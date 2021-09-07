@@ -32,7 +32,7 @@
 
 namespace {
     // pandasm definitions
-    constexpr const auto LANG_EXT = panda::pandasm::extensions::Language::ECMASCRIPT;
+    constexpr const auto LANG_EXT = panda::panda_file::SourceLang::ECMASCRIPT;
     const std::string WHOLE_LINE;
     bool g_debugModeEnabled = false;
     bool g_debugLogEnabled = false;
@@ -867,7 +867,7 @@ static int GenerateProgram(const std::string &data, std::string output,
                            panda::PandArg<std::string> optLogLevelArg)
 {
     panda::pandasm::Program prog = panda::pandasm::Program();
-    prog.lang = panda::pandasm::extensions::Language::ECMASCRIPT;
+    prog.lang = LANG_EXT;
     if (ParseData(data, prog)) {
         std::cerr << "fail to parse Data!" << std::endl;
         return RETURN_FAILED;
