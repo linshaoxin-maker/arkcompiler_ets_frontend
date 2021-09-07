@@ -31,7 +31,9 @@ import { PandaGen } from "../pandagen";
 import { Recorder } from "../recorder";
 import {
     FunctionScope,
+    GlobalScope,
     LocalScope,
+    ModuleScope,
     Scope,
     VariableScope
 } from "../scope";
@@ -111,9 +113,13 @@ export function compileClassDeclaration(compiler: Compiler, stmt: ts.ClassLikeDe
     if (stmt.name) {
         let className = jshelpers.getTextOfIdentifierOrLiteral(stmt.name);
         let classScope = <Scope>compiler.getRecorder().getScopeOfNode(stmt);
-        let classInfo = classScope.find(className);
-        (<LocalVariable>classInfo.v).initialize();
-        pandaGen.storeAccToLexEnv(stmt, classInfo.scope!, classInfo.level, classInfo.v!, true);
+        if (classScope instanceof GlobalScope || classScope instanceof ModuleScope) {
+            pandaGen.stClassToGlobalRecord(stmt, className);
+        } else {
+            let classInfo = classScope.find(className);
+            (<LocalVariable>classInfo.v).initialize();
+            pandaGen.storeAccToLexEnv(stmt, classInfo.scope!, classInfo.level, classInfo.v!, true);
+        }
     }
 
     pandaGen.freeTemps(classReg, baseVreg);

@@ -38,7 +38,6 @@ import {
     createObjectHavingMethod,
     createObjectWithBuffer,
     createObjectWithExcludedKeys,
-    setObjectWithProto,
     defineClassWithBuffer,
     defineGetterSetterByValue,
     deleteObjProperty,
@@ -67,6 +66,10 @@ import {
     newObject,
     popLexicalEnv,
     returnUndefined,
+    setObjectWithProto,
+    stClassToGlobalRecord,
+    stConstToGlobalRecord,
+    stLetToGlobalRecord,
     storeAccumulator,
     storeArraySpread,
     storeGlobalVar,
@@ -82,8 +85,8 @@ import {
     stSuperByValue,
     superCall,
     superCallSpread,
-    throwException,
     throwDeleteSuperProperty,
+    throwException,
     throwIfNotObject,
     throwIfSuperNotCorrectCall,
     throwObjectNonCoercible,
@@ -94,20 +97,19 @@ import {
     tryStoreGlobalByName,
     tryStoreGlobalByValue
 } from "./base/bcGenUtil";
+import { LiteralBuffer } from "./base/literal";
 import {
     CacheList,
     getVregisterCache,
     VregisterCache
 } from "./base/vregisterCache";
 import { CmdOptions } from "./cmdOptions";
-import { Compiler } from "./compiler";
 import {
     DebugInfo,
     NodeKind,
     VariableDebugInfo
 } from "./debuginfo";
 import { isInteger } from "./expression/numericLiteral";
-import { LiteralBuffer } from "./base/literal";
 import {
     Add2Dyn,
     And2Dyn,
@@ -1169,6 +1171,24 @@ export class PandaGen {
             node,
             loadHomeObject()
         )
+    }
+
+    stLetToGlobalRecord(node: ts.Node, string_id: string) {
+        this.add(
+            node,
+            stLetToGlobalRecord(string_id));
+    }
+
+    stConstToGlobalRecord(node: ts.Node, string_id: string) {
+        this.add(
+            node,
+            stConstToGlobalRecord(string_id));
+    }
+
+    stClassToGlobalRecord(node: ts.Node, string_id: string) {
+        this.add(
+            node,
+            stClassToGlobalRecord(string_id));
     }
 
     private binaryRelation(node: ts.Node, op: BinaryOperator, lhs: VReg) {

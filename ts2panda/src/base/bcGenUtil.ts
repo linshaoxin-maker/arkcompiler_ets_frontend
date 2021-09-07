@@ -29,7 +29,6 @@ import {
     CreateObjectHavingMethod,
     CreateObjectWithBuffer,
     CreateObjectWithExcludedKeys,
-    SetObjectWithProto,
     Debugger,
     DefineClassWithBuffer,
     DefineGetterSetterByValue,
@@ -63,9 +62,13 @@ import {
     PopLexEnv,
     ResultType,
     ReturnUndefined,
+    SetObjectWithProto,
     StaDyn,
     StArraySpread,
+    StClassToGlobalRecord,
+    StConstToGlobalRecord,
     StGlobalVar,
+    StLetToGlobalRecord,
     StLexVar,
     StModuleVar,
     StObjByIndex,
@@ -79,8 +82,8 @@ import {
     SuperCall,
     SuperCallSpread,
     ThrowConstAssignment,
-    ThrowDyn,
     ThrowDeleteSuperProperty,
+    ThrowDyn,
     ThrowIfNotObject,
     ThrowIfSuperNotCorrectCall,
     ThrowPatternNonCoercible,
@@ -382,4 +385,16 @@ export function copyModuleIntoCurrentModule(mod: VReg) {
 
 export function loadHomeObject() {
     return new LdHomeObject();
+}
+
+export function stLetToGlobalRecord (name: string) {
+    return new StLetToGlobalRecord(name);
+}
+
+export function stConstToGlobalRecord (name: string) {
+    return new StConstToGlobalRecord(name);
+}
+
+export function stClassToGlobalRecord (name: string) {
+    return new StClassToGlobalRecord(name);
 }
