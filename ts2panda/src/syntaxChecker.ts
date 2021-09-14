@@ -860,7 +860,7 @@ function checkClassDeclaration(node: ts.ClassLikeDeclaration) {
         }
     });
 
-    // Class declaration is not allowed in statement position
+    // Class declaration not allowed in statement position
     if (isStatement(node.parent.kind)) {
         throw new DiagnosticError(node, DiagnosticCode.Class_declaration_not_allowed_in_statement_position, file);
     }
@@ -992,18 +992,15 @@ function checkObjectLiteralExpression(node: ts.ObjectLiteralExpression) {
         }
 
         /**
-         * It is a Syntax Error if PropertyNameList of PropertyDefinitionList contains any duplicate entries for "__proto__" and
-         * at least two of those entries were obtained from productions of the form
-         * PropertyDefinition : PropertyName : AssignmentExpression .
-         */
+        * It is a Syntax Error if PropertyNameList of PropertyDefinitionList contains any duplicate entries for "__proto__" and
+        * at least two of those entries were obtained from productions of the form
+        * PropertyDefinition : PropertyName : AssignmentExpression .
+        */
         let curKind = getPropertieDeclaration(prop, name);
         if (!curKind) continue;
         if (!inDestructuring) {
             let effectName = jshelpers.getPropertyNameForPropertyNameNode(name);
-            if (!effectName || ts.isComputedPropertyName(name)) {
-                continue;
-            }
-
+            if (!effectName || ts.isComputedPropertyName(name)) continue;
             let existKind = seen.get(effectName);
             if (!existKind) {
                 seen.set(effectName, curKind);
@@ -1019,16 +1016,14 @@ function checkObjectLiteralExpression(node: ts.ObjectLiteralExpression) {
 }
 
 function checkInvalidExclamationToken(exclamationToken: ts.ExclamationToken | undefined) {
-    let isInvalidToken = Boolean(exclamationToken);
-    if (isInvalidToken) {
+    if (!!exclamationToken) {
         let file = jshelpers.getSourceFileOfNode(exclamationToken);
         throw new DiagnosticError(exclamationToken, DiagnosticCode.A_definite_assignment_assertion_is_not_permitted_in_this_context, file);
     }
 }
 
 function checkInvalidQuestionMark(questionToken: ts.QuestionToken | undefined) {
-    let isInvalidToken = Boolean(questionToken);
-    if (isInvalidToken) {
+    if (!!questionToken) {
         let file = jshelpers.getSourceFileOfNode(questionToken);
         throw new DiagnosticError(questionToken, DiagnosticCode.An_object_member_cannot_be_declared_optional, file);
     }

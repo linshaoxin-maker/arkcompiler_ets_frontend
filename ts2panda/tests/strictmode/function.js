@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-function add(a, b) {
+function add(a,b) {
     "use strict";
     var x = 12;
     return a + b + x;

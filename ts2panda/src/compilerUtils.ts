@@ -339,6 +339,7 @@ function compileObjectDestructuring(obj: ts.ObjectBindingOrAssignmentPattern, pa
         if (ts.isComputedPropertyName(key)) {
             compiler.compileExpression(key.expression);
         } else {
+            // compiler.compileExpression(key);
             if (ts.isIdentifier(key)) {
                 let keyName = jshelpers.getTextOfIdentifierOrLiteral(key);
                 pandaGen.loadAccumulatorString(key, keyName);

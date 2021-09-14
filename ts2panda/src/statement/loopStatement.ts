@@ -15,7 +15,7 @@
 
 /**
  * The loopStatement implementation.
- * This file implements compilation process of loop statements
+ * This file implements Compilation process of loop statement
  * and uses Pandagen to generate bytecode.
  *
  */
@@ -178,7 +178,7 @@ export function compileForStatement(stmt: ts.ForStatement, compiler: Compiler) {
             }
         });
 
-        // pop the current loopenv and create a new loopenv before next iteration
+        // pop the current loopenv and create a new loopenv before the next iteration
         pandaGen.popLexicalEnv(stmt);
         pandaGen.createLexEnv(stmt, loopEnv, loopScope);
         variables.forEach((reg, varInfo) => {

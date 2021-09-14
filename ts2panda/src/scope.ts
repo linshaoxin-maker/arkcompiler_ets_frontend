@@ -483,7 +483,7 @@ export class LocalScope extends Scope {
             if (root instanceof GlobalScope || root instanceof ModuleScope) {
                 return root.add(name, declKind, status);
             } else {
-                LOGE(undefined, "Error: this scope'root is not globalscope, it is wrong");
+                LOGE(undefined, "Error: the root of this scope is not global scope, it is wrong");
                 return undefined;
             }
         } else if (declKind == VarDeclarationKind.VAR) {

@@ -53,6 +53,7 @@ import {
     findInnerExprOfParenthesis,
     findOuterNodeOfParenthesis
 } from "./expression/parenthesizedExpression";
+import { compileRegularExpressionLiteral } from "./expression/regularExpression";
 import { compileStringLiteral } from "./expression/stringLiteral";
 import { getTemplateObject } from "./expression/templateExpression";
 import { compileYieldExpression } from "./expression/yieldExpression";
@@ -343,9 +344,7 @@ export class Compiler {
         }
 
         this.funcBuilder = this.createFuncBuilder(decl);
-
         this.funcBuilder.prepare(decl, this.recorder);
-
         if (decl.body) {
             this.compileFunctionBody(decl.kind, decl.body);
         }
@@ -537,7 +536,7 @@ export class Compiler {
             this.pandaGen.label(stmt, blockEndLabel);
         }
 
-        // because the scope of the label just in labeld statment, we need to delete it.
+        // because the scope of the label is just in labeled statment, we need to delete it.
         LabelTarget.deleteName2LabelTarget(labelName);
         this.popScope();
     }
@@ -555,7 +554,7 @@ export class Compiler {
     compileFinallyBeforeCFC(endTry: TryStatement | undefined, cfc: ControlFlowChange, continueTargetLabel: Label | undefined) {// compile finally before control flow change
         let startTry = TryStatement.getCurrentTryStatement();
         let originTry = startTry;
-        for (; startTry != endTry; startTry = startTry?.getOuterTryStatement()) {
+        for (; startTry != endTry; startTry = startTry ?.getOuterTryStatement()) {
 
             if (startTry && startTry.trybuilder) {
                 let inlineFinallyBegin = new Label();
@@ -631,7 +630,7 @@ export class Compiler {
             let hasDefault: boolean = hasDefaultKeywordModifier(decl);
             if (hasExport && hasDefault) {
                 if (this.scope instanceof ModuleScope) {
-                    let internalName = this.compilerDriver.getFuncInternalName(decl);
+                    let internalName = this.compilerDriver.getFuncInternalName(decl, this.recorder);
                     let env = this.getCurrentEnv();
                     this.pandaGen.defineFunction(NodeKind.FirstNodeOfFunction, <ts.FunctionDeclaration>decl, internalName, env);
                     this.pandaGen.storeModuleVar(decl, "default");
@@ -678,21 +677,17 @@ export class Compiler {
                 }
                 case ts.SyntaxKind.AmpersandAmpersandToken: {
                     this.compileExpression(binExpr.left);
-                    pandaGen.toBoolean(binExpr.left);
-                    pandaGen.condition(binExpr, ts.SyntaxKind.EqualsEqualsToken, getVregisterCache(pandaGen, CacheList.True), ifFalseLabel);
+                    pandaGen.jumpIfFalse(binExpr, ifFalseLabel);
                     this.compileExpression(binExpr.right);
-                    pandaGen.toBoolean(binExpr.right);
-                    pandaGen.condition(binExpr, ts.SyntaxKind.EqualsEqualsToken, getVregisterCache(pandaGen, CacheList.True), ifFalseLabel);
+                    pandaGen.jumpIfFalse(binExpr, ifFalseLabel);
                     return;
                 }
                 case ts.SyntaxKind.BarBarToken: {
                     let endLabel = new Label();
                     this.compileExpression(binExpr.left);
-                    pandaGen.toBoolean(binExpr.left);
-                    pandaGen.condition(binExpr, ts.SyntaxKind.EqualsEqualsToken, getVregisterCache(pandaGen, CacheList.False), endLabel);
+                    pandaGen.jumpIfTrue(binExpr, endLabel);
                     this.compileExpression(binExpr.right);
-                    pandaGen.toBoolean(binExpr.right);
-                    pandaGen.condition(binExpr, ts.SyntaxKind.ExclamationEqualsToken, getVregisterCache(pandaGen, CacheList.False), ifFalseLabel);
+                    pandaGen.jumpIfFalse(binExpr, ifFalseLabel);
                     pandaGen.label(binExpr, endLabel);
                     return;
                 }
@@ -700,10 +695,10 @@ export class Compiler {
                     break;
             }
         }
+
         // General case including some binExpr i.e.(a+b)
         this.compileExpression(expr);
-        pandaGen.toBoolean(expr);
-        pandaGen.condition(expr, ts.SyntaxKind.EqualsEqualsToken, getVregisterCache(pandaGen, CacheList.True), ifFalseLabel);
+        pandaGen.jumpIfFalse(expr, ifFalseLabel);
     }
 
     compileExpression(expr: ts.Expression) {
@@ -719,7 +714,7 @@ export class Compiler {
                 compileStringLiteral(this.pandaGen, <ts.StringLiteral>expr);
                 break;
             case ts.SyntaxKind.RegularExpressionLiteral: // line 39
-                this.compileRegularExpressionLiteral(<ts.RegularExpressionLiteral>expr);
+                compileRegularExpressionLiteral(this, <ts.RegularExpressionLiteral>expr);
                 break;
             case ts.SyntaxKind.Identifier: // line 109
                 this.compileIdentifier(<ts.Identifier>expr);
@@ -812,48 +807,9 @@ export class Compiler {
         }
     }
 
-    private compileRegularExpressionLiteral(regexp: ts.RegularExpressionLiteral) {
-        let pandaGen = this.pandaGen;
-
-        let ctorReg = pandaGen.getTemp();
-        let newTargetReg = pandaGen.getTemp();
-        let regexpText = regexp.text;
-        let regexpPatternReg = pandaGen.getTemp();
-        let regexpPattern = regexpText;
-        let regexpFlags = "";
-        let firstSlashPos = regexpText.indexOf('/');
-        let lastSlashPos = regexpText.lastIndexOf('/');
-        if (firstSlashPos == -1 ||
-            lastSlashPos == -1 ||
-            firstSlashPos == lastSlashPos) {
-            throw new Error("Incorrect regular expression");
-        }
-        regexpPattern = regexpText.substring(firstSlashPos + 1, lastSlashPos);
-        regexpFlags = regexpText.substring(lastSlashPos + 1);
-
-        pandaGen.tryLoadGlobalByName(regexp, "RegExp");
-        pandaGen.storeAccumulator(regexp, ctorReg);
-        pandaGen.moveVreg(regexp, newTargetReg, ctorReg);
-
-        pandaGen.loadAccumulatorString(regexp, regexpPattern);
-        pandaGen.storeAccumulator(regexp, regexpPatternReg);
-
-        let argsArray = [ctorReg, newTargetReg, regexpPatternReg];
-
-        if (regexpFlags.length > 0) {
-            let regexpFlagsReg = pandaGen.getTemp();
-            pandaGen.loadAccumulatorString(regexp, regexpFlags);
-            pandaGen.storeAccumulator(regexp, regexpFlagsReg);
-            argsArray.push(regexpFlagsReg);
-        }
-        pandaGen.newObject(regexp, argsArray);
-        pandaGen.freeTemps(...argsArray);
-    }
-
     private compileIdentifier(id: ts.Identifier) {
         let name = jshelpers.getTextOfIdentifierOrLiteral(id);
         let { scope, level, v } = this.scope.find(name);
-
         if (!v) {
             // the variable may appear after function call
             // any way it is a global variable.
@@ -883,7 +839,6 @@ export class Compiler {
             default: {
                 // typeof an undeclared variable will return undefined instead of throwing reference error
                 let parent = findOuterNodeOfParenthesis(id);
-
                 if ((parent.kind == ts.SyntaxKind.TypeOfExpression)) {
                     let obj = getVregisterCache(pandaGen, CacheList.Global);
                     pandaGen.loadObjProperty(id, obj, name);
@@ -958,7 +913,7 @@ export class Compiler {
     }
 
     private compileFunctionExpression(expr: ts.FunctionExpression) {
-        let internalName = this.compilerDriver.getFuncInternalName(expr);
+        let internalName = this.compilerDriver.getFuncInternalName(expr, this.recorder);
         let env = this.getCurrentEnv();
         this.pandaGen.defineFunction(expr, expr, internalName, env);
     }
@@ -972,7 +927,7 @@ export class Compiler {
             case ts.SyntaxKind.Identifier: {
                 // Check if this is a known variable.
                 let name = jshelpers.getTextOfIdentifierOrLiteral(<ts.Identifier>unaryExpr);
-                let { scope, level, v } = this.scope.find(name);
+                let { scope, v } = this.scope.find(name);
 
                 if (!v || ((scope instanceof GlobalScope) && (v instanceof GlobalVariable))) {
                     // If the variable doesn't exist or if it is global, we must generate
@@ -1022,7 +977,6 @@ export class Compiler {
             default: {
                 // compile the delete operand.
                 this.compileExpression(unaryExpr);
-
                 // Deleting any value or a result of an expression returns True.
                 pandaGen.loadAccumulator(expr, getVregisterCache(pandaGen, CacheList.True));
             }
@@ -1070,7 +1024,8 @@ export class Compiler {
         // acc -> op(acc)
         switch (expr.operator) {
             case ts.SyntaxKind.PlusPlusToken: // line 73
-            case ts.SyntaxKind.MinusMinusToken: { // line 74
+            case ts.SyntaxKind.MinusMinusToken: {
+                // line 74
                 let lref = LReference.generateLReference(this, expr.operand, false);
                 lref.getValue();
                 pandaGen.storeAccumulator(expr, operandReg);
@@ -1125,14 +1080,15 @@ export class Compiler {
                 let leftFalseLabel = new Label();
                 let endLabel = new Label();
 
-                // left -> acc -> lhs -> toboolean -> acc -> boolLhs
+                // left -> acc
                 this.compileExpression(expr.left);
                 pandaGen.storeAccumulator(expr, lhs);
-                pandaGen.toBoolean(expr.left);
-                pandaGen.condition(expr, ts.SyntaxKind.EqualsEqualsToken, getVregisterCache(pandaGen, CacheList.True), leftFalseLabel);
+                pandaGen.jumpIfFalse(expr, leftFalseLabel);
+
                 // left is true then right -> acc
                 this.compileExpression(expr.right);
                 pandaGen.branch(expr, endLabel);
+
                 // left is false then lhs -> acc
                 pandaGen.label(expr, leftFalseLabel);
                 pandaGen.loadAccumulator(expr, lhs);
@@ -1143,14 +1099,15 @@ export class Compiler {
                 let leftTrueLabel = new Label();
                 let endLabel = new Label();
 
-                // left -> acc -> lhs -> toboolean -> acc -> boolLhs
+                // left -> acc
                 this.compileExpression(expr.left);
                 pandaGen.storeAccumulator(expr, lhs);
-                pandaGen.toBoolean(expr.left);
-                pandaGen.condition(expr, ts.SyntaxKind.EqualsEqualsToken, getVregisterCache(pandaGen, CacheList.False), leftTrueLabel);
+                pandaGen.jumpIfTrue(expr, leftTrueLabel);
+
                 // left is false then right -> acc
                 this.compileExpression(expr.right);
                 pandaGen.branch(expr, endLabel);
+
                 // left is true then lhs -> acc
                 pandaGen.label(expr, leftTrueLabel);
                 pandaGen.loadAccumulator(expr, lhs);
@@ -1221,7 +1178,7 @@ export class Compiler {
     }
 
     private compileArrowFunction(expr: ts.ArrowFunction) {
-        let internalName = this.compilerDriver.getFuncInternalName(expr);
+        let internalName = this.compilerDriver.getFuncInternalName(expr, this.recorder);
         let env = this.getCurrentEnv();
         this.pandaGen.defineFunction(expr, expr, internalName, env);
     }
@@ -1331,13 +1288,32 @@ export class Compiler {
 
     getThis(node: ts.Node, res: VReg) {
         let pandaGen = this.pandaGen;
+        let curScope = <Scope>this.getCurrentScope();
         let thisInfo = this.getCurrentScope().find("this");
-        if (thisInfo.v!.isLexVar) {
-            let slot = (<Variable>thisInfo.v).idxLex;
-            pandaGen.loadLexicalVar(node, thisInfo.level, slot);
+        let scope = <Scope>thisInfo.scope;
+        let level = thisInfo.level;
+        let v = <Variable>thisInfo.v;
+        if (scope && level >= 0) {
+            let needSetLexVar: boolean = false;
+            while (curScope != scope) {
+                if (curScope instanceof VariableScope) {
+                    needSetLexVar = true;
+                    break;
+                }
+                curScope = <Scope>curScope.getParent();
+            }
+
+            if (needSetLexVar) {
+                scope.setLexVar(v, curScope);
+            }
+        }
+
+        if (v.isLexVar) {
+            let slot = v.idxLex;
+            pandaGen.loadLexicalVar(node, level, slot);
             pandaGen.storeAccumulator(node, res);
         } else {
-            pandaGen.moveVreg(node, res, pandaGen.getVregForVariable(<Variable>thisInfo.v))
+            pandaGen.moveVreg(node, res, pandaGen.getVregForVariable(v));
         }
     }
 
@@ -1380,10 +1356,28 @@ export class Compiler {
         isDeclaration: boolean) {
         if (variable.v instanceof LocalVariable) {
             if (isDeclaration) {
-                if (variable.v.isLetOrConst()) {
+                if (variable.v.isLet()) {
                     variable.v.initialize();
+                    if (variable.scope instanceof GlobalScope || variable.scope instanceof ModuleScope) {
+                        this.pandaGen.stLetToGlobalRecord(node, variable.v.getName());
+                        return;
+                    }
+                } else if (variable.v.isConst()) {
+                    variable.v.initialize();
+                    if (variable.scope instanceof GlobalScope || variable.scope instanceof ModuleScope) {
+                        this.pandaGen.stConstToGlobalRecord(node, variable.v.getName());
+                        return;
+                    }
                 }
             }
+
+            if (variable.v.isLetOrConst()) {
+                if (variable.scope instanceof GlobalScope || variable.scope instanceof ModuleScope) {
+                    this.pandaGen.tryStoreGlobalByName(node, variable.v.getName());
+                    return;
+                }
+            }
+
             if (variable.scope && variable.level >= 0) { // inner most function will load outer env instead of new a lex env
                 let scope = this.scope;
                 let needSetLexVar: boolean = false;
@@ -1416,6 +1410,13 @@ export class Compiler {
         if (variable.v instanceof ModuleVariable) {
             this.pandaGen.loadModuleVariable(node, variable.v.getModule(), variable.v.getExoticName());
         } else if (variable.v instanceof LocalVariable) {
+            if (variable.v.isLetOrConst() || variable.v.isClass()) {
+                if (variable.scope instanceof GlobalScope || variable.scope instanceof ModuleScope) {
+                    this.pandaGen.tryLoadGlobalByName(node, variable.v.getName());
+                    return;
+                }
+            }
+
             if (variable.scope && variable.level >= 0) { // inner most function will load outer env instead of new a lex env
                 let scope = this.scope;
                 let needSetLexVar: boolean = false;

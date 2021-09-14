@@ -17,6 +17,7 @@ import * as ts from "typescript";
 import { hasExportKeywordModifier, hasDefaultKeywordModifier } from "./base/util";
 import { CacheList, getVregisterCache } from "./base/vregisterCache";
 import { Compiler } from "./compiler";
+import { CompilerDriver } from "./compilerDriver";
 import { NodeKind } from "./debuginfo";
 import { PandaGen } from "./pandagen";
 import { Recorder } from "./recorder";
@@ -31,7 +32,9 @@ import {
     VariableScope
 } from "./scope";
 import { LocalVariable } from "./variable";
-export function hoisting(rootNode: ts.SourceFile | ts.FunctionLikeDeclaration, pandaGen: PandaGen, recorder: Recorder, compiler: Compiler) {
+
+export function hoisting(rootNode: ts.SourceFile | ts.FunctionLikeDeclaration, pandaGen: PandaGen,
+                         recorder: Recorder, compiler: Compiler) {
     let variableScope = <VariableScope>recorder.getScopeOfNode(rootNode);
     let hoistDecls = recorder.getHoistDeclsOfScope(variableScope);
 
@@ -39,7 +42,8 @@ export function hoisting(rootNode: ts.SourceFile | ts.FunctionLikeDeclaration, p
         if (decl instanceof VarDecl) {
             hoistVar(decl, variableScope, pandaGen);
         } else if (decl instanceof FuncDecl) {
-            hoistFunction(decl, variableScope, pandaGen, compiler);
+            let compilerDriver = compiler.getCompilerDriver();
+            hoistFunction(decl, variableScope, pandaGen, compiler, compilerDriver);
         } else {
             throw new Error("Wrong declaration type to be hoisted");
         }
@@ -61,10 +65,9 @@ export function hoistVar(decl: VarDecl, scope: Scope, pandaGen: PandaGen) {
     }
 }
 
-export function hoistFunction(decl: FuncDecl, scope: Scope, pandaGen: PandaGen, compiler: Compiler) {
+export function hoistFunction(decl: FuncDecl, scope: Scope, pandaGen: PandaGen, compiler: Compiler, compilerDriver: CompilerDriver) {
     let funcName = decl.name;
-    let funcIndex = decl.index;
-    let internalName = `func_${funcName}_${funcIndex}`;
+    let internalName = compilerDriver.getFuncInternalName(<ts.FunctionLikeDeclaration>decl.node, compiler.getRecorder());
     let env = compiler.getCurrentEnv();
 
     if (scope instanceof GlobalScope) {
@@ -101,7 +104,8 @@ export function hoistFunctionInBlock(scope: Scope, pandaGen: PandaGen, strictMod
 
     if (strictMode) {
         funcToHoist.forEach(func => {
-            hoistFunction(func, scope, pandaGen, compiler);
+            let compilerDriver = compiler.getCompilerDriver();
+            hoistFunction(func, scope, pandaGen, compiler, compilerDriver);
         });
     }
 }

@@ -278,12 +278,7 @@ export class TryBuilderWithForOf extends TryBuilderBase {
         this.compileIteratorNext(stmt, pandaGen, this.iterator, resultReg);
 
         pandaGen.loadObjProperty(stmt, resultReg, "done");
-        pandaGen.toBoolean(stmt);
-        pandaGen.condition(
-            stmt.expression,
-            ts.SyntaxKind.ExclamationEqualsEqualsToken,
-            getVregisterCache(pandaGen, CacheList.True),
-            this.labelTarget.getBreakTargetLabel());
+        pandaGen.jumpIfTrue(stmt, this.labelTarget.getBreakTargetLabel());
 
         pandaGen.loadObjProperty(stmt, resultReg, "value");
         pandaGen.storeAccumulator(stmt, resultReg);
