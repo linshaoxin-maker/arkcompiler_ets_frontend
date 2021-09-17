@@ -304,13 +304,3 @@ ohos_copy("panda_ts2abc_ets") {
   module_source_dir = target_out_dir + "/$target_name/"
   module_install_name = ""
 }
-
-group("ark_ts2abc_build") {
-  deps = []
-  if (host_os != "mac") {
-    deps += [
-      "${ts2abc_root}:ts2abc_build(${buildtool_linux})",
-      "${ts2abc_root}:ts2abc_build_ets(${buildtool_linux})",
-    ]
-  }
-}
