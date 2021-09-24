@@ -19,6 +19,7 @@ import {
     LoopScope,
     VariableScope
 } from "./scope";
+import { PremitiveType } from "./typeinfo"
 
 export enum VarDeclarationKind {
     NONE,
@@ -33,6 +34,7 @@ export enum VarDeclarationKind {
 export abstract class Variable {
     private vreg: VReg | undefined;
     private name: string;
+    private typeIndex: number;
     isLexVar: boolean = false;
     idxLex: number = 0;
     constructor(
@@ -42,10 +44,12 @@ export abstract class Variable {
         this.name = name;
         this.vreg = undefined;
         this.name = name;
+        this.typeIndex = PremitiveType.UNDEFINED;
     }
 
     bindVreg(vreg: VReg) {
         this.vreg = vreg;
+        this.vreg.setType(this.typeIndex);
     }
 
     hasAlreadyBinded(): boolean {
@@ -61,6 +65,14 @@ export abstract class Variable {
 
     getName() {
         return this.name;
+    }
+
+    getTypeIndex() {
+        return this.typeIndex;
+    }
+
+    setTypeIndex(typeIndex: number) {
+        return this.typeIndex = typeIndex;
     }
 
     setLexVar(scope: VariableScope | LoopScope) {

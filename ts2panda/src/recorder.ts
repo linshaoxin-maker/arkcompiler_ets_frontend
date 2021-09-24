@@ -62,6 +62,7 @@ export class Recorder {
     private importStmts: Array<ModuleStmt> = [];
     private exportStmts: Array<ModuleStmt> = [];
     private defaultUsed: boolean = false;
+    private recordTypeContent: boolean = false;
 
     constructor(node: ts.Node, scope: Scope, compilerDriver: CompilerDriver) {
         this.node = node;
