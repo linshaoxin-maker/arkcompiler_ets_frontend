@@ -217,7 +217,7 @@ export class Recorder {
                     let tmp: Scope | undefined = nearestRefVariableScope.getNearestLexicalScope();
                     let needCreateLoopEnv: boolean = false;
                     if (nearestDefLexicalScope instanceof LoopScope) {
-                        while(tmp) {
+                        while (tmp) {
                             if (tmp == nearestDefLexicalScope) {
                                 needCreateLoopEnv = true;
                                 break;
@@ -236,7 +236,7 @@ export class Recorder {
 
         if (name == "arguments") {
             let varialbeScope = scope.getNearestVariableScope();
-            varialbeScope ?.setUseArgs(true);
+            varialbeScope?.setUseArgs(true);
         }
     }
 
@@ -493,8 +493,11 @@ export class Recorder {
 
         // if variable share a same name with the parameter of its contained function, it should not be hoisted
         if (scope instanceof FunctionScope) {
-            let nearestFunc = jshelpers.getContainingFunction(node);
-            let functionParameters = this.getParametersOfFunction(nearestFunc);
+            let nearestFunc = jshelpers.getContainingFunctionDeclaration(node);
+            if (!nearestFunc) {
+                return;
+            }
+            let functionParameters = this.getParametersOfFunction(<ts.FunctionLikeDeclaration>nearestFunc);
             if (functionParameters) {
                 for (let i = 0; i < functionParameters.length; i++) {
                     if (functionParameters[i].name == declName) {

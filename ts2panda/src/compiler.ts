@@ -83,7 +83,9 @@ import {
 import {
     checkValidUseSuperBeforeSuper,
     compileClassDeclaration,
-    compileConstructor
+    compileConstructor,
+    compileDefaultConstructor,
+    isContainConstruct
 } from "./statement/classStatement";
 import { compileForOfStatement } from "./statement/forOfStatement";
 import { LabelTarget } from "./statement/labelTarget";
@@ -336,6 +338,14 @@ export class Compiler {
         let pandaGen = this.pandaGen;
         this.compileFunctionParameterDeclaration(decl);
 
+        if (ts.isConstructorDeclaration(decl)) {
+            let classNode = <ts.ClassLikeDeclaration>decl.parent;
+            if (jshelpers.getClassExtendsHeritageElement(classNode) && !isContainConstruct(classNode)) {
+                compileDefaultConstructor(this, decl);
+                return;
+            }
+        }
+
         if (decl.kind == ts.SyntaxKind.FunctionExpression) {
             if (decl.name) {
                 let funcName = jshelpers.getTextOfIdentifierOrLiteral(decl.name);
@@ -554,7 +564,7 @@ export class Compiler {
     compileFinallyBeforeCFC(endTry: TryStatement | undefined, cfc: ControlFlowChange, continueTargetLabel: Label | undefined) {// compile finally before control flow change
         let startTry = TryStatement.getCurrentTryStatement();
         let originTry = startTry;
-        for (; startTry != endTry; startTry = startTry ?.getOuterTryStatement()) {
+        for (; startTry != endTry; startTry = startTry?.getOuterTryStatement()) {
 
             if (startTry && startTry.trybuilder) {
                 let inlineFinallyBegin = new Label();
@@ -616,7 +626,7 @@ export class Compiler {
         // try-catch-finally statements must have been transformed into
         // two nested try statements with only "catch" or "finally" each.
         if (stmt.catchClause && stmt.finallyBlock) {
-            transformTryCatchFinally(stmt, this.recorder);
+            stmt = transformTryCatchFinally(stmt, this.recorder);
         }
 
         let tryBuilder = new TryBuilder(this, this.pandaGen, stmt);
