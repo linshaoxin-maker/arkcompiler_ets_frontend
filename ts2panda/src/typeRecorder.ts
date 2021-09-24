@@ -13,17 +13,14 @@
  * limitations under the License.
  */
 
-export enum PremitiveType {
-    UNDEFINED,
-    STRING,
-    NUMBER,
-    BOOLEAN,
-    _LENGTH
-}
+import {
+    BaseType,
+    PremitiveType
+} from "./base/typeSystem";
 
 export class TypeRecorder {
     private type2Index: Map<string, number> = new Map<string, number>();
-    private typeInfo: Array<any>;
+    private typeInfo: Array<BaseType> = new Array<BaseType>();
     private index: number;
 
     constructor() {
@@ -34,13 +31,13 @@ export class TypeRecorder {
         this.type2Index.set(typePosition, this.index);
     }
 
-    setTypeInfo(typeContent: any) {
-        this.typeInfo[this.index] = typeContent;
+    setTypeInfo(typeInfo: BaseType) {
+        this.typeInfo[this.index] = typeInfo;
     }
 
-    addType(typePosition: string, typeContent: any) {
+    addType(typePosition: string, typeInfo: BaseType) {
         this.setType2Index(typePosition);
-        this.setTypeInfo(typeContent);
+        this.setTypeInfo(typeInfo);
         this.index += this.index;
     }
 
@@ -48,7 +45,7 @@ export class TypeRecorder {
         return this.type2Index;
     }
 
-    getTypeInfo(): Array<any> {
+    getTypeInfo(): Array<BaseType> {
         return this.typeInfo;
     }
 

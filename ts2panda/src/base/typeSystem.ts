@@ -15,17 +15,23 @@
 
 import * as ts from "typescript";
 
-abstract class BaseType {
+export enum PremitiveType {
+    UNDEFINED,
+    STRING,
+    NUMBER,
+    BOOLEAN,
+    _LENGTH
+}
+
+export abstract class BaseType {
 
 }
 
 export class ClassType extends BaseType {
     modifier: number = 0; // 0 -> unabstract, 1 -> abstract;
     heritages: Array<number> = new Array<number>();
-    unstaticFields: Map<string, number> = new Map<string, number>();
-    staticFields: Map<string, number> = new Map<string, number>();
-    unstaticMethods: Array<number> = new Array<number>();
-    staticMethods: Array<number> = new Array<number>();
+    fields : Map<string, Array<number>> = new Map<string, Array<number>>(); // Array: [type][static][public/private]
+    Methods: Array<number> = new Array<number>();
 
     constructor(classNode: ts.ClassDeclaration) {
         super();
@@ -44,7 +50,8 @@ export class ClassType extends BaseType {
 }
 
 export class FunctionType extends BaseType {
-    modifier: number = 0; // 0 -> normal function or method, 1 -> static member of class
+    modifierPublic: number = 0;
+    modifierStatic: number = 0; // 0 -> normal function or method, 1 -> static member of class
     name: string = '';
     parameters: Map<string, number> = new Map<string, number>();
     returnType: number = 0;
