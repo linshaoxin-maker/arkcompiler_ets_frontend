@@ -183,6 +183,7 @@ import { CatchTable } from "./statement/tryStatement";
 import {
     Variable
 } from "./variable";
+import { BaseType } from "./base/typeSystem";
 
 export class PandaGen {
     private debugTag: string = "PandaGen";
@@ -201,8 +202,10 @@ export class PandaGen {
     private sourceFileDebugInfo: string = "";
     private sourceCodeDebugInfo: string | undefined;
     private icSize: number = 0;
+    private typeRecord: Map<VReg, number> = new Map<VReg, number>();
 
     private static literalArrayBuffer: Array<LiteralBuffer> = [];
+    private static typeArrayBuffer: Array<LiteralBuffer> = new Array<LiteralBuffer>();
 
     constructor(internalName: string, parametersCount: number, scope: Scope | undefined = undefined) {
         this.internalName = internalName;
@@ -255,6 +258,27 @@ export class PandaGen {
 
     setICSize(total: number) {
         this.icSize = total;
+    }
+
+    getTypeRecord() {
+        return this.typeRecord;
+    }
+
+    appendTypeRecord(vreg: VReg, type: number) {
+        if (this.typeRecord.has(vreg)) {
+            throw new Error("The vreg has been recorded, please check");
+        }
+
+        this.typeRecord.set(vreg, type);
+    }
+
+    getTypeArrayBuffer() {
+        return PandaGen.typeArrayBuffer;
+    }
+
+    appendTypeArrayBuffer(type: BaseType) {
+        let typeLiteralBuffer = type.transfer2LiteralBuffer();
+        PandaGen.typeArrayBuffer.push(typeLiteralBuffer);
     }
 
     getFirstStmt() {

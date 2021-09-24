@@ -170,6 +170,12 @@ export class Ts2Panda {
         let funcSignature = Ts2Panda.getFuncSignature(pg);
         let funcInsnsAndRegsNum = Ts2Panda.getFuncInsnsAndRegsNum(pg);
         let sourceFile = pg.getSourceFileDebugInfo();
+        let typeRecord = pg.getTypeRecord();
+        let typeInfo = new Map<number, number>();
+        typeRecord.forEach((type, vreg) => {
+            let vregNum = vreg.num;
+            typeInfo.set(vregNum, type);
+        });
 
         let variables, sourceCode;
         if (CmdOptions.isDebugMode()) {
@@ -189,6 +195,7 @@ export class Ts2Panda {
             variables,
             sourceFile,
             sourceCode,
+            typeInfo
         );
         let catchTables = generateCatchTables(pg.getCatchMap());
         catchTables.forEach((catchTable) => {

@@ -14,6 +14,7 @@
  */
 
 import * as ts from "typescript";
+import { Literal, LiteralBuffer } from "./literal";
 
 export enum PremitiveType {
     UNDEFINED,
@@ -24,7 +25,7 @@ export enum PremitiveType {
 }
 
 export abstract class BaseType {
-
+    abstract transfer2LiteralBuffer(): LiteralBuffer;
 }
 
 export class ClassType extends BaseType {
@@ -43,8 +44,11 @@ export class ClassType extends BaseType {
         // pls extract class info here;
     }
 
-    extractFields() {
+    transfer2LiteralBuffer() {
+        let classLiteralBuf = new LiteralBuffer();
+        // TODO add implementation;
 
+        return classLiteralBuf;
     }
 
 }
@@ -64,6 +68,13 @@ export class FunctionType extends BaseType {
         }
 
         // pls extract function info here
+    }
+
+    transfer2LiteralBuffer() : LiteralBuffer {
+        let funcLiteralBuf = new LiteralBuffer();
+        // TODO add implementation;
+
+        return funcLiteralBuf;
     }
 
 }
