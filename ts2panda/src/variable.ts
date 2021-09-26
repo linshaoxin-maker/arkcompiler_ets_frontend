@@ -19,7 +19,7 @@ import {
     LoopScope,
     VariableScope
 } from "./scope";
-import { PremitiveType } from "./typeinfo"
+import { PremitiveType } from "./base/typeSystem"
 
 export enum VarDeclarationKind {
     NONE,
@@ -49,7 +49,7 @@ export abstract class Variable {
 
     bindVreg(vreg: VReg) {
         this.vreg = vreg;
-        this.vreg.setType(this.typeIndex);
+        this.vreg.setTypeIndex(this.typeIndex);
     }
 
     hasAlreadyBinded(): boolean {

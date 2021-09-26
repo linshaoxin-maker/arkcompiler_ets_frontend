@@ -36,12 +36,40 @@ export class ClassType extends BaseType {
 
     constructor(classNode: ts.ClassDeclaration) {
         super();
+        this.fillInModifiers(classNode);
+        this.fillInHeritages(classNode);
+        this.fillInFields(classNode);
+        this.fillInMethods(classNode);
+    }
 
-        if (classNode.AbstractKeyword) {
-            this.modifier = 1;
+    fillInModifiers(node: ts.ClassDeclaration) {
+        if (node.modifiers) {
+            for (let modifier of node.modifiers) {
+                switch (modifier.kind) {
+                    case ts.SyntaxKind.AbstractKeyword: {
+                        this.modifier = 1;
+                        break;
+                    }
+                    case ts.SyntaxKind.ExportKeyword: {
+                        break;
+                    }
+                }
+            }
         }
+    }
 
-        // pls extract class info here;
+    fillInHeritages(node: ts.ClassDeclaration) {
+        if (node.heritageClauses) {
+
+        }
+    }
+
+    fillInFields(node: ts.ClassDeclaration) {
+
+    }
+
+    fillInMethods(node: ts.ClassDeclaration) {
+
     }
 
     transfer2LiteralBuffer() {
@@ -63,9 +91,9 @@ export class FunctionType extends BaseType {
     constructor(funcNode: ts.FunctionLikeDeclaration) {
         super();
 
-        if (funcNode.AbstractKeyword) {
-            this.modifier = 1;
-        }
+        // if (funcNode.AbstractKeyword) {
+        //     this.modifier = 1;
+        // }
 
         // pls extract function info here
     }
