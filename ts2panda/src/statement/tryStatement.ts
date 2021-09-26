@@ -39,7 +39,6 @@ export function transformTryCatchFinally(tryStmt: ts.TryStatement, recorder: Rec
     (<LocalScope>recorder.getScopeOfNode(tryStmt.tryBlock)).setParent(newTryStmtScope);
     (<LocalScope>recorder.getScopeOfNode(tryStmt.catchClause!)).setParent(newTryStmtScope);
 
-    // const newTryStmt = ts.createTry(tryStmt.tryBlock, tryStmt.catchClause, undefined);
     const newTryStmt = ts.factory.createTryStatement(tryStmt.tryBlock, tryStmt.catchClause, undefined);
     recorder.setScopeMap(newTryStmt, newTryStmtScope);
 
