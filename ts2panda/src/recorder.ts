@@ -49,6 +49,7 @@ import {
 import { checkSyntaxError } from "./syntaxChecker";
 import { isGlobalIdentifier } from "./syntaxCheckHelper";
 import { VarDeclarationKind } from "./variable";
+import { TypeChecker } from "./typeChecker";
 
 export class Recorder {
     node: ts.Node;
@@ -162,6 +163,10 @@ export class Recorder {
                     }
                     this.defaultUsed = true;
                     this.recordInfo(childNode, scope);
+                    break;
+                }
+                case ts.SyntaxKind.VariableStatement: {
+                    TypeChecker.getInstance().formatNodeType(childNode);
                     break;
                 }
                 default:
