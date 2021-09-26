@@ -22,6 +22,8 @@ export enum LiteralTag {
   GENERATOR = 7,
   ACCESSOR = 8,
   METHODAFFILIATE = 9,
+  MODIFIER = 10,
+  ACCESSFLAG = 11,
   NULLVALUE = 255
 }
 

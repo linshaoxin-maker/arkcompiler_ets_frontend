@@ -14,7 +14,11 @@
  */
 
 import * as ts from "typescript";
-import { Literal, LiteralBuffer } from "./literal";
+import {
+    Literal,
+    LiteralBuffer,
+    LiteralTag
+} from "./literal";
 
 export enum PremitiveType {
     UNDEFINED,
@@ -32,7 +36,7 @@ export class ClassType extends BaseType {
     modifier: number = 0; // 0 -> unabstract, 1 -> abstract;
     heritages: Array<number> = new Array<number>();
     fields : Map<string, Array<number>> = new Map<string, Array<number>>(); // Array: [type][static][public/private]
-    Methods: Array<number> = new Array<number>();
+    methods: Array<number> = new Array<number>();
 
     constructor(classNode: ts.ClassDeclaration) {
         super();
@@ -73,17 +77,38 @@ export class ClassType extends BaseType {
     }
 
     transfer2LiteralBuffer() {
-        let classLiteralBuf = new LiteralBuffer();
-        // TODO add implementation;
+        let classTypeBuf = new LiteralBuffer();
+        let classTypeLiterals: Array<Literal> = new Array<Literal>();
 
-        return classLiteralBuf;
+        classTypeLiterals.push(new Literal(LiteralTag.MODIFIER, this.modifier)); // modifier is added at the front
+
+        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.heritages.length)); // num of heritages are recorded
+        this.heritages.forEach(heritage => {
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, heritage));
+        });
+
+        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.fields.size)); // num of fields are recorded
+        this.fields.forEach((typeInfo, name) => {
+            classTypeLiterals.push(new Literal(LiteralTag.STRING, name));
+            classTypeLiterals.push(new Literal(LiteralTag.MODIFIER, typeInfo[0]));
+            classTypeLiterals.push(new Literal(LiteralTag.ACCESSFLAG, typeInfo[1]));
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[2]));
+        });
+
+        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.methods.length)); // num of fields are recorded
+        this.fields.forEach(method => {
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, method));
+        });
+
+        classTypeBuf.addLiterals(...classTypeLiterals);
+        return classTypeBuf;
     }
 
 }
 
 export class FunctionType extends BaseType {
-    modifierPublic: number = 0;
-    modifierStatic: number = 0; // 0 -> normal function or method, 1 -> static member of class
+    accessFlag: number = 0; // 0 -> private, 1 -> public
+    modifier: number = 0; // 0 -> unstatic, 1 -> static
     name: string = '';
     parameters: Map<string, number> = new Map<string, number>();
     returnType: number = 0;
@@ -99,10 +124,22 @@ export class FunctionType extends BaseType {
     }
 
     transfer2LiteralBuffer() : LiteralBuffer {
-        let funcLiteralBuf = new LiteralBuffer();
-        // TODO add implementation;
+        let funcTypeBuf = new LiteralBuffer();
+        let funcTypeLiterals: Array<Literal> = new Array<Literal>();
+        funcTypeLiterals.push(new Literal(LiteralTag.ACCESSFLAG, this.accessFlag));
+        funcTypeLiterals.push(new Literal(LiteralTag.MODIFIER, this.modifier));
+        funcTypeLiterals.push(new Literal(LiteralTag.STRING, this.name));
 
-        return funcLiteralBuf;
+        funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.parameters.size));
+        this.parameters.forEach((type, paramName) => {
+            funcTypeLiterals.push(new Literal(LiteralTag.STRING, paramName));
+            funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, type));
+        });
+
+        funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.returnType));
+
+        funcTypeBuf.addLiterals(...funcTypeLiterals);
+        return funcTypeBuf;
     }
 
 }
