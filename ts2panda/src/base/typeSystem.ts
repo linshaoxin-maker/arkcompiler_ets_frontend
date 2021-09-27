@@ -143,3 +143,13 @@ export class FunctionType extends BaseType {
     }
 
 }
+
+export class TypeOfVreg {
+    private vregNum: number;
+    private typeIndex: number;
+
+    constructor(vregNum: number, typeIndex: number) {
+        this.vregNum = vregNum;
+        this.typeIndex = typeIndex;
+    }
+}

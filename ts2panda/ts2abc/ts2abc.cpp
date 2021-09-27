@@ -600,6 +600,36 @@ static void ParseFunctionCatchTables(const Json::Value &function, panda::pandasm
     }
 }
 
+static void ParseFunctionTypeInfo(const Json::Value &function, panda::pandasm::Function &pandaFunc)
+{
+    if (function.isMember("typeInfo") && function["typeInfo"].isArray()) {
+        auto typeInfo = function["typeInfo"];
+        panda::pandasm::AnnotationData funcAnnotation("_ESTypeAnnotation");
+        for (Json::ArrayIndex i = 0; i < typeInfo.size(); i++) {
+            auto type = typeInfo[i];
+            if (!type.isObject()) {
+                continue;
+            }
+
+            // TODO add type-vreg info to function annotation
+            uint32_t vregNum = 0;
+            if (type.isMember("vregNum") && type["vregNum"].isInt()) {
+                vregNum = type["vregNum"].asUInt();
+            }
+
+            uint32_t typeIndex = 0;
+            if (type.isMember("typeIndex") && type["typeIndex"].isInt()) {
+                typeIndex = type["typeIndex"].asUInt();
+            }
+
+            panda::pandasm::AnnotationElement typeOfVregElement(std::to_string(vregNum), std::make_unique<panda::pandasm::ScalarValue>(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U32>(typeIndex)));
+            funcAnnotation.AddElement(std::move(typeOfVregElement));
+        }
+
+        const_cast<std::vector<panda::pandasm::AnnotationData>&>(pandaFunc.metadata->GetAnnotations()).push_back(std::move(funcAnnotation));
+    }
+}
+
 static panda::pandasm::Function ParseFunction(const Json::Value &function)
 {
     auto pandaFunc = GetFunctionDefintion(function);
@@ -613,8 +643,18 @@ static panda::pandasm::Function ParseFunction(const Json::Value &function)
     ParseFunctionLabels(function, pandaFunc);
     // parsing catch blocks
     ParseFunctionCatchTables(function, pandaFunc);
+    // parsing type info
+    ParseFunctionTypeInfo(function, pandaFunc);
 
     return pandaFunc;
+}
+
+static void GenerateESTypeAnnotationRecord(panda::pandasm::Program &prog)
+{
+    auto tsTypeAnnotationRecord = panda::pandasm::Record("_ESTypeAnnotation", LANG_EXT);
+    tsTypeAnnotationRecord.metadata->SetAttribute("external");
+    tsTypeAnnotationRecord.metadata->SetAccessFlags(panda::ACC_ANNOTATION);
+    prog.record_table.emplace(tsTypeAnnotationRecord.name, std::move(tsTypeAnnotationRecord));
 }
 
 static void GenrateESModuleModeRecord(panda::pandasm::Program &prog, bool moduleMode)
@@ -711,6 +751,7 @@ static void ReplaceAllDistinct(std::string &str, const std::string &oldValue, co
 
 static void ParseOptions(const Json::Value &rootValue, panda::pandasm::Program &prog)
 {
+    GenerateESTypeAnnotationRecord(prog);
     ParseModuleMode(rootValue, prog);
     ParseLogEnable(rootValue);
     ParseDebugMode(rootValue);

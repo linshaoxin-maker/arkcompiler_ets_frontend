@@ -27,6 +27,7 @@ import { PandaGen } from "./pandagen";
 import { CatchTable, Function, Ins, Signature } from "./pandasm";
 import { generateCatchTables } from "./statement/tryStatement";
 import { escapeUnicode, isRangeInst, getRangeStartVregPos } from "./base/util";
+import { TypeOfVreg } from "./base/typeSystem";
 
 const dollarSign: RegExp = /\$/g;
 
@@ -171,10 +172,11 @@ export class Ts2Panda {
         let funcInsnsAndRegsNum = Ts2Panda.getFuncInsnsAndRegsNum(pg);
         let sourceFile = pg.getSourceFileDebugInfo();
         let typeRecord = pg.getTypeRecord();
-        let typeInfo = new Map<number, number>();
+
+        let typeInfo = new Array<TypeOfVreg>();
         typeRecord.forEach((type, vreg) => {
-            let vregNum = vreg.num;
-            typeInfo.set(vregNum, type);
+            let typeOfVreg = new TypeOfVreg(vreg.num, type);
+            typeInfo.push(typeOfVreg);
         });
 
         let variables, sourceCode;

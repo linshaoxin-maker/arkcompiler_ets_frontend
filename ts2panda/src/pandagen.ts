@@ -277,8 +277,7 @@ export class PandaGen {
     }
 
     appendTypeArrayBuffer(type: BaseType) {
-        let typeLiteralBuffer = type.transfer2LiteralBuffer();
-        PandaGen.typeArrayBuffer.push(typeLiteralBuffer);
+        PandaGen.typeArrayBuffer.push(type.transfer2LiteralBuffer());
     }
 
     getFirstStmt() {
