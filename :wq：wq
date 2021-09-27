@@ -1,0 +1,13 @@
+修改generate_plugin中java代码string过长的优化
+
+Signed-off-by: zgy-ian <zhaogaoyi@huawei.com>
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch master
+# Your branch is up to date with 'origin/master'.
+#
+# Changes to be committed:
+#	modified:   ts2panda/scripts/generate_plugin.py
+#
