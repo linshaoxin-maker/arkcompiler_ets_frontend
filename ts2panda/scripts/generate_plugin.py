@@ -108,13 +108,38 @@ def gen_java_method(input_arguments):
                          % os.linesep)
             output.write("        return%s" % os.linesep)
             lines = input_src.readlines()
-            for line in lines[:-1]:
+            # seperate_lines into blocks
+            single_block_len = 1024
+            total_len = len(lines)
+            for index, line in enumerate(lines):
+                block_index = index // single_block_len
                 line = line.strip(os.linesep)
                 line = line.replace("\"", "\\\"")
-                output.write("        \"%s\\n\" +%s" % (line, os.linesep))
-
-            last_line = lines[-1].replace("\"", "\\\"").strip(os.linesep)
-            output.write("        \"%s\";%s" % (last_line, os.linesep))
+                # generate getJsCode%s
+                if (index % single_block_len == 0):
+                    output.write("    private static String getJsCode%s(){%s"
+                                 % (block_index, os.linesep))
+                    output.write("     return%s" % os.linesep)
+                if (index % single_block_len == single_block_len-1 or index == total_len - 1):
+                    output.write("       \"%s\";%s" % (line, os.linesep))
+                    output.write("   }%s" % os.linesep)
+                else:
+                    output.write("        \"%s\\n\" +%s" % (line, os.linesep))
+            block_num = (total_len//single_block_len) + 1
+            if total_len % single_block_len == 0:
+                block_num = total_len // single_block_len
+            # generate getJsCode
+            output.write(
+                "     public static String getJsCode(){%s" % os.linesep)
+            output.write("         return %s" % os.linesep)
+            # let getJsCode call getJsCode%s
+            for index in range(block_num):
+                if (index != block_num - 1):
+                    output.write("       getJsCode%() +%s" %
+                                 (index, os.linesep))
+                else:
+                    output.write("       getJsCode%s() ;%s" %
+                                 (index, os.linesep))
             output.write("    }%s" % os.linesep)
 
         output.write("%s" % os.linesep)
