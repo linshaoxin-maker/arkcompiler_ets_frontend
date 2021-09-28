@@ -21,6 +21,7 @@ import {
 } from "./literal";
 import { TypeChecker } from "../typeChecker";
 import { TypeRecorder } from "../typeRecorder";
+import { PandaGen } from "../pandagen";
 import { TryStatement } from "src/statement/tryStatement";
 
 export enum PremitiveType {
@@ -122,6 +123,14 @@ export abstract class BaseType {
         return -1;
     }
 
+    protected getIndexFromTypeArrayBuffer(type: BaseType): number {
+        return PandaGen.appendTypeArrayBuffer(new PlaceHolderType);
+    }
+
+    protected setTypeArrayBuffer(type: BaseType, index:number) {
+        PandaGen.setTypeArrayBuffer(type, index);
+    }
+
     // temp for test
     protected getIndex() {
         let currIndex = this.typeRecorder.index;
@@ -129,14 +138,23 @@ export abstract class BaseType {
         return currIndex;
     }
 
-    protected getLog(node: ts.Node) {
-        // console.log("=========== " + node.kind);
-        // console.log(node.getText());
-        // console.log("==============================");
-        // console.log("type2Index: ");
-        // console.log(this.typeRecorder.getType2Index());
-        // console.log("variable2Type: ");
-        // console.log(this.typeRecorder.getVariable2Type());
+    protected getLog(node: ts.Node, currIndex: number) {
+        console.log("=========== " + node.kind);
+        console.log(node.getText());
+        console.log("==============================");
+        console.log("+++++++++++++++++++++++++++++++++");
+        console.log(PandaGen.getLiteralArrayBuffer()[currIndex]);
+        console.log("+++++++++++++++++++++++++++++++++");
+        console.log("type2Index: ");
+        console.log(this.typeRecorder.getType2Index());
+        console.log("variable2Type: ");
+        console.log(this.typeRecorder.getVariable2Type());
+    }
+}
+
+export class PlaceHolderType extends BaseType {
+    transfer2LiteralBuffer(): LiteralBuffer {
+        return new LiteralBuffer();
     }
 }
 
@@ -150,7 +168,7 @@ export class ClassType extends BaseType {
     constructor(classNode: ts.ClassDeclaration, variablePos?: number) {
         super();
 
-        let currIndex = this.getIndex();
+        let currIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
         // record type before its initialization, so its index can be recorded
         // in case there's recursive reference of this type
         this.addCurrentType(classNode, currIndex);
@@ -163,9 +181,9 @@ export class ClassType extends BaseType {
         if (variablePos) {
             this.setVariable2Type(variablePos, currIndex);
         }
-
+        this.setTypeArrayBuffer(this, currIndex);
         // check typeRecorder
-        this.getLog(classNode);
+        this.getLog(classNode, currIndex);
     }
 
     private fillInModifiers(node: ts.ClassDeclaration) {
@@ -296,7 +314,7 @@ export class FunctionType extends BaseType {
     constructor(funcNode: ts.FunctionLikeDeclaration, variablePos?: number) {
         super();
 
-        let currIndex = this.getIndex();
+        let currIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
         // record type before its initialization, so its index can be recorded
         // in case there's recursive reference of this type
         this.addCurrentType(funcNode, currIndex);
@@ -310,9 +328,10 @@ export class FunctionType extends BaseType {
         if (variablePos) {
             this.setVariable2Type(variablePos, currIndex);
         }
+        this.setTypeArrayBuffer(this, currIndex);
 
         // check typeRecorder
-        this.getLog(funcNode);
+        this.getLog(funcNode, currIndex);
     }
 
     private fillInModifiers(node: ts.FunctionLikeDeclaration) {
@@ -366,7 +385,6 @@ export class FunctionType extends BaseType {
         });
 
         funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.returnType));
-
         funcTypeBuf.addLiterals(...funcTypeLiterals);
         return funcTypeBuf;
     }

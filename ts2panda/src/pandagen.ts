@@ -202,7 +202,7 @@ export class PandaGen {
     private sourceFileDebugInfo: string = "";
     private sourceCodeDebugInfo: string | undefined;
     private icSize: number = 0;
-    private typeRecord: Map<VReg, number> = new Map<VReg, number>();
+    // private typeRecord: Map<VReg, number> = new Map<VReg, number>();
 
     private static literalArrayBuffer: Array<LiteralBuffer> = new Array<LiteralBuffer>();
 
@@ -259,22 +259,26 @@ export class PandaGen {
         this.icSize = total;
     }
 
-    getTypeRecord() {
-        return this.typeRecord;
-    }
+    // getTypeRecord() {
+    //     return this.typeRecord;
+    // }
 
-    appendTypeRecord(vreg: VReg, type: number) {
-        if (this.typeRecord.has(vreg)) {
-            throw new Error("The vreg has been recorded, please check");
-        }
+    // appendTypeRecord(vreg: VReg, type: number) {
+    //     if (this.typeRecord.has(vreg)) {
+    //         throw new Error("The vreg has been recorded, please check");
+    //     }
 
-        this.typeRecord.set(vreg, type);
-    }
+    //     this.typeRecord.set(vreg, type);
+    // }
 
     static appendTypeArrayBuffer(type: BaseType): number {
-        let index = PandaGen.literalArrayBuffer.length;
+        let index = PandaGen.literalArrayBuffer.length + 50;
         PandaGen.literalArrayBuffer.push(type.transfer2LiteralBuffer());
         return index;
+    }
+
+    static setTypeArrayBuffer(type: BaseType, index: number) {
+        PandaGen.literalArrayBuffer[index] = type.transfer2LiteralBuffer();
     }
 
     getFirstStmt() {
