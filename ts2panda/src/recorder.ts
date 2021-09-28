@@ -50,6 +50,8 @@ import { checkSyntaxError } from "./syntaxChecker";
 import { isGlobalIdentifier } from "./syntaxCheckHelper";
 import { VarDeclarationKind } from "./variable";
 import { TypeChecker } from "./typeChecker";
+// test
+import { ClassType } from "./base/typeSystem";
 
 export class Recorder {
     node: ts.Node;
@@ -63,7 +65,6 @@ export class Recorder {
     private importStmts: Array<ModuleStmt> = [];
     private exportStmts: Array<ModuleStmt> = [];
     private defaultUsed: boolean = false;
-    private recordTypeContent: boolean = false;
 
     constructor(node: ts.Node, scope: Scope, compilerDriver: CompilerDriver) {
         this.node = node;
@@ -131,6 +132,7 @@ export class Recorder {
                 case ts.SyntaxKind.ClassDeclaration:
                 case ts.SyntaxKind.ClassExpression: {
                     this.recordClassInfo(<ts.ClassLikeDeclaration>childNode, scope);
+                    let testClassType = new ClassType(<ts.ClassDeclaration>childNode);
                     break;
                 }
                 case ts.SyntaxKind.Identifier: {

@@ -19,13 +19,19 @@ import {
     LiteralBuffer,
     LiteralTag
 } from "./literal";
+import { TypeChecker } from "../typeChecker";
+import { TypeRecorder } from "../typeRecorder";
+import { TryStatement } from "src/statement/tryStatement";
 
 export enum PremitiveType {
-    UNDEFINED,
-    STRING,
     NUMBER,
     BOOLEAN,
-    _LENGTH
+    STRING,
+    SYMBOL,
+    VOID,
+    NULL,
+    UNDEFINED,
+    _LENGTH = 50
 }
 
 export enum L2Type {
@@ -35,24 +41,134 @@ export enum L2Type {
 }
 
 export abstract class BaseType {
+
     abstract transfer2LiteralBuffer(): LiteralBuffer;
+    protected typeChecker = TypeChecker.getInstance().getTypeChecker();
+    protected typeRecorder = TypeRecorder.getInstance();
+
+    protected getTypePosForIdentifier(node: ts.Node): number {
+        let identifierSymbol = this.typeChecker.getTypeAtLocation(node).symbol;
+        return identifierSymbol.declarations[0].pos;
+    }
+
+    protected getTypeNodeForIdentifier(node: ts.Node): ts.Node {
+        let identifierSymbol = this.typeChecker.getTypeAtLocation(node).symbol;
+        return identifierSymbol.declarations[0];
+    }
+
+    protected getTypeFlagsForIdentifier(node: ts.Node): string {
+        let typeFlag = this.typeChecker.getTypeAtLocation(node).getFlags();
+        return ts.TypeFlags[typeFlag].toUpperCase();
+    }
+
+    protected addCurrentType(node: ts.Node, index: number) {
+        let typePos = node.pos;
+        this.typeRecorder.addType2Index(typePos, index);
+    }
+
+    protected setVariable2Type(variablePos: number, index: number) {
+        this.typeRecorder.setVariable2Type(variablePos, index);
+    }
+
+    protected createType(node: ts.Node, variablePos?: number) {
+        switch(node.kind) {
+            case ts.SyntaxKind.MethodDeclaration:
+            case ts.SyntaxKind.Constructor:
+            case ts.SyntaxKind.GetAccessor:
+            case ts.SyntaxKind.SetAccessor: {
+                new FunctionType(<ts.FunctionLikeDeclaration>node, variablePos);
+                break;
+            }
+            case ts.SyntaxKind.ClassDeclaration: {
+                new ClassType(<ts.ClassDeclaration>node, variablePos);
+                break;
+            }
+        }
+    }
+
+    protected getOrCreateUserDefinedType(node: ts.Node, variablePos?:number) {
+        let typePos = this.getTypePosForIdentifier(node);
+        let typeIndex = this.typeRecorder.tryGetTypeIndex(typePos);
+        if (typeIndex == -1) {
+            let typeNode = this.getTypeNodeForIdentifier(node);
+            this.createType(typeNode, variablePos);
+            typeIndex = this.typeRecorder.tryGetTypeIndex(typePos);
+        }
+        return typeIndex;
+    }
+
+    protected getTypeIndexForDeclWithType(node: ts.FunctionLikeDeclaration | ts.ParameterDeclaration | ts.PropertyDeclaration, variablePos?: number): number {
+        if (node.type) {
+            let typeRef = node.type;
+            let typeFlagName = this.getTypeFlagsForIdentifier(typeRef);
+            let typeIndex = -1;
+            if (typeFlagName in PremitiveType) {
+                typeIndex = PremitiveType[typeFlagName as keyof typeof PremitiveType];
+            } else {
+                let identifier = typeRef.getChildAt(0);
+                typeIndex = this.getOrCreateUserDefinedType(identifier, variablePos);
+            }
+            // set variable if variablePos is given;
+            if (variablePos) {
+                this.setVariable2Type(variablePos, typeIndex);
+            }
+            if (typeIndex == -1) {
+                console.log("ERROR: Type cannot be found for: " + node.getText());
+            }
+            return typeIndex!;
+        }
+        // console.trace();
+        console.log("WARNING: node type not found for: " + node.getText());
+        return -1;
+    }
+
+    // temp for test
+    protected getIndex() {
+        let currIndex = this.typeRecorder.index;
+        this.typeRecorder.index += 1;
+        return currIndex;
+    }
+
+    protected getLog(node: ts.Node) {
+        // console.log("=========== " + node.kind);
+        // console.log(node.getText());
+        // console.log("==============================");
+        // console.log("type2Index: ");
+        // console.log(this.typeRecorder.getType2Index());
+        // console.log("variable2Type: ");
+        // console.log(this.typeRecorder.getVariable2Type());
+    }
 }
 
 export class ClassType extends BaseType {
     modifier: number = 0; // 0 -> unabstract, 1 -> abstract;
     heritages: Array<number> = new Array<number>();
-    fields : Map<string, Array<number>> = new Map<string, Array<number>>(); // Array: [type][static][public/private]
+    // fileds Array: [typeIndex] [static -> 1] [public -> 0, private -> 1, protected -> 2] [readonly -> 1]
+    fields: Map<string, Array<number>> = new Map<string, Array<number>>();
     methods: Array<number> = new Array<number>();
 
-    constructor(classNode: ts.ClassDeclaration) {
+    constructor(classNode: ts.ClassDeclaration, variablePos?: number) {
         super();
+
+        let currIndex = this.getIndex();
+        // record type before its initialization, so its index can be recorded
+        // in case there's recursive reference of this type
+        this.addCurrentType(classNode, currIndex);
+
         this.fillInModifiers(classNode);
         this.fillInHeritages(classNode);
-        this.fillInFields(classNode);
-        this.fillInMethods(classNode);
+        this.fillInFieldsAndMethods(classNode);
+
+        // initialization finished, add variable to type if variable is given
+        if (variablePos) {
+            this.setVariable2Type(variablePos, currIndex);
+        }
+
+        // check typeRecorder
+        this.getLog(classNode);
     }
 
-    fillInModifiers(node: ts.ClassDeclaration) {
+    private fillInModifiers(node: ts.ClassDeclaration) {
         if (node.modifiers) {
             for (let modifier of node.modifiers) {
                 switch (modifier.kind) {
@@ -68,18 +184,74 @@ export class ClassType extends BaseType {
         }
     }
 
-    fillInHeritages(node: ts.ClassDeclaration) {
+    private fillInHeritages(node: ts.ClassDeclaration) {
         if (node.heritageClauses) {
-
+            for (let heritage of node.heritageClauses) {
+                let heritageIdentifier = heritage.getChildAt(1).getChildAt(0);
+                let heritageTypePos = this.getOrCreateUserDefinedType(heritageIdentifier);
+                this.heritages.push(heritageTypePos);
+            }
         }
     }
 
-    fillInFields(node: ts.ClassDeclaration) {
-
+    private fillInFields(member: ts.PropertyDeclaration) {
+        // collect modifier info
+        let fieldName = member.name.getText();
+        let fieldInfo = Array<number>(0, 0, 0, 0);
+        if (member.modifiers) {
+            for (let modifier of member.modifiers) {
+                switch(modifier.kind) {
+                    case ts.SyntaxKind.StaticKeyword: {
+                        fieldInfo[1] = 1;
+                        break;
+                    }
+                    case ts.SyntaxKind.PrivateKeyword: {
+                        fieldInfo[2] = 1;
+                        break;
+                    }
+                    case ts.SyntaxKind.ProtectedKeyword: {
+                        fieldInfo[2] = 2;
+                    }
+                    case ts.SyntaxKind.ReadonlyKeyword: {
+                        fieldInfo[3] = 1;
+                    }
+                }
+            }
+        }
+        // collect type info
+        let variablePos = member.name? member.name.pos : member.pos;
+        fieldInfo[0] = this.getTypeIndexForDeclWithType(member, variablePos);
+        this.fields.set(fieldName, fieldInfo);
     }
 
-    fillInMethods(node: ts.ClassDeclaration) {
-
+    private fillInFieldsAndMethods(node: ts.ClassDeclaration) {
+        if (node.members) {
+            for (let member of node.members) {
+                switch(member.kind) {
+                    case ts.SyntaxKind.MethodDeclaration:
+                    case ts.SyntaxKind.Constructor:
+                    case ts.SyntaxKind.GetAccessor:
+                    case ts.SyntaxKind.SetAccessor: {
+                        // a method like declaration in class must be a new type,
+                        // add it into typeRecorder
+                        let typePos = member.pos;
+                        let variablePos = member.name ? member.name.pos : member.pos;
+                        let typeIndex = this.typeRecorder.tryGetTypeIndex(typePos);
+                        if (typeIndex == -1) {
+                            this.createType(member, variablePos)
+                        }
+                        // Then, get the typeIndex and fill in the methods array
+                        typeIndex = this.typeRecorder.tryGetTypeIndex(typePos);
+                        this.methods.push(typeIndex!);
+                        break;
+                    }
+                    case ts.SyntaxKind.PropertyDeclaration: {
+                        this.fillInFields(<ts.PropertyDeclaration>member);
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     transfer2LiteralBuffer() {
@@ -89,10 +261,10 @@ export class ClassType extends BaseType {
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.CLASS));
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.modifier));
 
-        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.heritages.length)); // num of heritages are recorded
-        this.heritages.forEach(heritage => {
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, heritage));
-        });
+        // classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.heritages.length)); // num of heritages are recorded
+        // this.heritages.forEach(heritage => {
+        //     classTypeLiterals.push(new Literal(LiteralTag.INTEGER, heritage));
+        // });
 
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.fields.size)); // num of fields are recorded
         this.fields.forEach((typeInfo, name) => {
@@ -102,28 +274,81 @@ export class ClassType extends BaseType {
             classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[2]));
         });
 
-        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.methods.length)); // num of fields are recorded
-        this.fields.forEach(method => {
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, method));
-        });
+        // classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.methods.length)); // num of fields are recorded
+        // this.fields.forEach(method => {
+        //     classTypeLiterals.push(new Literal(LiteralTag.INTEGER, method));
+        // });
 
-        classTypeBuf.addLiterals(...classTypeLiterals);
+        // classTypeBuf.addLiterals(...classTypeLiterals);
         return classTypeBuf;
     }
 
 }
 
 export class FunctionType extends BaseType {
-    accessFlag: number = 0; // 0 -> private, 1 -> public
+    name: string | undefined = '';
+    accessFlag: number = 0; // 0 -> public -> 0, private -> 1, protected -> 2
     modifier: number = 0; // 0 -> unstatic, 1 -> static
-    name: string = '';
     parameters: Array<number> = new Array<number>();
     returnType: number = 0;
 
-    constructor(funcNode: ts.FunctionLikeDeclaration) {
+    constructor(funcNode: ts.FunctionLikeDeclaration, variablePos?: number) {
         super();
 
-        // pls extract function info here
+        let currIndex = this.getIndex();
+        // record type before its initialization, so its index can be recorded
+        // in case there's recursive reference of this type
+        this.addCurrentType(funcNode, currIndex);
+
+        this.name = funcNode.name?.getText();
+        this.fillInModifiers(funcNode);
+        this.fillInParameters(funcNode);
+        this.fillInReturn(funcNode);
+
+        // initialization finished, add variable to type if variable is given
+        if (variablePos) {
+            this.setVariable2Type(variablePos, currIndex);
+        }
+
+        // check typeRecorder
+        this.getLog(funcNode);
+    }
+
+    private fillInModifiers(node: ts.FunctionLikeDeclaration) {
+        if (node.modifiers) {
+            for (let modifier of node.modifiers) {
+                switch (modifier.kind) {
+                    case ts.SyntaxKind.PrivateKeyword: {
+                        this.accessFlag = 1;
+                        break;
+                    }
+                    case ts.SyntaxKind.ProtectedKeyword: {
+                        this.accessFlag = 2;
+                        break;
+                    }
+                    case ts.SyntaxKind.StaticKeyword: {
+                        this.modifier = 1;
+                    }
+                }
+            }
+        }
+    }
+
+    private fillInParameters(node: ts.FunctionLikeDeclaration) {
+        if (node.parameters) {
+            for (let parameter of node.parameters) {
+                let variableName = parameter.pos;
+                let typeIndex = this.getTypeIndexForDeclWithType(parameter, variableName);
+                this.parameters.push(typeIndex);
+            }
+        }
+    }
+
+    private fillInReturn(node: ts.FunctionLikeDeclaration) {
+        let typeIndex = this.getTypeIndexForDeclWithType(node);
+        if (typeIndex != -1) {
+            this.returnType = typeIndex;
+        }
     }
 
     transfer2LiteralBuffer() : LiteralBuffer {
@@ -139,9 +364,9 @@ export class FunctionType extends BaseType {
             funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, type));
         });
 
-        funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.returnType));
+        // funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.returnType));
 
-        funcTypeBuf.addLiterals(...funcTypeLiterals);
+        // funcTypeBuf.addLiterals(...funcTypeLiterals);
         return funcTypeBuf;
     }
 }

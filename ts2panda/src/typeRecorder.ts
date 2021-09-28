@@ -19,35 +19,57 @@ import {
 } from "./base/typeSystem";
 
 export class TypeRecorder {
-    private type2Index: Map<string, number> = new Map<string, number>();
+    private static instance: TypeRecorder;
+    private type2Index: Map<number, number> = new Map<number, number>();
     private typeInfo: Array<BaseType> = new Array<BaseType>();
-    private index: number;
+    private variable2Type: Map<number, number> = new Map<number, number>();
 
-    constructor() {
+    // temp for test index
+    public index: number;
+
+    private constructor() {
         this.index = PremitiveType._LENGTH;
     }
 
-    setType2Index(typePosition: string) {
-        this.type2Index.set(typePosition, this.index);
+    public static getInstance() {
+        return TypeRecorder.instance;
     }
 
-    setTypeInfo(typeInfo: BaseType) {
-        this.typeInfo[this.index] = typeInfo;
+    public static createInstance() {
+        TypeRecorder.instance = new TypeRecorder();
     }
 
-    addType(typePosition: string, typeInfo: BaseType) {
-        this.setType2Index(typePosition);
-        this.setTypeInfo(typeInfo);
-        this.index += this.index;
+    public addType2Index(typePosition: number, index: number) {
+        this.type2Index.set(typePosition, index);
     }
 
-    getType2Index(): Map<string, number> {
+    public setVariable2Type(variablePos: number, index: number) {
+        this.variable2Type.set(variablePos, index);
+    }
+
+    public hasType(typePosition: number): boolean {
+        return this.type2Index.has(typePosition);
+    }
+
+    public tryGetTypeIndex(typePosition: number): number {
+        if (this.type2Index.has(typePosition)) {
+            return this.type2Index.get(typePosition)!;
+        } else {
+            return -1;
+        }
+    }
+
+    // might not needed
+
+    public getType2Index(): Map<number, number> {
         return this.type2Index;
     }
 
-    getTypeInfo(): Array<BaseType> {
+    public getTypeInfo(): Array<BaseType> {
         return this.typeInfo;
     }
 
-
+    public getVariable2Type(): Map<number, number> {
+        return this.variable2Type;
+    }
 }

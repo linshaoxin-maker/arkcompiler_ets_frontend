@@ -30,7 +30,7 @@ export class TypeChecker {
             decList.declarations.forEach(declaration => {
                 const nameNode = declaration.name;
                 let type: ts.Type = this.compiledTypeChecker.getTypeAtLocation(nameNode);
-                console.log(type.getSymbol()?.valueDeclaration); 
+                // console.log(type.getSymbol()?.valueDeclaration); 
             })
         }
     }
