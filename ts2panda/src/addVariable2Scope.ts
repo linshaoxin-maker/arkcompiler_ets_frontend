@@ -80,6 +80,8 @@ export function addVariableToScope(recorder: Recorder) {
             hoistDecls = <Decl[]>hoistMap.get(scope);
             if (hoistDecls) {
                 hoistDecls.forEach(hoistDecl => {
+                    // console.log("///////  hoist pos ////////// - ");
+                    // console.log(hoistDecl.node.pos);
                     if (hoistDecl instanceof VarDecl) {
                         scope.add(hoistDecl.name, VarDeclarationKind.VAR);
                     } else if (hoistDecl instanceof FuncDecl) {
@@ -100,7 +102,8 @@ export function addVariableToScope(recorder: Recorder) {
             if (hoistDecls && hoistDecls.includes(decl)) {
                 continue;
             }
-
+            // console.log("/////// decls pos ////////// - ");
+            // console.log(decl.node.pos);
             if (decl instanceof LetDecl) {
                 scope.add(decl.name, VarDeclarationKind.LET, InitStatus.UNINITIALIZED);
             } else if (decl instanceof ConstDecl) {

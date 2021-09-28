@@ -272,9 +272,13 @@ export class PandaGen {
     }
 
     static appendTypeArrayBuffer(type: BaseType): number {
-        let index = PandaGen.literalArrayBuffer.length;
+        let index = PandaGen.literalArrayBuffer.length + 50;
         PandaGen.literalArrayBuffer.push(type.transfer2LiteralBuffer());
         return index;
+    }
+
+    static setTypeArrayBuffer(type: BaseType, index: number) {
+        PandaGen.literalArrayBuffer[index] = type.transfer2LiteralBuffer();
     }
 
     getFirstStmt() {
