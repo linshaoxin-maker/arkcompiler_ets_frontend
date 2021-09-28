@@ -85,8 +85,9 @@ export class ClassType extends BaseType {
     transfer2LiteralBuffer() {
         let classTypeBuf = new LiteralBuffer();
         let classTypeLiterals: Array<Literal> = new Array<Literal>();
-
-        classTypeLiterals.push(new Literal(LiteralTag.MODIFIER, this.modifier)); // modifier is added at the front
+        // the first element is to determine the L2 type
+        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.CLASS));
+        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.modifier));
 
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.heritages.length)); // num of heritages are recorded
         this.heritages.forEach(heritage => {
@@ -96,8 +97,8 @@ export class ClassType extends BaseType {
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.fields.size)); // num of fields are recorded
         this.fields.forEach((typeInfo, name) => {
             classTypeLiterals.push(new Literal(LiteralTag.STRING, name));
-            classTypeLiterals.push(new Literal(LiteralTag.MODIFIER, typeInfo[0]));
-            classTypeLiterals.push(new Literal(LiteralTag.ACCESSFLAG, typeInfo[1]));
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[0]));
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[1]));
             classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[2]));
         });
 
@@ -128,8 +129,9 @@ export class FunctionType extends BaseType {
     transfer2LiteralBuffer() : LiteralBuffer {
         let funcTypeBuf = new LiteralBuffer();
         let funcTypeLiterals: Array<Literal> = new Array<Literal>();
-        funcTypeLiterals.push(new Literal(LiteralTag.ACCESSFLAG, this.accessFlag));
-        funcTypeLiterals.push(new Literal(LiteralTag.MODIFIER, this.modifier));
+        funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.FUNCTION));
+        funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.accessFlag));
+        funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.modifier));
         funcTypeLiterals.push(new Literal(LiteralTag.STRING, this.name));
 
         funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.parameters.length));
