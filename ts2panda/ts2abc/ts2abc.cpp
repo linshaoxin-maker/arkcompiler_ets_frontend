@@ -605,6 +605,7 @@ static void ParseFunctionTypeInfo(const Json::Value &function, panda::pandasm::F
     if (function.isMember("typeInfo") && function["typeInfo"].isArray()) {
         auto typeInfo = function["typeInfo"];
         panda::pandasm::AnnotationData funcAnnotation("_ESTypeAnnotation");
+        std::vector<panda::pandasm::ScalarValue> elements;
         for (Json::ArrayIndex i = 0; i < typeInfo.size(); i++) {
             auto type = typeInfo[i];
             if (!type.isObject()) {
@@ -622,10 +623,15 @@ static void ParseFunctionTypeInfo(const Json::Value &function, panda::pandasm::F
                 typeIndex = type["typeIndex"].asUInt();
             }
 
-            panda::pandasm::AnnotationElement typeOfVregElement(std::to_string(vregNum), std::make_unique<panda::pandasm::ScalarValue>(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U32>(typeIndex)));
-            funcAnnotation.AddElement(std::move(typeOfVregElement));
+            panda::pandasm::ScalarValue vNum(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U32>(vregNum));
+            elements.emplace_back(std::move(vNum));
+            panda::pandasm::ScalarValue tIndex(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U32>(typeIndex));
+            elements.emplace_back(std::move(tIndex));
         }
 
+        std::string annotationName = "typeOfVreg";
+        panda::pandasm::AnnotationElement typeOfVregElement(annotationName, std::make_unique<panda::pandasm::ArrayValue>(panda::pandasm::ArrayValue(panda::pandasm::Value::Type::U32, elements)));
+        funcAnnotation.AddElement(std::move(typeOfVregElement));
         const_cast<std::vector<panda::pandasm::AnnotationData>&>(pandaFunc.metadata->GetAnnotations()).push_back(std::move(funcAnnotation));
     }
 }

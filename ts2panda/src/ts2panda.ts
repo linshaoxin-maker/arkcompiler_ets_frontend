@@ -36,7 +36,8 @@ const JsonType = {
     "record": 1,
     "string": 2,
     "literal_arr": 3,
-    "options": 4
+    "options": 4,
+    "type_arr": 5
 };
 export class Ts2Panda {
     static strings: Set<string> = new Set();

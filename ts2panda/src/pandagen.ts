@@ -204,8 +204,7 @@ export class PandaGen {
     private icSize: number = 0;
     private typeRecord: Map<VReg, number> = new Map<VReg, number>();
 
-    private static literalArrayBuffer: Array<LiteralBuffer> = [];
-    private static typeArrayBuffer: Array<LiteralBuffer> = new Array<LiteralBuffer>();
+    private static literalArrayBuffer: Array<LiteralBuffer> = new Array<LiteralBuffer>();
 
     constructor(internalName: string, parametersCount: number, scope: Scope | undefined = undefined) {
         this.internalName = internalName;
@@ -272,12 +271,10 @@ export class PandaGen {
         this.typeRecord.set(vreg, type);
     }
 
-    getTypeArrayBuffer() {
-        return PandaGen.typeArrayBuffer;
-    }
-
-    appendTypeArrayBuffer(type: BaseType) {
-        PandaGen.typeArrayBuffer.push(type.transfer2LiteralBuffer());
+    static appendTypeArrayBuffer(type: BaseType): number {
+        let index = PandaGen.literalArrayBuffer.length;
+        PandaGen.literalArrayBuffer.push(type.transfer2LiteralBuffer());
+        return index;
     }
 
     getFirstStmt() {

@@ -28,6 +28,12 @@ export enum PremitiveType {
     _LENGTH
 }
 
+export enum L2Type {
+    CLASS,
+    FUNCTION,
+    OBJECT // object literal
+}
+
 export abstract class BaseType {
     abstract transfer2LiteralBuffer(): LiteralBuffer;
 }
@@ -110,15 +116,11 @@ export class FunctionType extends BaseType {
     accessFlag: number = 0; // 0 -> private, 1 -> public
     modifier: number = 0; // 0 -> unstatic, 1 -> static
     name: string = '';
-    parameters: Map<string, number> = new Map<string, number>();
+    parameters: Array<number> = new Array<number>();
     returnType: number = 0;
 
     constructor(funcNode: ts.FunctionLikeDeclaration) {
         super();
-
-        // if (funcNode.AbstractKeyword) {
-        //     this.modifier = 1;
-        // }
 
         // pls extract function info here
     }
@@ -130,9 +132,8 @@ export class FunctionType extends BaseType {
         funcTypeLiterals.push(new Literal(LiteralTag.MODIFIER, this.modifier));
         funcTypeLiterals.push(new Literal(LiteralTag.STRING, this.name));
 
-        funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.parameters.size));
-        this.parameters.forEach((type, paramName) => {
-            funcTypeLiterals.push(new Literal(LiteralTag.STRING, paramName));
+        funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.parameters.length));
+        this.parameters.forEach((type) => {
             funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, type));
         });
 
@@ -141,7 +142,23 @@ export class FunctionType extends BaseType {
         funcTypeBuf.addLiterals(...funcTypeLiterals);
         return funcTypeBuf;
     }
+}
 
+export class ObjectLiteralType extends BaseType {
+    private properties: Map<string, number> = new Map<string, number>();
+    private methods: Array<number> = new Array<number>();
+
+    constructor(obj: ts.ObjectLiteralExpression) {
+        super();
+
+        // TODO extract object info here
+    }
+
+    transfer2LiteralBuffer() : LiteralBuffer {
+        let objTypeBuf = new LiteralBuffer();
+
+        return objTypeBuf;
+    }
 }
 
 export class TypeOfVreg {
