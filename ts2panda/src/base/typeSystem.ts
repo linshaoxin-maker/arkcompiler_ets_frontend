@@ -261,25 +261,26 @@ export class ClassType extends BaseType {
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.CLASS));
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.modifier));
 
-        // classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.heritages.length)); // num of heritages are recorded
-        // this.heritages.forEach(heritage => {
-        //     classTypeLiterals.push(new Literal(LiteralTag.INTEGER, heritage));
-        // });
+        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.heritages.length)); // num of heritages are recorded
+        this.heritages.forEach(heritage => {
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, heritage));
+        });
 
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.fields.size)); // num of fields are recorded
         this.fields.forEach((typeInfo, name) => {
             classTypeLiterals.push(new Literal(LiteralTag.STRING, name));
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[0]));
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[1]));
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[2]));
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[0])); // typeIndex
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[1])); // static
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[2])); // accessFlag
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[3])); // readonly
         });
 
-        // classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.methods.length)); // num of fields are recorded
-        // this.fields.forEach(method => {
-        //     classTypeLiterals.push(new Literal(LiteralTag.INTEGER, method));
-        // });
+        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.methods.length)); // num of fields are recorded
+        this.fields.forEach(method => {
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, method));
+        });
 
-        // classTypeBuf.addLiterals(...classTypeLiterals);
+        classTypeBuf.addLiterals(...classTypeLiterals);
         return classTypeBuf;
     }
 
@@ -364,9 +365,9 @@ export class FunctionType extends BaseType {
             funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, type));
         });
 
-        // funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.returnType));
+        funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.returnType));
 
-        // funcTypeBuf.addLiterals(...funcTypeLiterals);
+        funcTypeBuf.addLiterals(...funcTypeLiterals);
         return funcTypeBuf;
     }
 }
