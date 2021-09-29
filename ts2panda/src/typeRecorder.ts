@@ -15,7 +15,7 @@
 
 import {
     BaseType,
-    PremitiveType
+    PrimitiveType
 } from "./base/typeSystem";
 
 export class TypeRecorder {
@@ -28,7 +28,7 @@ export class TypeRecorder {
     public index: number;
 
     private constructor() {
-        this.index = PremitiveType._LENGTH;
+        this.index = PrimitiveType._LENGTH;
     }
 
     public static getInstance() {

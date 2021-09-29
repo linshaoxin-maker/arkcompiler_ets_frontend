@@ -19,7 +19,6 @@ import {
     LoopScope,
     VariableScope
 } from "./scope";
-import { PremitiveType } from "./base/typeSystem"
 
 export enum VarDeclarationKind {
     NONE,
