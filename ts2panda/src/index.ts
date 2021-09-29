@@ -41,6 +41,9 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
             before: [
                 (ctx: ts.TransformationContext) => {
                     return (node: ts.SourceFile) => {
+                        const printer: ts.Printer = ts.createPrinter({newLine:ts.NewLineKind.LineFeed});
+                        const result: string = printer.printNode(ts.EmitHint.Unspecified, node, node);
+                        console.log(result);
                         let outputBinName = CmdOptions.getOutputBinName();
                         let fileName = node.fileName.substring(0, node.fileName.lastIndexOf('.'));
                         if (fileName != CmdOptions.getInputFileName()) {

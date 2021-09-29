@@ -166,6 +166,7 @@ export class Recorder {
                 }
                 case ts.SyntaxKind.VariableStatement: {
                     TypeChecker.getInstance().formatNodeType(childNode);
+                    this.recordInfo(childNode, scope);
                     break;
                 }
                 default:
@@ -202,6 +203,7 @@ export class Recorder {
         let parent = this.getDeclarationNodeOfId(id);
 
         if (parent) {
+            console.log(id.getText());
             let declKind = astutils.getVarDeclarationKind(<ts.VariableDeclaration>parent);
 
             // collect declaration information to corresponding scope

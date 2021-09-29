@@ -23,7 +23,7 @@ import { TypeChecker } from "../typeChecker";
 import { TypeRecorder } from "../typeRecorder";
 import { PandaGen } from "../pandagen";
 
-export enum PremitiveType {
+export enum PrimitiveType {
     NUMBER,
     BOOLEAN,
     STRING,
@@ -103,8 +103,8 @@ export abstract class BaseType {
             let typeRef = node.type;
             let typeFlagName = this.getTypeFlagsForIdentifier(typeRef);
             let typeIndex = -1;
-            if (typeFlagName in PremitiveType) {
-                typeIndex = PremitiveType[typeFlagName as keyof typeof PremitiveType];
+            if (typeFlagName in PrimitiveType) {
+                typeIndex = PrimitiveType[typeFlagName as keyof typeof PrimitiveType];
             } else {
                 let identifier = typeRef.getChildAt(0);
                 typeIndex = this.getOrCreateUserDefinedType(identifier, variablePos);
