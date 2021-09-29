@@ -173,11 +173,14 @@ export class Ts2Panda {
         let funcInsnsAndRegsNum = Ts2Panda.getFuncInsnsAndRegsNum(pg);
         let sourceFile = pg.getSourceFileDebugInfo();
         let typeRecord = pg.getLocals();
-
+        console.log("\\\\\\-= funcNmae =-\\\\\\ - ", funcName);
         let typeInfo = new Array<TypeOfVreg>();
         typeRecord.forEach((vreg) => {
             let typeOfVreg = new TypeOfVreg(vreg.num, vreg.getTypeIndex());
             typeInfo.push(typeOfVreg);
+
+            console.log("\\\\\\\\\\\\ vreg num \\\\\\\\\\", vreg.num);
+            console.log("\\\\\\\\\\\\ vreg type \\\\\\\\\\", vreg.getTypeIndex());
         });
 
         let variables, sourceCode;

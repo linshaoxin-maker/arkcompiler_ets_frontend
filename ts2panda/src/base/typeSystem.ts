@@ -24,6 +24,7 @@ import { TypeRecorder } from "../typeRecorder";
 import { PandaGen } from "../pandagen";
 
 export enum PrimitiveType {
+    ANY,
     NUMBER,
     BOOLEAN,
     STRING,
@@ -142,7 +143,7 @@ export abstract class BaseType {
         console.log("=========== " + node.kind);
         console.log(node.getText());
         console.log("==============================");
-        console.log("+++++++++++++++++++++++++++++++++");
+        console.log("+++++++++++ currIndex +++++++++++ - ", currIndex);
         console.log(PandaGen.getLiteralArrayBuffer()[currIndex]);
         console.log("+++++++++++++++++++++++++++++++++");
         console.log("type2Index: ");

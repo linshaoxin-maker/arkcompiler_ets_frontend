@@ -33,8 +33,9 @@ export class TypeChecker {
                 let type: ts.Type = this.compiledTypeChecker.getTypeAtLocation(nameNode);
                 let targetNode = type.getSymbol()?.valueDeclaration;
                 if (targetNode) {
+                    let variablePos = nameNode.pos;
                     if (ts.isClassDeclaration(targetNode!)) {
-                        let testClassType = new ClassType(<ts.ClassDeclaration>targetNode);
+                        let testClassType = new ClassType(<ts.ClassDeclaration>targetNode, variablePos);
                     }
                 }
                 // console.log(type.getSymbol()?.valueDeclaration); 

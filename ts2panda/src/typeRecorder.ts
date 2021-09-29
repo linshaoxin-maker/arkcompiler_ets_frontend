@@ -59,8 +59,15 @@ export class TypeRecorder {
         }
     }
 
-    // might not needed
+    public tryGetVariable2Type(variablePosition: number): number {
+        if (this.variable2Type.has(variablePosition)) {
+            return this.variable2Type.get(variablePosition)!;
+        } else {
+            return -1;
+        }
+    }
 
+    // might not needed
     public getType2Index(): Map<number, number> {
         return this.type2Index;
     }

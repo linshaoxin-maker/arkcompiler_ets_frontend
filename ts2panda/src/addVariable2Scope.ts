@@ -38,6 +38,27 @@ import {
 } from "./variable";
 import { TypeRecorder } from "./typeRecorder";
 
+function setVariableOrParameterType(node: ts.Node, v: Variable | undefined) {
+    if (v) {
+        let typeIndex = TypeRecorder.getInstance().tryGetVariable2Type(node.pos);
+        if (typeIndex != -1) {
+            v.setTypeIndex(typeIndex);
+        }
+        console.log("--node.pos--", node.pos);
+        console.log("--node.type--", v.getTypeIndex());
+    }
+}
+
+function setClassOrFunctionType(node: ts.Node, v: Variable | undefined) {
+    if (v) {
+        let typeIndex = TypeRecorder.getInstance().tryGetTypeIndex(node.pos);
+        if (typeIndex != -1) {
+            v.setTypeIndex(typeIndex);
+        }
+        console.log("--node.pos--", node.pos);
+        console.log("--node.type--", v.getTypeIndex());
+    }
+}
 
 function addInnerArgs(node: ts.Node, scope: VariableScope): void {
     // the first argument for js function is func_obj
@@ -89,16 +110,12 @@ export function addVariableToScope(recorder: Recorder) {
                     let v: Variable | undefined;
                     if (hoistDecl instanceof VarDecl) {
                         v = scope.add(hoistDecl.name, VarDeclarationKind.VAR);
+                        setVariableOrParameterType(hoistDecl.node, v);
                     } else if (hoistDecl instanceof FuncDecl) {
                         v = scope.add(hoistDecl.name, VarDeclarationKind.FUNCTION);
+                        setClassOrFunctionType(hoistDecl.node, v);
                     } else {
                         throw new Error("Wrong type of declaration to be hoisted")
-                    }
-                    if (v) {
-                        let typeIndex = TypeRecorder.getInstance().tryGetTypeIndex(node.pos);
-                        if (typeIndex != -1) {
-                            v.setTypeIndex(typeIndex);
-                        }
                     }
                 })
             }
@@ -118,12 +135,16 @@ export function addVariableToScope(recorder: Recorder) {
             let v: Variable | undefined;
             if (decl instanceof LetDecl) {
                 v = scope.add(decl.name, VarDeclarationKind.LET, InitStatus.UNINITIALIZED);
+                setVariableOrParameterType(decl.node, v);
             } else if (decl instanceof ConstDecl) {
                 v = scope.add(decl.name, VarDeclarationKind.CONST, InitStatus.UNINITIALIZED);
+                setVariableOrParameterType(decl.node, v);
             } else if (decl instanceof FuncDecl) {
                 v = scope.add(decl.name, VarDeclarationKind.FUNCTION);
+                setClassOrFunctionType(decl.node, v);
             } else if (decl instanceof CatchParameter) {
                 v = scope.add(decl.name, VarDeclarationKind.LET);
+                setVariableOrParameterType(decl.node, v);
             } else if (decl instanceof ModDecl) {
                 if (!(scope instanceof ModuleScope)) {
                     throw new Error("ModuleVariable can't exist without ModuleScope");
@@ -133,9 +154,11 @@ export function addVariableToScope(recorder: Recorder) {
                 let classNode = decl.node;
                 if (ts.isClassDeclaration(classNode)) {
                     v = scope.add(decl.name, VarDeclarationKind.CLASS, InitStatus.UNINITIALIZED);
+                    setClassOrFunctionType(decl.node, v);
                 } else {
                     let classScope = <Scope>recorder.getScopeOfNode(classNode);
                     v = classScope.add(decl.name, VarDeclarationKind.CLASS, InitStatus.UNINITIALIZED);
+                    setClassOrFunctionType(decl.node, v);
                 }
             } else {
                 /**
@@ -146,13 +169,6 @@ export function addVariableToScope(recorder: Recorder) {
                  */
                 if (isGlobalIdentifier(decls[j].name)) {
                     v = scope.add(decls[j].name, VarDeclarationKind.VAR);
-                }
-            }
-
-            if (v) {
-                let typeIndex = TypeRecorder.getInstance().tryGetTypeIndex(node.pos);
-                if (typeIndex != -1) {
-                    v.setTypeIndex(typeIndex);
                 }
             }
         }
@@ -176,13 +192,7 @@ function addParameters(node: ts.FunctionLikeDeclaration, scope: VariableScope): 
         console.log(param.pos);
 
         let v = scope.addParameter(name, VarDeclarationKind.VAR, i + 1);
-
-        if (v) {
-            let typeIndex = TypeRecorder.getInstance().tryGetTypeIndex(node.pos);
-            if (typeIndex != -1) {
-                v.setTypeIndex(typeIndex);
-            }
-        }
+        setVariableOrParameterType(param, v);
     }
 
     for (let i = 0; i < patternParams.length; i++) {
