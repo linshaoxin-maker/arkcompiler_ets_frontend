@@ -230,9 +230,11 @@ export class ClassType extends BaseType {
                     }
                     case ts.SyntaxKind.ProtectedKeyword: {
                         fieldInfo[2] = 2;
+                        break;
                     }
                     case ts.SyntaxKind.ReadonlyKeyword: {
                         fieldInfo[3] = 1;
+                        break;
                     }
                 }
             }
