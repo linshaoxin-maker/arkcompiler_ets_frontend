@@ -44,7 +44,7 @@ export abstract class Variable {
         this.name = name;
         this.vreg = undefined;
         this.name = name;
-        this.typeIndex = PremitiveType.UNDEFINED;
+        this.typeIndex = 0;
     }
 
     bindVreg(vreg: VReg) {

@@ -22,7 +22,6 @@ import {
 import { TypeChecker } from "../typeChecker";
 import { TypeRecorder } from "../typeRecorder";
 import { PandaGen } from "../pandagen";
-import { TryStatement } from "src/statement/tryStatement";
 
 export enum PremitiveType {
     NUMBER,
@@ -72,7 +71,7 @@ export abstract class BaseType {
     }
 
     protected createType(node: ts.Node, variablePos?: number) {
-        switch(node.kind) {
+        switch (node.kind) {
             case ts.SyntaxKind.MethodDeclaration:
             case ts.SyntaxKind.Constructor:
             case ts.SyntaxKind.GetAccessor:
@@ -87,7 +86,7 @@ export abstract class BaseType {
         }
     }
 
-    protected getOrCreateUserDefinedType(node: ts.Node, variablePos?:number) {
+    protected getOrCreateUserDefinedType(node: ts.Node, variablePos?: number) {
         let typePos = this.getTypePosForIdentifier(node);
         let typeIndex = this.typeRecorder.tryGetTypeIndex(typePos);
         if (typeIndex == -1) {
@@ -98,7 +97,8 @@ export abstract class BaseType {
         return typeIndex;
     }
 
-    protected getTypeIndexForDeclWithType(node: ts.FunctionLikeDeclaration | ts.ParameterDeclaration | ts.PropertyDeclaration, variablePos?: number): number {
+    protected getTypeIndexForDeclWithType(
+        node: ts.FunctionLikeDeclaration | ts.ParameterDeclaration | ts.PropertyDeclaration, variablePos?: number): number {
         if (node.type) {
             let typeRef = node.type;
             let typeFlagName = this.getTypeFlagsForIdentifier(typeRef);
@@ -127,7 +127,7 @@ export abstract class BaseType {
         return PandaGen.appendTypeArrayBuffer(new PlaceHolderType);
     }
 
-    protected setTypeArrayBuffer(type: BaseType, index:number) {
+    protected setTypeArrayBuffer(type: BaseType, index: number) {
         PandaGen.setTypeArrayBuffer(type, index);
     }
 
@@ -218,7 +218,7 @@ export class ClassType extends BaseType {
         let fieldInfo = Array<number>(0, 0, 0, 0);
         if (member.modifiers) {
             for (let modifier of member.modifiers) {
-                switch(modifier.kind) {
+                switch (modifier.kind) {
                     case ts.SyntaxKind.StaticKeyword: {
                         fieldInfo[1] = 1;
                         break;
@@ -237,7 +237,7 @@ export class ClassType extends BaseType {
             }
         }
         // collect type info
-        let variablePos = member.name? member.name.pos : member.pos;
+        let variablePos = member.name ? member.name.pos : member.pos;
         fieldInfo[0] = this.getTypeIndexForDeclWithType(member, variablePos);
         this.fields.set(fieldName, fieldInfo);
     }
@@ -245,7 +245,7 @@ export class ClassType extends BaseType {
     private fillInFieldsAndMethods(node: ts.ClassDeclaration) {
         if (node.members) {
             for (let member of node.members) {
-                switch(member.kind) {
+                switch (member.kind) {
                     case ts.SyntaxKind.MethodDeclaration:
                     case ts.SyntaxKind.Constructor:
                     case ts.SyntaxKind.GetAccessor:
@@ -294,7 +294,7 @@ export class ClassType extends BaseType {
         });
 
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.methods.length)); // num of fields are recorded
-        this.fields.forEach(method => {
+        this.methods.forEach(method => {
             classTypeLiterals.push(new Literal(LiteralTag.INTEGER, method));
         });
 
@@ -319,7 +319,7 @@ export class FunctionType extends BaseType {
         // in case there's recursive reference of this type
         this.addCurrentType(funcNode, currIndex);
 
-        this.name = funcNode.name?.getText();
+        this.name = funcNode.name ?.getText();
         this.fillInModifiers(funcNode);
         this.fillInParameters(funcNode);
         this.fillInReturn(funcNode);
@@ -371,7 +371,7 @@ export class FunctionType extends BaseType {
         }
     }
 
-    transfer2LiteralBuffer() : LiteralBuffer {
+    transfer2LiteralBuffer(): LiteralBuffer {
         let funcTypeBuf = new LiteralBuffer();
         let funcTypeLiterals: Array<Literal> = new Array<Literal>();
         funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.FUNCTION));
@@ -400,7 +400,7 @@ export class ObjectLiteralType extends BaseType {
         // TODO extract object info here
     }
 
-    transfer2LiteralBuffer() : LiteralBuffer {
+    transfer2LiteralBuffer(): LiteralBuffer {
         let objTypeBuf = new LiteralBuffer();
 
         return objTypeBuf;
