@@ -36,11 +36,23 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
             before: [
                 (ctx: ts.TransformationContext) => {
                     return (node: ts.SourceFile) => {
-                        let outputBinName = CmdOptions.getOutputBinName();
-                        let fileName = node.fileName.substring(0, node.fileName.lastIndexOf('.'));
-                        if (fileName != CmdOptions.getInputFileName()) {
-                            outputBinName = fileName + ".abc";
+                        let outputBinName = getOutputBinName(node);
+                        let compilerDriver = new CompilerDriver(outputBinName);
+                        compilerDriver.compileForSyntaxCheck(node);
+                        return node;
+                    }
+                }
+            ],
+            after: [
+                (ctx: ts.TransformationContext) => {
+                    return (node: ts.SourceFile) => {
+                        if (ts.getEmitHelpers(node)) {
+                            const printer: ts.Printer = ts.createPrinter({newLine:ts.NewLineKind.LineFeed});
+                            const text: string = printer.printNode(ts.EmitHint.Unspecified, node, node);
+                            let newNode = ts.createSourceFile(node.fileName, text, options.target!);
+                            node = newNode;
                         }
+                        let outputBinName = getOutputBinName(node);
                         let compilerDriver = new CompilerDriver(outputBinName);
                         setGlobalStrict(jshelpers.isEffectiveStrictModeSourceFile(node, options));
                         if (CmdOptions.isVariantBytecode()) {
@@ -68,6 +80,15 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
     allDiagnostics.forEach(diagnostic => {
         diag.printDiagnostic(diagnostic);
     });
+}
+
+function getOutputBinName(node: ts.SourceFile) {
+    let outputBinName = CmdOptions.getOutputBinName();
+    let fileName = node.fileName.substring(0, node.fileName.lastIndexOf('.'));
+    if (fileName != CmdOptions.getInputFileName()) {
+        outputBinName = fileName + ".abc";
+    }
+    return outputBinName;
 }
 
 namespace Compiler {
