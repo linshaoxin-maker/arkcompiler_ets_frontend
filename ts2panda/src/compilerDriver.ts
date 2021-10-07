@@ -143,6 +143,21 @@ export class CompilerDriver {
         return spArray.reverse();
     }
 
+    compileForSyntaxCheck(node: ts.SourceFile): void {
+        if (CmdOptions.showASTStatistics()) {
+            let statics: number[] = new Array(ts.SyntaxKind.Count).fill(0);
+
+            this.getASTStatistics(node, statics);
+            statics.forEach((element, idx) => {
+                if (element > 0) {
+                    LOGD(this.kind2String(idx) + " = " + element);
+                }
+            });
+        }
+
+        this.compilePrologue(node);
+    }
+
     compile(node: ts.SourceFile): void {
         if (CmdOptions.showASTStatistics()) {
             let statics: number[] = new Array(ts.SyntaxKind.Count).fill(0);
