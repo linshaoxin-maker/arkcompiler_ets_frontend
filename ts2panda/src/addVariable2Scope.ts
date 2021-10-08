@@ -42,23 +42,23 @@ import { PrimitiveType } from "./base/typeSystem";
 
 function setVariableOrParameterType(node: ts.Node, v: Variable | undefined) {
     if (v) {
-        let typeIndex = TypeRecorder.getInstance().tryGetVariable2Type(node.pos);
+        let typeIndex = TypeRecorder.getInstance().tryGetVariable2Type(node);
         if (typeIndex != -1) {
             v.setTypeIndex(typeIndex + PrimitiveType._LENGTH);
         }
-        console.log("--node.pos--", node.pos);
-        console.log("--node.type--", v.getTypeIndex());
+        // console.log("--node--", jshelpers.getTextOfNode(node));
+        // console.log("--node.type--", v.getTypeIndex());
     }
 }
 
 function setClassOrFunctionType(node: ts.Node, v: Variable | undefined) {
     if (v) {
-        let typeIndex = TypeRecorder.getInstance().tryGetTypeIndex(node.pos);
+        let typeIndex = TypeRecorder.getInstance().tryGetTypeIndex(node);
         if (typeIndex != -1) {
             v.setTypeIndex(typeIndex + PrimitiveType._LENGTH);
         }
-        console.log("--node.pos--", node.pos);
-        console.log("--node.type--", v.getTypeIndex());
+        // console.log("--node--", jshelpers.getTextOfNode(node));
+        // console.log("--node.type--", v.getTypeIndex());
     }
 }
 

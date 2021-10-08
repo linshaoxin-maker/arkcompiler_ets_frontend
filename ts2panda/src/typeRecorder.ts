@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+import ts from "typescript";
 import {
     BaseType,
     PrimitiveType
@@ -20,9 +21,9 @@ import {
 
 export class TypeRecorder {
     private static instance: TypeRecorder;
-    private type2Index: Map<number, number> = new Map<number, number>();
+    private type2Index: Map<ts.Node, number> = new Map<ts.Node, number>();
     private typeInfo: Array<BaseType> = new Array<BaseType>();
-    private variable2Type: Map<number, number> = new Map<number, number>();
+    private variable2Type: Map<ts.Node, number> = new Map<ts.Node, number>();
 
     // temp for test index
     public index: number;
@@ -39,36 +40,36 @@ export class TypeRecorder {
         TypeRecorder.instance = new TypeRecorder();
     }
 
-    public addType2Index(typePosition: number, index: number) {
-        this.type2Index.set(typePosition, index);
+    public addType2Index(typeNode: ts.Node, index: number) {
+        this.type2Index.set(typeNode, index);
     }
 
-    public setVariable2Type(variablePos: number, index: number) {
-        this.variable2Type.set(variablePos, index);
+    public setVariable2Type(variableNode: ts.Node, index: number) {
+        this.variable2Type.set(variableNode, index);
     }
 
-    public hasType(typePosition: number): boolean {
-        return this.type2Index.has(typePosition);
+    public hasType(typeNode: ts.Node): boolean {
+        return this.type2Index.has(typeNode);
     }
 
-    public tryGetTypeIndex(typePosition: number): number {
-        if (this.type2Index.has(typePosition)) {
-            return this.type2Index.get(typePosition)!;
+    public tryGetTypeIndex(typeNode: ts.Node): number {
+        if (this.type2Index.has(typeNode)) {
+            return this.type2Index.get(typeNode)!;
         } else {
             return -1;
         }
     }
 
-    public tryGetVariable2Type(variablePosition: number): number {
-        if (this.variable2Type.has(variablePosition)) {
-            return this.variable2Type.get(variablePosition)!;
+    public tryGetVariable2Type(variableNode: ts.Node): number {
+        if (this.variable2Type.has(variableNode)) {
+            return this.variable2Type.get(variableNode)!;
         } else {
             return -1;
         }
     }
 
     // might not needed
-    public getType2Index(): Map<number, number> {
+    public getType2Index(): Map<ts.Node, number> {
         return this.type2Index;
     }
 
@@ -76,7 +77,7 @@ export class TypeRecorder {
         return this.typeInfo;
     }
 
-    public getVariable2Type(): Map<number, number> {
+    public getVariable2Type(): Map<ts.Node, number> {
         return this.variable2Type;
     }
 }

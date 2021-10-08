@@ -70,44 +70,44 @@ export abstract class BaseType {
     }
 
     protected addCurrentType(node: ts.Node, index: number) {
-        let typePos = node.pos;
-        this.typeRecorder.addType2Index(typePos, index);
+        this.typeRecorder.addType2Index(node, index);
     }
 
-    protected setVariable2Type(variablePos: number, index: number) {
-        this.typeRecorder.setVariable2Type(variablePos, index);
+    protected setVariable2Type(variableNode: ts.Node, index: number) {
+        this.typeRecorder.setVariable2Type(variableNode, index);
     }
 
-    protected createType(node: ts.Node, variablePos?: number) {
+    protected createType(node: ts.Node, variableNode?: ts.Node) {
         switch (node.kind) {
             case ts.SyntaxKind.MethodDeclaration:
             case ts.SyntaxKind.Constructor:
             case ts.SyntaxKind.GetAccessor:
             case ts.SyntaxKind.SetAccessor: {
-                new FunctionType(<ts.FunctionLikeDeclaration>node, variablePos);
+                new FunctionType(<ts.FunctionLikeDeclaration>node, variableNode);
                 break;
             }
             case ts.SyntaxKind.ClassDeclaration: {
-                new ClassType(<ts.ClassDeclaration>node, variablePos);
+                new ClassType(<ts.ClassDeclaration>node, variableNode);
                 break;
             }
         }
     }
 
-    protected getOrCreateUserDefinedType(node: ts.Node, variablePos?: number) {
-        let typePos = this.getTypePosForIdentifier(node);
-        let typeIndex = this.typeRecorder.tryGetTypeIndex(typePos);
+    protected getOrCreateUserDefinedType(node: ts.Node, variableNode?: ts.Node) {
+        let typeNode = this.getTypeNodeForIdentifier(node);
+        let typeIndex = this.typeRecorder.tryGetTypeIndex(typeNode);
         if (typeIndex == -1) {
             let typeNode = this.getTypeNodeForIdentifier(node);
-            this.createType(typeNode, variablePos);
-            typeIndex = this.typeRecorder.tryGetTypeIndex(typePos);
+            this.createType(typeNode, variableNode);
+            typeIndex = this.typeRecorder.tryGetTypeIndex(typeNode);
         }
         return typeIndex;
     }
 
     protected getTypeIndexForDeclWithType(
-        node: ts.FunctionLikeDeclaration | ts.ParameterDeclaration | ts.PropertyDeclaration, variablePos?: number): number {
+        node: ts.FunctionLikeDeclaration | ts.ParameterDeclaration | ts.PropertyDeclaration, variableNode?: ts.Node): number {
         if (node.type) {
+            // get typeFlag to check if its a primitive type
             let typeRef = node.type;
             let typeFlagName = this.getTypeFlagsForIdentifier(typeRef);
             let typeIndex = -1;
@@ -115,11 +115,11 @@ export abstract class BaseType {
                 typeIndex = PrimitiveType[typeFlagName as keyof typeof PrimitiveType];
             } else {
                 let identifier = typeRef.getChildAt(0);
-                typeIndex = this.getOrCreateUserDefinedType(identifier, variablePos);
+                typeIndex = this.getOrCreateUserDefinedType(identifier, variableNode);
             }
-            // set variable if variablePos is given;
-            if (variablePos) {
-                this.setVariable2Type(variablePos, typeIndex);
+            // set variable if variable node is given;
+            if (variableNode) {
+                this.setVariable2Type(variableNode, typeIndex);
             }
             if (typeIndex == -1) {
                 console.log("ERROR: Type cannot be found for: " + jshelpers.getTextOfNode(node));
@@ -145,14 +145,22 @@ export abstract class BaseType {
         return currIndex;
     }
 
+    protected printMap(map: Map<ts.Node, number>) {
+        map.forEach((value, key) =>{
+            console.log(jshelpers.getTextOfNode(key) + ": " + value);
+        });
+    }
+
     protected getLog(node: ts.Node, currIndex: number) {
         console.log("=========== NodeKind ===========: " + node.kind);
         console.log(jshelpers.getTextOfNode(node));
         console.log("=========== currIndex ===========: ", currIndex);
         console.log(PandaGen.getLiteralArrayBuffer()[currIndex]);
         console.log("==============================");
-        console.log("type2Index: ", this.typeRecorder.getType2Index());
-        console.log("variable2Type: ", this.typeRecorder.getVariable2Type());
+        console.log("type2Index: ");
+        console.log(this.printMap(this.typeRecorder.getType2Index()));
+        console.log("variable2Type: ");
+        console.log(this.printMap(this.typeRecorder.getVariable2Type()));
         console.log("==============================");
     }
 }
@@ -170,7 +178,7 @@ export class ClassType extends BaseType {
     fields: Map<string, Array<number>> = new Map<string, Array<number>>();
     methods: Array<number> = new Array<number>();
 
-    constructor(classNode: ts.ClassDeclaration, variablePos?: number) {
+    constructor(classNode: ts.ClassDeclaration, variableNode?: ts.Node) {
         super();
 
         let currIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
@@ -183,8 +191,8 @@ export class ClassType extends BaseType {
         this.fillInFieldsAndMethods(classNode);
 
         // initialization finished, add variable to type if variable is given
-        if (variablePos) {
-            this.setVariable2Type(variablePos, currIndex);
+        if (variableNode) {
+            this.setVariable2Type(variableNode, currIndex);
         }
         this.setTypeArrayBuffer(this, currIndex);
         // check typeRecorder
@@ -244,8 +252,8 @@ export class ClassType extends BaseType {
             }
         }
         // collect type info
-        let variablePos = member.name ? member.name.pos : member.pos;
-        fieldInfo[0] = this.getTypeIndexForDeclWithType(member, variablePos);
+        let variableNode = member.name ? member.name : undefined;
+        fieldInfo[0] = this.getTypeIndexForDeclWithType(member, variableNode);
         this.fields.set(fieldName, fieldInfo);
     }
 
@@ -259,14 +267,13 @@ export class ClassType extends BaseType {
                     case ts.SyntaxKind.SetAccessor: {
                         // a method like declaration in class must be a new type,
                         // add it into typeRecorder
-                        let typePos = member.pos;
-                        let variablePos = member.name ? member.name.pos : member.pos;
-                        let typeIndex = this.typeRecorder.tryGetTypeIndex(typePos);
+                        let variableNode = member.name ? member.name : undefined;
+                        let typeIndex = this.typeRecorder.tryGetTypeIndex(member);
                         if (typeIndex == -1) {
-                            this.createType(member, variablePos)
+                            this.createType(member, variableNode)
                         }
                         // Then, get the typeIndex and fill in the methods array
-                        typeIndex = this.typeRecorder.tryGetTypeIndex(typePos);
+                        typeIndex = this.typeRecorder.tryGetTypeIndex(member);
                         this.methods.push(typeIndex!);
                         break;
                     }
@@ -318,7 +325,7 @@ export class FunctionType extends BaseType {
     parameters: Array<number> = new Array<number>();
     returnType: number = 0;
 
-    constructor(funcNode: ts.FunctionLikeDeclaration, variablePos?: number) {
+    constructor(funcNode: ts.FunctionLikeDeclaration, variableNode?: ts.Node) {
         super();
 
         let currIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
@@ -336,8 +343,8 @@ export class FunctionType extends BaseType {
         this.fillInReturn(funcNode);
 
         // initialization finished, add variable to type if variable is given
-        if (variablePos) {
-            this.setVariable2Type(variablePos, currIndex);
+        if (variableNode) {
+            this.setVariable2Type(variableNode, currIndex);
         }
         this.setTypeArrayBuffer(this, currIndex);
 
@@ -368,8 +375,8 @@ export class FunctionType extends BaseType {
     private fillInParameters(node: ts.FunctionLikeDeclaration) {
         if (node.parameters) {
             for (let parameter of node.parameters) {
-                let variableName = parameter.pos;
-                let typeIndex = this.getTypeIndexForDeclWithType(parameter, variableName);
+                let variableNode = parameter;
+                let typeIndex = this.getTypeIndexForDeclWithType(parameter, variableNode);
                 this.parameters.push(typeIndex);
             }
         }

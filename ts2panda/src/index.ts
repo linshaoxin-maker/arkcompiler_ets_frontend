@@ -57,6 +57,7 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
                             let newNode = ts.createSourceFile(node.fileName, text, options.target!);
                             node = newNode;
                         }
+                        console.log("----------------------------------- after --------------------------------");
                         let outputBinName = getOutputBinName(node);
                         let compilerDriver = new CompilerDriver(outputBinName);
                         setGlobalStrict(jshelpers.isEffectiveStrictModeSourceFile(node, options));
