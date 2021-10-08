@@ -15,6 +15,7 @@
 
 import { DebugPosInfo, VariableDebugInfo } from "./debuginfo";
 import { LiteralBuffer } from "./base/literal";
+import { TypeOfVreg } from "./base/typeSystem";
 
 export class Metadata {
     public attribute: string;
@@ -72,6 +73,7 @@ export class Function {
     public variables: Array<VariableDebugInfo> | undefined;
     public sourceFile: string;
     public sourceCode: string | undefined;
+    public typeInfo: Array<TypeOfVreg>;
 
     constructor(
         name: string,
@@ -82,6 +84,7 @@ export class Function {
         variables: Array<VariableDebugInfo> | undefined = undefined,
         sourceFile: string = "",
         sourceCode: string | undefined = undefined,
+        typeInfo: Array<TypeOfVreg>
     ) {
         this.name = name;
         this.signature = signature;
@@ -93,6 +96,7 @@ export class Function {
         this.variables = variables;
         this.sourceFile = sourceFile;
         this.sourceCode = sourceCode;
+        this.typeInfo = typeInfo;
     }
 }
 

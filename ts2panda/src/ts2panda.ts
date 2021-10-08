@@ -27,6 +27,7 @@ import { PandaGen } from "./pandagen";
 import { CatchTable, Function, Ins, Signature } from "./pandasm";
 import { generateCatchTables } from "./statement/tryStatement";
 import { escapeUnicode, isRangeInst, getRangeStartVregPos } from "./base/util";
+import { TypeOfVreg } from "./base/typeSystem";
 
 const dollarSign: RegExp = /\$/g;
 
@@ -35,7 +36,8 @@ const JsonType = {
     "record": 1,
     "string": 2,
     "literal_arr": 3,
-    "options": 4
+    "options": 4,
+    "type_arr": 5
 };
 export class Ts2Panda {
     static strings: Set<string> = new Set();
@@ -133,6 +135,11 @@ export class Ts2Panda {
 
     static dumpConstantPool(ts2abc: any): void {
         let literalArrays = PandaGen.getLiteralArrayBuffer();
+        console.log("-=-=-=-length=-=-=-=-=-=");
+        for (let e of PandaGen.getLiteralArrayBuffer()) {
+            console.log(JSON.parse(JSON.stringify(e)));
+        }
+
         if (CmdOptions.isEnableDebugLog()) {
             Ts2Panda.jsonString += escapeUnicode(JSON.stringify(literalArrays, null, 2));
         }
@@ -170,6 +177,16 @@ export class Ts2Panda {
         let funcSignature = Ts2Panda.getFuncSignature(pg);
         let funcInsnsAndRegsNum = Ts2Panda.getFuncInsnsAndRegsNum(pg);
         let sourceFile = pg.getSourceFileDebugInfo();
+        let typeRecord = pg.getLocals();
+        console.log("\\\\\\-= funcNmae =-\\\\\\ - ", funcName);
+        let typeInfo = new Array<TypeOfVreg>();
+        typeRecord.forEach((vreg) => {
+            let typeOfVreg = new TypeOfVreg(vreg.num, vreg.getTypeIndex());
+            typeInfo.push(typeOfVreg);
+
+            console.log("\\\\\\\\\\\\ vreg num \\\\\\\\\\", vreg.num);
+            console.log("\\\\\\\\\\\\ vreg type \\\\\\\\\\", vreg.getTypeIndex());
+        });
 
         let variables, sourceCode;
         if (CmdOptions.isDebugMode()) {
@@ -189,6 +206,7 @@ export class Ts2Panda {
             variables,
             sourceFile,
             sourceCode,
+            typeInfo
         );
         let catchTables = generateCatchTables(pg.getCatchMap());
         catchTables.forEach((catchTable) => {

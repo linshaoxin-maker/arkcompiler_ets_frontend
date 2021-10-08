@@ -24,9 +24,14 @@ import { ICPass } from "./pass/ICPass";
 import { RegAlloc } from "./regAllocator";
 import { setGlobalStrict } from "./strictMode";
 import jshelpers = require("./jshelpers");
+import { TypeChecker } from "./typeChecker";
+import { TypeRecorder } from "./typeRecorder";
 
 function main(fileNames: string[], options: ts.CompilerOptions) {
     let program = ts.createProgram(fileNames, options);
+    let typeChecker = TypeChecker.getInstance();
+    TypeRecorder.createInstance();
+    typeChecker.setTypeChecker(program.getTypeChecker());
     let emitResult = program.emit(
         undefined,
         undefined,
