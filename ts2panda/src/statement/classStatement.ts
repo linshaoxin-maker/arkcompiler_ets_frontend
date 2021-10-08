@@ -324,6 +324,9 @@ function loadCtorObj(node: ts.CallExpression, compiler: Compiler) {
     }
 
     let nearestFuncScope = <FunctionScope>recorder.getScopeOfNode(nearestFunc);
+    if (!nearestFuncScope) {
+        return;
+    }
 
     if (ts.isConstructorDeclaration(nearestFunc)) {
         let funcObj = <Variable>nearestFuncScope.findLocal("4funcObj");

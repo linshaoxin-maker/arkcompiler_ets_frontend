@@ -22,6 +22,7 @@ import {
 import { TypeChecker } from "../typeChecker";
 import { TypeRecorder } from "../typeRecorder";
 import { PandaGen } from "../pandagen";
+import * as jshelpers from "../jshelpers";
 
 export enum PrimitiveType {
     ANY,
@@ -49,12 +50,18 @@ export abstract class BaseType {
 
     protected getTypePosForIdentifier(node: ts.Node): number {
         let identifierSymbol = this.typeChecker.getTypeAtLocation(node).symbol;
-        return identifierSymbol.declarations[0].pos;
+        if (identifierSymbol && identifierSymbol.declarations) {
+            return identifierSymbol.declarations[0].pos;
+        }
+        return -1;
     }
 
     protected getTypeNodeForIdentifier(node: ts.Node): ts.Node {
         let identifierSymbol = this.typeChecker.getTypeAtLocation(node).symbol;
-        return identifierSymbol.declarations[0];
+        if (identifierSymbol && identifierSymbol.declarations) {
+            return identifierSymbol!.declarations[0];
+        }
+        return node;
     }
 
     protected getTypeFlagsForIdentifier(node: ts.Node): string {
@@ -115,12 +122,11 @@ export abstract class BaseType {
                 this.setVariable2Type(variablePos, typeIndex);
             }
             if (typeIndex == -1) {
-                console.log("ERROR: Type cannot be found for: " + node.getText());
+                console.log("ERROR: Type cannot be found for: " + jshelpers.getTextOfNode(node));
             }
             return typeIndex!;
         }
-        // console.trace();
-        console.log("WARNING: node type not found for: " + node.getText());
+        console.log("WARNING: node type not found for: " + jshelpers.getTextOfNode(node));
         return -1;
     }
 
@@ -141,7 +147,7 @@ export abstract class BaseType {
 
     protected getLog(node: ts.Node, currIndex: number) {
         console.log("=========== NodeKind ===========: " + node.kind);
-        console.log(node.getText());
+        console.log(jshelpers.getTextOfNode(node));
         console.log("=========== currIndex ===========: ", currIndex);
         console.log(PandaGen.getLiteralArrayBuffer()[currIndex]);
         console.log("==============================");
@@ -213,7 +219,7 @@ export class ClassType extends BaseType {
 
     private fillInFields(member: ts.PropertyDeclaration) {
         // collect modifier info
-        let fieldName = member.name.getText();
+        let fieldName = jshelpers.getTextOfIdentifierOrLiteral(member.name);
         let fieldInfo = Array<number>(0, 0, 0, 0);
         if (member.modifiers) {
             for (let modifier of member.modifiers) {
@@ -320,7 +326,11 @@ export class FunctionType extends BaseType {
         // in case there's recursive reference of this type
         this.addCurrentType(funcNode, currIndex);
 
-        this.name = funcNode.name ?.getText();
+        if (funcNode.name) {
+            this.name = jshelpers.getTextOfIdentifierOrLiteral(funcNode.name);
+        } else {
+            this.name = "constructor";
+        }
         this.fillInModifiers(funcNode);
         this.fillInParameters(funcNode);
         this.fillInReturn(funcNode);
