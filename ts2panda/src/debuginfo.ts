@@ -171,6 +171,9 @@ export class DebugInfo {
         let firstStmt = pandaGen.getFirstStmt();
         if (firstStmt) {
             let file = jshelpers.getSourceFileOfNode(firstStmt);
+            if (!file) {
+                return;
+            }
             let loc = file.getLineAndCharacterOfPosition(firstStmt.getStart());
             let wholeLineText = firstStmt.getText();
             posInfo.setSourecLineNum(loc.line);
@@ -199,7 +202,7 @@ export class DebugInfo {
         let wholeLineText = "";
         if (DebugInfo.isNode(node)) {
             let tsNode = <ts.Node>(node);
-            let file = jshelpers.getSourceFileOfNode(node);
+            let file = jshelpers.getSourceFileOfNode(tsNode);
             if (!file) {
                 return;
             }
