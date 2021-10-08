@@ -42,9 +42,7 @@ import {
     VariableScope
 } from "./scope";
 import {
-    AddCtor2Class,
-    isContainConstruct,
-    getClassNameForConstructor
+    AddCtor2Class, getClassNameForConstructor, isContainConstruct
 } from "./statement/classStatement";
 import { checkSyntaxError } from "./syntaxChecker";
 import { isGlobalIdentifier } from "./syntaxCheckHelper";
@@ -83,6 +81,10 @@ export class Recorder {
 
     private recordInfo(node: ts.Node, scope: Scope) {
         node.forEachChild(childNode => {
+            if (childNode!.parent == undefined || childNode.parent.kind != node.kind) {
+                childNode = jshelpers.setParent(childNode, node)!;
+                childNode = ts.setTextRange(childNode, node)!;
+            }
             checkSyntaxError(childNode);
             switch (childNode.kind) {
                 case ts.SyntaxKind.FunctionExpression:
