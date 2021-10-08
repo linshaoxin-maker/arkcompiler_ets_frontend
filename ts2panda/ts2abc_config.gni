@@ -151,3 +151,46 @@ template("ts2abc_gen_abc") {
     outputs = invoker.out_puts
   }
 }
+
+# ts2abc performs the ut test
+#
+# Mandatory arguments:
+# js_file: The name of the test use case file to execute , ex expression/TemplateExpression.test.js
+template("ts2abc_unittest") {
+  assert(defined(invoker.js_file), "js_file is required!")
+
+  action("$target_name") {
+    script = "${ts2abc_root}/scripts/run_tests.py"
+    deps = [ "${ts2abc_root}:ts2abc_tests" ]
+
+    args = [
+      "--src-dir",
+      rebase_path("${ts2abc_root}"),
+      "--dist-dir",
+      rebase_path(target_out_dir + "/.."),
+      "--node-modules",
+      rebase_path("${node_modules}"),
+      "--js-file",
+      invoker.js_file,
+      "--gn-build",
+    ]
+
+    if (host_toolchain == buildtool_linux) {
+      args += [
+        "--platform",
+        "linux",
+      ]
+    } else if (host_toolchain == buildtool_mac) {
+      args += [
+        "--platform",
+        "mac",
+      ]
+    } else {
+      args += [
+        "--platform",
+        "win",
+      ]
+    }
+    outputs = [ "$target_out_dir/${target_name}/" ]
+  }
+}

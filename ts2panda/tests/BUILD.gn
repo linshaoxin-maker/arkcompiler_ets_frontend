@@ -1,0 +1,163 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//ark/ts2abc/ts2panda/ts2abc_config.gni")
+import("//build/config/clang/clang.gni")
+import("//build/ohos.gni")
+
+# expression tests
+ts2abc_unittest("binary_tests") {
+  js_file = "expression/binary.test.js"
+}
+
+ts2abc_unittest("call_tests") {
+  js_file = "expression/call.test.js"
+}
+
+ts2abc_unittest("conditions_tests") {
+  js_file = "expression/conditions.test.js"
+}
+
+ts2abc_unittest("cmpBinary_tests") {
+  js_file = "expression/cmpBinary.test.js"
+}
+
+ts2abc_unittest("delete_tests") {
+  js_file = "expression/delete.test.js"
+}
+
+ts2abc_unittest("elementAccess_tests") {
+  js_file = "expression/elementAccess.test.js"
+}
+
+ts2abc_unittest("functionExpression_tests") {
+  js_file = "expression/functionExpression.test.js"
+}
+
+ts2abc_unittest("literal_tests") {
+  js_file = "expression/literal.test.js"
+}
+
+ts2abc_unittest("logicBinary_tests") {
+  js_file = "expression/logicBinary.test.js"
+}
+
+ts2abc_unittest("new_tests") {
+  js_file = "expression/new.test.js"
+}
+
+ts2abc_unittest("numericLiteral_tests") {
+  js_file = "expression/numericLiteral.test.js"
+}
+
+ts2abc_unittest("operationEqual_tests") {
+  js_file = "expression/operationEqual.test.js"
+}
+
+ts2abc_unittest("parenthesized_tests") {
+  js_file = "expression/parenthesized.test.js"
+}
+
+ts2abc_unittest("arguments_tests") {
+  js_file = "expression/arguments.test.js"
+}
+
+ts2abc_unittest("propertyAccess_tests") {
+  js_file = "expression/propertyAccess.test.js"
+}
+
+ts2abc_unittest("postfixOperations_tests") {
+  js_file = "expression/postfixOperations.test.js"
+}
+
+ts2abc_unittest("stringLiteral_tests") {
+  js_file = "expression/stringLiteral.test.js"
+}
+
+ts2abc_unittest("template_tests") {
+  js_file = "expression/templateExpression.test.js"
+}
+
+ts2abc_unittest("thisKeyWord_tests") {
+  js_file = "expression/thisKeyWord.test.js"
+}
+
+ts2abc_unittest("typeOf_tests") {
+  js_file = "expression/typeOf.test.js"
+}
+
+ts2abc_unittest("void_tests") {
+  js_file = "expression/void.test.js"
+}
+
+ts2abc_unittest("prefixOperations_tests") {
+  js_file = "expression/prefixOperations.test.js"
+}
+
+ts2abc_unittest("regular_tests") {
+  js_file = "expression/regular.test.js"
+}
+
+# ststement tests
+ts2abc_unittest("debugger_tests") {
+  js_file = "statements/debugger.test.js"
+}
+
+ts2abc_unittest("functionDeclaration_tests") {
+  js_file = "statements/functionDeclaration.test.js"
+}
+
+ts2abc_unittest("doWhile_tests") {
+  js_file = "statements/doWhile.test.js"
+}
+
+ts2abc_unittest("for_tests") {
+  js_file = "statements/for.test.js"
+}
+
+ts2abc_unittest("forin_tests") {
+  js_file = "statements/forIn.test.js"
+}
+
+ts2abc_unittest("forOf_tests") {
+  js_file = "statements/forOf.test.js"
+}
+
+ts2abc_unittest("return_tests") {
+  js_file = "statements/return.test.js"
+}
+
+ts2abc_unittest("switch_tests") {
+  js_file = "statements/switch.test.js"
+}
+
+ts2abc_unittest("tryCatch_tests") {
+  js_file = "statements/tryCatch.test.js"
+}
+
+ts2abc_unittest("variableDeclaration_tests") {
+  js_file = "statements/variableDeclaration.test.js"
+}
+
+ts2abc_unittest("while_tests") {
+  js_file = "statements/while.test.js"
+}
+
+# other tests
+ts2abc_unittest("strictmode_tests") {
+  js_file = "strictmode/strictmode.test.js"
+}
+
+ts2abc_unittest("hello_tests") {
+  js_file = "example_hello/hello.test.js"
+}

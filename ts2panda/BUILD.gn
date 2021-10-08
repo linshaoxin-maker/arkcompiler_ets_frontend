@@ -322,3 +322,52 @@ group("ark_ts2abc_build") {
     ]
   }
 }
+
+ohos_copy("ts2abc_tests") {
+  sources = [ "${ts2abc_root}/tests" ]
+  deps = [ ":npm_run_build" ]
+
+  outputs = [ target_out_dir + "/tests" ]
+  module_install_name = ""
+}
+
+group("ts2abc_unittests") {
+  deps = [
+    "tests:arguments_tests(${buildtool_linux})",
+    "tests:binary_tests(${buildtool_linux})",
+    "tests:call_tests(${buildtool_linux})",
+    "tests:cmpBinary_tests(${buildtool_linux})",
+    "tests:conditions_tests(${buildtool_linux})",
+    "tests:debugger_tests(${buildtool_linux})",
+    "tests:delete_tests(${buildtool_linux})",
+    "tests:doWhile_tests(${buildtool_linux})",
+    "tests:elementAccess_tests(${buildtool_linux})",
+    "tests:forOf_tests(${buildtool_linux})",
+    "tests:for_tests(${buildtool_linux})",
+    "tests:forin_tests(${buildtool_linux})",
+    "tests:functionDeclaration_tests(${buildtool_linux})",
+    "tests:functionExpression_tests(${buildtool_linux})",
+    "tests:hello_tests(${buildtool_linux})",
+    "tests:literal_tests(${buildtool_linux})",
+    "tests:logicBinary_tests(${buildtool_linux})",
+    "tests:new_tests(${buildtool_linux})",
+    "tests:numericLiteral_tests(${buildtool_linux})",
+    "tests:operationEqual_tests(${buildtool_linux})",
+    "tests:parenthesized_tests(${buildtool_linux})",
+    "tests:postfixOperations_tests(${buildtool_linux})",
+    "tests:prefixOperations_tests(${buildtool_linux})",
+    "tests:propertyAccess_tests(${buildtool_linux})",
+    "tests:regular_tests(${buildtool_linux})",
+    "tests:return_tests(${buildtool_linux})",
+    "tests:strictmode_tests(${buildtool_linux})",
+    "tests:stringLiteral_tests(${buildtool_linux})",
+    "tests:switch_tests(${buildtool_linux})",
+    "tests:template_tests(${buildtool_linux})",
+    "tests:thisKeyWord_tests(${buildtool_linux})",
+    "tests:tryCatch_tests(${buildtool_linux})",
+    "tests:typeOf_tests(${buildtool_linux})",
+    "tests:variableDeclaration_tests(${buildtool_linux})",
+    "tests:void_tests(${buildtool_linux})",
+    "tests:while_tests(${buildtool_linux})",
+  ]
+}
