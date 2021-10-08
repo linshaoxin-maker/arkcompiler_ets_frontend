@@ -84,7 +84,7 @@ export class Recorder {
         node.forEachChild(childNode => {
             if (childNode!.parent == undefined || childNode.parent.kind != node.kind) {
                 childNode = jshelpers.setParent(childNode, node)!;
-                childNode = ts.setTextRange(childNode, node)!;
+                // childNode = ts.setTextRange(childNode, node)!;
             }
             checkSyntaxError(childNode);
             switch (childNode.kind) {
