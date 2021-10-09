@@ -90,6 +90,9 @@ export abstract class BaseType {
                 new ClassType(<ts.ClassDeclaration>node, variableNode);
                 break;
             }
+            // create other type as project goes on;
+            default:
+                throw new Error("Currently this type is not supported");
         }
     }
 
@@ -146,7 +149,7 @@ export abstract class BaseType {
     }
 
     protected printMap(map: Map<ts.Node, number>) {
-        map.forEach((value, key) =>{
+        map.forEach((value, key) => {
             console.log(jshelpers.getTextOfNode(key) + ": " + value);
         });
     }
@@ -174,7 +177,9 @@ export class PlaceHolderType extends BaseType {
 export class ClassType extends BaseType {
     modifier: number = 0; // 0 -> unabstract, 1 -> abstract;
     heritages: Array<number> = new Array<number>();
-    // fileds Array: [typeIndex] [static -> 1] [public -> 0, private -> 1, protected -> 2] [readonly -> 1]
+    // fileds Array: [typeIndex] [public -> 0, private -> 1, protected -> 2] [readonly -> 1]
+    staticFields: Map<string, Array<number>> = new Map<string, Array<number>>();
+    staticMethods: Array<number> = new Array<number>();
     fields: Map<string, Array<number>> = new Map<string, Array<number>>();
     methods: Array<number> = new Array<number>();
 
@@ -227,25 +232,39 @@ export class ClassType extends BaseType {
 
     private fillInFields(member: ts.PropertyDeclaration) {
         // collect modifier info
-        let fieldName = jshelpers.getTextOfIdentifierOrLiteral(member.name);
-        let fieldInfo = Array<number>(0, 0, 0, 0);
+        let fieldName: string = "";
+        switch (member.name.kind) {
+            case ts.SyntaxKind.Identifier:
+            case ts.SyntaxKind.StringLiteral:
+            case ts.SyntaxKind.NumericLiteral:
+                fieldName = jshelpers.getTextOfIdentifierOrLiteral(member.name);
+                break;
+            case ts.SyntaxKind.ComputedPropertyName:
+                fieldName = "#computed";
+                break;
+            default:
+                throw new Error("Invalid proerty name");
+        }
+
+        let fieldInfo = Array<number>(0, 0, 0);
+        let isStatic: boolean = false;
         if (member.modifiers) {
             for (let modifier of member.modifiers) {
                 switch (modifier.kind) {
                     case ts.SyntaxKind.StaticKeyword: {
-                        fieldInfo[1] = 1;
+                        isStatic = true;
                         break;
                     }
                     case ts.SyntaxKind.PrivateKeyword: {
-                        fieldInfo[2] = 1;
+                        fieldInfo[1] = 1;
                         break;
                     }
                     case ts.SyntaxKind.ProtectedKeyword: {
-                        fieldInfo[2] = 2;
+                        fieldInfo[1] = 2;
                         break;
                     }
                     case ts.SyntaxKind.ReadonlyKeyword: {
-                        fieldInfo[3] = 1;
+                        fieldInfo[2] = 1;
                         break;
                     }
                 }
@@ -254,7 +273,12 @@ export class ClassType extends BaseType {
         // collect type info
         let variableNode = member.name ? member.name : undefined;
         fieldInfo[0] = this.getTypeIndexForDeclWithType(member, variableNode);
-        this.fields.set(fieldName, fieldInfo);
+
+        if (isStatic) {
+            this.staticFields.set(fieldName, fieldInfo);
+        } else {
+            this.fields.set(fieldName, fieldInfo);
+        }
     }
 
     private fillInFieldsAndMethods(node: ts.ClassDeclaration) {
@@ -265,12 +289,14 @@ export class ClassType extends BaseType {
                     case ts.SyntaxKind.Constructor:
                     case ts.SyntaxKind.GetAccessor:
                     case ts.SyntaxKind.SetAccessor: {
-                        // a method like declaration in class must be a new type,
-                        // add it into typeRecorder
+                        /**
+                         * a method like declaration in class must be a new type,
+                         * add it into typeRecorder
+                         */
                         let variableNode = member.name ? member.name : undefined;
                         let typeIndex = this.typeRecorder.tryGetTypeIndex(member);
                         if (typeIndex == -1) {
-                            this.createType(member, variableNode)
+                            this.createType(member, variableNode);
                         }
                         // Then, get the typeIndex and fill in the methods array
                         typeIndex = this.typeRecorder.tryGetTypeIndex(member);
@@ -293,21 +319,20 @@ export class ClassType extends BaseType {
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.CLASS));
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.modifier));
 
-        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.heritages.length)); // num of heritages are recorded
+        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.heritages.length));
         this.heritages.forEach(heritage => {
             classTypeLiterals.push(new Literal(LiteralTag.INTEGER, heritage));
         });
 
-        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.fields.size)); // num of fields are recorded
-        this.fields.forEach((typeInfo, name) => {
-            classTypeLiterals.push(new Literal(LiteralTag.STRING, name));
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[0])); // typeIndex
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[1])); // static
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[2])); // accessFlag
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[3])); // readonly
-        });
+        // record static methods and fields;
+        this.transferFields2Literal(classTypeLiterals, true);
 
-        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.methods.length)); // num of fields are recorded
+        // TODO record static methods here
+
+        // record unstatic fields and methods
+        this.transferFields2Literal(classTypeLiterals, false);
+
+        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.methods.length));
         this.methods.forEach(method => {
             classTypeLiterals.push(new Literal(LiteralTag.INTEGER, method));
         });
@@ -316,6 +341,17 @@ export class ClassType extends BaseType {
         return classTypeBuf;
     }
 
+    private transferFields2Literal(classTypeLiterals: Array<Literal>, isStatic: boolean) {
+        let transferredTarget: Map<string, Array<number>> = isStatic ? this.staticFields : this.fields;
+
+        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, transferredTarget.size));
+        transferredTarget.forEach((typeInfo, name) => {
+            classTypeLiterals.push(new Literal(LiteralTag.STRING, name));
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[0])); // typeIndex
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[1])); // accessFlag
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[2])); // readonly
+        });
+    }
 }
 
 export class FunctionType extends BaseType {
