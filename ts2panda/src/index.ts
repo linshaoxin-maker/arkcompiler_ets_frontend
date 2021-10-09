@@ -24,9 +24,14 @@ import { ICPass } from "./pass/ICPass";
 import { RegAlloc } from "./regAllocator";
 import { setGlobalStrict } from "./strictMode";
 import jshelpers = require("./jshelpers");
+import { TypeChecker } from "./typeChecker";
+import { TypeRecorder } from "./typeRecorder";
 
 function main(fileNames: string[], options: ts.CompilerOptions) {
     let program = ts.createProgram(fileNames, options);
+    let typeChecker = TypeChecker.getInstance();
+    TypeRecorder.createInstance();
+    typeChecker.setTypeChecker(program.getTypeChecker());
     let emitResult = program.emit(
         undefined,
         undefined,
@@ -52,6 +57,7 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
                             let newNode = ts.createSourceFile(node.fileName, text, options.target!);
                             node = newNode;
                         }
+                        console.log("----------------------------------- after --------------------------------");
                         let outputBinName = getOutputBinName(node);
                         let compilerDriver = new CompilerDriver(outputBinName);
                         setGlobalStrict(jshelpers.isEffectiveStrictModeSourceFile(node, options));
