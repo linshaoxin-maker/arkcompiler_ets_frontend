@@ -102,26 +102,23 @@ export abstract class BaseType {
         this.typeRecorder.setVariable2Type(variableNode, index);
     }
 
-    protected createType(node: ts.Node, variableNode?: ts.Node): BaseType {
-        let type: BaseType;
+    protected createType(node: ts.Node, variableNode?: ts.Node) {
         switch (node.kind) {
             case ts.SyntaxKind.MethodDeclaration:
             case ts.SyntaxKind.Constructor:
             case ts.SyntaxKind.GetAccessor:
             case ts.SyntaxKind.SetAccessor: {
-                type = new FunctionType(<ts.FunctionLikeDeclaration>node, variableNode);
+                new FunctionType(<ts.FunctionLikeDeclaration>node, variableNode);
                 break;
             }
             case ts.SyntaxKind.ClassDeclaration: {
-                type = new ClassType(<ts.ClassDeclaration>node, variableNode);
+                new ClassType(<ts.ClassDeclaration>node, variableNode);
                 break;
             }
             // create other type as project goes on;
             default:
-                throw new Error("Currently this type is not supported");
+                // throw new Error("Currently this type is not supported");
         }
-
-        return type;
     }
 
     protected getOrCreateUserDefinedType(node: ts.Node, variableNode?: ts.Node) {
@@ -307,19 +304,14 @@ export class ClassType extends BaseType {
 
     private fillInMethods(member: ClassMemberFunction) {
         /**
-         * a method like declaration in class must be a new type,
-         * add it into typeRecorder
+         * a method like declaration in a new class must be a new type,
+         * create this type and add it into typeRecorder
          */
-        let funcType: FunctionType;
         let variableNode = member.name ? member.name : undefined;
-        let typeIndex = this.typeRecorder.tryGetTypeIndex(member);
-        if (typeIndex == -1) {
-            funcType = <FunctionType>this.createType(member, variableNode);
-        }
+        let funcType = new FunctionType(<ts.FunctionLikeDeclaration>member, variableNode);
 
         // Then, get the typeIndex and fill in the methods array
-        typeIndex = this.typeRecorder.tryGetTypeIndex(member);
-        funcType = <FunctionType>this.typeRecorder.getTypeInfo()[typeIndex];
+        let typeIndex = this.typeRecorder.tryGetTypeIndex(member);
         let funcModifier = funcType.getModifier();
         if (funcModifier) {
             this.staticMethods.push(typeIndex!);
