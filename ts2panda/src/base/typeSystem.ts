@@ -23,6 +23,7 @@ import { TypeChecker } from "../typeChecker";
 import { TypeRecorder } from "../typeRecorder";
 import { PandaGen } from "../pandagen";
 import * as jshelpers from "../jshelpers";
+import { access } from "fs";
 
 export enum PrimitiveType {
     ANY,
@@ -41,6 +42,27 @@ export enum L2Type {
     CLASSINST,
     FUNCTION,
     OBJECT // object literal
+}
+
+export enum ModifierAbstract {
+    NONABSTRACT,
+    ABSTRACT
+}
+
+export enum ModifierStatic {
+    NONSTATIC,
+    STATIC
+}
+
+export enum ModifierReadonly {
+    NONREADONLY,
+    READONLY
+}
+
+export enum AccessFlag {
+    PUBLIC,
+    PRIVATE,
+    PROTECTED
 }
 
 type ClassMemberFunction = ts.MethodDeclaration | ts.ConstructorDeclaration | ts.GetAccessorDeclaration | ts.SetAccessorDeclaration;
@@ -148,11 +170,6 @@ export abstract class BaseType {
     }
 
     // temp for test
-    protected getIndex() {
-        let currIndex = this.typeRecorder.index;
-        this.typeRecorder.index += 1;
-        return currIndex;
-    }
 
     protected printMap(map: Map<ts.Node, number>) {
         map.forEach((value, key) => {
@@ -215,7 +232,7 @@ export class ClassType extends BaseType {
             for (let modifier of node.modifiers) {
                 switch (modifier.kind) {
                     case ts.SyntaxKind.AbstractKeyword: {
-                        this.modifier = 1;
+                        this.modifier = ModifierAbstract.ABSTRACT;
                         break;
                     }
                     case ts.SyntaxKind.ExportKeyword: {
@@ -252,7 +269,8 @@ export class ClassType extends BaseType {
                 throw new Error("Invalid proerty name");
         }
 
-        let fieldInfo = Array<number>(0, 0, 0);
+        // Array: [typeIndex] [public -> 0, private -> 1, protected -> 2] [readonly -> 1]
+        let fieldInfo = Array<number>(PrimitiveType.ANY, AccessFlag.PUBLIC, ModifierReadonly.NONREADONLY);
         let isStatic: boolean = false;
         if (member.modifiers) {
             for (let modifier of member.modifiers) {
@@ -262,15 +280,15 @@ export class ClassType extends BaseType {
                         break;
                     }
                     case ts.SyntaxKind.PrivateKeyword: {
-                        fieldInfo[1] = 1;
+                        fieldInfo[1] = AccessFlag.PRIVATE;
                         break;
                     }
                     case ts.SyntaxKind.ProtectedKeyword: {
-                        fieldInfo[1] = 2;
+                        fieldInfo[1] = AccessFlag.PROTECTED;
                         break;
                     }
                     case ts.SyntaxKind.ReadonlyKeyword: {
-                        fieldInfo[2] = 1;
+                        fieldInfo[2] = ModifierReadonly.READONLY;
                         break;
                     }
                 }
@@ -393,7 +411,7 @@ export class ClassInstType extends BaseType {
 export class FunctionType extends BaseType {
     name: string | undefined = '';
     accessFlag: number = 0; // 0 -> public -> 0, private -> 1, protected -> 2
-    modifier: number = 0; // 0 -> unstatic, 1 -> static
+    modifierStatic: number = 0; // 0 -> unstatic, 1 -> static
     parameters: Array<number> = new Array<number>();
     returnType: number = 0;
 
@@ -429,15 +447,15 @@ export class FunctionType extends BaseType {
             for (let modifier of node.modifiers) {
                 switch (modifier.kind) {
                     case ts.SyntaxKind.PrivateKeyword: {
-                        this.accessFlag = 1;
+                        this.accessFlag = AccessFlag.PRIVATE;
                         break;
                     }
                     case ts.SyntaxKind.ProtectedKeyword: {
-                        this.accessFlag = 2;
+                        this.accessFlag = AccessFlag.PROTECTED;
                         break;
                     }
                     case ts.SyntaxKind.StaticKeyword: {
-                        this.modifier = 1;
+                        this.modifierStatic = ModifierStatic.STATIC;
                     }
                 }
             }
@@ -462,7 +480,7 @@ export class FunctionType extends BaseType {
     }
 
     getModifier() {
-        return this.modifier;
+        return this.modifierStatic;
     }
 
     transfer2LiteralBuffer(): LiteralBuffer {
@@ -471,7 +489,6 @@ export class FunctionType extends BaseType {
         funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.FUNCTION));
         funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.accessFlag));
         funcTypeLiterals.push(new Literal(LiteralTag.STRING, this.name));
-
         funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.parameters.length));
         this.parameters.forEach((type) => {
             funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, type));
