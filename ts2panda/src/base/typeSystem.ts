@@ -38,9 +38,12 @@ export enum PrimitiveType {
 
 export enum L2Type {
     CLASS,
+    CLASSINST,
     FUNCTION,
     OBJECT // object literal
 }
+
+type ClassMemberFunction = ts.MethodDeclaration | ts.ConstructorDeclaration | ts.GetAccessorDeclaration | ts.SetAccessorDeclaration;
 
 export abstract class BaseType {
 
@@ -77,23 +80,26 @@ export abstract class BaseType {
         this.typeRecorder.setVariable2Type(variableNode, index);
     }
 
-    protected createType(node: ts.Node, variableNode?: ts.Node) {
+    protected createType(node: ts.Node, variableNode?: ts.Node): BaseType {
+        let type: BaseType;
         switch (node.kind) {
             case ts.SyntaxKind.MethodDeclaration:
             case ts.SyntaxKind.Constructor:
             case ts.SyntaxKind.GetAccessor:
             case ts.SyntaxKind.SetAccessor: {
-                new FunctionType(<ts.FunctionLikeDeclaration>node, variableNode);
+                type = new FunctionType(<ts.FunctionLikeDeclaration>node, variableNode);
                 break;
             }
             case ts.SyntaxKind.ClassDeclaration: {
-                new ClassType(<ts.ClassDeclaration>node, variableNode);
+                type = new ClassType(<ts.ClassDeclaration>node, variableNode);
                 break;
             }
             // create other type as project goes on;
             default:
                 throw new Error("Currently this type is not supported");
         }
+
+        return type;
     }
 
     protected getOrCreateUserDefinedType(node: ts.Node, variableNode?: ts.Node) {
@@ -281,6 +287,29 @@ export class ClassType extends BaseType {
         }
     }
 
+    private fillInMethods(member: ClassMemberFunction) {
+        /**
+         * a method like declaration in class must be a new type,
+         * add it into typeRecorder
+         */
+        let funcType: FunctionType;
+        let variableNode = member.name ? member.name : undefined;
+        let typeIndex = this.typeRecorder.tryGetTypeIndex(member);
+        if (typeIndex == -1) {
+            funcType = <FunctionType>this.createType(member, variableNode);
+        }
+
+        // Then, get the typeIndex and fill in the methods array
+        typeIndex = this.typeRecorder.tryGetTypeIndex(member);
+        funcType = <FunctionType>this.typeRecorder.getTypeInfo()[typeIndex];
+        let funcModifier = funcType.getModifier();
+        if (funcModifier) {
+            this.staticMethods.push(typeIndex!);
+        } else {
+            this.methods.push(typeIndex!);
+        }
+    }
+
     private fillInFieldsAndMethods(node: ts.ClassDeclaration) {
         if (node.members) {
             for (let member of node.members) {
@@ -289,18 +318,7 @@ export class ClassType extends BaseType {
                     case ts.SyntaxKind.Constructor:
                     case ts.SyntaxKind.GetAccessor:
                     case ts.SyntaxKind.SetAccessor: {
-                        /**
-                         * a method like declaration in class must be a new type,
-                         * add it into typeRecorder
-                         */
-                        let variableNode = member.name ? member.name : undefined;
-                        let typeIndex = this.typeRecorder.tryGetTypeIndex(member);
-                        if (typeIndex == -1) {
-                            this.createType(member, variableNode);
-                        }
-                        // Then, get the typeIndex and fill in the methods array
-                        typeIndex = this.typeRecorder.tryGetTypeIndex(member);
-                        this.methods.push(typeIndex!);
+                        this.fillInMethods(<ClassMemberFunction>member);
                         break;
                     }
                     case ts.SyntaxKind.PropertyDeclaration: {
@@ -351,6 +369,24 @@ export class ClassType extends BaseType {
             classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[1])); // accessFlag
             classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[2])); // readonly
         });
+    }
+}
+
+export class ClassInstType extends BaseType {
+    referredClassIndex: number = 0; // the referred class in the type system;
+    constructor(referredClassIndex: number) {
+        super();
+        this.referredClassIndex = referredClassIndex;
+    }
+
+    transfer2LiteralBuffer(): LiteralBuffer {
+        let classInstBuf = new LiteralBuffer();
+        let classInstLiterals: Array<Literal> = new Array<Literal>();
+        classInstLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.CLASSINST));
+        classInstLiterals.push(new Literal(LiteralTag.INTEGER, this.referredClassIndex));
+        classInstBuf.addLiterals(...classInstLiterals);
+
+        return classInstBuf;
     }
 }
 
@@ -425,12 +461,15 @@ export class FunctionType extends BaseType {
         }
     }
 
+    getModifier() {
+        return this.modifier;
+    }
+
     transfer2LiteralBuffer(): LiteralBuffer {
         let funcTypeBuf = new LiteralBuffer();
         let funcTypeLiterals: Array<Literal> = new Array<Literal>();
         funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.FUNCTION));
         funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.accessFlag));
-        funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.modifier));
         funcTypeLiterals.push(new Literal(LiteralTag.STRING, this.name));
 
         funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.parameters.length));
