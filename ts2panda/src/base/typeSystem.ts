@@ -102,7 +102,7 @@ export abstract class BaseType {
         this.typeRecorder.setVariable2Type(variableNode, index);
     }
 
-    protected createType(node: ts.Node, variableNode?: ts.Node) {
+    protected createType(node: ts.Node, newExpressionFlag: boolean, variableNode?: ts.Node) {
         switch (node.kind) {
             case ts.SyntaxKind.MethodDeclaration:
             case ts.SyntaxKind.Constructor:
@@ -112,21 +112,22 @@ export abstract class BaseType {
                 break;
             }
             case ts.SyntaxKind.ClassDeclaration: {
-                new ClassType(<ts.ClassDeclaration>node, variableNode);
+                new ClassType(<ts.ClassDeclaration>node, newExpressionFlag, variableNode);
                 break;
             }
             // create other type as project goes on;
             default:
+                console.log("Error: Currently this type is not supported");
                 // throw new Error("Currently this type is not supported");
         }
     }
 
-    protected getOrCreateUserDefinedType(node: ts.Node, variableNode?: ts.Node) {
+    protected getOrCreateUserDefinedType(node: ts.Node, newExpressionFlag: boolean, variableNode?: ts.Node) {
         let typeNode = this.getTypeNodeForIdentifier(node);
         let typeIndex = this.typeRecorder.tryGetTypeIndex(typeNode);
         if (typeIndex == -1) {
             let typeNode = this.getTypeNodeForIdentifier(node);
-            this.createType(typeNode, variableNode);
+            this.createType(typeNode, newExpressionFlag, variableNode);
             typeIndex = this.typeRecorder.tryGetTypeIndex(typeNode);
         }
         return typeIndex;
@@ -135,6 +136,11 @@ export abstract class BaseType {
     protected getTypeIndexForDeclWithType(
         node: ts.FunctionLikeDeclaration | ts.ParameterDeclaration | ts.PropertyDeclaration, variableNode?: ts.Node): number {
         if (node.type) {
+            // check for newExpression 
+            let newExpressionFlag = false;
+            if (node.kind == ts.SyntaxKind.PropertyDeclaration && node.initializer && node.initializer.kind == ts.SyntaxKind.NewExpression) {
+                newExpressionFlag = true;
+            }
             // get typeFlag to check if its a primitive type
             let typeRef = node.type;
             let typeFlagName = this.getTypeFlagsForIdentifier(typeRef);
@@ -143,7 +149,7 @@ export abstract class BaseType {
                 typeIndex = PrimitiveType[typeFlagName as keyof typeof PrimitiveType];
             } else {
                 let identifier = typeRef.getChildAt(0);
-                typeIndex = this.getOrCreateUserDefinedType(identifier, variableNode);
+                typeIndex = this.getOrCreateUserDefinedType(identifier, newExpressionFlag, variableNode);
             }
             // set variable if variable node is given;
             if (variableNode) {
@@ -159,7 +165,7 @@ export abstract class BaseType {
     }
 
     protected getIndexFromTypeArrayBuffer(type: BaseType): number {
-        return PandaGen.appendTypeArrayBuffer(new PlaceHolderType);
+        return PandaGen.appendTypeArrayBuffer(type);
     }
 
     protected setTypeArrayBuffer(type: BaseType, index: number) {
@@ -203,7 +209,7 @@ export class ClassType extends BaseType {
     fields: Map<string, Array<number>> = new Map<string, Array<number>>();
     methods: Array<number> = new Array<number>();
 
-    constructor(classNode: ts.ClassDeclaration, variableNode?: ts.Node) {
+    constructor(classNode: ts.ClassDeclaration, newExpressionFlag: boolean, variableNode?: ts.Node) {
         super();
 
         let currIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
@@ -217,7 +223,12 @@ export class ClassType extends BaseType {
 
         // initialization finished, add variable to type if variable is given
         if (variableNode) {
-            this.setVariable2Type(variableNode, currIndex);
+            // if the variable is a instance, create another classInstType instead of current classType itself
+            if (newExpressionFlag) {
+                new ClassInstType(variableNode, currIndex);
+            } else {
+                this.setVariable2Type(variableNode, currIndex);
+            }
         }
         this.setTypeArrayBuffer(this, currIndex);
         // check typeRecorder
@@ -244,7 +255,7 @@ export class ClassType extends BaseType {
         if (node.heritageClauses) {
             for (let heritage of node.heritageClauses) {
                 let heritageIdentifier = heritage.getChildAt(1).getChildAt(0);
-                let heritageTypePos = this.getOrCreateUserDefinedType(heritageIdentifier);
+                let heritageTypePos = this.getOrCreateUserDefinedType(heritageIdentifier, false);
                 this.heritages.push(heritageTypePos);
             }
         }
@@ -384,9 +395,15 @@ export class ClassType extends BaseType {
 
 export class ClassInstType extends BaseType {
     referredClassIndex: number = 0; // the referred class in the type system;
-    constructor(referredClassIndex: number) {
+    constructor(variableNode: ts.Node, referredClassIndex: number) {
         super();
+        // use referedClassIndex to point to the actually class type of this instance
         this.referredClassIndex = referredClassIndex;
+
+        // map variable to classInstType, which has a newly generated index
+        let currIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
+        this.setVariable2Type(variableNode, currIndex);
+        this.setTypeArrayBuffer(this, currIndex);
     }
 
     transfer2LiteralBuffer(): LiteralBuffer {

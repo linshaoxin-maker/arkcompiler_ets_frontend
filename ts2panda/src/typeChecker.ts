@@ -30,11 +30,15 @@ export class TypeChecker {
             const decList = variableStatementNode.declarationList;
             decList.declarations.forEach(declaration => {
                 const nameNode = declaration.name;
+                let newExpressionFlag = false;
+                if (declaration.initializer && declaration.initializer.kind == ts.SyntaxKind.NewExpression) {
+                    newExpressionFlag = true;
+                }
                 let type: ts.Type = this.compiledTypeChecker.getTypeAtLocation(nameNode);
                 let targetNode = type.getSymbol()?.valueDeclaration;
                 if (targetNode) {
                     if (ts.isClassDeclaration(targetNode!)) {
-                        let testClassType = new ClassType(<ts.ClassDeclaration>targetNode, nameNode);
+                        let testClassType = new ClassType(<ts.ClassDeclaration>targetNode, newExpressionFlag, nameNode);
                     }
                 }
                 // console.log(type.getSymbol()?.valueDeclaration); 
