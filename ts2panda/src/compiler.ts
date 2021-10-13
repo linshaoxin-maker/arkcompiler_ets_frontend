@@ -812,6 +812,8 @@ export class Compiler {
             case ts.SyntaxKind.ClassExpression:
                 compileClassDeclaration(this, <ts.ClassLikeDeclaration>expr);
                 break;
+            case ts.SyntaxKind.PartiallyEmittedExpression:
+                break;
             default:
                 throw new Error("Expression of type " + this.getNodeName(expr) + " is unimplemented");
         }
