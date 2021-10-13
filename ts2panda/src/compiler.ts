@@ -1418,7 +1418,7 @@ export class Compiler {
 
     loadTarget(node: ts.Node, variable: { scope: Scope | undefined, level: number, v: Variable | undefined }) {
         if (variable.v instanceof ModuleVariable) {
-            this.pandaGen.loadModuleVariable(node, variable.v.getModule(), variable.v.getExoticName());
+            // this.pandaGen.loadModuleVariable(node, variable.v.getModule(), variable.v.getExoticName());
         } else if (variable.v instanceof LocalVariable) {
             if (variable.v.isLetOrConst() || variable.v.isClass()) {
                 if (variable.scope instanceof GlobalScope || variable.scope instanceof ModuleScope) {

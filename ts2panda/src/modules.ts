@@ -119,7 +119,7 @@ export function setExportBinding(exportStmts: Array<ModuleStmt>, moduleScope: Mo
                 }
 
                 if (v instanceof ModuleVariable) {
-                    pandagen.loadModuleVariable(exportStmt.getNode(), v.getModule(), v.getName());
+                    //pandagen.loadModuleVariable(exportStmt.getNode(), v.getModule(), v.getName());
                     pandagen.storeModuleVar(exportStmt.getNode(), key);
                 } else {
                     (<LocalVariable>v).setExport();
