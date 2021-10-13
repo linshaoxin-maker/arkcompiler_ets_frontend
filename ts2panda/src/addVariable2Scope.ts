@@ -39,7 +39,6 @@ import {
 import { TypeRecorder } from "./typeRecorder";
 import { PrimitiveType } from "./base/typeSystem";
 
-
 function setVariableOrParameterType(node: ts.Node, v: Variable | undefined) {
     if (v) {
         let typeIndex = TypeRecorder.getInstance().tryGetVariable2Type(node);
@@ -53,12 +52,12 @@ function setVariableOrParameterType(node: ts.Node, v: Variable | undefined) {
 
 function setClassOrFunctionType(node: ts.Node, v: Variable | undefined) {
     if (v) {
-        let typeIndex = TypeRecorder.getInstance().tryGetTypeIndex(node);
+        let typeIndex = TypeRecorder.getInstance().tryGetTypeIndex(ts.getOriginalNode(node));
         if (typeIndex != -1) {
             v.setTypeIndex(typeIndex + PrimitiveType._LENGTH);
         }
-        // // console.log("--node--", jshelpers.getTextOfNode(node));
-        // // console.log("--node.type--", v.getTypeIndex());
+        // console.log("--node--", jshelpers.getTextOfNode(ts.getOriginalNode(node)));
+        // console.log("--node.type--", v.getTypeIndex());
     }
 }
 

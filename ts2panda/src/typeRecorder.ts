@@ -25,12 +25,7 @@ export class TypeRecorder {
     private typeInfo: Array<BaseType> = new Array<BaseType>();
     private variable2Type: Map<ts.Node, number> = new Map<ts.Node, number>();
 
-    // temp for test index
-    public index: number;
-
-    private constructor() {
-        this.index = PrimitiveType._LENGTH;
-    }
+    private constructor() {}
 
     public static getInstance() {
         return TypeRecorder.instance;
