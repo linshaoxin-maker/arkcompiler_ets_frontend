@@ -178,7 +178,7 @@ export class ModuleVariable extends LocalVariable {
 
     getModule() {
         if (!this.module) {
-            throw new Error("Variable's module has not been binded");
+             // throw new Error("Variable's module has not been binded");
         }
         return this.module;
     }

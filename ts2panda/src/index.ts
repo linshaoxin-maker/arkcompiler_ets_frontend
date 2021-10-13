@@ -61,7 +61,6 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
                             let newNode = ts.createSourceFile(node.fileName, text, options.target!);
                             node = newNode;
                         }
-                        // console.log("----------------------------------- after --------------------------------");
                         let outputBinName = getOutputBinName(node);
                         let compilerDriver = new CompilerDriver(outputBinName);
                         setGlobalStrict(jshelpers.isEffectiveStrictModeSourceFile(node, options));
@@ -109,7 +108,7 @@ namespace Compiler {
             noEmitOnError: true,
             noImplicitAny: true,
             target: ts.ScriptTarget.ES2015,
-            module: ts.ModuleKind.CommonJS,
+            module: ts.ModuleKind.ES2015,
             strictNullChecks: true,
             skipLibCheck: true,
             alwaysStrict: true
@@ -134,7 +133,6 @@ function run(args: string[], options?: ts.CompilerOptions): void {
         if (err instanceof diag.DiagnosticError) {
 
             let diagnostic = diag.getDiagnostic(err.code);
-            console.log(diagnostic)
             if (diagnostic != undefined) {
                 let diagnosticLog = diag.createDiagnostic(err.file, err.irnode, diagnostic, ...err.args);
                 diag.printDiagnostic(diagnosticLog);
