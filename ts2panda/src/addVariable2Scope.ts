@@ -45,8 +45,8 @@ function setVariableOrParameterType(node: ts.Node, v: Variable | undefined) {
         if (typeIndex != -1) {
             v.setTypeIndex(typeIndex + PrimitiveType._LENGTH);
         }
-        // console.log("--node--", jshelpers.getTextOfNode(node));
-        // console.log("--node.type--", v.getTypeIndex());
+        // // console.log("--node--", jshelpers.getTextOfNode(node));
+        // // console.log("--node.type--", v.getTypeIndex());
     }
 }
 
@@ -106,8 +106,8 @@ export function addVariableToScope(recorder: Recorder) {
             hoistDecls = <Decl[]>hoistMap.get(scope);
             if (hoistDecls) {
                 hoistDecls.forEach(hoistDecl => {
-                    console.log("///////  hoist pos ////////// - ");
-                    console.log(hoistDecl.node.pos);
+                    // console.log("///////  hoist pos ////////// - ");
+                    // console.log(hoistDecl.node.pos);
                     let v: Variable | undefined;
                     if (hoistDecl instanceof VarDecl) {
                         v = scope.add(hoistDecl.name, VarDeclarationKind.VAR);
@@ -131,8 +131,8 @@ export function addVariableToScope(recorder: Recorder) {
             if (hoistDecls && hoistDecls.includes(decl)) {
                 continue;
             }
-            console.log("/////// decls pos ////////// - ");
-            console.log(decl.node.pos);
+            // console.log("/////// decls pos ////////// - ");
+            // console.log(decl.node.pos);
             let v: Variable | undefined;
             if (decl instanceof LetDecl) {
                 v = scope.add(decl.name, VarDeclarationKind.LET, InitStatus.UNINITIALIZED);
@@ -177,8 +177,8 @@ export function addVariableToScope(recorder: Recorder) {
 }
 
 function addParameters(node: ts.FunctionLikeDeclaration, scope: VariableScope): void {
-    console.log("////////// methods //////////");
-    console.log(node.pos);
+    // console.log("////////// methods //////////");
+    // console.log(node.pos);
     let patternParams: Array<ts.BindingPattern> = new Array<ts.BindingPattern>();
     for (let i = 0; i < node.parameters.length; ++i) {
         let param = node.parameters[i];
@@ -189,8 +189,8 @@ function addParameters(node: ts.FunctionLikeDeclaration, scope: VariableScope): 
         } else if (ts.isIdentifier(param.name)) {
             name = jshelpers.getTextOfIdentifierOrLiteral(<ts.Identifier>param.name);
         }
-        console.log("//////// add para /////////");
-        console.log(param.pos);
+        // console.log("//////// add para /////////");
+        // console.log(param.pos);
 
         let v = scope.addParameter(name, VarDeclarationKind.VAR, i + 1);
         setVariableOrParameterType(param, v);
