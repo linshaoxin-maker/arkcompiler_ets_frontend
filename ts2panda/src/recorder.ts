@@ -48,6 +48,7 @@ import { checkSyntaxError } from "./syntaxChecker";
 import { isGlobalIdentifier } from "./syntaxCheckHelper";
 import { VarDeclarationKind } from "./variable";
 import { TypeChecker } from "./typeChecker";
+import {isBeforeCompile} from "./base/util";
 
 export class Recorder {
     node: ts.Node;
@@ -71,6 +72,7 @@ export class Recorder {
     }
 
     record() {
+        this.setParent(this.node)
         this.setScopeMap(this.node, this.scope);
         this.recordInfo(this.node, this.scope);
         return this.node;
@@ -80,13 +82,21 @@ export class Recorder {
         return this.ClassGroupOfNoCtor;
     }
 
-    private recordInfo(node: ts.Node, scope: Scope) {
+    private setParent(node: ts.Node) {
         node.forEachChild(childNode => {
             if (childNode!.parent == undefined || childNode.parent.kind != node.kind) {
                 childNode = jshelpers.setParent(childNode, node)!;
                 // childNode = ts.setTextRange(childNode, node)!;
             }
-            checkSyntaxError(childNode);
+            this.setParent(childNode);
+        });
+    }
+
+    private recordInfo(node: ts.Node, scope: Scope) {
+        node.forEachChild(childNode => {
+            if (isBeforeCompile()) {
+                checkSyntaxError(childNode);
+            }
             switch (childNode.kind) {
                 case ts.SyntaxKind.FunctionExpression:
                 case ts.SyntaxKind.MethodDeclaration:
@@ -205,7 +215,7 @@ export class Recorder {
         let parent = this.getDeclarationNodeOfId(id);
 
         if (parent) {
-            console.log(id.getText());
+            // console.log(id.getText());
             let declKind = astutils.getVarDeclarationKind(<ts.VariableDeclaration>parent);
 
             // collect declaration information to corresponding scope

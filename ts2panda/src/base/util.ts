@@ -296,3 +296,12 @@ export function getRangeStartVregPos(ins: IRNode): number {
     }
     return ins instanceof EcmaCreateobjectwithexcludedkeys ? 2 : 1;
 }
+
+let isBeforeCompileFlag : boolean = false;
+export function isBeforeCompile():boolean {
+    return isBeforeCompileFlag;
+}
+
+export function setBeforeCompileFlag(flag: boolean){
+    isBeforeCompileFlag = flag;
+}

@@ -26,6 +26,7 @@ import { setGlobalStrict } from "./strictMode";
 import jshelpers = require("./jshelpers");
 import { TypeChecker } from "./typeChecker";
 import { TypeRecorder } from "./typeRecorder";
+import {setBeforeCompileFlag} from "./base/util";
 
 function main(fileNames: string[], options: ts.CompilerOptions) {
     let program = ts.createProgram(fileNames, options);
@@ -41,6 +42,7 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
             before: [
                 (ctx: ts.TransformationContext) => {
                     return (node: ts.SourceFile) => {
+                        setBeforeCompileFlag(true);
                         let outputBinName = getOutputBinName(node);
                         let compilerDriver = new CompilerDriver(outputBinName);
                         compilerDriver.compileForSyntaxCheck(node);
@@ -51,13 +53,15 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
             after: [
                 (ctx: ts.TransformationContext) => {
                     return (node: ts.SourceFile) => {
+                        setBeforeCompileFlag(false);
+                        let nodeBak = node;
                         if (ts.getEmitHelpers(node)) {
                             const printer: ts.Printer = ts.createPrinter({newLine:ts.NewLineKind.LineFeed});
                             const text: string = printer.printNode(ts.EmitHint.Unspecified, node, node);
                             let newNode = ts.createSourceFile(node.fileName, text, options.target!);
                             node = newNode;
                         }
-                        console.log("----------------------------------- after --------------------------------");
+                        // console.log("----------------------------------- after --------------------------------");
                         let outputBinName = getOutputBinName(node);
                         let compilerDriver = new CompilerDriver(outputBinName);
                         setGlobalStrict(jshelpers.isEffectiveStrictModeSourceFile(node, options));
@@ -72,7 +76,7 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
                         }
                         compilerDriver.compile(node);
                         compilerDriver.showStatistics();
-                        return node;
+                        return nodeBak;
                     }
                 }
             ]
@@ -128,7 +132,9 @@ function run(args: string[], options?: ts.CompilerOptions): void {
         main(parsed.fileNames, parsed.options);
     } catch (err) {
         if (err instanceof diag.DiagnosticError) {
+
             let diagnostic = diag.getDiagnostic(err.code);
+            console.log(diagnostic)
             if (diagnostic != undefined) {
                 let diagnosticLog = diag.createDiagnostic(err.file, err.irnode, diagnostic, ...err.args);
                 diag.printDiagnostic(diagnosticLog);

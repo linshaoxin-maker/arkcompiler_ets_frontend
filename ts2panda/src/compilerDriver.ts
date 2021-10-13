@@ -144,7 +144,9 @@ export class CompilerDriver {
     }
 
     compileForSyntaxCheck(node: ts.SourceFile): void {
-        this.compilePrologue(node);
+       let recorder = this.compilePrologue(node);
+       checkDuplicateDeclaration(recorder);
+       checkExportEntries(recorder);
     }
 
     compile(node: ts.SourceFile): void {
@@ -275,9 +277,7 @@ export class CompilerDriver {
 
         let recorder = new Recorder(node, topLevelScope, this);
         recorder.record();
-
-        checkDuplicateDeclaration(recorder);
-        checkExportEntries(recorder);
+  
         addVariableToScope(recorder);
         let postOrderVariableScopes = this.postOrderAnalysis(topLevelScope);
 

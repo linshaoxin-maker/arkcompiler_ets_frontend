@@ -37,7 +37,7 @@ export class TypeChecker {
                         let testClassType = new ClassType(<ts.ClassDeclaration>targetNode, nameNode);
                     }
                 }
-                // console.log(type.getSymbol()?.valueDeclaration); 
+                // // console.log(type.getSymbol()?.valueDeclaration); 
             })
         }
     }
