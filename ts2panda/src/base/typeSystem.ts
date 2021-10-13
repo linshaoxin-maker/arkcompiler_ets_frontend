@@ -211,7 +211,6 @@ export class ClassType extends BaseType {
 
     constructor(classNode: ts.ClassDeclaration, newExpressionFlag: boolean, variableNode?: ts.Node) {
         super();
-
         let currIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
         // record type before its initialization, so its index can be recorded
         // in case there's recursive reference of this type
@@ -398,19 +397,20 @@ export class ClassInstType extends BaseType {
     constructor(variableNode: ts.Node, referredClassIndex: number) {
         super();
         // use referedClassIndex to point to the actually class type of this instance
+        console.log("referredClassIndex", referredClassIndex);
         this.referredClassIndex = referredClassIndex;
 
         // map variable to classInstType, which has a newly generated index
-        let currIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
+        let currIndex = this.getIndexFromTypeArrayBuffer(this);
         this.setVariable2Type(variableNode, currIndex);
-        this.setTypeArrayBuffer(this, currIndex);
     }
 
     transfer2LiteralBuffer(): LiteralBuffer {
         let classInstBuf = new LiteralBuffer();
         let classInstLiterals: Array<Literal> = new Array<Literal>();
+
         classInstLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.CLASSINST));
-        classInstLiterals.push(new Literal(LiteralTag.INTEGER, this.referredClassIndex));
+        classInstLiterals.push(new Literal(LiteralTag.INTEGER, this.referredClassIndex + PrimitiveType._LENGTH));
         classInstBuf.addLiterals(...classInstLiterals);
 
         return classInstBuf;

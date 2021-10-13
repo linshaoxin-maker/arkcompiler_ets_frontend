@@ -54,6 +54,7 @@ export class Recorder {
     node: ts.Node;
     scope: Scope;
     compilerDriver: CompilerDriver;
+    recordType: boolean;
     private scopeMap: Map<ts.Node, Scope> = new Map<ts.Node, Scope>();
     private hoistMap: Map<Scope, Decl[]> = new Map<Scope, Decl[]>();
     private parametersMap: Map<ts.FunctionLikeDeclaration, FunctionParameter[]> = new Map<ts.FunctionLikeDeclaration, FunctionParameter[]>();
@@ -63,10 +64,11 @@ export class Recorder {
     private exportStmts: Array<ModuleStmt> = [];
     private defaultUsed: boolean = false;
 
-    constructor(node: ts.Node, scope: Scope, compilerDriver: CompilerDriver) {
+    constructor(node: ts.Node, scope: Scope, compilerDriver: CompilerDriver, recordType: boolean) {
         this.node = node;
         this.scope = scope;
         this.compilerDriver = compilerDriver;
+        this.recordType = recordType;
         this.funcNameMap = new Map<string, number>();
         this.funcNameMap.set("main", 1);
     }
@@ -177,7 +179,9 @@ export class Recorder {
                     break;
                 }
                 case ts.SyntaxKind.VariableStatement: {
-                    TypeChecker.getInstance().formatNodeType(childNode);
+                    if (this.recordType) {
+                        TypeChecker.getInstance().formatNodeType(childNode);
+                    }
                     this.recordInfo(childNode, scope);
                     break;
                 }
