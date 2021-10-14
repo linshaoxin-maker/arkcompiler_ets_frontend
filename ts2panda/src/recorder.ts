@@ -48,7 +48,6 @@ import { checkSyntaxError } from "./syntaxChecker";
 import { isGlobalIdentifier } from "./syntaxCheckHelper";
 import { VarDeclarationKind } from "./variable";
 import { TypeChecker } from "./typeChecker";
-import {isBeforeCompile} from "./base/util";
 
 export class Recorder {
     node: ts.Node;
@@ -96,7 +95,7 @@ export class Recorder {
 
     private recordInfo(node: ts.Node, scope: Scope) {
         node.forEachChild(childNode => {
-            if (isBeforeCompile()) {
+            if (!this.recordType) {
                 checkSyntaxError(childNode);
             }
             switch (childNode.kind) {

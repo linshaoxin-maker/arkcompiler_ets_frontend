@@ -397,7 +397,7 @@ export class ClassInstType extends BaseType {
     constructor(variableNode: ts.Node, referredClassIndex: number) {
         super();
         // use referedClassIndex to point to the actually class type of this instance
-        console.log("referredClassIndex", referredClassIndex);
+        // console.log("referredClassIndex", referredClassIndex);
         this.referredClassIndex = referredClassIndex;
 
         // map variable to classInstType, which has a newly generated index

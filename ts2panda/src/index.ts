@@ -26,7 +26,6 @@ import { setGlobalStrict } from "./strictMode";
 import jshelpers = require("./jshelpers");
 import { TypeChecker } from "./typeChecker";
 import { TypeRecorder } from "./typeRecorder";
-import {setBeforeCompileFlag} from "./base/util";
 
 function main(fileNames: string[], options: ts.CompilerOptions) {
     let program = ts.createProgram(fileNames, options);
@@ -42,7 +41,6 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
             before: [
                 (ctx: ts.TransformationContext) => {
                     return (node: ts.SourceFile) => {
-                        setBeforeCompileFlag(true);
                         let outputBinName = getOutputBinName(node);
                         let compilerDriver = new CompilerDriver(outputBinName);
                         compilerDriver.compileForSyntaxCheck(node);
@@ -53,7 +51,6 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
             after: [
                 (ctx: ts.TransformationContext) => {
                     return (node: ts.SourceFile) => {
-                        setBeforeCompileFlag(false);
                         let nodeBak = node;
                         if (ts.getEmitHelpers(node)) {
                             const printer: ts.Printer = ts.createPrinter({newLine:ts.NewLineKind.LineFeed});
