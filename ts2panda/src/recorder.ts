@@ -329,7 +329,7 @@ export class Recorder {
             if (!ts.isStringLiteral(node.moduleSpecifier)) {
                 throw new Error("moduleSpecifier must be a stringLiteral");
             }
-            exportStmt = new ModuleStmt(node, jshelpers.getTextOfIdentifierOrLiteral(node.moduleSpecifier));
+            exportStmt = new ModuleStmt(node, getModuleRequest(node, jshelpers.getTextOfIdentifierOrLiteral(node.moduleSpecifier)));
         } else {
             exportStmt = new ModuleStmt(node);
         }
