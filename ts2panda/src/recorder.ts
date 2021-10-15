@@ -15,7 +15,7 @@
 
 import ts from "typescript";
 import * as astutils from "./astutils";
-import { isAnonymousFunctionDefinition } from "./base/util";
+import { isAnonymousFunctionDefinition, getModuleRequest } from "./base/util";
 import { CmdOptions } from "./cmdOptions";
 import { CompilerDriver } from "./compilerDriver";
 import { DiagnosticCode, DiagnosticError } from "./diagnostic";
@@ -283,7 +283,7 @@ export class Recorder {
         if (!ts.isStringLiteral(node.moduleSpecifier)) {
             throw new Error("moduleSpecifier must be a stringLiteral");
         }
-        let moduleRequest = jshelpers.getTextOfIdentifierOrLiteral(node.moduleSpecifier);
+        let moduleRequest = getModuleRequest(node, jshelpers.getTextOfIdentifierOrLiteral(node.moduleSpecifier));
         let importStmt = new ModuleStmt(node, moduleRequest);
 
         if (node.importClause) {
@@ -329,7 +329,7 @@ export class Recorder {
             if (!ts.isStringLiteral(node.moduleSpecifier)) {
                 throw new Error("moduleSpecifier must be a stringLiteral");
             }
-            exportStmt = new ModuleStmt(node, jshelpers.getTextOfIdentifierOrLiteral(node.moduleSpecifier));
+            exportStmt = new ModuleStmt(node, getModuleRequest(node, jshelpers.getTextOfIdentifierOrLiteral(node.moduleSpecifier)));
         } else {
             exportStmt = new ModuleStmt(node);
         }

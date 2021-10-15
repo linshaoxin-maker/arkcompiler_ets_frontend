@@ -296,3 +296,13 @@ export function getRangeStartVregPos(ins: IRNode): number {
     }
     return ins instanceof EcmaCreateobjectwithexcludedkeys ? 2 : 1;
 }
+
+export function getModuleRequest(node: ts.Node, moduleSpecifier: string): string {
+    if (path.isAbsolute(moduleSpecifier)) {
+        return moduleSpecifier;
+    }
+
+    // relative path resolving
+    let currentFileName = jshelpers.getSourceFileOfNode(node).fileName;
+    return path.resolve(path.dirname(currentFileName), moduleSpecifier);
+}
