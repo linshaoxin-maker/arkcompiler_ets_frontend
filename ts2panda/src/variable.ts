@@ -49,8 +49,6 @@ export abstract class Variable {
     bindVreg(vreg: VReg) {
         this.vreg = vreg;
         this.vreg.setTypeIndex(this.typeIndex);
-        // console.log("==== bindVreg var  Name ====: ", this.name);
-        // console.log("==== bindVreg typeIndex ====: ", this.typeIndex);
     }
 
     hasAlreadyBinded(): boolean {

@@ -19,6 +19,7 @@ import {
     LiteralBuffer,
     LiteralTag
 } from "./literal";
+import { LOGD } from "../log";
 import { TypeChecker } from "../typeChecker";
 import { TypeRecorder } from "../typeRecorder";
 import { PandaGen } from "../pandagen";
@@ -41,7 +42,8 @@ export enum L2Type {
     CLASS,
     CLASSINST,
     FUNCTION,
-    OBJECT // object literal
+    OBJECT, // object literal
+    _COUNTER
 }
 
 export enum ModifierAbstract {
@@ -72,14 +74,6 @@ export abstract class BaseType {
     abstract transfer2LiteralBuffer(): LiteralBuffer;
     protected typeChecker = TypeChecker.getInstance().getTypeChecker();
     protected typeRecorder = TypeRecorder.getInstance();
-
-    protected getTypePosForIdentifier(node: ts.Node): number {
-        let identifierSymbol = this.typeChecker.getTypeAtLocation(node).symbol;
-        if (identifierSymbol && identifierSymbol.declarations) {
-            return identifierSymbol.declarations[0].pos;
-        }
-        return -1;
-    }
 
     protected getTypeNodeForIdentifier(node: ts.Node): ts.Node {
         let identifierSymbol = this.typeChecker.getTypeAtLocation(node).symbol;
@@ -117,7 +111,7 @@ export abstract class BaseType {
             }
             // create other type as project goes on;
             default:
-                console.log("Error: Currently this type is not supported");
+                LOGD("Error: Currently this type is not supported");
                 // throw new Error("Currently this type is not supported");
         }
     }
@@ -156,11 +150,11 @@ export abstract class BaseType {
                 this.setVariable2Type(variableNode, typeIndex);
             }
             if (typeIndex == -1) {
-                // console.log("ERROR: Type cannot be found for: " + jshelpers.getTextOfNode(node));
+                LOGD("ERROR: Type cannot be found for: " + jshelpers.getTextOfNode(node));
             }
             return typeIndex!;
         }
-        // console.log("WARNING: node type not found for: " + jshelpers.getTextOfNode(node));
+        LOGD("WARNING: node type not found for: " + jshelpers.getTextOfNode(node));
         return -1;
     }
 
@@ -172,11 +166,15 @@ export abstract class BaseType {
         PandaGen.setTypeArrayBuffer(type, index);
     }
 
+    protected getTypeNum() {
+        return this.typeRecorder.countTypeSet();
+    }
+
     // temp for test
 
     protected printMap(map: Map<ts.Node, number>) {
         map.forEach((value, key) => {
-            // console.log(jshelpers.getTextOfNode(key) + ": " + value);
+            console.log(jshelpers.getTextOfNode(key) + ": " + value);
         });
     }
 
@@ -197,6 +195,28 @@ export abstract class BaseType {
 export class PlaceHolderType extends BaseType {
     transfer2LiteralBuffer(): LiteralBuffer {
         return new LiteralBuffer();
+    }
+}
+
+export class typeNumCounter extends BaseType {
+    preservedIndex: number = 0;
+    constructor() {
+        super();
+        this.preservedIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
+    }
+
+    public setNumCount() {
+        this.setTypeArrayBuffer(this, this.preservedIndex);
+    }
+
+    transfer2LiteralBuffer(): LiteralBuffer {
+        let countBuf = new LiteralBuffer();
+        let countLiterals: Array<Literal> = new Array<Literal>();
+        countLiterals.push(new Literal(LiteralTag.INTEGER, L2Type._COUNTER));
+        countLiterals.push(new Literal(LiteralTag.INTEGER, TypeRecorder.getInstance().countTypeSet()));
+
+        countBuf.addLiterals(...countLiterals);
+        return countBuf;
     }
 }
 
@@ -397,7 +417,6 @@ export class ClassInstType extends BaseType {
     constructor(variableNode: ts.Node, referredClassIndex: number) {
         super();
         // use referedClassIndex to point to the actually class type of this instance
-        // console.log("referredClassIndex", referredClassIndex);
         this.referredClassIndex = referredClassIndex;
 
         // map variable to classInstType, which has a newly generated index

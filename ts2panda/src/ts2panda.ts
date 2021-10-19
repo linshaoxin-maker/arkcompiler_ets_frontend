@@ -135,10 +135,10 @@ export class Ts2Panda {
 
     static dumpConstantPool(ts2abc: any): void {
         let literalArrays = PandaGen.getLiteralArrayBuffer();
-        // console.log("-=-=-=-length=-=-=-=-=-=");
-        for (let e of PandaGen.getLiteralArrayBuffer()) {
-            // console.log(JSON.parse(JSON.stringify(e)));
-        }
+        // console.log("-=-=-=- LiteralArrayBuffer =-=-=-=-=-=");
+        // for (let e of PandaGen.getLiteralArrayBuffer()) {
+        //     console.log(JSON.parse(JSON.stringify(e)));
+        // }
 
         if (CmdOptions.isEnableDebugLog()) {
             Ts2Panda.jsonString += escapeUnicode(JSON.stringify(literalArrays, null, 2));

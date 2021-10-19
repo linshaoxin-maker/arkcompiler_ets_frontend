@@ -48,6 +48,7 @@ import { checkSyntaxError } from "./syntaxChecker";
 import { isGlobalIdentifier } from "./syntaxCheckHelper";
 import { VarDeclarationKind } from "./variable";
 import { TypeChecker } from "./typeChecker";
+import { TypeRecorder } from "./typeRecorder";
 
 export class Recorder {
     node: ts.Node;

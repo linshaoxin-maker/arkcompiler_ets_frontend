@@ -43,6 +43,7 @@ import {
 import { getClassNameForConstructor } from "./statement/classStatement";
 import { checkDuplicateDeclaration, checkExportEntries } from "./syntaxChecker";
 import { Ts2Panda } from "./ts2panda";
+import { TypeRecorder } from "./typeRecorder";
 
 export class PendingCompilationUnit {
     constructor(
@@ -162,6 +163,7 @@ export class CompilerDriver {
         }
 
         let recorder = this.compilePrologue(node, true);
+        TypeRecorder.getInstance().getTypeCounter().setNumCount();
 
         // initiate ts2abc
         if (!CmdOptions.isAssemblyMode()) {
