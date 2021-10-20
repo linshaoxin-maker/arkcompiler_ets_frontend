@@ -72,21 +72,8 @@ type ClassMemberFunction = ts.MethodDeclaration | ts.ConstructorDeclaration | ts
 export abstract class BaseType {
 
     abstract transfer2LiteralBuffer(): LiteralBuffer;
-    protected typeChecker = TypeChecker.getInstance().getTypeChecker();
+    protected typeChecker = TypeChecker.getInstance();
     protected typeRecorder = TypeRecorder.getInstance();
-
-    protected getTypeNodeForIdentifier(node: ts.Node): ts.Node {
-        let identifierSymbol = this.typeChecker.getTypeAtLocation(node).symbol;
-        if (identifierSymbol && identifierSymbol.declarations) {
-            return identifierSymbol!.declarations[0];
-        }
-        return node;
-    }
-
-    protected getTypeFlagsForIdentifier(node: ts.Node): string {
-        let typeFlag = this.typeChecker.getTypeAtLocation(node).getFlags();
-        return ts.TypeFlags[typeFlag].toUpperCase();
-    }
 
     protected addCurrentType(node: ts.Node, index: number) {
         this.typeRecorder.addType2Index(node, index);
@@ -117,10 +104,9 @@ export abstract class BaseType {
     }
 
     protected getOrCreateUserDefinedType(node: ts.Node, newExpressionFlag: boolean, variableNode?: ts.Node) {
-        let typeNode = this.getTypeNodeForIdentifier(node);
+        let typeNode = this.typeChecker.getTypeDeclAtLocation(node);
         let typeIndex = this.typeRecorder.tryGetTypeIndex(typeNode);
         if (typeIndex == -1) {
-            let typeNode = this.getTypeNodeForIdentifier(node);
             this.createType(typeNode, newExpressionFlag, variableNode);
             typeIndex = this.typeRecorder.tryGetTypeIndex(typeNode);
         }
@@ -137,7 +123,7 @@ export abstract class BaseType {
             }
             // get typeFlag to check if its a primitive type
             let typeRef = node.type;
-            let typeFlagName = this.getTypeFlagsForIdentifier(typeRef);
+            let typeFlagName = this.typeChecker.getTypeFlagsAtLocation(typeRef);
             let typeIndex = -1;
             if (typeFlagName in PrimitiveType) {
                 typeIndex = PrimitiveType[typeFlagName as keyof typeof PrimitiveType];
@@ -273,9 +259,11 @@ export class ClassType extends BaseType {
     private fillInHeritages(node: ts.ClassDeclaration) {
         if (node.heritageClauses) {
             for (let heritage of node.heritageClauses) {
-                let heritageIdentifier = heritage.getChildAt(1).getChildAt(0);
-                let heritageTypePos = this.getOrCreateUserDefinedType(heritageIdentifier, false);
-                this.heritages.push(heritageTypePos);
+                for (let heritageType of heritage.types) {
+                    let heritageIdentifier = heritageType.expression;
+                    let heritageTypeIndex = this.getOrCreateUserDefinedType(heritageIdentifier, false);
+                    this.heritages.push(heritageTypeIndex);
+                }
             }
         }
     }
