@@ -23,9 +23,10 @@ import { CacheExpander } from "./pass/cacheExpander";
 import { ICPass } from "./pass/ICPass";
 import { RegAlloc } from "./regAllocator";
 import { setGlobalStrict } from "./strictMode";
-import jshelpers = require("./jshelpers");
 import { TypeChecker } from "./typeChecker";
 import { TypeRecorder } from "./typeRecorder";
+import jshelpers = require("./jshelpers");
+import path = require("path");
 
 function main(fileNames: string[], options: ts.CompilerOptions) {
     let program = ts.createProgram(fileNames, options);
@@ -51,9 +52,8 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
             after: [
                 (ctx: ts.TransformationContext) => {
                     return (node: ts.SourceFile) => {
-                        let nodeBak = node;
                         if (ts.getEmitHelpers(node)) {
-                            const printer: ts.Printer = ts.createPrinter({newLine:ts.NewLineKind.LineFeed});
+                            const printer: ts.Printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
                             const text: string = printer.printNode(ts.EmitHint.Unspecified, node, node);
                             let newNode = ts.createSourceFile(node.fileName, text, options.target!);
                             node = newNode;
@@ -72,7 +72,7 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
                         }
                         compilerDriver.compile(node);
                         compilerDriver.showStatistics();
-                        return nodeBak;
+                        return node;
                     }
                 }
             ]
@@ -91,7 +91,13 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
 function getOutputBinName(node: ts.SourceFile) {
     let outputBinName = CmdOptions.getOutputBinName();
     let fileName = node.fileName.substring(0, node.fileName.lastIndexOf('.'));
-    if (fileName != CmdOptions.getInputFileName()) {
+    let inputFileName = CmdOptions.getInputFileName();
+    if (/^win/.test(require('os').platform())) {
+        var inputFileTmps = inputFileName.split(path.sep);
+        inputFileName = path.posix.join(...inputFileTmps);
+    }
+
+    if (fileName != inputFileName) {
         outputBinName = fileName + ".abc";
     }
     return outputBinName;
@@ -128,7 +134,6 @@ function run(args: string[], options?: ts.CompilerOptions): void {
         main(parsed.fileNames, parsed.options);
     } catch (err) {
         if (err instanceof diag.DiagnosticError) {
-
             let diagnostic = diag.getDiagnostic(err.code);
             if (diagnostic != undefined) {
                 let diagnosticLog = diag.createDiagnostic(err.file, err.irnode, diagnostic, ...err.args);

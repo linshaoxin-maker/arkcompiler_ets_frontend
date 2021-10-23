@@ -4,7 +4,7 @@ import { ClassType } from "./base/typeSystem";
 export class TypeChecker {
     private static instance: TypeChecker;
     private compiledTypeChecker: any = null;
-    private constructor() {}
+    private constructor() { }
 
     public static getInstance(): TypeChecker {
         if (!TypeChecker.instance) {
@@ -17,13 +17,13 @@ export class TypeChecker {
         this.compiledTypeChecker = typeChecker;
     }
 
-    public getTypeChecker() : ts.TypeChecker {
+    public getTypeChecker(): ts.TypeChecker {
         return this.compiledTypeChecker;
     }
 
     public formatNodeType(node: ts.Node) {
         if (this.compiledTypeChecker === null) {
-            return ;
+            return;
         }
         if (node.kind === ts.SyntaxKind.VariableStatement) {
             const variableStatementNode = <ts.VariableStatement>node;
@@ -34,8 +34,8 @@ export class TypeChecker {
                 if (declaration.initializer && declaration.initializer.kind == ts.SyntaxKind.NewExpression) {
                     newExpressionFlag = true;
                 }
-                let type: ts.Type = this.compiledTypeChecker.getTypeAtLocation(nameNode);
-                let targetNode = type.getSymbol()?.valueDeclaration;
+                let symbol: ts.Symbol = this.compiledTypeChecker.getSymbolAtLocation(nameNode);
+                let targetNode = symbol?.valueDeclaration;
                 if (targetNode) {
                     if (ts.isClassDeclaration(targetNode!)) {
                         let testClassType = new ClassType(<ts.ClassDeclaration>targetNode, newExpressionFlag, nameNode);
