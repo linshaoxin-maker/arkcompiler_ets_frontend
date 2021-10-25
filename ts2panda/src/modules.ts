@@ -16,10 +16,9 @@
 import * as ts from "typescript";
 import { PandaGen } from "./pandagen";
 import jshelpers from "./jshelpers";
-import { LocalVariable, ModuleVariable } from "./variable";
+import { LocalVariable } from "./variable";
 import { DiagnosticCode, DiagnosticError } from "./diagnostic";
 import { ModuleScope } from "./scope";
-import { Compiler } from "./compiler";
 
 export class ModuleStmt {
     private node: ts.Node
@@ -69,23 +68,26 @@ export class ModuleStmt {
     }
 }
 
-export function setImport(importStmts: Array<ModuleStmt>, moduleScope: ModuleScope, pandagen: PandaGen, compiler: Compiler) {
+export function setImport(importStmts: Array<ModuleStmt>, moduleScope: ModuleScope, pandagen: PandaGen) {
     importStmts.forEach((importStmt) => {
         pandagen.importModule(importStmt.getNode(), importStmt.getModuleRequest());
-        let moduleReg = pandagen.allocLocalVreg();
-        pandagen.storeAccumulator(importStmt.getNode(), moduleReg);
-
+        // import * as xxx from "a.js"
         if (importStmt.getNameSpace()) {
             let v = moduleScope.findLocal(importStmt.getNameSpace())!;
-            pandagen.storeAccToLexEnv(importStmt.getNode(), moduleScope, 0, v, true);
+            pandagen.stConstToGlobalRecord(importStmt.getNode(), v.getName());
             (<LocalVariable>v).initialize();
         }
 
+        // import { ... } from "a.js"
+        // import defaultExport, * as a from "a.js"
+        let moduleReg = pandagen.allocLocalVreg();
+        pandagen.storeAccumulator(importStmt.getNode(), moduleReg);
+
         let bindingNameMap = importStmt.getBindingNameMap();
         bindingNameMap.forEach((value: string, key: string) => {
-            let v = <ModuleVariable>moduleScope.findLocal(key)!;
-            v.bindModuleVreg(moduleReg);
-            v.setExoticName(value);
+            let v = <LocalVariable>moduleScope.findLocal(key)!;
+            pandagen.loadObjProperty(importStmt.getNode(), moduleReg, value);
+            pandagen.stConstToGlobalRecord(importStmt.getNode(), v.getName());
         });
     })
 }
@@ -118,13 +120,8 @@ export function setExportBinding(exportStmts: Array<ModuleStmt>, moduleScope: Mo
                     throw new DiagnosticError(exportStmt.getNode(), DiagnosticCode.Cannot_export_0_Only_local_declarations_can_be_exported_from_a_module, jshelpers.getSourceFileOfNode(exportStmt.getNode()), [value]);
                 }
 
-                if (v instanceof ModuleVariable) {
-                    //pandagen.loadModuleVariable(exportStmt.getNode(), v.getModule(), v.getName());
-                    pandagen.storeModuleVar(exportStmt.getNode(), key);
-                } else {
-                    (<LocalVariable>v).setExport();
-                    (<LocalVariable>v).setExportedName(key);
-                }
+                (<LocalVariable>v).setExport();
+                (<LocalVariable>v).setExportedName(key);
             });
         }
     })
