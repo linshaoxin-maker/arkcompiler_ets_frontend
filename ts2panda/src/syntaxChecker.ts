@@ -21,7 +21,7 @@ import {
 } from "./diagnostic";
 import { hasExportKeywordModifier } from "./base/util";
 import { findInnerExprOfParenthesis } from "./expression/parenthesizedExpression";
-import jshelpers, { getContainingFunction, getSourceFileOfNode } from "./jshelpers";
+import jshelpers, { getContainingFunction, getContainingFunctionDeclaration, getSourceFileOfNode } from "./jshelpers";
 import { LOGE } from "./log";
 import { Recorder } from "./recorder";
 import {
@@ -73,7 +73,7 @@ export function checkDuplicateDeclaration(recorder: Recorder) {
         }
 
         // implement catchParameter-related duplicate-entry check
-        if ((node.kind == ts.SyntaxKind.Block) && (node.parent.kind == ts.SyntaxKind.CatchClause)) {
+        if ((node.kind == ts.SyntaxKind.Block) && (node.parent != undefined && node.parent.kind == ts.SyntaxKind.CatchClause)) {
             let catchScope = <Scope>scopeMap.get(node.parent);
             checkDuplicateInCatch(scope, catchScope);
         }
@@ -355,12 +355,11 @@ function checkMetaProperty(node: ts.MetaProperty) {
             if (!getContainingFunction(node)) {
                 throw new DiagnosticError(node, DiagnosticCode.Meta_property_0_is_only_allowed_in_the_body_of_a_function_declaration_function_expression_or_constructor, file, args);
             } else {
-                let func = getContainingFunction(node);
-                while (getContainingFunction(func)) {
-                    func = getContainingFunction(func);
+                let func = getContainingFunctionDeclaration(node);
+                while (getContainingFunctionDeclaration(func!)) {
+                    func = getContainingFunctionDeclaration(func!);
                 }
-
-                if (ts.isArrowFunction(func)) {
+                if (func && ts.isArrowFunction(func)) {
                     throw new DiagnosticError(node, DiagnosticCode.Meta_property_0_is_only_allowed_in_the_body_of_a_function_declaration_function_expression_or_constructor, file, args);
                 }
             }
@@ -516,7 +515,7 @@ function checkModifiers(node: ts.Node) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_must_precede_1_modifier, file, [text, "readonly"]);
                 } else if (flags & ts.ModifierFlags.Async) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_must_precede_1_modifier, file, [text, "async"]);
-                } else if (ts.isModuleBlock(node.parent) || ts.isSourceFile(node.parent)) {
+                } else if (node.parent && (ts.isModuleBlock(node.parent) || ts.isSourceFile(node.parent))) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_a_module_or_namespace_element, file, [text]);
                 } else if (flags & ts.ModifierFlags.Abstract) {
                     if (modifier.kind === ts.SyntaxKind.PrivateKeyword) {
@@ -537,7 +536,7 @@ function checkModifiers(node: ts.Node) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_must_precede_1_modifier, file, ["static", "readonly"]);
                 } else if (flags & ts.ModifierFlags.Async) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_must_precede_1_modifier, file, ["static", "async"]);
-                } else if (ts.isModuleBlock(node.parent) || ts.isSourceFile(node.parent)) {
+                } else if (node.parent && (ts.isModuleBlock(node.parent) || ts.isSourceFile(node.parent))) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_a_module_or_namespace_element, file, ["static"]);
                 } else if (ts.isParameter(node)) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_a_parameter, file, ["static"]);
@@ -570,7 +569,7 @@ function checkModifiers(node: ts.Node) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_must_precede_1_modifier, file, ["export", "abstract"]);
                 } else if (flags & ts.ModifierFlags.Async) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_must_precede_1_modifier, file, ["export", "async"]);
-                } else if (ts.isClassLike(node.parent)) {
+                } else if (node.parent && ts.isClassLike(node.parent)) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_class_elements_of_this_kind, file, ["export"]);
                 } else if (ts.isParameter(node)) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_a_parameter, file, ["export"]);
@@ -592,7 +591,7 @@ function checkModifiers(node: ts.Node) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_already_seen, file, ["declare"]);
                 } else if (flags & ts.ModifierFlags.Async) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_be_used_in_an_ambient_context, file, ["async"]);
-                } else if (ts.isClassLike(node.parent) && !ts.isPropertyDeclaration(node)) {
+                } else if (node.parent && ts.isClassLike(node.parent) && !ts.isPropertyDeclaration(node)) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_class_elements_of_this_kind, file, ["declare"]);
                 } else if (ts.isParameter(node)) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_a_parameter, file, ["declare"]);
@@ -1051,7 +1050,7 @@ function getPropertieDeclaration(node: ts.Node, name: ts.Node) {
 
 function checkDisallowedTrailingComma(list: ts.NodeArray<ts.Node> | undefined) {
     if (list && list.hasTrailingComma) {
-        let file = jshelpers.getSourceFileOfNode(list);
+        let file = jshelpers.getSourceFileOfNode(list[0]);
         throw new DiagnosticError(list[0], DiagnosticCode.A_rest_parameter_or_binding_pattern_may_not_have_a_trailing_comma, file);
     }
 }
@@ -1059,10 +1058,10 @@ function checkDisallowedTrailingComma(list: ts.NodeArray<ts.Node> | undefined) {
 function checkParameters(parameters: ts.NodeArray<ts.ParameterDeclaration>) {
     let count = parameters.length;
     let optionalParameter = false;
-    let file = jshelpers.getSourceFileOfNode(parameters);
 
     for (let i = 0; i < count; i++) {
         let parameter = parameters[i];
+        let file = jshelpers.getSourceFileOfNode(parameter);
         if (parameter.dotDotDotToken) {
             if (i != count - 1) {
                 throw new DiagnosticError(parameter.dotDotDotToken, DiagnosticCode.A_rest_parameter_must_be_last_in_a_parameter_list, file);
@@ -1205,6 +1204,12 @@ function checkRegularExpression(regexp: ts.RegularExpressionLiteral) {
     new regexpParse().parseLiteral(regexpText);
 }
 
+function checkThrowStatement(node: ts.ThrowStatement) {
+    if (ts.isIdentifier(node.expression) && (<ts.Identifier>node.expression).text === '') {
+        throw new DiagnosticError(node, DiagnosticCode.Line_break_not_permitted_here, jshelpers.getSourceFileOfNode(node));
+    }
+}
+
 function checkSyntaxErrorForSloppyAndStrictMode(node: ts.Node) {
     switch (node.kind) {
         case ts.SyntaxKind.BreakStatement:
@@ -1269,6 +1274,9 @@ function checkSyntaxErrorForSloppyAndStrictMode(node: ts.Node) {
             break;
         case ts.SyntaxKind.RegularExpressionLiteral:
             checkRegularExpression(<ts.RegularExpressionLiteral>node);
+            break;
+        case ts.SyntaxKind.ThrowStatement:
+            checkThrowStatement(<ts.ThrowStatement>node);
             break;
         default:
             break;

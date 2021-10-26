@@ -143,6 +143,12 @@ export class CompilerDriver {
         return spArray.reverse();
     }
 
+    compileForSyntaxCheck(node: ts.SourceFile): void {
+       let recorder = this.compilePrologue(node, false);
+       checkDuplicateDeclaration(recorder);
+       checkExportEntries(recorder);
+    }
+
     compile(node: ts.SourceFile): void {
         if (CmdOptions.showASTStatistics()) {
             let statics: number[] = new Array(ts.SyntaxKind.Count).fill(0);
@@ -155,7 +161,7 @@ export class CompilerDriver {
             });
         }
 
-        let recorder = this.compilePrologue(node);
+        let recorder = this.compilePrologue(node, true);
 
         // initiate ts2abc
         if (!CmdOptions.isAssemblyMode()) {
@@ -206,7 +212,7 @@ export class CompilerDriver {
         let compiler = new Compiler(node, pandaGen, this, recorder);
 
         if (CmdOptions.isModules() && ts.isSourceFile(node) && scope instanceof ModuleScope) {
-            setImport(recorder.getImportStmts(), scope, pandaGen, compiler);
+            setImport(recorder.getImportStmts(), scope, pandaGen);
             setExportBinding(recorder.getExportStmts(), scope, pandaGen);
         }
 
@@ -233,7 +239,7 @@ export class CompilerDriver {
     }
 
     compileUnitTest(node: ts.SourceFile): void {
-        let recorder = this.compilePrologue(node);
+        let recorder = this.compilePrologue(node, true);
 
         for (let i = 0; i < this.pendingCompilationUnits.length; i++) {
             let unit: PendingCompilationUnit = this.pendingCompilationUnits[i];
@@ -249,7 +255,7 @@ export class CompilerDriver {
         let compiler = new Compiler(node, pandaGen, this, recorder);
 
         if (CmdOptions.isModules() && ts.isSourceFile(node) && scope instanceof ModuleScope) {
-            setImport(recorder.getImportStmts(), scope, pandaGen, compiler);
+            setImport(recorder.getImportStmts(), scope, pandaGen);
             setExportBinding(recorder.getExportStmts(), scope, pandaGen);
         }
 
@@ -261,7 +267,7 @@ export class CompilerDriver {
         this.compilationUnits.push(pandaGen);
     }
 
-    private compilePrologue(node: ts.SourceFile) {
+    private compilePrologue(node: ts.SourceFile, recordType: boolean) {
         let topLevelScope: GlobalScope | ModuleScope;
         if (CmdOptions.isModules()) {
             topLevelScope = new ModuleScope(node);
@@ -269,11 +275,9 @@ export class CompilerDriver {
             topLevelScope = new GlobalScope(node);
         }
 
-        let recorder = new Recorder(node, topLevelScope, this);
+        let recorder = new Recorder(node, topLevelScope, this, recordType);
         recorder.record();
-
-        checkDuplicateDeclaration(recorder);
-        checkExportEntries(recorder);
+  
         addVariableToScope(recorder);
         let postOrderVariableScopes = this.postOrderAnalysis(topLevelScope);
 

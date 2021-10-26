@@ -33,6 +33,7 @@ export enum VarDeclarationKind {
 export abstract class Variable {
     private vreg: VReg | undefined;
     private name: string;
+    private typeIndex: number;
     isLexVar: boolean = false;
     idxLex: number = 0;
     constructor(
@@ -42,10 +43,14 @@ export abstract class Variable {
         this.name = name;
         this.vreg = undefined;
         this.name = name;
+        this.typeIndex = 77;
     }
 
     bindVreg(vreg: VReg) {
         this.vreg = vreg;
+        this.vreg.setTypeIndex(this.typeIndex);
+        // console.log("==== bindVreg var  Name ====: ", this.name);
+        // console.log("==== bindVreg typeIndex ====: ", this.typeIndex);
     }
 
     hasAlreadyBinded(): boolean {
@@ -61,6 +66,14 @@ export abstract class Variable {
 
     getName() {
         return this.name;
+    }
+
+    getTypeIndex() {
+        return this.typeIndex;
+    }
+
+    setTypeIndex(typeIndex: number) {
+        return this.typeIndex = typeIndex;
     }
 
     setLexVar(scope: VariableScope | LoopScope) {
@@ -137,37 +150,6 @@ export class LocalVariable extends Variable {
             throw new Error("Exported Variable " + this.getName() + " doesn't have exported name");
         }
         return this.exportedName;
-    }
-}
-
-export class ModuleVariable extends LocalVariable {
-    private module: VReg | undefined;
-    private exoticName: string = "";
-
-    constructor(declKind: VarDeclarationKind, name: string, status: InitStatus) {
-        super(declKind, name, status);
-    }
-
-    bindModuleVreg(vreg: VReg) {
-        this.module = vreg;
-    }
-
-    setExoticName(exoticName: string) {
-        this.exoticName = exoticName;
-    }
-
-    getExoticName() {
-        if (this.exoticName == "") {
-            throw new Error("Variable doesn't have exotic name");
-        }
-        return this.exoticName;
-    }
-
-    getModule() {
-        if (!this.module) {
-            throw new Error("Variable's module has not been binded");
-        }
-        return this.module;
     }
 }
 

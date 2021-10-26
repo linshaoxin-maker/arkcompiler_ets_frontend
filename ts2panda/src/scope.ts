@@ -19,7 +19,6 @@ import { LOGD, LOGE } from "./log";
 import {
     GlobalVariable,
     LocalVariable,
-    ModuleVariable,
     VarDeclarationKind,
     Variable
 } from "./variable";
@@ -52,12 +51,6 @@ export class LetDecl extends Decl {
 export class ConstDecl extends Decl {
     constructor(constName: string, node: ts.Node) {
         super(constName, node);
-    }
-}
-
-export class ModDecl extends Decl {
-    constructor(localName: string, node: ts.Node) {
-        super(localName, node);
     }
 }
 
@@ -392,9 +385,6 @@ export class ModuleScope extends VariableScope {
             this.globals.push(v);
         } else if (declKind == VarDeclarationKind.VAR || declKind == VarDeclarationKind.FUNCTION) {
             v = new LocalVariable(declKind, name);
-            this.locals.push(v);
-        } else if (declKind == VarDeclarationKind.MODULE) {
-            v = new ModuleVariable(VarDeclarationKind.CONST, name, InitStatus.INITIALIZED);
             this.locals.push(v);
         } else {
             v = new LocalVariable(declKind, name, status);
