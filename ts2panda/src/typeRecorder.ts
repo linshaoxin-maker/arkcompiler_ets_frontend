@@ -24,7 +24,7 @@ export class TypeRecorder {
     private static instance: TypeRecorder;
     private type2Index: Map<ts.Node, number> = new Map<ts.Node, number>();
     private variable2Type: Map<ts.Node, number> = new Map<ts.Node, number>();
-    private typeSet: Set<number> = new Set<number>();;
+    private userDefinedTypeSet: Set<number> = new Set<number>();;
     private typeCounter: typeNumCounter = new typeNumCounter();
 
     private constructor() {}
@@ -43,11 +43,11 @@ export class TypeRecorder {
     }
 
     public addTypeSet(index: number) {
-        this.typeSet.add(index);
+        this.userDefinedTypeSet.add(index);
     }
 
     public countTypeSet(): number {
-        return this.typeSet.size;
+        return this.userDefinedTypeSet.size;
     }
 
     public addType2Index(typeNode: ts.Node, index: number) {
@@ -55,9 +55,11 @@ export class TypeRecorder {
         this.addTypeSet(index);
     }
 
-    public setVariable2Type(variableNode: ts.Node, index: number) {
+    public setVariable2Type(variableNode: ts.Node, index: number, isUserDefinedType: boolean) {
         this.variable2Type.set(variableNode, index);
-        this.addTypeSet(index);
+        if (isUserDefinedType) {
+            this.addTypeSet(index);
+        }
     }
 
     public hasType(typeNode: ts.Node): boolean {
@@ -87,5 +89,9 @@ export class TypeRecorder {
 
     public getVariable2Type(): Map<ts.Node, number> {
         return this.variable2Type;
+    }
+
+    public getTypeSet() {
+        return this.userDefinedTypeSet;
     }
 }

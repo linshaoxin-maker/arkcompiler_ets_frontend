@@ -79,8 +79,8 @@ export abstract class BaseType {
         this.typeRecorder.addType2Index(node, index);
     }
 
-    protected setVariable2Type(variableNode: ts.Node, index: number) {
-        this.typeRecorder.setVariable2Type(variableNode, index);
+    protected setVariable2Type(variableNode: ts.Node, index: number, isUserDefinedType: boolean) {
+        this.typeRecorder.setVariable2Type(variableNode, index, isUserDefinedType);
     }
 
     protected createType(node: ts.Node, newExpressionFlag: boolean, variableNode?: ts.Node) {
@@ -125,15 +125,17 @@ export abstract class BaseType {
             let typeRef = node.type;
             let typeFlagName = this.typeChecker.getTypeFlagsAtLocation(typeRef);
             let typeIndex = -1;
+            let isUserDefinedType = false;
             if (typeFlagName in PrimitiveType) {
                 typeIndex = PrimitiveType[typeFlagName as keyof typeof PrimitiveType];
             } else {
                 let identifier = typeRef.getChildAt(0);
                 typeIndex = this.getOrCreateUserDefinedType(identifier, newExpressionFlag, variableNode);
+                isUserDefinedType = true;
             }
             // set variable if variable node is given;
             if (variableNode) {
-                this.setVariable2Type(variableNode, typeIndex);
+                this.setVariable2Type(variableNode, typeIndex, isUserDefinedType);
             }
             if (typeIndex == -1) {
                 LOGD("ERROR: Type cannot be found for: " + jshelpers.getTextOfNode(node));
@@ -169,12 +171,14 @@ export abstract class BaseType {
         // console.log(jshelpers.getTextOfNode(node));
         // console.log("=========== currIndex ===========: ", currIndex);
         // console.log(PandaGen.getLiteralArrayBuffer()[currIndex]);
-        // console.log("==============================");
-        // console.log("type2Index: ");
-        // console.log(this.printMap(this.typeRecorder.getType2Index()));
-        // console.log("variable2Type: ");
-        // console.log(this.printMap(this.typeRecorder.getVariable2Type()));
-        // console.log("==============================");
+        console.log("==============================");
+        console.log("type2Index: ");
+        console.log(this.printMap(this.typeRecorder.getType2Index()));
+        console.log("variable2Type: ");
+        console.log(this.printMap(this.typeRecorder.getVariable2Type()));
+        console.log("getTypeSet: ");
+        console.log(this.typeRecorder.getTypeSet());
+        console.log("==============================");
     }
 }
 
@@ -232,7 +236,7 @@ export class ClassType extends BaseType {
             if (newExpressionFlag) {
                 new ClassInstType(variableNode, currIndex);
             } else {
-                this.setVariable2Type(variableNode, currIndex);
+                this.setVariable2Type(variableNode, currIndex, true);
             }
         }
         this.setTypeArrayBuffer(this, currIndex);
@@ -409,7 +413,7 @@ export class ClassInstType extends BaseType {
 
         // map variable to classInstType, which has a newly generated index
         let currIndex = this.getIndexFromTypeArrayBuffer(this);
-        this.setVariable2Type(variableNode, currIndex);
+        this.setVariable2Type(variableNode, currIndex, true);
     }
 
     transfer2LiteralBuffer(): LiteralBuffer {
@@ -450,7 +454,7 @@ export class FunctionType extends BaseType {
 
         // initialization finished, add variable to type if variable is given
         if (variableNode) {
-            this.setVariable2Type(variableNode, currIndex);
+            this.setVariable2Type(variableNode, currIndex, true);
         }
         this.setTypeArrayBuffer(this, currIndex);
 
