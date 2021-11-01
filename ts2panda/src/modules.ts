@@ -74,7 +74,7 @@ export function setImport(importStmts: Array<ModuleStmt>, moduleScope: ModuleSco
         // import * as xxx from "a.js"
         if (importStmt.getNameSpace()) {
             let v = moduleScope.findLocal(importStmt.getNameSpace())!;
-            pandagen.stConstToGlobalRecord(importStmt.getNode(), v.getName());
+            pandagen.storeAccToLexEnv(importStmt.getNode(), moduleScope, 0, v, true);
             (<LocalVariable>v).initialize();
         }
 
