@@ -1354,32 +1354,21 @@ export class Compiler {
         variable: { scope: Scope | undefined, level: number, v: Variable | undefined },
         isDeclaration: boolean) {
         if (variable.v instanceof LocalVariable) {
-            if (isDeclaration) {
-                if (variable.v.isLetOrConst()) {
-                    variable.v.initialize();
-                    if (variable.scope instanceof GlobalScope || variable.scope instanceof ModuleScope) {
-                        if (variable.v.isLet()) {
-                            this.pandaGen.stLetToGlobalRecord(node, variable.v.getName());
-                        } else {
-                            this.pandaGen.stConstToGlobalRecord(node, variable.v.getName());
-                        }
-
-                        if (variable.v.isExportVar()) {
-                            this.pandaGen.storeModuleVar(node, variable.v.getExportedName());
-                        }
-                        return;
-                    }
-                }
-            }
-
-            if (variable.v.isLetOrConst()) {
-                if (variable.scope instanceof GlobalScope || variable.scope instanceof ModuleScope) {
-                    this.pandaGen.tryStoreGlobalByName(node, variable.v.getName());
-                    if (variable.v.isExportVar()) {
-                        this.pandaGen.storeModuleVar(node, variable.v.getExportedName());
+            if (isDeclaration && variable.v.isLetOrConst()) {
+                variable.v.initialize();
+                if (variable.scope instanceof GlobalScope) {
+                    if (variable.v.isLet()) {
+                        this.pandaGen.stLetToGlobalRecord(node, variable.v.getName());
+                    } else {
+                        this.pandaGen.stConstToGlobalRecord(node, variable.v.getName());
                     }
                     return;
                 }
+            }
+
+            if (variable.v.isLetOrConst() && variable.scope instanceof GlobalScope) {
+                this.pandaGen.tryStoreGlobalByName(node, variable.v.getName());
+                return;
             }
 
             if (variable.scope && variable.level >= 0) { // inner most function will load outer env instead of new a lex env
@@ -1413,7 +1402,7 @@ export class Compiler {
     loadTarget(node: ts.Node, variable: { scope: Scope | undefined, level: number, v: Variable | undefined }) {
          if (variable.v instanceof LocalVariable) {
             if (variable.v.isLetOrConst() || variable.v.isClass()) {
-                if (variable.scope instanceof GlobalScope || variable.scope instanceof ModuleScope) {
+                if (variable.scope instanceof GlobalScope) {
                     this.pandaGen.tryLoadGlobalByName(node, variable.v.getName());
                     return;
                 }

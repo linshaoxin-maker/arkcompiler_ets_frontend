@@ -87,7 +87,8 @@ export function setImport(importStmts: Array<ModuleStmt>, moduleScope: ModuleSco
         bindingNameMap.forEach((value: string, key: string) => {
             let v = <LocalVariable>moduleScope.findLocal(key)!;
             pandagen.loadObjProperty(importStmt.getNode(), moduleReg, value);
-            pandagen.stConstToGlobalRecord(importStmt.getNode(), v.getName());
+            pandagen.storeAccToLexEnv(importStmt.getNode(), moduleScope, 0, v, true);
+            (<LocalVariable>v).initialize();
         });
     })
 }
