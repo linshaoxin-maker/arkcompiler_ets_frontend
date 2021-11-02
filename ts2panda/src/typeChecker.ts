@@ -21,6 +21,19 @@ export class TypeChecker {
         return this.compiledTypeChecker;
     }
 
+    public getTypeDeclAtLocation(node: ts.Node): ts.Node {
+        let identifierSymbol = this.compiledTypeChecker.getSymbolAtLocation(node);
+        if (identifierSymbol && identifierSymbol.declarations) {
+            return identifierSymbol!.declarations[0];
+        }
+        return node;
+    }
+
+    public getTypeFlagsAtLocation(node: ts.Node): string {
+        let typeFlag = this.compiledTypeChecker.getTypeAtLocation(node).getFlags();
+        return ts.TypeFlags[typeFlag].toUpperCase();
+    }
+
     public formatNodeType(node: ts.Node) {
         if (this.compiledTypeChecker === null) {
             return;

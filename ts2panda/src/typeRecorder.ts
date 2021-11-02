@@ -16,31 +16,50 @@
 import ts from "typescript";
 import {
     BaseType,
-    PrimitiveType
+    PrimitiveType,
+    typeNumCounter
 } from "./base/typeSystem";
 
 export class TypeRecorder {
     private static instance: TypeRecorder;
     private type2Index: Map<ts.Node, number> = new Map<ts.Node, number>();
-    private typeInfo: Array<BaseType> = new Array<BaseType>();
     private variable2Type: Map<ts.Node, number> = new Map<ts.Node, number>();
+    private userDefinedTypeSet: Set<number> = new Set<number>();;
+    private typeCounter: typeNumCounter = new typeNumCounter();
 
     private constructor() {}
 
-    public static getInstance() {
+    public static getInstance(): TypeRecorder {
         return TypeRecorder.instance;
     }
 
-    public static createInstance() {
+    public static createInstance(): TypeRecorder{
         TypeRecorder.instance = new TypeRecorder();
+        return TypeRecorder.instance;
+    }
+
+    public getTypeCounter(): typeNumCounter {
+        return this.typeCounter;
+    }
+
+    public addTypeSet(index: number) {
+        this.userDefinedTypeSet.add(index);
+    }
+
+    public countTypeSet(): number {
+        return this.userDefinedTypeSet.size;
     }
 
     public addType2Index(typeNode: ts.Node, index: number) {
         this.type2Index.set(typeNode, index);
+        this.addTypeSet(index);
     }
 
-    public setVariable2Type(variableNode: ts.Node, index: number) {
+    public setVariable2Type(variableNode: ts.Node, index: number, isUserDefinedType: boolean) {
         this.variable2Type.set(variableNode, index);
+        if (isUserDefinedType) {
+            this.addTypeSet(index);
+        }
     }
 
     public hasType(typeNode: ts.Node): boolean {
@@ -63,16 +82,16 @@ export class TypeRecorder {
         }
     }
 
-    // might not needed
+    // for log
     public getType2Index(): Map<ts.Node, number> {
         return this.type2Index;
     }
 
-    public getTypeInfo(): Array<BaseType> {
-        return this.typeInfo;
-    }
-
     public getVariable2Type(): Map<ts.Node, number> {
         return this.variable2Type;
+    }
+
+    public getTypeSet() {
+        return this.userDefinedTypeSet;
     }
 }

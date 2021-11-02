@@ -19,6 +19,7 @@ import {
     LiteralBuffer,
     LiteralTag
 } from "./literal";
+import { LOGD } from "../log";
 import { TypeChecker } from "../typeChecker";
 import { TypeRecorder } from "../typeRecorder";
 import { PandaGen } from "../pandagen";
@@ -41,7 +42,8 @@ export enum L2Type {
     CLASS,
     CLASSINST,
     FUNCTION,
-    OBJECT // object literal
+    OBJECT, // object literal
+    _COUNTER
 }
 
 export enum ModifierAbstract {
@@ -70,36 +72,15 @@ type ClassMemberFunction = ts.MethodDeclaration | ts.ConstructorDeclaration | ts
 export abstract class BaseType {
 
     abstract transfer2LiteralBuffer(): LiteralBuffer;
-    protected typeChecker = TypeChecker.getInstance().getTypeChecker();
+    protected typeChecker = TypeChecker.getInstance();
     protected typeRecorder = TypeRecorder.getInstance();
-
-    protected getTypePosForIdentifier(node: ts.Node): number {
-        let identifierSymbol = this.typeChecker.getTypeAtLocation(node).symbol;
-        if (identifierSymbol && identifierSymbol.declarations) {
-            return identifierSymbol.declarations[0].pos;
-        }
-        return -1;
-    }
-
-    protected getTypeNodeForIdentifier(node: ts.Node): ts.Node {
-        let identifierSymbol = this.typeChecker.getTypeAtLocation(node).symbol;
-        if (identifierSymbol && identifierSymbol.declarations) {
-            return identifierSymbol!.declarations[0];
-        }
-        return node;
-    }
-
-    protected getTypeFlagsForIdentifier(node: ts.Node): string {
-        let typeFlag = this.typeChecker.getTypeAtLocation(node).getFlags();
-        return ts.TypeFlags[typeFlag].toUpperCase();
-    }
 
     protected addCurrentType(node: ts.Node, index: number) {
         this.typeRecorder.addType2Index(node, index);
     }
 
-    protected setVariable2Type(variableNode: ts.Node, index: number) {
-        this.typeRecorder.setVariable2Type(variableNode, index);
+    protected setVariable2Type(variableNode: ts.Node, index: number, isUserDefinedType: boolean) {
+        this.typeRecorder.setVariable2Type(variableNode, index, isUserDefinedType);
     }
 
     protected createType(node: ts.Node, newExpressionFlag: boolean, variableNode?: ts.Node) {
@@ -117,16 +98,15 @@ export abstract class BaseType {
             }
             // create other type as project goes on;
             default:
-                console.log("Error: Currently this type is not supported");
+                LOGD("Error: Currently this type is not supported");
                 // throw new Error("Currently this type is not supported");
         }
     }
 
     protected getOrCreateUserDefinedType(node: ts.Node, newExpressionFlag: boolean, variableNode?: ts.Node) {
-        let typeNode = this.getTypeNodeForIdentifier(node);
+        let typeNode = this.typeChecker.getTypeDeclAtLocation(node);
         let typeIndex = this.typeRecorder.tryGetTypeIndex(typeNode);
         if (typeIndex == -1) {
-            let typeNode = this.getTypeNodeForIdentifier(node);
             this.createType(typeNode, newExpressionFlag, variableNode);
             typeIndex = this.typeRecorder.tryGetTypeIndex(typeNode);
         }
@@ -143,24 +123,26 @@ export abstract class BaseType {
             }
             // get typeFlag to check if its a primitive type
             let typeRef = node.type;
-            let typeFlagName = this.getTypeFlagsForIdentifier(typeRef);
+            let typeFlagName = this.typeChecker.getTypeFlagsAtLocation(typeRef);
             let typeIndex = -1;
+            let isUserDefinedType = false;
             if (typeFlagName in PrimitiveType) {
                 typeIndex = PrimitiveType[typeFlagName as keyof typeof PrimitiveType];
             } else {
                 let identifier = typeRef.getChildAt(0);
                 typeIndex = this.getOrCreateUserDefinedType(identifier, newExpressionFlag, variableNode);
+                isUserDefinedType = true;
             }
             // set variable if variable node is given;
             if (variableNode) {
-                this.setVariable2Type(variableNode, typeIndex);
+                this.setVariable2Type(variableNode, typeIndex, isUserDefinedType);
             }
             if (typeIndex == -1) {
-                // console.log("ERROR: Type cannot be found for: " + jshelpers.getTextOfNode(node));
+                LOGD("ERROR: Type cannot be found for: " + jshelpers.getTextOfNode(node));
             }
             return typeIndex!;
         }
-        // console.log("WARNING: node type not found for: " + jshelpers.getTextOfNode(node));
+        LOGD("WARNING: node type not found for: " + jshelpers.getTextOfNode(node));
         return -1;
     }
 
@@ -172,11 +154,15 @@ export abstract class BaseType {
         PandaGen.setTypeArrayBuffer(type, index);
     }
 
+    protected getTypeNum() {
+        return this.typeRecorder.countTypeSet();
+    }
+
     // temp for test
 
     protected printMap(map: Map<ts.Node, number>) {
         map.forEach((value, key) => {
-            // console.log(jshelpers.getTextOfNode(key) + ": " + value);
+            console.log(jshelpers.getTextOfNode(key) + ": " + value);
         });
     }
 
@@ -185,18 +171,42 @@ export abstract class BaseType {
         // console.log(jshelpers.getTextOfNode(node));
         // console.log("=========== currIndex ===========: ", currIndex);
         // console.log(PandaGen.getLiteralArrayBuffer()[currIndex]);
-        // console.log("==============================");
-        // console.log("type2Index: ");
-        // console.log(this.printMap(this.typeRecorder.getType2Index()));
-        // console.log("variable2Type: ");
-        // console.log(this.printMap(this.typeRecorder.getVariable2Type()));
-        // console.log("==============================");
+        console.log("==============================");
+        console.log("type2Index: ");
+        console.log(this.printMap(this.typeRecorder.getType2Index()));
+        console.log("variable2Type: ");
+        console.log(this.printMap(this.typeRecorder.getVariable2Type()));
+        console.log("getTypeSet: ");
+        console.log(this.typeRecorder.getTypeSet());
+        console.log("==============================");
     }
 }
 
 export class PlaceHolderType extends BaseType {
     transfer2LiteralBuffer(): LiteralBuffer {
         return new LiteralBuffer();
+    }
+}
+
+export class typeNumCounter extends BaseType {
+    preservedIndex: number = 0;
+    constructor() {
+        super();
+        this.preservedIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
+    }
+
+    public setNumCount() {
+        this.setTypeArrayBuffer(this, this.preservedIndex);
+    }
+
+    transfer2LiteralBuffer(): LiteralBuffer {
+        let countBuf = new LiteralBuffer();
+        let countLiterals: Array<Literal> = new Array<Literal>();
+        countLiterals.push(new Literal(LiteralTag.INTEGER, L2Type._COUNTER));
+        countLiterals.push(new Literal(LiteralTag.INTEGER, TypeRecorder.getInstance().countTypeSet()));
+
+        countBuf.addLiterals(...countLiterals);
+        return countBuf;
     }
 }
 
@@ -226,7 +236,7 @@ export class ClassType extends BaseType {
             if (newExpressionFlag) {
                 new ClassInstType(variableNode, currIndex);
             } else {
-                this.setVariable2Type(variableNode, currIndex);
+                this.setVariable2Type(variableNode, currIndex, true);
             }
         }
         this.setTypeArrayBuffer(this, currIndex);
@@ -253,9 +263,11 @@ export class ClassType extends BaseType {
     private fillInHeritages(node: ts.ClassDeclaration) {
         if (node.heritageClauses) {
             for (let heritage of node.heritageClauses) {
-                let heritageIdentifier = heritage.getChildAt(1).getChildAt(0);
-                let heritageTypePos = this.getOrCreateUserDefinedType(heritageIdentifier, false);
-                this.heritages.push(heritageTypePos);
+                for (let heritageType of heritage.types) {
+                    let heritageIdentifier = heritageType.expression;
+                    let heritageTypeIndex = this.getOrCreateUserDefinedType(heritageIdentifier, false);
+                    this.heritages.push(heritageTypeIndex);
+                }
             }
         }
     }
@@ -397,12 +409,11 @@ export class ClassInstType extends BaseType {
     constructor(variableNode: ts.Node, referredClassIndex: number) {
         super();
         // use referedClassIndex to point to the actually class type of this instance
-        // console.log("referredClassIndex", referredClassIndex);
         this.referredClassIndex = referredClassIndex;
 
         // map variable to classInstType, which has a newly generated index
         let currIndex = this.getIndexFromTypeArrayBuffer(this);
-        this.setVariable2Type(variableNode, currIndex);
+        this.setVariable2Type(variableNode, currIndex, true);
     }
 
     transfer2LiteralBuffer(): LiteralBuffer {
@@ -443,7 +454,7 @@ export class FunctionType extends BaseType {
 
         // initialization finished, add variable to type if variable is given
         if (variableNode) {
-            this.setVariable2Type(variableNode, currIndex);
+            this.setVariable2Type(variableNode, currIndex, true);
         }
         this.setTypeArrayBuffer(this, currIndex);
 

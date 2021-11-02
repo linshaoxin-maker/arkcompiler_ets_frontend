@@ -135,9 +135,9 @@ export class Ts2Panda {
 
     static dumpConstantPool(ts2abc: any): void {
         let literalArrays = PandaGen.getLiteralArrayBuffer();
-        // console.log("-=-=-=-length=-=-=-=-=-=");
+        console.log("-=-=-=- LiteralArrayBuffer =-=-=-=-=-=");
         for (let e of PandaGen.getLiteralArrayBuffer()) {
-            // console.log(JSON.parse(JSON.stringify(e)));
+            console.log(JSON.parse(JSON.stringify(e)));
         }
 
         if (CmdOptions.isEnableDebugLog()) {

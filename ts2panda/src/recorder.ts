@@ -47,6 +47,15 @@ import { checkSyntaxError } from "./syntaxChecker";
 import { isGlobalIdentifier } from "./syntaxCheckHelper";
 import { VarDeclarationKind } from "./variable";
 import { TypeChecker } from "./typeChecker";
+import { TypeRecorder } from "./typeRecorder";
+
+// function getTypeFlagsForIdentifier(node: ts.Node) {
+//     let identifierSymbol = TypeChecker.getInstance().getTypeChecker().getTypeAtLocation(node).symbol;
+//     if (identifierSymbol && identifierSymbol.declarations) {
+//         console.log("node: " + jshelpers.getTextOfNode(node))
+//         console.log("type: " + identifierSymbol.getEscapedName());
+//     }
+// }
 
 export class Recorder {
     node: ts.Node;
@@ -145,6 +154,7 @@ export class Recorder {
                     break;
                 }
                 case ts.SyntaxKind.Identifier: {
+                    // getTypeFlagsForIdentifier(childNode);
                     this.recordVariableDecl(<ts.Identifier>childNode, scope);
                     break;
                 }
