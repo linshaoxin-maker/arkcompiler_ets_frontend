@@ -594,6 +594,19 @@ static void ParseFunctionCatchTables(const Json::Value &function, panda::pandasm
     }
 }
 
+static void ParseFunctionCallType(const Json::Value &function, panda::pandasm::Function &pandaFunc)
+{
+    uint8_t callType = 0;
+    if (function.isMember("callType") && function["callType"].isInt()) {
+        callType = function["callType"].asInt()
+    }
+    panda::pandasm::AnnotationData callTypeAnnotation("_ESCallTypeAnnotation");
+    std::string annotationName = "callType";
+    panda::pandasm::AnnotationElement callTypeAnnotationElement(annotationName, std::make_unique<panda::pandasm::ScalarValue>(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U8>(call_type)));
+    callTypeAnnotation.AddElement(std::move(callTypeAnnotationElement));
+    const_cast<std::vector<panda::pandasm::AnnotationData>&>(pandaFunc.metadata->GetAnnotations()).push_back(std::move(callTypeAnnotation));
+}
+
 static panda::pandasm::Function ParseFunction(const Json::Value &function)
 {
     auto pandaFunc = GetFunctionDefintion(function);
@@ -607,6 +620,8 @@ static panda::pandasm::Function ParseFunction(const Json::Value &function)
     ParseFunctionLabels(function, pandaFunc);
     // parsing catch blocks
     ParseFunctionCatchTables(function, pandaFunc);
+    // parsing call opt type
+    ParseFunctionCallType(function, pandaFunc);
 
     return pandaFunc;
 }
