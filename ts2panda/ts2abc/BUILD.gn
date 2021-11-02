@@ -21,6 +21,7 @@ config("ts2abc_config") {
   include_dirs = [
     ".",
     "$jsoncpp_root/include",
+    "$ark_root/libpandabase",
   ]
 
   if (enable_bytecode_optimizer) {
@@ -45,7 +46,7 @@ config("ts2abc_config") {
   }
 }
 
-ohos_executable("ts2abc") {
+ohos_static_library("ts2abc_static") {
   sources = [ "ts2abc.cpp" ]
 
   configs = [ ":ts2abc_config" ]
@@ -89,6 +90,14 @@ ohos_executable("ts2abc") {
       libs = [ libcpp_static_lib ]
     }
   }
+}
+
+ohos_executable("ts2abc") {
+  sources = [ "main.cpp" ]
+
+  configs = [ ":ts2abc_config" ]
+
+  deps = [ ":ts2abc_static" ]
 
   output_name = "js2abc"
   install_enable = true
