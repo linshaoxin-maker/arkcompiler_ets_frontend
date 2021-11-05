@@ -171,14 +171,14 @@ export abstract class BaseType {
         // console.log(jshelpers.getTextOfNode(node));
         // console.log("=========== currIndex ===========: ", currIndex);
         // console.log(PandaGen.getLiteralArrayBuffer()[currIndex]);
-        console.log("==============================");
-        console.log("type2Index: ");
-        console.log(this.printMap(this.typeRecorder.getType2Index()));
-        console.log("variable2Type: ");
-        console.log(this.printMap(this.typeRecorder.getVariable2Type()));
-        console.log("getTypeSet: ");
-        console.log(this.typeRecorder.getTypeSet());
-        console.log("==============================");
+        // console.log("==============================");
+        // console.log("type2Index: ");
+        // console.log(this.printMap(this.typeRecorder.getType2Index()));
+        // console.log("variable2Type: ");
+        // console.log(this.printMap(this.typeRecorder.getVariable2Type()));
+        // console.log("getTypeSet: ");
+        // console.log(this.typeRecorder.getTypeSet());
+        // console.log("==============================");
     }
 }
 
