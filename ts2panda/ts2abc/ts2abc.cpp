@@ -598,11 +598,11 @@ static void ParseFunctionCallType(const Json::Value &function, panda::pandasm::F
 {
     uint8_t callType = 0;
     if (function.isMember("callType") && function["callType"].isInt()) {
-        callType = function["callType"].asInt()
+        callType = function["callType"].asInt();
     }
     panda::pandasm::AnnotationData callTypeAnnotation("_ESCallTypeAnnotation");
     std::string annotationName = "callType";
-    panda::pandasm::AnnotationElement callTypeAnnotationElement(annotationName, std::make_unique<panda::pandasm::ScalarValue>(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U8>(call_type)));
+    panda::pandasm::AnnotationElement callTypeAnnotationElement(annotationName, std::make_unique<panda::pandasm::ScalarValue>(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U8>(callType)));
     callTypeAnnotation.AddElement(std::move(callTypeAnnotationElement));
     const_cast<std::vector<panda::pandasm::AnnotationData>&>(pandaFunc.metadata->GetAnnotations()).push_back(std::move(callTypeAnnotation));
 }
@@ -624,6 +624,14 @@ static panda::pandasm::Function ParseFunction(const Json::Value &function)
     ParseFunctionCallType(function, pandaFunc);
 
     return pandaFunc;
+}
+
+static void GenerateESCallTypeAnnotationRecord(panda::pandasm::Program &prog)
+{
+    auto callTypeAnnotationRecord = panda::pandasm::Record("_ESCallTypeAnnotation", LANG_EXT);
+    callTypeAnnotationRecord.metadata->SetAttribute("external");
+    callTypeAnnotationRecord.metadata->SetAccessFlags(panda::ACC_ANNOTATION);
+    prog.record_table.emplace(callTypeAnnotationRecord.name, std::move(callTypeAnnotationRecord));
 }
 
 static void GenrateESModuleModeRecord(panda::pandasm::Program &prog, bool moduleMode)
@@ -720,6 +728,7 @@ static void ReplaceAllDistinct(std::string &str, const std::string &oldValue, co
 
 static void ParseOptions(const Json::Value &rootValue, panda::pandasm::Program &prog)
 {
+    GenerateESCallTypeAnnotationRecord(prog);
     ParseModuleMode(rootValue, prog);
     ParseLogEnable(rootValue);
     ParseDebugMode(rootValue);
