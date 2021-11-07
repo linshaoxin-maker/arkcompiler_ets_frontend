@@ -47,6 +47,8 @@ export abstract class Variable {
     }
 
     bindVreg(vreg: VReg) {
+        // console.log("=> variable name --", this.name);
+        // console.log("=> variable index --", this.typeIndex);
         this.vreg = vreg;
         this.vreg.setTypeIndex(this.typeIndex);
     }

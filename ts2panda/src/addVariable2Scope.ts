@@ -39,12 +39,12 @@ import { PrimitiveType } from "./base/typeSystem";
 
 function setVariableOrParameterType(node: ts.Node, v: Variable | undefined) {
     if (v) {
-        let typeIndex = TypeRecorder.getInstance().tryGetVariable2Type(node);
+        let typeIndex = TypeRecorder.getInstance().tryGetVariable2Type(ts.getOriginalNode(node));
         if (typeIndex != -1) {
             v.setTypeIndex(typeIndex + PrimitiveType._LENGTH);
         }
-        // // console.log("--node--", jshelpers.getTextOfNode(node));
-        // // console.log("--node.type--", v.getTypeIndex());
+        // console.log("--node--", jshelpers.getTextOfNode(ts.getOriginalNode(node)));
+        // console.log("--node.type--", v.getTypeIndex());
     }
 }
 
@@ -178,7 +178,7 @@ function addParameters(node: ts.FunctionLikeDeclaration, scope: VariableScope): 
         }
 
         let v = scope.addParameter(name, VarDeclarationKind.VAR, i + 1);
-        setVariableOrParameterType(param, v);
+        setVariableOrParameterType(param.name, v);
     }
 
     for (let i = 0; i < patternParams.length; i++) {

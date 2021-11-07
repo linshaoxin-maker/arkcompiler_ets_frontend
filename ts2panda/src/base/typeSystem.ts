@@ -485,7 +485,7 @@ export class FunctionType extends BaseType {
     private fillInParameters(node: ts.FunctionLikeDeclaration) {
         if (node.parameters) {
             for (let parameter of node.parameters) {
-                let variableNode = parameter;
+                let variableNode = parameter.name;
                 let typeIndex = this.getTypeIndexForDeclWithType(parameter, variableNode);
                 this.parameters.push(typeIndex);
             }
