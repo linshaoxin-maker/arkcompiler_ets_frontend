@@ -119,7 +119,7 @@ class Ts2abcTests():
             cmd = [tsc, '-b', 'src/tsconfig.mac.json',
                    'tests/tsconfig.mac.json']
             ret = run_command(cmd, self.dist_dir)
-        if ret :
+        if ret:
             raise RuntimeError("Run [" + " ".join(cmd) + "] failed !")
 
     def run_tests(self):

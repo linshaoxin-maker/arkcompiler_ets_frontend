@@ -515,7 +515,7 @@ function checkModifiers(node: ts.Node) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_must_precede_1_modifier, file, [text, "readonly"]);
                 } else if (flags & ts.ModifierFlags.Async) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_must_precede_1_modifier, file, [text, "async"]);
-                } else if (node.parent && (ts.isModuleBlock(node.parent) || ts.isSourceFile(node.parent))) {
+                } else if (ts.isModuleBlock(node.parent) || ts.isSourceFile(node.parent)) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_a_module_or_namespace_element, file, [text]);
                 } else if (flags & ts.ModifierFlags.Abstract) {
                     if (modifier.kind === ts.SyntaxKind.PrivateKeyword) {
@@ -536,7 +536,7 @@ function checkModifiers(node: ts.Node) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_must_precede_1_modifier, file, ["static", "readonly"]);
                 } else if (flags & ts.ModifierFlags.Async) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_must_precede_1_modifier, file, ["static", "async"]);
-                } else if (node.parent && (ts.isModuleBlock(node.parent) || ts.isSourceFile(node.parent))) {
+                } else if (ts.isModuleBlock(node.parent) || ts.isSourceFile(node.parent)) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_a_module_or_namespace_element, file, ["static"]);
                 } else if (ts.isParameter(node)) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_a_parameter, file, ["static"]);
@@ -569,7 +569,7 @@ function checkModifiers(node: ts.Node) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_must_precede_1_modifier, file, ["export", "abstract"]);
                 } else if (flags & ts.ModifierFlags.Async) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_must_precede_1_modifier, file, ["export", "async"]);
-                } else if (node.parent && ts.isClassLike(node.parent)) {
+                } else if (ts.isClassLike(node.parent)) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_class_elements_of_this_kind, file, ["export"]);
                 } else if (ts.isParameter(node)) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_a_parameter, file, ["export"]);
@@ -591,7 +591,7 @@ function checkModifiers(node: ts.Node) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_already_seen, file, ["declare"]);
                 } else if (flags & ts.ModifierFlags.Async) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_be_used_in_an_ambient_context, file, ["async"]);
-                } else if (node.parent && ts.isClassLike(node.parent) && !ts.isPropertyDeclaration(node)) {
+                } else if (ts.isClassLike(node.parent) && !ts.isPropertyDeclaration(node)) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_class_elements_of_this_kind, file, ["declare"]);
                 } else if (ts.isParameter(node)) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_a_parameter, file, ["declare"]);
