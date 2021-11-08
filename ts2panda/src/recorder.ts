@@ -45,17 +45,8 @@ import {
 } from "./statement/classStatement";
 import { checkSyntaxError } from "./syntaxChecker";
 import { isGlobalIdentifier } from "./syntaxCheckHelper";
-import { VarDeclarationKind } from "./variable";
 import { TypeChecker } from "./typeChecker";
-import { TypeRecorder } from "./typeRecorder";
-
-// function getTypeFlagsForIdentifier(node: ts.Node) {
-//     let identifierSymbol = TypeChecker.getInstance().getTypeChecker().getTypeAtLocation(node).symbol;
-//     if (identifierSymbol && identifierSymbol.declarations) {
-//         console.log("node: " + jshelpers.getTextOfNode(node))
-//         console.log("type: " + identifierSymbol.getEscapedName());
-//     }
-// }
+import { VarDeclarationKind } from "./variable";
 
 export class Recorder {
     node: ts.Node;
@@ -95,7 +86,8 @@ export class Recorder {
         node.forEachChild(childNode => {
             if (childNode!.parent == undefined || childNode.parent.kind != node.kind) {
                 childNode = jshelpers.setParent(childNode, node)!;
-                // childNode = ts.setTextRange(childNode, node)!;
+                let originNode = ts.getOriginalNode(childNode);
+                childNode = ts.setTextRange(childNode, originNode);
             }
             this.setParent(childNode);
         });
