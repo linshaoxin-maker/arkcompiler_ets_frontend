@@ -377,16 +377,11 @@ export class ClassType extends BaseType {
 
         // record static methods and fields;
         this.transferFields2Literal(classTypeLiterals, true);
-
-        // TODO record static methods here
+        this.transferMethods2Literal(classTypeLiterals, true);
 
         // record unstatic fields and methods
         this.transferFields2Literal(classTypeLiterals, false);
-
-        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.methods.length));
-        this.methods.forEach(method => {
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, method));
-        });
+        this.transferMethods2Literal(classTypeLiterals, false);
 
         classTypeBuf.addLiterals(...classTypeLiterals);
         return classTypeBuf;
@@ -401,6 +396,15 @@ export class ClassType extends BaseType {
             classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[0])); // typeIndex
             classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[1])); // accessFlag
             classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[2])); // readonly
+        });
+    }
+
+    private transferMethods2Literal(classTypeLiterals: Array<Literal>, isStatic: boolean) {
+        let transferredTarget: Array<number> = isStatic ? this.staticMethods : this.methods;
+
+        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, transferredTarget.length));
+        transferredTarget.forEach(method => {
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, method));
         });
     }
 }
@@ -511,6 +515,7 @@ export class FunctionType extends BaseType {
         let funcTypeLiterals: Array<Literal> = new Array<Literal>();
         funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.FUNCTION));
         funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.accessFlag));
+        funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.modifierStatic));
         funcTypeLiterals.push(new Literal(LiteralTag.STRING, this.name));
         funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.parameters.length));
         this.parameters.forEach((type) => {
