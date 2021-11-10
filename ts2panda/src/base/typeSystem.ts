@@ -222,9 +222,10 @@ export class ClassType extends BaseType {
     constructor(classNode: ts.ClassDeclaration, newExpressionFlag: boolean, variableNode?: ts.Node) {
         super();
         let currIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
+        let shiftedIndex = currIndex + PrimitiveType._LENGTH;
         // record type before its initialization, so its index can be recorded
         // in case there's recursive reference of this type
-        this.addCurrentType(classNode, currIndex);
+        this.addCurrentType(classNode, shiftedIndex);
 
         this.fillInModifiers(classNode);
         this.fillInHeritages(classNode);
@@ -236,7 +237,7 @@ export class ClassType extends BaseType {
             if (newExpressionFlag) {
                 new ClassInstType(variableNode, currIndex);
             } else {
-                this.setVariable2Type(variableNode, currIndex, true);
+                this.setVariable2Type(variableNode, shiftedIndex, true);
             }
         }
         this.setTypeArrayBuffer(this, currIndex);
@@ -376,16 +377,11 @@ export class ClassType extends BaseType {
 
         // record static methods and fields;
         this.transferFields2Literal(classTypeLiterals, true);
-
-        // TODO record static methods here
+        this.transferMethods2Literal(classTypeLiterals, true);
 
         // record unstatic fields and methods
         this.transferFields2Literal(classTypeLiterals, false);
-
-        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.methods.length));
-        this.methods.forEach(method => {
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, method));
-        });
+        this.transferMethods2Literal(classTypeLiterals, false);
 
         classTypeBuf.addLiterals(...classTypeLiterals);
         return classTypeBuf;
@@ -402,18 +398,28 @@ export class ClassType extends BaseType {
             classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[2])); // readonly
         });
     }
+
+    private transferMethods2Literal(classTypeLiterals: Array<Literal>, isStatic: boolean) {
+        let transferredTarget: Array<number> = isStatic ? this.staticMethods : this.methods;
+
+        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, transferredTarget.length));
+        transferredTarget.forEach(method => {
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, method));
+        });
+    }
 }
 
 export class ClassInstType extends BaseType {
-    referredClassIndex: number = 0; // the referred class in the type system;
+    shiftedReferredClassIndex: number = 0; // the referred class in the type system;
     constructor(variableNode: ts.Node, referredClassIndex: number) {
         super();
         // use referedClassIndex to point to the actually class type of this instance
-        this.referredClassIndex = referredClassIndex;
+        this.shiftedReferredClassIndex = referredClassIndex + PrimitiveType._LENGTH;
 
         // map variable to classInstType, which has a newly generated index
         let currIndex = this.getIndexFromTypeArrayBuffer(this);
-        this.setVariable2Type(variableNode, currIndex, true);
+        let shiftedIndex = currIndex + PrimitiveType._LENGTH;
+        this.setVariable2Type(variableNode, shiftedIndex, true);
     }
 
     transfer2LiteralBuffer(): LiteralBuffer {
@@ -421,7 +427,7 @@ export class ClassInstType extends BaseType {
         let classInstLiterals: Array<Literal> = new Array<Literal>();
 
         classInstLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.CLASSINST));
-        classInstLiterals.push(new Literal(LiteralTag.INTEGER, this.referredClassIndex + PrimitiveType._LENGTH));
+        classInstLiterals.push(new Literal(LiteralTag.INTEGER, this.shiftedReferredClassIndex));
         classInstBuf.addLiterals(...classInstLiterals);
 
         return classInstBuf;
@@ -439,9 +445,10 @@ export class FunctionType extends BaseType {
         super();
 
         let currIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
+        let shiftedIndex = currIndex + PrimitiveType._LENGTH;
         // record type before its initialization, so its index can be recorded
         // in case there's recursive reference of this type
-        this.addCurrentType(funcNode, currIndex);
+        this.addCurrentType(funcNode, shiftedIndex);
 
         if (funcNode.name) {
             this.name = jshelpers.getTextOfIdentifierOrLiteral(funcNode.name);
@@ -454,7 +461,7 @@ export class FunctionType extends BaseType {
 
         // initialization finished, add variable to type if variable is given
         if (variableNode) {
-            this.setVariable2Type(variableNode, currIndex, true);
+            this.setVariable2Type(variableNode, shiftedIndex, true);
         }
         this.setTypeArrayBuffer(this, currIndex);
 
@@ -508,6 +515,7 @@ export class FunctionType extends BaseType {
         let funcTypeLiterals: Array<Literal> = new Array<Literal>();
         funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.FUNCTION));
         funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.accessFlag));
+        funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.modifierStatic));
         funcTypeLiterals.push(new Literal(LiteralTag.STRING, this.name));
         funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.parameters.length));
         this.parameters.forEach((type) => {

@@ -41,7 +41,7 @@ function setVariableOrParameterType(node: ts.Node, v: Variable | undefined) {
     if (v) {
         let typeIndex = TypeRecorder.getInstance().tryGetVariable2Type(ts.getOriginalNode(node));
         if (typeIndex != -1) {
-            v.setTypeIndex(typeIndex + PrimitiveType._LENGTH);
+            v.setTypeIndex(typeIndex);
         }
         // console.log("--node--", jshelpers.getTextOfNode(ts.getOriginalNode(node)));
         // console.log("--node.type--", v.getTypeIndex());
@@ -52,7 +52,7 @@ function setClassOrFunctionType(node: ts.Node, v: Variable | undefined) {
     if (v) {
         let typeIndex = TypeRecorder.getInstance().tryGetTypeIndex(ts.getOriginalNode(node));
         if (typeIndex != -1) {
-            v.setTypeIndex(typeIndex + PrimitiveType._LENGTH);
+            v.setTypeIndex(typeIndex);
         }
         // console.log("--node--", jshelpers.getTextOfNode(ts.getOriginalNode(node)));
         // console.log("--node.type--", v.getTypeIndex());
