@@ -85,6 +85,8 @@ import {
     compileClassDeclaration,
     compileConstructor,
     compileDefaultConstructor,
+    compileDefaultInitClassMembers,
+    compileReturnThis4Ctor,
     isContainConstruct
 } from "./statement/classStatement";
 import { compileForOfStatement } from "./statement/forOfStatement";
@@ -217,6 +219,10 @@ export class Compiler {
         let statements = body.statements;
         let unreachableFlag = false;
 
+        if (body.parent && ts.isConstructorDeclaration(body.parent)) {
+            compileDefaultInitClassMembers(this, body.parent)
+        }
+
         statements.forEach((stmt) => {
             this.compileStatement(stmt);
             if (stmt.kind == ts.SyntaxKind.ReturnStatement) {
@@ -225,8 +231,7 @@ export class Compiler {
         });
 
         if (body.parent && ts.isConstructorDeclaration(body.parent)) {
-
-            compileConstructor(this, body.parent, unreachableFlag);
+            compileReturnThis4Ctor(this, body.parent, unreachableFlag);
             return;
         }
 

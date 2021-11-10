@@ -239,6 +239,71 @@ function createClassLiteralBuf(compiler: Compiler, classBuffer: LiteralBuffer,
     pandaGen.storeAccumulator(stmt, vregs[1]);
 }
 
+export function compileDefaultInitClassMembers(compiler: Compiler, node: ts.ConstructorDeclaration) {
+    let pandaGen = compiler.getPandaGen();
+    let members = node.parent!.members;
+    for (let index = 0; index < members.length; index++) {
+        let decl = members[index];
+        if (ts.isPropertyDeclaration(decl) && !jshelpers.hasStaticModifier(decl)) {
+            if (!decl.initializer) {
+                continue;
+            }
+
+            let prop: VReg | string = "";
+            let thisReg: VReg = pandaGen.getTemp();
+            compiler.getThis(node, thisReg);
+
+            compiler.compileExpression(decl.initializer);
+
+            switch (decl.name.kind) {
+                case ts.SyntaxKind.Identifier:
+                case ts.SyntaxKind.StringLiteral:
+                case ts.SyntaxKind.NumericLiteral: {
+                    prop = jshelpers.getTextOfIdentifierOrLiteral(decl.name);
+                    pandaGen.storeObjProperty(node, thisReg, prop);
+                    break;
+                }
+                case ts.SyntaxKind.ComputedPropertyName: {
+                    // need to store the init value first
+                    let initVal: VReg = pandaGen.getTemp();
+                    pandaGen.storeAccumulator(node, initVal);
+
+                    prop = pandaGen.getTemp();
+                    compiler.compileExpression(decl.name.expression);
+                    pandaGen.storeAccumulator(node, prop);
+
+                    pandaGen.loadAccumulator(node, initVal);
+                    pandaGen.storeObjProperty(node, thisReg, prop);
+                    pandaGen.freeTemps(initVal, prop);
+                    break;
+                }
+                default:
+                    throw new Error("Private Identifier has not been supported")
+
+            }
+
+            pandaGen.freeTemps(thisReg);
+        }
+    }
+}
+
+export function compileReturnThis4Ctor(compiler: Compiler, node: ts.ConstructorDeclaration, unreachableFlag: boolean) {
+    let pandaGen = compiler.getPandaGen();
+
+    if (unreachableFlag) {
+        return;
+    }
+
+    let thisReg = pandaGen.getTemp();
+    compiler.getThis(node, thisReg);
+    pandaGen.loadAccumulator(node, thisReg);
+
+    checkValidUseSuperBeforeSuper(compiler, node);
+
+    pandaGen.return(node);
+    pandaGen.freeTemps(thisReg);
+}
+
 export function compileConstructor(compiler: Compiler, node: ts.ConstructorDeclaration, unreachableFlag: boolean) {
     let pandaGen = compiler.getPandaGen();
     let members = node.parent!.members;
