@@ -183,6 +183,7 @@ import { CatchTable } from "./statement/tryStatement";
 import {
     Variable
 } from "./variable";
+import { BaseType } from "./base/typeSystem";
 
 export class PandaGen {
     private debugTag: string = "PandaGen";
@@ -202,7 +203,7 @@ export class PandaGen {
     private sourceCodeDebugInfo: string | undefined;
     private icSize: number = 0;
 
-    private static literalArrayBuffer: Array<LiteralBuffer> = [];
+    private static literalArrayBuffer: Array<LiteralBuffer> = new Array<LiteralBuffer>();
 
     constructor(internalName: string, parametersCount: number, scope: Scope | undefined = undefined) {
         this.internalName = internalName;
@@ -255,6 +256,16 @@ export class PandaGen {
 
     setICSize(total: number) {
         this.icSize = total;
+    }
+
+    static appendTypeArrayBuffer(type: BaseType): number {
+        let index = PandaGen.literalArrayBuffer.length;
+        PandaGen.literalArrayBuffer.push(type.transfer2LiteralBuffer());
+        return index;
+    }
+
+    static setTypeArrayBuffer(type: BaseType, index: number) {
+        PandaGen.literalArrayBuffer[index] = type.transfer2LiteralBuffer();
     }
 
     getFirstStmt() {

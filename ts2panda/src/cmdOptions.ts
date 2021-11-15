@@ -39,6 +39,8 @@ const ts2pandaOptions = [
     { name: 'bc-min-version', type: Boolean, defaultValue: false, description: "Print ark bytecode minimum supported version"}
 ]
 
+
+
 export class CmdOptions {
     private static parsedResult: ts.ParsedCommandLine;
     private static options: commandLineArgs.CommandLineOptions;

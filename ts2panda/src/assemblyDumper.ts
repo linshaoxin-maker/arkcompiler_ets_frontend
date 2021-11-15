@@ -188,12 +188,12 @@ export class AssemblyDumper {
         this.writeFunctionCatchTable();
         this.writeFunctionTail();
 
-        console.log(this.output);
+        // console.log(this.output);
     }
 
     static dumpHeader(): void {
         let out = { str: "" };
         AssemblyDumper.writeLanguageTag(out);
-        console.log(out.str)
+        // console.log(out.str)
     }
 }
