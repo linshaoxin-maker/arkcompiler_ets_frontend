@@ -131,7 +131,8 @@ function run(args: string[], options?: ts.CompilerOptions): void {
         }
     }
     try {
-        main(parsed.fileNames, parsed.options);
+        let files: string[] = parsed.fileNames;
+        main(files.concat(CmdOptions.getIncludedFiles()), parsed.options);
     } catch (err) {
         if (err instanceof diag.DiagnosticError) {
             let diagnostic = diag.getDiagnostic(err.code);
