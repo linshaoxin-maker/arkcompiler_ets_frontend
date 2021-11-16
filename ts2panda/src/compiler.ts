@@ -438,6 +438,7 @@ export class Compiler {
                 this.compileExportAssignment(<ts.ExportAssignment>stmt);
                 break;
             case ts.SyntaxKind.ExportDeclaration:
+            case ts.SyntaxKind.NotEmittedStatement:
                 break;
             default:
                 throw new Error("Statement " + this.getNodeName(stmt) + " is unimplemented");
