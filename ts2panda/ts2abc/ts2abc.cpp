@@ -604,13 +604,13 @@ static void ParseFunctionCallType(const Json::Value &function, panda::pandasm::F
         return ;
     }
 
-    uint8_t callType = 0;
+    uint32_t callType = 0;
     if (function.isMember("callType") && function["callType"].isInt()) {
-        callType = function["callType"].asInt();
+        callType = function["callType"].asUInt();
     }
     panda::pandasm::AnnotationData callTypeAnnotation("_ESCallTypeAnnotation");
     std::string annotationName = "callType";
-    panda::pandasm::AnnotationElement callTypeAnnotationElement(annotationName, std::make_unique<panda::pandasm::ScalarValue>(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U8>(callType)));
+    panda::pandasm::AnnotationElement callTypeAnnotationElement(annotationName, std::make_unique<panda::pandasm::ScalarValue>(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U32>(callType)));
     callTypeAnnotation.AddElement(std::move(callTypeAnnotationElement));
     const_cast<std::vector<panda::pandasm::AnnotationData>&>(pandaFunc.metadata->GetAnnotations()).push_back(std::move(callTypeAnnotation));
 }
