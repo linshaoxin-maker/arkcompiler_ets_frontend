@@ -596,6 +596,14 @@ static void ParseFunctionCatchTables(const Json::Value &function, panda::pandasm
 
 static void ParseFunctionCallType(const Json::Value &function, panda::pandasm::Function &pandaFunc)
 {
+    std::string funcName = "";
+    if (function.isMember("name") && function["name"].isString()) {
+        funcName = function["name"].asString();
+    }
+    if (funcName == "func_main_0") {
+        return ;
+    }
+
     uint8_t callType = 0;
     if (function.isMember("callType") && function["callType"].isInt()) {
         callType = function["callType"].asInt();
