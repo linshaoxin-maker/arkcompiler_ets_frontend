@@ -243,8 +243,14 @@ export class Compiler {
         let v = variableInfo.v;
 
         if (v && v.isLexVar) {
+            if ((arg === "this" || arg === "4newTarget") && variableInfo.scope instanceof FunctionScope) {
+                variableInfo.scope.setCallOpt(arg);
+            }
+            if (arg === "arguments" && variableInfo.scope instanceof FunctionScope) {
+                variableInfo.scope.setArgumentsOrRestargs();
+            }
             let pandaGen = this.pandaGen;
-            let vreg = pandaGen.getVregForVariable(<Variable>variableInfo.v);
+            let vreg = "4funcObj" === arg ? getVregisterCache(pandaGen, CacheList.undefined) : pandaGen.getVregForVariable(<Variable>variableInfo.v);
             let slot = (<Variable>variableInfo.v).idxLex;
             pandaGen.storeLexicalVar(this.rootNode, variableInfo.level, slot, vreg);
         }

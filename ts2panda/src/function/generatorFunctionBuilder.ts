@@ -47,6 +47,8 @@ export class GeneratorFunctionBuilder {
 
     prepare(node: ts.Node, recorder: Recorder) {
         let pandaGen = this.pandaGen;
+        let scope = <Scope>recorder.getScopeOfNode(node);
+        let funcObj = scope.getName2variable().get('4funcObj')!.getVreg();
 
         // backend handle funcobj, frontend set undefined
         pandaGen.createGeneratorObj(node, getVregisterCache(pandaGen, CacheList.undefined));
