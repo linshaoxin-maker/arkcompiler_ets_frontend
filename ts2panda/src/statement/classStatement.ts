@@ -332,7 +332,7 @@ function loadCtorObj(node: ts.CallExpression, compiler: Compiler) {
 
     if (ts.isConstructorDeclaration(nearestFunc)) {
         let funcObj = <Variable>nearestFuncScope.findLocal("4funcObj");
-        pandaGen.loadAccumulator(node, getVregisterCache(pandaGen, CacheList.undefined));
+        pandaGen.loadAccumulator(node, getVregisterCache(pandaGen, CacheList.HOLE));
     } else {
         let outerFunc = jshelpers.getContainingFunction(nearestFunc);
         let outerFuncScope = <FunctionScope>recorder.getScopeOfNode(outerFunc);

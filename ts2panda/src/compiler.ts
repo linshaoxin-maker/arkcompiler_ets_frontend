@@ -250,7 +250,7 @@ export class Compiler {
                 variableInfo.scope.setArgumentsOrRestargs();
             }
             let pandaGen = this.pandaGen;
-            let vreg = "4funcObj" === arg ? getVregisterCache(pandaGen, CacheList.undefined) : pandaGen.getVregForVariable(<Variable>variableInfo.v);
+            let vreg = "4funcObj" === arg ? getVregisterCache(pandaGen, CacheList.HOLE) : pandaGen.getVregForVariable(<Variable>variableInfo.v);
             let slot = (<Variable>variableInfo.v).idxLex;
             pandaGen.storeLexicalVar(this.rootNode, variableInfo.level, slot, vreg);
         }
