@@ -283,6 +283,7 @@ export function compileSuperCall(compiler: Compiler, node: ts.CallExpression, ar
     let { scope, level, v } = curScope.find("this");
 
     compiler.setCallOpt(scope, "this");
+    compiler.setCallOpt(scope, "4newTarget");
     
     if (scope && level >= 0) {
         let tmpScope = curScope;
