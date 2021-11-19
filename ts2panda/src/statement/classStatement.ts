@@ -299,6 +299,9 @@ export function compileSuperCall(compiler: Compiler, node: ts.CallExpression, ar
         if (needSetLexVar) {
             scope.setLexVar(<Variable>v, curScope);
         }
+        if (needSetLexVar && curScope instanceof FunctionScope) {
+            curScope.setCallOpt("0newTarget");
+        }
     }
 
     if (hasSpread) {
