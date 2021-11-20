@@ -408,6 +408,8 @@ export class ModuleScope extends VariableScope {
 export class FunctionScope extends VariableScope {
     private parameterLength: number = 0;
     private funcName: string = "";
+    private callOpt: Set<String> = new Set();
+    private isArgumentsOrRestargs: boolean = false;
     constructor(parent?: Scope, node?: ts.FunctionLikeDeclaration) {
         super();
         this.parent = parent ? parent : undefined;
@@ -428,6 +430,22 @@ export class FunctionScope extends VariableScope {
 
     getFuncName() {
         return this.funcName;
+    }
+
+    public getCallOpt() {
+        return this.callOpt;
+    }
+
+    public setCallOpt(key: String) {
+        this.callOpt.add(key);
+    }
+
+    public setArgumentsOrRestargs() {
+        this.isArgumentsOrRestargs = true;
+    }
+
+    public getArgumentsOrRestargs() {
+        return this.isArgumentsOrRestargs;
     }
 
     getParent(): Scope | undefined {

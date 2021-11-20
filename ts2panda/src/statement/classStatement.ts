@@ -282,6 +282,9 @@ export function compileSuperCall(compiler: Compiler, node: ts.CallExpression, ar
     let curScope = <Scope>compiler.getCurrentScope();
     let { scope, level, v } = curScope.find("this");
 
+    compiler.setCallOpt(scope, "this");
+    compiler.setCallOpt(scope, "4newTarget");
+    
     if (scope && level >= 0) {
         let tmpScope = curScope;
         let needSetLexVar: boolean = false;
@@ -295,6 +298,9 @@ export function compileSuperCall(compiler: Compiler, node: ts.CallExpression, ar
 
         if (needSetLexVar) {
             scope.setLexVar(<Variable>v, curScope);
+        }
+        if (needSetLexVar && curScope instanceof FunctionScope) {
+            curScope.setCallOpt("0newTarget");
         }
     }
 
@@ -330,7 +336,7 @@ function loadCtorObj(node: ts.CallExpression, compiler: Compiler) {
 
     if (ts.isConstructorDeclaration(nearestFunc)) {
         let funcObj = <Variable>nearestFuncScope.findLocal("4funcObj");
-        pandaGen.loadAccumulator(node, pandaGen.getVregForVariable(funcObj));
+        pandaGen.loadAccumulator(node, getVregisterCache(pandaGen, CacheList.FUNC));
     } else {
         let outerFunc = jshelpers.getContainingFunction(nearestFunc);
         let outerFuncScope = <FunctionScope>recorder.getScopeOfNode(outerFunc);
