@@ -33,7 +33,8 @@ import {
     // expandString,
     expandSymbol,
     expandTrue,
-    expandUndefined
+    expandUndefined,
+    expandFunc
 } from "./builtIn";
 import { expandLexEnv } from "./lexEnv";
 export enum CacheList {
@@ -56,6 +57,7 @@ export enum CacheList {
     True,
     False,
     MAX,
+    FUNC
 }
 let cacheExpandHandlers = new Map([
     [CacheList.HOLE, expandHole],
@@ -75,6 +77,7 @@ let cacheExpandHandlers = new Map([
     [CacheList.LexEnv, expandLexEnv],
     [CacheList.True, expandTrue],
     [CacheList.False, expandFalse],
+    [CacheList.FUNC, expandFunc],
 ]);
 
 class CacheItem {

@@ -51,7 +51,7 @@ export class GeneratorFunctionBuilder {
         let funcObj = scope.getName2variable().get("4funcObj")!.getVreg();
 
         // backend handle funcobj, frontend set undefined
-        pandaGen.createGeneratorObj(node, getVregisterCache(pandaGen, CacheList.HOLE));
+        pandaGen.createGeneratorObj(node, getVregisterCache(pandaGen, CacheList.FUNC));
         pandaGen.storeAccumulator(node, this.genObj);
         pandaGen.suspendGenerator(node, this.genObj, getVregisterCache(pandaGen, CacheList.undefined));
         pandaGen.resumeGenerator(node, this.genObj);
