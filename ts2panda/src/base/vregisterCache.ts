@@ -41,6 +41,7 @@ export enum CacheList {
     MIN,
     NaN = MIN,
     HOLE,
+    FUNC,
     Infinity,
     undefined,
     // Boolean,
@@ -56,8 +57,7 @@ export enum CacheList {
     LexEnv, // Lex Env must come before True and False, because LexEnv depends on True and False
     True,
     False,
-    MAX,
-    FUNC
+    MAX
 }
 let cacheExpandHandlers = new Map([
     [CacheList.HOLE, expandHole],
