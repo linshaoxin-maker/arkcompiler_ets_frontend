@@ -41,7 +41,7 @@ export enum CacheList {
     MIN,
     NaN = MIN,
     HOLE,
-    FUNC,
+    FUNC, // load function
     Infinity,
     undefined,
     // Boolean,

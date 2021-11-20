@@ -26,7 +26,7 @@ import {
     EcmaLdtrue,
     EcmaLdundefined,
     StaDyn,
-    EcmaLdfunc
+    EcmaLdfunction
 } from "../irnodes";
 import { CacheList, getVregisterCache } from "./vregisterCache";
 
@@ -105,7 +105,7 @@ export function expandFalse(pandaGen: PandaGen): IRNode[] {
 export function expandFunc(pandaGen: PandaGen): IRNode[] {
     let vreg = getVregisterCache(pandaGen, CacheList.FUNC);
     return [
-        new EcmaLdfunc(),
+        new EcmaLdfunction(),
         new StaDyn(vreg)
     ];
 }
