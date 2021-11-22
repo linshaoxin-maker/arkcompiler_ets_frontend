@@ -126,16 +126,16 @@ class Ts2abcTests():
         if self.args.js_file:
             tests_args = self.args.js_file
         else:
-            tests_args = "**/*.test.js"
+            tests_args = "tests/**/*.test.js"
 
         if plat_form == "linux":
-            cmd = [mocha, f'build/tests/{tests_args}']
+            cmd = [mocha, f'build/{tests_args}']
             ret = run_command(cmd, self.dist_dir)
         elif plat_form == "win":
-            cmd = [mocha, f'build-win/tests/{tests_args}']
+            cmd = [mocha, f'build-win/{tests_args}']
             ret = run_command(cmd, self.dist_dir)
         elif plat_form == 'mac':
-            cmd = [mocha, f'build-mac/tests/{tests_args}']
+            cmd = [mocha, f'build-mac/{tests_args}']
             ret = run_command(cmd, self.dist_dir)
         if ret:
             raise RuntimeError("Run [" + " ".join(cmd) + "] failed !")
