@@ -40,7 +40,6 @@ import {
     FunctionScope,
     GlobalScope,
     LocalScope,
-    ModuleScope,
     Scope,
     VariableScope
 } from "../scope";
@@ -117,7 +116,7 @@ export function compileClassDeclaration(compiler: Compiler, stmt: ts.ClassLikeDe
     if (stmt.name) {
         let className = jshelpers.getTextOfIdentifierOrLiteral(stmt.name);
         let classScope = <Scope>compiler.getRecorder().getScopeOfNode(stmt);
-        if (!ts.isClassExpression(stmt) && (classScope.getParent() instanceof GlobalScope || classScope.getParent() instanceof ModuleScope)) {
+        if (!ts.isClassExpression(stmt) && classScope.getParent() instanceof GlobalScope) {
             pandaGen.stClassToGlobalRecord(stmt, className);
         } else {
             let classInfo = classScope.find(className);
