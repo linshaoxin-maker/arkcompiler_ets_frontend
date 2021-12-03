@@ -83,7 +83,11 @@ import {
 import {
     checkValidUseSuperBeforeSuper,
     compileClassDeclaration,
-    compileConstructor
+    compileConstructor,
+    compileDefaultConstructor,
+    compileDefaultInitClassMembers,
+    compileReturnThis4Ctor,
+    isContainConstruct
 } from "./statement/classStatement";
 import { compileForOfStatement } from "./statement/forOfStatement";
 import { LabelTarget } from "./statement/labelTarget";
@@ -109,7 +113,6 @@ import { isAssignmentOperator } from "./syntaxCheckHelper";
 import {
     GlobalVariable,
     LocalVariable,
-    ModuleVariable,
     VarDeclarationKind,
     Variable
 } from "./variable";
@@ -216,6 +219,10 @@ export class Compiler {
         let statements = body.statements;
         let unreachableFlag = false;
 
+        if (body.parent && ts.isConstructorDeclaration(body.parent)) {
+            compileDefaultInitClassMembers(this, body.parent)
+        }
+
         statements.forEach((stmt) => {
             this.compileStatement(stmt);
             if (stmt.kind == ts.SyntaxKind.ReturnStatement) {
@@ -224,8 +231,7 @@ export class Compiler {
         });
 
         if (body.parent && ts.isConstructorDeclaration(body.parent)) {
-
-            compileConstructor(this, body.parent, unreachableFlag);
+            compileReturnThis4Ctor(this, body.parent, unreachableFlag);
             return;
         }
 
@@ -336,6 +342,14 @@ export class Compiler {
         let pandaGen = this.pandaGen;
         this.compileFunctionParameterDeclaration(decl);
 
+        if (ts.isConstructorDeclaration(decl)) {
+            let classNode = <ts.ClassLikeDeclaration>decl.parent;
+            if (jshelpers.getClassExtendsHeritageElement(classNode) && !isContainConstruct(classNode)) {
+                compileDefaultConstructor(this, decl);
+                return;
+            }
+        }
+
         if (decl.kind == ts.SyntaxKind.FunctionExpression) {
             if (decl.name) {
                 let funcName = jshelpers.getTextOfIdentifierOrLiteral(decl.name);
@@ -424,6 +438,7 @@ export class Compiler {
                 this.compileExportAssignment(<ts.ExportAssignment>stmt);
                 break;
             case ts.SyntaxKind.ExportDeclaration:
+            case ts.SyntaxKind.NotEmittedStatement:
                 break;
             default:
                 throw new Error("Statement " + this.getNodeName(stmt) + " is unimplemented");
@@ -554,7 +569,7 @@ export class Compiler {
     compileFinallyBeforeCFC(endTry: TryStatement | undefined, cfc: ControlFlowChange, continueTargetLabel: Label | undefined) {// compile finally before control flow change
         let startTry = TryStatement.getCurrentTryStatement();
         let originTry = startTry;
-        for (; startTry != endTry; startTry = startTry ?.getOuterTryStatement()) {
+        for (; startTry != endTry; startTry = startTry?.getOuterTryStatement()) {
 
             if (startTry && startTry.trybuilder) {
                 let inlineFinallyBegin = new Label();
@@ -616,7 +631,7 @@ export class Compiler {
         // try-catch-finally statements must have been transformed into
         // two nested try statements with only "catch" or "finally" each.
         if (stmt.catchClause && stmt.finallyBlock) {
-            transformTryCatchFinally(stmt, this.recorder);
+            stmt = transformTryCatchFinally(stmt, this.recorder);
         }
 
         let tryBuilder = new TryBuilder(this, this.pandaGen, stmt);
@@ -801,6 +816,8 @@ export class Compiler {
                 break;
             case ts.SyntaxKind.ClassExpression:
                 compileClassDeclaration(this, <ts.ClassLikeDeclaration>expr);
+                break;
+            case ts.SyntaxKind.PartiallyEmittedExpression:
                 break;
             default:
                 throw new Error("Expression of type " + this.getNodeName(expr) + " is unimplemented");
@@ -1355,27 +1372,21 @@ export class Compiler {
         variable: { scope: Scope | undefined, level: number, v: Variable | undefined },
         isDeclaration: boolean) {
         if (variable.v instanceof LocalVariable) {
-            if (isDeclaration) {
-                if (variable.v.isLet()) {
-                    variable.v.initialize();
-                    if (variable.scope instanceof GlobalScope || variable.scope instanceof ModuleScope) {
+            if (isDeclaration && variable.v.isLetOrConst()) {
+                variable.v.initialize();
+                if (variable.scope instanceof GlobalScope) {
+                    if (variable.v.isLet()) {
                         this.pandaGen.stLetToGlobalRecord(node, variable.v.getName());
-                        return;
-                    }
-                } else if (variable.v.isConst()) {
-                    variable.v.initialize();
-                    if (variable.scope instanceof GlobalScope || variable.scope instanceof ModuleScope) {
+                    } else {
                         this.pandaGen.stConstToGlobalRecord(node, variable.v.getName());
-                        return;
                     }
+                    return;
                 }
             }
 
-            if (variable.v.isLetOrConst()) {
-                if (variable.scope instanceof GlobalScope || variable.scope instanceof ModuleScope) {
-                    this.pandaGen.tryStoreGlobalByName(node, variable.v.getName());
-                    return;
-                }
+            if (variable.v.isLetOrConst() && variable.scope instanceof GlobalScope) {
+                this.pandaGen.tryStoreGlobalByName(node, variable.v.getName());
+                return;
             }
 
             if (variable.scope && variable.level >= 0) { // inner most function will load outer env instead of new a lex env
@@ -1407,11 +1418,9 @@ export class Compiler {
     }
 
     loadTarget(node: ts.Node, variable: { scope: Scope | undefined, level: number, v: Variable | undefined }) {
-        if (variable.v instanceof ModuleVariable) {
-            this.pandaGen.loadModuleVariable(node, variable.v.getModule(), variable.v.getExoticName());
-        } else if (variable.v instanceof LocalVariable) {
+         if (variable.v instanceof LocalVariable) {
             if (variable.v.isLetOrConst() || variable.v.isClass()) {
-                if (variable.scope instanceof GlobalScope || variable.scope instanceof ModuleScope) {
+                if (variable.scope instanceof GlobalScope) {
                     this.pandaGen.tryLoadGlobalByName(node, variable.v.getName());
                     return;
                 }

@@ -35,25 +35,24 @@ import {
     LetDecl,
     LocalScope,
     LoopScope,
-    ModDecl,
     ModuleScope,
     Scope,
     VarDecl,
     VariableScope
 } from "./scope";
 import {
-    AddCtor2Class,
-    isContainConstruct,
-    getClassNameForConstructor
+    AddCtor2Class, getClassNameForConstructor, isContainConstruct
 } from "./statement/classStatement";
 import { checkSyntaxError } from "./syntaxChecker";
 import { isGlobalIdentifier } from "./syntaxCheckHelper";
+import { TypeChecker } from "./typeChecker";
 import { VarDeclarationKind } from "./variable";
 
 export class Recorder {
     node: ts.Node;
     scope: Scope;
     compilerDriver: CompilerDriver;
+    recordType: boolean;
     private scopeMap: Map<ts.Node, Scope> = new Map<ts.Node, Scope>();
     private hoistMap: Map<Scope, Decl[]> = new Map<Scope, Decl[]>();
     private parametersMap: Map<ts.FunctionLikeDeclaration, FunctionParameter[]> = new Map<ts.FunctionLikeDeclaration, FunctionParameter[]>();
@@ -63,15 +62,17 @@ export class Recorder {
     private exportStmts: Array<ModuleStmt> = [];
     private defaultUsed: boolean = false;
 
-    constructor(node: ts.Node, scope: Scope, compilerDriver: CompilerDriver) {
+    constructor(node: ts.Node, scope: Scope, compilerDriver: CompilerDriver, recordType: boolean) {
         this.node = node;
         this.scope = scope;
         this.compilerDriver = compilerDriver;
+        this.recordType = recordType;
         this.funcNameMap = new Map<string, number>();
         this.funcNameMap.set("main", 1);
     }
 
     record() {
+        this.setParent(this.node)
         this.setScopeMap(this.node, this.scope);
         this.recordInfo(this.node, this.scope);
         return this.node;
@@ -81,9 +82,22 @@ export class Recorder {
         return this.ClassGroupOfNoCtor;
     }
 
+    private setParent(node: ts.Node) {
+        node.forEachChild(childNode => {
+            if (childNode!.parent == undefined || childNode.parent.kind != node.kind) {
+                childNode = jshelpers.setParent(childNode, node)!;
+                let originNode = ts.getOriginalNode(childNode);
+                childNode = ts.setTextRange(childNode, originNode);
+            }
+            this.setParent(childNode);
+        });
+    }
+
     private recordInfo(node: ts.Node, scope: Scope) {
         node.forEachChild(childNode => {
-            checkSyntaxError(childNode);
+            if (!this.recordType) {
+                checkSyntaxError(childNode);
+            }
             switch (childNode.kind) {
                 case ts.SyntaxKind.FunctionExpression:
                 case ts.SyntaxKind.MethodDeclaration:
@@ -132,6 +146,7 @@ export class Recorder {
                     break;
                 }
                 case ts.SyntaxKind.Identifier: {
+                    // getTypeFlagsForIdentifier(childNode);
                     this.recordVariableDecl(<ts.Identifier>childNode, scope);
                     break;
                 }
@@ -160,6 +175,13 @@ export class Recorder {
                         throw new DiagnosticError(childNode, DiagnosticCode.Duplicate_identifier_0, jshelpers.getSourceFileOfNode(childNode), ["default"]);
                     }
                     this.defaultUsed = true;
+                    this.recordInfo(childNode, scope);
+                    break;
+                }
+                case ts.SyntaxKind.VariableStatement: {
+                    if (this.recordType) {
+                        TypeChecker.getInstance().formatNodeType(childNode);
+                    }
                     this.recordInfo(childNode, scope);
                     break;
                 }
@@ -197,6 +219,7 @@ export class Recorder {
         let parent = this.getDeclarationNodeOfId(id);
 
         if (parent) {
+            // console.log(id.getText());
             let declKind = astutils.getVarDeclarationKind(<ts.VariableDeclaration>parent);
 
             // collect declaration information to corresponding scope
@@ -217,7 +240,7 @@ export class Recorder {
                     let tmp: Scope | undefined = nearestRefVariableScope.getNearestLexicalScope();
                     let needCreateLoopEnv: boolean = false;
                     if (nearestDefLexicalScope instanceof LoopScope) {
-                        while(tmp) {
+                        while (tmp) {
                             if (tmp == nearestDefLexicalScope) {
                                 needCreateLoopEnv = true;
                                 break;
@@ -236,7 +259,7 @@ export class Recorder {
 
         if (name == "arguments") {
             let varialbeScope = scope.getNearestVariableScope();
-            varialbeScope ?.setUseArgs(true);
+            varialbeScope?.setUseArgs(true);
         }
     }
 
@@ -292,7 +315,7 @@ export class Recorder {
             // import defaultExport from "a.js"
             if (importClause.name) {
                 let name = jshelpers.getTextOfIdentifierOrLiteral(importClause.name);
-                scope.setDecls(new ModDecl(name, importClause.name));
+                scope.setDecls(new ConstDecl(name, importClause.name));
                 importStmt.addLocalName(name, "default");
             }
 
@@ -313,7 +336,7 @@ export class Recorder {
                     namedBindings.elements.forEach((element) => {
                         let name: string = jshelpers.getTextOfIdentifierOrLiteral(element.name);
                         let exoticName: string = element.propertyName ? jshelpers.getTextOfIdentifierOrLiteral(element.propertyName) : name;
-                        scope.setDecls(new ModDecl(name, element));
+                        scope.setDecls(new ConstDecl(name, element));
                         importStmt.addLocalName(name, exoticName);
                     });
                 }
@@ -493,8 +516,11 @@ export class Recorder {
 
         // if variable share a same name with the parameter of its contained function, it should not be hoisted
         if (scope instanceof FunctionScope) {
-            let nearestFunc = jshelpers.getContainingFunction(node);
-            let functionParameters = this.getParametersOfFunction(nearestFunc);
+            let nearestFunc = jshelpers.getContainingFunctionDeclaration(node);
+            if (!nearestFunc) {
+                return;
+            }
+            let functionParameters = this.getParametersOfFunction(<ts.FunctionLikeDeclaration>nearestFunc);
             if (functionParameters) {
                 for (let i = 0; i < functionParameters.length; i++) {
                     if (functionParameters[i].name == declName) {
