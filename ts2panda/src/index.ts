@@ -157,7 +157,8 @@ namespace Compiler {
             module: ts.ModuleKind.ES2015,
             strictNullChecks: true,
             skipLibCheck: true,
-            alwaysStrict: true
+            alwaysStrict: true,
+            importsNotUsedAsValues: ts.ImportsNotUsedAsValues.Preserve
         };
     }
 }
