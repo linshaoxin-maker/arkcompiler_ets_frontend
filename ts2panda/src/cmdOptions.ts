@@ -36,7 +36,8 @@ const ts2pandaOptions = [
                                                                     2: other bytecode optimizations, unimplemented yet"},
     { name: 'help', alias: 'h', type: Boolean, description: "Show usage guide."},
     { name: 'bc-version', alias: 'v', type: Boolean, defaultValue: false, description: "Print ark bytecode version"},
-    { name: 'bc-min-version', type: Boolean, defaultValue: false, description: "Print ark bytecode minimum supported version"}
+    { name: 'bc-min-version', type: Boolean, defaultValue: false, description: "Print ark bytecode minimum supported version"},
+    { name: 'merge-abc-files', alias: 'e', type: Boolean, defaultValue: false, description: "Merge multiple abc files into one" }
 ]
 
 export class CmdOptions {
@@ -113,7 +114,7 @@ export class CmdOptions {
         return inputFile;
     }
 
-    static getOutputBinName(): string {
+    static getOutputFileName(): string {
         let outputFile = this.options.output;
         if (outputFile == "") {
             outputFile = CmdOptions.getInputFileName() + ".abc";
@@ -163,6 +164,13 @@ export class CmdOptions {
             return false;
         }
         return this.options["bc-min-version"];
+    }
+
+    static isMergeAbcFiles(): boolean {
+        if (!this.options) {
+            return false;
+        }
+        return this.options["merge-abc-files"];
     }
 
     static parseUserCmd(args: string[]): ts.ParsedCommandLine | undefined {
