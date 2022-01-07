@@ -13,9 +13,8 @@
  * limitations under the License.
  */
 
-import { writeFileSync } from "fs";
 import * as ts from "typescript";
-import { initiateTs2abcChildProcess, terminateWritePipe } from "./base/util";
+import { initiateTs2abcChildProcess } from "./base/util";
 import { CmdOptions } from "./cmdOptions";
 import { CompilerDriver } from "./compilerDriver";
 import * as diag from "./diagnostic";
@@ -58,18 +57,8 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
 
     if (!CmdOptions.isAssemblyMode()) {
         if (CmdOptions.isMergeAbcFiles()) {
-            Ts2Panda.dumpCmdOptions(ts2abcProc);
-            Ts2Panda.dumpStringsArray(ts2abcProc);
-            Ts2Panda.dumpConstantPool(ts2abcProc);
-            Ts2Panda.dumpRecoder(ts2abcProc);
-
-            terminateWritePipe(ts2abcProc);
-            if (CmdOptions.isEnableDebugLog()) {
-                let jsonFileName = outputFileName.substring(0, outputFileName.lastIndexOf(".")).concat(".json");
-                writeFileSync(jsonFileName, Ts2Panda.jsonString);
-                LOGD("Successfully generate ", `${jsonFileName}`);
-            }
-            Ts2Panda.clearDumpData();
+            Ts2Panda.dumpCommonFields(ts2abcProc, outputFileName);
+            PandaGen.clearRecoders();
             PandaGen.clearLiteralArrayBuffer();
         }
     }

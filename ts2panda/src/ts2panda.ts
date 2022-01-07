@@ -13,7 +13,13 @@
  * limitations under the License.
  */
 
-import { escapeUnicode, getRangeStartVregPos, isRangeInst } from "./base/util";
+import { writeFileSync } from "fs";
+import {
+    escapeUnicode,
+    getRangeStartVregPos,
+    isRangeInst,
+    terminateWritePipe
+} from "./base/util";
 import { CmdOptions } from "./cmdOptions";
 import { DebugPosInfo } from "./debuginfo";
 import {
@@ -25,7 +31,13 @@ import {
 } from "./irnodes";
 import { LOGD } from "./log";
 import { PandaGen } from "./pandagen";
-import { CatchTable, Function, Ins, Record, Signature } from "./pandasm";
+import {
+    CatchTable,
+    Function,
+    Ins,
+    Record,
+    Signature
+} from "./pandasm";
 import { generateCatchTables } from "./statement/tryStatement";
 
 const dollarSign: RegExp = /\$/g;
@@ -143,6 +155,7 @@ export class Ts2Panda {
             if (CmdOptions.isEnableDebugLog()) {
                 Ts2Panda.jsonString += jsonLiteralArrUnicode;
             }
+
             jsonLiteralArrUnicode = "$" + jsonLiteralArrUnicode.replace(dollarSign, '#$') + "$";
             ts2abc.stdio[3].write(jsonLiteralArrUnicode + '\n');
         });
@@ -239,5 +252,20 @@ export class Ts2Panda {
     static clearDumpData() {
         Ts2Panda.strings.clear();
         Ts2Panda.jsonString = "";
+    }
+
+    static dumpCommonFields(ts2abcProc: any, outputFileName: string) {
+        Ts2Panda.dumpCmdOptions(ts2abcProc);
+        Ts2Panda.dumpStringsArray(ts2abcProc);
+        Ts2Panda.dumpConstantPool(ts2abcProc);
+        Ts2Panda.dumpRecoder(ts2abcProc);
+
+        terminateWritePipe(ts2abcProc);
+        if (CmdOptions.isEnableDebugLog()) {
+            let jsonFileName = outputFileName.substring(0, outputFileName.lastIndexOf(".")).concat(".json");
+            writeFileSync(jsonFileName, Ts2Panda.jsonString);
+            LOGD("Successfully generate ", `${jsonFileName}`);
+        }
+        Ts2Panda.clearDumpData();
     }
 }

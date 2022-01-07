@@ -13,11 +13,13 @@
  * limitations under the License.
  */
 
-import { writeFileSync } from "fs";
 import * as ts from "typescript";
 import { addVariableToScope } from "./addVariable2Scope";
 import { AssemblyDumper } from "./assemblyDumper";
-import { initiateTs2abcChildProcess, terminateWritePipe } from "./base/util";
+import {
+    initiateTs2abcChildProcess,
+    terminateWritePipe
+} from "./base/util";
 import { CmdOptions } from "./cmdOptions";
 import { Compiler } from "./compiler";
 import { CompilerStatistics } from "./compilerStatistics";
@@ -172,19 +174,7 @@ export class CompilerDriver {
                 this.prePendingCompilationUnits(recorder);
 
                 if (!CmdOptions.isMergeAbcFiles()) {
-                    Ts2Panda.dumpCmdOptions(this.getTs2abcProcess());
-                    Ts2Panda.dumpStringsArray(this.getTs2abcProcess());
-                    Ts2Panda.dumpConstantPool(this.getTs2abcProcess());
-
-                    terminateWritePipe(this.getTs2abcProcess());
-                    if (CmdOptions.isEnableDebugLog()) {
-                        let jsonFileName = this.outputfileName
-                            .substring(0, this.outputfileName.lastIndexOf("."))
-                            .concat(".json");
-                        writeFileSync(jsonFileName, Ts2Panda.jsonString);
-                        LOGD("Successfully generate ", `${jsonFileName}`);
-                    }
-
+                    Ts2Panda.dumpCommonFields(this.getTs2abcProcess(), this.outputfileName);
                     Ts2Panda.clearDumpData();
                 }
             } catch (err) {
@@ -196,6 +186,7 @@ export class CompilerDriver {
         }
 
         if (!CmdOptions.isMergeAbcFiles()) {
+            PandaGen.clearRecoders();
             PandaGen.clearLiteralArrayBuffer();
         }
     }
