@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-import { Ts2Panda } from "src/ts2panda";
 import * as ts from "typescript";
 import { Literal, LiteralBuffer, LiteralTag } from "../base/literal";
 import { LReference } from "../base/lreference";
@@ -26,6 +25,7 @@ import {
 } from "../base/properties";
 import { getParameterLength4Ctor, getParamLengthOfFunc, isUndefinedIdentifier } from "../base/util";
 import { CacheList, getVregisterCache } from "../base/vregisterCache";
+import { CmdOptions } from "../cmdOptions";
 import { Compiler } from "../compiler";
 import { createArrayFromElements } from "../expression/arrayLiteralExpression";
 import { createMethodOrAccessor } from "../expression/objectLiteralExpression";
@@ -238,6 +238,11 @@ function createClassLiteralBuf(compiler: Compiler, classBuffer: LiteralBuffer,
     let classLiteralBuf = PandaGen.getLiteralArrayBuffer();
     let buffIdx = classLiteralBuf.length;
     let internalName = compiler.getCompilerDriver().getInternalNameForCtor(stmt);
+    if (CmdOptions.isMergeAbcFiles()) {
+        let sourceFileName: string = compiler.getCompilerDriver().getSourceFileName();
+        let recoderName: string = sourceFileName.substring(0, sourceFileName.lastIndexOf("."));
+        internalName = `${recoderName}.${internalName}`
+    }
     classLiteralBuf.push(classBuffer);
 
     let parameterLength = getParameterLength4Ctor(stmt);
@@ -651,7 +656,7 @@ function scalarArrayEquals(node1: ts.Node | undefined, node2: ts.Node | undefine
         let val1Modifs = node1.modifiers;
         let val2Modifs = node2.modifiers;
         if (val1Modifs && val2Modifs) {
-            return val1Modifs.length == val2Modifs.length && val1Modifs.every(function(v, i) { return v === val2Modifs![i] });;
+            return val1Modifs.length == val2Modifs.length && val1Modifs.every(function (v, i) { return v === val2Modifs![i] });;
         }
 
         if (!val1Modifs && !val2Modifs) {

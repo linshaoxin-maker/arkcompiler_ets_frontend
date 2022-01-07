@@ -760,7 +760,7 @@ export class Compiler {
 
     compileExpression(expr: ts.Expression) {
         // Please keep order of cases the same as in types.ts
-        LOGD(this.debugTag, "compile expr:" + expr.kind);
+        LOGD(this.debugTag, "compile expr:" + this.getNodeName(expr));
         switch (expr.kind) {
             case ts.SyntaxKind.NumericLiteral: // line 34
                 compileNumericLiteral(this.pandaGen, <ts.NumericLiteral>expr);

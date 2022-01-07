@@ -13,6 +13,13 @@
  * limitations under the License.
  */
 
+import { writeFileSync } from "fs";
+import {
+    escapeUnicode,
+    getRangeStartVregPos,
+    isRangeInst,
+    terminateWritePipe
+} from "./base/util";
 import { CmdOptions } from "./cmdOptions";
 import { DebugPosInfo } from "./debuginfo";
 import {
@@ -24,9 +31,14 @@ import {
 } from "./irnodes";
 import { LOGD } from "./log";
 import { PandaGen } from "./pandagen";
-import { CatchTable, Function, Ins, Signature } from "./pandasm";
+import {
+    CatchTable,
+    Function,
+    Ins,
+    Record,
+    Signature
+} from "./pandasm";
 import { generateCatchTables } from "./statement/tryStatement";
-import { escapeUnicode, isRangeInst, getRangeStartVregPos } from "./base/util";
 
 const dollarSign: RegExp = /\$/g;
 
@@ -119,7 +131,7 @@ export class Ts2Panda {
             Ts2Panda.jsonString += escapeUnicode(JSON.stringify(strings_arr, null, 2));
         }
 
-        strings_arr.forEach(function(str){
+        strings_arr.forEach(function (str: string) {
             let strObject = {
                 "type": JsonType.string,
                 "string": str
@@ -133,22 +145,40 @@ export class Ts2Panda {
 
     static dumpConstantPool(ts2abc: any): void {
         let literalArrays = PandaGen.getLiteralArrayBuffer();
-        if (CmdOptions.isEnableDebugLog()) {
-            Ts2Panda.jsonString += escapeUnicode(JSON.stringify(literalArrays, null, 2));
-        }
 
-        literalArrays.forEach(function(literalArray){
+        literalArrays.forEach(function (literalArray) {
             let literalArrayObject = {
                 "type": JsonType.literal_arr,
                 "literalArray": literalArray
             }
             let jsonLiteralArrUnicode = escapeUnicode(JSON.stringify(literalArrayObject, null, 2));
+            if (CmdOptions.isEnableDebugLog()) {
+                Ts2Panda.jsonString += jsonLiteralArrUnicode;
+            }
+
             jsonLiteralArrUnicode = "$" + jsonLiteralArrUnicode.replace(dollarSign, '#$') + "$";
             ts2abc.stdio[3].write(jsonLiteralArrUnicode + '\n');
         });
     }
 
-    static dumpCmdOptions(ts2abc: any): void  {
+    static dumpRecoder(ts2abc: any): void {
+        let recoders: Record[] = PandaGen.getRecoders();
+
+        recoders.forEach(function (recoder: Record) {
+            let recoderObject = {
+                "type": JsonType.record,
+                "rec_body": recoder
+            }
+            let jsonRecoderUnicode = escapeUnicode(JSON.stringify(recoderObject, null, 2));
+            if (CmdOptions.isEnableDebugLog()) {
+                Ts2Panda.jsonString += jsonRecoderUnicode;
+            }
+            jsonRecoderUnicode = "$" + jsonRecoderUnicode.replace(dollarSign, '#$') + "$";
+            ts2abc.stdio[3].write(jsonRecoderUnicode + '\n');
+        });
+    }
+
+    static dumpCmdOptions(ts2abc: any): void {
         let options = {
             "type": JsonType.options,
             "module_mode": CmdOptions.isModules(),
@@ -169,7 +199,7 @@ export class Ts2Panda {
         let funcName = pg.internalName;
         let funcSignature = Ts2Panda.getFuncSignature(pg);
         let funcInsnsAndRegsNum = Ts2Panda.getFuncInsnsAndRegsNum(pg);
-        let sourceFile = pg.getSourceFileDebugInfo();
+        let sourceFile = pg.getSourceFileName();
         let callType = pg.getCallType();
 
         let variables, sourceCode;
@@ -222,5 +252,20 @@ export class Ts2Panda {
     static clearDumpData() {
         Ts2Panda.strings.clear();
         Ts2Panda.jsonString = "";
+    }
+
+    static dumpCommonFields(ts2abcProc: any, outputFileName: string) {
+        Ts2Panda.dumpCmdOptions(ts2abcProc);
+        Ts2Panda.dumpStringsArray(ts2abcProc);
+        Ts2Panda.dumpConstantPool(ts2abcProc);
+        Ts2Panda.dumpRecoder(ts2abcProc);
+
+        terminateWritePipe(ts2abcProc);
+        if (CmdOptions.isEnableDebugLog()) {
+            let jsonFileName = outputFileName.substring(0, outputFileName.lastIndexOf(".")).concat(".json");
+            writeFileSync(jsonFileName, Ts2Panda.jsonString);
+            LOGD("Successfully generate ", `${jsonFileName}`);
+        }
+        Ts2Panda.clearDumpData();
     }
 }
