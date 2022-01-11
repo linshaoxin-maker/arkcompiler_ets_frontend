@@ -13,33 +13,36 @@
  * limitations under the License.
  */
 
+import { writeFileSync } from "fs";
+import { LiteralBuffer } from "./base/literal";
+import {
+  escapeUnicode,
+  getRangeStartVregPos,
+  isRangeInst,
+  terminateWritePipe
+} from "./base/util";
 import { CmdOptions } from "./cmdOptions";
 import { DebugPosInfo } from "./debuginfo";
 import {
-    Imm,
-    IRNode,
-    Label,
-    OperandType,
-    VReg
+  Imm,
+  IRNode,
+  Label,
+  OperandType,
+  VReg
 } from "./irnodes";
 import { LOGD } from "./log";
 import { PandaGen } from "./pandagen";
 import {
-    CatchTable,
-    DeclaredSymbol2Type,
-    ExportedSymbol2Type,
-    Function,
-    Ins,
-    Signature
+  CatchTable,
+  DeclaredSymbol2Type,
+  ExportedSymbol2Type,
+  Function,
+  Ins,
+  Record,
+  Signature,
+  TypeOfVreg
 } from "./pandasm";
 import { generateCatchTables } from "./statement/tryStatement";
-import {
-    escapeUnicode,
-    isRangeInst,
-    getRangeStartVregPos
-} from "./base/util";
-import { TypeOfVreg } from "./pandasm";
-import { LiteralBuffer } from "./base/literal";
 
 const dollarSign: RegExp = /\$/g;
 
@@ -130,7 +133,7 @@ export class Ts2Panda {
     static dumpStringsArray(ts2abc: any) {
         let strings_arr = Array.from(Ts2Panda.strings);
 
-        strings_arr.forEach(function(str) {
+        strings_arr.forEach(function (str: string) {
             let strObject = {
                 "type": JsonType.string,
                 "string": str
@@ -172,11 +175,32 @@ export class Ts2Panda {
                 "literalArray": literalArray
             }
             let jsonLiteralArrUnicode = escapeUnicode(JSON.stringify(literalArrayObject, null, 2));
+            if (CmdOptions.isEnableDebugLog()) {
+                Ts2Panda.jsonString += jsonLiteralArrUnicode;
+            }
+
             jsonLiteralArrUnicode = "$" + jsonLiteralArrUnicode.replace(dollarSign, '#$') + "$";
             if (CmdOptions.isEnableDebugLog()) {
                 Ts2Panda.jsonString += jsonLiteralArrUnicode;
             }
             ts2abc.stdio[3].write(jsonLiteralArrUnicode + '\n');
+        });
+    }
+
+    static dumpRecoder(ts2abc: any): void {
+        let recoders: Record[] = PandaGen.getRecoders();
+
+        recoders.forEach(function (recoder: Record) {
+            let recoderObject = {
+                "type": JsonType.record,
+                "rec_body": recoder
+            }
+            let jsonRecoderUnicode = escapeUnicode(JSON.stringify(recoderObject, null, 2));
+            if (CmdOptions.isEnableDebugLog()) {
+                Ts2Panda.jsonString += jsonRecoderUnicode;
+            }
+            jsonRecoderUnicode = "$" + jsonRecoderUnicode.replace(dollarSign, '#$') + "$";
+            ts2abc.stdio[3].write(jsonRecoderUnicode + '\n');
         });
     }
 
@@ -201,7 +225,7 @@ export class Ts2Panda {
         let funcName = pg.internalName;
         let funcSignature = Ts2Panda.getFuncSignature(pg);
         let funcInsnsAndRegsNum = Ts2Panda.getFuncInsnsAndRegsNum(pg);
-        let sourceFile = pg.getSourceFileDebugInfo();
+        let sourceFile = pg.getSourceFileName();
         let callType = pg.getCallType();
         let typeRecord = pg.getLocals();
         let typeInfo = new Array<TypeOfVreg>();
@@ -218,7 +242,7 @@ export class Ts2Panda {
 
         let exportedTypes = PandaGen.getExportedTypes();
         let exportedSymbol2Types = exportedTypes.size == 0 ? undefined : new Array<ExportedSymbol2Type>();
-        if (funcName == "func_main_0") {
+        if (funcName.indexOf("func_main_0") !== -1) {
             exportedTypes.forEach((type: number, symbol: string) => {
                 let exportedSymbol2Type = new ExportedSymbol2Type(symbol, type);
                 exportedSymbol2Types!.push(exportedSymbol2Type);
@@ -227,7 +251,7 @@ export class Ts2Panda {
 
         let declareddTypes = PandaGen.getDeclaredTypes();
         let declaredSymbol2Types = declareddTypes.size == 0 ? undefined : new Array<DeclaredSymbol2Type>();
-        if (funcName == "func_main_0") {
+        if (funcName.indexOf("func_main_0") !== -1) {
             declareddTypes.forEach((type: number, symbol: string) => {
                 let declaredSymbol2Type = new DeclaredSymbol2Type(symbol, type);
                 declaredSymbol2Types!.push(declaredSymbol2Type);
@@ -287,5 +311,20 @@ export class Ts2Panda {
     static clearDumpData() {
         Ts2Panda.strings.clear();
         Ts2Panda.jsonString = "";
+    }
+
+    static dumpCommonFields(ts2abcProc: any, outputFileName: string) {
+        Ts2Panda.dumpCmdOptions(ts2abcProc);
+        Ts2Panda.dumpStringsArray(ts2abcProc);
+        Ts2Panda.dumpConstantPool(ts2abcProc);
+        Ts2Panda.dumpRecoder(ts2abcProc);
+
+        terminateWritePipe(ts2abcProc);
+        if (CmdOptions.isEnableDebugLog()) {
+            let jsonFileName = outputFileName.substring(0, outputFileName.lastIndexOf(".")).concat(".json");
+            writeFileSync(jsonFileName, Ts2Panda.jsonString);
+            LOGD("Successfully generate ", `${jsonFileName}`);
+        }
+        Ts2Panda.clearDumpData();
     }
 }
