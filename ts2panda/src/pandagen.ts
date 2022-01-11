@@ -173,6 +173,7 @@ import {
     VariableAcessStore
 } from "./lexenv";
 import { LOGE } from "./log";
+import { Record } from "./pandasm";
 import {
     FunctionScope,
     LoopScope,
@@ -200,12 +201,13 @@ export class PandaGen {
     // for debug info
     private variableDebugInfoArray: VariableDebugInfo[] = [];
     private firstStmt: ts.Statement | undefined;
-    private sourceFileDebugInfo: string = "";
+    private sourceFileName: string = "";
     private sourceCodeDebugInfo: string | undefined;
     private icSize: number = 0;
     private callType: number = 0;
 
     private static literalArrayBuffer: Array<LiteralBuffer> = new Array<LiteralBuffer>();
+    private static recoders: Array<Record> = new Array<Record>();
 
     constructor(internalName: string, parametersCount: number, scope: Scope | undefined = undefined) {
         this.internalName = internalName;
@@ -246,12 +248,12 @@ export class PandaGen {
         this.sourceCodeDebugInfo = code;
     }
 
-    public getSourceFileDebugInfo() {
-        return this.sourceFileDebugInfo;
+    public getSourceFileName() {
+        return this.sourceFileName;
     }
 
-    public setSourceFileDebugInfo(sourceFile: string) {
-        this.sourceFileDebugInfo = sourceFile;
+    public setSourceFileName(sourceFile: string) {
+        this.sourceFileName = sourceFile;
     }
 
     static getLiteralArrayBuffer() {
@@ -260,6 +262,14 @@ export class PandaGen {
 
     static clearLiteralArrayBuffer() {
         PandaGen.literalArrayBuffer = [];
+    }
+
+    static getRecoders() {
+        return PandaGen.recoders;
+    }
+
+    static clearRecoders() {
+        PandaGen.recoders = [];
     }
 
     getParameterLength() {
