@@ -35,21 +35,21 @@ DEFAULT_NODE_MODULE = os.path.join(
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--src-dir',
+    parser.add_argument("--src-dir",
                         default=TS2PANDA_DIR,
-                        help='Source directory')
-    parser.add_argument('--dist-dir',
+                        help="Source directory")
+    parser.add_argument("--dist-dir",
                         default=DEFAULT_TARGET_DIR,
-                        help='Destination directory')
+                        help="Destination directory")
     parser.add_argument("--node-modules",
                         default=DEFAULT_NODE_MODULE,
-                        help='path to node-modules exetuable')
-    parser.add_argument('--platform',
+                        help="path to node-modules exetuable")
+    parser.add_argument("--platform",
                         default="linux",
-                        help='platform, as: linux, mac, win')
-    parser.add_argument('--js-file',
-                        metavar='FILE',
-                        help='The name of the test use case file to execute')
+                        help="platform, as: linux, mac, win")
+    parser.add_argument("--js-file",
+                        metavar="FILE",
+                        help="The name of the test use case file to execute")
 
     return parser.parse_args()
 
@@ -85,37 +85,38 @@ class Ts2abcTests():
     def copy_node_modules(self):
         src_dir = self.src_dir
         dist_dir = self.dist_dir
-        run_command(['cp', '-f', os.path.join(src_dir, "package.json"),
+        run_command(["cp", "-f", os.path.join(src_dir, "package.json"),
                      os.path.join(dist_dir, "package.json")])
-        run_command(['cp', '-f', os.path.join(src_dir, "package-lock.json"),
+        run_command(["cp", "-f", os.path.join(src_dir, "package-lock.json"),
                      os.path.join(dist_dir, "package-lock.json")])
 
         if self.node_modules:
-            run_command(['cp', '-rf', self.node_modules, dist_dir])
+            run_command(["cp", "-rf", self.node_modules, dist_dir])
         else:
-            run_command(['npm', 'install'], dist_dir)
+            run_command(["npm", "install"], dist_dir)
 
     def copy_tests(self):
-        if os.path.exists(f'{self.dist_dir}/tests'):
-            run_command(['rm', '-rf', f'{self.dist_dir}/tests'])
-        run_command(['cp', '-rf', f'{self.src_dir}/tests', self.dist_dir])
+        if os.path.exists("{}/tests".format(self.dist_dir)):
+            run_command(["rm", "-rf", "{}/tests".format(self.dist_dir)])
+        run_command(
+            ["cp", "-rf", "{}/tests".format(self.src_dir), self.dist_dir])
 
     def run_build(self):
         plat_form = self.platform
         tsc = "node_modules/typescript/bin/tsc"
         if plat_form == "linux":
-            cmd = [tsc, '-b', 'src', 'tests']
+            cmd = [tsc, "-b", "src", "tests"]
             ret = run_command(cmd, self.dist_dir)
         elif plat_form == "win":
-            cmd = [tsc, '-b', 'src/tsconfig.win.json',
-                   'tests/tsconfig.win.json']
+            cmd = [tsc, "-b", "src/tsconfig.win.json",
+                   "tests/tsconfig.win.json"]
             ret = run_command(cmd, self.dist_dir)
-        elif plat_form == 'mac':
-            cmd = [tsc, '-b', 'src/tsconfig.mac.json',
-                   'tests/tsconfig.mac.json']
+        elif plat_form == "mac":
+            cmd = [tsc, "-b", "src/tsconfig.mac.json",
+                   "tests/tsconfig.mac.json"]
             ret = run_command(cmd, self.dist_dir)
         if ret:
-            raise RuntimeError("Run [" + " ".join(cmd) + "] failed !")
+            raise RuntimeError("Run [ {} ] failed !".format(" ".join(cmd)))
 
     def run_tests(self):
         os.chdir(self.dist_dir)
@@ -129,19 +130,18 @@ class Ts2abcTests():
             tests_args = "tests/**/*.test.js"
 
         if plat_form == "linux":
-            cmd = [mocha, f'build/{tests_args}']
-            ret = run_command(cmd, self.dist_dir)
+            cmd = [mocha, "build/{}".format(tests_args)]
         elif plat_form == "win":
-            cmd = [mocha, f'build-win/{tests_args}']
-            ret = run_command(cmd, self.dist_dir)
-        elif plat_form == 'mac':
-            cmd = [mocha, f'build-mac/{tests_args}']
-            ret = run_command(cmd, self.dist_dir)
+            cmd = [mocha, "build-win/{}".format(tests_args)]
+        elif plat_form == "mac":
+            cmd = [mocha, "build-mac/{}".format(tests_args)]
+        cmd.extend(["--exit", "--recursive", "--timeout", "30000000"])
+        ret = run_command(cmd, self.dist_dir)
         if ret:
-            raise RuntimeError("Run [" + " ".join(cmd) + "] failed !")
+            raise RuntimeError("Run [ {} ] failed !".format(" ".join(cmd)))
         else:
-            print("Run [" + " ".join(cmd) + "] success!")
-        print("used: %.5f seconds" % (time.time() - start_time))
+            print("Run [ {} ] success!".format(" ".join(cmd)))
+        print("used: {:0,.5f} seconds".format(time.time() - start_time))
 
 
 def main():

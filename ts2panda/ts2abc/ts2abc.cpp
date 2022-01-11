@@ -61,17 +61,11 @@ namespace {
 }
 
 // pandasm hellpers
-static panda::pandasm::Record MakeRecordDefinition(const std::string &name, const std::string &wholeLine,
-    size_t boundLeft, size_t boundRight, size_t lineNumber)
+static panda::pandasm::Record MakeRecordDefinition(const std::string &name)
 {
     auto record = panda::pandasm::Record(
         name,
-        LANG_EXT,
-        boundLeft,
-        boundRight,
-        wholeLine,
-        IS_DEFINED,
-        lineNumber);
+        LANG_EXT);
 
     return record;
 }
@@ -286,28 +280,7 @@ static panda::pandasm::Record ParseRecord(const Json::Value &record)
         recordName = record["name"].asString();
     }
 
-    std::string wholeLine = "";
-    if (record.isMember("whole_line") && record["whole_line"].isString()) {
-        wholeLine = ParseString(record["whole_line"].asString());
-    }
-
-    int boundLeft = -1;
-    if (record.isMember("bound_left") && record["bound_left"].isInt()) {
-        boundLeft = record["bound_left"].asInt();
-    }
-
-    int boundRight = -1;
-    if (record.isMember("bound_right") && record["bound_right"].isInt()) {
-        boundRight = record["bound_right"].asInt();
-    }
-
-    int lineNumber = -1;
-    if (record.isMember("line_number") && record["line_number"].isInt()) {
-        lineNumber = record["line_number"].asInt();
-    }
-
-    auto pandaRecord = MakeRecordDefinition(recordName, wholeLine, static_cast<size_t>(boundLeft),
-        static_cast<size_t>(boundRight), static_cast<size_t>(lineNumber));
+    auto pandaRecord = MakeRecordDefinition(recordName);
 
     if (record.isMember("metadata") && record["metadata"].isObject()) {
         auto metadata = record["metadata"];
@@ -317,6 +290,10 @@ static panda::pandasm::Record ParseRecord(const Json::Value &record)
                 pandaRecord.metadata->SetAttribute(metAttribute);
             }
         }
+    }
+
+    if (record.isMember("source_file") && record["source_file"].isString()) {
+        pandaRecord.source_file = record["source_file"].asString();
     }
 
     return pandaRecord;

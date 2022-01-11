@@ -89,7 +89,8 @@ export function compileClassDeclaration(compiler: Compiler, stmt: ts.ClassLikeDe
             }
 
             if (ts.isMethodDeclaration(prop.getValue())) {
-                let methodLiteral = new Literal(LiteralTag.METHOD, compiler.getCompilerDriver().getFuncInternalName(<ts.MethodDeclaration>prop.getValue(), compiler.getRecorder()));
+                let internalName = compiler.getCompilerDriver().getFuncInternalName(<ts.MethodDeclaration>prop.getValue(), compiler.getRecorder());
+                let methodLiteral = new Literal(LiteralTag.METHOD, internalName);
                 let affiliateLiteral = new Literal(LiteralTag.METHODAFFILIATE, getParamLengthOfFunc(<ts.MethodDeclaration>prop.getValue()));
                 classBuffer.addLiterals(methodLiteral, affiliateLiteral);
             } else {
@@ -253,7 +254,8 @@ function createClassLiteralBuf(compiler: Compiler, classBuffer: LiteralBuffer,
 
     let ctorNode = compiler.getRecorder().getCtorOfClass(stmt);
     let internalName = compiler.getCompilerDriver().getInternalNameForCtor(stmt, <ts.ConstructorDeclaration>ctorNode);
-
+    let recoderName: string = compiler.getCompilerDriver().getRecoderName();
+    internalName = `${recoderName}.${internalName}`
     let pandaGen = compiler.getPandaGen();
     let parameterLength = getParameterLength4Ctor(stmt);
     let buffIdx = classLiteralBuf.length - 1;
