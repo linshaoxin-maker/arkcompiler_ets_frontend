@@ -22,21 +22,72 @@ import path = require("path");
 import { execute } from "./base/util";
 
 const ts2pandaOptions = [
-    { name: 'variant-bytecode', alias: 'r', type: Boolean, defaultValue: true, description: "emit 2nd bytecode to pandafile."},
-    { name: 'modules', alias: 'm', type: Boolean, defaultValue: false, description: "compile as module."},
-    { name: 'debug-log', alias: 'l', type: Boolean, defaultValue: false, description: "show info debug log."},
-    { name: 'dump-assembly', alias: 'a', type: Boolean, defaultValue: false, description: "dump assembly to file."},
-    { name: 'debug', alias: 'd', type: Boolean, defaultValue: false, description: "compile with debug info."},
-    { name: 'show-statistics', alias: 's', type: String, lazyMultiple: true, defaultValue: "", description: "show compile statistics(ast, histogram, hoisting, all)."},
-    { name: 'output', alias: 'o', type: String, defaultValue: "", description: "set output file."},
-    { name: 'timeout', alias: 't', type: Number, defaultValue: 0, description: "js to abc timeout threshold(unit: seconds)."},
-    { name: 'opt-log-level', type: String, defaultValue: "error", description: "specifie optimizer log level. Possible values: ['debug', 'info', 'error', 'fatal']"},
-    { name: 'opt-level', type: Number, defaultValue: 1, description: "Optimization level. Possible values: [0, 1, 2]. Default: 0\n    0: no optimizations\n    \
-                                                                    1: basic bytecode optimizations, including valueNumber, lowering, constantResolver, regAccAllocator\n    \
-                                                                    2: other bytecode optimizations, unimplemented yet"},
-    { name: 'help', alias: 'h', type: Boolean, description: "Show usage guide."},
-    { name: 'bc-version', alias: 'v', type: Boolean, defaultValue: false, description: "Print ark bytecode version"},
-    { name: 'bc-min-version', type: Boolean, defaultValue: false, description: "Print ark bytecode minimum supported version"}
+    {
+        name: 'variant-bytecode', alias: 'r', type: Boolean, defaultValue: true,
+        description: "emit 2nd bytecode to pandafile."
+    },
+    {
+        name: 'modules', alias: 'm', type: Boolean, defaultValue: false,
+        description: "compile as module."
+    },
+    {
+        name: 'debug-log', alias: 'l', type: Boolean, defaultValue: false,
+        description: "show info debug log."
+    },
+    {
+        name: 'dump-assembly', alias: 'a', type: Boolean, defaultValue: false,
+        description: "dump assembly to file."
+    },
+    {
+        name: 'debug', alias: 'd', type: Boolean, defaultValue: false,
+        description: "compile with debug info."
+    },
+    {
+        name: 'show-statistics', alias: 's', type: String, lazyMultiple: true, defaultValue: "",
+        description: "show compile statistics(ast, histogram, hoisting, all)."
+    },
+    {
+        name: 'output', alias: 'o', type: String, defaultValue: "",
+        description: "set output file."
+    },
+    {
+        name: 'timeout', alias: 't', type: Number, defaultValue: 0,
+        description: "js to abc timeout threshold(unit: seconds)."
+    },
+    {
+        name: 'opt-log-level', type: String, defaultValue: "error",
+        description: "specifie optimizer log level. Possible values: ['debug', 'info', 'error', 'fatal']"
+    },
+    {
+        name: 'opt-level', type: Number, defaultValue: 1,
+        description: `Optimization level. Possible values: [0, 1, 2]. Default: 0\n
+                    0: no optimizations\n
+                    1: basic bytecode optimizations, including valueNumber, lowering, constantResolver, regAccAllocator\n
+                    2: other bytecode optimizations, unimplemented yet`
+    },
+    {
+        name: 'help', alias: 'h', type: Boolean,
+        description: "Show usage guide."
+    },
+    {
+        name: 'bc-version', alias: 'v', type: Boolean, defaultValue: false,
+        description: "Print ark bytecode version"
+    },
+    {
+        name: 'bc-min-version', type: Boolean, defaultValue: false,
+        description: "Print ark bytecode minimum supported version"
+    },
+    {   name: 'merge-abc-files', alias: 'e', type: Boolean, defaultValue: false,
+        description: "Merge multiple abc files into one" 
+    },
+    {
+        name: 'modules-dir-map', type: String, defaultValue: "",
+        description: "The modules path map relation table."
+    },
+    {
+        name: 'recoder-dir-map', type: String, defaultValue: "",
+        description: "The recoder path map relation table."
+    }
 ]
 
 export class CmdOptions {
@@ -113,7 +164,7 @@ export class CmdOptions {
         return inputFile;
     }
 
-    static getOutputBinName(): string {
+    static getOutputFileName(): string {
         let outputFile = this.options.output;
         if (outputFile == "") {
             outputFile = CmdOptions.getInputFileName() + ".abc";
@@ -163,6 +214,39 @@ export class CmdOptions {
             return false;
         }
         return this.options["bc-min-version"];
+    }
+
+    static getModulesDirMap(): string[] {
+        if (!this.options) {
+            return [];
+        }
+
+        let file = this.options["modules-dir-map"];
+        if (file) {
+            let files = file.split(",");
+            return files;
+        }
+        return [];
+    }
+
+    static getRecodersDirMap(): string[] {
+        if (!this.options) {
+            return [];
+        }
+
+        let file = this.options["recoder-dir-map"];
+        if (file) {
+            let files = file.split(",");
+            return files;
+        }
+        return [];
+    }
+  
+    static isMergeAbcFiles(): boolean {
+        if (!this.options) {
+            return false;
+        }
+        return this.options["merge-abc-files"];
     }
 
     static parseUserCmd(args: string[]): ts.ParsedCommandLine | undefined {

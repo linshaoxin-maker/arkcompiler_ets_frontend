@@ -14,60 +14,55 @@
  */
 
 import * as ts from "typescript";
+import { initiateTs2abcChildProcess } from "./base/util";
 import { CmdOptions } from "./cmdOptions";
 import { CompilerDriver } from "./compilerDriver";
 import * as diag from "./diagnostic";
 import { LOGD, LOGE } from "./log";
+import { PandaGen } from "./pandagen";
+import { Record } from "./pandasm";
 import { Pass } from "./pass";
 import { CacheExpander } from "./pass/cacheExpander";
 import { ICPass } from "./pass/ICPass";
 import { RegAlloc } from "./regAllocator";
 import { setGlobalStrict } from "./strictMode";
+import { Ts2Panda } from "./ts2panda";
 import jshelpers = require("./jshelpers");
+import path = require("path");
 
 function main(fileNames: string[], options: ts.CompilerOptions) {
-    let program = ts.createProgram(fileNames, options);
+    let program: ts.Program = ts.createProgram(fileNames, options);
+    let outputFileName: string = CmdOptions.getOutputFileName();
+
+    let ts2abcProc: any
+    if (CmdOptions.isMergeAbcFiles()) {
+        ts2abcProc = initiateTs2abcChildProcess(outputFileName);
+    }
+
     let emitResult = program.emit(
-        undefined,
-        undefined,
-        undefined,
-        undefined,
+        undefined, undefined, undefined, undefined,
         {
             before: [
                 (ctx: ts.TransformationContext) => {
                     return (node: ts.SourceFile) => {
-                        let outputBinName = CmdOptions.getOutputBinName();
-                        let fileName = node.fileName.substring(0, node.fileName.lastIndexOf('.'));
-                        if (fileName != CmdOptions.getInputFileName()) {
-                            outputBinName = fileName + ".abc";
-                        }
-                        let compilerDriver = new CompilerDriver(outputBinName);
-                        setGlobalStrict(jshelpers.isEffectiveStrictModeSourceFile(node, options));
-                        if (CmdOptions.isVariantBytecode()) {
-                            LOGD("variant bytecode dump");
-                            let passes: Pass[] = [
-                                new CacheExpander(),
-                                new ICPass(),
-                                new RegAlloc()
-                            ];
-                            compilerDriver.setCustomPasses(passes);
-                        }
-                        compilerDriver.compile(node);
-                        compilerDriver.showStatistics();
-                        return node;
+                        return ts2abcTransform(node, outputFileName, options, ts2abcProc);
                     }
                 }
             ]
         }
     );
 
-    let allDiagnostics = ts
-        .getPreEmitDiagnostics(program)
-        .concat(emitResult.diagnostics);
+    if (preDiagnostics(program, emitResult)) {
+        return;
+    }
 
-    allDiagnostics.forEach(diagnostic => {
-        diag.printDiagnostic(diagnostic);
-    });
+    if (!CmdOptions.isAssemblyMode()) {
+        if (CmdOptions.isMergeAbcFiles()) {
+            Ts2Panda.dumpCommonFields(ts2abcProc, outputFileName);
+            PandaGen.clearRecoders();
+            PandaGen.clearLiteralArrayBuffer();
+        }
+    }
 }
 
 namespace Compiler {
@@ -86,6 +81,70 @@ namespace Compiler {
     }
 }
 
+function ts2abcTransform(node: ts.SourceFile,
+    outputFileName: string,
+    options: ts.CompilerOptions,
+    ts2abcProc: any): ts.SourceFile {
+    let sourceFileName: string = node.fileName;
+    let recoderName: string = getRecoderName(sourceFileName);
+    let recoder: Record = new Record(recoderName, sourceFileName);
+    let recoders: Array<Record> = PandaGen.getRecoders();
+    recoders.push(recoder);
+    let newOutputFileName: string = getOutputFileName(node, outputFileName);
+    let compilerDriver = new CompilerDriver(newOutputFileName, ts2abcProc, recoderName);
+    setGlobalStrict(jshelpers.isEffectiveStrictModeSourceFile(node, options));
+    if (CmdOptions.isVariantBytecode()) {
+        LOGD("variant bytecode dump");
+        let passes: Pass[] = [
+            new CacheExpander(),
+            new ICPass(),
+            new RegAlloc()
+        ];
+        compilerDriver.setCustomPasses(passes);
+    }
+    compilerDriver.compile(node);
+    compilerDriver.showStatistics();
+    return node;
+}
+
+function preDiagnostics(program: ts.Program, emitResult: ts.EmitResult): boolean {
+    let hasDiagnostics: boolean = false;
+    let allDiagnostics: ts.Diagnostic[] = ts
+        .getPreEmitDiagnostics(program)
+        .concat(emitResult.diagnostics);
+
+    allDiagnostics.forEach((diagnostic: ts.Diagnostic) => {
+        diag.printDiagnostic(diagnostic);
+        hasDiagnostics = true;
+    });
+    return hasDiagnostics;
+}
+
+function getRecoderName(sourceFileName: string): string {
+    let recoderName: string = sourceFileName.substring(0, sourceFileName.lastIndexOf("."));
+    let recoderDirInfo: string[] = CmdOptions.getRecodersDirMap();
+    if (recoderDirInfo.length) {
+        let index: number = recoderDirInfo.indexOf(sourceFileName);
+        if (index !== -1) {
+            recoderName = recoderDirInfo[index + 1];
+        }
+    }
+    return recoderName;
+}
+
+function getOutputFileName(node: ts.SourceFile, outputFileName: string): string {
+    let fileName = node.fileName.substring(0, node.fileName.lastIndexOf('.'));
+    let inputFileName = CmdOptions.getInputFileName();
+    if (/^win/.test(require('os').platform())) {
+        var inputFileTmps = inputFileName.split(path.sep);
+        inputFileName = path.posix.join(...inputFileTmps);
+    }
+    if (fileName != inputFileName) {
+        outputFileName = fileName + ".abc";
+    }
+    return outputFileName;
+}
+
 function run(args: string[], options?: ts.CompilerOptions): void {
     let parsed = CmdOptions.parseUserCmd(args);
     if (!parsed) {
@@ -101,9 +160,10 @@ function run(args: string[], options?: ts.CompilerOptions): void {
         main(parsed.fileNames, parsed.options);
     } catch (err) {
         if (err instanceof diag.DiagnosticError) {
-            let diagnostic = diag.getDiagnostic(err.code);
+            let diagError: diag.DiagnosticError = <diag.DiagnosticError>err;
+            let diagnostic = diag.getDiagnostic(diagError.code);
             if (diagnostic != undefined) {
-                let diagnosticLog = diag.createDiagnostic(err.file, err.irnode, diagnostic, ...err.args);
+                let diagnosticLog = diag.createDiagnostic(diagError.file, diagError.irnode, diagnostic, ...diagError.args);
                 diag.printDiagnostic(diagnosticLog);
             }
         } else if (err instanceof SyntaxError) {
