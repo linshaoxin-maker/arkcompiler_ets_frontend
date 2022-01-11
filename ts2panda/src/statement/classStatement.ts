@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-import { Ts2Panda } from "src/ts2panda";
 import * as ts from "typescript";
 import { Literal, LiteralBuffer, LiteralTag } from "../base/literal";
 import { LReference } from "../base/lreference";
@@ -26,6 +25,7 @@ import {
 } from "../base/properties";
 import { getParameterLength4Ctor, getParamLengthOfFunc, isUndefinedIdentifier } from "../base/util";
 import { CacheList, getVregisterCache } from "../base/vregisterCache";
+import { CmdOptions } from "../cmdOptions";
 import { Compiler } from "../compiler";
 import { createArrayFromElements } from "../expression/arrayLiteralExpression";
 import { createMethodOrAccessor } from "../expression/objectLiteralExpression";
@@ -233,7 +233,10 @@ function createClassLiteralBuf(compiler: Compiler, classBuffer: LiteralBuffer,
 
     let ctorNode = compiler.getRecorder().getCtorOfClass(stmt);
     let internalName = compiler.getCompilerDriver().getInternalNameForCtor(stmt, <ts.ConstructorDeclaration>ctorNode);
-
+    if (CmdOptions.isMergeAbcFiles()) {
+      let recoderName: string = compiler.getCompilerDriver().getRecoderName();
+      internalName = `${recoderName}.${internalName}`
+    }
     let pandaGen = compiler.getPandaGen();
     let parameterLength = getParameterLength4Ctor(stmt);
     let buffIdx = classLiteralBuf.length - 1;
