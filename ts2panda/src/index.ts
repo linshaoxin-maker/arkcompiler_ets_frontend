@@ -122,13 +122,16 @@ function preDiagnostics(program: ts.Program, emitResult: ts.EmitResult): boolean
 
 function getRecoderName(sourceFileName: string): string {
     let recoderName: string = sourceFileName.substring(0, sourceFileName.lastIndexOf("."));
-    let recoderDirInfo: string[] = CmdOptions.getRecodersDirMap();
+    let recoderDirInfo: string[] = CmdOptions.getModulesDirMap();
     if (recoderDirInfo.length) {
         let index: number = recoderDirInfo.indexOf(sourceFileName);
         if (index !== -1) {
             recoderName = recoderDirInfo[index + 1];
         }
     }
+    console.error("-----------------sourceFileName:  ", sourceFileName);
+    console.error("-----------------recoderName:  ", recoderName);
+
     return recoderName;
 }
 

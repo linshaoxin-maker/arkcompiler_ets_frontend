@@ -83,10 +83,6 @@ const ts2pandaOptions = [
     {
         name: 'modules-dir-map', type: String, defaultValue: "",
         description: "The modules path map relation table."
-    },
-    {
-        name: 'recoder-dir-map', type: String, defaultValue: "",
-        description: "The recoder path map relation table."
     }
 ]
 
@@ -222,19 +218,6 @@ export class CmdOptions {
         }
 
         let file = this.options["modules-dir-map"];
-        if (file) {
-            let files = file.split(",");
-            return files;
-        }
-        return [];
-    }
-
-    static getRecodersDirMap(): string[] {
-        if (!this.options) {
-            return [];
-        }
-
-        let file = this.options["recoder-dir-map"];
         if (file) {
             let files = file.split(",");
             return files;
