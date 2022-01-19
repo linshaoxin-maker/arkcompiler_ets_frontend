@@ -143,7 +143,8 @@ export function compileAllSnippet(snippet: string, passes?: Pass[], literalBuffe
     let sourceFile = creatAstFromSnippet(snippet);
     jshelpers.bindSourceFile(sourceFile, {});
     setGlobalStrict(jshelpers.isEffectiveStrictModeSourceFile(sourceFile, compileOptions));
-    let compilerDriver = new CompilerDriver('UnitTest');
+    const recoderName: string = sourceFile.fileName.substring(0, sourceFile.fileName.lastIndexOf("."));
+    let compilerDriver = new CompilerDriver('UnitTest', undefined, recoderName);
 
     if (!passes) {
         passes = [];
