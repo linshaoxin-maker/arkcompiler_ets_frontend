@@ -60,7 +60,7 @@ def set_env(input_arguments):
 
 
 def run_command(cmd, execution_path):
-    print(" ".join(cmd) + " | execution_path: " + execution_path)
+    print("{} | execution_path:{}".format(" ".join(cmd), execution_path))
     proc = subprocess.Popen(cmd, cwd=execution_path)
     proc.wait()
 
