@@ -28,6 +28,7 @@ import * as jshelpers from "../jshelpers";
 import { LOGD } from "../log";
 import { ModuleScope, Scope } from "../scope";
 import { isFunctionLikeDeclaration } from "../syntaxCheckHelper";
+import { CmdOptions } from "../cmdOptions";
 
 export function containSpreadElement(args?: ts.NodeArray<ts.Expression>): boolean {
     if (!args) {
@@ -196,7 +197,7 @@ export function initiateTs2abc(args: Array<string>) {
     args.unshift("--compile-by-pipe");
     var spawn = require('child_process').spawn;
     let child = spawn(js2abc, [...args], {
-        stdio: ['pipe', 'inherit', 'inherit', 'pipe']
+        stdio: ['pipe', 'inherit', 'pipe', 'pipe']
     });
 
     return child;
@@ -206,8 +207,17 @@ export function terminateWritePipe(ts2abc: any) {
     if (!ts2abc) {
         LOGD("ts2abc is not a valid object");
     }
-
     ts2abc.stdio[3].end();
+}
+
+export function initiateTs2abcChildProcess(outputFileName: string): any {
+    let ts2abcProcess;
+    if (!CmdOptions.isAssemblyMode()) {
+        ts2abcProcess = initiateTs2abc([outputFileName]);
+        listenChildExit(ts2abcProcess);
+        listenErrorEvent(ts2abcProcess);
+    }
+    return ts2abcProcess;
 }
 
 export function listenChildExit(child: any) {
@@ -295,4 +305,25 @@ export function getRangeStartVregPos(ins: IRNode): number {
         return -1;
     }
     return ins instanceof EcmaCreateobjectwithexcludedkeys ? 2 : 1;
+}
+
+export function checkIsGlobalDeclaration(sourceFile: ts.SourceFile) {
+  for (let statement of sourceFile.statements) {
+      if (statement.modifiers) {
+          for (let modifier of statement.modifiers) {
+              if (modifier.kind === ts.SyntaxKind.ExportKeyword) {
+                  return false;
+              }
+          }
+      } else if (statement.kind === ts.SyntaxKind.ExportAssignment) {
+          return false;
+      } else if (statement.kind === ts.SyntaxKind.ImportKeyword || statement.kind === ts.SyntaxKind.ImportDeclaration) {
+          return false;
+      }
+  }
+  return true;
+}
+
+export function isSourceFileFromLibrary(program:ts.Program, node: ts.SourceFile) {
+  return program.isSourceFileFromExternalLibrary(node) || program.isSourceFileDefaultLibrary(node);
 }

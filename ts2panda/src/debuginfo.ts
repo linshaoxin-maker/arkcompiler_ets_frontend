@@ -379,7 +379,7 @@ export class DebugInfo {
 
     public static setSourceFileDebugInfo(pandaGen: PandaGen, node: ts.SourceFile | ts.FunctionLikeDeclaration) {
         let sourceFile = jshelpers.getSourceFileOfNode(node);
-        pandaGen.setSourceFileDebugInfo(sourceFile.fileName);
+        pandaGen.setSourceFileName(sourceFile.fileName);
 
         if (CmdOptions.isDebugMode()) {
             if (ts.isSourceFile(node)) {
