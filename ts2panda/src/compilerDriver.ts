@@ -43,7 +43,7 @@ import {
     VariableScope
 } from "./scope";
 import { getClassNameForConstructor } from "./statement/classStatement";
-import { checkDuplicateDeclaration } from "./syntaxChecker";
+import { checkDuplicateDeclaration, checkExportEntries } from "./syntaxChecker";
 import { Ts2Panda } from "./ts2panda";
 import { TypeRecorder } from "./typeRecorder";
 
@@ -161,8 +161,11 @@ export class CompilerDriver {
         try {
             let recorder = this.compilePrologue(node, false);
             checkDuplicateDeclaration(recorder);
+            checkExportEntries(recorder);
         } catch (err) {
-            terminateWritePipe(this.getTs2abcProcess());
+            if (CmdOptions.isMergeAbcFiles()) {
+                terminateWritePipe(this.getTs2abcProcess());
+            }
             throw err;
         }
     }
