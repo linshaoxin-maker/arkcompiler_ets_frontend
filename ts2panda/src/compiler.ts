@@ -498,6 +498,9 @@ export class Compiler {
             case ts.SyntaxKind.ExportDeclaration:
             case ts.SyntaxKind.NotEmittedStatement:
             case ts.SyntaxKind.InterfaceDeclaration:
+            case ts.SyntaxKind.EnumDeclaration:
+            case ts.SyntaxKind.TypeAliasDeclaration:
+            case ts.SyntaxKind.ModuleDeclaration:
                 break;
             default:
                 throw new Error("Statement " + this.getNodeName(stmt) + " is unimplemented");
@@ -772,7 +775,7 @@ export class Compiler {
 
     compileExpression(expr: ts.Expression) {
         // Please keep order of cases the same as in types.ts
-        LOGD(this.debugTag, "compile expr:" + expr.kind);
+        LOGD(this.debugTag, "compile expr:" + this.getNodeName(expr));
         switch (expr.kind) {
             case ts.SyntaxKind.NumericLiteral: // line 34
                 compileNumericLiteral(this.pandaGen, <ts.NumericLiteral>expr);
@@ -872,6 +875,7 @@ export class Compiler {
                 compileClassDeclaration(this, <ts.ClassLikeDeclaration>expr);
                 break;
             case ts.SyntaxKind.PartiallyEmittedExpression:
+            case ts.SyntaxKind.AsExpression:
                 break;
             default:
                 throw new Error("Expression of type " + this.getNodeName(expr) + " is unimplemented");

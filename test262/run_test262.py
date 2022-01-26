@@ -138,7 +138,7 @@ def collect_files(path):
         return
 
     if not os.path.isdir(path):
-        raise ValueError(f'Not found: "{path}"')
+        raise ValueError("Not found: {}".format(path))
 
     for root, _, file_names in os.walk(path):
         for file_name in file_names:
@@ -151,7 +151,7 @@ def collect_files(path):
 def mkdstdir(file, src_dir, dist_dir):
     idx = file.rfind(src_dir)
     if idx == -1:
-        raise SystemExit(f'{file} can not found in {src_dir}')
+        raise SystemExit("{} can not found in {}".format(file, src_dir))
 
     fpath, fname = os.path.split(file[idx:])
     fpath = fpath.replace(src_dir, dist_dir)
@@ -245,7 +245,7 @@ class TestPrepare():
             dstdir = os.path.join(TEST_ES2015_DIR, file)
         elif self.args.ci_build:
             dstdir = os.path.join(TEST_CI_DIR, file)
-        subprocess.getstatusoutput("cp %s %s" % (srcdir, dstdir))
+        subprocess.getstatusoutput("cp {} {}".format(srcdir, dstdir))
 
     def collect_tests(self):
         files = []
@@ -413,15 +413,15 @@ def get_host_args(args, host_type):
         ark_frontend = args.ark_frontend
 
     if host_type == DEFAULT_HOST_TYPE:
-        host_args = f"-B test262/run_sunspider.py "
-        host_args += f"--ark-tool={ark_tool} "
-        host_args += f"--ark-frontend-tool={ark_frontend_tool} "
-        host_args += f"--libs-dir={libs_dir} "
-        host_args += f"--ark-frontend={ark_frontend} "
+        host_args = "-B test262/run_sunspider.py "
+        host_args += "--ark-tool={} ".format(ark_tool)
+        host_args += "--ark-frontend-tool={} ".format(ark_frontend_tool)
+        host_args += "--libs-dir={} ".format(libs_dir)
+        host_args += "--ark-frontend={} ".format(ark_frontend)
 
     if args.ark_arch != ark_arch:
-        host_args += f"--ark-arch={args.ark_arch} "
-        host_args += f"--ark-arch-root={args.ark_arch_root} "
+        host_args += "--ark-arch={} ".format(args.ark_arch)
+        host_args += "--ark-arch-root={} ".format(args.ark_arch_root)
 
     return host_args
 
@@ -434,15 +434,15 @@ def run_test262_test(args):
     timeout = get_timeout(args, threads)
 
     test_cmd = ["node", TEST262_RUNNER_SCRIPT]
-    test_cmd.append(f"--hostType={host_type}")
-    test_cmd.append(f"--hostPath={host_path}")
+    test_cmd.append("--hostType={}".format(host_type))
+    test_cmd.append("--hostPath={}".format(host_path))
     if host_args != "":
-        test_cmd.append(f"--hostArgs='{host_args}'")
-    test_cmd.append(f"--threads={threads}")
-    test_cmd.append(f"--mode={run_test262_mode(args)}")
-    test_cmd.append(f"--timeout={timeout}")
-    test_cmd.append(f"--tempDir={BASE_OUT_DIR}")
-    test_cmd.append(f"--test262Dir={DATA_DIR}")
+        test_cmd.append("--hostArgs='{}'".format(host_args))
+    test_cmd.append("--threads={}".format(threads))
+    test_cmd.append("--mode={}".format(run_test262_mode(args)))
+    test_cmd.append("--timeout={}".format(timeout))
+    test_cmd.append("--tempDir={}".format(BASE_OUT_DIR))
+    test_cmd.append("--test262Dir={}".format(DATA_DIR))
 
     if args.babel:
         test_cmd.append("--preprocessor='test262/babel-preprocessor.js'")
@@ -465,7 +465,7 @@ def main(args):
     if ret:
         sys.exit(ret)
     endtime = datetime.datetime.now()
-    print(f"used time is: {str(endtime - starttime)}")
+    print("used time is: {}".format(str(endtime - starttime)))
 
 
 if __name__ == "__main__":
