@@ -11,8 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//ark/runtime_core/ark_config.gni")
-import("//build/ohos.gni")
+if (!defined(ark_flag)){
+  import("//ark/runtime_core/ark_config.gni")
+  import("//build/ohos.gni")
+}else{
+  import("//build/ark.gni")
+  import("//runtime_core/ark_config.gni")
+}
 
 jsoncpp_root = "//third_party/jsoncpp"
 
@@ -46,13 +51,13 @@ config("ts2abc_config") {
   }
 }
 
-ohos_executable("ts2abc") {
+source_set("ts2abc_static") {
   sources = [
     "main.cpp",
     "ts2abc.cpp",
   ]
 
-  configs = [ ":ts2abc_config" ]
+  public_configs = [ ":ts2abc_config" ]
 
   deps = [ sdk_libc_secshared_dep ]
 
@@ -85,30 +90,48 @@ ohos_executable("ts2abc") {
       ]
     }
   }
-
-  if (is_linux) {
-    if (build_public_version) {
-      ldflags = [ "-static-libstdc++" ]
-    } else {
-      libs = [ libcpp_static_lib ]
-    }
-  }
-
-  output_name = "js2abc"
-  install_enable = true
-  subsystem_name = "ark"
 }
 
-ohos_static_library("jsoncpp_static") {
+config("flag_config") {
+  cflags_cc = [ "-fexceptions" ]
+}
+
+source_set("jsoncpp_set") {
   sources = [
     "//third_party/jsoncpp/src/lib_json/json_reader.cpp",
     "//third_party/jsoncpp/src/lib_json/json_value.cpp",
     "//third_party/jsoncpp/src/lib_json/json_writer.cpp",
   ]
-  use_exceptions = true
-  configs = [ "$jsoncpp_root:jsoncpp_config" ]
+  public_configs = [ "$jsoncpp_root:jsoncpp_config" ]
   include_dirs = [
     "$jsoncpp_root/include",
     "$jsoncpp_root/include/json/",
   ]
+}
+
+if (!defined(ark_flag)){
+  ohos_executable("ts2abc") {
+    deps = [ ":ts2abc_static" ]
+
+    if (is_linux) {
+      if (build_public_version) {
+        ldflags = [ "-static-libstdc++" ]
+      } else {
+        libs = [ libcpp_static_lib ]
+      }
+    }
+
+    output_name = "js2abc"
+    install_enable = true
+    subsystem_name = "ark"
+  }
+
+  ohos_static_library("jsoncpp_static") {
+    deps = [ ":jsoncpp_set" ]
+    use_exceptions = true
+  }
+}else{
+  ark_static_library("jsoncpp_static") {
+    deps = [ ":jsoncpp_set" ]
+  }
 }
