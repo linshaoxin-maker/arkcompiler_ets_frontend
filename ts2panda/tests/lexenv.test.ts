@@ -116,7 +116,8 @@ describe("lexenv-compile-testcase in lexenv.test.ts", function () {
     it("test CompilerDriver.scanFunctions-with-empty", function () {
         let source: string = ``;
         let sourceFile = creatAstFromSnippet(source);
-        let compilerDriver = new CompilerDriver('UnitTest');
+        const recoderName: string = sourceFile.fileName.substring(0, sourceFile.fileName.lastIndexOf("."));
+        let compilerDriver = new CompilerDriver('UnitTest',undefined, recoderName);
         let globalScope = new GlobalScope(sourceFile);
         let recorder = new Recorder(sourceFile, globalScope, compilerDriver, false, false);
         recorder.record();
@@ -144,7 +145,8 @@ describe("lexenv-compile-testcase in lexenv.test.ts", function () {
       var funcExpression = function() { }
     `;
         let sourceFile = creatAstFromSnippet(source);
-        let compilerDriver = new CompilerDriver('UnitTest');
+        const recoderName: string = sourceFile.fileName.substring(0, sourceFile.fileName.lastIndexOf("."));
+        let compilerDriver = new CompilerDriver('UnitTest',undefined, recoderName);
         let globalScope = new GlobalScope(sourceFile);
         let recorder = new Recorder(sourceFile, globalScope, compilerDriver, false, false);
         recorder.record();
@@ -191,7 +193,8 @@ describe("lexenv-compile-testcase in lexenv.test.ts", function () {
         let source: string = `
     `;
         let sourceFile = creatAstFromSnippet(source);
-        let compilerDriver = new CompilerDriver('UnitTest');
+        const recoderName: string = sourceFile.fileName.substring(0, sourceFile.fileName.lastIndexOf("."));
+        let compilerDriver = new CompilerDriver('UnitTest',undefined, recoderName);
         let globalScope = new GlobalScope(sourceFile);
 
         let recorder = new Recorder(sourceFile, globalScope, compilerDriver, false, false);
@@ -215,7 +218,8 @@ describe("lexenv-compile-testcase in lexenv.test.ts", function () {
       var funcExt = function() { }
     `;
         let sourceFile = creatAstFromSnippet(source);
-        let compilerDriver = new CompilerDriver('UnitTest');
+        const recoderName: string = sourceFile.fileName.substring(0, sourceFile.fileName.lastIndexOf("."));
+        let compilerDriver = new CompilerDriver('UnitTest',undefined, recoderName);
         let globalScope = new GlobalScope(sourceFile);
 
         let recorder = new Recorder(sourceFile, globalScope, compilerDriver, false, false);
@@ -269,7 +273,8 @@ describe("lexenv-compile-testcase in lexenv.test.ts", function () {
     })))
     `;
         let sourceFile = creatAstFromSnippet(source);
-        let compilerDriver = new CompilerDriver('UnitTest');
+        const recoderName: string = sourceFile.fileName.substring(0, sourceFile.fileName.lastIndexOf("."));
+        let compilerDriver = new CompilerDriver('UnitTest',undefined, recoderName);
         let globalScope = new GlobalScope(sourceFile);
 
         let recorder = new Recorder(sourceFile, globalScope, compilerDriver, false, false);

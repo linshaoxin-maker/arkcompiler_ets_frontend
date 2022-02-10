@@ -19,6 +19,7 @@ Description: Generate javascript byte code
 """
 
 import os
+import string
 import subprocess
 import platform
 import argparse
@@ -40,6 +41,12 @@ def parse_args():
                         help='whether add debuginfo')
     parser.add_argument("--module", action='store_true',
                         help='whether is module')
+    parser.add_argument("--dts-type-record", action='store_true',
+                        help='Record type info for .d.ts files. Default: false')
+    parser.add_argument("--merge-abc-files", action='store_true',
+                        help='Merge multiple abc files into one. Default: false')
+    parser.add_argument("--other-files", nargs='*',
+                        help='other files')
     arguments = parser.parse_args()
     return arguments
 
@@ -53,7 +60,7 @@ def set_env(input_arguments):
 
 
 def run_command(cmd, execution_path):
-    print(" ".join(cmd) + " | execution_path: " + execution_path)
+    print("{} | execution_path:{}".format(" ".join(cmd), execution_path))
     proc = subprocess.Popen(cmd, cwd=execution_path)
     proc.wait()
 
@@ -77,13 +84,20 @@ def gen_abc_info(input_arguments):
            '--expose-gc',
            os.path.join(name, 'src/index.js'),
            input_arguments.src_js,
-           '-o', input_arguments.dst_file,
-           '-t', '0']
+           '-o',
+           input_arguments.dst_file]
 
     if input_arguments.debug:
         cmd.insert(3, '--debug')
     if input_arguments.module:
         cmd.insert(4, '-m')
+    if input_arguments.dts_type_record:
+        cmd.append('--dts-type-record')
+    if input_arguments.merge_abc_files:
+        cmd.append('--merge-abc-files')
+    if input_arguments.other_files:
+        cmd.append(input_arguments.other_files)
+
     run_command(cmd, path)
 
 
