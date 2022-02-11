@@ -469,17 +469,17 @@ export class Recorder {
     }
 
     private getModulSpecifierName(node: ts.Node, dependentFile: string): string {
-        if (CmdOptions.getModulesDirMap() != []) {
-            let currentSourceFile = jshelpers.getSourceFileOfNode(node).fileName;
-            let absPath = currentSourceFile.substring(0, currentSourceFile.lastIndexOf('/'));
-            let dependentAbsFile = path.join(absPath, dependentFile);
+        let currentSourceFileName = jshelpers.getSourceFileOfNode(node).fileName;
+        let absPath = currentSourceFileName.substring(0, currentSourceFileName.lastIndexOf('/'));
+        let dependentAbsFile = path.isAbsolute(dependentFile) ? dependentFile : path.join(absPath, dependentFile);
 
+        if (CmdOptions.getModulesDirMap() != []) {
             let amiFileName = getRecoderName(dependentAbsFile);
             if (amiFileName !==  dependentAbsFile.substring(0, dependentAbsFile.lastIndexOf("."))) {
                 return amiFileName;
             }
         }
-        return dependentFile;
+        return dependentAbsFile.substring(0, dependentAbsFile.lastIndexOf("."));
     }
 
     private recordEcmaNamedBindings(namedBindings: ts.NamedImportBindings, scope: ModuleScope, moduleRequest: string) {
