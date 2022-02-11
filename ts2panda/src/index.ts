@@ -116,6 +116,9 @@ function generateDTs(program: ts.Program, outputFileName: string, options: ts.Co
 function ts2abcTransform(node: ts.SourceFile, outputFileName: string, options: ts.CompilerOptions, ts2abcProc: any): ts.SourceFile {
     let sourceFileName: string = node.fileName;
     let recoderName: string = getRecoderName(sourceFileName);
+    if (recoderName == CmdOptions.getEntryPoint()) {
+        recoderName = '_EcmaEntryPoint';
+    }
     // console.error("-----------------sourceFileName:  ", sourceFileName);
     // console.error("-----------------recoderName:  ", recoderName);
     let recoder: Record = new Record(recoderName, sourceFileName);
@@ -163,8 +166,13 @@ export function getRecoderName(sourceFileName: string): string {
     if (recoderDirInfo.length) {
         let index: number = recoderDirInfo.indexOf(sourceFileName);
         if (index !== -1) {
-            recoderName = recoderDirInfo[index + 1];
+            return recoderDirInfo[index + 1];
         }
+    }
+
+    if (!path.isAbsolute(sourceFileName)) {
+        let absoluteSourceFile = path.join(process.cwd(), sourceFileName);
+        recoderName = absoluteSourceFile.substring(0, absoluteSourceFile.lastIndexOf("."));
     }
 
     return recoderName;

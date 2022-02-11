@@ -100,6 +100,10 @@ const ts2pandaOptions = [
   {
     name: 'modules-dir-map', type: String, defaultValue: "",
     description: "The modules path map relation table."
+  },
+  {
+    name: 'entrypoint', type: String, defaultValue: "",
+    description: "set entrypoint of a module."
   }
 ]
 
@@ -275,6 +279,19 @@ export class CmdOptions {
       return false;
     }
     return this.options["merge-abc-files"];
+  }
+
+  static getEntryPoint(): string {
+    if (!this.options) {
+      return '';
+    }
+
+    let entryPoint = this.options["entrypoint"];
+    if (!path.isAbsolute(entryPoint)) {
+      entryPoint = path.join(process.cwd(), entryPoint);
+    }
+
+    return entryPoint.substring(0, entryPoint.lastIndexOf('.'));
   }
 
   static parseUserCmd(args: string[]): ts.ParsedCommandLine | undefined {
