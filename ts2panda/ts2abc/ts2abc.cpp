@@ -40,13 +40,12 @@ namespace {
     bool g_debugLogEnabled = false;
     int g_optLevel = 0;
     std::string g_optLogLevel = "error";
-    bool g_moduleModeEnabled = false;
     const int LOG_BUFFER_SIZE = 1024;
     const int BASE = 16;
     const int UNICODE_ESCAPE_SYMBOL_LEN = 2;
     const int UNICODE_CHARACTER_LEN = 4;
 
-    int g_literalArrayCount = 0;
+    uint32_t g_literalArrayCount = 0;
 
     constexpr std::size_t BOUND_LEFT = 0;
     constexpr std::size_t BOUND_RIGHT = 0;
@@ -62,17 +61,11 @@ namespace {
 }
 
 // pandasm hellpers
-static panda::pandasm::Record MakeRecordDefinition(const std::string &name, const std::string &wholeLine,
-    size_t boundLeft, size_t boundRight, size_t lineNumber)
+static panda::pandasm::Record MakeRecordDefinition(const std::string &name)
 {
     auto record = panda::pandasm::Record(
         name,
-        LANG_EXT,
-        boundLeft,
-        boundRight,
-        wholeLine,
-        IS_DEFINED,
-        lineNumber);
+        LANG_EXT);
 
     return record;
 }
@@ -287,28 +280,7 @@ static panda::pandasm::Record ParseRecord(const Json::Value &record)
         recordName = record["name"].asString();
     }
 
-    std::string wholeLine = "";
-    if (record.isMember("whole_line") && record["whole_line"].isString()) {
-        wholeLine = ParseString(record["whole_line"].asString());
-    }
-
-    int boundLeft = -1;
-    if (record.isMember("bound_left") && record["bound_left"].isInt()) {
-        boundLeft = record["bound_left"].asInt();
-    }
-
-    int boundRight = -1;
-    if (record.isMember("bound_right") && record["bound_right"].isInt()) {
-        boundRight = record["bound_right"].asInt();
-    }
-
-    int lineNumber = -1;
-    if (record.isMember("line_number") && record["line_number"].isInt()) {
-        lineNumber = record["line_number"].asInt();
-    }
-
-    auto pandaRecord = MakeRecordDefinition(recordName, wholeLine, static_cast<size_t>(boundLeft),
-        static_cast<size_t>(boundRight), static_cast<size_t>(lineNumber));
+    auto pandaRecord = MakeRecordDefinition(recordName);
 
     if (record.isMember("metadata") && record["metadata"].isObject()) {
         auto metadata = record["metadata"];
@@ -318,6 +290,10 @@ static panda::pandasm::Record ParseRecord(const Json::Value &record)
                 pandaRecord.metadata->SetAttribute(metAttribute);
             }
         }
+    }
+
+    if (record.isMember("source_file") && record["source_file"].isString()) {
+        pandaRecord.source_file = record["source_file"].asString();
     }
 
     return pandaRecord;
@@ -819,20 +795,26 @@ static void GenerateESTypeAnnotationRecord(panda::pandasm::Program &prog)
     prog.record_table.emplace(tsTypeAnnotationRecord.name, std::move(tsTypeAnnotationRecord));
 }
 
-static void GenrateESModuleModeRecord(panda::pandasm::Program &prog, bool moduleMode)
+static void GenerateESModuleRecord(panda::pandasm::Program &prog)
 {
-    auto ecmaModuleModeRecord = panda::pandasm::Record("_ESModuleMode", LANG_EXT);
-    ecmaModuleModeRecord.metadata->SetAccessFlags(panda::ACC_PUBLIC);
+    auto ecmaModuleRecord = panda::pandasm::Record("_ESModuleRecord", LANG_EXT);
+    ecmaModuleRecord.metadata->SetAccessFlags(panda::ACC_PUBLIC);
+    prog.record_table.emplace(ecmaModuleRecord.name, std::move(ecmaModuleRecord));
+}
 
-    auto modeField = panda::pandasm::Field(LANG_EXT);
-    modeField.name = "isModule";
-    modeField.type = panda::pandasm::Type("u8", 0);
-    modeField.metadata->SetValue(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U8>(
-        static_cast<uint8_t>(moduleMode)));
+static void AddModuleRecord(panda::pandasm::Program &prog, std::string &moduleName, uint32_t moduleIdx)
+{
+    auto iter = prog.record_table.find("_ESModuleRecord");
+    if (iter != prog.record_table.end()) {
+        auto &rec = iter->second;
+        auto moduleIdxField = panda::pandasm::Field(LANG_EXT);
+        moduleIdxField.name = moduleName;
+        moduleIdxField.type = panda::pandasm::Type("u32", 0);
+        moduleIdxField.metadata->SetValue(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U32>(
+            static_cast<uint32_t>(moduleIdx)));
 
-    ecmaModuleModeRecord.field_list.emplace_back(std::move(modeField));
-
-    prog.record_table.emplace(ecmaModuleModeRecord.name, std::move(ecmaModuleModeRecord));
+        rec.field_list.emplace_back(std::move(moduleIdxField));
+    }
 }
 
 int ParseJson(const std::string &data, Json::Value &rootValue)
@@ -860,10 +842,10 @@ static void ParseModuleMode(const Json::Value &rootValue, panda::pandasm::Progra
 {
     Logd("----------------parse module_mode-----------------");
     if (rootValue.isMember("module_mode") && rootValue["module_mode"].isBool()) {
-        g_moduleModeEnabled = rootValue["module_mode"].asBool();
+        if (rootValue["module_mode"].asBool()) {
+           GenerateESModuleRecord(prog);
+        }
     }
-
-    GenrateESModuleModeRecord(prog, g_moduleModeEnabled);
 }
 
 void ParseLogEnable(const Json::Value &rootValue)
@@ -952,6 +934,101 @@ static void ParseSingleLiteralBuf(const Json::Value &rootValue, panda::pandasm::
     prog.literalarray_table.emplace(std::to_string(g_literalArrayCount++), std::move(literalarrayInstance));
 }
 
+static void ParseModuleRequests(const Json::Value &moduleRequests, std::vector<panda::pandasm::LiteralArray::Literal> &moduleLiteralArray)
+{
+    panda::pandasm::LiteralArray::Literal moduleSize = {.tag_ = panda::panda_file::LiteralTag::INTEGER, .value_ = static_cast<uint32_t>(moduleRequests.size())};
+    moduleLiteralArray.emplace_back(moduleSize);
+    for (Json::ArrayIndex i = 0; i < moduleRequests.size(); ++i) {
+        panda::pandasm::LiteralArray::Literal moduleRequest = {.tag_ = panda::panda_file::LiteralTag::STRING, .value_ = ParseString(moduleRequests[i].asString())};
+        moduleLiteralArray.emplace_back(moduleRequest);
+    }
+}
+
+static void ParseRegularImportEntries(const Json::Value &regularImportEntries, std::vector<panda::pandasm::LiteralArray::Literal> &moduleLiteralArray)
+{
+    panda::pandasm::LiteralArray::Literal entrySize = {.tag_ = panda::panda_file::LiteralTag::INTEGER, .value_ = static_cast<uint32_t>(regularImportEntries.size())};
+    moduleLiteralArray.emplace_back(entrySize);
+    for (Json::ArrayIndex i = 0; i < regularImportEntries.size(); ++i) {
+        auto entry = regularImportEntries[i];
+        panda::pandasm::LiteralArray::Literal localName = {.tag_ = panda::panda_file::LiteralTag::STRING, .value_ = ParseString(entry["localName"].asString())};
+        moduleLiteralArray.emplace_back(localName);
+        panda::pandasm::LiteralArray::Literal importName = {.tag_ = panda::panda_file::LiteralTag::STRING, .value_ = ParseString(entry["importName"].asString())};
+        moduleLiteralArray.emplace_back(importName);
+        panda::pandasm::LiteralArray::Literal moduleRequest = {.tag_ = panda::panda_file::LiteralTag::METHODAFFILIATE, .value_ = static_cast<uint16_t>(entry["moduleRequest"].asUInt())};
+        moduleLiteralArray.emplace_back(moduleRequest);
+    }
+}
+
+static void ParseNamespaceImportEntries(const Json::Value &namespaceImportEntries, std::vector<panda::pandasm::LiteralArray::Literal> &moduleLiteralArray)
+{
+    panda::pandasm::LiteralArray::Literal entrySize = {.tag_ = panda::panda_file::LiteralTag::INTEGER, .value_ = static_cast<uint32_t>(namespaceImportEntries.size())};
+    moduleLiteralArray.emplace_back(entrySize);
+    for (Json::ArrayIndex i = 0; i < namespaceImportEntries.size(); ++i) {
+        auto entry = namespaceImportEntries[i];
+        panda::pandasm::LiteralArray::Literal localName = {.tag_ = panda::panda_file::LiteralTag::STRING, .value_ = ParseString(entry["localName"].asString())};
+        moduleLiteralArray.emplace_back(localName);
+        panda::pandasm::LiteralArray::Literal moduleRequest = {.tag_ = panda::panda_file::LiteralTag::METHODAFFILIATE, .value_ = static_cast<uint16_t>(entry["moduleRequest"].asUInt())};
+        moduleLiteralArray.emplace_back(moduleRequest);
+    }
+}
+
+static void ParseLocalExportEntries(const Json::Value &localExportEntries, std::vector<panda::pandasm::LiteralArray::Literal> &moduleLiteralArray)
+{
+    panda::pandasm::LiteralArray::Literal entrySize = {.tag_ = panda::panda_file::LiteralTag::INTEGER, .value_ = static_cast<uint32_t>(localExportEntries.size())};
+    moduleLiteralArray.emplace_back(entrySize);
+    for (Json::ArrayIndex i = 0; i < localExportEntries.size(); ++i) {
+        auto entry = localExportEntries[i];
+        panda::pandasm::LiteralArray::Literal localName = {.tag_ = panda::panda_file::LiteralTag::STRING, .value_ = ParseString(entry["localName"].asString())};
+        moduleLiteralArray.emplace_back(localName);
+        panda::pandasm::LiteralArray::Literal exportName = {.tag_ = panda::panda_file::LiteralTag::STRING, .value_ = ParseString(entry["exportName"].asString())};
+        moduleLiteralArray.emplace_back(exportName);
+    }
+}
+
+static void ParseIndirectExportEntries(const Json::Value &indirectExportEntries, std::vector<panda::pandasm::LiteralArray::Literal> &moduleLiteralArray)
+{
+    panda::pandasm::LiteralArray::Literal entrySize = {.tag_ = panda::panda_file::LiteralTag::INTEGER, .value_ = static_cast<uint32_t>(indirectExportEntries.size())};
+    moduleLiteralArray.emplace_back(entrySize);
+    for (Json::ArrayIndex i = 0; i < indirectExportEntries.size(); ++i) {
+        auto entry = indirectExportEntries[i];
+        panda::pandasm::LiteralArray::Literal exportName = {.tag_ = panda::panda_file::LiteralTag::STRING, .value_ = ParseString(entry["exportName"].asString())};
+        moduleLiteralArray.emplace_back(exportName);
+        panda::pandasm::LiteralArray::Literal importName = {.tag_ = panda::panda_file::LiteralTag::STRING, .value_ = ParseString(entry["importName"].asString())};
+        moduleLiteralArray.emplace_back(importName);
+        panda::pandasm::LiteralArray::Literal moduleRequest = {.tag_ = panda::panda_file::LiteralTag::METHODAFFILIATE, .value_ = static_cast<uint16_t>(entry["moduleRequest"].asUInt())};
+        moduleLiteralArray.emplace_back(moduleRequest);
+    }
+}
+
+static void ParseStarExportEntries(const Json::Value &starExportEntries, std::vector<panda::pandasm::LiteralArray::Literal> &moduleLiteralArray)
+{
+    panda::pandasm::LiteralArray::Literal entrySize = {.tag_ = panda::panda_file::LiteralTag::INTEGER, .value_ = static_cast<uint32_t>(starExportEntries.size())};
+    moduleLiteralArray.emplace_back(entrySize);
+    for (Json::ArrayIndex i = 0; i < starExportEntries.size(); ++i) {
+        panda::pandasm::LiteralArray::Literal moduleRequest = {.tag_ = panda::panda_file::LiteralTag::METHODAFFILIATE, .value_ = static_cast<uint16_t>(starExportEntries[i].asUInt())};
+        moduleLiteralArray.emplace_back(moduleRequest);
+    }
+}
+
+static void ParseSingleModule(const Json::Value &rootValue, panda::pandasm::Program &prog)
+{
+    std::vector<panda::pandasm::LiteralArray::Literal> moduleLiteralArray;
+
+    auto moduleRecord = rootValue["module_rec"];
+    ParseModuleRequests(moduleRecord["moduleRequests"], moduleLiteralArray);
+    ParseRegularImportEntries(moduleRecord["regularImportEntries"], moduleLiteralArray);
+    ParseNamespaceImportEntries(moduleRecord["namespaceImportEntries"], moduleLiteralArray);
+    ParseLocalExportEntries(moduleRecord["localExportEntries"], moduleLiteralArray);
+    ParseIndirectExportEntries(moduleRecord["indirectExportEntries"], moduleLiteralArray);
+    ParseStarExportEntries(moduleRecord["starExportEntries"], moduleLiteralArray);
+
+    auto moduleName = ParseString(moduleRecord["moduleName"].asString());
+    AddModuleRecord(prog, moduleName, g_literalArrayCount);
+
+    auto moduleLiteralarrayInstance = panda::pandasm::LiteralArray(moduleLiteralArray);
+    prog.literalarray_table.emplace(std::to_string(g_literalArrayCount++), std::move(moduleLiteralarrayInstance));
+}
+
 static int ParseSmallPieceJson(const std::string &subJson, panda::pandasm::Program &prog)
 {
     Json::Value rootValue;
@@ -985,6 +1062,12 @@ static int ParseSmallPieceJson(const std::string &subJson, panda::pandasm::Progr
         case static_cast<int>(JsonType::LITERALBUFFER): {
             if (rootValue.isMember("literalArray") && rootValue["literalArray"].isObject()) {
                 ParseSingleLiteralBuf(rootValue, prog);
+            }
+            break;
+        }
+        case static_cast<int>(JsonType::MODULE): {
+            if (rootValue.isMember("module_rec") && rootValue["module_rec"].isObject()) {
+                ParseSingleModule(rootValue, prog);
             }
             break;
         }
