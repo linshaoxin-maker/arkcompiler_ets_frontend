@@ -157,7 +157,7 @@ function preDiagnostics(program: ts.Program, emitResult: ts.EmitResult): boolean
     return hasDiagnostics;
 }
 
-function getRecoderName(sourceFileName: string): string {
+export function getRecoderName(sourceFileName: string): string {
     let recoderName: string = sourceFileName.substring(0, sourceFileName.lastIndexOf("."));
     let recoderDirInfo: string[] = CmdOptions.getModulesDirMap();
     if (recoderDirInfo.length) {

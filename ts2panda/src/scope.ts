@@ -378,10 +378,10 @@ export class GlobalScope extends VariableScope {
 export class ModuleScope extends VariableScope {
     private moduleRecord: SourceTextModuleRecord;
 
-    constructor(node: ts.SourceFile) {
+    constructor(node: ts.SourceFile, moduleName: string) {
         super();
         this.node = node;
-        this.moduleRecord = new SourceTextModuleRecord(node.fileName);
+        this.moduleRecord = new SourceTextModuleRecord(moduleName);
     }
 
     setExportDecl(exportedLocalName: string) {

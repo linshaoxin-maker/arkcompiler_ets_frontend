@@ -40,7 +40,7 @@ import {
     VariableScope
 } from "./scope";
 import { getClassNameForConstructor } from "./statement/classStatement";
-import { checkDuplicateDeclaration, checkExportEntries } from "./syntaxChecker";
+import { checkDuplicateDeclaration } from "./syntaxChecker";
 import { Ts2Panda } from "./ts2panda";
 import { TypeRecorder } from "./typeRecorder";
 import { findOuterNodeOfParenthesis } from "./expression/parenthesizedExpression";
@@ -159,7 +159,6 @@ export class CompilerDriver {
         try {
             let recorder = this.compilePrologue(node, false);
             checkDuplicateDeclaration(recorder);
-            checkExportEntries(recorder);
         } catch (err) {
             if (CmdOptions.isMergeAbcFiles()) {
                 terminateWritePipe(this.getTs2abcProcess());
@@ -304,7 +303,7 @@ export class CompilerDriver {
     private compilePrologue(node: ts.SourceFile, recordType: boolean) {
         let topLevelScope: GlobalScope | ModuleScope;
         if (CmdOptions.isModules()) {
-            topLevelScope = new ModuleScope(node);
+            topLevelScope = new ModuleScope(node, this.recoderName);
         } else {
             topLevelScope = new GlobalScope(node);
         }

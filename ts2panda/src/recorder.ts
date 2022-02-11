@@ -56,6 +56,8 @@ import { TypeChecker } from "./typeChecker";
 import { VarDeclarationKind } from "./variable";
 import { TypeRecorder } from "./typeRecorder";
 import { PandaGen } from "./pandagen";
+import path = require("path");
+import { getRecoderName } from "./index";
 
 export class Recorder {
     node: ts.Node;
@@ -466,6 +468,20 @@ export class Recorder {
         return exportStmt;
     }
 
+    private getModulSpecifierName(node: ts.Node, dependentFile: string): string {
+        if (CmdOptions.getModulesDirMap() != []) {
+            let currentSourceFile = jshelpers.getSourceFileOfNode(node).fileName;
+            let absPath = currentSourceFile.substring(0, currentSourceFile.lastIndexOf('/'));
+            let dependentAbsFile = path.join(absPath, dependentFile);
+
+            let amiFileName = getRecoderName(dependentAbsFile);
+            if (amiFileName !==  dependentAbsFile.substring(0, dependentAbsFile.lastIndexOf("."))) {
+                return amiFileName;
+            }
+        }
+        return dependentFile;
+    }
+
     private recordEcmaNamedBindings(namedBindings: ts.NamedImportBindings, scope: ModuleScope, moduleRequest: string) {
         // import * as a from "a.js"
         if (ts.isNamespaceImport(namedBindings)) {
@@ -509,7 +525,7 @@ export class Recorder {
         if (!ts.isStringLiteral(node.moduleSpecifier)) {
             throw new Error("moduleSpecifier must be a stringLiteral");
         }
-        let moduleRequest: string = jshelpers.getTextOfIdentifierOrLiteral(node.moduleSpecifier);
+        let moduleRequest: string = this.getModulSpecifierName(node, jshelpers.getTextOfIdentifierOrLiteral(node.moduleSpecifier));
 
         if (node.importClause) {
             let importClause: ts.ImportClause = node.importClause;
@@ -525,7 +541,7 @@ export class Recorder {
             if (!ts.isStringLiteral(node.moduleSpecifier)) {
                 throw new Error("moduleSpecifier must be a stringLiteral");
             }
-            let moduleRequest: string = jshelpers.getTextOfIdentifierOrLiteral(node.moduleSpecifier);
+            let moduleRequest: string = this.getModulSpecifierName(node, jshelpers.getTextOfIdentifierOrLiteral(node.moduleSpecifier));
 
             if (node.exportClause) {
                 let namedBindings: ts.NamedExportBindings = node.exportClause;
