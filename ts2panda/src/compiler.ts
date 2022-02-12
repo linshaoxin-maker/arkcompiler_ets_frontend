@@ -1542,7 +1542,7 @@ export class Compiler {
         } else if (variable.v instanceof ModuleVariable) {
             let isLocal: boolean = variable.v.isExportVar() ? true : false;
             this.pandaGen.loadModuleVariable(node, variable.v.getName(), isLocal);
-            if (variable.v.isLetOrConst() && !variable.v.isInitialized()) {
+            if ((variable.v.isLetOrConst() || variable.v.isClass()) && !variable.v.isInitialized()) {
                 let valueReg = this.pandaGen.getTemp();
                 let nameReg = this.pandaGen.getTemp();
                 this.pandaGen.storeAccumulator(node, valueReg);

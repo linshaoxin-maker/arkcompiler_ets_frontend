@@ -17,6 +17,7 @@ import * as ts from "typescript";
 import {
     checkIsGlobalDeclaration,
     initiateTs2abcChildProcess,
+    terminateWritePipe,
     isSourceFileFromLibrary
 } from "./base/util";
 import { CmdOptions } from "./cmdOptions";
@@ -73,6 +74,7 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
     );
 
     if (preDiagnostics(program, emitResult)) {
+        terminateWritePipe(ts2abcProc);
         return;
     }
 
