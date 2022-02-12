@@ -64,7 +64,7 @@ def parse_args():
 
 
 ARK_ARGS = "--gc-type=epsilon"
-ICU_PATH = f"--icu-data-path={CODE_ROOT}/third_party/icu/ohos_icu4j/data"
+ICU_PATH = "--icu-data-path={}/third_party/icu/ohos_icu4j/data".format(CODE_ROOT)
 ARK_TOOL = DEFAULT_ARK_TOOL
 ARK_FRONTEND_TOOL = DEFAULT_ARK_FRONTEND_TOOL
 LIBS_DIR = DEFAULT_LIBS_DIR
@@ -85,7 +85,7 @@ def output(retcode, msg):
     elif msg != '':
         sys.stderr.write(str(msg))
     else:
-        sys.stderr.write("Unknown Error: " + str(retcode))
+        sys.stderr.write("Unknown Error: {}".format(str(retcode)))
 
 
 def exec_command(cmd_args, timeout=DEFAULT_TIMEOUT):
@@ -109,8 +109,8 @@ def exec_command(cmd_args, timeout=DEFAULT_TIMEOUT):
 
         if ret_code and ret_code != 1:
             code = ret_code
-            msg = f"Command {cmd_string}: \n"
-            msg += f"error: {str(errs.decode(code_format,'ignore'))}"
+            msg = "Command {}: \n".format(cmd_string)
+            msg += "error: {}".format(str(errs.decode(code_format,'ignore')))
         else:
             code = 0
             msg = str(msg.decode(code_format, 'ignore'))
@@ -120,10 +120,10 @@ def exec_command(cmd_args, timeout=DEFAULT_TIMEOUT):
         proc.terminate()
         os.kill(proc.pid, signal.SIGTERM)
         code = 1
-        msg = f"Timeout:'{cmd_string}' timed out after' {str(timeout)} seconds"
+        msg = "Timeout:'{}' timed out after' {} seconds".format(cmd_string, str(timeout))
     except Exception as err:
         code = 1
-        msg = f"{cmd_string}: unknown error: {str(err)}"
+        msg = "{}: unknown error: {}".format(cmd_string, str(err))
     output(code, msg)
     return code
 
@@ -162,7 +162,7 @@ class ArkProgram():
         js_file = self.js_file
         file_name_pre = os.path.splitext(js_file)[0]
         file_name = os.path.basename(js_file)
-        out_file = f"{file_name_pre}.abc"
+        out_file = "{}.abc".format(file_name_pre)
         mod_opt_index = 0
         cmd_args = []
         frontend_tool = self.ark_frontend_tool
@@ -192,17 +192,17 @@ class ArkProgram():
             qemu_arg2 = self.arch_root
             cmd_args = [qemu_tool, qemu_arg1, qemu_arg2, self.ark_tool,
                         ARK_ARGS, ICU_PATH,
-                        f'{file_name_pre}.abc']
+                        "{}.abc".format(file_name_pre)]
         elif self.arch == ARK_ARCH_LIST[2]:
             qemu_tool = "qemu-arm"
             qemu_arg1 = "-L"
             qemu_arg2 =  self.arch_root
             cmd_args = [qemu_tool, qemu_arg1, qemu_arg2, self.ark_tool,
                         ARK_ARGS, ICU_PATH,
-                        f'{file_name_pre}.abc']
+                        "{}.abc".format(file_name_pre)]
         elif self.arch == ARK_ARCH_LIST[0]:
             cmd_args = [self.ark_tool, ARK_ARGS, ICU_PATH,
-                        f'{file_name_pre}.abc']
+                        "{}.abc".format(file_name_pre)]
 
         retcode = exec_command(cmd_args)
         return retcode

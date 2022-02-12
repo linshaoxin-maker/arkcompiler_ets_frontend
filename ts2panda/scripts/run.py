@@ -51,10 +51,10 @@ def set_env(node_dir):
 
 
 def run_command(cmd, execution_path=os.getcwd()):
-    print(" ".join(cmd) + " | execution_path: " + execution_path)
+    print("{} | execution_path:{}".format(" ".join(cmd), execution_path))
     proc = subprocess.Popen(cmd, cwd=execution_path)
     ret = proc.wait()
-    assert not ret, f'\n{" ".join(cmd)} failed'
+    assert not ret, "\n{} failed".format(" ".join(cmd))
 
 
 def node_modules(options):
