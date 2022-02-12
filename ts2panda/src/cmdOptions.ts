@@ -278,7 +278,7 @@ export class CmdOptions {
     if (!this.options) {
       return false;
     }
-    return this.options["merge-abc-files"];
+    return this.options["merge-abc-files"] || this.options["modules"];
   }
 
   static getEntryPoint(): string {
