@@ -483,7 +483,7 @@ export class Recorder {
             }
         }
         let moduleSpecifierName = dependentAbsFile.substring(0, dependentAbsFile.lastIndexOf("."));
-        return moduleSpecifierName == CmdOptions.getEntryPoint() ? '_EcmaEntryPoint' : moduleSpecifierName;
+        return moduleSpecifierName == CmdOptions.getEntryPoint() ? 'L_GLOBAL;' : 'L' + moduleSpecifierName + ';';
     }
 
     private recordEcmaNamedBindings(namedBindings: ts.NamedImportBindings, scope: ModuleScope, moduleRequest: string) {

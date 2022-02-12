@@ -103,7 +103,7 @@ const ts2pandaOptions = [
   },
   {
     name: 'entrypoint', type: String, defaultValue: "",
-    description: "set entrypoint of a module."
+    description: "set entrypoint of a ark bytecode file. if not set explicitly, the first input js file is entrypoint."
   }
 ]
 
@@ -287,6 +287,11 @@ export class CmdOptions {
     }
 
     let entryPoint = this.options["entrypoint"];
+
+    if (entryPoint == "") {
+      entryPoint = this.parsedResult.fileNames[0];
+    }
+
     if (!path.isAbsolute(entryPoint)) {
       entryPoint = path.join(process.cwd(), entryPoint);
     }

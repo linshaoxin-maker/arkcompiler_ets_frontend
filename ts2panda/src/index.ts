@@ -117,7 +117,7 @@ function ts2abcTransform(node: ts.SourceFile, outputFileName: string, options: t
     let sourceFileName: string = node.fileName;
     let recoderName: string = getRecoderName(sourceFileName);
     if (recoderName == CmdOptions.getEntryPoint()) {
-        recoderName = '_EcmaEntryPoint';
+        recoderName = '_GLOBAL';
     }
     // console.error("-----------------sourceFileName:  ", sourceFileName);
     // console.error("-----------------recoderName:  ", recoderName);

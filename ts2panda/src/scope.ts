@@ -381,7 +381,7 @@ export class ModuleScope extends VariableScope {
     constructor(node: ts.SourceFile, moduleName: string) {
         super();
         this.node = node;
-        this.moduleRecord = new SourceTextModuleRecord(moduleName);
+        this.moduleRecord = new SourceTextModuleRecord('L' + moduleName + ';');
     }
 
     setExportDecl(exportedLocalName: string) {
