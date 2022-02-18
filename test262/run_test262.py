@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#!/usr/bin/python3
+# coding: utf-8
 
 """
 Copyright (c) 2021 Huawei Device Co., Ltd.
@@ -265,8 +265,9 @@ class TestPrepare():
         return files
 
     def get_tests_from_file(self, file):
-        with open(file) as fopen:
-            files = fopen.readlines()
+        fopen = open(file)
+        files = fopen.readlines()
+        fopen.close()
         return files
 
     def prepare_es2015_tests(self):
