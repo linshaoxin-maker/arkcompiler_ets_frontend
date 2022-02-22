@@ -189,8 +189,11 @@ export class DebugInfo {
             pos = node.getStart();
         }
 
-        let loc = file.getLineAndCharacterOfPosition(pos); 
-        let wholeLineText = tempWholeLineText || node.getText();
+        let loc = file.getLineAndCharacterOfPosition(pos);
+        let wholeLineText = tempWholeLineText;
+        if (node.pos >= 0 && node.end >= 0) {
+            wholeLineText = wholeLineText || node.getText()
+        }
         return {
             loc: loc,
             wholeLineText: wholeLineText
