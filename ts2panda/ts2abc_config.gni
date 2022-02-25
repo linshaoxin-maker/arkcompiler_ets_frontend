@@ -13,9 +13,11 @@
 
 if (!defined(ark_flag)) {
   import("//build/ohos.gni")
+  prebuilts_root = "//prebuilts"
   ts2abc_root = "//ark/ts2abc/ts2panda"
 } else {
   import("//build/ark.gni")
+  prebuilts_root = "//build/prebuilts"
   ts2abc_root = "//ts2abc/ts2panda"
 }
 
@@ -33,11 +35,11 @@ declare_args() {
 }
 
 if (build_public_version) {
-  nodejs_dir = "//prebuilts/build-tools/common/nodejs"
-  node_modules = "//prebuilts/build-tools/common/ts2abc/node_modules"
+  nodejs_dir = "$prebuilts_root/build-tools/common/nodejs"
+  node_modules = "$prebuilts_root/build-tools/common/ts2abc/node_modules"
 } else {
-  nodejs_dir = "//prebuilts/ace-toolkit/nodejs"
-  node_modules = "//prebuilts/ace-toolkit/ace-loader/panda/node_modules"
+  nodejs_dir = "$prebuilts_root/ace-toolkit/nodejs"
+  node_modules = "$prebuilts_root/ace-toolkit/ace-loader/panda/node_modules"
 }
 
 if (!defined(ark_flag)) {

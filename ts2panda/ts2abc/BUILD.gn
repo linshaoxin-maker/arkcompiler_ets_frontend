@@ -14,12 +14,12 @@
 if (!defined(ark_flag)) {
   import("//ark/runtime_core/ark_config.gni")
   import("//build/ohos.gni")
+  jsoncpp_root = "$ark_third_party_root/jsoncpp"
 } else {
   import("//build/ark.gni")
   import("//runtime_core/ark_config.gni")
+  jsoncpp_root = "//build/core/third_party/jsoncpp"
 }
-
-jsoncpp_root = "//third_party/jsoncpp"
 
 config("ts2abc_config") {
   visibility = [ ":*" ]
@@ -103,9 +103,9 @@ group("jsoncpp_tar") {
 
 source_set("jsoncpp_set") {
   sources = [
-    "//third_party/jsoncpp/src/lib_json/json_reader.cpp",
-    "//third_party/jsoncpp/src/lib_json/json_value.cpp",
-    "//third_party/jsoncpp/src/lib_json/json_writer.cpp",
+    "$ark_third_party_root/jsoncpp/src/lib_json/json_reader.cpp",
+    "$ark_third_party_root/jsoncpp/src/lib_json/json_value.cpp",
+    "$ark_third_party_root/jsoncpp/src/lib_json/json_writer.cpp",
   ]
   public_configs = [ "$jsoncpp_root:jsoncpp_config" ]
   include_dirs = [
