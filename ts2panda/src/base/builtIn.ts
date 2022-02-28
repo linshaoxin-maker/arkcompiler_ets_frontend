@@ -25,8 +25,7 @@ import {
     EcmaLdsymbol,
     EcmaLdtrue,
     EcmaLdundefined,
-    StaDyn,
-    EcmaLdfunction
+    StaDyn
 } from "../irnodes";
 import { CacheList, getVregisterCache } from "./vregisterCache";
 
@@ -98,14 +97,6 @@ export function expandFalse(pandaGen: PandaGen): IRNode[] {
     let vreg = getVregisterCache(pandaGen, CacheList.False);
     return [
         new EcmaLdfalse(),
-        new StaDyn(vreg)
-    ];
-}
-
-export function expandFunc(pandaGen: PandaGen): IRNode[] {
-    let vreg = getVregisterCache(pandaGen, CacheList.FUNC);
-    return [
-        new EcmaLdfunction(),
         new StaDyn(vreg)
     ];
 }

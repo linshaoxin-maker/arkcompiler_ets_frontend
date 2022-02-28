@@ -92,11 +92,7 @@ export class VariableAccessLoad extends VariableAccessBase {
             pandaGen.freeTemps(holeReg);
             return insns;
         }
-        if (v.getName() === "4funcObj") {
-            insns.push(loadAccumulator(getVregisterCache(pandaGen, CacheList.FUNC)));
-        } else {
-            insns.push(loadAccumulator(bindVreg));
-        }
+        insns.push(loadAccumulator(bindVreg));
 
         return insns;
     }

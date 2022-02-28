@@ -610,30 +610,6 @@ static void ParseFunctionCatchTables(const Json::Value &function, panda::pandasm
     }
 }
 
-static void ParseFunctionCallType(const Json::Value &function, panda::pandasm::Function &pandaFunc)
-{
-    std::string funcName = "";
-    if (function.isMember("name") && function["name"].isString()) {
-        funcName = function["name"].asString();
-    }
-    if (funcName == "func_main_0") {
-        return ;
-    }
-
-    uint32_t callType = 0;
-    if (function.isMember("callType") && function["callType"].isInt()) {
-        callType = function["callType"].asUInt();
-    }
-    panda::pandasm::AnnotationData callTypeAnnotation("_ESCallTypeAnnotation");
-    std::string annotationName = "callType";
-    panda::pandasm::AnnotationElement callTypeAnnotationElement(
-        annotationName, std::make_unique<panda::pandasm::ScalarValue>(
-        panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U32>(callType)));
-    callTypeAnnotation.AddElement(std::move(callTypeAnnotationElement));
-    const_cast<std::vector<panda::pandasm::AnnotationData>&>(
-        pandaFunc.metadata->GetAnnotations()).push_back(std::move(callTypeAnnotation));
-}
-
 static void ParseFunctionTypeInfo(const Json::Value &function, panda::pandasm::Function &pandaFunc)
 {
     if (function.isMember("typeInfo") && function["typeInfo"].isArray()) {
@@ -795,8 +771,6 @@ static panda::pandasm::Function ParseFunction(const Json::Value &function)
     ParseSourceFileDebugInfo(function, pandaFunc);
     ParseFunctionLabels(function, pandaFunc);
     ParseFunctionCatchTables(function, pandaFunc);
-    // parsing call opt type
-    ParseFunctionCallType(function, pandaFunc);
     ParseFunctionTypeInfo(function, pandaFunc);
     ParseFunctionExportedType(function, pandaFunc);
     ParseFunctionDeclaredType(function, pandaFunc);
@@ -804,13 +778,6 @@ static panda::pandasm::Function ParseFunction(const Json::Value &function)
     return pandaFunc;
 }
 
-static void GenerateESCallTypeAnnotationRecord(panda::pandasm::Program &prog)
-{
-    auto callTypeAnnotationRecord = panda::pandasm::Record("_ESCallTypeAnnotation", LANG_EXT);
-    callTypeAnnotationRecord.metadata->SetAttribute("external");
-    callTypeAnnotationRecord.metadata->SetAccessFlags(panda::ACC_ANNOTATION);
-    prog.record_table.emplace(callTypeAnnotationRecord.name, std::move(callTypeAnnotationRecord));
-}
 static void GenerateESTypeAnnotationRecord(panda::pandasm::Program &prog)
 {
     auto tsTypeAnnotationRecord = panda::pandasm::Record("_ESTypeAnnotation", LANG_EXT);
@@ -913,7 +880,6 @@ static void ReplaceAllDistinct(std::string &str, const std::string &oldValue, co
 
 static void ParseOptions(const Json::Value &rootValue, panda::pandasm::Program &prog)
 {
-    GenerateESCallTypeAnnotationRecord(prog);
     GenerateESTypeAnnotationRecord(prog);
     ParseModuleMode(rootValue, prog);
     ParseLogEnable(rootValue);
