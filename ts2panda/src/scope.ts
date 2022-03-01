@@ -418,22 +418,6 @@ export class FunctionScope extends VariableScope {
         return this.funcName;
     }
 
-    public getCallOpt() {
-        return this.callOpt;
-    }
-
-    public setCallOpt(key: String) {
-        this.callOpt.add(key);
-    }
-
-    public setArgumentsOrRestargs() {
-        this.isArgumentsOrRestargs = true;
-    }
-
-    public getArgumentsOrRestargs() {
-        return this.isArgumentsOrRestargs;
-    }
-
     getParent(): Scope | undefined {
         return this.parent;
     }

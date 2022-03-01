@@ -202,7 +202,6 @@ export class Ts2Panda {
         let funcSignature = Ts2Panda.getFuncSignature(pg);
         let funcInsnsAndRegsNum = Ts2Panda.getFuncInsnsAndRegsNum(pg);
         let sourceFile = pg.getSourceFileDebugInfo();
-        let callType = pg.getCallType();
         let typeRecord = pg.getLocals();
         let typeInfo = new Array<TypeOfVreg>();
         typeRecord.forEach((vreg) => {
@@ -252,7 +251,6 @@ export class Ts2Panda {
             variables,
             sourceFile,
             sourceCode,
-            callType,
             typeInfo,
             exportedSymbol2Types,
             declaredSymbol2Types

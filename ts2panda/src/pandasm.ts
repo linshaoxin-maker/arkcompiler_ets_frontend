@@ -72,7 +72,6 @@ export class Function {
     public variables: Array<VariableDebugInfo> | undefined;
     public sourceFile: string;
     public sourceCode: string | undefined;
-    public callType: number;
     public typeInfo: Array<TypeOfVreg>;
     public exportedSymbol2Types: Array<ExportedSymbol2Type> | undefined;
     public declaredSymbol2Types: Array<DeclaredSymbol2Type> | undefined;
@@ -86,7 +85,6 @@ export class Function {
         variables: Array<VariableDebugInfo> | undefined = undefined,
         sourceFile: string = "",
         sourceCode: string | undefined = undefined,
-        callType: number = 0,
         typeInfo: Array<TypeOfVreg>,
         exportedSymbol2Types: Array<ExportedSymbol2Type> | undefined = undefined,
         declaredSymbol2Types: Array<DeclaredSymbol2Type> | undefined = undefined
@@ -101,7 +99,6 @@ export class Function {
         this.variables = variables;
         this.sourceFile = sourceFile;
         this.sourceCode = sourceCode;
-        this.callType = callType;
         this.typeInfo = typeInfo;
         this.exportedSymbol2Types = exportedSymbol2Types;
         this.declaredSymbol2Types = declaredSymbol2Types;
