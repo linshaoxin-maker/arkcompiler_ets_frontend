@@ -46,6 +46,7 @@ import {
     EcmaImportmodule,
     EcmaIsfalse,
     EcmaIstrue,
+    EcmaLdbigint,
     EcmaLdglobalvar,
     EcmaLdhomeobject,
     EcmaLdlexenvdyn,
@@ -57,12 +58,16 @@ import {
     EcmaLdsuperbyname,
     EcmaLdsuperbyvalue,
     EcmaNewlexenvdyn,
+    EcmaNewlexenvwithnamedyn,
     EcmaNewobjdynrange,
     EcmaPoplexenvdyn,
     EcmaReturnundefined,
     EcmaSetobjectwithproto,
     EcmaStarrayspread,
+    EcmaStclasstoglobalrecord,
+    EcmaStconsttoglobalrecord,
     EcmaStglobalvar,
+    EcmaStlettoglobalrecord,
     EcmaStlexvardyn,
     EcmaStmodulevar,
     EcmaStobjbyindex,
@@ -70,8 +75,8 @@ import {
     EcmaStobjbyvalue,
     EcmaStownbyindex,
     EcmaStownbyname,
-    EcmaStownbyvalue,
     EcmaStownbynamewithnameset,
+    EcmaStownbyvalue,
     EcmaStownbyvaluewithnameset,
     EcmaStsuperbyname,
     EcmaStsuperbyvalue,
@@ -97,12 +102,7 @@ import {
     LdaStr,
     MovDyn,
     ResultType,
-    StaDyn,
-    EcmaStclasstoglobalrecord,
-    EcmaStconsttoglobalrecord,
-    EcmaStlettoglobalrecord,
-    EcmaLdbigint,
-    VReg
+    StaDyn, VReg
 } from "../irnodes";
 
 export function loadAccumulatorInt(value: number): IRNode {
@@ -161,8 +161,11 @@ export function throwDeleteSuperProperty() {
     return new EcmaThrowdeletesuperproperty();
 }
 
-export function newLexicalEnv(numVars: number) {
-    return new EcmaNewlexenvdyn(new Imm(ResultType.Int, numVars));
+export function newLexicalEnv(numVars: number, scopeInfo: number | undefined) {
+    if (scopeInfo == undefined) {
+        return new EcmaNewlexenvdyn(new Imm(ResultType.Int, numVars));
+    }
+    return new EcmaNewlexenvwithnamedyn(new Imm(ResultType.Int, numVars), new Imm(ResultType.Int, scopeInfo));
 }
 
 export function loadLexicalEnv() {
@@ -420,15 +423,15 @@ export function createRegExpWithLiteral(pattern: string, flags: number) {
     return new EcmaCreateregexpwithliteral(pattern, new Imm(ResultType.Int, flags));
 }
 
-export function stLetToGlobalRecord (name: string) {
+export function stLetToGlobalRecord(name: string) {
     return new EcmaStlettoglobalrecord(name);
 }
 
-export function stConstToGlobalRecord (name: string) {
+export function stConstToGlobalRecord(name: string) {
     return new EcmaStconsttoglobalrecord(name);
 }
 
-export function stClassToGlobalRecord (name: string) {
+export function stClassToGlobalRecord(name: string) {
     return new EcmaStclasstoglobalrecord(name);
 }
 
