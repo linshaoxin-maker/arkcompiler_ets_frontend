@@ -100,6 +100,7 @@ import {
     EcmaStclasstoglobalrecord,
     EcmaStconsttoglobalrecord,
     EcmaStlettoglobalrecord,
+    EcmaLdbigint,
     VReg
 } from "../irnodes";
 
@@ -428,4 +429,8 @@ export function stConstToGlobalRecord (name: string) {
 
 export function stClassToGlobalRecord (name: string) {
     return new EcmaStclasstoglobalrecord(name);
+}
+
+export function loadAccumulatorBigInt(value: string): IRNode {
+    return new EcmaLdbigint(value);
 }
