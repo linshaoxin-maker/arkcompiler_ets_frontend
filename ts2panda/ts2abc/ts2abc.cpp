@@ -19,6 +19,7 @@
 #include <locale>
 #include <string>
 #include <unistd.h>
+#include <cstdio>
 
 #include "assembly-type.h"
 #include "assembly-program.h"
@@ -877,16 +878,16 @@ static void ParseOptLogLevel(const Json::Value &rootValue)
     }
 }
 
-static void ReplaceAllDistinct(std::string &str, const std::string &oldValue, const std::string &newValue)
-{
-    for (std::string::size_type pos(0); pos != std::string::npos; pos += newValue.length()) {
-        if ((pos = str.find(oldValue, pos)) != std::string::npos) {
-            str.replace(pos, oldValue.length(), newValue);
-        } else {
-            break;
-        }
-    }
-}
+//static void ReplaceAllDistinct(std::string &str, const std::string &oldValue, const std::string &newValue)
+//{
+//    for (std::string::size_type pos(0); pos != std::string::npos; pos += newValue.length()) {
+//        if ((pos = str.find(oldValue, pos)) != std::string::npos) {
+//            str.replace(pos, oldValue.length(), newValue);
+//        } else {
+//            break;
+//        }
+//    }
+//}
 
 static void ParseOptions(const Json::Value &rootValue, panda::pandasm::Program &prog)
 {
@@ -980,42 +981,71 @@ static int ParseSmallPieceJson(const std::string &subJson, panda::pandasm::Progr
     return RETURN_SUCCESS;
 }
 
-static bool ParseData(const std::string &data, panda::pandasm::Program &prog)
-{
-    if (data.empty()) {
-        std::cerr << "the stringify json is empty" << std::endl;
+class BufferedPipe {
+public:
+    explicit BufferedPipe(FILE * pipe):
+      pipe_(pipe), curPos_(0), curRdSize_(0) {};
+
+    char GetChar();
+    bool Eof();
+private:
+    static constexpr size_t BUFFER_SIZE = 1024;
+    FILE *pipe_{nullptr};
+    size_t curPos_{0};
+    size_t curRdSize_{0};
+    char buffer_[BUFFER_SIZE]{0};
+};
+
+char BufferedPipe::GetChar() {
+    if (curPos_ >= curRdSize_) {
+        curRdSize_ = fread(buffer_, sizeof(char), sizeof(buffer_), pipe_);
+        curPos_ = 0;
+    }
+    return buffer_[curPos_++];
+}
+
+bool BufferedPipe::Eof() {
+    if (!feof(pipe_)) {
         return false;
     }
-
-    size_t pos = 0;
-    bool isStartDollar = true;
-
-    for (size_t idx = 0; idx < data.size(); idx++) {
-        if (data[idx] == '$' && (idx ==0 || data[idx - 1] != '#')) {
-            if (isStartDollar) {
-                pos = idx + 1;
-                isStartDollar = false;
-                continue;
-            }
-
-            std::string subJson = data.substr(pos, idx - pos);
-            ReplaceAllDistinct(subJson, "#$", "$");
-            if (ParseSmallPieceJson(subJson, prog)) {
-                std::cerr << "fail to parse stringify json" << std::endl;
-                return false;
-            }
-            isStartDollar = true;
-        }
+    if (curPos_ < curRdSize_) {
+        return false;
     }
-
     return true;
 }
 
-bool GenerateProgram(const std::string &data, std::string output, int optLevel, std::string optLogLevel)
+static bool ParseData(FILE *fp, panda::pandasm::Program &prog) {
+    char preCh{'\0'};
+    std::string subJson{};
+    BufferedPipe bp(fp);
+
+    while (!bp.Eof()) {
+        char ch = bp.GetChar();
+        if (ch == '$' && preCh != '#') {
+            if (!subJson.empty()) {
+                if (ParseSmallPieceJson(subJson, prog)) {
+                    std::cerr << "fail to parse stringify json" << std::endl;
+                    return false;
+                }
+                subJson.clear();
+            }
+            continue;
+        }
+
+        if (ch == '$' && preCh == '#') {
+            subJson.pop_back();
+        }
+        subJson += (ch);
+        preCh = ch;
+    }
+    return true;
+}
+
+bool GenerateProgram(FILE* fp, std::string output, int optLevel, std::string optLogLevel)
 {
     panda::pandasm::Program prog = panda::pandasm::Program();
     prog.lang = panda::pandasm::extensions::Language::ECMASCRIPT;
-    if (!ParseData(data, prog)) {
+    if (!ParseData(fp, prog)) {
         std::cerr << "fail to parse Data!" << std::endl;
         return false;
     }
@@ -1055,70 +1085,5 @@ bool GenerateProgram(const std::string &data, std::string output, int optLevel, 
     }
 
     Logd("Successfully generated: %s\n", output.c_str());
-    return true;
-}
-
-bool HandleJsonFile(const std::string &input, std::string &data)
-{
-    auto inputAbs = panda::os::file::File::GetAbsolutePath(input);
-    if (!inputAbs) {
-        std::cerr << "Input file does not exist" << std::endl;
-        return false;
-    }
-    auto fpath = inputAbs.Value();
-    if (panda::os::file::File::IsRegularFile(fpath) == false) {
-        std::cerr << "Input must be either a regular file or a directory" << std::endl;
-        return false;
-    }
-
-    std::ifstream file;
-    file.open(fpath);
-    if (file.fail()) {
-        std::cerr << "failed to open:" << fpath << std::endl;
-        return false;
-    }
-
-    file.seekg(0, std::ios::end);
-    int64_t fileSize = file.tellg();
-    if (fileSize == -1) {
-        std::cerr << "failed to get position in input sequence: " << fpath << std::endl;
-        return false;
-    }
-    file.seekg(0, std::ios::beg);
-    auto buf = std::vector<char>(fileSize);
-    file.read(reinterpret_cast<char *>(buf.data()), fileSize);
-    data = buf.data();
-    buf.clear();
-    file.close();
-    Logd(data.c_str());
-    Logd("----------------------------------");
-
-    return true;
-}
-
-bool ReadFromPipe(std::string &data)
-{
-    const size_t bufSize = 4096;
-    // the parent process open a pipe to this child process with fd of 3
-    const size_t fd = 3;
-
-    char buff[bufSize + 1];
-    int ret = 0;
-
-    while ((ret = read(fd, buff, bufSize)) != 0) {
-        if (ret < 0) {
-            std::cerr << "Read pipe error" << std::endl;
-            return false;
-        }
-        buff[ret] = '\0';
-        data += buff;
-    }
-
-    if (data.empty()) {
-        std::cerr << "Nothing has been read from pipe" << std::endl;
-        return false;
-    }
-
-    Logd("finish reading from pipe");
     return true;
 }
