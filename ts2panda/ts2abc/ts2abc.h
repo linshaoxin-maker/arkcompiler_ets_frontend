@@ -22,6 +22,7 @@
 #include <locale>
 #include <string>
 #include <unistd.h>
+#include <cstdio>
 
 #include "assembly-type.h"
 #include "assembly-program.h"
@@ -47,7 +48,7 @@ enum class OptLevel {
 
 bool HandleJsonFile(const std::string &input, std::string &data);
 bool ReadFromPipe(std::string &data);
-bool GenerateProgram(const std::string &data, std::string output,
+bool GenerateProgram(FILE *fp, std::string output,
                      int optLevel,
                      std::string optLogLevel);
 bool GetDebugLog();

@@ -20,37 +20,31 @@
 #include "ts2abc_options.h"
 #include "ts2abc.h"
 
-int Preprocess(const panda::ts2abc::Options &options, const panda::PandArgParser &argParser, std::string &output,
-    std::string &data, std::string &usage)
+static constexpr int PIPE_FILE_NO = 3;
+
+
+FILE* Preprocess(const panda::ts2abc::Options &options, std::string &output, const panda::PandArgParser &argParser, std::string &usage)
 {
-    std::string input;
+    std::string input{};
+    FILE *fp {nullptr};
+
     if (!options.GetCompileByPipeArg()) {
         input = options.GetTailArg1();
         output = options.GetTailArg2();
-        if (input.empty() || output.empty()) {
+        if (input.empty()) {
             std::cerr << "Incorrect args number" << std::endl;
             std::cerr << "Usage example: ts2abc test.json test.abc"<< std::endl;
             std::cerr << usage << std::endl;
             std::cerr << argParser.GetHelpString();
-            return RETURN_FAILED;
+            return nullptr;
         }
 
-        if (!HandleJsonFile(input, data)) {
-            return RETURN_FAILED;
-        }
+        fp = fopen(input.c_str(), "r");
     } else {
         output = options.GetTailArg1();
-        if (output.empty()) {
-            std::cerr << usage << std::endl;
-            std::cerr << argParser.GetHelpString();
-            return RETURN_FAILED;
-        }
-
-        if (!ReadFromPipe(data)) {
-            return RETURN_FAILED;
-        }
+        fp = fdopen(PIPE_FILE_NO, "r");
     }
-    return RETURN_SUCCESS;
+    return fp;
 }
 
 int main(int argc, const char *argv[])
@@ -88,14 +82,15 @@ int main(int argc, const char *argv[])
         return RETURN_FAILED;
     }
 
-    std::string output;
-    std::string data = "";
+    std::string output {};
 
-    if (Preprocess(options, argParser, output, data, usage) == RETURN_FAILED) {
+    FILE *fp {nullptr};
+    fp = Preprocess(options, output, argParser, usage);
+    if (fp == nullptr) {
         return RETURN_FAILED;
     }
 
-    if (!GenerateProgram(data, output, options.GetOptLevelArg(), options.GetOptLogLevelArg())) {
+    if (!GenerateProgram(fp, output, options.GetOptLevelArg(), options.GetOptLogLevelArg())) {
         std::cerr << "call GenerateProgram fail" << std::endl;
         return RETURN_FAILED;
     }
