@@ -63,7 +63,6 @@ import {
     loadAccumulatorString,
     loadGlobalVar,
     loadHomeObject,
-    loadLexicalEnv,
     loadLexicalVar,
     loadModuleVarByName,
     loadObjByIndex,
@@ -104,7 +103,11 @@ import {
     tryStoreGlobalByName,
     loadAccumulatorBigInt
 } from "./base/bcGenUtil";
-import { LiteralBuffer } from "./base/literal";
+import {
+    Literal,
+    LiteralBuffer,
+    LiteralTag
+} from "./base/literal";
 import { getParamLengthOfFunc } from "./base/util";
 import {
     CacheList,
@@ -215,6 +218,25 @@ export class PandaGen {
         this.vregisterCache = new VregisterCache();
     }
 
+    public appendScopeInfo(lexVarInfo: Map<string, number>): number | undefined {
+        if (lexVarInfo.size == 0) {
+            return undefined;
+        }
+
+        let scopeInfoIdx: number | undefined = undefined;
+        scopeInfoIdx = PandaGen.getLiteralArrayBuffer().length;
+        let scopeInfo = new LiteralBuffer();
+        let scopeInfoLiterals = new Array<Literal>();
+        scopeInfoLiterals.push(new Literal(LiteralTag.INTEGER, lexVarInfo.size));
+        lexVarInfo.forEach((slot: number, name: string) => {
+            scopeInfoLiterals.push(new Literal(LiteralTag.STRING, name));
+            scopeInfoLiterals.push(new Literal(LiteralTag.INTEGER, slot));
+        });
+        scopeInfo.addLiterals(...scopeInfoLiterals);
+        PandaGen.getLiteralArrayBuffer().push(scopeInfo);
+        return scopeInfoIdx;
+    }
+
     public setCallType(callType: number) {
         this.callType = callType;
     }
@@ -222,7 +244,7 @@ export class PandaGen {
     public getCallType(): number {
         return this.callType;
     }
-    
+
     static getExportedTypes() {
         if (TypeRecorder.getInstance()) {
             return TypeRecorder.getInstance().getExportedType();
@@ -435,21 +457,18 @@ export class PandaGen {
     }
 
     createLexEnv(node: ts.Node, env: VReg, scope: VariableScope | LoopScope) {
-        let needCreateNewEnv = scope.need2CreateLexEnv();
         let numVars = scope.getNumLexEnv();
-        if (needCreateNewEnv) {
-            this.add(
-                node,
-                newLexicalEnv(numVars),
-                storeAccumulator(env)
-            )
-        } else {
-            this.add(
-                node,
-                loadLexicalEnv(),
-                storeAccumulator(env)
-            )
+        let scopeInfoIdx: number | undefined = undefined;
+        let lexVarInfo = scope.getLexVarInfo();
+        if (CmdOptions.isDebugMode()) {
+            scopeInfoIdx = this.appendScopeInfo(lexVarInfo);
         }
+
+        this.add(
+            node,
+            newLexicalEnv(numVars, scopeInfoIdx),
+            storeAccumulator(env)
+        )
     }
 
     popLexicalEnv(node: ts.Node) {
