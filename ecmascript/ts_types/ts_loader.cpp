@@ -122,8 +122,9 @@ int TSLoader::GetTypeIndexFromExportTable(JSHandle<EcmaString> target, JSHandle<
     return -1;
 }
 
-GlobalTSTypeRef TSLoader::GetPropType(GlobalTSTypeRef gt, JSHandle<EcmaString> propertyName) const
+GlobalTSTypeRef TSLoader::GetPropType(GlobalTSTypeRef gt, EcmaString *propertyName) const
 {
+    DISALLOW_GARBAGE_COLLECTION;
     JSThread *thread = vm_->GetJSThread();
     JSHandle<TSModuleTable> table = GetTSModuleTable();
 
@@ -131,8 +132,14 @@ GlobalTSTypeRef TSLoader::GetPropType(GlobalTSTypeRef gt, JSHandle<EcmaString> p
     int localId = gt.GetLocalId();
     TSTypeKind typeKind = GetTypeKind(gt);
 
+<<<<<<< HEAD
     JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
     GlobalTSTypeRef propTypeRef = TSTypeTable::GetPropertyTypeGT(thread, typeTable, typeKind, localId, propertyName);
+=======
+    TSTypeTable *typeTable = TSTypeTable::Cast(table->GetTSTypeTable(thread, moduleId).GetTaggedValue().GetTaggedObject());
+    GlobalTSTypeRef propTypeRef = TSTypeTable::GetPropertyType(thread, typeTable, typeKind, localId,
+                                                               propertyName);
+>>>>>>> Set macros "DISALLOW_GARBAGE_COLLECTION" avoiding unnecessary object creation
     return propTypeRef;
 }
 
@@ -365,7 +372,7 @@ GlobalTSTypeRef TSLoader::GetOrCreateUnionType(CVector<GlobalTSTypeRef> unionTyp
     JSHandle<TaggedArray> unionTypeArray(thread, unionType->GetComponentTypes());
 
     for (int unionArgIndex = 0; unionArgIndex < size; unionArgIndex++) {
-        unionTypeArray->Set(thread, unionArgIndex, JSTaggedValue(unionTypeRef[unionArgIndex].GetGlobalTSTypeRef()));
+        unionTypeArray->Set(thread, unionArgIndex, JSTaggedValue(unionTypeRef[unionArgIndex].GetGlobalTSTypeRef()));  // [[dhn : cannot directly set uint64_t]]
     }
     unionType->SetComponentTypes(thread, unionTypeArray);
 

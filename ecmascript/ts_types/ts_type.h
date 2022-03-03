@@ -57,8 +57,8 @@ public:
 
     JSHClass *GetOrCreateHClass(JSThread *thread);
 
-    static GlobalTSTypeRef GetPropTypeGT(JSHandle<TSTypeTable> &table, JSHandle<TSObjectType> objType,
-                                          JSHandle<EcmaString> propName);
+    static GlobalTSTypeRef GetPropTypeGT(TSTypeTable *table, TSObjectType *objType,
+                                         EcmaString *propName);
 
     ACCESSORS(ObjLayoutInfo, PROPERTIES_OFFSET, HCLASS_OFFSET);
     ACCESSORS(HClass, HCLASS_OFFSET, SIZE);
@@ -74,11 +74,12 @@ class TSClassType : public TSType {
 public:
     CAST_CHECK(TSClassType, IsTSClassType);
 
-    static constexpr size_t FIELD_LENGTH = 4;  // every field record name, typeIndex, accessFlag, readonly
+    // 4 : every attribute field record name, typeIndex, accessFlag, readonly
+    static constexpr size_t ATTRIBUTE_FIELD_LENGTH = 4;
     static constexpr size_t INSTANCE_TYPE_OFFSET = TSType::SIZE;
 
-    static GlobalTSTypeRef GetPropTypeGT(const JSThread *thread, JSHandle<TSTypeTable> &table,
-                                          int localtypeId, JSHandle<EcmaString> propName);
+    static GlobalTSTypeRef GetPropTypeGT(const JSThread *thread, TSTypeTable *table,
+                                         int localtypeId, EcmaString *propName);
 
     ACCESSORS(InstanceType, INSTANCE_TYPE_OFFSET, CONSTRUCTOR_TYPE_OFFSET);
     ACCESSORS(ConstructorType, CONSTRUCTOR_TYPE_OFFSET, PROTOTYPE_TYPE_OFFSET);
@@ -94,8 +95,8 @@ class TSClassInstanceType : public TSType {
 public:
     CAST_CHECK(TSClassInstanceType, IsTSClassInstanceType);
 
-    static GlobalTSTypeRef GetPropTypeGT(const JSThread *thread, JSHandle<TSTypeTable> &table,
-                                          int localtypeId, JSHandle<EcmaString> propName);
+    static GlobalTSTypeRef GetPropTypeGT(const JSThread *thread, TSTypeTable *table,
+                                         int localtypeId, EcmaString *propName);
 
     static constexpr size_t CREATE_CLASS_TYPE_OFFSET = TSType::SIZE;
     static constexpr size_t CREATE_CLASS_OFFSET = 1;
@@ -139,7 +140,7 @@ public:
     DECL_DUMP()
 };
 
-class TSUnionType : public TSType {
+class TSUnionType : public TSType { // [[dhn : set GTref by TaggedValue *2]]
 public:
     CAST_CHECK(TSUnionType, IsTSUnionType);
 

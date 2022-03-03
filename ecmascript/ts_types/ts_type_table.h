@@ -23,7 +23,7 @@ namespace panda::ecmascript {
 class TSTypeTable : public TaggedArray {
 public:
     enum class TypeLiteralFlag : uint8_t {
-        COUNTER = 0,     // just used for the first type literal
+        COUNTER = 0, // just used for the first type literal
         CLASS,
         CLASS_INSTANCE,
         FUNCTION,
@@ -54,8 +54,8 @@ public:
     static void Initialize(JSThread *thread, const JSPandaFile *jsPandaFile,
                            CVector<JSHandle<EcmaString>> &recordImportModules);
 
-    static GlobalTSTypeRef GetPropertyTypeGT(JSThread *thread, JSHandle<TSTypeTable> &table, TSTypeKind typeKind,
-                                           uint32_t index, JSHandle<EcmaString> propName);
+    static GlobalTSTypeRef GetPropertyTypeGT(JSThread *thread, TSTypeTable *table, TSTypeKind typeKind,
+                                             uint32_t index, EcmaString *propName);
 
     static JSHandle<JSTaggedValue> ParseType(JSThread *thread, JSHandle<TSTypeTable> &table,
                                              JSHandle<TaggedArray> &literal,

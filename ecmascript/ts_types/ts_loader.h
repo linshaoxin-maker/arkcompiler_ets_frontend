@@ -208,7 +208,7 @@ public:
 
     GlobalTSTypeRef PUBLIC_API GetImportTypeTargetGT(GlobalTSTypeRef gt) const;
 
-    GlobalTSTypeRef PUBLIC_API GetPropType(GlobalTSTypeRef gt, JSHandle<EcmaString> propertyName) const;
+    GlobalTSTypeRef PUBLIC_API GetPropType(GlobalTSTypeRef gt, EcmaString *propertyName) const;
 
     uint32_t PUBLIC_API GetUnionTypeLength(GlobalTSTypeRef gt) const;
 

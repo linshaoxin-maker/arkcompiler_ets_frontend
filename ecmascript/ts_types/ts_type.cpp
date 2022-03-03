@@ -14,11 +14,11 @@
  */
 #include "ts_type.h"
 
-#include "ecmascript/ic/ic_handler.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/layout_info.h"
+#include "ecmascript/ic/ic_handler.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_hclass.h"
+#include "ecmascript/layout_info.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/ts_types/ts_obj_layout_info.h"
 #include "ecmascript/ts_types/ts_type_table.h"
@@ -97,27 +97,29 @@ bool TSUnionType::IsEqual(JSHandle<TSUnionType> unionB)
     return findUnionTag;
 }
 
-GlobalTSTypeRef TSClassType::GetPropTypeGT(const JSThread *thread, JSHandle<TSTypeTable> &table,
-                                           int localtypeId, JSHandle<EcmaString> propName)
+GlobalTSTypeRef TSClassType::GetPropTypeGT(const JSThread *thread, TSTypeTable *table,
+                                           int localtypeId, EcmaString *propName)
 {
-    JSHandle<TSClassType> classType(thread, table->Get(localtypeId));
-    JSHandle<TSObjectType> constructorType(thread, classType->GetConstructorType());
+    DISALLOW_GARBAGE_COLLECTION;
+    TSClassType *classType = TSClassType::Cast(table->Get(localtypeId).GetTaggedObject());
+    TSObjectType *constructorType = TSObjectType::Cast(classType->GetConstructorType().GetTaggedObject());
 
     // search static propType in constructorType
     return TSObjectType::GetPropTypeGT(table, constructorType, propName);
 }
 
-GlobalTSTypeRef TSClassInstanceType::GetPropTypeGT(const JSThread *thread, JSHandle<TSTypeTable> &table,
-                                                   int localtypeId, JSHandle<EcmaString> propName)
+GlobalTSTypeRef TSClassInstanceType::GetPropTypeGT(const JSThread *thread, TSTypeTable *table,
+                                                   int localtypeId, EcmaString *propName)
 {
-    JSHandle<TSClassInstanceType> classInstanceType(thread, table->Get(localtypeId));
+    DISALLOW_GARBAGE_COLLECTION;
+    TSClassInstanceType *classInstanceType = TSClassInstanceType::Cast(table->Get(localtypeId).GetTaggedObject());
     GlobalTSTypeRef createClassTypeRefGT = classInstanceType->GetClassRefGT();
     int localId = createClassTypeRefGT.GetLocalId();
     int localTableIndex = TSTypeTable::GetUserdefinedTypeId(localId);
 
-    JSHandle<TSClassType> createClassType(thread, table->Get(localTableIndex));
-    JSHandle<TSObjectType> instanceType(thread, createClassType->GetInstanceType());
-    JSHandle<TSObjectType> protoTypeType(thread, createClassType->GetPrototypeType());
+    TSClassType *createClassType = TSClassType::Cast(table->Get(localTableIndex).GetTaggedObject());
+    TSObjectType *instanceType = TSObjectType::Cast(createClassType->GetInstanceType().GetTaggedObject());
+    TSObjectType *protoTypeType = TSObjectType::Cast(createClassType->GetPrototypeType().GetTaggedObject());
 
     // search non-static propType in instanceType
     GlobalTSTypeRef propTypeGT = TSObjectType::GetPropTypeGT(table, instanceType, propName);
@@ -128,14 +130,14 @@ GlobalTSTypeRef TSClassInstanceType::GetPropTypeGT(const JSThread *thread, JSHan
     return propTypeGT;
 }
 
-GlobalTSTypeRef TSObjectType::GetPropTypeGT(JSHandle<TSTypeTable> &table, JSHandle<TSObjectType> objType,
-                                            JSHandle<EcmaString> propName)
+GlobalTSTypeRef TSObjectType::GetPropTypeGT(TSTypeTable  *table, TSObjectType *objType,
+                                            EcmaString *propName)
 {
     DISALLOW_GARBAGE_COLLECTION;
     TSObjLayoutInfo *objTypeInfo = TSObjLayoutInfo::Cast(objType->GetObjLayoutInfo().GetTaggedObject());
     for (uint32_t index = 0; index < objTypeInfo->NumberOfElements(); ++index) {
         EcmaString* propKey = EcmaString::Cast(objTypeInfo->GetKey(index).GetTaggedObject());
-        if (EcmaString::StringsAreEqual(propKey, *propName)) {
+        if (EcmaString::StringsAreEqual(propKey, propName)) {
             int localId = objTypeInfo->GetTypeId(index).GetInt();
             if (localId < GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT) {
                 return GlobalTSTypeRef(localId);

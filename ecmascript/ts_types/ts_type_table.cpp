@@ -131,10 +131,10 @@ JSHandle<JSTaggedValue> TSTypeTable::ParseType(JSThread *thread, JSHandle<TSType
     return JSHandle<JSTaggedValue>(thread, JSTaggedValue::Null());
 }
 
-GlobalTSTypeRef TSTypeTable::GetPropertyTypeGT(JSThread *thread, JSHandle<TSTypeTable> &table, TSTypeKind typeKind,
-                                               uint32_t localtypeId, JSHandle<EcmaString> propName)
+GlobalTSTypeRef TSTypeTable::GetPropertyTypeGT(JSThread *thread, TSTypeTable *table,
+                                               TSTypeKind typeKind, uint32_t localtypeId, EcmaString *propName)
 {
-    GlobalTSTypeRef gt = GlobalTSTypeRef::Default();
+    DISALLOW_GARBAGE_COLLECTION;
     switch (typeKind) {
         case TSTypeKind::TS_CLASS: {
             gt = TSClassType::GetPropTypeGT(thread, table, localtypeId, propName);
@@ -311,7 +311,7 @@ JSHandle<TSClassType> TSTypeTable::ParseClassType(JSThread *thread, JSHandle<TST
     // resolve constructor type
     // stitic include fields and methods, which the former takes up 4 spaces and the latter takes up 2 spaces.
     uint32_t numStaticFields = literal->Get(index++).GetInt();
-    uint32_t numStaticMethods = literal->Get(index + numStaticFields * TSClassType::FIELD_LENGTH).GetInt();
+    uint32_t numStaticMethods = literal->Get(index + numStaticFields * TSClassType::ATTRIBUTE_FIELD_LENGTH).GetInt();
     uint32_t numStatic = numStaticFields + numStaticMethods;
     // new function type when support it
     JSHandle<TSObjectType> constructorType = factory->NewTSObjectType(numStatic);
