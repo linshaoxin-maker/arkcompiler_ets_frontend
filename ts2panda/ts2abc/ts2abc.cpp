@@ -1015,6 +1015,7 @@ bool BufferedPipe::Eof() {
 }
 
 static bool ParseData(FILE *fp, panda::pandasm::Program &prog) {
+    bool statementState {true};
     char preCh{'\0'};
     std::string subJson{};
     BufferedPipe bp(fp);
@@ -1028,6 +1029,9 @@ static bool ParseData(FILE *fp, panda::pandasm::Program &prog) {
                     return false;
                 }
                 subJson.clear();
+                statementState = false;
+            } else {
+                statementState = true;
             }
             continue;
         }
@@ -1035,8 +1039,11 @@ static bool ParseData(FILE *fp, panda::pandasm::Program &prog) {
         if (ch == '$' && preCh == '#') {
             subJson.pop_back();
         }
-        subJson += (ch);
-        preCh = ch;
+
+        if (statementState) {
+            subJson += (ch);
+            preCh = ch;
+        }
     }
     return true;
 }
