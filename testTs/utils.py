@@ -29,7 +29,7 @@ import json
 
 #执行终端命令
 def command_os(order):
-    cmd = order
+    cmd = order.split(' ')
     subprocess.run(cmd)
 
 #创建文件夹   
@@ -135,3 +135,8 @@ def npm_install(cwd):
         os.chdir(WORK_PATH)
     except Exception as e:
         print(e)
+
+
+    
+
+    
