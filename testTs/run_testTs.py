@@ -78,7 +78,7 @@ def run_test(file, tool,flag = False):
     if not os.path.exists(out_dir_path):  
         os.makedirs(out_dir_path)
     try:
-        command_os(f'node --expose-gc {tool} -m {file}  --output-type')
+        command_os(f'node --expose-gc {tool} -m {file} --output-type')
     except:
         e = str(e)
     if flag:
