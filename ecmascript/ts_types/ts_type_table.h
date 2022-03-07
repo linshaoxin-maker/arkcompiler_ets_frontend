@@ -36,7 +36,7 @@ public:
 
     static constexpr std::string_view ENTRY_FUNC_NAME = "func_main_0";
     static constexpr size_t RESERVE_TABLE_LENGTH = 2; // for reserve length and exportTable
-    static constexpr size_t TABLE_LENGTH_OFFSET_IN_LITREAL = 1;
+    static constexpr size_t TABLE_LENGTH_OFFSET_IN_LITERAL = 1;
     static constexpr size_t TYPE_KIND_OFFSET = 0;
     static constexpr size_t LENGTH_OFFSET = 0;
     static constexpr const char* DECLARED_FILE_NAME = "ohos.lib.d.ts";
@@ -54,7 +54,7 @@ public:
     static void Initialize(JSThread *thread, const JSPandaFile *jsPandaFile,
                            CVector<JSHandle<EcmaString>> &recordImportModules);
 
-    static GlobalTSTypeRef GetPropertyTypeGT(JSThread *thread, TSTypeTable *table, TSTypeKind typeKind,
+    static GlobalTSTypeRef GetPropertyTypeGT(TSTypeTable *table, TSTypeKind typeKind,
                                              uint32_t index, EcmaString *propName);
 
     static JSHandle<JSTaggedValue> ParseType(JSThread *thread, JSHandle<TSTypeTable> &table,

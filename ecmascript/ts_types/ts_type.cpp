@@ -69,7 +69,6 @@ JSHClass *TSObjectType::CreateHClassByProps(JSThread *thread, JSHandle<TSObjLayo
 bool TSUnionType::IsEqual(JSHandle<TSUnionType> unionB)
 {
     DISALLOW_GARBAGE_COLLECTION;
-    ASSERT(unionB->GetComponentTypes().IsTaggedArray());
     bool findUnionTag = 0;
 
     TaggedArray *unionArrayA = TaggedArray::Cast(TSUnionType::GetComponentTypes().GetTaggedObject());
@@ -97,8 +96,16 @@ bool TSUnionType::IsEqual(JSHandle<TSUnionType> unionB)
     return findUnionTag;
 }
 
-GlobalTSTypeRef TSClassType::GetPropTypeGT(const JSThread *thread, TSTypeTable *table,
-                                           int localtypeId, EcmaString *propName)
+uint32_t TSUnionType::GetArgsNum()
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    TaggedArray *unionTypeArray = TaggedArray::Cast(GetComponentTypes().GetTaggedObject());
+    ASSERT((unionTypeArray->GetLength() % GTREF_SPACE_CONSUMED) == 0);
+    uint32_t argsNum = unionTypeArray->GetLength() / GTREF_SPACE_CONSUMED;
+    return argsNum;
+}
+
+GlobalTSTypeRef TSClassType::GetPropTypeGT(TSTypeTable *table, int localtypeId, EcmaString *propName)
 {
     DISALLOW_GARBAGE_COLLECTION;
     TSClassType *classType = TSClassType::Cast(table->Get(localtypeId).GetTaggedObject());
@@ -108,8 +115,7 @@ GlobalTSTypeRef TSClassType::GetPropTypeGT(const JSThread *thread, TSTypeTable *
     return TSObjectType::GetPropTypeGT(table, constructorType, propName);
 }
 
-GlobalTSTypeRef TSClassInstanceType::GetPropTypeGT(const JSThread *thread, TSTypeTable *table,
-                                                   int localtypeId, EcmaString *propName)
+GlobalTSTypeRef TSClassInstanceType::GetPropTypeGT(TSTypeTable *table, int localtypeId, EcmaString *propName)
 {
     DISALLOW_GARBAGE_COLLECTION;
     TSClassInstanceType *classInstanceType = TSClassInstanceType::Cast(table->Get(localtypeId).GetTaggedObject());
@@ -138,7 +144,7 @@ GlobalTSTypeRef TSObjectType::GetPropTypeGT(TSTypeTable  *table, TSObjectType *o
     for (uint32_t index = 0; index < objTypeInfo->NumberOfElements(); ++index) {
         EcmaString* propKey = EcmaString::Cast(objTypeInfo->GetKey(index).GetTaggedObject());
         if (EcmaString::StringsAreEqual(propKey, propName)) {
-            int localId = objTypeInfo->GetTypeId(index).GetInt();
+            int localId = objTypeInfo->GetTypeId(index).GetInt(); // [[dhn : propKey should not be a EcmaString]]
             if (localId < GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT) {
                 return GlobalTSTypeRef(localId);
             }

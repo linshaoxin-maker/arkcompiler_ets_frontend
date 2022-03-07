@@ -23,16 +23,6 @@
 namespace panda::ecmascript {
 class GlobalTSTypeRef {
 public:
-    GlobalTSTypeRef(uint64_t num = 0) : ref_(num) {}
-    GlobalTSTypeRef(int moduleId, int localId, int typeKind)
-    {
-        ref_ = 0;
-        SetUserDefineTypeKind(typeKind);
-        SetLocalId(localId);
-        SetModuleId(moduleId);
-    }
-    ~GlobalTSTypeRef() = default;
-
     static constexpr int TS_TYPE_RESERVED_COUNT = 50;
     static constexpr int GLOBAL_TSTYPE_REF_SIZE = 64;
     static constexpr int USER_DEFINE_TYPE_KIND_FIELD_NUM = 6;
@@ -44,6 +34,21 @@ public:
     NEXT_BIT_FIELD(GlobalTSTypeRef, LocalId, uint32_t, LOCAL_TSTYPETABLE_INDEX_FIELD_NUM, GCType);
     NEXT_BIT_FIELD(GlobalTSTypeRef, ModuleId, uint32_t, GLOBAL_MODULE_ID_FIELD_NUM, LocalId);
 
+    static constexpr int LITTLE_ENDIAN_OFFSET = 32;
+    static constexpr int BIG_ENDIAN_NUM = 32;
+    FIRST_BIT_FIELD(GlobalTSTypeRef, LittleEndian, uint32_t, LITTLE_ENDIAN_OFFSET);
+    NEXT_BIT_FIELD(GlobalTSTypeRef, BigEndian, uint32_t, BIG_ENDIAN_NUM, LittleEndian);
+
+    GlobalTSTypeRef(uint64_t num = 0) : ref_(num) {};
+    GlobalTSTypeRef(uint8_t typeKind, int moduleId, int localId)
+    {
+        ref_ = 0;
+        SetUserDefineTypeKind(typeKind);
+        SetLocalId(localId);
+        SetModuleId(moduleId);
+    }
+    ~GlobalTSTypeRef() = default;
+
     static GlobalTSTypeRef Default()
     {
         return GlobalTSTypeRef(0u);
@@ -52,6 +57,12 @@ public:
     uint64_t GetGlobalTSTypeRef() const
     {
         return ref_;
+    }
+
+    static uint64_t GreateGlobalTSTypeRef(uint8_t typeKindIdx, int moduleId, int localId)
+    {
+        GlobalTSTypeRef ref(typeKindIdx, moduleId, localId);
+        return ref.ref_;
     }
 
     void SetGlobalTSTypeRef(uint64_t gt)
@@ -74,6 +85,23 @@ public:
         return ref_ == 0;
     }
 
+    void GTRef2TaggedVal(JSTaggedValue &bigEndian, JSTaggedValue &littleEndian)
+    {
+        uint32_t litEndianNum = GetLittleEndian();
+        uint32_t bigEndianNum = GetBigEndian();
+        bigEndian = JSTaggedValue(bigEndianNum);
+        littleEndian = JSTaggedValue(litEndianNum);
+        return;
+    }
+
+    void TaggedVal2GTRef(JSTaggedValue bigEndian, JSTaggedValue littleEndian)
+    {
+        uint32_t litEndianNum = littleEndian.GetInt();
+        uint32_t bigEndianNum = bigEndian.GetInt();
+        SetLittleEndian(litEndianNum);
+        SetBigEndian(bigEndianNum);
+        return;
+    }
 private:
     uint64_t ref_;
 };
@@ -210,7 +238,7 @@ public:
 
     GlobalTSTypeRef PUBLIC_API GetPropType(GlobalTSTypeRef gt, EcmaString *propertyName) const;
 
-    uint32_t PUBLIC_API GetUnionTypeLength(GlobalTSTypeRef gt) const;
+    int PUBLIC_API GetUnionTypeArgsNum(GlobalTSTypeRef gt) const;
 
     GlobalTSTypeRef PUBLIC_API GetUnionTypeByIndex(GlobalTSTypeRef gt, int index) const;
 

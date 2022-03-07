@@ -2303,7 +2303,9 @@ JSHandle<TSUnionType> ObjectFactory::NewTSUnionType(uint32_t length)
     JSHandle<TSUnionType> unionType(thread_, header);
 
     unionType->SetGTRef(GlobalTSTypeRef::Default());
-    JSHandle<TaggedArray> componentTypes = NewTaggedArray(length, JSTaggedValue::Undefined());
+    // each GtRef occupies 2 positions.
+    JSHandle<TaggedArray> componentTypes = NewTaggedArray((length * TSUnionType::GTREF_SPACE_CONSUMED),
+                                                           JSTaggedValue::Undefined());
     unionType->SetComponentTypes(thread_, componentTypes);
 
     return unionType;

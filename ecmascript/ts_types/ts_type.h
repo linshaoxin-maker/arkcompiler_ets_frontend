@@ -47,6 +47,11 @@ public:
     {
         SetGT(r.GetGlobalTSTypeRef());
     }
+
+    void SetGTRef(int typeKindIdx, int moduleId, int localId)
+    {
+        SetGT(GlobalTSTypeRef::GreateGlobalTSTypeRef(typeKindIdx, moduleId, localId));
+    }
 };
 
 class TSObjectType : public TSType {
@@ -60,7 +65,8 @@ public:
     static GlobalTSTypeRef GetPropTypeGT(TSTypeTable *table, TSObjectType *objType,
                                          EcmaString *propName);
 
-    ACCESSORS(ObjLayoutInfo, PROPERTIES_OFFSET, HCLASS_OFFSET);
+    ACCESSORS(Element, PROPERTIES_OFFSET, OBJ_LAYOUT_INFO_OFFSET);
+    ACCESSORS(ObjLayoutInfo, OBJ_LAYOUT_INFO_OFFSET, HCLASS_OFFSET);
     ACCESSORS(HClass, HCLASS_OFFSET, SIZE);
 
     DECL_VISIT_OBJECT(PROPERTIES_OFFSET, SIZE)
@@ -78,8 +84,7 @@ public:
     static constexpr size_t ATTRIBUTE_FIELD_LENGTH = 4;
     static constexpr size_t INSTANCE_TYPE_OFFSET = TSType::SIZE;
 
-    static GlobalTSTypeRef GetPropTypeGT(const JSThread *thread, TSTypeTable *table,
-                                         int localtypeId, EcmaString *propName);
+    static GlobalTSTypeRef GetPropTypeGT(TSTypeTable *table, int localtypeId, EcmaString *propName);
 
     ACCESSORS(InstanceType, INSTANCE_TYPE_OFFSET, CONSTRUCTOR_TYPE_OFFSET);
     ACCESSORS(ConstructorType, CONSTRUCTOR_TYPE_OFFSET, PROTOTYPE_TYPE_OFFSET);
@@ -95,8 +100,7 @@ class TSClassInstanceType : public TSType {
 public:
     CAST_CHECK(TSClassInstanceType, IsTSClassInstanceType);
 
-    static GlobalTSTypeRef GetPropTypeGT(const JSThread *thread, TSTypeTable *table,
-                                         int localtypeId, EcmaString *propName);
+    static GlobalTSTypeRef GetPropTypeGT(TSTypeTable *table, int localtypeId, EcmaString *propName);
 
     static constexpr size_t CREATE_CLASS_TYPE_OFFSET = TSType::SIZE;
     static constexpr size_t CREATE_CLASS_OFFSET = 1;
@@ -140,11 +144,13 @@ public:
     DECL_DUMP()
 };
 
-class TSUnionType : public TSType { // [[dhn : set GTref by TaggedValue *2]]
+class TSUnionType : public TSType {
 public:
     CAST_CHECK(TSUnionType, IsTSUnionType);
 
+    static constexpr int GTREF_SPACE_CONSUMED = 2;
     bool IsEqual(JSHandle<TSUnionType> unionB);
+    uint32_t GetArgsNum();
 
     static constexpr size_t COMPONENT_OFFSET = TSType::SIZE;
     ACCESSORS(ComponentTypes, COMPONENT_OFFSET, SIZE);

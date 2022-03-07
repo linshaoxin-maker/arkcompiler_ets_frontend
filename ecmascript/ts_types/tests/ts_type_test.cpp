@@ -55,6 +55,7 @@ public:
 HWTEST_F_L0(TSTypeTest, UnionType)
 {
     auto factory = ecmaVm->GetFactory();
+    TSLoader *tsLoader = ecmaVm->GetTSLoader();
     JSHandle<TSTypeTable> table = factory->NewTSTypeTable(2);
 
     const uint32_t literalLength = 4;
@@ -73,11 +74,22 @@ HWTEST_F_L0(TSTypeTest, UnionType)
 
     JSHandle<TSUnionType> unionType = JSHandle<TSUnionType>(type);
     ASSERT_TRUE(unionType->GetComponentTypes().IsTaggedArray());
-
+    int moduleId = tsLoader->GetNextModuleId();
+    uint8_t typeKind = static_cast<int>(TSTypeKind::TS_UNION);
+    GlobalTSTypeRef ref1 = GlobalTSTypeRef(typeKind, moduleId, 51);
+    GlobalTSTypeRef ref2 = GlobalTSTypeRef(typeKind, moduleId, 57);
+    JSTaggedValue ref1BigEnd(0);
+    JSTaggedValue ref1LitEnd(0);
+    JSTaggedValue ref2BigEnd(0);
+    JSTaggedValue ref2LitEnd(0);
+    ref1.GTRef2TaggedVal(ref1BigEnd, ref1LitEnd);
+    ref2.GTRef2TaggedVal(ref2BigEnd, ref2LitEnd);
     JSHandle<TaggedArray> unionArray(thread, unionType->GetComponentTypes());
-    ASSERT_EQ(unionArray->GetLength(), unionLength);
-    ASSERT_EQ(unionArray->Get(0).GetInt(), 51);
-    ASSERT_EQ(unionArray->Get(1).GetInt(), 57);
+    ASSERT_EQ(unionType->GetArgsNum(), unionLength);
+    ASSERT_EQ(unionArray->Get(0).GetInt(), ref1BigEnd.GetInt());
+    ASSERT_EQ(unionArray->Get(1).GetInt(), ref1LitEnd.GetInt());
+    ASSERT_EQ(unionArray->Get(2).GetInt(), ref2BigEnd.GetInt());
+    ASSERT_EQ(unionArray->Get(3).GetInt(), ref2LitEnd.GetInt());
 }
 
 HWTEST_F_L0(TSTypeTest, ImportType)
@@ -199,7 +211,7 @@ HWTEST_F_L0(TSTypeTest, ImportType)
     ASSERT_EQ(linkimportGT.GetGlobalTSTypeRef(), unionTypeGT.GetGlobalTSTypeRef());
     ASSERT_EQ(linkredirectImportGT.GetGlobalTSTypeRef(), unionTypeGT.GetGlobalTSTypeRef());
 
-    int length = tsLoader->GetUnionTypeLength(unionTypeGT);
+    int length = tsLoader->GetUnionTypeArgsNum(unionTypeGT);
     ASSERT_EQ(length, unionLength);
 }
 

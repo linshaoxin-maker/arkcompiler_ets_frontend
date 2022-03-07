@@ -132,32 +132,27 @@ GlobalTSTypeRef TSLoader::GetPropType(GlobalTSTypeRef gt, EcmaString *propertyNa
     int localId = gt.GetLocalId();
     TSTypeKind typeKind = GetTypeKind(gt);
 
-<<<<<<< HEAD
-    JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
-    GlobalTSTypeRef propTypeRef = TSTypeTable::GetPropertyTypeGT(thread, typeTable, typeKind, localId, propertyName);
-=======
-    TSTypeTable *typeTable = TSTypeTable::Cast(table->GetTSTypeTable(thread, moduleId).GetTaggedValue().GetTaggedObject());
-    GlobalTSTypeRef propTypeRef = TSTypeTable::GetPropertyType(thread, typeTable, typeKind, localId,
-                                                               propertyName);
->>>>>>> Set macros "DISALLOW_GARBAGE_COLLECTION" avoiding unnecessary object creation
+    TSTypeTable *typeTable = TSTypeTable::Cast(table->GetTSTypeTable(thread, moduleId)
+                                               .GetTaggedValue().GetTaggedObject());
+    GlobalTSTypeRef propTypeRef = TSTypeTable::GetPropertyTypeGT(typeTable, typeKind, localId,
+                                                                 propertyName);
     return propTypeRef;
 }
 
-uint32_t TSLoader::GetUnionTypeLength(GlobalTSTypeRef gt) const
+int TSLoader::GetUnionTypeArgsNum(GlobalTSTypeRef gt) const
 {
     JSThread *thread = vm_->GetJSThread();
     JSHandle<TSModuleTable> table = GetTSModuleTable();
 
-    uint32_t moduleId = gt.GetModuleId();
-    uint32_t localId = gt.GetLocalId();
-    [[maybe_unused]] TSTypeKind typeKind = GetTypeKind(gt);
-    ASSERT(typeKind == TSTypeKind::TS_UNION);
+    int moduleId = gt.GetModuleId();
+    int localId = gt.GetLocalId();
+
+    ASSERT(TSTypeKind(GetTypeKind(gt)) == TSTypeKind::TS_UNION);
 
     JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
     JSHandle<TSUnionType> unionType(thread, typeTable->Get(localId));
-    JSHandle<TaggedArray> unionTypeArray(thread, unionType->GetComponentTypes());
 
-    return unionTypeArray->GetLength();
+    return unionType->GetArgsNum();
 }
 
 GlobalTSTypeRef TSLoader::GetUnionTypeByIndex(GlobalTSTypeRef gt, int index) const
@@ -167,8 +162,8 @@ GlobalTSTypeRef TSLoader::GetUnionTypeByIndex(GlobalTSTypeRef gt, int index) con
 
     int moduleId = gt.GetModuleId();
     int localId = gt.GetLocalId();
-    [[maybe_unused]] TSTypeKind typeKind = GetTypeKind(gt);
-    ASSERT(typeKind == TSTypeKind::TS_UNION);
+
+    ASSERT(TSTypeKind(GetTypeKind(gt)) == TSTypeKind::TS_UNION);
 
     JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
     JSHandle<TSUnionType> unionType(thread, typeTable->Get(localId));
@@ -370,9 +365,13 @@ GlobalTSTypeRef TSLoader::GetOrCreateUnionType(CVector<GlobalTSTypeRef> unionTyp
 
     JSHandle<TSUnionType> unionType = factory->NewTSUnionType(size);
     JSHandle<TaggedArray> unionTypeArray(thread, unionType->GetComponentTypes());
-
+    JSTaggedValue bigEndian(0);
+    JSTaggedValue littleEndian(0);
     for (int unionArgIndex = 0; unionArgIndex < size; unionArgIndex++) {
-        unionTypeArray->Set(thread, unionArgIndex, JSTaggedValue(unionTypeRef[unionArgIndex].GetGlobalTSTypeRef()));  // [[dhn : cannot directly set uint64_t]]
+        uint64_t ref = unionTypeRef[unionArgIndex].GetGlobalTSTypeRef();
+        GlobalTSTypeRef(ref).GTRef2TaggedVal(bigEndian, littleEndian);
+        unionTypeArray->Set(thread, unionArgIndex * TSUnionType::GTREF_SPACE_CONSUMED, bigEndian);
+        unionTypeArray->Set(thread, unionArgIndex * TSUnionType::GTREF_SPACE_CONSUMED + 1, littleEndian);
     }
     unionType->SetComponentTypes(thread, unionTypeArray);
 
@@ -408,8 +407,7 @@ GlobalTSTypeRef TSLoader::GetImportTypeTargetGT(GlobalTSTypeRef gt) const
     int moduleId = gt.GetModuleId();
     int localId = gt.GetLocalId();
 
-    [[maybe_unused]] TSTypeKind typeKind = GetTypeKind(gt);
-    ASSERT(typeKind == TSTypeKind::TS_IMPORT);
+    ASSERT(TSTypeKind(GetTypeKind(gt)) == TSTypeKind::TS_IMPORT);
 
     JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
     JSHandle<TSImportType> importType(thread, typeTable->Get(localId));
