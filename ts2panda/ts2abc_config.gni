@@ -11,15 +11,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/ohos.gni")
-import("//build/test.gni")
+if (!defined(ark_flag)) {
+  import("//build/ohos.gni")
+  prebuilts_root = "//prebuilts"
+  ts2abc_root = "//ark/ts2abc/ts2panda"
+} else {
+  import("//build/ark.gni")
+  prebuilts_root = "//build/prebuilts"
+  ts2abc_root = "//ts2abc/ts2panda"
+}
 
 declare_args() {
   buildtool_linux = "//build/toolchain/linux:clang_x64"
   buildtool_mac = "//build/toolchain/mac:clang_x64"
   buildtool_win = "//build/toolchain/mingw:mingw_x86_64"
 
-  ts2abc_root = "//ark/ts2abc/ts2panda"
   nodejs_dir = ""
   node_path = ""
   node_modules = ""
@@ -29,24 +35,32 @@ declare_args() {
 }
 
 if (build_public_version) {
-  nodejs_dir = "//prebuilts/build-tools/common/nodejs"
-  node_modules = "//prebuilts/build-tools/common/ts2abc/node_modules"
+  nodejs_dir = "$prebuilts_root/build-tools/common/nodejs"
+  node_modules = "$prebuilts_root/build-tools/common/ts2abc/node_modules"
 } else {
-  nodejs_dir = "//prebuilts/ace-toolkit/nodejs"
-  node_modules = "//prebuilts/ace-toolkit/ace-loader/panda/node_modules"
+  nodejs_dir = "$prebuilts_root/ace-toolkit/nodejs"
+  node_modules = "$prebuilts_root/ace-toolkit/ace-loader/panda/node_modules"
 }
 
-if (host_toolchain == buildtool_mac) {
-  ts2abc_build_deps = [ "$ts2abc_root:ts2abc_build_mac($buildtool_mac)" ]
-  ts2abc_build_path =
-      get_label_info("//ark/ts2abc/ts2panda:ts2abc_build_mac($buildtool_mac)",
-                     "root_out_dir") + "/obj/ark/ts2abc/ts2panda/build-mac"
-  node_path = "${nodejs_dir}/node-v12.18.4-darwin-x64/bin/"
-} else if (host_toolchain == buildtool_win) {
-  ts2abc_build_deps = [ "$ts2abc_root:ts2abc_build_win($buildtool_win)" ]
-  ts2abc_build_path =
-      get_label_info("//ark/ts2abc/ts2panda:ts2abc_build_win($buildtool_win)",
-                     "root_out_dir") + "/obj/ark/ts2abc/ts2panda/build_win"
+if (!defined(ark_flag)) {
+  if (host_toolchain == buildtool_mac) {
+    ts2abc_build_deps = [ "$ts2abc_root:ts2abc_build_mac($buildtool_mac)" ]
+    ts2abc_build_path =
+        get_label_info("//ark/ts2abc/ts2panda:ts2abc_build_mac($buildtool_mac)",
+                       "root_out_dir") + "/obj/ark/ts2abc/ts2panda/build-mac"
+    node_path = "${nodejs_dir}/node-v12.18.4-darwin-x64/bin/"
+  } else if (host_toolchain == buildtool_win) {
+    ts2abc_build_deps = [ "$ts2abc_root:ts2abc_build_win($buildtool_win)" ]
+    ts2abc_build_path =
+        get_label_info("//ark/ts2abc/ts2panda:ts2abc_build_win($buildtool_win)",
+                       "root_out_dir") + "/obj/ark/ts2abc/ts2panda/build_win"
+  } else {
+    ts2abc_build_deps = [ "$ts2abc_root:ts2abc_build($buildtool_linux)" ]
+    ts2abc_build_path =
+        get_label_info("//ark/ts2abc/ts2panda:ts2abc_build($buildtool_linux)",
+                       "root_out_dir") + "/obj/ark/ts2abc/ts2panda/build"
+    node_path = "${nodejs_dir}/node-v12.18.4-linux-x64/bin/"
+  }
 } else {
   ts2abc_build_deps = [ "$ts2abc_root:ts2abc_build($buildtool_linux)" ]
   ts2abc_build_path =
