@@ -44,8 +44,6 @@ const ts2pandaOptions = [
     { name: 'output-type', type: Boolean, defaultValue: false, description: "set output type."}
 ]
 
-
-
 export class CmdOptions {
     private static parsedResult: ts.ParsedCommandLine;
     private static options: commandLineArgs.CommandLineOptions;
