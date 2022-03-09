@@ -48,12 +48,10 @@ def set_env(input_arguments):
     jsoner_format = ":"
     if platform.system() == "Windows":
         jsoner_format = ";"
-    os.environ["PATH"] = input_arguments.node + \
-        jsoner_format + os.environ["PATH"]
-
+    os.environ["PATH"]="{}{}{}".format(input_arguments.node,jsoner_format,os.environ["PATH"])
 
 def run_command(cmd, execution_path):
-    print(" ".join(cmd) + " | execution_path: " + execution_path)
+    print("{} | execution_path: {}".format(" ".join(cmd),execution_path))
     proc = subprocess.Popen(cmd, cwd=execution_path)
     proc.wait()
 

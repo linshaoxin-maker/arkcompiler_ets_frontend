@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 """
 Copyright (c) 2022 Huawei Device Co., Ltd.
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,60 +24,71 @@ import subprocess
 import json
 
 
-#执行终端命令
+# Executing terminal Commands
 def command_os(order):
     cmd = order
     subprocess.run(cmd)
 
-#创建文件夹   
+
+# Creating a folder
 def mk_dir(path):
     if not os.path.exists(path):
         os.makedirs(path)
-    
-#切换分支(git_brash:分支)
+
+
+# Switch branches (git_brash: branches)
 def git_checkout(git_brash):
     command_os(f'git checkout {git_brash}')
 
-#删除文件夹(空文件夹与非空文件夹)
+
+# Delete folders (empty folders vs. non-empty folders)
 def remove_dir(path):
     if os.path.exists(path):
         shutil.rmtree(path)
 
-#删除文件
+
+# Delete the file
 def remove_file(path):
     if os.path.exists(path):
         os.remove(path)
 
-#清空文件内容（path：文件路径）
+
+# Clear file contents (path: file path)
 def clean_file(path):
-    with open(path,'w') as f:
+    with open(path, 'w') as f:
         f.write('')
 
-#读取文件内容(全部)
+
+# Read file contents (all)
 def read_file(path):
     content = []
-    with open(path,'r') as f:
+    with open(path, 'r') as f:
         content = f.readlines()
-    
+
     return content
 
-#写入文件，覆盖之前内容
-def write_file(path,content):
-    with open(path,'w') as f:
+
+# Write to the file, overwrite the previous content
+def write_file(path, content):
+    with open(path, 'w') as f:
         f.write(content)
 
-#追加写入文件（path：文件路径，content：写入内容）
-def write_append(path,content):
-    with open(path,'a+') as f:
+
+# Appending files (path: file path, content: write content)
+def write_append(path, content):
+    with open(path, 'a+') as f:
         f.write(content)
+
 
 def move_file(srcfile, dstfile):
     subprocess.getstatusoutput("mv %s %s" % (srcfile, dstfile))
+
 
 def git_clone(git_url, code_dir):
     cmd = ['git', 'clone', git_url, code_dir]
     ret = run_cmd_cwd(cmd)
     assert not ret, f"\n error: Cloning '{git_url}' failed."
+
 
 def git_checkout(git_bash, cwd):
     cmd = ['git', 'checkout', git_bash]
@@ -98,9 +106,11 @@ def git_clean(cwd):
     cmd = ['git', 'checkout', '--', '.']
     run_cmd_cwd(cmd, cwd)
 
-#输出当前时间(可用于计算程序运行时长)
+
+# Output the current time (can be used to calculate the running time of the program)
 def current_time():
     return datetime.datetime.now()
+
 
 class Command():
     def __init__(self, cmd):
@@ -112,9 +122,11 @@ class Command():
         LOGGING.info(out)
         return out
 
+
 def run_cmd(command):
     cmd = Command(command)
     return cmd.run()
+
 
 def excuting_npm_install(args):
     ark_frontend_tool = os.path.join(DEFAULT_ARK_FRONTEND_TOOL)
@@ -127,7 +139,8 @@ def excuting_npm_install(args):
         npm_install(ts2abc_build_dir)
     elif os.path.exists(os.path.join(ts2abc_build_dir, "..", "package.json")):
         npm_install(os.path.join(ts2abc_build_dir, ".."))
-        
+
+
 def npm_install(cwd):
     try:
         os.chdir(cwd)
