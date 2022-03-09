@@ -162,9 +162,7 @@ class RegAllocator {
         DebugInfo.copyDebugInfo(irNodes[index], head);
         DebugInfo.copyDebugInfo(irNodes[index], tail);
 
-        this.newInsns.push(...head);
-        this.newInsns.push(irNodes[index]);
-        this.newInsns.push(...tail);
+        this.newInsns.push(...head, irNodes[index], ...tail);
 
         for (let j = spills.length - 1; j >= 0; --j) {
             this.freeSpill(spills[j]);
@@ -236,9 +234,7 @@ class RegAllocator {
         DebugInfo.copyDebugInfo(irNodes[index], head);
         DebugInfo.copyDebugInfo(irNodes[index], tail);
 
-        this.newInsns.push(...head);
-        this.newInsns.push(irNodes[index]);
-        this.newInsns.push(...tail);
+        this.newInsns.push(...head, irNodes[index], ...tail);
         for (let i = spills.length - 1; i >= 0; --i) {
             this.freeSpill(spills[i]);
         }
