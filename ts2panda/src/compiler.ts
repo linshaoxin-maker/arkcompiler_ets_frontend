@@ -33,6 +33,7 @@ import {
     setVariableExported
 } from "./base/util";
 import { CacheList, getVregisterCache } from "./base/vregisterCache";
+import { CmdOptions } from "./cmdOptions";
 import { CompilerDriver } from "./compilerDriver";
 import { DebugInfo, NodeKind } from "./debuginfo";
 import { DiagnosticCode, DiagnosticError } from "./diagnostic";
@@ -85,7 +86,6 @@ import {
 import {
     checkValidUseSuperBeforeSuper,
     compileClassDeclaration,
-    compileConstructor,
     compileDefaultConstructor,
     compileDefaultInitClassMembers,
     compileReturnThis4Ctor,
@@ -177,6 +177,9 @@ export class Compiler {
     }
 
     private callOpt() {
+        if (CmdOptions.isDebugMode()) {
+            return;
+        }
         let CallMap: Map<String, number> = new Map([
             ["this", 1],
             ["4newTarget", 2],
@@ -205,6 +208,7 @@ export class Compiler {
                 tempLocals.push(this.pandaGen.getLocals()[i]);
             }
             let name2variable = scope.getName2variable();
+            // @ts-ignore
             name2variable.forEach((value, key) => {
                 if (tempNames.has(key)) {
                     name2variable.delete(key)

@@ -111,7 +111,6 @@ import {
     getVregisterCache,
     VregisterCache
 } from "./base/vregisterCache";
-import { CmdOptions } from "./cmdOptions";
 import {
     DebugInfo,
     NodeKind,
@@ -165,7 +164,6 @@ import {
     IRNode,
     Jeqz,
     Label,
-    ResultType,
     ReturnDyn,
     VReg
 } from "./irnodes";
@@ -188,6 +186,7 @@ import { BaseType } from "./base/typeSystem";
 import { TypeRecorder } from "./typeRecorder";
 
 export class PandaGen {
+    // @ts-ignore
     private debugTag: string = "PandaGen";
     readonly internalName: string;
     private parametersCount: number;
@@ -203,7 +202,6 @@ export class PandaGen {
     private firstStmt: ts.Statement | undefined;
     private sourceFileDebugInfo: string = "";
     private sourceCodeDebugInfo: string | undefined;
-    private icSize: number = 0;
     private callType: number = 0;
 
     private static literalArrayBuffer: Array<LiteralBuffer> = new Array<LiteralBuffer>();
@@ -277,14 +275,6 @@ export class PandaGen {
         }
     }
 
-    getICSize() {
-        return this.icSize;
-    }
-
-    setICSize(total: number) {
-        this.icSize = total;
-    }
-
     static appendTypeArrayBuffer(type: BaseType): number {
         let index = PandaGen.literalArrayBuffer.length;
         PandaGen.literalArrayBuffer.push(type.transfer2LiteralBuffer());
@@ -349,20 +339,10 @@ export class PandaGen {
             retval = new VReg();
         }
 
-        if (CmdOptions.isEnableDebugLog()) {
-            if (retval.getStackTrace() !== undefined) {
-                throw new Error("stack trace of new temp register is not empty");
-            }
-            retval.setStackTrace();
-        }
         return retval;
     }
 
     freeTemps(...temps: VReg[]) {
-        if (CmdOptions.isEnableDebugLog())
-            for (let value of temps)
-                value.setStackTrace(null);
-
         this.temps.unshift(...temps);
     }
 
@@ -655,6 +635,7 @@ export class PandaGen {
         this.add(node, moveVreg(vd, vs));
     }
 
+    // @ts-ignore
     label(node: ts.Node, label: Label) {
         this.add(NodeKind.FirstNodeOfFunction, label);
     }
@@ -1011,7 +992,7 @@ export class PandaGen {
     }
 
     copyRestArgs(node: ts.Node, index: number) {
-        this.add(node, new EcmaCopyrestargs(new Imm(ResultType.Int, index)));
+        this.add(node, new EcmaCopyrestargs(new Imm(index)));
     }
 
     getPropIterator(node: ts.Node) {
@@ -1304,6 +1285,6 @@ export class PandaGen {
         // set pos debug info if debug mode
         DebugInfo.setDebuginfoForIns(node, ...insns);
 
-        this.insns = this.insns.concat(insns);
+        this.insns.push(...insns);
     }
 }
