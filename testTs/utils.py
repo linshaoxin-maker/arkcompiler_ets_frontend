@@ -26,18 +26,14 @@ import json
 
 # Executing terminal Commands
 def command_os(order):
-    subprocess.run(order,shell=True)
+    cmd = order
+    subprocess.run(cmd, shell=True)
 
 
 # Creating a folder
 def mk_dir(path):
     if not os.path.exists(path):
         os.makedirs(path)
-
-
-# Switch branches (git_brash: branches)
-def git_checkout(git_brash):
-    command_os(f'git checkout {git_brash}')
 
 
 # Delete folders (empty folders vs. non-empty folders)
@@ -52,12 +48,6 @@ def remove_file(path):
         os.remove(path)
 
 
-# Clear file contents (path: file path)
-def clean_file(path):
-    with open(path, 'w') as f:
-        f.write('')
-
-
 # Read file contents (all)
 def read_file(path):
     content = []
@@ -65,12 +55,6 @@ def read_file(path):
         content = f.readlines()
 
     return content
-
-
-# Write to the file, overwrite the previous content
-def write_file(path, content):
-    with open(path, 'w') as f:
-        f.write(content)
 
 
 # Appending files (path: file path, content: write content)
@@ -81,50 +65,6 @@ def write_append(path, content):
 
 def move_file(srcfile, dstfile):
     subprocess.getstatusoutput("mv %s %s" % (srcfile, dstfile))
-
-
-def git_clone(git_url, code_dir):
-    cmd = ['git', 'clone', git_url, code_dir]
-    ret = run_cmd_cwd(cmd)
-    assert not ret, f"\n error: Cloning '{git_url}' failed."
-
-
-def git_checkout(git_bash, cwd):
-    cmd = ['git', 'checkout', git_bash]
-    ret = run_cmd_cwd(cmd, cwd)
-    assert not ret, f"\n error: git checkout '{git_bash}' failed."
-
-
-def git_apply(patch_file, cwd):
-    cmd = ['git', 'apply', patch_file]
-    ret = run_cmd_cwd(cmd, cwd)
-    assert not ret, f"\n error: Failed to apply '{patch_file}'"
-
-
-def git_clean(cwd):
-    cmd = ['git', 'checkout', '--', '.']
-    run_cmd_cwd(cmd, cwd)
-
-
-# Output the current time (can be used to calculate the running time of the program)
-def current_time():
-    return datetime.datetime.now()
-
-
-class Command():
-    def __init__(self, cmd):
-        self.cmd = cmd
-
-    def run(self):
-        LOGGING.debug("command: " + self.cmd)
-        out = os.popen(self.cmd).read()
-        LOGGING.info(out)
-        return out
-
-
-def run_cmd(command):
-    cmd = Command(command)
-    return cmd.run()
 
 
 def excuting_npm_install(args):

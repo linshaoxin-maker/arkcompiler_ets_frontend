@@ -165,7 +165,7 @@ export abstract class Scope {
 
         while (sp) {
             if (sp instanceof VariableScope) {
-                if (tempLevel == 0) {
+                if (!tempLevel) {
                     return <VariableScope>sp;
                 } else {
                     tempLevel--;

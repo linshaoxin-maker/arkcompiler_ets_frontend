@@ -51,7 +51,7 @@ def skip(filepath, flag=False):
             skip_test['import_skip'] + \
             skip_test['code_rule'] + skip_test['no_case']
         if os.path.isfile(filepath):
-            if filepath.endwith('.ts'):
+            if filepath.endswith('.ts'):
                 if filepath not in skip_test_list:
                     return True
                 else:
@@ -84,7 +84,7 @@ def run_test(file, tool, flag=False):
         os.makedirs(out_dir_path)
     try:
         command_os(f'node --expose-gc {tool} -m {file} --output-type')
-    except:
+    except Exception as e:
         e = str(e)
     if flag:
         for root, dirs, files in os.walk(ts_dir_path):
@@ -265,7 +265,7 @@ def prepare_ts_code():
         command_os(f'rm -rf ./tests')
         command_os('rm -rf .git')
         os.chdir('../../')
-    except:
+    except Exception as e:
         print("pull test code fail")
 
 
@@ -276,7 +276,7 @@ def main(args):
         prepare_ts_code()
         run_test_machine(args)
         summary()
-    except:
+    except Exception as e:
         print("Run Python Script Fail")
 
 

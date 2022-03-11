@@ -1142,7 +1142,7 @@ function checkLabeledStatement(node: ts.LabeledStatement) {
 
 function checkGetAccessor(node: ts.GetAccessorDeclaration) {
     checkFunctionLikeDeclaration(node);
-    if (node.parameters.length != 0) {
+    if (node.parameters.length) {
         throw new DiagnosticError(node, DiagnosticCode.Getter_must_not_have_any_formal_parameters);
     }
 }

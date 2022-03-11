@@ -95,7 +95,7 @@ describe("FunctionDeclarationTest", function () {
         expect(foo != undefined).to.be.true;
         expect(foo instanceof LocalVariable).to.be.true;
         let parameterLength = functionPg!.getParameterLength();
-        expect(parameterLength == 0).to.be.true;
+        expect(!parameterLength).to.be.true;
     });
 
     it("function expression", function () {

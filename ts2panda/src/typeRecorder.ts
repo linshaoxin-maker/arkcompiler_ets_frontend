@@ -156,7 +156,7 @@ export class TypeRecorder {
                 let typeIndex = externalType.shiftedTypeIndex;
                 this.setExportedType(moduleStmt.getNameSpace(), typeIndex);
                 this.addUserDefinedTypeSet(typeIndex);
-            } else if (moduleStmt.getBindingNameMap().size != 0) {
+            } else if (moduleStmt.getBindingNameMap().size) {
                 // re-export via clause
                 moduleStmt.getBindingNameMap().forEach((originalName, exportedName) => {
                     let externalType = new ExternalType(originalName, moduleStmt.getModuleRequest());

@@ -101,7 +101,7 @@ export class AssemblyDumper {
             let formats = node.getFormats();
             var outputRangeVregNum = getRangeExplicitVregNums(node);
             for (let j = 0; j < operands.length; ++j) {
-                if (outputRangeVregNum == 0) {
+                if (!outputRangeVregNum) {
                     break;
                 }
                 let format = formats[0];
@@ -149,7 +149,7 @@ export class AssemblyDumper {
 
     writeFunctionCatchTable(): void {
         let catchTables = generateCatchTables(this.pg.getCatchMap());
-        if (catchTables.length == 0) {
+        if (!catchTables.length) {
             return;
         }
 

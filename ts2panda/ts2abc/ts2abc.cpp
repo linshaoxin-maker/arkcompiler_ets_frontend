@@ -376,7 +376,7 @@ static void ParseInstructionLabel(const Json::Value &ins, panda::pandasm::Ins &p
 {
     if (ins.isMember("l") && ins["l"].isString()) {
         std::string label = ins["l"].asString();
-        if (label.length() != 0) {
+        if (label.length()) {
             Logd("label:\t%s", label.c_str());
             pandaIns.set_label = true;
             pandaIns.label = label;
@@ -1071,7 +1071,7 @@ static bool ReadFromPipe(panda::pandasm::Program &prog)
     char buff[bufSize + 1];
     int ret = 0;
 
-    while ((ret = read(fd, buff, bufSize)) != 0) {
+    while ((ret = read(fd, buff, bufSize))) {
         if (ret < 0) {
             std::cerr << "Read pipe error" << std::endl;
             return false;

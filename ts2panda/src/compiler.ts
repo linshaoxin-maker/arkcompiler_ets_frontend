@@ -1280,7 +1280,7 @@ export class Compiler {
         let lrh = this.pandaGen.getTemp();
         let text = literal.text;
 
-        if (text.length != 0) {
+        if (text.length) {
             this.pandaGen.storeAccumulator(expr, lrh);
             this.pandaGen.loadAccumulatorString(expr, text);
             this.pandaGen.binary(expr, ts.SyntaxKind.PlusToken, lrh);

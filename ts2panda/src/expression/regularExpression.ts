@@ -77,7 +77,7 @@ function updateExpressionFlags(regexpFlags: string, regexp: ts.RegularExpression
                 let file = jshelpers.getSourceFileOfNode(regexp);
                 throw new DiagnosticError(regexp, DiagnosticCode.Invalid_regular_expression_flag_0, file, [regexpFlags[idx]]);
         }
-        if ((flagsBits & flagsBitsTemp) != 0) {
+        if ((flagsBits & flagsBitsTemp)) {
             let file = jshelpers.getSourceFileOfNode(regexp);
             throw new DiagnosticError(regexp, DiagnosticCode.Invalid_regular_expression_flag_0, file, [regexpFlags[idx]]);
         }

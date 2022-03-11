@@ -45,7 +45,7 @@ export class LabelTarget {
     }
 
     private static isLabelTargetsEmpty(): boolean {
-        if (LabelTarget.labelTargetStack.length == 0) {
+        if (!LabelTarget.labelTargetStack.length) {
             return true;
         }
         return false;
