@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,7 @@ import {
     loadLexicalVar,
     storeAccumulator,
     storeLexicalVar,
+    storeModuleVariable,
     throwConstAssignment,
     throwUndefinedIfHole
 } from "./base/bcGenUtil";
@@ -107,7 +108,7 @@ export class VariableAccessLoad extends VariableAccessBase {
         insns.push(loadLexicalVar(this.level, slot));
 
         // check TDZ
-        if (v.isLetOrConst() || v.isClass()) {
+        if (v.isLetOrConst()) {
             let tempReg = pandaGen.getTemp();
 
             insns.push(storeAccumulator(tempReg));
@@ -165,6 +166,10 @@ export class VariableAcessStore extends VariableAccessBase {
         }
         insns.push(storeAccumulator(bindVreg));
 
+        if (v.isExportVar()) {
+            insns.push(storeModuleVariable(v.getExportedName()));
+        }
+
         return insns;
     }
 
@@ -183,7 +188,7 @@ export class VariableAcessStore extends VariableAccessBase {
                 /**
                  * check TDZ first
                  * If acc == hole -> throw reference error
-                 * else -> excute the next insn
+                 * else -> execute the next insn
                 */
                 insns.push(loadLexicalVar(this.level, slot));
                 insns.push(storeAccumulator(holeReg));
@@ -197,7 +202,9 @@ export class VariableAcessStore extends VariableAccessBase {
 
         insns.push(storeLexicalVar(this.level, slot, valueReg));
         insns.push(loadAccumulator(valueReg));
-
+        if (v.isExportVar()) {
+            insns.push(storeModuleVariable(v.getExportedName()));
+        }
         pandaGen.freeTemps(valueReg);
 
         return insns;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -156,7 +156,7 @@ export class TypeRecorder {
                 let typeIndex = externalType.shiftedTypeIndex;
                 this.setExportedType(moduleStmt.getNameSpace(), typeIndex);
                 this.addUserDefinedTypeSet(typeIndex);
-            } else if (moduleStmt.getBindingNameMap().size != 0) {
+            } else if (moduleStmt.getBindingNameMap().size) {
                 // re-export via clause
                 moduleStmt.getBindingNameMap().forEach((originalName, exportedName) => {
                     let externalType = new ExternalType(originalName, moduleStmt.getModuleRequest());

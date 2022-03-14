@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Copyright (c) 2022 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -249,18 +249,4 @@ group("ts2abc_unittests") {
   # if (host_os == "linux") {
   #   deps += [ "${ts2abc_root}/ts2abc/tests:unittest" ]
   # }
-}
-
-# Workaround for dev brach. Should be about to remove shortly
-group("src_linux") {
-}
-group("src_win") {
-}
-group("src_mac") {
-}
-group("ts2abc_linux") {
-}
-group("ts2abc_win") {
-}
-group("ts2abc_mac") {
 }

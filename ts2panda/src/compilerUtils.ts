@@ -390,7 +390,7 @@ function emitRestProperty(restProperty: ts.BindingElement | ts.SpreadAssignment,
     let lRef = LReference.generateLReference(compiler, target, true);
     let undefinedReg = pandaGen.getTemp();
 
-    if (excludedProp.length == 0) {
+    if (!excludedProp.length) {
         pandaGen.loadAccumulator(restProperty, getVregisterCache(pandaGen, CacheList.undefined));
         pandaGen.storeAccumulator(restProperty, undefinedReg);
         excludedProp.push(undefinedReg);
