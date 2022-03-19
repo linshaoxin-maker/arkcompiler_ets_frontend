@@ -58,7 +58,8 @@ def run_command(cmd, execution_path=os.getcwd()):
     print(" ".join(cmd) + " | execution_path: " + execution_path)
     proc = subprocess.Popen(cmd, cwd=execution_path)
     ret = proc.wait()
-    assert not ret, f'\n{" ".join(cmd)} failed'
+    if ret:
+        raise AssertionError(f'\n{" ".join(cmd)} failed')
 
 
 def node_modules(options):

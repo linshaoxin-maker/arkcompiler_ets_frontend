@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1286,7 +1286,7 @@ export class Compiler {
         let lrh = this.pandaGen.getTemp();
         let text = literal.text;
 
-        if (text.length != 0) {
+        if (text.length) {
             this.pandaGen.storeAccumulator(expr, lrh);
             this.pandaGen.loadAccumulatorString(expr, text);
             this.pandaGen.binary(expr, ts.SyntaxKind.PlusToken, lrh);

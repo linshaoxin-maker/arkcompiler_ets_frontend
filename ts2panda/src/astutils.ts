@@ -19,9 +19,9 @@ import { VarDeclarationKind } from "./variable";
 export function getVarDeclarationKind(decl: ts.VariableDeclaration): VarDeclarationKind {
     if (decl.parent.kind == ts.SyntaxKind.VariableDeclarationList) {
         let declList = <ts.VariableDeclarationList>decl.parent;
-        if ((declList.flags & ts.NodeFlags.Let) != 0) {
+        if ((declList.flags & ts.NodeFlags.Let)) {
             return VarDeclarationKind.LET;
-        } else if ((declList.flags & ts.NodeFlags.Const) != 0) {
+        } else if ((declList.flags & ts.NodeFlags.Const)) {
             return VarDeclarationKind.CONST;
         } else {
             return VarDeclarationKind.VAR;

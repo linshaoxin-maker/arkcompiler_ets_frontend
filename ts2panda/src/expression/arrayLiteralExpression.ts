@@ -32,7 +32,7 @@ export function compileArrayLiteralExpression(compiler: Compiler, node: ts.Array
 export function createArrayFromElements(node: ts.Node, compiler: Compiler, elements: ts.NodeArray<ts.Expression>, arrayObj: VReg) {
     let pandaGen = compiler.getPandaGen();
     // empty Array
-    if (elements.length == 0) {
+    if (!elements.length) {
         pandaGen.createEmptyArray(node);
         pandaGen.storeAccumulator(node, arrayObj);
         return;

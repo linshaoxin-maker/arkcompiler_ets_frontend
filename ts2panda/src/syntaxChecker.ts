@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1142,7 +1142,7 @@ function checkLabeledStatement(node: ts.LabeledStatement) {
 
 function checkGetAccessor(node: ts.GetAccessorDeclaration) {
     checkFunctionLikeDeclaration(node);
-    if (node.parameters.length != 0) {
+    if (node.parameters.length) {
         throw new DiagnosticError(node, DiagnosticCode.Getter_must_not_have_any_formal_parameters);
     }
 }
