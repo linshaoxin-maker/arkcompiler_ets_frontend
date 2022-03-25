@@ -143,25 +143,101 @@ export class TypeSummary extends BaseType {
     }
 }
 
-export class ClassType extends BaseType {
+export class ClassOrInterfaceType extends BaseType {
     modifier: number = ModifierAbstract.NONABSTRACT; // 0 -> unabstract, 1 -> abstract;
+    fields: Map<string, Array<number>> = new Map<string, Array<number>>();
+    methods: Map<string, number> = new Map<string, number>();
+    typeIndex: number;
+    shiftedTypeIndex: number;
+    constructor(node: ts.ClassDeclaration | ts.ClassExpression | ts.InterfaceDeclaration) {
+        super();
+        this.typeIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
+        this.shiftedTypeIndex = this.typeIndex + PrimitiveType._LENGTH;
+                // record type before its initialization, so its index can be recorded
+        // in case there's recursive reference of this type
+        this.addCurrentType(node, this.shiftedTypeIndex);
+    }
+
+    public fillInMethods(member: ClassMemberFunction | ts.MethodSignature) {
+        /**
+         * a method like declaration in a new class must be a new type,
+         * create this type and add it into typeRecorder
+         */
+        let variableNode = member.name ? member.name : undefined;
+        let funcType = new FunctionType(<ts.FunctionLikeDeclaration>member);
+        if (variableNode) {
+            this.setVariable2Type(variableNode, funcType.shiftedTypeIndex);
+        }
+
+        return funcType;
+    }
+
+    public fillInFields(member: ts.PropertyDeclaration | ts.PropertySignature, isStatic = false) {
+        let fieldInfo = Array<number>(PrimitiveType.ANY, AccessFlag.PUBLIC, ModifierReadonly.NONREADONLY);
+        if (member.modifiers) {
+            for (let modifier of member.modifiers) {
+                switch (modifier.kind) {
+                    case ts.SyntaxKind.StaticKeyword: {
+                        isStatic = true;
+                        break;
+                    }
+                    case ts.SyntaxKind.PrivateKeyword: {
+                        fieldInfo[1] = AccessFlag.PRIVATE;
+                        break;
+                    }
+                    case ts.SyntaxKind.ProtectedKeyword: {
+                        fieldInfo[1] = AccessFlag.PROTECTED;
+                        break;
+                    }
+                    case ts.SyntaxKind.ReadonlyKeyword: {
+                        fieldInfo[2] = ModifierReadonly.READONLY;
+                        break;
+                    }
+                    default: {
+                        break;
+                    }
+                }
+            }
+        }
+
+        let typeNode = member.type
+        let memberName = member.name
+        fieldInfo[0] = this.getOrCreateRecordForTypeNode(typeNode, memberName);
+        return fieldInfo;
+    }
+
+    public transferFields2Literal(classTypeLiterals: Array<Literal>, fileds: Map<string, Array<number>>) {
+        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, fileds.size));
+        fileds.forEach((typeInfo, name) => {
+            classTypeLiterals.push(new Literal(LiteralTag.STRING, name));
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[0])); // typeIndex
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[1])); // accessFlag
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[2])); // readonly
+        });
+    }
+
+    public transferMethods2Literal(classTypeLiterals: Array<Literal>, methods: Map<string, number>) {
+        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, methods.size));
+        methods.forEach((typeInfo, name) => {
+            classTypeLiterals.push(new Literal(LiteralTag.STRING, name));
+            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo));
+        });
+    }
+
+    public transfer2LiteralBuffer(): LiteralBuffer {
+        return new LiteralBuffer();
+    }
+}
+
+export class ClassType extends ClassOrInterfaceType {
     extendsHeritage: number = PrimitiveType.ANY;
     implementsHeritages: Array<number> = new Array<number>();
     // fileds Array: [typeIndex] [public -> 0, private -> 1, protected -> 2] [readonly -> 1]
     staticFields: Map<string, Array<number>> = new Map<string, Array<number>>();
     staticMethods: Map<string, number> = new Map<string, number>();
-    fields: Map<string, Array<number>> = new Map<string, Array<number>>();
-    methods: Map<string, number> = new Map<string, number>();
-    typeIndex: number;
-    shiftedTypeIndex: number;
 
     constructor(classNode: ts.ClassDeclaration | ts.ClassExpression) {
-        super();
-        this.typeIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
-        this.shiftedTypeIndex = this.typeIndex + PrimitiveType._LENGTH;
-        // record type before its initialization, so its index can be recorded
-        // in case there's recursive reference of this type
-        this.addCurrentType(classNode, this.shiftedTypeIndex);
+        super(classNode);
         this.fillInModifiers(classNode);
         this.fillInHeritages(classNode);
         this.fillInFieldsAndMethods(classNode);
@@ -201,68 +277,6 @@ export class ClassType extends BaseType {
         }
     }
 
-    private fillInFields(member: ts.PropertyDeclaration) {
-        let fieldName = jshelpers.getTextOfIdentifierOrLiteral(member.name);
-        let fieldInfo = Array<number>(PrimitiveType.ANY, AccessFlag.PUBLIC, ModifierReadonly.NONREADONLY);
-        let isStatic: boolean = false;
-        if (member.modifiers) {
-            for (let modifier of member.modifiers) {
-                switch (modifier.kind) {
-                    case ts.SyntaxKind.StaticKeyword: {
-                        isStatic = true;
-                        break;
-                    }
-                    case ts.SyntaxKind.PrivateKeyword: {
-                        fieldInfo[1] = AccessFlag.PRIVATE;
-                        break;
-                    }
-                    case ts.SyntaxKind.ProtectedKeyword: {
-                        fieldInfo[1] = AccessFlag.PROTECTED;
-                        break;
-                    }
-                    case ts.SyntaxKind.ReadonlyKeyword: {
-                        fieldInfo[2] = ModifierReadonly.READONLY;
-                        break;
-                    }
-                    default: {
-                        break;
-                    }
-                }
-            }
-        }
-
-        let typeNode = member.type
-        let memberName = member.name
-        fieldInfo[0] = this.getOrCreateRecordForTypeNode(typeNode, memberName);
-
-        if (isStatic) {
-            this.staticFields.set(fieldName, fieldInfo);
-        } else {
-            this.fields.set(fieldName, fieldInfo);
-        }
-    }
-
-    private fillInMethods(member: ClassMemberFunction) {
-        /**
-         * a method like declaration in a new class must be a new type,
-         * create this type and add it into typeRecorder
-         */
-        let variableNode = member.name ? member.name : undefined;
-        let funcType = new FunctionType(<ts.FunctionLikeDeclaration>member);
-        if (variableNode) {
-            this.setVariable2Type(variableNode, funcType.shiftedTypeIndex);
-        }
-
-        // Then, get the typeIndex and fill in the methods array
-        let typeIndex = this.tryGetTypeIndex(member);
-        let funcModifier = funcType.getModifier();
-        if (funcModifier) {
-            this.staticMethods.set(funcType.getFunctionName(), typeIndex!);
-        } else {
-            this.methods.set(funcType.getFunctionName(), typeIndex!);
-        }
-    }
-
     private fillInFieldsAndMethods(node: ts.ClassDeclaration | ts.ClassExpression) {
         if (node.members) {
             for (let member of node.members) {
@@ -271,11 +285,27 @@ export class ClassType extends BaseType {
                     case ts.SyntaxKind.Constructor:
                     case ts.SyntaxKind.GetAccessor:
                     case ts.SyntaxKind.SetAccessor: {
-                        this.fillInMethods(<ClassMemberFunction>member);
+                        let funcType = this.fillInMethods(<ClassMemberFunction>member);
+                        funcType.getModifier() ? this.staticMethods.set(
+                            funcType.getFunctionName(),
+                            this.tryGetTypeIndex(member)!
+                        ) : this.methods.set(
+                            funcType.getFunctionName(),
+                            this.tryGetTypeIndex(member)!
+                        )
                         break;
                     }
                     case ts.SyntaxKind.PropertyDeclaration: {
-                        this.fillInFields(<ts.PropertyDeclaration>member);
+                        let isStatic = false;
+                        let fieldName = jshelpers.getTextOfIdentifierOrLiteral((<ts.PropertyDeclaration>member).name);
+                        let filedInfo = this.fillInFields(<ts.PropertyDeclaration>member, isStatic);
+                        isStatic ? this.staticFields.set(
+                            fieldName,
+                            filedInfo
+                        ) : this.fields.set(
+                            fieldName,
+                            filedInfo
+                        )
                         break;
                     }
                     default:
@@ -299,37 +329,15 @@ export class ClassType extends BaseType {
         });
 
         // record unstatic fields and methods
-        this.transferFields2Literal(classTypeLiterals, false);
-        this.transferMethods2Literal(classTypeLiterals, false);
+        this.transferFields2Literal(classTypeLiterals, this.fields);
+        this.transferMethods2Literal(classTypeLiterals, this.methods);
 
         // record static methods and fields;
-        this.transferFields2Literal(classTypeLiterals, true);
-        this.transferMethods2Literal(classTypeLiterals, true);
+        this.transferFields2Literal(classTypeLiterals, this.staticFields);
+        this.transferMethods2Literal(classTypeLiterals, this.staticMethods);
 
         classTypeBuf.addLiterals(...classTypeLiterals);
         return classTypeBuf;
-    }
-
-    private transferFields2Literal(classTypeLiterals: Array<Literal>, isStatic: boolean) {
-        let transferredTarget: Map<string, Array<number>> = isStatic ? this.staticFields : this.fields;
-
-        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, transferredTarget.size));
-        transferredTarget.forEach((typeInfo, name) => {
-            classTypeLiterals.push(new Literal(LiteralTag.STRING, name));
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[0])); // typeIndex
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[1])); // accessFlag
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[2])); // readonly
-        });
-    }
-
-    private transferMethods2Literal(classTypeLiterals: Array<Literal>, isStatic: boolean) {
-        let transferredTarget: Map<string, number> = isStatic ? this.staticMethods : this.methods;
-
-        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, transferredTarget.size));
-        transferredTarget.forEach((typeInfo, name) => {
-            classTypeLiterals.push(new Literal(LiteralTag.STRING, name));
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo));
-        });
     }
 }
 
@@ -609,21 +617,11 @@ export class ObjectType extends BaseType {
     }
 }
 
-export class InterfaceType extends BaseType {
+export class InterfaceType extends ClassOrInterfaceType {
     heritages: Array<number> = new Array<number>();
-    // fileds Array: [typeIndex] [public -> 0, private -> 1, protected -> 2] [readonly -> 1]
-    fields: Map<string, Array<number>> = new Map<string, Array<number>>();
-    methods: Array<number> = new Array<number>();
-    typeIndex: number;
-    shiftedTypeIndex: number;
 
     constructor(interfaceNode: ts.InterfaceDeclaration) {
-        super();
-        this.typeIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
-        this.shiftedTypeIndex = this.typeIndex + PrimitiveType._LENGTH;
-        // record type before its initialization, so its index can be recorded
-        // in case there's recursive reference of this type
-        this.addCurrentType(interfaceNode, this.shiftedTypeIndex);
+        super(interfaceNode);
         this.fillInHeritages(interfaceNode);
         this.fillInFieldsAndMethods(interfaceNode);
         this.setTypeArrayBuffer(this, this.typeIndex);
@@ -641,60 +639,22 @@ export class InterfaceType extends BaseType {
         }
     }
 
-    private fillInFields(member: ts.PropertySignature) {
-        let fieldName = jshelpers.getTextOfIdentifierOrLiteral(member.name);
-        let fieldInfo = Array<number>(PrimitiveType.ANY, AccessFlag.PUBLIC, ModifierReadonly.NONREADONLY);
-        if (member.modifiers) {
-            for (let modifier of member.modifiers) {
-                switch (modifier.kind) {
-                    case ts.SyntaxKind.PrivateKeyword: {
-                        fieldInfo[1] = AccessFlag.PRIVATE;
-                        break;
-                    }
-                    case ts.SyntaxKind.ProtectedKeyword: {
-                        fieldInfo[1] = AccessFlag.PROTECTED;
-                        break;
-                    }
-                    case ts.SyntaxKind.ReadonlyKeyword: {
-                        fieldInfo[2] = ModifierReadonly.READONLY;
-                        break;
-                    }
-                    default:
-                        break;
-                }
-            }
-        }
-        let typeNode = member.type;
-        let memberName = member.name;
-        fieldInfo[0] = this.getOrCreateRecordForTypeNode(typeNode, memberName);
-        this.fields.set(fieldName, fieldInfo);
-    }
-
-    private fillInMethods(member: ts.MethodSignature) {
-        /**
-         * a method like declaration in a new class must be a new type,
-         * create this type and add it into typeRecorder
-         */
-        let variableNode = member.name ? member.name : undefined;
-        let funcType = new FunctionType(<ts.MethodSignature>member);
-        if (variableNode) {
-            this.setVariable2Type(variableNode, funcType.shiftedTypeIndex);
-        }
-        // Then, get the typeIndex and fill in the methods array
-        let typeIndex = this.tryGetTypeIndex(member);
-        this.methods.push(typeIndex!);
-    }
-
     private fillInFieldsAndMethods(node: ts.InterfaceDeclaration) {
         if (node.members) {
             for (let member of node.members) {
                 switch (member.kind) {
                     case ts.SyntaxKind.MethodSignature: {
-                        this.fillInMethods(<ts.MethodSignature>member);
+                        let funcType = this.fillInMethods(<ts.MethodSignature>member);
+                        this.methods.set(funcType.getFunctionName(), this.tryGetTypeIndex(member)!);
                         break;
                     }
                     case ts.SyntaxKind.PropertySignature: {
-                        this.fillInFields(<ts.PropertySignature>member);
+                        let fieldName = jshelpers.getTextOfIdentifierOrLiteral((<ts.PropertySignature>member).name);
+                        let filedInfo = this.fillInFields(<ts.PropertySignature>member);
+                        this.fields.set(
+                            fieldName,
+                            filedInfo
+                        )
                         break;
                     }
                     default:
@@ -716,31 +676,10 @@ export class InterfaceType extends BaseType {
         });
 
         // record fields and methods
-        this.transferFields2Literal(interfaceTypeLiterals);
-        this.transferMethods2Literal(interfaceTypeLiterals);
+        this.transferFields2Literal(interfaceTypeLiterals, this.fields);
+        this.transferMethods2Literal(interfaceTypeLiterals, this.methods);
 
         interfaceTypeBuf.addLiterals(...interfaceTypeLiterals);
         return interfaceTypeBuf;
-    }
-
-    private transferFields2Literal(interfaceTypeLiterals: Array<Literal>) {
-        let transferredTarget: Map<string, Array<number>> = this.fields;
-
-        interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, transferredTarget.size));
-        transferredTarget.forEach((typeInfo, name) => {
-            interfaceTypeLiterals.push(new Literal(LiteralTag.STRING, name));
-            interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[0])); // typeIndex
-            interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[1])); // accessFlag
-            interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[2])); // readonly
-        });
-    }
-
-    private transferMethods2Literal(interfaceTypeLiterals: Array<Literal>) {
-        let transferredTarget: Array<number> = this.methods;
-
-        interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, transferredTarget.length));
-        transferredTarget.forEach(method => {
-            interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, method));
-        });
     }
 }
