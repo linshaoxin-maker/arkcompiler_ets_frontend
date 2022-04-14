@@ -112,11 +112,6 @@ config("flag_config") {
   cflags_cc = [ "-fexceptions" ]
 }
 
-group("jsoncpp_tar") {
-  # Config to apply to all targets that depend on this one.
-  public_configs = [ ":flag_config" ]
-}
-
 source_set("jsoncpp_set_static") {
   sources = [
     "//third_party/jsoncpp/src/lib_json/json_reader.cpp",
@@ -124,7 +119,6 @@ source_set("jsoncpp_set_static") {
     "//third_party/jsoncpp/src/lib_json/json_writer.cpp",
   ]
   public_configs = [ "$jsoncpp_root:jsoncpp_config" ]
-  public_configs += [ ":flag_config" ]
   include_dirs = [
     "$jsoncpp_root/include",
     "$jsoncpp_root/include/json/",
@@ -133,7 +127,6 @@ source_set("jsoncpp_set_static") {
 
 ohos_static_library("jsoncpp_static") {
   deps = [ ":jsoncpp_set_static" ]
-  public_deps = [ ":jsoncpp_tar" ]
   use_exceptions = true
   subsystem_name = "ark"
   part_name = "ark_frontend_tool"
