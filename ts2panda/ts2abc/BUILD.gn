@@ -119,6 +119,7 @@ source_set("jsoncpp_set_static") {
     "//third_party/jsoncpp/src/lib_json/json_writer.cpp",
   ]
   public_configs = [ "$jsoncpp_root:jsoncpp_config" ]
+  public_configs += [ ":flag_config" ]
   include_dirs = [
     "$jsoncpp_root/include",
     "$jsoncpp_root/include/json/",
