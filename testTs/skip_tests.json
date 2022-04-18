@@ -3932,7 +3932,14 @@
         "./testTs/test/typings/typingsLookup3.ts",
         "./testTs/test/typings/typingsLookup4.ts",
         "./testTs/test/ambient/ambientInsideNonAmbient.ts",
-        "./testTs/test/ambient/ambientDeclarations.ts" 
+        "./testTs/test/ambient/ambientDeclarations.ts",
+        "./testTs/test/types/stringLiteral/stringLiteralTypesOverloadAssignability05.ts",
+        "./testTs/test/types/stringLiteral/stringLiteralTypesOverloadAssignability04.ts",
+        "./testTs/test/types/rest/genericObjectRest.ts",
+        "./testTs/test/classes/classExpressions/modifierOnClassExpressionMemberInFunction.ts",
+        "./testTs/test/es6/destructuring/destructuringObjectBindingPatternAndAssignment5.ts",
+        "./testTs/test/functions/functionOverloadCompatibilityWithVoid03.ts",
+        "./testTs/test/functions/functionOverloadCompatibilityWithVoid02.ts"
     ],
     "import_skip":[
         "./testTs/test/ambient/ambientDeclarationsPatterns/declarations.d.ts",
