@@ -328,7 +328,7 @@ export class Compiler {
             this.funcBuilder.resolve(NodeKind.Invalid, getVregisterCache(pandaGen, CacheList.undefined));
             pandaGen.return(NodeKind.Invalid);
         } else {
-            pandaGen.returnUndefined(NodeKind.Invalid);
+            CmdOptions.isWatchMode() ? pandaGen.return(NodeKind.Invalid) : pandaGen.returnUndefined(NodeKind.Invalid);
         }
     }
 
@@ -933,8 +933,8 @@ export class Compiler {
                 // typeof an undeclared variable will return undefined instead of throwing reference error
                 let parent = findOuterNodeOfParenthesis(id);
                 if ((parent.kind == ts.SyntaxKind.TypeOfExpression)) {
-                    let obj = getVregisterCache(pandaGen, CacheList.Global);
-                    pandaGen.loadObjProperty(id, obj, name);
+                    CmdOptions.isWatchMode() ? pandaGen.loadByNameViaDebugger(id, name, CacheList.False)
+                                    : pandaGen.loadObjProperty(id, getVregisterCache(pandaGen, CacheList.Global), name);
                 } else {
                     pandaGen.tryLoadGlobalByName(id, name);
                 }
