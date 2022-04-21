@@ -121,6 +121,8 @@ source_set("jsoncpp_set_static") {
     "$jsoncpp_root/include",
     "$jsoncpp_root/include/json/",
   ]
+  subsystem_name = "ark"
+  part_name = "ark_frontend_tool"
 }
 
 if (!defined(ark_flag)) {
