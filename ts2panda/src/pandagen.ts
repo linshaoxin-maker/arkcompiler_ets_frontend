@@ -659,7 +659,7 @@ export class PandaGen {
 
     // @ts-ignore
     label(node: ts.Node, label: Label) {
-        this.add(NodeKind.Invalid, label);
+        this.add(NodeKind.FirstNodeOfFunction, label);
     }
 
     branch(node: ts.Node | NodeKind, target: Label) {
@@ -993,7 +993,7 @@ export class PandaGen {
         this.add(node, new EcmaGetresumemode(genObj));
     }
 
-    asyncFunctionEnter(node: ts.Node | NodeKind) {
+    asyncFunctionEnter(node: ts.Node) {
         this.add(node, new EcmaAsyncfunctionenter());
     }
 
