@@ -32,6 +32,7 @@ CUR_FILE_DIR = os.path.dirname(__file__)
 CODE_ROOT = os.path.abspath(os.path.join(CUR_FILE_DIR, "../../.."))
 ARK_DIR = f"{CODE_ROOT}/out/hi3516dv300/clang_x64/ark/ark"
 ICUI_DIR = f"{CODE_ROOT}/out/hi3516dv300/clang_x64/global/i18n_standard"
+ICU_STANDARD_DIR = f"{CODE_ROOT}/out/hi3516dv300/clang_x64/thirdparty/icu"
 LLVM_DIR = f"{CODE_ROOT}/prebuilts/clang/ohos/linux-x86_64/llvm/lib/"
 ARK_JS_RUNTIME_DIR = f"{CODE_ROOT}/out/hi3516dv300/clang_x64/ark/ark_js_runtime"
 
@@ -43,7 +44,7 @@ TEST_CI_DIR = os.path.join(DATA_DIR, "test_CI")
 
 DEFAULT_ARK_FRONTEND_TOOL = os.path.join(ARK_DIR, "build", "src", "index.js")
 DEFAULT_ARK_TOOL = os.path.join(ARK_JS_RUNTIME_DIR, "ark_js_vm")
-DEFAULT_LIBS_DIR = f"{ARK_DIR}:{ICUI_DIR}:{LLVM_DIR}:{ARK_JS_RUNTIME_DIR}"
+DEFAULT_LIBS_DIR = f"{ARK_DIR}:{ICUI_DIR}:{LLVM_DIR}:{ARK_JS_RUNTIME_DIR}:{ICU_STANDARD_DIR}"
 
 DEFAULT_HOST_TYPE = "panda"
 DEFAULT_HOST_PATH = "python3"
