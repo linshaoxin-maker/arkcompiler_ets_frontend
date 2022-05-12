@@ -60,6 +60,7 @@ import { compileYieldExpression } from "./expression/yieldExpression";
 import { AsyncFunctionBuilder } from "./function/asyncFunctionBuilder";
 import { FunctionBuilder, FunctionBuilderType } from "./function/functionBuilder";
 import { GeneratorFunctionBuilder } from "./function/generatorFunctionBuilder";
+import { AsyncGeneratorFunctionBuilder } from "./function/asyncGeneratorFunctionBuilder"; // new add
 import {
     hoistFunctionInBlock
 } from "./hoisting";
@@ -162,6 +163,7 @@ export class Compiler {
         if (this.rootNode.kind == ts.SyntaxKind.SourceFile) {
             this.compileSourceFileOrBlock(<ts.SourceFile>this.rootNode);
         } else {
+            console.log("----compile---1---");
             this.compileFunctionLikeDeclaration(<ts.FunctionLikeDeclaration>this.rootNode);
             this.callOpt();
         }
@@ -336,19 +338,22 @@ export class Compiler {
         let pandaGen = this.pandaGen;
 
         if (body.kind == ts.SyntaxKind.Block) {
+            console.log("----createFuncBuilder---6.1---");
             this.pushScope(body);
             this.compileSourceFileOrBlock(<ts.Block>body);
             this.popScope();
         } else if (kind == ts.SyntaxKind.ArrowFunction) {
+            console.log("----createFuncBuilder---6.2---");
             this.compileExpression(<ts.Expression>body);
-
             let retValue = pandaGen.getTemp();
             pandaGen.storeAccumulator(body, retValue);
 
             if (this.funcBuilder instanceof AsyncFunctionBuilder) {
+                console.log("----createFuncBuilder---6.3---");
                 this.funcBuilder.resolve(body, retValue);
                 pandaGen.return(NodeKind.Invalid);
             } else {
+                console.log("----createFuncBuilder---6.4---");
                 pandaGen.loadAccumulator(body, retValue);
             }
             pandaGen.freeTemps(retValue);
@@ -414,8 +419,11 @@ export class Compiler {
                 if (decl.modifiers[i].kind == ts.SyntaxKind.AsyncKeyword) {
                     // async generator
                     if (decl.asteriskToken) {
-                        throw new Error("Async generator is not supported");
+                        console.log("----createFuncBuilder---4.1---");
+                        return new AsyncGeneratorFunctionBuilder(pandaGen, this); // new add
+                        //throw new Error("Async generator is not supported");
                     } else { // async
+                        console.log("----createFuncBuilder---4.11---");
                         return new AsyncFunctionBuilder(pandaGen);
                     }
                 }
@@ -423,9 +431,10 @@ export class Compiler {
         }
 
         if (decl.asteriskToken) {
+            console.log("----createFuncBuilder---4.12---");
             return new GeneratorFunctionBuilder(pandaGen, this);
         }
-
+        console.log("----createFuncBuilder---4.13---");
         return new FunctionBuilder();
     }
 
@@ -434,6 +443,7 @@ export class Compiler {
         this.compileFunctionParameterDeclaration(decl);
 
         if (ts.isConstructorDeclaration(decl)) {
+            console.log("----compileFunctionLikeDeclaration---2---");
             let classNode = <ts.ClassLikeDeclaration>decl.parent;
             if (jshelpers.getClassExtendsHeritageElement(classNode) && !extractCtorOfClass(classNode)) {
                 compileDefaultConstructor(this, decl);
@@ -442,15 +452,19 @@ export class Compiler {
         }
 
         if (decl.kind == ts.SyntaxKind.FunctionExpression) {
+            console.log("----compileFunctionLikeDeclaration---3---");
             if (decl.name) {
+                console.log("----compileFunctionLikeDeclaration---4---");
                 let funcName = jshelpers.getTextOfIdentifierOrLiteral(decl.name);
                 (<VariableScope>pandaGen.getScope()!).addFuncName(funcName);
             }
         }
-
         this.funcBuilder = this.createFuncBuilder(decl);
+        console.log("----compileFunctionLikeDeclaration---5---this.funcBuilder" + this.funcBuilder);
         this.funcBuilder.prepare(decl, this.recorder);
+        
         if (decl.body) {
+            console.log("----compileFunctionLikeDeclaration---5.1---this.funcBuilder" + this.funcBuilder);
             this.compileFunctionBody(decl.kind, decl.body);
         }
 
@@ -1142,7 +1156,7 @@ export class Compiler {
     private compileAwaitExpression(expr: ts.AwaitExpression) {
         let pandaGen = this.pandaGen;
 
-        if (!(this.funcBuilder instanceof AsyncFunctionBuilder)) {
+        if (!(this.funcBuilder instanceof AsyncFunctionBuilder || this.funcBuilder instanceof AsyncGeneratorFunctionBuilder)) { //new add
             throw new DiagnosticError(expr.parent, DiagnosticCode.await_expressions_are_only_allowed_within_async_functions_and_at_the_top_levels_of_modules);
         }
 
