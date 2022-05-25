@@ -49,6 +49,16 @@ def parse_args():
                         help='Run test262 - ES2015. ' +
                         'all: Contains all use cases for ES5 and ES2015' +
                         'only: Only include use cases for ES2015')
+    parser.add_argument('--es2015_1', action='store_true',
+                        help='Run test262 - ES2015_1.')
+    parser.add_argument('--es2015_2', action='store_true',
+                        help='Run test262 - ES2015_2.')
+    parser.add_argument('--es2015_3', action='store_true',
+                        help='Run test262 - ES2015_3.')
+    parser.add_argument('--es2015_4', action='store_true',
+                        help='Run test262 - ES2015_4.')
+    parser.add_argument('--es2015_5', action='store_true',
+                        help='Run test262 - ES2015_5')
     parser.add_argument('--ci-build', action='store_true',
                         help='Run test262 ES2015 filter cases for build version')
     parser.add_argument('--esnext', action='store_true',
@@ -120,6 +130,11 @@ def init(args):
     remove_dir(BASE_OUT_DIR)
     remove_dir(TEST_ES5_DIR)
     remove_dir(TEST_ES2015_DIR)
+    remove_dir(TEST_ES2015_1_DIR)
+    remove_dir(TEST_ES2015_2_DIR)
+    remove_dir(TEST_ES2015_3_DIR)
+    remove_dir(TEST_ES2015_4_DIR)
+    remove_dir(TEST_ES2015_5_DIR)
     remove_dir(TEST_CI_DIR)
     get_all_skip_tests(SKIP_LIST_FILE)
     excuting_npm_install(args)
@@ -214,6 +229,16 @@ class TestPrepare():
             self.out_dir = os.path.join(BASE_OUT_DIR, "test_es51")
         elif self.args.es2015:
             self.out_dir = os.path.join(BASE_OUT_DIR, "test_es2015")
+        elif self.args.es2015_1:
+            self.out_dir = os.path.join(BASE_OUT_DIR, "test_es2015_1")
+        elif self.args.es2015_2:
+            self.out_dir = os.path.join(BASE_OUT_DIR, "test_es2015_2")
+        elif self.args.es2015_3:
+            self.out_dir = os.path.join(BASE_OUT_DIR, "test_es2015_3")
+        elif self.args.es2015_4:
+            self.out_dir = os.path.join(BASE_OUT_DIR, "test_es2015_4")
+        elif self.args.es2015_5:
+            self.out_dir = os.path.join(BASE_OUT_DIR, "test_es2015_5")
         elif self.args.ci_build:
             self.out_dir = os.path.join(BASE_OUT_DIR, "test_CI")
         else:
@@ -227,6 +252,16 @@ class TestPrepare():
             self.args.dir = TEST_ES5_DIR
         elif self.args.es2015:
             self.args.dir = TEST_ES2015_DIR
+        elif self.args.es2015_1:
+            self.args.dir = TEST_ES2015_1_DIR
+        elif self.args.es2015_2:
+            self.args.dir = TEST_ES2015_2_DIR
+        elif self.args.es2015_3:
+            self.args.dir = TEST_ES2015_3_DIR
+        elif self.args.es2015_4:
+            self.args.dir = TEST_ES2015_4_DIR
+        elif self.args.es2015_5:
+            self.args.dir = TEST_ES2015_5_DIR
         elif self.args.ci_build:
             self.args.dir = TEST_CI_DIR
         else:
@@ -243,6 +278,16 @@ class TestPrepare():
             dstdir = os.path.join(TEST_ES5_DIR, file)
         elif self.args.es2015:
             dstdir = os.path.join(TEST_ES2015_DIR, file)
+        elif self.args.es2015_1:
+            dstdir = os.path.join(TEST_ES2015_1_DIR, file)
+        elif self.args.es2015_2:
+            dstdir = os.path.join(TEST_ES2015_2_DIR, file)
+        elif self.args.es2015_3:
+            dstdir = os.path.join(TEST_ES2015_3_DIR, file)
+        elif self.args.es2015_4:
+            dstdir = os.path.join(TEST_ES2015_4_DIR, file)
+        elif self.args.es2015_5:
+            dstdir = os.path.join(TEST_ES2015_5_DIR, file)
         elif self.args.ci_build:
             dstdir = os.path.join(TEST_CI_DIR, file)
         subprocess.getstatusoutput("cp %s %s" % (srcdir, dstdir))
@@ -286,6 +331,21 @@ class TestPrepare():
         elif self.args.es2015:
             test_dir = TEST_ES2015_DIR
             files = self.prepare_es2015_tests()
+        elif self.args.es2015_1:
+            test_dir = TEST_ES2015_1_DIR
+            files = self.get_tests_from_file(ES2015_LIST_FILE_1)
+        elif self.args.es2015_2:
+            test_dir = TEST_ES2015_2_DIR
+            files = self.get_tests_from_file(ES2015_LIST_FILE_2)
+        elif self.args.es2015_3:
+            test_dir = TEST_ES2015_3_DIR
+            files = self.get_tests_from_file(ES2015_LIST_FILE_3)
+        elif self.args.es2015_4:
+            test_dir = TEST_ES2015_4_DIR
+            files = self.get_tests_from_file(ES2015_LIST_FILE_4)
+        elif self.args.es2015_5:
+            test_dir = TEST_ES2015_5_DIR
+            files = self.get_tests_from_file(ES2015_LIST_FILE_5)
         elif self.args.ci_build:
             test_dir = TEST_CI_DIR
             files = self.get_tests_from_file(CI_LIST_FILE)
@@ -308,6 +368,21 @@ class TestPrepare():
         elif self.args.es2015:
             self.prepare_test_suit()
             src_dir = TEST_ES2015_DIR
+        elif self.args.es2015_1:
+            self.prepare_test_suit()
+            src_dir = TEST_ES2015_1_DIR
+        elif self.args.es2015_2:
+            self.prepare_test_suit()
+            src_dir = TEST_ES2015_2_DIR
+        elif self.args.es2015_3:
+            self.prepare_test_suit()
+            src_dir = TEST_ES2015_3_DIR
+        elif self.args.es2015_4:
+            self.prepare_test_suit()
+            src_dir = TEST_ES2015_4_DIR
+        elif self.args.es2015_5:
+            self.prepare_test_suit()
+            src_dir = TEST_ES2015_5_DIR
         elif self.args.ci_build:
             self.prepare_test_suit()
             src_dir = TEST_CI_DIR
