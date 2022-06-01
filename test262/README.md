@@ -7,7 +7,7 @@ skip_tests.json: This file contains a list of use cases that do not meet the req
 
 ## 1. Compile ts2abc and ark_js_vm project
 ```
-./build.sh --product-name Hi3516DV300 --build-target ark_js_vm --build-target ark_ts2abc_build
+./build.sh --product-name hispark_taurus_standard --build-target ark_js_vm --build-target ark_ts2abc_build
 ```
 
 ## 2 Run test cases
