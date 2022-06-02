@@ -460,13 +460,6 @@ export class Recorder {
         return exportStmt;
     }
 
-    private getNormalizeModuleSpecifier(moduleSpecifier: ts.Expression): string {
-        if (!ts.isStringLiteral(moduleSpecifier)) {
-            throw new Error("moduleSpecifier must be a stringLiteral");
-        }
-        return path.normalize(jshelpers.getTextOfIdentifierOrLiteral(moduleSpecifier));
-    }
-
     private recordEcmaNamedBindings(namedBindings: ts.NamedImportBindings, scope: ModuleScope, moduleRequest: string) {
         // import * as a from "a.js"
         if (ts.isNamespaceImport(namedBindings)) {
@@ -508,7 +501,11 @@ export class Recorder {
             return;
         }
 
-        let moduleRequest: string = this.getNormalizeModuleSpecifier(node.moduleSpecifier);
+        if (!ts.isStringLiteral(node.moduleSpecifier)) {
+            throw new Error("moduleSpecifier must be a stringLiteral");
+        }
+
+        let moduleRequest: string = jshelpers.getTextOfIdentifierOrLiteral(node.moduleSpecifier);
 
         if (node.importClause) {
             let importClause: ts.ImportClause = node.importClause;
@@ -521,7 +518,11 @@ export class Recorder {
 
     private recordEcmaExportDecl(node: ts.ExportDeclaration, scope: ModuleScope) {
         if (node.moduleSpecifier) {
-            let moduleRequest: string = this.getNormalizeModuleSpecifier(node.moduleSpecifier);
+            if (!ts.isStringLiteral(node.moduleSpecifier)) {
+                throw new Error("moduleSpecifier must be a stringLiteral");
+            }
+
+            let moduleRequest: string = jshelpers.getTextOfIdentifierOrLiteral(node.moduleSpecifier);
 
             if (node.exportClause) {
                 let namedBindings: ts.NamedExportBindings = node.exportClause;
