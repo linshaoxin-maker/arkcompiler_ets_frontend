@@ -28,6 +28,7 @@ import { LOGD } from "../log";
 import { isFunctionLikeDeclaration } from "../syntaxCheckHelper";
 import { CmdOptions } from "../cmdOptions";
 import { CompilerDriver } from "../compilerDriver";
+import { Recorder } from "src/recorder";
 
 export function containSpreadElement(args?: ts.NodeArray<ts.Expression>): boolean {
     if (!args) {
@@ -338,4 +339,15 @@ export function transformCommonjsModule(sourceFile: ts.SourceFile) {
     ))];
 
     return ts.factory.updateSourceFile(sourceFile, newStatements);
+}
+
+export function getScopeOfNodeOrMappingNode(node: ts.Node, recorder: Recorder) {
+    let nodeScope = null;
+    if (node == ts.getOriginalNode(node)) {
+        let mapNearestFunc = recorder.getMappingNode(node);
+        nodeScope = recorder.getScopeOfNode(mapNearestFunc!);
+    } else {
+        nodeScope = recorder.getScopeOfNode(node!);
+    }
+    return nodeScope;
 }

@@ -14,7 +14,7 @@
  */
 
 import * as ts from "typescript";
-import { isBindingPattern } from "./base/util";
+import { isBindingPattern, getScopeOfNodeOrMappingNode } from "./base/util";
 import { CmdOptions } from "./cmdOptions";
 import * as jshelpers from "./jshelpers";
 import { Recorder } from "./recorder";
@@ -147,7 +147,7 @@ export function addVariableToScope(recorder: Recorder, enableTypeRecord: boolean
                 if (ts.isFunctionDeclaration(funcNode)) {
                     v = scope.add(decl, VarDeclarationKind.FUNCTION);
                 } else if (ts.isFunctionExpression(funcNode)) {
-                    let functionScope = <Scope>recorder.getScopeOfNode(funcNode);
+                    let functionScope = <Scope>getScopeOfNodeOrMappingNode(funcNode, recorder);
                     v = functionScope.add(decl, VarDeclarationKind.FUNCTION);
                 }
             } else if (decl instanceof CatchParameter) {
@@ -157,7 +157,7 @@ export function addVariableToScope(recorder: Recorder, enableTypeRecord: boolean
                 if (ts.isClassDeclaration(classNode)) {
                     v = scope.add(decl, VarDeclarationKind.CLASS, InitStatus.UNINITIALIZED);
                 } else {
-                    let classScope = <Scope>recorder.getScopeOfNode(classNode);
+                    let classScope = <Scope>getScopeOfNodeOrMappingNode(classNode, recorder);
                     v = classScope.add(decl, VarDeclarationKind.CLASS, InitStatus.UNINITIALIZED);
                 }
             } else {

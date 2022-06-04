@@ -31,12 +31,13 @@ import { Compiler } from "../compiler";
 import { Label, VReg } from "../irnodes";
 import { LoopScope, Scope } from "../scope";
 import { LabelTarget } from "./labelTarget";
+import { getScopeOfNodeOrMappingNode } from "../base/util";
 
 export function compileDoStatement(stmt: ts.DoStatement, compiler: Compiler) {
     compiler.pushScope(stmt);
     let pandaGen = compiler.getPandaGen();
 
-    let loopScope = <LoopScope>compiler.getRecorder().getScopeOfNode(stmt);
+    let loopScope = <LoopScope>getScopeOfNodeOrMappingNode(stmt, compiler.getRecorder());
     let needCreateLoopEnv: boolean = loopScope.need2CreateLexEnv() ? true : false;
 
     let loopStartLabel = new Label();
@@ -79,7 +80,7 @@ export function compileWhileStatement(stmt: ts.WhileStatement, compiler: Compile
     compiler.pushScope(stmt);
     let pandaGen = compiler.getPandaGen();
 
-    let loopScope = <LoopScope>compiler.getRecorder().getScopeOfNode(stmt);
+    let loopScope = <LoopScope>getScopeOfNodeOrMappingNode(stmt, compiler.getRecorder());
     let needCreateLoopEnv: boolean = loopScope.need2CreateLexEnv() ? true : false;
 
     let loopStartLabel = new Label();
@@ -121,7 +122,7 @@ export function compileForStatement(stmt: ts.ForStatement, compiler: Compiler) {
     let pandaGen = compiler.getPandaGen();
 
     // determine if loopenv need to be created
-    let loopScope = <LoopScope>compiler.getRecorder().getScopeOfNode(stmt);
+    let loopScope = <LoopScope>getScopeOfNodeOrMappingNode(stmt, compiler.getRecorder());
     let needCreateLoopEnv: boolean = loopScope.need2CreateLexEnv();
     let loopEnv = pandaGen.getTemp();
     let createEnvAtBegining: boolean = false;
@@ -254,7 +255,7 @@ export function compileForInStatement(stmt: ts.ForInStatement, compiler: Compile
     let pandaGen = compiler.getPandaGen();
 
     // determine the location where env should be created
-    let loopScope = <LoopScope>compiler.getRecorder().getScopeOfNode(stmt);
+    let loopScope = <LoopScope>getScopeOfNodeOrMappingNode(stmt, compiler.getRecorder());
     let needCreateLexEnv: boolean = loopScope.need2CreateLexEnv() ? true : false;
     let loopEnv = pandaGen.getTemp();
 

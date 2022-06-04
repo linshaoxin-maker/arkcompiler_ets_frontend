@@ -31,10 +31,11 @@ import {
     VarDecl,
     VariableScope
 } from "./scope";
+import { getScopeOfNodeOrMappingNode } from "./base/util";
 
 export function hoisting(rootNode: ts.SourceFile | ts.FunctionLikeDeclaration, pandaGen: PandaGen,
     recorder: Recorder, compiler: Compiler) {
-    let variableScope = <VariableScope>recorder.getScopeOfNode(rootNode);
+    let variableScope = <VariableScope>getScopeOfNodeOrMappingNode(rootNode, recorder);
     let hoistDecls = recorder.getHoistDeclsOfScope(variableScope);
 
     hoistDecls ?.forEach((decl) => {

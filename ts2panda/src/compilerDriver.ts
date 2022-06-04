@@ -17,7 +17,7 @@ import { writeFileSync } from "fs";
 import * as ts from "typescript";
 import { addVariableToScope } from "./addVariable2Scope";
 import { AssemblyDumper } from "./assemblyDumper";
-import { hasDefaultKeywordModifier, hasExportKeywordModifier, initiateTs2abc, listenChildExit, listenErrorEvent, terminateWritePipe, getRecordTypeFlag } from "./base/util";
+import { hasDefaultKeywordModifier, hasExportKeywordModifier, initiateTs2abc, listenChildExit, listenErrorEvent, terminateWritePipe, getRecordTypeFlag, getScopeOfNodeOrMappingNode } from "./base/util";
 import { CmdOptions } from "./cmdOptions";
 import {
     Compiler
@@ -348,7 +348,7 @@ export class CompilerDriver {
             name = this.getInternalNameForCtor(classNode, node);
         } else {
             let funcNode = <ts.FunctionLikeDeclaration>node;
-            name = (<FunctionScope>recorder.getScopeOfNode(funcNode)).getFuncName();
+            name = (<FunctionScope>getScopeOfNodeOrMappingNode(funcNode, recorder)).getFuncName();
             if (name == '') {
                 if ((ts.isFunctionDeclaration(node) && hasExportKeywordModifier(node) && hasDefaultKeywordModifier(node))
                     || ts.isExportAssignment(findOuterNodeOfParenthesis(node))) {

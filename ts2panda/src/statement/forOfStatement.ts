@@ -24,6 +24,7 @@ import { Label, VReg } from "../irnodes";
 import { TryBuilderWithForOf } from "./tryStatement";
 import { PandaGen } from "src/pandagen";
 import { LoopScope } from "src/scope";
+import { getScopeOfNodeOrMappingNode } from "../base/util";
 
 export enum IteratorType { Normal, Async }
 
@@ -63,7 +64,7 @@ export function compileForOfStatement(stmt: ts.ForOfStatement, compiler: Compile
     let method = pandaGen.getTemp();
     let object = pandaGen.getTemp();
 
-    let loopScope = <LoopScope>compiler.getRecorder().getScopeOfNode(stmt);
+    let loopScope = <LoopScope>getScopeOfNodeOrMappingNode(stmt, compiler.getRecorder());
     let needCreateLoopEnv: boolean = loopScope.need2CreateLexEnv();
     let loopEnv = pandaGen.getTemp();
 
