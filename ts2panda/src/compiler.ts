@@ -232,7 +232,7 @@ export class Compiler {
 
     private storeFuncObj2LexEnvIfNeeded() {
         let rootNode = this.rootNode;
-        if (!ts.isFunctionExpression(rootNode) && !ts.isMethodDeclaration(rootNode)) {
+        if (!ts.isFunctionExpression(rootNode)) {
             return;
         }
         let functionScope = this.recorder.getScopeOfNode(rootNode);
