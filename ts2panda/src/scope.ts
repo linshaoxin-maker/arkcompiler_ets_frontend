@@ -495,6 +495,13 @@ export class FunctionScope extends VariableScope {
             v = topLevelScope.add(name, declKind);
         } else if (declKind == VarDeclarationKind.VAR || declKind == VarDeclarationKind.FUNCTION) {
             v = new LocalVariable(declKind, name);
+            if (declKind === VarDeclarationKind.FUNCTION && ts.isFunctionExpression((<Decl>decl).node)) {
+                for (let para of this.parameters) {
+                    if (para.getName() === name) {
+                        return v;
+                    }
+                }
+            }
             this.name2variable.set(name, v);
         } else {
             v = new LocalVariable(declKind, name, status);

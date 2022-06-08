@@ -232,14 +232,14 @@ export class Compiler {
 
     private storeFuncObj2LexEnvIfNeeded() {
         let rootNode = this.rootNode;
-        if (!ts.isFunctionExpression(rootNode) && !ts.isMethodDeclaration(rootNode)) {
+        if (!ts.isFunctionExpression(rootNode)) {
             return;
         }
         let functionScope = this.recorder.getScopeOfNode(rootNode);
         if ((<ts.FunctionLikeDeclaration>rootNode).name) {
             let funcName = jshelpers.getTextOfIdentifierOrLiteral((<ts.FunctionLikeDeclaration>rootNode).name);
             let v = functionScope.find(funcName);
-            if (v.scope == functionScope) {
+            if (v.scope == functionScope && v.v.declKind === VarDeclarationKind.FUNCTION) {
                 this.pandaGen.loadAccumulator(NodeKind.FirstNodeOfFunction, getVregisterCache(this.pandaGen, CacheList.FUNC));
                 this.pandaGen.storeAccToLexEnv(NodeKind.FirstNodeOfFunction, v.scope, v.level, v.v, true);
             }
