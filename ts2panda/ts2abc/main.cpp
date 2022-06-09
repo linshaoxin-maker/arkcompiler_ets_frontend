@@ -91,8 +91,9 @@ int main(int argc, const char *argv[])
         return RETURN_FAILED;
     }
 
+    std::string optLogLevel = options.GetOptLogLevelArg();
     if (!GenerateProgram(data, output, options.GetCompileByPipeArg(),
-                         options.GetOptLevelArg(), options.GetOptLogLevelArg())) {
+                         options.GetOptLevelArg(), optLogLevel)) {
         std::cerr << "call GenerateProgram fail" << std::endl;
         return RETURN_FAILED;
     }
