@@ -14,9 +14,11 @@
 if (!defined(ark_independent_build)) {
   import("//ark/runtime_core/ark_config.gni")
   import("//build/ohos.gni")
+  runtime_core_gn = "//runtime_core"
 } else {
-  import("//runtime_core/ark_config.gni")
+  import("//js_runtime/build/runtime_core_gn/ark_config.gni")
   import("$build_root/ark.gni")
+  runtime_core_gn = "//js_runtime/build/runtime_core_gn"
 }
 
 jsoncpp_root = "$ark_third_party_root/jsoncpp"
@@ -26,7 +28,7 @@ config("ts2abc_config") {
   include_dirs = [
     ".",
     "$jsoncpp_root/include",
-    "$ark_root/libpandabase",
+    "$runtime_core_gn/libpandabase",
   ]
 
   if (enable_bytecode_optimizer) {
@@ -34,18 +36,18 @@ config("ts2abc_config") {
   }
 
   configs = [
-    "$ark_root:ark_config",
+    "$runtime_core_gn:ark_config",
     sdk_libc_secshared_config,
-    "$ark_root/libpandafile:arkfile_public_config",
-    "$ark_root/libpandabase:arkbase_public_config",
-    "$ark_root/runtime:arkruntime_public_config",
-    "$ark_root/assembler:arkassembler_public_config",
+    "$runtime_core_gn/libpandafile:arkfile_public_config",
+    "$runtime_core_gn/libpandabase:arkbase_public_config",
+    "$runtime_core_gn/runtime:arkruntime_public_config",
+    "$runtime_core_gn/assembler:arkassembler_public_config",
   ]
 
   if (enable_bytecode_optimizer) {
     configs += [
-      "$ark_root/compiler:arkcompiler_public_config",
-      "$ark_root/bytecode_optimizer:bytecodeopt_public_config",
+      "$runtime_core_gn/compiler:arkcompiler_public_config",
+      "$runtime_core_gn/bytecode_optimizer:bytecodeopt_public_config",
     ]
   }
 }
@@ -94,30 +96,30 @@ if (!defined(ark_independent_build)) {
 
     if (is_linux || is_mingw || is_mac) {
       deps += [
-        "$ark_root/assembler:libarkassembler_frontend_static",
-        "$ark_root/libpandabase:libarkbase_frontend_static",
-        "$ark_root/libpandafile:libarkfile_frontend_static",
-        "$ark_root/libziparchive:libarkziparchive_frontend_static",
+        "$runtime_core_gn/assembler:libarkassembler_frontend_static",
+        "$runtime_core_gn/libpandabase:libarkbase_frontend_static",
+        "$runtime_core_gn/libpandafile:libarkfile_frontend_static",
+        "$runtime_core_gn/libziparchive:libarkziparchive_frontend_static",
         "//third_party/jsoncpp:jsoncpp_static",
       ]
       if (enable_bytecode_optimizer) {
         deps += [
-          "$ark_root/bytecode_optimizer:libarkbytecodeopt_frontend_static",
-          "$ark_root/compiler:libarkcompiler_frontend_static",
+          "$runtime_core_gn/bytecode_optimizer:libarkbytecodeopt_frontend_static",
+          "$runtime_core_gn/compiler:libarkcompiler_frontend_static",
         ]
       }
     } else {
       deps += [
-        "$ark_root/assembler:libarkassembler",
-        "$ark_root/libpandabase:libarkbase",
-        "$ark_root/libpandafile:libarkfile",
-        "$ark_root/libziparchive:libarkziparchive",
+        "$runtime_core_gn/assembler:libarkassembler",
+        "$runtime_core_gn/libpandabase:libarkbase",
+        "$runtime_core_gn/libpandafile:libarkfile",
+        "$runtime_core_gn/libziparchive:libarkziparchive",
         "$jsoncpp_root:jsoncpp",
       ]
       if (enable_bytecode_optimizer) {
         deps += [
-          "$ark_root/bytecode_optimizer:libarkbytecodeopt",
-          "$ark_root/compiler:libarkcompiler",
+          "$runtime_core_gn/bytecode_optimizer:libarkbytecodeopt",
+          "$runtime_core_gn/compiler:libarkcompiler",
         ]
       }
     }
