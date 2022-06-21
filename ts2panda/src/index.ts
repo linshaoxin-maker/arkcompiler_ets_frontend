@@ -159,13 +159,13 @@ function getDtsFiles(libDir: string): string[] {
 }
 
 const stopWatchingStr = "####";
-const watchAbcFileTimeOut = 5000;
+const watchAbcFileDefaultTimeOut = 10;
 const watchFileName = "watch_expressions";
 
-function updateWatchedFile() {
+function updateWatchedFile(watchAbcFileTimeOut: number) {
     let watchArgs = CmdOptions.getAddWatchArgs();
     let ideIputStr = watchArgs[0];
-    if (watchArgs.length != 2 || !isBase64Str(ideIputStr)) {
+    if ((watchArgs.length > 3) || !isBase64Str(ideIputStr)) {
         throw new Error("Incorrect args' format or not enter base64 string in watch mode");
     }
     let fragmentSep = "\\n";
@@ -188,7 +188,6 @@ function updateWatchedFile() {
     if (CmdOptions.isAssemblyMode()) {
         return;
     }
-
     fs.watchFile(abcFileName, { persistent: true, interval: 50 }, (curr, prev) => {
         if (+curr.mtime <= +prev.mtime) {
             fs.unwatchFile(jsFileName);
@@ -206,7 +205,7 @@ function updateWatchedFile() {
         fs.unlinkSync(jsFileName);
         fs.unlinkSync(abcFileName);
         throw new Error("watchFileServer has not been initialized");
-    }, watchAbcFileTimeOut);
+    }, watchAbcFileTimeOut*1000);
 }
 
 function convertWatchExpression(jsfileName: string, parsed: ts.ParsedCommandLine | undefined) {
@@ -286,7 +285,15 @@ function run(args: string[], options?: ts.CompilerOptions): void {
             return;
         }
         if (CmdOptions.isWatchMode()) {
-            updateWatchedFile();
+            if (CmdOptions.getAddWatchArgs().length == 3) {
+                let watchAbcFileTimeOut = Number(CmdOptions.getAddWatchArgs()[2]);
+                if (watchAbcFileTimeOut.toString() == "NaN") {
+                    throw new Error("Incorrect args' format for watch out time in watch mode");
+                }
+                updateWatchedFile(watchAbcFileTimeOut);
+                return;
+            }
+            updateWatchedFile(watchAbcFileDefaultTimeOut);
             return;
         }
 
