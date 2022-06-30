@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if (!defined(ark_independent_build)) {
+if (!defined(ark_standalone_build)) {
   import("//ark/runtime_core/ark_config.gni")
   import("//build/ohos.gni")
 } else {
@@ -125,7 +125,16 @@ if (!defined(ark_independent_build)) {
 
     if (is_linux) {
       if (build_public_version) {
-        ldflags = [ "-static-libstdc++" ]
+        ldflags = [
+          "-fPIE",
+          "-ldl",
+          "-lpthread",
+          "-lrt",
+          "-lc++",
+          "-latomic",
+          "-static-libstdc++",
+        ]
+        output_dir = "${root_out_dir}/ark/ark/"
       } else {
         libs = [ libcpp_static_lib ]
       }
