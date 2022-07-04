@@ -11,13 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if (!defined(ark_independent_build)) {
+if (!defined(ark_standalone_build)) {
   import("//build/ohos.gni")
   import("//build/test.gni")
   build_root = "//build"
   ts2abc_root = "//ark/ts2abc/ts2panda"
 } else {
-  import("$build_root/ark.gni")
+  import("//js_runtime/build/ark.gni")
   ts2abc_root = "//ts2abc/ts2panda"
 }
 
