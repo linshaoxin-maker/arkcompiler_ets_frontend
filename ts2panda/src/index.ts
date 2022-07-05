@@ -159,13 +159,13 @@ function getDtsFiles(libDir: string): string[] {
 }
 
 const stopWatchingStr = "####";
-const watchAbcFileTimeOut = 5000;
+const watchAbcFileDefaultTimeOut = 10;
 const watchFileName = "watch_expressions";
 
-function updateWatchedFile() {
+function updateWatchedFile(watchAbcFileTimeOut: number) {
     let watchArgs = CmdOptions.getAddWatchArgs();
     let ideIputStr = watchArgs[0];
-    if (watchArgs.length != 2 || !isBase64Str(ideIputStr)) {
+    if (watchArgs.length > 3 || !isBase64Str(ideIputStr)) {
         throw new Error("Incorrect args' format or not enter base64 string in watch mode");
     }
     let fragmentSep = "\\n";
@@ -206,7 +206,7 @@ function updateWatchedFile() {
         fs.unlinkSync(jsFileName);
         fs.unlinkSync(abcFileName);
         throw new Error("watchFileServer has not been initialized");
-    }, watchAbcFileTimeOut);
+    }, watchAbcFileTimeOut*1000);
 }
 
 function convertWatchExpression(jsfileName: string, parsed: ts.ParsedCommandLine | undefined) {
@@ -220,7 +220,7 @@ function keepWatchingFiles(filePath: string, parsed: ts.ParsedCommandLine | unde
     let jsFileName = filePath + path.sep + watchFileName + ".js";
     let abcFileName = filePath + path.sep + watchFileName + ".abc";
     if (fs.existsSync(jsFileName)) {
-        console.log("watchFileServer has been initialized");
+        console.log("watchFileServer has been initialized supportTimeout");
         return;
     }
     fs.writeFileSync(jsFileName, "initJsFile\n");
@@ -237,7 +237,7 @@ function keepWatchingFiles(filePath: string, parsed: ts.ParsedCommandLine | unde
         }
         convertWatchExpression(jsFileName, parsed);
     });
-    console.log("startWatchingSuccess");
+    console.log("startWatchingSuccess supportTimeout");
 
     process.on("exit", () => {
         fs.unlinkSync(jsFileName);
@@ -286,7 +286,15 @@ function run(args: string[], options?: ts.CompilerOptions): void {
             return;
         }
         if (CmdOptions.isWatchMode()) {
-            updateWatchedFile();
+            if (CmdOptions.getAddWatchArgs().length == 3) {
+                let watchAbcFileTimeOut = Number(CmdOptions.getAddWatchArgs()[2]);
+                if (watchAbcFileTimeOut.toString() == "NaN") {
+                    throw new Error("Incorrect args' format for watch out time in watch mode");
+                }
+                updateWatchedFile(watchAbcFileTimeOut);
+                return;
+            }
+            updateWatchedFile(watchAbcFileDefaultTimeOut);
             return;
         }
 
