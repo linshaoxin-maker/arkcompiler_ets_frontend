@@ -690,6 +690,31 @@ void ParserImpl::CheckFunctionDeclaration(StatementParsingFlags flags)
     }
 }
 
+void ParserImpl::CheckFunctionLocation(const ir::Statement *node)
+{
+    if (node->IsFunctionDeclaration()) {
+        ThrowSyntaxError("In strict mode code, functions can only be declared at top level or inside a block.");
+    }
+}
+
+void ParserImpl::CheckLexerTokenType()
+{
+    switch (lexer_->GetToken().Type()) {
+        case lexer::TokenType::KEYW_CONST: {
+            ThrowSyntaxError("The 'const' declarations can only be declared inside a block.");
+        }
+        case lexer::TokenType::KEYW_CLASS: {
+            ThrowSyntaxError("Class declaration not allowed in statement position.");
+        }
+        case lexer::TokenType::KEYW_LET: {
+            ThrowSyntaxError("The 'let' declarations can only be declared inside a block.");
+        }
+        default: {
+            return;
+        }
+    }
+}
+
 void ParserImpl::ConsumeSemicolon(ir::Statement *statement)
 {
     if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
@@ -917,8 +942,9 @@ ir::DoWhileStatement *ParserImpl::ParseDoWhileStatement()
 
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
     lexer_->NextToken();
+    CheckLexerTokenType();
     ir::Statement *body = ParseStatement();
-
+    CheckFunctionLocation(body);
     if (lexer_->GetToken().Type() != lexer::TokenType::KEYW_WHILE) {
         ThrowSyntaxError("Missing 'while' keyword in a 'DoWhileStatement'");
     }
@@ -1302,7 +1328,9 @@ ir::Statement *ParserImpl::ParseForStatement()
     }
     lexer_->NextToken();
 
+    CheckLexerTokenType();
     ir::Statement *bodyNode = ParseStatement();
+    CheckFunctionLocation(bodyNode);
     lexer::SourcePosition endLoc = bodyNode->End();
 
     ir::Statement *forStatement = nullptr;
@@ -1341,18 +1369,22 @@ ir::IfStatement *ParserImpl::ParseIfStatement()
     }
 
     lexer_->NextToken();
+    CheckLexerTokenType();
     ir::Statement *consequent = ParseStatement(StatementParsingFlags::IF_ELSE | StatementParsingFlags::ALLOW_LEXICAL);
 
     if (Extension() == ScriptExtension::TS && consequent->IsEmptyStatement()) {
         ThrowSyntaxError("The body of an if statement cannot be the empty statement");
     }
+    CheckFunctionLocation(consequent);
 
     endLoc = consequent->End();
     ir::Statement *alternate = nullptr;
 
     if (lexer_->GetToken().Type() == lexer::TokenType::KEYW_ELSE) {
         lexer_->NextToken();  // eat ELSE keyword
+        CheckLexerTokenType();
         alternate = ParseStatement(StatementParsingFlags::IF_ELSE | StatementParsingFlags::ALLOW_LEXICAL);
+        CheckFunctionLocation(alternate);
         endLoc = alternate->End();
     }
 
@@ -1368,6 +1400,10 @@ ir::LabelledStatement *ParserImpl::ParseLabelledStatement(const lexer::LexerPosi
     // TODO(frobert) : check correctness
     if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_AWAIT && context_.IsModule()) {
         ThrowSyntaxError("'await' is a reserved identifier in module code", pos.token.Start());
+    }
+
+    if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_YIELD) {
+        ThrowSyntaxError("Identifier expected. 'yield' is a reserved word in strict mode.", pos.token.Start());
     }
 
     if (context_.FindLabel(actualLabel)) {
@@ -1816,6 +1852,13 @@ ir::Statement *ParserImpl::ParseVariableDeclaration(VariableParsingFlags flags, 
         lexer_->NextToken();
     }
 
+    if (lexer_->GetToken().Ident().Is("yield")) {
+        ThrowSyntaxError("Invalid use of 'yield' in strict mode.");
+    }
+    if ((flags & VariableParsingFlags::LET) && (lexer_->GetToken().Ident().Is("undefined"))) {
+        ThrowSyntaxError("Declaration name conflicts with built-in global identifier 'undefined'.");
+    }
+
     if (Extension() == ScriptExtension::TS && lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_ENUM) {
         if (!(flags & VariableParsingFlags::CONST)) {
             ThrowSyntaxError("Variable declaration expected.");
@@ -1867,8 +1910,10 @@ ir::WhileStatement *ParserImpl::ParseWhileStatement()
     }
 
     lexer_->NextToken();
+    CheckLexerTokenType();
     IterationContext<binder::LoopScope> iterCtx(&context_, Binder());
     ir::Statement *body = ParseStatement();
+    CheckFunctionLocation(body);
 
     lexer::SourcePosition endLoc = body->End();
     auto *whileStatement = AllocNode<ir::WhileStatement>(iterCtx.LexicalScope().GetScope(), test, body);

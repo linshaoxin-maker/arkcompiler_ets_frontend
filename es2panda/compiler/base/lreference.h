@@ -47,7 +47,7 @@ public:
     NO_MOVE_SEMANTIC(LReference);
 
     void GetValue();
-    void SetValue();
+    void SetValue(bool isInSetClassProto = false);
     binder::Variable *Variable() const;
     ReferenceKind Kind() const;
 

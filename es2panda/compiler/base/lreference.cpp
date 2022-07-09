@@ -58,11 +58,11 @@ void LReference::GetValue()
     }
 }
 
-void LReference::SetValue()
+void LReference::SetValue(bool isInSetClassProto)
 {
     switch (refKind_) {
         case ReferenceKind::VAR_OR_GLOBAL: {
-            pg_->StoreVar(node_, res_, isDeclaration_);
+            pg_->StoreVar(node_, res_, isDeclaration_, isInSetClassProto);
             break;
         }
         case ReferenceKind::MEMBER: {

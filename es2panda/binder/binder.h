@@ -104,6 +104,9 @@ public:
     static constexpr std::string_view LEXICAL_MANDATORY_PARAM_NEW_TARGET = "!nt";
     static constexpr std::string_view LEXICAL_MANDATORY_PARAM_THIS = "!t";
 
+    static constexpr std::string_view MAIN_FUNC_NAME = "func_main_0";
+    static constexpr std::string_view ANONYMOUS_FUNC_NAME = "";
+
 private:
     using MandatoryParams = std::array<std::string_view, MANDATORY_PARAMS_NUMBER>;
 
@@ -119,6 +122,7 @@ private:
     void AddMandatoryParam(const std::string_view &name);
     void AddMandatoryParams(const MandatoryParams &params);
     void AddMandatoryParams();
+    util::StringView BuildFunctionName(FunctionScope *funcScope, util::StringView name);
     void BuildFunction(FunctionScope *funcScope, util::StringView name);
     void BuildScriptFunction(Scope *outerScope, const ir::ScriptFunction *scriptFunc);
     void BuildClassDefinition(ir::ClassDefinition *classDef);
@@ -138,6 +142,8 @@ private:
     GlobalScope *topScope_ {};
     Scope *scope_ {};
     ArenaVector<FunctionScope *> functionScopes_;
+    std::vector<util::StringView> functionNames_;
+    size_t functionNameIndex_ {1};
 };
 
 template <typename T>

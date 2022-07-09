@@ -41,7 +41,7 @@ void ClassDeclaration::Compile([[maybe_unused]] compiler::PandaGen *pg) const
 {
     auto lref = compiler::LReference::CreateLRef(pg, def_->Ident(), true);
     def_->Compile(pg);
-    lref.SetValue();
+    lref.SetValue(true);
 }
 
 checker::Type *ClassDeclaration::Check([[maybe_unused]] checker::Checker *checker) const
