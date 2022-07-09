@@ -834,8 +834,24 @@ void PandaGen::EmitThrow(const ir::AstNode *node)
 
 void PandaGen::EmitRethrow(const ir::AstNode *node)
 {
-    // commented for compile workaround
-    // sa_.Emit<EcmaRethrowdyn>(node);
+    auto *skipThrow = AllocLabel();
+    auto *doThrow = AllocLabel();
+
+    VReg exception = AllocReg();
+    StoreAccumulator(node, exception);
+
+    VReg hole = AllocReg();
+    StoreConst(node, hole, Constant::JS_HOLE);
+
+    LoadAccumulator(node, exception);
+    ra_.Emit<EcmaNoteqdyn>(node, hole);
+    sa_.Emit<Jeqz>(node, skipThrow);
+
+    SetLabel(node, doThrow);
+    LoadAccumulator(node, exception);
+    sa_.Emit<EcmaThrowdyn>(node);
+
+    SetLabel(node, skipThrow);
 }
 
 void PandaGen::EmitReturn(const ir::AstNode *node)
