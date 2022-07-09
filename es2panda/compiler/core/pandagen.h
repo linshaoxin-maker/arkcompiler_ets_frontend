@@ -295,8 +295,8 @@ public:
     void GetResumeMode(const ir::AstNode *node, VReg genObj);
 
     void AsyncFunctionEnter(const ir::AstNode *node);
-    void AsyncFunctionAwait(const ir::AstNode *node, VReg asyncFuncObj);
-    void AsyncFunctionResolve(const ir::AstNode *node, VReg asyncFuncObj);
+    void AsyncFunctionAwait(const ir::AstNode *node, VReg asyncFuncObj, VReg retVal);
+    void AsyncFunctionResolve(const ir::AstNode *node, VReg asyncFuncObj, VReg canSuspend, VReg value);
     void AsyncFunctionReject(const ir::AstNode *node, VReg asyncFuncObj);
 
     void GetMethod(const ir::AstNode *node, VReg obj, const util::StringView &name);
@@ -352,10 +352,10 @@ public:
 
     void LdLexEnv(const ir::AstNode *node);
     void PopLexEnv(const ir::AstNode *node);
-    void CopyLexEnv(const ir::AstNode *node);
+    void CopyLexEnv(const ir::AstNode *node, uint32_t num);
     void NewLexEnv(const ir::AstNode *node, uint32_t num);
     void LoadLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot);
-    void StoreLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot);
+    void StoreLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot, VReg toAllocVreg = 0);
 
     void ThrowIfSuperNotCorrectCall(const ir::AstNode *node, int64_t num);
     void ThrowUndefinedIfHole(const ir::AstNode *node, const util::StringView &name);

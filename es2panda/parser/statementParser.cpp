@@ -815,11 +815,11 @@ ir::BreakStatement *ParserImpl::ParseBreakStatement()
     }
 
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
-    lexer::SourcePosition endLoc = lexer_->GetToken().End();
     lexer_->NextToken();
 
     if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SEMI_COLON ||
-        lexer_->GetToken().Type() == lexer::TokenType::EOS || lexer_->GetToken().NewLine()) {
+        lexer_->GetToken().Type() == lexer::TokenType::EOS || lexer_->GetToken().NewLine() ||
+        lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
         if (!allowBreak) {
             if (Extension() == ScriptExtension::JS) {
                 ThrowSyntaxError("Illegal break statement");
@@ -833,24 +833,9 @@ ir::BreakStatement *ParserImpl::ParseBreakStatement()
 
         auto *breakStatement = AllocNode<ir::BreakStatement>();
         breakStatement->SetRange({startLoc, lexer_->GetToken().End()});
-        lexer_->NextToken();
-        return breakStatement;
-    }
-
-    if (lexer_->GetToken().NewLine() || lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
-        if (!allowBreak) {
-            if (Extension() == ScriptExtension::JS) {
-                ThrowSyntaxError("Illegal break statement");
-            }
-            if (Extension() == ScriptExtension::TS) {
-                ThrowSyntaxError(
-                    "A 'break' statement can only be used within an "
-                    "enclosing iteration or switch statement");
-            }
+        if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
+            lexer_->NextToken();
         }
-
-        auto *breakStatement = AllocNode<ir::BreakStatement>();
-        breakStatement->SetRange({startLoc, endLoc});
         return breakStatement;
     }
 

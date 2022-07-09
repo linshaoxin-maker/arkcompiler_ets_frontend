@@ -78,6 +78,23 @@ ScopeFindResult Scope::Find(const util::StringView &name, ResolveBindingOptions 
     uint32_t lexLevel = 0;
     const auto *iter = this;
 
+    if (iter->IsFunctionParamScope()) {
+        Variable *v = iter->FindLocal(name, options);
+
+        if (v != nullptr) {
+            return {name, const_cast<Scope *>(iter), level, lexLevel, v};
+        }
+
+        level++;
+        auto *funcVariableScope = iter->AsFunctionParamScope()->GetFunctionScope();
+
+        if (funcVariableScope->NeedLexEnv()) {
+            lexLevel++;
+        }
+
+        iter = iter->Parent();
+    }
+
     while (iter != nullptr) {
         Variable *v = iter->FindLocal(name, options);
 

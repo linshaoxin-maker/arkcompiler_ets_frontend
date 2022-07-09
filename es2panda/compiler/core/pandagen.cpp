@@ -159,11 +159,12 @@ void PandaGen::CopyFunctionArguments(const ir::AstNode *node)
 {
     FrontAllocator fa(this);
     VReg targetReg = totalRegs_;
+    VReg lexerNextReg = topScope_->ParamScope()->Params().size() + 1;
 
     for (const auto *param : topScope_->ParamScope()->Params()) {
         if (param->LexicalBound()) {
             LoadAccumulator(node, targetReg++);
-            StoreLexicalVar(node, 0, param->LexIdx());
+            StoreLexicalVar(node, 0, param->LexIdx(), lexerNextReg);
         } else {
             ra_.Emit<MovDyn>(node, param->Vreg(), targetReg++);
         }
@@ -1003,7 +1004,9 @@ void PandaGen::LoadHomeObject(const ir::AstNode *node)
 void PandaGen::DefineFunction(const ir::AstNode *node, const ir::ScriptFunction *realNode, const util::StringView &name)
 {
     auto formal_param_cnt = realNode->FormalParamsLength();
-    if (realNode->IsAsync()) {
+    if (realNode->IsMethod()) {
+        ra_.Emit<EcmaDefinemethod>(node, name, static_cast<int64_t>(formal_param_cnt), LexEnv());
+    } else if (realNode->IsAsync()) {
         if (realNode->IsGenerator()) {
             // TODO(): async generator
         } else {
@@ -1014,8 +1017,6 @@ void PandaGen::DefineFunction(const ir::AstNode *node, const ir::ScriptFunction 
     } else if (realNode->IsArrow()) {
         LoadHomeObject(node);
         ra_.Emit<EcmaDefinencfuncdyn>(node, name, static_cast<int64_t>(formal_param_cnt), LexEnv());
-    } else if (realNode->IsMethod()) {
-        ra_.Emit<EcmaDefinemethod>(node, name, static_cast<int64_t>(formal_param_cnt), LexEnv());
     } else {
         ra_.Emit<EcmaDefinefuncdyn>(node, name, static_cast<int64_t>(formal_param_cnt), LexEnv());
     }
@@ -1121,16 +1122,14 @@ void PandaGen::AsyncFunctionEnter(const ir::AstNode *node)
     sa_.Emit<EcmaAsyncfunctionenter>(node);
 }
 
-void PandaGen::AsyncFunctionAwait(const ir::AstNode *node, VReg asyncFuncObj)
+void PandaGen::AsyncFunctionAwait(const ir::AstNode *node, VReg asyncFuncObj, VReg retVal)
 {
-    // commented for compile workaround
-    // ra_.Emit<EcmaAsyncfunctionawait>(node, asyncFuncObj);
+    ra_.Emit<EcmaAsyncfunctionawaituncaught>(node, asyncFuncObj, retVal);
 }
 
-void PandaGen::AsyncFunctionResolve(const ir::AstNode *node, VReg asyncFuncObj)
+void PandaGen::AsyncFunctionResolve(const ir::AstNode *node, VReg asyncFuncObj, VReg canSuspend, VReg value)
 {
-    // commented for compile workaround
-    // ra_.Emit<EcmaAsyncfunctionresolve>(node, asyncFuncObj);
+    ra_.Emit<EcmaAsyncfunctionresolve>(node, asyncFuncObj, canSuspend, value);
 }
 
 void PandaGen::AsyncFunctionReject(const ir::AstNode *node, VReg asyncFuncObj)
@@ -1466,9 +1465,12 @@ void PandaGen::LoadLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t 
     sa_.Emit<EcmaLdlexvardyn>(node, level, slot);
 }
 
-void PandaGen::StoreLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot)
+void PandaGen::StoreLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot, VReg toAllocVreg)
 {
-    VReg value = AllocReg();
+    VReg value = toAllocVreg;
+    if (toAllocVreg == 0) {
+        value = AllocReg();
+    }
     StoreAccumulator(node, value);
     ra_.Emit<EcmaStlexvardyn>(node, level, slot, value);
 }
@@ -1504,9 +1506,11 @@ void PandaGen::PopLexEnv(const ir::AstNode *node)
     sa_.Emit<EcmaPoplexenvdyn>(node);
 }
 
-void PandaGen::CopyLexEnv(const ir::AstNode *node)
+void PandaGen::CopyLexEnv(const ir::AstNode *node, uint32_t num)
 {
     // commented for compile workaround
+    PopLexEnv(node);
+    NewLexEnv(node, num);
     // sa_.Emit<EcmaCopylexenvdyn>(node);
 }
 

@@ -105,11 +105,27 @@ void FunctionBuilder::Await(const ir::AstNode *node)
     RegScope rs(pg_);
     VReg completionType = pg_->AllocReg();
     VReg completionValue = pg_->AllocReg();
+    VReg retVal = pg_->AllocReg();
 
-    pg_->AsyncFunctionAwait(node, funcObj_);
+    pg_->StoreAccumulator(node, retVal);
+    pg_->AsyncFunctionAwait(node, funcObj_, retVal);
     SuspendResumeExecution(node, completionType, completionValue);
 
-    HandleCompletion(node, completionType, completionValue);
+    HandleAsyncCompletion(node, completionType, completionValue);
+}
+
+void FunctionBuilder::HandleAsyncCompletion(const ir::AstNode *node, VReg completionType, VReg completionValue)
+{
+    // .reject
+    auto *notThrowLabel = pg_->AllocLabel();
+    pg_->LoadAccumulatorInt(node, static_cast<int32_t>(ResumeMode::THROW));
+    pg_->Condition(node, lexer::TokenType::PUNCTUATOR_EQUAL, completionType, notThrowLabel);
+    pg_->LoadAccumulator(node, completionValue);
+    pg_->EmitThrow(node);
+
+    //.resolve
+    pg_->SetLabel(node, notThrowLabel);
+    pg_->LoadAccumulator(node, completionValue);
 }
 
 void FunctionBuilder::HandleCompletion(const ir::AstNode *node, VReg completionType, VReg completionValue)
@@ -267,7 +283,7 @@ void FunctionBuilder::YieldStar(const ir::AstNode *node)
 
         // b. Let awaited be Await(resumptionValue.[[Value]]).
         pg_->LoadAccumulator(node, receivedValue);
-        pg_->AsyncFunctionAwait(node, funcObj_);
+        pg_->AsyncFunctionAwait(node, funcObj_, receivedValue);
         SuspendResumeExecution(node, receivedType, receivedValue);
 
         // c. If awaited.[[Type]] is throw, return Completion(awaited).
