@@ -50,10 +50,13 @@ void TaggedTemplateExpression::Compile(compiler::PandaGen *pg) const
     compiler::RegScope rs(pg);
     compiler::VReg callee = pg->AllocReg();
     bool hasThis = false;
+    std::vector<compiler::VReg> regs;
+    regs.push_back(callee);
 
     if (tag_->IsMemberExpression()) {
         hasThis = true;
         compiler::VReg thisReg = pg->AllocReg();
+        regs.push_back(thisReg);
 
         compiler::RegScope mrs(pg);
         tag_->AsMemberExpression()->Compile(pg, thisReg);
@@ -66,21 +69,21 @@ void TaggedTemplateExpression::Compile(compiler::PandaGen *pg) const
     compiler::Literals::GetTemplateObject(pg, this);
     compiler::VReg arg0 = pg->AllocReg();
     pg->StoreAccumulator(this, arg0);
+    regs.push_back(arg0);
 
     for (const auto *element : quasi_->Expressions()) {
         element->Compile(pg);
         compiler::VReg arg = pg->AllocReg();
         pg->StoreAccumulator(element, arg);
+        regs.push_back(arg);
     }
 
     if (hasThis) {
-        constexpr auto extraParams = 2;
-        pg->CallThis(this, callee, static_cast<int64_t>(quasi_->Expressions().size() + extraParams));
+        pg->CallThis(this, regs);
         return;
     }
 
-    constexpr auto extraParams = 1;
-    pg->Call(this, callee, quasi_->Expressions().size() + extraParams);
+    pg->Call(this, regs);
 }
 
 checker::Type *TaggedTemplateExpression::Check(checker::Checker *checker) const

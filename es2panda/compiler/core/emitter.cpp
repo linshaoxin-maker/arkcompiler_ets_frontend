@@ -114,6 +114,11 @@ void FunctionEmitter::GenBufferLiterals(const LiteralBuffer *buff)
                 valueLit.value_ = literal->GetMethod().Mutf8();
                 break;
             }
+            case ir::LiteralTag::METHODAFFILIATE: {
+                valueLit.tag_ = panda::panda_file::LiteralTag::METHODAFFILIATE;
+                valueLit.value_ = literal->GetMethodAffiliate();
+                break;
+            }
             case ir::LiteralTag::GENERATOR_METHOD: {
                 valueLit.tag_ = panda::panda_file::LiteralTag::GENERATORMETHOD;
                 valueLit.value_ = literal->GetMethod().Mutf8();
@@ -139,6 +144,14 @@ void FunctionEmitter::GenBufferLiterals(const LiteralBuffer *buff)
         array.emplace_back(tagLit);
         array.emplace_back(valueLit);
     }
+
+    // std::cout << " --- literal array buffer --- " << std::endl;
+    // for (auto a : array) {
+    //     std::cout << "tag: " << static_cast<std::underlying_type<ir::LiteralTag>::type>(a.tag_) << std::endl;
+    //     std::visit( [](auto&& e) {
+    //         std::cout << "value: " << e << std::endl;
+    //     }, a.value_ );
+    // }
 }
 
 util::StringView FunctionEmitter::SourceCode() const

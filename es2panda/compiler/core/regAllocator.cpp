@@ -72,7 +72,7 @@ void RegAllocatorBase::Restore(IRNode *ins)
     VReg spillReg = spillIndex_;
     VReg origin = regEnd_ + spillIndex_;
 
-    Add<MovDyn>(ins->Node(), origin, spillReg);
+    Add<MovDyn>(ins->Node(), spillReg, origin);
 }
 
 // RegAllocator
@@ -110,6 +110,56 @@ void RegAllocator::Run(IRNode *ins)
 }
 
 // RangeRegAllocator
+bool RangeRegAllocator::CheckRegContinuous(std::vector<VReg> &inputRegs)
+{
+    VReg startReg = inputRegs[0];
+    for (size_t i = 0; i < inputRegs.size(); i++) {
+        if (inputRegs[i] != startReg++) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void RangeRegAllocator::Run(IRNode *ins, std::vector<VReg> &inputRegs)
+{
+    ASSERT(spillIndex_ == 0);
+    std::array<VReg *, IRNode::MAX_REG_OPERAND> regs {};
+    auto regCnt = ins->Registers(&regs);
+    auto registers = Span<VReg *>(regs.data(), regs.data() + regCnt);
+
+    if (CheckRegIndices(ins, registers) && CheckRegContinuous(inputRegs)) {
+        PushBack(ins);
+        return;
+    }
+
+    RegScope regScope(pg_);
+
+    regEnd_ = pg_->NextReg();
+
+    auto *iter = registers.begin();
+    auto *iter_end = iter + registers.size() - 1;
+
+    while (iter != iter_end) {
+        VReg *reg = *iter;
+
+        const auto actual_reg = *reg;
+        *reg = Spill(ins, actual_reg);
+        iter++;
+    }
+
+    VReg *regStartReg = *iter;
+    *regStartReg = Spill(ins, inputRegs[0]);
+    for (size_t i = 1; i < inputRegs.size(); ++i) {
+        Spill(ins, inputRegs[i]);
+    }
+
+    PushBack(ins);
+
+    while (spillIndex_ != 0) {
+        Restore(ins);
+    }
+}
 
 void RangeRegAllocator::Run(IRNode *ins, VReg rangeStart, size_t argCount)
 {

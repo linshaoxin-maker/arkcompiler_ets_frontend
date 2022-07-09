@@ -230,6 +230,8 @@ protected:
      */
     std::tuple<Scope *, bool> IterateShadowedVariables(const util::StringView &name, const VariableVisitior &visitor);
 
+    bool IterateShadowedDefaultVariables(const Decl *newDecl);
+
     bool AddLocal(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                   [[maybe_unused]] ScriptExtension extension);
 

@@ -158,8 +158,17 @@ public:
         Run(ins, rangeStart, argCount);
     }
 
+    template <typename T, typename... Args>
+    void Emit(const ir::AstNode *node, std::vector<VReg> &regs, Args &&... args)
+    {
+        auto *ins = Alloc<T>(node, std::forward<Args>(args)...);
+        Run(ins, regs);
+    }
+
 private:
     void Run(IRNode *ins, VReg rangeStart, size_t argCount);
+    void Run(IRNode *ins, std::vector<VReg> &inputRegs);
+    bool CheckRegContinuous(std::vector<VReg> &inputRegs);
 };
 }  // namespace panda::es2panda::compiler
 

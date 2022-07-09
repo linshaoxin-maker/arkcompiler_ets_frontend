@@ -67,8 +67,10 @@ void FunctionBuilder::SuspendResumeExecution(const ir::AstNode *node, VReg compl
 {
     ASSERT(BuilderKind() == BuilderType::ASYNC || BuilderKind() == BuilderType::ASYNC_GENERATOR ||
            BuilderKind() == BuilderType::GENERATOR);
-
-    pg_->SuspendGenerator(node, funcObj_);
+    RegScope rs(pg_);
+    VReg iterResult = pg_->AllocReg();
+    pg_->StoreAccumulator(node, iterResult);
+    pg_->SuspendGenerator(node, funcObj_, iterResult);
     resumeGenerator(node, completionType, completionValue);
 }
 
@@ -225,7 +227,7 @@ void FunctionBuilder::YieldStar(const ir::AstNode *node)
     // i. Let innerResult be ? Call(iteratorRecord.[[NextMethod]], iteratorRecord.[[Iterator]], « received.[[Value]] »).
     // 1. Let innerResult be ? Call(throw, iterator, « received.[[Value]] »).
     // iv. Let innerReturnResult be ? Call(return, iterator, « received.[[Value]] »).
-    iterator.CallMethodWithValue();
+    iterator.CallMethodWithValue(receivedValue);
 
     // ii. ii. If generatorKind is async, set innerResult to ? Await(innerResult).
     // 2. If generatorKind is async, set innerResult to ? Await(innerResult).
@@ -239,7 +241,7 @@ void FunctionBuilder::YieldStar(const ir::AstNode *node)
     // ii. If Type(innerResult) is not Object, throw a TypeError exception.
     // 4. If Type(innerResult) is not Object, throw a TypeError exception.
     // vi. If Type(innerReturnResult) is not Object, throw a TypeError exception.
-    pg_->ThrowIfNotObject(node);
+    pg_->ThrowIfNotObject(node, receivedValue);
 
     // iv. Let done be ? IteratorComplete(innerResult).
     // v. Let done be ? IteratorComplete(innerResult).

@@ -33,7 +33,7 @@ void AsyncFunctionBuilder::ImplicitReturn(const ir::AstNode *node) const
     DirectReturn(node);
 }
 
-void AsyncFunctionBuilder::Prepare(const ir::ScriptFunction *node) const
+void AsyncFunctionBuilder::Prepare(const ir::ScriptFunction *node)
 {
     pg_->AsyncFunctionEnter(node);
     pg_->StoreAccumulator(node, funcObj_);

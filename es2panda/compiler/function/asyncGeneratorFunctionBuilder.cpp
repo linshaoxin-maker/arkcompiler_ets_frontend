@@ -20,13 +20,13 @@
 #include <ir/base/scriptFunction.h>
 
 namespace panda::es2panda::compiler {
-void AsyncGeneratorFunctionBuilder::Prepare(const ir::ScriptFunction *node) const
+void AsyncGeneratorFunctionBuilder::Prepare(const ir::ScriptFunction *node)
 {
     VReg callee = FunctionReg(node);
 
     pg_->CreateAsyncGeneratorObj(node, callee);
     pg_->StoreAccumulator(node, funcObj_);
-    pg_->SuspendGenerator(node, funcObj_);
+    // pg_->SuspendGenerator(node, funcObj_);
     pg_->SetLabel(node, catchTable_->LabelSet().TryBegin());
 }
 

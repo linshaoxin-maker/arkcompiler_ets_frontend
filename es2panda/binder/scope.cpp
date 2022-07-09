@@ -131,6 +131,20 @@ std::tuple<Scope *, bool> Scope::IterateShadowedVariables(const util::StringView
     return {iter, false};
 }
 
+bool Scope::IterateShadowedDefaultVariables(const Decl *newDecl)
+{
+    ASSERT(!newDecl->IsVarDecl());
+
+    auto *iter = this;
+    auto name = newDecl->Name();
+    auto *v = iter->FindLocal(name);
+    if (v && (iter == this)) {
+        return true;
+    }
+
+    return false;
+}
+
 bool Scope::AddLocal(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                      [[maybe_unused]] ScriptExtension extension)
 {
@@ -174,9 +188,10 @@ bool Scope::AddLocal(ArenaAllocator *allocator, Variable *currentVariable, Decl 
                 return false;
             }
 
-            auto [_, shadowed] = IterateShadowedVariables(
-                newDecl->Name(), [](const Variable *v) { return v->HasFlag(VariableFlags::LEXICAL_VAR); });
-            (void)_;
+            // auto [_, shadowed] = IterateShadowedVariables(
+            //     newDecl->Name(), [](const Variable *v) { return v->HasFlag(VariableFlags::LEXICAL_VAR); });
+            // (void)_;
+            bool shadowed = IterateShadowedDefaultVariables(newDecl);
 
             if (shadowed) {
                 return false;

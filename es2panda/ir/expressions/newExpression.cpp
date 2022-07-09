@@ -40,23 +40,27 @@ void NewExpression::Dump(ir::AstDumper *dumper) const
 void NewExpression::Compile(compiler::PandaGen *pg) const
 {
     compiler::RegScope rs(pg);
-    compiler::VReg ctor = pg->AllocReg();
-    compiler::VReg newTarget = pg->AllocReg();
 
     callee_->Compile(pg);
+    compiler::VReg ctor = pg->AllocReg();
+    compiler::VReg newTarget = pg->AllocReg();
+    std::vector<compiler::VReg> regs;
     pg->StoreAccumulator(this, ctor);
+    regs.push_back(ctor);
 
     // new.Target will be the same as ctor
     pg->StoreAccumulator(this, newTarget);
+    regs.push_back(newTarget);
 
     if (!util::Helpers::ContainSpreadElement(arguments_)) {
         for (const auto *it : arguments_) {
             compiler::VReg arg = pg->AllocReg();
             it->Compile(pg);
             pg->StoreAccumulator(this, arg);
+            regs.push_back(arg);
         }
 
-        pg->NewObject(this, ctor, arguments_.size() + 2);
+        pg->NewObject(this, regs);
     } else {
         compiler::VReg argsObj = pg->AllocReg();
 

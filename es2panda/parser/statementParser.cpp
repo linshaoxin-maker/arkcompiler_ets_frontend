@@ -498,7 +498,7 @@ ir::ClassDeclaration *ParserImpl::ParseClassDeclaration(bool idRequired, ArenaVe
                                                         bool isDeclare, bool isAbstract)
 {
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
-    ir::ClassDefinition *classDefinition = ParseClassDefinition(true, idRequired, isDeclare, isAbstract);
+    ir::ClassDefinition *classDefinition = ParseClassDefinition(true, idRequired, isDeclare, isAbstract, true);
 
     auto *decl =
         Binder()->AddDecl<binder::LetDecl>(classDefinition->Ident()->Start(), classDefinition->Ident()->Name());

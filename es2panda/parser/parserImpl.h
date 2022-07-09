@@ -280,7 +280,7 @@ private:
                                                    bool implExists, bool isAbstract = false);
     ir::Identifier *SetIdentNodeInClassDefinition();
     ir::ClassDefinition *ParseClassDefinition(bool isDeclaration, bool idRequired = true, bool isDeclare = false,
-                                              bool isAbstract = false);
+                                              bool isAbstract = false, bool isStmt = false);
 
     void ValidateAccessor(ExpressionParseFlags flags, lexer::TokenFlags currentTokenFlags);
     void CheckPropertyKeyAsycModifier(ParserStatus *methodStatus);

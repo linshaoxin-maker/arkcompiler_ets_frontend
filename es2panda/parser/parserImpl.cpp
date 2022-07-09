@@ -2400,7 +2400,7 @@ ir::Identifier *ParserImpl::SetIdentNodeInClassDefinition()
 }
 
 ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool idRequired, bool isDeclare,
-                                                      bool isAbstract)
+                                                      bool isAbstract, bool isStmt)
 {
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
     lexer_->NextToken();
@@ -2537,7 +2537,7 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool i
 
     auto *classDefinition = AllocNode<ir::ClassDefinition>(
         classCtx.GetScope(), identNode, typeParamDecl, superTypeParams, std::move(implements), ctor, superClass,
-        std::move(properties), std::move(indexSignatures), isDeclare, isAbstract);
+        std::move(properties), std::move(indexSignatures), isDeclare, isAbstract, isStmt);
 
     classDefinition->SetRange({classBodyStartLoc, classBodyEndLoc});
 

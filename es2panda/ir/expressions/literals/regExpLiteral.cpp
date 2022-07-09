@@ -38,22 +38,27 @@ void RegExpLiteral::Compile(compiler::PandaGen *pg) const
     compiler::VReg newTarget = pg->AllocReg();
     compiler::VReg pattern = pg->AllocReg();
     size_t argCount = 3;
+    std::vector<compiler::VReg> regs = {};
 
     pg->TryLoadGlobalByName(this, "RegExp");
     pg->StoreAccumulator(this, ctor);
     pg->StoreAccumulator(this, newTarget);
+    regs.push_back(ctor);
+    regs.push_back(newTarget);
 
     pg->LoadAccumulatorString(this, pattern_);
     pg->StoreAccumulator(this, pattern);
+    regs.push_back(pattern);
 
     if (!flags_.Empty()) {
         compiler::VReg flag = pg->AllocReg();
         pg->LoadAccumulatorString(this, flags_);
         pg->StoreAccumulator(this, flag);
+        regs.push_back(flag);
         argCount++;
     }
 
-    pg->NewObject(this, ctor, argCount);
+    pg->NewObject(this, regs);
 }
 
 checker::Type *RegExpLiteral::Check(checker::Checker *checker) const

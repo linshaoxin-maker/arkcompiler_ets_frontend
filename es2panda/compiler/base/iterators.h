@@ -57,11 +57,12 @@ public:
 
     void GetMethod(util::StringView name) const;
     void CallMethod() const;
-    void CallMethodWithValue() const;
+    void CallMethodWithValue(VReg value) const;
 
     void Next() const;
     void Complete() const;
     void Value() const;
+    void CloseWithException() const;
     void Close(bool abruptCompletion) const;
 
 protected:
