@@ -206,7 +206,12 @@ public:
     void GetThis(const ir::AstNode *node);
     void SetThis(const ir::AstNode *node);
     void LoadVar(const ir::Identifier *node, const binder::ScopeFindResult &result);
-    void StoreVar(const ir::AstNode *node, const binder::ScopeFindResult &result, bool isDeclaration);
+    void StoreVar(const ir::AstNode *node, const binder::ScopeFindResult &result,
+                  bool isDeclaration, bool isInSetClassProto = false);
+
+    void StLetToGlobalRecord(const ir::AstNode *node, const util::StringView &name);
+    void StConstToGlobalRecord(const ir::AstNode *node, const util::StringView &name);
+    void StClassToGlobalRecord(const ir::AstNode *node, const util::StringView &name);
 
     void StoreAccumulator(const ir::AstNode *node, VReg vreg);
     void LoadAccFromArgs(const ir::AstNode *node);
@@ -234,6 +239,7 @@ public:
     void LoadAccumulatorFloat(const ir::AstNode *node, double num);
     void LoadAccumulatorInt(const ir::AstNode *node, int32_t num);
     void LoadAccumulatorInt(const ir::AstNode *node, size_t num);
+    void LoadAccumulatorBigInt(const ir::AstNode *node, const util::StringView &num);
 
     void LoadConst(const ir::AstNode *node, Constant id);
     void StoreConst(const ir::AstNode *node, VReg reg, Constant id);
@@ -256,6 +262,7 @@ public:
     void BranchIfTrue(const ir::AstNode *node, class Label *target);
     void BranchIfNotTrue(const ir::AstNode *node, class Label *target);
     void BranchIfFalse(const ir::AstNode *node, class Label *target);
+    void BranchIfNotFalse(const ir::AstNode *node, class Label *target);
 
     void EmitThrow(const ir::AstNode *node);
     void EmitRethrow(const ir::AstNode *node);

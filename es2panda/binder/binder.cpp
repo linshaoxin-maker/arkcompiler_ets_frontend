@@ -80,7 +80,7 @@ void Binder::IdentifierAnalysis()
     ASSERT(program_->Ast());
     ASSERT(scope_ == topScope_);
 
-    BuildFunction(topScope_, "main");
+    BuildFunction(topScope_, MAIN_FUNC_NAME);
     ResolveReferences(program_->Ast());
     AddMandatoryParams();
 }
@@ -158,16 +158,38 @@ void Binder::LookupIdentReference(ir::Identifier *ident)
     ident->SetVariable(res.variable);
 }
 
+util::StringView Binder::BuildFunctionName(FunctionScope *funcScope, util::StringView name)
+{
+    // the first funcitonScope is for func_main_0
+    if ((functionScopes_.size() == 1) && (name == MAIN_FUNC_NAME)) {
+        return name;
+    }
+
+    std::string name_str = std::string(name);
+    bool funcNameWithoutDot = (name_str.find(".") == std::string::npos);
+    bool funcNameWithoutBackslash = (name_str.find("\\") == std::string::npos);
+
+    if (name != ANONYMOUS_FUNC_NAME && name != MAIN_FUNC_NAME && funcNameWithoutDot && funcNameWithoutBackslash
+        && std::find(functionNames_.begin(), functionNames_.end(), name) == functionNames_.end()) {
+        functionNames_.push_back(name);
+        return name;
+    }
+    std::stringstream ss;
+    uint32_t idx = duplicateFunctionCount_++;
+    ss << "#" << std::to_string(idx) << "#";
+    if (funcNameWithoutDot && funcNameWithoutBackslash) {
+        ss << name;
+    }
+    util::UString internalName(ss.str(), Allocator());
+    return internalName.View();
+}
+
 void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name)
 {
-    uint32_t idx = functionScopes_.size();
     functionScopes_.push_back(funcScope);
 
-    std::stringstream ss;
-    ss << "func_" << name << "_" << std::to_string(idx);
-    util::UString internalName(ss.str(), Allocator());
-
-    funcScope->BindName(name, internalName.View());
+    util::StringView internalName = BuildFunctionName(funcScope, name);
+    funcScope->BindName(name, internalName);
 }
 
 void Binder::BuildScriptFunction(Scope *outerScope, const ir::ScriptFunction *scriptFunc)

@@ -390,6 +390,8 @@ private:
     void CheckFunctionDeclaration(StatementParsingFlags flags);
 
     void CheckLabelledFunction(const ir::Statement *node);
+    void CheckFunctionLocation(const ir::Statement *node);
+    void CheckLexerTokenType();
     void CheckDeclare();
 
     bool ParseDirective(ArenaVector<ir::Statement *> *statements);

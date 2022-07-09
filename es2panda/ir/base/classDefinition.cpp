@@ -290,7 +290,7 @@ void ClassDefinition::Compile(compiler::PandaGen *pg) const
     auto formalParamCnt = Ctor()->Function()->FormalParamsLength();
     pg->DefineClassWithBuffer(this, ctorId, bufIdx, lexenv, baseReg, formalParamCnt);
     if (scope_->Parent()->IsGlobalScope() && ident_ && IsStmt()) {
-        pg->StoreGlobalLet(this, ident_->Name());
+        pg->StClassToGlobalRecord(this, ident_->Name());
     }
     pg->StoreAccumulator(this, classReg);
     InitializeClassName(pg);
