@@ -76,6 +76,7 @@ protected:
 
     VReg FunctionReg(const ir::ScriptFunction *node) const;
     void HandleCompletion(const ir::AstNode *node, VReg completionType, VReg completionValue);
+    void HandleAsyncCompletion(const ir::AstNode *node, VReg completionType, VReg completionValue);
 
     PandaGen *pg_;
     CatchTable *catchTable_;

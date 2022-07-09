@@ -23,14 +23,31 @@ namespace panda::es2panda::compiler {
 
 void AsyncFunctionBuilder::DirectReturn(const ir::AstNode *node) const
 {
-    pg_->AsyncFunctionResolve(node, funcObj_);
+    RegScope rs(pg_);
+    VReg retVal = pg_->AllocReg();
+    VReg canSuspend = pg_->AllocReg();
+
+    pg_->StoreAccumulator(node, retVal);
+    pg_->LoadConst(node, Constant::JS_TRUE);
+    pg_->StoreAccumulator(node, canSuspend);
+    pg_->AsyncFunctionResolve(node, funcObj_, canSuspend, retVal);
+    // pg_->LoadAccumulator(node, retVal);
+    // pg_->AsyncFunctionResolve(node, funcObj_);
     pg_->EmitReturn(node);
 }
 
 void AsyncFunctionBuilder::ImplicitReturn(const ir::AstNode *node) const
 {
+    RegScope rs(pg_);
+    VReg retVal = pg_->AllocReg();
+    VReg canSuspend = pg_->AllocReg();
+
+    pg_->LoadConst(node, Constant::JS_TRUE);
+    pg_->StoreAccumulator(node, canSuspend);
     pg_->LoadConst(node, Constant::JS_UNDEFINED);
-    DirectReturn(node);
+    pg_->StoreAccumulator(node, retVal);
+    pg_->AsyncFunctionResolve(node, funcObj_, canSuspend, retVal);
+    pg_->EmitReturn(node);
 }
 
 void AsyncFunctionBuilder::Prepare(const ir::ScriptFunction *node)

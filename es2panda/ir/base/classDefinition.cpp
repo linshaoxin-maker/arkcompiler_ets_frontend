@@ -159,6 +159,7 @@ int32_t ClassDefinition::CreateClassStaticProperties(compiler::PandaGen *pg, uti
 
             literalBuf->Add(pg->Allocator()->New<StringLiteral>(name));
             literalBuf->Add(nullptr);
+            literalBuf->Add(nullptr);
         } else {
             bufferPos = res.first->second;
         }
