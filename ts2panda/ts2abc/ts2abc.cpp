@@ -1327,8 +1327,9 @@ bool GenerateProgram([[maybe_unused]] const std::string &data, const std::string
     if (g_optLevel != static_cast<int>(OptLevel::O_LEVEL0) || optLevel != static_cast<int>(OptLevel::O_LEVEL0)) {
         optLogLevel = (optLogLevel != "error") ? optLogLevel : g_optLogLevel;
 
-        const uint32_t componentMask = panda::Logger::Component::CLASS2PANDA | panda::Logger::Component::ASSEMBLER |
-                                    panda::Logger::Component::BYTECODE_OPTIMIZER | panda::Logger::Component::COMPILER;
+        const uint32_t componentMask = panda::Logger::Component::ASSEMBLER |
+                                       panda::Logger::Component::BYTECODE_OPTIMIZER |
+                                       panda::Logger::Component::COMPILER;
         panda::Logger::InitializeStdLogging(panda::Logger::LevelFromString(optLogLevel), componentMask);
 
         bool emitDebugInfo = true;
