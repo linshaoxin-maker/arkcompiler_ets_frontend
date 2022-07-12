@@ -26,8 +26,6 @@ namespace panda::es2panda::binder {
     _(CONST, ConstDecl)                  \
     _(FUNC, FunctionDecl)                \
     _(PARAM, ParameterDecl)              \
-    _(IMPORT, ImportDecl)                \
-    _(EXPORT, ExportDecl)                \
     /* TS */                             \
     _(TYPE_ALIAS, TypeAliasDecl)         \
     _(NAMESPACE, NameSpaceDecl)          \
@@ -104,6 +102,7 @@ enum class VariableFlags {
     COMPUTED_IDENT = 1 << 8,
     COMPUTED_INDEX = 1 << 9,
     INDEX_NAME = 1 << 10,
+    IMPORT = 1 << 11,
     LOCAL_EXPORT = 1 << 12,
     INFERED_IN_PATTERN = 1 << 13,
     REST_ARG = 1 << 14,

@@ -30,6 +30,7 @@ class ClassDefinition;
 class Expression;
 class ForUpdateStatement;
 class Identifier;
+class ImportNamespaceSpecifier;
 class ScriptFunction;
 class Statement;
 class VariableDeclarator;
@@ -62,7 +63,7 @@ public:
         return scope_;
     }
 
-    GlobalScope *TopScope() const
+    FunctionScope *TopScope() const
     {
         return topScope_;
     }
@@ -134,12 +135,13 @@ private:
     void BuildForInOfLoop(const ir::Statement *parent, binder::LoopScope *loopScope, ir::AstNode *left,
                           ir::Expression *right, ir::Statement *body);
     void BuildCatchClause(ir::CatchClause *catchClauseStmt);
+    void BuildNameSpace(const ir::ImportNamespaceSpecifier *namespaceSpecifier);
     void LookupIdentReference(ir::Identifier *ident);
     void ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode);
     void ResolveReferences(const ir::AstNode *parent);
 
     parser::Program *program_ {};
-    GlobalScope *topScope_ {};
+    FunctionScope *topScope_ {};
     Scope *scope_ {};
     ArenaVector<FunctionScope *> functionScopes_;
     std::vector<util::StringView> functionNames_;

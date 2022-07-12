@@ -30,6 +30,7 @@
 #include <ir/expressions/assignmentExpression.h>
 #include <ir/expressions/identifier.h>
 #include <ir/expressions/objectExpression.h>
+#include <ir/module/importNamespaceSpecifier.h>
 #include <ir/statements/blockStatement.h>
 #include <ir/statements/doWhileStatement.h>
 #include <ir/statements/forInStatement.h>
@@ -264,7 +265,14 @@ void Binder::BuildVarDeclarator(ir::VariableDeclarator *varDecl)
 void Binder::BuildClassDefinition(ir::ClassDefinition *classDef)
 {
     if (classDef->Parent()->IsClassDeclaration()) {
-        ScopeFindResult res = scope_->Find(classDef->Ident()->Name());
+        util::StringView className;
+        if (classDef->Ident()) {
+            className = classDef->Ident()->Name();
+        } else {
+            ASSERT(scope_->IsModuleScope());
+            className = util::StringView("*default*");
+        }
+        ScopeFindResult res = scope_->Find(className);
 
         ASSERT(res.variable && res.variable->Declaration()->IsLetDecl());
         res.variable->AddFlag(VariableFlags::INITIALIZED);
@@ -338,6 +346,13 @@ void Binder::BuildCatchClause(ir::CatchClause *catchClauseStmt)
 
     auto scopeCtx = LexicalScope<CatchScope>::Enter(this, catchClauseStmt->Scope());
     ResolveReference(catchClauseStmt, catchClauseStmt->Body());
+}
+
+void Binder::BuildNameSpace(const ir::ImportNamespaceSpecifier *namespaceSpecifier)
+{
+    const auto &name = namespaceSpecifier->Local()->Name();
+    auto *variable = scope_->FindLocal(name);
+    variable->AddFlag(VariableFlags::INITIALIZED);
 }
 
 void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
@@ -449,6 +464,10 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
         }
         case ir::AstNodeType::CATCH_CLAUSE: {
             BuildCatchClause(childNode->AsCatchClause());
+            break;
+        }
+        case ir::AstNodeType::IMPORT_NAMESPACE_SPECIFIER: {
+            BuildNameSpace(childNode->AsImportNamespaceSpecifier());
             break;
         }
         default: {

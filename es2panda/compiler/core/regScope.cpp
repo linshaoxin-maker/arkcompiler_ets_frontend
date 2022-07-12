@@ -16,12 +16,12 @@
 #include "regScope.h"
 
 #include <binder/binder.h>
+#include <binder/module.h>
 #include <binder/scope.h>
 #include <binder/variable.h>
 #include <compiler/base/hoisting.h>
 #include <compiler/core/compilerContext.h>
 #include <compiler/core/pandagen.h>
-#include <compiler/core/moduleContext.h>
 
 namespace panda::es2panda::compiler {
 
@@ -114,11 +114,19 @@ FunctionRegScope::FunctionRegScope(PandaGen *pg) : RegScope(pg), envScope_(pg->A
 
     pg_->LoadAccFromArgs(pg_->rootNode_);
 
-    if (funcScope->IsModuleScope()) {
-        ModuleContext::Compile(pg_, pg_->scope_->AsModuleScope());
-    }
-
     Hoisting::Hoist(pg);
+
+    if (pg_->TopScope()->IsModuleScope()) {
+        binder::SourceTextModuleRecord *moduleRecord = pg_->TopScope()->AsModuleScope()->GetModuleRecord();
+        for (auto nameSpaceEntry : moduleRecord->GetNamespaceImportEntries()) {
+            pg_->GetModuleNamespace(nameSpaceEntry->moduleNode, nameSpaceEntry->localName);
+            auto *var = pg_->TopScope()->FindLocal(nameSpaceEntry->localName);
+            ASSERT(var != nullptr);
+            pg_->StoreVar(nameSpaceEntry->moduleNode,
+                          {nameSpaceEntry->localName, pg_->TopScope(), 0, var},
+                          true);
+        }
+    }
 }
 
 FunctionRegScope::~FunctionRegScope()
