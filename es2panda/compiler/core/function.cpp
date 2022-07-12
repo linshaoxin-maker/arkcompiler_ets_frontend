@@ -200,6 +200,7 @@ static VReg CompileFunctionOrProgram(PandaGen *pg)
 void Function::Compile(PandaGen *pg)
 {
     VReg lexEnv = CompileFunctionOrProgram(pg);
+    pg->SetModuleRecordBufferIndex();
     pg->CopyFunctionArguments(pg->RootNode());
     pg->InitializeLexEnv(pg->RootNode(), lexEnv);
     pg->SortCatchTables();
