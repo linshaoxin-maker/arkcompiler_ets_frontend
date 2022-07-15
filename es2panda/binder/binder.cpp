@@ -30,6 +30,7 @@
 #include <ir/expressions/assignmentExpression.h>
 #include <ir/expressions/identifier.h>
 #include <ir/expressions/objectExpression.h>
+#include <ir/module/importNamespaceSpecifier.h>
 #include <ir/statements/blockStatement.h>
 #include <ir/statements/doWhileStatement.h>
 #include <ir/statements/forInStatement.h>
@@ -80,7 +81,7 @@ void Binder::IdentifierAnalysis()
     ASSERT(program_->Ast());
     ASSERT(scope_ == topScope_);
 
-    BuildFunction(topScope_, "main");
+    BuildFunction(topScope_, MAIN_FUNC_NAME);
     ResolveReferences(program_->Ast());
     AddMandatoryParams();
 }
@@ -158,16 +159,37 @@ void Binder::LookupIdentReference(ir::Identifier *ident)
     ident->SetVariable(res.variable);
 }
 
+util::StringView Binder::BuildFunctionName(FunctionScope *funcScope, util::StringView name)
+{
+    // the first functionScope is for func_main_0
+    if ((functionScopes_.size() == 1) && (name == MAIN_FUNC_NAME)) {
+        return name;
+    }
+
+    bool funcNameWithoutDot = name.Find(".") == std::string::npos;
+    bool funcNameWithoutBackslash = name.Find("\\") == std::string::npos;
+
+    if (name != ANONYMOUS_FUNC_NAME && name != MAIN_FUNC_NAME && funcNameWithoutDot && funcNameWithoutBackslash
+        && std::find(functionNames_.begin(), functionNames_.end(), name) == functionNames_.end()) {
+        functionNames_.push_back(name);
+        return name;
+    }
+    std::stringstream ss;
+    uint32_t idx = functionNameIndex_++;
+    ss << "#" << std::to_string(idx) << "#";
+    if (funcNameWithoutDot && funcNameWithoutBackslash) {
+        ss << name;
+    }
+    util::UString internalName(ss.str(), Allocator());
+    return internalName.View();
+}
+
 void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name)
 {
-    uint32_t idx = functionScopes_.size();
     functionScopes_.push_back(funcScope);
 
-    std::stringstream ss;
-    ss << "func_" << name << "_" << std::to_string(idx);
-    util::UString internalName(ss.str(), Allocator());
-
-    funcScope->BindName(name, internalName.View());
+    util::StringView internalName = BuildFunctionName(funcScope, name);
+    funcScope->BindName(name, internalName);
 }
 
 void Binder::BuildScriptFunction(Scope *outerScope, const ir::ScriptFunction *scriptFunc)
@@ -243,7 +265,14 @@ void Binder::BuildVarDeclarator(ir::VariableDeclarator *varDecl)
 void Binder::BuildClassDefinition(ir::ClassDefinition *classDef)
 {
     if (classDef->Parent()->IsClassDeclaration()) {
-        ScopeFindResult res = scope_->Find(classDef->Ident()->Name());
+        util::StringView className;
+        if (classDef->Ident()) {
+            className = classDef->Ident()->Name();
+        } else {
+            ASSERT(scope_->IsModuleScope());
+            className = util::StringView("*default*");
+        }
+        ScopeFindResult res = scope_->Find(className);
 
         ASSERT(res.variable && res.variable->Declaration()->IsLetDecl());
         res.variable->AddFlag(VariableFlags::INITIALIZED);
@@ -317,6 +346,13 @@ void Binder::BuildCatchClause(ir::CatchClause *catchClauseStmt)
 
     auto scopeCtx = LexicalScope<CatchScope>::Enter(this, catchClauseStmt->Scope());
     ResolveReference(catchClauseStmt, catchClauseStmt->Body());
+}
+
+void Binder::BuildNameSpace(const ir::ImportNamespaceSpecifier *namespaceSpecifier)
+{
+    const auto &name = namespaceSpecifier->Local()->Name();
+    auto *variable = scope_->FindLocal(name);
+    variable->AddFlag(VariableFlags::INITIALIZED);
 }
 
 void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
@@ -428,6 +464,10 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
         }
         case ir::AstNodeType::CATCH_CLAUSE: {
             BuildCatchClause(childNode->AsCatchClause());
+            break;
+        }
+        case ir::AstNodeType::IMPORT_NAMESPACE_SPECIFIER: {
+            BuildNameSpace(childNode->AsImportNamespaceSpecifier());
             break;
         }
         default: {

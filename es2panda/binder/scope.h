@@ -17,6 +17,7 @@
 #define ES2PANDA_COMPILER_SCOPES_SCOPE_H
 
 #include <binder/declaration.h>
+#include <binder/module.h>
 #include <binder/variable.h>
 #include <parser/program/program.h>
 #include <util/enumbitops.h>
@@ -229,6 +230,8 @@ protected:
      *         false - otherwise
      */
     std::tuple<Scope *, bool> IterateShadowedVariables(const util::StringView &name, const VariableVisitior &visitor);
+
+    bool IterateShadowedDefaultVariables(const Decl *newDecl);
 
     bool AddLocal(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                   [[maybe_unused]] ScriptExtension extension);
@@ -559,21 +562,19 @@ public:
                     [[maybe_unused]] ScriptExtension extension) override;
 };
 
-class ModuleScope : public GlobalScope {
+class ModuleScope : public FunctionScope {
 public:
-    template <typename K, typename V>
-    using ModuleEntry = ArenaVector<std::pair<K, V>>;
-    using ImportDeclList = ArenaVector<ImportDecl *>;
-    using ExportDeclList = ArenaVector<ExportDecl *>;
-    using LocalExportNameMap = ArenaMultiMap<binder::Variable *, util::StringView>;
-
     explicit ModuleScope(ArenaAllocator *allocator)
-        : GlobalScope(allocator),
-          allocator_(allocator),
-          imports_(allocator_->Adapter()),
-          exports_(allocator_->Adapter()),
-          localExports_(allocator_->Adapter())
+        : FunctionScope(allocator, nullptr),
+          moduleRecord_(new SourceTextModuleRecord(allocator))
     {
+        auto *paramScope = allocator->New<FunctionParamScope>(allocator, this);
+        paramScope_ = paramScope;
+    }
+
+    ~ModuleScope()
+    {
+        delete moduleRecord_;
     }
 
     ScopeType Type() const override
@@ -581,52 +582,32 @@ public:
         return ScopeType::MODULE;
     }
 
-    const ModuleEntry<const ir::ImportDeclaration *, ImportDeclList> &Imports() const
+    SourceTextModuleRecord *GetModuleRecord() const
     {
-        return imports_;
+        return moduleRecord_;
     }
-
-    const ModuleEntry<const ir::AstNode *, ExportDeclList> &Exports() const
-    {
-        return exports_;
-    }
-
-    const LocalExportNameMap &LocalExports() const
-    {
-        return localExports_;
-    }
-
-    void AddImportDecl(const ir::ImportDeclaration *importDecl, ImportDeclList &&decls);
-
-    void AddExportDecl(const ir::AstNode *exportDecl, ExportDecl *decl);
-
-    void AddExportDecl(const ir::AstNode *exportDecl, ExportDeclList &&decls);
 
     bool AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                     [[maybe_unused]] ScriptExtension extension) override;
 
-    bool ExportAnalysis();
-
 private:
-    bool AddImport(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl);
-
-    ArenaAllocator *allocator_;
-    ModuleEntry<const ir::ImportDeclaration *, ImportDeclList> imports_;
-    ModuleEntry<const ir::AstNode *, ExportDeclList> exports_;
-    LocalExportNameMap localExports_;
+    SourceTextModuleRecord *moduleRecord_;
 };
 
 template <typename T>
 bool VariableScope::AddVar(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl)
 {
+    VariableFlags flags = newDecl->IsNormal() ? VariableFlags::HOIST_VAR :
+                          newDecl->IsImport() ? VariableFlags::HOIST_VAR | VariableFlags::IMPORT :
+                                                VariableFlags::HOIST_VAR | VariableFlags::LOCAL_EXPORT;
     if (!currentVariable) {
-        bindings_.insert({newDecl->Name(), allocator->New<T>(newDecl, VariableFlags::HOIST_VAR)});
+        bindings_.insert({newDecl->Name(), allocator->New<T>(newDecl, flags)});
         return true;
     }
 
     switch (currentVariable->Declaration()->Type()) {
         case DeclType::VAR: {
-            currentVariable->Reset(newDecl, VariableFlags::HOIST_VAR);
+            currentVariable->Reset(newDecl, flags);
             break;
         }
         case DeclType::PARAM:
@@ -647,19 +628,23 @@ bool VariableScope::AddFunction(ArenaAllocator *allocator, Variable *currentVari
 {
     VariableFlags flags = (extension == ScriptExtension::JS) ? VariableFlags::HOIST_VAR : VariableFlags::HOIST;
 
+    flags = newDecl->IsNormal() ? flags :
+            newDecl->IsImport() ? flags | VariableFlags::IMPORT :
+                                  flags | VariableFlags::LOCAL_EXPORT;
+
     if (!currentVariable) {
         bindings_.insert({newDecl->Name(), allocator->New<T>(newDecl, flags)});
         return true;
     }
 
-    if (extension != ScriptExtension::JS || IsModuleScope()) {
+    if (extension != ScriptExtension::JS) {
         return false;
     }
 
     switch (currentVariable->Declaration()->Type()) {
         case DeclType::VAR:
         case DeclType::FUNC: {
-            currentVariable->Reset(newDecl, VariableFlags::HOIST_VAR);
+            currentVariable->Reset(newDecl, flags);
             break;
         }
         default: {
@@ -682,11 +667,14 @@ bool VariableScope::AddTSBinding(ArenaAllocator *allocator, [[maybe_unused]] Var
 template <typename T>
 bool VariableScope::AddLexical(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl)
 {
+    VariableFlags flags = newDecl->IsNormal() ? VariableFlags::NONE :
+                          newDecl->IsImport() ? VariableFlags::NONE | VariableFlags::IMPORT :
+                                                VariableFlags::NONE | VariableFlags::LOCAL_EXPORT;
     if (currentVariable) {
         return false;
     }
 
-    bindings_.insert({newDecl->Name(), allocator->New<T>(newDecl, VariableFlags::NONE)});
+    bindings_.insert({newDecl->Name(), allocator->New<T>(newDecl, flags)});
     return true;
 }
 

@@ -174,6 +174,11 @@ public:
         return buffStorage_;
     }
 
+    int32_t ModuleBuffIndex() const
+    {
+        return moduleBuffIndex_;
+    }
+
     uint32_t IcSize() const
     {
         return ic_.Size();
@@ -198,6 +203,7 @@ public:
 
     LiteralBuffer *NewLiteralBuffer();
     int32_t AddLiteralBuffer(LiteralBuffer *buf);
+    void SetModuleRecordBufferIndex();
 
     void InitializeLexEnv(const ir::AstNode *node, VReg lexEnv);
     void CopyFunctionArguments(const ir::AstNode *node);
@@ -206,7 +212,12 @@ public:
     void GetThis(const ir::AstNode *node);
     void SetThis(const ir::AstNode *node);
     void LoadVar(const ir::Identifier *node, const binder::ScopeFindResult &result);
-    void StoreVar(const ir::AstNode *node, const binder::ScopeFindResult &result, bool isDeclaration);
+    void StoreVar(const ir::AstNode *node, const binder::ScopeFindResult &result,
+                  bool isDeclaration, bool isInSetClassProto = false);
+
+    void StLetToGlobalRecord(const ir::AstNode *node, const util::StringView &name);
+    void StConstToGlobalRecord(const ir::AstNode *node, const util::StringView &name);
+    void StClassToGlobalRecord(const ir::AstNode *node, const util::StringView &name);
 
     void StoreAccumulator(const ir::AstNode *node, VReg vreg);
     void LoadAccFromArgs(const ir::AstNode *node);
@@ -215,7 +226,7 @@ public:
     void LoadObjByName(const ir::AstNode *node, VReg obj, const util::StringView &prop);
 
     void StoreObjProperty(const ir::AstNode *node, VReg obj, const Operand &prop);
-    void StoreOwnProperty(const ir::AstNode *node, VReg obj, const Operand &prop);
+    void StoreOwnProperty(const ir::AstNode *node, VReg obj, const Operand &prop, const bool nameSetting = false);
     void DeleteObjProperty(const ir::AstNode *node, VReg obj, const Operand &prop);
     void LoadAccumulator(const ir::AstNode *node, VReg reg);
     void LoadGlobalVar(const ir::AstNode *node, const util::StringView &name);
@@ -234,6 +245,7 @@ public:
     void LoadAccumulatorFloat(const ir::AstNode *node, double num);
     void LoadAccumulatorInt(const ir::AstNode *node, int32_t num);
     void LoadAccumulatorInt(const ir::AstNode *node, size_t num);
+    void LoadAccumulatorBigInt(const ir::AstNode *node, const util::StringView &num);
 
     void LoadConst(const ir::AstNode *node, Constant id);
     void StoreConst(const ir::AstNode *node, VReg reg, Constant id);
@@ -250,12 +262,13 @@ public:
     void Binary(const ir::AstNode *node, lexer::TokenType op, VReg lhs);
 
     void BranchIfUndefined(const ir::AstNode *node, class Label *target);
+    void BranchIfStrictNotUndefined(const ir::AstNode *node, class Label *target);
     void BranchIfNotUndefined(const ir::AstNode *node, class Label *target);
     void BranchIfHole(const ir::AstNode *node, class Label *target);
     void BranchIfTrue(const ir::AstNode *node, class Label *target);
     void BranchIfNotTrue(const ir::AstNode *node, class Label *target);
     void BranchIfFalse(const ir::AstNode *node, class Label *target);
-    void BranchIfCoercible(const ir::AstNode *node, class Label *target);
+    void BranchIfNotFalse(const ir::AstNode *node, class Label *target);
 
     void EmitThrow(const ir::AstNode *node);
     void EmitRethrow(const ir::AstNode *node);
@@ -266,14 +279,14 @@ public:
     void ImplicitReturn(const ir::AstNode *node);
     void EmitAwait(const ir::AstNode *node);
 
-    void CallThis(const ir::AstNode *node, VReg startReg, size_t argCount);
-    void Call(const ir::AstNode *node, VReg startReg, size_t argCount);
+    void CallThis(const ir::AstNode *node, std::vector<VReg> &regs);
+    void Call(const ir::AstNode *node, std::vector<VReg> &regs);
     void CallSpread(const ir::AstNode *node, VReg func, VReg thisReg, VReg args);
     void SuperCall(const ir::AstNode *node, VReg startReg, size_t argCount);
     void SuperCallSpread(const ir::AstNode *node, VReg vs);
 
     void LoadHomeObject(const ir::AstNode *node);
-    void NewObject(const ir::AstNode *node, VReg startReg, size_t argCount);
+    void NewObject(const ir::AstNode *node, std::vector<VReg> &regs);
     void DefineFunction(const ir::AstNode *node, const ir::ScriptFunction *realNode, const util::StringView &name);
 
     void TypeOf(const ir::AstNode *node);
@@ -281,7 +294,6 @@ public:
     void GetUnmappedArgs(const ir::AstNode *node);
 
     void Negate(const ir::AstNode *node);
-    void ToBoolean(const ir::AstNode *node);
     void ToNumber(const ir::AstNode *node, VReg arg);
 
     void CreateGeneratorObj(const ir::AstNode *node, VReg funcObj);
@@ -289,16 +301,16 @@ public:
     void GetResumeMode(const ir::AstNode *node, VReg genObj);
 
     void AsyncFunctionEnter(const ir::AstNode *node);
-    void AsyncFunctionAwait(const ir::AstNode *node, VReg asyncFuncObj);
-    void AsyncFunctionResolve(const ir::AstNode *node, VReg asyncFuncObj);
+    void AsyncFunctionAwait(const ir::AstNode *node, VReg asyncFuncObj, VReg retVal);
+    void AsyncFunctionResolve(const ir::AstNode *node, VReg asyncFuncObj, VReg canSuspend, VReg value);
     void AsyncFunctionReject(const ir::AstNode *node, VReg asyncFuncObj);
 
     void GetMethod(const ir::AstNode *node, VReg obj, const util::StringView &name);
     void GeneratorYield(const ir::AstNode *node, VReg genObj);
     void GeneratorComplete(const ir::AstNode *node, VReg genObj);
     void CreateAsyncGeneratorObj(const ir::AstNode *node, VReg funcObj);
-    void CreateIterResultObject(const ir::AstNode *node, bool done);
-    void SuspendGenerator(const ir::AstNode *node, VReg genObj);
+    void CreateIterResultObject(const ir::AstNode *node, VReg value, VReg done);
+    void SuspendGenerator(const ir::AstNode *node, VReg genObj, VReg iterResult);
     void SuspendAsyncGenerator(const ir::AstNode *node, VReg asyncGenObj);
 
     void AsyncGeneratorResolve(const ir::AstNode *node, VReg asyncGenObj);
@@ -321,7 +333,7 @@ public:
     void CreateArrayWithBuffer(const ir::AstNode *node, uint32_t idx);
     void StoreArraySpread(const ir::AstNode *node, VReg array, VReg index);
 
-    void ThrowIfNotObject(const ir::AstNode *node);
+    void ThrowIfNotObject(const ir::AstNode *node, VReg obj);
     void ThrowThrowNotExist(const ir::AstNode *node);
     void GetIterator(const ir::AstNode *node);
     void GetAsyncIterator(const ir::AstNode *node);
@@ -329,13 +341,12 @@ public:
     void CreateObjectWithExcludedKeys(const ir::AstNode *node, VReg obj, VReg argStart, size_t argCount);
     void ThrowObjectNonCoercible(const ir::AstNode *node);
     void CloseIterator(const ir::AstNode *node, VReg iter);
-    void DefineClassWithBuffer(const ir::AstNode *node, const util::StringView &ctorId, int32_t litIdx, VReg lexenv,
-                               VReg base);
+    void DefineClassWithBuffer(const ir::AstNode *node, const util::StringView &ctorId, int32_t litIdx,
+                               VReg lexenv, VReg base, int64_t formalParamCnt);
 
-    void ImportModule(const ir::AstNode *node, const util::StringView &name);
-    void LoadModuleVariable(const ir::AstNode *node, VReg module, const util::StringView &name);
-    void StoreModuleVar(const ir::AstNode *node, const util::StringView &name);
-    void CopyModule(const ir::AstNode *node, VReg module);
+    void LoadModuleVariable(const ir::AstNode *node, const util::StringView &name, bool isLocalExport);
+    void StoreModuleVariable(const ir::AstNode *node, const util::StringView &name);
+    void GetModuleNamespace(const ir::AstNode *node, const util::StringView &name);
 
     void StSuperByName(const ir::AstNode *node, VReg obj, const util::StringView &key);
     void LdSuperByName(const ir::AstNode *node, VReg obj, const util::StringView &key);
@@ -346,10 +357,10 @@ public:
 
     void LdLexEnv(const ir::AstNode *node);
     void PopLexEnv(const ir::AstNode *node);
-    void CopyLexEnv(const ir::AstNode *node);
+    void CopyLexEnv(const ir::AstNode *node, uint32_t num);
     void NewLexEnv(const ir::AstNode *node, uint32_t num);
     void LoadLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot);
-    void StoreLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot);
+    void StoreLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot, VReg toAllocVreg = 0);
 
     void ThrowIfSuperNotCorrectCall(const ir::AstNode *node, int64_t num);
     void ThrowUndefinedIfHole(const ir::AstNode *node, const util::StringView &name);
@@ -366,8 +377,8 @@ public:
     void StoreObjByIndex(const ir::AstNode *node, VReg obj, int64_t index);
     void StoreObjByValue(const ir::AstNode *node, VReg obj, VReg prop);
 
-    void StOwnByName(const ir::AstNode *node, VReg obj, const util::StringView &prop);
-    void StOwnByValue(const ir::AstNode *node, VReg obj, VReg prop);
+    void StOwnByName(const ir::AstNode *node, VReg obj, const util::StringView &prop, const bool nameSetting);
+    void StOwnByValue(const ir::AstNode *node, VReg obj, VReg prop, const bool nameSetting);
     void StOwnByIndex(const ir::AstNode *node, VReg obj, int64_t index);
 
     static Operand ToNamedPropertyKey(const ir::Expression *prop, bool isComputed);
@@ -403,6 +414,7 @@ private:
     RegAllocator ra_;
     RangeRegAllocator rra_;
 
+    int32_t moduleBuffIndex_ {-1};
     uint32_t usedRegs_ {0};
     uint32_t totalRegs_ {0};
     friend class ScopeContext;

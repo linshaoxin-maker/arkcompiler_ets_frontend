@@ -31,17 +31,18 @@ namespace panda::es2panda::ir {
 
 // must be kept in sync with panda::panda_file::LiteralTag
 enum class LiteralTag {
-    TAGVALUE,
-    BOOLEAN,
-    INTEGER,
+    TAGVALUE = 0,
+    BOOLEAN = 1,
+    INTEGER = 2,
     FLOAT,
-    DOUBLE,
-    STRING,
-    ACCESSOR,
-    METHOD,
+    DOUBLE = 4,
+    STRING = 5,
+    METHOD = 6,
     GENERATOR_METHOD,
+    ACCESSOR = 8,
+    METHODAFFILIATE = 9,
     ASYNC_GENERATOR_METHOD,
-    NULL_VALUE,
+    NULL_VALUE = 255,
 };
 
 class Literal : public Expression {
@@ -58,6 +59,7 @@ public:
     double GetDouble() const;
     const util::StringView &GetString() const;
     const util::StringView &GetMethod() const;
+    uint16_t GetMethodAffiliate() const;
 
 protected:
     explicit Literal(AstNodeType type) : Expression(type) {}

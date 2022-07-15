@@ -34,7 +34,9 @@ void ExportDefaultDeclaration::Dump(ir::AstDumper *dumper) const
 void ExportDefaultDeclaration::Compile([[maybe_unused]] compiler::PandaGen *pg) const
 {
     decl_->Compile(pg);
-    pg->StoreModuleVar(this, "default");
+    if (!decl_->IsFunctionDeclaration()) {
+        pg->StoreModuleVariable(this, "*default*");
+    }
 }
 
 checker::Type *ExportDefaultDeclaration::Check([[maybe_unused]] checker::Checker *checker) const

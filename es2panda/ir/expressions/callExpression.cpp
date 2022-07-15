@@ -106,6 +106,8 @@ void CallExpression::Compile(compiler::PandaGen *pg) const
     compiler::VReg callee = pg->AllocReg();
     bool hasThis = false;
     compiler::VReg thisReg {};
+    std::vector<compiler::VReg> regs;
+    regs.push_back(callee);
 
     if (callee_->IsMemberExpression()) {
         hasThis = true;
@@ -113,6 +115,7 @@ void CallExpression::Compile(compiler::PandaGen *pg) const
 
         compiler::RegScope mrs(pg);
         callee_->AsMemberExpression()->Compile(pg, thisReg);
+        regs.push_back(thisReg);
     } else {
         callee_->Compile(pg);
     }
@@ -135,14 +138,15 @@ void CallExpression::Compile(compiler::PandaGen *pg) const
         it->Compile(pg);
         compiler::VReg arg = pg->AllocReg();
         pg->StoreAccumulator(it, arg);
+        regs.push_back(arg);
     }
 
     if (hasThis) {
-        pg->CallThis(this, callee, static_cast<int64_t>(arguments_.size() + 1));
+        pg->CallThis(this, regs);
         return;
     }
 
-    pg->Call(this, callee, arguments_.size());
+    pg->Call(this, regs);
 }
 
 using ArgRange = std::pair<uint32_t, uint32_t>;

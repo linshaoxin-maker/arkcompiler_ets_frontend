@@ -30,6 +30,7 @@ class ClassDefinition;
 class Expression;
 class ForUpdateStatement;
 class Identifier;
+class ImportNamespaceSpecifier;
 class ScriptFunction;
 class Statement;
 class VariableDeclarator;
@@ -62,7 +63,7 @@ public:
         return scope_;
     }
 
-    GlobalScope *TopScope() const
+    FunctionScope *TopScope() const
     {
         return topScope_;
     }
@@ -104,6 +105,9 @@ public:
     static constexpr std::string_view LEXICAL_MANDATORY_PARAM_NEW_TARGET = "!nt";
     static constexpr std::string_view LEXICAL_MANDATORY_PARAM_THIS = "!t";
 
+    static constexpr std::string_view MAIN_FUNC_NAME = "func_main_0";
+    static constexpr std::string_view ANONYMOUS_FUNC_NAME = "";
+
 private:
     using MandatoryParams = std::array<std::string_view, MANDATORY_PARAMS_NUMBER>;
 
@@ -119,6 +123,7 @@ private:
     void AddMandatoryParam(const std::string_view &name);
     void AddMandatoryParams(const MandatoryParams &params);
     void AddMandatoryParams();
+    util::StringView BuildFunctionName(FunctionScope *funcScope, util::StringView name);
     void BuildFunction(FunctionScope *funcScope, util::StringView name);
     void BuildScriptFunction(Scope *outerScope, const ir::ScriptFunction *scriptFunc);
     void BuildClassDefinition(ir::ClassDefinition *classDef);
@@ -130,14 +135,17 @@ private:
     void BuildForInOfLoop(const ir::Statement *parent, binder::LoopScope *loopScope, ir::AstNode *left,
                           ir::Expression *right, ir::Statement *body);
     void BuildCatchClause(ir::CatchClause *catchClauseStmt);
+    void BuildNameSpace(const ir::ImportNamespaceSpecifier *namespaceSpecifier);
     void LookupIdentReference(ir::Identifier *ident);
     void ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode);
     void ResolveReferences(const ir::AstNode *parent);
 
     parser::Program *program_ {};
-    GlobalScope *topScope_ {};
+    FunctionScope *topScope_ {};
     Scope *scope_ {};
     ArenaVector<FunctionScope *> functionScopes_;
+    std::vector<util::StringView> functionNames_;
+    size_t functionNameIndex_ {1};
 };
 
 template <typename T>

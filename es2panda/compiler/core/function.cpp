@@ -81,7 +81,7 @@ static void CompileFunctionParameterDeclaration(PandaGen *pg, const ir::ScriptFu
             if (ref.Kind() == ReferenceKind::DESTRUCTURING) {
                 auto *loadParamLabel = pg->AllocLabel();
 
-                pg->BranchIfNotUndefined(func, loadParamLabel);
+                pg->BranchIfStrictNotUndefined(func, loadParamLabel);
                 param->AsAssignmentPattern()->Right()->Compile(pg);
                 pg->Branch(func, nonDefaultLabel);
 
@@ -91,7 +91,7 @@ static void CompileFunctionParameterDeclaration(PandaGen *pg, const ir::ScriptFu
                 pg->SetLabel(func, nonDefaultLabel);
                 ref.SetValue();
             } else {
-                pg->BranchIfNotUndefined(func, nonDefaultLabel);
+                pg->BranchIfStrictNotUndefined(func, nonDefaultLabel);
 
                 param->AsAssignmentPattern()->Right()->Compile(pg);
                 ref.SetValue();
@@ -200,6 +200,7 @@ static VReg CompileFunctionOrProgram(PandaGen *pg)
 void Function::Compile(PandaGen *pg)
 {
     VReg lexEnv = CompileFunctionOrProgram(pg);
+    pg->SetModuleRecordBufferIndex();
     pg->CopyFunctionArguments(pg->RootNode());
     pg->InitializeLexEnv(pg->RootNode(), lexEnv);
     pg->SortCatchTables();

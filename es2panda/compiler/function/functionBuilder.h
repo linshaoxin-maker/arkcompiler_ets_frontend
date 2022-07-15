@@ -49,7 +49,7 @@ public:
     NO_COPY_SEMANTIC(FunctionBuilder);
     NO_MOVE_SEMANTIC(FunctionBuilder);
 
-    virtual void Prepare([[maybe_unused]] const ir::ScriptFunction *node) const {};
+    virtual void Prepare([[maybe_unused]] const ir::ScriptFunction *node) {};
     virtual void CleanUp([[maybe_unused]] const ir::ScriptFunction *node) const {};
 
     virtual void DirectReturn(const ir::AstNode *node) const;
@@ -76,6 +76,7 @@ protected:
 
     VReg FunctionReg(const ir::ScriptFunction *node) const;
     void HandleCompletion(const ir::AstNode *node, VReg completionType, VReg completionValue);
+    void HandleAsyncCompletion(const ir::AstNode *node, VReg completionType, VReg completionValue);
 
     PandaGen *pg_;
     CatchTable *catchTable_;

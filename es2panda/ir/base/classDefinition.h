@@ -49,7 +49,7 @@ public:
                              TSTypeParameterInstantiation *superTypeParams,
                              ArenaVector<TSClassImplements *> &&implements, MethodDefinition *ctor,
                              Expression *superClass, ArenaVector<Statement *> &&body,
-                             ArenaVector<TSIndexSignature *> &&indexSignatures, bool declare, bool abstract)
+                             ArenaVector<TSIndexSignature *> &&indexSignatures, bool declare, bool abstract, bool isStmt)
         : AstNode(AstNodeType::CLASS_DEFINITION),
           scope_(scope),
           ident_(ident),
@@ -61,7 +61,8 @@ public:
           body_(std::move(body)),
           indexSignatures_(std::move(indexSignatures)),
           declare_(declare),
-          abstract_(abstract)
+          abstract_(abstract),
+          isStmt_(isStmt)
     {
     }
 
@@ -93,6 +94,11 @@ public:
     bool Abstract() const
     {
         return abstract_;
+    }
+
+    bool IsStmt() const
+    {
+        return isStmt_;
     }
 
     ArenaVector<Statement *> &Body()
@@ -135,6 +141,7 @@ private:
     ArenaVector<TSIndexSignature *> indexSignatures_;
     bool declare_;
     bool abstract_;
+    bool isStmt_;
 };
 
 }  // namespace panda::es2panda::ir

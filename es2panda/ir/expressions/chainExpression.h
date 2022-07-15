@@ -17,6 +17,7 @@
 #define ES2PANDA_IR_EXPRESSION_CHAIN_EXPRESSION_H
 
 #include <ir/expression.h>
+#include <ir/irnode.h>
 
 namespace panda::es2panda::compiler {
 class PandaGen;
@@ -44,6 +45,12 @@ public:
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;
     void Compile([[maybe_unused]] compiler::PandaGen *pg) const override;
+    void CompileLogical(compiler::PandaGen *pg, const MemberExpression *memberExpr,
+                        compiler::Label *&resultLabel) const;
+    void CheckMemberExpressionObjIfNull(compiler::PandaGen *pg, const MemberExpression *memberExpr,
+                                        std::vector<compiler::VReg> regs) const;
+    void CheckMemberExpressionObjIfUndefined(compiler::PandaGen *pg, const MemberExpression *memberExpr,
+                                             std::vector<compiler::VReg> regs) const;
     checker::Type *Check([[maybe_unused]] checker::Checker *checker) const override;
 
 private:
