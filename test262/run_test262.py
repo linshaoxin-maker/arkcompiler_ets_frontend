@@ -27,7 +27,7 @@ import sys
 import subprocess
 from multiprocessing import Pool
 import platform
-from utils import * 
+from utils import *
 from config import *
 
 
@@ -88,6 +88,9 @@ def parse_args():
     parser.add_argument('--ark-arch-root',
                         default=DEFAULT_ARK_ARCH,
                         help="the root path for qemu-aarch64 or qemu-arm")
+    parser.add_argument('--opt-level',
+                        default=DEFAULT_OPT_LEVEL,
+                        help="the opt level for es2abc")
     return parser.parse_args()
 
 
@@ -333,7 +336,7 @@ class TestPrepare():
         if self.args.intl:
             files = self.get_tests_from_file(INTL_LIST_FILE)
         return files
-        
+
     def prepare_es2015_tests(self):
         files = []
         files = self.collect_tests()
@@ -473,6 +476,7 @@ def get_host_args(args, host_type):
     ark_frontend = DEFAULT_ARK_FRONTEND
     ark_arch = DEFAULT_ARK_ARCH
     module_list = ''
+    opt_level = DEFAULT_OPT_LEVEL
     with open(MODULE_FILES_LIST) as fopen:
         module_list = fopen.read()
 
@@ -491,13 +495,17 @@ def get_host_args(args, host_type):
     if args.ark_frontend:
         ark_frontend = args.ark_frontend
 
+    if args.opt_level:
+        opt_level = args.opt_level
+
     if host_type == DEFAULT_HOST_TYPE:
         host_args = f"-B test262/run_sunspider.py "
         host_args += f"--ark-tool={ark_tool} "
         host_args += f"--ark-frontend-tool={ark_frontend_tool} "
         host_args += f"--libs-dir={libs_dir} "
         host_args += f"--ark-frontend={ark_frontend} "
-        host_args += f"--module-list={module_list}"
+        host_args += f"--module-list={module_list} "
+        host_args += f"--opt-level={opt_level} "
 
     if args.ark_arch != ark_arch:
         host_args += f"--ark-arch={args.ark_arch} "

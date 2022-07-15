@@ -62,6 +62,10 @@ def parse_args():
                         default=DEFAULT_ARK_ARCH,
                         required=False,
                         help="the root path for qemu-aarch64 or qemu-arm")
+    parser.add_argument('--opt-level',
+                        default=DEFAULT_OPT_LEVEL,
+                        required=False,
+                        help="the opt level for es2abc")
     arguments = parser.parse_args()
     return arguments
 
@@ -143,6 +147,7 @@ class ArkProgram():
         self.js_file = ""
         self.arch = ARK_ARCH
         self.arch_root = ""
+        self.opt_level = DEFAULT_OPT_LEVEL
 
     def proce_parameters(self):
         if self.args.ark_tool:
@@ -156,6 +161,9 @@ class ArkProgram():
 
         if self.args.ark_frontend:
             self.ark_frontend = self.args.ark_frontend
+
+        if self.args.opt_level:
+            self.opt_level = self.args.opt_level
 
         self.module_list = self.args.module_list.splitlines()
 
@@ -177,13 +185,15 @@ class ArkProgram():
             mod_opt_index = 3
             cmd_args = ['node', '--expose-gc', frontend_tool,
                         js_file, '-o', out_file]
+            if file_name in self.module_list:
+                cmd_args.insert(mod_opt_index, "-m")
         elif self.ark_frontend == ARK_FRONTEND_LIST[1]:
             mod_opt_index = 1
-            cmd_args = [frontend_tool, '-c',
-                        '-e', 'js', '-o', out_file, '-i', js_file]
+            cmd_args = [frontend_tool, '--opt-level=' + str(self.opt_level),
+                        '--thread=0', '--output', out_file, js_file]
+            if file_name in self.module_list:
+                cmd_args.insert(mod_opt_index, "--module")
 
-        if file_name in self.module_list:
-            cmd_args.insert(mod_opt_index, "-m")
         retcode = exec_command(cmd_args)
         return retcode
 
@@ -196,7 +206,7 @@ class ArkProgram():
         elif platform.system() == "Linux" :
             os.environ["LD_LIBRARY_PATH"] = self.libs_dir
         else :
-            sys.exit(f" test262 on {platform.system()} not supported"); 
+            sys.exit(f" test262 on {platform.system()} not supported");
         file_name_pre = os.path.splitext(self.js_file)[0]
         cmd_args = []
         if self.arch == ARK_ARCH_LIST[1]:
