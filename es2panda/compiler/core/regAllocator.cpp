@@ -72,7 +72,7 @@ void RegAllocatorBase::Restore(IRNode *ins)
     VReg spillReg = spillIndex_;
     VReg origin = regEnd_ + spillIndex_;
 
-    Add<MovDyn>(ins->Node(), origin, spillReg);
+    Add<MovDyn>(ins->Node(), spillReg, origin);
 }
 
 // RegAllocator
@@ -110,7 +110,6 @@ void RegAllocator::Run(IRNode *ins)
 }
 
 // RangeRegAllocator
-
 void RangeRegAllocator::Run(IRNode *ins, VReg rangeStart, size_t argCount)
 {
     ASSERT(spillIndex_ == 0);

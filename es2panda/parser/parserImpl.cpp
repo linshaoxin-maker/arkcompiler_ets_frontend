@@ -2399,8 +2399,8 @@ ir::Identifier *ParserImpl::SetIdentNodeInClassDefinition()
     return identNode;
 }
 
-ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool idRequired, bool isDeclare,
-                                                      bool isAbstract)
+ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool idRequired,
+                                                      bool isDeclare, bool isAbstract)
 {
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
     lexer_->NextToken();

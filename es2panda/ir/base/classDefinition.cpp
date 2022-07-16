@@ -120,6 +120,7 @@ int32_t ClassDefinition::CreateClassStaticProperties(compiler::PandaGen *pg, uti
     auto *buf = pg->NewLiteralBuffer();
     compiler::LiteralBuffer staticBuf(pg->Allocator());
     bool seenComputed = false;
+    uint32_t unstaticNum = 0;
     std::unordered_map<util::StringView, size_t> propNameMap;
     std::unordered_map<util::StringView, size_t> staticPropNameMap;
 
@@ -131,10 +132,18 @@ int32_t ClassDefinition::CreateClassStaticProperties(compiler::PandaGen *pg, uti
         }
         const ir::MethodDefinition *prop = properties[i]->AsMethodDefinition();
 
-        if (!util::Helpers::IsConstantPropertyKey(prop->Key(), prop->Computed()) ||
-            (prop->Computed() && util::Helpers::IsSpecialPropertyKey(prop->Key()))) {
+        // if (!util::Helpers::IsConstantPropertyKey(prop->Key(), prop->Computed()) ||
+        //     (prop->Computed() && util::Helpers::IsSpecialPropertyKey(prop->Key()))) {
+        //     seenComputed = true;
+        //     continue;
+        // }
+        if (prop->Computed()) {
             seenComputed = true;
             continue;
+        }
+
+        if (prop->IsAccessor()) {
+            break;
         }
 
         util::StringView name = util::Helpers::LiteralToPropName(prop->Key());
@@ -149,7 +158,8 @@ int32_t ClassDefinition::CreateClassStaticProperties(compiler::PandaGen *pg, uti
             }
 
             literalBuf->Add(pg->Allocator()->New<StringLiteral>(name));
-            literalBuf->Add(nullptr);
+            literalBuf->Add(nullptr); // save for method name
+            literalBuf->Add(nullptr); // save for method affiliate
         } else {
             bufferPos = res.first->second;
         }
@@ -163,11 +173,15 @@ int32_t ClassDefinition::CreateClassStaticProperties(compiler::PandaGen *pg, uti
 
                 value = pg->Allocator()->New<TaggedLiteral>(LiteralTag::METHOD, internalName);
                 compiled.Set(i);
+                literalBuf->ResetLiteral(bufferPos + 1, value);
+                Literal *methodAffiliate = pg->Allocator()->New<TaggedLiteral>(LiteralTag::METHODAFFILIATE, func->Function()->FormalParamsLength());
+                literalBuf->ResetLiteral(bufferPos + 2, methodAffiliate);
                 break;
             }
             case ir::MethodDefinitionKind::GET:
             case ir::MethodDefinitionKind::SET: {
                 value = pg->Allocator()->New<NullLiteral>();
+                literalBuf->ResetLiteral(bufferPos + 1, value);
                 break;
             }
             default: {
@@ -175,17 +189,17 @@ int32_t ClassDefinition::CreateClassStaticProperties(compiler::PandaGen *pg, uti
             }
         }
 
-        literalBuf->ResetLiteral(bufferPos + 1, value);
+        if (!prop->IsStatic()) {
+            unstaticNum++;
+        }
     }
-
-    uint32_t litPairs = buf->Size() / 2;
 
     /* Static items are stored at the end of the buffer */
     buf->Insert(&staticBuf);
 
     /* The last literal item represents the offset of the first static property. The regular property literal count
      * is divided by 2 as key/value pairs count as one. */
-    buf->Add(pg->Allocator()->New<NumberLiteral>(litPairs));
+    buf->Add(pg->Allocator()->New<NumberLiteral>(unstaticNum));
 
     return pg->AddLiteralBuffer(buf);
 }
@@ -212,12 +226,18 @@ void ClassDefinition::CompileMissingProperties(compiler::PandaGen *pg, const uti
         switch (prop->Kind()) {
             case ir::MethodDefinitionKind::METHOD: {
                 compiler::Operand key = pg->ToPropertyKey(prop->Key(), prop->Computed());
-
+                compiler::VReg keyReg = pg->AllocReg();
+                if (prop->Key()->IsIdentifier() && !prop->Computed()) {
+                    pg->LoadAccumulatorString(this, std::get<util::StringView>(key));
+                } else {
+                    prop->Key()->Compile(pg);
+                }
+                pg->StoreAccumulator(this, keyReg);
                 pg->LoadAccumulator(this, dest);
                 const ir::FunctionExpression *func = prop->Value()->AsFunctionExpression();
                 func->Compile(pg);
 
-                pg->StoreOwnProperty(prop->Value()->Parent(), dest, key);
+                pg->StoreOwnProperty(prop->Value()->Parent(), dest, keyReg, prop->Computed());
                 break;
             }
             case ir::MethodDefinitionKind::GET:
@@ -268,8 +288,9 @@ void ClassDefinition::Compile(compiler::PandaGen *pg) const
     util::BitSet compiled(body_.size());
 
     int32_t bufIdx = CreateClassStaticProperties(pg, compiled);
-    pg->DefineClassWithBuffer(this, ctorId, bufIdx, lexenv, baseReg);
-    if (scope_->Parent()->IsGlobalScope() && ident_) {
+    auto formalParamCnt = Ctor()->Function()->FormalParamsLength();
+    pg->DefineClassWithBuffer(this, ctorId, bufIdx, lexenv, baseReg, formalParamCnt);
+    if (scope_->Parent()->IsGlobalScope() && ident_ && this->Parent()->IsClassDeclaration()) {
         pg->StoreGlobalLet(this, ident_->Name());
     }
     pg->StoreAccumulator(this, classReg);

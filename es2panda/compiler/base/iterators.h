@@ -62,6 +62,7 @@ public:
     void Next() const;
     void Complete() const;
     void Value() const;
+    void CloseWithException() const;
     void Close(bool abruptCompletion) const;
 
 protected:
