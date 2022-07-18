@@ -30,8 +30,7 @@ void BigIntLiteral::Dump(ir::AstDumper *dumper) const
 
 void BigIntLiteral::Compile(compiler::PandaGen *pg) const
 {
-    // TODO()
-    pg->Unimplemented();
+    pg->LoadAccumulatorBigInt(this, src_);
 }
 
 checker::Type *BigIntLiteral::Check(checker::Checker *checker) const
