@@ -159,6 +159,7 @@ int32_t ClassDefinition::CreateClassStaticProperties(compiler::PandaGen *pg, uti
 
             literalBuf->Add(pg->Allocator()->New<StringLiteral>(name));
             literalBuf->Add(nullptr);
+            literalBuf->Add(nullptr);
         } else {
             bufferPos = res.first->second;
         }
@@ -174,7 +175,7 @@ int32_t ClassDefinition::CreateClassStaticProperties(compiler::PandaGen *pg, uti
                 compiled.Set(i);
                 literalBuf->ResetLiteral(bufferPos + 1, value);
                 Literal *methodAffiliate = pg->Allocator()->New<TaggedLiteral>(LiteralTag::METHODAFFILIATE, func->Function()->FormalParamsLength());
-                literalBuf->Add(methodAffiliate);
+                literalBuf->ResetLiteral(bufferPos + 2, methodAffiliate);
                 break;
             }
             case ir::MethodDefinitionKind::GET:
