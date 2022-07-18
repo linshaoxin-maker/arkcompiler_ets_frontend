@@ -957,6 +957,9 @@ ir::Expression *ParserImpl::ParsePrimaryExpression(ExpressionParseFlags flags)
             return ParseImportExpression();
         }
         case lexer::TokenType::LITERAL_IDENT: {
+            if (lexer_->GetToken().Ident().Is("yield")) {
+                ThrowSyntaxError("Identifier expected. 'yield' is a reserved word in strict mode.");
+            }
             auto *identNode = AllocNode<ir::Identifier>(lexer_->GetToken().Ident(), Allocator());
             identNode->SetReference();
             identNode->SetRange(lexer_->GetToken().Loc());

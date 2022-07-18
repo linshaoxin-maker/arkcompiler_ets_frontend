@@ -82,6 +82,11 @@ public:
         return IsLetDecl() || IsConstDecl();
     }
 
+    bool IsLetOrConstOrClassDecl() const
+    {
+        return IsLetDecl() || IsConstDecl() || IsClassDecl();
+    }
+
 protected:
     explicit Decl(util::StringView name) : name_(name) {}
 
@@ -231,6 +236,16 @@ public:
     DeclType Type() const override
     {
         return DeclType::CONST;
+    }
+};
+
+class ClassDecl : public Decl {
+public:
+    explicit ClassDecl(util::StringView name) : Decl(name) {}
+
+    DeclType Type() const override
+    {
+        return DeclType::CLASS;
     }
 };
 
