@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if (!defined(ark_standalone_build)) {
-  import("//ark/runtime_core/ark_config.gni")
+if (!defined(ark_independent_build)) {
+  import("//arkcompiler/runtime_core/ark_config.gni")
   import("//build/ohos.gni")
   jsoncpp_root = "$ark_third_party_root/jsoncpp"
 } else {

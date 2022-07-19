@@ -74,6 +74,10 @@ def parse_args():
                         help="command-line arguments to pass to eshost host\n")
     parser.add_argument('--ark-tool',
                         help="ark's binary tool")
+    parser.add_argument('--ark-aot', action='store_true',
+                        help="Run test262 with aot")
+    parser.add_argument('--ark-aot-tool',
+                        help="ark's aot tool")
     parser.add_argument('--ark-frontend-tool',
                         help="ark frontend conversion tool")
     parser.add_argument("--libs-dir",
@@ -267,12 +271,14 @@ class TestPrepare():
         else:
             self.args.dir = os.path.join(DATA_DIR, "test")
 
-    def copyfile(self, file):
+    def copyfile(self, file, all_skips, intl_skips):
         dstdir = os.path.join(DATA_DIR, "test")
         file = file.strip()
-        if file in ALL_SKIP_TESTS:
+        file = file.strip('\n')
+        file = file.replace("\\", "/")
+        if file in all_skips:
             return
-        if file in INTL_SKIP_TESTS:
+        if file in intl_skips:
             return
 
         srcdir = os.path.join(DATA_DIR, "test", file)
@@ -364,7 +370,8 @@ class TestPrepare():
             mkdir(path)
 
         pool = Pool(DEFAULT_THREADS)
-        pool.map(self.copyfile, files)
+        for it in files:
+            pool.apply(self.copyfile, (it, ALL_SKIP_TESTS, INTL_SKIP_TESTS))
         pool.close()
         pool.join()
 
@@ -465,6 +472,7 @@ def get_threads(args):
 def get_host_args(args, host_type):
     host_args = ""
     ark_tool = DEFAULT_ARK_TOOL
+    ark_aot_tool = DEFAULT_ARK_AOT_TOOL
     ark_frontend_tool = DEFAULT_ARK_FRONTEND_TOOL
     libs_dir = DEFAULT_LIBS_DIR
     ark_frontend = DEFAULT_ARK_FRONTEND
@@ -479,6 +487,9 @@ def get_host_args(args, host_type):
     if args.ark_tool:
         ark_tool = args.ark_tool
 
+    if args.ark_aot_tool:
+        ark_aot_tool = args.ark_aot_tool
+
     if args.ark_frontend_tool:
         ark_frontend_tool = args.ark_frontend_tool
 
@@ -491,10 +502,13 @@ def get_host_args(args, host_type):
     if host_type == DEFAULT_HOST_TYPE:
         host_args = f"-B test262/run_sunspider.py "
         host_args += f"--ark-tool={ark_tool} "
+        if args.ark_aot:
+            host_args += f"--ark-aot "
+        host_args += f"--ark-aot-tool={ark_aot_tool} "
         host_args += f"--ark-frontend-tool={ark_frontend_tool} "
         host_args += f"--libs-dir={libs_dir} "
         host_args += f"--ark-frontend={ark_frontend} "
-        host_args += f"--module-list={module_list}"
+        host_args += f"--module-list={module_list} "
 
     if args.ark_arch != ark_arch:
         host_args += f"--ark-arch={args.ark_arch} "
