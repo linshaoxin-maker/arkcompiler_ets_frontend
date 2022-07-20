@@ -1479,12 +1479,11 @@ void PandaGen::PopLexEnv(const ir::AstNode *node)
     sa_.Emit<EcmaPoplexenvdyn>(node);
 }
 
-void PandaGen::CopyLexEnv(const ir::AstNode *node)
+void PandaGen::CopyLexEnv(const ir::AstNode *node, uint32_t num)
 {
-    /*
-     *  TODO: copy lexenv
-     *  sa_.Emit<EcmaCopylexenvdyn>(node);
-     */
+    PopLexEnv(node);
+    NewLexEnv(node, num);
+    // TODO: optimize this part later
 }
 
 void PandaGen::NewLexEnv(const ir::AstNode *node, uint32_t num)
