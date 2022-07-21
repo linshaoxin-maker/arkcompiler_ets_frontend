@@ -18,7 +18,8 @@ import * as astutils from "./astutils";
 import {
     hasDefaultKeywordModifier,
     hasExportKeywordModifier,
-    isAnonymousFunctionDefinition
+    isAnonymousFunctionDefinition,
+    getScopeOfNodeOrMappingNode
 } from "./base/util";
 import { CmdOptions } from "./cmdOptions";
 import { CompilerDriver } from "./compilerDriver";
@@ -73,6 +74,7 @@ export class Recorder {
     private importStmts: Array<ModuleStmt> = [];
     private exportStmts: Array<ModuleStmt> = [];
     private syntaxCheckStatus: boolean;
+    private mappingOriginNode: Map<ts.Node, ts.Node> = new Map<ts.Node, ts.Node>();
 
     constructor(node: ts.Node, scope: Scope, compilerDriver: CompilerDriver, recordType: boolean, isTsFile: boolean, syntaxCheckStatus: boolean) {
         this.node = node;
@@ -88,6 +90,10 @@ export class Recorder {
     record() {
         this.setParent(this.node);
         this.setScopeMap(this.node, this.scope);
+        if (ts.getOriginalNode(this.node)) {
+            this.setMappingNode(this.node, ts.getOriginalNode(this.node));
+            this.setMappingNode(ts.getOriginalNode(this.node), this.node);
+        }
         this.recordInfo(this.node, this.scope);
         return this.node;
     }
@@ -132,6 +138,10 @@ export class Recorder {
                 }
                 case ts.SyntaxKind.FunctionDeclaration: {
                     let functionScope = this.buildVariableScope(scope, <ts.FunctionLikeDeclaration>childNode);
+                    if (ts.getOriginalNode(node)) {
+                        this.setMappingNode(childNode, ts.getOriginalNode(childNode));
+                        this.setMappingNode(ts.getOriginalNode(childNode), childNode);
+                    }
                     let isExport: boolean = false;
                     if (hasExportKeywordModifier(childNode)) {
                         if (!CmdOptions.isModules()) {
@@ -158,6 +168,10 @@ export class Recorder {
                 case ts.SyntaxKind.CatchClause: {
                     let localScope = new LocalScope(scope);
                     this.setScopeMap(childNode, localScope);
+                    if (ts.getOriginalNode(childNode)) {
+                        this.setMappingNode(childNode, ts.getOriginalNode(childNode));
+                        this.setMappingNode(ts.getOriginalNode(childNode), childNode);
+                    }
                     this.recordInfo(childNode, localScope);
                     break;
                 }
@@ -166,8 +180,13 @@ export class Recorder {
                 case ts.SyntaxKind.ForStatement:
                 case ts.SyntaxKind.ForInStatement:
                 case ts.SyntaxKind.ForOfStatement: {
-                    let loopScope: LoopScope = new LoopScope(scope);;
+                    let loopScope: LoopScope = new LoopScope(scope);
+                    this.setMappingNode(childNode, ts.getOriginalNode(childNode));
                     this.setScopeMap(childNode, loopScope);
+                    if (ts.getOriginalNode(childNode)) {
+                        this.setMappingNode(childNode, ts.getOriginalNode(childNode));
+                        this.setMappingNode(ts.getOriginalNode(childNode), childNode);
+                    }
                     this.recordInfo(childNode, loopScope);
                     break;
                 }
@@ -261,6 +280,10 @@ export class Recorder {
     private recordClassInfo(childNode: ts.ClassLikeDeclaration, scope: Scope, isExport: boolean) {
         let localScope = new LocalScope(scope);
         this.setScopeMap(childNode, localScope);
+        if (ts.getOriginalNode(childNode)) {
+            this.setMappingNode(childNode, ts.getOriginalNode(childNode));
+            this.setMappingNode(ts.getOriginalNode(childNode), childNode);
+        }
         let ctor = extractCtorOfClass(childNode);
         if (!ctor) {
             AddCtor2Class(this, childNode, localScope);
@@ -282,6 +305,10 @@ export class Recorder {
         functionScope.setParentVariableScope(parentVariableScope);
         parentVariableScope.addChildVariableScope(functionScope);
         this.setScopeMap(node, functionScope);
+        if (ts.getOriginalNode(node)) {
+            this.setMappingNode(node, ts.getOriginalNode(node));
+            this.setMappingNode(ts.getOriginalNode(node), node);
+        }
         return functionScope;
     }
 
@@ -831,5 +858,13 @@ export class Recorder {
 
     getFuncNameMap() {
         return this.funcNameMap;
+    }
+
+    setMappingNode(currentNode: ts.Node, originNode: ts.Node) {
+        this.mappingOriginNode.set(originNode, currentNode);
+    }
+
+    getMappingNode(node: ts.Node) {
+        return this.mappingOriginNode.get(node)
     }
 }

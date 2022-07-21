@@ -28,7 +28,8 @@ import {
     getParamLengthOfFunc,
     hasDefaultKeywordModifier,
     hasExportKeywordModifier,
-    isUndefinedIdentifier
+    isUndefinedIdentifier,
+    getScopeOfNodeOrMappingNode
 } from "../base/util";
 import { CacheList, getVregisterCache } from "../base/vregisterCache";
 import { Compiler } from "../compiler";
@@ -118,7 +119,7 @@ export function compileClassDeclaration(compiler: Compiler, stmt: ts.ClassLikeDe
     compileUnCompiledProperty(compiler, properties, classReg);
     pandaGen.loadAccumulator(stmt, classReg);
 
-    let classScope = <Scope>compiler.getRecorder().getScopeOfNode(stmt);
+    let classScope = <Scope>getScopeOfNodeOrMappingNode(stmt, compiler.getRecorder());
     if (hasExportKeywordModifier(stmt)) {
         if (stmt.name) {
             let className = jshelpers.getTextOfIdentifierOrLiteral(stmt.name);
@@ -169,7 +170,7 @@ export function AddCtor2Class(recorder: Recorder, classNode: ts.ClassLikeDeclara
     ctorNode = jshelpers.setParent(ctorNode, classNode)!;
     ctorNode = ts.setTextRange(ctorNode, classNode);
 
-    let parentScope = <LocalScope>recorder.getScopeOfNode(classNode);
+    let parentScope = <LocalScope>getScopeOfNodeOrMappingNode(classNode, recorder);
     let funcScope = recorder.buildVariableScope(scope, ctorNode);
     funcScope.setParent(parentScope);
 
@@ -177,7 +178,15 @@ export function AddCtor2Class(recorder: Recorder, classNode: ts.ClassLikeDeclara
     ctorBodyScope.setParent(funcScope);
 
     recorder.setScopeMap(ctorNode, funcScope);
+    if (ts.getOriginalNode(ctorNode)) {
+        recorder.setMappingNode(ctorNode, ts.getOriginalNode(ctorNode));
+        recorder.setMappingNode(ts.getOriginalNode(ctorNode), ctorNode);
+    }
     recorder.setScopeMap(ctorNode.body!, ctorBodyScope);
+    if (ts.getOriginalNode(ctorNode.body!)) {
+        recorder.setMappingNode(ctorNode.body!, ts.getOriginalNode(ctorNode.body!));
+        recorder.setMappingNode(ts.getOriginalNode(ctorNode.body!), ctorNode.body!);
+    }
 
     recorder.recordFuncName(ctorNode);
     recorder.recordFunctionParameters(ctorNode);
@@ -416,7 +425,7 @@ function loadCtorObj(node: ts.CallExpression, compiler: Compiler) {
         return;
     }
 
-    let nearestFuncScope = <FunctionScope>recorder.getScopeOfNode(nearestFunc);
+    let nearestFuncScope = <FunctionScope>getScopeOfNodeOrMappingNode(nearestFunc, recorder);
     if (!nearestFuncScope) {
         return;
     }
@@ -425,7 +434,7 @@ function loadCtorObj(node: ts.CallExpression, compiler: Compiler) {
         pandaGen.loadAccumulator(node, getVregisterCache(pandaGen, CacheList.FUNC));
     } else {
         let outerFunc = jshelpers.getContainingFunctionDeclaration(nearestFunc);
-        let outerFuncScope = <FunctionScope>recorder.getScopeOfNode(outerFunc!);
+        let outerFuncScope = <FunctionScope>getScopeOfNodeOrMappingNode(outerFunc, recorder);
         outerFuncScope.pendingCreateEnv();
         let level = 1;
         while (!ts.isConstructorDeclaration(outerFunc!)) {
