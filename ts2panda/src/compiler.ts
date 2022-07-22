@@ -29,6 +29,7 @@ import { LReference } from "./base/lreference";
 import {
     hasExportKeywordModifier,
     isBindingPattern,
+    getScopeOfNodeOrMappingNode,
 } from "./base/util";
 import { CacheList, getVregisterCache } from "./base/vregisterCache";
 import { CmdOptions } from "./cmdOptions";
@@ -235,7 +236,7 @@ export class Compiler {
         if (!ts.isFunctionExpression(rootNode) && !ts.isMethodDeclaration(rootNode)) {
             return;
         }
-        let functionScope = this.recorder.getScopeOfNode(rootNode);
+        let functionScope = getScopeOfNodeOrMappingNode(rootNode, this.recorder);
         if ((<ts.FunctionLikeDeclaration>rootNode).name) {
             let funcName = jshelpers.getTextOfIdentifierOrLiteral((<ts.FunctionLikeDeclaration>rootNode).name);
             let v = functionScope.find(funcName);
@@ -737,7 +738,7 @@ export class Compiler {
         // Finally after normal try
         tryBuilder.compileFinallyBlockIfExisted();
         if (ts.isForOfStatement(node)) {
-            let loopScope = <LoopScope>this.getRecorder().getScopeOfNode(node);
+            let loopScope = <LoopScope>getScopeOfNodeOrMappingNode(node, this.getRecorder());
             let needCreateLoopEnv = loopScope.need2CreateLexEnv();
             if (needCreateLoopEnv) {
                 pandaGen.popLexicalEnv(node);
@@ -1412,7 +1413,7 @@ export class Compiler {
     }
 
     pushScope(node: ts.Node) {
-        let scope = <Scope>this.recorder.getScopeOfNode(node);
+        let scope = <Scope>getScopeOfNodeOrMappingNode(node, this.recorder);
         this.scope = scope;
         // for debug info
         DebugInfo.addDebugIns(scope, this.pandaGen, true);

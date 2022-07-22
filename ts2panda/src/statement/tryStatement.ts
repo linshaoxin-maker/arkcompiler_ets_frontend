@@ -29,18 +29,23 @@ import { IteratorRecord } from "./forOfStatement";
 import * as astutils from "../astutils";
 import { VarDeclarationKind } from "../variable";
 import * as jshelpers from "../jshelpers";
+import { getScopeOfNodeOrMappingNode } from "../base/util";
 
 // adjust the try...catch...finally into nested try(try...catch) finally
 export function transformTryCatchFinally(tryStmt: ts.TryStatement, recorder: Recorder): ts.TryStatement {
     // after create new try block node, mapped with new scope, and adjust parent node
-    let tryStmtScope = <LocalScope>recorder.getScopeOfNode(tryStmt);
+    let tryStmtScope = <LocalScope>getScopeOfNodeOrMappingNode(tryStmt, recorder);
     let newTryBlockScope = new LocalScope(tryStmtScope);
     let newTryStmtScope = new LocalScope(newTryBlockScope);
-    (<LocalScope>recorder.getScopeOfNode(tryStmt.tryBlock)).setParent(newTryStmtScope);
-    (<LocalScope>recorder.getScopeOfNode(tryStmt.catchClause!)).setParent(newTryStmtScope);
+    (<LocalScope>getScopeOfNodeOrMappingNode(tryStmt, recorder)).setParent(newTryStmtScope);
+    (<LocalScope>getScopeOfNodeOrMappingNode(tryStmt.catchClause!, recorder)).setParent(newTryStmtScope);
 
     const newTryStmt = ts.factory.createTryStatement(tryStmt.tryBlock, tryStmt.catchClause, undefined);
     recorder.setScopeMap(newTryStmt, newTryStmtScope);
+    if (ts.getOriginalNode(newTryStmt)) {
+        recorder.setMappingNode(newTryStmt, ts.getOriginalNode(newTryStmt));
+        recorder.setMappingNode(ts.getOriginalNode(newTryStmt), newTryStmt);
+    }
 
     const newTryBlock = [newTryStmt];
     newTryBlock[0] = jshelpers.setParent(newTryBlock[0], tryStmt)!;
@@ -48,6 +53,11 @@ export function transformTryCatchFinally(tryStmt: ts.TryStatement, recorder: Rec
     let tryBlock = ts.factory.updateBlock(tryStmt.tryBlock, newTryBlock);
     tryStmt = ts.factory.updateTryStatement(tryStmt, tryBlock, undefined, tryStmt.finallyBlock);
     recorder.setScopeMap(tryStmt.tryBlock, newTryBlockScope);
+    if (ts.getOriginalNode(tryStmt.tryBlock)) {
+        recorder.setMappingNode(tryStmt.tryBlock, ts.getOriginalNode(tryStmt.tryBlock));
+        recorder.setMappingNode(ts.getOriginalNode(tryStmt.tryBlock), tryStmt.tryBlock);
+    }
+
     return tryStmt;
 }
 
@@ -266,7 +276,7 @@ export class TryBuilderWithForOf extends TryBuilderBase {
         let resultReg = this.pandaGen.getTemp();
         let isDeclaration: boolean = false;
 
-        let loopScope = <LoopScope>compiler.getRecorder().getScopeOfNode(stmt);
+        let loopScope = <LoopScope>getScopeOfNodeOrMappingNode(stmt, compiler.getRecorder());
 
         pandaGen.loadAccumulator(stmt, getVregisterCache(pandaGen, CacheList.True));
         pandaGen.storeAccumulator(stmt, this.doneReg);

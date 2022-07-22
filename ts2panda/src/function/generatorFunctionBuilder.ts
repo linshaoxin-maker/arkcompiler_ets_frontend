@@ -24,6 +24,7 @@ import {
 import { PandaGen } from "../pandagen";
 import { Recorder } from "../recorder";
 import { IteratorRecord, IteratorType, getIteratorRecord } from "../statement/forOfStatement";
+import { getScopeOfNodeOrMappingNode } from "../base/util"
 
 enum ResumeMode { Return = 0, Throw, Next };
 
@@ -48,7 +49,7 @@ export class GeneratorFunctionBuilder {
     prepare(node: ts.Node, recorder: Recorder) {
         let pandaGen = this.pandaGen;
         // @ts-ignore
-        let scope = <Scope>recorder.getScopeOfNode(node);
+        let scope = <Scope>getScopeOfNodeOrMappingNode(node, recorder);
 
         // backend handle funcobj, frontend set undefined
         pandaGen.createGeneratorObj(node, getVregisterCache(pandaGen, CacheList.FUNC));
