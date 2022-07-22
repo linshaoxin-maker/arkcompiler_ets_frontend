@@ -25,6 +25,7 @@ import re
 import subprocess
 import sys
 import test262util
+import datetime
 
 
 def is_directory(parser, arg):
@@ -168,6 +169,9 @@ class Test262Test(Test):
         self.test_id = test_id
         self.fail_kind = None
         self.with_optimizer = with_optimizer
+        self.start_time = datetime.datetime.now(tz=datetime.timezone.utc)
+        self.finish_time = datetime.datetime.now(tz=datetime.timezone.utc)
+        self.skip_reason = ''
 
     class FailKind(Enum):
         ES2PANDA_FAIL = 1
@@ -198,6 +202,7 @@ class Test262Test(Test):
 
         if 'noStrict' in desc['flags']:
             self.skipped = True
+            self.skip_reason = "This test is for No Strict mode that is not supported"
             return self
 
         cmd.append(self.path)
@@ -471,6 +476,8 @@ class Test262Runner(Runner):
             # we don't want to interpret asan failures as SyntaxErrors
             self.cmd_env[san] = ":exitcode=255"
 
+        self.test_result = test262util.Test262Result()
+        self.test_report_xml = 'report.xml'
         self.update = args.update
         self.enable_skiplists = False if self.update else args.skip
         self.normal_skiplist_file = "test262skiplist.txt"
@@ -568,8 +575,15 @@ class Test262Runner(Runner):
         return path.relpath(src, self.test262_dir)
 
     def run(self):
+        self.test_result.start_test_run()
         Runner.run(self)
         self.update_skiplist()
+
+    def run_test(self, test)
+        test.start_time = datetime.datetime.now(tz=datetime.timezone.utc)
+        result = test.run(self)
+        result.finish_time = datetime.datetime.now(tz=datetime.timezone.utc)
+        return result
 
     def summarize(self):
         print("")
@@ -583,12 +597,16 @@ class Test262Runner(Runner):
         for test in self.tests:
             if test.skipped:
                 num_skipped += 1
+                self.test_result.add_skip(test)
                 continue
 
             assert(test.passed is not None)
             if not test.passed:
                 fail_lists[test.fail_kind].append(test)
                 num_failed += 1
+                self.test_result.add_failure(test)
+            else:
+                self.test_result.add_success(test)
 
         def summarize_list(name, tests_list):
             if len(tests_list):
@@ -612,6 +630,11 @@ class Test262Runner(Runner):
         print("\033[92mPassed:  %5d" % (total_tests - num_failed))
         print("\033[91mFailed:  %5d" % (num_failed))
         print("\033[0m")
+
+        fd = os.open(os.path.join(self.test_root, self.test_report_xml), os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
+        file = os.fdopen(fd, "w+")
+        self.test_result.stop_test_run(file)
+        file.close()
 
         return num_failed
 

@@ -20,6 +20,7 @@ import os
 import re
 import shutil
 import subprocess
+import datetime
 
 
 class Test262Util:
@@ -184,3 +185,40 @@ class Test262Util:
             return is_negative and (desc['negative_type'] in std_err)
 
         return False  # abnormal
+
+
+class Test262Result():
+
+    def __init__(self):
+        self.startTime = datetime.datetime.now(tz=datetime.timezone.utc)
+        self.results = []
+        self.passed = 0
+        self.failed = 0
+        self.skipped = 0
+
+    def start_test_run(self) -> None:
+        self.startTime = datetime.datetime.now(tz=datetime.timezone.utc)
+
+    def stop_test_run(self, fp) -> None:
+        duration = datetime.datetime.now(tz=datetime.timezone.utc) - self.startTime
+        fp.write('<testsuite failures="%d" skipped="%d" name="test262" tests="%d" time="%0.3f">\n' % (self.failed, self.skipped, self.failed + self.passed, duration.total_seconds()))
+        fp.write(''.join(self.results))
+        fp.write('</testsuite>\n')
+
+    def add_success(self, test) -> None:
+        duration = test.finish_time - test.start_time
+        self.passed +=1
+        self.results.append('<testcase classname="test262" name="%s" time="%0.3f"/>\n' % (test.test_id, duration.total_seconds()))
+
+    def add_failure(self, test) -> None:
+        duration = test.finish_time - test.start_time
+        self.failed +=1
+        self.results.append('<testcase classname="test262" name="%s" time="%0.3f"/>\n' % (test.test_id, duration.total_seconds())
+        self.results.append('<failure type="%s">%s\n</failure>\n</testcase>' % (test.fail_kind, test.error))
+
+    def add skip(self, test) -> None:
+        self.skipped +=1
+        self.results.append('<testcase classname="test262" name="%s" time="0.0"/>\n' % test.test_id)
+        self.results.append('<skipped>%s</skipped>\n</testcase>\n' % test.skip_reason)
+    
+        
