@@ -73,7 +73,7 @@ if (!defined(ark_independent_build)) {
     deps = [ ":jsoncpp_set_static" ]
     use_exceptions = true
     subsystem_name = "ark"
-    part_name = "ark_frontend_tool"
+    part_name = "ark_ts2abc"
   }
 
   ohos_executable("ts2abc") {

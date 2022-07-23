@@ -118,7 +118,7 @@ IteratorContext::~IteratorContext()
     pg_->Branch(node, labelSet.CatchEnd());
 
     pg_->SetLabel(node, labelSet.CatchBegin());
-    iterator_.Close(true);
+    iterator_.CloseWithException();
     pg_->SetLabel(node, labelSet.CatchEnd());
 }
 
