@@ -124,6 +124,10 @@ public:
         return (status_ & ParserStatus::MODULE) != 0;
     }
 
+    const util::StringView Label() {
+        return label_;
+    }
+
     const ParserContext *FindLabel(const util::StringView &label) const;
 
 private:

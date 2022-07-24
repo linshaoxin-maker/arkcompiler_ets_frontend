@@ -392,6 +392,9 @@ private:
     void CheckLabelledFunction(const ir::Statement *node);
     void CheckDeclare();
 
+    void checkBreakStatement(ir::Identifier *label);
+    void checkContinueStatement(ir::Identifier *label);
+
     bool ParseDirective(ArenaVector<ir::Statement *> *statements);
     void ParseDirectivePrologue(ArenaVector<ir::Statement *> *statements);
     ArenaVector<ir::Statement *> ParseStatementList(StatementParsingFlags flags = StatementParsingFlags::ALLOW_LEXICAL);

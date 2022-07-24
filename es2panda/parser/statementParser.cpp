@@ -116,6 +116,75 @@ void ParserImpl::CheckDeclare()
     }
 }
 
+void ParserImpl::checkBreakStatement(ir::Identifier *label)
+{
+    auto *iter = &context_;
+    while (iter) {
+        if (static_cast<ParserStatus>(iter->Status() & (ParserStatus::FUNCTION |
+                                                        ParserStatus::IN_ITERATION |
+                                                        ParserStatus::IN_SWITCH |
+                                                        ParserStatus::IN_LABELED)) == ParserStatus::FUNCTION) {
+            ThrowSyntaxError("Jump target cannot cross function boundary.");
+        }
+        if (static_cast<ParserStatus>(iter->Status() & ParserStatus::IN_LABELED) == ParserStatus::IN_LABELED) {
+            if (label != nullptr && iter->Label() == label->Name()) {
+                return;
+            }
+        }
+        if (static_cast<ParserStatus>(iter->Status() & ParserStatus::IN_SWITCH) == ParserStatus::IN_SWITCH) {
+            if (label == nullptr) {
+                return;
+            }
+        }
+        if (static_cast<ParserStatus>(iter->Status() & ParserStatus::IN_ITERATION) == ParserStatus::IN_ITERATION) {
+            if (label == nullptr) {
+                return;
+            }
+        }
+        iter = iter->Prev();
+    }
+
+    if (label != nullptr) {
+        ThrowSyntaxError("A 'break' statement can only jump to a label of an enclosing statement.");
+    } else {
+        ThrowSyntaxError("A 'break' statement can only be used within an enclosing iteration or switch statement.");
+    }
+}
+
+
+void ParserImpl::checkContinueStatement(ir::Identifier *label)
+{
+    auto *iter = &context_;
+    while (iter) {
+        if (static_cast<ParserStatus>(iter->Status() & (ParserStatus::FUNCTION |
+                                                        ParserStatus::IN_ITERATION |
+                                                        ParserStatus::IN_SWITCH |
+                                                        ParserStatus::IN_LABELED)) == ParserStatus::FUNCTION) {
+            ThrowSyntaxError("Jump target cannot cross function boundary.");
+        }
+        if (static_cast<ParserStatus>(iter->Status() & ParserStatus::IN_LABELED) == ParserStatus::IN_LABELED) {
+            if (label != nullptr && iter->Label() == label->Name()) {
+                if (!(static_cast<ParserStatus>(iter->Status() & ParserStatus::IN_ITERATION) == ParserStatus::IN_ITERATION)) {
+                    ThrowSyntaxError("A 'continue' statement can only jump to a label of an enclosing iteration statement.");
+                }
+                return;
+            }
+        }
+        if (static_cast<ParserStatus>(iter->Status() & ParserStatus::IN_ITERATION) == ParserStatus::IN_ITERATION) {
+            if (label == nullptr) {
+                return;
+            }
+        }
+        iter = iter->Prev();
+    }
+
+    if (label != nullptr) {
+        ThrowSyntaxError("A 'continue' statement can only jump to a label of an enclosing statement.");
+    } else {
+        ThrowSyntaxError("A 'continue' statement can only be used within an enclosing iteration statement.");
+    }
+}
+
 ir::Statement *ParserImpl::ParseStatement(StatementParsingFlags flags)
 {
     bool isDeclare = false;
@@ -780,27 +849,13 @@ ir::BlockStatement *ParserImpl::ParseBlockStatement()
 
 ir::BreakStatement *ParserImpl::ParseBreakStatement()
 {
-    bool allowBreak = (context_.Status() & (ParserStatus::IN_ITERATION | ParserStatus::IN_SWITCH));
-    if (Extension() == ScriptExtension::TS && (context_.Status() & ParserStatus::FUNCTION) && !allowBreak) {
-        ThrowSyntaxError("Jump target cannot cross function boundary");
-    }
-
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
     lexer_->NextToken();
 
     if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SEMI_COLON ||
         lexer_->GetToken().Type() == lexer::TokenType::EOS || lexer_->GetToken().NewLine() ||
         lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
-        if (!allowBreak) {
-            if (Extension() == ScriptExtension::JS) {
-                ThrowSyntaxError("Illegal break statement");
-            }
-            if (Extension() == ScriptExtension::TS) {
-                ThrowSyntaxError(
-                    "A 'break' statement can only be used within an "
-                    "enclosing iteration or switch statement");
-            }
-        }
+        checkBreakStatement(nullptr);
 
         auto *breakStatement = AllocNode<ir::BreakStatement>();
         breakStatement->SetRange({startLoc, lexer_->GetToken().End()});
@@ -823,6 +878,7 @@ ir::BreakStatement *ParserImpl::ParseBreakStatement()
 
     auto *identNode = AllocNode<ir::Identifier>(label, Allocator());
     identNode->SetRange(lexer_->GetToken().Loc());
+    checkBreakStatement(identNode);
 
     auto *breakStatement = AllocNode<ir::BreakStatement>(identNode);
     breakStatement->SetRange({startLoc, lexer_->GetToken().End()});
@@ -835,28 +891,13 @@ ir::BreakStatement *ParserImpl::ParseBreakStatement()
 
 ir::ContinueStatement *ParserImpl::ParseContinueStatement()
 {
-    if (Extension() == ScriptExtension::TS &&
-        (static_cast<ParserStatus>(context_.Status() & (ParserStatus::FUNCTION | ParserStatus::IN_ITERATION |
-                                                        ParserStatus::IN_SWITCH)) == ParserStatus::FUNCTION)) {
-        ThrowSyntaxError("Jump target cannot cross function boundary");
-    }
-
-    if (!(context_.Status() & ParserStatus::IN_ITERATION)) {
-        if (Extension() == ScriptExtension::JS) {
-            ThrowSyntaxError("Illegal continue statement");
-        }
-        if (Extension() == ScriptExtension::TS) {
-            ThrowSyntaxError(
-                "A 'continue' statement can only be used within an "
-                "enclosing iteration statement");
-        }
-    }
-
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
     lexer::SourcePosition endLoc = lexer_->GetToken().End();
     lexer_->NextToken();
 
     if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
+        checkContinueStatement(nullptr);
+
         auto *continueStatement = AllocNode<ir::ContinueStatement>();
         continueStatement->SetRange({startLoc, lexer_->GetToken().End()});
         lexer_->NextToken();
@@ -865,6 +906,8 @@ ir::ContinueStatement *ParserImpl::ParseContinueStatement()
 
     if (lexer_->GetToken().NewLine() || lexer_->GetToken().Type() == lexer::TokenType::EOS ||
         lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
+        checkContinueStatement(nullptr);
+
         auto *continueStatement = AllocNode<ir::ContinueStatement>();
         continueStatement->SetRange({startLoc, endLoc});
         return continueStatement;
@@ -877,12 +920,13 @@ ir::ContinueStatement *ParserImpl::ParseContinueStatement()
     const auto &label = lexer_->GetToken().Ident();
     const ParserContext *labelCtx = context_.FindLabel(label);
 
-    if (!labelCtx || !(labelCtx->Status() & ParserStatus::IN_ITERATION)) {
+    if (!labelCtx) {
         ThrowSyntaxError("Undefined label");
     }
 
     auto *identNode = AllocNode<ir::Identifier>(label, Allocator());
     identNode->SetRange(lexer_->GetToken().Loc());
+    checkContinueStatement(identNode);
 
     auto *continueStatement = AllocNode<ir::ContinueStatement>(identNode);
     continueStatement->SetRange({startLoc, lexer_->GetToken().End()});

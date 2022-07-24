@@ -22,10 +22,6 @@ const ParserContext *ParserContext::FindLabel(const util::StringView &label) con
 {
     const auto *iter = this;
     do {
-        if (iter->label_.Empty()) {
-            return nullptr;
-        }
-
         if (iter->label_ == label) {
             return iter;
         }
