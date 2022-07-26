@@ -16,6 +16,7 @@
 #include "binder.h"
 
 #include <util/helpers.h>
+#include <util/hotfix.h>
 #include <binder/scope.h>
 #include <binder/tsBinding.h>
 #include <es2panda.h>

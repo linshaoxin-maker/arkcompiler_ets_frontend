@@ -144,6 +144,11 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<int> opFileThreadCount("file-threads", 0, "Number of worker threads to compile file");
     panda::PandArg<bool> opSizeStat("dump-size-stat", false, "Dump size statistics");
     panda::PandArg<bool> opDumpLiteralBuffer("dump-literal-buffer", false, "Dump literal buffer");
+
+    // hotfix
+    panda::PandArg<std::string> opDumpBytecodeMap("dump-map", "", "Dump function bytecode info to file");
+    panda::PandArg<std::string> opMapFile("ref-map", "", "Generate patch with this map file");
+
     panda::PandArg<std::string> outputFile("output", "", "Compiler binary output (.abc)");
     panda::PandArg<std::string> recordName("record-name", "", "Specify the record name");
     panda::PandArg<bool> debuggerEvaluateExpression("debugger-evaluate-expression", false,
@@ -178,6 +183,9 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&opFileThreadCount);
     argparser_->Add(&opSizeStat);
     argparser_->Add(&opDumpLiteralBuffer);
+
+    argparser_->Add(&opDumpBytecodeMap);
+    argparser_->Add(&opMapFile);
 
     argparser_->Add(&inputExtension);
     argparser_->Add(&outputFile);
@@ -338,6 +346,9 @@ bool Options::Parse(int argc, const char **argv)
     compilerOptions_.optLevel = opOptLevel.GetValue();
     compilerOptions_.sourceFiles = sourceFiles_;
     compilerOptions_.mergeAbc = opMergeAbc.GetValue();
+
+    compilerOptions_.hotfixOptions.dumpBytecodeMap = opDumpBytecodeMap.GetValue();
+    compilerOptions_.hotfixOptions.mapFile = opMapFile.GetValue();
 
     return true;
 }

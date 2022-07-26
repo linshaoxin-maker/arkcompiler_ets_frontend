@@ -30,6 +30,7 @@
 #include <macros.h>
 #include <parser/program/program.h>
 #include <util/helpers.h>
+#include <util/hotfix.h>
 
 #include <string>
 #include <string_view>
@@ -62,6 +63,7 @@ void FunctionEmitter::Generate()
     GenSourceFileDebugInfo();
     GenFunctionCatchTables();
     GenLiteralBuffers();
+    util::Hotfix::GetInstance()->ProcessFunction(pg_, func_, literalBuffers_);
 }
 
 const ArenaSet<util::StringView> &FunctionEmitter::Strings() const
@@ -385,6 +387,7 @@ void Emitter::AddSourceTextModuleRecord(ModuleRecordEmitter *module, const Compi
         moduleIdxField.metadata->SetValue(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U32>(
             static_cast<uint32_t>(module->Index())));
         rec_->field_list.emplace_back(std::move(moduleIdxField));
+        util::Hotfix::GetInstance()->ProcessModule(rec_->name, module->Buffer());
     } else {
         auto ecmaModuleRecord = panda::pandasm::Record("_ESModuleRecord", LANG_EXT);
         ecmaModuleRecord.metadata->SetAccessFlags(panda::ACC_PUBLIC);
@@ -395,11 +398,14 @@ void Emitter::AddSourceTextModuleRecord(ModuleRecordEmitter *module, const Compi
         moduleIdxField.metadata->SetValue(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U32>(
             static_cast<uint32_t>(module->Index())));
         ecmaModuleRecord.field_list.emplace_back(std::move(moduleIdxField));
+
+        util::Hotfix::GetInstance()->ProcessModule(ecmaModuleRecord.name, module->Buffer());
         prog_->record_table.emplace(ecmaModuleRecord.name, std::move(ecmaModuleRecord));
     }
     auto &moduleLiteralsBuffer = module->Buffer();
     auto literalArrayInstance = panda::pandasm::LiteralArray(std::move(moduleLiteralsBuffer));
     prog_->literalarray_table.emplace(std::to_string(module->Index()), std::move(literalArrayInstance));
+
 }
 
 void Emitter::DumpAsm(const panda::pandasm::Program *prog)
@@ -439,6 +445,8 @@ void Emitter::DumpAsm(const panda::pandasm::Program *prog)
 
 panda::pandasm::Program *Emitter::Finalize(bool dumpDebugInfo)
 {
+    util::Hotfix::GetInstance()->Finalize(&prog_);
+
     if (dumpDebugInfo) {
         debuginfo::DebugInfoDumper dumper(prog_);
         dumper.Dump();

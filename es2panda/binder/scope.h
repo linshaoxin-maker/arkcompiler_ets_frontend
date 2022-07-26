@@ -291,9 +291,20 @@ public:
         return lexicalVarNames_;
     }
 
+    void AddLexicalVarTypes(uint32_t slot, int type)
+    {
+        lexicalVarTypes_.emplace(slot, type);
+    }
+
+    ArenaMap<uint32_t, int> &GetLexicalVarTypes()
+    {
+        return lexicalVarTypes_;
+    }
+
 protected:
     explicit VariableScope(ArenaAllocator *allocator, Scope *parent) : Scope(allocator, parent),
-                                                                       lexicalVarNames_(allocator->Adapter()) {}
+                                                                       lexicalVarNames_(allocator->Adapter()),
+                                                                       lexicalVarTypes_(allocator->Adapter()) {}
 
     inline VariableFlags DeclFlagToVariableFlag(DeclarationFlags declFlag);
 
@@ -313,6 +324,7 @@ protected:
     VariableScopeFlags flags_ {};
     uint32_t slotIndex_ {};
     ArenaMap<uint32_t, util::StringView> lexicalVarNames_; // for debuginfo
+    ArenaMap<uint32_t, int> lexicalVarTypes_;
 };
 
 class ParamScope : public Scope {

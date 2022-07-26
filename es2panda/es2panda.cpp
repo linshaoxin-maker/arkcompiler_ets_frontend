@@ -20,6 +20,7 @@
 #include <compiler/core/compilerImpl.h>
 #include <parser/parserImpl.h>
 #include <parser/program/program.h>
+#include <util/hotfix.h>
 
 #include <libpandabase/utils/hash.h>
 
@@ -51,6 +52,11 @@ panda::pandasm::Program *Compiler::Compile(const SourceFile &input, const Compil
     std::string src(input.source);
     std::string rname(input.recordName);
     parser::ScriptKind kind(input.scriptKind);
+
+    if (!util::Hotfix::GetInstance()->Initialize(options.hotfixOptions.mapFile, options.hotfixOptions.dumpBytecodeMap)) {
+        std::cerr << "Exits due to hot fix initialize failed!" << std::endl;
+        return nullptr;
+    }
 
     try {
         auto ast = parser_->Parse(fname, src, rname, kind);

@@ -284,6 +284,7 @@ set(ES2PANDA_LIB_SRC
   typescript/types/voidType.cpp
   util/bitset.cpp
   util/helpers.cpp
+  util/hotfix.cpp
   util/ustring.cpp
 )
 

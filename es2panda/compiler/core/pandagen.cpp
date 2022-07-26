@@ -17,6 +17,7 @@
 
 #include <binder/binder.h>
 #include <util/helpers.h>
+#include <util/hotfix.h>
 #include <binder/scope.h>
 #include <binder/variable.h>
 #include <compiler/base/catchTable.h>
@@ -1563,6 +1564,16 @@ void PandaGen::LoadLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t 
     sa_.Emit<EcmaLdlexvardyn>(node, level, slot);
 }
 
+void PandaGen::LoadLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot, const util::StringView &name)
+{
+    if (slot != UINT32_MAX) {
+        sa_.Emit<EcmaLdlexvardyn>(node, level, slot);
+    } else {
+        uint32_t patchSlot = util::Hotfix::GetInstance()->GetPatchLexicalIdx(std::string(name));
+        sa_.Emit<EcmaLdpatchvar>(node, patchSlot);
+    }
+}
+
 void PandaGen::StoreLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot)
 {
     RegScope rs(this);
@@ -1574,6 +1585,19 @@ void PandaGen::StoreLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t
 void PandaGen::StoreLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot, VReg value)
 {
     ra_.Emit<EcmaStlexvardyn>(node, level, slot, value);
+}
+
+void PandaGen::StoreLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot, const util::StringView &name)
+{
+    if (slot != UINT32_MAX) {
+        RegScope rs(this);
+        VReg value = AllocReg();
+        StoreAccumulator(node, value);
+        ra_.Emit<EcmaStlexvardyn>(node, level, slot, value);
+    } else {
+        uint32_t patchSlot = util::Hotfix::GetInstance()->GetPatchLexicalIdx(std::string(name));
+        sa_.Emit<EcmaStpatchvar>(node, patchSlot);
+    }
 }
 
 void PandaGen::ThrowIfSuperNotCorrectCall(const ir::AstNode *node, int64_t num)

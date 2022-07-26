@@ -16,6 +16,7 @@
 #include "variable.h"
 
 #include <binder/scope.h>
+#include <util/hotfix.h>
 
 #include <utility>
 
@@ -47,10 +48,19 @@ void LocalVariable::SetLexical(Scope *scope)
     }
 
     VariableScope *varScope = scope->EnclosingVariableScope();
-    uint32_t slot = varScope->NextSlot();
+    uint32_t slot = 0;
     auto name = Declaration()->Name();
-    varScope->AddLexicalVarName(slot, name); // gather lexical variables for debuginfo
+
+    if (util::Hotfix::GetInstance()->NeedSetLexicalForPatch(varScope)) {
+        slot = util::Hotfix::GetInstance()->SetLexicalForPatch(varScope, std::string(name));
+    } else {
+        slot = varScope->NextSlot();
+    }
+
     BindLexEnvSlot(slot);
+    varScope->AddLexicalVarName(slot, name); // gather lexical variables for debuginfo
+    varScope->AddLexicalVarTypes(slot,
+        static_cast<typename std::underlying_type<binder::DeclType>::type>(Declaration()->Type()));
 }
 
 void GlobalVariable::SetLexical([[maybe_unused]] Scope *scope) {}

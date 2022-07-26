@@ -56,6 +56,11 @@ struct SourceFile {
     uint32_t hash {0};
 };
 
+struct HotfixOptions {
+    std::string dumpBytecodeMap;
+    std::string mapFile;
+};
+
 struct CompilerOptions {
     bool isDebug {false};
     bool dumpAst {false};
@@ -73,6 +78,7 @@ struct CompilerOptions {
     std::string output {};
     std::string debugInfoSourceFile {};
     std::vector<es2panda::SourceFile> sourceFiles;
+    HotfixOptions hotfixOptions;
 };
 
 enum class ErrorType {
