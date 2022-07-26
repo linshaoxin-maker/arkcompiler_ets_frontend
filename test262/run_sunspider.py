@@ -239,22 +239,24 @@ class ArkProgram():
         if self.ark_aot:
             os.system(f'''sed -i 's/;$262.destroy();/\/\/;$262.destroy();/g' {js_file}''')
             if self.module:
+                self.abc_file = os.path.abspath(out_file)
                 js_dir = os.path.dirname(js_file)
                 for line in fileinput.input(js_file):
-                    import_line = re.findall(r"^(?:ex|im)port.*from.*\.js", line)
+                    import_line = re.findall(r"^(?:ex|im)port.*\.js", line)
                     if len(import_line):
                         import_file = re.findall(r"['\"].*\.js", import_line[0])
                         if len(import_file):
                             abc_file = import_file[0][1:].replace(".js", ".abc")
+                            abc_file = os.path.abspath(f'{js_dir}/{abc_file}')
                             if self.abc_file.find(abc_file) < 0:
-                                self.abc_file += f':{js_dir}/{abc_file}'
+                                self.abc_file += f':{abc_file}'
         retcode = exec_command(cmd_args)
+        self.abc_cmd = cmd_args
         return retcode
 
     def compile_aot(self):
         os.environ["LD_LIBRARY_PATH"] = self.libs_dir
         file_name_pre = os.path.splitext(self.js_file)[0]
-        abc_file = f'{file_name_pre}.abc'
         cmd_args = []
         if self.arch == ARK_ARCH_LIST[1]:
             cmd_args = [self.ark_aot_tool, ICU_PATH,
@@ -278,7 +280,10 @@ class ArkProgram():
                         f'> {file_name_pre}.log 2>&1']
         retcode = run_command(cmd_args)
         if retcode:
+            print_command(self.abc_cmd)
             print_command(cmd_args)
+            for line in fileinput.input(f'{file_name_pre}.log'):
+                sys.stderr.write(line)
 
     def execute_aot(self):
         os.environ["LD_LIBRARY_PATH"] = self.libs_dir
