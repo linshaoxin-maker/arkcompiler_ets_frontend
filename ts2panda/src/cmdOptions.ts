@@ -27,7 +27,7 @@ const ts2pandaOptions = [
     { name: 'debug-log', alias: 'l', type: Boolean, defaultValue: false, description: "show info debug log and generate the json file." },
     { name: 'dump-assembly', alias: 'a', type: Boolean, defaultValue: false, description: "dump assembly to file." },
     { name: 'debug', alias: 'd', type: Boolean, defaultValue: false, description: "compile with debug info." },
-    { name: 'debug-add-watch', alias: 'w', type: String, lazyMultiple: true, defaultValue: [], description: "watch expression and abc file path in debug mode." },
+    { name: 'debug-add-watch', alias: 'w', type: String, lazyMultiple: true, defaultValue: [], description: "watch expression, abc file path and maybe watchTimeOut(in seconds) in debug mode." },
     { name: 'keep-persistent-watch', alias: 'k', type: String, lazyMultiple: true, defaultValue: [], description: "keep persistent watch on js file with watched expression." },
     { name: 'show-statistics', alias: 's', type: String, lazyMultiple: true, defaultValue: "", description: "show compile statistics(ast, histogram, hoisting, all)." },
     { name: 'output', alias: 'o', type: String, defaultValue: "", description: "set output file." },
