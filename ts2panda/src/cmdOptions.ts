@@ -34,7 +34,7 @@ const ts2pandaOptions = [
     { name: 'timeout', alias: 't', type: Number, defaultValue: 0, description: "js to abc timeout threshold(unit: seconds)." },
     { name: 'opt-log-level', type: String, defaultValue: "error", description: "specifie optimizer log level. Possible values: ['debug', 'info', 'error', 'fatal']" },
     {
-        name: 'opt-level', type: Number, defaultValue: 1, description: "Optimization level. Possible values: [0, 1, 2]. Default: 0\n    0: no optimizations\n    \
+        name: 'opt-level', type: Number, defaultValue: 2, description: "Optimization level. Possible values: [0, 1, 2]. Default: 0\n    0: no optimizations\n    \
                                                                     1: basic bytecode optimizations, including valueNumber, lowering, constantResolver, regAccAllocator\n    \
                                                                     2: other bytecode optimizations, unimplemented yet"},
     { name: 'help', alias: 'h', type: Boolean, description: "Show usage guide." },
@@ -45,7 +45,6 @@ const ts2pandaOptions = [
     { name: 'dts-type-record', alias: 'q', type: Boolean, defaultValue: false, description: "Record type info for .d.ts files. Default: false" },
     { name: 'debug-type', alias: 'g', type: Boolean, defaultValue: false, description: "Print type-related log. Default: false" },
     { name: 'output-type', type: Boolean, defaultValue: false, description: "set output type."},
-    { name: 'enable-typeinfo', type: Boolean, defaultValue: false, description: "Enable typeinfo of pairs of instruction orders and types" },
     { name: 'display-typeinfo', type: Boolean, defaultValue: false, description: "Display typeinfo of pairs of instruction orders and types when enable-typeinfo is true" }
 ]
 
@@ -54,13 +53,6 @@ const ts2pandaOptions = [
 export class CmdOptions {
     private static parsedResult: ts.ParsedCommandLine;
     private static options: commandLineArgs.CommandLineOptions;
-
-    static getEnableTypeinfo(): boolean {
-        if (!this.options) {
-            return false;
-        }
-        return this.options["enable-typeinfo"];
-    }
 
     static getDisplayTypeinfo(): boolean {
         if (!this.options) {

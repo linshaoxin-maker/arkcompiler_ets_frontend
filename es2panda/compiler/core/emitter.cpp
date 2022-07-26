@@ -75,7 +75,8 @@ void FunctionEmitter::GenBufferLiterals(const LiteralBuffer *buff)
 {
     auto &[idx, array] = literalBuffers_.emplace_back();
     idx = buff->Index();
-    array.reserve(buff->Literals().size() * 2);
+    constexpr size_t ARRAY_EXPANSION = 2;
+    array.reserve(buff->Literals().size() * ARRAY_EXPANSION);
 
     for (const auto *literal : buff->Literals()) {
         panda::pandasm::LiteralArray::Literal valueLit;
@@ -114,16 +115,17 @@ void FunctionEmitter::GenBufferLiterals(const LiteralBuffer *buff)
                 valueLit.value_ = literal->GetMethod().Mutf8();
                 break;
             }
+            case ir::LiteralTag::METHODAFFILIATE: {
+                valueLit.tag_ = panda::panda_file::LiteralTag::METHODAFFILIATE;
+                valueLit.value_ = literal->GetMethodAffiliate();
+                break;
+            }
             case ir::LiteralTag::GENERATOR_METHOD: {
                 valueLit.tag_ = panda::panda_file::LiteralTag::GENERATORMETHOD;
                 valueLit.value_ = literal->GetMethod().Mutf8();
                 break;
             }
-            case ir::LiteralTag::ASYNC_GENERATOR_METHOD: {
-                valueLit.tag_ = panda::panda_file::LiteralTag::ASYNCGENERATORMETHOD;
-                valueLit.value_ = literal->GetMethod().Mutf8();
-                break;
-            }
+            // TODO: support ir::LiteralTag::ASYNC_GENERATOR_METHOD
             case ir::LiteralTag::NULL_VALUE: {
                 valueLit.tag_ = panda::panda_file::LiteralTag::NULLVALUE;
                 valueLit.value_ = static_cast<uint8_t>(0);
@@ -181,16 +183,17 @@ static size_t GetIRNodeWholeLength(const IRNode *node)
     }
 
     size_t len = 1;
+    constexpr size_t BIT_WIDTH = 8;
     const auto format = MatchFormat(node, formats);
 
     for (auto fi : format.GetFormatItem()) {
-        len += fi.Bitwidth() / 8;
+        len += fi.Bitwidth() / BIT_WIDTH;
     }
 
     return len;
 }
 
-static std::string WholeLine(const util::StringView &source, lexer::SourceRange range)
+[[maybe_unused]] static std::string WholeLine(const util::StringView &source, lexer::SourceRange range)
 {
     return source.Substr(range.start.index, range.end.index).EscapeSymbol<util::StringView::Mutf8Encode>();
 }
@@ -208,7 +211,7 @@ void FunctionEmitter::GenInstructionDebugInfo(const IRNode *ins, panda::pandasm:
         }
     }
 
-    pandaIns->ins_debug.line_number = astNode->Range().start.line + 1;
+    pandaIns->ins_debug.line_number = astNode->Range().start.line;
 
     if (pg_->IsDebug()) {
         size_t insLen = GetIRNodeWholeLength(ins);
@@ -218,7 +221,8 @@ void FunctionEmitter::GenInstructionDebugInfo(const IRNode *ins, panda::pandasm:
         }
 
         offset_ += insLen;
-        pandaIns->ins_debug.whole_line = WholeLine(SourceCode(), astNode->Range());
+
+        pandaIns->ins_debug.column_number = astNode->Range().start.index;
     }
 }
 

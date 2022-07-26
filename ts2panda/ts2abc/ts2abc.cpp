@@ -900,14 +900,6 @@ static void ParseOptLevel(const Json::Value &rootValue)
     }
 }
 
-static void ParseEnableTypeinfo(const Json::Value &rootValue)
-{
-    Logd("-----------------parse enable_typeinfo-----------------");
-    if (rootValue.isMember("enable_typeinfo") && rootValue["enable_typeinfo"].isBool()) {
-        g_enableTypeinfo = rootValue["enable_typeinfo"].asBool();
-    }
-}
-
 static void ParseDisplayTypeinfo(const Json::Value &rootValue)
 {
     Logd("-----------------parse enable_typeinfo-----------------");
@@ -944,7 +936,6 @@ static void ParseOptions(const Json::Value &rootValue, panda::pandasm::Program &
     ParseLogEnable(rootValue);
     ParseDebugMode(rootValue);
     ParseOptLevel(rootValue);
-    ParseEnableTypeinfo(rootValue);
     ParseDisplayTypeinfo(rootValue);
     ParseOptLogLevel(rootValue);
 }
@@ -1318,18 +1309,20 @@ bool GenerateProgram([[maybe_unused]] const std::string &data, const std::string
 
     Logd("parsing done, calling pandasm\n");
 
-    if (g_enableTypeinfo) {
-        TypeAdapter ada(g_displayTypeinfo);
-        ada.AdaptTypeForProgram(&prog);
-    }
+    TypeAdapter ada(g_displayTypeinfo);
+    ada.AdaptTypeForProgram(&prog);
 
 #ifdef ENABLE_BYTECODE_OPT
     if (g_optLevel != static_cast<int>(OptLevel::O_LEVEL0) || optLevel != static_cast<int>(OptLevel::O_LEVEL0)) {
         optLogLevel = (optLogLevel != "error") ? optLogLevel : g_optLogLevel;
 
-        const uint32_t componentMask = panda::Logger::Component::CLASS2PANDA | panda::Logger::Component::ASSEMBLER |
-                                    panda::Logger::Component::BYTECODE_OPTIMIZER | panda::Logger::Component::COMPILER;
-        panda::Logger::InitializeStdLogging(panda::Logger::LevelFromString(optLogLevel), componentMask);
+        if (g_optLogLevel != "error") {
+            panda::Logger::ComponentMask mask;
+            mask.set(panda::Logger::Component::ASSEMBLER);
+            mask.set(panda::Logger::Component::BYTECODE_OPTIMIZER);
+            mask.set(panda::Logger::Component::COMPILER);
+            panda::Logger::InitializeStdLogging(panda::Logger::LevelFromString(optLogLevel), mask);
+        }
 
         bool emitDebugInfo = true;
         std::map<std::string, size_t> stat;
