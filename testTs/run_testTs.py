@@ -40,6 +40,7 @@ def parse_args():
     parser.add_argument('--file', metavar='FILE', help="File to test")
     parser.add_argument(
         '--ark_frontend_tool',
+        default=DEFAULT_ARK_FRONTEND_TOOL,
         help="ark frontend conversion tool")
     arguments = parser.parse_args()
     return arguments
@@ -53,7 +54,7 @@ def skip(filepath, flag=False):
             skip_test['import_skip'] + \
             skip_test['code_rule'] + skip_test['no_case']
         if os.path.isfile(filepath):
-            if filepath.endswith('.ts'):
+            if filepath.endswith('.ts') or filepath.endswith('.js'):
                 if filepath not in skip_test_list:
                     return True
                 else:
@@ -72,57 +73,75 @@ def run_test(file, tool, flag=False):
     path_list = file.split(os.sep)
     if path_list[0] != '.':
         file = "." + os.sep + file
-    out_file_path = file.replace(TEST_PATH, OUT_PATH).replace(TS_EXT, TXT_EXT)
-    temp_out_file_path = file.replace(TS_EXT, TXT_EXT)
-    temp_abc_file_path = file.replace(TS_EXT, ABC_EXT)
-    ts_list = temp_out_file_path.split(os.sep)
-    ts_list.pop(-1)
-    ts_dir_path = os.sep.join(ts_list)
-    path_list = out_file_path.split(os.sep)
-    path_list.pop(-1)
-    out_dir_path = os.sep.join(path_list)
-    if not os.path.exists(out_dir_path):
-        os.makedirs(out_dir_path)
-    try:
-        if file in IMPORT_TEST['import'] + IMPORT_TEST['m_parameter']:
-            command_os(['node', '--expose-gc', tool, '-m', file, '--output-type'])
+    if file.endswith(TS_EXT):
+        tool = DEFAULT_ARK_FRONTEND_TOOL
+        out_file_path = file.replace(TEST_PATH, OUT_TS_PATH).replace(TS_EXT, TXT_EXT)
+        temp_out_file_path = file.replace(TS_EXT, TXT_EXT)
+        temp_abc_file_path = file.replace(TS_EXT, ABC_EXT)
+        ts_list = temp_out_file_path.split(os.sep)
+        ts_list.pop(-1)
+        ts_dir_path = os.sep.join(ts_list)
+        path_list = out_file_path.split(os.sep)
+        path_list.pop(-1)
+        out_dir_path = os.sep.join(path_list)
+        if not os.path.exists(out_dir_path):
+            os.makedirs(out_dir_path)
+        try:
+            if file in IMPORT_TEST['import'] + IMPORT_TEST['m_parameter']:
+                command_os(['node', '--expose-gc', tool, '-m', file, '--output-type'])
+            else:
+                command_os(['node', '--expose-gc', tool, file, '--output-type'])
+        except BaseException as e:
+            print(e)
+        if flag:
+            for root, dirs, files in os.walk(ts_dir_path):
+                for fi in files:
+                    ts_file = f'{root}/{fi}'
+                    if ABC_EXT in ts_file:
+                        remove_file(ts_file)
+                    elif TXT_EXT in ts_file:
+                        sj_path = ts_file.replace(TEST_PATH, OUT_TS_PATH)
+                        move_file(ts_file, sj_path)
         else:
-            command_os(['node', '--expose-gc', tool, file, '--output-type'])
-    except BaseException as e:
-        print(e)
-    if flag:
-        for root, dirs, files in os.walk(ts_dir_path):
-            for fi in files:
-                ts_file = f'{root}/{fi}'
-                if ABC_EXT in ts_file:
-                    remove_file(ts_file)
-                elif TXT_EXT in ts_file:
-                    sj_path = ts_file.replace(TEST_PATH, OUT_PATH)
-                    move_file(ts_file, sj_path)
-    else:
-        if os.path.exists(temp_abc_file_path):
-            abc_judge(temp_abc_file_path)
-            remove_file(temp_abc_file_path)
-        if os.path.exists(temp_out_file_path):
-            move_file(temp_out_file_path, out_file_path)
+            if os.path.exists(temp_abc_file_path):
+                abc_judge(temp_abc_file_path)
+                remove_file(temp_abc_file_path)
+            if os.path.exists(temp_out_file_path):
+                move_file(temp_out_file_path, out_file_path)
+    elif file.endswith(JS_EXT):
+        abc_filepath = os.path.join(WORK_PATH, file.replace(JS_EXT, ABC_EXT).lstrip('./'))
+        output_path = file.replace(JS_EXT, TXT_EXT)
+        if tool == DEFAULT_ARK_FRONTEND_TOOL:
+            command_os(['node', '--expose-gc', tool, file])
+        elif tool == ARK_FRONTEND_TOOL_ES2ABC:
+            command_os([tool, file, '--output', abc_filepath])
+        os.chdir('../../')
+        run_abc_cmd = [ARK_JS_VM, abc_filepath]
+        run_abc_result = subprocess.Popen(run_abc_cmd, stdout=subprocess.PIPE)
+        js_result_list = []
+        for line in run_abc_result.stdout.readlines():
+            js_result = str(line).lstrip("b'").rstrip("\\n'")+'\n'
+            js_result_list.append(js_result)
+        remove_file(abc_filepath)
+        os.chdir(ARK_TS2ABC_PATH)
+        with open(output_path,'w') as output:
+            output.writelines(js_result_list)
 
 
 def run_test_machine(args):
     ark_frontend_tool = DEFAULT_ARK_FRONTEND_TOOL
-    result_path = []
     if args.ark_frontend_tool:
-        ark_frontend_tool = args.ark_frontend_tool
-
+        ark_frontend_tool = process_tool_path(args.ark_frontend_tool)
+    result_path = []
     if args.file:
         if skip(args.file, True):
             if args.file in IMPORT_TEST['import']:
                 run_test(args.file, ark_frontend_tool, True)
                 result = compare(args.file, True)
-                result_path.append(result)
             else:
                 run_test(args.file, ark_frontend_tool)
                 result = compare(args.file)
-                result_path.append(result)
+            result_path.append(result)
 
     elif args.dir:
         for root, dirs, files in os.walk(args.dir):
@@ -132,25 +151,23 @@ def run_test_machine(args):
                     if test_path in IMPORT_TEST['import']:
                         run_test(test_path, ark_frontend_tool, True)
                         result = compare(test_path, True)
-                        result_path.append(result)
                     else:
                         run_test(test_path, ark_frontend_tool)
                         result = compare(test_path)
-                        result_path.append(result)
+                    result_path.append(result)
 
     elif args.file is None and args.dir is None:
-        for root, dirs, files in os.walk(TS_CASES_DIR):
+        for root, dirs, files in os.walk(CASES_DIR):
             for file in files:
                 test_path = f'{root}/{file}'
                 if skip(test_path):
                     if test_path in IMPORT_TEST['import']:
                         run_test(test_path, ark_frontend_tool, True)
                         result = compare(test_path, True)
-                        result_path.append(result)
                     else:
                         run_test(test_path, ark_frontend_tool)
                         result = compare(test_path)
-                        result_path.append(result)
+                    result_path.append(result)
     with open(OUT_RESULT_FILE, 'w') as read_out_result:
         read_out_result.writelines(result_path)
 
@@ -193,31 +210,42 @@ def compare(file, flag=False):
     path_list = file.split(os.sep)
     if path_list[0] != '.':
         file = "." + os.sep + file
-    out_path = file.replace(TEST_PATH, OUT_PATH).replace(TS_EXT, TXT_EXT)
-    expect_path = file.replace(TEST_PATH, EXPECT_PATH).replace(TS_EXT, TXT_EXT)
-    if flag:
-        path_list = out_path.split(os.sep)
-        del path_list[-1]
-        out_dir_path = os.sep.join(path_list)
-        for root, dirs, files in os.walk(out_dir_path):
-            for fi in files:
-                fi = f'{root}/{fi}'
-                if fi != out_path:
-                    with open(fi, 'r') as read_out_txt:
-                        el_file_txt = read_out_txt.read()
-                        write_append(out_path, el_file_txt)
-                        remove_file(fi)
+    if file.endswith(TS_EXT):
+        out_path = file.replace(TEST_PATH, OUT_TS_PATH).replace(TS_EXT, TXT_EXT)
+        expect_path = file.replace(TEST_PATH, EXPECT_PATH).replace(TS_EXT, TXT_EXT)
+        if flag:
+            path_list = out_path.split(os.sep)
+            del path_list[-1]
+            out_dir_path = os.sep.join(path_list)
+            for root, dirs, files in os.walk(out_dir_path):
+                for fi in files:
+                    fi = f'{root}/{fi}'
+                    if fi != out_path:
+                        with open(fi, 'r') as read_out_txt:
+                            el_file_txt = read_out_txt.read()
+                            write_append(out_path, el_file_txt)
+                            remove_file(fi)
+    elif file.endswith(JS_EXT):
+        out_path = file.replace(JS_EXT, TXT_EXT)
+        filepath_list = file.split(os.sep)
+        filepath_list[-1] = filepath_list[-1].replace(JS_EXT, EXPECT_EXT)
+        expect_path = (os.sep).join(filepath_list)
     if (not os.path.exists(out_path) or not os.path.exists(expect_path)):
         print("There are no expected files or validation file generation: %s", file)
         result = f'FAIL {file}\n'
     else:
-        outcont = read_out_file(out_path)
-        expectcont = read_file(expect_path)
-        expectcontlist = []
-        for i in expectcont:
-            i = json.loads(i.replace("'", '"').replace('\n', ''))
-            expectcontlist.append(i)
-        if outcont == expectcontlist:
+        if file.endswith(TS_EXT):
+            outcont = read_out_file(out_path)
+            temp_expectcont = read_file(expect_path)
+            expectcont = []
+            for i in temp_expectcont:
+                i = json.loads(i.replace("'", '"').replace('\n', ''))
+                expectcont.append(i)
+        elif file.endswith(JS_EXT):
+            outcont = read_file(out_path)
+            remove_file(out_path)
+            expectcont = read_file(expect_path)
+        if outcont == expectcont:
             result = f'PASS {file}\n'
         else:
             result = f'FAIL {file}\n'
@@ -256,7 +284,7 @@ def prepare_ts_code():
         return
     try:
         mk_dir(TS_CASES_DIR)
-        os.chdir('./testTs/test')
+        os.chdir(TS_CASES_DIR)
         command_os(['git', 'init'])
         command_os(['git', 'remote', 'add', 'origin', TS_GIT_PATH])
         command_os(['git', 'config', 'core.sparsecheckout', 'true'])
@@ -267,11 +295,11 @@ def prepare_ts_code():
             remove_dir(TS_CASES_DIR)
             raise MyException(
                 "Pull TypeScript Code Fail, Please Check The Network Request")
-        command_os(['git', 'apply', '../test-case.patch'])
+        command_os(['git', 'apply', '../../test-case.patch'])
         command_os(['cp', '-r', './tests/cases/conformance/.', './'])
         command_os(['rm', '-rf', './tests'])
         command_os(['rm', '-rf', '.git'])
-        os.chdir('../../')
+        os.chdir(WORK_PATH)
     except BaseException:
         print("pull test code fail")
 
@@ -281,6 +309,7 @@ def main(args):
         init_path()
         excuting_npm_install(args)
         prepare_ts_code()
+        export_path()
         run_test_machine(args)
         summary()
     except BaseException:
