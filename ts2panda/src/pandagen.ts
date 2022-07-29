@@ -42,6 +42,7 @@ import {
     defineClassWithBuffer,
     defineFunc,
     defineGeneratorFunc,
+    defineAsyncGeneratorFunc,
     defineGetterSetterByValue,
     defineMethod,
     defineNCFunc,
@@ -133,7 +134,10 @@ import {
     EcmaCallspreaddyn,
     EcmaCopyrestargs,
     EcmaCreategeneratorobj,
+    EcmaCreateasyncgeneratorobj,
+    EcmaPreparehandlemode,
     EcmaCreateiterresultobj,
+    EcmaAsyncgeneratorresolve,
     EcmaDecdyn,
     EcmaDiv2dyn,
     EcmaEqdyn,
@@ -949,6 +953,11 @@ export class PandaGen {
                 if (realNode.modifiers[i].kind == ts.SyntaxKind.AsyncKeyword) {
                     if (realNode.asteriskToken) {
                         // support async* further
+                        this.add(
+                            node,
+                            defineAsyncGeneratorFunc(name, env, paramLength)
+                        );
+                        return;
                     } else { // async
                         this.add(
                             node,
@@ -976,7 +985,6 @@ export class PandaGen {
             );
             return;
         }
-
         this.add(
             node,
             defineFunc(name, env, paramLength)
@@ -1011,8 +1019,20 @@ export class PandaGen {
         this.add(node, new EcmaCreategeneratorobj(funcObj));
     }
 
+    createAsyncGeneratorObj(node: ts.Node, funcObj: VReg) {
+        this.add(node, new EcmaCreateasyncgeneratorobj(funcObj));
+    }
+    
+    prepareHandleMode(node: ts.Node, asyncGen: VReg){
+        this.add(node, new EcmaPreparehandlemode(asyncGen));
+    }
+
     EcmaCreateiterresultobj(node: ts.Node, value: VReg, done: VReg) {
         this.add(node, new EcmaCreateiterresultobj(value, done));
+    }
+
+    EcmaAsyncgeneratorresolve(node: ts.Node, genObj: VReg, value: VReg) {
+        this.add(node, new EcmaAsyncgeneratorresolve(genObj, value));
     }
 
     suspendGenerator(node: ts.Node, genObj: VReg, iterRslt: VReg) {
