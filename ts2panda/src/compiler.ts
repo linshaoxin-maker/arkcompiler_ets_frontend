@@ -60,6 +60,7 @@ import { compileYieldExpression } from "./expression/yieldExpression";
 import { AsyncFunctionBuilder } from "./function/asyncFunctionBuilder";
 import { FunctionBuilder, FunctionBuilderType } from "./function/functionBuilder";
 import { GeneratorFunctionBuilder } from "./function/generatorFunctionBuilder";
+import { AsyncGeneratorFunctionBuilder } from "./function/asyncGeneratorFunctionBuilder";
 import {
     hoistFunctionInBlock
 } from "./hoisting";
@@ -415,7 +416,8 @@ export class Compiler {
                 if (decl.modifiers[i].kind == ts.SyntaxKind.AsyncKeyword) {
                     // async generator
                     if (decl.asteriskToken) {
-                        throw new Error("Async generator is not supported");
+                        return new AsyncGeneratorFunctionBuilder(pandaGen, this);
+                        //throw new Error("Async generator is not supported");
                     } else { // async
                         return new AsyncFunctionBuilder(pandaGen);
                     }
@@ -1144,7 +1146,7 @@ export class Compiler {
     private compileAwaitExpression(expr: ts.AwaitExpression) {
         let pandaGen = this.pandaGen;
 
-        if (!(this.funcBuilder instanceof AsyncFunctionBuilder)) {
+        if (!(this.funcBuilder instanceof AsyncFunctionBuilder || this.funcBuilder instanceof AsyncGeneratorFunctionBuilder)) { //new add
             throw new DiagnosticError(expr.parent, DiagnosticCode.await_expressions_are_only_allowed_within_async_functions_and_at_the_top_levels_of_modules);
         }
 
