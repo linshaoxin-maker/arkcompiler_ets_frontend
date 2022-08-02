@@ -124,7 +124,13 @@ public:
         return (status_ & ParserStatus::MODULE) != 0;
     }
 
-    const util::StringView Label() {
+    bool IsInStatus(const ParserStatus status) const
+    {
+        return static_cast<ParserStatus>(status_ & status) == status;
+    }
+
+    const util::StringView &Label() const
+    {
         return label_;
     }
 

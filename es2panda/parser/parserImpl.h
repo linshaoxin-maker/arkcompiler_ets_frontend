@@ -392,8 +392,8 @@ private:
     void CheckLabelledFunction(const ir::Statement *node);
     void CheckDeclare();
 
-    void checkBreakStatement(ir::Identifier *label);
-    void checkContinueStatement(ir::Identifier *label);
+    void checkBreakStatement(ir::Identifier *label) const;
+    void checkContinueStatement(ir::Identifier *label) const;
 
     bool ParseDirective(ArenaVector<ir::Statement *> *statements);
     void ParseDirectivePrologue(ArenaVector<ir::Statement *> *statements);
