@@ -768,6 +768,10 @@ ir::BlockStatement *ParserImpl::ParseBlockStatement(binder::Scope *scope)
     blockNode->SetRange({startLoc, lexer_->GetToken().End()});
     scope->BindNode(blockNode);
 
+    // fix case: async function foo() { function test(){} await sleep(100);}
+    if (scope->IsFunctionScope()) {
+        context_.Status() = context_.Prev()->Status();
+    }
     lexer_->NextToken();
     return blockNode;
 }
