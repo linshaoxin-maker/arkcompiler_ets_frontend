@@ -1423,8 +1423,34 @@ ir::IfStatement *ParserImpl::ParseIfStatement()
     return ifStatement;
 }
 
+bool ParserImpl::isIterationStatement()
+{
+    lexer_->NextToken();
+
+    switch (lexer_->GetToken().Type()) {
+        case lexer::TokenType::KEYW_DO:
+        case lexer::TokenType::KEYW_FOR:
+        case lexer::TokenType::KEYW_WHILE: {
+            return true;
+        }
+        case lexer::TokenType::LITERAL_IDENT: {
+            if (lexer_->Lookahead() == LEX_CHAR_COLON) {
+                lexer_->NextToken();
+                return isIterationStatement();
+            }
+        }
+        default:
+            return false;
+    }
+    return false;
+}
+
 ir::LabelledStatement *ParserImpl::ParseLabelledStatement(const lexer::LexerPosition &pos)
 {
+    const auto savedPos = lexer_->Save();
+    bool isInIterator = isIterationStatement();
+    lexer_->Rewind(savedPos);
+
     const util::StringView &actualLabel = pos.token.Ident();
 
     // TODO(frobert) : check correctness
@@ -1436,7 +1462,11 @@ ir::LabelledStatement *ParserImpl::ParseLabelledStatement(const lexer::LexerPosi
         ThrowSyntaxError("Label already declared", pos.token.Start());
     }
 
-    SavedParserContext newCtx(this, ParserStatus::IN_LABELED, actualLabel);
+    ParserStatus newStatus = ParserStatus::IN_LABELED;
+    if (isInIterator) {
+        newStatus |= ParserStatus::IN_ITERATION;
+    }
+    SavedParserContext newCtx(this, newStatus, actualLabel);
 
     auto *identNode = AllocNode<ir::Identifier>(actualLabel, Allocator());
     identNode->SetRange(pos.token.Loc());

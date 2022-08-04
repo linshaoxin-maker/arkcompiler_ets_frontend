@@ -394,6 +394,7 @@ private:
 
     void checkBreakStatement(ir::Identifier *label) const;
     void checkContinueStatement(ir::Identifier *label) const;
+    bool isIterationStatement();
 
     bool ParseDirective(ArenaVector<ir::Statement *> *statements);
     void ParseDirectivePrologue(ArenaVector<ir::Statement *> *statements);
