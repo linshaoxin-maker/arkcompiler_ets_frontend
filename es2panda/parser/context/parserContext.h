@@ -124,6 +124,16 @@ public:
         return (status_ & ParserStatus::MODULE) != 0;
     }
 
+    bool IsInStatus(const ParserStatus status) const
+    {
+        return static_cast<ParserStatus>(status_ & status) == status;
+    }
+
+    const util::StringView &Label() const
+    {
+        return label_;
+    }
+
     const ParserContext *FindLabel(const util::StringView &label) const;
 
 private:
