@@ -148,7 +148,8 @@ int Run(int argc, const char **argv)
     }
 
     es2panda::Compiler compiler(options->Extension(), options->ThreadCount());
-    es2panda::SourceFile input(options->SourceFile(), options->ParserInput(), options->ScriptKind());
+    es2panda::SourceFile input(options->SourceFile(), options->ParserInput(),
+                               options->RecordName(), options->ScriptKind());
 
     auto *program = compiler.Compile(input, options->CompilerOptions());
 
