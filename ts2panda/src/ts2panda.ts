@@ -36,7 +36,8 @@ import {
     ModuleRecord,
     NamespaceImportEntry,
     RegularImportEntry,
-    Signature
+    Signature,
+    Record
 } from "./pandasm";
 import { generateCatchTables } from "./statement/tryStatement";
 import {
@@ -207,6 +208,19 @@ export class Ts2Panda {
         ts2abc.stdio[3].write(jsonOpt + '\n');
     }
 
+    static dumpRecord(ts2abc: any, recordName: string): void {
+        let record = {
+            "t": JsonType.record,
+            "rb": new Record(recordName)
+        }
+        let jsonRecord = escapeUnicode(JSON.stringify(record, null, 2));
+        jsonRecord = "$" + jsonRecord.replace(dollarSign, '#$') + "$";
+        if (CmdOptions.isEnableDebugLog()) {
+            Ts2Panda.jsonString += jsonRecord;
+        }
+        ts2abc.stdio[3].write(jsonRecord + '\n');
+    }
+
     // @ts-ignore
     static dumpPandaGen(pg: PandaGen, ts2abc: any, recordType?: boolean): void {
         let funcName = pg.internalName;
@@ -230,7 +244,7 @@ export class Ts2Panda {
                 }
             });
 
-            if (funcName == "func_main_0") {
+            if (funcName.indexOf("func_main_0") !== -1) {
                 let exportedTypes = PandaGen.getExportedTypes();
                 let declareddTypes = PandaGen.getDeclaredTypes();
                 if (exportedTypes.size != 0) {

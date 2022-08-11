@@ -50,6 +50,7 @@ const ts2pandaOptions = [
     { name: 'function-sourcecode', type: Boolean, defaultValue: false, description: "Record functions' sourceCode to support the feature of [function].toString()" },
     { name: 'expression-watch-toolchain', type: String, defaultValue: "es2panda", description: "Specify the tool chain used to transform the expression" },
     { name: 'source-file', type: String, defaultValue: "", description: "specify the file path info recorded in generated abc" },
+    { name: 'record-name', type: String, defaultValue: "", description: "specify the record name." }
 ]
 
 
@@ -206,6 +207,13 @@ export class CmdOptions {
             outputFile = CmdOptions.getInputFileName() + ".abc";
         }
         return outputFile;
+    }
+
+    static getRecordName(): string {
+        if (!this.options) {
+            return "";
+        }
+        return this.options["record-name"];
     }
 
     static getTimeOut(): Number {
