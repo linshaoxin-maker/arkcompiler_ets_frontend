@@ -18,19 +18,18 @@ import {
 } from 'chai';
 import 'mocha';
 import {
-    EcmaCopyrestargs,
-    EcmaDefinefuncdyn,
-    EcmaReturnundefined,
-    EcmaStglobalvar,
-    EcmaStlettoglobalrecord,
-    EcmaStricteqdyn,
+    Copyrestargs,
+    Definefunc,
+    Returnundefined,
+    Stglobalvar,
+    Sttoglobalrecord,
+    Stricteq,
     Imm,
     Jeqz,
     Label,
-    LdaDyn,
-    LdaiDyn,
-    ResultType,
-    StaDyn,
+    Lda,
+    Ldai,
+    Sta,
     VReg
 } from "../../src/irnodes";
 import {
@@ -45,9 +44,9 @@ describe("FunctionDeclarationTest", function () {
         snippetCompiler.compile("function foo() {}");
         let funcName = "foo";
         let expected = [
-            new EcmaDefinefuncdyn(funcName, new Imm(0), new VReg()),
-            new EcmaStglobalvar(funcName),
-            new EcmaReturnundefined()
+            new Definefunc(new Imm(0), funcName, new Imm(0)),
+            new Stglobalvar(new Imm(1), funcName),
+            new Returnundefined()
         ];
         let insns = snippetCompiler.getGlobalInsns();
         let globalScope = snippetCompiler.getGlobalScope();
@@ -64,9 +63,9 @@ describe("FunctionDeclarationTest", function () {
       function foo() {}
       `);
         let expected = [
-            new EcmaDefinefuncdyn("#2#foo", new Imm(0), new VReg()),
-            new EcmaStglobalvar("foo"),
-            new EcmaReturnundefined()
+            new Definefunc(new Imm(0), "#2#foo", new Imm(0)),
+            new Stglobalvar(new Imm(1), "foo"),
+            new Returnundefined()
         ];
         let insns = snippetCompiler.getGlobalInsns();
         let globalScope = snippetCompiler.getGlobalScope();
@@ -81,10 +80,10 @@ describe("FunctionDeclarationTest", function () {
         snippetCompiler.compile(`function out() {function foo() {}}`);
         let funcReg = new VReg();
         let expected = [
-            new EcmaDefinefuncdyn("foo", new Imm(0), new VReg()),
-            new StaDyn(funcReg),
+            new Definefunc(new Imm(0), "foo", new Imm(0)),
+            new Sta(funcReg),
 
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
         let functionPg = snippetCompiler.getPandaGenByName("out");
         let insns = functionPg!.getInsns();
@@ -103,9 +102,9 @@ describe("FunctionDeclarationTest", function () {
         snippetCompiler.compile("let foo = function() {}");
         let insns = snippetCompiler.getGlobalInsns();
         let expected = [
-            new EcmaDefinefuncdyn("foo", new Imm(0), new VReg()),
-            new EcmaStlettoglobalrecord("foo"),
-            new EcmaReturnundefined()
+            new Definefunc(new Imm(0), "foo", new Imm(0)),
+            new Sttoglobalrecord(new Imm(1), "foo"),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -117,19 +116,19 @@ describe("FunctionDeclarationTest", function () {
         let endLabel = new Label();
 
         let expected_main = [
-            new EcmaDefinefuncdyn("test", new Imm(1), new VReg()),
-            new EcmaStglobalvar("test"),
-            new EcmaReturnundefined()
+            new Definefunc(new Imm(0), "test", new Imm(1)),
+            new Stglobalvar(new Imm(1), "test"),
+            new Returnundefined()
         ];
         let expected_func = [
             // func_test_0
-            new LdaDyn(new VReg()),
-            new EcmaStricteqdyn(undefinedVReg),
+            new Lda(new VReg()),
+            new Stricteq(new Imm(0), undefinedVReg),
             new Jeqz(endLabel),
-            new LdaiDyn(new Imm(1)),
-            new StaDyn(value),
+            new Ldai(new Imm(1)),
+            new Sta(value),
             endLabel,
-            new EcmaReturnundefined(),
+            new Returnundefined(),
         ];
 
         compilerunit.forEach(element => {
@@ -153,9 +152,9 @@ describe("FunctionDeclarationTest", function () {
         let lastParam = new VReg();
         let expected_func = [
             // func_test_0
-            new EcmaCopyrestargs(idx),
-            new StaDyn(lastParam),
-            new EcmaReturnundefined(),
+            new Copyrestargs(idx),
+            new Sta(lastParam),
+            new Returnundefined(),
         ];
 
         let functionPg = snippetCompiler.getPandaGenByName("test");

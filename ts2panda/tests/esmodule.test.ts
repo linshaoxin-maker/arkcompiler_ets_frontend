@@ -19,16 +19,16 @@ import {
 import 'mocha';
 import { checkInstructions, SnippetCompiler } from "./utils/base";
 import {
-    EcmaDefineclasswithbuffer,
-    EcmaLdmodulevar,
-    EcmaReturnundefined,
-    EcmaStmodulevar,
-    EcmaThrowundefinedifhole,
+    Defineclasswithbuffer,
+    Ldlocalmodulevar,
+    Returnundefined,
+    Stmodulevar,
+    ThrowUndefinedifhole,
     Imm,
-    LdaDyn,
+    Lda,
     LdaStr,
-    MovDyn,
-    StaDyn,
+    Mov,
+    Sta,
     VReg
 } from "../src/irnodes";
 import { CmdOptions } from '../src/cmdOptions';
@@ -44,12 +44,12 @@ describe("ExportDeclaration", function () {
         let funcMainInsns = snippetCompiler.getGlobalInsns();
         let classReg = new VReg();
         let expected = [
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaDefineclasswithbuffer("#1#C", new Imm(0), new Imm(0), new VReg(), new VReg()),
-            new StaDyn(classReg),
-            new LdaDyn(classReg),
-            new EcmaStmodulevar('C'),
-            new EcmaReturnundefined(),
+            new Mov(new VReg(), new VReg()),
+            new Defineclasswithbuffer(new Imm(0), "#1#C", "0", new Imm(0), new VReg()),
+            new Sta(classReg),
+            new Lda(classReg),
+            new Stmodulevar(new Imm(0)),
+            new Returnundefined(),
         ];
         expect(checkInstructions(funcMainInsns, expected)).to.be.true;
     });
@@ -64,14 +64,14 @@ describe("ExportDeclaration", function () {
         let v = new VReg();
         let name = new VReg();
         let expected = [
-            new EcmaLdmodulevar("a", new Imm(0)),
-            new StaDyn(a),
+            new Ldlocalmodulevar(new Imm(0)),
+            new Sta(a),
             new LdaStr("a"),
-            new StaDyn(name),
-            new EcmaThrowundefinedifhole(a, name),
-            new LdaDyn(a),
-            new StaDyn(v),
-            new EcmaReturnundefined(),
+            new Sta(name),
+            new ThrowUndefinedifhole(a, name),
+            new Lda(a),
+            new Sta(v),
+            new Returnundefined(),
         ];
         expect(checkInstructions(funcMainInsns, expected)).to.be.true;
     });

@@ -18,17 +18,16 @@ import {
 } from 'chai';
 import 'mocha';
 import {
-    EcmaReturnundefined,
-    EcmaStlettoglobalrecord,
-    EcmaThrowdyn,
-    EcmaTrystglobalbyname,
+    Returnundefined,
+    Sttoglobalrecord,
+    Throw,
+    Trystglobalbyname,
     Imm,
     Jmp,
     Label,
-    LdaDyn,
-    LdaiDyn,
-    ResultType,
-    StaDyn,
+    Lda,
+    Ldai,
+    Sta,
     VReg
 } from "../../src/irnodes";
 import { checkInstructions, compileMainSnippet } from "../utils/base";
@@ -45,18 +44,18 @@ describe("TryCatch", function () {
         let catchEndLabel = new Label();
 
         let expected = [
-            new LdaiDyn(new Imm(0)),
-            new EcmaStlettoglobalrecord('a'),
+            new Ldai(new Imm(0)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
             tryBeginLabel,
-            new LdaiDyn(new Imm(1)),
-            new EcmaTrystglobalbyname('a'),
+            new Ldai(new Imm(1)),
+            new Trystglobalbyname(new Imm(1), 'a'),
             tryEndLabel,
             new Jmp(catchEndLabel),
             catchBeginLabel,
-            new LdaiDyn(new Imm(2)),
-            new EcmaTrystglobalbyname('a'),
+            new Ldai(new Imm(2)),
+            new Trystglobalbyname(new Imm(2), 'a'),
             catchEndLabel,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
 
         expect(checkInstructions(insns, expected)).to.be.true;
@@ -74,19 +73,19 @@ describe("TryCatch", function () {
         let err = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(0)),
-            new EcmaStlettoglobalrecord('a'),
+            new Ldai(new Imm(0)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
             tryBeginLabel,
-            new LdaiDyn(new Imm(1)),
-            new EcmaTrystglobalbyname('a'),
+            new Ldai(new Imm(1)),
+            new Trystglobalbyname(new Imm(1), 'a'),
             tryEndLabel,
             new Jmp(catchEndLabel),
             catchBeginLabel,
-            new StaDyn(err),
-            new LdaiDyn(new Imm(2)),
-            new EcmaTrystglobalbyname('a'),
+            new Sta(err),
+            new Ldai(new Imm(2)),
+            new Trystglobalbyname(new Imm(2), 'a'),
             catchEndLabel,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
 
         expect(checkInstructions(insns, expected)).to.be.true;
@@ -104,23 +103,23 @@ describe("TryCatch", function () {
         let exceptionVreg = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(0)),
-            new EcmaStlettoglobalrecord('a'),
+            new Ldai(new Imm(0)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
             tryBeginLabel,
-            new LdaiDyn(new Imm(1)),
-            new EcmaTrystglobalbyname('a'),
+            new Ldai(new Imm(1)),
+            new Trystglobalbyname(new Imm(1), 'a'),
             tryEndLabel,
-            new LdaiDyn(new Imm(3)),
-            new EcmaTrystglobalbyname('a'),
+            new Ldai(new Imm(3)),
+            new Trystglobalbyname(new Imm(2), 'a'),
             new Jmp(catchEndLabel),
             catchBeginLabel,
-            new StaDyn(exceptionVreg),
-            new LdaiDyn(new Imm(3)),
-            new EcmaTrystglobalbyname('a'),
-            new LdaDyn(exceptionVreg),
-            new EcmaThrowdyn(),
+            new Sta(exceptionVreg),
+            new Ldai(new Imm(3)),
+            new Trystglobalbyname(new Imm(3), 'a'),
+            new Lda(exceptionVreg),
+            new Throw(),
             catchEndLabel,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
 
         expect(checkInstructions(insns, expected)).to.be.true;
@@ -143,30 +142,30 @@ describe("TryCatch", function () {
         let catchEndLabel = new Label();
 
         let expected = [
-            new LdaiDyn(new Imm(0)),
-            new EcmaStlettoglobalrecord('a'),
+            new Ldai(new Imm(0)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
             tryBeginLabel,
             nestedTryBeginLabel,
-            new LdaiDyn(new Imm(1)),
-            new EcmaTrystglobalbyname('a'),
+            new Ldai(new Imm(1)),
+            new Trystglobalbyname(new Imm(1), 'a'),
             nestedTryEndLabel,
             new Jmp(tryEndLabel),
             nestedCatchBeginLabel,
-            new LdaiDyn(new Imm(2)),
-            new EcmaTrystglobalbyname('a'),
+            new Ldai(new Imm(2)),
+            new Trystglobalbyname(new Imm(2), 'a'),
             nestedCatchEndLabel,
             tryEndLabel,
-            new LdaiDyn(new Imm(3)),
-            new EcmaTrystglobalbyname('a'),
+            new Ldai(new Imm(3)),
+            new Trystglobalbyname(new Imm(3), 'a'),
             new Jmp(catchEndLabel),
             catchBeginLabel,
-            new StaDyn(exceptionVreg),
-            new LdaiDyn(new Imm(3)),
-            new EcmaTrystglobalbyname('a'),
-            new LdaDyn(exceptionVreg),
-            new EcmaThrowdyn(),
+            new Sta(exceptionVreg),
+            new Ldai(new Imm(3)),
+            new Trystglobalbyname(new Imm(4), 'a'),
+            new Lda(exceptionVreg),
+            new Throw(),
             catchEndLabel,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
 
         expect(checkInstructions(insns, expected)).to.be.true;

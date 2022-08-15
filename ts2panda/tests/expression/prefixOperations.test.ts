@@ -18,22 +18,24 @@ import {
 } from 'chai';
 import 'mocha';
 import {
-    EcmaDecdyn,
-    EcmaIncdyn,
-    EcmaIstrue,
-    EcmaNegdyn,
-    EcmaNotdyn,
-    EcmaReturnundefined,
-    EcmaStlettoglobalrecord,
-    EcmaTonumber,
-    EcmaTryldglobalbyname,
-    EcmaTrystglobalbyname,
+    Dec,
+    Inc,
+    Istrue,
+    Neg,
+    Not,
+    Returnundefined,
+    Sttoglobalrecord,
+    Tonumber,
+    Tryldglobalbyname,
+    Trystglobalbyname,
     Imm,
     Jeqz,
     Jmp,
     Label,
-    LdaDyn,
-    LdaiDyn, ResultType, StaDyn, VReg
+    Lda,
+    Ldai,
+    Sta,
+    VReg
 } from "../../src/irnodes";
 import { checkInstructions, compileMainSnippet } from "../utils/base";
 
@@ -44,14 +46,15 @@ describe("PrefixOperationsTest", function () {
         let temp = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(5)),
-            new EcmaStlettoglobalrecord('i'),
-            new EcmaTryldglobalbyname('i'),
-            new StaDyn(temp),
-            new EcmaIncdyn(temp),
-            new EcmaTrystglobalbyname('i'),
-            new EcmaStlettoglobalrecord('j'),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(5)),
+            new Sttoglobalrecord(new Imm(0), 'i'),
+            new Tryldglobalbyname(new Imm(1), 'i'),
+            new Sta(temp),
+            new Lda(temp),
+            new Inc(new Imm(2)),
+            new Trystglobalbyname(new Imm(3), 'i'),
+            new Sttoglobalrecord(new Imm(4), 'j'),
+            new Returnundefined()
         ];
 
         expect(checkInstructions(insns, expected)).to.be.true;
@@ -63,14 +66,15 @@ describe("PrefixOperationsTest", function () {
         let temp = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(5)),
-            new EcmaStlettoglobalrecord('i'),
-            new EcmaTryldglobalbyname('i'),
-            new StaDyn(temp),
-            new EcmaDecdyn(temp),
-            new EcmaTrystglobalbyname('i'),
-            new EcmaStlettoglobalrecord('j'),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(5)),
+            new Sttoglobalrecord(new Imm(0), 'i'),
+            new Tryldglobalbyname(new Imm(1), 'i'),
+            new Sta(temp),
+            new Lda(temp),
+            new Dec(new Imm(2)),
+            new Trystglobalbyname(new Imm(3), 'i'),
+            new Sttoglobalrecord(new Imm(4), 'j'),
+            new Returnundefined()
         ];
 
         expect(checkInstructions(insns, expected)).to.be.true;
@@ -82,13 +86,14 @@ describe("PrefixOperationsTest", function () {
         let temp = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(5)),
-            new EcmaStlettoglobalrecord('i'),
-            new EcmaTryldglobalbyname('i'),
-            new StaDyn(temp),
-            new EcmaTonumber(temp),
-            new EcmaStlettoglobalrecord('j'),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(5)),
+            new Sttoglobalrecord(new Imm(0), 'i'),
+            new Tryldglobalbyname(new Imm(1), 'i'),
+            new Sta(temp),
+            new Lda(temp),
+            new Tonumber(new Imm(2)),
+            new Sttoglobalrecord(new Imm(3), 'j'),
+            new Returnundefined()
         ];
 
         expect(checkInstructions(insns, expected)).to.be.true;
@@ -100,13 +105,14 @@ describe("PrefixOperationsTest", function () {
         let temp = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(5)),
-            new EcmaStlettoglobalrecord('i'),
-            new EcmaTryldglobalbyname('i'),
-            new StaDyn(temp),
-            new EcmaNegdyn(temp),
-            new EcmaStlettoglobalrecord('j'),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(5)),
+            new Sttoglobalrecord(new Imm(0), 'i'),
+            new Tryldglobalbyname(new Imm(1), 'i'),
+            new Sta(temp),
+            new Lda(temp),
+            new Neg(new Imm(2)),
+            new Sttoglobalrecord(new Imm(3), 'j'),
+            new Returnundefined()
         ];
 
         expect(checkInstructions(insns, expected)).to.be.true;
@@ -118,19 +124,19 @@ describe("PrefixOperationsTest", function () {
         let preLabel = new Label();
         let postLabel = new Label();
         let expected = [
-            new LdaiDyn(new Imm(5)),
-            new EcmaStlettoglobalrecord('i'),
-            new EcmaTryldglobalbyname('i'),
-            new StaDyn(new VReg()),
-            new EcmaIstrue(),
+            new Ldai(new Imm(5)),
+            new Sttoglobalrecord(new Imm(0), 'i'),
+            new Tryldglobalbyname(new Imm(1), 'i'),
+            new Sta(new VReg()),
+            new Istrue(),
             new Jeqz(preLabel),
-            new LdaDyn(new VReg()),
+            new Lda(new VReg()),
             new Jmp(postLabel),
             preLabel,
-            new LdaDyn(new VReg()),
+            new Lda(new VReg()),
             postLabel,
-            new EcmaStlettoglobalrecord('j'),
-            new EcmaReturnundefined()
+            new Sttoglobalrecord(new Imm(2), 'j'),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -141,13 +147,14 @@ describe("PrefixOperationsTest", function () {
         let temp_i = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(5)),
-            new EcmaStlettoglobalrecord('i'),
-            new EcmaTryldglobalbyname('i'),
-            new StaDyn(temp_i),
-            new EcmaNotdyn(temp_i),
-            new EcmaStlettoglobalrecord('j'),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(5)),
+            new Sttoglobalrecord(new Imm(0), 'i'),
+            new Tryldglobalbyname(new Imm(1), 'i'),
+            new Sta(temp_i),
+            new Lda(temp_i),
+            new Not(new Imm(2)),
+            new Sttoglobalrecord(new Imm(3), 'j'),
+            new Returnundefined()
         ];
 
         expect(checkInstructions(insns, expected)).to.be.true;

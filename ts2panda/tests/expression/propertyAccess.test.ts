@@ -18,19 +18,18 @@ import {
 } from 'chai';
 import 'mocha';
 import {
-    EcmaCreateobjectwithbuffer,
-    EcmaDefinegettersetterbyvalue,
-    EcmaDefinemethod,
-    EcmaLdobjbyname,
-    EcmaStobjbyname,
-    EcmaTryldglobalbyname,
+    Createobjectwithbuffer,
+    Definegettersetterbyvalue,
+    Definemethod,
+    Ldobjbyname,
+    Stobjbyname,
+    Tryldglobalbyname,
     Imm,
-    LdaDyn,
-    LdaiDyn,
+    Lda,
+    Ldai,
     LdaStr,
-    MovDyn,
-    ResultType,
-    StaDyn,
+    Mov,
+    Sta,
     VReg
 } from "../../src/irnodes";
 import { checkInstructions, compileAllSnippet, compileMainSnippet } from "../utils/base";
@@ -43,12 +42,13 @@ describe("PropertyAccess", function () {
         let objReg = new VReg();
 
         let expected = [
-            new EcmaTryldglobalbyname('obj'),
-            new StaDyn(objReg),
-            new EcmaLdobjbyname("property", objReg)
+            new Tryldglobalbyname(new Imm(0), 'obj'),
+            new Sta(objReg),
+            new Lda(objReg),
+            new Ldobjbyname(new Imm(1), "property")
         ];
 
-        insns = insns.slice(2, insns.length - 1); // cut off let obj and return.dyn
+        insns = insns.slice(2, insns.length - 1); // cut off let obj and return.
         expect(checkInstructions(insns, expected)).to.be.true;
     });
 
@@ -59,14 +59,14 @@ describe("PropertyAccess", function () {
         let tempObj = new VReg();
 
         let expected = [
-            new EcmaTryldglobalbyname('obj'),
-            new StaDyn(tempObj),
-            new MovDyn(objReg, tempObj),
-            new LdaiDyn(new Imm(0)),
-            new EcmaStobjbyname("property", objReg),
+            new Tryldglobalbyname(new Imm(0), 'obj'),
+            new Sta(tempObj),
+            new Mov(objReg, tempObj),
+            new Ldai(new Imm(0)),
+            new Stobjbyname(new Imm(1), "property", objReg),
         ];
 
-        insns = insns.slice(2, insns.length - 1); // cut off let obj and return.dyn
+        insns = insns.slice(2, insns.length - 1); // cut off let obj and return.
         expect(checkInstructions(insns, expected)).to.be.true;
     });
 
@@ -83,15 +83,15 @@ describe("PropertyAccess", function () {
         let propReg = new VReg();
 
         let expected = [
-            new EcmaCreateobjectwithbuffer(new Imm(0)),
-            new StaDyn(objInstance),
-            new LdaDyn(new VReg()),
-            new EcmaDefinemethod("myMethod", new Imm(1), new VReg()),
-            new StaDyn(funcReg),
+            new Createobjectwithbuffer(new Imm(0), "0"),
+            new Sta(objInstance),
+            new Lda(new VReg()),
+            new Definemethod(new Imm(1), "myMethod", new Imm(1)),
+            new Sta(funcReg),
             new LdaStr("myMethod"),
-            new StaDyn(propReg),
-            new LdaDyn(new VReg()),
-            new EcmaDefinegettersetterbyvalue(objInstance, propReg, new VReg(), funcReg),
+            new Sta(propReg),
+            new Lda(new VReg()),
+            new Definegettersetterbyvalue(objInstance, propReg, new VReg(), funcReg),
         ];
 
         compilerunit.forEach(element => {
@@ -120,15 +120,15 @@ describe("PropertyAccess", function () {
         let propReg = new VReg();
 
         let expected = [
-            new EcmaCreateobjectwithbuffer(new Imm(0)),
-            new StaDyn(objInstance),
-            new LdaDyn(new VReg()),
-            new EcmaDefinemethod("a", new Imm(0), new VReg()),
-            new StaDyn(funcReg),
+            new Createobjectwithbuffer(new Imm(0), "0"),
+            new Sta(objInstance),
+            new Lda(new VReg()),
+            new Definemethod(new Imm(1), "a", new Imm(0)),
+            new Sta(funcReg),
             new LdaStr("a"),
-            new StaDyn(propReg),
-            new LdaDyn(new VReg()),
-            new EcmaDefinegettersetterbyvalue(objInstance, propReg, funcReg, new VReg()),
+            new Sta(propReg),
+            new Lda(new VReg()),
+            new Definegettersetterbyvalue(objInstance, propReg, funcReg, new VReg()),
         ];
 
         compilerunit.forEach(element => {
@@ -153,18 +153,18 @@ describe("PropertyAccess", function () {
         let propReg = new VReg();
 
         let expected = [
-            new EcmaCreateobjectwithbuffer(new Imm(0)),
-            new StaDyn(objInstance),
-            new LdaDyn(new VReg()),
-            new EcmaDefinemethod("#1#a", new Imm(0), new VReg()),
-            new StaDyn(getterReg),
-            new LdaDyn(new VReg()),
-            new EcmaDefinemethod("#2#a", new Imm(1), new VReg()),
-            new StaDyn(setterReg),
+            new Createobjectwithbuffer(new Imm(0), "0"),
+            new Sta(objInstance),
+            new Lda(new VReg()),
+            new Definemethod(new Imm(1), "#1#a", new Imm(0)),
+            new Sta(getterReg),
+            new Lda(new VReg()),
+            new Definemethod(new Imm(2), "#2#a", new Imm(1)),
+            new Sta(setterReg),
             new LdaStr("a"),
-            new StaDyn(propReg),
-            new LdaDyn(new VReg()),
-            new EcmaDefinegettersetterbyvalue(objInstance, propReg, getterReg, setterReg),
+            new Sta(propReg),
+            new Lda(new VReg()),
+            new Definegettersetterbyvalue(objInstance, propReg, getterReg, setterReg),
         ];
 
         compilerunit.forEach(element => {

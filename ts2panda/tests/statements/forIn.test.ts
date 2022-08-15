@@ -19,19 +19,20 @@ import {
 import 'mocha';
 import { DiagnosticCode, DiagnosticError } from '../../src/diagnostic';
 import {
-    EcmaCreateemptyobject,
-    EcmaGetnextpropname,
-    EcmaGetpropiterator,
-    EcmaReturnundefined,
-    EcmaStrictnoteqdyn,
-    EcmaTryldglobalbyname,
-    EcmaTrystglobalbyname,
+    Createemptyobject,
+    Getnextpropname,
+    Getpropiterator,
+    Returnundefined,
+    Strictnoteq,
+    Tryldglobalbyname,
+    Trystglobalbyname,
     Jeqz,
     Jmp,
     Label,
-    LdaDyn,
-    StaDyn,
-    VReg
+    Lda,
+    Sta,
+    VReg,
+    Imm
 } from "../../src/irnodes";
 import { checkInstructions, compileMainSnippet } from "../utils/base";
 
@@ -47,22 +48,22 @@ describe("forInLoopTest", function () {
         let loopStartLabel = new Label();
         let loopEndLabel = new Label();
         let expected = [
-            new EcmaCreateemptyobject(),
-            new StaDyn(objInstance),
-            new EcmaGetpropiterator(),
-            new StaDyn(iterReg),
+            new Createemptyobject(),
+            new Sta(objInstance),
+            new Getpropiterator(),
+            new Sta(iterReg),
 
             loopStartLabel,
-            new EcmaGetnextpropname(iterReg),
-            new StaDyn(rhs),
-            new EcmaStrictnoteqdyn(temp),
+            new Getnextpropname(iterReg),
+            new Sta(rhs),
+            new Strictnoteq(new Imm(0), temp),
             new Jeqz(loopEndLabel),
-            new LdaDyn(rhs),
-            new StaDyn(prop),
+            new Lda(rhs),
+            new Sta(prop),
             new Jmp(loopStartLabel),
 
             loopEndLabel,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
 
@@ -85,17 +86,17 @@ describe("forInLoopTest", function () {
         let loopStartLabel = new Label();
         let loopEndLabel = new Label();
         let expected = [
-            new EcmaTryldglobalbyname('obj'),
-            new EcmaGetpropiterator(),
-            new StaDyn(iterReg),
+            new Tryldglobalbyname(new Imm(0), 'obj'),
+            new Getpropiterator(),
+            new Sta(iterReg),
 
             loopStartLabel,
-            new EcmaGetnextpropname(iterReg),
-            new StaDyn(rhs),
-            new EcmaStrictnoteqdyn(temp),
+            new Getnextpropname(iterReg),
+            new Sta(rhs),
+            new Strictnoteq(new Imm(1), temp),
             new Jeqz(loopEndLabel),
-            new LdaDyn(rhs),
-            new EcmaTrystglobalbyname('prop'),
+            new Lda(rhs),
+            new Trystglobalbyname(new Imm(2), 'prop'),
             new Jmp(loopStartLabel),
 
             loopEndLabel,
@@ -121,23 +122,23 @@ describe("forInLoopTest", function () {
         let loopStartLabel = new Label();
         let loopEndLabel = new Label();
         let expected = [
-            new EcmaCreateemptyobject(),
-            new StaDyn(objInstance),
-            new EcmaGetpropiterator(),
-            new StaDyn(iterReg),
+            new Createemptyobject(),
+            new Sta(objInstance),
+            new Getpropiterator(),
+            new Sta(iterReg),
 
             loopStartLabel,
-            new EcmaGetnextpropname(iterReg),
-            new StaDyn(rhs),
-            new EcmaStrictnoteqdyn(temp),
+            new Getnextpropname(iterReg),
+            new Sta(rhs),
+            new Strictnoteq(new Imm(0), temp),
             new Jeqz(loopEndLabel),
-            new LdaDyn(rhs),
-            new StaDyn(prop),
+            new Lda(rhs),
+            new Sta(prop),
             new Jmp(loopStartLabel),
             new Jmp(loopStartLabel),
 
             loopEndLabel,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
 
@@ -157,23 +158,23 @@ describe("forInLoopTest", function () {
         let loopStartLabel = new Label();
         let loopEndLabel = new Label();
         let expected = [
-            new EcmaCreateemptyobject(),
-            new StaDyn(objInstance),
-            new EcmaGetpropiterator(),
-            new StaDyn(iterReg),
+            new Createemptyobject(),
+            new Sta(objInstance),
+            new Getpropiterator(),
+            new Sta(iterReg),
 
             loopStartLabel,
-            new EcmaGetnextpropname(iterReg),
-            new StaDyn(rhs),
-            new EcmaStrictnoteqdyn(temp),
+            new Getnextpropname(iterReg),
+            new Sta(rhs),
+            new Strictnoteq(new Imm(0), temp),
             new Jeqz(loopEndLabel),
-            new LdaDyn(rhs),
-            new StaDyn(prop),
+            new Lda(rhs),
+            new Sta(prop),
             new Jmp(loopEndLabel),
             new Jmp(loopStartLabel),
 
             loopEndLabel,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
 

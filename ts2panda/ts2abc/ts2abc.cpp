@@ -781,6 +781,14 @@ static void ParseFunctionDeclaredType(const Json::Value &function, panda::pandas
     }
 }
 
+static void ParseFunctionKind(const Json::Value &function, panda::pandasm::Function &pandaFunc) {
+    panda::panda_file::FunctionKind funcKind {};
+    if (function.isMember("kind") && function["kind"].isInt()) {
+        funcKind = static_cast<panda::panda_file::FunctionKind>(function["kind"].asUInt());
+        pandaFunc.SetFunctionKind(funcKind);
+    }
+}
+
 static panda::pandasm::Function ParseFunction(const Json::Value &function)
 {
     auto pandaFunc = GetFunctionDefintion(function);
@@ -794,6 +802,7 @@ static panda::pandasm::Function ParseFunction(const Json::Value &function)
     ParseFunctionTypeInfo(function, pandaFunc);
     ParseFunctionExportedType(function, pandaFunc);
     ParseFunctionDeclaredType(function, pandaFunc);
+    ParseFunctionKind(function, pandaFunc);
 
     if (g_isDtsFile && pandaFunc.name != "func_main_0") {
         pandaFunc.metadata->SetAttribute("external");

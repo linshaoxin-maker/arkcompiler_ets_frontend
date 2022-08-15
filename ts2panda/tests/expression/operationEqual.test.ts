@@ -18,23 +18,22 @@ import {
 } from 'chai';
 import 'mocha';
 import {
-    EcmaAdd2dyn,
-    EcmaAshr2dyn,
-    EcmaDiv2dyn,
-    EcmaExpdyn,
-    EcmaMod2dyn,
-    EcmaMul2dyn,
-    EcmaReturnundefined,
-    EcmaShl2dyn,
-    EcmaShr2dyn,
-    EcmaStlettoglobalrecord,
-    EcmaSub2dyn,
-    EcmaTryldglobalbyname,
-    EcmaTrystglobalbyname,
+    Add2,
+    Ashr2,
+    Div2,
+    Exp,
+    Mod2,
+    Mul2,
+    Returnundefined,
+    Shl2,
+    Shr2,
+    Sttoglobalrecord,
+    Sub2,
+    Tryldglobalbyname,
+    Trystglobalbyname,
     Imm,
-    LdaiDyn,
-    ResultType,
-    StaDyn,
+    Ldai,
+    Sta,
     VReg
 } from "../../src/irnodes";
 import { checkInstructions, compileMainSnippet } from "../utils/base";
@@ -46,14 +45,14 @@ describe("OperationEqualTest", function () {
         let lhs = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(2)),
-            new EcmaStlettoglobalrecord('a'),
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(lhs),
-            new LdaiDyn(new Imm(3)),
-            new EcmaAdd2dyn(lhs),
-            new EcmaTrystglobalbyname('a'),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(2)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(lhs),
+            new Ldai(new Imm(3)),
+            new Add2(new Imm(2), lhs),
+            new Trystglobalbyname(new Imm(3), 'a'),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -64,14 +63,14 @@ describe("OperationEqualTest", function () {
         let lhs = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(5)),
-            new EcmaStlettoglobalrecord('a'),
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(lhs),
-            new LdaiDyn(new Imm(7)),
-            new EcmaSub2dyn(lhs),
-            new EcmaTrystglobalbyname('a'),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(5)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(lhs),
+            new Ldai(new Imm(7)),
+            new Sub2(new Imm(2), lhs),
+            new Trystglobalbyname(new Imm(3), 'a'),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -82,14 +81,14 @@ describe("OperationEqualTest", function () {
         let lhs = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(2)),
-            new EcmaStlettoglobalrecord('a'),
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(lhs),
-            new LdaiDyn(new Imm(4)),
-            new EcmaMul2dyn(lhs),
-            new EcmaTrystglobalbyname('a'),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(2)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(lhs),
+            new Ldai(new Imm(4)),
+            new Mul2(new Imm(2), lhs),
+            new Trystglobalbyname(new Imm(3), 'a'),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -100,14 +99,14 @@ describe("OperationEqualTest", function () {
         let lhs = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(2)),
-            new EcmaStlettoglobalrecord('a'),
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(lhs),
-            new LdaiDyn(new Imm(3)),
-            new EcmaExpdyn(lhs),
-            new EcmaTrystglobalbyname('a'),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(2)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(lhs),
+            new Ldai(new Imm(3)),
+            new Exp(new Imm(2), lhs),
+            new Trystglobalbyname(new Imm(3), 'a'),
+            new Returnundefined()
         ]
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -118,14 +117,14 @@ describe("OperationEqualTest", function () {
         let lhs = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(5)),
-            new EcmaStlettoglobalrecord('a'),
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(lhs),
-            new LdaiDyn(new Imm(3)),
-            new EcmaDiv2dyn(lhs),
-            new EcmaTrystglobalbyname('a'),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(5)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(lhs),
+            new Ldai(new Imm(3)),
+            new Div2(new Imm(2), lhs),
+            new Trystglobalbyname(new Imm(3), 'a'),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -136,14 +135,14 @@ describe("OperationEqualTest", function () {
         let lhs = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(15)),
-            new EcmaStlettoglobalrecord('a'),
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(lhs),
-            new LdaiDyn(new Imm(7)),
-            new EcmaMod2dyn(lhs),
-            new EcmaTrystglobalbyname('a'),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(15)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(lhs),
+            new Ldai(new Imm(7)),
+            new Mod2(new Imm(2), lhs),
+            new Trystglobalbyname(new Imm(3), 'a'),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -154,14 +153,14 @@ describe("OperationEqualTest", function () {
         let lhs = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(8)),
-            new EcmaStlettoglobalrecord('a'),
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(lhs),
-            new LdaiDyn(new Imm(3)),
-            new EcmaShl2dyn(lhs),
-            new EcmaTrystglobalbyname('a'),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(8)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(lhs),
+            new Ldai(new Imm(3)),
+            new Shl2(new Imm(2), lhs),
+            new Trystglobalbyname(new Imm(3), 'a'),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -172,14 +171,14 @@ describe("OperationEqualTest", function () {
         let lhs = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(4)),
-            new EcmaStlettoglobalrecord('a'),
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(lhs),
-            new LdaiDyn(new Imm(1)),
-            new EcmaShr2dyn(lhs),
-            new EcmaTrystglobalbyname('a'),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(4)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(lhs),
+            new Ldai(new Imm(1)),
+            new Shr2(new Imm(2), lhs),
+            new Trystglobalbyname(new Imm(3), 'a'),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -190,14 +189,14 @@ describe("OperationEqualTest", function () {
         let lhs = new VReg();
 
         let expected = [
-            new LdaiDyn(new Imm(8)),
-            new EcmaStlettoglobalrecord('a'),
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(lhs),
-            new LdaiDyn(new Imm(2)),
-            new EcmaAshr2dyn(lhs),
-            new EcmaTrystglobalbyname('a'),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(8)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(lhs),
+            new Ldai(new Imm(2)),
+            new Ashr2(new Imm(2), lhs),
+            new Trystglobalbyname(new Imm(3), 'a'),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });

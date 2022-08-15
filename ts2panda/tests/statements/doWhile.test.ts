@@ -18,17 +18,17 @@ import {
 } from 'chai';
 import 'mocha';
 import {
-    EcmaLessdyn,
-    EcmaReturnundefined,
-    EcmaStlettoglobalrecord,
-    EcmaTryldglobalbyname,
-    EcmaTrystglobalbyname,
+    Less,
+    Returnundefined,
+    Sttoglobalrecord,
+    Tryldglobalbyname,
+    Trystglobalbyname,
     Imm,
     Jeqz,
     Jmp,
-    Label, LdaiDyn,
-    ResultType,
-    StaDyn,
+    Label,
+    Ldai,
+    Sta,
     VReg
 } from "../../src/irnodes";
 import { checkInstructions, compileMainSnippet } from "../utils/base";
@@ -68,29 +68,28 @@ describe("DoWhileLoopTest", function () {
     it('doWhileLoopWithContinue', function () {
         let insns = compileMainSnippet("let a = 5;" +
             "do { a = 1; continue; } while (a < 1);");
-        let a = new VReg();
         let lhs = new VReg();
         let labelPre = new Label();
         let labelCond = new Label();
         let labelPost = new Label();
         let expected = [
-            new LdaiDyn(new Imm(5)),
-            new EcmaStlettoglobalrecord('a'),
+            new Ldai(new Imm(5)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
             // body
             labelPre,
-            new LdaiDyn(new Imm(1)),
-            new EcmaTrystglobalbyname('a'),
+            new Ldai(new Imm(1)),
+            new Trystglobalbyname(new Imm(1), 'a'),
             new Jmp(labelCond), // continue
             // condition
             labelCond,
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(lhs),
-            new LdaiDyn(new Imm(1)),
-            new EcmaLessdyn(lhs),
+            new Tryldglobalbyname(new Imm(2), 'a'),
+            new Sta(lhs),
+            new Ldai(new Imm(1)),
+            new Less(new Imm(3), lhs),
             new Jeqz(labelPost),
             new Jmp(labelPre),
             labelPost,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ]
 
         // check the instruction kinds are the same as we expect
@@ -104,29 +103,28 @@ describe("DoWhileLoopTest", function () {
     it('doWhileLoopWithBreak', function () {
         let insns = compileMainSnippet("let a = 5;" +
             "do { a = 1; break; } while (a < 1);");
-        let a = new VReg();
         let lhs = new VReg();
         let labelPre = new Label();
         let labelPost = new Label();
         let labelCond = new Label();
         let expected = [
-            new LdaiDyn(new Imm(5)),
-            new EcmaStlettoglobalrecord('a'),
+            new Ldai(new Imm(5)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
             //body
             labelPre,
-            new LdaiDyn(new Imm(1)),
-            new EcmaTrystglobalbyname('a'),
+            new Ldai(new Imm(1)),
+            new Trystglobalbyname(new Imm(1), 'a'),
             new Jmp(labelPost), // break
             // condition
             labelCond,
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(lhs),
-            new LdaiDyn(new Imm(1)),
-            new EcmaLessdyn(lhs),
+            new Tryldglobalbyname(new Imm(2), 'a'),
+            new Sta(lhs),
+            new Ldai(new Imm(1)),
+            new Less(new Imm(3), lhs),
             new Jeqz(labelPost),
             new Jmp(labelPre),
             labelPost,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ]
 
         // check the instruction kinds are the same as we expect

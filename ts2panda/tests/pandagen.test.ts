@@ -19,7 +19,7 @@ import {
 import 'mocha';
 import * as ts from "typescript";
 import {
-    StaDyn,
+    Sta,
     VReg
 } from "../src/irnodes";
 import { PandaGen } from "../src/pandagen";
@@ -32,7 +32,7 @@ describe("PandaGenTest", function () {
         pandaGen.storeAccumulator(ts.createNode(0), vreg);
         let insns = pandaGen.getInsns();
         let expected = [
-            new StaDyn(vreg)
+            new Sta(vreg)
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });

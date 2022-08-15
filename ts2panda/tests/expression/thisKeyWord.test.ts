@@ -18,8 +18,8 @@ import {
 } from 'chai';
 import 'mocha';
 import {
-    EcmaReturnundefined,
-    LdaDyn,
+    Returnundefined,
+    Lda,
     VReg
 } from "../../src/irnodes";
 import { PandaGen } from "../../src/pandagen";
@@ -39,8 +39,8 @@ describe("ThisKeyword", function () {
         let globalScope = snippetCompiler.getGlobalScope();
         let insns = snippetCompiler.getGlobalInsns();
         let expected = [
-            new LdaDyn(new VReg()),
-            new EcmaReturnundefined()
+            new Lda(new VReg()),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
         let thisVar = globalScope!.findLocal("this");
@@ -54,8 +54,8 @@ describe("ThisKeyword", function () {
         let functionScope = functionPg!.getScope();
         let insns = compileMainSnippet("this;", pandaGen, functionScope);
         let expected = [
-            new LdaDyn(new VReg()),
-            new EcmaReturnundefined()
+            new Lda(new VReg()),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
         let thisVar = functionScope!.findLocal("this");
