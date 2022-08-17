@@ -348,9 +348,9 @@ public:
     void DefineClassWithBuffer(const ir::AstNode *node, const util::StringView &ctorId, int32_t litIdx, VReg lexenv,
                                VReg base);
 
-    void LoadModuleVariable(const ir::AstNode *node, const util::StringView &name, bool isLocalExport);
-    void StoreModuleVariable(const ir::AstNode *node, const util::StringView &name);
-    void GetModuleNamespace(const ir::AstNode *node, const util::StringView &name);
+    void LoadModuleVariable(const ir::AstNode *node, uint32_t index, bool isLocalExport);
+    void StoreModuleVariable(const ir::AstNode *node, uint32_t index);
+    void GetModuleNamespace(const ir::AstNode *node, uint32_t index);
 
     void StSuperByName(const ir::AstNode *node, VReg obj, const util::StringView &key);
     void LdSuperByName(const ir::AstNode *node, VReg obj, const util::StringView &key);

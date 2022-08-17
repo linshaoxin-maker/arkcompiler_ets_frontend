@@ -236,7 +236,7 @@ void PandaGen::LoadVar(const ir::Identifier *node, const binder::ScopeFindResult
     }
 
     if (var->IsModuleVariable()) {
-        LoadModuleVariable(node, var->Name(), var->HasFlag(binder::VariableFlags::LOCAL_EXPORT));
+        LoadModuleVariable(node, var->AsModuleVariable()->Index(), var->HasFlag(binder::VariableFlags::LOCAL_EXPORT));
         if (var->Declaration()->IsLetOrConstOrClassDecl()) {
             ThrowUndefinedIfHole(node, var->Name());
         }
@@ -278,12 +278,12 @@ void PandaGen::StoreVar(const ir::AstNode *node, const binder::ScopeFindResult &
             RegScope rs(this);
             VReg valueReg = AllocReg();
             StoreAccumulator(node, valueReg);
-            LoadModuleVariable(node, var->Name(), true);
+            LoadModuleVariable(node, var->AsModuleVariable()->Index(), true);
             ThrowUndefinedIfHole(node, var->Name());
             LoadAccumulator(node, valueReg);
         }
 
-        StoreModuleVariable(node, var->Name());
+        StoreModuleVariable(node, var->AsModuleVariable()->Index());
         return;
     }
 
@@ -1463,22 +1463,23 @@ void PandaGen::DefineClassWithBuffer(const ir::AstNode *node, const util::String
     strings_.insert(ctorId);
 }
 
-void PandaGen::LoadModuleVariable(const ir::AstNode *node, const util::StringView &name, bool isLocalExport)
+void PandaGen::LoadModuleVariable(const ir::AstNode *node, uint32_t index, bool isLocalExport)
 {
-    ra_.Emit<EcmaLdmodulevar>(node, name, isLocalExport ? static_cast<uint8_t>(1) : static_cast<uint8_t>(0));
-    strings_.insert(name);
+    if (isLocalExport) {
+        sa_.Emit<EcmaLdlocalmodulevar>(node, index);
+    } else {
+        sa_.Emit<EcmaLdexternalmodulevar>(node, index);
+    }
 }
 
-void PandaGen::StoreModuleVariable(const ir::AstNode *node, const util::StringView &name)
+void PandaGen::StoreModuleVariable(const ir::AstNode *node, uint32_t index)
 {
-    sa_.Emit<EcmaStmodulevar>(node, name);
-    strings_.insert(name);
+    sa_.Emit<EcmaStmodulevar>(node, index);
 }
 
-void PandaGen::GetModuleNamespace(const ir::AstNode *node, const util::StringView &name)
+void PandaGen::GetModuleNamespace(const ir::AstNode *node, uint32_t index)
 {
-    sa_.Emit<EcmaGetmodulenamespace>(node, name);
-    strings_.insert(name);
+    sa_.Emit<EcmaGetmodulenamespace>(node, index);
 }
 
 void PandaGen::StSuperByName(const ir::AstNode *node, VReg obj, const util::StringView &key)

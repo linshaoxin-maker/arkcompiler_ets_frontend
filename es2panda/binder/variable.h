@@ -183,6 +183,19 @@ public:
     }
 
     void SetLexical([[maybe_unused]] Scope *scope) override;
+
+    void AssignIndex(uint32_t index)
+    {
+        index_ = index;
+    }
+
+    uint32_t Index() const
+    {
+        return index_;
+    }
+
+private:
+    uint32_t index_;
 };
 
 class EnumVariable : public Variable {

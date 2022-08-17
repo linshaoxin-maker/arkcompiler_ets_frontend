@@ -153,6 +153,7 @@ private:
     }
 
     void AddMandatoryParams();
+    void AssignIndexToModuleVariable();
     void BuildFunction(FunctionScope *funcScope, util::StringView name);
     void BuildScriptFunction(Scope *outerScope, const ir::ScriptFunction *scriptFunc);
     void BuildClassDefinition(ir::ClassDefinition *classDef);
