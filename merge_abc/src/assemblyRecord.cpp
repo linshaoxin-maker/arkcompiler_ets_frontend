@@ -39,4 +39,23 @@ void Record::Serialize(const panda::pandasm::Record &record, proto_panda::Record
         FileLocation::Serialize(location.value(), *proto_location);
     }
 }
+
+void Record::Deserialize(const proto_panda::Record &protoRecord, panda::pandasm::Record &record)
+{
+    record.conflict = protoRecord.conflict();
+    RecordMetadata recordMetadata;
+    recordMetadata.Deserialize(protoRecord.metadata(), record.metadata);
+    for (const auto &protoField : protoRecord.field_list()) {
+        auto recordField = panda::pandasm::Field(panda::panda_file::SourceLang::ECMASCRIPT);
+        Field::Deserialize(protoField, recordField);
+        record.field_list.emplace_back(std::move(recordField));
+    }
+    record.params_num = protoRecord.params_num();
+    record.body_presence = protoRecord.body_presence();
+    record.source_file = protoRecord.source_file();
+    if (protoRecord.has_file_location()) {
+        const auto &protoLocation = protoRecord.file_location();
+        FileLocation::Deserialize(protoLocation, record.file_location.value());
+    }
+}
 } // panda::proto

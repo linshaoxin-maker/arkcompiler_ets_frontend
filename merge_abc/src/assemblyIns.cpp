@@ -43,4 +43,33 @@ void Ins::Serialize(const panda::pandasm::Ins &insn, proto_panda::Ins &protoInsn
     auto *protoDebug = protoInsn.mutable_ins_debug();
     DebuginfoIns::Serialize(insn.ins_debug, *protoDebug);
 }
+
+void Ins::Deserialize(const proto_panda::Ins &protoInsn, panda::pandasm::Ins &insn)
+{
+    insn.opcode = static_cast<panda::pandasm::Opcode>(protoInsn.opcode());
+    for (const auto &protoReg : protoInsn.regs()) {
+        insn.regs.push_back(static_cast<uint16_t>(protoReg));
+    }
+    for (const auto &protoId : protoInsn.ids()) {
+        insn.ids.push_back(protoId);
+    }
+    for (const auto &protoImm : protoInsn.imms()) {
+        switch (protoImm.type_case()) {
+            case proto_panda::Ins_IType::kValueInt: {
+                insn.imms.push_back(protoImm.value_int());
+                break;
+            }
+            case proto_panda::Ins_IType::kValueDouble: {
+                insn.imms.push_back(protoImm.value_double());
+                break;
+            }
+            default:
+                UNREACHABLE();
+        }
+    }
+    insn.label = protoInsn.label();
+    insn.set_label = protoInsn.set_label();
+    const proto_panda::DebuginfoIns protoDebugInfoIns = protoInsn.ins_debug();
+    DebuginfoIns::Deserialize(protoDebugInfoIns, insn.ins_debug);
+}
 } // panda::proto

@@ -125,12 +125,14 @@ static int GenerateProgram(panda::pandasm::Program *prog, std::unique_ptr<panda:
         return 0;
     }
 
-    if (options->compilerProtoOutput().size() > 0) {
-        proto::ProtobufSnapshotGenerator::GenerateSnapshot(*prog, options->compilerProtoOutput());
-        return 0;
-    }
+    std::string protoFileName = output.substr(0, output.rfind(".")) + ".bin";
+    proto::ProtobufSnapshotGenerator::GenerateSnapshot(*prog, protoFileName);
 
-    if (!panda::pandasm::AsmEmitter::Emit(output, *prog, statp, mapsp, true)) {
+    // std::cout << "protoFileName: " << protoFileName << std::endl;
+    panda::pandasm::Program deserializedProgram;
+    proto::ProtobufSnapshotGenerator::GenerateProgram(protoFileName, deserializedProgram);
+
+    if (!panda::pandasm::AsmEmitter::Emit(output, deserializedProgram, statp, mapsp, true)) {
         return 1;
     }
 

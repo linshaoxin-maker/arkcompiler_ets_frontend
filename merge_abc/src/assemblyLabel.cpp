@@ -25,4 +25,13 @@ void Label::Serialize(const panda::pandasm::Label &label, proto_panda::Label &pr
         FileLocation::Serialize(fileLocation.value(), *protoLocation);
     }
 }
+
+void Label::Deserialize(const proto_panda::Label &protoLabel, panda::pandasm::Label &label)
+{
+    label.name = protoLabel.name();
+    if (protoLabel.has_file_location()) {
+        proto_panda::FileLocation protoLocation = protoLabel.file_location();
+        FileLocation::Deserialize(protoLocation, label.file_location.value());
+    }
+}
 } // panda::proto

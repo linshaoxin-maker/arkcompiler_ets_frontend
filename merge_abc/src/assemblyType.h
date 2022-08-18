@@ -18,11 +18,19 @@
 
 #include "assembly-program.h"
 #include "assemblyType.pb.h"
+#include "arena_allocator.h"
 
 namespace panda::proto {
 class Type {
 public:
+    explicit Type()
+        : allocator_(std::make_unique<panda::ArenaAllocator>(panda::SpaceType::SPACE_TYPE_COMPILER, nullptr, true))
+    {
+    }
     static void Serialize(const panda::pandasm::Type type, proto_panda::Type &protoType);
+    panda::pandasm::Type &Deserialize(const proto_panda::Type &protoType);
+private:
+    std::unique_ptr<panda::ArenaAllocator> allocator_ {};
 };
 } // panda::proto
 #endif

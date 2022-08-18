@@ -21,11 +21,19 @@
 #include "assemblyFunction.h"
 #include "assemblyLiterals.h"
 #include "assemblyProgram.pb.h"
+#include "arena_allocator.h"
 
 namespace panda::proto {
 class Program {
 public:
+    explicit Program()
+        : allocator_(std::make_unique<panda::ArenaAllocator>(panda::SpaceType::SPACE_TYPE_COMPILER, nullptr, true))
+    {
+    }
     static void Serialize(const panda::pandasm::Program &program, proto_panda::Program &protoProgram);
+    void Deserialize(const proto_panda::Program &protoProgram, panda::pandasm::Program &program);
+private:
+    std::unique_ptr<panda::ArenaAllocator> allocator_ {};
 };
 } // panda::proto
 #endif

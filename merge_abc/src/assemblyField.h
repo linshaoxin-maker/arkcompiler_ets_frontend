@@ -25,6 +25,7 @@ namespace panda::proto {
 class Field {
 public:
     static void Serialize(const panda::pandasm::Field &field, proto_panda::Field &protoField);
+    static void Deserialize(const proto_panda::Field &protoField, panda::pandasm::Field &field);
 };
 } // panda::proto
 #endif

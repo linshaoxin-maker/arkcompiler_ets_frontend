@@ -48,4 +48,48 @@ void Program::Serialize(const panda::pandasm::Program &program, proto_panda::Pro
         Type::Serialize(type, *protoType);
     }
 }
+
+void Program::Deserialize(const proto_panda::Program &protoProgram, panda::pandasm::Program &program)
+{
+    program.lang = static_cast<panda::panda_file::SourceLang>(protoProgram.lang());
+
+    for (const auto &recordUnit : protoProgram.record_table()) {
+        auto name = recordUnit.key();
+        auto protoRecord = recordUnit.value();
+        auto record = panda::pandasm::Record(protoRecord.name(),
+                                             static_cast<panda::panda_file::SourceLang>(protoRecord.language()));
+        Record::Deserialize(protoRecord, record);
+        program.record_table.insert({name, std::move(record)});
+    }
+
+    Function functionDeserialization;
+    for (const auto &functionUnit : protoProgram.function_table()) {
+        auto name = functionUnit.key();
+        auto protoFunction = functionUnit.value();
+        auto function = allocator_->New<panda::pandasm::Function>(protoFunction.name(),
+            static_cast<panda::panda_file::SourceLang>(protoFunction.language()));
+        functionDeserialization.Deserialize(protoFunction, *function);
+        program.function_table.insert({name, std::move(*function)});
+    }
+
+    // TODO: support function_synonyms
+
+    for (const auto &literalUnit : protoProgram.literalarray_table()) {
+        auto name = literalUnit.key();
+        auto protoLiteralArray = literalUnit.value();
+        panda::pandasm::LiteralArray literalArray;
+        LiteralArray::Deserialize(protoLiteralArray, literalArray);
+        program.literalarray_table.insert({name, std::move(literalArray)});
+    }
+
+    for (const auto &protoString : protoProgram.strings()) {
+        program.strings.insert(protoString);
+    }
+
+    Type type;
+    for (const auto &protoArrayType : protoProgram.array_types()) {
+        auto arrayType = type.Deserialize(protoArrayType);
+        program.array_types.insert(std::move(arrayType));
+    }
+}
 } // panda::proto

@@ -25,6 +25,15 @@ void AnnotationData::Serialize(const panda::pandasm::AnnotationData &anno, proto
     }
 }
 
+void AnnotationData::Deserialize(const proto_panda::AnnotationData &protoAnno, panda::pandasm::AnnotationData &anno)
+{
+    AnnotationElement annotationElement;
+    for (const auto &protoElement : protoAnno.elements()) {
+        panda::pandasm::AnnotationElement element = annotationElement.Deserialize(protoElement);
+        anno.AddElement(std::move(element));
+    }
+}
+
 void AnnotationElement::Serialize(const panda::pandasm::AnnotationElement &element,
                                                 proto_panda::AnnotationElement &protoElement)
 {
@@ -38,6 +47,22 @@ void AnnotationElement::Serialize(const panda::pandasm::AnnotationElement &eleme
         auto *protoScalar = protoElement.mutable_scalar();
         ScalarValue::Serialize(*(element.GetValue()->GetAsScalar()), *protoScalar);
     }
+}
+
+panda::pandasm::AnnotationElement &AnnotationElement::Deserialize(const proto_panda::AnnotationElement &protoElement)
+{
+    if (protoElement.is_array()) {
+        ArrayValue arrayValue;
+        panda::pandasm::ArrayValue array = arrayValue.Deserialize(protoElement.array());
+        auto element = allocator_->New<panda::pandasm::AnnotationElement>(protoElement.name(),
+            std::make_unique<panda::pandasm::ArrayValue>(array));
+        return *element;
+    }
+    ScalarValue scalarValue;
+    panda::pandasm::ScalarValue scalar = scalarValue.Deserialize(protoElement.scalar());
+    auto element = allocator_->New<panda::pandasm::AnnotationElement>(protoElement.name(),
+        std::make_unique<panda::pandasm::ScalarValue>(scalar));
+    return *element;
 }
 
 void ScalarValue::Serialize(const panda::pandasm::ScalarValue &scalar, proto_panda::ScalarValue &protoScalar)
@@ -104,6 +129,122 @@ void ScalarValue::Serialize(const panda::pandasm::ScalarValue &scalar, proto_pan
     protoScalar.set_type(type);
 }
 
+panda::pandasm::ScalarValue ScalarValue::Deserialize(const proto_panda::ScalarValue &protoScalar)
+{
+    proto_panda::ScalarValue_VariantValueType scalarType = protoScalar.type();
+    std::variant<uint64_t, float, double, std::string, panda::pandasm::Type, panda::pandasm::AnnotationData> value;
+    switch (scalarType)
+    {
+        case proto_panda::ScalarValue_VariantValueType::ScalarValue_VariantValueType_UINT64: {
+            value = static_cast<uint64_t>(protoScalar.value_u64());
+            break;
+        }
+        case proto_panda::ScalarValue_VariantValueType::ScalarValue_VariantValueType_FLOAT: {
+            value = static_cast<float>(protoScalar.value_f());
+            break;
+        }
+        case proto_panda::ScalarValue_VariantValueType::ScalarValue_VariantValueType_DOUBLE: {
+            value = static_cast<double>(protoScalar.value_d());
+            break;
+        }
+        case proto_panda::ScalarValue_VariantValueType::ScalarValue_VariantValueType_STRING: {
+            value = static_cast<std::string>(protoScalar.value_str());
+            break;
+        }
+        case proto_panda::ScalarValue_VariantValueType::ScalarValue_VariantValueType_PANDASM_TYPE: {
+            Type type;
+            value = static_cast<panda::pandasm::Type>(type.Deserialize(protoScalar.value_type()));
+            break;
+        }
+        case proto_panda::ScalarValue_VariantValueType::ScalarValue_VariantValueType_ANNOTATION_DATA: {
+            auto protoAnnotationData = protoScalar.value_anno();
+            auto value = allocator_->New<panda::pandasm::AnnotationData>(protoAnnotationData.record_name());
+            AnnotationData::Deserialize(protoAnnotationData, *value);
+            break;
+        }
+        default:
+            UNREACHABLE();
+    }
+    auto scalar = ScalarValue::CreateScalarValue(static_cast<panda::pandasm::Value::Type>(
+        protoScalar.father().type()), value);
+    return scalar;
+}
+
+panda::pandasm::ScalarValue ScalarValue::CreateScalarValue(const panda::pandasm::Value::Type &type,
+    std::variant<uint64_t, float, double, std::string, panda::pandasm::Type, panda::pandasm::AnnotationData> &value)
+{
+    switch (type)
+    {
+        case panda::pandasm::Value::Type::U1: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U1>(static_cast<uint8_t>(
+                std::get<uint64_t>(value)));
+        }
+        case panda::pandasm::Value::Type::U8: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U8>(static_cast<uint8_t>(
+                std::get<uint64_t>(value)));
+        }
+        case panda::pandasm::Value::Type::U16: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U16>(static_cast<uint16_t>(
+                std::get<uint64_t>(value)));
+        }
+        case panda::pandasm::Value::Type::STRING_NULLPTR: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::STRING_NULLPTR>(
+                static_cast<uint32_t>(std::get<uint64_t>(value)));
+        }
+        case panda::pandasm::Value::Type::U32: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U32>(static_cast<uint32_t>(
+                std::get<uint64_t>(value)));
+        }
+        case panda::pandasm::Value::Type::U64: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U64>(static_cast<uint64_t>(
+                std::get<uint64_t>(value)));
+        }
+        case panda::pandasm::Value::Type::I8: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::I8>(static_cast<int8_t>(
+                std::get<uint64_t>(value)));
+        }
+        case panda::pandasm::Value::Type::I16: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::I16>(static_cast<int16_t>(
+                std::get<uint64_t>(value)));
+        }
+        case panda::pandasm::Value::Type::I32: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::I32>(static_cast<int32_t>(
+                std::get<uint64_t>(value)));
+        }
+        case panda::pandasm::Value::Type::I64: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::I64>(static_cast<int64_t>(
+                std::get<uint64_t>(value)));
+        }
+        case panda::pandasm::Value::Type::F32: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::F32>(std::get<float>(value));
+        }
+        case panda::pandasm::Value::Type::F64: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::F64>(std::get<double>(value));
+        }
+        case panda::pandasm::Value::Type::STRING: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::STRING>(
+                std::get<std::string>(value));
+        }
+        case panda::pandasm::Value::Type::METHOD: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::METHOD>(
+                std::get<std::string>(value));
+        }
+        case panda::pandasm::Value::Type::ENUM: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::ENUM>(std::get<std::string>(value));
+        }
+        case panda::pandasm::Value::Type::RECORD: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::RECORD>(
+                std::get<panda::pandasm::Type>(value));
+        }
+        case panda::pandasm::Value::Type::ANNOTATION: {
+            return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::ANNOTATION>(
+                std::get<panda::pandasm::AnnotationData>(value));
+        }
+        default:
+            UNREACHABLE();
+    }
+}
+
 void ArrayValue::Serialize(const panda::pandasm::ArrayValue &array, proto_panda::ArrayValue &protoArray)
 {
     protoArray.mutable_father()->set_type(static_cast<uint32_t>(array.GetType()));
@@ -114,4 +255,16 @@ void ArrayValue::Serialize(const panda::pandasm::ArrayValue &array, proto_panda:
     }
 }
 
+panda::pandasm::ArrayValue &ArrayValue::Deserialize(const proto_panda::ArrayValue &protoArray)
+{
+    std::vector<panda::pandasm::ScalarValue> values;
+    ScalarValue scalarValue;
+    for (const auto &protoValue : protoArray.values()) {
+        panda::pandasm::ScalarValue scalar = scalarValue.Deserialize(protoValue);
+        values.emplace_back(std::move(scalar));
+    }
+    auto array = allocator_->New<panda::pandasm::ArrayValue>(
+        static_cast<panda::pandasm::Value::Type>(protoArray.component_type()), values);
+    return *array;
+}
 } // panda::proto

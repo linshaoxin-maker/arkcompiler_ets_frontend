@@ -17,10 +17,16 @@
 
 namespace panda::proto {
 void Type::Serialize(const panda::pandasm::Type type, proto_panda::Type &protoType)
-{   
+{
     protoType.set_component_name(type.GetComponentName());
     protoType.set_rank(type.GetRank());
     protoType.set_name(type.GetName());
     protoType.set_type_id(static_cast<uint32_t>(type.GetId()));
+}
+
+panda::pandasm::Type &Type::Deserialize(const proto_panda::Type &protoType)
+{
+    auto type = allocator_->New<panda::pandasm::Type>(protoType.component_name(), protoType.rank());
+    return *type;
 }
 } // panda::proto

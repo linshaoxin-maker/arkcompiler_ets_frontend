@@ -25,21 +25,31 @@
 #include "assemblyFileLocation.h"
 #include "meta.h"
 #include "assemblyFunction.pb.h"
+#include "arena_allocator.h"
 
 namespace panda::proto {
 class CatchBlock {
 public:
     static void Serialize(const panda::pandasm::Function::CatchBlock &block, proto_panda::CatchBlock &protoBlock);
+    static void Deserialize(const proto_panda::CatchBlock &protoBlock, panda::pandasm::Function::CatchBlock &block);
 };
 
 class Parameter {
 public:
     static void Serialize(const panda::pandasm::Function::Parameter &param, proto_panda::Parameter &protoParam);
+    static void Deserialize(const proto_panda::Parameter &protoParam, panda::pandasm::Function::Parameter &param);
 };
 
 class Function {
 public:
+    explicit Function()
+        : allocator_(std::make_unique<panda::ArenaAllocator>(panda::SpaceType::SPACE_TYPE_COMPILER, nullptr, true))
+    {
+    }
     static void Serialize(const panda::pandasm::Function &function, proto_panda::Function &protoFunction);
+    void Deserialize(const proto_panda::Function &protoFunction, panda::pandasm::Function &function);
+private:
+    std::unique_ptr<panda::ArenaAllocator> allocator_ {};
 };
 } // panda::proto
 #endif

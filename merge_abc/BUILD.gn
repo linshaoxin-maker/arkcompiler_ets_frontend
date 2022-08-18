@@ -39,6 +39,7 @@ protobuf_snapshot_generator_sources = [
 config("panda_assembly_proto_public_config") {
   include_dirs = [
     "$ark_root/assembler",
+    "$ark_root/libpandabase/mem",
     "$ark_root",
     "src",
     "$proto_out_dir",

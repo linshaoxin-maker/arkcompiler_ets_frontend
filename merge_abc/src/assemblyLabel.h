@@ -24,6 +24,7 @@ namespace panda::proto {
 class Label {
 public:
     static void Serialize(const panda::pandasm::Label &label, proto_panda::Label &protoLabel);
+    static void Deserialize(const proto_panda::Label &protoLabel, panda::pandasm::Label &label);
 };
 } // panda::proto
 #endif

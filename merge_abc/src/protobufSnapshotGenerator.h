@@ -22,6 +22,7 @@ namespace panda::proto {
 class ProtobufSnapshotGenerator {
 public:
     static void GenerateSnapshot(const panda::pandasm::Program &prog, const std::string &outputName);
+    static void GenerateProgram(const std::string &inputName, panda::pandasm::Program &prog);
 };
 } // panda::proto
 #endif

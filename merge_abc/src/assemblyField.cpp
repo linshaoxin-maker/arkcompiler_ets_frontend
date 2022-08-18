@@ -30,4 +30,19 @@ void Field::Serialize(const panda::pandasm::Field &field, proto_panda::Field &pr
     protoField.set_bound_right(field.bound_right);
     protoField.set_is_defined(field.is_defined);
 }
+
+void Field::Deserialize(const proto_panda::Field &protoField, panda::pandasm::Field &field)
+{
+    Type type;
+    FieldMetadata fieldMetadata;
+
+    field.type = type.Deserialize(protoField.type());
+    field.name = protoField.name();
+    fieldMetadata.Deserialize(protoField.metadata(), field.metadata);
+    field.line_of_def = protoField.line_of_def();
+    field.whole_line = protoField.whole_line();
+    field.bound_left = protoField.bound_left();
+    field.bound_right = protoField.bound_right();
+    field.is_defined = protoField.is_defined();
+}
 } // panda::proto

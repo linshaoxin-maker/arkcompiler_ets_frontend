@@ -18,6 +18,7 @@
 #include "assemblyProgram.h"
 
 namespace panda::proto {
+
 void ProtobufSnapshotGenerator::GenerateSnapshot(const panda::pandasm::Program &program, const std::string &outputName)
 {
     proto_panda::Program protoProgram;
@@ -28,4 +29,21 @@ void ProtobufSnapshotGenerator::GenerateSnapshot(const panda::pandasm::Program &
     protoProgram.SerializeToOstream(&output);
     output.close();
 }
+
+void ProtobufSnapshotGenerator::GenerateProgram(const std::string &inputName, panda::pandasm::Program &prog)
+{
+    std::fstream input(inputName, std::ios::in | std::ios::binary);
+    if (!input) {
+        std::cout << ": File not found" << std::endl;
+        return;
+    }
+    proto_panda::Program proto_program;
+    if (!proto_program.ParseFromIstream(&input)) {
+        std::cerr << "Failed to parse program proto." << std::endl;
+        return;
+    }
+    Program program;
+    program.Deserialize(proto_program, prog);
+}
+
 } // panda::proto
