@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "assemblyField.h"
+#include "assemblyFieldProto.h"
 
 namespace panda::proto {
 void Field::Serialize(const panda::pandasm::Field &field, proto_panda::Field &protoField)
@@ -30,14 +30,12 @@ void Field::Serialize(const panda::pandasm::Field &field, proto_panda::Field &pr
     protoField.set_is_defined(field.is_defined);
 }
 
-void Field::Deserialize(const proto_panda::Field &protoField, panda::pandasm::Field &field)
+void Field::Deserialize(const proto_panda::Field &protoField, panda::pandasm::Field &field,
+                        std::unique_ptr<panda::ArenaAllocator> &&allocator)
 {
-    Type type;
-    FieldMetadata fieldMetadata;
-
-    field.type = type.Deserialize(protoField.type());
+    field.type = Type::Deserialize(protoField.type(), std::move(allocator));
     field.name = protoField.name();
-    fieldMetadata.Deserialize(protoField.metadata(), field.metadata);
+    FieldMetadata::Deserialize(protoField.metadata(), field.metadata, std::move(allocator));
     field.line_of_def = protoField.line_of_def();
     field.whole_line = protoField.whole_line();
     field.bound_left = protoField.bound_left();

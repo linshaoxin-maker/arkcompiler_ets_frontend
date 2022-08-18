@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "assemblyProgram.h"
+#include "assemblyProgramProto.h"
 
 namespace panda::proto {
 void Program::Serialize(const panda::pandasm::Program &program, proto_panda::Program &protoProgram)
@@ -49,7 +49,8 @@ void Program::Serialize(const panda::pandasm::Program &program, proto_panda::Pro
     }
 }
 
-void Program::Deserialize(const proto_panda::Program &protoProgram, panda::pandasm::Program &program)
+void Program::Deserialize(const proto_panda::Program &protoProgram, panda::pandasm::Program &program,
+                          std::unique_ptr<panda::ArenaAllocator> &&allocator)
 {
     program.lang = static_cast<panda::panda_file::SourceLang>(protoProgram.lang());
 
@@ -58,17 +59,16 @@ void Program::Deserialize(const proto_panda::Program &protoProgram, panda::panda
         auto protoRecord = recordUnit.value();
         auto record = panda::pandasm::Record(protoRecord.name(),
                                              static_cast<panda::panda_file::SourceLang>(protoRecord.language()));
-        Record::Deserialize(protoRecord, record);
+        Record::Deserialize(protoRecord, record, std::move(allocator));
         program.record_table.insert({name, std::move(record)});
     }
 
-    Function functionDeserialization;
     for (const auto &functionUnit : protoProgram.function_table()) {
         auto name = functionUnit.key();
         auto protoFunction = functionUnit.value();
-        auto function = allocator_->New<panda::pandasm::Function>(protoFunction.name(),
+        auto function = allocator->New<panda::pandasm::Function>(protoFunction.name(),
             static_cast<panda::panda_file::SourceLang>(protoFunction.language()));
-        functionDeserialization.Deserialize(protoFunction, *function);
+        Function::Deserialize(protoFunction, *function, std::move(allocator));
         program.function_table.insert({name, std::move(*function)});
     }
 
@@ -84,9 +84,8 @@ void Program::Deserialize(const proto_panda::Program &protoProgram, panda::panda
         program.strings.insert(protoString);
     }
 
-    Type type;
     for (const auto &protoArrayType : protoProgram.array_types()) {
-        auto arrayType = type.Deserialize(protoArrayType);
+        auto arrayType = Type::Deserialize(protoArrayType, std::move(allocator));
         program.array_types.insert(std::move(arrayType));
     }
 }

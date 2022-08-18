@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "meta.h"
+#include "metaProto.h"
 
 namespace panda::proto {
 void RecordMetadata::Serialize(const panda::pandasm::RecordMetadata &meta, proto_panda::RecordMetadata &protoMeta)
@@ -22,14 +22,14 @@ void RecordMetadata::Serialize(const panda::pandasm::RecordMetadata &meta, proto
 }
 
 void RecordMetadata::Deserialize(const proto_panda::RecordMetadata &protoMeta,
-                                 std::unique_ptr<panda::pandasm::RecordMetadata> &meta)
+                                 std::unique_ptr<panda::pandasm::RecordMetadata> &meta,
+                                 std::unique_ptr<panda::ArenaAllocator> &&allocator)
 {
     auto protoItemMetadata = protoMeta.father();
     ItemMetadata::Deserialize(protoItemMetadata, *meta);
 
     auto protoAnnoMetadata = protoItemMetadata.father();
-    AnnotationMetadata annotationMetadata;
-    annotationMetadata.Deserialize(protoAnnoMetadata, *meta);
+    AnnotationMetadata::Deserialize(protoAnnoMetadata, *meta, std::move(allocator));
 
     auto protoMetadata = protoAnnoMetadata.father();
     Metadata::Deserialize(protoMetadata, *meta);
@@ -43,14 +43,14 @@ void FunctionMetadata::Serialize(const panda::pandasm::FunctionMetadata &meta,
 }
 
 void FunctionMetadata::Deserialize(const proto_panda::FunctionMetadata &protoMeta,
-                                   std::unique_ptr<panda::pandasm::FunctionMetadata> &meta)
+                                   std::unique_ptr<panda::pandasm::FunctionMetadata> &meta,
+                                   std::unique_ptr<panda::ArenaAllocator> &&allocator)
 {
     auto protoItemMetadata = protoMeta.father();
     ItemMetadata::Deserialize(protoItemMetadata, *meta);
 
     auto protoAnnoMetadata = protoItemMetadata.father();
-    AnnotationMetadata annotationMetadata;
-    annotationMetadata.Deserialize(protoAnnoMetadata, *meta);
+    AnnotationMetadata::Deserialize(protoAnnoMetadata, *meta, std::move(allocator));
 
     auto protoMetadata = protoAnnoMetadata.father();
     Metadata::Deserialize(protoMetadata, *meta);
@@ -70,22 +70,21 @@ void FieldMetadata::Serialize(const panda::pandasm::FieldMetadata &meta, proto_p
 }
 
 void FieldMetadata::Deserialize(const proto_panda::FieldMetadata &protoMeta,
-                                std::unique_ptr<panda::pandasm::FieldMetadata> &meta)
+                                std::unique_ptr<panda::pandasm::FieldMetadata> &meta,
+                                std::unique_ptr<panda::ArenaAllocator> &&allocator)
 {
     auto protoItemMetadata = protoMeta.father();
     ItemMetadata::Deserialize(protoItemMetadata, *meta);
     auto protoAnnoMetadata = protoItemMetadata.father();
-    AnnotationMetadata annotationMetadata;
-    annotationMetadata.Deserialize(protoAnnoMetadata, *meta);
+    AnnotationMetadata::Deserialize(protoAnnoMetadata, *meta, std::move(allocator));
     auto protoMetadata = protoAnnoMetadata.father();
     Metadata::Deserialize(protoMetadata, *meta);
 
-    Type type;
-    auto fieldType = type.Deserialize(protoMeta.field_type());
+    auto fieldType = Type::Deserialize(protoMeta.field_type(), std::move(allocator));
     meta->SetFieldType(fieldType);
     ScalarValue scalarValue;
     if (protoMeta.has_value()) {
-        auto scalar = scalarValue.Deserialize(protoMeta.value());
+        auto scalar = scalarValue.Deserialize(protoMeta.value(), std::move(allocator));
         meta->SetValue(scalar);
     }
 }
@@ -97,11 +96,11 @@ void ParamMetadata::Serialize(const panda::pandasm::ParamMetadata &meta, proto_p
 }
 
 void ParamMetadata::Deserialize(const proto_panda::ParamMetadata &protoMeta,
-                                std::unique_ptr<panda::pandasm::ParamMetadata> &meta)
+                                std::unique_ptr<panda::pandasm::ParamMetadata> &meta,
+                                std::unique_ptr<panda::ArenaAllocator> &&allocator)
 {
     auto protoAnnoMetadata = protoMeta.father();
-    AnnotationMetadata annotationMetadata;
-    annotationMetadata.Deserialize(protoAnnoMetadata, *meta);
+    AnnotationMetadata::Deserialize(protoAnnoMetadata, *meta, std::move(allocator));
 }
 
 void ItemMetadata::Serialize(const panda::pandasm::ItemMetadata &meta, proto_panda::ItemMetadata &protoMeta)
@@ -128,13 +127,13 @@ void AnnotationMetadata::Serialize(const panda::pandasm::AnnotationMetadata &met
 }
 
 void AnnotationMetadata::Deserialize(const proto_panda::AnnotationMetadata &protoMeta,
-                                     panda::pandasm::AnnotationMetadata &meta)
+                                     panda::pandasm::AnnotationMetadata &meta,
+                                     std::unique_ptr<panda::ArenaAllocator> &&allocator)
 {
     std::vector<panda::pandasm::AnnotationData> annotations;
-    AnnotationData annotationData;
     for (const auto &protoAnnotation : protoMeta.annotations()) {
-        auto annotation = allocator_->New<panda::pandasm::AnnotationData>(protoAnnotation.record_name());
-        annotationData.Deserialize(protoAnnotation, *annotation);
+        auto annotation = allocator->New<panda::pandasm::AnnotationData>(protoAnnotation.record_name());
+        AnnotationData::Deserialize(protoAnnotation, *annotation, std::move(allocator));
         annotations.emplace_back(std::move(*annotation));
     }
     meta.AddAnnotations(annotations);

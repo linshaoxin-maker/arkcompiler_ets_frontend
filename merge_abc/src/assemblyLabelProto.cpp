@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "assemblyLabel.h"
+#include "assemblyLabelProto.h"
 
 namespace panda::proto {
 void Label::Serialize(const panda::pandasm::Label &label, proto_panda::Label &protoLabel)

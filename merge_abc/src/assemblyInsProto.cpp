@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "assemblyIns.h"
+#include "assemblyInsProto.h"
 
 namespace panda::proto {
 void Ins::Serialize(const panda::pandasm::Ins &insn, proto_panda::Ins &protoInsn)

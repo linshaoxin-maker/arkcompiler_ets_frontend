@@ -13,27 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef MERGE_ABC_ASSEMBLY_PROGRAM_H
-#define MERGE_ABC_ASSEMBLY_PROGRAM_H
+#ifndef MERGE_ABC_ASSEMBLY_TYPE_H
+#define MERGE_ABC_ASSEMBLY_TYPE_H
 
 #include "assembly-program.h"
-#include "assemblyRecord.h"
-#include "assemblyFunction.h"
-#include "assemblyLiterals.h"
-#include "assemblyProgram.pb.h"
+#include "assemblyType.pb.h"
 #include "arena_allocator.h"
 
 namespace panda::proto {
-class Program {
+class Type {
 public:
-    explicit Program()
-        : allocator_(std::make_unique<panda::ArenaAllocator>(panda::SpaceType::SPACE_TYPE_COMPILER, nullptr, true))
-    {
-    }
-    static void Serialize(const panda::pandasm::Program &program, proto_panda::Program &protoProgram);
-    void Deserialize(const proto_panda::Program &protoProgram, panda::pandasm::Program &program);
-private:
-    std::unique_ptr<panda::ArenaAllocator> allocator_ {};
+    static void Serialize(const panda::pandasm::Type type, proto_panda::Type &protoType);
+    static panda::pandasm::Type &Deserialize(const proto_panda::Type &protoType,
+                                             std::unique_ptr<panda::ArenaAllocator> &&allocator);
 };
 } // panda::proto
 #endif

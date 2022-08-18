@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "assemblyDebug.h"
+#include "assemblyDebugProto.h"
 
 namespace panda::proto {
 void DebuginfoIns::Serialize(const panda::pandasm::debuginfo::Ins &debug, proto_panda::DebuginfoIns &protoDebug)

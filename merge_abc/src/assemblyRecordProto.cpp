@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "assemblyRecord.h"
+#include "assemblyRecordProto.h"
 
 namespace panda::proto {
 void Record::Serialize(const panda::pandasm::Record &record, proto_panda::Record &protoRecord)
@@ -40,14 +40,14 @@ void Record::Serialize(const panda::pandasm::Record &record, proto_panda::Record
     }
 }
 
-void Record::Deserialize(const proto_panda::Record &protoRecord, panda::pandasm::Record &record)
+void Record::Deserialize(const proto_panda::Record &protoRecord, panda::pandasm::Record &record,
+                        std::unique_ptr<panda::ArenaAllocator> &&allocator)
 {
     record.conflict = protoRecord.conflict();
-    RecordMetadata recordMetadata;
-    recordMetadata.Deserialize(protoRecord.metadata(), record.metadata);
+    RecordMetadata::Deserialize(protoRecord.metadata(), record.metadata, std::move(allocator));
     for (const auto &protoField : protoRecord.field_list()) {
         auto recordField = panda::pandasm::Field(panda::panda_file::SourceLang::ECMASCRIPT);
-        Field::Deserialize(protoField, recordField);
+        Field::Deserialize(protoField, recordField, std::move(allocator));
         record.field_list.emplace_back(std::move(recordField));
     }
     record.params_num = protoRecord.params_num();

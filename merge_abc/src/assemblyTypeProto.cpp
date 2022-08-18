@@ -13,20 +13,21 @@
  * limitations under the License.
  */
 
-#ifndef MERGE_ABC_ASSEMBLY_RECORD_H
-#define MERGE_ABC_ASSEMBLY_RECORD_H
-
-#include "assembly-program.h"
-#include "meta.h"
-#include "assemblyField.h"
-#include "assemblyFunction.h"
-#include "assemblyRecord.pb.h"
+#include "assemblyTypeProto.h"
 
 namespace panda::proto {
-class Record {
-public:
-    static void Serialize(const panda::pandasm::Record &record, proto_panda::Record &protoRecord);
-    static void Deserialize(const proto_panda::Record &protoRecord, panda::pandasm::Record &record);
-};
+void Type::Serialize(const panda::pandasm::Type type, proto_panda::Type &protoType)
+{
+    protoType.set_component_name(type.GetComponentName());
+    protoType.set_rank(type.GetRank());
+    protoType.set_name(type.GetName());
+    protoType.set_type_id(static_cast<uint32_t>(type.GetId()));
+}
+
+panda::pandasm::Type &Type::Deserialize(const proto_panda::Type &protoType,
+                                        std::unique_ptr<panda::ArenaAllocator> &&allocator)
+{
+    auto type = allocator->New<panda::pandasm::Type>(protoType.component_name(), protoType.rank());
+    return *type;
+}
 } // panda::proto
-#endif

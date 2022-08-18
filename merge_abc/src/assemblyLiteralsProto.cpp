@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "assemblyLiterals.h"
+#include "assemblyLiteralsProto.h"
 
 namespace panda::proto {
 void VariantValue::Serialize(const LiteralValueType &value, proto_panda::VariantValue &protoValue)

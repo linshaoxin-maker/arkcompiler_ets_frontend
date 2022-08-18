@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "assemblyFileLocation.h"
+#include "assemblyFileLocationProto.h"
 
 namespace panda::proto {
 void FileLocation::Serialize(const panda::pandasm::FileLocation &location, proto_panda::FileLocation &protoLocation)

@@ -32,6 +32,7 @@
 #include <memory>
 
 #include <protobufSnapshotGenerator.h>
+#include <mergeProgramProto.h>
 
 namespace panda::es2panda::aot {
 
@@ -125,14 +126,9 @@ static int GenerateProgram(panda::pandasm::Program *prog, std::unique_ptr<panda:
         return 0;
     }
 
-    std::string protoFileName = output.substr(0, output.rfind(".")) + ".bin";
-    proto::ProtobufSnapshotGenerator::GenerateSnapshot(*prog, protoFileName);
+    proto::ProtobufSnapshotGenerator::GenerateSnapshot(*prog, output);
 
-    // std::cout << "protoFileName: " << protoFileName << std::endl;
-    panda::pandasm::Program deserializedProgram;
-    proto::ProtobufSnapshotGenerator::GenerateProgram(protoFileName, deserializedProgram);
-
-    if (!panda::pandasm::AsmEmitter::Emit(output, deserializedProgram, statp, mapsp, true)) {
+    if (!panda::pandasm::AsmEmitter::Emit(output, *prog, statp, mapsp, true)) {
         return 1;
     }
 

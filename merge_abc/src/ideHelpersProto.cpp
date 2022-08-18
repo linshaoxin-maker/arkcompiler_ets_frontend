@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ideHelpers.h"
+#include "ideHelpersProto.h"
 
 namespace panda::proto {
 void SourceLocation::Serialize(const panda::pandasm::SourceLocation &location,
