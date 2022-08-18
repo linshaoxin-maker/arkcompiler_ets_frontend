@@ -33,7 +33,7 @@ void Program::Serialize(const panda::pandasm::Program &program, proto_panda::Pro
         auto *protoFunc = functionMap->mutable_value();
         Function::Serialize(func, *protoFunc);
     }
-    // TODO: support function_synonyms
+
     for (const auto &[name, array] : program.literalarray_table) {
         auto *literalarrayMap = protoProgram.add_literalarray_table();
         literalarrayMap->set_key(name);
@@ -71,8 +71,6 @@ void Program::Deserialize(const proto_panda::Program &protoProgram, panda::panda
         functionDeserialization.Deserialize(protoFunction, *function);
         program.function_table.insert({name, std::move(*function)});
     }
-
-    // TODO: support function_synonyms
 
     for (const auto &literalUnit : protoProgram.literalarray_table()) {
         auto name = literalUnit.key();

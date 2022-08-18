@@ -58,7 +58,6 @@ void Function::Serialize(const panda::pandasm::Function &function, proto_panda::
     auto *protoFuncMeta = protoFunction.mutable_metadata();
     FunctionMetadata::Serialize(*function.metadata, *protoFuncMeta);
 
-
     for (const auto &[name, label] : function.label_table) {
         auto *labelMap = protoFunction.add_label_table();
         labelMap->set_key(name);

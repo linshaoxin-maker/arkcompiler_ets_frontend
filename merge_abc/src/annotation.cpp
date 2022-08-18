@@ -35,7 +35,7 @@ void AnnotationData::Deserialize(const proto_panda::AnnotationData &protoAnno, p
 }
 
 void AnnotationElement::Serialize(const panda::pandasm::AnnotationElement &element,
-                                                proto_panda::AnnotationElement &protoElement)
+                                  proto_panda::AnnotationElement &protoElement)
 {
     protoElement.set_name(element.GetName());
     bool is_array = element.GetValue()->IsArray();
@@ -133,8 +133,7 @@ panda::pandasm::ScalarValue ScalarValue::Deserialize(const proto_panda::ScalarVa
 {
     proto_panda::ScalarValue_VariantValueType scalarType = protoScalar.type();
     std::variant<uint64_t, float, double, std::string, panda::pandasm::Type, panda::pandasm::AnnotationData> value;
-    switch (scalarType)
-    {
+    switch (scalarType) {
         case proto_panda::ScalarValue_VariantValueType::ScalarValue_VariantValueType_UINT64: {
             value = static_cast<uint64_t>(protoScalar.value_u64());
             break;
@@ -173,8 +172,7 @@ panda::pandasm::ScalarValue ScalarValue::Deserialize(const proto_panda::ScalarVa
 panda::pandasm::ScalarValue ScalarValue::CreateScalarValue(const panda::pandasm::Value::Type &type,
     std::variant<uint64_t, float, double, std::string, panda::pandasm::Type, panda::pandasm::AnnotationData> &value)
 {
-    switch (type)
-    {
+    switch (type) {
         case panda::pandasm::Value::Type::U1: {
             return panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U1>(static_cast<uint8_t>(
                 std::get<uint64_t>(value)));

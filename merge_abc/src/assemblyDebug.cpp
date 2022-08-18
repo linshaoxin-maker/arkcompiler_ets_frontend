@@ -35,7 +35,7 @@ void DebuginfoIns::Deserialize(const proto_panda::DebuginfoIns &protoDebug, pand
 }
 
 void LocalVariable::Serialize(const panda::pandasm::debuginfo::LocalVariable &debug,
-                                              proto_panda::LocalVariable &protoDebug)
+                              proto_panda::LocalVariable &protoDebug)
 {
     protoDebug.set_name(debug.name);
     protoDebug.set_signature(debug.signature);

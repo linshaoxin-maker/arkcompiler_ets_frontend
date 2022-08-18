@@ -25,7 +25,7 @@ void Ins::Serialize(const panda::pandasm::Ins &insn, proto_panda::Ins &protoInsn
     for (const auto &str : insn.ids) {
         protoInsn.add_ids(str);
     }
-    for (const auto imm : insn.imms) {
+    for (const auto &imm : insn.imms) {
         auto *protoImm = protoInsn.add_imms();
         switch (static_cast<proto_panda::Ins_IType::TypeCase>(imm.index() + 1)) {  // 1: enum TypeCase start from 1
             case proto_panda::Ins_IType::kValueInt:

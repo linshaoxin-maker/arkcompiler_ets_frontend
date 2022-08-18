@@ -16,7 +16,6 @@
 #include "assemblyField.h"
 
 namespace panda::proto {
-
 void Field::Serialize(const panda::pandasm::Field &field, proto_panda::Field &protoField)
 {
     auto *protoType = protoField.mutable_type();

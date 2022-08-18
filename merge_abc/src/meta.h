@@ -23,7 +23,6 @@
 #include "arena_allocator.h"
 
 namespace panda::proto {
-
 class RecordMetadata {
 public:
     static void Serialize(const panda::pandasm::RecordMetadata &meta, proto_panda::RecordMetadata &protoMeta);
@@ -66,7 +65,7 @@ public:
     {
     }
     static void Serialize(const panda::pandasm::AnnotationMetadata &meta,
-                                     proto_panda::AnnotationMetadata &protoMeta);
+                          proto_panda::AnnotationMetadata &protoMeta);
     void Deserialize(const proto_panda::AnnotationMetadata &protoMeta, panda::pandasm::AnnotationMetadata &meta);
 private:
     std::unique_ptr<panda::ArenaAllocator> allocator_ {};

@@ -16,9 +16,8 @@
 #include "ideHelpers.h"
 
 namespace panda::proto {
-
 void SourceLocation::Serialize(const panda::pandasm::SourceLocation &location,
-                                  proto_panda::SourceLocation &protoLocation)
+                               proto_panda::SourceLocation &protoLocation)
 {
     auto *protoBegin = protoLocation.mutable_begin();
     SourcePosition::Serialize(location.begin, *protoBegin);
@@ -38,7 +37,7 @@ void SourceLocation::Deserialize(const proto_panda::SourceLocation &protoLocatio
 }
 
 void SourcePosition::Serialize(const panda::pandasm::SourcePosition &position,
-                                  proto_panda::SourcePosition &protoPosition)
+                               proto_panda::SourcePosition &protoPosition)
 {
     protoPosition.set_line(position.line);
     protoPosition.set_column(position.column);
@@ -50,5 +49,4 @@ void SourcePosition::Deserialize(const proto_panda::SourcePosition &protoPositio
     position.line = protoPosition.line();
     position.column = protoPosition.column();
 }
-
 } // panda::proto

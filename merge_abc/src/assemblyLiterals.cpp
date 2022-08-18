@@ -20,7 +20,7 @@ void VariantValue::Serialize(const LiteralValueType &value, proto_panda::Variant
 {
     const auto type = static_cast<proto_panda::VariantValue_VariantValueType>(value.index());
     protoValue.set_type(type);
-    switch(type) {
+    switch (type) {
         case proto_panda::VariantValue_VariantValueType_BOOL: {
             protoValue.set_value_int(static_cast<uint64_t>(std::get<bool>(value)));
             return;
@@ -51,7 +51,7 @@ void VariantValue::Serialize(const LiteralValueType &value, proto_panda::Variant
         }
         case proto_panda::VariantValue_VariantValueType_STRING: {
             protoValue.set_value_str(std::get<std::string>(value));
-            return;;
+            return;
         }
         default:
             UNREACHABLE();
@@ -61,7 +61,7 @@ void VariantValue::Serialize(const LiteralValueType &value, proto_panda::Variant
 void VariantValue::Deserialize(const proto_panda::VariantValue &protoValue, LiteralValueType &value)
 {
     auto type = protoValue.type();
-    switch(type) {
+    switch (type) {
         case proto_panda::VariantValue_VariantValueType_BOOL: {
             value = static_cast<bool>(protoValue.value_int());
             return;

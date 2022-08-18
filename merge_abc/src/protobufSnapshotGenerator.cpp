@@ -18,14 +18,17 @@
 #include "assemblyProgram.h"
 
 namespace panda::proto {
-
 void ProtobufSnapshotGenerator::GenerateSnapshot(const panda::pandasm::Program &program, const std::string &outputName)
 {
     proto_panda::Program protoProgram;
 
     panda::proto::Program::Serialize(program, protoProgram);
 
-    std::ofstream output(outputName, std::ios::out | std::ios::trunc | std::ios::binary);
+    std::fstream output(outputName, std::ios::out | std::ios::trunc | std::ios::binary);
+    if (!output) {
+        std::cout << ": Fail to create file" << std::endl;
+        return;
+    }
     protoProgram.SerializeToOstream(&output);
     output.close();
 }
@@ -45,5 +48,4 @@ void ProtobufSnapshotGenerator::GenerateProgram(const std::string &inputName, pa
     Program program;
     program.Deserialize(proto_program, prog);
 }
-
 } // panda::proto

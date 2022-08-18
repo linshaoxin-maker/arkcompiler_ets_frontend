@@ -15,7 +15,6 @@
 #include "meta.h"
 
 namespace panda::proto {
-
 void RecordMetadata::Serialize(const panda::pandasm::RecordMetadata &meta, proto_panda::RecordMetadata &protoMeta)
 {
     auto *protoItemmetadata = protoMeta.mutable_father();
@@ -37,7 +36,7 @@ void RecordMetadata::Deserialize(const proto_panda::RecordMetadata &protoMeta,
 }
 
 void FunctionMetadata::Serialize(const panda::pandasm::FunctionMetadata &meta,
-                                              proto_panda::FunctionMetadata &protoMeta)
+                                 proto_panda::FunctionMetadata &protoMeta)
 {
     auto *protoItemmetadata = protoMeta.mutable_father();
     ItemMetadata::Serialize(static_cast<const panda::pandasm::ItemMetadata &>(meta), *protoItemmetadata);
@@ -118,7 +117,7 @@ void ItemMetadata::Deserialize(const proto_panda::ItemMetadata &protoMeta, panda
 }
 
 void AnnotationMetadata::Serialize(const panda::pandasm::AnnotationMetadata &meta,
-                                                  proto_panda::AnnotationMetadata &protoMeta)
+                                   proto_panda::AnnotationMetadata &protoMeta)
 {
     auto *protoMetadata = protoMeta.mutable_father();
     Metadata::Serialize(static_cast<const panda::pandasm::Metadata &>(meta), *protoMetadata);
