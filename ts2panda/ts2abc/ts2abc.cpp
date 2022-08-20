@@ -28,6 +28,7 @@
 #include "ts2abc_options.h"
 #include "type_adapter.h"
 #include "ts2abc.h"
+#include "protobufSnapshotGenerator.h"
 
 #ifdef ENABLE_BYTECODE_OPT
 #include "optimize_bytecode.h"
@@ -46,6 +47,7 @@ bool g_isDtsFile = false;
 std::string g_optLogLevel = "error";
 uint32_t g_literalArrayCount = 0;
 using ts2abc_type_adapter::TypeAdapter;
+std::string g_compilerOutputProto = "";
 
 constexpr std::size_t BOUND_LEFT = 0;
 constexpr std::size_t BOUND_RIGHT = 0;
@@ -884,6 +886,12 @@ static void ParseIsDtsFile(const Json::Value &rootValue)
     }
 }
 
+static void ParseCompilerOutputProto(const Json::Value &rootValue) {
+    Logd("-----------------parse compiler output proto-----------------");
+    if (rootValue.isMember("output-proto") && rootValue["output-proto"].isString()) {
+        g_compilerOutputProto = rootValue["output-proto"].asString();
+    }
+}
 static void ReplaceAllDistinct(std::string &str, const std::string &oldValue, const std::string &newValue)
 {
     for (std::string::size_type pos(0); pos != std::string::npos; pos += newValue.length()) {
@@ -906,6 +914,7 @@ static void ParseOptions(const Json::Value &rootValue, panda::pandasm::Program &
     ParseDisplayTypeinfo(rootValue);
     ParseOptLogLevel(rootValue);
     ParseIsDtsFile(rootValue);
+    ParseCompilerOutputProto(rootValue);
 }
 
 static void ParseSingleFunc(const Json::Value &rootValue, panda::pandasm::Program &prog)
@@ -1257,9 +1266,11 @@ static bool ReadFromPipe(panda::pandasm::Program &prog)
     return true;
 }
 
-bool GenerateProgram([[maybe_unused]] const std::string &data, const std::string &output, bool isParsingFromPipe,
-                     int optLevel, std::string &optLogLevel)
+bool GenerateProgram([[maybe_unused]] const std::string &data, const std::string &output, panda::ts2abc::Options options)
 {
+    bool isParsingFromPipe = options.GetCompileByPipeArg();
+    int optLevel = options.GetOptLevelArg();
+    std::string optLogLevel = options.GetOptLogLevelArg();
     panda::pandasm::Program prog = panda::pandasm::Program();
     prog.lang = panda::pandasm::extensions::Language::ECMASCRIPT;
 
@@ -1276,6 +1287,11 @@ bool GenerateProgram([[maybe_unused]] const std::string &data, const std::string
     }
 
     Logd("parsing done, calling pandasm\n");
+
+    std::string compilerOutputProto = g_compilerOutputProto;
+    if (options.GetCompilerOutputProto().size() > 0) {
+        compilerOutputProto = options.GetCompilerOutputProto();
+    }
 
     TypeAdapter ada(g_displayTypeinfo);
     ada.AdaptTypeForProgram(&prog);
@@ -1302,7 +1318,14 @@ bool GenerateProgram([[maybe_unused]] const std::string &data, const std::string
             std::cerr << "Failed to emit binary data: " << panda::pandasm::AsmEmitter::GetLastError() << std::endl;
             return false;
         }
+
         panda::bytecodeopt::OptimizeBytecode(&prog, mapsp, output.c_str(), true);
+
+        if (compilerOutputProto.size() > 0) {
+            panda::proto::ProtobufSnapshotGenerator::GenerateSnapshot(prog, compilerOutputProto);
+            return true;
+        }
+
         if (!panda::pandasm::AsmEmitter::Emit(output.c_str(), prog, statp, mapsp, emitDebugInfo)) {
             std::cerr << "Failed to emit binary data: " << panda::pandasm::AsmEmitter::GetLastError() << std::endl;
             return false;
@@ -1310,6 +1333,10 @@ bool GenerateProgram([[maybe_unused]] const std::string &data, const std::string
         return true;
     }
 #endif
+    if (compilerOutputProto.size() > 0) {
+        panda::proto::ProtobufSnapshotGenerator::GenerateSnapshot(prog, compilerOutputProto);
+        return true;
+    }
 
     if (!panda::pandasm::AsmEmitter::Emit(output.c_str(), prog, nullptr)) {
         std::cerr << "Failed to emit binary data: " << panda::pandasm::AsmEmitter::GetLastError() << std::endl;
