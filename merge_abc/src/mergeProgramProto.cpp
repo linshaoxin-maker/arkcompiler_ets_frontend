@@ -21,7 +21,11 @@
 #include "libpandafile/literal_data_accessor.h"
 #include <assembly-emitter.h>
 
-#include <filesystem>
+#if defined(PANDA_TARGET_WINDOWS)
+#include <io.h>
+#else
+#include <dirent.h>
+#endif
 #include <mem/pool_manager.h>
 
 namespace panda::proto {
@@ -53,17 +57,53 @@ int TraverseProtoBinPath(const std::string &protoBinPath, const std::string &pro
 {
     panda::pandasm::Program program;
 
-    const std::filesystem::path fsPath(protoBinPath);
-    if (!std::filesystem::exists(fsPath)) {
+#if PANDA_TARGET_WINDOWS
+    int handle = 0;
+    struct _finddata_t fileInfo;
+    std::string path;
+    if ((handle = _findfirst(path.assign(protoBinPath).append("\\*").c_str(), &fileInfo)) == -1) {
         return 1;
     }
-    for (auto &itr : std::filesystem::directory_iterator(fsPath)) {
-        if (std::filesystem::is_directory(itr.status())) {
-            if (TraverseProtoBinPath(itr.path().string(), protoBinSuffix, mergeProgram, std::move(allocator)) != 0) {
+    do
+    {
+        if (fileInfo.attrib & _A_SUBDIR) {
+            if((!strncmp(fileInfo.name, ".", 1)) || (!strncmp(fileInfo.name, "..", 2))) {
+                continue;
+            }
+            if (TraverseProtoBinPath(path.assign(protoBinPath).append("\\").append(fileInfo.name), protoBinSuffix,
+                                     mergeProgram, std::move(allocator)) != 0) {
+                _findclose(handle);
                 return 1;
             }
         } else {
-            auto fileName = itr.path().string();
+            std::string fileName(fileInfo.name);
+            if (fileName.substr(fileName.find_last_of(".") + 1).compare(protoBinSuffix) == 0) {
+                proto::ProtobufSnapshotGenerator::GenerateProgram(
+                    path.assign(protoBinPath).append("\\").append(fileName), program, std::move(allocator));
+                mergeProgram->Merge(&program);
+            }
+        }
+    } while (_findnext(handle, &fileInfo) == 0);
+    _findclose(handle);
+#else
+    DIR *protoBin = opendir(protoBinPath.c_str());
+    if (protoBin == nullptr) {
+        return 1;
+    }
+    dirent *dir = nullptr;
+    std::string pathPrefix = protoBinPath + "/";
+    while ((dir = readdir(protoBin)) != nullptr) {
+        if((!strncmp(dir->d_name, ".", 1)) || (!strncmp(dir->d_name, "..", 2))) {
+            continue;
+        }
+        if (dir->d_type == DT_DIR) {
+            std::string subDirName = pathPrefix + dir->d_name;
+            if (TraverseProtoBinPath(subDirName, protoBinSuffix, mergeProgram, std::move(allocator)) != 0) {
+                closedir(protoBin);
+                return 1;
+            }
+        } else {
+            std::string fileName = pathPrefix + dir->d_name;
             std::string suffixStr = fileName.substr(fileName.find_last_of(".") + 1);
             if (suffixStr.compare(protoBinSuffix) == 0) {
                 proto::ProtobufSnapshotGenerator::GenerateProgram(fileName, program, std::move(allocator));
@@ -71,6 +111,8 @@ int TraverseProtoBinPath(const std::string &protoBinPath, const std::string &pro
             }
         }
     }
+    closedir(protoBin);
+#endif
     return 0;
 }
 
@@ -185,7 +227,11 @@ int Run(int argc, const char **argv)
     panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps *mapsp = nullptr;
 
     std::string outputPandaFile = options->outputPandaFile();
-    outputPandaFile = std::filesystem::path(protoBinPath).append(outputPandaFile);
+#ifdef PANDA_TARGET_WINDOWS
+    outputPandaFile = protoBinPath + "\\" + outputPandaFile;
+#else
+    outputPandaFile = protoBinPath + "/" + outputPandaFile;
+#endif
     if (!panda::pandasm::AsmEmitter::Emit(outputPandaFile, *(mergeProgram.GetResult()), statp, mapsp, true)) {
         return 1;
     }
