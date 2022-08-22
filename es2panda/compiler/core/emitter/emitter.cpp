@@ -352,13 +352,14 @@ void FunctionEmitter::GenVariablesDebugInfo()
 Emitter::Emitter(const CompilerContext *context)
 {
     prog_ = new panda::pandasm::Program();
-    prog_->lang = panda::pandasm::extensions::Language::ECMASCRIPT;
+    prog_->lang = LANG_EXT;
+
+    rec_ = new panda::pandasm::Record(context->Binder()->Program()->RecordName().Mutf8(), LANG_EXT);
 
     prog_->function_table.reserve(context->Binder()->Functions().size());
+
+    SetCommonjsField(context->Binder()->Program()->Kind() == parser::ScriptKind::COMMONJS);
     GenESAnnoatationRecord();
-    if (context->Binder()->Program()->Kind() == parser::ScriptKind::COMMONJS) {
-        GenCommonjsRecord();
-    }
 }
 
 Emitter::~Emitter()
@@ -395,16 +396,12 @@ void Emitter::AddSourceTextModuleRecord(ModuleRecordEmitter *module, const Compi
 {
     std::lock_guard<std::mutex> lock(m_);
 
-    auto ecmaModuleRecord = panda::pandasm::Record("_ESModuleRecord", LANG_EXT);
-    ecmaModuleRecord.metadata->SetAccessFlags(panda::ACC_PUBLIC);
-
     auto moduleIdxField = panda::pandasm::Field(LANG_EXT);
-    moduleIdxField.name = std::string {context->Binder()->Program()->SourceFile()};
+    moduleIdxField.name = "moduleRecordIdx";
     moduleIdxField.type = panda::pandasm::Type("u32", 0);
     moduleIdxField.metadata->SetValue(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U32>(
         static_cast<uint32_t>(module->Index())));
-    ecmaModuleRecord.field_list.emplace_back(std::move(moduleIdxField));
-    prog_->record_table.emplace(ecmaModuleRecord.name, std::move(ecmaModuleRecord));
+    rec_->field_list.emplace_back(std::move(moduleIdxField));
 
     auto &moduleLiteralsBuffer = module->Buffer();
     auto literalArrayInstance = panda::pandasm::LiteralArray(std::move(moduleLiteralsBuffer));
@@ -452,6 +449,10 @@ panda::pandasm::Program *Emitter::Finalize(bool dumpDebugInfo)
         debuginfo::DebugInfoDumper dumper(prog_);
         dumper.Dump();
     }
+
+    prog_->record_table.emplace(rec_->name, std::move(*rec_));
+    delete rec_;
+    rec_ = nullptr;
 
     auto *prog = prog_;
     prog_ = nullptr;
