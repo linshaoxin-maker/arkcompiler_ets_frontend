@@ -1,10 +1,9 @@
 const ts = require("typescript");
 const fs =require('fs');
-const { resolve } = require("path");
 var exec = require('child_process').execSync;
 
-// create my target JsonObject for comparing with es2panda_ts
-const tscKind2MyAST = {
+
+const tscKind2es2pandaAST = {
     SourceFile:"Program",VariableDeclarationList:"VariableDeclaration",VariableDeclaration:"VariableDeclarator",TrueKeyword:true,Identifier:"Identifier",
     Block:"BlockStatement",InterfaceDeclaration:"TSInterfaceDeclaration",PropertySignature:"TSPropertySignature",NumberKeyword:"TSNumberKeyword",
     TypeReference:"TSTypeReference",SuperKeyword:"Super",PropertyAccessExpression:"MemberExpression",PropertyDeclaration:"ClassProperty",
@@ -29,9 +28,7 @@ function serializeChildObjects(node,indentLevel,sourceFile) {
     let arr = [];
     node.forEachChild(child => {
         const val =printRecursiveFrom(child,indentLevel+1,sourceFile,node);
-         //console.log("----------val----------")
-         //console.log(val)
-        if( ts.isVariableStatement(node) ){  //237
+        if( ts.isVariableStatement(node)){  //237
             arr=val;
         }else if (val ===undefined){
             
@@ -39,10 +36,7 @@ function serializeChildObjects(node,indentLevel,sourceFile) {
         else {
             arr.push(val)
         };
-         //console.log("---------arr-----------");
-         //console.log(arr);
     });
-    
     return arr;
 }
 
@@ -61,10 +55,10 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
             console.log(identation +syntaxKind+":"+node.kind+"   ==> start: "+start+"   end: "+end +"  start: " + JSON.stringify(getRowandColumn(start,code))+"end: "+JSON.stringify(getRowandColumn(end,code)));
         }
     }
-    if(ts.isSourceFile(node)){            //305
-        content = {"type":tscKind2MyAST[syntaxKind],"statements":serializeChildObjects(node,indentLevel,sourceFile)};
+    if(ts.isSourceFile(node)){            //305  SourceFile
+        content = {"type":tscKind2es2pandaAST[syntaxKind],"statements":serializeChildObjects(node,indentLevel,sourceFile)};
     }
-    else if (node.kind === 1){           //EndOfFileToken
+    else if (node.kind === 1){           //1 EndOfFileToken
         return;
     }
     else if(ts.isNumericLiteral(node)){  //8 NumericLiteral -->  NumberLiteral
@@ -87,7 +81,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         content = {"type":syntaxKind,"value":value};
     }
     else if(node.kind === 15 ){  // 15 TemplateHead--> TemplateElement
-        content = {"type": tscKind2MyAST[syntaxKind]}
+        content = {"type": tscKind2es2pandaAST[syntaxKind]}
         content.value = {"raw":"","cooked":""}
     }
     else if(node.kind === 16 ){  //  16 TemplateMiddle
@@ -208,22 +202,22 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         if(parent &&  parent.kind === 196){
             content= {"type":"TSNullKeyword"} ;
         }else{
-            content= {"type":tscKind2MyAST[syntaxKind]} ;
+            content= {"type":tscKind2es2pandaAST[syntaxKind]} ;
             content.value = null;
         }
     }
     else if (node.kind === 106 ){  // 106 SuperKeyword --> Super
-        content= {"type":tscKind2MyAST[syntaxKind]} ;
+        content= {"type":tscKind2es2pandaAST[syntaxKind]} ;
     }
     else if(node.kind === 108 ){  //108  ThisKeyword --> ThisExpression
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
     }
     else if(node.kind === 110 ){  //110  TrueKeyword --> BooleanLiteral
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.value = true;
     }
     else if(node.kind ===114){     // 114 VoidKeyword  --> TSVoidKeyword
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
     }
     else if(node.kind === 117 ){  /// 117 implements
         //None
@@ -249,13 +243,13 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         return "static"
     }
     else if(node.kind === 130){  // 130 AnyKeyword -->TSAnyKeyword
-        content ={"type":tscKind2MyAST[syntaxKind]}
+        content ={"type":tscKind2es2pandaAST[syntaxKind]}
     }
     else if(node.kind === 131 ){  // 131  AsyncKeyword ==> To judge async
         return true;
     }
     else if(node.kind === 133){      //133 BooleanKeyword  ->TSBooleanKeyword
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
     }
     else if(node.kind ===135){   //135  DeclareKeyword -->
         return true
@@ -264,14 +258,14 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         return "keyof"
     }
     else if(node.kind === 143){  // 143  NeverKeyword-->TSNeverKeyword
-        content= {"type":tscKind2MyAST[syntaxKind]};
+        content= {"type":tscKind2es2pandaAST[syntaxKind]};
     }
     else if(node.kind === 147) {     //147  NumberKeyword  --> TSNumberKeyword
-        content= {"type":tscKind2MyAST[syntaxKind]};
+        content= {"type":tscKind2es2pandaAST[syntaxKind]};
     }
     else if(node.kind ===150){  //  150  StringKeyword --> TSStringKeyword
 
-        content= {"type":tscKind2MyAST[syntaxKind]};
+        content= {"type":tscKind2es2pandaAST[syntaxKind]};
     }
     else if(node.kind ===151){  //  151  SymbolKeyword
         content = {"type":"TSTypeReference"}
@@ -280,10 +274,10 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         content.typeName.loc={"start":getRowandColumn(node.getStart(sourceFile),code),"end":getRowandColumn(node.end,code)};
     }
     else if(node.kind === 153){  // 153 UndefinedKeyword-->TSUndefinedKeyword
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
     }
     else if(node.kind === 155){  // 155  UnknownKeyword-->TSUnknownKeyword
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
     }
     else if(ts.isComputedPropertyName(node)){  //  162  ComputedPropertyName--> []  computed: true
         // if( node.expression.questionDotToken.kind === 28 || node.expression.questionToken.kind === 28 ){
@@ -294,7 +288,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         //}
     }
     else if(ts.isTypeParameterDeclaration(node)){       //  163  TypeParameter --> TSTypeParameter
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.name = serializeThisNodeObjects(node.name,indentLevel,sourceFile)
         if(node.constraint){
             content.constraint = serializeThisNodeObjects(node.constraint,indentLevel,sourceFile);
@@ -336,7 +330,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         content.expression = serializeThisNodeObjects(node.expression,indentLevel,sourceFile);
     }
     else if(ts.isPropertySignature(node)){      //166 PropertySignature  -->  TSPropertySignature
-        content={"type":tscKind2MyAST[syntaxKind]};
+        content={"type":tscKind2es2pandaAST[syntaxKind]};
         content.computed = false;
         content.optional = false;
         content.readonly = false;
@@ -347,7 +341,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         if(node.questionToken){content.optional = true; }
     }
     else if(ts.isPropertyDeclaration(node)){   // 167 PropertyDeclaration --> ClassProperty
-        content= {"type":tscKind2MyAST[syntaxKind]};
+        content= {"type":tscKind2es2pandaAST[syntaxKind]};
         if(ts.isPrivateIdentifier(node.name)){  // special condition: PrivateIdentifier
             content.key = {"type":"TSPrivateIdentifier"}
             content.key.key = serializeThisNodeObjects(node.name,indentLevel,sourceFile);
@@ -395,7 +389,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
             } 
     }
     else if(ts.isMethodSignature(node)){    // 168 MethodSignature  --> TSMethodSignature
-        content= {"type":tscKind2MyAST[syntaxKind]};
+        content= {"type":tscKind2es2pandaAST[syntaxKind]};
         content.computed= false;
         content.optional= false;
         content.key=serializeThisNodeObjects(node.name,indentLevel,sourceFile)
@@ -424,7 +418,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
             content.value = {"type":"FunctionExpression","function":{"type":"ScriptFunction","id":null,"generator":false,"async":false,"expression":false}}
             content.kind = "init"
         }else{
-            content={"type":tscKind2MyAST[syntaxKind]}
+            content={"type":tscKind2es2pandaAST[syntaxKind]}
             content.kind="method"  
             content.static=false
             if(node.modifiers){
@@ -592,7 +586,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         }  
     }
     else if(ts.isCallSignatureDeclaration(node)){  //  174  CallSignature-->TSCallSignatureDeclaration
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
         content.params = [] 
         for(var i=0; i<node.parameters.length; i++){
             content.params[i] = serializeThisNodeObjects(node.parameters[i],indentLevel,sourceFile)
@@ -609,7 +603,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         }
     }
     else if(ts.isConstructSignatureDeclaration(node)){  // 175  ConstructSignature --> TSConstructSignatureDeclaration
-        content={"type":tscKind2MyAST[syntaxKind]}
+        content={"type":tscKind2es2pandaAST[syntaxKind]}
         content.params=[]
         for(var i=0; i<node.parameters.length;i++){
             content.params[i] = serializeThisNodeObjects(node.parameters[i],indentLevel,sourceFile)
@@ -625,14 +619,14 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
             }    
         }
     }else if(ts.isIndexSignatureDeclaration(node)){   //176  IndexSignature  -->  TSIndexSignature
-        content={"type":tscKind2MyAST[syntaxKind]}
+        content={"type":tscKind2es2pandaAST[syntaxKind]}
         content.parameters=serializeThisNodeObjects(node.parameters[0].name,indentLevel,sourceFile)
         content.parameters.typeAnnotation=serializeThisNodeObjects(node.parameters[0].type,indentLevel,sourceFile)
         content.typeAnnotation=serializeThisNodeObjects(node.type,indentLevel,sourceFile)
         content.readonly=false
     }
     else if(ts.isTypePredicateNode(node)){  // 177 FirstTypeNode / TypePredicate-->TSTypePredicate
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.parameterName= serializeThisNodeObjects(node.parameterName,indentLevel,sourceFile)
         if(node.type){
             content.typeAnnotation = serializeThisNodeObjects(node.type,indentLevel,sourceFile)
@@ -642,7 +636,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         }
     }
     else if (ts.isTypeReferenceNode(node)){   //178 TypeReference-->  TSTypeReference
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
         content.typeName = serializeThisNodeObjects(node.typeName,indentLevel,sourceFile);
         if(node.typeArguments){
             content.typeParameters = {"type":"TSTypeParameterInstantiation"}
@@ -654,7 +648,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         }
     }
     else if(ts.isFunctionTypeNode(node)){ // 179  FunctionType --> TSFunctionType
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
         content.params =[]
         for(var i=0; i<node.parameters.length;i++){
             content.params[i] = serializeThisNodeObjects(node.parameters[i],indentLevel,sourceFile)
@@ -670,40 +664,40 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
     }
 
     else if(ts.isTypeQueryNode(node)) {           //   181  TypeQuery --> TSTypeQuery
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.exprName = serializeThisNodeObjects(node.exprName,indentLevel,sourceFile);
     }
     else if(ts.isTypeLiteralNode(node)){        // 182 TypeLiteral  -->  TSTypeLiteral
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.members = [];
         for(var i =0; i < node.members.length;i++){
             content.members[i] = serializeThisNodeObjects(node.members[i],indentLevel,sourceFile)
         }
     }
     else if(ts.isArrayTypeNode(node)){          //   183 ArrayType -->  TSArrayType 
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
         content.elementType=serializeThisNodeObjects(node.elementType,indentLevel,sourceFile)
     }
     else if(ts.isTupleTypeNode(node)){          //   184 TupleType -->  TSTupleType 
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
         content.elementTypes=[]
         for(var i =0;i <node.elements.length;i++){
             content.elementTypes[i] = serializeThisNodeObjects(node.elements[i],indentLevel,sourceFile)
         }
     }
     else if(ts.isUnionTypeNode(node)){  //187 UnionType-->TSUnionType
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.types = []
         for(var i=0;i<node.types.length;i++){
             content.types[i] = serializeThisNodeObjects(node.types[i],indentLevel,sourceFile);
         }
     }
     else if(ts.isParenthesizedTypeNode(node)){ // 191 ParenthesizedType-->TSParenthesizedType
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
         content.typeAnnotation = serializeThisNodeObjects(node.type,indentLevel,sourceFile);
     }
     else if(ts.isTypeOperatorNode(node)){  // 193 TypeOperator-->TSTypeOperator
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
         switch(node.operator){
             case 140:content.operator = "keyof";
             break;
@@ -711,7 +705,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         content.typeAnnotation = serializeThisNodeObjects(node.type,indentLevel,sourceFile);
     }
     else if(ts.isIndexedAccessTypeNode(node)){  // 194 IndexedAccessType -->TSIndexedAccessType
-        content = {"type": tscKind2MyAST[syntaxKind]};
+        content = {"type": tscKind2es2pandaAST[syntaxKind]};
         content.objectType = serializeThisNodeObjects(node.objectType,indentLevel,sourceFile)
         content.indexType =serializeThisNodeObjects(node.indexType,indentLevel,sourceFile)
     }
@@ -719,12 +713,12 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         if(node.literal.kind ===104 || node.literal.kind ===106 ){
            return serializeThisNodeObjects(node.literal,indentLevel,sourceFile,node)
         }else{
-            content = {"type": tscKind2MyAST[syntaxKind]};
+            content = {"type": tscKind2es2pandaAST[syntaxKind]};
             content.literal = serializeThisNodeObjects(node.literal,indentLevel,sourceFile);
         }    
     }
     else if(ts.isObjectBindingPattern(node)){  //201  ObjectBindingPattern-->ObjectPattern
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
         content.properties  = []
         if(node.elements.length>0){
             for(var i=0; i <node.elements.length; i++ ){
@@ -733,7 +727,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         }
     }
     else if(ts.isArrayBindingPattern(node)) { //202 ArrayBindingPattern-->ArrayPattern
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.elements = []
         for(var i=0 ; i<node.elements.length;i++){
             content.elements[i]=serializeThisNodeObjects(node.elements[i],indentLevel,sourceFile,node);
@@ -751,7 +745,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         else if(parent &&  ts.isArrayBindingPattern(parent)){  //202
             return serializeThisNodeObjects(node.name,indentLevel,sourceFile)
         }else{
-            content = {"type":tscKind2MyAST[syntaxKind]};
+            content = {"type":tscKind2es2pandaAST[syntaxKind]};
             content.method = false
             content.shorthand = false
             content.computed = false
@@ -775,7 +769,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         }
     }
     else if(ts.isArrayLiteralExpression(node)){      //   204 ArrayLiteralExpression -->  ArrayExpression
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.elements = []
         if(node.elements.length>0){
             for(var i=0; i <node.elements.length; i++ ){
@@ -783,7 +777,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
             }
         }
     }else if(ts.isObjectLiteralExpression(node)){  // 205  ObjectLiteralExpression  --> ObjectExpression
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.properties = []
         for(var i =0; i < node.properties.length ;i++){
             content.properties[i] = serializeThisNodeObjects(node.properties[i],indentLevel,sourceFile,node);
@@ -793,14 +787,14 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         // if( (node.expression.kind === 230 || node.expression.kind === 207 || node.expression.kind === 208)  || !parent
         //       && parent.kind !==206 && parent.kind !==207 && parent.kind !==230 ){
         //     content= {"type":"ChainExpression"}
-        //     content.expression = {"type":tscKind2MyAST[syntaxKind]}
+        //     content.expression = {"type":tscKind2es2pandaAST[syntaxKind]}
         //     content.expression.object = serializeThisNodeObjects(node.expression,indentLevel,sourceFile,node)
         //     content.expression.property = serializeThisNodeObjects(node.name,indentLevel,sourceFile);
         //     content.expression.computed = false;
         //     content.expression.optional = false;
         //     if(node.questionDotToken) {content.expression.optional = true;}
         // }else{
-            content= {"type":tscKind2MyAST[syntaxKind]};
+            content= {"type":tscKind2es2pandaAST[syntaxKind]};
             content.object = serializeThisNodeObjects(node.expression,indentLevel,sourceFile);
             content.property = serializeThisNodeObjects(node.name,indentLevel,sourceFile);
             content.computed = false;
@@ -810,7 +804,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
     else if(ts.isElementAccessExpression(node)){ //207 ElementAccessExpression --> MemberExpression
         // if(((node.expression.kind === 230||node.expression.kind === 207) && parent.kind !==206 && parent.kind !==207 && parent.kind !==230) || (node.expression.kind === 206 && parent && parent.kind !==206 && parent.kind !==207 && parent.kind !==230)){
         //     content= {"type":"ChainExpression"}
-        //     content.expression = {"type":tscKind2MyAST[syntaxKind]}
+        //     content.expression = {"type":tscKind2es2pandaAST[syntaxKind]}
         //     content.expression.object = serializeThisNodeObjects(node.expression,indentLevel,sourceFile,node)
         //     content.expression.property = serializeThisNodeObjects(node.argumentExpression,indentLevel,sourceFile);
         //     content.expression.computed = false;
@@ -818,13 +812,13 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         //     if(node.questionDotToken) {content.expression.optional = true;}
         // }else if(node.questionDotToken && node.questionDotToken.kind === 28  && (parent &&  parent.kind !== 206 && parent.kind !== 207 && parent.kind !== 230)){
         //     content= {"type":"ChainExpression"}
-        //     content.expression = {"type":tscKind2MyAST[syntaxKind]}
+        //     content.expression = {"type":tscKind2es2pandaAST[syntaxKind]}
         //     content.expression.object = serializeThisNodeObjects(node.expression,indentLevel,sourceFile,node)
         //     content.expression.property = serializeThisNodeObjects(node.argumentExpression,indentLevel,sourceFile) 
         //     content.expression.computed = true;
         //     content.expression.optional = false;if(node.questionDotToken) {content.expression.optional = true;}
         // }else{
-            content = {"type":tscKind2MyAST[syntaxKind]};
+            content = {"type":tscKind2es2pandaAST[syntaxKind]};
             content.object = serializeThisNodeObjects(node.expression,indentLevel,sourceFile,node)
             content.property = serializeThisNodeObjects(node.argumentExpression,indentLevel,sourceFile) 
             content.computed = true;
@@ -875,7 +869,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         content.quasi = serializeThisNodeObjects(node.template,indentLevel,sourceFile);
     }
     else if(ts.isTypeAssertionExpression(node)){ //211 TypeAssertionExpression-->TSTypeAssertion
-        content = {"type":tscKind2MyAST[syntaxKind] }
+        content = {"type":tscKind2es2pandaAST[syntaxKind] }
         content.typeAnnotation =serializeThisNodeObjects(node.type,indentLevel,sourceFile);
         content.expression = serializeThisNodeObjects(node.expression,indentLevel,sourceFile);
     }
@@ -924,7 +918,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         }
     }
     else if(ts.isArrowFunction(node)){  //214  ArrowFunction-->ArrowFunctionExpression
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.function = {"type":"ScriptFunction","id":null,"generator" : false,"async" : false, "expression" : false};
         if(node.asteriskToken){
             if(node.asteriskToken.kind === 41){
@@ -957,13 +951,13 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         }
     }
     else if(ts.isTypeOfExpression(node)){   // 216 TypeOfExpression-->UnaryExpression
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.operator = "typeof"
         content.prefix = true;
         content.argument = serializeThisNodeObjects(node.expression,indentLevel,sourceFile);
     }
     else if(ts.isVoidExpression(node)){  //217 VoidExpression --> UnaryExpression
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.operator = "void"
         content.prefix = true
         content.argument = serializeThisNodeObjects(node.expression,indentLevel,sourceFile);
@@ -983,7 +977,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
                 break;
             }
         }else{
-            content = {"type":tscKind2MyAST[syntaxKind]};
+            content = {"type":tscKind2es2pandaAST[syntaxKind]};
             switch(node.operator){
                 case 39: content.operator = '+';
                 break;
@@ -1003,7 +997,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         content.argument = serializeThisNodeObjects(node.operand,indentLevel,sourceFile);
     }
     else if(ts.isPostfixUnaryExpression(node)){  // 220 PostfixUnaryExpression--> UpdateExpression
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
         switch(node.operator){
             case 45: content.operator = '++';
             break;
@@ -1056,7 +1050,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         content.alternate = serializeThisNodeObjects(node.whenFalse,indentLevel,sourceFile)
     }
     else if(ts.isTemplateExpression(node)){ // 223 TemplateExpression-->TemplateLiteral  // The structure  difference between TSC is large, and it's temporarily ignored. 
-        content= {"type":tscKind2MyAST[syntaxKind]};
+        content= {"type":tscKind2es2pandaAST[syntaxKind]};
         content.expressions = []
         for(var i=0 ; i< node.templateSpans.length ; i++){
             content.expressions[i] = serializeThisNodeObjects(node.templateSpans[i],indentLevel,sourceFile)
@@ -1105,17 +1099,17 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         return serializeThisNodeObjects(node.expression,indentLevel,sourceFile); 
     }
     else if (ts.isAsExpression(node)){   //229 AsExpression-->TSAsExpression
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.expression =serializeThisNodeObjects(node.expression,indentLevel,sourceFile);
         content.typeAnnotation =serializeThisNodeObjects(node.type,indentLevel,sourceFile);
     }
     else if(ts.isNonNullExpression(node)){  // 230 NonNullExpression-->TSNonNullExpression
         if( (node.expression.kind === 206 || node.expression.kind === 207) && parent && parent.kind !==206 && parent.kind !==207 && parent.kind !==230  && parent.kind !==230){
             content= {"type":"ChainExpression"}
-            content.expression = {"type":tscKind2MyAST[syntaxKind]}
+            content.expression = {"type":tscKind2es2pandaAST[syntaxKind]}
             content.expression.expression = serializeThisNodeObjects(node.expression,indentLevel,sourceFile,node)
         }else{
-            content = {"type":tscKind2MyAST[syntaxKind]}
+            content = {"type":tscKind2es2pandaAST[syntaxKind]}
             content.expression = serializeThisNodeObjects(node.expression,indentLevel,sourceFile,node);
         }
     }
@@ -1127,7 +1121,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         return serializeThisNodeObjects(node.expression,indentLevel,sourceFile);
     }
     else if(ts.isBlock(node)){                  //235 Block  -->  BlockStatement
-        const body_kind = tscKind2MyAST[syntaxKind];  
+        const body_kind = tscKind2es2pandaAST[syntaxKind];  
         content ={"type":body_kind,"statements":serializeChildObjects(node,indentLevel,sourceFile)};
     }
     else if(ts.isEmptyStatement(node)){  // 236 EmptyStatement-->EmptyStatement
@@ -1147,7 +1141,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         content.alternate = node.elseStatement ? serializeThisNodeObjects(node.elseStatement,indentLevel,sourceFile) : null;
     }
     else if(ts.isDoStatement(node)){  //240 DoStatement -->DoWhileStatement
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.body = serializeThisNodeObjects(node.statement, indentLevel, sourceFile)
         content.test = serializeThisNodeObjects(node.expression, indentLevel, sourceFile)
     }
@@ -1157,7 +1151,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         content.body = serializeThisNodeObjects(node.statement, indentLevel, sourceFile)
     }
     else if (ts.isForStatement(node)){ //242  ForStatement --> ForUpdateStatement
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.init =node.initializer? serializeThisNodeObjects(node.initializer, indentLevel, sourceFile): null ; 
         content.test =node.condition ? serializeThisNodeObjects(node.condition,indentLevel,sourceFile):null;
         content.update =node.incrementor ? serializeThisNodeObjects(node.incrementor,indentLevel,sourceFile):null;
@@ -1197,7 +1191,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         }
     }
     else if(ts.isLabeledStatement(node)) {  // 250  LabeledStatement-->LabelledStatement
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.label = serializeThisNodeObjects(node.label,indentLevel,sourceFile)
         content.body = serializeThisNodeObjects(node.statement,indentLevel,sourceFile)
     }
@@ -1216,14 +1210,14 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         content.finalizer = node.finallyBlock ? serializeThisNodeObjects(node.finallyBlock,indentLevel,sourceFile) : null
     }
     else if(ts.isDebuggerStatement(node)){  //253  LastStatement/DebuggerStatement-->DebuggerStatement
-        content={"type":tscKind2MyAST[syntaxKind]};
+        content={"type":tscKind2es2pandaAST[syntaxKind]};
     }
     else if(ts.isVariableDeclaration(node)){        //254  VariableDeclaration --> VariableDeclarator
-        content={"type":tscKind2MyAST[syntaxKind]};                                 
+        content={"type":tscKind2es2pandaAST[syntaxKind]};                                 
         content.id = serializeThisNodeObjects(node.name,indentLevel,sourceFile);
         content.init = node.initializer ? serializeThisNodeObjects(node.initializer,indentLevel,sourceFile): null
         // const init = node.initializer;
-        // const value = tscKind2MyAST[ts.SyntaxKind[init.kind]];
+        // const value = tscKind2es2pandaAST[ts.SyntaxKind[init.kind]];
         // content.init = {"type":dataType[value],"value":value}; 
         // content.init.loc={"start":getRowandColumn(init.getStart(sourceFile),code),"end":getRowandColumn(init.end,code)};
         if(node.type){
@@ -1231,7 +1225,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         }
     }
     else if(ts.isVariableDeclarationList(node)){    //255  VariableDeclarationList  -->  VariableDeclaration
-        content = {"type":tscKind2MyAST[syntaxKind],"declarations": serializeChildObjects(node,indentLevel,sourceFile)};
+        content = {"type":tscKind2es2pandaAST[syntaxKind],"declarations": serializeChildObjects(node,indentLevel,sourceFile)};
         if(parent && parent.hasOwnProperty("modifiers") && parent["modifiers"]!=undefined){
             for(var i =0 ; i< parent.modifiers.length ; i++){
                 switch(parent.modifiers[i].kind){
@@ -1338,7 +1332,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         }
     }
     else if(ts.isInterfaceDeclaration(node)){   //258  InterfaceDeclaration --> TSInterfaceDeclaration
-        content = {"type":tscKind2MyAST[syntaxKind],"body":{"type":"TSInterfaceBody"}};
+        content = {"type":tscKind2es2pandaAST[syntaxKind],"body":{"type":"TSInterfaceBody"}};
         content.body.body = []
         for(var i =0; i< node.members.length;i++){
             content.body.body[i]=serializeThisNodeObjects(node.members[i],indentLevel,sourceFile);
@@ -1359,7 +1353,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         }
     }
     else if(ts.isTypeAliasDeclaration(node)){  // 259  TypeAliasDeclaration-->TSTypeAliasDeclaration
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
         content.id = serializeThisNodeObjects(node.name,indentLevel,sourceFile)
         content.typeAnnotation = serializeThisNodeObjects(node.type,indentLevel,sourceFile)
         if(node.typeParameters){
@@ -1371,7 +1365,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         }
     }
     else if(ts.isEnumDeclaration(node)){  // 260 EnumDeclaration-->TSEnumDeclaration
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
         content.id = serializeThisNodeObjects(node.name,indentLevel,sourceFile)
         content.members =[];
         for(var i =0;i< node.members.length;i++){
@@ -1380,7 +1374,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         content.const =false;
     }
     else if(ts.isModuleDeclaration (node)){  //   261 ModuleDeclaration -->  TSModuleDeclaration
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
         content.id = serializeThisNodeObjects(node.name,indentLevel,sourceFile)
         if(node.body){
             content.body=serializeThisNodeObjects(node.body,indentLevel,sourceFile);
@@ -1397,7 +1391,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         content.global=false;
     }
     else if(ts.isModuleBlock(node)){  //262 ModuleBlock  --> TSModuleBlock
-        content = {"type":tscKind2MyAST[syntaxKind]};
+        content = {"type":tscKind2es2pandaAST[syntaxKind]};
         content.body = []
         for(var i =0; i< node.statements.length;i++){
             content.body[i]=serializeThisNodeObjects(node.statements[i],indentLevel,sourceFile);
@@ -1407,7 +1401,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
 
     }
     else if(ts.isImportEqualsDeclaration(node)){  //265  ImportEqualsDeclaration --> TSImportEqualsDeclaration
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.id = serializeThisNodeObjects(node.name,indentLevel,sourceFile);
         if(node.modifiers){
             for(var i=0; i < node.modifiers.length;i++){
@@ -1420,7 +1414,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         content.moduleReference = serializeThisNodeObjects(node.moduleReference,indentLevel,sourceFile);
     }
     else if(ts.isCaseClause(node)){  //  289  CaseClause  --> SwitchCase
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.test = serializeThisNodeObjects(node.expression,indentLevel,sourceFile);
         content.consequent = []
         for(var i=0; i<node.statements.length;i++){
@@ -1428,7 +1422,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         }
     }
     else if(ts.isDefaultClause(node)){  //  290  DefaultClause-->SwitchCase
-        content = {"type":tscKind2MyAST[syntaxKind]}
+        content = {"type":tscKind2es2pandaAST[syntaxKind]}
         content.test = null;
         content.consequent = []
         for(var i=0; i<node.statements.length;i++){
@@ -1471,7 +1465,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         }
     }
     else if(ts.isPropertyAssignment(node)){  // 296 PropertyAssignment--> Property
-        content={"type":tscKind2MyAST[syntaxKind]}
+        content={"type":tscKind2es2pandaAST[syntaxKind]}
         content.method = false
         content.shorthand = false
         content.computed = false
@@ -1481,7 +1475,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         if(node.name.kind === 162 ){content.computed = true};
     }
     else if(ts.isShorthandPropertyAssignment(node)){  // 297 ShorthandPropertyAssignment--> Property
-        content={"type":tscKind2MyAST[syntaxKind]}
+        content={"type":tscKind2es2pandaAST[syntaxKind]}
         content.method = false
         content.shorthand = true
         content.computed = false
@@ -1490,7 +1484,7 @@ function printRecursiveFrom(node,indentLevel,sourceFile,parent=null,extendNum = 
         content.kind = "init"
     } 
     else if(ts.isEnumMember(node)){ //299  EnumMember-->TSEnumMember
-        content={"type":tscKind2MyAST[syntaxKind]}
+        content={"type":tscKind2es2pandaAST[syntaxKind]}
         content.id =  serializeThisNodeObjects(node.name,indentLevel,sourceFile);
         if(node.initializer){
             content.initializer = serializeThisNodeObjects(node.initializer,indentLevel,sourceFile);
@@ -1727,112 +1721,98 @@ function getKeys(left, right) {
     return getDiff;
 }
 
-var third_path="/mnt/disk4/zhangchen/ohos/third_party/typescript/tests/cases/compiler/downlevelLetConst9.ts"
-const tscCasesPath=" /mnt/disk4/zhangchen/TypeScript/chen/tsc_cases/"
 
-function RunTask(third_path,Alloutpath){
+function RunTask(third_path,es2abcPath,AlloutDirpath){
     if(printPath!== "" && third_path !==printPath){
         return;
     }
-    const tscCasesPath=" /mnt/disk4/zhangchen/TypeScript/chen/tsc_cases/"
-    var cmdStr = "cp "+third_path +tscCasesPath
+
+    //tscTestsRootPath = " /mnt/disk4/zhangchen/TypeScript/chen/tsc_cases/"
+    // var cmdStr = "cp "+third_path +tscCasesPath
+    // exec(cmdStr,function(err,stdout,stderr){
+    // if(err){
+    //     console.log("error: "+stderr);
+    // }else{
+    //     //console.log(stdout)
+    // }});
+
+    const targetname=(third_path.split("/")[third_path.split("/").length-1]).replace(".ts","") //"numericIndexerConstraint3";
+    console.log("targetname: "+targetname)
+
+    const path = AlloutDirpath+"/"+targetname+".json";
+
+    //cmdStr = "/mnt/disk4/zhangchen/ohos/out/rk3568/clang_x64/exe.unstripped/clang_x64/ark/ark/es2abc --extension ts --dump-ast --parse-only "+third_path  +" > "+path
+    cmdStr = es2abcPath+" --extension ts --dump-ast --parse-only "+third_path  +" > "+path
     exec(cmdStr,function(err,stdout,stderr){
     if(err){
         console.log("error: "+stderr);
     }else{
         //console.log(stdout)
     }});
-    const targetname=(third_path.split("/")[third_path.split("/").length-1]).replace(".ts","") //"numericIndexerConstraint3";
-    console.log("targetname: "+targetname)
 
-    const tsSourcePath="/mnt/disk4/zhangchen/TypeScript/chen/tsc_cases/"+targetname+".ts";
-    const path = "/mnt/disk4/zhangchen/TypeScript/chen/es2panda_ast/TempJson/"+targetname+".json";
-
-    cmdStr = "/mnt/disk4/zhangchen/ohos/out/rk3568/clang_x64/exe.unstripped/clang_x64/ark/ark/es2abc --extension ts --dump-ast --parse-only "+third_path  +" > "+path
-    
-    var es2panda_ast_json =""
-    exec(cmdStr,function(err,stdout,stderr){
-    if(err){
-        console.log("error: "+stderr);
-    }else{
-        console.log(stdout)
-    }});
-    
-    console.log(es2panda_ast_json)
-    // function sleep(ms){
-    //     return new Promise(resolve => {  
-    //         setTimeout(() =>{
-    //         resolve()}
-    //         ,ms);
-    //     });
-    // }
-    
-    // async function DelayExecute(ms){  // 单位：ms
-    //     console.log("!!!!!!!!!")
-    //     await sleep(ms);
-    //     es2panda_ast_json = JSON.parse(fs.readFileSync(path, 'UTF-8'))
-    //     console.log(JSON.stringify(es2panda_ast_json))
-    // };
-    // DelayExecute(1000);
-
-    var    es2panda_ast_json = JSON.parse(fs.readFileSync(path, 'UTF-8'))
-    //var    es2panda_ast_json = JSON.parse(es2panda_ast_data)
-
-    code= fs.readFileSync(tsSourcePath,"utf8");
-    const sourceFile = ts.createSourceFile(tsSourcePath,code,ts.ScriptTarget.Latest);
+    code= fs.readFileSync(third_path,"utf8");
+    const sourceFile = ts.createSourceFile(third_path,code,ts.ScriptTarget.Latest);
     if(printPath!== "" && third_path === printPath){
         console.log(JSON.stringify(sourceFile));
     }
-    // judge the file
-    try{
-        if(fs.existsSync(outpath)){
-            fs.unlinkSync(outpath);
-        }
-    }catch(err){
-            console.log(err);
-    }
-    var outpath="/mnt/disk4/zhangchen/TypeScript/chen/tsc_output.json"
-    var tsc_convert_ast = printRecursiveFrom(sourceFile,0,sourceFile,null,0);
-    fs.writeFileSync(outpath,JSON.stringify(tsc_convert_ast));
 
-    fs.appendFileSync(Alloutpath,"==================================================================\n");
+    var tsc_convert_ast = printRecursiveFrom(sourceFile,0,sourceFile,null,0);
+    if(printPath!== "" && third_path === printPath){
+        // delete the file
+        var tempoutpath=AlloutDirpath+"/tmp_convert_ast.json"
+        try{
+            if(fs.existsSync(tempoutpath)){
+                fs.unlinkSync(tempoutpath);
+            }
+        }catch(err){
+                console.log(err);
+        }
+        fs.writeFileSync(tempoutpath,JSON.stringify(tsc_convert_ast));
+    }
+
+    const Alloutpath = AlloutDirpath+"/AlloutPath.txt"
+    fs.appendFileSync(Alloutpath,"**************************************************************************************\n");
     fs.appendFileSync(Alloutpath,third_path+"\n\n");
     fs.appendFileSync(Alloutpath,JSON.stringify(sourceFile)+"\n");
 
+    //get the difference
+    var  es2panda_ast_json = JSON.parse(fs.readFileSync(path, 'UTF-8'))
     const getDiffFunction1 = getDiffScope();
     let diffs = getDiffFunction1(es2panda_ast_json, tsc_convert_ast);
     
-    if(diffs.length==0){
-        console.log("The two jsons are same");
-    }else if(printPath!== "" && third_path === printPath ){
-        diffs.forEach( obj => console.log(obj));
-        //for(var i=0 ; i< 100 ; i++){     console.log(diffs[i]) }
+    //print the result
+    if(printPath!== "" && third_path === printPath ){
+        if(diffs.length==0){
+            console.log("The two jsons are same");
+        }else{
+            diffs.forEach( obj => console.log(obj));
+            //for(var i=0 ; i< 100 ; i++){     console.log(diffs[i]) }
+        }
     }
-
     //save the result
-    console.log(typeof result)
-
     var result = diffs.length==0 ? ["The two jsons are same"] : diffs;
     fs.appendFileSync(Alloutpath,result.join("\n"));
     fs.appendFileSync(Alloutpath,"\n");
 }
 
-function run(fileListPath,Alloutpath){
-    const fileList = fs.readFileSync(fileListPath, 'UTF-8')
-        // judge the file
-        try{
-            if(fs.existsSync(Alloutpath)){
-                fs.unlinkSync(Alloutpath);
-            }
-        }catch(err){
-                console.log(err);
+function run(fileListPath,es2abcPath,AlloutDirpath){
+    const Alloutpath = AlloutDirpath+"/AlloutPath.txt"
+    try{
+        if(fs.existsSync(Alloutpath)){
+            fs.unlinkSync(Alloutpath);
         }
+    }catch(err){
+            console.log(err);
+    }
+    const fileList = fs.readFileSync(fileListPath, 'UTF-8')
     for (filepath of fileList.trim().split("\n")){
-        RunTask(filepath,Alloutpath)
+        RunTask(filepath,es2abcPath,AlloutDirpath)
     }
 }
+
 var code= ""
-var printPath = "" //"/mnt/disk4/zhangchen/ohos/third_party/typescript/tests/cases/compiler/collisionSuperAndLocalVarInMethod.ts"
+var printPath = "/mnt/disk4/zhangchen/ohos/third_party/typescript/tests/cases/compiler/collisionSuperAndLocalVarInMethod.ts" //"/mnt/disk4/zhangchen/ohos/third_party/typescript/tests/cases/compiler/collisionSuperAndLocalVarInMethod.ts"
+const es2abcPath = "/mnt/disk4/zhangchen/ohos/out/rk3568/clang_x64/exe.unstripped/clang_x64/ark/ark/es2abc"
 const fileListPath = "/mnt/disk4/zhangchen/TypeScript/chen/es2panda_ast/saveModuleDir/es2panSuccessFileList3.txt"
-const Alloutpath="/mnt/disk4/zhangchen/TypeScript/chen/All_tsc_output.txt"
-run(fileListPath,Alloutpath)
+const AlloutDirpath="/mnt/disk4/zhangchen/ohos/arkcompiler/ets_frontend/es2panda/test/parser_verification/astOutDir"
+run(fileListPath,es2abcPath,AlloutDirpath)
