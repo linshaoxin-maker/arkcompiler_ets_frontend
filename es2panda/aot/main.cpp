@@ -32,7 +32,6 @@
 #include <memory>
 
 #include <protobufSnapshotGenerator.h>
-#include <mergeProgramProto.h>
 
 namespace panda::es2panda::aot {
 

@@ -149,8 +149,8 @@ ohos_static_library("panda_assembly_proto_static") {
 ohos_executable("merge_abc") {
   use_exceptions = true
   sources = [
-    "src/mergeOptions.cpp",
-    "src/mergeProgramProto.cpp",
+    "src/Options.cpp",
+    "src/mergeProgram.cpp",
   ]
 
   include_dirs = [ "./src" ]

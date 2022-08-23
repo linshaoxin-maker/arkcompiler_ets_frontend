@@ -55,7 +55,7 @@ private:
     std::string errorMsg_;
     std::string protoBinSuffix_ {"protoBin"};
     std::string protoBinPath_;
-    std::string outputPandaFile_ {"merge.abc"};
+    std::string outputPandaFile_ {"modules.abc"};
 };
 }
 #endif

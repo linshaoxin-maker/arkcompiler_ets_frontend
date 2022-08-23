@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "mergeOptions.h"
+#include "Options.h"
 
 #include <sstream>
 

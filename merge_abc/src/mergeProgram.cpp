@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#include "mergeProgramProto.h"
+#include "mergeProgram.h"
 #include "protobufSnapshotGenerator.h"
 #include "arena_allocator.h"
-#include "mergeOptions.h"
+#include "Options.h"
 #include "assembler/assembly-function.h"
 #include "libpandafile/literal_data_accessor.h"
 #include <assembly-emitter.h>
@@ -53,7 +53,7 @@ public:
 };
 
 int TraverseProtoBinPath(const std::string &protoBinPath, const std::string &protoBinSuffix, MergeProgram *mergeProgram,
-                         std::unique_ptr<panda::ArenaAllocator> &&allocator)
+                         panda::ArenaAllocator *allocator)
 {
     panda::pandasm::Program program;
 
@@ -71,7 +71,7 @@ int TraverseProtoBinPath(const std::string &protoBinPath, const std::string &pro
                 continue;
             }
             if (TraverseProtoBinPath(path.assign(protoBinPath).append("\\").append(fileInfo.name), protoBinSuffix,
-                                     mergeProgram, std::move(allocator)) != 0) {
+                                     mergeProgram, allocator) != 0) {
                 _findclose(handle);
                 return 1;
             }
@@ -79,7 +79,7 @@ int TraverseProtoBinPath(const std::string &protoBinPath, const std::string &pro
             std::string fileName(fileInfo.name);
             if (fileName.substr(fileName.find_last_of(".") + 1).compare(protoBinSuffix) == 0) {
                 proto::ProtobufSnapshotGenerator::GenerateProgram(
-                    path.assign(protoBinPath).append("\\").append(fileName), program, std::move(allocator));
+                    path.assign(protoBinPath).append("\\").append(fileName), program, allocator);
                 mergeProgram->Merge(&program);
             }
         }
@@ -98,7 +98,7 @@ int TraverseProtoBinPath(const std::string &protoBinPath, const std::string &pro
         }
         if (dir->d_type == DT_DIR) {
             std::string subDirName = pathPrefix + dir->d_name;
-            if (TraverseProtoBinPath(subDirName, protoBinSuffix, mergeProgram, std::move(allocator)) != 0) {
+            if (TraverseProtoBinPath(subDirName, protoBinSuffix, mergeProgram, allocator) != 0) {
                 closedir(protoBin);
                 return 1;
             }
@@ -106,7 +106,7 @@ int TraverseProtoBinPath(const std::string &protoBinPath, const std::string &pro
             std::string fileName = pathPrefix + dir->d_name;
             std::string suffixStr = fileName.substr(fileName.find_last_of(".") + 1);
             if (suffixStr.compare(protoBinSuffix) == 0) {
-                proto::ProtobufSnapshotGenerator::GenerateProgram(fileName, program, std::move(allocator));
+                proto::ProtobufSnapshotGenerator::GenerateProgram(fileName, program, allocator);
                 mergeProgram->Merge(&program);
             }
         }
@@ -212,12 +212,11 @@ int Run(int argc, const char **argv)
     std::string protoBinPath = options->protoBinPath();
     std::string protoBinSuffix = options->protoBinSuffix();
 
-    std::unique_ptr<panda::ArenaAllocator> allocator = std::make_unique<panda::ArenaAllocator>(
-        panda::SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
+    panda::ArenaAllocator allocator(panda::SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
 
     panda::pandasm::Program program;
     MergeProgram mergeProgram(&program);
-    if (panda::proto::TraverseProtoBinPath(protoBinPath, protoBinSuffix, &mergeProgram, std::move(allocator))) {
+    if (panda::proto::TraverseProtoBinPath(protoBinPath, protoBinSuffix, &mergeProgram, &allocator)) {
         return 1;
     }
 
