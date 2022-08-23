@@ -71,13 +71,9 @@ bool Options::Parse(int argc, const char **argv)
                                                     "evaluate expression in debugger mode");
     panda::PandArg<std::string> base64Input("base64Input", "", "base64 input of js content");
     panda::PandArg<bool> base64Output("base64Output", false, "output panda file content as base64 to std out");
-<<<<<<< HEAD
     panda::PandArg<std::string> sourceFile("source-file", "",
                                            "specify the file path info recorded in generated abc");
-    panda::PandArg<std::string> outputProto("outputProto", "", "Compiler proto serialize binary output (.bin)");
-=======
     panda::PandArg<std::string> outputProto("outputProto", "", "compiler proto serialize binary output (.proto)");
->>>>>>> Add serialize program to proto of ts2abc
 
     // tail arguments
     panda::PandArg<std::string> inputFile("input", "", "input file");
