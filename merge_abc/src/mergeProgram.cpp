@@ -14,12 +14,9 @@
  */
 
 #include "mergeProgram.h"
-#include "protobufSnapshotGenerator.h"
-#include "arena_allocator.h"
 #include "Options.h"
 #include "assembler/assembly-function.h"
 #include "libpandafile/literal_data_accessor.h"
-#include <assembly-emitter.h>
 #include <fstream>
 #include "os/file.h"
 
@@ -28,31 +25,8 @@
 #else
 #include <dirent.h>
 #endif
-#include <mem/pool_manager.h>
 
 namespace panda::proto {
-
-using mem::MemConfig;
-
-class ProtoMemManager {
-public:
-    explicit ProtoMemManager()
-    {
-        constexpr auto COMPILER_SIZE = 512_MB;
-
-        MemConfig::Initialize(0, 0, COMPILER_SIZE, 0);
-        PoolManager::Initialize(PoolType::MMAP);
-    }
-
-    NO_COPY_SEMANTIC(ProtoMemManager);
-    NO_MOVE_SEMANTIC(ProtoMemManager);
-
-    ~ProtoMemManager()
-    {
-        PoolManager::Finalize();
-        MemConfig::Finalize();
-    }
-};
 
 void MergeProgram::Merge(panda::pandasm::Program *src) {
     CorrectLiteraArrayId(src);
@@ -139,7 +113,8 @@ void MergeProgram::IncreaseInsLiteralArrayIdByBase(panda::pandasm::Ins &insn, si
     }
 }
 
-bool GetProtoFiles(std::string &protoBinPath, std::string &protoBinSuffix, std::vector<std::string> &directoryFiles)
+bool MergeProgram::GetProtoFiles(std::string &protoBinPath, std::string &protoBinSuffix,
+                                 std::vector<std::string> &directoryFiles)
 {
 #if PANDA_TARGET_WINDOWS
     int handle = 0;
@@ -196,7 +171,8 @@ bool GetProtoFiles(std::string &protoBinPath, std::string &protoBinSuffix, std::
     return true;
 }
 
-bool AppendProtoFiles(std::string filePath, std::string protoBinSuffix, std::vector<std::string> &protoFiles)
+bool MergeProgram::AppendProtoFiles(std::string filePath, std::string protoBinSuffix,
+                                    std::vector<std::string> &protoFiles)
 {
     auto inputAbs = panda::os::file::File::GetAbsolutePath(filePath);
     if (!inputAbs) {
@@ -223,7 +199,8 @@ bool AppendProtoFiles(std::string filePath, std::string protoBinSuffix, std::vec
     return true;
 }
 
-bool CollectProtoFiles(std::string input, std::string protoBinSuffix, std::vector<std::string> &protoFiles)
+bool MergeProgram::CollectProtoFiles(std::string input, std::string protoBinSuffix,
+                                     std::vector<std::string> &protoFiles)
 {
     constexpr const char DOGGY = '@';
     std::vector<std::string> inputs;
@@ -269,55 +246,4 @@ bool CollectProtoFiles(std::string input, std::string protoBinSuffix, std::vecto
     return true;
 }
 
-int Run(int argc, const char **argv)
-{
-    auto options = std::make_unique<Options>();
-    if (!options->Parse(argc, argv)) {
-        std::cerr << options->ErrorMsg() << std::endl;
-        return 1;
-    }
-
-    std::string protoPathInput = options->protoPathInput();
-    std::string protoBinSuffix = options->protoBinSuffix();
-    std::string outputFilePath = options->outputFilePath();
-
-    if (outputFilePath.empty()) {
-        outputFilePath = panda::os::file::File::GetExecutablePath().Value().append(
-            panda::os::file::File::GetPathDelim());
-    }
-
-    panda::ArenaAllocator allocator(panda::SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
-
-    std::vector<std::string> protoFiles;
-    if (!CollectProtoFiles(protoPathInput, protoBinSuffix, protoFiles)) {
-        return 1;
-    }
-
-    panda::pandasm::Program program;
-    MergeProgram mergeProgram(&program);
-
-    for (auto &protoFile : protoFiles) {
-        panda::pandasm::Program program;
-        proto::ProtobufSnapshotGenerator::GenerateProgram(protoFile, program, &allocator);
-        mergeProgram.Merge(&program);
-    }
-
-    std::map<std::string, size_t> stat;
-    std::map<std::string, size_t> *statp = nullptr;
-    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps maps {};
-    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps *mapsp = nullptr;
-
-    std::string outputFileName = outputFilePath.append(options->outputFileName());
-    if (!panda::pandasm::AsmEmitter::Emit(outputFileName, *(mergeProgram.GetResult()), statp, mapsp, true)) {
-        return 1;
-    }
-
-    return 0;
-}
-}
-
-int main(int argc, const char **argv)
-{
-    panda::proto::ProtoMemManager mm;
-    return panda::proto::Run(argc, argv);
-}
+} // namespace panda::proto
