@@ -146,8 +146,6 @@ bool Options::Parse(int argc, const char **argv)
         std::stringstream ss;
         ss << inputStream.rdbuf();
         parserInput_ = ss.str();
-
-        sourceFile_ = BaseName(sourceFile_);
     } else {
         // input content is base64 string
         parserInput_ = ExtractContentFromBase64Input(base64Input.GetValue());
