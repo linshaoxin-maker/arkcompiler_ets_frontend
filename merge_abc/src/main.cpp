@@ -67,23 +67,18 @@ int Run(int argc, const char **argv)
         return 1;
     }
 
-    panda::pandasm::Program program;
-    MergeProgram mergeProgram(&program);
+    std::vector<panda::pandasm::Program *> programs(protoFiles.size());
 
     for (auto &protoFile : protoFiles) {
-        panda::pandasm::Program program;
-        proto::ProtobufSnapshotGenerator::GenerateProgram(protoFile, program, &allocator);
-        mergeProgram.Merge(&program);
+        auto *prog = allocator.New<panda::pandasm::Program>();
+        proto::ProtobufSnapshotGenerator::GenerateProgram(protoFile, *prog, &allocator);
+        programs.emplace_back(prog);
     }
-
-    std::map<std::string, size_t> stat;
-    std::map<std::string, size_t> *statp = nullptr;
-    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps maps {};
-    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps *mapsp = nullptr;
 
     std::string outputFileName = outputFilePath.append(panda::os::file::File::GetPathDelim()).
         append(options->outputFileName());
-    if (!panda::pandasm::AsmEmitter::Emit(outputFileName, *(mergeProgram.GetResult()), statp, mapsp, true)) {
+
+    if (!panda::pandasm::AsmEmitter::EmitPrograms(outputFileName, programs, true)) {
         return 1;
     }
 
