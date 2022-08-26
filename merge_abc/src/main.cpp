@@ -60,19 +60,22 @@ int Run(int argc, const char **argv)
         outputFilePath = panda::os::file::File::GetExecutablePath().Value();
     }
 
-    panda::ArenaAllocator allocator(panda::SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
-
     std::vector<std::string> protoFiles;
     if (!MergeProgram::CollectProtoFiles(protoPathInput, protoBinSuffix, protoFiles)) {
         return 1;
     }
 
-    std::vector<panda::pandasm::Program *> programs(protoFiles.size());
+    panda::ArenaAllocator allocator(panda::SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
 
-    for (auto &protoFile : protoFiles) {
+    std::vector<panda::pandasm::Program *> programs;
+    for(size_t i = 0; i < protoFiles.size(); i++) {
         auto *prog = allocator.New<panda::pandasm::Program>();
-        proto::ProtobufSnapshotGenerator::GenerateProgram(protoFile, *prog, &allocator);
         programs.emplace_back(prog);
+    }
+
+    size_t idx = 0;
+    for (auto &protoFile : protoFiles) {
+        proto::ProtobufSnapshotGenerator::GenerateProgram(protoFile, *(programs[idx++]), &allocator);
     }
 
     std::string outputFileName = outputFilePath.append(panda::os::file::File::GetPathDelim()).
