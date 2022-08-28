@@ -49,11 +49,12 @@ void ProtobufSnapshotGenerator::GenerateProgram(const std::string &inputName, pa
     Program::Deserialize(proto_program, prog, allocator);
 }
 
-void ProtobufSnapshotGenerator::UpdateCacheFile(panda::es2panda::util::CompositeProgramMap compositeProgramMap,
-                                                const std::string &cacheFilePath)
+void ProtobufSnapshotGenerator::UpdateCacheFile(
+    const std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> &compositeProgramMap,
+    bool &isDebug, const std::string &cacheFilePath)
 {
     protoPanda::CompositeProgram protoCompositeProgram;
-    CompositeProgram::Serialize(compositeProgram, protoCompositeProgram);
+    CompositeProgram::Serialize(compositeProgramMap, isDebug, protoCompositeProgram);
     std::fstream output(cacheFilePath, std::ios::out | std::ios::trunc | std::ios::binary);
     if (!output) {
         std::cout << "Fail to create cache file: " << cacheFilePath << std::endl;
@@ -63,8 +64,8 @@ void ProtobufSnapshotGenerator::UpdateCacheFile(panda::es2panda::util::Composite
     output.close();
 }
 
-panda::es2panda::util::CompositeProgramMap *ProtobufSnapshotGenerator::GetCacheContext(const std::string &cacheFilePath,
-                                                                                       panda::ArenaAllocator *allocator)
+std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> *ProtobufSnapshotGenerator::GetCacheContext(
+    const std::string &cacheFilePath, bool &isDebug, panda::ArenaAllocator *allocator)
 {
     std::fstream input(cacheFilePath, std::ios::in | std::ios::binary);
     if (!input) {
@@ -77,8 +78,8 @@ panda::es2panda::util::CompositeProgramMap *ProtobufSnapshotGenerator::GetCacheC
         return nullptr;
     }
 
-    auto compositeProgramMap = allocator->New<panda::es2panda::util::CompositeProgramMap>();
-    CompositeProgram::Deserialize(protoCompositeProgram, *compositeProgramMap, allocator);
+    auto compositeProgramMap = allocator->New<std::unordered_map<std::string, panda::es2panda::util::ProgramCache*>>();
+    CompositeProgram::Deserialize(protoCompositeProgram, *compositeProgramMap, isDebug, allocator);
 
     return compositeProgramMap;
 }

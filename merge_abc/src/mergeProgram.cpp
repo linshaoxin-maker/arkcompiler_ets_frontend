@@ -28,7 +28,7 @@
 
 namespace panda::proto {
 
-bool MergeProgram::GetProtoFiles(std::string &protoBinPath, std::string &protoBinSuffix,
+bool MergeProgram::GetProtoFiles(const std::string &protoBinPath, const std::string &protoBinSuffix,
                                  std::vector<std::string> &directoryFiles)
 {
 #if PANDA_TARGET_WINDOWS
@@ -86,12 +86,12 @@ bool MergeProgram::GetProtoFiles(std::string &protoBinPath, std::string &protoBi
     return true;
 }
 
-bool MergeProgram::AppendProtoFiles(std::string filePath, std::string protoBinSuffix,
+bool MergeProgram::AppendProtoFiles(const std::string &filePath, const std::string &protoBinSuffix,
                                     std::vector<std::string> &protoFiles)
 {
     auto inputAbs = panda::os::file::File::GetAbsolutePath(filePath);
     if (!inputAbs) {
-        std::cerr << "Failed to open: " << inputAbs.Value() << std::endl;
+        std::cerr << "Failed to open: " << filePath << std::endl;
         return false;
     }
 
@@ -114,7 +114,7 @@ bool MergeProgram::AppendProtoFiles(std::string filePath, std::string protoBinSu
     return true;
 }
 
-bool MergeProgram::CollectProtoFiles(std::string input, std::string protoBinSuffix,
+bool MergeProgram::CollectProtoFiles(std::string &input, const std::string &protoBinSuffix,
                                      std::vector<std::string> &protoFiles)
 {
     constexpr const char DOGGY = '@';
@@ -128,7 +128,7 @@ bool MergeProgram::CollectProtoFiles(std::string input, std::string protoBinSuff
 
     auto inputAbs = panda::os::file::File::GetAbsolutePath(input);
     if (!inputAbs) {
-        std::cerr << "Failed to open: " << inputAbs.Value() << std::endl;
+        std::cerr << "Failed to open: " << input << std::endl;
         return false;
     }
     if (isList) {

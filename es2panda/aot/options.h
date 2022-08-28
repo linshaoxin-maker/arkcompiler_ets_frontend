@@ -19,6 +19,7 @@
 #include <macros.h>
 #include <es2panda.h>
 #include <parser/program/program.h>
+#include <mem/arena_allocator.h>
 
 #include <exception>
 #include <fstream>
@@ -71,14 +72,14 @@ public:
         return compilerOptions_;
     }
 
+    es2panda::CompilerOptions &CompilerOptions()
+    {
+        return compilerOptions_;
+    }
+
     es2panda::parser::ScriptKind ScriptKind() const
     {
         return scriptKind_;
-    }
-
-    const std::string &ParserInput() const
-    {
-        return parserInput_;
     }
 
     const std::string &CompilerOutput() const
@@ -106,11 +107,6 @@ public:
         return optLevel_;
     }
 
-    int ThreadCount() const
-    {
-        return threadCount_;
-    }
-
     bool ParseOnly() const
     {
         return (options_ & OptionFlags::PARSE_ONLY) != 0;
@@ -128,13 +124,26 @@ public:
         return compilerProtoOutput_;
     }
 
+    const std::string &CacheFile() const
+    {
+        return cacheFile_;
+    }
+
+    const std::string &NpmModuleEntryList() const
+    {
+        return npmModuleEntryList_;
+    }
+
+    bool CollectInputFilesFromFileList(const std::string &input);
+    bool CollectInputFilesFromFileDirectory(const std::string &input, const std::string &extension);
+
 private:
     es2panda::ScriptExtension extension_ {es2panda::ScriptExtension::JS};
     es2panda::CompilerOptions compilerOptions_ {};
     es2panda::parser::ScriptKind scriptKind_ {es2panda::parser::ScriptKind::SCRIPT};
     OptionFlags options_ {OptionFlags::DEFAULT};
     panda::PandArgParser *argparser_;
-    std::string parserInput_;
+    std::string base64Input_;
     std::string compilerOutput_;
     std::string result_;
     std::string sourceFile_;
@@ -142,7 +151,11 @@ private:
     std::string errorMsg_;
     std::string compilerProtoOutput_;
     int optLevel_ {0};
-    int threadCount_ {0};
+    int functionThreadCount_ {0};
+    int fileThreadCount_ {0};
+    std::string cacheFile_;
+    std::string npmModuleEntryList_;
+    std::vector<es2panda::SourceFile> sourceFiles_;
 };
 
 }  // namespace panda::es2panda::aot

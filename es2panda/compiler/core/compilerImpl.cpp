@@ -27,17 +27,17 @@
 
 namespace panda::es2panda::compiler {
 
-CompilerImpl::CompilerImpl(size_t threadCount) : queue_(new CompileQueue(threadCount)) {}
-
 CompilerImpl::~CompilerImpl()
 {
-    delete queue_;
+    if (queue_ != nullptr) {
+        delete queue_;
+        queue_ = nullptr;
+    }
 }
 
-panda::pandasm::Program *CompilerImpl::Compile(parser::Program *program, const es2panda::CompilerOptions &options)
+panda::pandasm::Program *CompilerImpl::Compile(parser::Program *program, const es2panda::CompilerOptions &options, const std::string &debugSourceFile)
 {
-    CompilerContext context(program->Binder(), options.isDebug, options.isDebuggerEvaluateExpressionMode,
-                            options.sourceFile);
+    CompilerContext context(program->Binder(), options.isDebug, options.isDebuggerEvaluateExpressionMode, debugSourceFile);
 
     if (program->Extension() == ScriptExtension::TS && options.enableTypeCheck) {
         ArenaAllocator localAllocator(SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
@@ -49,7 +49,8 @@ panda::pandasm::Program *CompilerImpl::Compile(parser::Program *program, const e
         return nullptr;
     }
 
-    queue_->Schedule(&context);
+    queue_ = new CompileFuncQueue(threadCount_, &context);
+    queue_->Schedule();
 
     /* Main thread can also be used instead of idling */
     queue_->Consume();

@@ -27,6 +27,8 @@
 #include <mem/pool_manager.h>
 #include <options.h>
 #include <util/dumper.h>
+#include <util/moduleHelpers.h>
+#include <util/programCache.h>
 
 #include <iostream>
 #include <memory>
@@ -89,12 +91,35 @@ static void DumpPandaFileSizeStatistic(std::map<std::string, size_t> &stat)
     std::cout << "total: " << totalSize << std::endl;
 }
 
-static int GenerateProgram(panda::pandasm::Program *prog, std::unique_ptr<panda::es2panda::aot::Options> &options)
+static int GenerateProgram(std::vector<panda::pandasm::Program *> &progs, std::unique_ptr<panda::es2panda::aot::Options> &options)
 {
     const std::string output = options->CompilerOutput();
+
+    if (progs.size() == 0) {
+        std::cerr << "Failed to generate program " << std::endl;
+        return 1;
+    }
+
+    // std::cout << "progs.sizezzzzzzz()" << progs.size() << std::endl;
+    // int index = 0;
+    // for (auto *prog: progs) {
+    //     std::cout << "prog " << index++ << std::endl;
+    //     es2panda::Compiler::DumpAsm(prog);
+    // }
+
+    if (progs.size() > 1) {
+        if (!panda::pandasm::AsmEmitter::EmitPrograms(output, progs, true)) {
+            std::cerr << "Failed to emit merged program " << std::endl;
+            return 1;
+        }
+        return 0;
+    }
+
+    auto *prog = progs[0];
     int optLevel = options->OptLevel();
     const es2panda::CompilerOptions compilerOptions = options->CompilerOptions();
     bool dumpSize = options->SizeStat();
+
     std::map<std::string, size_t> stat;
     std::map<std::string, size_t> *statp = optLevel != 0 ? &stat : nullptr;
     panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps maps {};
@@ -125,13 +150,13 @@ static int GenerateProgram(panda::pandasm::Program *prog, std::unique_ptr<panda:
         return 0;
     }
 
+    if (!panda::pandasm::AsmEmitter::Emit(output, *prog, statp, mapsp, true)) {
+        return 1;
+    }
+
     if (options->compilerProtoOutput().size() > 0) {
         panda::proto::ProtobufSnapshotGenerator::GenerateSnapshot(*prog, options->compilerProtoOutput());
         return 0;
-    }
-
-    if (!panda::pandasm::AsmEmitter::Emit(output, *prog, statp, mapsp, true)) {
-        return 1;
     }
 
     if (compilerOptions.dumpLiteralBuffer) {
@@ -154,27 +179,28 @@ int Run(int argc, const char **argv)
         return 1;
     }
 
-    es2panda::Compiler compiler(options->Extension(), options->ThreadCount());
-    es2panda::SourceFile input(options->SourceFile(), options->ParserInput(),
-                               options->RecordName(), options->ScriptKind());
+    std::vector<panda::pandasm::Program*> programs;
+    std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> programsInfo;
+    panda::ArenaAllocator allocator(panda::SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
 
-    auto *program = compiler.Compile(input, options->CompilerOptions());
-
-    if (!program) {
-        const auto &err = compiler.GetError();
-
-        if (err.Message().empty() && options->ParseOnly()) {
-            return 0;
-        }
-
-        std::cerr << err.TypeString() << ": " << err.Message();
-        std::cerr << " [" << options->SourceFile() << ":" << err.Line() << ":" << err.Col() << "]" << std::endl;
-
-        return err.ErrorCode();
+    std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> *cachePrograms = nullptr;
+    bool isCacheHasDebugInfo = false;
+    if (!options->CacheFile().empty()) {
+        cachePrograms = proto::ProtobufSnapshotGenerator::GetCacheContext(options->CacheFile(), isCacheHasDebugInfo, &allocator);
     }
 
-    GenerateProgram(program, options);
-    delete program;
+    Compiler::CompileFiles(options->CompilerOptions(), cachePrograms, programs, programsInfo, &allocator, isCacheHasDebugInfo);
+
+    if (!options->NpmModuleEntryList().empty()) {
+        es2panda::util::ModuleHelpers::CompileNpmModuleEntryList(options->NpmModuleEntryList(), cachePrograms,
+            programs, programsInfo, &allocator);
+    }
+
+    GenerateProgram(programs, options);
+
+    if (!options->CacheFile().empty()) {
+        proto::ProtobufSnapshotGenerator::UpdateCacheFile(programsInfo, options->CompilerOptions().isDebug, options->CacheFile());
+    }
 
     return 0;
 }

@@ -416,6 +416,10 @@ void Emitter::DumpAsm(const panda::pandasm::Program *prog)
         }
     }
 
+    for (auto &[name, rec] : prog->record_table) {
+        ss << ".record " << name << '(';
+    }
+
     ss << std::endl;
 }
 
