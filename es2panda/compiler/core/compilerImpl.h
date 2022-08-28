@@ -41,7 +41,7 @@ public:
     NO_COPY_SEMANTIC(CompilerImpl);
     NO_MOVE_SEMANTIC(CompilerImpl);
 
-    panda::pandasm::Program *Compile(parser::Program *program, const es2panda::CompilerOptions &options, const std::string &debugSourceFile);
+    panda::pandasm::Program *Compile(parser::Program *program, const es2panda::CompilerOptions &options, const std::string &debugInfoSourceFile);
     static void DumpAsm(const panda::pandasm::Program *prog);
 
 private:

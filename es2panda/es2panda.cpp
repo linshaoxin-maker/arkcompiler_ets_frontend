@@ -59,8 +59,8 @@ panda::pandasm::Program *Compiler::Compile(const SourceFile &input, const Compil
             std::cout << ast.Dump() << std::endl;
         }
 
-        std::string debugSourceFile = options.debugSourceFile.empty() ? fname : options.debugSourceFile;
-        auto *prog = compiler_->Compile(&ast, options, debugSourceFile);
+        std::string debugInfoSourceFile = options.debugInfoSourceFile.empty() ? fname : options.debugInfoSourceFile;
+        auto *prog = compiler_->Compile(&ast, options, debugInfoSourceFile);
 
         return prog;
     } catch (const class Error &e) {
@@ -88,13 +88,9 @@ void Compiler::SelectCompileFile(CompilerOptions &options,
     std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> *cacheProgs,
     std::vector<panda::pandasm::Program *> &progs,
     std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
-    panda::ArenaAllocator *allocator, bool isCacheHasDebugInfo)
+    panda::ArenaAllocator *allocator)
 {
     if (cacheProgs == nullptr) {
-        return;
-    }
-
-    if (isCacheHasDebugInfo != options.isDebug) {
         return;
     }
 
@@ -115,14 +111,11 @@ void Compiler::SelectCompileFile(CompilerOptions &options,
 
         uint32_t hash = GetHash32String(reinterpret_cast<const uint8_t *>(ss.str().c_str()));
 
-        // std::cout << "this function: "<< input.fileName << " hash " << hash << std::endl;
-
         auto it = cacheProgs->find(input.fileName);
         if (it != cacheProgs->end() && hash == it->second->hashCode) {
             progs.push_back(it->second->program);
             auto *cache = allocator->New<util::ProgramCache>(it->second->hashCode, it->second->program);
             progsInfo.insert({input.fileName, cache});
-            // std::cout << "find same function: "<< input.fileName << std::endl;
         } else {
             input.hash = hash;
             inputList.push_back(input);
@@ -135,9 +128,9 @@ void Compiler::CompileFiles(CompilerOptions &options,
     std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> *cacheProgs,
     std::vector<panda::pandasm::Program *> &progs,
     std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
-    panda::ArenaAllocator *allocator, bool isCacheHasDebugInfo)
+    panda::ArenaAllocator *allocator)
 {
-    SelectCompileFile(options, cacheProgs, progs, progsInfo, allocator, isCacheHasDebugInfo);
+    SelectCompileFile(options, cacheProgs, progs, progsInfo, allocator);
 
     auto queue = new compiler::CompileFileQueue(options.fileThreadCount, &options, progs, progsInfo, allocator);
 
@@ -161,7 +154,7 @@ panda::pandasm::Program *Compiler::CompileFile(CompilerOptions &options, SourceF
 
         if (src->hash == 0) {
             src->hash = GetHash32String(reinterpret_cast<const uint8_t *>(buffer.c_str()));
-        } 
+        }
     }
 
     auto *program = Compile(*src, options);

@@ -26,7 +26,7 @@ public:
     static void GenerateProgram(const std::string &inputName, panda::pandasm::Program &prog,
                                 panda::ArenaAllocator *allocator);
     static std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> *GetCacheContext(
-        const std::string &cacheFilePath, bool &isDebug, panda::ArenaAllocator *allocator);
+        const std::string &cacheFilePath, bool isDebug, panda::ArenaAllocator *allocator);
     static void UpdateCacheFile(
         const std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> &compositeProgram,
         bool &isDebug, const std::string &cacheFilePath);

@@ -16,9 +16,9 @@
 #ifndef MERGE_ABC_MERGE_PROGRAM_H
 #define MERGE_ABC_MERGE_PROGRAM_H
 
+#include "assembly-function.h"
 #include "assembly-ins.h"
 #include "assembly-program.h"
-#include "assembler/assembly-function.h"
 
 namespace panda::proto {
 class MergeProgram {

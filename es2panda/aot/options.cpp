@@ -16,19 +16,17 @@
 #include "options.h"
 
 #include <utils/pandargs.h>
-
-#include <utility>
-#include <sstream>
-
 #include "mergeProgram.h"
-#include <fstream>
 #include "os/file.h"
-
 #if defined(PANDA_TARGET_WINDOWS)
 #include <io.h>
 #else
 #include <dirent.h>
 #endif
+
+#include <fstream>
+#include <sstream>
+#include <utility>
 
 namespace panda::es2panda::aot {
 
@@ -187,7 +185,8 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->EnableTail();
     argparser_->EnableRemainder();
 
-    if (!argparser_->Parse(argc, argv) || opHelp.GetValue() || (inputFile.GetValue().empty() && base64Input.GetValue().empty())) {
+    if (!argparser_->Parse(argc, argv) || opHelp.GetValue() || (inputFile.GetValue().empty()
+        && base64Input.GetValue().empty())) {
         std::stringstream ss;
 
         ss << argparser_->GetErrorString() << std::endl;
@@ -259,6 +258,11 @@ bool Options::Parse(int argc, const char **argv)
         compilerOutput_ = RemoveExtension(BaseName(sourceFile_)).append(".abc");
     }
 
+    recordName_ = recordName.GetValue();
+    if (recordName_.empty()) {
+        recordName_ = compilerOutput_.empty() ? "Base64Output" : RemoveExtension(BaseName(compilerOutput_));
+    }
+
     if (!inputIsEmpty) {
         // common mode
         auto inputAbs = panda::os::file::File::GetAbsolutePath(sourceFile_);
@@ -273,11 +277,6 @@ bool Options::Parse(int argc, const char **argv)
         } else if (panda::os::file::File::IsDirectory(fpath)) {
             CollectInputFilesFromFileDirectory(fpath, extension);
         } else {
-            recordName_ = recordName.GetValue();
-            if (recordName_.empty()) {
-                recordName_ = RemoveExtension(BaseName(compilerOutput_));
-            }
-
             es2panda::SourceFile src(sourceFile_, recordName_, scriptKind_);
             sourceFiles_.push_back(src);
         }
@@ -289,7 +288,7 @@ bool Options::Parse(int argc, const char **argv)
             return false;
         }
 
-        es2panda::SourceFile src("", "Base64Output", es2panda::parser::ScriptKind::SCRIPT);
+        es2panda::SourceFile src("", recordName_, es2panda::parser::ScriptKind::SCRIPT);
         src.source = base64Input_;
         sourceFiles_.push_back(src);
     }
@@ -324,7 +323,9 @@ bool Options::Parse(int argc, const char **argv)
     compilerOptions_.extension = extension_;
     compilerOptions_.functionThreadCount = functionThreadCount_;
     compilerOptions_.fileThreadCount = fileThreadCount_;
-    compilerOptions_.debugSourceFile = sourceFile.GetValue();
+    compilerOptions_.output = compilerOutput_;
+    compilerOptions_.debugInfoSourceFile = sourceFile.GetValue();
+    compilerOptions_.optLevel = opOptLevel.GetValue();
     compilerOptions_.sourceFiles = sourceFiles_;
 
     return true;

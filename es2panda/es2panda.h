@@ -17,10 +17,11 @@
 #define ES2PANDA_PUBLIC_H
 
 #include <macros.h>
+#include <mem/arena_allocator.h>
+#include <util/programCache.h>
+
 #include <string>
 #include <unordered_map>
-#include <util/programCache.h>
-#include <mem/arena_allocator.h>
 
 namespace panda::pandasm {
 struct Program;
@@ -67,7 +68,9 @@ struct CompilerOptions {
     ScriptExtension extension {};
     int fileThreadCount {0};
     int functionThreadCount {0};
-    std::string debugSourceFile {};
+    int optLevel {0};
+    std::string output {};
+    std::string debugInfoSourceFile {};
     std::vector<es2panda::SourceFile> sourceFiles;
 };
 
@@ -154,15 +157,15 @@ public:
 
     static void CompileFiles(CompilerOptions &options,
         std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> *cacheProgs,
-        std::vector<panda::pandasm::Program *> &progs, 
+        std::vector<panda::pandasm::Program *> &progs,
         std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
-        panda::ArenaAllocator *allocator, bool isCacheHasDebugInfo);
+        panda::ArenaAllocator *allocator);
 
     static void SelectCompileFile(CompilerOptions &options,
         std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> *cacheProgs,
         std::vector<panda::pandasm::Program *> &progs,
         std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
-        panda::ArenaAllocator *allocator, bool isCacheHasDebugInfo);
+        panda::ArenaAllocator *allocator);
 
     inline panda::pandasm::Program *Compile(const SourceFile &input)
     {

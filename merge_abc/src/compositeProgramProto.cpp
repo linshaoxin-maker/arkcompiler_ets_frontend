@@ -33,7 +33,7 @@ void CompositeProgram::Serialize(
 
 void CompositeProgram::Deserialize(const protoPanda::CompositeProgram &protoCompositeProgram,
     std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> &compositeProgramMap,
-    bool &isDebug, panda::ArenaAllocator *allocator)
+    panda::ArenaAllocator *allocator)
 {
     compositeProgramMap.reserve(protoCompositeProgram.programcache_size());
     for (const auto &protoProgramcache : protoCompositeProgram.programcache()) {
@@ -45,7 +45,6 @@ void CompositeProgram::Deserialize(const protoPanda::CompositeProgram &protoComp
         auto *programCache = allocator->New<panda::es2panda::util::ProgramCache>(hashCode, program);
         compositeProgramMap.insert({fileName, programCache});
     }
-    isDebug = protoCompositeProgram.isdebug();
 }
 
 } // namespace panda::proto

@@ -21,6 +21,17 @@
 #include <compiler/core/emitter/emitter.h>
 #include <compiler/core/function.h>
 #include <compiler/core/pandagen.h>
+#include <es2panda.h>
+#include <mem/arena_allocator.h>
+#include <mem/pool_manager.h>
+#include <util/dumper.h>
+#include <util/helpers.h>
+
+#include <fstream>
+#include <iostream>
+#include <dirent.h>
+
+#include <chrono>
 
 #include <assembly-literals.h>
 #ifdef ENABLE_BYTECODE_OPT
@@ -102,6 +113,10 @@ void CompileFileJob::Run()
     es2panda::Compiler compiler(options_->extension, options_->functionThreadCount);
 
     auto *prog = compiler.CompileFile(*options_, src_);
+
+    if (options_->optLevel != 0) {
+        util::Helpers::OptimizeProgram(prog, options_);
+    }
 
     {
         std::unique_lock<std::mutex> lock(global_m_);

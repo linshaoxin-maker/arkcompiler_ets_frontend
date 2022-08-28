@@ -13,12 +13,13 @@
  * limitations under the License.
  */
 
-#include "mergeProgram.h"
 #include "arena_allocator.h"
-#include "Options.h"
+#include "mergeProgram.h"
+#include "options.h"
 #include "protobufSnapshotGenerator.h"
-#include <mem/pool_manager.h>
+
 #include <assembly-emitter.h>
+#include <mem/pool_manager.h>
 
 namespace panda::proto {
 

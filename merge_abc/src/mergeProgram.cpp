@@ -13,18 +13,19 @@
  * limitations under the License.
  */
 
-#include "mergeProgram.h"
-#include "Options.h"
 #include "assembler/assembly-function.h"
 #include "libpandafile/literal_data_accessor.h"
-#include <fstream>
+#include "mergeProgram.h"
 #include "os/file.h"
+#include "options.h"
 
 #if defined(PANDA_TARGET_WINDOWS)
 #include <io.h>
 #else
 #include <dirent.h>
 #endif
+
+#include <fstream>
 
 namespace panda::proto {
 

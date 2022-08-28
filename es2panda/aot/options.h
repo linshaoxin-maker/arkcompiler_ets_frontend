@@ -16,10 +16,9 @@
 #ifndef ES2PANDA_AOT_OPTIONS_H
 #define ES2PANDA_AOT_OPTIONS_H
 
-#include <macros.h>
 #include <es2panda.h>
+#include <macros.h>
 #include <parser/program/program.h>
-#include <mem/arena_allocator.h>
 
 #include <exception>
 #include <fstream>

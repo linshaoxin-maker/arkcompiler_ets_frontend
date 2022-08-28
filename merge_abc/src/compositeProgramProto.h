@@ -16,9 +16,9 @@
 #ifndef MERGE_ABC_BUILD_COMPOSITE_PROGRAM_H
 #define MERGE_ABC_BUILD_COMPOSITE_PROGRAM_H
 
-#include "programCache.h"
-#include "compositeProgram.pb.h"
 #include "assemblyProgramProto.h"
+#include "compositeProgram.pb.h"
+#include "programCache.h"
 
 namespace panda::proto {
 class CompositeProgram {
@@ -28,7 +28,7 @@ public:
         protoPanda::CompositeProgram &protoCompositeProgram);
     static void Deserialize(const protoPanda::CompositeProgram &protoCompositeProgram,
         std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> &compositeProgramMap,
-        bool &isDebug, panda::ArenaAllocator *allocator);
+        panda::ArenaAllocator *allocator);
 };
 } // panda::proto
 

@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#include "protobufSnapshotGenerator.h"
-#include "assembly-program.h"
 #include "assemblyProgramProto.h"
+#include "assembly-program.h"
+#include "protobufSnapshotGenerator.h"
 
 namespace panda::proto {
 void ProtobufSnapshotGenerator::GenerateSnapshot(const panda::pandasm::Program &program, const std::string &outputName)
@@ -65,11 +65,11 @@ void ProtobufSnapshotGenerator::UpdateCacheFile(
 }
 
 std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> *ProtobufSnapshotGenerator::GetCacheContext(
-    const std::string &cacheFilePath, bool &isDebug, panda::ArenaAllocator *allocator)
+    const std::string &cacheFilePath, bool isDebug, panda::ArenaAllocator *allocator)
 {
     std::fstream input(cacheFilePath, std::ios::in | std::ios::binary);
     if (!input) {
-        std::cerr << "Failed to open cache file: " << cacheFilePath << std::endl;
+        std::cerr << "Cache file: " << cacheFilePath << " doesn't exist" << std::endl;
         return nullptr;
     }
     protoPanda::CompositeProgram protoCompositeProgram;
@@ -78,8 +78,12 @@ std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> *ProtobufS
         return nullptr;
     }
 
+    if (protoCompositeProgram.isdebug() != isDebug) {
+        return nullptr;
+    }
+
     auto compositeProgramMap = allocator->New<std::unordered_map<std::string, panda::es2panda::util::ProgramCache*>>();
-    CompositeProgram::Deserialize(protoCompositeProgram, *compositeProgramMap, isDebug, allocator);
+    CompositeProgram::Deserialize(protoCompositeProgram, *compositeProgramMap, allocator);
 
     return compositeProgramMap;
 }

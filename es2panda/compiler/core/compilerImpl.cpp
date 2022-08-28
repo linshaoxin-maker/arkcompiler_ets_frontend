@@ -18,9 +18,9 @@
 #include <compiler/core/compileQueue.h>
 #include <compiler/core/compilerContext.h>
 #include <compiler/core/emitter/emitter.h>
-#include <typescript/checker.h>
 #include <es2panda.h>
 #include <parser/program/program.h>
+#include <typescript/checker.h>
 
 #include <iostream>
 #include <thread>
@@ -35,9 +35,11 @@ CompilerImpl::~CompilerImpl()
     }
 }
 
-panda::pandasm::Program *CompilerImpl::Compile(parser::Program *program, const es2panda::CompilerOptions &options, const std::string &debugSourceFile)
+panda::pandasm::Program *CompilerImpl::Compile(parser::Program *program, const es2panda::CompilerOptions &options,
+    const std::string &debugInfoSourceFile)
 {
-    CompilerContext context(program->Binder(), options.isDebug, options.isDebuggerEvaluateExpressionMode, debugSourceFile);
+    CompilerContext context(program->Binder(), options.isDebug, options.isDebuggerEvaluateExpressionMode,
+        debugInfoSourceFile);
 
     if (program->Extension() == ScriptExtension::TS && options.enableTypeCheck) {
         ArenaAllocator localAllocator(SpaceType::SPACE_TYPE_COMPILER, nullptr, true);

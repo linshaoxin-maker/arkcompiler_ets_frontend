@@ -16,7 +16,6 @@
 #include "emitter.h"
 
 #include <binder/binder.h>
-#include <util/helpers.h>
 #include <binder/scope.h>
 #include <binder/variable.h>
 #include <compiler/base/literals.h>
@@ -30,6 +29,7 @@
 #include <ir/statements/blockStatement.h>
 #include <macros.h>
 #include <parser/program/program.h>
+#include <util/helpers.h>
 
 #include <string>
 #include <string_view>

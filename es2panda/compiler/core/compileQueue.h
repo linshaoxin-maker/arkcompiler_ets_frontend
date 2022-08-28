@@ -16,9 +16,9 @@
 #ifndef ES2PANDA_COMPILER_CORE_COMPILEQUEUE_H
 #define ES2PANDA_COMPILER_CORE_COMPILEQUEUE_H
 
+#include <aot/options.h>
 #include <macros.h>
 #include <os/thread.h>
-#include <aot/options.h>
 
 #include <condition_variable>
 #include <mutex>
@@ -150,8 +150,8 @@ private:
 
 class CompileFileQueue : public CompileQueue {
 public:
-    explicit CompileFileQueue(size_t threadCount, es2panda::CompilerOptions *options, 
-                              std::vector<panda::pandasm::Program *> &progs, 
+    explicit CompileFileQueue(size_t threadCount, es2panda::CompilerOptions *options,
+                              std::vector<panda::pandasm::Program *> &progs,
                               std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
                               panda::ArenaAllocator *allocator):
         CompileQueue(threadCount), options_(options), progs_(progs), progsInfo_(progsInfo), allocator_(allocator) {}

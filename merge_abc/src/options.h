@@ -16,8 +16,8 @@
 #ifndef MERGE_ABC_MERGE_OPTIONS_H
 #define MERGE_ABC_MERGE_OPTIONS_H
 
-#include <macros.h>
 #include <iostream>
+#include <macros.h>
 #include <utils/pandargs.h>
 
 namespace panda::proto {

@@ -155,7 +155,7 @@ ohos_executable("merge_abc") {
   use_exceptions = true
   sources = [
     "src/main.cpp",
-    "src/Options.cpp",
+    "src/options.cpp",
   ]
 
   include_dirs = [ "./src" ]
