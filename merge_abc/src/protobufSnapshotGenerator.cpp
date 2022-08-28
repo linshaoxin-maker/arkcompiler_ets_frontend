@@ -20,7 +20,7 @@
 namespace panda::proto {
 void ProtobufSnapshotGenerator::GenerateSnapshot(const panda::pandasm::Program &program, const std::string &outputName)
 {
-    proto_panda::Program protoProgram;
+    protoPanda::Program protoProgram;
 
     Program::Serialize(program, protoProgram);
 
@@ -41,7 +41,7 @@ void ProtobufSnapshotGenerator::GenerateProgram(const std::string &inputName, pa
         std::cerr << "Failed to open " << inputName << std::endl;
         return;
     }
-    proto_panda::Program proto_program;
+    protoPanda::Program proto_program;
     if (!proto_program.ParseFromIstream(&input)) {
         std::cerr << "Failed to parse " << inputName << std::endl;
         return;
@@ -52,8 +52,8 @@ void ProtobufSnapshotGenerator::GenerateProgram(const std::string &inputName, pa
 void ProtobufSnapshotGenerator::UpdateCacheFile(panda::es2panda::util::CompositeProgramMap compositeProgramMap,
                                                 const std::string &cacheFilePath)
 {
-    proto_panda::CompositeProgram protoCompositeProgram;
-    CompositeProgram::Serialize(compositeProgramMap, protoCompositeProgram);
+    protoPanda::CompositeProgram protoCompositeProgram;
+    CompositeProgram::Serialize(compositeProgram, protoCompositeProgram);
     std::fstream output(cacheFilePath, std::ios::out | std::ios::trunc | std::ios::binary);
     if (!output) {
         std::cout << "Fail to create cache file: " << cacheFilePath << std::endl;
@@ -71,7 +71,7 @@ panda::es2panda::util::CompositeProgramMap *ProtobufSnapshotGenerator::GetCacheC
         std::cerr << "Failed to open cache file: " << cacheFilePath << std::endl;
         return nullptr;
     }
-    proto_panda::CompositeProgram protoCompositeProgram;
+    protoPanda::CompositeProgram protoCompositeProgram;
     if (!protoCompositeProgram.ParseFromIstream(&input)) {
         std::cerr << "Failed to parse cache file: " << cacheFilePath << std::endl;
         return nullptr;

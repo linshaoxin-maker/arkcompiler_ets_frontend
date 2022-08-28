@@ -23,9 +23,9 @@
 namespace panda::proto {
 class CompositeProgram {
 public:
-    static void Serialize(const panda::es2panda::util::CompositeProgramMap &compositeProgramMap,
-                          proto_panda::CompositeProgram &protoCompositeProgram);
-    static void Deserialize(const proto_panda::CompositeProgram &protoCompositeProgram,
+    static void Serialize(const panda::es2panda::util::CompositeProgram &compositeProgram,
+                          protoPanda::CompositeProgram &protoCompositeProgram);
+    static void Deserialize(const protoPanda::CompositeProgram &protoCompositeProgram,
                             panda::es2panda::util::CompositeProgramMap &compositeProgramMap,
                             panda::ArenaAllocator *allocator);
 };

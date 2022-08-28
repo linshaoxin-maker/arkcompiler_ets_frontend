@@ -14,11 +14,11 @@
  */
 
 syntax = "proto3";
-package proto_panda;
+package protoPanda;
 
 import "assemblyFileLocation.proto";
 
 message Label {
     bytes name = 1;
-    optional FileLocation file_location = 2;
+    optional FileLocation fileLocation = 2;
 }

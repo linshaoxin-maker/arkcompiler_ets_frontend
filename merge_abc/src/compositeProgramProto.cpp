@@ -17,8 +17,8 @@
 
 namespace panda::proto {
 
-void CompositeProgram::Serialize(const panda::es2panda::util::CompositeProgramMap &compositeProgramMap,
-                                 proto_panda::CompositeProgram &protoCompositeProgram)
+void CompositeProgram::Serialize(const panda::es2panda::util::CompositeProgram &compositeProgram,
+                                 protoPanda::CompositeProgram &protoCompositeProgram)
 {
     for (const auto &[fileName, hashProgram] : compositeProgramMap.compositeProgramInfo) {
         auto protoHashNameProgram = protoCompositeProgram.add_hashnameprogram();
@@ -29,7 +29,7 @@ void CompositeProgram::Serialize(const panda::es2panda::util::CompositeProgramMa
     }
 }
 
-void CompositeProgram::Deserialize(const proto_panda::CompositeProgram &protoCompositeProgram,
+void CompositeProgram::Deserialize(const protoPanda::CompositeProgram &protoCompositeProgram,
                                    panda::es2panda::util::CompositeProgramMap &compositeProgramMap,
                                    panda::ArenaAllocator *allocator)
 {
