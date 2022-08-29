@@ -68,6 +68,7 @@ int Run(int argc, const char **argv)
     panda::ArenaAllocator allocator(panda::SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
 
     std::vector<panda::pandasm::Program *> programs;
+    programs.reserve(protoFiles.size());
     for(size_t i = 0; i < protoFiles.size(); i++) {
         auto *prog = allocator.New<panda::pandasm::Program>();
         programs.emplace_back(prog);

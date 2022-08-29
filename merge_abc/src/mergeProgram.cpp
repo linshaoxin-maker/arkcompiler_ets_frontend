@@ -152,6 +152,7 @@ bool MergeProgram::CollectProtoFiles(std::string &input, const std::string &prot
         inputs.push_back(inputAbs.Value());
     }
 
+    protoFiles.reserve(inputs.size());
     for (auto &filePath : inputs) {
         if (!AppendProtoFiles(filePath, protoBinSuffix, protoFiles)) {
             return false;

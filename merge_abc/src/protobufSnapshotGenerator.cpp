@@ -26,7 +26,7 @@ void ProtobufSnapshotGenerator::GenerateSnapshot(const panda::pandasm::Program &
 
     std::fstream output(outputName, std::ios::out | std::ios::trunc | std::ios::binary);
     if (!output) {
-        std::cout << ": Fail to create file" << std::endl;
+        std::cerr << "Failed to create: " << outputName << std::endl;
         return;
     }
     protoProgram.SerializeToOstream(&output);
@@ -38,12 +38,12 @@ void ProtobufSnapshotGenerator::GenerateProgram(const std::string &inputName, pa
 {
     std::fstream input(inputName, std::ios::in | std::ios::binary);
     if (!input) {
-        std::cerr << "Failed to open " << inputName << std::endl;
+        std::cerr << "Failed to open: " << inputName << std::endl;
         return;
     }
     protoPanda::Program proto_program;
     if (!proto_program.ParseFromIstream(&input)) {
-        std::cerr << "Failed to parse " << inputName << std::endl;
+        std::cerr << "Failed to parse: " << inputName << std::endl;
         return;
     }
     Program::Deserialize(proto_program, prog, allocator);
@@ -57,7 +57,7 @@ void ProtobufSnapshotGenerator::UpdateCacheFile(
     CompositeProgram::Serialize(compositeProgramMap, isDebug, protoCompositeProgram);
     std::fstream output(cacheFilePath, std::ios::out | std::ios::trunc | std::ios::binary);
     if (!output) {
-        std::cout << "Fail to create cache file: " << cacheFilePath << std::endl;
+        std::cerr << "Failed to create cache file: " << cacheFilePath << std::endl;
         return;
     }
     protoCompositeProgram.SerializeToOstream(&output);
