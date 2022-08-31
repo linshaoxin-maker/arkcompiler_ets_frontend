@@ -40,6 +40,12 @@ describe("BuiltInsTest", function () {
 });
 
 describe("FunctionToStringTest", function () {
+    /*
+     * @tc.name: FunctionToStringTest
+     * @tc.desc: verify func.toString() interface
+     * @tc.type: FUNC
+     * @tc.require: issueI5INW1
+     */
     it("func.toString()", function () {
         CmdOptions.needRecordSourceCode = () => {return true};
         let snippetCompiler = new SnippetCompiler();
