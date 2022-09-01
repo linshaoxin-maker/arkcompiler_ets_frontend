@@ -279,7 +279,8 @@ void PandaGen::LoadVar(const ir::Identifier *node, const binder::ScopeFindResult
     }
 
     if (var->IsModuleVariable()) {
-        LoadModuleVariable(node, var->AsModuleVariable()->Index(), var->HasFlag(binder::VariableFlags::LOCAL_EXPORT));
+        var->HasFlag(binder::VariableFlags::LOCAL_EXPORT) ? LoadLocalModuleVariable(node, var->AsModuleVariable()) :
+                                                            LoadExternalModuleVariable(node, var->AsModuleVariable());
         if (var->Declaration()->IsLetOrConstOrClassDecl()) {
             ThrowUndefinedIfHole(node, var->Name());
         }
@@ -321,12 +322,12 @@ void PandaGen::StoreVar(const ir::AstNode *node, const binder::ScopeFindResult &
             RegScope rs(this);
             VReg valueReg = AllocReg();
             StoreAccumulator(node, valueReg);
-            LoadModuleVariable(node, var->AsModuleVariable()->Index(), true);
+            LoadLocalModuleVariable(node, var->AsModuleVariable());
             ThrowUndefinedIfHole(node, var->Name());
             LoadAccumulator(node, valueReg);
         }
 
-        StoreModuleVariable(node, var->AsModuleVariable()->Index());
+        StoreModuleVariable(node, var->AsModuleVariable());
         return;
     }
 
@@ -1654,19 +1655,23 @@ void PandaGen::DefineClassWithBuffer(const ir::AstNode *node, const util::String
     strings_.insert(ctorId);
 }
 
-void PandaGen::LoadModuleVariable(const ir::AstNode *node, uint32_t index, bool isLocalExport)
+void PandaGen::LoadLocalModuleVariable(const ir::AstNode *node, const binder::ModuleVariable *variable)
 {
-    if (isLocalExport) {
-        index <= util::Helpers::MAX_INT8 ? sa_.Emit<Ldlocalmodulevar>(node, index) :
-                                           sa_.Emit<WideLdlocalmodulevar>(node, index);
-    } else {
-        index <= util::Helpers::MAX_INT8 ? sa_.Emit<Ldexternalmodulevar>(node, index) :
-                                           sa_.Emit<WideLdexternalmodulevar>(node, index);
-    }
+    auto index = variable->Index();
+    index <= util::Helpers::MAX_INT8 ? sa_.Emit<Ldlocalmodulevar>(node, index) :
+                                       sa_.Emit<WideLdlocalmodulevar>(node, index);
 }
 
-void PandaGen::StoreModuleVariable(const ir::AstNode *node, uint32_t index)
+void PandaGen::LoadExternalModuleVariable(const ir::AstNode *node, const binder::ModuleVariable *variable)
 {
+    auto index = variable->Index();
+    index <= util::Helpers::MAX_INT8 ? sa_.Emit<Ldexternalmodulevar>(node, index) :
+                                       sa_.Emit<WideLdexternalmodulevar>(node, index);
+}
+
+void PandaGen::StoreModuleVariable(const ir::AstNode *node, const binder::ModuleVariable *variable)
+{
+    auto index = variable->Index();
     index <= util::Helpers::MAX_INT8 ? sa_.Emit<Stmodulevar>(node, index) :
                                        sa_.Emit<WideStmodulevar>(node, index);
 }

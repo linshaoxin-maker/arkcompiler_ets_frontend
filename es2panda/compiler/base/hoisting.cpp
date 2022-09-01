@@ -29,7 +29,7 @@ static void StoreModuleVarOrLocalVar(PandaGen *pg, binder::ScopeFindResult &resu
         ASSERT(pg->Scope()->IsModuleScope());
         auto *var = pg->Scope()->FindLocal(decl->Name());
         ASSERT(var->IsModuleVariable());
-        pg->StoreModuleVariable(decl->Node(), var->AsModuleVariable()->Index());
+        pg->StoreModuleVariable(decl->Node(), var->AsModuleVariable());
     } else {
         pg->StoreAccToLexEnv(decl->Node(), result, true);
     }

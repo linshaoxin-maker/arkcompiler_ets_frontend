@@ -28,6 +28,7 @@
 
 namespace panda::es2panda::binder {
 class FunctionScope;
+class ModuleVaribale;
 class ScopeFindResult;
 class Scope;
 }  // namespace panda::es2panda::binder
@@ -368,8 +369,9 @@ public:
     void CloseIterator(const ir::AstNode *node, VReg iter);
     void DefineClassWithBuffer(const ir::AstNode *node, const util::StringView &ctorId, int32_t litIdx, VReg base);
 
-    void LoadModuleVariable(const ir::AstNode *node, uint32_t index, bool isLocalExport);
-    void StoreModuleVariable(const ir::AstNode *node, uint32_t index);
+    void LoadLocalModuleVariable(const ir::AstNode *node, const binder::ModuleVariable *variable);
+    void LoadExternalModuleVariable(const ir::AstNode *node, const binder::ModuleVariable *variable);
+    void StoreModuleVariable(const ir::AstNode *node, const binder::ModuleVariable *variable);
     void GetModuleNamespace(const ir::AstNode *node, uint32_t index);
     void DynamicImportCall(const ir::AstNode *node);
 

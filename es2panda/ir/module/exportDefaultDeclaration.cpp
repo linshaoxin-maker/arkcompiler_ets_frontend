@@ -40,7 +40,7 @@ void ExportDefaultDeclaration::Compile(compiler::PandaGen *pg) const
         ASSERT(pg->Scope()->IsModuleScope());
         auto *var = pg->Scope()->FindLocal(parser::SourceTextModuleRecord::DEFAULT_LOCAL_NAME);
         ASSERT(var->IsModuleVariable());
-        pg->StoreModuleVariable(this, var->AsModuleVariable()->Index());
+        pg->StoreModuleVariable(this, var->AsModuleVariable());
     }
 }
 
