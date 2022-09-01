@@ -246,12 +246,12 @@ export function assignIndexToModuleVariable(moduleScope: Scope) {
     }
     let index: number = 0;
     // @ts-ignore
-    this.localExportEntries.forEach((entries: Array<Entry>, localName: string) => {
+    moduleScope.module().getLocalExportEntries().forEach((entries: Array<Entry>, localName: string) => {
         (<ModuleVariable>moduleScope.findLocal(localName)!).assignIndex(index++);
     });
     index = 0;
     // @ts-ignore
-    this.regularImportEntries.forEach((entry: Entry, localName: string) => {
+    moduleScope.module().getRegularImportEntries().forEach((entry: Entry, localName: string) => {
         (<ModuleVariable>moduleScope.findLocal(localName)!).assignIndex(index++);
     });
 }
