@@ -37,11 +37,14 @@ enum class LiteralTag {
     FLOAT,
     DOUBLE,
     STRING,
-    ACCESSOR,
     METHOD,
     GENERATOR_METHOD,
-    ASYNC_GENERATOR_METHOD,
-    NULL_VALUE,
+    ACCESSOR,
+    METHODAFFILIATE,
+    // 0x0a - 0x15 for ARRAY_Type
+    ASYNC_GENERATOR_METHOD = 22,
+    LITERALBUFFERINDEX = 23,
+    NULL_VALUE = 255,
 };
 
 class Literal : public Expression {
@@ -58,6 +61,7 @@ public:
     double GetDouble() const;
     const util::StringView &GetString() const;
     const util::StringView &GetMethod() const;
+    uint16_t GetMethodAffiliate() const;
 
 protected:
     explicit Literal(AstNodeType type) : Expression(type) {}

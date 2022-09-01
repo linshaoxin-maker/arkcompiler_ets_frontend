@@ -40,6 +40,19 @@ size_t ScriptFunction::FormalParamsLength() const
     return length;
 }
 
+util::StringView ScriptFunction::GetName() const
+{
+    if (id_) {
+        return id_->Name();
+    }
+
+    if (exportDefault_) {
+        return parser::SourceTextModuleRecord::DEFAULT_LOCAL_NAME;
+    }
+
+    return "";
+}
+
 void ScriptFunction::Iterate(const NodeTraverser &cb) const
 {
     if (id_) {
@@ -52,6 +65,10 @@ void ScriptFunction::Iterate(const NodeTraverser &cb) const
 
     for (auto *it : params_) {
         cb(it);
+    }
+
+    if (returnTypeAnnotation_) {
+        cb(returnTypeAnnotation_);
     }
 
     if (body_) {

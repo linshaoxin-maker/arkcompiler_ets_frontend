@@ -30,6 +30,8 @@
 #include <ir/expressions/assignmentExpression.h>
 #include <ir/expressions/identifier.h>
 #include <ir/expressions/objectExpression.h>
+#include <ir/module/exportNamedDeclaration.h>
+#include <ir/module/exportSpecifier.h>
 #include <ir/statements/blockStatement.h>
 #include <ir/statements/doWhileStatement.h>
 #include <ir/statements/forInStatement.h>
@@ -40,6 +42,10 @@
 #include <ir/statements/variableDeclaration.h>
 #include <ir/statements/variableDeclarator.h>
 #include <ir/statements/whileStatement.h>
+#include <ir/ts/tsConstructorType.h>
+#include <ir/ts/tsFunctionType.h>
+#include <ir/ts/tsMethodSignature.h>
+#include <ir/ts/tsSignatureDeclaration.h>
 
 namespace panda::es2panda::binder {
 void Binder::InitTopScope()
@@ -75,14 +81,40 @@ void Binder::ThrowRedeclaration(const lexer::SourcePosition &pos, const util::St
     throw Error(ErrorType::SYNTAX, ss.str(), loc.line, loc.col);
 }
 
+void Binder::ThrowUndeclaredExport(const lexer::SourcePosition &pos, const util::StringView &name)
+{
+    lexer::LineIndex index(program_->SourceCode());
+    lexer::SourceLocation loc = index.GetLocation(pos);
+
+    std::stringstream ss;
+    ss << "Export name '" << name << "' is not defined.";
+    throw Error(ErrorType::SYNTAX, ss.str(), loc.line, loc.col);
+}
+
 void Binder::IdentifierAnalysis()
 {
     ASSERT(program_->Ast());
     ASSERT(scope_ == topScope_);
 
-    BuildFunction(topScope_, "main");
+    BuildFunction(topScope_, MAIN_FUNC_NAME);
     ResolveReferences(program_->Ast());
     AddMandatoryParams();
+}
+
+void Binder::ValidateExportDecl(const ir::ExportNamedDeclaration *exportDecl)
+{
+    if (exportDecl->Source() != nullptr || exportDecl->Decl() != nullptr) {
+        return;
+    }
+
+    ASSERT(topScope_->IsModuleScope());
+    for (auto *it : exportDecl->Specifiers()) {
+        auto localName = it->AsExportSpecifier()->Local()->Name();
+        if (topScope_->FindLocal(localName) == nullptr) {
+            ThrowUndeclaredExport(it->AsExportSpecifier()->Local()->Start(), localName);
+        }
+        topScope_->AsModuleScope()->ConvertLocalVariableToModuleVariable(Allocator(), localName);
+    }
 }
 
 void Binder::LookupReference(const util::StringView &name)
@@ -141,7 +173,8 @@ void Binder::LookupIdentReference(ir::Identifier *ident)
         InstantiateArguments();
     }
 
-    ScopeFindResult res = scope_->Find(ident->Name());
+    ScopeFindResult res = scope_->Find(ident->Name(), bindingOptions_);
+
     if (res.level != 0) {
         ASSERT(res.variable);
         res.variable->SetLexical(res.scope);
@@ -151,7 +184,9 @@ void Binder::LookupIdentReference(ir::Identifier *ident)
         return;
     }
 
-    if (res.variable->Declaration()->IsLetOrConstDecl() && !res.variable->HasFlag(VariableFlags::INITIALIZED)) {
+    auto decl = res.variable->Declaration();
+    if (decl->IsLetOrConstOrClassDecl() && !decl->HasFlag(DeclarationFlags::NAMESPACE_IMPORT) &&
+        !res.variable->HasFlag(VariableFlags::INITIALIZED)) {
         ident->SetTdz();
     }
 
@@ -160,13 +195,24 @@ void Binder::LookupIdentReference(ir::Identifier *ident)
 
 void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name)
 {
-    uint32_t idx = functionScopes_.size();
     functionScopes_.push_back(funcScope);
 
+    bool funcNameWithoutDot = (name.Find(".") == std::string::npos);
+    bool funcNameWithoutBackslash = (name.Find("\\") == std::string::npos);
+    if (name != ANONYMOUS_FUNC_NAME && funcNameWithoutDot && funcNameWithoutBackslash && !functionNames_.count(name)) {
+        auto internalName = std::string(program_->RecordName()) + std::string(name);
+        functionNames_.insert(name);
+        funcScope->BindName(name, util::UString(internalName, Allocator()).View());
+        return;
+    }
     std::stringstream ss;
-    ss << "func_" << name << "_" << std::to_string(idx);
+    ss << std::string(program_->RecordName());
+    uint32_t idx = functionNameIndex_++;
+    ss << "#" << std::to_string(idx) << "#";
+    if (funcNameWithoutDot && funcNameWithoutBackslash) {
+        ss << name;
+    }
     util::UString internalName(ss.str(), Allocator());
-
     funcScope->BindName(name, internalName.View());
 }
 
@@ -186,25 +232,41 @@ void Binder::BuildVarDeclaratorId(const ir::AstNode *parent, ir::AstNode *childN
 
     switch (childNode->Type()) {
         case ir::AstNodeType::IDENTIFIER: {
-            const auto &name = childNode->AsIdentifier()->Name();
-            if (util::Helpers::IsGlobalIdentifier(childNode->AsIdentifier()->Name())) {
+            auto *ident = childNode->AsIdentifier();
+            const auto &name = ident->Name();
+
+            if (util::Helpers::IsGlobalIdentifier(name)) {
                 break;
             }
 
             auto *variable = scope_->FindLocal(name);
+
+            if (Program()->Extension() == ScriptExtension::TS) {
+                ident->SetVariable(variable);
+                BuildTSSignatureDeclarationBaseParams(ident->TypeAnnotation());
+            }
+
             variable->AddFlag(VariableFlags::INITIALIZED);
             break;
         }
         case ir::AstNodeType::OBJECT_PATTERN: {
-            for (auto *prop : childNode->AsObjectPattern()->Properties()) {
+            auto *objPattern = childNode->AsObjectPattern();
+
+            for (auto *prop : objPattern->Properties()) {
                 BuildVarDeclaratorId(childNode, prop);
             }
+
+            BuildTSSignatureDeclarationBaseParams(objPattern->TypeAnnotation());
             break;
         }
         case ir::AstNodeType::ARRAY_PATTERN: {
+            auto *arrayPattern = childNode->AsArrayPattern();
+
             for (auto *element : childNode->AsArrayPattern()->Elements()) {
                 BuildVarDeclaratorId(childNode, element);
             }
+
+            BuildTSSignatureDeclarationBaseParams(arrayPattern->TypeAnnotation());
             break;
         }
         case ir::AstNodeType::ASSIGNMENT_PATTERN: {
@@ -226,6 +288,43 @@ void Binder::BuildVarDeclaratorId(const ir::AstNode *parent, ir::AstNode *childN
     }
 }
 
+void Binder::BuildTSSignatureDeclarationBaseParams(const ir::AstNode *typeNode)
+{
+    if (!typeNode) {
+        return;
+    }
+
+    Scope *scope = nullptr;
+
+    switch (typeNode->Type()) {
+        case ir::AstNodeType::TS_FUNCTION_TYPE: {
+            scope = typeNode->AsTSFunctionType()->Scope();
+            break;
+        }
+        case ir::AstNodeType::TS_CONSTRUCTOR_TYPE: {
+            scope = typeNode->AsTSConstructorType()->Scope();
+            break;
+        }
+        case ir::AstNodeType::TS_SIGNATURE_DECLARATION: {
+            scope = typeNode->AsTSSignatureDeclaration()->Scope();
+            break;
+        }
+        case ir::AstNodeType::TS_METHOD_SIGNATURE: {
+            scope = typeNode->AsTSMethodSignature()->Scope();
+            break;
+        }
+        default: {
+            ResolveReferences(typeNode);
+            return;
+        }
+    }
+
+    ASSERT(scope && scope->IsFunctionParamScope());
+
+    auto scopeCtx = LexicalScope<FunctionParamScope>::Enter(this, scope->AsFunctionParamScope());
+    ResolveReferences(typeNode);
+}
+
 void Binder::BuildVarDeclarator(ir::VariableDeclarator *varDecl)
 {
     if (varDecl->Parent()->AsVariableDeclaration()->Kind() == ir::VariableDeclaration::VariableDeclarationKind::VAR) {
@@ -243,9 +342,11 @@ void Binder::BuildVarDeclarator(ir::VariableDeclarator *varDecl)
 void Binder::BuildClassDefinition(ir::ClassDefinition *classDef)
 {
     if (classDef->Parent()->IsClassDeclaration()) {
-        ScopeFindResult res = scope_->Find(classDef->Ident()->Name());
+        util::StringView className = classDef->GetName();
+        ASSERT(!className.Empty());
+        ScopeFindResult res = scope_->Find(className);
 
-        ASSERT(res.variable && res.variable->Declaration()->IsLetDecl());
+        ASSERT(res.variable && res.variable->Declaration()->IsClassDecl());
         res.variable->AddFlag(VariableFlags::INITIALIZED);
     }
 
@@ -355,6 +456,16 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
                 }
             }
 
+            if (Program()->Extension() == ScriptExtension::TS) {
+                if (scriptFunc->ReturnTypeAnnotation()) {
+                    ResolveReference(scriptFunc, scriptFunc->ReturnTypeAnnotation());
+                }
+
+                if (scriptFunc->IsOverload()) {
+                    break;
+                }
+            }
+
             auto scopeCtx = LexicalScope<FunctionScope>::Enter(this, funcScope);
 
             BuildScriptFunction(outerScope, scriptFunc);
@@ -430,6 +541,20 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
             BuildCatchClause(childNode->AsCatchClause());
             break;
         }
+        case ir::AstNodeType::EXPORT_NAMED_DECLARATION: {
+            ValidateExportDecl(childNode->AsExportNamedDeclaration());
+
+            ResolveReferences(childNode);
+            break;
+        }
+        // TypeScript specific part
+        case ir::AstNodeType::TS_FUNCTION_TYPE:
+        case ir::AstNodeType::TS_CONSTRUCTOR_TYPE:
+        case ir::AstNodeType::TS_METHOD_SIGNATURE:
+        case ir::AstNodeType::TS_SIGNATURE_DECLARATION: {
+            BuildTSSignatureDeclarationBaseParams(childNode);
+            break;
+        }
         default: {
             ResolveReferences(childNode);
             break;
@@ -453,13 +578,6 @@ void Binder::AddMandatoryParam(const std::string_view &name)
     scope_->AsFunctionVariableScope()->Bindings().insert({decl->Name(), param});
 }
 
-void Binder::AddMandatoryParams(const MandatoryParams &params)
-{
-    for (auto iter = params.rbegin(); iter != params.rend(); iter++) {
-        AddMandatoryParam(*iter);
-    }
-}
-
 void Binder::AddMandatoryParams()
 {
     ASSERT(scope_ == topScope_);
@@ -468,7 +586,12 @@ void Binder::AddMandatoryParams()
     [[maybe_unused]] auto *funcScope = *iter++;
 
     ASSERT(funcScope->IsGlobalScope() || funcScope->IsModuleScope());
-    AddMandatoryParams(FUNCTION_MANDATORY_PARAMS);
+
+    if (program_->Kind() == parser::ScriptKind::COMMONJS) {
+        AddMandatoryParams(CJS_MAINFUNC_MANDATORY_PARAMS);
+    } else {
+        AddMandatoryParams(FUNCTION_MANDATORY_PARAMS);
+    }
 
     for (; iter != functionScopes_.end(); iter++) {
         funcScope = *iter;

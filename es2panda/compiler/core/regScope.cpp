@@ -21,7 +21,6 @@
 #include <compiler/base/hoisting.h>
 #include <compiler/core/compilerContext.h>
 #include <compiler/core/pandagen.h>
-#include <compiler/core/moduleContext.h>
 
 namespace panda::es2panda::compiler {
 
@@ -112,13 +111,11 @@ FunctionRegScope::FunctionRegScope(PandaGen *pg) : RegScope(pg), envScope_(pg->A
         pg_->debugInfo_.variableDebugInfo.push_back(funcScope);
     }
 
+    pg_->SetSourceLocationFlag(lexer::SourceLocationFlag::INVALID_SOURCE_LOCATION);
     pg_->LoadAccFromArgs(pg_->rootNode_);
 
-    if (funcScope->IsModuleScope()) {
-        ModuleContext::Compile(pg_, pg_->scope_->AsModuleScope());
-    }
-
     Hoisting::Hoist(pg);
+    pg_->SetSourceLocationFlag(lexer::SourceLocationFlag::VALID_SOURCE_LOCATION);
 }
 
 FunctionRegScope::~FunctionRegScope()

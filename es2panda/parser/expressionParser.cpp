@@ -1016,6 +1016,9 @@ ir::Expression *ParserImpl::ParsePrimaryExpression(ExpressionParseFlags flags)
         case lexer::TokenType::PUNCTUATOR_DIVIDE:
         case lexer::TokenType::PUNCTUATOR_DIVIDE_EQUAL: {
             lexer_->ResetTokenEnd();
+            if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_DIVIDE_EQUAL) {
+                lexer_->BackwardToken(lexer::TokenType::PUNCTUATOR_DIVIDE, 1);
+            }
             auto regexp = lexer_->ScanRegExp();
 
             lexer::RegExpParser reParser(regexp, Allocator());
@@ -2029,6 +2032,7 @@ ir::Expression *ParserImpl::ParsePropertyValue(const ir::PropertyKind *propertyK
 
     ir::ScriptFunction *methodDefinitonNode =
         ParseFunction(*methodStatus | ParserStatus::FUNCTION | ParserStatus::ALLOW_SUPER);
+    lexer_->NextToken();
     methodDefinitonNode->AddFlag(ir::ScriptFunctionFlags::METHOD);
 
     size_t paramsSize = methodDefinitonNode->Params().size();
@@ -2273,7 +2277,16 @@ ir::Expression *ParserImpl::ParseImportExpression()
 
     lexer_->NextToken();  // eat left parentheses
 
+    if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD_PERIOD_PERIOD) {
+        ThrowSyntaxError("Argument of dynamic import cannot be spread element.");
+    }
+
     ir::Expression *source = ParseExpression();
+
+    if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA) {
+        ThrowSyntaxError(
+            "Dynamic imports can only accept a module specifier, optional assertion is not supported yet.");
+    }
 
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
         ThrowSyntaxError("Unexpected token");
@@ -2327,6 +2340,9 @@ ir::FunctionExpression *ParserImpl::ParseFunctionExpression(ParserStatus newStat
     }
 
     ir::ScriptFunction *functionNode = ParseFunction(newStatus);
+    if (functionNode->Body() != nullptr) {
+        lexer_->NextToken();
+    }
     functionNode->SetStart(startLoc);
 
     if (ident) {

@@ -22,7 +22,7 @@
 
 namespace panda::es2panda::ir {
 class AstNode;
-class FunctionDeclaration;
+class ScriptFunction;
 class TSInterfaceDeclaration;
 class ImportDeclaration;
 }  // namespace panda::es2panda::ir
@@ -77,15 +77,36 @@ public:
         node_ = node;
     }
 
-    bool IsLetOrConstDecl() const
+    bool IsLetOrConstOrClassDecl() const
     {
-        return IsLetDecl() || IsConstDecl();
+        return IsLetDecl() || IsConstDecl() || IsClassDecl();
+    }
+
+    DeclarationFlags Flags() const
+    {
+        return flags_;
+    }
+
+    void AddFlag(DeclarationFlags flag)
+    {
+        flags_ |= flag;
+    }
+
+    bool HasFlag(DeclarationFlags flag) const
+    {
+        return (flags_ & flag) != 0;
+    }
+
+    bool IsImportOrExportDecl() const
+    {
+        return HasFlag(DeclarationFlags::IMPORT | DeclarationFlags::EXPORT);
     }
 
 protected:
     explicit Decl(util::StringView name) : name_(name) {}
 
     util::StringView name_;
+    DeclarationFlags flags_ {};
     const ir::AstNode *node_ {};
 };
 
@@ -150,7 +171,7 @@ public:
     }
 };
 
-class FunctionDecl : public MultiDecl<ir::FunctionDeclaration> {
+class FunctionDecl : public MultiDecl<ir::ScriptFunction> {
 public:
     explicit FunctionDecl(ArenaAllocator *allocator, util::StringView name, const ir::AstNode *node)
         : MultiDecl(allocator, name)
@@ -171,6 +192,26 @@ public:
     DeclType Type() const override
     {
         return DeclType::TYPE_PARAMETER;
+    }
+};
+
+class PropertyDecl : public Decl {
+public:
+    explicit PropertyDecl(util::StringView name) : Decl(name) {}
+
+    DeclType Type() const override
+    {
+        return DeclType::PROPERTY;
+    }
+};
+
+class MethodDecl : public Decl {
+public:
+    explicit MethodDecl(util::StringView name) : Decl(name) {}
+
+    DeclType Type() const override
+    {
+        return DeclType::METHOD;
     }
 };
 
@@ -234,6 +275,16 @@ public:
     }
 };
 
+class ClassDecl : public Decl {
+public:
+    explicit ClassDecl(util::StringView name) : Decl(name) {}
+
+    DeclType Type() const override
+    {
+        return DeclType::CLASS;
+    }
+};
+
 class ParameterDecl : public Decl {
 public:
     explicit ParameterDecl(util::StringView name) : Decl(name) {}
@@ -242,70 +293,6 @@ public:
     {
         return DeclType::PARAM;
     }
-};
-
-class ImportDecl : public Decl {
-public:
-    explicit ImportDecl(util::StringView importName, util::StringView localName)
-        : Decl(localName), importName_(importName)
-    {
-    }
-
-    explicit ImportDecl(util::StringView importName, util::StringView localName, const ir::AstNode *node)
-        : Decl(localName), importName_(importName)
-    {
-        BindNode(node);
-    }
-
-    const util::StringView &ImportName() const
-    {
-        return importName_;
-    }
-
-    const util::StringView &LocalName() const
-    {
-        return name_;
-    }
-
-    DeclType Type() const override
-    {
-        return DeclType::IMPORT;
-    }
-
-private:
-    util::StringView importName_;
-};
-
-class ExportDecl : public Decl {
-public:
-    explicit ExportDecl(util::StringView exportName, util::StringView localName)
-        : Decl(localName), exportName_(exportName)
-    {
-    }
-
-    explicit ExportDecl(util::StringView exportName, util::StringView localName, const ir::AstNode *node)
-        : Decl(localName), exportName_(exportName)
-    {
-        BindNode(node);
-    }
-
-    const util::StringView &ExportName() const
-    {
-        return exportName_;
-    }
-
-    const util::StringView &LocalName() const
-    {
-        return name_;
-    }
-
-    DeclType Type() const override
-    {
-        return DeclType::EXPORT;
-    }
-
-private:
-    util::StringView exportName_;
 };
 
 }  // namespace panda::es2panda::binder

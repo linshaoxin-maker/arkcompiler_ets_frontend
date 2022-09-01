@@ -16,8 +16,10 @@
 #ifndef ES2PANDA_PARSER_INCLUDE_PROGRAM_H
 #define ES2PANDA_PARSER_INCLUDE_PROGRAM_H
 
+#include <lexer/token/sourceLocation.h>
 #include <macros.h>
 #include <mem/arena_allocator.h>
+#include <parser/module/sourceTextModuleRecord.h>
 #include <util/ustring.h>
 
 #include "es2panda.h"
@@ -32,7 +34,7 @@ class Binder;
 
 namespace panda::es2panda::parser {
 
-enum class ScriptKind { SCRIPT, MODULE };
+enum class ScriptKind { SCRIPT, MODULE, COMMONJS };
 
 class Program {
 public:
@@ -67,6 +69,11 @@ public:
         return kind_;
     }
 
+    SourceTextModuleRecord *ModuleRecord() const
+    {
+        return moduleRecord_;
+    }
+
     util::StringView SourceCode() const
     {
         return sourceCode_.View();
@@ -75,6 +82,16 @@ public:
     util::StringView SourceFile() const
     {
         return sourceFile_.View();
+    }
+
+    util::StringView RecordName() const
+    {
+        return recordName_.View();
+    }
+
+    const lexer::LineIndex &GetLineIndex() const
+    {
+        return lineIndex_;
     }
 
     ir::BlockStatement *Ast()
@@ -96,6 +113,12 @@ public:
     {
         sourceCode_ = util::UString(sourceCode, Allocator());
         sourceFile_ = util::UString(sourceFile, Allocator());
+        lineIndex_ = lexer::LineIndex(SourceCode());
+    }
+
+    void SetRecordName(const std::string &recordName)
+    {
+        recordName_ = util::UString(recordName, Allocator());
     }
 
     std::string Dump() const;
@@ -107,8 +130,11 @@ private:
     ir::BlockStatement *ast_ {};
     util::UString sourceCode_ {};
     util::UString sourceFile_ {};
+    util::UString recordName_ {};
     ScriptKind kind_ {};
     ScriptExtension extension_ {};
+    lexer::LineIndex lineIndex_ {};
+    SourceTextModuleRecord *moduleRecord_ {nullptr};
 };
 
 }  // namespace panda::es2panda::parser

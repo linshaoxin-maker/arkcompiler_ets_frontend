@@ -46,7 +46,7 @@ enum class ParserStatus {
     IN_ITERATION = (1 << 14),
     IN_LABELED = (1 << 15),
 
-    EXPORT_DEFAULT_REACHED = (1 << 16),
+    EXPORT_REACHED = (1 << 16),
     HAS_COMPLEX_PARAM = (1 << 17),
     IN_SWITCH = (1 << 18),
 
@@ -59,6 +59,9 @@ enum class ParserStatus {
     IN_AMBIENT_CONTEXT = (1 << 24),
     IN_CLASS_BODY = (1 << 25),
     IN_DECORATOR = (1 << 26),
+    DISALLOW_CONTINUE = (1 << 27),
+
+    TS_MODULE = (1 << 28),
 };
 
 DEFINE_BITOPS(ParserStatus)
@@ -122,6 +125,11 @@ public:
     bool IsModule() const
     {
         return (status_ & ParserStatus::MODULE) != 0;
+    }
+
+    bool IsTsModule() const
+    {
+        return (status_ & ParserStatus::TS_MODULE) != 0;
     }
 
     const ParserContext *FindLabel(const util::StringView &label) const;

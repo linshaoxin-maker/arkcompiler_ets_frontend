@@ -27,7 +27,7 @@ import sys
 import subprocess
 from multiprocessing import Pool
 import platform
-from utils import * 
+from utils import *
 from config import *
 
 
@@ -78,13 +78,13 @@ def parse_args():
                         help="Run test262 with aot")
     parser.add_argument('--ark-aot-tool',
                         help="ark's aot tool")
-    parser.add_argument('--ark-frontend-tool',
-                        help="ark frontend conversion tool")
     parser.add_argument("--libs-dir",
                         help="The path collection of dependent so has been divided by':'")
     parser.add_argument('--ark-frontend',
                         nargs='?', choices=ARK_FRONTEND_LIST, type=str,
                         help="Choose one of them")
+    parser.add_argument('--ark-frontend-binary',
+                        help="ark frontend conversion binary tool")
     parser.add_argument('--ark-arch',
                         default=DEFAULT_ARK_ARCH,
                         nargs='?', choices=ARK_ARCH_LIST, type=str,
@@ -92,6 +92,16 @@ def parse_args():
     parser.add_argument('--ark-arch-root',
                         default=DEFAULT_ARK_ARCH,
                         help="the root path for qemu-aarch64 or qemu-arm")
+    parser.add_argument('--opt-level',
+                        default=DEFAULT_OPT_LEVEL,
+                        help="the opt level for es2abc")
+    parser.add_argument('--es2abc-thread-count',
+                        default=DEFAULT_ES2ABC_THREAD_COUNT,
+                        help="the thread count for es2abc")
+    parser.add_argument('--merge-abc-binary',
+                        help="frontend merge abc binary tool")
+    parser.add_argument('--merge-abc-mode',
+                        help="run test for merge abc mode")
     return parser.parse_args()
 
 
@@ -113,15 +123,15 @@ def excuting_npm_install(args):
     if args.ark_frontend:
         ark_frontend = args.ark_frontend
 
-    if ark_frontend != DEFAULT_ARK_FRONTEND:
+    if ark_frontend != ARK_FRONTEND_LIST[0]:
         return
 
-    ark_frontend_tool = os.path.join(DEFAULT_ARK_FRONTEND_TOOL)
-    if args.ark_frontend_tool:
-        ark_frontend_tool = os.path.join(args.ark_frontend_tool)
+    ark_frontend_binary = os.path.join(ARK_FRONTEND_BINARY_LIST[0])
+    if args.ark_frontend_binary:
+        ark_frontend_binary = os.path.join(args.ark_frontend_binary)
 
     ts2abc_build_dir = os.path.join(os.path.dirname(
-        os.path.realpath(ark_frontend_tool)), "..")
+        os.path.realpath(ark_frontend_binary)), "..")
 
     if os.path.exists(os.path.join(ts2abc_build_dir, "package.json")):
         npm_install(ts2abc_build_dir)
@@ -136,23 +146,22 @@ def init(args):
     remove_dir(TEST_INTL_DIR)
     remove_dir(TEST_ES2021_DIR)
     remove_dir(TEST_CI_DIR)
-    get_all_skip_tests(SKIP_LIST_FILE)
-    get_intl_skip_tests(INTL_SKIP_LIST_FILE)
+    get_all_skip_tests(args)
     excuting_npm_install(args)
 
 
-def get_all_skip_tests(file):
-    with open(file) as jsonfile:
-        json_data = json.load(jsonfile)
-        for key in json_data:
-            ALL_SKIP_TESTS.extend(key["files"])
+def get_all_skip_tests(args):
+    # !!! plz correct the condition when changing the default frontend
+    if args.ark_frontend and args.ark_frontend == ARK_FRONTEND_LIST[1]:
+        SKIP_LIST_FILES.append(ES2ABC_SKIP_LIST_FILE)
+    else:
+        SKIP_LIST_FILES.append(TS2ABC_SKIP_LIST_FILE)
 
-
-def get_intl_skip_tests(file):
-    with open(file) as jsonfile:
-        json_data = json.load(jsonfile)
-        for key in json_data:
-            INTL_SKIP_TESTS.extend(key["files"])
+    for file in SKIP_LIST_FILES:
+        with open(file) as jsonfile:
+            json_data = json.load(jsonfile)
+            for key in json_data:
+                ALL_SKIP_TESTS.extend(key["files"])
 
 
 def collect_files(path):
@@ -271,14 +280,12 @@ class TestPrepare():
         else:
             self.args.dir = os.path.join(DATA_DIR, "test")
 
-    def copyfile(self, file, all_skips, intl_skips):
+    def copyfile(self, file, all_skips):
         dstdir = os.path.join(DATA_DIR, "test")
         file = file.strip()
         file = file.strip('\n')
         file = file.replace("\\", "/")
         if file in all_skips:
-            return
-        if file in intl_skips:
             return
 
         srcdir = os.path.join(DATA_DIR, "test", file)
@@ -337,7 +344,7 @@ class TestPrepare():
         if self.args.intl:
             files = self.get_tests_from_file(INTL_LIST_FILE)
         return files
-        
+
     def prepare_es2015_tests(self):
         files = []
         files = self.collect_tests()
@@ -371,12 +378,12 @@ class TestPrepare():
 
         pool = Pool(DEFAULT_THREADS)
         for it in files:
-            pool.apply(self.copyfile, (it, ALL_SKIP_TESTS, INTL_SKIP_TESTS))
+            pool.apply(self.copyfile, (it, ALL_SKIP_TESTS))
         pool.close()
         pool.join()
 
     def prepare_test262_test(self):
-        src_dir = os.path.join(DATA_DIR, "test")
+        src_dir = TEST_FULL_DIR
         if self.args.es51:
             self.prepare_test_suit()
             src_dir = TEST_ES5_DIR
@@ -473,13 +480,14 @@ def get_host_args(args, host_type):
     host_args = ""
     ark_tool = DEFAULT_ARK_TOOL
     ark_aot_tool = DEFAULT_ARK_AOT_TOOL
-    ark_frontend_tool = DEFAULT_ARK_FRONTEND_TOOL
     libs_dir = DEFAULT_LIBS_DIR
     ark_frontend = DEFAULT_ARK_FRONTEND
+    ark_frontend_binary = DEFAULT_ARK_FRONTEND_BINARY
     ark_arch = DEFAULT_ARK_ARCH
-    module_list = ''
-    with open(MODULE_FILES_LIST) as fopen:
-        module_list = fopen.read()
+    opt_level = DEFAULT_OPT_LEVEL
+    es2abc_thread_count = DEFAULT_ES2ABC_THREAD_COUNT
+    merge_abc_binary = DEFAULT_MERGE_ABC_BINARY
+    merge_abc_mode = DEFAULT_MERGE_ABC_MODE
 
     if args.hostArgs:
         host_args = args.hostArgs
@@ -490,14 +498,26 @@ def get_host_args(args, host_type):
     if args.ark_aot_tool:
         ark_aot_tool = args.ark_aot_tool
 
-    if args.ark_frontend_tool:
-        ark_frontend_tool = args.ark_frontend_tool
-
     if args.libs_dir:
         libs_dir = args.libs_dir
 
     if args.ark_frontend:
         ark_frontend = args.ark_frontend
+
+    if args.ark_frontend_binary:
+        ark_frontend_binary = args.ark_frontend_binary
+
+    if args.opt_level:
+        opt_level = args.opt_level
+
+    if args.es2abc_thread_count:
+        es2abc_thread_count = args.es2abc_thread_count
+
+    if args.merge_abc_binary:
+        merge_abc_binary = args.merge_abc_binary
+
+    if args.merge_abc_mode:
+        merge_abc_mode = args.merge_abc_mode
 
     if host_type == DEFAULT_HOST_TYPE:
         host_args = f"-B test262/run_sunspider.py "
@@ -505,10 +525,13 @@ def get_host_args(args, host_type):
         if args.ark_aot:
             host_args += f"--ark-aot "
         host_args += f"--ark-aot-tool={ark_aot_tool} "
-        host_args += f"--ark-frontend-tool={ark_frontend_tool} "
         host_args += f"--libs-dir={libs_dir} "
         host_args += f"--ark-frontend={ark_frontend} "
-        host_args += f"--module-list={module_list} "
+        host_args += f"--ark-frontend-binary={ark_frontend_binary} "
+        host_args += f"--opt-level={opt_level} "
+        host_args += f"--es2abc-thread-count={es2abc_thread_count} "
+        host_args += f"--merge-abc-binary={merge_abc_binary} "
+        host_args += f"--merge-abc-mode={merge_abc_mode} "
 
     if args.ark_arch != ark_arch:
         host_args += f"--ark-arch={args.ark_arch} "

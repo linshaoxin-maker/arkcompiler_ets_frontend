@@ -27,14 +27,14 @@ const ts2pandaOptions = [
     { name: 'debug-log', alias: 'l', type: Boolean, defaultValue: false, description: "show info debug log and generate the json file." },
     { name: 'dump-assembly', alias: 'a', type: Boolean, defaultValue: false, description: "dump assembly to file." },
     { name: 'debug', alias: 'd', type: Boolean, defaultValue: false, description: "compile with debug info." },
-    { name: 'debug-add-watch', alias: 'w', type: String, lazyMultiple: true, defaultValue: [], description: "watch expression and abc file path in debug mode." },
+    { name: 'debug-add-watch', alias: 'w', type: String, lazyMultiple: true, defaultValue: [], description: "watch expression, abc file path and maybe watchTimeOut(in seconds) in debug mode." },
     { name: 'keep-persistent-watch', alias: 'k', type: String, lazyMultiple: true, defaultValue: [], description: "keep persistent watch on js file with watched expression." },
     { name: 'show-statistics', alias: 's', type: String, lazyMultiple: true, defaultValue: "", description: "show compile statistics(ast, histogram, hoisting, all)." },
     { name: 'output', alias: 'o', type: String, defaultValue: "", description: "set output file." },
     { name: 'timeout', alias: 't', type: Number, defaultValue: 0, description: "js to abc timeout threshold(unit: seconds)." },
     { name: 'opt-log-level', type: String, defaultValue: "error", description: "specifie optimizer log level. Possible values: ['debug', 'info', 'error', 'fatal']" },
     {
-        name: 'opt-level', type: Number, defaultValue: 0, description: "Optimization level. Possible values: [0, 1, 2]. Default: 0\n    0: no optimizations\n    \
+        name: 'opt-level', type: Number, defaultValue: 2, description: "Optimization level. Possible values: [0, 1, 2]. Default: 0\n    0: no optimizations\n    \
                                                                     1: basic bytecode optimizations, including valueNumber, lowering, constantResolver, regAccAllocator\n    \
                                                                     2: other bytecode optimizations, unimplemented yet"},
     { name: 'help', alias: 'h', type: Boolean, description: "Show usage guide." },
@@ -43,9 +43,13 @@ const ts2pandaOptions = [
     { name: 'included-files', alias: 'i', type: String, lazyMultiple: true, defaultValue: [], description: "The list of dependent files." },
     { name: 'record-type', alias: 'p', type: Boolean, defaultValue: false, description: "Record type info. Default: true" },
     { name: 'dts-type-record', alias: 'q', type: Boolean, defaultValue: false, description: "Record type info for .d.ts files. Default: false" },
+    { name: 'dts-builtin-type-record', alias: 'b', type: Boolean, defaultValue: false, description: "Recognize builtin types for .d.ts files. Default: false" },
     { name: 'debug-type', alias: 'g', type: Boolean, defaultValue: false, description: "Print type-related log. Default: false" },
     { name: 'output-type', type: Boolean, defaultValue: false, description: "set output type."},
-    { name: 'display-typeinfo', type: Boolean, defaultValue: false, description: "Display typeinfo of pairs of instruction orders and types when enable-typeinfo is true" }
+    { name: 'display-typeinfo', type: Boolean, defaultValue: false, description: "Display typeinfo of pairs of instruction orders and types when enable-typeinfo is true" },
+    { name: 'function-sourcecode', type: Boolean, defaultValue: false, description: "Record functions' sourceCode to support the feature of [function].toString()" },
+    { name: 'expression-watch-toolchain', type: String, defaultValue: "es2panda", description: "Specify the tool chain used to transform the expression" },
+    { name: 'source-file', type: String, defaultValue: "", description: "specify the file path info recorded in generated abc" },
 ]
 
 
@@ -82,37 +86,59 @@ export class CmdOptions {
         return this.options["debug"];
     }
 
-    static getAddWatchArgs(): string[] {
-        if (!this.options) {
-            return [];
-        }
-        return this.options["debug-add-watch"];
-    }
-
-    static isWatchMode(): boolean {
-        if (!this.options) {
-            return false;
-        }
-        return this.options["debug-add-watch"].length != 0;
-    }
-
-    static setWatchArgs(watchArgs: string[]) {
+    static setWatchEvaluateExpressionArgs(watchArgs: string[]) {
         this.options["debug-add-watch"] = watchArgs;
     }
 
-    static getKeepWatchFile(): string[] {
+    static getDeamonModeArgs(): string[] {
         if (!this.options) {
             return [];
         }
         return this.options["keep-persistent-watch"];
     }
 
-    static isKeepWatchMode(args: string[]): boolean {
-        return args.length == 2 && args[0] == "start";
+    static isWatchEvaluateDeamonMode(): boolean {
+        return CmdOptions.getDeamonModeArgs()[0] == "start";
     }
 
-    static isStopWatchMode(args: string[]): boolean {
-        return args.length == 2 && args[0] == "stop";
+    static isStopEvaluateDeamonMode(): boolean {
+        return CmdOptions.getDeamonModeArgs()[0] == "stop";
+    }
+
+    static getEvaluateDeamonPath(): string {
+        return CmdOptions.getDeamonModeArgs()[1];
+    }
+
+    static isWatchEvaluateExpressionMode(): boolean {
+        if (!this.options) {
+            return false;
+        }
+        return this.options["debug-add-watch"].length != 0;
+    }
+
+    static getEvaluateExpression(): string {
+        return this.options["debug-add-watch"][0];
+    }
+
+    static getWatchJsPath(): string {
+        return this.options["debug-add-watch"][1];
+    }
+
+    static getWatchTimeOutValue(): number {
+        if (this.options["debug-add-watch"].length == 2) {
+            return 0;
+        }
+        return this.options["debug-add-watch"][2];
+    }
+
+    static watchViaEs2pandaToolchain(): boolean {
+        if (!this.options) {
+            return false;
+        }
+        if (this.options["expression-watch-toolchain"] && this.options["expression-watch-toolchain"] != "es2panda") {
+            return false;
+        }
+        return true;
     }
 
     static isCommonJs(): boolean {
@@ -256,11 +282,29 @@ export class CmdOptions {
         return this.options["dts-type-record"];
     }
 
+    static needRecordBuiltinDtsType(): boolean {
+        if (!this.options) {
+            return false;
+        }
+        return this.options["dts-builtin-type-record"];
+    }
+
     static enableTypeLog(): boolean {
         if (!this.options) {
             return false;
         }
         return this.options["debug-type"];
+    }
+
+    static needRecordSourceCode(): boolean {
+        if (!this.options) {
+            return false;
+        }
+        return this.options["function-sourcecode"];
+    }
+
+    static getSourceFile(): string {
+        return this.options["source-file"];
     }
 
     // @ts-ignore

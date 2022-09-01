@@ -37,13 +37,13 @@ ARK_JS_RUNTIME_DIR = f"{CODE_ROOT}/out/hispark_taurus/clang_x64/ark/ark_js_runti
 
 DEFAULT_MODE = 2
 
+TEST_FULL_DIR = os.path.join(DATA_DIR, "test")
 TEST_ES5_DIR = os.path.join(DATA_DIR, "test_es51")
 TEST_ES2015_DIR = os.path.join(DATA_DIR, "test_es2015")
 TEST_ES2021_DIR = os.path.join(DATA_DIR, "test_es2021")
 TEST_INTL_DIR = os.path.join(DATA_DIR, "test_intl")
 TEST_CI_DIR = os.path.join(DATA_DIR, "test_CI")
 
-DEFAULT_ARK_FRONTEND_TOOL = os.path.join(ARK_DIR, "build", "src", "index.js")
 DEFAULT_ARK_TOOL = os.path.join(ARK_JS_RUNTIME_DIR, "ark_js_vm")
 DEFAULT_ARK_AOT_TOOL = os.path.join(ARK_JS_RUNTIME_DIR, "ark_aot_compiler")
 DEFAULT_LIBS_DIR = f"{ARK_DIR}:{ICUI_DIR}:{LLVM_DIR}:{ARK_JS_RUNTIME_DIR}"
@@ -55,13 +55,17 @@ DEFAULT_OTHER_ARGS = "--saveCompiledTests"
 TEST262_RUNNER_SCRIPT = os.path.join(HARNESS_DIR, "bin", "run.js")
 DEFAULT_TIMEOUT = 60000
 
-
 ES5_LIST_FILE = os.path.join("test262", "es5_tests.txt")
 ES2015_LIST_FILE = os.path.join("test262", "es2015_tests.txt")
 INTL_LIST_FILE = os.path.join("test262", "intl_tests.txt")
 ES2021_LIST_FILE = os.path.join("test262", "es2021_tests.txt")
 CI_LIST_FILE = os.path.join("test262", "CI_tests.txt")
-MODULE_FILES_LIST = os.path.join("test262", "module_tests.txt")
+MODULE_LIST = []
+DYNAMIC_IMPORT_LIST = []
+with open(os.path.join("test262", "module_tests.txt")) as m_file:
+    MODULE_LIST = m_file.read().splitlines()
+with open(os.path.join("test262", "dynamicImport_tests.txt")) as d_file:
+    DYNAMIC_IMPORT_LIST = d_file.read().splitlines()
 
 TEST262_GIT_HASH = "9ca13b12728b7e0089c7eb03fa2bd17f8abe297f"
 HARNESS_GIT_HASH = "9c499f028eb24e67781435c0bb442e00343eb39d"
@@ -73,7 +77,10 @@ ESHOST_GIT_URL = "https://gitee.com/Han00000000/eshost.git"
 HARNESS_GIT_URL = "https://gitee.com/Han00000000/test262-harness.git"
 
 SKIP_LIST_FILE = os.path.join("test262", "skip_tests.json")
+ES2ABC_SKIP_LIST_FILE = os.path.join("test262", "es2abc_skip_tests.json")
+TS2ABC_SKIP_LIST_FILE = os.path.join("test262", "ts2abc_skip_tests.json")
 INTL_SKIP_LIST_FILE = os.path.join("test262", "intl_skip_tests.json")
+SKIP_LIST_FILES = [SKIP_LIST_FILE, INTL_SKIP_LIST_FILE]
 ALL_SKIP_TESTS = []
 INTL_SKIP_TESTS = []
 
@@ -81,7 +88,15 @@ ARK_FRONTEND_LIST = [
     "ts2panda",
     "es2panda"
 ]
+
+ARK_FRONTEND_BINARY_LIST = [
+    os.path.join(ARK_DIR, "build", "src", "index.js"),
+    os.path.join(ARK_DIR, "es2abc")
+]
+
 DEFAULT_ARK_FRONTEND = ARK_FRONTEND_LIST[0]
+DEFAULT_ARK_FRONTEND_BINARY = ARK_FRONTEND_BINARY_LIST[0]
+DEFAULT_MERGE_ABC_BINARY = os.path.join(ARK_DIR, "merge_abc")
 
 ARK_ARCH_LIST = [
     "x64",
@@ -90,3 +105,6 @@ ARK_ARCH_LIST = [
 ]
 
 DEFAULT_ARK_ARCH = ARK_ARCH_LIST[0]
+DEFAULT_OPT_LEVEL = 2
+DEFAULT_ES2ABC_THREAD_COUNT = 0
+DEFAULT_MERGE_ABC_MODE = 0

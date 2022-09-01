@@ -137,8 +137,12 @@ export function compileClassDeclaration(compiler: Compiler, stmt: ts.ClassLikeDe
                 pandaGen.stClassToGlobalRecord(stmt, className);
             } else {
                 let classInfo = classScope.find(className);
-                (<LocalVariable>classInfo.v).initialize();
-                pandaGen.storeAccToLexEnv(stmt, classInfo.scope!, classInfo.level, classInfo.v!, true);
+                (<LocalVariable | ModuleVariable>classInfo.v).initialize();
+                if (classInfo.v instanceof ModuleVariable) {
+                    pandaGen.storeModuleVariable(stmt, className);
+                } else {
+                    pandaGen.storeAccToLexEnv(stmt, classInfo.scope!, classInfo.level, classInfo.v!, true);
+                }
             }
         } else {
             // throw SyntaxError in SyntaxChecker
@@ -416,10 +420,11 @@ function loadCtorObj(node: ts.CallExpression, compiler: Compiler) {
         return;
     }
 
-    let nearestFuncScope = <FunctionScope>recorder.getScopeOfNode(nearestFunc);
-    if (!nearestFuncScope) {
-        return;
-    }
+    // TODO the design needs to be reconsidered
+    // let nearestFuncScope = <FunctionScope>recorder.getScopeOfNode(nearestFunc);
+    // if (!nearestFuncScope) {
+    //     return;
+    // }
 
     if (ts.isConstructorDeclaration(nearestFunc)) {
         pandaGen.loadAccumulator(node, getVregisterCache(pandaGen, CacheList.FUNC));
@@ -621,6 +626,7 @@ function generatePropertyFromExpr(node: ts.ClassLikeDeclaration, classFields: Ar
                 break;
             }
             case ts.SyntaxKind.SemicolonClassElement:
+            case ts.SyntaxKind.IndexSignature:
                 break;
             default:
                 throw new Error("Unreachable Kind");

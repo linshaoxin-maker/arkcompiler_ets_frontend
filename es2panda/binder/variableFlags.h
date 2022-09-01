@@ -24,16 +24,17 @@ namespace panda::es2panda::binder {
     _(VAR, VarDecl)                      \
     _(LET, LetDecl)                      \
     _(CONST, ConstDecl)                  \
+    _(CLASS, ClassDecl)                  \
     _(FUNC, FunctionDecl)                \
     _(PARAM, ParameterDecl)              \
-    _(IMPORT, ImportDecl)                \
-    _(EXPORT, ExportDecl)                \
     /* TS */                             \
     _(TYPE_ALIAS, TypeAliasDecl)         \
     _(NAMESPACE, NameSpaceDecl)          \
     _(INTERFACE, InterfaceDecl)          \
     _(ENUM_LITERAL, EnumLiteralDecl)     \
     _(TYPE_PARAMETER, TypeParameterDecl) \
+    _(PROPERTY, PropertyDecl)            \
+    _(METHOD, MethodDecl)                \
     _(ENUM, EnumDecl)
 
 enum class DeclType {
@@ -104,19 +105,21 @@ enum class VariableFlags {
     COMPUTED_IDENT = 1 << 8,
     COMPUTED_INDEX = 1 << 9,
     INDEX_NAME = 1 << 10,
+    IMPORT = 1 << 11,
     LOCAL_EXPORT = 1 << 12,
     INFERED_IN_PATTERN = 1 << 13,
     REST_ARG = 1 << 14,
+    NUMERIC_NAME = 1 << 15,
+    TYPE = 1 << 16,
 
     INDEX_LIKE = COMPUTED_INDEX | INDEX_NAME,
 
     LOOP_DECL = 1 << 25,
     PER_ITERATION = 1 << 26,
-    LEXICAL_VAR = 1 << 27,
-    HOIST = 1 << 28,
-    VAR = 1 << 29,
-    INITIALIZED = 1 << 30,
-    LEXICAL_BOUND = 1 << 31,
+    HOIST = 1 << 27,
+    VAR = 1 << 28,
+    INITIALIZED = 1 << 29,
+    LEXICAL_BOUND = 1 << 30,
 
     HOIST_VAR = HOIST | VAR,
 };
@@ -137,6 +140,15 @@ enum class VariableScopeFlags {
 };
 
 DEFINE_BITOPS(VariableScopeFlags)
+
+enum class DeclarationFlags {
+    NONE = 0,
+    IMPORT = 1 << 0,
+    EXPORT = 1 << 1,
+    NAMESPACE_IMPORT = 1 << 2,
+};
+
+DEFINE_BITOPS(DeclarationFlags)
 
 }  // namespace panda::es2panda::binder
 

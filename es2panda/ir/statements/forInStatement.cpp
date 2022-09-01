@@ -38,7 +38,7 @@ void ForInStatement::Dump(ir::AstDumper *dumper) const
     dumper->Add({{"type", "ForInStatement"}, {"left", left_}, {"right", right_}, {"body", body_}});
 }
 
-void ForInStatement::Compile([[maybe_unused]] compiler::PandaGen *pg) const
+void ForInStatement::Compile(compiler::PandaGen *pg) const
 {
     compiler::LabelTarget labelTarget(pg);
 
@@ -63,9 +63,8 @@ void ForInStatement::Compile([[maybe_unused]] compiler::PandaGen *pg) const
     pg->LoadAccumulator(this, propName);
     lref.SetValue();
 
-    compiler::LoopEnvScope declEnvScope(pg, scope_->DeclScope());
-
     {
+        compiler::LoopEnvScope declEnvScope(pg, scope_->DeclScope());
         compiler::LoopEnvScope envScope(pg, scope_, labelTarget);
         body_->Compile(pg);
     }

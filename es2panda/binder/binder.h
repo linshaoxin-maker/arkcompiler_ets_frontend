@@ -28,11 +28,13 @@ class BlockStatement;
 class CatchClause;
 class ClassDefinition;
 class Expression;
+class ExportNamedDeclaration;
 class ForUpdateStatement;
 class Identifier;
 class ScriptFunction;
 class Statement;
 class VariableDeclarator;
+class TSFunctionType;
 }  // namespace panda::es2panda::ir
 
 namespace panda::es2panda::binder {
@@ -41,7 +43,19 @@ class VariableScope;
 
 class Binder {
 public:
-    explicit Binder(parser::Program *program) : program_(program), functionScopes_(Allocator()->Adapter()) {}
+    explicit Binder(parser::Program *program, ScriptExtension extension)
+        : program_(program),
+          functionScopes_(Allocator()->Adapter()),
+          functionNames_(Allocator()->Adapter())
+    {
+        if (extension == ScriptExtension::TS) {
+            bindingOptions_ = ResolveBindingOptions::ALL;
+            return;
+        }
+
+        bindingOptions_ = ResolveBindingOptions::BINDINGS;
+    }
+
     NO_COPY_SEMANTIC(Binder);
     DEFAULT_MOVE_SEMANTIC(Binder);
     ~Binder() = default;
@@ -53,6 +67,9 @@ public:
     T *AddDecl(const lexer::SourcePosition &pos, Args &&... args);
 
     template <typename T, typename... Args>
+    T *AddDecl(const lexer::SourcePosition &pos, DeclarationFlags flag, Args &&... args);
+
+    template <typename T, typename... Args>
     T *AddTsDecl(const lexer::SourcePosition &pos, Args &&... args);
 
     ParameterDecl *AddParamDecl(const ir::AstNode *param);
@@ -62,12 +79,13 @@ public:
         return scope_;
     }
 
-    GlobalScope *TopScope() const
+    FunctionScope *TopScope() const
     {
         return topScope_;
     }
 
     [[noreturn]] void ThrowRedeclaration(const lexer::SourcePosition &pos, const util::StringView &name);
+    [[noreturn]] void ThrowUndeclaredExport(const lexer::SourcePosition &pos, const util::StringView &name);
 
     template <typename T>
     friend class LexicalScope;
@@ -97,15 +115,26 @@ public:
     static constexpr std::string_view MANDATORY_PARAM_NEW_TARGET = "=nt";
     static constexpr std::string_view MANDATORY_PARAM_THIS = "=t";
 
+    static constexpr std::string_view CJS_MANDATORY_PARAM_EXPORTS = "exports";
+    static constexpr std::string_view CJS_MANDATORY_PARAM_REQUIRE = "require";
+    static constexpr std::string_view CJS_MANDATORY_PARAM_MODULE = "module";
+    static constexpr std::string_view CJS_MANDATORY_PARAM_FILENAME = "__filename";
+    static constexpr std::string_view CJS_MANDATORY_PARAM_DIRNAME = "__dirname";
+
     static constexpr uint32_t MANDATORY_PARAM_FUNC_REG = 0;
     static constexpr uint32_t MANDATORY_PARAMS_NUMBER = 3;
+    static constexpr uint32_t CJS_MANDATORY_PARAMS_NUMBER = 8;
 
     static constexpr std::string_view LEXICAL_MANDATORY_PARAM_FUNC = "!f";
     static constexpr std::string_view LEXICAL_MANDATORY_PARAM_NEW_TARGET = "!nt";
     static constexpr std::string_view LEXICAL_MANDATORY_PARAM_THIS = "!t";
 
+    static constexpr std::string_view MAIN_FUNC_NAME = "func_main_0";
+    static constexpr std::string_view ANONYMOUS_FUNC_NAME = "";
+
 private:
     using MandatoryParams = std::array<std::string_view, MANDATORY_PARAMS_NUMBER>;
+    using CommonjsMandatoryParams = std::array<std::string_view, CJS_MANDATORY_PARAMS_NUMBER>;
 
     static constexpr MandatoryParams FUNCTION_MANDATORY_PARAMS = {MANDATORY_PARAM_FUNC, MANDATORY_PARAM_NEW_TARGET,
                                                                   MANDATORY_PARAM_THIS};
@@ -116,8 +145,21 @@ private:
     static constexpr MandatoryParams CTOR_ARROW_MANDATORY_PARAMS = {
         LEXICAL_MANDATORY_PARAM_FUNC, LEXICAL_MANDATORY_PARAM_NEW_TARGET, LEXICAL_MANDATORY_PARAM_THIS};
 
+    static constexpr CommonjsMandatoryParams CJS_MAINFUNC_MANDATORY_PARAMS = {
+        MANDATORY_PARAM_FUNC, MANDATORY_PARAM_NEW_TARGET, MANDATORY_PARAM_THIS,
+        CJS_MANDATORY_PARAM_EXPORTS, CJS_MANDATORY_PARAM_REQUIRE, CJS_MANDATORY_PARAM_MODULE,
+        CJS_MANDATORY_PARAM_FILENAME, CJS_MANDATORY_PARAM_DIRNAME};
+
     void AddMandatoryParam(const std::string_view &name);
-    void AddMandatoryParams(const MandatoryParams &params);
+
+    template<typename T>
+    void AddMandatoryParams(const T &params)
+    {
+        for (auto iter = params.rbegin(); iter != params.rend(); iter++) {
+            AddMandatoryParam(*iter);
+        }
+    }
+
     void AddMandatoryParams();
     void BuildFunction(FunctionScope *funcScope, util::StringView name);
     void BuildScriptFunction(Scope *outerScope, const ir::ScriptFunction *scriptFunc);
@@ -133,11 +175,18 @@ private:
     void LookupIdentReference(ir::Identifier *ident);
     void ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode);
     void ResolveReferences(const ir::AstNode *parent);
+    void ValidateExportDecl(const ir::ExportNamedDeclaration *exportDecl);
+
+    // TypeScript specific functions
+    void BuildTSSignatureDeclarationBaseParams(const ir::AstNode *typeNode);
 
     parser::Program *program_ {};
-    GlobalScope *topScope_ {};
+    FunctionScope *topScope_ {};
     Scope *scope_ {};
     ArenaVector<FunctionScope *> functionScopes_;
+    ResolveBindingOptions bindingOptions_;
+    ArenaSet<util::StringView> functionNames_;
+    size_t functionNameIndex_ {1};
 };
 
 template <typename T>
@@ -198,6 +247,19 @@ template <typename T, typename... Args>
 T *Binder::AddDecl(const lexer::SourcePosition &pos, Args &&... args)
 {
     T *decl = Allocator()->New<T>(std::forward<Args>(args)...);
+
+    if (scope_->AddDecl(Allocator(), decl, program_->Extension())) {
+        return decl;
+    }
+
+    ThrowRedeclaration(pos, decl->Name());
+}
+
+template <typename T, typename... Args>
+T *Binder::AddDecl(const lexer::SourcePosition &pos, DeclarationFlags flag, Args &&... args)
+{
+    T *decl = Allocator()->New<T>(std::forward<Args>(args)...);
+    decl->AddFlag(flag);
 
     if (scope_->AddDecl(Allocator(), decl, program_->Extension())) {
         return decl;

@@ -31,10 +31,14 @@ void ExportDefaultDeclaration::Dump(ir::AstDumper *dumper) const
         {{"type", IsExportEquals() ? "TSExportAssignment" : "ExportDefaultDeclaration"}, {"declaration", decl_}});
 }
 
-void ExportDefaultDeclaration::Compile([[maybe_unused]] compiler::PandaGen *pg) const
+void ExportDefaultDeclaration::Compile(compiler::PandaGen *pg) const
 {
     decl_->Compile(pg);
-    pg->StoreModuleVar(this, "default");
+    if (decl_->IsExpression()) {
+        // export default [AssignmentExpression]
+        // e.g. export default 42 (42 be exported as [default])
+        pg->StoreModuleVariable(this, parser::SourceTextModuleRecord::DEFAULT_LOCAL_NAME);
+    }
 }
 
 checker::Type *ExportDefaultDeclaration::Check([[maybe_unused]] checker::Checker *checker) const

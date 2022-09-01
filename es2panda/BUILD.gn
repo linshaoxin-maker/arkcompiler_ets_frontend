@@ -33,12 +33,13 @@ es2panda_src = [
   "compiler/core/compilerContext.cpp",
   "compiler/core/compilerImpl.cpp",
   "compiler/core/dynamicContext.cpp",
-  "compiler/core/emitter.cpp",
+  "compiler/core/emitter/commonjs.cpp",
+  "compiler/core/emitter/emitter.cpp",
+  "compiler/core/emitter/moduleRecordEmitter.cpp",
   "compiler/core/envScope.cpp",
   "compiler/core/function.cpp",
   "compiler/core/inlineCache.cpp",
   "compiler/core/labelTarget.cpp",
-  "compiler/core/moduleContext.cpp",
   "compiler/core/pandagen.cpp",
   "compiler/core/regAllocator.cpp",
   "compiler/core/regScope.cpp",
@@ -184,20 +185,21 @@ es2panda_src = [
   "lexer/regexp/regexp.cpp",
   "lexer/token/sourceLocation.cpp",
   "lexer/token/token.cpp",
+  "parser/commonjs.cpp",
   "parser/context/parserContext.cpp",
   "parser/expressionParser.cpp",
+  "parser/module/sourceTextModuleRecord.cpp",
   "parser/parserImpl.cpp",
   "parser/program/program.cpp",
   "parser/statementParser.cpp",
   "typescript/checker.cpp",
   "typescript/core/binaryLikeExpression.cpp",
-  "typescript/core/destructuring.cpp",
+  "typescript/core/destructuringContext.cpp",
   "typescript/core/function.cpp",
-  "typescript/core/generics.cpp",
   "typescript/core/helpers.cpp",
   "typescript/core/object.cpp",
   "typescript/core/typeCreation.cpp",
-  "typescript/core/typeElaboration.cpp",
+  "typescript/core/typeElaborationContext.cpp",
   "typescript/core/typeRelation.cpp",
   "typescript/core/util.cpp",
   "typescript/types/anyType.cpp",
@@ -233,8 +235,11 @@ es2panda_src = [
   "typescript/types/unionType.cpp",
   "typescript/types/unknownType.cpp",
   "typescript/types/voidType.cpp",
+  "util/base64.cpp",
   "util/bitset.cpp",
+  "util/dumper.cpp",
   "util/helpers.cpp",
+  "util/moduleHelpers.cpp",
   "util/ustring.cpp",
 ]
 
@@ -379,7 +384,17 @@ ohos_static_library("es2panda_lib") {
     "//third_party/icu/icu4c:static_icuuc",
   ]
 
-  cflags = [ "-Wno-implicit-fallthrough" ]
+  if (enable_bytecode_optimizer) {
+    deps += [
+      "$ark_root/bytecode_optimizer:libarkbytecodeopt_frontend_static",
+      "$ark_root/compiler:libarkcompiler_frontend_static",
+    ]
+  }
+
+  cflags = [
+    "-Wno-c++20-designator",
+    "-Wno-implicit-fallthrough",
+  ]
 }
 
 ohos_executable("es2panda") {
@@ -391,23 +406,40 @@ ohos_executable("es2panda") {
 
   include_dirs = [ "./aot" ]
 
-  configs = [ ":es2abc_config_common" ]
+  configs = [
+    ":es2abc_config_common",
+    "//arkcompiler/ets_frontend/merge_abc:panda_assembly_proto_public_config",
+  ]
 
-  deps = [ ":es2panda_lib" ]
+  deps = [
+    ":es2panda_lib",
+    "//arkcompiler/ets_frontend/merge_abc:panda_assembly_proto_static",
+  ]
 
+  ldflags = []
   if (is_linux) {
     if (build_public_version) {
-      ldflags = [ "-static-libstdc++" ]
+      ldflags += [ "-static-libstdc++" ]
     } else {
       libs = [ libcpp_static_lib ]
     }
+
+    # for statically linking pthread
+    ldflags += [
+      "-Wl,--whole-archive",
+      "-lrt",
+      "-lpthread",
+      "-Wl,--no-whole-archive",
+    ]
   }
 
-  if (enable_bytecode_optimizer) {
-    deps += [
-      "$ark_root/bytecode_optimizer:libarkbytecodeopt_frontend_static",
-      "$ark_root/compiler:libarkcompiler_frontend_static",
-    ]
+  if (!is_mac) {
+    static_link = true
+  }
+
+  if (!use_musl) {
+    static_link = false
+    ldflags += [ "-lc++" ]
   }
 
   output_name = "es2abc"
@@ -467,6 +499,17 @@ if (is_mac) {
     module_source_dir = "${root_out_dir}/ark/ark"
     module_install_name = "es2abc"
   }
+}
+
+ohos_copy("build_es2abc_for_hap") {
+  deps = [ ":es2panda(${host_toolchain})" ]
+  es2abc_root_out_dir =
+      get_label_info(":es2panda_build($host_toolchain)", "root_out_dir")
+  es2abc_target_out_dir =
+      get_label_info(":es2panda_build($host_toolchain)", "target_out_dir")
+
+  sources = [ "${es2abc_root_out_dir}/ark/ark/es2abc" ]
+  outputs = [ "${es2abc_target_out_dir}/build/bin/es2abc" ]
 }
 
 group("es2panda_build") {

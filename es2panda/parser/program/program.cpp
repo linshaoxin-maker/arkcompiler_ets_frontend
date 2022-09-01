@@ -22,7 +22,7 @@ namespace panda::es2panda::parser {
 
 Program::Program(ScriptExtension extension)
     : allocator_(std::make_unique<ArenaAllocator>(SpaceType::SPACE_TYPE_COMPILER, nullptr, true)),
-      binder_(allocator_->New<binder::Binder>(this)),
+      binder_(allocator_->New<binder::Binder>(this, extension)),
       sourceCode_(Allocator()),
       sourceFile_(Allocator()),
       extension_(extension)
@@ -36,7 +36,8 @@ Program::Program(Program &&other)
       sourceCode_(other.sourceCode_),
       sourceFile_(other.sourceFile_),
       kind_(other.kind_),
-      extension_(other.extension_)
+      extension_(other.extension_),
+      lineIndex_(other.lineIndex_)
 {
     other.binder_ = nullptr;
     other.ast_ = nullptr;
@@ -51,6 +52,7 @@ Program &Program::operator=(Program &&other)
     sourceFile_ = other.sourceFile_;
     kind_ = other.kind_;
     extension_ = other.extension_;
+    lineIndex_ = other.lineIndex_;
 
     other.ast_ = nullptr;
 
@@ -61,6 +63,10 @@ void Program::SetKind(ScriptKind kind)
 {
     kind_ = kind;
     binder_->InitTopScope();
+
+    if (kind == ScriptKind::MODULE) {
+        moduleRecord_ = allocator_->New<SourceTextModuleRecord>(Allocator());
+    }
 }
 
 std::string Program::Dump() const

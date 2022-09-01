@@ -60,6 +60,7 @@ import { compileYieldExpression } from "./expression/yieldExpression";
 import { AsyncFunctionBuilder } from "./function/asyncFunctionBuilder";
 import { FunctionBuilder, FunctionBuilderType } from "./function/functionBuilder";
 import { GeneratorFunctionBuilder } from "./function/generatorFunctionBuilder";
+import { AsyncGeneratorFunctionBuilder } from "./function/asyncGeneratorFunctionBuilder";
 import {
     hoistFunctionInBlock
 } from "./hoisting";
@@ -324,11 +325,12 @@ export class Compiler {
             return ;
         }
         // exit GlobalScopefunction or Function Block return
-        if (this.funcBuilder instanceof AsyncFunctionBuilder) {
+        if (this.funcBuilder instanceof AsyncFunctionBuilder || this.funcBuilder instanceof AsyncGeneratorFunctionBuilder) {
             this.funcBuilder.resolve(NodeKind.Invalid, getVregisterCache(pandaGen, CacheList.undefined));
             pandaGen.return(NodeKind.Invalid);
         } else {
-            CmdOptions.isWatchMode() ? pandaGen.return(NodeKind.Invalid) : pandaGen.returnUndefined(NodeKind.Invalid);
+            CmdOptions.isWatchEvaluateExpressionMode() ?
+                pandaGen.return(NodeKind.Invalid) : pandaGen.returnUndefined(NodeKind.Invalid);
         }
     }
 
@@ -345,7 +347,7 @@ export class Compiler {
             let retValue = pandaGen.getTemp();
             pandaGen.storeAccumulator(body, retValue);
 
-            if (this.funcBuilder instanceof AsyncFunctionBuilder) {
+            if (this.funcBuilder instanceof AsyncFunctionBuilder || this.funcBuilder instanceof AsyncGeneratorFunctionBuilder) {
                 this.funcBuilder.resolve(body, retValue);
                 pandaGen.return(NodeKind.Invalid);
             } else {
@@ -414,7 +416,7 @@ export class Compiler {
                 if (decl.modifiers[i].kind == ts.SyntaxKind.AsyncKeyword) {
                     // async generator
                     if (decl.asteriskToken) {
-                        throw new Error("Async generator is not supported");
+                        return new AsyncGeneratorFunctionBuilder(pandaGen, this);
                     } else { // async
                         return new AsyncFunctionBuilder(pandaGen);
                     }
@@ -531,6 +533,9 @@ export class Compiler {
             case ts.SyntaxKind.ExportDeclaration:
             case ts.SyntaxKind.NotEmittedStatement:
             case ts.SyntaxKind.InterfaceDeclaration:
+            case ts.SyntaxKind.EndOfDeclarationMarker:
+            case ts.SyntaxKind.ModuleDeclaration:
+            case ts.SyntaxKind.TypeAliasDeclaration:
                 break;
             default:
                 throw new Error("Statement " + this.getNodeName(stmt) + " is unimplemented");
@@ -609,8 +614,17 @@ export class Compiler {
                 this.popLoopEnv(node, popTimes);
                 break;
             }
-            // SwitchStatement & BlockStatement could also have break labelTarget which changes
-            // the control flow out of their inner env loop. We should pop Loop env with such cases either.
+            case ts.SyntaxKind.SwitchStatement: {
+                if (!isContinue) {
+                    return;
+                }
+                this.popLoopEnv(node, loopEnvLevel);
+                break;
+            }
+            /**
+             * BlockStatement could also have break labelTarget which changes the control flow
+             * out of their inner env loop. We should pop Loop env with such cases either.
+             */
             default: {
                 this.popLoopEnv(node, loopEnvLevel);
             }
@@ -711,7 +725,27 @@ export class Compiler {
                 // restore pandaGen.tryStatement
                 TryStatement.setCurrentTryStatement(saveTry);
 
-                updateCatchTables(originTry, startTry, inlinedLabelPair);
+                /*
+                 * split the catchZone in most Inner try & add the insertedZone by the finally-nearset TryZone.
+                 * the inserted innerTry's FinallyBlock can only be catched by the outer's tryBlock. so here just
+                 * need append the inserted finally's Zone into the outerTry's catchTable in order.
+                 * OuterTryBegin      ----
+                 *           <outerTry_0> |
+                 *     InnerTryBegin  ----
+                 *
+                 *          ----    InnerTry's FinallyBegin --
+                 * <outerTry_2> |                             |
+                 *          ----    InnerTry's FinallyEnd   --
+                 *                  return;
+                 *     InnerTryEnd    ----
+                 *           <outerTry_1> |
+                 * OuterTryEnd        ----
+                 */
+                originTry.getCatchTable().splitLabelPair(inlinedLabelPair);
+                if (startTry.getOuterTryStatement()) {
+                    let outerLabelPairs: LabelPair[] = startTry.getOuterTryStatement().getCatchTable().getLabelPairs();
+                    outerLabelPairs.splice(outerLabelPairs.length - 2, 0, inlinedLabelPair);
+                }
             }
         }
         this.scope = currentScope;
@@ -936,10 +970,11 @@ export class Compiler {
                 compileClassDeclaration(this, <ts.ClassLikeDeclaration>expr);
                 break;
             case ts.SyntaxKind.PartiallyEmittedExpression:
+                this.compileExpression((<ts.PartiallyEmittedExpression>expr).expression);
                 break;
             case ts.SyntaxKind.CommaListExpression:
-	        compileCommaListExpression(this, <ts.CommaListExpression>expr);
-		break;
+                compileCommaListExpression(this, <ts.CommaListExpression>expr);
+                break;
             default:
                 throw new Error("Expression of type " + this.getNodeName(expr) + " is unimplemented");
         }
@@ -978,8 +1013,9 @@ export class Compiler {
                 // typeof an undeclared variable will return undefined instead of throwing reference error
                 let parent = findOuterNodeOfParenthesis(id);
                 if ((parent.kind == ts.SyntaxKind.TypeOfExpression)) {
-                    CmdOptions.isWatchMode() ? pandaGen.loadByNameViaDebugger(id, name, CacheList.False)
-                                    : pandaGen.loadObjProperty(id, getVregisterCache(pandaGen, CacheList.Global), name);
+                    CmdOptions.isWatchEvaluateExpressionMode() ?
+                        pandaGen.loadByNameViaDebugger(id, name, CacheList.False) :
+                        pandaGen.loadObjProperty(id, getVregisterCache(pandaGen, CacheList.Global), name);
                 } else {
                     pandaGen.tryLoadGlobalByName(id, name);
                 }
@@ -1047,8 +1083,8 @@ export class Compiler {
                     scope.setLexVar(v, this.scope);
                 }
             }
-            CmdOptions.isWatchMode() ? pandaGen.loadByNameViaDebugger(node, "this", CacheList.True)
-                                     : pandaGen.loadAccFromLexEnv(node, scope!, level, v);
+            CmdOptions.isWatchEvaluateExpressionMode() ? pandaGen.loadByNameViaDebugger(node, "this", CacheList.True)
+                                                       : pandaGen.loadAccFromLexEnv(node, scope!, level, v);
         } else {
             throw new Error("\"this\" must be a local variable");
         }
@@ -1142,7 +1178,7 @@ export class Compiler {
     private compileAwaitExpression(expr: ts.AwaitExpression) {
         let pandaGen = this.pandaGen;
 
-        if (!(this.funcBuilder instanceof AsyncFunctionBuilder)) {
+        if (!(this.funcBuilder instanceof AsyncFunctionBuilder || this.funcBuilder instanceof AsyncGeneratorFunctionBuilder)) {
             throw new DiagnosticError(expr.parent, DiagnosticCode.await_expressions_are_only_allowed_within_async_functions_and_at_the_top_levels_of_modules);
         }
 
@@ -1614,9 +1650,10 @@ export class Compiler {
             if (variable.v.isNone()) {
                 let parent = findOuterNodeOfParenthesis(node);
                 if ((parent.kind == ts.SyntaxKind.TypeOfExpression)) {
-                    CmdOptions.isWatchMode() ? this.pandaGen.loadByNameViaDebugger(node, variable.v.getName(),
-                            CacheList.False) : this.pandaGen.loadObjProperty(node, getVregisterCache(this.pandaGen,
-                            CacheList.Global), variable.v.getName());
+                    CmdOptions.isWatchEvaluateExpressionMode() ?
+                        this.pandaGen.loadByNameViaDebugger(node, variable.v.getName(), CacheList.False) :
+                        this.pandaGen.loadObjProperty(node, getVregisterCache(this.pandaGen, CacheList.Global),
+                        variable.v.getName());
                 } else {
                     this.pandaGen.tryLoadGlobalByName(node, variable.v.getName());
                 }

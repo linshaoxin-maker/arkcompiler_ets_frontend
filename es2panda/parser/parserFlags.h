@@ -39,6 +39,8 @@ enum class VariableParsingFlags {
     LET = (1 << 4),
     CONST = (1 << 5),
     STOP_AT_IN = (1 << 6),
+    EXPORTED = (1 << 7),
+    IN_FOR = (1 << 8),
 };
 
 DEFINE_BITOPS(VariableParsingFlags)

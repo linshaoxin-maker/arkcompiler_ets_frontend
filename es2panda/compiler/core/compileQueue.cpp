@@ -18,13 +18,54 @@
 #include <binder/binder.h>
 #include <binder/scope.h>
 #include <compiler/core/compilerContext.h>
-#include <compiler/core/emitter.h>
+#include <compiler/core/emitter/emitter.h>
 #include <compiler/core/function.h>
 #include <compiler/core/pandagen.h>
+#include <es2panda.h>
+#include <mem/arena_allocator.h>
+#include <mem/pool_manager.h>
+#include <util/dumper.h>
+#include <util/helpers.h>
+
+#include <fstream>
+#include <iostream>
+#include <dirent.h>
+
+#include <chrono>
+
+#include <assembly-literals.h>
+#include <es2panda.h>
+#include <mem/arena_allocator.h>
+#include <mem/pool_manager.h>
+#include <util/dumper.h>
+
+#include <fstream>
+#include <iostream>
+#include <dirent.h>
+
+#include <chrono>
 
 namespace panda::es2panda::compiler {
 
-void CompileJob::Run()
+std::mutex CompileFileJob::global_m_;
+
+void CompileJob::DependsOn(CompileJob *job)
+{
+    job->dependant_ = this;
+    dependencies_++;
+}
+
+void CompileJob::Signal()
+{
+    {
+        std::lock_guard<std::mutex> lock(m_);
+        dependencies_--;
+    }
+
+    cond_.notify_one();
+}
+
+void CompileFunctionJob::Run()
 {
     std::unique_lock<std::mutex> lock(m_);
     cond_.wait(lock, [this] { return dependencies_ == 0; });
@@ -44,20 +85,37 @@ void CompileJob::Run()
     }
 }
 
-void CompileJob::DependsOn(CompileJob *job)
+void CompileModuleRecordJob::Run()
 {
-    job->dependant_ = this;
-    dependencies_++;
+    std::unique_lock<std::mutex> lock(m_);
+    cond_.wait(lock, [this] { return dependencies_ == 0; });
+
+    ModuleRecordEmitter moduleEmitter(context_->Binder()->Program()->ModuleRecord(), context_->NewLiteralIndex());
+    moduleEmitter.Generate();
+
+    context_->GetEmitter()->AddSourceTextModuleRecord(&moduleEmitter, context_);
+
+    if (dependant_) {
+        dependant_->Signal();
+    }
 }
 
-void CompileJob::Signal()
+void CompileFileJob::Run()
 {
-    {
-        std::lock_guard<std::mutex> lock(m_);
-        dependencies_--;
+    es2panda::Compiler compiler(options_->extension, options_->functionThreadCount);
+
+    auto *prog = compiler.CompileFile(*options_, src_);
+
+    if (options_->optLevel != 0) {
+        util::Helpers::OptimizeProgram(prog, options_);
     }
 
-    cond_.notify_one();
+    {
+        std::unique_lock<std::mutex> lock(global_m_);
+        auto *cache = allocator_->New<util::ProgramCache>(src_->hash, prog);
+        progsInfo_.insert({src_->fileName, cache});
+        progs_.push_back(prog);
+    }
 }
 
 CompileQueue::CompileQueue(size_t threadCount)
@@ -81,21 +139,6 @@ CompileQueue::~CompileQueue()
     for (const auto handle_id : threads_) {
         os::thread::ThreadJoin(handle_id, &retval);
     }
-}
-
-void CompileQueue::Schedule(CompilerContext *context)
-{
-    ASSERT(jobsCount_ == 0);
-    std::unique_lock<std::mutex> lock(m_);
-    const auto &functions = context->Binder()->Functions();
-    jobs_ = new CompileJob[functions.size()]();
-
-    for (auto *function : functions) {
-        jobs_[jobsCount_++].SetConext(context, function);
-    }
-
-    lock.unlock();
-    jobsAvailable_.notify_all();
 }
 
 void CompileQueue::Worker(CompileQueue *queue)
@@ -122,7 +165,7 @@ void CompileQueue::Consume()
 
     while (jobsCount_ > 0) {
         --jobsCount_;
-        auto &job = jobs_[jobsCount_];
+        auto &job = *(jobs_[jobsCount_]);
 
         lock.unlock();
 
@@ -144,12 +187,56 @@ void CompileQueue::Wait()
 {
     std::unique_lock<std::mutex> lock(m_);
     jobsFinished_.wait(lock, [this]() { return activeWorkers_ == 0 && jobsCount_ == 0; });
-    delete[] jobs_;
+    for (auto it = jobs_.begin(); it != jobs_.end(); it++) {
+        if (*it != nullptr) {
+            delete *it;
+            *it =nullptr;
+        }
+    }
+    jobs_.clear();
 
     if (!errors_.empty()) {
         // NOLINTNEXTLINE
         throw errors_.front();
     }
+}
+
+void CompileFuncQueue::Schedule()
+{
+    ASSERT(jobsCount_ == 0);
+    std::unique_lock<std::mutex> lock(m_);
+    const auto &functions = context_->Binder()->Functions();
+
+    for (auto *function : functions) {
+        auto *funcJob = new CompileFunctionJob(context_);
+        funcJob->SetFunctionScope(function);
+        jobs_.push_back(funcJob);
+        jobsCount_++;
+    }
+
+    if (context_->Binder()->Program()->Kind() == parser::ScriptKind::MODULE) {
+        auto *moduleRecordJob = new CompileModuleRecordJob(context_);
+        jobs_.push_back(moduleRecordJob);
+        jobsCount_++;
+    }
+
+    lock.unlock();
+    jobsAvailable_.notify_all();
+}
+
+void CompileFileQueue::Schedule()
+{
+    ASSERT(jobsCount_ == 0);
+    std::unique_lock<std::mutex> lock(m_);
+
+    for (auto &input: options_->sourceFiles) {
+        auto *fileJob = new CompileFileJob(&input, options_, progs_, progsInfo_, allocator_);
+        jobs_.push_back(fileJob);
+        jobsCount_++;
+    }
+
+    lock.unlock();
+    jobsAvailable_.notify_all();
 }
 
 }  // namespace panda::es2panda::compiler

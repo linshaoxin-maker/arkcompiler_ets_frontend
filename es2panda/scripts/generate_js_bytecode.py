@@ -27,11 +27,11 @@ import argparse
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--src-js',
-                        help = 'js source file')
+                        help='js source file')
     parser.add_argument('--dst-file',
-                        help = 'the converted target file')
+                        help='the converted target file')
     parser.add_argument('--frontend-tool-path',
-                        help = 'path of the frontend conversion tool')
+                        help='path of the frontend conversion tool')
     parser.add_argument("--debug", action='store_true',
                         help='whether add debuginfo')
     parser.add_argument("--module", action='store_true',
@@ -64,7 +64,8 @@ def gen_abc_info(input_arguments):
         cmd.insert(src_index, '--module')
     if input_arguments.commonjs:
         src_index = cmd.index(input_arguments.src_js)
-        # insert commonjs option to cmd later
+        cmd.insert(src_index, '--commonjs')
+        # insert d.ts option to cmd later
     run_command(cmd, path)
 
 

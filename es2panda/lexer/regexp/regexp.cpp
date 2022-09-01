@@ -96,6 +96,7 @@ void RegExpParser::ParsePattern()
     if (iter_.HasNext()) {
         ThrowError("Invalid closing parenthesis");
     }
+    ValidateNamedGroupReferences();
 }
 
 void RegExpParser::ParseDisjunction()
@@ -644,7 +645,7 @@ uint32_t RegExpParser::ParseUnicodeEscape()
         Next();
     } else {
         value = ParseUnicodeDigits();
-        if (util::StringView::IsHighSurrogate(value)) {
+        if (Unicode() && util::StringView::IsHighSurrogate(value)) {
             auto pos = iter_;
 
             if (Next() == LEX_CHAR_BACKSLASH && Next() == LEX_CHAR_LOWERCASE_U) {
@@ -699,10 +700,16 @@ void RegExpParser::ParseNamedBackreference()
     }
 
     util::StringView name = ParseIdent();
+    namedGroupReferences_.insert(name);
+}
 
-    auto result = groupNames_.find(name);
-    if (result == groupNames_.end()) {
-        ThrowError("Invalid named capture referenced");
+void RegExpParser::ValidateNamedGroupReferences()
+{
+    for (auto& ref : namedGroupReferences_) {
+        auto result = groupNames_.find(ref);
+        if (result == groupNames_.end()) {
+            ThrowError("Invalid named capture referenced");
+        }
     }
 }
 

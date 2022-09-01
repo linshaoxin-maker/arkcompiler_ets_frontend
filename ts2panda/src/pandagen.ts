@@ -42,10 +42,12 @@ import {
     defineClassWithBuffer,
     defineFunc,
     defineGeneratorFunc,
+    defineAsyncGeneratorFunc,
     defineGetterSetterByValue,
     defineMethod,
     defineNCFunc,
     deleteObjProperty,
+    dynamicImport,
     getIterator,
     getIteratorNext,
     getNextPropName,
@@ -133,7 +135,9 @@ import {
     EcmaCallspreaddyn,
     EcmaCopyrestargs,
     EcmaCreategeneratorobj,
+    EcmaCreateasyncgeneratorobj,
     EcmaCreateiterresultobj,
+    EcmaAsyncgeneratorresolve,
     EcmaDecdyn,
     EcmaDiv2dyn,
     EcmaEqdyn,
@@ -203,8 +207,8 @@ export class PandaGen {
     // for debug info
     private variableDebugInfoArray: VariableDebugInfo[] = [];
     private firstStmt: ts.Statement | undefined;
-    private sourceFileDebugInfo: string = "";
-    private sourceCodeDebugInfo: string | undefined;
+    private sourceFile: string = "";
+    private sourceCode: string | undefined = undefined;
     private callType: number = 0;
 
     private static literalArrayBuffer: Array<LiteralBuffer> = new Array<LiteralBuffer>();
@@ -259,20 +263,20 @@ export class PandaGen {
         }
     }
 
-    public getSourceCodeDebugInfo() {
-        return this.sourceCodeDebugInfo;
+    public getSourceCode(): string | undefined {
+        return this.sourceCode;
     }
 
-    public setSourceCodeDebugInfo(code: string) {
-        this.sourceCodeDebugInfo = code;
+    public setSourceCode(code: string) {
+        this.sourceCode = code;
     }
 
     public getSourceFileDebugInfo() {
-        return this.sourceFileDebugInfo;
+        return this.sourceFile;
     }
 
     public setSourceFileDebugInfo(sourceFile: string) {
-        this.sourceFileDebugInfo = sourceFile;
+        this.sourceFile = sourceFile;
     }
 
     static getLiteralArrayBuffer() {
@@ -630,7 +634,7 @@ export class PandaGen {
 
     // eg. print
     tryLoadGlobalByName(node: ts.Node, string_id: string) {
-        CmdOptions.isWatchMode() ? this.loadByNameViaDebugger(node, string_id, CacheList.True)
+        CmdOptions.isWatchEvaluateExpressionMode() ? this.loadByNameViaDebugger(node, string_id, CacheList.True)
                                 : this.add(node, tryLoadGlobalByName(string_id));
     }
 
@@ -649,7 +653,7 @@ export class PandaGen {
 
     // eg. a = 1
     tryStoreGlobalByName(node: ts.Node, string_id: string) {
-        CmdOptions.isWatchMode() ? this.storeByNameViaDebugger(node, string_id)
+        CmdOptions.isWatchEvaluateExpressionMode() ? this.storeByNameViaDebugger(node, string_id)
                                 : this.add(node, tryStoreGlobalByName(string_id));
     }
 
@@ -949,6 +953,11 @@ export class PandaGen {
                 if (realNode.modifiers[i].kind == ts.SyntaxKind.AsyncKeyword) {
                     if (realNode.asteriskToken) {
                         // support async* further
+                        this.add(
+                            node,
+                            defineAsyncGeneratorFunc(name, env, paramLength)
+                        );
+                        return;
                     } else { // async
                         this.add(
                             node,
@@ -1011,8 +1020,16 @@ export class PandaGen {
         this.add(node, new EcmaCreategeneratorobj(funcObj));
     }
 
+    createAsyncGeneratorObj(node: ts.Node, funcObj: VReg) {
+        this.add(node, new EcmaCreateasyncgeneratorobj(funcObj));
+    }
+
     EcmaCreateiterresultobj(node: ts.Node, value: VReg, done: VReg) {
         this.add(node, new EcmaCreateiterresultobj(value, done));
+    }
+
+    EcmaAsyncgeneratorresolve(node: ts.Node | NodeKind, genObj: VReg, value: VReg, done: VReg) {
+        this.add(node, new EcmaAsyncgeneratorresolve(genObj, value, done));
     }
 
     suspendGenerator(node: ts.Node, genObj: VReg, iterRslt: VReg) {
@@ -1128,6 +1145,10 @@ export class PandaGen {
 
     getModuleNamespace(node: ts.Node, localName: string) {
         this.add(node, getModuleNamespace(localName));
+    }
+
+    dynamicImportCall(node: ts.Node, moduleSpecifier: VReg) {
+        this.add(node, dynamicImport(moduleSpecifier));
     }
 
     defineClassWithBuffer(node: ts.Node, name: string, idx: number, parameterLength: number, base: VReg) {

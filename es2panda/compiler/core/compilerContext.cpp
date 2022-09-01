@@ -15,12 +15,14 @@
 
 #include "compilerContext.h"
 
-#include <compiler/core/emitter.h>
+#include <compiler/core/emitter/emitter.h>
 
 namespace panda::es2panda::compiler {
 
-CompilerContext::CompilerContext(binder::Binder *binder, bool isDebug)
-    : binder_(binder), emitter_(std::make_unique<class Emitter>(this)), isDebug_(isDebug)
+CompilerContext::CompilerContext(binder::Binder *binder, bool isDebug, bool isDebuggerEvaluateExpressionMode,
+                                 bool isMergeAbc, std::string sourceFile)
+    : binder_(binder), isDebug_(isDebug), isDebuggerEvaluateExpressionMode_(isDebuggerEvaluateExpressionMode),
+      isMergeAbc_(isMergeAbc), sourceFile_(sourceFile), emitter_(std::make_unique<class Emitter>(this))
 {
 }
 

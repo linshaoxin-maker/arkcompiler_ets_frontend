@@ -56,6 +56,11 @@ public:
         return typeAnnotation_;
     }
 
+    Expression *TypeAnnotation()
+    {
+        return typeAnnotation_;
+    }
+
     bool IsDeclaration() const
     {
         return isDeclaration_;
@@ -76,9 +81,11 @@ public:
     void Dump(ir::AstDumper *dumper) const override;
     void Compile(compiler::PandaGen *pg) const override;
     checker::Type *Check(checker::Checker *checker) const override;
-    checker::Type *CheckPattern(checker::Checker *checker, bool inAssignment) const;
+    checker::Type *CheckPattern(checker::Checker *checker) const;
 
 private:
+    void FillInLiteralBuffer(compiler::LiteralBuffer *buf,
+                             std::vector<std::vector<const Literal *>> &tempLiteralBuffer) const;
     void EmitCreateObjectWithBuffer(compiler::PandaGen *pg, compiler::LiteralBuffer *buf, bool hasMethod) const;
     void CompileStaticProperties(compiler::PandaGen *pg, util::BitSet *compiled) const;
     void CompileRemainingProperties(compiler::PandaGen *pg, const util::BitSet *compiled, compiler::VReg objReg) const;
