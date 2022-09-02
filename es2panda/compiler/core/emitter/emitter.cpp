@@ -78,6 +78,11 @@ void FunctionEmitter::GenFunctionKind()
     func_->SetFunctionKind(static_cast<panda::panda_file::FunctionKind>(pg_->GetFunctionKind()));
 }
 
+void FunctionEmitter::GenIcSize()
+{
+    func_->SetSlotsNum(pg_->GetCurrentSlot());
+}
+
 void FunctionEmitter::GenBufferLiterals(const LiteralBuffer *buff)
 {
     auto &[idx, array] = literalBuffers_.emplace_back();

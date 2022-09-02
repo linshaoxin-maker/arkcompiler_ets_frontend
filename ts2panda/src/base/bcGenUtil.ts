@@ -284,8 +284,8 @@ export function call(args: VReg[], passThis: boolean) {
                 insn = new Callargs3(new Imm(0), args[0], args[1], args[2]);
                 break;
             default:
-                insn = (length - 1) <= MAX_INT8 ? new Callrange(new Imm(0), new Imm(length - 1), args) :
-                                                  new WideCallrange(new Imm(length - 1), args);
+                insn = length <= MAX_INT8 ? new Callrange(new Imm(0), new Imm(length), args) :
+                                                  new WideCallrange(new Imm(length), args);
         }
     } else {
         insn = callThis(args);

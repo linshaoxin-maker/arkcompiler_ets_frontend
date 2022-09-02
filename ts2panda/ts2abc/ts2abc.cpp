@@ -789,6 +789,13 @@ static void ParseFunctionKind(const Json::Value &function, panda::pandasm::Funct
     }
 }
 
+static void ParseFunctionIcSize(const Json::Value &function, panda::pandasm::Function &pandaFunc) {
+    if (function.isMember("icSize") && function["icSize"].isInt()) {
+        size_t icSize = static_cast<size_t>(function["icSize"].asUInt());
+        pandaFunc.SetSlotsNum(icSize);
+    }
+}
+
 static panda::pandasm::Function ParseFunction(const Json::Value &function)
 {
     auto pandaFunc = GetFunctionDefintion(function);
@@ -803,6 +810,7 @@ static panda::pandasm::Function ParseFunction(const Json::Value &function)
     ParseFunctionExportedType(function, pandaFunc);
     ParseFunctionDeclaredType(function, pandaFunc);
     ParseFunctionKind(function, pandaFunc);
+    ParseFunctionIcSize(function, pandaFunc);
 
     if (g_isDtsFile && pandaFunc.name != "func_main_0") {
         pandaFunc.metadata->SetAttribute("external");

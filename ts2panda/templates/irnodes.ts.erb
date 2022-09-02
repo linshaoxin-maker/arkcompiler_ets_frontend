@@ -470,13 +470,38 @@ export class <%= insn2node(insn) %> extends <%= parent_type %> {
     );
 % is_jit_ic = insn.properties.include?("jit_ic_slot")
 % is_ic = (!is_jit_ic) && insn.properties.include?("ic_slot")
-% if (is_jit_ic || is_ic)
+% if (is_ic)
 %   ret = insn.properties.include?("one_slot") ? 1 : 2;
-    let invalid = <%= is_jit_ic ? 255 : 65535 %>
+    let invalid = 255;
     let icSize = (<PandaGen>(IRNode.pg)).getIcSize();
-    if (icSize < invalid) {
+    if (icSize <= invalid) {
+        if ((icSize + <%= ret %>) > 255)  {
+            this.operands[0] = new Imm(256);
+            let inc = <%= ret %> + 256 - icSize;
+            (<PandaGen>(IRNode.pg)).updateIcSize(inc);
+        } else {
+            this.operands[0] = new Imm(icSize);
+            (<PandaGen>(IRNode.pg)).updateIcSize(<%= ret %>);
+        }
+    } else if(icSize > invalid && icSize <= 65535) {
         this.operands[0] = new Imm(icSize);
         (<PandaGen>(IRNode.pg)).updateIcSize(<%= ret %>);
+    } else {
+        this.operands[0] = new Imm(invalid);
+    }
+% end
+% if (is_jit_ic && !is_ic)
+%   ret = insn.properties.include?("one_slot") ? 1 : 2;
+    let invalid = 255;
+    let icSize = (<PandaGen>(IRNode.pg)).getIcSize();
+    if (icSize < invalid) {
+        if ((icSize + <%= ret %>) > invalid) {
+            this.operands[0] = new Imm(invalid);
+            (<PandaGen>(IRNode.pg)).updateIcSize((256 - icSize));
+        } else {
+            this.operands[0] = new Imm(icSize);
+            (<PandaGen>(IRNode.pg)).updateIcSize(<%= ret %>);
+        }
     } else {
         this.operands[0] = new Imm(invalid);
     }

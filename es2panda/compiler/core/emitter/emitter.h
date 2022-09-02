@@ -82,6 +82,7 @@ private:
     void GenSourceFileDebugInfo();
     void GenVariablesDebugInfo();
     void GenFunctionKind();
+    void GenIcSize();
     util::StringView SourceCode() const;
     lexer::LineIndex &GetLineIndex() const;
 

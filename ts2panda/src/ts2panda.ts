@@ -407,7 +407,8 @@ export class Ts2Panda {
             typeInfo,
             exportedSymbol2Types,
             declaredSymbol2Types,
-            pg.getFunctionKind()
+            pg.getFunctionKind(),
+            pg.getIcSize()
         );
 
         LOGD(func);
