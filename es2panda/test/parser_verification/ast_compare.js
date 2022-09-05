@@ -1770,12 +1770,14 @@ function RunTask(third_path,es2abcPath,AlloutDirpath){
         fs.writeFileSync(tempoutpath,JSON.stringify(tsc_convert_ast));
     }
 
+
     const Alloutpath = AlloutDirpath+"/AlloutPath.txt"
     fs.appendFileSync(Alloutpath,"**************************************************************************************\n");
     fs.appendFileSync(Alloutpath,third_path+"\n\n");
     fs.appendFileSync(Alloutpath,JSON.stringify(sourceFile)+"\n");
 
     //get the difference
+    
     var  es2panda_ast_json = JSON.parse(fs.readFileSync(path, 'UTF-8'))
     const getDiffFunction1 = getDiffScope();
     let diffs = getDiffFunction1(es2panda_ast_json, tsc_convert_ast);
@@ -1811,7 +1813,7 @@ function run(fileListPath,es2abcPath,AlloutDirpath){
 }
 
 var code= ""
-var printPath = "/mnt/disk4/zhangchen/ohos/third_party/typescript/tests/cases/compiler/collisionSuperAndLocalVarInMethod.ts" //"/mnt/disk4/zhangchen/ohos/third_party/typescript/tests/cases/compiler/collisionSuperAndLocalVarInMethod.ts"
+var printPath = "" //"/mnt/disk4/zhangchen/ohos/third_party/typescript/tests/cases/compiler/collisionSuperAndLocalVarInMethod.ts"
 const es2abcPath = "/mnt/disk4/zhangchen/ohos/out/rk3568/clang_x64/exe.unstripped/clang_x64/ark/ark/es2abc"
 const fileListPath = "/mnt/disk4/zhangchen/TypeScript/chen/es2panda_ast/saveModuleDir/es2panSuccessFileList3.txt"
 const AlloutDirpath="/mnt/disk4/zhangchen/ohos/arkcompiler/ets_frontend/es2panda/test/parser_verification/astOutDir"
