@@ -266,8 +266,6 @@ config("es2abc_config_src") {
     "./typescript",
     "./typescript/types",
   ]
-
-  cflags = [ "-fexceptions" ]
 }
 
 config("es2abc_config_common") {
