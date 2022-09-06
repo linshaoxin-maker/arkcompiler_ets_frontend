@@ -425,7 +425,7 @@ export class ClassType extends BaseType {
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.extendsHeritage));
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.implementsHeritages.length));
         this.implementsHeritages.forEach(heritage => {
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, heritage));
+            classTypeLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, heritage));
         });
 
         // record unstatic fields and methods
@@ -446,7 +446,7 @@ export class ClassType extends BaseType {
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, transferredTarget.size));
         transferredTarget.forEach((typeInfo, name) => {
             classTypeLiterals.push(new Literal(LiteralTag.STRING, name));
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[0])); // typeIndex
+            classTypeLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, typeInfo[0])); // typeIndex
             classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[1])); // accessFlag
             classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[2])); // readonly
         });
@@ -458,7 +458,7 @@ export class ClassType extends BaseType {
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, transferredTarget.size));
         transferredTarget.forEach((typeInfo, name) => {
             classTypeLiterals.push(new Literal(LiteralTag.STRING, name));
-            classTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo));
+            classTypeLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, typeInfo));
         });
     }
 }
@@ -588,17 +588,17 @@ export class FunctionType extends BaseType {
             funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.parameters[0]));
             funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.parameters.length - 1));
             for (let i = 1; i < this.parameters.length; i++) {
-                funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.parameters[i]));
+                funcTypeLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, this.parameters[i]));
             }
         } else {
             funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, 0)); // marker for not having 'this' param
             funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.parameters.length));
             for (let i = 0; i < this.parameters.length; i++) {
-                funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.parameters[i]));
+                funcTypeLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, this.parameters[i]));
             }
         }
 
-        funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.returnType));
+        funcTypeLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, this.returnType));
         funcTypeBuf.addLiterals(...funcTypeLiterals);
         return funcTypeBuf;
     }
@@ -675,7 +675,7 @@ export class UnionType extends BaseType {
         UnionTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.UNION));
         UnionTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.unionedTypeArray.length));
         for (let type of this.unionedTypeArray) {
-            UnionTypeLiterals.push(new Literal(LiteralTag.INTEGER, type));
+            UnionTypeLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, type));
         }
         UnionTypeBuf.addLiterals(...UnionTypeLiterals);
         return UnionTypeBuf;
@@ -720,7 +720,7 @@ export class ArrayType extends BaseType {
         let arrayBuf = new LiteralBuffer();
         let arrayLiterals: Array<Literal> = new Array<Literal>();
         arrayLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.ARRAY));
-        arrayLiterals.push(new Literal(LiteralTag.INTEGER, this.referedTypeIndex));
+        arrayLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, this.referedTypeIndex));
         arrayBuf.addLiterals(...arrayLiterals);
         return arrayBuf;
     }
@@ -755,7 +755,7 @@ export class ObjectType extends BaseType {
         objLiterals.push(new Literal(LiteralTag.INTEGER, this.properties.size));
         this.properties.forEach((typeIndex, name) => {
             objLiterals.push(new Literal(LiteralTag.STRING, name));
-            objLiterals.push(new Literal(LiteralTag.INTEGER, typeIndex));
+            objLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, typeIndex));
         });
         objTypeBuf.addLiterals(...objLiterals);
         return objTypeBuf;
@@ -868,7 +868,7 @@ export class InterfaceType extends BaseType {
 
         interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.heritages.length));
         this.heritages.forEach(heritage => {
-            interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, heritage));
+            interfaceTypeLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, heritage));
         });
 
         // record fields and methods
@@ -885,7 +885,7 @@ export class InterfaceType extends BaseType {
         interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, transferredTarget.size));
         transferredTarget.forEach((typeInfo, name) => {
             interfaceTypeLiterals.push(new Literal(LiteralTag.STRING, name));
-            interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[0])); // typeIndex
+            interfaceTypeLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, typeInfo[0])); // typeIndex
             interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[1])); // accessFlag
             interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, typeInfo[2])); // readonly
         });
@@ -896,7 +896,7 @@ export class InterfaceType extends BaseType {
 
         interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, transferredTarget.length));
         transferredTarget.forEach(method => {
-            interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, method));
+            interfaceTypeLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, method));
         });
     }
 }
@@ -925,10 +925,10 @@ export class BuiltinContainerType extends BaseType {
         let UnionTypeBuf = new LiteralBuffer();
         let UnionTypeLiterals: Array<Literal> = new Array<Literal>();
         UnionTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.BUILTINCONTAINER));
-        UnionTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.builtinTypeIndex));
+        UnionTypeLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, this.builtinTypeIndex));
         UnionTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.containerArray.length));
         for (let type of this.containerArray) {
-            UnionTypeLiterals.push(new Literal(LiteralTag.INTEGER, type));
+            UnionTypeLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, type));
         }
         UnionTypeBuf.addLiterals(...UnionTypeLiterals);
         return UnionTypeBuf;

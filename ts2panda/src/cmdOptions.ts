@@ -211,6 +211,13 @@ export class CmdOptions {
         return outputFile;
     }
 
+    static getRecordName(): string {
+        if (!this.options) {
+            return "";
+        }
+        return this.options["record-name"];
+    }
+
     static getTimeOut(): Number {
         if (!this.options) {
             return 0;
