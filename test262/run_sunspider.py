@@ -261,8 +261,12 @@ class ArkProgram():
 
         if self.ark_frontend == ARK_FRONTEND_LIST[0]:
             mod_opt_index = 3
-            cmd_args = ['node', '--expose-gc', frontend_tool,
-                        js_file, '-o', out_file]
+            if merge_abc_mode != "0":
+                cmd_args = ['node', '--expose-gc', frontend_tool,
+                            js_file, '-output-proto', proto_bin_file]
+            else:
+                cmd_args = ['node', '--expose-gc', frontend_tool,
+                            js_file, '-o', out_file]
             if file_name in self.module_list:
                 cmd_args.insert(mod_opt_index, "-m")
                 self.module = True
@@ -294,7 +298,7 @@ class ArkProgram():
                             self.abc_file += f':{abc_file}'
         retcode = exec_command(cmd_args)
         self.abc_cmd = cmd_args
-        if self.ark_frontend == ARK_FRONTEND_LIST[1] and merge_abc_mode != "0":
+        if merge_abc_mode != "0":
             cmd_args = [merge_abc_binary, '--input', proto_bin_file,
                         '--suffix', "bin", '--outputFilePath',
                         file_dir, '--output', proto_abc_file]
