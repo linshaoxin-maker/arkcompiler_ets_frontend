@@ -17,6 +17,7 @@
 
 #include "mergeProgram.h"
 #include "os/file.h"
+#include <util/helpers.h>
 #include <utils/pandargs.h>
 #if defined(PANDA_TARGET_WINDOWS)
 #include <io.h>
@@ -29,11 +30,6 @@
 #include <utility>
 
 namespace panda::es2panda::aot {
-template <class T>
-T BaseName(T const &path, T const &delims = std::string(panda::os::file::File::GetPathDelim()))
-{
-    return path.substr(path.find_last_of(delims) + 1);
-}
 
 template <class T>
 T RemoveExtension(T const &filename)
@@ -107,7 +103,7 @@ bool Options::CollectInputFilesFromFileDirectory(const std::string &input, const
         return false;
     }
     for (auto &f : files) {
-        es2panda::SourceFile src(f, BaseName(f), scriptKind_);
+        es2panda::SourceFile src(f, util::Helpers::BaseName(f), scriptKind_);
         sourceFiles_.push_back(src);
     }
 
@@ -157,6 +153,11 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<std::string> opNpmModuleEntryList("npm-module-entry-list", "", "entry list file for module compile");
     panda::PandArg<bool> opMergeAbc("merge-abc", false, "Compile as merge abc");
 
+    // hotfix
+    panda::PandArg<std::string> opDumpSymbolTable("dump-symbol-table", "", "dump symbol table to file");
+    panda::PandArg<std::string> opInputSymbolTable("input-symbol-table", "", "input symbol table file");
+    panda::PandArg<bool> opGeneratePatch("generate-patch", false, "generate patch abc");
+
     // tail arguments
     panda::PandArg<std::string> inputFile("input", "", "input file");
 
@@ -187,6 +188,10 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&opCacheFile);
     argparser_->Add(&opNpmModuleEntryList);
     argparser_->Add(&opMergeAbc);
+
+    argparser_->Add(&opDumpSymbolTable);
+    argparser_->Add(&opInputSymbolTable);
+    argparser_->Add(&opGeneratePatch);
 
     argparser_->PushBackTail(&inputFile);
     argparser_->EnableTail();
@@ -262,13 +267,14 @@ bool Options::Parse(int argc, const char **argv)
     } else if (!outputIsEmpty) {
         compilerOutput_ = outputFile.GetValue();
     } else if (outputIsEmpty && !inputIsEmpty) {
-        compilerOutput_ = RemoveExtension(BaseName(sourceFile_)).append(".abc");
+        compilerOutput_ = RemoveExtension(util::Helpers::BaseName(sourceFile_)).append(".abc");
     }
 
     if (opMergeAbc.GetValue()) {
         recordName_ = recordName.GetValue();
         if (recordName_.empty()) {
-            recordName_ = compilerOutput_.empty() ? "Base64Output" : RemoveExtension(BaseName(compilerOutput_));
+            recordName_ = compilerOutput_.empty() ? "Base64Output" :
+                RemoveExtension(util::Helpers::BaseName(compilerOutput_));
         }
         recordName_ = FormatRecordName(recordName_);
     }
@@ -338,6 +344,10 @@ bool Options::Parse(int argc, const char **argv)
     compilerOptions_.optLevel = opOptLevel.GetValue();
     compilerOptions_.sourceFiles = sourceFiles_;
     compilerOptions_.mergeAbc = opMergeAbc.GetValue();
+
+    compilerOptions_.hotfixOptions.dumpSymbolTable = opDumpSymbolTable.GetValue();
+    compilerOptions_.hotfixOptions.symbolTable = opInputSymbolTable.GetValue();
+    compilerOptions_.hotfixOptions.generatePatch = opGeneratePatch.GetValue();
 
     return true;
 }
