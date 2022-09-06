@@ -25,6 +25,7 @@ import re
 import subprocess
 import sys
 import test262util
+import pandas as pd
 
 def is_directory(parser, arg):
     if not path.isdir(arg):
@@ -359,13 +360,14 @@ class TSCTest(Test):
         cmd.append(self.path)
 
         self.log_cmd(cmd)
+        print(cmd)
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = process.communicate()
         self.output = out.decode("utf-8", errors="ignore")
 
         self.passed = True if process.returncode == 0 else False
-
+        print( process.returncode)
         if not self.passed:
             self.error = err.decode("utf-8", errors="ignore")
 
@@ -418,24 +420,52 @@ class Runner:
         self.tests = results
         pool.join()
 
+    def deal_error(self, test):
+        print("steps:", test.reproduce)
+        path_str = test.path.split("cases/")[1]
+        err_col = {}
+        if test.error:
+            print(test.error)
+            err_str = test.error.split('[')[0]
+            if "Variable" in err_str and "has already been declared." in err_str:
+                error_kind = "SyntaxError: Variable has already been declared."
+            else:
+                error_kind = err_str
+            err_col = { "path" : [path_str], "status": ["fail"], "error" : [test.error], "type" : [error_kind] }
+        else:
+            err_col = { "path" : [path_str], "status": ["fail"], "error" : ["Segmentation fault"], "type" : ["Segmentation fault"] }
+        return err_col
+
     def summarize(self):
         print("")
         fail_list = []
+        success_list = []
 
         for test in self.tests:
             assert(test.passed is not None)
             if not test.passed:
                 fail_list.append(test)
+            else:
+                success_list.append(test)
 
         if len(fail_list):
+            test_list = pd.DataFrame(columns = ["path","status","error","type"])
+            for test in success_list:
+                path_str = test.path.split("cases/")[1]
+                suc_col = {"path" : [path_str], "status": ["success"], "error" : ["success"], "type" : ["success"] }
+                test_list = pd.concat([test_list, pd.DataFrame(suc_col)])
             print("Failed tests:")
             for test in fail_list:
                 print(self.test_path(test.path))
 
                 if self.args.error:
-                    print("steps:", test.reproduce)
-                    print(test.error)
+                    err_col = self.deal_error(test)
+                    test_list = pd.concat([test_list, pd.DataFrame(err_col)])
 
+            if self.args.error:
+                test_list.to_csv('./es2panda/test/test_statistics.csv', index = False)
+                test_list["type"].value_counts().to_csv('./es2panda/test/type_statistics.csv', index_label = "error")
+                print("Type statistics:\n", test_list["type"].value_counts())
             print("")
 
         print("Summary(%s):" % self.name)
