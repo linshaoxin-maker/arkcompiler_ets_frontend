@@ -335,7 +335,7 @@ export class Ts2Panda {
             }
             typeInfo = Ts2Panda.dumpInstTypeMap(pg);
 
-            if (funcName.indexOf("func_main_0") !== -1) {
+            if (funcName.endsWith("func_main_0")) {
                 let exportedTypes = PandaGen.getExportedTypes();
                 let declareddTypes = PandaGen.getDeclaredTypes();
                 if (exportedTypes.size != 0) {

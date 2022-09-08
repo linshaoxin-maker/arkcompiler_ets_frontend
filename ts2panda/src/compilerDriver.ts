@@ -359,7 +359,7 @@ export class CompilerDriver {
             name = "func_main_0";
         } else if (ts.isConstructorDeclaration(node)) {
             let classNode = node.parent;
-            name = this.getInternalNameForCtor(classNode, node);
+            return this.getInternalNameForCtor(classNode, node);
         } else {
             let funcNode = <ts.FunctionLikeDeclaration>node;
             name = (<FunctionScope>recorder.getScopeOfNode(funcNode)).getFuncName();

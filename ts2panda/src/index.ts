@@ -220,6 +220,7 @@ const es2abcBinaryName = /^win/.test(require('os').platform()) ? "es2abc.exe" : 
 const es2abcBase64Input = "--base64Input";
 const es2abcDebuggerEvaluateFlag = "--debugger-evaluate-expression";
 const es2abcBase64Output = "--base64Output";
+// need to specify the record name as 'Base64Output' in es2abc's commandline; cancel the opMergeAbc option
 
 function callEs2pandaToolChain(ideIputStr: string) {
     let commandLine = es2abcBinaryPath + es2abcBinaryName + " " + es2abcBase64Input + " \"" + ideIputStr + "\" " +

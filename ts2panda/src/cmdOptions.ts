@@ -52,7 +52,7 @@ const ts2pandaOptions = [
     { name: 'source-file', type: String, defaultValue: "", description: "specify the file path info recorded in generated abc" },
     { name: 'generate-tmp-file', type: Boolean, defaultValue: false, description: "whether to generate intermediate temporary files"},
     { name: 'record-name', type: String, defaultValue: "", description: "specify the record name." },
-    { name: 'output-proto', type: String, defaultValue: "", description: "specify output name of serializd protobuf file (.bin)" },
+    { name: 'output-proto', type: String, defaultValue: "", description: "specify the output name for serializd protobuf file (.protoBin)" },
 ]
 
 
@@ -317,16 +317,15 @@ export class CmdOptions {
         return this.options["source-file"];
     }
 
-<<<<<<< HEAD
     static needGenerateTmpFile(): boolean {
         if (!this.options) {
             return false;
         }
         return this.options["generate-tmp-file"];
-=======
+    }
+
     static getOutputproto(): string {
         return this.options["output-proto"];
->>>>>>> Support serialize proto bin file in ts2abc
     }
 
     // @ts-ignore
