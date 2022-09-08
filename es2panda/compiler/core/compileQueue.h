@@ -19,6 +19,7 @@
 #include <aot/options.h>
 #include <macros.h>
 #include <os/thread.h>
+#include <util/symbolTable.h>
 
 #include <condition_variable>
 #include <mutex>
@@ -89,10 +90,9 @@ private:
 class CompileFileJob : public CompileJob {
 public:
     explicit CompileFileJob(es2panda::SourceFile *src, es2panda::CompilerOptions *options,
-                            std::vector<panda::pandasm::Program *> &progs,
-                            std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
-                            panda::ArenaAllocator *allocator)
-        : src_(src), options_(options), progs_(progs), progsInfo_(progsInfo), allocator_(allocator) {};
+                            std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
+                            util::SymbolTable *symbolTable, panda::ArenaAllocator *allocator)
+        : src_(src), options_(options), progsInfo_(progsInfo), symbolTable_(symbolTable), allocator_(allocator) {};
     NO_COPY_SEMANTIC(CompileFileJob);
     NO_MOVE_SEMANTIC(CompileFileJob);
     ~CompileFileJob() = default;
@@ -103,8 +103,8 @@ private:
     static std::mutex global_m_;
     es2panda::SourceFile *src_;
     es2panda::CompilerOptions *options_;
-    std::vector<panda::pandasm::Program *> &progs_;
-    std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo_;
+    std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo_;
+    util::SymbolTable *symbolTable_;
     panda::ArenaAllocator *allocator_;
 };
 
@@ -151,10 +151,10 @@ private:
 class CompileFileQueue : public CompileQueue {
 public:
     explicit CompileFileQueue(size_t threadCount, es2panda::CompilerOptions *options,
-                              std::vector<panda::pandasm::Program *> &progs,
-                              std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
-                              panda::ArenaAllocator *allocator)
-        : CompileQueue(threadCount), options_(options), progs_(progs), progsInfo_(progsInfo), allocator_(allocator) {}
+                              std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
+                              util::SymbolTable *symbolTable, panda::ArenaAllocator *allocator)
+        : CompileQueue(threadCount), options_(options), progsInfo_(progsInfo),
+        symbolTable_(symbolTable), allocator_(allocator) {}
 
     NO_COPY_SEMANTIC(CompileFileQueue);
     NO_MOVE_SEMANTIC(CompileFileQueue);
@@ -164,8 +164,8 @@ public:
 
 private:
     es2panda::CompilerOptions *options_;
-    std::vector<panda::pandasm::Program *> &progs_;
-    std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo_;
+    std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo_;
+    util::SymbolTable *symbolTable_;
     panda::ArenaAllocator *allocator_;
 };
 

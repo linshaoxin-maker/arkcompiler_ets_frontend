@@ -138,6 +138,7 @@ import {
     EcmaCreateasyncgeneratorobj,
     EcmaCreateiterresultobj,
     EcmaAsyncgeneratorresolve,
+    EcmaAsyncgeneratorreject,
     EcmaDecdyn,
     EcmaDiv2dyn,
     EcmaEqdyn,
@@ -200,6 +201,7 @@ export class PandaGen {
     private locals: VReg[] = [];
     private temps: VReg[] = [];
     private insns: IRNode[] = [];
+    private instTypeMap: Map<IRNode, number> = new Map<IRNode, number>();
     private scope: Scope | undefined;
     private vregisterCache: VregisterCache;
     private catchMap: Map<Label, CatchTable> = new Map<Label, CatchTable>();
@@ -406,6 +408,10 @@ export class PandaGen {
 
     setLocals(locals: VReg[]) {
         this.locals = locals;
+    }
+
+    getInstTypeMap() {
+        return this.instTypeMap;
     }
 
     getLocals(): VReg[] {
@@ -1032,6 +1038,10 @@ export class PandaGen {
         this.add(node, new EcmaAsyncgeneratorresolve(genObj, value, done));
     }
 
+    EcmaAsyncgeneratorreject(node: ts.Node, genObj: VReg, value: VReg) {
+        this.add(node, new EcmaAsyncgeneratorreject(genObj, value));
+    }
+
     suspendGenerator(node: ts.Node, genObj: VReg, iterRslt: VReg) {
         this.add(node, new EcmaSuspendgenerator(genObj, iterRslt));
     }
@@ -1359,5 +1369,11 @@ export class PandaGen {
         DebugInfo.setDebuginfoForIns(node, ...insns);
 
         this.insns.push(...insns);
+    }
+
+    public setInstType(inst: IRNode, typeId: number | undefined): void {
+        if (typeId != undefined && TypeRecorder.getInstance() != undefined) {
+            this.instTypeMap.set(inst, typeId);
+        }
     }
 }

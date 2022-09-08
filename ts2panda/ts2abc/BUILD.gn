@@ -76,12 +76,11 @@ ohos_static_library("jsoncpp_static") {
   part_name = "ark_frontend_tool"
 }
 
-ohos_executable("ts2abc") {
-  sources = [
-    "main.cpp",
-    "ts2abc.cpp",
-    "type_adapter.cpp",
-  ]
+  ohos_executable("ts2abc") {
+    sources = [
+      "main.cpp",
+      "ts2abc.cpp",
+    ]
 
   configs = [ ":ts2abc_config" ]
 

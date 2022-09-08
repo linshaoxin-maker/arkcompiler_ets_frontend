@@ -77,6 +77,7 @@
 #include <ir/ts/tsQualifiedName.h>
 #include <ir/ts/tsSignatureDeclaration.h>
 #include <ir/ts/tsStringKeyword.h>
+#include <ir/ts/tsTemplateLiteralType.h>
 #include <ir/ts/tsThisType.h>
 #include <ir/ts/tsTupleType.h>
 #include <ir/ts/tsTypeLiteral.h>
@@ -388,19 +389,74 @@ ir::Expression *ParserImpl::ParseTsThisTypeOrTsTypePredicate(ir::Expression *typ
     return ParseTsThisType(throwError);
 }
 
+ir::Expression *ParserImpl::ParseTsTemplateLiteralType()
+{
+    ASSERT(lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_BACK_TICK);
+    lexer::SourcePosition startLoc = lexer_->GetToken().Start();
+
+    ArenaVector<ir::TemplateElement *> quasis(Allocator()->Adapter());
+    ArenaVector<ir::Expression *> references(Allocator()->Adapter());
+
+    while (true) {
+        lexer_->ResetTokenEnd();
+        const auto startPos = lexer_->Save();
+
+        lexer_->ScanString<LEX_CHAR_BACK_TICK>();
+        util::StringView cooked = lexer_->GetToken().String();
+
+        lexer_->Rewind(startPos);
+        auto [raw, end, scanExpression] = lexer_->ScanTemplateString();
+
+        auto *element = AllocNode<ir::TemplateElement>(raw.View(), cooked);
+        element->SetRange({lexer::SourcePosition{startPos.iterator.Index(), startPos.line},
+                           lexer::SourcePosition{end, lexer_->Line()}});
+        quasis.push_back(element);
+
+        if (!scanExpression) {
+            lexer_->ScanTemplateStringEnd();
+            break;
+        }
+
+        ir::Expression *reference = nullptr;
+
+        {
+            lexer::TemplateLiteralParserContext ctx(lexer_);
+            lexer_->PushTemplateContext(&ctx);
+            lexer_->NextToken();
+            TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
+            reference = ParseTsTypeAnnotation(&options);
+        }
+
+        if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
+            ThrowSyntaxError("Unexpected token, expected '}'.");
+        }
+
+        references.push_back(reference);
+    }
+
+    ir::Expression *typeAnnotation = AllocNode<ir::TSTemplateLiteralType>(std::move(quasis), std::move(references));
+    typeAnnotation->SetRange({startLoc, lexer_->GetToken().End()});
+
+    lexer_->NextToken();
+
+    return typeAnnotation;
+}
+
 ir::Expression *ParserImpl::ParseTsTypeAnnotationElement(ir::Expression *typeAnnotation,
                                                          TypeAnnotationParsingOptions *options)
 {
     switch (lexer_->GetToken().Type()) {
         case lexer::TokenType::PUNCTUATOR_BITWISE_OR: {
-            if (*options & (TypeAnnotationParsingOptions::IN_UNION | TypeAnnotationParsingOptions::IN_INTERSECTION)) {
+            if (*options & (TypeAnnotationParsingOptions::IN_MODIFIER | TypeAnnotationParsingOptions::IN_UNION |
+                TypeAnnotationParsingOptions::IN_INTERSECTION)) {
                 break;
             }
 
             return ParseTsUnionType(typeAnnotation, *options & TypeAnnotationParsingOptions::RESTRICT_EXTENDS);
         }
         case lexer::TokenType::PUNCTUATOR_BITWISE_AND: {
-            if (*options & TypeAnnotationParsingOptions::IN_INTERSECTION) {
+            if (*options & (TypeAnnotationParsingOptions::IN_MODIFIER |
+	        TypeAnnotationParsingOptions::IN_INTERSECTION)) {
                 break;
             }
 
@@ -487,6 +543,9 @@ ir::Expression *ParserImpl::ParseTsTypeAnnotationElement(ir::Expression *typeAnn
             return ParseTsThisTypeOrTsTypePredicate(typeAnnotation,
                                                     *options & TypeAnnotationParsingOptions::CAN_BE_TS_TYPE_PREDICATE,
                                                     *options & TypeAnnotationParsingOptions::THROW_ERROR);
+        }
+        case lexer::TokenType::PUNCTUATOR_BACK_TICK: {
+            return ParseTsTemplateLiteralType();
         }
         default: {
             break;
@@ -655,6 +714,7 @@ ir::Expression *ParserImpl::ParseTsTypeOperatorOrTypeReference()
         lexer::SourcePosition typeOperatorStart = lexer_->GetToken().Start();
         lexer_->NextToken();
 
+        options |= TypeAnnotationParsingOptions::IN_MODIFIER;
         ir::Expression *type = ParseTsTypeAnnotation(&options);
 
         if (!type->IsTSArrayType() && !type->IsTSTupleType()) {
@@ -674,6 +734,7 @@ ir::Expression *ParserImpl::ParseTsTypeOperatorOrTypeReference()
         lexer::SourcePosition typeOperatorStart = lexer_->GetToken().Start();
         lexer_->NextToken();
 
+        options |= TypeAnnotationParsingOptions::IN_MODIFIER;
         ir::Expression *type = ParseTsTypeAnnotation(&options);
 
         auto *typeOperator = AllocNode<ir::TSTypeOperator>(type, ir::TSOperatorType::KEYOF);
@@ -1907,7 +1968,7 @@ void ParserImpl::ThrowIfPrivateIdent(ClassElmentDescriptor *desc, const char *ms
     }
 }
 
-void ParserImpl::ValidateClassKey(ClassElmentDescriptor *desc)
+void ParserImpl::ValidateClassKey(ClassElmentDescriptor *desc, bool isDeclare)
 {
     if ((desc->modifiers & ir::ModifierFlags::ASYNC) &&
         (desc->methodKind == ir::MethodDefinitionKind::GET || desc->methodKind == ir::MethodDefinitionKind::SET)) {
@@ -1935,12 +1996,12 @@ void ParserImpl::ValidateClassKey(ClassElmentDescriptor *desc)
         } else if (Extension() == ScriptExtension::TS) {
             ThrowSyntaxError("Static modifier can not appear on a constructor");
         }
-    } else if (propNameStr.Is("prototype") && (desc->modifiers & ir::ModifierFlags::STATIC)) {
+    } else if (!isDeclare && propNameStr.Is("prototype") && (desc->modifiers & ir::ModifierFlags::STATIC)) {
         ThrowSyntaxError("Classes may not have static property named prototype");
     }
 }
 
-ir::Expression *ParserImpl::ParseClassKey(ClassElmentDescriptor *desc)
+ir::Expression *ParserImpl::ParseClassKey(ClassElmentDescriptor *desc, bool isDeclare)
 {
     ir::Expression *propName = nullptr;
     if (lexer_->GetToken().IsKeyword()) {
@@ -1949,7 +2010,7 @@ ir::Expression *ParserImpl::ParseClassKey(ClassElmentDescriptor *desc)
 
     switch (lexer_->GetToken().Type()) {
         case lexer::TokenType::LITERAL_IDENT: {
-            ValidateClassKey(desc);
+            ValidateClassKey(desc, isDeclare);
 
             propName = AllocNode<ir::Identifier>(lexer_->GetToken().Ident(), Allocator());
             propName->SetRange(lexer_->GetToken().Loc());
@@ -2319,7 +2380,7 @@ ir::Statement *ParserImpl::ParseClassElement(const ArenaVector<ir::Statement *> 
         context_.Status() |= ParserStatus::ALLOW_THIS_TYPE;
     }
 
-    ir::Expression *propName = ParseClassKey(&desc);
+    ir::Expression *propName = ParseClassKey(&desc, isDeclare);
 
     if (desc.methodKind == ir::MethodDefinitionKind::CONSTRUCTOR && !decorators.empty()) {
         ThrowSyntaxError("Decorators are not valid here.", decorators.front()->Start());
@@ -2398,7 +2459,7 @@ static bool IsConstructor(ir::Statement *stmt)
     return def->Kind() == ir::MethodDefinitionKind::CONSTRUCTOR;
 }
 
-ir::MethodDefinition *ParserImpl::CreateImplicitConstructor(bool hasSuperClass)
+ir::MethodDefinition *ParserImpl::CreateImplicitConstructor(bool hasSuperClass, bool isDeclare)
 {
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
     ArenaVector<ir::Statement *> statements(Allocator()->Adapter());
@@ -2422,8 +2483,8 @@ ir::MethodDefinition *ParserImpl::CreateImplicitConstructor(bool hasSuperClass)
     }
 
     auto *body = AllocNode<ir::BlockStatement>(scope, std::move(statements));
-    auto *func = AllocNode<ir::ScriptFunction>(scope, std::move(params), nullptr, body, nullptr,
-                                               ir::ScriptFunctionFlags::CONSTRUCTOR, false);
+    auto *func = AllocNode<ir::ScriptFunction>(scope, std::move(params), nullptr, isDeclare ? nullptr : body, nullptr,
+                                               ir::ScriptFunctionFlags::CONSTRUCTOR, isDeclare);
     scope->BindNode(func);
     paramScope->BindNode(func);
     scope->BindParamScope(paramScope);
@@ -2623,6 +2684,7 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool i
     // Parse ClassBody
     auto savedStatus = context_.Status();
     context_.Status() |= ParserStatus::IN_CLASS_BODY;
+    context_.Status() &= ~(ParserStatus::CONSTRUCTOR_FUNCTION);
     lexer::SourcePosition classBodyStartLoc = lexer_->GetToken().Start();
     lexer_->NextToken(lexer::LexerNextTokenFlags::KEYWORD_TO_IDENT);
 
@@ -2643,7 +2705,7 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool i
         }
 
         if (IsConstructor(property)) {
-            if (ctor) {
+            if (!isDeclare && ctor) {
                 ThrowSyntaxError("Multiple constructor implementations are not allowed.", property->Start());
             }
             ctor = property->AsMethodDefinition();
@@ -2657,7 +2719,7 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool i
 
     lexer::SourcePosition classBodyEndLoc = lexer_->GetToken().End();
     if (ctor == nullptr) {
-        ctor = CreateImplicitConstructor(hasSuperClass);
+        ctor = CreateImplicitConstructor(hasSuperClass, isDeclare);
         ctor->SetRange({startLoc, classBodyEndLoc});
     }
     lexer_->NextToken();
@@ -3381,6 +3443,11 @@ ScriptExtension ParserImpl::Extension() const
 parser::SourceTextModuleRecord *ParserImpl::GetSourceTextModuleRecord()
 {
     return Binder()->Program()->ModuleRecord();
+}
+
+void ParserImpl::AddHotfixHelper(util::Hotfix *hotfixHelper)
+{
+    program_.AddHotfixHelper(hotfixHelper);
 }
 
 }  // namespace panda::es2panda::parser

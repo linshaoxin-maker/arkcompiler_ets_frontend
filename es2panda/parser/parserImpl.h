@@ -163,6 +163,7 @@ enum class TypeAnnotationParsingOptions {
     THROW_ERROR = 1 << 4,
     CAN_BE_TS_TYPE_PREDICATE = 1 << 5,
     BREAK_AT_NEW_LINE = 1 << 6,
+    IN_MODIFIER = 1 << 7,
 };
 
 DEFINE_BITOPS(TypeAnnotationParsingOptions)
@@ -180,6 +181,8 @@ public:
                   const std::string &recordName, ScriptKind kind);
 
     ScriptExtension Extension() const;
+
+    void AddHotfixHelper(util::Hotfix *hotfixHelper);
 
 private:
     bool IsStartOfMappedType() const;
@@ -256,14 +259,15 @@ private:
     ir::Expression *ParseTsTypeReferenceOrTsTypePredicate(ir::Expression *typeAnnotation, bool canBeTsTypePredicate);
     ir::Expression *ParseTsThisTypeOrTsTypePredicate(ir::Expression *typeAnnotation, bool canBeTsTypePredicate,
                                                      bool throwError);
+    ir::Expression *ParseTsTemplateLiteralType();
     ir::Expression *ParseTsTypeAnnotationElement(ir::Expression *typeAnnotation, TypeAnnotationParsingOptions *options);
     ir::ModifierFlags ParseModifiers();
 
     void ThrowIfPrivateIdent(ClassElmentDescriptor *desc, const char *msg);
-    void ValidateClassKey(ClassElmentDescriptor *desc);
+    void ValidateClassKey(ClassElmentDescriptor *desc, bool isDeclare);
 
     void ValidateClassMethodStart(ClassElmentDescriptor *desc, ir::Expression *typeAnnotation);
-    ir::Expression *ParseClassKey(ClassElmentDescriptor *desc);
+    ir::Expression *ParseClassKey(ClassElmentDescriptor *desc, bool isDeclare);
 
     void ValidateClassSetter(ClassElmentDescriptor *desc, const ArenaVector<ir::Statement *> &properties,
                              ir::Expression *propName, ir::ScriptFunction *func, bool hasDecorator,
@@ -286,7 +290,7 @@ private:
     ir::Statement *ParseClassElement(const ArenaVector<ir::Statement *> &properties,
                                      ArenaVector<ir::TSIndexSignature *> *indexSignatures, bool hasSuperClass,
                                      bool isDeclare, bool isAbstractClass);
-    ir::MethodDefinition *CreateImplicitConstructor(bool hasSuperClass);
+    ir::MethodDefinition *CreateImplicitConstructor(bool hasSuperClass, bool isDeclare = false);
     ir::MethodDefinition *CheckClassMethodOverload(ir::Statement *property, ir::MethodDefinition **ctor, bool isDeclare,
                                                    lexer::SourcePosition errorInfo, ir::MethodDefinition *lastOverload,
                                                    bool implExists, bool isAbstract = false);

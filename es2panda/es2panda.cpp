@@ -20,6 +20,8 @@
 #include <compiler/core/compilerImpl.h>
 #include <parser/parserImpl.h>
 #include <parser/program/program.h>
+#include <util/helpers.h>
+#include <util/hotfix.h>
 
 #include <libpandabase/utils/hash.h>
 
@@ -44,13 +46,23 @@ Compiler::~Compiler()
     delete compiler_;
 }
 
-panda::pandasm::Program *Compiler::Compile(const SourceFile &input, const CompilerOptions &options)
+panda::pandasm::Program *Compiler::Compile(const SourceFile &input, const CompilerOptions &options,
+    util::SymbolTable *symbolTable)
 {
     /* TODO(dbatyai): pass string view */
     std::string fname(input.fileName);
     std::string src(input.source);
     std::string rname(input.recordName);
     parser::ScriptKind kind(input.scriptKind);
+
+    bool needDumpSymbolFile = !options.hotfixOptions.dumpSymbolTable.empty();
+    bool needGeneratePatch = options.hotfixOptions.generatePatch && !options.hotfixOptions.symbolTable.empty();
+    util::Hotfix *hotfixHelper = nullptr;
+    if (symbolTable && (needDumpSymbolFile || needGeneratePatch)) {
+        hotfixHelper = new util::Hotfix(needDumpSymbolFile, needGeneratePatch, input.recordName, symbolTable);
+        parser_->AddHotfixHelper(hotfixHelper);
+        compiler_->AddHotfixHelper(hotfixHelper);
+    }
 
     try {
         auto ast = parser_->Parse(fname, src, rname, kind);
@@ -62,9 +74,18 @@ panda::pandasm::Program *Compiler::Compile(const SourceFile &input, const Compil
         std::string debugInfoSourceFile = options.debugInfoSourceFile.empty() ? fname : options.debugInfoSourceFile;
         auto *prog = compiler_->Compile(&ast, options, debugInfoSourceFile);
 
+        if (hotfixHelper) {
+            delete hotfixHelper;
+            hotfixHelper = nullptr;
+        }
         return prog;
     } catch (const class Error &e) {
         error_ = e;
+
+        if (hotfixHelper) {
+            delete hotfixHelper;
+            hotfixHelper = nullptr;
+        }
         return nullptr;
     }
 }
@@ -86,9 +107,8 @@ static bool ReadFileToBuffer(const std::string &file, std::stringstream &ss)
 }
 
 void Compiler::SelectCompileFile(CompilerOptions &options,
-    std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> *cacheProgs,
-    std::vector<panda::pandasm::Program *> &progs,
-    std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
+    std::map<std::string, panda::es2panda::util::ProgramCache*> *cacheProgs,
+    std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
     panda::ArenaAllocator *allocator)
 {
     if (cacheProgs == nullptr) {
@@ -114,7 +134,6 @@ void Compiler::SelectCompileFile(CompilerOptions &options,
 
         auto it = cacheProgs->find(input.fileName);
         if (it != cacheProgs->end() && hash == it->second->hashCode) {
-            progs.push_back(it->second->program);
             auto *cache = allocator->New<util::ProgramCache>(it->second->hashCode, it->second->program);
             progsInfo.insert({input.fileName, cache});
         } else {
@@ -126,23 +145,38 @@ void Compiler::SelectCompileFile(CompilerOptions &options,
 }
 
 void Compiler::CompileFiles(CompilerOptions &options,
-    std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> *cacheProgs,
-    std::vector<panda::pandasm::Program *> &progs,
-    std::unordered_map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
+    std::map<std::string, panda::es2panda::util::ProgramCache*> *cacheProgs,
+    std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
     panda::ArenaAllocator *allocator)
 {
-    SelectCompileFile(options, cacheProgs, progs, progsInfo, allocator);
+    util::SymbolTable *symbolTable = nullptr;
+    if (!options.hotfixOptions.symbolTable.empty() || !options.hotfixOptions.dumpSymbolTable.empty()) {
+        symbolTable = new util::SymbolTable(options.hotfixOptions.symbolTable, options.hotfixOptions.dumpSymbolTable);
+        if (!symbolTable->Initialize()) {
+            std::cerr << "Exits due to hot fix initialize failed!" << std::endl;
+            return;
+        }
+    }
 
-    auto queue = new compiler::CompileFileQueue(options.fileThreadCount, &options, progs, progsInfo, allocator);
+    SelectCompileFile(options, cacheProgs, progsInfo, allocator);
+
+    auto queue = new compiler::CompileFileQueue(options.fileThreadCount, &options, progsInfo, symbolTable, allocator);
 
     queue->Schedule();
     queue->Consume();
     queue->Wait();
 
     delete queue;
+    queue = nullptr;
+
+    if (symbolTable) {
+        delete symbolTable;
+        symbolTable = nullptr;
+    }
 }
 
-panda::pandasm::Program *Compiler::CompileFile(CompilerOptions &options, SourceFile *src)
+panda::pandasm::Program *Compiler::CompileFile(CompilerOptions &options, SourceFile *src,
+                                               util::SymbolTable *symbolTable)
 {
     std::string buffer;
     if (src->source.empty()) {
@@ -157,8 +191,9 @@ panda::pandasm::Program *Compiler::CompileFile(CompilerOptions &options, SourceF
             src->hash = GetHash32String(reinterpret_cast<const uint8_t *>(buffer.c_str()));
         }
     }
+    src->fileName = util::Helpers::BaseName(src->fileName);
 
-    auto *program = Compile(*src, options);
+    auto *program = Compile(*src, options, symbolTable);
     if (!program) {
         const auto &err = GetError();
 
