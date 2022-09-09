@@ -97,3 +97,25 @@ def npm_install(cwd):
         os.chdir(WORK_PATH)
     except BaseException as e:
         print(e)
+
+
+def process_tool_path(tool_path):
+    if tool_path.startswith('../'):
+        tool_path_list = tool_path.split(os.sep)
+        dir_level = tool_path.count('..')
+        for i in range(dir_level):
+            del tool_path_list[0]
+        tool_path = os.sep.join(tool_path_list)
+        frontend_tool_path = f'{CODE_ROOT}/{tool_path}'
+        return frontend_tool_path
+    return tool_path
+
+
+def export_path():
+    ld_library_path = ':'.join(LD_LIBRARY_PATH_LIST)
+    try:
+        os.chdir(CODE_ROOT)
+        os.environ['LD_LIBRARY_PATH'] = ld_library_path
+        os.chdir(WORK_PATH)
+    except BaseException as e:
+        print(e)
