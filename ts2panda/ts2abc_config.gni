@@ -10,15 +10,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import("//arkcompiler/ets_frontend/ets_frontend_config.gni")
-if (!defined(ark_independent_build)) {
+if (!defined(ark_standalone_build)) {
+  import("//arkcompiler/ets_frontend/ets_frontend_config.gni")
   import("//build/ohos.gni")
   import("//build/test.gni")
   build_root = "//build"
   ts2abc_root = "//arkcompiler/ets_frontend/ts2panda"
 } else {
+  import("//ets_frontend/ets_frontend_config.gni")
   import("$build_root/ark.gni")
-  ts2abc_root = "//arkcompiler/ets_frontend/ts2panda"
+  ts2abc_root = "//ets_frontend/ts2panda"
 }
 
 declare_args() {
