@@ -11,13 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if (!defined(ark_independent_build)) {
-  import("//arkcompiler/runtime_core/ark_config.gni")
-  import("//build/ohos.gni")
-} else {
-  import("//runtime_core/ark_config.gni")
-  import("$build_root/ark.gni")
-}
+import("//arkcompiler/runtime_core/ark_config.gni")
+import("//build/ohos.gni")
 
 jsoncpp_root = "$ark_third_party_root/jsoncpp"
 
@@ -69,77 +64,71 @@ source_set("jsoncpp_set_static") {
   ]
 }
 
-if (!defined(ark_independent_build)) {
-  ohos_static_library("jsoncpp_static") {
-    deps = [ ":jsoncpp_set_static" ]
-    use_exceptions = true
-    subsystem_name = "ark"
-    part_name = "ark_frontend_tool"
+ohos_static_library("jsoncpp_static") {
+  deps = [ ":jsoncpp_set_static" ]
+  use_exceptions = true
+  subsystem_name = "ark"
+  part_name = "ark_frontend_tool"
+}
+
+ohos_executable("ts2abc") {
+  sources = [
+    "main.cpp",
+    "ts2abc.cpp",
+  ]
+
+  configs = [ ":ts2abc_config" ]
+
+  cflags = [
+    "-Wno-c++20-designator",
+    "-Wno-c99-extensions",
+    "-Wno-unknown-warning-option",
+  ]
+
+  deps = [
+    "//arkcompiler/ets_frontend/merge_abc:panda_assembly_proto_static",
+    sdk_libc_secshared_dep,
+  ]
+
+  if (is_linux || is_mingw || is_mac) {
+    deps += [
+      "$ark_root/assembler:libarkassembler_frontend_static",
+      "$ark_root/libpandabase:libarkbase_frontend_static",
+      "$ark_root/libpandafile:libarkfile_frontend_static",
+      "$ark_root/libziparchive:libarkziparchive_frontend_static",
+      "//third_party/jsoncpp:jsoncpp_static",
+    ]
+    if (enable_bytecode_optimizer) {
+      deps += [
+        "$ark_root/bytecode_optimizer:libarkbytecodeopt_frontend_static",
+        "$ark_root/compiler:libarkcompiler_frontend_static",
+      ]
+    }
+  } else {
+    deps += [
+      "$ark_root/assembler:libarkassembler",
+      "$ark_root/libpandabase:libarkbase",
+      "$ark_root/libpandafile:libarkfile",
+      "$ark_root/libziparchive:libarkziparchive",
+      "$jsoncpp_root:jsoncpp",
+    ]
+    if (enable_bytecode_optimizer) {
+      deps += [
+        "$ark_root/bytecode_optimizer:libarkbytecodeopt",
+        "$ark_root/compiler:libarkcompiler",
+      ]
+    }
   }
 
-  ohos_executable("ts2abc") {
-    sources = [
-      "main.cpp",
-      "ts2abc.cpp",
-    ]
-
-    configs = [ ":ts2abc_config" ]
-
-    cflags = [
-      "-Wno-c++20-designator",
-      "-Wno-c99-extensions",
-      "-Wno-unknown-warning-option",
-    ]
-
-    deps = [
-      "//arkcompiler/ets_frontend/merge_abc:panda_assembly_proto_static",
-      sdk_libc_secshared_dep,
-    ]
-
-    if (is_linux || is_mingw || is_mac) {
-      deps += [
-        "$ark_root/assembler:libarkassembler_frontend_static",
-        "$ark_root/libpandabase:libarkbase_frontend_static",
-        "$ark_root/libpandafile:libarkfile_frontend_static",
-        "$ark_root/libziparchive:libarkziparchive_frontend_static",
-        "//third_party/jsoncpp:jsoncpp_static",
-      ]
-      if (enable_bytecode_optimizer) {
-        deps += [
-          "$ark_root/bytecode_optimizer:libarkbytecodeopt_frontend_static",
-          "$ark_root/compiler:libarkcompiler_frontend_static",
-        ]
-      }
+  if (is_linux) {
+    if (build_public_version) {
+      ldflags = [ "-static-libstdc++" ]
     } else {
-      deps += [
-        "$ark_root/assembler:libarkassembler",
-        "$ark_root/libpandabase:libarkbase",
-        "$ark_root/libpandafile:libarkfile",
-        "$ark_root/libziparchive:libarkziparchive",
-        "$jsoncpp_root:jsoncpp",
-      ]
-      if (enable_bytecode_optimizer) {
-        deps += [
-          "$ark_root/bytecode_optimizer:libarkbytecodeopt",
-          "$ark_root/compiler:libarkcompiler",
-        ]
-      }
+      libs = [ libcpp_static_lib ]
     }
-
-    if (is_linux) {
-      if (build_public_version) {
-        ldflags = [ "-static-libstdc++" ]
-      } else {
-        libs = [ libcpp_static_lib ]
-      }
-    }
-
-    output_name = "js2abc"
-    install_enable = true
-    subsystem_name = "ark"
   }
-} else {
-  ark_static_library("jsoncpp_static") {
-    deps = [ ":jsoncpp_set_static" ]
-  }
+
+  output_name = "js2abc"
+  install_enable = true
+  subsystem_name = "ark"
 }
