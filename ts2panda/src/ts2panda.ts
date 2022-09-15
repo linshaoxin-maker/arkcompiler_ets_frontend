@@ -55,6 +55,7 @@ import { ModuleScope } from "./scope";
 import { TypeRecorder } from "./typeRecorder";
 import { isGlobalDeclare } from "./strictMode";
 import { isFunctionLikeDeclaration } from "./syntaxCheckHelper";
+import { getLiteralKey } from "./index";
 
 const dollarSign: RegExp = /\$/g;
 
@@ -65,7 +66,8 @@ const JsonType = {
     "literal_arr": 3,
     "module": 4,
     "options": 5,
-    'type_info': 6
+    'type_info': 6,
+    'record_name': 7
 };
 export class Ts2Panda {
     static strings: Set<string> = new Set();
@@ -190,6 +192,20 @@ export class Ts2Panda {
             }
             ts2abc.stdio[3].write(jsonLiteralArrUnicode + '\n');
         });
+    }
+
+    static dumpRecordName(ts2abc: any, recordName: string) {
+        let recordNameObject = {
+            "t": JsonType.record_name,
+            "rn": recordName
+        }
+
+        let jsonRecordName = escapeUnicode(JSON.stringify(recordNameObject, null, 2));
+        jsonRecordName = "$" + jsonRecordName.replace(dollarSign, '#$') + "$";
+        if (CmdOptions.isEnableDebugLog()) {
+            Ts2Panda.jsonString += jsonRecordName;
+        }
+        ts2abc.stdio[3].write(jsonRecordName + '\n');
     }
 
     static dumpCmdOptions(ts2abc: any): void {
@@ -437,9 +453,9 @@ export class Ts2Panda {
 
     static dumpTypeInfoRecord(ts2abc: any, recordType: boolean): void {
         let enableTypeRecord = getRecordTypeFlag(recordType);
-        let typeSummaryIndex = 0;
+        let typeSummaryIndex = getLiteralKey(CompilerDriver.srcNode, 0);
         if (enableTypeRecord) {
-            typeSummaryIndex = TypeRecorder.getInstance().getTypeSummaryIndex();
+            typeSummaryIndex = getLiteralKey(CompilerDriver.srcNode, TypeRecorder.getInstance().getTypeSummaryIndex());
         }
         let typeInfo = {
             'tf': enableTypeRecord,

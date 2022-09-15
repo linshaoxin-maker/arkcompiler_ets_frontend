@@ -119,6 +119,7 @@ function main(fileNames: string[], options: ts.CompilerOptions) {
                         }
                         let outputBinName = getOutputBinName(node);
                         let compilerDriver = new CompilerDriver(outputBinName, getRecordName(node));
+                        CompilerDriver.srcNode = node;
                         setGlobalStrict(jshelpers.isEffectiveStrictModeSourceFile(node, options));
                         compilerDriver.compile(node);
                         compilerDriver.showStatistics();
@@ -185,6 +186,10 @@ function getRecordName(node: ts.SourceFile): string {
     }
 
     return recordName;
+}
+
+export function getLiteralKey(node: ts.SourceFile, idx:number): string {
+    return getRecordName(node) + "_" + idx;
 }
 
 function specifyCustomLib(customLib) {

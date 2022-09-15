@@ -25,6 +25,8 @@ export enum LiteralTag {
   // 0x0a - 0x15 for ARRAY_Type
   ASYNCGENERATOR = 22,
   LITERALBUFFERINDEX = 23,
+  LITERALARRAY = 24,
+  BUILTINTYPEINDEX = 25,
   NULLVALUE = 255
 }
 
