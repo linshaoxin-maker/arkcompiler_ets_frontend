@@ -355,3 +355,11 @@ export function hasAbstractModifier(node: ts.Node): boolean {
     }
     return false;
 }
+
+export function getRecordName(node: ts.SourceFile): string {
+    return ""; // need to be fixed later
+}
+
+export function getLiteralKey(node: ts.SourceFile, idx:number): string {
+    return `${getRecordName(node)}_${idx}`;
+}

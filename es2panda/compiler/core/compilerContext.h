@@ -19,6 +19,7 @@
 #include <macros.h>
 #include <mem/arena_allocator.h>
 #include <util/hotfix.h>
+#include <util/ustring.h>
 
 #include <cstdint>
 #include <mutex>
