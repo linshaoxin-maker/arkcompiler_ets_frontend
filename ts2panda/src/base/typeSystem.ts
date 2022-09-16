@@ -238,7 +238,7 @@ export class TypeSummary extends BaseType {
         if (isGlobalDeclare()) {
             definedTypeNum += userDefinedTypeStartIndex - BuiltinType._HEAD;
         }
-        summaryLiterals.push(new Literal(LiteralTag.INTEGER, definedTypeNum));
+        summaryLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, definedTypeNum));
         summaryLiterals.push(new Literal(LiteralTag.INTEGER, this.anonymousRedirect.length));
         for (let element of this.anonymousRedirect) {
             summaryLiterals.push(new Literal(LiteralTag.STRING, element));
@@ -422,7 +422,7 @@ export class ClassType extends BaseType {
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.CLASS));
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.modifier));
 
-        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.extendsHeritage));
+        classTypeLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, this.extendsHeritage));
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.implementsHeritages.length));
         this.implementsHeritages.forEach(heritage => {
             classTypeLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, heritage));
@@ -480,7 +480,7 @@ export class ClassInstType extends BaseType {
         let classInstLiterals: Array<Literal> = new Array<Literal>();
 
         classInstLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.CLASSINST));
-        classInstLiterals.push(new Literal(LiteralTag.INTEGER, this.shiftedReferredClassIndex));
+        classInstLiterals.push(new Literal(LiteralTag.LITERALBUFFERINDEX, this.shiftedReferredClassIndex));
         classInstBuf.addLiterals(...classInstLiterals);
 
         return classInstBuf;
