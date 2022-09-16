@@ -11,19 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if (!defined(ark_standalone_build)) {
-  import("//arkcompiler/ets_frontend/ets_frontend_config.gni")
-  import("//arkcompiler/runtime_core/ark_config.gni")
+import("//arkcompiler/ets_frontend/ets_frontend_config.gni")
+if (!ark_standalone_build) {
   import("//build/config/clang/clang.gni")
   import("//build/ohos.gni")
   import("//developtools/profiler/build/config.gni")
 } else {
-  import("//ets_frontend/ets_frontend_config.gni")
   import("//profiler//build/config.gni")
-  import("//runtime_core/ark_config.gni")
   import("$build_root/ark.gni")
   import("$build_root/config/clang/clang.gni")
 }
+import("//arkcompiler/runtime_core/ark_config.gni")
 
 proto_base_dir = "protos"
 proto_out_dir = "$target_gen_dir" + "/protos_generated"
@@ -58,7 +56,7 @@ config("panda_assembly_proto_public_config") {
     "//third_party/protobuf/src",
     "//third_party/protobuf/src/google",
     "//third_party/protobuf/src/google/protobuf",
-    "$ets_frontend_root/ets_frontend/es2panda/util",
+    "//arkcompiler/ets_frontend/es2panda/util",
   ]
 }
 
@@ -288,7 +286,7 @@ group("merge_proto_abc_build") {
   }
 }
 
-if (!defined(ark_standalone_build)) {
+if (!ark_standalone_build) {
   group("merge_proto_abc_build_win") {
     deps = [ ":merge_abc(${toolchain_win})" ]
   }

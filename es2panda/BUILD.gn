@@ -11,19 +11,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if (!defined(ark_standalone_build)) {
-  import("//arkcompiler/ets_frontend/ets_frontend_config.gni")
-  import("//arkcompiler/runtime_core/ark_config.gni")
+import("//arkcompiler/ets_frontend/ets_frontend_config.gni")
+if (!ark_standalone_build) {
   import("//build/ohos.gni")
   third_party_gn_path = "//third_party"
-  runtime_core_root = "//arkcompiler/runtime_core"
 } else {
-  import("//ets_frontend/ets_frontend_config.gni")
-  import("//runtime_core/ark_config.gni")
   import("$build_root/ark.gni")
-  third_party_gn_path = "//toolchain/build/third_party_gn"
-  runtime_core_root = "//runtime_core"
+  third_party_gn_path = "//arkcompiler/toolchain/build/third_party_gn"
 }
+import("//arkcompiler/runtime_core/ark_config.gni")
 
 es2panda_src = [
   "es2panda.cpp",
@@ -167,13 +163,16 @@ es2panda_src = [
   "ir/ts/tsNullKeyword.cpp",
   "ir/ts/tsNumberKeyword.cpp",
   "ir/ts/tsObjectKeyword.cpp",
+  "ir/ts/tsOptionalType.cpp",
   "ir/ts/tsParameterProperty.cpp",
   "ir/ts/tsParenthesizedType.cpp",
   "ir/ts/tsPrivateIdentifier.cpp",
   "ir/ts/tsPropertySignature.cpp",
   "ir/ts/tsQualifiedName.cpp",
+  "ir/ts/tsRestType.cpp",
   "ir/ts/tsSignatureDeclaration.cpp",
   "ir/ts/tsStringKeyword.cpp",
+  "ir/ts/tsSymbolKeyword.cpp",
   "ir/ts/tsTemplateLiteralType.cpp",
   "ir/ts/tsThisType.cpp",
   "ir/ts/tsTupleType.cpp",
@@ -237,6 +236,7 @@ es2panda_src = [
   "typescript/types/signature.cpp",
   "typescript/types/stringLiteralType.cpp",
   "typescript/types/stringType.cpp",
+  "typescript/types/symbolType.cpp",
   "typescript/types/tupleType.cpp",
   "typescript/types/type.cpp",
   "typescript/types/typeParameter.cpp",
@@ -338,7 +338,7 @@ isa_gen = "${ark_root}/isa/gen.rb"
 isa_gen_data = "$root_gen_dir/isa/isa.yaml"
 isa_gen_require = "${ark_root}/isa/isapi.rb"
 action_foreach("gen_isa_headers") {
-  deps = [ "$runtime_core_root/isa:isa_combine" ]
+  deps = [ "$ark_root/isa:isa_combine" ]
 
   template_files = [
     "isa.h.erb",
@@ -421,12 +421,12 @@ ohos_executable("es2panda") {
 
   configs = [
     ":es2abc_config_common",
-    "$ets_frontend_root/merge_abc:panda_assembly_proto_public_config",
+    "//arkcompiler/ets_frontend/merge_abc:panda_assembly_proto_public_config",
   ]
 
   deps = [
     ":es2panda_lib",
-    "$ets_frontend_root/merge_abc:panda_assembly_proto_static",
+    "//arkcompiler/ets_frontend/merge_abc:panda_assembly_proto_static",
   ]
 
   ldflags = []
@@ -535,13 +535,14 @@ group("es2panda_build") {
   }
 }
 
-if (!defined(ark_standalone_build)) {
+if (!ark_standalone_build) {
   group("es2panda_build_win") {
     deps = [ ":es2panda(${toolchain_win})" ]
   }
 
   group("es2abc_tests") {
     deps = [ "./test:es2abc_parser_tests" ]
+    deps += [ "./test:es2abc_parser_tsc_tests" ]
     deps += [ "./test:es2abc_compiler_tests" ]
   }
 }

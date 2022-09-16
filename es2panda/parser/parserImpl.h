@@ -251,6 +251,7 @@ private:
     ir::Expression *ParseTsIndexAccessType(ir::Expression *typeName);
     ir::Expression *ParseTsQualifiedReference(ir::Expression *typeName);
     ir::Expression *ParseTsTypeReferenceOrQuery(bool parseQuery = false);
+    bool IsTSNamedTupleMember();
     ir::Expression *ParseTsTupleElement(ir::TSTupleKind *kind, bool *seenOptional);
     ir::TSTupleType *ParseTsTupleType();
     ir::TSImportType *ParseTsImportType(const lexer::SourcePosition &startLoc, bool isTypeof = false);
@@ -324,7 +325,7 @@ private:
     ir::TSParameterProperty *CreateTsParameterProperty(ir::Expression *parameter, ir::ModifierFlags modifiers);
     ir::Expression *ParseFunctionParameter(bool isDeclare);
     void CreateTSVariableForProperty(ir::AstNode *node, const ir::Expression *key, binder::VariableFlags flags);
-    void CheckObjectTypeForDuplicatedProperties(ir::Expression *key, ArenaVector<ir::Expression *> &members);
+    void CheckObjectTypeForDuplicatedProperties(ir::Expression *member, ArenaVector<ir::Expression *> &members);
 
     // ExpressionParser.Cpp
 
