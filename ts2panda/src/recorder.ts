@@ -571,6 +571,7 @@ export class Recorder {
                 // export default v;
                 // "*default*" is used within this specification as a synthetic name for anonymous default export values.
                 scope.module().addLocalExportEntry(node, "default", "*default*");
+                scope.setDecls(new LetDecl("*default*", node, ModuleVarKind.EXPORTED));
                 break;
             }
             case ts.SyntaxKind.VariableStatement: {

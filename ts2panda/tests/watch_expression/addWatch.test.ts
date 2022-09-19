@@ -19,52 +19,51 @@ import {
 import 'mocha';
 import { CmdOptions } from '../../src/cmdOptions';
 import {
-    EcmaAdd2dyn,
-    EcmaAsyncfunctionawaituncaught,
-    EcmaAsyncfunctionenter,
-    EcmaAsyncfunctionreject,
-    EcmaAsyncfunctionresolve,
-    EcmaCallarg0dyn,
-    EcmaCallarg1dyn,
-    EcmaCallargs2dyn,
-    EcmaCreatearraywithbuffer,
-    EcmaCreateemptyarray,
-    EcmaCreategeneratorobj,
-    EcmaCreateiterresultobj,
-    EcmaCreateobjectwithbuffer,
-    EcmaCreateregexpwithliteral,
-    EcmaDecdyn,
-    EcmaDefineclasswithbuffer,
-    EcmaDefinefuncdyn,
-    EcmaEqdyn,
-    EcmaGetresumemode,
-    EcmaIstrue,
-    EcmaLdobjbyindex,
-    EcmaLdobjbyname,
-    EcmaNegdyn,
-    EcmaNewobjdynrange,
-    EcmaResumegenerator,
-    EcmaStownbyindex,
-    EcmaStricteqdyn,
-    EcmaSuspendgenerator,
-    EcmaThrowdyn,
-    EcmaTonumeric,
-    EcmaTypeofdyn,
-    FldaiDyn,
+    Add2,
+    Asyncfunctionawaituncaught,
+    Asyncfunctionenter,
+    Asyncfunctionreject,
+    Asyncfunctionresolve,
+    Callarg0,
+    Callarg1,
+    Callargs2,
+    Createarraywithbuffer,
+    Createemptyarray,
+    Creategeneratorobj,
+    Createiterresultobj,
+    Createobjectwithbuffer,
+    Createregexpwithliteral,
+    Dec,
+    Defineclasswithbuffer,
+    Definefunc,
+    Eq,
+    Getresumemode,
+    Istrue,
+    Ldobjbyindex,
+    Ldobjbyname,
+    Neg,
+    Newobjrange,
+    Resumegenerator,
+    Stownbyindex,
+    Stricteq,
+    Suspendgenerator,
+    Throw,
+    Tonumeric,
+    Typeof,
+    Fldai,
     Imm,
     Jeqz,
     Jmp,
     Label,
-    LdaDyn,
+    Lda,
     LdaStr,
-    LdaiDyn,
-    MovDyn,
-    ReturnDyn,
-    StaDyn,
+    Ldai,
+    Mov,
+    Return,
+    Sta,
     VReg
 } from "../../src/irnodes";
-import { LocalVariable } from "../../src/variable";
-import { checkInstructions, compileMainSnippet, compileAllSnippet, SnippetCompiler } from "../utils/base";
+import { checkInstructions, compileMainSnippet, compileAllSnippet } from "../utils/base";
 
 describe("WatchExpressions", function () {
     it("watch NumericLiteral", function () {
@@ -75,17 +74,20 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new FldaiDyn(new Imm(123.212)),
-            new StaDyn(new VReg()),
-            new EcmaNegdyn(new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaLdobjbyname('debuggerSetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Fldai(new Imm(123.212)),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Neg(new Imm(0)),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(1), 'debuggerSetValue'),
+            new Sta(new VReg()),
             new LdaStr('a'),
-            new StaDyn(new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(3), new VReg(), new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -99,21 +101,25 @@ describe("WatchExpressions", function () {
 
         let expected = [
             new LdaStr('He is called '),
-            new StaDyn(new VReg()),
-            new EcmaLdobjbyname('debuggerSetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerSetValue'),
+            new Sta(new VReg()),
             new LdaStr('y'),
-            new StaDyn(new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(3), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('Johnny'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(5), new VReg(), new VReg()),
             new LdaStr(''),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -126,15 +132,17 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaCreateregexpwithliteral('abc', new Imm(0)),
-            new StaDyn(new VReg()),
-            new EcmaLdobjbyname('debuggerSetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Createregexpwithliteral(new Imm(0), 'abc', new Imm(0)),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(1), 'debuggerSetValue'),
+            new Sta(new VReg()),
             new LdaStr('a'),
-            new StaDyn(new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(3), new VReg(), new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -147,14 +155,16 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('_awef'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -169,23 +179,25 @@ describe("WatchExpressions", function () {
         let isTrueLabel = new Label();
         let isFalseLabel = new Label();
         let expected = [
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('b'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
-            new EcmaStricteqdyn(new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Stricteq(new Imm(3), new VReg()),
             new Jeqz(isTrueLabel),
-            new LdaDyn(new VReg()),
+            new Lda(new VReg()),
             new Jmp(isFalseLabel),
             isTrueLabel,
-            new LdaDyn(new VReg()),
+            new Lda(new VReg()),
             isFalseLabel,
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -201,23 +213,25 @@ describe("WatchExpressions", function () {
         let ifTrueLabel = new Label();  //label1
 
         let expected = [
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('b'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
-            new EcmaStricteqdyn(new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Stricteq(new Imm(3), new VReg()),
             new Jeqz(ifFalseLabel),
-            new LdaDyn(new VReg()),
+            new Lda(new VReg()),
             new Jmp(ifTrueLabel),
             ifFalseLabel,
-            new LdaDyn(new VReg()), //lda.dyn v10
+            new Lda(new VReg()), //lda. v10
             ifTrueLabel,
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -230,18 +244,21 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('BigInt'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new FldaiDyn(new Imm(10.2)),
-            new StaDyn(new VReg()),
-            new EcmaCallarg1dyn(new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Fldai(new Imm(10.2)),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Callarg1(new Imm(3), new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -256,23 +273,25 @@ describe("WatchExpressions", function () {
         let isTrueLabel = new Label();
         let isFalseLabel = new Label();
         let expected = [
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('b'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
-            new EcmaStricteqdyn(new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Stricteq(new Imm(3), new VReg()),
             new Jeqz(isTrueLabel),
-            new LdaDyn(new VReg()),
+            new Lda(new VReg()),
             new Jmp(isFalseLabel),
             isTrueLabel,
-            new LdaDyn(new VReg()),
+            new Lda(new VReg()),
             isFalseLabel,
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -284,14 +303,16 @@ describe("WatchExpressions", function () {
         this
         `);
         let expected = [
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('this'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -306,15 +327,17 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new LdaDyn(new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaLdobjbyname("debuggerSetValue", new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), "debuggerSetValue"),
+            new Sta(new VReg()),
             new LdaStr("b"),
-            new StaDyn(new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
         pandaGens.forEach((pg) => {
             if (pg.internalName == "#1#") {
@@ -331,11 +354,11 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaCreatearraywithbuffer(new Imm(1)),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
+            new Createarraywithbuffer(new Imm(0), "1"),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -348,17 +371,19 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaCreateobjectwithbuffer(new Imm(1)),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaLdobjbyname('debuggerSetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Createobjectwithbuffer(new Imm(0), "1"),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(1), 'debuggerSetValue'),
+            new Sta(new VReg()),
             new LdaStr('a'),
-            new StaDyn(new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(3), new VReg(), new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -371,16 +396,19 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('a'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaLdobjbyname('b', new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(3), 'b'),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -393,16 +421,19 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaLdobjbyname('debuggerGetValue',new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('a'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaLdobjbyindex(new VReg(), new Imm(0)),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyindex(new Imm(3), new Imm(0)),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -415,17 +446,19 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('Function'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaNewobjdynrange(new Imm(2), [new VReg(), new VReg()]),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Newobjrange(new Imm(3), new Imm(1), [new VReg()]),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -438,28 +471,34 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('a'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(3), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('b'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(5), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(6), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('c'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(8), new VReg(), new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -472,15 +511,17 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaDefinefuncdyn('a', new Imm(0), new VReg()),
-            new StaDyn(new VReg),
-            new EcmaLdobjbyname('debuggerSetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Definefunc(new Imm(0), 'a', new Imm(0)),
+            new Sta(new VReg),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(1), 'debuggerSetValue'),
+            new Sta(new VReg()),
             new LdaStr('a'),
-            new StaDyn(new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(3), new VReg(), new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
         pandaGens.forEach((pg) => {
             if (pg.internalName == "func_main_0") {
@@ -497,19 +538,21 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaCreateemptyarray(),
-            new StaDyn(new VReg()),
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Createemptyarray(new Imm(0)),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(1), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('abc'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new EcmaStownbyindex(new VReg(), new Imm(0)),
-            new LdaDyn(new VReg()),
-            new LdaDyn(new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(3), new VReg(), new VReg()),
+            new Stownbyindex(new Imm(4), new VReg(), new Imm(0)),
+            new Lda(new VReg()),
+            new Lda(new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -522,15 +565,17 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('a'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new EcmaTypeofdyn(),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Typeof(new Imm(3)),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -543,17 +588,20 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('doSomething'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaCallarg0dyn(new VReg()),
-            new LdaDyn(new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Callarg0(new Imm(3)),
+            new Lda(new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -572,36 +620,44 @@ describe("WatchExpressions", function () {
         let nextLabel = new Label();
 
         let expected = [
-            new EcmaAsyncfunctionenter(),
-            new StaDyn(new VReg()),
+            new Asyncfunctionenter(),
+            new Sta(new VReg()),
             beginLabel,
-            new EcmaLdobjbyname("debuggerGetValue", new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), "debuggerGetValue"),
+            new Sta(new VReg()),
             new LdaStr('abc'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaAsyncfunctionawaituncaught(new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaSuspendgenerator(new VReg(), new VReg()),
-            new EcmaResumegenerator(new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaGetresumemode(new VReg()),
-            new StaDyn(new VReg()),
-            new LdaiDyn(new Imm(1)),
-            new EcmaEqdyn(new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Asyncfunctionawaituncaught(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Suspendgenerator(new VReg()),
+            new Lda(new VReg()),
+            new Resumegenerator(),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Getresumemode(),
+            new Sta(new VReg()),
+            new Ldai(new Imm(1)),
+            new Eq(new Imm(3), new VReg()),
             new Jeqz(nextLabel),
-            new LdaDyn(new VReg()),
-            new EcmaThrowdyn(),
+            new Lda(new VReg()),
+            new Throw(),
             nextLabel,
-            new LdaDyn(new VReg()),
-            new EcmaAsyncfunctionresolve(new VReg(), new VReg(), new VReg()),
-            new ReturnDyn(),
+            new Lda(new VReg()),
+            new Lda(new VReg()),
+            new Asyncfunctionresolve(new VReg()),
+            new Return(),
             endLabel,
-            new StaDyn(new VReg()),
-            new EcmaAsyncfunctionreject(new VReg(), new VReg(), new VReg()),
-            new ReturnDyn(),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Asyncfunctionreject(new VReg()),
+            new Return(),
         ];
 
         pandaGens.forEach((pg) => {
@@ -619,22 +675,27 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaLdobjbyname("debuggerGetValue", new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), "debuggerGetValue"),
+            new Sta(new VReg()),
             new LdaStr('a'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaDecdyn(new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaLdobjbyname("debuggerSetValue", new VReg()),
-            new StaDyn(new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Dec(new Imm(3)),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(4), "debuggerSetValue"),
+            new Sta(new VReg()),
             new LdaStr('a'),
-            new StaDyn(new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(6), new VReg(), new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -647,23 +708,29 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('a'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaDecdyn(new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaLdobjbyname('debuggerSetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Dec(new Imm(3)),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(4), 'debuggerSetValue'),
+            new Sta(new VReg()),
             new LdaStr('a'),
-            new StaDyn(new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new EcmaTonumeric(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(6), new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Tonumeric(new Imm(7)),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -676,22 +743,26 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaLdobjbyname("debuggerGetValue", new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), "debuggerGetValue"),
+            new Sta(new VReg()),
             new LdaStr("a"),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaLdobjbyname("debuggerGetValue", new VReg()),
-            new StaDyn(new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(3), "debuggerGetValue"),
+            new Sta(new VReg()),
             new LdaStr("b"),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new EcmaAdd2dyn(new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(5), new VReg(), new VReg()),
+            new Add2(new Imm(6), new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -707,21 +778,23 @@ describe("WatchExpressions", function () {
         let ifFalseLabel = new Label();
 
         let expected = [
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('a'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new EcmaIstrue(),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(), new VReg()),
+            new Istrue(),
             new Jeqz(ifTrueLabel),
-            new LdaiDyn(new Imm(4)),
+            new Ldai(new Imm(4)),
             new Jmp(ifFalseLabel),
             ifTrueLabel,
-            new LdaiDyn(new Imm(2)),
+            new Ldai(new Imm(2)),
             ifFalseLabel,
 
-            new ReturnDyn()
+            new Return()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -740,55 +813,60 @@ describe("WatchExpressions", function () {
         let endLabel = new Label();
 
         let expected = [
-            new EcmaCreategeneratorobj(new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaSuspendgenerator(new VReg(), new VReg()),
-            new EcmaResumegenerator(new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaGetresumemode(new VReg()),
-            new StaDyn(new VReg()),
-            new LdaiDyn(new Imm(0)),
-            new EcmaEqdyn(new VReg()),
+            new Creategeneratorobj(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Suspendgenerator(new VReg()),
+            new Lda(new VReg()),
+            new Resumegenerator(),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Getresumemode(),
+            new Sta(new VReg()),
+            new Ldai(new Imm(0)),
+            new Eq(new Imm(0), new VReg()),
             new Jeqz(startLabel),
-            new LdaDyn(new VReg()),
-            new ReturnDyn(),
+            new Lda(new VReg()),
+            new Return(),
             startLabel,
-            new LdaiDyn(new Imm(1)),
-            new EcmaEqdyn(new VReg()),
+            new Ldai(new Imm(1)),
+            new Eq(new Imm(1), new VReg()),
             new Jeqz(thenLabel),
-            new LdaDyn(new VReg()),
-            new EcmaThrowdyn(),
+            new Lda(new VReg()),
+            new Throw(),
             thenLabel,
-            new LdaDyn(new VReg()),
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(2), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('a'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaCreateiterresultobj(new VReg(),new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaSuspendgenerator(new VReg(), new VReg()),
-            new EcmaResumegenerator(new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaGetresumemode(new VReg()),
-            new StaDyn(new VReg()),
-            new LdaiDyn(new Imm(0)),
-            new EcmaEqdyn(new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Callargs2(new Imm(4), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Createiterresultobj(new VReg(),new VReg()),
+            new Suspendgenerator(new VReg()),
+            new Lda(new VReg()),
+            new Resumegenerator(),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Getresumemode(),
+            new Sta(new VReg()),
+            new Ldai(new Imm(0)),
+            new Eq(new Imm(5), new VReg()),
             new Jeqz(nextLabel),
-            new LdaDyn(new VReg()),
-            new ReturnDyn(),
+            new Lda(new VReg()),
+            new Return(),
             nextLabel,
-            new LdaiDyn(new Imm(1)),
-            new EcmaEqdyn(new VReg()),
+            new Ldai(new Imm(1)),
+            new Eq(new Imm(6), new VReg()),
             new Jeqz(endLabel),
-            new LdaDyn(new VReg()),
-            new EcmaThrowdyn(),
+            new Lda(new VReg()),
+            new Throw(),
             endLabel,
-            new LdaDyn(new VReg()),
+            new Lda(new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
 
         pandaGens.forEach((pg) => {
@@ -806,18 +884,21 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new EcmaLdobjbyname('debuggerGetValue', new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(0), 'debuggerGetValue'),
+            new Sta(new VReg()),
             new LdaStr('b'),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(),new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(),new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaLdobjbyname('length', new VReg()),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(),new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(2), new VReg(),new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(3), 'length'),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
 
         pandaGens.forEach((pg) => {
@@ -835,21 +916,23 @@ describe("WatchExpressions", function () {
         `);
 
         let expected = [
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaDefineclasswithbuffer("#1#", new Imm(1), new Imm(0), new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
-            new StaDyn(new VReg()),
-            new MovDyn(new VReg(), new VReg()),
-            new EcmaNewobjdynrange(new Imm(2), [new VReg(), new VReg()]),
-            new StaDyn(new VReg()),
-            new EcmaLdobjbyname("debuggerSetValue", new VReg()),
-            new StaDyn(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Defineclasswithbuffer(new Imm(0), "#1#", "1", new Imm(0), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Sta(new VReg()),
+            new Mov(new VReg(), new VReg()),
+            new Newobjrange(new Imm(1), new Imm(1), [new VReg()]),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Ldobjbyname(new Imm(2), "debuggerSetValue"),
+            new Sta(new VReg()),
             new LdaStr("a"),
-            new StaDyn(new VReg()),
-            new EcmaCallargs2dyn(new VReg(), new VReg(), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Callargs2(new Imm(4), new VReg(), new VReg()),
 
-            new ReturnDyn()
+            new Return()
         ];
         pandaGens.forEach((pg) => {
             if (pg.internalName == "func_main_0") {

@@ -18,69 +18,76 @@ import {
 } from 'chai';
 import 'mocha';
 import {
-    EcmaAdd2dyn,
-    EcmaCallithisrangedyn,
-    EcmaCreateemptyarray,
-    EcmaGettemplateobject,
-    EcmaLdobjbyname,
-    EcmaReturnundefined,
-    EcmaStobjbyvalue,
-    EcmaTryldglobalbyname,
+    Add2,
+    Callthisrange,
+    Createemptyarray,
+    Gettemplateobject,
+    Ldobjbyname,
+    Returnundefined,
+    Stobjbyvalue,
+    Tryldglobalbyname,
     Imm,
     IRNode,
-    LdaDyn,
-    LdaiDyn,
+    Lda,
+    Ldai,
     LdaStr,
-    MovDyn,
-    ResultType,
-    StaDyn,
+    Mov,
+    Sta,
     VReg
 } from "../../src/irnodes";
 import { checkInstructions, compileMainSnippet } from "../utils/base";
 
-function MicroCreateAddInsns(leftVal: number, rightVal: number): IRNode[] {
+function MicroCreateAddInsns(leftVal: number, rightVal: number, icSize: number) {
     let insns = [];
     let lhs = new VReg();
 
-    insns.push(new LdaiDyn(new Imm(leftVal)));
-    insns.push(new StaDyn(lhs));
-    insns.push(new LdaiDyn(new Imm(rightVal)));
-    insns.push(new EcmaAdd2dyn(lhs));
+    insns.push(new Ldai(new Imm(leftVal)));
+    insns.push(new Sta(lhs));
+    insns.push(new Ldai(new Imm(rightVal)));
+    insns.push(new Add2(new Imm(icSize), lhs));
 
-    return insns;
+    let nextIc = icSize + 1;
+
+    return {insns: insns, nextIc: nextIc};
 }
 
-function MicroCreateObjAndPropInsns(): IRNode[] {
+function MicroCreateObjAndPropInsns(icSize: number) {
     let insns = [];
     let obj = new VReg();
     let val = new VReg();
 
-    insns.push(new EcmaTryldglobalbyname("String"));
-    insns.push(new StaDyn(obj));
-    insns.push(new EcmaLdobjbyname("raw", obj));
-    insns.push(new StaDyn(val));
+    insns.push(new Tryldglobalbyname(new Imm(icSize), "String"));
+    insns.push(new Sta(obj));
+    insns.push(new Lda(obj));
+    insns.push(new Ldobjbyname(new Imm(icSize + 1), "raw"));
+    insns.push(new Sta(val));
 
-    return insns;
+    let nextIc = icSize + 3;
+
+    return {insns: insns, nextIc: nextIc};
 }
 
-function MicroGetTemplateObject(rawArr: VReg, cookedArr: VReg): IRNode[] {
+function MicroGetTemplateObject(rawArr: VReg, cookedArr: VReg, icSize: number) {
     let insns = [];
     let objReg = new VReg();
     let indexReg = new VReg();
 
-    insns.push(new EcmaCreateemptyarray());
-    insns.push(new StaDyn(objReg));
+    insns.push(new Createemptyarray(new Imm(icSize)));
+    insns.push(new Sta(objReg));
 
-    insns.push(new LdaiDyn(new Imm(0)));
-    insns.push(new StaDyn(indexReg));
-    insns.push(new LdaDyn(rawArr));
-    insns.push(new EcmaStobjbyvalue(objReg, indexReg));
-    insns.push(new LdaiDyn(new Imm(1)));
-    insns.push(new StaDyn(indexReg));
-    insns.push(new LdaDyn(cookedArr));
-    insns.push(new EcmaStobjbyvalue(objReg, indexReg));
-    insns.push(new EcmaGettemplateobject(objReg));
-    return insns;
+    insns.push(new Ldai(new Imm(0)));
+    insns.push(new Sta(indexReg));
+    insns.push(new Lda(rawArr));
+    insns.push(new Stobjbyvalue(new Imm(icSize + 1), objReg, indexReg));
+    insns.push(new Ldai(new Imm(1)));
+    insns.push(new Sta(indexReg));
+    insns.push(new Lda(cookedArr));
+    insns.push(new Stobjbyvalue(new Imm(icSize + 3), objReg, indexReg));
+    insns.push(new Lda(objReg));
+    insns.push(new Gettemplateobject(new Imm(icSize + 5)));
+
+    let nextIc = icSize + 6;
+    return {insns: insns, nextIc: nextIc};
 
 }
 
@@ -89,7 +96,7 @@ describe("templateExpressionTest", function () {
         let insns = compileMainSnippet("`string text line 1`;");
         let expected = [
             new LdaStr("string text line 1"),
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -97,13 +104,15 @@ describe("templateExpressionTest", function () {
     it("`Fifteen is ${5 + 10}`", function () {
         let insns = compileMainSnippet("`Fifteen is ${5 + 10}`");
         let headVal = new VReg();
+        let insertedInsns = MicroCreateAddInsns(5, 10, 0).insns;
+        let followedIc = MicroCreateAddInsns(5, 10, 0).nextIc;
 
         let expected = [
             new LdaStr("Fifteen is "),
-            new StaDyn(headVal),
-            ...MicroCreateAddInsns(5, 10),
-            new EcmaAdd2dyn(headVal),
-            new EcmaReturnundefined()
+            new Sta(headVal),
+            ...insertedInsns,
+            new Add2(new Imm(followedIc), headVal),
+            new Returnundefined()
         ]
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -119,31 +128,36 @@ describe("templateExpressionTest", function () {
         let cookedArr1 = new VReg();
         let templateObj = new VReg();
 
+        let insertedInsns1 = MicroCreateObjAndPropInsns(0).insns;
+        let followedIc1 = MicroCreateObjAndPropInsns(0).nextIc;
+
+        let insertedInsns2 = MicroGetTemplateObject(rawArr1, cookedArr, followedIc1 + 6).insns;
+        let followedIc2 = MicroGetTemplateObject(rawArr1, cookedArr, followedIc1 + 6).nextIc;
         let expected = [
+            ...insertedInsns1,
+            new Createemptyarray(new Imm(followedIc1)),
+            new Sta(rawArr),
+            new Createemptyarray(new Imm(followedIc1 + 1)),
+            new Sta(cookedArr),
 
-            ...MicroCreateObjAndPropInsns(),
-            new EcmaCreateemptyarray(),
-            new StaDyn(rawArr),
-            new EcmaCreateemptyarray(),
-            new StaDyn(cookedArr),
-
-            new LdaiDyn(new Imm(0)),
-            new StaDyn(elemIdxReg),
+            new Ldai(new Imm(0)),
+            new Sta(elemIdxReg),
             new LdaStr("string text line 1"),
-            new EcmaStobjbyvalue(rawArr, elemIdxReg),
+            new Stobjbyvalue(new Imm(followedIc1 + 2), rawArr, elemIdxReg),
 
             new LdaStr("string text line 1"),
-            new EcmaStobjbyvalue(cookedArr, elemIdxReg),
-            new MovDyn(rawArr1, rawArr),
-            new MovDyn(cookedArr1, cookedArr),
+            new Stobjbyvalue(new Imm(followedIc1 + 4), cookedArr, elemIdxReg),
+            new Mov(rawArr1, rawArr),
+            new Mov(cookedArr1, cookedArr),
 
-            ...MicroGetTemplateObject(rawArr1, cookedArr),
-            new StaDyn(templateObj),
+            ...insertedInsns2,
+            new Sta(templateObj),
 
-            // structure call 
-            new EcmaCallithisrangedyn(new Imm(2), [prop, obj, templateObj]),
+            // structure call
+            new Lda(prop),
+            new Callthisrange(new Imm(followedIc2), new Imm(1), [obj, templateObj]),
 
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
 
         expect(checkInstructions(insns, expected)).to.be.true;
@@ -160,31 +174,35 @@ describe("templateExpressionTest", function () {
         let cookedArr1 = new VReg();
         let templateObj = new VReg();
 
+        let insertedInsns1 = MicroCreateObjAndPropInsns(0).insns;
+        let followedIc1 = MicroCreateObjAndPropInsns(0).nextIc;
+        let insertedInsns2 = MicroGetTemplateObject(rawArr1, cookedArr1, followedIc1 + 6).insns;
+        let followedIc2 = MicroGetTemplateObject(rawArr1, cookedArr1, followedIc1 + 6).nextIc;
         let expected = [
+            ...insertedInsns1,
+            new Createemptyarray(new Imm(followedIc1)),
+            new Sta(rawArr),
+            new Createemptyarray(new Imm(followedIc1 + 1)),
+            new Sta(cookedArr),
 
-            ...MicroCreateObjAndPropInsns(),
-            new EcmaCreateemptyarray(),
-            new StaDyn(rawArr),
-            new EcmaCreateemptyarray(),
-            new StaDyn(cookedArr),
-
-            new LdaiDyn(new Imm(0)),
-            new StaDyn(elemIdxReg),
+            new Ldai(new Imm(0)),
+            new Sta(elemIdxReg),
             new LdaStr("string text line 1\\nstring text line 2"),
-            new EcmaStobjbyvalue(rawArr, elemIdxReg),
+            new Stobjbyvalue(new Imm(followedIc1 + 2), rawArr, elemIdxReg),
 
             new LdaStr("string text line 1\nstring text line 2"),
-            new EcmaStobjbyvalue(cookedArr, elemIdxReg),
-            new MovDyn(rawArr1, rawArr),
-            new MovDyn(cookedArr1, cookedArr),
+            new Stobjbyvalue(new Imm(followedIc1 + 4), cookedArr, elemIdxReg),
+            new Mov(rawArr1, rawArr),
+            new Mov(cookedArr1, cookedArr),
 
-            ...MicroGetTemplateObject(rawArr1, cookedArr1),
-            new StaDyn(templateObj),
+            ...insertedInsns2,
+            new Sta(templateObj),
 
-            // structure call 
-            new EcmaCallithisrangedyn(new Imm(2), [prop, obj, templateObj]),
+            // structure call
+            new Lda(prop),
+            new Callthisrange(new Imm(followedIc2), new Imm(1), [obj, templateObj]),
 
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
 
         expect(checkInstructions(insns, expected)).to.be.true;
@@ -202,38 +220,44 @@ describe("templateExpressionTest", function () {
         let addRet = new VReg();
         let templateObj = new VReg();
 
+        let insertedInsns1 = MicroCreateObjAndPropInsns(0).insns;
+        let followedIc1 = MicroCreateObjAndPropInsns(0).nextIc;
+        let insertedInsns2 = MicroGetTemplateObject(rawArr1, cookedArr1, followedIc1 + 10).insns;
+        let followedIc2 = MicroGetTemplateObject(rawArr1, cookedArr1, followedIc1 + 10).nextIc;
+        let insertedInsns3 = MicroCreateAddInsns(5, 10, followedIc2).insns;
+        let followedIc3 = MicroCreateAddInsns(5, 10, followedIc2).nextIc;
         let expected = [
+            ...insertedInsns1,
+            new Createemptyarray(new Imm(followedIc1)),
+            new Sta(rawArr),
+            new Createemptyarray(new Imm(followedIc1 + 1)),
+            new Sta(cookedArr),
 
-            ...MicroCreateObjAndPropInsns(),
-            new EcmaCreateemptyarray(),
-            new StaDyn(rawArr),
-            new EcmaCreateemptyarray(),
-            new StaDyn(cookedArr),
-
-            new LdaiDyn(new Imm(0)),
-            new StaDyn(elemIdxReg),
+            new Ldai(new Imm(0)),
+            new Sta(elemIdxReg),
             new LdaStr("Fifteen is "),
-            new EcmaStobjbyvalue(rawArr, elemIdxReg),
+            new Stobjbyvalue(new Imm(followedIc1 + 2), rawArr, elemIdxReg),
             new LdaStr("Fifteen is "),
-            new EcmaStobjbyvalue(cookedArr, elemIdxReg),
-            new LdaiDyn(new Imm(1)),
-            new StaDyn(elemIdxReg),
+            new Stobjbyvalue(new Imm(followedIc1 + 4), cookedArr, elemIdxReg),
+            new Ldai(new Imm(1)),
+            new Sta(elemIdxReg),
             new LdaStr(" !!"),
-            new EcmaStobjbyvalue(rawArr, elemIdxReg),
+            new Stobjbyvalue(new Imm(followedIc1 + 6), rawArr, elemIdxReg),
             new LdaStr(" !!"),
-            new EcmaStobjbyvalue(cookedArr, elemIdxReg),
-            new MovDyn(rawArr1, rawArr),
-            new MovDyn(cookedArr1, cookedArr),
+            new Stobjbyvalue(new Imm(followedIc1 + 8), cookedArr, elemIdxReg),
+            new Mov(rawArr1, rawArr),
+            new Mov(cookedArr1, cookedArr),
 
-            ...MicroGetTemplateObject(rawArr1, cookedArr1),
-            new StaDyn(templateObj),
+            ...insertedInsns2,
+            new Sta(templateObj),
 
-            ...MicroCreateAddInsns(5, 10),
-            new StaDyn(addRet),
+            ...insertedInsns3,
+            new Sta(addRet),
 
             // structure call
-            new EcmaCallithisrangedyn(new Imm(3), [prop, obj, rawArr, templateObj]),
-            new EcmaReturnundefined()
+            new Lda(prop),
+            new Callthisrange(new Imm(followedIc3), new Imm(2), [obj, rawArr, templateObj]),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -241,7 +265,6 @@ describe("templateExpressionTest", function () {
     it("String.raw`Fifteen is ${5 + 10} !!\\n Is not ${15 + 10} !!!`", function () {
         let insns = compileMainSnippet("String.raw`Fifteen is ${5 + 10} !!\\n Is not ${15 + 10} !!!\\n`");
         let obj = new VReg();
-        let val = new VReg();
         let prop = new VReg();
         let elemIdxReg = new VReg();
         let rawArr = new VReg();
@@ -252,46 +275,56 @@ describe("templateExpressionTest", function () {
         let addRet2 = new VReg();
         let templateObj = new VReg();
 
+        let insertedInsns1 = MicroCreateObjAndPropInsns(0).insns;
+        let followedIc1 = MicroCreateObjAndPropInsns(0).nextIc;
+        let insertedInsns2 = MicroGetTemplateObject(rawArr1, cookedArr1, followedIc1 + 14).insns;
+        let followedIc2 = MicroGetTemplateObject(rawArr1, cookedArr1, followedIc1 + 14).nextIc;
+        let insertedInsns3 = MicroCreateAddInsns(5, 10, followedIc2).insns;
+        let followedIc3 = MicroCreateAddInsns(5, 10, followedIc2).nextIc;
+        let insertedInsns4 = MicroCreateAddInsns(15, 10, followedIc3).insns;
+        let followedIc4 = MicroCreateAddInsns(15, 10, followedIc3).nextIc;
+
         let expected = [
 
-            ...MicroCreateObjAndPropInsns(),
-            new EcmaCreateemptyarray(),
-            new StaDyn(rawArr),
-            new EcmaCreateemptyarray(),
-            new StaDyn(cookedArr),
+            ...insertedInsns1,
+            new Createemptyarray(new Imm(followedIc1)),
+            new Sta(rawArr),
+            new Createemptyarray(new Imm(followedIc1 + 1)),
+            new Sta(cookedArr),
 
-            new LdaiDyn(new Imm(0)),
-            new StaDyn(elemIdxReg),
+            new Ldai(new Imm(0)),
+            new Sta(elemIdxReg),
             new LdaStr("Fifteen is "),
-            new EcmaStobjbyvalue(rawArr, elemIdxReg),
+            new Stobjbyvalue(new Imm(followedIc1 + 2), rawArr, elemIdxReg),
             new LdaStr("Fifteen is "),
-            new EcmaStobjbyvalue(cookedArr, elemIdxReg),
-            new LdaiDyn(new Imm(1)),
-            new StaDyn(elemIdxReg),
+            new Stobjbyvalue(new Imm(followedIc1 + 4), cookedArr, elemIdxReg),
+            new Ldai(new Imm(1)),
+            new Sta(elemIdxReg),
             new LdaStr(" !!\\n Is not "),
-            new EcmaStobjbyvalue(rawArr, elemIdxReg),
+            new Stobjbyvalue(new Imm(followedIc1 + 6), rawArr, elemIdxReg),
             new LdaStr(" !!\n Is not "),
-            new EcmaStobjbyvalue(cookedArr, elemIdxReg),
-            new LdaiDyn(new Imm(2)),
-            new StaDyn(elemIdxReg),
+            new Stobjbyvalue(new Imm(followedIc1 + 8), cookedArr, elemIdxReg),
+            new Ldai(new Imm(2)),
+            new Sta(elemIdxReg),
             new LdaStr(" !!!\\n"),
-            new EcmaStobjbyvalue(rawArr, elemIdxReg),
+            new Stobjbyvalue(new Imm(followedIc1 + 10), rawArr, elemIdxReg),
             new LdaStr(" !!!\n"),
-            new EcmaStobjbyvalue(cookedArr, elemIdxReg),
-            new MovDyn(rawArr1, rawArr),
-            new MovDyn(cookedArr1, cookedArr),
+            new Stobjbyvalue(new Imm(followedIc1 + 12), cookedArr, elemIdxReg),
+            new Mov(rawArr1, rawArr),
+            new Mov(cookedArr1, cookedArr),
 
-            ...MicroGetTemplateObject(rawArr1, cookedArr1),
-            new StaDyn(templateObj),
+            ...insertedInsns2,
+            new Sta(templateObj),
 
-            ...MicroCreateAddInsns(5, 10),
-            new StaDyn(addRet1),
-            ...MicroCreateAddInsns(15, 10),
-            new StaDyn(addRet2),
+            ...insertedInsns3,
+            new Sta(addRet1),
+            ...insertedInsns4,
+            new Sta(addRet2),
 
             // structure call
-            new EcmaCallithisrangedyn(new Imm(4), [prop, obj, rawArr, cookedArr, templateObj]),
-            new EcmaReturnundefined()
+            new Lda(prop),
+            new Callthisrange(new Imm(followedIc4), new Imm(3), [obj, rawArr, cookedArr, templateObj]),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });

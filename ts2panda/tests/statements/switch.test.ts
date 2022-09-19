@@ -18,17 +18,17 @@ import {
 } from 'chai';
 import 'mocha';
 import {
-    EcmaReturnundefined,
-    EcmaStlettoglobalrecord,
-    EcmaStrictnoteqdyn,
-    EcmaTryldglobalbyname,
+    Returnundefined,
+    Sttoglobalrecord,
+    Strictnoteq,
+    Tryldglobalbyname,
     Imm,
     Jeqz,
     Jmp,
     Jnez,
-    Label, LdaiDyn,
-    ResultType,
-    StaDyn,
+    Label,
+    Ldai,
+    Sta,
     VReg
 } from "../../src/irnodes";
 import { checkInstructions, compileMainSnippet } from "../utils/base";
@@ -36,24 +36,23 @@ import { checkInstructions, compileMainSnippet } from "../utils/base";
 describe("switchTest", function () {
     it("single case", function () {
         let insns = compileMainSnippet("let a = 0; switch (a) {case 0 : ;}");
-        let a = new VReg();
         let rhs = new VReg();
         let caseLabel = new Label();
         let switchEndLabel = new Label();
         let expected = [
-            new LdaiDyn(new Imm(0)),
-            new EcmaStlettoglobalrecord('a'),
-            // switch body
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(rhs),
-            new LdaiDyn(new Imm(0)),
-            new EcmaStrictnoteqdyn(rhs),
+            new Ldai(new Imm(0)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
+            // switch bodynew Imm(0), 
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(rhs),
+            new Ldai(new Imm(0)),
+            new Strictnoteq(new Imm(2), rhs),
             new Jeqz(caseLabel),
             new Jmp(switchEndLabel),
             // switch cases
             caseLabel,
             switchEndLabel,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
         expect((<Jnez>insns[6]).getTarget() === insns[8]).to.be.true;
@@ -73,16 +72,16 @@ describe("switchTest", function () {
         let defaultLabel = new Label();
         let switchEndLabel = new Label();
         let expected = [
-            new LdaiDyn(new Imm(0)),
-            new EcmaStlettoglobalrecord('a'),
+            new Ldai(new Imm(0)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
             // switch body
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(rhs),
-            new LdaiDyn(new Imm(0)),
-            new EcmaStrictnoteqdyn(rhs),
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(rhs),
+            new Ldai(new Imm(0)),
+            new Strictnoteq(new Imm(2), rhs),
             new Jeqz(caseLabel_0),
-            new LdaiDyn(new Imm(1)),
-            new EcmaStrictnoteqdyn(rhs),
+            new Ldai(new Imm(1)),
+            new Strictnoteq(new Imm(3), rhs),
             new Jeqz(caseLabel_1),
             new Jmp(defaultLabel),
             // cases
@@ -91,7 +90,7 @@ describe("switchTest", function () {
             // default case
             defaultLabel,
             switchEndLabel,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -109,16 +108,16 @@ describe("switchTest", function () {
         let defaultLabel = new Label();
         let switchEndLabel = new Label();
         let expected = [
-            new LdaiDyn(new Imm(0)),
-            new EcmaStlettoglobalrecord('a'),
+            new Ldai(new Imm(0)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
             // switch body
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(rhs),
-            new LdaiDyn(new Imm(0)),
-            new EcmaStrictnoteqdyn(rhs),
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(rhs),
+            new Ldai(new Imm(0)),
+            new Strictnoteq(new Imm(2), rhs),
             new Jeqz(caseLabel_0),
-            new LdaiDyn(new Imm(1)),
-            new EcmaStrictnoteqdyn(rhs),
+            new Ldai(new Imm(1)),
+            new Strictnoteq(new Imm(3), rhs),
             new Jeqz(caseLabel_1),
             new Jmp(defaultLabel),
             // switch cases
@@ -128,7 +127,7 @@ describe("switchTest", function () {
             new Jmp(switchEndLabel),
             defaultLabel,
             switchEndLabel,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -144,16 +143,16 @@ describe("switchTest", function () {
         let caseLabel_1 = new Label();
         let switchEndLabel = new Label();
         let expected = [
-            new LdaiDyn(new Imm(0)),
-            new EcmaStlettoglobalrecord('a'),
+            new Ldai(new Imm(0)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
             // switch body
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(rhs),
-            new LdaiDyn(new Imm(0)),
-            new EcmaStrictnoteqdyn(rhs),
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(rhs),
+            new Ldai(new Imm(0)),
+            new Strictnoteq(new Imm(2), rhs),
             new Jeqz(caseLabel_0),
-            new LdaiDyn(new Imm(1)),
-            new EcmaStrictnoteqdyn(rhs),
+            new Ldai(new Imm(1)),
+            new Strictnoteq(new Imm(3), rhs),
             new Jeqz(caseLabel_1),
             new Jmp(switchEndLabel),
             // switch cases
@@ -162,7 +161,7 @@ describe("switchTest", function () {
             caseLabel_1,
             new Jmp(switchEndLabel),
             switchEndLabel,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -180,16 +179,16 @@ describe("switchTest", function () {
         let defaultLabel = new Label();
         let switchEndLabel = new Label();
         let expected = [
-            new LdaiDyn(new Imm(0)),
-            new EcmaStlettoglobalrecord('a'),
+            new Ldai(new Imm(0)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
             // switch body
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(rhs),
-            new LdaiDyn(new Imm(0)),
-            new EcmaStrictnoteqdyn(rhs),
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(rhs),
+            new Ldai(new Imm(0)),
+            new Strictnoteq(new Imm(2), rhs),
             new Jeqz(caseLabel_0),
-            new LdaiDyn(new Imm(1)),
-            new EcmaStrictnoteqdyn(rhs),
+            new Ldai(new Imm(1)),
+            new Strictnoteq(new Imm(3), rhs),
             new Jeqz(caseLabel_1),
             new Jmp(defaultLabel),
             // switch cases
@@ -199,7 +198,7 @@ describe("switchTest", function () {
             defaultLabel,
             caseLabel_1,
             switchEndLabel,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });

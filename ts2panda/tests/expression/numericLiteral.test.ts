@@ -17,11 +17,10 @@ import { expect } from 'chai';
 import * as ts from "typescript";
 import { compileNumericLiteral } from "../../src/expression/numericLiteral";
 import {
-    FldaiDyn,
+    Fldai,
     Imm,
-    LdaDyn,
-    LdaiDyn,
-    ResultType,
+    Lda,
+    Ldai,
     VReg
 } from "../../src/irnodes";
 import { PandaGen } from "../../src/pandagen";
@@ -33,7 +32,7 @@ describe("compileNumericLiteral", function () {
         let node: ts.NumericLiteral = ts.createNumericLiteral("NaN");
         compileNumericLiteral(pandaGen, node);
         let insns = pandaGen.getInsns();
-        let expected = [new LdaDyn(new VReg())];
+        let expected = [new Lda(new VReg())];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
 
@@ -42,7 +41,7 @@ describe("compileNumericLiteral", function () {
         let node: ts.NumericLiteral = ts.createNumericLiteral("10e10000");
         compileNumericLiteral(pandaGen, node);
         let insns = pandaGen.getInsns();
-        let expected = [new LdaDyn(new VReg())];
+        let expected = [new Lda(new VReg())];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
     it("int", function () {
@@ -50,7 +49,7 @@ describe("compileNumericLiteral", function () {
         let node: ts.NumericLiteral = ts.createNumericLiteral("1");
         compileNumericLiteral(pandaGen, node);
         let insns = pandaGen.getInsns();
-        let expected = [new LdaiDyn(new Imm(1))];
+        let expected = [new Ldai(new Imm(1))];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
     it("Integer overflow", function () {
@@ -58,7 +57,7 @@ describe("compileNumericLiteral", function () {
         let node: ts.NumericLiteral = ts.createNumericLiteral("2147483648");
         compileNumericLiteral(pandaGen, node);
         let insns = pandaGen.getInsns();
-        let expected = [new FldaiDyn(new Imm(2147483648))];
+        let expected = [new Fldai(new Imm(2147483648))];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
     it("double", function () {
@@ -66,7 +65,7 @@ describe("compileNumericLiteral", function () {
         let node: ts.NumericLiteral = ts.createNumericLiteral("1.1");
         compileNumericLiteral(pandaGen, node);
         let insns = pandaGen.getInsns();
-        let expected = [new FldaiDyn(new Imm(1.1))];
+        let expected = [new Fldai(new Imm(1.1))];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
 })

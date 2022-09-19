@@ -18,13 +18,12 @@ import {
 } from 'chai';
 import 'mocha';
 import {
-    EcmaGetunmappedargs,
-    EcmaLdobjbyindex,
-    EcmaReturnundefined,
+    Getunmappedargs,
+    Ldobjbyindex,
+    Returnundefined,
     Imm,
-    LdaDyn,
-    ResultType,
-    StaDyn,
+    Lda,
+    Sta,
     VReg
 } from "../../src/irnodes";
 import { checkInstructions, SnippetCompiler } from "../utils/base";
@@ -36,12 +35,13 @@ describe("arguments Keyword", function () {
         let argumentsReg = new VReg();
         let temp1 = new VReg();
         let expected = [
-            new EcmaGetunmappedargs(),
-            new StaDyn(argumentsReg),
-            new LdaDyn(argumentsReg),
-            new StaDyn(temp1),
-            new EcmaLdobjbyindex(temp1, new Imm(0)),
-            new EcmaReturnundefined()
+            new Getunmappedargs(),
+            new Sta(argumentsReg),
+            new Lda(argumentsReg),
+            new Sta(temp1),
+            new Lda(temp1),
+            new Ldobjbyindex(new Imm(0), new Imm(0)),
+            new Returnundefined()
         ];
         let functionPg = snippetCompiler.getPandaGenByName("foo");
         let insns = functionPg!.getInsns();
@@ -55,12 +55,13 @@ describe("arguments Keyword", function () {
         let parameterArguments = new VReg();
         let temp1 = new VReg();
         let expected = [
-            new EcmaGetunmappedargs(),
-            new StaDyn(new VReg()),
-            new LdaDyn(parameterArguments),
-            new StaDyn(temp1),
-            new EcmaLdobjbyindex(temp1, new Imm(0)),
-            new EcmaReturnundefined()
+            new Getunmappedargs(),
+            new Sta(new VReg()),
+            new Lda(parameterArguments),
+            new Sta(temp1),
+            new Lda(temp1),
+            new Ldobjbyindex(new Imm(0), new Imm(0)),
+            new Returnundefined()
         ];
         let functionPg = snippetCompiler.getPandaGenByName("foo");
         let insns = functionPg!.getInsns();

@@ -16,32 +16,29 @@
 import { expect } from 'chai';
 import { DiagnosticCode, DiagnosticError } from '../../src/diagnostic';
 import {
-    EcmaAdd2dyn,
-    EcmaAsyncfunctionawaituncaught,
-    EcmaAsyncfunctionenter,
-    EcmaAsyncfunctionreject,
-    EcmaAsyncfunctionresolve,
-    EcmaCallarg0dyn,
-    EcmaCreategeneratorobj,
-    EcmaCreateiterresultobj,
-    EcmaDefinefuncdyn,
-    EcmaDefinegeneratorfunc,
-    EcmaDefinencfuncdyn,
-    EcmaEqdyn,
-    EcmaGetresumemode,
-    EcmaLdlexenvdyn,
-    EcmaResumegenerator,
-    EcmaReturnundefined,
-    EcmaSuspendgenerator,
-    EcmaThrowdyn,
-    EcmaLdfunction,
+    Add2,
+    Asyncfunctionawaituncaught,
+    Asyncfunctionenter,
+    Asyncfunctionreject,
+    Asyncfunctionresolve,
+    Callarg0,
+    Creategeneratorobj,
+    Createiterresultobj,
+    Definefunc,
+    Eq,
+    Getresumemode,
+    Resumegenerator,
+    Returnundefined,
+    Suspendgenerator,
+    Throw,
+    Ldfunction,
     Imm,
     Jeqz,
     Label,
-    LdaDyn,
-    LdaiDyn,
-    ReturnDyn,
-    StaDyn,
+    Lda,
+    Ldai,
+    Return,
+    Sta,
     VReg
 } from "../../src/irnodes";
 import { CacheExpander } from '../../src/pass/cacheExpander';
@@ -58,16 +55,16 @@ describe("compileFunctionExpression", function () {
         let pandaGens = compileAllSnippet(source, passes);
 
         let expected_func = [
-            new EcmaLdlexenvdyn(),
-            new StaDyn(new VReg()),
-            new EcmaLdfunction(),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaCallarg0dyn(new VReg()),
-            new EcmaReturnundefined()
+            new Sta(new VReg()),
+            new Ldfunction(),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Callarg0(new Imm(0)),
+            new Returnundefined()
         ];
 
         let checkCount = 0;
@@ -97,7 +94,7 @@ describe("compileFunctionExpression", function () {
             if (pg.internalName == "func_main_0") {
 
                 pg.getInsns().forEach((insns) => {
-                    if (insns instanceof EcmaDefinefuncdyn) {
+                    if (insns instanceof Definefunc) {
                         expect(insns.operands[0]).to.equal('a');
                         checkCount++;
                     }
@@ -125,7 +122,7 @@ describe("compileFunctionExpression", function () {
             if (pg.internalName == "func_main_0") {
 
                 pg.getInsns().forEach((insns) => {
-                    if (insns instanceof EcmaDefinefuncdyn) {
+                    if (insns instanceof Definefunc) {
                         expect(insns.operands[0]).to.equal('a');
                         checkCount++;
                     }
@@ -153,7 +150,7 @@ describe("compileFunctionExpression", function () {
             if (pg.internalName == "func_main_0") {
 
                 pg.getInsns().forEach((insns) => {
-                    if (insns instanceof EcmaDefinencfuncdyn) {
+                    if (insns instanceof Definefunc) {
                         expect(insns.operands[0]).to.equal('a');
                         checkCount++;
                     }
@@ -172,13 +169,13 @@ describe("compileFunctionExpression", function () {
         let checkCount = 0;
 
         let expected_func = [
-            new LdaDyn(new VReg()),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
-            new EcmaAdd2dyn(new VReg()),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
-            new ReturnDyn()
+            new Lda(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Add2(new Imm(0), new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Return()
         ];
 
         pandaGens.forEach((pg) => {
@@ -190,7 +187,7 @@ describe("compileFunctionExpression", function () {
             if (pg.internalName == "func_main_0") {
 
                 pg.getInsns().forEach((insns) => {
-                    if (insns instanceof EcmaDefinencfuncdyn) {
+                    if (insns instanceof Definefunc) {
                         expect(insns.operands[0]).to.equal('p');
                         checkCount++;
                     }
@@ -228,55 +225,59 @@ describe("compileFunctionExpression", function () {
         let notThrowLabel1 = new Label();
 
         let expected_func = [
-            new EcmaCreategeneratorobj(new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaSuspendgenerator(new VReg(), new VReg()),
-            new EcmaResumegenerator(new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaGetresumemode(new VReg()),
-            new StaDyn(new VReg()),
+            new Creategeneratorobj(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Suspendgenerator(new VReg()),
+            new Lda(new VReg()),
+            new Resumegenerator(),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Getresumemode(),
+            new Sta(new VReg()),
 
-            new LdaiDyn(new Imm(0)),
-            new EcmaEqdyn(new VReg()),
+            new Ldai(new Imm(0)),
+            new Eq(new Imm(0), new VReg()),
             new Jeqz(notRetLabel0),
-            new LdaDyn(new VReg()),
-            new ReturnDyn(),
+            new Lda(new VReg()),
+            new Return(),
 
             notRetLabel0,
-            new LdaiDyn(new Imm(1)),
-            new EcmaEqdyn(new VReg()),
+            new Ldai(new Imm(1)),
+            new Eq(new Imm(1), new VReg()),
             new Jeqz(notThrowLabel0),
-            new LdaDyn(new VReg()),
-            new EcmaThrowdyn(),
+            new Lda(new VReg()),
+            new Throw(),
 
             notThrowLabel0,
-            new LdaDyn(new VReg()),
-            new LdaiDyn(new Imm(1)),
-            new StaDyn(new VReg()),
-            new EcmaCreateiterresultobj(new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaSuspendgenerator(new VReg(), new VReg()),
-            new EcmaResumegenerator(new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaGetresumemode(new VReg()),
-            new StaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Ldai(new Imm(1)),
+            new Sta(new VReg()),
+            new Createiterresultobj(new VReg(), new VReg()),
+            new Suspendgenerator(new VReg()),
+            new Lda(new VReg()),
+            new Resumegenerator(),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Getresumemode(),
+            new Sta(new VReg()),
 
-            new LdaiDyn(new Imm(0)),
-            new EcmaEqdyn(new VReg()),
+            new Ldai(new Imm(0)),
+            new Eq(new Imm(2), new VReg()),
             new Jeqz(notRetLabel1),
-            new LdaDyn(new VReg()),
-            new ReturnDyn(),
+            new Lda(new VReg()),
+            new Return(),
 
             notRetLabel1,
-            new LdaiDyn(new Imm(1)),
-            new EcmaEqdyn(new VReg()),
+            new Ldai(new Imm(1)),
+            new Eq(new Imm(3), new VReg()),
             new Jeqz(notThrowLabel1),
-            new LdaDyn(new VReg()),
-            new EcmaThrowdyn(),
+            new Lda(new VReg()),
+            new Throw(),
 
             notThrowLabel1,
-            new LdaDyn(new VReg()),
-            new EcmaReturnundefined()
+            new Lda(new VReg()),
+            new Returnundefined()
         ];
 
         let pandaGens = compileAllSnippet(source);
@@ -290,7 +291,7 @@ describe("compileFunctionExpression", function () {
 
             if (pg.internalName == "func_main_0") {
                 pg.getInsns().forEach((insns) => {
-                    if (insns instanceof EcmaDefinegeneratorfunc) {
+                    if (insns instanceof Definefunc) {
                         expect(insns.operands[0]).to.equal('a');
                         checkCount++;
                     }
@@ -312,31 +313,37 @@ describe("compileFunctionExpression", function () {
         let nextLabel = new Label();
 
         let expected_func = [
-            new EcmaAsyncfunctionenter(),
-            new StaDyn(new VReg()),
+            new Asyncfunctionenter(),
+            new Sta(new VReg()),
             beginLabel,
-            new LdaiDyn(new Imm(1)),
-            new StaDyn(new VReg()),
-            new EcmaAsyncfunctionawaituncaught(new VReg(), new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaSuspendgenerator(new VReg(), new VReg()),
-            new EcmaResumegenerator(new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaGetresumemode(new VReg()),
-            new StaDyn(new VReg()),
-            new LdaiDyn(new Imm(1)),
-            new EcmaEqdyn(new VReg()),
+            new Ldai(new Imm(1)),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Asyncfunctionawaituncaught(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Suspendgenerator(new VReg()),
+            new Lda(new VReg()),
+            new Resumegenerator(),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Getresumemode(),
+            new Sta(new VReg()),
+            new Ldai(new Imm(1)),
+            new Eq(new Imm(0), new VReg()),
             new Jeqz(nextLabel),
-            new LdaDyn(new VReg()),
-            new EcmaThrowdyn(),
+            new Lda(new VReg()),
+            new Throw(),
             nextLabel,
-            new LdaDyn(new VReg()),
-            new EcmaAsyncfunctionresolve(new VReg(), new VReg(), new VReg()),
-            new ReturnDyn(),
+            new Lda(new VReg()),
+            new Lda(new VReg()),
+            new Asyncfunctionresolve(new VReg()),
+            new Return(),
             endLabel,
-            new StaDyn(new VReg()),
-            new EcmaAsyncfunctionreject(new VReg(), new VReg(), new VReg()),
-            new ReturnDyn(),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Asyncfunctionreject(new VReg()),
+            new Return(),
         ];
 
         let pandaGens = compileAllSnippet(source);
@@ -350,7 +357,7 @@ describe("compileFunctionExpression", function () {
 
             if (pg.internalName == "func_main_0") {
                 pg.getInsns().forEach((insns) => {
-                    if (insns instanceof EcmaDefinencfuncdyn) {
+                    if (insns instanceof Definefunc) {
                         expect(insns.operands[0]).to.equal('a');
                         checkCount++;
                     }

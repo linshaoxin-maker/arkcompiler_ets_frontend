@@ -18,22 +18,20 @@ import {
 } from 'chai';
 import 'mocha';
 import {
-    EcmaAdd2dyn,
-    EcmaIstrue,
-    EcmaLessdyn,
-    EcmaReturnundefined,
-    EcmaStlettoglobalrecord,
-    EcmaTryldglobalbyname,
-    EcmaTrystglobalbyname,
+    Add2,
+    Istrue,
+    Less,
+    Returnundefined,
+    Sttoglobalrecord,
+    Tryldglobalbyname,
+    Trystglobalbyname,
     Imm,
     Jeqz,
-    Jgez,
     Jmp,
     Label,
-    LdaDyn,
-    LdaiDyn,
-    ResultType,
-    StaDyn,
+    Lda,
+    Ldai,
+    Sta,
     VReg
 } from "../../src/irnodes";
 import { checkInstructions, compileMainSnippet } from "../utils/base";
@@ -45,12 +43,12 @@ describe("WhileLoopTest", function () {
         let labelPost = new Label();
         let expected = [
             labelPre,
-            new LdaDyn(new VReg()),
-            new EcmaIstrue(),
+            new Lda(new VReg()),
+            new Istrue(),
             new Jeqz(labelPost),
             new Jmp(labelPre),
             labelPost,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
 
         expect(checkInstructions(insns, expected)).to.be.true;
@@ -64,18 +62,18 @@ describe("WhileLoopTest", function () {
         let expected = [
             loopBegin,
             // a + b
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(lhs),
-            new EcmaTryldglobalbyname('b'),
-            new EcmaAdd2dyn(lhs),
-            new EcmaIstrue(),
+            new Tryldglobalbyname(new Imm(0), 'a'),
+            new Sta(lhs),
+            new Tryldglobalbyname(new Imm(1), 'b'),
+            new Add2(new Imm(2), lhs),
+            new Istrue(),
             new Jeqz(loopEnd),
             // body
             new Jmp(loopBegin),
             loopEnd
         ];
 
-        insns = insns.slice(4, insns.length - 1); // skip let a, b and return.dyn
+        insns = insns.slice(4, insns.length - 1); // skip let a, b and return.
         expect(checkInstructions(insns, expected)).to.be.true;
     });
 
@@ -92,24 +90,24 @@ describe("WhileLoopTest", function () {
             loopBegin,
             // condition
             // compute lhs
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(lhs),
+            new Tryldglobalbyname(new Imm(0), 'a'),
+            new Sta(lhs),
             // compute rhs
-            new LdaiDyn(new Imm(0)),
-            new EcmaLessdyn(lhs),
+            new Ldai(new Imm(0)),
+            new Less(new Imm(1), lhs),
             new Jeqz(loopEnd),
 
             // body
-            new LdaiDyn(new Imm(1)),
-            new EcmaTrystglobalbyname('a'),
+            new Ldai(new Imm(1)),
+            new Trystglobalbyname(new Imm(2), 'a'),
             new Jmp(loopBegin),
 
             loopEnd,
         ];
 
-        insns = insns.slice(2, insns.length - 1); // skip let a and return.dyn
+        insns = insns.slice(2, insns.length - 1); // skip let a and return.
         expect(checkInstructions(insns, expected)).to.be.true;
-        expect((<Jgez>insns[5]).getTarget() === insns[insns.length - 1]).to.be.true;
+        expect((<Jeqz>insns[5]).getTarget() === insns[insns.length - 1]).to.be.true;
         expect((<Jmp>insns[insns.length - 2]).getTarget() === insns[0]).to.be.true;
     });
 
@@ -120,22 +118,22 @@ describe("WhileLoopTest", function () {
         let labelPre = new Label();
         let labelPost = new Label();
         let expected = [
-            new LdaiDyn(new Imm(5)),
-            new EcmaStlettoglobalrecord('a'),
+            new Ldai(new Imm(5)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
             labelPre,
             // condition
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(lhs),
-            new LdaiDyn(new Imm(1)),
-            new EcmaLessdyn(lhs),
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(lhs),
+            new Ldai(new Imm(1)),
+            new Less(new Imm(2), lhs),
             new Jeqz(labelPost),
             //body
-            new LdaiDyn(new Imm(2)),
-            new EcmaTrystglobalbyname('a'),
+            new Ldai(new Imm(2)),
+            new Trystglobalbyname(new Imm(3), 'a'),
             new Jmp(labelPre), // continue
             new Jmp(labelPre),
             labelPost,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ]
         // check the instruction kinds are the same as we expect
         expect(checkInstructions(insns, expected)).to.be.true;
@@ -152,22 +150,22 @@ describe("WhileLoopTest", function () {
         let labelPre = new Label();
         let labelPost = new Label();
         let expected = [
-            new LdaiDyn(new Imm(5)),
-            new EcmaStlettoglobalrecord('a'),
+            new Ldai(new Imm(5)),
+            new Sttoglobalrecord(new Imm(0), 'a'),
             labelPre,
             // condition
-            new EcmaTryldglobalbyname('a'),
-            new StaDyn(lhs),
-            new LdaiDyn(new Imm(1)),
-            new EcmaLessdyn(lhs),
+            new Tryldglobalbyname(new Imm(1), 'a'),
+            new Sta(lhs),
+            new Ldai(new Imm(1)),
+            new Less(new Imm(2), lhs),
             new Jeqz(labelPost),
             //body
-            new LdaiDyn(new Imm(2)),
-            new EcmaTrystglobalbyname('a'),
+            new Ldai(new Imm(2)),
+            new Trystglobalbyname(new Imm(3), 'a'),
             new Jmp(labelPost), //break
             new Jmp(labelPre),
             labelPost,
-            new EcmaReturnundefined()
+            new Returnundefined()
         ]
         // check the instruction kinds are the same as we expect
         expect(checkInstructions(insns, expected)).to.be.true;

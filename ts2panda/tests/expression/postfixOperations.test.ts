@@ -17,19 +17,20 @@ import {
     expect
 } from 'chai';
 import 'mocha';
+import { loadAccumulator } from 'src/base/bcGenUtil';
 import {
-    EcmaDecdyn,
-    EcmaIncdyn,
-    EcmaReturnundefined,
-    EcmaStlettoglobalrecord,
-    EcmaTonumeric,
-    EcmaTryldglobalbyname,
-    EcmaTrystglobalbyname,
+    Dec,
+    Inc,
+    Returnundefined,
+    Sttoglobalrecord,
+    Tonumeric,
+    Tryldglobalbyname,
+    Trystglobalbyname,
     Imm,
-    LdaiDyn,
-    ResultType,
-    StaDyn,
-    VReg
+    Ldai,
+    Sta,
+    VReg,
+    Lda
 } from "../../src/irnodes";
 import { checkInstructions, compileMainSnippet } from "../utils/base";
 
@@ -39,14 +40,16 @@ describe("PostfixOperationsTest", function () {
         let i = new VReg();
         let temp = new VReg();
         let expected = [
-            new LdaiDyn(new Imm(5)),
-            new EcmaStlettoglobalrecord('i'),
-            new EcmaTryldglobalbyname('i'),
-            new StaDyn(temp),
-            new EcmaIncdyn(temp),
-            new EcmaTrystglobalbyname('i'),
-            new EcmaTonumeric(i),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(5)),
+            new Sttoglobalrecord(new Imm(0), 'i'),
+            new Tryldglobalbyname(new Imm(1), 'i'),
+            new Sta(temp),
+            new Lda(temp),
+            new Inc(new Imm(2)),
+            new Trystglobalbyname(new Imm(3), 'i'),
+            new Lda(i),
+            new Tonumeric(new Imm(4), ),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -56,14 +59,16 @@ describe("PostfixOperationsTest", function () {
         let i = new VReg();
         let temp = new VReg();
         let expected = [
-            new LdaiDyn(new Imm(5)),
-            new EcmaStlettoglobalrecord('i'),
-            new EcmaTryldglobalbyname('i'),
-            new StaDyn(temp),
-            new EcmaDecdyn(temp),
-            new EcmaTrystglobalbyname('i'),
-            new EcmaTonumeric(i),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(5)),
+            new Sttoglobalrecord(new Imm(0), 'i'),
+            new Tryldglobalbyname(new Imm(1), 'i'),
+            new Sta(temp),
+            new Lda(temp),
+            new Dec(new Imm(2)),
+            new Trystglobalbyname(new Imm(3), 'i'),
+            new Lda(i),
+            new Tonumeric(new Imm(4)),
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });

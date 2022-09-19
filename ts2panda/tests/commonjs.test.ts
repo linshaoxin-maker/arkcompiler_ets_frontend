@@ -19,17 +19,17 @@ import {
 import 'mocha';
 import { checkInstructions, SnippetCompiler } from "./utils/base";
 import {
-    EcmaCallarg1dyn,
-    EcmaCallirangedyn,
-    EcmaDefinefuncdyn,
-    EcmaReturnundefined,
-    EcmaStobjbyname,
+    Callarg1,
+    Callrange,
+    Definefunc,
+    Returnundefined,
+    Stobjbyname,
     Imm,
-    LdaDyn,
-    LdaiDyn,
+    Lda,
+    Ldai,
     LdaStr,
-    MovDyn,
-    StaDyn,
+    Mov,
+    Sta,
     VReg
 } from "../src/irnodes";
 import { CmdOptions } from '../src/cmdOptions';
@@ -44,20 +44,21 @@ describe("CommonJsTest", function () {
         CmdOptions.isCommonJs = () => {return false};
         let funcMainInsns = snippetCompiler.getGlobalInsns();
         let expected = [
-            new EcmaDefinefuncdyn('#1#', new Imm(5), new VReg()),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
-            new StaDyn(new VReg()),
-            new LdaDyn(new VReg()),
-            new StaDyn(new VReg()),
-            new EcmaCallirangedyn(new Imm(5), [new VReg(), new VReg(), new VReg(), new VReg(), new VReg(), new VReg()]),
-            new EcmaReturnundefined(),
+            new Definefunc(new Imm(0), '#1#', new Imm(5)),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Sta(new VReg()),
+            new Lda(new VReg()),
+            new Callrange(new Imm(1), new Imm(4), [new VReg(), new VReg(), new VReg(), new VReg(), new VReg()]),
+            new Returnundefined(),
         ];
         expect(checkInstructions(funcMainInsns, expected)).to.be.true;
     });
@@ -72,13 +73,14 @@ describe("CommonJsTest", function () {
         let requireReg = new VReg();
         let moduleRequest = new VReg();
         let expected = [
-            new LdaDyn(requirePara),
-            new StaDyn(requireReg),
+            new Lda(requirePara),
+            new Sta(requireReg),
             new LdaStr("a.js"),
-            new StaDyn(moduleRequest),
-            new EcmaCallarg1dyn(requireReg, moduleRequest),
-            new StaDyn(new VReg()),
-            new EcmaReturnundefined()
+            new Sta(moduleRequest),
+            new Lda(new VReg()),
+            new Callarg1(new Imm(0), moduleRequest),
+            new Sta(new VReg()),
+            new Returnundefined()
         ];
         expect(checkInstructions(execInsns, expected)).to.be.true;
     });
@@ -94,14 +96,14 @@ describe("CommonJsTest", function () {
         let tmpReg = new VReg();
         let a = new VReg();
         let expected = [
-            new LdaiDyn(new Imm(1)),
-            new StaDyn(a),
-            new LdaDyn(exportsPara),
-            new StaDyn(exportsReg),
-            new MovDyn(tmpReg, exportsReg),
-            new LdaDyn(a),
-            new EcmaStobjbyname("a", tmpReg),
-            new EcmaReturnundefined()
+            new Ldai(new Imm(1)),
+            new Sta(a),
+            new Lda(exportsPara),
+            new Sta(exportsReg),
+            new Mov(tmpReg, exportsReg),
+            new Lda(a),
+            new Stobjbyname(new Imm(0), "a", tmpReg),
+            new Returnundefined()
         ];
         expect(checkInstructions(execInsns, expected)).to.be.true;
     });
