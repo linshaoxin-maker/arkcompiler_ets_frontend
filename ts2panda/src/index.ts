@@ -178,11 +178,11 @@ function getDtsFiles(libDir: string): string[] {
 }
 
 export function getRecordName(node: ts.SourceFile): string {
-    return "";
+    return ""; // need to be fixed later
 }
 
 export function getLiteralKey(node: ts.SourceFile, idx:number): string {
-    return getRecordName(node) + "_" + idx;
+    return `${getRecordName(node)}_${idx}`;
 }
 
 function specifyCustomLib(customLib) {

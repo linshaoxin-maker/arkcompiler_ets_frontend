@@ -208,6 +208,7 @@ export class Ts2Panda {
     }
 
     static dumpCmdOptions(ts2abc: any): void {
+        let enableRecordType: boolean = CmdOptions.needRecordType() && CompilerDriver.isTsFile;
         let options = {
             "t": JsonType.options,
             "module_mode": CmdOptions.isModules(),
@@ -217,7 +218,8 @@ export class Ts2Panda {
             "opt_level": CmdOptions.getOptLevel(),
             "opt_log_level": CmdOptions.getOptLogLevel(),
             "display_typeinfo": CmdOptions.getDisplayTypeinfo(),
-            "is_dts_file": isGlobalDeclare()
+            "is_dts_file": isGlobalDeclare(),
+            "record_type": enableRecordType
         };
         let jsonOpt = JSON.stringify(options, null, 2);
         jsonOpt = "$" + jsonOpt.replace(dollarSign, '#$') + "$";

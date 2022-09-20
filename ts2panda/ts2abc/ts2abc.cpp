@@ -686,7 +686,7 @@ static void ParseFunctionTypeInfo(const Json::Value &function, panda::pandasm::F
             typeTagLiteral.tag_ = panda::panda_file::LiteralTag::TAGVALUE;
             auto type = it.second;
             if (type < LITERALBUFFERINDEXOFFSET) {
-                typeTagLiteral.value_ = static_cast<uint8_t>(panda::panda_file::LiteralTag::INTEGER);
+                typeTagLiteral.value_ = static_cast<uint8_t>(panda::panda_file::LiteralTag::BUILTINTYPEINDEX);
                 typeValueLiteral.tag_ = panda::panda_file::LiteralTag::BUILTINTYPEINDEX;
                 typeValueLiteral.value_ = static_cast<uint8_t>(type);
             } else {
@@ -700,7 +700,6 @@ static void ParseFunctionTypeInfo(const Json::Value &function, panda::pandasm::F
         }
 
         std::string litId = GetLiteralId(g_newLiteralArrayIndex--);
-        std::cerr << "--------------function typeinfo litId------------------" << litId << std::endl;
         auto literalarrayInstance = panda::pandasm::LiteralArray(literalArray);
         prog.literalarray_table.emplace(litId, std::move(literalarrayInstance));
 
@@ -750,7 +749,7 @@ static std::string CreateLiteralArrayForType(const Json::Value &types, panda::pa
         } else {
             typeTagLiteral.value_ = static_cast<uint8_t>(panda::panda_file::LiteralTag::LITERALARRAY);
             typeValueLiteral.tag_ = panda::panda_file::LiteralTag::LITERALARRAY;
-            std::string litId = g_recordName + "_" + std::to_string(typeIndex);
+            std::string litId = GetLiteralId(typeIndex - LITERALBUFFERINDEXOFFSET);
             typeValueLiteral.value_ = litId;
         }
 
@@ -759,7 +758,6 @@ static std::string CreateLiteralArrayForType(const Json::Value &types, panda::pa
     }
 
     std::string litId = GetLiteralId(g_newLiteralArrayIndex--);
-    std::cerr << "--------------function literalArray of type litId------------------" << litId << std::endl;
     auto literalarrayInstance = panda::pandasm::LiteralArray(literalArray);
     prog.literalarray_table.emplace(litId, std::move(literalarrayInstance));
     return litId;
@@ -983,6 +981,14 @@ static void ParseIsDtsFile(const Json::Value &rootValue)
     }
 }
 
+static void ParseEnableTypeInfo(const Json::Value &rootValue)
+{
+    Logd("-----------------parse enable type info-----------------");
+    if (rootValue.isMember("record_type") && rootValue["record_type"].isBool()) {
+        g_enableTypeinfo = rootValue["record_type"].asBool();
+    }
+}
+
 static void ParseCompilerOutputProto(const Json::Value &rootValue)
 {
     Logd("-----------------parse compiler output proto-----------------");
@@ -1013,6 +1019,7 @@ static void ParseOptions(const Json::Value &rootValue, panda::pandasm::Program &
     ParseDisplayTypeinfo(rootValue);
     ParseOptLogLevel(rootValue);
     ParseIsDtsFile(rootValue);
+    ParseEnableTypeInfo(rootValue);
     ParseCompilerOutputProto(rootValue);
 }
 
@@ -1046,11 +1053,7 @@ static void ParseSingleLiteralBuf(const Json::Value &rootValue, panda::pandasm::
     }
 
     auto literalarrayInstance = panda::pandasm::LiteralArray(literalArray);
-    std::string litId = g_recordName + "_" + std::to_string(g_literalArrayCount++);
-    if (prog.literalarray_table.find(litId) != prog.literalarray_table.end()) {
-        std::cerr << "----litId is alrerady exist--------" << litId << std::endl;
-    }
-    std::cerr << "---------literal id----------" << litId << std::endl;
+    auto litId = literalBuffer["k"].asString();
     prog.literalarray_table.emplace(litId, std::move(literalarrayInstance));
 }
 
@@ -1174,7 +1177,6 @@ static void ParseSingleModule(const Json::Value &rootValue, panda::pandasm::Prog
     std::string moduleName = ParseString(moduleRecord["moduleName"].asString());
     AddModuleRecord(prog, moduleName);
     std::string moduleId = GetLiteralId(g_newLiteralArrayIndex--);
-    std::cerr << "--------------moduleId------------------" << moduleId << std::endl;
 
     auto moduleLiteralarrayInstance = panda::pandasm::LiteralArray(moduleLiteralArray);
     prog.literalarray_table.emplace(moduleId, std::move(moduleLiteralarrayInstance));
@@ -1185,7 +1187,6 @@ static void ParseSingleTypeInfo(const Json::Value &rootValue, panda::pandasm::Pr
     auto typeInfoRecord = rootValue["ti"];
     auto typeFlag = typeInfoRecord["tf"].asBool();
     auto typeSummaryIndex = typeInfoRecord["tsi"].asString();
-    std::cerr << "--------type summary index---------" << typeSummaryIndex << std::endl;
     auto ecmaTypeInfoRecord = panda::pandasm::Record("_ESTypeInfoRecord", LANG_EXT);
     ecmaTypeInfoRecord.metadata->SetAccessFlags(panda::ACC_PUBLIC);
 
@@ -1195,12 +1196,15 @@ static void ParseSingleTypeInfo(const Json::Value &rootValue, panda::pandasm::Pr
     typeFlagField.metadata->SetValue(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U8>(
     static_cast<uint8_t>(typeFlag)));
     ecmaTypeInfoRecord.field_list.emplace_back(std::move(typeFlagField));
-    auto typeSummaryIndexField = panda::pandasm::Field(LANG_EXT);
-    typeSummaryIndexField.name = "typeSummaryIndex";
-    typeSummaryIndexField.type = panda::pandasm::Type("u32", 0);
-    typeSummaryIndexField.metadata->SetValue(
-        panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::LITERALARRAY>(typeSummaryIndex));
-    ecmaTypeInfoRecord.field_list.emplace_back(std::move(typeSummaryIndexField));
+
+    if (g_enableTypeinfo) {
+        auto typeSummaryIndexField = panda::pandasm::Field(LANG_EXT);
+        typeSummaryIndexField.name = "typeSummaryIndex";
+        typeSummaryIndexField.type = panda::pandasm::Type("u32", 0);
+        typeSummaryIndexField.metadata->SetValue(
+            panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::LITERALARRAY>(typeSummaryIndex));
+        ecmaTypeInfoRecord.field_list.emplace_back(std::move(typeSummaryIndexField));
+    }
 
     prog.record_table.emplace(ecmaTypeInfoRecord.name, std::move(ecmaTypeInfoRecord));
 }
@@ -1401,8 +1405,6 @@ bool GenerateProgram([[maybe_unused]] const std::string &data, const std::string
     }
 
     Logd("parsing done, calling pandasm\n");
-
-    std::cerr << "---------num of literal array------------" << prog.literalarray_table.size() << std::endl;
 
     std::string compilerOutputProto = g_compilerOutputProto;
     if (options.GetCompilerOutputProto().size() > 0) {

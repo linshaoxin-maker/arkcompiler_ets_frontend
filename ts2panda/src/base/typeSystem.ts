@@ -438,7 +438,7 @@ export class ClassType extends BaseType {
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.CLASS));
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.modifier));
 
-        classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.extendsHeritage));
+        this.transferType2Literal(this.extendsHeritage, classTypeLiterals);
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.implementsHeritages.length));
         this.implementsHeritages.forEach(heritage => { // heritage types
             this.transferType2Literal(heritage, classTypeLiterals);
@@ -614,7 +614,7 @@ export class FunctionType extends BaseType {
             }
         }
 
-        funcTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.returnType));
+        this.transferType2Literal(this.returnType, funcTypeLiterals);
         funcTypeBuf.addLiterals(...funcTypeLiterals);
         return funcTypeBuf;
     }
@@ -941,7 +941,7 @@ export class BuiltinContainerType extends BaseType {
         let UnionTypeBuf = new LiteralBuffer();
         let UnionTypeLiterals: Array<Literal> = new Array<Literal>();
         UnionTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.BUILTINCONTAINER));
-        UnionTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.builtinTypeIndex));
+        this.transferType2Literal(this.builtinTypeIndex, UnionTypeLiterals);
         UnionTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.containerArray.length));
         for (let type of this.containerArray) {
             this.transferType2Literal(type, UnionTypeLiterals);

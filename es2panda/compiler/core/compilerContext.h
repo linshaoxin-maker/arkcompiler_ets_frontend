@@ -36,7 +36,7 @@ class Emitter;
 class CompilerContext {
 public:
     CompilerContext(binder::Binder *binder, bool isDebug, bool isDebuggerEvaluateExpressionMode,
-                    bool isMergeAbc, std::string sourceFile, util::StringView recordName);
+                    bool isMergeAbc, std::string sourceFile);
     NO_COPY_SEMANTIC(CompilerContext);
     NO_MOVE_SEMANTIC(CompilerContext);
     ~CompilerContext() = default;
@@ -97,11 +97,6 @@ public:
         return hotfixHelper_;
     }
 
-    util::StringView RecordName() const
-    {
-        return recordName_;
-    }
-
 private:
     binder::Binder *binder_;
     int32_t literalBufferIdx_ {0};
@@ -112,7 +107,6 @@ private:
     std::string sourceFile_;
     std::unique_ptr<Emitter> emitter_;
     util::Hotfix *hotfixHelper_ {nullptr};
-    util::StringView recordName_;
 };
 
 }  // namespace panda::es2panda::compiler
