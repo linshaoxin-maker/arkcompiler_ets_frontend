@@ -57,7 +57,6 @@ constexpr std::size_t BOUND_RIGHT = 0;
 constexpr std::size_t LINE_NUMBER = 0;
 constexpr bool IS_DEFINED = true;
 int g_opCodeIndex = 0;
-std::string g_recordName = "";
 std::unordered_map<int, panda::pandasm::Opcode> g_opcodeMap = {
 #define OPLIST(opcode, name, optype, width, flags, def_idx, use_idxs) {g_opCodeIndex++, panda::pandasm::Opcode::opcode},
     PANDA_INSTRUCTION_LIST(OPLIST)
@@ -750,7 +749,7 @@ static std::string CreateLiteralArrayForType(const Json::Value &types, panda::pa
         } else {
             typeTagLiteral.value_ = static_cast<uint8_t>(panda::panda_file::LiteralTag::LITERALARRAY);
             typeValueLiteral.tag_ = panda::panda_file::LiteralTag::LITERALARRAY;
-            std::string litId = g_recordName + "_" + std::to_string(typeIndex);
+            std::string litId = GetLiteralId(typeIndex - LITERALBUFFERINDEXOFFSET);
             typeValueLiteral.value_ = litId;
         }
 
@@ -963,6 +962,14 @@ static void ParseIsDtsFile(const Json::Value &rootValue)
     }
 }
 
+static void ParseEnableTypeInfo(const Json::Value &rootValue)
+{
+    Logd("-----------------parse enable type info-----------------");
+    if (rootValue.isMember("record_type") && rootValue["record_type"].isBool()) {
+        g_enableTypeinfo = rootValue["record_type"].asBool();
+    }
+}
+
 static void ParseCompilerOutputProto(const Json::Value &rootValue)
 {
     Logd("-----------------parse compiler output proto-----------------");
@@ -992,6 +999,7 @@ static void ParseOptions(const Json::Value &rootValue, panda::pandasm::Program &
     ParseDisplayTypeinfo(rootValue);
     ParseOptLogLevel(rootValue);
     ParseIsDtsFile(rootValue);
+    ParseEnableTypeInfo(rootValue);
     ParseCompilerOutputProto(rootValue);
 }
 
@@ -1026,10 +1034,7 @@ static void ParseSingleLiteralBuf(const Json::Value &rootValue, panda::pandasm::
     }
 
     auto literalarrayInstance = panda::pandasm::LiteralArray(literalArray);
-    std::string litId = g_recordName + "_" + std::to_string(g_literalArrayCount++);
-    if (prog.literalarray_table.find(litId) != prog.literalarray_table.end()) {
-        std::cerr << "----litId is alrerady exist--------" << litId << std::endl;
-    }
+    auto litId = literalBuffer["k"].asString();
     std::cerr << "---------literal id----------" << litId << std::endl;
     prog.literalarray_table.emplace(litId, std::move(literalarrayInstance));
 }
@@ -1174,15 +1179,18 @@ static void ParseSingleTypeInfo(const Json::Value &rootValue, panda::pandasm::Pr
         typeFlagField.type = panda::pandasm::Type("u8", 0);
         typeFlagField.metadata->SetValue(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U8>(
             static_cast<uint8_t>(typeFlag)));
-
-        auto typeSummaryIndexField = panda::pandasm::Field(LANG_EXT);
-        typeSummaryIndexField.name = "typeSummaryIndex";
-        typeSummaryIndexField.type = panda::pandasm::Type("u32", 0);
-        typeSummaryIndexField.metadata->SetValue(
-            panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::LITERALARRAY>(typeSummaryIndex));
-
         rec.field_list.emplace_back(std::move(typeFlagField));
-        rec.field_list.emplace_back(std::move(typeSummaryIndexField));
+
+
+        if (g_enableTypeinfo) {
+            std::cerr << "--------type summary index---------" << typeSummaryIndex << std::endl;
+            auto typeSummaryIndexField = panda::pandasm::Field(LANG_EXT);
+            typeSummaryIndexField.name = "typeSummaryIndex";
+            typeSummaryIndexField.type = panda::pandasm::Type("u32", 0);
+            typeSummaryIndexField.metadata->SetValue(
+                panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::LITERALARRAY>(typeSummaryIndex));
+            rec.field_list.emplace_back(std::move(typeSummaryIndexField));
+        }
     }
 }
 

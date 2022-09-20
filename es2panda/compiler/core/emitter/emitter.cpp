@@ -359,7 +359,7 @@ Emitter::~Emitter()
     delete prog_;
 }
 
-void Emitter::AddFunction(FunctionEmitter *func)
+void Emitter::AddFunction(FunctionEmitter *func, CompilerContext *context)
 {
     std::lock_guard<std::mutex> lock(m_);
 
@@ -369,7 +369,8 @@ void Emitter::AddFunction(FunctionEmitter *func)
 
     for (auto &[idx, buf] : func->LiteralBuffers()) {
         auto literalArrayInstance = panda::pandasm::LiteralArray(std::move(buf));
-        prog_->literalarray_table.emplace(std::to_string(idx), std::move(literalArrayInstance));
+        auto litId = std::string(context->Binder()->Program()->RecordName()) + "_" + std::to_string(idx);
+        prog_->literalarray_table.emplace(litId, std::move(literalArrayInstance));
     }
 
     auto *function = func->Function();
@@ -380,13 +381,13 @@ void Emitter::AddSourceTextModuleRecord(ModuleRecordEmitter *module, CompilerCon
 {
     std::lock_guard<std::mutex> lock(m_);
 
-    auto moduleLiteral = std::string(context->RecordName()) + "_" + std::to_string(module->Index());
+    auto moduleLiteral = std::string(context->Binder()->Program()->RecordName()) + "_" + std::to_string(module->Index());
     if (context->IsMergeAbc()) {
         auto moduleIdxField = panda::pandasm::Field(LANG_EXT);
         moduleIdxField.name = "moduleRecordIdx";
         moduleIdxField.type = panda::pandasm::Type("u32", 0);
-        moduleIdxField.metadata->SetValue(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U32>(
-            static_cast<uint32_t>(module->Index())));
+        moduleIdxField.metadata->SetValue(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::LITERALARRAY>(
+            static_cast<std::string_view>(moduleLiteral)));
         rec_->field_list.emplace_back(std::move(moduleIdxField));
 
         if (context->HotfixHelper()) {

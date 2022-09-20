@@ -219,7 +219,8 @@ export class Ts2Panda {
             "opt_log_level": CmdOptions.getOptLogLevel(),
             "display_typeinfo": CmdOptions.getDisplayTypeinfo(),
             "is_dts_file": isGlobalDeclare(),
-            "output-proto": CmdOptions.getOutputproto()
+            "output-proto": CmdOptions.getOutputproto(),
+            "record_type": CmdOptions.needRecordType()
         };
         let jsonOpt = JSON.stringify(options, null, 2);
         jsonOpt = "$" + jsonOpt.replace(dollarSign, '#$') + "$";

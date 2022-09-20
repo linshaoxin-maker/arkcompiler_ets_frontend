@@ -177,7 +177,7 @@ function getDtsFiles(libDir: string): string[] {
     return dtsFiles;
 }
 
-function getRecordName(node: ts.SourceFile): string {
+export function getRecordName(node: ts.SourceFile): string {
     let recordName = CmdOptions.getRecordName();
 
     if (recordName == "") {
@@ -189,7 +189,7 @@ function getRecordName(node: ts.SourceFile): string {
 }
 
 export function getLiteralKey(node: ts.SourceFile, idx:number): string {
-    return getRecordName(node) + "_" + idx;
+    return `${getRecordName(node)}_${idx}`;
 }
 
 function specifyCustomLib(customLib) {

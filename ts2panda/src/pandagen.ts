@@ -192,6 +192,8 @@ import {
 import { CatchTable } from "./statement/tryStatement";
 import { TypeRecorder } from "./typeRecorder";
 import { Variable } from "./variable";
+import { CompilerDriver } from "./compilerDriver";
+import { getLiteralKey } from "./index";
 
 export class PandaGen {
     // @ts-ignore
@@ -306,14 +308,24 @@ export class PandaGen {
         }
     }
 
+    static appendLiteralArrayBuffer(litBuf: LiteralBuffer) {
+        let index = PandaGen.literalArrayBuffer.length;
+        litBuf.setKey(getLiteralKey(CompilerDriver.srcNode, index));
+        PandaGen.literalArrayBuffer.push(litBuf);
+    }
+
     static appendTypeArrayBuffer(type: BaseType): number {
         let index = PandaGen.literalArrayBuffer.length;
-        PandaGen.literalArrayBuffer.push(type.transfer2LiteralBuffer());
+        let typeBuf = type.transfer2LiteralBuffer();
+        typeBuf.setKey(getLiteralKey(CompilerDriver.srcNode, index));
+        PandaGen.literalArrayBuffer.push(typeBuf);
         return index;
     }
 
     static setTypeArrayBuffer(type: BaseType, index: number) {
-        PandaGen.literalArrayBuffer[index] = type.transfer2LiteralBuffer();
+        let typeBuf = type.transfer2LiteralBuffer();
+        typeBuf.setKey(getLiteralKey(CompilerDriver.srcNode, index));
+        PandaGen.literalArrayBuffer[index] = typeBuf;
     }
 
     getFirstStmt() {

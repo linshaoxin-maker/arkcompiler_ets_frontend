@@ -112,9 +112,8 @@ function createObject(expr: ts.ObjectLiteralExpression, pandaGen: PandaGen, objR
     if (literalBuffer.isEmpty()) {
         pandaGen.createEmptyObject(expr);
     } else {
-        let literalArrayBuffer = PandaGen.getLiteralArrayBuffer();
-        let bufferIdx = literalArrayBuffer.length;
-        literalArrayBuffer.push(literalBuffer);
+        let bufferIdx = PandaGen.getLiteralArrayBuffer().length;
+        PandaGen.appendLiteralArrayBuffer(literalBuffer);
         if (hasMethod) {
             let env = compiler.getCurrentEnv();
             pandaGen.createObjectHavingMethod(expr, bufferIdx, env);

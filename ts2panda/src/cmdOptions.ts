@@ -282,7 +282,7 @@ export class CmdOptions {
             return false;
         }
 
-        return !this.options["record-type"];
+        return this.options["record-type"];
     }
 
     static needRecordDtsType(): boolean {
