@@ -20,33 +20,35 @@
 #include "ts2abc_options.h"
 #include "ts2abc.h"
 
-int Preprocess(const panda::ts2abc::Options &options, const panda::PandArgParser &argParser, std::string &output,
-    std::string &data, const std::string &usage)
-{
-    std::string input;
-    if (!options.GetCompileByPipeArg()) {
-        input = options.GetTailArg1();
-        output = options.GetTailArg2();
-        if (input.empty() || output.empty()) {
-            std::cerr << "Incorrect args number" << std::endl;
-            std::cerr << "Usage example: ts2abc test.json test.abc"<< std::endl;
-            std::cerr << usage << std::endl;
-            std::cerr << argParser.GetHelpString();
-            return panda::ts2abc::RETURN_FAILED;
-        }
+namespace {
+    int Preprocess(const panda::ts2abc::Options &options, const panda::PandArgParser &argParser, std::string &output,
+        std::string &data, const std::string &usage)
+    {
+        std::string input;
+        if (!options.GetCompileByPipeArg()) {
+            input = options.GetTailArg1();
+            output = options.GetTailArg2();
+            if (input.empty() || output.empty()) {
+                std::cerr << "Incorrect args number" << std::endl;
+                std::cerr << "Usage example: ts2abc test.json test.abc"<< std::endl;
+                std::cerr << usage << std::endl;
+                std::cerr << argParser.GetHelpString();
+                return panda::ts2abc::RETURN_FAILED;
+            }
 
-        if (!panda::ts2abc::HandleJsonFile(input, data)) {
-            return panda::ts2abc::RETURN_FAILED;
+            if (!panda::ts2abc::HandleJsonFile(input, data)) {
+                return panda::ts2abc::RETURN_FAILED;
+            }
+        } else {
+            output = options.GetTailArg1();
+            if (output.empty()) {
+                std::cerr << usage << std::endl;
+                std::cerr << argParser.GetHelpString();
+                return panda::ts2abc::RETURN_FAILED;
+            }
         }
-    } else {
-        output = options.GetTailArg1();
-        if (output.empty()) {
-            std::cerr << usage << std::endl;
-            std::cerr << argParser.GetHelpString();
-            return panda::ts2abc::RETURN_FAILED;
-        }
+        return panda::ts2abc::RETURN_SUCCESS;
     }
-    return panda::ts2abc::RETURN_SUCCESS;
 }
 
 int main(int argc, const char *argv[])
