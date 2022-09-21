@@ -180,6 +180,7 @@ export class CompilerDriver {
             listenErrorEvent(ts2abcProc);
 
             try {
+                // must keep [dumpRecord] at first
                 Ts2Panda.dumpRecord(ts2abcProc, this.recordName);
                 Ts2Panda.dumpCmdOptions(ts2abcProc);
 
