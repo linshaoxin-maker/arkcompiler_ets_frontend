@@ -978,9 +978,13 @@ ir::Expression *ParserImpl::ParsePrimaryExpression(ExpressionParseFlags flags)
             lexer_->NextToken();
 
             if (Extension() == ScriptExtension::TS && (flags & ExpressionParseFlags::ALLOW_TS_PARAM_TOKEN) &&
-                lexer::Token::IsTsParamToken(lexer_->GetToken().Type())) {
-                context_.Status() |= ParserStatus::FUNCTION_PARAM;
-                ParsePotentialTsFunctionParameter(ExpressionParseFlags::NO_OPTS, identNode);
+                lexer::Token::IsTsParamToken(lexer_->GetToken().Type()) &&
+                (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_QUESTION_MARK ||
+                (lexer_->Lookahead() == LEX_CHAR_COLON ||
+                lexer_->Lookahead() == LEX_CHAR_COMMA ||
+                lexer_->Lookahead() == LEX_CHAR_RIGHT_PAREN))) {
+                    context_.Status() |= ParserStatus::FUNCTION_PARAM;
+                    ParsePotentialTsFunctionParameter(ExpressionParseFlags::NO_OPTS, identNode);
             }
 
             return identNode;
