@@ -63,6 +63,11 @@ bool PandaGen::isDebuggerEvaluateExpressionMode() const
     return context_->isDebuggerEvaluateExpressionMode();
 }
 
+bool PandaGen::IsRecordFunctionSourceCode() const
+{
+    return context_->IsRecordFunctionSourceCode();
+}
+
 std::string PandaGen::SourceFile() const
 {
     return context_->SourceFile();

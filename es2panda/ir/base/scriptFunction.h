@@ -64,6 +64,11 @@ public:
         return id_;
     }
 
+    util::StringView SourceCode() const
+    {
+        return source_;
+    }
+
     const ArenaVector<Expression *> &Params() const
     {
         return params_;
@@ -139,6 +144,11 @@ public:
         id_ = id;
     }
 
+    void SetSourceCode(util::StringView source)
+    {
+        source_ = source;
+    }
+
     void SetAsExportDefault()
     {
         exportDefault_ = true;
@@ -172,6 +182,7 @@ private:
     ir::ScriptFunctionFlags flags_;
     bool declare_;
     bool exportDefault_;
+    util::StringView source_;
 };
 
 }  // namespace panda::es2panda::ir

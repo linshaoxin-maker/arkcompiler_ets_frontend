@@ -25,6 +25,7 @@
 #include <compiler/base/catchTable.h>
 #include <es2panda.h>
 #include <gen/isa.h>
+#include <ir/base/scriptFunction.h>
 #include <ir/expressions/literal.h>
 #include <ir/statements/blockStatement.h>
 #include <macros.h>
@@ -278,6 +279,12 @@ void FunctionEmitter::GenSourceFileDebugInfo()
         func_->source_file = pg_->SourceFile();
     } else {
         func_->source_file = std::string {pg_->Binder()->Program()->SourceFile()};
+    }
+
+    if (pg_->IsRecordFunctionSourceCode() && pg_->RootNode()->IsScriptFunction()) {
+        std::cerr << "function source: " << "\n" << pg_->RootNode()->AsScriptFunction()->SourceCode() << "\n";
+        func_->source_code =
+            pg_->RootNode()->AsScriptFunction()->SourceCode().EscapeSymbol<util::StringView::Mutf8Encode>();
     }
 
     if (!pg_->IsDebug()) {

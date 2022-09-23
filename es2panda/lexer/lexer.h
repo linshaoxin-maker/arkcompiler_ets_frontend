@@ -81,6 +81,9 @@ public:
     void BackwardToken(TokenType type, size_t offset);
     void ForwardToken(TokenType type, size_t offset);
 
+    util::StringView SourceView(const util::StringView::Iterator &begin, const util::StringView::Iterator &end) const;
+    util::StringView SourceView(size_t begin, size_t end) const;
+
     char32_t Lookahead();
     bool CheckArrow();
 
@@ -112,9 +115,6 @@ private:
     {
         return pos_.iterator;
     }
-
-    util::StringView SourceView(const util::StringView::Iterator &begin, const util::StringView::Iterator &end) const;
-    util::StringView SourceView(size_t begin, size_t end) const;
 
     void SkipWhiteSpaces();
     void SkipSingleLineComment();

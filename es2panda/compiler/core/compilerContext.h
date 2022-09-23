@@ -35,7 +35,7 @@ class Emitter;
 class CompilerContext {
 public:
     CompilerContext(binder::Binder *binder, bool isDebug, bool isDebuggerEvaluateExpressionMode,
-                    bool isMergeAbc, std::string sourceFile);
+                    bool isRecordFunctionSourceCode, bool isMergeAbc, std::string sourceFile);
     NO_COPY_SEMANTIC(CompilerContext);
     NO_MOVE_SEMANTIC(CompilerContext);
     ~CompilerContext() = default;
@@ -81,6 +81,11 @@ public:
         return isMergeAbc_;
     }
 
+    bool IsRecordFunctionSourceCode() const
+    {
+        return isRecordFunctionSourceCode_;
+    }
+
     std::string SourceFile() const
     {
         return sourceFile_;
@@ -103,6 +108,7 @@ private:
     bool isDebug_;
     bool isDebuggerEvaluateExpressionMode_;
     bool isMergeAbc_;
+    bool isRecordFunctionSourceCode_;
     std::string sourceFile_;
     std::unique_ptr<Emitter> emitter_;
     util::Hotfix *hotfixHelper_ {nullptr};

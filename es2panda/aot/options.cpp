@@ -136,18 +136,24 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<bool> opDebugInfo("debug-info", false, "Compile with debug info");
     panda::PandArg<bool> opDumpDebugInfo("dump-debug-info", false, "Dump debug info");
     panda::PandArg<int> opOptLevel("opt-level", 0, "Compiler optimization level (options: 0 | 1 | 2)");
+    panda::PandArg<bool> opFunctionSourceCode("function-sourcecode", false,
+                                              "Record functions' source code to support [function].toString()");
     panda::PandArg<int> opFunctionThreadCount("function-threads", 0, "Number of worker threads to compile function");
     panda::PandArg<int> opFileThreadCount("file-threads", 0, "Number of worker threads to compile file");
     panda::PandArg<bool> opSizeStat("dump-size-stat", false, "Dump size statistics");
     panda::PandArg<bool> opDumpLiteralBuffer("dump-literal-buffer", false, "Dump literal buffer");
     panda::PandArg<std::string> outputFile("output", "", "Compiler binary output (.abc)");
     panda::PandArg<std::string> recordName("record-name", "", "Specify the record name");
+    panda::PandArg<std::string> sourceFile("source-file", "",
+                                           "specify the file path info recorded in generated abc");
+
+    // watch & debugger
     panda::PandArg<bool> debuggerEvaluateExpression("debugger-evaluate-expression", false,
                                                     "evaluate expression in debugger mode");
     panda::PandArg<std::string> base64Input("base64Input", "", "base64 input of js content");
     panda::PandArg<bool> base64Output("base64Output", false, "output panda file content as base64 to std out");
-    panda::PandArg<std::string> sourceFile("source-file", "",
-                                           "specify the file path info recorded in generated abc");
+
+    // mergeABC
     panda::PandArg<std::string> outputProto("outputProto", "", "compiler proto serialize binary output (.proto)");
     panda::PandArg<std::string> opCacheFile("cache-file", "", "cache file for incremental compile");
     panda::PandArg<std::string> opNpmModuleEntryList("npm-module-entry-list", "", "entry list file for module compile");
@@ -165,38 +171,46 @@ bool Options::Parse(int argc, const char **argv)
     // tail arguments
     panda::PandArg<std::string> inputFile("input", "", "input file");
 
+    // parser
     argparser_->Add(&opHelp);
+    argparser_->Add(&inputExtension);
     argparser_->Add(&opModule);
     argparser_->Add(&opCommonjs);
-    argparser_->Add(&opDumpAst);
     argparser_->Add(&opParseOnly);
     argparser_->Add(&opEnableTypeCheck);
+    argparser_->Add(&opDumpAst);
+
+    // compiler
     argparser_->Add(&opDumpAssembly);
     argparser_->Add(&opDebugInfo);
     argparser_->Add(&opDumpDebugInfo);
-    argparser_->Add(&debuggerEvaluateExpression);
-    argparser_->Add(&base64Input);
-    argparser_->Add(&base64Output);
-
     argparser_->Add(&opOptLevel);
+    argparser_->Add(&opFunctionSourceCode);
     argparser_->Add(&opFunctionThreadCount);
     argparser_->Add(&opFileThreadCount);
     argparser_->Add(&opSizeStat);
     argparser_->Add(&opDumpLiteralBuffer);
-
-    argparser_->Add(&inputExtension);
     argparser_->Add(&outputFile);
-    argparser_->Add(&sourceFile);
     argparser_->Add(&recordName);
+    argparser_->Add(&sourceFile);
+
+    // watch & debugger
+    argparser_->Add(&debuggerEvaluateExpression);
+    argparser_->Add(&base64Input);
+    argparser_->Add(&base64Output);
+
+    // mergeABC
     argparser_->Add(&outputProto);
     argparser_->Add(&opCacheFile);
     argparser_->Add(&opNpmModuleEntryList);
     argparser_->Add(&opMergeAbc);
 
+    // hotfix
     argparser_->Add(&opDumpSymbolTable);
     argparser_->Add(&opInputSymbolTable);
     argparser_->Add(&opGeneratePatch);
 
+    // version
     argparser_->Add(&bcVersion);
     argparser_->Add(&bcMinVersion);
 
@@ -354,6 +368,7 @@ bool Options::Parse(int argc, const char **argv)
     compilerOptions_.functionThreadCount = functionThreadCount_;
     compilerOptions_.fileThreadCount = fileThreadCount_;
     compilerOptions_.output = compilerOutput_;
+    compilerOptions_.functionSource = opFunctionSourceCode.GetValue();
     compilerOptions_.debugInfoSourceFile = sourceFile.GetValue();
     compilerOptions_.optLevel = opOptLevel.GetValue();
     compilerOptions_.sourceFiles = sourceFiles_;

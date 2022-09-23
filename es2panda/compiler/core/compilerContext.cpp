@@ -20,9 +20,10 @@
 namespace panda::es2panda::compiler {
 
 CompilerContext::CompilerContext(binder::Binder *binder, bool isDebug, bool isDebuggerEvaluateExpressionMode,
-                                 bool isMergeAbc, std::string sourceFile)
+                                 bool isMergeAbc, bool isRecordFunctionSourceCode, std::string sourceFile)
     : binder_(binder), isDebug_(isDebug), isDebuggerEvaluateExpressionMode_(isDebuggerEvaluateExpressionMode),
-      isMergeAbc_(isMergeAbc), sourceFile_(sourceFile), emitter_(std::make_unique<class Emitter>(this))
+      isMergeAbc_(isMergeAbc), isRecordFunctionSourceCode_(isRecordFunctionSourceCode), sourceFile_(sourceFile),
+      emitter_(std::make_unique<class Emitter>(this))
 {
 }
 
