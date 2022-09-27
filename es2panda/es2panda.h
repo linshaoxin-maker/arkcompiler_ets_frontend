@@ -74,6 +74,7 @@ struct CompilerOptions {
     bool dumpLiteralBuffer {false};
     bool isDebuggerEvaluateExpressionMode {false};
     bool mergeAbc {false};
+    bool functionSource {false};
     ScriptExtension extension {};
     int fileThreadCount {0};
     int functionThreadCount {0};
