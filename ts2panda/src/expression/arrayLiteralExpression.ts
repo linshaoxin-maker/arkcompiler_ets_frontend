@@ -162,9 +162,8 @@ function emitCreateArrayWithBuffer(pandaGen: PandaGen, literalBuffer: LiteralBuf
     if (literalBuffer.isEmpty()) {
         pandaGen.createEmptyArray(element);
     } else {
-        let literalArrayBuffer = PandaGen.getLiteralArrayBuffer();
-        let bufferIdx = literalArrayBuffer.length;
-        literalArrayBuffer.push(literalBuffer);
+        let bufferIdx = PandaGen.getLiteralArrayBuffer().length;
+        PandaGen.appendLiteralArrayBuffer(literalBuffer);
         pandaGen.createArrayWithBuffer(element, bufferIdx);
     }
 }

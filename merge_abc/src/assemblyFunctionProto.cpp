@@ -159,7 +159,7 @@ void Function::Deserialize(const protoPanda::Function &protoFunction, panda::pan
     SourceLocation::Deserialize(protoFunction.bodylocation(), function.body_location);
 
     if (protoFunction.has_filelocation()) {
-        FileLocation::Deserialize(protoFunction.filelocation(), function.file_location.value());
+        FileLocation::Deserialize(protoFunction.filelocation(), function.file_location);
     }
 }
 } // panda::proto

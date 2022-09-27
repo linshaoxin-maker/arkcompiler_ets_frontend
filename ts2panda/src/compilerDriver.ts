@@ -17,7 +17,8 @@ import { writeFileSync } from "fs";
 import * as ts from "typescript";
 import { addVariableToScope } from "./addVariable2Scope";
 import { AssemblyDumper } from "./assemblyDumper";
-import { hasDefaultKeywordModifier, hasExportKeywordModifier, initiateTs2abc, listenChildExit, listenErrorEvent, terminateWritePipe, getRecordTypeFlag } from "./base/util";
+import { hasDefaultKeywordModifier, hasExportKeywordModifier, initiateTs2abc, listenChildExit,
+         listenErrorEvent, terminateWritePipe, getRecordTypeFlag } from "./base/util";
 import { CmdOptions } from "./cmdOptions";
 import {
     Compiler
@@ -45,6 +46,7 @@ import { Ts2Panda } from "./ts2panda";
 import { TypeRecorder } from "./typeRecorder";
 import { LiteralBuffer } from "./base/literal";
 import { findOuterNodeOfParenthesis } from "./expression/parenthesizedExpression";
+import { getRecordName } from "./index";
 
 export class PendingCompilationUnit {
     constructor(
@@ -59,8 +61,10 @@ export class PendingCompilationUnit {
  * It handles all dependencies and run passes.
  */
 export class CompilerDriver {
+    static srcNode: ts.SourceFile | undefined = undefined;
     static isTsFile: boolean = false;
     private fileName: string;
+    private recordName: string;
     private passes: Pass[] = [];
     private compilationUnits: PandaGen[];
     pendingCompilationUnits: PendingCompilationUnit[];
@@ -70,8 +74,9 @@ export class CompilerDriver {
     private needDumpHeader: boolean = true;
     private ts2abcProcess: any = undefined;
 
-    constructor(fileName: string) {
+    constructor(fileName: string, recordName: string) {
         this.fileName = fileName;
+        this.recordName = recordName;
         // register passes here
         this.passes = [
             new CacheExpander(),
@@ -178,7 +183,10 @@ export class CompilerDriver {
             listenErrorEvent(ts2abcProc);
 
             try {
+                // must keep [dumpRecord] at first
+                Ts2Panda.dumpRecord(ts2abcProc, this.recordName);
                 Ts2Panda.dumpCmdOptions(ts2abcProc);
+                Ts2Panda.dumpRecordName(ts2abcProc, getRecordName(CompilerDriver.srcNode));
 
                 for (let i = 0; i < this.pendingCompilationUnits.length; i++) {
                     let unit: PendingCompilationUnit = this.pendingCompilationUnits[i];
@@ -356,20 +364,20 @@ export class CompilerDriver {
             name = "func_main_0";
         } else if (ts.isConstructorDeclaration(node)) {
             let classNode = node.parent;
-            name = this.getInternalNameForCtor(classNode, node);
+            return this.getInternalNameForCtor(classNode, node);
         } else {
             let funcNode = <ts.FunctionLikeDeclaration>node;
             name = (<FunctionScope>recorder.getScopeOfNode(funcNode)).getFuncName();
             if (name == '') {
                 if ((ts.isFunctionDeclaration(node) && hasExportKeywordModifier(node) && hasDefaultKeywordModifier(node))
                     || ts.isExportAssignment(findOuterNodeOfParenthesis(node))) {
-                    return 'default';
+                    return `${this.recordName}.default`;
                 }
-                return `#${this.getFuncId(funcNode)}#`;
+                return `${this.recordName}.#${this.getFuncId(funcNode)}#`;
             }
 
             if (name == "func_main_0") {
-                return `#${this.getFuncId(funcNode)}#${name}`;
+                return `${this.recordName}.#${this.getFuncId(funcNode)}#${name}`;
             }
 
             let funcNameMap = recorder.getFuncNameMap();
@@ -386,7 +394,7 @@ export class CompilerDriver {
                 name = `#${this.getFuncId(funcNode)}#`
             }
         }
-        return name;
+        return `${this.recordName}.${name}`;
     }
 
     getInternalNameForCtor(node: ts.ClassLikeDeclaration, ctor: ts.ConstructorDeclaration) {
@@ -395,7 +403,7 @@ export class CompilerDriver {
         if (name.lastIndexOf(".") != -1) {
             name = `#${this.getFuncId(ctor)}#`
         }
-        return name;
+        return `${this.recordName}.${name}`;
     }
 
     writeBinaryFile(pandaGen: PandaGen) {

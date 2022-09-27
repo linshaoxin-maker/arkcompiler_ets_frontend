@@ -37,7 +37,8 @@ import {
     ModuleRecord,
     NamespaceImportEntry,
     RegularImportEntry,
-    Signature
+    Signature,
+    Record
 } from "./pandasm";
 import { generateCatchTables } from "./statement/tryStatement";
 import {
@@ -54,6 +55,7 @@ import { ModuleScope } from "./scope";
 import { TypeRecorder } from "./typeRecorder";
 import { isGlobalDeclare } from "./strictMode";
 import { isFunctionLikeDeclaration } from "./syntaxCheckHelper";
+import { getLiteralKey } from "./index";
 
 const dollarSign: RegExp = /\$/g;
 
@@ -64,7 +66,8 @@ const JsonType = {
     "literal_arr": 3,
     "module": 4,
     "options": 5,
-    'type_info': 6
+    'type_info': 6,
+    'record_name': 7
 };
 export class Ts2Panda {
     static strings: Set<string> = new Set();
@@ -191,6 +194,20 @@ export class Ts2Panda {
         });
     }
 
+    static dumpRecordName(ts2abc: any, recordName: string) {
+        let recordNameObject = {
+            "t": JsonType.record_name,
+            "rn": recordName
+        }
+
+        let jsonRecordName = escapeUnicode(JSON.stringify(recordNameObject, null, 2));
+        jsonRecordName = "$" + jsonRecordName.replace(dollarSign, '#$') + "$";
+        if (CmdOptions.isEnableDebugLog()) {
+            Ts2Panda.jsonString += jsonRecordName;
+        }
+        ts2abc.stdio[3].write(jsonRecordName + '\n');
+    }
+
     static dumpCmdOptions(ts2abc: any): void {
         let options = {
             "t": JsonType.options,
@@ -201,7 +218,9 @@ export class Ts2Panda {
             "opt_level": CmdOptions.getOptLevel(),
             "opt_log_level": CmdOptions.getOptLogLevel(),
             "display_typeinfo": CmdOptions.getDisplayTypeinfo(),
-            "is_dts_file": isGlobalDeclare()
+            "is_dts_file": isGlobalDeclare(),
+            "output-proto": CmdOptions.getOutputproto(),
+            "record_type": CmdOptions.needRecordType()
         };
         let jsonOpt = JSON.stringify(options, null, 2);
         jsonOpt = "$" + jsonOpt.replace(dollarSign, '#$') + "$";
@@ -209,6 +228,19 @@ export class Ts2Panda {
             Ts2Panda.jsonString += jsonOpt;
         }
         ts2abc.stdio[3].write(jsonOpt + '\n');
+    }
+
+    static dumpRecord(ts2abc: any, recordName: string): void {
+        let record = {
+            "t": JsonType.record,
+            "rb": new Record(recordName)
+        }
+        let jsonRecord = escapeUnicode(JSON.stringify(record, null, 2));
+        jsonRecord = "$" + jsonRecord.replace(dollarSign, '#$') + "$";
+        if (CmdOptions.isEnableDebugLog()) {
+            Ts2Panda.jsonString += jsonRecord;
+        }
+        ts2abc.stdio[3].write(jsonRecord + '\n');
     }
 
     // @ts-ignore
@@ -320,7 +352,7 @@ export class Ts2Panda {
             }
             typeInfo = Ts2Panda.dumpInstTypeMap(pg);
 
-            if (funcName == "func_main_0") {
+            if (funcName.endsWith("func_main_0")) {
                 let exportedTypes = PandaGen.getExportedTypes();
                 let declareddTypes = PandaGen.getDeclaredTypes();
                 if (exportedTypes.size != 0) {
@@ -422,9 +454,9 @@ export class Ts2Panda {
 
     static dumpTypeInfoRecord(ts2abc: any, recordType: boolean): void {
         let enableTypeRecord = getRecordTypeFlag(recordType);
-        let typeSummaryIndex = 0;
+        let typeSummaryIndex = getLiteralKey(CompilerDriver.srcNode, 0);
         if (enableTypeRecord) {
-            typeSummaryIndex = TypeRecorder.getInstance().getTypeSummaryIndex();
+            typeSummaryIndex = getLiteralKey(CompilerDriver.srcNode, TypeRecorder.getInstance().getTypeSummaryIndex());
         }
         let typeInfo = {
             'tf': enableTypeRecord,
