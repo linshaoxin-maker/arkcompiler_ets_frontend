@@ -3399,7 +3399,7 @@ bool ParserImpl::CurrentTokenIsModifier(char32_t nextCp) const
 void ParserImpl::ThrowParameterModifierError(ir::ModifierFlags status) const
 {
     ThrowSyntaxError(
-        {"'", status & ir::ModifierFlags::STATIC ? "static" : status & ir::ModifierFlags::ASYNC ? "async" : "declare",
+        {"'", (status & ir::ModifierFlags::STATIC) ? "static" : ((status & ir::ModifierFlags::ASYNC) ? "async" : "declare") ,
          "' modifier cannot appear on a parameter."},
         lexer_->GetToken().Start());
 }

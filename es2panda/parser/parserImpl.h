@@ -369,7 +369,7 @@ private:
     ir::MetaProperty *ParsePotentialNewTarget();
     void CheckInvalidDestructuring(const ir::AstNode *object) const;
     void ValidateParenthesizedExpression(ir::Expression *lhsExpression);
-    ir::Expression *ParseAssignmentExpression(ir::Expression *expression,
+    ir::Expression *ParseAssignmentExpression(ir::Expression *lhsExpression,
                                               ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
     ir::Expression *ParsePrimaryExpression(ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
     ir::NewExpression *ParseNewExpression();
