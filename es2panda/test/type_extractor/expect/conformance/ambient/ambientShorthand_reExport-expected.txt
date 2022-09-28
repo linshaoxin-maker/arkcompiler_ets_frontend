@@ -1,0 +1,223 @@
+======> literal array buffer <======
+------------------------------------
+slot _-1
+------------------------------------
+slot _0
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 3
+},
+{
+  index: 2
+    tag: 0
+    val: 24
+},
+{
+  index: 3
+    tag: 24
+    val: _1
+},
+{
+  index: 4
+    tag: 0
+    val: 24
+},
+{
+  index: 5
+    tag: 24
+    val: _2
+},
+{
+  index: 6
+    tag: 0
+    val: 24
+},
+{
+  index: 7
+    tag: 24
+    val: _3
+},
+{
+  index: 8
+    tag: 0
+    val: 2
+},
+{
+  index: 9
+    tag: 2
+    val: 1
+},
+{
+  index: 10
+    tag: 0
+    val: 5
+},
+{
+  index: 11
+    tag: 5
+    val: jquery
+},
+------------------------------------
+slot _1
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 7
+},
+{
+  index: 2
+    tag: 0
+    val: 5
+},
+{
+  index: 3
+    tag: 5
+    val: #x#./reExportX
+},
+------------------------------------
+slot _2
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 7
+},
+{
+  index: 2
+    tag: 0
+    val: 5
+},
+{
+  index: 3
+    tag: 5
+    val: #*#./reExportAll
+},
+------------------------------------
+slot _3
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 7
+},
+{
+  index: 2
+    tag: 0
+    val: 5
+},
+{
+  index: 3
+    tag: 5
+    val: #x#jquery
+},
+------------------------------------
+slot _4
+{
+  index: 0
+    tag: 2
+    val: 3
+},
+{
+  index: 1
+    tag: 5
+    val: jquery
+},
+{
+  index: 2
+    tag: 5
+    val: ./reExportX
+},
+{
+  index: 3
+    tag: 5
+    val: ./reExportAll
+},
+{
+  index: 4
+    tag: 2
+    val: 1
+},
+{
+  index: 5
+    tag: 5
+    val: x
+},
+{
+  index: 6
+    tag: 5
+    val: x
+},
+{
+  index: 7
+    tag: 9
+    val: 1
+},
+{
+  index: 8
+    tag: 2
+    val: 1
+},
+{
+  index: 9
+    tag: 5
+    val: $
+},
+{
+  index: 10
+    tag: 9
+    val: 2
+},
+{
+  index: 11
+    tag: 2
+    val: 0
+},
+{
+  index: 12
+    tag: 2
+    val: 1
+},
+{
+  index: 13
+    tag: 5
+    val: x
+},
+{
+  index: 14
+    tag: 5
+    val: x
+},
+{
+  index: 15
+    tag: 9
+    val: 0
+},
+{
+  index: 16
+    tag: 2
+    val: 1
+},
+{
+  index: 17
+    tag: 9
+    val: 0
+},
