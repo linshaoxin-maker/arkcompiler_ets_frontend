@@ -227,8 +227,8 @@ class ArkProgram():
 
     def gen_dependency_abc(self, dependency):
         cmd_args = []
-        output_file = os.path.splitext(os.path.join(BASE_OUT_DIR,
-                                       os.path.split(dependency)[1]))[0]
+        temp_file = dependency.replace(DATA_DIR, BASE_OUT_DIR)
+        output_file = os.path.splitext(temp_file)[0]
         output_abc = f"{output_file}.abc"
         frontend_tool = self.ark_frontend_binary
         cmd_args = [frontend_tool, dependency, '--output', output_abc,
@@ -252,10 +252,12 @@ class ArkProgram():
         merge_abc_mode = self.merge_abc_mode
 
         # pre-generate the dependencies' abc when ark_frontend is [es2panda]
-        if (file_name in self.module_list or file_name in self.dynamicImport_list) and \
+        if (new_file_name in self.module_list or new_file_name in self.dynamicImport_list) and \
             self.ark_frontend == ARK_FRONTEND_LIST[1]:
-            search_dir = "language/module-code" if file_name in self.module_list else "language/expressions/dynamic-import"
-            dependencies = collect_module_dependencies(js_file, os.path.join(TEST_FULL_DIR, search_dir), [])
+            search_dir = "language/module-code" if new_file_name in self.module_list else "language/expressions/dynamic-import"
+            new_js_file = js_file.replace(BASE_OUT_DIR, DATA_DIR)
+            new_path = os.path.dirname(new_js_file)
+            dependencies = collect_module_dependencies(js_file, new_path, [])
             for dependency in list(set(dependencies)):
                 self.gen_dependency_abc(dependency)
 
@@ -263,7 +265,7 @@ class ArkProgram():
             mod_opt_index = 3
             cmd_args = ['node', '--expose-gc', frontend_tool,
                         js_file, '-o', out_file]
-            if file_name in self.module_list:
+            if new_file_name in self.module_list or new_file_name in self.dynamicImport_list:
                 cmd_args.insert(mod_opt_index, "-m")
                 self.module = True
         elif self.ark_frontend == ARK_FRONTEND_LIST[1]:
@@ -276,7 +278,7 @@ class ArkProgram():
                             '--function-threads=' +
                             str(self.es2abc_thread_count), '--output',
                             out_file, js_file]
-            if file_name in self.module_list:
+            if new_file_name in self.module_list or new_file_name in self.dynamicImport_list:
                 cmd_args.insert(mod_opt_index, "--module")
                 self.module = True
         # get abc file list from import statement
