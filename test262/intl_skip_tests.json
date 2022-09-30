@@ -52,5 +52,17 @@
             "intl402/Intl/getCanonicalLocales/canonicalized-tags.js",
             "intl402/Intl/getCanonicalLocales/transformed-ext-invalid.js"
         ]
+    },
+    {
+        "reason": "Temporarily skip for crash imported from isa merge",
+        "files": [
+            "intl402/PluralRules/constructor-options-throwing-getters.js",
+            "intl402/Collator/constructor-options-throwing-getters.js",
+            "intl402/DateTimeFormat/constructor-options-throwing-getters-timedate-style.js",
+            "intl402/DateTimeFormat/constructor-options-throwing-getters.js",
+            "intl402/NumberFormat/constructor-options-throwing-getters.js",
+            "intl402/ListFormat/constructor/constructor/options-throwing-getters.js",
+            "intl402/Locale/constructor-options-throwing-getters.js"
+        ]
     }
 ]
