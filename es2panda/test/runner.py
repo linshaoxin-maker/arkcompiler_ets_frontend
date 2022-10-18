@@ -119,6 +119,8 @@ def get_args():
     parser.add_argument(
         '--verbose', '-v', action='store_true', dest='verbose', default=False,
         help='Enable verbose output')
+    parser.add_argument('--quick-fix', dest='quick_fix', default=False,
+        help='run quick fix tests')
 
     return parser.parse_args()
 
@@ -714,6 +716,78 @@ class TSCRunner(Runner):
         return src
 
 
+class QuickFixTest(Test):
+    def __init__(self, test_path):
+        Test.__init__(self, test_path, "")
+        self.clear_directory()
+
+
+    def clear_directory(self):
+        files_in_dir = os.listdir(self.path)
+        filtered_files = [file for file in files_in_dir if file.endswith(".map") or file.endswith(".abc")]
+        for file in filtered_files:
+            os.remove(os.path.join(self.path, file))
+
+
+    def run(self, runner):
+        gen_base_cmd = runner.cmd_prefix + [runner.es2panda, '--module']
+        gen_base_cmd.extend(['--dump-symbol-table=' + os.path.join(self.path, 'base.map')])
+        gen_base_cmd.extend(['--output=' + os.path.join(self.path, 'base.abc')])
+        gen_base_cmd.extend([os.path.join(self.path, 'base.js')])
+        self.log_cmd(gen_base_cmd)
+
+        gen_patch_cmd = runner.cmd_prefix + [runner.es2panda, '--module', '--generate-patch']
+        gen_patch_cmd.extend(['--input-symbol-table=' + os.path.join(self.path, 'base.map')])
+        gen_patch_cmd.extend(['--output=' + os.path.join(self.path, 'patch.abc')])
+        gen_patch_cmd.extend([os.path.join(self.path, 'base_mod.js')])
+        self.log_cmd(gen_patch_cmd)
+
+        process_base = subprocess.Popen(gen_base_cmd, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        stdout_base, stderr_base = process_base.communicate()
+        if stderr_base:
+            self.passed = False
+            self.error = stderr_base.decode("utf-8", errors="ignore")
+            return self
+
+        process_patch = subprocess.Popen(gen_patch_cmd, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        stdout_patch, stderr_patch = process_patch.communicate()
+        if stderr_patch:
+            self.passed = False
+            self.error = stderr_patch.decode("utf-8", errors="ignore")
+
+        self.output = stdout_patch.decode("utf-8", errors="ignore") + stderr_patch.decode("utf-8", errors="ignore")
+        expected_path = os.path.join(self.path, 'expected.txt')
+        try:
+            with open(expected_path, 'r') as fp:
+                expected = ''.join(fp.readlines()[13:])
+            self.passed = expected == self.output
+        except Exception:
+            self.passed = False
+
+        if not self.passed:
+            self.error = "expected output: " + expected + os.linesep + "actual output: " + self.output
+
+        return self
+
+
+class QuickFixRunner(Runner):
+    def __init__(self, args):
+        Runner.__init__(self, args, "QuickFix")
+        self.add_directory("hotfix", "hotfix-throwerror")
+
+
+    def add_directory(self, directory, sub_direcotry):
+        glob_expression = path.join(self.test_root, directory, sub_direcotry, "*")
+        tests = glob(glob_expression, recursive=False)
+        self.tests += list(map(lambda t: QuickFixTest(t), tests))
+
+
+    def test_path(self, src):
+        return os.path.basename(src)
+
+
 def main():
     args = get_args()
 
@@ -734,6 +808,9 @@ def main():
 
     if args.tsc:
         runners.append(TSCRunner(args))
+
+    if args.quick_fix:
+        runners.append(QuickFixRunner(args))
 
     failed_tests = 0
 
