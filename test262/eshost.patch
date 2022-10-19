@@ -113,3 +113,151 @@ index 947c1db..18de7a3 100644
        result.error = this.parseError(result.stderr);
  
        return result;
+diff --git a/lib/agents/panda.js b/lib/agents/panda.js
+new file mode 100644
+index 0000000..ab22b47
+--- /dev/null
++++ b/lib/agents/panda.js
+@@ -0,0 +1,88 @@
++'use strict';
++
++const fs = require('fs');
++const runtimePath = require('../runtime-path');
++const ConsoleAgent = require('../ConsoleAgent');
++
++const errorRe = /[(](\d+),(\d+)[)]: (.*)/;
++const errorRe1 = /^(\w+): (.*)$/m;
++// const errorRe2 = /^(?:(\w+): (.*))|(?:(\w+))$/m;
++const errorRe2 = /(\w+): (\w+): (.*)$/m;
++
++function parseSyntaxError(syntaxErrorMessage) {
++  const matches = syntaxErrorMessage.match();
++  if (matches && matches.length) {
++    return {
++      message: matches[3],
++      lineNumber: Number(matches[1]),
++      columnNumber: Number(matches[2])
++    };
++  }
++  return null;
++}
++
++class PandaAgent extends ConsoleAgent{
++    constructor(options) {
++        super(options);
++    }
++
++    createChildProcess(args) {
++      let js_file = args[0]
++      args = []
++      args.unshift(`--js-file=${js_file}`)
++      return super.createChildProcess(args);
++    }
++
++    evalScript(code, options = {}) {
++        return super.evalScript(code, options);
++    }
++
++    parseError(str) {
++        let match = str.match(errorRe1);
++        if (match) {
++          return {
++            name: match[1],
++            message: match[2],
++            stack: [],
++          };
++        } else {
++          // Syntax errors don't have nice error messages...
++          let error = null;
++          let errors = str.match(/[(](\d+),(\d+)[)]: (.*)/gm);
++
++          if (errors && errors.length) {
++            error = {
++              name: 'SyntaxError',
++              message: errors[0],
++              stack: []
++            };
++
++            const stack = parseSyntaxError(errors[0]);
++
++            if (stack) {
++              error.stack.push(stack);
++              error.message = stack.message;
++            }
++          }
++
++          if (error) {
++            return error;
++          }
++
++          // Last chance...
++          errors = str.match(errorRe2);
++          if (errors && errors.length >3) {
++            return {
++              name: errors[2],
++              message: errors[0],
++              stack: [],
++            };
++          }
++        }
++
++        return null;
++      }
++}
++
++PandaAgent.runtime = fs.readFileSync(runtimePath.for('panda'), 'utf8');
++module.exports = PandaAgent;
+\ No newline at end of file
+diff --git a/runtimes/panda.js b/runtimes/panda.js
+new file mode 100644
+index 0000000..0acbd09
+--- /dev/null
++++ b/runtimes/panda.js
+@@ -0,0 +1,44 @@
++if (!globalThis.$262) {
++  globalThis.$262 = {
++    global: globalThis,
++    evalScript(code) {
++      try {
++        global.evalScript(code);
++        return { type: 'normal', value: undefined };
++      } catch (e) {
++        return { type: 'throw', value: e };
++      }
++    },
++    gc() {
++      throw new Test262Error('gc() not yet supported.');
++    },
++    getGlobal(name) {
++      return global[name];
++    },
++    setGlobal(name, value) {
++      global[name] = value;
++    },
++    agent: (function() {
++      function thrower() {
++        throw new Test262Error('agent.* not yet supported.');
++      };
++      return {
++        start: thrower,
++        broadcast: thrower,
++        getReport: thrower,
++        sleep: thrower,
++        monotonicNow: thrower,
++      };
++    })(),
++  };
++}
++
++$262.IsHTMLDDA = function() {};
++$262.destroy = function() {};
++$262.getGlobal = function(name) {
++  return this.global[name];
++};
++$262.setGlobal = function(name, value) {
++  this.global[name] = value;
++};
++$262.source = $SOURCE;
+-- 
+2.25.1
+
