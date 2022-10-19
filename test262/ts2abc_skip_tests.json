@@ -333,5 +333,11 @@
             "language/expressions/dynamic-import/catch/nested-async-arrow-function-return-await-specifier-tostring-abrupt-rejects.js",
             "language/expressions/dynamic-import/catch/nested-async-arrow-function-await-specifier-tostring-abrupt-rejects.js"
         ]
+    },
+    {
+        "reason" : "Expected test to throw error of type SyntaxError, but did not throw error",
+        "files": [
+            "language/module-code/instn-resolve-empty-export.js"
+        ]
     }
 ]

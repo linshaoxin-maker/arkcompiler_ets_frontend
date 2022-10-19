@@ -53,7 +53,7 @@ DEFAULT_HOST_PATH = "python3"
 DEFAULT_THREADS = min(cpu_count(), 32)
 DEFAULT_OTHER_ARGS = "--saveCompiledTests"
 TEST262_RUNNER_SCRIPT = os.path.join(HARNESS_DIR, "bin", "run.js")
-DEFAULT_TIMEOUT = 120000
+DEFAULT_TIMEOUT = 60000
 
 ES5_LIST_FILE = os.path.join("test262", "es5_tests.txt")
 ES2015_LIST_FILE = os.path.join("test262", "es2015_tests.txt")

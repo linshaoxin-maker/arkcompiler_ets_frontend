@@ -226,6 +226,21 @@ class ArkProgram():
 
         self.arch_root = self.args.ark_arch_root
 
+    def get_mod_compile(self, dependency, mod_opt_compile):
+
+        with open(dependency, 'r', encoding='utf-8') as f:
+            context_file = f.read()
+            script_import_list = re.findall(r'(import)\(((.)|(\'(\.\/.*))\'|"(\.\/.*)")\)', context_file)
+            module_import_list = re.findall(r'(export)', context_file)
+        for script_improt in list(set(script_import_list)):
+            if len(script_improt[1]) != 0:
+                mod_opt_compile = 1
+        for module_import in list(set(module_import_list)):
+            if len(module_import[0]) != 0:
+                mod_opt_compile = 0
+
+        return mod_opt_compile
+
     def gen_dependency_abc(self, dependency):
         cmd_args = []
         output_file = os.path.splitext(dependency.replace(DATA_DIR, BASE_OUT_DIR))[0]
@@ -235,55 +250,28 @@ class ArkProgram():
         merge_abc_mode = self.merge_abc_mode
         mod_opt_compile = 0
 
-        if merge_abc_mode != "0":
-            proto_bin_file = output_file + "." + PROTO_BIN_SUFFIX
-            cmd_args = [frontend_tool, dependency, '--outputProto',
-                        proto_bin_file, '--merge-abc']
-        else:
-            # for testing no-record-name abc
-            cmd_args = [frontend_tool, dependency, '--output', output_abc]
+        if self.ark_frontend == ARK_FRONTEND_LIST[1]:
+            if merge_abc_mode != "0":
+                proto_bin_file = output_file + "." + PROTO_BIN_SUFFIX
+                cmd_args = [frontend_tool, dependency, '--outputProto',
+                            proto_bin_file, '--merge-abc']
+            else:
+                # for testing no-record-name abc
+                cmd_args = [frontend_tool, dependency, '--output', output_abc]
+        elif self.ark_frontend == ARK_FRONTEND_LIST[0]:
+            cmd_args = ['node', '--expose-gc', frontend_tool, dependency,
+                        '-o', output_abc]
 
-        with open(dependency, 'r', encoding='utf-8') as f:
-            context_file = f.read()
-            script_import_list = re.findall(r'(import)\(((.)|(\'(\.\/.*))\'|"(\.\/.*)")\)', context_file)
-            module_import_list = re.findall(r'(export)', context_file)
-        for script_improt in list(set(script_import_list)):
-            if len(script_improt[1]) != 0:
-                mod_opt_compile = 1
-        for module_import in list(set(module_import_list)):
-            if len(module_import[0]) != 0:
-                mod_opt_compile = 0
+        mod_opt_compile = self.get_mod_compile(dependency, mod_opt_compile)
 
-        if mod_opt_compile == 0:
-            mod_opt_index = 4
-            cmd_args.insert(mod_opt_index, "--module")
-        proc = subprocess.Popen(cmd_args)
-        proc.wait()
-
-    def gen_ts_abc(self, dependency):
-        cmd_args = []
-        output_file = os.path.splitext(dependency.replace(DATA_DIR, BASE_OUT_DIR))[0]
-        output_abc = f"{output_file}.abc"
-        frontend_tool = self.ark_frontend_binary
-        mod_opt_compile = 0
-
-        cmd_args = ['node', '--expose-gc', frontend_tool, dependency,
-                            '-o', output_abc]
-
-        with open(dependency, 'r', encoding='utf-8') as f:
-            context_file = f.read()
-            script_import_list = re.findall(r'(import)\(((.)|(\'(\.\/.*))\'|"(\.\/.*)")\)', context_file)
-            module_import_list = re.findall(r'(export)', context_file)
-        for script_improt in list(set(script_import_list)):
-            if len(script_improt[1]) != 0:
-                mod_opt_compile = 1
-        for module_import in list(set(module_import_list)):
-            if len(module_import[0]) != 0:
-                mod_opt_compile = 0
-
-        if mod_opt_compile == 0:
-            mod_opt_index = 6
-            cmd_args.insert(mod_opt_index, "--modules")
+        if self.ark_frontend == ARK_FRONTEND_LIST[1]:
+            if mod_opt_compile == 0:
+                mod_opt_index = 4
+                cmd_args.insert(mod_opt_index, "--module")
+        elif self.ark_frontend == ARK_FRONTEND_LIST[0]:
+            if mod_opt_compile == 0:
+                mod_opt_index = 6
+                cmd_args.insert(mod_opt_index, "--modules")
         proc = subprocess.Popen(cmd_args)
         proc.wait()
 
@@ -367,23 +355,10 @@ class ArkProgram():
         if (file_name in self.module_list or file_name in self.dynamicImport_list):
             search_dir = os.path.dirname(js_file.replace(BASE_OUT_DIR, DATA_DIR))
             dependencies = collect_module_dependencies(js_file, search_dir, [])
-            if (self.ark_frontend == ARK_FRONTEND_LIST[1]):
-                for dependency in list(set(dependencies)):
-                    self.gen_dependency_abc(dependency)
-            elif (self.ark_frontend == ARK_FRONTEND_LIST[0]):
-                for dependency in list(set(dependencies)):
-                    self.gen_ts_abc(dependency)
+            for dependency in list(set(dependencies)):
+                self.gen_dependency_abc(dependency)
 
-        with open(js_file, 'r', encoding='utf-8') as f:
-            context_file = f.read()
-            script_import_list = re.findall(r'(import)\(((.)|(\'(\.\/.*))\'|"(\.\/.*)")\)', context_file)
-            module_import_list = re.findall(r'(export)', context_file)
-        for script_improt in list(set(script_import_list)):
-            if len(script_improt[1]) != 0:
-                mod_opt_compile = 1
-        for module_import in list(set(module_import_list)):
-            if len(module_import[0]) != 0:
-                mod_opt_compile = 0
+            mod_opt_compile = self.get_mod_compile(js_file, mod_opt_compile)
 
         if self.ark_frontend == ARK_FRONTEND_LIST[0]:
             mod_opt_index = 3
@@ -446,15 +421,10 @@ class ArkProgram():
             return retcode
 
         if merge_abc_mode != "0":
-            if "dynamic-import" in js_file:
-                if file_name in self.module_list:
-                    retcode = self.gen_merged_abc(dependencies, file_name_pre,
-                                                proto_bin_file, retcode)
-                else:
-                    retcode = self.gen_apart_abc(dependencies, retcode)
+            if "dynamic-import" in js_file and file_name not in self.module_list:
+                return self.gen_apart_abc(dependencies, retcode)
             else:
-                retcode = self.gen_merged_abc(dependencies, file_name_pre,
-                                              proto_bin_file, retcode)
+                return self.gen_merged_abc(dependencies, file_name_pre, proto_bin_file, retcode)
 
         return retcode
 
