@@ -62,10 +62,13 @@ ES2021_LIST_FILE = os.path.join("test262", "es2021_tests.txt")
 CI_LIST_FILE = os.path.join("test262", "CI_tests.txt")
 MODULE_LIST = []
 DYNAMIC_IMPORT_LIST = []
+NOT_MODULE_LIST = []
 with open(os.path.join("test262", "module_tests.txt")) as m_file:
     MODULE_LIST = m_file.read().splitlines()
 with open(os.path.join("test262", "dynamicImport_tests.txt")) as d_file:
     DYNAMIC_IMPORT_LIST = d_file.read().splitlines()
+with open(os.path.join("test262", "not_module_tests.txt")) as n_file:
+    NOT_MODULE_LIST = n_file.read().splitlines()
 
 TEST262_GIT_HASH = "9ca13b12728b7e0089c7eb03fa2bd17f8abe297f"
 HARNESS_GIT_HASH = "9c499f028eb24e67781435c0bb442e00343eb39d"

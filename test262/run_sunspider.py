@@ -175,6 +175,7 @@ class ArkProgram():
         self.ark_frontend_binary = ARK_FRONTEND_BINARY
         self.module_list = []
         self.dynamicImport_list = []
+        self.not_module_list = []
         self.js_file = ""
         self.module = False
         self.abc_file = ""
@@ -220,6 +221,8 @@ class ArkProgram():
 
         self.dynamicImport_list = DYNAMIC_IMPORT_LIST
 
+        self.not_module_list = NOT_MODULE_LIST
+
         self.js_file = self.args.js_file
 
         self.arch = self.args.ark_arch
@@ -228,8 +231,8 @@ class ArkProgram():
 
     def gen_dependency_abc(self, dependency):
         cmd_args = []
-        output_file = os.path.splitext(os.path.join(BASE_OUT_DIR,
-                                       os.path.split(dependency)[1]))[0]
+        temp_file = dependency.replace(DATA_DIR, BASE_OUT_DIR)
+        output_file = os.path.splitext(temp_file)[0]
         output_abc = f"{output_file}.abc"
         frontend_tool = self.ark_frontend_binary
         merge_abc_binary = self.args.merge_abc_binary
@@ -238,11 +241,14 @@ class ArkProgram():
         if merge_abc_mode != "0":
             proto_bin_file = output_file + "." + PROTO_BIN_SUFFIX
             cmd_args = [frontend_tool, dependency, '--outputProto',
-                        proto_bin_file, '--module', '--merge-abc']
+                        proto_bin_file, '--merge-abc']
         else:
             # for testing no-record-name abc
-            cmd_args = [frontend_tool, dependency, '--output', output_abc,
-                        '--module']
+            cmd_args = [frontend_tool, dependency, '--output', output_abc]
+        file_name = os.path.basename(dependency)
+        if file_name not in self.not_module_list:
+            mod_opt_index = 4
+            cmd_args.insert(mod_opt_index, "--module")
         proc = subprocess.Popen(cmd_args)
         proc.wait()
 
@@ -292,6 +298,8 @@ class ArkProgram():
         js_file = self.js_file
         file_name_pre = os.path.splitext(js_file)[0]
         file_name = os.path.basename(js_file)
+        file_name_std = file_name.replace("-strict.js", ".js")
+        file_dir = os.path.split(js_file)[0]
         out_file = f"{file_name_pre}.abc"
         proto_bin_file = file_name_pre + "." + PROTO_BIN_SUFFIX
         self.abc_file = out_file
@@ -303,10 +311,9 @@ class ArkProgram():
         dependencies = []
 
         # pre-generate the dependencies' abc when ark_frontend is [es2panda]
-        if (file_name in self.module_list or file_name in self.dynamicImport_list):
-            search_dir = "language/module-code" if file_name in self.module_list \
-                                                else "language/expressions/dynamic-import"
-            dependencies = collect_module_dependencies(js_file, os.path.join(TEST_FULL_DIR, search_dir), [])
+        if (file_name_std in self.module_list or file_name_std in self.dynamicImport_list):
+            search_dir = os.path.dirname(js_file.replace(BASE_OUT_DIR, DATA_DIR))
+            dependencies = collect_module_dependencies(js_file, search_dir, [])
             if (self.ark_frontend == ARK_FRONTEND_LIST[1]):
                 for dependency in list(set(dependencies)):
                     self.gen_dependency_abc(dependency)
@@ -320,7 +327,7 @@ class ArkProgram():
                 # for testing no-record-name abc
                 cmd_args = ['node', '--expose-gc', frontend_tool,
                             js_file, '-o', out_file]
-            if file_name in self.module_list:
+            if file_name_std in self.module_list or file_name_std in self.dynamicImport_list:
                 cmd_args.insert(mod_opt_index, "-m")
                 self.module = True
         elif self.ark_frontend == ARK_FRONTEND_LIST[1]:
@@ -336,8 +343,9 @@ class ArkProgram():
                             '--function-threads=' +
                             str(self.es2abc_thread_count), '--output',
                             out_file, js_file]
-            if file_name in self.module_list:
-                cmd_args.insert(mod_opt_index, "--module")
+            if file_name_std in self.module_list or file_name_std in self.dynamicImport_list:
+                if file_name_std not in self.not_module_list:
+                    cmd_args.insert(mod_opt_index, "--module")
                 self.module = True
         # get abc file list from import statement
         if merge_abc_mode == "0" and self.ark_aot and self.module:
@@ -427,7 +435,10 @@ class ArkProgram():
             os.environ["LD_LIBRARY_PATH"] = self.libs_dir
         else :
             sys.exit(f" test262 on {platform.system()} not supported");
+        file_name = os.path.basename(self.js_file)
         file_name_pre = os.path.splitext(self.js_file)[0]
+        file_name_std = file_name.replace("-strict.js", ".js")
+        file_name_pre = file_name_pre.replace(os.path.splitext(file_name)[0], os.path.splitext(file_name_std)[0])
         cmd_args = []
         if self.arch == ARK_ARCH_LIST[1]:
             qemu_tool = "qemu-aarch64"
