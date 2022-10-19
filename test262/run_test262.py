@@ -413,9 +413,9 @@ class TestPrepare():
             mkdstdir(file, src_dir, self.out_dir)
 
     def run(self):
-        # self.prepare_test262_code()
-        # self.prepare_clean_data()
-        # self.patching_the_plugin()
+        self.prepare_test262_code()
+        self.prepare_clean_data()
+        self.patching_the_plugin()
         self.prepare_args_es51_es2021()
         self.prepare_out_dir()
         self.prepare_args_testdir()
@@ -547,7 +547,7 @@ def run_test262_test(args):
     threads = get_threads(args)
     timeout = get_timeout(args, threads)
 
-    test_cmd = ["node", TEST262_RUNNER_SCRIPT]  # node run.js --hostType=xxx --hostPath=xxx
+    test_cmd = ["node", TEST262_RUNNER_SCRIPT]
     test_cmd.append(f"--hostType={host_type}")
     test_cmd.append(f"--hostPath={host_path}")
     if host_args != "":
