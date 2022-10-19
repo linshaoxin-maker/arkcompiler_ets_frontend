@@ -85,30 +85,25 @@
         ]
     },
     {
-        "reason" : "Dynamic Import failed testcases : ResolveFilenameFromNative:185 resolve absolute path fail",
+        "reason" : "Dynamic Import failed testcases :Can not get module",
         "files": [
-            "language/expressions/dynamic-import/catch/nested-if-import-catch-eval-rqstd-abrupt-typeerror.js",
-            "language/expressions/dynamic-import/catch/nested-async-gen-return-await-file-does-not-exist.js",
-            "language/expressions/dynamic-import/catch/top-level-import-catch-file-does-not-exist.js",
-            "language/expressions/dynamic-import/catch/nested-if-import-catch-file-does-not-exist.js",
-            "language/expressions/dynamic-import/catch/nested-block-labeled-file-does-not-exist.js",
-            "language/expressions/dynamic-import/catch/nested-async-arrow-function-return-await-file-does-not-exist.js",
-            "language/expressions/dynamic-import/catch/nested-async-function-await-file-does-not-exist.js",
-            "language/expressions/dynamic-import/catch/nested-function-import-catch-file-does-not-exist.js",
-            "language/expressions/dynamic-import/catch/nested-arrow-import-catch-file-does-not-exist.js",
-            "language/expressions/dynamic-import/catch/nested-block-import-catch-file-does-not-exist.js",
-            "language/expressions/dynamic-import/catch/nested-else-import-catch-file-does-not-exist.js",
-            "language/expressions/dynamic-import/catch/nested-do-while-file-does-not-exist.js",
-            "language/expressions/dynamic-import/catch/nested-while-import-catch-file-does-not-exist.js",
-            "language/expressions/dynamic-import/catch/nested-async-arrow-function-await-file-does-not-exist.js",
-            "language/expressions/dynamic-import/catch/nested-async-function-file-does-not-exist.js"  
-        ]
-    },
-    {
-        "reason" : "Dynamic Import failed testcases :SyntaxError 'await' is not permitted as an identifier in module code",
-        "files": [
-            "language/expressions/dynamic-import/catch/nested-async-function-return-await-file-does-not-exist.js",
-            "language/expressions/dynamic-import/assignment-expression/await-identifier-strict.js"
+            "language/expressions/dynamic-import/catch/nested-async-arrow-function-await-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-await-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-return-await-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-async-arrow-function-return-await-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/top-level-import-catch-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-if-import-catch-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-arrow-import-catch-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-block-labeled-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-async-function-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-await-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-async-function-return-await-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-while-import-catch-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-block-import-catch-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-function-import-catch-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-async-function-await-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-else-import-catch-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-do-while-eval-script-code-target.js"
         ]
     },
     {
@@ -201,57 +196,48 @@
         ]
     },
     {
-        "reason" : "Dynamic Import failed testcases :Can not get module",
+        "reason" : "ecmascript",
         "files": [
-            "language/expressions/dynamic-import/catch/nested-async-arrow-function-await-eval-script-code-target.js",
-            "language/expressions/dynamic-import/catch/nested-async-gen-await-eval-script-code-target.js",
-            "language/expressions/dynamic-import/catch/nested-async-gen-return-await-eval-script-code-target.js",
-            "language/expressions/dynamic-import/catch/nested-async-arrow-function-return-await-eval-script-code-target.js",
-            "language/expressions/dynamic-import/catch/top-level-import-catch-eval-script-code-target.js",
-            "language/expressions/dynamic-import/catch/nested-if-import-catch-eval-script-code-target.js",
-            "language/expressions/dynamic-import/catch/nested-arrow-import-catch-eval-script-code-target.js",
-            "language/expressions/dynamic-import/catch/nested-block-labeled-eval-script-code-target.js",
-            "language/expressions/dynamic-import/catch/nested-async-function-eval-script-code-target.js",
-            "language/expressions/dynamic-import/catch/nested-async-gen-await-file-does-not-exist.js",
-            "language/expressions/dynamic-import/catch/nested-async-function-return-await-eval-script-code-target.js",
-            "language/expressions/dynamic-import/catch/nested-while-import-catch-eval-script-code-target.js",
-            "language/expressions/dynamic-import/catch/nested-block-import-catch-eval-script-code-target.js",
-            "language/expressions/dynamic-import/catch/nested-function-import-catch-eval-script-code-target.js",
-            "language/expressions/dynamic-import/catch/nested-async-function-await-eval-script-code-target.js",
-            "language/expressions/dynamic-import/catch/nested-else-import-catch-eval-script-code-target.js",
-            "language/expressions/dynamic-import/catch/nested-do-while-eval-script-code-target.js"
+            "language/expressions/dynamic-import/namespace/promise-then-ns-has-property-str-found-init.js",
+            "language/expressions/dynamic-import/catch/top-level-import-catch-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-while-import-catch-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-function-import-catch-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-if-import-catch-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-block-import-catch-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-do-while-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-else-import-catch-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-block-labeled-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-async-function-return-await-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-async-function-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-async-arrow-function-return-await-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-async-function-await-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-async-arrow-function-await-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-arrow-import-catch-file-does-not-exist.js",
+            "language/expressions/dynamic-import/assignment-expression/call-expr-expr.js",
+            "language/expressions/dynamic-import/assignment-expression/await-identifier.js",
+            "language/expressions/dynamic-import/assignment-expression/lhs-eq-assign-expr.js",
+            "language/expressions/dynamic-import/namespace/await-ns-get-own-property-str-found-init.js"
         ]
     },
     {
-        "reason" : "Dynamic Import failed testcases",
+        "reason" : "Expected no error, but got  ",
         "files": [
-            "language/expressions/dynamic-import/assignment-expression/await-identifier.js",
-            "language/expressions/dynamic-import/catch/nested-async-arrow-function-await-specifier-tostring-abrupt-rejects.js",
             "language/expressions/dynamic-import/catch/nested-async-function-await-specifier-tostring-abrupt-rejects.js",
             "language/expressions/dynamic-import/catch/nested-async-function-return-await-specifier-tostring-abrupt-rejects.js",
-            "language/expressions/dynamic-import/catch/nested-async-arrow-function-return-await-specifier-tostring-abrupt-rejects.js",
-            "language/expressions/dynamic-import/catch/nested-async-function-specifier-tostring-abrupt-rejects.js",
+            "language/expressions/dynamic-import/catch/nested-async-function-specifier-tostring-abrupt-rejects.js"
+        ]
+    },
+    {
+        "reason" : "Expected SameValue(XXXX, XXXX) to be true",
+        "files": [
+            "language/expressions/dynamic-import/namespace/promise-then-ns-Symbol-toStringTag.js",
+            "language/expressions/dynamic-import/namespace/promise-then-ns-define-own-property.js",
             "language/expressions/dynamic-import/catch/nested-async-gen-await-specifier-tostring-abrupt-rejects.js",
             "language/expressions/dynamic-import/catch/nested-async-gen-return-await-specifier-tostring-abrupt-rejects.js",
             "language/expressions/dynamic-import/namespace/await-ns-Symbol-toStringTag.js",
             "language/expressions/dynamic-import/namespace/await-ns-define-own-property.js",
-            "language/expressions/dynamic-import/namespace/promise-then-ns-Symbol-toStringTag.js",
-            "language/expressions/dynamic-import/namespace/promise-then-ns-define-own-property.js",
-            "language/expressions/dynamic-import/assignment-expression/ternary.js",
-            "language/expressions/dynamic-import/namespace/promise-then-ns-has-property-str-not-found.js",
-            "language/expressions/dynamic-import/namespace/promise-then-ns-prevent-extensions-object.js",
-            "language/expressions/dynamic-import/usage/nested-async-function-return-await-returns-thenable.js",
-            "language/expressions/dynamic-import/namespace/await-ns-set-prototype-of.js",
-            "language/expressions/dynamic-import/syntax/valid/nested-block-script-code-valid.js",
-            "language/expressions/dynamic-import/namespace/await-ns-has-property-str-not-found.js",
-            "language/expressions/dynamic-import/namespace/await-ns-prop-descs.js",
-            "language/expressions/dynamic-import/returns-promise.js"
-        ]
-    },
-    {
-        "reason" : "module-code failed testcases",
-        "files": [
-            "language/module-code/instn-iee-err-circular-as.js"
+            "language/expressions/dynamic-import/catch/nested-async-arrow-function-return-await-specifier-tostring-abrupt-rejects.js",
+            "language/expressions/dynamic-import/catch/nested-async-arrow-function-await-specifier-tostring-abrupt-rejects.js"
         ]
     }
 ]
