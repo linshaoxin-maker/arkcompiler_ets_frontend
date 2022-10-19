@@ -1,3 +1,16 @@
+From f9fc0c21475bc5efb6f53d33d01fe793c0ec35de Mon Sep 17 00:00:00 2001
+Date: Tue, 18 Oct 2022 20:08:54 +0800
+Subject: [PATCH] fix
+
+---
+ lib/Agent.js        |  1 +
+ lib/ConsoleAgent.js | 50 +++++++++++++--------
+ lib/agents/panda.js | 88 +++++++++++++++++++++++++++++++++++++++++++++
+ runtimes/panda.js   | 44 +++++++++++++++++++++++
+ 4 files changed, 160 insertions(+), 14 deletions(-)
+ create mode 100644 lib/agents/panda.js
+ create mode 100644 runtimes/panda.js
+
 diff --git a/lib/Agent.js b/lib/Agent.js
 index edcdf0e..7e655c5 100644
 --- a/lib/Agent.js

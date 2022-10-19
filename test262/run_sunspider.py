@@ -385,17 +385,6 @@ class ArkProgram():
             if len(module_import[0]) != 0:
                 mod_opt_compile = 0
 
-        with open(js_file, 'r', encoding='utf-8') as f:
-            context_file = f.read()
-            script_import_list = re.findall(r'(import)\(((.)|(\'(\.\/.*))\'|"(\.\/.*)")\)', context_file)
-            module_import_list = re.findall(r'(export)', context_file)
-        for script_improt in list(set(script_import_list)):
-            if len(script_improt[1]) != 0:
-                mod_opt_compile = 1
-        for module_import in list(set(module_import_list)):
-            if len(module_import[0]) != 0:
-                mod_opt_compile = 0
-
         if self.ark_frontend == ARK_FRONTEND_LIST[0]:
             mod_opt_index = 3
             if "dynamic-import" in js_file:
