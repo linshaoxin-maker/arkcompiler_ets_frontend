@@ -241,7 +241,9 @@ class ArkProgram():
 
         return mod_opt_compile
 
-    def gen_dependency_abc(self, dependency):
+    def gen_dependency_abc(self, dependency, js_file):
+        if "dynamic-import" not in js_file:
+            return
         cmd_args = []
         output_file = os.path.splitext(dependency.replace(DATA_DIR, BASE_OUT_DIR))[0]
         output_abc = f"{output_file}.abc"
@@ -356,7 +358,7 @@ class ArkProgram():
             search_dir = os.path.dirname(js_file.replace(BASE_OUT_DIR, DATA_DIR))
             dependencies = collect_module_dependencies(js_file, search_dir, [])
             for dependency in list(set(dependencies)):
-                self.gen_dependency_abc(dependency)
+                self.gen_dependency_abc(dependency, js_file)
 
             mod_opt_compile = self.get_mod_compile(js_file, mod_opt_compile)
 
