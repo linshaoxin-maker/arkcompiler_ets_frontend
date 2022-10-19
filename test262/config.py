@@ -53,7 +53,7 @@ DEFAULT_HOST_PATH = "python3"
 DEFAULT_THREADS = min(cpu_count(), 32)
 DEFAULT_OTHER_ARGS = "--saveCompiledTests"
 TEST262_RUNNER_SCRIPT = os.path.join(HARNESS_DIR, "bin", "run.js")
-DEFAULT_TIMEOUT = 60000
+DEFAULT_TIMEOUT = 120000
 
 ES5_LIST_FILE = os.path.join("test262", "es5_tests.txt")
 ES2015_LIST_FILE = os.path.join("test262", "es2015_tests.txt")
@@ -62,13 +62,10 @@ ES2021_LIST_FILE = os.path.join("test262", "es2021_tests.txt")
 CI_LIST_FILE = os.path.join("test262", "CI_tests.txt")
 MODULE_LIST = []
 DYNAMIC_IMPORT_LIST = []
-NOT_MODULE_LIST = []
 with open(os.path.join("test262", "module_tests.txt")) as m_file:
     MODULE_LIST = m_file.read().splitlines()
 with open(os.path.join("test262", "dynamicImport_tests.txt")) as d_file:
     DYNAMIC_IMPORT_LIST = d_file.read().splitlines()
-with open(os.path.join("test262", "not_module_tests.txt")) as n_file:
-    NOT_MODULE_LIST = n_file.read().splitlines()
 
 TEST262_GIT_HASH = "9ca13b12728b7e0089c7eb03fa2bd17f8abe297f"
 HARNESS_GIT_HASH = "9c499f028eb24e67781435c0bb442e00343eb39d"
