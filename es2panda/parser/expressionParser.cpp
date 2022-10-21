@@ -1496,6 +1496,7 @@ bool ParserImpl::ParsePotentialTsGenericFunctionCall(ir::Expression **returnExpr
 }
 
 ir::Expression *ParserImpl::ParsePostPrimaryExpression(ir::Expression *primaryExpr, lexer::SourcePosition startLoc,
+                                                       ExpressionParseFlags flags,
                                                        bool ignoreCallExpression, bool *isChainExpression)
 {
     ir::Expression *returnExpression = primaryExpr;
@@ -1601,6 +1602,15 @@ ir::Expression *ParserImpl::ParsePostPrimaryExpression(ir::Expression *primaryEx
                 lexer_->NextToken();
                 continue;
             }
+            case lexer::TokenType::LITERAL_IDENT: {
+                if (Extension() == ScriptExtension::TS &&
+                    lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_AS &&
+                    !(flags & ExpressionParseFlags::EXP_DISALLOW_AS)) {
+                    returnExpression = ParseTsAsExpression(returnExpression, flags);
+                    continue;
+                }
+                break;
+            }
             default: {
                 break;
             }
@@ -1652,7 +1662,8 @@ ir::Expression *ParserImpl::ParseMemberExpression(bool ignoreCallExpression, Exp
     }
 
     bool isChainExpression = false;
-    returnExpression = ParsePostPrimaryExpression(returnExpression, startLoc, ignoreCallExpression, &isChainExpression);
+    returnExpression = ParsePostPrimaryExpression(returnExpression, startLoc, flags,
+                                                  ignoreCallExpression, &isChainExpression);
 
     if (!lexer_->GetToken().NewLine() && lexer::Token::IsUpdateToken(lexer_->GetToken().Type())) {
         lexer::SourcePosition start = returnExpression->Start();
