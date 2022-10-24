@@ -12,8 +12,14 @@
 # limitations under the License.
 
 import("//arkcompiler/ets_frontend/ets_frontend_config.gni")
+if (!ark_standalone_build) {
+  import("//build/ohos.gni")
+  third_party_gn_path = "//third_party"
+} else {
+  import("$build_root/ark.gni")
+  third_party_gn_path = "//arkcompiler/toolchain/build/third_party_gn"
+}
 import("//arkcompiler/runtime_core/ark_config.gni")
-import("//build/ohos.gni")
 
 es2panda_src = [
   "es2panda.cpp",
@@ -339,7 +345,7 @@ isa_gen = "${ark_root}/isa/gen.rb"
 isa_gen_data = "$root_gen_dir/isa/isa.yaml"
 isa_gen_require = "${ark_root}/isa/isapi.rb"
 action_foreach("gen_isa_headers") {
-  deps = [ "//arkcompiler/runtime_core/isa:isa_combine" ]
+  deps = [ "$ark_root/isa:isa_combine" ]
 
   template_files = [
     "isa.h.erb",
@@ -395,7 +401,7 @@ ohos_static_library("es2panda_lib") {
     "$ark_root/libpandabase:libarkbase_frontend_static",
     "$ark_root/libpandafile:libarkfile_frontend_static",
     "$ark_root/libziparchive:libarkziparchive_frontend_static",
-    "//third_party/icu/icu4c:static_icuuc",
+    "$third_party_gn_path/icu/icu4c:static_icuuc",
   ]
 
   if (enable_bytecode_optimizer) {
@@ -550,12 +556,14 @@ group("es2panda_build") {
   }
 }
 
-group("es2panda_build_win") {
-  deps = [ ":es2panda(${toolchain_win})" ]
-}
+if (!ark_standalone_build) {
+  group("es2panda_build_win") {
+    deps = [ ":es2panda(${toolchain_win})" ]
+  }
 
-group("es2abc_tests") {
-  deps = [ "./test:es2abc_parser_tests" ]
-  deps += [ "./test:es2abc_parser_tsc_tests" ]
-  deps += [ "./test:es2abc_compiler_tests" ]
+  group("es2abc_tests") {
+    deps = [ "./test:es2abc_parser_tests" ]
+    deps += [ "./test:es2abc_parser_tsc_tests" ]
+    deps += [ "./test:es2abc_compiler_tests" ]
+  }
 }

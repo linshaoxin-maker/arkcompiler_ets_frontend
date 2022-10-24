@@ -12,10 +12,16 @@
 # limitations under the License.
 
 import("//arkcompiler/ets_frontend/ets_frontend_config.gni")
+if (!ark_standalone_build) {
+  import("//build/config/clang/clang.gni")
+  import("//build/ohos.gni")
+  import("//developtools/profiler/build/config.gni")
+} else {
+  import("//profiler//build/config.gni")
+  import("$build_root/ark.gni")
+  import("$build_root/config/clang/clang.gni")
+}
 import("//arkcompiler/runtime_core/ark_config.gni")
-import("//build/config/clang/clang.gni")
-import("//build/ohos.gni")
-import("//developtools/profiler/build/config.gni")
 
 proto_base_dir = "protos"
 proto_out_dir = "$target_gen_dir" + "/protos_generated"
@@ -106,7 +112,7 @@ host_protoc_path =
     root_out_dir + host_out_path + "/" + protoc_binary_out_path + "/protoc"
 
 action("arkcompiler_generate_proto") {
-  deps = [ "//third_party/protobuf:protoc($host_toolchain)" ]
+  deps = [ "$ark_third_party_root/protobuf:protoc($host_toolchain)" ]
   args = []
   sources = []
   outputs = proto_generated_header + proto_generated_source
@@ -137,8 +143,8 @@ ohos_source_set("assembly_proto_static") {
 
   deps = [
     ":arkcompiler_generate_proto",
-    "//third_party/protobuf:protobuf_lite_static",
-    "//third_party/protobuf:protobuf_static",
+    "$ark_third_party_root/protobuf:protobuf_lite_static",
+    "$ark_third_party_root/protobuf:protobuf_static",
   ]
 
   sources = proto_generated_header + proto_generated_source +
@@ -176,7 +182,7 @@ ohos_executable("merge_abc") {
     "$ark_root/libpandabase:libarkbase_frontend_static",
     "$ark_root/libpandafile:libarkfile_frontend_static",
     "$ark_root/libziparchive:libarkziparchive_frontend_static",
-    "//third_party/icu/icu4c:static_icuuc",
+    "$ark_third_party_root/icu/icu4c:static_icuuc",
   ]
 
   ldflags = []
@@ -281,6 +287,8 @@ group("merge_proto_abc_build") {
   }
 }
 
-group("merge_proto_abc_build_win") {
-  deps = [ ":merge_abc(${toolchain_win})" ]
+if (!ark_standalone_build) {
+  group("merge_proto_abc_build_win") {
+    deps = [ ":merge_abc(${toolchain_win})" ]
+  }
 }
