@@ -16,6 +16,7 @@
 #include "classDefinition.h"
 
 #include <util/helpers.h>
+#include <binder/binder.h>
 #include <binder/scope.h>
 #include <compiler/base/literals.h>
 #include <compiler/base/lreference.h>
@@ -287,7 +288,6 @@ void ClassDefinition::Compile(compiler::PandaGen *pg) const
 
     compiler::RegScope rs(pg);
     compiler::VReg classReg = pg->AllocReg();
-    compiler::VReg lexenv = pg->LexEnv();
 
     compiler::LocalRegScope lrs(pg, scope_);
 
@@ -296,7 +296,7 @@ void ClassDefinition::Compile(compiler::PandaGen *pg) const
     util::BitSet compiled(body_.size());
 
     int32_t bufIdx = CreateClassStaticProperties(pg, compiled);
-    pg->DefineClassWithBuffer(this, ctorId, bufIdx, lexenv, baseReg);
+    pg->DefineClassWithBuffer(this, ctorId, bufIdx, baseReg);
 
     pg->StoreAccumulator(this, classReg);
     InitializeClassName(pg);
@@ -308,6 +308,41 @@ checker::Type *ClassDefinition::Check(checker::Checker *checker) const
 {
     // TODO(aszilagyi)
     return checker->GlobalAnyType();
+}
+
+void ClassDefinition::UpdateSelf(const NodeUpdater &cb, binder::Binder *binder)
+{
+    auto scopeCtx = binder::LexicalScope<binder::LocalScope>::Enter(binder, scope_);
+
+    if (ident_) {
+        ident_ = std::get<ir::AstNode *>(cb(ident_))->AsIdentifier();
+    }
+
+    if (typeParams_) {
+        typeParams_ = std::get<ir::AstNode *>(cb(typeParams_))->AsTSTypeParameterDeclaration();
+    }
+
+    if (superClass_) {
+        superClass_ = std::get<ir::AstNode *>(cb(superClass_))->AsExpression();
+    }
+
+    if (superTypeParams_) {
+        superTypeParams_ = std::get<ir::AstNode *>(cb(superTypeParams_))->AsTSTypeParameterInstantiation();
+    }
+
+    for (auto iter = implements_.begin(); iter != implements_.end(); iter++) {
+        *iter = std::get<ir::AstNode *>(cb(*iter))->AsTSClassImplements();
+    }
+
+    ctor_ = std::get<ir::AstNode *>(cb(ctor_))->AsMethodDefinition();
+
+    for (auto iter = body_.begin(); iter != body_.end(); iter++) {
+        *iter = std::get<ir::AstNode *>(cb(*iter))->AsStatement();
+    }
+
+    for (auto iter = indexSignatures_.begin(); iter != indexSignatures_.end(); iter++) {
+        *iter = std::get<ir::AstNode *>(cb(*iter))->AsTSIndexSignature();
+    }
 }
 
 }  // namespace panda::es2panda::ir

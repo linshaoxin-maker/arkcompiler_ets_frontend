@@ -18,8 +18,8 @@ import {
 } from 'chai';
 import 'mocha';
 import {
-    EcmaReturnundefined,
-    LdaDyn,
+    Returnundefined,
+    Lda,
     VReg
 } from "../src/irnodes";
 import { checkInstructions, compileMainSnippet, SnippetCompiler } from "./utils/base";
@@ -29,11 +29,11 @@ describe("BuiltInsTest", function () {
     it("Global Value Properties", function () {
         let insns = compileMainSnippet(`NaN; Infinity; globalThis;`);
         let expected = [
-            new LdaDyn(new VReg()),
-            new LdaDyn(new VReg()),
-            new LdaDyn(new VReg()),
+            new Lda(new VReg()),
+            new Lda(new VReg()),
+            new Lda(new VReg()),
 
-            new EcmaReturnundefined()
+            new Returnundefined()
         ];
         expect(checkInstructions(insns, expected)).to.be.true;
     });
@@ -45,7 +45,7 @@ describe("FunctionToStringTest", function () {
         let snippetCompiler = new SnippetCompiler();
         snippetCompiler.compileAfter(`function foo() {return 123;}\nfunction bar() {return 321;}\n`, 'toStringTest.js');
         CmdOptions.needRecordSourceCode = () => {return false};
-        let pandaGen = snippetCompiler.getPandaGenByName('foo');
+        let pandaGen = snippetCompiler.getPandaGenByName('UnitTest.foo');
         let expected = "function foo() {return 123;}";
         expect(pandaGen.getSourceCode() == expected).to.be.true;
     })

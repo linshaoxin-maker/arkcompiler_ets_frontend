@@ -23,6 +23,7 @@
 #include <typescript/types/signature.h>
 #include <typescript/types/type.h>
 #include <ir/astDump.h>
+#include <ir/expressions/chainExpression.h>
 #include <ir/expressions/memberExpression.h>
 #include <ir/ts/tsTypeParameterInstantiation.h>
 
@@ -94,7 +95,6 @@ void CallExpression::Compile(compiler::PandaGen *pg) const
                 pg->StoreAccumulator(it, arg);
             }
 
-            pg->GetFunctionObject(this);
             pg->SuperCall(this, argStart, arguments_.size());
         }
 
@@ -119,11 +119,15 @@ void CallExpression::Compile(compiler::PandaGen *pg) const
 
         compiler::RegScope mrs(pg);
         callee_->AsMemberExpression()->Compile(pg, thisReg);
+    } else if (callee_->IsChainExpression()) {
+        hasThis = true;
+        callee_->AsChainExpression()->Compile(pg);
     } else {
         callee_->Compile(pg);
     }
 
     pg->StoreAccumulator(this, callee);
+    pg->GetOptionalChain()->CheckNullish(optional_, callee);
 
     if (containsSpread) {
         if (!hasThis) {
@@ -163,6 +167,19 @@ checker::Type *CallExpression::Check(checker::Checker *checker) const
 
     checker->ThrowTypeError("This expression is not callable.", Start());
     return nullptr;
+}
+
+void CallExpression::UpdateSelf(const NodeUpdater &cb, [[maybe_unused]] binder::Binder *binder)
+{
+    callee_ = std::get<ir::AstNode *>(cb(callee_))->AsExpression();
+
+    if (typeParams_) {
+        typeParams_ = std::get<ir::AstNode *>(cb(typeParams_))->AsTSTypeParameterInstantiation();
+    }
+
+    for (auto iter = arguments_.begin(); iter != arguments_.end(); iter++) {
+        *iter = std::get<ir::AstNode *>(cb(*iter))->AsExpression();
+    }
 }
 
 }  // namespace panda::es2panda::ir

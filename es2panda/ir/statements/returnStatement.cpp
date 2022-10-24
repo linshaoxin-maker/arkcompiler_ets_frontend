@@ -51,7 +51,7 @@ void ReturnStatement::Compile(compiler::PandaGen *pg) const
         compiler::VReg res = pg->AllocReg();
 
         pg->StoreAccumulator(this, res);
-        pg->ControlFlowChangeBreak();
+        pg->ControlFlowChangeReturn();
         pg->LoadAccumulator(this, res);
     }
 
@@ -91,6 +91,13 @@ checker::Type *ReturnStatement::Check(checker::Checker *checker) const
     }
 
     return nullptr;
+}
+
+void ReturnStatement::UpdateSelf(const NodeUpdater &cb, [[maybe_unused]] binder::Binder *binder)
+{
+    if (argument_) {
+        argument_ = std::get<ir::AstNode *>(cb(argument_))->AsExpression();
+    }
 }
 
 }  // namespace panda::es2panda::ir

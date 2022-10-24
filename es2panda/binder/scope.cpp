@@ -305,6 +305,12 @@ bool FunctionScope::AddBinding(ArenaAllocator *allocator, Variable *currentVaria
         case DeclType::ENUM_LITERAL: {
             return AddTSBinding<LocalVariable>(allocator, currentVariable, newDecl, VariableFlags::ENUM_LITERAL);
         }
+        case DeclType::NAMESPACE: {
+            return AddTSBinding<NamespaceVariable>(allocator, newDecl, VariableFlags::NAMESPACE);
+        }
+        case DeclType::IMPORT_EQUALS: {
+            return AddTSBinding<ImportEqualsVariable>(allocator, newDecl, VariableFlags::IMPORT_EQUALS);
+        }
         case DeclType::INTERFACE: {
             return AddTSBinding<LocalVariable>(allocator, currentVariable, newDecl, VariableFlags::INTERFACE);
         }
@@ -331,6 +337,12 @@ bool GlobalScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariabl
         case DeclType::ENUM_LITERAL: {
             return AddTSBinding<LocalVariable>(allocator, currentVariable, newDecl, VariableFlags::ENUM_LITERAL);
         }
+        case DeclType::NAMESPACE: {
+            return AddTSBinding<NamespaceVariable>(allocator, newDecl, VariableFlags::NAMESPACE);
+        }
+        case DeclType::IMPORT_EQUALS: {
+            return AddTSBinding<ImportEqualsVariable>(allocator, newDecl, VariableFlags::IMPORT_EQUALS);
+        }
         case DeclType::INTERFACE: {
             return AddTSBinding<LocalVariable>(allocator, currentVariable, newDecl, VariableFlags::INTERFACE);
         }
@@ -356,6 +368,14 @@ void ModuleScope::ConvertLocalVariableToModuleVariable(ArenaAllocator *allocator
         VariableFlags flags = res->second->Flags();
         res->second = allocator->New<ModuleVariable>(decl, flags | VariableFlags::LOCAL_EXPORT);
     }
+}
+
+void ModuleScope::AssignIndexToModuleVariable(util::StringView name, uint32_t index)
+{
+    auto *moduleVar = FindLocal(name);
+    ASSERT(moduleVar != nullptr);
+    ASSERT(moduleVar->IsModuleVariable());
+    moduleVar->AsModuleVariable()->AssignIndex(index);
 }
 
 bool ModuleScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
@@ -387,6 +407,12 @@ bool ModuleScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariabl
         }
         case DeclType::ENUM_LITERAL: {
             return AddTSBinding<LocalVariable>(allocator, currentVariable, newDecl, VariableFlags::ENUM_LITERAL);
+        }
+        case DeclType::NAMESPACE: {
+            return AddTSBinding<NamespaceVariable>(allocator, newDecl, VariableFlags::NAMESPACE);
+        }
+        case DeclType::IMPORT_EQUALS: {
+            return AddTSBinding<ImportEqualsVariable>(allocator, newDecl, VariableFlags::IMPORT_EQUALS);
         }
         case DeclType::INTERFACE: {
             return AddTSBinding<LocalVariable>(allocator, currentVariable, newDecl, VariableFlags::INTERFACE);

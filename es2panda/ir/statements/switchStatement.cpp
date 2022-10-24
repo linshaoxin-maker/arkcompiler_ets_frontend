@@ -15,6 +15,7 @@
 
 #include "switchStatement.h"
 
+#include <binder/binder.h>
 #include <binder/scope.h>
 #include <compiler/core/labelTarget.h>
 #include <compiler/core/switchBuilder.h>
@@ -42,11 +43,12 @@ void SwitchStatement::Dump(ir::AstDumper *dumper) const
 
 void SwitchStatement::Compile(compiler::PandaGen *pg) const
 {
-    compiler::LocalRegScope lrs(pg, scope_);
     compiler::SwitchBuilder builder(pg, this);
     compiler::VReg tag = pg->AllocReg();
 
     builder.CompileTagOfSwitch(tag);
+
+    compiler::LocalRegScope lrs(pg, scope_);
     uint32_t defaultIndex = 0;
 
     for (size_t i = 0; i < cases_.size(); i++) {
@@ -103,6 +105,17 @@ checker::Type *SwitchStatement::Check(checker::Checker *checker) const
     }
 
     return nullptr;
+}
+
+void SwitchStatement::UpdateSelf(const NodeUpdater &cb, binder::Binder *binder)
+{
+    auto scopeCtx = binder::LexicalScope<binder::LocalScope>::Enter(binder, scope_);
+
+    discriminant_ = std::get<ir::AstNode *>(cb(discriminant_))->AsExpression();
+
+    for (auto iter = cases_.begin(); iter != cases_.end(); iter++) {
+        *iter = std::get<ir::AstNode *>(cb(*iter))->AsSwitchCaseStatement();
+    }
 }
 
 }  // namespace panda::es2panda::ir

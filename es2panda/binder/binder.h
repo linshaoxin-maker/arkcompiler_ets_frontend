@@ -46,9 +46,12 @@ public:
     explicit Binder(parser::Program *program, ScriptExtension extension)
         : program_(program),
           functionScopes_(Allocator()->Adapter()),
-          functionNames_(Allocator()->Adapter())
+          functionNames_(Allocator()->Adapter()),
+          anonymousFunctionNames_(Allocator()->Adapter()),
+          variableNames_(Allocator()->Adapter()),
+          extension_(extension)
     {
-        if (extension == ScriptExtension::TS) {
+        if (extension_ == ScriptExtension::TS) {
             bindingOptions_ = ResolveBindingOptions::ALL;
             return;
         }
@@ -61,7 +64,7 @@ public:
     ~Binder() = default;
 
     void InitTopScope();
-    void IdentifierAnalysis();
+    void IdentifierAnalysis(ResolveBindingFlags flags = ResolveBindingFlags::ALL);
 
     template <typename T, typename... Args>
     T *AddDecl(const lexer::SourcePosition &pos, Args &&... args);
@@ -109,6 +112,20 @@ public:
     {
         return program_;
     }
+
+    void SetProgram(parser::Program *program)
+    {
+        program_ = program;
+    }
+
+    const ArenaUnorderedMap<const ir::ScriptFunction *, util::StringView> &AnonymousFunctionNames() const
+    {
+        return anonymousFunctionNames_;
+    }
+
+    void AddDeclarationName(const util::StringView &name);
+
+    bool HasVariableName(const util::StringView &name) const;
 
     static constexpr std::string_view FUNCTION_ARGUMENTS = "arguments";
     static constexpr std::string_view MANDATORY_PARAM_FUNC = "=f";
@@ -161,7 +178,8 @@ private:
     }
 
     void AddMandatoryParams();
-    void BuildFunction(FunctionScope *funcScope, util::StringView name);
+    void AssignIndexToModuleVariable();
+    void BuildFunction(FunctionScope *funcScope, util::StringView name, const ir::ScriptFunction *func = nullptr);
     void BuildScriptFunction(Scope *outerScope, const ir::ScriptFunction *scriptFunc);
     void BuildClassDefinition(ir::ClassDefinition *classDef);
     void LookupReference(const util::StringView &name);
@@ -186,7 +204,11 @@ private:
     ArenaVector<FunctionScope *> functionScopes_;
     ResolveBindingOptions bindingOptions_;
     ArenaSet<util::StringView> functionNames_;
+    ArenaUnorderedMap<const ir::ScriptFunction *, util::StringView> anonymousFunctionNames_;
+    ArenaSet<util::StringView> variableNames_;
     size_t functionNameIndex_ {1};
+    ResolveBindingFlags bindingFlags_ {ResolveBindingFlags::ALL};
+    ScriptExtension extension_;
 };
 
 template <typename T>
@@ -237,6 +259,7 @@ T *Binder::AddTsDecl(const lexer::SourcePosition &pos, Args &&... args)
     T *decl = Allocator()->New<T>(std::forward<Args>(args)...);
 
     if (scope_->AddTsDecl(Allocator(), decl, program_->Extension())) {
+        AddDeclarationName(decl->Name());
         return decl;
     }
 
@@ -249,6 +272,7 @@ T *Binder::AddDecl(const lexer::SourcePosition &pos, Args &&... args)
     T *decl = Allocator()->New<T>(std::forward<Args>(args)...);
 
     if (scope_->AddDecl(Allocator(), decl, program_->Extension())) {
+        AddDeclarationName(decl->Name());
         return decl;
     }
 
@@ -262,6 +286,7 @@ T *Binder::AddDecl(const lexer::SourcePosition &pos, DeclarationFlags flag, Args
     decl->AddFlag(flag);
 
     if (scope_->AddDecl(Allocator(), decl, program_->Extension())) {
+        AddDeclarationName(decl->Name());
         return decl;
     }
 

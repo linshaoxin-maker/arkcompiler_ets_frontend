@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2021 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,6 +120,20 @@ int64_t Helpers::GetIndex(const util::StringView &str)
     }
 
     return value;
+}
+
+bool Helpers::FileExtensionIs(std::string_view filePath, std::string_view extension)
+{
+    return filePath.length() > extension.length() && Helpers::EndsWith(filePath, extension);
+}
+
+bool Helpers::EndsWith(std::string_view str, std::string_view suffix)
+{
+    if (str.length() < suffix.length()) {
+        return false;
+    }
+    size_t expectPos = str.length() - suffix.length();
+    return str.find(suffix, expectPos) == expectPos;
 }
 
 std::string Helpers::ToString(double number)

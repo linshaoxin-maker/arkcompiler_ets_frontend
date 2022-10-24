@@ -21,6 +21,7 @@
 #include <ir/astNode.h>
 #include <lexer/token/sourceLocation.h>
 #include <macros.h>
+#include <typescript/extractor/typeRecorder.h>
 #include <util/hotfix.h>
 #include <util/ustring.h>
 
@@ -54,6 +55,8 @@ class Label;
 class IRNode;
 class CompilerContext;
 
+using Literal = panda::pandasm::LiteralArray::Literal;
+
 class FunctionEmitter {
 public:
     explicit FunctionEmitter(ArenaAllocator *allocator, const PandaGen *pg);
@@ -81,6 +84,8 @@ private:
     void GenScopeVariableInfo(const binder::Scope *scope);
     void GenSourceFileDebugInfo();
     void GenVariablesDebugInfo();
+    void GenFunctionKind();
+    void GenIcSize();
     util::StringView SourceCode() const;
     lexer::LineIndex &GetLineIndex() const;
 
@@ -89,7 +94,7 @@ private:
 
     const PandaGen *pg_;
     panda::pandasm::Function *func_ {};
-    ArenaVector<std::pair<int32_t, std::vector<panda::pandasm::LiteralArray::Literal>>> literalBuffers_;
+    ArenaVector<std::pair<int32_t, std::vector<Literal>>> literalBuffers_;
     size_t offset_ {0};
 };
 
@@ -100,14 +105,20 @@ public:
     NO_COPY_SEMANTIC(Emitter);
     NO_MOVE_SEMANTIC(Emitter);
 
-    void AddFunction(FunctionEmitter *func);
+    void AddFunction(FunctionEmitter *func, CompilerContext *context);
     void AddSourceTextModuleRecord(ModuleRecordEmitter *module, CompilerContext *context);
+    void FillTypeInfoRecord(bool typeFlag, int64_t typeSummaryIndex) const;
+    void FillTypeLiteralBuffers(const extractor::TypeRecorder *recorder) const;
+    static void GenBufferLiterals(ArenaVector<std::pair<int32_t, std::vector<Literal>>> &literalBuffers,
+                                  const LiteralBuffer *buff);
     static void DumpAsm(const panda::pandasm::Program *prog);
     panda::pandasm::Program *Finalize(bool dumpDebugInfo, util::Hotfix *hotfixHelper);
 
 private:
     void SetCommonjsField(bool isCommonjs);
     void GenCommonjsRecord() const;
+    void GenTypeInfoRecord() const;
+    void GenESTypeAnnotationRecord() const;
 
     std::mutex m_;
     panda::pandasm::Program *prog_;

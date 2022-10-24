@@ -37,13 +37,21 @@ void ExportDefaultDeclaration::Compile(compiler::PandaGen *pg) const
     if (decl_->IsExpression()) {
         // export default [AssignmentExpression]
         // e.g. export default 42 (42 be exported as [default])
-        pg->StoreModuleVariable(this, parser::SourceTextModuleRecord::DEFAULT_LOCAL_NAME);
+        ASSERT(pg->Scope()->IsModuleScope());
+        auto *var = pg->Scope()->FindLocal(parser::SourceTextModuleRecord::DEFAULT_LOCAL_NAME);
+        ASSERT(var->IsModuleVariable());
+        pg->StoreModuleVariable(this, var->AsModuleVariable());
     }
 }
 
 checker::Type *ExportDefaultDeclaration::Check([[maybe_unused]] checker::Checker *checker) const
 {
     return nullptr;
+}
+
+void ExportDefaultDeclaration::UpdateSelf(const NodeUpdater &cb, [[maybe_unused]] binder::Binder *binder)
+{
+    decl_ = std::get<ir::AstNode *>(cb(decl_));
 }
 
 }  // namespace panda::es2panda::ir

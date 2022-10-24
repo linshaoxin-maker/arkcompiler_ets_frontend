@@ -30,11 +30,20 @@ void TSTypeAssertion::Dump(ir::AstDumper *dumper) const
     dumper->Add({{"type", "TSTypeAssertion"}, {"typeAnnotation", typeAnnotation_}, {"expression", expression_}});
 }
 
-void TSTypeAssertion::Compile([[maybe_unused]] compiler::PandaGen *pg) const {}
+void TSTypeAssertion::Compile(compiler::PandaGen *pg) const
+{
+    expression_->Compile(pg);
+}
 
 checker::Type *TSTypeAssertion::Check([[maybe_unused]] checker::Checker *checker) const
 {
     return nullptr;
+}
+
+void TSTypeAssertion::UpdateSelf(const NodeUpdater &cb, [[maybe_unused]] binder::Binder *binder)
+{
+    typeAnnotation_ = std::get<ir::AstNode *>(cb(typeAnnotation_))->AsExpression();
+    expression_ = std::get<ir::AstNode *>(cb(expression_))->AsExpression();
 }
 
 }  // namespace panda::es2panda::ir

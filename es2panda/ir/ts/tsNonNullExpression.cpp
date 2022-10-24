@@ -29,11 +29,19 @@ void TSNonNullExpression::Dump(ir::AstDumper *dumper) const
     dumper->Add({{"type", "TSNonNullExpression"}, {"expression", expr_}});
 }
 
-void TSNonNullExpression::Compile([[maybe_unused]] compiler::PandaGen *pg) const {}
+void TSNonNullExpression::Compile(compiler::PandaGen *pg) const
+{
+    expr_->Compile(pg);
+}
 
 checker::Type *TSNonNullExpression::Check([[maybe_unused]] checker::Checker *checker) const
 {
     return nullptr;
+}
+
+void TSNonNullExpression::UpdateSelf(const NodeUpdater &cb, [[maybe_unused]] binder::Binder *binder)
+{
+    expr_ = std::get<ir::AstNode *>(cb(expr_))->AsExpression();
 }
 
 }  // namespace panda::es2panda::ir

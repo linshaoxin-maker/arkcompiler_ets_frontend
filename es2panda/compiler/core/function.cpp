@@ -16,7 +16,6 @@
 #include "function.h"
 
 #include <binder/binder.h>
-#include <util/helpers.h>
 #include <binder/scope.h>
 #include <binder/variable.h>
 #include <compiler/base/lreference.h>
@@ -27,6 +26,7 @@
 #include <ir/expressions/assignmentExpression.h>
 #include <ir/expressions/identifier.h>
 #include <ir/statements/blockStatement.h>
+#include <util/helpers.h>
 
 namespace panda::es2panda::compiler {
 
@@ -75,7 +75,7 @@ static void CompileFunctionParameterDeclaration(PandaGen *pg, const ir::ScriptFu
 
         if (param->IsAssignmentPattern()) {
             RegScope rs(pg);
-            pg->LoadAccumulator(func, paramReg);
+            ref.GetValue();
             auto *nonDefaultLabel = pg->AllocLabel();
 
             if (ref.Kind() == ReferenceKind::DESTRUCTURING) {
@@ -170,7 +170,7 @@ static void CompileFunction(PandaGen *pg)
     pg->FunctionExit();
 }
 
-static VReg CompileFunctionOrProgram(PandaGen *pg)
+static void CompileFunctionOrProgram(PandaGen *pg)
 {
     FunctionRegScope lrs(pg);
     const auto *topScope = pg->TopScope();
@@ -185,23 +185,22 @@ static VReg CompileFunctionOrProgram(PandaGen *pg)
     } else {
         pg->FunctionInit(nullptr);
 
-        if (topScope->IsFunctionScope()) {
+        if (topScope->IsFunctionScope() || topScope->IsTSModuleScope()) {
             CompileFunction(pg);
         } else {
             ASSERT(topScope->IsGlobalScope() || topScope->IsModuleScope());
             CompileSourceBlock(pg, pg->RootNode()->AsBlockStatement());
         }
     }
-
-    return pg->GetEnvScope()->LexEnv();
 }
 
 void Function::Compile(PandaGen *pg)
 {
-    VReg lexEnv = CompileFunctionOrProgram(pg);
+    CompileFunctionOrProgram(pg);
+    pg->SetFunctionKind();
     pg->SetSourceLocationFlag(lexer::SourceLocationFlag::INVALID_SOURCE_LOCATION);
     pg->CopyFunctionArguments(pg->RootNode());
-    pg->InitializeLexEnv(pg->RootNode(), lexEnv);
+    pg->InitializeLexEnv(pg->RootNode());
     pg->SetSourceLocationFlag(lexer::SourceLocationFlag::VALID_SOURCE_LOCATION);
     pg->SortCatchTables();
 }

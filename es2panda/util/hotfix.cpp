@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +31,6 @@ constexpr std::string_view ANONYMOUS_OR_DUPLICATE_FUNCTION_SPECIFIER = "#";
 const std::string EXTERNAL_ATTRIBUTE = "external";
 const uint32_t PATCH_ENV_VREG = 0;  // reuse first param vreg
 const panda::panda_file::SourceLang SRC_LANG = panda::panda_file::SourceLang::ECMASCRIPT;
-
-const std::string FUNC_MAIN = "func_main_0";
-// stores newly added function define ins, runtime will execute
-const std::string PATCH_FUNC_MAIN_0 = "patch_main_0";
-// stores modified function and class define ins, runtime will scan but not execute
-const std::string PATCH_FUNC_MAIN_1 = "patch_main_1";
 
 void Hotfix::ProcessFunction(const compiler::PandaGen *pg, panda::pandasm::Function *func,
     LiteralBuffers &literalBuffers)
@@ -117,11 +111,11 @@ std::vector<std::pair<std::string, size_t>> Hotfix::GenerateFunctionAndClassHash
 
     for (const auto &ins : func->ins) {
         ss << (ins.set_label ? "" : "\t") << ins.ToString("", true, func->GetTotalRegs()) << " ";
-        if (ins.opcode == panda::pandasm::Opcode::ECMA_CREATEARRAYWITHBUFFER ||
-            ins.opcode == panda::pandasm::Opcode::ECMA_CREATEOBJECTWITHBUFFER) {
+        if (ins.opcode == panda::pandasm::Opcode::CREATEARRAYWITHBUFFER ||
+            ins.opcode == panda::pandasm::Opcode::CREATEOBJECTWITHBUFFER) {
             int64_t bufferIdx = std::get<int64_t>(ins.imms[0]);
             ss << ExpandLiteral(bufferIdx, literalBuffers) << " ";
-        } else if (ins.opcode == panda::pandasm::Opcode::ECMA_DEFINECLASSWITHBUFFER) {
+        } else if (ins.opcode == panda::pandasm::Opcode::DEFINECLASSWITHBUFFER) {
             int64_t bufferIdx = std::get<int64_t>(ins.imms[0]);
             std::string literalStr = ExpandLiteral(bufferIdx, literalBuffers);
             auto classHash = std::hash<std::string>{}(literalStr);
@@ -208,7 +202,7 @@ void Hotfix::CollectClassMemberFunctions(const std::string &className, int64_t b
     classMemberFunctions_.insert({className, classMemberFunctions});
 }
 
-bool Hotfix::IsScopeValidToPatchLexical(binder::VariableScope *scope)
+bool Hotfix::IsScopeValidToPatchLexical(binder::VariableScope *scope) const
 {
     if (!generatePatch_) {
         return false;
@@ -219,7 +213,7 @@ bool Hotfix::IsScopeValidToPatchLexical(binder::VariableScope *scope)
     }
 
     auto funcName = scope->AsFunctionVariableScope()->InternalName();
-    if (std::string(funcName) != (recordName_ + FUNC_MAIN)) {
+    if (std::string(funcName) != funcMain0_) {
         return false;
     }
     return true;
@@ -234,7 +228,7 @@ void Hotfix::AllocSlotfromPatchEnv(const std::string &variableName)
 
 uint32_t Hotfix::GetSlotIdFromSymbolTable(const std::string &variableName)
 {
-    auto functionIter = originFunctionInfo_->find(recordName_ + FUNC_MAIN);
+    auto functionIter = originFunctionInfo_->find(funcMain0_);
     if (functionIter != originFunctionInfo_->end()) {
         auto lexenvIter = functionIter->second.lexenv.find(variableName);
         if (lexenvIter != functionIter->second.lexenv.end()) {
@@ -252,11 +246,9 @@ uint32_t Hotfix::GetPatchLexicalIdx(const std::string &variableName)
 
 bool IsFunctionOrClassDefineIns(panda::pandasm::Ins &ins)
 {
-    if (ins.opcode == panda::pandasm::Opcode::ECMA_DEFINEGENERATORFUNC ||
-        ins.opcode == panda::pandasm::Opcode::ECMA_DEFINEMETHOD ||
-        ins.opcode == panda::pandasm::Opcode::ECMA_DEFINEFUNCDYN ||
-        ins.opcode == panda::pandasm::Opcode::ECMA_DEFINEASYNCFUNC ||
-        ins.opcode == panda::pandasm::Opcode::ECMA_DEFINECLASSWITHBUFFER) {
+    if (ins.opcode == panda::pandasm::Opcode::DEFINEMETHOD ||
+        ins.opcode == panda::pandasm::Opcode::DEFINEFUNC ||
+        ins.opcode == panda::pandasm::Opcode::DEFINECLASSWITHBUFFER) {
         return true;
     }
     return false;
@@ -301,7 +293,7 @@ void Hotfix::HandleModifiedClasses(panda::pandasm::Program *prog)
 void Hotfix::AddHeadAndTailInsForPatchFuncMain0(std::vector<panda::pandasm::Ins> &ins)
 {
     panda::pandasm::Ins returnUndefine;
-    returnUndefine.opcode = pandasm::Opcode::ECMA_RETURNUNDEFINED;
+    returnUndefine.opcode = pandasm::Opcode::RETURNUNDEFINED;
 
     if (ins.size() == 0) {
         ins.push_back(returnUndefine);
@@ -309,13 +301,13 @@ void Hotfix::AddHeadAndTailInsForPatchFuncMain0(std::vector<panda::pandasm::Ins>
     }
 
     panda::pandasm::Ins newLexenv;
-    newLexenv.opcode = pandasm::Opcode::ECMA_NEWLEXENVDYN;
+    newLexenv.opcode = pandasm::Opcode::NEWLEXENV;
     newLexenv.imms.reserve(1);
     auto newFuncNum = long(ins.size() / 2);  // each new function has 2 ins: define and store
     newLexenv.imms.emplace_back(newFuncNum);
 
     panda::pandasm::Ins stLexenv;
-    stLexenv.opcode = pandasm::Opcode::STA_DYN;
+    stLexenv.opcode = pandasm::Opcode::STA;
     stLexenv.regs.reserve(1);
     stLexenv.regs.emplace_back(PATCH_ENV_VREG);
 
@@ -374,8 +366,8 @@ void Hotfix::Finalize(panda::pandasm::Program **prog)
         return;
     }
 
-    panda::pandasm::Function patchFuncMain0(recordName_ + PATCH_FUNC_MAIN_0, SRC_LANG);
-    panda::pandasm::Function patchFuncMain1(recordName_ + PATCH_FUNC_MAIN_1, SRC_LANG);
+    panda::pandasm::Function patchFuncMain0(patchMain0_, SRC_LANG);
+    panda::pandasm::Function patchFuncMain1(patchMain1_, SRC_LANG);
     CreateFunctionPatchMain0AndMain1(patchFuncMain0, patchFuncMain1);
 
     (*prog)->function_table.emplace(patchFuncMain0.name, std::move(patchFuncMain0));
@@ -387,7 +379,7 @@ bool Hotfix::CompareLexenv(const std::string &funcName, const compiler::PandaGen
 {
     auto &lexicalVarNameAndTypes = pg->TopScope()->GetLexicalVarNameAndTypes();
     auto &lexenv = bytecodeInfo.lexenv;
-    if (funcName != (recordName_ + FUNC_MAIN)) {
+    if (funcName != funcMain0_) {
         if (lexenv.size() != lexicalVarNameAndTypes.size()) {
             std::cerr << "Found lexenv size changed, not supported!" << std::endl;
             patchError_ = true;
@@ -438,7 +430,8 @@ void Hotfix::HandleFunction(const compiler::PandaGen *pg, panda::pandasm::Functi
     auto originFunction = originFunctionInfo_->find(funcName);
     if (originFunction == originFunctionInfo_->end()) {
         if (IsAnonymousOrDuplicateNameFunction(funcName)) {
-            std::cerr << "Found new anonymous or duplicate name function " << funcName << " not supported!" << std::endl;
+            std::cerr << "Found new anonymous or duplicate name function " << funcName
+                      << " not supported!" << std::endl;
             patchError_ = true;
             return;
         }
@@ -458,7 +451,7 @@ void Hotfix::HandleFunction(const compiler::PandaGen *pg, panda::pandasm::Functi
     }
 
     auto funcHash = std::to_string(hashList.back().second);
-    if (funcHash == bytecodeInfo.funcHash) {
+    if (funcHash == bytecodeInfo.funcHash || funcName == funcMain0_) {
         func->metadata->SetAttribute(EXTERNAL_ATTRIBUTE);
     } else {
         patchFuncNames_.insert(funcName);

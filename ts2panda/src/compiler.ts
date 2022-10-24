@@ -152,7 +152,6 @@ export class Compiler {
 
         // spare v3 to save the currrent lexcial env
         getVregisterCache(this.pandaGen, CacheList.LexEnv);
-        this.envUnion.push(getVregisterCache(this.pandaGen, CacheList.LexEnv));
 
         this.pandaGen.loadAccFromArgs(this.rootNode);
     }
@@ -165,7 +164,6 @@ export class Compiler {
             this.compileSourceFileOrBlock(<ts.SourceFile>this.rootNode);
         } else {
             this.compileFunctionLikeDeclaration(<ts.FunctionLikeDeclaration>this.rootNode);
-            this.callOpt();
         }
     }
 
@@ -179,57 +177,6 @@ export class Compiler {
 
     getCurrentEnv() {
         return this.envUnion[this.envUnion.length - 1];
-    }
-
-    private callOpt() {
-        if (CmdOptions.isDebugMode()) {
-            return;
-        }
-        let CallMap: Map<String, number> = new Map([
-            ["this", 1],
-            ["4newTarget", 2],
-            ["0newTarget", 2],
-            ["argumentsOrRestargs", 4],
-            ["4funcObj", 8]
-        ]);
-        let callType = 0;
-        let scope = this.pandaGen.getScope();
-
-        if (scope instanceof FunctionScope) {
-            let tempLocals: VReg[] = [];
-            let tempNames: Set<String> = new Set();
-            let count = 0;
-            // 4funcObj/newTarget/this
-            for (let i = 0; i < 3; i++) {
-                if (scope.getCallOpt().has(scope.getParameters()[i].getName())) {
-                    tempLocals.push(this.pandaGen.getLocals()[i]);
-                    callType += CallMap.get(scope.getParameters()[i].getName()) ?? 0;
-                } else {
-                    tempNames.add(scope.getParameters()[i].getName());
-                    count++;
-                }
-            }
-            // actual parameters
-            for (let i = 3; i < this.pandaGen.getLocals().length; i++) {
-                tempLocals.push(this.pandaGen.getLocals()[i]);
-            }
-            let name2variable = scope.getName2variable();
-            // @ts-ignore
-            name2variable.forEach((value, key) => {
-                if (tempNames.has(key)) {
-                    name2variable.delete(key)
-                }
-            })
-
-            this.pandaGen.setLocals(tempLocals);
-            this.pandaGen.setParametersCount(this.pandaGen.getParametersCount() - count);
-
-            if (scope.getArgumentsOrRestargs()) {
-                callType += CallMap.get("argumentsOrRestargs") ?? 0;
-            }
-
-            this.pandaGen.setCallType(callType);
-        }
     }
 
     private storeFuncObj2LexEnvIfNeeded() {
@@ -289,9 +236,6 @@ export class Compiler {
                                      pandaGen.getVregForVariable(<Variable>variableInfo.v));
         } else {
             if (v && v.isLexVar) {
-                if ((arg === "this" || arg === "4newTarget") && variableInfo.scope instanceof FunctionScope) {
-                    variableInfo.scope.setCallOpt(arg);
-                }
                 if (arg === "arguments" && variableInfo.scope instanceof FunctionScope) {
                     variableInfo.scope.setArgumentsOrRestargs();
                 }
@@ -812,7 +756,8 @@ export class Compiler {
 
     private compileExportAssignment(stmt: ts.ExportAssignment) {
         this.compileExpression(stmt.expression);
-        this.pandaGen.storeModuleVariable(stmt, "*default*");
+        this.pandaGen.storeModuleVariable(
+            stmt, (<ModuleVariable>this.pandaGen.getScope().findLocal("*default*")).getIndex());
     }
 
     compileCondition(expr: ts.Expression, ifFalseLabel: Label) {
@@ -1062,8 +1007,6 @@ export class Compiler {
 
         let { scope, level, v } = this.scope.find("this");
 
-        this.setCallOpt(scope, "this")
-
         if (!v) {
             throw new Error("\"this\" not found");
         }
@@ -1093,8 +1036,7 @@ export class Compiler {
 
     private compileFunctionExpression(expr: ts.FunctionExpression) {
         let internalName = this.compilerDriver.getFuncInternalName(expr, this.recorder);
-        let env = this.getCurrentEnv();
-        this.pandaGen.defineFunction(expr, expr, internalName, env);
+        this.pandaGen.defineFunction(expr, expr, internalName);
     }
 
     private compileDeleteExpression(expr: ts.DeleteExpression) {
@@ -1111,12 +1053,9 @@ export class Compiler {
                 if (!v || ((scope instanceof GlobalScope) && (v instanceof GlobalVariable))) {
                     // If the variable doesn't exist or if it is global, we must generate
                     // a delete global property instruction.
-                    let variableReg = pandaGen.getTemp();
                     objReg = getVregisterCache(pandaGen, CacheList.Global);
                     pandaGen.loadAccumulatorString(unaryExpr, name);
-                    pandaGen.storeAccumulator(unaryExpr, variableReg);
-                    pandaGen.deleteObjProperty(expr, objReg, variableReg);
-                    pandaGen.freeTemps(variableReg);
+                    pandaGen.deleteObjProperty(expr, objReg);
                 } else {
                     // Otherwise it is a local variable which can't be deleted and we just
                     // return false.
@@ -1139,17 +1078,16 @@ export class Compiler {
                 switch (typeof prop) {
                     case "string":
                         pandaGen.loadAccumulatorString(expr, prop);
-                        pandaGen.storeAccumulator(expr, propReg);
                         break;
                     case "number":
                         pandaGen.loadAccumulatorInt(expr, prop);
-                        pandaGen.storeAccumulator(expr, propReg);
                         break;
                     default:
+                        pandaGen.loadAccumulator(expr, prop);
                         break;
                 }
 
-                pandaGen.deleteObjProperty(expr, objReg, propReg);
+                pandaGen.deleteObjProperty(expr, objReg);
                 pandaGen.freeTemps(objReg, propReg);
                 break;
             }
@@ -1358,8 +1296,7 @@ export class Compiler {
 
     private compileArrowFunction(expr: ts.ArrowFunction) {
         let internalName = this.compilerDriver.getFuncInternalName(expr, this.recorder);
-        let env = this.getCurrentEnv();
-        this.pandaGen.defineFunction(expr, expr, internalName, env);
+        this.pandaGen.defineFunction(expr, expr, internalName);
     }
 
     private compileTemplateSpan(expr: ts.TemplateSpan) {
@@ -1473,8 +1410,6 @@ export class Compiler {
         let level = thisInfo.level;
         let v = <Variable>thisInfo.v;
 
-        this.setCallOpt(scope, "this")
-
         if (scope && level >= 0) {
             let needSetLexVar: boolean = false;
             while (curScope != scope) {
@@ -1503,8 +1438,6 @@ export class Compiler {
         let pandaGen = this.pandaGen;
         let thisInfo = this.getCurrentScope().find("this");
 
-        this.setCallOpt(thisInfo.scope, "this")
-
         if (thisInfo.v!.isLexVar) {
             let slot = (<Variable>thisInfo.v).idxLex;
             let value = pandaGen.getTemp();
@@ -1513,12 +1446,6 @@ export class Compiler {
             pandaGen.freeTemps(value);
         } else {
             pandaGen.storeAccumulator(node, pandaGen.getVregForVariable(<Variable>thisInfo.v))
-        }
-    }
-
-    setCallOpt(scope: Scope | undefined, callOptStr: String) {
-        if (scope instanceof FunctionScope) {
-            scope.setCallOpt(callOptStr);
         }
     }
 
@@ -1550,7 +1477,7 @@ export class Compiler {
                 variable.v.initialize();
                 if (variable.scope instanceof GlobalScope) {
                     if (variable.v.isLet()) {
-                        this.pandaGen.stLetToGlobalRecord(node, variable.v.getName());
+                        this.pandaGen.stLetOrClassToGlobalRecord(node, variable.v.getName());
                     } else {
                         this.pandaGen.stConstToGlobalRecord(node, variable.v.getName());
                     }
@@ -1606,7 +1533,7 @@ export class Compiler {
                 let holeReg = this.pandaGen.getTemp();
                 let nameReg = this.pandaGen.getTemp();
                 this.pandaGen.storeAccumulator(node, valueReg);
-                this.pandaGen.loadModuleVariable(node, variable.v.getName(), true);
+                this.pandaGen.loadModuleVariable(node, variable.v.getIndex(), true);
                 this.pandaGen.storeAccumulator(node, holeReg);
                 this.pandaGen.loadAccumulatorString(node, variable.v.getName());
                 this.pandaGen.storeAccumulator(node, nameReg);
@@ -1615,7 +1542,7 @@ export class Compiler {
                 this.pandaGen.freeTemps(valueReg, holeReg, nameReg);
             }
 
-            this.pandaGen.storeModuleVariable(node, variable.v.getName());
+            this.pandaGen.storeModuleVariable(node, variable.v.getIndex());
         } else {
             throw new Error("invalid lhsRef to store");
         }
@@ -1663,7 +1590,7 @@ export class Compiler {
             }
         } else if (variable.v instanceof ModuleVariable) {
             let isLocal: boolean = variable.v.isExportVar() ? true : false;
-            this.pandaGen.loadModuleVariable(node, variable.v.getName(), isLocal);
+            this.pandaGen.loadModuleVariable(node, variable.v.getIndex(), isLocal);
             if ((variable.v.isLetOrConst() || variable.v.isClass()) && !variable.v.isInitialized()) {
                 let valueReg = this.pandaGen.getTemp();
                 let nameReg = this.pandaGen.getTemp();

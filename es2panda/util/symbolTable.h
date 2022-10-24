@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,8 @@ public:
         ArenaMap<std::string, std::pair<uint32_t, int>> lexenv;  // lexenv: <name, <slot, type>>
         ArenaMap<std::string, std::string> classHash;
 
-        OriginFunctionInfo(ArenaAllocator *allocator) : lexenv(allocator->Adapter()),
-                                                        classHash(allocator->Adapter()) {}
+        explicit OriginFunctionInfo(ArenaAllocator *allocator) : lexenv(allocator->Adapter()),
+                                                                 classHash(allocator->Adapter()) {}
     };
 
     SymbolTable(const std::string &inputSymbolTable, const std::string &dumpSymbolTable)
@@ -57,7 +57,7 @@ public:
 
 private:
     bool ReadSymbolTable(const std::string &symbolTable);
-    std::vector<std::string_view> GetStringItems(std::string_view input, const std::string &delimiter);
+    std::vector<std::string_view> GetStringItems(std::string_view input, const std::string &separator);
 
     std::mutex m_;
     std::string symbolTable_;

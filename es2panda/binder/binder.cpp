@@ -38,6 +38,7 @@
 #include <ir/statements/forOfStatement.h>
 #include <ir/statements/forUpdateStatement.h>
 #include <ir/statements/ifStatement.h>
+#include <ir/statements/switchCaseStatement.h>
 #include <ir/statements/switchStatement.h>
 #include <ir/statements/variableDeclaration.h>
 #include <ir/statements/variableDeclarator.h>
@@ -93,14 +94,28 @@ void Binder::ThrowUndeclaredExport(const lexer::SourcePosition &pos, const util:
     throw Error(ErrorType::SYNTAX, ss.str(), loc.line, loc.col);
 }
 
-void Binder::IdentifierAnalysis()
+void Binder::AssignIndexToModuleVariable()
+{
+    ASSERT(program_->ModuleRecord());
+    program_->ModuleRecord()->AssignIndexToModuleVariable(topScope_->AsModuleScope());
+}
+
+void Binder::IdentifierAnalysis(ResolveBindingFlags flags)
 {
     ASSERT(program_->Ast());
     ASSERT(scope_ == topScope_);
 
-    BuildFunction(topScope_, MAIN_FUNC_NAME);
-    ResolveReferences(program_->Ast());
-    AddMandatoryParams();
+    bindingFlags_ = flags;
+    if (bindingFlags_ & ResolveBindingFlags::TS_BEFORE_TRANSFORM) {
+        ResolveReferences(program_->Ast());
+    } else if (bindingFlags_ & ResolveBindingFlags::ALL) {
+        BuildFunction(topScope_, MAIN_FUNC_NAME);
+        ResolveReferences(program_->Ast());
+        AddMandatoryParams();
+        if (topScope_->IsModuleScope()) {
+            AssignIndexToModuleVariable();
+        }
+    }
 }
 
 void Binder::ValidateExportDecl(const ir::ExportNamedDeclaration *exportDecl)
@@ -195,22 +210,25 @@ void Binder::LookupIdentReference(ir::Identifier *ident)
     ident->SetVariable(res.variable);
 }
 
-void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name)
+void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name, const ir::ScriptFunction *func)
 {
     functionScopes_.push_back(funcScope);
 
     bool funcNameWithoutDot = (name.Find(".") == std::string::npos);
     bool funcNameWithoutBackslash = (name.Find("\\") == std::string::npos);
     if (name != ANONYMOUS_FUNC_NAME && funcNameWithoutDot && funcNameWithoutBackslash && !functionNames_.count(name)) {
-        auto internalName = std::string(program_->RecordName()) + std::string(name);
+        auto internalName = std::string(program_->FormatedRecordName()) + std::string(name);
         functionNames_.insert(name);
         funcScope->BindName(name, util::UString(internalName, Allocator()).View());
         return;
     }
     std::stringstream ss;
-    ss << std::string(program_->RecordName());
+    ss << std::string(program_->FormatedRecordName());
     uint32_t idx = functionNameIndex_++;
     ss << "#" << std::to_string(idx) << "#";
+    if (name == ANONYMOUS_FUNC_NAME && func != nullptr) {
+        anonymousFunctionNames_[func] = util::UString(ss.str(), Allocator()).View();
+    }
     if (funcNameWithoutDot && funcNameWithoutBackslash) {
         ss << name;
     }
@@ -220,12 +238,17 @@ void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name)
 
 void Binder::BuildScriptFunction(Scope *outerScope, const ir::ScriptFunction *scriptFunc)
 {
+    if (bindingFlags_ & ResolveBindingFlags::TS_BEFORE_TRANSFORM) {
+        return;
+    }
+
     if (scriptFunc->IsArrow()) {
         VariableScope *outerVarScope = outerScope->EnclosingVariableScope();
         outerVarScope->AddFlag(VariableScopeFlags::INNER_ARROW);
     }
 
-    BuildFunction(scope_->AsFunctionScope(), util::Helpers::FunctionName(scriptFunc));
+    ASSERT(scope_->IsFunctionScope() || scope_->IsTSModuleScope());
+    BuildFunction(scope_->AsFunctionVariableScope(), util::Helpers::FunctionName(scriptFunc), scriptFunc);
 }
 
 void Binder::BuildVarDeclaratorId(const ir::AstNode *parent, ir::AstNode *childNode)
@@ -499,9 +522,13 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
             break;
         }
         case ir::AstNodeType::SWITCH_STATEMENT: {
-            auto scopeCtx = LexicalScope<LocalScope>::Enter(this, childNode->AsSwitchStatement()->Scope());
+            auto *switchStatement = childNode->AsSwitchStatement();
+            ResolveReference(switchStatement, switchStatement->Discriminant());
 
-            ResolveReferences(childNode);
+            auto scopeCtx = LexicalScope<LocalScope>::Enter(this, childNode->AsSwitchStatement()->Scope());
+            for (auto *it : switchStatement->Cases()) {
+                ResolveReference(switchStatement, it);
+            }
             break;
         }
         case ir::AstNodeType::DO_WHILE_STATEMENT: {
@@ -562,11 +589,6 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
             ResolveReferences(childNode);
             break;
         }
-        case ir::AstNodeType::TS_MODULE_BLOCK: {
-            auto scopeCtx = LexicalScope<Scope>::Enter(this, childNode->AsTSModuleBlock()->Scope());
-            ResolveReferences(childNode);
-            break;
-        }
         default: {
             ResolveReferences(childNode);
             break;
@@ -587,6 +609,7 @@ void Binder::AddMandatoryParam(const std::string_view &name)
 
     auto &funcParams = scope_->AsFunctionVariableScope()->ParamScope()->Params();
     funcParams.insert(funcParams.begin(), param);
+    scope_->AsFunctionVariableScope()->ParamScope()->Bindings().insert({decl->Name(), param});
     scope_->AsFunctionVariableScope()->Bindings().insert({decl->Name(), param});
 }
 
@@ -641,4 +664,25 @@ void Binder::AddMandatoryParams()
         }
     }
 }
+
+void Binder::AddDeclarationName(const util::StringView &name)
+{
+    if (extension_ != ScriptExtension::TS) {
+        return;
+    }
+    variableNames_.insert(name);
+    auto *scope = GetScope();
+    while (scope != nullptr) {
+        if (scope->IsTSModuleScope()) {
+            scope->AsTSModuleScope()->AddDeclarationName(name);
+        }
+        scope = scope->Parent();
+    }
+}
+
+bool Binder::HasVariableName(const util::StringView &name) const
+{
+    return variableNames_.find(name) != variableNames_.end();
+}
+
 }  // namespace panda::es2panda::binder

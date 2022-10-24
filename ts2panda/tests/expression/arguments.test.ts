@@ -18,32 +18,36 @@ import {
 } from 'chai';
 import 'mocha';
 import {
-    EcmaGetunmappedargs,
-    EcmaLdobjbyindex,
-    EcmaReturnundefined,
+    Getunmappedargs,
+    Ldobjbyindex,
+    Returnundefined,
     Imm,
-    LdaDyn,
-    ResultType,
-    StaDyn,
-    VReg
+    Lda,
+    Sta,
+    VReg,
+    IRNode
 } from "../../src/irnodes";
 import { checkInstructions, SnippetCompiler } from "../utils/base";
+import { creatAstFromSnippet } from "../utils/asthelper";
+import { PandaGen } from '../../src/pandagen';
 
 describe("arguments Keyword", function () {
     it('arguments: Array-like object accessible inside functions', function () {
         let snippetCompiler = new SnippetCompiler();
         snippetCompiler.compile(`function foo(a,b) {arguments[0];}`);
+        IRNode.pg = new PandaGen("foo", creatAstFromSnippet(`function foo(a,b) {arguments[0];}`), 0, undefined);
         let argumentsReg = new VReg();
         let temp1 = new VReg();
         let expected = [
-            new EcmaGetunmappedargs(),
-            new StaDyn(argumentsReg),
-            new LdaDyn(argumentsReg),
-            new StaDyn(temp1),
-            new EcmaLdobjbyindex(temp1, new Imm(0)),
-            new EcmaReturnundefined()
+            new Getunmappedargs(),
+            new Sta(argumentsReg),
+            new Lda(argumentsReg),
+            new Sta(temp1),
+            new Lda(temp1),
+            new Ldobjbyindex(new Imm(0), new Imm(0)),
+            new Returnundefined()
         ];
-        let functionPg = snippetCompiler.getPandaGenByName("foo");
+        let functionPg = snippetCompiler.getPandaGenByName("UnitTest.foo");
         let insns = functionPg!.getInsns();
 
         expect(checkInstructions(insns, expected)).to.be.true;
@@ -52,17 +56,19 @@ describe("arguments Keyword", function () {
     it('arguments as parameter shadows keyword', function () {
         let snippetCompiler = new SnippetCompiler();
         snippetCompiler.compile(`function foo(arguments) {arguments[0];}`);
+        IRNode.pg = new PandaGen("foo", creatAstFromSnippet(`function foo(arguments) {arguments[0];}`), 0, undefined);
         let parameterArguments = new VReg();
         let temp1 = new VReg();
         let expected = [
-            new EcmaGetunmappedargs(),
-            new StaDyn(new VReg()),
-            new LdaDyn(parameterArguments),
-            new StaDyn(temp1),
-            new EcmaLdobjbyindex(temp1, new Imm(0)),
-            new EcmaReturnundefined()
+            new Getunmappedargs(),
+            new Sta(new VReg()),
+            new Lda(parameterArguments),
+            new Sta(temp1),
+            new Lda(temp1),
+            new Ldobjbyindex(new Imm(0), new Imm(0)),
+            new Returnundefined()
         ];
-        let functionPg = snippetCompiler.getPandaGenByName("foo");
+        let functionPg = snippetCompiler.getPandaGenByName("UnitTest.foo");
         let insns = functionPg!.getInsns();
 
         expect(checkInstructions(insns, expected)).to.be.true;

@@ -37,7 +37,8 @@ import {
     ModuleRecord,
     NamespaceImportEntry,
     RegularImportEntry,
-    Signature
+    Signature,
+    Record
 } from "./pandasm";
 import { generateCatchTables } from "./statement/tryStatement";
 import {
@@ -54,6 +55,7 @@ import { ModuleScope } from "./scope";
 import { TypeRecorder } from "./typeRecorder";
 import { isGlobalDeclare } from "./strictMode";
 import { isFunctionLikeDeclaration } from "./syntaxCheckHelper";
+import { getLiteralKey } from "./base/util";
 
 const dollarSign: RegExp = /\$/g;
 
@@ -64,7 +66,8 @@ const JsonType = {
     "literal_arr": 3,
     "module": 4,
     "options": 5,
-    'type_info': 6
+    'type_info': 6,
+    'record_name': 7
 };
 export class Ts2Panda {
     static strings: Set<string> = new Set();
@@ -96,10 +99,28 @@ export class Ts2Panda {
             } else if (isRangeInst(insn)) {
                 // For DynRange insn we only pass the first vreg of continuous vreg array
                 let operands = insn.operands;
-                insImms.push((<Imm>operands[0]).value);
-                insRegs.push((<VReg>operands[1]).num);
-                if (getRangeStartVregPos(insn) == 2) {
-                    insRegs.push((<VReg>operands[2]).num);
+                for (let i = 0; i <= getRangeStartVregPos(insn); i++) {
+                    let operand = operands[i];
+                    if (operand instanceof VReg) {
+                        insRegs.push((<VReg>operand).num);
+                        continue;
+                    }
+
+                    if (operand instanceof Imm) {
+                        insImms.push((<Imm>operand).value);
+                        continue;
+                    }
+
+                    if (typeof (operand) === "string") {
+                        insIds.push(operand);
+                        continue;
+                    }
+
+                    if (operand instanceof Label) {
+                        let labelName = Ts2Panda.labelPrefix + operand.id;
+                        insIds.push(labelName);
+                        continue;
+                    }
                 }
             } else {
                 insn.operands.forEach((operand: OperandType) => {
@@ -158,7 +179,7 @@ export class Ts2Panda {
         let literalArrays = PandaGen.getLiteralArrayBuffer();
         let countType: LiteralBuffer = literalArrays[0];
         let jsonTypeString: string = ""
-        let typeCount = countType.getLiteral(1)?.getValue();
+        let typeCount = countType.getLiteral(0)?.getValue();
         if (typeCount) {
             for (let i = 0; i < typeCount; i++) {
                 jsonTypeString += escapeUnicode(JSON.stringify(literalArrays[1+i], null, 2));
@@ -192,8 +213,10 @@ export class Ts2Panda {
     }
 
     static dumpCmdOptions(ts2abc: any): void {
+        let enableRecordType: boolean = CmdOptions.needRecordType() && CompilerDriver.isTsFile;
         let options = {
             "t": JsonType.options,
+            "merge_abc": CmdOptions.isMergeAbc(),
             "module_mode": CmdOptions.isModules(),
             "commonjs_module": CmdOptions.isCommonJs(),
             "debug_mode": CmdOptions.isDebugMode(),
@@ -201,7 +224,9 @@ export class Ts2Panda {
             "opt_level": CmdOptions.getOptLevel(),
             "opt_log_level": CmdOptions.getOptLogLevel(),
             "display_typeinfo": CmdOptions.getDisplayTypeinfo(),
-            "is_dts_file": isGlobalDeclare()
+            "is_dts_file": isGlobalDeclare(),
+            "output-proto": CmdOptions.isOutputproto(),
+            "record_type": enableRecordType
         };
         let jsonOpt = JSON.stringify(options, null, 2);
         jsonOpt = "$" + jsonOpt.replace(dollarSign, '#$') + "$";
@@ -209,6 +234,19 @@ export class Ts2Panda {
             Ts2Panda.jsonString += jsonOpt;
         }
         ts2abc.stdio[3].write(jsonOpt + '\n');
+    }
+
+    static dumpRecord(ts2abc: any, recordName: string): void {
+        let record = {
+            "t": JsonType.record,
+            "rb": new Record(recordName)
+        }
+        let jsonRecord = escapeUnicode(JSON.stringify(record, null, 2));
+        jsonRecord = "$" + jsonRecord.replace(dollarSign, '#$') + "$";
+        if (CmdOptions.isEnableDebugLog()) {
+            Ts2Panda.jsonString += jsonRecord;
+        }
+        ts2abc.stdio[3].write(jsonRecord + '\n');
     }
 
     // @ts-ignore
@@ -230,8 +268,8 @@ export class Ts2Panda {
             }
 
             // get builtin type for tryloadglobal instruction
-            if (inst.kind == IRNodeKind.ECMA_TRYLDGLOBALBYNAME) {
-                let name = inst.operands[0] as string;
+            if (inst.kind == IRNodeKind.TRYLDGLOBALBYNAME) {
+                let name = inst.operands[1] as string;
                 if (name in BuiltinType) {
                     typeIdx = BuiltinType[name];
                     instTypeMap.set(i, typeIdx);
@@ -240,7 +278,7 @@ export class Ts2Panda {
             }
 
             // skip arg type
-            if (i < paraCount && inst.kind == IRNodeKind.MOV_DYN) {
+            if (i < paraCount && inst.kind == IRNodeKind.MOV) {
                 let vreg = (inst.operands[0] as VReg).num;
                 let arg = (inst.operands[1] as VReg).num;
                 if (vreg >= paraCount || arg < vregCount) {
@@ -252,7 +290,7 @@ export class Ts2Panda {
             }
 
             // local vreg -> inst
-            if (inst.kind == IRNodeKind.STA_DYN) {
+            if (inst.kind == IRNodeKind.STA) {
                 let vreg = (inst.operands[0] as VReg).num;
                 if (vreg < locals.length && !handledSet.has(vreg)) {
                     typeIdx = locals[vreg].getTypeIndex();
@@ -320,7 +358,7 @@ export class Ts2Panda {
             }
             typeInfo = Ts2Panda.dumpInstTypeMap(pg);
 
-            if (funcName == "func_main_0") {
+            if (funcName.endsWith("func_main_0")) {
                 let exportedTypes = PandaGen.getExportedTypes();
                 let declareddTypes = PandaGen.getDeclaredTypes();
                 if (exportedTypes.size != 0) {
@@ -388,7 +426,9 @@ export class Ts2Panda {
             callType,
             typeInfo,
             exportedSymbol2Types,
-            declaredSymbol2Types
+            declaredSymbol2Types,
+            pg.getFunctionKind(),
+            pg.getIcSize()
         );
 
         LOGD(func);
@@ -422,9 +462,9 @@ export class Ts2Panda {
 
     static dumpTypeInfoRecord(ts2abc: any, recordType: boolean): void {
         let enableTypeRecord = getRecordTypeFlag(recordType);
-        let typeSummaryIndex = 0;
+        let typeSummaryIndex = getLiteralKey(CompilerDriver.srcNode, 0);
         if (enableTypeRecord) {
-            typeSummaryIndex = TypeRecorder.getInstance().getTypeSummaryIndex();
+            typeSummaryIndex = getLiteralKey(CompilerDriver.srcNode, TypeRecorder.getInstance().getTypeSummaryIndex());
         }
         let typeInfo = {
             'tf': enableTypeRecord,

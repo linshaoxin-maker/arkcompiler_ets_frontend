@@ -94,12 +94,14 @@ export function compareVReg2Type(expectedMap: Map<string, number>, generated: VR
 
 export function createLiteralBufferArray(input: any) {
     let literalBufferArray: Array<LiteralBuffer> = new Array<LiteralBuffer>();
-    for (let buff of input) {
+    for (let i = 0; i < input.length; i++) {
+        let buff = input[i];
         let literalBuffer: LiteralBuffer = new LiteralBuffer();
         for (let rol of buff) {
             let literal = new Literal(rol[0], rol[1]);
             literalBuffer.addLiterals(literal);
         }
+        literalBuffer.setKey(`_${i}`);
         literalBufferArray.push(literalBuffer);
     }
     return literalBufferArray;
@@ -122,11 +124,11 @@ export function compareLiteralBuffer(expected: Array<LiteralBuffer>, generated: 
             return false;
         }
         for (let i = 0; i < generatedLiterals.length; i++) {
-            if (expectedLiterals[i].getTag != generatedLiterals[i].getTag) {
+            if (expectedLiterals[i].getTag() != generatedLiterals[i].getTag()) {
                 printLiteralLog(expectedLiterals[i], generatedLiterals[i]);
                 return false;
             }
-            if (expectedLiterals[i].getValue != generatedLiterals[i].getValue) {
+            if (expectedLiterals[i].getValue() != generatedLiterals[i].getValue()) {
                 printLiteralLog(expectedLiterals[i], generatedLiterals[i]);
                 return false;
             }

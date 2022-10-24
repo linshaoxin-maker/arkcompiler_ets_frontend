@@ -56,9 +56,13 @@ protected:
     T *Alloc(const ir::AstNode *node, Args &&... args)
     {
         ir::AstNode *invalidNode = nullptr;
-        return Allocator()->New<T>((GetSourceLocationFlag() == lexer::SourceLocationFlag::INVALID_SOURCE_LOCATION) ?
-                                   invalidNode : node, std::forward<Args>(args)...);
+        bool isInvalid = GetSourceLocationFlag() == lexer::SourceLocationFlag::INVALID_SOURCE_LOCATION;
+        auto *ret = Allocator()->New<T>(isInvalid ? invalidNode : node, std::forward<Args>(args)...);
+        UpdateIcSlot(ret);
+        return ret;
     }
+
+    void UpdateIcSlot(IRNode *node);
 
     template <typename T, typename... Args>
     void Add(const ir::AstNode *node, Args &&... args)
@@ -88,6 +92,16 @@ public:
     {
         Add<T>(node, std::forward<Args>(args)...);
     }
+
+    template <typename T, typename... Args>
+    void EmitWithType(const ir::AstNode *node, int64_t typeIndex, Args &&... args)
+    {
+        auto *ins = Alloc<T>(node, std::forward<Args>(args)...);
+        Run(ins, typeIndex);
+    }
+
+private:
+    void Run(IRNode *ins, int64_t typeIndex);
 };
 
 class FrontAllocator : public AllocatorBase {
@@ -137,6 +151,7 @@ protected:
 
     VReg Spill(IRNode *ins, VReg reg);
     void Restore(IRNode *ins);
+    void ClearSpillMap();
 
     VReg spillIndex_ {0};
     VReg regEnd_ {0};
@@ -158,8 +173,16 @@ public:
         Run(ins);
     }
 
+    template <typename T, typename... Args>
+    void EmitWithType(const ir::AstNode *node, int64_t typeIndex, Args &&... args)
+    {
+        auto *ins = Alloc<T>(node, std::forward<Args>(args)...);
+        Run(ins, typeIndex);
+    }
+
 private:
     void Run(IRNode *ins);
+    void Run(IRNode *ins, int64_t typeIndex);
 };
 
 class RangeRegAllocator : public RegAllocatorBase {

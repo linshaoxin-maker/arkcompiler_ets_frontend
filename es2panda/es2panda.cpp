@@ -20,6 +20,8 @@
 #include <compiler/core/compilerImpl.h>
 #include <parser/parserImpl.h>
 #include <parser/program/program.h>
+#include <parser/transformer/transformer.h>
+#include <typescript/checker.h>
 #include <util/helpers.h>
 #include <util/hotfix.h>
 
@@ -38,6 +40,9 @@ Compiler::Compiler(ScriptExtension ext) : Compiler(ext, DEFAULT_THREAD_COUNT) {}
 Compiler::Compiler(ScriptExtension ext, size_t threadCount)
     : parser_(new parser::ParserImpl(ext)), compiler_(new compiler::CompilerImpl(threadCount))
 {
+    if (parser_->Extension() == ScriptExtension::TS) {
+        transformer_ = std::make_unique<parser::Transformer>(parser_->Allocator());
+    }
 }
 
 Compiler::~Compiler()
@@ -53,6 +58,7 @@ panda::pandasm::Program *Compiler::Compile(const SourceFile &input, const Compil
     std::string fname(input.fileName);
     std::string src(input.source);
     std::string rname(input.recordName);
+    std::string sourcefile(input.sourcefile);
     parser::ScriptKind kind(input.scriptKind);
 
     bool needDumpSymbolFile = !options.hotfixOptions.dumpSymbolTable.empty();
@@ -66,12 +72,29 @@ panda::pandasm::Program *Compiler::Compile(const SourceFile &input, const Compil
 
     try {
         auto ast = parser_->Parse(fname, src, rname, kind);
+        ast.Binder()->SetProgram(&ast);
 
         if (options.dumpAst) {
             std::cout << ast.Dump() << std::endl;
         }
 
-        std::string debugInfoSourceFile = options.debugInfoSourceFile.empty() ? fname : options.debugInfoSourceFile;
+        if (ast.Extension() == ScriptExtension::TS && options.enableTypeCheck) {
+            ArenaAllocator localAllocator(SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
+            auto checker = std::make_unique<checker::Checker>(&localAllocator, ast.Binder());
+            checker->StartChecker();
+        }
+
+        if (options.parseOnly) {
+            return nullptr;
+        }
+
+        if (ast.Extension() == ScriptExtension::TS) {
+            transformer_->Transform(&ast);
+            ast.Binder()->IdentifierAnalysis(binder::ResolveBindingFlags::ALL);
+        }
+
+        std::string debugInfoSourceFile = options.debugInfoSourceFile.empty() ?
+                                          sourcefile : options.debugInfoSourceFile;
         auto *prog = compiler_->Compile(&ast, options, debugInfoSourceFile);
 
         if (hotfixHelper) {
@@ -182,7 +205,7 @@ int Compiler::CompileFiles(CompilerOptions &options,
     return failed ? 1 : 0;
 }
 
-panda::pandasm::Program *Compiler::CompileFile(CompilerOptions &options, SourceFile *src,
+panda::pandasm::Program *Compiler::CompileFile(const CompilerOptions &options, SourceFile *src,
                                                util::SymbolTable *symbolTable)
 {
     std::string buffer;
@@ -198,7 +221,6 @@ panda::pandasm::Program *Compiler::CompileFile(CompilerOptions &options, SourceF
             src->hash = GetHash32String(reinterpret_cast<const uint8_t *>(buffer.c_str()));
         }
     }
-    src->fileName = util::Helpers::BaseName(src->fileName);
 
     auto *program = Compile(*src, options, symbolTable);
     if (!program) {
@@ -209,7 +231,8 @@ panda::pandasm::Program *Compiler::CompileFile(CompilerOptions &options, SourceF
         }
 
         std::cerr << err.TypeString() << ": " << err.Message();
-        std::cerr << " [" << src->fileName << ":" << err.Line() << ":" << err.Col() << "]" << std::endl;
+        std::cerr << " [" << util::Helpers::BaseName(src->fileName) << ":"
+                  << err.Line() << ":" << err.Col() << "]" << std::endl;
         throw err;
     }
     return program;

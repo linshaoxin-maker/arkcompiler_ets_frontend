@@ -90,6 +90,11 @@ public:
         return recordName_.View();
     }
 
+    util::StringView FormatedRecordName() const
+    {
+        return formatedRecordName_.View();
+    }
+
     const lexer::LineIndex &GetLineIndex() const
     {
         return lineIndex_;
@@ -110,16 +115,19 @@ public:
         ast_ = ast;
     }
 
-    void SetSource(const std::string &sourceCode, const std::string &sourceFile)
+    void SetSource(const std::string &sourceCode, const std::string &sourceFile, bool isDtsFile)
     {
         sourceCode_ = util::UString(sourceCode, Allocator());
         sourceFile_ = util::UString(sourceFile, Allocator());
         lineIndex_ = lexer::LineIndex(SourceCode());
+        isDtsFile_ = isDtsFile;
     }
 
     void SetRecordName(const std::string &recordName)
     {
         recordName_ = util::UString(recordName, Allocator());
+        std::string formatedRecordName = recordName + ".";
+        formatedRecordName_ = util::UString(formatedRecordName, Allocator());
     }
 
     void AddHotfixHelper(util::Hotfix *hotfixHelper)
@@ -132,6 +140,11 @@ public:
         return hotfixHelper_;
     }
 
+    bool IsDtsFile() const
+    {
+        return isDtsFile_;
+    }
+
     std::string Dump() const;
     void SetKind(ScriptKind kind);
 
@@ -142,11 +155,13 @@ private:
     util::UString sourceCode_ {};
     util::UString sourceFile_ {};
     util::UString recordName_ {};
+    util::UString formatedRecordName_ {};
     ScriptKind kind_ {};
     ScriptExtension extension_ {};
     lexer::LineIndex lineIndex_ {};
     SourceTextModuleRecord *moduleRecord_ {nullptr};
     util::Hotfix *hotfixHelper_ {nullptr};
+    bool isDtsFile_ {false};
 };
 
 }  // namespace panda::es2panda::parser

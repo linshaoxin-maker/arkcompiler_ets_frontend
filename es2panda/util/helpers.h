@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2021 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,8 @@ public:
     static bool IsIndex(double number);
     static int64_t GetIndex(const util::StringView &str);
 
+    static bool FileExtensionIs(std::string_view filePath, std::string_view extension);
+    static bool EndsWith(std::string_view str, std::string_view suffix);
     static std::string ToString(double number);
     static util::StringView ToStringView(ArenaAllocator *allocator, double number);
     static util::StringView ToStringView(ArenaAllocator *allocator, int32_t number);
@@ -81,6 +83,8 @@ public:
 
     static const uint32_t INVALID_INDEX = 4294967295L;
     static const uint32_t MAX_INT32 = 2147483647;
+    static const uint32_t MAX_INT16 = std::numeric_limits<int16_t>::max();
+    static const uint32_t MAX_INT8 = std::numeric_limits<int8_t>::max();
 };
 
 template <typename T>

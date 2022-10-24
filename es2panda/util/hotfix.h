@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,10 +50,13 @@ public:
         classMemberFunctions_(allocator_.Adapter()) {
             originFunctionInfo_ = symbolTable_->GetOriginFunctionInfo();
             originModuleInfo_ = symbolTable_->GetOriginModuleInfo();
+            patchMain0_ = recordName_ + "patch_main_0";
+            patchMain1_ = recordName_ + "patch_main_1";
+            funcMain0_ = recordName_ + "func_main_0";
         }
 
     void Finalize(panda::pandasm::Program **prog);
-    bool IsScopeValidToPatchLexical(binder::VariableScope *scope);
+    bool IsScopeValidToPatchLexical(binder::VariableScope *scope) const;
     uint32_t GetSlotIdFromSymbolTable(const std::string &variableName);
     void AllocSlotfromPatchEnv(const std::string &variableName);
     uint32_t GetPatchLexicalIdx(const std::string &variableName);
@@ -91,6 +94,9 @@ private:
     bool generateSymbolFile_ {false};
     bool generatePatch_ {false};
     std::string recordName_;
+    std::string funcMain0_;
+    std::string patchMain0_;  // stores newly added function define ins, runtime will execute
+    std::string patchMain1_;  // stores modified function and class define ins, runtime will scan but not execute
 
     util::SymbolTable* symbolTable_ {nullptr};
     ArenaAllocator allocator_;

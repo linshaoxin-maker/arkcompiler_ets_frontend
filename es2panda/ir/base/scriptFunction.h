@@ -17,6 +17,7 @@
 #define ES2PANDA_PARSER_INCLUDE_AST_SCRIPT_FUNCTION_H
 
 #include <ir/astNode.h>
+#include <ir/expressions/identifier.h>
 #include <util/enumbitops.h>
 
 namespace panda::es2panda::compiler {
@@ -40,7 +41,7 @@ class ScriptFunction : public AstNode {
 public:
     explicit ScriptFunction(binder::FunctionScope *scope, ArenaVector<Expression *> &&params,
                             TSTypeParameterDeclaration *typeParams, AstNode *body, Expression *returnTypeAnnotation,
-                            ir::ScriptFunctionFlags flags, bool declare)
+                            ir::ScriptFunctionFlags flags, bool declare, bool isTsFunction)
         : AstNode(AstNodeType::SCRIPT_FUNCTION),
           scope_(scope),
           id_(nullptr),
@@ -52,6 +53,15 @@ public:
           declare_(declare),
           exportDefault_(false)
     {
+        thisParam_ = nullptr;
+        if (isTsFunction && !params_.empty()) {
+            auto *firstParam = params_.front();
+            if (firstParam->IsIdentifier() && firstParam->AsIdentifier()->Name().Is(THIS_PARAM)) {
+                thisParam_ = firstParam;
+                params_.erase(params_.begin());
+                scope_->ParamScope()->RemoveThisParam();
+            }
+        }
     }
 
     const Identifier *Id() const
@@ -161,10 +171,14 @@ public:
     void Dump(ir::AstDumper *dumper) const override;
     void Compile([[maybe_unused]] compiler::PandaGen *pg) const override;
     checker::Type *Check([[maybe_unused]] checker::Checker *checker) const override;
+    void UpdateSelf(const NodeUpdater &cb, binder::Binder *binder) override;
 
 private:
+    static constexpr std::string_view THIS_PARAM = "this";
+
     binder::FunctionScope *scope_;
     Identifier *id_;
+    Expression *thisParam_;
     ArenaVector<Expression *> params_;
     TSTypeParameterDeclaration *typeParams_;
     AstNode *body_;

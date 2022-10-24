@@ -126,9 +126,10 @@ ohos_executable("ts2abc") {
     } else {
       libs = [ libcpp_static_lib ]
     }
-  }
 
-  output_name = "js2abc"
-  install_enable = true
-  subsystem_name = "ark"
+    output_name = "js2abc"
+    install_enable = false
+    part_name = "ets_frontend"
+    subsystem_name = "arkcompiler"
+  }
 }

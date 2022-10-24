@@ -13,6 +13,10 @@ ets_frontend组件是方舟运行时子系统的前端工具，结合ace-ets2bun
 
 更多信息请参考：[方舟运行时子系统](https://gitee.com/openharmony/docs/blob/master/zh-cn/readme/ARK-Runtime-Subsystem-zh.md)
 
+**ets_frontend组件架构图**
+
+![](/figures/zh-cn_image_ets_frontend_arch.png)
+
 ## 目录<a name="section161941989596"></a>
 
 ```
@@ -55,7 +59,7 @@ $ ./build.sh --product-name hispark_taurus_standard --build-target ets_frontend_
 使用ets_frontend组件下的es2abc可执行文件将JavaScript文件转换为方舟字节码文件
 
 ```
-$ cd out/hispark_taurus/clang_x64/ark/ark/
+$ cd out/hispark_taurus/clang_x64/arkcompiler/ets_frontend/
 $ ./es2abc [options] file.js
 ```
 
@@ -210,7 +214,7 @@ $ ./es2abc [options] file.js
 使用ets_frontend组件将JavaScript文件转换为方舟字节码文件
 
 ```
-$ cd out/hispark_taurus/clang_x64/ark/ark/build
+$ cd out/hispark_taurus/clang_x64/arkcompiler/ets_frontend/build
 $ npm install
 $ node --expose-gc src/index.js [options] file.js
 ```
@@ -433,7 +437,7 @@ $ node --expose-gc src/index.js [options] file.js
 </table>
 
 
-更多使用说明请参考：[方舟运行时使用指南](https://gitee.com/openharmony/ark_js_runtime/blob/master/docs/ARK-Runtime-Usage-Guide-zh.md)
+更多使用说明请参考：[方舟运行时使用指南](https://gitee.com/openharmony/arkcompiler_ets_runtime/blob/master/docs/ARK-Runtime-Usage-Guide-zh.md)
 
 ## 相关仓<a name="section1371113476307"></a>
 

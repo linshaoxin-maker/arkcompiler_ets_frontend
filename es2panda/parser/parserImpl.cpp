@@ -17,6 +17,7 @@
 
 #include <binder/scope.h>
 #include <binder/tsBinding.h>
+#include <util/helpers.h>
 #include <ir/astDump.h>
 #include <ir/astNode.h>
 #include <ir/base/classDefinition.h>
@@ -105,7 +106,11 @@ ParserImpl::ParserImpl(ScriptExtension extension) : program_(extension), context
 
 std::unique_ptr<lexer::Lexer> ParserImpl::InitLexer(const std::string &fileName, const std::string &source)
 {
-    program_.SetSource(source, fileName);
+    bool isDtsFile = false;
+    if (Extension() == ScriptExtension::TS) {
+        isDtsFile = util::Helpers::FileExtensionIs(fileName, ".d.ts");
+    }
+    program_.SetSource(source, fileName, isDtsFile);
     auto lexer = std::make_unique<lexer::Lexer>(&context_);
     lexer_ = lexer.get();
 
@@ -139,7 +144,11 @@ Program ParserImpl::Parse(const std::string &fileName, const std::string &source
             UNREACHABLE();
         }
     }
-    Binder()->IdentifierAnalysis();
+    binder::ResolveBindingFlags bindFlags = binder::ResolveBindingFlags::ALL;
+    if (Extension() == ScriptExtension::TS) {
+        bindFlags = binder::ResolveBindingFlags::TS_BEFORE_TRANSFORM;
+    }
+    Binder()->IdentifierAnalysis(bindFlags);
     return std::move(program_);
 }
 
@@ -323,7 +332,7 @@ bool ParserImpl::IsStartOfTsTypePredicate() const
 
     lexer_->NextToken();
 
-    bool result = lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_IS;
+    bool result = !lexer_->GetToken().NewLine() && (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_IS);
     lexer_->Rewind(pos);
     return result;
 }
@@ -1411,7 +1420,7 @@ util::StringView GetTSPropertyName(ir::Expression *key)
     }
 }
 
-void ParserImpl::CheckObjectTypeForDuplicatedProperties(ir::Expression *member, ArenaVector<ir::Expression *> &members)
+void ParserImpl::CheckObjectTypeForDuplicatedProperties(ir::Expression *member, ArenaVector<ir::Expression *> const &members)
 {
     ir::Expression *key = nullptr;
 
@@ -2551,7 +2560,8 @@ ir::MethodDefinition *ParserImpl::CreateImplicitConstructor(bool hasSuperClass, 
 
     auto *body = AllocNode<ir::BlockStatement>(scope, std::move(statements));
     auto *func = AllocNode<ir::ScriptFunction>(scope, std::move(params), nullptr, isDeclare ? nullptr : body, nullptr,
-                                               ir::ScriptFunctionFlags::CONSTRUCTOR, isDeclare);
+                                               ir::ScriptFunctionFlags::CONSTRUCTOR, isDeclare,
+                                               Extension() == ScriptExtension::TS);
     scope->BindNode(func);
     paramScope->BindNode(func);
     scope->BindParamScope(paramScope);
@@ -2657,6 +2667,7 @@ ir::Identifier *ParserImpl::SetIdentNodeInClassDefinition()
 ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool idRequired, bool isDeclare,
                                                       bool isAbstract)
 {
+    isDeclare = isDeclare | (context_.Status() & ParserStatus::IN_AMBIENT_CONTEXT);
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
     lexer_->NextToken();
 
@@ -2758,6 +2769,8 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool i
     ir::MethodDefinition *ctor = nullptr;
     ArenaVector<ir::Statement *> properties(Allocator()->Adapter());
     ArenaVector<ir::TSIndexSignature *> indexSignatures(Allocator()->Adapter());
+    bool hasConstructorFuncBody = false;
+    bool isCtorContinuousDefined = true;
 
     while (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
         if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
@@ -2772,13 +2785,18 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool i
         }
 
         if (IsConstructor(property)) {
-            if (!isDeclare && ctor) {
+            if (!isDeclare && !isCtorContinuousDefined) {
+                ThrowSyntaxError("Constructor implementation is missing.", property->Start());
+            }
+  
+            if (hasConstructorFuncBody) {
                 ThrowSyntaxError("Multiple constructor implementations are not allowed.", property->Start());
             }
             ctor = property->AsMethodDefinition();
+            hasConstructorFuncBody = ctor->Value()->Function()->Body() != nullptr;
             continue;
         }
-
+        isCtorContinuousDefined = ctor == nullptr;
         properties.push_back(property);
     }
 
@@ -2788,8 +2806,13 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool i
     if (ctor == nullptr) {
         ctor = CreateImplicitConstructor(hasSuperClass, isDeclare);
         ctor->SetRange({startLoc, classBodyEndLoc});
+        hasConstructorFuncBody = !isDeclare;
     }
     lexer_->NextToken();
+
+    if (!isDeclare && !hasConstructorFuncBody) {
+        ThrowSyntaxError("Constructor implementation is missing.", ctor->Start());
+    }
 
     auto *classDefinition = AllocNode<ir::ClassDefinition>(
         classCtx.GetScope(), identNode, typeParamDecl, superTypeParams, std::move(implements), ctor, superClass,
@@ -3231,7 +3254,8 @@ ir::ScriptFunction *ParserImpl::ParseFunction(ParserStatus newStatus, bool isDec
 
     auto *funcNode =
         AllocNode<ir::ScriptFunction>(functionScope, std::move(params), typeParamDecl, body, returnTypeAnnotation,
-                                      functionContext.Flags(), isDeclare && letDeclare);
+                                      functionContext.Flags(), isDeclare && letDeclare,
+                                      Extension() == ScriptExtension::TS);
     functionScope->BindNode(funcNode);
     funcParamScope->BindNode(funcNode);
     funcNode->SetRange({startLoc, endLoc});
@@ -3466,7 +3490,7 @@ bool ParserImpl::CurrentTokenIsModifier(char32_t nextCp) const
 void ParserImpl::ThrowParameterModifierError(ir::ModifierFlags status) const
 {
     ThrowSyntaxError(
-        {"'", status & ir::ModifierFlags::STATIC ? "static" : status & ir::ModifierFlags::ASYNC ? "async" : "declare",
+        {"'", (status & ir::ModifierFlags::STATIC) ? "static" : ((status & ir::ModifierFlags::ASYNC) ? "async" : "declare") ,
          "' modifier cannot appear on a parameter."},
         lexer_->GetToken().Start());
 }
@@ -3515,6 +3539,11 @@ parser::SourceTextModuleRecord *ParserImpl::GetSourceTextModuleRecord()
 void ParserImpl::AddHotfixHelper(util::Hotfix *hotfixHelper)
 {
     program_.AddHotfixHelper(hotfixHelper);
+}
+
+bool ParserImpl::IsDtsFile() const
+{
+    return program_.IsDtsFile();
 }
 
 }  // namespace panda::es2panda::parser

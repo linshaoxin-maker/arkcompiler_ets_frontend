@@ -25,6 +25,7 @@ import re
 import subprocess
 import sys
 import test262util
+import pandas as pd
 
 
 def is_directory(parser, arg):
@@ -144,6 +145,9 @@ class Test:
     def log_cmd(self, cmd):
         self.reproduce += "\n" + ' '.join(cmd)
 
+    def get_path_to_expected(self):
+        return "%s-expected.txt" % (path.splitext(self.path)[0])
+
     def run(self, runner):
         cmd = runner.cmd_prefix + [runner.es2panda, "--dump-ast"]
         cmd.extend(self.flags)
@@ -155,7 +159,7 @@ class Test:
         out, err = process.communicate()
         self.output = out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore")
 
-        expected_path = "%s-expected.txt" % (path.splitext(self.path)[0])
+        expected_path = self.get_path_to_expected();
         try:
             with open(expected_path, 'r') as fp:
                 expected = fp.read()
@@ -436,16 +440,34 @@ class Runner:
         self.tests = results
         pool.join()
 
+    def deal_error(self, test):
+        path_str = test.path
+        err_col = {}
+        if test.error:
+            err_str = test.error.split('[')[0]
+            err_col = {"path" : [path_str], "status": ["fail"], "error" : [test.error], "type" : [err_str]}
+        else:
+            err_col = {"path" : [path_str], "status": ["fail"], "error" : ["Segmentation fault"],
+                        "type" : ["Segmentation fault"]}
+        return err_col
+
     def summarize(self):
         print("")
         fail_list = []
+        success_list = []
 
         for test in self.tests:
             assert(test.passed is not None)
             if not test.passed:
                 fail_list.append(test)
+            else:
+                success_list.append(test)
 
         if len(fail_list):
+            test_list = pd.DataFrame(columns=["path", "status", "error", "type"])
+            for test in success_list:
+                suc_col = {"path" : [test.path], "status": ["success"], "error" : ["success"], "type" : ["success"]}
+                test_list = pd.concat([test_list, pd.DataFrame(suc_col)])
             print("Failed tests:")
             for test in fail_list:
                 print(self.test_path(test.path))
@@ -455,7 +477,13 @@ class Runner:
                     print("error:")
                     print(test.error)
                     print("\n")
+                    err_col = self.deal_error(test)
+                    test_list = pd.concat([test_list, pd.DataFrame(err_col)])
 
+            if self.args.error:
+                test_list.to_csv('test_statistics.csv', index=False)
+                test_list["type"].value_counts().to_csv('type_statistics.csv', index_label="error")
+                print("Type statistics:\n", test_list["type"].value_counts())
             print("")
 
         print("Summary(%s):" % self.name)
@@ -471,13 +499,13 @@ class RegressionRunner(Runner):
     def __init__(self, args):
         Runner.__init__(self, args, "Regresssion")
 
-    def add_directory(self, directory, extension, flags):
+    def add_directory(self, directory, extension, flags, func=Test):
         glob_expression = path.join(
             self.test_root, directory, "*.%s" % (extension))
         files = glob(glob_expression)
         files = fnmatch.filter(files, self.test_root + '**' + self.args.filter)
 
-        self.tests += list(map(lambda f: Test(f, flags), files))
+        self.tests += list(map(lambda f: func(f, flags), files))
 
     def test_path(self, src):
         return src
@@ -708,6 +736,8 @@ class TSCRunner(Runner):
         files = glob(glob_expression, recursive=True)
         files = fnmatch.filter(files, ts_suite_dir + '**' + self.args.filter)
 
+        failed_references = open(path.join(self.test_root, 'test_tsc_ignore_list.txt'), 'r').read()
+
         for f in files:
             test_name = path.basename(f.split(".ts")[0])
             negative_references = path.join(
@@ -726,6 +756,10 @@ class TSCRunner(Runner):
 
             if is_negative or "filename" in test.options:
                 continue
+
+            if self.args.skip:
+                if path.relpath(f, self.test_root) in failed_references:
+                    continue
 
             self.tests.append(test)
 
@@ -776,7 +810,7 @@ class CompilerTest(Test):
         process = subprocess.Popen(run_abc_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = process.communicate()
         self.output = out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore")
-        expected_path = "%s-expected.txt" % (path.splitext(self.path)[0])
+        expected_path = self.get_path_to_expected()
         try:
             with open(expected_path, 'r') as fp:
                 expected = fp.read()
@@ -792,6 +826,12 @@ class CompilerTest(Test):
         return self
 
 
+class TSDeclarationTest(Test):
+    def get_path_to_expected(self):
+        file_name = self.path[:self.path.find(".d.ts")]
+        return "%s-expected.txt" % file_name
+
+
 def main():
     args = get_args()
 
@@ -804,7 +844,8 @@ def main():
                              ["--parse-only", "--module", "--extension=ts"])
         runner.add_directory("parser/ts/type_checker", "ts",
                              ["--parse-only", "--enable-type-check", "--module", "--extension=ts"])
-
+        runner.add_directory("parser/ts/cases/declaration", "d.ts",
+                             ["--parse-only", "--module", "--extension=ts"], TSDeclarationTest)
         runners.append(runner)
 
     if args.test262:

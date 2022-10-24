@@ -17,11 +17,19 @@ import * as path from "path";
 import { extractCtorOfClass } from "../statement/classStatement";
 import * as ts from "typescript";
 import {
-    EcmaCallirangedyn,
-    EcmaCallithisrangedyn,
-    EcmaCreateobjectwithexcludedkeys,
-    EcmaNewobjdynrange,
-    IRNode
+    Callrange,
+    Callthisrange,
+    Createobjectwithexcludedkeys,
+    Newobjrange,
+    IRNode,
+    WideCallthisrange,
+    WideCallrange,
+    WideCreateobjectwithexcludedkeys,
+    Supercallthisrange,
+    WideSupercallthisrange,
+    Supercallarrowrange,
+    WideSupercallarrowrange,
+    WideNewobjrange
 } from "../irnodes";
 import * as jshelpers from "../jshelpers";
 import { LOGD } from "../log";
@@ -225,20 +233,52 @@ export function listenErrorEvent(child: any) {
 }
 
 export function isRangeInst(ins: IRNode) {
-    if (ins instanceof EcmaCallithisrangedyn ||
-        ins instanceof EcmaCallirangedyn ||
-        ins instanceof EcmaNewobjdynrange ||
-        ins instanceof EcmaCreateobjectwithexcludedkeys) {
+    if (ins instanceof Callthisrange ||
+        ins instanceof WideCallthisrange ||
+        ins instanceof Callrange ||
+        ins instanceof WideCallrange ||
+        ins instanceof Newobjrange ||
+        ins instanceof WideNewobjrange ||
+        ins instanceof Createobjectwithexcludedkeys ||
+        ins instanceof WideCreateobjectwithexcludedkeys ||
+        ins instanceof Supercallthisrange ||
+        ins instanceof WideSupercallthisrange ||
+        ins instanceof Supercallarrowrange ||
+        ins instanceof WideSupercallarrowrange) {
         return true;
     }
     return false;
+}
+
+export function getRangeStartVregPos(ins: IRNode): number {
+    if (!isRangeInst(ins)) {
+        return -1;
+    }
+
+    if (ins instanceof Callthisrange ||
+        ins instanceof Callrange ||
+        ins instanceof Newobjrange ||
+        ins instanceof Supercallthisrange ||
+        ins instanceof Supercallarrowrange ||
+        ins instanceof Createobjectwithexcludedkeys ||
+        ins instanceof WideCreateobjectwithexcludedkeys) {
+        return 2;
+    }
+
+    if (ins instanceof WideCallthisrange ||
+        ins instanceof WideCallrange ||
+        ins instanceof WideNewobjrange ||
+        ins instanceof WideSupercallthisrange ||
+        ins instanceof WideSupercallarrowrange) {
+        return 1;
+    }
 }
 
 export function getRangeExplicitVregNums(ins: IRNode): number {
     if (!isRangeInst(ins)) {
         return -1;
     }
-    return ins instanceof EcmaCreateobjectwithexcludedkeys ? 2 : 1;
+    return ins instanceof Createobjectwithexcludedkeys ? 2 : 1;
 }
 
 export function isRestParameter(parameter: ts.ParameterDeclaration) {
@@ -279,13 +319,6 @@ export function getParameterLength4Ctor(node: ts.ClassLikeDeclaration) {
     }
 
     return getParamLengthOfFunc(ctorNode!);
-}
-
-export function getRangeStartVregPos(ins: IRNode): number {
-    if (!isRangeInst(ins)) {
-        return -1;
-    }
-    return ins instanceof EcmaCreateobjectwithexcludedkeys ? 2 : 1;
 }
 
 export function setPos(node: ts.Node) {
@@ -354,4 +387,37 @@ export function hasAbstractModifier(node: ts.Node): boolean {
         }
     }
     return false;
+}
+
+export const MAX_INT8 = 127;
+export const MAX_INT16 = 32767;
+
+export function getOutputBinName(node: ts.SourceFile) {
+    let outputBinName = CmdOptions.getOutputBinName();
+    let fileName = node.fileName.substring(0, node.fileName.lastIndexOf('.'));
+    let inputFileName = CmdOptions.getInputFileName();
+    if (/^win/.test(require('os').platform())) {
+        var inputFileTmps = inputFileName.split(path.sep);
+        inputFileName = path.posix.join(...inputFileTmps);
+    }
+
+    if (fileName != inputFileName) {
+        outputBinName = fileName + ".abc";
+    }
+    return outputBinName;
+}
+
+export function getRecordName(node: ts.SourceFile): string {
+    let recordName = CmdOptions.getRecordName();
+
+    if (recordName == "" && CmdOptions.isMergeAbc()) {
+        let outputBinName = getOutputBinName(node);
+        recordName = path.basename(outputBinName, path.extname(outputBinName));
+    }
+
+    return recordName;
+}
+
+export function getLiteralKey(node: ts.SourceFile, idx:number): string {
+    return `${getRecordName(node)}_${idx}`;
 }

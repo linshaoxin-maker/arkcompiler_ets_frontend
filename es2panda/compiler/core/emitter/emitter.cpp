@@ -20,6 +20,7 @@
 #include <binder/variable.h>
 #include <compiler/base/literals.h>
 #include <compiler/core/compilerContext.h>
+#include <compiler/core/emitter/typeExtractorEmitter.h>
 #include <compiler/core/pandagen.h>
 #include <compiler/debugger/debuginfoDumper.h>
 #include <compiler/base/catchTable.h>
@@ -57,6 +58,8 @@ FunctionEmitter::FunctionEmitter(ArenaAllocator *allocator, const PandaGen *pg)
 
 void FunctionEmitter::Generate(util::Hotfix *hotfixHelper)
 {
+    GenFunctionKind();
+    GenIcSize();
     GenFunctionInstructions();
     GenVariablesDebugInfo();
     GenSourceFileDebugInfo();
@@ -72,81 +75,19 @@ const ArenaSet<util::StringView> &FunctionEmitter::Strings() const
     return pg_->Strings();
 }
 
+void FunctionEmitter::GenFunctionKind()
+{
+    func_->SetFunctionKind(static_cast<panda::panda_file::FunctionKind>(pg_->GetFunctionKind()));
+}
+
+void FunctionEmitter::GenIcSize()
+{
+    func_->SetSlotsNum(pg_->GetCurrentSlot());
+}
+
 void FunctionEmitter::GenBufferLiterals(const LiteralBuffer *buff)
 {
-    auto &[idx, array] = literalBuffers_.emplace_back();
-    idx = buff->Index();
-    constexpr size_t ARRAY_EXPANSION = 2;
-    array.reserve(buff->Literals().size() * ARRAY_EXPANSION);
-
-    for (const auto *literal : buff->Literals()) {
-        panda::pandasm::LiteralArray::Literal valueLit;
-        panda::pandasm::LiteralArray::Literal tagLit;
-
-        ir::LiteralTag tag = literal->Tag();
-
-        switch (tag) {
-            case ir::LiteralTag::BOOLEAN: {
-                valueLit.tag_ = panda::panda_file::LiteralTag::BOOL;
-                valueLit.value_ = literal->GetBoolean();
-                break;
-            }
-            case ir::LiteralTag::INTEGER: {
-                valueLit.tag_ = panda::panda_file::LiteralTag::INTEGER;
-                valueLit.value_ = literal->GetInt();
-                break;
-            }
-            case ir::LiteralTag::DOUBLE: {
-                valueLit.tag_ = panda::panda_file::LiteralTag::DOUBLE;
-                valueLit.value_ = literal->GetDouble();
-                break;
-            }
-            case ir::LiteralTag::STRING: {
-                valueLit.tag_ = panda::panda_file::LiteralTag::STRING;
-                valueLit.value_ = literal->GetString().Mutf8();
-                break;
-            }
-            case ir::LiteralTag::ACCESSOR: {
-                valueLit.tag_ = panda::panda_file::LiteralTag::ACCESSOR;
-                valueLit.value_ = static_cast<uint8_t>(0);
-                break;
-            }
-            case ir::LiteralTag::METHOD: {
-                valueLit.tag_ = panda::panda_file::LiteralTag::METHOD;
-                valueLit.value_ = literal->GetMethod().Mutf8();
-                break;
-            }
-            case ir::LiteralTag::METHODAFFILIATE: {
-                valueLit.tag_ = panda::panda_file::LiteralTag::METHODAFFILIATE;
-                valueLit.value_ = literal->GetMethodAffiliate();
-                break;
-            }
-            case ir::LiteralTag::GENERATOR_METHOD: {
-                valueLit.tag_ = panda::panda_file::LiteralTag::GENERATORMETHOD;
-                valueLit.value_ = literal->GetMethod().Mutf8();
-                break;
-            }
-            case ir::LiteralTag::LITERALBUFFERINDEX: {
-                valueLit.tag_ = panda::panda_file::LiteralTag::LITERALBUFFERINDEX;
-                valueLit.value_ = literal->GetInt();
-                break;
-            }
-            // TODO: support ir::LiteralTag::ASYNC_GENERATOR_METHOD
-            case ir::LiteralTag::NULL_VALUE: {
-                valueLit.tag_ = panda::panda_file::LiteralTag::NULLVALUE;
-                valueLit.value_ = static_cast<uint8_t>(0);
-                break;
-            }
-            default:
-                break;
-        }
-
-        tagLit.tag_ = panda::panda_file::LiteralTag::TAGVALUE;
-        tagLit.value_ = static_cast<uint8_t>(valueLit.tag_);
-
-        array.emplace_back(tagLit);
-        array.emplace_back(valueLit);
-    }
+    Emitter::GenBufferLiterals(literalBuffers_, buff);
 }
 
 util::StringView FunctionEmitter::SourceCode() const
@@ -248,6 +189,10 @@ void FunctionEmitter::GenFunctionInstructions()
         ins->Transform(&pandaIns);
         GenInstructionDebugInfo(ins, &pandaIns);
     }
+
+    if (pg_->Context()->IsTypeExtractorEnabled()) {
+        TypeExtractorEmitter(pg_, func_);
+    }
 }
 
 void FunctionEmitter::GenFunctionCatchTables()
@@ -274,10 +219,10 @@ void FunctionEmitter::GenLiteralBuffers()
 
 void FunctionEmitter::GenSourceFileDebugInfo()
 {
-    if (pg_->SourceFile().size() > 0) {
-        func_->source_file = pg_->SourceFile();
-    } else {
+    if (pg_->SourceFile().empty()) {
         func_->source_file = std::string {pg_->Binder()->Program()->SourceFile()};
+    } else {
+        func_->source_file = pg_->SourceFile();
     }
 
     if (!pg_->IsDebug()) {
@@ -342,8 +287,13 @@ Emitter::Emitter(const CompilerContext *context)
     prog_ = new panda::pandasm::Program();
     prog_->lang = LANG_EXT;
 
+    // For Type Extractor
+    // Global record to show type extractor is enabled or not
+    GenTypeInfoRecord();
+    GenESTypeAnnotationRecord();
+
     if (context->IsMergeAbc()) {
-        auto recordName = context->Binder()->Program()->RecordName().Mutf8();
+        auto recordName = context->Binder()->Program()->FormatedRecordName().Mutf8();
         rec_ = new panda::pandasm::Record(recordName.substr(0, recordName.find_last_of('.')), LANG_EXT);
         SetCommonjsField(context->Binder()->Program()->Kind() == parser::ScriptKind::COMMONJS);
     } else {
@@ -359,7 +309,22 @@ Emitter::~Emitter()
     delete prog_;
 }
 
-void Emitter::AddFunction(FunctionEmitter *func)
+void Emitter::GenTypeInfoRecord() const
+{
+    auto typeInfoRecord = panda::pandasm::Record(TypeExtractorEmitter::TYPE_INFO_RECORD, LANG_EXT);
+    typeInfoRecord.metadata->SetAccessFlags(panda::ACC_PUBLIC);
+    prog_->record_table.emplace(typeInfoRecord.name, std::move(typeInfoRecord));
+}
+
+void Emitter::GenESTypeAnnotationRecord() const
+{
+    auto typeAnnotationRecord = panda::pandasm::Record(TypeExtractorEmitter::TYPE_ANNOTATION, LANG_EXT);
+    typeAnnotationRecord.metadata->SetAttribute("external");
+    typeAnnotationRecord.metadata->SetAccessFlags(panda::ACC_ANNOTATION);
+    prog_->record_table.emplace(typeAnnotationRecord.name, std::move(typeAnnotationRecord));
+}
+
+void Emitter::AddFunction(FunctionEmitter *func, CompilerContext *context)
 {
     std::lock_guard<std::mutex> lock(m_);
 
@@ -369,7 +334,8 @@ void Emitter::AddFunction(FunctionEmitter *func)
 
     for (auto &[idx, buf] : func->LiteralBuffers()) {
         auto literalArrayInstance = panda::pandasm::LiteralArray(std::move(buf));
-        prog_->literalarray_table.emplace(std::to_string(idx), std::move(literalArrayInstance));
+        auto litId = std::string(context->Binder()->Program()->RecordName()) + "_" + std::to_string(idx);
+        prog_->literalarray_table.emplace(litId, std::move(literalArrayInstance));
     }
 
     auto *function = func->Function();
@@ -380,12 +346,15 @@ void Emitter::AddSourceTextModuleRecord(ModuleRecordEmitter *module, CompilerCon
 {
     std::lock_guard<std::mutex> lock(m_);
 
+    auto moduleLiteral = std::string(context->Binder()->Program()->RecordName()) + "_" +
+         std::to_string(module->Index());
     if (context->IsMergeAbc()) {
         auto moduleIdxField = panda::pandasm::Field(LANG_EXT);
         moduleIdxField.name = "moduleRecordIdx";
         moduleIdxField.type = panda::pandasm::Type("u32", 0);
-        moduleIdxField.metadata->SetValue(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U32>(
-            static_cast<uint32_t>(module->Index())));
+        moduleIdxField.metadata->SetValue(
+            panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::LITERALARRAY>(
+            static_cast<std::string_view>(moduleLiteral)));
         rec_->field_list.emplace_back(std::move(moduleIdxField));
 
         if (context->HotfixHelper()) {
@@ -398,8 +367,9 @@ void Emitter::AddSourceTextModuleRecord(ModuleRecordEmitter *module, CompilerCon
         auto moduleIdxField = panda::pandasm::Field(LANG_EXT);
         moduleIdxField.name = std::string {context->Binder()->Program()->SourceFile()};
         moduleIdxField.type = panda::pandasm::Type("u32", 0);
-        moduleIdxField.metadata->SetValue(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::U32>(
-            static_cast<uint32_t>(module->Index())));
+        moduleIdxField.metadata->SetValue(
+            panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::LITERALARRAY>(
+            static_cast<std::string_view>(moduleLiteral)));
         ecmaModuleRecord.field_list.emplace_back(std::move(moduleIdxField));
 
         if (context->HotfixHelper()) {
@@ -409,7 +379,96 @@ void Emitter::AddSourceTextModuleRecord(ModuleRecordEmitter *module, CompilerCon
     }
     auto &moduleLiteralsBuffer = module->Buffer();
     auto literalArrayInstance = panda::pandasm::LiteralArray(std::move(moduleLiteralsBuffer));
-    prog_->literalarray_table.emplace(std::to_string(module->Index()), std::move(literalArrayInstance));
+    prog_->literalarray_table.emplace(static_cast<std::string_view>(moduleLiteral), std::move(literalArrayInstance));
+}
+
+void Emitter::FillTypeInfoRecord(bool typeFlag, int64_t typeSummaryIndex) const
+{
+    TypeExtractorEmitter::GenTypeInfoRecord(prog_, typeFlag, typeSummaryIndex);
+}
+
+void Emitter::FillTypeLiteralBuffers(const extractor::TypeRecorder *recorder) const
+{
+    TypeExtractorEmitter::GenTypeLiteralBuffers(prog_, recorder);
+}
+
+// static
+void Emitter::GenBufferLiterals(ArenaVector<std::pair<int32_t, std::vector<Literal>>> &literalBuffers,
+                                const LiteralBuffer *buff)
+{
+    auto &[idx, array] = literalBuffers.emplace_back();
+    idx = buff->Index();
+    constexpr size_t ARRAY_EXPANSION = 2;
+    array.reserve(buff->Literals().size() * ARRAY_EXPANSION);
+
+    for (const auto *literal : buff->Literals()) {
+        panda::pandasm::LiteralArray::Literal valueLit;
+        panda::pandasm::LiteralArray::Literal tagLit;
+
+        ir::LiteralTag tag = literal->Tag();
+
+        switch (tag) {
+            case ir::LiteralTag::BOOLEAN: {
+                valueLit.tag_ = panda::panda_file::LiteralTag::BOOL;
+                valueLit.value_ = literal->GetBoolean();
+                break;
+            }
+            case ir::LiteralTag::INTEGER: {
+                valueLit.tag_ = panda::panda_file::LiteralTag::INTEGER;
+                valueLit.value_ = literal->GetInt();
+                break;
+            }
+            case ir::LiteralTag::DOUBLE: {
+                valueLit.tag_ = panda::panda_file::LiteralTag::DOUBLE;
+                valueLit.value_ = literal->GetDouble();
+                break;
+            }
+            case ir::LiteralTag::STRING: {
+                valueLit.tag_ = panda::panda_file::LiteralTag::STRING;
+                valueLit.value_ = literal->GetString().Mutf8();
+                break;
+            }
+            case ir::LiteralTag::ACCESSOR: {
+                valueLit.tag_ = panda::panda_file::LiteralTag::ACCESSOR;
+                valueLit.value_ = static_cast<uint8_t>(0);
+                break;
+            }
+            case ir::LiteralTag::METHOD: {
+                valueLit.tag_ = panda::panda_file::LiteralTag::METHOD;
+                valueLit.value_ = literal->GetMethod().Mutf8();
+                break;
+            }
+            case ir::LiteralTag::METHODAFFILIATE: {
+                valueLit.tag_ = panda::panda_file::LiteralTag::METHODAFFILIATE;
+                valueLit.value_ = literal->GetMethodAffiliate();
+                break;
+            }
+            case ir::LiteralTag::GENERATOR_METHOD: {
+                valueLit.tag_ = panda::panda_file::LiteralTag::GENERATORMETHOD;
+                valueLit.value_ = literal->GetMethod().Mutf8();
+                break;
+            }
+            case ir::LiteralTag::LITERALBUFFERINDEX: {
+                valueLit.tag_ = panda::panda_file::LiteralTag::LITERALBUFFERINDEX;
+                valueLit.value_ = literal->GetInt();
+                break;
+            }
+            // TODO: support ir::LiteralTag::ASYNC_GENERATOR_METHOD
+            case ir::LiteralTag::NULL_VALUE: {
+                valueLit.tag_ = panda::panda_file::LiteralTag::NULLVALUE;
+                valueLit.value_ = static_cast<uint8_t>(0);
+                break;
+            }
+            default:
+                break;
+        }
+
+        tagLit.tag_ = panda::panda_file::LiteralTag::TAGVALUE;
+        tagLit.value_ = static_cast<uint8_t>(valueLit.tag_);
+
+        array.emplace_back(tagLit);
+        array.emplace_back(valueLit);
+    }
 }
 
 void Emitter::DumpAsm(const panda::pandasm::Program *prog)

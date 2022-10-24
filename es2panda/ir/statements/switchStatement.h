@@ -49,7 +49,17 @@ public:
         return discriminant_;
     }
 
+    Expression *Discriminant()
+    {
+        return discriminant_;
+    }
+
     const ArenaVector<SwitchCaseStatement *> &Cases() const
+    {
+        return cases_;
+    }
+
+    ArenaVector<SwitchCaseStatement *> &Cases()
     {
         return cases_;
     }
@@ -63,6 +73,7 @@ public:
     void Dump(ir::AstDumper *dumper) const override;
     void Compile(compiler::PandaGen *pg) const override;
     checker::Type *Check(checker::Checker *checker) const override;
+    void UpdateSelf(const NodeUpdater &cb, binder::Binder *binder) override;
 
 protected:
     binder::LocalScope *scope_;

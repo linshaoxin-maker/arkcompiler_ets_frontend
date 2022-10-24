@@ -30,7 +30,7 @@ describe("union tests in union.test.ts", function () {
     it("test union with primitives", function () {
         let fileNames = 'tests/types/union/union_primitives.ts';
         let result = compileTsWithType(fileNames);
-        let functionPg = result.snippetCompiler.getPandaGenByName("func_main_0");
+        let functionPg = result.snippetCompiler.getPandaGenByName("UnitTest.func_main_0");
         let locals = functionPg!.getLocals();
         // check vreg
         let extectedVRegTypePair = [
@@ -45,20 +45,20 @@ describe("union tests in union.test.ts", function () {
         // check liberalBuffer
         let expectedBuffValues = [
             [
-                [2, 0], [2, 4], [2, 0]
+                [2, 4], [24, "snippet_1"], [24, "snippet_2"], [24, "snippet_3"], [24, "snippet_4"], [2, 0]
             ],
             [
-                [2, 4], [2, 2], [2, 1], [2, 2]
+                [2, 4], [2, 2], [25, 1], [25, 2]
             ],
             [
-                [2, 4], [2, 2], [2, 4], [2, 5]
+                [2, 4], [2, 2], [25, 4], [25, 5]
             ],
             [
-                [2, 4], [2, 2], [2, 7], [2, 6]
+                [2, 4], [2, 2], [25, 7], [25, 6]
             ],
             [
-                [2, 4], [2, 6], [2, 1], [2, 2],
-                [2, 4], [2, 5], [2, 7], [2, 6]
+                [2, 4], [2, 6], [25, 1], [25, 2],
+                [25, 4], [25, 5], [25, 7], [25, 6]
             ]
         ]
         let buff = createLiteralBufferArray(expectedBuffValues);
@@ -68,7 +68,7 @@ describe("union tests in union.test.ts", function () {
     it("test union with user defined type", function () {
         let fileNames = 'tests/types/union/union_userDefinedType.ts';
         let result = compileTsWithType(fileNames);
-        let functionPg = result.snippetCompiler.getPandaGenByName("func_main_0");
+        let functionPg = result.snippetCompiler.getPandaGenByName("UnitTest.func_main_0");
         let locals = functionPg!.getLocals();
         // check vreg
         let extectedVRegTypePair = [
@@ -81,20 +81,20 @@ describe("union tests in union.test.ts", function () {
         // check liberalBuffer
         let expectedBuffValues = [
             [
-                [2, 0], [2, 4], [2, 0]
+                [2, 4], [24, "snippet_1"], [24, "snippet_2"], [24, "snippet_3"], [24, "snippet_4"], [2, 0]
             ],
             [
-                [2, 1], [2, 0], [2, 0], [2, 0],
+                [2, 1], [2, 0], [25, 0], [2, 0],
                 [2, 0], [2, 0], [2, 0], [2, 0]
             ],
             [
-                [2, 4], [2, 2], [2, shift + 3], [2, shift + 4]
+                [2, 4], [2, 2], [24, "snippet_3"], [24, "snippet_4"]
             ],
             [
-                [2, 2], [2, shift + 1]
+                [2, 2], [24, "snippet_1"]
             ],
             [
-                [2, 5], [2, 1]
+                [2, 5], [25, 1]
             ]
         ]
         let buff = createLiteralBufferArray(expectedBuffValues);
@@ -104,7 +104,7 @@ describe("union tests in union.test.ts", function () {
     it("test union with multi same primitives", function () {
         let fileNames = 'tests/types/union/union_multi_same_primi.ts';
         let result = compileTsWithType(fileNames);
-        let functionPg = result.snippetCompiler.getPandaGenByName("func_main_0");
+        let functionPg = result.snippetCompiler.getPandaGenByName("UnitTest.func_main_0");
         let locals = functionPg!.getLocals();
         // check vreg
         let extectedVRegTypePair = [
@@ -117,10 +117,10 @@ describe("union tests in union.test.ts", function () {
         // check liberalBuffer
         let expectedBuffValues = [
             [
-                [2, 0], [2, 1], [2, 0]
+                [2, 1], [24, "snippet_1"], [2, 0]
             ],
             [
-                [2, 4], [2, 2], [2, 1], [2, 2]
+                [2, 4], [2, 2], [25, 1], [25, 2]
             ],
         ]
         let buff = createLiteralBufferArray(expectedBuffValues);
@@ -130,7 +130,7 @@ describe("union tests in union.test.ts", function () {
     it("test union with multi same user defined type", function () {
         let fileNames = 'tests/types/union/union_multi_userDefinedType.ts';
         let result = compileTsWithType(fileNames);
-        let functionPg = result.snippetCompiler.getPandaGenByName("func_main_0");
+        let functionPg = result.snippetCompiler.getPandaGenByName("UnitTest.func_main_0");
         let locals = functionPg!.getLocals();
         // check vreg
         let extectedVRegTypePair = [
@@ -144,20 +144,20 @@ describe("union tests in union.test.ts", function () {
         // check liberalBuffer
         let expectedBuffValues = [
             [
-                [2, 0], [2, 4], [2, 0]
+                [2, 4], [24, "snippet_1"], [24, "snippet_2"], [24, "snippet_3"], [24, "snippet_4"], [2, 0]
             ],
             [
-                [2, 1], [2, 0], [2, 0], [2, 0],
+                [2, 1], [2, 0], [25, 0], [2, 0],
                 [2, 0], [2, 0], [2, 0], [2, 0]
             ],
             [
-                [2, 4], [2, 2], [2, shift + 3], [2, shift + 4]
+                [2, 4], [2, 2], [24, "snippet_3"], [24, "snippet_4"]
             ],
             [
-                [2, 2], [2, shift + 1]
+                [2, 2], [24, "snippet_1"]
             ],
             [
-                [2, 5], [2, 1]
+                [2, 5], [25, 1]
             ]
         ]
         let buff = createLiteralBufferArray(expectedBuffValues);

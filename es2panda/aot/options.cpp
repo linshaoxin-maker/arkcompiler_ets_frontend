@@ -38,11 +38,6 @@ T RemoveExtension(T const &filename)
     return P > 0 && P != T::npos ? filename.substr(0, P) : filename;
 }
 
-static std::string FormatRecordName(const std::string &recordName)
-{
-    return recordName + ".";
-}
-
 static std::vector<std::string> GetStringItems(std::string &input, const std::string &delimiter)
 {
     std::vector<std::string> items;
@@ -71,7 +66,7 @@ bool Options::CollectInputFilesFromFileList(const std::string &input)
         return false;
     }
 
-    constexpr size_t ITEM_COUNT = 3;
+    constexpr size_t ITEM_COUNT = 4;
     while (std::getline(ifs, line)) {
         const std::string seperator = ";";
         std::vector<std::string> itemList = GetStringItems(line, seperator);
@@ -79,8 +74,9 @@ bool Options::CollectInputFilesFromFileList(const std::string &input)
             std::cerr << "Failed to parse input file" << std::endl;
             return false;
         }
+        // itemList: [filePath, recordName, moduleKind, sourceFile]
         std::string fileName = itemList[0];
-        std::string recordName = FormatRecordName(itemList[1]);
+        std::string recordName = itemList[1];
         parser::ScriptKind scriptKind;
         if (itemList[2] == "script") {
             scriptKind = parser::ScriptKind::SCRIPT;
@@ -91,6 +87,7 @@ bool Options::CollectInputFilesFromFileList(const std::string &input)
         }
 
         es2panda::SourceFile src(fileName, recordName, scriptKind);
+        src.sourcefile = itemList[3];
         sourceFiles_.push_back(src);
     }
     return true;
@@ -131,6 +128,10 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<bool> opEnableTypeCheck("enable-type-check", false, "Check the type in ts after parse");
     panda::PandArg<bool> opDumpAst("dump-ast", false, "Dump the parsed AST");
 
+    // type extractor
+    panda::PandArg<bool> opTypeExtractor("type-extractor", false, "Enable type extractor for typescript");
+    panda::PandArg<bool> opTypeDtsBuiltin("type-dts-builtin", false, "Enable builtin type extractor for .d.ts file");
+
     // compiler
     panda::PandArg<bool> opDumpAssembly("dump-assembly", false, "Dump pandasm");
     panda::PandArg<bool> opDebugInfo("debug-info", false, "Compile with debug info");
@@ -148,7 +149,8 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<bool> base64Output("base64Output", false, "output panda file content as base64 to std out");
     panda::PandArg<std::string> sourceFile("source-file", "",
                                            "specify the file path info recorded in generated abc");
-    panda::PandArg<std::string> outputProto("outputProto", "", "compiler proto serialize binary output (.proto)");
+    panda::PandArg<std::string> outputProto("outputProto", "",
+                                            "specify the output name for serializd protobuf file (.protoBin)");
     panda::PandArg<std::string> opCacheFile("cache-file", "", "cache file for incremental compile");
     panda::PandArg<std::string> opNpmModuleEntryList("npm-module-entry-list", "", "entry list file for module compile");
     panda::PandArg<bool> opMergeAbc("merge-abc", false, "Compile as merge abc");
@@ -157,6 +159,10 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<std::string> opDumpSymbolTable("dump-symbol-table", "", "dump symbol table to file");
     panda::PandArg<std::string> opInputSymbolTable("input-symbol-table", "", "input symbol table file");
     panda::PandArg<bool> opGeneratePatch("generate-patch", false, "generate patch abc");
+
+    // version
+    panda::PandArg<bool> bcVersion("bc-version", false, "Print ark bytecode version");
+    panda::PandArg<bool> bcMinVersion("bc-min-version", false, "Print ark bytecode minimum supported version");
 
     // tail arguments
     panda::PandArg<std::string> inputFile("input", "", "input file");
@@ -167,6 +173,8 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&opDumpAst);
     argparser_->Add(&opParseOnly);
     argparser_->Add(&opEnableTypeCheck);
+    argparser_->Add(&opTypeExtractor);
+    argparser_->Add(&opTypeDtsBuiltin);
     argparser_->Add(&opDumpAssembly);
     argparser_->Add(&opDebugInfo);
     argparser_->Add(&opDumpDebugInfo);
@@ -193,12 +201,22 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&opInputSymbolTable);
     argparser_->Add(&opGeneratePatch);
 
+    argparser_->Add(&bcVersion);
+    argparser_->Add(&bcMinVersion);
+
     argparser_->PushBackTail(&inputFile);
     argparser_->EnableTail();
     argparser_->EnableRemainder();
 
-    if (!argparser_->Parse(argc, argv) || opHelp.GetValue() || (inputFile.GetValue().empty()
-        && base64Input.GetValue().empty())) {
+    bool parseStatus = argparser_->Parse(argc, argv);
+
+    if (parseStatus && (bcVersion.GetValue() || bcMinVersion.GetValue())) {
+        compilerOptions_.bcVersion = bcVersion.GetValue();
+        compilerOptions_.bcMinVersion = bcMinVersion.GetValue();
+        return true;
+    }
+
+    if (!parseStatus || opHelp.GetValue() || (inputFile.GetValue().empty() && base64Input.GetValue().empty())) {
         std::stringstream ss;
 
         ss << argparser_->GetErrorString() << std::endl;
@@ -240,12 +258,25 @@ bool Options::Parse(int argc, const char **argv)
         scriptKind_ = es2panda::parser::ScriptKind::SCRIPT;
     }
 
+    auto parseTypeExtractor = [&opTypeExtractor, &opTypeDtsBuiltin, this]() {
+        compilerOptions_.typeExtractor = opTypeExtractor.GetValue();
+        if (compilerOptions_.typeExtractor) {
+            compilerOptions_.typeDtsBuiltin = opTypeDtsBuiltin.GetValue();
+#ifndef NDEBUG
+            std::cout << "[LOG]TypeExtractor is enabled, type-dts-builtin: " <<
+                compilerOptions_.typeDtsBuiltin << std::endl;
+#endif
+        }
+    };
+
     std::string extension = inputExtension.GetValue();
     if (!extension.empty()) {
         if (extension == "js") {
             extension_ = es2panda::ScriptExtension::JS;
         } else if (extension == "ts") {
             extension_ = es2panda::ScriptExtension::TS;
+            // Type Extractor is only enabled for TypeScript
+            parseTypeExtractor();
         } else if (extension == "as") {
             extension_ = es2panda::ScriptExtension::AS;
         } else {
@@ -276,7 +307,6 @@ bool Options::Parse(int argc, const char **argv)
             recordName_ = compilerOutput_.empty() ? "Base64Output" :
                 RemoveExtension(util::Helpers::BaseName(compilerOutput_));
         }
-        recordName_ = FormatRecordName(recordName_);
     }
 
     if (!inputIsEmpty) {

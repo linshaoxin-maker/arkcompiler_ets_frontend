@@ -36,7 +36,10 @@ void TSAsExpression::Dump(ir::AstDumper *dumper) const
     dumper->Add({{"type", "TSAsExpression"}, {"expression", expression_}, {"typeAnnotation", typeAnnotation_}});
 }
 
-void TSAsExpression::Compile([[maybe_unused]] compiler::PandaGen *pg) const {}
+void TSAsExpression::Compile(compiler::PandaGen *pg) const
+{
+    expression_->Compile(pg);
+}
 
 static bool IsValidConstAssertionArgument(checker::Checker *checker, const ir::AstNode *arg)
 {
@@ -106,6 +109,12 @@ checker::Type *TSAsExpression::Check(checker::Checker *checker) const
         Start());
 
     return targetType;
+}
+
+void TSAsExpression::UpdateSelf(const NodeUpdater &cb, [[maybe_unused]] binder::Binder *binder)
+{
+    expression_ = std::get<ir::AstNode *>(cb(expression_))->AsExpression();
+    typeAnnotation_ = std::get<ir::AstNode *>(cb(typeAnnotation_))->AsExpression();
 }
 
 }  // namespace panda::es2panda::ir

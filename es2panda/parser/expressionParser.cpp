@@ -166,12 +166,10 @@ ir::Expression *ParserImpl::ParseExpression(ExpressionParseFlags flags)
 
         // TODO(rsipka): ParseTsGenericArrowFunction and ParseTsTypeAssertion might be in a common function
         ir::Expression *expr = ParseTsGenericArrowFunction();
-        // TODO(rsipka): negative cases are not covered, probably this is not a complete solution yet
-        if (expr == nullptr) {
-            lexer_->Rewind(startPos);
-            expr = ParseTsTypeAssertion();
+        if (expr != nullptr) {
+            return expr;
         }
-        return expr;
+        lexer_->Rewind(startPos);
     }
 
     ir::Expression *unaryExpressionNode = ParseUnaryOrPrefixUpdateExpression(flags);
@@ -181,25 +179,10 @@ ir::Expression *ParserImpl::ParseExpression(ExpressionParseFlags flags)
         return assignmentExpression;
     }
 
-    switch (lexer_->GetToken().Type()) {
-        case lexer::TokenType::LITERAL_IDENT: {
-            if (Extension() == ScriptExtension::TS && lexer_->GetToken().Type() == lexer::TokenType::LITERAL_IDENT &&
-                lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_AS &&
-                !(flags & ExpressionParseFlags::EXP_DISALLOW_AS)) {
-                return ParseTsAsExpression(assignmentExpression, flags);
-            }
-            break;
-        }
-        case lexer::TokenType::PUNCTUATOR_COMMA: {
-            if (flags & ExpressionParseFlags::ACCEPT_COMMA) {
-                return ParseSequenceExpression(assignmentExpression, (flags & ExpressionParseFlags::ACCEPT_REST),
-                                               flags & ExpressionParseFlags::ALLOW_TS_PARAM_TOKEN);
-            }
-            break;
-        }
-        default: {
-            break;
-        }
+    if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA &&
+        (flags & ExpressionParseFlags::ACCEPT_COMMA)) {
+        return ParseSequenceExpression(assignmentExpression, (flags & ExpressionParseFlags::ACCEPT_REST),
+                                       flags & ExpressionParseFlags::ALLOW_TS_PARAM_TOKEN);
     }
 
     return assignmentExpression;
@@ -396,7 +379,8 @@ ir::ArrowFunctionExpression *ParserImpl::ParseArrowFunctionExpressionBody(ArrowF
     }
 
     funcNode = AllocNode<ir::ScriptFunction>(functionScope, std::move(desc->params), typeParamDecl, body,
-                                             returnTypeAnnotation, arrowFunctionContext->Flags(), false);
+                                             returnTypeAnnotation, arrowFunctionContext->Flags(), false,
+                                             Extension() == ScriptExtension::TS);
     funcNode->SetRange({desc->startLoc, endLoc});
     functionScope->BindNode(funcNode);
     desc->paramScope->BindNode(funcNode);
@@ -496,7 +480,7 @@ ir::ArrowFunctionExpression *ParserImpl::ParseTsGenericArrowFunction()
 
     ir::TSTypeParameterDeclaration *typeParamDecl = ParseTsTypeParameterDeclaration(false);
 
-    if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS) {
+    if (typeParamDecl == nullptr || lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS) {
         return nullptr;
     }
 
@@ -527,7 +511,7 @@ ir::ArrowFunctionExpression *ParserImpl::ParseTsGenericArrowFunction()
                                             returnTypeAnnotation);
 }
 
-ir::TSTypeAssertion *ParserImpl::ParseTsTypeAssertion()
+ir::TSTypeAssertion *ParserImpl::ParseTsTypeAssertion(ExpressionParseFlags flags)
 {
     ASSERT(lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN);
     lexer::SourcePosition start = lexer_->GetToken().Start();
@@ -541,7 +525,7 @@ ir::TSTypeAssertion *ParserImpl::ParseTsTypeAssertion()
     }
 
     lexer_->NextToken();  // eat '>'
-    ir::Expression *expression = ParseExpression();
+    ir::Expression *expression = ParseUnaryOrPrefixUpdateExpression(flags);
     auto *typeAssertion = AllocNode<ir::TSTypeAssertion>(typeAnnotation, expression);
     typeAssertion->SetRange({start, lexer_->GetToken().End()});
 
@@ -806,6 +790,14 @@ ir::Expression *ParserImpl::ParseAssignmentExpression(ir::Expression *lhsExpress
 
             binaryAssignmentExpression->SetRange({lhsExpression->Start(), assignmentExpression->End()});
             return binaryAssignmentExpression;
+        }
+        case lexer::TokenType::LITERAL_IDENT: {
+            if (Extension() == ScriptExtension::TS && lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_AS &&
+                !(flags & ExpressionParseFlags::EXP_DISALLOW_AS) && !lexer_->GetToken().NewLine()) {
+                ir::Expression *asExpression = ParseTsAsExpression(lhsExpression, flags);
+                return ParseAssignmentExpression(asExpression);
+            }
+            break;
         }
         default:
             break;
@@ -2219,6 +2211,11 @@ ir::SequenceExpression *ParserImpl::ParseSequenceExpression(ir::Expression *star
 
 ir::Expression *ParserImpl::ParseUnaryOrPrefixUpdateExpression(ExpressionParseFlags flags)
 {
+    if (Extension() == ScriptExtension::TS && lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
+        // TODO(rsipka): negative cases are not covered, probably this is not a complete solution yet
+        return ParseTsTypeAssertion(flags);
+    }
+
     if (!lexer_->GetToken().IsUnary()) {
         return ParseLeftHandSideExpression(flags);
     }
@@ -2226,9 +2223,7 @@ ir::Expression *ParserImpl::ParseUnaryOrPrefixUpdateExpression(ExpressionParseFl
     lexer::TokenType operatorType = lexer_->GetToken().Type();
     lexer::SourcePosition start = lexer_->GetToken().Start();
     lexer_->NextToken();
-
-    ir::Expression *argument =
-        lexer_->GetToken().IsUnary() ? ParseUnaryOrPrefixUpdateExpression() : ParseLeftHandSideExpression();
+    ir::Expression *argument = ParseUnaryOrPrefixUpdateExpression();
 
     if (lexer::Token::IsUpdateToken(operatorType)) {
         if (!argument->IsIdentifier() && !argument->IsMemberExpression() && !argument->IsTSNonNullExpression()) {

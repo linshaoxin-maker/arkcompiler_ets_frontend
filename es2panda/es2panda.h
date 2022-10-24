@@ -31,6 +31,7 @@ struct Program;
 namespace panda::es2panda {
 namespace parser {
 class ParserImpl;
+class Transformer;
 enum class ScriptKind;
 }  // namespace parser
 
@@ -54,6 +55,7 @@ struct SourceFile {
     std::string recordName {};
     std::string_view source {};
     parser::ScriptKind scriptKind {};
+    std::string sourcefile {};
     uint32_t hash {0};
 };
 
@@ -73,6 +75,8 @@ struct CompilerOptions {
     bool dumpLiteralBuffer {false};
     bool isDebuggerEvaluateExpressionMode {false};
     bool mergeAbc {false};
+    bool typeExtractor {false};
+    bool typeDtsBuiltin {false};
     ScriptExtension extension {};
     int fileThreadCount {0};
     int functionThreadCount {0};
@@ -81,6 +85,8 @@ struct CompilerOptions {
     std::string debugInfoSourceFile {};
     std::vector<es2panda::SourceFile> sourceFiles;
     HotfixOptions hotfixOptions;
+    bool bcVersion {false};
+    bool bcMinVersion {false};
 };
 
 enum class ErrorType {
@@ -163,7 +169,7 @@ public:
 
     panda::pandasm::Program *Compile(const SourceFile &input, const CompilerOptions &options,
         util::SymbolTable *symbolTable = nullptr);
-    panda::pandasm::Program *CompileFile(CompilerOptions &options, SourceFile *src, util::SymbolTable *symbolTable_);
+    panda::pandasm::Program *CompileFile(const CompilerOptions &options, SourceFile *src, util::SymbolTable *symbolTable);
 
     static int CompileFiles(CompilerOptions &options,
         std::map<std::string, panda::es2panda::util::ProgramCache*> *cacheProgs,
@@ -192,6 +198,7 @@ public:
 private:
     parser::ParserImpl *parser_;
     compiler::CompilerImpl *compiler_;
+    std::unique_ptr<parser::Transformer> transformer_ {nullptr};
     Error error_;
 };
 }  // namespace panda::es2panda

@@ -184,6 +184,12 @@ public:
 
     void AddHotfixHelper(util::Hotfix *hotfixHelper);
 
+    ArenaAllocator *Allocator() const
+    {
+        return program_.Allocator();
+    }
+    bool IsDtsFile() const;
+
 private:
     bool IsStartOfMappedType() const;
     bool IsStartOfTsTypePredicate() const;
@@ -282,7 +288,7 @@ private:
     ir::Statement *ParseClassProperty(ClassElmentDescriptor *desc, const ArenaVector<ir::Statement *> &properties,
                                       ir::Expression *propName, ir::Expression *typeAnnotation,
                                       ArenaVector<ir::Decorator *> &&decorators, bool isDeclare);
-    void ParseClassKeyModifiers(ClassElmentDescriptor *descy);
+    void ParseClassKeyModifiers(ClassElmentDescriptor *desc);
     void CheckClassGeneratorMethod(ClassElmentDescriptor *desc);
     void CheckClassPrivateIdentifier(ClassElmentDescriptor *desc);
     ir::Expression *ParseClassKeyAnnotation();
@@ -325,13 +331,13 @@ private:
     ir::TSParameterProperty *CreateTsParameterProperty(ir::Expression *parameter, ir::ModifierFlags modifiers);
     ir::Expression *ParseFunctionParameter(bool isDeclare);
     void CreateTSVariableForProperty(ir::AstNode *node, const ir::Expression *key, binder::VariableFlags flags);
-    void CheckObjectTypeForDuplicatedProperties(ir::Expression *member, ArenaVector<ir::Expression *> &members);
+    void CheckObjectTypeForDuplicatedProperties(ir::Expression *member, ArenaVector<ir::Expression *> const &members);
 
     // ExpressionParser.Cpp
 
     ir::Expression *ParseExpression(ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
     ir::ArrowFunctionExpression *ParseTsGenericArrowFunction();
-    ir::TSTypeAssertion *ParseTsTypeAssertion();
+    ir::TSTypeAssertion *ParseTsTypeAssertion(ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
     ir::TSAsExpression *ParseTsAsExpression(ir::Expression *expr, ExpressionParseFlags flags);
     ir::Expression *ParseArrayExpression(ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
     ir::YieldExpression *ParseYieldExpression();
@@ -370,7 +376,7 @@ private:
     ir::MetaProperty *ParsePotentialNewTarget();
     void CheckInvalidDestructuring(const ir::AstNode *object) const;
     void ValidateParenthesizedExpression(ir::Expression *lhsExpression);
-    ir::Expression *ParseAssignmentExpression(ir::Expression *expression,
+    ir::Expression *ParseAssignmentExpression(ir::Expression *lhsExpression,
                                               ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
     ir::Expression *ParsePrimaryExpression(ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
     ir::NewExpression *ParseNewExpression();
@@ -418,20 +424,23 @@ private:
     void AddExportStarEntryItem(const lexer::SourcePosition &startLoc, const ir::StringLiteral *source,
                                 const ir::Identifier *exported);
     void AddExportDefaultEntryItem(const ir::AstNode *declNode);
-    void AddExportLocalEntryItem(const ir::Statement *declNode);
+    void AddExportLocalEntryItem(const ir::Statement *declNode, bool isTsModule);
     parser::SourceTextModuleRecord *GetSourceTextModuleRecord();
 
     bool ParseDirective(ArenaVector<ir::Statement *> *statements);
     void ParseDirectivePrologue(ArenaVector<ir::Statement *> *statements);
     ArenaVector<ir::Statement *> ParseStatementList(StatementParsingFlags flags = StatementParsingFlags::ALLOW_LEXICAL);
     ir::Statement *ParseStatement(StatementParsingFlags flags = StatementParsingFlags::NONE);
-    ir::TSModuleDeclaration *ParseTsModuleDeclaration(bool isDeclare);
+    ir::TSModuleDeclaration *ParseTsModuleDeclaration(bool isDeclare, bool isExport = false);
     ir::TSModuleDeclaration *ParseTsAmbientExternalModuleDeclaration(const lexer::SourcePosition &startLoc,
                                                                      bool isDeclare);
-    ir::TSModuleDeclaration *ParseTsModuleOrNamespaceDelaration(const lexer::SourcePosition &startLoc, bool isDeclare);
+    ir::TSModuleDeclaration *ParseTsModuleOrNamespaceDelaration(const lexer::SourcePosition &startLoc,
+                                                                bool isDeclare,
+                                                                bool isExport);
 
     ir::TSImportEqualsDeclaration *ParseTsImportEqualsDeclaration(const lexer::SourcePosition &startLoc,
                                                                   bool isExport = false);
+    ir::TSNamespaceExportDeclaration *ParseTsNamespaceExportDeclaration(const lexer::SourcePosition &startLoc);
     ir::TSModuleBlock *ParseTsModuleBlock();
     ir::BlockStatement *ParseFunctionBody();
     ir::BlockStatement *ParseBlockStatement();
@@ -495,11 +504,6 @@ private:
                            std::to_string(namespaceExportCount_++);
         util::UString internalName(name, Allocator());
         return internalName.View();
-    }
-
-    ArenaAllocator *Allocator() const
-    {
-        return program_.Allocator();
     }
 
     binder::Binder *Binder()

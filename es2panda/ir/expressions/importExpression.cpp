@@ -32,16 +32,18 @@ void ImportExpression::Dump(ir::AstDumper *dumper) const
 
 void ImportExpression::Compile(compiler::PandaGen *pg) const
 {
-    compiler::RegScope rs(pg);
-    compiler::VReg moduleSpecifier = pg->AllocReg();
     source_->Compile(pg);
-    pg->StoreAccumulator(this, moduleSpecifier);
-    pg->DynamicImportCall(this, moduleSpecifier);
+    pg->DynamicImportCall(this);
 }
 
 checker::Type *ImportExpression::Check([[maybe_unused]] checker::Checker *checker) const
 {
     return nullptr;
+}
+
+void ImportExpression::UpdateSelf(const NodeUpdater &cb, [[maybe_unused]] binder::Binder *binder)
+{
+    source_ = std::get<ir::AstNode *>(cb(source_))->AsExpression();
 }
 
 }  // namespace panda::es2panda::ir
