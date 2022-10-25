@@ -1100,6 +1100,9 @@ ir::Expression *ParserImpl::ParsePrimaryExpression(ExpressionParseFlags flags)
         case lexer::TokenType::PUNCTUATOR_BACK_TICK: {
             return ParseTemplateLiteral();
         }
+        case lexer::TokenType::PUNCTUATOR_LESS_THAN: {
+            return ParseTsTypeAssertion();
+        }
         default: {
             break;
         }
