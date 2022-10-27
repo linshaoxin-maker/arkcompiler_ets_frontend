@@ -2344,8 +2344,14 @@ ir::FunctionExpression *ParserImpl::ParseFunctionExpression(ParserStatus newStat
                 ThrowSyntaxError("Expected an identifier.");
             }
 
-            if (lexer_->GetToken().KeywordType() >= lexer::TokenType::KEYW_ARGUMENTS) {
-                ThrowSyntaxError("Unexpected reserved word in strict mode.");
+            if (Extension() == ScriptExtension::JS) {
+                if (lexer_->GetToken().IsJsStrictReservedWord()) {
+                    ThrowSyntaxError("Unexpected reserved word in strict mode.");
+                }
+            } else {
+                if (lexer_->GetToken().KeywordType() >= lexer::TokenType::KEYW_ARGUMENTS) {
+                    ThrowSyntaxError("Unexpected reserved word in strict mode.");
+                }
             }
 
             ident = AllocNode<ir::Identifier>(lexer_->GetToken().Ident(), Allocator());

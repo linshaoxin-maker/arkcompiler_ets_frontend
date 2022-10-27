@@ -1060,8 +1060,16 @@ ir::FunctionDeclaration *ParserImpl::ParseFunctionDeclaration(bool canBeAnonymou
         ThrowSyntaxError("Unexpected token, expected identifier after 'function' keyword");
     }
 
-    if (!isDeclare && lexer_->GetToken().KeywordType() >= lexer::TokenType::KEYW_ARGUMENTS) {
-        ThrowSyntaxError("Unexpected reserved word in strict mode.");
+    if (!isDeclare) {
+        if (Extension() == ScriptExtension::JS) {
+            if (lexer_->GetToken().IsJsStrictReservedWord()) {
+                ThrowSyntaxError("Unexpected reserved word in strict mode.");
+            }
+        } else {
+            if (lexer_->GetToken().KeywordType() >= lexer::TokenType::KEYW_ARGUMENTS) {
+                ThrowSyntaxError("Unexpected reserved word in strict mode.");
+            }
+        }
     }
 
     util::StringView ident = lexer_->GetToken().Ident();
