@@ -210,7 +210,7 @@ export class Compiler {
                 }
             });
             if (!hasAFChild) {
-                return ;
+                return;
             }
             this.storeSpecialArg2LexEnv("4newTarget");
             this.storeSpecialArg2LexEnv("arguments");
@@ -226,12 +226,14 @@ export class Compiler {
 
     private storeSpecialArg2LexEnv(arg: string) {
         let variableInfo = this.scope.find(arg);
+        let enclosingFuncScope = this.scope.getNearestVariableScope();
+        let isLeaf = enclosingFuncScope.getChildVariableScope().length == 0 ? true : false;
         let v = variableInfo.v;
         let pandaGen = this.pandaGen;
 
         if (CmdOptions.isDebugMode()) {
             variableInfo.scope!.setLexVar(v!, this.scope);
-            pandaGen.storeLexicalVar(this.rootNode, variableInfo.level,
+            pandaGen.storeLexicalVar(this.rootNode, isLeaf ? variableInfo.level - 1 : variableInfo.level,
                                      (<Variable>variableInfo.v).idxLex,
                                      pandaGen.getVregForVariable(<Variable>variableInfo.v));
         } else {
@@ -241,7 +243,8 @@ export class Compiler {
                 }
                 let vreg = "4funcObj" === arg ? getVregisterCache(pandaGen, CacheList.FUNC) :
                                                 pandaGen.getVregForVariable(<Variable>variableInfo.v);
-                pandaGen.storeLexicalVar(this.rootNode, variableInfo.level, v.idxLex, vreg);
+                pandaGen.storeLexicalVar(this.rootNode, isLeaf ? variableInfo.level - 1 : variableInfo.level,
+                                         v.idxLex, vreg);
             }
         }
     }
@@ -1006,6 +1009,8 @@ export class Compiler {
         checkValidUseSuperBeforeSuper(this, node);
 
         let { scope, level, v } = this.scope.find("this");
+        let enclosingFuncScope = this.scope.getNearestVariableScope();
+        let isLeaf = enclosingFuncScope.getChildVariableScope().length == 0 ? true : false;
 
         if (!v) {
             throw new Error("\"this\" not found");
@@ -1028,7 +1033,7 @@ export class Compiler {
                 }
             }
             CmdOptions.isWatchEvaluateExpressionMode() ? pandaGen.loadByNameViaDebugger(node, "this", CacheList.True)
-                                                       : pandaGen.loadAccFromLexEnv(node, scope!, level, v);
+                                                       : pandaGen.loadAccFromLexEnv(node, scope!, isLeaf ? level - 1 : level, v);
         } else {
             throw new Error("\"this\" must be a local variable");
         }
@@ -1427,7 +1432,9 @@ export class Compiler {
 
         if (v.isLexVar) {
             let slot = v.idxLex;
-            pandaGen.loadLexicalVar(node, level, slot);
+            let enclosingFuncScope = this.getCurrentScope().getNearestVariableScope();
+            let isLeaf = enclosingFuncScope.getChildVariableScope().length == 0 ? true : false;
+            pandaGen.loadLexicalVar(node, isLeaf ? thisInfo.level - 1 : thisInfo.level, slot);
             pandaGen.storeAccumulator(node, res);
         } else {
             pandaGen.moveVreg(node, res, pandaGen.getVregForVariable(v));
@@ -1442,7 +1449,9 @@ export class Compiler {
             let slot = (<Variable>thisInfo.v).idxLex;
             let value = pandaGen.getTemp();
             pandaGen.storeAccumulator(node, value);
-            pandaGen.storeLexicalVar(node, thisInfo.level, slot, value);
+            let enclosingFuncScope = this.getCurrentScope().getNearestVariableScope();
+            let isLeaf = enclosingFuncScope.getChildVariableScope().length == 0 ? true : false;
+            pandaGen.storeLexicalVar(node, isLeaf ? thisInfo.level - 1 : thisInfo.level, slot, value);
             pandaGen.freeTemps(value);
         } else {
             pandaGen.storeAccumulator(node, pandaGen.getVregForVariable(<Variable>thisInfo.v))
@@ -1505,8 +1514,10 @@ export class Compiler {
                     variable.scope.setLexVar(variable.v, this.scope);
                 }
             }
+            let enclosingFuncScope = this.scope.getNearestVariableScope();
+                let isLeaf = enclosingFuncScope.getChildVariableScope().length == 0 ? true : false;
             // storeAcc must after setLexVar, because next statement will emit bc intermediately
-            this.pandaGen.storeAccToLexEnv(node, variable.scope!, variable.level, variable.v, isDeclaration);
+            this.pandaGen.storeAccToLexEnv(node, variable.scope!, isLeaf ? variable.level - 1 : variable.level, variable.v, isDeclaration);
         } else if (variable.v instanceof GlobalVariable) {
             if (variable.v.isNone() && isStrictMode(node)) {
                 this.pandaGen.tryStoreGlobalByName(node, variable.v.getName());
@@ -1560,6 +1571,7 @@ export class Compiler {
             if (variable.scope && variable.level >= 0) { // leaf function will load outer env instead of new a lex env
                 let scope = this.scope;
                 let needSetLexVar: boolean = false;
+                
                 while (scope != variable.scope) {
                     if (scope instanceof VariableScope) {
                         needSetLexVar = true;
@@ -1573,7 +1585,9 @@ export class Compiler {
                 }
             }
 
-            this.pandaGen.loadAccFromLexEnv(node, variable.scope!, variable.level, (<LocalVariable>variable.v));
+            let enclosingFuncScope = this.scope.getNearestVariableScope();
+            let isLeaf = enclosingFuncScope.getChildVariableScope().length == 0 ? true : false;
+            this.pandaGen.loadAccFromLexEnv(node, variable.scope!, isLeaf ? variable.level - 1 : variable.level, (<LocalVariable>variable.v));
         } else if (variable.v instanceof GlobalVariable) {
             if (variable.v.isNone()) {
                 let parent = findOuterNodeOfParenthesis(node);

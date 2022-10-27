@@ -407,6 +407,8 @@ function loadCtorObj(node: ts.CallExpression, compiler: Compiler) {
     let recorder = compiler.getRecorder();
     let pandaGen = compiler.getPandaGen();
     let nearestFunc = jshelpers.getContainingFunctionDeclaration(node);
+    let nearestFuncScope = compiler.getCurrentScope().getNearestVariableScope();
+    let isLeaf = nearestFuncScope.getChildVariableScope().length == 0 ? true : false;
     if (!nearestFunc) {
         return;
     }
@@ -433,7 +435,7 @@ function loadCtorObj(node: ts.CallExpression, compiler: Compiler) {
         let funcObj = <Variable>outerFuncScope.findLocal("4funcObj");
         outerFuncScope.setLexVar(funcObj, outerFuncScope);
         let slot = funcObj.idxLex;
-        pandaGen.loadLexicalVar(node, level, slot);
+        pandaGen.loadLexicalVar(node, isLeaf ? level - 1 : level, slot);
     }
 
 }
