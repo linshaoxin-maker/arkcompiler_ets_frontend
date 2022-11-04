@@ -158,7 +158,7 @@
   <project name="multimedia_media_lite" path="foundation/multimedia/media_lite" revision="e35ff312862adf828d82a0327d14ccc6387d8f70" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
   <project name="multimedia_media_standard" path="foundation/multimedia/media_standard" revision="d4dafed5ea4f80516be661168a74c3da56decd95" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
   <project name="multimedia_medialibrary_standard" path="foundation/multimedia/medialibrary_standard" revision="88ca47dd1058c10808dbf1ede34dbf3604576cd9" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
-  <project name="multimedia_utils_lite" path="foundation/multimedia/utils/lite" revision="137cf4ebb233d1a3de1070e7e7e40d3879f3addf" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
+  <project name="multimedia_utils_lite" path="foundation/multimedia/media_utils_lite" revision="137cf4ebb233d1a3de1070e7e7e40d3879f3addf" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
   <project name="multimodalinput_input" path="foundation/multimodalinput/input" revision="dcc4a6c5eb9e9d246574e1fc95c8bffeedc59be2" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
   <project name="notification_common_event_service" path="base/notification/ces_standard" revision="91c9bec9b0e095341c447fe52ef1c210977098ad" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
   <project name="notification_distributed_notification_service" path="base/notification/ans_standard" revision="51abfb76d5650c5e8422c12a23682545c53fdcd8" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
