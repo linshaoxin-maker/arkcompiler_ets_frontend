@@ -487,7 +487,7 @@ private:
     ir::TSEnumDeclaration *ParseEnumMembers(ir::Identifier *key, const lexer::SourcePosition &enumStart,
                                             bool isExport, bool isDeclare, bool isConst);
     ir::TSEnumDeclaration *ParseEnumDeclaration(bool isExport = false, bool isDeclare = false, bool isConst = false);
-    ir::TSInterfaceDeclaration *ParseTsInterfaceDeclaration();
+    ir::TSInterfaceDeclaration *ParseTsInterfaceDeclaration(bool isExport = false);
     ir::SwitchCaseStatement *ParseSwitchCaseStatement(bool *seenDefault);
     ir::SwitchStatement *ParseSwitchStatement();
     ir::ThrowStatement *ParseThrowStatement();

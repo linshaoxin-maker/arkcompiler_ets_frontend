@@ -68,15 +68,6 @@ enum class ScopeType {
 #undef GEN_SCOPE_TYPES
 };
 
-enum class ResolveBindingOptions {
-    BINDINGS = 1U << 0U,
-    INTERFACES = 1U << 1U,
-
-    ALL = BINDINGS | INTERFACES,
-};
-
-DEFINE_BITOPS(ResolveBindingOptions)
-
 enum class ResolveBindingFlags {
     ALL = 1U << 0U,
     TS_BEFORE_TRANSFORM = 1U << 1U,
@@ -91,7 +82,8 @@ DEFINE_BITOPS(ResolveBindingFlags)
     _(ENUM, EnumVariable)                  \
     _(NAMESPACE, NamespaceVariable)        \
     _(IMPORT_EQUALS, ImportEqualsVariable) \
-    _(ENUMLITERAL, EnumLiteralVariable)
+    _(ENUMLITERAL, EnumLiteralVariable)    \
+    _(INTERFACE, InterfaceVariable)
 
 enum class VariableType {
 #define GEN_VARIABLE_TYPES(type, class_name) type,

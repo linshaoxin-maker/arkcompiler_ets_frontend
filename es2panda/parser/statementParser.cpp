@@ -671,7 +671,7 @@ ir::TSTypeAliasDeclaration *ParserImpl::ParseTsTypeAliasDeclaration(bool isDecla
     return typeAliasDecl;
 }
 
-ir::TSInterfaceDeclaration *ParserImpl::ParseTsInterfaceDeclaration()
+ir::TSInterfaceDeclaration *ParserImpl::ParseTsInterfaceDeclaration(bool isExport)
 {
     ASSERT(lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_INTERFACE);
     context_.Status() |= ParserStatus::ALLOW_THIS_TYPE;
@@ -690,18 +690,25 @@ ir::TSInterfaceDeclaration *ParserImpl::ParseTsInterfaceDeclaration()
     }
 
     const util::StringView &ident = lexer_->GetToken().Ident();
-    binder::TSBinding tsBinding(Allocator(), ident);
-
-    const auto &bindings = Binder()->GetScope()->Bindings();
-    auto res = bindings.find(tsBinding.View());
     binder::InterfaceDecl *decl {};
-
-    if (res == bindings.end()) {
-        decl = Binder()->AddTsDecl<binder::InterfaceDecl>(lexer_->GetToken().Start(), Allocator(), tsBinding.View());
-    } else if (!res->second->Declaration()->IsInterfaceDecl()) {
+    auto *currentScope = Binder()->GetScope();
+    binder::Variable *res = currentScope->FindLocalTSVariable<binder::TSBindingType::INTERFACE>(ident);
+    if (res == nullptr && isExport && currentScope->IsTSModuleScope()) {
+        res = currentScope->AsTSModuleScope()->FindExportTSVariable<binder::TSBindingType::INTERFACE>(ident);
+        if (res != nullptr) {
+            currentScope->AddLocalTSVariable<binder::TSBindingType::INTERFACE>(ident, res);
+        }
+    }
+    if (res == nullptr) {
+        decl = Binder()->AddTsDecl<binder::InterfaceDecl>(lexer_->GetToken().Start(), Allocator(), ident);
+        res = currentScope->FindLocalTSVariable<binder::TSBindingType::INTERFACE>(ident);
+        if (isExport && currentScope->IsTSModuleScope()) {
+            currentScope->AsTSModuleScope()->AddExportTSVariable<binder::TSBindingType::INTERFACE>(ident, res);
+        }
+    } else if (!res->Declaration()->IsInterfaceDecl()) {
         Binder()->ThrowRedeclaration(lexer_->GetToken().Start(), ident);
     } else {
-        decl = res->second->Declaration()->AsInterfaceDecl();
+        decl = res->Declaration()->AsInterfaceDecl();
     }
 
     auto *id = AllocNode<ir::Identifier>(lexer_->GetToken().Ident(), Allocator());
@@ -776,9 +783,7 @@ ir::TSInterfaceDeclaration *ParserImpl::ParseTsInterfaceDeclaration()
 
     ASSERT(decl);
 
-    if (res == bindings.end()) {
-        decl->BindNode(interfaceDecl);
-    }
+    localScope.GetScope()->BindNode(interfaceDecl);
     decl->AsInterfaceDecl()->Add(interfaceDecl);
 
     lexer_->NextToken();
@@ -2281,7 +2286,7 @@ ir::ExportDefaultDeclaration *ParserImpl::ParseExportDefaultDeclaration(const le
         declNode = ParseFunctionDeclaration(false, ParserStatus::ASYNC_FUNCTION | ParserStatus::EXPORT_REACHED);
     } else if (Extension() == ScriptExtension::TS &&
                lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_INTERFACE) {
-        declNode = ParseTsInterfaceDeclaration();
+        declNode = ParseTsInterfaceDeclaration(true);
     } else {
         declNode = ParseExpression();
         Binder()->AddDecl<binder::LetDecl>(declNode->Start(), binder::DeclarationFlags::EXPORT,
@@ -2458,7 +2463,7 @@ ir::ExportNamedDeclaration *ParserImpl::ParseNamedExportDeclaration(const lexer:
                         break;
                     }
                     case lexer::TokenType::KEYW_INTERFACE: {
-                        decl = ParseTsInterfaceDeclaration();
+                        decl = ParseTsInterfaceDeclaration(true);
                         break;
                     }
                     case lexer::TokenType::KEYW_TYPE: {

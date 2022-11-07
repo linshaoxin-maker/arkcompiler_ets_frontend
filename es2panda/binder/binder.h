@@ -49,15 +49,7 @@ public:
           functionNames_(Allocator()->Adapter()),
           anonymousFunctionNames_(Allocator()->Adapter()),
           variableNames_(Allocator()->Adapter()),
-          extension_(extension)
-    {
-        if (extension_ == ScriptExtension::TS) {
-            bindingOptions_ = ResolveBindingOptions::ALL;
-            return;
-        }
-
-        bindingOptions_ = ResolveBindingOptions::BINDINGS;
-    }
+          extension_(extension) {}
 
     NO_COPY_SEMANTIC(Binder);
     DEFAULT_MOVE_SEMANTIC(Binder);
@@ -202,7 +194,6 @@ private:
     FunctionScope *topScope_ {};
     Scope *scope_ {};
     ArenaVector<FunctionScope *> functionScopes_;
-    ResolveBindingOptions bindingOptions_;
     ArenaSet<util::StringView> functionNames_;
     ArenaUnorderedMap<const ir::ScriptFunction *, util::StringView> anonymousFunctionNames_;
     ArenaSet<util::StringView> variableNames_;

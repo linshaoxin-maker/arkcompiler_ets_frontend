@@ -96,6 +96,10 @@ void CheckInheritedPropertiesAreIdentical(checker::Checker *checker, checker::In
 checker::Type *TSInterfaceDeclaration::Check(checker::Checker *checker) const
 {
     binder::Variable *var = id_->Variable();
+    // TODO: Interface Identifier binds InterfaceVariable.
+    if (var == nullptr) {
+        return nullptr;
+    }
     ASSERT(var->Declaration()->Node() && var->Declaration()->Node()->IsTSInterfaceDeclaration());
 
     if (this == var->Declaration()->Node()) {

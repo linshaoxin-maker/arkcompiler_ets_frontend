@@ -23,7 +23,6 @@ es2panda/test/TypeScript/tests/cases/compiler/letInVarDeclOfForIn_ES5.ts
 es2panda/test/TypeScript/tests/cases/compiler/letInVarDeclOfForIn_ES6.ts
 es2panda/test/TypeScript/tests/cases/compiler/letInVarDeclOfForOf_ES5.ts
 es2panda/test/TypeScript/tests/cases/compiler/letInVarDeclOfForOf_ES6.ts
-es2panda/test/TypeScript/tests/cases/compiler/mutuallyRecursiveInterfaceDeclaration.ts
 es2panda/test/TypeScript/tests/cases/compiler/overloadedConstructorFixesInferencesAppropriately.ts
 es2panda/test/TypeScript/tests/cases/compiler/parameterInitializerBeforeDestructuringEmit.ts
 es2panda/test/TypeScript/tests/cases/compiler/parseEntityNameWithReservedWord.ts

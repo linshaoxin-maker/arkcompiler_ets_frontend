@@ -277,7 +277,7 @@ public:
     bool AddTsDecl(ArenaAllocator *allocator, Decl *decl, [[maybe_unused]] ScriptExtension extension)
     {
         decls_.push_back(decl);
-        return AddBinding(allocator, FindLocal(decl->Name(), ResolveBindingOptions::ALL), decl, extension);
+        return AddBinding(allocator, FindLocal(decl->Name()), decl, extension);
     }
 
     template <typename T, typename... Args>
@@ -306,11 +306,9 @@ public:
     virtual bool AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                             [[maybe_unused]] ScriptExtension extension) = 0;
 
-    Variable *FindLocal(const util::StringView &name,
-                        ResolveBindingOptions options = ResolveBindingOptions::BINDINGS) const;
+    Variable *FindLocal(const util::StringView &name) const;
 
-    ScopeFindResult Find(const util::StringView &name,
-                         ResolveBindingOptions options = ResolveBindingOptions::BINDINGS) const;
+    ScopeFindResult Find(const util::StringView &name) const;
 
     Decl *FindDecl(const util::StringView &name) const;
 
