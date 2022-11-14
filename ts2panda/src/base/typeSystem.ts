@@ -760,6 +760,7 @@ export class ArrayType extends BaseType {
 
 export class ObjectType extends BaseType {
     private properties: Map<string, number> = new Map<string, number>();
+    private methods: Array<number> = new Array<number>();
     typeIndex: number = PrimitiveType.ANY;
     shiftedTypeIndex: number = PrimitiveType.ANY;
 
@@ -767,16 +768,46 @@ export class ObjectType extends BaseType {
         super();
         this.typeIndex = this.getIndexFromTypeArrayBuffer(new PlaceHolderType());
         this.shiftedTypeIndex = this.typeIndex + literalBufferIndexShift;
-        this.fillInMembers(objNode);
+        this.fillInFieldsAndMethods(objNode);
         this.setTypeArrayBuffer(this, this.typeIndex);
     }
 
-    fillInMembers(objNode: ts.TypeLiteralNode) {
-        for (let member of objNode.members) {
-            let propertySig = <ts.PropertySignature>member;
-            let name = member.name ? member.name.getText() : "#undefined";
-            let typeIndex = this.getOrCreateRecordForTypeNode(propertySig.type, member.name);
-            this.properties.set(name, typeIndex);
+    private fillInMethods(member: ts.MethodSignature) {
+        if (this.typeChecker.isFromDefaultLib(member)) {
+            return;
+        }
+        let variableNode = member.name ? member.name : undefined;
+        let funcType = new FunctionType(<ts.MethodSignature>member);
+        if (variableNode) {
+            this.setVariable2Type(variableNode, funcType.shiftedTypeIndex);
+        }
+        let typeIndex = this.tryGetTypeIndex(member);
+        this.methods.push(typeIndex!);
+    }
+
+    private fillInFields(member) {
+        let propertySig = <ts.PropertySignature>member;
+        let name = member.name ? member.name.getText() : "#undefined";
+        let typeIndex = this.getOrCreateRecordForTypeNode(propertySig.type, member.name);
+        this.properties.set(name, typeIndex);
+    }
+
+    private fillInFieldsAndMethods(objNode: ts.TypeLiteralNode) {
+        if (objNode.members) {
+            for (let member of objNode.members) {
+                switch (member.kind) {
+                    case ts.SyntaxKind.MethodSignature: {
+                        this.fillInMethods(<ts.MethodSignature>member);
+                        break;
+                    }
+                    case ts.SyntaxKind.PropertySignature: {
+                        this.fillInFields(<ts.PropertySignature>member);
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
         }
     }
 
@@ -789,6 +820,12 @@ export class ObjectType extends BaseType {
             objLiterals.push(new Literal(LiteralTag.STRING, name));
             this.transferType2Literal(typeIndex, objLiterals);
         });
+        if (this.method.legnth > 0) {
+            objLiterals.push(new Literal(LiteralTag.INTEGER, this.methods.length));
+            this.methods.forEach(method => {
+                this.transferType2Literal(method, objLiterals);
+            });
+        }
         objTypeBuf.addLiterals(...objLiterals);
         return objTypeBuf;
     }
