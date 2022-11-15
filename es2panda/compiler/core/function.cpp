@@ -70,7 +70,7 @@ static void CompileFunctionParameterDeclaration(PandaGen *pg, const ir::ScriptFu
 
         if (ref.Kind() == ReferenceKind::DESTRUCTURING) {
             util::StringView name = util::Helpers::ToStringView(pg->Allocator(), index);
-            paramVar = pg->Scope()->FindLocal(name, binder::ResolveBindingOptions::BINDINGS);
+            paramVar = pg->Scope()->FindLocal(name);
         }
 
         ASSERT(paramVar && paramVar->IsLocalVariable());

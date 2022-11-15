@@ -63,21 +63,8 @@ FunctionScope *Scope::EnclosingFunctionVariableScope()
     return nullptr;
 }
 
-Variable *Scope::FindLocal(const util::StringView &name, ResolveBindingOptions options) const
+Variable *Scope::FindLocal(const util::StringView &name) const
 {
-    if (options & ResolveBindingOptions::INTERFACES) {
-        util::StringView interfaceNameView(binder::TSBinding::ToTSBinding(name));
-
-        auto res = bindings_.find(interfaceNameView);
-        if (res != bindings_.end()) {
-            return res->second;
-        }
-
-        if (!(options & ResolveBindingOptions::BINDINGS)) {
-            return nullptr;
-        }
-    }
-
     auto res = bindings_.find(name);
     if (res == bindings_.end()) {
         return nullptr;
@@ -86,14 +73,14 @@ Variable *Scope::FindLocal(const util::StringView &name, ResolveBindingOptions o
     return res->second;
 }
 
-ScopeFindResult Scope::Find(const util::StringView &name, ResolveBindingOptions options) const
+ScopeFindResult Scope::Find(const util::StringView &name) const
 {
     uint32_t level = 0;
     uint32_t lexLevel = 0;
     const auto *iter = this;
 
     if (iter->IsFunctionParamScope()) {
-        Variable *v = iter->FindLocal(name, options);
+        Variable *v = iter->FindLocal(name);
 
         if (v != nullptr) {
             return {name, const_cast<Scope *>(iter), level, lexLevel, v};
@@ -111,7 +98,7 @@ ScopeFindResult Scope::Find(const util::StringView &name, ResolveBindingOptions 
     }
 
     while (iter != nullptr) {
-        Variable *v = iter->FindLocal(name, options);
+        Variable *v = iter->FindLocal(name);
 
         if (v != nullptr) {
             return {name, const_cast<Scope *>(iter), level, lexLevel, v};
@@ -201,8 +188,8 @@ bool Scope::AddLocal(ArenaAllocator *allocator, Variable *currentVariable, Decl 
                 newDecl->Name(), allocator->New<EnumLiteralVariable>(newDecl, VariableFlags::ENUM_LITERAL));
         }
         case DeclType::INTERFACE: {
-            bindings_.insert({newDecl->Name(), allocator->New<LocalVariable>(newDecl, VariableFlags::INTERFACE)});
-            return true;
+            return tsBindings_.AddTSVariable<TSBindingType::INTERFACE>(
+                newDecl->Name(), allocator->New<InterfaceVariable>(newDecl, VariableFlags::INTERFACE));
         }
         case DeclType::FUNC: {
             flags = VariableFlags::HOIST;
@@ -304,7 +291,7 @@ bool FunctionScope::AddBinding(ArenaAllocator *allocator, Variable *currentVaria
             return AddTSBinding<ImportEqualsVariable>(allocator, newDecl, VariableFlags::IMPORT_EQUALS);
         }
         case DeclType::INTERFACE: {
-            return AddTSBinding<LocalVariable>(allocator, currentVariable, newDecl, VariableFlags::INTERFACE);
+            return AddTSBinding<InterfaceVariable>(allocator, newDecl, VariableFlags::INTERFACE);
         }
         default: {
             return AddLexical<LocalVariable>(allocator, currentVariable, newDecl);
@@ -339,7 +326,7 @@ bool GlobalScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariabl
             return AddTSBinding<ImportEqualsVariable>(allocator, newDecl, VariableFlags::IMPORT_EQUALS);
         }
         case DeclType::INTERFACE: {
-            return AddTSBinding<LocalVariable>(allocator, currentVariable, newDecl, VariableFlags::INTERFACE);
+            return AddTSBinding<InterfaceVariable>(allocator, newDecl, VariableFlags::INTERFACE);
         }
         default: {
             return AddLexical<LocalVariable>(allocator, currentVariable, newDecl);
@@ -406,7 +393,7 @@ bool ModuleScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariabl
             return AddTSBinding<ImportEqualsVariable>(allocator, newDecl, VariableFlags::IMPORT_EQUALS);
         }
         case DeclType::INTERFACE: {
-            return AddTSBinding<LocalVariable>(allocator, currentVariable, newDecl, VariableFlags::INTERFACE);
+            return AddTSBinding<InterfaceVariable>(allocator, newDecl, VariableFlags::INTERFACE);
         }
         default: {
             if (currentVariable) {

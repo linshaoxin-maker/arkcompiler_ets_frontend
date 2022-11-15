@@ -350,5 +350,17 @@ private:
     Scope *scope_ {nullptr};
 };
 
+class InterfaceVariable : public Variable {
+public:
+    explicit InterfaceVariable(Decl *decl, VariableFlags flags) : Variable(decl, flags) {}
+
+    VariableType Type() const override
+    {
+        return VariableType::INTERFACE;
+    }
+
+    void SetLexical([[maybe_unused]] Scope *scope, [[maybe_unused]] util::Hotfix *hotfixHelper = nullptr) override;
+};
+
 }  // namespace panda::es2panda::binder
 #endif

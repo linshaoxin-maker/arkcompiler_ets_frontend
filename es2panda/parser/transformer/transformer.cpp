@@ -156,7 +156,7 @@ binder::Scope *Transformer::FindExportVariableInTsModuleScope(util::StringView n
     bool isExport = false;
     auto currentScope = Scope();
     while (currentScope != nullptr) {
-        binder::Variable *v = currentScope->FindLocal(name, binder::ResolveBindingOptions::ALL);
+        binder::Variable *v = currentScope->FindLocal(name);
         bool isTSModuleScope = currentScope->IsTSModuleScope();
         if (v != nullptr) {
             if (!v->HasFlag(binder::VariableFlags::VAR)) {
@@ -1184,7 +1184,7 @@ ir::UpdateNodes Transformer::VisitTsModuleDeclaration(ir::TSModuleDeclaration *n
 
     util::StringView name = GetNameFromModuleDeclaration(node);
 
-    auto findRes = Scope()->FindLocal(name, binder::ResolveBindingOptions::ALL);
+    auto findRes = Scope()->FindLocal(name);
     if (findRes == nullptr) {
         res.push_back(CreateVariableDeclarationForTSEnumOrTSModule(name, node, isExport));
     }

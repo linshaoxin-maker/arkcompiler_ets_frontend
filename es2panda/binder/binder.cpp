@@ -129,7 +129,7 @@ void Binder::ValidateExportDecl(const ir::ExportNamedDeclaration *exportDecl)
     for (auto *it : exportDecl->Specifiers()) {
         auto localName = it->AsExportSpecifier()->Local()->Name();
         if (scope_->IsTSModuleScope()) {
-            if (scope_->FindLocal(localName, ResolveBindingOptions::ALL) == nullptr &&
+            if (scope_->FindLocal(localName) == nullptr &&
                 !scope_->InLocalTSBindings(localName) &&
                 !scope_->AsTSModuleScope()->InExportBindings(localName)) {
                 ThrowUndeclaredExport(it->AsExportSpecifier()->Local()->Start(), localName);
@@ -140,8 +140,7 @@ void Binder::ValidateExportDecl(const ir::ExportNamedDeclaration *exportDecl)
         if (scope_->FindLocal(localName) == nullptr) {
             // The declaration of ts cannot correspond to the variables of ts before transform,
             // After the transform, they are all js variables. So it can return directly here.
-            if (scope_->InLocalTSBindings(localName) ||
-                scope_->FindLocal(localName, ResolveBindingOptions::INTERFACES)) {
+            if (scope_->InLocalTSBindings(localName)) {
                 continue;
             }
             ThrowUndeclaredExport(it->AsExportSpecifier()->Local()->Start(), localName);
@@ -206,7 +205,7 @@ void Binder::LookupIdentReference(ir::Identifier *ident)
         InstantiateArguments();
     }
 
-    ScopeFindResult res = scope_->Find(ident->Name(), bindingOptions_);
+    ScopeFindResult res = scope_->Find(ident->Name());
 
     if (res.level != 0) {
         ASSERT(res.variable);
