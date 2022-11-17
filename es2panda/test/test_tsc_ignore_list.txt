@@ -1,16 +1,10 @@
-es2panda/test/TypeScript/tests/cases/compiler/ambientClassOverloadForFunction.ts
 es2panda/test/TypeScript/tests/cases/compiler/bom-utf16be.ts
-es2panda/test/TypeScript/tests/cases/compiler/classFunctionMerging.ts
 es2panda/test/TypeScript/tests/cases/compiler/collisionArgumentsInType.ts
 es2panda/test/TypeScript/tests/cases/compiler/collisionArgumentsInterfaceMembers.ts
-es2panda/test/TypeScript/tests/cases/compiler/computedPropertiesTransformedInOtherwiseNonTSClasses.ts
-es2panda/test/TypeScript/tests/cases/compiler/constructorOverloads5.ts
 es2panda/test/TypeScript/tests/cases/compiler/elidedEmbeddedStatementsReplacedWithSemicolon.ts
 es2panda/test/TypeScript/tests/cases/compiler/emitBundleWithShebang1.ts
 es2panda/test/TypeScript/tests/cases/compiler/fileWithNextLine2.ts
 es2panda/test/TypeScript/tests/cases/compiler/genericRecursiveImplicitConstructorErrors2.ts
-es2panda/test/TypeScript/tests/cases/compiler/globalIsContextualKeyword.ts
-es2panda/test/TypeScript/tests/cases/compiler/inferenceErasedSignatures.ts
 es2panda/test/TypeScript/tests/cases/compiler/isLiteral1.ts
 es2panda/test/TypeScript/tests/cases/compiler/isLiteral2.ts
 es2panda/test/TypeScript/tests/cases/compiler/letAsIdentifier2.ts
@@ -20,7 +14,6 @@ es2panda/test/TypeScript/tests/cases/compiler/letInVarDeclOfForOf_ES5.ts
 es2panda/test/TypeScript/tests/cases/compiler/letInVarDeclOfForOf_ES6.ts
 es2panda/test/TypeScript/tests/cases/compiler/parameterInitializerBeforeDestructuringEmit.ts
 es2panda/test/TypeScript/tests/cases/compiler/shebang.ts
-es2panda/test/TypeScript/tests/cases/compiler/sigantureIsSubTypeIfTheyAreIdentical.ts
 es2panda/test/TypeScript/tests/cases/compiler/sourceMap-LineBreaks.ts
 es2panda/test/TypeScript/tests/cases/compiler/withStatementInternalComments.ts
 es2panda/test/TypeScript/tests/cases/conformance/es6/arrowFunction/emitArrowFunctionWhenUsingArguments03_ES6.ts
@@ -64,7 +57,4 @@ es2panda/test/TypeScript/tests/cases/conformance/interfaces/interfaceDeclaration
 es2panda/test/TypeScript/tests/cases/conformance/parser/ecmascript5/RegressionTests/parser579071.ts
 es2panda/test/TypeScript/tests/cases/conformance/parser/ecmascript5/parserUnicodeWhitespaceCharacter1.ts
 es2panda/test/TypeScript/tests/cases/conformance/scanner/ecmascript3/scannerES3NumericLiteral2.ts
-es2panda/test/TypeScript/tests/cases/conformance/types/keyof/keyofAndIndexedAccess.ts
 es2panda/test/TypeScript/tests/cases/conformance/types/members/objectTypeWithStringNamedNumericProperty.ts
-es2panda/test/TypeScript/tests/cases/conformance/types/uniqueSymbol/uniqueSymbols.ts
-es2panda/test/TypeScript/tests/cases/conformance/types/uniqueSymbol/uniqueSymbolsDeclarations.ts

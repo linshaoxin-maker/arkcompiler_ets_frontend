@@ -1061,7 +1061,7 @@ ir::Expression *ParserImpl::ParsePrimaryExpression(ExpressionParseFlags flags)
             return ParseCoverParenthesizedExpressionAndArrowParameterList();
         }
         case lexer::TokenType::PUNCTUATOR_LEFT_BRACE: {
-            return ParseObjectExpression(CarryPatternFlags(flags));
+            return ParseObjectExpression(CarryAllowTsParamAndPatternFlags(flags));
         }
         case lexer::TokenType::KEYW_FUNCTION: {
             return ParseFunctionExpression();

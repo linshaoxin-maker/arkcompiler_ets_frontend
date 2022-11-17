@@ -250,6 +250,13 @@ ExpressionParseFlags ParserImpl::CarryPatternFlags(ExpressionParseFlags flags)
                                                 ExpressionParseFlags::OBJECT_PATTERN);
 }
 
+ExpressionParseFlags ParserImpl::CarryAllowTsParamAndPatternFlags(ExpressionParseFlags flags)
+{
+    return CarryExpressionParserFlag(flags, ExpressionParseFlags::ALLOW_TS_PARAM_TOKEN |
+                                            ExpressionParseFlags::POTENTIALLY_IN_PATTERN |
+                                            ExpressionParseFlags::OBJECT_PATTERN);
+}
+
 bool ParserImpl::CurrentLiteralIsBasicType()
 {
     ASSERT(lexer_->GetToken().Type() == lexer::TokenType::LITERAL_IDENT ||
@@ -312,13 +319,13 @@ ir::TSTypeReference *ParserImpl::ParseTsConstExpression()
     return typeReference;
 }
 
-ir::Expression *ParserImpl::ParseTsIdentifierReference()
+ir::Expression *ParserImpl::ParseTsIdentifierReference(TypeAnnotationParsingOptions options)
 {
     if (CurrentLiteralIsBasicType() && lexer_->Lookahead() != LEX_CHAR_DOT) {
         return ParseTsBasicType();
     }
 
-    return ParseTsTypeReferenceOrQuery();
+    return ParseTsTypeReferenceOrQuery(options, false);
 }
 
 bool ParserImpl::IsStartOfMappedType() const
@@ -426,7 +433,7 @@ ir::Expression *ParserImpl::ParseTsTypeLiteralOrTsMappedType(ir::Expression *typ
 }
 
 ir::Expression *ParserImpl::ParseTsTypeReferenceOrTsTypePredicate(ir::Expression *typeAnnotation,
-                                                                  bool canBeTsTypePredicate)
+                                                                  bool canBeTsTypePredicate, bool throwError)
 {
     if (typeAnnotation) {
         return nullptr;
@@ -436,7 +443,7 @@ ir::Expression *ParserImpl::ParseTsTypeReferenceOrTsTypePredicate(ir::Expression
         return ParseTsTypePredicate();
     }
 
-    return ParseTsTypeOperatorOrTypeReference();
+    return ParseTsTypeOperatorOrTypeReference(throwError);
 }
 
 ir::Expression *ParserImpl::ParseTsThisTypeOrTsTypePredicate(ir::Expression *typeAnnotation, bool canBeTsTypePredicate,
@@ -542,7 +549,7 @@ ir::Expression *ParserImpl::ParseTsTypeAnnotationElement(ir::Expression *typeAnn
                     return ParseTsArrayType(typeAnnotation);
                 }
 
-                return ParseTsIndexAccessType(typeAnnotation);
+                return ParseTsIndexAccessType(typeAnnotation, *options & TypeAnnotationParsingOptions::THROW_ERROR);
             }
 
             return ParseTsTupleType();
@@ -568,7 +575,7 @@ ir::Expression *ParserImpl::ParseTsTypeAnnotationElement(ir::Expression *typeAnn
                 break;
             }
 
-            return ParseTsTypeReferenceOrQuery(true);
+            return ParseTsTypeReferenceOrQuery(*options, true);
         }
         case lexer::TokenType::KEYW_IMPORT: {
             if (typeAnnotation) {
@@ -593,7 +600,8 @@ ir::Expression *ParserImpl::ParseTsTypeAnnotationElement(ir::Expression *typeAnn
             }
 
             return ParseTsTypeReferenceOrTsTypePredicate(
-                typeAnnotation, *options & TypeAnnotationParsingOptions::CAN_BE_TS_TYPE_PREDICATE);
+                typeAnnotation, *options & TypeAnnotationParsingOptions::CAN_BE_TS_TYPE_PREDICATE,
+                *options & TypeAnnotationParsingOptions::THROW_ERROR);
         }
         case lexer::TokenType::KEYW_EXTENDS: {
             if (*options & (TypeAnnotationParsingOptions::IN_UNION | TypeAnnotationParsingOptions::IN_INTERSECTION)) {
@@ -601,7 +609,7 @@ ir::Expression *ParserImpl::ParseTsTypeAnnotationElement(ir::Expression *typeAnn
             }
 
             if (!typeAnnotation) {
-                return ParseTsIdentifierReference();
+                return ParseTsIdentifierReference(*options);
             }
 
             return ParseTsConditionalType(typeAnnotation, *options & TypeAnnotationParsingOptions::RESTRICT_EXTENDS);
@@ -773,9 +781,10 @@ ir::Expression *ParserImpl::ParseTsTypeAnnotation(TypeAnnotationParsingOptions *
     return typeAnnotation;
 }
 
-ir::Expression *ParserImpl::ParseTsTypeOperatorOrTypeReference()
+ir::Expression *ParserImpl::ParseTsTypeOperatorOrTypeReference(bool throwError)
 {
-    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
+    TypeAnnotationParsingOptions options = throwError ?
+        TypeAnnotationParsingOptions::THROW_ERROR : TypeAnnotationParsingOptions::NO_OPTS;
 
     if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_READONLY) {
         lexer::SourcePosition typeOperatorStart = lexer_->GetToken().Start();
@@ -846,7 +855,7 @@ ir::Expression *ParserImpl::ParseTsTypeOperatorOrTypeReference()
         return inferType;
     }
 
-    return ParseTsIdentifierReference();
+    return ParseTsIdentifierReference(options);
 }
 
 bool ParserImpl::IsTSNamedTupleMember()
@@ -1007,7 +1016,7 @@ ir::Expression *ParserImpl::ParseTsQualifiedReference(ir::Expression *typeName)
     return typeName;
 }
 
-ir::Expression *ParserImpl::ParseTsIndexAccessType(ir::Expression *typeName)
+ir::Expression *ParserImpl::ParseTsIndexAccessType(ir::Expression *typeName, bool throwError)
 {
     TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
 
@@ -1017,7 +1026,10 @@ ir::Expression *ParserImpl::ParseTsIndexAccessType(ir::Expression *typeName)
         ir::Expression *indexType = ParseTsTypeAnnotation(&options);
 
         if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
-            ThrowSyntaxError("']' exprected");
+            if (!throwError) {
+                return nullptr;
+            }
+            ThrowSyntaxError("']' expected");
         }
 
         lexer_->NextToken();  // eat ']'
@@ -1030,7 +1042,7 @@ ir::Expression *ParserImpl::ParseTsIndexAccessType(ir::Expression *typeName)
     return typeName;
 }
 
-ir::Expression *ParserImpl::ParseTsTypeReferenceOrQuery(bool parseQuery)
+ir::Expression *ParserImpl::ParseTsTypeReferenceOrQuery(TypeAnnotationParsingOptions options, bool parseQuery)
 {
     lexer::SourcePosition referenceStartLoc = lexer_->GetToken().Start();
 
@@ -1084,7 +1096,7 @@ ir::Expression *ParserImpl::ParseTsTypeReferenceOrQuery(bool parseQuery)
 
         typeName->SetRange({referenceStartLoc, lexer_->GetToken().End()});
 
-        return ParseTsIndexAccessType(typeName);
+        return ParseTsIndexAccessType(typeName, options & TypeAnnotationParsingOptions::THROW_ERROR);
     }
 
     ir::Expression *returnNode = nullptr;
@@ -1746,6 +1758,9 @@ ir::Expression *ParserImpl::ParseTsParenthesizedOrFunctionType(ir::Expression *t
 
         if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS &&
             lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LESS_THAN) {
+            if (!throwError) {
+                return nullptr;
+            }
             ThrowSyntaxError("'(' expected");
         }
     }
@@ -2109,7 +2124,7 @@ void ParserImpl::ParseClassKeyModifiers(ClassElmentDescriptor *desc)
 
     if ((Extension() == ScriptExtension::JS && nextCp != LEX_CHAR_LEFT_PAREN) ||
         (Extension() == ScriptExtension::TS && nextCp != LEX_CHAR_EQUALS && nextCp != LEX_CHAR_SEMICOLON &&
-         nextCp != LEX_CHAR_LEFT_PAREN)) {
+         nextCp != LEX_CHAR_LEFT_PAREN && nextCp != LEX_CHAR_LESS_THAN)) {
         if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_GET) {
             if (desc->isPrivateIdent) {
                 ThrowSyntaxError("Private identifier can not be getter");
@@ -2258,11 +2273,10 @@ ir::Expression *ParserImpl::ParseClassKey(ClassElmentDescriptor *desc, bool isDe
             propName = ParseExpression(ExpressionParseFlags::ACCEPT_COMMA);
 
             if (Extension() == ScriptExtension::TS) {
+                // TODO(songqi): Determine whether MemberExpression is a symbol during type check.
                 desc->invalidComputedProperty =
                     !propName->IsNumberLiteral() && !propName->IsStringLiteral() &&
-                    !(propName->IsMemberExpression() && propName->AsMemberExpression()->Object()->IsIdentifier() &&
-                      propName->AsMemberExpression()->Object()->AsIdentifier()->Name().Is("Symbol")) &&
-                    !propName->IsIdentifier();
+                    !propName->IsMemberExpression() && !propName->IsIdentifier();
             }
 
             if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
@@ -2895,7 +2909,7 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool i
             if (!isDeclare && !isCtorContinuousDefined) {
                 ThrowSyntaxError("Constructor implementation is missing.", property->Start());
             }
-  
+
             if (hasConstructorFuncBody) {
                 ThrowSyntaxError("Multiple constructor implementations are not allowed.", property->Start());
             }
@@ -3030,7 +3044,7 @@ ir::TSEnumDeclaration *ParserImpl::ParseEnumDeclaration(bool isExport, bool isDe
     auto enumCtx = binder::LexicalScope<binder::TSEnumScope>(Binder(), enumMemberBindings);
     auto *enumDeclaration = ParseEnumMembers(key, enumStart, isExport, isDeclare, isConst);
     res->Declaration()->AsEnumLiteralDecl()->Add(enumDeclaration);
-    
+
     return enumDeclaration;
 }
 
