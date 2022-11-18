@@ -350,7 +350,14 @@ export abstract class VariableScope extends Scope {
         LOGD(this.debugTag, "VariableScope.setLexVar(" + v.idxLex + ")");
         // set all chain to create env
         let scope: Scope | undefined = refScope;
+        let nearestRefVariableScope = refScope.getNearestVariableScope();
+        let isLeaf = nearestRefVariableScope.getChildVariableScope().length == 0 ? true : false;
         while (scope && scope != this) {
+            if (scope == nearestRefVariableScope && isLeaf) {
+                scope = scope.getParent();
+                continue;
+            }
+
             if (scope instanceof VariableScope || (scope instanceof LoopScope && scope.need2CreateLexEnv())) {
                 scope.pendingCreateEnv();
             }
@@ -536,7 +543,14 @@ export class LoopScope extends LocalScope {
 
         LOGD(this.debugTag, "LoopScope.setLexVar(" + v.idxLex + ")");
         let scope: Scope | undefined = refScope;
+        let nearestRefVariableScope = refScope.getNearestVariableScope();
+        let isLeaf = nearestRefVariableScope.getChildVariableScope().length == 0 ? true : false;
         while (scope && scope != this) {
+            if (scope == nearestRefVariableScope && isLeaf) {
+                scope = scope.getParent();
+                continue;
+            }
+
             if (scope instanceof VariableScope || (scope instanceof LoopScope && scope.need2CreateLexEnv())) {
                 scope.pendingCreateEnv();
             }
