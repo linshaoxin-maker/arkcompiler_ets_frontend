@@ -68,7 +68,29 @@
             "language/expressions/dynamic-import/usage/nested-async-gen-await-eval-gtbndng-indirect-update.js",
             "language/expressions/dynamic-import/usage/nested-async-gen-await-eval-gtbndng-indirect-update-dflt.js",
             "language/expressions/dynamic-import/usage/nested-async-gen-return-await-eval-script-code-host-resolves-module-code.js",
-            "language/expressions/dynamic-import/usage/nested-async-function-specifier-tostring.js"
+            "language/expressions/dynamic-import/syntax/valid/nested-async-gen-await-script-code-valid.js",
+            "language/expressions/dynamic-import/syntax/valid/nested-async-gen-await-empty-str-is-valid-assign-expr.js",
+            "language/expressions/dynamic-import/syntax/valid/nested-async-gen-await-nested-imports.js",
+            "language/expressions/dynamic-import/syntax/valid/nested-async-gen-await-nested-imports.js",
+            "language/expressions/dynamic-import/syntax/invalid/nested-async-gen-await-no-rest-param.js",
+            "language/expressions/dynamic-import/syntax/invalid/nested-async-gen-await-no-new-call-expression.js",
+            "language/expressions/dynamic-import/syntax/invalid/nested-async-gen-await-not-extensible-args.js",
+            "language/expressions/dynamic-import/syntax/invalid/nested-async-gen-await-assignment-expr-not-optional.js",
+            "language/expressions/dynamic-import/usage/nested-async-gen-return-await-specifier-tostring.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-await-eval-rqstd-abrupt-typeerror.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-await-specifier-tostring-abrupt-rejects.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-return-await-instn-iee-err-circular.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-await-instn-iee-err-circular.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-return-await-instn-iee-err-ambiguous-import.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-return-await-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-await-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-return-await-specifier-tostring-abrupt-rejects.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-await-eval-script-code-target.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-await-eval-rqstd-abrupt-urierror.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-return-await-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-return-await-eval-rqstd-abrupt-typeerror.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-await-instn-iee-err-ambiguous-import.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-return-await-eval-rqstd-abrupt-urierror.js"
         ]
     },
     {
@@ -82,6 +104,27 @@
             "language/expressions/dynamic-import/for-await-resolution-and-error.js",
             "language/expressions/dynamic-import/reuse-namespace-object-from-import.js",
             "language/expressions/dynamic-import/usage-from-eval.js"
+        ]
+    },
+    {
+        "reason" : "excute DOES_NOT_EXIST file",
+        "files": [
+            "language/expressions/dynamic-import/catch/nested-async-function-return-await-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/top-level-import-catch-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-if-import-catch-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-arrow-import-catch-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-async-function-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-block-labeled-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-await-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-else-import-catch-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-async-function-await-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-async-gen-return-await-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-block-import-catch-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-while-import-catch-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-function-import-catch-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-do-while-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-async-arrow-function-await-file-does-not-exist.js",
+            "language/expressions/dynamic-import/catch/nested-async-arrow-function-return-await-file-does-not-exist.js"
         ]
     }
 ]
