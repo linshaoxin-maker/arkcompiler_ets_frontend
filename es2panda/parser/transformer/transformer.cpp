@@ -680,10 +680,10 @@ std::vector<ir::AstNode *> Transformer::CreateParamDecorators(util::StringView c
      */
     std::vector<ir::AstNode *> res;
     auto paramsDecorators = node->GetParamDecorators();
-    for (int i = paramsDecorators.size() - 1; i >= 0; i--) {
+    for (uint32_t i = paramsDecorators.size() - 1; i >= 0; i--) {
         auto paramIndex = paramsDecorators[i].paramIndex;
         auto decorators = paramsDecorators[i].decorators;
-        for (int j = decorators.size() - 1; j >= 0; j--) {
+        for (uint32_t j = decorators.size() - 1; j >= 0; j--) {
             ArenaVector<ir::Expression *> arguments(Allocator()->Adapter());
             arguments.push_back(CreateDecoratorTarget(className, isConstructor || isStatic));
             arguments.push_back(isConstructor ?
@@ -719,7 +719,7 @@ std::vector<ir::AstNode *> Transformer::CreatePropertyDecorators(util::StringVie
      */
     std::vector<ir::AstNode *> res;
     auto decorators = node->Decorators();
-    for (int i = decorators.size() - 1; i >= 0; i--) {
+    for (uint32_t i = decorators.size() - 1; i >= 0; i--) {
         ArenaVector<ir::Expression *> arguments(Allocator()->Adapter());
         arguments.push_back(CreateDecoratorTarget(className, isStatic));
         arguments.push_back(GetClassMemberName(node->Key(), node->IsComputed(), node));
@@ -755,7 +755,7 @@ std::vector<ir::AstNode *> Transformer::CreateMethodDecorators(util::StringView 
      */
     std::vector<ir::AstNode *> res;
     auto decorators = node->Decorators();
-    for (int i = decorators.size() - 1; i >= 0; i--) {
+    for (uint32_t i = decorators.size() - 1; i >= 0; i--) {
         ArenaVector<ir::Expression *> arguments(Allocator()->Adapter());
         arguments.push_back(CreateDecoratorTarget(className, isStatic));
         arguments.push_back(GetClassMemberName(node->Key(), node->Computed(), node));
@@ -776,9 +776,9 @@ std::vector<ir::AstNode *> Transformer::CreateMethodDecorators(util::StringView 
     return res;
 }
 
-ir::Expression *Transformer::CreateDecoratorTarget(util::StringView className, bool targetCtor)
+ir::Expression *Transformer::CreateDecoratorTarget(util::StringView className, bool isStatic)
 {
-    if (targetCtor) {
+    if (isStatic) {
         return CreateReferenceIdentifier(className);
     }
     return CreateClassPrototype(className);
@@ -856,7 +856,7 @@ std::vector<ir::AstNode *> Transformer::CreateClassDecorators(ir::ClassDeclarati
     auto decorators = node->Decorators();
     auto size = decorators.size();
     std::vector<ir::AstNode *> res;
-    for (int i = size - 1; i >= 0; i--) {
+    for (uint32_t i = size - 1; i >= 0; i--) {
         ArenaVector<ir::Expression *> arguments(Allocator()->Adapter());
         arguments.push_back(CreateReferenceIdentifier(name));
         auto *callExpr = AllocNode<ir::CallExpression>(decorators[i]->Expr(), std::move(arguments), nullptr, false);
