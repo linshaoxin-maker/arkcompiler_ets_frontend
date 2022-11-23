@@ -58,15 +58,15 @@ void LoopEnvScope::CopyBindings(PandaGen *pg, binder::VariableScope *scope, bind
 
     ASSERT(scope->NeedLexEnv());
 
-    for (const auto &[_, variable] : scope_->Bindings()) {
-        (void)_;
-        if (!variable->HasFlag(flag)) {
-            continue;
-        }
+    // for (const auto &[_, variable] : scope_->Bindings()) {
+    //     (void)_;
+    //     if (!variable->HasFlag(flag)) {
+    //         continue;
+    //     }
 
-        pg->LoadLexicalVar(scope_->Node(), 1, variable->AsLocalVariable()->LexIdx());
-        pg->StoreLexicalVar(scope_->Parent()->Node(), 0, variable->AsLocalVariable()->LexIdx());
-    }
+    //     pg->LoadLexicalVar(scope_->Node(), 1, variable->AsLocalVariable()->LexIdx());
+    //     pg->StoreLexicalVar(scope_->Parent()->Node(), 0, variable->AsLocalVariable()->LexIdx());
+    // }
 }
 
 void LoopEnvScope::CopyPetIterationCtx()

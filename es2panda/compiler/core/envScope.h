@@ -68,20 +68,38 @@ protected:
 
 class LoopEnvScope : public EnvScope {
 public:
+    // explicit LoopEnvScope(PandaGen *pg, binder::LoopScope *scope, LabelTarget target)
+    //     : scope_(NeedEnv(scope) ? scope : nullptr), regScope_(pg, scope), lexEnvCtx_(this, pg, target)
+    // {
+    //     CopyBindings(pg, scope, binder::VariableFlags::PER_ITERATION);
+    // }
+
+    // explicit LoopEnvScope(PandaGen *pg, LabelTarget target, binder::LoopScope *scope)
+    //     : scope_(NeedEnv(scope) ? scope : nullptr), regScope_(pg), lexEnvCtx_(this, pg, target)
+    // {
+    //     CopyBindings(pg, scope, binder::VariableFlags::PER_ITERATION);
+    // }
+
+    // explicit LoopEnvScope(PandaGen *pg, binder::LoopDeclarationScope *scope)
+    //     : scope_(NeedEnv(scope) ? scope : nullptr), regScope_(pg), lexEnvCtx_(this, pg, {})
+    // {
+    //     CopyBindings(pg, scope, binder::VariableFlags::LOOP_DECL);
+    // }
+
     explicit LoopEnvScope(PandaGen *pg, binder::LoopScope *scope, LabelTarget target)
-        : scope_(NeedEnv(scope) ? scope : nullptr), regScope_(pg, scope), lexEnvCtx_(this, pg, target)
+        : scope_(NeedEnv(scope) ? scope : nullptr), lexEnvCtx_(this, pg, target)
     {
         CopyBindings(pg, scope, binder::VariableFlags::PER_ITERATION);
     }
 
     explicit LoopEnvScope(PandaGen *pg, LabelTarget target, binder::LoopScope *scope)
-        : scope_(NeedEnv(scope) ? scope : nullptr), regScope_(pg), lexEnvCtx_(this, pg, target)
+        : scope_(NeedEnv(scope) ? scope : nullptr), lexEnvCtx_(this, pg, target)
     {
         CopyBindings(pg, scope, binder::VariableFlags::PER_ITERATION);
     }
 
     explicit LoopEnvScope(PandaGen *pg, binder::LoopDeclarationScope *scope)
-        : scope_(NeedEnv(scope) ? scope : nullptr), regScope_(pg), lexEnvCtx_(this, pg, {})
+        : scope_(NeedEnv(scope) ? scope : nullptr), lexEnvCtx_(this, pg, {})
     {
         CopyBindings(pg, scope, binder::VariableFlags::LOOP_DECL);
     }
@@ -108,7 +126,7 @@ private:
     void CopyBindings(PandaGen *pg, binder::VariableScope *scope, binder::VariableFlags flag);
 
     binder::VariableScope *scope_ {};
-    LocalRegScope regScope_;
+    // LocalRegScope regScope_;
     LexEnvContext lexEnvCtx_;
 };
 

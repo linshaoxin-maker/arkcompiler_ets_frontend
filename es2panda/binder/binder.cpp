@@ -415,7 +415,8 @@ void Binder::BuildForUpdateLoop(ir::ForUpdateStatement *forUpdateStmt)
 {
     auto *loopScope = forUpdateStmt->Scope();
 
-    auto declScopeCtx = LexicalScope<LoopDeclarationScope>::Enter(this, loopScope->DeclScope());
+    // auto declScopeCtx = LexicalScope<LoopDeclarationScope>::Enter(this, loopScope->DeclScope());
+    auto loopCtx = LexicalScope<LoopScope>::Enter(this, loopScope);
 
     if (forUpdateStmt->Init()) {
         ResolveReference(forUpdateStmt, forUpdateStmt->Init());
@@ -425,7 +426,7 @@ void Binder::BuildForUpdateLoop(ir::ForUpdateStatement *forUpdateStmt)
         ResolveReference(forUpdateStmt, forUpdateStmt->Update());
     }
 
-    auto loopCtx = LexicalScope<LoopScope>::Enter(this, loopScope);
+    // auto loopCtx = LexicalScope<LoopScope>::Enter(this, loopScope);
 
     if (forUpdateStmt->Test()) {
         ResolveReference(forUpdateStmt, forUpdateStmt->Test());
@@ -439,12 +440,13 @@ void Binder::BuildForUpdateLoop(ir::ForUpdateStatement *forUpdateStmt)
 void Binder::BuildForInOfLoop(const ir::Statement *parent, binder::LoopScope *loopScope, ir::AstNode *left,
                               ir::Expression *right, ir::Statement *body)
 {
-    auto declScopeCtx = LexicalScope<LoopDeclarationScope>::Enter(this, loopScope->DeclScope());
+    // auto declScopeCtx = LexicalScope<LoopDeclarationScope>::Enter(this, loopScope->DeclScope());
+    auto loopCtx = LexicalScope<LoopScope>::Enter(this, loopScope);
 
     ResolveReference(parent, right);
     ResolveReference(parent, left);
 
-    auto loopCtx = LexicalScope<LoopScope>::Enter(this, loopScope);
+    // auto loopCtx = LexicalScope<LoopScope>::Enter(this, loopScope);
 
     ResolveReference(parent, body);
     loopCtx.GetScope()->ConvertToVariableScope(Allocator());
