@@ -445,12 +445,7 @@ ohos_executable("es2panda") {
     ]
   }
 
-  if (!is_mac) {
-    static_link = true
-  }
-
   if (!use_musl) {
-    static_link = false
     ldflags += [ "-lc++" ]
   }
 
