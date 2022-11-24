@@ -1353,7 +1353,7 @@ ir::Statement *ParserImpl::ParseForStatement()
     }
     lexer_->NextToken();
 
-    auto declCtx = binder::LexicalScope<binder::LoopDeclarationScope>(Binder());
+    IterationContext<binder::LoopScope> iterCtx(&context_, Binder());
 
     switch (lexer_->GetToken().Type()) {
         case lexer::TokenType::KEYW_VAR: {
@@ -1384,9 +1384,6 @@ ir::Statement *ParserImpl::ParseForStatement()
             break;
         }
     }
-
-    IterationContext<binder::LoopScope> iterCtx(&context_, Binder());
-    iterCtx.LexicalScope().GetScope()->BindDecls(declCtx.GetScope());
 
     if (initNode != nullptr) {
         if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
@@ -1429,7 +1426,6 @@ ir::Statement *ParserImpl::ParseForStatement()
 
     forStatement->SetRange({startLoc, endLoc});
     loopScope->BindNode(forStatement);
-    loopScope->DeclScope()->BindNode(forStatement);
 
     return forStatement;
 }
