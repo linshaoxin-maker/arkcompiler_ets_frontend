@@ -3396,7 +3396,7 @@ ir::Expression *ParserImpl::ParseFunctionParameter(bool isDeclare)
     return functionParameter;
 }
 
-void ParserImpl::ValidateLvalueAssignmentTarget(ir::Expression *node)
+void ParserImpl::ValidateLvalueAssignmentTarget(ir::Expression *node) const
 {
     switch (node->Type()) {
         case ir::AstNodeType::IDENTIFIER: {
