@@ -200,12 +200,7 @@ ohos_executable("merge_abc") {
     defines = [ "PANDA_TARGET_WINDOWS" ]
   }
 
-  if (!is_mac) {
-    static_link = true
-  }
-
   if (!use_musl) {
-    static_link = false
     ldflags += [ "-lc++" ]
   }
 
