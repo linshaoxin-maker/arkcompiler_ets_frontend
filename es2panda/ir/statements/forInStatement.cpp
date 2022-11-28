@@ -59,13 +59,13 @@ void ForInStatement::Compile(compiler::PandaGen *pg) const
     pg->StoreAccumulator(this, propName);
     pg->BranchIfUndefined(this, labelTarget.BreakTarget());
 
-    compiler::LocalRegScope declRegScope(pg, scope_->DeclScope()->InitScope());
+    compiler::LocalRegScope declRegScope(pg, scope_);
     auto lref = compiler::LReference::CreateLRef(pg, left_, false);
     pg->LoadAccumulator(this, propName);
     lref.SetValue();
 
     {
-        compiler::LoopEnvScope declEnvScope(pg, scope_->DeclScope());
+        // compiler::LoopEnvScope declEnvScope(pg, scope_->DeclScope());
         compiler::LoopEnvScope envScope(pg, scope_, labelTarget);
         body_->Compile(pg);
     }
@@ -82,11 +82,12 @@ checker::Type *ForInStatement::Check([[maybe_unused]] checker::Checker *checker)
 void ForInStatement::UpdateSelf(const NodeUpdater &cb, binder::Binder *binder)
 {
     auto *loopScope = Scope();
-    auto declScopeCtx = binder::LexicalScope<binder::LoopDeclarationScope>::Enter(binder, loopScope->DeclScope());
+    // auto declScopeCtx = binder::LexicalScope<binder::LoopDeclarationScope>::Enter(binder, loopScope->DeclScope());
+    auto loopCtx = binder::LexicalScope<binder::LoopScope>::Enter(binder, loopScope);
     left_ = std::get<ir::AstNode *>(cb(left_));
     right_ = std::get<ir::AstNode *>(cb(right_))->AsExpression();
 
-    auto loopCtx = binder::LexicalScope<binder::LoopScope>::Enter(binder, loopScope);
+    // auto loopCtx = binder::LexicalScope<binder::LoopScope>::Enter(binder, loopScope);
     body_ = std::get<ir::AstNode *>(cb(body_))->AsStatement();
 }
 

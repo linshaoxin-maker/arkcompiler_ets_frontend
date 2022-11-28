@@ -49,7 +49,6 @@ void LocalVariable::SetLexical(Scope *scope, util::Hotfix *hotfixHelper)
     VariableScope *varScope = scope->EnclosingVariableScope();
     uint32_t slot = 0;
     auto name = Declaration()->Name();
-
     if (hotfixHelper && hotfixHelper->IsScopeValidToPatchLexical(varScope)) {
         slot = hotfixHelper->GetSlotIdFromSymbolTable(std::string(name));
         if (hotfixHelper->IsPatchVar(slot)) {

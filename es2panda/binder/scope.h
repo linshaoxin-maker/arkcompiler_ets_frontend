@@ -679,23 +679,23 @@ class LoopScope : public VariableScope {
 public:
     explicit LoopScope(ArenaAllocator *allocator, Scope *parent) : VariableScope(allocator, parent) {}
 
-    LoopDeclarationScope *DeclScope()
-    {
-        return declScope_;
-    }
+    // LoopDeclarationScope *DeclScope()
+    // {
+    //     return declScope_;
+    // }
 
-    void BindDecls(LoopDeclarationScope *declScope)
-    {
-        declScope_ = declScope;
-        declScope_->loopScope_ = this;
-    }
+    // void BindDecls(LoopDeclarationScope *declScope)
+    // {
+    //     declScope_ = declScope;
+    //     declScope_->loopScope_ = this;
+    // }
 
     ScopeType Type() const override
     {
         return loopType_;
     }
 
-    void ConvertToVariableScope(ArenaAllocator *allocator);
+    void ConvertToVariableScope([[maybe_unused]] ArenaAllocator *allocator);
 
     bool AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                     [[maybe_unused]] ScriptExtension extension) override
@@ -704,8 +704,8 @@ public:
     }
 
 protected:
-    LoopDeclarationScope *declScope_ {};
-    ScopeType loopType_ {ScopeType::LOCAL};
+    // LoopDeclarationScope *declScope_ {};
+    ScopeType loopType_ {ScopeType::LOOP};
 };
 
 class GlobalScope : public FunctionScope {

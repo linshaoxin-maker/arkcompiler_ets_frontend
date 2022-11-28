@@ -26,6 +26,7 @@
 #include <ir/module/exportNamedDeclaration.h>
 #include <ir/module/exportSpecifier.h>
 #include <ir/module/importDeclaration.h>
+#include <ir/statement.h>
 #include <macros.h>
 #include <util/ustring.h>
 
@@ -454,26 +455,29 @@ void LoopDeclarationScope::ConvertToVariableScope(ArenaAllocator *allocator)
     }
 }
 
-void LoopScope::ConvertToVariableScope(ArenaAllocator *allocator)
+void LoopScope::ConvertToVariableScope([[maybe_unused]] ArenaAllocator *allocator)
 {
-    declScope_->ConvertToVariableScope(allocator);
-
-    if (loopType_ != ScopeType::LOCAL) {
-        return;
+    for (auto &[name, var] : bindings_) {
+        var->AddFlag(VariableFlags::INITIALIZED | VariableFlags::PER_ITERATION);
     }
+    // declScope_->ConvertToVariableScope(allocator);
 
-    for (const auto &[_, var] : bindings_) {
-        (void)_;
-        if (var->LexicalBound() && var->Declaration()->IsLetDecl()) {
-            ASSERT(declScope_->NeedLexEnv());
-            loopType_ = ScopeType::LOOP;
-            break;
-        }
-    }
+    // if (loopType_ != ScopeType::LOCAL) {
+    //     return;
+    // }
 
-    if (loopType_ == ScopeType::LOOP) {
-        slotIndex_ = std::max(slotIndex_, declScope_->LexicalSlots());
-    }
+    // for (const auto &[_, var] : bindings_) {
+    //     (void)_;
+    //     if (var->LexicalBound() && var->Declaration()->IsLetDecl()) {
+    //         ASSERT(declScope_->NeedLexEnv());
+    //         loopType_ = ScopeType::LOOP;
+    //         break;
+    //     }
+    // }
+
+    // if (loopType_ == ScopeType::LOOP) {
+    //     slotIndex_ = std::max(slotIndex_, declScope_->LexicalSlots());
+    // }
 }
 
 bool CatchParamScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,

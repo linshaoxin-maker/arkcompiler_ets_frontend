@@ -39,36 +39,72 @@ void ForOfStatement::Dump(ir::AstDumper *dumper) const
     dumper->Add({{"type", "ForOfStatement"}, {"await", isAwait_}, {"left", left_}, {"right", right_}, {"body", body_}});
 }
 
+// void ForOfStatement::Compile(compiler::PandaGen *pg) const
+// {
+//     compiler::LocalRegScope regScope(pg, scope_);
+
+//     right_->Compile(pg);
+
+//     compiler::LabelTarget labelTarget(pg);
+//     auto iterator_type = isAwait_ ? compiler::IteratorType::ASYNC : compiler::IteratorType::SYNC;
+//     compiler::Iterator iterator(pg, this, iterator_type);
+
+//     pg->SetLabel(this, labelTarget.ContinueTarget());
+
+//     iterator.Next();
+//     iterator.Complete();
+//     pg->BranchIfTrue(this, labelTarget.BreakTarget());
+
+//     compiler::VReg value = pg->AllocReg();
+//     iterator.Value();
+//     pg->StoreAccumulator(this, value);
+
+//     auto lref = compiler::LReference::CreateLRef(pg, left_, false);
+
+//     {
+//         compiler::IteratorContext forOfCtx(pg, iterator, labelTarget);
+//         pg->LoadAccumulator(this, value);
+//         lref.SetValue();
+
+//         // compiler::LoopEnvScope declEnvScope(pg, scope_->DeclScope());
+//         compiler::LoopEnvScope envScope(pg, scope_, {});
+//         body_->Compile(pg);
+//     }
+
+//     pg->Branch(this, labelTarget.ContinueTarget());
+//     pg->SetLabel(this, labelTarget.BreakTarget());
+// }
+
 void ForOfStatement::Compile(compiler::PandaGen *pg) const
 {
-    compiler::LocalRegScope declRegScope(pg, scope_->DeclScope()->InitScope());
-
-    right_->Compile(pg);
-
+    compiler::LocalRegScope regScope(pg, scope_);
     compiler::LabelTarget labelTarget(pg);
-    auto iterator_type = isAwait_ ? compiler::IteratorType::ASYNC : compiler::IteratorType::SYNC;
-    compiler::Iterator iterator(pg, this, iterator_type);
-
-    pg->SetLabel(this, labelTarget.ContinueTarget());
-
-    iterator.Next();
-    iterator.Complete();
-    pg->BranchIfTrue(this, labelTarget.BreakTarget());
-
-    compiler::VReg value = pg->AllocReg();
-    iterator.Value();
-    pg->StoreAccumulator(this, value);
-
-    auto lref = compiler::LReference::CreateLRef(pg, left_, false);
-
     {
-        compiler::IteratorContext forOfCtx(pg, iterator, labelTarget);
-        pg->LoadAccumulator(this, value);
-        lref.SetValue();
-
-        compiler::LoopEnvScope declEnvScope(pg, scope_->DeclScope());
         compiler::LoopEnvScope envScope(pg, scope_, {});
-        body_->Compile(pg);
+
+        right_->Compile(pg);
+
+        auto iterator_type = isAwait_ ? compiler::IteratorType::ASYNC : compiler::IteratorType::SYNC;
+        compiler::Iterator iterator(pg, this, iterator_type);
+
+        pg->SetLabel(this, labelTarget.ContinueTarget());
+
+        iterator.Next();
+        iterator.Complete();
+        pg->BranchIfTrue(this, labelTarget.BreakTarget());
+
+        compiler::VReg value = pg->AllocReg();
+        iterator.Value();
+        pg->StoreAccumulator(this, value);
+
+        auto lref = compiler::LReference::CreateLRef(pg, left_, false);
+        {
+            compiler::IteratorContext forOfCtx(pg, iterator, labelTarget);
+            pg->LoadAccumulator(this, value);
+            lref.SetValue();
+
+            body_->Compile(pg);
+        }
     }
 
     pg->Branch(this, labelTarget.ContinueTarget());
@@ -83,11 +119,12 @@ checker::Type *ForOfStatement::Check([[maybe_unused]] checker::Checker *checker)
 void ForOfStatement::UpdateSelf(const NodeUpdater &cb, binder::Binder *binder)
 {
     auto *loopScope = Scope();
-    auto declScopeCtx = binder::LexicalScope<binder::LoopDeclarationScope>::Enter(binder, loopScope->DeclScope());
+    // auto declScopeCtx = binder::LexicalScope<binder::LoopDeclarationScope>::Enter(binder, loopScope->DeclScope());
+    auto loopCtx = binder::LexicalScope<binder::LoopScope>::Enter(binder, loopScope);
     left_ = std::get<ir::AstNode *>(cb(left_));
     right_ = std::get<ir::AstNode *>(cb(right_))->AsExpression();
 
-    auto loopCtx = binder::LexicalScope<binder::LoopScope>::Enter(binder, loopScope);
+    // auto loopCtx = binder::LexicalScope<binder::LoopScope>::Enter(binder, loopScope);
     body_ = std::get<ir::AstNode *>(cb(body_))->AsStatement();
 }
 
