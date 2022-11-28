@@ -295,6 +295,7 @@ Emitter::Emitter(const CompilerContext *context)
     if (context->IsMergeAbc()) {
         auto recordName = context->Binder()->Program()->FormatedRecordName().Mutf8();
         rec_ = new panda::pandasm::Record(recordName.substr(0, recordName.find_last_of('.')), LANG_EXT);
+        rec_->source_file = context->SourceFile();
         SetCommonjsField(context->Binder()->Program()->Kind() == parser::ScriptKind::COMMONJS);
     } else {
         rec_ = nullptr;
