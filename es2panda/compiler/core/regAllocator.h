@@ -93,9 +93,8 @@ private:
                     regsKind->push_back(formatItem.Kind());
                 }
 
-                if (formatItem.IsVReg()) {
+                if (formatItem.IsVReg() && limit_ == 0) {
                     limit_ = 1 << formatItem.Bitwidth();
-                    break;
                 }
             }
 
