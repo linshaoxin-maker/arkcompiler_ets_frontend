@@ -229,17 +229,28 @@ class ArkProgram():
     def check_compile_mod_for_dynamicImport(self, dependency):
         with open(dependency, 'r', encoding='utf-8') as f:
             context_file = f.read()
-            script_mode_list = re.findall(r'(import)\(((.)|(\'(\.\/.*))\'|"(\.\/.*)")\)',
+            script_mode_list = re.findall(r'(import)\(((.)|\'(\.\/.*)\'|"(\.\/.*)")\)',
                                              context_file)
-            module_mode_list = re.findall(r'(export)|(import)(?:\s+)',
+            module_mode_list = re.findall(r'(export)\s+(?:(?:((?:\*|{\S+})\s+from))|({\S+}|{\s+\S+\s+as\s+\S+\s+}|{\s+\S+\s+}|\*\s+as\s+\S+\s+from\s+\'.+\'|let|const|var|function|class|default))|(import\s+\'.+\')',
                                              context_file)
-            compile_as_module = True
+            flags_module_mode_list = re.findall(r'(flags:)\s+(\[module])', context_file)
+
+        compile_as_module = False
         for script_mode in list(set(script_mode_list)):
-            if len(script_mode[1]) != 0:
+            if len(script_mode[3]) != 0:
                 compile_as_module = False
         for module_mode in list(set(module_mode_list)):
-            if len(module_mode[0]) != 0:
+            if (len(module_mode[0]) != 0 and (len(module_mode[1]) != 0 or len(module_mode[2]) != 0)) or len(module_mode[3]) != 0:
                 compile_as_module = True
+        for flags_module_mode in list(set(flags_module_mode_list)):
+            if len(flags_module_mode[0]) != 0 and len(flags_module_mode[1]) != 0:
+                compile_as_module = True
+
+        if not list(set(script_mode_list)) and not list(set(module_mode_list)) and not list(set(flags_module_mode_list)):
+            compile_as_module = False
+
+        if "/language/module-code/" in self.js_file:
+            compile_as_module = True
 
         return compile_as_module
 
@@ -345,7 +356,7 @@ class ArkProgram():
         proto_bin_file = file_name_pre + "." + PROTO_BIN_SUFFIX
         self.abc_file = out_file
         mod_opt_index = 0
-        compile_as_module = True
+        compile_as_module = False
         cmd_args = []
         dependency_cmd_args = []
         frontend_tool = self.ark_frontend_binary
@@ -372,8 +383,7 @@ class ArkProgram():
                 # for testing no-record-name abc
                 cmd_args = ['node', '--expose-gc', frontend_tool, js_file,
                             '-o', out_file]
-            if (file_name in self.module_list or file_name in self.dynamicImport_list) \
-                and compile_as_module:
+            if compile_as_module:
                 cmd_args.insert(mod_opt_index, "-m")
                 self.module = True
         elif self.ark_frontend == ARK_FRONTEND_LIST[1]:
@@ -389,8 +399,7 @@ class ArkProgram():
                             '--function-threads=' +
                             str(self.es2abc_thread_count), '--output',
                             out_file, js_file]
-            if (file_name in self.module_list or file_name in self.dynamicImport_list) \
-                and compile_as_module:
+            if compile_as_module:
                 cmd_args.insert(mod_opt_index, "--module")
                 self.module = True
         # get abc file list from import statement
