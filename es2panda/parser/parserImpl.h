@@ -396,7 +396,7 @@ private:
     ir::AstNode *ParseImportDefaultSpecifier(ArenaVector<ir::AstNode *> *specifiers);
     ir::AstNode *ParseImportSpecifiers(ArenaVector<ir::AstNode *> *specifiers);
     void ValidateAssignmentTarget(ExpressionParseFlags flags, ir::Expression *node);
-    void ValidateLvalueAssignmentTarget(ir::Expression *node);
+    void ValidateLvalueAssignmentTarget(ir::Expression *node) const;
     void ValidateArrowParameterBindings(const ir::Expression *node);
 
     ir::ExportDefaultDeclaration *ParseExportDefaultDeclaration(const lexer::SourcePosition &startLoc,
