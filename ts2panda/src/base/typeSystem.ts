@@ -796,14 +796,12 @@ export class ObjectType extends BaseType {
         if (objNode.members) {
             for (let member of objNode.members) {
                 switch (member.kind) {
-                    case ts.SyntaxKind.MethodSignature: {
+                    case ts.SyntaxKind.MethodSignature:
                         this.fillInMethods(<ts.MethodSignature>member);
                         break;
-                    }
-                    case ts.SyntaxKind.PropertySignature: {
+                    case ts.SyntaxKind.PropertySignature:
                         this.fillInFields(<ts.PropertySignature>member);
                         break;
-                    }
                     default:
                         break;
                 }
@@ -820,7 +818,7 @@ export class ObjectType extends BaseType {
             objLiterals.push(new Literal(LiteralTag.STRING, name));
             this.transferType2Literal(typeIndex, objLiterals);
         });
-        if (this.method.legnth > 0) {
+        if (this.methods.length > 0) {
             objLiterals.push(new Literal(LiteralTag.INTEGER, this.methods.length));
             this.methods.forEach(method => {
                 this.transferType2Literal(method, objLiterals);
