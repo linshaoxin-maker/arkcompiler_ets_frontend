@@ -866,7 +866,7 @@ bool ParserImpl::IsTSNamedTupleMember()
     return isNamedMember;
 }
 
-void ParserImpl::HandleRestType(ir::AstNodeType elementType, bool *hasRestType)
+void ParserImpl::HandleRestType(ir::AstNodeType elementType, bool *hasRestType) const
 {
     if (elementType ==  ir::AstNodeType::TS_ARRAY_TYPE && *hasRestType) {
         ThrowSyntaxError("A rest element cannot follow another rest element");
@@ -3519,7 +3519,7 @@ ir::Expression *ParserImpl::ParseFunctionParameter(bool isDeclare)
     return functionParameter;
 }
 
-void ParserImpl::ValidateLvalueAssignmentTarget(ir::Expression *node)
+void ParserImpl::ValidateLvalueAssignmentTarget(ir::Expression *node) const
 {
     switch (node->Type()) {
         case ir::AstNodeType::IDENTIFIER: {
