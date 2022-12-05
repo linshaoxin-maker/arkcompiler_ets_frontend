@@ -91,7 +91,7 @@ bool Options::CollectInputFilesFromFileList(const std::string &input)
         es2panda::SourceFile src(fileName, recordName, scriptKind);
         src.sourcefile = itemList[3];
         if (compilerOptions_.mergeAbc) {
-            src.pkgName = itemList[4];
+            src.pkgName = itemList[4];  // outputfile
         }
 
         sourceFiles_.push_back(src);
