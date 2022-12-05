@@ -866,7 +866,7 @@ bool ParserImpl::IsTSNamedTupleMember()
     return isNamedMember;
 }
 
-void ParserImpl::HandleRestType(ir::AstNodeType elementType, bool *hasRestType)
+void ParserImpl::HandleRestType(ir::AstNodeType elementType, bool *hasRestType) const
 {
     if (elementType ==  ir::AstNodeType::TS_ARRAY_TYPE && *hasRestType) {
         ThrowSyntaxError("A rest element cannot follow another rest element");
@@ -939,7 +939,6 @@ ir::Expression *ParserImpl::ParseTsTupleElement(ir::TSTupleKind *kind, bool *see
             element = AllocNode<ir::TSOptionalType>(std::move(element));
             element->SetRange({elementStartPos, lexer_->GetToken().End()});
             lexer_->NextToken();  // eat '?'
-            isOptional = true;
             *seenOptional = true;
         } else if (*seenOptional && !isRestType) {
             ThrowSyntaxError("A required element cannot follow an optional element");
@@ -3094,6 +3093,10 @@ ArenaVector<ir::Expression *> ParserImpl::ParseFunctionParams(bool isDeclare,
 
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
     bool seenOptional = false;
+    bool isInMethodDefinition  = context_.Status() & ParserStatus::IN_METHOD_DEFINITION;
+    if (isInMethodDefinition) {
+        ASSERT(paramDecorators != nullptr);
+    }
 
     size_t index = 0;
     while (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
@@ -3519,7 +3522,7 @@ ir::Expression *ParserImpl::ParseFunctionParameter(bool isDeclare)
     return functionParameter;
 }
 
-void ParserImpl::ValidateLvalueAssignmentTarget(ir::Expression *node)
+void ParserImpl::ValidateLvalueAssignmentTarget(ir::Expression *node) const
 {
     switch (node->Type()) {
         case ir::AstNodeType::IDENTIFIER: {
