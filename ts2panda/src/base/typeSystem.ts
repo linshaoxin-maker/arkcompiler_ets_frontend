@@ -802,6 +802,10 @@ export class ObjectType extends BaseType {
                     case ts.SyntaxKind.PropertySignature:
                         this.fillInFields(<ts.PropertySignature>member);
                         break;
+                    case ts.SyntaxKind.CallSignature:
+                    case ts.SyntaxKind.ConstructSignature:
+                        // Considering the complex cases of function overloads, call/construct signature is not recorded
+                    case ts.SyntaxKind.IndexSignature:
                     default:
                         break;
                 }
@@ -813,17 +817,14 @@ export class ObjectType extends BaseType {
         let objTypeBuf = new LiteralBuffer();
         let objLiterals: Array<Literal> = new Array<Literal>();
         objLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.OBJECT));
-        objLiterals.push(new Literal(LiteralTag.INTEGER, this.properties.size));
+        objLiterals.push(new Literal(LiteralTag.INTEGER, this.properties.size + this.methods.length));
         this.properties.forEach((typeIndex, name) => {
             objLiterals.push(new Literal(LiteralTag.STRING, name));
             this.transferType2Literal(typeIndex, objLiterals);
         });
-        if (this.methods.length > 0) {
-            objLiterals.push(new Literal(LiteralTag.INTEGER, this.methods.length));
-            this.methods.forEach(method => {
-                this.transferType2Literal(method, objLiterals);
-            });
-        }
+        this.methods.forEach(method => {
+            this.transferType2Literal(method, objLiterals);
+        });
         objTypeBuf.addLiterals(...objLiterals);
         return objTypeBuf;
     }
