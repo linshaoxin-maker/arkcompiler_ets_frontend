@@ -114,10 +114,6 @@ void CompileFileJob::Run()
         return;
     }
 
-    if (options_->optLevel != 0) {
-        util::Helpers::OptimizeProgram(prog, options_);
-    }
-
     {
         std::unique_lock<std::mutex> lock(global_m_);
         auto *cache = allocator_->New<util::ProgramCache>(src_->hash, prog);

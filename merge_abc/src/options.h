@@ -55,6 +55,11 @@ public:
         return errorMsg_;
     }
 
+    bool IsDumpSizeStat() const
+    {
+        return dumpSizeStat_;
+    }
+
 private:
     panda::PandArgParser *argparser_;
     std::string errorMsg_;
@@ -62,6 +67,7 @@ private:
     std::string protoPathInput_;
     std::string outputFileName_ {"modules.abc"};
     std::string outputFilePath_;
+    bool dumpSizeStat_ {false};
 };
 } // panda::proto
 #endif

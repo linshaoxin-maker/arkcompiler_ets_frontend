@@ -15,6 +15,7 @@
 
 #include <assembly-program.h>
 #include <assembly-emitter.h>
+#include <bytecode_optimizer/optimize_bytecode.h>
 #include <es2panda.h>
 #include <mem/arena_allocator.h>
 #include <mem/pool_manager.h>
@@ -48,10 +49,9 @@ public:
     }
 };
 
-static void GenerateBase64Output(panda::pandasm::Program *prog,
-                                 panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps *mapsp)
+static void GenerateBase64Output(panda::pandasm::Program *prog)
 {
-    auto pandaFile = panda::pandasm::AsmEmitter::Emit(*prog, mapsp);
+    auto pandaFile = panda::pandasm::AsmEmitter::Emit(*prog, nullptr);
     const uint8_t *buffer = pandaFile->GetBase();
     size_t size = pandaFile->GetPtr().GetSize();
     std::string content(reinterpret_cast<const char*>(buffer), size);
@@ -59,25 +59,52 @@ static void GenerateBase64Output(panda::pandasm::Program *prog,
     std::cout << base64Output << std::endl;
 }
 
-static void DumpPandaFileSizeStatistic(std::map<std::string, size_t> &stat)
+static bool EmitProgramWithOpt(const std::string &output, panda::pandasm::Program *prog,
+    const std::unique_ptr<panda::es2panda::aot::Options> &options)
 {
-    size_t totalSize = 0;
-    std::cout << "Panda file size statistic:" << std::endl;
-    constexpr std::array<std::string_view, 2> INFO_STATS = {"instructions_number", "codesize"};
+    const bool emitDebuginfo = options->CompilerOptions().isDebug;
+    bool isOpt = !emitDebuginfo && options->OptLevel() != 0 && options->ScriptKind() != parser::ScriptKind::COMMONJS;
+    std::map<std::string, size_t> stat;
+    std::map<std::string, size_t> *statp = options->SizeStat() ? &stat : nullptr;
+    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps maps{};
+    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps *mapsp = isOpt ? &maps : nullptr;
 
-    for (const auto &[name, size] : stat) {
-        if (find(INFO_STATS.begin(), INFO_STATS.end(), name) != INFO_STATS.end()) {
-            continue;
+    if (isOpt) {
+        if (!panda::pandasm::AsmEmitter::Emit(output, *prog, statp, mapsp, emitDebuginfo)) {
+            std::cerr << "Failed to emit unoptimized single abc file: " << output << std::endl;
+            return false;
         }
-        std::cout << name << " section: " << size << std::endl;
-        totalSize += size;
+        bytecodeopt::OptimizeBytecode(prog, mapsp, output, true);  // true: has memory pool
     }
-
-    for (const auto &name : INFO_STATS) {
-        std::cout << name << ": " << stat.at(std::string(name)) << std::endl;
+    if (!panda::pandasm::AsmEmitter::Emit(output, *prog, statp, mapsp, emitDebuginfo)) {
+        std::cerr << "Failed to emit single abc file: " << output << std::endl;
+        return false;
     }
+    return true;
+}
 
-    std::cout << "total: " << totalSize << std::endl;
+static bool EmitProgramsWithOpt(const std::string &output, const std::vector<panda::pandasm::Program *> &progs,
+    const std::unique_ptr<panda::es2panda::aot::Options> &options)
+{
+    const bool emitDebuginfo = options->CompilerOptions().isDebug;
+    bool isOpt = !emitDebuginfo && options->OptLevel() != 0 && options->ScriptKind() != parser::ScriptKind::COMMONJS;
+    std::map<std::string, size_t> stat;
+    std::map<std::string, size_t> *statp = options->SizeStat() ? &stat : nullptr;
+    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps maps{};
+    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps *mapsp = isOpt ? &maps : nullptr;
+
+    if (isOpt) {
+        if (!panda::pandasm::AsmEmitter::EmitPrograms(output, progs, statp, mapsp, emitDebuginfo)) {
+            std::cerr << "Failed to emit unoptimized abc file: " << output << std::endl;
+            return false;
+        }
+        bytecodeopt::OptimizeBytecodeWithPrograms(progs, mapsp, output, true);  // true: has memory pool
+    }
+    if (!panda::pandasm::AsmEmitter::EmitPrograms(output, progs, statp, mapsp, emitDebuginfo)) {
+        std::cerr << "Failed to emit abc file: " << output << std::endl;
+        return false;
+    }
+    return true;
 }
 
 static bool GenerateMultiProgram(const std::unordered_map<panda::pandasm::Program*, std::string> &programs,
@@ -90,71 +117,48 @@ static bool GenerateMultiProgram(const std::unordered_map<panda::pandasm::Progra
         }
 
         auto output = programs.begin()->second;
-        if (!panda::pandasm::AsmEmitter::EmitPrograms(output, progs, true)) {
-            std::cerr << "Failed to emit merged program, error: " <<
-                panda::pandasm::AsmEmitter::GetLastError() << std::endl;
-                return false;
-        }
-    } else {
-        for (auto &prog: programs) {
-            if (!panda::pandasm::AsmEmitter::Emit(prog.second, *(prog.first), nullptr, nullptr, true)) {
-                std::cout << "Failed to emit single program, error: " <<
-                    panda::pandasm::AsmEmitter::GetLastError() << std::endl;
-                return false;
-            }
+        return EmitProgramsWithOpt(output, progs, options);
+    }
+    for (auto &prog: programs) {
+        if (!EmitProgramWithOpt(prog.second, prog.first, options)) {
+            return false;
         }
     }
     return true;
 }
 
+static void TryDumpAsmAndLiteralBuffer(const std::unordered_map<panda::pandasm::Program*, std::string> &programs,
+    const std::unique_ptr<panda::es2panda::aot::Options> &options)
+{
+    const auto &compilerOptions = options->CompilerOptions();
+    if (!compilerOptions.dumpAsm && !compilerOptions.dumpLiteralBuffer) {
+        return;
+    }
+    for (auto &prog : programs) {
+        if (compilerOptions.dumpAsm) {
+            es2panda::Compiler::DumpAsm(prog.first);
+        }
+
+        if (compilerOptions.dumpLiteralBuffer) {
+            panda::es2panda::util::Dumper::DumpLiterals(prog.first->literalarray_table);
+        }
+    }
+}
+
 static bool GenerateProgram(const std::unordered_map<panda::pandasm::Program*, std::string> &programs,
     const std::unique_ptr<panda::es2panda::aot::Options> &options)
 {
-    int optLevel = options->OptLevel();
-    bool dumpSize = options->SizeStat();
-    const es2panda::CompilerOptions compilerOptions = options->CompilerOptions();
-    if (compilerOptions.dumpAsm || compilerOptions.dumpLiteralBuffer) {
-        for (auto &prog : programs) {
-            if (compilerOptions.dumpAsm) {
-                es2panda::Compiler::DumpAsm(prog.first);
-            }
-
-            if (compilerOptions.dumpLiteralBuffer) {
-                panda::es2panda::util::Dumper::DumpLiterals(prog.first->literalarray_table);
-            }
-        }
-    }
-
+    TryDumpAsmAndLiteralBuffer(programs, options);
     if (programs.size() > 1) {
         return GenerateMultiProgram(programs, options);
-    } else {
-        auto *prog = programs.begin()->first;
-        std::map<std::string, size_t> stat;
-        std::map<std::string, size_t> *statp = optLevel != 0 ? &stat : nullptr;
-        panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps maps {};
-        panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps *mapsp = optLevel != 0 ? &maps : nullptr;
-
-        auto output = programs.begin()->second;
-        if (output.empty()) {
-            GenerateBase64Output(prog, mapsp);
-            return true;
-        }
-
-        if (options->compilerProtoOutput().size() > 0) {
-            panda::proto::ProtobufSnapshotGenerator::GenerateSnapshot(*prog, options->compilerProtoOutput());
-            return true;
-        }
-
-        if (!panda::pandasm::AsmEmitter::Emit(output, *prog, statp, mapsp, true)) {
-            return false;
-        }
-
-        if (dumpSize && optLevel != 0) {
-            DumpPandaFileSizeStatistic(stat);
-        }
     }
-
-    return true;
+    auto *prog = programs.begin()->first;
+    const auto &output = programs.begin()->second;
+    if (output.empty()) {
+        GenerateBase64Output(prog);
+        return true;
+    }
+    return EmitProgramWithOpt(output, prog, options);
 }
 
 static bool GenerateAbcFiles(const std::map<std::string, panda::es2panda::util::ProgramCache*> &programsInfo,
@@ -218,13 +222,13 @@ int Run(int argc, const char **argv)
         expectedProgsCount++;
     }
 
+    if (!GenerateAbcFiles(programsInfo, options, expectedProgsCount)) {
+        return 1;
+    }
+
     if (!options->CacheFile().empty()) {
         proto::ProtobufSnapshotGenerator::UpdateCacheFile(programsInfo, options->CompilerOptions().isDebug,
             options->CacheFile());
-    }
-
-    if (!GenerateAbcFiles(programsInfo, options, expectedProgsCount)) {
-        return 1;
     }
 
     return 0;
