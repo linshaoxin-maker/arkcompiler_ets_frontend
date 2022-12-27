@@ -427,27 +427,4 @@ std::tuple<util::StringView, bool> Helpers::ParamName(ArenaAllocator *allocator,
     return {Helpers::ToStringView(allocator, index), true};
 }
 
-bool Helpers::OptimizeProgram(panda::pandasm::Program * prog, es2panda::CompilerOptions *options)
-{
-    std::map<std::string, size_t> stat;
-    std::map<std::string, size_t> *statp = &stat;
-    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps maps{};
-    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps *mapsp = &maps;
-
-#ifdef PANDA_WITH_BYTECODE_OPTIMIZER
-    const uint32_t COMPONENT_MASK = panda::Logger::Component::ASSEMBLER |
-                                    panda::Logger::Component::BYTECODE_OPTIMIZER |
-                                    panda::Logger::Component::COMPILER;
-    panda::Logger::InitializeStdLogging(panda::Logger::Level::ERROR, COMPONENT_MASK);
-
-    if (!panda::pandasm::AsmEmitter::Emit(options->output, *prog, statp, mapsp, true)) {
-        return false;
-    }
-
-    panda::bytecodeopt::options.SetOptLevel(options->optLevel);
-    panda::bytecodeopt::OptimizeBytecode(prog, mapsp, options->output, true, true);
-#endif
-    return true;
-}
-
 }  // namespace panda::es2panda::util

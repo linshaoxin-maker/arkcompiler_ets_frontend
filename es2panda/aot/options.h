@@ -117,11 +117,6 @@ public:
 
     std::string ExtractContentFromBase64Input(const std::string &inputBase64String);
 
-    const std::string &compilerProtoOutput() const
-    {
-        return compilerProtoOutput_;
-    }
-
     const std::string &CacheFile() const
     {
         return cacheFile_;
@@ -152,7 +147,6 @@ private:
     std::string sourceFile_;
     std::string recordName_;
     std::string errorMsg_;
-    std::string compilerProtoOutput_;
     int optLevel_ {0};
     int functionThreadCount_ {0};
     int fileThreadCount_ {0};

@@ -78,9 +78,11 @@ int Run(int argc, const char **argv)
         proto::ProtobufSnapshotGenerator::GenerateProgram(protoFile, *(programs[idx++]), &allocator);
     }
 
+    std::map<std::string, size_t> stat;
+    std::map<std::string, size_t> *statp = options->IsDumpSizeStat() ? &stat : nullptr;
     std::string outputFileName = outputFilePath.append(panda::os::file::File::GetPathDelim()).
         append(options->outputFileName());
-    if (!panda::pandasm::AsmEmitter::EmitPrograms(outputFileName, programs, true)) {
+    if (!panda::pandasm::AsmEmitter::EmitPrograms(outputFileName, programs, statp, nullptr, true)) {
         return 1;
     }
 

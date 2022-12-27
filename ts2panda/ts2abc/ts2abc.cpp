@@ -28,16 +28,13 @@
 #include "ts2abc_options.h"
 #include "ts2abc.h"
 #include "protobufSnapshotGenerator.h"
-
-#ifdef ENABLE_BYTECODE_OPT
 #include "optimize_bytecode.h"
-#endif
-
 namespace panda::ts2abc {
 // pandasm definitions
 constexpr const auto LANG_EXT = panda::pandasm::extensions::Language::ECMASCRIPT;
 const std::string WHOLE_LINE;
 bool g_isMergeAbc = false;
+bool g_isDumpSizeStat = false;
 bool g_debugModeEnabled = false;
 bool g_debugLogEnabled = false;
 int g_optLevel = 0;
@@ -49,7 +46,6 @@ uint32_t g_literalArrayCount = 0;
 int32_t g_newLiteralArrayIndex = -1;
 static constexpr const char* TSTYPE_ANNO_RECORD_NAME = "_ESTypeAnnotation";
 static constexpr const char* TSTYPE_ANNO_ELEMENT_NAME = "_TypeOfInstruction";
-std::string g_compilerOutputProto = "";
 std::string g_recordName = "";
 std::string g_outputFileName = "";
 bool g_isStartDollar = true;
@@ -944,6 +940,14 @@ static void ParseMergeAbcMode(const Json::Value &rootValue)
     }
 }
 
+static void ParseDumpSizeStat(const Json::Value &rootValue)
+{
+    Logd("---------------parse is_dump_size_stat----------------");
+    if (rootValue.isMember("dump_size_stat") && rootValue["dump_size_stat"].isBool()) {
+        g_isDumpSizeStat = rootValue["dump_size_stat"].asBool();
+    }
+}
+
 static void ParseModuleMode(const Json::Value &rootValue, panda::pandasm::Program &prog)
 {
     Logd("----------------parse module_mode-----------------");
@@ -1050,6 +1054,7 @@ static void ParseOptions(const Json::Value &rootValue, panda::pandasm::Program &
     GenerateESCallTypeAnnotationRecord(prog);
     GenerateESTypeAnnotationRecord(prog);
     ParseMergeAbcMode(rootValue);
+    ParseDumpSizeStat(rootValue);
     ParseModuleMode(rootValue, prog);
     ParseCommonJsModuleMode(rootValue, prog);
     ParseLogEnable(rootValue);
@@ -1412,66 +1417,61 @@ static bool IsStartOrEndPosition(int idx, char *buff, const std::string &data)
     return false;
 }
 
-static bool EmitProgram(const std::string &output, int optLevel, std::string optLogLevel, panda::pandasm::Program &prog)
+static void SetPandaLogger(const std::string &optLogLevel)
 {
+    if (g_optLogLevel == "error") {
+        return;
+    }
+    std::string logLevel = (optLogLevel != "error") ? optLogLevel : g_optLogLevel;
+    panda::Logger::ComponentMask mask;
+    mask.set(panda::Logger::Component::ASSEMBLER);
+    mask.set(panda::Logger::Component::BYTECODE_OPTIMIZER);
+    mask.set(panda::Logger::Component::COMPILER);
+    panda::Logger::InitializeStdLogging(panda::Logger::LevelFromString(logLevel), mask);
+}
+
+static bool EmitProgram(const std::string &output, const panda::ts2abc::Options &options, panda::pandasm::Program &prog)
+{
+    std::string outputPath = output;
     if (g_isOutputProto) {
-        g_compilerOutputProto = output.substr(0, output.find_last_of(".") + 1).append(PROTO_BIN_SUFFIX);
+        outputPath = output.substr(0, output.find_last_of(".") + 1).append(PROTO_BIN_SUFFIX);
     }
 
-#ifdef ENABLE_BYTECODE_OPT
-    if (g_optLevel != static_cast<int>(OptLevel::O_LEVEL0) || optLevel != static_cast<int>(OptLevel::O_LEVEL0)) {
-        optLogLevel = (optLogLevel != "error") ? optLogLevel : g_optLogLevel;
+    int noOpt = static_cast<int>(OptLevel::O_LEVEL0);
+    bool emitDebugInfo = GetDebugModeEnabled();
+    bool isOpt = (g_optLevel != noOpt || options.GetOptLevelArg() != noOpt) && !emitDebugInfo;
+    bool dumpSize = g_isDumpSizeStat || options.GetSizeStatArg();
+    std::map<std::string, size_t> stat;
+    std::map<std::string, size_t> *statp = dumpSize ? &stat : nullptr;
+    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps maps {};
+    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps* mapsp = isOpt ? &maps : nullptr;
 
-        if (g_optLogLevel != "error") {
-            panda::Logger::ComponentMask mask;
-            mask.set(panda::Logger::Component::ASSEMBLER);
-            mask.set(panda::Logger::Component::BYTECODE_OPTIMIZER);
-            mask.set(panda::Logger::Component::COMPILER);
-            panda::Logger::InitializeStdLogging(panda::Logger::LevelFromString(optLogLevel), mask);
-        }
+    SetPandaLogger(options.GetOptLogLevelArg());
 
-        bool emitDebugInfo = true;
-        std::map<std::string, size_t> stat;
-        std::map<std::string, size_t> *statp = nullptr;
-        panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps maps {};
-        panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps* mapsp = &maps;
-
-        if (!panda::pandasm::AsmEmitter::Emit(output.c_str(), prog, statp, mapsp, emitDebugInfo)) {
+    if (isOpt) {
+        if (!panda::pandasm::AsmEmitter::Emit(outputPath, prog, statp, mapsp, emitDebugInfo)) {
             std::cerr << "Failed to emit binary data: " << panda::pandasm::AsmEmitter::GetLastError() << std::endl;
             return false;
         }
+        panda::bytecodeopt::OptimizeBytecode(&prog, mapsp, outputPath, false);  // false: do not have memory pool
+    }
 
-        panda::bytecodeopt::OptimizeBytecode(&prog, mapsp, output.c_str(), true);
-
-        if (g_compilerOutputProto.size() > 0) {
-            panda::proto::ProtobufSnapshotGenerator::GenerateSnapshot(prog, g_compilerOutputProto);
-            return true;
-        }
-
-        if (!panda::pandasm::AsmEmitter::Emit(output.c_str(), prog, statp, mapsp, emitDebugInfo)) {
+    if (g_isOutputProto) {
+        panda::proto::ProtobufSnapshotGenerator::GenerateSnapshot(prog, outputPath);
+    } else {
+        if (!panda::pandasm::AsmEmitter::Emit(outputPath, prog, statp, mapsp, emitDebugInfo)) {
             std::cerr << "Failed to emit binary data: " << panda::pandasm::AsmEmitter::GetLastError() << std::endl;
             return false;
         }
-        return true;
-    }
-#endif
-    if (g_compilerOutputProto.size() > 0) {
-        panda::proto::ProtobufSnapshotGenerator::GenerateSnapshot(prog, g_compilerOutputProto);
-        return true;
     }
 
-    if (!panda::pandasm::AsmEmitter::Emit(output.c_str(), prog, nullptr)) {
-        std::cerr << "Failed to emit binary data: " << panda::pandasm::AsmEmitter::GetLastError() << std::endl;
-        return false;
-    }
-
-    Logd("Successfully generated: %s\n", output.c_str());
+    Logd("Successfully generated: %s\n", outputPath.c_str());
     return true;
 }
 
 static bool EmitAndRestoreProgram(panda::pandasm::Program &prog, panda::ts2abc::Options options)
 {
-    if (!EmitProgram(g_outputFileName, options.GetOptLevelArg(), options.GetOptLogLevelArg(), prog)) {
+    if (!EmitProgram(g_outputFileName, options, prog)) {
         std::cerr << "fail to emit porgram " << g_outputFileName << " in HandleBuffer" << std::endl;
         return false;
     }
@@ -1572,8 +1572,6 @@ bool GenerateProgram([[maybe_unused]] const std::string &data, const std::string
                      panda::ts2abc::Options options)
 {
     bool isParsingFromPipe = options.GetCompileByPipeArg();
-    int optLevel = options.GetOptLevelArg();
-    std::string optLogLevel = options.GetOptLogLevelArg();
     panda::pandasm::Program prog = panda::pandasm::Program();
     prog.lang = panda::pandasm::extensions::Language::ECMASCRIPT;
 
@@ -1591,7 +1589,7 @@ bool GenerateProgram([[maybe_unused]] const std::string &data, const std::string
 
     Logd("parsing done, calling pandasm\n");
 
-    return EmitProgram(output, optLevel, optLogLevel, prog);
+    return EmitProgram(output, options, prog);
 }
 
 bool CompileNpmEntries(const std::string &input, const std::string &output)

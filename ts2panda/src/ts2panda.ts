@@ -231,7 +231,8 @@ export class Ts2Panda {
             "is_dts_file": isGlobalDeclare(),
             "output-proto": CmdOptions.isOutputproto(),
             "record_type": enableRecordType,
-            "input-file": CmdOptions.getCompileFilesList()
+            "input-file": CmdOptions.getCompileFilesList(),
+            "dump_size_stat": CmdOptions.isDumpSizeStat()
         };
         let jsonOpt = JSON.stringify(options, null, 2);
         jsonOpt = "$" + jsonOpt.replace(dollarSign, '#$') + "$";
