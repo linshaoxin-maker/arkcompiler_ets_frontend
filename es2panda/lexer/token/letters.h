@@ -144,6 +144,9 @@ namespace panda::es2panda::lexer {
 
 #define LEX_VERTICAL_TILDE 0x2E2F /* vertical tilde */
 
+#define LEX_CHAR_ROUNDED_SP 0xffffffe3 /* rounded space */
+#define LEX_CHAR_ROUNDED_SP_apart 0xffffff80 /* rounded space apart */
+
 #define LEX_TO_ASCII_LOWERCASE(character) ((character) | LEX_CHAR_SP)
 
 #define LEX_UTF8_2_BYTE_CODE_POINT_MIN (0x80)
