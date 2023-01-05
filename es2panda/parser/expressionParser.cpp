@@ -663,6 +663,9 @@ void ParserImpl::ValidateParenthesizedExpression(ir::Expression *lhsExpression)
     switch (lhsExpression->Type()) {
         case ir::AstNodeType::IDENTIFIER:
         case ir::AstNodeType::MEMBER_EXPRESSION: {
+            if (lhsExpression->IsIdentifier() && lhsExpression->AsIdentifier()->TypeAnnotation() != nullptr) {
+                ThrowSyntaxError("'=>' expected.");
+            }
             break;
         }
         case ir::AstNodeType::ARRAY_EXPRESSION: {
@@ -670,12 +673,18 @@ void ParserImpl::ValidateParenthesizedExpression(ir::Expression *lhsExpression)
             if (info.Fail()) {
                 ThrowSyntaxError(info.msg.Utf8(), info.pos);
             }
+            if (lhsExpression->AsArrayExpression()->TypeAnnotation() != nullptr) {
+                ThrowSyntaxError("'=>' expected.");
+            }
             break;
         }
         case ir::AstNodeType::OBJECT_EXPRESSION: {
             auto info = lhsExpression->AsObjectExpression()->ValidateExpression();
             if (info.Fail()) {
                 ThrowSyntaxError(info.msg.Utf8(), info.pos);
+            }
+            if (lhsExpression->AsObjectExpression()->TypeAnnotation() != nullptr) {
+                ThrowSyntaxError("'=>' expected.");
             }
             break;
         }
@@ -1054,13 +1063,13 @@ ir::Expression *ParserImpl::ParsePrimaryExpression(ExpressionParseFlags flags)
             return regexpNode;
         }
         case lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET: {
-            return ParseArrayExpression(CarryPatternFlags(flags));
+            return ParseArrayExpression(CarryAllowTsParamAndPatternFlags(flags));
         }
         case lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS: {
             return ParseCoverParenthesizedExpressionAndArrowParameterList();
         }
         case lexer::TokenType::PUNCTUATOR_LEFT_BRACE: {
-            return ParseObjectExpression(CarryPatternFlags(flags));
+            return ParseObjectExpression(CarryAllowTsParamAndPatternFlags(flags));
         }
         case lexer::TokenType::KEYW_FUNCTION: {
             return ParseFunctionExpression();
