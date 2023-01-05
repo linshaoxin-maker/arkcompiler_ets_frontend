@@ -699,6 +699,49 @@ void ParserImpl::ValidateParenthesizedExpression(ir::Expression *lhsExpression)
     }
 }
 
+void ParserImpl::ValidateParenthesizedExpressionWithoutArrow(ir::Expression *lhsExpression)
+{
+    switch (lhsExpression->Type()) {
+        case ir::AstNodeType::IDENTIFIER: {
+            if (lhsExpression->AsIdentifier()->TypeAnnotation() != nullptr) {
+                ThrowSyntaxError("'=>' expected.");
+            }
+            break;
+        }
+        case ir::AstNodeType::ARRAY_EXPRESSION: {
+            if (lhsExpression->AsArrayExpression()->TypeAnnotation() != nullptr) {
+                ThrowSyntaxError("'=>' expected.");
+            }
+            break;
+        }
+        case ir::AstNodeType::OBJECT_EXPRESSION: {
+            if (lhsExpression->AsObjectExpression()->TypeAnnotation() != nullptr) {
+                ThrowSyntaxError("'=>' expected.");
+            }
+            break;
+        }
+        case ir::AstNodeType::ASSIGNMENT_EXPRESSION: {
+            ValidateParenthesizedExpressionWithoutArrow(lhsExpression->AsAssignmentExpression()->Left());
+            break;
+        }
+        case ir::AstNodeType::SPREAD_ELEMENT: {
+            if (lhsExpression->AsSpreadElement()->TypeAnnotation() != nullptr) {
+                ThrowSyntaxError("'=>' expected.");
+            }
+            break;
+        }
+        case ir::AstNodeType::REST_ELEMENT: {
+            if (lhsExpression->AsRestElement()->TypeAnnotation() != nullptr) {
+                ThrowSyntaxError("'=>' expected.");
+            }
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+}
+
 ir::Expression *ParserImpl::ParseAssignmentExpression(ir::Expression *lhsExpression, ExpressionParseFlags flags)
 {
     lexer::TokenType tokenType = lexer_->GetToken().Type();
@@ -706,9 +749,15 @@ ir::Expression *ParserImpl::ParseAssignmentExpression(ir::Expression *lhsExpress
         if (lhsExpression->IsSequenceExpression()) {
             for (auto *seq : lhsExpression->AsSequenceExpression()->Sequence()) {
                 ValidateParenthesizedExpression(seq);
+                if (tokenType != lexer::TokenType::PUNCTUATOR_ARROW) {
+                    ValidateParenthesizedExpressionWithoutArrow(seq);
+                }
             }
         } else {
             ValidateParenthesizedExpression(lhsExpression);
+            if (tokenType != lexer::TokenType::PUNCTUATOR_ARROW) {
+                ValidateParenthesizedExpressionWithoutArrow(lhsExpression);
+            }
         }
     }
 
@@ -1059,13 +1108,13 @@ ir::Expression *ParserImpl::ParsePrimaryExpression(ExpressionParseFlags flags)
             return regexpNode;
         }
         case lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET: {
-            return ParseArrayExpression(CarryPatternFlags(flags));
+            return ParseArrayExpression(CarryAllowTsParamAndPatternFlags(flags));
         }
         case lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS: {
             return ParseCoverParenthesizedExpressionAndArrowParameterList();
         }
         case lexer::TokenType::PUNCTUATOR_LEFT_BRACE: {
-            return ParseObjectExpression(CarryPatternFlags(flags));
+            return ParseObjectExpression(CarryAllowTsParamAndPatternFlags(flags));
         }
         case lexer::TokenType::KEYW_FUNCTION: {
             return ParseFunctionExpression();

@@ -1,0 +1,1 @@
+SyntaxError: '=>' expected. [test-arrow-function4.ts:17:15]
