@@ -166,6 +166,8 @@ private:
     inline static bool IsHexDigit(char32_t ch);
     inline static bool IsBinaryDigit(char32_t ch);
     inline static bool IsOctalDigit(char32_t ch);
+    bool SkipWhiteSpacesDefault(uint32_t cp);
+    bool SkipWhiteSpacesBackwardDefault(uint32_t cp);
 
     friend class KeywordsUtil;
     friend class TemplateLiteralParserContext;
