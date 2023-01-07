@@ -63,6 +63,8 @@ public:
     void Complete() const;
     void Value() const;
     void Close(bool abruptCompletion) const;
+    void SyncClose(bool abruptCompletion) const;
+    void AsyncClose(bool abruptCompletion) const;
 
 protected:
     PandaGen *pg_;

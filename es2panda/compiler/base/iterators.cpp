@@ -78,29 +78,7 @@ void Iterator::Value() const
 void Iterator::Close(bool abruptCompletion) const
 {
     if (type_ == IteratorType::SYNC) {
-        RegScope rs(pg_);
-        VReg exception = pg_->AllocReg();
-        VReg innerResult = pg_->AllocReg();
-        Label *noReturn = pg_->AllocLabel();
-
-        if (abruptCompletion) {
-            pg_->StoreAccumulator(node_, exception);
-        }
-
-        // close iterator
-        pg_->LoadObjByName(node_, iterator_, "return");
-        pg_->StoreAccumulator(node_, method_);
-        pg_->LoadConst(node_, Constant::JS_UNDEFINED);
-        pg_->Condition(node_, lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL, method_, noReturn);
-        CallMethod();
-        pg_->StoreAccumulator(node_, innerResult);
-        pg_->ThrowIfNotObject(node_, innerResult);
-
-        pg_->SetLabel(node_, noReturn);
-        if (abruptCompletion) {
-            pg_->LoadAccumulator(node_, exception);
-            pg_->EmitThrow(node_);
-        }
+        SyncClose(abruptCompletion);
         return;
     }
 
@@ -177,6 +155,64 @@ void Iterator::Close(bool abruptCompletion) const
     // 8. If Type(innerResult.[[Value]]) is not Object, throw a TypeError exception.
     pg_->LoadAccumulator(node_, innerResult);
     pg_->ThrowIfNotObject(node_, innerResult);
+}
+
+void Iterator::SyncClose(bool abruptCompletion) const
+{
+    RegScope rs(pg_);
+    VReg completion = pg_->AllocReg();
+    VReg innerResult = pg_->AllocReg();
+    VReg innnerException = pg_->AllocReg();
+    Label *noReturn = pg_->AllocLabel();
+    Label *finishClose = pg_->AllocLabel();
+
+    pg_->StoreAccumulator(node_, completion);
+
+    pg_->StoreConst(node_, innnerException, Constant::JS_HOLE);
+
+    TryContext tryCtx(pg_);
+    const auto &labelSet = tryCtx.LabelSet();
+
+    pg_->SetLabel(node_, labelSet.TryBegin());
+    // 4. Let innerResult be GetMethod(iterator, "return").
+    GetMethod("return");
+
+    // 5. If innerResult.[[Type]] is normal, then
+    pg_->BranchIfUndefined(node_, noReturn);
+
+    // c. Set innerResult to Call(return, iterator).
+    CallMethod();
+    pg_->StoreAccumulator(node_, innerResult);
+    pg_->SetLabel(node_, labelSet.TryEnd());
+    pg_->Branch(node_, labelSet.CatchEnd());
+
+    pg_->SetLabel(node_, labelSet.CatchBegin());
+    pg_->StoreAccumulator(node_, innnerException);
+    pg_->SetLabel(node_, labelSet.CatchEnd());
+
+    // 6. If completion.[[Type]] is throw, return Completion(completion).
+    if (abruptCompletion) {
+        pg_->LoadAccumulator(node_, completion);
+        pg_->EmitThrow(node_);
+    } else {
+        // 7. If innerResult.[[Type]] is throw, return Completion(innerResult).
+        pg_->LoadAccumulator(node_, innnerException);
+        pg_->EmitRethrow(node_);
+    }
+
+    // 8. If Type(innerResult.[[Value]]) is not Object, throw a TypeError exception.
+    pg_->LoadAccumulator(node_, innerResult);
+    pg_->ThrowIfNotObject(node_, innerResult);
+    pg_->Branch(node_, finishClose);
+
+    pg_->SetLabel(node_, noReturn);
+    // b. If return is undefined, return Completion(completion).
+    pg_->LoadAccumulator(node_, completion);
+    if (abruptCompletion) {
+        pg_->EmitThrow(node_);
+    }
+
+    pg_->SetLabel(node_, finishClose);
 }
 
 DestructuringIterator::DestructuringIterator(PandaGen *pg, const ir::AstNode *node)
