@@ -3094,6 +3094,10 @@ ArenaVector<ir::Expression *> ParserImpl::ParseFunctionParams(bool isDeclare,
 
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
     bool seenOptional = false;
+    bool isInMethodDefinition  = context_.Status() & ParserStatus::IN_METHOD_DEFINITION;
+    if (isInMethodDefinition) {
+        ASSERT(paramDecorators != nullptr);
+    }
 
     size_t index = 0;
     while (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {

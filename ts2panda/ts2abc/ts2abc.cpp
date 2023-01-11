@@ -1550,7 +1550,7 @@ static bool HandleBuffer(const int &ret, char *buff, std::string &data, panda::p
     return true;
 }
 
-static bool ReadFromPipe(panda::pandasm::Program &prog, panda::ts2abc::Options options)
+static bool ReadFromPipe(panda::pandasm::Program &prog, const panda::ts2abc::Options &options)
 {
     std::string data;
     const size_t bufSize = 4096;
