@@ -1233,6 +1233,17 @@ void Lexer::SkipWhiteSpaces()
         auto cp = Iterator().Peek();
 
         switch (cp) {
+            case LEX_CHAR_ROUNDED_SP: {
+                Iterator().Forward(1);
+                if (Iterator().Peek() == LEX_CHAR_ROUNDED_SP_apart) {
+                    Iterator().Forward(1);
+                    if (Iterator().Peek() == LEX_CHAR_ROUNDED_SP_apart) {
+                        Iterator().Forward(1);
+                        cp = Iterator().Peek();
+                    }
+                }
+                continue;
+            }
             case LEX_CHAR_CR: {
                 Iterator().Forward(1);
 
