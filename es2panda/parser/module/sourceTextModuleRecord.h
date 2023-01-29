@@ -52,13 +52,14 @@ public:
         util::StringView importName_;
         const ir::Identifier *localId_;
         const ir::Identifier *importId_;
+        bool typeFlag_;
 
         ImportEntry(const util::StringView localName, const util::StringView importName, int moduleRequestIdx,
                     const ir::Identifier *localId, const ir::Identifier *importId)
             : moduleRequestIdx_(moduleRequestIdx), localName_(localName), importName_(importName),
-              localId_(localId), importId_(importId) {}
+              localId_(localId), importId_(importId), typeFlag_(true) {}
         ImportEntry(const util::StringView localName, int moduleRequestIdx, const ir::Identifier *localId)
-            : moduleRequestIdx_(moduleRequestIdx), localName_(localName), localId_(localId) {}
+            : moduleRequestIdx_(moduleRequestIdx), localName_(localName), localId_(localId), typeFlag_(true) {}
     };
 
     struct ExportEntry {
@@ -98,6 +99,9 @@ public:
     void CheckImplicitIndirectExport(ImportEntry *importEntry);
 
     void AssignIndexToModuleVariable(binder::ModuleScope *moduleScope);
+
+    void RemoveImportEntryTypeFlag(const util::StringView source);
+    void RemoveImportEntry();
 
     using ModuleRequestList = ArenaVector<util::StringView>;
     using ModuleRequestMap = ArenaMap<const util::StringView, uint32_t>;

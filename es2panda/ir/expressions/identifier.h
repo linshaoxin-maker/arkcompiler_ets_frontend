@@ -39,6 +39,7 @@ enum class IdentifierFlags {
     OPTIONAL = 1 << 0,
     REFERENCE = 1 << 1,
     TDZ = 1 << 2,
+    TYPE = 1 << 3,
 };
 
 DEFINE_BITOPS(IdentifierFlags)
@@ -99,6 +100,16 @@ public:
     void SetReference()
     {
         flags_ |= IdentifierFlags::REFERENCE;
+    }
+
+    bool IsType() const
+    {
+        return (flags_ & IdentifierFlags::TYPE) != 0;
+    }
+
+    void SetType()
+    {
+        flags_ |= IdentifierFlags::TYPE;
     }
 
     const std::vector<binder::Variable *> &TSVariables() const
