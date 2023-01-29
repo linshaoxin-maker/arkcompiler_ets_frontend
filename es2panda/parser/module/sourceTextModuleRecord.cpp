@@ -187,4 +187,25 @@ namespace panda::es2panda::parser {
             (*index)++;
         }
     }
+
+    void SourceTextModuleRecord::RemoveImportEntryTypeFlag(const util::StringView name)
+    {
+        ASSERT(!name.Empty());
+        auto regularImport = regularImportEntries_.find(name);
+        if (regularImport != regularImportEntries_.end()) {
+            regularImport->second->typeFlag_ = false;
+        }
+    }
+
+    void SourceTextModuleRecord::RemoveImportEntry()
+    {
+        for (auto iter = regularImportEntries_.begin(); iter != regularImportEntries_.end();)
+        {
+            if (iter->second->typeFlag_) {
+                iter = regularImportEntries_.erase(iter);
+            } else {
+                iter++;
+            }
+        }
+    }
 } // namespace panda::es2panda::parser
