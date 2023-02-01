@@ -231,6 +231,7 @@ private:
     bool CheckTopStatementsForRequiredDeclare(const ArenaVector<ir::Statement *> &statements);
     static ExpressionParseFlags CarryExpressionParserFlag(ExpressionParseFlags origin, ExpressionParseFlags carry);
     static ExpressionParseFlags CarryPatternFlags(ExpressionParseFlags flags);
+    static ExpressionParseFlags CarryAllowTsParamAndPatternFlags(ExpressionParseFlags flags);
     bool CurrentIsBasicType();
     bool CurrentLiteralIsBasicType();
     static bool CheckTypeNameIsReserved(const util::StringView &paramName);
@@ -238,8 +239,8 @@ private:
     static bool IsMemberExpressionsAreSame(const ir::MemberExpression *mExp1, const ir::MemberExpression *mExp2);
     static bool IsMethodDefinitionsAreSame(const ir::MethodDefinition *property, ir::MethodDefinition *overload);
     ir::TSTypeReference *ParseTsConstExpression();
-    ir::Expression *ParseTsTypeOperatorOrTypeReference();
-    ir::Expression *ParseTsIdentifierReference();
+    ir::Expression *ParseTsTypeOperatorOrTypeReference(bool throwError);
+    ir::Expression *ParseTsIdentifierReference(TypeAnnotationParsingOptions options);
     ir::Expression *ParseTsBasicType();
     ir::TSIntersectionType *ParseTsIntersectionType(ir::Expression *type, bool inUnion, bool restrictExtends);
     ir::TSUnionType *ParseTsUnionType(ir::Expression *type, bool restrictExtends);
@@ -257,9 +258,9 @@ private:
     ir::Expression *ParseTsTypeLiteralOrInterfaceMember();
     ArenaVector<ir::Expression *> ParseTsTypeLiteralOrInterface();
     ir::Expression *ParseTsThisType(bool throwError);
-    ir::Expression *ParseTsIndexAccessType(ir::Expression *typeName);
+    ir::Expression *ParseTsIndexAccessType(ir::Expression *typeName, bool throwError);
     ir::Expression *ParseTsQualifiedReference(ir::Expression *typeName);
-    ir::Expression *ParseTsTypeReferenceOrQuery(bool parseQuery = false);
+    ir::Expression *ParseTsTypeReferenceOrQuery(TypeAnnotationParsingOptions options, bool parseQuery = false);
     bool IsTSNamedTupleMember();
     void HandleRestType(ir::AstNodeType elementType, bool *hasRestType) const;
     ir::Expression *ParseTsTupleElement(ir::TSTupleKind *kind, bool *seenOptional, bool *hasRestType);
@@ -267,7 +268,8 @@ private:
     ir::TSImportType *ParseTsImportType(const lexer::SourcePosition &startLoc, bool isTypeof = false);
     ir::Expression *ParseTsTypeAnnotation(TypeAnnotationParsingOptions *options);
     ir::Expression *ParseTsTypeLiteralOrTsMappedType(ir::Expression *typeAnnotation);
-    ir::Expression *ParseTsTypeReferenceOrTsTypePredicate(ir::Expression *typeAnnotation, bool canBeTsTypePredicate);
+    ir::Expression *ParseTsTypeReferenceOrTsTypePredicate(ir::Expression *typeAnnotation, bool canBeTsTypePredicate,
+                                                          bool throwError);
     ir::Expression *ParseTsThisTypeOrTsTypePredicate(ir::Expression *typeAnnotation, bool canBeTsTypePredicate,
                                                      bool throwError);
     ir::Expression *ParseTsTemplateLiteralType();

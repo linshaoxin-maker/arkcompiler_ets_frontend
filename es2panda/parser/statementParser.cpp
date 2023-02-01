@@ -663,7 +663,7 @@ ir::ClassDeclaration *ParserImpl::ParseClassDeclaration(bool idRequired, ArenaVe
     ASSERT(!className.Empty());
 
     binder::DeclarationFlags flag = isExported ? binder::DeclarationFlags::EXPORT : binder::DeclarationFlags::NONE;
-    auto *decl = Binder()->AddDecl<binder::ClassDecl>(location, flag, className);
+    auto *decl = Binder()->AddDecl<binder::ClassDecl>(location, flag, className, classDefinition->Declare());
 
     decl->BindNode(classDefinition);
 
@@ -1170,13 +1170,13 @@ ir::FunctionDeclaration *ParserImpl::ParseFunctionDeclaration(bool canBeAnonymou
     if (Extension() == ScriptExtension::TS) {
         const auto &bindings = Binder()->GetScope()->Bindings();
         auto res = bindings.find(ident);
+        binder::Decl *currentDecl = res == bindings.end() ? nullptr : res->second->Declaration();
         binder::FunctionDecl *decl {};
 
-        if (res == bindings.end()) {
+        if (res == bindings.end() ||
+            (currentDecl->IsClassDecl() && currentDecl->AsClassDecl()->IsDeclare())) {
             decl = Binder()->AddDecl<binder::FunctionDecl>(identNode->Start(), declflag, Allocator(), ident, func);
         } else {
-            binder::Decl *currentDecl = res->second->Declaration();
-
             if (!currentDecl->IsFunctionDecl()) {
                 Binder()->ThrowRedeclaration(startLoc, currentDecl->Name());
             }
