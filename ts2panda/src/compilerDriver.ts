@@ -53,6 +53,7 @@ import {
     IRNode
 } from "./irnodes";
 import { LexicalBinder } from "./lexicalBinder";
+import { RecordTime } from "./recoredTime";
 
 export class PendingCompilationUnit {
     constructor(
@@ -182,9 +183,12 @@ export class CompilerDriver {
         }
         Label.resetGlobalId();
 
+        RecordTime.recordStartTime = new Date().getTime();
         let recorder = this.compilePrologue(node, true, false);
         let lexBinder = new LexicalBinder(node, recorder);
         lexBinder.resolve();
+        RecordTime.recordEndTime = new Date().getTime();
+        RecordTime.recordTotalCostTime += RecordTime.recordEndTime - RecordTime.recordStartTime;
 
         // initiate ts2abc
         if (!CmdOptions.isAssemblyMode()) {
@@ -196,16 +200,20 @@ export class CompilerDriver {
             let ts2abcProc = this.getTs2abcProcess();
 
             try {
+                RecordTime.compileTs2abcStartTime = new Date().getTime();
                 if (CmdOptions.isMergeAbc()) {
                     // must keep [dumpRecord] at first
                     Ts2Panda.dumpRecord(ts2abcProc, this.recordName);
                 }
                 Ts2Panda.dumpCmdOptions(ts2abcProc);
 
+                RecordTime.compileCompliationUnitStartTime = new Date().getTime();
                 for (let i = 0; i < this.pendingCompilationUnits.length; i++) {
                     let unit: PendingCompilationUnit = this.pendingCompilationUnits[i];
                     this.compileImpl(unit.decl, unit.scope, unit.internalName, recorder);
                 }
+                RecordTime.compileCompliationUnitEndTime = new Date().getTime();
+                RecordTime.compileCompliationTotalCostTime += RecordTime.compileCompliationUnitEndTime - RecordTime.compileCompliationUnitStartTime;
 
                 Ts2Panda.dumpStringsArray(ts2abcProc);
                 Ts2Panda.dumpConstantPool(ts2abcProc);
@@ -217,6 +225,8 @@ export class CompilerDriver {
                 } else {
                     terminateWritePipe(ts2abcProc);
                 }
+                RecordTime.compileTs2abcEndTime = new Date().getTime();
+                RecordTime.compileTs2abcTotalCostTime += RecordTime.compileTs2abcEndTime - RecordTime.compileTs2abcStartTime;
 
                 if (CmdOptions.isEnableDebugLog()) {
                     let jsonFileName = this.fileName.substring(0, this.fileName.lastIndexOf(".")).concat(".json");
