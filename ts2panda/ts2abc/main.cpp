@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <chrono>
 
 #include "assembly-type.h"
 #include "assembly-program.h"
@@ -19,6 +20,8 @@
 #include "json/json.h"
 #include "ts2abc_options.h"
 #include "ts2abc.h"
+
+uint32_t js2abcCostTime = 0U;
 
 int Preprocess(const panda::ts2abc::Options &options, const panda::PandArgParser &argParser, std::string &output,
     std::string &data, const std::string &usage)
@@ -75,6 +78,7 @@ bool HandleNpmEntries(const panda::ts2abc::Options &options, const panda::PandAr
 
 int main(int argc, const char *argv[])
 {
+    auto startTime = std::chrono::steady_clock::now();
     panda::PandArgParser argParser;
     panda::Span<const char *> sp(argv, argc);
     panda::ts2abc::Options options(sp[0]);
@@ -123,6 +127,9 @@ int main(int argc, const char *argv[])
             std::cerr << "call GenerateProgramsFromPipe fail" << std::endl;
             return panda::ts2abc::RETURN_FAILED;
         }
+        auto multiEndTime = std::chrono::steady_clock::now();
+        js2abcCostTime += std::chrono::duration_cast<std::chrono::milliseconds>(multiEndTime - startTime).count();
+        std::cerr << "js2abc cost time is: " << js2abcCostTime << " ms" << std::endl;
         return panda::ts2abc::RETURN_SUCCESS;
     }
 
@@ -138,5 +145,8 @@ int main(int argc, const char *argv[])
         return panda::ts2abc::RETURN_FAILED;
     }
 
+    auto endTime = std::chrono::steady_clock::now();
+    js2abcCostTime += std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+    std::cerr << "---js2abc cost time is: " << js2abcCostTime << " ms" << std::endl;
     return panda::ts2abc::RETURN_SUCCESS;
 }

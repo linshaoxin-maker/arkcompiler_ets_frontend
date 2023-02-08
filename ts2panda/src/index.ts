@@ -235,15 +235,15 @@ function main(fileNames: string[], options: ts.CompilerOptions, inputJsonFiles?:
         diag.printDiagnostic(diagnostic);
     });
 
-    console.error(`${RecordTime.workFileName} Before parse cost time is: ${RecordTime.beforeTotalCostTime} ms`);
-    console.error(`${RecordTime.workFileName} After parse cost time is: ${RecordTime.afterTotalCostTime} ms`);
-    console.error(`${RecordTime.workFileName} Prepare compile cost time is: ${RecordTime.prepareCompileTotalCostTime} ms`);
-    console.error(`${RecordTime.workFileName} Record cost time is: ${RecordTime.recordTotalCostTime} ms`);
-    console.error(`${RecordTime.workFileName} Compile compliation cost time is: ${RecordTime.compileCompliationTotalCostTime} ms`);
-    console.error(`${RecordTime.workFileName} Compile ts2abc cost time is: ${RecordTime.compileTs2abcTotalCostTime} ms`);
-    console.error(`${RecordTime.workFileName} Compile pure ts2abc cost time is: ${RecordTime.compileTs2abcTotalCostTime - RecordTime.compileCompliationTotalCostTime} ms`);
-    console.error(`${RecordTime.workFileName} Compile json cost time is: ${RecordTime.compileJsonTotalCostTime} ms`);
-    console.error(`${RecordTime.workFileName} Compile abc cost time is: ${RecordTime.compileAbcTotalCostTime} ms`);
+    console.error(`---${RecordTime.workFileName} Before parse cost time is: ${RecordTime.beforeTotalCostTime} ms`);
+    console.error(`--${RecordTime.workFileName} After parse cost time is: ${RecordTime.afterTotalCostTime} ms`);
+    console.error(`------${RecordTime.workFileName} Prepare compile cost time is: ${RecordTime.prepareCompileTotalCostTime} ms`);
+    console.error(`------${RecordTime.workFileName} Compile abc cost time is: ${RecordTime.compileAbcTotalCostTime} ms`);
+    console.error(`---------${RecordTime.workFileName} Record cost time is: ${RecordTime.recordTotalCostTime} ms`);
+    console.error(`---------${RecordTime.workFileName} Compile ts2abc cost time is: ${RecordTime.compileTs2abcTotalCostTime} ms`);
+    console.error(`---------${RecordTime.workFileName} Compile compliation cost time is: ${RecordTime.compileCompliationTotalCostTime} ms`);
+    console.error(`---------${RecordTime.workFileName} Compile pure ts2abc cost time is: ${RecordTime.compileTs2abcTotalCostTime - RecordTime.compileCompliationTotalCostTime} ms`);
+    console.error(`---${RecordTime.workFileName} Compile json cost time is: ${RecordTime.compileJsonTotalCostTime} ms`);
 }
 
 function transformSourcefilesList(parsed: ts.ParsedCommandLine | undefined) {
