@@ -84,8 +84,8 @@ ohos_executable("ts2abc") {
   ]
 
   deps = [
+    "$ark_third_party_root/bounds_checking_function:libsec_shared",
     "//arkcompiler/ets_frontend/merge_abc:panda_assembly_proto_static",
-    sdk_libc_secshared_dep,
   ]
 
   if (is_linux || is_mingw || is_mac) {
