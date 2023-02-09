@@ -86,6 +86,7 @@ ark_gen_file("ts2abc_irnodes_ts") {
 action("npm_run_build") {
   visibility = [ ":*" ]
   deps = [
+    "$ark_third_party_root/bounds_checking_function:libsec_shared",
     "$ts2abc_root:config_files",
     "$ts2abc_root:node_modules",
     "$ts2abc_root:ts2abc_diagnostic_ts",
