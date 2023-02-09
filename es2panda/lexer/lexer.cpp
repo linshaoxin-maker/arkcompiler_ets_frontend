@@ -1227,12 +1227,98 @@ void Lexer::CheckFutureReservedKeyword(TokenType keywordType)
     ThrowError("Unexpected strict mode reserved keyword");
 }
 
+bool Lexer::SkipWhiteSpacesBackwardDefault(uint32_t cp)
+{
+    Iterator().Backward(1);
+    cp = Iterator().Peek();
+
+    if (!SkipWhiteSpacesDefault(cp)) {
+        return true;
+    }
+
+    return false;
+}
+
+bool Lexer::SkipWhiteSpacesDefault(uint32_t cp)
+{
+    if (cp < LEX_ASCII_MAX_BITS) {
+        return false;
+    }
+
+    size_t cpSize {};
+    cp = Iterator().PeekCp(&cpSize);
+
+    switch (cp) {
+        case LEX_CHAR_LS:
+        case LEX_CHAR_PS: {
+            pos_.nextTokenLine++;
+            [[fallthrough]];
+        }
+        case LEX_CHAR_NBSP:
+        case LEX_CHAR_ZWNBSP: {
+            Iterator().Forward(cpSize);
+            return true;
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
 void Lexer::SkipWhiteSpaces()
 {
     while (true) {
         auto cp = Iterator().Peek();
 
         switch (cp) {
+            case LEX_CHAR_NEXT_LINE_APART1: {
+                Iterator().Forward(1);
+                cp = Iterator().Peek();
+                if (cp == LEX_CHAR_NEXT_LINE_APART2) {
+                    Iterator().Forward(1);
+                    cp = Iterator().Peek();
+                    continue;
+                } else {
+                    if (SkipWhiteSpacesBackwardDefault(cp)){
+                        return;
+                    }
+                }
+                break;
+            }
+            case LEX_CHAR_ROUNDED_SP_APART1: {
+                Iterator().Forward(1);
+                cp = Iterator().Peek();
+                if (cp == LEX_CHAR_ROUNDED_SP_APART2) {
+                    Iterator().Forward(1);
+                    cp = Iterator().Peek();
+                    if (cp == LEX_CHAR_ROUNDED_SP_APART3) {
+                        Iterator().Forward(1);
+                        cp = Iterator().Peek();
+                        continue;
+                    } else {
+                        if (SkipWhiteSpacesBackwardDefault(cp)){
+                            return;
+                        }
+                    }
+                } else {
+                    if (SkipWhiteSpacesBackwardDefault(cp)){
+                        return;
+                    }
+                }
+                break;
+            }
+            case LEX_CHAR_HASH_MARK: {
+                Iterator().Forward(1);
+                cp = Iterator().Peek();
+                if (cp == LEX_CHAR_EXCLAMATION) {
+                    Iterator().Forward(1);
+                    SkipSingleLineComment();
+                    continue;
+                }
+
+                Iterator().Backward(1);
+                return;
+            }
             case LEX_CHAR_CR: {
                 Iterator().Forward(1);
 
@@ -1272,27 +1358,10 @@ void Lexer::SkipWhiteSpaces()
                 return;
             }
             default: {
-                if (cp < LEX_ASCII_MAX_BITS) {
+                if (SkipWhiteSpacesDefault(cp)) {
+                    continue;
+                } else {
                     return;
-                }
-
-                size_t cpSize {};
-                cp = Iterator().PeekCp(&cpSize);
-
-                switch (cp) {
-                    case LEX_CHAR_LS:
-                    case LEX_CHAR_PS: {
-                        pos_.nextTokenLine++;
-                        [[fallthrough]];
-                    }
-                    case LEX_CHAR_NBSP:
-                    case LEX_CHAR_ZWNBSP: {
-                        Iterator().Forward(cpSize);
-                        continue;
-                    }
-                    default: {
-                        return;
-                    }
                 }
             }
         }
