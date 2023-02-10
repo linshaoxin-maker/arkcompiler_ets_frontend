@@ -19,6 +19,7 @@
 #include "options.h"
 
 #include "mergeProgram.h"
+#include "protobufSnapshotGenerator.h"
 
 #if defined(PANDA_TARGET_WINDOWS)
 #include <io.h>
@@ -132,7 +133,8 @@ bool MergeProgram::CollectProtoFiles(std::string &input, const std::string &prot
         return false;
     }
     if (isList) {
-        std::ifstream in(inputAbs.Value());
+        std::fstream in;
+        GetFileStream(inputAbs.Value(), std::ios::in, in);
         std::string line;
         constexpr const char CARRIAGE = '\r';
         while (getline(in, line)) {

@@ -1631,7 +1631,8 @@ bool CompileNpmEntries(const std::string &input, const std::string &output)
     }
 
     std::stringstream ss;
-    std::ifstream inputStream(input);
+    std::fstream inputStream;
+    panda::proto::GetFileStream(input, std::ios::in | std::ios::binary, inputStream);
     if (inputStream.fail()) {
         std::cerr << "Failed to read file to buffer: " << input << std::endl;
         return false;
@@ -1676,8 +1677,8 @@ bool HandleJsonFile(const std::string &input, std::string &data)
         return false;
     }
 
-    std::ifstream file;
-    file.open(fpath);
+    std::fstream file;
+    panda::proto::GetFileStream(fpath, std::ios::in | std::ios::binary, file);
     if (file.fail()) {
         std::cerr << "failed to open:" << fpath << std::endl;
         return false;

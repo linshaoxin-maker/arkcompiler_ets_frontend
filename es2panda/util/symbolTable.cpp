@@ -17,6 +17,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <util/helpers.h>
 
 namespace panda::es2panda::util {
 const std::string SymbolTable::FIRST_LEVEL_SEPERATOR = "|";
@@ -33,7 +34,7 @@ bool SymbolTable::Initialize()
 
     if (!dumpSymbolTable_.empty()) {
         std::fstream fs;
-        fs.open(dumpSymbolTable_, std::ios_base::out | std::ios_base::trunc);
+        util::Helpers::GetFileStream(dumpSymbolTable_, std::ios_base::out | std::ios_base::trunc, fs);
         if (!fs.is_open()) {
             std::cerr << "Failed to create output symbol table: " << dumpSymbolTable_ << std::endl;
             return false;
@@ -46,9 +47,9 @@ bool SymbolTable::Initialize()
 
 bool SymbolTable::ReadSymbolTable(const std::string &symbolTable)
 {
-    std::ifstream ifs;
     std::string line;
-    ifs.open(symbolTable.c_str());
+    std::fstream ifs;
+    util::Helpers::GetFileStream(symbolTable.c_str(), std::ios::in, ifs);
     if (!ifs.is_open()) {
         std::cerr << "Failed to open symbol table: " << symbolTable << std::endl;
         return false;
@@ -92,7 +93,7 @@ void SymbolTable::WriteSymbolTable(const std::string &content)
 {
     std::lock_guard<std::mutex> lock(m_);
     std::fstream fs;
-    fs.open(dumpSymbolTable_, std::ios_base::app | std::ios_base::in);
+    util::Helpers::GetFileStream(dumpSymbolTable_, std::ios_base::app | std::ios_base::in, fs);
     if (fs.is_open()) {
         fs << content;
         fs.close();

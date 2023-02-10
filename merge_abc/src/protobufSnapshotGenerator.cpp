@@ -18,7 +18,7 @@
 #include "protobufSnapshotGenerator.h"
 
 namespace panda::proto {
-static void GetFileStream(const std::string &path, std::ios::openmode mode, std::fstream &fs)
+void GetFileStream(const std::string &path, std::ios::openmode mode, std::fstream &fs)
 {
 #ifdef PANDA_TARGET_WINDOWS
     if (path.length() < _MAX_PATH) {

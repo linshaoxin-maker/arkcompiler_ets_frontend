@@ -58,9 +58,9 @@ static std::vector<std::string> GetStringItems(std::string &input, const std::st
 
 bool Options::CollectInputFilesFromFileList(const std::string &input)
 {
-    std::ifstream ifs;
     std::string line;
-    ifs.open(input.c_str());
+    std::fstream ifs;
+    util::Helpers::GetFileStream(input.c_str(), std::ios::in, ifs);
     if (!ifs.is_open()) {
         std::cerr << "Failed to open source list: " << input << std::endl;
         return false;

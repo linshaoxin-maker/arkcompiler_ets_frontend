@@ -147,7 +147,8 @@ void Compiler::DumpAsm(const panda::pandasm::Program *prog)
 
 static bool ReadFileToBuffer(const std::string &file, std::stringstream &ss)
 {
-    std::ifstream inputStream(file, std::ios::binary);
+    std::fstream inputStream;
+    util::Helpers::GetFileStream(file, std::ios::in | std::ios::binary, inputStream);
     if (inputStream.fail()) {
         std::cerr << "Failed to read file to buffer: " << file << std::endl;
         return false;
