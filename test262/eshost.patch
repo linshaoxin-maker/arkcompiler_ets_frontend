@@ -1,13 +1,13 @@
-From 5a251716800252529f80e72a06eb5c84fab6e553 Mon Sep 17 00:00:00 2001
-Date: Thu, 17 Nov 2022 15:20:06 +0800
-Subject: [PATCH] Fix_eshost
+From e72bbf143755a9ccb1c662d1912e5b70edf83d23 Mon Sep 17 00:00:00 2001
+Date: Thu, 9 Feb 2023 20:01:37 +0800
+Subject: [PATCH] eshost.patch
 
 ---
  lib/Agent.js        |  1 +
- lib/ConsoleAgent.js | 35 +++++++++---------
+ lib/ConsoleAgent.js | 52 ++++++++++++++++++---------
  lib/agents/panda.js | 88 +++++++++++++++++++++++++++++++++++++++++++++
  runtimes/panda.js   | 44 +++++++++++++++++++++++
- 4 files changed, 151 insertions(+), 17 deletions(-)
+ 4 files changed, 168 insertions(+), 17 deletions(-)
  create mode 100644 lib/agents/panda.js
  create mode 100644 runtimes/panda.js
 
@@ -20,26 +20,26 @@ index edcdf0e..7e655c5 100644
      this.transform = options.transform || (x => x);
      this.out = options.out || '';
 +    this.test262Dir = options.test262Dir;
-
+ 
      if (typeof this.args === 'string') {
        this.args = this.args.includes(' ') ?
 diff --git a/lib/ConsoleAgent.js b/lib/ConsoleAgent.js
-index 947c1db..cc194c8 100644
+index 947c1db..f5dd241 100644
 --- a/lib/ConsoleAgent.js
 +++ b/lib/ConsoleAgent.js
 @@ -19,7 +19,7 @@ const {
  const cpSym = Symbol.for('cp');
  const tpSym = Symbol.for('tp');
-
+ 
 -function generateTempFileName() {
 +function generateTempFileName(file) {
    const now = Date.now();
    return `f-${now}-${process.pid}-${(Math.random() * 0x100000000 + 1).toString(36)}.js`;
  }
-@@ -47,9 +47,23 @@ class ConsoleAgent extends Agent {
+@@ -47,9 +47,29 @@ class ConsoleAgent extends Agent {
      }
    }
-
+ 
 +  genTempFileName(code){
 +    let file = code.file;
 +    let scenario = code.scenario === 'strict mode' ? '' : code.scenario;
@@ -58,14 +58,20 @@ index 947c1db..cc194c8 100644
 +
 +    let tempfile = this.genTempFileName(code);
 +    let tempfilebase = path.basename(tempfile);
++    let tempfilepre = tempfilebase.substring(0,tempfilebase.indexOf('.js'));
 +    let deptemppath = tempfile.substring(0,tempfile.indexOf(tempfilebase));
++
++    if (tempfile.indexOf("expressions/dynamic-import/")) {
++      deptemppath = deptemppath + tempfilepre +"/";
++      tempfile = deptemppath + tempfilebase;
++    }
  
      let isExpectingRawSource = false;
      let hasDependencies = false;
-@@ -57,11 +71,6 @@ class ConsoleAgent extends Agent {
+@@ -57,11 +77,6 @@ class ConsoleAgent extends Agent {
      const sources = [];
      const dependencies = [];
-
+ 
 -    if (this.out) {
 -      tempfile = tempfile.replace(temppath, this.out);
 -      temppath = this.out;
@@ -74,7 +80,7 @@ index 947c1db..cc194c8 100644
      // When evalScript is called with a test262-stream test record:
      if (typeof code === 'object' && code.contents) {
        let {attrs, contents, file} = code;
-@@ -84,13 +93,6 @@ class ConsoleAgent extends Agent {
+@@ -84,13 +99,6 @@ class ConsoleAgent extends Agent {
          hasDependencies = false;
        }
  
@@ -88,7 +94,7 @@ index 947c1db..cc194c8 100644
        // The test record in "code" is no longer needed and
        // all further operations expect the "code" argument to be
        // a string, make that true for back-compat.
-@@ -123,7 +125,7 @@ class ConsoleAgent extends Agent {
+@@ -123,9 +131,20 @@ class ConsoleAgent extends Agent {
        // 3. Push the dependency and source into the sources to be written.
        //
        dependencies.forEach(file => {
@@ -96,10 +102,23 @@ index 947c1db..cc194c8 100644
 +        let absname = path.join(deptemppath, file);
          let depsource = rawSource.get(path.basename(file));
  
++        if (absname.indexOf("expressions/dynamic-import/")) {
++          let dynamicabsname = path.join(deptemppath, file);
++
++          if (dynamicabsname != tempfile) {
++            sources.push([
++              dynamicabsname,
++              depsource
++            ]);
++          }
++        }
++
          // Sometimes a test file might want to import itself,
-@@ -161,7 +163,6 @@ class ConsoleAgent extends Agent {
+         // which is a valid exercise of the import semantics.
+         // Here we avoid adding the test file more than once.
+@@ -161,7 +180,6 @@ class ConsoleAgent extends Agent {
        sources.forEach(({0: file}) => fs.unlink(file, () => { /* ignore */ }));
-
+ 
        const result = this.normalizeResult({ stderr, stdout });
 -
        result.error = this.parseError(result.stderr);
@@ -251,5 +270,5 @@ index 0000000..0acbd09
 +};
 +$262.source = $SOURCE;
 -- 
-2.25.1
+2.34.1
 
