@@ -16,6 +16,7 @@
 #include "moduleHelpers.h"
 
 #include <libpandabase/utils/hash.h>
+#include <protobufHelper.h>
 
 namespace panda::es2panda::util {
 void ModuleHelpers::CompileNpmModuleEntryList(const std::string &entriesInfo,
@@ -24,7 +25,7 @@ void ModuleHelpers::CompileNpmModuleEntryList(const std::string &entriesInfo,
     panda::ArenaAllocator *allocator)
 {
     std::stringstream ss;
-    std::ifstream inputStream(entriesInfo);
+    std::ifstream inputStream(panda::proto::ConvertPlatFormPath(entriesInfo));
     if (inputStream.fail()) {
         std::cerr << "Failed to read file to buffer: " << entriesInfo << std::endl;
         return;

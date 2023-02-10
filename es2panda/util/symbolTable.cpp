@@ -15,6 +15,8 @@
 
 #include "symbolTable.h"
 
+#include <protobufHelper.h>
+
 #include <fstream>
 #include <iostream>
 
@@ -33,7 +35,7 @@ bool SymbolTable::Initialize()
 
     if (!dumpSymbolTable_.empty()) {
         std::fstream fs;
-        fs.open(dumpSymbolTable_, std::ios_base::out | std::ios_base::trunc);
+        fs.open(panda::proto::ConvertPlatFormPath(dumpSymbolTable_), std::ios_base::out | std::ios_base::trunc);
         if (!fs.is_open()) {
             std::cerr << "Failed to create output symbol table: " << dumpSymbolTable_ << std::endl;
             return false;
@@ -48,7 +50,7 @@ bool SymbolTable::ReadSymbolTable(const std::string &symbolTable)
 {
     std::ifstream ifs;
     std::string line;
-    ifs.open(symbolTable.c_str());
+    ifs.open(panda::proto::ConvertPlatFormPath(symbolTable.c_str()));
     if (!ifs.is_open()) {
         std::cerr << "Failed to open symbol table: " << symbolTable << std::endl;
         return false;
@@ -92,7 +94,7 @@ void SymbolTable::WriteSymbolTable(const std::string &content)
 {
     std::lock_guard<std::mutex> lock(m_);
     std::fstream fs;
-    fs.open(dumpSymbolTable_, std::ios_base::app | std::ios_base::in);
+    fs.open(panda::proto::ConvertPlatFormPath(dumpSymbolTable_), std::ios_base::app | std::ios_base::in);
     if (fs.is_open()) {
         fs << content;
         fs.close();

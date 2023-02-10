@@ -17,6 +17,7 @@
 
 #include "mergeProgram.h"
 #include "os/file.h"
+#include <protobufHelper.h>
 #include <util/helpers.h>
 #include <utils/pandargs.h>
 #if defined(PANDA_TARGET_WINDOWS)
@@ -60,7 +61,7 @@ bool Options::CollectInputFilesFromFileList(const std::string &input)
 {
     std::ifstream ifs;
     std::string line;
-    ifs.open(input.c_str());
+    ifs.open(panda::proto::ConvertPlatFormPath(input.c_str()));
     if (!ifs.is_open()) {
         std::cerr << "Failed to open source list: " << input << std::endl;
         return false;

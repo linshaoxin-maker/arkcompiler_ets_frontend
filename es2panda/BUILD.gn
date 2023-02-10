@@ -381,7 +381,10 @@ ohos_static_library("es2panda_lib") {
     use_rtti = true
   }
 
-  configs = [ ":es2abc_config_common" ]
+  configs = [
+    ":es2abc_config_common",
+    "$ets_frontend_root/merge_abc:panda_assembly_proto_public_config",
+  ]
 
   include_dirs = [
     "${target_out_dir}",
