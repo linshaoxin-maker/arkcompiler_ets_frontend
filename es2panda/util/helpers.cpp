@@ -450,17 +450,4 @@ bool Helpers::OptimizeProgram(panda::pandasm::Program * prog, es2panda::Compiler
     return true;
 }
 
-void Helpers::GetFileStream(const std::string &path, std::ios::openmode mode, std::fstream &fs)
-{
-#ifdef PANDA_TARGET_WINDOWS
-    if (path.length() < _MAX_PATH) {
-        fs = std::fstream(path, mode);
-    } else {
-        fs = std::fstream(panda::os::file::File::GetExtendedLengthStylePath(path), mode);
-    }
-#else
-    fs = std::fstream(path, mode);
-#endif  // PANDA_TARGET_WINDOWS
-}
-
 }  // namespace panda::es2panda::util

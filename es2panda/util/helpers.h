@@ -58,7 +58,6 @@ public:
 
     static bool FileExtensionIs(std::string_view filePath, std::string_view extension);
     static bool EndsWith(std::string_view str, std::string_view suffix);
-    static void GetFileStream(const std::string &path, std::ios::openmode mode, std::fstream &fs);
     static std::string ToString(double number);
     static util::StringView ToStringView(ArenaAllocator *allocator, double number);
     static util::StringView ToStringView(ArenaAllocator *allocator, int32_t number);

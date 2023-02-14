@@ -29,6 +29,8 @@
 #include <sstream>
 #include <utility>
 
+#include <protobufHelper.h>
+
 namespace panda::es2panda::aot {
 
 template <class T>
@@ -58,9 +60,9 @@ static std::vector<std::string> GetStringItems(std::string &input, const std::st
 
 bool Options::CollectInputFilesFromFileList(const std::string &input)
 {
+    std::ifstream ifs;
     std::string line;
-    std::fstream ifs;
-    util::Helpers::GetFileStream(input.c_str(), std::ios::in, ifs);
+    ifs.open(panda::proto::GetFilePath(input.c_str()));
     if (!ifs.is_open()) {
         std::cerr << "Failed to open source list: " << input << std::endl;
         return false;

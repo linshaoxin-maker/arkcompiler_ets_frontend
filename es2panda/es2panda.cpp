@@ -24,6 +24,7 @@
 #include <parser/transformer/transformer.h>
 #include <typescript/checker.h>
 #include <util/helpers.h>
+#include <protobufHelper.h>
 
 #include <libpandabase/utils/hash.h>
 
@@ -147,8 +148,7 @@ void Compiler::DumpAsm(const panda::pandasm::Program *prog)
 
 static bool ReadFileToBuffer(const std::string &file, std::stringstream &ss)
 {
-    std::fstream inputStream;
-    util::Helpers::GetFileStream(file, std::ios::in | std::ios::binary, inputStream);
+    std::ifstream inputStream(panda::proto::GetFilePath(file), std::ios::binary);
     if (inputStream.fail()) {
         std::cerr << "Failed to read file to buffer: " << file << std::endl;
         return false;
