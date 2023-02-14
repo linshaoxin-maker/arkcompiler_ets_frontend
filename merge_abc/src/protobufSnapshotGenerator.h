@@ -20,6 +20,9 @@
 #include "compositeProgramProto.h"
 
 namespace panda::proto {
+
+void GetFileStream(const std::string &path, std::ios::openmode mode, std::fstream &fs);
+
 class ProtobufSnapshotGenerator {
 public:
     static void GenerateSnapshot(const panda::pandasm::Program &program, const std::string &outputName);

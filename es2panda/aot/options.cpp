@@ -29,6 +29,8 @@
 #include <sstream>
 #include <utility>
 
+#include <protobufHelper.h>
+
 namespace panda::es2panda::aot {
 
 template <class T>
@@ -60,7 +62,7 @@ bool Options::CollectInputFilesFromFileList(const std::string &input)
 {
     std::ifstream ifs;
     std::string line;
-    ifs.open(input.c_str());
+    ifs.open(panda::proto::GetFilePath(input.c_str()));
     if (!ifs.is_open()) {
         std::cerr << "Failed to open source list: " << input << std::endl;
         return false;
