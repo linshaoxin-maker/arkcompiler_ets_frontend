@@ -2109,7 +2109,7 @@ void ParserImpl::ParseClassKeyModifiers(ClassElmentDescriptor *desc)
 
     if ((Extension() == ScriptExtension::JS && nextCp != LEX_CHAR_LEFT_PAREN) ||
         (Extension() == ScriptExtension::TS && nextCp != LEX_CHAR_EQUALS && nextCp != LEX_CHAR_SEMICOLON &&
-         nextCp != LEX_CHAR_LEFT_PAREN)) {
+         nextCp != LEX_CHAR_LEFT_PAREN && nextCp != LEX_CHAR_LESS_THAN)) {
         if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_GET) {
             if (desc->isPrivateIdent) {
                 ThrowSyntaxError("Private identifier can not be getter");
@@ -2895,7 +2895,7 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool i
             if (!isDeclare && !isCtorContinuousDefined) {
                 ThrowSyntaxError("Constructor implementation is missing.", property->Start());
             }
-  
+
             if (hasConstructorFuncBody) {
                 ThrowSyntaxError("Multiple constructor implementations are not allowed.", property->Start());
             }
@@ -3030,7 +3030,7 @@ ir::TSEnumDeclaration *ParserImpl::ParseEnumDeclaration(bool isExport, bool isDe
     auto enumCtx = binder::LexicalScope<binder::TSEnumScope>(Binder(), enumMemberBindings);
     auto *enumDeclaration = ParseEnumMembers(key, enumStart, isExport, isDeclare, isConst);
     res->Declaration()->AsEnumLiteralDecl()->Add(enumDeclaration);
-    
+
     return enumDeclaration;
 }
 

@@ -1,0 +1,4 @@
+common set str
+common get function
+set name success
+get first-last
