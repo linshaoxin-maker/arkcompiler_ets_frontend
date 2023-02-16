@@ -17,12 +17,17 @@ import * as ts from "typescript";
 import { CmdOptions } from "./cmdOptions";
 import { SourceTextModuleRecord } from "./ecmaModule";
 import {
+    Createarraywithbuffer,
+    Createobjectwithbuffer,
+    Defineclasswithbuffer,
     Imm,
     IRNode,
     IRNodeKind,
     Label,
+    Newlexenvwithname,
     OperandType,
-    VReg
+    VReg,
+    WideNewlexenvwithname,
 } from "./irnodes";
 import { LOGD } from "./log";
 import { PandaGen } from "./pandagen";
@@ -134,8 +139,10 @@ export class Ts2Panda {
                         let imm = <Imm>operand;
                         insImms.push(imm.value);
                     } else if (typeof (operand) === "string") {
-                        insIds.push(operand);
-                        Ts2Panda.strings.add(operand);
+                        if (!this.escapeLitIdString(insn, operand)) {
+                            insIds.push(operand);
+                            Ts2Panda.strings.add(operand);
+                        }
                     } else if (operand instanceof Label) {
                         let labelName = Ts2Panda.labelPrefix + operand.id;
                         insIds.push(labelName);
@@ -160,6 +167,23 @@ export class Ts2Panda {
             regsNum: (pg.getTotalRegsNum() - pg.getParametersCount()),
             labels: labels.length == 0 ? undefined : labels
         };
+    }
+
+    static escapeLitIdString(insn: IRNode, operand: string): boolean {
+        if (insn instanceof Createarraywithbuffer || insn instanceof Createobjectwithbuffer ||
+            insn instanceof Newlexenvwithname || insn instanceof WideNewlexenvwithname) {
+            return true;
+        }
+
+        if (!(insn instanceof Defineclasswithbuffer)) {
+            return false;
+        }
+
+        if (insn.operands[2] == operand) {
+            return true;
+        }
+
+        return false;
     }
 
     static dumpStringsArray(ts2abc: any) {
