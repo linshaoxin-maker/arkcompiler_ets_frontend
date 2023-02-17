@@ -229,6 +229,7 @@ export function listenErrorEvent(child: any) {
 
     child.on('error', (err: any) => {
         LOGD(err.toString());
+        console.error(err.toString());
     });
 }
 

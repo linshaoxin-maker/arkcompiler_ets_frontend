@@ -19,6 +19,7 @@
 #include <locale>
 #include <string>
 #include <unistd.h>
+#include <chrono>
 
 #include "assembly-type.h"
 #include "assembly-program.h"
@@ -57,6 +58,10 @@ constexpr uint32_t LITERALBUFFERINDEXOFFSET = 100;
 uint32_t MAX_UINT8 = static_cast<uint32_t>(std::numeric_limits<uint8_t>::max());
 bool g_isOutputProto = false;
 static constexpr const char* PROTO_BIN_SUFFIX = "protoBin";
+uint32_t g_emitProgramCostTime = 0U;
+uint32_t g_parseJsonCostTime = 0U;
+uint32_t g_handleBufferCostTime = 0U;
+uint32_t g_readFromPipeCostTime = 0U;
 
 constexpr std::size_t BOUND_LEFT = 0;
 constexpr std::size_t BOUND_RIGHT = 0;
@@ -1306,6 +1311,7 @@ static void ParseSingleTypeInfo(const Json::Value &rootValue, panda::pandasm::Pr
 
 static int ParseSmallPieceJson(const std::string &subJson, panda::pandasm::Program &prog)
 {
+    auto parseJsonStartTime = std::chrono::steady_clock::now();
     Json::Value rootValue;
     if (ParseJson(subJson, rootValue)) {
         std::cerr <<" Fail to parse json by JsonCPP" << std::endl;
@@ -1383,6 +1389,8 @@ static int ParseSmallPieceJson(const std::string &subJson, panda::pandasm::Progr
             return RETURN_FAILED;
         }
     }
+    auto parseJsonEndTime = std::chrono::steady_clock::now();
+    g_parseJsonCostTime += std::chrono::duration_cast<std::chrono::milliseconds>(parseJsonEndTime - parseJsonStartTime).count();
     return RETURN_SUCCESS;
 }
 
@@ -1493,6 +1501,7 @@ static bool EmitProgram(const std::string &output, int optLevel, std::string opt
 
 static bool EmitAndRestoreProgram(panda::pandasm::Program &prog, const panda::ts2abc::Options &options)
 {
+    auto startEmitProgramTime = std::chrono::steady_clock::now();
     if (!EmitProgram(g_outputFileName, options.GetOptLevelArg(), options.GetOptLogLevelArg(), prog)) {
         std::cerr << "fail to emit porgram " << g_outputFileName << " in HandleBuffer" << std::endl;
         return false;
@@ -1500,12 +1509,15 @@ static bool EmitAndRestoreProgram(panda::pandasm::Program &prog, const panda::ts
     prog = panda::pandasm::Program();
     prog.lang = panda::pandasm::extensions::Language::ECMASCRIPT;
     g_newLiteralArrayIndex = -1;
+    auto endEmitProgramTime = std::chrono::steady_clock::now();
+    g_emitProgramCostTime += std::chrono::duration_cast<std::chrono::milliseconds>(endEmitProgramTime - startEmitProgramTime).count();
     return true;
 }
 
 static bool HandleBuffer(const int &ret, char *buff, std::string &data, panda::pandasm::Program &prog,
                          const panda::ts2abc::Options &options)
 {
+    auto handleBufferStartTime = std::chrono::steady_clock::now();
     uint32_t startPos = 0;
     if (options.IsMultiProgramsPipe() && ((buff[0] == '*' && data.back() != '#') ||
                                           (buff[0] == '\n' && buff[1] == '*'))) {
@@ -1548,11 +1560,14 @@ static bool HandleBuffer(const int &ret, char *buff, std::string &data, panda::p
         data += substr;
     }
 
+    auto handleBufferEndTime = std::chrono::steady_clock::now();
+    g_handleBufferCostTime += std::chrono::duration_cast<std::chrono::milliseconds>(handleBufferEndTime - handleBufferStartTime).count();
     return true;
 }
 
 static bool ReadFromPipe(panda::pandasm::Program &prog, panda::ts2abc::Options options)
 {
+    auto readFromPipeStartime = std::chrono::steady_clock::now();
     std::string data;
     const size_t bufSize = 4096;
     // the parent process open a pipe to this child process with fd of 3
@@ -1575,11 +1590,14 @@ static bool ReadFromPipe(panda::pandasm::Program &prog, panda::ts2abc::Options o
     }
 
     Logd("finish parsing from pipe");
+    auto readFromPipeEndime = std::chrono::steady_clock::now();
+    g_readFromPipeCostTime += std::chrono::duration_cast<std::chrono::milliseconds>(readFromPipeEndime - readFromPipeStartime).count();
     return true;
 }
 
 bool GenerateProgramsFromPipe(const panda::ts2abc::Options &options)
 {
+    auto generateProgramsFromPipeStartTime = std::chrono::steady_clock::now();
     panda::pandasm::Program prog = panda::pandasm::Program();
     prog.lang = panda::pandasm::extensions::Language::ECMASCRIPT;
 
@@ -1588,6 +1606,13 @@ bool GenerateProgramsFromPipe(const panda::ts2abc::Options &options)
         return false;
     }
 
+    auto generateProgramsFromPipeEndTime = std::chrono::steady_clock::now();
+    auto generateProgramsFromPipeCostTime = std::chrono::duration_cast<std::chrono::milliseconds>(generateProgramsFromPipeEndTime - generateProgramsFromPipeStartTime).count();
+    std::cerr << "------js2abc generate programs from pipe cost time is: " << generateProgramsFromPipeCostTime << " ms" << std::endl;
+    std::cerr << "---------js2abc read from pipe cost time is: " << g_readFromPipeCostTime << " ms" << std::endl;
+    std::cerr << "------------js2abc handle buffer cost time is: " << g_handleBufferCostTime << " ms" << std::endl;
+    std::cerr << "---------------js2abc parse json cost time is: " << g_parseJsonCostTime << " ms" << std::endl;
+    std::cerr << "---------------js2abc emit program cost time is: " << g_emitProgramCostTime << " ms" << std::endl;
     return true;
 }
 

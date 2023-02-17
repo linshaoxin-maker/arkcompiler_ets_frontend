@@ -37,6 +37,9 @@ import {
     terminateWritePipe,
     makeNameForGeneratedNode
 } from "./base/util";
+import {
+    RecordTime
+} from './recoredTime'
 
 function checkIsGlobalDeclaration(sourceFile: ts.SourceFile) {
     for (let statement of sourceFile.statements) {
@@ -65,12 +68,18 @@ function generateDTs(node: ts.SourceFile, options: ts.CompilerOptions) {
 }
 
 function main(fileNames: string[], options: ts.CompilerOptions, inputJsonFiles?: string[], cmdArgsSet?: Map<string, string[]>) {
+    RecordTime.createProgramStartTime = new Date().getTime();
+    console.error(`${RecordTime.workFileName} CreateProgram start time is: ${RecordTime.createProgramStartTime}`);
     const host = ts.createCompilerHost(options);
     if (!CmdOptions.needGenerateTmpFile()) {
         host.writeFile = () => {};
     }
 
     let program = ts.createProgram(fileNames, options, host);
+    RecordTime.createProgramEndTime = new Date().getTime();
+    console.error(`${RecordTime.workFileName} CreateProgram end time is: ${RecordTime.createProgramEndTime}`);
+    RecordTime.createProgramCostTime = RecordTime.createProgramEndTime - RecordTime.createProgramStartTime;
+    console.error(`${RecordTime.workFileName} CreateProgram cost time is: ${RecordTime.createProgramCostTime} ms`);
     let typeChecker = TypeChecker.getInstance();
     typeChecker.setTypeChecker(program.getTypeChecker());
 
@@ -96,6 +105,7 @@ function main(fileNames: string[], options: ts.CompilerOptions, inputJsonFiles?:
     let initCompilerDriver = new CompilerDriver("", "");
     let initTs2abcProcessState = false;
 
+    RecordTime.programEmitStartTime = new Date().getTime();
     let emitResult = program.emit(
         undefined,
         undefined,
@@ -107,8 +117,11 @@ function main(fileNames: string[], options: ts.CompilerOptions, inputJsonFiles?:
                 (ctx: ts.TransformationContext) => {
                     return (node: ts.SourceFile) => {
                         if (CmdOptions.isCompileFilesList()) {
+                            RecordTime.beforeStartTime = new Date().getTime();
                             let specifiedCmdArgs = cmdArgsSet.get(node.fileName);
                             if (specifiedCmdArgs === undefined) {
+                                RecordTime.beforeEndTime = new Date().getTime();
+                                RecordTime.beforeTotalCostTime += RecordTime.beforeEndTime - RecordTime.beforeStartTime;
                                 return node;
                             }
                             let originProcessArgs = process.argv.slice(0);
@@ -122,6 +135,8 @@ function main(fileNames: string[], options: ts.CompilerOptions, inputJsonFiles?:
                         let outputBinName = getOutputBinName(node);
                         let compilerDriver = new CompilerDriver(outputBinName, getRecordName(node));
                         compilerDriver.compileForSyntaxCheck(node);
+                        RecordTime.beforeEndTime = new Date().getTime();
+                        RecordTime.beforeTotalCostTime += RecordTime.beforeEndTime - RecordTime.beforeStartTime;
                         return node;
                     }
                 }
@@ -130,6 +145,7 @@ function main(fileNames: string[], options: ts.CompilerOptions, inputJsonFiles?:
                 // @ts-ignore
                 (ctx: ts.TransformationContext) => {
                     return (node: ts.SourceFile) => {
+                        RecordTime.afterStartTime = new Date().getTime();
                         if (CmdOptions.isCompileFilesList()) {
                             if (!initTs2abcProcessState) {
                                 initCompilerDriver.initiateTs2abcChildProcess(["--multi-programs-pipe"]);
@@ -137,9 +153,12 @@ function main(fileNames: string[], options: ts.CompilerOptions, inputJsonFiles?:
                             }
                             let specifiedCmdArgs = cmdArgsSet.get(node.fileName);
                             if (specifiedCmdArgs == undefined) {
+                                RecordTime.afterEndTime = new Date().getTime();
+                                RecordTime.afterTotalCostTime += RecordTime.afterEndTime - RecordTime.afterStartTime;
                                 return node;
                             }
                         }
+                        RecordTime.prepareCompileStartTime = new Date().getTime();
                         makeNameForGeneratedNode(node);
                         if (ts.getEmitHelpers(node)) {
                             let newStatements = [];
@@ -159,6 +178,9 @@ function main(fileNames: string[], options: ts.CompilerOptions, inputJsonFiles?:
                             node = transformCommonjsModule(node);
                         }
                         let outputBinName = getOutputBinName(node);
+                        RecordTime.prepareCompileEndTime = new Date().getTime();
+                        RecordTime.prepareCompileTotalCostTime += RecordTime.prepareCompileEndTime - RecordTime.prepareCompileEndTime;
+                        RecordTime.compileAbcStartTime = new Date().getTime();
                         let compilerDriver = new CompilerDriver(outputBinName, getRecordName(node));
                         CompilerDriver.srcNode = node;
                         setGlobalStrict(jshelpers.isEffectiveStrictModeSourceFile(node, options));
@@ -167,14 +189,22 @@ function main(fileNames: string[], options: ts.CompilerOptions, inputJsonFiles?:
                         } else {
                             compilerDriver.compile(node);
                         }
+                        RecordTime.compileAbcEndTime = new Date().getTime();
+                        RecordTime.compileAbcTotalCostTime += RecordTime.compileAbcEndTime - RecordTime.compileAbcStartTime;
                         compilerDriver.showStatistics();
+                        RecordTime.afterEndTime = new Date().getTime();
+                        RecordTime.afterTotalCostTime += RecordTime.afterEndTime - RecordTime.afterStartTime;
                         return node;
                     }
                 }
             ]
         }
     );
+    RecordTime.programEmitEndTime = new Date().getTime();
+    RecordTime.programEmitCostTime = RecordTime.programEmitEndTime - RecordTime.programEmitStartTime;
+    console.error(`${RecordTime.workFileName} Program emit cost time is: ${RecordTime.programEmitCostTime} ms`);
 
+    RecordTime.compileJsonStartTime = new Date().getTime();
     if (CmdOptions.isCompileFilesList()) {
         if (!initTs2abcProcessState) {
             initCompilerDriver.initiateTs2abcChildProcess(["--multi-programs-pipe"]);
@@ -190,6 +220,8 @@ function main(fileNames: string[], options: ts.CompilerOptions, inputJsonFiles?:
         }
         terminateWritePipe(initCompilerDriver.getTs2abcProcess());
     }
+    RecordTime.compileJsonEndTime = new Date().getTime();
+    RecordTime.compileJsonTotalCostTime = RecordTime.compileJsonEndTime - RecordTime.compileJsonStartTime;
 
     let allDiagnostics = ts
         .getPreEmitDiagnostics(program)
@@ -202,10 +234,21 @@ function main(fileNames: string[], options: ts.CompilerOptions, inputJsonFiles?:
         }
         diag.printDiagnostic(diagnostic);
     });
+
+    console.error(`---${RecordTime.workFileName} Before parse cost time is: ${RecordTime.beforeTotalCostTime} ms`);
+    console.error(`--${RecordTime.workFileName} After parse cost time is: ${RecordTime.afterTotalCostTime} ms`);
+    console.error(`------${RecordTime.workFileName} Prepare compile cost time is: ${RecordTime.prepareCompileTotalCostTime} ms`);
+    console.error(`------${RecordTime.workFileName} Compile abc cost time is: ${RecordTime.compileAbcTotalCostTime} ms`);
+    console.error(`---------${RecordTime.workFileName} Record cost time is: ${RecordTime.recordTotalCostTime} ms`);
+    console.error(`---------${RecordTime.workFileName} Compile ts2abc cost time is: ${RecordTime.compileTs2abcTotalCostTime} ms`);
+    console.error(`---------${RecordTime.workFileName} Compile compliation cost time is: ${RecordTime.compileCompliationTotalCostTime} ms`);
+    console.error(`---------${RecordTime.workFileName} Compile pure ts2abc cost time is: ${RecordTime.compileTs2abcTotalCostTime - RecordTime.compileCompliationTotalCostTime} ms`);
+    console.error(`---${RecordTime.workFileName} Compile json cost time is: ${RecordTime.compileJsonTotalCostTime} ms`);
 }
 
 function transformSourcefilesList(parsed: ts.ParsedCommandLine | undefined) {
     let inputFile = CmdOptions.getCompileFilesList();
+    RecordTime.workFileName = path.basename(inputFile);
     let sourceFileInfoArray = [];
     try {
         sourceFileInfoArray = fs.readFileSync(inputFile).toString().split("\n");
@@ -573,6 +616,8 @@ function run(args: string[], options?: ts.CompilerOptions): void {
     }
 }
 
+RecordTime.startTime = new Date().getTime();
+console.error(`Ts2panda start time is: ${RecordTime.startTime}`);
 let dtsFiles = getDtsFiles(path["join"](__dirname, "../node_modules/typescript/lib"));
 let customLib = CmdOptions.parseCustomLibrary(process.argv);
 if (!customLib || customLib.length === 0) {
@@ -583,3 +628,7 @@ if (!customLib || customLib.length === 0) {
 
 run(process.argv.slice(2), Compiler.Options.Default);
 global.gc();
+RecordTime.endTime = new Date().getTime();
+console.error(`${RecordTime.workFileName} Ts2panda end time is: ${RecordTime.endTime}`);
+RecordTime.costTime = RecordTime.endTime - RecordTime.startTime;
+console.error(`${RecordTime.workFileName} Ts2panda cost time is: ${RecordTime.costTime} ms`);
