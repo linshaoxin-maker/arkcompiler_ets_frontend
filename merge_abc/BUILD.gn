@@ -34,6 +34,7 @@ protobuf_snapshot_generator_sources = [
   "src/ideHelpersProto.cpp",
   "src/mergeProgram.cpp",
   "src/metaProto.cpp",
+  "src/protobufHelper.cpp",
   "src/protobufSnapshotGenerator.cpp",
 ]
 
