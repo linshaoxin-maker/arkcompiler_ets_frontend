@@ -127,6 +127,8 @@ static bool GenerateProgram(const std::unordered_map<panda::pandasm::Program*, s
         }
     }
 
+    panda::pandasm::AsmEmitter::SetGenHotFix(!compilerOptions.hotfixOptions.symbolTable.empty());
+
     if (programs.size() > 1) {
         return GenerateMultiProgram(programs, options);
     } else {
