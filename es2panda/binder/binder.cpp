@@ -122,6 +122,7 @@ void Binder::IdentifierAnalysis(ResolveBindingFlags flags)
             if (Program()->Extension() == ScriptExtension::TS) {
                 auto *moduleRecord = Program()->ModuleRecord();
                 moduleRecord->RemoveImportEntry();
+                moduleRecord->RemoveModuleRequest();
             }
             AssignIndexToModuleVariable();
         }
@@ -763,7 +764,7 @@ void Binder::AddDeclarationName(const util::StringView &name, DeclType type)
         return;
     }
     variableNames_.insert(name);
-    
+
     if (type == DeclType::ENUM) {
         return;
     }

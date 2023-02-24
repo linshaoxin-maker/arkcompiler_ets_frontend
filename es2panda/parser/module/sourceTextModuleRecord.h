@@ -102,6 +102,7 @@ public:
 
     void RemoveImportEntryTypeFlag(const util::StringView source);
     void RemoveImportEntry();
+    void RemoveModuleRequest();
 
     using ModuleRequestList = ArenaVector<util::StringView>;
     using ModuleRequestMap = ArenaMap<const util::StringView, uint32_t>;

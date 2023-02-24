@@ -14,10 +14,10 @@
  */
 
 
-interface A {
-  a : string;
-}
+import type {type1} from "./null-file";
+import {type2} from "./null-file";
 
-var b : A = {a : "b"};
-export type {A};
-export {b};
+var a : type1 = {a : "a"};
+var b : type2 = {b : "b"};
+print(a.a);
+print(b.b);
