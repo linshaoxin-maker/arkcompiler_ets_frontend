@@ -44,10 +44,6 @@ config("ts2abc_config") {
   }
 }
 
-config("flag_config") {
-  cflags_cc = [ "-fexceptions" ]
-}
-
 source_set("jsoncpp_set_static") {
   sources = [
     "//third_party/jsoncpp/src/lib_json/json_reader.cpp",
@@ -55,7 +51,6 @@ source_set("jsoncpp_set_static") {
     "//third_party/jsoncpp/src/lib_json/json_writer.cpp",
   ]
   public_configs = [ "$jsoncpp_root:jsoncpp_config" ]
-  public_configs += [ ":flag_config" ]
   include_dirs = [
     "//third_party/jsoncpp/include",
     "//third_party/jsoncpp/include/json/",

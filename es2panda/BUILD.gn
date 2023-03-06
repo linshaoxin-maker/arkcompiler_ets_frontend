@@ -280,8 +280,6 @@ config("es2abc_config_src") {
     "./typescript/types",
     "./typescript/types/extractor",
   ]
-
-  cflags = [ "-fexceptions" ]
 }
 
 config("es2abc_config_common") {
