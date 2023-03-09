@@ -41,6 +41,30 @@ def is_file(parser, arg):
 
     return path.abspath(arg)
 
+def prepare_tsc_testcases(test_root):
+    ts_dir = path.join(test_root, "TypeScript")
+    third_party_tsc = path.join(test_root, "../../../../third_party/typescript")
+
+    if not path.isdir(ts_dir):
+        if (path.exists(third_party_tsc)):
+            subprocess.run(
+                f"mkdir {ts_dir} && cp -r {third_party_tsc}/tests {ts_dir}",
+                shell=True,
+                stdout=subprocess.DEVNULL,
+            )
+        else:
+            subprocess.run(
+                f"git clone https://gitee.com/openharmony/third_party_typescript.git {ts_dir}",
+                shell=True,
+                stdout=subprocess.DEVNULL,
+            )
+    else:
+        subprocess.run(
+            f"cd {ts_dir} && git clean -f > /dev/null 2>&1",
+            shell=True,
+            stdout=subprocess.DEVNULL,
+        )
+    return ts_dir
 
 def check_timeout(value):
     ivalue = int(value)
@@ -70,6 +94,9 @@ def get_args():
     parser.add_argument(
         '--tsc', action='store_true', dest='tsc',
         default=False, help='run tsc tests')
+    parser.add_argument(
+        '--type-extractor', action='store_true', dest='type_extractor',
+        default=False, help='run type extractor tests')
     parser.add_argument(
         '--no-progress', action='store_false', dest='progress', default=True,
         help='don\'t show progress bar')
@@ -718,24 +745,7 @@ class TSCRunner(Runner):
         if self.args.tsc_path:
             self.tsc_path = self.args.tsc_path
         else :
-            ts_dir = path.join(self.test_root, "TypeScript")
-            ts_branch = "v4.2.4"
-
-            if not path.isdir(ts_dir):
-                subprocess.run(
-                    f"git clone https://github.com/microsoft/TypeScript.git \
-                    {ts_dir} && cd {ts_dir} \
-                    && git checkout {ts_branch} > /dev/null 2>&1",
-                    shell=True,
-                    stdout=subprocess.DEVNULL,
-                )
-            else:
-                subprocess.run(
-                    f"cd {ts_dir} && git clean -f > /dev/null 2>&1",
-                    shell=True,
-                    stdout=subprocess.DEVNULL,
-                )
-            self.tsc_path = ts_dir
+            self.tsc_path = prepare_tsc_testcases(self.test_root)
 
         self.add_directory("conformance", [])
         self.add_directory("compiler", [])
@@ -845,6 +855,67 @@ class CompilerTest(Test):
 
         return self
 
+class TypeExtractorRunner(Runner):
+    def __init__(self, args):
+        Runner.__init__(self, args, "TypeExtractor")
+
+        prepare_tsc_testcases(self.test_root)
+
+        self.add_directory("conformance", [])
+
+    def add_directory(self, directory, flags):
+        ts_suite_dir = path.join(self.test_root, 'TypeScript/tests/cases')
+
+        glob_expression = path.join(
+            ts_suite_dir, directory, "**/*.ts")
+        files = glob(glob_expression, recursive=True)
+        files = fnmatch.filter(files, ts_suite_dir + '**' + self.args.filter)
+
+        passed_references = open(path.join(self.test_root, 'type_extractor/testlist.txt'), 'r').read()
+
+        for f in files:
+            if path.relpath(f, self.test_root) in passed_references:
+                test = TypeExtractorTest(f, flags)
+                self.tests.append(test)
+
+    def test_path(self, src):
+        return src
+
+class TypeExtractorTest(Test):
+    def __init__(self, test_path, flags):
+        Test.__init__(self, test_path, flags)
+
+    def run(self, runner):
+        test_abc_name = ("%s.abc" % (path.splitext(self.path)[0])).replace("/", "_")
+        cmd = runner.cmd_prefix + [runner.es2panda,
+            '--extension=ts', '--module', '--dump-literal-buffer', '--type-extractor']
+        cmd.extend(self.flags)
+        cmd.extend(["--output=" + test_abc_name])
+        cmd.append(self.path)
+
+        self.log_cmd(cmd)
+        process = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = process.communicate()
+        self.output = out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore")
+
+        if os.path.isfile(test_abc_name):
+            os.remove(test_abc_name)
+
+        expected_path = "%s-expected.txt" % (path.splitext(self.path)[0]).replace("TypeScript/tests/cases",
+            "type_extractor/expect")
+        try:
+            with open(expected_path, 'r') as fp:
+                expected = fp.read()
+            self.passed = expected == self.output and process.returncode in [
+                0, 1]
+        except Exception:
+            self.passed = False
+
+        if not self.passed:
+            self.error = err.decode("utf-8", errors="ignore")
+
+        return self
 
 class CompilerProjectTest(Test):
     def __init__(self, projects_path, project, test_paths, flags):
@@ -1021,6 +1092,9 @@ def main():
         runner.add_directory("compiler/commonjs", "js", ["--commonjs"])
 
         runners.append(runner)
+
+    if args.type_extractor:
+        runners.append(TypeExtractorRunner(args))
 
     failed_tests = 0
 

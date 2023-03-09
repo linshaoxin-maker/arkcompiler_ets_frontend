@@ -1,0 +1,1325 @@
+======> literal array buffer <======
+------------------------------------
+slot _-1
+------------------------------------
+slot _-10
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 5
+},
+{
+  index: 2
+    tag: 0
+    val: 25
+},
+{
+  index: 3
+    tag: 25
+    val: 24
+},
+{
+  index: 4
+    tag: 0
+    val: 2
+},
+{
+  index: 5
+    tag: 2
+    val: 4294967295
+},
+{
+  index: 6
+    tag: 0
+    val: 24
+},
+{
+  index: 7
+    tag: 24
+    val: _4
+},
+------------------------------------
+slot _-11
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 4294967295
+},
+{
+  index: 2
+    tag: 0
+    val: 24
+},
+{
+  index: 3
+    tag: 24
+    val: _3
+},
+------------------------------------
+slot _-12
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 4294967295
+},
+{
+  index: 2
+    tag: 0
+    val: 24
+},
+{
+  index: 3
+    tag: 24
+    val: _2
+},
+------------------------------------
+slot _-13
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 4294967295
+},
+{
+  index: 2
+    tag: 0
+    val: 24
+},
+{
+  index: 3
+    tag: 24
+    val: _1
+},
+------------------------------------
+slot _-14
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 5
+},
+{
+  index: 2
+    tag: 0
+    val: 24
+},
+{
+  index: 3
+    tag: 24
+    val: _5
+},
+{
+  index: 4
+    tag: 0
+    val: 2
+},
+{
+  index: 5
+    tag: 2
+    val: 7
+},
+{
+  index: 6
+    tag: 0
+    val: 24
+},
+{
+  index: 7
+    tag: 24
+    val: _3
+},
+{
+  index: 8
+    tag: 0
+    val: 2
+},
+{
+  index: 9
+    tag: 2
+    val: 9
+},
+{
+  index: 10
+    tag: 0
+    val: 24
+},
+{
+  index: 11
+    tag: 24
+    val: _2
+},
+{
+  index: 12
+    tag: 0
+    val: 2
+},
+{
+  index: 13
+    tag: 2
+    val: 11
+},
+{
+  index: 14
+    tag: 0
+    val: 24
+},
+{
+  index: 15
+    tag: 24
+    val: _1
+},
+{
+  index: 16
+    tag: 0
+    val: 2
+},
+{
+  index: 17
+    tag: 2
+    val: 13
+},
+{
+  index: 18
+    tag: 0
+    val: 24
+},
+{
+  index: 19
+    tag: 24
+    val: _11
+},
+{
+  index: 20
+    tag: 0
+    val: 2
+},
+{
+  index: 21
+    tag: 2
+    val: 15
+},
+{
+  index: 22
+    tag: 0
+    val: 24
+},
+{
+  index: 23
+    tag: 24
+    val: _9
+},
+{
+  index: 24
+    tag: 0
+    val: 2
+},
+{
+  index: 25
+    tag: 2
+    val: 17
+},
+{
+  index: 26
+    tag: 0
+    val: 24
+},
+{
+  index: 27
+    tag: 24
+    val: _6
+},
+{
+  index: 28
+    tag: 0
+    val: 2
+},
+{
+  index: 29
+    tag: 2
+    val: 21
+},
+{
+  index: 30
+    tag: 0
+    val: 24
+},
+{
+  index: 31
+    tag: 24
+    val: _8
+},
+{
+  index: 32
+    tag: 0
+    val: 2
+},
+{
+  index: 33
+    tag: 2
+    val: 23
+},
+{
+  index: 34
+    tag: 0
+    val: 24
+},
+{
+  index: 35
+    tag: 24
+    val: _4
+},
+{
+  index: 36
+    tag: 0
+    val: 2
+},
+{
+  index: 37
+    tag: 2
+    val: 25
+},
+{
+  index: 38
+    tag: 0
+    val: 24
+},
+{
+  index: 39
+    tag: 24
+    val: _7
+},
+{
+  index: 40
+    tag: 0
+    val: 2
+},
+{
+  index: 41
+    tag: 2
+    val: 29
+},
+{
+  index: 42
+    tag: 0
+    val: 24
+},
+{
+  index: 43
+    tag: 24
+    val: _10
+},
+------------------------------------
+slot _-2
+------------------------------------
+slot _-3
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 4294967295
+},
+{
+  index: 2
+    tag: 0
+    val: 24
+},
+{
+  index: 3
+    tag: 24
+    val: _11
+},
+------------------------------------
+slot _-4
+------------------------------------
+slot _-5
+------------------------------------
+slot _-6
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 4294967295
+},
+{
+  index: 2
+    tag: 0
+    val: 24
+},
+{
+  index: 3
+    tag: 24
+    val: _10
+},
+------------------------------------
+slot _-7
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 4294967295
+},
+{
+  index: 2
+    tag: 0
+    val: 24
+},
+{
+  index: 3
+    tag: 24
+    val: _9
+},
+------------------------------------
+slot _-8
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 4294967295
+},
+{
+  index: 2
+    tag: 0
+    val: 24
+},
+{
+  index: 3
+    tag: 24
+    val: _8
+},
+------------------------------------
+slot _-9
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 4294967295
+},
+{
+  index: 2
+    tag: 0
+    val: 24
+},
+{
+  index: 3
+    tag: 24
+    val: _5
+},
+------------------------------------
+slot _0
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 11
+},
+{
+  index: 2
+    tag: 0
+    val: 24
+},
+{
+  index: 3
+    tag: 24
+    val: _1
+},
+{
+  index: 4
+    tag: 0
+    val: 24
+},
+{
+  index: 5
+    tag: 24
+    val: _2
+},
+{
+  index: 6
+    tag: 0
+    val: 24
+},
+{
+  index: 7
+    tag: 24
+    val: _3
+},
+{
+  index: 8
+    tag: 0
+    val: 24
+},
+{
+  index: 9
+    tag: 24
+    val: _4
+},
+{
+  index: 10
+    tag: 0
+    val: 24
+},
+{
+  index: 11
+    tag: 24
+    val: _5
+},
+{
+  index: 12
+    tag: 0
+    val: 24
+},
+{
+  index: 13
+    tag: 24
+    val: _6
+},
+{
+  index: 14
+    tag: 0
+    val: 24
+},
+{
+  index: 15
+    tag: 24
+    val: _7
+},
+{
+  index: 16
+    tag: 0
+    val: 24
+},
+{
+  index: 17
+    tag: 24
+    val: _8
+},
+{
+  index: 18
+    tag: 0
+    val: 24
+},
+{
+  index: 19
+    tag: 24
+    val: _9
+},
+{
+  index: 20
+    tag: 0
+    val: 24
+},
+{
+  index: 21
+    tag: 24
+    val: _10
+},
+{
+  index: 22
+    tag: 0
+    val: 24
+},
+{
+  index: 23
+    tag: 24
+    val: _11
+},
+{
+  index: 24
+    tag: 0
+    val: 2
+},
+{
+  index: 25
+    tag: 2
+    val: 0
+},
+------------------------------------
+slot _1
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 3
+},
+{
+  index: 2
+    tag: 0
+    val: 2
+},
+{
+  index: 3
+    tag: 2
+    val: 0
+},
+{
+  index: 4
+    tag: 0
+    val: 5
+},
+{
+  index: 5
+    tag: 5
+    val: f1
+},
+{
+  index: 6
+    tag: 0
+    val: 2
+},
+{
+  index: 7
+    tag: 2
+    val: 0
+},
+{
+  index: 8
+    tag: 0
+    val: 2
+},
+{
+  index: 9
+    tag: 2
+    val: 0
+},
+{
+  index: 10
+    tag: 0
+    val: 25
+},
+{
+  index: 11
+    tag: 25
+    val: 0
+},
+------------------------------------
+slot _10
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 3
+},
+{
+  index: 2
+    tag: 0
+    val: 2
+},
+{
+  index: 3
+    tag: 2
+    val: 0
+},
+{
+  index: 4
+    tag: 0
+    val: 5
+},
+{
+  index: 5
+    tag: 5
+    val: f11
+},
+{
+  index: 6
+    tag: 0
+    val: 2
+},
+{
+  index: 7
+    tag: 2
+    val: 0
+},
+{
+  index: 8
+    tag: 0
+    val: 2
+},
+{
+  index: 9
+    tag: 2
+    val: 0
+},
+{
+  index: 10
+    tag: 0
+    val: 25
+},
+{
+  index: 11
+    tag: 25
+    val: 0
+},
+------------------------------------
+slot _11
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 3
+},
+{
+  index: 2
+    tag: 0
+    val: 2
+},
+{
+  index: 3
+    tag: 2
+    val: 0
+},
+{
+  index: 4
+    tag: 0
+    val: 5
+},
+{
+  index: 5
+    tag: 5
+    val: f12
+},
+{
+  index: 6
+    tag: 0
+    val: 2
+},
+{
+  index: 7
+    tag: 2
+    val: 0
+},
+{
+  index: 8
+    tag: 0
+    val: 2
+},
+{
+  index: 9
+    tag: 2
+    val: 0
+},
+{
+  index: 10
+    tag: 0
+    val: 25
+},
+{
+  index: 11
+    tag: 25
+    val: 0
+},
+------------------------------------
+slot _12
+{
+  index: 0
+    tag: 2
+    val: 0
+},
+{
+  index: 1
+    tag: 2
+    val: 0
+},
+{
+  index: 2
+    tag: 2
+    val: 0
+},
+{
+  index: 3
+    tag: 2
+    val: 0
+},
+{
+  index: 4
+    tag: 2
+    val: 0
+},
+{
+  index: 5
+    tag: 2
+    val: 0
+},
+------------------------------------
+slot _2
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 3
+},
+{
+  index: 2
+    tag: 0
+    val: 2
+},
+{
+  index: 3
+    tag: 2
+    val: 0
+},
+{
+  index: 4
+    tag: 0
+    val: 5
+},
+{
+  index: 5
+    tag: 5
+    val: f2
+},
+{
+  index: 6
+    tag: 0
+    val: 2
+},
+{
+  index: 7
+    tag: 2
+    val: 0
+},
+{
+  index: 8
+    tag: 0
+    val: 2
+},
+{
+  index: 9
+    tag: 2
+    val: 0
+},
+{
+  index: 10
+    tag: 0
+    val: 25
+},
+{
+  index: 11
+    tag: 25
+    val: 0
+},
+------------------------------------
+slot _3
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 3
+},
+{
+  index: 2
+    tag: 0
+    val: 2
+},
+{
+  index: 3
+    tag: 2
+    val: 0
+},
+{
+  index: 4
+    tag: 0
+    val: 5
+},
+{
+  index: 5
+    tag: 5
+    val: f4
+},
+{
+  index: 6
+    tag: 0
+    val: 2
+},
+{
+  index: 7
+    tag: 2
+    val: 0
+},
+{
+  index: 8
+    tag: 0
+    val: 2
+},
+{
+  index: 9
+    tag: 2
+    val: 0
+},
+{
+  index: 10
+    tag: 0
+    val: 25
+},
+{
+  index: 11
+    tag: 25
+    val: 0
+},
+------------------------------------
+slot _4
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 3
+},
+{
+  index: 2
+    tag: 0
+    val: 2
+},
+{
+  index: 3
+    tag: 2
+    val: 0
+},
+{
+  index: 4
+    tag: 0
+    val: 5
+},
+{
+  index: 5
+    tag: 5
+    val: f5
+},
+{
+  index: 6
+    tag: 0
+    val: 2
+},
+{
+  index: 7
+    tag: 2
+    val: 0
+},
+{
+  index: 8
+    tag: 0
+    val: 2
+},
+{
+  index: 9
+    tag: 2
+    val: 0
+},
+{
+  index: 10
+    tag: 0
+    val: 25
+},
+{
+  index: 11
+    tag: 25
+    val: 0
+},
+------------------------------------
+slot _5
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 3
+},
+{
+  index: 2
+    tag: 0
+    val: 2
+},
+{
+  index: 3
+    tag: 2
+    val: 0
+},
+{
+  index: 4
+    tag: 0
+    val: 5
+},
+{
+  index: 5
+    tag: 5
+    val: f6
+},
+{
+  index: 6
+    tag: 0
+    val: 2
+},
+{
+  index: 7
+    tag: 2
+    val: 0
+},
+{
+  index: 8
+    tag: 0
+    val: 2
+},
+{
+  index: 9
+    tag: 2
+    val: 1
+},
+{
+  index: 10
+    tag: 0
+    val: 25
+},
+{
+  index: 11
+    tag: 25
+    val: 0
+},
+{
+  index: 12
+    tag: 0
+    val: 25
+},
+{
+  index: 13
+    tag: 25
+    val: 0
+},
+------------------------------------
+slot _6
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 6
+},
+{
+  index: 2
+    tag: 0
+    val: 2
+},
+{
+  index: 3
+    tag: 2
+    val: 2
+},
+{
+  index: 4
+    tag: 0
+    val: 5
+},
+{
+  index: 5
+    tag: 5
+    val: x
+},
+{
+  index: 6
+    tag: 0
+    val: 25
+},
+{
+  index: 7
+    tag: 25
+    val: 1
+},
+{
+  index: 8
+    tag: 0
+    val: 5
+},
+{
+  index: 9
+    tag: 5
+    val: y
+},
+{
+  index: 10
+    tag: 0
+    val: 25
+},
+{
+  index: 11
+    tag: 25
+    val: 1
+},
+{
+  index: 12
+    tag: 0
+    val: 2
+},
+{
+  index: 13
+    tag: 2
+    val: 0
+},
+------------------------------------
+slot _7
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 6
+},
+{
+  index: 2
+    tag: 0
+    val: 2
+},
+{
+  index: 3
+    tag: 2
+    val: 2
+},
+{
+  index: 4
+    tag: 0
+    val: 5
+},
+{
+  index: 5
+    tag: 5
+    val: x
+},
+{
+  index: 6
+    tag: 0
+    val: 25
+},
+{
+  index: 7
+    tag: 25
+    val: 1
+},
+{
+  index: 8
+    tag: 0
+    val: 5
+},
+{
+  index: 9
+    tag: 5
+    val: z
+},
+{
+  index: 10
+    tag: 0
+    val: 25
+},
+{
+  index: 11
+    tag: 25
+    val: 1
+},
+{
+  index: 12
+    tag: 0
+    val: 2
+},
+{
+  index: 13
+    tag: 2
+    val: 0
+},
+------------------------------------
+slot _8
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 3
+},
+{
+  index: 2
+    tag: 0
+    val: 2
+},
+{
+  index: 3
+    tag: 2
+    val: 0
+},
+{
+  index: 4
+    tag: 0
+    val: 5
+},
+{
+  index: 5
+    tag: 5
+    val: f9
+},
+{
+  index: 6
+    tag: 0
+    val: 2
+},
+{
+  index: 7
+    tag: 2
+    val: 0
+},
+{
+  index: 8
+    tag: 0
+    val: 2
+},
+{
+  index: 9
+    tag: 2
+    val: 0
+},
+{
+  index: 10
+    tag: 0
+    val: 25
+},
+{
+  index: 11
+    tag: 25
+    val: 0
+},
+------------------------------------
+slot _9
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 3
+},
+{
+  index: 2
+    tag: 0
+    val: 2
+},
+{
+  index: 3
+    tag: 2
+    val: 0
+},
+{
+  index: 4
+    tag: 0
+    val: 5
+},
+{
+  index: 5
+    tag: 5
+    val: f10
+},
+{
+  index: 6
+    tag: 0
+    val: 2
+},
+{
+  index: 7
+    tag: 2
+    val: 0
+},
+{
+  index: 8
+    tag: 0
+    val: 2
+},
+{
+  index: 9
+    tag: 2
+    val: 0
+},
+{
+  index: 10
+    tag: 0
+    val: 25
+},
+{
+  index: 11
+    tag: 25
+    val: 0
+},
