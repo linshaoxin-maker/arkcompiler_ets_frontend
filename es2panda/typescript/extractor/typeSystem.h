@@ -668,7 +668,15 @@ private:
     {
         auto super = classDef->Super();
         if (super != nullptr) {
-            extendsHeritage_ = extractor_->GetTypeIndexFromInitializer(super);
+            if (super->IsIdentifier()) {
+                extendsHeritage_ = extractor_->GetTypeIndexFromBuiltin(super->AsIdentifier()->Name(),
+                    classDef->SuperTypeParams(), false);
+            }
+            if (extendsHeritage_ == PrimitiveType::ANY) {
+                extendsHeritage_ = extractor_->GetTypeIndexFromInitializer(super);
+            }
+        } else {
+            extendsHeritage_ = -1;  // -1 means it's a base class
         }
 
         for (const auto &t : classDef->Implements()) {
@@ -838,7 +846,11 @@ private:
     {
         buffer_->Add(recorder_->Allocator()->New<ir::NumberLiteral>(UserType::CLASS));
         buffer_->Add(recorder_->Allocator()->New<ir::NumberLiteral>(modifierAB_));
-        FillTypeIndexLiteralBuffer(extendsHeritage_);
+        if (extendsHeritage_ == -1) {  // -1 means it's a base class
+            buffer_->Add(recorder_->Allocator()->New<ir::BuiltinTypeIndexLiteral>(extendsHeritage_));
+        } else {
+            FillTypeIndexLiteralBuffer(extendsHeritage_);
+        }
         buffer_->Add(recorder_->Allocator()->New<ir::NumberLiteral>(implementsHeritages_.size()));
         std::for_each(implementsHeritages_.begin(), implementsHeritages_.end(), [this](const auto &t) {
             FillTypeIndexLiteralBuffer(t);

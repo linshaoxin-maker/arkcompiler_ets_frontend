@@ -107,7 +107,7 @@ public:
 
     void AddFunction(FunctionEmitter *func, CompilerContext *context);
     void AddSourceTextModuleRecord(ModuleRecordEmitter *module, CompilerContext *context);
-    void FillTypeInfoRecord(CompilerContext *context, bool typeFlag, int64_t typeSummaryIndex,
+    void FillTypeInfoRecord(const CompilerContext *context, bool typeFlag, int64_t typeSummaryIndex,
         const std::string &recordName) const;
     void FillTypeLiteralBuffers(const extractor::TypeRecorder *recorder) const;
     static void GenBufferLiterals(ArenaVector<std::pair<int32_t, std::vector<Literal>>> &literalBuffers,

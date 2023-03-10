@@ -810,20 +810,25 @@ int64_t TypeExtractor::GetTypeIndexFromTSLiteralType(const ir::TSLiteralType *ts
 }
 
 int64_t TypeExtractor::GetTypeIndexFromBuiltin(const util::StringView &name,
-                                               const ir::TSTypeParameterInstantiation *node)
+                                               const ir::TSTypeParameterInstantiation *node,
+                                               bool isNewInstance)
 {
     auto typeIndexBuiltin = GetBuiltinTypeIndex(name);
     if (typeIndexBuiltin != PrimitiveType::ANY) {
         if (node == nullptr) {
+            if (!isNewInstance) {
+                return typeIndexBuiltin;
+            }
             return GetTypeIndexFromClassInst(typeIndexBuiltin);
         }
-        return GetTypeIndexFromBuiltinInst(typeIndexBuiltin, node);
+        return GetTypeIndexFromBuiltinInst(typeIndexBuiltin, node, isNewInstance);
     }
     return PrimitiveType::ANY;
 }
 
 int64_t TypeExtractor::GetTypeIndexFromBuiltinInst(int64_t typeIndexBuiltin,
-                                                   const ir::TSTypeParameterInstantiation *node)
+                                                   const ir::TSTypeParameterInstantiation *node,
+                                                   bool isNewInstance)
 {
     std::vector<int64_t> allTypes = {typeIndexBuiltin};
     for (const auto &t : node->Params()) {
@@ -831,11 +836,17 @@ int64_t TypeExtractor::GetTypeIndexFromBuiltinInst(int64_t typeIndexBuiltin,
     }
     auto typeIndex = recorder_->GetBuiltinInst(allTypes);
     if (typeIndex != PrimitiveType::ANY) {
-        return typeIndex;
+        if (!isNewInstance) {
+            return typeIndex;
+        }
+        return GetTypeIndexFromClassInst(typeIndex);
     }
 
     // New instance for builtin generic type
     BuiltinInstType builtinInstType(this, allTypes);
+    if (!isNewInstance) {
+        return builtinInstType.GetTypeIndexShift();
+    }
     return GetTypeIndexFromClassInst(builtinInstType.GetTypeIndexShift());
 }
 
@@ -848,7 +859,7 @@ int64_t TypeExtractor::GetTypeIndexFromGenericInst(int64_t typeIndexGeneric,
     }
     auto typeIndex = recorder_->GetGenericInst(allTypes);
     if (typeIndex != PrimitiveType::ANY) {
-        return typeIndex;
+        return GetTypeIndexFromClassInst(typeIndex);
     }
 
     // New instance for generic type

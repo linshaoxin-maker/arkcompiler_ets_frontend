@@ -271,7 +271,7 @@ export class TypeSummary extends BaseType {
 
 export class ClassType extends BaseType {
     modifier: number = ModifierAbstract.NONABSTRACT; // 0 -> unabstract, 1 -> abstract;
-    extendsHeritage: number = PrimitiveType.ANY;
+    extendsHeritage: number = -1;
     implementsHeritages: Array<number> = new Array<number>();
     // fileds Array: [typeIndex] [public -> 0, private -> 1, protected -> 2] [readonly -> 1]
     staticFields: Map<string, Array<number>> = new Map<string, Array<number>>();
