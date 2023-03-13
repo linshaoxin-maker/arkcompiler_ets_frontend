@@ -56,7 +56,8 @@ export const ts2pandaOptions = [
     { name: 'output-proto', type: Boolean, defaultValue: false, description: "Output protoBin file. Default: false" },
     { name: 'merge-abc', type: Boolean, defaultValue: false, description: "Compile as merge abc" },
     { name: 'input-file', type: String, defaultValue: "", description: "A file containing a list of source files to be compiled. Each line of this file should be constructed in such format: fileName;recordName;moduleType;sourceFile;packageName" },
-    { name: 'oh-modules', type: Boolean, defaultValue: false, description: "Set oh-modules as typescript compiler's package manager type. Default: false" }
+    { name: 'oh-modules', type: Boolean, defaultValue: false, description: "Set oh-modules as typescript compiler's package manager type. Default: false" },
+    { name: 'target-api-version', type: Number, defaultValue: 0, description: "Specify the target api version for compilation" }
 ]
 
 
@@ -374,6 +375,13 @@ export class CmdOptions {
             return false;
         }
         return this.options["oh-modules"]
+    }
+
+    static getTargetApiVersion(): number {
+        if (!this.options) {
+            return 0;
+        }
+        return this.options["target-api-version"];
     }
 
     // @ts-ignore

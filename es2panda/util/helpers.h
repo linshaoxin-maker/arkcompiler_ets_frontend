@@ -87,7 +87,7 @@ public:
     static bool IsObjectPropertyValue(const ArenaVector<ir::Expression *> &properties, const ir::AstNode *ident);
     static SignedNumberLiteral GetSignedNumberLiteral(const ir::Expression *expr);
 
-    static void OptimizeProgram(panda::pandasm::Program *prog, const std::string &inputFile);
+    static bool OptimizeProgram(panda::pandasm::Program *prog, const std::string &inputFile, int targetApiVersion);
     template <typename T>
     static T BaseName(T const &path, T const &delims = std::string(panda::os::file::File::GetPathDelim()));
     static bool ReadFileToBuffer(const std::string &file, std::stringstream &ss);

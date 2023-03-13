@@ -69,6 +69,7 @@ std::unordered_map<int, panda::pandasm::Opcode> g_opcodeMap = {
 #undef OPLIST
     {-1, panda::pandasm::Opcode::INVALID},
 };
+int g_targetApiVersion = 0;
 
 // pandasm helpers
 static panda::pandasm::Record MakeRecordDefinition(const std::string &name)
@@ -1034,6 +1035,13 @@ static void ParseCompilerOutputProto(const Json::Value &rootValue)
     }
 }
 
+static void ParseTargetApiVersion(const Json::Value &rootValue)
+{
+    if (rootValue.isMember("target-api-version") && rootValue["target-api-version"].isInt()) {
+        g_targetApiVersion = rootValue["target-api-version"].asInt();
+    }
+}
+
 static void ReplaceAllDistinct(std::string &str, const std::string &oldValue, const std::string &newValue)
 {
     for (std::string::size_type pos(0); pos != std::string::npos; pos += newValue.length()) {
@@ -1060,6 +1068,7 @@ static void ParseOptions(const Json::Value &rootValue, panda::pandasm::Program &
     ParseIsDtsFile(rootValue);
     ParseEnableTypeInfo(rootValue);
     ParseCompilerOutputProto(rootValue);
+    ParseTargetApiVersion(rootValue);
 }
 
 static void ParseSingleFunc(const Json::Value &rootValue, panda::pandasm::Program &prog)
@@ -1459,7 +1468,8 @@ static bool EmitProgram(const std::string &output, int optLevel, std::string opt
         panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps maps {};
         panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps* mapsp = &maps;
 
-        if (!panda::pandasm::AsmEmitter::Emit(convertedFilePath, prog, statp, mapsp, emitDebugInfo)) {
+        if (!panda::pandasm::AsmEmitter::Emit(convertedFilePath, prog, statp, mapsp, emitDebugInfo, nullptr,
+            g_targetApiVersion)) {
             std::cerr << "Failed to emit binary data: " << panda::pandasm::AsmEmitter::GetLastError() << std::endl;
             return false;
         }
@@ -1471,7 +1481,8 @@ static bool EmitProgram(const std::string &output, int optLevel, std::string opt
             return true;
         }
 
-        if (!panda::pandasm::AsmEmitter::Emit(convertedFilePath, prog, statp, mapsp, emitDebugInfo)) {
+        if (!panda::pandasm::AsmEmitter::Emit(convertedFilePath, prog, statp, mapsp, emitDebugInfo, nullptr,
+            g_targetApiVersion)) {
             std::cerr << "Failed to emit binary data: " << panda::pandasm::AsmEmitter::GetLastError() << std::endl;
             return false;
         }
@@ -1483,7 +1494,8 @@ static bool EmitProgram(const std::string &output, int optLevel, std::string opt
         return true;
     }
 
-    if (!panda::pandasm::AsmEmitter::Emit(convertedFilePath, prog, nullptr)) {
+    if (!panda::pandasm::AsmEmitter::Emit(convertedFilePath, prog, nullptr, nullptr, true, nullptr,
+        g_targetApiVersion)) {
         std::cerr << "Failed to emit binary data: " << panda::pandasm::AsmEmitter::GetLastError() << std::endl;
         return false;
     }
@@ -1600,6 +1612,9 @@ bool GenerateProgram([[maybe_unused]] const std::string &data, const std::string
     std::string optLogLevel = options.GetOptLogLevelArg();
     panda::pandasm::Program prog = panda::pandasm::Program();
     prog.lang = panda::pandasm::extensions::Language::ECMASCRIPT;
+    if (options.WasSetTargetApiVersion()) {
+        g_targetApiVersion = options.GetTargetApiVersion();
+    }
 
     if (isParsingFromPipe) {
         if (!ReadFromPipe(prog, options)) {
