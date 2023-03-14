@@ -35,10 +35,22 @@ group("ts2abc_src") {
   }
 }
 
+action("npm_install_tsc") {
+  deps = [ "//third_party/typescript:build_typescript" ]
+  script = "npm_install_tsc.py"
+  args = [
+    rebase_path("${root_build_dir}/typescript/typescript-4.2.3-r2.tgz"),
+    rebase_path("//prebuilts/build-tools/common/ts2abc"),
+    rebase_path(get_path_info("./", "abspath")),
+  ]
+  outputs = [ "${target_out_dir}/${target_name}.stamp" ]
+}
+
 ohos_copy("node_modules") {
   sources = [ rebase_path("${node_modules}") ]
   outputs = [ target_out_dir + "/node_modules" ]
   module_install_name = ""
+  deps = [ ":npm_install_tsc" ]
 }
 
 ohos_copy("config_files") {
@@ -54,8 +66,7 @@ ohos_copy("config_files") {
 }
 
 ohos_copy("ts2abc_deps") {
-  sources =
-      [ "//third_party/typescript/build_package/ohos-typescript-4.2.3-r2.tgz" ]
+  sources = [ "${root_build_dir}/typescript/typescript-4.2.3-r2.tgz" ]
 
   outputs = [ target_out_dir + "/$target_name/{{source_file_part}}" ]
   module_source_dir = target_out_dir + "/$target_name"
@@ -63,11 +74,11 @@ ohos_copy("ts2abc_deps") {
   license_file = "//third_party/typescript/LICENSE"
   part_name = "ets_frontend"
   subsystem_name = "arkcompiler"
+  deps = [ "//third_party/typescript:build_typescript" ]
 }
 
 ohos_copy("ts2abc_deps_ets") {
-  sources =
-      [ "//third_party/typescript/build_package/ohos-typescript-4.2.3-r2.tgz" ]
+  sources = [ "${root_build_dir}/typescript/typescript-4.2.3-r2.tgz" ]
 
   outputs = [ target_out_dir + "/$target_name/{{source_file_part}}" ]
   module_source_dir = target_out_dir + "/$target_name"
@@ -75,11 +86,11 @@ ohos_copy("ts2abc_deps_ets") {
   license_file = "//third_party/typescript/LICENSE"
   part_name = "ets_frontend"
   subsystem_name = "arkcompiler"
+  deps = [ "//third_party/typescript:build_typescript" ]
 }
 
 ohos_copy("ts2abc_deps_win") {
-  sources =
-      [ "//third_party/typescript/build_package/ohos-typescript-4.2.3-r2.tgz" ]
+  sources = [ "${root_build_dir}/typescript/typescript-4.2.3-r2.tgz" ]
 
   outputs = [ target_out_dir + "/$target_name/{{source_file_part}}" ]
   module_source_dir = target_out_dir + "/$target_name"
@@ -87,11 +98,11 @@ ohos_copy("ts2abc_deps_win") {
   license_file = "//third_party/typescript/LICENSE"
   part_name = "ets_frontend"
   subsystem_name = "arkcompiler"
+  deps = [ "//third_party/typescript:build_typescript" ]
 }
 
 ohos_copy("ts2abc_deps_win_ets") {
-  sources =
-      [ "//third_party/typescript/build_package/ohos-typescript-4.2.3-r2.tgz" ]
+  sources = [ "${root_build_dir}/typescript/typescript-4.2.3-r2.tgz" ]
 
   outputs = [ target_out_dir + "/$target_name/{{source_file_part}}" ]
   module_source_dir = target_out_dir + "/$target_name"
@@ -99,11 +110,11 @@ ohos_copy("ts2abc_deps_win_ets") {
   license_file = "//third_party/typescript/LICENSE"
   part_name = "ets_frontend"
   subsystem_name = "arkcompiler"
+  deps = [ "//third_party/typescript:build_typescript" ]
 }
 
 ohos_copy("ts2abc_deps_mac") {
-  sources =
-      [ "//third_party/typescript/build_package/ohos-typescript-4.2.3-r2.tgz" ]
+  sources = [ "${root_build_dir}/typescript/typescript-4.2.3-r2.tgz" ]
 
   outputs = [ target_out_dir + "/$target_name/{{source_file_part}}" ]
   module_source_dir = target_out_dir + "/$target_name"
@@ -111,11 +122,11 @@ ohos_copy("ts2abc_deps_mac") {
   license_file = "//third_party/typescript/LICENSE"
   part_name = "ets_frontend"
   subsystem_name = "arkcompiler"
+  deps = [ "//third_party/typescript:build_typescript" ]
 }
 
 ohos_copy("ts2abc_deps_mac_ets") {
-  sources =
-      [ "//third_party/typescript/build_package/ohos-typescript-4.2.3-r2.tgz" ]
+  sources = [ "${root_build_dir}/typescript/typescript-4.2.3-r2.tgz" ]
 
   outputs = [ target_out_dir + "/$target_name/{{source_file_part}}" ]
   module_source_dir = target_out_dir + "/$target_name"
@@ -123,6 +134,7 @@ ohos_copy("ts2abc_deps_mac_ets") {
   license_file = "//third_party/typescript/LICENSE"
   part_name = "ets_frontend"
   subsystem_name = "arkcompiler"
+  deps = [ "//third_party/typescript:build_typescript" ]
 }
 
 action("ts2abc_diagnostic_ts") {
@@ -160,6 +172,7 @@ action("npm_run_build") {
   deps = [
     "$ts2abc_root:config_files",
     "$ts2abc_root:node_modules",
+    "$ts2abc_root:npm_install_tsc",
     "$ts2abc_root:ts2abc_diagnostic_ts",
     "$ts2abc_root:ts2abc_irnodes_ts",
     "$ts2abc_root:ts2abc_src",
