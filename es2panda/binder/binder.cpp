@@ -183,6 +183,11 @@ void Binder::IdentifierAnalysis(ResolveBindingFlags flags)
         ResolveReferences(program_->Ast());
         AddMandatoryParams();
         if (topScope_->IsModuleScope()) {
+            if (Program()->Extension() == ScriptExtension::TS) {
+                auto *moduleRecord = Program()->ModuleRecord();
+                moduleRecord->RemoveImportEntry();
+                moduleRecord->RemoveModuleRequest();
+            }
             AssignIndexToModuleVariable();
         }
     }
@@ -303,6 +308,13 @@ void Binder::LookupIdentReference(ir::Identifier *ident)
     if (decl->IsLetOrConstOrClassDecl() && !decl->HasFlag(DeclarationFlags::NAMESPACE_IMPORT) &&
         !res.variable->HasFlag(VariableFlags::INITIALIZED)) {
         ident->SetTdz();
+    }
+
+    if (topScope_->IsModuleScope() && Program()->Extension() == ScriptExtension::TS &&
+        decl->HasFlag(DeclarationFlags::IMPORT) && !ident->IsType()) {
+        auto name = ident->Name();
+        auto *moduleRecord = Program()->ModuleRecord();
+        moduleRecord->RemoveImportEntryTypeFlag(name);
     }
 
     ident->SetVariable(res.variable);

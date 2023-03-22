@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include <set>
+
 #include "sourceTextModuleRecord.h"
 #include <binder/scope.h>
 
@@ -185,6 +187,53 @@ namespace panda::es2panda::parser {
         if (moduleScope->FindLocal(name) != nullptr) {
             moduleScope->AssignIndexToModuleVariable(name, *index);
             (*index)++;
+        }
+    }
+
+    void SourceTextModuleRecord::RemoveImportEntryTypeFlag(const util::StringView name)
+    {
+        ASSERT(!name.Empty());
+        auto regularImport = regularImportEntries_.find(name);
+        if (regularImport != regularImportEntries_.end()) {
+            regularImport->second->typeFlag_ = false;
+        }
+    }
+
+    void SourceTextModuleRecord::RemoveImportEntry()
+    {
+        for (auto iter = regularImportEntries_.begin(); iter != regularImportEntries_.end();) {
+            if (iter->second->typeFlag_) {
+                iter = regularImportEntries_.erase(iter);
+            } else {
+                iter++;
+            }
+        }
+    }
+
+    void SourceTextModuleRecord::RemoveModuleRequest()
+    {
+        std::set<int> moduleRequestIdxList;
+        for (auto iter = regularImportEntries_.begin(); iter != regularImportEntries_.end(); iter++) {
+            moduleRequestIdxList.insert(iter->second->moduleRequestIdx_);
+        }
+        for (auto iter = namespaceImportEntries_.begin(); iter != namespaceImportEntries_.end(); iter++) {
+            moduleRequestIdxList.insert((*iter)->moduleRequestIdx_);
+        }
+
+        for (auto iter = moduleRequestsIdxMap_.begin(); iter != moduleRequestsIdxMap_.end();) {
+            if (moduleRequestIdxList.find(iter->first) == moduleRequestIdxList.end()) {
+                const util::StringView source = iter->second;
+                iter = moduleRequestsIdxMap_.erase(iter);
+                moduleRequestsMap_.erase(source);
+                for (auto it = moduleRequests_.begin(); it != moduleRequests_.end(); it++) {
+                    if (*it == source) {
+                        moduleRequests_.erase(it);
+                        break;
+                    }
+                }
+            } else {
+                 iter++;
+            }
         }
     }
 } // namespace panda::es2panda::parser

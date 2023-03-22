@@ -304,6 +304,7 @@ ir::TSTypeReference *ParserImpl::ParseTsConstExpression()
 {
     auto *identRef = AllocNode<ir::Identifier>(lexer_->GetToken().Ident());
     identRef->SetReference();
+    identRef->SetType();
     identRef->SetRange(lexer_->GetToken().Loc());
 
     auto *typeReference = AllocNode<ir::TSTypeReference>(identRef, nullptr);
@@ -1064,6 +1065,7 @@ ir::Expression *ParserImpl::ParseTsTypeReferenceOrQuery(TypeAnnotationParsingOpt
     ir::Expression *typeName = AllocNode<ir::Identifier>(lexer_->GetToken().Ident());
     typeName->SetRange(lexer_->GetToken().Loc());
     typeName->AsIdentifier()->SetReference();
+    typeName->AsIdentifier()->SetType();
 
     if (lexer_->Lookahead() == LEX_CHAR_LESS_THAN) {
         lexer_->ForwardToken(lexer::TokenType::PUNCTUATOR_LESS_THAN, 1);
@@ -2843,6 +2845,7 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool i
             ir::Expression *expr = AllocNode<ir::Identifier>(lexer_->GetToken().Ident());
             expr->SetRange(lexer_->GetToken().Loc());
             expr->AsIdentifier()->SetReference();
+            expr->AsIdentifier()->SetType();
 
             lexer_->NextToken();
 

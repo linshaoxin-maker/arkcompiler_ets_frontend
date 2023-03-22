@@ -785,6 +785,7 @@ ir::TSInterfaceDeclaration *ParserImpl::ParseTsInterfaceDeclaration()
             lexer::SourcePosition heritageEnd = lexer_->GetToken().End();
             ir::Expression *expr = AllocNode<ir::Identifier>(lexer_->GetToken().Ident());
             expr->AsIdentifier()->SetReference();
+            expr->AsIdentifier()->SetType();
             expr->SetRange(lexer_->GetToken().Loc());
 
             if (lexer_->Lookahead() == LEX_CHAR_LESS_THAN) {
