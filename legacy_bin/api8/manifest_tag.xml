@@ -116,10 +116,10 @@
   <project name="global_resource_management_lite" path="base/global/resmgr_lite" revision="d2ae86ca408cc3fc5cab2256a31f29f2a53d3494" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
   <project name="global_timezone" path="base/global/timezone" revision="864354e85a295d19c186869b6478932678a78e13" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
   <project name="graphic_graphic_2d" path="foundation/graphic/standard" revision="5855660571d7517b5b7914973db590e4b1a604b0" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
-  <project name="graphic_surface" path="foundation/graphic/surface" revision="89e97124971b7652af961e18abc304bb270b3dde" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
-  <project name="graphic_ui" path="foundation/graphic/ui" revision="ca14b9c19f8893911e4ed7c273971ead36717fe4" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
-  <project name="graphic_utils" path="foundation/graphic/utils" revision="df4dbfb27c72f07236779e2a777b649f6c61dc7a" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
-  <project name="graphic_wms" path="foundation/graphic/wms" revision="77ee040f4917300e1f800b7ea417efa6e6aef837" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
+  <project name="graphic_surface" path="foundation/graphic/surface_lite" revision="89e97124971b7652af961e18abc304bb270b3dde" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
+  <project name="graphic_ui" path="foundation/arkui/ui_lite" revision="ca14b9c19f8893911e4ed7c273971ead36717fe4" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
+  <project name="graphic_utils" path="foundation/graphic/graphic_utils_lite" revision="df4dbfb27c72f07236779e2a777b649f6c61dc7a" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
+  <project name="graphic_wms" path="foundation/window/window_manager_lite" revision="77ee040f4917300e1f800b7ea417efa6e6aef837" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
   <project name="hiviewdfx_blackbox" path="base/hiviewdfx/blackbox" revision="26729e1b34b5e9ec6bb9d091bcbabbb36fc4d190" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
   <project name="hiviewdfx_faultloggerd" path="base/hiviewdfx/faultloggerd" revision="b8ef4c5985ffa01148502fff526670554b5cead7" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
   <project name="hiviewdfx_hiappevent" path="base/hiviewdfx/hiappevent" revision="0aaa7a05ffad1fb384aae1d05d3aeb4b5b277d76" upstream="OpenHarmony-3.1-Release" dest-branch="OpenHarmony-3.1-Release"/>
