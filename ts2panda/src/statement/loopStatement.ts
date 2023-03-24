@@ -102,7 +102,7 @@ export function compileWhileStatement(stmt: ts.WhileStatement, compiler: Compile
 
     if (needCreateLoopEnv) {
         pandaGen.popLexicalEnv(stmt);
-        compiler.popEnv()
+        compiler.popEnv();
     }
 
     LabelTarget.popLabelTarget();

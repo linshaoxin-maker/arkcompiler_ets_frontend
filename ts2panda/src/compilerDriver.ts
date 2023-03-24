@@ -103,7 +103,7 @@ export class CompilerDriver {
 
     getTs2abcProcess(): any {
         if (this.ts2abcProcess === undefined) {
-            throw new Error("ts2abc hasn't been initiated")
+            throw new Error("ts2abc hasn't been initiated");
         }
         return this.ts2abcProcess;
     }
@@ -409,8 +409,8 @@ export class CompilerDriver {
             let funcNode = <ts.FunctionLikeDeclaration>node;
             name = (<FunctionScope>recorder.getScopeOfNode(funcNode)).getFuncName();
             if (name == '') {
-                if ((ts.isFunctionDeclaration(node) && hasExportKeywordModifier(node) && hasDefaultKeywordModifier(node))
-                    || ts.isExportAssignment(findOuterNodeOfParenthesis(node))) {
+                if ((ts.isFunctionDeclaration(node) && hasExportKeywordModifier(node) && hasDefaultKeywordModifier(node)) ||
+                    ts.isExportAssignment(findOuterNodeOfParenthesis(node))) {
                     return `${this.getFormatedRecordName()}default`;
                 }
                 return `${this.getFormatedRecordName()}#${this.getFuncId(funcNode)}#`;
@@ -431,7 +431,7 @@ export class CompilerDriver {
             }
 
             if (name.lastIndexOf(".") != -1 || name.lastIndexOf("\\") != -1) {
-                name = `#${this.getFuncId(funcNode)}#`
+                name = `#${this.getFuncId(funcNode)}#`;
             }
         }
         return `${this.getFormatedRecordName()}${name}`;
@@ -439,9 +439,9 @@ export class CompilerDriver {
 
     getInternalNameForCtor(node: ts.ClassLikeDeclaration, ctor: ts.ConstructorDeclaration) {
         let name = getClassNameForConstructor(node);
-        name = `#${this.getFuncId(ctor)}#${name}`
+        name = `#${this.getFuncId(ctor)}#${name}`;
         if (name.lastIndexOf(".") != -1) {
-            name = `#${this.getFuncId(ctor)}#`
+            name = `#${this.getFuncId(ctor)}#`;
         }
         return `${this.getFormatedRecordName()}${name}`;
     }

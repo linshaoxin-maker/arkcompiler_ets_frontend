@@ -95,7 +95,9 @@ export function compileClassDeclaration(compiler: Compiler, stmt: ts.ClassLikeDe
             }
 
             if (ts.isMethodDeclaration(prop.getValue())) {
-                let methodLiteral = new Literal(LiteralTag.METHOD, compiler.getCompilerDriver().getFuncInternalName(<ts.MethodDeclaration>prop.getValue(), compiler.getRecorder()));
+                let methodLiteral = new Literal(LiteralTag.METHOD,
+                                                compiler.getCompilerDriver().getFuncInternalName(<ts.MethodDeclaration>prop.getValue(),
+                                                compiler.getRecorder()));
                 let affiliateLiteral = new Literal(LiteralTag.METHODAFFILIATE, getParamLengthOfFunc(<ts.MethodDeclaration>prop.getValue()));
                 classBuffer.addLiterals(methodLiteral, affiliateLiteral);
             } else {
@@ -202,7 +204,7 @@ export function compileDefaultConstructor(compiler: Compiler, ctrNode: ts.Constr
         [ts.factory.createSpreadElement(ts.factory.createIdentifier("args"))]);
 
     callNode = jshelpers.setParent(callNode, ctrNode)!;
-    callNode = ts.setTextRange(callNode, ctrNode)!
+    callNode = ts.setTextRange(callNode, ctrNode)!;
 
     compileSuperCall(compiler, callNode, [], true);
     compileConstructor(compiler, ctrNode, false);
@@ -310,7 +312,7 @@ export function compileDefaultInitClassMembers(compiler: Compiler, node: ts.Cons
                     break;
                 }
                 default:
-                    throw new Error("Private Identifier has not been supported")
+                    throw new Error("Private Identifier has not been supported");
 
             }
 
@@ -614,7 +616,7 @@ function generatePropertyFromExpr(node: ts.ClassLikeDeclaration, classFields: Ar
      * Need to reverse the order of non-static members
      */
 
-    let staticItems = properties.slice(properties.length - staticNum)
+    let staticItems = properties.slice(properties.length - staticNum);
     properties = properties.slice(0, properties.length - staticNum);
     properties = properties.reverse();
     properties.push(...staticItems);
@@ -650,7 +652,8 @@ function compileComputedProperty(compiler: Compiler, prop: Property, classReg: V
             let getProtoReg = pandaGen.getTemp();
             let getter = <ts.GetAccessorDeclaration>prop.getValue();
             let getFlag = createClassMethodOrAccessor(compiler, classReg, getProtoReg, accessorReg, getter);
-            pandaGen.defineGetterSetterByValue(getter, getFlag ? getProtoReg : classReg, keyReg, accessorReg, getVregisterCache(pandaGen, CacheList.undefined), true);
+            pandaGen.defineGetterSetterByValue(getter, getFlag ? getProtoReg : classReg, keyReg, accessorReg,
+                                               getVregisterCache(pandaGen, CacheList.undefined), true);
             pandaGen.freeTemps(accessorReg, getProtoReg);
             break;
         }
@@ -659,7 +662,8 @@ function compileComputedProperty(compiler: Compiler, prop: Property, classReg: V
             let setter = <ts.SetAccessorDeclaration>prop.getValue();
             let setProtoReg = pandaGen.getTemp();
             let setFlag = createClassMethodOrAccessor(compiler, classReg, setProtoReg, accesReg, setter);
-            pandaGen.defineGetterSetterByValue(setter, setFlag ? setProtoReg : classReg, keyReg, getVregisterCache(pandaGen, CacheList.undefined), accesReg, true);
+            pandaGen.defineGetterSetterByValue(setter, setFlag ? setProtoReg : classReg, keyReg,
+                                               getVregisterCache(pandaGen, CacheList.undefined), accesReg, true);
             pandaGen.freeTemps(accesReg, setProtoReg);
             break;
         }
@@ -726,7 +730,7 @@ function scalarArrayEquals(node1: ts.Node | undefined, node2: ts.Node | undefine
         let val1Modifs = node1.modifiers;
         let val2Modifs = node2.modifiers;
         if (val1Modifs && val2Modifs) {
-            return val1Modifs.length == val2Modifs.length && val1Modifs.every(function (v, i) { return v === val2Modifs![i] });;
+            return val1Modifs.length == val2Modifs.length && val1Modifs.every(function (v, i) { return v === val2Modifs![i] });
         }
 
         if (!val1Modifs && !val2Modifs) {

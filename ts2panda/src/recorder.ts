@@ -132,7 +132,8 @@ export class Recorder {
                     let isExport: boolean = false;
                     if (hasExportKeywordModifier(childNode)) {
                         if (!CmdOptions.isModules()) {
-                            throw new DiagnosticError(childNode, DiagnosticCode.Cannot_use_imports_exports_or_module_augmentations_when_module_is_none, jshelpers.getSourceFileOfNode(childNode));
+                            throw new DiagnosticError(childNode, DiagnosticCode.Cannot_use_imports_exports_or_module_augmentations_when_module_is_none,
+                                                      jshelpers.getSourceFileOfNode(childNode));
                         }
                         this.recordEcmaExportInfo(<ts.FunctionDeclaration>childNode, scope);
                         isExport = true;
@@ -172,7 +173,8 @@ export class Recorder {
                     let isExport: boolean = false;
                     if (hasExportKeywordModifier(childNode)) {
                         if (!CmdOptions.isModules()) {
-                            throw new DiagnosticError(childNode, DiagnosticCode.Cannot_use_imports_exports_or_module_augmentations_when_module_is_none, jshelpers.getSourceFileOfNode(childNode));
+                            throw new DiagnosticError(childNode, DiagnosticCode.Cannot_use_imports_exports_or_module_augmentations_when_module_is_none,
+                                                      jshelpers.getSourceFileOfNode(childNode));
                         }
                         this.recordEcmaExportInfo(<ts.ClassDeclaration>childNode, scope);
                         isExport = true;
@@ -202,7 +204,8 @@ export class Recorder {
                 }
                 case ts.SyntaxKind.ImportDeclaration: {
                     if (!CmdOptions.isModules()) {
-                        throw new DiagnosticError(childNode, DiagnosticCode.Cannot_use_imports_exports_or_module_augmentations_when_module_is_none, jshelpers.getSourceFileOfNode(childNode));
+                        throw new DiagnosticError(childNode, DiagnosticCode.Cannot_use_imports_exports_or_module_augmentations_when_module_is_none,
+                                                  jshelpers.getSourceFileOfNode(childNode));
                     }
                     this.recordEcmaImportInfo(<ts.ImportDeclaration>childNode, scope);
 
@@ -555,7 +558,8 @@ export class Recorder {
         }
     }
 
-    private recordEcmaExportInfo(node: ts.ExportDeclaration | ts.ExportAssignment | ts.VariableStatement | ts.FunctionDeclaration | ts.ClassDeclaration, scope: Scope) {
+    private recordEcmaExportInfo(node: ts.ExportDeclaration | ts.ExportAssignment | ts.VariableStatement |
+                                 ts.FunctionDeclaration | ts.ClassDeclaration, scope: Scope) {
         if (!(scope instanceof ModuleScope)) {
             return;
         }

@@ -753,8 +753,8 @@ export class PandaGen {
 
     // eg. print
     tryLoadGlobalByName(node: ts.Node, string_id: string) {
-        CmdOptions.isWatchEvaluateExpressionMode() ? this.loadByNameViaDebugger(node, string_id, CacheList.True)
-                                : this.add(node, tryLoadGlobalByName(string_id));
+        CmdOptions.isWatchEvaluateExpressionMode() ? this.loadByNameViaDebugger(node, string_id, CacheList.True) :
+                                                     this.add(node, tryLoadGlobalByName(string_id));
     }
 
     storeByNameViaDebugger(node: ts.Node, string_id: string) {
@@ -772,8 +772,8 @@ export class PandaGen {
 
     // eg. a = 1
     tryStoreGlobalByName(node: ts.Node, string_id: string) {
-        CmdOptions.isWatchEvaluateExpressionMode() ? this.storeByNameViaDebugger(node, string_id)
-                                : this.add(node, tryStoreGlobalByName(string_id));
+        CmdOptions.isWatchEvaluateExpressionMode() ? this.storeByNameViaDebugger(node, string_id) :
+                                                     this.add(node, tryStoreGlobalByName(string_id));
     }
 
     // eg. var n; n;
@@ -1440,7 +1440,7 @@ export class PandaGen {
                 this.loadAccumulatorInt(node, prop);
                 this.storeAccumulator(node, propReg);
                 this.stSuperByValue(node, obj, propReg);
-                this.freeTemps(propReg)
+                this.freeTemps(propReg);
                 break;
             default:
                 this.stSuperByValue(node, obj, prop);

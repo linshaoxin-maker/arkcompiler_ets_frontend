@@ -201,8 +201,8 @@ function checkImportDeclaration(node: ts.ImportDeclaration, scope: Scope) {
         let namedBindings = node.importClause.namedBindings;
         if (ts.isNamedImports(namedBindings)) {
             namedBindings.elements.forEach((element: any) => {
-                if (jshelpers.getTextOfIdentifierOrLiteral(element.name) == 'arguments'
-                    || jshelpers.getTextOfIdentifierOrLiteral(element.name) == 'eval') {
+                if (jshelpers.getTextOfIdentifierOrLiteral(element.name) == 'arguments' ||
+                    jshelpers.getTextOfIdentifierOrLiteral(element.name) == 'eval') {
                     throw new DiagnosticError(node, DiagnosticCode.Unexpected_eval_or_arguments_in_strict_mode);
                 }
             });

@@ -90,10 +90,10 @@ class RegAllocator {
                     if (format[j][0] == OperandKind.SrcVReg) {
                         head.push(new Mov(spill, vOrigin));
                     } else if (format[j][0] == OperandKind.DstVReg) {
-                        tail.push(new Mov(vOrigin, spill))
+                        tail.push(new Mov(vOrigin, spill));
                     } else if (format[j][0] == OperandKind.SrcDstVReg) {
                         head.push(new Mov(spill, vOrigin));
-                        tail.push(new Mov(vOrigin, spill))
+                        tail.push(new Mov(vOrigin, spill));
                     } else {
                         // here we do nothing
                     }

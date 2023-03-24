@@ -199,13 +199,17 @@ export class SourceTextModuleRecord {
         {
             let dupExportEntry: Entry | undefined = this.searchDuplicateExport();
             if (dupExportEntry !== undefined) {
-                throw new DiagnosticError(dupExportEntry.node, DiagnosticCode.Module_0_has_already_exported_a_member_named_1, getSourceFileOfNode(dupExportEntry.node), [getSourceFileOfNode(dupExportEntry.node).fileName, dupExportEntry.exportName]);
+                throw new DiagnosticError(dupExportEntry.node, DiagnosticCode.Module_0_has_already_exported_a_member_named_1,
+                                          getSourceFileOfNode(dupExportEntry.node),
+                                          [getSourceFileOfNode(dupExportEntry.node).fileName, dupExportEntry.exportName]);
             }
         }
 
         this.localExportEntries.forEach((entry: Array<Entry>, localName: string) => {
             if (!moduleScope.hasDecl(localName) && localName != '*default*') {
-                throw new DiagnosticError(entry[0].node, DiagnosticCode.Module_0_has_no_exported_member_1, getSourceFileOfNode(entry[0].node), [getSourceFileOfNode(entry[0].node).fileName, localName]);
+                throw new DiagnosticError(entry[0].node, DiagnosticCode.Module_0_has_no_exported_member_1,
+                                          getSourceFileOfNode(entry[0].node),
+                                          [getSourceFileOfNode(entry[0].node).fileName, localName]);
             }
         });
 

@@ -78,7 +78,7 @@ export function hasDefaultKeywordModifier(node: ts.Node): boolean {
 }
 
 export function execute(cmd: string, args: Array<string>) {
-    var spawn = require('child_process').spawn;
+    let spawn = require('child_process').spawn;
 
     let child = spawn(cmd, [...args], {
         stdio: ['pipe', 'inherit', 'inherit']
@@ -139,8 +139,8 @@ export function isBindingOrAssignmentPattern(node: ts.Node) {
 }
 
 export function isMemberExpression(node: ts.Node) {
-    if (ts.isPropertyAccessExpression(node)
-        || ts.isElementAccessExpression(node)) {
+    if (ts.isPropertyAccessExpression(node) ||
+        ts.isElementAccessExpression(node)) {
         return true;
     }
 
@@ -175,7 +175,7 @@ export function escapeUnicode(data: string) {
     let char = '\n';
     let i = 0;
     let j = 0;
-    let new_data = ""
+    let new_data = "";
     while ((j = data.indexOf(char, i)) !== -1) {
         let tmp = data.substring(i, j);
         if (tmp.indexOf("\\u") != -1) {
@@ -186,14 +186,14 @@ export function escapeUnicode(data: string) {
     }
 
     new_data = new_data.concat("}\n");
-    return new_data
+    return new_data;
 }
 
 export function initiateTs2abc(args: Array<string>) {
     let js2abc = path.join(path.resolve(__dirname, '../bin'), "js2abc");
     args.unshift("--compile-by-pipe");
     // @ts-ignore
-    var spawn = require('child_process').spawn;
+    let spawn = require('child_process').spawn;
     let child = spawn(js2abc, [...args], {
         stdio: ['pipe', 'inherit', 'inherit', 'pipe']
     });
@@ -407,7 +407,7 @@ export function getOutputBinName(node: ts.SourceFile) {
     let fileName = node.fileName.substring(0, node.fileName.lastIndexOf('.'));
     let inputFileName = CmdOptions.getInputFileName();
     if (/^win/.test(require('os').platform())) {
-        var inputFileTmps = inputFileName.split(path.sep);
+        let inputFileTmps = inputFileName.split(path.sep);
         inputFileName = path.posix.join(...inputFileTmps);
     }
 
@@ -446,11 +446,11 @@ function getNodeForGeneratedName(
         node = original;
 
         // if "node" is a different generated name (having a different "autoGenerateId"), use it and stop traversing.
-        if (ts.isIdentifier(node)
+        if (ts.isIdentifier(node) &&
             // @ts-ignore
-            && !!(node.autoGenerateFlags! & ts.GeneratedIdentifierFlags.Node)
+            !!(node.autoGenerateFlags! & ts.GeneratedIdentifierFlags.Node) &&
             // @ts-ignore
-            && node.autoGenerateId !== autoGenerateId) {
+            node.autoGenerateId !== autoGenerateId) {
             break;
         }
         // @ts-ignore

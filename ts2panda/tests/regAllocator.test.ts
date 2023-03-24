@@ -253,7 +253,7 @@ describe("RegAllocator", function () {
         let para2 = pandaGen.getTemp();
         let para3 = pandaGen.getTemp();
 
-        pandaGen.getInsns().push(new Callrange(new Imm(0), new Imm(3), [para1, para2, para3]))
+        pandaGen.getInsns().push(new Callrange(new Imm(0), new Imm(3), [para1, para2, para3]));
 
         pandaGen.freeTemps(para1, para3, para2);
 

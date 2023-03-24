@@ -18,7 +18,7 @@ import { PandaGen } from "../pandagen";
 import { VReg } from "../irnodes";
 
 function genRawString(pandaGen: PandaGen, expr: ts.TemplateExpression | ts.NoSubstitutionTemplateLiteral) {
-    let text = ""
+    let text = "";
     if (ts.isTemplateExpression(expr)) {
         text = expr.head.rawText!;
     } else {
@@ -30,7 +30,7 @@ function genRawString(pandaGen: PandaGen, expr: ts.TemplateExpression | ts.NoSub
 }
 
 function genCookedString(pandaGen: PandaGen, expr: ts.TemplateExpression | ts.NoSubstitutionTemplateLiteral) {
-    let text = ""
+    let text = "";
     if (ts.isTemplateExpression(expr)) {
         text = expr.head.text;
     } else {
@@ -63,10 +63,10 @@ function genTemplateArrayArg(pandaGen: PandaGen, expr: ts.TemplateExpression | t
     pandaGen.loadAccumulatorInt(expr, elemIndex);
     pandaGen.storeAccumulator(expr, indexReg);
 
-    genRawString(pandaGen, expr)
+    genRawString(pandaGen, expr);
     pandaGen.storeObjProperty(expr, rawArrTmp, indexReg);
 
-    genCookedString(pandaGen, expr)
+    genCookedString(pandaGen, expr);
     pandaGen.storeObjProperty(expr, cookedArrTmp, indexReg);
     ++elemIndex;
 

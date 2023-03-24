@@ -26,7 +26,7 @@ export function compileMemberAccessExpression(node: ts.ElementAccessExpression |
     let objReg = pandaGen.getTemp();
     let propReg = pandaGen.getTemp();
 
-    let { obj: obj, prop: property } = getObjAndProp(node, objReg, propReg, compiler)
+    let { obj: obj, prop: property } = getObjAndProp(node, objReg, propReg, compiler);
 
     if (jshelpers.isSuperProperty(node)) {
         // make sure "this" is stored in lexical env if needed

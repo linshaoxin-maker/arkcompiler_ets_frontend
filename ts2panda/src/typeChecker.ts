@@ -240,7 +240,7 @@ export class TypeChecker {
                 let arrayType = new ArrayType(typeNode);
                 return arrayType.shiftedTypeIndex;
             case ts.SyntaxKind.ParenthesizedType:
-                let subType = (<ts.ParenthesizedTypeNode>typeNode).type
+                let subType = (<ts.ParenthesizedTypeNode>typeNode).type;
                 if (subType.kind == ts.SyntaxKind.UnionType) {
                     let unionType = new UnionType(subType);
                     return unionType.shiftedTypeIndex;

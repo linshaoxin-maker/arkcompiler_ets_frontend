@@ -71,7 +71,7 @@ export class Property {
 
     getValue() {
         if (this.propKind == PropertyKind.Accessor) {
-            throw new Error("Accessor doesn't have valueNode")
+            throw new Error("Accessor doesn't have valueNode");
         }
         return this.valueNode!;
     }
@@ -199,8 +199,8 @@ function defineProperty(
         if (namedPropertyMap.has(name_str)) {
             let prevProp = properties[namedPropertyMap.get(name_str)!];
 
-            if ((prevProp.getKind() == PropertyKind.Accessor || prevProp.getKind() == PropertyKind.Constant)
-                && (propKind == PropertyKind.Accessor || propKind == PropertyKind.Constant)) {
+            if ((prevProp.getKind() == PropertyKind.Accessor || prevProp.getKind() == PropertyKind.Constant) &&
+                (propKind == PropertyKind.Accessor || propKind == PropertyKind.Constant)) {
                 if (propKind == PropertyKind.Accessor) {
                     if (ts.isGetAccessorDeclaration(propValue)) {
                         prevProp!.setGetter(propValue);

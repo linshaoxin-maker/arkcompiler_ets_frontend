@@ -77,7 +77,7 @@ export class LReference {
             case ReferenceKind.Destructuring:
                 throw new Error("Destructuring target can't be loaded");
             default:
-                throw new Error("Invalid LReference kind to GetValue")
+                throw new Error("Invalid LReference kind to GetValue");
         }
     }
 
@@ -85,7 +85,7 @@ export class LReference {
         let pandaGen = this.compiler.getPandaGen();
         switch (this.refKind) {
             case ReferenceKind.MemberAccess: {
-                let prop: VReg | number | string
+                let prop: VReg | number | string;
                 if (this.propLiteral === undefined) {
                     prop = <VReg>this.prop!;
                 } else {
@@ -109,7 +109,7 @@ export class LReference {
                 compileDestructuring(<ts.BindingOrAssignmentPattern>this.destructuringTarget, pandaGen, this.compiler);
                 return;
             default:
-                throw new Error("Invalid LReference kind to SetValue")
+                throw new Error("Invalid LReference kind to SetValue");
         }
     }
 
