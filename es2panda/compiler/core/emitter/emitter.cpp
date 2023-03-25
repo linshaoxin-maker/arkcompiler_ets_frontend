@@ -414,7 +414,7 @@ void Emitter::AddSourceTextModuleRecord(ModuleRecordEmitter *module, CompilerCon
     prog_->literalarray_table.emplace(static_cast<std::string_view>(moduleLiteral), std::move(literalArrayInstance));
 }
 
-void Emitter::FillTypeInfoRecord(CompilerContext *context, bool typeFlag, int64_t typeSummaryIndex,
+void Emitter::FillTypeInfoRecord(const CompilerContext *context, bool typeFlag, int64_t typeSummaryIndex,
     const std::string &recordName) const
 {
     if (!context->IsMergeAbc()) {

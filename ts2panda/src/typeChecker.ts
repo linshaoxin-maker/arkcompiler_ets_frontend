@@ -255,7 +255,7 @@ export class TypeChecker {
                 if (BuiltinType[typeIdentifierName]) {
                     let declNode = this.getDeclNodeForInitializer(typeIdentifier);
                     if (declNode && (ts.isClassLike(declNode) || declNode.kind == ts.SyntaxKind.InterfaceDeclaration)) {
-                        return this.getBuiltinTypeIndex(<ts.TypeReferenceNode>typeNode, typeIdentifierName);
+                        return this.getBuiltinTypeIndex(<ts.TypeReferenceNode>typeNode, typeIdentifierName, true);
                     } else {
                         return BuiltinType[typeIdentifierName];
                     }
@@ -265,8 +265,13 @@ export class TypeChecker {
         }
     }
 
-    isBuiltinType(expr: ts.NewExpression) {
+    isBuiltinType(expr: ts.NewExpression | ts.ExpressionWithTypeArguments) {
         let name = expr.expression.getFullText().replace(/\s/g, "");
+        return name in BuiltinType;
+    }
+
+    isBuiltinIdentifier(id: ts.Identifier) {
+        let name = id.escapedText.toString();
         return name in BuiltinType;
     }
 
@@ -283,17 +288,23 @@ export class TypeChecker {
         return instanceType.shiftedTypeIndex;
     }
 
-    getOrCreateInstanceTypeForBuiltinContainer(builtinContainerSignature: object) {
+    getOrCreateInstanceTypeForBuiltinContainer(builtinContainerSignature: object, getTypeForInstace: boolean) {
         let typeRec = TypeRecorder.getInstance();
         if (typeRec.hasBuiltinContainer2InstanceMap(builtinContainerSignature)) {
+            if (getTypeForInstace) {
+                return this.getOrCreateInstanceType(typeRec.getBuiltinContainer2InstanceMap(builtinContainerSignature));
+            }
             return typeRec.getBuiltinContainer2InstanceMap(builtinContainerSignature);
         }
         let builtinContainerType = new BuiltinContainerType(builtinContainerSignature);
         let builtinContainerTypeIdx = builtinContainerType.shiftedTypeIndex;
-        return this.getOrCreateInstanceType(builtinContainerTypeIdx);
+        if (getTypeForInstace) {
+            return this.getOrCreateInstanceType(builtinContainerTypeIdx);
+        }
+        return builtinContainerTypeIdx;
     }
 
-    getBuiltinTypeIndex(node: ts.NewExpression | ts.TypeReferenceNode, name: string) {
+    getBuiltinTypeIndex(node: ts.NewExpression | ts.TypeReferenceNode | ts.ExpressionWithTypeArguments, name: string, getTypeForInstace: boolean) {
         let typeArguments = node.typeArguments;
         if (typeArguments && this.needRecordBuiltinContainer) {
             let typeArgIdxs = new Array<number>();
@@ -305,15 +316,25 @@ export class TypeChecker {
                 "typeIndex": BuiltinType[name],
                 "typeArgIdxs": typeArgIdxs
             }
-            return this.getOrCreateInstanceTypeForBuiltinContainer(builtinContainerSignature);
+            return this.getOrCreateInstanceTypeForBuiltinContainer(builtinContainerSignature, getTypeForInstace);
         }
-        return this.getOrCreateInstanceType(BuiltinType[name]);
+        if (getTypeForInstace) {
+            return this.getOrCreateInstanceType(BuiltinType[name]);
+        }
+        return BuiltinType[name];
     }
 
-    getBuiltinTypeIndexForExpr(expr: ts.NewExpression) {
-        let origExprNode = <ts.NewExpression>ts.getOriginalNode(expr);
+    getBuiltinTypeIndexForExpr(expr: ts.NewExpression | ts.ExpressionWithTypeArguments, getTypeForInstace: boolean) {
+        let origExprNode = <ts.NewExpression | ts.ExpressionWithTypeArguments>ts.getOriginalNode(expr);
         let name = origExprNode.expression.getFullText().replace(/\s/g, "");
-        return this.getBuiltinTypeIndex(origExprNode, name);
+        return this.getBuiltinTypeIndex(origExprNode, name, getTypeForInstace);
+    }
+
+    getBuiltinTypeIndexForIdentifier(id: ts.Identifier, getTypeForInstace: boolean) {
+        if (getTypeForInstace) {
+            return this.getOrCreateInstanceType(BuiltinType[id.escapedText.toString()]);
+        }
+        return BuiltinType[id.escapedText.toString()];
     }
 
     public getOrCreateRecordForDeclNode(initializer: ts.Node | undefined, variableNode?: ts.Node) {
@@ -323,7 +344,11 @@ export class TypeChecker {
 
         let typeIndex = PrimitiveType.ANY;
         if (initializer.kind == ts.SyntaxKind.NewExpression && this.isBuiltinType(<ts.NewExpression>initializer)) {
-            typeIndex = this.getBuiltinTypeIndexForExpr(<ts.NewExpression>initializer);
+            typeIndex = this.getBuiltinTypeIndexForExpr(<ts.NewExpression>initializer, true);
+        } else if (initializer.kind == ts.SyntaxKind.ExpressionWithTypeArguments && this.isBuiltinType(<ts.ExpressionWithTypeArguments>initializer)) {
+            typeIndex = this.getBuiltinTypeIndexForExpr(<ts.ExpressionWithTypeArguments>initializer, false);
+        } else if (initializer.kind == ts.SyntaxKind.Identifier && this.isBuiltinIdentifier(<ts.Identifier>initializer)) {
+            typeIndex = this.getBuiltinTypeIndexForIdentifier(<ts.Identifier>initializer, false);
         } else {
             let declNode = this.getDeclNodeForInitializer(initializer);
             typeIndex = this.getTypeFromDecl(declNode, initializer.kind == ts.SyntaxKind.NewExpression);
