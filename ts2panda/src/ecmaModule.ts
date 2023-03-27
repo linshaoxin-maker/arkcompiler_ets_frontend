@@ -231,9 +231,9 @@ export function setModuleNamespaceImports(compiler: Compiler, moduleScope: Scope
     }
 
     moduleScope.module().getNamespaceImportEntries().forEach(entry => {
-        let namespace_lref = LReference.generateLReference(compiler, (<ts.NamespaceImport>entry.node).name, true);
+        let namespaceLref = LReference.generateLReference(compiler, (<ts.NamespaceImport>entry.node).name, true);
         pandagen.getModuleNamespace(entry.node, entry.moduleRequest);
-        namespace_lref.setValue();
+        namespaceLref.setValue();
     });
 }
 

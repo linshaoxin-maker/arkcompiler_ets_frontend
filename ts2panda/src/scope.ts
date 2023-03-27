@@ -77,14 +77,14 @@ export class ClassDecl extends Decl {
 }
 
 export class CatchParameter extends Decl {
-    constructor(CpName: string, node: ts.Node, isModule: ModuleVarKind = ModuleVarKind.NOT) {
-        super(CpName, node, isModule);
+    constructor(cpName: string, node: ts.Node, isModule: ModuleVarKind = ModuleVarKind.NOT) {
+        super(cpName, node, isModule);
     }
 }
 
 export class FunctionParameter extends Decl {
-    constructor(FpName: string, node: ts.Node, isModule: ModuleVarKind = ModuleVarKind.NOT) {
-        super(FpName, node, isModule);
+    constructor(fpName: string, node: ts.Node, isModule: ModuleVarKind = ModuleVarKind.NOT) {
+        super(fpName, node, isModule);
     }
 }
 

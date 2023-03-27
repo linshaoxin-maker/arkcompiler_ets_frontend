@@ -36,13 +36,13 @@ export class DebugPosInfo {
     private br: number | undefined;  // bound right
     private l: number = -1;  // line number
     private c: number = -1;  // column number
-    private nodeKind: NodeKind | undefined = NodeKind.FirstNodeOfFunction;
+    private nodeKind: NodeKind | undefined = NodeKind.FIRST_NODE_OF_FUNCTION;
 
     constructor() { }
 
     public setDebugPosInfoNodeState(extendedNode: ts.Node | NodeKind): void {
         if (DebugInfo.isNode(extendedNode)) {
-            this.nodeKind = NodeKind.Normal;
+            this.nodeKind = NodeKind.NORMAL;
         } else {
             this.nodeKind = <NodeKind>extendedNode;
         }
@@ -84,7 +84,7 @@ export class DebugPosInfo {
         return this.c;
     }
 
-    public ClearNodeKind(): void {
+    public clearNodeKind(): void {
         this.nodeKind = undefined;
     }
 }
@@ -128,9 +128,9 @@ export class VariableDebugInfo {
 }
 
 export enum NodeKind {
-    Normal,
-    Invalid,
-    FirstNodeOfFunction,
+    NORMAL,
+    INVALID,
+    FIRST_NODE_OF_FUNCTION,
 }
 
 export class DebugInfo {
@@ -139,9 +139,9 @@ export class DebugInfo {
     constructor() { }
 
     public static isNode(extendedNode: ts.Node | NodeKind) {
-        if (extendedNode != NodeKind.Invalid &&
-            extendedNode != NodeKind.FirstNodeOfFunction &&
-            extendedNode != NodeKind.Normal) {
+        if (extendedNode != NodeKind.INVALID &&
+            extendedNode != NodeKind.FIRST_NODE_OF_FUNCTION &&
+            extendedNode != NodeKind.NORMAL) {
             return true;
         }
 
@@ -281,7 +281,7 @@ export class DebugInfo {
 
         // count pos offset
         for (let i = 0; i < insns.length; i++) {
-            if (insns[i].debugPosInfo.getDebugPosInfoNodeState() == NodeKind.FirstNodeOfFunction) {
+            if (insns[i].debugPosInfo.getDebugPosInfoNodeState() == NodeKind.FIRST_NODE_OF_FUNCTION) {
                 DebugInfo.setInvalidPosInfoForUninitializeIns(insns[i].debugPosInfo, pandaGen);
             }
 

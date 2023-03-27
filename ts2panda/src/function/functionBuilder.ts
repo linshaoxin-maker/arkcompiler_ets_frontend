@@ -74,7 +74,7 @@ export class FunctionBuilder {
     }
 
     implicitReturn(node: ts.Node | NodeKind) {
-        CmdOptions.isWatchEvaluateExpressionMode() ? this.pg.return(NodeKind.Invalid) : this.pg.returnUndefined(node);
+        CmdOptions.isWatchEvaluateExpressionMode() ? this.pg.return(NodeKind.INVALID) : this.pg.returnUndefined(node);
     }
 
     builderType(): FunctionBuilderType {

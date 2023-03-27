@@ -139,7 +139,7 @@ export function emitCall(expr: ts.CallExpression, args: VReg[], passThis: boolea
 
     // spread argument exist
     let calleeReg = args[0];
-    let thisReg = passThis ? args[1] : getVregisterCache(pandaGen, CacheList.undefined);
+    let thisReg = passThis ? args[1] : getVregisterCache(pandaGen, CacheList.UNDEFINED);
     let argArray = pandaGen.getTemp();
     createArrayFromElements(expr, compiler, <ts.NodeArray<ts.Expression>>expr.arguments, argArray);
     pandaGen.callSpread(debugNode, calleeReg, thisReg, argArray);

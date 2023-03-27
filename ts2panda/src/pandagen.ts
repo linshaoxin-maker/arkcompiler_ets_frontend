@@ -739,7 +739,7 @@ export class PandaGen {
     }
 
     loadByNameViaDebugger(node: ts.Node, string_id: string, boolVal: CacheList) {
-        this.loadObjProperty(node, getVregisterCache(this, CacheList.Global), "debuggerGetValue");
+        this.loadObjProperty(node, getVregisterCache(this, CacheList.GLOBAL), "debuggerGetValue");
         let getValueReg = this.getTemp();
         this.storeAccumulator(node, getValueReg);
         let variableReg = this.getTemp();
@@ -753,14 +753,14 @@ export class PandaGen {
 
     // eg. print
     tryLoadGlobalByName(node: ts.Node, string_id: string) {
-        CmdOptions.isWatchEvaluateExpressionMode() ? this.loadByNameViaDebugger(node, string_id, CacheList.True)
+        CmdOptions.isWatchEvaluateExpressionMode() ? this.loadByNameViaDebugger(node, string_id, CacheList.TRUE)
                                 : this.add(node, tryLoadGlobalByName(string_id));
     }
 
     storeByNameViaDebugger(node: ts.Node, string_id: string) {
         let valueReg = this.getTemp();
         this.storeAccumulator(node, valueReg);
-        this.loadObjProperty(node, getVregisterCache(this, CacheList.Global), "debuggerSetValue");
+        this.loadObjProperty(node, getVregisterCache(this, CacheList.GLOBAL), "debuggerSetValue");
         let setValueReg = this.getTemp();
         this.storeAccumulator(node, setValueReg);
         let variableReg = this.getTemp();
@@ -808,7 +808,7 @@ export class PandaGen {
 
     // @ts-ignore
     label(node: ts.Node, label: Label) {
-        this.add(NodeKind.Invalid, label);
+        this.add(NodeKind.INVALID, label);
     }
 
     branch(node: ts.Node | NodeKind, target: Label) {
@@ -817,12 +817,12 @@ export class PandaGen {
 
     branchIfNotUndefined(node: ts.Node, target: Label) {
         // the compared value is in acc
-        this.condition(node, ts.SyntaxKind.EqualsEqualsToken, getVregisterCache(this, CacheList.undefined), target);
+        this.condition(node, ts.SyntaxKind.EqualsEqualsToken, getVregisterCache(this, CacheList.UNDEFINED), target);
     }
 
     branchIfUndefined(node: ts.Node, target: Label) {
         // the compared value is in acc
-        this.condition(node, ts.SyntaxKind.ExclamationEqualsToken, getVregisterCache(this, CacheList.undefined), target)
+        this.condition(node, ts.SyntaxKind.ExclamationEqualsToken, getVregisterCache(this, CacheList.UNDEFINED), target)
     }
 
     isTrue(node: ts.Node) {
@@ -971,11 +971,11 @@ export class PandaGen {
                 let endLabel = new Label();
                 this.jumpIfFalse(node, falseLabel);
                 // operand is true
-                this.add(node, loadAccumulator(getVregisterCache(this, CacheList.False)));
+                this.add(node, loadAccumulator(getVregisterCache(this, CacheList.FALSE)));
                 this.branch(node, endLabel);
                 // operand is false
                 this.label(node, falseLabel);
-                this.add(node, loadAccumulator(getVregisterCache(this, CacheList.True)));
+                this.add(node, loadAccumulator(getVregisterCache(this, CacheList.TRUE)));
                 this.label(node, endLabel);
                 break;
             case SyntaxKind.TildeToken:
@@ -1248,9 +1248,9 @@ export class PandaGen {
 
     defineGetterSetterByValue(node: ts.Node, obj: VReg, name: VReg, getter: VReg, setter: VReg, isComputedPropertyName: boolean) {
         if (isComputedPropertyName) {
-            this.add(node, loadAccumulator(getVregisterCache(this, CacheList.True)));
+            this.add(node, loadAccumulator(getVregisterCache(this, CacheList.TRUE)));
         } else {
-            this.add(node, loadAccumulator(getVregisterCache(this, CacheList.False)));
+            this.add(node, loadAccumulator(getVregisterCache(this, CacheList.FALSE)));
         }
         this.add(node, defineGetterSetterByValue(obj, name, getter, setter));
     }
@@ -1509,10 +1509,10 @@ export class PandaGen {
                 break;
         }
         this.add(node, new Jeqz(falseLabel));
-        this.add(node, loadAccumulator(getVregisterCache(this, CacheList.True)));
+        this.add(node, loadAccumulator(getVregisterCache(this, CacheList.TRUE)));
         this.branch(node, endLabel);
         this.label(node, falseLabel);
-        this.add(node, loadAccumulator(getVregisterCache(this, CacheList.False)));
+        this.add(node, loadAccumulator(getVregisterCache(this, CacheList.FALSE)));
         this.label(node, endLabel);
     }
 

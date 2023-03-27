@@ -175,18 +175,18 @@ export function escapeUnicode(data: string) {
     let char = '\n';
     let i = 0;
     let j = 0;
-    let new_data = ""
+    let newData = "";
     while ((j = data.indexOf(char, i)) !== -1) {
         let tmp = data.substring(i, j);
         if (tmp.indexOf("\\u") != -1) {
             tmp = addUnicodeEscape(tmp);
         }
-        new_data = new_data.concat(tmp, "\n");
+        newData = newData.concat(tmp, "\n");
         i = j + 1;
     }
 
-    new_data = new_data.concat("}\n");
-    return new_data
+    newData = newData.concat("}\n");
+    return newData;
 }
 
 export function initiateTs2abc(args: Array<string>) {

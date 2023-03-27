@@ -35,7 +35,7 @@ function genYieldExpr(compiler: Compiler, expr: ts.YieldExpression) {
         compiler.compileExpression(expr.expression);
         funcBuilder.yield(expr);
     } else {
-        pandaGen.loadAccumulator(expr, getVregisterCache(pandaGen, CacheList.undefined));
+        pandaGen.loadAccumulator(expr, getVregisterCache(pandaGen, CacheList.UNDEFINED));
         funcBuilder.yield(expr);
     }
 }

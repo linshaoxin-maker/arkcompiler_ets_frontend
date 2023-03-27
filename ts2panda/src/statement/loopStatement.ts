@@ -287,7 +287,7 @@ export function compileForInStatement(stmt: ts.ForInStatement, compiler: Compile
     // get next prop of enumerator
     pandaGen.getNextPropName(stmt, iterReg);
     pandaGen.storeAccumulator(stmt, propName);
-    pandaGen.condition(stmt, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.undefined), loopEndLabel);
+    pandaGen.condition(stmt, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.UNDEFINED), loopEndLabel);
 
     let lref = LReference.generateLReference(compiler, stmt.initializer, false);
     pandaGen.loadAccumulator(stmt, propName);

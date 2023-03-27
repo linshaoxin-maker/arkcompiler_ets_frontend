@@ -649,12 +649,12 @@ export class ExternalType extends BaseType {
     }
 
     transfer2LiteralBuffer(): LiteralBuffer {
-        let ImpTypeBuf = new LiteralBuffer();
-        let ImpTypeLiterals: Array<Literal> = new Array<Literal>();
-        ImpTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.EXTERNAL));
-        ImpTypeLiterals.push(new Literal(LiteralTag.STRING, this.fullRedirectNath));
-        ImpTypeBuf.addLiterals(...ImpTypeLiterals);
-        return ImpTypeBuf;
+        let impTypeBuf = new LiteralBuffer();
+        let impTypeLiterals: Array<Literal> = new Array<Literal>();
+        impTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.EXTERNAL));
+        impTypeLiterals.push(new Literal(LiteralTag.STRING, this.fullRedirectNath));
+        impTypeBuf.addLiterals(...impTypeLiterals);
+        return impTypeBuf;
     }
 }
 
@@ -702,15 +702,15 @@ export class UnionType extends BaseType {
     }
 
     transfer2LiteralBuffer(): LiteralBuffer {
-        let UnionTypeBuf = new LiteralBuffer();
-        let UnionTypeLiterals: Array<Literal> = new Array<Literal>();
-        UnionTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.UNION));
-        UnionTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.unionedTypeArray.length));
+        let unionTypeBuf = new LiteralBuffer();
+        let unionTypeLiterals: Array<Literal> = new Array<Literal>();
+        unionTypeLiterals.push(new Literal(LiteralTag.INTEGER, L2Type.UNION));
+        unionTypeLiterals.push(new Literal(LiteralTag.INTEGER, this.unionedTypeArray.length));
         for (let type of this.unionedTypeArray) {
-            this.transferType2Literal(type, UnionTypeLiterals);
+            this.transferType2Literal(type, unionTypeLiterals);
         }
-        UnionTypeBuf.addLiterals(...UnionTypeLiterals);
-        return UnionTypeBuf;
+        unionTypeBuf.addLiterals(...unionTypeLiterals);
+        return unionTypeBuf;
     }
 }
 

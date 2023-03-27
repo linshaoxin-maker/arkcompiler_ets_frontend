@@ -59,24 +59,24 @@ function compileProperties(compiler: Compiler, properties: Property[], literalBu
     let hasMethod: boolean = false;
 
     for (let prop of properties) {
-        if (prop.getKind() == PropertyKind.Spread || prop.getKind() == PropertyKind.Computed) {
+        if (prop.getKind() == PropertyKind.SPREAD || prop.getKind() == PropertyKind.COMPUTED) {
             break;
         }
 
-        if (prop.getKind() == PropertyKind.Prototype || prop.isRedeclared()) {
+        if (prop.getKind() == PropertyKind.PROTOTYPE || prop.isRedeclared()) {
             continue;
         }
 
         let nameLiteral = new Literal(LiteralTag.STRING, String(prop.getName()));
 
-        if (prop.getKind() == PropertyKind.Constant) {
+        if (prop.getKind() == PropertyKind.CONSTANT) {
             let valLiteral: Literal = createConstantLiteral(prop);
 
             literalBuffer.addLiterals(nameLiteral, valLiteral!);
             prop.setCompiled();  // need to be careful
         }
 
-        if (prop.getKind() == PropertyKind.Variable) {
+        if (prop.getKind() == PropertyKind.VARIABLE) {
             let compilerDriver = compiler.getCompilerDriver();
             let valueNode = prop.getValue();
             let valLiteral: Literal;
@@ -98,7 +98,7 @@ function compileProperties(compiler: Compiler, properties: Property[], literalBu
             }
         }
 
-        if (prop.getKind() == PropertyKind.Accessor) {
+        if (prop.getKind() == PropertyKind.ACCESSOR) {
             let valLiteral = new Literal(LiteralTag.ACCESSOR, null);
             literalBuffer.addLiterals(nameLiteral, valLiteral);
         }
@@ -170,9 +170,9 @@ function compileAccessorProperty(pandaGen: PandaGen, compiler: Compiler, objReg:
     if (prop.getGetter() !== undefined && prop.getSetter() !== undefined) {
         pandaGen.defineGetterSetterByValue(accessor!, objReg, propReg, getterReg, setterReg, false);
     } else if (ts.isGetAccessorDeclaration(accessor!)) {
-        pandaGen.defineGetterSetterByValue(accessor, objReg, propReg, getterReg, getVregisterCache(pandaGen, CacheList.undefined), false);
+        pandaGen.defineGetterSetterByValue(accessor, objReg, propReg, getterReg, getVregisterCache(pandaGen, CacheList.UNDEFINED), false);
     } else {
-        pandaGen.defineGetterSetterByValue(accessor!, objReg, propReg, getVregisterCache(pandaGen, CacheList.undefined), setterReg, false);
+        pandaGen.defineGetterSetterByValue(accessor!, objReg, propReg, getVregisterCache(pandaGen, CacheList.UNDEFINED), setterReg, false);
     }
 
     pandaGen.freeTemps(getterReg, setterReg, propReg);
@@ -211,7 +211,7 @@ function compileComputedProperty(compiler: Compiler, prop: Property, objReg: VRe
             let getter = <ts.GetAccessorDeclaration>prop.getValue();
             createMethodOrAccessor(pandaGen, compiler, objReg, getter);
             pandaGen.storeAccumulator(getter, accessorReg);
-            pandaGen.defineGetterSetterByValue(getter, objReg, keyReg, accessorReg, getVregisterCache(pandaGen, CacheList.undefined), true);
+            pandaGen.defineGetterSetterByValue(getter, objReg, keyReg, accessorReg, getVregisterCache(pandaGen, CacheList.UNDEFINED), true);
             pandaGen.freeTemps(accessorReg);
             break;
         }
@@ -220,7 +220,7 @@ function compileComputedProperty(compiler: Compiler, prop: Property, objReg: VRe
             let setter = <ts.SetAccessorDeclaration>prop.getValue();
             createMethodOrAccessor(pandaGen, compiler, objReg, setter);
             pandaGen.storeAccumulator(setter, accessorReg);
-            pandaGen.defineGetterSetterByValue(setter, objReg, keyReg, getVregisterCache(pandaGen, CacheList.undefined), accessorReg, true);
+            pandaGen.defineGetterSetterByValue(setter, objReg, keyReg, getVregisterCache(pandaGen, CacheList.UNDEFINED), accessorReg, true);
             pandaGen.freeTemps(accessorReg);
             break;
         }
@@ -244,20 +244,20 @@ function setUncompiledProperties(compiler: Compiler, pandaGen: PandaGen, propert
     for (let prop of properties) {
         if (!prop.isCompiled()) {
             switch (prop.getKind()) {
-                case PropertyKind.Accessor: {
+                case PropertyKind.ACCESSOR: {
                     compileAccessorProperty(pandaGen, compiler, objReg, prop);
                     break;
                 }
-                case PropertyKind.Spread: {
+                case PropertyKind.SPREAD: {
                     compileSpreadProperty(compiler, prop, objReg);
                     break;
                 }
-                case PropertyKind.Computed: {
+                case PropertyKind.COMPUTED: {
                     compileComputedProperty(compiler, prop, objReg);
                     break;
                 }
-                case PropertyKind.Constant:
-                case PropertyKind.Variable: {
+                case PropertyKind.CONSTANT:
+                case PropertyKind.VARIABLE: {
                     let nameSetting: boolean = false;
                     if (ts.isMethodDeclaration(prop.getValue())) {
                         createMethodOrAccessor(pandaGen, compiler, objReg, <ts.MethodDeclaration>prop.getValue());
@@ -269,7 +269,7 @@ function setUncompiledProperties(compiler: Compiler, pandaGen: PandaGen, propert
                     pandaGen.storeOwnProperty(prop.getValue().parent, objReg, <string | number>(prop.getName()), nameSetting);
                     break;
                 }
-                case PropertyKind.Prototype: {
+                case PropertyKind.PROTOTYPE: {
                     compileProtoProperty(compiler, prop, objReg);
                     break;
                 }
