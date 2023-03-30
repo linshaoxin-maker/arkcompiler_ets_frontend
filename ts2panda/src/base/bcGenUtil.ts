@@ -178,7 +178,7 @@ export function throwDeleteSuperProperty() {
 }
 
 export function newLexicalEnv(numVars: number, scopeInfoId: string | undefined) {
-    if (scopeInfoId == undefined) {
+    if (scopeInfoId === undefined) {
         return numVars <= MAX_INT8 ? new Newlexenv(new Imm(numVars)) :
                                      new WideNewlexenv(new Imm(numVars));
     }

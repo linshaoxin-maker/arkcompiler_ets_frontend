@@ -101,7 +101,7 @@ export class Recorder {
 
     private setParent(node: ts.Node) {
         node.forEachChild(childNode => {
-            if (!this.isTsFile || childNode!.parent == undefined || childNode.parent.kind != node.kind) {
+            if (!this.isTsFile || childNode!.parent === undefined || childNode.parent.kind != node.kind) {
                 childNode = jshelpers.setParent(childNode, node)!;
                 let originNode = ts.getOriginalNode(childNode);
                 childNode = ts.setTextRange(childNode, originNode);
@@ -289,13 +289,13 @@ export class Recorder {
         if (parent) {
             let declKind = astutils.getVarDeclarationKind(<ts.VariableDeclaration>parent);
             let isExportDecl: boolean = false;
-            if ((<ts.VariableDeclaration>parent).parent.parent.kind == ts.SyntaxKind.VariableStatement) {
+            if ((<ts.VariableDeclaration>parent).parent.parent.kind === ts.SyntaxKind.VariableStatement) {
                 isExportDecl = hasExportKeywordModifier((<ts.VariableDeclaration>parent).parent.parent);
             }
 
             // collect declaration information to corresponding scope
             let decl = this.addVariableDeclToScope(scope, id, parent, name, declKind, isExportDecl);
-            if (declKind == VarDeclarationKind.VAR) {
+            if (declKind === VarDeclarationKind.VAR) {
                 let variableScopeParent = <VariableScope>scope.getNearestVariableScope();
                 this.collectHoistDecls(id, variableScopeParent, decl);
             }
@@ -312,7 +312,7 @@ export class Recorder {
                     let needCreateLoopEnv: boolean = false;
                     if (nearestDefLexicalScope instanceof LoopScope) {
                         while (tmp) {
-                            if (tmp == nearestDefLexicalScope) {
+                            if (tmp === nearestDefLexicalScope) {
                                 needCreateLoopEnv = true;
                                 break;
                             }
@@ -328,7 +328,7 @@ export class Recorder {
             }
         }
 
-        if (name == MandatoryArguments) {
+        if (name === MandatoryArguments) {
             let varialbeScope = scope.getNearestVariableScope();
             varialbeScope?.setUseArgs(true);
         }
@@ -342,7 +342,7 @@ export class Recorder {
             case VarDeclarationKind.VAR:
                 break;
             case VarDeclarationKind.LET:
-                    if (parent.parent.kind == ts.SyntaxKind.CatchClause) {
+                    if (parent.parent.kind === ts.SyntaxKind.CatchClause) {
                     decl = new CatchParameter(name, node);
                 } else {
                     decl = new LetDecl(name, node, moduleKind);
@@ -361,10 +361,10 @@ export class Recorder {
     private getDeclarationNodeOfId(id: ts.Identifier): ts.VariableDeclaration | undefined {
         let parent = id.parent;
         if (ts.isVariableDeclaration(parent) &&
-            parent.name == id) {
+            parent.name === id) {
             return <ts.VariableDeclaration>parent;
         } else if (ts.isBindingElement(parent) &&
-            parent.name == id) {
+            parent.name === id) {
             while (parent && !ts.isVariableDeclaration(parent)) {
                 parent = parent.parent;
             }
@@ -471,7 +471,7 @@ export class Recorder {
             scope.setDecls(new ConstDecl(nameSpace, namedBindings, ModuleVarKind.NOT));
             scope.module().addStarImportEntry(namedBindings, nameSpace, moduleRequest);
         } else if (ts.isNamedImports(namedBindings)) {
-            if (namedBindings.elements.length == 0) {
+            if (namedBindings.elements.length === 0) {
                 // import {} from "a.js"
                 scope.module().addEmptyImportEntry(moduleRequest);
             }
@@ -526,7 +526,7 @@ export class Recorder {
                     // Targetcase 1: export * as m from "mod";
                     // Targetcase 2: `export namespace` is not the ECMA2018's feature
                 } else if (ts.isNamedExports(namedBindings)) {
-                    if (namedBindings.elements.length == 0) {
+                    if (namedBindings.elements.length === 0) {
                         // export {} from "mod";
                         scope.module().addEmptyImportEntry(moduleRequest);
                     }
@@ -670,7 +670,7 @@ export class Recorder {
                     }
                 } else if (ts.isBinaryExpression(outerNode)) {
                     // @ts-ignore
-                    if (outerNode.operatorToken.kind == ts.SyntaxKind.EqualsToken && ts.isIdentifier(outerNode.left)) {
+                    if (outerNode.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(outerNode.left)) {
                         // @ts-ignore
                         name = jshelpers.getTextOfIdentifierOrLiteral(outerNode.left);
                     }
@@ -679,7 +679,7 @@ export class Recorder {
                     let propName = outerNode.name;
                     if (ts.isIdentifier(propName) || ts.isStringLiteral(propName) || ts.isNumericLiteral(propName)) {
                         name = jshelpers.getTextOfIdentifierOrLiteral(propName);
-                        if (name == "__proto__") {
+                        if (name === "__proto__") {
                             name = '';
                         }
                     }
@@ -764,7 +764,7 @@ export class Recorder {
             let functionParameters = this.getParametersOfFunction(<ts.FunctionLikeDeclaration>nearestFunc);
             if (functionParameters) {
                 for (let i = 0; i < functionParameters.length; i++) {
-                    if (functionParameters[i].name == declName) {
+                    if (functionParameters[i].name === declName) {
                         return false;
                     }
                 }
@@ -800,7 +800,7 @@ export class Recorder {
 
         let hoistDecls = <Decl[]>this.hoistMap.get(scope);
         for (let i = 0; i < hoistDecls.length; i++) {
-            if (decl.name == hoistDecls[i].name) {
+            if (decl.name === hoistDecls[i].name) {
                 if (decl instanceof FuncDecl) {
                     hoistDecls[i] = decl;
                 }

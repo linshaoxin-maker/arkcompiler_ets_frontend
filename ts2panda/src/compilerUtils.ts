@@ -138,7 +138,7 @@ function compileArrayDestructuring(arr: ts.ArrayBindingOrAssignmentPattern, pand
             hasInit ? getDefaultLabel : getUndefinedLabel
         );
 
-        // iterdone == false, get current itervalue
+        // iterdone === false, get current itervalue
         iterator.iteratorValue(nextResult);
 
         if (hasInit) {
@@ -218,7 +218,7 @@ function emitRestElement(restElement: ts.BindingName | ts.Expression, iterator: 
 
     pandaGen.label(restElement, nextLabel);
 
-    // if iterDone == true, done with the process of building array
+    // if iterDone === true, done with the process of building array
     iterator.iteratorComplete(iterResult);
     pandaGen.condition(
         restElement,
@@ -256,7 +256,7 @@ function compileObjectDestructuring(obj: ts.ObjectBindingOrAssignmentPattern, pa
     let elementsLength = elements.length;
 
     // check if value is coercible
-    if (elementsLength == 0 ||
+    if (elementsLength === 0 ||
         (isDeclaration && isRestElement(<ts.BindingElement>elements[0])) ||
         (!isDeclaration && ts.isSpreadAssignment(elements[0]))) {
         let notNullish: Label = new Label();
@@ -395,7 +395,7 @@ function emitRestProperty(restProperty: ts.BindingElement | ts.SpreadAssignment,
     let target = isDeclaration ? (<ts.BindingElement>restProperty).name : (<ts.SpreadAssignment>restProperty).expression;
     let lRef = LReference.generateLReference(compiler, target, true);
 
-    if (excludedProp.length == 0) {
+    if (excludedProp.length === 0) {
         excludedProp = [getVregisterCache(pandaGen, CacheList.undefined)];
     }
 

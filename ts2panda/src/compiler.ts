@@ -163,7 +163,7 @@ export class Compiler {
         this.storeFuncObj2LexEnvIfNeeded();
         this.compileLexicalBindingForArrowFunction();
 
-        if (this.rootNode.kind == ts.SyntaxKind.SourceFile) {
+        if (this.rootNode.kind === ts.SyntaxKind.SourceFile) {
             this.compileSourceFileOrBlock(<ts.SourceFile>this.rootNode);
         } else {
             this.compileFunctionLikeDeclaration(<ts.FunctionLikeDeclaration>this.rootNode);
@@ -191,7 +191,7 @@ export class Compiler {
         if ((<ts.FunctionLikeDeclaration>rootNode).name) {
             let funcName = jshelpers.getTextOfIdentifierOrLiteral((<ts.FunctionLikeDeclaration>rootNode).name);
             let v = functionScope.find(funcName);
-            if (v.scope == functionScope) {
+            if (v.scope === functionScope) {
                 this.pandaGen.loadAccumulator(NodeKind.FirstNodeOfFunction,
                                               getVregisterCache(this.pandaGen, CacheList.FUNC));
                 this.pandaGen.storeAccToLexEnv(NodeKind.FirstNodeOfFunction, v.scope, v.level, v.v, true);
@@ -224,7 +224,7 @@ export class Compiler {
             return;
         }
 
-        let vreg = arg == MandatoryFuncObj ? getVregisterCache(this.pandaGen, CacheList.FUNC) :
+        let vreg = arg === MandatoryFuncObj ? getVregisterCache(this.pandaGen, CacheList.FUNC) :
                                        this.pandaGen.getVregForVariable(v);
         this.pandaGen.storeLexicalVar(this.rootNode, 0, v.lexIndex(), vreg);
     }
@@ -239,7 +239,7 @@ export class Compiler {
 
         statements.forEach((stmt) => {
             this.compileStatement(stmt);
-            if (stmt.kind == ts.SyntaxKind.ReturnStatement) {
+            if (stmt.kind === ts.SyntaxKind.ReturnStatement) {
                 unreachableFlag = true;
             }
         });
@@ -258,11 +258,11 @@ export class Compiler {
     private compileFunctionBody(kind: number, body: ts.ConciseBody): void {
         let pandaGen = this.pandaGen;
 
-        if (body.kind == ts.SyntaxKind.Block) {
+        if (body.kind === ts.SyntaxKind.Block) {
             this.pushScope(body);
             this.compileSourceFileOrBlock(<ts.Block>body);
             this.popScope();
-        } else if (kind == ts.SyntaxKind.ArrowFunction) {
+        } else if (kind === ts.SyntaxKind.ArrowFunction) {
             this.compileExpression(<ts.Expression>body);
 
             let retValue = pandaGen.getTemp();
@@ -334,7 +334,7 @@ export class Compiler {
 
         if (decl.modifiers) {
             for (let i = 0; i < decl.modifiers.length; i++) {
-                if (decl.modifiers[i].kind == ts.SyntaxKind.AsyncKeyword) {
+                if (decl.modifiers[i].kind === ts.SyntaxKind.AsyncKeyword) {
                     // async generator
                     if (decl.asteriskToken) {
                         return new AsyncGeneratorFunctionBuilder(pandaGen, this);
@@ -364,7 +364,7 @@ export class Compiler {
             }
         }
 
-        if (decl.kind == ts.SyntaxKind.FunctionExpression) {
+        if (decl.kind === ts.SyntaxKind.FunctionExpression) {
             if (decl.name) {
                 let funcName = jshelpers.getTextOfIdentifierOrLiteral(decl.name);
                 (<VariableScope>pandaGen.getScope()!).addFuncName(funcName);
@@ -486,11 +486,11 @@ export class Compiler {
             this.compileExpression(decl.initializer);
         } else {
             // global var without init should not be assigned undefined twice
-            if (astutils.getVarDeclarationKind(decl) == VarDeclarationKind.VAR) {
+            if (astutils.getVarDeclarationKind(decl) === VarDeclarationKind.VAR) {
                 return;
             }
 
-            if ((astutils.getVarDeclarationKind(decl) == VarDeclarationKind.LET)
+            if ((astutils.getVarDeclarationKind(decl) === VarDeclarationKind.LET)
                 && decl.parent.kind != ts.SyntaxKind.CatchClause) {
                 this.pandaGen.loadAccumulator(decl, getVregisterCache(this.pandaGen, CacheList.undefined));
             }
@@ -593,7 +593,7 @@ export class Compiler {
         let blockEndLabel = undefined;
 
         // because there is no label in the block/if statement, we need to add the end label.
-        if (stmt.statement.kind == ts.SyntaxKind.Block || stmt.statement.kind == ts.SyntaxKind.IfStatement) {
+        if (stmt.statement.kind === ts.SyntaxKind.Block || stmt.statement.kind === ts.SyntaxKind.IfStatement) {
             blockEndLabel = new Label();
 
             let labelTarget = new LabelTarget(stmt, blockEndLabel, undefined);
@@ -739,7 +739,7 @@ export class Compiler {
 
     compileCondition(expr: ts.Expression, ifFalseLabel: Label) {
         let pandaGen = this.pandaGen;
-        if (expr.kind == ts.SyntaxKind.BinaryExpression) {
+        if (expr.kind === ts.SyntaxKind.BinaryExpression) {
             let binExpr = <ts.BinaryExpression>expr;
 
             switch (binExpr.operatorToken.kind) {
@@ -935,7 +935,7 @@ export class Compiler {
             default: {
                 // typeof an undeclared variable will return undefined instead of throwing reference error
                 let parent = findOuterNodeOfParenthesis(id);
-                if ((parent.kind == ts.SyntaxKind.TypeOfExpression)) {
+                if ((parent.kind === ts.SyntaxKind.TypeOfExpression)) {
                     CmdOptions.isWatchEvaluateExpressionMode() ?
                         pandaGen.loadByNameViaDebugger(id, name, CacheList.False) :
                         pandaGen.loadObjProperty(id, getVregisterCache(pandaGen, CacheList.Global), name);
@@ -948,7 +948,7 @@ export class Compiler {
     }
 
     private compileBooleanLiteral(lit: ts.BooleanLiteral) {
-        if (lit.kind == ts.SyntaxKind.TrueKeyword) {
+        if (lit.kind === ts.SyntaxKind.TrueKeyword) {
             this.pandaGen.loadAccumulator(lit, getVregisterCache(this.pandaGen, CacheList.True));
         } else {
             this.pandaGen.loadAccumulator(lit, getVregisterCache(this.pandaGen, CacheList.False));
@@ -956,16 +956,16 @@ export class Compiler {
     }
 
     compileFunctionReturnThis(expr: ts.NewExpression | ts.CallExpression): boolean {
-        if (expr.expression.kind == ts.SyntaxKind.Identifier) {
+        if (expr.expression.kind === ts.SyntaxKind.Identifier) {
             let identifier = <ts.Identifier>expr.expression;
             let args = expr.arguments;
-            if (identifier.escapedText == "Function") {
+            if (identifier.escapedText === "Function") {
                 if (args && args.length > 0) {
                     if (!ts.isStringLiteral(args[args.length - 1])) {
                         return false;
                     }
                     let arg = <ts.StringLiteral>args[args.length - 1];
-                    if (arg.text.match(/ *return +this[;]? *$/) == null) {
+                    if (arg.text.match(/ *return +this[;]? *$/) === null) {
                         return false;
                     } else {
                         this.pandaGen.loadAccumulator(expr, getVregisterCache(this.pandaGen, CacheList.Global))
@@ -1224,9 +1224,9 @@ export class Compiler {
             return;
         }
         // LogicAnd, LogicOr and Coalesce are Short-circuiting
-        if (expr.operatorToken.kind == ts.SyntaxKind.AmpersandAmpersandToken
-            || expr.operatorToken.kind == ts.SyntaxKind.BarBarToken
-            || expr.operatorToken.kind == ts.SyntaxKind.QuestionQuestionToken) {
+        if (expr.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
+            || expr.operatorToken.kind === ts.SyntaxKind.BarBarToken
+            || expr.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken) {
             this.compileLogicalExpression(expr);
             return;
         }
@@ -1485,7 +1485,7 @@ export class Compiler {
         } else if (variable.v instanceof GlobalVariable) {
             if (variable.v.isNone()) {
                 let parent = findOuterNodeOfParenthesis(node);
-                if ((parent.kind == ts.SyntaxKind.TypeOfExpression)) {
+                if ((parent.kind === ts.SyntaxKind.TypeOfExpression)) {
                     CmdOptions.isWatchEvaluateExpressionMode() ?
                         this.pandaGen.loadByNameViaDebugger(node, variable.v.getName(), CacheList.False) :
                         this.pandaGen.loadObjProperty(node, getVregisterCache(this.pandaGen, CacheList.Global),

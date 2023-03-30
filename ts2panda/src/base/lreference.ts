@@ -49,11 +49,11 @@ export class LReference {
         this.isDeclaration = isDeclaration;
         this.refKind = refKind;
 
-        if (refKind == ReferenceKind.Destructuring) {
+        if (refKind === ReferenceKind.Destructuring) {
             this.destructuringTarget = <ts.BindingOrAssignmentPattern>node;
-        } else if (refKind == ReferenceKind.LocalOrGlobal) {
+        } else if (refKind === ReferenceKind.LocalOrGlobal) {
             this.variable = variable!;
-        } else if (refKind == ReferenceKind.MemberAccess) {
+        } else if (refKind === ReferenceKind.MemberAccess) {
             this.obj = compiler.getPandaGen().getTemp();
             this.prop = compiler.getPandaGen().getTemp();
         }

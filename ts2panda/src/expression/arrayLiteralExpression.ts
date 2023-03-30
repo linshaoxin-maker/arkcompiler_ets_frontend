@@ -32,7 +32,7 @@ export function compileArrayLiteralExpression(compiler: Compiler, node: ts.Array
 export function createArrayFromElements(node: ts.Node, compiler: Compiler, elements: ts.NodeArray<ts.Expression>, arrayObj: VReg) {
     let pandaGen = compiler.getPandaGen();
     // empty Array
-    if (elements.length == 0) {
+    if (elements.length === 0) {
         pandaGen.createEmptyArray(node);
         pandaGen.storeAccumulator(node, arrayObj);
         return;
@@ -51,7 +51,7 @@ export function createArrayFromElements(node: ts.Node, compiler: Compiler, eleme
 
             if (!arrayCreated) {
                 literalBuffer.addLiterals(elem);
-                if (i == elements.length - 1) {
+                if (i === elements.length - 1) {
                     emitCreateArrayWithBuffer(pandaGen, literalBuffer, element);
                     pandaGen.storeAccumulator(element, arrayObj);
                     arrayCreated = true;
@@ -93,7 +93,7 @@ export function createArrayFromElements(node: ts.Node, compiler: Compiler, eleme
                 arrayCreated = true;
             }
 
-            if (i == elements.length - 1) {
+            if (i === elements.length - 1) {
                 // omittedExpression is the last element, we need to set the length of the array
                 if (hasSpread) {
                     pandaGen.loadAccumulator(element, indexReg);

@@ -147,7 +147,7 @@ export class CompilerDriver {
         stack.push(scope);
         while (stack.length > 0) {
             let temp: VariableScope | undefined = stack.pop();
-            if (temp == undefined) {
+            if (temp === undefined) {
                 break;
             }
             spArray.push(temp);
@@ -408,7 +408,7 @@ export class CompilerDriver {
         } else {
             let funcNode = <ts.FunctionLikeDeclaration>node;
             name = (<FunctionScope>recorder.getScopeOfNode(funcNode)).getFuncName();
-            if (name == '') {
+            if (name === '') {
                 if ((ts.isFunctionDeclaration(node) && hasExportKeywordModifier(node) && hasDefaultKeywordModifier(node))
                     || ts.isExportAssignment(findOuterNodeOfParenthesis(node))) {
                     return `${this.getFormatedRecordName()}default`;
@@ -416,7 +416,7 @@ export class CompilerDriver {
                 return `${this.getFormatedRecordName()}#${this.getFuncId(funcNode)}#`;
             }
 
-            if (name == "func_main_0") {
+            if (name === "func_main_0") {
                 return `${this.getFormatedRecordName()}#${this.getFuncId(funcNode)}#${name}`;
             }
 
@@ -458,7 +458,7 @@ export class CompilerDriver {
         // each function and global scope accepts three parameters - funcObj + newTarget + this.
         // the runtime passes these to global scope when calls it
         let parametersCount = 3;
-        if (node.kind == ts.SyntaxKind.SourceFile) {
+        if (node.kind === ts.SyntaxKind.SourceFile) {
             if (CmdOptions.isCommonJs()) {
                 // global scope accepts 5 additional parameters:
                 // "exports", "require", "module", "__filename","__dirname"

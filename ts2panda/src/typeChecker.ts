@@ -113,7 +113,7 @@ export class TypeChecker {
             case ts.SyntaxKind.NewExpression:
                 let initializerExpression = <ts.NewExpression>initializer;
                 let expression = initializerExpression.expression;
-                if (expression.kind == ts.SyntaxKind.ClassExpression) {
+                if (expression.kind === ts.SyntaxKind.ClassExpression) {
                     return expression;
                 }
                 return this.getTypeDeclForIdentifier(expression);
@@ -131,7 +131,7 @@ export class TypeChecker {
             return PrimitiveType.ANY;
         }
         let classTypeIndex = TypeRecorder.getInstance().tryGetTypeIndex(typeDeclNode);
-        if (classTypeIndex == PrimitiveType.ANY) {
+        if (classTypeIndex === PrimitiveType.ANY) {
             let classDeclNode = <ts.ClassDeclaration>typeDeclNode;
             let className = "";
             let classNameNode = classDeclNode.name;
@@ -165,7 +165,7 @@ export class TypeChecker {
             return PrimitiveType.ANY;
         }
         let interfaceTypeIndex = TypeRecorder.getInstance().tryGetTypeIndex(typeDeclNode);
-        if (interfaceTypeIndex == PrimitiveType.ANY) {
+        if (interfaceTypeIndex === PrimitiveType.ANY) {
             let interefaceType = new InterfaceType(<ts.InterfaceDeclaration>typeDeclNode);
             interfaceTypeIndex = interefaceType.shiftedTypeIndex;
         }
@@ -241,7 +241,7 @@ export class TypeChecker {
                 return arrayType.shiftedTypeIndex;
             case ts.SyntaxKind.ParenthesizedType:
                 let subType = (<ts.ParenthesizedTypeNode>typeNode).type
-                if (subType.kind == ts.SyntaxKind.UnionType) {
+                if (subType.kind === ts.SyntaxKind.UnionType) {
                     let unionType = new UnionType(subType);
                     return unionType.shiftedTypeIndex;
                 }
@@ -254,7 +254,7 @@ export class TypeChecker {
                 let typeIdentifierName = jshelpers.getTextOfIdentifierOrLiteral(typeIdentifier);
                 if (BuiltinType[typeIdentifierName]) {
                     let declNode = this.getDeclNodeForInitializer(typeIdentifier);
-                    if (declNode && (ts.isClassLike(declNode) || declNode.kind == ts.SyntaxKind.InterfaceDeclaration)) {
+                    if (declNode && (ts.isClassLike(declNode) || declNode.kind === ts.SyntaxKind.InterfaceDeclaration)) {
                         return this.getBuiltinTypeIndex(<ts.TypeReferenceNode>typeNode, typeIdentifierName);
                     } else {
                         return BuiltinType[typeIdentifierName];
@@ -322,11 +322,11 @@ export class TypeChecker {
         }
 
         let typeIndex = PrimitiveType.ANY;
-        if (initializer.kind == ts.SyntaxKind.NewExpression && this.isBuiltinType(<ts.NewExpression>initializer)) {
+        if (initializer.kind === ts.SyntaxKind.NewExpression && this.isBuiltinType(<ts.NewExpression>initializer)) {
             typeIndex = this.getBuiltinTypeIndexForExpr(<ts.NewExpression>initializer);
         } else {
             let declNode = this.getDeclNodeForInitializer(initializer);
-            typeIndex = this.getTypeFromDecl(declNode, initializer.kind == ts.SyntaxKind.NewExpression);
+            typeIndex = this.getTypeFromDecl(declNode, initializer.kind === ts.SyntaxKind.NewExpression);
         }
 
         if (variableNode) {
@@ -341,7 +341,7 @@ export class TypeChecker {
         }
         let typeIndex = PrimitiveType.ANY;
         typeIndex = this.getTypeFromAnotation(typeNode);
-        if (typeIndex == PrimitiveType.ANY && typeNode.kind == ts.SyntaxKind.TypeReference) {
+        if (typeIndex === PrimitiveType.ANY && typeNode.kind === ts.SyntaxKind.TypeReference) {
             let typeName = typeNode.getChildAt(0);
             let typeDecl = this.getDeclNodeForInitializer(typeName);
             typeIndex = this.getTypeFromDecl(typeDecl, true);
@@ -359,7 +359,7 @@ export class TypeChecker {
             let typeNode = declaration.type;
             let initializer = declaration.initializer;
             let typeIndex = this.getOrCreateRecordForTypeNode(typeNode, variableNode);
-            if (typeIndex == PrimitiveType.ANY) {
+            if (typeIndex === PrimitiveType.ANY) {
                 typeIndex = this.getOrCreateRecordForDeclNode(initializer, variableNode);
             }
             if (this.hasExportKeyword(variableStatementNode) && typeIndex != PrimitiveType.ANY) {
@@ -380,7 +380,7 @@ export class TypeChecker {
         }
 
         let typeIndex = TypeRecorder.getInstance().tryGetTypeIndex(classDeclNode);
-        if (typeIndex == PrimitiveType.ANY) {
+        if (typeIndex === PrimitiveType.ANY) {
             let classType = new ClassType(classDeclNode, BuiltinType[className]);
             typeIndex = classType.shiftedTypeIndex;
         }
@@ -400,7 +400,7 @@ export class TypeChecker {
         switch (node.kind) {
             case ts.SyntaxKind.VariableStatement:
                 let variableStatementNode = <ts.VariableStatement>ts.getOriginalNode(node);
-                if (variableStatementNode.kind == ts.SyntaxKind.VariableStatement) {
+                if (variableStatementNode.kind === ts.SyntaxKind.VariableStatement) {
                     this.formatVariableStatement(variableStatementNode);
                 }
                 break;
@@ -411,7 +411,7 @@ export class TypeChecker {
                 }
                 let functionName = functionDeclNode.name ? functionDeclNode.name : undefined;
                 let funcTypeIndex = TypeRecorder.getInstance().tryGetTypeIndex(functionDeclNode);
-                if (funcTypeIndex == PrimitiveType.ANY) {
+                if (funcTypeIndex === PrimitiveType.ANY) {
                     let functionnameText = "";
                     if (functionName) {
                         functionnameText = jshelpers.getTextOfIdentifierOrLiteral(functionName);

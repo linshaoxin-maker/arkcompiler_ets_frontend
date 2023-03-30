@@ -105,11 +105,11 @@ export class CmdOptions {
     }
 
     static isWatchEvaluateDeamonMode(): boolean {
-        return CmdOptions.getDeamonModeArgs()[0] == "start";
+        return CmdOptions.getDeamonModeArgs()[0] === "start";
     }
 
     static isStopEvaluateDeamonMode(): boolean {
-        return CmdOptions.getDeamonModeArgs()[0] == "stop";
+        return CmdOptions.getDeamonModeArgs()[0] === "stop";
     }
 
     static getEvaluateDeamonPath(): string {
@@ -132,7 +132,7 @@ export class CmdOptions {
     }
 
     static getWatchTimeOutValue(): number {
-        if (this.options["debug-add-watch"].length == 2) {
+        if (this.options["debug-add-watch"].length === 2) {
             return 0;
         }
         return this.options["debug-add-watch"][2];
@@ -220,7 +220,7 @@ export class CmdOptions {
 
     static getOutputBinName(): string {
         let outputFile = this.options.output;
-        if (outputFile == "") {
+        if (outputFile === "") {
             outputFile = CmdOptions.getInputFileName() + ".abc";
         }
         return outputFile;

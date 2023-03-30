@@ -243,7 +243,7 @@ export class PandaGen {
     }
 
     public appendScopeInfo(lexVarInfo: Map<string, number>): string | undefined {
-        if (lexVarInfo.size == 0) {
+        if (lexVarInfo.size === 0) {
             return undefined;
         }
 
@@ -272,7 +272,7 @@ export class PandaGen {
 
         if (node.modifiers) {
             for (let i = 0; i < node.modifiers.length; i++) {
-                if (node.modifiers[i].kind == ts.SyntaxKind.AsyncKeyword) {
+                if (node.modifiers[i].kind === ts.SyntaxKind.AsyncKeyword) {
                     if (node.asteriskToken) {
                         this.funcKind = FunctionKind.ASYNC_GENERATOR_FUNCTION;
                         return;

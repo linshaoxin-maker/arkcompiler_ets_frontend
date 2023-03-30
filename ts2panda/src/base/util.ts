@@ -55,7 +55,7 @@ export function hasExportKeywordModifier(node: ts.Node): boolean {
     let hasExport: boolean = false;
     if (node.modifiers) {
         node.modifiers.forEach((mod) => {
-            if (mod.kind == ts.SyntaxKind.ExportKeyword) {
+            if (mod.kind === ts.SyntaxKind.ExportKeyword) {
                 hasExport = true;
             }
         });
@@ -68,7 +68,7 @@ export function hasDefaultKeywordModifier(node: ts.Node): boolean {
     let hasDefault: boolean = false;
     if (node.modifiers) {
         node.modifiers.forEach((mod) => {
-            if (mod.kind == ts.SyntaxKind.DefaultKeyword) {
+            if (mod.kind === ts.SyntaxKind.DefaultKeyword) {
                 hasDefault = true;
             }
         });
@@ -102,8 +102,8 @@ export function addUnicodeEscape(text: string) {
     let len = text.length;
     let newText = "";
     while (secondIdx != len) {
-        if (text[secondIdx] == '\\' && secondIdx + 1 != len && text[secondIdx + 1] == 'u') {
-            if (secondIdx != 0 && text[secondIdx - 1] == '\\') {
+        if (text[secondIdx] === '\\' && secondIdx + 1 != len && text[secondIdx + 1] === 'u') {
+            if (secondIdx != 0 && text[secondIdx - 1] === '\\') {
                 newText += text.substr(firstIdx, secondIdx - firstIdx) + "\\\\" + "\\u";
             } else {
                 newText += text.substr(firstIdx, secondIdx - firstIdx) + "\\" + "\\u";
@@ -115,7 +115,7 @@ export function addUnicodeEscape(text: string) {
         }
     }
 
-    if (secondIdx == len && firstIdx != secondIdx) {
+    if (secondIdx === len && firstIdx != secondIdx) {
         newText += text.substr(firstIdx);
     }
 
@@ -334,10 +334,10 @@ export function getRecordTypeFlag(recordType: boolean) {
 }
 
 export function isBase64Str(input: string): boolean {
-    if (input == '' || input.trim() == '') {
+    if (input === '' || input.trim() === '') {
         return false;
     }
-    return Buffer.from(Buffer.from(input, 'base64').toString()).toString('base64') == input;
+    return Buffer.from(Buffer.from(input, 'base64').toString()).toString('base64') === input;
 }
 
 export function transformCommonjsModule(sourceFile: ts.SourceFile) {
@@ -420,7 +420,7 @@ export function getOutputBinName(node: ts.SourceFile) {
 export function getRecordName(node: ts.SourceFile): string {
     let recordName = CmdOptions.getRecordName();
 
-    if (recordName == "" && CmdOptions.isMergeAbc()) {
+    if (recordName === "" && CmdOptions.isMergeAbc()) {
         let outputBinName = getOutputBinName(node);
         recordName = path.basename(outputBinName, path.extname(outputBinName));
     }
@@ -492,7 +492,7 @@ function generateNameForTempAndLoopVariable(node: ts.Node): string {
     }
     let generatedName = generateUniqueName();
     // @ts-ignore
-    if ((node.autoGenerateFlags & ts.GeneratedIdentifierFlags.KindMask) == ts.GeneratedIdentifierFlags.Unique) {
+    if ((node.autoGenerateFlags & ts.GeneratedIdentifierFlags.KindMask) === ts.GeneratedIdentifierFlags.Unique) {
         // Unique names are generated and cached based on their unique autoGenerateId and original idText.
         // @ts-ignore
         generatedName = (<ts.Identifier>node).escapedText + generatedName;

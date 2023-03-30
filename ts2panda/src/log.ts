@@ -39,7 +39,7 @@ export function printAstRecursively(node: ts.Node, indentLevel: number, sourceFi
     if (CmdOptions.isEnableDebugLog()) {
         const indentation = "-".repeat(indentLevel);
         let nodeContent = ts.SyntaxKind[node.kind] + ": ";
-        if (node.kind == ts.SyntaxKind.Identifier) {
+        if (node.kind === ts.SyntaxKind.Identifier) {
             // @ts-ignore
             nodeContent += (<ts.Identifier>node).escapedText;
         }

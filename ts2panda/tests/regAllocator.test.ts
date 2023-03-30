@@ -50,7 +50,7 @@ function checkRegisterNumber(left: IRNode, right: IRNode): boolean {
         let l = lo[i];
         let r = ro[i];
         if (l instanceof VReg && r instanceof VReg) {
-            if (!((<VReg>l).num == (<VReg>r).num)) {
+            if (!((<VReg>l).num === (<VReg>r).num)) {
                 return false;
             }
         }

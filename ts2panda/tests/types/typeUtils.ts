@@ -73,7 +73,7 @@ export function createVRegTypePair(input: any) {
 export function compareVReg2Type(expectedMap: Map<string, number>, generated: VReg[]): boolean {
     for (let vreg of generated) {
         let name = vreg.getVariableName();
-        if (name == "4funcObj" || name == "4newTarget" || name == "this") {
+        if (name === "4funcObj" || name === "4newTarget" || name === "this") {
             continue;
         }
         let vregMarker = "#" + vreg.num + "#" + vreg.getVariableName()

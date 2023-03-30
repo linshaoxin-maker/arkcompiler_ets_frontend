@@ -72,7 +72,7 @@ function addInnerArgs(node: ts.Node, scope: VariableScope, enableTypeRecord: boo
     scope.addParameter(MandatoryFuncObj, VarDeclarationKind.CONST, -1);
     // the second argument for newTarget
 
-    if (node.kind == ts.SyntaxKind.ArrowFunction) {
+    if (node.kind === ts.SyntaxKind.ArrowFunction) {
         scope.addParameter("0newTarget", VarDeclarationKind.CONST, -1);
         scope.addParameter("0this", VarDeclarationKind.CONST, 0);
     } else {

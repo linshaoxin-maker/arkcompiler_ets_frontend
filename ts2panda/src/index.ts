@@ -140,7 +140,7 @@ function main(fileNames: string[], options: ts.CompilerOptions, inputJsonFiles?:
                                 initTs2abcProcessState = true;
                             }
                             let specifiedCmdArgs = cmdArgsSet.get(node.fileName);
-                            if (specifiedCmdArgs == undefined) {
+                            if (specifiedCmdArgs === undefined) {
                                 return node;
                             }
                         }
@@ -219,7 +219,7 @@ function transformSourcefilesList(parsed: ts.ParsedCommandLine | undefined) {
     } catch(err) {
         throw err;
     }
-    if (sourceFileInfoArray.length == 0) return;
+    if (sourceFileInfoArray.length === 0) return;
 
     let files: string[] = parsed.fileNames;
     let inputJsonFiles: string[] = [];
@@ -234,7 +234,7 @@ function transformSourcefilesList(parsed: ts.ParsedCommandLine | undefined) {
 
         let inputFileName = sourceFileInfo[0];
         let inputFileSuffix = inputFileName.substring(inputFileName.lastIndexOf(".") + 1);
-        if (inputFileSuffix == "json") {
+        if (inputFileSuffix === "json") {
             inputJsonFiles.push(inputFileName);
         } else {
             files.unshift(inputFileName);
@@ -412,7 +412,7 @@ function compileWatchExpression(jsFileName: string, errorMsgFileName: string, op
                 // @ts-ignore
                 (ctx: ts.TransformationContext) => {
                     return (node: ts.SourceFile) => {
-                        if (path.basename(node.fileName) == fileName) { node = sourceFile; }
+                        if (path.basename(node.fileName) === fileName) { node = sourceFile; }
                         let outputBinName = getOutputBinName(node);
                         let compilerDriver = new CompilerDriver(outputBinName, watchOutputFileName);
                         compilerDriver.compileForSyntaxCheck(node);
@@ -479,7 +479,7 @@ function launchWatchEvaluateDeamon(parsed: ts.ParsedCommandLine | undefined) {
         if (+curr.mtime <= +prev.mtime) {
             throw new Error("watched js file has not been initialized");
         }
-        if (fs.readFileSync(jsFileName).toString() == stopWatchingStr) {
+        if (fs.readFileSync(jsFileName).toString() === stopWatchingStr) {
             fs.unwatchFile(jsFileName);
             console.log("stopWatchingSuccess");
             return;
