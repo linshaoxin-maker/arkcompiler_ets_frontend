@@ -185,7 +185,7 @@ export function compileMainSnippet(snippet: string, pandaGen?: PandaGen, scope?:
     return compileUnits[0].getInsns();
 }
 
-export function compileAfterSnippet(snippet: string, name:string, isCommonJs: boolean = false) {
+export function compileAfterSnippet(snippet: string, name:string, isCommonJs: boolean = false): any {
     let compileUnits = null;
     CmdOptions.parseUserCmd([""]);
     CmdOptions.setMergeAbc(true);
@@ -230,17 +230,17 @@ export function getCompileOptions(): ts.CompilerOptions {
 
 export class SnippetCompiler {
     pandaGens: PandaGen[] = [];
-    compile(snippet: string, passes?: Pass[], literalBufferArray?: Array<LiteralBuffer>) {
+    compile(snippet: string, passes?: Pass[], literalBufferArray?: Array<LiteralBuffer>): PandaGen[] {
         this.pandaGens = compileAllSnippet(snippet, passes, literalBufferArray);
         return this.pandaGens;
     }
 
-    compileAfter(snippet: string, name: string, passes?: Pass[], literalBufferArray?: Array<LiteralBuffer>) {
+    compileAfter(snippet: string, name: string, passes?: Pass[], literalBufferArray?: Array<LiteralBuffer>): PandaGen[] {
         this.pandaGens = compileAfterSnippet(snippet, name);
         return this.pandaGens;
     }
 
-    compileCommonjs(snippet: string, name: string) {
+    compileCommonjs(snippet: string, name: string): PandaGen[] {
         this.pandaGens = compileAfterSnippet(snippet, name, true);
         return this.pandaGens;
     }

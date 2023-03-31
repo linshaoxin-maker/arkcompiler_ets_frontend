@@ -36,7 +36,7 @@ import {
 } from "./statement/tryStatement";
 import { Iterator } from "./base/iterator";
 
-export function compileDestructuring(pattern: ts.BindingOrAssignmentPattern, pandaGen: PandaGen, compiler: Compiler) {
+export function compileDestructuring(pattern: ts.BindingOrAssignmentPattern, pandaGen: PandaGen, compiler: Compiler): void {
     let rhs = pandaGen.getTemp();
     pandaGen.storeAccumulator(pattern, rhs);
 
@@ -52,7 +52,7 @@ export function compileDestructuring(pattern: ts.BindingOrAssignmentPattern, pan
     pandaGen.freeTemps(rhs);
 }
 
-function compileArrayDestructuring(arr: ts.ArrayBindingOrAssignmentPattern, pandaGen: PandaGen, compiler: Compiler) {
+function compileArrayDestructuring(arr: ts.ArrayBindingOrAssignmentPattern, pandaGen: PandaGen, compiler: Compiler): void {
     let iter = pandaGen.getTemp();
     let nextMethod = pandaGen.getTemp();
     let iterDone = pandaGen.getTemp();
@@ -197,7 +197,7 @@ function compileArrayDestructuring(arr: ts.ArrayBindingOrAssignmentPattern, pand
 }
 
 function emitRestElement(restElement: ts.BindingName | ts.Expression, iterator: Iterator, iterResult: VReg,
-                         pandaGen: PandaGen, compiler: Compiler, isDeclaration: boolean) {
+                         pandaGen: PandaGen, compiler: Compiler, isDeclaration: boolean): void {
     let arrayObj = pandaGen.getTemp();
     let index = pandaGen.getTemp();
 
@@ -247,7 +247,7 @@ function emitRestElement(restElement: ts.BindingName | ts.Expression, iterator: 
     pandaGen.freeTemps(arrayObj, index);
 }
 
-function compileObjectDestructuring(obj: ts.ObjectBindingOrAssignmentPattern, pandaGen: PandaGen, compiler: Compiler) {
+function compileObjectDestructuring(obj: ts.ObjectBindingOrAssignmentPattern, pandaGen: PandaGen, compiler: Compiler): void {
     let value = pandaGen.getTemp();
     pandaGen.storeAccumulator(obj, value);
 
@@ -390,7 +390,7 @@ function compileObjectDestructuring(obj: ts.ObjectBindingOrAssignmentPattern, pa
 }
 
 function emitRestProperty(restProperty: ts.BindingElement | ts.SpreadAssignment, excludedProp: Array<VReg | string>,
-                          obj: VReg, pandaGen: PandaGen, compiler: Compiler) {
+                          obj: VReg, pandaGen: PandaGen, compiler: Compiler): void {
     let isDeclaration = ts.isBindingElement(restProperty) ? true : false;
     let target = isDeclaration ? (<ts.BindingElement>restProperty).name : (<ts.SpreadAssignment>restProperty).expression;
     let lRef = LReference.generateLReference(compiler, target, true);
@@ -419,7 +419,7 @@ function emitRestProperty(restProperty: ts.BindingElement | ts.SpreadAssignment,
     pandaGen.freeTemps(...namedPropRegs);
 }
 
-function isRestElement(node: ts.BindingElement) {
+function isRestElement(node: ts.BindingElement): boolean {
     if (node.dotDotDotToken) {
         return true;
     }

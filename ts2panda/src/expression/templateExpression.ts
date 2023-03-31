@@ -17,7 +17,7 @@ import * as ts from "typescript";
 import { PandaGen } from "../pandagen";
 import { VReg } from "../irnodes";
 
-function genRawString(pandaGen: PandaGen, expr: ts.TemplateExpression | ts.NoSubstitutionTemplateLiteral) {
+function genRawString(pandaGen: PandaGen, expr: ts.TemplateExpression | ts.NoSubstitutionTemplateLiteral): void {
     let text = ""
     if (ts.isTemplateExpression(expr)) {
         text = expr.head.rawText!;
@@ -29,7 +29,7 @@ function genRawString(pandaGen: PandaGen, expr: ts.TemplateExpression | ts.NoSub
     pandaGen.loadAccumulatorString(expr, text);
 }
 
-function genCookedString(pandaGen: PandaGen, expr: ts.TemplateExpression | ts.NoSubstitutionTemplateLiteral) {
+function genCookedString(pandaGen: PandaGen, expr: ts.TemplateExpression | ts.NoSubstitutionTemplateLiteral): void {
     let text = ""
     if (ts.isTemplateExpression(expr)) {
         text = expr.head.text;
@@ -45,7 +45,7 @@ function genCookedString(pandaGen: PandaGen, expr: ts.TemplateExpression | ts.No
     pandaGen.loadAccumulatorString(expr, text);
 }
 
-function genTemplateArrayArg(pandaGen: PandaGen, expr: ts.TemplateExpression | ts.NoSubstitutionTemplateLiteral, rawArr: VReg, cookedArr: VReg) {
+function genTemplateArrayArg(pandaGen: PandaGen, expr: ts.TemplateExpression | ts.NoSubstitutionTemplateLiteral, rawArr: VReg, cookedArr: VReg): void {
     let spans = undefined;
     if (ts.isTemplateExpression(expr)) {
         spans = expr.templateSpans;
@@ -88,7 +88,7 @@ function genTemplateArrayArg(pandaGen: PandaGen, expr: ts.TemplateExpression | t
     pandaGen.freeTemps(indexReg, rawArrTmp, cookedArrTmp);
 }
 
-export function getTemplateObject(pandaGen: PandaGen, expr: ts.TaggedTemplateExpression) {
+export function getTemplateObject(pandaGen: PandaGen, expr: ts.TaggedTemplateExpression): void {
     let templateArgs = pandaGen.getTemp();
     let indexReg = pandaGen.getTemp();
     let rawArr = pandaGen.getTemp();

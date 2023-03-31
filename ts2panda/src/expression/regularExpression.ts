@@ -31,7 +31,7 @@ export enum RegExpFlags {
 }
 
 
-export function compileRegularExpressionLiteral(compiler: Compiler, regexp: ts.RegularExpressionLiteral) {
+export function compileRegularExpressionLiteral(compiler: Compiler, regexp: ts.RegularExpressionLiteral): void {
     let pandaGen = compiler.getPandaGen();
     let regexpText = regexp.text;
     let regexpPattern = regexpText;
@@ -50,7 +50,7 @@ export function compileRegularExpressionLiteral(compiler: Compiler, regexp: ts.R
 
 }
 
-function updateExpressionFlags(regexpFlags: string, regexp: ts.RegularExpressionLiteral) {
+function updateExpressionFlags(regexpFlags: string, regexp: ts.RegularExpressionLiteral): number {
     let flagsBits: number = 0;
     let flagsBitsTemp: number = 0;
     for (let idx = 0; idx < regexpFlags.length; idx++) {

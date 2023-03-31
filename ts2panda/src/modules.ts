@@ -31,38 +31,38 @@ export class ModuleStmt {
         this.moduleRequest = moduleRequest;
     }
 
-    getNode() {
+    getNode(): ts.Node {
         return this.node;
     }
 
-    getModuleRequest() {
+    getModuleRequest(): string {
         return this.moduleRequest;
     }
 
-    addLocalName(localName: string, importName: string) {
+    addLocalName(localName: string, importName: string): void {
         if (this.bingdingNameMap.has(localName)) {
             throw new DiagnosticError(this.node, DiagnosticCode.Duplicate_identifier_0, jshelpers.getSourceFileOfNode(this.node), [localName]);
         }
         this.bingdingNameMap.set(localName, importName);
     }
 
-    getBindingNameMap() {
+    getBindingNameMap(): Map<string, string> {
         return this.bingdingNameMap;
     }
 
-    addNodeMap(name: ts.Node, propertyName: ts.Node) {
+    addNodeMap(name: ts.Node, propertyName: ts.Node): void {
         this.bingdingNodeMap.set(name, propertyName);
     }
 
-    getBindingNodeMap() {
+    getBindingNodeMap(): Map<ts.Node, ts.Node> {
         return this.bingdingNodeMap;
     }
 
-    setNameSpace(namespace: string) {
+    setNameSpace(namespace: string): void {
         this.namespace = namespace;
     }
 
-    getNameSpace() {
+    getNameSpace(): string {
         return this.namespace;
     }
 
@@ -70,7 +70,7 @@ export class ModuleStmt {
         this.isCopy = isCopy;
     }
 
-    getCopyFlag() {
+    getCopyFlag(): boolean {
         return this.isCopy;
     }
 }

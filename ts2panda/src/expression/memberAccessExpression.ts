@@ -21,7 +21,7 @@ import { compileSuperProperty } from "../statement/classStatement";
 
 const MAX_LENGTH = 2 ** 32 - 1;
 
-export function compileMemberAccessExpression(node: ts.ElementAccessExpression | ts.PropertyAccessExpression, compiler: Compiler) {
+export function compileMemberAccessExpression(node: ts.ElementAccessExpression | ts.PropertyAccessExpression, compiler: Compiler): void {
     let pandaGen = compiler.getPandaGen();
     let objReg = pandaGen.getTemp();
     let propReg = pandaGen.getTemp();
@@ -44,7 +44,8 @@ export function compileMemberAccessExpression(node: ts.ElementAccessExpression |
     pandaGen.freeTemps(objReg, propReg);
 }
 
-export function getObjAndProp(node: ts.ElementAccessExpression | ts.PropertyAccessExpression, objReg: VReg, propReg: VReg, compiler: Compiler) {
+export function getObjAndProp(node: ts.ElementAccessExpression | ts.PropertyAccessExpression,
+                              objReg: VReg, propReg: VReg, compiler: Compiler): { obj: VReg; prop: any; } {
     let pandaGen = compiler.getPandaGen();
     let obj = objReg;
     let prop: VReg | string | number = propReg;
@@ -97,7 +98,7 @@ export function getObjAndProp(node: ts.ElementAccessExpression | ts.PropertyAcce
     return { obj: obj, prop: prop };
 }
 
-export function isValidIndex(num: number) {
+export function isValidIndex(num: number): boolean {
     if ((num >= 0) && (num < MAX_LENGTH) && (Number.isInteger(num))) {
         return true;
     }

@@ -38,21 +38,21 @@ export class IteratorRecord {
         this.nextMethod = nextMethod;
     }
 
-    getType() {
+    getType(): IteratorType {
         return this.type;
     }
 
-    getObject() {
+    getObject(): VReg {
         return this.object;
     }
 
-    getNextMethod() {
+    getNextMethod(): VReg {
         return this.nextMethod;
     }
 }
 
 
-export function compileForOfStatement(stmt: ts.ForOfStatement, compiler: Compiler) {
+export function compileForOfStatement(stmt: ts.ForOfStatement, compiler: Compiler): void {
     compiler.pushScope(stmt);
 
     let pandaGen = compiler.getPandaGen();
@@ -107,7 +107,7 @@ export function compileForOfStatement(stmt: ts.ForOfStatement, compiler: Compile
     compiler.popScope();
 }
 
-export function getIteratorRecord(pandagen: PandaGen, node: ts.Node, nextMethod: VReg, object: VReg, type: IteratorType) {
+export function getIteratorRecord(pandagen: PandaGen, node: ts.Node, nextMethod: VReg, object: VReg, type: IteratorType): IteratorRecord {
     getIterator(pandagen, node, type);
 
     pandagen.storeAccumulator(node, object);
@@ -117,7 +117,7 @@ export function getIteratorRecord(pandagen: PandaGen, node: ts.Node, nextMethod:
     return new IteratorRecord(object, nextMethod, type);
 }
 
-function getIterator(pandagen: PandaGen, node: ts.Node, type: IteratorType) {
+function getIterator(pandagen: PandaGen, node: ts.Node, type: IteratorType): void {
     if (type == IteratorType.Async) {
         pandagen.getAsyncIterator(node);
     } else {

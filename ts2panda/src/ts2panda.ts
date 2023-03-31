@@ -85,7 +85,7 @@ export class Ts2Panda {
         return new Signature(pg.getParametersCount());
     }
 
-    static getFuncInsnsAndRegsNum(pg: PandaGen) {
+    static getFuncInsnsAndRegsNum(pg: PandaGen): { insns: Ins[]; regsNum: number; labels: string[]; } {
         let insns: Array<Ins> = [];
         let labels: Array<string> = [];
 
@@ -179,7 +179,7 @@ export class Ts2Panda {
         ts2abc.stdio[3].write(jsonStrUnicode + '\n');
     }
 
-    static dumpTypeLiteralArrayBuffer() {
+    static dumpTypeLiteralArrayBuffer(): string {
         let literalArrays = PandaGen.getLiteralArrayBuffer();
         let countType: LiteralBuffer = literalArrays[0];
         let jsonTypeString: string = ""
@@ -526,7 +526,7 @@ export class Ts2Panda {
         ts2abc.stdio[3].write("*" + '\n');
     }
 
-    static clearDumpData() {
+    static clearDumpData(): void {
         Ts2Panda.strings.clear();
         Ts2Panda.jsonString = "";
         Ts2Panda.moduleRecordlist = [];

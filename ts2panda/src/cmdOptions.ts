@@ -93,7 +93,7 @@ export class CmdOptions {
         return this.options["debug"];
     }
 
-    static setWatchEvaluateExpressionArgs(watchArgs: string[]) {
+    static setWatchEvaluateExpressionArgs(watchArgs: string[]): void {
         this.options["debug-add-watch"] = watchArgs;
     }
 

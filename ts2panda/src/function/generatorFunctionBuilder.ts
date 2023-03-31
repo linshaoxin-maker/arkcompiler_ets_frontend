@@ -43,7 +43,7 @@ export class GeneratorFunctionBuilder extends FunctionBuilder {
         this.compiler = compiler;
     }
 
-    prepare(node: ts.Node) {
+    prepare(node: ts.Node): void {
         let pandaGen = this.pg;
 
         // backend handle funcobj, frontend set undefined
@@ -57,15 +57,15 @@ export class GeneratorFunctionBuilder extends FunctionBuilder {
         this.handleMode(node);
     }
 
-    explicitReturn(node: ts.Node | NodeKind, empty ? : boolean) {
+    explicitReturn(node: ts.Node | NodeKind, empty ? : boolean): void {
         this.pg.return(node);
     }
 
-    implicitReturn(node: ts.Node | NodeKind) {
+    implicitReturn(node: ts.Node | NodeKind): void {
         CmdOptions.isWatchEvaluateExpressionMode() ? this.pg.return(NodeKind.Invalid) : this.pg.returnUndefined(node);
     }
 
-    yield(node: ts.Node) {
+    yield(node: ts.Node): void {
         let pandaGen = this.pg;
         let iterRslt = pandaGen.getTemp();
         let value = pandaGen.getTemp();
@@ -81,7 +81,7 @@ export class GeneratorFunctionBuilder extends FunctionBuilder {
         this.handleMode(node);
     }
 
-    yieldStar(expr: ts.YieldExpression) {
+    yieldStar(expr: ts.YieldExpression): void {
         let pandaGen = this.pg;
         let method = pandaGen.getTemp();
         let object = pandaGen.getTemp();
@@ -217,7 +217,7 @@ export class GeneratorFunctionBuilder extends FunctionBuilder {
         pandaGen.freeTemps(method, object, receivedValue, modeType, outputResult);
     }
 
-    private handleMode(node: ts.Node) {
+    private handleMode(node: ts.Node): void {
         let pandaGen = this.pg;
 
         let modeType = pandaGen.getTemp();
@@ -260,7 +260,7 @@ export class GeneratorFunctionBuilder extends FunctionBuilder {
         pandaGen.loadAccumulator(node, this.resumeVal);
     }
 
-    cleanUp() {
+    cleanUp(): void {
         this.pg.freeTemps(this.funcObj, this.resumeVal);
     }
 }

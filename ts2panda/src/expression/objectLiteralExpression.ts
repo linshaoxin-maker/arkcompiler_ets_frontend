@@ -25,7 +25,7 @@ import { VReg } from "../irnodes";
 import { PropertyKind, Property, generatePropertyFromExpr } from "../base/properties";
 import { LiteralTag, Literal, LiteralBuffer } from "../base/literal";
 
-export function compileObjectLiteralExpression(compiler: Compiler, expr: ts.ObjectLiteralExpression) {
+export function compileObjectLiteralExpression(compiler: Compiler, expr: ts.ObjectLiteralExpression): void {
     let pandaGen = compiler.getPandaGen();
 
     // traverse the properties entries and store the useful information
@@ -108,7 +108,7 @@ function compileProperties(compiler: Compiler, properties: Property[], literalBu
 }
 
 function createObject(expr: ts.ObjectLiteralExpression, pandaGen: PandaGen, objReg: VReg,
-                      literalBuffer: LiteralBuffer, hasMethod: boolean, compiler: Compiler) {
+                      literalBuffer: LiteralBuffer, hasMethod: boolean, compiler: Compiler): void {
     if (literalBuffer.isEmpty()) {
         pandaGen.createEmptyObject(expr);
     } else {
@@ -144,7 +144,7 @@ function createConstantLiteral(prop: Property): Literal {
     return valLiteral;
 }
 
-function compileAccessorProperty(pandaGen: PandaGen, compiler: Compiler, objReg: VReg, prop: Property) {
+function compileAccessorProperty(pandaGen: PandaGen, compiler: Compiler, objReg: VReg, prop: Property): void {
     let getterReg = pandaGen.getTemp();
     let setterReg = pandaGen.getTemp();
     let propReg = pandaGen.getTemp();
@@ -178,7 +178,7 @@ function compileAccessorProperty(pandaGen: PandaGen, compiler: Compiler, objReg:
     pandaGen.freeTemps(getterReg, setterReg, propReg);
 }
 
-function compileSpreadProperty(compiler: Compiler, prop: Property, objReg: VReg) {
+function compileSpreadProperty(compiler: Compiler, prop: Property, objReg: VReg): void {
     let pandaGen = compiler.getPandaGen();
 
     compiler.compileExpression(<ts.Expression>prop.getValue());
@@ -186,7 +186,7 @@ function compileSpreadProperty(compiler: Compiler, prop: Property, objReg: VReg)
     pandaGen.copyDataProperties(<ts.Expression>prop.getValue().parent, objReg);
 }
 
-function compileComputedProperty(compiler: Compiler, prop: Property, objReg: VReg) {
+function compileComputedProperty(compiler: Compiler, prop: Property, objReg: VReg): void {
     // Computed can't know its key in compile time, create Object now.
     let pandaGen = compiler.getPandaGen();
 
@@ -230,7 +230,7 @@ function compileComputedProperty(compiler: Compiler, prop: Property, objReg: VRe
     pandaGen.freeTemps(keyReg);
 }
 
-function compileProtoProperty(compiler: Compiler, prop: Property, objReg: VReg) {
+function compileProtoProperty(compiler: Compiler, prop: Property, objReg: VReg): void {
     let pandaGen = compiler.getPandaGen();
     let protoReg = pandaGen.getTemp();
 
@@ -240,7 +240,7 @@ function compileProtoProperty(compiler: Compiler, prop: Property, objReg: VReg) 
     pandaGen.freeTemps(protoReg);
 }
 
-function setUncompiledProperties(compiler: Compiler, pandaGen: PandaGen, properties: Property[], objReg: VReg) {
+function setUncompiledProperties(compiler: Compiler, pandaGen: PandaGen, properties: Property[], objReg: VReg): void {
     for (let prop of properties) {
         if (!prop.isCompiled()) {
             switch (prop.getKind()) {

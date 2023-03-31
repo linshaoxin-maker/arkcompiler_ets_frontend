@@ -55,7 +55,7 @@ export class AsyncGeneratorFunctionBuilder extends FunctionBuilder {
         this.compiler = compiler;
     }
 
-    prepare(node: ts.Node) {
+    prepare(node: ts.Node): void {
         let pg = this.pg;
 
         // backend handle funcobj, frontend set undefined
@@ -100,7 +100,7 @@ export class AsyncGeneratorFunctionBuilder extends FunctionBuilder {
         this.directReturn(node);
     }
 	
-    yield(node: ts.Node) {
+    yield(node: ts.Node): void {
         let pg = this.pg;
 
         // 27.6.3.8.5 Set value to ? Await(value).
@@ -120,7 +120,7 @@ export class AsyncGeneratorFunctionBuilder extends FunctionBuilder {
         this.handleAsyncYieldResume(node);
     }
 
-    yieldStar(node: ts.Node) {
+    yieldStar(node: ts.Node): void {
         let pg = this.pg;
         let method = pg.getTemp();
         let iterator = pg.getTemp();
@@ -264,7 +264,7 @@ export class AsyncGeneratorFunctionBuilder extends FunctionBuilder {
         pg.freeTemps(method, iterator, nextResult, value, done, nextMethod, exitReturn);
     }
 
-    private handleAsyncYieldResume(node: ts.Node) {
+    private handleAsyncYieldResume(node: ts.Node): void {
         let pg = this.pg;
         let notRet = new Label();
         let normalCompletion = new Label();
@@ -310,7 +310,7 @@ export class AsyncGeneratorFunctionBuilder extends FunctionBuilder {
         pg.loadAccumulator(node, this.resumeVal);
     }
 
-    private handleMode(node: ts.Node) {
+    private handleMode(node: ts.Node): void {
         let pandaGen = this.pg;
 
         pandaGen.getResumeMode(node, this.funcObj);
@@ -330,12 +330,12 @@ export class AsyncGeneratorFunctionBuilder extends FunctionBuilder {
         pandaGen.loadAccumulator(node, this.resumeVal);
     }
 
-    resolve(node: ts.Node | NodeKind, value: VReg) {
+    resolve(node: ts.Node | NodeKind, value: VReg): void {
         let pandaGen = this.pg;
         pandaGen.asyncgeneratorresolve(node, this.funcObj, value, getVregisterCache(pandaGen, CacheList.True));
     }
 
-    cleanUp(node: ts.Node) {
+    cleanUp(node: ts.Node): void {
         let pandaGen = this.pg;
         pandaGen.label(node, this.endLabel);
         // catch

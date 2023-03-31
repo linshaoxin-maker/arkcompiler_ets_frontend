@@ -34,7 +34,7 @@ import {
 import { ModuleVariable } from "./variable";
 
 export function hoisting(rootNode: ts.SourceFile | ts.FunctionLikeDeclaration, pandaGen: PandaGen,
-    recorder: Recorder, compiler: Compiler) {
+    recorder: Recorder, compiler: Compiler): void {
     let variableScope = <VariableScope>recorder.getScopeOfNode(rootNode);
     let hoistDecls = recorder.getHoistDeclsOfScope(variableScope);
 
@@ -50,7 +50,7 @@ export function hoisting(rootNode: ts.SourceFile | ts.FunctionLikeDeclaration, p
     });
 }
 
-export function hoistVar(decl: VarDecl, scope: Scope, pandaGen: PandaGen) {
+export function hoistVar(decl: VarDecl, scope: Scope, pandaGen: PandaGen): void {
     let name = decl.name;
 
     if (scope instanceof GlobalScope) {
@@ -69,7 +69,7 @@ export function hoistVar(decl: VarDecl, scope: Scope, pandaGen: PandaGen) {
     }
 }
 
-export function hoistFunction(decl: FuncDecl, scope: Scope, pandaGen: PandaGen, compiler: Compiler, compilerDriver: CompilerDriver) {
+export function hoistFunction(decl: FuncDecl, scope: Scope, pandaGen: PandaGen, compiler: Compiler, compilerDriver: CompilerDriver): void {
     let funcName = decl.name;
     let internalName = compilerDriver.getFuncInternalName(<ts.FunctionLikeDeclaration>decl.node, compiler.getRecorder());
     let env = compiler.getCurrentEnv();
@@ -91,7 +91,7 @@ export function hoistFunction(decl: FuncDecl, scope: Scope, pandaGen: PandaGen, 
 }
 
 // this function is called when hoisting function inside blocks
-export function hoistFunctionInBlock(scope: Scope, pandaGen: PandaGen, strictMode: boolean, compiler: Compiler) {
+export function hoistFunctionInBlock(scope: Scope, pandaGen: PandaGen, strictMode: boolean, compiler: Compiler): void {
     let decls = scope.getDecls();
     let funcToHoist = new Array<FuncDecl>();
     for (let i = 0; i < decls.length; i++) {

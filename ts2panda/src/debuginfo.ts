@@ -138,7 +138,7 @@ export class DebugInfo {
     private static lastNode: ts.Node;
     constructor() { }
 
-    public static isNode(extendedNode: ts.Node | NodeKind) {
+    public static isNode(extendedNode: ts.Node | NodeKind): boolean {
         if (extendedNode != NodeKind.Invalid &&
             extendedNode != NodeKind.FirstNodeOfFunction &&
             extendedNode != NodeKind.Normal) {
@@ -148,7 +148,7 @@ export class DebugInfo {
         return false;
     }
 
-    public static updateLastNode(lastNode: ts.Node | NodeKind) {
+    public static updateLastNode(lastNode: ts.Node | NodeKind): void {
         if (DebugInfo.isNode(lastNode)) {
             DebugInfo.lastNode = <ts.Node>lastNode;
         }
@@ -181,7 +181,7 @@ export class DebugInfo {
         }
     }
 
-    public static setPosInfoForUninitializeIns(posInfo: DebugPosInfo, pandaGen: PandaGen) {
+    public static setPosInfoForUninitializeIns(posInfo: DebugPosInfo, pandaGen: PandaGen): void {
         let firstStmt = pandaGen.getFirstStmt();
         if (firstStmt) {
             let res = this.searchForPos(firstStmt);
@@ -193,7 +193,7 @@ export class DebugInfo {
         }
     }
 
-    public static setInvalidPosInfoForUninitializeIns(posInfo: DebugPosInfo, pandaGen: PandaGen) {
+    public static setInvalidPosInfoForUninitializeIns(posInfo: DebugPosInfo, pandaGen: PandaGen): void {
         posInfo.setSourecLineNum(-1);
         posInfo.setSourecColumnNum(-1);
     }
@@ -275,7 +275,7 @@ export class DebugInfo {
         return length;
     }
 
-    private static setPosDebugInfo(pandaGen: PandaGen) {
+    private static setPosDebugInfo(pandaGen: PandaGen): void {
         let insns: IRNode[] = pandaGen.getInsns();
         let offset = 0;
 
@@ -301,7 +301,7 @@ export class DebugInfo {
         }
     }
 
-    private static setVariablesDebugInfo(pandaGen: PandaGen) {
+    private static setVariablesDebugInfo(pandaGen: PandaGen): void {
         let insns = pandaGen.getInsns();
 
         for (let i = 0; i < insns.length; i++) {
@@ -341,7 +341,7 @@ export class DebugInfo {
         });
     }
 
-    public static setDebugInfo(pandaGen: PandaGen) {
+    public static setDebugInfo(pandaGen: PandaGen): void {
         // set position debug info
         DebugInfo.setPosDebugInfo(pandaGen);
         if (CmdOptions.isDebugMode()) {
@@ -354,7 +354,7 @@ export class DebugInfo {
         }
     }
 
-    public static setSourceFileDebugInfo(pandaGen: PandaGen, node: ts.SourceFile | ts.FunctionLikeDeclaration) {
+    public static setSourceFileDebugInfo(pandaGen: PandaGen, node: ts.SourceFile | ts.FunctionLikeDeclaration): void {
         let sourceFile = jshelpers.getSourceFileOfNode(node);
         if (CmdOptions.getSourceFile().length > 0) {
             pandaGen.setSourceFileDebugInfo(CmdOptions.getSourceFile());
@@ -367,11 +367,11 @@ export class DebugInfo {
         }
     }
 
-    public static copyDebugInfo(insn: IRNode, expansion: IRNode[]) {
+    public static copyDebugInfo(insn: IRNode, expansion: IRNode[]): void {
         expansion.forEach(irNode => irNode.debugPosInfo = insn.debugPosInfo);
     }
 
-    public static addDebugIns(scope: Scope, pandaGen: PandaGen, isStart: boolean) {
+    public static addDebugIns(scope: Scope, pandaGen: PandaGen, isStart: boolean): void {
         if (!CmdOptions.isDebugMode()) {
             return;
         }

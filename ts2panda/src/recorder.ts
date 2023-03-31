@@ -82,24 +82,24 @@ export class Recorder {
         this.syntaxCheckStatus = syntaxCheckStatus;
     }
 
-    record() {
+    record(): ts.Node {
         this.setParent(this.node);
         this.setScopeMap(this.node, this.scope);
         this.recordInfo(this.node, this.scope);
         return this.node;
     }
 
-    getCtorOfClass(node: ts.ClassLikeDeclaration) {
+    getCtorOfClass(node: ts.ClassLikeDeclaration): ts.ConstructorDeclaration {
         return this.class2Ctor.get(node);
     }
 
-    setCtorOfClass(node: ts.ClassLikeDeclaration, ctor: ts.ConstructorDeclaration) {
+    setCtorOfClass(node: ts.ClassLikeDeclaration, ctor: ts.ConstructorDeclaration): void {
         if (!this.class2Ctor.has(node)) {
             this.class2Ctor.set(node, ctor);
         }
     }
 
-    private setParent(node: ts.Node) {
+    private setParent(node: ts.Node): void {
         node.forEachChild(childNode => {
             if (!this.isTsFile || childNode!.parent == undefined || childNode.parent.kind != node.kind) {
                 childNode = jshelpers.setParent(childNode, node)!;
@@ -110,7 +110,7 @@ export class Recorder {
         });
     }
 
-    private recordInfo(node: ts.Node, scope: Scope) {
+    private recordInfo(node: ts.Node, scope: Scope): void {
         node.forEachChild(childNode => {
             if (this.syntaxCheckStatus) {
                 checkSyntaxError(childNode, scope);
@@ -255,7 +255,7 @@ export class Recorder {
         });
     }
 
-    private recordClassInfo(childNode: ts.ClassLikeDeclaration, scope: Scope, isExport: boolean) {
+    private recordClassInfo(childNode: ts.ClassLikeDeclaration, scope: Scope, isExport: boolean): void {
         let localScope = new LocalScope(scope);
         this.setScopeMap(childNode, localScope);
         let ctor = extractCtorOfClass(childNode);
@@ -273,7 +273,7 @@ export class Recorder {
         this.recordInfo(childNode, localScope);
     }
 
-    buildVariableScope(curScope: Scope, node: ts.FunctionLikeDeclaration) {
+    buildVariableScope(curScope: Scope, node: ts.FunctionLikeDeclaration): FunctionScope {
         let functionScope = new FunctionScope(curScope, <ts.FunctionLikeDeclaration>node);
         let parentVariableScope = <VariableScope>curScope.getNearestVariableScope();
         functionScope.setParentVariableScope(parentVariableScope);
@@ -282,7 +282,7 @@ export class Recorder {
         return functionScope;
     }
 
-    private recordVariableDecl(id: ts.Identifier, scope: Scope) {
+    private recordVariableDecl(id: ts.Identifier, scope: Scope): void {
         let name = jshelpers.getTextOfIdentifierOrLiteral(id);
         let parent = this.getDeclarationNodeOfId(id);
 
@@ -487,7 +487,7 @@ export class Recorder {
         }
     }
 
-    private recordEcmaImportClause(importClause: ts.ImportClause, scope: ModuleScope, moduleRequest: string) {
+    private recordEcmaImportClause(importClause: ts.ImportClause, scope: ModuleScope, moduleRequest: string): void {
         // import defaultExport from "a.js"
         if (importClause.name) {
             let localName = jshelpers.getTextOfIdentifierOrLiteral(importClause.name);
@@ -500,7 +500,7 @@ export class Recorder {
         }
     }
 
-    private recordEcmaImportInfo(node: ts.ImportDeclaration, scope: Scope) {
+    private recordEcmaImportInfo(node: ts.ImportDeclaration, scope: Scope): void {
         if (!(scope instanceof ModuleScope)) {
             return;
         }
@@ -516,7 +516,7 @@ export class Recorder {
         }
     }
 
-    private recordEcmaExportDecl(node: ts.ExportDeclaration, scope: ModuleScope) {
+    private recordEcmaExportDecl(node: ts.ExportDeclaration, scope: ModuleScope): void {
         if (node.moduleSpecifier) {
             let moduleRequest: string = this.getModuleSpecifier(node.moduleSpecifier);
 
@@ -555,7 +555,8 @@ export class Recorder {
         }
     }
 
-    private recordEcmaExportInfo(node: ts.ExportDeclaration | ts.ExportAssignment | ts.VariableStatement | ts.FunctionDeclaration | ts.ClassDeclaration, scope: Scope) {
+    private recordEcmaExportInfo(node: ts.ExportDeclaration | ts.ExportAssignment | ts.VariableStatement | ts.FunctionDeclaration | ts.ClassDeclaration,
+                                 scope: Scope): void {
         if (!(scope instanceof ModuleScope)) {
             return;
         }
@@ -606,7 +607,7 @@ export class Recorder {
         }
     }
 
-    private recordFuncDecl(node: ts.FunctionDeclaration, scope: Scope, isExport: boolean) {
+    private recordFuncDecl(node: ts.FunctionDeclaration, scope: Scope, isExport: boolean): void {
         this.recordFuncInfo(node);
 
         let funcId = <ts.Identifier>(node).name;
@@ -635,7 +636,7 @@ export class Recorder {
         }
     }
 
-    private recordOtherFunc(node: ts.FunctionLikeDeclaration, scope: Scope) { // functionlikedecalration except function declaration
+    private recordOtherFunc(node: ts.FunctionLikeDeclaration, scope: Scope): void { // functionlikedecalration except function declaration
         this.recordFuncInfo(node);
         if (!ts.isFunctionExpression(node) && !ts.isMethodDeclaration(node)) {
             return;
@@ -648,12 +649,12 @@ export class Recorder {
         }
     }
 
-    private recordFuncInfo(node: ts.FunctionLikeDeclaration) {
+    private recordFuncInfo(node: ts.FunctionLikeDeclaration): void {
         this.recordFunctionParameters(node);
         this.recordFuncName(node);
     }
 
-    recordFuncName(node: ts.FunctionLikeDeclaration) {
+    recordFuncName(node: ts.FunctionLikeDeclaration): void {
         let name: string = '';
         if (ts.isConstructorDeclaration(node)) {
             let classNode = node.parent;
@@ -704,7 +705,7 @@ export class Recorder {
         }
     }
 
-    recordFunctionParameters(node: ts.FunctionLikeDeclaration) {
+    recordFunctionParameters(node: ts.FunctionLikeDeclaration): void {
         let parameters = node.parameters;
         let funcParams: FunctionParameter[] = [];
         let length = 0;
@@ -732,7 +733,7 @@ export class Recorder {
         this.setParametersMap(node, funcParams);
     }
 
-    recordPatternParameter(pattern: ts.BindingPattern, funcParams: Array<FunctionParameter>) {
+    recordPatternParameter(pattern: ts.BindingPattern, funcParams: Array<FunctionParameter>): void {
         let name: string = '';
         pattern.elements.forEach(bindingElement => {
             if (ts.isOmittedExpression(bindingElement)) {
@@ -751,7 +752,7 @@ export class Recorder {
     }
 
 
-    isRestParameter(parameter: ts.ParameterDeclaration) {
+    isRestParameter(parameter: ts.ParameterDeclaration): boolean {
         return parameter.dotDotDotToken ? true : false;
     }
 
@@ -780,19 +781,19 @@ export class Recorder {
         return false;
     }
 
-    setScopeMap(node: ts.Node, scope: Scope) {
+    setScopeMap(node: ts.Node, scope: Scope): void {
         this.scopeMap.set(node, scope);
     }
 
-    getScopeMap() {
+    getScopeMap(): Map<ts.Node, Scope> {
         return this.scopeMap;
     }
 
-    getScopeOfNode(node: ts.Node) {
+    getScopeOfNode(node: ts.Node): Scope {
         return this.scopeMap.get(node);
     }
 
-    setHoistMap(scope: VariableScope, decl: Decl) {
+    setHoistMap(scope: VariableScope, decl: Decl): void {
         if (!this.hoistMap.has(scope)) {
             this.hoistMap.set(scope, [decl]);
             return;
@@ -810,23 +811,23 @@ export class Recorder {
         hoistDecls.push(decl);
     }
 
-    getHoistMap() {
+    getHoistMap(): Map<Scope, Decl[]> {
         return this.hoistMap;
     }
 
-    getHoistDeclsOfScope(scope: VariableScope) {
+    getHoistDeclsOfScope(scope: VariableScope): Decl[] {
         return this.hoistMap.get(scope);
     }
 
-    setParametersMap(node: ts.FunctionLikeDeclaration, parameters: FunctionParameter[]) {
+    setParametersMap(node: ts.FunctionLikeDeclaration, parameters: FunctionParameter[]): void {
         this.parametersMap.set(node, parameters);
     }
 
-    getParametersOfFunction(node: ts.FunctionLikeDeclaration) {
+    getParametersOfFunction(node: ts.FunctionLikeDeclaration): FunctionParameter[] {
         return this.parametersMap.get(node);
     }
 
-    getFuncNameMap() {
+    getFuncNameMap(): Map<string, number> {
         return this.funcNameMap;
     }
 }

@@ -34,7 +34,7 @@ export function isNewOrCallExpression(node: ts.Node): boolean {
     return node.kind === ts.SyntaxKind.NewExpression || node.kind === ts.SyntaxKind.CallExpression;
 }
 
-export function stringLiteralIsInRegExp(node: ts.Node) {
+export function stringLiteralIsInRegExp(node: ts.Node): boolean {
     let parent = node.parent;
     if (parent && isNewOrCallExpression(parent)) {
         let expression = (<ts.NewExpression | ts.CallExpression>parent).expression;
@@ -74,7 +74,7 @@ export function isEvalOrArgumentsIdentifier(node: ts.Node): boolean {
     return ts.isIdentifier(node) && (node.escapedText === "eval" || node.escapedText === MandatoryArguments);
 }
 
-export function isLeftHandSideExpressionKind(kind: ts.SyntaxKind) {
+export function isLeftHandSideExpressionKind(kind: ts.SyntaxKind): boolean {
     switch (kind) {
         case ts.SyntaxKind.NumericLiteral:
         case ts.SyntaxKind.BigIntLiteral:
@@ -110,11 +110,11 @@ export function isLeftHandSideExpressionKind(kind: ts.SyntaxKind) {
     }
 }
 
-export function isLeftHandSideExpression(node: ts.Node) {
+export function isLeftHandSideExpression(node: ts.Node): boolean {
     return isLeftHandSideExpressionKind(ts.skipPartiallyEmittedExpressions(node).kind);
 }
 
-export function isAssignmentOperator(token: ts.SyntaxKind) {
+export function isAssignmentOperator(token: ts.SyntaxKind): boolean {
     return token >= ts.SyntaxKind.FirstAssignment && token <= ts.SyntaxKind.LastAssignment;
 }
 
@@ -168,7 +168,7 @@ export function allowLetAndConstDeclarations(node: ts.Node): boolean {
     return true;
 }
 
-export function isGlobalIdentifier(name: string) {
+export function isGlobalIdentifier(name: string): boolean {
     switch (name) {
         case "NaN":
         case "undefined":
@@ -269,7 +269,7 @@ export function isOptionalParameter(node: ts.ParameterDeclaration): boolean {
     return false;
 }
 
-export function isStatement(kind: ts.SyntaxKind) {
+export function isStatement(kind: ts.SyntaxKind): boolean {
     if (kind >= ts.SyntaxKind.FirstStatement && kind <= ts.SyntaxKind.LastStatement) {
         return true;
     }

@@ -35,7 +35,7 @@ export function isInteger(value: number): Boolean {
     return true;
 }
 
-export function compileNumericLiteral(pandaGen: PandaGen, lit: ts.NumericLiteral) {
+export function compileNumericLiteral(pandaGen: PandaGen, lit: ts.NumericLiteral): void {
     let text = jshelpers.getTextOfIdentifierOrLiteral(lit);
     let value = Number.parseFloat(text);
     // check whether value is a NaN
