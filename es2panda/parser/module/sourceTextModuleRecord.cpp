@@ -169,6 +169,18 @@ namespace panda::es2panda::parser {
         for (auto it = localExportEntries_.begin(); it != localExportEntries_.end();
              it = localExportEntries_.upper_bound(it->first))
         {
+            // local module variable's index is suffixed to the exportEntry's localName as format liking
+            // `[identifier]#index` to resolve resolvingBindings's index correctly in runtime.
+            std::pair<SourceTextModuleRecord::LocalExportEntryMap::iterator,
+                SourceTextModuleRecord::LocalExportEntryMap::iterator> localNames =
+                localExportEntries_.equal_range(it->first);
+            util::StringView updatedLocalName =
+                util::UString(std::string(it->first) + '#' + std::to_string(index), allocator_).View();
+            for (auto localNameIter = localNames.first; localNameIter != localNames.second; ++localNameIter) {
+                auto *entry = localNameIter->second;
+                entry->localName_ = updatedLocalName;
+            }
+
             CheckAndAssignIndex(moduleScope, it->first, &index);
         }
 
