@@ -44,7 +44,7 @@ export abstract class Variable {
         this.typeIndex = 0;
     }
 
-    bindVreg(vreg: VReg) {
+    bindVreg(vreg: VReg): void {
         this.vreg = vreg;
         this.vreg.setTypeIndex(this.typeIndex);
         this.vreg.setVariableName(this.name);
@@ -61,19 +61,19 @@ export abstract class Variable {
         return this.vreg;
     }
 
-    getName() {
+    getName(): string {
         return this.name;
     }
 
-    getTypeIndex() {
+    getTypeIndex(): number {
         return this.typeIndex;
     }
 
-    setTypeIndex(typeIndex: number) {
+    setTypeIndex(typeIndex: number): number {
         return this.typeIndex = typeIndex;
     }
 
-    setLexVar(scope: VariableScope | LoopScope) {
+    setLexVar(scope: VariableScope | LoopScope): number {
         if (this.lexical()) {
             return;
         }
@@ -84,7 +84,7 @@ export abstract class Variable {
         return this.idxLex;
     }
 
-    clearLexVar() {
+    clearLexVar(): void {
         this.isLexVar = false;
         this.idxLex = 0;
     }
@@ -93,7 +93,7 @@ export abstract class Variable {
         return this.isLexVar;
     }
 
-    lexIndex() {
+    lexIndex(): number {
         return this.idxLex;
     }
 
@@ -130,11 +130,11 @@ export class LocalVariable extends Variable {
         this.status = status ? status : null;
     }
 
-    initialize() {
+    initialize(): void {
         this.status = InitStatus.INITIALIZED;
     }
 
-    isInitialized() {
+    isInitialized(): boolean {
         if (this.status != null) {
             return this.status == InitStatus.INITIALIZED;
         }
@@ -153,30 +153,30 @@ export class ModuleVariable extends Variable {
         this.status = status ? status : null;
     }
 
-    initialize() {
+    initialize(): void {
         this.status = InitStatus.INITIALIZED;
     }
 
-    isInitialized() {
+    isInitialized(): boolean {
         if (this.status != null) {
             return this.status == InitStatus.INITIALIZED;
         }
         return true;
     }
 
-    setExport() {
+    setExport(): void {
         this.isExport = true;
     }
 
-    isExportVar() {
+    isExportVar(): boolean {
         return this.isExport;
     }
 
-    assignIndex(index: number) {
+    assignIndex(index: number): void {
         this.index = index;
     }
 
-    getIndex() {
+    getIndex(): number {
         return this.index;
     }
 }
@@ -192,7 +192,7 @@ export const MandatoryNewTarget = "4newTarget";
 export const MandatoryThis = "this";
 export const MandatoryArguments = "arguments";
 
-export function isMandatoryParam(name: string) {
+export function isMandatoryParam(name: string): boolean {
     if (name == MandatoryFuncObj || name == MandatoryArguments ||
         name == MandatoryNewTarget || name == MandatoryThis) {
         return true;

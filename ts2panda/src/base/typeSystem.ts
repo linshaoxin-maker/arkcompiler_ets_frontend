@@ -169,23 +169,23 @@ export abstract class BaseType {
         }
     }
 
-    protected addCurrentType(node: ts.Node, index: number) {
+    protected addCurrentType(node: ts.Node, index: number): void {
         this.typeRecorder.addType2Index(node, index);
     }
 
-    protected setVariable2Type(variableNode: ts.Node, index: number) {
+    protected setVariable2Type(variableNode: ts.Node, index: number): void {
         this.typeRecorder.setVariable2Type(variableNode, index);
     }
 
-    protected tryGetTypeIndex(typeNode: ts.Node) {
+    protected tryGetTypeIndex(typeNode: ts.Node): number {
         return this.typeRecorder.tryGetTypeIndex(typeNode);
     }
 
-    protected getOrCreateRecordForDeclNode(typeNode: ts.Node, variableNode?: ts.Node) {
+    protected getOrCreateRecordForDeclNode(typeNode: ts.Node, variableNode?: ts.Node): PrimitiveType {
         return this.typeChecker.getOrCreateRecordForDeclNode(typeNode, variableNode);
     }
 
-    protected getOrCreateRecordForTypeNode(typeNode: ts.TypeNode | undefined, variableNode?: ts.Node) {
+    protected getOrCreateRecordForTypeNode(typeNode: ts.TypeNode | undefined, variableNode?: ts.Node): PrimitiveType {
         return this.typeChecker.getOrCreateRecordForTypeNode(typeNode, variableNode);
     }
 
@@ -193,11 +193,11 @@ export abstract class BaseType {
         return PandaGen.appendTypeArrayBuffer(type);
     }
 
-    protected setTypeArrayBuffer(type: BaseType, index: number) {
+    protected setTypeArrayBuffer(type: BaseType, index: number): void {
         PandaGen.setTypeArrayBuffer(type, index);
     }
 
-    protected calculateIndex(builtinTypeIdx) {
+    protected calculateIndex(builtinTypeIdx): { typeIndex: number; shiftedTypeIndex: number; } {
         let typeIndex: number;
         let shiftedTypeIndex: number;
         let recordBuiltin = builtinTypeIdx && CmdOptions.needRecordBuiltinDtsType();
@@ -238,7 +238,7 @@ export class TypeSummary extends BaseType {
         }
     }
 
-    public setInfo(userDefinedClassNum: number, anonymousRedirect: Array<string>) {
+    public setInfo(userDefinedClassNum: number, anonymousRedirect: Array<string>): void {
         this.userDefinedClassNum = userDefinedClassNum;
         this.anonymousRedirect = anonymousRedirect;
         this.setTypeArrayBuffer(this, this.preservedIndex);
@@ -308,7 +308,7 @@ export class ClassType extends BaseType {
         }
     }
 
-    private fillInModifiers(node: ts.ClassDeclaration | ts.ClassExpression) {
+    private fillInModifiers(node: ts.ClassDeclaration | ts.ClassExpression): void {
         if (node.modifiers) {
             for (let modifier of node.modifiers) {
                 switch (modifier.kind) {
@@ -324,7 +324,7 @@ export class ClassType extends BaseType {
         }
     }
 
-    private fillInHeritages(node: ts.ClassDeclaration | ts.ClassExpression) {
+    private fillInHeritages(node: ts.ClassDeclaration | ts.ClassExpression): void {
         if (node.heritageClauses) {
             for (let heritage of node.heritageClauses) {
                 let heritageFullName = heritage.getText();
@@ -341,7 +341,7 @@ export class ClassType extends BaseType {
         }
     }
 
-    private fillInFields(member: ts.PropertyDeclaration) {
+    private fillInFields(member: ts.PropertyDeclaration): void {
         let fieldName = jshelpers.getTextOfIdentifierOrLiteral(member.name);
         let fieldInfo = Array<number>(PrimitiveType.ANY, AccessFlag.PUBLIC, ModifierReadonly.NONREADONLY);
         let isStatic: boolean = false;
@@ -385,7 +385,7 @@ export class ClassType extends BaseType {
         }
     }
 
-    private fillInMethods(member: ClassMemberFunction) {
+    private fillInMethods(member: ClassMemberFunction): void {
         /**
          * a method like declaration in a new class must be a new type,
          * create this type and add it into typeRecorder if it's not from tsc's library
@@ -412,7 +412,7 @@ export class ClassType extends BaseType {
         }
     }
 
-    private fillInFieldsAndMethods(node: ts.ClassDeclaration | ts.ClassExpression) {
+    private fillInFieldsAndMethods(node: ts.ClassDeclaration | ts.ClassExpression): void {
         if (node.members) {
             for (let member of node.members) {
                 switch (member.kind) {
@@ -434,7 +434,7 @@ export class ClassType extends BaseType {
         }
     }
 
-    transfer2LiteralBuffer() {
+    transfer2LiteralBuffer(): LiteralBuffer {
         if (!this.typeIndex) {
             return;
         }
@@ -462,7 +462,7 @@ export class ClassType extends BaseType {
         return classTypeBuf;
     }
 
-    private transferFields2Literal(classTypeLiterals: Array<Literal>, isStatic: boolean) {
+    private transferFields2Literal(classTypeLiterals: Array<Literal>, isStatic: boolean): void {
         let transferredTarget: Map<string, Array<number>> = isStatic ? this.staticFields : this.fields;
 
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, transferredTarget.size));
@@ -474,7 +474,7 @@ export class ClassType extends BaseType {
         });
     }
 
-    private transferMethods2Literal(classTypeLiterals: Array<Literal>, isStatic: boolean) {
+    private transferMethods2Literal(classTypeLiterals: Array<Literal>, isStatic: boolean): void {
         let transferredTarget: Map<string, number> = isStatic ? this.staticMethods : this.methods;
 
         classTypeLiterals.push(new Literal(LiteralTag.INTEGER, transferredTarget.size));
@@ -547,11 +547,11 @@ export class FunctionType extends BaseType {
         this.setTypeArrayBuffer(this, this.typeIndex);
     }
 
-    public getFunctionName() {
+    public getFunctionName(): string {
         return this.name;
     }
 
-    private fillInModifiers(node: ts.FunctionLikeDeclaration | ts.MethodSignature) {
+    private fillInModifiers(node: ts.FunctionLikeDeclaration | ts.MethodSignature): void {
         if (node.modifiers) {
             for (let modifier of node.modifiers) {
                 switch (modifier.kind) {
@@ -586,7 +586,7 @@ export class FunctionType extends BaseType {
         }
     }
 
-    private fillInParameters(node: ts.FunctionLikeDeclaration | ts.MethodSignature) {
+    private fillInParameters(node: ts.FunctionLikeDeclaration | ts.MethodSignature): void {
         if (node.parameters) {
             for (let parameter of node.parameters) {
                 let typeNode = parameter.type;
@@ -600,17 +600,17 @@ export class FunctionType extends BaseType {
         }
     }
 
-    private fillInReturn(node: ts.FunctionLikeDeclaration | ts.MethodSignature) {
+    private fillInReturn(node: ts.FunctionLikeDeclaration | ts.MethodSignature): void {
         let typeNode = node.type;
         let typeIndex = this.getOrCreateRecordForTypeNode(typeNode, typeNode);
         this.returnType = typeIndex;
     }
 
-    getModifier() {
+    getModifier(): number {
         return this.modifiers;
     }
 
-    hasModifier(modifier: MethodModifier) {
+    hasModifier(modifier: MethodModifier): boolean {
         return (this.modifiers & modifier) ? true : false;
     }
 
@@ -673,7 +673,7 @@ export class UnionType extends BaseType {
         this.setOrReadFromArrayRecord(typeNode);
     }
 
-    setOrReadFromArrayRecord(typeNode: ts.Node) {
+    setOrReadFromArrayRecord(typeNode: ts.Node): void {
         let unionStr = typeNode.getText();
         if (this.hasUnionTypeMapping(unionStr)) {
             this.shiftedTypeIndex = this.getFromUnionTypeMap(unionStr)!;
@@ -686,19 +686,19 @@ export class UnionType extends BaseType {
         this.setTypeArrayBuffer(this, this.typeIndex);
     }
 
-    hasUnionTypeMapping(unionStr: string) {
+    hasUnionTypeMapping(unionStr: string): boolean {
         return this.typeRecorder.hasUnionTypeMapping(unionStr);
     }
 
-    getFromUnionTypeMap(unionStr: string) {
+    getFromUnionTypeMap(unionStr: string): number {
         return this.typeRecorder.getFromUnionTypeMap(unionStr);
     }
 
-    setUnionTypeMap(unionStr: string, shiftedTypeIndex: number) {
+    setUnionTypeMap(unionStr: string, shiftedTypeIndex: number): void {
         return this.typeRecorder.setUnionTypeMap(unionStr, shiftedTypeIndex);
     }
 
-    fillInUnionArray(typeNode: ts.Node, unionedTypeArray: Array<number>) {
+    fillInUnionArray(typeNode: ts.Node, unionedTypeArray: Array<number>): void {
         for (let element of (<ts.UnionType><any>typeNode).types) {
             let elementNode = <ts.TypeNode><any>element;
             let typeIndex = this.getOrCreateRecordForTypeNode(elementNode, elementNode);
@@ -730,7 +730,7 @@ export class ArrayType extends BaseType {
         this.setOrReadFromArrayRecord();
     }
 
-    setOrReadFromArrayRecord() {
+    setOrReadFromArrayRecord(): void {
         if (this.hasArrayTypeMapping(this.referedTypeIndex)) {
             this.shiftedTypeIndex = this.getFromArrayTypeMap(this.referedTypeIndex)!;
         } else {
@@ -741,15 +741,15 @@ export class ArrayType extends BaseType {
         }
     }
 
-    hasArrayTypeMapping(referedTypeIndex: number) {
+    hasArrayTypeMapping(referedTypeIndex: number): boolean {
         return this.typeRecorder.hasArrayTypeMapping(referedTypeIndex);
     }
 
-    getFromArrayTypeMap(referedTypeIndex: number) {
+    getFromArrayTypeMap(referedTypeIndex: number): number {
         return this.typeRecorder.getFromArrayTypeMap(referedTypeIndex);
     }
 
-    setArrayTypeMap(referedTypeIndex: number, shiftedTypeIndex: number) {
+    setArrayTypeMap(referedTypeIndex: number, shiftedTypeIndex: number): void {
         return this.typeRecorder.setArrayTypeMap(referedTypeIndex, shiftedTypeIndex);
     }
 
@@ -776,7 +776,7 @@ export class ObjectType extends BaseType {
         this.setTypeArrayBuffer(this, this.typeIndex);
     }
 
-    fillInMembers(objNode: ts.TypeLiteralNode) {
+    fillInMembers(objNode: ts.TypeLiteralNode): void {
         for (let member of objNode.members) {
             let propertySig = <ts.PropertySignature>member;
             let name = member.name ? member.name.getText() : "#undefined";
@@ -819,7 +819,7 @@ export class InterfaceType extends BaseType {
         this.setTypeArrayBuffer(this, this.typeIndex);
     }
 
-    private fillInHeritages(node: ts.InterfaceDeclaration) {
+    private fillInHeritages(node: ts.InterfaceDeclaration): void {
         if (node.heritageClauses) {
             for (let heritage of node.heritageClauses) {
                 for (let heritageType of heritage.types) {
@@ -831,7 +831,7 @@ export class InterfaceType extends BaseType {
         }
     }
 
-    private fillInFields(member: ts.PropertySignature) {
+    private fillInFields(member: ts.PropertySignature): void {
         let fieldName = jshelpers.getTextOfIdentifierOrLiteral(member.name);
         let fieldInfo = Array<number>(PrimitiveType.ANY, AccessFlag.PUBLIC, ModifierReadonly.NONREADONLY);
         if (member.modifiers) {
@@ -860,7 +860,7 @@ export class InterfaceType extends BaseType {
         this.fields.set(fieldName, fieldInfo);
     }
 
-    private fillInMethods(member: ts.MethodSignature) {
+    private fillInMethods(member: ts.MethodSignature): void {
         /**
          * a method like declaration in a new class must be a new type,
          * create this type and add it into typeRecorder if it's not from tsc's library
@@ -878,7 +878,7 @@ export class InterfaceType extends BaseType {
         this.methods.push(typeIndex!);
     }
 
-    private fillInFieldsAndMethods(node: ts.InterfaceDeclaration) {
+    private fillInFieldsAndMethods(node: ts.InterfaceDeclaration): void {
         if (node.members) {
             for (let member of node.members) {
                 switch (member.kind) {
@@ -897,7 +897,7 @@ export class InterfaceType extends BaseType {
         }
     }
 
-    transfer2LiteralBuffer() {
+    transfer2LiteralBuffer(): LiteralBuffer {
         let interfaceTypeBuf = new LiteralBuffer();
         let interfaceTypeLiterals: Array<Literal> = new Array<Literal>();
         // the first element is to determine the L2 type
@@ -916,7 +916,7 @@ export class InterfaceType extends BaseType {
         return interfaceTypeBuf;
     }
 
-    private transferFields2Literal(interfaceTypeLiterals: Array<Literal>) {
+    private transferFields2Literal(interfaceTypeLiterals: Array<Literal>): void {
         let transferredTarget: Map<string, Array<number>> = this.fields;
 
         interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, transferredTarget.size));
@@ -928,7 +928,7 @@ export class InterfaceType extends BaseType {
         });
     }
 
-    private transferMethods2Literal(interfaceTypeLiterals: Array<Literal>) {
+    private transferMethods2Literal(interfaceTypeLiterals: Array<Literal>): void {
         let transferredTarget: Array<number> = this.methods;
 
         interfaceTypeLiterals.push(new Literal(LiteralTag.INTEGER, transferredTarget.length));
@@ -953,7 +953,7 @@ export class BuiltinContainerType extends BaseType {
         this.setBuiltinContainer2InstanceMap(builtinContainerSignature, this.shiftedTypeIndex);
     }
 
-    setBuiltinContainer2InstanceMap(builtinContainerSignature: object, index: number) {
+    setBuiltinContainer2InstanceMap(builtinContainerSignature: object, index: number): void {
         return this.typeRecorder.setBuiltinContainer2InstanceMap(builtinContainerSignature, index);
     }
 

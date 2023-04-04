@@ -95,7 +95,7 @@ export class CompilerDriver {
         }
     }
 
-    initiateTs2abcChildProcess(args: Array<string>) {
+    initiateTs2abcChildProcess(args: Array<string>): void {
         this.ts2abcProcess = initiateTs2abc(args);
         listenChildExit(this.getTs2abcProcess());
         listenErrorEvent(this.getTs2abcProcess());
@@ -108,11 +108,11 @@ export class CompilerDriver {
         return this.ts2abcProcess;
     }
 
-    getStatistics() {
+    getStatistics(): CompilerStatistics {
         return this.statistics;
     }
 
-    setCustomPasses(passes: Pass[]) {
+    setCustomPasses(passes: Pass[]): void {
         this.passes = passes;
     }
 
@@ -124,15 +124,15 @@ export class CompilerDriver {
         return internalName;
     }
 
-    getCompilationUnits() {
+    getCompilationUnits(): PandaGen[] {
         return this.compilationUnits;
     }
 
-    kind2String(kind: ts.SyntaxKind) {
+    kind2String(kind: ts.SyntaxKind): string {
         return ts.SyntaxKind[kind];
     }
 
-    getASTStatistics(node: ts.Node, statics: number[]) {
+    getASTStatistics(node: ts.Node, statics: number[]): void {
         node.forEachChild(childNode => {
             statics[<number>childNode.kind] = statics[<number>childNode.kind] + 1;
             this.getASTStatistics(childNode, statics);
@@ -306,7 +306,7 @@ export class CompilerDriver {
     }
 
     private compileUnitTestImpl(node: ts.SourceFile | ts.FunctionLikeDeclaration, scope: Scope,
-        internalName: string, recorder: Recorder) {
+        internalName: string, recorder: Recorder): void {
         let pandaGen = new PandaGen(internalName, node, this.getParametersCount(node), scope);
         IRNode.pg = pandaGen;
         if (CmdOptions.needRecordSourceCode() && !ts.isSourceFile(node)) {
@@ -323,7 +323,7 @@ export class CompilerDriver {
         this.compilationUnits.push(pandaGen);
     }
 
-    static isTypeScriptSourceFile(node: ts.SourceFile) {
+    static isTypeScriptSourceFile(node: ts.SourceFile): boolean {
         let fileName = node.fileName;
         if (fileName && fileName.endsWith(".ts")) {
             return true;
@@ -332,7 +332,7 @@ export class CompilerDriver {
         }
     }
 
-    private compilePrologue(node: ts.SourceFile, recordType: boolean, syntaxCheckStatus: boolean) {
+    private compilePrologue(node: ts.SourceFile, recordType: boolean, syntaxCheckStatus: boolean): Recorder {
         let topLevelScope: GlobalScope | ModuleScope;
         if (CmdOptions.isModules()) {
             topLevelScope = new ModuleScope(node);
@@ -386,7 +386,7 @@ export class CompilerDriver {
         return idx;
     }
 
-    getFormatedRecordName() {
+    getFormatedRecordName(): string {
         let formatedRecordName: string = '';
         if (CmdOptions.isMergeAbc()) {
             formatedRecordName = this.recordName + '.';
@@ -437,7 +437,7 @@ export class CompilerDriver {
         return `${this.getFormatedRecordName()}${name}`;
     }
 
-    getInternalNameForCtor(node: ts.ClassLikeDeclaration, ctor: ts.ConstructorDeclaration) {
+    getInternalNameForCtor(node: ts.ClassLikeDeclaration, ctor: ts.ConstructorDeclaration): string {
         let name = getClassNameForConstructor(node);
         name = `#${this.getFuncId(ctor)}#${name}`
         if (name.lastIndexOf(".") != -1) {
@@ -446,7 +446,7 @@ export class CompilerDriver {
         return `${this.getFormatedRecordName()}${name}`;
     }
 
-    writeBinaryFile(pandaGen: PandaGen) {
+    writeBinaryFile(pandaGen: PandaGen): void {
         if (this.needDumpHeader) {
             AssemblyDumper.dumpHeader();
             this.needDumpHeader = false;
@@ -472,13 +472,13 @@ export class CompilerDriver {
         return parametersCount;
     }
 
-    private setTypeInfoBeforeRecord(enableTypeRecord: boolean) {
+    private setTypeInfoBeforeRecord(enableTypeRecord: boolean): void {
         if (enableTypeRecord) {
             TypeRecorder.createInstance();
         }
     }
 
-    private setTypeInfoAfterRecord(enableTypeRecord: boolean) {
+    private setTypeInfoAfterRecord(enableTypeRecord: boolean): void {
         if (enableTypeRecord) {
             TypeRecorder.getInstance().setTypeSummary();
             if (CmdOptions.enableTypeLog()) {

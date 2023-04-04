@@ -56,7 +56,7 @@ import {
     Variable
 } from "../variable";
 
-export function compileClassDeclaration(compiler: Compiler, stmt: ts.ClassLikeDeclaration) {
+export function compileClassDeclaration(compiler: Compiler, stmt: ts.ClassLikeDeclaration): void {
     compiler.pushScope(stmt);
 
     let pandaGen = compiler.getPandaGen();
@@ -161,7 +161,7 @@ export function compileClassDeclaration(compiler: Compiler, stmt: ts.ClassLikeDe
     compiler.popScope();
 }
 
-export function AddCtor2Class(recorder: Recorder, classNode: ts.ClassLikeDeclaration, scope: Scope) {
+export function AddCtor2Class(recorder: Recorder, classNode: ts.ClassLikeDeclaration, scope: Scope): void {
     let ctorNode;
     if (jshelpers.getClassExtendsHeritageElement(classNode)) {
         let parameter = ts.factory.createParameterDeclaration(undefined, undefined, ts.factory.createToken(ts.SyntaxKind.DotDotDotToken), "args");
@@ -197,7 +197,7 @@ export function AddCtor2Class(recorder: Recorder, classNode: ts.ClassLikeDeclara
     recorder.setCtorOfClass(classNode, ctorNode);
 }
 
-export function compileDefaultConstructor(compiler: Compiler, ctrNode: ts.ConstructorDeclaration) {
+export function compileDefaultConstructor(compiler: Compiler, ctrNode: ts.ConstructorDeclaration): void {
     let callNode = ts.factory.createCallExpression(ts.factory.createSuper(), undefined,
         [ts.factory.createSpreadElement(ts.factory.createIdentifier("args"))]);
 
@@ -208,7 +208,7 @@ export function compileDefaultConstructor(compiler: Compiler, ctrNode: ts.Constr
     compileConstructor(compiler, ctrNode, false);
 }
 
-function compileUnCompiledProperty(compiler: Compiler, properties: Property[], classReg: VReg) {
+function compileUnCompiledProperty(compiler: Compiler, properties: Property[], classReg: VReg): void {
     let pandaGen = compiler.getPandaGen();
     for (let propertyIndex = 0; propertyIndex < properties.length; propertyIndex++) {
         let prop = properties[propertyIndex];
@@ -239,7 +239,7 @@ function compileUnCompiledProperty(compiler: Compiler, properties: Property[], c
     }
 }
 
-function compileUnCompiledVariable(compiler: Compiler, prop: Property, classReg: VReg) {
+function compileUnCompiledVariable(compiler: Compiler, prop: Property, classReg: VReg): void {
     let pandaGen = compiler.getPandaGen();
     let proptoReg = pandaGen.getTemp();
     let tmpReg = pandaGen.getTemp();
@@ -259,7 +259,7 @@ function compileUnCompiledVariable(compiler: Compiler, prop: Property, classReg:
 }
 
 function createClassLiteralBuf(compiler: Compiler, classBuffer: LiteralBuffer,
-    stmt: ts.ClassLikeDeclaration, vregs: VReg[]) {
+    stmt: ts.ClassLikeDeclaration, vregs: VReg[]): void {
     let litId: string = PandaGen.appendLiteralArrayBuffer(classBuffer);
 
     let ctorNode = compiler.getRecorder().getCtorOfClass(stmt);
@@ -271,7 +271,7 @@ function createClassLiteralBuf(compiler: Compiler, classBuffer: LiteralBuffer,
     pandaGen.storeAccumulator(stmt, vregs[1]);
 }
 
-export function compileDefaultInitClassMembers(compiler: Compiler, node: ts.ConstructorDeclaration) {
+export function compileDefaultInitClassMembers(compiler: Compiler, node: ts.ConstructorDeclaration): void {
     let pandaGen = compiler.getPandaGen();
     let members = node.parent!.members;
     for (let index = 0; index < members.length; index++) {
@@ -319,7 +319,7 @@ export function compileDefaultInitClassMembers(compiler: Compiler, node: ts.Cons
     }
 }
 
-export function compileReturnThis4Ctor(compiler: Compiler, node: ts.ConstructorDeclaration, unreachableFlag: boolean) {
+export function compileReturnThis4Ctor(compiler: Compiler, node: ts.ConstructorDeclaration, unreachableFlag: boolean): void {
     let pandaGen = compiler.getPandaGen();
 
     if (unreachableFlag) {
@@ -336,7 +336,7 @@ export function compileReturnThis4Ctor(compiler: Compiler, node: ts.ConstructorD
     pandaGen.freeTemps(thisReg);
 }
 
-export function compileConstructor(compiler: Compiler, node: ts.ConstructorDeclaration, unreachableFlag: boolean) {
+export function compileConstructor(compiler: Compiler, node: ts.ConstructorDeclaration, unreachableFlag: boolean): void {
     let pandaGen = compiler.getPandaGen();
     let members = node.parent!.members;
 
@@ -365,7 +365,7 @@ export function compileConstructor(compiler: Compiler, node: ts.ConstructorDecla
     pandaGen.freeTemps(thisReg);
 }
 
-export function compileSuperCall(compiler: Compiler, node: ts.CallExpression, args: VReg[], hasSpread: boolean) {
+export function compileSuperCall(compiler: Compiler, node: ts.CallExpression, args: VReg[], hasSpread: boolean): void {
     let pandaGen = compiler.getPandaGen();
 
     if (hasSpread) {
@@ -391,7 +391,7 @@ export function compileSuperCall(compiler: Compiler, node: ts.CallExpression, ar
     compiler.setThis(node);
 }
 
-function loadCtorObj(node: ts.CallExpression, compiler: Compiler) {
+function loadCtorObj(node: ts.CallExpression, compiler: Compiler): void {
     let recorder = compiler.getRecorder();
     let pandaGen = compiler.getPandaGen();
     let nearestFunc = jshelpers.getContainingFunctionDeclaration(node);
@@ -423,7 +423,7 @@ function loadCtorObj(node: ts.CallExpression, compiler: Compiler) {
 
 }
 
-export function extractCtorOfClass(stmt: ts.ClassLikeDeclaration) {
+export function extractCtorOfClass(stmt: ts.ClassLikeDeclaration): ts.ConstructorDeclaration {
     let members = stmt.members;
     for (let index = 0; index < members.length; index++) {
         let member = members[index];
@@ -440,7 +440,7 @@ export function defineClassMember(
     propValue: ts.Node,
     propKind: PropertyKind,
     properties: Property[],
-    namedPropertyMap: Map<string, Property>) {
+    namedPropertyMap: Map<string, Property>): boolean {
     let staticFlag = false;
     if (propKind == PropertyKind.Computed || propKind == PropertyKind.Spread) {
         let prop = new Property(propKind, <ts.ComputedPropertyName | undefined>propName);
@@ -476,7 +476,7 @@ export function defineClassMember(
     return staticFlag;
 }
 
-function compileHeritageClause(compiler: Compiler, node: ts.ClassLikeDeclaration) {
+function compileHeritageClause(compiler: Compiler, node: ts.ClassLikeDeclaration): VReg {
     let pandaGen = compiler.getPandaGen();
     let baseVreg = pandaGen.getTemp();
     if (node.heritageClauses && node.heritageClauses.length) {
@@ -493,7 +493,7 @@ function compileHeritageClause(compiler: Compiler, node: ts.ClassLikeDeclaration
     return baseVreg;
 }
 
-export function getClassNameForConstructor(classNode: ts.ClassLikeDeclaration) {
+export function getClassNameForConstructor(classNode: ts.ClassLikeDeclaration): string {
     let className = "";
 
     if (!isAnonymousClass(classNode)) {
@@ -528,11 +528,11 @@ export function getClassNameForConstructor(classNode: ts.ClassLikeDeclaration) {
     return className;
 }
 
-function isAnonymousClass(node: ts.ClassLikeDeclaration) {
+function isAnonymousClass(node: ts.ClassLikeDeclaration): boolean {
     return node.name ? false : true;
 }
 
-function generatePropertyFromExpr(node: ts.ClassLikeDeclaration, classFields: Array<ts.PropertyDeclaration>, namedPropertyMap: Map<string, Property>) {
+function generatePropertyFromExpr(node: ts.ClassLikeDeclaration, classFields: Array<ts.PropertyDeclaration>, namedPropertyMap: Map<string, Property>): Property[] {
     let properties: Array<Property> = [];
     let staticNum = 0;
     let constructNode: any;
@@ -626,7 +626,7 @@ function generatePropertyFromExpr(node: ts.ClassLikeDeclaration, classFields: Ar
     return properties;
 }
 
-function compileComputedProperty(compiler: Compiler, prop: Property, classReg: VReg, keyReg: VReg) {
+function compileComputedProperty(compiler: Compiler, prop: Property, classReg: VReg, keyReg: VReg): void {
     let pandaGen = compiler.getPandaGen();
     switch (prop.getValue().kind) {
         case ts.SyntaxKind.PropertyDeclaration: {
@@ -669,7 +669,7 @@ function compileComputedProperty(compiler: Compiler, prop: Property, classReg: V
     pandaGen.freeTemps(keyReg);
 }
 
-function setClassAccessor(pandaGen: PandaGen, compiler: Compiler, objReg: VReg, prop: Property) {
+function setClassAccessor(pandaGen: PandaGen, compiler: Compiler, objReg: VReg, prop: Property): void {
 
     let getterReg = pandaGen.getTemp();
     let setterReg = pandaGen.getTemp();
@@ -705,7 +705,7 @@ function setClassAccessor(pandaGen: PandaGen, compiler: Compiler, objReg: VReg, 
 }
 
 function createClassMethodOrAccessor(compiler: Compiler, classReg: VReg, propReg: VReg, storeReg: VReg,
-    node: ts.MethodDeclaration | ts.GetAccessorDeclaration | ts.SetAccessorDeclaration | ts.ConstructorDeclaration) {
+    node: ts.MethodDeclaration | ts.GetAccessorDeclaration | ts.SetAccessorDeclaration | ts.ConstructorDeclaration): boolean {
     let pandaGen = compiler.getPandaGen();
     if (jshelpers.hasStaticModifier(node)) {
         createMethodOrAccessor(pandaGen, compiler, classReg, node);
@@ -721,7 +721,7 @@ function createClassMethodOrAccessor(compiler: Compiler, classReg: VReg, propReg
     return true;
 }
 
-function scalarArrayEquals(node1: ts.Node | undefined, node2: ts.Node | undefined) {
+function scalarArrayEquals(node1: ts.Node | undefined, node2: ts.Node | undefined): boolean {
     if (node1 && node2) {
         let val1Modifs = node1.modifiers;
         let val2Modifs = node2.modifiers;
@@ -739,7 +739,7 @@ function scalarArrayEquals(node1: ts.Node | undefined, node2: ts.Node | undefine
     return false;
 }
 
-export function setPrototypeAttributes(compiler: Compiler, node: ts.Node, classReg: VReg, propReg: VReg, storeReg: VReg) {
+export function setPrototypeAttributes(compiler: Compiler, node: ts.Node, classReg: VReg, propReg: VReg, storeReg: VReg): boolean {
     let pandaGen = compiler.getPandaGen();
     pandaGen.storeAccumulator(node, storeReg);
     if (jshelpers.hasStaticModifier(node)) {
@@ -792,7 +792,7 @@ export function shouldReturnThisForConstruct(stmt: ts.ReturnStatement): boolean 
     return false;
 }
 
-export function compileSuperProperty(compiler: Compiler, expr: ts.Expression, thisReg: VReg, prop: VReg | string | number) {
+export function compileSuperProperty(compiler: Compiler, expr: ts.Expression, thisReg: VReg, prop: VReg | string | number): void {
     checkValidUseSuperBeforeSuper(compiler, expr);
     let pandaGen = compiler.getPandaGen();
     compiler.getThis(expr, thisReg);
@@ -800,7 +800,7 @@ export function compileSuperProperty(compiler: Compiler, expr: ts.Expression, th
     pandaGen.loadSuperProperty(expr, thisReg, prop);
 }
 
-export function checkValidUseSuperBeforeSuper(compiler: Compiler, node: ts.Node) {
+export function checkValidUseSuperBeforeSuper(compiler: Compiler, node: ts.Node): void {
     let pandaGen = compiler.getPandaGen();
     let ctorNode = jshelpers.findAncestor(node, ts.isConstructorDeclaration);
 

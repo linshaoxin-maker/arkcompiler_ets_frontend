@@ -70,7 +70,7 @@ class CacheItem {
     private flag: boolean;
     private vreg: VReg | undefined;
     private expander: Function;
-    isNeeded() {
+    isNeeded(): boolean {
         return this.flag;
     }
     getCache(): VReg {
@@ -80,7 +80,7 @@ class CacheItem {
         }
         return this.vreg;
     }
-    getExpander() {
+    getExpander(): Function {
         return this.expander;
     }
 }
@@ -96,7 +96,7 @@ export class VregisterCache {
             this.cache[i] = new CacheItem(handler);
         }
     }
-    getCache(index: CacheList) {
+    getCache(index: CacheList): CacheItem {
         if (index < CacheList.MIN || index > CacheList.MAX) {
             throw new Error("invalid builtin index");
         }
@@ -104,7 +104,7 @@ export class VregisterCache {
     }
 }
 
-export function getVregisterCache(pandaGen: PandaGen, index: CacheList) {
+export function getVregisterCache(pandaGen: PandaGen, index: CacheList): VReg {
     let cache = pandaGen.getVregisterCache();
     let cacheItem = cache.getCache(index);
 

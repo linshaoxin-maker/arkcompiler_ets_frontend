@@ -71,7 +71,7 @@ export class AsyncFunctionBuilder extends FunctionBuilder {
         this.pg.return(node);
     }
 
-    private handleMode(node: ts.Node) {
+    private handleMode(node: ts.Node): void {
         let pandaGen = this.pg;
         let modeType = pandaGen.getTemp();
 
@@ -95,7 +95,7 @@ export class AsyncFunctionBuilder extends FunctionBuilder {
         pandaGen.loadAccumulator(node, this.resumeVal);
     }
 
-    resolve(node: ts.Node | NodeKind, value: VReg) {
+    resolve(node: ts.Node | NodeKind, value: VReg): void {
         let pandaGen = this.pg;
         pandaGen.loadAccumulator(node, value);
         pandaGen.asyncFunctionResolve(node, this.funcObj);

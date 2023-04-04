@@ -42,55 +42,55 @@ export class Property {
         }
     }
 
-    setCompiled() {
+    setCompiled(): void {
         this.compiled = true;
     }
 
-    setRedeclared() {
+    setRedeclared(): void {
         this.redeclared = true;
     }
 
-    isCompiled() {
+    isCompiled(): boolean {
         return this.compiled;
     }
 
-    isRedeclared() {
+    isRedeclared(): boolean {
         return this.redeclared;
     }
 
-    getName() {
+    getName(): string | number | ts.ComputedPropertyName {
         if (typeof (this.name) == 'undefined') {
             throw new Error("this property doesn't have a name");
         }
         return this.name;
     }
 
-    getKind() {
+    getKind(): PropertyKind {
         return this.propKind;
     }
 
-    getValue() {
+    getValue(): ts.Node {
         if (this.propKind == PropertyKind.Accessor) {
             throw new Error("Accessor doesn't have valueNode")
         }
         return this.valueNode!;
     }
 
-    getGetter() {
+    getGetter(): ts.GetAccessorDeclaration {
         return this.getterNode;
     }
 
-    getSetter() {
+    getSetter(): ts.SetAccessorDeclaration {
         return this.setterNode;
     }
 
-    setValue(valueNode: ts.Node) {
+    setValue(valueNode: ts.Node): void {
         this.valueNode = valueNode;
         this.getterNode = undefined;
         this.setterNode = undefined;
     }
 
-    setGetter(getter: ts.GetAccessorDeclaration) {
+    setGetter(getter: ts.GetAccessorDeclaration): void {
         if (this.propKind != PropertyKind.Accessor) {
             this.valueNode = undefined;
             this.setterNode = undefined;
@@ -99,7 +99,7 @@ export class Property {
         this.getterNode = getter;
     }
 
-    setSetter(setter: ts.SetAccessorDeclaration) {
+    setSetter(setter: ts.SetAccessorDeclaration): void {
         if (this.propKind != PropertyKind.Accessor) {
             this.valueNode = undefined;
             this.getterNode = undefined;
@@ -108,7 +108,7 @@ export class Property {
         this.setterNode = setter;
     }
 
-    setKind(propKind: PropertyKind) {
+    setKind(propKind: PropertyKind): void {
         this.propKind = propKind;
     }
 }
@@ -187,7 +187,7 @@ function defineProperty(
     propValue: ts.Node,
     propKind: PropertyKind,
     properties: Property[],
-    namedPropertyMap: Map<string, number>) {
+    namedPropertyMap: Map<string, number>): void {
     if (propKind == PropertyKind.Computed || propKind == PropertyKind.Spread) {
         let prop = new Property(propKind, <ts.ComputedPropertyName | undefined>propName);
         prop.setValue(propValue);
@@ -244,14 +244,14 @@ export function isConstantExpr(node: ts.Node): boolean {
     }
 }
 
-export function propertyKeyAsString(propName: string | number) {
+export function propertyKeyAsString(propName: string | number): string {
     if (typeof (propName) == 'number') {
         return propName.toString();
     }
     return propName;
 }
 
-export function getPropName(propertyName: ts.PropertyName) {
+export function getPropName(propertyName: ts.PropertyName): string | number | ts.ComputedPropertyName {
     if (ts.isComputedPropertyName(propertyName)) {
         return propertyName;
     }

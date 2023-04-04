@@ -41,7 +41,7 @@ class RegAllocator {
         this.vRegsId = 0;
     }
 
-    allocIndexForVreg(vreg: VReg) {
+    allocIndexForVreg(vreg: VReg): void {
         let num = this.getFreeVreg();
         vreg.num = num;
     }
@@ -77,7 +77,7 @@ class RegAllocator {
         return num;
     }
 
-    doRealAdjustment(operands: OperandType[], format: Format, index: number, irNodes: IRNode[]) {
+    doRealAdjustment(operands: OperandType[], format: Format, index: number, irNodes: IRNode[]): void {
         let head: IRNode[] = [];
         let tail: IRNode[] = [];
 
@@ -143,7 +143,7 @@ class RegAllocator {
         return false;
     }
 
-    adjustDynRangeInstruction(irNodes: IRNode[], index: number) {
+    adjustDynRangeInstruction(irNodes: IRNode[], index: number): void {
         let head: IRNode[] = [];
         let operands = irNodes[index].operands;
 

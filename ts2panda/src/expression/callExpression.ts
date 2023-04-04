@@ -24,7 +24,7 @@ import { getObjAndProp } from "./memberAccessExpression";
 
 
 // @ts-ignore
-export function compileCallExpression(expr: ts.CallExpression, compiler: Compiler, inTailPos?: boolean) {
+export function compileCallExpression(expr: ts.CallExpression, compiler: Compiler, inTailPos?: boolean): void {
     let pandaGen = compiler.getPandaGen();
 
     let innerExpression = ts.skipPartiallyEmittedExpressions(expr.expression);
@@ -90,7 +90,7 @@ export function getHiddenParameters(expr: ts.Expression, compiler: Compiler) {
     return { arguments: args, passThis: passThis };
 }
 
-function emitCallArguments(compiler: Compiler, expr: ts.CallExpression, args: VReg[]) {
+function emitCallArguments(compiler: Compiler, expr: ts.CallExpression, args: VReg[]): boolean {
     let pandaGen = compiler.getPandaGen();
     let hasSpread = false;
     for (let i = 0; i < expr.arguments.length; i++) {
@@ -113,7 +113,7 @@ function emitCallArguments(compiler: Compiler, expr: ts.CallExpression, args: VR
     return hasSpread;
 }
 
-export function emitCall(expr: ts.CallExpression, args: VReg[], passThis: boolean, compiler: Compiler) {
+export function emitCall(expr: ts.CallExpression, args: VReg[], passThis: boolean, compiler: Compiler): void {
     let pandaGen = compiler.getPandaGen();
     let hasSpread = emitCallArguments(compiler, expr, args);
     let callee = expr.expression;

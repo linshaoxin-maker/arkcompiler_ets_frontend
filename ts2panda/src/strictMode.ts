@@ -80,7 +80,7 @@ function getGlobalStrict(): boolean {
     return globalStrict;
 }
 
-export function setGlobalStrict(flag: boolean) {
+export function setGlobalStrict(flag: boolean): void {
     globalStrict = flag;
 }
 
@@ -92,10 +92,10 @@ export function isStrictMode(node: ts.Node): boolean {
     return checkStrictMode(node);
 }
 
-export function setGlobalDeclare(flag: boolean) {
+export function setGlobalDeclare(flag: boolean): void {
     globalDeclare = flag;
 }
 
-export function isGlobalDeclare() {
+export function isGlobalDeclare(): boolean {
     return globalDeclare;
 }

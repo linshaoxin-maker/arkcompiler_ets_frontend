@@ -22,7 +22,7 @@ import { Label, VReg } from "../irnodes";
 import * as jshelpers from "../jshelpers";
 import { checkValidUseSuperBeforeSuper } from "./classStatement";
 
-export function compileReturnStatement(stmt: ts.ReturnStatement, compiler: Compiler) {
+export function compileReturnStatement(stmt: ts.ReturnStatement, compiler: Compiler): void {
     let pandaGen = compiler.getPandaGen();
     let returnValue = pandaGen.getTemp();
 
@@ -34,7 +34,7 @@ export function compileReturnStatement(stmt: ts.ReturnStatement, compiler: Compi
     pandaGen.freeTemps(returnValue);
 }
 
-function compileReturnInDerivedCtor(stmt: ts.ReturnStatement, returnValue: VReg, compiler: Compiler) {
+function compileReturnInDerivedCtor(stmt: ts.ReturnStatement, returnValue: VReg, compiler: Compiler): void {
     let pandaGen = compiler.getPandaGen();
     let expr = stmt.expression;
 
@@ -104,7 +104,7 @@ function compileReturnInDerivedCtor(stmt: ts.ReturnStatement, returnValue: VReg,
     pandaGen.freeTemps(need2CheckSuper, thisReg);
 }
 
-function compileNormalReturn(stmt: ts.ReturnStatement, returnValue: VReg, compiler: Compiler) {
+function compileNormalReturn(stmt: ts.ReturnStatement, returnValue: VReg, compiler: Compiler): void {
     let expr = stmt.expression;
     let pandaGen = compiler.getPandaGen();
     let empty : boolean = false;
@@ -127,7 +127,7 @@ function compileNormalReturn(stmt: ts.ReturnStatement, returnValue: VReg, compil
     compiler.getFuncBuilder().explicitReturn(stmt, empty);
 }
 
-function isReturnInDerivedCtor(stmt: ts.ReturnStatement) {
+function isReturnInDerivedCtor(stmt: ts.ReturnStatement): boolean {
     let funcNode = jshelpers.getContainingFunctionDeclaration(stmt);
     if (!funcNode || !ts.isConstructorDeclaration(funcNode)) {
         return false;

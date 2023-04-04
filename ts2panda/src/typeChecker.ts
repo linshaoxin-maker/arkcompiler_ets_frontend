@@ -47,7 +47,7 @@ export class TypeChecker {
         return TypeChecker.instance;
     }
 
-    public setTypeChecker(typeChecker: ts.TypeChecker) {
+    public setTypeChecker(typeChecker: ts.TypeChecker): void {
         this.compiledTypeChecker = typeChecker;
     }
 
@@ -55,7 +55,7 @@ export class TypeChecker {
         return this.compiledTypeChecker;
     }
 
-    public getTypeAtLocation(node: ts.Node) {
+    public getTypeAtLocation(node: ts.Node): any {
         if (!node) {
             return undefined;
         }
@@ -67,7 +67,7 @@ export class TypeChecker {
         }
     }
 
-    public getTypeDeclForIdentifier(node: ts.Node) {
+    public getTypeDeclForIdentifier(node: ts.Node): any {
         if (!node) {
             return undefined;
         }
@@ -106,7 +106,7 @@ export class TypeChecker {
         return false;
     }
 
-    public getDeclNodeForInitializer(initializer: ts.Node) {
+    public getDeclNodeForInitializer(initializer: ts.Node): any {
         switch (initializer.kind) {
             case ts.SyntaxKind.Identifier:
                 return this.getTypeDeclForIdentifier(initializer);
@@ -147,7 +147,7 @@ export class TypeChecker {
         return classTypeIndex;
     }
 
-    public getTypeForPropertyAccessExpression(typeDeclNode: ts.Node) {
+    public getTypeForPropertyAccessExpression(typeDeclNode: ts.Node): number {
         let propertyAccessExpression = <ts.PropertyAccessExpression>typeDeclNode;
         let localName = jshelpers.getTextOfIdentifierOrLiteral(propertyAccessExpression.expression);
         let externalName = jshelpers.getTextOfIdentifierOrLiteral(propertyAccessExpression.name);
@@ -160,7 +160,7 @@ export class TypeChecker {
         return PrimitiveType.ANY;
     }
 
-    public getInterfaceDeclaration(typeDeclNode: ts.Node) {
+    public getInterfaceDeclaration(typeDeclNode: ts.Node): number {
         if (this.isFromDefaultLib(typeDeclNode)) {
             return PrimitiveType.ANY;
         }
@@ -197,7 +197,7 @@ export class TypeChecker {
         }
     }
 
-    public getTypeForLiteralTypeNode(node: ts.Node) {
+    public getTypeForLiteralTypeNode(node: ts.Node): PrimitiveType.ANY | PrimitiveType.NUMBER | PrimitiveType.BOOLEAN | PrimitiveType.STRING | PrimitiveType.NULL {
         switch (node.kind) {
             case ts.SyntaxKind.NumericLiteral:
                 return PrimitiveType.NUMBER;
@@ -213,7 +213,7 @@ export class TypeChecker {
         }
     }
 
-    public getTypeFromAnotation(typeNode: ts.TypeNode | undefined) {
+    public getTypeFromAnotation(typeNode: ts.TypeNode | undefined): any {
         if (!typeNode) {
             return PrimitiveType.ANY;
         }
@@ -265,16 +265,16 @@ export class TypeChecker {
         }
     }
 
-    isBuiltinType(expr: ts.NewExpression) {
+    isBuiltinType(expr: ts.NewExpression): boolean {
         let name = expr.expression.getFullText().replace(/\s/g, "");
         return name in BuiltinType;
     }
 
-    isFromDefaultLib(node: ts.Node) {
+    isFromDefaultLib(node: ts.Node): boolean {
         return node.getSourceFile().hasNoDefaultLib;
     }
 
-    getOrCreateInstanceType(classTypeIdx: number) {
+    getOrCreateInstanceType(classTypeIdx: number): number {
         let typeRec = TypeRecorder.getInstance();
         if (typeRec.hasClass2InstanceMap(classTypeIdx)) {
             return typeRec.getClass2InstanceMap(classTypeIdx);
@@ -283,7 +283,7 @@ export class TypeChecker {
         return instanceType.shiftedTypeIndex;
     }
 
-    getOrCreateInstanceTypeForBuiltinContainer(builtinContainerSignature: object) {
+    getOrCreateInstanceTypeForBuiltinContainer(builtinContainerSignature: object): number {
         let typeRec = TypeRecorder.getInstance();
         if (typeRec.hasBuiltinContainer2InstanceMap(builtinContainerSignature)) {
             return typeRec.getBuiltinContainer2InstanceMap(builtinContainerSignature);
@@ -293,7 +293,7 @@ export class TypeChecker {
         return this.getOrCreateInstanceType(builtinContainerTypeIdx);
     }
 
-    getBuiltinTypeIndex(node: ts.NewExpression | ts.TypeReferenceNode, name: string) {
+    getBuiltinTypeIndex(node: ts.NewExpression | ts.TypeReferenceNode, name: string): number {
         let typeArguments = node.typeArguments;
         if (typeArguments && this.needRecordBuiltinContainer) {
             let typeArgIdxs = new Array<number>();
@@ -310,13 +310,13 @@ export class TypeChecker {
         return this.getOrCreateInstanceType(BuiltinType[name]);
     }
 
-    getBuiltinTypeIndexForExpr(expr: ts.NewExpression) {
+    getBuiltinTypeIndexForExpr(expr: ts.NewExpression): number {
         let origExprNode = <ts.NewExpression>ts.getOriginalNode(expr);
         let name = origExprNode.expression.getFullText().replace(/\s/g, "");
         return this.getBuiltinTypeIndex(origExprNode, name);
     }
 
-    public getOrCreateRecordForDeclNode(initializer: ts.Node | undefined, variableNode?: ts.Node) {
+    public getOrCreateRecordForDeclNode(initializer: ts.Node | undefined, variableNode?: ts.Node): PrimitiveType {
         if (!initializer) {
             return PrimitiveType.ANY;
         }
@@ -335,7 +335,7 @@ export class TypeChecker {
         return typeIndex;
     }
 
-    public getOrCreateRecordForTypeNode(typeNode: ts.TypeNode | undefined, variableNode?: ts.Node) {
+    public getOrCreateRecordForTypeNode(typeNode: ts.TypeNode | undefined, variableNode?: ts.Node): PrimitiveType {
         if (!typeNode) {
             return PrimitiveType.ANY;
         }
@@ -352,7 +352,7 @@ export class TypeChecker {
         return typeIndex;
     }
 
-    public formatVariableStatement(variableStatementNode: ts.VariableStatement) {
+    public formatVariableStatement(variableStatementNode: ts.VariableStatement): void {
         let decList = variableStatementNode.declarationList;
         decList.declarations.forEach(declaration => {
             let variableNode = declaration.name;
@@ -369,7 +369,7 @@ export class TypeChecker {
         });
     }
 
-    public formatClassDeclaration(classDeclNode: ts.ClassDeclaration) {
+    public formatClassDeclaration(classDeclNode: ts.ClassDeclaration): void {
         if (this.isFromDefaultLib(classDeclNode)) {
             return;
         }
@@ -393,7 +393,7 @@ export class TypeChecker {
     }
 
     // Entry for type recording
-    public formatNodeType(node: ts.Node, importOrExportStmt?: ModuleStmt) {
+    public formatNodeType(node: ts.Node, importOrExportStmt?: ModuleStmt): void {
         if (this.compiledTypeChecker === null) {
             return;
         }

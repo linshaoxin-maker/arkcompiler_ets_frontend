@@ -106,7 +106,7 @@ export abstract class Scope {
         return this.name2variable;
     }
 
-    getScopeStartInsIdx() {
+    getScopeStartInsIdx(): number {
         return this.startInsIdx;
     }
 
@@ -118,11 +118,11 @@ export abstract class Scope {
         this.endInsIdx = endInsIdx;
     }
 
-    getScopeEndInsIdx() {
+    getScopeEndInsIdx(): number {
         return this.endInsIdx;
     }
 
-    setParent(parentScope: Scope | undefined) {
+    setParent(parentScope: Scope | undefined): void {
         this.parent = parentScope;
     }
 
@@ -254,7 +254,7 @@ export abstract class Scope {
         return {isLexical: false, scope: undefined, defLexicalScope: undefined, v: undefined};
     }
 
-    setDecls(decl: Decl) {
+    setDecls(decl: Decl): void {
         this.decls.push(decl);
     }
 
@@ -280,11 +280,11 @@ export abstract class Scope {
         return undefined;
     }
 
-    getDecls() {
+    getDecls(): Decl[] {
         return this.decls;
     }
 
-    public setArgumentsOrRestargs() {
+    public setArgumentsOrRestargs(): void {
         this.isArgumentsOrRestargs = true;
     }
 
@@ -292,7 +292,7 @@ export abstract class Scope {
         return this.isArgumentsOrRestargs;
     }
 
-    isLexicalScope() {
+    isLexicalScope(): boolean {
         let scope = this;
         return ((scope instanceof VariableScope) || (scope instanceof LoopScope));
     }
@@ -308,31 +308,31 @@ export abstract class VariableScope extends Scope {
     protected childVariableScope: VariableScope[] = [];
     protected lexVarInfo: Map<string, number> = new Map<string, number>();
 
-    getLexVarInfo() {
+    getLexVarInfo(): Map<string, number> {
         return this.lexVarInfo;
     }
 
-    addLexVarInfo(name: string, slot: number) {
+    addLexVarInfo(name: string, slot: number): void {
         this.lexVarInfo.set(name, slot);
     }
 
-    getBindingNode() {
+    getBindingNode(): ts.Node {
         return this.node;
     }
 
-    setParentVariableScope(scope: VariableScope) {
+    setParentVariableScope(scope: VariableScope): void {
         this.parentVariableScope = scope;
     }
 
-    getParentVariableScope() {
+    getParentVariableScope(): VariableScope {
         return this.parentVariableScope;
     }
 
-    getChildVariableScope() {
+    getChildVariableScope(): VariableScope[] {
         return this.childVariableScope;
     }
 
-    addChildVariableScope(scope: VariableScope) {
+    addChildVariableScope(scope: VariableScope): void {
         this.childVariableScope.push(scope);
     }
 
@@ -346,7 +346,7 @@ export abstract class VariableScope extends Scope {
         return v;
     }
 
-    addFuncName(funcName: string) {
+    addFuncName(funcName: string): void {
         let funcObj = this.name2variable.get(MandatoryFuncObj);
         this.name2variable.set(funcName, funcObj!);
     }
@@ -355,7 +355,7 @@ export abstract class VariableScope extends Scope {
         return this.needCreateLexEnv;
     }
 
-    pendingCreateEnv() {
+    pendingCreateEnv(): void {
         this.needCreateLexEnv = true;
     }
 
@@ -371,7 +371,7 @@ export abstract class VariableScope extends Scope {
         return this.parameters;
     }
 
-    getLexVarIdx() {
+    getLexVarIdx(): number {
         this.needCreateLexEnv = true;
         return this.startLexIdx++;
     }
@@ -425,14 +425,14 @@ export class ModuleScope extends VariableScope {
         this.moduleRecord = new SourceTextModuleRecord(node.fileName);
     }
 
-    setExportDecl(exportedLocalName: string) {
+    setExportDecl(exportedLocalName: string): void {
         let decl = this.getDecl(exportedLocalName);
         if (decl && decl.isModule != ModuleVarKind.IMPORTED) {
             decl.isModule = ModuleVarKind.EXPORTED;
         }
     }
 
-    module() {
+    module(): SourceTextModuleRecord {
         return this.moduleRecord;
     }
 
@@ -470,7 +470,7 @@ export class FunctionScope extends VariableScope {
         this.node = node ? node : undefined;
     }
 
-    setParameterLength(length: number) {
+    setParameterLength(length: number): void {
         this.parameterLength = length;
     }
 
@@ -478,11 +478,11 @@ export class FunctionScope extends VariableScope {
         return this.parameterLength;
     }
 
-    setFuncName(name: string) {
+    setFuncName(name: string): void {
         this.funcName = name;
     }
 
-    getFuncName() {
+    getFuncName(): string {
         return this.funcName;
     }
 
@@ -550,11 +550,11 @@ export class LoopScope extends LocalScope {
         super(parent);
     }
 
-    getLexVarInfo() {
+    getLexVarInfo(): Map<string, number> {
         return this.lexVarInfo;
     }
 
-    addLexVarInfo(name: string, slot: number) {
+    addLexVarInfo(name: string, slot: number): void {
         this.lexVarInfo.set(name, slot);
     }
 
@@ -562,11 +562,11 @@ export class LoopScope extends LocalScope {
         return this.needCreateLexEnv;
     }
 
-    pendingCreateEnv() {
+    pendingCreateEnv(): void {
         this.needCreateLexEnv = true;
     }
 
-    getLexVarIdx() {
+    getLexVarIdx(): number {
         this.needCreateLexEnv = true;
         return this.startLexIdx++;
     }

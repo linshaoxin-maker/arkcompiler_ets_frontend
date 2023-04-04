@@ -49,7 +49,7 @@ abstract class VariableAccessBase {
         this.level = level;
     }
 
-    isLexVar() {
+    isLexVar(): boolean {
         return this.variable.isLexVar;
     }
 
@@ -187,7 +187,7 @@ export class VariableAcessStore extends VariableAccessBase {
     }
 }
 
-function checkConstAssignment(pg: PandaGen, v: Variable, expansion: IRNode[], node: ts.Node | NodeKind) {
+function checkConstAssignment(pg: PandaGen, v: Variable, expansion: IRNode[], node: ts.Node | NodeKind): void {
     let nameReg = pg.getTemp();
     if (v.isConst()) {
         expansion.push(loadAccumulatorString(v.getName()));

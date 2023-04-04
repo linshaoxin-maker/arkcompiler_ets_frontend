@@ -59,7 +59,7 @@ export class LReference {
         }
     }
 
-    getValue() {
+    getValue(): void {
         let pandaGen = this.compiler.getPandaGen();
         switch (this.refKind) {
             case ReferenceKind.MemberAccess:
@@ -81,7 +81,7 @@ export class LReference {
         }
     }
 
-    setValue() {
+    setValue(): void {
         let pandaGen = this.compiler.getPandaGen();
         switch (this.refKind) {
             case ReferenceKind.MemberAccess: {
@@ -113,7 +113,7 @@ export class LReference {
         }
     }
 
-    setObjectAndProperty(pandaGen: PandaGen, obj: VReg, prop: VReg | number | string) {
+    setObjectAndProperty(pandaGen: PandaGen, obj: VReg, prop: VReg | number | string): void {
         if (!jshelpers.isSuperProperty(this.node)) {
             pandaGen.moveVreg(this.node, <VReg>this.obj, obj);
         }

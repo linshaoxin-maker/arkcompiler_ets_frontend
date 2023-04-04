@@ -32,7 +32,7 @@ import { Label, VReg } from "../irnodes";
 import { LoopScope, Scope } from "../scope";
 import { LabelTarget } from "./labelTarget";
 
-export function compileDoStatement(stmt: ts.DoStatement, compiler: Compiler) {
+export function compileDoStatement(stmt: ts.DoStatement, compiler: Compiler): void {
     compiler.pushScope(stmt);
     let pandaGen = compiler.getPandaGen();
 
@@ -72,7 +72,7 @@ export function compileDoStatement(stmt: ts.DoStatement, compiler: Compiler) {
     compiler.popScope();
 }
 
-export function compileWhileStatement(stmt: ts.WhileStatement, compiler: Compiler) {
+export function compileWhileStatement(stmt: ts.WhileStatement, compiler: Compiler): void {
     compiler.pushScope(stmt);
     let pandaGen = compiler.getPandaGen();
 
@@ -109,7 +109,7 @@ export function compileWhileStatement(stmt: ts.WhileStatement, compiler: Compile
     compiler.popScope();
 }
 
-export function compileForStatement(stmt: ts.ForStatement, compiler: Compiler) {
+export function compileForStatement(stmt: ts.ForStatement, compiler: Compiler): void {
     compiler.pushScope(stmt);
     let pandaGen = compiler.getPandaGen();
 
@@ -247,7 +247,7 @@ export function compileForStatement(stmt: ts.ForStatement, compiler: Compiler) {
     compiler.popScope();
 }
 
-export function compileForInStatement(stmt: ts.ForInStatement, compiler: Compiler) {
+export function compileForInStatement(stmt: ts.ForInStatement, compiler: Compiler): void {
     compiler.pushScope(stmt);
     let pandaGen = compiler.getPandaGen();
 

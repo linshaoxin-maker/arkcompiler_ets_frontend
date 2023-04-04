@@ -56,7 +56,7 @@ import {
 import { MandatoryArguments } from "./variable";
 
 //*************************************Part 1: Implement early check of declarations*******************************//
-export function checkDuplicateDeclaration(recorder: Recorder) {
+export function checkDuplicateDeclaration(recorder: Recorder): void {
     let scopeMap = recorder.getScopeMap();
     scopeMap.forEach((scope, node) => {
         // implement functionParameter-related duplicate-entry check
@@ -93,7 +93,7 @@ export function checkDuplicateDeclaration(recorder: Recorder) {
     })
 }
 
-function checkDuplicateEntryAcrossScope(scope: Scope, index: number) {
+function checkDuplicateEntryAcrossScope(scope: Scope, index: number): void {
     let decls = scope.getDecls();
     let parentScope: Scope | undefined = scope;
     if (decls[index] instanceof VarDecl) {
@@ -113,7 +113,7 @@ function checkDuplicateEntryAcrossScope(scope: Scope, index: number) {
     }
 }
 
-function checkDuplicateEntryInScope(scope: Scope, index: number) {
+function checkDuplicateEntryInScope(scope: Scope, index: number): void {
     let decls = scope.getDecls();
     for (let i = index + 1; i < decls.length; i++) {
         if (hasDuplicateEntryInScope(decls[index], decls[i], scope)) {
@@ -122,7 +122,7 @@ function checkDuplicateEntryInScope(scope: Scope, index: number) {
     }
 }
 
-function hasDuplicateExportedFuncDecl(decl: FuncDecl, exportFuncMap: Map<string, boolean>) {
+function hasDuplicateExportedFuncDecl(decl: FuncDecl, exportFuncMap: Map<string, boolean>): void {
     if (!exportFuncMap.has(decl.name)) {
         exportFuncMap.set(decl.name, hasExportKeywordModifier(decl.node));
     } else {
@@ -132,13 +132,13 @@ function hasDuplicateExportedFuncDecl(decl: FuncDecl, exportFuncMap: Map<string,
     }
 }
 
-function hasDuplicateEntryAcrossScope(decl1: Decl, decl2: Decl) {
+function hasDuplicateEntryAcrossScope(decl1: Decl, decl2: Decl): boolean {
     if ((decl2 instanceof LetDecl) || (decl2 instanceof ConstDecl)) {
         return decl1.name == decl2.name;
     }
 }
 
-function hasDuplicateEntryInScope(decl1: Decl, decl2: Decl, scope: Scope) {
+function hasDuplicateEntryInScope(decl1: Decl, decl2: Decl, scope: Scope): boolean {
     if (((decl1 instanceof LetDecl) || (decl1 instanceof ConstDecl) || (decl1 instanceof ClassDecl && ts.isClassDeclaration(decl1.node)) ||
         (decl2 instanceof LetDecl) || (decl2 instanceof ConstDecl) || (decl2 instanceof ClassDecl && ts.isClassDeclaration(decl1.node))) &&
         !ts.isClassExpression(decl1.node) && !ts.isClassExpression(decl2.node)) {
@@ -174,7 +174,7 @@ function hasDuplicateEntryInScope(decl1: Decl, decl2: Decl, scope: Scope) {
     return false;
 }
 
-function checkDuplicateInCatch(blockScope: Scope, catchScope: Scope) {
+function checkDuplicateInCatch(blockScope: Scope, catchScope: Scope): void {
     let bodyDecls = blockScope.getDecls();
     let catchParameters = catchScope.getDecls();
 
@@ -197,7 +197,7 @@ function checkDuplicateInCatch(blockScope: Scope, catchScope: Scope) {
     }
 }
 
-function getParameterNames(node: ts.FunctionLikeDeclaration, recorder: Recorder) {
+function getParameterNames(node: ts.FunctionLikeDeclaration, recorder: Recorder): string[] {
     let parameters = recorder.getParametersOfFunction(node);
     let parameterNames: string[] = [];
 
@@ -212,7 +212,7 @@ function getParameterNames(node: ts.FunctionLikeDeclaration, recorder: Recorder)
     return parameterNames;
 }
 
-function checkDuplicateParameter(node: ts.FunctionLikeDeclaration, recorder: Recorder) {
+function checkDuplicateParameter(node: ts.FunctionLikeDeclaration, recorder: Recorder): void {
     let parameters = recorder.getParametersOfFunction(node);
     let tempNames: string[] = [];
     if (!parameters) {
@@ -228,7 +228,7 @@ function checkDuplicateParameter(node: ts.FunctionLikeDeclaration, recorder: Rec
     });
 }
 
-function checkDuplicateParameterVar(parameterNames: string[] | undefined, scope: Scope) {
+function checkDuplicateParameterVar(parameterNames: string[] | undefined, scope: Scope): void {
     if (!parameterNames) {
         return;
     }
@@ -245,7 +245,7 @@ function checkDuplicateParameterVar(parameterNames: string[] | undefined, scope:
     }
 }
 
-function checkDeclareGlobalId(decl: Decl, scope: Scope) {
+function checkDeclareGlobalId(decl: Decl, scope: Scope): void {
     if (!(scope instanceof GlobalScope)) {
         return;
     }
@@ -260,7 +260,7 @@ function checkDeclareGlobalId(decl: Decl, scope: Scope) {
     }
 }
 
-function throwDupIdError(decl: Decl) {
+function throwDupIdError(decl: Decl): void {
     let sourceNode = jshelpers.getSourceFileOfNode(decl.node);
     if (decl.node.kind == ts.SyntaxKind.FunctionDeclaration) {
         decl.node = <ts.Identifier>(<ts.FunctionDeclaration>decl.node).name;
@@ -269,14 +269,14 @@ function throwDupIdError(decl: Decl) {
 }
 
 //**********************************Part 2: Implementing syntax check except declaration******************************************//
-export function checkSyntaxError(node: ts.Node, scope:Scope) {
+export function checkSyntaxError(node: ts.Node, scope:Scope): void {
     checkSyntaxErrorForSloppyAndStrictMode(node);
     if (isStrictMode(node) || CmdOptions.isModules()) {
         checkSyntaxErrorForStrictMode(node, scope);
     }
 }
 
-function checkBreakOrContinueStatement(node: ts.BreakOrContinueStatement) {
+function checkBreakOrContinueStatement(node: ts.BreakOrContinueStatement): boolean {
     let curNode: ts.Node = node;
     while (curNode) {
         if (ts.isFunctionLike(curNode)) {
@@ -340,7 +340,7 @@ function checkBreakOrContinueStatement(node: ts.BreakOrContinueStatement) {
     throw new DiagnosticError(node, diagnosticCode, jshelpers.getSourceFileOfNode(node));
 }
 
-function checkReturnStatement(node: ts.ReturnStatement) {
+function checkReturnStatement(node: ts.ReturnStatement): void {
     let func = jshelpers.getContainingFunction(node);
     if (!func) {
         let file = jshelpers.getSourceFileOfNode(node);
@@ -348,7 +348,7 @@ function checkReturnStatement(node: ts.ReturnStatement) {
     }
 }
 
-function checkMetaProperty(node: ts.MetaProperty) {
+function checkMetaProperty(node: ts.MetaProperty): void {
     let text = jshelpers.getTextOfIdentifierOrLiteral(node.name);
     let file = jshelpers.getSourceFileOfNode(node);
     switch (node.keywordToken) {
@@ -383,7 +383,7 @@ function checkMetaProperty(node: ts.MetaProperty) {
     }
 }
 
-function checkNameInLetOrConstDeclarations(name: ts.Identifier | ts.BindingPattern) {
+function checkNameInLetOrConstDeclarations(name: ts.Identifier | ts.BindingPattern): void {
     if (name.kind === ts.SyntaxKind.Identifier) {
         if (name.originalKeywordKind === ts.SyntaxKind.LetKeyword) {
             let file = jshelpers.getSourceFileOfNode(name);
@@ -399,7 +399,7 @@ function checkNameInLetOrConstDeclarations(name: ts.Identifier | ts.BindingPatte
     }
 }
 
-function checkDisallowedLetOrConstStatement(node: ts.VariableStatement) {
+function checkDisallowedLetOrConstStatement(node: ts.VariableStatement): void {
     if (allowLetAndConstDeclarations(node.parent)) {
         return;
     }
@@ -413,7 +413,7 @@ function checkDisallowedLetOrConstStatement(node: ts.VariableStatement) {
     }
 }
 
-function checkVariableDeclaration(node: ts.VariableDeclaration) {
+function checkVariableDeclaration(node: ts.VariableDeclaration): void {
     let file = jshelpers.getSourceFileOfNode(node);
     if (!ts.isForInStatement(node.parent.parent) && !ts.isForOfStatement(node.parent.parent) && !ts.isCatchClause(node.parent)) {
         if (!node.initializer) {
@@ -446,7 +446,7 @@ function checkVariableDeclaration(node: ts.VariableDeclaration) {
     }
 }
 
-function checkDecorators(node: ts.Node) {
+function checkDecorators(node: ts.Node): void {
     if (!node.decorators) {
         return;
     }
@@ -466,7 +466,7 @@ function checkDecorators(node: ts.Node) {
     }
 }
 
-function checkAsyncModifier(node: ts.Node, asyncModifier: ts.Node) {
+function checkAsyncModifier(node: ts.Node, asyncModifier: ts.Node): void {
     switch (node.kind) {
         case ts.SyntaxKind.ArrowFunction:
         case ts.SyntaxKind.FunctionDeclaration:
@@ -480,7 +480,7 @@ function checkAsyncModifier(node: ts.Node, asyncModifier: ts.Node) {
     throw new DiagnosticError(asyncModifier, DiagnosticCode._0_modifier_cannot_be_used_here, file, ["async"])
 }
 
-function checkModifiers(node: ts.Node) {
+function checkModifiers(node: ts.Node): void {
     if (!node.modifiers) {
         return;
     }
@@ -678,7 +678,7 @@ function checkModifiers(node: ts.Node) {
     }
 }
 
-function checkVariableDeclarationList(declarationList: ts.VariableDeclarationList) {
+function checkVariableDeclarationList(declarationList: ts.VariableDeclarationList): void {
     let declarations = declarationList.declarations;
     if (!declarations.length) {
         throw new DiagnosticError(declarationList, DiagnosticCode.Identifier_expected);
@@ -690,14 +690,14 @@ function checkVariableDeclarationList(declarationList: ts.VariableDeclarationLis
     }
 }
 
-function checkVariableStatement(node: ts.VariableStatement) {
+function checkVariableStatement(node: ts.VariableStatement): void {
     checkDecorators(node);
     checkModifiers(node);
     checkVariableDeclarationList(node.declarationList);
     checkDisallowedLetOrConstStatement(node);
 }
 
-function checkForInOrForOfStatement(stmt: ts.ForInOrOfStatement) {
+function checkForInOrForOfStatement(stmt: ts.ForInOrOfStatement): void {
     let file = jshelpers.getSourceFileOfNode(stmt);
     let leftExpr = stmt.initializer;
     if (ts.isParenthesizedExpression(leftExpr)) {
@@ -740,7 +740,7 @@ function checkForInOrForOfStatement(stmt: ts.ForInOrOfStatement) {
     }
 }
 
-function checkForInOrForOfVariableDeclaration(iterationStatement: ts.ForInOrOfStatement) {
+function checkForInOrForOfVariableDeclaration(iterationStatement: ts.ForInOrOfStatement): void {
     let variableDeclarationList = <ts.VariableDeclarationList>iterationStatement.initializer;
     // checkGrammarForInOrForOfStatement will check that there is exactly one declaration.
     if (variableDeclarationList.declarations.length >= 1) {
@@ -748,7 +748,7 @@ function checkForInOrForOfVariableDeclaration(iterationStatement: ts.ForInOrOfSt
     }
 }
 
-function checkForInStatement(node: ts.ForInStatement) {
+function checkForInStatement(node: ts.ForInStatement): void {
     checkForInOrForOfStatement(node);
 
     let file = jshelpers.getSourceFileOfNode(node);
@@ -772,7 +772,7 @@ const enum OuterExpressionKinds {
     All = Parentheses | Assertions | PartiallyEmittedExpressions
 }
 
-function checkReferenceExpression(expr: ts.Expression, invalidReferenceCode: DiagnosticCode, invalidOptionalChainCode: DiagnosticCode) {
+function checkReferenceExpression(expr: ts.Expression, invalidReferenceCode: DiagnosticCode, invalidOptionalChainCode: DiagnosticCode): void {
     let node = jshelpers.skipOuterExpressions(expr, OuterExpressionKinds.Assertions | OuterExpressionKinds.Parentheses);
     if (node.kind !== ts.SyntaxKind.Identifier && node.kind !== ts.SyntaxKind.PropertyAccessExpression && node.kind !== ts.SyntaxKind.ElementAccessExpression) {
         throw new DiagnosticError(expr, invalidReferenceCode);
@@ -783,7 +783,7 @@ function checkReferenceExpression(expr: ts.Expression, invalidReferenceCode: Dia
     }
 }
 
-function checkReferenceAssignment(node: ts.Expression) {
+function checkReferenceAssignment(node: ts.Expression): void {
     let invalidReferenceCode: DiagnosticCode;
     let invalidOptionalChainCode: DiagnosticCode;
 
@@ -798,7 +798,7 @@ function checkReferenceAssignment(node: ts.Expression) {
     checkReferenceExpression(node, invalidReferenceCode, invalidOptionalChainCode);
 }
 
-function checkDestructuringAssignment(node: ts.Expression | ts.ShorthandPropertyAssignment) {
+function checkDestructuringAssignment(node: ts.Expression | ts.ShorthandPropertyAssignment): void {
     let target: ts.Expression;
     if (ts.isShorthandPropertyAssignment(node)) {
         let prop = <ts.ShorthandPropertyAssignment>node;
@@ -820,7 +820,7 @@ function checkDestructuringAssignment(node: ts.Expression | ts.ShorthandProperty
 
 }
 
-function checkForOfStatement(node: ts.ForOfStatement) {
+function checkForOfStatement(node: ts.ForOfStatement): void {
     checkForInOrForOfStatement(node);
 
     if (ts.isVariableDeclarationList(node.initializer)) {
@@ -839,7 +839,7 @@ function checkForOfStatement(node: ts.ForOfStatement) {
     }
 }
 
-function checkClassDeclaration(node: ts.ClassLikeDeclaration) {
+function checkClassDeclaration(node: ts.ClassLikeDeclaration): void {
     checkClassDeclarationHeritageClauses(node);
     let hasConstructorImplementation = false;
     let file = jshelpers.getSourceFileOfNode(node);
@@ -872,7 +872,7 @@ function checkClassDeclaration(node: ts.ClassLikeDeclaration) {
 
 }
 
-function checkClassDeclarationHeritageClauses(node: ts.ClassLikeDeclaration) {
+function checkClassDeclarationHeritageClauses(node: ts.ClassLikeDeclaration): void {
     let hasExtendsKeyWords = false;
     checkDecorators(node);
     checkModifiers(node);
@@ -895,7 +895,7 @@ function checkClassDeclarationHeritageClauses(node: ts.ClassLikeDeclaration) {
     }
 }
 
-function checkBinaryExpression(node: ts.BinaryExpression) {
+function checkBinaryExpression(node: ts.BinaryExpression): void {
     // AssignmentExpression
     if (isAssignmentOperator(node.operatorToken.kind)) {
         let leftExpr: ts.Expression = node.left;
@@ -913,7 +913,7 @@ function checkBinaryExpression(node: ts.BinaryExpression) {
     }
 }
 
-function isInVaildAssignmentLeftSide(leftExpr: ts.Expression) {
+function isInVaildAssignmentLeftSide(leftExpr: ts.Expression): void {
     if (jshelpers.isKeyword(leftExpr.kind)
         || leftExpr.kind == ts.SyntaxKind.NumericLiteral
         || leftExpr.kind == ts.SyntaxKind.StringLiteral) {
@@ -922,7 +922,7 @@ function isInVaildAssignmentLeftSide(leftExpr: ts.Expression) {
 }
 
 
-function checkContextualIdentifier(node: ts.Identifier) {
+function checkContextualIdentifier(node: ts.Identifier): void {
     if (jshelpers.isIdentifierName(node)) {
         return;
     }
@@ -939,7 +939,7 @@ function checkContextualIdentifier(node: ts.Identifier) {
     }
 }
 
-function checkComputedPropertyName(node: ts.Node) {
+function checkComputedPropertyName(node: ts.Node): void {
     if (!ts.isComputedPropertyName(node)) {
         return;
     }
@@ -960,7 +960,7 @@ const enum DeclarationMeaning {
     PropertyAssignmentOrMethod = PropertyAssignment | Method,
 }
 
-function checkObjectLiteralExpression(node: ts.ObjectLiteralExpression) {
+function checkObjectLiteralExpression(node: ts.ObjectLiteralExpression): void {
     let inDestructuring = jshelpers.isAssignmentTarget(node);
     let file = jshelpers.getSourceFileOfNode(node);
     let seen = new Map<ts.__String, DeclarationMeaning>();
@@ -1020,14 +1020,14 @@ function checkObjectLiteralExpression(node: ts.ObjectLiteralExpression) {
     }
 }
 
-function checkInvalidExclamationToken(exclamationToken: ts.ExclamationToken | undefined) {
+function checkInvalidExclamationToken(exclamationToken: ts.ExclamationToken | undefined): void {
     if (!!exclamationToken) {
         let file = jshelpers.getSourceFileOfNode(exclamationToken);
         throw new DiagnosticError(exclamationToken, DiagnosticCode.A_definite_assignment_assertion_is_not_permitted_in_this_context, file);
     }
 }
 
-function checkInvalidQuestionMark(questionToken: ts.QuestionToken | undefined) {
+function checkInvalidQuestionMark(questionToken: ts.QuestionToken | undefined): void {
     if (!!questionToken) {
         let file = jshelpers.getSourceFileOfNode(questionToken);
         throw new DiagnosticError(questionToken, DiagnosticCode.An_object_member_cannot_be_declared_optional, file);
@@ -1035,7 +1035,7 @@ function checkInvalidQuestionMark(questionToken: ts.QuestionToken | undefined) {
 }
 
 // @ts-ignore
-function getPropertieDeclaration(node: ts.Node, name: ts.Node) {
+function getPropertieDeclaration(node: ts.Node, name: ts.Node): any {
     let decl = undefined;
     if (ts.isShorthandPropertyAssignment(node)) {
         checkInvalidExclamationToken(node.exclamationToken);
@@ -1055,14 +1055,14 @@ function getPropertieDeclaration(node: ts.Node, name: ts.Node) {
     return decl;
 }
 
-function checkDisallowedTrailingComma(list: ts.NodeArray<ts.Node> | undefined) {
+function checkDisallowedTrailingComma(list: ts.NodeArray<ts.Node> | undefined): void {
     if (list && list.hasTrailingComma) {
         let file = jshelpers.getSourceFileOfNode(list[0]);
         throw new DiagnosticError(list[0], DiagnosticCode.A_rest_parameter_or_binding_pattern_may_not_have_a_trailing_comma, file);
     }
 }
 
-function checkParameters(parameters: ts.NodeArray<ts.ParameterDeclaration>) {
+function checkParameters(parameters: ts.NodeArray<ts.ParameterDeclaration>): void {
     let count = parameters.length;
     let optionalParameter = false;
 
@@ -1096,7 +1096,7 @@ function checkParameters(parameters: ts.NodeArray<ts.ParameterDeclaration>) {
     }
 }
 
-function checkArrowFunction(node: ts.Node) {
+function checkArrowFunction(node: ts.Node): void {
     if (!ts.isArrowFunction(node)) {
         return;
     }
@@ -1110,14 +1110,14 @@ function checkArrowFunction(node: ts.Node) {
     }
 }
 
-function checkFunctionLikeDeclaration(node: ts.FunctionLikeDeclaration | ts.MethodSignature) {
+function checkFunctionLikeDeclaration(node: ts.FunctionLikeDeclaration | ts.MethodSignature): void {
     checkDecorators(node);
     checkModifiers(node);
     checkParameters(node.parameters);
     checkArrowFunction(node);
 }
 
-function checkLabeledStatement(node: ts.LabeledStatement) {
+function checkLabeledStatement(node: ts.LabeledStatement): void {
     let file = jshelpers.getSourceFileOfNode(node);
     jshelpers.findAncestor(node.parent, current => {
         if (jshelpers.isFunctionLike(current)) {
@@ -1143,7 +1143,7 @@ function checkLabeledStatement(node: ts.LabeledStatement) {
     }
 }
 
-function checkGetAccessor(node: ts.GetAccessorDeclaration) {
+function checkGetAccessor(node: ts.GetAccessorDeclaration): void {
     checkFunctionLikeDeclaration(node);
     if (node.parameters.length != 0) {
         throw new DiagnosticError(node, DiagnosticCode.Getter_must_not_have_any_formal_parameters);
@@ -1167,7 +1167,7 @@ function isValidUseSuperExpression(node: ts.Node, isCallExpression: boolean): bo
         ts.isPropertyDeclaration(node) || ts.isPropertySignature(node) || ts.isConstructorDeclaration(node);
 }
 
-function checkSuperExpression(node: ts.SuperExpression) {
+function checkSuperExpression(node: ts.SuperExpression): void {
     let file = jshelpers.getSourceFileOfNode(node);
     let isCallExpression = false;
     if (ts.isCallExpression(node.parent) && (<ts.CallExpression>node.parent).expression === node) {
@@ -1205,7 +1205,7 @@ function checkSuperExpression(node: ts.SuperExpression) {
     }
 }
 
-function checkImportExpression(node: ts.ImportExpression) {
+function checkImportExpression(node: ts.ImportExpression): void {
     let args = (<ts.CallExpression>node.parent).arguments;
     if (args.length != 1) {
         throw new DiagnosticError(node, DiagnosticCode.Dynamic_imports_can_only_accept_a_module_specifier_optional_assertion_is_not_supported_yet);
@@ -1218,19 +1218,19 @@ function checkImportExpression(node: ts.ImportExpression) {
     });
 }
 
-function checkRegularExpression(regexp: ts.RegularExpressionLiteral) {
+function checkRegularExpression(regexp: ts.RegularExpressionLiteral): void {
     let regexpText = regexp.text;
     let regexpParse = require("regexpp").RegExpParser;
     new regexpParse().parseLiteral(regexpText);
 }
 
-function checkThrowStatement(node: ts.ThrowStatement) {
+function checkThrowStatement(node: ts.ThrowStatement): void {
     if (ts.isIdentifier(node.expression) && (<ts.Identifier>node.expression).text === '') {
         throw new DiagnosticError(node, DiagnosticCode.Line_break_not_permitted_here, jshelpers.getSourceFileOfNode(node));
     }
 }
 
-function checkSyntaxErrorForSloppyAndStrictMode(node: ts.Node) {
+function checkSyntaxErrorForSloppyAndStrictMode(node: ts.Node): void {
     switch (node.kind) {
         case ts.SyntaxKind.BreakStatement:
         case ts.SyntaxKind.ContinueStatement:
@@ -1306,7 +1306,7 @@ function checkSyntaxErrorForSloppyAndStrictMode(node: ts.Node) {
     }
 }
 
-function checkDestructuringAssignmentLhs(lhs: ts.Expression) {
+function checkDestructuringAssignmentLhs(lhs: ts.Expression): void {
     let file = getSourceFileOfNode(lhs);
     if (ts.isArrayLiteralExpression(lhs)) {
         let elements = lhs.elements;
@@ -1418,7 +1418,7 @@ function checkDestructuringAssignmentLhs(lhs: ts.Expression) {
     }
 }
 
-function checkBindingPattern(node: ts.BindingPattern) {
+function checkBindingPattern(node: ts.BindingPattern): void {
     let elements = node.elements;
 
     for (let i = 0; i < elements.length; i++) {
