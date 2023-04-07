@@ -244,6 +244,12 @@ export function assignIndexToModuleVariable(moduleScope: Scope) {
     let index: number = 0;
     // @ts-ignore
     moduleScope.module().getLocalExportEntries().forEach((entries: Array<Entry>, localName: string) => {
+        // local module variable's index is suffixed to the exportEntry's localName as format liking
+        // `[identifier]#index` to resolve resolvingBindings's index correctly in runtime.
+        let updatedLocalName: string = localName + '#' + index;
+        entries.forEach(entry => {
+            entry.localName = updatedLocalName;
+        });
         (<ModuleVariable>moduleScope.findLocal(localName)!).assignIndex(index++);
     });
     index = 0;
