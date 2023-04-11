@@ -236,9 +236,6 @@ export class AsyncGeneratorFunctionBuilder extends FunctionBuilder {
         pg.suspendGenerator(node, this.funcObj);
         this.resumeGenerator(node);
 
-        pg.loadAccumulatorInt(node, ResumeMode.THROW);
-        pg.condition(node, ts.SyntaxKind.EqualsEqualsToken, this.resumeType, returnCompletion);
-
         pg.branch(node, loopStart);
 
         pg.label(node, iterCompletion);
