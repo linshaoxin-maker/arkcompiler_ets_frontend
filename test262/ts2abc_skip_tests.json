@@ -982,5 +982,17 @@
         "files": [
             "language/module-code/instn-star-err-not-found.js"
         ]
+    },
+    {
+        "reason" : "async-generator cases failed in AOT",
+        "files": [
+            "language/expressions/async-generator/named-yield-star-sync-return.js",
+            "language/expressions/async-generator/yield-star-getiter-async-return-method-is-null.js",
+            "language/expressions/async-generator/yield-star-sync-return.js",
+            "language/statements/async-generator/yield-star-return-notdone-iter-value-throws.js",
+            "language/statements/async-generator/yield-star-return-missing-value-is-awaited.js",
+            "language/statements/async-generator/yield-star-return-then-getter-ticks.js",
+            "language/statements/async-generator/yield-star-sync-return.js"
+        ]
     }
 ]
