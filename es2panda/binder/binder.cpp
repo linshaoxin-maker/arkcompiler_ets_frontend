@@ -343,11 +343,8 @@ void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name, cons
 
     // For anonymous and duplicated func, get its source and name, make hash code,
     // and make #hash_duplicateHashTime#name as its name;
-    util::UString funcContentName(wholeSourceCode.Substr(startIndex, endIndex).Mutf8(), Allocator());
-    funcContentName.Append(name);
-    auto funcContentNameStr = funcContentName.View();
-
-    ss << ANONYMOUS_OR_DUPLICATE_FUNCTION_SPECIFIER << std::hash<std::string>{}(funcContentNameStr.Mutf8());
+    auto funcContentNameStr = wholeSourceCode.Substr(startIndex, endIndex).Mutf8() + name.Mutf8();
+    ss << ANONYMOUS_OR_DUPLICATE_FUNCTION_SPECIFIER << std::hash<std::string>{}(funcContentNameStr);
 
     auto res = functionHashNames_.find(funcContentNameStr);
     if (res != functionHashNames_.end()) {

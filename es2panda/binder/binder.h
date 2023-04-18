@@ -214,7 +214,7 @@ private:
     ResolveBindingOptions bindingOptions_;
     ArenaSet<util::StringView> functionNames_;
     ArenaUnorderedMap<const ir::ScriptFunction *, util::StringView> anonymousFunctionNames_;
-    ArenaUnorderedMap<util::StringView, size_t> functionHashNames_;
+    ArenaUnorderedMap<std::string, size_t> functionHashNames_;
     ArenaSet<util::StringView> variableNames_;
     ResolveBindingFlags bindingFlags_ {ResolveBindingFlags::ALL};
     ScriptExtension extension_;
