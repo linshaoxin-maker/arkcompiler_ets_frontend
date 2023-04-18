@@ -323,16 +323,42 @@ void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name, cons
     bool funcNameWithoutDot = (name.Find(".") == std::string::npos);
     bool funcNameWithoutBackslash = (name.Find("\\") == std::string::npos);
     if (name != ANONYMOUS_FUNC_NAME && funcNameWithoutDot && funcNameWithoutBackslash && !functionNames_.count(name)) {
+        // function with normal name, and hasn't been recorded
         auto internalName = std::string(program_->FormatedRecordName()) + std::string(name);
         functionNames_.insert(name);
         funcScope->BindName(name, util::UString(internalName, Allocator()).View());
         return;
     }
+
     std::stringstream ss;
     ss << std::string(program_->FormatedRecordName());
-    uint32_t idx = functionNameIndex_++;
-    ss << "#" << std::to_string(idx) << "#";
-    if (name == ANONYMOUS_FUNC_NAME && func != nullptr) {
+
+    auto startSourcePos = func->Start();
+    auto endSourcePos = func->End();
+
+    auto wholeSourceCode = Program()->SourceCode();
+
+    auto startIndex = startSourcePos.index;
+    auto endIndex = endSourcePos.index;
+
+    // For anonymous and duplicated func, get its source and name, make hash code,
+    // and make #hash_duplicateHashTime#name as its name;
+    util::UString funcContentName(wholeSourceCode.Substr(startIndex, endIndex).Mutf8(), Allocator());
+    funcContentName.Append(name);
+    auto funcContentNameStr = funcContentName.View();
+
+    ss << ANONYMOUS_OR_DUPLICATE_FUNCTION_SPECIFIER << std::hash<std::string>{}(funcContentNameStr.Mutf8());
+
+    auto res = functionHashNames_.find(funcContentNameStr);
+    if (res != functionHashNames_.end()) {
+        ss << "_" << res->second++;
+    } else {
+        // function name never equal to hash value(all number)
+        functionHashNames_.insert({funcContentNameStr, 1});
+    }
+    ss << ANONYMOUS_OR_DUPLICATE_FUNCTION_SPECIFIER;
+
+    if (name == ANONYMOUS_FUNC_NAME) {
         anonymousFunctionNames_[func] = util::UString(ss.str(), Allocator()).View();
     }
     if (funcNameWithoutDot && funcNameWithoutBackslash) {
