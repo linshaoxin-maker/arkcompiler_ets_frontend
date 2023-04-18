@@ -237,7 +237,10 @@ export class AsyncGeneratorFunctionBuilder extends FunctionBuilder {
         this.resumeGenerator(node);
 
         pg.loadAccumulatorInt(node, ResumeMode.THROW);
-        pg.condition(node, ts.SyntaxKind.EqualsEqualsToken, this.resumeType, returnCompletion);
+        pg.condition(node, ts.SyntaxKind.ExclamationEqualsEqualsToken, this.resumeType, loopStart);
+
+        pg.loadAccumulatorInt(node, ResumeMode.RETURN);
+        pg.storeAccumulator(node, this.resumeType);
 
         pg.branch(node, loopStart);
 
