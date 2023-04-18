@@ -66,6 +66,7 @@ struct PatchFixOptions {
     std::string dumpSymbolTable {};
     std::string symbolTable {};
     bool generatePatch {false};
+    bool hotfix {false};
     bool hotReload {false};
 };
 

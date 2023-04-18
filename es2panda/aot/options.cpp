@@ -232,6 +232,7 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<std::string> opDumpSymbolTable("dump-symbol-table", "", "dump symbol table to file");
     panda::PandArg<std::string> opInputSymbolTable("input-symbol-table", "", "input symbol table file");
     panda::PandArg<bool> opGeneratePatch("generate-patch", false, "generate patch abc");
+    panda::PandArg<bool> opHotfix("hot-fix", false, "generate patch abc as hot-fix mode");
     panda::PandArg<bool> opHotReload("hot-reload", false, "compile as hot-reload mode");
 
     // version
@@ -276,6 +277,7 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&opDumpSymbolTable);
     argparser_->Add(&opInputSymbolTable);
     argparser_->Add(&opGeneratePatch);
+    argparser_->Add(&opHotfix);
     argparser_->Add(&opHotReload);
 
     argparser_->Add(&bcVersion);
@@ -453,6 +455,7 @@ bool Options::Parse(int argc, const char **argv)
     compilerOptions_.patchFixOptions.dumpSymbolTable = opDumpSymbolTable.GetValue();
     compilerOptions_.patchFixOptions.symbolTable = opInputSymbolTable.GetValue();
     compilerOptions_.patchFixOptions.generatePatch = opGeneratePatch.GetValue();
+    compilerOptions_.patchFixOptions.hotfix = opHotfix.GetValue();
     compilerOptions_.patchFixOptions.hotReload = opHotReload.GetValue();
 
     return true;

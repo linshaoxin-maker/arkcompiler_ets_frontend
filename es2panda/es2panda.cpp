@@ -121,10 +121,11 @@ util::PatchFix *Compiler::InitPatchFixHelper(const SourceFile &input, const Comp
 {
     bool needDumpSymbolFile = !options.patchFixOptions.dumpSymbolTable.empty();
     bool needGeneratePatch = options.patchFixOptions.generatePatch && !options.patchFixOptions.symbolTable.empty();
+    bool isHotFix = options.patchFixOptions.hotfix;
     bool isHotReload = options.patchFixOptions.hotReload;
     util::PatchFix *patchFixHelper = nullptr;
     if (symbolTable && (needDumpSymbolFile || needGeneratePatch || isHotReload)) {
-        patchFixHelper = new util::PatchFix(needDumpSymbolFile, needGeneratePatch, isHotReload,
+        patchFixHelper = new util::PatchFix(needDumpSymbolFile, needGeneratePatch, isHotFix, isHotReload,
                                         input.recordName, symbolTable);
         parser_->AddPatchFixHelper(patchFixHelper);
         compiler_->AddPatchFixHelper(patchFixHelper);

@@ -38,9 +38,10 @@ class PatchFix {
     using LiteralBuffers = ArenaVector<std::pair<int32_t, std::vector<panda::pandasm::LiteralArray::Literal>>>;
 
 public:
-    PatchFix(bool generateSymbolFile, bool generatePatch, bool hotReload, const std::string &recordName,
+    PatchFix(bool generateSymbolFile, bool generatePatch, bool hotfix, bool hotReload, const std::string &recordName,
         util::SymbolTable *symbolTable)
-        : generateSymbolFile_(generateSymbolFile), generatePatch_(generatePatch), hotReload_(hotReload),
+        : generateSymbolFile_(generateSymbolFile), generatePatch_(generatePatch), hotfix_(hotfix),
+        hotReload_(hotReload),
         recordName_(recordName),
         symbolTable_(symbolTable),
         allocator_(SpaceType::SPACE_TYPE_COMPILER, nullptr, true),
@@ -100,6 +101,7 @@ private:
     bool patchError_ {false};
     bool generateSymbolFile_ {false};
     bool generatePatch_ {false};
+    bool hotfix_ {false};
     bool hotReload_ {false};
     std::string recordName_;
     std::string funcMain0_;
