@@ -320,6 +320,8 @@ void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name, cons
     functionScopes_.push_back(funcScope);
     funcScope->SetInFunctionScopes();
 
+    std::cout << "func_name: " << name << std::endl;
+
     bool funcNameWithoutDot = (name.Find(".") == std::string::npos);
     bool funcNameWithoutBackslash = (name.Find("\\") == std::string::npos);
     if (name != ANONYMOUS_FUNC_NAME && funcNameWithoutDot && funcNameWithoutBackslash && !functionNames_.count(name)) {
@@ -345,6 +347,8 @@ void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name, cons
     // and make #hash_duplicateHashTime#name as its name;
     auto funcContentNameStr = wholeSourceCode.Substr(startIndex, endIndex).Mutf8() + name.Mutf8();
     ss << ANONYMOUS_OR_DUPLICATE_FUNCTION_SPECIFIER << std::hash<std::string>{}(funcContentNameStr);
+
+    std::cout << "funcContentNameStr: " << funcContentNameStr << std::endl;
 
     auto res = functionHashNames_.find(funcContentNameStr);
     if (res != functionHashNames_.end()) {
