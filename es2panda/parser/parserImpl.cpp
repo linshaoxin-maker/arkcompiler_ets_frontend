@@ -3697,9 +3697,9 @@ parser::SourceTextModuleRecord *ParserImpl::GetSourceTextModuleRecord()
     return Binder()->Program()->ModuleRecord();
 }
 
-void ParserImpl::AddPatchFixHelper(util::PatchFix *hotfixHelper)
+void ParserImpl::AddPatchFixHelper(util::PatchFix *patchFixHelper)
 {
-    program_.AddPatchFixHelper(hotfixHelper);
+    program_.AddPatchFixHelper(patchFixHelper);
 }
 
 bool ParserImpl::IsDtsFile() const

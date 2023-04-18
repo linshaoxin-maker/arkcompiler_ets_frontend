@@ -44,7 +44,7 @@
 #include <typescript/extractor/typeExtractor.h>
 #include <util/concurrent.h>
 #include <util/helpers.h>
-#include <util/hotfix.h>
+#include <util/patchFix.h>
 
 namespace panda::es2panda::compiler {
 

@@ -183,7 +183,7 @@ public:
 
     ScriptExtension Extension() const;
 
-    void AddPatchFixHelper(util::PatchFix *hotfixHelper);
+    void AddPatchFixHelper(util::PatchFix *patchFixHelper);
 
     ArenaAllocator *Allocator() const
     {

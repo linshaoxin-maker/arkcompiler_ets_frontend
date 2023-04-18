@@ -56,7 +56,7 @@ FunctionEmitter::FunctionEmitter(ArenaAllocator *allocator, const PandaGen *pg)
     func_->return_type = panda::pandasm::Type("any", 0);
 }
 
-void FunctionEmitter::Generate(util::PatchFix *hotfixHelper)
+void FunctionEmitter::Generate(util::PatchFix *patchFixHelper)
 {
     GenFunctionKind();
     GenIcSize();
@@ -65,8 +65,8 @@ void FunctionEmitter::Generate(util::PatchFix *hotfixHelper)
     GenSourceFileDebugInfo();
     GenFunctionCatchTables();
     GenLiteralBuffers();
-    if (hotfixHelper != nullptr) {
-        hotfixHelper->ProcessFunction(pg_, func_, literalBuffers_);
+    if (patchFixHelper != nullptr) {
+        patchFixHelper->ProcessFunction(pg_, func_, literalBuffers_);
     }
 }
 
@@ -555,7 +555,7 @@ void Emitter::DumpAsm(const panda::pandasm::Program *prog)
     ss << std::endl;
 }
 
-panda::pandasm::Program *Emitter::Finalize(bool dumpDebugInfo, util::PatchFix *hotfixHelper)
+panda::pandasm::Program *Emitter::Finalize(bool dumpDebugInfo, util::PatchFix *patchFixHelper)
 {
     if (dumpDebugInfo) {
         debuginfo::DebugInfoDumper dumper(prog_);
@@ -567,8 +567,8 @@ panda::pandasm::Program *Emitter::Finalize(bool dumpDebugInfo, util::PatchFix *h
         rec_ = nullptr;
     }
 
-    if (hotfixHelper) {
-        hotfixHelper->Finalize(&prog_);
+    if (patchFixHelper) {
+        patchFixHelper->Finalize(&prog_);
     }
 
     auto *prog = prog_;

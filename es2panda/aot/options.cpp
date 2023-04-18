@@ -228,7 +228,7 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<std::string> opNpmModuleEntryList("npm-module-entry-list", "", "entry list file for module compile");
     panda::PandArg<bool> opMergeAbc("merge-abc", false, "Compile as merge abc");
 
-    // hotfix && hotreload
+    // patchFix && hotreload
     panda::PandArg<std::string> opDumpSymbolTable("dump-symbol-table", "", "dump symbol table to file");
     panda::PandArg<std::string> opInputSymbolTable("input-symbol-table", "", "input symbol table file");
     panda::PandArg<bool> opGeneratePatch("generate-patch", false, "generate patch abc");
@@ -450,10 +450,10 @@ bool Options::Parse(int argc, const char **argv)
     compilerOptions_.sourceFiles = sourceFiles_;
     compilerOptions_.mergeAbc = opMergeAbc.GetValue();
 
-    compilerOptions_.hotfixOptions.dumpSymbolTable = opDumpSymbolTable.GetValue();
-    compilerOptions_.hotfixOptions.symbolTable = opInputSymbolTable.GetValue();
-    compilerOptions_.hotfixOptions.generatePatch = opGeneratePatch.GetValue();
-    compilerOptions_.hotfixOptions.hotReload = opHotReload.GetValue();
+    compilerOptions_.patchFixOptions.dumpSymbolTable = opDumpSymbolTable.GetValue();
+    compilerOptions_.patchFixOptions.symbolTable = opInputSymbolTable.GetValue();
+    compilerOptions_.patchFixOptions.generatePatch = opGeneratePatch.GetValue();
+    compilerOptions_.patchFixOptions.hotReload = opHotReload.GetValue();
 
     return true;
 }

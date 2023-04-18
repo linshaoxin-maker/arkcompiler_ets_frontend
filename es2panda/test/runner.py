@@ -153,8 +153,8 @@ def get_args():
     parser.add_argument(
         '--tsc-path', dest='tsc_path', default=None, type=lambda arg: is_directory(parser, arg),
         help='the path of tsc')
-    parser.add_argument('--hotfix', dest='hotfix', action='store_true', default=False,
-        help='run hotfix tests')
+    parser.add_argument('--patchFix', dest='patchFix', action='store_true', default=False,
+        help='run patchFix tests')
     parser.add_argument('--hotreload', dest='hotreload', action='store_true', default=False,
         help='run hotreload tests')
     parser.add_argument('--base64', dest='base64', action='store_true', default=False,
@@ -487,7 +487,7 @@ class Runner:
         path_str = test.path
         err_col = {}
         if test.error:
-            err_str = test.error.split('[')[0] if "hotfix" not in test.path else " hotfix throw error failed"
+            err_str = test.error.split('[')[0] if "patchFix" not in test.path else " patchFix throw error failed"
             err_col = {"path" : [path_str], "status": ["fail"], "error" : [test.error], "type" : [err_str]}
         else:
             err_col = {"path" : [path_str], "status": ["fail"], "error" : ["Segmentation fault"],
@@ -1065,7 +1065,7 @@ class PatchTest(Test):
         gen_base_cmd.extend([os.path.join(self.path, origin_input_file)])
         self.log_cmd(gen_base_cmd)
 
-        if self.mode == 'hotfix':
+        if self.mode == 'patchFix':
             mode_arg = "--generate-patch"
         elif self.mode == 'hotreload':
             mode_arg = "--hot-reload"
@@ -1135,9 +1135,9 @@ class PatchRunner(Runner):
 class PatchFixRunner(PatchRunner):
     def __init__(self, args):
         PatchRunner.__init__(self, args, "PatchFix")
-        self.test_directory = path.join(self.test_root, "hotfix", "hotfix-throwerror")
+        self.test_directory = path.join(self.test_root, "patchFix", "patchFix-throwerror")
         self.add_directory()
-        self.tests += list(map(lambda t: PatchTest(t, "hotfix"), self.tests_in_dirs))
+        self.tests += list(map(lambda t: PatchTest(t, "patchFix"), self.tests_in_dirs))
 
 
 class HotreloadRunner(PatchRunner):
@@ -1454,7 +1454,7 @@ def main():
 
         runners.append(runner)
 
-    if args.hotfix:
+    if args.patchFix:
         runners.append(PatchFixRunner(args))
 
     if args.hotreload:
