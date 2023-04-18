@@ -47,7 +47,7 @@ public:
                                      const std::string &debugInfoSourceFile, const std::string &pkgName);
     static void DumpAsm(const panda::pandasm::Program *prog);
 
-    void AddHotfixHelper(util::Hotfix *hotfixHelper)
+    void AddPatchFixHelper(util::PatchFix *hotfixHelper)
     {
         hotfixHelper_ = hotfixHelper;
     }
@@ -55,7 +55,7 @@ public:
 private:
     size_t threadCount_ {0};
     CompileFuncQueue *queue_ {nullptr};
-    util::Hotfix *hotfixHelper_ {nullptr};
+    util::PatchFix *hotfixHelper_ {nullptr};
     std::unique_ptr<extractor::TypeExtractor> extractor_ {};
 };
 }  // namespace panda::es2panda::compiler

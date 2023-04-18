@@ -31,7 +31,7 @@ constexpr std::string_view ANONYMOUS_OR_DUPLICATE_FUNCTION_SPECIFIER = "#";
 const std::string EXTERNAL_ATTRIBUTE = "external";
 const panda::panda_file::SourceLang SRC_LANG = panda::panda_file::SourceLang::ECMASCRIPT;
 
-void Hotfix::ProcessFunction(const compiler::PandaGen *pg, panda::pandasm::Function *func,
+void PatchFix::ProcessFunction(const compiler::PandaGen *pg, panda::pandasm::Function *func,
     LiteralBuffers &literalBuffers)
 {
     if (generateSymbolFile_) {
@@ -45,7 +45,7 @@ void Hotfix::ProcessFunction(const compiler::PandaGen *pg, panda::pandasm::Funct
     }
 }
 
-void Hotfix::ProcessModule(const std::string &recordName,
+void PatchFix::ProcessModule(const std::string &recordName,
     std::vector<panda::pandasm::LiteralArray::Literal> &moduleBuffer)
 {
     if (generateSymbolFile_) {
@@ -59,7 +59,7 @@ void Hotfix::ProcessModule(const std::string &recordName,
     }
 }
 
-void Hotfix::ProcessJsonContentRecord(const std::string &recordName, const std::string &jsonFileContent)
+void PatchFix::ProcessJsonContentRecord(const std::string &recordName, const std::string &jsonFileContent)
 {
     if (generateSymbolFile_) {
         DumpJsonContentRecInfo(recordName, jsonFileContent);
@@ -72,7 +72,7 @@ void Hotfix::ProcessJsonContentRecord(const std::string &recordName, const std::
     }
 }
 
-void Hotfix::DumpModuleInfo(const std::string &recordName,
+void PatchFix::DumpModuleInfo(const std::string &recordName,
     std::vector<panda::pandasm::LiteralArray::Literal> &moduleBuffer)
 {
     std::stringstream ss;
@@ -82,7 +82,7 @@ void Hotfix::DumpModuleInfo(const std::string &recordName,
     symbolTable_->WriteSymbolTable(ss.str());
 }
 
-void Hotfix::ValidateModuleInfo(const std::string &recordName,
+void PatchFix::ValidateModuleInfo(const std::string &recordName,
     std::vector<panda::pandasm::LiteralArray::Literal> &moduleBuffer)
 {
     auto it = originModuleInfo_->find(recordName);
@@ -101,7 +101,7 @@ void Hotfix::ValidateModuleInfo(const std::string &recordName,
     }
 }
 
-void Hotfix::DumpJsonContentRecInfo(const std::string &recordName, const std::string &jsonFileContent)
+void PatchFix::DumpJsonContentRecInfo(const std::string &recordName, const std::string &jsonFileContent)
 {
     std::stringstream ss;
     ss << recordName << SymbolTable::SECOND_LEVEL_SEPERATOR;
@@ -110,7 +110,7 @@ void Hotfix::DumpJsonContentRecInfo(const std::string &recordName, const std::st
     symbolTable_->WriteSymbolTable(ss.str());
 }
 
-void Hotfix::ValidateJsonContentRecInfo(const std::string &recordName, const std::string &jsonFileContent)
+void PatchFix::ValidateJsonContentRecInfo(const std::string &recordName, const std::string &jsonFileContent)
 {
     auto it = originModuleInfo_->find(recordName);
     if (it == originModuleInfo_->end()) {
@@ -129,19 +129,19 @@ void Hotfix::ValidateJsonContentRecInfo(const std::string &recordName, const std
     }
 }
 
-bool Hotfix::IsAnonymousOrDuplicateNameFunction(const std::string &funcName)
+bool PatchFix::IsAnonymousOrDuplicateNameFunction(const std::string &funcName)
 {
     return funcName.find(ANONYMOUS_OR_DUPLICATE_FUNCTION_SPECIFIER) != std::string::npos;
 }
 
-int64_t Hotfix::GetLiteralIdxFromStringId(const std::string &stringId)
+int64_t PatchFix::GetLiteralIdxFromStringId(const std::string &stringId)
 {
     auto recordPrefix = recordName_ + "_";
     auto idxStr = stringId.substr(recordPrefix.size());
     return std::atoi(idxStr.c_str());
 }
 
-std::vector<std::pair<std::string, size_t>> Hotfix::GenerateFunctionAndClassHash(panda::pandasm::Function *func,
+std::vector<std::pair<std::string, size_t>> PatchFix::GenerateFunctionAndClassHash(panda::pandasm::Function *func,
     LiteralBuffers &literalBuffers)
 {
     std::stringstream ss;
@@ -185,7 +185,7 @@ std::vector<std::pair<std::string, size_t>> Hotfix::GenerateFunctionAndClassHash
     return hashList;
 }
 
-std::string Hotfix::ConvertLiteralToString(std::vector<panda::pandasm::LiteralArray::Literal> &literalBuffer)
+std::string PatchFix::ConvertLiteralToString(std::vector<panda::pandasm::LiteralArray::Literal> &literalBuffer)
 {
     std::stringstream ss;
     int count = 0;
@@ -207,7 +207,7 @@ std::string Hotfix::ConvertLiteralToString(std::vector<panda::pandasm::LiteralAr
     return ss.str();
 }
 
-std::string Hotfix::ExpandLiteral(int64_t bufferIdx, Hotfix::LiteralBuffers &literalBuffers)
+std::string PatchFix::ExpandLiteral(int64_t bufferIdx, PatchFix::LiteralBuffers &literalBuffers)
 {
     for (auto &litPair : literalBuffers) {
         if (litPair.first == bufferIdx) {
@@ -218,7 +218,7 @@ std::string Hotfix::ExpandLiteral(int64_t bufferIdx, Hotfix::LiteralBuffers &lit
     return "";
 }
 
-std::vector<std::string> Hotfix::GetLiteralMethods(int64_t bufferIdx, Hotfix::LiteralBuffers &literalBuffers)
+std::vector<std::string> PatchFix::GetLiteralMethods(int64_t bufferIdx, PatchFix::LiteralBuffers &literalBuffers)
 {
     std::vector<std::string> methods;
     for (auto &litPair : literalBuffers) {
@@ -242,15 +242,15 @@ std::vector<std::string> Hotfix::GetLiteralMethods(int64_t bufferIdx, Hotfix::Li
     return methods;
 }
 
-void Hotfix::CollectClassMemberFunctions(const std::string &className, int64_t bufferIdx,
-    Hotfix::LiteralBuffers &literalBuffers)
+void PatchFix::CollectClassMemberFunctions(const std::string &className, int64_t bufferIdx,
+    PatchFix::LiteralBuffers &literalBuffers)
 {
     std::vector<std::string> classMemberFunctions = GetLiteralMethods(bufferIdx, literalBuffers);
     classMemberFunctions.push_back(className);
     classMemberFunctions_.insert({className, classMemberFunctions});
 }
 
-bool Hotfix::IsScopeValidToPatchLexical(binder::VariableScope *scope) const
+bool PatchFix::IsScopeValidToPatchLexical(binder::VariableScope *scope) const
 {
     if (!generatePatch_ && !hotReload_) {
         return false;
@@ -267,14 +267,14 @@ bool Hotfix::IsScopeValidToPatchLexical(binder::VariableScope *scope) const
     return true;
 }
 
-void Hotfix::AllocSlotfromPatchEnv(const std::string &variableName)
+void PatchFix::AllocSlotfromPatchEnv(const std::string &variableName)
 {
     if (!topScopeLexEnvs_.count(variableName)) {
         topScopeLexEnvs_[variableName] = topScopeIdx_++;
     }
 }
 
-uint32_t Hotfix::GetSlotIdFromSymbolTable(const std::string &variableName)
+uint32_t PatchFix::GetSlotIdFromSymbolTable(const std::string &variableName)
 {
     auto functionIter = originFunctionInfo_->find(funcMain0_);
     if (functionIter != originFunctionInfo_->end()) {
@@ -287,7 +287,7 @@ uint32_t Hotfix::GetSlotIdFromSymbolTable(const std::string &variableName)
     return UINT32_MAX;
 }
 
-uint32_t Hotfix::GetPatchLexicalIdx(const std::string &variableName)
+uint32_t PatchFix::GetPatchLexicalIdx(const std::string &variableName)
 {
     ASSERT(topScopeLexEnvs_.count(variableName));
     return topScopeLexEnvs_[variableName];
@@ -308,7 +308,7 @@ bool IsStPatchVarIns(panda::pandasm::Ins &ins)
     return ins.opcode == panda::pandasm::Opcode::WIDE_STPATCHVAR;
 }
 
-void Hotfix::CollectFuncDefineIns(panda::pandasm::Function *func)
+void PatchFix::CollectFuncDefineIns(panda::pandasm::Function *func)
 {
     for (size_t i = 0; i < func->ins.size(); ++i) {
         if (IsFunctionOrClassDefineIns(func->ins[i])) {
@@ -318,7 +318,7 @@ void Hotfix::CollectFuncDefineIns(panda::pandasm::Function *func)
     }
 }
 
-void Hotfix::HandleModifiedClasses(panda::pandasm::Program *prog)
+void PatchFix::HandleModifiedClasses(panda::pandasm::Program *prog)
 {
     for (auto &cls: classMemberFunctions_) {
         for (auto &func: cls.second) {
@@ -339,7 +339,7 @@ void Hotfix::HandleModifiedClasses(panda::pandasm::Program *prog)
     }
 }
 
-void Hotfix::AddHeadAndTailInsForPatchFuncMain0(std::vector<panda::pandasm::Ins> &ins)
+void PatchFix::AddHeadAndTailInsForPatchFuncMain0(std::vector<panda::pandasm::Ins> &ins)
 {
     panda::pandasm::Ins returnUndefine;
     returnUndefine.opcode = pandasm::Opcode::RETURNUNDEFINED;
@@ -359,14 +359,14 @@ void Hotfix::AddHeadAndTailInsForPatchFuncMain0(std::vector<panda::pandasm::Ins>
     ins.push_back(returnUndefine);
 }
 
-void Hotfix::AddTailInsForPatchFuncMain1(std::vector<panda::pandasm::Ins> &ins)
+void PatchFix::AddTailInsForPatchFuncMain1(std::vector<panda::pandasm::Ins> &ins)
 {
     panda::pandasm::Ins returnUndefined;
     returnUndefined.opcode = pandasm::Opcode::RETURNUNDEFINED;
     ins.push_back(returnUndefined);
 }
 
-void Hotfix::CreateFunctionPatchMain0AndMain1(panda::pandasm::Function &patchFuncMain0,
+void PatchFix::CreateFunctionPatchMain0AndMain1(panda::pandasm::Function &patchFuncMain0,
     panda::pandasm::Function &patchFuncMain1)
 {
     const size_t defaultParamCount = 3;
@@ -405,7 +405,7 @@ void Hotfix::CreateFunctionPatchMain0AndMain1(panda::pandasm::Function &patchFun
     patchFuncMain1.return_type = panda::pandasm::Type("any", 0);
 }
 
-void Hotfix::Finalize(panda::pandasm::Program **prog)
+void PatchFix::Finalize(panda::pandasm::Program **prog)
 {
     if (!generatePatch_ && !hotReload_) {
         return;
@@ -431,7 +431,7 @@ void Hotfix::Finalize(panda::pandasm::Program **prog)
     (*prog)->function_table.emplace(patchFuncMain1.name, std::move(patchFuncMain1));
 }
 
-bool Hotfix::CompareLexenv(const std::string &funcName, const compiler::PandaGen *pg,
+bool PatchFix::CompareLexenv(const std::string &funcName, const compiler::PandaGen *pg,
     SymbolTable::OriginFunctionInfo &bytecodeInfo)
 {
     auto &lexicalVarNameAndTypes = pg->TopScope()->GetLexicalVarNameAndTypes();
@@ -465,7 +465,7 @@ bool Hotfix::CompareLexenv(const std::string &funcName, const compiler::PandaGen
     return true;
 }
 
-bool Hotfix::CompareClassHash(std::vector<std::pair<std::string, size_t>> &hashList,
+bool PatchFix::CompareClassHash(std::vector<std::pair<std::string, size_t>> &hashList,
     SymbolTable::OriginFunctionInfo &bytecodeInfo)
 {
     auto &classInfo = bytecodeInfo.classHash;
@@ -490,7 +490,7 @@ bool Hotfix::CompareClassHash(std::vector<std::pair<std::string, size_t>> &hashL
     return true;
 }
 
-void Hotfix::HandleFunction(const compiler::PandaGen *pg, panda::pandasm::Function *func,
+void PatchFix::HandleFunction(const compiler::PandaGen *pg, panda::pandasm::Function *func,
     LiteralBuffers &literalBuffers)
 {
     std::string funcName = func->name;
@@ -535,8 +535,8 @@ void Hotfix::HandleFunction(const compiler::PandaGen *pg, panda::pandasm::Functi
     CollectFuncDefineIns(func);
 }
 
-void Hotfix::DumpFunctionInfo(const compiler::PandaGen *pg, panda::pandasm::Function *func,
-    Hotfix::LiteralBuffers &literalBuffers)
+void PatchFix::DumpFunctionInfo(const compiler::PandaGen *pg, panda::pandasm::Function *func,
+    PatchFix::LiteralBuffers &literalBuffers)
 {
     std::stringstream ss;
 
@@ -563,7 +563,7 @@ void Hotfix::DumpFunctionInfo(const compiler::PandaGen *pg, panda::pandasm::Func
     symbolTable_->WriteSymbolTable(ss.str());
 }
 
-bool Hotfix::IsPatchVar(uint32_t slot)
+bool PatchFix::IsPatchVar(uint32_t slot)
 {
     return slot == UINT32_MAX;
 }

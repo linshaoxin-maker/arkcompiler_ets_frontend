@@ -44,7 +44,7 @@ class CompilerContext {
 public:
     CompilerContext(binder::Binder *binder, bool isDebug, bool isDebuggerEvaluateExpressionMode,
                     bool isMergeAbc, bool isTypeExtractorEnabled, bool isJsonInputFile, std::string sourceFile,
-                    std::string pkgName, util::StringView recordName, util::Hotfix *hotfixHelper);
+                    std::string pkgName, util::StringView recordName, util::PatchFix *hotfixHelper);
     NO_COPY_SEMANTIC(CompilerContext);
     NO_MOVE_SEMANTIC(CompilerContext);
     ~CompilerContext() = default;
@@ -100,7 +100,7 @@ public:
         return pkgName_;
     }
 
-    util::Hotfix *HotfixHelper() const
+    util::PatchFix *PatchFixHelper() const
     {
         return hotfixHelper_;
     }
@@ -142,7 +142,7 @@ private:
     std::string sourceFile_;
     std::string pkgName_;
     util::StringView recordName_;
-    util::Hotfix *hotfixHelper_ {nullptr};
+    util::PatchFix *hotfixHelper_ {nullptr};
     std::unique_ptr<Emitter> emitter_;
 };
 

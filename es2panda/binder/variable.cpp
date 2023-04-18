@@ -40,7 +40,7 @@ LocalVariable *LocalVariable::Copy(ArenaAllocator *allocator, Decl *decl) const
     return var;
 }
 
-void LocalVariable::SetLexical(Scope *scope, util::Hotfix *hotfixHelper)
+void LocalVariable::SetLexical(Scope *scope, util::PatchFix *hotfixHelper)
 {
     if (LexicalBound()) {
         return;
@@ -65,12 +65,12 @@ void LocalVariable::SetLexical(Scope *scope, util::Hotfix *hotfixHelper)
         static_cast<typename std::underlying_type<binder::DeclType>::type>(Declaration()->Type()));
 }
 
-void GlobalVariable::SetLexical([[maybe_unused]] Scope *scope, [[maybe_unused]] util::Hotfix *hotfixHelper) {}
-void ModuleVariable::SetLexical([[maybe_unused]] Scope *scope, [[maybe_unused]] util::Hotfix *hotfixHelper) {}
-void EnumVariable::SetLexical([[maybe_unused]] Scope *scope, [[maybe_unused]] util::Hotfix *hotfixHelper) {}
-void NamespaceVariable::SetLexical([[maybe_unused]] Scope *scope, [[maybe_unused]] util::Hotfix *hotfixHelper) {}
-void ImportEqualsVariable::SetLexical([[maybe_unused]] Scope *scope, [[maybe_unused]] util::Hotfix *hotfixHelper) {}
-void EnumLiteralVariable::SetLexical([[maybe_unused]] Scope *scope, [[maybe_unused]] util::Hotfix *hotfixHelper) {}
+void GlobalVariable::SetLexical([[maybe_unused]] Scope *scope, [[maybe_unused]] util::PatchFix *hotfixHelper) {}
+void ModuleVariable::SetLexical([[maybe_unused]] Scope *scope, [[maybe_unused]] util::PatchFix *hotfixHelper) {}
+void EnumVariable::SetLexical([[maybe_unused]] Scope *scope, [[maybe_unused]] util::PatchFix *hotfixHelper) {}
+void NamespaceVariable::SetLexical([[maybe_unused]] Scope *scope, [[maybe_unused]] util::PatchFix *hotfixHelper) {}
+void ImportEqualsVariable::SetLexical([[maybe_unused]] Scope *scope, [[maybe_unused]] util::PatchFix *hotfixHelper) {}
+void EnumLiteralVariable::SetLexical([[maybe_unused]] Scope *scope, [[maybe_unused]] util::PatchFix *hotfixHelper) {}
 
 void EnumVariable::ResetDecl(Decl *decl)
 {

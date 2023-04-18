@@ -62,7 +62,7 @@ struct SourceFile {
     uint32_t hash {0};
 };
 
-struct HotfixOptions {
+struct PatchFixOptions {
     std::string dumpSymbolTable {};
     std::string symbolTable {};
     bool generatePatch {false};
@@ -89,7 +89,7 @@ struct CompilerOptions {
     std::string output {};
     std::string debugInfoSourceFile {};
     std::vector<es2panda::SourceFile> sourceFiles;
-    HotfixOptions hotfixOptions;
+    PatchFixOptions hotfixOptions;
     bool bcVersion {false};
     bool bcMinVersion {false};
     std::unordered_map<std::string, std::string> cacheFiles;
@@ -195,9 +195,9 @@ public:
     }
 
 private:
-    util::Hotfix *InitHotfixHelper(const SourceFile &input, const CompilerOptions &options,
+    util::PatchFix *InitPatchFixHelper(const SourceFile &input, const CompilerOptions &options,
                                    util::SymbolTable *symbolTable);
-    static void CleanHotfixHelper(const util::Hotfix *hotfixHelper);
+    static void CleanPatchFixHelper(const util::PatchFix *hotfixHelper);
 
     parser::ParserImpl *parser_;
     compiler::CompilerImpl *compiler_;

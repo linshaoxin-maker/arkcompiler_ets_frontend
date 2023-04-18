@@ -34,11 +34,11 @@ class PandaGen;
 }  // namespace panda::es2panda::compiler
 
 namespace panda::es2panda::util {
-class Hotfix {
+class PatchFix {
     using LiteralBuffers = ArenaVector<std::pair<int32_t, std::vector<panda::pandasm::LiteralArray::Literal>>>;
 
 public:
-    Hotfix(bool generateSymbolFile, bool generatePatch, bool hotReload, const std::string &recordName,
+    PatchFix(bool generateSymbolFile, bool generatePatch, bool hotReload, const std::string &recordName,
         util::SymbolTable *symbolTable)
         : generateSymbolFile_(generateSymbolFile), generatePatch_(generatePatch), hotReload_(hotReload),
         recordName_(recordName),

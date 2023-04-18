@@ -1132,9 +1132,9 @@ class PatchRunner(Runner):
         return os.path.basename(src)
 
 
-class HotfixRunner(PatchRunner):
+class PatchFixRunner(PatchRunner):
     def __init__(self, args):
-        PatchRunner.__init__(self, args, "Hotfix")
+        PatchRunner.__init__(self, args, "PatchFix")
         self.test_directory = path.join(self.test_root, "hotfix", "hotfix-throwerror")
         self.add_directory()
         self.tests += list(map(lambda t: PatchTest(t, "hotfix"), self.tests_in_dirs))
@@ -1455,7 +1455,7 @@ def main():
         runners.append(runner)
 
     if args.hotfix:
-        runners.append(HotfixRunner(args))
+        runners.append(PatchFixRunner(args))
 
     if args.hotreload:
         runners.append(HotreloadRunner(args))

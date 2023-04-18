@@ -48,7 +48,7 @@ Compiler::~Compiler()
     delete compiler_;
 }
 
-panda::pandasm::Program *CreateJsonContentProgram(std::string src, std::string rname, util::Hotfix *hotfixHelper)
+panda::pandasm::Program *CreateJsonContentProgram(std::string src, std::string rname, util::PatchFix *hotfixHelper)
 {
     panda::es2panda::compiler::CompilerContext context(nullptr, false, false, false, false, true,
                                                        src, "", util::StringView(rname), hotfixHelper);
@@ -67,7 +67,7 @@ panda::pandasm::Program *Compiler::Compile(const SourceFile &input, const Compil
     std::string pkgName(input.pkgName);
     parser::ScriptKind kind(input.scriptKind);
 
-    auto *hotfixHelper = InitHotfixHelper(input, options, symbolTable);
+    auto *hotfixHelper = InitPatchFixHelper(input, options, symbolTable);
 
     if (fname.substr(fname.find_last_of(".") + 1) == "json") {
         return CreateJsonContentProgram(src, rname, hotfixHelper);
@@ -106,33 +106,33 @@ panda::pandasm::Program *Compiler::Compile(const SourceFile &input, const Compil
                                           sourcefile : options.debugInfoSourceFile;
         auto *prog = compiler_->Compile(&ast, options, debugInfoSourceFile, pkgName);
 
-        CleanHotfixHelper(hotfixHelper);
+        CleanPatchFixHelper(hotfixHelper);
         return prog;
     } catch (const class Error &e) {
         error_ = e;
 
-        CleanHotfixHelper(hotfixHelper);
+        CleanPatchFixHelper(hotfixHelper);
         return nullptr;
     }
 }
 
-util::Hotfix *Compiler::InitHotfixHelper(const SourceFile &input, const CompilerOptions &options,
+util::PatchFix *Compiler::InitPatchFixHelper(const SourceFile &input, const CompilerOptions &options,
                                          util::SymbolTable *symbolTable)
 {
     bool needDumpSymbolFile = !options.hotfixOptions.dumpSymbolTable.empty();
     bool needGeneratePatch = options.hotfixOptions.generatePatch && !options.hotfixOptions.symbolTable.empty();
     bool isHotReload = options.hotfixOptions.hotReload;
-    util::Hotfix *hotfixHelper = nullptr;
+    util::PatchFix *hotfixHelper = nullptr;
     if (symbolTable && (needDumpSymbolFile || needGeneratePatch || isHotReload)) {
-        hotfixHelper = new util::Hotfix(needDumpSymbolFile, needGeneratePatch, isHotReload,
+        hotfixHelper = new util::PatchFix(needDumpSymbolFile, needGeneratePatch, isHotReload,
                                         input.recordName, symbolTable);
-        parser_->AddHotfixHelper(hotfixHelper);
-        compiler_->AddHotfixHelper(hotfixHelper);
+        parser_->AddPatchFixHelper(hotfixHelper);
+        compiler_->AddPatchFixHelper(hotfixHelper);
     }
     return hotfixHelper;
 }
 
-void Compiler::CleanHotfixHelper(const util::Hotfix *hotfixHelper)
+void Compiler::CleanPatchFixHelper(const util::PatchFix *hotfixHelper)
 {
     if (hotfixHelper) {
         delete hotfixHelper;

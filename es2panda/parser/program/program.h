@@ -135,12 +135,12 @@ public:
         formatedRecordName_ = util::UString(formatedRecordName, Allocator());
     }
 
-    void AddHotfixHelper(util::Hotfix *hotfixHelper)
+    void AddPatchFixHelper(util::PatchFix *hotfixHelper)
     {
         hotfixHelper_ = hotfixHelper;
     }
 
-    util::Hotfix *HotfixHelper()
+    util::PatchFix *PatchFixHelper()
     {
         return hotfixHelper_;
     }
@@ -165,7 +165,7 @@ private:
     ScriptExtension extension_ {};
     lexer::LineIndex lineIndex_ {};
     SourceTextModuleRecord *moduleRecord_ {nullptr};
-    util::Hotfix *hotfixHelper_ {nullptr};
+    util::PatchFix *hotfixHelper_ {nullptr};
     bool isDtsFile_ {false};
 };
 

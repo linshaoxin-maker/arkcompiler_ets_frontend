@@ -74,7 +74,7 @@ public:
         return literalBuffers_;
     }
 
-    void Generate(util::Hotfix *hotfixHelper);
+    void Generate(util::PatchFix *hotfixHelper);
     const ArenaSet<util::StringView> &Strings() const;
 
 private:
@@ -113,7 +113,7 @@ public:
     static void GenBufferLiterals(ArenaVector<std::pair<int32_t, std::vector<Literal>>> &literalBuffers,
                                   const LiteralBuffer *buff);
     static void DumpAsm(const panda::pandasm::Program *prog);
-    panda::pandasm::Program *Finalize(bool dumpDebugInfo, util::Hotfix *hotfixHelper);
+    panda::pandasm::Program *Finalize(bool dumpDebugInfo, util::PatchFix *hotfixHelper);
     panda::pandasm::Program *GetProgram() const;
     void GenJsonContentRecord(const CompilerContext *context);
     void GenRecordNameInfo() const;

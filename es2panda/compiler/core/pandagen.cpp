@@ -1791,8 +1791,8 @@ void PandaGen::LoadLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t 
 
 void PandaGen::LoadLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot, const util::StringView &name)
 {
-    if (context_->HotfixHelper() && context_->HotfixHelper()->IsPatchVar(slot)) {
-        uint32_t patchSlot = context_->HotfixHelper()->GetPatchLexicalIdx(std::string(name));
+    if (context_->PatchFixHelper() && context_->PatchFixHelper()->IsPatchVar(slot)) {
+        uint32_t patchSlot = context_->PatchFixHelper()->GetPatchLexicalIdx(std::string(name));
         ra_.Emit<WideLdpatchvar>(node, patchSlot);
         return;
     }
@@ -1829,8 +1829,8 @@ void PandaGen::StoreLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t
 void PandaGen::StoreLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot,
     const binder::LocalVariable *local)
 {
-    if (context_->HotfixHelper() && context_->HotfixHelper()->IsPatchVar(slot)) {
-        uint32_t patchSlot = context_->HotfixHelper()->GetPatchLexicalIdx(std::string(local->Name()));
+    if (context_->PatchFixHelper() && context_->PatchFixHelper()->IsPatchVar(slot)) {
+        uint32_t patchSlot = context_->PatchFixHelper()->GetPatchLexicalIdx(std::string(local->Name()));
         ra_.Emit<WideStpatchvar>(node, patchSlot);
         return;
     }

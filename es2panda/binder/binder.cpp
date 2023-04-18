@@ -236,7 +236,7 @@ void Binder::LookupReference(const util::StringView &name)
     }
 
     ASSERT(res.variable);
-    res.variable->SetLexical(res.scope, program_->HotfixHelper());
+    res.variable->SetLexical(res.scope, program_->PatchFixHelper());
 }
 
 void Binder::InstantiateArguments()
@@ -292,10 +292,9 @@ void Binder::LookupIdentReference(ir::Identifier *ident)
     }
 
     if (res.level != 0) {
-        ASSERT(res.variable);
-        if (!res.variable->Declaration()->IsDeclare()) {
+        ASSERT(res.variable);if (!res.variable->Declaration()->IsDeclare()) {
             util::Concurrent::VerifyImportVarForConcurrentFunction(Program()->GetLineIndex(), ident, res);
-            res.variable->SetLexical(res.scope, program_->HotfixHelper());
+            res.variable->SetLexical(res.scope, program_->PatchFixHelper());
         }
     }
 
