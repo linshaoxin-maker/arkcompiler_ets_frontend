@@ -55,6 +55,10 @@ public:
         return errorMsg_;
     }
 
+    int TargetApiVersion() const
+    {
+        return targetApiVersion_;
+    }
 private:
     panda::PandArgParser *argparser_;
     std::string errorMsg_;
@@ -62,6 +66,7 @@ private:
     std::string protoPathInput_;
     std::string outputFileName_ {"modules.abc"};
     std::string outputFilePath_;
+    int targetApiVersion_ {0};
 };
 } // panda::proto
 #endif

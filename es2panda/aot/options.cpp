@@ -226,6 +226,7 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<std::string> opCacheFile("cache-file", "", "cache file for incremental compile");
     panda::PandArg<std::string> opNpmModuleEntryList("npm-module-entry-list", "", "entry list file for module compile");
     panda::PandArg<bool> opMergeAbc("merge-abc", false, "Compile as merge abc");
+    panda::PandArg<int> opTargetApiVersion("target-api-version", 0, "Specify the target api version for compilation");
 
     // hotfix && hotreload
     panda::PandArg<std::string> opDumpSymbolTable("dump-symbol-table", "", "dump symbol table to file");
@@ -234,8 +235,10 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<bool> opHotReload("hot-reload", false, "compile as hot-reload mode");
 
     // version
-    panda::PandArg<bool> bcVersion("bc-version", false, "Print ark bytecode version");
+    panda::PandArg<bool> bcVersion("bc-version", false, "Print ark bytecode maximum supported version");
     panda::PandArg<bool> bcMinVersion("bc-min-version", false, "Print ark bytecode minimum supported version");
+    panda::PandArg<bool> supportedApi("supported-api", false,
+                                      "Print supported apis and corresponding bytecode versions");
 
     // tail arguments
     panda::PandArg<std::string> inputFile("input", "", "input file");
@@ -271,6 +274,7 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&opCacheFile);
     argparser_->Add(&opNpmModuleEntryList);
     argparser_->Add(&opMergeAbc);
+    argparser_->Add(&opTargetApiVersion);
 
     argparser_->Add(&opDumpSymbolTable);
     argparser_->Add(&opInputSymbolTable);
@@ -279,6 +283,7 @@ bool Options::Parse(int argc, const char **argv)
 
     argparser_->Add(&bcVersion);
     argparser_->Add(&bcMinVersion);
+    argparser_->Add(&supportedApi);
 
     argparser_->PushBackTail(&inputFile);
     argparser_->EnableTail();
@@ -286,9 +291,10 @@ bool Options::Parse(int argc, const char **argv)
 
     bool parseStatus = argparser_->Parse(argc, argv);
 
-    if (parseStatus && (bcVersion.GetValue() || bcMinVersion.GetValue())) {
+    if (parseStatus && (bcVersion.GetValue() || bcMinVersion.GetValue() || supportedApi.GetValue())) {
         compilerOptions_.bcVersion = bcVersion.GetValue();
         compilerOptions_.bcMinVersion = bcMinVersion.GetValue();
+        compilerOptions_.supportedApi = supportedApi.GetValue();
         return true;
     }
 
@@ -429,6 +435,8 @@ bool Options::Parse(int argc, const char **argv)
         options_ |= OptionFlags::SIZE_STAT;
     }
 
+    targetApiVersion_ = opTargetApiVersion.GetValue();
+
     compilerOptions_.dumpAsm = opDumpAssembly.GetValue();
     compilerOptions_.dumpAst = opDumpAst.GetValue();
     compilerOptions_.dumpTransformedAst = opDumpTransformedAst.GetValue();
@@ -448,6 +456,7 @@ bool Options::Parse(int argc, const char **argv)
         base64Output.GetValue()) ? 0 : opOptLevel.GetValue();
     compilerOptions_.sourceFiles = sourceFiles_;
     compilerOptions_.mergeAbc = opMergeAbc.GetValue();
+    compilerOptions_.targetApiVersion = targetApiVersion_;
 
     compilerOptions_.hotfixOptions.dumpSymbolTable = opDumpSymbolTable.GetValue();
     compilerOptions_.hotfixOptions.symbolTable = opInputSymbolTable.GetValue();
