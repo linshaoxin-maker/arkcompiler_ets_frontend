@@ -42,6 +42,7 @@ namespace panda::ts2abc {
             parser->Add(&compile_npm_entries_);
             parser->Add(&compiler_output_proto_);
             parser->Add(&multi_programs_pipe_);
+            parser->Add(&target_api_version_);
             parser->EnableTail();
             parser->PushBackTail(&Tail_Arg1_arg_);
             parser->PushBackTail(&Tail_Arg2_arg_);
@@ -187,6 +188,21 @@ namespace panda::ts2abc {
             return multi_programs_pipe_.GetValue();
         }
 
+        int GetTargetApiVersion() const
+        {
+            return target_api_version_.GetValue();
+        }
+
+        void SetTargetApiVersion(int value)
+        {
+            target_api_version_.SetValue(value);
+        }
+
+        bool WasSetTargetApiVersion() const
+        {
+            return target_api_version_.WasSet();
+        }
+
         std::string GetTailArg1() const
         {
             return Tail_Arg1_arg_.GetValue();
@@ -251,6 +267,8 @@ namespace panda::ts2abc {
                 R"(Output protoBin file)"};
         panda::PandArg<bool> multi_programs_pipe_{ "multi-programs-pipe", false,
                 R"(Genrate programs by single pipe)"};
+        panda::PandArg<int> target_api_version_{ "target-api-version", 0,
+                R"(Specify the target api version for compilation)"};
         panda::PandArg<std::string> Tail_Arg1_arg_{ "ARG_1", "",
                 R"(Path to input(json file) or path to output(ark bytecode)"
                   " when 'compile-by-pipe' enabled)"};
