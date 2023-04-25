@@ -80,8 +80,11 @@ ohos_executable("ts2abc") {
   cflags = [
     "-Wno-c++20-designator",
     "-Wno-c99-extensions",
-    "-Wno-unknown-warning-option",
   ]
+
+  if (!is_mingw) {
+    cflags += [ "-Wno-unknown-warning-option" ]
+  }
 
   deps = [
     "//arkcompiler/ets_frontend/merge_abc:panda_assembly_proto_static",
