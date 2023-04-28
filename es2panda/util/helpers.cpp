@@ -55,7 +55,6 @@
 #include <unistd.h>
 #endif
 #include <fstream>
-
 namespace panda::es2panda::util {
 
 // Helpers
@@ -70,7 +69,7 @@ bool Helpers::ContainSpreadElement(const ArenaVector<ir::Expression *> &args)
     return std::any_of(args.begin(), args.end(), [](const auto *it) { return it->IsSpreadElement(); });
 }
 
-util::StringView Helpers::LiteralToPropName(const ir::Expression *lit)
+util::StringView Helpers::LiteralToPropName(ArenaAllocator *allocator, const ir::Expression *lit)
 {
     switch (lit->Type()) {
         case ir::AstNodeType::IDENTIFIER: {
@@ -80,7 +79,16 @@ util::StringView Helpers::LiteralToPropName(const ir::Expression *lit)
             return lit->AsStringLiteral()->Str();
         }
         case ir::AstNodeType::NUMBER_LITERAL: {
-            return lit->AsNumberLiteral()->Str();
+            auto str = lit->AsNumberLiteral()->Str();
+            auto num = lit->AsNumberLiteral()->Number();
+
+            // "e" and "E" represent Scientific notation.
+            if ((std::fabs(num) >= MIN_SCINOTATION_TO_LITERAL && std::fabs(num) < MAX_SCINOTATION_TO_LITERAL) &&
+                (str.Find("e") == std::string::npos && str.Find("E") == std::string::npos)) {
+                return str;
+            } else {
+                return util::Helpers::ToStringView(allocator, num);
+            }
         }
         case ir::AstNodeType::NULL_LITERAL: {
             return "null";
@@ -149,14 +157,131 @@ bool Helpers::EndsWith(std::string_view str, std::string_view suffix)
     return str.find(suffix, expectPos) == expectPos;
 }
 
+void Helpers::GetBase(double d, int digits, int *decpt, char *buf, char *bufTmp, int size)
+{
+    int result = snprintf_s(bufTmp, size, size - 1, "%+.*e", digits - 1, d);
+
+    if (result == -1) {
+        std::cerr << "Failed to write number to buffer in snprintf_s"  << std::endl;
+        UNREACHABLE();
+    }
+    // mantissa
+    buf[0] = bufTmp[1];
+    if (digits > 1) {
+        if (memcpy_s(buf + 1, digits, bufTmp + 2, digits) != EOK) { // 2 means add the point char to buf
+            std::cerr << "Failed to copy bufTmp to buf in memcpy_s"  << std::endl;
+            UNREACHABLE();
+        }
+    }
+    buf[digits + 1] = '\0';
+
+    // exponent
+    *decpt = atoi(bufTmp + digits + 2 + (digits > 1)) + 1; // 2 means ignore the integer and point
+}
+
+int Helpers::GetMinmumDigits(double d, int *decpt, char *buf)
+{
+    int digits = 0;
+    char bufTmp[JS_DTOA_BUF_SIZE] = {0};
+
+    // find the minimum amount of digits
+    int MinDigits = 1;
+    int MaxDigits = DOUBLE_MAX_PRECISION;
+    while (MinDigits < MaxDigits) {
+        digits = (MinDigits + MaxDigits) / 2;
+        GetBase(d, digits, decpt, buf, bufTmp, sizeof(bufTmp));
+        if (strtod(bufTmp, NULL) == d) {
+            // no need to keep the trailing zeros
+            while (digits >= 2 && buf[digits] == '0') { // 2 means ignore the integer and point
+                digits--;
+            }
+            MaxDigits = digits;
+        } else {
+            MinDigits = digits + 1;
+        }
+    }
+    digits = MaxDigits;
+    GetBase(d, digits, decpt, buf, bufTmp, sizeof(bufTmp));
+
+    return digits;
+}
+
+std::string Helpers::DoubleToString(double number)
+{
+    // Let n, k, and s be integers such that k ≥ 1, 10k−1 ≤ s < 10k, the Number value for s × 10n−k is m,
+    // and k is as small as possible.
+    // n is the number of digits before the Decimal separator.
+    // s is the number in the Decimal representation.
+    // k is the number of digits in the decimal representation of s and that s is not divisible by 10.
+    std::string result;
+    if (number < 0) {
+        result += "-";
+        number = -number;
+    }
+
+    // In this case, n==0, just need to calculate k and s.
+    if (0.1 <= number && number < 1) {  // 0.1: 10 ** -1
+
+        std::string resultFast = "0.";
+        int64_t sFast = 0;
+        int kFast = 1;
+        int64_t power = 1;
+        while (kFast <= DOUBLE_MAX_PRECISION) {
+            power *= 10;                                                // 10: base 10
+            int digitFast = static_cast<int64_t>(number * power) % 10;  // 10: base 10
+            ASSERT(0 <= digitFast && digitFast <= 9);                   // 9: single digit max
+            sFast = sFast * 10 + digitFast;                             // 10: base 10
+            resultFast += (digitFast + '0');
+            if (sFast / static_cast<double>(power) == number) {         // s * (10 ** -k)
+                result += resultFast;
+            }
+            kFast++;
+        }
+    }
+
+    char buffer[JS_DTOA_BUF_SIZE] = {0};
+    int n = 0;
+    double d = number;
+    int k = GetMinmumDigits(d, &n, buffer);
+    std::string base = buffer;
+    if (n > 0 && n <= 21) {  // NOLINT(readability-magic-numbers)
+        base.erase(1, 1);
+        if (k <= n) {
+            base += std::string(n - k, '0');
+        } else {
+            base.insert(n, 1, '.');
+        }
+    } else if (-6 < n && n <= 0) {  // NOLINT(readability-magic-numbers)
+        base.erase(1, 1);
+        base = std::string("0.") + std::string(-n, '0') + base;
+    } else {
+        if (k == 1) {
+            base.erase(1, 1);
+        }
+        base += "e" + (n >= 1 ? std::string("+") : "") + std::to_string(n - 1);
+    }
+    result += base;
+
+    return result;
+}
+
 std::string Helpers::ToString(double number)
 {
-    std::string str;
+    if (std::isnan(number)) {
+        return "NaN";
+    }
+    if (number == 0.0) {
+        return "0";
+    }
+    if (std::isinf(number)) {
+        return (number > 0) ? "Infinity" : "-Infinity";
+    }
 
+    std::string str;
     if (Helpers::IsInteger<int32_t>(number)) {
         str = std::to_string(static_cast<int32_t>(number));
     } else {
-        str = std::to_string(number);
+        str = DoubleToString(number);
     }
 
     return str;
@@ -332,7 +457,7 @@ std::vector<const ir::Identifier *> Helpers::CollectBindingNames(const ir::AstNo
     return bindings;
 }
 
-util::StringView Helpers::FunctionName(const ir::ScriptFunction *func)
+util::StringView Helpers::FunctionName(ArenaAllocator *allocator, const ir::ScriptFunction *func)
 {
     if (func->Id()) {
         return func->Id()->Name();
@@ -395,7 +520,7 @@ util::StringView Helpers::FunctionName(const ir::ScriptFunction *func)
 
             if (prop->Kind() != ir::PropertyKind::PROTO &&
                 Helpers::IsConstantPropertyKey(prop->Key(), prop->IsComputed())) {
-                return Helpers::LiteralToPropName(prop->Key());
+                return Helpers::LiteralToPropName(allocator, prop->Key());
             }
 
             break;
