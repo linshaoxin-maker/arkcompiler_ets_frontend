@@ -1,0 +1,12 @@
+description: #描述测试用例的测试内容，观点，一般是原文中对语法特性的描述"
+options:  #对应tsc的compiler option
+  strict: #true/false 是否采用strict模式，未设置时采用框架统一设定
+  target: 
+  lib: 
+module: ESNext #支持ESNext模块
+isCurrent: true #有些情况不支持默认的--outFile编译选项，这个时候设置isCurrent为true可以去掉--outFile
+error: #异常系的声明
+  code: #compiler异常时的错误code
+  message: #compiler异常时错误消息(目前未使用)
+  type: #对应es2abc场景时的ERRORType
+  phase: #异常出现的阶段 compiler/runtime 默认runtime
