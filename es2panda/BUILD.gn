@@ -376,6 +376,7 @@ action_foreach("gen_isa_headers") {
 }
 
 ohos_static_library("es2panda_lib") {
+  stack_protector_ret = false
   sources = es2panda_src
   use_exceptions = true
   if (is_mac && current_cpu == "arm64") {
