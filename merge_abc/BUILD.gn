@@ -138,6 +138,7 @@ config("proto_file_cpp_config") {
 }
 
 ohos_source_set("assembly_proto_static") {
+  stack_protector_ret = false
   cflags = [ "-Wno-error=zero-length-array" ]
 
   deps = [
@@ -156,6 +157,7 @@ ohos_source_set("assembly_proto_static") {
 }
 
 ohos_static_library("panda_assembly_proto_static") {
+  stack_protector_ret = false
   deps = [ ":assembly_proto_static" ]
 }
 

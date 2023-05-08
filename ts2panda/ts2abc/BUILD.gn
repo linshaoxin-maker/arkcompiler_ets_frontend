@@ -63,6 +63,7 @@ source_set("jsoncpp_set_static") {
 }
 
 ohos_static_library("jsoncpp_static") {
+  stack_protector_ret = false
   deps = [ ":jsoncpp_set_static" ]
   use_exceptions = true
   part_name = "ets_frontend"
