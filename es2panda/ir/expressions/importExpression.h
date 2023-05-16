@@ -31,7 +31,8 @@ namespace panda::es2panda::ir {
 
 class ImportExpression : public Expression {
 public:
-    explicit ImportExpression(Expression *source) : Expression(AstNodeType::IMPORT_EXPRESSION), source_(source) {}
+    explicit ImportExpression(Expression *source, Expression *canUnload) :
+        Expression(AstNodeType::IMPORT_EXPRESSION), source_(source), canUnload_(canUnload) {}
 
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;
@@ -41,6 +42,7 @@ public:
 
 private:
     Expression *source_;
+    Expression *canUnload_;
 };
 
 }  // namespace panda::es2panda::ir

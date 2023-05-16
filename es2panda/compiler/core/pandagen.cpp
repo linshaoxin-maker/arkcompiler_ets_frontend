@@ -1713,6 +1713,11 @@ void PandaGen::DynamicImportCall(const ir::AstNode *node)
     ra_.Emit<Dynamicimport>(node);
 }
 
+void PandaGen::UnloadableDynamicImportCall(const ir::AstNode *node, VReg canUnload)
+{
+    ra_.Emit<Unloadabledynamicimport>(node, canUnload);
+}
+
 void PandaGen::StSuperByName(const ir::AstNode *node, VReg obj, const util::StringView &key)
 {
     ra_.Emit<Stsuperbyname>(node, 0, key, obj);

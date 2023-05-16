@@ -2296,17 +2296,26 @@ ir::Expression *ParserImpl::ParseImportExpression()
     }
 
     ir::Expression *source = ParseExpression();
+    ir::Expression *canUnload = nullptr;
 
+    // optional module-unloading parameter or import assertions
     if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA) {
-        ThrowSyntaxError(
-            "Dynamic imports can only accept a module specifier, optional assertion is not supported yet.");
+        lexer_->NextToken(); // eat comma
+
+        // import assertion
+        if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
+            ThrowSyntaxError(
+                "Dynamic imports can only accept a module specifier, optional assertion is not supported yet.");
+        }
+
+        canUnload = ParseExpression();
     }
 
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
         ThrowSyntaxError("Unexpected token");
     }
 
-    auto *importExpression = AllocNode<ir::ImportExpression>(source);
+    auto *importExpression = AllocNode<ir::ImportExpression>(source, canUnload);
     importExpression->SetRange({startLoc, lexer_->GetToken().End()});
 
     lexer_->NextToken();  // eat right paren
