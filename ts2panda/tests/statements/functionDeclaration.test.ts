@@ -124,14 +124,14 @@ describe("FunctionDeclarationTest", function () {
         let endLabel = new Label();
 
         IRNode.pg = new PandaGen("", creatAstFromSnippet(``), 0, undefined);
-        let expected_main = [
+        let expectedMain = [
             new Definefunc(new Imm(0), "UnitTest.test", new Imm(1)),
             new Stglobalvar(new Imm(1), "test"),
             new Returnundefined()
         ];
 
         IRNode.pg = new PandaGen("", creatAstFromSnippet(``), 0, undefined);
-        let expected_func = [
+        let expectedFunc = [
             // func_test_0
             new Lda(new VReg()),
             new Stricteq(new Imm(0), undefinedVReg),
@@ -145,10 +145,10 @@ describe("FunctionDeclarationTest", function () {
         compilerunit.forEach(element => {
             if (element.internalName == "UnitTest.func_main_0") {
                 let insns = element.getInsns();
-                expect(checkInstructions(insns, expected_main)).to.be.true;
+                expect(checkInstructions(insns, expectedMain)).to.be.true;
             } else if (element.internalName == "UnitTest.test") {
                 let insns = element.getInsns();
-                expect(checkInstructions(insns, expected_func)).to.be.true;
+                expect(checkInstructions(insns, expectedFunc)).to.be.true;
                 let parameterLength = element.getParameterLength();
                 expect(parameterLength == 1).to.be.true;
             }
@@ -162,7 +162,7 @@ describe("FunctionDeclarationTest", function () {
         IRNode.pg = new PandaGen("", creatAstFromSnippet(``), 0, undefined);
         let idx = new Imm(1);
         let lastParam = new VReg();
-        let expected_func = [
+        let expectedFunc = [
             // func_test_0
             new Copyrestargs(idx),
             new Sta(lastParam),
@@ -172,6 +172,6 @@ describe("FunctionDeclarationTest", function () {
         let functionPg = snippetCompiler.getPandaGenByName("UnitTest.test");
         let insns = functionPg!.getInsns();
 
-        expect(checkInstructions(insns, expected_func)).to.be.true;
+        expect(checkInstructions(insns, expectedFunc)).to.be.true;
     });
 });

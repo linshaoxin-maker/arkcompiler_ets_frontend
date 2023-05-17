@@ -154,8 +154,8 @@ export class TypeChecker {
         if (TypeRecorder.getInstance().inNampespaceMap(localName)) {
             let redirectPath = TypeRecorder.getInstance().getPathForNamespace(localName)!;
             let externalType = new ExternalType(externalName, redirectPath);
-            let ImportTypeIndex = externalType.shiftedTypeIndex;
-            return ImportTypeIndex;
+            let importTypeIndex = externalType.shiftedTypeIndex;
+            return importTypeIndex;
         }
         return PrimitiveType.ANY;
     }
@@ -183,9 +183,9 @@ export class TypeChecker {
                 return this.getTypeForClassDeclOrExp(typeDeclNode, getTypeForInstace);
             case ts.SyntaxKind.ImportSpecifier:
             case ts.SyntaxKind.ImportClause:
-                let ImportTypeIndex = TypeRecorder.getInstance().tryGetTypeIndex(typeDeclNode);
-                if (ImportTypeIndex != PrimitiveType.ANY) {
-                    return ImportTypeIndex;
+                let importTypeIndex = TypeRecorder.getInstance().tryGetTypeIndex(typeDeclNode);
+                if (importTypeIndex != PrimitiveType.ANY) {
+                    return importTypeIndex;
                 }
                 return PrimitiveType.ANY;
             case ts.SyntaxKind.PropertyAccessExpression:

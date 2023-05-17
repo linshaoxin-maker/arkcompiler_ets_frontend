@@ -154,7 +154,7 @@ export class Compiler {
         }
 
         // spare v3 to save the currrent lexcial env
-        getVregisterCache(this.pandaGen, CacheList.LexEnv);
+        getVregisterCache(this.pandaGen, CacheList.LEXENV);
 
         this.pandaGen.loadAccFromArgs(this.rootNode);
     }
@@ -192,9 +192,9 @@ export class Compiler {
             let funcName = jshelpers.getTextOfIdentifierOrLiteral((<ts.FunctionLikeDeclaration>rootNode).name);
             let v = functionScope.find(funcName);
             if (v.scope == functionScope) {
-                this.pandaGen.loadAccumulator(NodeKind.FirstNodeOfFunction,
+                this.pandaGen.loadAccumulator(NodeKind.FIRST_NODE_OF_FUNCTION,
                                               getVregisterCache(this.pandaGen, CacheList.FUNC));
-                this.pandaGen.storeAccToLexEnv(NodeKind.FirstNodeOfFunction, v.scope, v.level, v.v, true);
+                this.pandaGen.storeAccToLexEnv(NodeKind.FIRST_NODE_OF_FUNCTION, v.scope, v.level, v.v, true);
             }
         }
     }
@@ -252,7 +252,7 @@ export class Compiler {
             return ;
         }
         // exit GlobalScopefunction or Function Block return
-        this.funcBuilder.implicitReturn(NodeKind.Invalid);
+        this.funcBuilder.implicitReturn(NodeKind.INVALID);
     }
 
     private compileFunctionBody(kind: number, body: ts.ConciseBody): void {
@@ -270,12 +270,12 @@ export class Compiler {
 
             if (this.funcBuilder instanceof AsyncFunctionBuilder || this.funcBuilder instanceof AsyncGeneratorFunctionBuilder) {
                 this.funcBuilder.resolve(body, retValue);
-                pandaGen.return(NodeKind.Invalid);
+                pandaGen.return(NodeKind.INVALID);
             } else {
                 pandaGen.loadAccumulator(body, retValue);
             }
             pandaGen.freeTemps(retValue);
-            pandaGen.return(NodeKind.Invalid);
+            pandaGen.return(NodeKind.INVALID);
         } else {
             throw new Error("Node " + this.getNodeName(body) + " is unimplemented as a function body");
         }
@@ -314,7 +314,7 @@ export class Compiler {
                 pandaGen.condition(
                     decl,
                     ts.SyntaxKind.EqualsEqualsEqualsToken,
-                    getVregisterCache(pandaGen, CacheList.undefined),
+                    getVregisterCache(pandaGen, CacheList.UNDEFINED),
                     endLabel);
                 this.compileExpression(param.initializer);
                 pandaGen.storeAccumulator(param, paramReg);
@@ -492,7 +492,7 @@ export class Compiler {
 
             if ((astutils.getVarDeclarationKind(decl) == VarDeclarationKind.LET)
                 && decl.parent.kind != ts.SyntaxKind.CatchClause) {
-                this.pandaGen.loadAccumulator(decl, getVregisterCache(this.pandaGen, CacheList.undefined));
+                this.pandaGen.loadAccumulator(decl, getVregisterCache(this.pandaGen, CacheList.UNDEFINED));
             }
         }
         lref.setValue();
@@ -817,7 +817,7 @@ export class Compiler {
                 compileCallExpression(<ts.CallExpression>expr, this);
                 break;
             case ts.SyntaxKind.NullKeyword: // line 135
-                this.pandaGen.loadAccumulator(expr, getVregisterCache(this.pandaGen, CacheList.Null));
+                this.pandaGen.loadAccumulator(expr, getVregisterCache(this.pandaGen, CacheList.NULL));
                 break;
             case ts.SyntaxKind.ThisKeyword: // line 139
                 this.compileThisKeyword(expr);
@@ -921,24 +921,24 @@ export class Compiler {
         switch (name) {
             // Those identifier are Built-In value properties
             case "NaN":
-                pandaGen.loadAccumulator(id, getVregisterCache(this.pandaGen, CacheList.NaN));
+                pandaGen.loadAccumulator(id, getVregisterCache(this.pandaGen, CacheList.NAN));
                 return;
             case "Infinity":
-                pandaGen.loadAccumulator(id, getVregisterCache(this.pandaGen, CacheList.Infinity));
+                pandaGen.loadAccumulator(id, getVregisterCache(this.pandaGen, CacheList.INFINITY));
                 return;
             case "globalThis":
-                pandaGen.loadAccumulator(id, getVregisterCache(this.pandaGen, CacheList.Global));
+                pandaGen.loadAccumulator(id, getVregisterCache(this.pandaGen, CacheList.GLOBAL));
                 return;
             case "undefined":
-                pandaGen.loadAccumulator(id, getVregisterCache(this.pandaGen, CacheList.undefined));
+                pandaGen.loadAccumulator(id, getVregisterCache(this.pandaGen, CacheList.UNDEFINED));
                 return;
             default: {
                 // typeof an undeclared variable will return undefined instead of throwing reference error
                 let parent = findOuterNodeOfParenthesis(id);
                 if ((parent.kind == ts.SyntaxKind.TypeOfExpression)) {
                     CmdOptions.isWatchEvaluateExpressionMode() ?
-                        pandaGen.loadByNameViaDebugger(id, name, CacheList.False) :
-                        pandaGen.loadObjProperty(id, getVregisterCache(pandaGen, CacheList.Global), name);
+                        pandaGen.loadByNameViaDebugger(id, name, CacheList.FALSE) :
+                        pandaGen.loadObjProperty(id, getVregisterCache(pandaGen, CacheList.GLOBAL), name);
                 } else {
                     pandaGen.tryLoadGlobalByName(id, name);
                 }
@@ -949,9 +949,9 @@ export class Compiler {
 
     private compileBooleanLiteral(lit: ts.BooleanLiteral) {
         if (lit.kind == ts.SyntaxKind.TrueKeyword) {
-            this.pandaGen.loadAccumulator(lit, getVregisterCache(this.pandaGen, CacheList.True));
+            this.pandaGen.loadAccumulator(lit, getVregisterCache(this.pandaGen, CacheList.TRUE));
         } else {
-            this.pandaGen.loadAccumulator(lit, getVregisterCache(this.pandaGen, CacheList.False));
+            this.pandaGen.loadAccumulator(lit, getVregisterCache(this.pandaGen, CacheList.FALSE));
         }
     }
 
@@ -968,7 +968,7 @@ export class Compiler {
                     if (arg.text.match(/ *return +this[;]? *$/) == null) {
                         return false;
                     } else {
-                        this.pandaGen.loadAccumulator(expr, getVregisterCache(this.pandaGen, CacheList.Global))
+                        this.pandaGen.loadAccumulator(expr, getVregisterCache(this.pandaGen, CacheList.GLOBAL))
                         return true;
                     }
                 }
@@ -990,7 +990,7 @@ export class Compiler {
 
         if (v instanceof LocalVariable) {
             if (CmdOptions.isWatchEvaluateExpressionMode()) {
-                pandaGen.loadByNameViaDebugger(node, MandatoryThis, CacheList.True);
+                pandaGen.loadByNameViaDebugger(node, MandatoryThis, CacheList.TRUE);
                 return;
             }
 
@@ -1020,13 +1020,13 @@ export class Compiler {
                 if (!v || ((scope instanceof GlobalScope) && (v instanceof GlobalVariable))) {
                     // If the variable doesn't exist or if it is global, we must generate
                     // a delete global property instruction.
-                    objReg = getVregisterCache(pandaGen, CacheList.Global);
+                    objReg = getVregisterCache(pandaGen, CacheList.GLOBAL);
                     pandaGen.loadAccumulatorString(unaryExpr, name);
                     pandaGen.deleteObjProperty(expr, objReg);
                 } else {
                     // Otherwise it is a local variable which can't be deleted and we just
                     // return false.
-                    pandaGen.loadAccumulator(unaryExpr, getVregisterCache(pandaGen, CacheList.False));
+                    pandaGen.loadAccumulator(unaryExpr, getVregisterCache(pandaGen, CacheList.FALSE));
                 }
                 break;
             }
@@ -1062,7 +1062,7 @@ export class Compiler {
                 // compile the delete operand.
                 this.compileExpression(unaryExpr);
                 // Deleting any value or a result of an expression returns True.
-                pandaGen.loadAccumulator(expr, getVregisterCache(pandaGen, CacheList.True));
+                pandaGen.loadAccumulator(expr, getVregisterCache(pandaGen, CacheList.TRUE));
             }
         }
     }
@@ -1078,7 +1078,7 @@ export class Compiler {
         // compileExpression() must be called even though its value is not used
         // because it may have observable sideeffects.
         this.compileExpression(expr.expression);
-        pandaGen.loadAccumulator(expr, getVregisterCache(pandaGen, CacheList.undefined));
+        pandaGen.loadAccumulator(expr, getVregisterCache(pandaGen, CacheList.UNDEFINED));
     }
 
     private compileAwaitExpression(expr: ts.AwaitExpression) {
@@ -1092,7 +1092,7 @@ export class Compiler {
             this.compileExpression(expr.expression);
             this.funcBuilder.await(expr);
         } else {
-            pandaGen.loadAccumulator(expr, getVregisterCache(pandaGen, CacheList.undefined));
+            pandaGen.loadAccumulator(expr, getVregisterCache(pandaGen, CacheList.UNDEFINED));
             this.funcBuilder.await(expr);
         }
     }
@@ -1200,10 +1200,10 @@ export class Compiler {
                 this.compileExpression(expr.left);
                 pandaGen.storeAccumulator(expr, lhs);
                 // equality comparasion between lhs and null, if true, load right
-                pandaGen.condition(expr, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.Null), leftNullishLabel);
+                pandaGen.condition(expr, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.NULL), leftNullishLabel);
                 // equality comparasion between lhs and undefined, if true, load right
                 pandaGen.loadAccumulator(expr.left, lhs);
-                pandaGen.condition(expr, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.undefined), leftNullishLabel);
+                pandaGen.condition(expr, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.UNDEFINED), leftNullishLabel);
                 // lhs is either null or undefined, load left
                 pandaGen.loadAccumulator(expr, lhs);
                 pandaGen.branch(expr, endLabel);
@@ -1487,8 +1487,8 @@ export class Compiler {
                 let parent = findOuterNodeOfParenthesis(node);
                 if ((parent.kind == ts.SyntaxKind.TypeOfExpression)) {
                     CmdOptions.isWatchEvaluateExpressionMode() ?
-                        this.pandaGen.loadByNameViaDebugger(node, variable.v.getName(), CacheList.False) :
-                        this.pandaGen.loadObjProperty(node, getVregisterCache(this.pandaGen, CacheList.Global),
+                        this.pandaGen.loadByNameViaDebugger(node, variable.v.getName(), CacheList.FALSE) :
+                        this.pandaGen.loadObjProperty(node, getVregisterCache(this.pandaGen, CacheList.GLOBAL),
                         variable.v.getName());
                 } else {
                     this.pandaGen.tryLoadGlobalByName(node, variable.v.getName());

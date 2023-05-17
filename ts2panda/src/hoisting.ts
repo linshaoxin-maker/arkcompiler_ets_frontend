@@ -54,15 +54,15 @@ export function hoistVar(decl: VarDecl, scope: Scope, pandaGen: PandaGen) {
     let name = decl.name;
 
     if (scope instanceof GlobalScope) {
-        pandaGen.loadAccumulator(decl.node, getVregisterCache(pandaGen, CacheList.undefined));
+        pandaGen.loadAccumulator(decl.node, getVregisterCache(pandaGen, CacheList.UNDEFINED));
         pandaGen.storeGlobalVar(decl.node, name);
     } else if (scope instanceof FunctionScope || scope instanceof ModuleScope) {
         let v: ModuleVariable = <ModuleVariable>(scope.findLocal(name)!);
-        pandaGen.loadAccumulator(NodeKind.FirstNodeOfFunction, getVregisterCache(pandaGen, CacheList.undefined));
+        pandaGen.loadAccumulator(NodeKind.FIRST_NODE_OF_FUNCTION, getVregisterCache(pandaGen, CacheList.UNDEFINED));
         if (decl.isModule !== ModuleVarKind.NOT) {
-            pandaGen.storeModuleVariable(NodeKind.FirstNodeOfFunction, v);
+            pandaGen.storeModuleVariable(NodeKind.FIRST_NODE_OF_FUNCTION, v);
         } else {
-            pandaGen.storeAccToLexEnv(NodeKind.FirstNodeOfFunction, scope, 0, v, true);
+            pandaGen.storeAccToLexEnv(NodeKind.FIRST_NODE_OF_FUNCTION, scope, 0, v, true);
         }
     } else {
         throw new Error("Wrong scope to hoist");
@@ -75,15 +75,15 @@ export function hoistFunction(decl: FuncDecl, scope: Scope, pandaGen: PandaGen, 
     let env = compiler.getCurrentEnv();
 
     if (scope instanceof GlobalScope) {
-        pandaGen.defineFunction(NodeKind.FirstNodeOfFunction, <ts.FunctionDeclaration>decl.node, internalName);
-        pandaGen.storeGlobalVar(NodeKind.FirstNodeOfFunction, funcName);
+        pandaGen.defineFunction(NodeKind.FIRST_NODE_OF_FUNCTION, <ts.FunctionDeclaration>decl.node, internalName);
+        pandaGen.storeGlobalVar(NodeKind.FIRST_NODE_OF_FUNCTION, funcName);
     } else if ((scope instanceof FunctionScope) || (scope instanceof LocalScope) || (scope instanceof ModuleScope)) {
         let v: ModuleVariable = <ModuleVariable>(scope.findLocal(funcName)!);
-        pandaGen.defineFunction(NodeKind.FirstNodeOfFunction, <ts.FunctionDeclaration>decl.node, internalName);
+        pandaGen.defineFunction(NodeKind.FIRST_NODE_OF_FUNCTION, <ts.FunctionDeclaration>decl.node, internalName);
         if (decl.isModule !== ModuleVarKind.NOT) {
-            pandaGen.storeModuleVariable(NodeKind.FirstNodeOfFunction, v);
+            pandaGen.storeModuleVariable(NodeKind.FIRST_NODE_OF_FUNCTION, v);
         } else {
-            pandaGen.storeAccToLexEnv(NodeKind.FirstNodeOfFunction, scope, 0, v, true);
+            pandaGen.storeAccToLexEnv(NodeKind.FIRST_NODE_OF_FUNCTION, scope, 0, v, true);
         }
     } else {
         throw new Error("Wrong scope to hoist");

@@ -134,7 +134,7 @@ function compileArrayDestructuring(arr: ts.ArrayBindingOrAssignmentPattern, pand
         pandaGen.condition(
             element,
             ts.SyntaxKind.ExclamationEqualsEqualsToken,
-            getVregisterCache(pandaGen, CacheList.True),
+            getVregisterCache(pandaGen, CacheList.TRUE),
             hasInit ? getDefaultLabel : getUndefinedLabel
         );
 
@@ -145,7 +145,7 @@ function compileArrayDestructuring(arr: ts.ArrayBindingOrAssignmentPattern, pand
             pandaGen.condition(
                 element,
                 ts.SyntaxKind.ExclamationEqualsEqualsToken,
-                getVregisterCache(pandaGen, CacheList.undefined),
+                getVregisterCache(pandaGen, CacheList.UNDEFINED),
                 getDefaultLabel
             )
 
@@ -161,7 +161,7 @@ function compileArrayDestructuring(arr: ts.ArrayBindingOrAssignmentPattern, pand
         }
 
         pandaGen.label(element, getUndefinedLabel);
-        pandaGen.loadAccumulator(element, getVregisterCache(pandaGen, CacheList.undefined));
+        pandaGen.loadAccumulator(element, getVregisterCache(pandaGen, CacheList.UNDEFINED));
 
         pandaGen.label(element, storeLabel);
         lRef.setValue();
@@ -173,7 +173,7 @@ function compileArrayDestructuring(arr: ts.ArrayBindingOrAssignmentPattern, pand
     pandaGen.condition(
         arr,
         ts.SyntaxKind.EqualsEqualsEqualsToken,
-        getVregisterCache(pandaGen, CacheList.True),
+        getVregisterCache(pandaGen, CacheList.TRUE),
         normalClose
     );
 
@@ -223,7 +223,7 @@ function emitRestElement(restElement: ts.BindingName | ts.Expression, iterator: 
     pandaGen.condition(
         restElement,
         ts.SyntaxKind.ExclamationEqualsEqualsToken,
-        getVregisterCache(pandaGen, CacheList.True),
+        getVregisterCache(pandaGen, CacheList.TRUE),
         doneLabel
     );
 
@@ -263,9 +263,9 @@ function compileObjectDestructuring(obj: ts.ObjectBindingOrAssignmentPattern, pa
         let nullLish: Label = new Label();
 
         pandaGen.loadAccumulator(obj, value);
-        pandaGen.condition(obj, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.Null), nullLish);
+        pandaGen.condition(obj, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.NULL), nullLish);
         pandaGen.loadAccumulator(obj, value);
-        pandaGen.condition(obj, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.undefined), nullLish);
+        pandaGen.condition(obj, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.UNDEFINED), nullLish);
         pandaGen.branch(obj, notNullish);
 
         // value == null or undefined, throw error
@@ -367,7 +367,7 @@ function compileObjectDestructuring(obj: ts.ObjectBindingOrAssignmentPattern, pa
             pandaGen.condition(
                 element,
                 ts.SyntaxKind.ExclamationEqualsEqualsToken,
-                getVregisterCache(pandaGen, CacheList.undefined),
+                getVregisterCache(pandaGen, CacheList.UNDEFINED),
                 getDefaultLabel
             );
 
@@ -396,7 +396,7 @@ function emitRestProperty(restProperty: ts.BindingElement | ts.SpreadAssignment,
     let lRef = LReference.generateLReference(compiler, target, true);
 
     if (excludedProp.length == 0) {
-        excludedProp = [getVregisterCache(pandaGen, CacheList.undefined)];
+        excludedProp = [getVregisterCache(pandaGen, CacheList.UNDEFINED)];
     }
 
     // Create a Object with the information of excluded properties

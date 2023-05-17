@@ -76,7 +76,7 @@ export function compileClassDeclaration(compiler: Compiler, stmt: ts.ClassLikeDe
     for (; propertyIndex < properties.length; propertyIndex++) {
         let prop = properties[propertyIndex];
         let tmpVreg = pandaGen.getTemp();
-        if (prop.getKind() == PropertyKind.Constant) {
+        if (prop.getKind() == PropertyKind.CONSTANT) {
             staticItemsNum++;
             let nameLiteral = new Literal(LiteralTag.STRING, String(prop.getName()));
             classBuffer.addLiterals(nameLiteral);
@@ -85,7 +85,7 @@ export function compileClassDeclaration(compiler: Compiler, stmt: ts.ClassLikeDe
             prop.setCompiled();
         }
 
-        if (prop.getKind() == PropertyKind.Variable) {
+        if (prop.getKind() == PropertyKind.VARIABLE) {
             if (prop.getValue().kind != ts.SyntaxKind.Constructor) {
                 if (jshelpers.hasStaticModifier(prop.getValue())) {
                     staticItemsNum++;
@@ -110,7 +110,7 @@ export function compileClassDeclaration(compiler: Compiler, stmt: ts.ClassLikeDe
         }
 
         pandaGen.freeTemps(tmpVreg);
-        if (prop.getKind() == PropertyKind.Computed || prop.getKind() == PropertyKind.Accessor) {
+        if (prop.getKind() == PropertyKind.COMPUTED || prop.getKind() == PropertyKind.ACCESSOR) {
             break;
         }
     }
@@ -217,20 +217,20 @@ function compileUnCompiledProperty(compiler: Compiler, properties: Property[], c
         }
 
         switch (prop.getKind()) {
-            case PropertyKind.Constant:
+            case PropertyKind.CONSTANT:
                 compiler.compileExpression(<ts.Expression>prop.getValue());
                 pandaGen.storeOwnProperty(prop.getValue().parent, classReg, <string | number>prop.getName());
                 break;
-            case PropertyKind.Variable:
+            case PropertyKind.VARIABLE:
                 compileUnCompiledVariable(compiler, prop, classReg);
                 break;
-            case PropertyKind.Computed:
+            case PropertyKind.COMPUTED:
                 let keyReg = pandaGen.getTemp();
                 compiler.compileExpression((<ts.ComputedPropertyName>prop.getName()).expression);
                 pandaGen.storeAccumulator(prop.getValue(), keyReg);
                 compileComputedProperty(compiler, prop, classReg, keyReg);
                 break;
-            case PropertyKind.Accessor:
+            case PropertyKind.ACCESSOR:
                 setClassAccessor(pandaGen, compiler, classReg, prop);
                 break;
             default:
@@ -377,7 +377,7 @@ export function compileSuperCall(compiler: Compiler, node: ts.CallExpression, ar
     } else {
         let num = args.length;
         loadCtorObj(node, compiler);
-        pandaGen.superCall(node, num, num ? args : [getVregisterCache(pandaGen, CacheList.undefined)]);
+        pandaGen.superCall(node, num, num ? args : [getVregisterCache(pandaGen, CacheList.UNDEFINED)]);
     }
 
     let tmpReg = pandaGen.getTemp();
@@ -442,7 +442,7 @@ export function defineClassMember(
     properties: Property[],
     namedPropertyMap: Map<string, Property>) {
     let staticFlag = false;
-    if (propKind == PropertyKind.Computed || propKind == PropertyKind.Spread) {
+    if (propKind == PropertyKind.COMPUTED || propKind == PropertyKind.SPREAD) {
         let prop = new Property(propKind, <ts.ComputedPropertyName | undefined>propName);
         prop.setValue(propValue);
         if (jshelpers.hasStaticModifier(propValue)) {
@@ -455,7 +455,7 @@ export function defineClassMember(
         let name_str = propertyKeyAsString(<string | number>propName);
         if (!checkAndUpdateProperty(namedPropertyMap, name_str, propKind, propValue)) {
             let prop = new Property(propKind, propName);
-            if (propKind == PropertyKind.Accessor) {
+            if (propKind == PropertyKind.ACCESSOR) {
                 if (ts.isGetAccessorDeclaration(propValue)) {
                     prop.setGetter(propValue);
                 } else if (ts.isSetAccessorDeclaration(propValue)) {
@@ -549,7 +549,7 @@ function generatePropertyFromExpr(node: ts.ClassLikeDeclaration, classFields: Ar
                 }
 
                 if (ts.isComputedPropertyName(member.name!)) {
-                    if (defineClassMember(member.name, member, PropertyKind.Computed, properties, namedPropertyMap)) {
+                    if (defineClassMember(member.name, member, PropertyKind.COMPUTED, properties, namedPropertyMap)) {
                         staticNum++;
                     }
                 } else {
@@ -557,17 +557,17 @@ function generatePropertyFromExpr(node: ts.ClassLikeDeclaration, classFields: Ar
                     let initializer = (<ts.PropertyDeclaration>member).initializer;
                     if (initializer) {
                         if (isConstantExpr(initializer)) {
-                            if (defineClassMember(memberName, initializer, PropertyKind.Constant, properties, namedPropertyMap)) {
+                            if (defineClassMember(memberName, initializer, PropertyKind.CONSTANT, properties, namedPropertyMap)) {
                                 staticNum++;
                             }
                         } else {
-                            if (defineClassMember(memberName, initializer, PropertyKind.Variable, properties, namedPropertyMap)) {
+                            if (defineClassMember(memberName, initializer, PropertyKind.VARIABLE, properties, namedPropertyMap)) {
                                 staticNum++;
                             }
                         }
                     } else {
                         initializer = ts.createIdentifier("undefined");
-                        if (defineClassMember(memberName, initializer, PropertyKind.Constant, properties, namedPropertyMap)) {
+                        if (defineClassMember(memberName, initializer, PropertyKind.CONSTANT, properties, namedPropertyMap)) {
                             staticNum++;
                         }
                     }
@@ -577,11 +577,11 @@ function generatePropertyFromExpr(node: ts.ClassLikeDeclaration, classFields: Ar
             case ts.SyntaxKind.MethodDeclaration: {
                 let memberName = getPropName(member.name!);
                 if (typeof (memberName) == 'string' || typeof (memberName) == 'number') {
-                    if (defineClassMember(memberName, member, PropertyKind.Variable, properties, namedPropertyMap)) {
+                    if (defineClassMember(memberName, member, PropertyKind.VARIABLE, properties, namedPropertyMap)) {
                         staticNum++;
                     }
                 } else {
-                    if (defineClassMember(memberName, member, PropertyKind.Computed, properties, namedPropertyMap)) {
+                    if (defineClassMember(memberName, member, PropertyKind.COMPUTED, properties, namedPropertyMap)) {
                         staticNum++;
                     }
                 }
@@ -591,11 +591,11 @@ function generatePropertyFromExpr(node: ts.ClassLikeDeclaration, classFields: Ar
             case ts.SyntaxKind.SetAccessor: {
                 let accessorName = getPropName(member.name!);
                 if (typeof (accessorName) == 'string' || typeof (accessorName) == 'number') {
-                    if (defineClassMember(accessorName, member, PropertyKind.Accessor, properties, namedPropertyMap)) {
+                    if (defineClassMember(accessorName, member, PropertyKind.ACCESSOR, properties, namedPropertyMap)) {
                         staticNum++;
                     }
                 } else {
-                    if (defineClassMember(accessorName, member, PropertyKind.Computed, properties, namedPropertyMap)) {
+                    if (defineClassMember(accessorName, member, PropertyKind.COMPUTED, properties, namedPropertyMap)) {
                         staticNum++;
                     }
                 }
@@ -620,7 +620,7 @@ function generatePropertyFromExpr(node: ts.ClassLikeDeclaration, classFields: Ar
     properties.push(...staticItems);
 
     if (constructNode) {
-        defineClassMember("constructor", constructNode, PropertyKind.Variable, properties, namedPropertyMap);
+        defineClassMember("constructor", constructNode, PropertyKind.VARIABLE, properties, namedPropertyMap);
     }
 
     return properties;
@@ -650,7 +650,7 @@ function compileComputedProperty(compiler: Compiler, prop: Property, classReg: V
             let getProtoReg = pandaGen.getTemp();
             let getter = <ts.GetAccessorDeclaration>prop.getValue();
             let getFlag = createClassMethodOrAccessor(compiler, classReg, getProtoReg, accessorReg, getter);
-            pandaGen.defineGetterSetterByValue(getter, getFlag ? getProtoReg : classReg, keyReg, accessorReg, getVregisterCache(pandaGen, CacheList.undefined), true);
+            pandaGen.defineGetterSetterByValue(getter, getFlag ? getProtoReg : classReg, keyReg, accessorReg, getVregisterCache(pandaGen, CacheList.UNDEFINED), true);
             pandaGen.freeTemps(accessorReg, getProtoReg);
             break;
         }
@@ -659,7 +659,7 @@ function compileComputedProperty(compiler: Compiler, prop: Property, classReg: V
             let setter = <ts.SetAccessorDeclaration>prop.getValue();
             let setProtoReg = pandaGen.getTemp();
             let setFlag = createClassMethodOrAccessor(compiler, classReg, setProtoReg, accesReg, setter);
-            pandaGen.defineGetterSetterByValue(setter, setFlag ? setProtoReg : classReg, keyReg, getVregisterCache(pandaGen, CacheList.undefined), accesReg, true);
+            pandaGen.defineGetterSetterByValue(setter, setFlag ? setProtoReg : classReg, keyReg, getVregisterCache(pandaGen, CacheList.UNDEFINED), accesReg, true);
             pandaGen.freeTemps(accesReg, setProtoReg);
             break;
         }
@@ -696,9 +696,9 @@ function setClassAccessor(pandaGen: PandaGen, compiler: Compiler, objReg: VReg, 
     if (prop.getGetter() !== undefined && prop.getSetter() !== undefined) {
         pandaGen.defineGetterSetterByValue(accessor!, flag ? tmpVreg : objReg, propReg, getterReg, setterReg, false);
     } else if (ts.isGetAccessorDeclaration(accessor!)) {
-        pandaGen.defineGetterSetterByValue(accessor, flag ? tmpVreg : objReg, propReg, getterReg, getVregisterCache(pandaGen, CacheList.undefined), false);
+        pandaGen.defineGetterSetterByValue(accessor, flag ? tmpVreg : objReg, propReg, getterReg, getVregisterCache(pandaGen, CacheList.UNDEFINED), false);
     } else {
-        pandaGen.defineGetterSetterByValue(accessor!, flag ? tmpVreg : objReg, propReg, getVregisterCache(pandaGen, CacheList.undefined), setterReg, false);
+        pandaGen.defineGetterSetterByValue(accessor!, flag ? tmpVreg : objReg, propReg, getVregisterCache(pandaGen, CacheList.UNDEFINED), setterReg, false);
     }
 
     pandaGen.freeTemps(getterReg, setterReg, propReg, tmpVreg);
@@ -754,7 +754,7 @@ export function setPrototypeAttributes(compiler: Compiler, node: ts.Node, classR
 function checkAndUpdateProperty(namedPropertyMap: Map<string, Property>, name: string, propKind: PropertyKind, valueNode: ts.Node): boolean {
     if (namedPropertyMap.has(name)) {
         let prop = namedPropertyMap.get(name);
-        if (propKind == PropertyKind.Accessor) {
+        if (propKind == PropertyKind.ACCESSOR) {
             if (ts.isGetAccessorDeclaration(valueNode)) {
                 if (!scalarArrayEquals(prop!.getGetter(), valueNode)) {
                     return false;

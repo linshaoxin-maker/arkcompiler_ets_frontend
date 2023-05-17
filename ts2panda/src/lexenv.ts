@@ -195,8 +195,8 @@ function checkConstAssignment(pg: PandaGen, v: Variable, expansion: IRNode[], no
         expansion.push(throwConstAssignment(nameReg));
     }
 
-    if (v.isClass() && node != NodeKind.FirstNodeOfFunction &&
-        node != NodeKind.Invalid && node != NodeKind.Normal) {
+    if (v.isClass() && node != NodeKind.FIRST_NODE_OF_FUNCTION &&
+        node != NodeKind.INVALID && node != NodeKind.NORMAL) {
         let className = v.getName();
         while (node) {
             if (ts.isClassLike(node) && node.name &&

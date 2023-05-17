@@ -18,12 +18,12 @@ import { isValidIndex } from "../expression/memberAccessExpression";
 import * as jshelpers from "../jshelpers";
 
 export enum PropertyKind {
-    Variable,
-    Constant,
-    Computed, // Property with computed value (execution time).
-    Prototype,
-    Accessor,
-    Spread
+    VARIABLE,
+    CONSTANT,
+    COMPUTED, // Property with computed value (execution time).
+    PROTOTYPE,
+    ACCESSOR,
+    SPREAD
 }
 
 export class Property {
@@ -70,7 +70,7 @@ export class Property {
     }
 
     getValue() {
-        if (this.propKind == PropertyKind.Accessor) {
+        if (this.propKind == PropertyKind.ACCESSOR) {
             throw new Error("Accessor doesn't have valueNode")
         }
         return this.valueNode!;
@@ -91,19 +91,19 @@ export class Property {
     }
 
     setGetter(getter: ts.GetAccessorDeclaration) {
-        if (this.propKind != PropertyKind.Accessor) {
+        if (this.propKind != PropertyKind.ACCESSOR) {
             this.valueNode = undefined;
             this.setterNode = undefined;
-            this.propKind = PropertyKind.Accessor;
+            this.propKind = PropertyKind.ACCESSOR;
         }
         this.getterNode = getter;
     }
 
     setSetter(setter: ts.SetAccessorDeclaration) {
-        if (this.propKind != PropertyKind.Accessor) {
+        if (this.propKind != PropertyKind.ACCESSOR) {
             this.valueNode = undefined;
             this.getterNode = undefined;
-            this.propKind = PropertyKind.Accessor;
+            this.propKind = PropertyKind.ACCESSOR;
         }
         this.setterNode = setter;
     }
@@ -123,14 +123,14 @@ export function generatePropertyFromExpr(expr: ts.ObjectLiteralExpression): Prop
         switch (property.kind) {
             case ts.SyntaxKind.PropertyAssignment: {
                 if (property.name.kind == ts.SyntaxKind.ComputedPropertyName) {
-                    defineProperty(property.name, property, PropertyKind.Computed, properties, namedPropertyMap);
+                    defineProperty(property.name, property, PropertyKind.COMPUTED, properties, namedPropertyMap);
                     break;
                 }
 
                 let propName: number | string = <number | string>getPropName(property.name);
                 if (propName == "__proto__") {
                     if (!hasProto) {
-                        defineProperty(propName, property.initializer, PropertyKind.Prototype, properties, namedPropertyMap);
+                        defineProperty(propName, property.initializer, PropertyKind.PROTOTYPE, properties, namedPropertyMap);
                         hasProto = true;
                         break;
                     } else {
@@ -139,28 +139,28 @@ export function generatePropertyFromExpr(expr: ts.ObjectLiteralExpression): Prop
                 }
 
                 if (isConstantExpr(property.initializer)) {
-                    defineProperty(propName, property.initializer, PropertyKind.Constant, properties, namedPropertyMap);
+                    defineProperty(propName, property.initializer, PropertyKind.CONSTANT, properties, namedPropertyMap);
                 } else {
-                    defineProperty(propName, property.initializer, PropertyKind.Variable, properties, namedPropertyMap);
+                    defineProperty(propName, property.initializer, PropertyKind.VARIABLE, properties, namedPropertyMap);
                 }
                 break;
             }
             case ts.SyntaxKind.ShorthandPropertyAssignment: {
                 // ShorthandProperty's name always be Identifier
                 let propName = jshelpers.getTextOfIdentifierOrLiteral(property.name);
-                defineProperty(propName, property.name, PropertyKind.Variable, properties, namedPropertyMap);
+                defineProperty(propName, property.name, PropertyKind.VARIABLE, properties, namedPropertyMap);
                 break;
             }
             case ts.SyntaxKind.SpreadAssignment: {
-                defineProperty(undefined, property.expression, PropertyKind.Spread, properties, namedPropertyMap);
+                defineProperty(undefined, property.expression, PropertyKind.SPREAD, properties, namedPropertyMap);
                 break;
             }
             case ts.SyntaxKind.MethodDeclaration: {
                 let propName = getPropName(property.name);
                 if (typeof (propName) == 'string' || typeof (propName) == 'number') {
-                    defineProperty(propName, property, PropertyKind.Variable, properties, namedPropertyMap);
+                    defineProperty(propName, property, PropertyKind.VARIABLE, properties, namedPropertyMap);
                 } else {
-                    defineProperty(propName, property, PropertyKind.Computed, properties, namedPropertyMap);
+                    defineProperty(propName, property, PropertyKind.COMPUTED, properties, namedPropertyMap);
                 }
                 break;
             }
@@ -168,9 +168,9 @@ export function generatePropertyFromExpr(expr: ts.ObjectLiteralExpression): Prop
             case ts.SyntaxKind.SetAccessor: {
                 let propName = getPropName(property.name);
                 if (typeof (propName) == 'string' || typeof (propName) == 'number') {
-                    defineProperty(propName, property, PropertyKind.Accessor, properties, namedPropertyMap);
+                    defineProperty(propName, property, PropertyKind.ACCESSOR, properties, namedPropertyMap);
                 } else {
-                    defineProperty(propName, property, PropertyKind.Computed, properties, namedPropertyMap);
+                    defineProperty(propName, property, PropertyKind.COMPUTED, properties, namedPropertyMap);
                 }
                 break;
             }
@@ -188,7 +188,7 @@ function defineProperty(
     propKind: PropertyKind,
     properties: Property[],
     namedPropertyMap: Map<string, number>) {
-    if (propKind == PropertyKind.Computed || propKind == PropertyKind.Spread) {
+    if (propKind == PropertyKind.COMPUTED || propKind == PropertyKind.SPREAD) {
         let prop = new Property(propKind, <ts.ComputedPropertyName | undefined>propName);
         prop.setValue(propValue);
         properties.push(prop);
@@ -199,9 +199,9 @@ function defineProperty(
         if (namedPropertyMap.has(name_str)) {
             let prevProp = properties[namedPropertyMap.get(name_str)!];
 
-            if ((prevProp.getKind() == PropertyKind.Accessor || prevProp.getKind() == PropertyKind.Constant)
-                && (propKind == PropertyKind.Accessor || propKind == PropertyKind.Constant)) {
-                if (propKind == PropertyKind.Accessor) {
+            if ((prevProp.getKind() == PropertyKind.ACCESSOR || prevProp.getKind() == PropertyKind.CONSTANT)
+                && (propKind == PropertyKind.ACCESSOR || propKind == PropertyKind.CONSTANT)) {
+                if (propKind == PropertyKind.ACCESSOR) {
                     if (ts.isGetAccessorDeclaration(propValue)) {
                         prevProp!.setGetter(propValue);
                     } else if (ts.isSetAccessorDeclaration(propValue)) {
@@ -209,7 +209,7 @@ function defineProperty(
                     }
                 } else {
                     prevProp!.setValue(propValue);
-                    prevProp!.setKind(PropertyKind.Constant);
+                    prevProp!.setKind(PropertyKind.CONSTANT);
                 }
                 return;
             }
@@ -218,7 +218,7 @@ function defineProperty(
         }
 
         namedPropertyMap.set(name_str, properties.length);
-        if (propKind == PropertyKind.Accessor) {
+        if (propKind == PropertyKind.ACCESSOR) {
             if (ts.isGetAccessorDeclaration(propValue)) {
                 prop.setGetter(propValue);
             } else if (ts.isSetAccessorDeclaration(propValue)) {

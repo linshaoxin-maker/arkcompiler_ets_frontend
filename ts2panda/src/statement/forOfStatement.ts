@@ -83,7 +83,7 @@ export function compileForOfStatement(stmt: ts.ForOfStatement, compiler: Compile
         compiler.popEnv();
     }
 
-    pandaGen.loadAccumulator(stmt, getVregisterCache(pandaGen, CacheList.False));
+    pandaGen.loadAccumulator(stmt, getVregisterCache(pandaGen, CacheList.FALSE));
     pandaGen.storeAccumulator(stmt, doneReg);
 
     let labelTarget = new LabelTarget(stmt, endLabel, nextLabel, needCreateLoopEnv);

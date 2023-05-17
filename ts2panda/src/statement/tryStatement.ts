@@ -281,7 +281,7 @@ export class TryBuilderWithForOf extends TryBuilderBase {
 
         let loopScope = <LoopScope>compiler.getRecorder().getScopeOfNode(stmt);
 
-        pandaGen.loadAccumulator(stmt, getVregisterCache(pandaGen, CacheList.True));
+        pandaGen.loadAccumulator(stmt, getVregisterCache(pandaGen, CacheList.TRUE));
         pandaGen.storeAccumulator(stmt, this.doneReg);
 
         pandaGen.label(stmt, this.labelTarget.getContinueTargetLabel()!);
@@ -297,7 +297,7 @@ export class TryBuilderWithForOf extends TryBuilderBase {
         pandaGen.loadObjProperty(stmt, resultReg, "value");
         pandaGen.storeAccumulator(stmt, resultReg);
 
-        pandaGen.loadAccumulator(stmt, getVregisterCache(pandaGen, CacheList.False));
+        pandaGen.loadAccumulator(stmt, getVregisterCache(pandaGen, CacheList.FALSE));
         pandaGen.storeAccumulator(stmt, this.doneReg);
 
         let lref = LReference.generateLReference(this.compiler, stmt.initializer, isDeclaration);
@@ -321,12 +321,12 @@ export class TryBuilderWithForOf extends TryBuilderBase {
         pandaGen.condition(
             (<ts.ForOfStatement>this.stmt).expression,
             ts.SyntaxKind.ExclamationEqualsEqualsToken,
-            getVregisterCache(pandaGen, CacheList.True),
+            getVregisterCache(pandaGen, CacheList.TRUE),
             noReturn);
         // Iterator Close
         pandaGen.loadObjProperty(this.stmt, this.iterator.getObject(), "return");
         pandaGen.storeAccumulator(this.stmt, this.iterator.getNextMethod());
-        pandaGen.condition(this.stmt, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.undefined), noReturn);
+        pandaGen.condition(this.stmt, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.UNDEFINED), noReturn);
         pandaGen.call(this.stmt, [this.iterator.getNextMethod(), this.iterator.getObject()], true);
         if (this.iterator.getType() == IteratorType.Async) {
             (<AsyncGeneratorFunctionBuilder>(this.compiler.getFuncBuilder())).await(this.stmt);
@@ -345,7 +345,7 @@ export class TryBuilderWithForOf extends TryBuilderBase {
             let innerResult = this.pandaGen.getTemp();
             this.pandaGen.loadObjProperty(this.stmt, this.iterator.getObject(), "return");
             this.pandaGen.storeAccumulator(this.stmt, this.iterator.getNextMethod());
-            this.pandaGen.condition(this.stmt, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(this.pandaGen, CacheList.undefined), noReturn);
+            this.pandaGen.condition(this.stmt, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(this.pandaGen, CacheList.UNDEFINED), noReturn);
             this.pandaGen.call(this.stmt, [this.iterator.getNextMethod(), this.iterator.getObject()], true);
 
             this.pandaGen.storeAccumulator(this.stmt, innerResult);

@@ -41,7 +41,7 @@ function compileReturnInDerivedCtor(stmt: ts.ReturnStatement, returnValue: VReg,
     let need2CheckSuper = pandaGen.getTemp();
 
     if (!expr) {
-        pandaGen.moveVreg(stmt, need2CheckSuper, getVregisterCache(pandaGen, CacheList.True));
+        pandaGen.moveVreg(stmt, need2CheckSuper, getVregisterCache(pandaGen, CacheList.TRUE));
     } else {
         if (ts.isCallExpression(expr) && expr.expression.kind == ts.SyntaxKind.SuperKeyword) {
             compileNormalReturn(stmt, returnValue, compiler);
@@ -50,10 +50,10 @@ function compileReturnInDerivedCtor(stmt: ts.ReturnStatement, returnValue: VReg,
         }
 
         if (expr.kind == ts.SyntaxKind.ThisKeyword) {
-            pandaGen.moveVreg(stmt, need2CheckSuper, getVregisterCache(pandaGen, CacheList.True));
+            pandaGen.moveVreg(stmt, need2CheckSuper, getVregisterCache(pandaGen, CacheList.TRUE));
         } else {
             compiler.compileExpression(expr);
-            pandaGen.binary(stmt, ts.SyntaxKind.EqualsEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.undefined));
+            pandaGen.binary(stmt, ts.SyntaxKind.EqualsEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.UNDEFINED));
             pandaGen.storeAccumulator(stmt, need2CheckSuper);
         }
     }
@@ -61,7 +61,7 @@ function compileReturnInDerivedCtor(stmt: ts.ReturnStatement, returnValue: VReg,
     let compile = new Label();
     let notCompile = new Label();
     pandaGen.loadAccumulator(stmt, need2CheckSuper);
-    pandaGen.condition(stmt, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.False), compile);
+    pandaGen.condition(stmt, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.FALSE), compile);
 
     // load this
     let thisReg = pandaGen.getTemp();
@@ -74,7 +74,7 @@ function compileReturnInDerivedCtor(stmt: ts.ReturnStatement, returnValue: VReg,
     if (expr) {
         compiler.compileExpression(expr);
     } else {
-        pandaGen.loadAccumulator(stmt, getVregisterCache(pandaGen, CacheList.undefined));
+        pandaGen.loadAccumulator(stmt, getVregisterCache(pandaGen, CacheList.UNDEFINED));
     }
 
     pandaGen.label(stmt, notCompile);
@@ -89,7 +89,7 @@ function compileReturnInDerivedCtor(stmt: ts.ReturnStatement, returnValue: VReg,
     let returnLabel = new Label();
     let normalLabel = new Label();
     pandaGen.loadAccumulator(stmt, need2CheckSuper);
-    pandaGen.condition(stmt, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.False), normalLabel);
+    pandaGen.condition(stmt, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.FALSE), normalLabel);
     // check if super has been called
     checkValidUseSuperBeforeSuper(compiler, stmt);
     pandaGen.branch(stmt, returnLabel);
@@ -113,7 +113,7 @@ function compileNormalReturn(stmt: ts.ReturnStatement, returnValue: VReg, compil
         compiler.compileExpression(expr);
     } else {
         empty = true;
-        pandaGen.loadAccumulator(stmt, getVregisterCache(pandaGen, CacheList.undefined));
+        pandaGen.loadAccumulator(stmt, getVregisterCache(pandaGen, CacheList.UNDEFINED));
     }
     pandaGen.storeAccumulator(stmt, returnValue);
 

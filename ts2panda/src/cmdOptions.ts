@@ -281,8 +281,8 @@ export class CmdOptions {
 
     static getVersion(isBcVersion: boolean = true): void {
         let js2abc = path.join(path.resolve(__dirname, '../bin'), "js2abc");
-        let version_arg = isBcVersion ? "--bc-version" : "--bc-min-version"
-        execute(`${js2abc}`, [version_arg]);
+        let versionArg = isBcVersion ? "--bc-version" : "--bc-min-version"
+        execute(`${js2abc}`, [versionArg]);
     }
 
     static isBcMinVersion(): boolean {

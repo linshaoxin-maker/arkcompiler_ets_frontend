@@ -159,8 +159,8 @@ export class TypeRecorder {
         if (moduleStmt.getNameSpace() != "") {
             this.setNamespaceMap(moduleStmt.getNameSpace(), moduleStmt.getModuleRequest());
             let externalType = new ExternalType("*", moduleStmt.getNameSpace());
-            let ImportTypeIndex = externalType.shiftedTypeIndex;
-            this.addUserDefinedTypeSet(ImportTypeIndex);
+            let importTypeIndex = externalType.shiftedTypeIndex;
+            this.addUserDefinedTypeSet(importTypeIndex);
         }
     }
 

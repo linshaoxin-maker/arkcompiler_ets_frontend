@@ -764,16 +764,16 @@ function checkForInStatement(node: ts.ForInStatement) {
 }
 
 const enum OuterExpressionKinds {
-    Parentheses = 1 << 0,
-    TypeAssertions = 1 << 1,
-    NonNullAssertions = 1 << 2,
-    PartiallyEmittedExpressions = 1 << 3,
-    Assertions = TypeAssertions | NonNullAssertions,
-    All = Parentheses | Assertions | PartiallyEmittedExpressions
+    PARENTHESES = 1 << 0,
+    TYPEASSERTIONS = 1 << 1,
+    NON_NULL_ASSERTIONS= 1 << 2,
+    PARTIALLY_EMITTED_EXPRESSIONS = 1 << 3,
+    ASSERTIONS= TYPEASSERTIONS | NON_NULL_ASSERTIONS,
+    ALL = PARENTHESES | ASSERTIONS | PARTIALLY_EMITTED_EXPRESSIONS
 }
 
 function checkReferenceExpression(expr: ts.Expression, invalidReferenceCode: DiagnosticCode, invalidOptionalChainCode: DiagnosticCode) {
-    let node = jshelpers.skipOuterExpressions(expr, OuterExpressionKinds.Assertions | OuterExpressionKinds.Parentheses);
+    let node = jshelpers.skipOuterExpressions(expr, OuterExpressionKinds.ASSERTIONS | OuterExpressionKinds.PARENTHESES);
     if (node.kind !== ts.SyntaxKind.Identifier && node.kind !== ts.SyntaxKind.PropertyAccessExpression && node.kind !== ts.SyntaxKind.ElementAccessExpression) {
         throw new DiagnosticError(expr, invalidReferenceCode);
     }
@@ -952,12 +952,12 @@ function checkComputedPropertyName(node: ts.Node) {
 }
 
 const enum DeclarationMeaning {
-    GetAccessor = 1,
-    SetAccessor = 2,
-    PropertyAssignment = 4,
-    Method = 8,
-    GetOrSetAccessor = GetAccessor | SetAccessor,
-    PropertyAssignmentOrMethod = PropertyAssignment | Method,
+    GET_ACCESSOR = 1,
+    SET_ACCESSOR = 2,
+    PROPERTY_ASSIGNMENT = 4,
+    METHOD= 8,
+    GET_OR_SET_ACCESSOR = GET_ACCESSOR | SET_ACCESSOR,
+    PROPERTY_ASSIGNMENT_OR_METHOD = PROPERTY_ASSIGNMENT | METHOD,
 }
 
 function checkObjectLiteralExpression(node: ts.ObjectLiteralExpression) {
@@ -1010,7 +1010,7 @@ function checkObjectLiteralExpression(node: ts.ObjectLiteralExpression) {
             if (!existKind) {
                 seen.set(effectName, curKind);
             } else {
-                if ((curKind & DeclarationMeaning.PropertyAssignmentOrMethod) && (existKind & DeclarationMeaning.PropertyAssignmentOrMethod)) {
+                if ((curKind & DeclarationMeaning.PROPERTY_ASSIGNMENT_OR_METHOD) && (existKind & DeclarationMeaning.PROPERTY_ASSIGNMENT_OR_METHOD)) {
                     if (effectName === "___proto__") {
                         throw new DiagnosticError(name, DiagnosticCode.Duplicate_identifier_0, file, [jshelpers.getTextOfNode(name)]);
                     }
@@ -1041,14 +1041,14 @@ function getPropertieDeclaration(node: ts.Node, name: ts.Node) {
         checkInvalidExclamationToken(node.exclamationToken);
     } else if (ts.isPropertyAssignment(node)) {
         checkInvalidQuestionMark(node.questionToken);
-        decl = DeclarationMeaning.PropertyAssignment;
+        decl = DeclarationMeaning.PROPERTY_ASSIGNMENT;
     } else if (ts.isMethodDeclaration(node)) {
-        decl = DeclarationMeaning.Method;
+        decl = DeclarationMeaning.METHOD;
     } else if (ts.isGetAccessor(node)) {
         checkGetAccessor(node);
-        decl = DeclarationMeaning.GetAccessor;
+        decl = DeclarationMeaning.GET_ACCESSOR;
     } else if (ts.isSetAccessor(node)) {
-        decl = DeclarationMeaning.SetAccessor;
+        decl = DeclarationMeaning.SET_ACCESSOR;
     } else {
         LOGE("Unexpected syntax kind:" + node.kind);
     }

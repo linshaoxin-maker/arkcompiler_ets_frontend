@@ -34,30 +34,30 @@ import { expandLexEnv } from "./lexEnv";
 
 export enum CacheList {
     MIN,
-    NaN = MIN,
+    NAN = MIN,
     HOLE,
     FUNC, // load function
-    Infinity,
-    undefined,
-    Symbol,
-    Null,
-    Global,
-    LexEnv,
-    True,
-    False,
+    INFINITY,
+    UNDEFINED,
+    SYMBOL,
+    NULL,
+    GLOBAL,
+    LEXENV,
+    TRUE,
+    FALSE,
     MAX
 }
 let cacheExpandHandlers = new Map([
     [CacheList.HOLE, expandHole],
-    [CacheList.NaN, expandNaN],
-    [CacheList.Infinity, expandInfinity],
-    [CacheList.undefined, expandUndefined],
-    [CacheList.Symbol, expandSymbol],
-    [CacheList.Null, expandNull],
-    [CacheList.Global, expandGlobal],
-    [CacheList.LexEnv, expandLexEnv],
-    [CacheList.True, expandTrue],
-    [CacheList.False, expandFalse],
+    [CacheList.NAN, expandNaN],
+    [CacheList.INFINITY, expandInfinity],
+    [CacheList.UNDEFINED, expandUndefined],
+    [CacheList.SYMBOL, expandSymbol],
+    [CacheList.NULL, expandNull],
+    [CacheList.GLOBAL, expandGlobal],
+    [CacheList.LEXENV, expandLexEnv],
+    [CacheList.TRUE, expandTrue],
+    [CacheList.FALSE, expandFalse],
     [CacheList.FUNC, expandFunc],
 ]);
 
