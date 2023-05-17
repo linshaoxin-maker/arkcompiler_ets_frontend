@@ -87,11 +87,11 @@ class RegAllocator {
                 if (vOrigin.num >= (1 << format[j][1])) {
                     let spill = this.getSpill();
                     operands[j] = spill;
-                    if (format[j][0] == OperandKind.SrcVReg) {
+                    if (format[j][0] === OperandKind.SrcVReg) {
                         head.push(new Mov(spill, vOrigin));
-                    } else if (format[j][0] == OperandKind.DstVReg) {
+                    } else if (format[j][0] === OperandKind.DstVReg) {
                         tail.push(new Mov(vOrigin, spill))
-                    } else if (format[j][0] == OperandKind.SrcDstVReg) {
+                    } else if (format[j][0] === OperandKind.SrcDstVReg) {
                         head.push(new Mov(spill, vOrigin));
                         tail.push(new Mov(vOrigin, spill))
                     } else {
@@ -135,7 +135,7 @@ class RegAllocator {
         }
 
         /* If the parameters are consecutive, no adjustment is required. */
-        if (i == (irNodes[index]).operands.length) {
+        if (i === (irNodes[index]).operands.length) {
             return true;
         }
 

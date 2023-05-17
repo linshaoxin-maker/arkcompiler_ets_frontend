@@ -328,7 +328,7 @@ export class TryBuilderWithForOf extends TryBuilderBase {
         pandaGen.storeAccumulator(this.stmt, this.iterator.getNextMethod());
         pandaGen.condition(this.stmt, ts.SyntaxKind.ExclamationEqualsEqualsToken, getVregisterCache(pandaGen, CacheList.undefined), noReturn);
         pandaGen.call(this.stmt, [this.iterator.getNextMethod(), this.iterator.getObject()], true);
-        if (this.iterator.getType() == IteratorType.Async) {
+        if (this.iterator.getType() === IteratorType.Async) {
             (<AsyncGeneratorFunctionBuilder>(this.compiler.getFuncBuilder())).await(this.stmt);
         }
 
@@ -340,7 +340,7 @@ export class TryBuilderWithForOf extends TryBuilderBase {
     }
 
     compileFinalizer(cfc: ControlFlowChange, continueTargetLabel: Label) {
-        if (cfc == ControlFlowChange.Break || continueTargetLabel != this.labelTarget.getContinueTargetLabel()) {
+        if (cfc === ControlFlowChange.Break || continueTargetLabel != this.labelTarget.getContinueTargetLabel()) {
             let noReturn = new Label();
             let innerResult = this.pandaGen.getTemp();
             this.pandaGen.loadObjProperty(this.stmt, this.iterator.getObject(), "return");
@@ -358,7 +358,7 @@ export class TryBuilderWithForOf extends TryBuilderBase {
 
     private compileIteratorNext(stmt: ts.ForOfStatement, pandagen: PandaGen, iterator: IteratorRecord, resultObj: VReg) {
         pandagen.call(stmt, [iterator.getNextMethod(), iterator.getObject()], true);
-        if (iterator.getType() == IteratorType.Async) {
+        if (iterator.getType() === IteratorType.Async) {
             (<AsyncGeneratorFunctionBuilder>(this.compiler.getFuncBuilder())).await(this.stmt);
         }
         pandagen.storeAccumulator(stmt, resultObj);

@@ -75,7 +75,7 @@ export function checkDuplicateDeclaration(recorder: Recorder) {
         }
 
         // implement catchParameter-related duplicate-entry check
-        if ((node.kind == ts.SyntaxKind.Block) && (node.parent != undefined && node.parent.kind == ts.SyntaxKind.CatchClause)) {
+        if ((node.kind === ts.SyntaxKind.Block) && (node.parent != undefined && node.parent.kind === ts.SyntaxKind.CatchClause)) {
             let catchScope = <Scope>scopeMap.get(node.parent);
             checkDuplicateInCatch(scope, catchScope);
         }
@@ -126,7 +126,7 @@ function hasDuplicateExportedFuncDecl(decl: FuncDecl, exportFuncMap: Map<string,
     if (!exportFuncMap.has(decl.name)) {
         exportFuncMap.set(decl.name, hasExportKeywordModifier(decl.node));
     } else {
-        if (exportFuncMap.get(decl.name) == true || hasExportKeywordModifier(decl.node)) {
+        if (exportFuncMap.get(decl.name) === true || hasExportKeywordModifier(decl.node)) {
             throw new DiagnosticError(decl.node, DiagnosticCode.Duplicate_identifier_0, jshelpers.getSourceFileOfNode(decl.node), [decl.name]);
         }
     }
@@ -134,7 +134,7 @@ function hasDuplicateExportedFuncDecl(decl: FuncDecl, exportFuncMap: Map<string,
 
 function hasDuplicateEntryAcrossScope(decl1: Decl, decl2: Decl) {
     if ((decl2 instanceof LetDecl) || (decl2 instanceof ConstDecl)) {
-        return decl1.name == decl2.name;
+        return decl1.name === decl2.name;
     }
 }
 
@@ -142,7 +142,7 @@ function hasDuplicateEntryInScope(decl1: Decl, decl2: Decl, scope: Scope) {
     if (((decl1 instanceof LetDecl) || (decl1 instanceof ConstDecl) || (decl1 instanceof ClassDecl && ts.isClassDeclaration(decl1.node)) ||
         (decl2 instanceof LetDecl) || (decl2 instanceof ConstDecl) || (decl2 instanceof ClassDecl && ts.isClassDeclaration(decl1.node))) &&
         !ts.isClassExpression(decl1.node) && !ts.isClassExpression(decl2.node)) {
-        return decl1.name == decl2.name;
+        return decl1.name === decl2.name;
     }
     // Var and FunctionDeclaration with same names, FunctionDeclaration and FunctionDeclaration with same names are illegal in strict mode
     // and Module
@@ -167,7 +167,7 @@ function hasDuplicateEntryInScope(decl1: Decl, decl2: Decl, scope: Scope) {
             if (isFunctionLikeDeclaration(decl1.node.parent.parent) || isFunctionLikeDeclaration(decl2.node.parent.parent)) {
                 return false;
             }
-            return decl1.name == decl2.name;
+            return decl1.name === decl2.name;
         }
     }
 
@@ -180,7 +180,7 @@ function checkDuplicateInCatch(blockScope: Scope, catchScope: Scope) {
 
     for (let i = 0; i < catchParameters.length; i++) {
         for (let j = i + 1; j < catchParameters.length; j++) {
-            if (catchParameters[i].name == catchParameters[j].name) {
+            if (catchParameters[i].name === catchParameters[j].name) {
                 throwDupIdError(catchParameters[j]);
             }
         }
@@ -190,7 +190,7 @@ function checkDuplicateInCatch(blockScope: Scope, catchScope: Scope) {
                 continue;
             }
 
-            if (catchParameters[i].name == bodyDecls[m].name) {
+            if (catchParameters[i].name === bodyDecls[m].name) {
                 throwDupIdError(bodyDecls[m]);
             }
         }
@@ -262,7 +262,7 @@ function checkDeclareGlobalId(decl: Decl, scope: Scope) {
 
 function throwDupIdError(decl: Decl) {
     let sourceNode = jshelpers.getSourceFileOfNode(decl.node);
-    if (decl.node.kind == ts.SyntaxKind.FunctionDeclaration) {
+    if (decl.node.kind === ts.SyntaxKind.FunctionDeclaration) {
         decl.node = <ts.Identifier>(<ts.FunctionDeclaration>decl.node).name;
     }
     throw new DiagnosticError(decl.node, DiagnosticCode.Duplicate_identifier_0, sourceNode, [decl.name]);
@@ -324,13 +324,13 @@ function checkBreakOrContinueStatement(node: ts.BreakOrContinueStatement) {
     let diagnosticCode;
 
     if (node.label) {
-        if (node.kind == ts.SyntaxKind.BreakStatement) {
+        if (node.kind === ts.SyntaxKind.BreakStatement) {
             diagnosticCode = DiagnosticCode.A_break_statement_can_only_jump_to_a_label_of_an_enclosing_statement;
         } else {
             diagnosticCode = DiagnosticCode.A_continue_statement_can_only_jump_to_a_label_of_an_enclosing_iteration_statement;
         }
     } else {
-        if (node.kind == ts.SyntaxKind.BreakStatement) {
+        if (node.kind === ts.SyntaxKind.BreakStatement) {
             diagnosticCode = DiagnosticCode.A_break_statement_can_only_be_used_within_an_enclosing_iteration_or_switch_statement;
         } else {
             diagnosticCode = DiagnosticCode.A_continue_statement_can_only_be_used_within_an_enclosing_iteration_statement;
@@ -876,13 +876,13 @@ function checkClassDeclarationHeritageClauses(node: ts.ClassLikeDeclaration) {
     let hasExtendsKeyWords = false;
     checkDecorators(node);
     checkModifiers(node);
-    if (node.heritageClauses == undefined) {
+    if (node.heritageClauses === undefined) {
         return;
     }
 
     let file = jshelpers.getSourceFileOfNode(node);
     for (let heritageClause of node.heritageClauses) {
-        if (heritageClause.token == ts.SyntaxKind.ExtendsKeyword) {
+        if (heritageClause.token === ts.SyntaxKind.ExtendsKeyword) {
             if (hasExtendsKeyWords) {
                 throw new DiagnosticError(heritageClause, DiagnosticCode.The_extends_clause_already_seen, file);
             }
@@ -903,7 +903,7 @@ function checkBinaryExpression(node: ts.BinaryExpression) {
             leftExpr = findInnerExprOfParenthesis(leftExpr);
         }
 
-        if (node.operatorToken.kind == ts.SyntaxKind.EqualsToken) {
+        if (node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
             if (ts.isArrayLiteralExpression(leftExpr) || ts.isObjectLiteralExpression(leftExpr)) {
                 checkDestructuringAssignmentLhs(leftExpr);
             }
@@ -915,8 +915,8 @@ function checkBinaryExpression(node: ts.BinaryExpression) {
 
 function isInVaildAssignmentLeftSide(leftExpr: ts.Expression) {
     if (jshelpers.isKeyword(leftExpr.kind)
-        || leftExpr.kind == ts.SyntaxKind.NumericLiteral
-        || leftExpr.kind == ts.SyntaxKind.StringLiteral) {
+        || leftExpr.kind === ts.SyntaxKind.NumericLiteral
+        || leftExpr.kind === ts.SyntaxKind.StringLiteral) {
         throw new DiagnosticError(leftExpr, DiagnosticCode.The_left_hand_side_of_an_assignment_expression_must_be_a_variable_or_a_property_access);
     }
 }
@@ -1339,7 +1339,7 @@ function checkDestructuringAssignmentLhs(lhs: ts.Expression) {
             if (ts.isIdentifier(target)) {
                 let name = jshelpers.getTextOfIdentifierOrLiteral(target);
 
-                if (name == MandatoryArguments || name == "eval") {
+                if (name === MandatoryArguments || name === "eval") {
                     throw new DiagnosticError(target, DiagnosticCode.Property_destructuring_pattern_expected, file);
                 }
                 continue;
@@ -1402,7 +1402,7 @@ function checkDestructuringAssignmentLhs(lhs: ts.Expression) {
             if (ts.isShorthandPropertyAssignment(element)) {
                 let name = jshelpers.getTextOfIdentifierOrLiteral(element.name);
 
-                if (name == MandatoryArguments || name == "eval") {
+                if (name === MandatoryArguments || name === "eval") {
                     throw new DiagnosticError(element, DiagnosticCode.Property_destructuring_pattern_expected, file);
                 }
 

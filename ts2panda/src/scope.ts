@@ -173,7 +173,7 @@ export abstract class Scope {
 
         while (sp) {
             if (sp instanceof VariableScope) {
-                if (tempLevel == 0) {
+                if (tempLevel === 0) {
                     return <VariableScope>sp;
                 } else {
                     tempLevel--;
@@ -234,7 +234,7 @@ export abstract class Scope {
         let enclosingVariableScope: VariableScope = this.getNearestVariableScope();
 
         while (curScope) {
-            if (curScope == enclosingVariableScope.parent) {
+            if (curScope === enclosingVariableScope.parent) {
                 crossFunc = true;
             }
 
@@ -261,7 +261,7 @@ export abstract class Scope {
     hasDecl(name: string): boolean {
         let decls = this.decls;
         for (let i = 0; i < decls.length; i++) {
-            if (decls[i].name == name) {
+            if (decls[i].name === name) {
                 return true;
             }
         }
@@ -272,7 +272,7 @@ export abstract class Scope {
     getDecl(name: string): Decl | undefined {
         let decls = this.decls;
         for (let i = 0; i < decls.length; i++) {
-            if (decls[i].name == name) {
+            if (decls[i].name === name) {
                 return decls[i];
             }
         }
@@ -406,7 +406,7 @@ export class GlobalScope extends VariableScope {
         let name = decl instanceof Decl ? decl.name : decl;
         LOGD(this.debugTag, "globalscope.add (" + name + "), kind:" + declKind);
         let v: Variable | undefined;
-        if (declKind == VarDeclarationKind.NONE || declKind == VarDeclarationKind.VAR || declKind == VarDeclarationKind.FUNCTION) {
+        if (declKind === VarDeclarationKind.NONE || declKind === VarDeclarationKind.VAR || declKind === VarDeclarationKind.FUNCTION) {
             v = new GlobalVariable(declKind, name);
         } else {
             v = new LocalVariable(declKind, name, status);
@@ -443,13 +443,13 @@ export class ModuleScope extends VariableScope {
 
         if (isModule !== ModuleVarKind.NOT) {
             v = new ModuleVariable(declKind, name, InitStatus.UNINITIALIZED);
-            if (isModule == ModuleVarKind.EXPORTED) {
+            if (isModule === ModuleVarKind.EXPORTED) {
                 (<ModuleVariable>v).setExport();
             }
         } else {
             if (declKind === VarDeclarationKind.NONE) {
                 v = new GlobalVariable(declKind, name);
-            } else if (declKind == VarDeclarationKind.VAR || declKind == VarDeclarationKind.FUNCTION) {
+            } else if (declKind === VarDeclarationKind.VAR || declKind === VarDeclarationKind.FUNCTION) {
                 v = new LocalVariable(declKind, name);
             } else {
                 v = new LocalVariable(declKind, name, status);
@@ -495,12 +495,12 @@ export class FunctionScope extends VariableScope {
         let v: Variable | undefined;
         LOGD(this.debugTag, "functionscope.add (" + name + "), kind:" + declKind);
 
-        if (declKind == VarDeclarationKind.NONE) {
+        if (declKind === VarDeclarationKind.NONE) {
             // the variable declared without anything should be global
             // See EcmaStandard: 13.3.2 Variable Statement
             let topLevelScope = this.getRootScope();
             v = topLevelScope.add(name, declKind);
-        } else if (declKind == VarDeclarationKind.VAR || declKind == VarDeclarationKind.FUNCTION) {
+        } else if (declKind === VarDeclarationKind.VAR || declKind === VarDeclarationKind.FUNCTION) {
             v = new LocalVariable(declKind, name);
             this.name2variable.set(name, v);
         } else {
@@ -522,10 +522,10 @@ export class LocalScope extends Scope {
         let v: Variable | undefined;
 
         LOGD(this.debugTag, "localscope.add (" + name + "), kind:" + declKind);
-        if (declKind == VarDeclarationKind.NONE) {
+        if (declKind === VarDeclarationKind.NONE) {
             let topLevelScope = this.getRootScope();
             v = topLevelScope.add(name, declKind);
-        } else if (declKind == VarDeclarationKind.VAR) {
+        } else if (declKind === VarDeclarationKind.VAR) {
             /**
              * the variable declared without anything should be accessible
              * in all parent scopes so delegate creation to the parent

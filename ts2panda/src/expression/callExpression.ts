@@ -29,7 +29,7 @@ export function compileCallExpression(expr: ts.CallExpression, compiler: Compile
 
     let innerExpression = ts.skipPartiallyEmittedExpressions(expr.expression);
 
-    if (innerExpression.kind == ts.SyntaxKind.ImportKeyword) {
+    if (innerExpression.kind === ts.SyntaxKind.ImportKeyword) {
         compiler.compileExpression(expr.arguments[0]);
         pandaGen.dynamicImportCall(expr);
         return;
@@ -42,7 +42,7 @@ export function compileCallExpression(expr: ts.CallExpression, compiler: Compile
         }
     }
 
-    if (innerExpression.kind == ts.SyntaxKind.SuperKeyword) {
+    if (innerExpression.kind === ts.SyntaxKind.SuperKeyword) {
         let args: VReg[] = [];
         let hasSpread = emitCallArguments(compiler, expr, args);
         compileSuperCall(compiler, expr, args, hasSpread);
@@ -69,7 +69,7 @@ export function getHiddenParameters(expr: ts.Expression, compiler: Compiler) {
         // @ts-ignore
         let { obj: obj, prop: prop } = getObjAndProp(<ts.PropertyAccessExpression | ts.ElementAccessExpression>expr, thisReg, propReg, compiler);
 
-        if ((<ts.PropertyAccessExpression | ts.ElementAccessExpression>expr).expression.kind == ts.SyntaxKind.SuperKeyword) {
+        if ((<ts.PropertyAccessExpression | ts.ElementAccessExpression>expr).expression.kind === ts.SyntaxKind.SuperKeyword) {
             compileSuperProperty(compiler, expr, thisReg, prop);
         } else {
             pandaGen.loadObjProperty(

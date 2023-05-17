@@ -101,7 +101,7 @@ describe("FunctionDeclarationTest", function () {
         expect(foo != undefined).to.be.true;
         expect(foo instanceof LocalVariable).to.be.true;
         let parameterLength = functionPg!.getParameterLength();
-        expect(parameterLength == 0).to.be.true;
+        expect(parameterLength === 0).to.be.true;
     });
 
     it("function expression", function () {
@@ -143,14 +143,14 @@ describe("FunctionDeclarationTest", function () {
         ];
 
         compilerunit.forEach(element => {
-            if (element.internalName == "UnitTest.func_main_0") {
+            if (element.internalName === "UnitTest.func_main_0") {
                 let insns = element.getInsns();
                 expect(checkInstructions(insns, expected_main)).to.be.true;
-            } else if (element.internalName == "UnitTest.test") {
+            } else if (element.internalName === "UnitTest.test") {
                 let insns = element.getInsns();
                 expect(checkInstructions(insns, expected_func)).to.be.true;
                 let parameterLength = element.getParameterLength();
-                expect(parameterLength == 1).to.be.true;
+                expect(parameterLength === 1).to.be.true;
             }
         });
     });

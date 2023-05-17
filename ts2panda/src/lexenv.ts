@@ -166,7 +166,7 @@ export class VariableAcessStore extends VariableAccessBase {
             if (!this.isDeclaration) {
                 /**
                  * check TDZ first
-                 * If acc == hole -> throw reference error
+                 * If acc === hole -> throw reference error
                  * else -> execute the next insn
                 */
                 insns.push(loadLexicalVar(this.level, slot));
@@ -200,7 +200,7 @@ function checkConstAssignment(pg: PandaGen, v: Variable, expansion: IRNode[], no
         let className = v.getName();
         while (node) {
             if (ts.isClassLike(node) && node.name &&
-                jshelpers.getTextOfIdentifierOrLiteral(node.name) == className) {
+                jshelpers.getTextOfIdentifierOrLiteral(node.name) === className) {
                 break;
             }
 

@@ -43,13 +43,13 @@ function compileReturnInDerivedCtor(stmt: ts.ReturnStatement, returnValue: VReg,
     if (!expr) {
         pandaGen.moveVreg(stmt, need2CheckSuper, getVregisterCache(pandaGen, CacheList.True));
     } else {
-        if (ts.isCallExpression(expr) && expr.expression.kind == ts.SyntaxKind.SuperKeyword) {
+        if (ts.isCallExpression(expr) && expr.expression.kind === ts.SyntaxKind.SuperKeyword) {
             compileNormalReturn(stmt, returnValue, compiler);
             pandaGen.freeTemps(need2CheckSuper);
             return;
         }
 
-        if (expr.kind == ts.SyntaxKind.ThisKeyword) {
+        if (expr.kind === ts.SyntaxKind.ThisKeyword) {
             pandaGen.moveVreg(stmt, need2CheckSuper, getVregisterCache(pandaGen, CacheList.True));
         } else {
             compiler.compileExpression(expr);

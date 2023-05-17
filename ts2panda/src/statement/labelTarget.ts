@@ -81,7 +81,7 @@ export class LabelTarget {
     }
 
     private static isLabelTargetsEmpty(): boolean {
-        if (LabelTarget.labelTargetStack.length == 0) {
+        if (LabelTarget.labelTargetStack.length === 0) {
             return true;
         }
         return false;
@@ -120,7 +120,7 @@ export class LabelTarget {
     }
 
     static updateName2LabelTarget(node: ts.Node, labelTarget: LabelTarget) {
-        while (node.kind == ts.SyntaxKind.LabeledStatement) {
+        while (node.kind === ts.SyntaxKind.LabeledStatement) {
             let labeledStmt = <ts.LabeledStatement>node;
             let labelName = jshelpers.getTextOfIdentifierOrLiteral(labeledStmt.label);
 

@@ -55,7 +55,7 @@ export class Iterator {
         let iterator = this.iterRecord.iterator;
 
         // get iterator
-        this.kind == IteratorType.Normal ? pandaGen.getIterator(this.node) : pandaGen.getAsyncIterator(this.node);
+        this.kind === IteratorType.Normal ? pandaGen.getIterator(this.node) : pandaGen.getAsyncIterator(this.node);
         pandaGen.storeAccumulator(this.node, iterator);
 
         // get the next method
@@ -99,7 +99,7 @@ export class Iterator {
 
     close() {
         let pg = this.pandaGen;
-        if (this.kind == IteratorType.Normal) {
+        if (this.kind === IteratorType.Normal) {
             pg.closeIterator(this.node, this.iterRecord.iterator);
             return;
         }

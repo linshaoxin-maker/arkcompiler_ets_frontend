@@ -74,7 +74,7 @@ describe("lexenv-compile-testcase in lexenv.test.ts", function () {
 
         expect(globalScope.getChildVariableScope().length, "should not have any children!").to.be.equal(0);
         expect(globalScope.getParentVariableScope(), "should not have any children!").to.be.equal(null);
-        expect(globalScope.getBindingNode() == sourceFile, "functionblock.node should equal to sourceFile").to.be.true;
+        expect(globalScope.getBindingNode() === sourceFile, "functionblock.node should equal to sourceFile").to.be.true;
     });
 
     it("test CompilerDriver.scanFunctions-with-embedded-function", function () {
@@ -110,7 +110,7 @@ describe("lexenv-compile-testcase in lexenv.test.ts", function () {
         let grandchildren0 = son0.getChildVariableScope();
         let parentOfSon0 = son0.getParentVariableScope();
         let bindingNodeOfSon0 = <ts.Node>son0.getBindingNode();
-        expect(grandchildren0.length == 2, "son should have two children!").to.be.true;
+        expect(grandchildren0.length === 2, "son should have two children!").to.be.true;
         expect(parentOfSon0, "son's parent should equal root!").deep.equal(globalScope);
         expect(bindingNodeOfSon0.kind, "son's parent should equal root!").deep.equal(ts.SyntaxKind.FunctionDeclaration);
         // check grandson
@@ -131,7 +131,7 @@ describe("lexenv-compile-testcase in lexenv.test.ts", function () {
         let grandchildren1 = son1.getChildVariableScope();
         let parentOfSon1 = son1.getParentVariableScope();
         let bindingNodeOfSon1 = <ts.Node>son1.getBindingNode();
-        expect(grandchildren1.length == 0, "son1 should have two children!").to.be.true;
+        expect(grandchildren1.length === 0, "son1 should have two children!").to.be.true;
         expect(parentOfSon1, "son1's parent should equal root!").deep.equal(globalScope);
         expect(bindingNodeOfSon1.kind, "son1's parent should equal root!").deep.equal(ts.SyntaxKind.FunctionExpression);
     });
@@ -147,7 +147,7 @@ describe("lexenv-compile-testcase in lexenv.test.ts", function () {
         recorder.record();
         let postOrderVariableScopes = compilerDriver.postOrderAnalysis(globalScope);
 
-        expect(postOrderVariableScopes.length == 1, "postorder array length not correct");
+        expect(postOrderVariableScopes.length === 1, "postorder array length not correct");
         expect(postOrderVariableScopes[0]).to.be.deep.equal(globalScope);
     });
 
@@ -172,7 +172,7 @@ describe("lexenv-compile-testcase in lexenv.test.ts", function () {
         let postOrderVariableScopes = compilerDriver.postOrderAnalysis(globalScope);
 
         let children = globalScope.getChildVariableScope();
-        expect(postOrderVariableScopes.length == 5, "postorder array length not correct");
+        expect(postOrderVariableScopes.length === 5, "postorder array length not correct");
         expect(postOrderVariableScopes[0]).to.be.deep.equal(children[0].getChildVariableScope()[0]);
         expect(postOrderVariableScopes[1]).to.be.deep.equal(children[0].getChildVariableScope()[1]);
         expect(postOrderVariableScopes[2]).to.be.deep.equal(children[0]);
@@ -227,7 +227,7 @@ describe("lexenv-compile-testcase in lexenv.test.ts", function () {
 
         let children = globalScope.getChildVariableScope();
         let grandchildren1 = children[1].getChildVariableScope();
-        expect(postOrderVariableScopes.length == 6, "postorder array length not correct");
+        expect(postOrderVariableScopes.length === 6, "postorder array length not correct");
         expect(postOrderVariableScopes[0]).to.be.deep.equal(children[0]);
         expect(postOrderVariableScopes[1]).to.be.deep.equal(grandchildren1[0].getChildVariableScope()[0]);
         expect(postOrderVariableScopes[2]).to.be.deep.equal(grandchildren1[0].getChildVariableScope()[1]);
@@ -372,9 +372,9 @@ describe("lexenv-compile-testcase in lexenv.test.ts", function () {
         ];
 
         pandaGens.forEach((pg) => {
-            if (pg.internalName == "UnitTest.func_main_0") {
+            if (pg.internalName === "UnitTest.func_main_0") {
                 expect(checkInstructions(pg.getInsns(), expected_main)).to.be.true;
-            } else if (pg.internalName == "UnitTest.func") {
+            } else if (pg.internalName === "UnitTest.func") {
                 expect(checkInstructions(pg.getInsns(), expected_func)).to.be.true;
             }
         })
@@ -410,11 +410,11 @@ describe("lexenv-compile-testcase in lexenv.test.ts", function () {
 
         pandaGens.forEach((pg) => {
             let scope = <VariableScope>pg.getScope();
-            if (pg.internalName == "UnitTest.func_main_0") {
+            if (pg.internalName === "UnitTest.func_main_0") {
                 expect(checkInstructions(pg.getInsns(), expected_main), "check main insns").to.be.true;
                 expect(scope.getNumLexEnv(), "main scope has 0 lexvar").to.be.equal(0);
                 // expect(scope.hasLexEnv(), "main scope has lexenv").to.be.true;
-            } else if (pg.internalName == "UnitTest.func") {
+            } else if (pg.internalName === "UnitTest.func") {
 
                 expect(checkInstructions(pg.getInsns(), expected_func), "check func insns").to.be.true;
                 expect(scope.getNumLexEnv(), "func scope has 1 lexvar").to.be.equal(0);

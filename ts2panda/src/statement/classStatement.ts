@@ -71,12 +71,12 @@ export function compileClassDeclaration(compiler: Compiler, stmt: ts.ClassLikeDe
     let classBuffer = new LiteralBuffer();
     let propertyIndex = 0;
     let staticItemsNum = 0;
-    let hasConstructor = extractCtorOfClass(stmt) == undefined ? false : true;
+    let hasConstructor = extractCtorOfClass(stmt) === undefined ? false : true;
 
     for (; propertyIndex < properties.length; propertyIndex++) {
         let prop = properties[propertyIndex];
         let tmpVreg = pandaGen.getTemp();
-        if (prop.getKind() == PropertyKind.Constant) {
+        if (prop.getKind() === PropertyKind.Constant) {
             staticItemsNum++;
             let nameLiteral = new Literal(LiteralTag.STRING, String(prop.getName()));
             classBuffer.addLiterals(nameLiteral);
@@ -85,7 +85,7 @@ export function compileClassDeclaration(compiler: Compiler, stmt: ts.ClassLikeDe
             prop.setCompiled();
         }
 
-        if (prop.getKind() == PropertyKind.Variable) {
+        if (prop.getKind() === PropertyKind.Variable) {
             if (prop.getValue().kind != ts.SyntaxKind.Constructor) {
                 if (jshelpers.hasStaticModifier(prop.getValue())) {
                     staticItemsNum++;
@@ -110,7 +110,7 @@ export function compileClassDeclaration(compiler: Compiler, stmt: ts.ClassLikeDe
         }
 
         pandaGen.freeTemps(tmpVreg);
-        if (prop.getKind() == PropertyKind.Computed || prop.getKind() == PropertyKind.Accessor) {
+        if (prop.getKind() === PropertyKind.Computed || prop.getKind() === PropertyKind.Accessor) {
             break;
         }
     }
@@ -442,7 +442,7 @@ export function defineClassMember(
     properties: Property[],
     namedPropertyMap: Map<string, Property>) {
     let staticFlag = false;
-    if (propKind == PropertyKind.Computed || propKind == PropertyKind.Spread) {
+    if (propKind === PropertyKind.Computed || propKind === PropertyKind.Spread) {
         let prop = new Property(propKind, <ts.ComputedPropertyName | undefined>propName);
         prop.setValue(propValue);
         if (jshelpers.hasStaticModifier(propValue)) {
@@ -455,7 +455,7 @@ export function defineClassMember(
         let name_str = propertyKeyAsString(<string | number>propName);
         if (!checkAndUpdateProperty(namedPropertyMap, name_str, propKind, propValue)) {
             let prop = new Property(propKind, propName);
-            if (propKind == PropertyKind.Accessor) {
+            if (propKind === PropertyKind.Accessor) {
                 if (ts.isGetAccessorDeclaration(propValue)) {
                     prop.setGetter(propValue);
                 } else if (ts.isSetAccessorDeclaration(propValue)) {
@@ -512,7 +512,7 @@ export function getClassNameForConstructor(classNode: ts.ClassLikeDeclaration) {
             }
         } else if (ts.isBinaryExpression(outerNode)) {
             let leftExp = outerNode.left;
-            if (outerNode.operatorToken.kind == ts.SyntaxKind.EqualsToken && ts.isIdentifier(leftExp)) {
+            if (outerNode.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(leftExp)) {
                 className = jshelpers.getTextOfIdentifierOrLiteral(leftExp);
             }
         } else if (ts.isPropertyAssignment(outerNode)) {
@@ -576,7 +576,7 @@ function generatePropertyFromExpr(node: ts.ClassLikeDeclaration, classFields: Ar
             }
             case ts.SyntaxKind.MethodDeclaration: {
                 let memberName = getPropName(member.name!);
-                if (typeof (memberName) == 'string' || typeof (memberName) == 'number') {
+                if (typeof (memberName) === 'string' || typeof (memberName) === 'number') {
                     if (defineClassMember(memberName, member, PropertyKind.Variable, properties, namedPropertyMap)) {
                         staticNum++;
                     }
@@ -590,7 +590,7 @@ function generatePropertyFromExpr(node: ts.ClassLikeDeclaration, classFields: Ar
             case ts.SyntaxKind.GetAccessor:
             case ts.SyntaxKind.SetAccessor: {
                 let accessorName = getPropName(member.name!);
-                if (typeof (accessorName) == 'string' || typeof (accessorName) == 'number') {
+                if (typeof (accessorName) === 'string' || typeof (accessorName) === 'number') {
                     if (defineClassMember(accessorName, member, PropertyKind.Accessor, properties, namedPropertyMap)) {
                         staticNum++;
                     }
@@ -726,7 +726,7 @@ function scalarArrayEquals(node1: ts.Node | undefined, node2: ts.Node | undefine
         let val1Modifs = node1.modifiers;
         let val2Modifs = node2.modifiers;
         if (val1Modifs && val2Modifs) {
-            return val1Modifs.length == val2Modifs.length && val1Modifs.every(function (v, i) { return v === val2Modifs![i] });;
+            return val1Modifs.length === val2Modifs.length && val1Modifs.every(function (v, i) { return v === val2Modifs![i] });;
         }
 
         if (!val1Modifs && !val2Modifs) {
@@ -754,7 +754,7 @@ export function setPrototypeAttributes(compiler: Compiler, node: ts.Node, classR
 function checkAndUpdateProperty(namedPropertyMap: Map<string, Property>, name: string, propKind: PropertyKind, valueNode: ts.Node): boolean {
     if (namedPropertyMap.has(name)) {
         let prop = namedPropertyMap.get(name);
-        if (propKind == PropertyKind.Accessor) {
+        if (propKind === PropertyKind.Accessor) {
             if (ts.isGetAccessorDeclaration(valueNode)) {
                 if (!scalarArrayEquals(prop!.getGetter(), valueNode)) {
                     return false;
@@ -785,7 +785,7 @@ export function shouldReturnThisForConstruct(stmt: ts.ReturnStatement): boolean 
         return false;
     }
 
-    if (!expr || isUndefinedIdentifier(expr) || expr.kind == ts.SyntaxKind.ThisKeyword) {
+    if (!expr || isUndefinedIdentifier(expr) || expr.kind === ts.SyntaxKind.ThisKeyword) {
         return true;
     }
 
@@ -815,8 +815,8 @@ export function checkValidUseSuperBeforeSuper(compiler: Compiler, node: ts.Node)
 
     if (jshelpers.isSuperProperty(node) ||
         ts.isConstructorDeclaration(node) ||
-        node.kind == ts.SyntaxKind.ThisKeyword ||
-        node.kind == ts.SyntaxKind.ReturnStatement) {
+        node.kind === ts.SyntaxKind.ThisKeyword ||
+        node.kind === ts.SyntaxKind.ReturnStatement) {
         pandaGen.throwIfSuperNotCorrectCall(ctorNode, 0);
     }
 

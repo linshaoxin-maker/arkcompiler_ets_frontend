@@ -102,25 +102,25 @@ export class AssemblyDumper {
             let formats = node.getFormats();
             var outputRangeVregNum = getRangeExplicitVregNums(node);
             for (let j = 0; j < operands.length; ++j) {
-                if (outputRangeVregNum == 0) {
+                if (outputRangeVregNum === 0) {
                     break;
                 }
                 let format = formats[0];
                 let kind = format[j][0];
                 let op = operands[j];
 
-                if (kind == OperandKind.Imm) {
+                if (kind === OperandKind.Imm) {
                     let imm = <Imm>op;
                     this.output += imm.value.toString();
-                } else if (kind == OperandKind.Id) {
+                } else if (kind === OperandKind.Id) {
                     this.output += op;
-                } else if (kind == OperandKind.StringId) {
+                } else if (kind === OperandKind.StringId) {
                     let escapedOp = op.toString().replace(/\\/g, "\\\\").replace(/\t/g, "\\t")
                         .replace(/\n/g, "\\n").replace(/\"/g, "\\\"")
                     this.output += "\"" + escapedOp + "\"";
-                } else if (kind == OperandKind.DstVReg
-                    || kind == OperandKind.SrcDstVReg
-                    || kind == OperandKind.SrcVReg) {
+                } else if (kind === OperandKind.DstVReg
+                    || kind === OperandKind.SrcDstVReg
+                    || kind === OperandKind.SrcVReg) {
                     let v = <VReg>op;
                     if (v.num < 0) {
                         throw Error("invalid register, please check your insn!\n");
@@ -131,7 +131,7 @@ export class AssemblyDumper {
                         outputRangeVregNum--;
                         continue;
                     }
-                } else if (kind == OperandKind.Label) {
+                } else if (kind === OperandKind.Label) {
                     this.output += this.getLabelName(<Label>op);
                 } else {
                     throw new Error("Unexpected OperandKind");
@@ -150,7 +150,7 @@ export class AssemblyDumper {
 
     writeFunctionCatchTable(): void {
         let catchTables = generateCatchTables(this.pg.getCatchMap());
-        if (catchTables.length == 0) {
+        if (catchTables.length === 0) {
             return;
         }
 

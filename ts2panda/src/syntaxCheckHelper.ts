@@ -57,8 +57,8 @@ export function isIncludeOctalEscapeSequence(text: string): boolean {
     // Like \\1, should not be treated as an octal escape sequence
     let index = 0;
     while (index < text.length) {
-        if (text[index] == '\\' && index != text.length - 1) {
-            if (text[index + 1] == "\\") {
+        if (text[index] === '\\' && index != text.length - 1) {
+            if (text[index + 1] === "\\") {
                 index++;
             } else if (text[index + 1] >= '0' && text[index + 1] <= '7') {
                 return true;
@@ -239,10 +239,10 @@ export function isIncludeBackslash8Or9InString(text: string): boolean {
     // \8 and \9 are not allowed in strict mode
     let index = 0;
     while (index < text.length) {
-        if (text[index] == '\\' && index != text.length - 1) {
-            if (text[index + 1] == "\\") {
+        if (text[index] === '\\' && index != text.length - 1) {
+            if (text[index + 1] === "\\") {
                 index++;
-            } else if (text[index + 1] == '8' || text[index + 1] == '9') {
+            } else if (text[index + 1] === '8' || text[index + 1] === '9') {
                 return true;
             }
         }

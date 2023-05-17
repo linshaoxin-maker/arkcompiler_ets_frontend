@@ -63,7 +63,7 @@ export class LiteralBuffer {
     }
 
     isEmpty() {
-        return this.lb.length == 0;
+        return this.lb.length === 0;
     }
 
     getLiteral(index: number) {

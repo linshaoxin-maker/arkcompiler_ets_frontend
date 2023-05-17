@@ -98,27 +98,27 @@ export abstract class Variable {
     }
 
     isLet(): boolean {
-        return this.declKind == VarDeclarationKind.LET;
+        return this.declKind === VarDeclarationKind.LET;
     }
 
     isConst(): boolean {
-        return this.declKind == VarDeclarationKind.CONST;
+        return this.declKind === VarDeclarationKind.CONST;
     }
 
     isLetOrConst(): boolean {
-        return this.declKind == VarDeclarationKind.LET || this.declKind == VarDeclarationKind.CONST;
+        return this.declKind === VarDeclarationKind.LET || this.declKind === VarDeclarationKind.CONST;
     }
 
     isVar(): boolean {
-        return this.declKind == VarDeclarationKind.VAR;
+        return this.declKind === VarDeclarationKind.VAR;
     }
 
     isNone(): boolean {
-        return this.declKind == VarDeclarationKind.NONE;
+        return this.declKind === VarDeclarationKind.NONE;
     }
 
     isClass(): boolean {
-        return this.declKind == VarDeclarationKind.CLASS;
+        return this.declKind === VarDeclarationKind.CLASS;
     }
 }
 
@@ -136,7 +136,7 @@ export class LocalVariable extends Variable {
 
     isInitialized() {
         if (this.status != null) {
-            return this.status == InitStatus.INITIALIZED;
+            return this.status === InitStatus.INITIALIZED;
         }
         return true;
     }
@@ -159,7 +159,7 @@ export class ModuleVariable extends Variable {
 
     isInitialized() {
         if (this.status != null) {
-            return this.status == InitStatus.INITIALIZED;
+            return this.status === InitStatus.INITIALIZED;
         }
         return true;
     }
@@ -193,8 +193,8 @@ export const MandatoryThis = "this";
 export const MandatoryArguments = "arguments";
 
 export function isMandatoryParam(name: string) {
-    if (name == MandatoryFuncObj || name == MandatoryArguments ||
-        name == MandatoryNewTarget || name == MandatoryThis) {
+    if (name === MandatoryFuncObj || name === MandatoryArguments ||
+        name === MandatoryNewTarget || name === MandatoryThis) {
         return true;
     }
 

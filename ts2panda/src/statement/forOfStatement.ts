@@ -118,7 +118,7 @@ export function getIteratorRecord(pandagen: PandaGen, node: ts.Node, nextMethod:
 }
 
 function getIterator(pandagen: PandaGen, node: ts.Node, type: IteratorType) {
-    if (type == IteratorType.Async) {
+    if (type === IteratorType.Async) {
         pandagen.getAsyncIterator(node);
     } else {
         pandagen.getIterator(node);

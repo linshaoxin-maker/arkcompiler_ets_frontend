@@ -38,9 +38,9 @@ export function compileRegularExpressionLiteral(compiler: Compiler, regexp: ts.R
     let regexpFlags = "";
     let firstSlashPos = regexpText.indexOf('/');
     let lastSlashPos = regexpText.lastIndexOf('/');
-    if (firstSlashPos == -1 ||
-        lastSlashPos == -1 ||
-        firstSlashPos == lastSlashPos) {
+    if (firstSlashPos === -1 ||
+        lastSlashPos === -1 ||
+        firstSlashPos === lastSlashPos) {
         throw new DiagnosticError(regexp, DiagnosticCode.Incorrect_regular_expression);
     }
     regexpPattern = regexpText.substring(firstSlashPos + 1, lastSlashPos);

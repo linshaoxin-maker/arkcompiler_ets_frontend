@@ -66,7 +66,7 @@ export function getObjAndProp(node: ts.ElementAccessExpression | ts.PropertyAcce
             prop = jshelpers.getTextOfIdentifierOrLiteral(node.argumentExpression);
             // deal with case like a["1"]
             let temp = Number(prop);
-            if (!isNaN(Number.parseFloat(prop)) && !isNaN(temp) && isValidIndex(temp) && String(temp) == prop) {
+            if (!isNaN(Number.parseFloat(prop)) && !isNaN(temp) && isValidIndex(temp) && String(temp) === prop) {
                 prop = temp;
             }
         } else if (ts.isNumericLiteral(node.argumentExpression)) {
@@ -75,10 +75,10 @@ export function getObjAndProp(node: ts.ElementAccessExpression | ts.PropertyAcce
                 prop = prop.toString();
             }
         } else if (ts.isPrefixUnaryExpression(node.argumentExpression) && ts.isNumericLiteral(node.argumentExpression.operand) &&
-            (node.argumentExpression.operator == ts.SyntaxKind.MinusToken || node.argumentExpression.operator == ts.SyntaxKind.PlusToken)) {
+            (node.argumentExpression.operator === ts.SyntaxKind.MinusToken || node.argumentExpression.operator === ts.SyntaxKind.PlusToken)) {
             let expr = node.argumentExpression;
             let temp = parseFloat(jshelpers.getTextOfIdentifierOrLiteral(expr.operand));
-            if (expr.operator == ts.SyntaxKind.MinusToken) {
+            if (expr.operator === ts.SyntaxKind.MinusToken) {
                 prop = temp === 0 ? temp : "-" + temp.toString();
             } else {
                 if (!isValidIndex(temp)) {

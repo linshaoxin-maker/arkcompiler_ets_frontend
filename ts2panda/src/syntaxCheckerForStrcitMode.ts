@@ -124,7 +124,7 @@ function checkBinaryExpression(node: ts.BinaryExpression) {
 
 function checkContextualIdentifier(node: ts.Identifier) {
     let file = jshelpers.getSourceFileOfNode(node);
-    if (jshelpers.getTextOfIdentifierOrLiteral(node) == 'await' && CmdOptions.isModules()) {
+    if (jshelpers.getTextOfIdentifierOrLiteral(node) === 'await' && CmdOptions.isModules()) {
         throw new DiagnosticError(node, DiagnosticCode.Identifier_expected_0_is_a_reserved_word_at_the_top_level_of_a_module, file, ['await']);
     }
 
@@ -201,8 +201,8 @@ function checkImportDeclaration(node: ts.ImportDeclaration, scope: Scope) {
         let namedBindings = node.importClause.namedBindings;
         if (ts.isNamedImports(namedBindings)) {
             namedBindings.elements.forEach((element: any) => {
-                if (jshelpers.getTextOfIdentifierOrLiteral(element.name) == 'arguments'
-                    || jshelpers.getTextOfIdentifierOrLiteral(element.name) == 'eval') {
+                if (jshelpers.getTextOfIdentifierOrLiteral(element.name) === 'arguments'
+                    || jshelpers.getTextOfIdentifierOrLiteral(element.name) === 'eval') {
                     throw new DiagnosticError(node, DiagnosticCode.Unexpected_eval_or_arguments_in_strict_mode);
                 }
             });

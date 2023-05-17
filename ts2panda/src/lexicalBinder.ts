@@ -205,7 +205,7 @@ export class LexicalBinder {
     hasDeclarationParent(id: ts.Identifier): boolean {
         let parent = id.parent;
         if (ts.isBindingElement(parent) &&
-            parent.name == id) {
+            parent.name === id) {
             while (parent && !ts.isVariableDeclaration(parent)) {
                 parent = parent.parent;
             }
@@ -215,7 +215,7 @@ export class LexicalBinder {
 
         if ((ts.isVariableDeclaration(parent) || ts.isClassDeclaration(parent) ||
              ts.isClassExpression(parent) || ts.isFunctionLike(parent))
-             && parent.name == id) {
+             && parent.name === id) {
             return true;
         }
 
@@ -224,7 +224,7 @@ export class LexicalBinder {
 
     isPropertyName(id: ts.Identifier) {
         let parent = id.parent;
-        if (ts.isPropertyAccessExpression(parent) && (parent.name == id)) { // eg. a.b -> b is the property name
+        if (ts.isPropertyAccessExpression(parent) && (parent.name === id)) { // eg. a.b -> b is the property name
             return true;
         }
 

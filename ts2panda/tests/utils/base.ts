@@ -94,7 +94,7 @@ function basicOperandsEqual(left: OperandType, right: OperandType): boolean {
 
     if (isId(left) && isId(right)) {
         // string compare
-        return left == right;
+        return left === right;
     }
 
     let str = "operandsEqual: operands are not one of this types: VReg | Imm | Label | BuiltIns | string\n";
@@ -178,7 +178,7 @@ export function compileMainSnippet(snippet: string, pandaGen?: PandaGen, scope?:
     // only return main function
     if (compileFunc) {
         compileUnits.filter((pg) => {
-            return (pg.internalName == "UnitTest.func_main_0");
+            return (pg.internalName === "UnitTest.func_main_0");
         })
     }
 
@@ -262,7 +262,7 @@ export class SnippetCompiler {
 
     getPandaGenByName(name: string): PandaGen | undefined {
         let pgs = this.pandaGens.filter(pg => {
-            return (pg.internalName == name);
+            return (pg.internalName === name);
         })
         return pgs[0];
     }

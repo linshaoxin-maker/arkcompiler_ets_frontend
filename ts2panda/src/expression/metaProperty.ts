@@ -21,7 +21,7 @@ import * as jshelpers from "../jshelpers";
 export function compileMetaProperty(expr: ts.MetaProperty, compiler: Compiler) {
     let curScope = compiler.getCurrentScope();
     let id = jshelpers.getTextOfIdentifierOrLiteral(expr.name);
-    if (id == "target") {
+    if (id === "target") {
         let { scope, level, v } = curScope.find(MandatoryNewTarget);
 
         if (!v) {

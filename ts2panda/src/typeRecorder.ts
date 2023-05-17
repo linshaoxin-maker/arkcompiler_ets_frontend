@@ -210,7 +210,7 @@ export class TypeRecorder {
         } else {
             // not found in typeRecord. Need to create the type and
             // add to typeRecord with its localName and to exportedType with its exportedName
-            let typeIndex = TypeChecker.getInstance().getTypeFromDecl(typeNode, localNode.kind == ts.SyntaxKind.NewExpression);
+            let typeIndex = TypeChecker.getInstance().getTypeFromDecl(typeNode, localNode.kind === ts.SyntaxKind.NewExpression);
             this.setExportedType(exportedName, typeIndex);
         }
     }

@@ -281,7 +281,7 @@ export class DebugInfo {
 
         // count pos offset
         for (let i = 0; i < insns.length; i++) {
-            if (insns[i].debugPosInfo.getDebugPosInfoNodeState() == NodeKind.FirstNodeOfFunction) {
+            if (insns[i].debugPosInfo.getDebugPosInfoNodeState() === NodeKind.FirstNodeOfFunction) {
                 DebugInfo.setInvalidPosInfoForUninitializeIns(insns[i].debugPosInfo, pandaGen);
             }
 
@@ -330,7 +330,7 @@ export class DebugInfo {
                 if (!value.hasAlreadyBinded()) {
                     return;
                 }
-                if (value.getName() == "0this" || value.getName() == "0newTarget") {
+                if (value.getName() === "0this" || value.getName() === "0newTarget") {
                     return;
                 }
                 let variableInfo = new VariableDebugInfo(key, "any", "any", (value.getVreg().num));

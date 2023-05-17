@@ -154,9 +154,9 @@ export class Ts2Panda {
 
             insns.push(new Ins(
                 insOpcode,
-                insRegs.length == 0 ? undefined : insRegs,
-                insIds.length == 0 ? undefined : insIds,
-                insImms.length == 0 ? undefined : insImms,
+                insRegs.length === 0 ? undefined : insRegs,
+                insIds.length === 0 ? undefined : insIds,
+                insImms.length === 0 ? undefined : insImms,
                 insLabel === "" ? undefined : insLabel,
                 insn.debugPosInfo,
             ));
@@ -165,7 +165,7 @@ export class Ts2Panda {
         return {
             insns: insns,
             regsNum: (pg.getTotalRegsNum() - pg.getParametersCount()),
-            labels: labels.length == 0 ? undefined : labels
+            labels: labels.length === 0 ? undefined : labels
         };
     }
 
@@ -298,7 +298,7 @@ export class Ts2Panda {
             }
 
             // get builtin type for tryloadglobal instruction
-            if (inst.kind == IRNodeKind.TRYLDGLOBALBYNAME) {
+            if (inst.kind === IRNodeKind.TRYLDGLOBALBYNAME) {
                 let name = inst.operands[1] as string;
                 if (name in BuiltinType) {
                     typeIdx = BuiltinType[name];
@@ -308,7 +308,7 @@ export class Ts2Panda {
             }
 
             // skip arg type
-            if (i < paraCount && inst.kind == IRNodeKind.MOV) {
+            if (i < paraCount && inst.kind === IRNodeKind.MOV) {
                 let vreg = (inst.operands[0] as VReg).num;
                 let arg = (inst.operands[1] as VReg).num;
                 if (vreg >= paraCount || arg < vregCount) {
@@ -320,7 +320,7 @@ export class Ts2Panda {
             }
 
             // local vreg -> inst
-            if (inst.kind == IRNodeKind.STA) {
+            if (inst.kind === IRNodeKind.STA) {
                 let vreg = (inst.operands[0] as VReg).num;
                 if (vreg < locals.length && !handledSet.has(vreg)) {
                     typeIdx = locals[vreg].getTypeIndex();

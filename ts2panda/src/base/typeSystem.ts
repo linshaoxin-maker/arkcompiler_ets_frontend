@@ -544,7 +544,7 @@ export class FunctionType extends BaseType {
         let res = this.calculateIndex(builtinTypeIdx);
         this.typeIndex = res.typeIndex;
         this.shiftedTypeIndex = res.shiftedTypeIndex;
-        if (funcNode.kind == ts.SyntaxKind.GetAccessor || funcNode.kind == ts.SyntaxKind.SetAccessor) {
+        if (funcNode.kind === ts.SyntaxKind.GetAccessor || funcNode.kind === ts.SyntaxKind.SetAccessor) {
             this.getOrSetAccessorFlag = GetOrSetAccessorFlag.TRUE;
         }
 
@@ -612,7 +612,7 @@ export class FunctionType extends BaseType {
                 let variableNode = parameter.name;
                 let typeIndex = this.getOrCreateRecordForTypeNode(typeNode, variableNode);
                 this.parameters.push(typeIndex);
-                if (variableNode.getFullText() == 'this') {
+                if (variableNode.getFullText() === 'this') {
                     this.containThisParam = true;
                 }
             }

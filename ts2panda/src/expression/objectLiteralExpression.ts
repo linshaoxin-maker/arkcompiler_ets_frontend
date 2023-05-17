@@ -35,7 +35,7 @@ export function compileObjectLiteralExpression(compiler: Compiler, expr: ts.Obje
     let hasMethod: boolean = false;
 
     // empty ObjectLiteral expression
-    if (properties.length == 0) {
+    if (properties.length === 0) {
         pandaGen.createEmptyObject(expr);
         pandaGen.storeAccumulator(expr, objReg);
         pandaGen.freeTemps(objReg);
@@ -59,24 +59,24 @@ function compileProperties(compiler: Compiler, properties: Property[], literalBu
     let hasMethod: boolean = false;
 
     for (let prop of properties) {
-        if (prop.getKind() == PropertyKind.Spread || prop.getKind() == PropertyKind.Computed) {
+        if (prop.getKind() === PropertyKind.Spread || prop.getKind() === PropertyKind.Computed) {
             break;
         }
 
-        if (prop.getKind() == PropertyKind.Prototype || prop.isRedeclared()) {
+        if (prop.getKind() === PropertyKind.Prototype || prop.isRedeclared()) {
             continue;
         }
 
         let nameLiteral = new Literal(LiteralTag.STRING, String(prop.getName()));
 
-        if (prop.getKind() == PropertyKind.Constant) {
+        if (prop.getKind() === PropertyKind.Constant) {
             let valLiteral: Literal = createConstantLiteral(prop);
 
             literalBuffer.addLiterals(nameLiteral, valLiteral!);
             prop.setCompiled();  // need to be careful
         }
 
-        if (prop.getKind() == PropertyKind.Variable) {
+        if (prop.getKind() === PropertyKind.Variable) {
             let compilerDriver = compiler.getCompilerDriver();
             let valueNode = prop.getValue();
             let valLiteral: Literal;
@@ -98,7 +98,7 @@ function compileProperties(compiler: Compiler, properties: Property[], literalBu
             }
         }
 
-        if (prop.getKind() == PropertyKind.Accessor) {
+        if (prop.getKind() === PropertyKind.Accessor) {
             let valLiteral = new Literal(LiteralTag.ACCESSOR, null);
             literalBuffer.addLiterals(nameLiteral, valLiteral);
         }
@@ -120,22 +120,22 @@ function createObject(expr: ts.ObjectLiteralExpression, pandaGen: PandaGen, objR
 
 function createConstantLiteral(prop: Property): Literal {
     let valLiteral: Literal;
-    if (prop.getValue().kind == ts.SyntaxKind.StringLiteral) {
+    if (prop.getValue().kind === ts.SyntaxKind.StringLiteral) {
         valLiteral = new Literal(LiteralTag.STRING, jshelpers.getTextOfIdentifierOrLiteral(prop.getValue()));
-    } else if (prop.getValue().kind == ts.SyntaxKind.NumericLiteral) {
+    } else if (prop.getValue().kind === ts.SyntaxKind.NumericLiteral) {
         let value = Number.parseFloat(jshelpers.getTextOfIdentifierOrLiteral(prop.getValue()));
         if (isInteger(value)) {
             valLiteral = new Literal(LiteralTag.INTEGER, value);
         } else {
             valLiteral = new Literal(LiteralTag.DOUBLE, value);
         }
-    } else if (prop.getValue().kind == ts.SyntaxKind.TrueKeyword || prop.getValue().kind == ts.SyntaxKind.FalseKeyword) {
-        if (prop.getValue().kind == ts.SyntaxKind.TrueKeyword) {
+    } else if (prop.getValue().kind === ts.SyntaxKind.TrueKeyword || prop.getValue().kind === ts.SyntaxKind.FalseKeyword) {
+        if (prop.getValue().kind === ts.SyntaxKind.TrueKeyword) {
             valLiteral = new Literal(LiteralTag.BOOLEAN, true);
         } else {
             valLiteral = new Literal(LiteralTag.BOOLEAN, false);
         }
-    } else if (prop.getValue().kind == ts.SyntaxKind.NullKeyword) {
+    } else if (prop.getValue().kind === ts.SyntaxKind.NullKeyword) {
         valLiteral = new Literal(LiteralTag.NULLVALUE, null);
     } else {
         throw new Error("Unreachable Kind of Literal");

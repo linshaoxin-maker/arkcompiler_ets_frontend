@@ -103,7 +103,7 @@ class ItemValue {
 
     static createItemValue(name: string, instSize: number): ItemValue {
         let relatedInsns: { name: string, num: number };
-        if (name == "lda.str") {
+        if (name === "lda.str") {
             relatedInsns = { name: "sta.dyn", num: 1 };
         }
 
@@ -120,7 +120,7 @@ class HistogramStatistics {
     }
 
     getInsName(ins: IRNode): string {
-        if (ins.kind == IRNodeKind.LABEL) {
+        if (ins.kind === IRNodeKind.LABEL) {
             return "Label"
         }
 
