@@ -20,7 +20,7 @@ function testCreateAstFromSnippet() {
     console.log(ast.getText());
 }
 function testCreateAstFromFile() {
-    const absolutePath = __dirname + "/example_asthelper.js"
+    const absolutePath = __dirname + "/example_asthelper.js";
     let ast = asthelper.creatAstFromFile(absolutePath);
     console.log(ast.getText());
 }

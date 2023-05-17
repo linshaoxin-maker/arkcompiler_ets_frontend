@@ -204,7 +204,7 @@ export abstract class TryBuilderBase {
 export class TryBuilder extends TryBuilderBase {
 
     constructor(compiler: Compiler, pandaGen: PandaGen, tryStmt: ts.TryStatement) {
-        super(compiler, pandaGen, tryStmt)
+        super(compiler, pandaGen, tryStmt);
     }
 
     compileTryBlock(catchTable: CatchTable) {
@@ -260,7 +260,8 @@ export class TryBuilderWithForOf extends TryBuilderBase {
     private hasLoopEnv: boolean;
     private loopEnv: VReg | undefined;
 
-    constructor(compiler: Compiler, pandaGen: PandaGen, forOfStmt: ts.ForOfStatement, doneReg: VReg, iterator: IteratorRecord, labelTarget: LabelTarget, hasLoopEnv: boolean, loopEnv?: VReg) {
+    constructor(compiler: Compiler, pandaGen: PandaGen, forOfStmt: ts.ForOfStatement, doneReg: VReg, iterator: IteratorRecord,
+                labelTarget: LabelTarget, hasLoopEnv: boolean, loopEnv?: VReg) {
         super(compiler, pandaGen, forOfStmt);
 
         this.labelTarget = labelTarget;
@@ -382,7 +383,7 @@ export function updateCatchTables(inlinedTry: TryStatement | undefined, targetTr
 export function generateCatchTables(catchMap: Map<Label, CatchTable>): CatchTable[] {
     let catchTableList: CatchTable[] = [];
     catchMap.forEach((catchTable) => {
-        catchTableList.push(catchTable)
+        catchTableList.push(catchTable);
     });
     catchTableList.sort((a, b) => (b.getDepth() - a.getDepth()));
     return catchTableList;

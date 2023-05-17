@@ -76,9 +76,9 @@ export function compareVReg2Type(expectedMap: Map<string, number>, generated: VR
         if (name == "4funcObj" || name == "4newTarget" || name == "this") {
             continue;
         }
-        let vregMarker = "#" + vreg.num + "#" + vreg.getVariableName()
+        let vregMarker = "#" + vreg.num + "#" + vreg.getVariableName();
         if (!expectedMap.has(vregMarker)) {
-            console.log("verg not found: ", vregMarker)
+            console.log("verg not found: ", vregMarker);
             return false;
         }
         if (expectedMap.get(vregMarker) != vreg.getTypeIndex()) {

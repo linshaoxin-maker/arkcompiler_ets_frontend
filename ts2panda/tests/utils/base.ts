@@ -132,7 +132,7 @@ export function checkInstructions(actual: IRNode[], expected: IRNode[], checkFn?
     }
 
     if (actual.length !== expected.length) {
-        console.log("actual.length:" + actual.length + " expected.length:" + expected.length)
+        console.log("actual.length:" + actual.length + " expected.length:" + expected.length);
         return false;
     }
 
@@ -154,8 +154,8 @@ export function compileAllSnippet(snippet: string, passes?: Pass[], literalBuffe
         CmdOptions.setWatchEvaluateExpressionArgs(['','']);
     }
     CmdOptions.setMergeAbc(true);
-    CmdOptions.isWatchEvaluateExpressionMode() ? setGlobalStrict(true)
-                            : setGlobalStrict(jshelpers.isEffectiveStrictModeSourceFile(sourceFile, compileOptions));
+    CmdOptions.isWatchEvaluateExpressionMode() ? setGlobalStrict(true) :
+        setGlobalStrict(jshelpers.isEffectiveStrictModeSourceFile(sourceFile, compileOptions));
     let compilerDriver = new CompilerDriver('UnitTest', 'UnitTest');
     CompilerDriver.srcNode = sourceFile;
 

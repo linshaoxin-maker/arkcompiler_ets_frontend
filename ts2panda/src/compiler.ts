@@ -124,7 +124,7 @@ import {
 } from "./variable";
 import {
     compileCommaListExpression
-} from "./expression/compileCommaListExpression"
+} from "./expression/compileCommaListExpression";
 
 export enum ControlFlowChange { Continue, Break }
 export class Compiler {
@@ -234,7 +234,7 @@ export class Compiler {
         let unreachableFlag = false;
 
         if (body.parent && ts.isConstructorDeclaration(body.parent)) {
-            compileDefaultInitClassMembers(this, body.parent)
+            compileDefaultInitClassMembers(this, body.parent);
         }
 
         statements.forEach((stmt) => {
@@ -490,8 +490,8 @@ export class Compiler {
                 return;
             }
 
-            if ((astutils.getVarDeclarationKind(decl) == VarDeclarationKind.LET)
-                && decl.parent.kind != ts.SyntaxKind.CatchClause) {
+            if ((astutils.getVarDeclarationKind(decl) == VarDeclarationKind.LET) &&
+                decl.parent.kind != ts.SyntaxKind.CatchClause) {
                 this.pandaGen.loadAccumulator(decl, getVregisterCache(this.pandaGen, CacheList.undefined));
             }
         }
@@ -627,7 +627,8 @@ export class Compiler {
         pandaGen.throw(stmt);
     }
 
-    compileFinallyBeforeCFC(endTry: TryStatement | undefined, cfc: ControlFlowChange, continueTargetLabel: Label | undefined) {// compile finally before control flow change
+    // compile finally before control flow change
+    compileFinallyBeforeCFC(endTry: TryStatement | undefined, cfc: ControlFlowChange, continueTargetLabel: Label | undefined) {
         let startTry = TryStatement.getCurrentTryStatement();
         let originTry = startTry;
         let currentScope = this.scope;
@@ -639,7 +640,7 @@ export class Compiler {
                 let inlinedLabelPair = new LabelPair(inlineFinallyBegin, inlineFinallyEnd);
                 // adjust the current tryStatement before inlining finallyBlock
                 let saveTry = TryStatement.getCurrentTryStatement();
-                TryStatement.setCurrentTryStatement(startTry.getOuterTryStatement())
+                TryStatement.setCurrentTryStatement(startTry.getOuterTryStatement());
 
                 this.pandaGen.label(startTry.getStatement(), inlineFinallyBegin);
                 startTry.trybuilder.compileFinalizer(cfc, continueTargetLabel);
@@ -968,7 +969,7 @@ export class Compiler {
                     if (arg.text.match(/ *return +this[;]? *$/) == null) {
                         return false;
                     } else {
-                        this.pandaGen.loadAccumulator(expr, getVregisterCache(this.pandaGen, CacheList.Global))
+                        this.pandaGen.loadAccumulator(expr, getVregisterCache(this.pandaGen, CacheList.Global));
                         return true;
                     }
                 }
@@ -1224,9 +1225,9 @@ export class Compiler {
             return;
         }
         // LogicAnd, LogicOr and Coalesce are Short-circuiting
-        if (expr.operatorToken.kind == ts.SyntaxKind.AmpersandAmpersandToken
-            || expr.operatorToken.kind == ts.SyntaxKind.BarBarToken
-            || expr.operatorToken.kind == ts.SyntaxKind.QuestionQuestionToken) {
+        if (expr.operatorToken.kind == ts.SyntaxKind.AmpersandAmpersandToken ||
+            expr.operatorToken.kind == ts.SyntaxKind.BarBarToken ||
+            expr.operatorToken.kind == ts.SyntaxKind.QuestionQuestionToken) {
             this.compileLogicalExpression(expr);
             return;
         }
@@ -1311,7 +1312,7 @@ export class Compiler {
         let { arguments: argRegs, passThis: passThis } = getHiddenParameters(expr.tag, this); // +3 for function and this
         getTemplateObject(pandaGen, expr);
         let templateObj = pandaGen.getTemp();
-        pandaGen.storeAccumulator(expr, templateObj)
+        pandaGen.storeAccumulator(expr, templateObj);
         argRegs.push(templateObj);
 
         if (spans && spans.length) {
@@ -1390,7 +1391,7 @@ export class Compiler {
             pandaGen.storeLexicalVar(node, thisInfo.level, slot, value);
             pandaGen.freeTemps(value);
         } else {
-            pandaGen.storeAccumulator(node, pandaGen.getVregForVariable(<Variable>thisInfo.v))
+            pandaGen.storeAccumulator(node, pandaGen.getVregForVariable(<Variable>thisInfo.v));
         }
     }
 

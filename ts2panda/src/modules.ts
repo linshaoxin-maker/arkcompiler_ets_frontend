@@ -19,7 +19,7 @@ import * as jshelpers from "./jshelpers";
 import { DiagnosticCode, DiagnosticError } from "./diagnostic";
 
 export class ModuleStmt {
-    private node: ts.Node
+    private node: ts.Node;
     private moduleRequest: string;
     private namespace: string = "";
     private bingdingNameMap: Map<string, string> = new Map<string, string>();

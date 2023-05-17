@@ -514,7 +514,7 @@ export class FunctionScope extends VariableScope {
 export class LocalScope extends Scope {
     constructor(parent: Scope) {
         super();
-        this.parent = parent
+        this.parent = parent;
     }
 
     add(decl: Decl | string, declKind: VarDeclarationKind, status?: InitStatus): Variable | undefined {

@@ -203,7 +203,7 @@ export class Ts2Panda {
     static dumpTypeLiteralArrayBuffer() {
         let literalArrays = PandaGen.getLiteralArrayBuffer();
         let countType: LiteralBuffer = literalArrays[0];
-        let jsonTypeString: string = ""
+        let jsonTypeString: string = "";
         let typeCount = countType.getLiteral(0)?.getValue();
         if (typeCount) {
             for (let i = 0; i < typeCount; i++) {
@@ -414,7 +414,8 @@ export class Ts2Panda {
             );
         }
 
-        let variables = undefined, sourceCode = undefined;
+        let variables = undefined;
+        let sourceCode = undefined;
         if (CmdOptions.needRecordSourceCode() || CmdOptions.isDebugMode()) {
             // function's sourceCode will be undefined in debugMode
             // if we don't need to record function-sourceCode

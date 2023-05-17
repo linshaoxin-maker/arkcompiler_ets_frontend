@@ -263,8 +263,8 @@ function setUncompiledProperties(compiler: Compiler, pandaGen: PandaGen, propert
                         createMethodOrAccessor(pandaGen, compiler, objReg, <ts.MethodDeclaration>prop.getValue());
                     } else {
                         compiler.compileExpression(<ts.Expression | ts.Identifier>prop.getValue());
-                        nameSetting = needSettingName(<ts.Expression | ts.Identifier>prop.getValue())
-                            && (<string | number>(prop.getName())).toString().lastIndexOf('.') != -1;
+                        nameSetting = needSettingName(<ts.Expression | ts.Identifier>prop.getValue()) &&
+                                      (<string | number>(prop.getName())).toString().lastIndexOf('.') != -1;
                     }
                     pandaGen.storeOwnProperty(prop.getValue().parent, objReg, <string | number>(prop.getName()), nameSetting);
                     break;

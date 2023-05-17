@@ -372,8 +372,8 @@ export class ClassType extends BaseType {
             }
         }
 
-        let typeNode = member.type
-        let memberName = member.name
+        let typeNode = member.type;
+        let memberName = member.name;
         fieldInfo[0] = this.getOrCreateRecordForTypeNode(typeNode, memberName);
 
         if (isStatic) {

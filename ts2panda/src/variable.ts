@@ -56,7 +56,7 @@ export abstract class Variable {
 
     getVreg(): VReg {
         if (!this.vreg) {
-            throw new Error("variable has not been binded")
+            throw new Error("variable has not been binded");
         }
         return this.vreg;
     }
@@ -77,7 +77,7 @@ export abstract class Variable {
         if (this.lexical()) {
             return;
         }
-        this.idxLex = scope.getLexVarIdx()
+        this.idxLex = scope.getLexVarIdx();
         scope.pendingCreateEnv();
         this.isLexVar = true;
         scope.addLexVarInfo(this.name, this.idxLex);

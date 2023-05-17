@@ -256,7 +256,7 @@ function checkDeclareGlobalId(decl: Decl, scope: Scope) {
 
     if (isGlobalIdentifier(decl.name) && isDeclInGlobal(<ts.Identifier>decl.node)) {
         let sourceNode = jshelpers.getSourceFileOfNode(decl.node);
-        throw new DiagnosticError(decl.node, DiagnosticCode.Declaration_name_conflicts_with_built_in_global_identifier_0, sourceNode, [decl.name])
+        throw new DiagnosticError(decl.node, DiagnosticCode.Declaration_name_conflicts_with_built_in_global_identifier_0, sourceNode, [decl.name]);
     }
 }
 
@@ -296,13 +296,14 @@ function checkBreakOrContinueStatement(node: ts.BreakOrContinueStatement) {
                     // found matching label - verify that label usage is correct
                     // continue can only target labels that are on iteration statements
                     let isMisplacedContinueLabel = false;
-                    if (node.kind === ts.SyntaxKind.ContinueStatement
-                        && !jshelpers.isIterationStatement((<ts.LabeledStatement>curNode).statement, /*lookInLabeledStatement*/ true)) {
+                    if (node.kind === ts.SyntaxKind.ContinueStatement &&
+                        !jshelpers.isIterationStatement((<ts.LabeledStatement>curNode).statement, /*lookInLabeledStatement*/ true)) {
                         isMisplacedContinueLabel = true;
                     }
 
                     if (isMisplacedContinueLabel) {
-                        throw new DiagnosticError(node, DiagnosticCode.A_continue_statement_can_only_jump_to_a_label_of_an_enclosing_iteration_statement, jshelpers.getSourceFileOfNode(curNode));
+                        throw new DiagnosticError(node, DiagnosticCode.A_continue_statement_can_only_jump_to_a_label_of_an_enclosing_iteration_statement,
+                            jshelpers.getSourceFileOfNode(curNode));
                     }
 
                     return;
@@ -360,13 +361,16 @@ function checkMetaProperty(node: ts.MetaProperty) {
 
             let func = getContainingFunctionDeclaration(node);
             if (!func) {
-                throw new DiagnosticError(node, DiagnosticCode.Meta_property_0_is_only_allowed_in_the_body_of_a_function_declaration_function_expression_or_constructor, file, args);
+                throw new DiagnosticError(node,
+                    DiagnosticCode.Meta_property_0_is_only_allowed_in_the_body_of_a_function_declaration_function_expression_or_constructor, file, args);
             } else {
                 if (ts.isMethodDeclaration(func)) {
-                    throw new DiagnosticError(node, DiagnosticCode.Meta_property_0_is_only_allowed_in_the_body_of_a_function_declaration_function_expression_or_constructor, file, args);
+                    throw new DiagnosticError(node,
+                        DiagnosticCode.Meta_property_0_is_only_allowed_in_the_body_of_a_function_declaration_function_expression_or_constructor, file, args);
                 }
                 if (ts.isArrowFunction(func) && !jshelpers.getNewTargetContainer(node)) {
-                    throw new DiagnosticError(node, DiagnosticCode.Meta_property_0_is_only_allowed_in_the_body_of_a_function_declaration_function_expression_or_constructor, file, args);
+                    throw new DiagnosticError(node,
+                        DiagnosticCode.Meta_property_0_is_only_allowed_in_the_body_of_a_function_declaration_function_expression_or_constructor, file, args);
                 }
             }
             break;
@@ -429,18 +433,20 @@ function checkVariableDeclaration(node: ts.VariableDeclaration) {
 
     if (node.exclamationToken && (node.parent.parent.kind !== ts.SyntaxKind.VariableStatement || !node.type || node.initializer)) {
         if (node.initializer) {
-            throw new DiagnosticError(node.exclamationToken, DiagnosticCode.Declarations_with_initializers_cannot_also_have_definite_assignment_assertions, file);
+            throw new DiagnosticError(node.exclamationToken,
+                DiagnosticCode.Declarations_with_initializers_cannot_also_have_definite_assignment_assertions, file);
         } else {
-            throw new DiagnosticError(node.exclamationToken, DiagnosticCode.Declarations_with_definite_assignment_assertions_must_also_have_type_annotations, file);
+            throw new DiagnosticError(node.exclamationToken,
+                DiagnosticCode.Declarations_with_definite_assignment_assertions_must_also_have_type_annotations, file);
         }
     }
 
     if (jshelpers.isLet(node) || jshelpers.isVarConst(node)) {
         checkNameInLetOrConstDeclarations(node.name);
-        if (!isInBlockScope(node.parent.parent.parent)
-            && !ts.isForInStatement(node.parent.parent)
-            && !ts.isForOfStatement(node.parent.parent)
-            && !ts.isForStatement(node.parent.parent)) {
+        if (!isInBlockScope(node.parent.parent.parent) &&
+            !ts.isForInStatement(node.parent.parent) &&
+            !ts.isForOfStatement(node.parent.parent) &&
+            !ts.isForStatement(node.parent.parent)) {
             throw new DiagnosticError(node, DiagnosticCode.const_and_let_declarations_not_allowed_in_statement_positions, file);
         }
     }
@@ -477,7 +483,7 @@ function checkAsyncModifier(node: ts.Node, asyncModifier: ts.Node) {
             break;
     }
     let file = jshelpers.getSourceFileOfNode(node);
-    throw new DiagnosticError(asyncModifier, DiagnosticCode._0_modifier_cannot_be_used_here, file, ["async"])
+    throw new DiagnosticError(asyncModifier, DiagnosticCode._0_modifier_cannot_be_used_here, file, ["async"]);
 }
 
 function checkModifiers(node: ts.Node) {
@@ -495,16 +501,19 @@ function checkModifiers(node: ts.Node) {
     for (let modifier of node.modifiers!) {
         if (modifier.kind !== ts.SyntaxKind.ReadonlyKeyword) {
             if (ts.isPropertySignature(node) || ts.isMethodSignature(node)) {
-                throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_a_type_member, file, [jshelpers.tokenToString(modifier.kind)]);
+                throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_a_type_member,
+                    file, [jshelpers.tokenToString(modifier.kind)]);
             }
             if (ts.isIndexSignatureDeclaration(node)) {
-                throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_an_index_signature, file, [jshelpers.tokenToString(modifier.kind)]);
+                throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_appear_on_an_index_signature,
+                    file, [jshelpers.tokenToString(modifier.kind)]);
             }
         }
         switch (modifier.kind) {
             case ts.SyntaxKind.ConstKeyword: {
                 if (ts.isEnumDeclaration(node)) {
-                    throw new DiagnosticError(node, DiagnosticCode.A_class_member_cannot_have_the_0_keyword, file, [jshelpers.tokenToString(ts.SyntaxKind.ConstKeyword)]);
+                    throw new DiagnosticError(node, DiagnosticCode.A_class_member_cannot_have_the_0_keyword,
+                        file, [jshelpers.tokenToString(ts.SyntaxKind.ConstKeyword)]);
                 }
                 break;
             }
@@ -558,9 +567,11 @@ function checkModifiers(node: ts.Node) {
             case ts.SyntaxKind.ReadonlyKeyword: {
                 if (flags & ts.ModifierFlags.Readonly) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_already_seen, file, ["readonly"]);
-                } else if (!ts.isPropertyDeclaration(node) && !ts.isPropertySignature(node) && !ts.isIndexSignatureDeclaration(node) && !ts.isParameter(node)) {
+                } else if (!ts.isPropertyDeclaration(node) && !ts.isPropertySignature(node) &&
+                           !ts.isIndexSignatureDeclaration(node) && !ts.isParameter(node)) {
                     // If node.kind === SyntaxKind.Parameter, checkParameter report an error if it's not a parameter property.
-                    throw new DiagnosticError(modifier, DiagnosticCode.The_readonly_modifier_can_only_appear_on_a_property_declaration_or_index_signature, file);
+                    throw new DiagnosticError(modifier,
+                        DiagnosticCode.The_readonly_modifier_can_only_appear_on_a_property_declaration_or_index_signature, file);
                 }
                 flags |= ts.ModifierFlags.Readonly;
                 lastReadonly = modifier;
@@ -613,8 +624,10 @@ function checkModifiers(node: ts.Node) {
                     throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_already_seen, file, ["abstract"]);
                 }
                 if (ts.isClassDeclaration(node) && ts.isConstructorTypeNode(node)) {
-                    if (!ts.isMethodDeclaration(node) && !ts.isPropertyDeclaration(node) && !ts.isGetAccessorDeclaration(node) && !ts.isSetAccessorDeclaration(node)) {
-                        throw new DiagnosticError(modifier, DiagnosticCode.The_abstract_modifier_can_only_appear_on_a_class_method_or_property_declaration, file);
+                    if (!ts.isMethodDeclaration(node) && !ts.isPropertyDeclaration(node) &&
+                        !ts.isGetAccessorDeclaration(node) && !ts.isSetAccessorDeclaration(node)) {
+                        throw new DiagnosticError(modifier,
+                            DiagnosticCode.The_abstract_modifier_can_only_appear_on_a_class_method_or_property_declaration, file);
                     }
                     if (flags & ts.ModifierFlags.Static) {
                         throw new DiagnosticError(modifier, DiagnosticCode._0_modifier_cannot_be_used_with_1_modifier, file, ["static", "abstract"]);
@@ -710,25 +723,31 @@ function checkForInOrForOfStatement(stmt: ts.ForInOrOfStatement) {
 
         if (declarations.length > 1) {
             if (ts.isForInStatement(stmt)) {
-                throw new DiagnosticError(variableList.declarations[1], DiagnosticCode.Only_a_single_variable_declaration_is_allowed_in_a_for_in_statement, file);
+                throw new DiagnosticError(variableList.declarations[1],
+                    DiagnosticCode.Only_a_single_variable_declaration_is_allowed_in_a_for_in_statement, file);
             } else {
-                throw new DiagnosticError(variableList.declarations[1], DiagnosticCode.Only_a_single_variable_declaration_is_allowed_in_a_for_of_statement, file);
+                throw new DiagnosticError(variableList.declarations[1],
+                    DiagnosticCode.Only_a_single_variable_declaration_is_allowed_in_a_for_of_statement, file);
             }
         }
 
         if (declarations[0].initializer) {
             if (ts.isForInStatement(stmt)) {
-                throw new DiagnosticError(declarations[0].name, DiagnosticCode.The_variable_declaration_of_a_for_in_statement_cannot_have_an_initializer, file);
+                throw new DiagnosticError(declarations[0].name,
+                    DiagnosticCode.The_variable_declaration_of_a_for_in_statement_cannot_have_an_initializer, file);
             } else {
-                throw new DiagnosticError(declarations[0].name, DiagnosticCode.The_variable_declaration_of_a_for_of_statement_cannot_have_an_initializer, file);
+                throw new DiagnosticError(declarations[0].name,
+                    DiagnosticCode.The_variable_declaration_of_a_for_of_statement_cannot_have_an_initializer, file);
             }
         }
 
         if (declarations[0].type) {
             if (ts.isForInStatement(stmt)) {
-                throw new DiagnosticError(declarations[0], DiagnosticCode.The_left_hand_side_of_a_for_in_statement_cannot_use_a_type_annotation, file);
+                throw new DiagnosticError(declarations[0],
+                    DiagnosticCode.The_left_hand_side_of_a_for_in_statement_cannot_use_a_type_annotation, file);
             } else {
-                throw new DiagnosticError(declarations[0], DiagnosticCode.The_left_hand_side_of_a_for_of_statement_cannot_use_a_type_annotation, file);
+                throw new DiagnosticError(declarations[0],
+                    DiagnosticCode.The_left_hand_side_of_a_for_of_statement_cannot_use_a_type_annotation, file);
             }
         }
     } else {
@@ -774,7 +793,8 @@ const enum OuterExpressionKinds {
 
 function checkReferenceExpression(expr: ts.Expression, invalidReferenceCode: DiagnosticCode, invalidOptionalChainCode: DiagnosticCode) {
     let node = jshelpers.skipOuterExpressions(expr, OuterExpressionKinds.Assertions | OuterExpressionKinds.Parentheses);
-    if (node.kind !== ts.SyntaxKind.Identifier && node.kind !== ts.SyntaxKind.PropertyAccessExpression && node.kind !== ts.SyntaxKind.ElementAccessExpression) {
+    if (node.kind !== ts.SyntaxKind.Identifier && node.kind !== ts.SyntaxKind.PropertyAccessExpression &&
+        node.kind !== ts.SyntaxKind.ElementAccessExpression) {
         throw new DiagnosticError(expr, invalidReferenceCode);
     }
 
@@ -914,9 +934,9 @@ function checkBinaryExpression(node: ts.BinaryExpression) {
 }
 
 function isInVaildAssignmentLeftSide(leftExpr: ts.Expression) {
-    if (jshelpers.isKeyword(leftExpr.kind)
-        || leftExpr.kind == ts.SyntaxKind.NumericLiteral
-        || leftExpr.kind == ts.SyntaxKind.StringLiteral) {
+    if (jshelpers.isKeyword(leftExpr.kind) ||
+        leftExpr.kind == ts.SyntaxKind.NumericLiteral ||
+        leftExpr.kind == ts.SyntaxKind.StringLiteral) {
         throw new DiagnosticError(leftExpr, DiagnosticCode.The_left_hand_side_of_an_assignment_expression_must_be_a_variable_or_a_property_access);
     }
 }
@@ -930,12 +950,15 @@ function checkContextualIdentifier(node: ts.Identifier) {
     let file = jshelpers.getSourceFileOfNode(node);
     if (node.originalKeywordKind === ts.SyntaxKind.AwaitKeyword) {
         if (jshelpers.isExternalOrCommonJsModule(file) && jshelpers.isInTopLevelContext(node)) {
-            throw new DiagnosticError(node, DiagnosticCode.Identifier_expected_0_is_a_reserved_word_at_the_top_level_of_a_module, file, jshelpers.declarationNameToString(node));
+            throw new DiagnosticError(node, DiagnosticCode.Identifier_expected_0_is_a_reserved_word_at_the_top_level_of_a_module,
+                file, jshelpers.declarationNameToString(node));
         } else if (node.flags & ts.NodeFlags.AwaitContext) {
-            throw new DiagnosticError(node, DiagnosticCode.Identifier_expected_0_is_a_reserved_word_that_cannot_be_used_here, file, jshelpers.declarationNameToString(node));
+            throw new DiagnosticError(node, DiagnosticCode.Identifier_expected_0_is_a_reserved_word_that_cannot_be_used_here,
+                file, jshelpers.declarationNameToString(node));
         }
     } else if (node.originalKeywordKind === ts.SyntaxKind.YieldKeyword && node.flags & ts.NodeFlags.YieldContext) {
-        throw new DiagnosticError(node, DiagnosticCode.Identifier_expected_0_is_a_reserved_word_that_cannot_be_used_here, file, jshelpers.declarationNameToString(node));
+        throw new DiagnosticError(node, DiagnosticCode.Identifier_expected_0_is_a_reserved_word_that_cannot_be_used_here,
+            file, jshelpers.declarationNameToString(node));
     }
 }
 
@@ -981,7 +1004,9 @@ function checkObjectLiteralExpression(node: ts.ObjectLiteralExpression) {
         }
 
         if (ts.isShorthandPropertyAssignment(prop) && !inDestructuring && prop.objectAssignmentInitializer) {
-            throw new DiagnosticError(prop.equalsToken!, DiagnosticCode.Did_you_mean_to_use_a_Colon_An_can_only_follow_a_property_name_when_the_containing_object_literal_is_part_of_a_destructuring_pattern, file);
+            throw new DiagnosticError(prop.equalsToken!,
+                DiagnosticCode.Did_you_mean_to_use_a_Colon_An_can_only_follow_a_property_name_when_the_containing_object_literal_is_part_of_a_destructuring_pattern,
+                file);
         }
 
         if (ts.isPrivateIdentifier(name)) {
@@ -1002,10 +1027,14 @@ function checkObjectLiteralExpression(node: ts.ObjectLiteralExpression) {
         * PropertyDefinition : PropertyName : AssignmentExpression .
         */
         let curKind = getPropertieDeclaration(prop, name);
-        if (!curKind) continue;
+        if (!curKind) {
+            continue;
+        } 
         if (!inDestructuring) {
             let effectName = jshelpers.getPropertyNameForPropertyNameNode(name);
-            if (!effectName || ts.isComputedPropertyName(name)) continue;
+            if (!effectName || ts.isComputedPropertyName(name)) {
+                continue;
+            }
             let existKind = seen.get(effectName);
             if (!existKind) {
                 seen.set(effectName, curKind);
@@ -1194,14 +1223,17 @@ function checkSuperExpression(node: ts.SuperExpression) {
             return;
         }
         if (isCallExpression) {
-            throw new DiagnosticError(node, DiagnosticCode.Super_calls_are_not_permitted_outside_constructors_or_in_nested_functions_inside_constructors, file);
+            throw new DiagnosticError(node,
+                DiagnosticCode.Super_calls_are_not_permitted_outside_constructors_or_in_nested_functions_inside_constructors, file);
         }
 
         if (!container || !container.parent || !ts.isClassLike(container.parent) || ts.isObjectLiteralExpression(container.parent)) {
-            throw new DiagnosticError(node, DiagnosticCode.The_super_can_only_be_referenced_in_members_of_derived_classes_or_object_literal_expressions, file);
+            throw new DiagnosticError(node,
+                DiagnosticCode.The_super_can_only_be_referenced_in_members_of_derived_classes_or_object_literal_expressions, file);
         }
 
-        throw new DiagnosticError(node, DiagnosticCode.The_super_property_access_is_permitted_only_in_a_constructor_member_function_or_member_accessor_of_a_derived_class, file);
+        throw new DiagnosticError(node,
+            DiagnosticCode.The_super_property_access_is_permitted_only_in_a_constructor_member_function_or_member_accessor_of_a_derived_class, file);
     }
 }
 

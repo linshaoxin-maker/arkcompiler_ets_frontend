@@ -321,7 +321,7 @@ const es2abcBase64Output = "--base64Output";
 function callEs2pandaToolChain(ideInputStr: string) {
     let commandLine = "\"" + es2abcBinaryPath + es2abcBinaryName + "\" " + es2abcBase64Input + " \"" + ideInputStr
                       + "\" " + es2abcDebuggerEvaluateFlag + " " + es2abcBase64Output;
-    var exec = require('child_process').exec;
+    let exec = require('child_process').exec;
     exec(`${commandLine}`, function(error, stdout) {
         if (error) {
             console.log("generate abc file failed, please check the input string and syntax of the expression");

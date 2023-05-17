@@ -99,7 +99,7 @@ export class TypeRecorder {
     }
 
     public setArrayTypeMap(contentTypeIndex: number, arrayTypeIndex: number) {
-        this.arrayTypeMap.set(contentTypeIndex, arrayTypeIndex)
+        this.arrayTypeMap.set(contentTypeIndex, arrayTypeIndex);
     }
 
     public hasArrayTypeMapping(contentTypeIndex: number) {
@@ -123,7 +123,7 @@ export class TypeRecorder {
     }
 
     public setClass2InstanceMap(classIndex: number, instanceIndex: number) {
-        this.class2InstanceMap.set(classIndex, instanceIndex)
+        this.class2InstanceMap.set(classIndex, instanceIndex);
     }
 
     public hasClass2InstanceMap(classIndex: number) {
@@ -135,7 +135,7 @@ export class TypeRecorder {
     }
 
     public setBuiltinContainer2InstanceMap(builtinContainer: object, instanceIndex: number) {
-        this.builtinContainer2InstanceMap.set(builtinContainer, instanceIndex)
+        this.builtinContainer2InstanceMap.set(builtinContainer, instanceIndex);
     }
 
     public hasBuiltinContainer2InstanceMap(builtinContainer: object) {
