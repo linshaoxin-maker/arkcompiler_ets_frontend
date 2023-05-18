@@ -261,6 +261,17 @@ bool ParserImpl::CurrentLiteralIsBasicType()
         case lexer::TokenType::KEYW_ANY:
         case lexer::TokenType::KEYW_BOOLEAN:
         case lexer::TokenType::KEYW_NUMBER:
+        case lexer::TokenType::KEYW_CHAR:
+        case lexer::TokenType::KEYW_BYTE:
+        case lexer::TokenType::KEYW_SHORT:
+        case lexer::TokenType::KEYW_INT:
+        case lexer::TokenType::KEYW_LONG:
+        case lexer::TokenType::KEYW_UBYTE:
+        case lexer::TokenType::KEYW_USHORT:
+        case lexer::TokenType::KEYW_UINT:
+        case lexer::TokenType::KEYW_ULONG:
+        case lexer::TokenType::KEYW_FLOAT:
+        case lexer::TokenType::KEYW_DOUBLE:
         case lexer::TokenType::KEYW_STRING:
         case lexer::TokenType::KEYW_SYMBOL:
         case lexer::TokenType::KEYW_UNKNOWN:
@@ -1884,6 +1895,32 @@ ir::Expression *ParserImpl::ParseTsBasicType(TypeAnnotationParsingOptions option
         typeAnnotation = AllocNode<ir::TSBooleanKeyword>();
     } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_NUMBER) {
         typeAnnotation = AllocNode<ir::TSNumberKeyword>();
+    // Currently we treat all the types of the number type family as the generic number type.
+    } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_NUMBER) {
+        typeAnnotation = AllocNode<ir::TSNumberKeyword>();
+    } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_CHAR) {
+        typeAnnotation = AllocNode<ir::TSNumberKeyword>();
+    } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_BYTE) {
+        typeAnnotation = AllocNode<ir::TSNumberKeyword>();
+    } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_SHORT) {
+        typeAnnotation = AllocNode<ir::TSNumberKeyword>();
+    } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_INT) {
+        typeAnnotation = AllocNode<ir::TSNumberKeyword>();
+    } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_LONG) {
+        typeAnnotation = AllocNode<ir::TSNumberKeyword>();
+    } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_UBYTE) {
+        typeAnnotation = AllocNode<ir::TSNumberKeyword>();
+    } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_USHORT) {
+        typeAnnotation = AllocNode<ir::TSNumberKeyword>();
+    } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_UINT) {
+        typeAnnotation = AllocNode<ir::TSNumberKeyword>();
+    } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_ULONG) {
+        typeAnnotation = AllocNode<ir::TSNumberKeyword>();
+    } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_FLOAT) {
+        typeAnnotation = AllocNode<ir::TSNumberKeyword>();
+    } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_DOUBLE) {
+        typeAnnotation = AllocNode<ir::TSNumberKeyword>();
+    // Number type family ends.
     } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_STRING) {
         typeAnnotation = AllocNode<ir::TSStringKeyword>();
     } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_UNKNOWN) {

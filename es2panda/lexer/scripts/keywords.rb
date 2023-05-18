@@ -33,12 +33,14 @@ keywords = [
         "bigint" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_BIGINT"],
         "boolean" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_BOOLEAN"],
         "break" => ["TokenType::KEYW_BREAK", "TokenType::KEYW_BREAK"],
+        "byte" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_BYTE"],
     },
 
     # keywords start with 'c'
     {
         "case" => ["TokenType::KEYW_CASE", "TokenType::KEYW_CASE"],
         "catch" => ["TokenType::KEYW_CATCH", "TokenType::KEYW_CATCH"],
+        "char" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_CHAR"],
         "class" => ["TokenType::KEYW_CLASS", "TokenType::KEYW_CLASS"],
         "const" => ["TokenType::KEYW_CONST", "TokenType::KEYW_CONST"],
         "continue" => ["TokenType::KEYW_CONTINUE", "TokenType::KEYW_CONTINUE"]
@@ -51,6 +53,7 @@ keywords = [
         "default" => ["TokenType::KEYW_DEFAULT", "TokenType::KEYW_DEFAULT"],
         "delete" => ["TokenType::KEYW_DELETE", "TokenType::KEYW_DELETE"],
         "do" => ["TokenType::KEYW_DO", "TokenType::KEYW_DO"],
+        "double" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_DOUBLE"],
     },
 
     # keywords start with 'e'
@@ -66,6 +69,7 @@ keywords = [
     {
         "false" => ["TokenType::LITERAL_FALSE", "TokenType::LITERAL_FALSE"],
         "finally" => ["TokenType::KEYW_FINALLY", "TokenType::KEYW_FINALLY"],
+        "float" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_FLOAT"],
         "for" => ["TokenType::KEYW_FOR", "TokenType::KEYW_FOR"],
         "from" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_FROM"],
         "function" => ["TokenType::KEYW_FUNCTION", "TokenType::KEYW_FUNCTION"],
@@ -85,6 +89,7 @@ keywords = [
         "in" => ["TokenType::KEYW_IN", "TokenType::KEYW_IN"],
         "infer" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_INFER"],
         "instanceof" => ["TokenType::KEYW_INSTANCEOF", "TokenType::KEYW_INSTANCEOF"],
+        "int" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_INT"],
         "interface" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_INTERFACE"],
         "is" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_IS"],
     },
@@ -97,6 +102,7 @@ keywords = [
     # keywords start with 'l'
     {
         "let" => ["TokenType::KEYW_LET", "TokenType::KEYW_LET"],
+        "long" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_LONG"],
     },
 
     # keywords start with 'm'
@@ -138,6 +144,7 @@ keywords = [
     # keywords start with 's'
     {
         "set" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_SET"],
+        "short" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_SHORT"],
         "static" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_STATIC"],
         "string" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_STRING"],
         "super" => ["TokenType::KEYW_SUPER", "TokenType::KEYW_SUPER"],
@@ -160,6 +167,10 @@ keywords = [
         "undefined" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_UNDEFINED"],
         "unique" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_UNIQUE"],
         "unknown" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_UNKNOWN"],
+        "ubyte" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_UBYTE"],
+        "uint" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_UINT"],
+        "ulong" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_ULONG"],
+        "ushort" => ["TokenType::LITERAL_IDENT", "TokenType::KEYW_USHORT"],
     },
 
     # keywords start with 'v'

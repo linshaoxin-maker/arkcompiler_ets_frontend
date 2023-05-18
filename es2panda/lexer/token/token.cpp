@@ -83,6 +83,17 @@ bool Token::IsReservedTypeName() const
         case TokenType::KEYW_UNKNOWN:
         case TokenType::KEYW_NEVER:
         case TokenType::KEYW_NUMBER:
+        case TokenType::KEYW_CHAR:
+        case TokenType::KEYW_BYTE:
+        case TokenType::KEYW_SHORT:
+        case TokenType::KEYW_INT:
+        case TokenType::KEYW_LONG:
+        case TokenType::KEYW_UBYTE:
+        case TokenType::KEYW_USHORT:
+        case TokenType::KEYW_UINT:
+        case TokenType::KEYW_ULONG:
+        case TokenType::KEYW_FLOAT:
+        case TokenType::KEYW_DOUBLE:
         case TokenType::KEYW_BIGINT:
         case TokenType::KEYW_BOOLEAN:
         case TokenType::KEYW_STRING:
