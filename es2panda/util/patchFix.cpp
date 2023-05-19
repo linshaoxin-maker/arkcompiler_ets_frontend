@@ -167,10 +167,14 @@ std::vector<std::pair<std::string, size_t>> PatchFix::GenerateFunctionAndClassHa
             int64_t bufferIdx = GetLiteralIdxFromStringId(ins.ids[1]);
             std::string literalStr = ExpandLiteral(bufferIdx, literalBuffers);
             auto classHash = std::hash<std::string>{}(literalStr);
+            if (!hotfix_ && !hotReload_) {
+                // cold patch, need add func bytecodes into patch.abc when defineclass inses change
+                ss << classHash;
+            }
+            ss << " ";
             hashList.push_back(std::pair<std::string, size_t>(ins.ids[0], classHash));
             CollectClassMemberFunctions(ins.ids[0], bufferIdx, literalBuffers);
         }
-        ss << " ";
     }
 
     ss << "}" << std::endl;
@@ -419,7 +423,8 @@ void PatchFix::Finalize(panda::pandasm::Program **prog)
         return;
     }
 
-    if (hotReload_) {
+    if (!hotfix_) {
+        // hotReload_ and coldPatch
         return;
     }
 
@@ -476,7 +481,8 @@ bool PatchFix::CompareClassHash(std::vector<std::pair<std::string, size_t>> &has
             if (classIter->second != std::to_string(hashList[i].second)) {
                 if (hotfix_) {
                     std::cerr << "[Patch] Found class " << hashList[i].first << " changed, not supported!" << std::endl;
-                } else if (hotReload_) {
+                } else {
+                    // hotReload_
                     std::cerr << "[Patch] Found class " << hashList[i].first << " changed, not supported! If " <<
                         hashList[i].first << " is not changed and you are changing UI Component, please only " <<
                         "change one Component at a time and make sure the Component is placed at the bottom " <<
@@ -517,8 +523,12 @@ void PatchFix::HandleFunction(const compiler::PandaGen *pg, panda::pandasm::Func
     }
 
     auto hashList = GenerateFunctionAndClassHash(func, literalBuffers);
-    if (!CompareClassHash(hashList, bytecodeInfo)) {
-        return;
+
+    if (hotfix_ || hotReload_) {
+        // not cold patch
+        if (!CompareClassHash(hashList, bytecodeInfo)) {
+            return;
+        }
     }
 
     if (hotReload_) {
@@ -526,10 +536,19 @@ void PatchFix::HandleFunction(const compiler::PandaGen *pg, panda::pandasm::Func
     }
 
     auto funcHash = std::to_string(hashList.back().second);
-    if (funcHash == bytecodeInfo.funcHash || funcName == funcMain0_) {
-        func->metadata->SetAttribute(EXTERNAL_ATTRIBUTE);
+
+    if (funcName == funcMain0_) {
+        if (hotfix_) {
+            func->metadata->SetAttribute(EXTERNAL_ATTRIBUTE);
+        } else {
+            patchFuncNames_.insert(funcName);
+        }
     } else {
-        patchFuncNames_.insert(funcName);
+        if (funcHash == bytecodeInfo.funcHash) {
+            func->metadata->SetAttribute(EXTERNAL_ATTRIBUTE);
+        } else {
+            patchFuncNames_.insert(funcName);
+        }
     }
 
     CollectFuncDefineIns(func);
