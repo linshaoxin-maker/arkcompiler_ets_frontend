@@ -1,0 +1,1 @@
+openharmony obfuscate tool.

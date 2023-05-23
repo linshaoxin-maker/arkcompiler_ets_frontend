@@ -1,0 +1,10 @@
+{
+    "mCompact": false,
+    "mRemoveComments": true,
+    "mOutputDir": "./out",
+    "mDisableHilog": true,
+    "mNameObfuscation": {
+        "mEnable": true,
+        "mNameGeneratorType": 2
+    }
+}
