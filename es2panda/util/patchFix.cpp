@@ -164,13 +164,17 @@ std::vector<std::pair<std::string, size_t>> PatchFix::GenerateFunctionAndClassHa
             int64_t bufferIdx = GetLiteralIdxFromStringId(ins.ids[0]);
             ss << ExpandLiteral(bufferIdx, literalBuffers) << " ";
         } else if (ins.opcode == panda::pandasm::Opcode::DEFINECLASSWITHBUFFER) {
+            auto funcInfo = funcDefinedClasses_.find(func->name);
+            if (funcInfo != funcDefinedClasses_.end()) {
+                funcInfo->second.push_back(ins.ids[0]);
+                funcDefinedClasses_.insert({func->name, funcInfo->second});
+            } else {
+                std::vector<std::string> funcDefinedClasses = {ins.ids[0]};
+                funcDefinedClasses_.insert({func->name, funcDefinedClasses});
+            }
             int64_t bufferIdx = GetLiteralIdxFromStringId(ins.ids[1]);
             std::string literalStr = ExpandLiteral(bufferIdx, literalBuffers);
             auto classHash = std::hash<std::string>{}(literalStr);
-            if (!hotfix_ && !hotReload_) {
-                // cold patch, need add func bytecodes into patch.abc when defineclass inses change
-                ss << classHash;
-            }
             ss << " ";
             hashList.push_back(std::pair<std::string, size_t>(ins.ids[0], classHash));
             CollectClassMemberFunctions(ins.ids[0], bufferIdx, literalBuffers);
@@ -343,6 +347,18 @@ void PatchFix::HandleModifiedClasses(panda::pandasm::Program *prog)
     }
 }
 
+void PatchFix::HandleModifiedDefinedClassFunc(panda::pandasm::Program *prog)
+{
+    for (auto &funcInfo: funcDefinedClasses_) {
+        for (auto &definedClass: funcInfo.second) {
+            if (modifiedClassNames_.count(definedClass) &&
+                prog->function_table.at(funcInfo.first).metadata->IsForeign()) {
+                prog->function_table.at(funcInfo.first).metadata->RemoveAttribute(EXTERNAL_ATTRIBUTE);
+            }
+        }
+    }
+}
+
 void PatchFix::AddHeadAndTailInsForPatchFuncMain0(std::vector<panda::pandasm::Ins> &ins)
 {
     panda::pandasm::Ins returnUndefine;
@@ -417,6 +433,8 @@ void PatchFix::Finalize(panda::pandasm::Program **prog)
 
     HandleModifiedClasses(*prog);
 
+    HandleModifiedDefinedClassFunc(*prog);
+
     if (patchError_) {
         *prog = nullptr;
         std::cerr << "[Patch] Found unsupported change in file, will not generate patch!" << std::endl;
@@ -479,10 +497,13 @@ bool PatchFix::CompareClassHash(std::vector<std::pair<std::string, size_t>> &has
         auto classIter = classInfo.find(className);
         if (classIter != classInfo.end()) {
             if (classIter->second != std::to_string(hashList[i].second)) {
-                if (hotfix_) {
+                if (!hotfix_ && !hotReload_) {
+                    // cold patch
+                    modifiedClassNames_.insert(className);
+                    continue;
+                } else if (hotfix_) {
                     std::cerr << "[Patch] Found class " << hashList[i].first << " changed, not supported!" << std::endl;
                 } else {
-                    // hotReload_
                     std::cerr << "[Patch] Found class " << hashList[i].first << " changed, not supported! If " <<
                         hashList[i].first << " is not changed and you are changing UI Component, please only " <<
                         "change one Component at a time and make sure the Component is placed at the bottom " <<
@@ -524,11 +545,8 @@ void PatchFix::HandleFunction(const compiler::PandaGen *pg, panda::pandasm::Func
 
     auto hashList = GenerateFunctionAndClassHash(func, literalBuffers);
 
-    if (hotfix_ || hotReload_) {
-        // not cold patch
-        if (!CompareClassHash(hashList, bytecodeInfo)) {
-            return;
-        }
+    if (!CompareClassHash(hashList, bytecodeInfo)) {
+        return;
     }
 
     if (hotReload_) {

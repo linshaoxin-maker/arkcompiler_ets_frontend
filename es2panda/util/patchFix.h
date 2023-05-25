@@ -50,7 +50,8 @@ public:
         newFuncNames_(allocator_.Adapter()),
         funcDefineIns_(allocator_.Adapter()),
         modifiedClassNames_(allocator_.Adapter()),
-        classMemberFunctions_(allocator_.Adapter()) {
+        classMemberFunctions_(allocator_.Adapter()),
+        funcDefinedClasses_(allocator_.Adapter()) {
             originFunctionInfo_ = symbolTable_->GetOriginFunctionInfo();
             originModuleInfo_ = symbolTable_->GetOriginModuleInfo();
             patchMain0_ = recordName_ + ".patch_main_0";
@@ -94,6 +95,7 @@ private:
     void CollectClassMemberFunctions(const std::string &className, int64_t bufferIdx, LiteralBuffers &literalBuffers);
     std::vector<std::string> GetLiteralMethods(int64_t bufferIdx, LiteralBuffers &literalBuffers);
     void HandleModifiedClasses(panda::pandasm::Program *prog);
+    void HandleModifiedDefinedClassFunc(panda::pandasm::Program *prog);
     int64_t GetLiteralIdxFromStringId(const std::string &stringId);
 
     std::mutex m_;
@@ -118,7 +120,8 @@ private:
     ArenaVector<panda::pandasm::Ins> funcDefineIns_;
     ArenaSet<std::string> modifiedClassNames_;
     ArenaUnorderedMap<std::string, std::vector<std::string>> classMemberFunctions_;
+    ArenaUnorderedMap<std::string, std::vector<std::string>> funcDefinedClasses_;
 };
 
 } // namespace panda::es2panda::util
-#endif // ES2PANDA_UTIL_HOTFIX_H
+#endif // ES2PANDA_UTIL_PATCHFIX_H
