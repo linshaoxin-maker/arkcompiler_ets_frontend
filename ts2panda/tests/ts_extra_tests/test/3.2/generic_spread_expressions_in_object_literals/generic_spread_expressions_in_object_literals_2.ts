@@ -1,0 +1,37 @@
+/*
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**---
+ description: >
+    Property assignments and non-generic spread expressions are merged to the greatest extent possible on either side of a generic spread expression.
+ module: ESNext
+ isCurrent: true
+ ---*/
+
+
+import { Assert } from "../../../suite/assert.js"
+
+function hwFun<T>(t: T, obj1: { a: string }, obj2: { b: string }) {
+    var arr = { ...obj1, x: 1, ...t, ...obj2, y: 2 };
+    return arr;
+}
+let o1 = {
+    a: "a",
+};
+let o2 = {
+    b: "b",
+};
+var f = hwFun("s", o1, o2);
+
+Assert.equal(JSON.stringify(f), '{"0":"s","a":"a","x":1,"b":"b","y":2}');
