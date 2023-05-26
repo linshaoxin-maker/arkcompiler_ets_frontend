@@ -1,0 +1,43 @@
+/*
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**---
+ description: >
+    Type parameters in call signatures provide a mechanism for expressing the relationships of parameter and return types in call operations.
+ module: ESNext
+ isCurrent: true
+ ---*/
+
+
+import { Assert } from '../../../../../../suite/assert.js'
+
+function identity<T>(h_x: T): T {
+  return h_x;
+}
+let h_x: number = 1;
+Assert.equal(h_x, identity(h_x));
+function identity2<T, U>(h_x: T, h_y: U): T {
+  return h_x;
+}
+Assert.equal(h_x, identity2(h_x, 1));
+function identity3<T, K extends keyof T>(obj: T, key: K) {
+  return obj[key];
+}
+let h_y = { h_a: 1, h_b: 2, h_c: 3, h_d: 4 };
+identity3(h_y, "h_a");
+function identity4<T>(arg: T[]): T[] {
+  return arg;
+}
+let arg: number[] = [1, 2, 3];
+Assert.equal(arg, identity4(arg));
