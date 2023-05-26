@@ -67,7 +67,6 @@ def get_path_file(dir_path, all_file_path=None, is_root=False, limit_version=Non
             if not limit_version is None:
                 file_or_dir_results.append('spec')
 
-
     else:
         file_or_dir_results = file_or_dir
     for file_dir in file_or_dir_results:
@@ -100,8 +99,3 @@ def is_disable_case(file_path, disable_list):
     for disable_path in disable_list:
         if disable_path in file_path:
             return True
-
-
-
-
-

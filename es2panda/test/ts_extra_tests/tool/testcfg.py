@@ -21,7 +21,6 @@ from tool.test_helper import read_declaration
 
 STRICT_OFF = ['--strict', 'false']
 STRICT_ON = ['--strict', 'true']
-HARNESS_PATH = os.path.abspath('./harness/')
 MODULE = ['--module']
 
 def get_error_message(str, filename):
@@ -48,14 +47,12 @@ class TestCase():
         except:
             data = {}
         self.declaration = data
-        self.includes = ['assertionError.ts', 'assert.ts']
         self.fail = False
         self.is_test_case = False if data is None else True
         self.detail_result = ""
         self.err_line = 0
         self.abc_file_path = ""
         self.abc_file_path_temp = ""
-        self.files_info_path = os.path.join(os.path.splitext(self.path)[0], '_filesInfo.txt')
 
 
     def execute(self, arkruntime = False):
@@ -103,14 +100,6 @@ class TestCase():
             return self.declaration['error']['type']
         return None
 
-    def __get_includes(self):
-        includes = ['assertionError.ts', 'assert.ts']
-        if "includes" in self.declaration:
-            includes.extend(self.declaration['includes'])
-        for index, value in enumerate(includes):
-            includes[index] = os.path.join(HARNESS_PATH, value)
-        return includes
-
     def __get_tsc_cmd(self):
         if platform.system().lower() == 'windows':
             cmd = ['cmd', '/c', 'tsc', '--target', 'es2020']
@@ -128,12 +117,6 @@ class TestCase():
             cmd.append('--outDir')
             cmd.append(TestCase.temp_path)
             self.target_js_path = TestCase.temp_path + self.__get_js_basename()
-        else:
-            cmd.append('--outFile')
-            cmd.append(TestCase.temp_path + self.__get_js_basename())
-            cmd.extend(self.__get_includes())
-            cmd.append(self.path)
-            cmd.append(HARNESS_PATH + "/console.ts")
         return cmd
 
     def __get_node_cmd(self):
@@ -152,7 +135,7 @@ class TestCase():
         cmd.extend(['--module', '--output', abc_file_path, file_path])
         return cmd
 
-    # static method batter
+    # create abc files
     def create_abc(self, filename):
         process = subprocess.Popen(self.__get_es2abc_cmd(filename), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
         out, err = process.communicate()
