@@ -13,89 +13,87 @@
  * limitations under the License.
  */
 
-// singleton to parse commandLine infos
-import commandLineArgs from "command-line-args";
-import commandLineUsage from "command-line-usage";
+import { Command, ParseOptionsResult } from "commander";
+import * as path from "path";
 import * as ts from "typescript";
 import { LOGE } from "./log";
-import * as path from "path";
 import { execute } from "./base/util";
 
-const ts2pandaOptions = [
-    { name: 'modules', alias: 'm', type: Boolean, defaultValue: false, description: "compile as module." },
-    { name: 'debug-log', alias: 'l', type: Boolean, defaultValue: false, description: "show info debug log and generate the json file."},
-    { name: 'dump-assembly', alias: 'a', type: Boolean, defaultValue: false, description: "dump assembly to file." },
-    { name: 'debug', alias: 'd', type: Boolean, defaultValue: false, description: "compile with debug info." },
-    { name: 'debug-add-watch', alias: 'w', type: String, lazyMultiple: true, defaultValue: [], description: "watch expression and abc file path in debug mode." },
-    { name: 'keep-persistent-watch', alias: 'k', type: String, lazyMultiple: true, defaultValue: [], description: "keep persistent watch on js file with watched expression." },
-    { name: 'show-statistics', alias: 's', type: String, lazyMultiple: true, defaultValue: "", description: "show compile statistics(ast, histogram, hoisting, all)." },
-    { name: 'output', alias: 'o', type: String, defaultValue: "", description: "set output file." },
-    { name: 'timeout', alias: 't', type: Number, defaultValue: 0, description: "js to abc timeout threshold(unit: seconds)." },
-    { name: 'opt-log-level', type: String, defaultValue: "error", description: "specifie optimizer log level. Possible values: ['debug', 'info', 'error', 'fatal']" },
-    {
-        name: 'opt-level', type: Number, defaultValue: 1, description: "Optimization level. Possible values: [0, 1, 2]. Default: 0\n    0: no optimizations\n    \
-                                                                    1: basic bytecode optimizations, including valueNumber, lowering, constantResolver, regAccAllocator\n    \
-                                                                    2: other bytecode optimizations, unimplemented yet"},
-    { name: 'help', alias: 'h', type: Boolean, description: "Show usage guide." },
-    { name: 'bc-version', alias: 'v', type: Boolean, defaultValue: false, description: "Print ark bytecode version" },
-    { name: 'bc-min-version', type: Boolean, defaultValue: false, description: "Print ark bytecode minimum supported version" },
-    { name: 'included-files', alias: 'i', type: String, lazyMultiple: true, defaultValue: [], description: "The list of dependent files." },
-    { name: 'record-type', alias: 'p', type: Boolean, defaultValue: false, description: "Record type info. Default: true" },
-    { name: 'dts-type-record', alias: 'q', type: Boolean, defaultValue: false, description: "Record type info for .d.ts files. Default: false" },
-    { name: 'debug-type', alias: 'g', type: Boolean, defaultValue: false, description: "Print type-related log. Default: false" },
-    { name: 'output-type', type: Boolean, defaultValue: false, description: "set output type."}
-]
-
-
-
 export class CmdOptions {
-    private static parsedResult: ts.ParsedCommandLine;
-    private static options: commandLineArgs.CommandLineOptions;
+    private static cmd: Command = new Command();
+    private static parsedResult: ParseOptionsResult;
+    private static unknownOpts: ts.ParsedCommandLine;
 
-    static isEnableDebugLog(): boolean {
-        if (!this.options) {
-            return false;
-        }
-        return this.options["debug-log"];
+    static initOptions(): void {
+        this.cmd
+            .option('-m, --module', 'compile as module.', false)
+            .option('-l, --debug-log', 'show info debug log and generate the json file.', false)
+            .option('-a, --dump-assembly', 'dump assembly to file.', false)
+            .option('-d, --debug', 'compile with debug info.', false)
+            .option('-w, --debug-add-watch <args>', 'watch expression and abc file path in debug mode.', [])
+            .option('-k, --keep-persistent-watch <watchArgs>',
+                    'keep persistent watch on js file with watched expression.', [])
+            .option('-s, --show-statistics', 'show compile statistics(ast, histogram, hoisting, all).', '')
+            .option('-o, --output', 'set output file.', '')
+            .option('-t, --timeout <time>', 'js to abc timeout threshold(unit: seconds).', 0)
+            .option('--opt-log-level', 'specifie optimizer log level. Possible values: [debug, info, error, fatal]', 'error')
+            .option('--opt-level', 'Optimization level. Possible values: [0, 1, 2]. Default: 0\n    0: no optimizations\n    \
+                1: basic bytecode optimizations, including valueNumber, lowering, constantResolver, regAccAllocator\n    \
+                2: other bytecode optimizations, unimplemented yet', '1')
+            .option('-h, --help', 'Show usage guide.')
+            .option('-v, --bc-version', 'Print ark bytecode version', false)
+            .option('--bc-min-version', 'Print ark bytecode minimum supported version', false)
+            .option('-i, --included-files', 'The list of dependent files.', false)
+            .option('-p, --record-type', 'Record type info. Default: true', false)
+            .option('-q, --dts-type-record', 'Record type info for .d.ts files. Default: false', false)
+            .option('-g, --debug-type', 'Print type-related log. Default: false', false)
+            .option('--output-type', 'set output type.', false)
     }
 
-    static isAssemblyMode(): boolean {
-        if (!this.options) {
-            return false;
+    static parseUserCmd(args: string[]) {
+        this.initOptions();
+        this.parsedResult = this.cmd.parseOptions(process.argv);
+        if (this.cmd.opts().help) {
+            this.showHelp();
+            return undefined;
         }
-        return this.options["dump-assembly"];
+
+        if (this.isBcVersion() || this.isBcMinVersion()) {
+            this.getVersion(this.isBcVersion())
+            return undefined
+        }
+
+        if (!this.parsedResult.unknown) {
+            LOGE("options at least one file is needed");
+            this.showHelp();
+            return undefined;
+        }
+
+        this.unknownOpts = ts.parseCommandLine(this.parsedResult.unknown);
+
+        return this.unknownOpts;
     }
 
-    static isDebugMode(): boolean {
-        if (!this.options) {
-            return false;
-        }
-        return this.options["debug"];
+    static showHelp(): void {
+        this.cmd.outputHelp()
     }
 
-    static getAddWatchArgs(): string[] {
-        if (!this.options) {
-            return [];
-        }
-        return this.options["debug-add-watch"];
+    static isBcVersion(): boolean {
+        return this.cmd.opts().bcVersion;
     }
 
-    static isWatchMode(): boolean {
-        if (!this.options) {
-            return false;
-        }
-        return this.options["debug-add-watch"].length != 0;
+    static isBcMinVersion(): boolean {
+        return this.cmd.opts().bcMinVersion;
     }
 
-    static setWatchArgs(watchArgs: string[]) {
-        this.options["debug-add-watch"] = watchArgs;
+    static getVersion(isBcVersion: boolean = true): void {
+        let js2abc = path.join(path.resolve(__dirname, '../bin'), "js2abc");
+        let version_arg = isBcVersion ? "--bc-version" : "--bc-min-version"
+        execute(`${js2abc}`, [version_arg]);
     }
 
     static getKeepWatchFile(): string[] {
-        if (!this.options) {
-            return [];
-        }
-        return this.options["keep-persistent-watch"];
+        return this.cmd.opts().keepPersistentWatch;
     }
 
     static isKeepWatchMode(args: string[]): boolean {
@@ -106,158 +104,89 @@ export class CmdOptions {
         return args.length == 2 && args[0] == "stop";
     }
 
-    static isModules(): boolean {
-        if (!this.options) {
-            return false;
-        }
-        return this.options["modules"];
+    static isWatchMode(): boolean {
+        return this.cmd.opts().debugAddWatch.length != 0;
     }
 
-    static getOptLevel(): number {
-        return this.options["opt-level"];
+    static getAddWatchArgs(): string[] {
+        return this.cmd.opts().debugAddWatch;
     }
 
-    static getOptLogLevel(): string {
-        return this.options["opt-log-level"];
+    static setWatchArgs(watchArgs: string[]) {
+        this.cmd.opts().debugAddWatch = watchArgs;
     }
 
-    static showASTStatistics(): boolean {
-        if (!this.options) {
-            return false;
-        }
-        return this.options["show-statistics"].includes("ast") || this.options["show-statistics"].includes("all");
-    }
-
-    static showHistogramStatistics(): boolean {
-        if (!this.options) {
-            return false;
-        }
-        return this.options["show-statistics"].includes("all") || this.options["show-statistics"].includes("histogram");
-    }
-
-    static showHoistingStatistics(): boolean {
-        if (!this.options) {
-            return false;
-        }
-        return this.options["show-statistics"].includes("all") || this.options["show-statistics"].includes("hoisting");
+    static getIncludedFiles(): string[] {
+        return this.cmd.opts().includedFiles;
     }
 
     static getInputFileName(): string {
-        let path = this.parsedResult.fileNames[0];
+        let path = this.unknownOpts.fileNames[0];
         let inputFile = path.substring(0, path.lastIndexOf('.'));
         return inputFile;
     }
 
     static getOutputBinName(): string {
-        let outputFile = this.options.output;
+        let outputFile = this.cmd.opts().output;
         if (outputFile == "") {
             outputFile = CmdOptions.getInputFileName() + ".abc";
         }
         return outputFile;
     }
 
-    static getTimeOut(): Number {
-        if (!this.options) {
-            return 0;
-        }
-        return this.options["timeout"];
-    }
-
-    static isOutputType(): false {
-        if (!this.options) {
-            return false;
-        }
-        return this.options["output-type"];
-    }
-
-    static showHelp(): void {
-        const usage = commandLineUsage([
-            {
-                header: "Ark JavaScript Compiler",
-                content: 'node --expose-gc index.js [options] file.js'
-            },
-            {
-                header: 'Options',
-                optionList: ts2pandaOptions
-            },
-            {
-                content: 'Project Ark'
-            }
-        ])
-        LOGE(usage);
-    }
-
-    static isBcVersion(): boolean {
-        if (!this.options) {
-            return false;
-        }
-        return this.options["bc-version"];
-    }
-
-    static getVersion(isBcVersion: boolean = true): void {
-        let js2abc = path.join(path.resolve(__dirname, '../bin'), "js2abc");
-        let version_arg = isBcVersion ? "--bc-version" : "--bc-min-version"
-        execute(`${js2abc}`, [version_arg]);
-    }
-
-    static isBcMinVersion(): boolean {
-        if (!this.options) {
-            return false;
-        }
-        return this.options["bc-min-version"];
-    }
-
-    static getIncludedFiles(): string[] {
-        if (!this.options) {
-            return [];
-        }
-
-        return this.options["included-files"];
-    }
-
     static needRecordType(): boolean {
-        if (!this.options) {
-            return false;
-        }
-
-        return !this.options["record-type"];
+        return this.cmd.opts().recordType;
     }
 
     static needRecordDtsType(): boolean {
-        if (!this.options) {
-            return false;
-        }
-        return this.options["dts-type-record"];
+        return this.cmd.opts().dtsTypeRecord;
+    }
+
+    static isAssemblyMode(): boolean {
+        return this.cmd.opts().dumpAssembly;
+    }
+
+    static isEnableDebugLog(): boolean {
+        return this.cmd.opts().debugLog;
+    }
+
+    static isDebugMode(): boolean {
+        return this.cmd.opts().debug;
+    }
+
+    static isModules(): boolean {
+        return this.cmd.opts().modules;
+    }
+
+    static getOptLevel(): number {
+        return this.cmd.opts().optLevel;
+    }
+
+    static getOptLogLevel(): string {
+        return this.cmd.opts().optLogLevel;
+    }
+
+    static showASTStatistics(): boolean {
+        return this.cmd.opts().showStatistics.include("ast") || this.cmd.opts().showStatistics.include("all");
+    }
+
+    static showHistogramStatistics(): boolean {
+        return this.cmd.opts().showStatistics.include("all") || this.cmd.opts().showStatistics.include("histogram");
+    }
+
+    static showHoistingStatistics(): boolean {
+        return this.cmd.opts().showStatistics.include("all") || this.cmd.opts().showStatistics.include("hoisting");
+    }
+
+    static getTimeOut(): Number {
+        return this.cmd.opts().timeout;
+    }
+
+    static isOutputType(): false {
+        return this.cmd.opts().outputType;
     }
 
     static enableTypeLog(): boolean {
-        if (!this.options) {
-            return false;
-        }
-        return this.options["debug-type"];
+        return this.cmd.opts().debugType;
     }
-
-    // @ts-ignore
-    static parseUserCmd(args: string[]): ts.ParsedCommandLine | undefined {
-        this.options = commandLineArgs(ts2pandaOptions, { partial: true });
-        if (this.options.help) {
-            this.showHelp();
-            return undefined;
-        }
-
-        if (this.isBcVersion() || this.isBcMinVersion()) {
-            this.getVersion(this.isBcVersion());
-            return undefined;
-        }
-
-        if (!this.options._unknown) {
-            LOGE("options at least one file is needed");
-            this.showHelp();
-            return undefined;
-        }
-
-        this.parsedResult = ts.parseCommandLine(this.options._unknown!);
-        return this.parsedResult;
-    }
-
 }
