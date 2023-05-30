@@ -430,6 +430,7 @@ public:
     void StoreModuleVariable(const ir::AstNode *node, const binder::ModuleVariable *variable);
     void GetModuleNamespace(const ir::AstNode *node, uint32_t index);
     void DynamicImportCall(const ir::AstNode *node);
+    void UnloadableDynamicImportCall(const ir::AstNode *node, VReg canUnload);
 
     void StSuperByName(const ir::AstNode *node, VReg obj, const util::StringView &key);
     void LdSuperByName(const ir::AstNode *node, VReg obj, const util::StringView &key);

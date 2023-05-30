@@ -32,8 +32,17 @@ void ImportExpression::Dump(ir::AstDumper *dumper) const
 
 void ImportExpression::Compile(compiler::PandaGen *pg) const
 {
-    source_->Compile(pg);
-    pg->DynamicImportCall(this);
+    if (canUnload_) {
+        compiler::RegScope rs(pg);
+        compiler::VReg unload = pg->AllocReg();
+        canUnload_->Compile(pg);
+        pg->StoreAccumulator(this, unload);
+        source_->Compile(pg);
+        pg->UnloadableDynamicImportCall(this, unload);
+    } else {
+        source_->Compile(pg);
+        pg->DynamicImportCall(this);
+    }
 }
 
 checker::Type *ImportExpression::Check([[maybe_unused]] checker::Checker *checker) const
