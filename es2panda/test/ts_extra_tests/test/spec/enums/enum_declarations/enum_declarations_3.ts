@@ -47,3 +47,16 @@ let h_date6 = H_Date.Saturday;
 Assert.equal(h_date6, 'Satur');
 let h_date7 = H_Date.Sunday;
 Assert.equal(h_date7, 'Sun');
+
+const enum H_Odd {
+    a = 1,
+    b = a + 2,
+    c = a + 4,
+    d = c + 2,
+    e = b * b,
+}
+Assert.equal(H_Odd.a, 1);
+Assert.equal(H_Odd.b, 3);
+Assert.equal(H_Odd.c, 5);
+Assert.equal(H_Odd.d, 7);
+Assert.equal(H_Odd.e, 9);

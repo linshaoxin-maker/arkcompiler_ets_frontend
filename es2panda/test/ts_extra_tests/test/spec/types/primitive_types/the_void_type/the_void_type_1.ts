@@ -21,9 +21,9 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var v: void = undefined;
+let v: void = undefined;
 function noReturn(): void { }
-Assert.isUndefined(v);
-Assert.isUndefined(noReturn());
+Assert.equal(v, undefined);
+Assert.equal(noReturn(), undefined);

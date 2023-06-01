@@ -29,16 +29,21 @@ class Person {
   tool(): number {
     return 30;
   }
-  static tool2() {
+  static tool1(): number {
     return this.n2;
   }
-  static get foo() {
+  static tool2() {
+    this.n2++;
+    return this;
+  }
+  static get foo(): number {
     return this.n2;
   }
 }
 let a: number = Person.n2;
 Assert.equal(a, 20);
-let b: number = Person.tool2();
+let b: number = Person.tool1();
 Assert.equal(b, 20);
 let c: number = Person.foo;
 Assert.equal(c, 20);
+Assert.equal(Person, Person.tool2());

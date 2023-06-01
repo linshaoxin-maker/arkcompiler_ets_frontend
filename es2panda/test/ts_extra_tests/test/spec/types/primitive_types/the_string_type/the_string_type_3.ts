@@ -21,23 +21,15 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var str: string = "string";
+let str: string = "string";
 Assert.equal(str.charAt(1), "t");
-
 Assert.equal(str.charCodeAt(2), 114);
-
 Assert.equal(str.toString(), 'string');
-
 Assert.equal(str.concat("new"), "stringnew");
-
 str = "cbaabcda";
 Assert.equal(str.indexOf("a"), 2);
-
 Assert.equal(str.indexOf("a", 4), 7);
-
 Assert.equal(str.lastIndexOf("b"), 4);
-
 Assert.equal(str.lastIndexOf("b", 2), 1);
-

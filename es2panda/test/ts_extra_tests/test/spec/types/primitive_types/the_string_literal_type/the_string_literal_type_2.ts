@@ -20,7 +20,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 interface Test {
   v: "hello";
@@ -30,7 +30,7 @@ function test(dd: Test) {
   Assert.equal(dd.v.length, 5);
   return dd;
 }
-var cc: Test = {
+let cc: Test = {
   v: "hello",
 };
-Assert.isString(test(cc).v);
+Assert.equal(test(cc).v, "hello");

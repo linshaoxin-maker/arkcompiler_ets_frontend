@@ -14,7 +14,7 @@
  */
 /**---
  description: >
-   TypeScript 4.7 now narrows the types of element accesses when the indexed keys are literal types and unique symbols.
+   TypeScript 4.7 now narrows the types of element accesses when the indexed key is unique symbols.
  module: ESNext
  isCurrent: true
  ---*/
@@ -22,15 +22,34 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-const sym = Symbol();
+var sym = Symbol();
 
-const numstr = Math.random() < 0.5 ? 42 : "hello";
-
-const obj = {
-  [sym]: numstr,
+var func = function () {
+  return 5;
 };
 
-if (typeof obj[sym] === "string") {
-  let str = obj[sym].toUpperCase();
-  Assert.equal(str, "HELLO");
+var o = {
+  obj: "obejct"
+};
+
+var x = Math.random();
+var y = Math.random();
+const fo = x > y ? func() : o;
+
+const key = {
+  [sym]: fo
+};
+
+if (typeof key[sym] === "object") {
+  o.obj = 'Object';
+} else {
+  func = function () {
+    return 10;
+  }
+}
+
+if (x < y) {
+  Assert.equal(o.obj, 'Object');
+} else {
+  Assert.equal(JSON.stringify(func), undefined);
 };

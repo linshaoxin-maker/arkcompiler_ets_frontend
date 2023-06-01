@@ -22,12 +22,12 @@ isCurrent: true
 
 import { Assert } from "../../../suite/assert.js"
 
-function hwtset<T>(arr?: T[]) {
+function func<T>(arr?: T[]) {
   return arr?.[0];
 }
 
 const arr: number[] = [1, 25, 8];
-Assert.equal(hwtset<number>(arr), 1, "true");
+Assert.equal(func<number>(arr), 1, "true");
 
 const arrStr: string[] = ["flower", "xian"];
-Assert.equal(hwtset<string>(arrStr), "flower", "true");
+Assert.equal(func<string>(arrStr), "flower", "true");

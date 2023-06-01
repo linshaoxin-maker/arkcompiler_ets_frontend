@@ -22,20 +22,18 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class A {
-  constructor(public a: number = 1) { }
-  static create() {
+class P {
+  constructor(public a: number = 1, public b: number = 1) { }
+  static createthis() {
     return new this();
   }
 }
-class B extends A {
-  constructor(public b: number = 2) {
+class CP extends P {
+  constructor(public a: number = 2, public b = 2) {
     super();
   }
 }
-// new A()
-var x = A.create();
-// new B()
-var y = B.create();
+let x = P.createthis();
+let y = CP.createthis();
 Assert.equal(x.a, 1);
-Assert.equal(y.a, 1);
+Assert.equal(y.a, 2);

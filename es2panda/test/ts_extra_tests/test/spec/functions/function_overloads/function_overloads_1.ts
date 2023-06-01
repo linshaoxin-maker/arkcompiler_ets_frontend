@@ -27,10 +27,10 @@ function add(): number;
 function add(x: number): number;
 function add(y: number): number;
 function add(x: number, y: number): number;
-function add(xOry?: number, y?: number): number {
+function add(x?: number, y?: number): number {
     let sum: number = 0;
-    if (xOry) {
-        sum += xOry;
+    if (x) {
+        sum += x;
     }
     if (y) {
         sum += y;

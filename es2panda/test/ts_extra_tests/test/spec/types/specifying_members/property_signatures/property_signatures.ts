@@ -21,10 +21,10 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var fname: { fristName: string, middleName?: string, lastName: string; } = { fristName: "NARC", lastName: "TypeScript" };
-var f2name: { fristName: string, middleName?: string, lastName: string; } = {
+let fname: { fristName: string, middleName?: string, lastName: string; } = { fristName: "NARC", lastName: "TypeScript" };
+let f2name: { fristName: string, middleName?: string, lastName: string; } = {
   fristName: "Isaac",
   middleName: "F",
   lastName: "Newton",
@@ -36,10 +36,7 @@ function fullName(name: { fristName: string, middleName?: string, lastName: stri
     return name.fristName + " " + name.lastName;
   }
 }
-var fn1: string = fullName(fname);
-Assert.isString(fn1);
+let fn1: string = fullName(fname);
 Assert.equal(fn1, "NARC TypeScript");
-
-var fn2: string = fullName(f2name);
-Assert.isString(fn2);
+let fn2: string = fullName(f2name);
 Assert.equal(fn2, "Isaac F Newton");

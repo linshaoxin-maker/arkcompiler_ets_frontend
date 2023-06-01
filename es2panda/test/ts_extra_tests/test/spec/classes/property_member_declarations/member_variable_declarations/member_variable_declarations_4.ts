@@ -22,21 +22,22 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class Staff1 {
-  constructor(public name: string, public place: string, public work = false) { }
+
+class A {
+  public x: number = 1;
+  public y: string = "name";
+  public z: boolean = false;
+  constructor() { }
 }
-class Staff2 {
-  public name: string;
-  public place: string;
-  public work: boolean;
-  constructor(name: string, place: string, work: boolean = false) {
-    this.name = name;
-    this.place = place;
-    this.work = work;
+class B {
+  public x: number = 1;
+  public y: string = "name";
+  public z: boolean
+  constructor(z: boolean = false) {
+    this.z = z;
   }
 }
-let em1 = new Staff1("name", "qindao", false);
-let em2 = new Staff2("name", "qingdao", true);
-Assert.equal(em1.work, false);
-Assert.equal(em2.work, true);
-
+let a = new A();
+Assert.equal(a.z, false);
+let b = new B();
+Assert.equal(b.z, false);

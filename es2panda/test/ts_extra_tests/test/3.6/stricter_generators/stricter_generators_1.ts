@@ -23,12 +23,12 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function* hwtest() {
+function* func() {
     yield 100;
     yield "Finished!";
     return false;
 }
-let t1 = hwtest();
+let t1 = func();
 let t2 = t1.next();
 Assert.isNumber(t2.value);
 t2 = t1.next();

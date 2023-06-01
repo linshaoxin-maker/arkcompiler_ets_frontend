@@ -14,8 +14,8 @@
  */
 /**---
  description: >
-   A tuple type literal is written as a sequence of element types, separated by commas and enclosed in square brackets.
-   A tuple type literal references a tuple type.
+    A tuple type literal is written as a sequence of element types, separated by commas and enclosed in square brackets.
+    A tuple type literal references a tuple type.
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,7 +23,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-var t_arr: [number, string, boolean] = [3, 'a', true]
+let t_arr: [number, string, boolean] = [3, 'a', true]
 Assert.isNumber(t_arr[0]);
 Assert.isString(t_arr[1]);
 Assert.isBoolean(t_arr[2]);

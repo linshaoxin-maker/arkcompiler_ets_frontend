@@ -20,15 +20,14 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var arr6: number[] = [1, 3, 5, 7, 9];
-var arr7: boolean[] = [true, false, true, false, true];
-var arr8: string[] = ["a", "b", "c", "d", "e", "f"];
-var arr9: object[] = [{ 0x00: "0x00" }, { 0x01: "0x01" }];
+let arr6: number[] = [1, 3, 5, 7, 9];
+let arr7: boolean[] = [true, false, true, false, true];
+let arr8: string[] = ["a", "b", "c", "d", "e", "f"];
+let arr9: object[] = [{ 0x00: "0x00" }, { 0x01: "0x01" }];
 arr6[3] = 14;
 Assert.equal(arr6[3], 14);
-Assert.isBoolean(arr7[2]);
 Assert.equal(true, arr7[2]);
 Assert.equal(arr8.toString(), "a,b,c,d,e,f");
 arr8.pop();

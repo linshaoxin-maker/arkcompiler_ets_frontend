@@ -31,10 +31,8 @@ class myClass1 {
         return;
     }
 }
-
-var myTest1 = new myClass1(5);
+let myTest1 = new myClass1(5);
 Assert.equal(myTest1.num, 5);
-
 class myClass2 {
     num: number;
     constructor(num: number) {
@@ -42,6 +40,5 @@ class myClass2 {
         return { num: 10 };
     }
 }
-
-var myTest2 = new myClass2(5);
+let myTest2 = new myClass2(5);
 Assert.equal(myTest2.num, 10);

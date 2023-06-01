@@ -26,9 +26,9 @@
 import { Assert } from '../../../../../suite/assert.js'
 
 class A1 {
-  public num: number;
+  public numa: number;
   constructor(a: number) {
-    this.num = a;
+    this.numa = a;
   }
 }
 class B1 extends A1 {
@@ -38,5 +38,8 @@ class B1 extends A1 {
     this.numb = b;
   }
 }
-const b = new B1(2, 2);
-Assert.equal(b.num, 2);
+let a: A1 = new A1(1);
+Assert.equal(a.numa, 1);
+let b: B1 = new B1(2, 2);
+Assert.equal(b.numa, 2);
+Assert.equal(b.numb, 2);

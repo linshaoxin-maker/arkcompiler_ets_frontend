@@ -21,7 +21,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../../suite/assert.js'
+import { Assert } from '../../../../../../suite/assert.js'
 
 const x: number = 3;
 function fun(a: number, c = 1, b = x) {

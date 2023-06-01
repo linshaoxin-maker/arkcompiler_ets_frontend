@@ -23,27 +23,35 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface HWX {
-  a: number;
+type myType = { [T in 'key1' | 'key2' | 'key3']: string };
+let mt: myType = {
+  key1: 'a',
+  key2: 'b',
+  key3: 'c'
 }
-interface HWY {
-  b: string;
-}
+Assert.isObject(mt);
 
-function fun(x: HWX | HWY) {
-  if ("a" in x) {
-    return x.a;
-  }
-  return x.b;
+interface I1{
+  name: string;
+  age: number;
 }
-
-let a1: HWX = {
-  a: 1
+interface I2{
+  height: number;
 }
-
-let b1: HWY = {
-  b: 'this is a string'
+let i1: I1 = {
+  name: 'xiao',
+  age: 18
+};
+let i2: I2 = {
+  height: 180
+};
+function func(arg: I1 | I2) {
+  if ('name' in arg) {
+    arg.age = 20;
+    return arg.age;
+  } 
+  arg.height = 185;
+  return arg.height;
 }
-
-Assert.equal(1, fun(a1));
-Assert.equal('this is a string', fun(b1));
+Assert.equal(func(i1), 20);
+Assert.equal(func(i2), 185);

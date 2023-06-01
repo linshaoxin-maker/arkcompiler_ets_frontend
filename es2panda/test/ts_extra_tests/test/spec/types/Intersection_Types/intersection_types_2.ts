@@ -20,7 +20,7 @@
  ---*/
 
 
-import {Assert} from '../../../../suite/assert.js'
+import { Assert } from '../../../../suite/assert.js'
 
 function getSmallPet(name: string | number) {
   return name;
@@ -39,4 +39,3 @@ let man: PersonMan = {
 }
 let getpersonname = getPerson(man);
 Assert.equal(getpersonname, "join");
-

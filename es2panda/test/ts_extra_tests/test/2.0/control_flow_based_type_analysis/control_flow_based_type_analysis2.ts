@@ -24,10 +24,10 @@ import { Assert } from "../../../suite/assert.js"
 
 function testFun(x: string | null): void {
   if (x === null) {
-    Assert.equal(typeof x, "object");
     return;
   }
   x;
+  Assert.isString(x);
 }
 
 testFun(null);

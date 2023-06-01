@@ -24,15 +24,22 @@
 import { Assert } from '../../../../../suite/assert.js'
 
 class Shape {
-  color: string = "black";
-  switchColor() {
+  public color: string = "black";
+  protected side: number = 10;
+  constructor() { };
+  public switchColor() {
     this.color = this.color === "black" ? "white" : "black";
   }
 }
-class Circle extends Shape { }
-const circle = new Circle();
-let a = circle.color;
+class Circle extends Shape {
+  get gside() {
+    return this.side;
+  }
+}
+let circle: Circle = new Circle();
+let a: string = circle.color;
 Assert.equal(a, "black");
 circle.switchColor();
-let b = circle.color;
+let b: string = circle.color;
 Assert.equal(b, "white");
+Assert.equal(10, circle.gside);

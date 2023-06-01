@@ -23,9 +23,9 @@
  ---*/
 
 
-import {Assert} from '../../../../suite/assert.js'
+import { Assert } from '../../../../suite/assert.js'
 
-var a;
+let a;
 a = 25.25;
 Assert.isNumber(a);
 a = "narc";

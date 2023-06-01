@@ -22,18 +22,19 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class Point {
+class P {
   constructor(public x: number, public y: number) { }
-  public distance(p: Point) {
-    var dx = this.x - p.x;
-    var dy = this.y - p.y;
+  public distance(p: P) {
+    let dx = this.x - p.x;
+    let dy = this.y - p.y;
     return Math.sqrt(dx * dx + dy * dy);
   }
-  static distance(p1: Point, p2: Point) {
-    return p1.distance(p2);
+  static add(p1: P) {
+    p1.x++;
+    return p1.x
   }
 }
-var p1: Point = new Point(2, 2);
-var p2: Point = new Point(1, 1);
+let p1: P = new P(2, 2);
+let p2: P = new P(1, 1);
 Assert.equal(p1.distance(p2), Math.sqrt(2));
-Assert.equal(Point.distance(p1, p2), Math.sqrt(2));
+Assert.equal(P.add(p1), 3);

@@ -22,19 +22,19 @@
 import { Assert } from '../../../../../suite/assert.js'
 
 // Equivalent to h_z: number = 123.456
-var h_z = 123.456;
+let h_z = 123.456;
 // The property of Number
-var s = h_z.toFixed(2);
+let s = h_z.toFixed(2);
 Assert.equal(s, 123.46);
-var a = h_z.toString();
+let a = h_z.toString();
 Assert.equal(a, "123.456");
-var b = h_z.toExponential();
+let b = h_z.toExponential();
 Assert.equal(b, "1.23456e+2");
 b = h_z.toExponential(2);
 Assert.equal(b, "1.23e+2");
-var c = h_z.toPrecision();
+let c = h_z.toPrecision();
 Assert.equal(c, "123.456");
 c = h_z.toPrecision(3);
 Assert.equal(c, "123");
-var d = h_z.valueOf();
+let d = h_z.valueOf();
 Assert.equal(d, 123.456);

@@ -37,9 +37,7 @@ function add(arg1: string | number, arg2: string | number) {
         return `${arg1}${arg2}`;
     }
 }
-// (number, number)
+
 Assert.equal(add(0, 1), 1);
-// (string, number)
 Assert.equal(add("0", 1), "01");
-// (string, string)
 Assert.equal(add("0", "1"), "01");

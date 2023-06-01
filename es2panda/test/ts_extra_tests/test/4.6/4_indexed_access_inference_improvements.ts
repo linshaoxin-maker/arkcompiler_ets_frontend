@@ -43,6 +43,6 @@ hwtest({
     kind: "string",
     v: "hello!",
     f: (val) => {
-        Assert.equal("HELLO!", val.toUpperCase());
+        Assert.equal(val.toUpperCase(),"HELLO!");
     },
 });

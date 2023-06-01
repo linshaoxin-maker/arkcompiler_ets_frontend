@@ -25,21 +25,39 @@ import { Assert } from '../../../../../suite/assert.js'
 
 class Base {
   protected x: number = 1;
-  add() {
+  protected y: number = 4;
+  protected addxy() {
+    return this.x + this.y;
+  }
+  public addx() {
     this.x++;
   }
-  get foo() {
+  public get foo() {
     return this.x;
+  }
+  static f(a: Base, b: Derived) {
+    a.x = 1;
+    b.x = 1;
+    a.y = 1;
+    b.y = 1;
   }
 }
 class Derived extends Base {
-  get foo() {
+  public get add(): number {
+    return this.addxy()
+  }
+  public get foo() {
     return this.x;
   }
+  static f(b: Derived) {
+    b.x = 1;
+    b.y = 1;
+  }
 }
-const a: Base = new Base();
-a.add();
+let a: Base = new Base();
+a.addx();
 Assert.equal(a.foo, 2);
-const b: Derived = new Derived();
-b.add();
+let b: Derived = new Derived();
+b.addx();
 Assert.equal(b.foo, 2);
+Assert.equal(b.add, 6);

@@ -23,9 +23,9 @@ isCurrent: true
 import { Assert } from "../../../suite/assert.js"
 
 let n = 0;
-function hwtset() {
+function func() {
   n = n ?? 0.5;
   return n;
 }
 
-Assert.equal(hwtset(), 0);
+Assert.equal(func(), 0);

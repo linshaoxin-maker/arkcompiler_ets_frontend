@@ -21,29 +21,29 @@
  ---*/
 
 
-import {Assert} from '../../../../../../suite/assert.js'
+import { Assert } from '../../../../../../suite/assert.js'
 
 function returnNum(a: number, b: number): number {
   return a + b;
 }
 let aa = returnNum(1, 2);
-Assert.isNumber(aa);
+Assert.equal(aa, 3);
 function returnString(name: string): string {
   return name + " b!";
 }
 let bb = returnString("rush");
-Assert.isString(bb);
+Assert.equal(bb, "rush b!");
 function returnBoolean(a: number, b: number): Boolean {
   return a > b ? true : false;
 }
 let cc = returnBoolean(1, 2);
-Assert.isBoolean(cc);
+Assert.equal(cc, false);
 function returnUndefine(a: undefined): undefined {
   return a;
 }
 let ad: undefined;
 let dd = returnUndefine(ad);
-Assert.isUndefined(dd);
+Assert.equal(dd, undefined);
 function returnVoid(a: number): void { }
 let ee = returnVoid(1);
 Assert.equal(ee, null);

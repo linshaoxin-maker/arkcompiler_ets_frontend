@@ -36,7 +36,7 @@ interface HWDI2 {
 interface HWDI3 extends HWDI2 {
   [key: number]: any;
 }
-const one = Symbol(1);
+const one:1 = 1;
 let a: HWDI1 = {};
 let b: HWDI3 = {};
 b[one] = 1;

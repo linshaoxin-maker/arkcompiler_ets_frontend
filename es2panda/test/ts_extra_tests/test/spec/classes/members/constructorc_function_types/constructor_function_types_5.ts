@@ -37,4 +37,4 @@ let p2 = new P(x2, y2);
 Assert.equal(p2.pro1, "one");
 let x3: boolean = true;
 let p3 = new P(x3, y);
-Assert.isBoolean(p3.pro1);
+Assert.equal(p3.pro1, true);

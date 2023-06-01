@@ -14,9 +14,8 @@
  */
 /**---
  description: >
-   The this-type (section 3.6.3) of the declared class 
-   must be assignable (section 3.11.4) to the base type reference 
-   and each of the type references listed in the implements clause.
+    The this-type (section 3.6.3) of the declared class must be assignable (section 3.11.4) to the base type reference 
+    and each of the type references listed in the implements clause.
  module: ESNext
  isCurrent: true
  ---*/
@@ -24,18 +23,16 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class Point {
-  constructor(public x: number = 0) { }
+class Addx {
+  constructor(public x: number) { }
   public add(): this {
     this.x++;
     return this;
   }
 }
-var p: Point = new Point(10);
-Assert.equal(11, p.add().x);
 // the extends
-class ChildPoint extends Point {
-  constructor(public x: number = 0) {
+class ChildAddx extends Addx {
+  constructor(public x: number) {
     super(x);
   }
   public move(): this {
@@ -43,22 +40,37 @@ class ChildPoint extends Point {
     return this;
   }
 }
-var pChild: ChildPoint = new ChildPoint(10);
-Assert.equal(11, pChild.move().x);
-var basePoint: Point = pChild.move();
-Assert.equal(13, basePoint.add().x);
+let childadd: ChildAddx = new ChildAddx(10);
+Assert.equal(11, childadd.move().x);
+let a: Addx = childadd.move();
+Assert.equal(13, a.add().x);
 // the implements
-interface InterPoint {
+interface InterAddx {
   x: number;
 }
-class Point2 implements InterPoint {
+class Addx2 implements InterAddx {
   x = 1;
   setadd(): this {
     this.x++;
     return this;
   }
 }
-var ipoint = new Point2();
-Assert.equal(2, ipoint.setadd().x);
-var interpoint: InterPoint = ipoint.setadd();
-Assert.equal(3, interpoint.x);
+let b1 = new Addx2();
+Assert.equal(2, b1.setadd().x);
+let interb1: InterAddx = b1.setadd();
+Assert.equal(3, interb1.x);
+interface InterP {
+  Area(x: number, y: number): number;
+}
+class Rectangle implements InterP {
+  Area(x: number, y: number): number {
+    return x * y;
+  }
+  setRec(): this {
+    return this;
+  }
+}
+let b2 = new Rectangle();
+Assert.equal(200, b2.Area(10, 20));
+let interb2: InterP = b2.setRec();
+Assert.equal(200, interb2.Area(10, 20));

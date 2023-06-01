@@ -28,7 +28,7 @@ function identity<T>(h_x: T): T {
 }
 let h_x: number = 3;
 // CHECK explicitly specified type in call
-Assert.isNumber(<number>identity(h_x));
+Assert.equal(<number>identity(h_x), 3);
 let h_y = "string";
 // CHECK inferred from argument in the call
-Assert.isString(identity(h_y));
+Assert.equal(identity(h_y), "string");

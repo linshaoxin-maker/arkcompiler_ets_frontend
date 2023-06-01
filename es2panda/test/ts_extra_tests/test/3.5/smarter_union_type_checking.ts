@@ -14,7 +14,8 @@
  */
 /**---
  description: >
-   Smarter union type checking.
+  In TypeScript 3.5, when assigning to types with discriminant properties like in T, 
+  the language actually will go further and decompose types like S into a union of every possible inhabitant type.
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,20 +24,41 @@
 import { Assert } from '../../suite/assert.js'
 
 {
-    type PointData = {
-        x: number;
-        y: number;
-        name: string;
-    };
-
-    type Data = {
-        name: string;
-    };
-
-    const point: PointData | Data = {
-        x: 0,
-        y: 0,
-        name: 'name'
+    type T = { mem: string } | { mem: number };
+    interface I1{
+        num: number;
+        boo: T;
     }
-    Assert.equal(point.name, 'name')
-}
+    interface I2{
+        num: number;
+        boo: { mem: string };
+    }
+    interface I3{
+        num: number;
+        boo: { mem: number };
+    }
+    let i1: I1 = {
+        num: 10,
+        boo: { mem: 'member' }
+    }
+    let i2: I2 | I3 = {
+        num: 20,
+        boo: { mem: 15 }
+    }
+
+    i1 = i2;
+    Assert.equal(i1, i2);
+
+    type T1 = { mem1: number, mem2: boolean };
+    type T2 = { mem1: number, mem2: true } | { mem1: number, mem2: false };
+    let t1: T1 = {
+        mem1: 10,
+        mem2: true
+    }
+    let t2: T2 = {
+        mem1: 20,
+        mem2: false
+    }
+    t1 = t2;
+    Assert.equal(t1, t2);
+};

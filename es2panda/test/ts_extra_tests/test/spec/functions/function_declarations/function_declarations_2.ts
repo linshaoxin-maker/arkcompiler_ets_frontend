@@ -22,10 +22,10 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-function add(a: string, b: string): string;
-function add(a: number, b: number): number;
-function add(a: string, b: number): string;
-function add(arg1: string | number, arg2: string | number) {
+export function add1(a: string, b: string): string;
+export function add1(a: number, b: number): number;
+export function add1(a: string, b: number): string;
+export function add1(arg1: string | number, arg2: string | number) {
     if (typeof arg1 === "number" && typeof arg2 === "number") {
         return arg1 + arg2;
     }
@@ -35,9 +35,11 @@ function add(arg1: string | number, arg2: string | number) {
     }
 }
 
-// (number, number)
-Assert.equal(add(0, 1), 1);
-// (string, number)
-Assert.equal(add("0", 1), "01");
-// (string, string)
-Assert.equal(add("0", "1"), "01");
+Assert.equal(add1(0, 1), 1);
+Assert.equal(add1("0", 1), "01");
+Assert.equal(add1("0", "1"), "01");
+
+declare function add2(a: string, b: string): string;
+declare function add2(a: number, b: number): number;
+declare function add2(a: string, b: number): string;
+declare function add2(arg1: string | number, arg2: string | number): unknown;

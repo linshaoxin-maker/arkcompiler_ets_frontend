@@ -21,17 +21,32 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-interface Entity {
-  name: string;
+type o = {
+  num: 10
 }
-// Compiled with --strictNullChecks
-function getEntityName(e: Entity): string {
-  return e.name;
+type T = o | undefined;
+let x: T;
+
+let y = x && x.num;
+y = 10;
+Assert.isNumber(y);
+y = undefined;
+Assert.isUndefined(y);
+
+let z = x || { num: 5 };
+Assert.isObject(z);
+
+interface I{
+  str: string;
 }
-Assert.equal(getEntityName({ name: "caihua" }), "caihua");
+type t = I | undefined;
+let a: t;
 
-let x: (e: Entity) => string = getEntityName;
-let s: (e: Entity) => string = x;
-let y: (e: Entity) => string = x || { name: "test" };
+let b = a && a.str; 
+b = ' ';
+Assert.isString(b);
+b = undefined;
+Assert.isUndefined(b);
 
-Assert.equal(x.name, "getEntityName");
+let c = a || { str: 's' };
+Assert.isObject(c);

@@ -25,11 +25,6 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-interface AsyncIterator<T> {
-    next(value?: any): Promise<IteratorResult<T>>;
-    return?(value?: any): Promise<IteratorResult<T>>;
-    throw?(e?: any): Promise<IteratorResult<T>>;
-}
 function createAsyncInterator(arr: any[]): AsyncIterator<any> {
     let index = 0;
     let len = arr.length;

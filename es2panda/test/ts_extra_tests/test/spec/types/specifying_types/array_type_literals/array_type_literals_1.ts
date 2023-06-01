@@ -14,7 +14,7 @@
  */
 /**---
  description: >
-   An array type literal is written as an element type followed by an open and close square bracket.
+    An array type literal is written as an element type followed by an open and close square bracket.
  module: ESNext
  isCurrent: true
  ---*/
@@ -22,8 +22,8 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-var arr: number[] = [2, 4, 6, 8];
-Assert.isNumber(arr[0]);
-Assert.isNumber(arr[1]);
-Assert.isNumber(arr[2]);
-Assert.isNumber(arr[3]);
+let arr: number[] = [2, 4, 6, 8];
+Assert.equal(arr[0], 2);
+Assert.equal(arr[1], 4);
+Assert.equal(arr[2], 6);
+Assert.equal(arr[3], 8);

@@ -36,3 +36,17 @@ class Box {
 }
 let v: Box = Box.getSubBos();
 Assert.equal(v.cname, "Box");
+
+class myBox{
+  arg: string;
+  protected constructor(arg: string) {
+    this.arg = arg;
+  }
+}
+class myLittleBox extends myBox{
+  constructor(arg: string) {
+    super(arg);
+  }
+}
+let tool = new myLittleBox('hammer');
+Assert.equal(tool.arg, 'hammer');

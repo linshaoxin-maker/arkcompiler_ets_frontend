@@ -19,7 +19,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 // Integral type
 let n1: number = 1;

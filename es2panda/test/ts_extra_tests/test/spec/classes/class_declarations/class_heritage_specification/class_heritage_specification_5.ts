@@ -14,8 +14,7 @@
  */
 /**---
  description: >
-  A class may optionally have type parameters. A class with type parameters is called a generic class. 
-  The type parameters of a generic class declaration are in scope in the entire declaration and may be referenced in the ClassHeritage and ClassBody.
+    The type parameters of a generic class declaration are in scope in the entire declaration and may be referenced in the ClassHeritage and ClassBody.
  module: ESNext
  isCurrent: true
  ---*/
@@ -29,8 +28,8 @@ class MyClass<T>{
         this.myArry.push(num);
     }
     max(): T {
-        var mNum = this.myArry[0];
-        for (var i = 0; i < this.myArry.length; i++) {
+        let mNum = this.myArry[0];
+        for (let i = 0; i < this.myArry.length; i++) {
             if (mNum < this.myArry[i]) {
                 mNum = this.myArry[i];
             }
@@ -38,9 +37,15 @@ class MyClass<T>{
         return mNum;
     }
 }
-var h_m = new MyClass<number>();
+let h_m: MyClass<number> = new MyClass<number>();
 h_m.add(5);
 h_m.add(4);
 h_m.add(9);
 h_m.add(15);
 Assert.equal(h_m.max(), 15);
+let h_m2: MyClass<string> = new MyClass<string>();
+h_m2.add('b');
+h_m2.add('a');
+h_m2.add('w');
+h_m2.add('f');
+Assert.equal(h_m2.max(), 'w');

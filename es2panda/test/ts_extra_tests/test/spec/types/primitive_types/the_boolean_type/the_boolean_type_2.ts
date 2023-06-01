@@ -21,23 +21,23 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var a: boolean = true;
+let a: boolean = true;
 Assert.isBoolean(a);
 Assert.equal(a, true);
 a = false;
 Assert.isBoolean(a);
 Assert.equal(a, false);
 // > < !
-var b: boolean = 2 > 1;
+let b: boolean = 2 > 1;
 Assert.isBoolean(b);
 Assert.equal(b, true);
 b = !b;
 Assert.isBoolean(b);
 Assert.equal(b, false);
 // &&
-var c: boolean = 2 > 1 && 7 < 8;
+let c: boolean = 2 > 1 && 7 < 8;
 Assert.isBoolean(c);
 Assert.equal(c, true);
 c = 2 < 1 && 7 < 8;
@@ -50,4 +50,3 @@ Assert.equal(c, true);
 c = 2 < 1 || 7 > 8;
 Assert.isBoolean(c);
 Assert.equal(c, false);
-

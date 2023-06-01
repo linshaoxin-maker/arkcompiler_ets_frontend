@@ -14,8 +14,7 @@
  */
 /**---
  description: >
-    A class declaration declares a new named type  called a class type. 
-    Within the constructor and instance member functions of a class, the type of this is the this-type  of that class type
+    All instance property members of a class must satisfy the constraints implied by the index members of the class .
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,39 +22,49 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class h_A {
+class A {
   public h_x: number;
-  public h_f() { }
-  public h_g(h_a: any): any {
-    return undefined;
-  }
   constructor(h_x: number) {
     this.h_x = h_x;
   }
-  static h_s: string;
+  public h_f() {
+    this.h_x++;
+  }
+  public h_g(): any {
+    return this.h_x;
+  }
+  static h_s: string = "aa";
 }
-let h_a = new h_A(1);
-class h_B extends h_A {
+let aa: A = new A(1);
+Assert.equal(aa.h_x, 1);
+aa.h_f();
+Assert.equal(aa.h_x, 2);
+class B extends A {
   public h_y: number;
-  public h_g(h_b: boolean) { return false; }
   constructor(h_x: number, h_y: number) {
     super(h_x);
     this.h_y = h_y;
   }
+  public h_g(): boolean { return false; }
 }
-let h_b = new h_B(1, 2);
-interface h_C {
+let bb: B = new B(1, 2);
+Assert.equal(bb.h_x, 1);
+Assert.equal(bb.h_y, 2);
+bb.h_f();
+Assert.equal(bb.h_x, 2);
+Assert.equal(bb.h_g(), false);
+interface C {
   h_x: number;
   h_f: () => void;
-  h_g: (h_a: any) => any;
+  h_g: () => any;
 }
-let h_c: h_C = h_a;
-Assert.equal(h_c.h_g(1), undefined);
-interface h_D {
+let c: C = aa;
+Assert.equal(c.h_g(), 2);
+interface D {
   h_x: number;
   h_y: number;
   h_f: () => void;
-  h_g: (h_b: boolean) => boolean;
+  h_g: () => boolean;
 }
-let h_d: h_D = h_b;
-Assert.isFalse(h_d.h_g(true));
+let d: D = bb;
+Assert.equal(d.h_g(), false);

@@ -26,9 +26,9 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function delayTime(milliseconds: number) {
+function delayTime(milli: number) {
     return new Promise<void>((resolve) => {
-        setTimeout(resolve, milliseconds);
+        setTimeout(resolve, milli);
     });
 }
 async function showMsg(a: number, b: string) {

@@ -14,8 +14,8 @@
  */
 /**---
  description: >
-  An intersection type literal is written as a sequence of types separated by ampersands.
-  An intersection type literal references an intersection type. 
+    An intersection type literal is written as a sequence of types separated by ampersands.
+    An intersection type literal references an intersection type. 
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,7 +23,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-var t_inter: object & { name: string };
+let t_inter: object & { name: string };
 t_inter = {
     name: 'intersection'
 }

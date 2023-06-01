@@ -39,5 +39,5 @@ import { Assert } from '../../suite/assert.js'
         c: 'string'
     }
     Assert.isFalse("c" in s)
-    Assert.isTrue("c" in s1)
-}
+    Assert.isTrue("c" in s1);
+};

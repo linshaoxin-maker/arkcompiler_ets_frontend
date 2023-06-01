@@ -21,7 +21,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../../suite/assert.js'
+import { Assert } from '../../../../../../suite/assert.js'
 
 interface specialType {
   Tfun(x: "hello"): "hello";
@@ -30,8 +30,8 @@ interface specialType {
 }
 class getType implements specialType {
   Tfun(x: any): any {
-    const xx: "hello" = "hello";
-    const xx2: "world" = "world";
+    let xx: "hello" = "hello";
+    let xx2: "world" = "world";
     if (x === xx) {
       return x;
     } else if (x === xx2) {
@@ -41,14 +41,14 @@ class getType implements specialType {
     }
   }
 }
-const x1 = new getType();
-const xx1: "hello" = "hello";
-const y1: "hello" = x1.Tfun(xx1);
-Assert.isTrue(y1 === xx1);
-const x2 = new getType();
-const xx2: "world" = "world";
-const y2 = x2.Tfun(xx2);
-Assert.isTrue(xx2 === y2);
-const x3 = new getType();
-const y3 = x3.Tfun("helloworld");
+let x1 = new getType();
+let xx1: "hello" = "hello";
+let y1: "hello" = x1.Tfun(xx1);
+Assert.equal(xx1, y1);
+let x2 = new getType();
+let xx2: "world" = "world";
+let y2 = x2.Tfun(xx2);
+Assert.equal(xx2, y2);
+let x3 = new getType();
+let y3 = x3.Tfun("helloworld");
 Assert.equal(y3, "isstring");

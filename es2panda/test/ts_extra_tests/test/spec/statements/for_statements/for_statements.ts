@@ -22,7 +22,7 @@
 import { Assert } from '../../../../suite/assert.js'
 
 let result = 0;
-for (let i = 0; i < 10; i++) {
+for (let i: number = 0; i < 10; i++) {
     result++;
 }
 

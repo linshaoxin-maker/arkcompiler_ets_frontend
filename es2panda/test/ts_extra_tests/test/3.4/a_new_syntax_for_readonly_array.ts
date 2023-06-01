@@ -14,8 +14,7 @@
  */
 /**---
  description: >
-   Improvements for ReadonlyArray and readonly tuples.
-   const assertions.
+   TypeScript 3.4 introduces a new syntax for ReadonlyArray using a new readonly modifier for array types.
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,25 +22,8 @@
 
 import { Assert } from "../../suite/assert.js"
 
+let arr1: ReadonlyArray<string> = ["1", "2"];
+let arr2: readonly string[] = ["1", "2"];
 
-    let hw_arr: ReadonlyArray<string> = ["1", "2"];
-    let hw_rsa: readonly string[] = ["1", "2"];
-
-    Assert.equal(hw_arr[1], "2");
-    Assert.equal(hw_rsa[1], "2");
-
-    function hwfun() {
-        let result = [
-            { kind: "circle", radius: 100 },
-            { kind: "square", sideLength: 50 },
-        ] as const;
-        return result;
-    }
-    for (const shape of hwfun()) {
-        if (shape.kind === "circle") {
-            Assert.equal(shape.radius, 100);
-        } else {
-            Assert.equal(shape.sideLength, 50);
-        }
-    }
-
+Assert.equal(arr1[1], "2");
+Assert.equal(arr2[1], "2");

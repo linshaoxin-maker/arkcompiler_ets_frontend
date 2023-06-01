@@ -20,13 +20,13 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var cc: "hello" = "hello";
+let cc: "hello" = "hello";
 Assert.isString(cc);
-var dd: string = cc;
+let dd: string = cc;
 Assert.equal(dd, "hello");
-var ee: "" = "";
+let ee: "" = "";
 Assert.isString(ee);
-var ff: string = ee;
+let ff: string = ee;
 Assert.equal(ff, "");

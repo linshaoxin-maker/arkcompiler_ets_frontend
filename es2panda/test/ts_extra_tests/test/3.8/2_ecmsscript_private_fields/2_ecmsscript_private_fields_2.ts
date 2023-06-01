@@ -21,24 +21,21 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class HWC {
+class C {
     #x = 10;
-
     getX() {
         return this.#x;
     }
 }
 
-class HWD extends HWC {
+class D extends C {
     #y = 20;
-
     getY() {
         return this.#y;
     }
 }
 
-let d = new HWD();
+let d = new D();
 
 Assert.equal(10, d.getX());
-
 Assert.equal(20, d.getY());

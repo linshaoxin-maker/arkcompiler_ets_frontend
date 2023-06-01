@@ -14,14 +14,14 @@
  */
 /**---
  description: >
-  Constructor types may be written using constructor type literals
-  or by including construct signatures in object type literals.
+    Constructor types may be written using constructor type literals
+    or by including construct signatures in object type literals.
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 class Person {
   name: string;
@@ -45,11 +45,11 @@ class Teacher extends Person {
   }
 }
 // literal type
-const testClass1: new (name: string, age: number) => Person = Student;
-const testObj1: Person = new testClass1("caihua1", 12);
+let testClass1: new (name: string, age: number) => Person = Student;
+let testObj1: Person = new testClass1("caihua1", 12);
 Assert.equal(testObj1.age, 12);
 Assert.equal(testObj1.name, "caihua1");
-const testClass2: { new(n: string, a: number): Person } = Teacher;
-const testObj2: Person = new testClass2("caihua2", 120);
+let testClass2: { new(n: string, a: number): Person } = Teacher;
+let testObj2: Person = new testClass2("caihua2", 120);
 Assert.equal(testObj2.age, 120);
 Assert.equal(testObj2.name, "caihua2");

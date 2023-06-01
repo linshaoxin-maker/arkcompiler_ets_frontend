@@ -34,7 +34,7 @@ const dFun1: DF1 = () => { Assert.isString("dFun1"); }
 const dFun2: DF2 = (a: string, b: string) => { Assert.isString("dFun2"); return a + b; }
 
 const dFun3: DF3 = (a: number, b?: number) => {
-   var c: any;
+   let c: any;
    if (b != undefined) {
       c = a + b;
    } else {

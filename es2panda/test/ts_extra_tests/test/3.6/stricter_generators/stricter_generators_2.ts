@@ -24,7 +24,7 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class HWC1 {
+class C {
     name: string;
     age: number;
     isJob: boolean;
@@ -35,7 +35,7 @@ class HWC1 {
     }
 }
 
-let c1 = new HWC1("caihua", 12, false);
+let c1 = new C("caihua", 12, false);
 
 const keys = Object.keys(c1);
 var nextIndex = 0;

@@ -22,6 +22,15 @@
 
 import { Assert } from "../../../suite/assert.js"
 
+const Data:any = Map<string, Error>;
+
+const data = new Data();
+
+data.set("name",new Error("TS error"))
+
+Assert.equal(data.get("name").name, 'Error');
+
+
 interface HWI1<T> {
     value: T;
 }
@@ -32,10 +41,35 @@ interface HWI3 {
     use: string;
 }
 function hwtest<T>(value: T) {
-    return { value };
-}
+    return {value};
+// Function
+    type myType1 = number | string;
+    type myType2 = { str: string } | (() => number);
 
-const m1 = hwtest<HWI2>({ name: "hammer" });
-Assert.equal(JSON.stringify(m1), '{"value":{"name":"hammer"}}');
-const m2 = hwtest<HWI3>({ use: "turn the screw" });
-Assert.equal(JSON.stringify(m2), '{"value":{"use":"turn the screw"}}');
+    function func<T>(arg: T) {
+        return arg;
+    }
+
+    var f1 = func<myType1>(5);
+    Assert.isNumber(f1);
+    var f2 = func<myType1>('a');
+    Assert.isString(f2);
+
+    var f3 = func<myType2>({str: 'str'});
+    Assert.isObject(f3);
+    var f4 = func<myType2>(() => {
+        return 10;
+    });
+    Assert.isFunction(f4);
+
+// Constructor
+    let map = Map<string, number>;
+    let map_instantiation = new map();
+    map_instantiation.set('num', 8);
+    Assert.isNumber(map_instantiation.get('num'));
+
+    let set = new Set<number>([2]);
+    for (let arg of set) {
+        Assert.isNumber(arg);
+    }
+}

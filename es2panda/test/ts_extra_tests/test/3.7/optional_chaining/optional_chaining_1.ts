@@ -22,12 +22,12 @@ isCurrent: true
 
 import { Assert } from "../../../suite/assert.js"
 
-const hwobj = {
+const obj1 = {
     x: {
         y: 'NARC'
     }
 };
 
-let str = hwobj?.x.y;
+let str = obj1?.x.y;
 
 Assert.equal(str, "NARC");

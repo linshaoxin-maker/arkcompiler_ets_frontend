@@ -23,6 +23,24 @@
 
 import { Assert } from '../../../suite/assert.js'
 
+type myType = { [arg: string]: string };
+let my_t: myType = {
+    'color': 'blue'
+}
+
+Assert.equal(my_t['color'], 'blue');
+Assert.equal(my_t.color, 'blue');
+
+class C{
+    Arg: { [arg: string]: string };
+    constructor(Arg: { [arg: string]: string }) {
+        this.Arg = Arg;
+    }
+}
+let c = new C({ 'color': 'black' });
+Assert.equal(c.Arg['color'], 'black');
+Assert.equal(c.Arg.color, 'black');
+
 interface StringArrIndex<T> {
     [x: string]: T;
 }

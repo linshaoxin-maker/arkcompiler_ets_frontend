@@ -30,7 +30,7 @@ class myClass {
         this.num3 = num3;
     }
 }
-var myTest = new myClass(3);
+let myTest = new myClass(3);
 Assert.equal(myTest.num1, 3);
-Assert.isUndefined(myTest.num2);
 Assert.equal(myTest.num3, 10);
+Assert.equal(myTest.num2, undefined);

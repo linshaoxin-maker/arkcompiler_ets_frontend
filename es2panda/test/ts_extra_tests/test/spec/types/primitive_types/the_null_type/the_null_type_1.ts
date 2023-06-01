@@ -19,11 +19,11 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var n: null = null;
+let n: null = null;
 let flag = false;
 if (n == null) {
     flag = true;
 }
-Assert.isTrue(flag);
+Assert.equal(flag, true);

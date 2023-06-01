@@ -22,27 +22,25 @@
 
 import { Assert } from '../../suite/assert.js'
 
-function hwfun01<A, B, C>(f: (arg: A) => B, g: (arg: B) => C): (arg: A) => C {
+function Func<A, B, C>(f: (arg: A) => B, g: (arg: B) => C): (arg: A) => C {
     return (x) => g(f(x));
 }
 
 interface A<T> {
-    value: T;
+    arr: T;
 }
 
-function hwfun02<T>(x: T): T[] {
-    return [x];
+function func1<T>(index: T): T[] {
+    return [index];
 }
 
-function hwfun03<U>(value: U): A<U> {
-    return { value };
+function func2<U>(arr: U): A<U> {
+    return { arr };
 }
 
-// has type '(arg: {}) => Box<{}[]>'
-const hw00 = hwfun01(
-    hwfun02,
-    hwfun03,
+const result = Func(
+    func1,
+    func2,
 )
 
-
-Assert.equal(hw00("hello").value[0].toUpperCase(), 'HELLO');
+Assert.equal(result("hello").arr[0].toUpperCase(), 'HELLO');

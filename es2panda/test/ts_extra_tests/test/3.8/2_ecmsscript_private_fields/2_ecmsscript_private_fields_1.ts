@@ -21,9 +21,8 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class HWC {
+class C {
     #name: string;
-
     constructor(name: string) {
         this.#name = name;
     }
@@ -33,7 +32,5 @@ class HWC {
     }
 }
 
-let c = new HWC("NARC");
-
+let c = new C("NARC");
 Assert.equal("NARC", c.getName());
-

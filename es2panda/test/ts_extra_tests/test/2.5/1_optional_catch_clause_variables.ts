@@ -21,9 +21,12 @@
 
 import { Assert } from '../../suite/assert.js'
 
-let input: string = "Error!";
-try {
-    JSON.parse(input);
-} catch {
-    Assert.equal("Error!", input);
-};
+function func(arg: string) {
+    try {
+        JSON.parse(arg);
+    } catch {
+        Assert.equal(arg, "string");
+    }
+}
+let str: string = 'string';
+func(str);

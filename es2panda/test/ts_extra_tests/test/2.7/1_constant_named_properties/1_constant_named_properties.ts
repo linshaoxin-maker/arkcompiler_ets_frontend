@@ -21,33 +21,29 @@ isCurrent: true
 
 import { Assert } from "../../../suite/assert.js"
 
-const SERIALIZE = Symbol("serialize-method-key");
-interface Test {
-  [SERIALIZE](obj: {}): string;
+const sym = Symbol();
+interface I{
+  [sym](func: Function): Function;
 }
-
-class JSONTest implements Test {
-  [SERIALIZE](obj: {}) {
-    return JSON.stringify(obj);
+class C implements I{
+  [sym](func: Function) {
+    return func;
   }
 }
-var obj = new JSONTest();
-Assert.equal('"test open harmony"', obj[SERIALIZE]("test open harmony"));
-Assert.equal(123456, obj[SERIALIZE](123456));
-
+var f = new C();
+Assert.isFunction(f[sym]);
 
 // This also applies to numeric and string literals.
-const test01 = "test01";
-const test02 = "test02";
 
-let x = {
-  [test01]: 100,
-  [test02]: "hello"
-};
+const num = 5;
+const str = 'a';
 
+let obj = {
+  [num]: 5,
+  [str]: "string"
+}
 
-let a = x[test01];
-
-let b = x[test02];
-Assert.equal(100, a);
-Assert.equal("hello", b);
+let para1 = obj[num];
+let para2 = obj[str];
+Assert.isNumber(para1);
+Assert.isString(para2);

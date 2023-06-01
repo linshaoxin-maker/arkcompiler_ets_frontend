@@ -23,10 +23,25 @@
 import { Assert } from '../../../../../suite/assert.js'
 
 class Person {
-  name: string = "rain";
-  static age: number = 0;
-  constructor() { }
+  private _name: string;
+  public age: number;
+  constructor(name: string, age: number) {
+    this._name = name;
+    this.age = age;
+  }
+  public set name(name: string) {
+    this._name = name;
+  }
+  public get name() {
+    return this._name;
+  }
+  static language: string = "english";
+  static ageAdd() {
+    return this.language + "aaa";
+  }
 }
-const per = new Person();
+let per: Person = new Person("rain", 22);
 Assert.equal(per.name, "rain");
-Assert.equal(Person.age, 0);
+Assert.equal(per.age, 22);
+Assert.equal(Person.language, "english");
+Assert.equal(Person.ageAdd(), "englishaaa");

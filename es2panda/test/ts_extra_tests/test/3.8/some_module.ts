@@ -16,4 +16,4 @@
 
 const cat: any = { legs: 4 };
 
-export type SomeThing = typeof cat;
+export type T = typeof cat;

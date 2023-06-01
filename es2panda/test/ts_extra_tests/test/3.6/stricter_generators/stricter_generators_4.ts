@@ -25,10 +25,10 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function* hwtest4() {
+function* func() {
     let x: number = yield;
     Assert.isNumber(x);
 }
-let x = hwtest4();
+let x = func();
 x.next();
 x.next(1);

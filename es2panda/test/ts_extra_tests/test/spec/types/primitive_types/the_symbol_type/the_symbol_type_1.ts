@@ -23,9 +23,9 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var sym: symbol = Symbol();
-var obj1: object = { [sym]: "symbol" };
+let sym: symbol = Symbol();
+let obj1: object = { [sym]: "symbol" };
 type Key = keyof typeof obj1;
 Assert.equal(obj1[sym as Key], "symbol");

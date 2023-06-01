@@ -25,7 +25,7 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function* hwtest5(): Generator<number, string, boolean> {
+function* func(): Generator<number, string, boolean> {
     let i = 0;
     while (true) {
         let cc = yield i++;
@@ -37,7 +37,7 @@ function* hwtest5(): Generator<number, string, boolean> {
     return "done!";
 }
 
-var t1 = hwtest5();
+var t1 = func();
 var t2 = t1.next();
 while (!t2.done) {
     t2 = t1.next(t2.value === 5);

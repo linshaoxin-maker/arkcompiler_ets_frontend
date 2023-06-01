@@ -14,8 +14,8 @@
  */
 /**---
  description: >
-   Types are specified either by referencing their keyword or name, or by writing object type literals, 
-   array type literals, tuple type literals, function type literals, constructor type literals, or type queries.
+    Types are specified either by referencing their keyword or name, or by writing object type literals, 
+    array type literals, tuple type literals, function type literals, constructor type literals, or type queries.
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,22 +23,22 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-var h_num: number = 5;
+let h_num: number = 5;
 Assert.isNumber(h_num);
 
-var h_obj = {
+let h_obj = {
   name: 'xiao',
   age: 18
 }
 Assert.equal(typeof h_obj, 'object');
 
-var h_arr = [10, 5, 7, 20];
+let h_arr = [10, 5, 7, 20];
 Assert.equal(typeof h_arr, 'object');
 
-var h_tup = ['str', 5, true];
+let h_tup = ['str', 5, true];
 Assert.equal(typeof h_tup, 'object');
 
-var h_func = (h_x: number, h_y: number) => {
+let h_func = (h_x: number, h_y: number) => {
   return h_x + h_y
 }
 Assert.equal(typeof h_func, 'function');

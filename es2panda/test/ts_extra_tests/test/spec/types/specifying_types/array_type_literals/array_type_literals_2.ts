@@ -14,7 +14,7 @@
  */
 /**---
  description: >
-   An array type literal references an array type with the given element type. 
+    An array type literal references an array type with the given element type. 
  module: ESNext
  isCurrent: true
  ---*/
@@ -22,7 +22,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-var h_arr = ['s', 5, true];
-Assert.isString(h_arr[0]);
-Assert.isNumber(h_arr[1]);
-Assert.isBoolean(h_arr[2]);
+let arr = ['s', 5, true];
+Assert.equal(arr[0], 's');
+Assert.equal(arr[1], 5);
+Assert.equal(arr[2], true);

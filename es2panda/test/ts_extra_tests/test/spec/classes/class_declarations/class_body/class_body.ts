@@ -35,15 +35,17 @@ class P {
   }
   static initial = new P(0, 0);
 }
-var p: P = new P(10, 20);
+let p: P = new P(10, 20);
 Assert.equal(10, p.num1);
 Assert.equal(20, p.num2);
+Assert.equal(0, P.initial.num1);
+Assert.equal(0, P.initial.num2);
 
 // zero constructor
 class Circle {
   radius: number = 1;
 }
-const c = new Circle();
+let c = new Circle();
 Assert.equal(c.radius, 1);
 
 // more constructor
@@ -70,8 +72,8 @@ class summation {
     return this.width * this.height;
   }
 }
-const sun = new summation(4, 5);
+let sun = new summation(4, 5);
 Assert.equal(sun.sunArea(), 20);
-const obj: TypeSummation = { width: 10, height: 2 };
-const sun2 = new summation(obj);
+let obj: TypeSummation = { width: 10, height: 2 };
+let sun2 = new summation(obj);
 Assert.equal(sun2.sunArea(), 20);

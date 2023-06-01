@@ -14,26 +14,28 @@
  */
 /**---
  description: >
-    The declaration spaces of instance and static property members are separate. 
-    Thus, it is possible to have instance and static property members with the same name.
+   In TypeScript 3.5, the type-checker at least verifies that all the provided properties belong to some union member and have the appropriate type.
  module: ESNext
  isCurrent: true
  ---*/
 
- 
-import { Assert } from "../../../../../suite/assert.js"
 
-class myClass {
-  public x: number;
-  public y: number;
-  constructor(x: number, y: number) {
-    this.x = x;
-    this.y = y;
-  }
-  static x: number = 3;
+import { Assert } from '../../suite/assert.js'
+
+interface I{
+    num: number;
+    mem2: string;
+}
+type T = {
+    num: number;
+    str: string;
 }
 
-let myTest = new myClass(1, 2);
-Assert.equal(myTest.x, 1);
-Assert.equal(myTest.y, 2);
-Assert.equal(myClass.x, 3);
+type ut = I | T;
+let result: ut = {
+    mem2: 'member',
+    num: 10,
+    str: 'string'
+}
+Assert.isNumber(result.num);
+Assert.isObject(result);

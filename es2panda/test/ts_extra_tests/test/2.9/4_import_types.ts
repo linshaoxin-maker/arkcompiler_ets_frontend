@@ -23,12 +23,21 @@
 
 import { Assert } from '../../suite/assert.js'
 
-function hw_adopt(p: import("./module").Pet) {
-  Assert.equal('puppy', `${p.name}`);
-  Assert.equal('puppy', p.name);
+function func1(i: import("./module").I) {
+  Assert.equal(5, `${i.num}`);
+  Assert.equal(5, i.num);
+}
+let i: import("./module.js").I = {
+  num: 5
+}
+func1(i);
+
+function func(p: import("./module").C) {
+  Assert.equal('puppy', `${p.str}`);
+  Assert.equal('puppy', p.str);
 }
 
-let p: import("./module.js").Pet = {
-  name: "puppy",
+let p: import("./module.js").C = {
+  str: "puppy",
 };
-hw_adopt(p);
+func(p);

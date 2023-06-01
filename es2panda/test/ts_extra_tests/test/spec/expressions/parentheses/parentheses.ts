@@ -23,11 +23,11 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-var addparent = function (n1: number, n2: number): number {
+let addparent = function (n1: number, n2: number): number {
   return n1 + n2;
 };
 // is equivalent to
-var addnoparent = (n1: number, n2: number): number => n1 + n2;
+let addnoparent = (n1: number, n2: number): number => n1 + n2;
 let isCorrect = addparent(11, 22) === addnoparent(11, 22);
 Assert.isTrue(isCorrect);
 

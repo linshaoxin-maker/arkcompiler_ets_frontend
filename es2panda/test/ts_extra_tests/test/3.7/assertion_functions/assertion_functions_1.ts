@@ -23,10 +23,10 @@ isCurrent: true
 import { Assert } from "../../../suite/assert.js"
 
 
-function hwtest(x: any, y: any) {
+function func(x: any, y: any) {
   Assert.equal(typeof x, "number");
   Assert.equal(typeof y, "number");
 
   return x * y;
 }
-Assert.equal(typeof hwtest(6, 8), "number");
+Assert.equal(typeof func(6, 8), "number");

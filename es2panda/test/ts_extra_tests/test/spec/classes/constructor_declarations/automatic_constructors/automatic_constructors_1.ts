@@ -40,3 +40,5 @@ class B {
 let b = new B();
 Assert.equal(a.x, 1);
 Assert.equal(a.y, "go");
+Assert.equal(b.x, 1);
+Assert.equal(b.y, "go");

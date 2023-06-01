@@ -78,5 +78,5 @@ let action4: HWA = {
   payload: " 5678 "
 }
 
-Assert.equal(4, hwtest02(action3));
-Assert.equal("5678", hwtest02(action4));
+Assert.equal(hwtest02(action3),4);
+Assert.equal(hwtest02(action4),"5678");

@@ -24,8 +24,8 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-let a = 1;
-function f(x: number, y = x * 2, z = x + y) {
+let a = 3;
+function f(x: number = a, y = x * 2, z = x + y) {
     let b = 12;
     function g(xx = b) {
         return xx;
@@ -33,6 +33,10 @@ function f(x: number, y = x * 2, z = x + y) {
     let c = g();
     return { x, y, z, g: c };
 }
+Assert.equal(f().x, 3);
+Assert.equal(f().y, 6);
+Assert.equal(f().z, 9);
+Assert.equal(f().g, 12);
 Assert.equal(f(1).x, 1);
 Assert.equal(f(1).y, 2);
 Assert.equal(f(1).z, 3);

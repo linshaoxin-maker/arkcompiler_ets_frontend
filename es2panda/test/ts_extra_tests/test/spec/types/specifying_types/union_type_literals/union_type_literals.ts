@@ -14,8 +14,8 @@
  */
 /**---
  description: >
-  A union type literal is written as a sequence of types separated by vertical bars.
-  A union type literal references a union type. 
+    A union type literal is written as a sequence of types separated by vertical bars.
+    A union type literal references a union type. 
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,7 +23,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-var t_union: string | number;
+let t_union: string | number;
 t_union = 's';
 Assert.isString(t_union);
 t_union = 5;

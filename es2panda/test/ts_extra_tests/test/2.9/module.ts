@@ -14,6 +14,10 @@
  */
 
 
-export declare class Pet {
-    name: string;
+export declare class C {
+    str: string;
+};
+
+export declare interface I{
+    num: number;
 };

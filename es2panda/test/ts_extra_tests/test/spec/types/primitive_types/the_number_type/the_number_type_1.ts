@@ -21,7 +21,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 // add
 Assert.notEqual(0.1 + 0.2, 0.3);
@@ -37,12 +37,9 @@ Assert.notEqual(35.41 * 100, 3541);
 // division
 Assert.notEqual(0.3 / 0.1, 3);
 Assert.notEqual(0.69 / 10, 0.069);
-
 // Number.toFiexed()
 Assert.equal((1.335).toFixed(2), 1.33);
 Assert.equal((1.3335).toFixed(3), 1.333);
 Assert.equal((1.33335).toFixed(4), 1.3334);
 Assert.equal((1.333335).toFixed(5), 1.33333);
 Assert.equal((1.3333335).toFixed(6), 1.333333);
-
-

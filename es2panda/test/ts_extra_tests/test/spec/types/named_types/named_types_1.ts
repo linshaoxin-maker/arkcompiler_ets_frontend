@@ -29,22 +29,27 @@ class Test {
     this.name = name;
   }
 }
-// create instances of implementations of named types
-const tt = new Test("caihua");
+let tt = new Test("caihua");
 Assert.equal(tt.name, "caihua");
-
+interface A {
+  a: string;
+}
+function f(obj: A) {
+  obj.a = obj.a + "bb";
+}
+let obj: A = { a: "aa" };
+f(obj);
+Assert.equal(obj.a, "aabb");
 enum Color {
   Red,
   Green,
   Blue,
 }
-
 let a: Color.Red = Color.Red;
 Assert.equal(a, Color.Red);
-
 type pp = number | string;
 let b: pp;
 b = 10;
-Assert.isNumber(b);
+Assert.equal(b, 10);
 b = "hello";
-Assert.isString(b);
+Assert.equal(b, "hello");

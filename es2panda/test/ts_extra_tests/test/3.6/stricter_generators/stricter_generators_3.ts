@@ -23,7 +23,7 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function* hwtest3(): Generator<number, string, boolean> {
+function* func(): Generator<number, string, boolean> {
     let i = 0;
     while (true) {
         if (yield i++) {
@@ -33,7 +33,7 @@ function* hwtest3(): Generator<number, string, boolean> {
     return "done!";
 }
 
-let t1 = hwtest3();
+let t1 = func();
 let t2 = t1.next();
 while (!t2.done) {
     Assert.equal(typeof t2.value, "number");

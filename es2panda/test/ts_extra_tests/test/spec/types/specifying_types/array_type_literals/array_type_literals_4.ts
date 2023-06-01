@@ -22,16 +22,15 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-var arr: Array<string | number> = [2, 'a'];
-Assert.isNumber(arr[0]);
-Assert.isString(arr[1]);
-
-var h_x = function () {
+let arr: Array<string | number> = [2, 'a'];
+Assert.equal(arr[0], 2);
+Assert.equal(arr[1], 'a');
+let h_x = function () {
     return 'h_x';
 }
-var h_y = function () {
+let h_y = function () {
     return 'h_y';
 }
-var fun: Array<() => string> = [h_x, h_y];
+let fun: Array<() => string> = [h_x, h_y];
 Assert.isFunction(fun[0]);
 Assert.isFunction(fun[1]);

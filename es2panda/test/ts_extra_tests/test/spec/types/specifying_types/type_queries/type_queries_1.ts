@@ -14,8 +14,8 @@
  */
 /**---
  description: >
-  A type query obtains the type of an expression.
-  A type query consists of the keyword typeof followed by an expression. 
+    A type query obtains the type of an expression.
+    A type query consists of the keyword typeof followed by an expression. 
  module: ESNext
  isCurrent: true
  ---*/

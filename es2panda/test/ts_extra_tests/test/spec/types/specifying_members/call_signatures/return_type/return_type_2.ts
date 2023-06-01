@@ -21,16 +21,16 @@
  ---*/
 
 
-import {Assert} from '../../../../../../suite/assert.js'
+import { Assert } from '../../../../../../suite/assert.js'
 
 let add: { (x: number, y: number): any };
 type anyT = ReturnType<typeof add>;
 let x: anyT;
 x = 1;
-Assert.isNumber(x);
+Assert.equal(x, 1);
 x = "any";
-Assert.isString(x);
+Assert.equal(x, "any");
 x = true;
-Assert.isBoolean(x);
+Assert.equal(x, true);
 x = undefined;
-Assert.isUndefined(x);
+Assert.equal(x, undefined);

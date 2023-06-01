@@ -14,8 +14,8 @@
  */
 /**---
  description: >
-   A type reference references a named type or type parameter through its name and, in the case of a generic type, supplies a type argument list.
-   A TypeReference consists of a TypeName that a references a named type or type parameter. A reference to a generic type must be followed by a list of TypeArguments.
+    A type reference references a named type or type parameter through its name and, in the case of a generic type, supplies a type argument list.
+    A TypeReference consists of a TypeName that a references a named type or type parameter. A reference to a generic type must be followed by a list of TypeArguments.
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,7 +23,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-var h_obj: {
+let h_obj: {
     month: number;
     day: number;
 } = {
@@ -32,7 +32,6 @@ var h_obj: {
 }
 Assert.equal(h_obj.month, 5);
 Assert.equal(h_obj.day, 15);
-
 function identity1<T, U>(value: T, message: U): [T, U] {
     return [value, message];
 }

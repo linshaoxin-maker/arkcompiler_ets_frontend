@@ -19,7 +19,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var u: undefined = undefined;
-Assert.isUndefined(u);
+let u: undefined = undefined;
+Assert.equal(u, undefined);

@@ -21,11 +21,11 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function arrayGen<T, U>(f: (x: T) => U): (a: T[]) => U[] {
+function func<T, U>(f: (x: T) => U): (a: T[]) => U[] {
     return a => a.map(f);
 }
 
-const len: (a: string[]) => number[] = arrayGen(s => s.length);
+const len: (a: string[]) => number[] = func(s => s.length);
 Assert.equal(1, len(["s", "ss", "sss"])[0]);
 Assert.equal(2, len(["s", "ss", "sss"])[1]);
 Assert.equal(3, len(["s", "ss", "sss"])[2]);
@@ -36,7 +36,7 @@ type B = <S>(x: S, y: S) => [S, S];
 
 function f(a: A, b: B) {
     b = a;
-    Assert.isTrue(true);
+    Assert.isTrue(b == a);
 }
 
 let a: A = function funA<T, U>(x: T, y: U): [T, U] {

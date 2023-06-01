@@ -14,15 +14,15 @@
  */
 /**--- 
  description: >
-  A parameter is permitted to include a public, private,
-  or protected modifier only if it occurs in the parameter list of a ConstructorImplementation (section 8.3.1) 
-  and only if it doesn't specify a BindingPattern.
+    A parameter is permitted to include a public, private,
+    or protected modifier only if it occurs in the parameter list of a ConstructorImplementation (section 8.3.1) 
+    and only if it doesn't specify a BindingPattern.
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import {Assert} from '../../../../../../suite/assert.js'
+import { Assert } from '../../../../../../suite/assert.js'
 
 class Person2 {
   public name: string;
@@ -51,9 +51,8 @@ class Child extends Person2 {
     }
   }
 }
-const a = new Child("wangwu", 15, "man");
+let a = new Child("wangwu", 15, "man");
 a.name = "lisi";
 a._age = 19;
 Assert.equal(a.name, "lisi");
 Assert.equal(a._age, 19);
-

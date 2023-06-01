@@ -15,7 +15,8 @@
 /**---
  description: >
     this appendix contains a summary of the grammar found in the main document. 
-    typescript grammar is a superset of the grammar defined in the ECMAScript 2015 Language Specification (specifically, the ECMA-262 Standard, 6th Edition) and this appendix lists only productions that are new or modified from the ECMAScript grammar.
+    typescript grammar is a superset of the grammar defined in the ECMAScript 2015 Language Specification (specifically, the ECMA-262 Standard, 6th Edition) 
+    and this appendix lists only productions that are new or modified from the ECMAScript grammar.
  options:
     target: es2015
     lib: es2015
@@ -50,6 +51,36 @@ interface Data extends Ver {
 let v: Data = { data: 1024, ver: "1.0.1" };
 Assert.equal(v.data, 1024);
 Assert.equal(v.ver, "1.0.1");
+
+function addNumbers(...num: number[]): number {
+    let n: number = 0;
+    for (let i: number = 0; i < num.length; i++) {
+        n += num[i];
+    }
+    return n;
+}
+Assert.equal(addNumbers(5, 5, 5, 5, 5), 25);
+
+interface StrIndex {
+    [key: string]: number;
+}
+let si: StrIndex = { C: 3, D: 4 };
+si['A'] = 1;
+si.B = 2;
+Assert.equal(si.A, 1);
+Assert.equal(si['B'], 2);
+Assert.equal(si.C, 3);
+Assert.equal(si['D'], 4);
+Assert.equal(JSON.stringify(si), '{"C":3,"D":4,"A":1,"B":2}');
+
+interface NumIndex {
+    [key: number]: string;
+}
+let ni: NumIndex = { 1: 'A' };
+ni[3] = 'C';
+Assert.equal(ni[1], 'A');
+Assert.equal(ni[3], 'C');
+Assert.equal(JSON.stringify(ni), '{"1":"A","3":"C"}');
 
 class AB<T, U>{
     a: T | undefined;

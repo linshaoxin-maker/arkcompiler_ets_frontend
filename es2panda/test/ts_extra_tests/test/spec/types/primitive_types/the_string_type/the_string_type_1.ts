@@ -21,7 +21,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var str: string = "\u4f60\u597d";
+let str: string = "\u4f60\u597d";
 Assert.equal(str, "你好");

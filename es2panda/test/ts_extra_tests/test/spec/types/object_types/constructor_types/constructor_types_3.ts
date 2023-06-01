@@ -14,13 +14,13 @@
  */
 /**---
  description: >
-  An object type containing one or more construct signatures is said to be a constructor type.
+    An object type containing one or more construct signatures is said to be a constructor type.
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 interface Point {
   x: number;
@@ -29,7 +29,6 @@ interface Point {
 interface PointConstructor {
   new(x: number, y: number): Point;
 }
-
 class Point2D implements Point {
   readonly x: number;
   readonly y: number;
@@ -38,7 +37,6 @@ class Point2D implements Point {
     this.y = y;
   }
 }
-
 function newPoint(
   pointConstructor: PointConstructor,
   x: number,
@@ -46,11 +44,9 @@ function newPoint(
 ): Point {
   return new pointConstructor(x, y);
 }
-
-const point1: Point = new Point2D(1, 2);
+let point1: Point = new Point2D(1, 2);
 Assert.equal(point1.x, 1);
 Assert.equal(point1.y, 2);
-
-const point: Point = newPoint(Point2D, 2, 2);
+let point: Point = newPoint(Point2D, 2, 2);
 Assert.equal(point.x, 2);
 Assert.equal(point.y, 2);

@@ -14,7 +14,7 @@
  */
 /**---
  description: >
-   When union, intersection, function, or constructor types are used as array element types they must be enclosed in parentheses. 
+    When union, intersection, function, or constructor types are used as array element types they must be enclosed in parentheses. 
  module: ESNext
  isCurrent: true
  ---*/
@@ -22,14 +22,13 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-var h_test1: string | number[];
+let h_test1: string | number[];
 h_test1 = 'string';
-Assert.isString(h_test1);
+Assert.equal(h_test1, 'string');
 h_test1 = [3, 5];
-Assert.isNumber(h_test1[0]);
-Assert.isNumber(h_test1[1]);
-
-var h_test2: (string | number)[];
-h_test2 = [2, 'b'];
-Assert.isNumber(h_test2[0]);
-Assert.isString(h_test2[1]);
+Assert.equal(h_test1[0], 3);
+Assert.equal(h_test1[1], 5);
+let h_test2: (string | number)[];
+h_test2 = [2, 'a'];
+Assert.equal(h_test2[0], 2);
+Assert.equal(h_test2[1], 'a');

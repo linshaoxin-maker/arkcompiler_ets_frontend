@@ -16,7 +16,7 @@
  description: >
    Conditional types are a bit of a power-user feature.
    They allow us to match and infer against the shape of types, and make decisions based on them.
-   To avoid that second level of nesting, TypeScript 4.7 now allows to place a constraint on any infer type.
+   TypeScript 4.7 now allows to place a constraint on any infer type.
  module: ESNext
  isCurrent: true
  ---*/
@@ -24,34 +24,25 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-type FStr1<T> = T extends [infer S, ...unknown[]]
-  ? S extends string
-  ? S
-  : boolean
-  : boolean;
+type myType1<T> = T extends (...arg: infer R) => number ? R : boolean;
 
-type FStr2<T> = T extends [infer S extends string, ...unknown[]] ? S : boolean;
+const Add = (a: number, b: number) => a + b;
+type add = typeof Add;
+type t1 = myType1<add>;
+const arr: t1 = [1, 2];
+Assert.isObject(arr);
 
-let A1: FStr1<[string, number, number]> = "A1";
-let A2: FStr2<[string, number, number]> = "A2";
-Assert.isString(A1);
-Assert.isString(A2);
+type fs = Function | string;
+type myType2<T> = T extends [infer S extends fs, ...any[]] ? S : boolean;
 
-let B1: FStr1<["hello", number, number]> = "hello";
-let B2: FStr2<["hello", number, number]> = "hello";
-Assert.equal(B1, "hello");
-Assert.equal(B2, "hello");
-
-let C1: FStr1<["hello" | "world", boolean]> = "hello";
-Assert.equal(C1, "hello");
-let C2: FStr2<["hello" | "world", boolean]> = "world";
-Assert.equal(C2, "world");
-C1 = "world";
-Assert.equal(C1, "world");
-C2 = "hello";
-Assert.equal(C2, "hello");
-
-let D1: FStr1<[object, number, string]> = false;
-Assert.isBoolean(D1);
-let D2: FStr2<[object, number, string]> = false;
-Assert.isBoolean(D2);
+const Min = (a: number, b: number)=>{
+  if (a > b) {
+    return b;
+  } else {
+    return a;
+  }
+}
+type min = typeof Min;
+type t2 = myType2<[min, number, string]>;
+const func: t2 = Min;
+Assert.isFunction(func);

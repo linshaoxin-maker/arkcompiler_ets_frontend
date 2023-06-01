@@ -26,20 +26,26 @@
 import { Assert } from '../../../../../suite/assert.js'
 
 class Property {
-  // reserved word as property name
   break: string;
-  // string literal as property name
+  let: string;
+  any: string;
+  as: string;
   "with blank": number;
-  // numeric literal as property name
   1: boolean;
-  constructor(x: string, y: number, z: boolean) {
-    this.break = x;
-    this["with blank"] = y;
-    this[1] = z;
+  constructor() {
+    this.break = "break";
+    this["with blank"] = 12;
+    this[1] = true;
+    this.any = "any";
+    this.let = "let";
+    this.as = "as";
   }
 }
 
-var p: Property = new Property("abc", 12, false);
-Assert.equal("abc", p.break);
+var p: Property = new Property();
+Assert.equal("break", p.break);
 Assert.equal(12, p["with blank"]);
-Assert.equal(false, p[1]);
+Assert.equal(true, p[1]);
+Assert.equal("any", p.any);
+Assert.equal("let", p.let);
+Assert.equal("as", p.as);

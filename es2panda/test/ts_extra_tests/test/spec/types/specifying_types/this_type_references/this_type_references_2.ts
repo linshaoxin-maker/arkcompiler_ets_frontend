@@ -14,9 +14,9 @@
  */
 /**---
  description: >
-   The meaning of a ThisType depends on the closest enclosing FunctionDeclaration, 
-   FunctionExpression, PropertyDefinition, ClassElement, or TypeMember, known as the root declaration of the ThisType,
-   when the root declaration is a member of an interface type, the ThisType references the this-type of that interface.
+    The meaning of a ThisType depends on the closest enclosing FunctionDeclaration, 
+    FunctionExpression, PropertyDefinition, ClassElement, or TypeMember, known as the root declaration of the ThisType,
+    when the root declaration is a member of an interface type, the ThisType references the this-type of that interface.
  module: ESNext
  isCurrent: true
  ---*/
@@ -28,8 +28,7 @@ interface h_inter {
   name: string;
   getN(this: h_inter): string;
 }
-
-var h_i: h_inter = {
+let h_i: h_inter = {
   name: 'xiao',
   getN() {
     return this.name;

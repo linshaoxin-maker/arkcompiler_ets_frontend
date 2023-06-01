@@ -21,15 +21,15 @@
  ---*/
 
 
-import {Assert} from '../../../../suite/assert.js'
+import { Assert } from '../../../../suite/assert.js'
 
-var x: any
+let x: any
 x = 1024;
 x.toString();
 Assert.isString(x.toString());
 x = "AAA";
 x.length;
-Assert.isNumber(x.length);
-var fun3: any;
-fun3 = () => { };
-fun3();
+Assert.equal(x.length, 3);
+let fun: any;
+fun = (a: number) => a;
+Assert.equal(fun(5), 5);

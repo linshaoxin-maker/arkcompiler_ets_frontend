@@ -25,7 +25,7 @@ import { Assert } from "../../../suite/assert.js"
 
 type R<T> = { error: Error; data: null } | { error: null; data: T };
 
-function hwfun<T>(result: R<T>) {
+function func<T>(result: R<T>) {
     if (result.error) {
         throw result.error;
     }
@@ -36,7 +36,7 @@ var a = {
     error: null,
     data: null,
 };
-var b = hwfun(a);
+var b = func(a);
 let f = false;
 if (b == null) {
     f = true;
@@ -47,5 +47,5 @@ var c = {
     error: null,
     data: 10,
 };
-var d = hwfun(c);
+var d = func(c);
 Assert.equal(d, "10");

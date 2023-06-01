@@ -23,41 +23,69 @@
 
 import { Assert } from "../../../suite/assert.js"
 
+function func1<T>(arg: T): T{
+  return arg;
+}
+var f1 = func1(5);
+Assert.isNumber(f1);
+var f2 = func1('a');
+Assert.isString(f2);
+var f3 = func1(true);
+Assert.isBoolean(f3);
+var f4 = func1({ num: 5 });
+Assert.isObject(f4);
+var f5 = func1(() => { return; });
+Assert.isFunction(f5);
+
+function func2<T>(arg: { member: (str: string) => T }) {
+  return arg;
+}
+var f6 = func2({ member: str => { return str; } });
+var result = f6.member('a');
+Assert.isString(result);
 function hwtest<T>(arg: {
     produce: (n: string) => T;
     consume: (x: T) => void;
-}): void { }
+}) {
+    arg.consume = function (x:T) {
+        Assert.equal(typeof x,"String")
+    }
+    arg.consume;
 
-var a = hwtest({
-    produce: () => "hello",
-    consume: (x) => x.toLowerCase(),
+}
+hwtest({
+    produce: ():string => "hello",
+    consume: (x:string) => x.toLowerCase(),
 });
-Assert.isUndefined(a);
 
-var b = hwtest({
-    produce: (n: string) => n,
-    consume: (x) => x.toLowerCase(),
-});
-Assert.isUndefined(b);
 
-var c = hwtest({
-    produce: (n) => n,
-    consume: (x) => x.toLowerCase(),
-});
-Assert.isUndefined(c);
+class C<T>{
+  arg: {
+    mem: (str: string) => T;
+    t: T;
+  }
+  constructor(arg: {
+    mem: (str: string) => T;
+    t: T;
+  }) {
+    this.arg = arg;
+    this.arg.t = arg.t;
+  }
+}
+var c1 = new C({
+  mem: function () { return 'a' },
+  t: 't'
+})
+Assert.isString(c1.arg.t);
+var c2 = new C({
+  mem() { return 'a' },
+  t: 't'
+})
+Assert.isString(c1.arg.t);
+var c3 = new C({
+  mem: str => str,
+  t: 't'
+})
+Assert.isString(c1.arg.t);
 
-var d = hwtest({
-    produce: function () {
-        return "hello";
-    },
-    consume: (x) => x.toLowerCase(),
-});
-Assert.isUndefined(d);
 
-var e = hwtest({
-    produce() {
-        return "hello";
-    },
-    consume: (x) => x.toLowerCase(),
-});
-Assert.isUndefined(e);

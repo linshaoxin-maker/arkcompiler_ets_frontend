@@ -21,13 +21,13 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var v: void;
-Assert.isUndefined(v);
-var v2: void = undefined;
-Assert.isUndefined(v2);
-var nu = null;
-var u: undefined = undefined;
+let v: void;
+Assert.equal(v, undefined);
+let v2: void = undefined;
+Assert.equal(v2, undefined);
+let nu = null;
+let u: undefined = undefined;
 v = u;
-Assert.isUndefined(v);
+Assert.equal(v, undefined);

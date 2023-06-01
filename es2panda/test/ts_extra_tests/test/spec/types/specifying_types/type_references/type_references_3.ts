@@ -14,9 +14,9 @@
  */
 /**---
  description: >
-   A type argument is simply a Type and may itself be a type reference to a generic type. 
-   A type reference to a generic type G designates a type wherein all occurrences of G's type parameters have been replaced 
-   with the actual type arguments supplied in the type reference. 
+    A type argument is simply a Type and may itself be a type reference to a generic type. 
+    A type reference to a generic type G designates a type wherein all occurrences of G's type parameters have been replaced 
+    with the actual type arguments supplied in the type reference. 
  module: ESNext
  isCurrent: true
  ---*/
@@ -37,8 +37,7 @@ interface h_G<T, U extends h_B> {
     h_x: T;
     h_y: U;
 }
-
-var h_v: h_G<h_G<h_A, h_B>, h_C> = {
+let h_v: h_G<h_G<h_A, h_B>, h_C> = {
     h_x: {
         h_x: { h_a: 'h_a' },
         h_y: {

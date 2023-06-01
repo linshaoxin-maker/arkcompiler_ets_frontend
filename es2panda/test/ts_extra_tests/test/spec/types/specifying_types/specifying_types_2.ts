@@ -14,7 +14,7 @@
  */
 /**---
  description: >
-   Parentheses are required around union, intersection, function, or constructor types when they are used as array element types
+    Parentheses are required around union, intersection, function, or constructor types when they are used as array element types
  module: ESNext
  isCurrent: true
  ---*/
@@ -22,11 +22,10 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-var h_arr: (string | number)[] = ['10', 5];
+let h_arr: (string | number)[] = ['10', 5];
 Assert.equal(typeof h_arr, 'object');
-
-var m_fun = function func(x: number) {
+let m_fun = function func(x: number) {
   return x;
 }
-var h_func: ((h_x: string) => string) | ((h_x: number) => number) = m_fun;
+let h_func: ((h_x: string) => string) | ((h_x: number) => number) = m_fun;
 Assert.equal(typeof h_func, 'function');

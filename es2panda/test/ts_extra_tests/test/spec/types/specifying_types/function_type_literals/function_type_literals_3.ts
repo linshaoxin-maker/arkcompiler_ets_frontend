@@ -14,8 +14,8 @@
  */
 /**---
  description: >
-  Function types with multiple call or construct signatures cannot be written as function type literals 
-  but must instead be written as object type literals.
+    Function types with multiple call or construct signatures cannot be written as function type literals 
+    but must instead be written as object type literals.
  module: ESNext
  isCurrent: true
  ---*/
@@ -27,8 +27,7 @@ interface h_inter {
     (h_x: string): number;
     (h_x: number): string
 }
-
-var h_i: h_inter = Object.assign(function (h_x: any) {
+let h_i: h_inter = Object.assign(function (h_x: any) {
     if (typeof h_x === 'string') {
         return h_x.toString();
     } else {

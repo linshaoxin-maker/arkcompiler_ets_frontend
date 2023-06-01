@@ -23,9 +23,16 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-function identity<T>(arg: T): T {
+type XY = { x: number; y: number };
+
+function f1<T>(arg: T): T {
   return arg;
 }
-Assert.equal(identity(0), 0);
-Assert.equal(identity("hello"), "hello");
-Assert.equal(identity(true), true);
+Assert.equal(f1(0), 0);
+Assert.equal(f1("hello"), "hello");
+Assert.equal(f1(true), true);
+
+function f2<T extends XY>(arg: T): T {
+  return arg;
+}
+Assert.equal(JSON.stringify(f2<{ x: number, y: number, z: number }>({ x: 0, y: 0, z: 0 })), '{"x":0,"y":0,"z":0}');

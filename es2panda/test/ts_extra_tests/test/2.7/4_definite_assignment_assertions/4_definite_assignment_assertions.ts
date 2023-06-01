@@ -21,19 +21,30 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-// With definite assignment assertions, we can assert that x is really assigned by appending an ! to its declaration
-let x!: number;
-
-// In a sense, the definite assignment assertion operator is the dual of the non-null assertion operator (in which expressions are post-fixed with a !)
-let y = x! + x!;
-
-Assert.isTrue(Number.isNaN(y));
-initialize();
-
-// No error!
-let z = x + x;
-function initialize() {
-  x = 10;
+function func(arg: number | undefined) {
+  let sum = arg! + arg!;
+  return sum;
 }
+let num = func(5);
+Assert.isFalse(Number.isNaN(num));
 
-Assert.equal(20, z);
+let x: number;
+let add = x! + x!;
+Assert.isTrue(Number.isNaN(add));
+
+// The definite assignment assertion operator is the dual of the non-null assertion operator
+let num1: number;
+later1();
+let sum1 = num1! + num1!;
+function later1() {
+  num1 = 5;
+}
+Assert.equal(sum1, 10);
+
+let num2!: number;
+later2();
+let sum2 = num2 + num2;
+function later2() {
+  num2 = 5;
+}
+Assert.equal(sum2, 10);

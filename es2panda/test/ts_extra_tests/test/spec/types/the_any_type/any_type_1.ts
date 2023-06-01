@@ -23,13 +23,12 @@
  ---*/
 
 
-import {Assert} from '../../../../suite/assert.js'
+import { Assert } from '../../../../suite/assert.js'
 
-var x: any;
+let x: any;
 x = 12;
-Assert.isNumber(x);
+Assert.equal(x, 12);
 x = "abc";
-Assert.isString(x);
+Assert.equal(x, "abc");
 x = true;
-Assert.isBoolean(x);
-
+Assert.equal(x, true);

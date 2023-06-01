@@ -14,14 +14,14 @@
  */
 /**---
  description: >
-   A signature's parameter list consists of zero or more required parameters, followed by zero or more optional parameters,
-   finally followed by an optional rest parameter.
+    A signature's parameter list consists of zero or more required parameters, followed by zero or more optional parameters,
+    finally followed by an optional rest parameter.
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import {Assert} from '../../../../../../suite/assert.js'
+import { Assert } from '../../../../../../suite/assert.js'
 
 function fun0() {
   return "zero parameter";
@@ -34,7 +34,6 @@ let result1 = fun1("Bob");
 let result3 = fun1("Bob", "Adams");
 Assert.equal(result1, "Bob");
 Assert.equal(result3, "Bob Adams");
-
 function fun2(firstParameter: string, ...restParameter: string[]) {
   return firstParameter + " " + restParameter.join(" ");
 }

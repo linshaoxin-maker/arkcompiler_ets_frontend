@@ -24,8 +24,8 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-var h_x: symbol = Symbol();
-var h_obj: any = {};
+let h_x: symbol = Symbol();
+let h_obj: any = {};
 h_obj[h_x] = "primitive type";
 Assert.equal(h_obj[h_x], "primitive type");
 h_obj[Symbol.toStringTag] = "project";

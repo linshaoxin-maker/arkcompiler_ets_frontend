@@ -21,14 +21,13 @@
 ---*/
 
 
-import {Assert} from '../../../../suite/assert.js'
+import { Assert } from '../../../../suite/assert.js'
 
 interface Person {
   m_name: string;
   m_age: number;
   getName(name: string): string;
 }
-
 type Optional<T> = { [P in keyof T]: T[P] };
 let cc: Optional<Person> = {
   m_age: 18,

@@ -39,3 +39,30 @@ Assert.equal(CED["False"], 0);
 Assert.equal(CED["True"], 1);
 Assert.equal(CED["DEF"], 1024);
 Assert.equal(CED.Ver, "1.0.1");
+
+function toLength(str: string): number {
+    return str.length;
+}
+
+enum ABCList {
+    A,
+    B,
+    C = "string".length,
+    D = 10,
+    E,
+    F = ~17,
+    G = 0x0f << 0x02,
+    H = 0xff & 0xaa,
+    I = E | F,
+    J = toLength(ABCList[11]),
+}
+Assert.equal(ABCList.A, 0);
+Assert.equal(ABCList.B, 1);
+Assert.equal(ABCList.C, 6);
+Assert.equal(ABCList.D, 10);
+Assert.equal(ABCList.E, 11);
+Assert.equal(ABCList.F, -18);
+Assert.equal(ABCList.G, 60);
+Assert.equal(ABCList.H, 170);
+Assert.equal(ABCList.I, -17);
+Assert.equal(ABCList.J, 1);

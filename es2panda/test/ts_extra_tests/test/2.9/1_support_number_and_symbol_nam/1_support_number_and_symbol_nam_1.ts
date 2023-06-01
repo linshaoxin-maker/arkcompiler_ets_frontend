@@ -24,7 +24,6 @@ import { Assert } from '../../../suite/assert.js'
 const str = "c";
 const num = 10;
 const sym = Symbol();
-const bool = true;
 
 const enum ABC { A, B, C }
 const enum ABCStr { A = "A", B = "B", C = "C" }

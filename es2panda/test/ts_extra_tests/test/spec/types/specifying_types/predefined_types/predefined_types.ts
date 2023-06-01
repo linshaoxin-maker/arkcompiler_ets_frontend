@@ -14,8 +14,8 @@
  */
 /**---
  description: >
-   The any, number, boolean, string, symbol and void keywords reference 
-   the Any type and the Number, Boolean, String, Symbol, and Void primitive types respectively.
+    The any, number, boolean, string, symbol and void keywords reference 
+    the Any type and the Number, Boolean, String, Symbol, and Void primitive types respectively.
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,14 +23,14 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-var m_n: number = 5;
+let m_n: number = 5;
 Assert.equal(m_n.toString(), "5");
 
-var m_b: boolean = true;
+let m_b: boolean = true;
 Assert.equal(m_b.toString(), "true");
 
-var m_s: string = 's';
+let m_s: string = 's';
 Assert.equal(m_s.toString(), "s");
 
-var m_sy: symbol = Symbol();
+let m_sy: symbol = Symbol();
 Assert.equal(m_sy.toString(), "Symbol()");

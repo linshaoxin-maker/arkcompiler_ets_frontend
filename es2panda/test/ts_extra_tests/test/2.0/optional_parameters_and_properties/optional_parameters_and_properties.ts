@@ -34,3 +34,30 @@ function printPoint(a: number, b: number, c?: number): string {
 }
 Assert.equal(printPoint(1, 3, 5), '{"a":1,"b":3,"c":5}');
 Assert.equal(printPoint(1, 1), '{"a":1,"b":1}');
+
+interface I{
+    num: number;
+    str?: string;
+}
+let i1: I = {
+    num: 5
+}
+Assert.isUndefined(i1.str);
+let i2: I = {
+    num: 5,
+    str: 'a'
+}
+Assert.isString(i2.str);
+
+class C{
+    num: number;
+    str?: string;
+    constructor(num: number, str?: string) {
+        this.num = num;
+        this.str = str;
+    }
+}
+let c1 = new C(10);
+Assert.isUndefined(c1.str);
+let c2 = new C(10, 'a');
+Assert.isString(c2.str);

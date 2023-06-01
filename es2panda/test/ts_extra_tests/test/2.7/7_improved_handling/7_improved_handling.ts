@@ -25,52 +25,77 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class HWA { }
-class HWB extends HWA { }
-class HWC extends HWA { }
-class HWD extends HWA { }
-class HWE extends HWD { }
-
-
-let x1 = !true ? new HWA() : new HWB();
-
-let x2 = !true ? new HWB() : new HWC();
-
-let x3 = !true ? new HWC() : new HWD();
-Assert.isTrue(x1 instanceof HWB);
-Assert.isTrue(x2 instanceof HWC);
-Assert.isTrue(x3 instanceof HWD);
-
-
-let a1 = [new HWA(), new HWB(), new HWC(), new HWD(), new HWE()];
-
-let a2 = [new HWB(), new HWC(), new HWD(), new HWE()];
-
-Assert.isTrue(a1[0] instanceof HWA);
-Assert.isTrue(a1[1] instanceof HWB);
-Assert.isTrue(a1[2] instanceof HWC);
-Assert.isTrue(a1[3] instanceof HWD);
-Assert.isTrue(a1[4] instanceof HWE);
-
-
-Assert.isTrue(a2[0] instanceof HWB);
-Assert.isTrue(a2[1] instanceof HWC);
-Assert.isTrue(a2[2] instanceof HWD);
-Assert.isTrue(a2[3] instanceof HWE);
-
-
-function fun(x: HWB | HWC | HWD) {
-  if (x instanceof HWB) {
-    Assert.isTrue(x instanceof HWB);
-  } else if (x instanceof HWC) {
-    Assert.isTrue(x instanceof HWC);
-  } else {
-    Assert.isFalse(x instanceof HWB);
-    Assert.isFalse(x instanceof HWC);
+class C1{
+  num: number;
+  constructor(num: number) {
+    this.num = num;
+  }
+}
+class C2 extends C1{
+  str: string;
+  constructor(num: number,str:string) {
+    super(5);
+    this.num = num;
+    this.str = str;
+  }
+}
+class C3 extends C1{
+  boo: boolean;
+  constructor(num: number,boo:boolean) {
+    super(6);
+    this.num = num;
+    this.boo = boo;
+  }
+}
+class C4 extends C1{
+  obj: object;
+  constructor(num: number, obj: object) {
+    super(7);
+    this.obj = obj;
+    this.num = num;
   }
 }
 
-fun(new HWA());
-fun(new HWB());
-fun(new HWC());
-fun(new HWD());
+let t1 = !true ? new C1(10) : new C2(11, 'a');
+function func1(arg: C1 | C2 | C3 | C4) {
+  if (arg instanceof C1) {
+    arg.num = 20;
+    return arg.num
+  }
+  return false;
+}
+Assert.equal(func1(t1), 20);
+
+let t2 = !true ? new C2(12, 'b') : new C3(13, false);
+function func2(arg: C1 | C2 | C3 | C4) {
+  if (arg instanceof C3) {
+    arg.num = 20;
+    return arg.num
+  }
+  return false;
+}
+Assert.equal(func2(t2), 20);
+
+let t3 = !true ? new C3(14, true) : new C4(15, { a: 'a' });
+function func3(arg: C1 | C2 | C3 | C4) {
+  if (arg instanceof C4) {
+    arg.num = 20;
+    return arg.num
+  }
+  return false;
+}
+Assert.equal(func3(t3), 20);
+
+
+function func(x: C2 | C3 | C4) {
+  if (x instanceof C2 ) {
+    return x.str;
+  } else if (x instanceof C3) {
+    return x.boo;
+  } else {
+    return x.obj
+  }
+}
+Assert.isString(func(new C2(1, 'C2')));
+Assert.isBoolean(func(new C3(2, true)));
+Assert.isObject(func(new C4(3, { o: 'obj' })));

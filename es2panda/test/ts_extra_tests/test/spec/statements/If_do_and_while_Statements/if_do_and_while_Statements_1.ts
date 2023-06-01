@@ -54,3 +54,12 @@ if (myObject2 == 2) {
     myObject2 = 3;
 }
 Assert.equal(1, myObject2);
+
+let und: undefined;
+let flag = false;
+if (und) {
+    flag = true;
+} else {
+    flag = false;
+}
+Assert.isFalse(flag);

@@ -21,30 +21,23 @@ isCurrent: true
 
 
 import { Assert } from "../../suite/assert.js"
-type TypeGather<T> =
-  T extends string ? string :
-  T extends number ? number :
-  T extends boolean ? boolean :
-  T extends undefined ? undefined :
-  T extends Function ? Function :
-  object;
 
-type T0 = TypeGather<string>;
-type T1 = TypeGather<"a">;
-type T2 = TypeGather<true>;
-type T3 = TypeGather<() => void>;
-type T4 = TypeGather<string[]>;
-
-
-let a: T0 = "string";
-let b: T1 = 'string';
-let c: T2 = true;
-let d: T3 = (() => { });
-let e: T4 = {};
-
-
-Assert.equal(typeof a, 'string');
-Assert.equal(typeof b, 'string');
-Assert.equal(typeof c, 'boolean');
-Assert.equal(typeof d, 'function');
-Assert.equal(typeof e, 'object');
+interface I1{
+  str: string;
+}
+interface I2{
+  num: number;
+}
+type mT<T> = T extends I1 ? boolean : T extends I2 ? number : string;
+function func1<T extends mT<I1>>(arg: T) {
+  return arg;
+}
+Assert.isBoolean(func1(true));
+function func2<T extends mT<I2>>(arg: T) {
+  return arg;
+}
+Assert.isNumber(func2(5));
+function func3<T extends mT<object>>(arg: T) {
+  return arg;
+}
+Assert.isString(func3('a'));

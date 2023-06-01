@@ -26,10 +26,13 @@
 import { Assert } from '../../../../../suite/assert.js'
 
 class A {
-  r: number;
-  constructor(r: number) {
-    this.r = r;
+  public x: number;
+  public y: number;
+  constructor(x: number, y: number) {
+    this.x = x;
+    this.y = y;
   }
 }
-let a = new A(1);
-Assert.equal(a.r, 1);
+let a = new A(1, 2);
+Assert.equal(a.x, 1);
+Assert.equal(a.y, 2);

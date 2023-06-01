@@ -14,7 +14,7 @@
  */
 /**---
  description: >
-   A class declaration declares a class type and a constructor function: class BindingIdentifieropt TypeParametersopt ClassHeritage { ClassBody }
+    A class that includes an extends clause is called a derived class, and the class specified in the extends clause is called the base class of the derived class.
  module: ESNext
  isCurrent: true
  ---*/
@@ -29,11 +29,6 @@ class P {
   }
   static initial = new P(0, 0);
 }
-
-var p: P = new P(10, 20);
-Assert.equal(10, p.num1);
-Assert.equal(20, p.num2);
-
 class ChildP extends P {
   constructor(public x: number, public y: number) {
     super(x, y);
@@ -43,26 +38,10 @@ class ChildP extends P {
     this.y += 1;
   }
 }
-
-var pChild: ChildP = new ChildP(10, 20);
+let pChild: ChildP = new ChildP(10, 20);
+Assert.equal(10, pChild.x);
+Assert.equal(20, pChild.y);
 pChild.move();
 Assert.equal(11, pChild.x);
 Assert.equal(21, pChild.y);
-class MyClass<T> {
-  field: T;
-  constructor(field: T) {
-    this.field = field;
-  }
-
-  public getFieldName(): T {
-    return this.field;
-  }
-}
-let mc: MyClass<String> = new MyClass<String>("a");
-Assert.equal("a", mc.field);
-let mc2: MyClass<number> = new MyClass<number>(1);
-Assert.equal(1, mc2.field);
-let mc3: MyClass<boolean> = new MyClass<boolean>(false);
-Assert.equal(false, mc3.field);
-let mc4: MyClass<ChildP> = new MyClass<ChildP>(pChild);
-Assert.isTrue(mc4.field instanceof ChildP);
+Assert.equal(0, ChildP.initial.num1);

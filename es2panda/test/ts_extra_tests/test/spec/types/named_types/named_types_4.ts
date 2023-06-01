@@ -35,13 +35,11 @@ interface Pi<T, U> {
   front: T;
   later: U;
 }
-
 function test(v: Pi<string, cE>) {
   Assert.equal(v.front, "abc");
   Assert.equal(v.later.x, 1);
   Assert.equal(v.later.y, 1);
 }
-// object literal
 test({ front: "abc", later: { x: 1, y: 1 } });
 let cc: Pi<string, cE>;
 cc = {
@@ -51,5 +49,4 @@ cc = {
     y: 1,
   },
 };
-// type reference
 test(cc);

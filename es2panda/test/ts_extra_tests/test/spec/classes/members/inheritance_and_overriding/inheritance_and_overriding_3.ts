@@ -15,7 +15,7 @@
 /**---
  description: >
     Base class static property members can be overridden by derived class static property members 
-    of any kind as long as the types are compatible, as described above.
+    of any kind as long as the types are compatible.
  module: ESNext
  isCurrent: true
  ---*/
@@ -31,7 +31,6 @@ class Shape {
 }
 class Circle extends Shape {
   static color: string = "red";
-
   static switchColor() {
     this.color = this.color === "red" ? "green" : "red";
   }

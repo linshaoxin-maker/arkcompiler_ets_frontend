@@ -14,13 +14,13 @@
  */
 /**---
  description: >
-   An object type containing one or more construct signatures is said to be a constructor type.
+    An object type containing one or more construct signatures is said to be a constructor type.
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 class Person {
   name: string;
@@ -38,10 +38,8 @@ class Teacher extends Person {
     return "teacher";
   }
 }
-// alias
 type constructor<T> = new (name: string, age: number) => T;
-
-const testClass1: constructor<Teacher> = Teacher;
+let testClass1: constructor<Teacher> = Teacher;
 let testObj1: Person = new testClass1("caihua", 20);
 Assert.equal(testObj1.age, 20);
 Assert.equal(testObj1.name, "caihua");

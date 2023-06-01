@@ -14,9 +14,7 @@
  */
 /**---
  description: >
-   The heritage specification of a class consists of optional extends and implements clauses. 
-   The extends clause specifies the base class of the class 
-   and the implements clause specifies a set of interfaces for which to validate the class provides an implementation.
+    the implements clause specifies a set of interfaces for which to validate the class provides an implementation.
  module: ESNext
  isCurrent: true
  ---*/
@@ -24,43 +22,39 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class P {
+class P1 {
   constructor(public num1: number, public num2: number) { }
   public hypot() {
     return Math.sqrt(this.num1 * this.num1 + this.num2 * this.num2);
   }
-  static initial = new P(0, 0);
+  static initial = new P1(0, 0);
 }
-
-var p: P = new P(10, 20);
+let p: P1 = new P1(10, 20);
 Assert.equal(10, p.num1);
 Assert.equal(20, p.num2);
-// the extends
-class ChildP extends P {
-  constructor(public x: number, public y: number) {
-    super(x, y);
-  }
-  public move() {
-    this.x += 1;
-    this.y += 1;
-  }
-}
-var pChild: ChildP = new ChildP(10, 20);
-pChild.move();
-Assert.equal(11, pChild.x);
-Assert.equal(21, pChild.y);
-// the implements
-interface InterP {
+// the implements1
+interface InterP1 {
   x: number;
   y: number;
 }
-class P2 implements InterP {
+class P2 implements InterP1 {
   x = 1;
   y = 1;
   setarea(x: number, y: number) {
     return x * y;
   }
 }
-var ipoint = new P2();
+let ipoint = new P2();
 Assert.equal(1, ipoint.x);
 Assert.equal(1, ipoint.y);
+// the implements2
+interface InterP2 {
+  Area(x: number, y: number): number;
+}
+class Rectangle implements InterP2 {
+  Area(x: number, y: number): number {
+    return x * y;
+  }
+}
+let rec = new Rectangle();
+Assert.equal(200, rec.Area(10, 20));

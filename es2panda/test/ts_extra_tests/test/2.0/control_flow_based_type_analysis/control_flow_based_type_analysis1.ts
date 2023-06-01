@@ -22,23 +22,21 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-function fun01(x: string | number | boolean): void {
-    if (typeof x === "string") {
-        x;
-        Assert.equal(typeof x, "string");
-        x = 1;
-        x;
-    }
-    x;
+let arg = Math.random() < 0.5 ? 5 : 'a';
+if (typeof arg === 'string') {
+    Assert.isString(arg);
+    arg = 3;
+    Assert.isNumber(arg);
 }
+arg;
+Assert.isNumber(arg);
 
-function fun02(x: string | number): void {
+
+function func(x: string | number): void {
     if (typeof x === "number") {
-        Assert.equal(typeof x, "number");
         return;
     }
     x;
+    Assert.isNumber(x);
 }
-
-fun01("hello");
-fun02(1024);
+func(10);

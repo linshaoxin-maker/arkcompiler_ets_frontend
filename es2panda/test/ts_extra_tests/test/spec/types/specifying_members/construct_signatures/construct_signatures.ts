@@ -19,7 +19,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 class Animal {
     name: string | undefined;
@@ -40,23 +40,21 @@ class Animal {
     }
 }
 type AnimalConstructor = {
-    new (name: string, age: number): Animal;
-    new (name: string): Animal;
-    new (age: number): Animal;
-    new (): Animal;
+    new(name: string, age: number): Animal;
+    new(name: string): Animal;
+    new(age: number): Animal;
+    new(): Animal;
 };
-
-const AnimalConstructor: AnimalConstructor = Animal;
-
+let AnimalConstructor: AnimalConstructor = Animal;
 let tt1 = new AnimalConstructor();
-Assert.isUndefined(tt1.age);
-Assert.isUndefined(tt1.name);
+Assert.equal(tt1.age, undefined);
+Assert.equal(tt1.name, undefined);
 let tt2 = new AnimalConstructor("caihua2", 12);
 Assert.equal(tt2.name, "caihua2");
 Assert.equal(tt2.age, 12);
 let tt3 = new AnimalConstructor("caihua3");
 Assert.equal(tt3.name, "caihua3");
-Assert.isUndefined(tt3.age);
+Assert.equal(tt3.age, undefined);
 let tt4 = new AnimalConstructor(1230);
 Assert.equal(tt4.age, 1230);
-Assert.isUndefined(tt4.name);
+Assert.equal(tt4.name, undefined);

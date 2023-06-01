@@ -26,13 +26,11 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-// stated type
 class Test {
     a: number;
     constructor(a: number) { this.a = a; }
 }
 function f(x: number, y: Test = { a: 1 }, z = "hello") {
-    // the type of the parameter is the widened
     Assert.isString(z);
     return {
         x,
@@ -40,6 +38,6 @@ function f(x: number, y: Test = { a: 1 }, z = "hello") {
         z: z,
     };
 }
-// y and z are optional
+
 Assert.equal(f(0).yy.a, 1);
 Assert.equal(f(0).z, "hello");

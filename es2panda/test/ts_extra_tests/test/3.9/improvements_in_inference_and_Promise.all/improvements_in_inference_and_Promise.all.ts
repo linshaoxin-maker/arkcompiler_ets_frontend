@@ -26,19 +26,23 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface HW_Lion {
-    roar(): void;
+interface I1 {
+    func1(): number;
 }
 
-interface HW_Seal {
-    visit(): void;
+interface I2 {
+    func2(): number;
 }
 
-async function zoo(
-    lionExhibit: Promise<HW_Lion>,
-    sealExhibit: Promise<HW_Seal | undefined>
+async function func(
+    arg1: Promise<I1>,
+    arg2: Promise<I2 | undefined>
 ) {
-    let [lion, seal] = await Promise.all([lionExhibit, sealExhibit]);
-    lion.roar();
+    let [t1, t2] = await Promise.all([arg1, arg2]);
+    return t1.func1();
 }
-Assert.isString("The \"lion.roar()\" in the above example was incorrectly reported as having the value \"undefined\" and has now been fixed.");
+
+let para1: Promise<I1> = new Promise(() => { return 10; });
+let para2: Promise<I2> = new Promise(() => { return 5; });
+func(para1, para2);
+Assert.isObject(func(para1, para2));

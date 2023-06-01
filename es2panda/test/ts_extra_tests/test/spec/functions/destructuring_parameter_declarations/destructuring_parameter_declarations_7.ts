@@ -24,7 +24,6 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-// v is any[].
 function test(...v: any[]) {
   Assert.isString(v[0]);
   Assert.isNumber(v[1]);

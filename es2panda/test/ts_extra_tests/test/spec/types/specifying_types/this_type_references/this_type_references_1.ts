@@ -14,9 +14,9 @@
  */
 /**---
  description: >
-   The meaning of a ThisType depends on the closest enclosing FunctionDeclaration, 
-   FunctionExpression, PropertyDefinition, ClassElement, or TypeMember, known as the root declaration of the ThisType,
-   when the root declaration is an instance member or constructor of a class, the ThisType references the this-type of that class.
+    The meaning of a ThisType depends on the closest enclosing FunctionDeclaration, 
+    FunctionExpression, PropertyDefinition, ClassElement, or TypeMember, known as the root declaration of the ThisType,
+    when the root declaration is an instance member or constructor of a class, the ThisType references the this-type of that class.
  module: ESNext
  isCurrent: true
  ---*/
@@ -29,10 +29,10 @@ class myClass {
     constructor(num: number) {
         this.num = num;
     }
-    get() {
-        return this;
+    getnu() {
+        return this.num;
     }
 }
 
-var my_c = new myClass(10);
-Assert.equal(typeof my_c.get(), 'object');
+let my_c = new myClass(10);
+Assert.equal(my_c.getnu(), 10);

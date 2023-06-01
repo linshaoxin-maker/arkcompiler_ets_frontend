@@ -14,21 +14,21 @@
  */
 /**---
  description: >
-   Tuple types represent JavaScript arrays with individually tracked element types.
-   A tuple type combines a set of numerically named properties with the members of an array type.
+    Tuple types represent JavaScript arrays with individually tracked element types.
+    A tuple type combines a set of numerically named properties with the members of an array type.
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 let cc: [number, string, boolean];
 cc = [12, "abcd", true];
-Assert.isNumber(cc[0]);
+Assert.equal(cc[0], "12");
 Assert.equal(cc[0].toString(), "12");
-Assert.isString(cc[1]);
+Assert.equal(cc[1], "abcd");
 Assert.equal(cc[1].length, 4);
-Assert.isBoolean(cc[2]);
+Assert.equal(cc[2], true);
 let dd = cc[2] ? 0 : 1;
 Assert.equal(dd, 0);

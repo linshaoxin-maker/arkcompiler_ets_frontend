@@ -28,5 +28,5 @@ class myClass<T>{
         this.num = num;
     }
 }
-var myTest = new myClass<number>(10);
-Assert.isNumber(myTest.num);
+let myTest = new myClass<number>(10);
+Assert.equal(myTest.num, 10);

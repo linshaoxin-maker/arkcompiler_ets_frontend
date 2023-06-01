@@ -19,7 +19,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 enum Color {
   Red,
@@ -29,9 +29,9 @@ enum Color {
 }
 let cc: Color = Color.Blue;
 // true
-Assert.isNumber(cc);
-var ee: Color = Color.Blue;
-var dd: number = cc;
+Assert.equal(cc, 2);
+let ee: Color = Color.Blue;
+let dd: number = cc;
 Assert.equal(dd, Color.Blue);
 dd = 15;
 ee = dd;

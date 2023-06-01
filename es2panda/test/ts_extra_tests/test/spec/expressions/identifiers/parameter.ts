@@ -32,4 +32,4 @@ class paramMethod {
     Assert.isNumber(age);
   }
 }
-var newparam = new paramMethod("xiaoli", 18);
+let newparam = new paramMethod("xiaoli", 18);

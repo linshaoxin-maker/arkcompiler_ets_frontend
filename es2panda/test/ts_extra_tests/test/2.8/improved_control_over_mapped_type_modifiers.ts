@@ -14,7 +14,7 @@
  */
 /**---
  description: >
-   Improved control over mapped type modifiers
+   With TypeScript 2.8 keyof applied to an intersection type is transformed to a union of keyof applied to each intersection constituent. 
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,33 +23,57 @@
 import { Assert } from '../../suite/assert.js'
 
 {
-  type OA = { a: string };
-  type OB = { b: string };
+  type myType1 = 'a' | 4;
+  type myType2 = { str: string };
+  interface I{
+    mem: string;
+  }
 
-
-  type T1 = keyof (OA & OB);
-
-  type T2<T> = keyof (T & OB);
-
-  type T3<U> = keyof (OA & U);
-
+  type T1 = keyof (myType1 & myType2);
+  type T2<T> = keyof (T & myType2);
+  type T3<U> = keyof (myType1 & U);
   type T4<T, U> = keyof (T & U);
+  type T5 = T2<myType1>;
+  type T6 = T3<myType2>;
+  type T7 = T4<myType1, myType2>;
 
-  type T5 = T2<OA>;
+  // The type of  a,b,c,d is "toString" | "valueOf" | "str"
+  let a: T1 = 'str';
+  a = 'toString';
+  a = 'valueOf';
+  Assert.equal(a, 'valueOf');
+  let b: T5 = "str";
+  b = 'toString';
+  b = 'valueOf';
+  Assert.equal(b, 'valueOf');
+  let c: T6 = "str";
+  c = 'toString';
+  c = 'valueOf';
+  Assert.equal(c, 'valueOf');
+  let d: T7 = "str";
+  d = 'toString';
+  d = 'valueOf';
+  Assert.equal(d, 'valueOf');
 
-  type T6 = T3<OB>;
+  type T11 = keyof (I & myType2);
+  type T22<T> = keyof (T & myType2);
+  type T33<U> = keyof (I & U);
+  type T44<T, U> = keyof (T & U);
+  type T55 = T22<I>;
+  type T66 = T33<myType2>;
+  type T77 = T44<I, myType2>;
 
-  type T7 = T4<OA, OB>;
-
-  let a: T1 = 'a';
-  let b: T1 = "b";
-  let c: T5 = "a";
-  let d: T6 = "a";
-  let e: T7 = "a";
-
-  Assert.equal(a, 'a');
-  Assert.equal(b, 'b');
-  Assert.equal(c, 'a');
-  Assert.equal(d, 'a');
-  Assert.equal(e, 'a');
+  let aa: T11 = 'mem';
+  aa = 'str';
+  Assert.equal(aa, 'str');
+  let bb: T55  = 'mem';
+  bb = 'str';
+  Assert.equal(bb, 'str');
+  let cc: T66 = 'mem';
+  cc = 'str';
+  Assert.equal(cc, 'str');
+  let dd: T77 = 'mem';
+  dd = 'str';
+  Assert.equal(dd, 'str');
+  
 };

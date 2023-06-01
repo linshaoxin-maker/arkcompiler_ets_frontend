@@ -14,9 +14,9 @@
  */
 /**---
  description: >
-   as is the case with every object type, type references (section 3.3.1) to the class 
-   will appear to have the members of the global interface type named 'Object' 
-   unless those members are hidden by members with the same name in the class.
+    as is the case with every object type, type references (section 3.3.1) to the class 
+    will appear to have the members of the global interface type named 'Object' 
+    unless those members are hidden by members with the same name in the class.
  module: ESNext
  isCurrent: true
  ---*/
@@ -29,7 +29,6 @@ class P {
   public hypot() { }
   static initial = new P(0, 0);
 }
-
 let p = new P(1, 2);
 let obj = new Object();
 Assert.equal(p.toString(), obj.toString());

@@ -21,7 +21,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 function test1(): number {
   return 0;
@@ -29,15 +29,15 @@ function test1(): number {
 function test2(): number {
   return 1;
 }
-function test3() {
+function test3(): number {
   return 1;
 }
 function test4(i: number): number {
   return i;
 }
-var a: boolean = true;
+let a: boolean = true;
 Assert.equal(a, true);
-var b = false;
+let b: boolean = false;
 Assert.equal(b, false);
 // conditional expression
 let c: number = a ? 0 : 1;

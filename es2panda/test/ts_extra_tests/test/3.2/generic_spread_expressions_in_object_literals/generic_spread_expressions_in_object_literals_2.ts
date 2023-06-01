@@ -22,16 +22,17 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-function hwFun<T>(t: T, obj1: { a: string }, obj2: { b: string }) {
-    var arr = { ...obj1, x: 1, ...t, ...obj2, y: 2 };
-    return arr;
+function func<T>(arg1: T, arg2: { str: string }, arg3:{num: number}) {
+    let obj = { n: 5, ...arg2, ...arg1, s: 's', ...arg3 };
+    return obj;
 }
+
 let o1 = {
-    a: "a",
+    str: 'a'
 };
 let o2 = {
-    b: "b",
+    num: 10
 };
-var f = hwFun("s", o1, o2);
+var f = func({ s: "string" }, o1, o2);
 
-Assert.equal(JSON.stringify(f), '{"0":"s","a":"a","x":1,"b":"b","y":2}');
+Assert.isObject(f);

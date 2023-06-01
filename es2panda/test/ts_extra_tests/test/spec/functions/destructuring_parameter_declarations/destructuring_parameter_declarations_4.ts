@@ -23,9 +23,8 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-// string literal type
 type testStr = "caihua";
-// number literal type
+
 type testStrNum = 12;
 class Person {
     m_name: testStr | undefined;

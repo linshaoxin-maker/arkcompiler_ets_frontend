@@ -14,8 +14,8 @@
  */
 /**---
  description: >
-   An object type literal defines an object type by specifying the set of members that are statically considered to be present in instances of the type. 
-   Object type literals can be given names using interface declarations but are otherwise anonymous.
+    An object type literal defines an object type by specifying the set of members that are statically considered to be present in instances of the type. 
+    Object type literals can be given names using interface declarations but are otherwise anonymous.
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,7 +23,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-var h_obj: {
+let h_obj: {
     num: number;
     str: string;
     boo: boolean;
@@ -35,12 +35,11 @@ var h_obj: {
 Assert.equal(h_obj.num, 5);
 Assert.equal(h_obj.str, 'str');
 Assert.equal(h_obj.boo, true);
-
 interface h_i {
     name: string,
     age: number
 }
-var h_o: h_i = {
+let h_o: h_i = {
     name: 'xiao',
     age: 18
 }

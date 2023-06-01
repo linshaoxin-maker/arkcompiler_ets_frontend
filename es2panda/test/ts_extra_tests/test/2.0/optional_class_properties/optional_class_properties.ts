@@ -21,32 +21,32 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class Class0000 {
+class myClass {
     a: number = 0;
     b?: number;
-    f() {
+    func() {
         return this.a;
     }
     // Body of optional method can be omitted
-    g?(): number;
-    h?() {
+    get?(): number;
+    handle?() {
         return this.b;
     }
 }
-let c0000 = new Class0000();
-c0000.a = 1024;
-c0000.b = 1408;
-Assert.equal(c0000.f(), 1024);
+let c = new myClass();
+c.a = 1024;
+c.b = 1408;
+Assert.equal(c.func(), 1024);
 
-if (c0000.h) {
-    Assert.equal(c0000.h(), 1408);
+if (c.handle) {
+    Assert.equal(c.handle(), 1408);
 }
 
-c0000.g = () => {
-    if (c0000.b !== undefined) {
-        return c0000.a + c0000.b;
+c.get = () => {
+    if (c.b !== undefined) {
+        return c.a + c.b;
     } else {
-        return c0000.a;
+        return c.a;
     }
 }
-Assert.equal(c0000.g(), 2432);
+Assert.equal(c.get(), 2432);

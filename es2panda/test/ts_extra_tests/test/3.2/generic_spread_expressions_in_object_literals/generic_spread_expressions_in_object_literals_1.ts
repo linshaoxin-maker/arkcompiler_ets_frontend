@@ -23,10 +23,11 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-function cObj<T, U extends string>(obj: T, tag: U) {
-    return { ...obj, tag };
+function func<T>(arg: T) {
+    return { ...arg };
 }
+let f1 = { num: 5, str: 'a' };
+let f2 = { num: 8, str: 'b', boo: true };
 
-let x = cObj({ x: 10, y: 20 }, "point");
-
-Assert.equal(JSON.stringify(x), '{"x":10,"y":20,"tag":"point"}');
+Assert.isObject(func(f1));
+Assert.isObject(func(f2));

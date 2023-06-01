@@ -24,11 +24,6 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-interface Iterator<T> {
-    next(value?: any): IteratorResult<T>;
-    return?(value?: any): IteratorResult<T>;
-    throw?(e?: any): IteratorResult<T>;
-}
 function createInterator(arr: any[]): Iterator<any> {
     let index = 0;
     let len = arr.length;

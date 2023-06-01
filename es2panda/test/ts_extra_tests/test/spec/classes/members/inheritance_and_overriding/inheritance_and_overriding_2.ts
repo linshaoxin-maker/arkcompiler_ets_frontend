@@ -14,8 +14,7 @@
  */
 /**---
  description: >
-    A property member in a derived class is said to override a property member in a base class 
-    when the derived class property member has the same name and kind (instance or static) as the base class property member.
+    Only public and protected property members can be overridden.
  module: ESNext
  isCurrent: true
  ---*/
@@ -24,21 +23,29 @@
 import { Assert } from '../../../../../suite/assert.js'
 
 class Shape {
-  color: string = "black";
-  switchColor() {
+  public color: string = "black";
+  protected side: number = 10;
+  constructor() { };
+  public switchColor() {
     this.color = this.color === "black" ? "white" : "black";
   }
 }
 class Circle extends Shape {
-  color: string = "red";
-
-  switchColor() {
-    this.color = this.color === "red" ? "green" : "red";
+  public color: string = "red";
+  protected side: number = 11;
+  get gside() {
+    return this.side;
+  }
+  public switchColor() {
+    this.color = this.color === "red" ? "white" : "black";
   }
 }
-const circle = new Circle();
-let a = circle.color;
-Assert.equal(a, "red");
+let shape: Shape = new Shape();
+Assert.equal(shape.color, "black");
+shape.switchColor();
+Assert.equal(shape.color, "white");
+let circle: Circle = new Circle();
+Assert.equal(circle.color, "red");
 circle.switchColor();
-let b = circle.color;
-Assert.equal(b, "green");
+Assert.equal(circle.color, "white");
+Assert.equal(11, circle.gside);

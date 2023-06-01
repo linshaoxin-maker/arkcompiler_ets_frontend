@@ -22,10 +22,14 @@
 
 import { Assert } from '../../../suite/assert.js'
 
+type myType = Function | object;
 
-let a: [number, number] = [1, 2];
+let tup: [myType, string, boolean] = [() => { }, 'a', true];
+Assert.isFunction(tup[0]);
+Assert.isString(tup[1]);
+Assert.isBoolean(tup[2]);
 
-let b: [string, number, boolean] = ["hello", 42, true];
-
-Assert.equal(JSON.stringify(a), "[1,2]");
-Assert.equal(JSON.stringify(b), "[\"hello\",42,true]");
+tup = [{ o: 'obj' }, 'b', false];
+Assert.isObject(tup[0]);
+Assert.isString(tup[1]);
+Assert.isBoolean(tup[2]);

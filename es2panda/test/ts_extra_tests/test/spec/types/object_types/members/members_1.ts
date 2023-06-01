@@ -48,7 +48,6 @@ let h_c = new h_C('Public', 'Private', 'Protected');
 Assert.equal(h_c.h_pub, 'Public');
 Assert.equal(h_c.get(), 'Private');
 Assert.equal(h_c.output(), 'Protected');
-
 class h_child extends h_C { }
 let h_ch = new h_child('public', 'private', 'protected');
 Assert.equal(h_ch.output(), 'protected');

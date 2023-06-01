@@ -21,15 +21,15 @@
 ---*/
 
 
-import {Assert} from '../../../../suite/assert.js'
+import { Assert } from '../../../../suite/assert.js'
 
 interface TestInterface {
   age: number;
 }
 class TestClass {
-  age: number;
-  constructor(age:number){
-    this.age=age
+  public age: number;
+  constructor(age: number) {
+    this.age = age
   }
 }
 function test1(v: TestInterface) {
@@ -41,7 +41,5 @@ function test2(v: TestClass) {
 let ee = {
   age: 18,
 };
-
 Assert.equal(test1(ee), 18);
 Assert.equal(test2(ee), 18);
-

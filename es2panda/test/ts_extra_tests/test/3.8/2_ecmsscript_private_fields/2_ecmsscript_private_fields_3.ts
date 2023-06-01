@@ -21,21 +21,18 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class HWS {
+class S {
     #len: number;
-
     constructor(len: number) {
         this.#len = len;
     }
-
-    equals(other: any) {
+    compare(other: any) {
         return this.#len === other.#len;
     }
 }
 
-const a = new HWS(100);
-const b = { len: 100 };
-const c = new HWS(100);
+const a = new S(100);
+const c = new S(100);
 
 
-Assert.isTrue(a.equals(c));
+Assert.isTrue(a.compare(c));

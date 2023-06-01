@@ -25,13 +25,25 @@ import { Assert } from '../../../../../suite/assert.js'
 
 class Base {
   private x: number = 1;
-  add() {
+  private y: number = 2;
+  addx() {
     this.x++;
   }
   get foo() {
     return this.x;
   }
+  public addxy(): number {
+    return this.x + this.y;
+  }
+  static f(a: Base, b: Derived) {
+    a.x = 1;
+    b.x = 1;
+    a.y = 1;
+    b.y = 1;
+  }
 }
-const a: Base = new Base();
-a.add();
+class Derived extends Base { }
+let a: Base = new Base();
+a.addx();
 Assert.equal(a.foo, 2);
+Assert.equal(a.addxy(), 4);

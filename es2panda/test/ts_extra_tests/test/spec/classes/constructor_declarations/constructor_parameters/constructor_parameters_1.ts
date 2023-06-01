@@ -52,4 +52,3 @@ let tt3 = new Animal1("caihua3");
 Assert.equal(tt3.name, "caihua3");
 let tt4 = new Animal1(1230);
 Assert.equal(tt4.age, 1230);
-

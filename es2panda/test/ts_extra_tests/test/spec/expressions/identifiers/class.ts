@@ -31,5 +31,5 @@ class Car {
         this.agelimit = agelimit;
     }
 }
-var car = new Car("Benci", 2);
+let car = new Car("Benci", 2);
 Assert.equal(car.agelimit, 2);

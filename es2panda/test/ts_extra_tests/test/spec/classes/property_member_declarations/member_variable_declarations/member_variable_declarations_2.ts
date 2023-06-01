@@ -14,7 +14,7 @@
  */
 /**---
  description: >
-    Every class automatically contains a static property member named 'prototype'
+    Instance member variable initializers are equivalent to assignments to properties of this in the constructor
  module: ESNext
  isCurrent: true
  ---*/
@@ -22,22 +22,37 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class Point {
-  public x: number;
-  public y: number;
-  constructor(x: number, y: number) {
-    this.x = x;
-    this.y = y;
+class Staff1 {
+  public name: string;
+  public place: string;
+  public work: boolean;
+  constructor(name: string, place: string, work: boolean) {
+    this.name = name;
+    this.place = place;
+    this.work = work;
   }
-  static origin = new Point(0, 0);
-}
-class ColoredPoint extends Point {
-  constructor(x: number, y: number, public color: string) {
-    super(x, y);
+  initializer(name: string, place: string, work: boolean) {
+    this.name = name;
+    this.place = place;
+    this.work = work;
   }
 }
-Assert.equal(ColoredPoint.prototype.color, undefined);
-Assert.equal(ColoredPoint.prototype.x, undefined);
-Assert.equal(ColoredPoint.prototype.y, undefined);
-Assert.equal(Point.prototype.x, undefined);
-Assert.equal(Point.prototype.y, undefined);
+class Staff2 {
+  public name: string;
+  public place: string;
+  public work: boolean;
+  constructor(name: string, place: string, work: boolean) {
+    this.name = name;
+    this.place = place;
+    this.work = work;
+  }
+}
+let em1 = new Staff1("zhangsan", "shanghai", true);
+em1.initializer("wangwu", "hainan", true);
+let em2 = new Staff2("lisi", "qingdao", true);
+Assert.equal(em1.name, "wangwu");
+Assert.equal(em1.place, "hainan");
+Assert.equal(em1.work, true);
+Assert.equal(em2.name, "lisi");
+Assert.equal(em2.place, "qingdao");
+Assert.equal(em2.work, true);

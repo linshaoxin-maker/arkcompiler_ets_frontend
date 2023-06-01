@@ -14,21 +14,19 @@
  */
 /**---
  description: >
-  Named tuple types can be created by declaring interfaces that derive from Array<T> 
-  and introduce numerically named properties
+    Named tuple types can be created by declaring interfaces that derive from Array<T> 
+    and introduce numerically named properties
  module: ESNext
  isCurrent: true
 ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 interface tt<K, V> extends Array<K | V> {
   0: K;
   1: V;
 }
 let x: tt<number, string> = [10, "ten"];
-Assert.isNumber(x[0]);
 Assert.equal(x[0], 10);
-Assert.isString(x[1]);
 Assert.equal(x[1], "ten");

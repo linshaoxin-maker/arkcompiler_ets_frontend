@@ -20,10 +20,9 @@ isCurrent: true
 
 
 import { Assert } from "../../suite/assert.js";
-import type { SomeThing } from "./some_module.js";
+import type { T } from "./some_module.js";
 
-export type { SomeThing };
+export type { T };
 
-let sth: SomeThing = { legs: 5 };
-
+let sth: T = { legs: 5 };
 Assert.equal(5, sth.legs);

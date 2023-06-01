@@ -21,22 +21,17 @@
 
 import { Assert } from '../../../suite/assert.js'
 
+const usym1: unique symbol = Symbol();
+const usym2: unique symbol = Symbol.for("Bar");
 
-declare const usym: unique symbol;
-
-const test03: unique symbol = Symbol();
-const test04: unique symbol = Symbol.for("Bar2");
-
-// Works - refers to a unique symbol, but its identity is tied to 'Foo'.
 // in order to reference a specific unique symbol, you’ll have to use the typeof operator. 
-let t01: typeof test03 = test03;
-let t02: typeof test04 = test04;
+let t1: typeof usym1 = usym1;
+let t2: typeof usym2 = usym2;
 
-// Also works.
 class C {
-  static readonly StaticSymbol: unique symbol = Symbol();
+  static readonly StaticUsym: unique symbol = Symbol();
 }
 
-Assert.isTrue('symbol' === typeof t01);
-Assert.isTrue('symbol' === typeof t02);
-Assert.isTrue('symbol' === typeof C.StaticSymbol);
+Assert.isTrue('symbol' === typeof t1);
+Assert.isTrue('symbol' === typeof t2);
+Assert.isTrue('symbol' === typeof C.StaticUsym);

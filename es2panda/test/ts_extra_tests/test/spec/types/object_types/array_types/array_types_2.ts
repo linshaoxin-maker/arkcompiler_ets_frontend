@@ -20,10 +20,9 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var arr: Array<string> = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
-Assert.isString(arr[5]);
+let arr: Array<string> = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
+Assert.equal(arr[0], "A");
 Assert.equal(arr[5], "F");
-Assert.isNumber(arr.length);
 Assert.equal(arr.length, 9);

@@ -23,17 +23,16 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-function httpService(path: string, headers: { [x: string]: string }) {
-  return JSON.stringify(headers);
+function func(path: string, arg: { [x: string]: string }) {
+  return JSON.stringify(arg);
 }
-const headers = {
-  "Content-Type": "application/x-www-form-urlencoded",
+const arg = {
+  "Color": "Red",
 };
-let s1: string = httpService("", {
-  "Content-Type": "application/x-www-form-urlencoded",
+let s1: string = func("", {
+  "Color": "red",
 });
-Assert.equal(s1, '{"Content-Type":"application/x-www-form-urlencoded"}');
+Assert.equal(s1, '{"Color":"red"}');
 
-// Now ok, previously wasn't
-let s2: string = httpService("", headers);
-Assert.equal(s2, '{"Content-Type":"application/x-www-form-urlencoded"}');
+let s2: string = func("", arg);
+Assert.equal(s2, '{"Color":"Red"}');

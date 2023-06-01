@@ -41,5 +41,5 @@ class HWB2 extends HWB1 {
 
 let d = new HWB2();
 
-Assert.equal(false, d.getBool());
+Assert.equal(d.getBool(),false );
 

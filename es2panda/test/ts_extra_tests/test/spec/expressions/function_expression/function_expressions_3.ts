@@ -31,7 +31,7 @@ function myFunction(obj: MyType) {
   Assert.isTrue(result);
 }
 
-var h_x: MyType = {
+let h_x: MyType = {
   fn: function func(x: number, y: string) {
     return true;
   }

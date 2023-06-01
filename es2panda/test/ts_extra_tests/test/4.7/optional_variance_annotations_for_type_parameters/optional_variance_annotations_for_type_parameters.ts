@@ -22,13 +22,34 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-
-class Dog {
-  dogType: any;
+interface P{
+  num: number;
+}
+interface C extends P{
+  str: string;
 }
 
-type Setter = (value) => void;
-let animal2: Setter = (): any => { };
-let dog2: Setter= (): any => { };
-dog2 = animal2;
-Assert.isTrue(dog2 == animal2);
+type myType1 = Array<P>;
+type myType2 = Array<C>;
+
+var m_ins1: myType1 = [{ num: 5 }];
+var m_ins2: myType2 = [{ num: 10, str: 'a' }];
+
+m_ins1 = m_ins2;
+Assert.equal(m_ins1, m_ins2);
+
+
+interface h_P{
+  name: string;
+}
+interface h_C{
+  name: string;
+  age: number;
+}
+
+type myType3<T> = () => T;
+type myType4<out T> = () => T;
+var m_ins3: myType3<h_P> = () => { return { name: 'xiao' } };
+var m_ins4: myType4<h_C> = () => { return { name: 'xi', age: 18 } };
+m_ins3 = m_ins4;
+Assert.equal(m_ins3, m_ins4);

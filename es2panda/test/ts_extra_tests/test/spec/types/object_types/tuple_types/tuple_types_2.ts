@@ -14,23 +14,22 @@
  */
 /**---
  description: >
-   Array literals may be used to create values of tuple types.
-   the members of an array type whose element type is the union type of the tuple element types
+    Array literals may be used to create values of tuple types.
+    the members of an array type whose element type is the union type of the tuple element types
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 let cc: [number, string, boolean];
 cc = [12, "abcd", true];
-let index: number=0;
-// Type of cc[index] is number | string | boolean
-var x = cc[index];
+let index: number = 0;
+let x = cc[index];
 x = 12;
-Assert.isNumber(x);
+Assert.equal(x, 12);
 x = false;
-Assert.isBoolean(x);
+Assert.equal(x, false);
 x = "string";
-Assert.isString(x);
+Assert.equal(x, "string");

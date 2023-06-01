@@ -21,25 +21,22 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface NumStrTuple extends Array<number | string> {
+interface NSTup extends Array<number | string> {
     0: number;
     1: string;
     length: 2;
 }
 
-const numstr01: NumStrTuple = [1, "string"];
+const numstr01: NSTup = [1, "string"];
 
-interface NumStr extends Array<number | string> {
+interface NS extends Array<number | string> {
     0: number;
     1: string;
 }
 
-const numstr02: NumStr = [2, "string", 3, "string2"];
+let numstr02: NS = [2, "string"];
+numstr02= [2, "string", 3, "string2"];
 
+Assert.equal(numstr01.length, 2);
 
-Assert.equal(1, numstr01[0]);
-Assert.equal("string", numstr01[1]);
-Assert.equal(2, numstr02[0]);
-Assert.equal("string", numstr02[1]);
-Assert.equal(3, numstr02[2]);
-Assert.equal("string2", numstr02[3]);
+Assert.equal(numstr02.length, 4);

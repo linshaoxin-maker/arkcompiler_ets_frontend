@@ -14,8 +14,8 @@
  */
 /**---
  description: >
-   A type reference to a generic type is required to specify exactly one type argument for each type parameter 
-   of the referenced generic type, and each type argument must be assignable to the constraint of the corresponding type parameter. 
+    A type reference to a generic type is required to specify exactly one type argument for each type parameter 
+    of the referenced generic type, and each type argument must be assignable to the constraint of the corresponding type parameter. 
  module: ESNext
  isCurrent: true
  ---*/
@@ -37,7 +37,7 @@ interface h_G<T, U extends h_B> {
     h_y: U;
 }
 
-var h_v: h_G<h_A, h_C> = {
+let h_v: h_G<h_A, h_C> = {
     h_x: { h_a: 'h_a' },
     h_y: {
         h_a: 'h_a',

@@ -14,7 +14,7 @@
  */
 /**---
  description: >
-   In TypeScript 3.4, we improved inference for when generic functions that return functions.
+   TypeScript 3.5 generalizes TypeScript 3.4's inference behavior to work on constructor functions as well.
  module: ESNext
  isCurrent: true
  ---*/
@@ -24,22 +24,20 @@ import { Assert } from '../../suite/assert.js'
 
 {
     class A<T> {
-        value: T;
-
-        constructor(value: T) {
-            this.value = value;
+        mem: T;
+        constructor(mem: T) {
+            this.mem = mem;
         }
     }
 
     class B<U> {
-        value: U;
-
-        constructor(value: U) {
-            this.value = value;
+        mem: U;
+        constructor(mem: U) {
+            this.mem = mem;
         }
     }
 
-    function hwfun<T, U, V>(
+    function func<T, U, V>(
         F: new (x: T) => U,
         G: new (y: U) => V
     ): (x: T) => V {
@@ -47,9 +45,9 @@ import { Assert } from '../../suite/assert.js'
     }
 
 
-    let f = hwfun(A, B);
+    let f = func(A, B);
 
-    let a = f(1024);
+    let a = f(10);
 
-    Assert.equal(a.value.value, 1024);
+    Assert.equal(a.mem.mem, 10);
 };

@@ -35,6 +35,6 @@ class h_C {
         return this.num
     }
 }
-var h_c = new h_C(10);
+let h_c = new h_C(10);
 Assert.isNumber(h_c.get())
 Assert.isNumber(h_c.set());

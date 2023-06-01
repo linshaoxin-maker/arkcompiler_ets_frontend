@@ -21,20 +21,11 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-function sum(a: number, b: number) {
-    return a + b;
-}
-sum(3, 5);
+var x: number | undefined;
+var y: string | null;
+var method: string | number | undefined | null;
 
-interface Entity {
-    name: string;
-}
-
-function getEntityName(e: Entity): string {
-    return e.name;
-}
-Assert.equal(getEntityName({ name: "caihua" }), "caihua");
-
-let x: (e: Entity) => string = getEntityName;
-let s: (e: Entity) => string = x;
-let y: (e: Entity) => string = x || { name: "test" };
+x = undefined;
+y = 'a';
+method = x + y;
+Assert.isString(method);

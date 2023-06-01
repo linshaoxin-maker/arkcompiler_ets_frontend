@@ -22,18 +22,20 @@
 
 import { Assert } from '../../../suite/assert.js'
 
+type myType = Function | object;
 
-let c: [string, string?] = ["hello"];
-c = ["hello", "world"];
+let tup1: [myType, string?] = [() => { }];
+tup1 = [{ o: "obj" }, "a"];
 
-let d: [first: string, second?: string] = ["hello"];
-d = ["hello", "world"];
+let tup2: [arg1: myType, arg2?: string] = [() => { }];
+tup2 = [{ o: "obj" }, "a"];
 
-let e: [string, string, ...boolean[]];
+let tup3: [myType, string, ...unknown[]];
 
-e = ["hello", "world"];
-e = ["hello", "world", false];
-e = ["hello", "world", true, false, true];
+tup3 = [() => { }, "world"];
+tup3 = [{ o: "obj" }, "world", false];
+tup3 = [{ o: "obj" }, "world", true, 2];
 
-Assert.equal(JSON.stringify(c), "[\"hello\",\"world\"]");
-Assert.equal(JSON.stringify(e), "[\"hello\",\"world\",true,false,true]");
+Assert.equal(JSON.stringify(tup1), "[{\"o\":\"obj\"},\"a\"]");
+Assert.equal(JSON.stringify(tup2), "[{\"o\":\"obj\"},\"a\"]");
+Assert.equal(JSON.stringify(tup3), "[{\"o\":\"obj\"},\"world\",true,2]");

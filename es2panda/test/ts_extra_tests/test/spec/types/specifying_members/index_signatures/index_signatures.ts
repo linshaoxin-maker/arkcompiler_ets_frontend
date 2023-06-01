@@ -21,44 +21,39 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var si: { [key: string]: number } = { a: 97, A: 65 };
+let si: { [key: string]: number } = { a: 97, A: 65 };
 si["b"] = 98;
-Assert.isNumber(si["a"]);
+Assert.equal(si["a"], 97);
 Assert.equal(si["A"], 65);
-
-var ni: { [key: number]: boolean } = { 0: false, 1: true };
+let ni: { [key: number]: boolean } = { 0: false, 1: true };
 ni[-1] = true;
 Assert.isBoolean(ni[0]);
 Assert.equal(ni[-1], true);
-
 interface UnionKey {
   [key: string | number]: string | number;
 }
-var uk: UnionKey = { Name: "UnionKey", 0: "NARC", 0x0a: 10 };
+let uk: UnionKey = { Name: "UnionKey", 0: "NARC", 0x0a: 10 };
 Assert.equal(uk["Name"], "UnionKey");
 Assert.equal(uk[0], "NARC");
 Assert.equal(uk[0x0a], 10);
 Assert.equal(uk[0xff], undefined);
-
 interface StringKey {
   [key: string]: string;
 }
-var sk: StringKey = { "1": "0x01", "2": "0x02", 3: "0x03", "4": "0x04" };
-Assert.isString(sk["1"]);
-Assert.isString(sk[2]);
+let sk: StringKey = { "1": "0x01", "2": "0x02", 3: "0x03", "4": "0x04" };
+Assert.equal(sk["1"], "0x01");
+Assert.equal(sk["2"], "0x02");
 Assert.equal(sk[3], 0x03);
-
 interface NumberKey {
   [key: number]: string;
 }
-var nk: NumberKey = { 1: "0x01", 2: "0x02", "3": "0x03", 4: "0x04" };
-Assert.isString(nk["1"]);
-Assert.isString(nk[2]);
+let nk: NumberKey = { 1: "0x01", 2: "0x02", "3": "0x03", 4: "0x04" };
+Assert.equal(nk[1], "0x01");
+Assert.equal(nk[2], "0x02");
 Assert.equal(nk["3"], "0x03");
-
-var rk1: Record<string, number> = { one: 1, two: 2, three: 3 };
+let rk1: Record<string, number> = { one: 1, two: 2, three: 3 };
 Assert.equal(rk1["one"], 1);
-var rk2: Record<"a" | "b" | "c", string> = { a: "A", b: "B", c: "C" };
+let rk2: Record<"a" | "b" | "c", string> = { a: "A", b: "B", c: "C" };
 Assert.equal(rk2["a"], "A");

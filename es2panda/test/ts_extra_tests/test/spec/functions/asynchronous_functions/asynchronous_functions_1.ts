@@ -26,30 +26,30 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-// globally defined
+
 let pp: Promise<number> = Promise.resolve(1);
-// Function
+
 async function fetchTest1(): Promise<number> {
     return await pp;
 }
 fetchTest1().then((params) => {
     Assert.equal(params, 1);
 });
-// Function : No Return Type
+
 async function fetchTest1NoReturnType() {
     return await pp;
 }
 fetchTest1NoReturnType().then((params) => {
     Assert.equal(params, 1);
 });
-// Arrow Function
+
 const fetchTest2 = async (): Promise<number> => {
     return await pp;
 };
 fetchTest2().then((params) => {
     Assert.equal(params, 1);
 });
-// Arrow Function : No Return Type
+
 const fetchTest2NoReturnType = async () => {
     return await pp;
 };
@@ -58,11 +58,9 @@ fetchTest2NoReturnType().then((params) => {
 });
 
 class Person {
-    // Method
     async fetchTest3(): Promise<number> {
         return await pp;
     }
-    // Method : No Return Type
     async fetchTest3NoReturnType() {
         return await pp;
     }

@@ -32,3 +32,4 @@ class A {
 }
 let a = new A();
 Assert.equal(a.a, 0);
+Assert.equal(a.b, 0);

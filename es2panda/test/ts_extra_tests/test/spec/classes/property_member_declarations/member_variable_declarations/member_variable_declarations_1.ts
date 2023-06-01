@@ -14,8 +14,7 @@
  */
 /**---
  description: >
-    Member declarations with a static modifier are called static member declarations.
-    it is possible to have instance and static property members with the same name.
+    Initializers in static member variable declarations are executed once when the containing script or module is loaded.
  module: ESNext
  isCurrent: true
  ---*/
@@ -25,20 +24,16 @@ import { Assert } from '../../../../../suite/assert.js'
 
 class Point {
   constructor(public x: number, public y: number) { }
-  public distance(p: Point) {
-    var dx = this.x - p.x;
-    var dy = this.y - p.y;
-    return Math.sqrt(dx * dx + dy * dy);
+  public addc() {
+    Point.c++;
   }
   static origin = new Point(0, 0);
-  static distance(p1: Point, p2: Point) {
-    return p1.distance(p2);
-  }
-  static x: number = 10;
+  static c: number = 10;
 }
-var p1: Point = new Point(2, 2);
-var p2: Point = new Point(1, 1);
-Assert.equal(p1.distance(p2), Math.sqrt(2));
-Assert.equal(Point.distance(p1, p2), Math.sqrt(2));
-Assert.equal(p1.distance(Point.origin), Math.sqrt(8));
-Assert.equal(Point.x, 10);
+let a: Point = new Point(1, 1);
+Assert.equal(Point.c, 10);
+a.addc();
+Assert.equal(Point.c, 11);
+let b: Point = new Point(1, 1);
+b.addc();
+Assert.equal(Point.c, 12);

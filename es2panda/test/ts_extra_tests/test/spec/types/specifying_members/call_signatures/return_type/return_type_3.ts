@@ -21,7 +21,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../../suite/assert.js'
+import { Assert } from '../../../../../../suite/assert.js'
 
 let add = function (x: number, y: number) {
   return x + y;

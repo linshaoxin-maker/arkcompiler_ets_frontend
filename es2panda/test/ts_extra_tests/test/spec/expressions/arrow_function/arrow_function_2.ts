@@ -38,7 +38,7 @@ let getTempItem = (id: any) => ({ id: id, name: "Temp" });
 const TempAResult = getTempItem(123);
 Assert.equal(TempAResult.id, 123);
 
-var getTempItemB = function (id: any) {
+let getTempItemB = function (id: any) {
   return {
     id: id,
     name: "Temp",

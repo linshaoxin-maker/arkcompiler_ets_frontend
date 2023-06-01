@@ -20,28 +20,8 @@
  ---*/
 
 
-class AssertionError extends Error {
-    constructor(public msg: string) {
-        super();
-        this.msg = "";
-        this.msg = msg;
-    }
-}
+import { Assert } from "../../../../suite/assert.js";
 
-function defaultMessage(actual: any, expect: any, flag: boolean = true) {
-    if (flag == true) {
-        return "expected '" + expect + "' ,but was '" + actual + "'.";
-    } else {
-        return "expected not '" + expect + "' ,but was '" + actual + "'.";
-    }
-
-}
-
-function equal(actual: any, expect: any, msg?: string) {
-    if (actual != expect) {
-        throw new AssertionError(msg ? msg : defaultMessage(actual, expect));
-    }
-}
 namespace IAD1 {
     export var lv: number = 5;
     export interface GGI {
@@ -59,10 +39,10 @@ namespace IAD2 {
 }
 var i1 = IAD2.i2;
 var gi: IAD2.GI = { UIName: "GI", Cost: 200, Strength: 100 };
-equal(i1, 10);
-equal(gi.UIName, "GI");
-equal(gi.Cost, 200);
-equal(gi.Strength, 100);
+Assert.equal(i1, 10);
+Assert.equal(gi.UIName, "GI");
+Assert.equal(gi.Cost, 200);
+Assert.equal(gi.Strength, 100);
 
 namespace IAD3 {
     export var i = 0;
@@ -77,5 +57,5 @@ namespace IAD3 {
 export namespace IAD4 {
     export import I3 = IAD3;
 }
-equal(IAD4.I3.i, 0);
-equal(IAD4.I3.ux5(), 25);
+Assert.equal(IAD4.I3.i, 0);
+Assert.equal(IAD4.I3.ux5(), 25);

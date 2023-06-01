@@ -22,21 +22,24 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class Point {
+class P {
   constructor(public x: number, public y: number) { }
-  public toString() {
-    return "x=" + this.x + " y=" + this.y;
+  public add() {
+    return this.x + this.y;
   }
 }
-class ColoredPoint extends Point {
-  constructor(x: number, y: number, public color: string) {
+class childP extends P {
+  constructor(x: number, y: number, public z: number) {
     super(x, y);
   }
-  public toString() {
-    return super.toString() + " color=" + this.color;
+  public add() {
+    return super.add() + this.z;
   }
 }
-let cp = new ColoredPoint(1, 2, "red");
-Assert.equal(cp.color, "red");
-Assert.equal(cp.x, 1);
-Assert.equal(cp.y, 2);
+let p = new P(1, 2);
+Assert.equal(p.x, 1);
+Assert.equal(p.y, 2);
+Assert.equal(p.add(), 3);
+let cp = new childP(1, 2, 3);
+Assert.equal(cp.z, 3);
+Assert.equal(cp.add(), 6);

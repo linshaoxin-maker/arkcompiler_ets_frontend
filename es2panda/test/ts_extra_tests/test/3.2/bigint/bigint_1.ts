@@ -27,21 +27,23 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-let bi01: bigint = BigInt(100);
-Assert.equal(bi01, 100n)
+let b1: bigint = 10n;
+let b2: bigint = BigInt(10n);
+Assert.equal(b1, b2);
 
-let bi02: bigint = 100n;
-Assert.equal(bi02, 100n)
-
-function hwfun(n: bigint) {
-    let a = 1n;
-    for (let x = 0n, i = 0n; i < n; i++) {
-        const y = a;
-        a += x;
-        x = y;
+function func(bnum: bigint) {
+    for (let i = 0; i < 10; i++){
+        bnum++;
     }
-    return a;
+    return bnum;
 }
+Assert.equal(func(10n), 20n);
 
-let a = hwfun(100n);
-Assert.equal(a, 573147844013817084101n);
+class C{
+    bigN: bigint
+    constructor(bigN: bigint) {
+        this.bigN = bigN;
+    }
+}
+let c = new C(10n);
+Assert.equal(c.bigN, 10n);

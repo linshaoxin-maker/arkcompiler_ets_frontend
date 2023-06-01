@@ -21,24 +21,23 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var arr1: Array<string> = ["ABC", "DEF", "GHI"];
-var arr2: Array<number> = [1, 3, 5, 7, 9];
-var arr3: Array<boolean> = [true, false];
-var arr4: Array<object> = [Object, { 0xff: "0xFF" }];
-Assert.isString(arr1[2]);
-var objArray: object[] = [];
+let arr1: Array<string> = ["ABC", "DEF", "GHI"];
+let arr2: Array<number> = [1, 3, 5, 7, 9];
+let arr3: Array<boolean> = [true, false];
+let arr4: Array<object> = [Object, { 0xff: "0xFF" }];
+Assert.equal(arr1[0], "ABC");
+Assert.equal(arr2[0], 1);
+Assert.equal(arr3[0], true);
+Assert.equal(arr4[0], Object);
+let objArray: object[] = [];
 arr1.forEach(function (element, index, arr) {
   objArray[index] = { index: index, element: element, arr: arr };
 });
-Assert.isString(arr2.toString());
 Assert.equal(arr2.toString(), "1,3,5,7,9");
-Assert.isNumber(arr3.length);
 Assert.equal(arr3.length, 2);
-Assert.isNumber(arr2.pop());
-Assert.equal(arr2.pop(), 7);
-arr2.push(15);
-Assert.equal(arr2.toString(), "1,3,5,15");
+Assert.equal(arr2.pop(), 9);
+Assert.equal(arr2.toString(), "1,3,5,7");
 arr3[0] = false;
 Assert.equal(arr3[0], false);

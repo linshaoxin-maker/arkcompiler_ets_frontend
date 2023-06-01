@@ -14,8 +14,7 @@
  */
 /**---
  description: >
-  A class that includes an extends clause is called a derived class, 
-  and the class specified in the extends clause is called the base class of the derived class. 
+    The constructor function type created by the class declaration must be assignable to the base class constructor function type
  module: ESNext
  isCurrent: true
  ---*/
@@ -30,14 +29,14 @@ class Person {
         this.name = name;
         this.age = age;
     }
-    introduce() {
-        return 'I am a college student';
-    }
 }
 class Student extends Person {
-    constructor(name: string, age: number) {
+    constructor(name: string, age: number, public id: string) {
         super(name, age);
+        this.id = id;
     }
 }
-var m_C = new Student('xiao', 18);
-Assert.equal(m_C.introduce(), 'I am a college student');
+let stu1: Student = new Student("xiao", 18, "001");
+let per1: Person = stu1;
+Assert.equal("xiao", per1.name);
+Assert.equal(18, per1.age);

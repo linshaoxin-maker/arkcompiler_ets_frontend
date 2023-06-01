@@ -14,22 +14,20 @@
  */
 /**---
  description: >
-  if the parameter is a rest parameter, the parameter type is any[].
-  A type annotation for a rest parameter must denote an array type.
+    if the parameter is a rest parameter, the parameter type is any[].
+    A type annotation for a rest parameter must denote an array type.
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import {Assert} from '../../../../../../suite/assert.js'
+import { Assert } from '../../../../../../suite/assert.js'
 
 function restFun(first: any, ...restname: any[]) {
   return first + " " + restname.join(" ");
 }
-
 let restname1 = restFun("aa", "bb", "cc");
 Assert.equal(restname1, "aa bb cc");
-
 let restname2 = restFun(1, 2, 3, 4);
 Assert.equal(restname2, "1 2 3 4");
 // boolean

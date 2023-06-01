@@ -20,10 +20,23 @@ isCurrent: true
 
 
 import { Assert } from "../../../suite/assert.js"
-import { HWC } from "./test.js"
+import { C } from "./test.js"
 
-let hw: HWC = { x: 1 };
+let obj: C = { x: 1 };
 
-Assert.equal(1, hw.x);
+Assert.equal(1, obj.x);
 
-
+class mC{
+    mem: string;
+    constructor(mem: string) {
+        this.mem = mem;
+    }
+    get mC_mem() {
+        return this.mem;
+    }
+    set mC_mem(str:string) {
+        this.mem = str;
+    }
+}
+let eg = new mC('member');
+Assert.equal(eg.mC_mem, 'member');

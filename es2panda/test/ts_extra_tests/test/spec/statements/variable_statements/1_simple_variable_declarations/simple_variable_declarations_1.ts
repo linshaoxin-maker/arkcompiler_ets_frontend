@@ -25,19 +25,14 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-// any  
 var h_a;
 
-// number                           
 var h_b: number;
 
-// number  
 var h_c = 30;
 
-// { x: number; y: string; }  
 var h_d = { x: 40, y: "hello" };
 
-// any
 var h_e: any = "test";
 h_a = 1;
 Assert.equal(1, h_a);

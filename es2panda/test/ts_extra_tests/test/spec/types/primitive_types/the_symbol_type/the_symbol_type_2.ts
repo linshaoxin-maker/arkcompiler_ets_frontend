@@ -23,23 +23,20 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var sym: symbol = Symbol("NARC");
-var sym2: symbol = Symbol("TypeScript");
+let sym: symbol = Symbol("NARC");
+let sym2: symbol = Symbol("TypeScript");
 Assert.equal(sym.description, "NARC");
-
-var s1: string = sym2.toString();
-var s2: symbol = sym.valueOf();
+let s1: string = sym2.toString();
+let s2: symbol = sym.valueOf();
 Assert.equal(s1, "Symbol(TypeScript)");
-
-var flag1: boolean = false;
+let flag1: boolean = false;
 if (sym != sym2) {
   flag1 = true;
 }
 Assert.isTrue(flag1);
-
-var flag2: boolean = false;
+let flag2: boolean = false;
 if (sym == s2) {
   flag2 = true;
 }

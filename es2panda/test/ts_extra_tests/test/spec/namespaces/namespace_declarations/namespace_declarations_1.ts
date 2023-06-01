@@ -32,6 +32,7 @@ namespace A {
 var varA: A.TA = { TName: "TA", Ver: 1.5 }
 Assert.equal(varA.TName, "TA");
 Assert.equal(varA.Ver, 1.5);
+
 module B {
    export interface TB {
       SkillName: string;

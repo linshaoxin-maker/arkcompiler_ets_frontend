@@ -14,16 +14,44 @@
  */
 /**---
  description: >
-   TypeScript 3.4 introduces a new construct for literal values called const assertions. Its syntax is a type assertion with const in place of the type name (e.g. 123 as const).
+   TypeScript 3.4 introduces a new construct for literal values called const assertions. Its syntax is a type assertion with const in place of the type name.
+   The angle bracket assertion syntax can also be used.
  module: ESNext
  isCurrent: true
  ---*/
 
 
 import { Assert } from "../../suite/assert.js"
-let a = 1408 as const;
-Assert.equal(a, 1408);
-let b = 'NARC' as const;
-Assert.equal(b, 'NARC');
-let c = [255, 0, 0] as const;
-Assert.equal(JSON.stringify(c), '[255,0,0]');
+
+let a1 = 1408 as const;
+let a2 = <const>1408;
+Assert.equal(a1, 1408);
+Assert.equal(a2, 1408);
+let b1 = 'NARC' as const;
+let b2 = <const>'NARC';
+Assert.equal(b1, 'NARC');
+Assert.equal(b2, 'NARC');
+let c1 = [255, 0, 0] as const;
+let c2 = <const>[255, 0, 0];
+Assert.equal(JSON.stringify(c1), '[255,0,0]');
+Assert.equal(JSON.stringify(c2), '[255,0,0]');
+let d1 = { mem: 'member' } as const;
+let d2 = <const>{ mem: 'member' };
+Assert.equal(JSON.stringify(d1), '{"mem":"member"}');
+Assert.equal(JSON.stringify(d2), '{"mem":"member"}');
+
+
+let obj1 = { kind: "circle", length: 80 };
+let obj2 = { kind: "square", length: 50 };
+
+function func() {
+  let result = [obj1, obj2] as const;
+  return result;
+}
+for (const shape of func()) {
+  if (shape.kind === "circle") {
+    Assert.equal(shape.length, 80);
+  } else {
+    Assert.equal(shape.length, 50);
+  }
+};

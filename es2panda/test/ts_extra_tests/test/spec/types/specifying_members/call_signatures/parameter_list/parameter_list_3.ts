@@ -14,13 +14,13 @@
  */
 /**---
  description: >
-  If the declaration includes a type annotation, the parameter is of that type.
+    If the declaration includes a type annotation, the parameter is of that type.
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import {Assert} from '../../../../../../suite/assert.js'
+import { Assert } from '../../../../../../suite/assert.js'
 
 function ff(first: string, second: number) {
   return first;
@@ -30,4 +30,3 @@ let second = 2;
 ff(first, second);
 Assert.equal(first, "first");
 Assert.equal(second, 2);
-

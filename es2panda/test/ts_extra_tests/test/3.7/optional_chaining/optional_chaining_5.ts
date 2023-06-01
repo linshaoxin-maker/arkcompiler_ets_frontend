@@ -22,13 +22,13 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-const hwobjnum = {
+const obj = {
     n1: {
         n2: 10
     }
 };
-function hwfun(divisor: number) {
+function func(divisor: number) {
     return divisor + 4;
 }
-let result = hwobjnum?.n1?.n2 / hwfun(1);
+let result = obj?.n1?.n2 / func(1);
 Assert.equal(typeof result, "number");

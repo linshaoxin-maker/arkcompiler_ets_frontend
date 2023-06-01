@@ -21,12 +21,16 @@ isCurrent: true
 
 
 import { Assert } from "../../../suite/assert.js"
-const hwobj = {
+
+const obj = {
     x: {
         y: 'e2'
     }
 };
 
-if (hwobj?.x?.y) {
-    Assert.equal(hwobj?.x?.y, "e2", "true");
+if (obj?.x?.y) {
+    Assert.equal(obj?.x?.y, "e2", "true");
+}
+if (obj && obj.x && obj.x.y) {
+    Assert.equal(obj && obj.x && obj.x.y, "e2", "true");
 };

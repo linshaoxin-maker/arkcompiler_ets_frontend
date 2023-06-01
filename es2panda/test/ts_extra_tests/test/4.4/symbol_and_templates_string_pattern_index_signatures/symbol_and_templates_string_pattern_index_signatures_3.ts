@@ -24,11 +24,11 @@
 import { Assert } from '../../../suite/assert.js'
 
 interface HWColor {
-  [keys: number]: any;
+  [keys: number|string]: any;
 }
-const red = Symbol("red");
-const green = Symbol("green");
-const blue = Symbol("blue");
+const red:any = Symbol("red");
+const green:any = Symbol("green");
+const blue:any = Symbol("blue");
 
 let c: HWColor = {};
 c[red] = 0xff0000;

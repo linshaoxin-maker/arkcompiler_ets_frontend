@@ -14,8 +14,8 @@
  */
 
 
-declare class HWC {
+declare class C {
     get x(): number;
     set x(val: number);
 }
-export { HWC };
+export { C };

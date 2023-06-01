@@ -21,7 +21,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 // If you define a variable type without explicit type annotations, the variable defaults to string instead of the string literal type it should be
 let HELLO: "HELLO" = "HELLO";

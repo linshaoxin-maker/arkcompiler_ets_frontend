@@ -14,7 +14,8 @@
  */
 /**---
  description: >
-   In prior versions, TypeScript only allowed ...rest elements at the very last position of a tuple type.However, now rest elements can occur anywhere within a tuple - with only a few restrictions.
+   In prior versions, TypeScript only allowed '...rest' elements at the very last position of a tuple type.
+   However, now rest elements can occur anywhere within a tuple.
  module: ESNext
  isCurrent: true
 ---*/
@@ -22,18 +23,25 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-let f: [...string[], number];
+interface h_i{
+  num: number;
+}
+interface h_f{
+  str: string;
+}
+type myType = h_i | h_f;
 
-f = [123];
-f = ['hello', 123];
-f = ['hello!', 'hello!', 'hello!', 123];
+let tup1: [...myType[], boolean];
+tup1 = [true];
+tup1 = [{ num: 10 }, true];
+tup1 = [{ num: 10 }, { str: 'string' }, true];
 
-let g: [boolean, ...string[], boolean];
+let tup2: [string, ...myType[], boolean];
 
-g = [true, false];
-g = [true, 'some text', false];
-g = [true, 'some', 'separated', 'text', false];
+tup2 = ['a', false];
+tup2 = ['a', { num: 10 }, false];
+tup2 = ['a', { num: 10 }, { str: 'string' }, false];
 
-Assert.equal(JSON.stringify(f), "[\"hello!\",\"hello!\",\"hello!\",123]");
-Assert.equal(JSON.stringify(g), "[true,\"some\",\"separated\",\"text\",false]");
+Assert.equal(JSON.stringify(tup1), "[{\"num\":10},{\"str\":\"string\"},true]");
+Assert.equal(JSON.stringify(tup2), "[\"a\",{\"num\":10},{\"str\":\"string\"},false]");
 

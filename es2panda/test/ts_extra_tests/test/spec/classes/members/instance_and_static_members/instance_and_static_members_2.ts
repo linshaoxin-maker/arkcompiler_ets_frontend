@@ -37,14 +37,39 @@ class Counter {
     this.count--;
     return this;
   }
-
-  public getResult(): number {
+  public get Result(): number {
     return this.count;
   }
 }
-const counter = new Counter(1);
+let counter = new Counter(1);
 counter.add();
-Assert.equal(counter.getResult(), 2);
-counter.add();
+Assert.equal(counter.add(), counter);
+Assert.equal(counter.Result, 3);
 counter.subtract();
-Assert.equal(counter.getResult(), 2);
+Assert.equal(counter.subtract(), counter);
+Assert.equal(counter.Result, 1);
+class P {
+  constructor(public num1: number, public num2: number) { }
+  public hypot() {
+    return Math.sqrt(this.num1 * this.num1 + this.num2 * this.num2);
+  }
+  static initial = new P(0, 0);
+}
+class ChildP extends P {
+  constructor(public x: number, public y: number, public z: number) {
+    super(x, y);
+    this.z = z;
+  }
+  public move(): this {
+    this.x += 1;
+    this.y += 1;
+    this.z += 1;
+    return this
+  }
+}
+let childp: ChildP = new ChildP(1, 2, 3);
+childp.move();
+Assert.equal(childp.x, 2);
+Assert.equal(childp.y, 3);
+Assert.equal(childp.z, 4);
+Assert.equal(childp.move(), childp);

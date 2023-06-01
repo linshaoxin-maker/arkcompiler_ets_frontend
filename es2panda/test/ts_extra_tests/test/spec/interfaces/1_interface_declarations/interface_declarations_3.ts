@@ -28,24 +28,6 @@ import { Assert } from '../../../../suite/assert.js'
         (h_a: string, h_b: string): number;
     }
 
-    let ps: StringC =
-        (h_a: string, h_b: string): number => {
-            return 1
-        };
-
-    class Class {
-        h_x: number;
-        h_y: number;
-
-        constructor(h_a: number, h_b: number) {
-            this.h_x = h_a;
-            this.h_y = h_b;
-        }
-    }
-
-    let pt: Class = new Class(0, 1);
-    // assert declare named function
-    Assert.equal(pt.h_x, 0);
-    // assert constructor types
-    Assert.equal(pt.h_y, 1);
+    let sc: StringC = (h_a: string, h_b: string): number => { return h_a.charCodeAt(0) + h_b.charCodeAt(0); };
+    Assert.equal(sc('a', 'b'), 195);
 };

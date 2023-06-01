@@ -22,13 +22,25 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-async function hwtest(url: string, log?: (msg: string) => void) {
-  log?.(`Request started at ${new Date().toISOString()}`);
-  const result = ((await fetch(url)).json());
-  log?.(`Request finished at ${new Date().toISOString()}`);
+class C{
+  mem: string;
+  constructor(mem: string) {
+    this.mem = mem;
+  }
+  func(mem: string) {
+    this.mem = mem;
+    return this.mem;
+   }
+}
+async function func(str: string, arg?: (str: string) => void): Promise<any>{
+  let c = new C('member');
+  let para = c.func('member');
+  arg?.(para);
+  const result: Promise<any> = ((await func(str)).json());
+  arg?.(para);
   return result;
 }
-hwtest("https://www.typescriptlang.org/").then(res => {
-  Assert.equal(typeof res, "object");
+func('string').then(res => {
+  Assert.isObject(res);
 }).catch(err => {
 });

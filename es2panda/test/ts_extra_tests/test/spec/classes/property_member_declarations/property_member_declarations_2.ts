@@ -14,29 +14,33 @@
  */
 /**---
  description: >
-    an object type containing one or more call signatures is said to be a function type.  
-    function types may be written using function type literals or by including call signatures in object type literals.
+    it is possible to have instance and static property members with the same name.
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from "../../../../suite/assert.js"
 
-var fun1: (num1: number, num2: number) => number = (
-  num1: number,
-  num2: number
-) => {
-  return num1 + num2;
-};
-Assert.isNumber(fun1(3, 5));
-Assert.equal(fun1(3, 5), 8);
-var fun2: { (num1: number, num2: number, num3: number): number } = (
-  num1: number,
-  num2: number,
-  num3: number
-) => {
-  return num1 + num2 + num3;
-};
-Assert.isNumber(fun2(1, 3, 5));
-Assert.equal(fun2(1, 3, 5), 9);
+class myClass {
+  public x: number;
+  public y: number;
+  constructor(x: number, y: number) {
+    this.x = x;
+    this.y = y;
+  }
+  public add(): number {
+    return this.x + this.y;
+  }
+  static x: number = 3;
+  static add(): number {
+    this.x++;
+    return this.x;
+  }
+}
+let myTest = new myClass(1, 2);
+Assert.equal(myTest.x, 1);
+Assert.equal(myTest.y, 2);
+Assert.equal(myTest.add(), 3);
+Assert.equal(myClass.x, 3);
+Assert.equal(myClass.add(), 4);
