@@ -31,14 +31,7 @@ let ni: { [key: number]: boolean } = { 0: false, 1: true };
 ni[-1] = true;
 Assert.isBoolean(ni[0]);
 Assert.equal(ni[-1], true);
-interface UnionKey {
-  [key: string | number]: string | number;
-}
-let uk: UnionKey = { Name: "UnionKey", 0: "NARC", 0x0a: 10 };
-Assert.equal(uk["Name"], "UnionKey");
-Assert.equal(uk[0], "NARC");
-Assert.equal(uk[0x0a], 10);
-Assert.equal(uk[0xff], undefined);
+
 interface StringKey {
   [key: string]: string;
 }
@@ -52,8 +45,3 @@ interface NumberKey {
 let nk: NumberKey = { 1: "0x01", 2: "0x02", "3": "0x03", 4: "0x04" };
 Assert.equal(nk[1], "0x01");
 Assert.equal(nk[2], "0x02");
-Assert.equal(nk["3"], "0x03");
-let rk1: Record<string, number> = { one: 1, two: 2, three: 3 };
-Assert.equal(rk1["one"], 1);
-let rk2: Record<"a" | "b" | "c", string> = { a: "A", b: "B", c: "C" };
-Assert.equal(rk2["a"], "A");

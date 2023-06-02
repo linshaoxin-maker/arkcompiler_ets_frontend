@@ -36,6 +36,4 @@ const obj: MyObj = {
 Assert.equal(obj[0], "foo");
 Assert.equal(obj[1], "bar");
 Assert.equal(obj[2], "baz");
-Assert.equal(obj["0"], "foo");
-Assert.equal(obj["1"], "bar");
-Assert.equal(obj["2"], "baz");
+

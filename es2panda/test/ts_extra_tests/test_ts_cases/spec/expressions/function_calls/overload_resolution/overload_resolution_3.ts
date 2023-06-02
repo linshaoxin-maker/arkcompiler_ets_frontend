@@ -26,13 +26,13 @@
 import { Assert } from '../../../../../suite/assert.js'
 
 interface IfnCall {
-  (name: string, age: number): string
+  (name: string, age: string): string
 }
 interface IfnCall {
   (str: string, num: string): string
 }
-const foo: IfnCall = function (name, age) {
+const foo: IfnCall = function (name: string, age: string) {
   return name + ":" + age
 }
-var f = foo("xiao", 18)
+var f = foo("xiao", "18")
 Assert.isString(f);

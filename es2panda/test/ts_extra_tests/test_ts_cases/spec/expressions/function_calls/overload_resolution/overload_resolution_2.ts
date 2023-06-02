@@ -32,7 +32,7 @@ interface IFnCall<S> {
 interface IFnCall<S> {
   <T>(func: (str: S) => T, name: string): T
 }
-const foo: IFnCall<string> = function (fn) {
+const foo: IFnCall<string> = function (fn:any) {
   return fn('xiao')
 }
 const res = foo((name) => {
