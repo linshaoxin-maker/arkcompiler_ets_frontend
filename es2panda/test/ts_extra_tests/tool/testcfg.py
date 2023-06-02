@@ -38,6 +38,7 @@ class TestCase():
     ld_library_path = ""
     js_runtime_path = ""
     es2abc = ""
+    tsc = ""
 
     def __init__(self, path):
         self.path = path
@@ -104,7 +105,7 @@ class TestCase():
         if platform.system().lower() == 'windows':
             cmd = ['cmd', '/c', 'tsc', '--target', 'es2020']
         else:
-            cmd = ['tsc', '--target', 'es2020']
+            cmd = [TestCase.tsc, '--target', 'es2020']
         if self.__is_strict():
             cmd.extend(STRICT_ON)
         else:

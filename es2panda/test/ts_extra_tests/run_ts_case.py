@@ -100,6 +100,9 @@ parser.add_argument(
 parser.add_argument(
     '--es2abc', dest='es2abc', default=None, help='ES2ABC_PATH')
 
+parser.add_argument(
+    '-tsc', dest='tsc', default="tsc", help='tsc')
+
 # parse the arguments from standard input
 args = parser.parse_args()
 if args.js_runtime_path:
@@ -108,6 +111,8 @@ if args.ld_library_path:
     TestCase.ld_library_path = args.ld_library_path
 if args.es2abc:
     TestCase.es2abc = args.es2abc
+
+TestCase.tsc = args.tsc
 
 disable_list = []
 if args.disable_list:
@@ -156,10 +161,9 @@ for file_path in args.release:
     # delete abc files
     if args.arkruntime:
         for file_paths in get_path_file("suite", None, True):
-            if file_paths.endswith(".ts"):
-                test_case = TestCase(file_paths)
-                if not test_case.is_test_case:
-                    test_case.create_abc(file_paths)
+            if file_paths.endswith(".abc"):
+                if os.path.exists(file_paths):
+                    os.remove(file_paths)
 
         for file_paths in get_path_file("test_ts_cases", None, True):
             if file_paths.endswith(".abc"):

@@ -36,14 +36,14 @@ def read_declaration(path):
     return context
 
 # LIMIT_VERSION = 4.2
-ROOT_FOLDER = 'test'
+ROOT_FOLDER = 'test_ts_cases'
 
 def get_path_file(dir_path, all_file_path=None, is_root=False, limit_version=None):
     if all_file_path is None:
         all_file_path = []
     file_or_dir = os.listdir(dir_path)
     file_or_dir_results = []
-    if dir_path.endswith("test") or dir_path.endswith("test/"):
+    if dir_path.endswith("test_ts_cases") or dir_path.endswith("test_ts_cases/"):
         is_root = True
     else:
         is_root = False
