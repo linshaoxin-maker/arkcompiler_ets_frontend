@@ -24,4 +24,4 @@ import { Assert } from '../../../../../../suite/assert.js'
 function string(): number {
     return 10;
 }
-Assert.equal(string, 10);
+Assert.equal(string(), 10);
