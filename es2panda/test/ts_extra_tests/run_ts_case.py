@@ -126,7 +126,7 @@ for file_path in args.release:
                 if not test_case.is_test_case:
                     test_case.create_abc(file_paths)
 
-        for file_paths in get_path_file("test", None, True):
+        for file_paths in get_path_file("test_ts_cases", None, True):
             if file_paths.endswith(".ts"):
                 test_case = TestCase(file_paths)
                 if not test_case.is_test_case:
@@ -161,7 +161,7 @@ for file_path in args.release:
                 if not test_case.is_test_case:
                     test_case.create_abc(file_paths)
 
-        for file_paths in get_path_file("test", None, True):
+        for file_paths in get_path_file("test_ts_cases", None, True):
             if file_paths.endswith(".abc"):
                 if os.path.exists(file_paths):
                     os.remove(file_paths)

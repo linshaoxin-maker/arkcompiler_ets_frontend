@@ -161,7 +161,7 @@ class TestCase():
 
     def __get_js_basename(self):
         sp = '/'
-        return "test" + sp + self.path.split(sp+"test"+sp)[1].replace('.ts', '.js')
+        return "test_ts_cases" + sp + self.path.split(sp+"test_ts_cases"+sp)[1].replace('.ts', '.js')
 
     def __is_strict(self):
         if 'strict' in self.declaration:
