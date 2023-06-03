@@ -23,18 +23,16 @@ def run(args):
         os.makedirs(deps_path, exist_ok= True)
 
     tsc_package_path = os.path.join(deps_path, "typescript-4.2.3-r2.tgz")
-    if not os.path.exists(tsc_package_path):
-        cmd = " ".join(["cp", "-f", tsc_path, deps_path])
-        run_cmd(cmd)
-    
-    if not os.path.exists(os.path.join(args[1], "node_modules", "typescript")):
-        cmd = " ".join(["npm", "install", tsc_path, "--legacy-peer-deps"])
-        run_cmd(cmd, args[1])
+    cmd = " ".join(["cp", "-f", tsc_path, deps_path])
+    run_cmd(cmd)
+    cmd = " ".join(["npm", "install", tsc_path, "--legacy-peer-deps"])
+    run_cmd(cmd, args[1])
+    cmd = " ".join(["npm", "install", tsc_package_path, "--legacy-peer-deps"])
+    run_cmd(cmd, cur_path)
 
-    if not os.path.exists(os.path.join(cur_path, "node_modules", "typescript")):
-        tsc_cur_path = os.path.join(deps_path, "typescript-4.2.3-r2.tgz")
-        cmd = " ".join(["npm", "install", tsc_cur_path, "--legacy-peer-deps"])
-        run_cmd(cmd, cur_path)
+    if os.path.exists(args[3]):
+        cmd =" ".join(["rm", "-rf", args[3]])
+        run_cmd(cmd)
 
 if __name__ == "__main__":
     run(sys.argv[1:])

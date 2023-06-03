@@ -39,9 +39,10 @@ action("npm_install_tsc") {
   deps = [ "//third_party/typescript:build_typescript" ]
   script = "npm_install_tsc.py"
   args = [
-    rebase_path("${root_build_dir}/typescript/typescript-4.2.3-r2.tgz"),
+    rebase_path("${root_out_dir}/obj/third_party/typescript/typescript-4.2.3-r2.tgz"),
     rebase_path("//prebuilts/build-tools/common/ts2abc"),
     rebase_path(get_path_info("./", "abspath")),
+    rebase_path("${target_out_dir}/${target_name}.stamp"),
   ]
   outputs = [ "${target_out_dir}/${target_name}.stamp" ]
 }
@@ -66,7 +67,7 @@ ohos_copy("config_files") {
 }
 
 ohos_copy("ts2abc_deps") {
-  sources = [ "${root_build_dir}/typescript/typescript-4.2.3-r2.tgz" ]
+  sources = [ "${root_out_dir}/obj/third_party/typescript/typescript-4.2.3-r2.tgz" ]
 
   outputs = [ target_out_dir + "/$target_name/{{source_file_part}}" ]
   module_source_dir = target_out_dir + "/$target_name"
@@ -78,7 +79,7 @@ ohos_copy("ts2abc_deps") {
 }
 
 ohos_copy("ts2abc_deps_ets") {
-  sources = [ "${root_build_dir}/typescript/typescript-4.2.3-r2.tgz" ]
+  sources = [ "${root_out_dir}/obj/third_party/typescript/typescript-4.2.3-r2.tgz" ]
 
   outputs = [ target_out_dir + "/$target_name/{{source_file_part}}" ]
   module_source_dir = target_out_dir + "/$target_name"
@@ -90,7 +91,7 @@ ohos_copy("ts2abc_deps_ets") {
 }
 
 ohos_copy("ts2abc_deps_win") {
-  sources = [ "${root_build_dir}/typescript/typescript-4.2.3-r2.tgz" ]
+  sources = [ "${root_out_dir}/obj/third_party/typescript/typescript-4.2.3-r2.tgz" ]
 
   outputs = [ target_out_dir + "/$target_name/{{source_file_part}}" ]
   module_source_dir = target_out_dir + "/$target_name"
@@ -102,7 +103,7 @@ ohos_copy("ts2abc_deps_win") {
 }
 
 ohos_copy("ts2abc_deps_win_ets") {
-  sources = [ "${root_build_dir}/typescript/typescript-4.2.3-r2.tgz" ]
+  sources = [ "${root_out_dir}/obj/third_party/typescript/typescript-4.2.3-r2.tgz" ]
 
   outputs = [ target_out_dir + "/$target_name/{{source_file_part}}" ]
   module_source_dir = target_out_dir + "/$target_name"
@@ -114,7 +115,7 @@ ohos_copy("ts2abc_deps_win_ets") {
 }
 
 ohos_copy("ts2abc_deps_mac") {
-  sources = [ "${root_build_dir}/typescript/typescript-4.2.3-r2.tgz" ]
+  sources = [ "${root_out_dir}/obj/third_party/typescript/typescript-4.2.3-r2.tgz" ]
 
   outputs = [ target_out_dir + "/$target_name/{{source_file_part}}" ]
   module_source_dir = target_out_dir + "/$target_name"
@@ -126,7 +127,7 @@ ohos_copy("ts2abc_deps_mac") {
 }
 
 ohos_copy("ts2abc_deps_mac_ets") {
-  sources = [ "${root_build_dir}/typescript/typescript-4.2.3-r2.tgz" ]
+  sources = [ "${root_out_dir}/obj/third_party/typescript/typescript-4.2.3-r2.tgz" ]
 
   outputs = [ target_out_dir + "/$target_name/{{source_file_part}}" ]
   module_source_dir = target_out_dir + "/$target_name"
