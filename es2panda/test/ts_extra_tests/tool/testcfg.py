@@ -61,7 +61,7 @@ class TestCase():
             return
         if arkruntime:
             with open(self.path, 'a') as fileAdded:
-                fileAdded.write('print("TESTCASE SUCCESS");')
+                fileAdded.write('\rprint("TESTCASE SUCCESS");')
             self.__test_es2abc()
             if(os.path.exists(self.abc_file_path)):
                 os.remove(self.abc_file_path)

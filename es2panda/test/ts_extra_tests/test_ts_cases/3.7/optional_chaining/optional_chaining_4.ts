@@ -32,12 +32,18 @@ class C{
     return this.mem;
    }
 }
-async function func(str: string, arg?: (str: string) => void): Promise<any>{
+async function method(str: string): Promise<string> {
+  return str;
+}
+
+async function func(str: string, arg?: (str: string) => void): Promise<string>{
   let c = new C('member');
   let para = c.func('member');
-  arg?.(para);
-  const result: Promise<any> = ((await func(str)).json());
-  arg?.(para);
+  let x = arg?.(para);
+  Assert.isUndefined(x);
+  const result: string = await method(str);
+  let y = arg?.(para);
+  Assert.isUndefined(y);
   return result;
 }
 func('string').then(res => {

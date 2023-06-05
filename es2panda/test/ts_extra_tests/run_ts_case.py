@@ -169,6 +169,15 @@ for file_path in args.release:
             if file_paths.endswith(".abc"):
                 if os.path.exists(file_paths):
                     os.remove(file_paths)
+            if file_paths.endswith(".ts"):
+                if os.path.exists(file_paths):
+                    file = open(file_paths, 'r')
+                    lines = file.readlines()
+                    if lines[-1] == 'print("TESTCASE SUCCESS");':
+                        lines.pop()
+                        file = open(file_paths, 'w')
+                        file.writelines(lines)
+                        file.close()
 
 print("TOTAL CASE COUNT:%d" % total_case)
 print("FAILED CASE COUNT:%d" % failed_case)
