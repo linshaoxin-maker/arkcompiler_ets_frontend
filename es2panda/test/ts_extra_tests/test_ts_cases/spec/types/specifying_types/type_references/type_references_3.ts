@@ -24,35 +24,35 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-interface h_A {
-    h_a: string;
+interface I1 {
+    a: string;
 }
-interface h_B extends h_A {
-    h_b: string;
+interface I2 extends I1 {
+    b: string;
 }
-interface h_C extends h_B {
-    h_c: string;
+interface I3 extends I2 {
+    c: string;
 }
-interface h_G<T, U extends h_B> {
-    h_x: T;
-    h_y: U;
+interface I4<T, U extends I2> {
+    x: T;
+    y: U;
 }
-let h_v: h_G<h_G<h_A, h_B>, h_C> = {
-    h_x: {
-        h_x: { h_a: 'h_a' },
-        h_y: {
-            h_a: 'h_a',
-            h_b: 'h_b'
+let z: I4<I4<I1, I2>, I3> = {
+    x: {
+        x: { a: 'a' },
+        y: {
+            a: 'a',
+            b: 'b'
         }
     },
-    h_y: {
-        h_a: 'h_a',
-        h_b: 'h_b',
-        h_c: 'h_c'
+    y: {
+        a: 'a',
+        b: 'b',
+        c: 'c'
     }
 }
-Assert.equal(h_v.h_x.h_x.h_a, 'h_a');
-Assert.equal(h_v.h_x.h_y.h_b, 'h_b');
-Assert.equal(h_v.h_y.h_a, 'h_a');
-Assert.equal(h_v.h_y.h_b, 'h_b');
-Assert.equal(h_v.h_y.h_c, 'h_c');
+Assert.equal(z.x.x.a, 'a');
+Assert.equal(z.x.y.b, 'b');
+Assert.equal(z.y.a, 'a');
+Assert.equal(z.y.b, 'b');
+Assert.equal(z.y.c, 'c');

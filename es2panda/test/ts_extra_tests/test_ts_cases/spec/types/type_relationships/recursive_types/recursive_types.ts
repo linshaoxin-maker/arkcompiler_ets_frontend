@@ -40,5 +40,5 @@ type IsEqual<T, U> =
     (<T2>() => T2 extends U ? 1 : 2)
     ? true
     : false
-var t1: IsEqual<iA, iB> = true
+var t1: IsEqual<iA, iB> = true;
 Assert.isTrue(t1);

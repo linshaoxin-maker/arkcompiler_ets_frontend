@@ -25,7 +25,6 @@ import { Assert } from '../../../../suite/assert.js'
 
 var x: number = 10
 var y: string = '5'
-// the typeof z is string | number
 var z = Math.random() < 0.5 ? x + y : y && x
 if (typeof z === 'number') {
     z++

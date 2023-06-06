@@ -22,30 +22,30 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-function hwtest01<V extends string>(arg: `*${V}*`): `*${V}*` {
+function funStr01<V extends string>(arg: `*${V}*`): `*${V}*` {
     return arg;
 }
-function hwtest02<T extends string>(s: string, n: number, b: boolean, t: T) {
-    let x1 = hwtest01("*hello*");
+function funStr02<T extends string>(s: string, n: number, b: boolean, t: T) {
+    let x1 = funStr01("*hello*");
     Assert.equal(x1, "*hello*");
 
-    let x2 = hwtest01("**hello**");
+    let x2 = funStr01("**hello**");
     Assert.equal(x2, "**hello**");
 
-    let x3 = hwtest01(`*${s}*` as const);
+    let x3 = funStr01(`*${s}*` as const);
     Assert.equal(x3, "*s*");
 
-    let x4 = hwtest01(`*${n}*` as const);
+    let x4 = funStr01(`*${n}*` as const);
     Assert.equal(x4, "*5*");
 
-    let x5 = hwtest01(`*${b}*` as const);
+    let x5 = funStr01(`*${b}*` as const);
     Assert.equal(x5, "*true*");
 
-    let x6 = hwtest01(`*${t}*` as const);
+    let x6 = funStr01(`*${t}*` as const);
     Assert.equal(x6, "*t*");
 
-    let x7 = hwtest01(`**${s}**` as const);
+    let x7 = funStr01(`**${s}**` as const);
     Assert.equal(x7, "**s**");
 }
 
-hwtest02("s", 5, true, "t");
+funStr02("s", 5, true, "t");

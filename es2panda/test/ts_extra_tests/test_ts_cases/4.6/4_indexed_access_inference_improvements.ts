@@ -21,28 +21,25 @@
 
 import { Assert } from '../../suite/assert.js'
 
-interface HWI01 {
-    number: number;
-    string: string;
-    boolean: boolean;
+interface I {
+    xx: number;
+    yy: string;
+    zz: boolean;
 }
-
-type HWI02<P extends keyof HWI01> = {
+type T<P extends keyof I> = {
     [K in P]: {
-        kind: K;
-        v: HWI01[K];
-        f: (p: HWI01[K]) => void;
+        name: K;
+        v: I[K];
+        f: (p: I[K]) => void;
     };
 }[P];
-
-function hwtest<K extends keyof HWI01>(record: HWI02<K>) {
+function fun<K extends keyof I>(record: T<K>) {
     record.f(record.v);
 }
-
-hwtest({
-    kind: "string",
+fun({
+    name: "yy",
     v: "hello!",
     f: (val) => {
-        Assert.equal(val.toUpperCase(),"HELLO!");
+        Assert.equal(val.toUpperCase(), "HELLO!");
     },
 });

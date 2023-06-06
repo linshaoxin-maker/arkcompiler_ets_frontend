@@ -24,11 +24,13 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class P {
+class Compute {
   constructor(public num1: number, public num2: number) { }
-  public hypot() { }
-  static initial = new P(0, 0);
+  public hypot() {return "what are you doing?" }
+  static initial = new Compute(0, 0);
 }
-let p = new P(1, 2);
+let p = new Compute(1, 2);
 let obj = new Object();
 Assert.equal(p.toString(), obj.toString());
+Assert.isString(p.hypot());
+Assert.equal(0,Compute.initial.num1);

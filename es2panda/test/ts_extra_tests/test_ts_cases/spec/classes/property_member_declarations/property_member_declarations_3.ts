@@ -22,16 +22,16 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-class Point {
+class Compute {
   public x: number;
   public y: number;
   constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
   }
-  static origin = new Point(0, 0);
+  static origin = new Compute(0, 0);
 }
-class ColoredPoint extends Point {
+class ColoredPoint extends Compute {
   constructor(x: number, y: number, public color: string) {
     super(x, y);
   }
@@ -39,5 +39,5 @@ class ColoredPoint extends Point {
 Assert.equal(ColoredPoint.prototype.color, undefined);
 Assert.equal(ColoredPoint.prototype.x, undefined);
 Assert.equal(ColoredPoint.prototype.y, undefined);
-Assert.equal(Point.prototype.x, undefined);
-Assert.equal(Point.prototype.y, undefined);
+Assert.equal(Compute.prototype.x, undefined);
+Assert.equal(Compute.prototype.y, undefined);

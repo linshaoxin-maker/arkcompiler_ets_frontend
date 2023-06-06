@@ -21,7 +21,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 var T: number = 4;
 enum S {

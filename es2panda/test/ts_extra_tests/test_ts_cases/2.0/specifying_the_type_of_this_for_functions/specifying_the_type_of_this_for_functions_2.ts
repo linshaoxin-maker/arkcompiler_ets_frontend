@@ -23,7 +23,7 @@ isCurrent: true
 
 import { Assert } from "../../../suite/assert.js"
 
-interface WebElement {
+interface Web {
     Click(onclick: (this: void, e: Event) => void): void;
 }
 
@@ -33,12 +33,13 @@ class NetLink {
         this.info = info;
     }
     onClickGood(this: void, e: Event) {
-        Assert.equal(this, undefined);
     }
 }
 
-let webElement: WebElement = {
-    Click(Onclick: (this: void, e: Event) => void) { }
+let web: Web = {
+    Click(Onclick: (this: void, e: Event) => void) {
+        Assert.equal(typeof this, "object");
+    }
 };
 let onAir = new NetLink("OnAir");
-webElement.Click(onAir.onClickGood);
+web.Click(onAir.onClickGood);

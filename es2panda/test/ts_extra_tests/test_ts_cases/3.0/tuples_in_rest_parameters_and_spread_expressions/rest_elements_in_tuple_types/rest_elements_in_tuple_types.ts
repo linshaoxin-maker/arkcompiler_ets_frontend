@@ -23,19 +23,19 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-function test<T extends any[]>(...args: T): T {
+function fun1<T extends any[]>(...args: T): T {
     return args;
 }
-function getArrayOfNumbers0_10() {
+function fun2() {
     let arr: number[] = [];
     for (let i = 0; i <= 10; i++) {
         arr.push(i);
     }
     return arr;
 }
-const numbers: number[] = getArrayOfNumbers0_10();
-const t1 = test("AAA", 1, true);
-const t2 = test("BBB", ...numbers);
+const numbers: number[] = fun2();
+const t1 = fun1("AAA", 1, true);
+const t2 = fun1("BBB", ...numbers);
 const t3 = ["A", true, ...numbers, false];
 Assert.equal(JSON.stringify(t1), "[\"AAA\",1,true]");
 Assert.equal(JSON.stringify(t2), "[\"BBB\",0,1,2,3,4,5,6,7,8,9,10]");

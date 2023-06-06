@@ -21,7 +21,7 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class C {
+class student {
     #name: string;
     constructor(name: string) {
         this.#name = name;
@@ -32,5 +32,5 @@ class C {
     }
 }
 
-let c = new C("NARC");
-Assert.equal("NARC", c.getName());
+let students = new student("NARC");
+Assert.equal("NARC", students.getName());

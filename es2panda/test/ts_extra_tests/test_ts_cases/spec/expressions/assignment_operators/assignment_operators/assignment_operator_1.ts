@@ -27,4 +27,5 @@ import { Assert } from '../../../../../suite/assert.js'
 var sum: Function = function (x: number, y: number) {
   return x + y
 }
-Assert.equal(typeof sum, 'function');
+let result = sum(5, 10);
+Assert.equal(result, 15);

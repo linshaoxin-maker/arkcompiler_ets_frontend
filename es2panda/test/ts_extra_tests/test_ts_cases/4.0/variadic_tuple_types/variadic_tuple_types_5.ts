@@ -24,14 +24,14 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function hwtest01<T extends any[]>(arr: readonly [any, ...T]) {
+function funVTT01<T extends any[]>(arr: readonly [any, ...T]) {
   const [_ignored, ...rest] = arr;
   return rest;
 }
 const anum = [1, 2, 3, 4] as const;
 const astr = ["hello", "world"];
-const r1 = hwtest01(anum);
-const r2 = hwtest01([...anum, ...astr] as const);
+const r1 = funVTT01(anum);
+const r2 = funVTT01([...anum, ...astr] as const);
 Assert.equal(r2.length, 5);
 Assert.equal(r2[0], 2);
 Assert.equal(r2[1], 3);

@@ -23,12 +23,11 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-function h_map<T, U>(h_a: T[], h_f: (h_x: T) => U): U[] {
-    var cons: U[] = [];
-    for (var i = 0; i < h_a.length; i++) cons.push(h_f(h_a[i]));
+function f<T, U>(x: T[], fun: (a: T) => U): U[] {
+    let cons: U[] = [];
+    for (let i = 0; i < x.length; i++) cons.push(fun(x[i]));
     return cons;
 }
-
-var h_names = ["xiao", "xi", "xin"];
-var h_lengths = h_map(h_names, str => str.length);
-Assert.equal(typeof h_lengths, 'object');
+let xx = ["xiao", "xi", "xin"];
+let yy = f(xx, str => str.length);
+Assert.isObject(yy);

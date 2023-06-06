@@ -23,7 +23,7 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function hwtest01(a: string | undefined, b: number | undefined, c: boolean) {
+function fun01(a: string | undefined, b: number | undefined, c: boolean) {
     const res = a && b && c;
     if (res) {
         Assert.equal(a.toLowerCase(), "abc");
@@ -34,5 +34,5 @@ function hwtest01(a: string | undefined, b: number | undefined, c: boolean) {
         return 0;
     }
 }
-Assert.equal(hwtest01("abc", 1, true), 1);
-Assert.equal(hwtest01("abc", undefined, true), 0);
+Assert.equal(fun01("abc", 1, true), 1);
+Assert.equal(fun01("abc", undefined, true), 0);

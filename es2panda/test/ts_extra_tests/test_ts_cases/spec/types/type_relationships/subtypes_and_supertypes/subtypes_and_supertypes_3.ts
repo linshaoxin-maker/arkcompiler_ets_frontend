@@ -21,7 +21,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 interface T {
     name: string | undefined
@@ -43,5 +43,5 @@ let s: S = {
     hobbies: undefined
 };
 
-t = s
+t = s;
 Assert.equal(t, s);

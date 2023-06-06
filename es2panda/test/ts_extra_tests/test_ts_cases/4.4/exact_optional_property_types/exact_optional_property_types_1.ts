@@ -24,18 +24,17 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface HWPerson {
-  name: string;
-  age?: number;
+interface I {
+  x: string;
+  y?: number;
 }
-const p: HWPerson = {
-  name: "Daniel",
+const p: I = {
+  x: "aaaa",
 };
 const keys = Object.keys(p);
-Assert.equal(keys.indexOf("age"), -1);
-Assert.equal(typeof p.age, "undefined");
-Assert.notEqual(typeof p.age, "number");
-
-p.age = 12;
-Assert.equal(typeof p.age, "number");
-Assert.notEqual(typeof p.age, "undefined");
+Assert.equal(keys.indexOf("y"), -1);
+Assert.equal(typeof p.y, "undefined");
+Assert.notEqual(typeof p.y, "number");
+p.y = 12;
+Assert.equal(typeof p.y, "number");
+Assert.notEqual(typeof p.y, "undefined");

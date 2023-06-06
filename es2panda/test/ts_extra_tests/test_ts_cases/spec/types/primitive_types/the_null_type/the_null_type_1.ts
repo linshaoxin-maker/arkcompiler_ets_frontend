@@ -27,3 +27,5 @@ if (n == null) {
     flag = true;
 }
 Assert.equal(flag, true);
+let x1: any = null;
+Assert.equal(x1, null);

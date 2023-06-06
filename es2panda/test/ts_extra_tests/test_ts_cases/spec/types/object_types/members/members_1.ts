@@ -25,7 +25,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class h_C {
+class C {
     public h_pub: string;
     private h_pri: string;
     protected h_pro: string;
@@ -44,10 +44,10 @@ class h_C {
         return this.h_pro;
     }
 }
-let h_c = new h_C('Public', 'Private', 'Protected');
-Assert.equal(h_c.h_pub, 'Public');
-Assert.equal(h_c.get(), 'Private');
-Assert.equal(h_c.output(), 'Protected');
-class h_child extends h_C { }
-let h_ch = new h_child('public', 'private', 'protected');
-Assert.equal(h_ch.output(), 'protected');
+let x = new C('Public', 'Private', 'Protected');
+Assert.equal(x.h_pub, 'Public');
+Assert.equal(x.get(), 'Private');
+Assert.equal(x.output(), 'Protected');
+class Child extends C { }
+let y = new Child('public', 'private', 'protected');
+Assert.equal(y.output(), 'protected');

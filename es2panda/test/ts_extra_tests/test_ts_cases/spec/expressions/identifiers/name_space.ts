@@ -35,7 +35,6 @@ namespace MyNamespace {
     Assert.equal(person.age, 30);
   }
 }
-
 const person: MyNamespace.Person = {
   name: "John",
   age: 30,

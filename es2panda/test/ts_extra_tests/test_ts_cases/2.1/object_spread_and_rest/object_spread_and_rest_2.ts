@@ -29,10 +29,10 @@ let humen = {
   age: 20,
 };
 
-let copy = { ...humen, name: "huahua", job: "teacher" };
+let combine = { ...humen, name: "huahua", job: "teacher" };
 
-Assert.equal(copy.age, humen.age);
-Assert.equal(copy.age == humen.age, true);
-Assert.equal(copy.name != humen.name, true);
+Assert.equal(combine.age, humen.age);
+Assert.equal(combine.age == humen.age, true);
+Assert.equal(combine.name != humen.name, true);
 
-Assert.equal(copy.job != undefined, true);
+Assert.equal(combine.job != undefined, true);

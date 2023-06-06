@@ -25,32 +25,31 @@ import { Assert } from '../../suite/assert.js'
 {
   type myType1 = 'a' | 4;
   type myType2 = { str: string };
-  interface I{
+  interface I {
     mem: string;
   }
 
-  type T1 = keyof (myType1 & myType2);
-  type T2<T> = keyof (T & myType2);
-  type T3<U> = keyof (myType1 & U);
-  type T4<T, U> = keyof (T & U);
-  type T5 = T2<myType1>;
-  type T6 = T3<myType2>;
-  type T7 = T4<myType1, myType2>;
+  type TA = keyof (myType1 & myType2);
+  type TB<T> = keyof (T & myType2);
+  type TC<U> = keyof (myType1 & U);
+  type TD<T, U> = keyof (T & U);
+  type TE = TB<myType1>;
+  type TF = TC<myType2>;
+  type TG = TD<myType1, myType2>;
 
-  // The type of  a,b,c,d is "toString" | "valueOf" | "str"
-  let a: T1 = 'str';
+  let a: TA = 'str';
   a = 'toString';
   a = 'valueOf';
   Assert.equal(a, 'valueOf');
-  let b: T5 = "str";
+  let b: TE = "str";
   b = 'toString';
   b = 'valueOf';
   Assert.equal(b, 'valueOf');
-  let c: T6 = "str";
+  let c: TF = "str";
   c = 'toString';
   c = 'valueOf';
   Assert.equal(c, 'valueOf');
-  let d: T7 = "str";
+  let d: TG = "str";
   d = 'toString';
   d = 'valueOf';
   Assert.equal(d, 'valueOf');
@@ -66,7 +65,7 @@ import { Assert } from '../../suite/assert.js'
   let aa: T11 = 'mem';
   aa = 'str';
   Assert.equal(aa, 'str');
-  let bb: T55  = 'mem';
+  let bb: T55 = 'mem';
   bb = 'str';
   Assert.equal(bb, 'str');
   let cc: T66 = 'mem';
@@ -75,5 +74,5 @@ import { Assert } from '../../suite/assert.js'
   let dd: T77 = 'mem';
   dd = 'str';
   Assert.equal(dd, 'str');
-  
+
 };

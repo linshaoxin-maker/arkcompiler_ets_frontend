@@ -26,11 +26,19 @@ import { Assert } from '../../../../../suite/assert.js'
 class P<T1, T2> {
   constructor(public pro1: T1, public pro2: T2) { }
 }
-class TwoArrays<T> extends P<T[], T[]> { }
+class TwoArrays<T> extends P<T[], T[]> {
+
+}
 let x: number = 1;
 let y: number = 2;
 let p = new P(x, y);
+let one = [3,4,5];
+let two = [6,7,8]
+let twoArrays = new TwoArrays(one,two);
+Assert.equal(twoArrays.pro1,one);
+Assert.equal(twoArrays.pro2,two)
 Assert.equal(p.pro1, 1);
+
 let x2: string = "one";
 let y2: string = "two";
 let p2 = new P(x2, y2);

@@ -29,7 +29,6 @@ import { Assert } from '../../../../suite/assert.js'
 function toLength(str: string): number {
   return str.length;
 }
-
 enum ABCList {
   A,
   B,

@@ -43,19 +43,23 @@ function func2<T>(arg: { member: (str: string) => T }) {
 var f6 = func2({ member: str => { return str; } });
 var result = f6.member('a');
 Assert.isString(result);
-function hwtest<T>(arg: {
-    produce: (n: string) => T;
-    consume: (x: T) => void;
-}) {
-    arg.consume = function (x:T) {
-        Assert.equal(typeof x,"String")
-    }
-    arg.consume;
 
+function f<T>(arg: {
+    arg1: (n: string) => T;
+    arg2: (x: T) => void;
+}) {
+    arg.arg2 = function (x:T) {
+      Assert.equal(typeof x, "String");
+    }
+    arg.arg2;
 }
-hwtest({
-    produce: ():string => "hello",
-    consume: (x:string) => x.toLowerCase(),
+f({
+    arg1: ():string => "string",
+    arg2: (x:string) => x.toLowerCase(),
+});
+f({
+    arg1: n => n,
+    arg2: (x:string) => x.toLowerCase(),
 });
 
 
@@ -81,11 +85,11 @@ var c2 = new C({
   mem() { return 'a' },
   t: 't'
 })
-Assert.isString(c1.arg.t);
+Assert.isString(c2.arg.t);
 var c3 = new C({
   mem: str => str,
   t: 't'
 })
-Assert.isString(c1.arg.t);
+Assert.isString(c3.arg.t);
 
 

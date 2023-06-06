@@ -22,10 +22,10 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var T: number | string = "18";
-var S: number = 20;
+let T: number | string = "18";
+let S: number = 20;
 
-T = S
+T = S;
 Assert.equal(T, S);

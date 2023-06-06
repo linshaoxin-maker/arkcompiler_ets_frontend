@@ -23,17 +23,39 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-type R<T> = { error: Error; data: null } | { error: null; data: T };
+interface I<T>{
+    mem: { x: Error, y: undefined } | { x: undefined, y: T };
+}
+function fun<T>(arg: I<T>) {
+    if (arg.mem.x) {
+        throw arg.mem.x;
+    }
+    return arg.mem.y;
+}
+
+let i1 = {
+    mem: { x: undefined, y: undefined, }
+};
+let result1 = fun(i1);
+Assert.isUndefined(result1);
+
+let i2 = {
+     mem: { x: undefined, y: 10 }
+};
+let result2 = fun(i2);
+Assert.isNumber(result2);
+
+type R<T> = { e: Error; data: null } | { e: null; data: T };
 
 function func<T>(result: R<T>) {
-    if (result.error) {
-        throw result.error;
+    if (result.e) {
+        throw result.e;
     }
     return result.data;
 }
 
 var a = {
-    error: null,
+    e: null,
     data: null,
 };
 var b = func(a);
@@ -44,8 +66,8 @@ if (b == null) {
 Assert.isTrue(f);
 
 var c = {
-    error: null,
+    e: null,
     data: 10,
 };
 var d = func(c);
-Assert.equal(d, "10");
+Assert.equal(d, 10);

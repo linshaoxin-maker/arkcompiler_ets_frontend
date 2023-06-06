@@ -30,7 +30,6 @@ class Person {
 interface Animal {
   speak(): void;
 }
-
 class Dog implements Animal {
   speak() {
     return "Woof!";

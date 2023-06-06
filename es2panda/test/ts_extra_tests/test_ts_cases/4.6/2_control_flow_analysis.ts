@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 /**---
- description: TypeScript is able to narrow types based on what’s called a discriminant property. For example, in the following code snippet, TypeScript is able to narrow the type of action based on every time we check against the value of kind.
+ description: TypeScript is able to narrow types based on what’s called a discriminant property. For example, in the following code snippet, TypeScript is able to narrow the type of action based on every time we check against the value of name.
  module: ESNext
  isCurrent: true
 ---*/
@@ -21,62 +21,48 @@
 
 import { Assert } from '../../suite/assert.js'
 
-type HWA =
-  | { kind: "NumberContents"; payload: number }
-  | { kind: "StringContents"; payload: string };
-
-function hwtest01(action: HWA) {
-  if (action.kind === "NumberContents") {
-    // `action.payload` is a number here.
-    let num = action.payload * 2;
+type T =
+  | { name: "Name"; size: number }
+  | { name: "Name2"; size: string };
+function fun1(action: T) {
+  if (action.name === "Name") {
+    let num = action.size * 2;
     return num;
-  } else if (action.kind === "StringContents") {
-    // `action.payload` is a string here.
-    const str = action.payload.trim();
+  } else if (action.name === "Name2") {
+    const str = action.size.trim();
     return str;
   }
 }
-
-let action1: HWA = {
-  kind: "NumberContents",
-  payload: 1
+let action1: T = {
+  name: "Name",
+  size: 1
 }
-
-let action2: HWA = {
-  kind: "StringContents",
-  payload: " 1234 "
+let action2: T = {
+  name: "Name2",
+  size: " 1234 "
 }
-
-Assert.equal(2, hwtest01(action1));
-Assert.equal("1234", hwtest01(action2));
-
-
-// you might have wanted to destructure kind and payload in the the example above. 
+Assert.equal(2, fun1(action1));
+Assert.equal("1234", fun1(action2));
 type Action2 =
-  | { kind: "NumberContents"; payload: number }
-  | { kind: "StringContents"; payload: string };
-
-function hwtest02(action: Action2) {
-  const { kind, payload } = action;
-  if (kind === "NumberContents") {
-    let num = payload * 2;
+  | { name: "Name"; size: number }
+  | { name: "Name2"; size: string };
+function fun2(action: Action2) {
+  const { name, size } = action;
+  if (name === "Name") {
+    let num = size * 2;
     return num;
-  } else if (kind === "StringContents") {
-    const str = payload.trim();
+  } else if (name === "Name2") {
+    const str = size.trim();
     return str;
   }
 }
-
-
-let action3: HWA = {
-  kind: "NumberContents",
-  payload: 2
+let action3: T = {
+  name: "Name",
+  size: 2
 }
-
-let action4: HWA = {
-  kind: "StringContents",
-  payload: " 5678 "
+let action4: T = {
+  name: "Name2",
+  size: " 5678 "
 }
-
-Assert.equal(hwtest02(action3),4);
-Assert.equal(hwtest02(action4),"5678");
+Assert.equal(fun2(action3), 4);
+Assert.equal(fun2(action4), "5678");

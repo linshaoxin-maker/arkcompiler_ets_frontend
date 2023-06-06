@@ -37,11 +37,15 @@ tup1 = [{ num: 10 }, true];
 tup1 = [{ num: 10 }, { str: 'string' }, true];
 
 let tup2: [string, ...myType[], boolean];
-
 tup2 = ['a', false];
 tup2 = ['a', { num: 10 }, false];
 tup2 = ['a', { num: 10 }, { str: 'string' }, false];
 
+let tup3: [string, boolean, ...myType[]];
+tup3 = ['a', false];
+tup3 = ['a', false, { num: 10 }];
+tup3 = ['a', false, { num: 10 }, { str: 'string' }];
+
 Assert.equal(JSON.stringify(tup1), "[{\"num\":10},{\"str\":\"string\"},true]");
 Assert.equal(JSON.stringify(tup2), "[\"a\",{\"num\":10},{\"str\":\"string\"},false]");
-
+Assert.equal(JSON.stringify(tup3), "[\"a\",false,{\"num\":10},{\"str\":\"string\"}]");

@@ -23,5 +23,5 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-const 𝓱𝓮𝓵𝓵𝓸 = "world";
-Assert.equal(𝓱𝓮𝓵𝓵𝓸, "world");
+const 𝓱𝓮 = "ok";
+Assert.equal(𝓱𝓮, "ok");

@@ -21,17 +21,16 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface HWI1 {
+interface I {
     name: string;
     age: number;
 }
-interface HWI2 extends HWI1 {
+interface I2 extends I {
     [optName: number]: any;
 }
-let a: HWI2 = {
+let a: I2 = {
     name: "wangcai",
     age: 20
 };
 Assert.isString(a.name);
 Assert.isNumber(a.age);
-

@@ -20,7 +20,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 interface GenericIdentityFn<T> {
   (arg: T): T;
@@ -28,8 +28,8 @@ interface GenericIdentityFn<T> {
 function identity<T>(arg: T): T {
   return arg;
 }
-let myidenti: number = 1;
-let myIdentity: GenericIdentityFn<number> = identity;
-let myidenti2 = myIdentity(myidenti);
-Assert.equal(myidenti2, 1);
+let x: number = 1;
+let y: GenericIdentityFn<number> = identity;
+let z = y(x);
+Assert.equal(z, 1);
 

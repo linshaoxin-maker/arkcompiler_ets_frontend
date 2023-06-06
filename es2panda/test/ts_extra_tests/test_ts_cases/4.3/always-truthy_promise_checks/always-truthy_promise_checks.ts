@@ -28,12 +28,12 @@ async function getFalse(): Promise<boolean> {
     return false;
 }
 
-async function hwtest(): Promise<string> {
+async function funPromise(): Promise<string> {
     if (!getFalse()) {
         return 'false';
     }
     return 'true';
 }
 
-var b = hwtest();
+var b = funPromise();
 Assert.equal(b, '[object Promise]');

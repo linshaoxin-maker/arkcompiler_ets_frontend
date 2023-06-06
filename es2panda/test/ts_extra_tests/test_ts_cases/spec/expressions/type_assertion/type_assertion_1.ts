@@ -24,15 +24,12 @@
 import { Assert } from '../../../../suite/assert.js'
 
 class Form { }
-
 class Square extends Form { }
-
 function createForm(mold: string): Form {
     if (mold === "square") {
         return new Square()
     }
     return Square
 }
-
-var square = <Square>createForm("square")
+let square = <Square>createForm("square")
 Assert.equal(JSON.stringify(square), '{}');

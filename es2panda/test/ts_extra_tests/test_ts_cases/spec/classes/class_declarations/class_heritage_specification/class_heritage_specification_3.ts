@@ -30,7 +30,6 @@ class Addx {
     return this;
   }
 }
-// the extends
 class ChildAddx extends Addx {
   constructor(public x: number) {
     super(x);
@@ -44,7 +43,7 @@ let childadd: ChildAddx = new ChildAddx(10);
 Assert.equal(11, childadd.move().x);
 let a: Addx = childadd.move();
 Assert.equal(13, a.add().x);
-// the implements
+
 interface InterAddx {
   x: number;
 }
@@ -59,6 +58,7 @@ let b1 = new Addx2();
 Assert.equal(2, b1.setadd().x);
 let interb1: InterAddx = b1.setadd();
 Assert.equal(3, interb1.x);
+
 interface InterP {
   Area(x: number, y: number): number;
 }

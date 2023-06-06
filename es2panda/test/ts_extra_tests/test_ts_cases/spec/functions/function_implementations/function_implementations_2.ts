@@ -35,7 +35,6 @@ function f(x: number) {
     }
 }
 type testType = ReturnType<typeof f>;
-
 type ttStr = testType & string;
 let tt1: ttStr = "hello";
 Assert.isString(tt1);

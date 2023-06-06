@@ -23,11 +23,11 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-function func<T>(arg: T) {
-    return { ...arg };
+function func<T, U>(arg: T, other: U) {
+    return { ...arg, other };
 }
 let f1 = { num: 5, str: 'a' };
 let f2 = { num: 8, str: 'b', boo: true };
 
-Assert.isObject(func(f1));
-Assert.isObject(func(f2));
+Assert.isObject(func(f1, 'a'));
+Assert.isObject(func(f2, 'b'));

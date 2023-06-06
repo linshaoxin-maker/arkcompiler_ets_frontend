@@ -25,7 +25,6 @@ var object_name = {
     key1: "value1"
 }
 
-// If the declaration specifies an object binding pattern, the implied type is an object type with a set of properties corresponding to the specified binding property declarations. The type of each property is the type implied by its binding property declaration, and a property is optional when its binding property declaration specifies an initializer expression.
 function f({ aa = {}, b = "hello", c = 3, d = object_name }) {
     Assert.equal("object", typeof (aa));
     Assert.equal("string", typeof (b));
@@ -41,8 +40,6 @@ var objectFun = {
 };
 f(objectFun);
 
-
-// If the declaration specifies an array binding pattern without a rest element, the implied type is a tuple type with elements corresponding to the specified binding element declarations. The type of each element is the type implied by its binding element declaration.
 var [a1, b1, c1, d1] = [1, "hello", true, object_name];
 
 Assert.equal("number", typeof (a1));
@@ -50,7 +47,6 @@ Assert.equal("string", typeof (b1));
 Assert.equal("boolean", typeof (c1));
 Assert.equal("object", typeof (d1));
 
-// If the declaration specifies an array binding pattern with a rest element, the implied type is an array type with an element type of Any
 function testRest(...restElements: any[]): any {
     Assert.isTrue(restElements.length > 0);
     return restElements[0];

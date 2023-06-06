@@ -21,13 +21,13 @@
 
 import { Assert } from '../../suite/assert.js'
 
-class C1 {
+class One {
     private x = 10;
 }
 
-Assert.equal(10, new C1()["x"]);
+Assert.equal(10, new One()["x"]);
 
-class C2 {
+class Two {
     #x: number;
     constructor(x: number) {
         this.#x = x;
@@ -37,5 +37,5 @@ class C2 {
     }
 }
 
-let c = new C2(5);
-Assert.equal(c.getX(), 5);
+let three = new Two(5);
+Assert.equal(three.getX(), 5);

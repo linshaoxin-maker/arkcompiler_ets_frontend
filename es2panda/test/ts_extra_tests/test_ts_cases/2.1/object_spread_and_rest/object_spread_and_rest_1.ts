@@ -34,18 +34,18 @@ let data = {
     },
 };
 
-let copy = { ...humen, ...job, ...data };
+let combine = { ...humen, ...job, ...data };
 
-Assert.equal(copy.name, humen.name);
-Assert.equal(copy.age, humen.age);
-Assert.equal(copy.job, job.job);
-Assert.equal(copy.location, data.location);
-Assert.equal(copy.pets.name, data.pets.name);
-Assert.equal(copy.pets.type, data.pets.type);
-Assert.equal(copy.name == humen.name, true);
-Assert.equal(copy.age == humen.age, true);
-Assert.equal(copy.job == job.job, true);
-Assert.equal(copy.location == data.location, true);
-Assert.equal(copy.pets == data.pets, true);
-Assert.equal(copy.pets.type == data.pets.type, true);
-Assert.equal(copy.pets.name == data.pets.name, true);
+Assert.equal(combine.name, humen.name);
+Assert.equal(combine.age, humen.age);
+Assert.equal(combine.job, job.job);
+Assert.equal(combine.location, data.location);
+Assert.equal(combine.pets.name, data.pets.name);
+Assert.equal(combine.pets.type, data.pets.type);
+Assert.equal(combine.name == humen.name, true);
+Assert.equal(combine.age == humen.age, true);
+Assert.equal(combine.job == job.job, true);
+Assert.equal(combine.location == data.location, true);
+Assert.equal(combine.pets == data.pets, true);
+Assert.equal(combine.pets.type == data.pets.type, true);
+Assert.equal(combine.pets.name == data.pets.name, true);

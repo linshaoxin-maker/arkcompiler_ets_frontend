@@ -22,17 +22,18 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class P1 {
+class Compute {
   constructor(public num1: number, public num2: number) { }
   public hypot() {
     return Math.sqrt(this.num1 * this.num1 + this.num2 * this.num2);
   }
-  static initial = new P1(0, 0);
+  static initial = new Compute(0, 0);
 }
-let p: P1 = new P1(10, 20);
-Assert.equal(10, p.num1);
-Assert.equal(20, p.num2);
-// the implements1
+let p: Compute = new Compute(4, 3);
+Assert.equal(4, p.num1);
+Assert.equal(3, p.num2);
+Assert.equal(5,p.hypot())
+
 interface InterP1 {
   x: number;
   y: number;
@@ -44,10 +45,11 @@ class P2 implements InterP1 {
     return x * y;
   }
 }
-let ipoint = new P2();
-Assert.equal(1, ipoint.x);
-Assert.equal(1, ipoint.y);
-// the implements2
+let Ip = new P2();
+Assert.equal(1, Ip.x);
+Assert.equal(1, Ip.y);
+Assert.equal(2,Ip.setarea(1,2))
+
 interface InterP2 {
   Area(x: number, y: number): number;
 }

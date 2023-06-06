@@ -24,17 +24,17 @@
 import { Assert } from '../../../../suite/assert.js'
 
 type MyString = string;
-var h_x: MyString = 'x';
-Assert.isString(h_x);
+let x: MyString = 'x';
+Assert.isString(x);
 
 type MyUnionType = number | string | boolean;
-var h_y: MyUnionType = 10;
-Assert.isNumber(h_y);
-h_y = '10';
-Assert.isString(h_y);
-h_y = true;
-Assert.isBoolean(h_y);
+let y: MyUnionType = 10;
+Assert.isNumber(y);
+y = '10';
+Assert.isString(y);
+y = true;
+Assert.isBoolean(y);
 
 type MyInterType = object & { name: string };
-var h_z: MyInterType = { name: 'xiao' };
-Assert.equal(typeof h_z, 'object');
+let z: MyInterType = { name: 'xiao' };
+Assert.equal(typeof z, 'object');

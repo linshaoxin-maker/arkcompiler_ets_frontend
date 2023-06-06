@@ -28,7 +28,6 @@ enum Color {
   Black,
 }
 let cc: Color = Color.Blue;
-// true
 Assert.equal(cc, 2);
 let ee: Color = Color.Blue;
 let dd: number = cc;

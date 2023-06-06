@@ -24,11 +24,11 @@
 import { Assert } from '../../../suite/assert.js'
 
 class Test {
-    x: number;
-    constructor(x: number) {
-        this.x = x;
+    one: number;
+    constructor(one: number) {
+        this.one = one;
         return {
-            x: 1,
+            one: 1,
         };
     }
 }
@@ -37,6 +37,6 @@ class Test_sub extends Test {
         super(x);
     }
 }
-let cc = new Test_sub(12);
-Assert.equal(cc.x, 1);
-Assert.notEqual(cc.x, 12);
+let newC = new Test_sub(12);
+Assert.equal(newC.one, 1);
+Assert.notEqual(newC.one, 12);

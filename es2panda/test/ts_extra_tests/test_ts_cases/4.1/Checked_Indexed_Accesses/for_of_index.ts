@@ -22,8 +22,8 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-let str:string[] =["1","2"];
-function indexs(strs:string[]) {
+let x: string[] = ["1", "2"];
+function fun(strs: string[]) {
     for (let str of strs) {
         if (str == "1") {
             Assert.equal(str, "1");
@@ -32,4 +32,4 @@ function indexs(strs:string[]) {
         }
     }
 }
-indexs(str);
+fun(x);

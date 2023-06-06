@@ -38,6 +38,5 @@ function f(x: number, y: Test = { a: 1 }, z = "hello") {
         z: z,
     };
 }
-
 Assert.equal(f(0).yy.a, 1);
 Assert.equal(f(0).z, "hello");

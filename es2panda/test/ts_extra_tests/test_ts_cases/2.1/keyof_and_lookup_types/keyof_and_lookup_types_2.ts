@@ -21,7 +21,7 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class TestPerson {
+class TestHuman {
     name: string;
     age: number;
     constructor(name: string, age: number, job: string) {
@@ -30,13 +30,13 @@ class TestPerson {
     }
 }
 
-type TestName = TestPerson["name"];
+type TestName = TestHuman["name"];
 let test1: TestName = "";
 Assert.equal(typeof test1, "string");
 Assert.notEqual(typeof test1, "number");
 Assert.notEqual(typeof test1, "boolean");
 
-type TestAge = TestPerson["age"];
+type TestAge = TestHuman["age"];
 let test2: TestAge = 0;
 Assert.equal(typeof test2, "number");
 Assert.notEqual(typeof test2, "string");

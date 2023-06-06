@@ -24,8 +24,9 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-function h_process(h_value: number | (() => number)) {
-   var h_x = typeof h_value == "number" ? h_value : h_value()
-   Assert.isNumber(h_x)
+function func(arg: number | (() => number)) {
+   let x = typeof arg == "number" ? arg : arg();
+   return x;
 }
-h_process(5);
+let result = func(5);
+Assert.isNumber(result);

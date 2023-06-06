@@ -24,26 +24,25 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-class Developer {
-    private _language = ''
-    private _tasks: string[] = []
-    get language() {
-        return this._language
+class C {
+    private _str = ''
+    private _arr: string[] = []
+    get func() {
+        return this._str
     }
-    set language(value: string) {
-        this._language = value
+    set func(value: string) {
+        this._str= value
     }
-    get tasks() {
-        return this._tasks
+    get f() {
+        return this._arr
     }
-    set tasks(value: string[]) {
-        this._tasks = value
+    set f(value: string[]) {
+        this._arr = value
     }
 }
-
-const dev = new Developer()
-dev.language = 'TS'
-Assert.isString(dev.language)
-dev.tasks = ['develop', 'test']
-dev.tasks.push('ship')
-Assert.equal(dev.tasks, 'develop,test,ship');
+const c = new C()
+c.func= 'TS'
+Assert.isString(c.func)
+c.f = ['develop', 'test']
+c.f.push('ship')
+Assert.equal(c.f, 'develop,test,ship');

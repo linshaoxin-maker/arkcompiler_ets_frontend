@@ -21,14 +21,13 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-// interface
 interface OutputValue {
   <T>(arg: T): T;
 }
-let tt1: OutputValue = function <T>(arg: T): T {
+let x: OutputValue = function <T>(arg: T): T {
   return arg;
 };
-Assert.equal(tt1("abc"), "abc");
+Assert.equal(x("abc"), "abc");
 

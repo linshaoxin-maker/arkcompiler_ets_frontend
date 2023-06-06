@@ -23,7 +23,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-let t_arr: [number, string, boolean] = [3, 'a', true]
-Assert.isNumber(t_arr[0]);
-Assert.isString(t_arr[1]);
-Assert.isBoolean(t_arr[2]);
+let arr: [number, string, boolean] = [3, 'a', true]
+Assert.isNumber(arr[0]);
+Assert.isString(arr[1]);
+Assert.isBoolean(arr[2]);

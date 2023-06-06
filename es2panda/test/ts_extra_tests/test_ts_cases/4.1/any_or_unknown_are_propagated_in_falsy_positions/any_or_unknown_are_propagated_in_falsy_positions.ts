@@ -23,11 +23,11 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-let unk: unknown;
-declare let hwobj: { someProp: string };
-let anyx = unk && hwobj;
-function isThing(x: any): boolean {
+let x: unknown;
+declare let obj: { str: string };
+let y = x && obj;
+function fun(x: any): boolean {
   return x && typeof x === "object" && x.blah === "foo";
 }
-let y = isThing(anyx);
-Assert.isUndefined(y);
+let z = fun(y);
+Assert.isUndefined(z);

@@ -47,8 +47,7 @@ class CB extends CA {
 let bB: CB = new CB();
 let xB = bB.f().b();
 Assert.equal(bB, xB);
-
-var thisStrB: string = bB.cbName("CB");
+let thisStrB: string = bB.cbName("CB");
 Assert.equal(thisStrB, "CB:CB");
-var thisStrA: string = bB.caName("CA");
+let thisStrA: string = bB.caName("CA");
 Assert.equal(thisStrA, "CA:CA");

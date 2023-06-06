@@ -32,7 +32,6 @@ var Square = class {
 };
 var square = new Square(5, 10);
 Assert.equal(square.acreage, 50);
-
 class Reflmpl<T> {
   public readonly _v = true;
   constructor(private _rawValue: T, public _shaw = false) {
@@ -52,7 +51,6 @@ class Reflmpl<T> {
     this._shaw = newShaw;
   }
 }
-
 let ref = new Reflmpl(10, true);
 Assert.equal(ref.value, 10);
 Assert.equal(ref._shaw, true);

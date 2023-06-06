@@ -21,35 +21,31 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-// Integral type
+
 let n1: number = 1;
 Assert.isNumber(n1);
 Assert.equal(n1, 1);
 n1 = 2;
 Assert.isNumber(n1);
 Assert.equal(n1, 2);
-// Floating point number
 let n2: number = 1.51;
 Assert.isNumber(n2);
 Assert.equal(n2, 1.51);
 n2 = 3.53;
 Assert.isNumber(n2);
 Assert.equal(n2, 3.53);
-// binary
 let n3: number = 0b1011;
 Assert.isNumber(n3);
 Assert.equal(n3, 0b1011);
 n3 = 0b1111;
 Assert.isNumber(n3);
 Assert.equal(n3, 0b1111);
-// octal
 let n4: number = 0o17;
 Assert.isNumber(n4);
 Assert.equal(n4, 0o17);
 n4 = 0o24;
 Assert.isNumber(n4);
 Assert.equal(n4, 0o24);
-// hexadecimal
 let n5: number = 0xf00d;
 Assert.isNumber(n5);
 Assert.equal(n5, 0xf00d);

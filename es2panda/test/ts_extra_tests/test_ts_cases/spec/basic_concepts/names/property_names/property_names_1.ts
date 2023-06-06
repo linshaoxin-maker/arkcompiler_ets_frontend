@@ -41,7 +41,6 @@ class Property {
     this.as = "as";
   }
 }
-
 var p: Property = new Property();
 Assert.equal("break", p.break);
 Assert.equal(12, p["with blank"]);

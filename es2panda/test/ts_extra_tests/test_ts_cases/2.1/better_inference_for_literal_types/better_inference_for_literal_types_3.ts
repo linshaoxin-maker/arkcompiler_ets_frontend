@@ -21,28 +21,28 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-const c1 = "hello";
+const newString = "hello";
 
-let v1 = c1;
-v1 = "world";
-const c2: "hello" = "hello";
-let v2 = c2;
-Assert.equal(v2, "hello");
+let newV = newString;
+newV = "world";
+const newS2: "hello" = "hello";
+let newV2 = newS2;
+Assert.equal(newV2, "hello");
 
-const c3 = 1;
-let c4 = c3;
-c4 = 10;
-Assert.equal(c4, 10);
-const c5: 1 = 1;
-let c6 = c5;
-c6 = 1;
-Assert.equal(c6, 1);
+const newN = 1;
+let n4 = newN;
+n4 = 10;
+Assert.equal(n4, 10);
+const n5: 1 = 1;
+let n6 = n5;
+n6 = 1;
+Assert.equal(n6, 1);
 
-const c7 = false;
-let c8 = c7;
-c8 = true;
-Assert.equal(c8, true);
-const c9: false = false;
-let c10 = c9;
-c10 = false;
-Assert.equal(c10, false);
+const newB = false;
+let b8 = newB;
+b8 = true;
+Assert.equal(b8, true);
+const b9: false = false;
+let b10 = b9;
+b10 = false;
+Assert.equal(b10, false);

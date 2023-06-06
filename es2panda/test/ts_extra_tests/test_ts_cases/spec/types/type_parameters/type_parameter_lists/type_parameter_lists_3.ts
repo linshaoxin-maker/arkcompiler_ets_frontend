@@ -21,9 +21,8 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-// alias
 class Person {
   name: string;
   age: number;
@@ -34,14 +33,14 @@ class Person {
     this.job = job;
   }
 }
-// Mapping: This parameter is optional
+
 type optionallyTest<T> = {
   [P in keyof T]?: T[P];
 };
-let pp: optionallyTest<Person> = {};
-pp = { name: "dog" };
-Assert.isUndefined(pp.job);
-Assert.isUndefined(pp.age);
-pp = { name: "dog", age: 18 };
-Assert.isUndefined(pp.job);
-pp = { name: "dog", age: 18, job: "teacher" };
+let x: optionallyTest<Person> = {};
+x = { name: "dog" };
+Assert.isUndefined(x.job);
+Assert.isUndefined(x.age);
+x = { name: "dog", age: 18 };
+Assert.isUndefined(x.job);
+x = { name: "dog", age: 18, job: "teacher" };

@@ -21,11 +21,12 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-var x: number | undefined;
-var y: string | null;
-var method: string | number | undefined | null;
+let x: number | undefined;
+let y: string | null;
+let method: string | number | undefined | null;
 
 x = undefined;
 y = 'a';
-method = x + y;
+method = null
+method = x + y + method;
 Assert.isString(method);

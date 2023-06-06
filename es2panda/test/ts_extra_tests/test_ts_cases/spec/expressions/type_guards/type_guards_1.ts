@@ -25,11 +25,15 @@ import { Assert } from '../../../../suite/assert.js'
 
 function h_func(h_x: number | string) {
     if (typeof h_x === 'string') {
-        Assert.isString(h_x)
+        Assert.isString(h_x);
+        return h_x.length;
     }
     else {
-        Assert.isNumber(h_x)
+        Assert.isNumber(h_x);
+        return h_x - 5;
     }
 }
-h_func('string')
-h_func(10);
+let a = h_func('string');
+Assert.equal(a, 6);
+let b = h_func(10);
+Assert.equal(b, 5);

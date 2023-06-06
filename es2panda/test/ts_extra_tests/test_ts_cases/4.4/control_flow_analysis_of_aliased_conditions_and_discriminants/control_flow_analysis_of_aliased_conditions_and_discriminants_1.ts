@@ -24,28 +24,55 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function hwtest01(arg: unknown) {
-    const argIsString = typeof arg === "string";
-    if (argIsString) {
-        Assert.equal(arg.toUpperCase(), "C");
+function fun01(a: unknown) {
+    if (typeof a === "string") {
+        Assert.equal(a[0], "c");
+    }
+    if (typeof a === "number") {
+        Assert.equal(a, 11);
+    }
+    if (typeof a === "boolean") {
+        Assert.equal(a, true);
+    }
+    if (typeof a === "undefined") {
+        Assert.isUndefined(a);
+    }
+    if (typeof a === "function") {
+        Assert.isFunction(a);
+    }
+    if (typeof a === "object") {
+        Assert.isObject(a);
+    }
+    if (typeof a === "symbol") {
+        Assert.isSymbol(a);
     }
 }
-hwtest01("c");
-
-interface HWTestType {
+fun01("c");
+fun01(11);
+fun01(true);
+let x: undefined;
+fun01(x);
+let f = (a: number) => { a = 0; return a; };
+fun01(f);
+let obj: object = {
+    x: 1
+}
+fun01(obj);
+let sym: symbol = Symbol('a');
+fun01(sym);
+interface I {
     readonly name: "caihua";
 }
-function hwtest02() {
-    let tt: HWTestType = { name: "caihua" };
+function fun02() {
+    let tt: I = { name: "caihua" };
     let res = tt.name === "caihua";
     if (res) {
         Assert.isNumber(tt.name.length);
         Assert.equal(tt.name[0], "c");
     }
 }
-hwtest02();
-
-function hwtest03(a: number, b = "function" as const) {
+fun02();
+function fun03(a: number, b = "function" as const) {
     let cc = typeof b === "function";
     if (cc) {
         Assert.isNumber(b.length);
@@ -55,4 +82,4 @@ function hwtest03(a: number, b = "function" as const) {
         Assert.equal(cc, false);
     }
 }
-hwtest03(12);
+fun03(12);

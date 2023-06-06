@@ -29,7 +29,7 @@ interface Point {
 interface PointConstructor {
   new(x: number, y: number): Point;
 }
-class Point2D implements Point {
+class Point2 implements Point {
   readonly x: number;
   readonly y: number;
   constructor(x: number, y: number) {
@@ -44,9 +44,9 @@ function newPoint(
 ): Point {
   return new pointConstructor(x, y);
 }
-let point1: Point = new Point2D(1, 2);
+let point1: Point = new Point2(1, 2);
 Assert.equal(point1.x, 1);
 Assert.equal(point1.y, 2);
-let point: Point = newPoint(Point2D, 2, 2);
+let point: Point = newPoint(Point2, 2, 2);
 Assert.equal(point.x, 2);
 Assert.equal(point.y, 2);

@@ -22,7 +22,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class A {
+class Ra {
   public h_x: number;
   constructor(h_x: number) {
     this.h_x = h_x;
@@ -35,11 +35,11 @@ class A {
   }
   static h_s: string = "aa";
 }
-let aa: A = new A(1);
+let aa: Ra = new Ra(1);
 Assert.equal(aa.h_x, 1);
 aa.h_f();
 Assert.equal(aa.h_x, 2);
-class B extends A {
+class Rb extends Ra {
   public h_y: number;
   constructor(h_x: number, h_y: number) {
     super(h_x);
@@ -47,24 +47,24 @@ class B extends A {
   }
   public h_g(): boolean { return false; }
 }
-let bb: B = new B(1, 2);
+let bb: Rb = new Rb(1, 2);
 Assert.equal(bb.h_x, 1);
 Assert.equal(bb.h_y, 2);
 bb.h_f();
 Assert.equal(bb.h_x, 2);
 Assert.equal(bb.h_g(), false);
-interface C {
+interface Rc {
   h_x: number;
   h_f: () => void;
   h_g: () => any;
 }
-let c: C = aa;
+let c: Rc = aa;
 Assert.equal(c.h_g(), 2);
-interface D {
+interface Rd {
   h_x: number;
   h_y: number;
   h_f: () => void;
   h_g: () => boolean;
 }
-let d: D = bb;
+let d: Rd = bb;
 Assert.equal(d.h_g(), false);

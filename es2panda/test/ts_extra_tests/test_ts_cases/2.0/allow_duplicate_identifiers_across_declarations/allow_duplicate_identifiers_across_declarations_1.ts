@@ -21,7 +21,7 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-interface Weapon {
+interface Skill {
     damage?: number;
 }
 
@@ -31,7 +31,7 @@ interface Skill {
     damage?: number;
 }
 
-let sa: Weapon = {
+let sa: Skill = {
     damage: 1024,
 };
 

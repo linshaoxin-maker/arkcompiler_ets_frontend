@@ -29,7 +29,7 @@ class MyClass<T> {
         return this.field;
     }
 }
-class P {
+class Compute {
     constructor(public num1: number, public num2: number) { }
     public hypot() {
         return Math.sqrt(this.num1 * this.num1 + this.num2 * this.num2);
@@ -37,14 +37,19 @@ class P {
 }
 let mc1: MyClass<string> = new MyClass<string>("a");
 Assert.equal("a", mc1.field);
+Assert.equal("a",mc1.getFieldName());
 let mc2: MyClass<number> = new MyClass<number>(1);
 Assert.equal(1, mc2.field);
+Assert.equal(1,mc2.getFieldName());
 let mc3: MyClass<boolean> = new MyClass<boolean>(false);
 Assert.equal(false, mc3.field);
-let p: P = new P(10, 20);
-let mc4: MyClass<P> = new MyClass<P>(p);
-Assert.equal(10, mc4.field.num1);
-Assert.equal(20, mc4.field.num2);
+Assert.equal(false,mc3.getFieldName());
+let p: Compute = new Compute(8, 6);
+let mc4: MyClass<Compute> = new MyClass<Compute>(p);
+Assert.equal(8, mc4.field.num1);
+Assert.equal(6, mc4.field.num2);
+Assert.equal(10,mc4.field.hypot());
+
 let obj: object = {
     x: 1,
     y: 2

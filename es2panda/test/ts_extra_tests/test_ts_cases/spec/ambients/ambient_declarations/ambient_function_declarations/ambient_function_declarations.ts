@@ -30,9 +30,7 @@ declare type DF3 = (a: number, b?: number) => string;
 declare function fun1(): void;
 declare function fun2(a: number): string;
 const dFun1: DF1 = () => { Assert.isString("dFun1"); }
-
 const dFun2: DF2 = (a: string, b: string) => { Assert.isString("dFun2"); return a + b; }
-
 const dFun3: DF3 = (a: number, b?: number) => {
    let c: any;
    if (b != undefined) {
@@ -44,7 +42,6 @@ const dFun3: DF3 = (a: number, b?: number) => {
    Assert.isString("dFun3");
    return "$" + c;
 }
-
 dFun1();
 Assert.equal(dFun2("A", "B"), 'AB');
 Assert.equal(dFun3(10, 20), "$30");

@@ -20,12 +20,12 @@ isCurrent: true
 
 
 import { Assert } from '../../../suite/assert.js'
-async function getSumAsyn(x: number, y: number): Promise<number> {
+async function func(x: number, y: number): Promise<number> {
   const add = await import("./lib.js");
   const sum = add.add(x, y);
   return sum;
 }
 
-getSumAsyn(10, 20).then((sum) => {
+func(10, 20).then((sum) => {
   Assert.equal(30, sum);
 });

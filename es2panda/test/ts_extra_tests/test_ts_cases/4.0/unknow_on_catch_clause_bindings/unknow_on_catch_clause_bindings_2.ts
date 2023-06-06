@@ -25,15 +25,20 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function hw_throwError(): never {
+let flag: boolean = false;
+
+function h_throwError(): never {
   throw new Error("An error occurred");
 }
 try {
-  hw_throwError();
+  h_throwError();
 } catch (error: unknown) {
   if (error instanceof Error) {
+    flag = true;
     Assert.equal(error.message, "An error occurred");
   } else {
+    flag = false;
     let errString = "An unknow error occurred";
   }
 };
+Assert.isTrue(flag);

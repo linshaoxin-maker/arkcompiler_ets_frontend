@@ -40,4 +40,3 @@ function showInfo(v: Person) {
     Assert.equal(m_age, 12);
 }
 showInfo(tt);
-

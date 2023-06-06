@@ -33,8 +33,9 @@ interface B {
 function isString(k: A | B) {
     if ('num' in k) {
         Assert.isBoolean('num' in k)
-        return false
+        return false;
     }
-    return true
+    return true;
 }
-isString({ num: 20 });
+let result = isString({ num: 20 });
+Assert.isFalse(result);

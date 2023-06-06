@@ -33,7 +33,6 @@ sites.sayHello = function () {
   return "hello " + sites.site1;
 };
 Assert.isString(sites.sayHello());
-
 class Person {
   name: string;
   age: string;

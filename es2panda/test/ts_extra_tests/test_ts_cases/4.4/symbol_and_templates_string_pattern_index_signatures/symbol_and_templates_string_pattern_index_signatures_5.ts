@@ -26,20 +26,19 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface HWDI1 {
-  [key: number ]: any;
+interface I1 {
+  [key: number]: any;
 }
-interface HWDI2 {
+interface I2 {
 
   [key: number]: any;
 }
-interface HWDI3 extends HWDI2 {
+interface I3 extends I2 {
   [key: number]: any;
 }
-const one:1 = 1;
-let a: HWDI1 = {};
-let b: HWDI3 = {};
+const one: 1 = 1;
+let a: I1 = {};
+let b: I3 = {};
 b[one] = 1;
 a = b;
 Assert.equal(a[one], 1);
-

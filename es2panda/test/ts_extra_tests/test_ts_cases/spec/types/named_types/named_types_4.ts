@@ -23,7 +23,7 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-class cE {
+class C {
   x: number;
   y: number;
   constructor(x: number, y: number) {
@@ -31,17 +31,17 @@ class cE {
     this.y = y;
   }
 }
-interface Pi<T, U> {
+interface I<T, U> {
   front: T;
   later: U;
 }
-function test(v: Pi<string, cE>) {
+function test(v: I<string, C>) {
   Assert.equal(v.front, "abc");
   Assert.equal(v.later.x, 1);
   Assert.equal(v.later.y, 1);
 }
 test({ front: "abc", later: { x: 1, y: 1 } });
-let cc: Pi<string, cE>;
+let cc: I<string, C>;
 cc = {
   front: "abc",
   later: {

@@ -26,16 +26,16 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class HW_Test {
-    static #count = 0;
+class C {
+  static #aa = 0;
 
-    get countValue() {
-        return HW_Test.#count;
-    }
+  get aaValue() {
+    return C.#aa;
+  }
 
-    static {
-        HW_Test.#count++;
-    }
+  static {
+    C.#aa++;
+  }
 }
-let hwt = new HW_Test();
-Assert.equal(hwt.countValue, 1);
+let x = new C();
+Assert.equal(x.aaValue, 1);

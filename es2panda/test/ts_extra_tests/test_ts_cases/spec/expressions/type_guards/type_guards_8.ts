@@ -50,7 +50,6 @@ function func(arg: Person | Animal) {
       return arg.weight = 300
    }
 }
-
 var p = new Person(150, 18)
 Assert.equal(func(p), 18)
 var a = new Animal(200, 180)

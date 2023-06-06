@@ -28,3 +28,6 @@ Assert.equal("name" in t3, true);
 Assert.equal("age" in t3, true);
 Assert.equal("skills" in t3, true);
 Assert.equal("isJob" in t3, false);
+
+let arr = [...Array(3)];
+Assert.equal(arr[0], undefined);

@@ -32,14 +32,14 @@ class PointXY {
         this.y = y;
     }
     toString() {
-        return `(${this.x}, ${this.y})`;
+        return '(' + this.x + ', ' + this.y + ')';
     }
 }
-type MIXType<T> = new (...args: any[]) => T;
-function mixC<T extends MIXType<{}>>(Base: T) {
-    return class extends Base {
-        constructor(...args: any[]) {
-            super(...args);
+type MIXType<T> = new (...members: any[]) => T;
+function mixC<T extends MIXType<{}>>(BC: T) {
+    return class extends BC {
+        constructor(...members: any[]) {
+            super(...members);
         }
         public pname: string = "";
         setPname(pname: string) {

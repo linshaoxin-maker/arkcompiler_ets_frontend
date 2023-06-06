@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
+ * you may not c this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
@@ -22,19 +22,16 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-interface Input {
-  place: string;
-  phanic?: boolean;
-  // the any type is allowed to be the additional properties 
+interface I {
+  a: string;
+  b?: boolean;
   [str: string]: any;
 }
 
-var site: Input = {
-  place: "Address",
-  phanic: true,
-  // Can do this because of index signature  
-  use: "Enter address here",
-  // Can do this because of index signature  
-  shortcut: "Alt-A"
+let x: I = {
+  a: "aaa",
+  b: true,
+  c: "ccc",
+  d: "ddd"
 };
-Assert.equal(JSON.stringify(site), '{"place":"Address","phanic":true,"use":"Enter address here","shortcut":"Alt-A"}');
+Assert.equal(JSON.stringify(x), '{"a":"aaa","b":true,"c":"ccc","d":"ddd"}');

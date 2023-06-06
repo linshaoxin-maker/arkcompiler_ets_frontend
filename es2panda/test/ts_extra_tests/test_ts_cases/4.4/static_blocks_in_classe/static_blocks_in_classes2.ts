@@ -21,23 +21,24 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class HW_Test {
-    static count = 0;
+class C {
+    static aa = 0;
 
-    get countValue() {
-        return HW_Test.count;
+    get aaValue() {
+        return C.aa;
     }
     static {
-        HW_Test.count++;
-        Assert.equal(HW_Test.count, 1);
+        C.aa++;
+        Assert.equal(C.aa, 1);
     }
     static {
-        HW_Test.count++;
-        Assert.equal(HW_Test.count, 2);
+        C.aa++;
+        Assert.equal(C.aa, 2);
     }
     static {
-        HW_Test.count++;
-        Assert.equal(HW_Test.count, 3);
+        C.aa++;
+        Assert.equal(C.aa, 3);
     }
 }
-new HW_Test();
+new C();
+Assert.equal(C.aa, 3);

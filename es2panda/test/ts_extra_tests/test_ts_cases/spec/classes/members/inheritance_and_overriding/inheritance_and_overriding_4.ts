@@ -46,7 +46,6 @@ class myClass extends MyClass {
         this.num = num;
     }
 }
-
 let myTest = new myClass(5);
 Assert.equal(myTest.num, 5);
 Assert.equal(myTest.get(), 10);

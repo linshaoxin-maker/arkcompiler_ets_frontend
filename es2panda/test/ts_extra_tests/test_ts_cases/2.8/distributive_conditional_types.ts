@@ -23,37 +23,36 @@ isCurrent: true
 import { Assert } from "../../suite/assert.js"
 type TypeGather<T> =
     T extends string ? string :
-        T extends number ? number :
-            T extends boolean ? boolean :
-                T extends undefined ? undefined :
-                    T extends Function ? Function :
-                        object;
+    T extends number ? number :
+    T extends boolean ? boolean :
+    T extends undefined ? undefined :
+    T extends Function ? Function :
+    object;
 
 
-type T0 = TypeGather<string | (() => void)>;
-type T2 = TypeGather<string | string[] | undefined>;
-type T1 = TypeGather<string[] | number[]>;
+type TSF = TypeGather<string | (() => void)>;
+type TSSA = TypeGather<string | string[] | undefined>;
+type TSANA = TypeGather<string[] | number[]>;
 
 type GatherValue<T> = { value: T };
 type GatherArray<T> = { array: T[] };
 type Gather<T> = T extends any[] ? GatherArray<T[number]> : GatherValue<T>;
 
-type T20 = Gather<string>;
-type T21 = Gather<number[]>;
-type T22 = Gather<string | number[]>;
+type TGS = Gather<string>;
+type TGNA = Gather<number[]>;
+type TGSNA = Gather<string | number[]>;
 
-let a: T0 = 's';
-let b: T0 = (() => {
-});
-let c: T2 = 's';
-let d: T2 = ['s'];
-let e: T2 = undefined;
-let f: T1 = ['s'];
-let g: T1 = [1];
-let h: T20 = { value: "s" };
-let i: T21 = { array: [1] };
-let j: T22 = { value: "s" };
-let k: T22 = { array: [1] };
+let a: TSF = 's';
+let b: TSF = (() => { });
+let c: TSSA = 's';
+let d: TSSA = ['s'];
+let e: TSSA = undefined;
+let f: TSANA = ['s'];
+let g: TSANA = [1];
+let h: TGS = { value: "s" };
+let i: TGNA = { array: [1] };
+let j: TGSNA = { value: "s" };
+let k: TGSNA = { array: [1] };
 
 Assert.equal(typeof a, 'string');
 Assert.equal(typeof b, 'function');
@@ -66,6 +65,3 @@ Assert.equal(typeof h, 'object');
 Assert.equal(typeof i, 'object');
 Assert.equal(typeof j, 'object');
 Assert.equal(typeof k, 'object');
-
-
-

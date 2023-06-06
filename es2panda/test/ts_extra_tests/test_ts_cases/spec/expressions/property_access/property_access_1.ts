@@ -26,7 +26,6 @@ var myType = {
     h_str: 'string',
     h_bool: true
 };
-
 var h_s = myType['h_str'];
 Assert.isString(h_s);
 var h_b = myType['h_bool'];

@@ -26,18 +26,19 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-function hwfun3<T, U>(t: T, u: U) {
-    return { ...t, ...u };
+function func<T, U>(arg1: T, arg2: U) {
+    return { ...arg1, ...arg2 };
 }
 
-let x: { a: string; b: number } = { a: "a", b: 1 };
-let y: { b: string; c: boolean } = { b: "b", c: true };
+let x: { mem1: string; mem2: { num: number } } = { mem1: "a", mem2: { num: 10 } };
+let y: { mem1: string; mem2: object } = { mem1: "b", mem2: { str: 'a' } };
 
 let s1 = { ...x, ...y };
-Assert.equal(typeof s1, "object");
-let s2 = hwfun3(x, y);
-Assert.equal(typeof s2, "object");
-let b1 = s1.b;
-Assert.isString(b1);
-let b2 = s2.b;
-Assert.isString(b2);
+Assert.isObject(s1);
+let s2 = func(x, y);
+Assert.isObject(s2);
+let b1 = s1.mem2;
+Assert.isObject(b1);
+let b2 = s2.mem2;
+b2 = { num: 20 };
+Assert.isObject(b2);

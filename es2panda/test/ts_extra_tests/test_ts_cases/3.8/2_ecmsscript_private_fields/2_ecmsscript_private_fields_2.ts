@@ -21,21 +21,21 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class C {
+class stu {
     #x = 10;
     getX() {
         return this.#x;
     }
 }
 
-class D extends C {
+class Dtu extends stu {
     #y = 20;
     getY() {
         return this.#y;
     }
 }
 
-let d = new D();
+let dt = new Dtu();
 
-Assert.equal(10, d.getX());
-Assert.equal(20, d.getY());
+Assert.equal(10, dt.getX());
+Assert.equal(20, dt.getY());

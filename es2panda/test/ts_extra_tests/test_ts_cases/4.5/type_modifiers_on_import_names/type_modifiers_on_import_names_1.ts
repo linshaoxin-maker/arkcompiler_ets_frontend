@@ -27,10 +27,10 @@ import { someFunc,  BaseType } from "./some-module.js"
 
 export class Thing implements BaseType {
   someMethod() {
-    someFunc();
+    return someFunc();
   }
 }
 
 const thing = new Thing();
 Assert.isFunction(Thing);
-Assert.isObject(thing);
+Assert.equal(thing.someMethod(), 15);

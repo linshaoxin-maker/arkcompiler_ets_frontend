@@ -21,25 +21,16 @@
 
 import { Assert } from '../../suite/assert.js'
 
-class HWB1 { }
-
-class HWB2 extends HWB1 {
+class C { }
+class C2 extends C {
     bool = true;
-
     constructor() {
         super();
         this.bool = false;
     }
-
     getBool(): boolean {
         return this.bool;
     }
-
-
 }
-
-
-let d = new HWB2();
-
-Assert.equal(d.getBool(),false );
-
+let d = new C2();
+Assert.equal(d.getBool(), false);

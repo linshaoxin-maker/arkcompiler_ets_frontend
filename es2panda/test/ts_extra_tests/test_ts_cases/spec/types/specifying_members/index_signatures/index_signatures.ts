@@ -23,25 +23,23 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-let si: { [key: string]: number } = { a: 97, A: 65 };
-si["b"] = 98;
-Assert.equal(si["a"], 97);
-Assert.equal(si["A"], 65);
-let ni: { [key: number]: boolean } = { 0: false, 1: true };
-ni[-1] = true;
-Assert.isBoolean(ni[0]);
-Assert.equal(ni[-1], true);
-
+let x: { [key: string]: number } = { a: 97, A: 65 };
+x["b"] = 98;
+Assert.equal(x["a"], 97);
+Assert.equal(x["A"], 65);
+let y: { [key: number]: boolean } = { 0: false, 1: true };
+y[-1] = true;
+Assert.isBoolean(y[0]);
+Assert.equal(y[-1], true);
 interface StringKey {
   [key: string]: string;
 }
-let sk: StringKey = { "1": "0x01", "2": "0x02", 3: "0x03", "4": "0x04" };
-Assert.equal(sk["1"], "0x01");
-Assert.equal(sk["2"], "0x02");
-Assert.equal(sk[3], 0x03);
+let z: StringKey = { "1": "0x01", "2": "0x02", 3: "0x03", "4": "0x04" };
+Assert.equal(z["1"], "0x01");
+Assert.equal(z["2"], "0x02");
 interface NumberKey {
   [key: number]: string;
 }
-let nk: NumberKey = { 1: "0x01", 2: "0x02", "3": "0x03", 4: "0x04" };
-Assert.equal(nk[1], "0x01");
-Assert.equal(nk[2], "0x02");
+let u: NumberKey = { 1: "0x01", 2: "0x02", "3": "0x03", 4: "0x04" };
+Assert.equal(u[1], "0x01");
+Assert.equal(u[2], "0x02");

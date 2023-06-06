@@ -22,20 +22,19 @@
 import { Assert } from '../../../suite/assert.js'
 
 class Box {
-  [x: string]: any;
-  private static subBox: Box = {
-    cname: "Box",
-  };
+  s!:string;
+  private static subBox: Box;
   private constructor() { }
-  static getSubBos() {
+  static getSubBos(s:string) {
     if (!Box.subBox) {
       Box.subBox = new Box();
+      Box.subBox.s = s;
     }
     return Box.subBox;
   }
 }
-let v: Box = Box.getSubBos();
-Assert.equal(v.cname, "Box");
+let v: Box = Box.getSubBos("s");
+Assert.equal(v.s, "s");
 
 class myBox{
   arg: string;

@@ -30,9 +30,8 @@ function myFunction(obj: MyType) {
   const result = fn(123, "hello");
   Assert.isTrue(result);
 }
-
 let h_x: MyType = {
-  fn: function func(x: number, y: string) {
+  fn: function func() {
     return true;
   }
 }

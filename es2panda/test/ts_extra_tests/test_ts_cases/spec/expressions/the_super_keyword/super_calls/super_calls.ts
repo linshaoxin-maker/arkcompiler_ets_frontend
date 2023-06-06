@@ -38,7 +38,6 @@ class Animal {
     return `${this.name} makes a noise`;
   }
 }
-
 class Dog extends Animal {
   private breed: string;
   constructor(name: any, breed: any) {

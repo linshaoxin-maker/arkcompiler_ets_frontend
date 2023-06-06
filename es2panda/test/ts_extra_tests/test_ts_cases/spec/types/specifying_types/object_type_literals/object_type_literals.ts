@@ -23,7 +23,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-let h_obj: {
+let obj: {
     num: number;
     str: string;
     boo: boolean;
@@ -32,16 +32,16 @@ let h_obj: {
     str: 'str',
     boo: true
 }
-Assert.equal(h_obj.num, 5);
-Assert.equal(h_obj.str, 'str');
-Assert.equal(h_obj.boo, true);
-interface h_i {
+Assert.equal(obj.num, 5);
+Assert.equal(obj.str, 'str');
+Assert.equal(obj.boo, true);
+interface I {
     name: string,
     age: number
 }
-let h_o: h_i = {
+let i: I = {
     name: 'xiao',
     age: 18
 }
-Assert.equal(h_o.name, 'xiao');
-Assert.equal(h_o.age, 18);
+Assert.equal(i.name, 'xiao');
+Assert.equal(i.age, 18);

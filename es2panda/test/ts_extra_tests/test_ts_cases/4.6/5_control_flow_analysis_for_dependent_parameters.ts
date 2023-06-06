@@ -21,9 +21,8 @@
 
 import { Assert } from '../../suite/assert.js'
 
-type HWT01 = (...args: ["a", number] | ["b", string]) => void;
-
-const hwf: HWT01 = (kind, payload) => {
+type T = (...args: ["a", number] | ["b", string]) => void;
+const fun: T = (kind, payload) => {
     if (kind === "a") {
         Assert.equal(42, payload.toFixed());
     }
@@ -31,6 +30,5 @@ const hwf: HWT01 = (kind, payload) => {
         Assert.equal("HELLO", payload.toUpperCase());
     }
 };
-
-hwf("a", 42);
-hwf("b", "hello");
+fun("a", 42);
+fun("b", "hello");

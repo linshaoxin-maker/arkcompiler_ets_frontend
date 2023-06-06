@@ -21,10 +21,10 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-let arr: Array<any> = [];
-arr[0] = "a";
-Assert.equal(arr[0], "a");
-Assert.isString(arr[0]);
-arr[1] = 12;
-Assert.equal(arr[1], 12);
-Assert.isNumber(arr[1]);
+let x: Array<any> = [];
+x[0] = "a";
+Assert.equal(x[0], "a");
+Assert.isString(x[0]);
+x[1] = 12;
+Assert.equal(x[1], 12);
+Assert.isNumber(x[1]);

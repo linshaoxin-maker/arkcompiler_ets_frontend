@@ -26,7 +26,6 @@ var a: number = 10
 var b: number = 5
 var c = (a + b) * (a - b)
 Assert.isNumber(c)
-
 interface Foo {
   num: number
   str: string

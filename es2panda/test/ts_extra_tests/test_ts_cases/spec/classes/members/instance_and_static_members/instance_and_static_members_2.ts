@@ -48,14 +48,14 @@ Assert.equal(counter.Result, 3);
 counter.subtract();
 Assert.equal(counter.subtract(), counter);
 Assert.equal(counter.Result, 1);
-class P {
+class Compute {
   constructor(public num1: number, public num2: number) { }
   public hypot() {
     return Math.sqrt(this.num1 * this.num1 + this.num2 * this.num2);
   }
-  static initial = new P(0, 0);
+  static initial = new Compute(0, 0);
 }
-class ChildP extends P {
+class ChildP extends Compute {
   constructor(public x: number, public y: number, public z: number) {
     super(x, y);
     this.z = z;
@@ -73,3 +73,5 @@ Assert.equal(childp.x, 2);
 Assert.equal(childp.y, 3);
 Assert.equal(childp.z, 4);
 Assert.equal(childp.move(), childp);
+let count: ChildP = new ChildP(4,3,1);
+Assert.equal(count.hypot(),5);

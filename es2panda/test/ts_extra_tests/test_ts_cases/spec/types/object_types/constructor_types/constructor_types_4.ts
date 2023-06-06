@@ -22,7 +22,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class Animal1 {
+class Animal {
   name: string | undefined;
   age: number | undefined;
   constructor();
@@ -41,11 +41,11 @@ class Animal1 {
     }
   }
 }
-let tt1 = new Animal1();
-let tt2 = new Animal1("caihua2", 12);
+let tt1 = new Animal();
+let tt2 = new Animal("caihua2", 12);
 Assert.equal(tt2.name, "caihua2");
 Assert.equal(tt2.age, 12);
-let tt3 = new Animal1("caihua3");
+let tt3 = new Animal("caihua3");
 Assert.equal(tt3.name, "caihua3");
-let tt4 = new Animal1(1230);
+let tt4 = new Animal(1230);
 Assert.equal(tt4.age, 1230);

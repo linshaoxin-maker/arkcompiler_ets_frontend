@@ -21,31 +21,28 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-type T1 = { kind: "circle"; radius: number };
-type T2 = { kind: "square"; sideLength: number };
+type T1 = { name: "x1"; size: number };
+type T2 = { name: "x2"; sideLength: number };
 type T3 = T1 | T2;
-
-let c: T1 = { kind: "circle", radius: 2 };
-let s: T2 = { kind: "square", sideLength: 2 };
-
-function hwtest01(shape: T3): number {
-    const isCircle = shape.kind === "circle";
-    if (isCircle) {
-        return Math.PI * shape.radius ** 2;
+let c: T1 = { name: "x1", size: 2 };
+let s: T2 = { name: "x2", sideLength: 2 };
+function fun01(shape: T3): number {
+    const isx1 = shape.name === "x1";
+    if (isx1) {
+        return Math.PI * shape.size ** 2;
     } else {
         return shape.sideLength ** 2;
     }
 }
-Assert.equal(Math.round(hwtest01(c)), 13);
-Assert.equal(hwtest01(s), 4);
-
-function hwtest02(shape: T3): number {
-    const { kind } = shape;
-    if (kind === "circle") {
-        return Math.PI * shape.radius ** 2;
+Assert.equal(Math.round(fun01(c)), 13);
+Assert.equal(fun01(s), 4);
+function fun02(shape: T3): number {
+    const { name } = shape;
+    if (name === "x1") {
+        return Math.PI * shape.size ** 2;
     } else {
         return shape.sideLength ** 2;
     }
 }
-Assert.equal(Math.round(hwtest02(c)), 13);
-Assert.equal(hwtest02(s), 4);
+Assert.equal(Math.round(fun02(c)), 13);
+Assert.equal(fun02(s), 4);

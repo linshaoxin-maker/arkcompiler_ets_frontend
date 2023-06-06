@@ -25,7 +25,6 @@ import { Assert } from '../../../../suite/assert.js'
 function func(h_x: number) {
   Assert.isNumber(h_x);
 }
-// get function's return type
 type voidTest = ReturnType<typeof func>;
 let tt1: void = undefined;
 let tt2: voidTest = undefined;

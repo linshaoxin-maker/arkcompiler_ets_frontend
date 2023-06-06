@@ -35,7 +35,7 @@ interface IFnCall<S> {
 const foo: IFnCall<string> = function (fn:any) {
   return fn('xiao')
 }
-const res = foo((name) => {
+const res = foo((name:string) => {
   return name
 }, 10)
 Assert.isString(res);

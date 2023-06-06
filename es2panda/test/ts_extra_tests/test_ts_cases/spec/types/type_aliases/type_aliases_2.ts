@@ -23,13 +23,13 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-type h_MyType = {
+type MyType = {
     h_name: string;
     h_age: number;
     h_height?: number;
     h_weight?: number
 }
-var h_ty: h_MyType = {
+var h_ty: MyType = {
     h_name: 'xiao',
     h_age: 18,
     h_height: 180

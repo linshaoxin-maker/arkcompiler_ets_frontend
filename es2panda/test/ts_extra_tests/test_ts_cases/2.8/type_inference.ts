@@ -29,22 +29,17 @@ import { Assert } from '../../suite/assert.js'
     T extends Promise<infer U> ? U :
     T;
 
-  // string
-  type Type0 = Type00<string>;
-  // string
-  type Type1 = Type00<string[]>;
-  // string
-  type Type2 = Type00<() => string>;
-  // string
-  type Type3 = Type00<Promise<string>>;
-  // string
-  type Type4 = Type00<Type00<Promise<string>[]>>;
+  type TS = Type00<string>;
+  type TSA = Type00<string[]>;
+  type TF = Type00<() => string>;
+  type TPS = Type00<Promise<string>>;
+  type TTPS = Type00<Type00<Promise<string>[]>>;
 
-  let a: Type0 = 's';
-  let b: Type1 = 's';
-  let c: Type2 = 's';
-  let d: Type3 = 's';
-  let e: Type4 = 's';
+  let a: TS = 's';
+  let b: TSA = 's';
+  let c: TF = 's';
+  let d: TPS = 's';
+  let e: TTPS = 's';
 
   Assert.equal(typeof a, 'string');
   Assert.equal(typeof b, 'string');
@@ -53,14 +48,12 @@ import { Assert } from '../../suite/assert.js'
   Assert.equal(typeof e, 'string');
 
   type F<T> = T extends { a: infer U, b: infer U } ? U : never;
-  // string
-  type Type5 = F<{ a: string, b: string }>;
-  // string | number
-  type Type6 = F<{ a: string, b: number }>;
+  type TF1 = F<{ a: string, b: string }>;
+  type TF2 = F<{ a: string, b: number }>;
 
-  let f: Type5 = 's';
-  let g: Type6 = 's';
-  let h: Type6 = 1;
+  let f: TF1 = 's';
+  let g: TF2 = 's';
+  let h: TF2 = 1;
 
   Assert.equal(typeof f, 'string');
   Assert.equal(typeof g, 'string');

@@ -24,6 +24,5 @@
 import { Assert } from '../../../../suite/assert.js'
 
 let [x, y]: [string, number] = ["hello", 42];
-
 Assert.isString(x);
 Assert.isNumber(y);

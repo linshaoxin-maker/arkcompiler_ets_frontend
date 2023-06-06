@@ -22,7 +22,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 interface S {
     name: string
@@ -46,5 +46,5 @@ let t: T = {
     age: 20
 }
 
-t = s
+t = s;
 Assert.equal(t, s);

@@ -23,8 +23,4 @@
 import { Assert } from '../../../../suite/assert.js'
 
 const emptyArray: any[] = [];
-
-const emptyStringArray: string[] = emptyArray;
-const emptyNumberArray: number[] = emptyArray;
-
 Assert.isUndefined(emptyArray[0]);

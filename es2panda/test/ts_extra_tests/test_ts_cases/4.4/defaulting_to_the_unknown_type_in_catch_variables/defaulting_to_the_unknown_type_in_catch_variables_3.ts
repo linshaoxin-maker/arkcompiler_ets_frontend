@@ -23,7 +23,7 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function hwtest(a: any) {
+function fun(a: any) {
     if (typeof a === "number") {
     } else {
         throw new Error("type error");
@@ -31,7 +31,7 @@ function hwtest(a: any) {
 }
 
 try {
-    hwtest("string");
+    fun("string");
 } catch (err: any) {
     Assert.equal(err instanceof Error, true);
     Assert.equal(err.message, "type error");

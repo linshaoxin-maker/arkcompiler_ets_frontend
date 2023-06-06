@@ -24,43 +24,41 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface PersonTest {
+interface HumanTest {
     name: string;
     age: number;
-    location: string;
+    destination: string;
 }
-type PersonType = Partial<PersonTest>;
+type PersonType = Partial<HumanTest>;
 
-let pt1: PersonTest = {
+let pt1: HumanTest = {
     name: "caihua",
     age: 20,
-    location: "earth",
+    destination: "earth",
 };
 
 let pt2: PersonType;
 pt2 = {};
 Assert.equal(pt2.name, undefined);
 Assert.equal(pt2.age, undefined);
-Assert.equal(pt2.location, undefined);
+Assert.equal(pt2.destination, undefined);
 pt2 = { name: "caihua" };
 Assert.equal(pt2.name, "caihua");
 Assert.equal(pt2.age, undefined);
-Assert.equal(pt2.location, undefined);
+Assert.equal(pt2.destination, undefined);
 pt2 = { age: 20 };
 Assert.equal(pt2.name, undefined);
 Assert.equal(pt2.age, 20);
-Assert.equal(pt2.location, undefined);
-pt2 = { location: "earth" };
+Assert.equal(pt2.destination, undefined);
+pt2 = { destination: "earth" };
 Assert.equal(pt2.name, undefined);
 Assert.equal(pt2.age, undefined);
-Assert.equal(pt2.location, "earth");
+Assert.equal(pt2.destination, "earth");
 pt2 = { name: "caihua", age: 20 };
 Assert.equal(pt2.name, "caihua");
 Assert.equal(pt2.age, 20);
-Assert.equal(pt2.location, undefined);
-pt2 = { name: "caihua", location: "earth" };
-pt2 = { age: 20, location: "earth" };
-pt2 = { name: "caihua", age: 20, location: "earth" };
-Assert.equal(pt2.name, "caihua");
-Assert.equal(pt2.age, 20);
-Assert.equal(pt2.location, "earth");
+Assert.equal(pt2.destination, undefined);
+pt2 = { name: "lwx", age: 27, destination: "nanj" };
+Assert.equal(pt2.name, "lwx");
+Assert.equal(pt2.age, 27);
+Assert.equal(pt2.destination, "nanj");

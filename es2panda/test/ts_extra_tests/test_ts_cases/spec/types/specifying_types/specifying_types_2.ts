@@ -22,10 +22,10 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-let h_arr: (string | number)[] = ['10', 5];
-Assert.equal(typeof h_arr, 'object');
+let arr: (string | number)[] = ['10', 5];
+Assert.equal(typeof arr, 'object');
 let m_fun = function func(x: number) {
   return x;
 }
-let h_func: ((h_x: string) => string) | ((h_x: number) => number) = m_fun;
-Assert.equal(typeof h_func, 'function');
+let fun: ((h_x: string) => string) | ((h_x: number) => number) = m_fun;
+Assert.equal(typeof fun, 'function');

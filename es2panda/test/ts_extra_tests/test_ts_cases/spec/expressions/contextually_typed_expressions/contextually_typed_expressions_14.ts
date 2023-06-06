@@ -31,7 +31,6 @@ var average1 = function (a: number, b: number) {
 }
 var rela1 = sum || average1
 Assert.equal(typeof rela1, 'function')
-
 var average2: number = 10
 var rela2 = average2 || sum
 Assert.equal(typeof rela2, 'number');

@@ -21,11 +21,11 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 class Teacher<T> {
     private x: T;
-    constructor(t:T) {
+    constructor(t: T) {
         this.x = t;
     }
 
@@ -35,15 +35,14 @@ interface student1 { f(): string; }
 
 interface student2 { f(): string; }
 
-class Person implements student1,student2 {
+class Person implements student1, student2 {
     f() {
         return "X+Y"
     }
 }
 
-let Hwa: Teacher<student1> = new Teacher(new Person);
-let Hwb: Teacher<student2> = new Teacher(new Person);
-
-Assert.isObject(Hwa);
-Assert.isObject(Hwb);
-Assert.equal(typeof Hwa,typeof Hwb)
+let a: Teacher<student1> = new Teacher(new Person);
+let b: Teacher<student2> = new Teacher(new Person);
+Assert.isObject(a);
+Assert.isObject(b);
+Assert.equal(typeof a, typeof b)

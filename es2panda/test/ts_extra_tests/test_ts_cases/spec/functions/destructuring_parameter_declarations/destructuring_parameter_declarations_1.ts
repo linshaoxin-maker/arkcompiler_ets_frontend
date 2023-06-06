@@ -39,11 +39,9 @@ function showInfo({ m_name, m_age }: Person) {
     Assert.equal(m_age, tt.m_age);
 }
 showInfo(tt);
-
 let tt1: Person = new Person("caihua1", 121);
 let tt2: Person = new Person("caihua2", 122);
 let person_array: Person[] = [tt1, tt2];
-
 function showArrayInfo(v_array: Array<Person>) {
     let [tt1, tt2] = v_array;
     Assert.equal(tt1.m_name, v_array[0].m_name);

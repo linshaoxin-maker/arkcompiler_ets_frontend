@@ -25,14 +25,13 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-function h_zip<S, T, U>(x: S[], y: T[], group: (x: S) => (y: T) => U): U[] {
-    var length = Math.max(x.length, y.length);
-    var cons: U[] = [];
-    for (var i = 0; i < length; i++) cons.push(group(x[i])(y[i]));
+function fun<S, T, U>(a: S[], b: T[], group: (a: S) => (b: T) => U): U[] {
+    let length = Math.max(a.length, b.length);
+    let cons: U[] = [];
+    for (let i = 0; i < length; i++) cons.push(group(a[i])(b[i]));
     return cons;
 }
-
-var h_names = ["Peter", "Paul", "Mary"];
-var h_ages = [7, 9, 12];
-var h_pairs = h_zip(h_names, h_ages, str => num => ({ name: str, age: num }));
-Assert.equal(typeof h_pairs, 'object');
+let xx = ["sum", "con", "say"];
+let yy = [1, 2, 3];
+let zz = fun(xx, yy, str => num => ({ name: str, age: num }));
+Assert.isObject(zz);

@@ -33,7 +33,6 @@ var g: string = 'a'
 var h: string = 'b'
 var i: undefined = undefined
 var j: undefined = undefined
-
 var k = a || b
 Assert.isNumber(k)
 var l = c || d

@@ -22,9 +22,9 @@ isCurrent: true
 
 import { Assert } from "../../../suite/assert.js"
 
-function hwfStr(x?: string, y?: number | string): string {
+function testStr(x?: string, y?: number | string): string {
   let z: number | string = x! + y!;
   return z;
 }
-Assert.equal(hwfStr("A"), "Aundefined");
-Assert.equal(hwfStr("B", 5), "B5");
+Assert.equal(testStr("A"), "Aundefined");
+Assert.equal(testStr("B", 5), "B5");

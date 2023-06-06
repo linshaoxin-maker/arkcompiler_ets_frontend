@@ -23,7 +23,6 @@
 import { Assert } from '../../../../../suite/assert.js'
 
 let v: void;
-let nu = null;
 let u: undefined = undefined;
 let a: any;
 a = v;

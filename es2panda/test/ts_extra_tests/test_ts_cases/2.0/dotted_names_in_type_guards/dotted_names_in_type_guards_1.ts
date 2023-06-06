@@ -22,7 +22,7 @@
 import { Assert } from "../../../suite/assert.js"
 
 type StrObj =
-    | {
+    {
         strobj?: {
             str1?: string;
             str2?: string;
@@ -60,3 +60,5 @@ so = { strobj: {} };
 Assert.equal(funSO(so), "so.strobj.str1 === undefined");
 so = { strobj: { str1: "str1" } };
 Assert.equal(funSO(so), "str1");
+so = { strobj: {str2: "str2"} };
+Assert.equal(funSO(so), "str2");

@@ -23,12 +23,12 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-let x;
-x = (a: number) => a + 1;
+let win;
+win = (a: number) => a + 1;
 
-let y = x;
-Assert.equal(y(12), 13);
+let fail = win;
+Assert.equal(fail(12), 13);
 
-x = "abc";
-Assert.isString(x);
-Assert.equal(x.toUpperCase(), "ABC");
+win = "abc";
+Assert.isString(win);
+Assert.equal(win.toUpperCase(), "ABC");

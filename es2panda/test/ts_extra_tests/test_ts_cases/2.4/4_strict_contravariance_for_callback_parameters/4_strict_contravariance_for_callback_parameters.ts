@@ -21,21 +21,27 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface TestI<T> {
-    add_10(t: T): T;
+interface I<T> {
+    add(t: T): T;
 }
-
-class CA implements TestI<number> {
-    add_10(n: number) {
+class C implements I<number> {
+    add(n: number) {
         return n += 10;
     }
 }
 
-let a: TestI<number>;
-let b: TestI<string | number>;
-
-a = new CA();
+let a: I<number>;
+let b: I<string | number>;
+a = new C();
 
 b = a;
+Assert.equal(20, b.add(10));
 
-Assert.equal(20, b.add_10(10));
+function func<T>(arg: T): T{
+    return arg;
+}
+let f1 = func<number>(5);
+let f2 = func<number | string>('a');
+
+f2 = f1;
+Assert.equal(f1, f2);

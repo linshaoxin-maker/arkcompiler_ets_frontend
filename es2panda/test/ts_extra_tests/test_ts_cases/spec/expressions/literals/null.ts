@@ -22,5 +22,4 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-// TODO judge the null type
 Assert.isTrue(typeof null === "object");

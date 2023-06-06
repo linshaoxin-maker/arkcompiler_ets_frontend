@@ -26,18 +26,18 @@
 import { Assert } from "../../../suite/assert.js"
 
 
-function MaybePromise<T>(value: number): number | Promise<number> | PromiseLike<number> {
+function ToP<T>(value: number): number | Promise<number> | PromiseLike<number> {
     return new Promise((resolve, reject) => {
         resolve(Math.random());
     });
 }
 
-async function doSomething(): Promise<[number, number]> {
-    const result = await Promise.all([MaybePromise(100), MaybePromise(200)]);
+async function operate(): Promise<[number, number]> {
+    const result = await Promise.all([ToP(100), ToP(200)]);
     return result;
 }
 
-let D = doSomething().then(res => {
+let D = operate().then(res => {
     Assert.isObject(res, "object");
 });
 

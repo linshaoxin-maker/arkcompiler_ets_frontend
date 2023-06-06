@@ -22,14 +22,12 @@
 import { Assert } from '../../../../suite/assert.js'
 
 class Car {
-    // field
     engine: string;
     agelimit: number;
-    // Constructor function
     constructor(engine: string, agelimit: number) {
         this.engine = engine;
         this.agelimit = agelimit;
     }
 }
-let car = new Car("Benci", 2);
+let car = new Car("Benchi", 2);
 Assert.equal(car.agelimit, 2);

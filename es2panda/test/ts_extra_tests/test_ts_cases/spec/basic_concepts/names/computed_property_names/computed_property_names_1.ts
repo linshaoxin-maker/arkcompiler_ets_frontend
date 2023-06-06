@@ -26,9 +26,7 @@
 import { Assert } from '../../../../../suite/assert.js'
 
 class ComputedName {
-  // computed property name with a well-known symbol name  have a simple literal type
   aa: 1 | undefined;
-  // computed property name have a simple literal type
   ["address"]: string;
   constructor(x: string, y: 1) {
     this.address = x;
@@ -42,7 +40,5 @@ class ComputedName {
 var c: ComputedName = new ComputedName("address No1", 1);
 Assert.equal(1, c.aa);
 Assert.equal("address No1", c.address);
-
-// computed property name with in object literal
 var objectliteral = { ["xx" + "123".length]: 22, name: "string" };
 Assert.equal(22, objectliteral.xx3);

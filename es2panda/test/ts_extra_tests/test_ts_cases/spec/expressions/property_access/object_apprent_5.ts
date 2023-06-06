@@ -26,12 +26,10 @@ import { Assert } from '../../../../suite/assert.js'
 interface ExampleObject {
   [key: string]: string;
 }
-
 const myObject: ExampleObject = {
   foo: "bar",
   baz: "qux",
 };
-
 const myIndex: any = "foo";
 const myValue = myObject[myIndex];
 Assert.isString(myValue);

@@ -15,7 +15,8 @@
 /**---
  description: >
   In the right operand of a && operation, 
-  the type of a variable or parameter is narrowed by a type guard in the left o
+  the type of a variable or parameter is narrowed by a type guard in the left operand when true, 
+  provided neither operand contains assignments to the variable or parameter.
  module: ESNext
  isCurrent: true
  ---*/

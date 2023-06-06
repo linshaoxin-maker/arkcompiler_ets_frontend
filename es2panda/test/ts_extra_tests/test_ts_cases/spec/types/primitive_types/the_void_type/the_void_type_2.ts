@@ -27,7 +27,6 @@ let v: void;
 Assert.equal(v, undefined);
 let v2: void = undefined;
 Assert.equal(v2, undefined);
-let nu = null;
 let u: undefined = undefined;
 v = u;
 Assert.equal(v, undefined);

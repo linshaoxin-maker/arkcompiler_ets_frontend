@@ -24,18 +24,18 @@
 import { Assert } from '../../../../suite/assert.js'
 
 interface Person {
-  m_name: string;
-  m_age: number;
+  name: string;
+  age: number;
   getName(name: string): string;
 }
 type Optional<T> = { [P in keyof T]: T[P] };
 let cc: Optional<Person> = {
-  m_age: 18,
-  m_name: "caihua",
+  age: 18,
+  name: "caihua",
   getName(name: string) {
     return name;
   },
 };
-Assert.equal(cc.m_age, 18);
-Assert.equal(cc.m_name, "caihua");
+Assert.equal(cc.age, 18);
+Assert.equal(cc.name, "caihua");
 Assert.equal(cc.getName("caihua"), "caihua");

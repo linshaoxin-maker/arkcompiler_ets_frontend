@@ -21,9 +21,9 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-var T: string = "T";
+let T: string = "T";
 type S = "s" | "str" | "string";
 let s: S = "str"
 T = s

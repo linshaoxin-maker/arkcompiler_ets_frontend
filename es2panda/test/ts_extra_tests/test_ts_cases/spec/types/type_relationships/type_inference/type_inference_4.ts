@@ -25,7 +25,7 @@
  isCurrent: true
  ---*/
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 
 type Maybe<T> = T | void
@@ -39,7 +39,6 @@ function getOrElse<T>(x: Maybe<T>, defaultValue: T): T {
     return isDefined(x) ? x : defaultValue;
 }
 function test1(x: Maybe<string>) {
-    // x1,x2,x3 are of type string
     let x1 = getOrElse(x, "Undefined");
     Assert.isString(x1)
     let x2 = isDefined(x) ? x : "undefined";
@@ -49,7 +48,6 @@ function test1(x: Maybe<string>) {
 }
 test1('t1')
 function test2(x: Maybe<number>) {
-    // x1,x2,x3 are of type number
     let x1 = getOrElse(x, - 1);
     Assert.isNumber(x1)
     let x2 = isDefined(x) ? x : -1;

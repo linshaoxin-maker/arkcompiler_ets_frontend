@@ -29,26 +29,26 @@ type ASN = [...ArrStr, ...ArrNum, boolean];
 const asn: ASN = ["hello", "world", 1, 2, true];
 Assert.equal(asn.length, 5);
 type Arr = readonly any[];
-function hwtest01<T extends Arr, U extends Arr>(arr1: T, arr2: U): [...T, ...U] {
+function funVTT01<T extends Arr, U extends Arr>(arr1: T, arr2: U): [...T, ...U] {
   return [...arr1, ...arr2];
 }
 const arr1 = [1, 2, 3];
 const arr2 = ["a", "b", "c"];
-const arr3 = hwtest01(arr1, arr2);
+const arr3 = funVTT01(arr1, arr2);
 Assert.equal(arr3.length, 6);
 
 
 type Arry = readonly unknown[];
 
-function hwtest02<T extends Arry, U extends Arry, R>(
+function funVTT02<T extends Arry, U extends Arry, R>(
   f: (...args: [...T, ...U]) => R,
   ...headArgs: T
 ) {
   return (...tailArgs: U) => f(...headArgs, ...tailArgs);
 }
-function hwtest03(a: number, b: number, c: number): number {
+function funVTT03(a: number, b: number, c: number): number {
   return a + b + c;
 }
-const add2And3 = hwtest02(hwtest03, 2, 3);
+const add2And3 = funVTT02(funVTT03, 2, 3);
 const result = add2And3(4);
 Assert.equal(result, 9);

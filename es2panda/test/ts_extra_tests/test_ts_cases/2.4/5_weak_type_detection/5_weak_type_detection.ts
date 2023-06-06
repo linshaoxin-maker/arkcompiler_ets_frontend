@@ -21,39 +21,33 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface Options {
-    data?: string;
+interface I {
+    month?: string;
     type?: number;
     value?: number;
 }
 
-function check(options: Options) {
-    if (options !== undefined && options !== null) {
+function check(i: I) {
+    if (i !== undefined && i !== null) {
         return true;
     } else {
         return false;
     }
 }
 
-const opts1 = {
-    str: "hello world!",
-    retryOnFail: true
+const obj1 = {
+    month: "January"
 };
+Assert.isTrue(check(obj1));
 
 
-const opts2 = {
-    data: "hello world!"
-};
-Assert.isTrue(check(opts2));
-
-
-const opts3: {
-    [index: string]: { data: string };
+const obj2: {
+    [index: string]: { mem: string };
 } = {};
-Assert.isTrue(check(opts3));
+Assert.isTrue(check(obj2));
 
-const opts4 = {
-    payload: "hello world!",
-    retryOnFail: true
-} as Options;
-Assert.isTrue(check(opts4));
+const obj3 = {
+    str: "string",
+    trueOrFalse: true
+} as I;
+Assert.isTrue(check(obj3));

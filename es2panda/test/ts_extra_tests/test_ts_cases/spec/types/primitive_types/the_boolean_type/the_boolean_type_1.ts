@@ -39,23 +39,19 @@ let a: boolean = true;
 Assert.equal(a, true);
 let b: boolean = false;
 Assert.equal(b, false);
-// conditional expression
 let c: number = a ? 0 : 1;
 Assert.equal(c, 0);
 c = b ? 0 : 1;
 Assert.equal(c, 1);
-// if
 if (a) {
   Assert.equal(test1(), 0);
 } else {
   Assert.equal(test2(), 1);
 }
-// while , do ...while
 while (a) {
   Assert.equal(test3(), 1);
   break;
 }
-// for
 for (let i = 0; a && i < 5; i++) {
   Assert.equal(test4(i), i);
 };

@@ -23,22 +23,22 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-let h_num: number = 5;
-Assert.isNumber(h_num);
+let num: number = 5;
+Assert.isNumber(num);
 
-let h_obj = {
+let obj = {
   name: 'xiao',
   age: 18
 }
-Assert.equal(typeof h_obj, 'object');
+Assert.equal(typeof obj, 'object');
 
-let h_arr = [10, 5, 7, 20];
-Assert.equal(typeof h_arr, 'object');
+let arr = [10, 5, 7, 20];
+Assert.equal(typeof arr, 'object');
 
-let h_tup = ['str', 5, true];
-Assert.equal(typeof h_tup, 'object');
+let arr2 = ['str', 5, true];
+Assert.equal(typeof arr2, 'object');
 
-let h_func = (h_x: number, h_y: number) => {
+let fun = (h_x: number, h_y: number) => {
   return h_x + h_y
 }
-Assert.equal(typeof h_func, 'function');
+Assert.equal(typeof fun, 'function');

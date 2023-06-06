@@ -21,9 +21,7 @@
 
 import { Assert } from '../../../../../../suite/assert.js'
 
-
 function module1(): string {
     return "module";
 }
-
 Assert.equal(module1(), "module");

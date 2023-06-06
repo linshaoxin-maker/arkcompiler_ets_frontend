@@ -22,7 +22,6 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-// Compiled with --strictNullChecks
 function tFun(c: boolean): void {
   let x: number;
   if (c) {

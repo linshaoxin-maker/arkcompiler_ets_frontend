@@ -22,23 +22,22 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface HwStaff{
-    name:string;
-    age:number;
-
-    [propName: string]: string|number;
+interface I1 {
+    name: string;
+    age: number;
+    [pName: string]: string | number;
 }
-let env:HwStaff = {
-    name:"lll",
+let env: I1 = {
+    name: "lll",
     age: 22,
 };
-function check(op?:HwStaff): HwStaff|undefined {
-    if (op){
+function fun(op?: I1): I1 | undefined {
+    if (op) {
         Assert.isString(op.name);
         Assert.isNumber(op.age);
     };
     return op;
 };
-let env2 = check(env);
-Assert.equal(env2!.name,"lll");
-Assert.equal(env2!.age,22);
+let env2 = fun(env);
+Assert.equal(env2!.name, "lll");
+Assert.equal(env2!.age, 22);

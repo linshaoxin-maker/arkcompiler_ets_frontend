@@ -23,17 +23,14 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface HWColor {
-  [keys: number|string]: any;
+interface I {
+  [keys: number | string]: any;
 }
-const red:any = Symbol("red");
-const green:any = Symbol("green");
-const blue:any = Symbol("blue");
-
-let c: HWColor = {};
-c[red] = 0xff0000;
-c[green] = 0x00ff00;
-c[blue] = 0x0000ff;
-Assert.isNumber(c[red]);
-
-
+const x: any = Symbol("x");
+const y: any = Symbol("y");
+const z: any = Symbol("z");
+let c: I = {};
+c[x] = 0xff0000;
+c[y] = 0x00ff00;
+c[z] = 0x0000ff;
+Assert.isNumber(c[x]);

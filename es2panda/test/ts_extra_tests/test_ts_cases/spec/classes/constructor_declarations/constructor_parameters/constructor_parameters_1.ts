@@ -44,7 +44,9 @@ class Animal1 {
     }
   }
 }
-let tt1 = new Animal1();
+let tt1 = new Animal1("caihua1",NaN);
+Assert.equal(tt1.name,"caihua1");
+Assert.equal(tt1.age, undefined);
 let tt2 = new Animal1("caihua2", 12);
 Assert.equal(tt2.name, "caihua2");
 Assert.equal(tt2.age, 12);

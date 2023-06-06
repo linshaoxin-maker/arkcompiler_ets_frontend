@@ -23,7 +23,7 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class TestPerson {
+class TestHuman {
     name: string;
     age: number;
     private job: string;
@@ -33,25 +33,30 @@ class TestPerson {
         this.job = job;
     }
 }
-type TestName = Pick<TestPerson, "name">;
+type TestName = Pick<TestHuman, "name">;
 let nn: TestName = {
-    name: "nn",
+    name: "ayw",
 };
 Assert.notEqual(nn.name, undefined);
+Assert.equal(nn.name, "ayw");
 
-type TestAge = Pick<TestPerson, "age">;
+type TestAge = Pick<TestHuman, "age">;
 let aa: TestAge = {
     age: 20,
 };
 Assert.notEqual(aa.age, undefined);
+Assert.equal(aa.age, 20);
 
-type Test = Pick<TestPerson, "name" | "age">;
+type Test = Pick<TestHuman, "name" | "age">;
 let cc: Test = {
-    name: "cc",
+    name: "cool",
     age: 15,
 };
 Assert.notEqual(cc.name, undefined);
 Assert.notEqual(cc.age, undefined);
+
+Assert.equal(cc.name, "cool");
+Assert.equal(cc.age, 15);
 
 type TestString = keyof { [x: string]: number };
 

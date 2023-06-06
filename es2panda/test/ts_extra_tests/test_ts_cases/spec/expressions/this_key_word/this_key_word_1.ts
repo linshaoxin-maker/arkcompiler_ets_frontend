@@ -23,7 +23,6 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-// CHECK this in constructor
 class Dog {
     name: string;
     age: number;
@@ -40,14 +39,9 @@ class Dog {
         return this.getName() + " is bark";
     }
 }
-
 var dog = new Dog("doggy", 7);
 Assert.equal(dog.age, 7);
-
-// CHECK this in instance member function and instance member accessor
 Assert.equal("doggy is bark", dog.bark())
-
-// CHECK this in instance member variable initializer
 class Duck {
     age: number = this.b;
     constructor(private readonly b: number) {

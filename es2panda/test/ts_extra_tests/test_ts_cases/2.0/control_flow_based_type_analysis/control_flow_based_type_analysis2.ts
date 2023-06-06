@@ -26,7 +26,7 @@ function testFun(x: string | null): void {
   if (x === null) {
     return;
   }
-  x;
+
   Assert.isString(x);
 }
 

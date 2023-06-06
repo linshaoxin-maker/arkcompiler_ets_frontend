@@ -23,14 +23,14 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-// If you define a variable type without explicit type annotations, the variable defaults to string instead of the string literal type it should be
 let HELLO: "HELLO" = "HELLO";
 let WORLD: "WORLD" = "WORLD";
-// type: string
+
 let hello = HELLO.toLowerCase();
 Assert.equal(hello, "hello");
-// type: string
+
 let HELLOWORLD = HELLO + WORLD;
 Assert.equal(HELLOWORLD, "HELLOWORLD");
-// valid
+
 let a: "foo" | number = "foo";
+Assert.equal(a, 'foo');

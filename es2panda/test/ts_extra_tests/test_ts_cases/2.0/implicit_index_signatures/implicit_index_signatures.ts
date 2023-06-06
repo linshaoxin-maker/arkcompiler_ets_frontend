@@ -23,7 +23,7 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-function func(path: string, arg: { [x: string]: string }) {
+function func(str: string, arg: { [x: string]: string }) {
   return JSON.stringify(arg);
 }
 const arg = {

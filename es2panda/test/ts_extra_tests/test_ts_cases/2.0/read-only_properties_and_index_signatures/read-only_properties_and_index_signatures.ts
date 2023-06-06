@@ -23,18 +23,30 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface Point {
+interface Demo {
   readonly x: number;
   readonly y: number;
 }
-var p1: Point = { x: 10, y: 20 };
-var p2 = { x: 1, y: 1 };
+let d2 = { x: 1, y: 1 };
 
-var p3: Point = p2;
-Assert.equal(JSON.stringify(p3), '{"x":1,"y":1}');
+let d3: Demo = d2;
+Assert.equal(JSON.stringify(d3), '{"x":1,"y":1}');
 
-p2.x = 5;
+d2.x = 5;
 
-let a: Array<number> = [0, 1, 2, 3, 4];
-let b: ReadonlyArray<number> = a;
-Assert.equal(JSON.stringify(b), '[0,1,2,3,4]');
+Assert.equal(d3.x, 5)
+
+let x: Array<number> = [0, 1, 2];
+let y: ReadonlyArray<number> = x;
+Assert.equal(JSON.stringify(y), '[0,1,2]');
+
+class Demo2 {
+  readonly x = 1;
+  readonly y: string;
+  constructor() {
+    this.y = "demo";
+  }
+
+}
+
+Assert.equal(new Demo2().y, "demo");

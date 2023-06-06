@@ -23,16 +23,16 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-interface h_inter {
-    (h_x: string): number;
-    (h_x: number): string
+interface I {
+    (x: string): number;
+    (x: number): string
 }
-let h_i: h_inter = Object.assign(function (h_x: any) {
-    if (typeof h_x === 'string') {
-        return h_x.toString();
+let i: I = Object.assign(function (x: any) {
+    if (typeof x === 'string') {
+        return x.toString();
     } else {
-        return h_x.toString();
+        return x.toString();
     }
 })
-Assert.equal(h_i('a'), 'a')
-Assert.equal(h_i(2), 2);
+Assert.equal(i('a'), 'a');
+Assert.equal(i(2), 2);

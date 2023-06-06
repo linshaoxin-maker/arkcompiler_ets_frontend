@@ -29,21 +29,21 @@ Assert.equal(a, true);
 a = false;
 Assert.isBoolean(a);
 Assert.equal(a, false);
-// > < !
+
 let b: boolean = 2 > 1;
 Assert.isBoolean(b);
 Assert.equal(b, true);
 b = !b;
 Assert.isBoolean(b);
 Assert.equal(b, false);
-// &&
+
 let c: boolean = 2 > 1 && 7 < 8;
 Assert.isBoolean(c);
 Assert.equal(c, true);
 c = 2 < 1 && 7 < 8;
 Assert.isBoolean(c);
 Assert.equal(c, false);
-// ||
+
 c = 2 > 1 || 7 < 8;
 Assert.isBoolean(c);
 Assert.equal(c, true);

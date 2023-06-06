@@ -15,7 +15,7 @@
 
 
 declare class C {
-    get x(): number;
-    set x(val: number);
+    get m(): number;
+    set m(value: number);
 }
 export { C };

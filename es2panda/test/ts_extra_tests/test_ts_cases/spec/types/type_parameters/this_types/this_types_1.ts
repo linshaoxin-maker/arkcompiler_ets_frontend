@@ -23,22 +23,21 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-interface h_inter {
-    h_say: () => string;
+interface INTERFACE {
+    say: () => string;
 }
-let h_i: h_inter = {
-    h_say() {
+let i: INTERFACE = {
+    say() {
         return typeof this;
     }
 }
-Assert.equal(h_i.h_say(), 'object');
-
-class h_C {
+Assert.equal(i.say(), 'object');
+class C {
     num: number;
     constructor(num: number) {
         this.num = num;
         Assert.equal(typeof this, 'object');
     }
 }
-let h_c = new h_C(10);
+let h_c = new C(10);
 Assert.equal(h_c.num, 10);

@@ -22,7 +22,6 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-
 class A {
   public x: number = 1;
   public y: string = "name";

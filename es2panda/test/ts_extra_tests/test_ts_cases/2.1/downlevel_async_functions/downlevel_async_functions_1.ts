@@ -26,15 +26,15 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function delayTime(milli: number) {
+function dTime(milli: number) {
     return new Promise<void>((resolve) => {
         setTimeout(resolve, milli);
     });
 }
 async function showMsg(a: number, b: string) {
     Assert.equal(a, 12);
-    for (let i = 0; i < 3; i++) {
-        await delayTime(500);
+    for (let i = 0; i < 5; i++) {
+        await dTime(300);
         Assert.equal(b, "New");
     }
     Assert.equal(b, "New");

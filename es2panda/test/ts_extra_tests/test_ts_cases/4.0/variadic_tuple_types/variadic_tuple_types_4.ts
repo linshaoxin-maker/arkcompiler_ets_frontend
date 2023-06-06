@@ -23,7 +23,7 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-function hwtest01<A1, B1, C1, D1, E1, F1, A2, A3>(
+function funVTT01<A1, B1, C1, D1, E1, F1, A2, A3>(
   arr1: [A1, B1, C1, D1, E1, F1, A2],
   arr2: [A3]
 ): [A1, B1, C1, D1, E1, F1, A2, A3] {
@@ -39,5 +39,5 @@ const arr1: [string, number, boolean, number, null, undefined, string] = [
   "tom",
 ];
 const arr2: [string] = ["world"];
-const result = hwtest01(arr1, arr2);
+const result = funVTT01(arr1, arr2);
 Assert.equal(result.length, 8);

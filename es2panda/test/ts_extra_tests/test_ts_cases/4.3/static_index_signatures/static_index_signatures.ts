@@ -30,10 +30,10 @@ class HWC {
 }
 
 let hwc = new HWC();
-hwc["whatever"] = 42;
-Assert.equal(hwc["whatever"], 42);
+hwc["Yes!Yes!Yes!"] = 42;
+Assert.equal(hwc["Yes!Yes!Yes!"], 42);
 
-let x = hwc["something"];
+let x = hwc["No!No!No!"];
 x = undefined;
 Assert.isUndefined(x);
 x = 20;
@@ -47,10 +47,10 @@ class HWB {
     static [propName: string]: string | number | undefined;
 }
 
-HWB["whatever"] = 42;
-Assert.equal(HWB["whatever"], 42);
+HWB["Yes!Yes!Yes!"] = 42;
+Assert.equal(HWB["Yes!Yes!Yes!"], 42);
 
-let y = HWB["something"];
+let y = HWB["No!No!No!"];
 y = "y";
 Assert.equal(y, "y");
 y = 10;

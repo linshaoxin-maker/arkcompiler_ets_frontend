@@ -21,30 +21,12 @@
 
 import { Assert } from '../../suite/assert.js'
 
-// In a structural type system, object types are compatible based on the members they have.
-interface HWA<T> {
-    prop: HWA<HWA<T>>;
-}
-
-interface HWB<T> {
-    prop: HWB<HWB<T>>;
-}
-
-function hwtest(source: HWA<string>, target: HWB<number>) {
-    target = source;
-}
-
-
-interface HWC<T> {
+interface I3<T> {
     prop: T;
 }
-
-let x: HWC<HWC<HWC<HWC<HWC<HWC<string>>>>>>;
-let y: HWC<HWC<HWC<HWC<HWC<string>>>>>;
-
-
+let x: I3<I3<I3<I3<I3<I3<string>>>>>>;
+let y: I3<I3<I3<I3<I3<string>>>>>;
 y = { prop: { prop: { prop: { prop: { prop: "prop" } } } } }
 x = { prop: y };
-
 Assert.isString("x = y; this is error");
 Assert.notEqual(JSON.stringify(x), JSON.stringify(y));

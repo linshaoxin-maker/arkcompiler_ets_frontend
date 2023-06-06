@@ -27,8 +27,6 @@ function h_f(): (h_x: string) => number {
 
 Assert.equal(11, h_f()("openharmony"));
 
-
-
 function testReruen() {
     for (let i = 0; i < 10; i++) {
 

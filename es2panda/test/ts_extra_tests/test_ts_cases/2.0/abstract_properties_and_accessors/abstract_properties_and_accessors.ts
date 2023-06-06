@@ -24,8 +24,8 @@ isCurrent: true
 import { Assert } from "../../../suite/assert.js"
 
 abstract class Skill {
-   name: string = "derive";
-   damage:number = 1;
+   abstract name: string;
+   abstract damage:number;
 }
 class Divied extends Skill {
   name = "derived";

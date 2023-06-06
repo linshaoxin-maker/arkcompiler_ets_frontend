@@ -22,18 +22,16 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-var sym = Symbol();
-
-var func = function () {
+let sym = Symbol();
+let func = function () {
   return 5;
 };
-
-var o = {
+let o = {
   obj: "obejct"
 };
 
-var x = Math.random();
-var y = Math.random();
+let x = Math.random();
+let y = Math.random();
 const fo = x > y ? func() : o;
 
 const key = {

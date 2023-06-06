@@ -23,12 +23,10 @@
 
 import { Assert } from '../../../../../../suite/assert.js'
 
-function identity<T>(h_x: T): T {
-  return h_x;
+function identity<T>(x: T): T {
+  return x;
 }
-let h_x: number = 3;
-// CHECK explicitly specified type in call
-Assert.equal(<number>identity(h_x), 3);
-let h_y = "string";
-// CHECK inferred from argument in the call
-Assert.equal(identity(h_y), "string");
+let x: number = 3;
+Assert.equal(<number>identity(x), 3);
+let y = "string";
+Assert.equal(identity(y), "string");

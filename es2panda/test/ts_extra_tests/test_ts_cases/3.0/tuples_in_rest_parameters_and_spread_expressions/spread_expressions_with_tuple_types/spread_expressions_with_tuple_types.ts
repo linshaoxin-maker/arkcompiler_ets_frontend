@@ -22,13 +22,13 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-function sfun(...v: [number, string, boolean]) {
+function fun1(...v: [number, string, boolean]) {
     return { number: v[0], string: v[1], boolean: v[2] };
 }
-const args: [number, string, boolean] = [42, "hello", true];
-var v1 = sfun(...args);
-var v2 = sfun(args[0], args[1], args[2]);
-var v3 = sfun(42, "hello", true);
+const args: [number, string, boolean] = [11, "str", true];
+var v1 = fun1(...args);
+var v2 = fun1(args[0], args[1], args[2]);
+var v3 = fun1(11, "str", true);
 var jv1 = JSON.stringify(v1);
 var jv2 = JSON.stringify(v2);
 var jv3 = JSON.stringify(v3);

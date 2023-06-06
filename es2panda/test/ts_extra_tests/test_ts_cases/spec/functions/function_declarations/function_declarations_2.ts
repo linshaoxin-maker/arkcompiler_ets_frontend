@@ -29,17 +29,10 @@ export function add1(arg1: string | number, arg2: string | number) {
     if (typeof arg1 === "number" && typeof arg2 === "number") {
         return arg1 + arg2;
     }
-
     if (typeof arg1 === "string" || typeof arg2 === "string") {
         return `${arg1}${arg2}`;
     }
 }
-
 Assert.equal(add1(0, 1), 1);
 Assert.equal(add1("0", 1), "01");
 Assert.equal(add1("0", "1"), "01");
-
-declare function add2(a: string, b: string): string;
-declare function add2(a: number, b: number): number;
-declare function add2(a: string, b: number): string;
-declare function add2(arg1: string | number, arg2: string | number): unknown;

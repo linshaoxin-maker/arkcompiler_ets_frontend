@@ -22,9 +22,9 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-class Point {
+class Compute {
   constructor(public x: number, public y: number) { }
-  public distance(p1: Point, p2: Point) {
+  public range(p1: Compute, p2: Compute) {
     let dx = p1.x - p2.x;
     let dy = p1.y - p2.y;
     return Math.sqrt(dx * dx + dy * dy);
@@ -32,12 +32,12 @@ class Point {
   static getx() {
     return this.x;
   }
-  static origin = new Point(0, 0);
+  static origin = new Compute(0, 0);
   static x: number = 10;
 }
-let p1: Point = new Point(2, 2);
-let p2: Point = new Point(1, 1);
-Assert.equal(p1.distance(p1, p2), Math.sqrt(2));
-Assert.equal(Point.getx(), 10);
-Assert.equal(p1.distance(p1, Point.origin), Math.sqrt(8));
-Assert.equal(Point.x, 10);
+let p1: Compute = new Compute(2, 2);
+let p2: Compute = new Compute(1, 1);
+Assert.equal(p1.range(p1, p2), Math.sqrt(2));
+Assert.equal(Compute.getx(), 10);
+Assert.equal(p1.range(p1, Compute.origin), Math.sqrt(8));
+Assert.equal(Compute.x, 10);

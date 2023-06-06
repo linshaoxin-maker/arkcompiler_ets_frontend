@@ -21,44 +21,34 @@
  ---*/
 
 
-import {Assert} from '../../../../suite/assert.js'
+import { Assert } from '../../../../suite/assert.js'
 
 type numType = { num: number };
 type strType = { str: string };
 type boolType = { bool: boolean };
 type objType = { obj: Object };
-var u4a: any;
-var u4: numType | strType | boolType | objType | undefined;
-var u4_1: numType = { num: 0xCA };
-u4a = u4_1;
-Assert.equal(JSON.stringify(u4a), '{"num":202}');
-
-var u4_2: strType = { str: "QWER" };
-u4a = u4_2;
-Assert.equal(JSON.stringify(u4a), '{"str":"QWER"}');
-
-var u4_3: boolType = { bool: false };
-u4a = u4_3;
-Assert.equal(JSON.stringify(u4a), '{"bool":false}');
-
-var u4_4: objType = { obj: { 0: "ZERO" } };
-u4a = u4_4;
-Assert.equal(JSON.stringify(u4a), '{"obj":{"0":"ZERO"}}');
-
-
-u4 = { num: 0xCA, str: "ABC", bool: false, obj: u4_4 };
-u4a = u4;
-Assert.equal(JSON.stringify(u4a), '{"num":202,"str":"ABC","bool":false,"obj":{"obj":{"0":"ZERO"}}}');
-
-
-u4 = u4_1;
-Assert.equal(JSON.stringify(u4), '{"num":202}');
-
-u4 = u4_2;
-Assert.equal(JSON.stringify(u4), '{"str":"QWER"}');
-
-u4 = u4_3;
-Assert.equal(JSON.stringify(u4), '{"bool":false}');
-
-u4 = u4_4;
-Assert.equal(JSON.stringify(u4), '{"obj":{"0":"ZERO"}}');
+let x: any;
+let y: numType | strType | boolType | objType | undefined;
+let z: numType = { num: 0xCA };
+x = z;
+Assert.equal(JSON.stringify(x), '{"num":202}');
+let a: strType = { str: "QWER" };
+x = a;
+Assert.equal(JSON.stringify(x), '{"str":"QWER"}');
+let b: boolType = { bool: false };
+x = b;
+Assert.equal(JSON.stringify(x), '{"bool":false}');
+let c: objType = { obj: { 0: "ZERO" } };
+x = c;
+Assert.equal(JSON.stringify(x), '{"obj":{"0":"ZERO"}}');
+y = { num: 0xCA, str: "ABC", bool: false, obj: c };
+x = y;
+Assert.equal(JSON.stringify(x), '{"num":202,"str":"ABC","bool":false,"obj":{"obj":{"0":"ZERO"}}}');
+y = z;
+Assert.equal(JSON.stringify(y), '{"num":202}');
+y = a;
+Assert.equal(JSON.stringify(y), '{"str":"QWER"}');
+y = b;
+Assert.equal(JSON.stringify(y), '{"bool":false}');
+y = c;
+Assert.equal(JSON.stringify(y), '{"obj":{"0":"ZERO"}}');

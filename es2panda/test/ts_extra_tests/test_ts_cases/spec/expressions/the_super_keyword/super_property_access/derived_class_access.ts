@@ -23,19 +23,18 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class AnimalA {
+class Animal {
     public makeSound(): string {
         return "the animal makes";
     }
 }
-
-class DogA extends AnimalA {
+class Dog extends Animal {
     public makeSound(): string {
         super.makeSound();
         Assert.equal(super.makeSound(), "the animal makes");
         return "the dog barks";
     }
 }
-const myDog = new DogA();
+const myDog = new Dog();
 myDog.makeSound();
 Assert.equal(myDog.makeSound(), "the dog barks");

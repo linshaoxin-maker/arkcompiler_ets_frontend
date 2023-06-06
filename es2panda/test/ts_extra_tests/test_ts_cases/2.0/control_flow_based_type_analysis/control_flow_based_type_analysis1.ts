@@ -28,15 +28,17 @@ if (typeof arg === 'string') {
     arg = 3;
     Assert.isNumber(arg);
 }
-arg;
+
 Assert.isNumber(arg);
 
 
-function func(x: string | number): void {
+function func(x: string | number) {
     if (typeof x === "number") {
-        return;
+        return "10";
     }
-    x;
-    Assert.isNumber(x);
+
+    return 10
 }
-func(10);
+
+Assert.isNumber(func("10"));
+Assert.isString(func(10));

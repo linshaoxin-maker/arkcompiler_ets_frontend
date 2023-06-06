@@ -22,14 +22,13 @@
 import { Assert } from '../../../suite/assert.js'
 
 let obj1 = [{ a: 1, b: 2 }, { a: "abc" }, {}][0];
-// The type of a is number|string|undefined
 obj1.a = 5;
 Assert.isNumber(obj1.a);
 obj1.a = 'a';
 Assert.isString(obj1.a);
 obj1.a = undefined;
 Assert.isUndefined(obj1.a);
-// The type of b is number|undefined
+
 obj1.b = 6;
 Assert.isNumber(obj1.b);
 obj1.b = undefined;
@@ -40,14 +39,13 @@ function fun<T>(...args: T[]): T {
 };
 let obj2 = fun({ a: 1, b: 2 }, { a: "abc", b: "ABC" }, {});
 
-// The type of a is number|string|undefined
 obj2.a = 5;
 Assert.isNumber(obj2.a);
 obj2.a = 'a';
 Assert.isString(obj2.a);
 obj2.a = undefined;
 Assert.isUndefined(obj2.a);
-// The type of a is number|string|undefined
+
 obj2.b = 6;
 Assert.isNumber(obj2.b);
 obj2.b = 'b';

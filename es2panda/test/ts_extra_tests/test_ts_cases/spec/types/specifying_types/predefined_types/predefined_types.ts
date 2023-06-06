@@ -23,14 +23,14 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-let m_n: number = 5;
-Assert.equal(m_n.toString(), "5");
+let x1: number = 5;
+Assert.equal(x1.toString(), "5");
 
-let m_b: boolean = true;
-Assert.equal(m_b.toString(), "true");
+let x2: boolean = true;
+Assert.equal(x2.toString(), "true");
 
-let m_s: string = 's';
-Assert.equal(m_s.toString(), "s");
+let x3: string = 's';
+Assert.equal(x3.toString(), "s");
 
-let m_sy: symbol = Symbol();
-Assert.equal(m_sy.toString(), "Symbol()");
+let x4: symbol = Symbol();
+Assert.equal(x4.toString(), "Symbol()");

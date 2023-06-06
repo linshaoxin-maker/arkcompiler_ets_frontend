@@ -28,25 +28,38 @@
 import { Assert } from "../../../suite/assert.js"
 
 class HWC {
-    #size = 0;
-    get size(): number {
-        return this.#size;
+    #data = 0;
+    get data(): number {
+        return this.#data;
     }
-    set size(value: string | number | boolean) {
-        let num = Number(value);
-        if (!Number.isFinite(num)) {
-            this.#size = 0;
-            return;
+    set data(val: string | number | boolean) {
+        if (val === undefined || val === null) {
+            this.#data = NaN;
+        } else if (typeof val === "number") {
+            this.#data = val;
+        } else if (typeof val === "string") {
+            this.#data = val.length;
+        } else if (typeof val === "boolean") {
+            if (val === false) {
+                this.#data = 0;
+            } else if (val === true) {
+                this.#data = 1;
+            }
         }
-        this.#size = num;
     }
 }
 
 let c = new HWC();
+let n: number = 0;
 
-c.size = "hello";
-c.size = 42;
-c.size = true;
+c.data = "hello";
+n = c.data;
+Assert.equal(n, 5);
 
-let n: number = c.size;
-Assert.equal(typeof n, "number");
+c.data = 42;
+n = c.data;
+Assert.equal(n, 42);
+
+c.data = true;
+n = c.data;
+Assert.equal(n, 1);

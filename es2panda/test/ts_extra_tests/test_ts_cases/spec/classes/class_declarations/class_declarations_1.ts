@@ -21,13 +21,10 @@
 import { Assert } from '../../../../suite/assert.js'
 
 class Rectangle {
-    // constructor
     constructor(public height: number, public width: number) { };
-    // Getter
     get area() {
         return this.calcArea()
     }
-    // Method
     calcArea() {
         return this.height * this.width;
     }

@@ -22,11 +22,11 @@ isCurrent: true
 import { Assert } from "../../../suite/assert.js"
 import { C } from "./test.js"
 
-let obj: C = { x: 1 };
+let obj: C = { m: 1 };
 
-Assert.equal(1, obj.x);
+Assert.equal(1, obj.m);
 
-class mC{
+class mC {
     mem: string;
     constructor(mem: string) {
         this.mem = mem;

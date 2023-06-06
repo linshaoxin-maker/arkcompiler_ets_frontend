@@ -28,7 +28,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 interface T {
     (x: any, y: any): void
@@ -36,12 +36,12 @@ interface T {
 interface S {
     (x: number): void
 }
-var t: T = (x, y): void => {
+let t: T = (x, y): void => {
     return;
 }
-var s: S = (x): void => {
+let s: S = (x): void => {
     return;
 }
 
-t = s
+t = s;
 Assert.equal(t, s);

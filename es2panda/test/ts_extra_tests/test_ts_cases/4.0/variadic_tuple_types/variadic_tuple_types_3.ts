@@ -24,19 +24,19 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function hwtest01<T, U>(arr1: T[], arr2: U[]): Array<T | U> {
+function funVTT01<T, U>(arr1: T[], arr2: U[]): Array<T | U> {
   return [...arr1, ...arr2]
 }
 const arr1: string[] = ["hello", "world"];
 const arr2: number[] = [1, 2, 3];
-const arrsn: Array<string | number> = hwtest01(arr1, arr2);
-function hwtest02(arg: any) {
+const arrsn: Array<string | number> = funVTT01(arr1, arr2);
+function funVTT02(arg: any) {
   const [_, ...result] = arg;
   return result;
 }
 const myTuple: any = [1, 2, 3, 4] as const;
 const newArr: any = ["hello", "world"];
-const r1 = hwtest02(myTuple);
-const r2 = hwtest02([...myTuple, ...newArr] as const);
+const r1 = funVTT02(myTuple);
+const r2 = funVTT02([...myTuple, ...newArr] as const);
 const Arrlength = r2.length;
 Assert.equal(Arrlength, 5);

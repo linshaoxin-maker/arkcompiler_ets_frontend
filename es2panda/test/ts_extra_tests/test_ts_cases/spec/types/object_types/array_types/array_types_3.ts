@@ -34,3 +34,4 @@ arr8.pop();
 Assert.equal(arr8.toString(), "a,b,c,d,e");
 arr8.push("0x02");
 Assert.equal(arr8.toString(), "a,b,c,d,e,0x02");
+Assert.isObject(arr9);

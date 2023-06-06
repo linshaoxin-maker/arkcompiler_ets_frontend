@@ -26,14 +26,11 @@ import { Assert } from '../../../../suite/assert.js'
 interface MyObj {
   [index: number]: string;
 }
-
 const obj: MyObj = {
   0: "foo",
   1: "bar",
   2: "baz",
 };
-
 Assert.equal(obj[0], "foo");
 Assert.equal(obj[1], "bar");
 Assert.equal(obj[2], "baz");
-

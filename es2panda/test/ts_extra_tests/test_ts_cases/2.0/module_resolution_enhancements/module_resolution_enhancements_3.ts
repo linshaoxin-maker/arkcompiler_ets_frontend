@@ -25,7 +25,6 @@ isCurrent: true
 
 
 import { Assert } from '../../../suite/assert.js'
-import '../test_virtual_directories_with_rootDirs/view2.js'
 import { Directions } from '../test_virtual_directories_with_rootDirs/view2.js'
 
 Assert.equal(Directions.Left, 2);

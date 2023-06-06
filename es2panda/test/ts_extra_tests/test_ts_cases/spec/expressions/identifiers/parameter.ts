@@ -33,3 +33,5 @@ class paramMethod {
   }
 }
 let newparam = new paramMethod("xiaoli", 18);
+Assert.equal(newparam.age, 18);
+Assert.equal(newparam.person, "xiaoli");

@@ -31,18 +31,18 @@ Assert.equal(2, len(["s", "ss", "sss"])[1]);
 Assert.equal(3, len(["s", "ss", "sss"])[2]);
 
 
-type A = <T, U>(x: T, y: U) => [T, U];
-type B = <S>(x: S, y: S) => [S, S];
+type T1 = <T, U>(x: T, y: U) => [T, U];
+type T2 = <S>(x: S, y: S) => [S, S];
 
-function f(a: A, b: B) {
+function f(a: T1, b: T2) {
     b = a;
     Assert.isTrue(b == a);
 }
 
-let a: A = function funA<T, U>(x: T, y: U): [T, U] {
+let a: T1 = function funA<T, U>(x: T, y: U): [T, U] {
     return [x, y];
 }
-let b: B = function funB<S>(x: S, y: S): [S, S] {
+let b: T2 = function funB<S>(x: S, y: S): [S, S] {
     return [x, x];
 }
 f(a, b);

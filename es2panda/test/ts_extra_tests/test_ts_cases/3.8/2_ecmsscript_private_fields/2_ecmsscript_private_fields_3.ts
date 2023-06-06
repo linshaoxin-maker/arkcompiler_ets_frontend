@@ -21,7 +21,7 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class S {
+class stu {
     #len: number;
     constructor(len: number) {
         this.#len = len;
@@ -31,8 +31,8 @@ class S {
     }
 }
 
-const a = new S(100);
-const c = new S(100);
+const a = new stu(300);
+const c = new stu(300);
 
 
 Assert.isTrue(a.compare(c));

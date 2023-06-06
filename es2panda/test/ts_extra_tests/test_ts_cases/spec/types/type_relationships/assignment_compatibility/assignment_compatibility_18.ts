@@ -26,8 +26,8 @@ import { Assert } from '../../../../../suite/assert.js'
 function func(stu: { num: number; name?: string }) {
    return stu
 }
-var f1 = func({ num: 1234 });
+let f1 = func({ num: 1234 });
 Assert.equal(JSON.stringify(f1), '{"num":1234}')
 
-var f2 = func({ num: 1234, name: "xiao" })
+let f2 = func({ num: 1234, name: "xiao" })
 Assert.equal(JSON.stringify(f2), '{"num":1234,"name":"xiao"}');

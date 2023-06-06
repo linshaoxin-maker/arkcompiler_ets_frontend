@@ -14,7 +14,7 @@
  */
 /**---
  description: >
-    You can traverse the index.
+    You can traverse the fun.
  module: ESNext
  isCurrent: true
  ---*/
@@ -22,14 +22,14 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-let str:string[] =["1","2"];
-function index(strs: string[]) {
-    for (let i:number = 0; i < strs.length; i++) {
-        if (i<1) {
+let x: string[] = ["1", "2"];
+function fun(strs: string[]) {
+    for (let i: number = 0; i < strs.length; i++) {
+        if (i < 1) {
             Assert.equal(strs[i], "1");
-        }else{
-            Assert.equal(strs[i],"2");
+        } else {
+            Assert.equal(strs[i], "2");
         }
     }
 }
-index(str);
+fun(x);

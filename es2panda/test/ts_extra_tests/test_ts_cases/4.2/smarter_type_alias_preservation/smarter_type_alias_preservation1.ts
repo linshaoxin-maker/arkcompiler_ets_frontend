@@ -24,10 +24,21 @@ import { Assert } from '../../../suite/assert.js'
 
 type NumStrBool = number | string | boolean;
 
-function hwtest01(value: NumStrBool): NumStrBool {
-  let x = value;
-  return x;
+function func(value: NumStrBool): NumStrBool {
+  return value;
 }
-
 let arr = [1, "hello", false];
-Assert.equal(typeof hwtest01(arr[0]), "number");
+Assert.equal(typeof func(arr[0]), "number");
+
+class C{
+  mem: NumStrBool;
+  constructor(mem: NumStrBool) {
+    this.mem = mem;
+  }
+}
+let c = new C(10);
+Assert.isNumber(c.mem);
+c.mem = 'a';
+Assert.isString(c.mem);
+c.mem = true;
+Assert.isBoolean(c.mem);

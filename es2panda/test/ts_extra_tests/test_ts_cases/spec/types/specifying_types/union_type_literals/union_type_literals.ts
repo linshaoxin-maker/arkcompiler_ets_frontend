@@ -23,8 +23,8 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-let t_union: string | number;
-t_union = 's';
-Assert.isString(t_union);
-t_union = 5;
-Assert.isNumber(t_union);
+let x: string | number;
+x = 's';
+Assert.isString(x);
+x = 5;
+Assert.isNumber(x);

@@ -24,7 +24,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 interface T {
   name: string
@@ -36,5 +36,10 @@ interface S {
 interface U {
   [name: string]: any
 }
+let x: T = { name: "aa" };
+Assert.equal(x.name, "aa");
+let y: S = { name: "aa", age: 11 };
+Assert.equal(y.name, "aa");
+Assert.equal(y.age, 11);
 let obj: U = { name: "xiao", age: 18 }
 Assert.equal(JSON.stringify(obj), '{"name":"xiao","age":18}');

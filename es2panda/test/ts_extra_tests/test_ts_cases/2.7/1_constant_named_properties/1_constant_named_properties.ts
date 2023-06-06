@@ -30,10 +30,9 @@ class C implements I{
     return func;
   }
 }
-var f = new C();
+let f = new C();
 Assert.isFunction(f[sym]);
 
-// This also applies to numeric and string literals.
 
 const num = 5;
 const str = 'a';

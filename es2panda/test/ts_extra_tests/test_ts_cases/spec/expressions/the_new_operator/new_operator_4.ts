@@ -24,15 +24,6 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-class MyClass {
-  constructor() {
-    return "MyClass";
-  }
-}
-
-const myInstance = new MyClass();
-
-
 class Person {
   name: string;
   age: number;
@@ -43,7 +34,6 @@ class Person {
 }
 const john = new Person("john", 30);
 Assert.isString(john.name, "john");
-
 class Box<T> {
   contents: T;
   constructor(value: T) {

@@ -22,20 +22,20 @@
 
 import { Assert } from '../../../../../../suite/assert.js'
 
-function identity<T>(h_x: T): T {
-  return h_x;
+function identity<T>(x: T): T {
+  return x;
 }
-let h_x: number = 1;
-Assert.equal(h_x, identity(h_x));
-function identity2<T, U>(h_x: T, h_y: U): T {
-  return h_x;
+let x: number = 1;
+Assert.equal(x, identity(x));
+function identity2<T, U>(x: T, y: U): T {
+  return x;
 }
-Assert.equal(h_x, identity2(h_x, 1));
+Assert.equal(x, identity2(x, 1));
 function identity3<T, K extends keyof T>(obj: T, key: K) {
   return obj[key];
 }
-let h_y = { h_a: 1, h_b: 2, h_c: 3, h_d: 4 };
-identity3(h_y, "h_a");
+let y = { h_a: 1, h_b: 2, h_c: 3, h_d: 4 };
+identity3(y, "h_a");
 function identity4<T>(arg: T[]): T[] {
   return arg;
 }

@@ -22,18 +22,14 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-// a call to 'f' with two arguments, 'g < A' and 'B > (7)'
 var h_g: number = 5
 var h_A: number = 3
 var h_B: number = 6
 function f(a: any, b?: any) {
   return a
 }
-
 Assert.isFalse(f(h_g < h_A, h_B > 7))
 Assert.isFalse(f(h_g < h_A, h_B > +(7)))
-
-// a call to a generic function 'g' with two type arguments and one regular argument
 type A1 = number
 type B1 = number
 function g1<T, U>(a: T) {
@@ -42,5 +38,4 @@ function g1<T, U>(a: T) {
 function f1(a: any, b?: any) {
   return a
 }
-
 Assert.equal(f1(g1<A1, B1>(7)), 7);

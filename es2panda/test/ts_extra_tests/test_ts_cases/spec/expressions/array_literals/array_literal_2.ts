@@ -28,7 +28,6 @@ var MyArray: {
   [1]: string;
   [2]: string;
 } = [1, "aaa", "bbb"];
-
 Assert.isNumber(MyArray[0]);
 Assert.isString(MyArray[1]);
 Assert.isString(MyArray[2]);

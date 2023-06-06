@@ -29,7 +29,6 @@ interface information {
     place?: [number, number];
     brave?: boolean;
 }
-
 function infor({ title, place, brave }: information) {
     if (title) {
         Assert.equal(typeof title == "string", true);
@@ -41,7 +40,6 @@ function infor({ title, place, brave }: information) {
         Assert.equal(typeof brave === "boolean", true);
     }
 }
-
 infor({ title: "title" });
 infor({ brave: false });
 infor({ place: [0, 1] });

@@ -24,13 +24,13 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-interface h_stu {
+interface I {
     h_name: string;
     h_age: number;
     h_height?: number;
     h_weight?: number;
 }
-let h_s: h_stu = {
+let h_s: I = {
     h_name: 'xiao',
     h_age: 19,
     h_height: 180

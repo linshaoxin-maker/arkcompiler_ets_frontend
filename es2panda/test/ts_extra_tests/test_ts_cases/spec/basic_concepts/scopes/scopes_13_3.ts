@@ -13,14 +13,31 @@
  * limitations under the License.
  */
 /**---
-description: > 
-  These UMD libraries can be accessed through either an import.
-module: ESNext
-isCurrent: true
----*/
+ description: >
+    When an identifier is resolved as a NamespaceName, only names in scope with a namespace meaning are considered and other names are ignored.
+ module: ESNext
+ isCurrent: true
+ ---*/
 
 
-import { Assert } from "../../../suite/assert.js"
-import { isPrime } from "./math-lib.js";
+import { Assert } from "../../../../suite/assert.js";
 
-Assert.equal(isPrime(2), true);
+var f: boolean = false;
+namespace f {
+   export interface f {
+      f: boolean;
+   }
+}
+Assert.equal(f, false);
+
+let f0: f.f = { f: true };
+Assert.equal(f0.f, true);
+
+type e = String;
+namespace e {
+   export var e: number = -1;
+}
+let e0: e = 'NARC';
+Assert.equal(e0, 'NARC');
+
+Assert.equal(e.e, -1);

@@ -30,7 +30,6 @@ Assert.isUndefined(t1);
 type T2 = unknown & string;
 let t2: T2 = 'a';
 Assert.isString(t2);
-
 type T3 = unknown | undefined;
 let t3: T3 = undefined;
 Assert.isUndefined(t3);
@@ -41,7 +40,6 @@ Assert.isUndefined(t4);
 type T5 = unknown | string;
 let t5: T5 = 'a';
 Assert.isString(t5);
-
 type T6<T> = T & {};
 let t6: T6<object> = { arg: 'arg' };
 Assert.isObject(t6);
@@ -55,7 +53,6 @@ Assert.isNumber(t8);
 type T9<T> = T | unknown;
 let t9: T9<number> = 10;
 Assert.isNumber(t9);
-
 type T10<T> = unknown extends T ? true : false;
 let t10: T10<string> = false;
 Assert.isFalse(t10);
@@ -68,18 +65,15 @@ Assert.isTrue(t12);
 type T13<T> = T extends never ? true : false;
 let t13: T13<string> = false;
 Assert.isFalse(t13);
-
 function func1(x: unknown): unknown {
     x = 10;
     return x;
 }
 Assert.equal(func1(0), 10);
-
 function func2(x: unknown) {
     return typeof x;
 }
 Assert.equal(func2("N"), "string");
-
 function func3(x: unknown) {
     if (x instanceof Error) {
         return 0;
@@ -88,7 +82,6 @@ function func3(x: unknown) {
 }
 let e: Error = Error();
 Assert.isNumber(func3(e));
-
 type T14<T> = { [P in keyof T]: number };
 type T15 = T14<any>;
 type T16 = T14<unknown>;
@@ -96,7 +89,6 @@ let t15: T15 = {};
 Assert.isObject(t15);
 let t16: T16 = {};
 Assert.isObject(t16);
-
 function func4<T>(pAny: any, pundefined: undefined, pT: T) {
     let x: unknown;
     x = 123;
@@ -111,12 +103,15 @@ function func4<T>(pAny: any, pundefined: undefined, pT: T) {
     x = pT;
 }
 func4(1024, undefined, "A");
-
 function fun5(x: unknown) {
     let v: unknown = x;
-    return v; 
+    return v;
 }
 Assert.equal(fun5(1024), 1024);
-
-let x: number = 1024;
-(x as unknown as string).length;
+function fun6() {
+    let a: unknown;
+    let b = a;
+    b = 2;
+    return b;
+}
+Assert.equal(fun6(), 2);

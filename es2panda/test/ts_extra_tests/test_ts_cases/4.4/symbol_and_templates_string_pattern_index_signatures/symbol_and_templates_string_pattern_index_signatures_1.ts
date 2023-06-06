@@ -23,10 +23,10 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface HWTest {
+interface I {
   [key: string]: any;
 }
-let t: HWTest = {};
+let t: I = {};
 t["1"] = 1;
 t["2"] = "1";
 const keys = Object.keys(t);

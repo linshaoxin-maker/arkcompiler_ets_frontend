@@ -25,27 +25,40 @@
 import { Assert } from "../../../suite/assert.js"
 
 interface HWC {
-    get size(): number;
-    set size(value: number | string | boolean);
+    get data(): number;
+    set data(val: number | string | boolean);
 }
 
-function hwtest(): HWC {
-    let size = 0;
+function funSW(): HWC {
+    let data = 0;
     return {
-        get size(): number {
-            return size;
+        get data(): number {
+            return data;
         },
-        set size(value: string | number | boolean) {
-            let num = Number(value);
-
-            if (!Number.isFinite(num)) {
-                size = 0;
-                return;
+        set data(val: string | number | boolean) {
+            if (val === undefined || val === null) {
+                data = NaN;
+            } else if (typeof val === "number") {
+                data = val;
+            } else if (typeof val === "string") {
+                data = val.length;
+            } else if (typeof val === "boolean") {
+                if (val === false) {
+                    data = 0;
+                } else if (val === true) {
+                    data = 1;
+                }
             }
-            size = num;
         },
     };
 }
 
-let t = hwtest();
-Assert.equal(t.size, 0);
+let t = funSW();
+t.data = "NARC";
+Assert.equal(t.data, 4);
+
+t.data = true;
+Assert.equal(t.data, 1);
+
+t.data = 1024;
+Assert.equal(t.data, 1024);

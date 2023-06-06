@@ -21,7 +21,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 interface T {
     name: any
@@ -42,5 +42,5 @@ let s: S = {
     hobbies: ["draw", "game"]
 };
 
-t = s
+t = s;
 Assert.equal(t, s);

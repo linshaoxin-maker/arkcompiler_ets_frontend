@@ -26,37 +26,31 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-
 let pp: Promise<number> = Promise.resolve(1);
-
 async function fetchTest1(): Promise<number> {
     return await pp;
 }
 fetchTest1().then((params) => {
     Assert.equal(params, 1);
 });
-
 async function fetchTest1NoReturnType() {
     return await pp;
 }
 fetchTest1NoReturnType().then((params) => {
     Assert.equal(params, 1);
 });
-
 const fetchTest2 = async (): Promise<number> => {
     return await pp;
 };
 fetchTest2().then((params) => {
     Assert.equal(params, 1);
 });
-
 const fetchTest2NoReturnType = async () => {
     return await pp;
 };
 fetchTest2NoReturnType().then((params) => {
     Assert.equal(params, 1);
 });
-
 class Person {
     async fetchTest3(): Promise<number> {
         return await pp;

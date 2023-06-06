@@ -26,15 +26,14 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-enum Colour {
-  Red = 0xff0000,
-  Green = 0x00ff00,
-  Blue = 0x0000ff,
+enum Animal {
+  cat = 0xff0000,
+  dog = 0x00ff00,
+  pig = 0x0000ff,
 }
-Assert.isString(Colour[0xff0000]);
-Assert.equal(Colour[0x00ff00], "Green");
-Assert.isNumber(Colour.Blue);
-
+Assert.isString(Animal[0xff0000]);
+Assert.equal(Animal[0x00ff00], "dog");
+Assert.isNumber(Animal.pig);
 enum TypeABC {
   A,
   B,

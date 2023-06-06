@@ -25,7 +25,6 @@ import { Assert } from '../../../../suite/assert.js'
 
 function add(): number;
 function add(x: number): number;
-function add(y: number): number;
 function add(x: number, y: number): number;
 function add(x?: number, y?: number): number {
     let sum: number = 0;

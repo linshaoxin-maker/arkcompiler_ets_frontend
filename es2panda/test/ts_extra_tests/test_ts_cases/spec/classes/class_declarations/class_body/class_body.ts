@@ -23,7 +23,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class P {
+class Compute {
   num1: number;
   num2: number;
   constructor(num1: number, num2: number) {
@@ -33,22 +33,21 @@ class P {
   public hypot() {
     return Math.sqrt(this.num1 * this.num1 + this.num2 * this.num2);
   }
-  static initial = new P(0, 0);
+  static initial = new Compute(0, 0);
 }
-let p: P = new P(10, 20);
+let p: Compute = new Compute(10, 20);
 Assert.equal(10, p.num1);
 Assert.equal(20, p.num2);
-Assert.equal(0, P.initial.num1);
-Assert.equal(0, P.initial.num2);
+Assert.equal(0, Compute.initial.num1);
+Assert.equal(0, Compute.initial.num2);
+let p2:Compute = new Compute(4,3)
+Assert.equal(5,p2.hypot())
 
-// zero constructor
 class Circle {
   radius: number = 1;
 }
 let c = new Circle();
 Assert.equal(c.radius, 1);
-
-// more constructor
 type TypeSummation = {
   width?: number;
   height?: number;

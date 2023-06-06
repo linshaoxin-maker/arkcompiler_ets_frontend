@@ -28,6 +28,7 @@ import { Assert } from '../../../../../suite/assert.js'
 var a: number = 10
 var b: number = 20
 var x = a + b
+Assert.equal(x, 30)
 enum e1 {
   A,
   B,

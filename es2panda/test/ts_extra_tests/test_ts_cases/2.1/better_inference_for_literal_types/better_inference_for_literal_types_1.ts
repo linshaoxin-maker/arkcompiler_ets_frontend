@@ -24,10 +24,14 @@ import { Assert } from '../../../suite/assert.js'
 
 const a = 1;
 let aa: typeof a = 1;
+Assert.equal(typeof aa , "number");
 const b = false;
 let bb: typeof b = false;
+Assert.equal(typeof bb , "boolean");
 const c = "hello";
 let cc: typeof c = "hello";
+Assert.equal(typeof cc , "string");
+
 
 class Test {
   static readonly age = 12;

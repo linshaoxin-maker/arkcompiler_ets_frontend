@@ -37,8 +37,8 @@ function* func(): Generator<number, string, boolean> {
     return "done!";
 }
 
-var t1 = func();
-var t2 = t1.next();
+let t1 = func();
+let t2 = t1.next();
 while (!t2.done) {
     t2 = t1.next(t2.value === 5);
 };

@@ -21,15 +21,15 @@
  ---*/
 
 
-import {Assert} from '../../../../suite/assert.js'
+import { Assert } from '../../../../suite/assert.js'
 
-var ab: number | string;
-var ba: string | number;
-ab = 1408;
-ba = 1408;
-Assert.equal(ab, ba);
-Assert.equal(typeof ab, typeof ba);
-ab = "Shift";
-ba = "Shift";
-Assert.equal(ab, ba);
-Assert.equal(typeof ab, typeof ba);
+let x: number | string;
+let y: string | number;
+x = 1408;
+y = 1408;
+Assert.equal(x, y);
+Assert.equal(typeof x, typeof y);
+x = "Shift";
+y = "Shift";
+Assert.equal(x, y);
+Assert.equal(typeof x, typeof y);

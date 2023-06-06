@@ -39,9 +39,6 @@ m_ins1 = m_ins2;
 Assert.equal(m_ins1, m_ins2);
 
 
-interface h_P{
-  name: string;
-}
 interface h_C{
   name: string;
   age: number;
@@ -49,7 +46,7 @@ interface h_C{
 
 type myType3<T> = () => T;
 type myType4<out T> = () => T;
-var m_ins3: myType3<h_P> = () => { return { name: 'xiao' } };
-var m_ins4: myType4<h_C> = () => { return { name: 'xi', age: 18 } };
+var m_ins3: myType3<h_C> = () => { return { name: 'xiao', age: 18 } };
+var m_ins4: myType4<h_C> = () => { return { name: 'xi', age: 18, height: 18 } };
 m_ins3 = m_ins4;
 Assert.equal(m_ins3, m_ins4);

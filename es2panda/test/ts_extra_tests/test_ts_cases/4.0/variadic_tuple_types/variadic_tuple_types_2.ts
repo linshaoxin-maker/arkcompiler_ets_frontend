@@ -24,12 +24,12 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function hwtest01<T1, T2>(arr1: [T1, T2], arr2: []): [T1, T2];
-function hwtest01<T>(arr1: T[], arr2: T[]): T[] {
+function funVTT01<T1, T2>(arr1: [T1, T2], arr2: []): [T1, T2];
+function funVTT01<T>(arr1: T[], arr2: T[]): T[] {
   return arr1.concat(arr2);
 }
 const t0: [] = [];
-const tns: [number, string] = hwtest01([1, "a"], t0);
+const tns: [number, string] = funVTT01([1, "a"], t0);
 Assert.equal(tns[0], 1);
 Assert.equal(tns[1], "a");
 
@@ -42,11 +42,11 @@ const arr1: [number, string, boolean, number[], object, string] = [
   "AAAA",
 ];
 const arr2: [] = [];
-function hwtest02<A, B, C, D, E, F>(
+function funVTT02<A, B, C, D, E, F>(
   arr1: [A, B, C, D, E, F],
   arr2: []
 ): [A, B, C, D, E, F] {
   return [...arr1, ...arr2];
 }
-const result = hwtest02(arr1, arr2);
+const result = funVTT02(arr1, arr2);
 Assert.equal(result.length, 6);

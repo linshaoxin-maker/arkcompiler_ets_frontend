@@ -28,7 +28,6 @@ a = a + 1
 a = a - 1
 a = ~a
 Assert.isNumber(a)
-
-function getValue() { }
-var n = +getValue()
+function func() { }
+var n = +func();
 Assert.isNumber(n);

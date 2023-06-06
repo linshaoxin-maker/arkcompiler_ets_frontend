@@ -46,8 +46,7 @@ function func(arg: Person | Animal) {
     Assert.isNumber(arg.height)
   }
 }
-
-var p = new Person('x', 18)
-func(p)
-var a = new Animal(200, 180)
+let p = new Person('x', 18);
+func(p);
+let a = new Animal(200, 180);
 func(a);

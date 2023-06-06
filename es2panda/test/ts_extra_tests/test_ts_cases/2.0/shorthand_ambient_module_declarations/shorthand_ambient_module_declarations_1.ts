@@ -22,8 +22,6 @@ isCurrent: true
 
 
 import { Assert } from "../../../suite/assert.js"
-import hwexpNumAdd15, { y } from "./hot-new-module.js"
+import hwexpNumAdd15, { y } from "./test_ts.js"
 
-hwexpNumAdd15(y);
-
-Assert.equal(typeof hwexpNumAdd15, "function");
+Assert.equal(hwexpNumAdd15(y), 25);

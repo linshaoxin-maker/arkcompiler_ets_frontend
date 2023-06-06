@@ -23,8 +23,8 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-let t_inter: object & { name: string };
-t_inter = {
+let x: object & { name: string };
+x = {
     name: 'intersection'
 }
-Assert.isObject(t_inter);
+Assert.isObject(x);

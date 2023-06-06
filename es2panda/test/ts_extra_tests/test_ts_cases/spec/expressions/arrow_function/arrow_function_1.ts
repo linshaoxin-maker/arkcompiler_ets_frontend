@@ -25,10 +25,8 @@ import { Assert } from '../../../../suite/assert.js'
 const addNumbers = (num1: number, num2: number): number => {
   return num1 + num2;
 };
-
 const result1 = addNumbers(5, 10);
 Assert.equal(result1, 15);
-
 const greet = (name: string) => {
   return name;
 };

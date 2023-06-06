@@ -22,14 +22,14 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class P {
+class Compute {
   constructor(public num1: number, public num2: number) { }
   public hypot() {
     return Math.sqrt(this.num1 * this.num1 + this.num2 * this.num2);
   }
-  static initial = new P(0, 0);
+  static initial = new Compute(0, 0);
 }
-class ChildP extends P {
+class ChildP extends Compute {
   constructor(public x: number, public y: number) {
     super(x, y);
   }
@@ -45,3 +45,8 @@ pChild.move();
 Assert.equal(11, pChild.x);
 Assert.equal(21, pChild.y);
 Assert.equal(0, ChildP.initial.num1);
+
+let count:ChildP = new ChildP(4,3);
+Assert.equal(4, count.x);
+Assert.equal(3, count.y);
+Assert.equal(5,count.hypot());

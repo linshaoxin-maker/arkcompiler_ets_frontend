@@ -23,3 +23,22 @@ import { Assert } from '../../../../../suite/assert.js'
 
 let u: undefined = undefined;
 Assert.equal(u, undefined);
+interface I2 {
+    s: number;
+}
+interface I {
+    a: number;
+    b?: string;
+    c?: number;
+    d?: object;
+    e?: string | number;
+    f?: I2;
+    g?: string & number;
+}
+let x: I = { a: 1 };
+Assert.isUndefined(x.b);
+Assert.isUndefined(x.c);
+Assert.isUndefined(x.d);
+Assert.isUndefined(x.e);
+Assert.isUndefined(x.f);
+Assert.isUndefined(x.g);

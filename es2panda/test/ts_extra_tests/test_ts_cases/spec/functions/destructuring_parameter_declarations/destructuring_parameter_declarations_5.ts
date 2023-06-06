@@ -28,7 +28,6 @@ type cc = {
     age: number;
     isJob: boolean;
 };
-// T is the implied type of that binding pattern
 function showInfo({ age, name, isJob }: cc) {
     Assert.isNumber(age);
     Assert.isBoolean(isJob);

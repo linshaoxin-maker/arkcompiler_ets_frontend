@@ -23,15 +23,15 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function hwtest01(...args: [string, number]): void {
+function funLTE01(...args: [string, number]): void {
   const newArr = [args[0].toUpperCase(), args[1] * 2];
   Assert.equal(newArr[0], "HELLO");
   Assert.equal(newArr[1], 10);
 }
-hwtest01("hello", 5);
-function hwtest02(arg0: string, arg1: number): void {
+funLTE01("hello", 5);
+function funLTE02(arg0: string, arg1: number): void {
   const Arrb = [arg0.toUpperCase(), arg1 * 2];
   Assert.equal(Arrb[0], "HELLO");
   Assert.equal(Arrb[1], 10);
 }
-hwtest02("hello", 5);
+funLTE02("hello", 5);

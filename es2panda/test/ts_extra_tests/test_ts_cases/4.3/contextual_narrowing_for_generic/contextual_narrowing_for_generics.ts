@@ -23,32 +23,20 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-function hwtest01<T, C extends Set<T> | T[]>(
-    collection: C,
-    comparer: (x: T, y: T) => number
-): C {
-    if (collection instanceof Set) {
-        return collection;
-    }
-    collection.sort(comparer);
-    for (let i = 0; i < collection.length; i++) {
-        let j = i;
-        while (
-            j < collection.length &&
-            comparer(collection[i], collection[j + 1]) === 0
-            ) {
-            j++;
-        }
-        collection.splice(i + 1, j - i);
-    }
+function funSetorArray<T, C extends Set<T> | T[]>(collection: C): C {
+  if (collection instanceof Set) {
     return collection;
+  }
+  return collection;
 }
 
 let num: number[] = [1, 3, 2, 2, 4];
-function hwtest02(a: number, b: number) {
-    if (a == b) {
-        return 0;
-    }
-    return 1;
-}
-Assert.equal(hwtest01(num, hwtest02), "1,3,2,4");
+let n = funSetorArray(num);
+Assert.equal(JSON.stringify(funSetorArray(num)), "[1,3,2,2,4]");
+
+let ss = new Set<string>();
+ss.add("NARC");
+ss.add("TypeScript");
+let ts = funSetorArray(ss);
+Assert.isTrue(ts.has("NARC"));
+Assert.isTrue(ts.has("TypeScript"));

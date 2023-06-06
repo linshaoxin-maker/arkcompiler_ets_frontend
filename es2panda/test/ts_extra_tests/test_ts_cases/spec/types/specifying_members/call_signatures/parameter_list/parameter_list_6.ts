@@ -24,7 +24,7 @@
 
 import { Assert } from '../../../../../../suite/assert.js'
 
-class Person2 {
+class Person {
   public name: string;
   private age: number;
   protected sex: string;
@@ -42,7 +42,7 @@ class Person2 {
     }
   }
 }
-class Child extends Person2 {
+class Child extends Person {
   f() {
     if (this.sex === "man") {
       this.sex = "male";

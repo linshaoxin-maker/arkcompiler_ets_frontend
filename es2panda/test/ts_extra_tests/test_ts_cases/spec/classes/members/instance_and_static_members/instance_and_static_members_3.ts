@@ -47,3 +47,5 @@ Assert.equal(b, 20);
 let c: number = Person.foo;
 Assert.equal(c, 20);
 Assert.equal(Person, Person.tool2());
+let d: Person = new Person();
+Assert.equal(d.tool(),30);

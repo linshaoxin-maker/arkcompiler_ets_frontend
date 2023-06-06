@@ -12,18 +12,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**---
+ description:  Trailing commas in function parameter and argument lists
+ module: ESNext
+ isCurrent: true
+ ---*/
 
 
-export function isPrime(x: number): boolean;
+import { Assert } from "../../../suite/assert.js"
 
-export function isPrime(x: number): boolean {
-    if (x < 2) {
-        return false;
-    }
-    for (let i = 2; i <= x / 2; i++) {
-        if (x % i == 0) {
-            return false;
-        }
-    }
-    return true;
-};
+function point(x:number, y:number,) {
+    return x+y
+}
+
+Assert.equal(3,point(1,2 ))
+Assert.equal(3,point(1,2, ))

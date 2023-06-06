@@ -22,8 +22,8 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-type HWT1<T extends string> = T extends ` ${infer Rest}` ? HWT1<Rest> : T;
+type project<T extends string> = T extends ` ${infer Rest}` ? project<Rest> : T;
 
-type HWT2 = HWT1<"                                                oops">;
-var t: HWT2 = "oops";
+type test = project<"                                                oops">;
+var t: test = "oops";
 Assert.equal(t, "oops");

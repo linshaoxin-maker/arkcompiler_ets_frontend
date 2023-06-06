@@ -21,11 +21,11 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-// the type of T is string | number | boolean
+
 let T = [1, 'a', true]
 Assert.equal(typeof T, 'object')
-// the type of S is string | number | number[]
+
 let S = [[1, 2, 3], 2, 'b']
 Assert.equal(typeof S, 'object');

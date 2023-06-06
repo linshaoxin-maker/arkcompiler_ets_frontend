@@ -14,9 +14,9 @@
  */
 /**---
  description: >
-    Type references to class and interface types are classified as object types.
+    Type references to class and interface types are classified as C1ect types.
     Type references to generic class and interface types include type arguments that are substituted for the type parameters of the class
-    or interface to produce an actual object type.
+    or interface to produce an actual C1ect type.
  module: ESNext
  isCurrent: true
  ---*/
@@ -24,31 +24,31 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class obj {
+class C1 {
     num1: number;
     num2: number;
     constructor(num1: number, num2: number) {
         this.num1 = num1;
         this.num2 = num2;
     }
-    add(h_x: number, h_y: number): void {
-        var sum: number = h_x + h_y;
+    add(x: number, y: number): void {
+        let sum: number = x + y;
         Assert.equal(sum, 10);
     }
 }
-let o: obj = new obj(4, 6);
+let o: C1 = new C1(4, 6);
 o.add(3, 7);
 
-interface h_inf {
-    h_name: string;
-    h_age: number;
+interface I {
+    name: string;
+    age: number;
     greet: () => string
 }
-let h_i: h_inf = {
-    h_name: 'xiao',
-    h_age: 18,
+let i: I = {
+    name: 'xiao',
+    age: 18,
     greet() { return "hello"; }
 }
-Assert.equal(h_i.h_name, "xiao");
-Assert.equal(h_i.h_age, 18);
-Assert.equal(h_i.greet(), "hello");
+Assert.equal(i.name, "xiao");
+Assert.equal(i.age, 18);
+Assert.equal(i.greet(), "hello");

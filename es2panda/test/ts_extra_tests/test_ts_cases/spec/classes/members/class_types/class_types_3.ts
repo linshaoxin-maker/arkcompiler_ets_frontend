@@ -22,7 +22,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class A {
+class Ra {
   public x: number = 10;
   private y: number = 10;
   protected z: number = 10;
@@ -44,17 +44,17 @@ class A {
     return this.g();
   }
 }
-class B extends A {
+class Rb extends Ra {
   protected z: number = 20;
   protected g(): boolean {
     return true;
   }
 }
-let a: A = new A();
+let a: Ra = new Ra();
 Assert.equal(a.x, 10);
 Assert.equal(a.gety(), 10);
 Assert.equal(a.getz(), 10);
 Assert.equal(a.getg(), false);
 Assert.equal(a.f().x, 11);
-let b: B = new B();
+let b: Rb = new Rb();
 Assert.equal(b.x, 10);

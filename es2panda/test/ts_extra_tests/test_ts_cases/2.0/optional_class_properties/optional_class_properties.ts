@@ -21,19 +21,19 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class myClass {
+class Demo {
     a: number = 0;
     b?: number;
     func() {
         return this.a;
     }
-    // Body of optional method can be omitted
+
     get?(): number;
     handle?() {
         return this.b;
     }
 }
-let c = new myClass();
+let c = new Demo();
 c.a = 1024;
 c.b = 1408;
 Assert.equal(c.func(), 1024);

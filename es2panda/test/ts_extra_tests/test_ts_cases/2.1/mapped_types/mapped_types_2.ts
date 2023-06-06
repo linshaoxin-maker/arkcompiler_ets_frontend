@@ -24,27 +24,26 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface PersonTest {
+interface HumanTest {
     name: string;
     age: number;
-    location: string;
+    destination: string;
 }
-type PersonType = Readonly<PersonTest>;
+type PersonType = Readonly<HumanTest>;
 
-let pt1: PersonTest = {
+let pt1: HumanTest = {
     name: "caihua",
     age: 20,
-    location: "earth",
+    destination: "earth",
 };
 pt1.name = "caihua1";
 Assert.notEqual(pt1.name, "caihua");
 pt1.age = 15;
 Assert.notEqual(pt1.age, 20);
-pt1.location = "Mars";
-Assert.notEqual(pt1.location, "earth");
-
+pt1.destination = "Mars";
+Assert.notEqual(pt1.destination, "earth");
 let pt2: PersonType = {
     name: "caihua",
     age: 20,
-    location: "earth",
+    destination: "earth",
 };

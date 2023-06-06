@@ -26,7 +26,6 @@ function func<T>(arg1: T, arg2: { str: string }, arg3:{num: number}) {
     let obj = { n: 5, ...arg2, ...arg1, s: 's', ...arg3 };
     return obj;
 }
-
 let o1 = {
     str: 'a'
 };
@@ -34,5 +33,4 @@ let o2 = {
     num: 10
 };
 var f = func({ s: "string" }, o1, o2);
-
 Assert.isObject(f);

@@ -22,8 +22,8 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-var obj: Object = { num1: 10, num2: 20 };
+let obj: Object = { num1: 10, num2: 20 };
 Assert.equal(JSON.stringify(obj), '{"num1":10,"num2":20}')
 
-var fun: Function = (num: number) => num * num;
+let fun: Function = (num: number) => num * num;
 Assert.isUndefined(JSON.stringify(fun));

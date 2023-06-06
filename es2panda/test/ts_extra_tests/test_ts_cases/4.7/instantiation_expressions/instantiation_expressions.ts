@@ -31,45 +31,43 @@ data.set("name",new Error("TS error"))
 Assert.equal(data.get("name").name, 'Error');
 
 
-interface HWI1<T> {
-    value: T;
-}
-interface HWI2 {
+interface I1 {
     name: string;
 }
-interface HWI3 {
+interface I2 {
     use: string;
 }
-function hwtest<T>(value: T) {
-    return {value};
-// Function
-    type myType1 = number | string;
-    type myType2 = { str: string } | (() => number);
-
-    function func<T>(arg: T) {
-        return arg;
-    }
-
-    var f1 = func<myType1>(5);
-    Assert.isNumber(f1);
-    var f2 = func<myType1>('a');
-    Assert.isString(f2);
-
-    var f3 = func<myType2>({str: 'str'});
-    Assert.isObject(f3);
-    var f4 = func<myType2>(() => {
-        return 10;
-    });
-    Assert.isFunction(f4);
-
-// Constructor
-    let map = Map<string, number>;
-    let map_instantiation = new map();
-    map_instantiation.set('num', 8);
-    Assert.isNumber(map_instantiation.get('num'));
-
-    let set = new Set<number>([2]);
-    for (let arg of set) {
-        Assert.isNumber(arg);
-    }
+function fc<T>(value: T) {
+    return value;
 }
+let obj1 = fc<I1>({ name: 'xiao' });
+let obj2 = fc<I2>({ use: 'play' });
+Assert.equal(JSON.stringify(obj1), '{"name":"xiao"}');
+Assert.equal(JSON.stringify(obj2), '{"use":"play"}');
+
+type myType1 = number | string;
+type myType2 = { str: string } | (() => number);
+function func<T>(arg: T) {
+    return arg;
+}
+
+var f1 = func<myType1>(5);
+Assert.isNumber(f1);
+var f2 = func<myType1>('a');
+Assert.isString(f2);
+var f3 = func<myType2>({str: 'str'});
+Assert.isObject(f3);
+var f4 = func<myType2>(() => {
+    return 10;
+});
+Assert.isFunction(f4);
+
+let map = Map<string, number>;
+let map_instantiation = new map();
+map_instantiation.set('num', 8);
+Assert.isNumber(map_instantiation.get('num'));
+
+let set = new Set<number>([2]);
+for (let arg of set) {
+    Assert.isNumber(arg);
+};

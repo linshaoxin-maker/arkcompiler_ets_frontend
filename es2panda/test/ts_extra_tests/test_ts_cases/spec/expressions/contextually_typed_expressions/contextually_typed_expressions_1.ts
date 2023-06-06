@@ -23,19 +23,14 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-// In a variable
 let a: number
 a = 10
 Assert.isNumber(a)
-
-// In a parameter
 function fun(x: string) {
   let y = x + 'ing'
   return y
 }
 Assert.isString(fun('str'))
-
-// In a member declaration
 interface Obj {
   name: string
   age: number

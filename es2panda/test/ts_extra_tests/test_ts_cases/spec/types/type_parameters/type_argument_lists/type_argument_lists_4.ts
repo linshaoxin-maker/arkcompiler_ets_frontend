@@ -23,9 +23,9 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-function h_iden<T>(h_x: T): T {
+function fun<T>(h_x: T): T {
     return h_x;
 }
-var x = h_iden<number>(10);
+let x = fun<number>(10);
 Assert.isNumber(x);
 Assert.equal(x, 10);

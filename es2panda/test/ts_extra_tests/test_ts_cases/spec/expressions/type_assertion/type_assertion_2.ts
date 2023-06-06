@@ -37,7 +37,6 @@ function doStuff(arg: Foo | Bar) {
     } else {
         Assert.equal(arg.bar, 123)
     }
-
 }
 doStuff(new Foo())
 doStuff(new Bar());

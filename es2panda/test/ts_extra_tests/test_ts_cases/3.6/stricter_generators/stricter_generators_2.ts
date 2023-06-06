@@ -38,7 +38,7 @@ class C {
 let c1 = new C("caihua", 12, false);
 
 const keys = Object.keys(c1);
-var nextIndex = 0;
+let nextIndex = 0;
 let x: Iterator<string, number> = {
     next() {
         return nextIndex < keys.length

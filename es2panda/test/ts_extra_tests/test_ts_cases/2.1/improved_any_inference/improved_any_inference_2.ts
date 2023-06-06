@@ -24,7 +24,8 @@
 
 
 import { Assert } from '../../../suite/assert.js'
-function func() {
+
+function funcT() {
     let arr = [];
     arr[0] = 0;
     arr.push("true");
@@ -32,7 +33,7 @@ function func() {
     return arr;
 }
 
-type c = ReturnType<typeof func>;
+type newF = ReturnType<typeof funcT>;
 
-let cc: c = ["hello", 12];
-Assert.equal(JSON.stringify(cc), '["hello",12]');
+let funC: newF = ["hello", 12];
+Assert.equal(JSON.stringify(funC), '["hello",12]');

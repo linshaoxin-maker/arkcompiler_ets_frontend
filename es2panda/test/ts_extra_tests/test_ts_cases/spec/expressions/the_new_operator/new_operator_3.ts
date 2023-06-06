@@ -28,10 +28,8 @@ class Person {
     return "Hello,world";
   }
 }
-
 let person: Person = new Person();
 Assert.equal(person.sayHello(), "Hello,world");
-
 let person2: any = new Person();
 person2.sayHello();
 Assert.equal(person2.sayHello(), "Hello,world");

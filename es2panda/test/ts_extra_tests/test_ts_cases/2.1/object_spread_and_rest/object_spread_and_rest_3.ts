@@ -29,9 +29,9 @@ let humen = {
   age: 20,
 };
 
-let copy = { ...humen, name: "huahua", job: "teacher" };
+let combine = { ...humen, name: "huahua", job: "teacher" };
 
-let { job, ...restProperties } = copy;
-Assert.equal(job, copy.job);
-Assert.equal(restProperties.age, copy.age);
-Assert.equal(restProperties.name, copy.name);
+let { job, ...restProperties } = combine;
+Assert.equal(job, combine.job);
+Assert.equal(restProperties.age, combine.age);
+Assert.equal(restProperties.name, combine.name);

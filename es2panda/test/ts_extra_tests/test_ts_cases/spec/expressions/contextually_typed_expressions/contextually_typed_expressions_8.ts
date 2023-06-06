@@ -22,21 +22,23 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-const state: Record<string, any> = {
-  isPending: false,
-  results: ['a', 'b', 'c']
+const obj: Record<string, any> = {
+  boo: false,
+  arr: ['a', 'b', 'c']
 }
-
-const useValue = <T extends {}>(name: string): [T, Function] => {
-  const value: T = state[name]
-  const setValue: Function = (value: T): void => {
-    state[name] = value
+const para = <T extends {}>(str: string): [T, Function] => {
+  const result1: T = obj[str];
+  const result2: Function = (value: T) => {
+    obj[str] = value;
+    return obj[str];
   }
-  return [value, setValue]
+  return [result1, result2];
 }
-
-const [isPending, setIsPending] = useValue('isPending')
-const [results, setResults] = useValue('results')
-
-Assert.isBoolean(isPending)
-Assert.equal(results, 'a,b,c');
+const [boo, mem2] = para('boo');
+const [arr, mem4] = para('arr');
+Assert.isBoolean(boo);
+Assert.equal(arr, 'a,b,c');
+let x = mem2(true);
+let y = mem4(false);
+Assert.isTrue(x);
+Assert.isFalse(y);

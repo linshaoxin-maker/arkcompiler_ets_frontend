@@ -22,22 +22,22 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-function hwfun01<T, U extends any[], V>(f: (x: T, ...args: U) => V): (...args: U) => V {
-    function frm(...args: U) { let json = JSON.stringify(args); return json as unknown as V; }
-    return frm;
+function fun1<T, U extends any[], V>(f: (x: T, ...args: U) => V): (...args: U) => V {
+    function f2(...args: U) { let json = JSON.stringify(args); return json as unknown as V; }
+    return f2;
 };
-function getArrJson(x: number, y: string, z: boolean): string {
+function fun2(x: number, y: string, z: boolean): string {
     let a: any[] = [x, y, z];
     let json = JSON.stringify(a);
     return json;
 }
-let a = getArrJson(5, "A", true);
-let gf1 = hwfun01(getArrJson);
-let b = gf1("B", true);
-let gf2 = hwfun01(gf1);
-let c = gf2(true);
-let gf3 = hwfun01(gf2);
-let d = gf3();
+let a = fun2(5, "A", true);
+let ff1 = fun1(fun2);
+let b = ff1("B", true);
+let ff2 = fun1(ff1);
+let c = ff2(true);
+let ff3 = fun1(ff2);
+let d = ff3();
 Assert.equal(a, "[5,\"A\",true]");
 Assert.equal(b, "[\"B\",true]");
 Assert.equal(c, "[true]");

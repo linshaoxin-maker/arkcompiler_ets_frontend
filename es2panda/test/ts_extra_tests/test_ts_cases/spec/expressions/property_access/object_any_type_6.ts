@@ -26,21 +26,17 @@ import { Assert } from '../../../../suite/assert.js'
 interface MyObject {
   [key: string]: number;
 }
-
 const obj: MyObject = {
   prop1: 1,
   prop2: 2,
   prop3: 3,
 };
-
-const prop = "prop2";
-const value1 = obj[prop];
 const value2 = obj[0];
+Assert.equal(value2, undefined);
 enum MyEnum {
   Prop1 = "prop1",
   Prop2 = "prop2",
   Prop3 = "prop3",
 }
-
 const value3 = obj[MyEnum.Prop3];
 Assert.equal(value3, 3);

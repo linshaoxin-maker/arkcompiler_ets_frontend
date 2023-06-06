@@ -23,11 +23,11 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-let h_a: { h_x: number, h_y: string };
+let a: { x: number, y: string };
 
-let h_b: typeof h_a;
-h_b = {
-    h_x: 10,
-    h_y: 'h_y'
+let b: typeof a;
+b = {
+    x: 10,
+    y: 'y'
 }
-Assert.equal(typeof h_b, 'object');
+Assert.equal(typeof b, 'object');

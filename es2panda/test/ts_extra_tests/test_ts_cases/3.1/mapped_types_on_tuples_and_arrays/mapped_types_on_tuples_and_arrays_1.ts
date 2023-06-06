@@ -23,11 +23,11 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-type Test<T> = {
+type Type<T> = {
     [k in keyof T]: Array<T[k]>;
 };
-type tupleTest = [number, string, boolean];
-type tt = Test<tupleTest>;
+type tuple = [number, string, boolean];
+type tt = Type<tuple>;
 let cc: tt = [
     [0, 1, 2, 3],
     ["a", "b", "c", "d"],
@@ -39,7 +39,7 @@ cc.push([1, 2, 3]);
 cc.push([false, false]);
 cc.push(["hello", "world"]);
 Assert.equal(cc.length, 6);
-// pop
+
 let vv: any = cc.pop();
 Assert.equal(vv[0], "hello");
 Assert.equal(vv[1], "world");

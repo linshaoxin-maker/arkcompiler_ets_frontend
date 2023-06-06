@@ -49,8 +49,6 @@ Assert.equal("c", testSwitch(3));
 Assert.equal("d", testSwitch(4));
 Assert.equal("e", testSwitch(5));
 
-
-
 function testSwitchExpression(x: number, y: number) {
     let outputVar: string;
     switch (x + y) {

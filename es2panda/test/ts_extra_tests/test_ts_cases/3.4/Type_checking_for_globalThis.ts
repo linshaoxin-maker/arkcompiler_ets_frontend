@@ -13,29 +13,24 @@
  * limitations under the License.
  */
 /**---
- description: Since keyof now reflects the presence of a numeric index signature by including type number in the key type, mapped types such as Partial<T> and Readonly<T> work correctly when applied to object types with numeric index signatures.
+ description: >
+    globalThis provides a standard way for accessing the global scope which can be used across different environments.
  module: ESNext
  isCurrent: true
----*/
+ ---*/
 
 
-import { Assert } from '../../../suite/assert.js'
+import { Assert } from "../../suite/assert.js"
 
-type ArrayAny<T> = {
-    length: number;
-    [x: number]: T;
-}
+var nm = 10010;
+let gt:any = globalThis
+gt.nm = 10086;
+Assert.equal(gt.nm,10086);
+Assert.equal(typeof gt.nm,"number");
 
-type RAA<T> = Readonly<ArrayAny<T>>;
-
-let arr: RAA<string> = {
-    [1]: "b",
-    [2]: "a",
-    length: 2,
-};
-
-
-let len = arr.length;
-let x = arr[1];
-Assert.equal(2, len);
-Assert.equal("b", x);
+var np = "sss";
+let gp:any = globalThis
+gp.np = "nanj";
+Assert.equal(gp.np,"nanj");
+Assert.notEqual(typeof gp.np,"number");
+Assert.isString(gp.np);

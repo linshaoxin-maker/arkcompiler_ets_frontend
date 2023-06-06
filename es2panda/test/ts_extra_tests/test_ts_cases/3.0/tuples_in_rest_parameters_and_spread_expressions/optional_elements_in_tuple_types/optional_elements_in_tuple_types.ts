@@ -24,13 +24,16 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-let test: [number, string?, boolean?];
-test = [1024, "hello", true];
-Assert.equal(JSON.stringify(test), "[1024,\"hello\",true]");
-Assert.equal(test.length, 3);
-test = [1408, "N"];
-Assert.equal(JSON.stringify(test), "[1408,\"N\"]");
-Assert.equal(test.length, 2);
-test = [0];
-Assert.equal(JSON.stringify(test), "[0]");
-Assert.equal(test.length, 1);
+let opt: [number, string?, boolean?, number[]?];
+opt = [1024, "str", true, [1, 2]];
+Assert.equal(JSON.stringify(opt), "[1024,\"str\",true,[1,2]]");
+Assert.equal(opt.length, 4);
+opt = [1024, "str", true];
+Assert.equal(JSON.stringify(opt), "[1024,\"str\",true]");
+Assert.equal(opt.length, 3);
+opt = [1408, "N"];
+Assert.equal(JSON.stringify(opt), "[1408,\"N\"]");
+Assert.equal(opt.length, 2);
+opt = [0];
+Assert.equal(JSON.stringify(opt), "[0]");
+Assert.equal(opt.length, 1);

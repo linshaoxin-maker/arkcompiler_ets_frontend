@@ -31,19 +31,15 @@ const sites = {
 Assert.isString(sites["siteName"]);
 Assert.isNumber(sites["site2"]);
 Assert.isFunction(sites["sayHello"]);
-
 interface Person {
   name: string;
   age: number;
   city: string;
 }
-
 const person: Person = {
   name: "Alice",
   age: 30,
   city: "New York",
 };
-
 Assert.equal(person["name"], "Alice");
-
 Assert.equal(person["city"], "New York");

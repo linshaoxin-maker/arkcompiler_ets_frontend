@@ -22,10 +22,15 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-let x: number = 20
-let y: boolean = true
-let z: string = 'a'
-let com1 = (x++, y)
-let com2 = (x++, z = z + 'b')
-Assert.isBoolean(com1)
+let x: number = 20;
+let y: boolean = true;
+let z: string = 'a';
+function add(arg1: number, arg2: number) {
+    return arg1 + arg2;
+}
+let com1 = (x++, y);
+let com2 = (x++, z = z + 'b');
+let com3 = (x++, add(3, 5));
+Assert.isBoolean(com1);
 Assert.isString(com2);
+Assert.isNumber(com3);

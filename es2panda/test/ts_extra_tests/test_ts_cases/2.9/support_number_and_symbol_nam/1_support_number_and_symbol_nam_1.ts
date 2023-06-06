@@ -21,36 +21,26 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-const str = "c";
-const num = 10;
+const str = "x";
+const num = 1;
 const sym = Symbol();
-
-const enum ABC { A, B, C }
-const enum ABCStr { A = "A", B = "B", C = "C" }
-
-
+const enum NUM { ONE, TWO, THREE }
+const enum XYZStr { X = "X", Y = "Y", Z = "Z" }
 type TypeObj = {
-    a: string;
-    5: string;
-
+    y: string;
+    2: string;
     [str]: string;
     [num]: string;
     [sym]: string;
-
-    [ABC.A]: string;
-    [ABCStr.A]: string;
+    [NUM.ONE]: string;
+    [XYZStr.X]: string;
 }
-
-
-type KEY1 = keyof TypeObj;
-type KEY2 = Extract<keyof TypeObj, string>;
-type KEY3 = Extract<keyof TypeObj, number>;
-type KEY4 = Extract<keyof TypeObj, symbol>;
-
-
-let key1: KEY1 = 'c';
-let key2: KEY2 = ABCStr.A;
-let key3: KEY3 = 10;
-Assert.equal("c", key1);
-Assert.equal(ABCStr.A, key2);
-Assert.equal(10, key3);
+type X1 = keyof TypeObj;
+type X2 = Extract<keyof TypeObj, string>;
+type X3 = Extract<keyof TypeObj, number>;
+let x1: X1 = "x";
+let x2: X2 = XYZStr.X;
+let x3: X3 = 1;
+Assert.equal("x", x1);
+Assert.equal(XYZStr.X, x2);
+Assert.equal(1, x3);

@@ -24,7 +24,6 @@
 import { Assert } from '../../../../suite/assert.js'
 
 type testStr = "caihua";
-
 type testStrNum = 12;
 class Person {
     m_name: testStr | undefined;
@@ -36,7 +35,6 @@ class Person {
         } else {
             this.m_name = undefined;
         }
-
         if (age && typeof age === "number") {
             this.m_age = age;
         } else {
@@ -45,7 +43,6 @@ class Person {
     }
 }
 let tt: Person = new Person();
-
 function showInfo(v: Person) {
     let {
         m_name = "caihua",

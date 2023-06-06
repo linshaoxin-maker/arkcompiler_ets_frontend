@@ -14,7 +14,7 @@
  */
 /**---
  description: >
-   If we hover our mouse over x in an editor like Visual Studio, Visual Studio Code, or the TypeScript Playground, we’ll get a quick info panel that shows the type BasicPrimitive. Likewise, if we get the declaration file output (.d.ts output) for this file, TypeScript will say that doStuff returns BasicPrimitive.
+   If we hover our mouse over value in an editor like Visual Studio, Visual Studio Code, or the TypeScript Playground, we’ll get a quick info panel that shows the type BasicPrimitive. Likewise, if we get the declaration file output (.d.ts output) for this file, TypeScript will say that doStuff returns BasicPrimitive.
  module: ESNext
  isCurrent: true
 ---*/
@@ -24,9 +24,9 @@ import { Assert } from '../../../suite/assert.js'
 
 type NumStrBool = number | string | boolean;
 
-function hwtest02(value: NumStrBool) {
+function func(value: NumStrBool) {
   return value;
 }
 
 let arr = [10, "hello", false];
-Assert.equal(typeof hwtest02(arr[0]), "number");
+Assert.equal(typeof func(arr[0]), "number");

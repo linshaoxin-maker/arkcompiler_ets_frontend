@@ -21,18 +21,15 @@
  ---*/
 
 
-import {Assert} from '../../../../suite/assert.js'
+import { Assert } from '../../../../suite/assert.js'
 
-var n_s: number | string;
-var b_s: boolean | string;
-var o_na: object | number[];
-n_s = 2048;
-Assert.isNumber(n_s);
-b_s = false;
-Assert.isFalse(b_s);
-n_s = "NARC";
-Assert.isString(n_s);
-b_s = "1";
-Assert.equal(b_s, "1");
-
-
+var x: number | string;
+var y: boolean | string;
+x = 2048;
+Assert.isNumber(x);
+y = false;
+Assert.isFalse(y);
+x = "NARC";
+Assert.isString(x);
+y = "1";
+Assert.equal(y, "1");

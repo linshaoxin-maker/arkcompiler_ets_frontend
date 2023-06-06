@@ -12,6 +12,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**---
+ description: >
+   never type
+ module: ESNext
+ isCurrent: true
+ ---*/
 
 
-import './module_resolution_enhancements_3.js'
+import { Assert } from "../../../suite/assert.js"
+
+function testError():never {
+    throw new Error("testError");
+}
+
+try {
+    testError();
+} catch (e:any) {
+    Assert.equal(e.message, "testError");
+}
+
+function test():never {
+    return "ok" as never
+}
+
+Assert.equal(typeof test(), "string");

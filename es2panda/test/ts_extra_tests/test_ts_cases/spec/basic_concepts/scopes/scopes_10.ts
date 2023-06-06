@@ -14,23 +14,30 @@
  */
 /**---
  description: >
-    locally declared entities in a namespace are closer in scope than exported entities declared in other namespace declarations for the same namespace.
+    The scope of a local let, const, class, interface, type alias, or enum declaration declared immediately within the body of a function-like declaration is the body of that function-like declaration.
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import { Assert } from '../../../../suite/assert.js'
+import { Assert } from "../../../../suite/assert.js";
 
-var num = 1;
-namespace ns {
-    export var num = 2;
-    Assert.equal(num, 2);
+function sfun() {
+   let s = 1024;
+   Assert.equal(s, 1024);
+   const n = 'NARC'
+   Assert.equal(n, 'NARC');
+   class C {
+      c: number;
+      constructor(c: number) {
+         this.c = c;
+      }
+   }
+   let cc = new C(5);
+   Assert.equal(cc.c, 5);
+
+   type S = keyof C | keyof number & keyof string;
+   let ss: S = "valueOf";
+   Assert.equal(ss, "valueOf");
 }
-namespace ns {
-    Assert.equal(num, 2);
-}
-namespace ns {
-    var num = 3;
-    Assert.equal(num, 3);
-}
+sfun();

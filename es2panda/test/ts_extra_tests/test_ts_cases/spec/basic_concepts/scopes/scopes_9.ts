@@ -14,30 +14,20 @@
  */
 /**---
  description: >
-  Modules can import types declared in other modules. But non-module global scripts cannot access types declared in modules. Enter import types.
-  Using import("mod") in a type annotation allows for reaching in a module and accessing its exported declaration without importing it.
+    The scope of a local var or function name declared anywhere in the body of a function-like declaration is the body of that function-like declaration.
  module: ESNext
  isCurrent: true
----*/
+ ---*/
 
 
-import { Assert } from '../../suite/assert.js'
+import { Assert } from "../../../../suite/assert.js";
 
-function func1(i: import("./module").I) {
-  Assert.equal(5, `${i.num}`);
-  Assert.equal(5, i.num);
+function sfun(x: number, y: number): number {
+   var a: number = x + y;
+   let b: number = x - y;
+   function subfun() {
+      return a * b;
+   }
+   return subfun();
 }
-let i: import("./module.js").I = {
-  num: 5
-}
-func1(i);
-
-function func(p: import("./module").C) {
-  Assert.equal('puppy', `${p.str}`);
-  Assert.equal('puppy', p.str);
-}
-
-let p: import("./module.js").C = {
-  str: "puppy",
-};
-func(p);
+Assert.equal(sfun(3, 5), -16);

@@ -23,7 +23,6 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-// interfaces
 interface point {
   point(x: number, y: number, z?: number): number;
 }
@@ -41,7 +40,7 @@ let sum = p1.point(x, y, z);
 Assert.equal(sum, 6);
 sum = p1.point(x, y);
 Assert.equal(sum, 3);
-// object type literals
+
 let point2: { x: number; y: number; z?: number };
 point2 = { x: 1, y: 2, z: 3 };
 let pp1 = point2;

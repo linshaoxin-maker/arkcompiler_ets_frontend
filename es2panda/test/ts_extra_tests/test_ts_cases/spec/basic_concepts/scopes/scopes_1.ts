@@ -26,12 +26,10 @@ var a: number = 1024;
 let b: string = 'NARC';
 Assert.equal(a, 1024);
 Assert.equal(b, 'NARC');
-
 function add() {
     return a + b;
 }
 Assert.equal(add(), '1024NARC');
-
 class OUT {
     out: string;
     constructor() {

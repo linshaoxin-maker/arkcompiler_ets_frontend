@@ -39,7 +39,6 @@ function createAsyncInterator(arr: any[]): AsyncIterator<any> {
         },
     };
 }
-
 export function newArray(len: number, step: number = 1) {
     if (len <= 0) { return [] };
     let arr: any[] = [];
@@ -68,4 +67,3 @@ async function exp(arr: any[]) {
     }
 }
 exp(arr);
-

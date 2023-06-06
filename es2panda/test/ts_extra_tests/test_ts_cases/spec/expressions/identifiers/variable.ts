@@ -24,6 +24,5 @@ import { Assert } from '../../../../suite/assert.js'
 
 let uname: string = "Runoob";
 let score1: number = 50;
-
 Assert.isString(uname);
 Assert.isNumber(score1);

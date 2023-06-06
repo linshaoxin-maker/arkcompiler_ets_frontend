@@ -21,13 +21,10 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-// { x: 0, y: 0 } is the fresh object literal type
 const p: { x: number, y: number } = { x: 0, y: 0 }
 Assert.equal(JSON.stringify(p), '{"x":0,"y":0}')
 
-// The freshness disappears when the type of the express in a type assertion
-// There is Excess Property y but no error
 const p1: { x: number } = { x: 0, y: 0 } as { x: 0, y: 0 }
 Assert.equal(JSON.stringify(p1), '{"x":0,"y":0}');

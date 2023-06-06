@@ -24,10 +24,10 @@
 import { Assert } from '../../suite/assert.js'
 
 {
-    type T = { mem: string } | { mem: number };
+    type newTest = { mem: string } | { mem: number };
     interface I1{
         num: number;
-        boo: T;
+        boo: newTest;
     }
     interface I2{
         num: number;

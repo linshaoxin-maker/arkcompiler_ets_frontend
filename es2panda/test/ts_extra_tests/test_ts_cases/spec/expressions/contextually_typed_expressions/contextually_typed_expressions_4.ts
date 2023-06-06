@@ -29,8 +29,6 @@ function add(x: number, y: number): number {
 }
 let sum = add(10, 20)
 Assert.isNumber(sum)
-
-
 type Fun = (a: number, b: number) => number
 function fun(fn: Fun, x: number, y: number) {
     return fn(x, y)

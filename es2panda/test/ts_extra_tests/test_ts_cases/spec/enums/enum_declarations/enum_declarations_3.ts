@@ -32,7 +32,6 @@ const enum H_Date {
     Saturday = 'Satur',
     Sunday = 'Sun'
 }
-
 let h_date1 = H_Date.Monday;
 Assert.equal(h_date1, 'Mon');
 let h_date2 = H_Date.Tuesday;
@@ -47,7 +46,6 @@ let h_date6 = H_Date.Saturday;
 Assert.equal(h_date6, 'Satur');
 let h_date7 = H_Date.Sunday;
 Assert.equal(h_date7, 'Sun');
-
 const enum H_Odd {
     a = 1,
     b = a + 2,

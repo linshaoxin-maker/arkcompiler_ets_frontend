@@ -24,14 +24,14 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-interface h_inter {
+interface I {
   name: string;
-  getN(this: h_inter): string;
+  getN(this: I): string;
 }
-let h_i: h_inter = {
+let i: I = {
   name: 'xiao',
   getN() {
     return this.name;
   }
 }
-Assert.equal(h_i.getN(), 'xiao');
+Assert.equal(i.getN(), 'xiao');

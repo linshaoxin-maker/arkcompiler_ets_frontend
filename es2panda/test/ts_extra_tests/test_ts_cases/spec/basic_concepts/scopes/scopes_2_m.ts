@@ -26,7 +26,6 @@ let m1 = 1969;
 var m2 = 'XO';
 Assert.equal(m1, 1969);
 Assert.equal(m2, 'XO');
-
 export let m3 = 1970;
 export var m4 = 'EXP';
 Assert.equal(m3, 1970);

@@ -26,7 +26,6 @@ import { Assert } from '../../../../suite/assert.js'
 let myTuple: [string, number] = ["hello", 42];
 Assert.isString(myTuple[0]);
 Assert.isNumber(myTuple[1]);
-
 function foo(pair: [string, number]) {
    return pair
 }

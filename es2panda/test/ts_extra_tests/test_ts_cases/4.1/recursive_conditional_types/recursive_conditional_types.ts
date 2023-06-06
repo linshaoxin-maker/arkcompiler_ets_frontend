@@ -22,20 +22,20 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-type HWElementType<T> = T extends ReadonlyArray<infer U> ? HWElementType<U> : T;
+type TYPE1<T> = T extends ReadonlyArray<infer U> ? TYPE1<U> : T;
 
-function hwtest01<T extends readonly unknown[]>(x: T): HWElementType<T>[] {
+function fun1<T extends readonly unknown[]>(x: T): TYPE1<T>[] {
   return [];
 }
-let d1 = hwtest01([1, 2, 3]);
+let d1 = fun1([1, 2, 3]);
 type typeofx = typeof d1;
 let nx1: typeofx = [1, 2, 3];
 Assert.isNumber(nx1[0]);
-let d2 = hwtest01([[1], [2, 3]]);
+let d2 = fun1([[1], [2, 3]]);
 type typeofx2 = typeof d2;
 let nx2: typeofx2 = [4, 5, 6];
 Assert.isNumber(nx2[0]);
-let d3 = hwtest01([[1], [[2]], [[[3]]]]);
+let d3 = fun1([[1], [[2]], [[[3]]]]);
 type typeofx3 = typeof d3;
 let nx3: typeofx3 = [7, 8, 9];
 Assert.isNumber(nx3[0]);

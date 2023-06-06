@@ -21,7 +21,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 interface Array1 {
     [index1: string]: number
@@ -39,5 +39,5 @@ const stu1 = {
 const stu2 = {
     number: 10001
 }
-Assert.equal(test(stu1), "right")
+Assert.equal(test(stu1), "right");
 Assert.equal(test(stu2), "right");

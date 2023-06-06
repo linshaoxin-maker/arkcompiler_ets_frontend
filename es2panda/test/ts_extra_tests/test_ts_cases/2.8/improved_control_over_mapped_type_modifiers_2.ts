@@ -13,33 +13,20 @@
  * limitations under the License.
  */
 /**---
- description: TypeScript 2.9 allows passing generic type arguments to tagged template strings.
+ description: >
+   Using this ability, lib.d.ts now has a new Required<T> type. 
+   This type strips ? modifiers from all properties of T, thus making all properties required.
  module: ESNext
  isCurrent: true
----*/
+ ---*/
 
 
-import { Assert } from '../../suite/assert.js'
+import { Assert } from "../../suite/assert.js";
 
-let jianbing = '煎饼'
+type ABCU = { 'A'?: number, 'B'?: number, 'C'?: number, 'D'?: number };
+type ABC = Required<ABCU>;
 
-function kitchen(strings: TemplateStringsArray, value: string) {
-  Assert.equal(2, strings.length);
-}
-
-let zaocan = kitchen`今天的早餐是${jianbing}!`;
-
-
-
-function tag<T>(strs: TemplateStringsArray, args: T): T {
-  Assert.equal(2, strs.length);
-  return args;
-};
-
-
-let a = tag<string> `今天的午餐是${jianbing}!`;
-Assert.equal("煎饼", a);
-
-let b = tag<string> `今天的午餐是${"dessert"}!`;
-
-Assert.equal("dessert", b);
+let abcu: ABCU = { 'C': 3 };
+let abc: ABC = { A: 1, B: 2, C: 3, D: 4 };
+Assert.equal(JSON.stringify(abcu), '{"C":3}');
+Assert.equal(JSON.stringify(abc), '{"A":1,"B":2,"C":3,"D":4}');

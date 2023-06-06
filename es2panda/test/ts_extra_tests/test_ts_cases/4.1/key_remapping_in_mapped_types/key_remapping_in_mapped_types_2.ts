@@ -22,13 +22,13 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-type HWRemoveKindField<T> = {
-  [K in keyof T as Exclude<K, "kind">]: T[K];
+type TYPE1<T> = {
+  [K in keyof T as Exclude<K, "name">]: T[K];
 };
-interface Circle {
-  kind: "circle";
-  radius: number;
+interface I1 {
+  name: "ww";
+  id: number;
 }
-type HWKindlessCircle = HWRemoveKindField<Circle>;
-let k: HWKindlessCircle = { radius: 10 };
-Assert.equal(k.radius, 10);
+type TYPE2 = TYPE1<I1>;
+let k: TYPE2 = { id: 10 };
+Assert.equal(k.id, 10);

@@ -23,8 +23,8 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-var h_x: string | number;
-h_x = 37;
-h_x = "hello";
-var h_n = typeof h_x === "string" ? h_x.length : h_x;
+let x: string | number;
+x = 37;
+x = "hello";
+let h_n = typeof x === "string" ? x.length : x;
 Assert.isNumber(h_n);

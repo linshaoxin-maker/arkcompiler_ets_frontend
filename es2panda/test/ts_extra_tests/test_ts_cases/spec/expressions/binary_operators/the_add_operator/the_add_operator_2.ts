@@ -30,7 +30,6 @@ var c: boolean = false
 var d: string = 'str'
 var e: number = 10
 var f: any = 20
-// the result is of type Any
 var w = a + b
 var v = a + f
 Assert.isString(w)

@@ -26,10 +26,12 @@ import { Assert } from '../../../../suite/assert.js'
 
 function h_func(h_x: number | string) {
    if (!(typeof h_x === 'string')) {
-      Assert.isNumber(h_x)
+      Assert.isNumber(h_x);
+      return h_x;
    }
    else {
       return h_x.length
    }
 }
-h_func(10);
+let a = h_func(10);
+Assert.equal(a, 10);

@@ -22,8 +22,8 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-var h_x = 5
-var h_y = typeof h_x
-Assert.equal(h_y, 'number')
-var h_z: typeof h_x = 10
-Assert.isNumber(h_z);
+let aa = 1
+let bb = typeof aa
+Assert.equal(bb, 'number')
+let cc: typeof aa = 2
+Assert.equal(cc, 2)

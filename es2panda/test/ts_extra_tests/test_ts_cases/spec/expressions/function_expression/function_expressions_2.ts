@@ -27,7 +27,7 @@ type MyFunctionType = (x: number, y: number) => number;
 function myFunction(fn: MyFunctionType) {
   return fn(2, 3);
 }
-const add: MyFunctionType = function (x:number, y:number) {
+const add: MyFunctionType = function (x: number, y: number) {
   return x + y;
 };
 const result = myFunction(add);

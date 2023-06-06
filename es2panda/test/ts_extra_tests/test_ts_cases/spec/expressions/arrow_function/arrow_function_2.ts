@@ -29,15 +29,12 @@ const myFunctionA = (num: string): string => {
 };
 const resultA = myFunctionA("hello,world");
 Assert.equal(resultA, "hello,world");
-
 const myFunctionB: () => string = () => "hello,world";
 const resultB = myFunctionB();
 Assert.equal(resultB, "hello,world");
-
 let getTempItem = (id: any) => ({ id: id, name: "Temp" });
 const TempAResult = getTempItem(123);
 Assert.equal(TempAResult.id, 123);
-
 let getTempItemB = function (id: any) {
   return {
     id: id,

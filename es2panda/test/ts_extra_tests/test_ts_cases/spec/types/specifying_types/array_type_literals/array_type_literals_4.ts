@@ -25,12 +25,12 @@ import { Assert } from '../../../../../suite/assert.js'
 let arr: Array<string | number> = [2, 'a'];
 Assert.equal(arr[0], 2);
 Assert.equal(arr[1], 'a');
-let h_x = function () {
-    return 'h_x';
+let x = function () {
+    return 'x';
 }
-let h_y = function () {
-    return 'h_y';
+let y = function () {
+    return 'y';
 }
-let fun: Array<() => string> = [h_x, h_y];
+let fun: Array<() => string> = [x, y];
 Assert.isFunction(fun[0]);
 Assert.isFunction(fun[1]);

@@ -21,9 +21,8 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-// class
 class MinClass<T> {
   public list: T[] = [];
   add(v: T) {
@@ -40,14 +39,14 @@ class MinClass<T> {
     return minNum;
   }
 }
-// string type
+
 let minStringValue = new MinClass();
 minStringValue.add("a");
 minStringValue.add("b");
 minStringValue.add("c");
 minStringValue.add("d");
 Assert.equal(minStringValue.findminNumberValue(), "a");
-// number type
+
 let minNumberValue = new MinClass();
 minNumberValue.add(1);
 minNumberValue.add(2);

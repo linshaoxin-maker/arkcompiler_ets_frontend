@@ -21,36 +21,30 @@
  ---*/
 
 
-import {Assert} from '../../../../suite/assert.js'
+import { Assert } from '../../../../suite/assert.js'
 
 class ClassT {
       size: number = 0;
       description: string = '';
 }
-
 class ClassU1 extends ClassT {
       alive: boolean = false;
 }
-
 class ClassU2 extends ClassT {
       weight: number = 0;
 }
-
 interface InterfaceU1 {
       speak(): string;
 }
-
 interface InterfaceU2 {
       eat(): string;
 }
-
 class ClassT2 implements InterfaceU1, InterfaceU2 {
       food: string = '';
       language: string = '';
       speak() {
             return this.language;
       }
-
       eat() {
             return this.food;
       }
@@ -59,14 +53,11 @@ class ClassT2 implements InterfaceU1, InterfaceU2 {
             this.language = language;
       }
 }
-
-var u1: ClassU1 | ClassU2 = { size: 7, description: "A", alive: false };
-var t1: ClassT;
+let u1: ClassU1 | ClassU2 = { size: 7, description: "A", alive: false };
+let t1: ClassT;
 t1 = u1;
 Assert.equal(JSON.stringify(t1), '{"size":7,"description":"A","alive":false}');
-
-var u2: InterfaceU1 | InterfaceU2;
-var t2: ClassT2 = new ClassT2("rice", "Chinese");
+let u2: InterfaceU1 | InterfaceU2;
+let t2: ClassT2 = new ClassT2("rice", "Chinese");
 u2 = t2;
 Assert.equal(JSON.stringify(u2), '{"food":"rice","language":"Chinese"}');
-

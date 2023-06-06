@@ -24,21 +24,21 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-type TrySetVIfFirst<T, V> = T extends [infer U extends V, ...unknown[]] ? U : never;
-function setFirst<T, V>(arr: any[], x: TrySetVIfFirst<[T, ...any], V>) {
+type myType<T, V> = T extends [infer U extends V, ...unknown[]] ? U : false;
+function func<T, V>(arr: any[], x: myType<[T, ...any], V>) {
     arr[0] = x;
     return arr;
 }
 let arr = ["A", "B", "C"];
-let first = setFirst<number, number>(arr, 65);
+let first = func<number, number>(arr, 65);
 Assert.equal(JSON.stringify(first), "[65,\"B\",\"C\"]");
 
-type SomeNum = "100" extends `${infer U extends number}` ? U : never;
-type SomeBigInt = "100" extends `${infer U extends bigint}` ? U : never;
-type SomeBool = "true" extends `${infer U extends boolean}` ? U : never;
-let sn: SomeNum = 100;
-let sbi: SomeBigInt = 100n;
-let sbool: SomeBool = true;
-Assert.equal(sn, 100);
-Assert.equal(sbi, 100n);
+type N = "10" extends `${infer U extends number}` ? U : false;
+type Bi = "string" extends `${infer U extends string}` ? U : false;
+type Bool = "true" extends `${infer U extends boolean}` ? U : false;
+let sn: N = 10;
+let sbi: Bi = "string";
+let sbool: Bool = true;
+Assert.equal(sn, 10);
+Assert.equal(sbi, "string");
 Assert.equal(sbool, true);

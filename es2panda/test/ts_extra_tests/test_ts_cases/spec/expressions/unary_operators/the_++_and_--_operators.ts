@@ -23,13 +23,12 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-var a: any = '10'
-a++
-a--
---a
-++a
-Assert.isNumber(a)
-
+var a: any = '10';
+a++;
+a--;
+--a;
+++a;
+Assert.isNumber(a);
 enum e {
   A,
   B,
@@ -37,8 +36,14 @@ enum e {
   D
 }
 let b = e.A
-b++
-b--
-++b
---b
+b++;
+b--;
+++b;
+--b;
 Assert.isNumber(b);
+var c: number = 10;
+c++;
+++c;
+--c;
+c--;
+Assert.isNumber(c);

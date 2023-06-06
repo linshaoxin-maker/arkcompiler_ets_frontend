@@ -22,31 +22,31 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface HWPerson {
-  name: string;
-  age: number;
-  location: string;
+interface I1 {
+  x: string;
+  y: number;
+  z: string;
 }
-interface HWAnimal {
-  name: string;
-  owner: HWPerson;
+interface I2 {
+  x: string;
+  owner: I1;
 }
-function hwtest01(pet?: HWAnimal) {
+function fun(other?: I2) {
   return {
-    ...(pet && pet.owner),
+    ...(other && other.owner),
     otherStuff: 123,
   };
 }
-let pet: HWAnimal = {
-  name: "qiqi",
+let pet: I2 = {
+  x: "qiqi",
   owner: {
-    name: "owner",
-    age: 11,
-    location: "qingdao",
+    x: "owner",
+    y: 11,
+    z: "qingdao",
   },
 };
-let pet2 = hwtest01(pet);
-Assert.equal(pet2.age, 11);
-Assert.equal(pet2.name, "owner");
-Assert.equal(pet2.location, "qingdao");
+let pet2 = fun(pet);
+Assert.equal(pet2.y, 11);
+Assert.equal(pet2.x, "owner");
+Assert.equal(pet2.z, "qingdao");
 Assert.equal(pet2.otherStuff, 123);

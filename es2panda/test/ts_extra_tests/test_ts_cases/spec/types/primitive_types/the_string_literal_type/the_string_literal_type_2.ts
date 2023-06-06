@@ -25,7 +25,6 @@ import { Assert } from '../../../../../suite/assert.js'
 interface Test {
   v: "hello";
 }
-
 function test(dd: Test) {
   Assert.equal(dd.v.length, 5);
   return dd;

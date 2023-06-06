@@ -24,7 +24,6 @@
 import { Assert } from '../../../../suite/assert.js'
 
 let GlobalScope = 1;
-
 function someFunc() {
     let FunctionScope = 2;
     if (true) {

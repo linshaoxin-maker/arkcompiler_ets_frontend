@@ -22,11 +22,8 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-interface T {
-    [key: string]: string
-}
 interface S {
     [value: string]: string
 }

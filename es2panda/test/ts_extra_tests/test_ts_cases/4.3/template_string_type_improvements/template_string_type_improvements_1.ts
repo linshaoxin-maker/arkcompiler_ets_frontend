@@ -23,19 +23,19 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-type Color = "red" | "blue";
+type Figure = "three-colour" | "pure color";
 type Num = "one" | "two";
 
-type Fish1 = `${Num | Color} fish`;
-type Fish2 = "one fish" | "two fish" | "red fish" | "blue fish";
-var fish1: Fish1 = "blue fish";
-var fish2: Fish2 = fish1;
-fish1 = "one fish";
-fish2 = fish1;
-fish1 = "red fish";
-fish2 = fish1;
-fish1 = "two fish";
-fish2 = fish1;
+type Cat1 = `${Num | Figure} cat`;
+type Cat2 = "one cat" | "two cat" | "three-colour cat" | "pure color cat";
+var cat1: Cat1 = "pure color cat";
+var cat2: Cat2 = cat1;
+cat1 = "one cat";
+cat2 = cat1;
+cat1 = "three-colour cat";
+cat2 = cat1;
+cat1 = "two cat";
+cat2 = cat1;
 
 let s1: `${number}-${number}-${number}`;
 let s2: `1-2-3` = `1-2-3`;

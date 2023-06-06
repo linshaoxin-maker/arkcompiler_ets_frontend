@@ -26,22 +26,22 @@
 import { Assert } from '../../../suite/assert.js'
 
 let a = 1;
-let aa: typeof a = 12;
-Assert.isNumber(aa);
+let newA: typeof a = 12;
+Assert.isNumber(newA);
 
-var b = 1;
-var bb: typeof b = 12;
-Assert.isNumber(bb);
+let b = 1;
+let newB: typeof b = 12;
+Assert.isNumber(newB);
 
-function test(a = true) {
+function test(a:boolean = true) {
     return a;
 }
-let tt: ReturnType<typeof test> = false;
-Assert.isBoolean(tt);
+let newT: ReturnType<typeof test> = false;
+Assert.isBoolean(newT);
 
 class Test {
     static job = "coder";
 }
 
-let cc: typeof Test.job = "driver";
-Assert.isString(cc);
+let newC: typeof Test.job = "driver";
+Assert.isString(newC);

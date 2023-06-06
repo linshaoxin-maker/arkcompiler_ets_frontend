@@ -23,7 +23,6 @@
 import { Assert } from '../../../../suite/assert.js'
 
 let someArray = [1, "string", false];
-
 for (let item of someArray) {
     if (typeof item === "number") {
         Assert.equal(item, 1);

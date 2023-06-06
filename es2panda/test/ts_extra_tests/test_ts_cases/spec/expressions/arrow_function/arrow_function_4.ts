@@ -25,17 +25,16 @@ import { Assert } from '../../../../suite/assert.js'
 
 class ToAlert {
     information = "Have a good time!";
-    start() {
+    F() {
         let for_this = this;
-        setTimeout(function() {
-            for_this.information="sad boy";
+        setTimeout(function () {
+            for_this.information = "sad boy";
         }, 2250);
-        Assert.notEqual(for_this.information,"sad boy")
+        Assert.notEqual(for_this.information, "sad boy")
     }
 };
-let Hwa = new ToAlert();
-Hwa.start();
-
-Hwa.information = "boy!";
-Assert.isString(Hwa.information)
-Assert.equal(Hwa.information,"boy!")
+let a = new ToAlert();
+a.F();
+a.information = "boy!";
+Assert.isString(a.information);
+Assert.equal(a.information, "boy!");

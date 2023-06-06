@@ -23,11 +23,10 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-function hwtest(s: string): `hello ${string}` {
-    // Previously an error, now works
+function funStr(s: string): `hello ${string}` {
     return `hello ${s}`;
 }
-var b = hwtest("s");
+var b = funStr("s");
 Assert.equal(b, "hello s");
 
 let s: string = "s";

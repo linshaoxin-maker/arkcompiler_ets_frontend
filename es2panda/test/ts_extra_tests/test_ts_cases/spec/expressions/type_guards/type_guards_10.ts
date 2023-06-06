@@ -38,7 +38,6 @@ var b = f1('s')
 Assert.isString(b)
 var c = f1(undefined)
 Assert.isUndefined(c)
-
 function f2(x: string | number | boolean) {
     if (typeof x === "undefined") {
         return undefined

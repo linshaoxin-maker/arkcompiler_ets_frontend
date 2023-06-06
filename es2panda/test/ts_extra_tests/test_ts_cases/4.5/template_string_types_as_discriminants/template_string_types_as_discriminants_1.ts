@@ -23,38 +23,38 @@ isCurrent: true
 import { Assert } from "../../../suite/assert.js"
 
 interface Message {
-    type: string;
-    url: string;
+    pattern: string;
+    location: string;
 }
 
-interface SuccessMessage {
-    type: `${string}Success`;
-    body: string;
+interface SMessage {
+    pattern: `${string}Success`;
+    location: string;
 }
 
-interface ErrorMessage {
-    type: `${string}Error`;
+interface EMessage {
+    pattern: `${string}Error`;
     message: string;
 }
 
-function hwtest(r: SuccessMessage | ErrorMessage) {
-    if (r.type === "HttpSuccess") {
-        let token = r.body;
-        Assert.equal(r.type, "HttpSuccess");
+function RunTest(r: SMessage | EMessage |Message) {
+    if (r.pattern === "HttpSuccess") {
+        let token = r.pattern;
+        Assert.equal(token, "HttpSuccess");
     } else {
-        Assert.equal(r.type, "HttpError");
+        Assert.equal(r.pattern, "HttpError");
     }
 }
 
-const successMessage: SuccessMessage = {
-    type: "HttpSuccess",
-    body: "request success"
+const successMessage: SMessage = {
+    pattern: "HttpSuccess",
+    location: "request success"
 }
 
-const errorMessage: ErrorMessage = {
-    type: "HttpError",
+const errorMessage: EMessage = {
+    pattern: "HttpError",
     message: "100-continue"
 }
 
-hwtest(successMessage);
-hwtest(errorMessage);
+RunTest(successMessage);
+RunTest(errorMessage);

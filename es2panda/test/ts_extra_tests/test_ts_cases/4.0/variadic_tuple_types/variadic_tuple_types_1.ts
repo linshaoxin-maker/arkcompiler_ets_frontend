@@ -22,19 +22,19 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function hwtest01(arr1: any, arr2: any) {
+function funVTT01(arr1: any, arr2: any) {
   return [...arr1, ...arr2];
 }
 const arrA: any = [1, 2, 3];
 const arrB: any = [4, 5, 6];
-let len01 = hwtest01(arrA, arrB).length;
+let len01 = funVTT01(arrA, arrB).length;
 Assert.equal(len01, 6);
 
-function hwtest02(arg: any) {
+function funVTT02(arg: any) {
   const [_, ...result] = arg;
   return result;
 }
 
 const arrC: any = [1, 2, 3, 4, 5];
-let len02 = hwtest02(arrC).length;
+let len02 = funVTT02(arrC).length;
 Assert.equal(len02, 4);

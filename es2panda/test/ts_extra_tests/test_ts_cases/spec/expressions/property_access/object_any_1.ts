@@ -23,13 +23,8 @@
 import { Assert } from '../../../../suite/assert.js'
 
 let myVariable: any = { name: "John", age: 30 };
-
 Assert.isUndefined(myVariable.firstName);
-
 myVariable = 42;
-
 Assert.isUndefined(myVariable.length);
-
 myVariable = "Hello World";
-
 Assert.isUndefined(myVariable.foo);

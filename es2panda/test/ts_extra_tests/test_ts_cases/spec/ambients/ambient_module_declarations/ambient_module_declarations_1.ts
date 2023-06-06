@@ -19,7 +19,7 @@
  isCurrent: true
  ---*/
 
- 
+
 import { Assert } from "../../../../suite/assert.js"
 
 declare module AMD1 {
@@ -29,6 +29,5 @@ declare module AMD1 {
     a1_2: number;
   }
 }
-
 var am2: AMD1.AMD1IF = { a1_1: "am2", a1_2: 123 };
 Assert.equal(JSON.stringify(am2), '{"a1_1":"am2","a1_2":123}');

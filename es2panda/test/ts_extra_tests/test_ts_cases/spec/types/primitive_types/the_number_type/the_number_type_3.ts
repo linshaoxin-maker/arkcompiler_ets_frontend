@@ -21,9 +21,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-// Equivalent to h_z: number = 123.456
 let h_z = 123.456;
-// The property of Number
 let s = h_z.toFixed(2);
 Assert.equal(s, 123.46);
 let a = h_z.toString();

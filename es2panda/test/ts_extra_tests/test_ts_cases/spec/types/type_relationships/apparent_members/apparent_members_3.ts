@@ -23,7 +23,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 let obj: Object;
 obj = {
@@ -39,8 +39,5 @@ class Person {
     toString(): string {
         return "hello"
     }
-}
-function test() {
-    let myTest1: new (str: string, num: number) => Person
 }
 Assert.notEqual(Person.toString(), "hello");

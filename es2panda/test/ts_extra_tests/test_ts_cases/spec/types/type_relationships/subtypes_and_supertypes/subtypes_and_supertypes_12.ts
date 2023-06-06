@@ -29,7 +29,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 type T = {
     name: any
@@ -50,5 +50,5 @@ let s: S = {
     height: 180
 }
 
-t = s
+t = s;
 Assert.equal(t, s);

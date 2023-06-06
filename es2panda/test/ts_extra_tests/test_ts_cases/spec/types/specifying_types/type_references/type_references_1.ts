@@ -23,15 +23,15 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-let h_obj: {
+let obj: {
     month: number;
     day: number;
 } = {
     month: 5,
     day: 15
 }
-Assert.equal(h_obj.month, 5);
-Assert.equal(h_obj.day, 15);
+Assert.equal(obj.month, 5);
+Assert.equal(obj.day, 15);
 function identity1<T, U>(value: T, message: U): [T, U] {
     return [value, message];
 }

@@ -21,17 +21,16 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-function zip<S, T, U>(x: S[], y: T[], combine: (x: S) => (y: T) => U): U[] {
-    var len = Math.max(x.length, y.length);
-    var result: U[] = [];
-    for (var i = 0; i < len; i++) result.push(combine(x[i])(y[i]));
+function fun<S, T, U>(x: S[], y: T[], combine: (x: S) => (y: T) => U): U[] {
+    let len = Math.max(x.length, y.length);
+    let result: U[] = [];
+    for (let i = 0; i < len; i++) result.push(combine(x[i])(y[i]));
     return result;
 }
 
-var names = ["Peter", "Paul", "Mary"];
-var ages = [7, 9, 12];
-// the type of 'pairs' is '{ name: string; age: number }[]'
-var pairs = zip(names, ages, s => n => ({ name: s, age: n }));
+let names = ["Peter", "Paul", "Mary"];
+let ages = [7, 9, 12];
+let pairs = fun(names, ages, s => n => ({ name: s, age: n }));
 Assert.equal(JSON.stringify(pairs), '[{"name":"Peter","age":7},{"name":"Paul","age":9},{"name":"Mary","age":12}]');

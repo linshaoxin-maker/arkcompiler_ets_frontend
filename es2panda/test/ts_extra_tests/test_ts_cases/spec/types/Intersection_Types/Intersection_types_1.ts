@@ -30,9 +30,9 @@ interface A1 {
 interface B1 {
   str1: string;
 }
-let ns1: A1 & B1 = { num1: 1, str1: "b" };
-Assert.equal(ns1.num1, 1);
-Assert.equal(ns1.str1, "b");
+let x: A1 & B1 = { num1: 1, str1: "b" };
+Assert.equal(x.num1, 1);
+Assert.equal(x.str1, "b");
 enum Color {
   Red1 = 1,
   Green1,
@@ -44,17 +44,17 @@ interface A2 {
 interface B2 {
   str2: Color;
 }
-let ns2: A2 & B2 = { num2: ["a2", 1], str2: Color.Red1 };
-Assert.equal(ns2.num2[0], "a2");
-Assert.equal(ns2.str2, 1);
+let x2: A2 & B2 = { num2: ["a2", 1], str2: Color.Red1 };
+Assert.equal(x2.num2[0], "a2");
+Assert.equal(x2.str2, 1);
 interface A3 {
   num3: number[];
 }
 interface B3 {
   str3: boolean;
 }
-let ns3: A3 & B3 = { num3: [1, 2, 3], str3: true };
-Assert.equal(ns3.str3, true);
+let x3: A3 & B3 = { num3: [1, 2, 3], str3: true };
+Assert.equal(x3.str3, true);
 interface A4 {
   num4: number;
 }
@@ -64,15 +64,15 @@ interface B4 {
 interface C4 {
   cm: any;
 }
-let ns4: A4 & B4 & C4 = { num4: 1, str4: "b4", cm: 3 };
-Assert.equal(ns4.num4, 1);
-Assert.equal(ns4.str4, "b4");
-Assert.equal(ns4.cm, 3);
+let x4: A4 & B4 & C4 = { num4: 1, str4: "b4", cm: 3 };
+Assert.equal(x4.num4, 1);
+Assert.equal(x4.str4, "b4");
+Assert.equal(x4.cm, 3);
 interface XX {
   obj: A1;
 }
 interface YY {
   obj: B1;
 }
-let xxyy: XX & YY = { obj: ns1 };
-Assert.equal(xxyy.obj.num1, 1);
+let x5: XX & YY = { obj: x };
+Assert.equal(x5.obj.num1, 1);

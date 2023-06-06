@@ -29,7 +29,6 @@ class Student {
         this.age = age;
     }
 }
-
 class Teacher {
     name: string;
     age: number;
@@ -40,7 +39,6 @@ class Teacher {
         this.job = job;
     }
 }
-
 function isTeacher(obj: Student | Teacher): obj is Teacher {
     return "job" in obj;
 }
@@ -60,7 +58,6 @@ function printInfo(obj: Student | Teacher) {
         return "student";
     }
 }
-
 let tt: Teacher = new Teacher("caihuaTeacher", 20, "teacher");
 let ss: Student = new Student("caihuaStudent", 20);
 Assert.equal(printInfo(tt), "teacher");

@@ -32,7 +32,6 @@ let x: number;
 let add = x! + x!;
 Assert.isTrue(Number.isNaN(add));
 
-// The definite assignment assertion operator is the dual of the non-null assertion operator
 let num1: number;
 later1();
 let sum1 = num1! + num1!;

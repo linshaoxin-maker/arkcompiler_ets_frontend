@@ -25,17 +25,17 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-function h_func(h_x: string | number | undefined) {
-    if (typeof h_x === "string" || typeof h_x === "number") {
-        return h_x
+function func(x: string | number | undefined) {
+    if (typeof x === "string" || typeof x === "number") {
+        return x;
     }
     else {
-        return undefined
+        return undefined;
     }
 }
-var h_a = h_func(10)
-Assert.isNumber(h_a)
-var h_b = h_func('s')
-Assert.isString(h_b)
-var h_c = h_func(undefined)
-Assert.isUndefined(h_c);
+let a = func(10);
+Assert.isNumber(a);
+let b = func('s');
+Assert.isString(b);
+let c = func(undefined);
+Assert.isUndefined(c);

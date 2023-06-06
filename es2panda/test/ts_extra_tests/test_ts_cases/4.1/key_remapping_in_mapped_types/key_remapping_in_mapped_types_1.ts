@@ -22,26 +22,26 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-type HWGetters<T> = {
+type G<T> = {
   [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K];
 };
-interface HWPerson {
+interface I1 {
   name: string;
-  age: number;
-  location: string;
+  id: number;
+  lo: string;
 }
-type HWPersonType = HWGetters<HWPerson>;
-let k1: HWPersonType = {
+type I1Type = G<I1>;
+let k1: I1Type = {
   getName() {
     return "honny";
   },
-  getAge() {
-    return 22;
+  getId() {
+    return 2;
   },
-  getLocation() {
+  getLo() {
     return "qingdao";
   },
 };
 Assert.equal(k1.getName(), "honny");
-Assert.equal(k1.getAge(), 22);
-Assert.equal(k1.getLocation(), "qingdao");
+Assert.equal(k1.getId(), 2);
+Assert.equal(k1.getLo(), "qingdao");

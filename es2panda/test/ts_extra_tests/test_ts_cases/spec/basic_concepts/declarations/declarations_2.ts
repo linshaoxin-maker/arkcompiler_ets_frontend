@@ -28,15 +28,14 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-class C {
-    x: string;
-    constructor(x: string) {
-        this.x = x;
+class Myclass {
+    a: string;
+    constructor(a: string) {
+        this.a = a;
     }
 }
-var c: C = new C("x");
-Assert.equal(c.x, "x");
-
+var c: Myclass = new Myclass("x");
+Assert.equal(c.a, "x");
 enum WeekDay {
     MON = 1,
     TUE,
@@ -49,8 +48,7 @@ enum WeekDay {
 type a = WeekDay;
 var mon: a = WeekDay.MON;
 Assert.equal(mon, 1);
-
-namespace N {
+namespace X {
     export let x: string = "x";
 }
-Assert.equal(N.x, "x");
+Assert.equal(X.x, "x");

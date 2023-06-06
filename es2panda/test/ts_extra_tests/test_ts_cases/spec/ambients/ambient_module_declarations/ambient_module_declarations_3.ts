@@ -37,7 +37,6 @@ declare module AMD3_2 {
    }
    export var AMD2Var1: string;
 }
-
 var am3_1: AMD3_1.AMD3_1IF = { a3_1: false, a3_2: 0 };
 var am3_2: AMD3_2.AMD3_2IF = { a3_1: true, a3_2: "T" };
 Assert.equal(JSON.stringify(am3_1), '{"a3_1":false,"a3_2":0}');

@@ -22,8 +22,8 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function hwtest(tuple: readonly [string, string, string]) {
+function func(tuple: readonly [string, string, string]) {
   return tuple.length;
 }
-var a = hwtest(['a', 'b', 'c']);
+var a = func(['a', 'b', 'c']);
 Assert.equal(a, 3);

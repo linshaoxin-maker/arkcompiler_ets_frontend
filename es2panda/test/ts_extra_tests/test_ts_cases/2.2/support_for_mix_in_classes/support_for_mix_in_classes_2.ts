@@ -32,12 +32,12 @@ class Color {
         this.Blue = blue;
     }
     toString() {
-        return `Color(${this.Red}, ${this.Green}, ${this.Blue})`;
+        return 'Color(' + this.Red + ', ' + this.Green + ', ' + this.Blue + ')';
     }
 }
-type MIXTypeCopy<T> = new (...args: any[]) => T;
-function ColorClassMix<T extends MIXTypeCopy<Color>>(Base: T) {
-    return class extends Base {
+type MIXTypeCopy<T> = new (...members: any[]) => T;
+function ColorClassMix<T extends MIXTypeCopy<Color>>(BC: T) {
+    return class extends BC {
         getColors(): [number, number, number] {
             return [this.Red, this.Green, this.Blue];
         }

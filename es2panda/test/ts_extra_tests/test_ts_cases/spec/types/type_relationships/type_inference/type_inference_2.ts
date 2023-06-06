@@ -21,7 +21,7 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
 function map<T, U>(a: T[], f: (x: T) => U): U[] {
   var result: U[] = [];
@@ -30,6 +30,6 @@ function map<T, U>(a: T[], f: (x: T) => U): U[] {
 }
 
 var names = ["Peter", "Paul", "Mary"];
-// the type of lengths is number[]
+
 var lengths = map(names, s => s.length);
 Assert.equal(typeof lengths, 'object');

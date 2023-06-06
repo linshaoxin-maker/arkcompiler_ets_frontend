@@ -24,12 +24,31 @@
 import { Assert } from '../../../../suite/assert.js'
 
 let x: any
+let fun: any;
+fun = (x: any) => x;
+Assert.equal(fun(5), 5);
 x = 1024;
 x.toString();
 Assert.isString(x.toString());
 x = "AAA";
 x.length;
 Assert.equal(x.length, 3);
-let fun: any;
-fun = (a: number) => a;
-Assert.equal(fun(5), 5);
+Assert.equal(fun(x), "AAA");
+x = true;
+Assert.equal(x, true);
+Assert.equal(fun(x), true);
+x = [1, 2, 3];
+Assert.equal(x[0], 1);
+Assert.equal(fun(x), "1,2,3");
+x = ["aa", "bb"];
+Assert.equal(x[0], "aa");
+Assert.equal(fun(x), "aa,bb");
+x = (a: number, b: number) => { return a + b };
+Assert.isFunction(x);
+Assert.isFunction(fun(x));
+x = Symbol("aa");
+Assert.isSymbol(x);
+Assert.isSymbol(fun(x));
+x = { a: 1, b: 1 };
+Assert.isObject(x);
+Assert.isObject(fun(x));

@@ -22,19 +22,19 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class HWP {
+class RunP {
     #name: string;
     constructor(name: string) {
         this.#name = name;
     }
 
-    equals(other: any) {
+    combine(other: any) {
         return other &&
             typeof other === "object" &&
             this.#name === other.#name;
     }
 }
 
-const men = new HWP('jack');
-const women = new HWP('marry');
-Assert.equal(women.equals(men), false);
+const men = new RunP('jack');
+const women = new RunP('marry');
+Assert.equal(women.combine(men), false);

@@ -27,8 +27,7 @@ var num1: number = 20
 var num2: number = 90
 var res = !((num1 > 50) && (num2 > 80))
 Assert.isBoolean(res)
-
-function getValue(): any {
+function func(): any {
 }
-var b = !!getValue()
+var b = !!func()
 Assert.isBoolean(b);

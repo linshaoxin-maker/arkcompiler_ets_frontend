@@ -21,11 +21,9 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-// function declaration
 function sum<T, K extends T>(a: T, b: K): string {
     return "a";
 }
 Assert.equal(sum(1, 1), "a");
- 

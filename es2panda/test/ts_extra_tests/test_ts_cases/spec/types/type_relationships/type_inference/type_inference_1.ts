@@ -22,16 +22,18 @@
  ---*/
 
 
-import {Assert} from '../../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-interface Cb {
+interface I1 {
     (a: number): void
 }
-interface Fn {
-    (cb: Cb): void
+interface I2 {
+    (cb: I1): void
 }
-const fn: Fn = function (cb) { }
-// The argument a to the anonymous function is of type number
+const fn: I2 = function (cb) {
+    Assert.isFunction(cb);
+}
+
 fn(function (a) {
     Assert.isNumber(a);
     a = a + 1;

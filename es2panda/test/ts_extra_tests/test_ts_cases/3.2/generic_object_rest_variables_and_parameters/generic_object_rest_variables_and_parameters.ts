@@ -24,12 +24,21 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-function hwfun<T extends { tag: string }>(obj: T) {
-    let { tag, ...rest } = obj;
+function func1<T>(arg: T) {
+    let { ...restPara } = arg;
+    return restPara;
+}
+const obj1 = { x: 10, y: 'a' };
+const o1 = func1(obj1);
+Assert.isObject(o1);
+Assert.equal(JSON.stringify(o1), '{"x":10,"y":"a"}');
+
+function func2<T extends { str: string }>(obj: T) {
+    let { str, ...rest } = obj;
     return rest;
 }
 
-const point = { x: 10, y: 20, tag: "point" };
-const p = hwfun(point);
-
-Assert.equal(JSON.stringify(p), '{"x":10,"y":20}');
+const obj2 = { x: 10, y: 20, str: "string" };
+const o2 = func2(obj2);
+Assert.isObject(o2);
+Assert.equal(JSON.stringify(o2), '{"x":10,"y":20}');

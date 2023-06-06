@@ -34,7 +34,6 @@ Assert.equal(T1.Tex0, 0);
 Assert.equal(T1.Tex1, 1);
 Assert.equal(T1.Tex2, 2);
 Assert.equal(T1.Tex3, 3);
-
 enum T2 {
   Tex0,
   Tex1,

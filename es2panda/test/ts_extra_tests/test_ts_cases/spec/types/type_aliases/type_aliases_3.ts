@@ -23,15 +23,15 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-interface h_inter<T, U> {
+interface I<T, U> {
     h_x: T;
     h_y: U;
 }
-interface h_face<T, U> {
+interface I2<T, U> {
     h_y: T;
     h_b: U;
 }
-type MyType = h_inter<number, string> | h_face<string, boolean>
+type MyType = I<number, string> | I2<string, boolean>
 var mytest: MyType = {
     h_x: 10,
     h_y: 'y',

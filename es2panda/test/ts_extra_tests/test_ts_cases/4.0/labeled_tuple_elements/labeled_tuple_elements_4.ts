@@ -23,9 +23,9 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function hwtest01(x: [first: string, second: number]) {
+function funLTE01(x: [first: string, second: number]) {
   const [a, b] = x;
   Assert.equal(a, "hello");
   Assert.equal(b, 42);
 }
-hwtest01(["hello", 42]);
+funLTE01(["hello", 42]);

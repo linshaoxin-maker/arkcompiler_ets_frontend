@@ -22,13 +22,13 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-let h_test1: string | number[];
-h_test1 = 'string';
-Assert.equal(h_test1, 'string');
-h_test1 = [3, 5];
-Assert.equal(h_test1[0], 3);
-Assert.equal(h_test1[1], 5);
-let h_test2: (string | number)[];
-h_test2 = [2, 'a'];
-Assert.equal(h_test2[0], 2);
-Assert.equal(h_test2[1], 'a');
+let test: string | number[];
+test = 'string';
+Assert.equal(test, 'string');
+test = [3, 5];
+Assert.equal(test[0], 3);
+Assert.equal(test[1], 5);
+let test2: (string | number)[];
+test2 = [2, 'a'];
+Assert.equal(test2[0], 2);
+Assert.equal(test2[1], 'a');

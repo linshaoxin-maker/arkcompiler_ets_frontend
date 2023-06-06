@@ -22,7 +22,18 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-var p = Promise.resolve();
 var count: number = 1;
-
 Assert.equal(count, 1);
+let a: number = 10;
+setTimeout(function () {
+   a = 1;
+}, 0);
+Promise.resolve().then(function () {
+   a = 2;
+});
+Assert.equal(a, 10);
+const p = Promise.resolve(1);
+p.then(function (s) {
+   a = a + s;
+});
+Assert.equal(a, 10);

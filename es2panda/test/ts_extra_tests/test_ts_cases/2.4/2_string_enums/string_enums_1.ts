@@ -23,8 +23,10 @@ import { Assert } from '../../../suite/assert.js'
 
 enum Option {
   END = "End",
-  START = "Start",
-  STOP = "BLUE"
+  START = "START",
+  STOP = "STOP"
 };
 
 Assert.equal(Option.END, "End");
+Assert.equal(Option.START, "START");
+Assert.equal(Option.STOP, "STOP");

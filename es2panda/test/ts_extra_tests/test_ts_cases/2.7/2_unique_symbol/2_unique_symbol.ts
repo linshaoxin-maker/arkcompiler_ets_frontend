@@ -23,8 +23,7 @@ import { Assert } from '../../../suite/assert.js'
 
 const usym1: unique symbol = Symbol();
 const usym2: unique symbol = Symbol.for("Bar");
-
-// in order to reference a specific unique symbol, you’ll have to use the typeof operator. 
+ 
 let t1: typeof usym1 = usym1;
 let t2: typeof usym2 = usym2;
 

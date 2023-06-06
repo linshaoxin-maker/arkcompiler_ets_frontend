@@ -27,28 +27,28 @@
 import { Assert } from "../../../suite/assert.js"
 
 class HWC {
-    #someMethod() {
+    #FUN() {
         return 1;
     }
-    test1() {
-        return this.#someMethod();
+    F1() {
+        return this.#FUN();
     }
     static #something(num: number) {
         return num;
     }
-    test2() {
+    F2() {
         return HWC.#something(10);
     }
-    get #someValue() {
+    get #V() {
         return 100;
     }
-    publicMethod() {
-        this.#someMethod();
-        return this.#someValue;
+    mFUN() {
+        this.#FUN();
+        return this.#V;
     }
 }
 
 let c = new HWC();
-Assert.equal(c.test1(), 1);
-Assert.equal(c.test2(), 10);
-Assert.equal(c.publicMethod(), 100);
+Assert.equal(c.F1(), 1);
+Assert.equal(c.F2(), 10);
+Assert.equal(c.mFUN(), 100);

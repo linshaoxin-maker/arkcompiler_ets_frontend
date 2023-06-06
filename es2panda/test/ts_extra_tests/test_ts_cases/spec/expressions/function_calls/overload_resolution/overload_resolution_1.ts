@@ -36,9 +36,7 @@ interface IFnCall {
 const foo: IFnCall = function () {
   return 'a'
 }
-
 var f = foo(() => {
   return 'f'
 }, 10)
-
 Assert.equal(f, 'a');

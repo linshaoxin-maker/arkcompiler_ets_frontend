@@ -30,6 +30,5 @@ let restname1 = restFun("aa", "bb", "cc");
 Assert.equal(restname1, "aa bb cc");
 let restname2 = restFun(1, 2, 3, 4);
 Assert.equal(restname2, "1 2 3 4");
-// boolean
 let restname3 = restFun(true, false, true);
 Assert.equal(restname3, "true false true");

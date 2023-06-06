@@ -38,7 +38,7 @@ interface Level {
 
 type ColorPoint = Color | Point | Level;
 
-function area(s: ColorPoint) {
+function test(s: ColorPoint) {
     switch (s.name) {
         case "Color":
             return s.rgb;
@@ -78,6 +78,6 @@ let level: Level = {
     level: 10
 };
 
-Assert.equal(JSON.stringify(area(color)), '[255,0,0]');
+Assert.equal(JSON.stringify(test(color)), '[255,0,0]');
 Assert.equal(test1(point).name, 'Point');
 Assert.equal(test2(level)?.level, 10);

@@ -44,7 +44,7 @@ class Teacher extends Person {
     return "teacher";
   }
 }
-// literal type
+
 let testClass1: new (name: string, age: number) => Person = Student;
 let testObj1: Person = new testClass1("caihua1", 12);
 Assert.equal(testObj1.age, 12);

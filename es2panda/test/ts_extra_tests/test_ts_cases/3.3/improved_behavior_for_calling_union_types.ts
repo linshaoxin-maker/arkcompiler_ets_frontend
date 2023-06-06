@@ -24,15 +24,15 @@ import { Assert } from '../../suite/assert.js'
 
 {
     type DamageType = "XO" | "EXP";
-    type Color = "red" | "green" | "blue";
+    type ColorType = "red" | "green" | "blue";
 
     type ATK = (atk: DamageType) => number;
 
     let s: ATK = (atk: DamageType) => 1;
 
-    type ColorConsumer = (color: Color) => string;
+    type newColorConstructor = (color: ColorType) => string;
 
-    let sp: ColorConsumer = (color: Color) => 'good';
+    let sp: newColorConstructor = (color: ColorType) => 'good';
 
     Assert.equal(s("XO"), 1)
     Assert.equal(sp("green"), 'good')

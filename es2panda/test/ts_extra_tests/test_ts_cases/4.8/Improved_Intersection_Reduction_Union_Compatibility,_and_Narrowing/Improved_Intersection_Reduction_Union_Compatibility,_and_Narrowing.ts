@@ -25,46 +25,43 @@
 import { Assert } from '../../../suite/assert.js'
 
 type T1 = {} & string;
-let Hwa:T1 = "sss";
-Assert.equal(Hwa,"sss")
+let a: T1 = "sss";
+Assert.equal(a, "sss");
 
 type T2 = {} & unknown;
-let  Hwb:T2 = 2;
-Assert.equal(Hwb,2)
+let b: T2 = 2;
+Assert.equal(b,2)
 
-let x:unknown = 1 ;
+let x: unknown = 1;
 function f1(x: unknown) {
-    let y:null|undefined|{};
-    y=x;
+    let y: null | undefined | {};
+    y = x;
     if (x) {
-        Assert.equal(y,1);
+        Assert.equal(y, 1);
     }
 }
 f1(x);
 
-let z:T1 ="Hw";
-function f2<T>(x: T,y?:T) {
-    y=x;
+let z: T1 = "string";
+function f2<T>(x: T, y?: T) {
+    y = x;
     if (x) {
-        Assert.equal(y,"Hw");  // T & {}
+        Assert.equal(y, "string");
     }
 }
-f2<string>(z,undefined);
+f2<string>(z, undefined);
 
-let bar:unknown = 555;
+let bar: unknown = 555;
 function f3(x: unknown, y?: {} | null | undefined) {
     y = x;
-    Assert.equal(y,555);
+    Assert.equal(y, 555);
 }
-f3(bar,null);
+f3(bar, null);
 
 function ensureNotNull<T>(x: T) {
     if (x != null){
         Assert.isNumber(x);
     }
 }
-let run:unknown = 111;
+let run: unknown = 111;
 ensureNotNull<unknown>(run);
-
-
-

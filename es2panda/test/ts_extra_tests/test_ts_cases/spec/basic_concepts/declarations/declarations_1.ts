@@ -24,18 +24,13 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-// name denotes a value
-var X: string = "X is string";
-Assert.equal("X is string1", X + "1");
-
-// name denotes a type
-type X = String | Number;
-var x: X = "xx";
+let a: string = "a is string";
+Assert.equal("a is string1", a + "1");
+type a = String;
+let x: a = "xx";
 Assert.equal("xx", x);
-
-// name denotes a namespace
-namespace X {
-  export type Y = string;
+namespace a {
+  export type b = string;
 }
-var y: X.Y = "ystr";
+let y: a.b = "ystr";
 Assert.equal("ystr", y);

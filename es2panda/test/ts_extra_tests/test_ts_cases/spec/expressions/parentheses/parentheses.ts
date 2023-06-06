@@ -26,16 +26,13 @@ import { Assert } from '../../../../suite/assert.js'
 let addparent = function (n1: number, n2: number): number {
   return n1 + n2;
 };
-// is equivalent to
 let addnoparent = (n1: number, n2: number): number => n1 + n2;
 let isCorrect = addparent(11, 22) === addnoparent(11, 22);
 Assert.isTrue(isCorrect);
-
 let foo: string = "hello";
 let bar: string = foo;
 Assert.isString(foo);
 Assert.isString(bar);
-
 const obj = { value: "world" };
 function printValue(value: string) {
   Assert.equal(value, "world");

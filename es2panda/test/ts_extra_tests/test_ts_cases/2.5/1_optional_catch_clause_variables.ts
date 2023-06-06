@@ -21,12 +21,12 @@
 
 import { Assert } from '../../suite/assert.js'
 
-function func(arg: string) {
+function func(str: string) {
     try {
-        JSON.parse(arg);
+        return JSON.parse(str);
     } catch {
-        Assert.equal(arg, "string");
+        return str + " is Error JSON";
     }
 }
 let str: string = 'string';
-func(str);
+Assert.equal(func(str), 'string is Error JSON');

@@ -23,14 +23,14 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-interface Options {
-    strict?: boolean
-    source?: string
-    target?: string
+interface I {
+    a?: boolean
+    b?: string
+    c?: string
 }
-var options: Options = {
-    strict: true,
-    source: "./src",
-    target: "./bin"
+let x: I = {
+    a: true,
+    b: "./src",
+    c: "./bin"
 }
-Assert.equal(JSON.stringify(options), '{"strict":true,"source":"./src","target":"./bin"}');
+Assert.equal(JSON.stringify(x), '{"a":true,"b":"./src","c":"./bin"}');

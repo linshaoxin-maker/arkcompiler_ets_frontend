@@ -38,7 +38,6 @@ Assert.equal(CED["None"], -1);
 Assert.equal(CED["False"], 0);
 Assert.equal(CED["True"], 1);
 Assert.equal(CED["DEF"], 1024);
-
 enum CED_COPY {
   None = -1,
   False,
