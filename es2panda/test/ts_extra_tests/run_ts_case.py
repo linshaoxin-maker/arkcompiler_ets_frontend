@@ -147,7 +147,6 @@ for file_path in args.release:
                 failed_case += 1
         continue
     for file_path in get_path_file(file_path, None, True, args.limit_version):
-        # continue
         if False == file_path.endswith(".ts"):
             continue
         if is_disable_case(file_path, disable_list):
@@ -158,26 +157,27 @@ for file_path in args.release:
             if failed :
                 failed_case += 1
 
-    # delete abc files
-    if args.arkruntime:
-        for file_paths in get_path_file("suite", None, True):
-            if file_paths.endswith(".abc"):
-                if os.path.exists(file_paths):
-                    os.remove(file_paths)
+# delete abc files
+if args.arkruntime:
+    for file_paths in get_path_file("suite", None, True):
+        if file_paths.endswith(".abc"):
+            if os.path.exists(file_paths):
+                os.remove(file_paths)
 
-        for file_paths in get_path_file("test_ts_cases", None, True):
-            if file_paths.endswith(".abc"):
-                if os.path.exists(file_paths):
-                    os.remove(file_paths)
-            if file_paths.endswith(".ts"):
-                if os.path.exists(file_paths):
-                    file = open(file_paths, 'r')
-                    lines = file.readlines()
-                    if lines[-1] == 'print("TESTCASE SUCCESS");':
-                        lines.pop()
-                        file = open(file_paths, 'w')
-                        file.writelines(lines)
-                        file.close()
+    for file_paths in get_path_file("test_ts_cases", None, True):
+        if file_paths.endswith(".abc"):
+            if os.path.exists(file_paths):
+                os.remove(file_paths)
+        if file_paths.endswith(".ts"):
+            if os.path.exists(file_paths):
+                file = open(file_paths, 'r')
+                lines = file.readlines()
+                if lines[-1] == 'print("TESTCASE SUCCESS");':
+                    lines.pop()
+                    lines[-1] = lines[-1].replace('\n', '')
+                    file = open(file_paths, 'w')
+                    file.writelines(lines)
+                    file.close()
 
 print("TOTAL CASE COUNT:%d" % total_case)
 print("FAILED CASE COUNT:%d" % failed_case)
