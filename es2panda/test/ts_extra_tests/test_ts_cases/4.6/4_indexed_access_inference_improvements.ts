@@ -22,24 +22,46 @@
 import { Assert } from '../../suite/assert.js'
 
 interface I {
-    xx: number;
-    yy: string;
-    zz: boolean;
+    a: number;
+    b: string;
+    c: boolean;
+    d: object;
 }
 type T<P extends keyof I> = {
     [K in P]: {
-        name: K;
+        nameI: K;
         v: I[K];
         f: (p: I[K]) => void;
     };
 }[P];
-function fun<K extends keyof I>(record: T<K>) {
-    record.f(record.v);
+function fun<K extends keyof I>(x: T<K>) {
+    x.f(x.v);
 }
 fun({
-    name: "yy",
-    v: "hello!",
-    f: (val) => {
-        Assert.equal(val.toUpperCase(), "HELLO!");
+    nameI: "a",
+    v: 11,
+    f: (x) => {
+        Assert.isNumber(x);
+    },
+});
+fun({
+    nameI: "b",
+    v: "b",
+    f: (x) => {
+        Assert.isString(x);
+    },
+});
+fun({
+    nameI: "c",
+    v: true,
+    f: (x) => {
+        Assert.isBoolean(x);
+    },
+});
+fun({
+    nameI: "d",
+    v: {},
+    f: (x) => {
+        Assert.isObject(x);
     },
 });

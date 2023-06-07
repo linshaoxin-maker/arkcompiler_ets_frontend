@@ -26,11 +26,20 @@ import { Assert } from "../../../suite/assert.js"
 abstract class Skill {
    abstract name: string;
    abstract damage:number;
+   abstract get accessor();
+   abstract set accessor(ok:string);
 }
 class Divied extends Skill {
   name = "derived";
   damage = 128;
+    get accessor() {
+        return 'ok'
+    }
+    set accessor(ok:string) {
+        this.name = ok;
+    }
 }
 let d = new Divied();
 Assert.equal(d.name, "derived");
 Assert.equal(d.damage, 128);
+Assert.equal(d.accessor, "ok");

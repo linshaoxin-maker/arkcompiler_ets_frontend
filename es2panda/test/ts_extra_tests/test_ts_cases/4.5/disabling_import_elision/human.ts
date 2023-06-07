@@ -12,17 +12,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**---
-description: >
-  test base url import,the tsc command needs to be executed in the 2.0 file directory.
-  tsconfig.json file url: testing-framework\test\2.0\tsconfig.json.
-module: ESNext
-isCurrent: true
----*/
 
 
-import { Assert } from "../../../suite/assert.js"
-import { ADD, flag } from "../test_base_url.js"
+export class Human {
+    name: string;
+    age: number;
+    gender: string;
+    constructor(name: string, age: number, gender: string) {
+        this.name = name;
+        this.age = age;
+        this.gender = gender;
+    }
+}
 
-Assert.equal(ADD(50, 75), 125);
-Assert.equal(flag, "baseurl");
+export { Human as human };

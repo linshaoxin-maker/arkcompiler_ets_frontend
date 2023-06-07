@@ -22,6 +22,6 @@
 
 
 import { Assert } from "../../../suite/assert.js";
-import { animal } from "./animal.js";
+import { human } from "./human.js";
 
-Assert.isFunction(animal);
+Assert.isFunction(human);

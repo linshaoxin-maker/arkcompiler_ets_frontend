@@ -21,27 +21,19 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface I<T> {
-    add(t: T): T;
-}
-class C implements I<number> {
-    add(n: number) {
-        return n += 10;
+function f<U>(arg: U): U{
+    if (typeof arg === 'number') {
+        return arg;
     }
-}
-
-let a: I<number>;
-let b: I<string | number>;
-a = new C();
-
-b = a;
-Assert.equal(20, b.add(10));
-
-function func<T>(arg: T): T{
     return arg;
 }
-let f1 = func<number>(5);
-let f2 = func<number | string>('a');
+function func<T>(a: T, callback: <U>(arg: U) => U){
+    return callback(a);
+}
 
-f2 = f1;
-Assert.equal(f1, f2);
+let a = func<number>(5, f);
+let b = func<number | string>('a', f);
+Assert.isNumber(a);
+Assert.isString(b);
+b = a;
+Assert.equal(a, b);

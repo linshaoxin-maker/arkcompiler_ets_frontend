@@ -22,8 +22,8 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-type project<T extends string> = T extends ` ${infer Rest}` ? project<Rest> : T;
+type project<T extends string> = T extends ` ${infer push}` ? project<push> : T;
 
-type test = project<"                                                oops">;
-var t: test = "oops";
-Assert.equal(t, "oops");
+type example = project<"                                                tool">;
+var t: example = "tool";
+Assert.equal(t, "tool");

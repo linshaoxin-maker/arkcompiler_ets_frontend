@@ -21,10 +21,14 @@
 
 import { Assert } from '../../suite/assert.js'
 
-class C { }
+class C {
+    a: number = 1;
+}
 class C2 extends C {
     bool = true;
     constructor() {
+        let x = 1;
+        Assert.equal(x, 1);
         super();
         this.bool = false;
     }

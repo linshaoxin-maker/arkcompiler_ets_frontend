@@ -64,4 +64,12 @@ import { Assert } from '../../suite/assert.js'
     Assert.equal(typeof f, "function");
     Assert.equal(x.a, 1);
     Assert.equal(y.x, 1);
+
+    type G = number[] | number | null | undefined
+    type TypeG = NonNullable<G>;
+    let g: TypeG;
+    g = [0, 1, 2];
+    Assert.equal(g.length, 3);
+    g = -1;
+    Assert.equal(g, -1);
 };

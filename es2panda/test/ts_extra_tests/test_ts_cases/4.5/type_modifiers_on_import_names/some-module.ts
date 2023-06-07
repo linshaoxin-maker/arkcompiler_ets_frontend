@@ -15,8 +15,8 @@
 
 
 let num = 5;
-export let someFunc = function () {
+export let privateF = function () {
     return 10 + num;
 };
 
-export class BaseType { };
+export class PrivateType { };

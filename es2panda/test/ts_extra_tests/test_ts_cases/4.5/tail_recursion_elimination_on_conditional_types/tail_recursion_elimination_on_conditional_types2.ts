@@ -23,17 +23,17 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-type RunGetChars<S> = S extends `${infer Char}${infer Rest}`
-  ? Char | RunGetChars<Rest>
-  : never;
-type gc = RunGetChars<"                getChar">;
-var g1: gc = "e";
+type RunChars<S> = S extends `${infer Char}${infer Rest}`
+    ? Char | RunChars<Rest>
+    : never;
+type gc = RunChars<"                RunChar">;
+var g1: gc = "n";
 Assert.isString(g1);
 
 type RunGetChars1<S> = RunGetCharsHelper<S, never>;
 type RunGetCharsHelper<S, Acc> = S extends `${infer Char}${infer Rest}`
-  ? RunGetCharsHelper<Rest, Char | Acc>
-  : Acc;
+    ? RunGetCharsHelper<Rest, Char | Acc>
+    : Acc;
 
 type gch = RunGetCharsHelper<string, number>;
 var g2: gch = 10;

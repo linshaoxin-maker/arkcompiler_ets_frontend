@@ -21,32 +21,33 @@ isCurrent: true
 
 import { Assert } from "../../../suite/assert.js"
 
-interface Color {
+type Color = {
     name: "Color";
     rgb: [number, number, number];
 }
 
-interface Point {
+type Point = {
     name: "Point";
     point: [number, number];
 }
 
-interface Level {
-    name: "Level";
-    level: number;
-}
 
-type ColorPoint = Color | Point | Level;
 
-function test(s: ColorPoint) {
-    switch (s.name) {
-        case "Color":
-            return s.rgb;
-        case "Point":
-            return s.point;
-        case "Level":
-            return s.level;
+type ColorPoint = Color | Point
+let un:ColorPoint[] = [{name:"Color", rgb:[0,0,0]},{name:"Point", point:[1,1]}];
+let count:number = 0;
+function test(s: ColorPoint[]) {
+    for (const unElement of s) {
+        switch (unElement.name) {
+            case "Color":
+                count++
+                break
+            case "Point":
+                count++
+                break
+        }
     }
+    return count;
 }
 
 function test1(s: ColorPoint) {
@@ -56,28 +57,11 @@ function test1(s: ColorPoint) {
     return s;
 }
 
-function test2(s: ColorPoint) {
-    if (s.name === "Color" || s.name === "Point") {
-        return;
-    }
-    return s;
-}
-
-let color: Color = {
-    name: "Color",
-    rgb: [255, 0, 0]
-};
-
 let point: Point = {
     name: "Point",
     point: [0, 0]
 };
 
-let level: Level = {
-    name: "Level",
-    level: 10
-};
 
-Assert.equal(JSON.stringify(test(color)), '[255,0,0]');
+Assert.equal(JSON.stringify(test(un)), 2);
 Assert.equal(test1(point).name, 'Point');
-Assert.equal(test2(level)?.level, 10);

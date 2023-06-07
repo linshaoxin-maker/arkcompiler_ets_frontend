@@ -28,5 +28,4 @@ let x: I3<I3<I3<I3<I3<I3<string>>>>>>;
 let y: I3<I3<I3<I3<I3<string>>>>>;
 y = { prop: { prop: { prop: { prop: { prop: "prop" } } } } }
 x = { prop: y };
-Assert.isString("x = y; this is error");
 Assert.notEqual(JSON.stringify(x), JSON.stringify(y));

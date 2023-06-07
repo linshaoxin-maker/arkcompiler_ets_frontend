@@ -28,31 +28,31 @@ interface Message {
 }
 
 interface SMessage {
-    pattern: `${string}Success`;
+    pattern: `${string}SMessage`;
     location: string;
 }
 
 interface EMessage {
-    pattern: `${string}Error`;
+    pattern: `${string}EMessage`;
     message: string;
 }
 
 function RunTest(r: SMessage | EMessage |Message) {
-    if (r.pattern === "HttpSuccess") {
+    if (r.pattern === "WinSMessage") {
         let token = r.pattern;
-        Assert.equal(token, "HttpSuccess");
+        Assert.equal(token, "WinSMessage");
     } else {
-        Assert.equal(r.pattern, "HttpError");
+        Assert.equal(r.pattern, "LostEMessage");
     }
 }
 
 const successMessage: SMessage = {
-    pattern: "HttpSuccess",
-    location: "request success"
+    pattern: "WinSMessage",
+    location: "request SMessage"
 }
 
 const errorMessage: EMessage = {
-    pattern: "HttpError",
+    pattern: "LostEMessage",
     message: "100-continue"
 }
 

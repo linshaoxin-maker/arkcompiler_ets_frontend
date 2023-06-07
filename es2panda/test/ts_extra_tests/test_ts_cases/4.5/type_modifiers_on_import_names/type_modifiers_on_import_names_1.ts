@@ -22,15 +22,15 @@ isCurrent: true
 
 
 import { Assert } from "../../../suite/assert.js"
-import { someFunc,  BaseType } from "./some-module.js"
+import { privateF,  PrivateType } from "./some-module.js"
 
 
-export class Thing implements BaseType {
-  someMethod() {
-    return someFunc();
+export class Type implements PrivateType {
+  func() {
+    return privateF();
   }
 }
 
-const thing = new Thing();
-Assert.isFunction(Thing);
-Assert.equal(thing.someMethod(), 15);
+const type = new Type();
+Assert.isFunction(Type);
+Assert.equal(type.func(), 15);

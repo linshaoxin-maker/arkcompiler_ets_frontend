@@ -14,27 +14,27 @@
  */
 /**---
  description: >
-    You can now write a class with a #private field member and see whether another object has the same field by using the in operator.
+     Create an object type variable
  module: ESNext
  isCurrent: true
----*/
+ ---*/
 
 
 import { Assert } from '../../../suite/assert.js'
 
-class RunP {
-    #type: string;
-    constructor(type: string) {
-        this.#type = type;
-    }
+let obj5 = new Object({ Damage: 1024, DamageType: 'XO' });
+Assert.equal(JSON.stringify(obj5), '{"Damage":1024,"DamageType":"XO"}');
 
-    combine(additional: any) {
-        return additional &&
-            typeof additional === "object" &&
-            this.#type === additional.#type;
-    }
+type ColorOBJ = { Color: [number, number, number], ColorName: string };
+let obj6: ColorOBJ = { Color: [255, 0, 0], ColorName: 'Red' };
+Assert.equal(JSON.stringify(obj6), '{"Color":[255,0,0],"ColorName":"Red"}');
+
+interface Weapon {
+    Damage: number;
+    DamageType: string;
 }
+let obj7: Weapon = { Damage: 333, DamageType: 'EXP' };
+Assert.equal(JSON.stringify(obj7), '{"Damage":333,"DamageType":"EXP"}');
 
-const men = new RunP('jack');
-const women = new RunP('marry');
-Assert.equal(women.combine(men), false);
+let obj8: object = { A: 1 };
+Assert.equal(JSON.stringify(obj8), '{"A":1}');

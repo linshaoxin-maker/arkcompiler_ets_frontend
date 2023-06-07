@@ -21,14 +21,19 @@
 
 import { Assert } from '../../suite/assert.js'
 
-type T = (...args: ["a", number] | ["b", string]) => void;
-const fun: T = (kind, payload) => {
-    if (kind === "a") {
-        Assert.equal(42, payload.toFixed());
+type T = (...args: [1, number] | [true, string] | ["a", boolean]) => void;
+const fun: T = (x: true | 1 | "a", y: string | number | boolean) => {
+    if (x === 1) {
+        Assert.equal(10, y);
     }
-    if (kind === "b") {
-        Assert.equal("HELLO", payload.toUpperCase());
+    if (x === true) {
+        Assert.equal("hello", y);
     }
+    if (x === "a") {
+        Assert.isBoolean(y);
+    }
+
 };
-fun("a", 42);
-fun("b", "hello");
+fun(1, 10);
+fun(true, "hello");
+fun("a", true);
