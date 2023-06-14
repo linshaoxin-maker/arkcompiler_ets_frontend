@@ -56,15 +56,21 @@ Assert.equal(m, 0);
 
 let o: number = 4;
 let p: number = 5;
-o = o && p;
+let o1 = o && p;
+o &&= p;
 Assert.equal(o, 5);
+Assert.equal(o1, 5);
 
 let s: number = 7;
 let t: number = 8;
-s = s || t;
+let s1 = s || t;
+s ||= t;
 Assert.equal(s, 7);
+Assert.equal(s1, 7);
 
 let u: number = 10;
 let v: number = 20;
-u = u ?? v;
+let u1 = u ?? v;
+u ??= v;
+Assert.equal(u1, 10);
 Assert.equal(u, 10);

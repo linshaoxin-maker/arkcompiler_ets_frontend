@@ -14,8 +14,8 @@
  */
 /**---
  description: > 
-    If index is a string literal or a numeric literal and object has an apparent property (section 3.11.1) with the name given by that literal 
-    (converted to its string representation in the case of a numeric literal), the property access is of the type of that property.
+    If index is a string literal or a numeric literal and object has an apparent property with the name given by that literal, 
+    the property access is of the type of that property.
  module: ESNext
  isCurrent: true
  ---*/

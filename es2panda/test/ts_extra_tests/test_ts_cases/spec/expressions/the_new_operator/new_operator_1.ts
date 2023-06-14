@@ -26,5 +26,11 @@ let C: any;
 C = function (this: any, x: number, y: number) {
   this.sum = x + y;
 };
-const myObject = new C(2, 3);
+let myObject = new C(2, 3);
 Assert.equal(myObject.sum, 5);
+myObject = 5;
+Assert.isNumber(myObject);
+myObject = 'a';
+Assert.isString(myObject);
+myObject = true;
+Assert.isBoolean(myObject);

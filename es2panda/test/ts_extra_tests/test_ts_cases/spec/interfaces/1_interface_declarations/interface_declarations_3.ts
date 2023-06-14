@@ -24,10 +24,10 @@
 import { Assert } from '../../../../suite/assert.js'
 
 {
-    interface StringC {
+    interface Example1 {
         (h_a: string, h_b: string): number;
     }
 
-    let sc: StringC = (h_a: string, h_b: string): number => { return h_a.charCodeAt(0) + h_b.charCodeAt(0); };
+    let sc: Example1 = (h_a: string, h_b: string): number => { return h_a.charCodeAt(0) + h_b.charCodeAt(0); };
     Assert.equal(sc('a', 'b'), 195);
 };

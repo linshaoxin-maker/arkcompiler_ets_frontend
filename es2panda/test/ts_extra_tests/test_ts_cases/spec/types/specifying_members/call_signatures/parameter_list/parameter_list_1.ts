@@ -23,9 +23,6 @@
 
 import { Assert } from '../../../../../../suite/assert.js'
 
-function fun0() {
-  return "zero parameter";
-}
 function fun1(firstParameter: string, lastParameter?: string) {
   if (lastParameter) return firstParameter + " " + lastParameter;
   else return firstParameter;

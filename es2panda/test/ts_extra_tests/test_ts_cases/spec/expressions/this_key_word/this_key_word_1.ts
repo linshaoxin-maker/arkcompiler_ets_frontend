@@ -23,29 +23,25 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-class Dog {
-    name: string;
-    age: number;
-    constructor(name: string, age: number) {
-        this.name = name;
-        this.age = age;
+class C{
+    public mem: string;
+    private num: number;
+    constructor(mem: string, num: number) {
+        this.mem = mem;
+        this.num = num;
+        Assert.isObject(this);
     }
-
-    getName(): string {
-        return this.name;
+    func() {
+        return this;
     }
-
-    bark(): string {
-        return this.getName() + " is bark";
+    get getNum() {
+        Assert.isObject(this);
+        return this.num;
     }
-}
-var dog = new Dog("doggy", 7);
-Assert.equal(dog.age, 7);
-Assert.equal("doggy is bark", dog.bark())
-class Duck {
-    age: number = this.b;
-    constructor(private readonly b: number) {
+    set setNum(num: number) {
+        this.num = num;
     }
 }
-var duck = new Duck(6);
-Assert.equal(6, duck.age);
+let c = new C('a', 10);
+c.getNum;
+Assert.isObject(c.func());

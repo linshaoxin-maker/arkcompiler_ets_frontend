@@ -41,7 +41,7 @@ import { Assert } from '../../../../suite/assert.js'
     }
 
     interface WorkerTool extends Worker, Tool {
-        z: number;
+        z: string;
 
         getS(): { velocity: number; rate: number; };
     }
@@ -52,22 +52,24 @@ import { Assert } from '../../../../suite/assert.js'
     };
 
     let point: WorkerTool = {
-        x: 1,
-        z: 1,
+        x: 1 ,
         y: 1,
+        z: "zzz",
         getS(): { velocity: number; rate: number; } {
             return result
         },
-        tool(): void {
+        tool(): string {
+            return "tool";
         },
-        work(): void {
+        work(): string {
+            return "work";
         }
     };
 
     Assert.equal(point.x, 1);
     Assert.equal(point.y, 1);
-    Assert.equal(point.z, 1);
+    Assert.equal(point.z, "zzz");
     Assert.equal(point.getS(), result);
-    Assert.equal(point.tool(), undefined);
-    Assert.equal(point.work(), undefined);
+    Assert.equal(point.tool(), "tool");
+    Assert.equal(point.work(), "work");
 };

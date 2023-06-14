@@ -21,7 +21,7 @@
  ---*/
 
 
-import {Assert} from '../../../../suite/assert.js'
+import { Assert } from '../../../../suite/assert.js'
 
 var str = "xiao"
 Assert.isString(str);

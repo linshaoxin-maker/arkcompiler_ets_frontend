@@ -12,17 +12,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**---
+ description: > 
+    If a get accessor is declared for a property, 
+    the return type of the get accessor becomes the type of the property. 
+    If only a set accessor is declared for a property, 
+    the parameter type of the set accessor becomes the type of the property.
+ module: ESNext
+ isCurrent: true
+ ---*/
 
 
-export class Animal {
-    color: string;
-    age: number;
-    gender: string;
-    constructor(color: string, age: number, gender: string) {
-        this.color = color;
-        this.age = age;
-        this.gender = gender;
+import { Assert } from '../../../../suite/assert.js'
+
+class C{
+    private mem;
+    constructor(mem: string) {
+        this.mem = mem;
+    }
+    get Mem(): string {
+        return this.mem;
+    }
+    set Mem(mem: string) {
+        this.mem = mem;
     }
 }
-
-export { Animal as animal };
+let c = new C('a');
+Assert.isString(c.Mem);

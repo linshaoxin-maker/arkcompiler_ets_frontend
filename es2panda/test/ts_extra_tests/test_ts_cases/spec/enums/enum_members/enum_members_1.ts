@@ -29,6 +29,7 @@ import { Assert } from '../../../../suite/assert.js'
 function toLength(str: string): number {
   return str.length;
 }
+let k = 999;
 enum ABCList {
   A,
   B,
@@ -40,6 +41,15 @@ enum ABCList {
   H = 0xff & 0xaa,
   I = E | F,
   J = toLength(ABCList[11]),
+  K = k++,
+  L = k--,
+  M = 1 + 2,
+  N = 1 - 2,
+  O = 1 / 2,
+  P = 1 % 2,
+  Q = 1 >> 2,
+  R = 1 >>> 2,
+  S = 1 ^ 2,
 }
 Assert.equal(ABCList.A, 0);
 Assert.equal(ABCList.B, 1);
@@ -51,3 +61,12 @@ Assert.equal(ABCList.G, 60);
 Assert.equal(ABCList.H, 170);
 Assert.equal(ABCList.I, -17);
 Assert.equal(ABCList.J, 1);
+Assert.equal(ABCList.K, 999);
+Assert.equal(ABCList.L, 1000);
+Assert.equal(ABCList.M, 3);
+Assert.equal(ABCList.N, -1);
+Assert.equal(ABCList.O, 0.5);
+Assert.equal(ABCList.P, 1);
+Assert.equal(ABCList.Q, 0);
+Assert.equal(ABCList.R, 0);
+Assert.equal(ABCList.S, 3);

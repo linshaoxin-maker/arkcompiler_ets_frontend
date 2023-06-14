@@ -52,3 +52,14 @@ let i: I = {
 Assert.equal(i.name, "xiao");
 Assert.equal(i.age, 18);
 Assert.equal(i.greet(), "hello");
+class C2<T> {
+    x: T;
+    constructor(x: T) {
+        this.x = x;
+    }
+    getx() {
+        return this.x;
+    };
+}
+let c2 = new C2<number>(1);
+Assert.equal(c2.getx(), 1)

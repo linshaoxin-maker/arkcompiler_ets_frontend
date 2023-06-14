@@ -13,35 +13,20 @@
  * limitations under the License.
  */
 /**---
- description: > 
-    If only one accessor includes a type annotation, the other behaves as if it had the same type annotation
+ description: >
+    Index signatures, which define type constraints for properties in the given type. 
+    An object type can have at most one string index signature and one numeric index signature.
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import { Assert } from '../../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-class Person1 {
-  private _name: string = "";
-  get name(){
-    return this._name;
-  }
-  set name(value: string) {
-    this._name = value;
-  }
+interface numberIndex {
+    [index: number]: string
 }
-const person1 = new Person1();
-Assert.isString(person1.name);
-
-class Person2 {
-  private _name: string = "";
-  get name(): string{
-    return this._name;
-  }
-  set name(value) {
-    this._name = value;
-  }
-}
-const person2 = new Person2();
-Assert.isString(person2.name);
+let numberTest: numberIndex = ['1', '2', '3']
+Assert.equal(numberTest[0], '1');
+Assert.equal(numberTest[1], '2');
+Assert.equal(numberTest[2], '3');

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 /**---
- description: > 
-    If only one accessor includes a type annotation, the other behaves as if it had the same type annotation
+ description: >
+    In a static member function or static member accessor, the type of this is the constructor function type of the containing class.
  module: ESNext
  isCurrent: true
  ---*/
@@ -22,26 +22,18 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-class Person1 {
-  private _name: string = "";
-  get name(){
-    return this._name;
-  }
-  set name(value: string) {
-    this._name = value;
-  }
+class C{
+    static mem: string = 'a';
+    static get getMem() {
+        Assert.isFunction(this);
+        return this.mem;
+    }
+    static set setMem(mem: string) {
+        this.mem = mem;
+    }
+    static func() {
+        return this;
+    }
 }
-const person1 = new Person1();
-Assert.isString(person1.name);
-
-class Person2 {
-  private _name: string = "";
-  get name(): string{
-    return this._name;
-  }
-  set name(value) {
-    this._name = value;
-  }
-}
-const person2 = new Person2();
-Assert.isString(person2.name);
+C.getMem;
+Assert.isFunction(C.func());

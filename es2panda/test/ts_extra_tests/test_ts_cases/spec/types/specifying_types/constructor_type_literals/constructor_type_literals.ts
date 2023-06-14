@@ -14,18 +14,38 @@
  */
 /**---
  description: >
-    It’s worth noting - labels don’t require us to name our variables differently when destructuring. 
-    They’re purely there for documentation and tooling.
+    A constructor type literal specifies the type parameters, regular parameters, and return type of a construct signature.
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import { Assert } from '../../../suite/assert.js'
+import { Assert } from '../../../../../suite/assert.js'
 
-function funLTE01(x: [first: string, second: number]) {
-  const [a, b] = x;
-  Assert.equal(a, "hello");
-  Assert.equal(b, 42);
+interface I1 {
+    x: number;
+    y: number;
 }
-funLTE01(["hello", 42]);
+
+interface Constructor {
+    new(x: number, y: number): I1;
+}
+class I2 implements I1 {
+    readonly x: number;
+    readonly y: number;
+
+    constructor(x: number, y: number) {
+        this.x = x;
+        this.y = y;
+    }
+}
+function fun(
+    cons: Constructor,
+    x: number,
+    y: number
+): I1 {
+    return new cons(x, y);
+}
+let x1: I1 = fun(I2, 2, 2)
+Assert.equal(x1.x, 2);
+Assert.equal(x1.y, 2);

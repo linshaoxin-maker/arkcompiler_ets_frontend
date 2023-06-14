@@ -27,18 +27,30 @@ import { Assert } from '../../../suite/assert.js'
 
 let flag: boolean = false;
 
-function h_throwError(): never {
+function getErrorMessage(): never {
   throw new Error("An error occurred");
 }
-try {
-  h_throwError();
-} catch (error: unknown) {
-  if (error instanceof Error) {
-    flag = true;
-    Assert.equal(error.message, "An error occurred");
-  } else {
-    flag = false;
-    let errString = "An unknow error occurred";
+function getUnknown(): never {
+  let err: unknown;
+  throw err;
+}
+function getFlag(fun: Function) {
+  try {
+    fun();
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      flag = true;
+      Assert.equal(error.message, "An error occurred");
+      return error.message;
+    } else {
+      flag = false;
+      let errString = "An unknow error occurred";
+      return errString;
+    }
   }
-};
+}
+getFlag(getErrorMessage);
 Assert.isTrue(flag);
+let errString = getFlag(getUnknown);
+Assert.equal(errString, "An unknow error occurred");
+Assert.isFalse(flag);

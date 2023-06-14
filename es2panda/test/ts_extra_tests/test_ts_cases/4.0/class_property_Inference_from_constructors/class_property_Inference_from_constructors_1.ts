@@ -22,46 +22,12 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-class HWP {
-  name: string;
-  age: number | undefined;
+class NA {
+  name;
+
   constructor(name: string) {
     this.name = name;
   }
-  setAge(age: number) {
-    if (age >= 0) {
-      this.age = age;
-    }
-  }
 }
-const W = new HWP("tom");
-Assert.equal(W.name, "tom");
-
-class HWSD {
-  area: number | undefined;
-
-  sideLength: number | undefined;
-  constructor(sideLength: number) {
-    this.sideLength = sideLength;
-    this.area = sideLength * 2;
-  }
-}
-const D = new HWSD(6);
-Assert.equal(D.area, 12);
-
-class HWS {
-  sideLength!: number;
-  constructor(sideLength: number) {
-    this.initialize(sideLength);
-  }
-
-  initialize(sideLength: number) {
-    this.sideLength = sideLength;
-  }
-
-  get area() {
-    return this.sideLength ** 2;
-  }
-}
-const b = new HWS(8);
-Assert.equal(b.area, 64);
+const W = new NA("tom");
+Assert.equal(W.name, 'tom');

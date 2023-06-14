@@ -14,9 +14,7 @@
  */
 /**---
  description: >
-  This is another case of what we like to call “death by a thousand overloads”, and it doesn’t even solve the problem generally.
-  It only gives correct types for as many overloads as we care to write. 
-  If we wanted to make a catch-all case, we’d need an overload like the following:
+    TypeScript 4.0 improves the inference process for rest parameters and rest tuple elements so that we can type this and have it “just work”.
  module: ESNext
  isCurrent: true
  ---*/
@@ -24,19 +22,27 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function funVTT01<T, U>(arr1: T[], arr2: U[]): Array<T | U> {
-  return [...arr1, ...arr2]
+type UnknownArray = readonly unknown[];
+
+function lockType<T extends UnknownArray, U extends UnknownArray, R>(f: (...list: [...T, ...U]) => R, ...listA: T) {
+  return (...listB: U) => f(...listA, ...listB);
 }
-const arr1: string[] = ["hello", "world"];
-const arr2: number[] = [1, 2, 3];
-const arrsn: Array<string | number> = funVTT01(arr1, arr2);
-function funVTT02(arg: any) {
-  const [_, ...result] = arg;
-  return result;
+function exp(num: number, str: string, bool: boolean): string {
+  let obj = { num: num, str: str, bool: bool };
+  return JSON.stringify(obj);
 }
-const myTuple: any = [1, 2, 3, 4] as const;
-const newArr: any = ["hello", "world"];
-const r1 = funVTT02(myTuple);
-const r2 = funVTT02([...myTuple, ...newArr] as const);
-const Arrlength = r2.length;
-Assert.equal(Arrlength, 5);
+const f1 = lockType(exp);
+let f1str = f1(1, "A", true);
+Assert.equal(f1str, '{"num":1,"str":"A","bool":true}');
+
+const f2 = lockType(exp, 100);
+let f2str = f2("B", false);
+Assert.equal(f2str, '{"num":100,"str":"B","bool":false}');
+
+const f3 = lockType(exp, 1024, "XO");
+let f3str = f3(true);
+Assert.equal(f3str, '{"num":1024,"str":"XO","bool":true}');
+
+const f4 = lockType(exp, 1408, "EXP", false);
+let f4str = f4();
+Assert.equal(f4str, '{"num":1408,"str":"EXP","bool":false}');

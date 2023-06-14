@@ -24,13 +24,21 @@
 import { Assert } from '../../../../../suite/assert.js'
 
 interface I {
-    a?: boolean
-    b?: string
+    a?: number
+    b?: boolean
     c?: string
 }
 let x: I = {
-    a: true,
-    b: "./src",
-    c: "./bin"
+    a: 12,
+    b: true,
+    c: "ccc"
 }
-Assert.equal(JSON.stringify(x), '{"a":true,"b":"./src","c":"./bin"}');
+Assert.equal(x.a, 12);
+Assert.equal(x.b, true);
+Assert.equal(x.c, "ccc");
+let y: I = {
+    a: 11,
+    b: false
+}
+Assert.equal(y.a, 11);
+Assert.equal(y.b, false);

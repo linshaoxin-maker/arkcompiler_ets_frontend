@@ -23,18 +23,28 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-type RunChars<S> = S extends `${infer Char}${infer Rest}`
-    ? Char | RunChars<Rest>
+type RunObtain<S> = S extends `${infer Char}${infer Rest}`
+    ? Char | RunObtain<Rest>
     : never;
-type gc = RunChars<"                RunChar">;
-var g1: gc = "n";
+type gc = RunObtain<"                getChar">;
+var g1: gc = "e";
 Assert.isString(g1);
 
-type RunGetChars1<S> = RunGetCharsHelper<S, never>;
-type RunGetCharsHelper<S, Acc> = S extends `${infer Char}${infer Rest}`
-    ? RunGetCharsHelper<Rest, Char | Acc>
+type RunObtain1<S> = RunObtainHelper<S, never>;
+type RunObtainHelper<S, Acc> = S extends `${infer Char}${infer Rest}`
+    ? RunObtainHelper<Rest, Char | Acc>
     : Acc;
 
-type gch = RunGetCharsHelper<string, number>;
+type gch = RunObtainHelper<string, number>;
 var g2: gch = 10;
 Assert.isNumber(g2);
+
+let g3: RunObtain1<'    NEW'> = ' ';
+Assert.equal(g3, ' ');
+g3 = 'E';
+Assert.equal(g3, 'E');
+
+let g4: RunObtainHelper<'  NARC  ', 'ACC'> = 'ACC';
+Assert.equal(g4, 'ACC');
+g4 = 'N';
+Assert.equal(g4, 'N');

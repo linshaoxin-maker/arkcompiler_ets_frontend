@@ -14,8 +14,8 @@
  */
 /**---
  description: >
-    There are a few rules when using labeled tuples. 
-    For one, when labeling a tuple element, all other elements in the tuple must also be labeled.
+    It’s worth noting - labels don’t require us to name our variables differently when destructuring. 
+    They’re purely there for documentation and tooling.
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,10 +23,9 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-type A01 = [name: string, age: number];
-type A02 = [name?: string, age?: number];
-
-const t: [string, number, boolean] = ["hello", 123, true];
-Assert.equal(t[0], "hello");
-Assert.equal(t[1], 123);
-Assert.equal(t[2], true);
+function funLTE01(x: [first: string, second: number]) {
+  const [a, b] = x;
+  Assert.equal(a, "hello");
+  Assert.equal(b, 42);
+}
+funLTE01(["hello", 42]);

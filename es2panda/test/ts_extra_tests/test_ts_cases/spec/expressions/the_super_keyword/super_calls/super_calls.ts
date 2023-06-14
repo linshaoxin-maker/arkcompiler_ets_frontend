@@ -15,13 +15,11 @@
 /**---
  description: > 
     The super keyword can be used in expressions to reference base  class properties and the base class constructor.
-    Super calls consist of the keyword super followed by an argument list enclosed in parentheses. 
-    Super calls are only permitted in constructors of derived classes, as described in section 8.3.2.
+    Super calls consist of the keyword super followed by an argument list enclosed in parentheses. Super calls are only permitted in constructors of derived classes.
     A super call invokes the constructor of the base class on the instance referenced by this. 
     A super call is processed as a function call (section 4.15) using the construct signatures of the base class constructor function type 
     as the initial set of candidate signatures for overload resolution. 
     The type of a super call expression is Void.
-    The JavaScript code generated for a super call is specified in section 8.7.2.
  module: ESNext
  isCurrent: true
  ---*/

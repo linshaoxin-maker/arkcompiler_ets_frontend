@@ -23,11 +23,9 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-var MyArray: {
-  [0]: number;
-  [1]: string;
-  [2]: string;
-} = [1, "aaa", "bbb"];
-Assert.isNumber(MyArray[0]);
+let MyArray: {
+  [key: number]: string;
+} = ["aaa", "bbb", "ccc"];
+Assert.isString(MyArray[0]);
 Assert.isString(MyArray[1]);
 Assert.isString(MyArray[2]);

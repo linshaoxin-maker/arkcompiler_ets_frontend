@@ -26,7 +26,7 @@ import { Assert } from '../../../../suite/assert.js'
 {
     class h_C {
         private state: any = 0;
-        point: any = 0;
+        point: number | unknown = 0;
     }
 
     interface h_SC extends h_C {
@@ -39,6 +39,8 @@ import { Assert } from '../../../../suite/assert.js'
         }
     }
 
+    Assert.equal(new h_B().point,0);
+    Assert.equal(typeof new h_B().point,"number");
     Assert.isTrue(new h_B().hasOwnProperty('point'));
     Assert.isTrue(new h_B().hasOwnProperty('state'));
 

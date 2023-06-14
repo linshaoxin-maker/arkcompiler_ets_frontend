@@ -23,8 +23,10 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-let x: string | number;
+let x: string | number | boolean;
 x = 's';
 Assert.isString(x);
 x = 5;
 Assert.isNumber(x);
+x = true;
+Assert.isBoolean(x);

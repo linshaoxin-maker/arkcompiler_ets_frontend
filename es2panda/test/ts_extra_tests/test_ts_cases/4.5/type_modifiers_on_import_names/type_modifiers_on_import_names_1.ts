@@ -22,7 +22,8 @@ isCurrent: true
 
 
 import { Assert } from "../../../suite/assert.js"
-import { privateF,  PrivateType } from "./some-module.js"
+import type { PrivateType } from "./some-module.js"
+import  { privateF } from "./some-module.js"
 
 
 export class Type implements PrivateType {

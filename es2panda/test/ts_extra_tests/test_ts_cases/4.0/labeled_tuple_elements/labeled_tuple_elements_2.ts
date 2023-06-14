@@ -14,8 +14,8 @@
  */
 /**---
  description: >
-    To deepen the connection between parameter lists and tuple types, 
-    the syntax for rest elements and optional elements mirrors the syntax for parameter lists.
+    There are a few rules when using labeled tuples. 
+    For one, when labeling a tuple element, all other elements in the tuple must also be labeled.
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,9 +23,12 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-type HWT = [first: number, second?: string, ...rest: any[]];
-let arr: HWT = [42, "Hello", true, { foo: "bar" }];
+type A01 = [name: string, age: number];
+type A02 = [name?: string, age?: number];
 
-Assert.equal(arr[0], 42);
-Assert.equal(arr[1], "Hello");
-Assert.equal(arr[2], true);
+let a1: A01 = ['NARC', 0];
+let a2_1: A02 = [];
+let a2_2: A02 = ['ACDC'];
+Assert.equal(JSON.stringify(a1), '["NARC",0]');
+Assert.equal(JSON.stringify(a2_1), '[]');
+Assert.equal(JSON.stringify(a2_2), '["ACDC"]');

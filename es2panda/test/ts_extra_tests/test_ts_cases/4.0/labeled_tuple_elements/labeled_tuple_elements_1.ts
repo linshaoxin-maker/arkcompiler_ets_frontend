@@ -14,8 +14,8 @@
  */
 /**---
  description: >
-    function foo(...args: [string, number]): void {
-      // ...}
+    To deepen the connection between parameter lists and tuple types, 
+    the syntax for rest elements and optional elements mirrors the syntax for parameter lists.
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,15 +23,24 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function funLTE01(...args: [string, number]): void {
-  const newArr = [args[0].toUpperCase(), args[1] * 2];
-  Assert.equal(newArr[0], "HELLO");
-  Assert.equal(newArr[1], 10);
+type Weapon = [Damage: number, DamageType?: string, ...rest: any[]];
+function getWeaponJSON(weapon: Weapon): string {
+   let len: number = weapon.length;
+   let obj: { [key: string | number]: any } = { 'Damage': 0 };
+   for (let i = 0; i < len; i++) {
+      if (i == 0) {
+         obj['Damage'] = weapon[i];
+      } else if (i == 1) {
+         obj['DamageType'] = weapon[i];
+      } else {
+         obj[i] = weapon[i];
+      }
+   }
+   return JSON.stringify(obj);
 }
-funLTE01("hello", 5);
-function funLTE02(arg0: string, arg1: number): void {
-  const Arrb = [arg0.toUpperCase(), arg1 * 2];
-  Assert.equal(Arrb[0], "HELLO");
-  Assert.equal(Arrb[1], 10);
-}
-funLTE02("hello", 5);
+let weapon1: Weapon = [1024, 'XO', 0, 'NARC', true];
+let weapon2: Weapon = [100];
+let weapon3: Weapon = [333, 'EXP', ['A', 1024, false], { A: 1, B: 2 }];
+Assert.equal(getWeaponJSON(weapon1), '{"2":0,"3":"NARC","4":true,"Damage":1024,"DamageType":"XO"}');
+Assert.equal(getWeaponJSON(weapon2), '{"Damage":100}');
+Assert.equal(getWeaponJSON(weapon3), '{"2":["A",1024,false],"3":{"A":1,"B":2},"Damage":333,"DamageType":"EXP"}');

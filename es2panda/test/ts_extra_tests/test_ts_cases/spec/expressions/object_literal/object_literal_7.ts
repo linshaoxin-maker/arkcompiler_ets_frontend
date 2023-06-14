@@ -23,18 +23,15 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-class h_C {
-    private num: number;
-    constructor(num: number) {
-        this.num = num;
-    }
-    get() {
-        return this.num;
-    }
-    set() {
-        return this.num
-    }
+class Example {
+    private _count: number = 0;
+    get count() {
+      return this._count;
+    };
+    set count(value) {
+        Assert.isNumber(value);
+        this._count = value;
+  }
 }
-let h_c = new h_C(10);
-Assert.isNumber(h_c.get())
-Assert.isNumber(h_c.set());
+const example = new Example();
+Assert.isNumber(example.count);

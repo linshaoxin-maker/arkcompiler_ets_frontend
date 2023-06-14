@@ -45,14 +45,31 @@ import { Assert } from '../../../../suite/assert.js'
             return 0
         }
     };
+    let src :Ds<number | string> = {
+        createE1(a: number): number {
+            return 1
+        },
+        createE2(a: number | string): number {
+            return 2;
+        },
+        createE3(a: number | string): number {
+            return 3;
+        },
+    }
 
-    class Class {
+    class Get {
         static getName(name: Ds<number | string | boolean>): Ds<number | string | boolean> {
             return name;
+        };
+        static getSrc(src :Ds<number | string>){
+            return src;
         }
     }
 
-    Assert.equal(Class.getName(name).createE1(''), 0);
-    Assert.equal(Class.getName(name).createE3(0), 0);
-    Assert.equal(Class.getName(name).createE2(true), 0);
+    Assert.equal(Get.getSrc(src).createE1(1),1);
+    Assert.equal(Get.getSrc(src).createE2(""),2);
+    Assert.equal(Get.getName(src).createE3("233"), 3);
+    Assert.equal(Get.getName(name).createE1(''), 0);
+    Assert.equal(Get.getName(name).createE3(0), 0);
+    Assert.equal(Get.getName(name).createE2(true), 0);
 };

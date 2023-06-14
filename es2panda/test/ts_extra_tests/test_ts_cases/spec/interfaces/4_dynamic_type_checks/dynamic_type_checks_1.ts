@@ -24,27 +24,27 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-{
-    interface WorkerTool {
+
+interface WorkerTool {
         shift(): void;
 
         rock(): void;
 
         getS(): void;
-    }
+}
 
-    function asWorkerTool(o: any): WorkerTool {
+function asWorkerTool(o: any): WorkerTool {
         return o && o.shift && o.rock && o.getS ? o : null;
-    }
+}
 
-    let point: WorkerTool = {
+let point: WorkerTool = {
         getS(): void {
         },
         rock(): void {
         },
         shift(): void {
         }
-    };
-
-    Assert.equal(asWorkerTool(point), point);
 };
+
+Assert.equal(asWorkerTool(point), point);
+Assert.equal(typeof asWorkerTool(point),"object")

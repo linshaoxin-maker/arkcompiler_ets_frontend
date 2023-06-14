@@ -14,7 +14,10 @@
  */
 /**---
  description: > 
-    If only one accessor includes a type annotation, the other behaves as if it had the same type annotation
+    if the object literal is contextually typed, 
+    if the contextual type contains a numeric index signature, 
+    and if the property assignment specifies a numeric property name, 
+    the property assignment is contextually typed by the type of the numeric index signature.
  module: ESNext
  isCurrent: true
  ---*/
@@ -22,26 +25,26 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-class Person1 {
-  private _name: string = "";
-  get name(){
-    return this._name;
-  }
-  set name(value: string) {
-    this._name = value;
-  }
+let obj1: {
+    1: string;
+    [key: number]: string;
+} = {
+    1: 'string',
+    2: 'number',
+    3: 'boolean'
 }
-const person1 = new Person1();
-Assert.isString(person1.name);
+Assert.isString(obj1[2]);
+Assert.isString(obj1[3]);
 
-class Person2 {
-  private _name: string = "";
-  get name(): string{
-    return this._name;
-  }
-  set name(value) {
-    this._name = value;
-  }
+interface I{
+    1: string;
+    [key: number]: string;
 }
-const person2 = new Person2();
-Assert.isString(person2.name);
+let obj2 = {} as I;
+obj2 = {
+    1: 'string',
+    2: 'number',
+    3: 'boolean'
+}
+Assert.isString(obj2[2]);
+Assert.isString(obj2[3]);

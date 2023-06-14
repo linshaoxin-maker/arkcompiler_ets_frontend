@@ -15,7 +15,7 @@
 /**---
  description: >
     properties of any name can be accessed through an Any value 
-    and Any values can be called as functions with any argument list.
+    and Any values can be called as functions or constructors with any argument list.
  module: ESNext
  isCurrent: true
  ---*/
@@ -52,3 +52,19 @@ Assert.isSymbol(fun(x));
 x = { a: 1, b: 1 };
 Assert.isObject(x);
 Assert.isObject(fun(x));
+class C {
+   public a: any;
+   public b: any;
+   constructor(a: any, b: any) {
+      this.a = a;
+      this.b = b;
+   }
+}
+let c1 = new C(1, "1");
+Assert.isNumber(c1.a);
+let c2 = new C("aa", "bb");
+Assert.isString(c2.a);
+let c3 = new C(true, true);
+Assert.isBoolean(c3.a);
+let c4 = new C({}, {});
+Assert.isObject(c4.a);

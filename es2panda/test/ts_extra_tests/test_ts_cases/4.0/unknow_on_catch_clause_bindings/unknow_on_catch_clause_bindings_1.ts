@@ -23,11 +23,11 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function h_throwError(): never {
+function getErrorMessage(): never {
   throw new Error("An error occurred");
 }
 try {
-  h_throwError();
+  getErrorMessage();
 } catch (error: any) {
   Assert.equal(error.message, "An error occurred");
 };

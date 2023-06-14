@@ -44,7 +44,7 @@ class h_c extends h_C implements h_I {
         return 'choose';
     }
 }
-var h_CC = new h_C('private');
+let h_CC = new h_C('private');
 Assert.equal(h_CC.get(), 'private');
-var h_cc = new h_c('PRIVATE');
+let h_cc = new h_c('PRIVATE');
 Assert.equal(h_cc.get(), 'PRIVATE');

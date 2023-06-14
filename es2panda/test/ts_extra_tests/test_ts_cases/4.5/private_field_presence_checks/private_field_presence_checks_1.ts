@@ -31,6 +31,7 @@ class RunP {
     combine(additional: any) {
         return additional &&
             typeof additional === "object" &&
+            #type in additional&&
             this.#type === additional.#type;
     }
 }

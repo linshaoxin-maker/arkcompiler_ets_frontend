@@ -14,7 +14,8 @@
  */
 /**---
  description: > 
-    If only one accessor includes a type annotation, the other behaves as if it had the same type annotation
+    If the object literal is contextually typed and the contextual type contains a property with a matching name, 
+    the property assignment is contextually typed by the type of that property.
  module: ESNext
  isCurrent: true
  ---*/
@@ -22,26 +23,25 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-class Person1 {
-  private _name: string = "";
-  get name(){
-    return this._name;
-  }
-  set name(value: string) {
-    this._name = value;
-  }
+let obj1: {
+    str: string;
+    num: number;
+    bool: boolean;
+} = {
+    str: 'string',
+    num: 5,
+    bool: true
 }
-const person1 = new Person1();
-Assert.isString(person1.name);
+Assert.isString(obj1.str);
+Assert.isNumber(obj1.num);
+Assert.isBoolean(obj1.bool);
 
-class Person2 {
-  private _name: string = "";
-  get name(): string{
-    return this._name;
-  }
-  set name(value) {
-    this._name = value;
-  }
+interface I{
+    num: number;
+    str: string;
 }
-const person2 = new Person2();
-Assert.isString(person2.name);
+let obj2 = {} as I;
+obj2.num = 10;
+obj2.str = 'string';
+Assert.isNumber(obj2.num);
+Assert.isString(obj2.str);

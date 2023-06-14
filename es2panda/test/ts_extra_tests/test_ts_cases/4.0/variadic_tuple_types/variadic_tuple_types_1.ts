@@ -14,7 +14,9 @@
  */
 /**---
  description: >
-  Consider a function in JavaScript called concat that takes two array or tuple types and concatenates them together to make a new array.
+  The first change is that spreads in tuple type syntax can now be generic. 
+  This means that we can represent higher-order operations on tuples and arrays even when we don’t know the actual types we’re operating over. 
+  When generic spreads are instantiated (or, replaced with a real type) in these tuple types, they can produce other sets of array and tuple types.
  module: ESNext
  isCurrent: true
  ---*/
@@ -22,19 +24,11 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function funVTT01(arr1: any, arr2: any) {
-  return [...arr1, ...arr2];
+function dropFrist<T, U>(arr1: T[], arr2: U[]): Array<T | U> {
+  const [first, ...others] = [...arr1, ...arr2];
+  return others;
 }
-const arrA: any = [1, 2, 3];
-const arrB: any = [4, 5, 6];
-let len01 = funVTT01(arrA, arrB).length;
-Assert.equal(len01, 6);
-
-function funVTT02(arg: any) {
-  const [_, ...result] = arg;
-  return result;
-}
-
-const arrC: any = [1, 2, 3, 4, 5];
-let len02 = funVTT02(arrC).length;
-Assert.equal(len02, 4);
+let num123: number[] = [1, 2, 3];
+let abc: string[] = ['a', 'b', 'c'];
+let arr = dropFrist<number, string>(num123, abc);
+Assert.equal(JSON.stringify(arr), '[2,3,"a","b","c"]');

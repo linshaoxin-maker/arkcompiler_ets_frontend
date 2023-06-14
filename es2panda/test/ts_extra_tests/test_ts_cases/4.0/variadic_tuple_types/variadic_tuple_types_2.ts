@@ -14,39 +14,21 @@
  */
 /**---
  description: >
-  How would we type either of these in TypeScript?
-  For concat, the only valid thing we could do in older versions of the language was to try and write some overloads.
-  function concat<A, B, C, D, E, F>(arr1: [A, B, C, D, E, F], arr2: []): [A, B, C, D, E, F];
+  The second change is that rest elements can occur anywhere in a tuple - not just at the end!
+  Note that in cases when we spread in a type without a known length, the resulting type becomes unbounded as well, and all the following elements factor into the resulting rest element type.
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import { Assert } from '../../../suite/assert.js'
+import { Assert } from "../../../suite/assert.js"
 
-function funVTT01<T1, T2>(arr1: [T1, T2], arr2: []): [T1, T2];
-function funVTT01<T>(arr1: T[], arr2: T[]): T[] {
-  return arr1.concat(arr2);
+type N = [number, number, number];
+type S = [string, string, string];
+type NBSB = [...N, boolean, ...S, boolean]
+function mergedArray1(nbsb: NBSB): string {
+  return JSON.stringify(nbsb);
 }
-const t0: [] = [];
-const tns: [number, string] = funVTT01([1, "a"], t0);
-Assert.equal(tns[0], 1);
-Assert.equal(tns[1], "a");
-
-const arr1: [number, string, boolean, number[], object, string] = [
-  1,
-  "NARC",
-  true,
-  [2, 3],
-  { name: "Rose" },
-  "AAAA",
-];
-const arr2: [] = [];
-function funVTT02<A, B, C, D, E, F>(
-  arr1: [A, B, C, D, E, F],
-  arr2: []
-): [A, B, C, D, E, F] {
-  return [...arr1, ...arr2];
-}
-const result = funVTT02(arr1, arr2);
-Assert.equal(result.length, 6);
+let a: NBSB = [1, 2, 3, true, 'A', 'B', 'C', false];
+let s = mergedArray1(a);
+Assert.equal(s, '[1,2,3,true,"A","B","C",false]');

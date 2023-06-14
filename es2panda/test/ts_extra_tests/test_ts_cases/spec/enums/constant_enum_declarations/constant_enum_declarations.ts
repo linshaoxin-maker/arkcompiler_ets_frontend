@@ -23,28 +23,34 @@
 
 
 import { Assert } from '../../../../suite/assert.js'
-
+let v = 8 * 8;
 const enum CED {
   None = -1,
   False,
   True = 1,
   DEF = 1024,
+  Val = DEF / 8,
 }
 Assert.equal(CED.None, -1);
 Assert.equal(CED.False, 0);
 Assert.equal(CED.True, 1);
 Assert.equal(CED.DEF, 1024);
+Assert.equal(CED.Val, 128);
 Assert.equal(CED["None"], -1);
 Assert.equal(CED["False"], 0);
 Assert.equal(CED["True"], 1);
 Assert.equal(CED["DEF"], 1024);
+Assert.equal(CED["Val"], 128);
+
 enum CED_COPY {
   None = -1,
   False,
   True = 1,
   DEF = 1024,
+  Val = DEF / 8,
 }
 Assert.equal(CED_COPY[-1], "None");
 Assert.equal(CED_COPY[0], "False");
 Assert.equal(CED_COPY[1], "True");
 Assert.equal(CED_COPY[1024], "DEF");
+Assert.equal(CED_COPY[128], "Val");

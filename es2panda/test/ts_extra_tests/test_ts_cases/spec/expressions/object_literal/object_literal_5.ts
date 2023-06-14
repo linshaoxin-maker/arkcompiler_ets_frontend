@@ -35,5 +35,4 @@ class Example {
   }
 }
 const example = new Example();
-example.count = 1;
 Assert.isNumber(example.count);

@@ -28,47 +28,88 @@ import { Assert } from '../../../../suite/assert.js'
     interface Worker {
         x: number;
 
-        work(): void;
+        work(): string;
 
-        getS(): { velocity: number; };
+        getS(): { rate: number,velocity: number; };
     }
 
     interface Tool {
         y: number;
 
-        tool(): void;
+        tool(): string;
 
-        getS(): { rate: number; };
+        getS(): { rate: number, velocity: number;};
     }
 
-    let result1: { rate: number; } = {
-        rate: 1
+    interface Runer extends Tool,Worker{
+        z:string,
+
+        getS(): { rate: number, velocity: number,play:string};
+
+        run():string;
+
+        tool(): string;
+    }
+
+    let result1: { rate: number,velocity: number; } = {
+        rate: 1,
+        velocity:123,
     };
-    let result2: { velocity: number; } = {
+    let result2: { velocity: number,rate: number,} = {
         velocity: 1,
+        rate:999,
     };
+    let  ToRun: {velocity: number, rate: number, play: string} = {
+        velocity: 1314,
+        rate:999,
+        play:"一万年",
+    }
 
     let point: Worker = {
         x: 1,
-        getS(): { velocity: number; } {
+        getS(): {rate: number, velocity: number} {
             return result2
         },
-        work(): void {
+        work(): string {
+            return "work";
         }
     };
     let pointer: Tool = {
         y: 1,
-        getS(): { rate: number; } {
+        getS(): {rate: number, velocity: number} {
             return result1
         },
-        tool(): void {
+        tool(): string {
+            return "tool";
         },
     };
+    let run:Runer = {
+        x: ++point.x,
+        y: --pointer.y,
+        z:"with z",
+        getS(): { rate: number; velocity: number; play: string } {
+            return ToRun;
+        },
+        work(): string {
+            return "let it work";
+        },
+        run():string {
+            return "let it run";
+        },
+        tool(): string {
+            return "He is the tool of work";
+        }
+    }
 
-    Assert.equal(point.x, 1);
-    Assert.equal(pointer.y, 1);
+    Assert.equal(run.x,2);
+    Assert.equal(run.y,0);
+    Assert.equal(run.z,"with z");
+    Assert.equal(run.getS(),ToRun);
+    Assert.equal(run.run()+","+run.work()+","+run.tool(),"let it run,let it work,He is the tool of work");
+    Assert.equal(point.x, 2);
+    Assert.equal(pointer.y, 0);
     Assert.equal(point.getS(), result2);
     Assert.equal(pointer.getS(), result1);
-    Assert.equal(pointer.tool(), undefined);
-    Assert.equal(point.work(), undefined);
+    Assert.equal(pointer.tool(), "tool");
+    Assert.equal(point.work(), "work");
 };

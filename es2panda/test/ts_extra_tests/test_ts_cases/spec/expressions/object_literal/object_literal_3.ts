@@ -23,19 +23,26 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-let animal: {
-  name: String;
-  age: Number;
-  run: Number;
-  bark(run: Number): Number;
+let obj1: {
+  'str': string;
+  [key: string]: string;
 } = {
-  name: "Tom",
-  age: 12,
-  run: 23,
-  bark(run) {
-    return run;
-  },
-};
-Assert.equal(animal.run, 23);
-animal.run = 66;
-Assert.equal(animal.run, 66);
+  'str': 'string',
+  'num': 'number',
+  'bool': 'boolean'
+}
+Assert.isString(obj1['num']);
+Assert.isString(obj1['bool']);
+
+interface I{
+  'str': string;
+  [key: string]: string;
+}
+let obj2 = {} as I;
+obj2 = {
+  'str': 'string',
+  'num': 'number',
+  'bool': 'boolean'
+}
+Assert.isString(obj2['num']);
+Assert.isString(obj2['bool']);
