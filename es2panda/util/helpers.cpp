@@ -70,7 +70,7 @@ bool Helpers::ContainSpreadElement(const ArenaVector<ir::Expression *> &args)
     return std::any_of(args.begin(), args.end(), [](const auto *it) { return it->IsSpreadElement(); });
 }
 
-util::StringView Helpers::LiteralToPropName(const ir::Expression *lit)
+util::StringView Helpers::LiteralToPropName(ArenaAllocator *allocator, const ir::Expression *lit)
 {
     switch (lit->Type()) {
         case ir::AstNodeType::IDENTIFIER: {
@@ -80,7 +80,15 @@ util::StringView Helpers::LiteralToPropName(const ir::Expression *lit)
             return lit->AsStringLiteral()->Str();
         }
         case ir::AstNodeType::NUMBER_LITERAL: {
-            return lit->AsNumberLiteral()->Str();
+            auto strName = lit->AsNumberLiteral()->Str();
+            auto numName = lit->AsNumberLiteral()->Number();
+
+            if ((strName.Find("e") != std::string::npos || strName.Find("E") != std::string::npos) &&
+                std::fabs(numName) < MAX_LITERAL_FORMAT && std::fabs(numName) >= MIN_LITERAL_FORMAT) {
+                return util::Helpers::ToStringView(allocator, numName);
+            }
+
+            return strName;
         }
         case ir::AstNodeType::NULL_LITERAL: {
             return "null";
@@ -149,12 +157,44 @@ bool Helpers::EndsWith(std::string_view str, std::string_view suffix)
     return str.find(suffix, expectPos) == expectPos;
 }
 
+std::string Helpers::RemoveLastZero(std::string &str)
+{
+    uint32_t index = 0;
+
+	if (str.empty() || str.find('.') == std::string::npos) {
+        return str;
+    }
+
+	for (int i = str.size() - 1; i > 0; --i) {
+        if (str[i] == '.') {
+            index = i;
+			break;
+		}
+        if (str[i] != '0') {
+            index = i + 1;
+			break;
+        }
+	}
+
+    return str.substr(0, index);
+}
+
 std::string Helpers::ToString(double number)
 {
     std::string str;
 
-    if (Helpers::IsInteger<int32_t>(number)) {
-        str = std::to_string(static_cast<int32_t>(number));
+    if (std::fabs(number) <= static_cast<double>(std::numeric_limits<int64_t>::max()) &&
+        std::fabs(number) >= MIN_LITERAL_FORMAT) {
+        if (Helpers::IsInteger<int64_t>(number)) {
+            str = std::to_string(static_cast<int64_t>(number));
+        } else {
+            str = std::to_string(number);
+            str = RemoveLastZero(str);
+        }
+    } else if (std::fabs(number) > static_cast<double>(std::numeric_limits<int64_t>::max()) &&
+               std::fabs(number) < MAX_LITERAL_FORMAT) {
+        str = std::to_string(number);
+        str = RemoveLastZero(str);
     } else {
         str = std::to_string(number);
     }
@@ -332,7 +372,7 @@ std::vector<const ir::Identifier *> Helpers::CollectBindingNames(const ir::AstNo
     return bindings;
 }
 
-util::StringView Helpers::FunctionName(const ir::ScriptFunction *func)
+util::StringView Helpers::FunctionName(ArenaAllocator *allocator, const ir::ScriptFunction *func)
 {
     if (func->Id()) {
         return func->Id()->Name();
@@ -395,7 +435,7 @@ util::StringView Helpers::FunctionName(const ir::ScriptFunction *func)
 
             if (prop->Kind() != ir::PropertyKind::PROTO &&
                 Helpers::IsConstantPropertyKey(prop->Key(), prop->IsComputed())) {
-                return Helpers::LiteralToPropName(prop->Key());
+                return Helpers::LiteralToPropName(allocator, prop->Key());
             }
 
             break;
