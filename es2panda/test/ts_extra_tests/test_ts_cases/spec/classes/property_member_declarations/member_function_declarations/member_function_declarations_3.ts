@@ -22,7 +22,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class Point {
+class MyClass {
   constructor(public x: number = 3, public y: number = 3) { }
   static z: number;
   static pro() {
@@ -32,5 +32,5 @@ class Point {
     this.z;
   }
 }
-Assert.equal(Point.pro(), "[object Object]");
-Assert.equal(Point.returnz(), undefined);
+Assert.equal(MyClass.pro(), "[object Object]");
+Assert.equal(MyClass.returnz(), undefined);

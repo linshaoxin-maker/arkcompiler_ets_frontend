@@ -14,10 +14,8 @@
  */
 /**---
  description: >
-  A type guard of the form 'x instanceof C', where x is not of type Any, 
-  C is of a subtype of the global type 'Function', and C has a property named 'prototype',
-  when true, narrows the type of x to the type of the 'prototype' property in C provided it is a subtype of the type of x,
-  or, if the type of x is a union type, removes from the type of x all constituent types that aren't subtypes of the type of the 'prototype' property in C, 
+  A type guard of the form typeof x === s, where s is a string literal with any value but 'string', 'number', or 'boolean',
+  when true, if x is a union type, removes from the type of x all constituent types that are subtypes of the string, number, or boolean primitive type,
   or when false, has no effect on the type of x.
  module: ESNext
  isCurrent: true
@@ -26,31 +24,31 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-class Person {
-   height: number
-   age: number
-   public constructor(height: number, age: number) {
-      this.height = height
-      this.age = age
-   }
+function f1(x: string | number | undefined) {
+    if (typeof x === "undefined") {
+        return undefined
+    }
+    else {
+        return x
+    }
 }
-class Animal {
-   height: number
-   weight: number
-   public constructor(height: number, weight: number) {
-      this.height = height
-      this.weight = weight
-   }
+var a = f1(10)
+Assert.isNumber(a)
+var b = f1('s')
+Assert.isString(b)
+var c = f1(undefined)
+Assert.isUndefined(c)
+function f2(x: string | number | boolean) {
+    if (typeof x === "undefined") {
+        return undefined
+    }
+    else {
+        return x
+    }
 }
-function func(arg: Person | Animal) {
-   if (arg instanceof Person) {
-      return arg.age = 18
-   }
-   if (arg instanceof Animal) {
-      return arg.weight = 300
-   }
-}
-var p = new Person(150, 18)
-Assert.equal(func(p), 18)
-var a = new Animal(200, 180)
-Assert.equal(func(a), 300);
+var a1 = f2(10)
+Assert.isNumber(a1)
+var b1 = f2('s')
+Assert.isString(b1)
+var c1 = f2(true)
+Assert.isBoolean(c1);

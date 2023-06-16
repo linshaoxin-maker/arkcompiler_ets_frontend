@@ -22,10 +22,9 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-type NumStrBool = number | string | boolean;
-
-function func(value: NumStrBool) {
-  return value;
+type T = number | string | boolean;
+function func(arg: T) {
+  return arg;
 }
 
 let arr = [10, "hello", false];

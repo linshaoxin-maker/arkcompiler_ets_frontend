@@ -23,11 +23,10 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-function f<T, U>(x: T[], fun: (a: T) => U): U[] {
-    let cons: U[] = [];
-    for (let i = 0; i < x.length; i++) cons.push(fun(x[i]));
-    return cons;
+function func<T>(arg1: T, arg2:T) {
+    return [arg1, arg2];
 }
-let xx = ["xiao", "xi", "xin"];
-let yy = f(xx, str => str.length);
-Assert.isObject(yy);
+let a = func(3, 5);
+let b = func('a', 'b');
+Assert.equal(a, '3,5');
+Assert.equal(b, 'a,b');

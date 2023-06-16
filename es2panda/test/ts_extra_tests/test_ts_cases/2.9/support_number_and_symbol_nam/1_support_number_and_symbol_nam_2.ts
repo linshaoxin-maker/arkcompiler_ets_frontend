@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 /**---
- description: Since keyof now reflects the presence of a numeric index signature by including type number in the key type, mapped types such as Partial<T> and Readonly<T> work correctly when applied to object types with numeric index signatures.
+ description: >
+    TypeScript 2.9 adds support for number and symbol named properties in index types and mapped types.
  module: ESNext
  isCurrent: true
 ---*/
@@ -21,17 +22,22 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-type TYPE1<T> = {
-    a: number;
-    [b: number]: T;
+const str = 'x'
+const num = 1
+const sym = Symbol()
+type Objs1 = {
+    [str]: string,
+    [num]: number,
+    [sym]: symbol
 }
-type TYPE2<T> = Readonly<TYPE1<T>>;
-let arr: TYPE2<string> = {
-    [1]: "b",
-    [2]: "a",
-    a: 2,
-};
-let len = arr.a;
-let x = arr[1];
-Assert.equal(2, len);
-Assert.equal("b", x);
+type Types<T> = {
+    [P in keyof T]: T[P]
+}
+let objs2: Types<Objs1> = {
+    x: 'xx',
+    1: 11,
+    [sym]: Symbol()
+}
+Assert.isString(objs2[str]);
+Assert.isNumber(objs2[num]);
+Assert.isSymbol(objs2[sym]);

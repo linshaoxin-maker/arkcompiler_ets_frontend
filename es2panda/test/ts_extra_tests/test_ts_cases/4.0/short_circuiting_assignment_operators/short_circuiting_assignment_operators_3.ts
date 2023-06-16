@@ -29,8 +29,8 @@ const obj = {
   },
   set prop(_val: boolean) { },
 };
-function hwtest01() {
+function test01() {
   return true;
 }
-obj.prop = obj.prop || hwtest01();
+obj.prop = obj.prop || test01();
 Assert.equal(obj.prop, true);

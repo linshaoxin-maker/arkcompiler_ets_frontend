@@ -25,7 +25,7 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-async function* ag() {
+async function* fun() {
     let i = 0;
     let c = 0;
     yield* [0, 0, 0, 0];
@@ -60,7 +60,7 @@ function newArray() {
     }
     return arr;
 }
-let arr = ag();
+let arr = fun();
 async function showAsyncGenerator(arr: AsyncGenerator) {
     let i = 0;
     for await (let x of arr) {

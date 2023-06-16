@@ -23,19 +23,15 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-const logo:string ="just do it"
-
-const hw: string = `go ${logo}`;
-
-let hwa: string = `hello ${logo}`;
-
-let hws:string = `luckily dog ${logo}` as const;
-
-function check(op?:string){
+const logo: "just do it" = "just do it";
+const str1: string = `go ${logo}`;
+let str2: string = `hello ${logo}`;
+let str3: "luckily dog just do it" = `luckily dog ${logo}` as const;
+function check(op?: string){
     if (op){
-        Assert.isString(op)
+        Assert.isString(op);
     }
 }
-check(hw+hwa+hws);
-Assert.equal(hw,"go just do it");
-Assert.equal(hwa,"hello just do it");
+check(str1 + str2 + str3);
+Assert.equal(str1, "go just do it");
+Assert.equal(str2, "hello just do it");

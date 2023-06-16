@@ -27,7 +27,7 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-class HWC {
+class SWTC1 {
     #data = 0;
     get data(): number {
         return this.#data;
@@ -49,7 +49,7 @@ class HWC {
     }
 }
 
-let c = new HWC();
+let c = new SWTC1();
 let n: number = 0;
 
 c.data = "hello";

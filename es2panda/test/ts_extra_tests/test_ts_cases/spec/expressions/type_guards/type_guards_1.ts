@@ -23,17 +23,18 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-function h_func(h_x: number | string) {
-    if (typeof h_x === 'string') {
-        Assert.isString(h_x);
-        return h_x.length;
+function fun(x: boolean | number | string) {
+    if (typeof x === 'string') {
+        Assert.isString(x);
     }
-    else {
-        Assert.isNumber(h_x);
-        return h_x - 5;
+    if (typeof x === 'boolean') {
+        x = true;
+        Assert.isTrue(x);
+    }
+    if (typeof x === 'number') {
+        Assert.isNumber(x);
     }
 }
-let a = h_func('string');
-Assert.equal(a, 6);
-let b = h_func(10);
-Assert.equal(b, 5);
+fun('string');
+fun(10);
+fun(false);

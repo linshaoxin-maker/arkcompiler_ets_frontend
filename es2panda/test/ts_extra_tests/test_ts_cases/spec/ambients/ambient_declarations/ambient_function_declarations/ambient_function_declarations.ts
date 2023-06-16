@@ -27,8 +27,6 @@ import { Assert } from '../../../../../suite/assert.js'
 declare type DF1 = () => void;
 declare type DF2 = (a: string, b: string) => string;
 declare type DF3 = (a: number, b?: number) => string;
-declare function fun1(): void;
-declare function fun2(a: number): string;
 const dFun1: DF1 = () => { Assert.isString("dFun1"); }
 const dFun2: DF2 = (a: string, b: string) => { Assert.isString("dFun2"); return a + b; }
 const dFun3: DF3 = (a: number, b?: number) => {

@@ -14,7 +14,8 @@
  */
 /**---
  description: >
-    A property of a function type for each static member function declaration in the class body.
+    A property named 'prototype', the type of which is an instantiation of the class type with type Any supplied 
+    as a type argument for each type parameter.
  module: ESNext
  isCurrent: true
  ---*/
@@ -22,29 +23,14 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class A1 {
-  public numa: number;
-  constructor(a: number) {
-    this.numa = a;
-  }
-  static c = 10;
-  static f(): void {
-    this.c++;
+class Animal {
+  public name: string;
+  constructor(name: string) {
+    this.name = name;
   }
 }
-class B1 extends A1 {
-  public numb: number;
-  constructor(a: number, b: number) {
-    super(a);
-    this.numb = b;
-  }
-  static f() {
-    this.c++;
-    return this.c
-  }
-}
-Assert.equal(A1.c, 10);
-A1.f();
-Assert.equal(A1.c, 11);
-Assert.equal(B1.c, 11);
-Assert.equal(B1.f(), 12);
+Assert.equal(typeof (Animal.prototype), "object");
+let cat = new Animal("Cat")
+Assert.equal(Object.getPrototypeOf(cat) === Animal.prototype, true);
+Assert.equal(Object.getPrototypeOf(Animal.prototype) === Object.prototype, true);
+Assert.equal(Object.getPrototypeOf(Object.prototype) === null, true);

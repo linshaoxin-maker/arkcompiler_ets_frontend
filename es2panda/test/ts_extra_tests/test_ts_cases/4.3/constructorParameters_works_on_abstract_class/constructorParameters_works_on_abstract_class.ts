@@ -22,7 +22,7 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-abstract class HWC {
+abstract class CPC {
     a: string;
     b: number;
     constructor(a: string, b: number) {
@@ -31,6 +31,6 @@ abstract class HWC {
     }
 }
 
-type TypeC = ConstructorParameters<typeof HWC>;
+type TypeC = ConstructorParameters<typeof CPC>;
 var c: TypeC = ["s", 10];
 Assert.equal(JSON.stringify(c), '["s",10]');

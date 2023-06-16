@@ -22,14 +22,14 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-function rfun1(...v: [number, string, boolean]) {
+function rfun1(a: string, b: number, c: boolean, ...v: [number, string, boolean]) {
     return { number: v[0], string: v[1], boolean: v[2] };
 }
-function rfun2(v1: number, v2: string, v3: boolean) {
+function rfun2(a: string, b: number, c: boolean, v1: number, v2: string, v3: boolean) {
     return { number: v1, string: v2, boolean: v3 };
 }
-var r1 = rfun1(1, "rfun", true);
-var r2 = rfun2(1, "rfun", true);
+var r1 = rfun1("a", 1, true, 1, "rfun", true);
+var r2 = rfun2("a", 1, true, 1, "rfun", true);
 var jr1 = JSON.stringify(r1);
 var jr2 = JSON.stringify(r2);
 Assert.equal(jr1, jr2);

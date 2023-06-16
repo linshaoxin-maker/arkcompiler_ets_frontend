@@ -23,17 +23,17 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-class HWC {
+class SIS {
     hello = "hello";
     world = "1213";
     [propName: string]: string | number | undefined;
 }
 
-let hwc = new HWC();
-hwc["Yes!Yes!Yes!"] = 42;
-Assert.equal(hwc["Yes!Yes!Yes!"], 42);
+let sis = new SIS();
+sis["Yes!Yes!Yes!"] = 42;
+Assert.equal(sis["Yes!Yes!Yes!"], 42);
 
-let x = hwc["No!No!No!"];
+let x = sis["No!No!No!"];
 x = undefined;
 Assert.isUndefined(x);
 x = 20;
@@ -41,16 +41,16 @@ Assert.equal(x, 20);
 x = "x";
 Assert.equal(x, "x");
 
-class HWB {
+class B {
     static hello = "hello";
     static world = 1342;
     static [propName: string]: string | number | undefined;
 }
 
-HWB["Yes!Yes!Yes!"] = 42;
-Assert.equal(HWB["Yes!Yes!Yes!"], 42);
+B["Yes!Yes!Yes!"] = 42;
+Assert.equal(B["Yes!Yes!Yes!"], 42);
 
-let y = HWB["No!No!No!"];
+let y = B["No!No!No!"];
 y = "y";
 Assert.equal(y, "y");
 y = 10;

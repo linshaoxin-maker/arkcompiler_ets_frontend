@@ -23,21 +23,21 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-export declare module AMD3_1 {
-   interface AMD3_1IF {
+export declare module m1 {
+   interface I1 {
       a3_1: boolean;
       a3_2: number;
    }
    var AMD2Var1: string;
 }
-declare module AMD3_2 {
-   export interface AMD3_2IF {
+declare module m2 {
+   export interface I2 {
       a3_1: boolean;
       a3_2: string;
    }
    export var AMD2Var1: string;
 }
-var am3_1: AMD3_1.AMD3_1IF = { a3_1: false, a3_2: 0 };
-var am3_2: AMD3_2.AMD3_2IF = { a3_1: true, a3_2: "T" };
+var am3_1: m1.I1 = { a3_1: false, a3_2: 0 };
+var am3_2: m2.I2 = { a3_1: true, a3_2: "T" };
 Assert.equal(JSON.stringify(am3_1), '{"a3_1":false,"a3_2":0}');
 Assert.equal(JSON.stringify(am3_2), '{"a3_1":true,"a3_2":"T"}');

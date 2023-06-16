@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 /**---
- description: TypeScript 2.9 adds support for number and symbol named properties in index types and mapped types.
+ description: >
+    TypeScript 2.9 adds support for number and symbol named properties in index types and mapped types.
  module: ESNext
  isCurrent: true
 ---*/
@@ -24,23 +25,23 @@ import { Assert } from '../../../suite/assert.js'
 const str = "x";
 const num = 1;
 const sym = Symbol();
-const enum NUM { ONE, TWO, THREE }
-const enum XYZStr { X = "X", Y = "Y", Z = "Z" }
-type TypeObj = {
-    y: string;
+
+type Obj = {
     2: string;
     [str]: string;
     [num]: string;
     [sym]: string;
-    [NUM.ONE]: string;
-    [XYZStr.X]: string;
 }
-type X1 = keyof TypeObj;
-type X2 = Extract<keyof TypeObj, string>;
-type X3 = Extract<keyof TypeObj, number>;
-let x1: X1 = "x";
-let x2: X2 = XYZStr.X;
-let x3: X3 = 1;
+type T1 = keyof Obj;
+let x1: T1 = "x";
+let x2: T1 = sym;
+let x3: T1 = 1;
+let x4: T1 = 2;
 Assert.equal("x", x1);
-Assert.equal(XYZStr.X, x2);
+Assert.isString(x1);
+Assert.equal(sym, x2);
+Assert.isSymbol(x2);
 Assert.equal(1, x3);
+Assert.isNumber(x3);
+Assert.equal(2, x4);
+Assert.isNumber(x4);

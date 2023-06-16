@@ -24,27 +24,27 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-class Boss{
-    run(person?:string): string{
-        return person+" go"
+class Boss {
+    run(person?: string): string {
+        return person + " go"
     }
 }
-class manage extends Boss{
+class Manage extends Boss {
     run(person?: string): string {
         return super.run(person);
     }
 }
-class staff extends Boss{
-    override run(person?:string): string {
+class Staff extends Boss {
+    override run(person?: string): string {
         super.run();
-        return person+" run";
+        return person + " run";
     }
 }
-let Hwa = new Boss();
-Assert.equal(Hwa.run("boss"),"boss go");
+let boss = new Boss();
+Assert.equal(boss.run("boss"), "boss go");
 
-let hwc = new manage();
-Assert.equal(hwc.run("manage"),"manage go");
+let manage = new Manage();
+Assert.equal(manage.run("manage"), "manage go");
 
-let Hwb = new staff();
-Assert.equal(Hwb.run("staff"),"staff run");
+let staff = new Staff();
+Assert.equal(staff.run("staff"), "staff run");

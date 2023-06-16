@@ -24,12 +24,12 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-interface HWC {
+interface SWTC2 {
     get data(): number;
     set data(val: number | string | boolean);
 }
 
-function funSW(): HWC {
+function funSW(): SWTC2 {
     let data = 0;
     return {
         get data(): number {

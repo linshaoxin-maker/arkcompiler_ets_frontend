@@ -14,8 +14,8 @@
  */
 /**---
  description: >
-  In the true branch statement of an 'if' statement, 
-  the type of a variable or parameter is narrowed by a type guard in the 'if' condition when true, 
+  In the false branch statement of an 'if' statement, 
+  the type of a variable or parameter is narrowed by a type guard in the 'if' condition when false, 
   provided no part of the 'if' statement contains assignments to the variable or parameter.
  module: ESNext
  isCurrent: true
@@ -25,13 +25,13 @@
 import { Assert } from '../../../../suite/assert.js'
 
 function h_func(h_x: number | string) {
-    if (typeof h_x === 'string') {
-        Assert.isString(h_x);
-        return h_x.length;
-    }
-    else {
-        return h_x + 1
-    }
+   if (!(typeof h_x === 'string')) {
+      Assert.isNumber(h_x);
+      return h_x;
+   }
+   else {
+      return h_x.length
+   }
 }
-let a = h_func('string');
-Assert.equal(a, 6);
+let a = h_func(10);
+Assert.equal(a, 10);

@@ -26,7 +26,7 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-class HWC {
+class ClassP {
     #FUN() {
         return 1;
     }
@@ -37,7 +37,7 @@ class HWC {
         return num;
     }
     F2() {
-        return HWC.#something(10);
+        return ClassP.#something(10);
     }
     get #V() {
         return 100;
@@ -48,7 +48,7 @@ class HWC {
     }
 }
 
-let c = new HWC();
+let c = new ClassP();
 Assert.equal(c.F1(), 1);
 Assert.equal(c.F2(), 10);
 Assert.equal(c.mFUN(), 100);

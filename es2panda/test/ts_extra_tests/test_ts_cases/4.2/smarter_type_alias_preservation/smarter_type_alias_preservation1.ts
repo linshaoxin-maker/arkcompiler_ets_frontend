@@ -22,17 +22,16 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-type NumStrBool = number | string | boolean;
-
-function func(value: NumStrBool): NumStrBool {
+type T = number | string | boolean;
+function func(value: T): T {
   return value;
 }
 let arr = [1, "hello", false];
 Assert.equal(typeof func(arr[0]), "number");
 
 class C{
-  mem: NumStrBool;
-  constructor(mem: NumStrBool) {
+  mem: T;
+  constructor(mem: T) {
     this.mem = mem;
   }
 }

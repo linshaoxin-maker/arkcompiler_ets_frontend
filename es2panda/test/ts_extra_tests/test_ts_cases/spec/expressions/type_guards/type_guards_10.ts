@@ -14,9 +14,9 @@
  */
 /**---
  description: >
-  A type guard of the form typeof x === s, where s is a string literal with any value but 'string', 'number', or 'boolean',
-  when true, if x is a union type, removes from the type of x all constituent types that are subtypes of the string, number, or boolean primitive type,
-  or when false, has no effect on the type of x.
+  A type guard of the form !expr,
+  when true, narrows the type of x by expr when false, 
+  or when false, narrows the type of x by expr when true.
  module: ESNext
  isCurrent: true
  ---*/
@@ -24,31 +24,17 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-function f1(x: string | number | undefined) {
-    if (typeof x === "undefined") {
-        return undefined
+function func(x: string | number) {
+    if (!(typeof x === "string")) {
+        Assert.isNumber(x);
+        return x + 1;
     }
     else {
-        return x
+        Assert.isString(x);
+        return x.length;
     }
 }
-var a = f1(10)
-Assert.isNumber(a)
-var b = f1('s')
-Assert.isString(b)
-var c = f1(undefined)
-Assert.isUndefined(c)
-function f2(x: string | number | boolean) {
-    if (typeof x === "undefined") {
-        return undefined
-    }
-    else {
-        return x
-    }
-}
-var a1 = f2(10)
-Assert.isNumber(a1)
-var b1 = f2('s')
-Assert.isString(b1)
-var c1 = f2(true)
-Assert.isBoolean(c1);
+let a = func(10);
+Assert.equal(a, 11);
+let b = func('s');
+Assert.equal(b, 1);

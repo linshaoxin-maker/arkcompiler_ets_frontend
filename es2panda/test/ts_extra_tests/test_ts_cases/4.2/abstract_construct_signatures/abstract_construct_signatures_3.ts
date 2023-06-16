@@ -22,26 +22,43 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-abstract class myClass {
-    abstract h_method(): number;
-    func() { };
+abstract class Point {
+    abstract a: number;
+    abstract b: number;
+    abstract getPoint(): [number, number];
 }
 
-type myType<T> = abstract new (...args: any[]) => T;
+type MIX<T> = abstract new (...args: any[]) => T
 
-function myFunc<T extends myType<object>>(value: T) {
-    abstract class myC extends value {
-        getS() {
-        };
+function mixClass<T extends MIX<object>>(Ctor: T) {
+    abstract class CPColor extends Ctor {
+        abstract red: number;
+        abstract green: number;
+        abstract blue: number;
+        abstract getColor(): [number, number, number];
     }
-    return myC;
+    return CPColor;
 }
 
-class h_C extends myFunc(myClass) {
-    h_method(): number {
-        return 10;
+class ColorPoint extends mixClass(Point) {
+    red: number = 0;
+    green: number = 0;
+    blue: number = 0;
+    a: number = 0;
+    b: number = 0;
+    getColor(): [number, number, number] {
+        return [this.red, this.green, this.blue];
+    }
+    getPoint(): [number, number] {
+        return [this.a, this.b];
+    }
+    constructor(red: number = 0, green: number = 0, blue: number = 0, a: number = 0, b: number = 0) {
+        super();
+        this.a = a; this.b = b;
+        this.red = red; this.green = green; this.blue = blue;
     }
 }
 
-let test = new h_C();
-Assert.equal(test.h_method(), 10);
+let cp = new ColorPoint(0, 255, 0, 25, 25);
+Assert.equal(JSON.stringify(cp.getColor()), '[0,255,0]');
+Assert.equal(JSON.stringify(cp.getPoint()), '[25,25]');

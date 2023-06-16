@@ -14,28 +14,20 @@
  */
 /**---
  description: >
-  A type guard of the form expr1 || expr2,
-  when true, narrows the type of x to T1 | T2, where T1 is the type of x narrowed by expr1 when true,
-  and T2 is the type of x narrowed by expr1 when false and then by expr2 when true, or
-  when false, narrows the type of x by expr1 when false and then by expr2 when false.
+   Rest parameters with tuple types
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import { Assert } from '../../../../suite/assert.js'
+import { Assert } from '../../../suite/assert.js'
 
-function func(x: string | number | undefined) {
-    if (typeof x === "string" || typeof x === "number") {
-        return x;
-    }
-    else {
-        return undefined;
-    }
+function test1(...ar:[string,number,boolean]):number {
+    return 0
 }
-let a = func(10);
-Assert.isNumber(a);
-let b = func('s');
-Assert.isString(b);
-let c = func(undefined);
-Assert.isUndefined(c);
+function test2(ar:string,ar1: number,ar2:boolean):number {
+    return 1
+}
+
+Assert.equal(test1("11",2,true), 0);
+Assert.equal(test2("11",2,true), 1);

@@ -25,13 +25,11 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-function fun<S, T, U>(a: S[], b: T[], group: (a: S) => (b: T) => U): U[] {
-    let length = Math.max(a.length, b.length);
-    let cons: U[] = [];
-    for (let i = 0; i < length; i++) cons.push(group(a[i])(b[i]));
-    return cons;
+type T = (arg: number) => number;
+let f = <T>(arg: T): T => { return arg };
+let para: T = function func(arg: number) { 
+    return arg;
 }
-let xx = ["sum", "con", "say"];
-let yy = [1, 2, 3];
-let zz = fun(xx, yy, str => num => ({ name: str, age: num }));
-Assert.isObject(zz);
+let result = f(para(20));
+Assert.equal(result, 20);
+Assert.isFunction(f);

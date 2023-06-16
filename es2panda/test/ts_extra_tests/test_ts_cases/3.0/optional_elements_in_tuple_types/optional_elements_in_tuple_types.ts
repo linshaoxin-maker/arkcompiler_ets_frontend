@@ -14,39 +14,24 @@
  */
 /**---
  description: >
-  A type guard of any other form has no effect on the type of x.
+   Optional elements in tuple types , Rest elements in tuple types
  module: ESNext
  isCurrent: true
  ---*/
 
 
-import { Assert } from '../../../../suite/assert.js'
+import { Assert } from '../../../suite/assert.js'
 
-class Person {
-  name: string
-  age: number
-  public constructor(name: string, age: number) {
-    this.name = name
-    this.age = age
-  }
-}
-class Animal {
-  height: number
-  weight: number
-  public constructor(height: number, weight: number) {
-    this.height = height
-    this.weight = weight
-  }
-}
-function func(arg: Person | Animal) {
-  if ('age' in arg) {
-    Assert.isString(arg.name)
-  }
-  if ('height' in arg) {
-    Assert.isNumber(arg.height)
-  }
-}
-let p = new Person('x', 18);
-func(p);
-let a = new Animal(200, 180);
-func(a);
+let o1:[number, ...string[]] = [1, '1', '2']
+let o2:[number, ...string[]] = [1, '1', '2', '3']
+Assert.equal(o1.length, 3)
+Assert.equal(o2.length, 4)
+
+let o3: [string, string?, number?]
+o3 = ['test', "hello", 1];
+Assert.equal(o3.length, 3)
+o3 = ['test', "hello"];
+Assert.equal(o3.length, 2)
+o3 = ['test'];
+Assert.equal(o3.length, 1)
+

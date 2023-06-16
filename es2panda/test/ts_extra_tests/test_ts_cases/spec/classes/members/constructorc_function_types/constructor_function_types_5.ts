@@ -14,8 +14,7 @@
  */
 /**---
  description: >
-   Every class automatically contains a static property member named 'prototype', 
-   the type of which is the containing class with type Any substituted for each type parameter.
+    A property for each static member variable declaration in the class body.
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,26 +22,24 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class P<T1, T2> {
-  constructor(public pro1: T1, public pro2: T2) { }
+class A1 {
+  public numa: number;
+  constructor(a: number) {
+    this.numa = a;
+  }
+  static c: number = 20;
 }
-class TwoArrays<T> extends P<T[], T[]> {
-
+class B1 extends A1 {
+  public numb: number;
+  constructor(a: number, b: number) {
+    super(a);
+    this.numb = b;
+  }
 }
-let x: number = 1;
-let y: number = 2;
-let p = new P(x, y);
-let one = [3,4,5];
-let two = [6,7,8]
-let twoArrays = new TwoArrays(one,two);
-Assert.equal(twoArrays.pro1,one);
-Assert.equal(twoArrays.pro2,two)
-Assert.equal(p.pro1, 1);
-
-let x2: string = "one";
-let y2: string = "two";
-let p2 = new P(x2, y2);
-Assert.equal(p2.pro1, "one");
-let x3: boolean = true;
-let p3 = new P(x3, y);
-Assert.equal(p3.pro1, true);
+let a: A1 = new A1(10);
+Assert.equal(a.numa, 10);
+Assert.equal(A1.c, 20);
+let b: B1 = new B1(10, 20);
+Assert.equal(b.numa, 10);
+Assert.equal(b.numb, 20);
+Assert.equal(B1.c, 20);

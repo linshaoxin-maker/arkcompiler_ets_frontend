@@ -22,7 +22,7 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class Point {
+class MyClass {
   public x: number;
   public y: number;
   constructor(x: number, y: number) {
@@ -31,17 +31,17 @@ class Point {
   }
   static z: number = 3;
 }
-class ColoredPoint extends Point {
+class MyClass2 extends MyClass {
   constructor(x: number, y: number, public color: string) {
     super(x, y);
   }
   static r: number = 10;
 }
-let p = new Point(1, 2);
+let p = new MyClass(1, 2);
 Assert.equal(p.x, 1);
 Assert.equal(p.y, 2);
-Assert.equal(Point.z, 3);
-let cp = new ColoredPoint(4, 5, "red");
+Assert.equal(MyClass.z, 3);
+let cp = new MyClass2(4, 5, "red");
 Assert.equal(cp.x, 4);
 Assert.equal(cp.y, 5);
-Assert.equal(ColoredPoint.r, 10);
+Assert.equal(MyClass2.r, 10);

@@ -22,13 +22,13 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class P {
+class MyClass {
   constructor(public x: number, public y: number) { }
   public add() {
     return this.x + this.y;
   }
 }
-class childP extends P {
+class MyClass2 extends MyClass {
   constructor(x: number, y: number, public z: number) {
     super(x, y);
   }
@@ -36,10 +36,10 @@ class childP extends P {
     return super.add() + this.z;
   }
 }
-let p = new P(1, 2);
+let p = new MyClass(1, 2);
 Assert.equal(p.x, 1);
 Assert.equal(p.y, 2);
 Assert.equal(p.add(), 3);
-let cp = new childP(1, 2, 3);
+let cp = new MyClass2(1, 2, 3);
 Assert.equal(cp.z, 3);
 Assert.equal(cp.add(), 6);

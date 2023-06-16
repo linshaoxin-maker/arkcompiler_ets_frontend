@@ -23,30 +23,30 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-type World = "world";
-type Greeting = `hello ${World}`;
-function helloworld(w: World | Greeting) {
-  if (w == "world") return 1;
-  else if (w == "hello world") return 2;
+type Go = "go";
+type Dong = `just ${Go}`;
+function fun(w: Go | Dong) {
+  if (w == "go") return 1;
+  else if (w == "just go") return 2;
 }
-let saying1 = helloworld("world");
+let saying1 = fun("go");
 Assert.equal(saying1, 1);
-let saying2 = helloworld("hello world");
+let saying2 = fun("just go");
 Assert.equal(saying2, 2);
-type Color = "red" | "blue";
-type Quantity = "one" | "two";
-type SeussFish = `${Quantity | Color} fish`;
-function getfish(fish: SeussFish) {
-  if (fish == "one fish") return 1;
-  else if (fish == "two fish") return 2;
-  else if (fish == "red fish") return "red";
-  else if (fish == "blue fish") return "blue";
+type Size = "small" | "big";
+type Num = "one" | "two";
+type Food = `${Num | Size} food`;
+function getfish(food: Food) {
+  if (food == "one food") return 1;
+  else if (food == "two food") return 2;
+  else if (food == "small food") return "small";
+  else if (food == "big food") return "big";
 }
-let fish1 = getfish("one fish");
-Assert.equal(fish1, 1);
-let fish2 = getfish("two fish");
-Assert.equal(fish2, 2);
-let fish3 = getfish("red fish");
-Assert.equal(fish3, "red");
-let fish4 = getfish("blue fish");
-Assert.equal(fish4, "blue");
+let x1 = getfish("one food");
+Assert.equal(x1, 1);
+let x2 = getfish("two food");
+Assert.equal(x2, 2);
+let x3 = getfish("small food");
+Assert.equal(x3, "small");
+let x4 = getfish("big food");
+Assert.equal(x4, "big");

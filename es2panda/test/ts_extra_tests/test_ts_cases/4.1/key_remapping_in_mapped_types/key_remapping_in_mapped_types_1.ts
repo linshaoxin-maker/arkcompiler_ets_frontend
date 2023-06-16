@@ -26,22 +26,22 @@ type G<T> = {
   [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K];
 };
 interface I1 {
-  name: string;
-  id: number;
-  lo: string;
+  a: string;
+  b: number;
+  c: string;
 }
 type I1Type = G<I1>;
 let k1: I1Type = {
-  getName() {
+  getA() {
     return "honny";
   },
-  getId() {
+  getB() {
     return 2;
   },
-  getLo() {
+  getC() {
     return "qingdao";
   },
 };
-Assert.equal(k1.getName(), "honny");
-Assert.equal(k1.getId(), 2);
-Assert.equal(k1.getLo(), "qingdao");
+Assert.equal(k1.getA(), "honny");
+Assert.equal(k1.getB(), 2);
+Assert.equal(k1.getC(), "qingdao");

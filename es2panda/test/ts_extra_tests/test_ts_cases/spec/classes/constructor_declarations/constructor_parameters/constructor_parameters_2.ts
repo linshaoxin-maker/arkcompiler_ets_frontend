@@ -24,13 +24,13 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class P1 {
+class MyClass1 {
   constructor(public num1: number, private num2: number = 1) { }
   get foo(): number {
     return this.num2;
   }
 }
-class Point2 {
+class MyClass2 {
   public num1: number;
   protected num2: number;
   constructor(num1: number, num2: number) {
@@ -41,8 +41,8 @@ class Point2 {
     return this.num2;
   }
 }
-let p1 = new P1(1, 2);
+let p1 = new MyClass1(1, 2);
 Assert.equal(p1.num1, 1);
 Assert.equal(p1.foo, 2);
-let p2 = new Point2(3, 4);
+let p2 = new MyClass2(3, 4);
 Assert.equal(p2.foo, 4);

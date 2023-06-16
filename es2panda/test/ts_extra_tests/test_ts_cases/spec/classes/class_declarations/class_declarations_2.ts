@@ -20,24 +20,24 @@
  ---*/
 import { Assert } from '../../../../suite/assert.js'
 
-class Point {
+class MyClass {
     constructor(public x: number, public y: number) {
         this.x = x;
         this.y = y;
     }
-    static initial = new Point(0, 0);
-    static distance(a: Point, b: Point) {
+    static initial = new MyClass(0, 0);
+    static distance(a: MyClass, b: MyClass) {
         let dx = a.x - b.x;
         let dy = a.y - b.y;
         return Math.hypot(dx, dy);
     }
 }
-Assert.equal(0, Point.initial.x);
-Assert.equal(0, Point.initial.y);
-let p1 = new Point(0, 4);
-let p2 = new Point(3, 0);
+Assert.equal(0, MyClass.initial.x);
+Assert.equal(0, MyClass.initial.y);
+let p1 = new MyClass(0, 4);
+let p2 = new MyClass(3, 0);
 Assert.equal(0, p1.x);
 Assert.equal(4, p1.y);
 Assert.equal(3, p2.x);
 Assert.equal(0, p2.y);
-Assert.equal(5, Point.distance(p1, p2));
+Assert.equal(5, MyClass.distance(p1, p2));

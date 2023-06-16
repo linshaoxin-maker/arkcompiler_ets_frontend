@@ -14,10 +14,7 @@
  */
 /**---
  description: >
-  A type guard of the form expr1 && expr2,
-  when true, narrows the type of x by expr1 when true and then by expr2 when true, or 
-  when false, narrows the type of x to T1 | T2, where T1 is the type of x narrowed by expr1 when false, 
-  and T2 is the type of x narrowed by expr1 when true and then by expr2 when false.
+  A type guard of any other form has no effect on the type of x.
  module: ESNext
  isCurrent: true
  ---*/
@@ -25,17 +22,31 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-function func(x: string | number | undefined) {
-  if (typeof x === "string" && typeof x === "number") {
-    return undefined;
-  }
-  else {
-    return x;
+class Person {
+  name: string
+  age: number
+  public constructor(name: string, age: number) {
+    this.name = name
+    this.age = age
   }
 }
-let a = func(10);
-Assert.isNumber(a);
-let b = func('s');
-Assert.isString(b);
-let c = func(undefined);
-Assert.isUndefined(c);
+class Animal {
+  height: number
+  weight: number
+  public constructor(height: number, weight: number) {
+    this.height = height
+    this.weight = weight
+  }
+}
+function func(arg: Person | Animal) {
+  if ('age' in arg) {
+    Assert.isString(arg.name)
+  }
+  if ('height' in arg) {
+    Assert.isNumber(arg.height)
+  }
+}
+let p = new Person('x', 18);
+func(p);
+let a = new Animal(200, 180);
+func(a);

@@ -14,9 +14,10 @@
  */
 /**---
  description: >
-  In the right operand of a || operation, 
-  the type of a variable or parameter is narrowed by a type guard in the left operand when false, 
-  provided neither operand contains assignments to the variable or parameter.
+  A type guard of the form typeof x === s, where s is a string literal with the value 'string', 'number', or 'boolean',
+  when true, narrows the type of x to the given primitive type provided it is a subtype of the type of x, 
+  or, if the type of x is a union type, removes from the type of x all constituent types that aren't subtypes of the given primitive type, 
+  or when false, removes the primitive type from the type of x.
  module: ESNext
  isCurrent: true
  ---*/
@@ -24,8 +25,17 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-function isString(obj: any) {
-    typeof obj === "string" || obj.length > 10
-    Assert.isString(obj)
+function func(x: string | number) {
+    if (typeof x === "string") {
+        Assert.isString(x);
+        return x.length;
+    }
+    else {
+        Assert.isNumber(x);
+        return x + 1;
+    }
 }
-isString('s');
+let a = func(10);
+Assert.equal(a, 11);
+let b = func('s');
+Assert.equal(b, 1);

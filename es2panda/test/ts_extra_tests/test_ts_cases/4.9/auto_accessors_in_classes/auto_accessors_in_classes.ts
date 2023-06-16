@@ -14,7 +14,7 @@
  */
 /**---
  description: >
-    typescript 4.9 makes the in operator a little bit more powerful when narrowing types that don’t list the property at all.
+    TypeScript 4.9 supports an upcoming feature in ECMAScript called auto-accessors.
  options:
     target: es2015
  module: ESNext
@@ -25,15 +25,15 @@
 import { Assert } from "../../../suite/assert.js"
 
 class NormalClass {
-    #_str: string;
-    get str(): string {
-        return this.#_str;
-    }
-    set str(value: string) {
-        this.#_str = value;
-    }
+    #str: string;
     constructor(str: string) {
-        this.#_str = str;
+        this.#str = str;
+    }
+    get Str(): string {
+        return this.#str;
+    }
+    set Str(str: string) {
+        this.#str = str;
     }
 }
 class AutoClass {
@@ -45,7 +45,7 @@ class AutoClass {
 
 let c1 = new NormalClass("0");
 let c2 = new AutoClass("0");
-c1.str = "NormalClass";
-Assert.equal(c1.str, "NormalClass");
+c1.Str = "NormalClass";
+Assert.equal(c1.Str, "NormalClass");
 c2.str = "AutoClass";
 Assert.equal(c2.str, "AutoClass");

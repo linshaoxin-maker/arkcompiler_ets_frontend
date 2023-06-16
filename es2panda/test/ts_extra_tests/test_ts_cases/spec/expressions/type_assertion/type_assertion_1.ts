@@ -23,13 +23,13 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-class Form { }
-class Square extends Form { }
-function createForm(mold: string): Form {
-    if (mold === "square") {
-        return new Square()
+class P{ }
+class C extends P { }
+function func(str: string): P {
+    if (str === "string") {
+        return new C();
     }
-    return Square
+    return C;
 }
-let square = <Square>createForm("square")
-Assert.equal(JSON.stringify(square), '{}');
+let c = <C>func("string");
+Assert.equal(JSON.stringify(c), '{}');

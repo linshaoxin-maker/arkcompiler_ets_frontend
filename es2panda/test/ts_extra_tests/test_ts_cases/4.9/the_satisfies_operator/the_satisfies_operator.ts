@@ -22,24 +22,22 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-type Colors = "Red" | "Green" | "Blue";
-type RGB = [Red: number, Green: number, Blue: number];
-const rgbData = {
-    Red: [255, 0, 0],
-    Green: "0x00ff00",
-    Blue: [0, 0, 255],
+const day = {
+    Mon: 'monday',
+    Wedn: "wednesday",
+    Fri: 'friday'
 };
 
-const favoriteColors = {
-    "Red": "yes",
-    "Green": false,
-    "Blue": "kinda",
+const hobby = {
+    "Mon": false,
+    "Wedn": false,
+    "Fri": true
 };
 
-const redComponent = rgbData.Red.length;
-const greenUpperCase = rgbData.Green.toUpperCase();
-const g: boolean = favoriteColors.Green;
+const long = day.Mon.length;
+const w = day.Wedn.toUpperCase();
+const g = hobby.Wedn;
 
-Assert.equal(redComponent, 3);
-Assert.equal(greenUpperCase, "0X00FF00");
+Assert.equal(long, 6);
+Assert.equal(w, "WEDNESDAY");
 Assert.isFalse(g);

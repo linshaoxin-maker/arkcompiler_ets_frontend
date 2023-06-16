@@ -14,9 +14,9 @@
  */
 /**---
  description: >
-  In the false expression of a conditional expression, 
-  the type of a variable or parameter is narrowed by a type guard in the condition when false, 
-  provided no part of the conditional expression contains assignments to the variable or parameter.
+  In the right operand of a && operation, 
+  the type of a variable or parameter is narrowed by a type guard in the left operand when true, 
+  provided neither operand contains assignments to the variable or parameter.
  module: ESNext
  isCurrent: true
  ---*/
@@ -24,9 +24,8 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-function func(arg: number | (() => number)) {
-   var x = typeof arg !== "number" ? arg() : arg;
-   return x;
+function fun(obj: any) {
+   typeof obj === "number" && obj
+   Assert.isNumber(obj)
 }
-let result = func(5);
-Assert.isNumber(result);
+fun(12);

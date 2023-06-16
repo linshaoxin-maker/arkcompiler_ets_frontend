@@ -14,8 +14,7 @@
  */
 /**---
  description: >
-    A property named 'prototype', the type of which is an instantiation of the class type with type Any supplied 
-    as a type argument for each type parameter.
+    An ambient class declaration declares a class type and a constructor function in the containing declaration space.
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,14 +22,20 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class Animal {
-  public name: string;
-  constructor(name: string) {
-    this.name = name;
-  }
+declare class Student {
+    constructor(sname?: string, sage?: number);
+    public sname: string;
+    public sage: number;
+    cl():number;
 }
-Assert.equal(typeof (Animal.prototype), "object");
-let cat = new Animal("Cat")
-Assert.equal(Object.getPrototypeOf(cat) === Animal.prototype, true);
-Assert.equal(Object.getPrototypeOf(Animal.prototype) === Object.prototype, true);
-Assert.equal(Object.getPrototypeOf(Object.prototype) === null, true);
+let s1 :Student ={
+    sname:"static",
+    sage:12,
+    cl(){
+        return 1;
+    }
+}
+Assert.equal(s1.sname,"static");
+Assert.equal(s1.sage,"12");
+Assert.equal(s1.cl(),1);
+Assert.isFunction(s1.cl);

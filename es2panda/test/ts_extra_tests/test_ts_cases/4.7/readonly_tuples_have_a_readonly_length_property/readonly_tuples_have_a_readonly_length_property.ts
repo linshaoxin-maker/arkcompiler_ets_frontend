@@ -22,8 +22,11 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function func(tuple: readonly [string, string, string]) {
-  return tuple.length;
+class C{
+  readonly arr: [number, string, boolean];
+  constructor(arr: [number, string, boolean]) {
+    this.arr = arr;
+  }
 }
-var a = func(['a', 'b', 'c']);
-Assert.equal(a, 3);
+let c = new C([10, 'a', true]);
+Assert.equal(c.arr.length, 3);

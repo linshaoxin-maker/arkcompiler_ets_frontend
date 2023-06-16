@@ -24,13 +24,13 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-let a: string = "a is string";
-Assert.equal("a is string1", a + "1");
-type a = String;
-let x: a = "xx";
-Assert.equal("xx", x);
-namespace a {
+let Rog: string = "a is string";
+Assert.equal("a is string1", Rog + "1");
+type Rog = String;
+let newOne: Rog = "xx";
+Assert.equal("xx", newOne);
+namespace Rog {
   export type b = string;
 }
-let y: a.b = "ystr";
-Assert.equal("ystr", y);
+let yoo: Rog.b = "ystr";
+Assert.equal("ystr", yoo);

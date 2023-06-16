@@ -23,6 +23,6 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-function getValue() { }
-var s = getValue() + ""
+function func() { }
+let s = func() + ""
 Assert.isString(s);

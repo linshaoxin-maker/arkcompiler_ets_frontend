@@ -22,14 +22,14 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function getnum(location: "top" | "middle" | "bottom") {
-  if (location == "top") return 1;
-  else if (location == "middle") return 2;
-  else if (location == "bottom") return 3;
+function getnum(x: "a" | "b" | "c") {
+  if (x == "a") return 1;
+  else if (x == "b") return 2;
+  else if (x == "c") return 3;
 }
-let num1 = getnum("top");
-let num2 = getnum("middle");
-let num3 = getnum("bottom");
+let num1 = getnum("a");
+let num2 = getnum("b");
+let num3 = getnum("c");
 Assert.equal(num1, 1);
 Assert.equal(num2, 2);
 Assert.equal(num3, 3);

@@ -14,9 +14,11 @@
  */
 /**---
  description: >
-  In the right operand of a && operation, 
-  the type of a variable or parameter is narrowed by a type guard in the left operand when true, 
-  provided neither operand contains assignments to the variable or parameter.
+  A type guard of the form 'x instanceof C', where x is not of type Any, 
+  C is of a subtype of the global type 'Function', and C has a property named 'prototype',
+  when true, narrows the type of x to the type of the 'prototype' property in C provided it is a subtype of the type of x,
+  or, if the type of x is a union type, removes from the type of x all constituent types that aren't subtypes of the type of the 'prototype' property in C, 
+  or when false, has no effect on the type of x.
  module: ESNext
  isCurrent: true
  ---*/
@@ -24,8 +26,31 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-function isString(obj: any) {
-   typeof obj === "string" && obj.length < 10
-   Assert.isString(obj)
+class Person {
+   height: number
+   age: number
+   public constructor(height: number, age: number) {
+      this.height = height
+      this.age = age
+   }
 }
-isString('s');
+class Animal {
+   height: number
+   weight: number
+   public constructor(height: number, weight: number) {
+      this.height = height
+      this.weight = weight
+   }
+}
+function func(arg: Person | Animal) {
+   if (arg instanceof Person) {
+      return arg.age = 18
+   }
+   if (arg instanceof Animal) {
+      return arg.weight = 300
+   }
+}
+var p = new Person(150, 18)
+Assert.equal(func(p), 18)
+var a = new Animal(200, 180)
+Assert.equal(func(a), 300);

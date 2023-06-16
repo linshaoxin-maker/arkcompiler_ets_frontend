@@ -37,16 +37,16 @@ class Ra {
   public getz(): number {
     return this.z;
   }
-  protected g(): boolean {
+  protected fun(): boolean {
     return false;
   }
-  public getg() {
-    return this.g();
+  public getfun() {
+    return this.fun();
   }
 }
 class Rb extends Ra {
   protected z: number = 20;
-  protected g(): boolean {
+  protected fun(): boolean {
     return true;
   }
 }
@@ -54,7 +54,7 @@ let a: Ra = new Ra();
 Assert.equal(a.x, 10);
 Assert.equal(a.gety(), 10);
 Assert.equal(a.getz(), 10);
-Assert.equal(a.getg(), false);
+Assert.equal(a.getfun(), false);
 Assert.equal(a.f().x, 11);
 let b: Rb = new Rb();
 Assert.equal(b.x, 10);

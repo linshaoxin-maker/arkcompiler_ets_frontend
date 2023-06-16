@@ -32,12 +32,12 @@ class Compute {
   static getx() {
     return this.x;
   }
-  static origin = new Compute(0, 0);
+  static po = new Compute(0, 0);
   static x: number = 10;
 }
 let p1: Compute = new Compute(2, 2);
 let p2: Compute = new Compute(1, 1);
 Assert.equal(p1.range(p1, p2), Math.sqrt(2));
 Assert.equal(Compute.getx(), 10);
-Assert.equal(p1.range(p1, Compute.origin), Math.sqrt(8));
+Assert.equal(p1.range(p1, Compute.po), Math.sqrt(8));
 Assert.equal(Compute.x, 10);

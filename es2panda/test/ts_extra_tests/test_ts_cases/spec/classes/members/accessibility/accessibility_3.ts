@@ -35,10 +35,10 @@ class Base {
   public get foo() {
     return this.x;
   }
-  static f(a: Base, b: Derived) {
-    a.x = 1;
+  static fun(m: Base, b: Derived) {
+    m.x = 1;
     b.x = 1;
-    a.y = 1;
+    m.y = 1;
     b.y = 1;
   }
 }
@@ -49,14 +49,14 @@ class Derived extends Base {
   public get foo() {
     return this.x;
   }
-  static f(b: Derived) {
+  static fun(b: Derived) {
     b.x = 1;
     b.y = 1;
   }
 }
-let a: Base = new Base();
-a.addx();
-Assert.equal(a.foo, 2);
+let m: Base = new Base();
+m.addx();
+Assert.equal(m.foo, 2);
 let b: Derived = new Derived();
 b.addx();
 Assert.equal(b.foo, 2);

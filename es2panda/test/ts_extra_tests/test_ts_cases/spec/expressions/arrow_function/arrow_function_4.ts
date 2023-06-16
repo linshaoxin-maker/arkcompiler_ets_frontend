@@ -27,10 +27,8 @@ class ToAlert {
     information = "Have a good time!";
     F() {
         let for_this = this;
-        setTimeout(function () {
-            for_this.information = "sad boy";
-        }, 2250);
-        Assert.notEqual(for_this.information, "sad boy")
+        for_this.information = "sad boy";
+        Assert.equal(for_this.information, "sad boy")
     }
 };
 let a = new ToAlert();

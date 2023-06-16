@@ -28,7 +28,7 @@ import { Assert } from '../../../../../suite/assert.js'
 
 type t = number | null | undefined
 function select<T extends t>(h_x: T, h_y: T): T {
-    return Math.random() < 0.5 ? h_x : h_y;
+    return h_x ? h_x : h_y;
 }
 var y = select(10, undefined)
 if (typeof y === 'number') {

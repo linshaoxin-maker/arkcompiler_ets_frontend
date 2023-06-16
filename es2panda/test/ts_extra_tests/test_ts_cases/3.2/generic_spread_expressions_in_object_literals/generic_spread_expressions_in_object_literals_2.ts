@@ -22,15 +22,13 @@
 
 import { Assert } from "../../../suite/assert.js"
 
-function func<T>(arg1: T, arg2: { str: string }, arg3:{num: number}) {
-    let obj = { n: 5, ...arg2, ...arg1, s: 's', ...arg3 };
+function func<T>(arg1: T, arg2: { str: string }) {
+    let obj = { n: 5, ...arg1, s: 's', ...arg2 };
     return obj;
 }
 let o1 = {
     str: 'a'
 };
-let o2 = {
-    num: 10
-};
-var f = func({ s: "string" }, o1, o2);
+let f = func({ s: "string" }, o1);
 Assert.isObject(f);
+Assert.equal(JSON.stringify(f), '{"n":5,"s":"s","str":"a"}');

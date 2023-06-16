@@ -27,10 +27,10 @@ type JSONType =
     | number
     | boolean
     | null
-    | HWJsonObject
+    | JsonObjectX
     | JsonArray;
 
-interface HWJsonObject {
+interface JsonObjectX {
     [property: string]: JSONType;
 }
 

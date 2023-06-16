@@ -22,18 +22,18 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-class Point {
+class MyClass {
   constructor(public x: number, public y: number) { }
   public addc() {
-    Point.c++;
+    MyClass.c++;
   }
-  static origin = new Point(0, 0);
+  static po = new MyClass(0, 0);
   static c: number = 10;
 }
-let a: Point = new Point(1, 1);
-Assert.equal(Point.c, 10);
+let a: MyClass = new MyClass(1, 1);
+Assert.equal(MyClass.c, 10);
 a.addc();
-Assert.equal(Point.c, 11);
-let b: Point = new Point(1, 1);
+Assert.equal(MyClass.c, 11);
+let b: MyClass = new MyClass(1, 1);
 b.addc();
-Assert.equal(Point.c, 12);
+Assert.equal(MyClass.c, 12);

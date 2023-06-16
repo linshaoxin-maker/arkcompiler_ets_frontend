@@ -28,5 +28,12 @@ function func(str: string) {
         return str + " is Error JSON";
     }
 }
+
+let arrjson: string = '[1,3,5]';
+let arr = func(arrjson);
+Assert.equal(arr[0], 1);
+Assert.equal(arr[1], 3);
+Assert.equal(arr[2], 5);
+
 let str: string = 'string';
 Assert.equal(func(str), 'string is Error JSON');

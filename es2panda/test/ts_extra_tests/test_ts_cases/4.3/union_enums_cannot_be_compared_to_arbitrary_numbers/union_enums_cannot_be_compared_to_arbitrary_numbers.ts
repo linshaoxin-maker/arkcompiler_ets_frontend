@@ -31,33 +31,33 @@ enum AB {
     B = 1,
 }
 
-function hwtest01(x: AB | -1) {
+function eFun01(x: AB | -1) {
     if (x === -1) {
         return -1;
     }
     return 1;
 }
-Assert.equal(hwtest01(-1), -1);
-Assert.equal(hwtest01(AB.A), 1);
+Assert.equal(eFun01(-1), -1);
+Assert.equal(eFun01(AB.A), 1);
 
-function hwtest02(x: AB) {
+function eFun02(x: AB) {
     if ((x as number) === -1) {
         return x;
     }
     return x + 1;
 }
-Assert.equal(hwtest02(AB.A), 1);
+Assert.equal(eFun02(AB.A), 1);
 
 enum ab {
     A = +0,
     B = 1,
 }
-function hwtest03(x: ab) {
+function eFun03(x: ab) {
     if (x === 1) {
         return x;
     }
     return x + 2;
 }
 
-Assert.equal(hwtest03(ab.A), 2);
-Assert.equal(hwtest03(ab.B), 1);
+Assert.equal(eFun03(ab.A), 2);
+Assert.equal(eFun03(ab.B), 1);

@@ -22,52 +22,37 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-interface RGBIN {
-    red: number;
-    green: number;
-    blue: number;
-}
-
-interface HSV {
-    hue: number;
-    saturation: number;
-    value: number;
-}
-
-function setColor(color: RGBIN | HSV) {
-    if ("hue" in color && "red" in color) {
-        return "RGBIN | HSV";
-    } else if ("hue" in color) {
-        return "HSV";
-    } else if ("red" in color) {
-        return "RGBIN";
+type T1 = { num: number };
+type T2 = { str: string };
+function func(arg: T1 | T2) {
+    if ("num" in arg && "str" in arg) {
+        return "T1 | T2";
+    } else if ("num" in arg) {
+        return "T1";
+    } else if ("str" in arg) {
+        return "T2";
     }
 }
-var c1: RGBIN = { red: 0, green: 0, blue: 0 };
-var c2: HSV = { hue: 0, saturation: 0, value: 0 };
-var c3: RGBIN | HSV = { hue: 0, saturation: 0, value: 0, red: 0, green: 0, blue: 0 };
+let x: T1 = { num: 10 };
+let y: T2 = { str: 'a' };
+let z: T1 | T2 = { num: 10, str: 'a' };
+Assert.equal(func(x), "T1");
+Assert.equal(func(y), "T2");
+Assert.equal(func(z), "T1 | T2");
 
-Assert.equal(setColor(c1), "RGBIN");
-Assert.equal(setColor(c2), "HSV");
-Assert.equal(setColor(c3), "RGBIN | HSV");
-
-interface Package {
-    JSON: unknown;
+interface I{
+    mem: any;
 }
-
-function getPackageName(pak: Package): string {
-    const p:any = pak.JSON;
-    if (p && typeof p === "object") {
-        if ("name" in p && typeof p.name === "string") {
-            return p.name;
+function check(arg: I) {
+    let mem = arg.mem;
+    if (mem && typeof mem === "object") {
+        if ("num" in mem && typeof mem.num === 'number') {
+            return mem.num;
         }
     }
-    return "no JSON";
+    return null;
 }
-let pak: Package = { JSON: { name: "JSON" } };
-let none: Package = { JSON: "null" };
-let out1 = getPackageName(pak);
-let out2 = getPackageName(none);
-
-Assert.equal(out1, "JSON");
-Assert.equal(out2, "no JSON");
+let a: I = { mem: 10 };
+let b: I = { mem: { num: 10 } };
+Assert.isTrue(check(a) === null);
+Assert.isNumber(check(b));

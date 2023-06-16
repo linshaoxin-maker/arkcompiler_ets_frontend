@@ -14,9 +14,10 @@
  */
 /**---
  description: >
-  A type guard of the form typeof x !== s, where s is a string literal,
-  when true, narrows the type of x by typeof x === s when false, 
-  or when false, narrows the type of x by typeof x === s when true.
+  A type guard of the form expr1 && expr2,
+  when true, narrows the type of x by expr1 when true and then by expr2 when true, or 
+  when false, narrows the type of x to T1 | T2, where T1 is the type of x narrowed by expr1 when false, 
+  and T2 is the type of x narrowed by expr1 when true and then by expr2 when false.
  module: ESNext
  isCurrent: true
  ---*/
@@ -24,17 +25,17 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-function func(x: string | number) {
-    if (typeof x !== "string") {
-        Assert.isNumber(x);
-        return x + 1;
-    }
-    else {
-        Assert.isString(x);
-        return x.length;
-    }
+function func(x: string | number | undefined) {
+  if (typeof x === "string" && typeof x === "number") {
+    return undefined;
+  }
+  else {
+    return x;
+  }
 }
 let a = func(10);
-Assert.equal(a, 11);
+Assert.isNumber(a);
 let b = func('s');
-Assert.equal(b, 1);
+Assert.isString(b);
+let c = func(undefined);
+Assert.isUndefined(c);

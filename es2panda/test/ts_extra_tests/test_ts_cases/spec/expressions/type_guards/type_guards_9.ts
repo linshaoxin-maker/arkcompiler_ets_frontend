@@ -14,10 +14,9 @@
  */
 /**---
  description: >
-  A type guard of the form typeof x === s, where s is a string literal with the value 'string', 'number', or 'boolean',
-  when true, narrows the type of x to the given primitive type provided it is a subtype of the type of x, 
-  or, if the type of x is a union type, removes from the type of x all constituent types that aren't subtypes of the given primitive type, 
-  or when false, removes the primitive type from the type of x.
+  A type guard of the form typeof x !== s, where s is a string literal,
+  when true, narrows the type of x by typeof x === s when false, 
+  or when false, narrows the type of x by typeof x === s when true.
  module: ESNext
  isCurrent: true
  ---*/
@@ -26,13 +25,13 @@
 import { Assert } from '../../../../suite/assert.js'
 
 function func(x: string | number) {
-    if (typeof x === "string") {
-        Assert.isString(x);
-        return x.length;
-    }
-    else {
+    if (typeof x !== "string") {
         Assert.isNumber(x);
         return x + 1;
+    }
+    else {
+        Assert.isString(x);
+        return x.length;
     }
 }
 let a = func(10);

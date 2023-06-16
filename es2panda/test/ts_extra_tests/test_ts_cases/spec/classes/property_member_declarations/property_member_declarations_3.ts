@@ -29,7 +29,7 @@ class Compute {
     this.x = x;
     this.y = y;
   }
-  static origin = new Compute(0, 0);
+  static p = new Compute(0, 0);
 }
 class ColoredPoint extends Compute {
   constructor(x: number, y: number, public color: string) {

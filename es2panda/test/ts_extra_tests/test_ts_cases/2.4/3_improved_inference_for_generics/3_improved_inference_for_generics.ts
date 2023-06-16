@@ -21,19 +21,13 @@
 
 import { Assert } from '../../../suite/assert.js'
 
-function func<T, U>(f: (x: T) => U): (a: T[]) => U[] {
-    return a => a.map(f);
+function func(a: number, b: string) {
+    return a + b;
 }
-
-const len: (a: string[]) => number[] = func(s => s.length);
-Assert.equal(1, len(["s", "ss", "sss"])[0]);
-Assert.equal(2, len(["s", "ss", "sss"])[1]);
-Assert.equal(3, len(["s", "ss", "sss"])[2]);
-
+Assert.isString(func(10, 'a'));
 
 type T1 = <T, U>(x: T, y: U) => [T, U];
-type T2 = <S>(x: S, y: S) => [S, S];
-
+type T2 = <T>(x: T, y: T) => [T, T];
 function f(a: T1, b: T2) {
     b = a;
     Assert.isTrue(b == a);
@@ -42,7 +36,7 @@ function f(a: T1, b: T2) {
 let a: T1 = function funA<T, U>(x: T, y: U): [T, U] {
     return [x, y];
 }
-let b: T2 = function funB<S>(x: S, y: S): [S, S] {
-    return [x, x];
+let b: T2 = function funB<T>(x: T, y: T): [T, T] {
+    return [x, y];
 }
 f(a, b);

@@ -14,7 +14,7 @@
  */
 /**---
  description: >
-    A property for each static member variable declaration in the class body.
+    A property of a function type for each static member function declaration in the class body.
  module: ESNext
  isCurrent: true
  ---*/
@@ -27,7 +27,10 @@ class A1 {
   constructor(a: number) {
     this.numa = a;
   }
-  static c: number = 20;
+  static c = 10;
+  static f(): void {
+    this.c++;
+  }
 }
 class B1 extends A1 {
   public numb: number;
@@ -35,11 +38,13 @@ class B1 extends A1 {
     super(a);
     this.numb = b;
   }
+  static f() {
+    this.c++;
+    return this.c
+  }
 }
-let a: A1 = new A1(10);
-Assert.equal(a.numa, 10);
-Assert.equal(A1.c, 20);
-let b: B1 = new B1(10, 20);
-Assert.equal(b.numa, 10);
-Assert.equal(b.numb, 20);
-Assert.equal(B1.c, 20);
+Assert.equal(A1.c, 10);
+A1.f();
+Assert.equal(A1.c, 11);
+Assert.equal(B1.c, 11);
+Assert.equal(B1.f(), 12);

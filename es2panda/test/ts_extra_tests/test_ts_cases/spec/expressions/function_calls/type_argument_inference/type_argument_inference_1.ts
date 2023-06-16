@@ -25,7 +25,7 @@ import { Assert } from '../../../../../suite/assert.js'
 
 type t = number | string
 function select<T extends t>(h_x: T, h_y: T): T {
-    return Math.random() < 0.5 ? h_x : h_y;
+    return h_x < h_y ? h_x : h_y;
 }
 var x = select(10, 20);
 Assert.isNumber(x);

@@ -33,9 +33,11 @@ class Myclass {
     constructor(a: string) {
         this.a = a;
     }
+    static a :number = 33;
 }
 var c: Myclass = new Myclass("x");
 Assert.equal(c.a, "x");
+Assert.equal(Myclass.a,33);
 enum WeekDay {
     MON = 1,
     TUE,

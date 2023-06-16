@@ -23,7 +23,7 @@
 
 
 import { Assert } from '../../../../suite/assert.js'
-let v = 8 * 8;
+
 const enum CED {
   None = -1,
   False,

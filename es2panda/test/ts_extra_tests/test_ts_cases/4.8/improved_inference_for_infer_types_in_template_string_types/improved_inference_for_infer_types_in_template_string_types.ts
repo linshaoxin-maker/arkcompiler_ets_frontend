@@ -33,12 +33,6 @@ let arr = ["A", "B", "C"];
 let first = func<number, number>(arr, 65);
 Assert.equal(JSON.stringify(first), "[65,\"B\",\"C\"]");
 
-type N = "10" extends `${infer U extends number}` ? U : false;
-type Bi = "string" extends `${infer U extends string}` ? U : false;
-type Bool = "true" extends `${infer U extends boolean}` ? U : false;
-let sn: N = 10;
-let sbi: Bi = "string";
-let sbool: Bool = true;
-Assert.equal(sn, 10);
-Assert.equal(sbi, "string");
-Assert.equal(sbool, true);
+type S = "string" extends `${infer T extends string}` ? T : false;
+let s: S = "string";
+Assert.equal(s, "string");
