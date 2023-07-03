@@ -60,7 +60,7 @@ public:
 
     static bool IsGlobalIdentifier(const util::StringView &str);
     static bool ContainSpreadElement(const ArenaVector<ir::Expression *> &args);
-    static util::StringView LiteralToPropName(const ir::Expression *lit);
+    static util::StringView LiteralToPropName(ArenaAllocator *allocator, const ir::Expression *lit);
 
     template <typename T>
     static bool IsInteger(double number);
@@ -69,6 +69,9 @@ public:
 
     static bool FileExtensionIs(std::string_view filePath, std::string_view extension);
     static bool EndsWith(std::string_view str, std::string_view suffix);
+    static std::string DoubleToString(double number);
+    static int GetMinmumDigits(double d, int *decpt, char *buf);
+    static void GetBase(double d, int digits, int *decpt, char *buf, char *bufTmp, int size);
     static std::string ToString(double number);
     static util::StringView ToStringView(ArenaAllocator *allocator, double number);
     static util::StringView ToStringView(ArenaAllocator *allocator, int32_t number);
@@ -84,7 +87,7 @@ public:
     static bool IsBindingPattern(const ir::AstNode *node);
     static bool IsPattern(const ir::AstNode *node);
     static std::vector<const ir::Identifier *> CollectBindingNames(const ir::AstNode *node);
-    static util::StringView FunctionName(const ir::ScriptFunction *func);
+    static util::StringView FunctionName(ArenaAllocator *allocator, const ir::ScriptFunction *func);
     static std::tuple<util::StringView, bool> ParamName(ArenaAllocator *allocator, const ir::AstNode *param,
                                                         uint32_t index);
     static bool IsChild(const ir::AstNode *parent, const ir::AstNode *child);
@@ -98,6 +101,10 @@ public:
     static void ScanDirectives(ir::ScriptFunction *func, const lexer::LineIndex &lineIndex);
     static std::string GetHashString(std::string str);
 
+    static constexpr size_t JS_DTOA_BUF_SIZE = 128;
+    static constexpr int DOUBLE_MAX_PRECISION = 17;
+    static constexpr double MAX_SCINOTATION_TO_LITERAL = 1e21;
+    static constexpr double MIN_SCINOTATION_TO_LITERAL = 1e-6;
     static const uint32_t INVALID_INDEX = 4294967295L;
     static const uint32_t MAX_INT32 = 2147483647;
     static const uint32_t MAX_INT16 = std::numeric_limits<int16_t>::max();
