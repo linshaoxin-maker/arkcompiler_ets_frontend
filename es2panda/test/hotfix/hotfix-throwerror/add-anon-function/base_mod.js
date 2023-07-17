@@ -17,8 +17,8 @@
 
 (()=>{
     print("anonymous: 1");
-})()
+})();
 
 (()=>{
     print("anonymous: 2");  // add anonymous function
-})()
+})();

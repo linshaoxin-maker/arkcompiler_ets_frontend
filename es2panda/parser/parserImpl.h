@@ -183,7 +183,7 @@ public:
 
     ScriptExtension Extension() const;
 
-    void AddHotfixHelper(util::Hotfix *hotfixHelper);
+    void AddPatchFixHelper(util::PatchFix *patchFixHelper);
 
     ArenaAllocator *Allocator() const
     {
@@ -370,7 +370,8 @@ private:
     ir::Expression *ParseBinaryExpression(ir::Expression *left);
     ir::CallExpression *ParseCallExpression(ir::Expression *callee, bool isOptionalChain = false, bool isAsync = false);
     ir::ArrowFunctionExpression *ParsePotentialArrowExpression(ir::Expression **returnExpression,
-                                                               const lexer::SourcePosition &startLoc);
+                                                               const lexer::SourcePosition &startLoc,
+                                                               bool ignoreCallExpression);
 
     void ValidateUpdateExpression(ir::Expression *returnExpression, bool isChainExpression);
     bool ParsePotentialTsGenericFunctionCall(ir::Expression **returnExpression, const lexer::SourcePosition &startLoc,
@@ -435,8 +436,9 @@ private:
 
     bool IsLabelFollowedByIterationStatement();
 
-    void AddImportEntryItem(const ir::StringLiteral *source, const ArenaVector<ir::AstNode *> *specifiers);
-    void AddExportNamedEntryItem(const ArenaVector<ir::ExportSpecifier *> &specifiers, const ir::StringLiteral *source);
+    void AddImportEntryItem(const ir::StringLiteral *source, const ArenaVector<ir::AstNode *> *specifiers, bool isType);
+    void AddExportNamedEntryItem(const ArenaVector<ir::ExportSpecifier *> &specifiers,
+                                 const ir::StringLiteral *source, bool isType);
     void AddExportStarEntryItem(const lexer::SourcePosition &startLoc, const ir::StringLiteral *source,
                                 const ir::Identifier *exported);
     void AddExportDefaultEntryItem(const ir::AstNode *declNode);
@@ -444,6 +446,7 @@ private:
     void AddTsTypeExportLocalEntryItem(const ir::Statement *declNode, bool isTsModule,
                                        binder::TSModuleScope *tsModuleScope);
     parser::SourceTextModuleRecord *GetSourceTextModuleRecord();
+    parser::SourceTextModuleRecord *GetSourceTextTypeModuleRecord();
 
     bool ParseDirective(ArenaVector<ir::Statement *> *statements);
     void ParseDirectivePrologue(ArenaVector<ir::Statement *> *statements);

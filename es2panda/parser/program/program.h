@@ -20,7 +20,7 @@
 #include <macros.h>
 #include <mem/arena_allocator.h>
 #include <parser/module/sourceTextModuleRecord.h>
-#include <util/hotfix.h>
+#include <util/patchFix.h>
 #include <util/ustring.h>
 
 #include "es2panda.h"
@@ -80,6 +80,11 @@ public:
         return moduleRecord_;
     }
 
+    SourceTextModuleRecord *TypeModuleRecord() const
+    {
+        return typeModuleRecord_;
+    }
+
     util::StringView SourceCode() const
     {
         return sourceCode_.View();
@@ -135,14 +140,14 @@ public:
         formatedRecordName_ = util::UString(formatedRecordName, Allocator());
     }
 
-    void AddHotfixHelper(util::Hotfix *hotfixHelper)
+    void AddPatchFixHelper(util::PatchFix *patchFixHelper)
     {
-        hotfixHelper_ = hotfixHelper;
+        patchFixHelper_ = patchFixHelper;
     }
 
-    util::Hotfix *HotfixHelper()
+    util::PatchFix *PatchFixHelper()
     {
-        return hotfixHelper_;
+        return patchFixHelper_;
     }
 
     bool IsDtsFile() const
@@ -165,7 +170,8 @@ private:
     ScriptExtension extension_ {};
     lexer::LineIndex lineIndex_ {};
     SourceTextModuleRecord *moduleRecord_ {nullptr};
-    util::Hotfix *hotfixHelper_ {nullptr};
+    SourceTextModuleRecord *typeModuleRecord_ {nullptr};
+    util::PatchFix *patchFixHelper_ {nullptr};
     bool isDtsFile_ {false};
 };
 

@@ -13,7 +13,9 @@
 
 import("//arkcompiler/ets_frontend/ets_frontend_config.gni")
 import("//arkcompiler/runtime_core/ark_config.gni")
-import("//developtools/profiler/build/config.gni")
+
+THIRDPARTY_PROTOBUF_SUBSYS_NAME = "thirdparty"
+THIRDPARTY_PROTOBUF_PART_NAME = "protobuf"
 
 proto_base_dir = "protos"
 proto_out_dir = "$target_gen_dir" + "/protos_generated"
@@ -90,7 +92,7 @@ foreach(proto_file, proto_file_defines) {
 }
 
 protoc_binary_out_path =
-    "${OHOS_PROFILER_SUBSYS_NAME}/${OHOS_PROFILER_PART_NAME}"
+    "${THIRDPARTY_PROTOBUF_SUBSYS_NAME}/${THIRDPARTY_PROTOBUF_PART_NAME}"
 
 if (!ark_standalone_build) {
   if (default_toolchain == current_toolchain) {
@@ -142,21 +144,39 @@ ohos_source_set("assembly_proto_static") {
 
   deps = [
     ":arkcompiler_generate_proto",
-    "$ark_root/assembler:libarkassembler_frontend_static",
-    "$ark_root/libpandabase:libarkbase_frontend_static",
-    "$ark_root/libpandafile:libarkfile_frontend_static",
     "$ark_third_party_root/protobuf:protobuf_lite_static",
     "$ark_third_party_root/protobuf:protobuf_static",
   ]
+
+  external_deps = []
+  if (!is_cross_platform_build) {
+    external_deps += [
+      "runtime_core:libarkassembler_frontend_static",
+      "runtime_core:libarkbase_frontend_static",
+      "runtime_core:libarkfile_frontend_static",
+    ]
+  } else {
+    deps += [
+      "$ark_root/assembler:libarkassembler_frontend_static",
+      "$ark_root/libpandabase:libarkbase_frontend_static",
+      "$ark_root/libpandafile:libarkfile_frontend_static",
+    ]
+  }
 
   sources = proto_generated_header + proto_generated_source +
             protobuf_snapshot_generator_sources
   public_configs = assembly_proto_configs
   public_configs += [ ":proto_file_cpp_config" ]
+
+  part_name = "ets_frontend"
+  subsystem_name = "arkcompiler"
 }
 
 ohos_static_library("panda_assembly_proto_static") {
   deps = [ ":assembly_proto_static" ]
+
+  part_name = "ets_frontend"
+  subsystem_name = "arkcompiler"
 }
 
 ohos_executable("merge_abc") {
@@ -180,9 +200,14 @@ ohos_executable("merge_abc") {
 
   deps = [
     ":panda_assembly_proto_static",
-    "$ark_root/libziparchive:libarkziparchive_frontend_static",
     "$ark_third_party_root/icu/icu4c:static_icuuc",
   ]
+
+  if (!is_cross_platform_build) {
+    external_deps = [ "runtime_core:libarkziparchive_frontend_static" ]
+  } else {
+    deps += [ "$ark_root/libziparchive:libarkziparchive_frontend_static" ]
+  }
 
   ldflags = []
   if (is_linux) {

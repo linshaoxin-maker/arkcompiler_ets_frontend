@@ -30,10 +30,14 @@
 #include <ir/expressions/literals/stringLiteral.h>
 #include <ir/expressions/objectExpression.h>
 #include <ir/expressions/unaryExpression.h>
+#include <ir/statements/blockStatement.h>
+#include <ir/statements/expressionStatement.h>
 #include <ir/statements/variableDeclaration.h>
 #include <ir/statements/variableDeclarator.h>
 #include <ir/ts/tsParameterProperty.h>
+#include <lexer/token/sourceLocation.h>
 #include <parser/module/sourceTextModuleRecord.h>
+#include <util/concurrent.h>
 
 #ifdef ENABLE_BYTECODE_OPT
 #include <bytecode_optimizer/bytecodeopt_options.h>
@@ -524,6 +528,67 @@ bool Helpers::ReadFileToBuffer(const std::string &file, std::stringstream &ss)
     }
     ss << inputStream.rdbuf();
     return true;
+}
+
+void Helpers::ScanDirectives(ir::ScriptFunction *func, const lexer::LineIndex &lineIndex)
+{
+    auto *body = func->Body();
+    if (!body || body->IsExpression()) {
+        return;
+    }
+
+    auto &statements = body->AsBlockStatement()->Statements();
+    if (statements.empty()) {
+        return;
+    }
+
+    bool keepScan = true;
+    auto iter = statements.begin();
+    while (keepScan && (iter != statements.end())) {
+        auto *stmt = *iter++;
+        if (!stmt->IsExpressionStatement()) {
+            return;
+        }
+
+        auto *expr = stmt->AsExpressionStatement()->GetExpression();
+        if (!expr->IsStringLiteral()) {
+            return;
+        }
+
+        keepScan = SetFuncFlagsForDirectives(expr->AsStringLiteral(), func, lineIndex);
+    }
+
+    return;
+}
+
+bool Helpers::SetFuncFlagsForDirectives(const ir::StringLiteral *strLit, ir::ScriptFunction *func,
+                                        const lexer::LineIndex &lineIndex)
+{
+    if (strLit->Str().Is(SHOW_SOURCE)) {
+        func->AddFlag(ir::ScriptFunctionFlags::SHOW_SOURCE);
+        return true;
+    }
+
+    if (strLit->Str().Is(USE_CONCURRENT)) {
+        util::Concurrent::SetConcurrent(func, strLit, lineIndex);
+        return true;
+    }
+
+    return false;
+}
+
+std::string Helpers::GetHashString(std::string str)
+{
+    uint64_t result = FNV_OFFSET;
+
+    const uint8_t *input = reinterpret_cast<const uint8_t *>(str.c_str());
+    // FNV-1a 64-bit Algorithm
+    for (size_t i = 0; i < str.size(); i++) {
+        result ^= input[i];
+        result *= FNV_PRIME;
+    }
+
+    return std::to_string(result);
 }
 
 }  // namespace panda::es2panda::util

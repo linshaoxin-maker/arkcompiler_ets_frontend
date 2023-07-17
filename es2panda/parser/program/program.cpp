@@ -41,7 +41,8 @@ Program::Program(Program &&other)
       extension_(other.extension_),
       lineIndex_(other.lineIndex_),
       moduleRecord_(other.moduleRecord_),
-      hotfixHelper_(other.hotfixHelper_),
+      typeModuleRecord_(other.typeModuleRecord_),
+      patchFixHelper_(other.patchFixHelper_),
       isDtsFile_(other.isDtsFile_)
 {
     other.binder_ = nullptr;
@@ -72,6 +73,7 @@ void Program::SetKind(ScriptKind kind)
 
     if (kind == ScriptKind::MODULE) {
         moduleRecord_ = allocator_->New<SourceTextModuleRecord>(Allocator());
+        typeModuleRecord_ = allocator_->New<SourceTextModuleRecord>(Allocator());
     }
 }
 

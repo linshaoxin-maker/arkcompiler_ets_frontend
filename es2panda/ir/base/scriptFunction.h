@@ -193,6 +193,11 @@ public:
         return (flags_ & ir::ScriptFunctionFlags::CONCURRENT) != 0;
     }
 
+    bool ShowSource() const
+    {
+        return (flags_ & ir::ScriptFunctionFlags::SHOW_SOURCE) != 0;
+    }
+
     bool CanBeConcurrent() const
     {
         return !(IsGenerator() || IsArrow() || IsConstructor() || IsMethod());
@@ -203,6 +208,7 @@ public:
     void Compile([[maybe_unused]] compiler::PandaGen *pg) const override;
     checker::Type *Check([[maybe_unused]] checker::Checker *checker) const override;
     void UpdateSelf(const NodeUpdater &cb, binder::Binder *binder) override;
+    util::StringView SourceCode(binder::Binder *binder) const;
 
 private:
     static constexpr std::string_view THIS_PARAM = "this";

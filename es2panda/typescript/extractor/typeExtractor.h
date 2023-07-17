@@ -41,6 +41,7 @@ public:
     TypeRecorder *Recorder() const;
 
     const ir::Identifier *GetIdentifierFromExpression(const ir::Expression *expression);
+    const ir::AstNode *GetDeclNodeFromIdentifier(const ir::Identifier *identifier, const ir::Identifier **variable);
     int64_t GetTypeIndexFromAnnotation(const ir::Expression *typeAnnotation, bool isNewInstance = true);
     int64_t GetTypeIndexFromIdentifier(const ir::Identifier *identifier);
     int64_t GetTypeIndexFromInitializer(const ir::Expression *initializer);
@@ -72,8 +73,9 @@ private:
     void ExtractNodeType(const ir::AstNode *parent, const ir::AstNode *childNode);
     void ExtractImport(const parser::Program *program);
     void ExtractExport(const parser::Program *program);
+    void ExtractImportModuleRecord(parser::SourceTextModuleRecord *moduleRecord);
+    void ExtractExportModuleRecord(parser::SourceTextModuleRecord *moduleRecord);
 
-    const ir::AstNode *GetDeclNodeFromIdentifier(const ir::Identifier *identifier, const ir::Identifier **variable);
     const ir::AstNode *GetDeclNodeFromInitializer(const ir::Expression *initializer, const ir::Identifier **variable);
 
     int64_t GetTypeIndexFromDeclNode(const ir::AstNode *node, bool isNewInstance);
@@ -95,6 +97,7 @@ private:
     void HandleInterfaceDeclaration(const ir::AstNode *node);
     void HandleTypeAliasDeclaration(const ir::AstNode *node);
     void HandleNewlyGenFuncExpression(const ir::AstNode *node);
+    void HandleArrowFunctionExpression(const ir::AstNode *node);
 
     // Helpers
     int64_t GetTypeIndexFromTypeReference(const ir::TSTypeReference *typeReference, bool isNewInstance);

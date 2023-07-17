@@ -54,7 +54,7 @@
 #include "ir/ts/tsTypeParameterDeclaration.h"
 #include "ir/ts/tsTypeParameterInstantiation.h"
 #include "util/concurrent.h"
-#include "util/helpers.h"
+#include "util/patchFix.h"
 
 namespace panda::es2panda::binder {
 void Binder::InitTopScope()
@@ -236,7 +236,7 @@ void Binder::LookupReference(const util::StringView &name)
     }
 
     ASSERT(res.variable);
-    res.variable->SetLexical(res.scope, program_->HotfixHelper());
+    res.variable->SetLexical(res.scope, program_->PatchFixHelper());
 }
 
 void Binder::InstantiateArguments()
@@ -299,7 +299,7 @@ void Binder::LookupIdentReference(ir::Identifier *ident)
         ASSERT(res.variable);
         if (!res.variable->Declaration()->IsDeclare()) {
             util::Concurrent::VerifyImportVarForConcurrentFunction(Program()->GetLineIndex(), ident, res);
-            res.variable->SetLexical(res.scope, program_->HotfixHelper());
+            res.variable->SetLexical(res.scope, program_->PatchFixHelper());
         }
     }
 
@@ -316,6 +316,26 @@ void Binder::LookupIdentReference(ir::Identifier *ident)
     ident->SetVariable(res.variable);
 }
 
+void Binder::StoreAndCheckSpecialFunctionName(std::string &internalNameStr, std::string recordName)
+{
+    if (program_->PatchFixHelper()) {
+        if (program_->PatchFixHelper()->IsDumpSymbolTable()) {
+            // anonymous, special-name and duplicate function index started from 1
+            specialFuncNameIndexMap_.insert({internalNameStr, std::to_string(++globalIndexForSpecialFunc_)});
+            return;
+        }
+        if (program_->PatchFixHelper()->IsHotFix()) {
+            // Adding/removing anonymous, special or duplicate functions is supported for hotReload and coldFix mode,
+            // but forbidden in hotFix mode
+            program_->PatchFixHelper()->CheckAndRestoreSpecialFunctionName(++globalIndexForSpecialFunc_,
+                internalNameStr, recordName);
+            return;
+        }
+        // else: must be coldfix or hotreload mode
+        ASSERT(program_->PatchFixHelper()->IsColdFix() || program_->PatchFixHelper()->IsHotReload());
+    }
+}
+
 void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name, const ir::ScriptFunction *func)
 {
     if (funcScope->InFunctionScopes()) {
@@ -327,23 +347,40 @@ void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name, cons
     bool funcNameWithoutDot = (name.Find(".") == std::string::npos);
     bool funcNameWithoutBackslash = (name.Find("\\") == std::string::npos);
     if (name != ANONYMOUS_FUNC_NAME && funcNameWithoutDot && funcNameWithoutBackslash && !functionNames_.count(name)) {
+        // function with normal name, and hasn't been recorded
         auto internalName = std::string(program_->FormatedRecordName()) + std::string(name);
         functionNames_.insert(name);
         funcScope->BindName(name, util::UString(internalName, Allocator()).View());
         return;
     }
+
     std::stringstream ss;
     ss << std::string(program_->FormatedRecordName());
-    uint32_t idx = functionNameIndex_++;
-    ss << "#" << std::to_string(idx) << "#";
-    if (name == ANONYMOUS_FUNC_NAME && func != nullptr) {
+
+    ASSERT(func != nullptr);
+
+    // For anonymous, special-name and duplicate function, get its source and name, make hash code,
+    // and make #hash_duplicateHashTime#name as its name;
+    auto funcContentNameStr = func->SourceCode(this).Mutf8() + name.Mutf8();
+    ss << ANONYMOUS_SPECIAL_DUPLICATE_FUNCTION_SPECIFIER << util::Helpers::GetHashString(funcContentNameStr);
+
+    auto res = functionHashNames_.find(funcContentNameStr);
+    if (res != functionHashNames_.end()) {
+        ss << "_" << res->second++;
+    } else {
+        functionHashNames_.insert({funcContentNameStr, 1});
+    }
+    ss << ANONYMOUS_SPECIAL_DUPLICATE_FUNCTION_SPECIFIER;
+
+    if (name == ANONYMOUS_FUNC_NAME) {
         anonymousFunctionNames_[func] = util::UString(ss.str(), Allocator()).View();
     }
     if (funcNameWithoutDot && funcNameWithoutBackslash) {
         ss << name;
     }
-    util::UString internalName(ss.str(), Allocator());
-    funcScope->BindName(name, internalName.View());
+    std::string internalNameStr = ss.str();
+    StoreAndCheckSpecialFunctionName(internalNameStr, program_->RecordName().Mutf8());
+    funcScope->BindName(name, util::UString(internalNameStr, Allocator()).View());
 }
 
 void Binder::BuildScriptFunction(Scope *outerScope, const ir::ScriptFunction *scriptFunc)
@@ -609,7 +646,8 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
         }
         case ir::AstNodeType::SCRIPT_FUNCTION: {
             auto *scriptFunc = childNode->AsScriptFunction();
-            util::Concurrent::SetConcurrent(const_cast<ir::ScriptFunction *>(scriptFunc), Program()->GetLineIndex());
+            util::Helpers::ScanDirectives(const_cast<ir::ScriptFunction *>(scriptFunc),
+                                          Program()->GetLineIndex());
             auto *funcScope = scriptFunc->Scope();
 
             auto *outerScope = scope_;

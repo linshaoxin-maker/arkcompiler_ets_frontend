@@ -107,6 +107,8 @@ TypeExtractor::TypeExtractor(const ir::BlockStatement *rootNode, bool typeDtsExt
         std::bind(&TypeExtractor::HandleTypeAliasDeclaration, this, std::placeholders::_1);
     handlerMap_[ir::AstNodeType::EXPRESSION_STATEMENT] =
         std::bind(&TypeExtractor::HandleNewlyGenFuncExpression, this, std::placeholders::_1);
+    handlerMap_[ir::AstNodeType::ARROW_FUNCTION_EXPRESSION] =
+        std::bind(&TypeExtractor::HandleArrowFunctionExpression, this, std::placeholders::_1);
 }
 
 void TypeExtractor::StartTypeExtractor(const parser::Program *program)
@@ -167,7 +169,17 @@ void TypeExtractor::ExtractImport(const parser::Program *program)
     if (moduleRecord == nullptr) {
         return;
     }
+    ExtractImportModuleRecord(moduleRecord);
 
+    auto typeModuleRecord = program->Binder()->Program()->TypeModuleRecord();
+    if (typeModuleRecord == nullptr) {
+        return;
+    }
+    ExtractImportModuleRecord(typeModuleRecord);
+}
+
+void TypeExtractor::ExtractImportModuleRecord(parser::SourceTextModuleRecord *moduleRecord)
+{
     const auto &regularImportEntries = moduleRecord->GetRegularImportEntries();
     for (const auto &t : regularImportEntries) {
         const auto &redirectPath = moduleRecord->GetModuleRequestIdxMap().at(t.second->moduleRequestIdx_);
@@ -177,8 +189,15 @@ void TypeExtractor::ExtractImport(const parser::Program *program)
 
     const auto &namespaceImportEntries = moduleRecord->GetNamespaceImportEntries();
     for (const auto &t : namespaceImportEntries) {
+        /*
+         * eg. export * as ns from './test'
+         */
+        if (t->localId_ == nullptr) {
+            continue;
+        }
         const auto &redirectPath = moduleRecord->GetModuleRequestIdxMap().at(t->moduleRequestIdx_);
         ExternalType externalType(this, "*", redirectPath);
+        recorder_->SetNodeTypeIndex(t->localId_->Parent(), externalType.GetTypeIndexShift());
         recorder_->SetNamespaceType(std::string(t->localName_), externalType.GetTypeIndexShift());
         recorder_->SetNamespacePath(std::string(t->localName_), std::string(redirectPath));
     }
@@ -190,7 +209,16 @@ void TypeExtractor::ExtractExport(const parser::Program *program)
     if (moduleRecord == nullptr) {
         return;
     }
+    ExtractExportModuleRecord(moduleRecord);
+    auto typeModuleRecord = program->Binder()->Program()->TypeModuleRecord();
+    if (typeModuleRecord == nullptr) {
+        return;
+    }
+    ExtractExportModuleRecord(typeModuleRecord);
+}
 
+void TypeExtractor::ExtractExportModuleRecord(parser::SourceTextModuleRecord *moduleRecord)
+{
     const auto &localExportEntries = moduleRecord->GetLocalExportEntries();
     for (const auto &t : localExportEntries) {
         auto identifier = t.second->localId_;
@@ -777,6 +805,16 @@ void TypeExtractor::HandleNewlyGenFuncExpression(const ir::AstNode *node)
         auto funcExpr = node->AsExpressionStatement()->GetExpression()->AsCallExpression()->Callee();
         recorder_->SetNodeTypeIndex(funcExpr->AsFunctionExpression()->Function(), typeFlag);
     }
+}
+
+void TypeExtractor::HandleArrowFunctionExpression(const ir::AstNode *node)
+{
+    ASSERT(node->IsArrowFunctionExpression());
+    auto typeIndex = recorder_->GetNodeTypeIndex(node->AsArrowFunctionExpression()->Function());
+    if (typeIndex != PrimitiveType::ANY) {
+        return;
+    }
+    GetTypeIndexFromFunctionNode(node, false);
 }
 
 int64_t TypeExtractor::GetTypeIndexFromClassInst(int64_t typeIndex, const ir::AstNode *node, int64_t builtinTypeIndex)

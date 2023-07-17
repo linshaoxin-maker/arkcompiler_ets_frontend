@@ -157,6 +157,8 @@ def get_args():
         help='run hotfix tests')
     parser.add_argument('--hotreload', dest='hotreload', action='store_true', default=False,
         help='run hotreload tests')
+    parser.add_argument('--coldfix', dest='coldfix', action='store_true', default=False,
+        help='run coldfix tests')
     parser.add_argument('--base64', dest='base64', action='store_true', default=False,
         help='run base64 tests')
     parser.add_argument('--bytecode', dest='bytecode', action='store_true', default=False,
@@ -487,7 +489,7 @@ class Runner:
         path_str = test.path
         err_col = {}
         if test.error:
-            err_str = test.error.split('[')[0] if "hotfix" not in test.path else " hotfix throw error failed"
+            err_str = test.error.split('[')[0] if "patchfix" not in test.path else " patchfix throw error failed"
             err_col = {"path" : [path_str], "status": ["fail"], "error" : [test.error], "type" : [err_str]}
         else:
             err_col = {"path" : [path_str], "status": ["fail"], "error" : ["Segmentation fault"],
@@ -1060,38 +1062,47 @@ class PatchTest(Test):
         modified_output_abc = 'patch.abc'
 
         gen_base_cmd = runner.cmd_prefix + [runner.es2panda, '--module']
+        if 'record-name-with-dots' in os.path.basename(self.path):
+            gen_base_cmd.extend(['--merge-abc', '--record-name=record.name.with.dots'])
         gen_base_cmd.extend(['--dump-symbol-table', os.path.join(self.path, symbol_table_file)])
         gen_base_cmd.extend(['--output', os.path.join(self.path, origin_output_abc)])
         gen_base_cmd.extend([os.path.join(self.path, origin_input_file)])
         self.log_cmd(gen_base_cmd)
 
         if self.mode == 'hotfix':
-            mode_arg = "--generate-patch"
+            mode_arg = ["--generate-patch"]
         elif self.mode == 'hotreload':
-            mode_arg = "--hot-reload"
+            mode_arg = ["--hot-reload"]
+        elif self.mode == 'coldfix':
+            mode_arg = ["--generate-patch", "--cold-fix"]
 
-        patch_test_cmd = runner.cmd_prefix + [runner.es2panda, '--module', mode_arg]
+        patch_test_cmd = runner.cmd_prefix + [runner.es2panda, '--module']
+        patch_test_cmd.extend(mode_arg)
         patch_test_cmd.extend(['--input-symbol-table', os.path.join(self.path, symbol_table_file)])
         patch_test_cmd.extend(['--output', os.path.join(self.path, modified_output_abc)])
         patch_test_cmd.extend([os.path.join(self.path, modified_input_file)])
+        if 'record-name-with-dots' in os.path.basename(self.path):
+            patch_test_cmd.extend(['--merge-abc', '--record-name=record.name.with.dots'])
+        if ('modify-anon-content-keep-origin-name' in os.path.basename(self.path) or
+            'modify-class-memeber-function' in os.path.basename(self.path)):
+            patch_test_cmd.extend(['--dump-assembly'])
         self.log_cmd(patch_test_cmd)
-
         process_base = subprocess.Popen(gen_base_cmd, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         stdout_base, stderr_base = process_base.communicate(timeout=runner.args.es2panda_timeout)
         if stderr_base:
             self.passed = False
             self.error = stderr_base.decode("utf-8", errors="ignore")
-            return self
+            self.output = stdout_base.decode("utf-8", errors="ignore") + stderr_base.decode("utf-8", errors="ignore")
+        else:
+            process_patch = subprocess.Popen(patch_test_cmd, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+            stdout_patch, stderr_patch = process_patch.communicate(timeout=runner.args.es2panda_timeout)
+            if stderr_patch:
+                self.passed = False
+                self.error = stderr_patch.decode("utf-8", errors="ignore")
+            self.output = stdout_patch.decode("utf-8", errors="ignore") + stderr_patch.decode("utf-8", errors="ignore")
 
-        process_patch = subprocess.Popen(patch_test_cmd, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-        stdout_patch, stderr_patch = process_patch.communicate(timeout=runner.args.es2panda_timeout)
-        if stderr_patch:
-            self.passed = False
-            self.error = stderr_patch.decode("utf-8", errors="ignore")
-
-        self.output = stdout_patch.decode("utf-8", errors="ignore") + stderr_patch.decode("utf-8", errors="ignore")
         expected_path = os.path.join(self.path, 'expected.txt')
         try:
             with open(expected_path, 'r') as fp:
@@ -1118,8 +1129,10 @@ class PatchRunner(Runner):
             self.clear_directory()
 
     def add_directory(self):
-        glob_expression = path.join(self.test_directory, "*")
-        self.tests_in_dirs = glob(glob_expression, recursive=False)
+        self.tests_in_dirs = []
+        for item in self.test_directory:
+            glob_expression = path.join(item, "*")
+            self.tests_in_dirs += glob(glob_expression, recursive=False)
 
     def clear_directory(self):
         for test in self.tests_in_dirs:
@@ -1135,7 +1148,8 @@ class PatchRunner(Runner):
 class HotfixRunner(PatchRunner):
     def __init__(self, args):
         PatchRunner.__init__(self, args, "Hotfix")
-        self.test_directory = path.join(self.test_root, "hotfix", "hotfix-throwerror")
+        self.test_directory = [path.join(self.test_root, "hotfix", "hotfix-throwerror"),
+            path.join(self.test_root, "hotfix", "hotfix-noerror")]
         self.add_directory()
         self.tests += list(map(lambda t: PatchTest(t, "hotfix"), self.tests_in_dirs))
 
@@ -1143,9 +1157,19 @@ class HotfixRunner(PatchRunner):
 class HotreloadRunner(PatchRunner):
     def __init__(self, args):
         PatchRunner.__init__(self, args, "Hotreload")
-        self.test_directory = path.join(self.test_root, "hotreload")
+        self.test_directory = [path.join(self.test_root, "hotreload", "hotreload-throwerror"),
+            path.join(self.test_root, "hotreload", "hotreload-noerror")]
         self.add_directory()
         self.tests += list(map(lambda t: PatchTest(t, "hotreload"), self.tests_in_dirs))
+
+
+class ColdfixRunner(PatchRunner):
+    def __init__(self, args):
+        PatchRunner.__init__(self, args, "Coldfix")
+        self.test_directory = [path.join(self.test_root, "coldfix", "coldfix-throwerror"),
+            path.join(self.test_root, "coldfix", "coldfix-noerror")]
+        self.add_directory()
+        self.tests += list(map(lambda t: PatchTest(t, "coldfix"), self.tests_in_dirs))
 
 
 class Base64Test(Test):
@@ -1226,6 +1250,7 @@ class TypeExtractorRunner(Runner):
         self.add_directory("testcases", [])
         self.add_directory("dts-testcases", [], True)
         self.add_directory("testcases_with_assert", [])
+        self.add_directory("testcases_with_assert/projects", [], False, True)
         self.add_directory("testcases_with_running", [])
 
     def add_tsc_directory(self, directory, flags):
@@ -1236,28 +1261,28 @@ class TypeExtractorRunner(Runner):
         files = glob(glob_expression, recursive=True)
         files = fnmatch.filter(files, ts_suite_dir + '**' + self.args.filter)
 
-        passed_references = open(path.join(self.test_root, 'type_extractor/testlist.txt'), 'r').read()
+        with open(path.join(self.test_root, 'type_extractor/testlist.txt'), 'r') as passed_references:
+            for f in files:
+                if path.relpath(f, self.tsc_path) in passed_references.read():
+                    test = TypeExtractorTest(f, flags)
+                    self.tests.append(test)
 
-        for f in files:
-            if path.relpath(f, self.tsc_path) in passed_references:
-                test = TypeExtractorTest(f, flags)
-                self.tests.append(test)
-
-    def add_directory(self, directory, flags, is_dts_test=False):
+    def add_directory(self, directory, flags, is_dts_test=False, is_project=False):
         ts_suite_dir = path.join(self.test_root, 'type_extractor')
 
-        if is_dts_test:
+        if is_project:
+            glob_expression = path.join(ts_suite_dir, directory, "**/*-main.ts")
+        elif is_dts_test:
             glob_expression = path.join(ts_suite_dir, directory, "**/*.d.ts")
         else:
-            glob_expression = path.join(ts_suite_dir, directory, "**/*.ts")
+            glob_expression = path.join(ts_suite_dir, directory, "*.ts")
         files = glob(glob_expression, recursive=True)
         files = fnmatch.filter(files, ts_suite_dir + '**' + self.args.filter)
-
         for f in files:
-            if directory.endswith("testcases_with_assert") or directory.endswith("testcases_with_running"):
+            if directory.startswith("testcases_with_assert") or directory.startswith("testcases_with_running"):
                 if (self.ld_library_path == "" or self.ark_aot_compiler == ""):
                     break
-                test = TypeExtractorWithAOTTest(f, flags, directory.endswith("testcases_with_running"))
+                test = TypeExtractorWithAOTTest(f, flags, directory.startswith("testcases_with_running"), directory.endswith("projects"))
                 self.tests.append(test)
             else:
                 test = TypeExtractorTest(f, flags, is_dts_test)
@@ -1318,9 +1343,10 @@ class TypeExtractorTest(Test):
 
 
 class TypeExtractorWithAOTTest(Test):
-    def __init__(self, test_path, flags, with_running=False):
+    def __init__(self, test_path, flags, with_running=False, is_project=False):
         Test.__init__(self, test_path, flags)
         self.with_running = with_running
+        self.is_project = is_project
 
     def run_js_vm(self, runner, file_name, test_abc_name):
         expected_path = "%s-expected.txt" % (file_name)
@@ -1355,7 +1381,11 @@ class TypeExtractorWithAOTTest(Test):
             '--module', '--merge-abc', '--opt-level=2', '--type-extractor']
         cmd.extend(self.flags)
         cmd.extend(["--output=" + test_abc_name])
-        cmd.append(self.path)
+        if self.is_project:
+            cmd.append("--extension=ts")
+            cmd.append(path.dirname(self.path))
+        else:
+            cmd.append(self.path)
 
         self.log_cmd(cmd)
         process = subprocess.Popen(
@@ -1427,6 +1457,8 @@ def main():
         runner.add_directory("parser/ts/cases/declaration", "d.ts",
                              ["--parse-only", "--module", "--dump-ast"], TSDeclarationTest)
         runner.add_directory("parser/commonjs", "js", ["--commonjs", "--parse-only", "--dump-ast"])
+        runner.add_directory("parser/binder", "js", ["--dump-assembly"])
+        runner.add_directory("parser/js/emptySource", "js", ["--dump-assembly"])
 
         runners.append(runner)
 
@@ -1460,6 +1492,9 @@ def main():
     if args.hotreload:
         runners.append(HotreloadRunner(args))
 
+    if args.coldfix:
+        runners.append(ColdfixRunner(args))
+
     if args.base64:
         runners.append(Base64Runner(args))
 
@@ -1469,6 +1504,7 @@ def main():
     if args.bytecode:
         runner = BytecodeRunner(args)
         runner.add_directory("bytecode/commonjs", "js", ["--commonjs", "--dump-assembly"])
+        runner.add_directory("bytecode/js", "js", ["--dump-assembly"])
 
         runners.append(runner)
 

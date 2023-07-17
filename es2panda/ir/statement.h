@@ -29,6 +29,7 @@ public:
 
 protected:
     explicit Statement(AstNodeType type) : AstNode(type) {}
+    void UpdateForMultipleTransformedStatements(const NodeUpdater &cb, ArenaVector<Statement *> &originStatements);
 };
 
 }  // namespace panda::es2panda::ir

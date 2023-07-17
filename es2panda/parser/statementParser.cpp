@@ -2052,6 +2052,9 @@ ir::VariableDeclarator *ParserImpl::ParseVariableDeclarator(VariableParsingFlags
         binder::Decl *decl = nullptr;
         binder::DeclarationFlags declflag = (flags & VariableParsingFlags::EXPORTED) ?
                                             binder::DeclarationFlags::EXPORT : binder::DeclarationFlags::NONE;
+        if (flags & VariableParsingFlags::EXPORTED_IN_TSMODULE) {
+            declflag |= binder::DeclarationFlags::EXPORT_IN_TSMODULE;
+        }
 
         if (flags & VariableParsingFlags::VAR) {
             decl = Binder()->AddDecl<binder::VarDecl>(startLoc, declflag, isDeclare, binding->Name());
@@ -2142,18 +2145,22 @@ ir::WhileStatement *ParserImpl::ParseWhileStatement()
     return whileStatement;
 }
 
-void ParserImpl::AddImportEntryItem(const ir::StringLiteral *source, const ArenaVector<ir::AstNode *> *specifiers)
+void ParserImpl::AddImportEntryItem(const ir::StringLiteral *source,
+                                    const ArenaVector<ir::AstNode *> *specifiers, bool isType)
 {
     if (context_.IsTsModule()) {
         return;
     }
 
     ASSERT(source != nullptr);
-    auto *moduleRecord = GetSourceTextModuleRecord();
+    auto *moduleRecord = isType ? GetSourceTextTypeModuleRecord() : GetSourceTextModuleRecord();
     ASSERT(moduleRecord != nullptr);
     auto moduleRequestIdx = moduleRecord->AddModuleRequest(source->Str());
 
     if (specifiers == nullptr) {
+        if (isType) {
+            ThrowSyntaxError("Unexpected import type syntax", source->Start());
+        }
         return;
     }
 
@@ -2194,14 +2201,14 @@ void ParserImpl::AddImportEntryItem(const ir::StringLiteral *source, const Arena
 }
 
 void ParserImpl::AddExportNamedEntryItem(const ArenaVector<ir::ExportSpecifier *> &specifiers,
-                                         const ir::StringLiteral *source)
+                                         const ir::StringLiteral *source, bool isType)
 {
     // The exported objects in the TSModuleScope do not need to be allocated index.
     if (context_.IsTsModule()) {
         ASSERT(Binder()->GetScope()->IsTSModuleScope());
         return;
     }
-    auto moduleRecord = GetSourceTextModuleRecord();
+    auto moduleRecord = isType ? GetSourceTextTypeModuleRecord() : GetSourceTextModuleRecord();
     ASSERT(moduleRecord != nullptr);
     if (source) {
         auto moduleRequestIdx = moduleRecord->AddModuleRequest(source->Str());
@@ -2520,9 +2527,7 @@ ir::ExportNamedDeclaration *ParserImpl::ParseExportNamedSpecifiers(const lexer::
     }
 
     // record ExportEntry
-    if (!isType) {
-        AddExportNamedEntryItem(specifiers, source);
-    }
+    AddExportNamedEntryItem(specifiers, source, isType);
 
     auto *exportDeclaration = AllocNode<ir::ExportNamedDeclaration>(source, std::move(specifiers), isType);
     exportDeclaration->SetRange({startLoc, endPos});
@@ -2550,7 +2555,8 @@ ir::ExportNamedDeclaration *ParserImpl::ParseNamedExportDeclaration(const lexer:
         ThrowSyntaxError("Decorators are not valid here.", decorators.front()->Start());
     }
 
-    VariableParsingFlags flag = isTsModule ? VariableParsingFlags::NO_OPTS : VariableParsingFlags::EXPORTED;
+    VariableParsingFlags flag = isTsModule ?
+        VariableParsingFlags::EXPORTED_IN_TSMODULE : VariableParsingFlags::EXPORTED;
     ParserStatus status = isTsModule ? ParserStatus::NO_OPTS : ParserStatus::EXPORT_REACHED;
 
     switch (lexer_->GetToken().Type()) {
@@ -2999,13 +3005,11 @@ ir::Statement *ParserImpl::ParseImportDeclaration(StatementParsingFlags flags)
             return astNode->AsTSImportEqualsDeclaration();
         }
         source = ParseFromClause(true);
-        if (!isType) {
-            AddImportEntryItem(source, &specifiers);
-        }
+        AddImportEntryItem(source, &specifiers, isType);
     } else {
         // import 'source'
         source = ParseFromClause(false);
-        AddImportEntryItem(source, nullptr);
+        AddImportEntryItem(source, nullptr, isType);
     }
 
     lexer::SourcePosition endLoc = source->End();

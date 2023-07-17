@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import("//arkcompiler/ets_frontend/es2panda/es2abc_config.gni")
 import("//arkcompiler/ets_frontend/ets_frontend_config.gni")
 import("//arkcompiler/runtime_core/ark_config.gni")
 
@@ -250,7 +251,7 @@ es2panda_src = [
   "util/concurrent.cpp",
   "util/dumper.cpp",
   "util/helpers.cpp",
-  "util/hotfix.cpp",
+  "util/patchFix.cpp",
   "util/moduleHelpers.cpp",
   "util/symbolTable.cpp",
   "util/ustring.cpp",
@@ -397,25 +398,47 @@ ohos_static_library("es2panda_lib") {
   deps = [
     ":gen_isa_headers",
     ":gen_keywords_headers",
-    "$ark_root/assembler:libarkassembler_frontend_static",
-    "$ark_root/libpandabase:libarkbase_frontend_static",
-    "$ark_root/libpandafile:libarkfile_frontend_static",
-    "$ark_root/libziparchive:libarkziparchive_frontend_static",
     "$ark_third_party_root/icu/icu4c:static_icuuc",
     "../merge_abc:panda_assembly_proto_static",
   ]
 
-  if (enable_bytecode_optimizer) {
-    deps += [
-      "$ark_root/bytecode_optimizer:libarkbytecodeopt_frontend_static",
-      "$ark_root/compiler:libarkcompiler_frontend_static",
+  external_deps = []
+  if (!is_cross_platform_build) {
+    external_deps += [
+      "runtime_core:libarkassembler_frontend_static",
+      "runtime_core:libarkbase_frontend_static",
+      "runtime_core:libarkfile_frontend_static",
+      "runtime_core:libarkziparchive_frontend_static",
     ]
+
+    if (enable_bytecode_optimizer) {
+      external_deps += [
+        "runtime_core:libarkbytecodeopt_frontend_static",
+        "runtime_core:libarkcompiler_frontend_static",
+      ]
+    }
+  } else {
+    deps += [
+      "$ark_root/assembler:libarkassembler_frontend_static",
+      "$ark_root/libpandabase:libarkbase_frontend_static",
+      "$ark_root/libpandafile:libarkfile_frontend_static",
+      "$ark_root/libziparchive:libarkziparchive_frontend_static",
+    ]
+    if (enable_bytecode_optimizer) {
+      deps += [
+        "$ark_root/bytecode_optimizer:libarkbytecodeopt_frontend_static",
+        "$ark_root/compiler:libarkcompiler_frontend_static",
+      ]
+    }
   }
 
   cflags = [
     "-Wno-c++20-designator",
     "-Wno-implicit-fallthrough",
   ]
+
+  part_name = "ets_frontend"
+  subsystem_name = "arkcompiler"
 }
 
 ohos_executable("es2panda") {
@@ -537,6 +560,35 @@ if (is_linux) {
   }
 }
 
+ohos_copy("panda_es2abc") {
+  sources = [ "${es2abc_root}/scripts/ts2abc.js" ]
+
+  outputs = [ target_out_dir + "/$target_name/{{source_file_part}}" ]
+  module_source_dir = target_out_dir + "/$target_name/"
+  module_install_name = ""
+
+  part_name = "ets_frontend"
+  subsystem_name = "arkcompiler"
+}
+
+ohos_copy("panda_es2abc_ets") {
+  sources = [ "${es2abc_root}/scripts/ts2abc.js" ]
+  outputs = [ target_out_dir + "/$target_name/{{source_file_part}}" ]
+  module_source_dir = target_out_dir + "/$target_name/"
+  module_install_name = ""
+
+  part_name = "ets_frontend"
+  subsystem_name = "arkcompiler"
+}
+
+ohos_copy("es2abc_js_file") {
+  sources = [ "${es2abc_root}/scripts/ts2abc.js" ]
+  outputs = [ target_out_dir + "/{{source_file_part}}" ]
+
+  part_name = "ets_frontend"
+  subsystem_name = "arkcompiler"
+}
+
 group("es2panda_build") {
   if (host_os == "linux") {
     deps = [ ":es2panda(${toolchain_linux})" ]
@@ -557,5 +609,6 @@ group("es2abc_tests") {
   deps += [ "./test:es2abc_parser_tests" ]
   deps += [ "./test:es2abc_parser_tsc_tests" ]
   deps += [ "./test:es2abc_patch_tests" ]
+  deps += [ "./test:es2abc_bytecode_tests" ]
   deps += [ "./test:es2abc_type_extractor_tests" ]
 }

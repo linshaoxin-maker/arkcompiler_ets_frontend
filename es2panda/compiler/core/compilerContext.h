@@ -21,7 +21,7 @@
 
 #include <binder/variable.h>
 #include <ir/astNode.h>
-#include <util/hotfix.h>
+#include <util/patchFix.h>
 #include <util/ustring.h>
 
 #include <cstdint>
@@ -33,6 +33,7 @@ class Binder;
 
 namespace panda::es2panda::extractor {
 class TypeRecorder;
+class TypeExtractor;
 }  // namespace panda::es2panda::extractor
 
 namespace panda::es2panda::compiler {
@@ -44,7 +45,7 @@ class CompilerContext {
 public:
     CompilerContext(binder::Binder *binder, bool isDebug, bool isDebuggerEvaluateExpressionMode,
                     bool isMergeAbc, bool isTypeExtractorEnabled, bool isJsonInputFile, std::string sourceFile,
-                    std::string pkgName, util::StringView recordName, util::Hotfix *hotfixHelper);
+                    std::string pkgName, util::StringView recordName, util::PatchFix *patchFixHelper);
     NO_COPY_SEMANTIC(CompilerContext);
     NO_MOVE_SEMANTIC(CompilerContext);
     ~CompilerContext() = default;
@@ -100,9 +101,9 @@ public:
         return pkgName_;
     }
 
-    util::Hotfix *HotfixHelper() const
+    util::PatchFix *PatchFixHelper() const
     {
-        return hotfixHelper_;
+        return patchFixHelper_;
     }
 
     const util::StringView &RecordName() const
@@ -120,7 +121,13 @@ public:
         return recorder_;
     }
 
+    extractor::TypeExtractor *TypeExtractor() const
+    {
+        return extractor_;
+    }
+
     void SetTypeRecorder(extractor::TypeRecorder *recorder);
+    void SetTypeExtractor(extractor::TypeExtractor *extractor);
 
     bool IsJsonInputFile() const
     {
@@ -139,10 +146,11 @@ private:
     // true when input file is json file
     bool isJsonInputFile_;
     extractor::TypeRecorder *recorder_ {};
+    extractor::TypeExtractor *extractor_ {};
     std::string sourceFile_;
     std::string pkgName_;
     util::StringView recordName_;
-    util::Hotfix *hotfixHelper_ {nullptr};
+    util::PatchFix *patchFixHelper_ {nullptr};
     std::unique_ptr<Emitter> emitter_;
 };
 
