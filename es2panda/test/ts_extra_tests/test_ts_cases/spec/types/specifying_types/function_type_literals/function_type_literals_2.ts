@@ -14,7 +14,7 @@
  */
 /**---
  description: >
-    An array type literal references an array type with the given element type. 
+    A function type literal specifies the type parameters, regular parameters, and return type of a call signature.
  module: ESNext
  isCurrent: true
  ---*/
@@ -22,7 +22,19 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-let arr: (string | number | boolean)[] = ['s', 5, true];
-Assert.equal(arr[0], 's');
-Assert.equal(arr[1], 5);
-Assert.equal(arr[2], true);
+let fun1: (x: number, y: number) => number =
+    function (x: number, y: number): number { return x + y; };
+Assert.equal(fun1(1, 2), 3);
+let fun2: Function = (x: number, y: number): boolean => {
+    return x > y ? true : false;
+}
+Assert.equal(fun2(1, 2), false);
+interface Func {
+    fun(x: string): string;
+}
+let fun3: Func = {
+    fun(x: string): string {
+        return x;
+    }
+}
+Assert.equal(fun3.fun("aa"), "aa");

@@ -39,13 +39,40 @@ class I2 implements I1 {
         this.y = y;
     }
 }
-function fun(
+function fun1(
     cons: Constructor,
     x: number,
     y: number
 ): I1 {
     return new cons(x, y);
 }
-let x1: I1 = fun(I2, 2, 2)
+let x1: I1 = fun1(I2, 2, 2)
 Assert.equal(x1.x, 2);
 Assert.equal(x1.y, 2);
+
+interface F1<T, U> {
+    x: T;
+    y: U;
+}
+interface ConstructorF<T, U> {
+    new(x: T, y: U): F1<T, U>;
+}
+class F2<T, U> implements F1<T, U> {
+    readonly x: T;
+    readonly y: U;
+
+    constructor(x: T, y: U) {
+        this.x = x;
+        this.y = y;
+    }
+}
+function fun2<T, U>(
+    cons: ConstructorF<T, U>,
+    x: T,
+    y: U
+): F1<T, U> {
+    return new cons(x, y);
+}
+let f1: F1<number, boolean> = fun2(F2, 1, true);
+Assert.equal(f1.x, 1);
+Assert.equal(f1.y, true);

@@ -25,6 +25,12 @@ import { Assert } from '../../../../../suite/assert.js'
 type T = number | string | boolean;
 type U = number | string | boolean;
 
+type IsEqual<TT, UU> =
+  (<T1>() => T1 extends TT ? 1 : 2) extends
+  (<T2>() => T2 extends UU ? 1 : 2)
+  ? true
+  : false
+
 let a1: T = 10;
 let a2: U = 5;
 Assert.equal(typeof a1, typeof a2);
@@ -34,3 +40,15 @@ Assert.equal(typeof b1, typeof b2);
 let c1: T = true;
 let c2: U = false;
 Assert.equal(typeof c1, typeof c2);
+
+let isEqual: IsEqual<T, U> = true;
+Assert.isTrue(isEqual);
+
+let d1: T = true;
+let d2: U = 555;
+d1 = d2;
+Assert.equal(d1, d2);
+d1 = 'd1';
+d2 = false;
+d2 = d1;
+Assert.equal(d2, d1);

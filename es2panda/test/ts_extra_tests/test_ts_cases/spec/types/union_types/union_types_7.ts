@@ -21,7 +21,7 @@
  ---*/
 
 
-import {Assert} from '../../../../suite/assert.js'
+import { Assert } from '../../../../suite/assert.js'
 
 type numType = { num: number };
 type strType = { str: string };
@@ -39,3 +39,21 @@ Assert.equal(typeof obv, "object");
 Assert.equal(typeof nsobv_1, "object");
 Assert.equal(typeof nsobv_2, "object");
 Assert.equal(typeof nsobv_3, "object");
+interface T1 {
+     x: number,
+     y: string,
+     z: boolean
+}
+interface T2 {
+     x: string,
+     y: string,
+     z: string
+}
+let t1: T1 | T2 = { x: 1, y: "yy", z: true };
+Assert.equal(t1.x, 1);
+Assert.equal(t1.y, "yy");
+Assert.equal(t1.z, true);
+let t2: T1 | T2 = { x: "aa", y: "bb", z: "cc" };
+Assert.equal(t2.x, "aa");
+Assert.equal(t2.y, "bb");
+Assert.equal(t2.z, "cc");

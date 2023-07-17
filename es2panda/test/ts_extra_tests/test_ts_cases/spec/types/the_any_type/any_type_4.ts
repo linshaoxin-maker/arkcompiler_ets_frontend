@@ -14,8 +14,7 @@
  */
 /**---
  description: >
-    Type aliases are referenced using type references. 
-    Type references to generic type aliases produce instantiations of the aliased type with the given type arguments. 
+    The Any type is a supertype of all types, and is assignable to and from all types.
  module: ESNext
  isCurrent: true
  ---*/
@@ -23,24 +22,41 @@
 
 import { Assert } from '../../../../suite/assert.js'
 
-interface I<T, U> {
-    h_x: T;
-    h_y: U;
-}
-interface I2<T, U> {
-    h_y: T;
-    h_b: U;
-}
-type MyType = I<number, string> | I2<string, boolean>
-var mytest: MyType = {
-    h_x: 10,
-    h_y: 'y',
-    h_b: true
-}
-Assert.isString(mytest.h_y);
-
-type KeyOf<T, U> = keyof T & keyof U;
-let key1: KeyOf<string, number> = 'toString';
-let key2: KeyOf<boolean, symbol> = 'valueOf';
-Assert.equal(key1, 'toString');
-Assert.equal(key2, 'valueOf');
+let x: any
+let y1: number;
+x = 1024;
+y1 = x;
+Assert.equal(y1, 1024)
+let y2: string;
+x = "AAA";
+y2 = x;
+Assert.equal(y2.length, 3);
+let y3: boolean;
+x = true;
+y3 = x;
+Assert.equal(y3, true);
+let y4: number[];
+x = [1, 2, 3];
+y4 = x;
+Assert.equal(y4[0], 1);
+let y5: string[];
+x = ["aa", "bb"];
+y5 = x;
+Assert.equal(y5[0], "aa");
+let y6: Function;
+x = (a: number, b: number) => { return a + b };
+y6 = x;
+Assert.equal(y6(1, 2), 3);
+let y7: symbol;
+x = Symbol("aa");
+y7 = x;
+Assert.equal(y7.toString(), "Symbol(aa)");
+let y8: object;
+x = {
+   toString() {
+      return 123;
+   }
+};
+y8 = x;
+Assert.isObject(x);
+Assert.equal(y8.toString(), 123)

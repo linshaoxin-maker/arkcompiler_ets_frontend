@@ -51,3 +51,37 @@ let pp2 = point2;
 Assert.equal(pp2.x, 0);
 Assert.equal(pp2.y, 0);
 Assert.equal(pp2.z, 0);
+
+class B {
+  add<T>(x: T, y: number): string;
+  add<U>(x: string, y: U): string;
+  add<T, U>(x: T, y: U): string;
+  add<T extends number | string | boolean, U extends number | string | boolean>(x: T, y: U): string {
+    return x.toString() + y.toString();
+  }
+}
+let b1 = new B();
+Assert.equal(b1.add(1, 2), '12');
+Assert.equal(b1.add<string>("A", 2), 'A2');
+Assert.equal(b1.add<number>("B", 3), 'B3');
+Assert.equal(b1.add<boolean, boolean>(true, false), 'truefalse');
+b1.add = <U extends number | string | boolean>(x: string, y: U) => { return typeof x + typeof y; };
+Assert.equal(b1.add<number>("B", 3), 'stringnumber');
+
+class C {
+  add1?(x: number): string;
+  add2?(x: number, y: boolean): number | boolean;
+}
+let c1 = new C();
+c1.add1 = (x: number): string => { return (x * x).toString() }
+Assert.equal(c1.add1(5), '25');
+
+let c2 = new C();
+c2.add2 = (x: number, y: boolean) => {
+  if (y == true) {
+    return x;
+  } else {
+    return y;
+  }
+}
+Assert.equal(c2.add2(5, true), 5);

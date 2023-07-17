@@ -34,3 +34,12 @@ Assert.equal(x3.toString(), "s");
 
 let x4: symbol = Symbol();
 Assert.equal(x4.toString(), "Symbol()");
+
+let x5: any;
+x5 = 1;
+x5 = "aa"
+x5 = true;
+Assert.equal(x5, true);
+
+let x6: void = undefined;
+Assert.equal(x6, undefined);

@@ -27,21 +27,51 @@ let obj: {
     num: number;
     str: string;
     boo: boolean;
+    fun: Function;
 } = {
     num: 5,
     str: 'str',
-    boo: true
+    boo: true,
+    fun(): number {
+        return 123;
+    }
 }
 Assert.equal(obj.num, 5);
 Assert.equal(obj.str, 'str');
 Assert.equal(obj.boo, true);
+Assert.equal(obj.fun(), 123);
 interface I {
     name: string,
-    age: number
+    age: number,
+    readonly id: number
 }
 let i: I = {
     name: 'xiao',
-    age: 18
+    age: 18,
+    id: 111
 }
 Assert.equal(i.name, 'xiao');
 Assert.equal(i.age, 18);
+Assert.equal(i.id, 111);
+interface I2 {
+    name: string,
+    [oname: string]: string;
+}
+let i2: I2 = {
+    name: "join",
+    gender: "male"
+};
+Assert.equal(i2.name, "join");
+Assert.equal(i2.gender, "male");
+class Myclass {
+    x: number = 1;
+    y: string = "aa";
+    constructor() { }
+    fun(): number {
+        return 11;
+    }
+}
+let obj2: Myclass = new Myclass()
+Assert.equal(obj2.fun(), 11);
+Assert.equal(obj2.x, 1);
+Assert.equal(obj2.y, "aa");

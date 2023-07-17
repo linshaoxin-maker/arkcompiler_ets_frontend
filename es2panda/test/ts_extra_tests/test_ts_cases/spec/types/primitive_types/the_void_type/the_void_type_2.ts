@@ -15,7 +15,6 @@
 /**---
  description: >
     the only possible values for the Void type are null and undefined.  
-    the void type can be assigned a null value, but this is only allowed in non-strict mode.
  module: ESNext
  isCurrent: true
  ---*/

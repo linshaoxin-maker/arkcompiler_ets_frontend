@@ -43,7 +43,7 @@ class A {
     }
   }
 }
-let a = new A();
-Assert.equal(a.add(1, 2), 3);
-let b = new A();
-Assert.equal(b.add(1, 2, 3), 6);
+let a1 = new A();
+Assert.equal(a1.add(1, 2), 3);
+let a2 = new A();
+Assert.equal(a2.add(1, 2, 3), 6);

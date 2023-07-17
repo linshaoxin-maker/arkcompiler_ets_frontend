@@ -21,10 +21,30 @@
 
 
 import { Assert } from '../../../../../suite/assert.js'
- 
+
 type T = number;
 type U = number;
+
+type IsEqual<TT, UU> =
+  (<T1>() => T1 extends TT ? 1 : 2) extends
+  (<T2>() => T2 extends UU ? 1 : 2)
+  ? true
+  : false
 
 let a: T = 5;
 let b: U = 10;
 Assert.equal(typeof a, typeof b);
+
+let isEqual1: IsEqual<T, U> = true;
+let isEqual2: IsEqual<T, number> = true;
+Assert.equal(isEqual1, isEqual2);
+Assert.isTrue(isEqual1);
+
+let a1: T = 1024;
+let b1: U = 999;
+a1 = b1;
+Assert.equal(a1, b1);
+a1 = 37;
+b1 = 111;
+b1 = a1;
+Assert.equal(b1, a1);

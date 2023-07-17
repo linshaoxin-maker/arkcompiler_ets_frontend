@@ -76,3 +76,11 @@ interface YY {
 }
 let x5: XX & YY = { obj: x };
 Assert.equal(x5.obj.num1, 1);
+interface A5 {
+  x: number;
+}
+interface B5 {
+  x: number;
+}
+let x6: A5 & B5 = { x: 1 };
+Assert.equal(x6.x, 1);

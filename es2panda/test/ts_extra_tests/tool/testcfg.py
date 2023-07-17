@@ -22,6 +22,8 @@ from tool.test_helper import read_declaration
 STRICT_OFF = ['--strict', 'false']
 STRICT_ON = ['--strict', 'true']
 MODULE = ['--module']
+Decorator = ['--experimentalDecorators']
+strictNullChecks = ['--strictNullChecks']
 
 def get_error_message(str, filename):
     if len(re.findall(filename + r':(\d+)', str)) > 0:
@@ -76,6 +78,14 @@ class TestCase():
         if 'isCurrent' in self.declaration:
             return True
         return False
+    def experimentalDecorators(self):
+        if 'experimentalDecorators' in self.declaration:
+            return True
+        return False
+    def nullChecks(self):
+        if 'strictNullChecks' in self.declaration:
+            return True
+        return False
     def is_set_module(self):
         if 'module' in self.declaration:
             return True
@@ -113,6 +123,12 @@ class TestCase():
         if self.is_set_module():
             cmd.extend(MODULE)
             cmd.append('es2020')
+        if self.experimentalDecorators():
+            cmd.extend(Decorator)
+            cmd.append('true')
+        if self.nullChecks():
+            cmd.extend(strictNullChecks)
+            cmd.append('false')
         if self.is_current():
             cmd.append(self.path)
             cmd.append('--outDir')

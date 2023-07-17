@@ -41,3 +41,30 @@ Assert.equal(arr2.pop(), 9);
 Assert.equal(arr2.toString(), "1,3,5,7");
 arr3[0] = false;
 Assert.equal(arr3[0], false);
+interface ArrayNumber {
+  [x: number]: number;
+}
+let arr5: ArrayNumber = arr2;
+Assert.equal(arr5[0], 1);
+Assert.equal(arr5[1], 3);
+class ArrayString {
+  [x: number]: string;
+}
+let arr6: ArrayString = arr1;
+Assert.equal(arr6[0], "ABC");
+Assert.equal(arr6[1], "DEF");
+type ArrayType = {
+  [x: number]: number;
+}
+let arr7: ArrayType = [1, 2, 3];
+Assert.equal(arr7[0], 1);
+Assert.equal(arr7[1], 2);
+let arr8: Object[];
+arr8 = [
+  111,
+  true,
+  "aaa"
+];
+Assert.equal(arr8[0], 111);
+Assert.equal(arr8[1], true);
+Assert.equal(arr8[2], "aaa");

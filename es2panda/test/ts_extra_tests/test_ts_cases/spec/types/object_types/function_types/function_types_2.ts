@@ -26,8 +26,8 @@ import { Assert } from '../../../../../suite/assert.js'
 function add(x: number, y: number): number {
   return x + y;
 }
-let a = add(1, 2);
+let a: number = add(1, 2);
 Assert.equal(a, 3);
 let add2 = function (x: number, y: number): number { return x + y; };
-let b = add2(3, 4);
+let b: number = add2(3, 4);
 Assert.equal(b, 7);
