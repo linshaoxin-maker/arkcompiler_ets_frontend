@@ -25,6 +25,7 @@ MODULE = ['--module']
 Decorator = ['--experimentalDecorators']
 strictNullChecks = ['--strictNullChecks']
 
+
 def get_error_message(str, filename):
     if len(re.findall(filename + r':(\d+)', str)) > 0:
         line_number = re.findall(filename + r':(\d+)', str)
@@ -35,7 +36,6 @@ def get_error_message(str, filename):
 
 
 class TestCase():
-
     temp_path = ""
     ld_library_path = ""
     js_runtime_path = ""
@@ -44,7 +44,7 @@ class TestCase():
 
     def __init__(self, path):
         self.path = path
-        self.target_js_path =""
+        self.target_js_path = ""
         try:
             data = yaml.load(read_declaration(path), yaml.SafeLoader)
         except:
@@ -57,15 +57,14 @@ class TestCase():
         self.abc_file_path = ""
         self.abc_file_path_temp = ""
 
-
-    def execute(self, arkruntime = False):
+    def execute(self, arkruntime=False):
         if not self.is_test_case:
             return
         if arkruntime:
             with open(self.path, 'a') as fileAdded:
                 fileAdded.write('\rprint("TESTCASE SUCCESS");')
             self.__test_es2abc()
-            if(os.path.exists(self.abc_file_path)):
+            if os.path.exists(self.abc_file_path):
                 os.remove(self.abc_file_path)
         else:
             self.__tsc_test()
@@ -74,29 +73,35 @@ class TestCase():
         if 'error' in self.declaration:
             return True
         return False
+
     def is_current(self):
         if 'isCurrent' in self.declaration:
             return True
         return False
-    def experimentalDecorators(self):
+
+    def experimental_decorators(self):
         if 'experimentalDecorators' in self.declaration:
             return True
         return False
-    def nullChecks(self):
+
+    def null_checks(self):
         if 'strictNullChecks' in self.declaration:
             return True
         return False
+
     def is_set_module(self):
         if 'module' in self.declaration:
             return True
         return False
+
     # check if
     def check_declaration(self):
         if self.declaration == {}:
             self.detail_result = "parse test case declaration failed, maybe bad format."
             return False
         if 'error' in self.declaration:
-            if self.declaration['error'] is None or 'code' not in self.declaration['error'] and 'type' not in self.declaration['error']:
+            if self.declaration['error'] is None or 'code' not in self.declaration['error'] and 'type' not in \
+                    self.declaration['error']:
                 self.detail_result = "neither error code nor error type are defined in negative case."
                 return False
         return True
@@ -123,10 +128,10 @@ class TestCase():
         if self.is_set_module():
             cmd.extend(MODULE)
             cmd.append('es2020')
-        if self.experimentalDecorators():
+        if self.experimental_decorators():
             cmd.extend(Decorator)
             cmd.append('true')
-        if self.nullChecks():
+        if self.null_checks():
             cmd.extend(strictNullChecks)
             cmd.append('false')
         if self.is_current():
@@ -154,11 +159,13 @@ class TestCase():
 
     # create abc files
     def create_abc(self, filename):
-        process = subprocess.Popen(self.__get_es2abc_cmd(filename), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+        process = subprocess.Popen(self.__get_es2abc_cmd(filename), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
         out, err = process.communicate()
         returncode = process.returncode
         if returncode != 0:
-            err_msg, line = get_error_message(out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore"), filename)
+            err_msg, line = get_error_message(
+                out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore"), filename)
             self.detail_result = err_msg
             self.err_line = line
             self.fail = True
@@ -171,14 +178,13 @@ class TestCase():
     # get es2abc file commands
     def _get_ark_js_cmd(self):
         os.environ.setdefault("LD_LIBRARY_PATH", TestCase.ld_library_path)
-        run_abc_cmd = [os.path.join(TestCase.js_runtime_path, 'ark_js_vm')]
-        run_abc_cmd.append(self.abc_file_path_temp)
+        run_abc_cmd = [os.path.join(TestCase.js_runtime_path, 'ark_js_vm'), self.abc_file_path_temp]
         return run_abc_cmd
         pass
 
     def __get_js_basename(self):
         sp = '/'
-        return "test_ts_cases" + sp + self.path.split(sp+"test_ts_cases"+sp)[1].replace('.ts', '.js')
+        return "test_ts_cases" + sp + self.path.split(sp + "test_ts_cases" + sp)[1].replace('.ts', '.js')
 
     def __is_strict(self):
         if 'strict' in self.declaration:
@@ -186,7 +192,8 @@ class TestCase():
         return True
 
     def __tsc_test(self):
-        process = subprocess.Popen(self.__get_tsc_cmd(), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+        process = subprocess.Popen(self.__get_tsc_cmd(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
         out, err = process.communicate()
         returncode = process.returncode
         if self.is_negative():
@@ -200,7 +207,7 @@ class TestCase():
             self.detail_result = "Error code not as expected."
             return
         # positive case
-        if returncode != 0 :
+        if returncode != 0:
             self.detail_result = out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore")
             self.fail = True
             return
@@ -208,14 +215,16 @@ class TestCase():
             with open(self.target_js_path, 'a') as fileAdded:
                 fileAdded.write('console.log("TESTCASE SUCCESS");')
         # run node command
-        process = subprocess.Popen(self.__get_node_cmd(), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+        process = subprocess.Popen(self.__get_node_cmd(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
         out, err = process.communicate()
         returncode = process.returncode
         if self.is_current():
             if os.path.exists(self.target_js_path):
                 os.remove(self.target_js_path)
         if returncode != 0:
-            err_msg, line = get_error_message(out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore"), self.__get_js_basename())
+            err_msg, line = get_error_message(
+                out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore"), self.__get_js_basename())
             self.detail_result = err_msg
             self.err_line = line
             self.fail = True
@@ -228,7 +237,8 @@ class TestCase():
 
     def __test_es2abc(self):
         # compiler to abc
-        process = subprocess.Popen(self.__get_es2abc_cmd(self.path), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+        process = subprocess.Popen(self.__get_es2abc_cmd(self.path), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
         out, err = process.communicate()
         returncode = process.returncode
         if self.is_negative():
@@ -241,16 +251,19 @@ class TestCase():
             self.detail_result = "Error type not as expected."
             return
         # positive case
-        if returncode != 0 :
+        if returncode != 0:
             self.detail_result = out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore")
             self.fail = True
             return
         # execute ark_js_vm
-        process = subprocess.Popen(self._get_ark_js_cmd(), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+        process = subprocess.Popen(self._get_ark_js_cmd(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
         out, err = process.communicate()
         returncode = process.returncode
         if returncode != 0:
-            err_msg, line = get_error_message(out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore"), os.path.basename(self.abc_file_path))
+            err_msg, line = get_error_message(
+                out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore"),
+                os.path.basename(self.abc_file_path))
             self.detail_result = err_msg
             self.err_line = line
             self.fail = True
