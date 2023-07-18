@@ -83,7 +83,7 @@ parser = argparse.ArgumentParser(description="TypeScript Spec&Feature Test Tool"
 parser.add_argument("release", nargs='*', metavar="release", type=lambda arg: is_testcase_exist(parser, arg),
                     help="All test case in the release will be execute")
 
-parser.add_argument("-a", "--arkruntime", action="store_true", default=False, help="test on ark_runtime")
+parser.add_argument("-a", "--ark_runtime", action="store_true", default=False, help="test on ark_runtime")
 
 parser.add_argument("-s", "--skip-abnormal-case", action="store_true", default=False, help="skip abnormal test case")
 
@@ -126,7 +126,7 @@ print("TEST CASE", "FAIL REASON", "FAIL LINE", sep="\t")
 for file_path in args.release:
     root = file_path
     # gen abc file
-    if args.arkruntime:
+    if args.ark_runtime:
         for file_paths in get_path_file("suite", None, True):
             if file_paths.endswith(".ts"):
                 test_case = TestCase(file_paths)
@@ -142,7 +142,7 @@ for file_path in args.release:
     if is_disable_case(file_path, disable_list):
         continue
     if os.path.isfile(file_path):
-        is_test_count, failed = parse_and_execute(file_path, args.arkruntime, args.skip_abnormal_case)
+        is_test_count, failed = parse_and_execute(file_path, args.ark_runtime, args.skip_abnormal_case)
         if is_test_count:
             total_case += 1
             if failed:
@@ -153,14 +153,14 @@ for file_path in args.release:
             continue
         if is_disable_case(file_paths, disable_list):
             continue
-        is_test_count, failed = parse_and_execute(file_paths, args.arkruntime, args.skip_abnormal_case)
+        is_test_count, failed = parse_and_execute(file_paths, args.ark_runtime, args.skip_abnormal_case)
         if is_test_count:
             total_case += 1
             if failed:
                 failed_case += 1
 
 # delete abc files
-if args.arkruntime:
+if args.ark_runtime:
     for file_paths in get_path_file("suite", None, True):
         if file_paths.endswith(".abc"):
             if os.path.exists(file_paths):
@@ -182,6 +182,7 @@ if args.arkruntime:
                     file.close()
 
 print("TOTAL CASE COUNT:%d" % total_case)
+print("SUCCESS CASE COUNT:%d" % (total_case-failed_case))
 print("FAILED CASE COUNT:%d" % failed_case)
 # delete temp dir
 if os.path.exists(TEMP_PATH):

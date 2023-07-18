@@ -37,9 +37,6 @@ def read_declaration(path):
     return context
 
 
-# LIMIT_VERSION = 4.2
-
-
 def get_path_file(dir_path, all_file_path=None, is_root=False, limit_version=None):
     rf = 'test_ts_cases'
     if all_file_path is None:
@@ -67,7 +64,7 @@ def get_path_file(dir_path, all_file_path=None, is_root=False, limit_version=Non
                     except Exception as e:
                         print(e)
                         continue
-            if not limit_version is None:
+            if limit_version is not None:
                 file_or_dir_results.append('spec')
 
     else:
