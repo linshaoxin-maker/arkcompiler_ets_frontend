@@ -15,11 +15,12 @@
 import re
 import os
 
+
 def read_declaration(path):
     start_pattern = re.compile(r'^\/\*\*\-*')
     end_pattern = re.compile(r'^\s*\-+\*\/')
     context = ""
-    with open(path,'r', encoding='utf-8', errors='ignore') as f:
+    with open(path, 'r', encoding='utf-8', errors='ignore') as f:
         declaration_begin = False
         while True:
             line = f.readline()
@@ -31,14 +32,16 @@ def read_declaration(path):
             if end_pattern.match(line):
                 declaration_begin = False
                 break
-            if declaration_begin == True:
+            if declaration_begin:
                 context += line
     return context
 
+
 # LIMIT_VERSION = 4.2
-ROOT_FOLDER = 'test_ts_cases'
+
 
 def get_path_file(dir_path, all_file_path=None, is_root=False, limit_version=None):
+    rf = 'test_ts_cases'
     if all_file_path is None:
         all_file_path = []
     file_or_dir = os.listdir(dir_path)
@@ -49,7 +52,7 @@ def get_path_file(dir_path, all_file_path=None, is_root=False, limit_version=Non
         is_root = False
     if is_root:
         root_folder = os.path.basename(dir_path)
-        if root_folder == ROOT_FOLDER:
+        if root_folder == rf:
             # file_or_dir like: ['2.0', '2.1', '2.2', ... '4.9', 'spec']
             for f_item in file_or_dir:
                 if limit_version is None:
@@ -81,9 +84,10 @@ def get_path_file(dir_path, all_file_path=None, is_root=False, limit_version=Non
 
     return all_file_path
 
+
 def get_disable_list(file_path):
     disable_list = []
-    with open(file_path,'r', encoding='utf-8', errors='ignore') as f:
+    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
         while True:
             line = f.readline()
             if not line:
@@ -91,8 +95,9 @@ def get_disable_list(file_path):
             disable_list.append(os.path.abspath(line.strip()))
     return disable_list
 
+
 def is_disable_case(file_path, disable_list):
-    if disable_list == None:
+    if disable_list is None:
         return False
     if file_path in disable_list:
         return True

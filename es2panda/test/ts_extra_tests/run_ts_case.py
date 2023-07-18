@@ -15,7 +15,6 @@
 import argparse
 import os
 import shutil
-import tempfile
 
 from tool.test_helper import get_path_file, get_disable_list, is_disable_case
 from tool.testcfg import TestCase
@@ -27,7 +26,7 @@ TEMP_PATH = os.getcwd() + TEST_TMP_PATH
 if os.path.exists(TEMP_PATH):
     shutil.rmtree(TEMP_PATH)
 
-if (os.path.exists(TEMP_PATH) == False):
+if not os.path.exists(TEMP_PATH):
     os.mkdir(TEMP_PATH)
 
 total_case = 0
@@ -35,44 +34,44 @@ failed_case = 0
 TestCase.temp_path = TEMP_PATH
 
 
-def is_testcase_exist(parser, arg):
+def is_testcase_exist(parsers, arg):
     if not os.path.isabs(arg):
         arg = TEST_PATH + arg
     if not os.path.exists(arg):
-        parser.error("The directory or file '%s' does not exist" % arg)
+        parsers.error("The directory or file '%s' does not exist" % arg)
     return os.path.abspath(arg)
 
 
-def is_file(parser, arg):
+def is_file(parsers, arg):
     if not os.path.isfile(arg):
-        parser.error("The file '%s' does not exist" % arg)
+        parsers.error("The file '%s' does not exist" % arg)
 
     return os.path.abspath(arg)
 
 
-def is_directory(parser, arg):
+def is_directory(parsers, arg):
     if not os.path.isdir(arg):
-        parser.error("The directory '%s' does not exist" % arg)
+        parsers.error("The directory '%s' does not exist" % arg)
 
     return os.path.abspath(arg)
 
 
-def parse_and_execute(path, arkruntime=False, skip_negative=True):
+def parse_and_execute(path, ark_runtime=False, skip_negative=True):
     if path.endswith(".ts"):
-        test_case = TestCase(path)
-        if not test_case.is_test_case:
+        test_cases = TestCase(path)
+        if not test_cases.is_test_case:
             return False, False
         # check test case declare
-        if not test_case.check_declaration():
-            print(test_case.path, test_case.detail_result, sep='\t')
+        if not test_cases.check_declaration():
+            print(test_cases.path, test_cases.detail_result, sep='\t')
             return True, True
-        if skip_negative and test_case.is_negative():
+        if skip_negative and test_cases.is_negative():
             return False, False
         else:
-            test_case.execute(arkruntime)
-            if test_case.fail:
+            test_cases.execute(ark_runtime)
+            if test_cases.fail:
                 print('TESTCASE Fail! Fail reason is coming:')
-                print(test_case.path, test_case.detail_result, sep='\t')
+                print(test_cases.path, test_cases.detail_result, sep='\t')
                 return True, True
             return True, False
 
@@ -84,7 +83,7 @@ parser = argparse.ArgumentParser(description="TypeScript Spec&Feature Test Tool"
 parser.add_argument("release", nargs='*', metavar="release", type=lambda arg: is_testcase_exist(parser, arg),
                     help="All test case in the release will be execute")
 
-parser.add_argument("-a", "--arkruntime", action="store_true", default=False, help="test on arkruntime")
+parser.add_argument("-a", "--arkruntime", action="store_true", default=False, help="test on ark_runtime")
 
 parser.add_argument("-s", "--skip-abnormal-case", action="store_true", default=False, help="skip abnormal test case")
 
@@ -149,12 +148,12 @@ for file_path in args.release:
             if failed:
                 failed_case += 1
         continue
-    for file_path in get_path_file(file_path, None, True, args.limit_version):
-        if False == file_path.endswith(".ts"):
+    for file_paths in get_path_file(file_path, None, True, args.limit_version):
+        if not file_paths.endswith(".ts"):
             continue
-        if is_disable_case(file_path, disable_list):
+        if is_disable_case(file_paths, disable_list):
             continue
-        is_test_count, failed = parse_and_execute(file_path, args.arkruntime, args.skip_abnormal_case)
+        is_test_count, failed = parse_and_execute(file_paths, args.arkruntime, args.skip_abnormal_case)
         if is_test_count:
             total_case += 1
             if failed:

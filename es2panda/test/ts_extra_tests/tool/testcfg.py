@@ -26,16 +26,16 @@ Decorator = ['--experimentalDecorators']
 strictNullChecks = ['--strictNullChecks']
 
 
-def get_error_message(str, filename):
-    if len(re.findall(filename + r':(\d+)', str)) > 0:
-        line_number = re.findall(filename + r':(\d+)', str)
+def get_error_message(strs, filename):
+    if len(re.findall(filename + r':(\d+)', strs)) > 0:
+        line_number = re.findall(filename + r':(\d+)', strs)
     else:
         line_number = 0
-    err_message = str
+    err_message = strs
     return err_message, line_number
 
 
-class TestCase():
+class TestCase:
     temp_path = ""
     ld_library_path = ""
     js_runtime_path = ""
@@ -57,12 +57,12 @@ class TestCase():
         self.abc_file_path = ""
         self.abc_file_path_temp = ""
 
-    def execute(self, arkruntime=False):
+    def execute(self, ark_runtime=False):
         if not self.is_test_case:
             return
-        if arkruntime:
-            with open(self.path, 'a') as fileAdded:
-                fileAdded.write('\rprint("TESTCASE SUCCESS");')
+        if ark_runtime:
+            with open(self.path, 'a') as file_added:
+                file_added.write('\rprint("TESTCASE SUCCESS");')
             self.__test_es2abc()
             if os.path.exists(self.abc_file_path):
                 os.remove(self.abc_file_path)
@@ -94,7 +94,6 @@ class TestCase():
             return True
         return False
 
-    # check if
     def check_declaration(self):
         if self.declaration == {}:
             self.detail_result = "parse test case declaration failed, maybe bad format."
@@ -162,8 +161,8 @@ class TestCase():
         process = subprocess.Popen(self.__get_es2abc_cmd(filename), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         out, err = process.communicate()
-        returncode = process.returncode
-        if returncode != 0:
+        return_code = process.returncode
+        if return_code != 0:
             err_msg, line = get_error_message(
                 out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore"), filename)
             self.detail_result = err_msg
@@ -195,9 +194,9 @@ class TestCase():
         process = subprocess.Popen(self.__get_tsc_cmd(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         out, err = process.communicate()
-        returncode = process.returncode
+        return_code = process.returncode
         if self.is_negative():
-            if returncode == 0:
+            if return_code == 0:
                 self.fail = True
                 self.detail_result = "No error found in negative case."
                 return
@@ -207,7 +206,7 @@ class TestCase():
             self.detail_result = "Error code not as expected."
             return
         # positive case
-        if returncode != 0:
+        if return_code != 0:
             self.detail_result = out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore")
             self.fail = True
             return
@@ -218,11 +217,11 @@ class TestCase():
         process = subprocess.Popen(self.__get_node_cmd(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         out, err = process.communicate()
-        returncode = process.returncode
+        return_code = process.returncode
         if self.is_current():
             if os.path.exists(self.target_js_path):
                 os.remove(self.target_js_path)
-        if returncode != 0:
+        if return_code != 0:
             err_msg, line = get_error_message(
                 out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore"), self.__get_js_basename())
             self.detail_result = err_msg
@@ -240,9 +239,9 @@ class TestCase():
         process = subprocess.Popen(self.__get_es2abc_cmd(self.path), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         out, err = process.communicate()
-        returncode = process.returncode
+        return_code = process.returncode
         if self.is_negative():
-            if returncode == 0:
+            if return_code == 0:
                 self.fail = True
                 return
             if self.__error_type() in out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore"):
@@ -251,7 +250,7 @@ class TestCase():
             self.detail_result = "Error type not as expected."
             return
         # positive case
-        if returncode != 0:
+        if return_code != 0:
             self.detail_result = out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore")
             self.fail = True
             return
@@ -259,8 +258,8 @@ class TestCase():
         process = subprocess.Popen(self._get_ark_js_cmd(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         out, err = process.communicate()
-        returncode = process.returncode
-        if returncode != 0:
+        return_code = process.returncode
+        if return_code != 0:
             err_msg, line = get_error_message(
                 out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore"),
                 os.path.basename(self.abc_file_path))
