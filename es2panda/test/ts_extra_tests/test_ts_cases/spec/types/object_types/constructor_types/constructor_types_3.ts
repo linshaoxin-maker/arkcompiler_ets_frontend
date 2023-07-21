@@ -22,31 +22,31 @@
 
 import { Assert } from '../../../../../suite/assert.js'
 
-interface Point {
-  x: number;
-  y: number;
+interface I1 {
+  a: string;
+  b: boolean;
 }
-interface PointConstructor {
-  new(x: number, y: number): Point;
+interface I2 {
+  new(a: string, b: boolean): I1;
 }
-class Point2 implements Point {
-  readonly x: number;
-  readonly y: number;
-  constructor(x: number, y: number) {
-    this.x = x;
-    this.y = y;
+class MyClass implements I1 {
+  readonly a: string;
+  readonly b: boolean;
+  constructor(a: string, b: boolean) {
+    this.a = a;
+    this.b = b;
   }
 }
-function newPoint(
-  pointConstructor: PointConstructor,
-  x: number,
-  y: number
-): Point {
-  return new pointConstructor(x, y);
+function fun(
+  funConstructor: I2,
+  a: string,
+  b: boolean
+): I1 {
+  return new funConstructor(a, b);
 }
-let point1: Point = new Point2(1, 2);
-Assert.equal(point1.x, 1);
-Assert.equal(point1.y, 2);
-let point: Point = newPoint(Point2, 2, 2);
-Assert.equal(point.x, 2);
-Assert.equal(point.y, 2);
+let x1: I1 = new MyClass("x1", true);
+Assert.equal(x1.a, "x1");
+Assert.equal(x1.b, true);
+let x2: I1 = fun(MyClass, "x2", true);
+Assert.equal(x2.a, "x2");
+Assert.equal(x2.b, true);

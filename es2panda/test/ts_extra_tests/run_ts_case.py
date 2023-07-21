@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #  Copyright (c) 2023 Huawei Device Co., Ltd.
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,7 +21,7 @@ from tool.test_helper import get_path_file, get_disable_list, is_disable_case
 from tool.testcfg import TestCase
 
 TEST_PATH = './'
-TEST_TMP_PATH = '/testTmp4/'
+TEST_TMP_PATH = './testTmp4/'
 TEMP_PATH = os.getcwd() + TEST_TMP_PATH
 
 if os.path.exists(TEMP_PATH):
