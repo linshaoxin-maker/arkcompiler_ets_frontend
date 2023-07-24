@@ -1441,6 +1441,9 @@ static bool EmitProgram(const std::string &output, int optLevel, std::string opt
     }
     std::string convertedFilePath = panda::os::file::File::GetExtendedFilePath(output);
 
+    panda::pandasm::AsmEmitter::MakeSlotNumberRecord(&prog);
+    panda::pandasm::AsmEmitter::MakeSlotNumberAnnotation(&prog);
+
 #ifdef ENABLE_BYTECODE_OPT
     if (g_optLevel != static_cast<int>(OptLevel::O_LEVEL0) || optLevel != static_cast<int>(OptLevel::O_LEVEL0)) {
         optLogLevel = (optLogLevel != "error") ? optLogLevel : g_optLogLevel;

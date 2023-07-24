@@ -15,6 +15,7 @@
 
 #include "emitter.h"
 
+#include <assembly-emitter.h>
 #include <binder/binder.h>
 #include <binder/scope.h>
 #include <binder/variable.h>
@@ -592,6 +593,8 @@ panda::pandasm::Program *Emitter::Finalize(bool dumpDebugInfo, util::PatchFix *p
     }
 
     auto *prog = prog_;
+    panda::pandasm::AsmEmitter::MakeSlotNumberRecord(prog);
+    panda::pandasm::AsmEmitter::MakeSlotNumberAnnotation(prog);
     prog_ = nullptr;
     return prog;
 }
