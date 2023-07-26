@@ -56,9 +56,13 @@ def parse_args():
     return arguments
 
 def run_command(cmd, execution_path):
-    print(" ".join(cmd) + " | execution_path: " + execution_path)
     proc = subprocess.Popen(cmd, cwd=execution_path)
-    proc.wait()
+    stdout, stderr = proc.communicate()
+    if stderr:
+        print("Gen abc failed")
+        print(" ".join(cmd) + " | execution_path: " + execution_path)
+        print(stderr)
+        exit(1)
 
 
 def gen_abc_info(input_arguments):
