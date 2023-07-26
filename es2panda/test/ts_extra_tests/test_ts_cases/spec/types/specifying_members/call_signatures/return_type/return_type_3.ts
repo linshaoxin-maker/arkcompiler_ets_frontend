@@ -14,8 +14,9 @@
  */
 /**---
  description: >
-    When a call signature with no return type annotation occurs in a context that has a function body , 
-    he return type is inferred from the function body.
+    When a call signature with no return type annotation occurs in a context that has a function body 
+    (specifically, a function implementation, a member function implementation, or a member accessor declaration), 
+    the return type is inferred from the function body.
  module: ESNext
  isCurrent: true
  ---*/

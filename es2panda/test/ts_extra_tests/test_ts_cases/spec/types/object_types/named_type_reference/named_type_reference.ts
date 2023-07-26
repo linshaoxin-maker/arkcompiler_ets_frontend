@@ -14,9 +14,9 @@
  */
 /**---
  description: >
-    Type references to class and interface types are classified as C1ect types.
+    Type references to class and interface types are classified as object types.
     Type references to generic class and interface types include type arguments that are substituted for the type parameters of the class
-    or interface to produce an actual C1ect type.
+    or interface to produce an actual object type.
  module: ESNext
  isCurrent: true
  ---*/
@@ -62,4 +62,4 @@ class C2<T> {
     };
 }
 let c2 = new C2<number>(1);
-Assert.equal(c2.getx(), 1)
+Assert.equal(c2.getx(), 1);

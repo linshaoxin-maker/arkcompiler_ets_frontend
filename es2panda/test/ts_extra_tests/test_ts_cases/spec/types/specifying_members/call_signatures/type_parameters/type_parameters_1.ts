@@ -27,10 +27,13 @@ function identity<T>(x: T): T {
 }
 let x: number = 1;
 Assert.equal(x, identity(x));
+let x2: "hello" = "hello";
+Assert.equal(identity(x2), "hello");
 function identity2<T, U>(x: T, y: U): T {
   return x;
 }
 Assert.equal(x, identity2(x, 1));
+Assert.equal(x2, identity2(x2, 1));
 function identity3<T, K extends keyof T>(obj: T, key: K) {
   return obj[key];
 }
@@ -41,3 +44,5 @@ function identity4<T>(arg: T[]): T[] {
 }
 let arg: number[] = [1, 2, 3];
 Assert.equal(arg, identity4(arg));
+let arg2: ["a", "b", "c"] = ["a", "b", "c"]
+Assert.equal(arg2, identity4(arg2));

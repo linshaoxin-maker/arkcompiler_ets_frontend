@@ -33,3 +33,14 @@ let name1 = "Anny";
 let animal = new Animal(name1);
 name1 = "Bob";
 Assert.notEqual(animal.fname, name1);
+let name2: "name2" = "name2";
+let animal2 = new Animal(name2);
+Assert.equal(name2, animal2.fname);
+const x: number = 3;
+function fun(a: number, c = 1, b = x) {
+  return a + c + b;
+}
+let y = 1;
+Assert.equal(y, 1);
+let z = fun(y);
+Assert.equal(z, 5);

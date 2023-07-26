@@ -14,7 +14,9 @@
  */
 /**---
  description: >
-    Every class and interface has a this-type that represents the actual type of instances of the class or interface within the declaration of the class or interface. The this-type is referenced using the keyword this in a type position. 
+    Every class and interface has a this-type that represents the actual type of instances of the class or interface
+    within the declaration of the class or interface. The this-type is referenced using the keyword this in a type
+    position.
     within instance methods and constructors of a class, the type of the expression this  is the this-type of the class.
  module: ESNext
  isCurrent: true

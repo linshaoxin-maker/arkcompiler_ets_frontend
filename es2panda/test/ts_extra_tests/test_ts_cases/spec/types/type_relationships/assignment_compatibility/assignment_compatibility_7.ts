@@ -23,24 +23,18 @@
 
 import {Assert} from '../../../../../suite/assert.js'
 
-interface T {
-    name: string
-    age: number
-    hobby: string
-}
 interface Foo {
     name: string
     age: number
 }
 interface Bar {
     hobby: string
+    name: string
 }
-type S = Foo & Bar
-let t: T;
+type S = Foo | Bar
 let s: S = {
     name: "S",
     age: 20,
     hobby: "drawing"
 }
-t = s
-Assert.equal(t, s);
+Assert.equal(s.name, 'S');

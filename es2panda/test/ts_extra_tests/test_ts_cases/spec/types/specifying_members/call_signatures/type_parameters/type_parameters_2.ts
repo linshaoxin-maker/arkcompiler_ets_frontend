@@ -27,6 +27,8 @@ function identity<T>(x: T): T {
   return x;
 }
 let x: number = 3;
+let x2: "world" = "world";
 Assert.equal(<number>identity(x), 3);
-let y = "string";
-Assert.equal(identity(y), "string");
+Assert.equal(<string>identity(x2), "world");
+let y: string = "string";
+Assert.equal(<string>identity(y), "string");
