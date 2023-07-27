@@ -77,6 +77,8 @@ def parse_and_execute(path, ark_runtime=False, skip_negative=True):
                 print(test_cases.path, test_cases.detail_result, sep='\t')
                 return True, True
             return True, False
+    else:
+        return False, False
 
 
 # create a parser object

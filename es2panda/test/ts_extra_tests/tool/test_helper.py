@@ -38,10 +38,31 @@ def read_declaration(path):
             if declaration_begin:
                 context += line
     return context
+    
+
+def is_root_dir(dir_path, file_or_dir, file_or_dir_results, limit_version):
+    rf = 'test_ts_cases'
+    root_folder = os.path.basename(dir_path)
+    if root_folder == rf:
+        # file_or_dir like: ['2.0', '2.1', '2.2', ... '4.9', 'spec']
+        for f_item in file_or_dir:
+            if limit_version is None:
+                file_or_dir_results = file_or_dir
+                break
+            else:
+                limit_version = float(limit_version)
+                try:
+                    f_num = float(f_item)
+                    if f_num <= limit_version:
+                        file_or_dir_results.append(f_item)
+                except Exception as e:
+                    print(e)
+                    continue
+        if limit_version is not None:
+            file_or_dir_results.append('spec')
 
 
 def get_path_file(dir_path, all_file_path=None, is_root=False, limit_version=None):
-    rf = 'test_ts_cases'
     if all_file_path is None:
         all_file_path = []
     file_or_dir = os.listdir(dir_path)
@@ -51,25 +72,7 @@ def get_path_file(dir_path, all_file_path=None, is_root=False, limit_version=Non
     else:
         is_root = False
     if is_root:
-        root_folder = os.path.basename(dir_path)
-        if root_folder == rf:
-            # file_or_dir like: ['2.0', '2.1', '2.2', ... '4.9', 'spec']
-            for f_item in file_or_dir:
-                if limit_version is None:
-                    file_or_dir_results = file_or_dir
-                    break
-                else:
-                    limit_version = float(limit_version)
-                    try:
-                        f_num = float(f_item)
-                        if f_num <= limit_version:
-                            file_or_dir_results.append(f_item)
-                    except Exception as e:
-                        print(e)
-                        continue
-            if limit_version is not None:
-                file_or_dir_results.append('spec')
-
+        is_root_dir(dir_path, file_or_dir, file_or_dir_results, limit_version)
     else:
         file_or_dir_results = file_or_dir
     for file_dir in file_or_dir_results:

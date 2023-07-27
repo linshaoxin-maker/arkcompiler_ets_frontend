@@ -25,8 +25,8 @@ from tool.test_helper import read_declaration
 STRICT_OFF = ['--strict', 'false']
 STRICT_ON = ['--strict', 'true']
 MODULE = ['--module']
-Decorator = ['--experimentalDecorators']
-strictNullChecks = ['--strictNullChecks']
+DECORATOR = ['--experimentalDecorators']
+STRICTNULLCHECKS = ['--strictNullChecks']
 
 
 def get_error_message(strs, filename):
@@ -49,7 +49,7 @@ class TestCase:
         self.path = path
         self.target_js_path = ""
         try:
-            data = yaml.load(read_declaration(path), yaml.SafeLoader)
+            data = yaml.safe_load(read_declaration(path))
         except:
             data = {}
         self.declaration = data
@@ -131,10 +131,10 @@ class TestCase:
             cmd.extend(MODULE)
             cmd.append('es2020')
         if self.experimental_decorators():
-            cmd.extend(Decorator)
+            cmd.extend(DECORATOR)
             cmd.append('true')
         if self.null_checks():
-            cmd.extend(strictNullChecks)
+            cmd.extend(STRICTNULLCHECKS)
             cmd.append('false')
         if self.is_current():
             cmd.append(self.path)
@@ -163,7 +163,7 @@ class TestCase:
     def create_abc(self, filename):
         process = subprocess.Popen(self.__get_es2abc_cmd(filename), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
-        out, err = process.communicate()
+        out, err = process.communicate(timeout=5000)
         return_code = process.returncode
         if return_code != 0:
             err_msg, line = get_error_message(
@@ -196,7 +196,7 @@ class TestCase:
     def __tsc_test(self):
         process = subprocess.Popen(self.__get_tsc_cmd(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
-        out, err = process.communicate()
+        out, err = process.communicate(timeout=5000)
         return_code = process.returncode
         if self.is_negative():
             if return_code == 0:
@@ -219,7 +219,7 @@ class TestCase:
         # run node command
         process = subprocess.Popen(self.__get_node_cmd(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
-        out, err = process.communicate()
+        out, err = process.communicate(timeout=5000)
         return_code = process.returncode
         if self.is_current():
             if os.path.exists(self.target_js_path):
@@ -241,7 +241,7 @@ class TestCase:
         # compiler to abc
         process = subprocess.Popen(self.__get_es2abc_cmd(self.path), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
-        out, err = process.communicate()
+        out, err = process.communicate(timeout=5000)
         return_code = process.returncode
         if self.is_negative():
             if return_code == 0:
@@ -260,7 +260,7 @@ class TestCase:
         # execute ark_js_vm
         process = subprocess.Popen(self._get_ark_js_cmd(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
-        out, err = process.communicate()
+        out, err = process.communicate(timeout=5000)
         return_code = process.returncode
         if return_code != 0:
             err_msg, line = get_error_message(
