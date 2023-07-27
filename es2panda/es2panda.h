@@ -94,6 +94,7 @@ struct CompilerOptions {
     bool bcVersion {false};
     bool bcMinVersion {false};
     std::unordered_map<std::string, std::string> cacheFiles;
+    static bool staticShowSource;
 };
 
 enum class ErrorType {
