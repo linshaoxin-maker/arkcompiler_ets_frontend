@@ -34,7 +34,7 @@ import {
   isIdentifier,
   isInterfaceDeclaration,
   isObjectLiteralExpression,
-  isTypeAliasDeclaration, 
+  isTypeAliasDeclaration,
   isVariableDeclaration,
   isVariableStatement,
   isElementAccessExpression,
