@@ -52,9 +52,9 @@ action("build_arkguard") {
     "src/utils/TypeUtils.ts",
   ]
 
-  script = "//arkcompiler/ets_frontend/arkguard/compile_arkguard.py"
+  script = "compile_arkguard.py"
   args = [
-    rebase_path("//arkcompiler/ets_frontend/arkguard"),
+    rebase_path(get_path_info("./", "abspath")),
     rebase_path("${target_out_dir}"),
   ]
 
