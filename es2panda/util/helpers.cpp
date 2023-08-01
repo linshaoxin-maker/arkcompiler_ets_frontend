@@ -630,7 +630,7 @@ SignedNumberLiteral Helpers::GetSignedNumberLiteral(const ir::Expression *expr)
     return SignedNumberLiteral::UNRECOGNIZED;
 }
 
-void Helpers::OptimizeProgram(panda::pandasm::Program *prog,  const std::string &inputFile)
+bool Helpers::OptimizeProgram(panda::pandasm::Program *prog, const std::string &inputFile, int targetApiVersion)
 {
     std::map<std::string, size_t> stat;
     std::map<std::string, size_t> *statp = &stat;
@@ -651,12 +651,15 @@ void Helpers::OptimizeProgram(panda::pandasm::Program *prog,  const std::string 
 #endif
     const std::string outputSuffix = ".unopt.abc";
     std::string tempOutput = panda::os::file::File::GetExtendedFilePath(inputFile + pid + outputSuffix);
-    if (panda::pandasm::AsmEmitter::Emit(tempOutput, *prog, statp, mapsp, true)) {
+    if (panda::pandasm::AsmEmitter::Emit(tempOutput, *prog, statp, mapsp, true, nullptr, targetApiVersion)) {
         panda::bytecodeopt::OptimizeBytecode(prog, mapsp, tempOutput, true, true);
+    } else {
+        return false;
     }
 
     std::remove(tempOutput.c_str());
 #endif
+    return true;
 }
 
 bool Helpers::ReadFileToBuffer(const std::string &file, std::stringstream &ss)

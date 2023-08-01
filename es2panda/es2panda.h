@@ -94,6 +94,9 @@ struct CompilerOptions {
     bool bcVersion {false};
     bool bcMinVersion {false};
     std::unordered_map<std::string, std::string> cacheFiles;
+    int targetApiVersion {0};
+    bool supportedApi {false};
+    bool targetArkVersion {false};
 };
 
 enum class ErrorType {

@@ -185,6 +185,21 @@ int Run(int argc, const char **argv)
         return 0;
     }
 
+    if (options->CompilerOptions().supportedApi) {
+        panda::panda_file::PrintSupportedApi();
+        return 0;
+    }
+
+    if (options->CompilerOptions().targetArkVersion) {
+        if (options->CompilerOptions().targetApiVersion != 0) {
+            panda::panda_file::PrintArkVersionOfTargetApi(options->TargetApiVersion());
+            return 0;
+        }
+
+        std::cout << panda::panda_file::GetVersion(panda::panda_file::version) << std::endl;
+        return 0;
+    }
+
     std::map<std::string, panda::es2panda::util::ProgramCache*> programsInfo;
     size_t expectedProgsCount = options->CompilerOptions().sourceFiles.size();
     panda::ArenaAllocator allocator(panda::SpaceType::SPACE_TYPE_COMPILER, nullptr, true);

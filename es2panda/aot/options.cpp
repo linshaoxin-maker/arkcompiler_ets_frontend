@@ -227,6 +227,7 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<std::string> opCacheFile("cache-file", "", "cache file for incremental compile");
     panda::PandArg<std::string> opNpmModuleEntryList("npm-module-entry-list", "", "entry list file for module compile");
     panda::PandArg<bool> opMergeAbc("merge-abc", false, "Compile as merge abc");
+    panda::PandArg<int> opTargetApiVersion("target-api-version", 0, "Specify the target api version for compilation");
 
     // patchfix && hotreload
     panda::PandArg<std::string> opDumpSymbolTable("dump-symbol-table", "", "dump symbol table to file");
@@ -237,8 +238,12 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<bool> opColdFix("cold-fix", false, "generate patch abc as cold-fix mode");
 
     // version
-    panda::PandArg<bool> bcVersion("bc-version", false, "Print ark bytecode version");
+    panda::PandArg<bool> bcVersion("bc-version", false, "Print ark bytecode maximum supported version");
     panda::PandArg<bool> bcMinVersion("bc-min-version", false, "Print ark bytecode minimum supported version");
+    panda::PandArg<bool> supportedApi("supported-api", false,
+                                      "Print supported apis and corresponding bytecode versions");
+    panda::PandArg<bool> targetArkVersion("target-ark-version", false,
+                                           "Print ark version of the corresponding target api");
 
     // tail arguments
     panda::PandArg<std::string> inputFile("input", "", "input file");
@@ -274,6 +279,7 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&opCacheFile);
     argparser_->Add(&opNpmModuleEntryList);
     argparser_->Add(&opMergeAbc);
+    argparser_->Add(&opTargetApiVersion);
 
     argparser_->Add(&opDumpSymbolTable);
     argparser_->Add(&opInputSymbolTable);
@@ -283,6 +289,8 @@ bool Options::Parse(int argc, const char **argv)
 
     argparser_->Add(&bcVersion);
     argparser_->Add(&bcMinVersion);
+    argparser_->Add(&supportedApi);
+    argparser_->Add(&targetArkVersion);
 
     argparser_->PushBackTail(&inputFile);
     argparser_->EnableTail();
@@ -290,9 +298,15 @@ bool Options::Parse(int argc, const char **argv)
 
     bool parseStatus = argparser_->Parse(argc, argv);
 
-    if (parseStatus && (bcVersion.GetValue() || bcMinVersion.GetValue())) {
+    targetApiVersion_ = opTargetApiVersion.GetValue();
+    compilerOptions_.targetApiVersion = targetApiVersion_;
+
+    if (parseStatus && (bcVersion.GetValue() || bcMinVersion.GetValue() ||
+                        supportedApi.GetValue() || targetArkVersion.GetValue())) {
         compilerOptions_.bcVersion = bcVersion.GetValue();
         compilerOptions_.bcMinVersion = bcMinVersion.GetValue();
+        compilerOptions_.supportedApi = supportedApi.GetValue();
+        compilerOptions_.targetArkVersion = targetArkVersion.GetValue();
         return true;
     }
 
