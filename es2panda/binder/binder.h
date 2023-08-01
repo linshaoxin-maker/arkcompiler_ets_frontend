@@ -210,6 +210,8 @@ private:
     void LookupIdentReference(ir::Identifier *ident);
     void ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode);
     void ResolveReferences(const ir::AstNode *parent);
+    void ResetParentForTransformedAtsNode(const ir::AstNode *parent, ir::AstNode *childNode);
+    void ResetParentForTransformedAtsNodes(const ir::AstNode *parent);
     void ValidateExportDecl(const ir::ExportNamedDeclaration *exportDecl);
     void StoreAndCheckSpecialFunctionName(std::string &internalNameStr, std::string recordName);
     void ReplaceConstReferenceWithInitialization(const ir::Identifier *ident, const Decl *decl);
