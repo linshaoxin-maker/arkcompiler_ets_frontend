@@ -25,6 +25,7 @@
 #include <typescript/checker.h>
 #include <util/commonUtil.h>
 #include <util/helpers.h>
+#include <util/timers.h>
 
 #include <iostream>
 
@@ -125,6 +126,7 @@ panda::pandasm::Program *Compiler::Compile(const SourceFile &input, const Compil
     }
 
     try {
+        es2panda::util::Timer::timerStart(util::EVENT_PARSE, fname);
         auto ast = parser_->Parse(input, options);
         ast.Binder()->SetProgram(&ast);
 
@@ -132,30 +134,18 @@ panda::pandasm::Program *Compiler::Compile(const SourceFile &input, const Compil
             std::cout << ast.Dump() << std::endl;
         }
 
-        if (ast.Extension() == ScriptExtension::TS && options.enableTypeCheck) {
-            ArenaAllocator localAllocator(SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
-            auto checker = std::make_unique<checker::Checker>(&localAllocator, ast.Binder());
-            checker->StartChecker();
-        }
-
-        if (ast.Extension() == ScriptExtension::TS) {
-            transformer_->Transform(&ast);
-            ast.Binder()->IdentifierAnalysis(binder::ResolveBindingFlags::TS_AFTER_TRANSFORM);
-            if (options.dumpTransformedAst) {
-                std::cout << ast.Dump() << std::endl;
-            }
-            if (options.checkTransformedAstStructure) {
-                transformer_->CheckTransformedAstStructure(&ast);
-            }
-        }
+        ProcessAstForTS(&ast, options);
 
         if (options.parseOnly) {
             return nullptr;
         }
+        es2panda::util::Timer::timerEnd(util::EVENT_PARSE, fname);
 
+        es2panda::util::Timer::timerStart(util::EVENT_COMPILE_TO_PROGRAM, fname);
         std::string debugInfoSourceFile = options.debugInfoSourceFile.empty() ?
                                           sourcefile : options.debugInfoSourceFile;
         auto *prog = compiler_->Compile(&ast, options, debugInfoSourceFile, pkgName);
+        es2panda::util::Timer::timerEnd(util::EVENT_COMPILE_TO_PROGRAM, fname);
 
         CleanPatchFixHelper(patchFixHelper);
         return prog;
@@ -275,6 +265,26 @@ panda::pandasm::Program *Compiler::CompileFile(const CompilerOptions &options, S
         throw err;
     }
     return program;
+}
+
+void Compiler::ProcessAstForTS(parser::Program *ast, const es2panda::CompilerOptions &options)
+{
+    if (ast->Extension() == ScriptExtension::TS && options.enableTypeCheck) {
+        ArenaAllocator localAllocator(SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
+        auto checker = std::make_unique<checker::Checker>(&localAllocator, ast->Binder());
+        checker->StartChecker();
+    }
+
+    if (ast->Extension() == ScriptExtension::TS) {
+        transformer_->Transform(ast);
+        ast->Binder()->IdentifierAnalysis(binder::ResolveBindingFlags::TS_AFTER_TRANSFORM);
+        if (options.dumpTransformedAst) {
+            std::cout << ast->Dump() << std::endl;
+        }
+        if (options.checkTransformedAstStructure) {
+            transformer_->CheckTransformedAstStructure(ast);
+        }
+    }
 }
 
 }  // namespace panda::es2panda

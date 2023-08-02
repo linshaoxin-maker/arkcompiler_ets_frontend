@@ -33,6 +33,7 @@
 
 #include "mergeProgram.h"
 #include "util/helpers.h"
+#include "util/timers.h"
 #include "utils/pandargs.h"
 
 namespace panda::es2panda::aot {
@@ -336,6 +337,8 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<std::string> opCacheFile("cache-file", "", "cache file for incremental compile");
     panda::PandArg<std::string> opNpmModuleEntryList("npm-module-entry-list", "", "entry list file for module compile");
     panda::PandArg<bool> opMergeAbc("merge-abc", false, "Compile as merge abc");
+    panda::PandArg<std::string> opPerfFile("perf-file", "perf.txt", "Specify the file path to dump time consuming data"\
+        " during compilation process, default to 'perf.txt' in the current directory");
     panda::PandArg<bool> opuseDefineSemantic("use-define-semantic", false, "Compile ts class fields "\
         "in accordance with ECMAScript2022");
 
@@ -413,6 +416,7 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&opCacheFile);
     argparser_->Add(&opNpmModuleEntryList);
     argparser_->Add(&opMergeAbc);
+    argparser_->Add(&opPerfFile);
     argparser_->Add(&opuseDefineSemantic);
     argparser_->Add(&opBranchElimination);
     argparser_->Add(&opOptTryCatchFunc);
@@ -592,6 +596,12 @@ bool Options::Parse(int argc, const char **argv)
     if (opSizePctStat.GetValue()) {
         options_ |= OptionFlags::SIZE_PCT_STAT;
     }
+
+    perfFile_ = "";
+    if (opPerfFile.WasSet()) {
+        perfFile_ = opPerfFile.GetValue().empty() ? opPerfFile.GetDefaultValue() : opPerfFile.GetValue();
+    }
+    es2panda::util::Timer::InitializeTimer(perfFile_);
 
     compilerOptions_.recordSource = opRecordSource.GetValue();
     compilerOptions_.enableAbcInput = opEnableAbcInput.GetValue();
