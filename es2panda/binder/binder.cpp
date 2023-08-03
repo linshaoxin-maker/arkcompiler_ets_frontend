@@ -572,6 +572,10 @@ void Binder::BuildClassDefinition(ir::ClassDefinition *classDef)
         ResolveReference(classDef, stmt);
     }
 
+    if (extension_ == ScriptExtension::TS) {
+        ResetParentForTransformedAtsNode(classDef, classDef->Ctor());
+    }
+
     for (auto *iter : classDef->IndexSignatures()) {
         ResolveReference(classDef, iter);
     }
@@ -804,6 +808,17 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
 void Binder::ResolveReferences(const ir::AstNode *parent)
 {
     parent->Iterate([this, parent](auto *childNode) { ResolveReference(parent, childNode); });
+}
+
+void Binder::ResetParentForTransformedAtsNodes(const ir::AstNode *parent)
+{
+    parent->Iterate([this, parent](auto *childNode) { ResetParentForTransformedAtsNode(parent, childNode); });
+}
+
+void Binder::ResetParentForTransformedAtsNode(const ir::AstNode *parent, ir::AstNode *childNode)
+{
+    childNode->SetParent(parent);
+    ResetParentForTransformedAtsNodes(childNode);
 }
 
 void Binder::AddMandatoryParam(const std::string_view &name)
