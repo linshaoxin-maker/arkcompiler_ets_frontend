@@ -572,7 +572,7 @@ private:
             if (param->IsAssignmentPattern()) {
                 param = param->AsAssignmentPattern()->Left();
             }
-            
+
             // Identifier / SpreadElement / RestElement / ArrayExpression / ObjectExpression
             auto identifier = extractor_->GetIdentifierFromExpression(param);
             if (identifier != nullptr) {

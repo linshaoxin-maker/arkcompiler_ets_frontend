@@ -1693,7 +1693,8 @@ void PandaGen::LoadExternalModuleVariable(const ir::AstNode *node, const binder:
     auto index = variable->Index();
     if (Context()->IsTypeExtractorEnabled()) {
         const ir::Identifier *identifier = nullptr;
-        const ir::AstNode *declareNode = Context()->TypeExtractor()->GetDeclNodeFromIdentifier(node->AsIdentifier(), &identifier);
+        const ir::AstNode *declareNode =
+            Context()->TypeExtractor()->GetDeclNodeFromIdentifier(node->AsIdentifier(), &identifier);
         int64_t typeIndex = Context()->TypeRecorder()->GetNodeTypeIndex(declareNode);
         if (typeIndex != extractor::TypeRecorder::PRIMITIVETYPE_ANY) {
             index <= util::Helpers::MAX_INT8 ? ra_.EmitWithType<Ldexternalmodulevar>(node, typeIndex, index) :

@@ -1282,7 +1282,8 @@ class TypeExtractorRunner(Runner):
             if directory.startswith("testcases_with_assert") or directory.startswith("testcases_with_running"):
                 if (self.ld_library_path == "" or self.ark_aot_compiler == ""):
                     break
-                test = TypeExtractorWithAOTTest(f, flags, directory.startswith("testcases_with_running"), directory.endswith("projects"))
+                test = TypeExtractorWithAOTTest(f, flags, directory.startswith("testcases_with_running"),
+                                                directory.endswith("projects"))
                 self.tests.append(test)
             else:
                 test = TypeExtractorTest(f, flags, is_dts_test)
