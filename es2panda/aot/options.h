@@ -131,9 +131,9 @@ public:
     bool CollectInputFilesFromFileDirectory(const std::string &input, const std::string &extension);
     void ParseCacheFileOption(const std::string &cacheInput);
 
-    bool SourceCode() const
+    bool RecordSource() const
     {
-        return sourceCode_;
+        return recordSource_;
     }
 
 private:
@@ -148,7 +148,7 @@ private:
     std::string recordName_;
     std::string errorMsg_;
     std::string compilerProtoOutput_;
-    bool sourceCode_;
+    bool recordSource_;
     int optLevel_ {0};
     int functionThreadCount_ {0};
     int fileThreadCount_ {0};
