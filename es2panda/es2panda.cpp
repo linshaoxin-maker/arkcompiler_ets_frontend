@@ -31,6 +31,7 @@ namespace panda::es2panda {
 // Compiler
 
 constexpr size_t DEFAULT_THREAD_COUNT = 2;
+bool CompilerOptions::staticShowSource = false;
 
 Compiler::Compiler(ScriptExtension ext) : Compiler(ext, DEFAULT_THREAD_COUNT) {}
 
