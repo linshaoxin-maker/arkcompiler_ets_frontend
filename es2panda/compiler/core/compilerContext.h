@@ -46,6 +46,10 @@ public:
     CompilerContext(binder::Binder *binder, bool isDebug, bool isDebuggerEvaluateExpressionMode,
                     bool isMergeAbc, bool isTypeExtractorEnabled, bool isJsonInputFile, std::string sourceFile,
                     std::string pkgName, util::StringView recordName, util::PatchFix *patchFixHelper);
+    CompilerContext(binder::Binder *binder, bool isDebug, bool isDebuggerEvaluateExpressionMode,
+                    bool isMergeAbc, bool isTypeExtractorEnabled, bool isJsonInputFile, bool isRecordCode, std::string sourceFile,
+                    std::string pkgName, util::StringView recordName, util::PatchFix *patchFixHelper);
+
     NO_COPY_SEMANTIC(CompilerContext);
     NO_MOVE_SEMANTIC(CompilerContext);
     ~CompilerContext() = default;
@@ -134,6 +138,11 @@ public:
         return isJsonInputFile_;
     }
 
+    bool IsRecordCode() const
+    {
+        return isRecordCode_; 
+    }
+
 private:
     binder::Binder *binder_;
     int32_t literalBufferIdx_ {0};
@@ -145,6 +154,7 @@ private:
     bool isTypeExtractorEnabled_;
     // true when input file is json file
     bool isJsonInputFile_;
+    bool isRecordCode_;
     extractor::TypeRecorder *recorder_ {};
     extractor::TypeExtractor *extractor_ {};
     std::string sourceFile_;

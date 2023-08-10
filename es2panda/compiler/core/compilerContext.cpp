@@ -31,6 +31,17 @@ CompilerContext::CompilerContext(binder::Binder *binder, bool isDebug, bool isDe
 {
 }
 
+CompilerContext::CompilerContext(binder::Binder *binder, bool isDebug, bool isDebuggerEvaluateExpressionMode,
+                                 bool isMergeAbc, bool isTypeExtractorEnabled, bool isJsonInputFile, bool isRecordCode,
+                                 std::string sourceFile, std::string pkgName, util::StringView recordName,
+                                 util::PatchFix *patchFixHelper)
+    : binder_(binder), isDebug_(isDebug), isDebuggerEvaluateExpressionMode_(isDebuggerEvaluateExpressionMode),
+      isMergeAbc_(isMergeAbc), isTypeExtractorEnabled_(isTypeExtractorEnabled), isJsonInputFile_(isJsonInputFile),
+      isRecordCode_(isRecordCode), sourceFile_(sourceFile), pkgName_(pkgName), recordName_(recordName), patchFixHelper_(patchFixHelper),
+      emitter_(std::make_unique<class Emitter>(this))
+{
+}
+
 void CompilerContext::SetTypeRecorder(extractor::TypeRecorder *recorder)
 {
     ASSERT(emitter_ != nullptr);
