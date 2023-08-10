@@ -247,7 +247,7 @@ void FunctionEmitter::GenFunctionSource()
         return;
     }
 
-    if (panda::es2panda::CompilerOptions::staticShowSource || (static_cast<const ir::ScriptFunction *>(pg_->RootNode()))->ShowSource()) {
+    if (pg_->Context()->IsRecordCode() || (static_cast<const ir::ScriptFunction *>(pg_->RootNode()))->ShowSource()) {
         func_->source_code = SourceCode().Mutf8();
         return;
     }

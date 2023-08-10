@@ -84,6 +84,7 @@ struct CompilerOptions {
     bool mergeAbc {false};
     bool typeExtractor {false};
     bool typeDtsBuiltin {false};
+    bool recordSource {false};
     int fileThreadCount {0};
     int functionThreadCount {0};
     int optLevel {0};
@@ -94,7 +95,6 @@ struct CompilerOptions {
     bool bcVersion {false};
     bool bcMinVersion {false};
     std::unordered_map<std::string, std::string> cacheFiles;
-    static bool staticShowSource;
 };
 
 enum class ErrorType {

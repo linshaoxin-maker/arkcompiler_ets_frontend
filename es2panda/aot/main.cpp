@@ -176,7 +176,6 @@ int Run(int argc, const char **argv)
         std::cerr << options->ErrorMsg() << std::endl;
         return 1;
     }
-    CompilerOptions::staticShowSource = options->RecordSource();
 
     if (options->CompilerOptions().bcVersion || options->CompilerOptions().bcMinVersion) {
         std::string version = options->CompilerOptions().bcVersion ?

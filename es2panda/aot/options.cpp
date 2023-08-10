@@ -435,7 +435,7 @@ bool Options::Parse(int argc, const char **argv)
         options_ |= OptionFlags::SIZE_STAT;
     }
 
-    recordSource_ = opRecordSource.GetValue();
+    compilerOptions_.recordSource = opRecordSource.GetValue();
     compilerOptions_.dumpAsm = opDumpAssembly.GetValue();
     compilerOptions_.dumpAst = opDumpAst.GetValue();
     compilerOptions_.dumpTransformedAst = opDumpTransformedAst.GetValue();

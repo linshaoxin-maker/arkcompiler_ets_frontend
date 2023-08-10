@@ -131,11 +131,6 @@ public:
     bool CollectInputFilesFromFileDirectory(const std::string &input, const std::string &extension);
     void ParseCacheFileOption(const std::string &cacheInput);
 
-    bool RecordSource() const
-    {
-        return recordSource_;
-    }
-
 private:
     es2panda::CompilerOptions compilerOptions_ {};
     es2panda::parser::ScriptKind scriptKind_ {es2panda::parser::ScriptKind::SCRIPT};
@@ -148,7 +143,6 @@ private:
     std::string recordName_;
     std::string errorMsg_;
     std::string compilerProtoOutput_;
-    bool recordSource_;
     int optLevel_ {0};
     int functionThreadCount_ {0};
     int fileThreadCount_ {0};
