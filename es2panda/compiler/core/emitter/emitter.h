@@ -92,6 +92,7 @@ private:
     void GenLiteralBuffers();
     void GenBufferLiterals(const LiteralBuffer *buff);
     void GenFunctionSource();
+    bool NotHoistAndDecl(const IRNode *ins, const binder::Variable *variable);
 
     const PandaGen *pg_;
     panda::pandasm::Function *func_ {};
