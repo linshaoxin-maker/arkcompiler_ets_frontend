@@ -99,4 +99,20 @@ SourceLocation LineIndex::GetLocation(SourcePosition pos) noexcept
     return SourceLocation(line + 1, col + 1);
 }
 
+SourceLocation LineIndex::GetLocation(size_t index) noexcept
+{
+    size_t line = 0;
+    size_t col = 0;
+    ASSERT(index < entrys_.back().lineStart);
+    for (size_t pos = 0; pos < entrys_.size(); ++pos) {
+        if (index > entrys_[pos].lineStart) {
+            ++line;
+            continue;
+        }
+        col = index - entrys_[pos - 1].lineStart + 1;
+        break;
+    }
+
+    return SourceLocation(line, col);
+}
 }  // namespace panda::es2panda::lexer

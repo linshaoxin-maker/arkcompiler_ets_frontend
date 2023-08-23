@@ -104,6 +104,7 @@ public:
     ~LineIndex() = default;
 
     SourceLocation GetLocation(SourcePosition pos) noexcept;
+    SourceLocation GetLocation(size_t index) noexcept;
 
 private:
     std::vector<OffsetEntry> entrys_;
