@@ -84,13 +84,13 @@ void PatchFix::ValidateModuleInfo(const std::string &recordName,
     std::vector<panda::pandasm::LiteralArray::Literal> &moduleBuffer)
 {
     auto it = originModuleInfo_->find(recordName);
-    if (it == originModuleInfo_->end()) {
+    if (!IsHotReload() && it == originModuleInfo_->end()) {
         std::cerr << "[Patch] Found new import/export expression in " << recordName << ", not supported!" << std::endl;
         patchError_ = true;
         return;
     }
 
-    if (Helpers::GetHashString(ConvertLiteralToString(moduleBuffer)) != it->second) {
+    if (!IsHotReload() && Helpers::GetHashString(ConvertLiteralToString(moduleBuffer)) != it->second) {
         std::cerr << "[Patch] Found import/export expression changed in " << recordName << ", not supported!" <<
             std::endl;
         patchError_ = true;
@@ -109,14 +109,14 @@ void PatchFix::DumpJsonContentRecInfo(const std::string &recordName, const std::
 void PatchFix::ValidateJsonContentRecInfo(const std::string &recordName, const std::string &jsonFileContent)
 {
     auto it = originModuleInfo_->find(recordName);
-    if (it == originModuleInfo_->end()) {
+    if (!IsHotReload() && it == originModuleInfo_->end()) {
         std::cerr << "[Patch] Found new import/require json file expression in " << recordName <<
             ", not supported!" << std::endl;
         patchError_ = true;
         return;
     }
 
-    if (Helpers::GetHashString(jsonFileContent) != it->second) {
+    if (!IsHotReload() && Helpers::GetHashString(jsonFileContent) != it->second) {
         std::cerr << "[Patch] Found imported/required json file content changed in " << recordName <<
             ", not supported!" << std::endl;
         patchError_ = true;
@@ -293,6 +293,13 @@ uint32_t PatchFix::GetSlotIdFromSymbolTable(const std::string &variableName)
     return UINT32_MAX;
 }
 
+uint32_t PatchFix::GetEnvSizeOfFuncMain0()
+{
+    auto functionIter = originFunctionInfo_->find(funcMain0_);
+    ASSERT(functionIter != originFunctionInfo_->end());
+    return functionIter->second.lexenv.size();
+}
+
 uint32_t PatchFix::GetPatchLexicalIdx(const std::string &variableName)
 {
     ASSERT(topScopeLexEnvs_.count(variableName));
@@ -457,7 +464,7 @@ bool PatchFix::CompareLexenv(const std::string &funcName, const compiler::PandaG
     auto &lexicalVarNameAndTypes = pg->TopScope()->GetLexicalVarNameAndTypes();
     auto &lexenv = bytecodeInfo.lexenv;
     if (funcName != funcMain0_) {
-        if (lexenv.size() != lexicalVarNameAndTypes.size()) {
+        if (!IsHotReload() && lexenv.size() != lexicalVarNameAndTypes.size()) {
             std::cerr << "[Patch] Found lexical variable added or removed in " << funcName << ", not supported!"
                 << std::endl;
             patchError_ = true;
@@ -466,7 +473,7 @@ bool PatchFix::CompareLexenv(const std::string &funcName, const compiler::PandaG
         for (auto &variable: lexicalVarNameAndTypes) {
             auto varSlot = variable.first;
             auto lexenvIter = lexenv.find(varSlot);
-            if (lexenvIter == lexenv.end()) {
+            if (!IsHotReload() && lexenvIter == lexenv.end()) {
                 std::cerr << "[Patch] Found new lexical variable added in function " << funcName << ", not supported!"
                     << std::endl;
                 patchError_ = true;
@@ -474,8 +481,8 @@ bool PatchFix::CompareLexenv(const std::string &funcName, const compiler::PandaG
             }
 
             auto &lexInfo = lexenvIter->second;
-            if (!IsColdFix() && (std::string(variable.second.first) != lexInfo.first ||
-                                 variable.second.second != lexInfo.second)) {
+            if (IsHotFix() && (std::string(variable.second.first) != lexInfo.first ||
+                               variable.second.second != lexInfo.second)) {
                 std::cerr << "[Patch] Found lexical variable changed in function " << funcName << ", not supported!"
                     << std::endl;
                 patchError_ = true;
@@ -493,15 +500,10 @@ bool PatchFix::CompareClassHash(std::vector<std::pair<std::string, std::string>>
     for (size_t i = 0; i < hashList.size() - 1; ++i) {
         auto &className = hashList[i].first;
         auto classIter = classInfo.find(className);
-        if (classIter != classInfo.end() && classIter->second != hashList[i].second) {
+        if (!IsHotReload() && classIter != classInfo.end() && classIter->second != hashList[i].second) {
             if (IsColdFix()) {
                 modifiedClassNames_.insert(className);
                 continue;
-            } else if (IsHotReload()) {
-                std::cerr << "[Patch] Found class " << hashList[i].first << " changed, not supported! If " <<
-                    hashList[i].first << " is not changed and you are changing UI Component, please only " <<
-                    "change one Component at a time and make sure the Component is placed at the bottom " <<
-                    "of the file." << std::endl;
             } else {
                 ASSERT(IsHotFix());
                 std::cerr << "[Patch] Found class " << hashList[i].first << " changed, not supported!" << std::endl;

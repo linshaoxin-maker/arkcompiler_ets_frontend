@@ -390,6 +390,11 @@ public:
         return (flags_ & flag) != 0;
     }
 
+    void RestoreFuncMain0LexEnv(uint32_t slotSize)
+    {
+        slotIndex_ = slotSize;
+    }
+
     uint32_t NextSlot()
     {
         return slotIndex_++;
