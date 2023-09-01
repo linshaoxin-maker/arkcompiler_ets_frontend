@@ -54,6 +54,8 @@ void LocalVariable::SetLexical(Scope *scope, util::PatchFix *patchFixHelper)
         slot = patchFixHelper->GetSlotIdFromSymbolTable(std::string(name));
         if (patchFixHelper->IsPatchVar(slot)) {
             patchFixHelper->AllocSlotfromPatchEnv(std::string(name));
+        } else {
+            varScope->RestoreFuncMain0LexEnv(patchFixHelper->GetEnvSizeOfFuncMain0());
         }
     } else {
         slot = varScope->NextSlot();

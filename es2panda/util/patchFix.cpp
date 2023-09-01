@@ -293,6 +293,13 @@ uint32_t PatchFix::GetSlotIdFromSymbolTable(const std::string &variableName)
     return UINT32_MAX;
 }
 
+uint32_t PatchFix::GetEnvSizeOfFuncMain0()
+{
+    auto functionIter = originFunctionInfo_->find(funcMain0_);
+    ASSERT(functionIter != originFunctionInfo_->end());
+    return functionIter->second.lexenv.size();
+}
+
 uint32_t PatchFix::GetPatchLexicalIdx(const std::string &variableName)
 {
     ASSERT(topScopeLexEnvs_.count(variableName));
@@ -497,11 +504,6 @@ bool PatchFix::CompareClassHash(std::vector<std::pair<std::string, std::string>>
             if (IsColdFix()) {
                 modifiedClassNames_.insert(className);
                 continue;
-            } else if (IsHotReload()) {
-                std::cerr << "[Patch] Found class " << hashList[i].first << " changed, not supported! If " <<
-                    hashList[i].first << " is not changed and you are changing UI Component, please only " <<
-                    "change one Component at a time and make sure the Component is placed at the bottom " <<
-                    "of the file." << std::endl;
             } else {
                 ASSERT(IsHotFix());
                 std::cerr << "[Patch] Found class " << hashList[i].first << " changed, not supported!" << std::endl;
