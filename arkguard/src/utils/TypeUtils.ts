@@ -19,7 +19,7 @@ import {
   createProgram,
   createSourceFile,
   ScriptTarget,
-} from 'typescript';
+} from "ohos-typescript";
 
 import type {
   CompilerHost,
@@ -28,7 +28,7 @@ import type {
   Program,
   SourceFile,
   TypeChecker,
-} from 'typescript';
+} from "ohos-typescript";
 
 import path from 'path';
 

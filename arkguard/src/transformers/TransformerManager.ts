@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import type {Node, TransformerFactory} from 'typescript';
+import type {Node, TransformerFactory} from "ohos-typescript";
 import {lstatSync, readdirSync} from 'fs';
 import {join, resolve} from 'path';
 

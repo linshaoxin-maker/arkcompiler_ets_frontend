@@ -29,7 +29,7 @@ import {
   setParentRecursive,
   visitEachChild,
   isStringLiteral
-} from 'typescript';
+} from "ohos-typescript";
 
 import type {
   ComputedPropertyName,
@@ -43,7 +43,7 @@ import type {
   ClassExpression,
   StructDeclaration,
   PropertyName
-} from 'typescript';
+} from "ohos-typescript";
 
 import type {IOptions} from '../../configs/IOptions';
 import type {INameObfuscationOption} from '../../configs/INameObfuscationOption';

@@ -19,7 +19,7 @@ import {
   ScriptTarget,
   transform,
   createObfTextSingleLineWriter,
-} from 'typescript';
+} from "ohos-typescript";
 
 import type {
   CompilerOptions,
@@ -32,7 +32,7 @@ import type {
   SourceMapGenerator,
   TransformationResult,
   TransformerFactory,
-} from 'typescript';
+} from "ohos-typescript";
 
 import * as fs from 'fs';
 import path from 'path';

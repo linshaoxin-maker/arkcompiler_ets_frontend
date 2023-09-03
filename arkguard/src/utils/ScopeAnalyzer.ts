@@ -22,7 +22,7 @@ import {
   isIdentifier,
   isMethodDeclaration,
   SyntaxKind
-} from 'typescript';
+} from "ohos-typescript";
 
 import type {
   BreakOrContinueStatement,
@@ -50,7 +50,7 @@ import type {
   TypeAliasDeclaration,
   TypeChecker,
   TypeElement
-} from 'typescript';
+} from "ohos-typescript";
 
 import {NodeUtils} from './NodeUtils';
 import {isViewPUBasedClass} from './OhsUtil';

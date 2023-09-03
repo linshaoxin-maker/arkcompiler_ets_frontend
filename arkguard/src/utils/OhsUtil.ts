@@ -33,7 +33,7 @@ import {
   SyntaxKind,
   isExpressionStatement,
   isClassExpression,
-} from 'typescript';
+} from "ohos-typescript";
 
 import type {
   ClassDeclaration,
@@ -50,7 +50,7 @@ import type {
   Statement,
   StructDeclaration,
   TypeAliasDeclaration,
-} from 'typescript';
+} from "ohos-typescript";
 
 import {OhPackType} from './TransformUtil';
 

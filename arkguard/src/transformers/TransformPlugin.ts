@@ -14,7 +14,7 @@
  */
 
 import type {IOptions} from '../configs/IOptions';
-import type {Node, TransformerFactory} from 'typescript';
+import type {Node, TransformerFactory} from "ohos-typescript";
 
 export interface TransformPlugin {
   name: string;

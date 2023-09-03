@@ -17,7 +17,7 @@ import type {
   ModifiersArray,
   Node,
   SourceFile
-} from 'typescript';
+} from "ohos-typescript";
 
 import {
   createSourceFile,
@@ -42,7 +42,7 @@ import {
   isStringLiteral,
   ScriptTarget,
   SyntaxKind,
-} from 'typescript';
+} from "ohos-typescript";
 
 import fs from 'fs';
 import path from 'path';

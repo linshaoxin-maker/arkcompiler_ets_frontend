@@ -16,7 +16,7 @@
 import {
   createCompilerHost,
   createSourceMapGenerator,
-} from 'typescript';
+} from "ohos-typescript";
 
 import type {
   CompilerHost,
@@ -24,7 +24,7 @@ import type {
   EmitHost,
   SourceMapGenerator,
   SourceMapGeneratorOptions,
-} from 'typescript';
+} from "ohos-typescript";
 
 /**
  * create sourcemap generator use api of typescript
