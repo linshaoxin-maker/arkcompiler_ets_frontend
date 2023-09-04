@@ -15,7 +15,7 @@
 
 import {before} from 'mocha';
 import {assert} from 'chai';
-import {createSourceFile, ScriptTarget, SourceFile} from 'typescript';
+import {createSourceFile, ScriptTarget, SourceFile} from 'ohos-typescript';
 
 import {collectExistNames, OhPackType} from '../../../src/utils/TransformUtil';
 import {findOhImportStatement} from '../../../src/utils/OhsUtil';

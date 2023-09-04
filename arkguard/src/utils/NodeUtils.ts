@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import type {Expression, Node, ObjectBindingPattern} from 'typescript';
+import type {Expression, Node, ObjectBindingPattern} from "ohos-typescript";
 import {
   isBindingElement,
   isCallExpression,
@@ -33,7 +33,7 @@ import {
   isQualifiedName,
   isSetAccessor,
   isVariableDeclaration
-} from 'typescript';
+} from "ohos-typescript";
 
 export class NodeUtils {
   public static isPropertyDeclarationNode(node: Node): boolean {

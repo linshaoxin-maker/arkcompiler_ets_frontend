@@ -20,7 +20,7 @@ import {
   isShorthandPropertyAssignment,
   setParentRecursive,
   visitEachChild
-} from 'typescript';
+} from "ohos-typescript";
 
 import type {
   BindingElement,
@@ -29,7 +29,7 @@ import type {
   TransformationContext,
   Transformer,
   TransformerFactory
-} from 'typescript';
+} from "ohos-typescript";
 
 import type {INameObfuscationOption} from '../../configs/INameObfuscationOption';
 import type {TransformPlugin} from '../TransformPlugin';

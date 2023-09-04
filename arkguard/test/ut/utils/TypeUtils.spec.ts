@@ -15,7 +15,7 @@
 
 import {assert} from 'chai';
 import {before, describe} from 'mocha';
-import {createSourceFile, ScriptTarget, SourceFile} from 'typescript';
+import {createSourceFile, ScriptTarget, SourceFile} from 'ohos-typescript';
 
 import {TypeUtils} from '../../../src/utils/TypeUtils';
 

@@ -21,7 +21,7 @@ import {
   isIdentifier,
   SyntaxKind,
   visitEachChild
-} from 'typescript';
+} from "ohos-typescript";
 
 import type {
   CommentRange,
@@ -29,7 +29,7 @@ import type {
   Node,
   SourceFile,
   TransformationContext 
-} from 'typescript';
+} from "ohos-typescript";
 
 /**
  * collect exist identifier names in current source file

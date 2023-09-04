@@ -24,7 +24,7 @@ import {
   isSourceFile,
   setParentRecursive,
   visitEachChild
-} from 'typescript';
+} from "ohos-typescript";
 
 import type {
   Block,
@@ -36,7 +36,7 @@ import type {
   TransformationContext,
   Transformer,
   TransformerFactory
-} from 'typescript';
+} from "ohos-typescript";
 
 import type {IOptions} from '../../configs/IOptions';
 import type {TransformPlugin} from '../TransformPlugin';

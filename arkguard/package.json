@@ -1,6 +1,6 @@
 {
   "name": "arkguard",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An obfuscator tools for open harmony apps.",
   "bin": {
     "arkguard": "bin/secharmony"
@@ -9,10 +9,10 @@
   "types": "lib/ArkObfuscator.d.ts",
   "scripts": {
     "clean": "rm -rf lib/*",
-    "build": "npm run clean && node node_modules/typescript/lib/tsc.js",
+    "build": "npm run clean && node node_modules/ohos-typescript/lib/tsc.js",
     "test": "npm run test:ut && npm run test:grammar",
-    "test:ut": "node ./node_modules/mocha/bin/mocha --require ts-node/register ./test/ut/**/*.ts",
-    "test:grammar": "rm -rf test/local && node --loader=ts-node/esm ./src/cli/SecHarmony.ts ./test/grammar --config-path ./scripts/grammarTestConfig.json && node ./scripts/grammarTestScript.js"
+    "test:ut": "TS_NODE_COMPILER=ohos-typescript node ./node_modules/mocha/bin/mocha --require ts-node/register ./test/ut/**/*.ts",
+    "test:grammar": "rm -rf test/local && TS_NODE_COMPILER=ohos-typescript node --loader=ts-node/esm ./src/cli/SecHarmony.ts ./test/grammar --config-path ./scripts/grammarTestConfig.json && node ./scripts/grammarTestScript.js"
   },
   "repository": {
     "type": "git",

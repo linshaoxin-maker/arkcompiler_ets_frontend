@@ -6,7 +6,7 @@ const testDirectory = path.resolve('./test/local');
 
 function runTest(filePath) {
   try {
-    const command = `node ./node_modules/ts-node/dist/bin.js ${filePath}`;
+    const command = `TS_NODE_COMPILER=ohos-typescript node ./node_modules/ts-node/dist/bin.js ${filePath}`;
     execSync(command);
     return true;
   } catch (error) {

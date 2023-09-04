@@ -24,7 +24,7 @@ import {
   SyntaxKind,
   visitEachChild,
   isStringLiteral,
-} from 'typescript';
+} from "ohos-typescript";
 
 import type {
   ExpressionStatement,
@@ -40,7 +40,7 @@ import type {
   SourceFile,
   Block,
   Expression
-} from 'typescript';
+} from "ohos-typescript";
 
 import type {IOptions} from '../../configs/IOptions';
 import type {TransformPlugin} from '../TransformPlugin';

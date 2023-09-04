@@ -22,7 +22,7 @@ import {
   isSourceFile,
   setParentRecursive,
   visitEachChild,
-} from 'typescript';
+} from "ohos-typescript";
 
 import type {
   Identifier,
@@ -33,7 +33,7 @@ import type {
   Transformer,
   TransformerFactory,
   TypeChecker
-} from 'typescript';
+} from "ohos-typescript";
 
 import {
   createScopeManager,
