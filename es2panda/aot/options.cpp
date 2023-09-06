@@ -334,6 +334,7 @@ bool Options::Parse(int argc, const char **argv)
     }
 
     if (opModule.GetValue()) {
+        opMergeAbc = opModule.GetValue();
         scriptKind_ = es2panda::parser::ScriptKind::MODULE;
     } else if (opCommonjs.GetValue()) {
         scriptKind_ = es2panda::parser::ScriptKind::COMMONJS;
