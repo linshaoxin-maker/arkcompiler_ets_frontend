@@ -115,6 +115,11 @@ public:
         return HasFlag(VariableFlags::LEXICAL_BOUND);
     }
 
+    bool IsHoistVar() const
+    {
+        return flags_ == VariableFlags::HOIST_VAR;
+    }
+
     const util::StringView &Name() const;
     virtual void SetLexical(Scope *scope, util::PatchFix *patchFixHelper = nullptr) = 0;
 

@@ -250,7 +250,20 @@ void FunctionEmitter::GenFunctionSource()
     if (pg_->Context()->IsRecordSource() || (static_cast<const ir::ScriptFunction *>(pg_->RootNode()))->ShowSource()) {
         func_->source_code = SourceCode().Mutf8();
     }
-    
+}
+
+bool FunctionEmitter::NotHoistAndDecl(const IRNode *ins, const binder::Variable *variable)
+{
+    if (variable->IsHoistVar()) {
+        return false;
+    } else {
+        if (ins->Node() == nullptr || variable->Declaration() == nullptr ||
+            variable->Declaration()->Node() == nullptr) {
+            return false;
+        } else {
+            return ins->Node() == variable->Declaration()->Node();
+        }
+    }
 }
 
 void FunctionEmitter::GenScopeVariableInfo(const binder::Scope *scope)
@@ -258,33 +271,34 @@ void FunctionEmitter::GenScopeVariableInfo(const binder::Scope *scope)
     const auto *startIns = scope->ScopeStart();
     const auto *endIns = scope->ScopeEnd();
 
-    uint32_t start = 0;
-    uint32_t count = 0;
-
-    for (const auto *it : pg_->Insns()) {
-        if (startIns == it) {
-            start = count;
-        } else if (endIns == it) {
-            auto varsLength = static_cast<uint32_t>(count - start + 1);
-
-            for (const auto &[name, variable] : scope->Bindings()) {
-                if (!variable->IsLocalVariable() || variable->LexicalBound()) {
-                    continue;
-                }
-
-                auto &variableDebug = func_->local_variable_debug.emplace_back();
-                variableDebug.name = name.Mutf8();
-                variableDebug.signature = "any";
-                variableDebug.signature_type = "any";
-                variableDebug.reg = static_cast<int32_t>(variable->AsLocalVariable()->Vreg());
-                variableDebug.start = start;
-                variableDebug.length = static_cast<uint32_t>(varsLength);
-            }
-
-            break;
+    for (const auto &[name, variable] : scope->Bindings()) {
+        if (!variable->IsLocalVariable() || variable->LexicalBound()) {
+            continue;
         }
 
-        count++;
+        auto &variableDebug = func_->local_variable_debug.emplace_back();
+        variableDebug.name = name.Mutf8();
+        variableDebug.signature = "any";
+        variableDebug.signature_type = "any";
+        variableDebug.reg = static_cast<int32_t>(variable->AsLocalVariable()->Vreg());
+        
+        uint32_t start = 0;
+        uint32_t count = 0;
+        for (const auto *it : pg_->Insns()) {
+            if (startIns == it) {
+                start = count;
+            }
+            if (NotHoistAndDecl(it,variable)) {
+                start = count;
+            }
+            if (endIns == it) {
+                auto varsLength = static_cast<uint32_t>(count - start + 1);
+                variableDebug.start = start;
+                variableDebug.length = static_cast<uint32_t>(varsLength);
+                break;
+            }
+            count++;
+        }
     }
 }
 
