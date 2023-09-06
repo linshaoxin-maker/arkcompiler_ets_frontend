@@ -146,6 +146,7 @@ private:
     int optLevel_ {0};
     int functionThreadCount_ {0};
     int fileThreadCount_ {0};
+    bool mergeAbc_ {false};
     std::string npmModuleEntryList_;
     std::vector<es2panda::SourceFile> sourceFiles_;
     std::unordered_map<std::string, std::string> outputFiles_;
