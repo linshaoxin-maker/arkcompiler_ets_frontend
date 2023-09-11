@@ -1,0 +1,49 @@
+.language ECMAScript
+
+.function any .#4021257117105775747#(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	tryldglobalbyname 0x0, print
+	sta v0
+	ldlexvar 0x0, 0x1
+	sta v1
+	lda v0
+	callarg1 0x1, v1
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .A(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	newlexenv 0x2
+	lda a1
+	stlexvar 0x0, 0x0
+	lda a2
+	stlexvar 0x0, 0x1
+	ldlexvar 0x0, 0x1
+	sta v0
+	definefunc 0x0, .#4021257117105775747#, 0x0
+	stobjbyname 0x1, prop, v0
+	ldlexvar 0x0, 0x1
+	return
+label_2: 
+}
+
+.function any .func_main_0(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldhole
+	sta v0
+	defineclasswithbuffer 0x0, .A, _0, 0x0, v0
+	sta v0
+	ldobjbyname 0x1, prototype
+	lda v0
+	sttoglobalrecord 0x3, A
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+
