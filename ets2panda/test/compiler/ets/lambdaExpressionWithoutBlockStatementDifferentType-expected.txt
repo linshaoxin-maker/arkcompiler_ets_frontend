@@ -487,4 +487,4 @@
     }
   }
 }
-TypeError: Return statements return type is not compatible with the containing functions return type [lambdaExpressionWithoutBlockStatementDifferentType.ets:17:28]
+TypeError: Return statement's return type 'int' is not compatible with the arrow function's return type 'void'. [lambdaExpressionWithoutBlockStatementDifferentType.ets:17:28]

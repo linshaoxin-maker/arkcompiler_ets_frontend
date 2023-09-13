@@ -518,4 +518,4 @@
     }
   }
 }
-TypeError: value type is not assignable to the property type [objectLiteralWrongValueType.ets:21:8]
+TypeError: Value's type 'string' is not assignable to the property's type 'int'. [objectLiteralWrongValueType.ets:21:8]

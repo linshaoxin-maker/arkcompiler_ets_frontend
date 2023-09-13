@@ -790,7 +790,9 @@ checker::Type *ObjectExpression::Check(checker::ETSChecker *checker)
         checker->ThrowTypeError({"need to specify target type for class composite"}, Start());
     }
     if (!PreferredType()->IsETSObjectType()) {
-        checker->ThrowTypeError({"target type for class composite needs to be an object type"}, Start());
+        checker->ThrowTypeError({"Target type for class composite needs to be an object type. Found target type is '",
+                                 PreferredType(), "'."},
+                                Start());
     }
 
     if (PreferredType()->IsETSDynamicType()) {
@@ -808,8 +810,7 @@ checker::Type *ObjectExpression::Check(checker::ETSChecker *checker)
 
     checker::ETSObjectType *obj_type = PreferredType()->AsETSObjectType();
     if (obj_type->HasObjectFlag(checker::ETSObjectFlags::ABSTRACT | checker::ETSObjectFlags::INTERFACE)) {
-        checker->ThrowTypeError({"target type for class composite ", obj_type->Name(), " is not instantiable"},
-                                Start());
+        checker->ThrowTypeError({"target type for class composite ", obj_type, " is not instantiable"}, Start());
     }
 
     bool have_empty_constructor = false;
@@ -821,7 +822,7 @@ checker::Type *ObjectExpression::Check(checker::ETSChecker *checker)
         }
     }
     if (!have_empty_constructor) {
-        checker->ThrowTypeError({"type ", obj_type->Name(), " has no parameterless constructor"}, Start());
+        checker->ThrowTypeError({"type ", obj_type, " has no parameterless constructor"}, Start());
     }
 
     for (Expression *prop_expr : Properties()) {
@@ -841,7 +842,7 @@ checker::Type *ObjectExpression::Check(checker::ETSChecker *checker)
         varbinder::LocalVariable *lv = obj_type->GetProperty(
             pname, checker::PropertySearchFlags::SEARCH_INSTANCE_FIELD | checker::PropertySearchFlags::SEARCH_IN_BASE);
         if (lv == nullptr) {
-            checker->ThrowTypeError({"type ", obj_type->Name(), " has no property named ", pname}, prop_expr->Start());
+            checker->ThrowTypeError({"type ", obj_type, " has no property named ", pname}, prop_expr->Start());
         }
         checker->ValidatePropertyAccess(lv, obj_type, prop_expr->Start());
         if (lv->HasFlag(varbinder::VariableFlags::READONLY)) {
@@ -855,8 +856,9 @@ checker::Type *ObjectExpression::Check(checker::ETSChecker *checker)
             value->AsObjectExpression()->SetPreferredType(prop_type);
         }
         value->SetTsType(value->Check(checker));
-        checker::AssignmentContext(checker->Relation(), value, value->TsType(), prop_type, value->Start(),
-                                   {"value type is not assignable to the property type"});
+        checker::AssignmentContext(
+            checker->Relation(), value, value->TsType(), prop_type, value->Start(),
+            {"Value's type '", value->TsType(), "' is not assignable to the property's type '", prop_type, "'."});
     }
 
     SetTsType(obj_type);

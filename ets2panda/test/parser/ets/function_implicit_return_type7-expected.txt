@@ -598,4 +598,4 @@
     }
   }
 }
-TypeError: Return statement type is not compatible with previous method's return statement type(s). [function_implicit_return_type7.ets:21:10]
+TypeError: Return statement's type 'int' is not compatible with the enclosing method's previous return statement type(s) 'boolean'. [function_implicit_return_type7.ets:21:10]
