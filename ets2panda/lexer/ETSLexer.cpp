@@ -15,6 +15,7 @@
 
 #include "ETSLexer.h"
 #include "generated/keywords.h"
+#include "libpandabase/utils/arena_containers.h"
 
 namespace panda::es2panda::lexer {
 // NOLINTNEXTLINE(google-default-arguments)
@@ -79,16 +80,35 @@ void ETSLexer::CheckUtf16Compatible(char32_t cp) const
     }
 }
 
+namespace {
+bool IsDocCommentStart(util::StringView::Iterator it)
+{
+    if (it.Peek() != LEX_CHAR_ASTERISK) {
+        return false;
+    }
+    it.Forward(1);
+    return it.Peek() != LEX_CHAR_SLASH;
+}
+}  // namespace
+
 void ETSLexer::SkipMultiLineComment()
 {
     uint32_t depth = 1U;
 
+    bool is_doc_comment = IsDocCommentStart(Iterator());
+
+    auto start = Iterator().Save();
+
     // Just to reduce extra nested level(s)
-    auto const check_asterisk = [this, &depth]() -> bool {
+    auto const check_asterisk = [this, &depth, is_doc_comment, start]() -> bool {
         if (Iterator().Peek() == LEX_CHAR_SLASH) {
             Iterator().Forward(1);
 
             if (--depth == 0U) {
+                if (is_doc_comment) {
+                    std::string_view view(start, Iterator().Save() - 1 - start);
+                    doc_comment_.emplace(view, Allocator()->Adapter());
+                }
                 return false;
             }
         }
@@ -127,6 +147,7 @@ void ETSLexer::SkipMultiLineComment()
             }
         }
     }
+    UNREACHABLE();
 }
 
 void ETSLexer::ScanAsteriskPunctuator()
@@ -211,4 +232,22 @@ bool ETSLexer::ScanDollarPunctuator()
     Iterator().Forward(1);
     return true;
 }
+
+std::optional<ArenaString> ETSLexer::FetchDocComment()
+{
+    auto ret = std::move(doc_comment_);
+    ResetDocComment();
+    return ret;
+}
+
+void ETSLexer::SetDocComment(std::optional<ArenaString> comment)
+{
+    doc_comment_ = std::move(comment);
+}
+
+void ETSLexer::ResetDocComment()
+{
+    doc_comment_ = std::nullopt;
+}
+
 }  // namespace panda::es2panda::lexer

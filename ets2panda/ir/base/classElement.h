@@ -17,6 +17,7 @@
 #define ES2PANDA_PARSER_INCLUDE_AST_CLASS_ELEMENT_H
 
 #include "ir/statement.h"
+#include "ir/hasDoc.h"
 
 namespace panda::es2panda::ir {
 class Expression;
@@ -89,12 +90,22 @@ public:
 
     [[nodiscard]] virtual PrivateFieldKind ToPrivateFieldKind(bool is_static) const = 0;
 
+    HasDoc &Documentation()
+    {
+        return doc_comment_;
+    }
+    const HasDoc &Documentation() const
+    {
+        return doc_comment_;
+    }
+
 protected:
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
     Expression *key_;
     Expression *value_;
     ArenaVector<Decorator *> decorators_;
     bool is_computed_;
+    HasDoc doc_comment_;
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 }  // namespace panda::es2panda::ir

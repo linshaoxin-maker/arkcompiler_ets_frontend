@@ -131,6 +131,11 @@ public:
         return options_.is_eval;
     }
 
+    const auto &GetMakeDoc() const
+    {
+        return options_.make_doc;
+    }
+
 private:
     varbinder::VarBinder *varbinder_;
     checker::Checker *checker_;

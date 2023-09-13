@@ -325,6 +325,9 @@ private:
     ir::TypeNode *CreateTypeAnnotation(TypeAnnotationParsingOptions *options, std::string_view source_code,
                                        std::string_view file_name = DEFAULT_SOURCE_FILE);
 
+    std::optional<ArenaString> FetchDocComment();
+    void SetDocComment(std::optional<ArenaString> comment);
+
     friend class ExternalSourceParser;
     friend class InnerSourceParser;
 

@@ -94,9 +94,11 @@ template <typename ElementMaker>
 
     auto *const array_ident = MakeQualifiedIdentifier(checker->Allocator(), enum_type->GetDecl(), name);
 
-    auto *const array_class_prop = checker->Allocator()->New<ir::ClassProperty>(
-        array_ident, array_expr, nullptr,
-        ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC | ir::ModifierFlags::CONST, checker->Allocator(), false);
+    auto *const array_class_prop =
+        checker->Allocator()->New<ir::ClassProperty>(array_ident, array_expr, nullptr,
+                                                     ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC |
+                                                         ir::ModifierFlags::CONST | ir::ModifierFlags::AUTO_GENERATED,
+                                                     checker->Allocator(), false);
     array_class_prop->SetTsType(array_expr->TsType());
     array_class_prop->SetParent(varbinder->Program()->GlobalClass());
     array_ident->SetTsType(array_class_prop->TsType());
@@ -151,7 +153,7 @@ template <typename ElementMaker>
 
     auto *const function = checker->Allocator()->New<ir::ScriptFunction>(
         function_scope, std::move(params), nullptr, body_block, return_type_annotation, ir::ScriptFunctionFlags::METHOD,
-        ir::ModifierFlags::PUBLIC, false, Language(Language::Id::ETS));
+        ir::ModifierFlags::PUBLIC | ir::ModifierFlags::AUTO_GENERATED, false, Language(Language::Id::ETS));
 
     varbinder->AsETSBinder()->BuildInternalName(function);
     varbinder->AsETSBinder()->AddCompilableFunction(function);
@@ -168,7 +170,8 @@ void MakeMethodDef(ETSChecker *const checker, varbinder::ETSBinder *const varbin
     function->SetParent(function_expr);
 
     auto *const method_def = checker->Allocator()->New<ir::MethodDefinition>(
-        ir::MethodDefinitionKind::METHOD, ident, function_expr, ir::ModifierFlags::PUBLIC, checker->Allocator(), false);
+        ir::MethodDefinitionKind::METHOD, ident, function_expr,
+        ir::ModifierFlags::PUBLIC | ir::ModifierFlags::AUTO_GENERATED, checker->Allocator(), false);
     method_def->SetParent(varbinder->Program()->GlobalClass());
     function_expr->SetParent(method_def);
 

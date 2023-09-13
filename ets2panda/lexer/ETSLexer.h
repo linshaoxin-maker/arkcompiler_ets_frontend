@@ -51,10 +51,17 @@ public:
     void CheckUtf16Compatible(char32_t cp) const;
     void ConvertNumber(const std::string &utf8, NumberFlags flags) override;
 
+    std::optional<ArenaString> FetchDocComment();
+    void SetDocComment(std::optional<ArenaString> comment);
+    void ResetDocComment();
+
 protected:
     void ScanEqualsPunctuator() override;
     void ScanExclamationPunctuator() override;
     bool ScanDollarPunctuator() override;
+
+private:
+    std::optional<ArenaString> doc_comment_ {};
 };
 }  // namespace panda::es2panda::lexer
 

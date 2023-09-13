@@ -85,6 +85,12 @@ struct SourceFile {
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
+struct MakeDocOptions {
+    std::string filter {};
+    std::string output_path {};
+    bool secure = true;
+};
+
 struct CompilerOptions {
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
     bool is_debug {};
@@ -96,6 +102,7 @@ struct CompilerOptions {
     bool op_dump_ast_only_silent {};
     bool dump_checked_ast {};
     bool dump_asm {};
+    std::optional<MakeDocOptions> make_doc {};
     bool dump_debug_info {};
     bool parse_only {};
     std::string std_lib {};

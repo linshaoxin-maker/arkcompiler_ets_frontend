@@ -142,6 +142,16 @@ namespace fs = std::experimental::filesystem;
 namespace panda::es2panda::parser {
 using namespace std::literals::string_literals;
 
+std::optional<ArenaString> ETSParser::FetchDocComment()
+{
+    return static_cast<lexer::ETSLexer *>(Lexer())->FetchDocComment();
+}
+
+void ETSParser::SetDocComment(std::optional<ArenaString> comment)
+{
+    static_cast<lexer::ETSLexer *>(Lexer())->SetDocComment(std::move(comment));
+}
+
 std::unique_ptr<lexer::Lexer> ETSParser::InitLexer(const SourceFile &source_file)
 {
     GetProgram()->SetSource(source_file);
@@ -749,6 +759,7 @@ ArenaVector<ir::AstNode *> ETSParser::ParseTopLevelStatements(ArenaVector<ir::St
 
                 ThrowUnexpectedToken(token_type);
             }
+                static_cast<lexer::ETSLexer *>(Lexer())->ResetDocComment();
         }
 
         GetContext().Status() &= ~ParserStatus::IN_AMBIENT_CONTEXT;
@@ -1260,6 +1271,7 @@ void ETSParser::ParseClassFieldDefiniton(ir::Identifier *field_name, ir::Modifie
 {
     lexer::SourcePosition start_loc = let_loc != nullptr ? *let_loc : Lexer()->GetToken().Start();
     lexer::SourcePosition end_loc = start_loc;
+    auto doc_comment = FetchDocComment();
     ir::TypeNode *type_annotation = nullptr;
     TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
 
@@ -1319,6 +1331,7 @@ void ETSParser::ParseClassFieldDefiniton(ir::Identifier *field_name, ir::Modifie
         end_loc = type_annotation != nullptr ? type_annotation->End() : field_name->End();
     }
     field->SetRange({start_loc, end_loc});
+    field->Documentation().SetDocComment(std::move(doc_comment));
 
     if ((modifiers & ir::ModifierFlags::CONST) != 0) {
         ASSERT(VarBinder()->GetScope()->Parent() != nullptr);
@@ -1342,6 +1355,8 @@ void ETSParser::ParseClassFieldDefiniton(ir::Identifier *field_name, ir::Modifie
 ir::MethodDefinition *ETSParser::ParseClassMethodDefinition(ir::Identifier *method_name, ir::ModifierFlags modifiers,
                                                             ir::Identifier *class_name, ir::Identifier *ident_node)
 {
+    auto doc_comment = FetchDocComment();
+
     auto *cur_scope = VarBinder()->GetScope();
     auto res = cur_scope->Find(method_name->Name(), varbinder::ResolveBindingOptions::ALL);
     if (res.variable != nullptr && !res.variable->Declaration()->IsFunctionDecl() && res.scope == cur_scope) {
@@ -1375,6 +1390,7 @@ ir::MethodDefinition *ETSParser::ParseClassMethodDefinition(ir::Identifier *meth
         func->AddFlag(ir::ScriptFunctionFlags::INSTANCE_EXTENSION_METHOD);
     }
     auto *method = AllocNode<ir::MethodDefinition>(method_kind, method_name, func_expr, modifiers, Allocator(), false);
+    method->Documentation().SetDocComment(std::move(doc_comment));
     method->SetRange(func_expr->Range());
 
     CreateClassFunctionDeclaration(method);
@@ -1704,8 +1720,11 @@ ir::Statement *ETSParser::ParseTypeDeclaration(bool allow_static)
                 modifiers |= ir::ClassDefinitionModifiers::INNER;
             }
 
+            auto doc_comment = FetchDocComment();
             if (Lexer()->GetToken().Type() == lexer::TokenType::KEYW_CLASS) {
-                return ParseClassDeclaration(modifiers, flags);
+                auto decl = ParseClassDeclaration(modifiers, flags);
+                decl->Documentation().SetDocComment(std::move(doc_comment));
+                return decl;
             }
 
             if (IsStructKeyword()) {
@@ -1721,7 +1740,10 @@ ir::Statement *ETSParser::ParseTypeDeclaration(bool allow_static)
             return ParseInterfaceDeclaration(false);
         }
         case lexer::TokenType::KEYW_CLASS: {
-            return ParseClassDeclaration(modifiers);
+            auto doc_comment = FetchDocComment();
+            auto decl = ParseClassDeclaration(modifiers);
+            decl->Documentation().SetDocComment(std::move(doc_comment));
+            return decl;
         }
         case lexer::TokenType::KEYW_TYPE: {
             return ParseTypeAliasDeclaration();
@@ -1861,6 +1883,7 @@ ir::TSInterfaceDeclaration *ETSParser::ParseInterfaceBody(ir::Identifier *name, 
 
 ir::Statement *ETSParser::ParseInterfaceDeclaration(bool is_static)
 {
+    auto doc_comment = FetchDocComment();
     if ((GetContext().Status() & parser::ParserStatus::FUNCTION) != 0U) {
         ThrowSyntaxError("Local interface declaration support is not yet implemented.");
     }
@@ -1877,6 +1900,7 @@ ir::Statement *ETSParser::ParseInterfaceDeclaration(bool is_static)
         VarBinder()->AddDecl<varbinder::InterfaceDecl>(Lexer()->GetToken().Start(), Allocator(), ident, decl_node);
     decl->AsInterfaceDecl()->Add(decl_node);
     decl_node->SetRange({interface_start, Lexer()->GetToken().End()});
+    decl_node->Documentation().SetDocComment(std::move(doc_comment));
     return decl_node;
 }
 
@@ -1889,6 +1913,8 @@ ir::Statement *ETSParser::ParseEnumDeclaration(bool is_const, bool is_static)
         ThrowSyntaxError("Local enum declaration support is not yet implemented.");
     }
 
+    auto doc_comment = FetchDocComment();
+
     lexer::SourcePosition enum_start = Lexer()->GetToken().Start();
     Lexer()->NextToken();  // eat enum keyword
 
@@ -1899,7 +1925,7 @@ ir::Statement *ETSParser::ParseEnumDeclaration(bool is_const, bool is_static)
     auto *decl =
         VarBinder()->AddDecl<varbinder::EnumLiteralDecl>(Lexer()->GetToken().Start(), ident, decl_node, is_const);
     decl->BindScope(decl_node->Scope());
-
+    decl_node->Documentation().SetDocComment(std::move(doc_comment));
     return decl_node;
 }
 
@@ -4139,9 +4165,11 @@ ir::TSEnumDeclaration *ETSParser::ParseEnumMembers(ir::Identifier *const key, co
     };
 
     // Get the underlying type of enum (number or string). It is defined from the first element ONLY!
+    auto comm = FetchDocComment();
     auto const pos = Lexer()->Save();
     auto const string_type_enum = is_string_enum();
     Lexer()->Rewind(pos);
+    SetDocComment(std::move(comm));
 
     ArenaVector<ir::AstNode *> members(Allocator()->Adapter());
     const auto enum_ctx = varbinder::LexicalScope<varbinder::LocalScope>(VarBinder());
@@ -4167,6 +4195,7 @@ void ETSParser::ParseNumberEnum(ArenaVector<ir::AstNode *> &members)
 
     // Lambda to parse enum member (maybe with initializer)
     auto const parse_member = [this, &members, &current_value]() {
+        auto doc_comment = FetchDocComment();
         auto *const ident = ExpectIdentifier();
         auto [decl, var] = VarBinder()->NewVarDecl<varbinder::LetDecl>(ident->Start(), ident->Name());
         var->SetScope(VarBinder()->GetScope());
@@ -4214,6 +4243,7 @@ void ETSParser::ParseNumberEnum(ArenaVector<ir::AstNode *> &members)
 
         auto *const member = AllocNode<ir::TSEnumMember>(ident, ordinal);
         member->SetRange({ident->Start(), end_loc});
+        member->Documentation().SetDocComment(std::move(doc_comment));
         decl->BindNode(member);
         members.emplace_back(member);
 

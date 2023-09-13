@@ -692,7 +692,7 @@ ir::MethodDefinition *ParserImpl::BuildImplicitConstructor(ir::ClassDefinitionMo
     }
 
     auto *ctor = AllocNode<ir::MethodDefinition>(ir::MethodDefinitionKind::CONSTRUCTOR, key, func_expr,
-                                                 ir::ModifierFlags::NONE, Allocator(), false);
+                                                 ir::ModifierFlags::AUTO_GENERATED, Allocator(), false);
 
     ctor->SetRange({start_loc, lexer_->GetToken().End()});
 

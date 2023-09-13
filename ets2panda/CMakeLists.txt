@@ -407,6 +407,9 @@ set(ES2PANDA_LIB_SRC
   checker/types/ts/unknownType.cpp
   checker/types/ts/voidType.cpp
   util/arktsconfig.cpp
+  docgen/NOdocgen.cpp
+  docgen/ETSdocgen.cpp
+  docgen/json.cpp
   util/bitset.cpp
   util/declgenEts2Ts.cpp
   util/helpers.cpp
@@ -489,6 +492,8 @@ panda_add_sanitizers(TARGET es2panda-public SANITIZERS
   ${PANDA_SANITIZERS_LIST})
 
 add_subdirectory(aot)
+
+add_subdirectory(docgen-app)
 
 if(PANDA_WITH_TESTS)
   add_subdirectory(test)

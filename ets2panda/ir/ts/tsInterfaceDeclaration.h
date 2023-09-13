@@ -19,6 +19,7 @@
 #include "varbinder/scope.h"
 #include "ir/statement.h"
 #include "util/language.h"
+#include "ir/hasDoc.h"
 
 namespace panda::es2panda::varbinder {
 class Variable;
@@ -144,6 +145,15 @@ public:
     checker::Type *Check([[maybe_unused]] checker::ETSChecker *checker) override;
     checker::Type *InferType(checker::TSChecker *checker, varbinder::Variable *binding_var) const;
 
+    HasDoc &Documentation()
+    {
+        return doc_comment_;
+    }
+    const HasDoc &Documentation() const
+    {
+        return doc_comment_;
+    }
+
 private:
     ArenaVector<Decorator *> decorators_;
     varbinder::LocalScope *scope_;
@@ -154,6 +164,7 @@ private:
     util::StringView internal_name_ {};
     bool is_static_;
     es2panda::Language lang_;
+    HasDoc doc_comment_ {};
 };
 }  // namespace panda::es2panda::ir
 

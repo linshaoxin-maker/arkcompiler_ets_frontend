@@ -1589,7 +1589,7 @@ ir::ModifierFlags ETSChecker::GetFlagsForProxyLambda(bool is_static)
 {
     // If every captured variable in the lambda is local variable, the proxy method can be 'static' since it doesn't
     // use any of the classes properties
-    ir::ModifierFlags flags = ir::ModifierFlags::PUBLIC;
+    ir::ModifierFlags flags = ir::ModifierFlags::PUBLIC | ir::ModifierFlags::AUTO_GENERATED;
 
     if (is_static) {
         flags |= ir::ModifierFlags::STATIC;
