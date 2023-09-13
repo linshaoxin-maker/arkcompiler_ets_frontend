@@ -624,7 +624,7 @@ ir::FunctionDeclaration *ParserImpl::ParseFunctionDeclaration(bool can_be_anonym
     util::StringView ident = lexer_->GetToken().Ident();
 
     CheckRestrictedBinding();
-    auto *ident_node = ExpectIdentifier();
+    auto *ident_node = ExpectIdentifier(false, true);
 
     new_status |= ParserStatus::FUNCTION_DECLARATION;
     ir::ScriptFunction *func = ParseFunction(new_status | ParserStatus::NEED_RETURN_TYPE);

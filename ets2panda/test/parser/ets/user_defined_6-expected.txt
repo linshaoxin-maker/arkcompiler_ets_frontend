@@ -1,0 +1,1 @@
+SyntaxError: Cannot to be used as user-defined type. [user_defined_6.ets:16:10]
