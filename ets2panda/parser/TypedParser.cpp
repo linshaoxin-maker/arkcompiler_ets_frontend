@@ -743,7 +743,7 @@ ir::TSTypeParameter *TypedParser::ParseTypeParameter(TypeAnnotationParsingOption
     bool throw_error = ((*options) & TypeAnnotationParsingOptions::THROW_ERROR) != 0;
     bool add_binding = ((*options) & TypeAnnotationParsingOptions::ADD_TYPE_PARAMETER_BINDING) != 0;
 
-    if (Lexer()->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
+    if (Lexer()->GetToken().Type() != lexer::TokenType::LITERAL_IDENT || Lexer()->GetToken().IsDefinableTypeName()) {
         if (!throw_error) {
             return nullptr;
         }
