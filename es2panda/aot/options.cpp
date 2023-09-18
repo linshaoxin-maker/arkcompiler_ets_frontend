@@ -334,6 +334,7 @@ bool Options::Parse(int argc, const char **argv)
     }
 
     if (opModule.GetValue()) {
+        mergeAbc_ = opModule.GetValue();
         scriptKind_ = es2panda::parser::ScriptKind::MODULE;
     } else if (opCommonjs.GetValue()) {
         scriptKind_ = es2panda::parser::ScriptKind::COMMONJS;
@@ -375,7 +376,7 @@ bool Options::Parse(int argc, const char **argv)
         compilerOutput_ = RemoveExtension(util::Helpers::BaseName(sourceFile_)).append(".abc");
     }
 
-    if (opMergeAbc.GetValue()) {
+    if (opMergeAbc.GetValue() || mergeAbc_) {
         recordName_ = recordName.GetValue();
         if (recordName_.empty()) {
             recordName_ = compilerOutput_.empty() ? "Base64Output" :
@@ -455,7 +456,7 @@ bool Options::Parse(int argc, const char **argv)
     compilerOptions_.optLevel = (compilerOptions_.isDebug || !base64Input.GetValue().empty() ||
         base64Output.GetValue()) ? 0 : opOptLevel.GetValue();
     compilerOptions_.sourceFiles = sourceFiles_;
-    compilerOptions_.mergeAbc = opMergeAbc.GetValue();
+    compilerOptions_.mergeAbc = opMergeAbc.GetValue() || mergeAbc_;
 
     compilerOptions_.patchFixOptions.dumpSymbolTable = opDumpSymbolTable.GetValue();
     compilerOptions_.patchFixOptions.symbolTable = opInputSymbolTable.GetValue();
