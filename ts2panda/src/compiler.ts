@@ -468,7 +468,14 @@ export class Compiler {
         this.pushScope(block);
         hoistFunctionInBlock(this.scope, this.pandaGen, isStrictMode(block), this);
 
-        block.statements.forEach((stmt) => this.compileStatement(stmt));
+        for (let i = 0; i < block.statements.length; ++i) {
+            let stmt = block.statements[i];
+            this.compileStatement(stmt);
+            if (stmt.kind == ts.SyntaxKind.ReturnStatement) {
+                this.popScope();
+                return;
+            }
+        }
 
         this.popScope();
     }
