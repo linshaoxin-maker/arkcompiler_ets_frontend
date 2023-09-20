@@ -706,9 +706,6 @@ private:
         }
     }
 
-    void BinaryEqualityRef(const ir::AstNode *node, bool test_equal, VReg lhs, VReg rhs, Label *if_false);
-    void BinaryEqualityRefDynamic(const ir::AstNode *node, bool test_equal, VReg lhs, VReg rhs, Label *if_false);
-
     template <typename Compare, typename Cond>
     void BinaryNumberComparison(const ir::AstNode *node, VReg lhs, Label *if_false)
     {
@@ -727,24 +724,29 @@ private:
     template <typename ObjCompare, typename IntCompare, typename CondCompare, typename DynCompare>
     void BinaryEquality(const ir::AstNode *node, VReg lhs, Label *if_false)
     {
-        BinaryEqualityCondition<ObjCompare, IntCompare, CondCompare>(node, lhs, if_false);
+        BinaryEqualityCondition<ObjCompare, IntCompare, CondCompare, DynCompare>(node, lhs, if_false);
+
         ToBinaryResult(node, if_false);
         SetAccumulatorType(Checker()->GlobalETSBooleanType());
     }
 
-    template <typename ObjCompare, typename IntCompare, typename CondCompare>
+    template <typename ObjCompare, typename IntCompare, typename CondCompare, typename DynCompare>
     void BinaryEqualityCondition(const ir::AstNode *node, VReg lhs, Label *if_false)
     {
         auto type_kind = checker::ETSChecker::TypeKind(target_type_);
 
         switch (type_kind) {
-            case checker::TypeFlag::ETS_OBJECT:
             case checker::TypeFlag::ETS_DYNAMIC_TYPE: {
-                RegScope rs(this);
-                VReg arg0 = AllocReg();
-                StoreAccumulator(node, arg0);
-                BinaryEqualityRef(node, !std::is_same_v<CondCompare, Jeqz>, lhs, arg0, if_false);
+                if (!std::is_same_v<CondCompare, Jeqz>) {
+                    Ra().Emit<JneObj>(node, lhs, if_false);
+                } else {
+                    Ra().Emit<JeqObj>(node, lhs, if_false);
+                }
                 return;
+            }
+            case checker::TypeFlag::ETS_OBJECT: {
+                Ra().Emit<ObjCompare>(node, lhs, if_false);
+                break;
             }
             case checker::TypeFlag::DOUBLE: {
                 BinaryFloatingPointComparison<FcmpgWide, FcmplWide, CondCompare>(node, lhs, if_false);
@@ -773,19 +775,6 @@ private:
             }
         }
 
-        SetAccumulatorType(Checker()->GlobalETSBooleanType());
-    }
-
-    template <typename ObjCompare, typename DynCompare>
-    void BinaryStrictEquality(const ir::AstNode *node, VReg lhs, Label *if_false)
-    {
-        if (GetAccumulatorType()->IsETSDynamicType() || GetVRegType(lhs)->IsETSDynamicType()) {
-            BinaryDynamicStrictEquality<DynCompare>(node, lhs, if_false);
-        } else {
-            Ra().Emit<ObjCompare>(node, lhs, if_false);
-        }
-
-        ToBinaryResult(node, if_false);
         SetAccumulatorType(Checker()->GlobalETSBooleanType());
     }
 

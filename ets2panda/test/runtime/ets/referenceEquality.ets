@@ -27,6 +27,13 @@ function ClassEquality(): void {
     assert (a === b);
     let c : A = new A();
     assert (a !== c);
+
+    assert(new A() != new A())
+    let x1 = new A()
+    let x2 = x1
+    assert(x1 == x2)
+
+    assert(5 == new Int(5))
 }
 
 
@@ -37,6 +44,22 @@ function NullEquality(): void {
     let c : A | null = null;
     assert (c === null);
     assert (null === null);
+
+    assert(5 != null)
+    assert("a string" != null)
+    assert(5.0 != null)
+
+    let x: A | null = null
+    assert(x == null)
+
+    assert(null != new Int(5))
+    assert(new Double(5) != null)
+
+    let i: Int|null = null
+    assert(i == null)
+
+    let f: Int|null = 1
+    assert(f != null)
 }
 
 
@@ -46,6 +69,11 @@ function ArrayEquality(): void {
     assert (a === b);
     let c : int[] = [1, 2, 3];
     assert (a !== c);
+
+    assert([1, 2, 3] != [1, 2, 3])
+    let y1 : Object[] = []
+    let y2 = y1
+    assert(y1 == y2)
 }
 
 function NumericEquality(): void {

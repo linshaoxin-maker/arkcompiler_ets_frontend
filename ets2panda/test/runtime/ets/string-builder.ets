@@ -27,10 +27,10 @@ function concatenate_float(prefix: String, number: float, suffix: String) : Stri
 
 function concatenate_compile_time() : void {
   let x: String = 5 + "10";
-  assert x == "510";
+  assert x.equals("510");
 
   let y = 5 + "10";
-  assert y == "510";
+  assert y.equals("510");
 }
 
 function main(): void {
@@ -38,13 +38,13 @@ function main(): void {
   let a: String = "abc";
   a += foo(123);
 
-  assert a == "abcd";
+  assert a.equals("abcd");
   assert count == 1;
 
   let const_str: String = 'str' + c'a';
-  assert const_str == "stra";
+  assert const_str.equals("stra");
 
-  assert concatenate_float('x', 1.0 as float, "y") == "x1y";
+  assert concatenate_float('x', 1.0 as float, "y").equals("x1y");
 
   concatenate_compile_time();
 }

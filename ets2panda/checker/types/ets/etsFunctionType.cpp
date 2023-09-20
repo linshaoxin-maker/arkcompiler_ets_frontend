@@ -51,6 +51,16 @@ void ETSFunctionType::Identical(TypeRelation *relation, Type *other)
     call_signatures_[0]->Identical(relation, other->AsETSFunctionType()->CallSignatures()[0]);
 }
 
+void ETSFunctionType::Cast(TypeRelation *const relation, Type *target)
+{
+    if (!target->IsETSFunctionType()) {
+        relation->Result(false);
+    }
+
+    Identical(relation, target);
+    // TODO(TorokG): Implement casting for function types as specification expects
+}
+
 bool ETSFunctionType::AssignmentSource(TypeRelation *relation, Type *target)
 {
     if (target->IsETSDynamicType()) {

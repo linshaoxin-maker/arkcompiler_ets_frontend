@@ -45,7 +45,7 @@ catch (e) {
 }
 
 assert(q == 8)
-assert(s == "abccba")
+assert(s.equals("abccba"))
 
 function main(): void {
   ETSGLOBAL.q = 1;
@@ -54,13 +54,13 @@ function main(): void {
   assert(q == 30)
   assert(ETSGLOBAL.q == 1)
 
-  assert(s == "abccba")
+  assert(s.equals("abccba"))
   s = "def";
   assert(s == "def")
 
   _$init$_();
    
-  assert(s == "abccba")
+  assert(s.equals("abccba"))
   assert(q == 30)
   assert(ETSGLOBAL.q == 8)
 }
