@@ -1248,6 +1248,10 @@ void Lexer::SkipWhiteSpaces()
                 cp = Iterator().Peek();
                 if (cp == LEX_CHAR_EXCLAMATION) {
                     if (Iterator().Index() != 1) {
+                        /*
+                         * according to ECMA-262 specification item 12.5 Hashbang Comments are location-sensitive.
+                         * only allowed occurs at the beginning of files, other position is illegal.
+                         */
                         ThrowErrorIndex("Invalid or unexpected token", Iterator().Index());
                     }
                     Iterator().Forward(1);

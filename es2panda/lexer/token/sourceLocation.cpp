@@ -103,13 +103,15 @@ SourceLocation LineIndex::GetLocation(size_t index) noexcept
 {
     size_t line = 0;
     size_t col = 0;
+    size_t prev = 0;
     ASSERT(index < entrys_.back().lineStart);
     for (size_t pos = 0; pos < entrys_.size(); ++pos) {
         if (index > entrys_[pos].lineStart) {
+            prev = pos; // save prev pos
             ++line;
             continue;
         }
-        col = index - entrys_[pos - 1].lineStart + 1;
+        col = index - entrys_[prev].lineStart;
         break;
     }
 
