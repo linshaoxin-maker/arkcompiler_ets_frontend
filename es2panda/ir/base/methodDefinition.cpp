@@ -76,6 +76,10 @@ void MethodDefinition::Dump(ir::AstDumper *dumper) const
             kind = "set";
             break;
         }
+        case MethodDefinitionKind::STATIC_BLOCK: {
+            kind = "staticblock";
+            break;
+        }
         default: {
             UNREACHABLE();
         }

@@ -177,6 +177,7 @@ private:
     void InitializeClassName(compiler::PandaGen *pg) const;
     int32_t CreateClassStaticProperties(compiler::PandaGen *pg, util::BitSet &compiled) const;
     void CompileMissingProperties(compiler::PandaGen *pg, const util::BitSet &compiled, compiler::VReg classReg) const;
+    void CompileStaticBlocks(compiler::PandaGen *pg, const util::BitSet &compiled, compiler::VReg classReg) const;
 
     binder::LocalScope *scope_;
     Identifier *ident_;

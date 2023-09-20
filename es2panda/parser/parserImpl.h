@@ -51,6 +51,7 @@ class BreakStatement;
 class CallExpression;
 class ClassDeclaration;
 class ClassDefinition;
+class ClassStaticBlock;
 class ContinueStatement;
 class DoWhileStatement;
 class ExportAllDeclaration;
@@ -139,6 +140,8 @@ public:
     bool isIndexSignature {};
     bool classMethod {};
     bool classField {};
+    bool getOrSet {};
+    bool staticBlock {};
 };
 
 class ArrowFunctionDescriptor {
@@ -298,6 +301,8 @@ private:
     ir::MethodDefinition *ParseClassMethod(ClassElmentDescriptor *desc, const ArenaVector<ir::Statement *> &properties,
                                            ir::Expression *propName, lexer::SourcePosition *propEnd,
                                            ArenaVector<ir::Decorator *> &&decorators, bool isDeclare);
+    ir::ClassStaticBlock *ParseClassStaticBlock(ClassElmentDescriptor *desc, lexer::SourcePosition *propEnd,
+                                                ArenaVector<ir::Decorator *> &&decorators);
     ir::Statement *ParseClassProperty(ClassElmentDescriptor *desc, const ArenaVector<ir::Statement *> &properties,
                                       ir::Expression *propName, ir::Expression *typeAnnotation,
                                       ArenaVector<ir::Decorator *> &&decorators, bool isDeclare);
@@ -676,6 +681,10 @@ public:
 
         if (newStatus & ParserStatus::CONSTRUCTOR_FUNCTION) {
             flags_ |= ir::ScriptFunctionFlags::CONSTRUCTOR;
+        }
+
+        if (newStatus & ParserStatus::STATIC_BLOCK) {
+            flags_ |= ir::ScriptFunctionFlags::STATIC_BLOCK;
         }
     }
 

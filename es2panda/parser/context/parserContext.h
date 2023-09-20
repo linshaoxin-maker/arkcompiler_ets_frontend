@@ -62,6 +62,7 @@ enum class ParserStatus {
     DISALLOW_CONTINUE = (1 << 27),
 
     TS_MODULE = (1 << 28),
+    STATIC_BLOCK = (1 << 29),
 };
 
 DEFINE_BITOPS(ParserStatus)
@@ -120,6 +121,11 @@ public:
     bool IsAsync() const
     {
         return (status_ & ParserStatus::ASYNC_FUNCTION) != 0;
+    }
+
+    bool IsInStaticBlock() const
+    {
+        return (status_ & ParserStatus::STATIC_BLOCK) != 0;
     }
 
     bool IsModule() const

@@ -23,6 +23,7 @@
 #include "typescript/checker.h"
 #include "ir/astDump.h"
 #include "ir/base/classProperty.h"
+#include "ir/base/classStaticBlock.h"
 #include "ir/base/methodDefinition.h"
 #include "ir/base/scriptFunction.h"
 #include "ir/expression.h"
@@ -140,6 +141,7 @@ int32_t ClassDefinition::CreateClassStaticProperties(compiler::PandaGen *pg, uti
     std::unordered_map<util::StringView, size_t> staticPropNameMap;
 
     const auto &properties = body_;
+
 
     for (size_t i = 0; i < properties.size(); i++) {
         if (!properties[i]->IsMethodDefinition()) {
@@ -295,6 +297,34 @@ void ClassDefinition::CompileMissingProperties(compiler::PandaGen *pg, const uti
     pg->LoadAccumulator(this, classReg);
 }
 
+void ClassDefinition::CompileStaticBlocks(compiler::PandaGen *pg, const util::BitSet &compiled,
+                                          compiler::VReg classReg) const
+{
+    const auto& properties = body_;
+
+    for (size_t i = 0; i < properties.size(); i++) {
+        if (!properties[i]->IsClassStaticBlock()) {
+            continue;
+        }
+
+        const ir::ClassStaticBlock* prop = properties[i]->AsClassStaticBlock();
+
+        compiler::RegScope rs(pg);
+        compiler::VReg callee = pg->AllocReg();
+        compiler::VReg thisReg = pg->AllocReg();
+        prop->BodyFunction()->Compile(pg);
+        pg->StoreAccumulator(this, thisReg);
+        compiler::Operand propCall = util::StringView("call");
+        pg->LoadObjProperty(this, thisReg, propCall);
+        pg->StoreAccumulator(this, callee);
+        compiler::VReg arg = pg->AllocReg();
+        pg->LoadAccumulator(this, classReg);
+        pg->StoreAccumulator(this, arg);
+        pg->CallThis(this, callee, 2);
+        pg->LoadAccumulator(this, classReg);
+    }
+}
+
 void ClassDefinition::Compile(compiler::PandaGen *pg) const
 {
     if (declare_) {
@@ -317,6 +347,7 @@ void ClassDefinition::Compile(compiler::PandaGen *pg) const
     InitializeClassName(pg);
 
     CompileMissingProperties(pg, compiled, classReg);
+    CompileStaticBlocks(pg, compiled, classReg);
 }
 
 checker::Type *ClassDefinition::Check(checker::Checker *checker) const

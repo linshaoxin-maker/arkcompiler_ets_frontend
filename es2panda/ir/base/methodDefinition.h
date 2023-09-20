@@ -32,7 +32,7 @@ namespace panda::es2panda::ir {
 class Expression;
 class FunctionExpression;
 
-enum class MethodDefinitionKind { CONSTRUCTOR, METHOD, GET, SET };
+enum class MethodDefinitionKind { CONSTRUCTOR, METHOD, GET, SET, STATIC_BLOCK };
 
 struct ParamDecorators {
     size_t paramIndex;

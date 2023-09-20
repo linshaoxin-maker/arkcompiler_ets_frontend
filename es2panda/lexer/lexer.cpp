@@ -1175,6 +1175,11 @@ void Lexer::SetTokenEnd()
 
 void Lexer::CheckAwaitKeyword()
 {
+    if (parserContext_->IsInStaticBlock() &&
+        (parserContext_->Status() & parser::ParserStatus::FUNCTION_DECLARATION) == 0) {
+        ThrowError("'await' is not allowed in static initialization block");
+    }
+
     if (!parserContext_->IsAsync()) {
         GetToken().type_ = TokenType::LITERAL_IDENT;
         return;
@@ -1185,6 +1190,15 @@ void Lexer::CheckAwaitKeyword()
     }
 
     GetToken().type_ = TokenType::KEYW_AWAIT;
+}
+
+void Lexer::CheckArgumentsKeyword()
+{
+    if (parserContext_->IsInStaticBlock()) {
+        ThrowError("'arguments' is not allowed in static initialization block");
+    }
+
+    GetToken().type_ = TokenType::LITERAL_IDENT;
 }
 
 void Lexer::CheckKeywordEscape(TokenType type)
