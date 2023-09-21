@@ -108,9 +108,9 @@ SourceLocation LineIndex::GetLocation(size_t index) noexcept
 {
     size_t line = 1;
     size_t col = 1;
-    ASSERT(index < entrys_.back().lineStart);
+    ASSERT(index < entrys_.back().lineStart); // EOF
     for (size_t pos = 0; pos < entrys_.size(); ++pos) {
-        if (index >= entrys_[pos].lineStart && index < entrys_[pos].GetOffset()) {
+        if (index >= entrys_[pos].lineStart && index < entrys_[pos].GetOffset()) { // line ends with newline punctuator
             col = index - entrys_[pos].lineStart;
             break;
         } else {
