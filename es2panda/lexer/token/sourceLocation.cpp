@@ -40,6 +40,11 @@ void OffsetEntry::AddCol(size_t offset)
     }
 }
 
+size_t OffsetEntry::GetOffset()
+{
+    return offset_;
+}
+
 LineIndex::LineIndex(const util::StringView &source) noexcept
 {
     auto iter = util::StringView::Iterator(source);
@@ -101,18 +106,17 @@ SourceLocation LineIndex::GetLocation(SourcePosition pos) noexcept
 
 SourceLocation LineIndex::GetLocation(size_t index) noexcept
 {
-    size_t line = 0;
-    size_t col = 0;
-    size_t prev = 0;
+    size_t line = 1;
+    size_t col = 1;
     ASSERT(index < entrys_.back().lineStart);
     for (size_t pos = 0; pos < entrys_.size(); ++pos) {
-        if (index > entrys_[pos].lineStart) {
-            prev = pos; // save prev pos
+        if (index >= entrys_[pos].lineStart && index < entrys_[pos].GetOffset()) {
+            col = index - entrys_[pos].lineStart;
+            break;
+        } else {
             ++line;
             continue;
         }
-        col = index - entrys_[prev].lineStart;
-        break;
     }
 
     return SourceLocation(line, col);

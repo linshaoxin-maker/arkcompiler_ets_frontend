@@ -87,6 +87,7 @@ public:
     ~OffsetEntry() = default;
 
     void AddCol(size_t offset);
+    size_t GetOffset();
 
     std::vector<Range> ranges {};
     size_t lineStart {};
