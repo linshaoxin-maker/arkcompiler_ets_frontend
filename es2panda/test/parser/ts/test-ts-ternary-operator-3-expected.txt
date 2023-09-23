@@ -151,36 +151,8 @@
               }
             },
             "consequent": {
-              "type": "BinaryExpression",
-              "operator": "+",
-              "left": {
-                "type": "NumberLiteral",
-                "value": 2,
-                "loc": {
-                  "start": {
-                    "line": 18,
-                    "column": 22
-                  },
-                  "end": {
-                    "line": 18,
-                    "column": 23
-                  }
-                }
-              },
-              "right": {
-                "type": "NumberLiteral",
-                "value": 3,
-                "loc": {
-                  "start": {
-                    "line": 18,
-                    "column": 26
-                  },
-                  "end": {
-                    "line": 18,
-                    "column": 27
-                  }
-                }
-              },
+              "type": "NumberLiteral",
+              "value": 5,
               "loc": {
                 "start": {
                   "line": 18,

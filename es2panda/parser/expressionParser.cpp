@@ -71,6 +71,7 @@
 #include <lexer/token/sourceLocation.h>
 #include <lexer/token/token.h>
 #include <macros.h>
+#include <util/helpers.h>
 
 #include <memory>
 
@@ -1255,7 +1256,9 @@ ir::Expression *ParserImpl::ParseBinaryExpression(ir::Expression *left)
 
     lexer_->NextToken();
 
+    parseExpressionRecursionCount_++;
     ir::Expression *rightExprNode = ParseExpression(ExpressionParseFlags::DISALLOW_YIELD);
+    parseExpressionRecursionCount_--;
 
     ir::Expression *rightExpr = rightExprNode;
     ir::ConditionalExpression *conditionalExpr = nullptr;
@@ -1309,6 +1312,10 @@ ir::Expression *ParserImpl::ParseBinaryExpression(ir::Expression *left)
         rightExpr->SetRange({left->Start(), endPos});
     }
 
+    if (parseExpressionRecursionCount_ == 0) {
+        rightExpr = TraverseBinaryExpression(rightExpr);
+    }
+
     if (conditionalExpr != nullptr) {
         conditionalExpr->SetStart(rightExpr->Start());
         conditionalExpr->SetTest(rightExpr);
@@ -1316,6 +1323,92 @@ ir::Expression *ParserImpl::ParseBinaryExpression(ir::Expression *left)
     }
 
     return rightExpr;
+}
+
+ir::Expression *ParserImpl::TraverseBinaryExpression(ir::Expression *expr)
+{
+    if (!expr->IsBinaryExpression()) {
+        return expr;
+    }
+
+    ir::Expression *lhsExpression = expr->AsBinaryExpression()->Left();
+    ir::Expression *rhsExpression = expr->AsBinaryExpression()->Right();
+    lexer::TokenType operatorType = expr->AsBinaryExpression()->OperatorType();
+    // update lhsExpression and rhsExpression
+    lhsExpression = TraverseBinaryExpression(lhsExpression);
+    rhsExpression = TraverseBinaryExpression(rhsExpression);
+    ir::Expression *numberNode = ShortcutNumberLiteralBinaryExpression(lhsExpression, rhsExpression, operatorType);
+
+    return (numberNode == nullptr) ? expr : numberNode;
+}
+
+ir::Expression *ParserImpl::ShortcutNumberLiteralBinaryExpression(ir::Expression *lhsExpression,
+                                                                  ir::Expression *rhsExpression,
+                                                                  lexer::TokenType operatorType)
+{
+    if (!lhsExpression->IsNumberLiteral() || !rhsExpression->IsNumberLiteral()) {
+        return nullptr;
+    }
+
+    double left = lhsExpression->AsNumberLiteral()->Number();
+    double right = rhsExpression->AsNumberLiteral()->Number();
+    ir::Expression *numberNode = nullptr;
+
+    switch (operatorType) {
+        case lexer::TokenType::PUNCTUATOR_PLUS: {
+            numberNode = AllocNode<ir::NumberLiteral>(left + right);
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_MINUS: {
+            numberNode = AllocNode<ir::NumberLiteral>(left - right);
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_MULTIPLY: {
+            numberNode = AllocNode<ir::NumberLiteral>(left * right);
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_DIVIDE: {
+            numberNode = AllocNode<ir::NumberLiteral>(util::Helpers::Divide<double>(left, right));
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_MOD: {
+            numberNode = AllocNode<ir::NumberLiteral>(std::fmod(left, right));
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_EXPONENTIATION: {
+            numberNode = AllocNode<ir::NumberLiteral>(std::pow(left, right));
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_BITWISE_OR: {
+            numberNode = AllocNode<ir::NumberLiteral>(util::Helpers::ToUint32(left) | util::Helpers::ToUint32(right));
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_BITWISE_AND: {
+            numberNode = AllocNode<ir::NumberLiteral>(util::Helpers::ToUint32(left) & util::Helpers::ToUint32(right));
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_BITWISE_XOR: {
+            numberNode = AllocNode<ir::NumberLiteral>(util::Helpers::ToUint32(left) ^ util::Helpers::ToUint32(right));
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_LEFT_SHIFT: {
+            numberNode = AllocNode<ir::NumberLiteral>(util::Helpers::ToInt32(left) << util::Helpers::ToUint32(right));
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_RIGHT_SHIFT: {
+            numberNode = AllocNode<ir::NumberLiteral>(util::Helpers::ToInt32(left) >> util::Helpers::ToUint32(right));
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_UNSIGNED_RIGHT_SHIFT: {
+            numberNode = AllocNode<ir::NumberLiteral>(util::Helpers::ToUint32(left) >> util::Helpers::ToUint32(right));
+            break;
+        }
+        default:
+            return nullptr;
+    }
+
+    numberNode->SetRange({lhsExpression->Start(), rhsExpression->End()});
+    return numberNode;
 }
 
 ir::CallExpression *ParserImpl::ParseCallExpression(ir::Expression *callee, bool isOptionalChain, bool isAsync)

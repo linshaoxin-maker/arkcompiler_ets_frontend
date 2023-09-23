@@ -143,6 +143,36 @@ int64_t Helpers::GetIndex(const util::StringView &str)
     return value;
 }
 
+int32_t Helpers::ToInt32(double num)
+{
+    if (std::isnan(num) || std::isinf(num) || num == 0.0) {
+        return 0;
+    }
+
+    double number = std::fmod(num, MAX_UINT32);
+    if (number >= std::numeric_limits<int32_t>::min() && number <= std::numeric_limits<int32_t>::max()) {
+        return number - std::fmod(number, 1);
+    } else if (number > std::numeric_limits<int32_t>::max()) {
+        return (number - MAX_UINT32) - std::fmod((number - MAX_UINT32), 1);
+    }
+
+    return 0;
+}
+
+uint32_t Helpers::ToUint32(double num)
+{
+    if (std::isnan(num) || std::isinf(num) || num == 0.0) {
+        return 0;
+    }
+
+    double number = std::fmod(num, MAX_UINT32);
+    if (number >= std::numeric_limits<uint32_t>::min() && number <= std::numeric_limits<uint32_t>::max()) {
+        return number - std::fmod(number, 1);
+    }
+
+    return 0;
+}
+
 bool Helpers::FileExtensionIs(std::string_view filePath, std::string_view extension)
 {
     return filePath.length() > extension.length() && Helpers::EndsWith(filePath, extension);

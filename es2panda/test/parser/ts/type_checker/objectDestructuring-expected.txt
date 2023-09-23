@@ -6396,36 +6396,8 @@
                       }
                     },
                     "value": {
-                      "type": "BinaryExpression",
-                      "operator": "+",
-                      "left": {
-                        "type": "NumberLiteral",
-                        "value": 5,
-                        "loc": {
-                          "start": {
-                            "line": 62,
-                            "column": 63
-                          },
-                          "end": {
-                            "line": 62,
-                            "column": 64
-                          }
-                        }
-                      },
-                      "right": {
-                        "type": "NumberLiteral",
-                        "value": 6,
-                        "loc": {
-                          "start": {
-                            "line": 62,
-                            "column": 67
-                          },
-                          "end": {
-                            "line": 62,
-                            "column": 68
-                          }
-                        }
-                      },
+                      "type": "NumberLiteral",
+                      "value": 11,
                       "loc": {
                         "start": {
                           "line": 62,

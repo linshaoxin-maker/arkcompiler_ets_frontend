@@ -62,36 +62,8 @@
             }
           },
           "initializer": {
-            "type": "BinaryExpression",
-            "operator": "<<",
-            "left": {
-              "type": "NumberLiteral",
-              "value": 5,
-              "loc": {
-                "start": {
-                  "line": 19,
-                  "column": 9
-                },
-                "end": {
-                  "line": 19,
-                  "column": 10
-                }
-              }
-            },
-            "right": {
-              "type": "NumberLiteral",
-              "value": 4,
-              "loc": {
-                "start": {
-                  "line": 19,
-                  "column": 14
-                },
-                "end": {
-                  "line": 19,
-                  "column": 15
-                }
-              }
-            },
+            "type": "NumberLiteral",
+            "value": 80,
             "loc": {
               "start": {
                 "line": 19,

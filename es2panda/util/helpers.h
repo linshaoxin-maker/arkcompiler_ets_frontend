@@ -64,8 +64,12 @@ public:
 
     template <typename T>
     static bool IsInteger(double number);
+    template <typename T>
+    static T Divide(T left, T right);
     static bool IsIndex(double number);
     static int64_t GetIndex(const util::StringView &str);
+    static int32_t ToInt32(double num);
+    static uint32_t ToUint32(double num);
 
     static bool FileExtensionIs(std::string_view filePath, std::string_view extension);
     static bool EndsWith(std::string_view str, std::string_view suffix);
@@ -111,6 +115,7 @@ public:
     static const int32_t MIN_DECIMAL_EXPONENT = -6;
     static const int32_t FAIL_SNPRINTF_S  = -1;
     static const uint32_t INVALID_INDEX = 4294967295L;
+    static const uint64_t MAX_UINT32 = 4294967296L;
     static const uint32_t MAX_INT32 = 2147483647;
     static const uint32_t MAX_INT16 = std::numeric_limits<int16_t>::max();
     static const uint32_t MAX_INT8 = std::numeric_limits<int8_t>::max();
@@ -135,6 +140,20 @@ bool Helpers::IsInteger(double number)
     }
 
     return false;
+}
+
+template <typename T>
+T Helpers::Divide(T left, T right)
+{
+    if (right != 0) {
+        return left / right;
+    } else if (left == 0 || left != left) { // for NaN
+        return std::numeric_limits<T>::quiet_NaN();
+    } else if ((left >= 0) == (std::signbit(right) == 0)) {
+        return std::numeric_limits<T>::infinity();
+    }
+
+    return -std::numeric_limits<T>::infinity();
 }
 
 template <class T>
