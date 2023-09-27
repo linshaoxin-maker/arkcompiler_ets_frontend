@@ -1,6 +1,6 @@
 # ets_frontend <a name="EN-US_TOPIC_0000001137330686"></a>
 
-- [ets_frontend <a name="EN-US_TOPIC_0000001137330686"></a>](#ets_frontend-)
+-  [ets_frontend <a name="EN-US_TOPIC_0000001137330686"></a>](#ets_frontend-)
   - [Introduction<a name="section11660541593"></a>](#introduction)
   - [Directory Structure<a name="section161941989596"></a>](#directory-structure)
   - [Build<a name="section0446154755015"></a>](#Build)
