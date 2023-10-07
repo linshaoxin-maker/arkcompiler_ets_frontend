@@ -106,19 +106,15 @@ SourceLocation LineIndex::GetLocation(SourcePosition pos) noexcept
 
 SourceLocation LineIndex::GetLocation(size_t index) noexcept
 {
-    size_t line = 1;
-    size_t col = 1;
+    SourcePosition sp;
     ASSERT(index < entrys_.back().lineStart); // EOF
-    for (size_t pos = 0; pos < entrys_.size(); ++pos) {
-        if (index >= entrys_[pos].lineStart && index < entrys_[pos].GetOffset()) { // line ends with newline punctuator
-            col = index - entrys_[pos].lineStart;
+    for (size_t line = 0; line < entrys_.size(); ++line) {
+        if (index >= entrys_[line].lineStart && index < entrys_[line].GetOffset()) { // line ends with newline punctuator
+            sp.index = index;
+            sp.line = line;
             break;
-        } else {
-            ++line;
-            continue;
         }
     }
-
-    return SourceLocation(line, col);
+    return GetLocation(sp);
 }
 }  // namespace panda::es2panda::lexer
