@@ -208,14 +208,24 @@ ETSLReference::ETSLReference(CodeGen *cg, const ir::AstNode *node, ReferenceKind
 ETSLReference ETSLReference::Create(CodeGen *const cg, const ir::AstNode *const node, const bool isDeclaration)
 {
     if (node->Type() == ir::AstNodeType::IDENTIFIER) {
+        if (node->AsIdentifier()->Variable() != nullptr) {
+            auto *var = node->AsIdentifier()->Variable();
+            varbinder::ConstScopeFindResult res;
+            res.name = var->Name();
+            res.variable = var;
+            res.scope = var->GetScope();
+            auto refKind = ReferenceKind::VAR_OR_GLOBAL;
+            if (var->HasFlag(varbinder::VariableFlags::PROPERTY)) {
+                refKind = ReferenceKind::FIELD;
+            }
+            return {cg, node, refKind, res, isDeclaration};
+        }
+
         const auto &name = node->AsIdentifier()->Name();
         auto res = cg->Scope()->FindInFunctionScope(name, varbinder::ResolveBindingOptions::ALL);
         if (res.variable == nullptr) {
             res = cg->Scope()->FindInGlobal(name, varbinder::ResolveBindingOptions::ALL_VARIABLES |
                                                       varbinder::ResolveBindingOptions::ALL_METHOD);
-            if (res.variable == nullptr) {
-                res.variable = node->AsIdentifier()->Variable();
-            }
         }
 
         return {cg, node, ReferenceKind::VAR_OR_GLOBAL, res, isDeclaration};

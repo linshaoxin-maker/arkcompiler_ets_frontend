@@ -180,6 +180,7 @@ public:
 private:
     BoundContext *prev_;
     RecordTable *recordTable_;
+    RecordTable::RecordHolder currentRecord_ {nullptr};
     RecordTable::RecordHolder savedRecord_ {nullptr};
     ir::Identifier *recordIdent_;
 };

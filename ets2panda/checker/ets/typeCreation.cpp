@@ -25,6 +25,7 @@
 #include "checker/types/ets/shortType.h"
 #include "generated/signatures.h"
 #include "ir/base/classDefinition.h"
+#include "ir/statements/classDeclaration.h"
 #include "ir/base/scriptFunction.h"
 #include "ir/ets/etsScript.h"
 #include "ir/expressions/identifier.h"
@@ -499,6 +500,15 @@ ETSObjectType *ETSChecker::CreateNewETSObjectType(util::StringView name, ir::Ast
 
     auto *containingObjType = util::Helpers::GetContainingObjectType(declNode->Parent());
 
+    if (declNode->IsClassDefinition()) {
+        auto *classDef = declNode->AsClassDefinition();
+        if (classDef->IsLocal()) {
+            util::UString localName(declNode->AsClassDefinition()->LocalPrefix(), Allocator());
+            localName.Append(name);
+            assemblerName = localName.View();
+        }
+    }
+
     if (containingObjType != nullptr) {
         prefix = containingObjType->AssemblerName();
     } else if (const auto *topStatement = declNode->GetTopStatement();
@@ -514,7 +524,7 @@ ETSObjectType *ETSChecker::CreateNewETSObjectType(util::StringView name, ir::Ast
     if (!prefix.Empty()) {
         util::UString fullPath(prefix, Allocator());
         fullPath.Append('.');
-        fullPath.Append(name);
+        fullPath.Append(assemblerName);
         assemblerName = fullPath.View();
     }
 

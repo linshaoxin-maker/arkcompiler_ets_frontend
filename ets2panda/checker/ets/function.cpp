@@ -1414,7 +1414,9 @@ void ETSChecker::CheckCapturedVariable(ir::AstNode *const node, varbinder::Varia
 
 void ETSChecker::CheckCapturedVariableInSubnodes(ir::AstNode *node, varbinder::Variable *var)
 {
-    node->Iterate([this, var](ir::AstNode *childNode) { CheckCapturedVariable(childNode, var); });
+    if (!node->IsClassDefinition()) {
+        node->Iterate([this, var](ir::AstNode *childNode) { CheckCapturedVariable(childNode, var); });
+    }
 }
 
 void ETSChecker::CheckCapturedVariables()
@@ -2201,7 +2203,7 @@ ir::ClassProperty *ETSChecker::CreateLambdaCapturedField(const varbinder::Variab
     auto fieldCtx = varbinder::LexicalScope<varbinder::LocalScope>::Enter(VarBinder(), scope->InstanceFieldScope());
 
     // Create the name for the synthetic property node
-    util::UString fieldName(util::StringView("field"), Allocator());
+    util::UString fieldName(util::StringView("field#"), Allocator());
     fieldName.Append(std::to_string(idx));
     auto *fieldIdent = Allocator()->New<ir::Identifier>(fieldName.View(), Allocator());
 

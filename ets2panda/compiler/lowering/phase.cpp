@@ -26,6 +26,7 @@
 #include "compiler/lowering/ets/generateDeclarations.h"
 #include "compiler/lowering/ets/lambdaLowering.h"
 #include "compiler/lowering/ets/interfacePropertyDeclarations.h"
+#include "compiler/lowering/ets/localClassLowering.h"
 #include "compiler/lowering/ets/opAssignment.h"
 #include "compiler/lowering/ets/tupleLowering.h"
 #include "compiler/lowering/ets/unionLowering.h"
@@ -57,6 +58,7 @@ static OptionalLowering g_optionalLowering;
 static ExpandBracketsPhase g_expandBracketsPhase;
 static PromiseVoidInferencePhase g_promiseVoidInferencePhase;
 static StructLowering g_structLowering;
+static LocalClassConstructionPhase g_localClassLowering;
 static PluginPhase g_pluginsAfterParse {"plugins-after-parse", ES2PANDA_STATE_PARSED, &util::Plugin::AfterParse};
 static PluginPhase g_pluginsAfterCheck {"plugins-after-check", ES2PANDA_STATE_CHECKED, &util::Plugin::AfterCheck};
 static PluginPhase g_pluginsAfterLowerings {"plugins-after-lowering", ES2PANDA_STATE_LOWERED,
@@ -78,7 +80,8 @@ std::vector<Phase *> GetETSPhaseList()
         &g_pluginsAfterCheck,      &g_generateTsDeclarationsPhase,
         &g_opAssignmentLowering,   &g_objectIndexLowering,
         &g_tupleLowering,          &g_unionLowering,
-        &g_expandBracketsPhase,    &g_pluginsAfterLowerings,
+        &g_expandBracketsPhase,    &g_localClassLowering,
+        &g_pluginsAfterLowerings,
     };
 }
 

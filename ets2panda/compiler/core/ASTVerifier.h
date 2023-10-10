@@ -124,7 +124,8 @@ public:
                                                                    "PromiseVoidInferencePhase",
                                                                    "TupleLowering",
                                                                    "UnionLowering",
-                                                                   "ExpandBracketsPhase"};
+                                                                   "ExpandBracketsPhase",
+                                                                   "LocalClassConstructionPhase"};
             if (withoutAdditionalChecks.count(phaseName.Mutf8()) > 0) {
                 return {{}};
             };
