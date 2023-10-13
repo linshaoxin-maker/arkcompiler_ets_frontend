@@ -1353,7 +1353,7 @@ bool ETSChecker::IsTypeBuiltinType(Type *type)
 bool ETSChecker::IsReferenceType(const Type *type)
 {
     return type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT) || type->IsETSNullLike() ||
-           type->IsETSStringType();
+           type->IsETSStringType() || type->IsETSBigIntType();
 }
 
 const ir::AstNode *ETSChecker::FindJumpTarget(ir::AstNodeType node_type, const ir::AstNode *node,

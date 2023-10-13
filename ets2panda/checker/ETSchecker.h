@@ -22,6 +22,7 @@
 #include "varbinder/enumMemberResult.h"
 #include "ir/ts/tsTypeParameter.h"
 #include "ir/ts/tsTypeParameterInstantiation.h"
+#include "lexer/token/tokenType.h"
 #include "util/enumbitops.h"
 #include "util/ustring.h"
 #include "checker/resolveResult.h"
@@ -98,10 +99,12 @@ public:
     Type *GlobalETSNullType() const;
     Type *GlobalETSUndefinedType() const;
     Type *GlobalETSStringLiteralType() const;
+    Type *GlobalETSBigIntLiteralType() const;
     Type *GlobalWildcardType() const;
 
     ETSObjectType *GlobalETSObjectType() const;
     ETSObjectType *GlobalBuiltinETSStringType() const;
+    ETSObjectType *GlobalBuiltinETSBigIntType() const;
     ETSObjectType *GlobalBuiltinTypeType() const;
     ETSObjectType *GlobalBuiltinExceptionType() const;
     ETSObjectType *GlobalBuiltinErrorType() const;
@@ -181,6 +184,7 @@ public:
     LongType *CreateLongType(int64_t value);
     ShortType *CreateShortType(int16_t value);
     CharType *CreateCharType(char16_t value);
+    ETSBigIntType *CreateETSBigIntLiteralType(util::StringView value);
     ETSStringType *CreateETSStringLiteralType(util::StringView value);
     ETSArrayType *CreateETSArrayType(Type *element_type);
     Type *CreateETSUnionType(ArenaVector<Type *> &&constituent_types);
@@ -207,6 +211,7 @@ public:
     // Arithmetic
     Type *NegateNumericType(Type *type, ir::Expression *node);
     Type *BitwiseNegateIntegralType(Type *type, ir::Expression *node);
+    bool CheckBinaryOperatorForBigInt(Type *left, Type *right, lexer::TokenType operation);
     std::tuple<Type *, Type *> CheckBinaryOperator(ir::Expression *left, ir::Expression *right, ir::Expression *expr,
                                                    lexer::TokenType operation_type, lexer::SourcePosition pos,
                                                    bool force_promotion = false);
@@ -599,6 +604,8 @@ private:
 
     void SetUpTypeParameterConstraint(ir::TSTypeParameter *param);
     ETSObjectType *SetUpParameterType(ir::TSTypeParameter *param);
+    ETSObjectType *UpdateGlobalType(ETSObjectType *obj_type, util::StringView name);
+    ETSObjectType *UpdateBoxedGlobalType(ETSObjectType *obj_type, util::StringView name);
     ETSObjectType *CreateETSObjectTypeCheckBuiltins(util::StringView name, ir::AstNode *decl_node,
                                                     ETSObjectFlags flags);
     void CheckProgram(parser::Program *program, bool run_analysis = false);
