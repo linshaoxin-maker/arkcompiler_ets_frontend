@@ -598,6 +598,11 @@ void ETSGen::LoadThis(const ir::AstNode *node)
     LoadAccumulator(node, GetThisReg());
 }
 
+void ETSGen::CreateBigIntObject(const ir::AstNode *node, VReg arg0)
+{
+    Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_BIGINT_CTOR, arg0, dummy_reg_);
+}
+
 void ETSGen::CreateLambdaObjectFromIdentReference(const ir::AstNode *node, ir::ClassDefinition *lambda_obj)
 {
     auto *ctor = lambda_obj->TsType()->AsETSObjectType()->ConstructSignatures()[0];
@@ -811,6 +816,19 @@ void ETSGen::EmitIsInstance([[maybe_unused]] const ir::AstNode *const node, [[ma
 #endif  // PANDA_WITH_ETS
 }
 
+void ETSGen::LoadConstantObject(const ir::Expression *node, const checker::Type *type)
+{
+    if (type->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_BIGINT)) {
+        LoadAccumulatorBigInt(node, type->AsETSObjectType()->AsETSBigIntType()->GetValue());
+        const VReg value = AllocReg();
+        StoreAccumulator(node, value);
+        CreateBigIntObject(node, value);
+    } else {
+        LoadAccumulatorString(node, type->AsETSObjectType()->AsETSStringType()->GetValue());
+        SetAccumulatorType(node->TsType());
+    }
+}
+
 bool ETSGen::TryLoadConstantExpression(const ir::Expression *node)
 {
     const auto *type = node->TsType();
@@ -855,8 +873,7 @@ bool ETSGen::TryLoadConstantExpression(const ir::Expression *node)
             break;
         }
         case checker::TypeFlag::ETS_OBJECT: {
-            LoadAccumulatorString(node, type->AsETSObjectType()->AsETSStringType()->GetValue());
-            SetAccumulatorType(node->TsType());
+            LoadConstantObject(node, type);
             break;
         }
         default: {
@@ -2100,7 +2117,10 @@ void ETSGen::BinaryEqualityRef(const ir::AstNode *node, bool test_equal, VReg lh
         StoreAccumulator(node, rhs);
 
         LoadAccumulator(node, lhs);
-        if (GetVRegType(lhs)->IsETSStringType()) {
+
+        if (GetVRegType(lhs)->IsETSBigIntType()) {
+            CallThisStatic1(node, lhs, Signatures::BUILTIN_BIGINT_EQUALS, rhs);
+        } else if (GetVRegType(lhs)->IsETSStringType()) {
             CallThisStatic1(node, lhs, Signatures::BUILTIN_STRING_EQUALS, rhs);
         } else {
             CallThisVirtual1(node, lhs, Signatures::BUILTIN_OBJECT_EQUALS, rhs);
@@ -2192,6 +2212,13 @@ void ETSGen::Unary(const ir::AstNode *node, lexer::TokenType op)
 
 void ETSGen::UnaryMinus(const ir::AstNode *node)
 {
+    if (GetAccumulatorType()->IsETSBigIntType()) {
+        const VReg value = AllocReg();
+        StoreAccumulator(node, value);
+        CallThisStatic0(node, value, Signatures::BUILTIN_BIGINT_NEGATE);
+        return;
+    }
+
     switch (checker::ETSChecker::ETSType(GetAccumulatorType())) {
         case checker::TypeFlag::LONG: {
             Sa().Emit<NegWide>(node);
@@ -2354,6 +2381,22 @@ void ETSGen::BuildString(const ir::Expression *node)
     CallThisStatic0(node, builder, Signatures::BUILTIN_STRING_BUILDER_TO_STRING);
 
     SetAccumulatorType(node->TsType());
+}
+
+void ETSGen::CallBigIntOperator(const ir::Expression *node)
+{
+    RegScope rs(this);
+
+    // Empty big int constructor
+    Ra().Emit<InitobjShort, 0>(node, Signatures::BUILTIN_BIGINT_CTOR_EMPTY, dummy_reg_, dummy_reg_);
+    SetAccumulatorType(Checker()->GlobalBuiltinETSBigIntType());
+    const VReg bigint = AllocReg();
+    StoreAccumulator(node, bigint);
+
+    // NOTE(kkonsw): add implementation for the operators
+    CallThisStatic0(node, bigint, Signatures::BUILTIN_BIGINT_OPERATOR);
+    SetAccumulatorType(Checker()->GlobalLongType());
+    StoreAccumulator(node, bigint);
 }
 
 void ETSGen::BuildTemplateString(const ir::TemplateLiteral *node)

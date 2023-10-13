@@ -353,6 +353,20 @@ static void CompileLogical(compiler::ETSGen *etsg, const ir::BinaryExpression *e
 void ETSCompiler::Compile(const ir::BinaryExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
+
+    if (expr->Left()->TsType()->IsETSBigIntType() && expr->Right()->TsType()->IsETSBigIntType()) {
+        switch (expr->OperatorType()) {
+            case lexer::TokenType::KEYW_INSTANCEOF:
+            case lexer::TokenType::PUNCTUATOR_EQUAL:
+            case lexer::TokenType::PUNCTUATOR_STRICT_EQUAL:
+                // Handled below
+                break;
+            default:
+                etsg->CallBigIntOperator(expr);
+                return;
+        }
+    }
+
     if (etsg->TryLoadConstantExpression(expr)) {
         return;
     }

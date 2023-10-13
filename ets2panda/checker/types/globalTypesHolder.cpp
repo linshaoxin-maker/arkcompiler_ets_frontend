@@ -42,6 +42,7 @@
 #include "checker/types/ets/shortType.h"
 #include "checker/types/ets/etsBooleanType.h"
 #include "checker/types/ets/etsStringType.h"
+#include "checker/types/ets/etsBigIntType.h"
 #include "checker/types/ets/etsVoidType.h"
 #include "checker/types/ets/etsObjectType.h"
 #include "checker/types/ets/wildcardType.h"
@@ -126,6 +127,7 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtin_name_m
     builtin_name_mappings_.emplace("ClassNotFoundException", GlobalTypeId::ETS_CLASS_NOT_FOUND_EXCEPTION_BUILTIN);
     builtin_name_mappings_.emplace("ClassCastException", GlobalTypeId::ETS_CLASS_CAST_EXCEPTION_BUILTIN);
     builtin_name_mappings_.emplace("String", GlobalTypeId::ETS_STRING_BUILTIN);
+    builtin_name_mappings_.emplace("BigInt", GlobalTypeId::ETS_BIG_INT_BUILTIN);
     builtin_name_mappings_.emplace("StringBuilder", GlobalTypeId::ETS_STRING_BUILDER_BUILTIN);
     builtin_name_mappings_.emplace("Type", GlobalTypeId::ETS_TYPE_BUILTIN);
     builtin_name_mappings_.emplace("Types", GlobalTypeId::ETS_TYPES_BUILTIN);
@@ -504,6 +506,16 @@ Type *GlobalTypesHolder::GlobalUncatchedExceptionErrorBuiltinType()
 Type *GlobalTypesHolder::GlobalETSStringBuiltinType()
 {
     return global_types_.at(static_cast<size_t>(GlobalTypeId::ETS_STRING_BUILTIN));
+}
+
+Type *GlobalTypesHolder::GlobalETSBigIntBuiltinType()
+{
+    return global_types_.at(static_cast<size_t>(GlobalTypeId::ETS_BIG_INT_BUILTIN));
+}
+
+Type *GlobalTypesHolder::GlobalETSBigIntLiteralType()
+{
+    return global_types_.at(static_cast<size_t>(GlobalTypeId::ETS_BIG_INT));
 }
 
 Type *GlobalTypesHolder::GlobalStringBuilderBuiltinType()

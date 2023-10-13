@@ -16,6 +16,7 @@
 #include "unaryExpression.h"
 
 #include "varbinder/variable.h"
+#include "checker/types/typeFlag.h"
 #include "compiler/core/pandagen.h"
 #include "compiler/core/ETSGen.h"
 #include "checker/TSchecker.h"
@@ -230,6 +231,24 @@ checker::Type *UnaryExpression::Check(checker::ETSChecker *checker)
     checker::Type *operand_type = checker->ApplyUnaryOperatorPromotion(arg_type, true, true, is_cond_expr);
     auto unboxed_operand_type = is_cond_expr ? checker->ETSBuiltinTypeAsConditionalType(arg_type)
                                              : checker->ETSBuiltinTypeAsPrimitiveType(arg_type);
+    if (arg_type != nullptr && arg_type->IsETSBigIntType() &&
+        arg_type->HasTypeFlag(checker::TypeFlag::BIGINT_LITERAL)) {
+        switch (operator_) {
+            case lexer::TokenType::PUNCTUATOR_MINUS: {
+                checker::Type *type = checker->CreateETSBigIntLiteralType(arg_type->AsETSBigIntType()->GetValue());
+
+                // We do not need this const anymore as we are negating the bigint object in runtime
+                type->RemoveTypeFlag(checker::TypeFlag::CONSTANT);
+                argument_->SetTsType(type);
+                SetTsType(type);
+                return TsType();
+            }
+            default:
+                // Handled below
+                // NOTE(kkonsw): handle other unary operators for bigint objects
+                break;
+        }
+    }
 
     switch (operator_) {
         case lexer::TokenType::PUNCTUATOR_MINUS:
@@ -296,7 +315,7 @@ checker::Type *UnaryExpression::Check(checker::ETSChecker *checker)
         }
     }
 
-    if (arg_type->IsETSObjectType() && (unboxed_operand_type != nullptr) &&
+    if ((arg_type != nullptr) && arg_type->IsETSObjectType() && (unboxed_operand_type != nullptr) &&
         unboxed_operand_type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
         argument_->AddBoxingUnboxingFlag(checker->GetUnboxingFlag(unboxed_operand_type));
     }

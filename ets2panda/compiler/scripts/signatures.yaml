@@ -251,6 +251,9 @@ builtins:
   - name: Error
     package: PKG_ESCOMPAT
     ref: BUILTIN_ERROR
+  - name: BigInt
+    package: PKG_ESCOMPAT
+    ref: BUILTIN_BIGINT
   - name: AssertionError
     package: PKG_ESCOMPAT
     ref: BUILTIN_ASSERTION_ERROR
@@ -330,6 +333,36 @@ signatures:
     params: [BUILTIN_STRING]
     return_type: PRIMITIVE_VOID
     ref: BUILTIN_ASSERTION_ERROR_CTOR
+
+  - callee: BUILTIN_BIGINT
+    method_name: $CTOR
+    params: [BUILTIN_STRING]
+    return_type: PRIMITIVE_VOID
+    ref: BUILTIN_BIGINT_CTOR
+
+  - callee: BUILTIN_BIGINT
+    method_name: $CTOR
+    params: []
+    return_type: PRIMITIVE_VOID
+    ref: BUILTIN_BIGINT_CTOR_EMPTY
+
+  - callee: BUILTIN_BIGINT
+    method_name: bigIntOperator
+    params: []
+    return_type: PRIMITIVE_LONG
+    ref: BUILTIN_BIGINT_OPERATOR
+
+  - callee: BUILTIN_BIGINT
+    method_name: equals
+    params: [BUILTIN_BIGINT]
+    return_type: PRIMITIVE_BOOLEAN
+    ref: BUILTIN_BIGINT_EQUALS
+
+  - callee: BUILTIN_BIGINT
+    method_name: negate
+    params: []
+    return_type: BUILTIN_BIGINT
+    ref: BUILTIN_BIGINT_NEGATE
 
   - callee: BUILTIN_THROWABLE
     method_name: $CTOR
