@@ -685,7 +685,7 @@ export class TypeScriptLinter {
     const baseExprSym = this.tsUtils.trueSymbolAtLocation(propertyAccessNode.expression);
     const baseExprType = this.tsTypeChecker.getTypeAtLocation(propertyAccessNode.expression);
 
-    if (this.isPrototypePropertyAccess(propertyAccessNode, exprSym, baseExprSym, baseExprType)) { 
+    if (this.isPrototypePropertyAccess(propertyAccessNode, exprSym, baseExprSym, baseExprType)) {
       this.incrementCounters(propertyAccessNode.name, FaultID.Prototype);
     }
     if (!!exprSym && this.tsUtils.isSymbolAPI(exprSym) && !TsUtils.ALLOWED_STD_SYMBOL_API.includes(exprSym.getName())) {
@@ -773,7 +773,7 @@ export class TypeScriptLinter {
             ts.isIdentifier(x.expression.expression)
           )
             decoratorName = x.expression.expression.text;
-          
+
           // special case for property of type CustomDialogController of the @CustomDialog-decorated class
           if (expectedDecorators.includes(TsUtils.NON_INITIALIZABLE_PROPERTY_CLASS_DECORATORS[0])) {
             return expectedDecorators.includes(decoratorName) && propType === 'CustomDialogController'
@@ -1610,7 +1610,7 @@ export class TypeScriptLinter {
     );
     const checkClassOrInterface = tsElemAccessBaseExprType.isClassOrInterface() &&
                                   !this.tsUtils.isGenericArrayType(tsElemAccessBaseExprType) &&
-                                  !this.tsUtils.isDerivedFrom(tsElemAccessBaseExprType, CheckType.Array);   
+                                  !this.tsUtils.isDerivedFrom(tsElemAccessBaseExprType, CheckType.Array);
     const checkThisOrSuper = this.tsUtils.isThisOrSuperExpr(tsElementAccessExpr.expression) &&
                              !this.tsUtils.isDerivedFrom(tsElemAccessBaseExprType, CheckType.Array);
 
@@ -1728,7 +1728,7 @@ export class TypeScriptLinter {
       this.handleStructIdentAndUndefinedInArgs(tsCallExpr, callSignature);
     }
     this.handleLibraryTypeCall(tsCallExpr, calleeType);
-    
+
     if (ts.isPropertyAccessExpression(tsCallExpr.expression) && this.tsUtils.hasEsObjectType(tsCallExpr.expression.expression)) {
       this.incrementCounters(node, FaultID.EsObjectAccess);
     }
@@ -2110,7 +2110,9 @@ export class TypeScriptLinter {
       comment.kind === ts.SyntaxKind.MultiLineCommentTrivia
         ? srcText.slice(comment.pos + 2, comment.end - 2)
         : srcText.slice(comment.pos + 2, comment.end);
-
+    //if comment is multiline end closing '*/' is not at the same line as '@ts-xxx' - do nothing (see #13851)
+    if (commentContent.endsWith('\n'))
+      return;
     let trimmedContent = commentContent.trim();
     if (
       trimmedContent.startsWith("@ts-ignore") ||
