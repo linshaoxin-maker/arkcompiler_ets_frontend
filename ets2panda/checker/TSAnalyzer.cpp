@@ -796,9 +796,8 @@ checker::Type *TSAnalyzer::Check(ir::TSModuleBlock *st) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSModuleDeclaration *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSModuleDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
@@ -838,9 +837,8 @@ checker::Type *TSAnalyzer::Check(ir::TSObjectKeyword *node) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSParameterProperty *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSParameterProperty *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -892,33 +890,28 @@ checker::Type *TSAnalyzer::Check(ir::TSTypeLiteral *node) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSTypeOperator *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSTypeOperator *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSTypeParameter *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSTypeParameter *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSTypeParameterDeclaration *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSTypeParameterDeclaration *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSTypeParameterInstantiation *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSTypeParameterInstantiation *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSTypePredicate *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSTypePredicate *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
