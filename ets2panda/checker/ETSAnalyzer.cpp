@@ -20,14 +20,6 @@
 #include "checker/ETSchecker.h"
 #include "checker/ets/castingContext.h"
 #include "checker/ets/typeRelationContext.h"
-#include "ir/base/catchClause.h"
-#include "ir/base/classProperty.h"
-#include "ir/base/classStaticBlock.h"
-#include "ir/expressions/identifier.h"
-#include "ir/expressions/objectExpression.h"
-#include "ir/expressions/arrayExpression.h"
-#include "ir/statements/blockStatement.h"
-#include "ir/statements/returnStatement.h"
 #include "util/helpers.h"
 
 namespace panda::es2panda::checker {
@@ -1087,9 +1079,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSModuleBlock *st) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSModuleDeclaration *st) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSModuleDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
@@ -1129,9 +1120,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSObjectKeyword *node) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSParameterProperty *expr) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSParameterProperty *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -1183,33 +1173,28 @@ checker::Type *ETSAnalyzer::Check(ir::TSTypeLiteral *node) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSTypeOperator *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypeOperator *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSTypeParameter *expr) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypeParameter *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSTypeParameterDeclaration *expr) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypeParameterDeclaration *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSTypeParameterInstantiation *expr) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypeParameterInstantiation *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSTypePredicate *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypePredicate *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 

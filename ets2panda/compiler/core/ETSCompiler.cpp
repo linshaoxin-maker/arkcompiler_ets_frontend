@@ -816,9 +816,8 @@ void ETSCompiler::Compile(const ir::TSModuleBlock *st) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSModuleDeclaration *st) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSModuleDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
@@ -858,9 +857,8 @@ void ETSCompiler::Compile(const ir::TSObjectKeyword *node) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSParameterProperty *expr) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSParameterProperty *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -912,33 +910,28 @@ void ETSCompiler::Compile(const ir::TSTypeLiteral *node) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSTypeOperator *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSTypeOperator *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSTypeParameter *expr) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSTypeParameter *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSTypeParameterDeclaration *expr) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSTypeParameterDeclaration *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSTypeParameterInstantiation *expr) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSTypeParameterInstantiation *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSTypePredicate *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSTypePredicate *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
