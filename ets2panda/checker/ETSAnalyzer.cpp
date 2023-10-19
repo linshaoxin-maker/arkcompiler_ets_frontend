@@ -19,14 +19,6 @@
 #include "checker/ETSchecker.h"
 #include "checker/ets/castingContext.h"
 #include "checker/ets/typeRelationContext.h"
-#include "ir/base/catchClause.h"
-#include "ir/base/classProperty.h"
-#include "ir/base/classStaticBlock.h"
-#include "ir/expressions/identifier.h"
-#include "ir/expressions/objectExpression.h"
-#include "ir/expressions/arrayExpression.h"
-#include "ir/statements/blockStatement.h"
-#include "ir/statements/returnStatement.h"
 #include "util/helpers.h"
 
 namespace panda::es2panda::checker {
@@ -419,25 +411,148 @@ checker::Type *ETSAnalyzer::Check(ir::FunctionExpression *expr) const
 
 checker::Type *ETSAnalyzer::Check(ir::Identifier *expr) const
 {
-    (void)expr;
+    ETSChecker *checker = GetETSChecker();
+    if (expr->TsType() != nullptr) {
+        return expr->TsType();
+    }
+
+    expr->SetTsType(checker->ResolveIdentifier(expr));
+    if (expr->TsType()->IsETSFunctionType()) {
+        for (auto *sig : expr->TsType()->AsETSFunctionType()->CallSignatures()) {
+            if (sig->HasSignatureFlag(checker::SignatureFlags::NEED_RETURN_TYPE)) {
+                sig->OwnerVar()->Declaration()->Node()->Check(checker);
+            }
+        }
+    }
+    return expr->TsType();
+}
+
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ImportExpression *expr) const
+{
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::ImportExpression *expr) const
+static checker::Type *CheckEnumMember(checker::ETSChecker *checker, checker::Type *type, ir::MemberExpression *expr)
 {
-    (void)expr;
-    UNREACHABLE();
+    auto const *const enum_interface = [type]() -> checker::ETSEnumInterface const * {
+        if (type->IsETSEnumType()) {
+            return type->AsETSEnumType();
+        }
+        return type->AsETSStringEnumType();
+    }();
+
+    if (expr->Parent()->Type() == ir::AstNodeType::CALL_EXPRESSION &&
+        expr->Parent()->AsCallExpression()->Callee() == expr) {
+        auto *const enum_method_type =
+            enum_interface->LookupMethod(checker, expr->Object(), expr->Property()->AsIdentifier());
+        expr->SetTsType(enum_method_type);
+        return expr->TsType();
+    }
+
+    auto *const enum_literal_type =
+        enum_interface->LookupConstant(checker, expr->Object(), expr->Property()->AsIdentifier());
+    expr->SetTsType(enum_literal_type);
+    expr->SetPropVar(enum_literal_type->GetMemberVar());
+    return expr->TsType();
+}
+
+static checker::Type *CheckObjectMember(checker::ETSChecker *checker, ir::MemberExpression *expr)
+{
+    auto resolve_res = checker->ResolveMemberReference(expr, expr->ObjType());
+    ASSERT(!resolve_res.empty());
+    checker::Type *type_to_set = nullptr;
+    switch (resolve_res.size()) {
+        case 1: {
+            if (resolve_res[0]->Kind() == checker::ResolvedKind::PROPERTY) {
+                expr->SetPropVar(resolve_res[0]->Variable()->AsLocalVariable());
+                checker->ValidatePropertyAccess(expr->PropVar(), expr->ObjType(), expr->Property()->Start());
+                type_to_set = checker->GetTypeOfVariable(expr->PropVar());
+            } else {
+                type_to_set = checker->GetTypeOfVariable(resolve_res[0]->Variable());
+            }
+            break;
+        }
+        case 2: {
+            // ETSExtensionFuncHelperType(class_method_type, extension_method_type)
+            type_to_set = checker->CreateETSExtensionFuncHelperType(
+                checker->GetTypeOfVariable(resolve_res[1]->Variable())->AsETSFunctionType(),
+                checker->GetTypeOfVariable(resolve_res[0]->Variable())->AsETSFunctionType());
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+    expr->SetTsType(type_to_set);
+    if (expr->PropVar() != nullptr && expr->PropVar()->TsType() != nullptr &&
+        expr->PropVar()->TsType()->IsETSFunctionType()) {
+        for (auto *sig : expr->PropVar()->TsType()->AsETSFunctionType()->CallSignatures()) {
+            if (sig->HasSignatureFlag(checker::SignatureFlags::NEED_RETURN_TYPE)) {
+                sig->OwnerVar()->Declaration()->Node()->Check(checker);
+            }
+        }
+    }
+    return expr->TsType();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    if (expr->TsType() != nullptr) {
+        return expr->TsType();
+    }
+
+    if (expr->IsComputed()) {
+        expr->SetTsType(checker->CheckArrayElementAccess(expr));
+        return expr->TsType();
+    }
+
+    checker::Type *const base_type = expr->Object()->Check(checker);
+
+    if (!base_type->IsETSObjectType()) {
+        if (base_type->IsETSArrayType() && expr->Property()->AsIdentifier()->Name().Is("length")) {
+            expr->SetTsType(checker->GlobalIntType());
+            return expr->TsType();
+        }
+
+        if (base_type->IsETSUnionType()) {
+            auto *const union_type = base_type->AsETSUnionType();
+            checker::Type *member_type = nullptr;
+            auto check_member_type = [expr, checker, &member_type]() {
+                if (member_type != nullptr && member_type != expr->TsType()) {
+                    checker->ThrowTypeError("Member type must be the same for all union objects.", expr->Start());
+                }
+                member_type = expr->TsType();
+            };
+            for (auto *type : union_type->ConstituentTypes()) {
+                if (type->IsETSObjectType()) {
+                    expr->SetObjectType(type->AsETSObjectType());
+                    CheckObjectMember(checker, expr);
+                    check_member_type();
+                }
+
+                if (type->IsETSEnumType() || base_type->IsETSStringEnumType()) {
+                    CheckEnumMember(checker, type, expr);
+                    check_member_type();
+                }
+            }
+            expr->SetObjectType(union_type->GetLeastUpperBoundType(checker)->AsETSObjectType());
+            return expr->TsType();
+        }
+
+        if (base_type->IsETSEnumType() || base_type->IsETSStringEnumType()) {
+            return CheckEnumMember(checker, base_type, expr);
+        }
+
+        checker->ThrowTypeError({"Cannot access property of non-object or non-enum type"}, expr->Object()->Start());
+    }
+
+    expr->SetObjectType(base_type->AsETSObjectType());
+    return CheckObjectMember(checker, expr);
 }
 
-checker::Type *ETSAnalyzer::Check(ir::NewExpression *expr) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::NewExpression *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -447,9 +562,8 @@ checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::OmittedExpression *expr) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::OmittedExpression *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -461,14 +575,26 @@ checker::Type *ETSAnalyzer::Check(ir::OpaqueTypeNode *expr) const
 
 checker::Type *ETSAnalyzer::Check(ir::SequenceExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    if (expr->TsType() != nullptr) {
+        return expr->TsType();
+    }
+
+    for (auto *it : expr->Sequence()) {
+        it->Check(checker);
+    }
+    return nullptr;
 }
 
 checker::Type *ETSAnalyzer::Check(ir::SuperExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    if (expr->TsType() != nullptr) {
+        return expr->TsType();
+    }
+
+    expr->SetTsType(checker->CheckThisOrSuperAccess(expr, checker->Context().ContainingClass()->SuperType(), "super"));
+    return expr->TsType();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TaggedTemplateExpression *expr) const
@@ -507,9 +633,8 @@ checker::Type *ETSAnalyzer::Check(ir::YieldExpression *expr) const
     UNREACHABLE();
 }
 // compile methods for LITERAL EXPRESSIONS in alphabetical order
-checker::Type *ETSAnalyzer::Check(ir::BigIntLiteral *expr) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::BigIntLiteral *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
