@@ -837,9 +837,8 @@ checker::Type *TSAnalyzer::Check(ir::TSClassImplements *expr) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSConditionalType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSConditionalType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -879,9 +878,8 @@ checker::Type *TSAnalyzer::Check(ir::TSImportEqualsDeclaration *st) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSImportType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSImportType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -891,9 +889,8 @@ checker::Type *TSAnalyzer::Check(ir::TSIndexedAccessType *node) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSInferType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSInferType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -915,9 +912,8 @@ checker::Type *TSAnalyzer::Check(ir::TSInterfaceHeritage *expr) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSIntersectionType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSIntersectionType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -927,15 +923,13 @@ checker::Type *TSAnalyzer::Check(ir::TSLiteralType *node) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSMappedType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSMappedType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSModuleBlock *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSModuleBlock *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
@@ -963,10 +957,9 @@ checker::Type *TSAnalyzer::Check(ir::TSNonNullExpression *expr) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSNullKeyword *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSNullKeyword *node) const
 {
-    (void)node;
-    UNREACHABLE();
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::TSNumberKeyword *node) const
@@ -1005,9 +998,8 @@ checker::Type *TSAnalyzer::Check(ir::TSStringKeyword *node) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSThisType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSThisType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 

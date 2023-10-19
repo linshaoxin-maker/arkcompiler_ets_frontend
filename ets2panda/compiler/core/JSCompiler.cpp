@@ -1061,9 +1061,8 @@ void JSCompiler::Compile(const ir::TSClassImplements *expr) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSConditionalType *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSConditionalType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1103,9 +1102,8 @@ void JSCompiler::Compile(const ir::TSImportEqualsDeclaration *st) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSImportType *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSImportType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1115,9 +1113,8 @@ void JSCompiler::Compile(const ir::TSIndexedAccessType *node) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSInferType *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSInferType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1139,9 +1136,8 @@ void JSCompiler::Compile(const ir::TSInterfaceHeritage *expr) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSIntersectionType *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSIntersectionType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1151,15 +1147,13 @@ void JSCompiler::Compile(const ir::TSLiteralType *node) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSMappedType *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSMappedType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSModuleBlock *st) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSModuleBlock *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
@@ -1187,9 +1181,8 @@ void JSCompiler::Compile(const ir::TSNonNullExpression *expr) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSNullKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSNullKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1229,9 +1222,8 @@ void JSCompiler::Compile(const ir::TSStringKeyword *node) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSThisType *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSThisType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
