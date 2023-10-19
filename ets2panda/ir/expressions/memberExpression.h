@@ -21,6 +21,11 @@
 #include "ir/expression.h"
 #include "ir/irnode.h"
 
+namespace panda::es2panda::compiler {
+class JSCompiler;
+class ETSCompiler;
+}  // namespace panda::es2panda::compiler
+
 namespace panda::es2panda::checker {
 class ETSObjectType;
 }  // namespace panda::es2panda::checker
@@ -58,6 +63,10 @@ public:
     }
 
     explicit MemberExpression(Tag tag, Expression *object, Expression *property);
+
+    // TODO (csabahurton): these friend relationships can be removed once there are getters for private fields
+    friend class compiler::JSCompiler;
+    friend class compiler::ETSCompiler;
 
     [[nodiscard]] Expression *Object() noexcept
     {
@@ -153,7 +162,7 @@ public:
     void CompileToReg(compiler::PandaGen *pg, compiler::VReg obj_reg) const;
     void CompileToRegs(compiler::PandaGen *pg, compiler::VReg object, compiler::VReg property) const;
     checker::Type *Check(checker::TSChecker *checker) override;
-    checker::Type *Check([[maybe_unused]] checker::ETSChecker *checker) override;
+    checker::Type *Check(checker::ETSChecker *checker) override;
 
 protected:
     MemberExpression(MemberExpression const &other) : MaybeOptionalExpression(other)
@@ -167,14 +176,6 @@ protected:
     }
 
 private:
-    std::pair<checker::Type *, varbinder::LocalVariable *> ResolveEnumMember(checker::ETSChecker *checker,
-                                                                             checker::Type *type) const;
-    std::pair<checker::Type *, varbinder::LocalVariable *> ResolveObjectMember(checker::ETSChecker *checker) const;
-
-    checker::Type *AdjustOptional(checker::ETSChecker *checker, checker::Type *type);
-    checker::Type *CheckComputed(checker::ETSChecker *checker, checker::Type *base_type);
-    checker::Type *CheckUnionMember(checker::ETSChecker *checker, checker::Type *base_type);
-
     void LoadRhs(compiler::PandaGen *pg) const;
     Expression *object_ = nullptr;
     Expression *property_ = nullptr;
