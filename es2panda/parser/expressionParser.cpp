@@ -2433,6 +2433,9 @@ ir::FunctionExpression *ParserImpl::ParseFunctionExpression(ParserStatus newStat
         if (newStatus & ParserStatus::ASYNC_FUNCTION) {
             context_.Status() |= (ParserStatus::DISALLOW_AWAIT | ParserStatus::ASYNC_FUNCTION);
         }
+        if (context_.IsInStaticBlock()) {
+            context_.Status() |= ParserStatus::FUNCTION_DECLARATION;
+        }
 
         lexer_->NextToken();
 
@@ -2440,7 +2443,9 @@ ir::FunctionExpression *ParserImpl::ParseFunctionExpression(ParserStatus newStat
             newStatus |= ParserStatus::GENERATOR_FUNCTION;
             lexer_->NextToken();
         }
-
+        if (context_.IsInStaticBlock()) {
+            context_.Status() &= ~ParserStatus::FUNCTION_DECLARATION;
+        }
         if ((Extension() == ScriptExtension::JS &&
              lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS) ||
             (Extension() == ScriptExtension::TS &&

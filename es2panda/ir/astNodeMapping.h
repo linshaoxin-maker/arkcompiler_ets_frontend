@@ -69,6 +69,7 @@
     _(RETURN_STATEMENT, ReturnStatement)                             \
     _(SCRIPT_FUNCTION, ScriptFunction)                               \
     _(SEQUENCE_EXPRESSION, SequenceExpression)                       \
+    _(CLASS_STATIC_BLOCK, ClassStaticBlock)                                      \
     _(STRING_LITERAL, StringLiteral)                                 \
     _(SUPER_EXPRESSION, SuperExpression)                             \
     _(SWITCH_CASE_STATEMENT, SwitchCaseStatement)                    \

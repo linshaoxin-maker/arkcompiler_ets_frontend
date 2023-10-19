@@ -155,6 +155,11 @@ public:
         return (flags_ & ir::ScriptFunctionFlags::METHOD) != 0;
     }
 
+    bool IsStaticBlock() const
+    {
+         return (flags_ & ir::ScriptFunctionFlags::STATIC_BLOCK) != 0;
+    }
+
     bool FunctionBodyIsExpression() const
     {
         return (flags_ & ir::ScriptFunctionFlags::EXPRESSION) != 0;

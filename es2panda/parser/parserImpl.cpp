@@ -22,6 +22,7 @@
 #include <ir/astNode.h>
 #include <ir/base/classDefinition.h>
 #include <ir/base/classProperty.h>
+#include <ir/base/classStaticBlock.h>
 #include <ir/base/decorator.h>
 #include <ir/base/methodDefinition.h>
 #include <ir/base/property.h>
@@ -2170,7 +2171,7 @@ void ParserImpl::ParseClassKeyModifiers(ClassElmentDescriptor *desc)
 
             desc->methodKind = ir::MethodDefinitionKind::GET;
             desc->methodStart = lexer_->GetToken().Start();
-
+            desc->getOrSet = true;
             lexer_->NextToken(lexer::LexerNextTokenFlags::KEYWORD_TO_IDENT);
             CheckClassPrivateIdentifier(desc);
         } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_SET) {
@@ -2180,7 +2181,7 @@ void ParserImpl::ParseClassKeyModifiers(ClassElmentDescriptor *desc)
 
             desc->methodKind = ir::MethodDefinitionKind::SET;
             desc->methodStart = lexer_->GetToken().Start();
-
+            desc->getOrSet = true;
             lexer_->NextToken(lexer::LexerNextTokenFlags::KEYWORD_TO_IDENT);
             CheckClassPrivateIdentifier(desc);
         }
@@ -2313,6 +2314,16 @@ ir::Expression *ParserImpl::ParseClassKey(ClassElmentDescriptor *desc, bool isDe
 
             if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
                 ThrowSyntaxError("Unexpected token, expected ']'");
+            }
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_LEFT_BRACE: {
+            if ((desc->modifiers & ir::ModifierFlags::STATIC) && (Extension() == ScriptExtension::JS) &&
+                !desc->getOrSet) {
+                desc->staticBlock = true;
+                return propName;
+            } else {
+                ThrowSyntaxError("Unexpected token in class property");
             }
             break;
         }
@@ -2461,14 +2472,62 @@ ir::MethodDefinition *ParserImpl::ParseClassMethod(ClassElmentDescriptor *desc,
     return method;
 }
 
+ir::ClassStaticBlock* ParserImpl::ParseClassStaticBlock(ClassElmentDescriptor* desc,
+                                                        lexer::SourcePosition* propEnd,
+                                                        ArenaVector<ir::Decorator*>&& decorators)
+{
+    FunctionContext functionContext(
+        this, desc->newStatus | ParserStatus::STATIC_BLOCK | ParserStatus::FUNCTION | ParserStatus::ALLOW_NEW_TARGET);
+
+    FunctionParameterContext funcParamContext(&context_, Binder());
+    auto* funcParamScope = funcParamContext.LexicalScope().GetScope();
+
+    lexer::SourcePosition startLoc = lexer_->GetToken().Start();
+
+    ir::TSTypeParameterDeclaration* typeParamDecl = nullptr;
+    ArenaVector<ir::Expression*> params(Allocator()->Adapter());
+    ir::Expression* returnTypeAnnotation = nullptr;
+
+    auto functionCtx = binder::LexicalScope<binder::FunctionScope>(Binder());
+    auto* functionScope = functionCtx.GetScope();
+    functionScope->BindParamScope(funcParamScope);
+    funcParamScope->BindFunctionScope(functionScope);
+
+    ir::BlockStatement* body = nullptr;
+    lexer::SourcePosition endLoc = lexer_->GetToken().End();
+
+    body = ParseBlockStatement(functionScope);
+    endLoc = body->End();
+    *propEnd = body->End();
+    lexer_->NextToken();
+    auto* funcNode = AllocNode<ir::ScriptFunction>(functionScope, std::move(params), typeParamDecl, body,
+        returnTypeAnnotation, functionContext.Flags(), false, false);
+    functionScope->BindNode(funcNode);
+    funcParamScope->BindNode(funcNode);
+    funcNode->SetRange({ startLoc, endLoc });
+    funcNode->AddFlag(ir::ScriptFunctionFlags::STATIC_BLOCK);
+
+    auto* funcExpr = AllocNode<ir::FunctionExpression>(funcNode);
+    funcExpr->SetRange(funcNode->Range());
+    ArenaVector<ir::ParamDecorators> paramDecorators(Allocator()->Adapter());
+    auto* staticBlock = AllocNode<ir::ClassStaticBlock>(funcExpr, desc->modifiers, std::move(decorators));
+    staticBlock->SetRange(funcExpr->Range());
+    return staticBlock;
+}
+
 ir::Statement *ParserImpl::ParseClassProperty(ClassElmentDescriptor *desc,
                                               const ArenaVector<ir::Statement *> &properties, ir::Expression *propName,
                                               ir::Expression *typeAnnotation, ArenaVector<ir::Decorator *> &&decorators,
                                               bool isDeclare)
 {
-    lexer::SourcePosition propEnd = propName->End();
+    lexer::SourcePosition propEnd;
     ir::Statement *property = nullptr;
 
+    if (desc->staticBlock) {
+        property = ParseClassStaticBlock(desc, &propEnd, std::move(decorators));
+        return property;
+    }
+    propEnd = propName->End();
     if (desc->classMethod) {
         property = ParseClassMethod(desc, properties, propName, &propEnd, std::move(decorators), isDeclare);
         property->SetRange({desc->propStart, propEnd});

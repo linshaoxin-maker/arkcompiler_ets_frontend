@@ -1322,7 +1322,7 @@ void PandaGen::DefineFunction(const ir::AstNode *node, const ir::ScriptFunction 
     }
 
     auto formalParamCnt = realNode->FormalParamsLength();
-    if (realNode->IsMethod()) {
+    if (realNode->IsMethod() || realNode->IsStaticBlock()) {
         ra_.Emit<Definemethod>(node, 0, name, static_cast<int64_t>(formalParamCnt));
     } else  {
         ra_.Emit<Definefunc>(node, 0, name, static_cast<int64_t>(formalParamCnt));
