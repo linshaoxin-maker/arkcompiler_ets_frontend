@@ -19,14 +19,6 @@
 #include "checker/ETSchecker.h"
 #include "checker/ets/castingContext.h"
 #include "checker/ets/typeRelationContext.h"
-#include "ir/base/catchClause.h"
-#include "ir/base/classProperty.h"
-#include "ir/base/classStaticBlock.h"
-#include "ir/expressions/identifier.h"
-#include "ir/expressions/objectExpression.h"
-#include "ir/expressions/arrayExpression.h"
-#include "ir/statements/blockStatement.h"
-#include "ir/statements/returnStatement.h"
 #include "util/helpers.h"
 
 namespace panda::es2panda::checker {
@@ -956,9 +948,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSClassImplements *expr) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSConditionalType *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSConditionalType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -998,9 +989,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSImportEqualsDeclaration *st) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSImportType *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSImportType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1010,9 +1000,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSIndexedAccessType *node) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSInferType *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSInferType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1034,9 +1023,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSInterfaceHeritage *expr) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSIntersectionType *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSIntersectionType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1046,15 +1034,13 @@ checker::Type *ETSAnalyzer::Check(ir::TSLiteralType *node) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSMappedType *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSMappedType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSModuleBlock *st) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSModuleBlock *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
@@ -1082,9 +1068,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSNonNullExpression *expr) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSNullKeyword *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSNullKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1124,9 +1109,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSStringKeyword *node) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSThisType *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSThisType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
