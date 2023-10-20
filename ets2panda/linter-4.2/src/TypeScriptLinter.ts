@@ -61,6 +61,7 @@ export class TypeScriptLinter {
   currentErrorLine: number;
   currentWarningLine: number;
   staticBlocks: Set<string>;
+  walkedComments: Set<number>;
   libraryTypeCallDiagnosticChecker: LibraryTypeCallDiagnosticChecker;
 
   private sourceFile?: ts.SourceFile;
@@ -83,6 +84,7 @@ export class TypeScriptLinter {
     this.currentErrorLine = 0;
     this.currentWarningLine = 0;
     this.staticBlocks = new Set<string>();
+    this.walkedComments = new Set<number>();
     this.libraryTypeCallDiagnosticChecker = new LibraryTypeCallDiagnosticChecker(TypeScriptLinter.filteredDiagnosticMessages);
 
     for (let i = 0; i < FaultID.LAST_ID; i++) {
@@ -254,7 +256,12 @@ export class TypeScriptLinter {
         }
       }
 
-      ts.forEachChild(node, visitTSNodeImpl);
+      // #13972: The 'ts.forEachChild' doesn't iterate over in-between punctuation tokens.
+      // As result, we can miss comment directives attached to those. Instead, use 'node.getChildren()'.
+      // to traverse child nodes.
+      for (const child of node.getChildren()) {
+        visitTSNodeImpl(child);
+      }
     }
   }
 
@@ -1188,6 +1195,8 @@ export class TypeScriptLinter {
       ) {
         this.incrementCounters(node, FaultID.InstanceofUnsupported);
       }
+    } else if (tsBinaryExpr.operatorToken.kind === ts.SyntaxKind.InKeyword) {
+      this.incrementCounters(tsBinaryExpr.operatorToken, FaultID.InOperator);
     } else if (tsBinaryExpr.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
         if (this.tsUtils.needToDeduceStructuralIdentity(leftOperandType, rightOperandType, tsRhsExpr)) {
         this.incrementCounters(tsBinaryExpr, FaultID.StructuralIdentity);
@@ -2059,7 +2068,12 @@ export class TypeScriptLinter {
       );
       if (leadingComments) {
         for (const comment of leadingComments) {
-          this.checkErrorSuppressingAnnotation(comment, srcText);
+          // In the real-time linter comment from the first line is double proccessed.
+          // It may be caused by tsc, but it should be investigated. This is a workaround
+          if (!this.walkedComments.has(comment.pos) && comment.pos !== comment.end) {
+            this.walkedComments.add(comment.pos);
+            this.checkErrorSuppressingAnnotation(comment, srcText);
+          }
         }
       }
     }
@@ -2071,7 +2085,12 @@ export class TypeScriptLinter {
       );
       if (trailingComments) {
         for (const comment of trailingComments) {
-          this.checkErrorSuppressingAnnotation(comment, srcText);
+          // In the real-time linter comment from the first line is double proccessed.
+          // It may be caused by tsc, but it should be investigated. This is a workaround
+          if (!this.walkedComments.has(comment.pos) && comment.pos !== comment.end) {
+            this.walkedComments.add(comment.pos);
+            this.checkErrorSuppressingAnnotation(comment, srcText);
+          }
         }
       }
     }
@@ -2240,6 +2259,7 @@ export class TypeScriptLinter {
   }
 
   public lint(sourceFile: ts.SourceFile) {
+    this.walkedComments.clear();
     this.sourceFile = sourceFile;
     this.visitTSNode(this.sourceFile);
   }
