@@ -1507,4 +1507,15 @@ export class TsUtils {
     visitNode(funcExpr);
     return found;
   }
+
+  public getTypeOrTypeConstraintAtLocation(expr: ts.Expression): ts.Type {
+    let type = this.tsTypeChecker.getTypeAtLocation(expr);
+    if (type.isTypeParameter()) {
+      let constraint = type.getConstraint();
+      if (constraint) {
+        return constraint;
+      }
+    }
+    return type;
+  }
 }
