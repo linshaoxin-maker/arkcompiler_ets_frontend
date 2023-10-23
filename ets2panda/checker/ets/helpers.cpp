@@ -439,7 +439,7 @@ void ETSChecker::ValidateResolvedIdentifier(ir::Identifier *const ident, varbind
 
             if (!resolved_type->IsETSObjectType() && !resolved_type->IsETSArrayType() &&
                 !resolved_type->IsETSEnumType() && !resolved_type->IsETSStringEnumType() &&
-                !resolved_type->IsETSUnionType()) {
+                !resolved_type->IsETSUnionType() && !resolved_type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
                 throw_error();
             }
 
