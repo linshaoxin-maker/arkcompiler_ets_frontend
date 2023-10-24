@@ -328,21 +328,22 @@ void CallExpression::Compile(compiler::ETSGen *etsg) const
         if (signature_->ReturnType() != TsType()) {
             etsg->ApplyConversion(this, TsType());
         }
-    } else if (!is_reference && callee_->IsIdentifier()) {
-        if (!is_static) {
-            etsg->LoadThis(this);
-            etsg->StoreAccumulator(this, callee_reg);
-        }
-        emit_arguments();
-    } else if (!is_reference && callee_->IsMemberExpression()) {
-        if (!is_static) {
-            callee_->AsMemberExpression()->Object()->Compile(etsg);
-            etsg->StoreAccumulator(this, callee_reg);
-        }
-        emit_arguments();
     } else {
-        callee_->Compile(etsg);
-        etsg->StoreAccumulator(this, callee_reg);
+        if (!is_reference && callee_->IsIdentifier()) {
+            if (!is_static) {
+                etsg->LoadThis(this);
+                etsg->StoreAccumulator(this, callee_reg);
+            }
+        } else if (!is_reference && callee_->IsMemberExpression()) {
+            if (!is_static) {
+                callee_->AsMemberExpression()->Object()->Compile(etsg);
+                etsg->StoreAccumulator(this, callee_reg);
+            }
+        } else {
+            callee_->Compile(etsg);
+            etsg->StoreAccumulator(this, callee_reg);
+        }
+
         if (optional_) {
             compiler::Label *end_label = etsg->AllocLabel();
             etsg->BranchIfNull(this, end_label);

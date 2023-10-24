@@ -3742,7 +3742,15 @@ ir::Expression *ETSParser::ParsePostPrimaryExpression(ir::Expression *primary_ex
                                                       [[maybe_unused]] bool *is_chain_expression)
 {
     ir::Expression *return_expression = primary_expr;
-
+    // NOTE: why we don't set the is_chain_expression here?
+    //  For ETS we process it internally later, by passing specific flag, and so
+    //  we don't need to set is_chain_expression as it would trigger the
+    //  'ChainExpression' class alloc at the caller (ParseMemberExpression()),
+    //  which in turn generate irrelevant byte-code.
+    //
+    //  From the other hand, we need to inform consequent call to ParseCallExpression
+    //  to let it properly process optional call (by '?.') to class member function.
+    bool is_optional_expression = false;
     while (true) {
         switch (Lexer()->GetToken().Type()) {
             case lexer::TokenType::PUNCTUATOR_QUESTION_DOT: {
@@ -3758,6 +3766,7 @@ ir::Expression *ETSParser::ParsePostPrimaryExpression(ir::Expression *primary_ex
                     continue;
                 }
 
+                is_optional_expression = true;
                 return_expression = ParsePropertyAccess(return_expression, true);
                 continue;
             }
@@ -3785,7 +3794,7 @@ ir::Expression *ETSParser::ParsePostPrimaryExpression(ir::Expression *primary_ex
                     break;
                 }
 
-                return_expression = ParseCallExpression(return_expression, false, false);
+                return_expression = ParseCallExpression(return_expression, is_optional_expression, false);
                 continue;
             }
             case lexer::TokenType::PUNCTUATOR_EXCLAMATION_MARK: {
