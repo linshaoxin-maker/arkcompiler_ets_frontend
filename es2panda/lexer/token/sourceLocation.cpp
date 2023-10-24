@@ -40,6 +40,11 @@ void OffsetEntry::AddCol(size_t offset)
     }
 }
 
+size_t OffsetEntry::GetOffset()
+{
+    return offset_;
+}
+
 LineIndex::LineIndex(const util::StringView &source) noexcept
 {
     auto iter = util::StringView::Iterator(source);
@@ -99,4 +104,17 @@ SourceLocation LineIndex::GetLocation(SourcePosition pos) noexcept
     return SourceLocation(line + 1, col + 1);
 }
 
+SourceLocation LineIndex::GetLocation(size_t index) noexcept
+{
+    SourcePosition sp;
+    ASSERT(index < entrys_.back().lineStart); // EOF
+    for (size_t line = 0; line < entrys_.size(); ++line) {
+        if (index >= entrys_[line].lineStart && index < entrys_[line].GetOffset()) { // line ends with newline punctuator
+            sp.index = index;
+            sp.line = line;
+            break;
+        }
+    }
+    return GetLocation(sp);
+}
 }  // namespace panda::es2panda::lexer

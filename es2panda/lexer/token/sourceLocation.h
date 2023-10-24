@@ -87,6 +87,7 @@ public:
     ~OffsetEntry() = default;
 
     void AddCol(size_t offset);
+    size_t GetOffset();
 
     std::vector<Range> ranges {};
     size_t lineStart {};
@@ -104,6 +105,7 @@ public:
     ~LineIndex() = default;
 
     SourceLocation GetLocation(SourcePosition pos) noexcept;
+    SourceLocation GetLocation(size_t index) noexcept;
 
 private:
     std::vector<OffsetEntry> entrys_;

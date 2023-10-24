@@ -99,6 +99,7 @@ private:
     RegExpFlags ScanRegExpFlags();
 
     void ThrowError(std::string_view message);
+    void ThrowErrorIndex(std::string_view message, size_t index);
 
     void SetTokenStart();
     void SetTokenEnd();
