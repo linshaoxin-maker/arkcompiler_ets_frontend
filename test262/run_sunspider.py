@@ -474,7 +474,6 @@ class ArkProgram():
         cmd_args = []
         if self.run_pgo:
             if self.arch == ARK_ARCH_LIST[1]:
-                # cmd_args = [self.ark_aot_tool, ICU_PATH, f'--compiler-target-triple=aarch64-unknown-linux-gnu']
                 qemu_tool = "qemu-aarch64"
                 qemu_arg1 = "-L"
                 qemu_arg2 = self.arch_root
