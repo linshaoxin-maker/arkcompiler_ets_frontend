@@ -1900,14 +1900,14 @@ export class TypeScriptLinter {
     }
 
     this.filterStrictDiagnostics({
-        [ARGUMENT_OF_TYPE_0_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_ERROR_CODE]: (pos: number) => {
-          return this.checkInRange(rangesToFilter, pos);
-        },
-        [TYPE_0_IS_NOT_ASSIGNABLE_TO_TYPE_1_ERROR_CODE]: (pos: number) => {
-          return this.checkInRange(rangesToFilter, pos);
-        }
+      [ARGUMENT_OF_TYPE_0_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_ERROR_CODE]: (pos: number) => {
+        return this.checkInRange(rangesToFilter, pos);
       },
-      this.libraryTypeCallDiagnosticChecker
+      [TYPE_0_IS_NOT_ASSIGNABLE_TO_TYPE_1_ERROR_CODE]: (pos: number) => {
+        return this.checkInRange(rangesToFilter, pos);
+      }
+    },
+    this.libraryTypeCallDiagnosticChecker
     );
 
     for (const msgChain of diagnosticMessages) {
@@ -2095,7 +2095,7 @@ export class TypeScriptLinter {
       comment.kind === ts.SyntaxKind.MultiLineCommentTrivia
         ? srcText.slice(comment.pos + 2, comment.end - 2)
         : srcText.slice(comment.pos + 2, comment.end);
-    //if comment is multiline end closing '*/' is not at the same line as '@ts-xxx' - do nothing (see #13851)
+    // if comment is multiline end closing '*/' is not at the same line as '@ts-xxx' - do nothing (see #13851)
     if (commentContent.endsWith('\n'))
       return;
     let trimmedContent = commentContent.trim();
