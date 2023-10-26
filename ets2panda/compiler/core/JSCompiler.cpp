@@ -20,7 +20,6 @@
 #include "compiler/core/pandagen.h"
 #include "compiler/function/functionBuilder.h"
 #include "util/helpers.h"
-
 namespace panda::es2panda::compiler {
 
 PandaGen *JSCompiler::GetPandaGen() const
@@ -716,13 +715,12 @@ void JSCompiler::Compile(const ir::BigIntLiteral *expr) const
 
 void JSCompiler::Compile(const ir::BooleanLiteral *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    PandaGen *pg = GetPandaGen();
+    pg->LoadConst(expr, expr->Value() ? compiler::Constant::JS_TRUE : compiler::Constant::JS_FALSE);
 }
 
-void JSCompiler::Compile(const ir::CharLiteral *expr) const
+void JSCompiler::Compile([[maybe_unused]] const ir::CharLiteral *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -798,22 +796,31 @@ void JSCompiler::Compile(const ir::ImportSpecifier *st) const
     UNREACHABLE();
 }
 // Compile methods for STATEMENTS in alphabetical order
-void JSCompiler::Compile(const ir::AssertStatement *st) const
+void JSCompiler::Compile([[maybe_unused]] const ir::AssertStatement *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
 void JSCompiler::Compile(const ir::BlockStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    PandaGen *pg = GetPandaGen();
+    compiler::LocalRegScope lrs(pg, st->Scope());
+
+    for (const auto *it : st->Statements()) {
+        it->Compile(pg);
+    }
 }
 
+template <typename CodeGen>
+static void CompileImpl(const ir::BreakStatement *self, [[maybe_unused]] CodeGen *cg)
+{
+    compiler::Label *target = cg->ControlFlowChangeBreak(self->Ident());
+    cg->Branch(self, target);
+}
 void JSCompiler::Compile(const ir::BreakStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    PandaGen *pg = GetPandaGen();
+    CompileImpl(st, pg);
 }
 
 void JSCompiler::Compile(const ir::ClassDeclaration *st) const

@@ -413,14 +413,14 @@ void ETSCompiler::Compile(const ir::BigIntLiteral *expr) const
 
 void ETSCompiler::Compile(const ir::BooleanLiteral *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    etsg->LoadAccumulatorBoolean(expr, expr->Value());
 }
 
 void ETSCompiler::Compile(const ir::CharLiteral *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    etsg->LoadAccumulatorChar(expr, expr->Char());
 }
 
 void ETSCompiler::Compile(const ir::NullLiteral *expr) const
@@ -494,23 +494,69 @@ void ETSCompiler::Compile(const ir::ImportSpecifier *st) const
     (void)st;
     UNREACHABLE();
 }
+
+static void ThrowError(compiler::ETSGen *const etsg, const ir::AssertStatement *st)
+{
+    const compiler::RegScope rs(etsg);
+
+    if (st->Second() != nullptr) {
+        st->Second()->Compile(etsg);
+    } else {
+        etsg->LoadAccumulatorString(st, "Assertion failed.");
+    }
+
+    const auto message = etsg->AllocReg();
+    etsg->StoreAccumulator(st, message);
+
+    const auto assertion_error = etsg->AllocReg();
+    etsg->NewObject(st, assertion_error, compiler::Signatures::BUILTIN_ASSERTION_ERROR);
+    etsg->CallThisStatic1(st, assertion_error, compiler::Signatures::BUILTIN_ASSERTION_ERROR_CTOR, message);
+    etsg->EmitThrow(st, assertion_error);
+}
 // compile methods for STATEMENTS in alphabetical order
 void ETSCompiler::Compile(const ir::AssertStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    auto res = compiler::Condition::CheckConstantExpr(etsg, st->Test());
+    if (res == compiler::Condition::Result::CONST_TRUE) {
+        return;
+    }
+
+    if (res == compiler::Condition::Result::CONST_FALSE) {
+        ThrowError(etsg, st);
+        return;
+    }
+
+    compiler::Label *end_label = etsg->AllocLabel();
+
+    st->Test()->Compile(etsg);
+    etsg->BranchIfTrue(st, end_label);
+    ThrowError(etsg, st);
+    etsg->SetLabel(st, end_label);
 }
 
 void ETSCompiler::Compile(const ir::BlockStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    compiler::LocalRegScope lrs(etsg, st->Scope());
+
+    etsg->CompileStatements(st->Statements());
+}
+
+template <typename CodeGen>
+static void CompileImpl(const ir::BreakStatement *self, [[maybe_unused]] CodeGen *cg)
+{
+    compiler::Label *target = cg->ControlFlowChangeBreak(self->Ident());
+    cg->Branch(self, target);
 }
 
 void ETSCompiler::Compile(const ir::BreakStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    if (etsg->ExtendWithFinalizer(st->parent_, st)) {
+        return;
+    }
+    CompileImpl(st, etsg);
 }
 
 void ETSCompiler::Compile(const ir::ClassDeclaration *st) const
