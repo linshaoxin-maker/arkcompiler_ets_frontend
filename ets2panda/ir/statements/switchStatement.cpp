@@ -180,12 +180,4 @@ checker::Type *SwitchStatement::Check(checker::ETSChecker *const checker)
     return nullptr;
 }
 
-void SwitchStatement::SetReturnType(checker::ETSChecker *checker, checker::Type *type)
-{
-    for (auto *cs : cases_) {
-        if (cs != nullptr) {
-            cs->SetReturnType(checker, type);
-        }
-    }
-}
 }  // namespace panda::es2panda::ir

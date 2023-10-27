@@ -119,7 +119,7 @@ ir::ScriptFunction *ETSChecker::CreateDynamicCallIntrinsic(ir::Expression *calle
         info->params.push_back(param->Ident()->Variable()->AsLocalVariable());
     }
 
-    auto *func = AllocNode<ir::ScriptFunction>(scope, std::move(params), nullptr, nullptr, nullptr,
+    auto *func = AllocNode<ir::ScriptFunction>(Allocator(), scope, std::move(params), nullptr, nullptr, nullptr,
                                                ir::ScriptFunctionFlags::METHOD, ir::ModifierFlags::NONE, false,
                                                Language(Language::Id::ETS));
 
@@ -223,14 +223,14 @@ std::conditional_t<IS_STATIC, ir::ClassStaticBlock *, ir::MethodDefinition *> ET
         auto *body = AllocNode<ir::BlockStatement>(Allocator(), scope, std::move(statements));
         id = AllocNode<ir::Identifier>(compiler::Signatures::CCTOR, Allocator());
         func =
-            AllocNode<ir::ScriptFunction>(scope, std::move(params), nullptr, body, nullptr,
+            AllocNode<ir::ScriptFunction>(Allocator(), scope, std::move(params), nullptr, body, nullptr,
                                           ir::ScriptFunctionFlags::STATIC_BLOCK | ir::ScriptFunctionFlags::EXPRESSION,
                                           ir::ModifierFlags::STATIC, false, Language(Language::Id::ETS));
     } else {
         builder(scope, &statements, &params);
         auto *body = AllocNode<ir::BlockStatement>(Allocator(), scope, std::move(statements));
         id = AllocNode<ir::Identifier>(compiler::Signatures::CTOR, Allocator());
-        func = AllocNode<ir::ScriptFunction>(scope, std::move(params), nullptr, body, nullptr,
+        func = AllocNode<ir::ScriptFunction>(Allocator(), scope, std::move(params), nullptr, body, nullptr,
                                              ir::ScriptFunctionFlags::CONSTRUCTOR | ir::ScriptFunctionFlags::EXPRESSION,
                                              ir::ModifierFlags::PUBLIC, false, Language(Language::Id::ETS));
     }
@@ -440,9 +440,9 @@ ir::MethodDefinition *ETSChecker::CreateClassMethod(binder::ClassScope *class_sc
 
     auto *body = AllocNode<ir::BlockStatement>(Allocator(), scope, std::move(statements));
 
-    auto *func =
-        AllocNode<ir::ScriptFunction>(scope, std::move(params), nullptr, body, nullptr, ir::ScriptFunctionFlags::METHOD,
-                                      modifier_flags, false, Language(Language::Id::ETS));
+    auto *func = AllocNode<ir::ScriptFunction>(Allocator(), scope, std::move(params), nullptr, body, nullptr,
+                                               ir::ScriptFunctionFlags::METHOD, modifier_flags, false,
+                                               Language(Language::Id::ETS));
     scope->BindNode(func);
     func->SetIdent(id);
     param_scope->BindNode(func);

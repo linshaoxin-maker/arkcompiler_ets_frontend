@@ -565,8 +565,9 @@ ir::ScriptFunction *ETSParser::AddInitMethod(ArenaVector<ir::AstNode *> &global_
             auto *init_body = AllocNode<ir::BlockStatement>(Allocator(), function_scope, std::move(statements));
             function_scope->BindNode(init_body);
 
-            init_func = AllocNode<ir::ScriptFunction>(function_scope, std::move(params), nullptr, init_body, nullptr,
-                                                      function_flags, false, GetContext().GetLanguge());
+            init_func =
+                AllocNode<ir::ScriptFunction>(Allocator(), function_scope, std::move(params), nullptr, init_body,
+                                              nullptr, function_flags, false, GetContext().GetLanguge());
             function_scope->BindNode(init_func);
             func_param_scope->BindNode(init_func);
         }
@@ -961,7 +962,7 @@ void ETSParser::CreateCCtor(binder::LocalScope *class_scope, ArenaVector<ir::Ast
     }
 
     auto *body = AllocNode<ir::BlockStatement>(Allocator(), scope, std::move(statements));
-    auto *func = AllocNode<ir::ScriptFunction>(scope, std::move(params), nullptr, body, nullptr,
+    auto *func = AllocNode<ir::ScriptFunction>(Allocator(), scope, std::move(params), nullptr, body, nullptr,
                                                ir::ScriptFunctionFlags::STATIC_BLOCK | ir::ScriptFunctionFlags::HIDDEN,
                                                ir::ModifierFlags::STATIC, false, GetContext().GetLanguge());
     scope->BindNode(func);
@@ -1405,8 +1406,8 @@ ir::ScriptFunction *ETSParser::ParseFunction(ParserStatus new_status, ir::Identi
     function_context.AddFlag(throw_marker);
 
     auto *func_node =
-        AllocNode<ir::ScriptFunction>(function_scope, std::move(params), typeParamDecl, body, returnTypeAnnotation,
-                                      function_context.Flags(), false, GetContext().GetLanguge());
+        AllocNode<ir::ScriptFunction>(Allocator(), function_scope, std::move(params), typeParamDecl, body,
+                                      returnTypeAnnotation, function_context.Flags(), false, GetContext().GetLanguge());
     function_scope->BindNode(func_node);
     funcParamScope->BindNode(func_node);
     func_node->SetRange({start_loc, end_loc});
@@ -2068,9 +2069,9 @@ ir::MethodDefinition *ETSParser::ParseInterfaceMethod(ir::ModifierFlags flags)
 
     function_context.AddFlag(throw_marker);
 
-    auto *func =
-        AllocNode<ir::ScriptFunction>(function_scope, std::move(params), typeParamDecl, body, returnTypeAnnotation,
-                                      function_context.Flags(), flags, true, GetContext().GetLanguge());
+    auto *func = AllocNode<ir::ScriptFunction>(Allocator(), function_scope, std::move(params), typeParamDecl, body,
+                                               returnTypeAnnotation, function_context.Flags(), flags, true,
+                                               GetContext().GetLanguge());
 
     if ((flags & ir::ModifierFlags::STATIC) == 0 && body == nullptr) {
         func->AddModifier(ir::ModifierFlags::ABSTRACT);

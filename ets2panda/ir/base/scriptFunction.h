@@ -16,6 +16,7 @@
 #ifndef ES2PANDA_PARSER_INCLUDE_AST_SCRIPT_FUNCTION_H
 #define ES2PANDA_PARSER_INCLUDE_AST_SCRIPT_FUNCTION_H
 
+#include "ir/statements/returnStatement.h"
 #include "ir/astNode.h"
 #include "binder/scope.h"
 #include "util/enumbitops.h"
@@ -31,7 +32,7 @@ class TypeNode;
 
 class ScriptFunction : public AstNode {
 public:
-    explicit ScriptFunction(binder::FunctionScope *scope, ArenaVector<Expression *> &&params,
+    explicit ScriptFunction(ArenaAllocator *allocator, binder::FunctionScope *scope, ArenaVector<Expression *> &&params,
                             TSTypeParameterDeclaration *type_params, AstNode *body, TypeNode *return_type_annotation,
                             ir::ScriptFunctionFlags func_flags, bool declare, Language lang)
         : AstNode(AstNodeType::SCRIPT_FUNCTION),
@@ -42,11 +43,12 @@ public:
           return_type_annotation_(return_type_annotation),
           func_flags_(func_flags),
           declare_(declare),
-          lang_(lang)
+          lang_(lang),
+          return_statements_(allocator->Adapter())
     {
     }
 
-    explicit ScriptFunction(binder::FunctionScope *scope, ArenaVector<Expression *> &&params,
+    explicit ScriptFunction(ArenaAllocator *allocator, binder::FunctionScope *scope, ArenaVector<Expression *> &&params,
                             TSTypeParameterDeclaration *type_params, AstNode *body, TypeNode *return_type_annotation,
                             ir::ScriptFunctionFlags func_flags, ir::ModifierFlags flags, bool declare, Language lang)
         : AstNode(AstNodeType::SCRIPT_FUNCTION, flags),
@@ -57,7 +59,8 @@ public:
           return_type_annotation_(return_type_annotation),
           func_flags_(func_flags),
           declare_(declare),
-          lang_(lang)
+          lang_(lang),
+          return_statements_(allocator->Adapter())
     {
     }
 
@@ -91,6 +94,16 @@ public:
         return params_;
     }
 
+    const ArenaVector<ReturnStatement *> &ReturnStatements() const
+    {
+        return return_statements_;
+    }
+
+    ArenaVector<ReturnStatement *> &ReturnStatements()
+    {
+        return return_statements_;
+    }
+
     const TSTypeParameterDeclaration *TypeParams() const
     {
         return type_params_;
@@ -114,6 +127,11 @@ public:
     void SetBody(AstNode *body)
     {
         body_ = body;
+    }
+
+    void AddReturnStatement(ReturnStatement *return_statement)
+    {
+        return_statements_.push_back(return_statement);
     }
 
     const TypeNode *ReturnTypeAnnotation() const
@@ -302,6 +320,7 @@ private:
     checker::Signature *signature_ {};
     bool declare_;
     es2panda::Language lang_;
+    ArenaVector<ReturnStatement *> return_statements_;
 };
 }  // namespace panda::es2panda::ir
 

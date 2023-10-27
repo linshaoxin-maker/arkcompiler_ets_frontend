@@ -42,12 +42,6 @@ public:
     const ir::AstNode *GetReferencedStatement() const;
 
     void TransformChildren(const NodeTransformer &cb) override;
-    void SetReturnType(checker::ETSChecker *checker, checker::Type *type) override
-    {
-        if (body_ != nullptr) {
-            body_->SetReturnType(checker, type);
-        }
-    }
 
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;

@@ -885,6 +885,8 @@ checker::Type *ETSAnalyzer::Check(ir::ReturnStatement *st) const
     }
 
     st->return_type_ = func_return_type;
+    containing_func->AddReturnStatement(st);
+
     return nullptr;
 }
 
