@@ -16,36 +16,81 @@
 #ifndef ES2PANDA_COMPILER_CORE_ASTVERIFIER_H
 #define ES2PANDA_COMPILER_CORE_ASTVERIFIER_H
 
+#include "ir/astNode.h"
+#include "lexer/token/sourceLocation.h"
 #include "parser/program/program.h"
+#include "util/ustring.h"
+#include "utils/arena_containers.h"
 
 namespace panda::es2panda::compiler {
 
-class ASTVerifier {
+class ASTVerifier final {
 public:
-    using ErrorMessages = std::vector<std::string>;
+    struct Error {
+        std::string message;
+        lexer::SourceLocation location;
+    };
+    struct NamedError {
+        util::StringView check_name;
+        Error error;
+    };
+    using Errors = ArenaVector<NamedError>;
+
+    using CheckFunction = std::function<bool(const ir::AstNode *)>;
+    struct NamedCheck {
+        util::StringView check_name;
+        CheckFunction check;
+    };
+    using Checks = ArenaVector<NamedCheck>;
+
     NO_COPY_SEMANTIC(ASTVerifier);
     NO_MOVE_SEMANTIC(ASTVerifier);
 
-    ASTVerifier() = default;
+    explicit ASTVerifier(ArenaAllocator *allocator, util::StringView source_code = "");
     ~ASTVerifier() = default;
 
-    bool IsCorrectProgram(const parser::Program *program);
-    bool HaveParents(const ir::AstNode *ast);
-    bool HasParent(const ir::AstNode *ast);
-    bool HaveTypes(const ir::AstNode *ast);
-    bool HasType(const ir::AstNode *ast);
-    bool HaveVariables(const ir::AstNode *ast);
-    bool HasVariable(const ir::AstNode *ast);
-    bool HasScope(const ir::AstNode *ast);
-    bool HaveScopes(const ir::AstNode *ast);
+    using CheckSet = ArenaSet<util::StringView>;
+    /**
+     * @brief Run all existing checks on some ast node (and consequently it's children)
+     * @param ast AstNode which will be analyzed
+     * @return bool Result of analysis
+     */
+    bool VerifyFull(const ir::AstNode *ast);
 
-    ErrorMessages GetErrorMessages()
+    /**
+     * @brief Run some particular checks on some ast node
+     * @note Checks must be supplied as strings to check_set, additionally check
+     * name can be suffixed by `Recursive` string to include recursive analysis of provided node
+     * @param ast AstNode which will be analyzed
+     * @param check_set Set of strings which will be used as check names
+     * @return bool Result of analysis
+     */
+    bool Verify(const ir::AstNode *ast, const CheckSet &check_set);
+
+    Errors GetErrors() const
     {
-        return error_messages_;
+        return named_errors_;
     }
 
 private:
-    ErrorMessages error_messages_;
+    bool HasParent(const ir::AstNode *ast);
+    bool HasType(const ir::AstNode *ast);
+    bool HasVariable(const ir::AstNode *ast);
+    bool HasScope(const ir::AstNode *ast);
+
+    void AddError(const std::string &message, const lexer::SourcePosition &from)
+    {
+        const auto loc = index_.has_value() ? index_->GetLocation(from) : lexer::SourceLocation {};
+        encountered_errors_.emplace_back(Error {message, loc});
+    }
+
+    std::optional<const lexer::LineIndex> index_;
+
+    ArenaAllocator *allocator_;
+    Errors named_errors_;
+    ArenaVector<Error> encountered_errors_;
+    Checks checks_;
+    CheckSet all_checks_;
 };
 
 std::string ToStringHelper(const ir::AstNode *ast);
