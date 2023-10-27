@@ -37,13 +37,13 @@ public:
 private:
     TSChecker *GetTSChecker() const;
 
-    binder::EnumMemberResult EvaluateBinaryExpression(checker::TSChecker *checker, binder::EnumVariable *enum_var,
+    varbinder::EnumMemberResult EvaluateBinaryExpression(checker::TSChecker *checker, varbinder::EnumVariable *enum_var,
                                                       const ir::BinaryExpression *expr) const;
-    binder::EnumMemberResult EvaluateEnumMember(checker::TSChecker *checker, binder::EnumVariable *enum_var,
+    varbinder::EnumMemberResult EvaluateEnumMember(checker::TSChecker *checker, varbinder::EnumVariable *enum_var,
                                                 const ir::AstNode *expr) const;
-    binder::EnumMemberResult EvaluateUnaryExpression(checker::TSChecker *checker, binder::EnumVariable *enum_var,
+    varbinder::EnumMemberResult EvaluateUnaryExpression(checker::TSChecker *checker, varbinder::EnumVariable *enum_var,
                                                      const ir::UnaryExpression *expr) const;
-    void InferEnumVariableType(checker::TSChecker *checker, binder::EnumVariable *variable, double *value,
+    void InferEnumVariableType(checker::TSChecker *checker, varbinder::EnumVariable *variable, double *value,
                                bool *init_next, bool *is_literal_enum, bool is_const_enum,
                                const ir::Expression *computed_expr) const;
     checker::Type *InferType(checker::TSChecker *checker, bool is_const, ir::TSEnumDeclaration *st) const;

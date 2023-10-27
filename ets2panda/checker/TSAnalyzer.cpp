@@ -544,51 +544,90 @@ checker::Type *TSAnalyzer::Check(ir::DoWhileStatement *st) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::EmptyStatement *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::EmptyStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::ExpressionStatement *st) const
 {
-    (void)st;
+    TSChecker *checker = GetTSChecker();
+    return st->GetExpression()->Check(checker);
+}
+
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ForInStatement *st) const
+{
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ForInStatement *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ForOfStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
-}
-
-checker::Type *TSAnalyzer::Check(ir::ForOfStatement *st) const
-{
-    (void)st;
     UNREACHABLE();
 }
 
 checker::Type *TSAnalyzer::Check(ir::ForUpdateStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    checker::ScopeContext scope_ctx(checker, st->Scope());
+
+    if (st->Init() != nullptr) {
+        st->Init()->Check(checker);
+    }
+
+    if (st->Test() != nullptr) {
+        checker::Type *test_type = st->Test()->Check(checker);
+        checker->CheckTruthinessOfType(test_type, st->Start());
+    }
+
+    if (st->Update() != nullptr) {
+        st->Update()->Check(checker);
+    }
+
+    st->Body()->Check(checker);
+
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::FunctionDeclaration *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    if (st->Function()->IsOverload()) {
+        return nullptr;
+    }
+
+    const util::StringView &func_name = st->Function()->Id()->Name();
+    auto result = checker->Scope()->Find(func_name);
+    ASSERT(result.variable);
+
+    checker::ScopeContext scope_ctx(checker, st->Function()->Scope());
+
+    if (result.variable->TsType() == nullptr) {
+        checker->InferFunctionDeclarationType(result.variable->Declaration()->AsFunctionDecl(), result.variable);
+    }
+
+    st->Function()->Body()->Check(checker);
+
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::IfStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    checker::Type *test_type = st->test_->Check(checker);
+    checker->CheckTruthinessOfType(test_type, st->Start());
+    checker->CheckTestingKnownTruthyCallableOrAwaitableType(st->test_, test_type, st->consequent_);
+
+    st->consequent_->Check(checker);
+
+    if (st->Alternate() != nullptr) {
+        st->alternate_->Check(checker);
+    }
+
+    return nullptr;
 }
 
-checker::Type *TSAnalyzer::Check(ir::LabelledStatement *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::LabelledStatement *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
@@ -623,16 +662,43 @@ checker::Type *TSAnalyzer::Check(ir::ReturnStatement *st) const
     return nullptr;
 }
 
-checker::Type *TSAnalyzer::Check(ir::SwitchCaseStatement *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::SwitchCaseStatement *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
 checker::Type *TSAnalyzer::Check(ir::SwitchStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    checker::ScopeContext scope_ctx(checker, st->Scope());
+
+    checker::Type *expr_type = st->discriminant_->Check(checker);
+    bool expr_is_literal = checker::TSChecker::IsLiteralType(expr_type);
+
+    for (auto *it : st->Cases()) {
+        if (it->Test() != nullptr) {
+            checker::Type *case_type = it->Test()->Check(checker);
+            bool case_is_literal = checker::TSChecker::IsLiteralType(case_type);
+            checker::Type *compared_expr_type = expr_type;
+
+            if (!case_is_literal || !expr_is_literal) {
+                case_type = case_is_literal ? checker->GetBaseTypeOfLiteralType(case_type) : case_type;
+                compared_expr_type = checker->GetBaseTypeOfLiteralType(expr_type);
+            }
+
+            if (!checker->IsTypeEqualityComparableTo(compared_expr_type, case_type) &&
+                !checker->IsTypeComparableTo(case_type, compared_expr_type)) {
+                checker->ThrowTypeError({"Type ", case_type, " is not comparable to type ", compared_expr_type},
+                                        it->Test()->Start());
+            }
+        }
+
+        for (auto *case_stmt : it->Consequent()) {
+            case_stmt->Check(checker);
+        }
+    }
+
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::ThrowStatement *st) const
@@ -711,7 +777,7 @@ checker::Type *TSAnalyzer::Check(ir::TSConstructorType *node) const
     UNREACHABLE();
 }
 
-static binder::EnumMemberResult EvaluateIdentifier(checker::TSChecker *checker, binder::EnumVariable *enum_var,
+static varbinder::EnumMemberResult EvaluateIdentifier(checker::TSChecker *checker, varbinder::EnumVariable *enum_var,
                                                    const ir::Identifier *expr)
 {
     if (expr->Name() == "NaN") {
@@ -721,7 +787,7 @@ static binder::EnumMemberResult EvaluateIdentifier(checker::TSChecker *checker, 
         return std::numeric_limits<double>::infinity();
     }
 
-    binder::Variable *enum_member = expr->AsIdentifier()->Variable();
+    varbinder::Variable *enum_member = expr->AsIdentifier()->Variable();
 
     if (enum_member == nullptr) {
         checker->ThrowTypeError({"Cannot find name ", expr->AsIdentifier()->Name()},
@@ -729,7 +795,7 @@ static binder::EnumMemberResult EvaluateIdentifier(checker::TSChecker *checker, 
     }
 
     if (enum_member->IsEnumVariable()) {
-        binder::EnumVariable *expr_enum_var = enum_member->AsEnumVariable();
+        varbinder::EnumVariable *expr_enum_var = enum_member->AsEnumVariable();
         if (std::holds_alternative<bool>(expr_enum_var->Value())) {
             checker->ThrowTypeError(
                 "A member initializer in a enum declaration cannot reference members declared after it, "
@@ -766,12 +832,12 @@ static uint32_t ToUInt(double num)
     return 0;
 }
 
-binder::EnumMemberResult TSAnalyzer::EvaluateBinaryExpression(checker::TSChecker *checker,
-                                                              binder::EnumVariable *enum_var,
+varbinder::EnumMemberResult TSAnalyzer::EvaluateBinaryExpression(checker::TSChecker *checker,
+                                                              varbinder::EnumVariable *enum_var,
                                                               const ir::BinaryExpression *expr) const
 {
-    binder::EnumMemberResult left = EvaluateEnumMember(checker, enum_var, expr->AsBinaryExpression()->Left());
-    binder::EnumMemberResult right = EvaluateEnumMember(checker, enum_var, expr->AsBinaryExpression()->Right());
+    varbinder::EnumMemberResult left = EvaluateEnumMember(checker, enum_var, expr->AsBinaryExpression()->Left());
+    varbinder::EnumMemberResult right = EvaluateEnumMember(checker, enum_var, expr->AsBinaryExpression()->Right());
     if (std::holds_alternative<double>(left) && std::holds_alternative<double>(right)) {
         switch (expr->AsBinaryExpression()->OperatorType()) {
             case lexer::TokenType::PUNCTUATOR_BITWISE_OR: {
@@ -830,11 +896,11 @@ binder::EnumMemberResult TSAnalyzer::EvaluateBinaryExpression(checker::TSChecker
     return false;
 }
 
-binder::EnumMemberResult TSAnalyzer::EvaluateUnaryExpression(checker::TSChecker *checker,
-                                                             binder::EnumVariable *enum_var,
+varbinder::EnumMemberResult TSAnalyzer::EvaluateUnaryExpression(checker::TSChecker *checker,
+                                                             varbinder::EnumVariable *enum_var,
                                                              const ir::UnaryExpression *expr) const
 {
-    binder::EnumMemberResult value = EvaluateEnumMember(checker, enum_var, expr->Argument());
+    varbinder::EnumMemberResult value = EvaluateEnumMember(checker, enum_var, expr->Argument());
     if (!std::holds_alternative<double>(value)) {
         return false;
     }
@@ -857,7 +923,7 @@ binder::EnumMemberResult TSAnalyzer::EvaluateUnaryExpression(checker::TSChecker 
     return false;
 }
 
-binder::EnumMemberResult TSAnalyzer::EvaluateEnumMember(checker::TSChecker *checker, binder::EnumVariable *enum_var,
+varbinder::EnumMemberResult TSAnalyzer::EvaluateEnumMember(checker::TSChecker *checker, varbinder::EnumVariable *enum_var,
                                                         const ir::AstNode *expr) const
 {
     switch (expr->Type()) {
@@ -899,21 +965,21 @@ static bool IsComputedEnumMember(const ir::Expression *init)
     return true;
 }
 
-static void AddEnumValueDeclaration(checker::TSChecker *checker, double number, binder::EnumVariable *variable)
+static void AddEnumValueDeclaration(checker::TSChecker *checker, double number, varbinder::EnumVariable *variable)
 {
     variable->SetTsType(checker->GlobalNumberType());
 
     util::StringView member_str = util::Helpers::ToStringView(checker->Allocator(), number);
 
-    binder::LocalScope *enum_scope = checker->Scope()->AsLocalScope();
-    binder::Variable *res = enum_scope->FindLocal(member_str);
-    binder::EnumVariable *enum_var = nullptr;
+    varbinder::LocalScope *enum_scope = checker->Scope()->AsLocalScope();
+    varbinder::Variable *res = enum_scope->FindLocal(member_str, varbinder::ResolveBindingOptions::BINDINGS);
+    varbinder::EnumVariable *enum_var = nullptr;
 
     if (res == nullptr) {
-        auto *decl = checker->Allocator()->New<binder::EnumDecl>(member_str);
+        auto *decl = checker->Allocator()->New<varbinder::EnumDecl>(member_str);
         decl->BindNode(variable->Declaration()->Node());
         enum_scope->AddDecl(checker->Allocator(), decl, ScriptExtension::TS);
-        res = enum_scope->FindLocal(member_str);
+        res = enum_scope->FindLocal(member_str, varbinder::ResolveBindingOptions::BINDINGS);
         ASSERT(res && res->IsEnumVariable());
         enum_var = res->AsEnumVariable();
         enum_var->AsEnumVariable()->SetBackReference();
@@ -921,7 +987,7 @@ static void AddEnumValueDeclaration(checker::TSChecker *checker, double number, 
     } else {
         ASSERT(res->IsEnumVariable());
         enum_var = res->AsEnumVariable();
-        auto *decl = checker->Allocator()->New<binder::EnumDecl>(member_str);
+        auto *decl = checker->Allocator()->New<varbinder::EnumDecl>(member_str);
         decl->BindNode(variable->Declaration()->Node());
         enum_var->ResetDecl(decl);
     }
@@ -929,7 +995,7 @@ static void AddEnumValueDeclaration(checker::TSChecker *checker, double number, 
     enum_var->SetValue(variable->Declaration()->Name());
 }
 
-void TSAnalyzer::InferEnumVariableType(checker::TSChecker *checker, binder::EnumVariable *variable, double *value,
+void TSAnalyzer::InferEnumVariableType(checker::TSChecker *checker, varbinder::EnumVariable *variable, double *value,
                                        bool *init_next, bool *is_literal_enum, bool is_const_enum,
                                        const ir::Expression *computed_expr) const
 {
@@ -956,7 +1022,7 @@ void TSAnalyzer::InferEnumVariableType(checker::TSChecker *checker, binder::Enum
         computed_expr = init;
     }
 
-    binder::EnumMemberResult res = EvaluateEnumMember(checker, variable, init);
+    varbinder::EnumMemberResult res = EvaluateEnumMember(checker, variable, init);
     if (std::holds_alternative<util::StringView>(res)) {
         if (computed_expr != nullptr) {
             checker->ThrowTypeError("Computed values are not permitted in an enum with string valued members.",
