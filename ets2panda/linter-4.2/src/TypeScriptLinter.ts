@@ -1515,8 +1515,9 @@ export class TypeScriptLinter {
 
     if (ts.isCallExpression(ctx.parent) || ts.isNewExpression(ctx.parent)) {
       let callee = ctx.parent.expression;
-      if (callee != ctx && (this.tsUtils.isAnyType(this.tsTypeChecker.getTypeAtLocation(callee)) ||
-        this.tsUtils.hasLibraryType(callee))) {
+      const isAny = this.tsUtils.isAnyType(this.tsTypeChecker.getTypeAtLocation(callee));
+      const isDynamic = isAny || this.tsUtils.hasLibraryType(callee);
+      if (callee != ctx && isDynamic) {
         return true;
       }
     }
@@ -1567,8 +1568,7 @@ export class TypeScriptLinter {
       // treat TypeQuery as valid because it's already forbidden (FaultID.TypeQuery)
       (ts.isTypeNode(parent) && !ts.isTypeOfExpression(parent)) ||
       // ElementAccess is allowed for enum types
-      (ts.isElementAccessExpression(parent)
-        && (parent as ts.ElementAccessExpression).expression == ident && (tsSym.flags & ts.SymbolFlags.Enum)) ||
+      this.isEnumPropAccess(ident, tsSym, parent) ||
       ts.isExpressionWithTypeArguments(parent) ||
       ts.isExportAssignment(parent) ||
       ts.isExportSpecifier(parent) ||
@@ -1590,6 +1590,12 @@ export class TypeScriptLinter {
         qualifiedStart.parent.operatorToken.kind ===
         ts.SyntaxKind.InstanceOfKeyword)
     );
+  }
+
+  private isEnumPropAccess(ident: ts.Identifier, tsSym: ts.Symbol, context: ts.Node): boolean {
+    return ts.isElementAccessExpression(context) && !!(tsSym.flags & ts.SymbolFlags.Enum) &&
+      (context.expression == ident ||
+        (ts.isPropertyAccessExpression(context.expression) && context.expression.name == ident));
   }
 
   private handleElementAccessExpression(node: ts.Node) {
