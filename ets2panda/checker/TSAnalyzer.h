@@ -38,11 +38,11 @@ private:
     TSChecker *GetTSChecker() const;
 
     varbinder::EnumMemberResult EvaluateBinaryExpression(checker::TSChecker *checker, varbinder::EnumVariable *enum_var,
-                                                      const ir::BinaryExpression *expr) const;
+                                                         const ir::BinaryExpression *expr) const;
     varbinder::EnumMemberResult EvaluateEnumMember(checker::TSChecker *checker, varbinder::EnumVariable *enum_var,
-                                                const ir::AstNode *expr) const;
+                                                   const ir::AstNode *expr) const;
     varbinder::EnumMemberResult EvaluateUnaryExpression(checker::TSChecker *checker, varbinder::EnumVariable *enum_var,
-                                                     const ir::UnaryExpression *expr) const;
+                                                        const ir::UnaryExpression *expr) const;
     void InferEnumVariableType(checker::TSChecker *checker, varbinder::EnumVariable *variable, double *value,
                                bool *init_next, bool *is_literal_enum, bool is_const_enum,
                                const ir::Expression *computed_expr) const;

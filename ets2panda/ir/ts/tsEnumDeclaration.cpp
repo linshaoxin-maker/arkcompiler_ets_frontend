@@ -57,12 +57,11 @@ void TSEnumDeclaration::Dump(ir::AstDumper *dumper) const
                  {"const", is_const_}});
 }
 
-// NOTE (csabahurton): this method has not been moved to TSAnalyizer.cpp, because it is not used. 
+// NOTE (csabahurton): this method has not been moved to TSAnalyizer.cpp, because it is not used.
 varbinder::EnumMemberResult EvaluateMemberExpression(checker::TSChecker *checker,
                                                      [[maybe_unused]] varbinder::EnumVariable *enum_var,
                                                      ir::MemberExpression *expr)
 {
-    
     if (checker::TSChecker::IsConstantMemberAccess(expr->AsExpression())) {
         if (expr->Check(checker)->TypeFlags() == checker::TypeFlag::ENUM) {
             util::StringView name;
@@ -80,7 +79,8 @@ varbinder::EnumMemberResult EvaluateMemberExpression(checker::TSChecker *checker
     return false;
 }
 
-void TSEnumDeclaration::Compile(compiler::PandaGen *pg) const {
+void TSEnumDeclaration::Compile(compiler::PandaGen *pg) const
+{
     pg->GetAstCompiler()->Compile(this);
 }
 

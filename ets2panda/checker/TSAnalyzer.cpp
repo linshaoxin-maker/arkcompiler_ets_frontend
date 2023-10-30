@@ -78,27 +78,25 @@ checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::Decorator *st) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::MetaProperty *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::MetaProperty *expr) const
 {
-    (void)expr;
+    TSChecker *checker = GetTSChecker();
+    // NOTE: aszilagyi.
+    return checker->GlobalAnyType();
+}
+
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::MethodDefinition *node) const
+{
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::MethodDefinition *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::Property *expr) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::Property *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ScriptFunction *node) const
 {
-    (void)expr;
-    UNREACHABLE();
-}
-
-checker::Type *TSAnalyzer::Check(ir::ScriptFunction *node) const
-{
-    (void)node;
     UNREACHABLE();
 }
 
@@ -108,28 +106,81 @@ checker::Type *TSAnalyzer::Check(ir::SpreadElement *expr) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TemplateElement *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TemplateElement *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
 checker::Type *TSAnalyzer::Check(ir::TSIndexSignature *node) const
 {
-    (void)node;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    if (node->TsType() != nullptr) {
+        return node->TsType();
+    }
+
+    const util::StringView &param_name = node->Param()->AsIdentifier()->Name();
+    node->type_annotation_->Check(checker);
+    checker::Type *index_type = node->type_annotation_->GetType(checker);
+    checker::IndexInfo *info =
+        checker->Allocator()->New<checker::IndexInfo>(index_type, param_name, node->Readonly(), node->Start());
+    checker::ObjectDescriptor *desc = checker->Allocator()->New<checker::ObjectDescriptor>(checker->Allocator());
+    checker::ObjectType *placeholder = checker->Allocator()->New<checker::ObjectLiteralType>(desc);
+
+    if (node->Kind() == ir::TSIndexSignature::TSIndexSignatureKind::NUMBER) {
+        placeholder->Desc()->number_index_info = info;
+    } else {
+        placeholder->Desc()->string_index_info = info;
+    }
+
+    node->SetTsType(placeholder);
+    return placeholder;
 }
 
 checker::Type *TSAnalyzer::Check(ir::TSMethodSignature *node) const
 {
-    (void)node;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    if (node->Computed()) {
+        checker->CheckComputedPropertyName(node->Key());
+    }
+
+    checker::ScopeContext scope_ctx(checker, node->Scope());
+
+    auto *signature_info = checker->Allocator()->New<checker::SignatureInfo>(checker->Allocator());
+    checker->CheckFunctionParameterDeclarations(node->Params(), signature_info);
+
+    auto *call_signature = checker->Allocator()->New<checker::Signature>(signature_info, checker->GlobalAnyType());
+    node->Variable()->SetTsType(checker->CreateFunctionTypeWithSignature(call_signature));
+
+    if (node->ReturnTypeAnnotation() == nullptr) {
+        checker->ThrowTypeError(
+            "Method signature, which lacks return-type annotation, implicitly has an 'any' return type.",
+            node->Start());
+    }
+
+    node->return_type_annotation_->Check(checker);
+    call_signature->SetReturnType(node->return_type_annotation_->GetType(checker));
+
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::TSPropertySignature *node) const
 {
-    (void)node;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    if (node->TypeAnnotation() != nullptr) {
+        node->TypeAnnotation()->Check(checker);
+    }
+
+    if (node->Computed()) {
+        checker->CheckComputedPropertyName(node->Key());
+    }
+
+    if (node->TypeAnnotation() != nullptr) {
+        node->Variable()->SetTsType(node->TypeAnnotation()->GetType(checker));
+        return nullptr;
+    }
+
+    checker->ThrowTypeError("Property implicitly has an 'any' type.", node->Start());
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::TSSignatureDeclaration *node) const
@@ -895,7 +946,7 @@ checker::Type *TSAnalyzer::Check(ir::TSConstructorType *node) const
 }
 
 static varbinder::EnumMemberResult EvaluateIdentifier(checker::TSChecker *checker, varbinder::EnumVariable *enum_var,
-                                                   const ir::Identifier *expr)
+                                                      const ir::Identifier *expr)
 {
     if (expr->Name() == "NaN") {
         return std::nan("");
@@ -950,8 +1001,8 @@ static uint32_t ToUInt(double num)
 }
 
 varbinder::EnumMemberResult TSAnalyzer::EvaluateBinaryExpression(checker::TSChecker *checker,
-                                                              varbinder::EnumVariable *enum_var,
-                                                              const ir::BinaryExpression *expr) const
+                                                                 varbinder::EnumVariable *enum_var,
+                                                                 const ir::BinaryExpression *expr) const
 {
     varbinder::EnumMemberResult left = EvaluateEnumMember(checker, enum_var, expr->AsBinaryExpression()->Left());
     varbinder::EnumMemberResult right = EvaluateEnumMember(checker, enum_var, expr->AsBinaryExpression()->Right());
@@ -1014,8 +1065,8 @@ varbinder::EnumMemberResult TSAnalyzer::EvaluateBinaryExpression(checker::TSChec
 }
 
 varbinder::EnumMemberResult TSAnalyzer::EvaluateUnaryExpression(checker::TSChecker *checker,
-                                                             varbinder::EnumVariable *enum_var,
-                                                             const ir::UnaryExpression *expr) const
+                                                                varbinder::EnumVariable *enum_var,
+                                                                const ir::UnaryExpression *expr) const
 {
     varbinder::EnumMemberResult value = EvaluateEnumMember(checker, enum_var, expr->Argument());
     if (!std::holds_alternative<double>(value)) {
@@ -1040,8 +1091,9 @@ varbinder::EnumMemberResult TSAnalyzer::EvaluateUnaryExpression(checker::TSCheck
     return false;
 }
 
-varbinder::EnumMemberResult TSAnalyzer::EvaluateEnumMember(checker::TSChecker *checker, varbinder::EnumVariable *enum_var,
-                                                        const ir::AstNode *expr) const
+varbinder::EnumMemberResult TSAnalyzer::EvaluateEnumMember(checker::TSChecker *checker,
+                                                           varbinder::EnumVariable *enum_var,
+                                                           const ir::AstNode *expr) const
 {
     switch (expr->Type()) {
         case ir::AstNodeType::UNARY_EXPRESSION: {
@@ -1197,7 +1249,8 @@ checker::Type *TSAnalyzer::InferType(checker::TSChecker *checker, bool is_const,
 
     for (size_t i = 0; i < locals_size; i++) {
         const util::StringView &current_name = enum_scope->Decls()[i]->Name();
-        varbinder::Variable *current_var = enum_scope->FindLocal(current_name, varbinder::ResolveBindingOptions::BINDINGS);
+        varbinder::Variable *current_var =
+            enum_scope->FindLocal(current_name, varbinder::ResolveBindingOptions::BINDINGS);
         ASSERT(current_var && current_var->IsEnumVariable());
         InferEnumVariableType(checker, current_var->AsEnumVariable(), &value, &init_next, &is_literal_enum, is_const,
                               computed_expr);

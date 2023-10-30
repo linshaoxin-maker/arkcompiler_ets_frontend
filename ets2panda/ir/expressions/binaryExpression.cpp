@@ -40,11 +40,13 @@ void BinaryExpression::Dump(ir::AstDumper *dumper) const
                  {"right", right_}});
 }
 
-void BinaryExpression::Compile(compiler::PandaGen *pg) const {
+void BinaryExpression::Compile(compiler::PandaGen *pg) const
+{
     pg->GetAstCompiler()->Compile(this);
 }
 
-void BinaryExpression::Compile(compiler::ETSGen *etsg) const {
+void BinaryExpression::Compile(compiler::ETSGen *etsg) const
+{
     etsg->GetAstCompiler()->Compile(this);
 }
 
