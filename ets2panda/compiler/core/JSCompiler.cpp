@@ -963,9 +963,8 @@ void JSCompiler::Compile(const ir::WhileStatement *st) const
     UNREACHABLE();
 }
 // from ts folder
-void JSCompiler::Compile(const ir::TSAnyKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSAnyKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -987,9 +986,8 @@ void JSCompiler::Compile(const ir::TSBigintKeyword *node) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSBooleanKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSBooleanKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1011,21 +1009,18 @@ void JSCompiler::Compile(const ir::TSConstructorType *node) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSEnumDeclaration *st) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSEnumDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSEnumMember *st) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSEnumMember *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSExternalModuleReference *expr) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSExternalModuleReference *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -1131,15 +1126,13 @@ void JSCompiler::Compile(const ir::TSNullKeyword *node) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSNumberKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSNumberKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSObjectKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSObjectKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1161,9 +1154,8 @@ void JSCompiler::Compile(const ir::TSQualifiedName *expr) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSStringKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSStringKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1239,9 +1231,8 @@ void JSCompiler::Compile(const ir::TSTypeReference *node) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSUndefinedKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSUndefinedKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1251,16 +1242,13 @@ void JSCompiler::Compile(const ir::TSUnionType *node) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSUnknownKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSUnknownKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSVoidKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSVoidKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
-
 }  // namespace panda::es2panda::compiler
