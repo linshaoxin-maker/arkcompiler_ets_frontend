@@ -350,21 +350,95 @@ static void CompileLogical(compiler::ETSGen *etsg, const ir::BinaryExpression *e
     etsg->SetAccumulatorType(expr->TsType());
 }
 
+static bool CompileBigInt(compiler::ETSGen *etsg, const ir::BinaryExpression *expr)
+{
+    if (!expr->Left()->TsType()->IsETSBigIntType()) {
+        return false;
+    }
+
+    if (!expr->Right()->TsType()->IsETSBigIntType()) {
+        return false;
+    }
+
+    std::string_view signature = compiler::Signatures::ANY;
+    bool comparison = false;
+    switch (expr->OperatorType()) {
+        case lexer::TokenType::PUNCTUATOR_PLUS:
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_PLUS;
+            break;
+        case lexer::TokenType::PUNCTUATOR_MINUS:
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_MINUS;
+            break;
+        case lexer::TokenType::PUNCTUATOR_MULTIPLY:
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_MULTIPLY;
+            break;
+        case lexer::TokenType::PUNCTUATOR_DIVIDE:
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_DIVIDE;
+            break;
+        case lexer::TokenType::PUNCTUATOR_MOD:
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_MODULE;
+            break;
+        case lexer::TokenType::PUNCTUATOR_BITWISE_OR:
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_BITWISE_OR;
+            break;
+        case lexer::TokenType::PUNCTUATOR_BITWISE_AND:
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_BITWISE_AND;
+            break;
+        case lexer::TokenType::PUNCTUATOR_BITWISE_XOR:
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_BITWISE_XOR;
+            break;
+        case lexer::TokenType::PUNCTUATOR_LEFT_SHIFT:
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_LEFT_SHIFT;
+            break;
+        case lexer::TokenType::PUNCTUATOR_RIGHT_SHIFT:
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_RIGHT_SHIFT;
+            break;
+        case lexer::TokenType::PUNCTUATOR_GREATER_THAN:
+            comparison = true;
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_GREATER_THAN;
+            break;
+        case lexer::TokenType::PUNCTUATOR_LESS_THAN:
+            comparison = true;
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_LESS_THAN;
+            break;
+        case lexer::TokenType::PUNCTUATOR_GREATER_THAN_EQUAL:
+            comparison = true;
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_GREATER_THAN_EQUAL;
+            break;
+        case lexer::TokenType::PUNCTUATOR_LESS_THAN_EQUAL:
+            comparison = true;
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_LESS_THAN_EQUAL;
+            break;
+        default:
+            return false;
+    }
+
+    const checker::Type *operation_type = expr->OperationType();
+    auto ttctx = compiler::TargetTypeContext(etsg, operation_type);
+    compiler::RegScope rs(etsg);
+    compiler::VReg lhs = etsg->AllocReg();
+    expr->Left()->Compile(etsg);
+    etsg->ApplyConversionAndStoreAccumulator(expr->Left(), lhs, operation_type);
+    expr->Right()->Compile(etsg);
+    etsg->ApplyConversion(expr->Right(), operation_type);
+    compiler::VReg rhs = etsg->AllocReg();
+    etsg->StoreAccumulator(expr, rhs);
+
+    if (comparison) {
+        etsg->CallBigIntBinaryComparison(expr, lhs, rhs, signature);
+    } else {
+        etsg->CallBigIntBinaryOperator(expr, lhs, rhs, signature);
+    }
+
+    return true;
+}
+
 void ETSCompiler::Compile(const ir::BinaryExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
 
-    if (expr->Left()->TsType()->IsETSBigIntType() && expr->Right()->TsType()->IsETSBigIntType()) {
-        switch (expr->OperatorType()) {
-            case lexer::TokenType::KEYW_INSTANCEOF:
-            case lexer::TokenType::PUNCTUATOR_EQUAL:
-            case lexer::TokenType::PUNCTUATOR_STRICT_EQUAL:
-                // Handled below
-                break;
-            default:
-                etsg->CallBigIntOperator(expr);
-                return;
-        }
+    if (CompileBigInt(etsg, expr)) {
+        return;
     }
 
     if (etsg->TryLoadConstantExpression(expr)) {

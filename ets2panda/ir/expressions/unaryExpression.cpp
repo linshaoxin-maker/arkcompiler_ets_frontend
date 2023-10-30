@@ -250,6 +250,19 @@ checker::Type *UnaryExpression::Check(checker::ETSChecker *checker)
         }
     }
 
+    if (arg_type != nullptr && arg_type->IsETSBigIntType()) {
+        switch (operator_) {
+            case lexer::TokenType::PUNCTUATOR_MINUS:
+            case lexer::TokenType::PUNCTUATOR_PLUS:
+            case lexer::TokenType::PUNCTUATOR_TILDE: {
+                SetTsType(arg_type);
+                return TsType();
+            }
+            default:
+                break;
+        }
+    }
+
     switch (operator_) {
         case lexer::TokenType::PUNCTUATOR_MINUS:
         case lexer::TokenType::PUNCTUATOR_PLUS: {

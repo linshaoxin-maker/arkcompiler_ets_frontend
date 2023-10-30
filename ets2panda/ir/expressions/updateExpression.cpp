@@ -74,7 +74,16 @@ void UpdateExpression::Compile(compiler::ETSGen *etsg) const
         lref.GetValue();
         argument_->SetBoxingUnboxingFlags(argument_unboxing_flags);
         etsg->ApplyConversion(argument_, nullptr);
-        etsg->Update(this, operator_);
+
+        if (argument_->TsType()->IsETSBigIntType()) {
+            compiler::RegScope rs(etsg);
+            compiler::VReg value_reg = etsg->AllocReg();
+            etsg->StoreAccumulator(argument_, value_reg);
+            etsg->UpdateBigInt(this, value_reg, operator_);
+        } else {
+            etsg->Update(this, operator_);
+        }
+
         argument_->SetBoxingUnboxingFlags(argument_boxing_flags);
         etsg->ApplyConversion(argument_, argument_->TsType());
         lref.SetValue();
@@ -91,7 +100,12 @@ void UpdateExpression::Compile(compiler::ETSGen *etsg) const
 
     argument_->SetBoxingUnboxingFlags(argument_unboxing_flags);
     etsg->ApplyConversion(argument_, nullptr);
-    etsg->Update(this, operator_);
+
+    if (argument_->TsType()->IsETSBigIntType()) {
+        etsg->UpdateBigInt(this, original_value_reg, operator_);
+    } else {
+        etsg->Update(this, operator_);
+    }
 
     argument_->SetBoxingUnboxingFlags(argument_boxing_flags);
     etsg->ApplyConversion(argument_, argument_->TsType());
@@ -124,6 +138,11 @@ checker::Type *UpdateExpression::Check(checker::ETSChecker *checker)
     }
 
     checker::Type *operand_type = argument_->Check(checker);
+    if (operand_type->IsETSBigIntType()) {
+        SetTsType(operand_type);
+        return TsType();
+    }
+
     if (argument_->IsIdentifier()) {
         checker->ValidateUnaryOperatorOperand(argument_->AsIdentifier()->Variable());
     } else {

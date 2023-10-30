@@ -99,7 +99,7 @@ public:
     Type *GlobalETSNullType() const;
     Type *GlobalETSUndefinedType() const;
     Type *GlobalETSStringLiteralType() const;
-    Type *GlobalETSBigIntLiteralType() const;
+    Type *GlobalETSBigIntType() const;
     Type *GlobalWildcardType() const;
 
     ETSObjectType *GlobalETSObjectType() const;

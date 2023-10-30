@@ -818,7 +818,7 @@ void ETSGen::EmitIsInstance([[maybe_unused]] const ir::AstNode *const node, [[ma
 
 void ETSGen::LoadConstantObject(const ir::Expression *node, const checker::Type *type)
 {
-    if (type->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_BIGINT)) {
+    if (type->HasTypeFlag(checker::TypeFlag::BIGINT_LITERAL)) {
         LoadAccumulatorBigInt(node, type->AsETSObjectType()->AsETSBigIntType()->GetValue());
         const VReg value = AllocReg();
         StoreAccumulator(node, value);
@@ -2247,6 +2247,14 @@ void ETSGen::UnaryMinus(const ir::AstNode *node)
 
 void ETSGen::UnaryTilde(const ir::AstNode *node)
 {
+    if (GetAccumulatorType()->IsETSBigIntType()) {
+        const VReg value = AllocReg();
+        StoreAccumulator(node, value);
+        CallThisStatic0(node, value, Signatures::BUILTIN_BIGINT_OPERATOR_BITWISE_NOT);
+        SetAccumulatorType(Checker()->GlobalETSBigIntType());
+        return;
+    }
+
     switch (checker::ETSChecker::ETSType(GetAccumulatorType())) {
         case checker::TypeFlag::LONG: {
             Sa().Emit<NotWide>(node);
@@ -2283,6 +2291,23 @@ void ETSGen::Update(const ir::AstNode *node, lexer::TokenType op)
         }
         case lexer::TokenType::PUNCTUATOR_MINUS_MINUS: {
             UpdateOperator<Sub2Wide, Subi, Fsub2Wide, Fsub2>(node);
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+}
+
+void ETSGen::UpdateBigInt(const ir::Expression *node, VReg arg, lexer::TokenType op)
+{
+    switch (op) {
+        case lexer::TokenType::PUNCTUATOR_PLUS_PLUS: {
+            CallBigIntUnaryOperator(node, arg, compiler::Signatures::BUILTIN_BIGINT_OPERATOR_INCREMENT);
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_MINUS_MINUS: {
+            CallBigIntUnaryOperator(node, arg, compiler::Signatures::BUILTIN_BIGINT_OPERATOR_DECREMENT);
             break;
         }
         default: {
@@ -2383,20 +2408,26 @@ void ETSGen::BuildString(const ir::Expression *node)
     SetAccumulatorType(node->TsType());
 }
 
-void ETSGen::CallBigIntOperator(const ir::Expression *node)
+void ETSGen::CallBigIntUnaryOperator(const ir::Expression *node, VReg arg, const util::StringView signature)
 {
-    RegScope rs(this);
+    LoadAccumulator(node, arg);
+    CallThisStatic0(node, arg, signature);
+    SetAccumulatorType(Checker()->GlobalETSBigIntType());
+}
 
-    // Empty big int constructor
-    Ra().Emit<InitobjShort, 0>(node, Signatures::BUILTIN_BIGINT_CTOR_EMPTY, dummy_reg_, dummy_reg_);
-    SetAccumulatorType(Checker()->GlobalBuiltinETSBigIntType());
-    const VReg bigint = AllocReg();
-    StoreAccumulator(node, bigint);
+void ETSGen::CallBigIntBinaryOperator(const ir::Expression *node, VReg lhs, VReg rhs, const util::StringView signature)
+{
+    LoadAccumulator(node, lhs);
+    CallThisStatic1(node, lhs, signature, rhs);
+    SetAccumulatorType(Checker()->GlobalETSBigIntType());
+}
 
-    // NOTE(kkonsw): add implementation for the operators
-    CallThisStatic0(node, bigint, Signatures::BUILTIN_BIGINT_OPERATOR);
-    SetAccumulatorType(Checker()->GlobalLongType());
-    StoreAccumulator(node, bigint);
+void ETSGen::CallBigIntBinaryComparison(const ir::Expression *node, VReg lhs, VReg rhs,
+                                        const util::StringView signature)
+{
+    LoadAccumulator(node, lhs);
+    CallThisStatic1(node, lhs, signature, rhs);
+    SetAccumulatorType(Checker()->GlobalETSBooleanType());
 }
 
 void ETSGen::BuildTemplateString(const ir::TemplateLiteral *node)

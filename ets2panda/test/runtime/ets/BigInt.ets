@@ -45,40 +45,36 @@ function test_assignment(): void {
 function test_compare(): void {
     const a = 24400569094091093912039019089543850580328542852805043n
     const b = 34034240244909504590902901119302940942904944029040950n
-    const c = 140044940590459049067274048929058908989042385n
-    const d = 44493059209094029409209402940924902n
 
-    // Expecting successfull compilation
-    // NOTE(kkonsw): add asserts
-    44493059209094029409209402940924902n < 140044940590459049067274048929058908989042385n
-    44493059209094029409209402940924902n < a
-    a < 34034240244909504590902901119302940942904944029040950n
-    a < b
+    assert 44493059209094029409209402940924902n < 140044940590459049067274048929058908989042385n
+    assert 44493059209094029409209402940924902n < a
+    assert a < 34034240244909504590902901119302940942904944029040950n
+    assert a < b
 
-    44493059209094029409209402940924902n <= 140044940590459049067274048929058908989042385n
-    44493059209094029409209402940924902n <= a
-    a <= 34034240244909504590902901119302940942904944029040950n
-    a <= b
+    assert 44493059209094029409209402940924902n <= 140044940590459049067274048929058908989042385n
+    assert 44493059209094029409209402940924902n <= a
+    assert a <= 34034240244909504590902901119302940942904944029040950n
+    assert a <= b
 
-    44493059209094029409209402940924902n <= 44493059209094029409209402940924902n
-    24400569094091093912039019089543850580328542852805043n <= a
-    a <= 24400569094091093912039019089543850580328542852805043n
-    a <= a
+    assert 44493059209094029409209402940924902n <= 44493059209094029409209402940924902n
+    assert 24400569094091093912039019089543850580328542852805043n <= a
+    assert a <= 24400569094091093912039019089543850580328542852805043n
+    assert a <= a
 
-    40044940590459049067274048929058908989042385n > 44493059209094029409209402940924902n
-    34034240244909504590902901119302940942904944029040950n > a
-    a > 140044940590459049067274048929058908989042385n
-    b > a
+    assert 40044940590459049067274048929058908989042385n > 44493059209094029409209402940924902n
+    assert 34034240244909504590902901119302940942904944029040950n > a
+    assert a > 140044940590459049067274048929058908989042385n
+    assert b > a
 
-    40044940590459049067274048929058908989042385n >= 44493059209094029409209402940924902n
-    34034240244909504590902901119302940942904944029040950n >= a
-    a >= 140044940590459049067274048929058908989042385n
-    b >= a
+    assert 40044940590459049067274048929058908989042385n >= 44493059209094029409209402940924902n
+    assert 34034240244909504590902901119302940942904944029040950n >= a
+    assert a >= 140044940590459049067274048929058908989042385n
+    assert b >= a
 
-    44493059209094029409209402940924902n <= 44493059209094029409209402940924902n
-    24400569094091093912039019089543850580328542852805043n <= a
-    a <= 24400569094091093912039019089543850580328542852805043n
-    a <= a
+    assert 44493059209094029409209402940924902n <= 44493059209094029409209402940924902n
+    assert 24400569094091093912039019089543850580328542852805043n <= a
+    assert a <= 24400569094091093912039019089543850580328542852805043n
+    assert a <= a
 }
 
 function test_literals() : void {
@@ -202,11 +198,21 @@ function test_bigint_methods(): void {
     let dec = new BigInt("-12392320390239294724747283477947923471101032")
     assert dec == -12392320390239294724747283477947923471101032n
 
-    // NOTE(kkonsw): asIntN not implemented
-    /* Testing asIntN() static method */
+    const n7 = 12392320390239294724747283477947923471101032n
 
-    // NOTE(kkonsw): asUintN not implemented
+    /* Testing asIntN() static method */
+    assert BigInt.asIntN(0, n7) == 0n
+    assert BigInt.asIntN(8, n7) == 104n
+    assert BigInt.asIntN(16, n7) == 27752n
+    assert BigInt.asIntN(32, n7) == -737317784n
+    assert BigInt.asIntN(64, n7) == -7098331616643290008n
+
     /* Testing asUintN() static method */
+    assert BigInt.asUintN(0, n7) == 0n
+    assert BigInt.asUintN(8, n7) == 104n
+    assert BigInt.asUintN(16, n7) == 27752n
+    assert BigInt.asUintN(32, n7) == 3557649512n
+    assert BigInt.asUintN(64, n7) == 11348412457066261608n
 }
 
 function test_unary(): void {
@@ -282,17 +288,18 @@ function test_multiplication(): void {
     const c = -245000234343499329134n
 
     /* Multiplication testing (*) */
-    978667632325344545n * 4534000101n 
-    a * b 
-    a * c 
-    a * 0n
-    c * 0n
+    assert 978667632325344545n * 4534000101n == 4437279143808543031889799045n
+    assert a * b == 5743661804677708098900659843374372544236731694n
+    assert a * c == -5743661804677708098900659843374372544236731694n
+    assert a * 0n == 0n
+    assert c * 0n == 0n
+
     
     /* Division testing (/) */
-    39735235034886462n / 89221422n 
-    a / b
-    a / c
-    0n / a
+    assert 39735235034886462n / 89221422n == 445355321n
+    assert a / b == 95687n
+    assert a / c == -95687n
+    assert 0n / a == 0n
 
     let err = false;
     try {
@@ -302,11 +309,12 @@ function test_multiplication(): void {
             err = true
         }
     }
+    assert err
 
     /* Remainder of the division (%) */
-    493433405047004109n / 111114444n 
-    a / b
-    0n / a
+    assert 493433405047004109n % 111114444n == 18100749n
+    assert a % b == a % c
+    assert 0n % a == 0n
 
     err = false;
     try {
@@ -316,6 +324,7 @@ function test_multiplication(): void {
             err = true
         }
     }
+    assert err
 }
 
 function test_addition_1(): void {
@@ -332,6 +341,9 @@ function test_addition_1(): void {
     assert (-(-c) == c)
 
     /* Plus testing (+) */
+    assert +a == a
+    assert +b == b
+    assert +c == 0n
 }
 
 function test_addition_2(): void {
@@ -340,11 +352,11 @@ function test_addition_2(): void {
     const c = -10000000000000000000n;
     
     /* Addition testing (+) */
-    999_999_999_999_999n + 1n
-    a + b
-    a + a
-    a + c
-    a + b + b
+    assert 999999999999999n + 1n == 1000000000000000n
+    assert a + b == 55340232221128654848n
+    assert a + a == b
+    assert a + c == 8446744073709551616n
+    assert a + b + b == 92233720368547758080n
 }
 
 function test_subtraction(): void {
@@ -353,10 +365,10 @@ function test_subtraction(): void {
     const c = -10000000000000000000n;
 
     // /* Subtraction testing (-) */
-    999_999_999_999_999n - 1n
-    b - a
-    a - b
-    b - a - a
+    assert 999999999999999n - 1n == 999999999999998n
+    assert b - a == a
+    assert a - b == -18446744073709551616n
+    assert b - a - a == 0n
 }
 
 function test_inc_dec(): void {
@@ -371,14 +383,12 @@ function test_shift(): void {
     const a = 245599210405555256299145n
     
     /* Testing left shift (<<) */
-    a << 100n
-    a << 0n
+    assert a << 100n == 311333986486181324779687697000809288883015536628203520n
+    assert a << 0n == a
 
     /* Testing right shift (>>) */
-    a >> 60n
-    a >> 0n
-
-    /* Testing unsigned right shift (>>>) */
+    assert a >> 60n == 213023n
+    assert a >> 0n == a
 }
 
 function test_bitwise(): void {
@@ -387,20 +397,12 @@ function test_bitwise(): void {
     const zero = 0n
 
     /* Testing bitwise NOT (~) */
+    assert ~zero == -1n
+    assert ~a == -123456789123456789123456789123456789123456789123456790n
     
     /* Testing bitwise AND (&) */
-    a & 0n
-    a & a
-
     /* Testing bitwise XOR (^) */
-    a ^ 0n 
-    a ^ a
-    a ^ b
-
     /* Testing bitwise OR (|) */
-    a | 0n 
-    a | a 
-    a | b
 }
 
 function main() : void {

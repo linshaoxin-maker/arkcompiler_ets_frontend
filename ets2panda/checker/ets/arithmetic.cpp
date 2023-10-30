@@ -132,17 +132,12 @@ bool ETSChecker::CheckBinaryOperatorForBigInt(Type *left, Type *right, lexer::To
         return false;
     }
 
-    if (!left->IsETSObjectType() || !left->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::BUILTIN_BIGINT)) {
+    if (!left->IsETSBigIntType()) {
         return false;
     }
 
-    if (!right->IsETSObjectType() || !right->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::BUILTIN_BIGINT)) {
+    if (!right->IsETSBigIntType()) {
         return false;
-    }
-
-    bool both_const = false;
-    if (left->HasTypeFlag(TypeFlag::CONSTANT) && right->HasTypeFlag(TypeFlag::CONSTANT)) {
-        both_const = true;
     }
 
     switch (operation) {
@@ -155,12 +150,11 @@ bool ETSChecker::CheckBinaryOperatorForBigInt(Type *left, Type *right, lexer::To
             break;
     }
 
-    if (!both_const) {
-        // Nothing else to be done here, return
-        return true;
-    }
-
     // NOTE(kkonsw): if both objects are const we can perform operations during compilation
+    // Currently all bigint operations happen during runtime
+    left->RemoveTypeFlag(TypeFlag::CONSTANT);
+    right->RemoveTypeFlag(TypeFlag::CONSTANT);
+
     return true;
 }
 
@@ -595,7 +589,15 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left,
         (op > lexer::TokenType::PUNCTUATOR_SUBSTITUTION && op < lexer::TokenType::PUNCTUATOR_ARROW) && !force_promotion;
 
     if (CheckBinaryOperatorForBigInt(left_type, right_type, op)) {
-        return {left_type, right_type};
+        switch (op) {
+            case lexer::TokenType::PUNCTUATOR_GREATER_THAN:
+            case lexer::TokenType::PUNCTUATOR_LESS_THAN:
+            case lexer::TokenType::PUNCTUATOR_GREATER_THAN_EQUAL:
+            case lexer::TokenType::PUNCTUATOR_LESS_THAN_EQUAL:
+                return {GlobalETSBooleanType(), GlobalETSBooleanType()};
+            default:
+                return {left_type, right_type};
+        }
     };
 
     if (check_map.find(op) != check_map.end()) {

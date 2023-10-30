@@ -221,7 +221,7 @@ Type *ETSChecker::GlobalETSStringLiteralType() const
     return GetGlobalTypesHolder()->GlobalETSStringLiteralType();
 }
 
-Type *ETSChecker::GlobalETSBigIntLiteralType() const
+Type *ETSChecker::GlobalETSBigIntType() const
 {
     return GetGlobalTypesHolder()->GlobalETSBigIntBuiltinType();
 }
