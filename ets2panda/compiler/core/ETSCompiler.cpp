@@ -86,27 +86,23 @@ void ETSCompiler::Compile([[maybe_unused]] const ir::Decorator *st) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::MetaProperty *expr) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::MetaProperty *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::MethodDefinition *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::MethodDefinition *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::Property *expr) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::Property *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::ScriptFunction *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::ScriptFunction *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -118,25 +114,22 @@ void ETSCompiler::Compile(const ir::SpreadElement *expr) const
 
 void ETSCompiler::Compile(const ir::TemplateElement *expr) const
 {
-    (void)expr;
+    ETSGen *etsg = GetETSGen();
+    etsg->LoadAccumulatorString(expr, expr->Raw());
+}
+
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSIndexSignature *node) const
+{
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSIndexSignature *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSMethodSignature *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSMethodSignature *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSPropertySignature *node) const
 {
-    (void)node;
-    UNREACHABLE();
-}
-
-void ETSCompiler::Compile(const ir::TSPropertySignature *node) const
-{
-    (void)node;
     UNREACHABLE();
 }
 

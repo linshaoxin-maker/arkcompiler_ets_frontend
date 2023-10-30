@@ -409,25 +409,30 @@ void JSCompiler::Compile([[maybe_unused]] const ir::Decorator *st) const
 
 void JSCompiler::Compile(const ir::MetaProperty *expr) const
 {
-    (void)expr;
+    PandaGen *pg = GetPandaGen();
+    if (expr->Kind() == ir::MetaProperty::MetaPropertyKind::NEW_TARGET) {
+        pg->GetNewTarget(expr);
+        return;
+    }
+
+    if (expr->Kind() == ir::MetaProperty::MetaPropertyKind::IMPORT_META) {
+        // TODO()
+        pg->Unimplemented();
+    }
+}
+
+void JSCompiler::Compile([[maybe_unused]] const ir::MethodDefinition *node) const
+{
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::MethodDefinition *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::Property *expr) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::Property *expr) const
+void JSCompiler::Compile([[maybe_unused]] const ir::ScriptFunction *node) const
 {
-    (void)expr;
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile(const ir::ScriptFunction *node) const
-{
-    (void)node;
     UNREACHABLE();
 }
 
@@ -437,27 +442,23 @@ void JSCompiler::Compile(const ir::SpreadElement *expr) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TemplateElement *expr) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TemplateElement *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSIndexSignature *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSIndexSignature *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSMethodSignature *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSMethodSignature *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSPropertySignature *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSPropertySignature *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 

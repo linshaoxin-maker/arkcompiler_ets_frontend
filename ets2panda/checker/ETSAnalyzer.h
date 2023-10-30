@@ -37,6 +37,7 @@ public:
 
 private:
     ETSChecker *GetETSChecker() const;
+    void CheckMethodModifiers(ir::MethodDefinition *node) const;
 };
 
 }  // namespace panda::es2panda::checker
