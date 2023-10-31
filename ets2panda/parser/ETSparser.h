@@ -37,7 +37,7 @@ public:
     NO_COPY_SEMANTIC(ETSParser);
     NO_MOVE_SEMANTIC(ETSParser);
 
-    ~ETSParser() = default;
+    ~ETSParser() final = default;
 
     ir::Expression *CreateExpression(ExpressionParseFlags flags, std::string_view source_code,
                                      std::string_view file_name = DEFAULT_SOURCE_FILE);

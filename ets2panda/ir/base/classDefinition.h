@@ -144,6 +144,11 @@ public:
         return super_class_;
     }
 
+    void SetSuper(Expression *super_class)
+    {
+        super_class_ = super_class;
+    }
+
     bool IsGlobal() const
     {
         return (modifiers_ & ClassDefinitionModifiers::GLOBAL) != 0;
@@ -208,6 +213,11 @@ public:
         return ctor_;
     }
 
+    void SetCtor(MethodDefinition *ctor)
+    {
+        ctor_ = ctor;
+    }
+
     ArenaVector<ir::TSClassImplements *> &Implements()
     {
         return implements_;
@@ -226,6 +236,11 @@ public:
     ir::TSTypeParameterDeclaration *TypeParams()
     {
         return type_params_;
+    }
+
+    void SetTypeParams(ir::TSTypeParameterDeclaration *type_params)
+    {
+        type_params_ = type_params;
     }
 
     const FunctionExpression *Ctor() const;

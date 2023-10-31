@@ -34,6 +34,26 @@ public:
     {
     }
 
+    ir::TypeNode *TypeReference()
+    {
+        return type_reference_;
+    }
+
+    ir::TypeNode const *TypeReference() const
+    {
+        return type_reference_;
+    }
+
+    ArenaVector<ir::Expression *> &Dimensions()
+    {
+        return dimensions_;
+    }
+
+    ArenaVector<ir::Expression *> const &Dimension() const
+    {
+        return dimensions_;
+    }
+
     checker::Signature *Signature()
     {
         return signature_;
