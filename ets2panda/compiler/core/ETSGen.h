@@ -77,6 +77,10 @@ public:
     void StoreElementDynamic(const ir::AstNode *node, VReg object_reg, VReg index, Language lang);
     void LoadElementDynamic(const ir::AstNode *node, VReg object_reg, Language lang);
 
+    void StoreUnionProperty(const ir::AstNode *node, VReg obj_reg, const util::StringView &name);
+    void LoadUnionProperty(const ir::AstNode *node, const checker::Type *prop_type, VReg obj_reg,
+                           const util::StringView &prop_name);
+
     void LoadUndefinedDynamic(const ir::AstNode *node, Language lang);
 
     void LoadThis(const ir::AstNode *node);
@@ -1056,8 +1060,9 @@ private:
 template <typename T>
 void ETSGen::LoadAccumulatorNumber(const ir::AstNode *node, T number, checker::TypeFlag target_type)
 {
-    auto type_kind =
-        target_type_ && !target_type_->IsETSObjectType() ? checker::ETSChecker::TypeKind(target_type_) : target_type;
+    auto type_kind = target_type_ && (!target_type_->IsETSObjectType() && !target_type_->IsETSUnionType())
+                         ? checker::ETSChecker::TypeKind(target_type_)
+                         : target_type;
 
     switch (type_kind) {
         case checker::TypeFlag::ETS_BOOLEAN:
