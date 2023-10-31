@@ -665,7 +665,7 @@ ArenaVector<ir::AstNode *> ETSParser::ParseTopLevelStatements(ArenaVector<ir::St
                 auto *member_name = ExpectIdentifier();
                 auto class_ctx =
                     binder::LexicalScope<binder::ClassScope>::Enter(Binder(), GetProgram()->GlobalClassScope());
-                ParseClassFieldDefiniton(member_name, member_modifiers, &global_properties, init_function);
+                ParseClassFieldDefiniton(member_name, member_modifiers, &global_properties, init_function, &start_loc);
                 break;
             }
             case lexer::TokenType::KEYW_ASYNC:
@@ -1248,7 +1248,8 @@ ir::ModifierFlags ETSParser::ParseClassMethodModifiers(bool seen_static)
 
 // NOLINTNEXTLINE(google-default-arguments)
 void ETSParser::ParseClassFieldDefiniton(ir::Identifier *field_name, ir::ModifierFlags modifiers,
-                                         ArenaVector<ir::AstNode *> *declarations, ir::ScriptFunction *init_function)
+                                         ArenaVector<ir::AstNode *> *declarations, ir::ScriptFunction *init_function,
+                                         lexer::SourcePosition *start_loc)
 {
     ir::TypeNode *type_annotation = nullptr;
     TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
@@ -1278,9 +1279,16 @@ void ETSParser::ParseClassFieldDefiniton(ir::Identifier *field_name, ir::Modifie
 
             auto *assignment_expression =
                 AllocNode<ir::AssignmentExpression>(ident, initializer, lexer::TokenType::PUNCTUATOR_SUBSTITUTION);
+            assignment_expression->SetRange({field_name->Range().start, initializer->Range().end});
             assignment_expression->SetParent(func_body);
-            func_body->AsBlockStatement()->Statements().emplace_back(
-                AllocNode<ir::ExpressionStatement>(assignment_expression));
+            auto expression_statement = AllocNode<ir::ExpressionStatement>(assignment_expression);
+            if (start_loc != nullptr) {
+                expression_statement->SetRange({*start_loc, initializer->Range().end});
+                if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
+                    expression_statement->SetEnd(Lexer()->GetToken().End());
+                }
+            }
+            func_body->AsBlockStatement()->Statements().emplace_back(expression_statement);
 
             if (type_annotation != nullptr && !type_annotation->IsETSFunctionType()) {
                 initializer = nullptr;
@@ -1295,6 +1303,9 @@ void ETSParser::ParseClassFieldDefiniton(ir::Identifier *field_name, ir::Modifie
     }
 
     auto *field = AllocNode<ir::ClassProperty>(field_name, initializer, type_annotation, modifiers, Allocator(), false);
+    if (initializer != nullptr) {
+        field->SetRange({field_name->Range().start, initializer->Range().end});
+    }
 
     if ((modifiers & ir::ModifierFlags::CONST) != 0) {
         ASSERT(Binder()->GetScope()->Parent() != nullptr);
