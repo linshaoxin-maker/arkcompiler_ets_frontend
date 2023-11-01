@@ -484,12 +484,8 @@ class ArkProgram():
             elif self.arch == ARK_ARCH_LIST[0]:
                 cmd_args = [self.ark_aot_tool, ICU_PATH]
 
-            cmd_args.append("--compiler-opt-loop-peeling=true")
             cmd_args.append("--compiler-fast-compile=false")
-            cmd_args.append("--compiler-opt-track-field=true")
-            cmd_args.append("--compiler-opt-inlining=true")
             cmd_args.append("--compiler-max-inline-bytecodes=45")
-            cmd_args.append("--compiler-opt-level=2")
             cmd_args.append(
                 f"--builtins-dts={CODE_ROOT}/arkcompiler/ets_runtime/ecmascript/ts_types/lib_ark_builtins.d.abc")
             cmd_args.append(f'--compiler-pgo-profiler-path={file_name_pre}.ap')
@@ -612,7 +608,6 @@ class ArkProgram():
                         ICU_PATH,
                         "--log-level=error",
                         "--enable-pgo-profiler=true",
-                        "--compiler-opt-inlining=true",
                         f'--compiler-pgo-profiler-path={file_name_pre}.ap',
                         "--asm-interpreter=true",
                         f'--entry-point={record_name}',
@@ -621,7 +616,6 @@ class ArkProgram():
             cmd_args = [self.ark_tool, ICU_PATH,
                         "--log-level=error",
                         "--enable-pgo-profiler=true",
-                        "--compiler-opt-inlining=true",
                         f'--compiler-pgo-profiler-path={file_name_pre}.ap',
                         "--asm-interpreter=true",
                         f'--entry-point={record_name}',
