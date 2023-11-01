@@ -103,13 +103,14 @@ private:
 
     // NOLINTNEXTLINE(google-default-arguments)
     void ParseClassFieldDefiniton(ir::Identifier *field_name, ir::ModifierFlags modifiers,
-                                  ArenaVector<ir::AstNode *> *declarations,
-                                  ir::ScriptFunction *init_function = nullptr);
+                                  ArenaVector<ir::AstNode *> *declarations, ir::ScriptFunction *init_function = nullptr,
+                                  lexer::SourcePosition *start_loc = nullptr);
     std::tuple<ir::Expression *, ir::TSTypeParameterInstantiation *> ParseTypeReferencePart(
         TypeAnnotationParsingOptions *options);
     ir::TypeNode *ParseTypeReference(TypeAnnotationParsingOptions *options);
     ir::TypeNode *ParseBaseTypeReference(TypeAnnotationParsingOptions *options);
     ir::TypeNode *ParsePrimitiveType(TypeAnnotationParsingOptions *options, ir::PrimitiveType type);
+    ir::ETSUnionType *ParseUnionType(ir::Expression *type);
     ir::TSIntersectionType *ParseIntersectionType(ir::Expression *type);
     ir::TypeNode *ParseWildcardType(TypeAnnotationParsingOptions *options);
     ir::TypeNode *ParseFunctionType();
