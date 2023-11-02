@@ -20,6 +20,7 @@
 #include "compiler/core/ASTVerifier.h"
 #include "ir/astDump.h"
 #include "ir/expressions/literals/stringLiteral.h"
+#include "ir/expressions/identifier.h"
 
 class ASTVerifierTest : public testing::Test {
 public:
@@ -68,4 +69,28 @@ TEST_F(ASTVerifierTest, WithoutScope)
 
     ASSERT_EQ(has_scope, true);
     ASSERT_EQ(messages.size(), 0);
+}
+
+TEST_F(ASTVerifierTest, ScopeTest)
+{
+    const auto memory_sz = 64'000'000;
+    panda::mem::MemConfig::Initialize(0, memory_sz, memory_sz, memory_sz, 0, 0);
+    panda::PoolManager::Initialize();
+    auto alloc = std::make_unique<panda::ArenaAllocator>(panda::SpaceType::SPACE_TYPE_INTERNAL);
+
+    panda::es2panda::compiler::ASTVerifier verifier {};
+    panda::es2panda::ir::Identifier ident(panda::es2panda::util::StringView("var_decl"), alloc.get());
+    panda::es2panda::binder::LetDecl decl("test", &ident);
+    panda::es2panda::binder::LocalVariable local(&decl, panda::es2panda::binder::VariableFlags::LOCAL);
+    ident.SetVariable(&local);
+
+    panda::es2panda::binder::LocalScope scope(alloc.get(), nullptr);
+    scope.AddDecl(alloc.get(), &decl, panda::es2panda::ScriptExtension::ETS);
+    scope.BindNode(&ident);
+
+    local.SetScope(&scope);
+
+    bool is_ok = verifier.ScopeEncloseVariable(&local);
+
+    ASSERT_EQ(is_ok, true);
 }

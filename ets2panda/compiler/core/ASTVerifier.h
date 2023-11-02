@@ -44,6 +44,12 @@ public:
         return error_messages_;
     }
 
+    bool ScopeEncloseVariable(const binder::LocalVariable *var);
+
+private:
+    void AddError(const char *err, const ir::AstNode *node);
+    std::optional<binder::LocalVariable *> GetLocalScopeVariable(const ir::AstNode *ast);
+
 private:
     ErrorMessages error_messages_;
 };

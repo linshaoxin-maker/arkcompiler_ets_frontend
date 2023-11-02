@@ -15,9 +15,9 @@
 
 #include "ASTVerifier.h"
 
-#include "es2panda.h"
-#include "binder/variableFlags.h"
 #include "binder/scope.h"
+#include "binder/variableFlags.h"
+#include "es2panda.h"
 #include "ir/astNode.h"
 #include "ir/base/catchClause.h"
 #include "ir/base/classDefinition.h"
@@ -33,9 +33,9 @@
 #include "ir/expressions/callExpression.h"
 #include "ir/expressions/functionExpression.h"
 #include "ir/expressions/identifier.h"
-#include "ir/expressions/memberExpression.h"
 #include "ir/expressions/literals/numberLiteral.h"
 #include "ir/expressions/literals/stringLiteral.h"
+#include "ir/expressions/memberExpression.h"
 #include "ir/statements/blockStatement.h"
 #include "ir/statements/classDeclaration.h"
 #include "ir/statements/expressionStatement.h"
@@ -351,6 +351,17 @@ bool ASTVerifier::HaveTypes(const ir::AstNode *ast)
     return has_type;
 }
 
+std::optional<binder::LocalVariable *> ASTVerifier::GetLocalScopeVariable(const ir::AstNode *ast)
+{
+    if (HasVariable(ast) && ast->AsIdentifier()->Variable()->IsLocalVariable()) {
+        const auto local_var = ast->AsIdentifier()->Variable()->AsLocalVariable();
+        if (local_var->HasFlag(binder::VariableFlags::LOCAL)) {
+            return local_var;
+        }
+    }
+    return std::nullopt;
+}
+
 bool ASTVerifier::HasVariable(const ir::AstNode *ast)
 {
     if (ast == nullptr) {
@@ -386,12 +397,15 @@ bool ASTVerifier::HasScope(const ir::AstNode *ast)
         return true;  // we will check only Identifier
     }
     // we will check only local variables of identifiers
-    if (HasVariable(ast) && ast->AsIdentifier()->Variable()->IsLocalVariable() &&
-        ast->AsIdentifier()->Variable()->AsLocalVariable()->GetScope() == nullptr) {
-        error_messages_.push_back("NULL_SCOPE_LOCAL_VAR: " + ToStringHelper(ast));
-        return false;
+    if (const auto maybe_var = GetLocalScopeVariable(ast)) {
+        const auto var = *maybe_var;
+        const auto scope = var->GetScope();
+        if (scope == nullptr) {
+            AddError("NULL_SCOPE_LOCAL_VAR: ", ast);
+            return false;
+        }
+        return ScopeEncloseVariable(var);
     }
-    // TODO(tatiana): Add check that the scope enclose this identifier
     return true;
 }
 
@@ -404,6 +418,42 @@ bool ASTVerifier::HaveScopes(const ir::AstNode *ast)
     bool has_scope = HasScope(ast);
     ast->IterateRecursively([this, &has_scope](ir::AstNode *child) { has_scope &= HasScope(child); });
     return has_scope;
+}
+
+bool ASTVerifier::ScopeEncloseVariable(const binder::LocalVariable *var)
+{
+    ASSERT(var);
+
+    const auto scope = var->GetScope();
+    ASSERT(scope);
+
+    const auto node = var->Declaration()->Node();
+    bool is_ok = true;
+    if (scope->Bindings().count(var->Name()) == 0) {
+        AddError("SCOPE_DO_NOT_ENCLOSE_LOCAL_VAR: ", node);
+        is_ok = false;
+    }
+    const auto scope_node = scope->Node();
+    auto var_node = node;
+    while (var_node != nullptr && var_node != scope_node) {
+        var_node = var_node->Parent();
+    }
+    if (var_node == nullptr) {
+        AddError("SCOPE_NODE_DONT_DOMINATE_VAR_NODE: ", node);
+        is_ok = false;
+    }
+    const auto &decls = scope->Decls();
+    const auto decl_dominate = std::count(decls.begin(), decls.end(), var->Declaration());
+    if (decl_dominate == 0) {
+        AddError("SCOPE_DECL_DONT_DOMINATE_VAR_DECL: ", node);
+        is_ok = false;
+    }
+    return is_ok;
+}
+
+void ASTVerifier::AddError(const char *err, const ir::AstNode *node)
+{
+    error_messages_.emplace_back(std::string(err) + ToStringHelper(node));
 }
 
 }  // namespace panda::es2panda::compiler
