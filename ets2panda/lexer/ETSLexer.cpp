@@ -82,12 +82,17 @@ void ETSLexer::CheckUtf16Compatible(char32_t cp) const
 void ETSLexer::SkipMultiLineComment()
 {
     uint32_t depth = 1;
+    LexerPosition start_pos = Pos();
+    LexerPosition last_comment_terminating_pos = Pos();
 
     while (true) {
         switch (Iterator().Next()) {
             case util::StringView::Iterator::INVALID_CP: {
-                ThrowError("Unterminated multi-line comment");
-                break;
+                if (start_pos.Iterator().Index() == last_comment_terminating_pos.Iterator().Index()) {
+                    ThrowError("Unterminated multi-line comment");
+                }
+                Pos() = last_comment_terminating_pos;
+                return;
             }
             case LEX_CHAR_LF:
             case LEX_CHAR_CR:
@@ -103,6 +108,8 @@ void ETSLexer::SkipMultiLineComment()
                     if (--depth == 0) {
                         return;
                     }
+
+                    last_comment_terminating_pos = Pos();
                 }
                 break;
             }
