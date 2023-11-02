@@ -3403,6 +3403,7 @@
   "channelInterpretation",
   "char",
   "charAt",
+  "getCharByIndex",
   "charCode",
   "charCodeAt",
   "charIndex",

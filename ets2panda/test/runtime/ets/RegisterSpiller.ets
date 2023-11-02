@@ -15,9 +15,9 @@
 
 function main(): void {
     let str: String = "hello\nworld\n";
-    assert str.charAt(2) == c'l';
+    assert str.getCharByIndex(2) == c'l';
     assert str.length() == 12;
-    assert str.charAt(str.length() - 1) == c'\n';
+    assert str.getCharByIndex(str.length() - 1) == c'\n';
 
     let a: String = "abc";
     let b: String = "ace";

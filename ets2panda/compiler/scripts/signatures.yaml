@@ -320,7 +320,7 @@ signatures:
     ref: BUILTIN_STRING_LENGTH
 
   - callee: BUILTIN_STRING
-    method_name: charAt
+    method_name: getCharByIndex
     params: [PRIMITIVE_INT]
     return_type: PRIMITIVE_CHAR
     ref: BUILTIN_STRING_CHAR_AT
