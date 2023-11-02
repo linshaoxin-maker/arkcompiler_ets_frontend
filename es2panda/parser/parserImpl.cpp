@@ -1277,16 +1277,43 @@ ir::TSTypePredicate *ParserImpl::ParseTsTypePredicate()
     return result;
 }
 
-ir::Expression *ParserImpl::ParseTsTypeLiteralOrInterfaceKey(bool *computed, bool *signature, bool *isIndexSignature)
+ir::Expression *ParserImpl::ParseTsTypeLiteralOrInterfaceKey(bool *computed, bool *signature, bool *isGetAccessor, bool *isSetAccessor, bool *isIndexSignature)
 {
     ir::Expression *key = nullptr;
 
     if (lexer_->GetToken().Type() == lexer::TokenType::LITERAL_IDENT &&
         (lexer_->GetToken().KeywordType() != lexer::TokenType::KEYW_NEW ||
-         (lexer_->Lookahead() != LEX_CHAR_LEFT_PAREN && lexer_->Lookahead() != LEX_CHAR_LESS_THAN))) {
+         (lexer_->Lookahead() != LEX_CHAR_LEFT_PAREN && lexer_->Lookahead() != LEX_CHAR_LESS_THAN)) &&
+          (lexer_->GetToken().KeywordType() != lexer::TokenType::KEYW_GET) &&
+           (lexer_->GetToken().KeywordType() != lexer::TokenType::KEYW_SET)) {
         key = AllocNode<ir::Identifier>(lexer_->GetToken().Ident());
         key->SetRange(lexer_->GetToken().Loc());
         lexer_->NextToken();
+    } else if (lexer_->GetToken().Type() == lexer::TokenType::LITERAL_IDENT &&
+               (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_GET ||
+                lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_SET)) {
+                    auto pos = lexer_->Save();
+                    lexer_->NextToken();
+        if (lexer_->GetToken().Type() != lexer::TokenType::KEYW_VOID && 
+            lexer_->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
+            lexer_->Rewind(pos);
+            key = AllocNode<ir::Identifier>(lexer_->GetToken().Ident());
+            key->SetRange(lexer_->GetToken().Loc());
+            lexer_->NextToken();
+        } else {                                                                                                             
+            lexer_->Rewind(pos);
+            if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_GET) {
+                *isGetAccessor = true;
+            } else {
+                *isSetAccessor = true;
+            }
+            lexer_->NextToken();
+            key = AllocNode<ir::Identifier>(lexer_->GetToken().Ident());
+            key->SetRange(lexer_->GetToken().Loc());
+            lexer_->NextToken();
+
+        }
+
     } else if (lexer_->GetToken().Type() == lexer::TokenType::LITERAL_NUMBER) {
         if (lexer_->GetToken().Flags() & lexer::TokenFlags::NUMBER_BIGINT) {
             key = AllocNode<ir::BigIntLiteral>(lexer_->GetToken().BigInt());
@@ -1385,6 +1412,8 @@ ir::Expression *ParserImpl::ParseTsTypeLiteralOrInterfaceMember()
     bool optional = false;
     bool signature = false;
     bool readonly = false;
+    bool isGetAccessor = false;
+    bool isSetAccessor = false;
     bool isConstructSignature = false;
     bool isIndexSignature = false;
     lexer::SourcePosition memberStartLoc = lexer_->GetToken().Start();
@@ -1396,7 +1425,7 @@ ir::Expression *ParserImpl::ParseTsTypeLiteralOrInterfaceMember()
         lexer_->NextToken();
     }
 
-    ir::Expression *key = ParseTsTypeLiteralOrInterfaceKey(&computed, &signature, &isIndexSignature);
+    ir::Expression *key = ParseTsTypeLiteralOrInterfaceKey(&computed, &signature, &isGetAccessor, &isSetAccessor, &isIndexSignature);
 
     if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_QUESTION_MARK) {
         if (isIndexSignature) {
@@ -1464,7 +1493,7 @@ ir::Expression *ParserImpl::ParseTsTypeLiteralOrInterfaceMember()
             funcParamScope->BindNode(member);
         } else {
             member = AllocNode<ir::TSMethodSignature>(funcParamScope, key, typeParamDecl, std::move(params),
-                                                      typeAnnotation, computed, optional);
+                                                      typeAnnotation, computed, optional, isGetAccessor, isSetAccessor);//改动
             funcParamScope->BindNode(member);
             CreateTSVariableForProperty(member, key, flags | binder::VariableFlags::METHOD);
         }

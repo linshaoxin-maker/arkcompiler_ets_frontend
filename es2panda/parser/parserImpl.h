@@ -261,8 +261,7 @@ private:
     ir::MappedOption ParseMappedOption(lexer::TokenType tokenType);
     ir::TSMappedType *ParseTsMappedType();
     ir::TSTypePredicate *ParseTsTypePredicate();
-    ir::Expression *ParseTsTypeLiteralOrInterfaceKey(bool *computed, bool *signature, bool *isIndexSignature);
-    ir::Expression *ParseTsConditionalType(ir::Expression *checkType, bool restrictExtends);
+    ir::Expression *ParseTsTypeLiteralOrInterfaceKey(bool *computed, bool *signature, bool *isGetAccessor, bool *isSetAccessor, bool *isIndexSignature);
     ir::Expression *ParseTsTypeLiteralOrInterfaceMember();
     ArenaVector<ir::Expression *> ParseTsTypeLiteralOrInterface();
     ir::Expression *ParseTsThisType(bool throwError);
