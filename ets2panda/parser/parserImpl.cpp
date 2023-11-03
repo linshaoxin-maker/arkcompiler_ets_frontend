@@ -581,7 +581,7 @@ ir::ClassElement *ParserImpl::ParseClassStaticBlock()
 
     auto *body = AllocNode<ir::BlockStatement>(Allocator(), func_scope, std::move(statements));
     auto *func =
-        AllocNode<ir::ScriptFunction>(func_scope, std::move(params), nullptr, body, nullptr,
+        AllocNode<ir::ScriptFunction>(Allocator(), func_scope, std::move(params), nullptr, body, nullptr,
                                       ir::ScriptFunctionFlags::EXPRESSION | ir::ScriptFunctionFlags::STATIC_BLOCK,
                                       ir::ModifierFlags::STATIC, false, context_.GetLanguge());
     func_scope->BindNode(func);
@@ -673,7 +673,7 @@ ir::MethodDefinition *ParserImpl::BuildImplicitConstructor(ir::ClassDefinitionMo
     }
 
     auto *body = AllocNode<ir::BlockStatement>(Allocator(), scope, std::move(statements));
-    auto *func = AllocNode<ir::ScriptFunction>(scope, std::move(params), nullptr, body, nullptr,
+    auto *func = AllocNode<ir::ScriptFunction>(Allocator(), scope, std::move(params), nullptr, body, nullptr,
                                                ir::ScriptFunctionFlags::CONSTRUCTOR |
                                                    ir::ScriptFunctionFlags::IMPLICIT_SUPER_CALL_NEEDED,
                                                false, context_.GetLanguge());
@@ -967,9 +967,9 @@ ir::ScriptFunction *ParserImpl::ParseFunction(ParserStatus new_status)
 
     function_context.AddFlag(throw_marker);
 
-    auto *func_node =
-        AllocNode<ir::ScriptFunction>(function_scope, std::move(params), typeParamDecl, body, returnTypeAnnotation,
-                                      function_context.Flags(), is_declare && letDeclare, context_.GetLanguge());
+    auto *func_node = AllocNode<ir::ScriptFunction>(Allocator(), function_scope, std::move(params), typeParamDecl, body,
+                                                    returnTypeAnnotation, function_context.Flags(),
+                                                    is_declare && letDeclare, context_.GetLanguge());
     function_scope->BindNode(func_node);
     funcParamScope->BindNode(func_node);
     func_node->SetRange({start_loc, endLoc});

@@ -324,8 +324,8 @@ ir::ArrowFunctionExpression *ParserImpl::ParseArrowFunctionExpressionBody(
         end_loc = body->End();
     }
 
-    func_node = AllocNode<ir::ScriptFunction>(function_scope, std::move(desc->params), type_param_decl, body,
-                                              return_type_annotation, arrow_function_context->Flags(), false,
+    func_node = AllocNode<ir::ScriptFunction>(Allocator(), function_scope, std::move(desc->params), type_param_decl,
+                                              body, return_type_annotation, arrow_function_context->Flags(), false,
                                               context_.GetLanguge());
     func_node->SetRange({desc->start_loc, end_loc});
     function_scope->BindNode(func_node);
