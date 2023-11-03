@@ -44,14 +44,6 @@ public:
     }
 
     void TransformChildren(const NodeTransformer &cb) override;
-    void SetReturnType(checker::ETSChecker *checker, checker::Type *type) override
-    {
-        for (auto *statement : consequent_) {
-            if (statement != nullptr) {
-                statement->SetReturnType(checker, type);
-            }
-        }
-    }
 
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;

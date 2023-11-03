@@ -147,8 +147,8 @@ template <typename ElementMaker>
         checker->Allocator()->New<ir::BlockStatement>(checker->Allocator(), function_scope, std::move(body));
 
     auto *const function = checker->Allocator()->New<ir::ScriptFunction>(
-        function_scope, std::move(params), nullptr, body_block, return_type_annotation, ir::ScriptFunctionFlags::METHOD,
-        ir::ModifierFlags::PUBLIC, false, Language(Language::Id::ETS));
+        checker->Allocator(), function_scope, std::move(params), nullptr, body_block, return_type_annotation,
+        ir::ScriptFunctionFlags::METHOD, ir::ModifierFlags::PUBLIC, false, Language(Language::Id::ETS));
 
     binder->AsETSBinder()->BuildInternalName(function);
     binder->AsETSBinder()->AddCompilableFunction(function);

@@ -202,11 +202,8 @@ checker::Type *MethodDefinition::Check(checker::ETSChecker *checker)
 
         script_func->Body()->Check(checker);
 
-        // In case of inferred function's return type set it forcedly to all return statements;
-        if (script_func->Signature()->HasSignatureFlag(checker::SignatureFlags::INFERRED_RETURN_TYPE) &&
-            script_func->ReturnTypeAnnotation() == nullptr && script_func->Body() != nullptr &&
-            script_func->Body()->IsStatement()) {
-            script_func->Body()->AsStatement()->SetReturnType(checker, script_func->Signature()->ReturnType());
+        for (auto &return_statement : script_func->ReturnStatements()) {
+            return_statement->SetReturnType(checker, script_func->Signature()->ReturnType());
         }
 
         checker->Context().SetContainingSignature(nullptr);

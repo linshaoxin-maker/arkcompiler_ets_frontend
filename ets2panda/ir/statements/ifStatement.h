@@ -44,16 +44,6 @@ public:
     }
     void TransformChildren(const NodeTransformer &cb) override;
 
-    void SetReturnType(checker::ETSChecker *checker, checker::Type *type) override
-    {
-        if (consequent_ != nullptr) {
-            consequent_->SetReturnType(checker, type);
-        }
-        if (alternate_ != nullptr) {
-            alternate_->SetReturnType(checker, type);
-        }
-    }
-
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;
     void Compile([[maybe_unused]] compiler::PandaGen *pg) const override;

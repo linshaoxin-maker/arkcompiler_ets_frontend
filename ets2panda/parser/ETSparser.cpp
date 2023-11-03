@@ -91,6 +91,7 @@
 #include "ir/ets/etsScript.h"
 #include "ir/ets/etsTypeReference.h"
 #include "ir/ets/etsTypeReferencePart.h"
+#include "ir/ets/etsUnionType.h"
 #include "ir/ets/etsImportSource.h"
 #include "ir/ets/etsImportDeclaration.h"
 #include "ir/ets/etsStructDeclaration.h"
@@ -564,8 +565,9 @@ ir::ScriptFunction *ETSParser::AddInitMethod(ArenaVector<ir::AstNode *> &global_
             auto *init_body = AllocNode<ir::BlockStatement>(Allocator(), function_scope, std::move(statements));
             function_scope->BindNode(init_body);
 
-            init_func = AllocNode<ir::ScriptFunction>(function_scope, std::move(params), nullptr, init_body, nullptr,
-                                                      function_flags, false, GetContext().GetLanguge());
+            init_func =
+                AllocNode<ir::ScriptFunction>(Allocator(), function_scope, std::move(params), nullptr, init_body,
+                                              nullptr, function_flags, false, GetContext().GetLanguge());
             function_scope->BindNode(init_func);
             func_param_scope->BindNode(init_func);
         }
@@ -960,7 +962,7 @@ void ETSParser::CreateCCtor(binder::LocalScope *class_scope, ArenaVector<ir::Ast
     }
 
     auto *body = AllocNode<ir::BlockStatement>(Allocator(), scope, std::move(statements));
-    auto *func = AllocNode<ir::ScriptFunction>(scope, std::move(params), nullptr, body, nullptr,
+    auto *func = AllocNode<ir::ScriptFunction>(Allocator(), scope, std::move(params), nullptr, body, nullptr,
                                                ir::ScriptFunctionFlags::STATIC_BLOCK | ir::ScriptFunctionFlags::HIDDEN,
                                                ir::ModifierFlags::STATIC, false, GetContext().GetLanguge());
     scope->BindNode(func);
@@ -1404,8 +1406,8 @@ ir::ScriptFunction *ETSParser::ParseFunction(ParserStatus new_status, ir::Identi
     function_context.AddFlag(throw_marker);
 
     auto *func_node =
-        AllocNode<ir::ScriptFunction>(function_scope, std::move(params), typeParamDecl, body, returnTypeAnnotation,
-                                      function_context.Flags(), false, GetContext().GetLanguge());
+        AllocNode<ir::ScriptFunction>(Allocator(), function_scope, std::move(params), typeParamDecl, body,
+                                      returnTypeAnnotation, function_context.Flags(), false, GetContext().GetLanguge());
     function_scope->BindNode(func_node);
     funcParamScope->BindNode(func_node);
     func_node->SetRange({start_loc, end_loc});
@@ -2067,9 +2069,9 @@ ir::MethodDefinition *ETSParser::ParseInterfaceMethod(ir::ModifierFlags flags)
 
     function_context.AddFlag(throw_marker);
 
-    auto *func =
-        AllocNode<ir::ScriptFunction>(function_scope, std::move(params), typeParamDecl, body, returnTypeAnnotation,
-                                      function_context.Flags(), flags, true, GetContext().GetLanguge());
+    auto *func = AllocNode<ir::ScriptFunction>(Allocator(), function_scope, std::move(params), typeParamDecl, body,
+                                               returnTypeAnnotation, function_context.Flags(), flags, true,
+                                               GetContext().GetLanguge());
 
     if ((flags & ir::ModifierFlags::STATIC) == 0 && body == nullptr) {
         func->AddModifier(ir::ModifierFlags::ABSTRACT);
@@ -2238,9 +2240,14 @@ void ETSParser::AddProxyOverloadToMethodWithDefaultParams(ir::MethodDefinition *
     proxy_method_def->Function()->AddFlag(ir::ScriptFunctionFlags::OVERLOAD);
 }
 
-std::string ETSParser::GetNameForTypeNode(const ir::TypeNode *const type_annotation)
+std::string ETSParser::GetNameForTypeNode(const ir::TypeNode *type_annotation)
 {
     const std::string optional_nullable = type_annotation->IsNullable() ? "|null" : "";
+
+    // FIXME(aakmaev): Support nullable types as unions
+    if (type_annotation->IsNullable() && type_annotation->IsETSUnionType()) {
+        type_annotation = type_annotation->AsETSUnionType()->Types().front();
+    }
 
     if (type_annotation->IsETSPrimitiveType()) {
         switch (type_annotation->AsETSPrimitiveType()->GetPrimitiveType()) {
@@ -2464,6 +2471,42 @@ ir::TypeNode *ETSParser::ParsePrimitiveType(TypeAnnotationParsingOptions *option
     return type_annotation;
 }
 
+ir::ETSUnionType *ETSParser::ParseUnionType(ir::Expression *type)
+{
+    TypeAnnotationParsingOptions options =
+        TypeAnnotationParsingOptions::THROW_ERROR | TypeAnnotationParsingOptions::DISALLOW_UNION;
+    lexer::SourcePosition start_loc = type->Start();
+    ArenaVector<ir::TypeNode *> types(Allocator()->Adapter());
+    ASSERT(type->IsTypeNode());
+    types.push_back(type->AsTypeNode());
+
+    bool is_nullable {false};
+    while (true) {
+        if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_BITWISE_OR) {
+            break;
+        }
+
+        Lexer()->NextToken();  // eat '|'
+
+        if (Lexer()->GetToken().Type() == lexer::TokenType::LITERAL_NULL) {
+            Lexer()->NextToken();  // eat 'null'
+            type->AddModifier(ir::ModifierFlags::NULLABLE);
+            is_nullable = true;
+            continue;
+        }
+
+        types.push_back(ParseTypeAnnotation(&options));
+    }
+
+    lexer::SourcePosition end_loc = types.back()->End();
+    auto *union_type = AllocNode<ir::ETSUnionType>(std::move(types));
+    union_type->SetRange({start_loc, end_loc});
+    if (is_nullable) {
+        union_type->AddModifier(ir::ModifierFlags::NULLABLE);
+    }
+    return union_type;
+}
+
 ir::TSIntersectionType *ETSParser::ParseIntersectionType(ir::Expression *type)
 {
     auto start_loc = type->Start();
@@ -2654,19 +2697,9 @@ ir::TypeNode *ETSParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *optio
         type_annotation->SetRange({start_pos, Lexer()->GetToken().End()});
     }
 
-    while (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_BITWISE_OR) {
-        Lexer()->NextToken();  // eat '|'
-
-        if (Lexer()->GetToken().Type() != lexer::TokenType::LITERAL_NULL) {
-            if (throw_error) {
-                ThrowExpectedToken(lexer::TokenType::LITERAL_NULL);
-            }
-
-            return nullptr;
-        }
-        Lexer()->NextToken();  // eat 'null'
-
-        type_annotation->AddModifier(ir::ModifierFlags::NULLABLE);
+    if (((*options) & TypeAnnotationParsingOptions::DISALLOW_UNION) == 0 &&
+        Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_BITWISE_OR) {
+        return ParseUnionType(type_annotation);
     }
 
     return type_annotation;
@@ -3546,7 +3579,8 @@ ir::Expression *ETSParser::ParsePrimaryExpression(ExpressionParseFlags flags)
             auto start_loc = Lexer()->GetToken().Start();
             auto saved_pos = Lexer()->Save();
             TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::POTENTIAL_CLASS_LITERAL |
-                                                   TypeAnnotationParsingOptions::IGNORE_FUNCTION_TYPE;
+                                                   TypeAnnotationParsingOptions::IGNORE_FUNCTION_TYPE |
+                                                   TypeAnnotationParsingOptions::DISALLOW_UNION;
             ir::TypeNode *potential_type = ParseTypeAnnotation(&options);
 
             if (potential_type != nullptr) {

@@ -1324,7 +1324,7 @@ ir::MethodDefinition *ETSChecker::CreateInvokeFunction(ir::ETSFunctionType *func
     func_param_scope->BindFunctionScope(function_scope);
 
     ir::ModifierFlags flags = ir::ModifierFlags::ABSTRACT | ir::ModifierFlags::PUBLIC;
-    auto *func = Allocator()->New<ir::ScriptFunction>(function_scope, std::move(params), nullptr, nullptr,
+    auto *func = Allocator()->New<ir::ScriptFunction>(Allocator(), function_scope, std::move(params), nullptr, nullptr,
                                                       func_type->ReturnType(), ir::ScriptFunctionFlags::METHOD, flags,
                                                       false, Language(Language::Id::ETS));
 
@@ -1743,7 +1743,7 @@ ir::MethodDefinition *ETSChecker::CreateProxyMethodForLambda(ir::ClassDefinition
     if (lambda->Function()->IsAsyncFunc()) {
         func_flags |= ir::ScriptFunctionFlags::ASYNC;
     }
-    auto *func = Allocator()->New<ir::ScriptFunction>(scope, std::move(params), nullptr, body,
+    auto *func = Allocator()->New<ir::ScriptFunction>(Allocator(), scope, std::move(params), nullptr, body,
                                                       lambda->Function()->ReturnTypeAnnotation(), func_flags, flags,
                                                       false, Language(Language::Id::ETS));
 
@@ -2003,7 +2003,7 @@ ir::MethodDefinition *ETSChecker::CreateLambdaImplicitCtor(ArenaVector<ir::AstNo
     // Create the synthetic constructor node
     auto *body = Allocator()->New<ir::BlockStatement>(Allocator(), scope, std::move(statements));
     auto *func =
-        Allocator()->New<ir::ScriptFunction>(scope, std::move(params), nullptr, body, nullptr,
+        Allocator()->New<ir::ScriptFunction>(Allocator(), scope, std::move(params), nullptr, body, nullptr,
                                              ir::ScriptFunctionFlags::CONSTRUCTOR, false, Language(Language::Id::ETS));
 
     // Set the scopes
@@ -2158,7 +2158,7 @@ ir::MethodDefinition *ETSChecker::CreateLambdaImplicitCtor(const lexer::SourceRa
 
     auto *body = Allocator()->New<ir::BlockStatement>(Allocator(), scope, std::move(statements));
     auto *func =
-        Allocator()->New<ir::ScriptFunction>(scope, std::move(params), nullptr, body, nullptr,
+        Allocator()->New<ir::ScriptFunction>(Allocator(), scope, std::move(params), nullptr, body, nullptr,
                                              ir::ScriptFunctionFlags::CONSTRUCTOR, false, Language(Language::Id::ETS));
 
     // Bind the scopes
@@ -2215,7 +2215,7 @@ ir::MethodDefinition *ETSChecker::CreateLambdaInvokeProto()
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
     ArenaVector<ir::Statement *> statements(Allocator()->Adapter());
     auto *body = Allocator()->New<ir::BlockStatement>(Allocator(), scope, std::move(statements));
-    auto *func = Allocator()->New<ir::ScriptFunction>(scope, std::move(params), nullptr, body, nullptr,
+    auto *func = Allocator()->New<ir::ScriptFunction>(Allocator(), scope, std::move(params), nullptr, body, nullptr,
                                                       ir::ScriptFunctionFlags::METHOD, ir::ModifierFlags::PUBLIC, false,
                                                       Language(Language::Id::ETS));
 
@@ -2578,8 +2578,9 @@ ir::MethodDefinition *ETSChecker::CreateMethod(const util::StringView &name, ir:
 {
     auto *name_id = Allocator()->New<ir::Identifier>(name, Allocator());
     auto *scope = Binder()->Allocator()->New<binder::FunctionScope>(Allocator(), param_scope);
-    ir::ScriptFunction *func = Allocator()->New<ir::ScriptFunction>(
-        scope, std::move(params), nullptr, body, return_type, flags, modifiers, false, Language(Language::Id::ETS));
+    ir::ScriptFunction *func =
+        Allocator()->New<ir::ScriptFunction>(Allocator(), scope, std::move(params), nullptr, body, return_type, flags,
+                                             modifiers, false, Language(Language::Id::ETS));
     func->SetIdent(name_id);
     body->SetParent(func);
     if (body->IsBlockStatement()) {
@@ -2716,8 +2717,9 @@ void ETSChecker::TransformTraillingLambda(ir::CallExpression *call_expr)
     func_scope->ReplaceBindings(trailing_block->Scope()->Bindings());
 
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
-    auto *func_node = AllocNode<ir::ScriptFunction>(func_scope, std::move(params), nullptr, trailing_block, nullptr,
-                                                    ir::ScriptFunctionFlags::ARROW, false, Language(Language::Id::ETS));
+    auto *func_node =
+        AllocNode<ir::ScriptFunction>(Allocator(), func_scope, std::move(params), nullptr, trailing_block, nullptr,
+                                      ir::ScriptFunctionFlags::ARROW, false, Language(Language::Id::ETS));
     func_scope->BindNode(func_node);
     func_param_scope->BindNode(func_node);
 
@@ -2741,7 +2743,7 @@ ArenaVector<ir::Expression *> ETSChecker::ExtendArgumentsWithFakeLamda(ir::CallE
     ArenaVector<ir::Statement *> statements(Allocator()->Adapter());
     auto *body = AllocNode<ir::BlockStatement>(Allocator(), func_scope, std::move(statements));
 
-    auto *func_node = AllocNode<ir::ScriptFunction>(func_scope, std::move(params), nullptr, body, nullptr,
+    auto *func_node = AllocNode<ir::ScriptFunction>(Allocator(), func_scope, std::move(params), nullptr, body, nullptr,
                                                     ir::ScriptFunctionFlags::ARROW, false, Language(Language::Id::ETS));
     func_scope->BindNode(func_node);
     auto *arrow_func_node = AllocNode<ir::ArrowFunctionExpression>(Allocator(), func_node);

@@ -267,18 +267,4 @@ checker::Type *TryStatement::Check([[maybe_unused]] checker::ETSChecker *checker
     return nullptr;
 }
 
-void TryStatement::SetReturnType(checker::ETSChecker *checker, checker::Type *type)
-{
-    if (block_ != nullptr) {
-        block_->SetReturnType(checker, type);
-    }
-    if (finalizer_ != nullptr) {
-        finalizer_->SetReturnType(checker, type);
-    }
-    for (auto *catch_clause : catch_clauses_) {
-        if (catch_clause != nullptr) {
-            catch_clause->SetReturnType(checker, type);
-        }
-    }
-}
 }  // namespace panda::es2panda::ir
