@@ -844,7 +844,15 @@ checker::Type *ObjectExpression::Check(checker::ETSChecker *checker)
             checker->ThrowTypeError({"type ", obj_type->Name(), " has no property named ", pname}, prop_expr->Start());
         }
         checker->ValidatePropertyAccess(lv, obj_type, prop_expr->Start());
-        if (lv->HasFlag(binder::VariableFlags::READONLY)) {
+        bool have_constructor = false;
+        for (checker::Signature *sig : obj_type->ConstructSignatures()) {
+            if (!sig->Params().empty()) {
+                have_constructor = true;
+                checker->ValidateSignatureAccessibility(obj_type, sig, Start());
+                break;
+            }
+        }
+        if (lv->HasFlag(binder::VariableFlags::READONLY) && !have_constructor) {
             checker->ThrowTypeError({"cannot assign to readonly property ", pname}, prop_expr->Start());
         }
 
