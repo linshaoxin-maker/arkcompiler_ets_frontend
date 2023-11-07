@@ -2104,6 +2104,14 @@ static void TypeToString(std::stringstream &ss, Type *tp)
         }
         ss << ">";
     }
+
+    if (tp->ContainsNull()) {
+        ss << "|null";
+    }
+
+    if (tp->ContainsUndefined()) {
+        ss << "|undefined";
+    }
 }
 
 util::StringView ETSChecker::GetHashFromTypeArguments(const ArenaVector<Type *> &type_arg_types)
