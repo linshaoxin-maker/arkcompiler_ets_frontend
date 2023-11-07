@@ -38,6 +38,8 @@ public:
     bool HasVariable(const ir::AstNode *ast);
     bool HasScope(const ir::AstNode *ast);
     bool HaveScopes(const ir::AstNode *ast);
+    bool CheckArithmeticExpressions(const ir::AstNode *ast);
+    bool CheckArithmeticExpr(const ir::AstNode *ast);
 
     ErrorMessages GetErrorMessages()
     {

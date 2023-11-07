@@ -15,6 +15,7 @@
 
 #include "ASTVerifier.h"
 
+#include "checker/types/typeFlag.h"
 #include "es2panda.h"
 #include "varbinder/variableFlags.h"
 #include "varbinder/scope.h"
@@ -47,6 +48,8 @@
 #include "ir/ts/tsTypeParameter.h"
 #include "ir/ts/tsTypeParameterDeclaration.h"
 #include "ir/ts/tsTypeParameterInstantiation.h"
+#include "ir/expressions/binaryExpression.h"
+#include "lexer/token/tokenType.h"
 
 namespace panda::es2panda::compiler {
 
@@ -404,6 +407,76 @@ bool ASTVerifier::HaveScopes(const ir::AstNode *ast)
     bool has_scope = HasScope(ast);
     ast->IterateRecursively([this, &has_scope](ir::AstNode *child) { has_scope &= HasScope(child); });
     return has_scope;
+}
+
+static bool IsNumericType(const ir::AstNode *ast)
+{
+    if (ast == nullptr) {
+        return false;
+    }
+
+    if (!ast->IsTyped()) {
+        return false;
+    }
+
+    auto typed_ast = static_cast<const ir::TypedAstNode *>(ast);
+
+    if (typed_ast->TsType() == nullptr) {
+        return false;
+    }
+
+    return typed_ast->TsType()->HasTypeFlag(checker::TypeFlag::ETS_NUMERIC) ||
+           typed_ast->TsType()->HasTypeFlag(checker::TypeFlag::NUMBER_LITERAL) ||
+           typed_ast->TsType()->HasTypeFlag(checker::TypeFlag::BIGINT_LITERAL);
+}
+
+static bool IsStringType(const ir::AstNode *ast)
+{
+    if (ast == nullptr) {
+        return false;
+    }
+
+    if (!ast->IsTyped()) {
+        return false;
+    }
+
+    auto typed_ast = static_cast<const ir::TypedAstNode *>(ast);
+
+    if (typed_ast->TsType() == nullptr) {
+        return false;
+    }
+
+    return typed_ast->TsType()->HasTypeFlag(checker::TypeFlag::STRING_LIKE);
+}
+
+bool ASTVerifier::CheckArithmeticExpr(const ir::AstNode *ast)
+{
+    if (ast == nullptr) {
+        return false;
+    }
+
+    if (ast->IsBinaryExpression() && ast->AsBinaryExpression()->IsArithmetic()) {
+        if (ast->AsBinaryExpression()->OperatorType() == lexer::TokenType::PUNCTUATOR_PLUS &&
+            IsStringType(ast->AsBinaryExpression()->Left()) && IsStringType(ast->AsBinaryExpression()->Right())) {
+            return true;
+        }
+        bool is_correct = true;
+        ast->Iterate([&is_correct](ir::AstNode *child) { is_correct &= (IsNumericType(child)); });
+        return is_correct;
+    }
+
+    return true;
+}
+
+bool ASTVerifier::CheckArithmeticExpressions(const ir::AstNode *ast)
+{
+    if (ast == nullptr) {
+        return false;
+    }
+
+    bool is_correct = CheckArithmeticExpr(ast);
+    ast->IterateRecursively([this, &is_correct](ir::AstNode *child) { is_correct &= CheckArithmeticExpr(child); });
+    return is_correct;
 }
 
 }  // namespace panda::es2panda::compiler
