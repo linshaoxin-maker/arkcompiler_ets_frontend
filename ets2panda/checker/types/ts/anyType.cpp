@@ -16,7 +16,7 @@
 #include "anyType.h"
 
 namespace panda::es2panda::checker {
-void AnyType::ToString(std::stringstream &ss) const
+void AnyType::ToString(std::stringstream &ss, [[maybe_unused]] bool precise) const
 {
     ss << "any";
 }
