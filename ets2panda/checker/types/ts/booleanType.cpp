@@ -16,7 +16,7 @@
 #include "booleanType.h"
 
 namespace panda::es2panda::checker {
-void BooleanType::ToString(std::stringstream &ss) const
+void BooleanType::ToString(std::stringstream &ss, [[maybe_unused]] bool precise) const
 {
     ss << "boolean";
 }
