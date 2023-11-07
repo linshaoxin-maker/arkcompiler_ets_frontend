@@ -40,14 +40,59 @@ void ETSChecker::InitializeBuiltins(varbinder::ETSBinder *varbinder)
     auto init_builtin = [var_map](ETSChecker *checker, std::string_view signature) -> util::StringView {
         const auto iterator = var_map.find(signature);
         ASSERT(iterator != var_map.end());
-        checker->GetGlobalTypesHolder()->InitializeBuiltin(
-            iterator->first,
-            checker->BuildClassProperties(iterator->second->Declaration()->Node()->AsClassDefinition()));
+        auto *var = iterator->second;
+        Type *type {nullptr};
+        if (var->Declaration()->Node()->IsClassDefinition()) {
+            type = checker->BuildClassProperties(var->Declaration()->Node()->AsClassDefinition());
+        } else {
+            ASSERT(var->Declaration()->Node()->IsTSInterfaceDeclaration());
+            type = checker->BuildInterfaceProperties(var->Declaration()->Node()->AsTSInterfaceDeclaration());
+        }
+        checker->GetGlobalTypesHolder()->InitializeBuiltin(iterator->first, type);
         return iterator->first;
     };
 
     auto const object_name = init_builtin(this, compiler::Signatures::BUILTIN_OBJECT_CLASS);
     auto const void_name = init_builtin(this, compiler::Signatures::BUILTIN_VOID_CLASS);
+
+    init_builtin(this, compiler::Signatures::BUILTIN_BOOLEAN_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_CHAR_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_BYTE_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_SHORT_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_INT_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_LONG_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FLOAT_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_DOUBLE_CLASS);
+
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION0_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION1_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION2_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION3_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION4_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION5_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION6_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION7_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION8_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION9_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION10_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION11_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION12_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION13_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION14_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION15_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTION16_CLASS);
+    init_builtin(this, compiler::Signatures::BUILTIN_FUNCTIONN_CLASS);
+
+    for (size_t id = static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS), nargs = 0;
+         id <= static_cast<size_t>(GlobalTypeId::ETS_FUNCTIONN_CLASS); id++, nargs++) {
+        auto *type = GetGlobalTypesHolder()->GlobalFunctionBuiltinType(nargs)->AsETSObjectType();
+        type->AddObjectFlag(ETSObjectFlags::FUNCTIONAL);
+        auto *invoke = type->GetOwnProperty<PropertyType::INSTANCE_METHOD>("invoke0");
+        auto *invoke_type = invoke->TsType()->AsETSFunctionType();
+        ASSERT(invoke_type->CallSignatures().size() == 1);
+        auto *signature = invoke_type->CallSignatures()[0];
+        signature->AddSignatureFlag(SignatureFlags::FUNCTIONAL_INTERFACE_SIGNATURE);
+    }
 
     for (const auto &[name, var] : var_map) {
         if (name == object_name || name == void_name) {
@@ -150,9 +195,10 @@ Type *ETSChecker::CheckTypeCached(ir::Expression *expr)
     return expr->TsType();
 }
 
-ETSObjectType *ETSChecker::AsETSObjectType(Type *(GlobalTypesHolder::*type_functor)()) const
+template <typename... Args>
+ETSObjectType *ETSChecker::AsETSObjectType(Type *(GlobalTypesHolder::*type_functor)(Args...), Args... args) const
 {
-    auto *ret = (GetGlobalTypesHolder()->*type_functor)();
+    auto *ret = (GetGlobalTypesHolder()->*type_functor)(args...);
     return ret != nullptr ? ret->AsETSObjectType() : nullptr;
 }
 
@@ -269,6 +315,17 @@ ETSObjectType *ETSChecker::GlobalBuiltinJSValueType() const
 ETSObjectType *ETSChecker::GlobalBuiltinVoidType() const
 {
     return AsETSObjectType(&GlobalTypesHolder::GlobalBuiltinVoidType);
+}
+
+ETSObjectType *ETSChecker::GlobalBuiltinFunctionType(size_t nargs) const
+{
+    return AsETSObjectType(&GlobalTypesHolder::GlobalFunctionBuiltinType, nargs);
+}
+
+size_t ETSChecker::GlobalBuiltinFunctionTypeVariadicThreshold() const
+{
+    return static_cast<size_t>(checker::GlobalTypeId::ETS_FUNCTIONN_CLASS) -
+           static_cast<size_t>(checker::GlobalTypeId::ETS_FUNCTION0_CLASS);
 }
 
 ETSObjectType *ETSChecker::GlobalBuiltinDynamicType(Language lang) const

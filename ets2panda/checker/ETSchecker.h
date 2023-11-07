@@ -60,6 +60,7 @@ using ArrayMap = ArenaUnorderedMap<Type *, ETSArrayType *>;
 using GlobalArraySignatureMap = ArenaUnorderedMap<ETSArrayType *, Signature *>;
 using DynamicCallIntrinsicsMap = ArenaUnorderedMap<Language, ArenaUnorderedMap<util::StringView, ir::ScriptFunction *>>;
 using DynamicLambdaObjectSignatureMap = ArenaUnorderedMap<std::string, Signature *>;
+using FunctionalInterfaceMap = ArenaUnorderedMap<util::StringView, ETSObjectType *>;
 
 class ETSChecker final : public Checker {
 public:
@@ -72,7 +73,8 @@ public:
           cached_computed_abstracts_(Allocator()->Adapter()),
           dynamic_call_intrinsics_(Allocator()->Adapter()),
           dynamic_new_intrinsics_(Allocator()->Adapter()),
-          dynamic_lambda_signature_cache_(Allocator()->Adapter())
+          dynamic_lambda_signature_cache_(Allocator()->Adapter()),
+          functional_interface_cache_(Allocator()->Adapter())
     {
     }
 
@@ -111,6 +113,9 @@ public:
     ETSObjectType *GlobalBuiltinJSValueType() const;
     ETSObjectType *GlobalBuiltinBoxType(const Type *contents) const;
     ETSObjectType *GlobalBuiltinVoidType() const;
+
+    ETSObjectType *GlobalBuiltinFunctionType(size_t nargs) const;
+    size_t GlobalBuiltinFunctionTypeVariadicThreshold() const;
 
     ETSObjectType *GlobalBuiltinDynamicType(Language lang) const;
 
@@ -342,7 +347,7 @@ public:
                                                                   ArenaVector<ir::AstNode *> &properties);
     std::tuple<varbinder::FunctionParamScope *, varbinder::Variable *> CreateLambdaCtorImplicitParam(
         ArenaVector<ir::Expression *> &params, const lexer::SourceRange &pos, bool is_static_reference);
-    ir::MethodDefinition *CreateLambdaInvokeProto();
+    ir::MethodDefinition *CreateLambdaInvokeProto(util::StringView invoke_name);
     void CreateLambdaFuncDecl(ir::MethodDefinition *func, varbinder::LocalScope *scope);
     void ResolveProxyMethod(ir::MethodDefinition *proxy_method, ir::ArrowFunctionExpression *lambda);
     void ResolveLambdaObject(ir::ClassDefinition *lambda_object, Signature *signature,
@@ -351,18 +356,18 @@ public:
                              ir::ArrowFunctionExpression *lambda, ir::MethodDefinition *proxy_method, bool save_this);
     void ResolveLambdaObjectCtor(ir::ClassDefinition *lambda_object, bool is_static_reference);
     void ResolveLambdaObjectCtor(ir::ClassDefinition *lambda_object);
-    void ResolveLambdaObjectInvoke(ir::ClassDefinition *lambda_object, Signature *signature_ref);
+    void ResolveLambdaObjectInvoke(ir::ClassDefinition *lambda_object, Signature *signature_ref, bool iface_override);
     void ResolveLambdaObjectInvoke(ir::ClassDefinition *lambda_object, ir::ArrowFunctionExpression *lambda,
-                                   ir::MethodDefinition *proxy_method, bool is_static);
-    ir::Statement *ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition *lambda_object, Signature *signature_ref);
+                                   ir::MethodDefinition *proxy_method, bool is_static, bool iface_override);
+    ir::Statement *ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition *lambda_object, Signature *signature_ref,
+                                                     bool iface_override);
     ir::Statement *ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition *lambda_object,
-                                                     ir::MethodDefinition *proxy_method, bool is_static);
-    void CreateFunctionalInterfaceForFunctionType(ir::ETSFunctionType *func_type);
-    ir::MethodDefinition *CreateInvokeFunction(ir::ETSFunctionType *func_type);
+                                                     ir::ArrowFunctionExpression *lambda,
+                                                     ir::MethodDefinition *proxy_method, bool is_static,
+                                                     bool iface_override);
     void CheckCapturedVariables();
     void CheckCapturedVariableInSubnodes(ir::AstNode *node, varbinder::Variable *var);
     void CheckCapturedVariable(ir::AstNode *node, varbinder::Variable *var);
-    void BuildFunctionalInterfaceName(ir::ETSFunctionType *func_type);
     void CreateAsyncProxyMethods(ir::ClassDefinition *class_def);
     ir::MethodDefinition *CreateAsyncImplMethod(ir::MethodDefinition *async_method, ir::ClassDefinition *class_def);
     ir::MethodDefinition *CreateAsyncProxy(ir::MethodDefinition *async_method, ir::ClassDefinition *class_def,
@@ -475,6 +480,7 @@ public:
     ETSObjectType *GetRelevantArgumentedTypeFromChild(ETSObjectType *child, ETSObjectType *target);
     util::StringView GetHashFromTypeArguments(const ArenaVector<Type *> &type_arg_types);
     util::StringView GetHashFromSubstitution(const Substitution *substitution);
+    util::StringView GetHashFromFunctionType(ir::ETSFunctionType *type);
     ETSObjectType *GetOriginalBaseType(Type *object);
     Type *GetTypeFromTypeAnnotation(ir::TypeNode *type_annotation);
     void AddUndefinedParamsForDefaultParams(const Signature *signature,
@@ -536,6 +542,9 @@ public:
         return ret;
     }
 
+    ETSObjectType *GetFunctionalInterface(ir::ETSFunctionType *type);
+    void CacheFunctionalInterface(ir::ETSFunctionType *type, ETSObjectType *iface_type);
+
 private:
     using ClassBuilder = std::function<void(varbinder::ClassScope *, ArenaVector<ir::AstNode *> *)>;
     using ClassInitializerBuilder = std::function<void(varbinder::FunctionScope *, ArenaVector<ir::Statement *> *,
@@ -594,7 +603,8 @@ private:
     template <typename TargetType>
     typename TargetType::UType GetOperand(Type *type);
 
-    ETSObjectType *AsETSObjectType(Type *(GlobalTypesHolder::*type_functor)()) const;
+    template <typename... Args>
+    ETSObjectType *AsETSObjectType(Type *(GlobalTypesHolder::*type_functor)(Args...), Args... args) const;
 
     // Trailing lambda
     void MoveTrailingBlockToEnclosingBlockStatement(ir::CallExpression *call_expr);
@@ -611,6 +621,7 @@ private:
     DynamicCallIntrinsicsMap dynamic_call_intrinsics_;
     DynamicCallIntrinsicsMap dynamic_new_intrinsics_;
     DynamicLambdaObjectSignatureMap dynamic_lambda_signature_cache_;
+    FunctionalInterfaceMap functional_interface_cache_;
     std::recursive_mutex mtx_;
 };
 

@@ -308,7 +308,7 @@ void ETSObjectType::ToString(std::stringstream &ss) const
     }
 }
 
-void ETSObjectType::IdenticalUptoNullability(TypeRelation *relation, Type *other)
+void ETSObjectType::IdenticalUptoNullabilityAndTypeArguments(TypeRelation *relation, Type *other)
 {
     relation->Result(false);
     if (!other->IsETSObjectType() || !CheckIdenticalFlags(other->AsETSObjectType()->ObjectFlags())) {
@@ -330,51 +330,62 @@ void ETSObjectType::IdenticalUptoNullability(TypeRelation *relation, Type *other
         return;
     }
 
+    if (IsNullish()) {
+        relation->Result(true);
+        return;
+    }
+
+    auto const source_type_arguments = other->AsETSObjectType()->TypeArguments();
+    if (type_arguments_.empty() != source_type_arguments.empty()) {
+        return;
+    }
+
+    if (HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
+        auto get_invoke_signature = [](const ETSObjectType *type) {
+            auto const prop_invoke =
+                type->GetProperty(util::StringView("invoke"), PropertySearchFlags::SEARCH_INSTANCE_METHOD);
+            ASSERT(prop_invoke != nullptr);
+            return prop_invoke->TsType()->AsETSFunctionType()->CallSignatures()[0];
+        };
+
+        auto *const this_invoke_signature = get_invoke_signature(this);
+        auto *const other_invoke_signature = get_invoke_signature(other->AsETSObjectType());
+
+        relation->IsIdenticalTo(this_invoke_signature, other_invoke_signature);
+        return;
+    }
+
+    relation->Result(true);
+}
+
+void ETSObjectType::IdenticalUptoNullability(TypeRelation *relation, Type *other)
+{
+    IdenticalUptoNullabilityAndTypeArguments(relation, other);
+
+    if (!relation->IsTrue() || !HasTypeFlag(TypeFlag::GENERIC)) {
+        return;
+    }
+
     auto const other_type_arguments = other->AsETSObjectType()->TypeArguments();
 
-    if (HasTypeFlag(TypeFlag::GENERIC) || IsNullish()) {
-        if (!HasTypeFlag(TypeFlag::GENERIC)) {
-            relation->Result(true);
-            return;
+    auto const args_number = type_arguments_.size();
+    ASSERT(args_number == other_type_arguments.size());
+
+    for (size_t idx = 0U; idx < args_number; ++idx) {
+        if (type_arguments_[idx]->IsWildcardType() || other_type_arguments[idx]->IsWildcardType()) {
+            continue;
         }
-        if (type_arguments_.empty() != other_type_arguments.empty()) {
-            return;
-        }
 
-        auto const args_number = type_arguments_.size();
-        ASSERT(args_number == other_type_arguments.size());
+        const auto get_original_base_type_or_type = [&relation](Type *const original_type) {
+            auto *const base_type = relation->GetChecker()->AsETSChecker()->GetOriginalBaseType(original_type);
+            return base_type == nullptr ? original_type : base_type;
+        };
 
-        for (size_t idx = 0U; idx < args_number; ++idx) {
-            if (type_arguments_[idx]->IsWildcardType() || other_type_arguments[idx]->IsWildcardType()) {
-                continue;
-            }
+        auto *const type_arg_type = get_original_base_type_or_type(type_arguments_[idx]);
+        auto *const other_type_arg_type = get_original_base_type_or_type(other_type_arguments[idx]);
 
-            const auto get_original_base_type_or_type = [&relation](Type *const original_type) {
-                auto *const base_type = relation->GetChecker()->AsETSChecker()->GetOriginalBaseType(original_type);
-                return base_type == nullptr ? original_type : base_type;
-            };
-
-            auto *const type_arg_type = get_original_base_type_or_type(type_arguments_[idx]);
-            auto *const other_type_arg_type = get_original_base_type_or_type(other_type_arguments[idx]);
-
-            type_arg_type->Identical(relation, other_type_arg_type);
-            if (!relation->IsTrue()) {
-                return;
-            }
-        }
-    } else {
-        if (HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
-            auto get_invoke_signature = [](const ETSObjectType *type) {
-                auto const prop_invoke =
-                    type->GetProperty(util::StringView("invoke"), PropertySearchFlags::SEARCH_INSTANCE_METHOD);
-                ASSERT(prop_invoke != nullptr);
-                return prop_invoke->TsType()->AsETSFunctionType()->CallSignatures()[0];
-            };
-
-            auto *const this_invoke_signature = get_invoke_signature(this);
-            auto *const other_invoke_signature = get_invoke_signature(other->AsETSObjectType());
-
-            relation->IsIdenticalTo(this_invoke_signature, other_invoke_signature);
+        type_arg_type->Identical(relation, other_type_arg_type);
+        if (!relation->IsTrue()) {
             return;
         }
     }
@@ -646,7 +657,12 @@ void ETSObjectType::IsSupertypeOf(TypeRelation *relation, Type *source)
         return;
     }
 
-    IdenticalUptoNullability(relation, source);
+    IdenticalUptoNullabilityAndTypeArguments(relation, source);
+
+    if (relation->IsTrue() && HasTypeFlag(TypeFlag::GENERIC)) {
+        IsGenericSupertypeOf(relation, source);
+    }
+
     if (relation->IsTrue()) {
         return;
     }
@@ -667,6 +683,51 @@ void ETSObjectType::IsSupertypeOf(TypeRelation *relation, Type *source)
             }
         }
     }
+}
+
+void ETSObjectType::IsGenericSupertypeOf(TypeRelation *relation, Type *source)
+{
+    ASSERT(HasTypeFlag(TypeFlag::GENERIC));
+
+    auto *source_type = source->AsETSObjectType();
+    auto const source_type_arguments = source_type->TypeArguments();
+    ASSERT(type_arguments_.size() == source_type_arguments.size());
+
+    ASSERT(decl_node_ == source_type->GetDeclNode());
+
+    auto *type_params_decl = GetTypeParams();
+    ASSERT(type_params_decl != nullptr || type_arguments_.empty());
+
+    if (type_params_decl == nullptr) {
+        return;
+    }
+
+    auto &type_params = type_params_decl->Params();
+    ASSERT(type_params.size() == type_arguments_.size());
+
+    for (size_t idx = 0; idx < type_arguments_.size(); idx++) {
+        auto *type_arg = type_arguments_[idx];
+        auto *source_type_arg = source_type_arguments[idx];
+        auto *type_param = type_params[idx];
+
+        relation->Result(false);
+
+        if (!(type_arg->IsWildcardType() || source_type_arg->IsWildcardType())) {
+            if (type_param->IsOut()) {
+                type_arg->IsSupertypeOf(relation, source_type_arg);
+            } else if (type_param->IsIn()) {
+                source_type_arg->IsSupertypeOf(relation, type_arg);
+            } else {
+                type_arg->Identical(relation, source_type_arg);
+            }
+
+            if (!relation->IsTrue()) {
+                return;
+            }
+        }
+    }
+
+    relation->Result(true);
 }
 
 Type *ETSObjectType::AsSuper(Checker *checker, varbinder::Variable *source_var)
@@ -797,7 +858,7 @@ ETSObjectType const *ETSObjectType::GetConstOriginalBaseType() const noexcept
     return this;
 }
 
-Type *ETSObjectType::Substitute(TypeRelation *relation, const Substitution *substitution)
+Type *ETSObjectType::Substitute(TypeRelation *relation, const Substitution *substitution, bool cache)
 {
     if (substitution == nullptr || substitution->empty()) {
         return this;
@@ -841,8 +902,10 @@ Type *ETSObjectType::Substitute(TypeRelation *relation, const Substitution *subs
     }
 
     const util::StringView hash = checker->GetHashFromSubstitution(substitution);
-    if (auto *inst = GetInstantiatedType(hash); inst != nullptr) {
-        return inst;
+    if (cache) {
+        if (auto *inst = GetInstantiatedType(hash); inst != nullptr) {
+            return inst;
+        }
     }
 
     if (!relation->TypeInstantiationPossible(base) || IsETSNullLike()) {
@@ -861,7 +924,9 @@ Type *ETSObjectType::Substitute(TypeRelation *relation, const Substitution *subs
     copied_type->relation_ = relation;
     copied_type->substitution_ = substitution;
 
-    GetInstantiationMap().try_emplace(hash, copied_type);
+    if (cache) {
+        GetInstantiationMap().try_emplace(hash, copied_type);
+    }
 
     if (super_type_ != nullptr) {
         copied_type->SetSuperType(super_type_->Substitute(relation, substitution)->AsETSObjectType());
@@ -874,6 +939,11 @@ Type *ETSObjectType::Substitute(TypeRelation *relation, const Substitution *subs
     relation->DecreaseTypeRecursionCount(base);
 
     return copied_type;
+}
+
+Type *ETSObjectType::Substitute(TypeRelation *relation, const Substitution *substitution)
+{
+    return Substitute(relation, substitution, true);
 }
 
 void ETSObjectType::InstantiateProperties() const

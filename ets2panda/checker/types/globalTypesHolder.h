@@ -109,6 +109,25 @@ enum class GlobalTypeId {
     ETS_DOUBLE_BOX_BUILTIN,
     ETS_NEVER_BUILTIN,
 
+    ETS_FUNCTION0_CLASS,
+    ETS_FUNCTION1_CLASS,
+    ETS_FUNCTION2_CLASS,
+    ETS_FUNCTION3_CLASS,
+    ETS_FUNCTION4_CLASS,
+    ETS_FUNCTION5_CLASS,
+    ETS_FUNCTION6_CLASS,
+    ETS_FUNCTION7_CLASS,
+    ETS_FUNCTION8_CLASS,
+    ETS_FUNCTION9_CLASS,
+    ETS_FUNCTION10_CLASS,
+    ETS_FUNCTION11_CLASS,
+    ETS_FUNCTION12_CLASS,
+    ETS_FUNCTION13_CLASS,
+    ETS_FUNCTION14_CLASS,
+    ETS_FUNCTION15_CLASS,
+    ETS_FUNCTION16_CLASS,
+    ETS_FUNCTIONN_CLASS,
+
     COUNT,
 };
 
@@ -197,6 +216,9 @@ public:
     Type *GlobalFloatBoxBuiltinType();
     Type *GlobalDoubleBoxBuiltinType();
     Type *GlobalBuiltinNeverType();
+
+    // Functional types
+    Type *GlobalFunctionBuiltinType(size_t nargs);
 
     // ETS escompat layer
     Type *GlobalArrayBuiltinType();

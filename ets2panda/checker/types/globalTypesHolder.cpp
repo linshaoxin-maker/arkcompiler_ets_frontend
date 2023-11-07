@@ -156,6 +156,18 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtin_name_m
     builtin_name_mappings_.emplace("RegExp", GlobalTypeId::ETS_REGEXP_BUILTIN);
     builtin_name_mappings_.emplace("Set", GlobalTypeId::ETS_SET_BUILTIN);
 
+    // ETS functional types
+    for (size_t id = static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS), nargs = 0;
+         id < static_cast<size_t>(GlobalTypeId::ETS_FUNCTIONN_CLASS); id++, nargs++) {
+        std::stringstream ss;
+        ss << "Function";
+        ss << nargs;
+
+        builtin_name_mappings_.emplace(util::UString(ss.str(), allocator).View(), static_cast<GlobalTypeId>(id));
+    }
+
+    builtin_name_mappings_.emplace("FunctionN", GlobalTypeId::ETS_FUNCTIONN_CLASS);
+
     // ETS interop js specific types
     builtin_name_mappings_.emplace("JSRuntime", GlobalTypeId::ETS_INTEROP_JSRUNTIME_BUILTIN);
     builtin_name_mappings_.emplace("JSValue", GlobalTypeId::ETS_INTEROP_JSVALUE_BUILTIN);
@@ -594,6 +606,11 @@ Type *GlobalTypesHolder::GlobalDoubleBoxBuiltinType()
 Type *GlobalTypesHolder::GlobalBuiltinNeverType()
 {
     return global_types_.at(static_cast<size_t>(GlobalTypeId::ETS_NEVER_BUILTIN));
+}
+
+Type *GlobalTypesHolder::GlobalFunctionBuiltinType(size_t nargs)
+{
+    return global_types_.at(static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS) + nargs);
 }
 
 void GlobalTypesHolder::InitializeBuiltin(const util::StringView name, Type *type)

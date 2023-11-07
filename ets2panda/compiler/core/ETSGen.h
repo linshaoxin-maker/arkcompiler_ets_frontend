@@ -938,11 +938,16 @@ private:
                 break;
             }
             default: {
-                for (const auto *arg : arguments) {
+                for (size_t idx = 0; idx < arguments.size(); idx++) {
+                    auto *arg = arguments[idx];
+                    auto *paramType = Checker()->MaybeBoxedType(
+                        idx < signature->Params().size() ? signature->Params()[idx] : signature->RestVar(),
+                        Allocator());
                     auto ttctx = TargetTypeContext(this, arg->TsType());
                     VReg arg_reg = AllocReg();
                     arg->Compile(this);
-                    StoreAccumulator(node, arg_reg);
+                    ApplyConversion(arg, nullptr);
+                    ApplyConversionAndStoreAccumulator(arg, arg_reg, paramType);
                 }
 
                 Rra().Emit<Range>(node, ctor, arguments.size() + 1, name, ctor);
@@ -997,11 +1002,16 @@ private:
             default: {
                 VReg arg_start = NextReg();
 
-                for (const auto *arg : arguments) {
+                for (size_t idx = 0; idx < arguments.size(); idx++) {
+                    auto *arg = arguments[idx];
+                    auto *paramType = Checker()->MaybeBoxedType(
+                        idx < signature->Params().size() ? signature->Params()[idx] : signature->RestVar(),
+                        Allocator());
                     auto ttctx = TargetTypeContext(this, arg->TsType());
                     VReg arg_reg = AllocReg();
                     arg->Compile(this);
-                    StoreAccumulator(node, arg_reg);
+                    ApplyConversion(arg, nullptr);
+                    ApplyConversionAndStoreAccumulator(arg, arg_reg, paramType);
                 }
 
                 Rra().Emit<Range>(node, arg_start, arguments.size(), name, arg_start);
