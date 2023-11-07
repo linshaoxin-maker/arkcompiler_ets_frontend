@@ -232,6 +232,8 @@ private:
 
     ir::Expression *ParsePotentialExpressionSequence(ir::Expression *expr, ExpressionParseFlags flags) override;
 
+    ir::Expression *ParseExpressionOrTypeAnnotation(lexer::TokenType type, ExpressionParseFlags flags) override;
+
     ir::ModifierFlags ParseTypeVarianceModifier(TypeAnnotationParsingOptions *options);
 
     ir::ScriptFunction *AddInitMethod(ArenaVector<ir::AstNode *> &global_properties);

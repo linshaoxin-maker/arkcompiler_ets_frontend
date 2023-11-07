@@ -13,20 +13,48 @@
  * limitations under the License.
  */
 
+function bar() {}
+
+function foo(): () => void {
+    return bar;
+}
+
 function main(): void {
   let obj = new Boolean();
-  assert (obj instanceof Object)
-  assert (obj instanceof Boolean)
-  assert (!(obj instanceof Long))
-
   let nobj: Object|null = null;
+
   assert (null instanceof null)
   assert (nobj instanceof null)
   assert (!(obj instanceof null))
 
   let arr: int[] = [1, 2, 3];
+
   assert (arr instanceof Object)
   assert (!(arr instanceof Long))
+  assert (obj instanceof Object);
+  assert (obj instanceof Boolean);
+  assert (!(obj instanceof Long));
+
+  let intArr: int[] = [1, 2, 3];
+
+  assert (intArr instanceof int[]);
+  assert (intArr instanceof Object);
+  assert (!(intArr instanceof Long));
+  assert (!(intArr instanceof Int[]));
+  assert (!(intArr instanceof Int));
+
+  let integerArr: Int[] = new Int[10];
+
+  assert (integerArr instanceof Int[]);
+  assert (integerArr instanceof Object);
+  assert (!(intArr instanceof Double[]));
+  assert (!(integerArr instanceof int[]));
+  assert (!(integerArr instanceof Int));
+
+  let f: () => void = foo();
+
+  assert (f instanceof (() => void));
 
   return;
 }
+

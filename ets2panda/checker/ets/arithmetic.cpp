@@ -433,7 +433,12 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left,
                                                            lexer::SourcePosition pos, bool force_promotion)
 {
     checker::Type *const left_type = left->Check(this);
-    checker::Type *const right_type = right->Check(this);
+    checker::Type *right_type = right->Check(this);
+
+    if (right->IsTypeNode()) {
+        right_type = right->AsTypeNode()->GetType(this);
+    }
+
     const bool is_logical_extended_operator = (operation_type == lexer::TokenType::PUNCTUATOR_LOGICAL_AND) ||
                                               (operation_type == lexer::TokenType::PUNCTUATOR_LOGICAL_OR);
     Type *unboxed_l = is_logical_extended_operator ? ETSBuiltinTypeAsConditionalType(left_type)

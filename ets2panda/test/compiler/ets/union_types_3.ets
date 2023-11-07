@@ -31,3 +31,4 @@ function main() {
     let x3 : String | boolean | int | double = 3.14;
     assert (x3 as double) == 3.14: "Error! Must be `3.14`";
 }
+

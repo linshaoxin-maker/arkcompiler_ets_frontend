@@ -724,14 +724,22 @@ void ETSGen::EmitIsInstance(const ir::AstNode *const node, const VReg lhs)
         Ra().Emit<CallShort, 2U>(node, Signatures::BUILTIN_JSRUNTIME_INSTANCE_OF, lhs, MoveAccToReg(node));
     } else {
         SwapBinaryOpArgs(node, lhs);
-        if (!GetVRegType(lhs)->IsETSNullType()) {
-            Sa().Emit<Isinstance>(node, GetVRegType(lhs)->AsETSObjectType()->AssemblerName());
-        } else {
+
+        if (GetVRegType(lhs)->IsETSNullType()) {
             Label *if_false = AllocLabel();
             Ra().Emit<JneObj>(node, lhs, if_false);
             ToBinaryResult(node, if_false);
+        } else if (GetVRegType(lhs)->IsETSArrayType()) {
+            std::stringstream ss;
+            GetVRegType(lhs)->AsETSArrayType()->ToAssemblerTypeWithRank(ss);
+            Sa().Emit<Isinstance>(node, util::UString(ss.str(), Allocator()).View());
+        } else if (GetVRegType(lhs)->IsETSObjectType()) {
+            Sa().Emit<Isinstance>(node, GetVRegType(lhs)->AsETSObjectType()->AssemblerName());
+        } else {
+            // UNREACHABLE?
         }
     }
+
     SetAccumulatorType(Checker()->GlobalETSBooleanType());
 }
 

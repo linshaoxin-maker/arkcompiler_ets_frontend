@@ -52,3 +52,4 @@ function main(): void {
     bar(a);
     foo(a.union0);
 }
+

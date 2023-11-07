@@ -403,6 +403,7 @@ protected:
     virtual ir::Statement *ParseStatement(StatementParsingFlags flags = StatementParsingFlags::NONE);
     // NOLINTNEXTLINE(google-default-arguments)
     virtual ir::Expression *ParseExpression(ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
+    virtual ir::Expression *ParseExpressionOrTypeAnnotation(lexer::TokenType type, ExpressionParseFlags flags);
     // NOLINTNEXTLINE(google-default-arguments)
     virtual ir::Expression *ParsePatternElement(ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS,
                                                 bool allow_default = true);

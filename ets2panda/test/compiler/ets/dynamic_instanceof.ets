@@ -33,3 +33,4 @@ function foo(): int {
     }
   }
 }
+

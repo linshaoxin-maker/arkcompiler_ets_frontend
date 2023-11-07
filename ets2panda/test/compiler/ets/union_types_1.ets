@@ -63,3 +63,4 @@ function main() {
     x = new B();
     assert x.num == 42: "Error! The num field of union must be 42";
 }
+

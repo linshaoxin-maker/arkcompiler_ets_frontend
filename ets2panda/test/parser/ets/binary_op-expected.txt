@@ -2583,9 +2583,35 @@
                             }
                           },
                           "right": {
-                            "type": "Identifier",
-                            "name": "Object",
-                            "decorators": [],
+                            "type": "ETSTypeReference",
+                            "part": {
+                              "type": "ETSTypeReferencePart",
+                              "name": {
+                                "type": "Identifier",
+                                "name": "Object",
+                                "decorators": [],
+                                "loc": {
+                                  "start": {
+                                    "line": 53,
+                                    "column": 25
+                                  },
+                                  "end": {
+                                    "line": 53,
+                                    "column": 31
+                                  }
+                                }
+                              },
+                              "loc": {
+                                "start": {
+                                  "line": 53,
+                                  "column": 25
+                                },
+                                "end": {
+                                  "line": 53,
+                                  "column": 32
+                                }
+                              }
+                            },
                             "loc": {
                               "start": {
                                 "line": 53,
@@ -2593,7 +2619,7 @@
                               },
                               "end": {
                                 "line": 53,
-                                "column": 31
+                                "column": 32
                               }
                             }
                           },
@@ -2604,7 +2630,7 @@
                             },
                             "end": {
                               "line": 53,
-                              "column": 31
+                              "column": 32
                             }
                           }
                         },
@@ -7406,9 +7432,35 @@
                 }
               },
               "right": {
-                "type": "Identifier",
-                "name": "Object",
-                "decorators": [],
+                "type": "ETSTypeReference",
+                "part": {
+                  "type": "ETSTypeReferencePart",
+                  "name": {
+                    "type": "Identifier",
+                    "name": "Object",
+                    "decorators": [],
+                    "loc": {
+                      "start": {
+                        "line": 53,
+                        "column": 25
+                      },
+                      "end": {
+                        "line": 53,
+                        "column": 31
+                      }
+                    }
+                  },
+                  "loc": {
+                    "start": {
+                      "line": 53,
+                      "column": 25
+                    },
+                    "end": {
+                      "line": 53,
+                      "column": 32
+                    }
+                  }
+                },
                 "loc": {
                   "start": {
                     "line": 53,
@@ -7416,7 +7468,7 @@
                   },
                   "end": {
                     "line": 53,
-                    "column": 31
+                    "column": 32
                   }
                 }
               },
@@ -7427,7 +7479,7 @@
                 },
                 "end": {
                   "line": 53,
-                  "column": 31
+                  "column": 32
                 }
               }
             },
