@@ -15,18 +15,10 @@
 
 #include "JSCompiler.h"
 
+#include "compiler/base/condition.h"
 #include "compiler/base/lreference.h"
 #include "compiler/core/pandagen.h"
-#include "ir/base/catchClause.h"
-#include "ir/base/classDefinition.h"
-#include "ir/base/classProperty.h"
-#include "ir/base/classStaticBlock.h"
-#include "ir/base/methodDefinition.h"
-#include "ir/base/scriptFunction.h"
-#include "ir/expressions/functionExpression.h"
-#include "ir/expressions/identifier.h"
-#include "ir/statements/blockStatement.h"
-#include "ir/statements/returnStatement.h"
+#include "compiler/function/functionBuilder.h"
 #include "util/helpers.h"
 
 namespace panda::es2panda::compiler {
@@ -523,39 +515,39 @@ void JSCompiler::Compile(const ir::ETSPackageDeclaration *expr) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::ETSParameterExpression *expr) const
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSParameterExpression *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::ETSPrimitiveType *expr) const
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSPrimitiveType *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::ETSStructDeclaration *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSStructDeclaration *node) const
+{
+    UNREACHABLE();
+}
+
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSTypeReference *expr) const
+{
+    UNREACHABLE();
+}
+
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSTypeReferencePart *expr) const
+{
+    UNREACHABLE();
+}
+
+void JSCompiler::Compile(const ir::ETSUnionType *node) const
 {
     (void)node;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::ETSTypeReference *expr) const
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSWildcardType *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile(const ir::ETSTypeReferencePart *expr) const
-{
-    (void)expr;
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile(const ir::ETSWildcardType *expr) const
-{
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -568,8 +560,8 @@ void JSCompiler::Compile(const ir::ArrayExpression *expr) const
 
 void JSCompiler::Compile(const ir::ArrowFunctionExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    PandaGen *pg = GetPandaGen();
+    pg->DefineFunction(expr->Function(), expr->Function(), expr->Function()->Scope()->InternalName());
 }
 
 void JSCompiler::Compile(const ir::AssignmentExpression *expr) const
@@ -782,27 +774,20 @@ void JSCompiler::Compile(const ir::ExportSpecifier *st) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::ImportDeclaration *st) const
+void JSCompiler::Compile([[maybe_unused]] const ir::ImportDeclaration *st) const {}
+
+void JSCompiler::Compile([[maybe_unused]] const ir::ImportDefaultSpecifier *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::ImportDefaultSpecifier *st) const
+void JSCompiler::Compile([[maybe_unused]] const ir::ImportNamespaceSpecifier *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::ImportNamespaceSpecifier *st) const
+void JSCompiler::Compile([[maybe_unused]] const ir::ImportSpecifier *st) const
 {
-    (void)st;
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile(const ir::ImportSpecifier *st) const
-{
-    (void)st;
     UNREACHABLE();
 }
 // Compile methods for STATEMENTS in alphabetical order
@@ -826,26 +811,50 @@ void JSCompiler::Compile(const ir::BreakStatement *st) const
 
 void JSCompiler::Compile(const ir::ClassDeclaration *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    PandaGen *pg = GetPandaGen();
+    auto lref = compiler::JSLReference::Create(pg, st->Definition()->Ident(), true);
+    st->Definition()->Compile(pg);
+    lref.SetValue();
+}
+
+static void CompileImpl(const ir::ContinueStatement *self, PandaGen *cg)
+{
+    compiler::Label *target = cg->ControlFlowChangeContinue(self->Ident());
+    cg->Branch(self, target);
 }
 
 void JSCompiler::Compile(const ir::ContinueStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    PandaGen *pg = GetPandaGen();
+    CompileImpl(st, pg);
 }
 
-void JSCompiler::Compile(const ir::DebuggerStatement *st) const
+void JSCompiler::Compile([[maybe_unused]] const ir::DebuggerStatement *st) const {}
+
+static void CompileImpl(const ir::DoWhileStatement *self, PandaGen *cg)
 {
-    (void)st;
-    UNREACHABLE();
+    auto *start_label = cg->AllocLabel();
+    compiler::LabelTarget label_target(cg);
+
+    cg->SetLabel(self, start_label);
+
+    {
+        compiler::LocalRegScope reg_scope(cg, self->Scope());
+        compiler::LabelContext label_ctx(cg, label_target);
+        self->Body()->Compile(cg);
+    }
+
+    cg->SetLabel(self, label_target.ContinueTarget());
+    compiler::Condition::Compile(cg, self->Test(), label_target.BreakTarget());
+
+    cg->Branch(self, start_label);
+    cg->SetLabel(self, label_target.BreakTarget());
 }
 
 void JSCompiler::Compile(const ir::DoWhileStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    PandaGen *pg = GetPandaGen();
+    CompileImpl(st, pg);
 }
 
 void JSCompiler::Compile(const ir::EmptyStatement *st) const
