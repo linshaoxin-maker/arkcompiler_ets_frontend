@@ -15,18 +15,10 @@
 
 #include "JSCompiler.h"
 
+#include "compiler/base/condition.h"
 #include "compiler/base/lreference.h"
 #include "compiler/core/pandagen.h"
-#include "ir/base/catchClause.h"
-#include "ir/base/classDefinition.h"
-#include "ir/base/classProperty.h"
-#include "ir/base/classStaticBlock.h"
-#include "ir/base/methodDefinition.h"
-#include "ir/base/scriptFunction.h"
-#include "ir/expressions/functionExpression.h"
-#include "ir/expressions/identifier.h"
-#include "ir/statements/blockStatement.h"
-#include "ir/statements/returnStatement.h"
+#include "compiler/function/functionBuilder.h"
 #include "util/helpers.h"
 
 namespace panda::es2panda::compiler {
@@ -523,39 +515,39 @@ void JSCompiler::Compile(const ir::ETSPackageDeclaration *expr) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::ETSParameterExpression *expr) const
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSParameterExpression *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::ETSPrimitiveType *expr) const
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSPrimitiveType *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::ETSStructDeclaration *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSStructDeclaration *node) const
+{
+    UNREACHABLE();
+}
+
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSTypeReference *expr) const
+{
+    UNREACHABLE();
+}
+
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSTypeReferencePart *expr) const
+{
+    UNREACHABLE();
+}
+
+void JSCompiler::Compile(const ir::ETSUnionType *node) const
 {
     (void)node;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::ETSTypeReference *expr) const
+void JSCompiler::Compile([[maybe_unused]] const ir::ETSWildcardType *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile(const ir::ETSTypeReferencePart *expr) const
-{
-    (void)expr;
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile(const ir::ETSWildcardType *expr) const
-{
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -568,8 +560,8 @@ void JSCompiler::Compile(const ir::ArrayExpression *expr) const
 
 void JSCompiler::Compile(const ir::ArrowFunctionExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    PandaGen *pg = GetPandaGen();
+    pg->DefineFunction(expr->Function(), expr->Function(), expr->Function()->Scope()->InternalName());
 }
 
 void JSCompiler::Compile(const ir::AssignmentExpression *expr) const
@@ -964,9 +956,8 @@ void JSCompiler::Compile(const ir::WhileStatement *st) const
     UNREACHABLE();
 }
 // from ts folder
-void JSCompiler::Compile(const ir::TSAnyKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSAnyKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -988,9 +979,8 @@ void JSCompiler::Compile(const ir::TSBigintKeyword *node) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSBooleanKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSBooleanKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1012,21 +1002,18 @@ void JSCompiler::Compile(const ir::TSConstructorType *node) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSEnumDeclaration *st) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSEnumDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSEnumMember *st) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSEnumMember *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSExternalModuleReference *expr) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSExternalModuleReference *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -1132,15 +1119,13 @@ void JSCompiler::Compile(const ir::TSNullKeyword *node) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSNumberKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSNumberKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSObjectKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSObjectKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1162,9 +1147,8 @@ void JSCompiler::Compile(const ir::TSQualifiedName *expr) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSStringKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSStringKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1240,9 +1224,8 @@ void JSCompiler::Compile(const ir::TSTypeReference *node) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSUndefinedKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSUndefinedKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1252,16 +1235,13 @@ void JSCompiler::Compile(const ir::TSUnionType *node) const
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSUnknownKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSUnknownKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-void JSCompiler::Compile(const ir::TSVoidKeyword *node) const
+void JSCompiler::Compile([[maybe_unused]] const ir::TSVoidKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
-
 }  // namespace panda::es2panda::compiler
