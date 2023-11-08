@@ -94,7 +94,7 @@ export function isAssignmentOperator(tsBinOp: ts.BinaryOperatorToken): boolean {
   return tsBinOp.kind >= ts.SyntaxKind.FirstAssignment && tsBinOp.kind <= ts.SyntaxKind.LastAssignment;
 }
 
-export type CheckType = ((t: ts.Type) => boolean);
+export type CheckType = ((this: TsUtils, t: ts.Type) => boolean);
 
 export class TsUtils {
   static readonly ES_OBJECT = 'ESObject'
@@ -906,16 +906,16 @@ export class TsUtils {
     return undefined;
   }
 
-  public checkTypeSet(uType: ts.Type, predicate: (t: ts.Type) => boolean): boolean {
-    if (!uType.isUnionOrIntersection()) {
-      return predicate(uType);
+  public checkTypeSet(typeSet: ts.Type, predicate: CheckType): boolean {
+    if (!typeSet.isUnionOrIntersection()) {
+      return predicate.call(this, typeSet);
     }
-    for (let elemType of uType.types) {
-      if (!this.checkTypeSet(elemType, predicate)) {
-        return false;
+    for (let elemType of typeSet.types) {
+      if (this.checkTypeSet(elemType, predicate)) {
+        return true;
       }
     }
-    return true;
+    return false;
   }
 
   public getNonNullableType(t: ts.Type) {
