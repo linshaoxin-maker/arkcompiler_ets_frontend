@@ -15,13 +15,12 @@
 
 #include "ETSCompiler.h"
 
+#include "checker/types/ets/etsDynamicFunctionType.h"
+#include "compiler/base/condition.h"
 #include "compiler/base/lreference.h"
 #include "compiler/core/ETSGen.h"
-#include "ir/base/catchClause.h"
-#include "ir/base/classProperty.h"
-#include "ir/expressions/identifier.h"
-#include "ir/statements/blockStatement.h"
-#include "ir/statements/returnStatement.h"
+#include "compiler/core/switchBuilder.h"
+#include "compiler/function/functionBuilder.h"
 
 namespace panda::es2panda::compiler {
 
@@ -198,38 +197,42 @@ void ETSCompiler::Compile(const ir::ETSPackageDeclaration *st) const
 
 void ETSCompiler::Compile(const ir::ETSParameterExpression *expr) const
 {
-    (void)expr;
+    ETSGen *etsg = GetETSGen();
+    expr->Ident()->Identifier::Compile(etsg);
+}
+
+void ETSCompiler::Compile([[maybe_unused]] const ir::ETSPrimitiveType *node) const
+{
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::ETSPrimitiveType *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::ETSStructDeclaration *node) const
 {
-    (void)node;
-    UNREACHABLE();
-}
-
-void ETSCompiler::Compile(const ir::ETSStructDeclaration *node) const
-{
-    (void)node;
     UNREACHABLE();
 }
 
 void ETSCompiler::Compile(const ir::ETSTypeReference *node) const
 {
-    (void)node;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    node->Part()->Compile(etsg);
 }
 
 void ETSCompiler::Compile(const ir::ETSTypeReferencePart *node) const
 {
+    ETSGen *etsg = GetETSGen();
+    node->Name()->Compile(etsg);
+}
+
+void ETSCompiler::Compile(const ir::ETSUnionType *node) const
+{
     (void)node;
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::ETSWildcardType *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::ETSWildcardType *node) const
 {
-    (void)node;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    etsg->Unimplemented();
 }
 // compile methods for EXPRESSIONS in alphabetical order
 void ETSCompiler::Compile(const ir::ArrayExpression *expr) const
@@ -240,8 +243,23 @@ void ETSCompiler::Compile(const ir::ArrayExpression *expr) const
 
 void ETSCompiler::Compile(const ir::ArrowFunctionExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    ASSERT(expr->ResolvedLambda() != nullptr);
+    auto *ctor = expr->ResolvedLambda()->TsType()->AsETSObjectType()->ConstructSignatures()[0];
+    std::vector<compiler::VReg> arguments;
+
+    for (auto *it : expr->CapturedVars()) {
+        if (it->HasFlag(binder::VariableFlags::LOCAL)) {
+            arguments.push_back(it->AsLocalVariable()->Vreg());
+        }
+    }
+
+    if (expr->propagate_this_) {
+        arguments.push_back(etsg->GetThisReg());
+    }
+
+    etsg->InitLambdaObject(expr, ctor, arguments);
+    etsg->SetAccumulatorType(expr->resolved_lambda_->TsType());
 }
 
 void ETSCompiler::Compile(const ir::AssignmentExpression *expr) const
@@ -520,52 +538,156 @@ void ETSCompiler::Compile(const ir::DoWhileStatement *st) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::EmptyStatement *st) const
-{
-    (void)st;
-    UNREACHABLE();
-}
+void ETSCompiler::Compile([[maybe_unused]] const ir::EmptyStatement *st) const {}
 
 void ETSCompiler::Compile(const ir::ExpressionStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    st->GetExpression()->Compile(etsg);
 }
 
-void ETSCompiler::Compile(const ir::ForInStatement *st) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::ForInStatement *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
 void ETSCompiler::Compile(const ir::ForOfStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    compiler::LocalRegScope decl_reg_scope(etsg, st->Scope()->DeclScope()->InitScope());
+
+    checker::Type const *const expr_type = st->Right()->TsType();
+    ASSERT(expr_type->IsETSArrayType() || expr_type->IsETSStringType());
+
+    st->Right()->Compile(etsg);
+    compiler::VReg obj_reg = etsg->AllocReg();
+    etsg->StoreAccumulator(st, obj_reg);
+
+    if (expr_type->IsETSArrayType()) {
+        etsg->LoadArrayLength(st, obj_reg);
+    } else {
+        etsg->LoadStringLength(st);
+    }
+
+    compiler::VReg size_reg = etsg->AllocReg();
+    etsg->StoreAccumulator(st, size_reg);
+
+    compiler::LabelTarget label_target(etsg);
+    auto label_ctx = compiler::LabelContext(etsg, label_target);
+
+    etsg->BranchIfFalse(st, label_target.BreakTarget());
+
+    compiler::VReg count_reg = etsg->AllocReg();
+    etsg->MoveImmediateToRegister(st, count_reg, checker::TypeFlag::INT, static_cast<std::int32_t>(0));
+    etsg->LoadAccumulatorInt(st, static_cast<std::int32_t>(0));
+
+    auto *const start_label = etsg->AllocLabel();
+    etsg->SetLabel(st, start_label);
+
+    auto lref = compiler::ETSLReference::Create(etsg, st->Left(), false);
+
+    if (st->Right()->TsType()->IsETSArrayType()) {
+        etsg->LoadArrayElement(st, obj_reg);
+    } else {
+        etsg->LoadStringChar(st, obj_reg, count_reg);
+    }
+
+    lref.SetValue();
+    st->Body()->Compile(etsg);
+
+    etsg->SetLabel(st, label_target.ContinueTarget());
+
+    etsg->IncrementImmediateRegister(st, count_reg, checker::TypeFlag::INT, static_cast<std::int32_t>(1));
+    etsg->LoadAccumulator(st, count_reg);
+
+    etsg->JumpCompareRegister<compiler::Jlt>(st, size_reg, start_label);
+    etsg->SetLabel(st, label_target.BreakTarget());
 }
 
 void ETSCompiler::Compile(const ir::ForUpdateStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    compiler::LocalRegScope decl_reg_scope(etsg, st->Scope()->DeclScope()->InitScope());
+
+    if (st->Init() != nullptr) {
+        ASSERT(st->Init()->IsVariableDeclaration() || st->Init()->IsExpression());
+        st->Init()->Compile(etsg);
+    }
+
+    auto *start_label = etsg->AllocLabel();
+    compiler::LabelTarget label_target(etsg);
+    auto label_ctx = compiler::LabelContext(etsg, label_target);
+    etsg->SetLabel(st, start_label);
+
+    {
+        compiler::LocalRegScope reg_scope(etsg, st->Scope());
+
+        if (st->Test() != nullptr) {
+            compiler::Condition::Compile(etsg, st->Test(), label_target.BreakTarget());
+        }
+
+        st->Body()->Compile(etsg);
+        etsg->SetLabel(st, label_target.ContinueTarget());
+    }
+
+    if (st->Update() != nullptr) {
+        st->Update()->Compile(etsg);
+    }
+
+    etsg->Branch(st, start_label);
+    etsg->SetLabel(st, label_target.BreakTarget());
 }
 
-void ETSCompiler::Compile(const ir::FunctionDeclaration *st) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::FunctionDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
 void ETSCompiler::Compile(const ir::IfStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    auto res = compiler::Condition::CheckConstantExpr(etsg, st->Test());
+
+    if (res == compiler::Condition::Result::CONST_TRUE) {
+        st->Consequent()->Compile(etsg);
+        return;
+    }
+
+    if (res == compiler::Condition::Result::CONST_FALSE) {
+        if (st->Alternate() != nullptr) {
+            st->Alternate()->Compile(etsg);
+        }
+        return;
+    }
+
+    auto *consequent_end = etsg->AllocLabel();
+    compiler::Label *statement_end = consequent_end;
+
+    compiler::Condition::Compile(etsg, st->Test(), consequent_end);
+
+    st->Consequent()->Compile(etsg);
+
+    if (st->Alternate() != nullptr) {
+        statement_end = etsg->AllocLabel();
+        etsg->Branch(etsg->Insns().back()->Node(), statement_end);
+
+        etsg->SetLabel(st, consequent_end);
+        st->Alternate()->Compile(etsg);
+    }
+
+    etsg->SetLabel(st, statement_end);
+}
+
+void CompileImpl(const ir::LabelledStatement *self, ETSGen *cg)
+{
+    compiler::LabelContext label_ctx(cg, self);
+    self->Body()->Compile(cg);
 }
 
 void ETSCompiler::Compile(const ir::LabelledStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    CompileImpl(st, etsg);
 }
 
 void ETSCompiler::Compile(const ir::ReturnStatement *st) const
@@ -613,16 +735,47 @@ void ETSCompiler::Compile(const ir::ReturnStatement *st) const
     etsg->ReturnAcc(st);
 }
 
-void ETSCompiler::Compile(const ir::SwitchCaseStatement *st) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::SwitchCaseStatement *st) const
 {
-    (void)st;
     UNREACHABLE();
+}
+
+static void CompileImpl(const ir::SwitchStatement *self, ETSGen *etsg)
+{
+    compiler::LocalRegScope lrs(etsg, self->Scope());
+    compiler::SwitchBuilder builder(etsg, self);
+    compiler::VReg tag = etsg->AllocReg();
+
+    builder.CompileTagOfSwitch(tag);
+    uint32_t default_index = 0;
+
+    for (size_t i = 0; i < self->Cases().size(); i++) {
+        const auto *clause = self->Cases()[i];
+
+        if (clause->Test() == nullptr) {
+            default_index = i;
+            continue;
+        }
+
+        builder.JumpIfCase(tag, i);
+    }
+
+    if (default_index > 0) {
+        builder.JumpToDefault(default_index);
+    } else {
+        builder.Break();
+    }
+
+    for (size_t i = 0; i < self->Cases().size(); i++) {
+        builder.SetCaseTarget(i);
+        builder.CompileCaseStatements(i);
+    }
 }
 
 void ETSCompiler::Compile(const ir::SwitchStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    CompileImpl(st, etsg);
 }
 
 void ETSCompiler::Compile(const ir::ThrowStatement *st) const

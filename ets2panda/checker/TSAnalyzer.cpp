@@ -16,12 +16,7 @@
 #include "TSAnalyzer.h"
 
 #include "checker/TSchecker.h"
-#include "ir/base/catchClause.h"
-#include "ir/base/methodDefinition.h"
-#include "ir/base/scriptFunction.h"
-#include "ir/statements/blockStatement.h"
-#include "ir/statements/returnStatement.h"
-#include "ir/typeNode.h"
+#include "checker/ts/destructuringContext.h"
 #include "util/helpers.h"
 
 namespace panda::es2panda::checker {
@@ -191,39 +186,39 @@ checker::Type *TSAnalyzer::Check(ir::ETSPackageDeclaration *st) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSParameterExpression *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSParameterExpression *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSPrimitiveType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSPrimitiveType *node) const
+{
+    UNREACHABLE();
+}
+
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSStructDeclaration *node) const
+{
+    UNREACHABLE();
+}
+
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSTypeReference *node) const
+{
+    UNREACHABLE();
+}
+
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSTypeReferencePart *node) const
+{
+    UNREACHABLE();
+}
+
+checker::Type *TSAnalyzer::Check(ir::ETSUnionType *node) const
 {
     (void)node;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSStructDeclaration *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSWildcardType *node) const
 {
-    (void)node;
-    UNREACHABLE();
-}
-
-checker::Type *TSAnalyzer::Check(ir::ETSTypeReference *node) const
-{
-    (void)node;
-    UNREACHABLE();
-}
-
-checker::Type *TSAnalyzer::Check(ir::ETSTypeReferencePart *node) const
-{
-    (void)node;
-    UNREACHABLE();
-}
-
-checker::Type *TSAnalyzer::Check(ir::ETSWildcardType *node) const
-{
-    (void)node;
     UNREACHABLE();
 }
 // compile methods for EXPRESSIONS in alphabetical order
@@ -235,8 +230,35 @@ checker::Type *TSAnalyzer::Check(ir::ArrayExpression *expr) const
 
 checker::Type *TSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    binder::Variable *func_var = nullptr;
+
+    if (expr->Function()->Parent()->Parent() != nullptr &&
+        expr->Function()->Parent()->Parent()->IsVariableDeclarator() &&
+        expr->Function()->Parent()->Parent()->AsVariableDeclarator()->Id()->IsIdentifier()) {
+        func_var = expr->Function()->Parent()->Parent()->AsVariableDeclarator()->Id()->AsIdentifier()->Variable();
+    }
+
+    checker::ScopeContext scope_ctx(checker, expr->Function()->Scope());
+
+    auto *signature_info = checker->Allocator()->New<checker::SignatureInfo>(checker->Allocator());
+    checker->CheckFunctionParameterDeclarations(expr->Function()->Params(), signature_info);
+
+    auto *signature = checker->Allocator()->New<checker::Signature>(
+        signature_info, checker->GlobalResolvingReturnType(), expr->Function());
+    checker::Type *func_type = checker->CreateFunctionTypeWithSignature(signature);
+
+    if (func_var != nullptr && func_var->TsType() == nullptr) {
+        func_var->SetTsType(func_type);
+    }
+
+    signature->SetReturnType(checker->HandleFunctionReturn(expr->Function()));
+
+    if (!expr->Function()->Body()->IsExpression()) {
+        expr->Function()->Body()->Check(checker);
+    }
+
+    return func_type;
 }
 
 checker::Type *TSAnalyzer::Check(ir::AssignmentExpression *expr) const
@@ -515,51 +537,90 @@ checker::Type *TSAnalyzer::Check(ir::DoWhileStatement *st) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::EmptyStatement *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::EmptyStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::ExpressionStatement *st) const
 {
-    (void)st;
+    TSChecker *checker = GetTSChecker();
+    return st->GetExpression()->Check(checker);
+}
+
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ForInStatement *st) const
+{
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ForInStatement *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ForOfStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
-}
-
-checker::Type *TSAnalyzer::Check(ir::ForOfStatement *st) const
-{
-    (void)st;
     UNREACHABLE();
 }
 
 checker::Type *TSAnalyzer::Check(ir::ForUpdateStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    checker::ScopeContext scope_ctx(checker, st->Scope());
+
+    if (st->Init() != nullptr) {
+        st->Init()->Check(checker);
+    }
+
+    if (st->Test() != nullptr) {
+        checker::Type *test_type = st->Test()->Check(checker);
+        checker->CheckTruthinessOfType(test_type, st->Start());
+    }
+
+    if (st->Update() != nullptr) {
+        st->Update()->Check(checker);
+    }
+
+    st->Body()->Check(checker);
+
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::FunctionDeclaration *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    if (st->Function()->IsOverload()) {
+        return nullptr;
+    }
+
+    const util::StringView &func_name = st->Function()->Id()->Name();
+    auto result = checker->Scope()->Find(func_name);
+    ASSERT(result.variable);
+
+    checker::ScopeContext scope_ctx(checker, st->Function()->Scope());
+
+    if (result.variable->TsType() == nullptr) {
+        checker->InferFunctionDeclarationType(result.variable->Declaration()->AsFunctionDecl(), result.variable);
+    }
+
+    st->Function()->Body()->Check(checker);
+
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::IfStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    checker::Type *test_type = st->test_->Check(checker);
+    checker->CheckTruthinessOfType(test_type, st->Start());
+    checker->CheckTestingKnownTruthyCallableOrAwaitableType(st->test_, test_type, st->consequent_);
+
+    st->consequent_->Check(checker);
+
+    if (st->Alternate() != nullptr) {
+        st->alternate_->Check(checker);
+    }
+
+    return nullptr;
 }
 
-checker::Type *TSAnalyzer::Check(ir::LabelledStatement *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::LabelledStatement *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
@@ -594,16 +655,43 @@ checker::Type *TSAnalyzer::Check(ir::ReturnStatement *st) const
     return nullptr;
 }
 
-checker::Type *TSAnalyzer::Check(ir::SwitchCaseStatement *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::SwitchCaseStatement *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
 checker::Type *TSAnalyzer::Check(ir::SwitchStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    checker::ScopeContext scope_ctx(checker, st->Scope());
+
+    checker::Type *expr_type = st->discriminant_->Check(checker);
+    bool expr_is_literal = checker::TSChecker::IsLiteralType(expr_type);
+
+    for (auto *it : st->Cases()) {
+        if (it->Test() != nullptr) {
+            checker::Type *case_type = it->Test()->Check(checker);
+            bool case_is_literal = checker::TSChecker::IsLiteralType(case_type);
+            checker::Type *compared_expr_type = expr_type;
+
+            if (!case_is_literal || !expr_is_literal) {
+                case_type = case_is_literal ? checker->GetBaseTypeOfLiteralType(case_type) : case_type;
+                compared_expr_type = checker->GetBaseTypeOfLiteralType(expr_type);
+            }
+
+            if (!checker->IsTypeEqualityComparableTo(compared_expr_type, case_type) &&
+                !checker->IsTypeComparableTo(case_type, compared_expr_type)) {
+                checker->ThrowTypeError({"Type ", case_type, " is not comparable to type ", compared_expr_type},
+                                        it->Test()->Start());
+            }
+        }
+
+        for (auto *case_stmt : it->Consequent()) {
+            case_stmt->Check(checker);
+        }
+    }
+
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::ThrowStatement *st) const
