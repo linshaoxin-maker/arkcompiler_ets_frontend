@@ -19,6 +19,10 @@
 #include "ir/expression.h"
 #include "lexer/token/tokenType.h"
 
+namespace panda::es2panda::checker {
+class ETSAnalyzer;
+}  // namespace panda::es2panda::checker
+
 namespace panda::es2panda::ir {
 class BinaryExpression : public Expression {
 public:
@@ -32,6 +36,9 @@ public:
         : Expression(AstNodeType::BINARY_EXPRESSION), left_(left), right_(right), operator_(operator_type)
     {
     }
+
+    // TODO (csabahurton): friend relationship can be removed once there are getters for private fields
+    friend class checker::ETSAnalyzer;
 
     [[nodiscard]] const Expression *Left() const noexcept
     {
@@ -53,6 +60,16 @@ public:
         return right_;
     }
 
+    [[nodiscard]] const Expression *Result() const noexcept
+    {
+        return result_;
+    }
+
+    [[nodiscard]] Expression *Result() noexcept
+    {
+        return result_;
+    }
+
     [[nodiscard]] lexer::TokenType OperatorType() const noexcept
     {
         return operator_;
@@ -63,7 +80,19 @@ public:
         return operator_ <= lexer::TokenType::PUNCTUATOR_LOGICAL_AND;
     }
 
+    [[nodiscard]] bool IsLogicalExtended() const noexcept
+    {
+        return operator_ == lexer::TokenType::PUNCTUATOR_LOGICAL_AND ||
+               operator_ == lexer::TokenType::PUNCTUATOR_LOGICAL_OR;
+    }
+
     void SetLeft(Expression *expr) noexcept
+    {
+        left_ = expr;
+        SetStart(left_->Start());
+    }
+
+    void SetResult(Expression *expr) noexcept
     {
         left_ = expr;
         SetStart(left_->Start());
@@ -98,14 +127,13 @@ public:
     void Dump(ir::AstDumper *dumper) const override;
     void Compile(compiler::PandaGen *pg) const override;
     void Compile(compiler::ETSGen *etsg) const override;
-    void CompileLogical(compiler::PandaGen *pg) const;
-    void CompileLogical(compiler::ETSGen *etsg) const;
     checker::Type *Check(checker::TSChecker *checker) override;
-    checker::Type *Check([[maybe_unused]] checker::ETSChecker *checker) override;
+    checker::Type *Check(checker::ETSChecker *checker) override;
 
 private:
     Expression *left_ = nullptr;
     Expression *right_ = nullptr;
+    Expression *result_ = nullptr;
     lexer::TokenType operator_;
     checker::Type *operation_type_ {};
 };
