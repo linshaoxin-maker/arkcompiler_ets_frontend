@@ -15,13 +15,11 @@
 
 #include "ETSCompiler.h"
 
+#include "checker/types/ets/etsDynamicFunctionType.h"
+#include "compiler/base/condition.h"
 #include "compiler/base/lreference.h"
 #include "compiler/core/ETSGen.h"
-#include "ir/base/catchClause.h"
-#include "ir/base/classProperty.h"
-#include "ir/expressions/identifier.h"
-#include "ir/statements/blockStatement.h"
-#include "ir/statements/returnStatement.h"
+#include "compiler/function/functionBuilder.h"
 
 namespace panda::es2panda::compiler {
 
@@ -198,38 +196,42 @@ void ETSCompiler::Compile(const ir::ETSPackageDeclaration *st) const
 
 void ETSCompiler::Compile(const ir::ETSParameterExpression *expr) const
 {
-    (void)expr;
+    ETSGen *etsg = GetETSGen();
+    expr->Ident()->Identifier::Compile(etsg);
+}
+
+void ETSCompiler::Compile([[maybe_unused]] const ir::ETSPrimitiveType *node) const
+{
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::ETSPrimitiveType *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::ETSStructDeclaration *node) const
 {
-    (void)node;
-    UNREACHABLE();
-}
-
-void ETSCompiler::Compile(const ir::ETSStructDeclaration *node) const
-{
-    (void)node;
     UNREACHABLE();
 }
 
 void ETSCompiler::Compile(const ir::ETSTypeReference *node) const
 {
-    (void)node;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    node->Part()->Compile(etsg);
 }
 
 void ETSCompiler::Compile(const ir::ETSTypeReferencePart *node) const
 {
+    ETSGen *etsg = GetETSGen();
+    node->Name()->Compile(etsg);
+}
+
+void ETSCompiler::Compile(const ir::ETSUnionType *node) const
+{
     (void)node;
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::ETSWildcardType *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::ETSWildcardType *node) const
 {
-    (void)node;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    etsg->Unimplemented();
 }
 // compile methods for EXPRESSIONS in alphabetical order
 void ETSCompiler::Compile(const ir::ArrayExpression *expr) const
@@ -240,8 +242,23 @@ void ETSCompiler::Compile(const ir::ArrayExpression *expr) const
 
 void ETSCompiler::Compile(const ir::ArrowFunctionExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    ASSERT(expr->ResolvedLambda() != nullptr);
+    auto *ctor = expr->ResolvedLambda()->TsType()->AsETSObjectType()->ConstructSignatures()[0];
+    std::vector<compiler::VReg> arguments;
+
+    for (auto *it : expr->CapturedVars()) {
+        if (it->HasFlag(binder::VariableFlags::LOCAL)) {
+            arguments.push_back(it->AsLocalVariable()->Vreg());
+        }
+    }
+
+    if (expr->propagate_this_) {
+        arguments.push_back(etsg->GetThisReg());
+    }
+
+    etsg->InitLambdaObject(expr, ctor, arguments);
+    etsg->SetAccumulatorType(expr->resolved_lambda_->TsType());
 }
 
 void ETSCompiler::Compile(const ir::AssignmentExpression *expr) const
@@ -408,49 +425,73 @@ void ETSCompiler::Compile(const ir::CharLiteral *expr) const
 
 void ETSCompiler::Compile(const ir::NullLiteral *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    etsg->LoadAccumulatorNull(expr, expr->TsType());
 }
 
 void ETSCompiler::Compile(const ir::NumberLiteral *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    auto ttctx = compiler::TargetTypeContext(etsg, expr->TsType());
+    if (expr->Number().IsInt()) {
+        if (util::Helpers::IsTargetFitInSourceRange<checker::ByteType::UType, checker::IntType::UType>(
+                expr->Number().GetInt())) {
+            etsg->LoadAccumulatorByte(expr, static_cast<int8_t>(expr->Number().GetInt()));
+            return;
+        }
+
+        if (util::Helpers::IsTargetFitInSourceRange<checker::ShortType::UType, checker::IntType::UType>(
+                expr->Number().GetInt())) {
+            etsg->LoadAccumulatorShort(expr, static_cast<int16_t>(expr->Number().GetInt()));
+            return;
+        }
+
+        etsg->LoadAccumulatorInt(expr, static_cast<int32_t>(expr->Number().GetInt()));
+        return;
+    }
+
+    if (expr->Number().IsLong()) {
+        etsg->LoadAccumulatorWideInt(expr, expr->Number().GetLong());
+        return;
+    }
+
+    if (expr->Number().IsFloat()) {
+        etsg->LoadAccumulatorFloat(expr, expr->Number().GetFloat());
+        return;
+    }
+
+    etsg->LoadAccumulatorDouble(expr, expr->Number().GetDouble());
 }
 
-void ETSCompiler::Compile(const ir::RegExpLiteral *expr) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::RegExpLiteral *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
 void ETSCompiler::Compile(const ir::StringLiteral *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    etsg->LoadAccumulatorString(expr, expr->Str());
 }
+
 // compile methods for MODULE-related nodes in alphabetical order
-void ETSCompiler::Compile(const ir::ExportAllDeclaration *st) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::ExportAllDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::ExportDefaultDeclaration *st) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::ExportDefaultDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::ExportNamedDeclaration *st) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::ExportNamedDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::ExportSpecifier *st) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::ExportSpecifier *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 

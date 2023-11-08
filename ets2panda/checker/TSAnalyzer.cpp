@@ -16,12 +16,7 @@
 #include "TSAnalyzer.h"
 
 #include "checker/TSchecker.h"
-#include "ir/base/catchClause.h"
-#include "ir/base/methodDefinition.h"
-#include "ir/base/scriptFunction.h"
-#include "ir/statements/blockStatement.h"
-#include "ir/statements/returnStatement.h"
-#include "ir/typeNode.h"
+#include "checker/ts/destructuringContext.h"
 #include "util/helpers.h"
 
 namespace panda::es2panda::checker {
@@ -191,39 +186,39 @@ checker::Type *TSAnalyzer::Check(ir::ETSPackageDeclaration *st) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSParameterExpression *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSParameterExpression *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSPrimitiveType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSPrimitiveType *node) const
+{
+    UNREACHABLE();
+}
+
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSStructDeclaration *node) const
+{
+    UNREACHABLE();
+}
+
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSTypeReference *node) const
+{
+    UNREACHABLE();
+}
+
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSTypeReferencePart *node) const
+{
+    UNREACHABLE();
+}
+
+checker::Type *TSAnalyzer::Check(ir::ETSUnionType *node) const
 {
     (void)node;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSStructDeclaration *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSWildcardType *node) const
 {
-    (void)node;
-    UNREACHABLE();
-}
-
-checker::Type *TSAnalyzer::Check(ir::ETSTypeReference *node) const
-{
-    (void)node;
-    UNREACHABLE();
-}
-
-checker::Type *TSAnalyzer::Check(ir::ETSTypeReferencePart *node) const
-{
-    (void)node;
-    UNREACHABLE();
-}
-
-checker::Type *TSAnalyzer::Check(ir::ETSWildcardType *node) const
-{
-    (void)node;
     UNREACHABLE();
 }
 // compile methods for EXPRESSIONS in alphabetical order
@@ -235,8 +230,35 @@ checker::Type *TSAnalyzer::Check(ir::ArrayExpression *expr) const
 
 checker::Type *TSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    binder::Variable *func_var = nullptr;
+
+    if (expr->Function()->Parent()->Parent() != nullptr &&
+        expr->Function()->Parent()->Parent()->IsVariableDeclarator() &&
+        expr->Function()->Parent()->Parent()->AsVariableDeclarator()->Id()->IsIdentifier()) {
+        func_var = expr->Function()->Parent()->Parent()->AsVariableDeclarator()->Id()->AsIdentifier()->Variable();
+    }
+
+    checker::ScopeContext scope_ctx(checker, expr->Function()->Scope());
+
+    auto *signature_info = checker->Allocator()->New<checker::SignatureInfo>(checker->Allocator());
+    checker->CheckFunctionParameterDeclarations(expr->Function()->Params(), signature_info);
+
+    auto *signature = checker->Allocator()->New<checker::Signature>(
+        signature_info, checker->GlobalResolvingReturnType(), expr->Function());
+    checker::Type *func_type = checker->CreateFunctionTypeWithSignature(signature);
+
+    if (func_var != nullptr && func_var->TsType() == nullptr) {
+        func_var->SetTsType(func_type);
+    }
+
+    signature->SetReturnType(checker->HandleFunctionReturn(expr->Function()));
+
+    if (!expr->Function()->Body()->IsExpression()) {
+        expr->Function()->Body()->Check(checker);
+    }
+
+    return func_type;
 }
 
 checker::Type *TSAnalyzer::Check(ir::AssignmentExpression *expr) const
@@ -401,51 +423,63 @@ checker::Type *TSAnalyzer::Check(ir::CharLiteral *expr) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::NullLiteral *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::NullLiteral *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    return checker->GlobalNullType();
 }
 
 checker::Type *TSAnalyzer::Check(ir::NumberLiteral *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    auto search = checker->NumberLiteralMap().find(expr->Number().GetDouble());
+    if (search != checker->NumberLiteralMap().end()) {
+        return search->second;
+    }
+
+    auto *new_num_literal_type = checker->Allocator()->New<checker::NumberLiteralType>(expr->Number().GetDouble());
+    checker->NumberLiteralMap().insert({expr->Number().GetDouble(), new_num_literal_type});
+    return new_num_literal_type;
 }
 
-checker::Type *TSAnalyzer::Check(ir::RegExpLiteral *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::RegExpLiteral *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    // TODO(aszilagyi);
+    return checker->GlobalAnyType();
 }
 
 checker::Type *TSAnalyzer::Check(ir::StringLiteral *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    auto search = checker->StringLiteralMap().find(expr->Str());
+    if (search != checker->StringLiteralMap().end()) {
+        return search->second;
+    }
+
+    auto *new_str_literal_type = checker->Allocator()->New<checker::StringLiteralType>(expr->Str());
+    checker->StringLiteralMap().insert({expr->Str(), new_str_literal_type});
+
+    return new_str_literal_type;
 }
 // compile methods for MODULE-related nodes in alphabetical order
-checker::Type *TSAnalyzer::Check(ir::ExportAllDeclaration *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ExportAllDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ExportDefaultDeclaration *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ExportDefaultDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ExportNamedDeclaration *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ExportNamedDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ExportSpecifier *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ExportSpecifier *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
