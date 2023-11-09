@@ -44,9 +44,10 @@
 
 namespace panda::es2panda::compiler {
 
-util::StringView OpAssignmentLowering::Name()
+std::string const &OpAssignmentLowering::Name()
 {
-    return "op-assignment";
+    static std::string const NAME = "op-assignment";
+    return NAME;
 }
 
 struct Conversion {
@@ -147,7 +148,7 @@ void AdjustBoxingUnboxingFlags(ir::Expression *new_expr, const ir::Expression *o
 
 ir::Expression *HandleOpAssignment(checker::ETSChecker *checker, ir::AssignmentExpression *assignment)
 {
-    if (assignment->TsType() == nullptr) {  // hasn't been throiugh checker
+    if (assignment->TsType() == nullptr) {  // hasn't been through checker
         return assignment;
     }
 
