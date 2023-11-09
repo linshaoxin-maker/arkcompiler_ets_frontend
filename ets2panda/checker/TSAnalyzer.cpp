@@ -16,12 +16,7 @@
 #include "TSAnalyzer.h"
 
 #include "checker/TSchecker.h"
-#include "ir/base/catchClause.h"
-#include "ir/base/methodDefinition.h"
-#include "ir/base/scriptFunction.h"
-#include "ir/statements/blockStatement.h"
-#include "ir/statements/returnStatement.h"
-#include "ir/typeNode.h"
+#include "checker/ts/destructuringContext.h"
 #include "util/helpers.h"
 
 namespace panda::es2panda::checker {
@@ -83,27 +78,25 @@ checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::Decorator *st) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::MetaProperty *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::MetaProperty *expr) const
 {
-    (void)expr;
+    TSChecker *checker = GetTSChecker();
+    // TODO(aszilagyi)
+    return checker->GlobalAnyType();
+}
+
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::MethodDefinition *node) const
+{
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::MethodDefinition *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::Property *expr) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::Property *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ScriptFunction *node) const
 {
-    (void)expr;
-    UNREACHABLE();
-}
-
-checker::Type *TSAnalyzer::Check(ir::ScriptFunction *node) const
-{
-    (void)node;
     UNREACHABLE();
 }
 
@@ -113,28 +106,81 @@ checker::Type *TSAnalyzer::Check(ir::SpreadElement *expr) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TemplateElement *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TemplateElement *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
 checker::Type *TSAnalyzer::Check(ir::TSIndexSignature *node) const
 {
-    (void)node;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    if (node->TsType() != nullptr) {
+        return node->TsType();
+    }
+
+    const util::StringView &param_name = node->Param()->AsIdentifier()->Name();
+    node->type_annotation_->Check(checker);
+    checker::Type *index_type = node->type_annotation_->GetType(checker);
+    checker::IndexInfo *info =
+        checker->Allocator()->New<checker::IndexInfo>(index_type, param_name, node->Readonly(), node->Start());
+    checker::ObjectDescriptor *desc = checker->Allocator()->New<checker::ObjectDescriptor>(checker->Allocator());
+    checker::ObjectType *placeholder = checker->Allocator()->New<checker::ObjectLiteralType>(desc);
+
+    if (node->Kind() == ir::TSIndexSignature::TSIndexSignatureKind::NUMBER) {
+        placeholder->Desc()->number_index_info = info;
+    } else {
+        placeholder->Desc()->string_index_info = info;
+    }
+
+    node->SetTsType(placeholder);
+    return placeholder;
 }
 
 checker::Type *TSAnalyzer::Check(ir::TSMethodSignature *node) const
 {
-    (void)node;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    if (node->Computed()) {
+        checker->CheckComputedPropertyName(node->Key());
+    }
+
+    checker::ScopeContext scope_ctx(checker, node->Scope());
+
+    auto *signature_info = checker->Allocator()->New<checker::SignatureInfo>(checker->Allocator());
+    checker->CheckFunctionParameterDeclarations(node->Params(), signature_info);
+
+    auto *call_signature = checker->Allocator()->New<checker::Signature>(signature_info, checker->GlobalAnyType());
+    node->Variable()->SetTsType(checker->CreateFunctionTypeWithSignature(call_signature));
+
+    if (node->ReturnTypeAnnotation() == nullptr) {
+        checker->ThrowTypeError(
+            "Method signature, which lacks return-type annotation, implicitly has an 'any' return type.",
+            node->Start());
+    }
+
+    node->return_type_annotation_->Check(checker);
+    call_signature->SetReturnType(node->return_type_annotation_->GetType(checker));
+
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::TSPropertySignature *node) const
 {
-    (void)node;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    if (node->TypeAnnotation() != nullptr) {
+        node->TypeAnnotation()->Check(checker);
+    }
+
+    if (node->Computed()) {
+        checker->CheckComputedPropertyName(node->Key());
+    }
+
+    if (node->TypeAnnotation() != nullptr) {
+        node->Variable()->SetTsType(node->TypeAnnotation()->GetType(checker));
+        return nullptr;
+    }
+
+    checker->ThrowTypeError("Property implicitly has an 'any' type.", node->Start());
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::TSSignatureDeclaration *node) const
@@ -191,39 +237,39 @@ checker::Type *TSAnalyzer::Check(ir::ETSPackageDeclaration *st) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSParameterExpression *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSParameterExpression *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSPrimitiveType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSPrimitiveType *node) const
+{
+    UNREACHABLE();
+}
+
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSStructDeclaration *node) const
+{
+    UNREACHABLE();
+}
+
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSTypeReference *node) const
+{
+    UNREACHABLE();
+}
+
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSTypeReferencePart *node) const
+{
+    UNREACHABLE();
+}
+
+checker::Type *TSAnalyzer::Check(ir::ETSUnionType *node) const
 {
     (void)node;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSStructDeclaration *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSWildcardType *node) const
 {
-    (void)node;
-    UNREACHABLE();
-}
-
-checker::Type *TSAnalyzer::Check(ir::ETSTypeReference *node) const
-{
-    (void)node;
-    UNREACHABLE();
-}
-
-checker::Type *TSAnalyzer::Check(ir::ETSTypeReferencePart *node) const
-{
-    (void)node;
-    UNREACHABLE();
-}
-
-checker::Type *TSAnalyzer::Check(ir::ETSWildcardType *node) const
-{
-    (void)node;
     UNREACHABLE();
 }
 // compile methods for EXPRESSIONS in alphabetical order
@@ -235,8 +281,35 @@ checker::Type *TSAnalyzer::Check(ir::ArrayExpression *expr) const
 
 checker::Type *TSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    binder::Variable *func_var = nullptr;
+
+    if (expr->Function()->Parent()->Parent() != nullptr &&
+        expr->Function()->Parent()->Parent()->IsVariableDeclarator() &&
+        expr->Function()->Parent()->Parent()->AsVariableDeclarator()->Id()->IsIdentifier()) {
+        func_var = expr->Function()->Parent()->Parent()->AsVariableDeclarator()->Id()->AsIdentifier()->Variable();
+    }
+
+    checker::ScopeContext scope_ctx(checker, expr->Function()->Scope());
+
+    auto *signature_info = checker->Allocator()->New<checker::SignatureInfo>(checker->Allocator());
+    checker->CheckFunctionParameterDeclarations(expr->Function()->Params(), signature_info);
+
+    auto *signature = checker->Allocator()->New<checker::Signature>(
+        signature_info, checker->GlobalResolvingReturnType(), expr->Function());
+    checker::Type *func_type = checker->CreateFunctionTypeWithSignature(signature);
+
+    if (func_var != nullptr && func_var->TsType() == nullptr) {
+        func_var->SetTsType(func_type);
+    }
+
+    signature->SetReturnType(checker->HandleFunctionReturn(expr->Function()));
+
+    if (!expr->Function()->Body()->IsExpression()) {
+        expr->Function()->Body()->Check(checker);
+    }
+
+    return func_type;
 }
 
 checker::Type *TSAnalyzer::Check(ir::AssignmentExpression *expr) const
