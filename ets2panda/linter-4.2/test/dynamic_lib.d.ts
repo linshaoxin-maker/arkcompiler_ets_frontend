@@ -97,3 +97,5 @@ export declare function bad_func(): A & B;
 export type IndexedSignatureType = {
     [key: string]: string;
 }
+
+export declare function postCardAction(comp: Object, action: Object): void;

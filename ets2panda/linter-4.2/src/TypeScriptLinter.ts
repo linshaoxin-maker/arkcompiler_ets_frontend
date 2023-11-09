@@ -710,13 +710,15 @@ export class TypeScriptLinter {
     ) {
       // We can use literals as property names only when creating Record or any interop instances.
       let isRecordObjectInitializer = false;
+      let isLibraryType = false;
       let isDynamic = false;
       if (ts.isPropertyAssignment(node)) {
         let objectLiteralType = this.tsTypeChecker.getContextualType(node.parent);
         if (objectLiteralType) {
           isRecordObjectInitializer = this.tsUtils.isStdRecordType(objectLiteralType);
-          isDynamic = this.tsUtils.isLibraryType(objectLiteralType) || this.tsUtils.isDynamicLiteralInitializer(node.parent);
+          isLibraryType = this.tsUtils.isLibraryType(objectLiteralType);
         }
+        isDynamic = isLibraryType || this.tsUtils.isDynamicLiteralInitializer(node.parent);
       }
 
       if (!isRecordObjectInitializer && !isDynamic) {
