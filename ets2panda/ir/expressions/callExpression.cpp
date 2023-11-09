@@ -339,7 +339,14 @@ void CallExpression::Compile(compiler::ETSGen *etsg) const
             callee_->AsMemberExpression()->Object()->Compile(etsg);
             etsg->StoreAccumulator(this, callee_reg);
         }
-        emit_arguments();
+        if (optional_) {
+            compiler::Label *end_label = etsg->AllocLabel();
+            etsg->BranchIfNull(this, end_label);
+            emit_arguments();
+            etsg->SetLabel(this, end_label);
+        } else {
+            emit_arguments();
+        }
     } else {
         callee_->Compile(etsg);
         etsg->StoreAccumulator(this, callee_reg);

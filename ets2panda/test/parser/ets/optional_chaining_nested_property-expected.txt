@@ -639,7 +639,7 @@
                             }
                           },
                           "arguments": [],
-                          "optional": false,
+                          "optional": true,
                           "loc": {
                             "start": {
                               "line": 27,
@@ -892,7 +892,7 @@
                 }
               },
               "arguments": [],
-              "optional": false,
+              "optional": true,
               "loc": {
                 "start": {
                   "line": 27,
