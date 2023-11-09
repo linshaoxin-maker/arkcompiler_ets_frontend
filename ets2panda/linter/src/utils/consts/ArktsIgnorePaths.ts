@@ -13,5 +13,10 @@
  * limitations under the License.
  */
 
-export const ARKTS_IGNORE_DIRS = ['node_modules', 'oh_modules', 'build', '.preview'];
+export const ARKTS_IGNORE_DIRS_NO_OH_MODULES = ['node_modules', 'build', '.preview'];
+
+export const ARKTS_IGNORE_DIRS_OH_MODULES = 'oh_modules';
+
+export const ARKTS_IGNORE_DIRS = [...ARKTS_IGNORE_DIRS_NO_OH_MODULES, ARKTS_IGNORE_DIRS_OH_MODULES];
+
 export const ARKTS_IGNORE_FILES = ['hvigorfile.ts'];

@@ -1,4 +1,4 @@
-/*
+2/*
  * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,4 @@
  * limitations under the License.
  */
 
-import * as ts from 'typescript';
-import { CommandLineOptions } from './CommandLineOptions';
-import { IsFileFromModuleCallback } from './IsFileFromModuleCallback';
-
-// common options interface, additional fields may be used by plugins
-export interface LintOptions {
-  cmdOptions: CommandLineOptions;
-  tsProgram?: ts.Program;
-  isFileFromModuleCb?: IsFileFromModuleCallback;
-  [key: string]: any;
-}
+export type IsFileFromModuleCallback = (fileFsPath: string) => boolean;

@@ -57,9 +57,7 @@ export function lint(options: LintOptions): LintRunResult {
   }
 
   // #13436: ignore-list for ArkTS projects.
-  inputFiles = inputFiles.filter(input =>
-    !TsUtils.ARKTS_IGNORE_FILES.some(ignore => path.basename(input) === ignore) &&
-    !TsUtils.ARKTS_IGNORE_DIRS.some(ignore => pathContainsDirectory(path.resolve(input), ignore)));
+  inputFiles = inputFiles.filter(input => shouldProcessFile(options, input));
 
   const srcFiles: ts.SourceFile[] = [];
   for (const inputFile of inputFiles) {
@@ -288,4 +286,17 @@ function runIDEMode(cmdOptions: CommandLineOptions) {
     }
     fs.unlinkSync(tmpFileName);
   });
+}
+
+function shouldProcessFile(options: LintOptions, fileFsPath: string) {
+  if (TsUtils.ARKTS_IGNORE_FILES.some(ignore => path.basename(fileFsPath) === ignore)) {
+    return false;
+  }
+
+  if (TsUtils.ARKTS_IGNORE_DIRS_NO_OH_MODULES.some(ignore => pathContainsDirectory(path.resolve(fileFsPath), ignore))) {
+    return false;
+  }
+
+  return !pathContainsDirectory(path.resolve(fileFsPath), TsUtils.ARKTS_IGNORE_DIRS_OH_MODULES) ||
+    (options.isFileFromModuleCb !== undefined && options.isFileFromModuleCb(fileFsPath));
 }

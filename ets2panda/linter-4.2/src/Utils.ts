@@ -193,7 +193,9 @@ export class TsUtils {
     'BigUint64Array',
   ]
 
-  static readonly ARKTS_IGNORE_DIRS = ['node_modules', 'oh_modules', 'build', '.preview'];
+  static readonly ARKTS_IGNORE_DIRS_NO_OH_MODULES = ['node_modules', 'build', '.preview'];
+  static readonly ARKTS_IGNORE_DIRS_OH_MODULES = 'oh_modules';
+  static readonly ARKTS_IGNORE_DIRS = [...TsUtils.ARKTS_IGNORE_DIRS_NO_OH_MODULES, TsUtils.ARKTS_IGNORE_DIRS_OH_MODULES];
   static readonly ARKTS_IGNORE_FILES = ['hvigorfile.ts'];
 
   constructor(private tsTypeChecker: ts.TypeChecker, private testMode: boolean) {
