@@ -488,6 +488,12 @@ checker::Type *ArrayExpression::Check(checker::ETSChecker *checker)
     if (!elements_.empty()) {
         if (preferred_type_ == nullptr) {
             preferred_type_ = elements_[0]->Check(checker);
+            for (auto *element : elements_) {
+                if (element->Check(checker) == checker->GlobalETSObjectType()) {
+                    preferred_type_ = element->Check(checker);
+                    break;
+                }
+            }
         }
 
         for (auto *element : elements_) {
