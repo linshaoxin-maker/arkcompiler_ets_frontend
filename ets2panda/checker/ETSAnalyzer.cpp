@@ -689,7 +689,8 @@ checker::Type *ETSAnalyzer::Check(ir::LabelledStatement *st) const
 }
 
 
-void CheckVoidType(checker::Type *&func_return_type, ETSChecker *&checker, const std::string &name, ir::ReturnStatement *st)
+void CheckVoidType(checker::Type *&func_return_type, ETSChecker *&checker, const std::string &name,
+                   ir::ReturnStatement *st)
 {
     if (name.find(compiler::Signatures::ETS_MAIN_WITH_MANGLE_BEGIN) != std::string::npos) {
         if (func_return_type == checker->GlobalBuiltinVoidType()) {
@@ -710,19 +711,6 @@ void CheckMissingArgumentType(checker::Type *&func_return_type, ETSChecker *chec
         containing_func->IsEntryPoint() ? checker->GlobalVoidType() : checker->GlobalBuiltinVoidType();
 }
 
-// void CheckObjectExpressionType(ir::ReturnStatement *st, checker::Type *func_return_type)
-// {
-//     if (st->argument_->IsObjectExpression()) {
-//         st->argument_->AsObjectExpression()->SetPreferredType(func_return_type);
-//     }
-// }
-
-// void CheckMemberExpressionType(ir::ReturnStatement *st, checker::Type *func_return_type) {
-//     if (st->argument_->IsMemberExpression()) {
-//         checker->SetArrayPreferredTypeForNestedMemberExpressions(st->argument_->AsMemberExpression(),
-//                                                                     func_return_type);
-//     }
-// }
 checker::Type *ETSAnalyzer::Check(ir::ReturnStatement *st) const
 {
     ETSChecker *checker = GetETSChecker();
