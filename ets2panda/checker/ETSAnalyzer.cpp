@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 #include "ETSAnalyzer.h"
 
 #include "varbinder/varbinder.h"
