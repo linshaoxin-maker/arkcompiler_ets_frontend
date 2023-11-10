@@ -700,7 +700,7 @@ void CheckVoidType(checker::Type *&func_return_type, ETSChecker *&checker, const
     }
 }
 
-void CheckMissingArgument(checker::Type *&func_return_type, ETSChecker *checker,
+void CheckMissingArgumentType(checker::Type *&func_return_type, ETSChecker *checker,
                           ir::ScriptFunction *containing_func, ir::ReturnStatement *st)
 {
     if (!func_return_type->IsETSVoidType() && func_return_type != checker->GlobalBuiltinVoidType()) {
@@ -710,6 +710,19 @@ void CheckMissingArgument(checker::Type *&func_return_type, ETSChecker *checker,
         containing_func->IsEntryPoint() ? checker->GlobalVoidType() : checker->GlobalBuiltinVoidType();
 }
 
+// void CheckObjectExpressionType(ir::ReturnStatement *st, checker::Type *func_return_type)
+// {
+//     if (st->argument_->IsObjectExpression()) {
+//         st->argument_->AsObjectExpression()->SetPreferredType(func_return_type);
+//     }
+// }
+
+// void CheckMemberExpressionType(ir::ReturnStatement *st, checker::Type *func_return_type) {
+//     if (st->argument_->IsMemberExpression()) {
+//         checker->SetArrayPreferredTypeForNestedMemberExpressions(st->argument_->AsMemberExpression(),
+//                                                                     func_return_type);
+//     }
+// }
 checker::Type *ETSAnalyzer::Check(ir::ReturnStatement *st) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -735,7 +748,7 @@ checker::Type *ETSAnalyzer::Check(ir::ReturnStatement *st) const
         func_return_type = checker->GetTypeFromTypeAnnotation(return_type_annotation);
 
         if (st->argument_ == nullptr) {
-            CheckMissingArgument(func_return_type, checker, containing_func, st);
+            CheckMissingArgumentType(func_return_type, checker, containing_func, st);
         } else {
             const auto name = containing_func->Scope()->InternalName().Mutf8();
             CheckVoidType(func_return_type, checker, name, st);
