@@ -14,7 +14,7 @@
  */
 
 #include <cstring>
-#include <string.h>
+
 #include "util.h"
 
 #include "ir/expressions/identifier.h"
@@ -42,7 +42,6 @@ ir::Identifier *Gensym(ArenaAllocator *allocator)
     auto *arena_pointer = allocator->Alloc(str.size() + 1);
     memmove_s(arena_pointer, str.size() + 1, reinterpret_cast<const void *>(str.c_str()), str.size() + 1);
     return allocator->New<ir::Identifier>(util::StringView(reinterpret_cast<const char *>(arena_pointer)), allocator);
-
 }
 
 }  // namespace panda::es2panda::compiler
