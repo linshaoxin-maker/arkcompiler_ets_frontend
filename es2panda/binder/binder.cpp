@@ -21,6 +21,7 @@
 #include "ir/astNode.h"
 #include "ir/base/catchClause.h"
 #include "ir/base/classDefinition.h"
+#include "ir/base/classProperty.h"
 #include "ir/base/methodDefinition.h"
 #include "ir/base/property.h"
 #include "ir/base/scriptFunction.h"
@@ -561,6 +562,11 @@ void Binder::BuildClassDefinition(ir::ClassDefinition *classDef)
         ResolveReference(classDef, iter);
     }
 
+    // Ts limitation for new class compilation
+    if (Program()->Extension() == ScriptExtension::JS) {
+        classDef->BuildClassEnvironment();
+    }
+
     if (classDef->Ident()) {
         ScopeFindResult res = scope_->Find(classDef->Ident()->Name());
 
@@ -572,8 +578,12 @@ void Binder::BuildClassDefinition(ir::ClassDefinition *classDef)
 
     ResolveReference(classDef, classDef->Ctor());
 
-    if (classDef->NeedStaticInitializer() && Program()->Extension() == ScriptExtension::JS) {
+    if (classDef->NeedStaticInitializer()) {
         ResolveReference(classDef, classDef->StaticInitializer());
+    }
+
+    if (classDef->NeedInstanceInitializer()) {
+        ResolveReference(classDef, classDef->InstanceInitializer());
     }
 
     for (auto *stmt : classDef->Body()) {
@@ -714,10 +724,23 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
             break;
         }
         case ir::AstNodeType::CLASS_PROPERTY: {
-            const ir::ScriptFunction *ctor = util::Helpers::GetContainingConstructor(childNode->AsClassProperty());
-            auto scopeCtx = LexicalScope<FunctionScope>::Enter(this, ctor->Scope());
-
-            ResolveReferences(childNode);
+            // Ts limitation for new class compilation
+            if (Program()->Extension() == ScriptExtension::TS) {
+                const ir::ScriptFunction *ctor = util::Helpers::GetContainingConstructor(childNode->AsClassProperty());
+                auto scopeCtx = LexicalScope<FunctionScope>::Enter(this, ctor->Scope());
+                ResolveReferences(childNode);
+                break;
+            }
+            auto *prop = childNode->AsClassProperty();
+            ResolveReference(prop, prop->Key());
+            if (prop->Value() != nullptr) {
+                ASSERT(parent->IsClassDefinition());
+                const auto *classDef = parent->AsClassDefinition();
+                const ir::MethodDefinition *method = prop->IsStatic() ? classDef->StaticInitializer() :
+                                                     classDef->InstanceInitializer();
+                auto scopeCtx = LexicalScope<FunctionScope>::Enter(this, method->Function()->Scope());
+                ResolveReference(prop, prop->Value());
+            }
             break;
         }
         case ir::AstNodeType::BLOCK_STATEMENT: {

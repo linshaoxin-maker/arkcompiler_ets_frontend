@@ -296,6 +296,10 @@ void ClassDefinition::CompileMissingProperties(compiler::PandaGen *pg, const uti
         }
     }
 
+    if (NeedInstanceInitializer()) {
+        InstanceInitialize(pg, protoReg);
+    }
+
     pg->LoadAccumulator(this, classReg);
 }
 
@@ -314,6 +318,27 @@ void ClassDefinition::StaticInitialize(compiler::PandaGen *pg, compiler::VReg cl
     pg->LoadAccumulator(this, classReg);
 }
 
+void ClassDefinition::InstanceInitialize(compiler::PandaGen *pg, compiler::VReg protoReg) const
+{
+    pg->StoreAccumulator(this, protoReg);
+    instanceInitializer_->Value()->Compile(pg);
+    pg->StoreLexicalVar(instanceInitializer_, 0, GetSlot(instanceInitializer_->Key()));
+}
+
+void ClassDefinition::CompileComputedKeys(compiler::PandaGen *pg) const
+{
+    for (const auto &stmt : body_) {
+        if (stmt->IsClassProperty()) {
+            const ir::ClassProperty *prop = stmt->AsClassProperty();
+            if (prop->IsComputed() && prop->NeedCompileKey()) {
+                prop->Key()->Compile(pg);
+                pg->ToComputedPropertyKey(prop->Key());
+                pg->StoreLexicalVar(prop->Key(), 0, GetSlot(prop->Key()));
+            }
+        }
+    }
+}
+
 void ClassDefinition::Compile(compiler::PandaGen *pg) const
 {
     if (declare_) {
@@ -324,6 +349,11 @@ void ClassDefinition::Compile(compiler::PandaGen *pg) const
     compiler::VReg classReg = pg->AllocReg();
 
     compiler::LocalRegScope lrs(pg, scope_);
+
+    if (NeedEnv()) {
+        pg->NewLexEnv(this, slot_);
+        CompileComputedKeys(pg);
+    }
 
     compiler::VReg baseReg = CompileHeritageClause(pg);
     util::StringView ctorId = ctor_->Function()->Scope()->InternalName();
@@ -337,8 +367,12 @@ void ClassDefinition::Compile(compiler::PandaGen *pg) const
 
     CompileMissingProperties(pg, compiled, classReg);
 
-    if (NeedStaticInitializer() && pg->Binder()->Program()->Extension() == ScriptExtension::JS) {
+    if (NeedStaticInitializer()) {
         StaticInitialize(pg, classReg);
+    }
+
+    if (NeedEnv()) {
+        pg->PopLexEnv(this);
     }
 }
 
@@ -380,6 +414,35 @@ void ClassDefinition::UpdateSelf(const NodeUpdater &cb, binder::Binder *binder)
 
     for (auto iter = indexSignatures_.begin(); iter != indexSignatures_.end(); iter++) {
         *iter = std::get<ir::AstNode *>(cb(*iter))->AsTSIndexSignature();
+    }
+}
+
+void ClassDefinition::BuildClassEnvironment()
+{
+    for (const auto *stmt : body_) {
+        if (stmt->IsMethodDefinition()) {
+            continue;
+        }
+
+        if (stmt->IsClassStaticBlock()) {
+            needStaticInitializer_ = true;
+            continue;
+        }
+
+        ASSERT(stmt->IsClassProperty());
+        const auto *prop = stmt->AsClassProperty();
+        if (prop->IsComputed() && prop->NeedCompileKey()) {
+            computedNames_.insert({prop->Key(), slot_++});
+        }
+        if (prop->IsStatic()) {
+            needStaticInitializer_ = true;
+        } else {
+            needInstanceInitializer_ = true;
+        }
+    }
+
+    if (NeedInstanceInitializer()) {
+        computedNames_.insert({instanceInitializer_->Key(), slot_++});
     }
 }
 

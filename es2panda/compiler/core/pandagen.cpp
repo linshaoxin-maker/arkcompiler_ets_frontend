@@ -442,6 +442,22 @@ void PandaGen::StoreObjProperty(const ir::AstNode *node, VReg obj, const Operand
     StoreObjByName(node, obj, std::get<util::StringView>(prop));
 }
 
+void PandaGen::DefineClassField(const ir::AstNode *node, VReg obj, const Operand &prop)
+{
+    if (std::holds_alternative<VReg>(prop)) {
+        DefineFieldByValue(node, obj, std::get<VReg>(prop));
+        return;
+    }
+
+    if (std::holds_alternative<int64_t>(prop)) {
+        DefineFieldByIndex(node, obj, std::get<int64_t>(prop));
+        return;
+    }
+
+    ASSERT(std::holds_alternative<util::StringView>(prop));
+    DefineFieldByName(node, obj, std::get<util::StringView>(prop));
+}
+
 void PandaGen::StoreOwnProperty(const ir::AstNode *node, VReg obj, const Operand &prop, bool nameSetting)
 {
     if (std::holds_alternative<VReg>(prop)) {
@@ -539,6 +555,12 @@ void PandaGen::StoreObjByName(const ir::AstNode *node, VReg obj, const util::Str
     strings_.insert(prop);
 }
 
+void PandaGen::DefineFieldByName(const ir::AstNode *node, VReg obj, const util::StringView &prop)
+{
+    ra_.Emit<CallruntimeDefinefieldbyname>(node, prop, obj);
+    strings_.insert(prop);
+}
+
 void PandaGen::LoadObjByIndex(const ir::AstNode *node, VReg obj, int64_t index)
 {
     LoadAccumulator(node, obj); // object is load to acc
@@ -568,6 +590,16 @@ void PandaGen::StoreObjByIndex(const ir::AstNode *node, VReg obj, int64_t index)
     }
 
     ra_.Emit<WideStobjbyindex>(node, obj, index);
+}
+
+void PandaGen::DefineFieldByValue(const ir::AstNode *node, VReg obj, VReg prop)
+{
+    ra_.Emit<CallruntimeDefinefieldbyvalue>(node, prop, obj);
+}
+
+void PandaGen::DefineFieldByIndex(const ir::AstNode *node, VReg obj, int64_t index)
+{
+    ra_.Emit<CallruntimeDefinefieldbyindex>(node, index, obj);
 }
 
 void PandaGen::StOwnByName(const ir::AstNode *node, VReg obj, const util::StringView &prop, bool nameSetting)
@@ -2055,6 +2087,11 @@ VReg PandaGen::LoadPropertyKey(const ir::Expression *prop, bool isComputed)
     StoreAccumulator(prop, propReg);
 
     return propReg;
+}
+
+void PandaGen::ToComputedPropertyKey(const ir::AstNode *node)
+{
+    ra_.Emit<CallruntimeTopropertykey>(node);
 }
 
 void PandaGen::StLetOrClassToGlobalRecord(const ir::AstNode *node, const util::StringView &name)

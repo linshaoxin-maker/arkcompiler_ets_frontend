@@ -17,6 +17,7 @@
 #define ES2PANDA_PARSER_INCLUDE_AST_CLASS_PROPERTY_H
 
 #include <ir/statement.h>
+#include <ir/expression.h>
 
 namespace panda::es2panda::compiler {
 class PandaGen;
@@ -114,6 +115,11 @@ public:
     bool Definite() const
     {
         return definite_;
+    }
+
+    bool NeedCompileKey() const
+    {
+        return !key_->IsLiteral();
     }
 
     void Iterate(const NodeTraverser &cb) const override;

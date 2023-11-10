@@ -18,6 +18,7 @@
 
 #include <binder/variable.h>
 #include <ir/base/classProperty.h>
+#include <ir/base/methodDefinition.h>
 #include <util/bitset.h>
 
 namespace panda::es2panda::compiler {
@@ -47,9 +48,9 @@ public:
     explicit ClassDefinition(binder::LocalScope *scope, Identifier *ident, TSTypeParameterDeclaration *typeParams,
                              TSTypeParameterInstantiation *superTypeParams,
                              ArenaVector<TSClassImplements *> &&implements, MethodDefinition *ctor,
-                             MethodDefinition *staticInitializer, Expression *superClass,
-                             ArenaVector<Statement *> &&body, ArenaVector<TSIndexSignature *> &&indexSignatures,
-                             bool declare, bool abstract)
+                             MethodDefinition *staticInitializer, MethodDefinition *instanceInitializer,
+                             Expression *superClass, ArenaVector<Statement *> &&body,
+                             ArenaVector<TSIndexSignature *> &&indexSignatures, bool declare, bool abstract)
         : AstNode(AstNodeType::CLASS_DEFINITION),
           scope_(scope),
           ident_(ident),
@@ -58,6 +59,7 @@ public:
           implements_(std::move(implements)),
           ctor_(ctor),
           staticInitializer_(staticInitializer),
+          instanceInitializer_(instanceInitializer),
           superClass_(superClass),
           body_(std::move(body)),
           indexSignatures_(std::move(indexSignatures)),
@@ -65,12 +67,6 @@ public:
           abstract_(abstract),
           exportDefault_(false)
     {
-        for (const auto *stmt : body_) {
-            if (stmt->IsClassStaticBlock() || (stmt->IsClassProperty() && stmt->AsClassProperty()->IsStatic())) {
-                needStaticInitializer_ = true;
-                break;
-            }
-        }
     }
 
     binder::LocalScope *Scope() const
@@ -169,9 +165,9 @@ public:
         return staticInitializer_;
     }
 
-    bool NeedStaticInitializer() const
+    MethodDefinition *InstanceInitializer() const
     {
-        return needStaticInitializer_;
+        return instanceInitializer_;
     }
 
     const TSTypeParameterInstantiation *SuperTypeParams() const
@@ -184,9 +180,32 @@ public:
         return superTypeParams_;
     }
 
+    bool NeedStaticInitializer() const
+    {
+        return needStaticInitializer_;
+    }
+
+    bool NeedInstanceInitializer() const
+    {
+        return needInstanceInitializer_;
+    }
+
+    bool NeedEnv() const
+    {
+        return slot_ != 0;
+    }
+
+    uint32_t GetSlot(const Expression *node) const
+    {
+        ASSERT(computedNames_.find(node) != computedNames_.end());
+        return computedNames_.find(node)->second;
+    }
+
     const FunctionExpression *Ctor() const;
 
     util::StringView GetName() const;
+
+    void BuildClassEnvironment();
 
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;
@@ -200,6 +219,8 @@ private:
     int32_t CreateClassStaticProperties(compiler::PandaGen *pg, util::BitSet &compiled) const;
     void CompileMissingProperties(compiler::PandaGen *pg, const util::BitSet &compiled, compiler::VReg classReg) const;
     void StaticInitialize(compiler::PandaGen *pg, compiler::VReg classReg) const;
+    void InstanceInitialize(compiler::PandaGen *pg, compiler::VReg classReg) const;
+    void CompileComputedKeys(compiler::PandaGen *pg) const;
 
     binder::LocalScope *scope_;
     Identifier *ident_;
@@ -208,13 +229,17 @@ private:
     ArenaVector<TSClassImplements *> implements_;
     MethodDefinition *ctor_;
     MethodDefinition *staticInitializer_;
+    MethodDefinition *instanceInitializer_;
     Expression *superClass_;
     ArenaVector<Statement *> body_;
     ArenaVector<TSIndexSignature *> indexSignatures_;
+    std::unordered_map<const Expression *, uint32_t> computedNames_;
+    uint32_t slot_ {0};
     bool declare_;
     bool abstract_;
     bool exportDefault_;
     bool needStaticInitializer_ {false};
+    bool needInstanceInitializer_ {false};
 };
 
 }  // namespace panda::es2panda::ir

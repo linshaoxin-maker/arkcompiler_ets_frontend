@@ -303,17 +303,19 @@ private:
     ir::ClassStaticBlock *ParseStaticBlock(ClassElmentDescriptor *desc);
     ir::Statement *ParseClassProperty(ClassElmentDescriptor *desc, const ArenaVector<ir::Statement *> &properties,
                                       ir::Expression *propName, ir::Expression *typeAnnotation,
-                                      ArenaVector<ir::Decorator *> &&decorators, bool isDeclare);
+                                      ArenaVector<ir::Decorator *> &&decorators, bool isDeclare,
+                                      std::pair<binder::FunctionScope *, binder::FunctionScope *> scopes);
     void ParseClassKeyModifiers(ClassElmentDescriptor *desc);
     void CheckClassGeneratorMethod(ClassElmentDescriptor *desc);
     void CheckClassPrivateIdentifier(ClassElmentDescriptor *desc);
+    void CheckFieldKey(ir::Expression *propName);
     ir::Expression *ParseClassKeyAnnotation();
     ir::Decorator *ParseDecorator();
     ArenaVector<ir::Decorator *> ParseDecorators();
     ir::Statement *ParseClassElement(const ArenaVector<ir::Statement *> &properties,
                                      ArenaVector<ir::TSIndexSignature *> *indexSignatures, bool hasSuperClass,
                                      bool isDeclare, bool isAbstractClass, bool isExtendsFromNull,
-                                     binder::Scope *scope);
+                                     std::pair<binder::FunctionScope *, binder::FunctionScope *> scopes);
     ir::MethodDefinition *CreateImplicitMethod(ir::Expression *superClass, bool hasSuperClass,
                                                ir::ScriptFunctionFlags funcFlag, bool isDeclare = false);
     ir::MethodDefinition *CheckClassMethodOverload(ir::Statement *property, ir::MethodDefinition **ctor, bool isDeclare,

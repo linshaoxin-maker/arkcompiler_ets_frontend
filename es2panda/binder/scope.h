@@ -327,6 +327,8 @@ public:
     ScopeFindResult Find(const util::StringView &name,
                          ResolveBindingOptions options = ResolveBindingOptions::BINDINGS) const;
 
+    std::pair<uint32_t, uint32_t> Find(const ir::Expression *expr, bool onlyLevel = false) const;
+
     Decl *FindDecl(const util::StringView &name) const;
 
     bool HasVarDecl(const util::StringView &name) const;
