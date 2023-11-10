@@ -688,6 +688,28 @@ checker::Type *ETSAnalyzer::Check(ir::LabelledStatement *st) const
     UNREACHABLE();
 }
 
+
+void CheckVoidType(checker::Type *&func_return_type, ETSChecker *&checker, const std::string &name, ir::ReturnStatement *st)
+{
+    if (name.find(compiler::Signatures::ETS_MAIN_WITH_MANGLE_BEGIN) != std::string::npos) {
+        if (func_return_type == checker->GlobalBuiltinVoidType()) {
+            func_return_type = checker->GlobalVoidType();
+        } else if (!func_return_type->IsETSVoidType() && !func_return_type->IsIntType()) {
+            checker->ThrowTypeError("Bad return type, main enable only void or int type.", st->Start());
+        }
+    }
+}
+
+void CheckMissingArgument(checker::Type *&func_return_type, ETSChecker *checker,
+                          ir::ScriptFunction *containing_func, ir::ReturnStatement *st)
+{
+    if (!func_return_type->IsETSVoidType() && func_return_type != checker->GlobalBuiltinVoidType()) {
+        checker->ThrowTypeError("Missing return value.", st->Start());
+    }
+    func_return_type =
+        containing_func->IsEntryPoint() ? checker->GlobalVoidType() : checker->GlobalBuiltinVoidType();
+}
+
 checker::Type *ETSAnalyzer::Check(ir::ReturnStatement *st) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -713,20 +735,10 @@ checker::Type *ETSAnalyzer::Check(ir::ReturnStatement *st) const
         func_return_type = checker->GetTypeFromTypeAnnotation(return_type_annotation);
 
         if (st->argument_ == nullptr) {
-            if (!func_return_type->IsETSVoidType() && func_return_type != checker->GlobalBuiltinVoidType()) {
-                checker->ThrowTypeError("Missing return value.", st->Start());
-            }
-            func_return_type =
-                containing_func->IsEntryPoint() ? checker->GlobalVoidType() : checker->GlobalBuiltinVoidType();
+            CheckMissingArgument(func_return_type, checker, containing_func, st);
         } else {
             const auto name = containing_func->Scope()->InternalName().Mutf8();
-            if (name.find(compiler::Signatures::ETS_MAIN_WITH_MANGLE_BEGIN) != std::string::npos) {
-                if (func_return_type == checker->GlobalBuiltinVoidType()) {
-                    func_return_type = checker->GlobalVoidType();
-                } else if (!func_return_type->IsETSVoidType() && !func_return_type->IsIntType()) {
-                    checker->ThrowTypeError("Bad return type, main enable only void or int type.", st->Start());
-                }
-            }
+            CheckVoidType(func_return_type, checker, name, st);
 
             if (st->argument_->IsObjectExpression()) {
                 st->argument_->AsObjectExpression()->SetPreferredType(func_return_type);
