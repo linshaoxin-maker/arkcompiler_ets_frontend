@@ -15,11 +15,9 @@
 
 #include "etsParameterExpression.h"
 
+#include "compiler/core/pandagen.h"
 #include "checker/ETSchecker.h"
 #include "checker/ets/typeRelationContext.h"
-#include "checker/TSchecker.h"
-#include "compiler/core/ETSGen.h"
-#include "compiler/core/pandagen.h"
 #include "ir/astDump.h"
 #include "ir/typeNode.h"
 #include "ir/expressions/identifier.h"
@@ -142,24 +140,43 @@ void ETSParameterExpression::Dump(ir::AstDumper *const dumper) const
     }
 }
 
-void ETSParameterExpression::Compile(compiler::PandaGen *const pg) const
+void ETSParameterExpression::Compile([[maybe_unused]] compiler::PandaGen *const pg) const
 {
-    pg->GetAstCompiler()->Compile(this);
+    UNREACHABLE();
 }
 
-void ETSParameterExpression::Compile(compiler::ETSGen *const etsg) const
+void ETSParameterExpression::Compile([[maybe_unused]] compiler::ETSGen *const etsg) const
 {
-    etsg->GetAstCompiler()->Compile(this);
+    ident_->Identifier::Compile(etsg);
 }
 
-checker::Type *ETSParameterExpression::Check(checker::TSChecker *const checker)
+checker::Type *ETSParameterExpression::Check([[maybe_unused]] checker::TSChecker *const checker)
 {
-    return checker->GetAnalyzer()->Check(this);
+    UNREACHABLE();
 }
 
 checker::Type *ETSParameterExpression::Check(checker::ETSChecker *const checker)
 {
-    return checker->GetAnalyzer()->Check(this);
+    if (TsType() == nullptr) {
+        checker::Type *param_type;
+
+        if (ident_->TsType() != nullptr) {
+            param_type = ident_->TsType();
+        } else {
+            param_type = !IsRestParameter() ? ident_->Check(checker) : spread_->Check(checker);
+            if (IsDefault()) {
+                [[maybe_unused]] auto *const init_type = initializer_->Check(checker);
+                // TODO(ttamas) : fix this aftet nullable fix
+                // const checker::AssignmentContext ctx(checker->Relation(), initializer_, init_type, name_type,
+                //                                      initializer_->Start(),
+                //                                      {"Initializers type is not assignable to the target type"});
+            }
+        }
+
+        SetTsType(param_type);
+    }
+
+    return TsType();
 }
 
 // NOLINTNEXTLINE(google-default-arguments)

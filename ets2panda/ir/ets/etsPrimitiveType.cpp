@@ -15,11 +15,10 @@
 
 #include "etsPrimitiveType.h"
 
+#include "ir/astDump.h"
 #include "checker/TSchecker.h"
 #include "checker/ETSchecker.h"
 #include "compiler/core/ETSGen.h"
-#include "compiler/core/pandagen.h"
-#include "ir/astDump.h"
 
 namespace panda::es2panda::ir {
 void ETSPrimitiveType::TransformChildren([[maybe_unused]] const NodeTransformer &cb) {}
@@ -30,19 +29,16 @@ void ETSPrimitiveType::Dump(ir::AstDumper *dumper) const
     dumper->Add({{"type", "ETSPrimitiveType"}});
 }
 
-void ETSPrimitiveType::Compile(compiler::PandaGen *pg) const
+void ETSPrimitiveType::Compile([[maybe_unused]] compiler::PandaGen *pg) const {}
+
+void ETSPrimitiveType::Compile([[maybe_unused]] compiler::ETSGen *etsg) const
 {
-    pg->GetAstCompiler()->Compile(this);
+    UNREACHABLE();
 }
 
-void ETSPrimitiveType::Compile(compiler::ETSGen *etsg) const
+checker::Type *ETSPrimitiveType::Check([[maybe_unused]] checker::TSChecker *checker)
 {
-    etsg->GetAstCompiler()->Compile(this);
-}
-
-checker::Type *ETSPrimitiveType::Check(checker::TSChecker *checker)
-{
-    return checker->GetAnalyzer()->Check(this);
+    return nullptr;
 }
 
 checker::Type *ETSPrimitiveType::GetType([[maybe_unused]] checker::TSChecker *checker)
@@ -50,9 +46,9 @@ checker::Type *ETSPrimitiveType::GetType([[maybe_unused]] checker::TSChecker *ch
     return checker->GlobalAnyType();
 }
 
-checker::Type *ETSPrimitiveType::Check(checker::ETSChecker *checker)
+checker::Type *ETSPrimitiveType::Check([[maybe_unused]] checker::ETSChecker *checker)
 {
-    return checker->GetAnalyzer()->Check(this);
+    return nullptr;
 }
 
 checker::Type *ETSPrimitiveType::GetType([[maybe_unused]] checker::ETSChecker *checker)
