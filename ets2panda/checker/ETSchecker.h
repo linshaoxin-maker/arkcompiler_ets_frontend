@@ -227,7 +227,6 @@ public:
     CharType *CreateCharType(char16_t value);
     ETSStringType *CreateETSStringLiteralType(util::StringView value);
     ETSArrayType *CreateETSArrayType(Type *element_type);
-    Type *CreateETSUnionType(ArenaVector<Type *> &&constituent_types);
     ETSFunctionType *CreateETSFunctionType(Signature *signature);
     ETSFunctionType *CreateETSFunctionType(Signature *signature, util::StringView name);
     ETSFunctionType *CreateETSFunctionType(ir::ScriptFunction *func, Signature *signature, util::StringView name);

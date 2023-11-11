@@ -282,12 +282,6 @@ checker::Type *ETSAnalyzer::Check(ir::ETSTypeReferencePart *node) const
     return node->GetType(checker);
 }
 
-checker::Type *ETSAnalyzer::Check(ir::ETSUnionType *node) const
-{
-    (void)node;
-    UNREACHABLE();
-}
-
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSWildcardType *node) const
 {
     UNREACHABLE();

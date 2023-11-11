@@ -623,11 +623,6 @@ void ETSObjectType::Cast(TypeRelation *const relation, Type *const target)
         }
     }
 
-    if (target->IsETSUnionType()) {
-        target->AsETSUnionType()->CastToThis(relation, this);
-        return;
-    }
-
     conversion::Forbidden(relation);
 }
 
@@ -644,8 +639,7 @@ void ETSObjectType::IsSupertypeOf(TypeRelation *relation, Type *source)
     }
 
     if (!source->IsETSObjectType() ||
-        !source->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::CLASS | ETSObjectFlags::INTERFACE |
-                                                  ETSObjectFlags::NULL_TYPE)) {
+        !source->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::CLASS | ETSObjectFlags::INTERFACE)) {
         return;
     }
 

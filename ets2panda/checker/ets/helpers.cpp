@@ -346,8 +346,7 @@ void ETSChecker::ValidateResolvedIdentifier(ir::Identifier *const ident, binder:
             }
 
             if (!resolved_type->IsETSObjectType() && !resolved_type->IsETSArrayType() &&
-                !resolved_type->IsETSEnumType() && !resolved_type->IsETSStringEnumType() &&
-                !resolved_type->IsETSUnionType()) {
+                !resolved_type->IsETSEnumType() && !resolved_type->IsETSStringEnumType()) {
                 throw_error();
             }
 

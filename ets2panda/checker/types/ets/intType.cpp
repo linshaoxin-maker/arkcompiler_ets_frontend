@@ -43,7 +43,7 @@ bool IntType::AssignmentSource([[maybe_unused]] TypeRelation *relation, [[maybe_
         }
     }
 
-    if (relation->ApplyBoxing() && (target->IsETSObjectType())) {
+    if (relation->ApplyBoxing() && target->IsETSObjectType()) {
         relation->GetChecker()->AsETSChecker()->CheckBoxedSourceTypeAssignable(relation, this, target);
     }
 
@@ -84,11 +84,6 @@ void IntType::Cast(TypeRelation *const relation, Type *const target)
         }
 
         conversion::BoxingWideningReference(relation, this, target->AsETSObjectType());
-        return;
-    }
-
-    if (target->IsETSUnionType()) {
-        target->AsETSUnionType()->CastToThis(relation, this);
         return;
     }
 

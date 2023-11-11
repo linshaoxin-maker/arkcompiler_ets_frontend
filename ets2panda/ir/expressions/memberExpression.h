@@ -17,7 +17,6 @@
 #define ES2PANDA_IR_EXPRESSION_MEMBER_EXPRESSION_H
 
 #include "binder/variable.h"
-#include "checker/types/ets/etsObjectType.h"
 #include "ir/expression.h"
 #include "ir/irnode.h"
 
@@ -146,9 +145,6 @@ public:
     }
 
     [[nodiscard]] bool IsPrivateReference() const noexcept;
-
-    checker::Type *CheckEnumMember(checker::ETSChecker *checker, checker::Type *type);
-    checker::Type *CheckObjectMember(checker::ETSChecker *checker);
 
     // NOLINTNEXTLINE(google-default-arguments)
     [[nodiscard]] Expression *Clone(ArenaAllocator *allocator, AstNode *parent = nullptr) override;
