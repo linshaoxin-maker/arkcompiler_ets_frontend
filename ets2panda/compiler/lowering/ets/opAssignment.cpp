@@ -44,10 +44,9 @@
 
 namespace panda::es2panda::compiler {
 
-std::string const &OpAssignmentLowering::Name()
+util::StringView OpAssignmentLowering::Name()
 {
-    static std::string const NAME = "op-assignment";
-    return NAME;
+    return "op-assignment";
 }
 
 struct Conversion {
