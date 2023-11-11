@@ -65,16 +65,6 @@ public:
         return right_;
     }
 
-    [[nodiscard]] const Expression *Result() const noexcept
-    {
-        return result_;
-    }
-
-    [[nodiscard]] Expression *Result() noexcept
-    {
-        return result_;
-    }
-
     [[nodiscard]] lexer::TokenType OperatorType() const noexcept
     {
         return operator_;
@@ -83,18 +73,6 @@ public:
     [[nodiscard]] lexer::TokenType SetOperatorType(lexer::TokenType token_type) noexcept
     {
         return operator_ = token_type;
-    }
-
-    void SetResult(Expression *expr) noexcept
-    {
-        left_ = expr;
-        SetStart(left_->Start());
-    }
-
-    [[nodiscard]] bool IsLogicalExtended() const noexcept
-    {
-        return operator_ == lexer::TokenType::PUNCTUATOR_LOGICAL_AND ||
-               operator_ == lexer::TokenType::PUNCTUATOR_LOGICAL_OR;
     }
 
     [[nodiscard]] binder::Variable *Target() noexcept
@@ -132,7 +110,6 @@ protected:
 private:
     Expression *left_ = nullptr;
     Expression *right_ = nullptr;
-    Expression *result_ = nullptr;
     lexer::TokenType operator_;
     binder::Variable *target_ {};
     checker::Type *operation_type_ {};

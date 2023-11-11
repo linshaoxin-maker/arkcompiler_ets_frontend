@@ -24,7 +24,6 @@
 #include "ir/expressions/identifier.h"
 #include "ir/expressions/literals/bigIntLiteral.h"
 #include "ir/expressions/literals/numberLiteral.h"
-#include "ir/expressions/callExpression.h"
 #include "ir/expressions/memberExpression.h"
 
 namespace panda::es2panda::ir {
@@ -217,10 +216,8 @@ checker::Type *UnaryExpression::Check(checker::ETSChecker *checker)
     }
 
     auto arg_type = argument_->Check(checker);
-    const auto is_cond_expr = operator_ == lexer::TokenType::PUNCTUATOR_EXCLAMATION_MARK;
-    checker::Type *operand_type = checker->ApplyUnaryOperatorPromotion(arg_type, true, true, is_cond_expr);
-    auto unboxed_operand_type = is_cond_expr ? checker->ETSBuiltinTypeAsConditionalType(arg_type)
-                                             : checker->ETSBuiltinTypeAsPrimitiveType(arg_type);
+    checker::Type *operand_type = checker->ApplyUnaryOperatorPromotion(arg_type);
+    auto unboxed_operand_type = checker->ETSBuiltinTypeAsPrimitiveType(arg_type);
 
     switch (operator_) {
         case lexer::TokenType::PUNCTUATOR_MINUS:
@@ -254,23 +251,13 @@ checker::Type *UnaryExpression::Check(checker::ETSChecker *checker)
             break;
         }
         case lexer::TokenType::PUNCTUATOR_EXCLAMATION_MARK: {
-            if (checker->IsNullOrVoidExpression(argument_)) {
-                auto ts_type = checker->CreateETSBooleanType(true);
-                ts_type->AddTypeFlag(checker::TypeFlag::CONSTANT);
-                SetTsType(ts_type);
-                break;
-            }
-
-            if (operand_type == nullptr || !operand_type->IsConditionalExprType()) {
+            if (operand_type == nullptr || !operand_type->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN)) {
                 checker->ThrowTypeError("Bad operand type, the type of the operand must be boolean type.",
                                         argument_->Start());
             }
 
-            auto expr_res = operand_type->ResolveConditionExpr();
-            if (std::get<0>(expr_res)) {
-                auto ts_type = checker->CreateETSBooleanType(!std::get<1>(expr_res));
-                ts_type->AddTypeFlag(checker::TypeFlag::CONSTANT);
-                SetTsType(ts_type);
+            if (operand_type->HasTypeFlag(checker::TypeFlag::CONSTANT)) {
+                SetTsType(checker->CreateETSBooleanType(!operand_type->AsETSBooleanType()->GetValue()));
                 break;
             }
 
@@ -287,8 +274,7 @@ checker::Type *UnaryExpression::Check(checker::ETSChecker *checker)
         }
     }
 
-    if (arg_type->IsETSObjectType() && (unboxed_operand_type != nullptr) &&
-        unboxed_operand_type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+    if (arg_type->IsETSObjectType() && (unboxed_operand_type != nullptr)) {
         argument_->AddBoxingUnboxingFlag(checker->GetUnboxingFlag(unboxed_operand_type));
     }
 

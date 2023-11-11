@@ -508,15 +508,6 @@ public:
         return allocator_;
     }
 
-    std::tuple<bool, bool> ResolveConditionExpr() const override
-    {
-        if (IsNullableType() || IsETSStringType()) {
-            return {false, false};
-        }
-
-        return {true, true};
-    }
-
 protected:
     virtual ETSFunctionType *CreateETSFunctionType(const util::StringView &name) const;
 
