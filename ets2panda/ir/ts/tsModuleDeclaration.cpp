@@ -15,7 +15,7 @@
 
 #include "tsModuleDeclaration.h"
 
-#include "varbinder/scope.h"
+#include "binder/scope.h"
 #include "ir/astDump.h"
 #include "ir/base/decorator.h"
 #include "ir/expression.h"

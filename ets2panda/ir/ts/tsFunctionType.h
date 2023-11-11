@@ -23,7 +23,7 @@ class TSTypeParameterDeclaration;
 
 class TSFunctionType : public TypeNode {
 public:
-    explicit TSFunctionType(varbinder::Scope *scope, ArenaVector<Expression *> &&params,
+    explicit TSFunctionType(binder::Scope *scope, ArenaVector<Expression *> &&params,
                             TSTypeParameterDeclaration *type_params, TypeNode *return_type)
         : TypeNode(AstNodeType::TS_FUNCTION_TYPE),
           scope_(scope),
@@ -38,7 +38,7 @@ public:
         return true;
     }
 
-    varbinder::Scope *Scope() const override
+    binder::Scope *Scope() const override
     {
         return scope_;
     }
@@ -73,7 +73,7 @@ public:
     checker::Type *GetType([[maybe_unused]] checker::ETSChecker *checker) override;
 
 private:
-    varbinder::Scope *scope_;
+    binder::Scope *scope_;
     ArenaVector<Expression *> params_;
     TSTypeParameterDeclaration *type_params_;
     TypeNode *return_type_;

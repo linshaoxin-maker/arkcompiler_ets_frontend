@@ -39,9 +39,9 @@ class CompilerImpl;
 class CompilerContext;
 }  // namespace compiler
 
-namespace varbinder {
-class VarBinder;
-}  // namespace varbinder
+namespace binder {
+class Binder;
+}  // namespace binder
 
 enum class ScriptExtension {
     JS,

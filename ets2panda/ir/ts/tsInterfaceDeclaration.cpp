@@ -15,9 +15,9 @@
 
 #include "tsInterfaceDeclaration.h"
 
-#include "varbinder/declaration.h"
-#include "varbinder/scope.h"
-#include "varbinder/variable.h"
+#include "binder/declaration.h"
+#include "binder/scope.h"
+#include "binder/variable.h"
 #include "checker/TSchecker.h"
 #include "checker/ETSchecker.h"
 #include "ir/astDump.h"
@@ -99,7 +99,7 @@ void CheckInheritedPropertiesAreIdentical(checker::TSChecker *checker, checker::
 
     for (auto *base : type->Bases()) {
         checker->ResolveStructuredTypeMembers(base);
-        ArenaVector<varbinder::LocalVariable *> inherited_properties(checker->Allocator()->Adapter());
+        ArenaVector<binder::LocalVariable *> inherited_properties(checker->Allocator()->Adapter());
         base->AsInterfaceType()->CollectProperties(&inherited_properties);
 
         for (auto *inherited_prop : inherited_properties) {
@@ -120,7 +120,7 @@ void CheckInheritedPropertiesAreIdentical(checker::TSChecker *checker, checker::
 
 checker::Type *TSInterfaceDeclaration::Check([[maybe_unused]] checker::TSChecker *checker)
 {
-    varbinder::Variable *var = id_->Variable();
+    binder::Variable *var = id_->Variable();
     ASSERT(var->Declaration()->Node() && var->Declaration()->Node()->IsTSInterfaceDeclaration());
 
     if (this == var->Declaration()->Node()) {

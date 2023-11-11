@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-#ifndef ES2PANDA_VARBINDER_VARBINDER_H
-#define ES2PANDA_VARBINDER_VARBINDER_H
+#ifndef ES2PANDA_BINDER_BINDER_H
+#define ES2PANDA_BINDER_BINDER_H
 
-#include "varbinder/scope.h"
-#include "varbinder/variableFlags.h"
+#include "binder/scope.h"
+#include "binder/variableFlags.h"
 #include "lexer/token/sourceLocation.h"
 #include "macros.h"
 
@@ -43,16 +43,16 @@ class MemberExpression;
 class ClassStaticBlock;
 }  // namespace panda::es2panda::ir
 
-namespace panda::es2panda::varbinder {
+namespace panda::es2panda::binder {
 class ETSBinder;
 
-class VarBinder {
+class Binder {
 public:
-    explicit VarBinder(ArenaAllocator *allocator) : allocator_(allocator), function_scopes_(allocator_->Adapter()) {}
+    explicit Binder(ArenaAllocator *allocator) : allocator_(allocator), function_scopes_(allocator_->Adapter()) {}
 
-    NO_COPY_SEMANTIC(VarBinder);
-    NO_MOVE_SEMANTIC(VarBinder);
-    ~VarBinder() = default;
+    NO_COPY_SEMANTIC(Binder);
+    NO_MOVE_SEMANTIC(Binder);
+    ~Binder() = default;
 
     void InitTopScope();
     virtual void IdentifierAnalysis();
@@ -64,7 +64,7 @@ public:
     T *AddTsDecl(const lexer::SourcePosition &pos, Args &&...args);
 
     template <typename T, typename... Args>
-    std::tuple<T *, varbinder::Variable *> NewVarDecl(const lexer::SourcePosition &pos, Args &&...args);
+    std::tuple<T *, binder::Variable *> NewVarDecl(const lexer::SourcePosition &pos, Args &&...args);
 
     std::tuple<ParameterDecl *, Variable *> AddParamDecl(ir::AstNode *param);
 
@@ -213,13 +213,11 @@ protected:
     void AddMandatoryParams();
     void LookupReference(const util::StringView &name);
     void InstantiateArguments();
-    bool InstantiateArgumentsImpl(Scope **scope, Scope *iter, const ir::AstNode *node);
     void InstantiatePrivateContext(const ir::Identifier *ident) const;
     void BuildVarDeclarator(ir::VariableDeclarator *var_decl);
     void BuildVarDeclaratorId(ir::AstNode *child_node);
     void BuildForUpdateLoop(ir::ForUpdateStatement *for_update_stmt);
-    void BuildForInOfLoop(varbinder::LoopScope *loop_scope, ir::AstNode *left, ir::Expression *right,
-                          ir::Statement *body);
+    void BuildForInOfLoop(binder::LoopScope *loop_scope, ir::AstNode *left, ir::Expression *right, ir::Statement *body);
     void BuildCatchClause(ir::CatchClause *catch_clause_stmt);
     void ResolveReference(ir::AstNode *child_node);
     void ResolveReferences(const ir::AstNode *parent);
@@ -227,7 +225,7 @@ protected:
     void VisitScriptFunction(ir::ScriptFunction *func);
     util::StringView BuildFunctionName(util::StringView name, uint32_t idx);
 
-    void AddCompilableFunctionScope(varbinder::FunctionScope *func_scope);
+    void AddCompilableFunctionScope(binder::FunctionScope *func_scope);
 
     void InitializeClassBinding(ir::ClassDefinition *class_def);
     void InitializeClassIdent(ir::ClassDefinition *class_def);
@@ -259,10 +257,9 @@ template <typename T>
 class LexicalScope {
 public:
     template <typename... Args>
-    explicit LexicalScope(VarBinder *varbinder, Args &&...args)
-        : LexicalScope(
-              varbinder->Allocator()->New<T>(varbinder->Allocator(), varbinder->scope_, std::forward<Args>(args)...),
-              varbinder)
+    explicit LexicalScope(Binder *binder, Args &&...args)
+        : LexicalScope(binder->Allocator()->New<T>(binder->Allocator(), binder->scope_, std::forward<Args>(args)...),
+                       binder)
     {
     }
 
@@ -273,37 +270,37 @@ public:
 
     ~LexicalScope()
     {
-        ASSERT(varbinder_);
-        varbinder_->scope_ = prev_scope_;
-        varbinder_->var_scope_ = prev_var_scope_;
+        ASSERT(binder_);
+        binder_->scope_ = prev_scope_;
+        binder_->var_scope_ = prev_var_scope_;
     }
 
-    [[nodiscard]] static LexicalScope<T> Enter(VarBinder *varbinder, T *scope, bool check_eval = true)
+    [[nodiscard]] static LexicalScope<T> Enter(Binder *binder, T *scope, bool check_eval = true)
     {
-        LexicalScope<T> lex_scope(scope, varbinder);
-        if (!check_eval || varbinder->Extension() == ScriptExtension::TS) {
+        LexicalScope<T> lex_scope(scope, binder);
+        if (!check_eval || binder->Extension() == ScriptExtension::TS) {
             return lex_scope;
         }
 
         // NOLINTNEXTLINE(readability-braces-around-statements)
         if constexpr (std::is_same_v<T, FunctionParamScope>) {
-            varbinder->var_scope_ = scope->GetFunctionScope();
-            varbinder->var_scope_->CheckDirectEval(varbinder->compiler_ctx_);
+            binder->var_scope_ = scope->GetFunctionScope();
+            binder->var_scope_->CheckDirectEval(binder->compiler_ctx_);
             // NOLINTNEXTLINE(readability-braces-around-statements,readability-misleading-indentation)
         } else if constexpr (std::is_same_v<T, FunctionScope>) {
-            varbinder->var_scope_ = scope;
-            varbinder->var_scope_->CheckDirectEval(varbinder->compiler_ctx_);
+            binder->var_scope_ = scope;
+            binder->var_scope_->CheckDirectEval(binder->compiler_ctx_);
             // NOLINTNEXTLINE(readability-braces-around-statements,readability-misleading-indentation)
         } else if constexpr (std::is_same_v<T, LoopScope>) {
             if (scope->IsLoopScope()) {
-                varbinder->var_scope_ = scope;
-                varbinder->var_scope_->CheckDirectEval(varbinder->compiler_ctx_);
+                binder->var_scope_ = scope;
+                binder->var_scope_->CheckDirectEval(binder->compiler_ctx_);
             }
             // NOLINTNEXTLINE(readability-braces-around-statements,readability-misleading-indentation)
         } else if constexpr (std::is_same_v<T, LoopDeclarationScope>) {
             if (scope->IsLoopDeclarationScope()) {
-                varbinder->var_scope_ = scope;
-                varbinder->var_scope_->CheckDirectEval(varbinder->compiler_ctx_);
+                binder->var_scope_ = scope;
+                binder->var_scope_->CheckDirectEval(binder->compiler_ctx_);
             }
         }
 
@@ -315,20 +312,20 @@ public:
 private:
     NO_COPY_SEMANTIC(LexicalScope);
 
-    explicit LexicalScope(T *scope, VarBinder *varbinder)
-        : varbinder_(varbinder), scope_(scope), prev_scope_(varbinder->scope_), prev_var_scope_(varbinder->var_scope_)
+    explicit LexicalScope(T *scope, Binder *binder)
+        : binder_(binder), scope_(scope), prev_scope_(binder->scope_), prev_var_scope_(binder->var_scope_)
     {
-        varbinder_->scope_ = scope_;
+        binder_->scope_ = scope_;
     }
 
-    VarBinder *varbinder_ {};
+    Binder *binder_ {};
     T *scope_ {};
     Scope *prev_scope_ {};
     VariableScope *prev_var_scope_ {};
 };
 
 template <size_t N>
-void VarBinder::AddMandatoryParams(const MandatoryParams<N> &params)
+void Binder::AddMandatoryParams(const MandatoryParams<N> &params)
 {
     ASSERT(scope_->IsFunctionVariableScope());
 
@@ -340,7 +337,7 @@ void VarBinder::AddMandatoryParams(const MandatoryParams<N> &params)
 }
 
 template <typename T, typename... Args>
-T *VarBinder::AddTsDecl(const lexer::SourcePosition &pos, Args &&...args)
+T *Binder::AddTsDecl(const lexer::SourcePosition &pos, Args &&...args)
 {
     T *decl = Allocator()->New<T>(std::forward<Args>(args)...);
 
@@ -352,7 +349,7 @@ T *VarBinder::AddTsDecl(const lexer::SourcePosition &pos, Args &&...args)
 }
 
 template <typename T, typename... Args>
-T *VarBinder::AddDecl(const lexer::SourcePosition &pos, Args &&...args)
+T *Binder::AddDecl(const lexer::SourcePosition &pos, Args &&...args)
 {
     T *decl = Allocator()->New<T>(std::forward<Args>(args)...);
 
@@ -364,10 +361,10 @@ T *VarBinder::AddDecl(const lexer::SourcePosition &pos, Args &&...args)
 }
 
 template <typename T, typename... Args>
-std::tuple<T *, varbinder::Variable *> VarBinder::NewVarDecl(const lexer::SourcePosition &pos, Args &&...args)
+std::tuple<T *, binder::Variable *> Binder::NewVarDecl(const lexer::SourcePosition &pos, Args &&...args)
 {
     T *decl = Allocator()->New<T>(std::forward<Args>(args)...);
-    varbinder::Variable *var = scope_->AddDecl(Allocator(), decl, Extension());
+    binder::Variable *var = scope_->AddDecl(Allocator(), decl, Extension());
 
     if (var != nullptr) {
         return {decl, var};
@@ -375,6 +372,6 @@ std::tuple<T *, varbinder::Variable *> VarBinder::NewVarDecl(const lexer::Source
 
     ThrowRedeclaration(pos, decl->Name());
 }
-}  // namespace panda::es2panda::varbinder
+}  // namespace panda::es2panda::binder
 
 #endif

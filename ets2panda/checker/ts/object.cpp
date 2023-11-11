@@ -31,8 +31,8 @@
 #include "ir/ts/tsInterfaceHeritage.h"
 #include "ir/ts/tsInterfaceBody.h"
 #include "util/helpers.h"
-#include "varbinder/variable.h"
-#include "varbinder/scope.h"
+#include "binder/variable.h"
+#include "binder/scope.h"
 
 #include "checker/TSchecker.h"
 #include "checker/types/ts/indexInfo.h"
@@ -49,11 +49,11 @@ void TSChecker::CheckIndexConstraints(Type *type)
 
     IndexInfo *number_info = obj_type->NumberIndexInfo();
     IndexInfo *string_info = obj_type->StringIndexInfo();
-    const ArenaVector<varbinder::LocalVariable *> &properties = obj_type->Properties();
+    const ArenaVector<binder::LocalVariable *> &properties = obj_type->Properties();
 
     if (number_info != nullptr) {
         for (auto *it : properties) {
-            if (it->HasFlag(varbinder::VariableFlags::NUMERIC_NAME)) {
+            if (it->HasFlag(binder::VariableFlags::NUMERIC_NAME)) {
                 Type *prop_type = GetTypeOfVariable(it);
                 IsTypeAssignableTo(prop_type, number_info->GetType(),
                                    {"Property '", it->Name(), "' of type '", prop_type,
@@ -200,7 +200,7 @@ void TSChecker::ResolvePropertiesOfObjectType(ObjectType *type, ir::AstNode *mem
                                               bool is_interface)
 {
     if (member->IsTSPropertySignature()) {
-        varbinder::Variable *prop = member->AsTSPropertySignature()->Variable();
+        binder::Variable *prop = member->AsTSPropertySignature()->Variable();
 
         if (!is_interface ||
             ValidateInterfaceMemberRedeclaration(type, prop, member->AsTSPropertySignature()->Key()->Start())) {
@@ -211,7 +211,7 @@ void TSChecker::ResolvePropertiesOfObjectType(ObjectType *type, ir::AstNode *mem
     }
 
     if (member->IsTSMethodSignature()) {
-        varbinder::Variable *method = member->AsTSMethodSignature()->Variable();
+        binder::Variable *method = member->AsTSMethodSignature()->Variable();
 
         if (!is_interface ||
             ValidateInterfaceMemberRedeclaration(type, method, member->AsTSMethodSignature()->Key()->Start())) {
@@ -271,8 +271,8 @@ void TSChecker::ResolveIndexInfosOfObjectType(ObjectType *type, ArenaVector<ir::
     }
 }
 
-varbinder::Variable *TSChecker::GetPropertyOfType(Type *type, const util::StringView &name, bool get_partial,
-                                                  varbinder::VariableFlags propagate_flags)
+binder::Variable *TSChecker::GetPropertyOfType(Type *type, const util::StringView &name, bool get_partial,
+                                               binder::VariableFlags propagate_flags)
 {
     if (type->IsObjectType()) {
         ResolveObjectTypeMembers(type->AsObjectType());
@@ -286,8 +286,8 @@ varbinder::Variable *TSChecker::GetPropertyOfType(Type *type, const util::String
     return nullptr;
 }
 
-varbinder::Variable *TSChecker::GetPropertyOfUnionType(UnionType *type, const util::StringView &name, bool get_partial,
-                                                       varbinder::VariableFlags propagate_flags)
+binder::Variable *TSChecker::GetPropertyOfUnionType(UnionType *type, const util::StringView &name, bool get_partial,
+                                                    binder::VariableFlags propagate_flags)
 {
     auto found = type->CachedSyntheticProperties().find(name);
 
@@ -295,11 +295,11 @@ varbinder::Variable *TSChecker::GetPropertyOfUnionType(UnionType *type, const ut
         return found->second;
     }
 
-    varbinder::VariableFlags flags = varbinder::VariableFlags::PROPERTY;
+    binder::VariableFlags flags = binder::VariableFlags::PROPERTY;
     ArenaVector<Type *> collected_types(Allocator()->Adapter());
 
     for (auto *it : type->ConstituentTypes()) {
-        varbinder::Variable *prop = GetPropertyOfType(it, name);
+        binder::Variable *prop = GetPropertyOfType(it, name);
 
         if (prop == nullptr) {
             if (it->IsArrayType()) {
@@ -331,8 +331,8 @@ varbinder::Variable *TSChecker::GetPropertyOfUnionType(UnionType *type, const ut
 
         prop->AddFlag(propagate_flags);
 
-        if (prop->HasFlag(varbinder::VariableFlags::OPTIONAL)) {
-            flags |= varbinder::VariableFlags::OPTIONAL;
+        if (prop->HasFlag(binder::VariableFlags::OPTIONAL)) {
+            flags |= binder::VariableFlags::OPTIONAL;
         }
 
         collected_types.push_back(GetTypeOfVariable(prop));
@@ -342,7 +342,7 @@ varbinder::Variable *TSChecker::GetPropertyOfUnionType(UnionType *type, const ut
         return nullptr;
     }
 
-    varbinder::Variable *synthetic_prop = varbinder::Scope::CreateVar(Allocator(), name, flags, nullptr);
+    binder::Variable *synthetic_prop = binder::Scope::CreateVar(Allocator(), name, flags, nullptr);
     synthetic_prop->SetTsType(CreateUnionType(std::move(collected_types)));
     type->CachedSyntheticProperties().insert({name, synthetic_prop});
     return synthetic_prop;
@@ -401,7 +401,7 @@ Type *TSChecker::GetPropertyTypeForIndexType(Type *type, Type *index_type)
     }
 
     if (index_type->HasTypeFlag(TypeFlag::STRING_LITERAL | TypeFlag::NUMBER_LITERAL)) {
-        varbinder::Variable *prop = nullptr;
+        binder::Variable *prop = nullptr;
 
         if (index_type->IsStringLiteralType()) {
             prop = GetPropertyOfType(type, index_type->AsStringLiteralType()->Value());
@@ -414,7 +414,7 @@ Type *TSChecker::GetPropertyTypeForIndexType(Type *type, Type *index_type)
         if (prop != nullptr) {
             Type *prop_type = GetTypeOfVariable(prop);
 
-            if (prop->HasFlag(varbinder::VariableFlags::READONLY)) {
+            if (prop->HasFlag(binder::VariableFlags::READONLY)) {
                 prop_type->AddTypeFlag(TypeFlag::READONLY);
             }
 
@@ -446,7 +446,7 @@ ArenaVector<ObjectType *> TSChecker::GetBaseTypes(InterfaceType *type)
     }
 
     ASSERT(type->Variable() && type->Variable()->Declaration()->IsInterfaceDecl());
-    varbinder::InterfaceDecl *decl = type->Variable()->Declaration()->AsInterfaceDecl();
+    binder::InterfaceDecl *decl = type->Variable()->Declaration()->AsInterfaceDecl();
 
     TypeStackElement tse(this, type, {"Type ", type->Name(), " recursively references itself as a base type."},
                          decl->Node()->AsTSInterfaceDeclaration()->Id()->Start());
@@ -505,7 +505,7 @@ void TSChecker::ResolveDeclaredMembers(InterfaceType *type)
     }
 
     ASSERT(type->Variable() && type->Variable()->Declaration()->IsInterfaceDecl());
-    varbinder::InterfaceDecl *decl = type->Variable()->Declaration()->AsInterfaceDecl();
+    binder::InterfaceDecl *decl = type->Variable()->Declaration()->AsInterfaceDecl();
 
     ArenaVector<ir::TSSignatureDeclaration *> signature_declarations(Allocator()->Adapter());
     ArenaVector<ir::TSIndexSignature *> index_declarations(Allocator()->Adapter());
@@ -522,14 +522,14 @@ void TSChecker::ResolveDeclaredMembers(InterfaceType *type)
     }
 }
 
-bool TSChecker::ValidateInterfaceMemberRedeclaration(ObjectType *type, varbinder::Variable *prop,
+bool TSChecker::ValidateInterfaceMemberRedeclaration(ObjectType *type, binder::Variable *prop,
                                                      const lexer::SourcePosition &loc_info)
 {
-    if (prop->HasFlag(varbinder::VariableFlags::COMPUTED)) {
+    if (prop->HasFlag(binder::VariableFlags::COMPUTED)) {
         return true;
     }
 
-    varbinder::Variable *found = type->GetProperty(prop->Name(), false);
+    binder::Variable *found = type->GetProperty(prop->Name(), false);
 
     if (found == nullptr) {
         return true;

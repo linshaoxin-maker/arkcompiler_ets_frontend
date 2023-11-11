@@ -16,7 +16,7 @@
 #ifndef ES2PANDA_CHECKER_CHECKER_H
 #define ES2PANDA_CHECKER_CHECKER_H
 
-#include "varbinder/enumMemberResult.h"
+#include "binder/enumMemberResult.h"
 #include "checker/checkerContext.h"
 #include "checker/SemanticAnalyzer.h"
 #include "checker/types/typeRelation.h"
@@ -42,15 +42,15 @@ class BlockStatement;
 enum class AstNodeType;
 }  // namespace panda::es2panda::ir
 
-namespace panda::es2panda::varbinder {
-class VarBinder;
+namespace panda::es2panda::binder {
+class Binder;
 class Decl;
 class EnumVariable;
 class FunctionDecl;
 class LocalVariable;
 class Scope;
 class Variable;
-}  // namespace panda::es2panda::varbinder
+}  // namespace panda::es2panda::binder
 
 namespace panda::es2panda::checker {
 class ETSChecker;
@@ -59,12 +59,11 @@ class GlobalTypesHolder;
 
 using StringLiteralPool = std::unordered_map<util::StringView, Type *>;
 using NumberLiteralPool = std::unordered_map<double, Type *>;
-using FunctionParamsResolveResult = std::variant<std::vector<varbinder::LocalVariable *> &, bool>;
-using InterfacePropertyMap =
-    std::unordered_map<util::StringView, std::pair<varbinder::LocalVariable *, InterfaceType *>>;
+using FunctionParamsResolveResult = std::variant<std::vector<binder::LocalVariable *> &, bool>;
+using InterfacePropertyMap = std::unordered_map<util::StringView, std::pair<binder::LocalVariable *, InterfaceType *>>;
 using TypeOrNode = std::variant<Type *, ir::AstNode *>;
 using IndexInfoTypePair = std::pair<Type *, Type *>;
-using PropertyMap = std::unordered_map<util::StringView, varbinder::LocalVariable *>;
+using PropertyMap = std::unordered_map<util::StringView, binder::LocalVariable *>;
 using ArgRange = std::pair<uint32_t, uint32_t>;
 
 class Checker {
@@ -79,7 +78,7 @@ public:
         return &allocator_;
     }
 
-    varbinder::Scope *Scope() const
+    binder::Scope *Scope() const
     {
         return scope_;
     }
@@ -149,9 +148,9 @@ public:
         return reinterpret_cast<const ETSChecker *>(this);
     }
 
-    virtual bool StartChecker([[maybe_unused]] varbinder::VarBinder *varbinder, const CompilerOptions &options) = 0;
+    virtual bool StartChecker([[maybe_unused]] binder::Binder *binder, const CompilerOptions &options) = 0;
     virtual Type *CheckTypeCached(ir::Expression *expr) = 0;
-    virtual Type *GetTypeOfVariable(varbinder::Variable *var) = 0;
+    virtual Type *GetTypeOfVariable(binder::Variable *var) = 0;
     virtual void ResolveStructuredTypeMembers(Type *type) = 0;
 
     std::string FormatMsg(std::initializer_list<TypeErrorMessageElement> list);
@@ -186,10 +185,10 @@ public:
     friend class TypeStackElement;
     friend class SavedCheckerContext;
 
-    varbinder::VarBinder *VarBinder() const;
+    binder::Binder *Binder() const;
 
 protected:
-    void Initialize(varbinder::VarBinder *varbinder);
+    void Initialize(binder::Binder *binder);
     parser::Program *Program() const;
     void SetProgram(parser::Program *program);
 
@@ -199,9 +198,9 @@ private:
     GlobalTypesHolder *global_types_;
     TypeRelation *relation_;
     SemanticAnalyzer *analyzer_ {};
-    varbinder::VarBinder *varbinder_ {};
+    binder::Binder *binder_ {};
     parser::Program *program_ {};
-    varbinder::Scope *scope_ {};
+    binder::Scope *scope_ {};
 
     RelationHolder identical_results_;
     RelationHolder assignable_results_;
@@ -245,8 +244,7 @@ private:
 
 class ScopeContext {
 public:
-    explicit ScopeContext(Checker *checker, varbinder::Scope *new_scope)
-        : checker_(checker), prev_scope_(checker_->scope_)
+    explicit ScopeContext(Checker *checker, binder::Scope *new_scope) : checker_(checker), prev_scope_(checker_->scope_)
     {
         checker_->scope_ = new_scope;
     }
@@ -261,7 +259,7 @@ public:
 
 private:
     Checker *checker_;
-    varbinder::Scope *prev_scope_;
+    binder::Scope *prev_scope_;
 };
 
 class SavedCheckerContext {

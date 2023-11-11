@@ -15,7 +15,7 @@
 
 #include "tsEnumDeclaration.h"
 
-#include "varbinder/scope.h"
+#include "binder/scope.h"
 #include "util/helpers.h"
 #include "ir/astDump.h"
 #include "ir/base/decorator.h"
@@ -76,7 +76,7 @@ int32_t ToInt(double num)
         return static_cast<int32_t>(num);
     }
 
-    // NOTE: aszilagyi. Perform ECMA defined toInt conversion
+    // TODO(aszilagyi): Perform ECMA defined toInt conversion
 
     return 0;
 }
@@ -87,13 +87,13 @@ uint32_t ToUInt(double num)
         return static_cast<int32_t>(num);
     }
 
-    // NOTE: aszilagyi. Perform ECMA defined toInt conversion
+    // TODO(aszilagyi): Perform ECMA defined toInt conversion
 
     return 0;
 }
 
-varbinder::EnumMemberResult EvaluateIdentifier(checker::TSChecker *checker, varbinder::EnumVariable *enum_var,
-                                               const ir::Identifier *expr)
+binder::EnumMemberResult EvaluateIdentifier(checker::TSChecker *checker, binder::EnumVariable *enum_var,
+                                            const ir::Identifier *expr)
 {
     if (expr->Name() == "NaN") {
         return std::nan("");
@@ -102,7 +102,7 @@ varbinder::EnumMemberResult EvaluateIdentifier(checker::TSChecker *checker, varb
         return std::numeric_limits<double>::infinity();
     }
 
-    varbinder::Variable *enum_member = expr->AsIdentifier()->Variable();
+    binder::Variable *enum_member = expr->AsIdentifier()->Variable();
 
     if (enum_member == nullptr) {
         checker->ThrowTypeError({"Cannot find name ", expr->AsIdentifier()->Name()},
@@ -110,7 +110,7 @@ varbinder::EnumMemberResult EvaluateIdentifier(checker::TSChecker *checker, varb
     }
 
     if (enum_member->IsEnumVariable()) {
-        varbinder::EnumVariable *expr_enum_var = enum_member->AsEnumVariable();
+        binder::EnumVariable *expr_enum_var = enum_member->AsEnumVariable();
         if (std::holds_alternative<bool>(expr_enum_var->Value())) {
             checker->ThrowTypeError(
                 "A member initializer in a enum declaration cannot reference members declared after it, "
@@ -125,10 +125,10 @@ varbinder::EnumMemberResult EvaluateIdentifier(checker::TSChecker *checker, varb
     return false;
 }
 
-varbinder::EnumMemberResult EvaluateUnaryExpression(checker::TSChecker *checker, varbinder::EnumVariable *enum_var,
-                                                    const ir::UnaryExpression *expr)
+binder::EnumMemberResult EvaluateUnaryExpression(checker::TSChecker *checker, binder::EnumVariable *enum_var,
+                                                 const ir::UnaryExpression *expr)
 {
-    varbinder::EnumMemberResult value = TSEnumDeclaration::EvaluateEnumMember(checker, enum_var, expr->Argument());
+    binder::EnumMemberResult value = TSEnumDeclaration::EvaluateEnumMember(checker, enum_var, expr->Argument());
     if (!std::holds_alternative<double>(value)) {
         return false;
     }
@@ -151,9 +151,9 @@ varbinder::EnumMemberResult EvaluateUnaryExpression(checker::TSChecker *checker,
     return false;
 }
 
-varbinder::EnumMemberResult EvaluateMemberExpression(checker::TSChecker *checker,
-                                                     [[maybe_unused]] varbinder::EnumVariable *enum_var,
-                                                     ir::MemberExpression *expr)
+binder::EnumMemberResult EvaluateMemberExpression(checker::TSChecker *checker,
+                                                  [[maybe_unused]] binder::EnumVariable *enum_var,
+                                                  ir::MemberExpression *expr)
 {
     if (checker::TSChecker::IsConstantMemberAccess(expr->AsExpression())) {
         if (expr->Check(checker)->TypeFlags() == checker::TypeFlag::ENUM) {
@@ -165,19 +165,19 @@ varbinder::EnumMemberResult EvaluateMemberExpression(checker::TSChecker *checker
                 name = reinterpret_cast<const ir::StringLiteral *>(expr->Property())->Str();
             }
 
-            // NOTE: aszilagyi.
+            // TODO(aszilagyi)
         }
     }
 
     return false;
 }
 
-varbinder::EnumMemberResult EvaluateBinaryExpression(checker::TSChecker *checker, varbinder::EnumVariable *enum_var,
-                                                     const ir::BinaryExpression *expr)
+binder::EnumMemberResult EvaluateBinaryExpression(checker::TSChecker *checker, binder::EnumVariable *enum_var,
+                                                  const ir::BinaryExpression *expr)
 {
-    varbinder::EnumMemberResult left =
+    binder::EnumMemberResult left =
         TSEnumDeclaration::EvaluateEnumMember(checker, enum_var, expr->AsBinaryExpression()->Left());
-    varbinder::EnumMemberResult right =
+    binder::EnumMemberResult right =
         TSEnumDeclaration::EvaluateEnumMember(checker, enum_var, expr->AsBinaryExpression()->Right());
     if (std::holds_alternative<double>(left) && std::holds_alternative<double>(right)) {
         switch (expr->AsBinaryExpression()->OperatorType()) {
@@ -237,9 +237,8 @@ varbinder::EnumMemberResult EvaluateBinaryExpression(checker::TSChecker *checker
     return false;
 }
 
-varbinder::EnumMemberResult TSEnumDeclaration::EvaluateEnumMember(checker::TSChecker *checker,
-                                                                  varbinder::EnumVariable *enum_var,
-                                                                  const ir::AstNode *expr)
+binder::EnumMemberResult TSEnumDeclaration::EvaluateEnumMember(checker::TSChecker *checker,
+                                                               binder::EnumVariable *enum_var, const ir::AstNode *expr)
 {
     switch (expr->Type()) {
         case ir::AstNodeType::UNARY_EXPRESSION: {
@@ -280,21 +279,21 @@ bool IsComputedEnumMember(const ir::Expression *init)
     return true;
 }
 
-void AddEnumValueDeclaration(checker::TSChecker *checker, double number, varbinder::EnumVariable *variable)
+void AddEnumValueDeclaration(checker::TSChecker *checker, double number, binder::EnumVariable *variable)
 {
     variable->SetTsType(checker->GlobalNumberType());
 
     util::StringView member_str = util::Helpers::ToStringView(checker->Allocator(), number);
 
-    varbinder::LocalScope *enum_scope = checker->Scope()->AsLocalScope();
-    varbinder::Variable *res = enum_scope->FindLocal(member_str, varbinder::ResolveBindingOptions::BINDINGS);
-    varbinder::EnumVariable *enum_var = nullptr;
+    binder::LocalScope *enum_scope = checker->Scope()->AsLocalScope();
+    binder::Variable *res = enum_scope->FindLocal(member_str);
+    binder::EnumVariable *enum_var = nullptr;
 
     if (res == nullptr) {
-        auto *decl = checker->Allocator()->New<varbinder::EnumDecl>(member_str);
+        auto *decl = checker->Allocator()->New<binder::EnumDecl>(member_str);
         decl->BindNode(variable->Declaration()->Node());
         enum_scope->AddDecl(checker->Allocator(), decl, ScriptExtension::TS);
-        res = enum_scope->FindLocal(member_str, varbinder::ResolveBindingOptions::BINDINGS);
+        res = enum_scope->FindLocal(member_str);
         ASSERT(res && res->IsEnumVariable());
         enum_var = res->AsEnumVariable();
         enum_var->AsEnumVariable()->SetBackReference();
@@ -302,7 +301,7 @@ void AddEnumValueDeclaration(checker::TSChecker *checker, double number, varbind
     } else {
         ASSERT(res->IsEnumVariable());
         enum_var = res->AsEnumVariable();
-        auto *decl = checker->Allocator()->New<varbinder::EnumDecl>(member_str);
+        auto *decl = checker->Allocator()->New<binder::EnumDecl>(member_str);
         decl->BindNode(variable->Declaration()->Node());
         enum_var->ResetDecl(decl);
     }
@@ -310,9 +309,8 @@ void AddEnumValueDeclaration(checker::TSChecker *checker, double number, varbind
     enum_var->SetValue(variable->Declaration()->Name());
 }
 
-void InferEnumVariableType(checker::TSChecker *checker, varbinder::EnumVariable *variable, double *value,
-                           bool *init_next, bool *is_literal_enum, bool is_const_enum,
-                           const ir::Expression *computed_expr)
+void InferEnumVariableType(checker::TSChecker *checker, binder::EnumVariable *variable, double *value, bool *init_next,
+                           bool *is_literal_enum, bool is_const_enum, const ir::Expression *computed_expr)
 {
     const ir::Expression *init = variable->Declaration()->Node()->AsTSEnumMember()->Init();
 
@@ -337,7 +335,7 @@ void InferEnumVariableType(checker::TSChecker *checker, varbinder::EnumVariable 
         computed_expr = init;
     }
 
-    varbinder::EnumMemberResult res = TSEnumDeclaration::EvaluateEnumMember(checker, variable, init);
+    binder::EnumMemberResult res = TSEnumDeclaration::EvaluateEnumMember(checker, variable, init);
     if (std::holds_alternative<util::StringView>(res)) {
         if (computed_expr != nullptr) {
             checker->ThrowTypeError("Computed values are not permitted in an enum with string valued members.",
@@ -386,7 +384,7 @@ checker::Type *TSEnumDeclaration::InferType(checker::TSChecker *checker, bool is
 {
     double value = -1.0;
 
-    varbinder::LocalScope *enum_scope = checker->Scope()->AsLocalScope();
+    binder::LocalScope *enum_scope = checker->Scope()->AsLocalScope();
 
     bool init_next = false;
     bool is_literal_enum = false;
@@ -395,8 +393,7 @@ checker::Type *TSEnumDeclaration::InferType(checker::TSChecker *checker, bool is
 
     for (size_t i = 0; i < locals_size; i++) {
         const util::StringView &current_name = enum_scope->Decls()[i]->Name();
-        varbinder::Variable *current_var =
-            enum_scope->FindLocal(current_name, varbinder::ResolveBindingOptions::BINDINGS);
+        binder::Variable *current_var = enum_scope->FindLocal(current_name);
         ASSERT(current_var && current_var->IsEnumVariable());
         InferEnumVariableType(checker, current_var->AsEnumVariable(), &value, &init_next, &is_literal_enum, is_const,
                               computed_expr);
@@ -412,7 +409,7 @@ checker::Type *TSEnumDeclaration::InferType(checker::TSChecker *checker, bool is
 
 checker::Type *TSEnumDeclaration::Check([[maybe_unused]] checker::TSChecker *checker)
 {
-    varbinder::Variable *enum_var = key_->Variable();
+    binder::Variable *enum_var = key_->Variable();
     ASSERT(enum_var);
 
     if (enum_var->TsType() == nullptr) {
@@ -427,7 +424,7 @@ checker::Type *TSEnumDeclaration::Check([[maybe_unused]] checker::TSChecker *che
 
 checker::Type *TSEnumDeclaration::Check(checker::ETSChecker *const checker)
 {
-    varbinder::Variable *enum_var = key_->Variable();
+    binder::Variable *enum_var = key_->Variable();
     ASSERT(enum_var != nullptr);
 
     if (enum_var->TsType() == nullptr) {

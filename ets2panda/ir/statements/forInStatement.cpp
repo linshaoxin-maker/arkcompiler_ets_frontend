@@ -15,7 +15,7 @@
 
 #include "forInStatement.h"
 
-#include "varbinder/scope.h"
+#include "binder/scope.h"
 #include "compiler/base/lreference.h"
 #include "compiler/core/labelTarget.h"
 #include "compiler/core/pandagen.h"

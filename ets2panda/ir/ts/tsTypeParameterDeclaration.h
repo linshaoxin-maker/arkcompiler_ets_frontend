@@ -16,7 +16,7 @@
 #ifndef ES2PANDA_IR_TS_TYPE_PARAMETER_DECLARATION_H
 #define ES2PANDA_IR_TS_TYPE_PARAMETER_DECLARATION_H
 
-#include "varbinder/scope.h"
+#include "binder/scope.h"
 #include "ir/expression.h"
 
 namespace panda::es2panda::ir {
@@ -24,7 +24,7 @@ class TSTypeParameter;
 
 class TSTypeParameterDeclaration : public Expression {
 public:
-    explicit TSTypeParameterDeclaration(varbinder::LocalScope *scope, ArenaVector<TSTypeParameter *> &&params,
+    explicit TSTypeParameterDeclaration(binder::LocalScope *scope, ArenaVector<TSTypeParameter *> &&params,
                                         size_t required_params)
         : Expression(AstNodeType::TS_TYPE_PARAMETER_DECLARATION),
           scope_(scope),
@@ -38,7 +38,7 @@ public:
         return true;
     }
 
-    varbinder::LocalScope *Scope() const override
+    binder::LocalScope *Scope() const override
     {
         return scope_;
     }
@@ -61,7 +61,7 @@ public:
     checker::Type *Check([[maybe_unused]] checker::ETSChecker *checker) override;
 
 private:
-    varbinder::LocalScope *scope_;
+    binder::LocalScope *scope_;
     ArenaVector<TSTypeParameter *> params_;
     size_t required_params_;
 };

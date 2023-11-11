@@ -23,7 +23,7 @@ class TSTypeParameterDeclaration;
 
 class TSMethodSignature : public AstNode {
 public:
-    explicit TSMethodSignature(varbinder::Scope *scope, Expression *key, TSTypeParameterDeclaration *type_params,
+    explicit TSMethodSignature(binder::Scope *scope, Expression *key, TSTypeParameterDeclaration *type_params,
                                ArenaVector<Expression *> &&params, TypeNode *return_type_annotation, bool computed,
                                bool optional)
         : AstNode(AstNodeType::TS_METHOD_SIGNATURE),
@@ -42,7 +42,7 @@ public:
         return true;
     }
 
-    varbinder::Scope *Scope() const override
+    binder::Scope *Scope() const override
     {
         return scope_;
     }
@@ -90,7 +90,7 @@ public:
     checker::Type *Check([[maybe_unused]] checker::ETSChecker *checker) override;
 
 private:
-    varbinder::Scope *scope_;
+    binder::Scope *scope_;
     Expression *key_;
     TSTypeParameterDeclaration *type_params_;
     ArenaVector<Expression *> params_;

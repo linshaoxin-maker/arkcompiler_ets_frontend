@@ -15,7 +15,7 @@
 
 #include "methodDefinition.h"
 
-#include "varbinder/scope.h"
+#include "binder/scope.h"
 #include "ir/astDump.h"
 #include "ir/base/decorator.h"
 #include "ir/base/classDefinition.h"
@@ -148,7 +148,7 @@ checker::Type *MethodDefinition::Check(checker::ETSChecker *checker)
         return nullptr;
     }
 
-    // NOTE: aszilagyi. make it correctly check for open function not have body
+    // TODO(aszilagyi): make it correctly check for open function not have body
     if (!script_func->HasBody() &&
         !(IsAbstract() || IsNative() || IsDeclare() || checker->HasStatus(checker::CheckerStatus::IN_INTERFACE))) {
         checker->ThrowTypeError("Only abstract or native methods can't have body.", script_func->Start());

@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2021 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-#ifndef ES2PANDA_VARBINDER_TS_VARBINDER_H
-#define ES2PANDA_VARBINDER_TS_VARBINDER_H
+#ifndef ES2PANDA_BINDER_TS_BINDER_H
+#define ES2PANDA_BINDER_TS_BINDER_H
 
-#include "varbinder/TypedBinder.h"
+#include "binder/TypedBinder.h"
 
-namespace panda::es2panda::varbinder {
+namespace panda::es2panda::binder {
 class TSBinder : public TypedBinder {
 public:
     explicit TSBinder(ArenaAllocator *allocator) : TypedBinder(allocator) {}
@@ -39,6 +39,6 @@ public:
 
 protected:
 };
-}  // namespace panda::es2panda::varbinder
+}  // namespace panda::es2panda::binder
 
 #endif

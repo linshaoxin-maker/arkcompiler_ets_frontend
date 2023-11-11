@@ -15,7 +15,7 @@
 
 #include "lexenv.h"
 
-#include "varbinder/variable.h"
+#include "binder/variable.h"
 #include "compiler/core/envScope.h"
 #include "compiler/core/pandagen.h"
 #include "compiler/core/moduleContext.h"
@@ -29,7 +29,7 @@ static bool CheckTdz(const ir::AstNode *node)
     return node->IsIdentifier() && node->AsIdentifier()->IsTdz();
 }
 
-static void CheckConstAssignment(PandaGen *pg, const ir::AstNode *node, varbinder::Variable *variable)
+static void CheckConstAssignment(PandaGen *pg, const ir::AstNode *node, binder::Variable *variable)
 {
     if (!variable->Declaration()->IsConstDecl()) {
         return;
@@ -40,7 +40,7 @@ static void CheckConstAssignment(PandaGen *pg, const ir::AstNode *node, varbinde
 
 // VirtualLoadVar
 
-static void ExpandLoadLexVar(PandaGen *pg, const ir::AstNode *node, const varbinder::ConstScopeFindResult &result)
+static void ExpandLoadLexVar(PandaGen *pg, const ir::AstNode *node, const binder::ConstScopeFindResult &result)
 {
     if (result.variable->Declaration()->IsVarDecl()) {
         pg->LoadLexicalVar(node, result.lex_level, result.variable->AsLocalVariable()->LexIdx());
@@ -49,7 +49,7 @@ static void ExpandLoadLexVar(PandaGen *pg, const ir::AstNode *node, const varbin
     }
 }
 
-static void ExpandLoadNormalVar(PandaGen *pg, const ir::AstNode *node, const varbinder::ConstScopeFindResult &result)
+static void ExpandLoadNormalVar(PandaGen *pg, const ir::AstNode *node, const binder::ConstScopeFindResult &result)
 {
     auto *local = result.variable->AsLocalVariable();
 
@@ -60,7 +60,7 @@ static void ExpandLoadNormalVar(PandaGen *pg, const ir::AstNode *node, const var
     }
 }
 
-void VirtualLoadVar::Expand(PandaGen *pg, const ir::AstNode *node, const varbinder::ConstScopeFindResult &result)
+void VirtualLoadVar::Expand(PandaGen *pg, const ir::AstNode *node, const binder::ConstScopeFindResult &result)
 {
     if (result.variable->LexicalBound()) {
         ExpandLoadLexVar(pg, node, result);
@@ -71,9 +71,9 @@ void VirtualLoadVar::Expand(PandaGen *pg, const ir::AstNode *node, const varbind
 
 // VirtualStoreVar
 
-static void StoreLocalExport(PandaGen *pg, const ir::AstNode *node, varbinder::Variable *variable)
+static void StoreLocalExport(PandaGen *pg, const ir::AstNode *node, binder::Variable *variable)
 {
-    if (!variable->HasFlag(varbinder::VariableFlags::LOCAL_EXPORT) || !pg->Scope()->IsModuleScope()) {
+    if (!variable->HasFlag(binder::VariableFlags::LOCAL_EXPORT) || !pg->Scope()->IsModuleScope()) {
         return;
     }
 
@@ -86,10 +86,10 @@ static void StoreLocalExport(PandaGen *pg, const ir::AstNode *node, varbinder::V
     }
 }
 
-static void ExpandStoreLexVar(PandaGen *pg, const ir::AstNode *node, const varbinder::ConstScopeFindResult &result,
+static void ExpandStoreLexVar(PandaGen *pg, const ir::AstNode *node, const binder::ConstScopeFindResult &result,
                               bool is_decl)
 {
-    varbinder::LocalVariable *local = result.variable->AsLocalVariable();
+    binder::LocalVariable *local = result.variable->AsLocalVariable();
 
     const auto *decl = result.variable->Declaration();
 
@@ -106,7 +106,7 @@ static void ExpandStoreLexVar(PandaGen *pg, const ir::AstNode *node, const varbi
     StoreLocalExport(pg, node, local);
 }
 
-static void ExpandStoreNormalVar(PandaGen *pg, const ir::AstNode *node, const varbinder::ConstScopeFindResult &result,
+static void ExpandStoreNormalVar(PandaGen *pg, const ir::AstNode *node, const binder::ConstScopeFindResult &result,
                                  bool is_decl)
 {
     auto *local = result.variable->AsLocalVariable();
@@ -124,7 +124,7 @@ static void ExpandStoreNormalVar(PandaGen *pg, const ir::AstNode *node, const va
     StoreLocalExport(pg, node, local);
 }
 
-void VirtualStoreVar::Expand(PandaGen *pg, const ir::AstNode *node, const varbinder::ConstScopeFindResult &result,
+void VirtualStoreVar::Expand(PandaGen *pg, const ir::AstNode *node, const binder::ConstScopeFindResult &result,
                              bool is_decl)
 {
     if (result.variable->LexicalBound()) {

@@ -16,7 +16,7 @@
 #ifndef ES2PANDA_COMPILER_SCOPES_LEXENV_H
 #define ES2PANDA_COMPILER_SCOPES_LEXENV_H
 
-#include "varbinder/scope.h"
+#include "binder/scope.h"
 #include "ir/irnode.h"
 
 namespace panda::es2panda::compiler {
@@ -26,15 +26,14 @@ class VirtualLoadVar {
 public:
     VirtualLoadVar() = delete;
 
-    static void Expand(PandaGen *pg, const ir::AstNode *node, const varbinder::ConstScopeFindResult &result);
+    static void Expand(PandaGen *pg, const ir::AstNode *node, const binder::ConstScopeFindResult &result);
 };
 
 class VirtualStoreVar {
 public:
     VirtualStoreVar() = delete;
 
-    static void Expand(PandaGen *pg, const ir::AstNode *node, const varbinder::ConstScopeFindResult &result,
-                       bool is_decl);
+    static void Expand(PandaGen *pg, const ir::AstNode *node, const binder::ConstScopeFindResult &result, bool is_decl);
 };
 }  // namespace panda::es2panda::compiler
 

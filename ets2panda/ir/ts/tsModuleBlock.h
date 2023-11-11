@@ -16,13 +16,13 @@
 #ifndef ES2PANDA_IR_TS_MODULE_BLOCK_H
 #define ES2PANDA_IR_TS_MODULE_BLOCK_H
 
-#include "varbinder/scope.h"
+#include "binder/scope.h"
 #include "ir/statement.h"
 
 namespace panda::es2panda::ir {
 class TSModuleBlock : public Statement {
 public:
-    explicit TSModuleBlock(varbinder::LocalScope *scope, ArenaVector<Statement *> &&statements)
+    explicit TSModuleBlock(binder::LocalScope *scope, ArenaVector<Statement *> &&statements)
         : Statement(AstNodeType::TS_MODULE_BLOCK), scope_(scope), statements_(std::move(statements))
     {
     }
@@ -32,7 +32,7 @@ public:
         return true;
     }
 
-    varbinder::LocalScope *Scope() const override
+    binder::LocalScope *Scope() const override
     {
         return scope_;
     }
@@ -50,7 +50,7 @@ public:
     checker::Type *Check([[maybe_unused]] checker::ETSChecker *checker) override;
 
 private:
-    varbinder::LocalScope *scope_;
+    binder::LocalScope *scope_;
     ArenaVector<Statement *> statements_;
 };
 }  // namespace panda::es2panda::ir

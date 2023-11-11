@@ -15,9 +15,9 @@
 
 #include "tsTypeReference.h"
 
-#include "varbinder/declaration.h"
-#include "varbinder/scope.h"
-#include "varbinder/variable.h"
+#include "binder/declaration.h"
+#include "binder/scope.h"
+#include "binder/variable.h"
 #include "checker/TSchecker.h"
 #include "ir/astDump.h"
 #include "ir/expressions/identifier.h"
@@ -86,7 +86,7 @@ checker::Type *TSTypeReference::GetType([[maybe_unused]] checker::TSChecker *che
     }
 
     ASSERT(type_name_->IsIdentifier());
-    varbinder::Variable *var = type_name_->AsIdentifier()->Variable();
+    binder::Variable *var = type_name_->AsIdentifier()->Variable();
 
     if (var == nullptr) {
         checker->ThrowTypeError({"Cannot find name ", type_name_->AsIdentifier()->Name()}, Start());

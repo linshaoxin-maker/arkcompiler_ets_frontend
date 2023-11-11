@@ -15,7 +15,7 @@
 
 #include "regExpLiteral.h"
 
-#include "varbinder/variable.h"
+#include "binder/variable.h"
 #include "compiler/core/pandagen.h"
 #include "compiler/core/regScope.h"
 #include "checker/TSchecker.h"
@@ -37,6 +37,7 @@ void RegExpLiteral::Compile(compiler::PandaGen *pg) const
 
 checker::Type *RegExpLiteral::Check(checker::TSChecker *checker)
 {
+    // TODO(aszilagyi);
     return checker->GlobalAnyType();
 }
 

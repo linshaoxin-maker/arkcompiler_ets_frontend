@@ -19,7 +19,7 @@
 #include "checker/types/type.h"
 
 #include "checker/types/ts/objectDescriptor.h"
-#include "varbinder/variable.h"
+#include "binder/variable.h"
 #include "util/ustring.h"
 #include "util/enumbitops.h"
 
@@ -121,7 +121,7 @@ public:
         return desc_->number_index_info;
     }
 
-    virtual ArenaVector<varbinder::LocalVariable *> Properties()
+    virtual ArenaVector<binder::LocalVariable *> Properties()
     {
         return desc_->properties;
     }
@@ -136,13 +136,12 @@ public:
         return desc_;
     }
 
-    void AddProperty(varbinder::LocalVariable *prop)
+    void AddProperty(binder::LocalVariable *prop)
     {
         desc_->properties.push_back(prop);
     }
 
-    virtual varbinder::LocalVariable *GetProperty(const util::StringView &name,
-                                                  [[maybe_unused]] bool search_in_base) const
+    virtual binder::LocalVariable *GetProperty(const util::StringView &name, [[maybe_unused]] bool search_in_base) const
     {
         for (auto *it : desc_->properties) {
             if (name == it->Name()) {

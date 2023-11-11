@@ -16,8 +16,8 @@
 #ifndef ES2PANDA_COMPILER_SCOPES_SCOPE_H
 #define ES2PANDA_COMPILER_SCOPES_SCOPE_H
 
-#include "varbinder/declaration.h"
-#include "varbinder/variable.h"
+#include "binder/declaration.h"
+#include "binder/variable.h"
 #include "es2panda.h"
 #include "util/enumbitops.h"
 #include "util/ustring.h"
@@ -31,7 +31,7 @@ class IRNode;
 class CompilerContext;
 }  // namespace panda::es2panda::compiler
 
-namespace panda::es2panda::varbinder {
+namespace panda::es2panda::binder {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_CLASSES(type, className) class className;
 SCOPE_TYPES(DECLARE_CLASSES)
@@ -212,8 +212,7 @@ public:
     Variable *AddDecl(ArenaAllocator *allocator, Decl *decl, [[maybe_unused]] ScriptExtension extension)
     {
         decls_.push_back(decl);
-        return AddBinding(allocator, FindLocal(decl->Name(), varbinder::ResolveBindingOptions::BINDINGS), decl,
-                          extension);
+        return AddBinding(allocator, FindLocal(decl->Name()), decl, extension);
     }
 
     Variable *AddTsDecl(ArenaAllocator *allocator, Decl *decl, [[maybe_unused]] ScriptExtension extension)
@@ -228,7 +227,7 @@ public:
     template <typename DeclType, typename VariableType>
     VariableType *AddDecl(ArenaAllocator *allocator, util::StringView name, VariableFlags flags);
 
-    template <typename DeclType = varbinder::LetDecl, typename VariableType = varbinder::LocalVariable>
+    template <typename DeclType = binder::LetDecl, typename VariableType = binder::LocalVariable>
     static VariableType *CreateVar(ArenaAllocator *allocator, util::StringView name, VariableFlags flags,
                                    ir::AstNode *node);
 
@@ -248,7 +247,9 @@ public:
     virtual Variable *AddBinding(ArenaAllocator *allocator, Variable *current_variable, Decl *new_decl,
                                  [[maybe_unused]] ScriptExtension extension) = 0;
 
-    virtual Variable *FindLocal(const util::StringView &name, ResolveBindingOptions options) const;
+    // NOLINTNEXTLINE(google-default-arguments)
+    virtual Variable *FindLocal(const util::StringView &name,
+                                ResolveBindingOptions options = ResolveBindingOptions::BINDINGS) const;
 
     ConstScopeFindResult Find(const util::StringView &name,
                               ResolveBindingOptions options = ResolveBindingOptions::BINDINGS) const;
@@ -288,8 +289,6 @@ protected:
 
     Variable *AddLocal(ArenaAllocator *allocator, Variable *current_variable, Decl *new_decl,
                        [[maybe_unused]] ScriptExtension extension);
-
-    Variable *AddLocalVar(ArenaAllocator *allocator, Decl *new_decl);
 
 private:
     template <
@@ -644,45 +643,12 @@ public:
         return anonymous_class_idx_++;
     }
 
-    Variable *FindLocal(const util::StringView &name, ResolveBindingOptions options) const override;
+    // NOLINTNEXTLINE(google-default-arguments)
+    Variable *FindLocal(const util::StringView &name,
+                        ResolveBindingOptions options = ResolveBindingOptions::BINDINGS) const override;
 
     Variable *AddBinding(ArenaAllocator *allocator, Variable *current_variable, Decl *new_decl,
                          [[maybe_unused]] ScriptExtension extension) override;
-
-    class BindingProps {
-    public:
-        BindingProps() = default;
-
-        void SetFlagsType(VariableFlags flags_type)
-        {
-            flags_ |= flags_type;
-        }
-        void SetBindingProps(VariableFlags flags, ir::Identifier *ident, LocalScope *target_scope)
-        {
-            flags_ |= flags;
-            ident_ = ident;
-            target_scope_ = target_scope;
-        }
-        VariableFlags GetFlags() const
-        {
-            return flags_;
-        }
-        ir::Identifier *GetIdent()
-        {
-            return ident_;
-        }
-        LocalScope *GetTargetScope()
-        {
-            return target_scope_;
-        }
-
-    private:
-        VariableFlags flags_ = VariableFlags::NONE;
-        ir::Identifier *ident_ {};
-        LocalScope *target_scope_ {};
-    };
-
-    void SetBindingProps(Decl *new_decl, BindingProps *props, bool is_static);
 
 private:
     LocalScope *type_alias_scope_;
@@ -833,7 +799,7 @@ public:
     using ModuleEntry = ArenaVector<std::pair<K, V>>;
     using ImportDeclList = ArenaVector<ImportDecl *>;
     using ExportDeclList = ArenaVector<ExportDecl *>;
-    using LocalExportNameMap = ArenaMultiMap<varbinder::Variable *, util::StringView>;
+    using LocalExportNameMap = ArenaMultiMap<binder::Variable *, util::StringView>;
 
     explicit ModuleScope(ArenaAllocator *allocator)
         : GlobalScope(allocator),
@@ -962,7 +928,7 @@ T *Scope::NewDecl(ArenaAllocator *allocator, Args &&...args)
 template <typename DeclType, typename VariableType>
 VariableType *Scope::AddDecl(ArenaAllocator *allocator, util::StringView name, VariableFlags flags)
 {
-    if (FindLocal(name, varbinder::ResolveBindingOptions::BINDINGS)) {
+    if (FindLocal(name)) {
         return nullptr;
     }
 
@@ -995,6 +961,6 @@ Variable *Scope::PropagateBinding(ArenaAllocator *allocator, util::StringView na
     res->second->Reset(std::forward<Args>(args)...);
     return res->second;
 }
-}  // namespace panda::es2panda::varbinder
+}  // namespace panda::es2panda::binder
 
 #endif
