@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,20 +21,19 @@
 #include "ir/expressions/assignmentExpression.h"
 #include "ir/expressions/identifier.h"
 #include "ir/expressions/binaryExpression.h"
-#include "ir/expressions/callExpression.h"
 #include "ir/expressions/memberExpression.h"
 #include "ir/expressions/templateLiteral.h"
 #include "ir/statements/breakStatement.h"
 #include "ir/statements/continueStatement.h"
 #include "ir/statements/tryStatement.h"
 #include "ir/ts/tsInterfaceDeclaration.h"
-#include "varbinder/variableFlags.h"
+#include "binder/variableFlags.h"
 #include "compiler/base/lreference.h"
 #include "compiler/base/catchTable.h"
 #include "compiler/core/dynamicContext.h"
 #include "compiler/core/compilerContext.h"
-#include "varbinder/ETSBinder.h"
-#include "varbinder/variable.h"
+#include "binder/ETSBinder.h"
+#include "binder/variable.h"
 #include "checker/types/type.h"
 #include "checker/types/typeFlag.h"
 #include "checker/checker.h"
@@ -45,8 +44,8 @@
 
 namespace panda::es2panda::compiler {
 
-ETSGen::ETSGen(ArenaAllocator *allocator, RegSpiller *spiller, CompilerContext *context,
-               varbinder::FunctionScope *scope, ProgramElement *program_element, AstCompiler *astcompiler) noexcept
+ETSGen::ETSGen(ArenaAllocator *allocator, RegSpiller *spiller, CompilerContext *context, binder::FunctionScope *scope,
+               ProgramElement *program_element, AstCompiler *astcompiler) noexcept
     : CodeGen(allocator, spiller, context, scope, program_element, astcompiler),
       containing_object_type_(util::Helpers::GetContainingObjectType(RootNode()))
 {
@@ -68,9 +67,9 @@ const checker::ETSChecker *ETSGen::Checker() const noexcept
     return Context()->Checker()->AsETSChecker();
 }
 
-const varbinder::ETSBinder *ETSGen::VarBinder() const noexcept
+const binder::ETSBinder *ETSGen::Binder() const noexcept
 {
-    return Context()->VarBinder()->AsETSBinder();
+    return Context()->Binder()->AsETSBinder();
 }
 
 const checker::Type *ETSGen::ReturnType() const noexcept
@@ -114,7 +113,7 @@ void ETSGen::StoreAccumulator(const ir::AstNode *const node, const VReg vreg)
 {
     const auto *const acc_type = GetAccumulatorType();
 
-    if (acc_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT | checker::TypeFlag::ETS_UNION)) {
+    if (acc_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
         Ra().Emit<StaObj>(node, vreg);
     } else if (acc_type->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
         Ra().Emit<StaWide>(node, vreg);
@@ -129,7 +128,7 @@ void ETSGen::LoadAccumulator(const ir::AstNode *node, VReg vreg)
 {
     const auto *const vreg_type = GetVRegType(vreg);
 
-    if (vreg_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT | checker::TypeFlag::ETS_UNION)) {
+    if (vreg_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
         Ra().Emit<LdaObj>(node, vreg);
     } else if (vreg_type->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
         Ra().Emit<LdaWide>(node, vreg);
@@ -145,7 +144,7 @@ IRNode *ETSGen::AllocMov(const ir::AstNode *const node, const VReg vd, const VRe
     const auto *const source_type = GetVRegType(vs);
 
     auto *const mov = [this, source_type, node, vd, vs]() -> IRNode * {
-        if (source_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT | checker::TypeFlag::ETS_UNION)) {
+        if (source_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
             return Allocator()->New<MovObj>(node, vd, vs);
         }
         if (source_type->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
@@ -174,7 +173,7 @@ IRNode *ETSGen::AllocMov(const ir::AstNode *const node, OutVReg vd, const VReg v
     return Allocator()->New<Mov>(node, *vd.reg, vs);
 }
 
-checker::Type const *ETSGen::TypeForVar(varbinder::Variable const *var) const noexcept
+checker::Type const *ETSGen::TypeForVar(binder::Variable const *var) const noexcept
 {
     return Checker()->MaybeBoxedType(var, Allocator());
 }
@@ -183,7 +182,7 @@ void ETSGen::MoveVreg(const ir::AstNode *const node, const VReg vd, const VReg v
 {
     const auto *const source_type = GetVRegType(vs);
 
-    if (source_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT | checker::TypeFlag::ETS_UNION)) {
+    if (source_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
         Ra().Emit<MovObj>(node, vd, vs);
     } else if (source_type->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
         Ra().Emit<MovWide>(node, vd, vs);
@@ -194,11 +193,11 @@ void ETSGen::MoveVreg(const ir::AstNode *const node, const VReg vd, const VReg v
     SetVRegType(vd, source_type);
 }
 
-util::StringView ETSGen::FormDynamicModulePropReference(const varbinder::Variable *var)
+util::StringView ETSGen::FormDynamicModulePropReference(const binder::Variable *var)
 {
-    ASSERT(VarBinder()->IsDynamicModuleVariable(var) || VarBinder()->IsDynamicNamespaceVariable(var));
+    ASSERT(Binder()->IsDynamicModuleVariable(var) || Binder()->IsDynamicNamespaceVariable(var));
 
-    auto *data = VarBinder()->DynamicImportDataForVar(var);
+    auto *data = Binder()->DynamicImportDataForVar(var);
     ASSERT(data != nullptr);
 
     auto *import = data->import;
@@ -216,7 +215,7 @@ void ETSGen::LoadAccumulatorDynamicModule(const ir::AstNode *node, const ir::ETS
 util::StringView ETSGen::FormDynamicModulePropReference(const ir::ETSImportDeclaration *import)
 {
     std::stringstream ss;
-    auto pkg_name = VarBinder()->Program()->GetPackageName();
+    auto pkg_name = Binder()->Program()->GetPackageName();
     if (!pkg_name.Empty()) {
         ss << pkg_name << '.';
     }
@@ -227,11 +226,11 @@ util::StringView ETSGen::FormDynamicModulePropReference(const ir::ETSImportDecla
     return util::UString(ss.str(), Allocator()).View();
 }
 
-void ETSGen::LoadDynamicModuleVariable(const ir::AstNode *node, varbinder::Variable const *const var)
+void ETSGen::LoadDynamicModuleVariable(const ir::AstNode *node, binder::Variable const *const var)
 {
     RegScope rs(this);
 
-    auto *data = VarBinder()->DynamicImportDataForVar(var);
+    auto *data = Binder()->DynamicImportDataForVar(var);
     auto *import = data->import;
 
     LoadStaticProperty(node, var->TsType(), FormDynamicModulePropReference(var));
@@ -248,19 +247,19 @@ void ETSGen::LoadDynamicModuleVariable(const ir::AstNode *node, varbinder::Varia
     }
 }
 
-void ETSGen::LoadDynamicNamespaceVariable(const ir::AstNode *node, varbinder::Variable const *const var)
+void ETSGen::LoadDynamicNamespaceVariable(const ir::AstNode *node, binder::Variable const *const var)
 {
     LoadStaticProperty(node, var->TsType(), FormDynamicModulePropReference(var));
 }
 
-void ETSGen::LoadVar(const ir::AstNode *node, varbinder::Variable const *const var)
+void ETSGen::LoadVar(const ir::AstNode *node, binder::Variable const *const var)
 {
-    if (VarBinder()->IsDynamicModuleVariable(var)) {
+    if (Binder()->IsDynamicModuleVariable(var)) {
         LoadDynamicModuleVariable(node, var);
         return;
     }
 
-    if (VarBinder()->IsDynamicNamespaceVariable(var)) {
+    if (Binder()->IsDynamicNamespaceVariable(var)) {
         LoadDynamicNamespaceVariable(node, var);
         return;
     }
@@ -294,7 +293,7 @@ void ETSGen::LoadVar(const ir::AstNode *node, varbinder::Variable const *const v
         }
     }
 
-    if (var->HasFlag(varbinder::VariableFlags::BOXED) && !node->AsIdentifier()->IsIgnoreBox()) {
+    if (var->HasFlag(binder::VariableFlags::BOXED) && !node->AsIdentifier()->IsIgnoreBox()) {
         EmitLocalBoxGet(node, var->TsType());
     }
 
@@ -303,7 +302,7 @@ void ETSGen::LoadVar(const ir::AstNode *node, varbinder::Variable const *const v
     }
 }
 
-void ETSGen::StoreVar(const ir::AstNode *node, const varbinder::ConstScopeFindResult &result)
+void ETSGen::StoreVar(const ir::AstNode *node, const binder::ConstScopeFindResult &result)
 {
     auto *local = result.variable->AsLocalVariable();
     ApplyConversion(node, local->TsType());
@@ -319,7 +318,7 @@ void ETSGen::StoreVar(const ir::AstNode *node, const varbinder::ConstScopeFindRe
             break;
         }
         case ReferenceKind::LOCAL: {
-            if (local->HasFlag(varbinder::VariableFlags::BOXED)) {
+            if (local->HasFlag(binder::VariableFlags::BOXED)) {
                 EmitLocalBoxSet(node, local);
             } else {
                 StoreAccumulator(node, local->Vreg());
@@ -353,7 +352,7 @@ util::StringView ETSGen::FormClassPropReference(const checker::ETSObjectType *cl
     return util::StringView(*res.first);
 }
 
-util::StringView ETSGen::FormClassPropReference(varbinder::Variable const *const var)
+util::StringView ETSGen::FormClassPropReference(binder::Variable const *const var)
 {
     auto containing_object_type = util::Helpers::GetContainingObjectType(var->Declaration()->Node());
     return FormClassPropReference(containing_object_type, var->Name());
@@ -369,7 +368,7 @@ void ETSGen::StoreStaticOwnProperty(const ir::AstNode *node, const checker::Type
 void ETSGen::StoreStaticProperty(const ir::AstNode *const node, const checker::Type *prop_type,
                                  const util::StringView &full_name)
 {
-    if (prop_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT | checker::TypeFlag::ETS_UNION)) {
+    if (prop_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
         Sa().Emit<StstaticObj>(node, full_name);
     } else if (prop_type->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
         Sa().Emit<StstaticWide>(node, full_name);
@@ -381,7 +380,7 @@ void ETSGen::StoreStaticProperty(const ir::AstNode *const node, const checker::T
 void ETSGen::LoadStaticProperty(const ir::AstNode *const node, const checker::Type *prop_type,
                                 const util::StringView &full_name)
 {
-    if (prop_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT | checker::TypeFlag::ETS_UNION)) {
+    if (prop_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
         Sa().Emit<LdstaticObj>(node, full_name);
     } else if (prop_type->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
         Sa().Emit<LdstaticWide>(node, full_name);
@@ -397,7 +396,7 @@ void ETSGen::StoreProperty(const ir::AstNode *const node, const checker::Type *p
 {
     const auto full_name = FormClassPropReference(GetVRegType(obj_reg)->AsETSObjectType(), name);
 
-    if (node->IsIdentifier() && node->AsIdentifier()->Variable()->HasFlag(varbinder::VariableFlags::BOXED)) {
+    if (node->IsIdentifier() && node->AsIdentifier()->Variable()->HasFlag(binder::VariableFlags::BOXED)) {
         prop_type = Checker()->GlobalBuiltinBoxType(prop_type);
     }
     if (prop_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
@@ -412,10 +411,10 @@ void ETSGen::StoreProperty(const ir::AstNode *const node, const checker::Type *p
 void ETSGen::LoadProperty(const ir::AstNode *const node, const checker::Type *prop_type, const VReg obj_reg,
                           const util::StringView &full_name)
 {
-    if (node->IsIdentifier() && node->AsIdentifier()->Variable()->HasFlag(varbinder::VariableFlags::BOXED)) {
+    if (node->IsIdentifier() && node->AsIdentifier()->Variable()->HasFlag(binder::VariableFlags::BOXED)) {
         prop_type = Checker()->GlobalBuiltinBoxType(prop_type);
     }
-    if (prop_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT | checker::TypeFlag::ETS_UNION)) {
+    if (prop_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
         Ra().Emit<LdobjObj>(node, obj_reg, full_name);
     } else if (prop_type->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
         Ra().Emit<LdobjWide>(node, obj_reg, full_name);
@@ -424,28 +423,6 @@ void ETSGen::LoadProperty(const ir::AstNode *const node, const checker::Type *pr
     }
 
     SetAccumulatorType(prop_type);
-}
-
-void ETSGen::StoreUnionProperty([[maybe_unused]] const ir::AstNode *node, [[maybe_unused]] VReg obj_reg,
-                                [[maybe_unused]] const util::StringView &prop_name)
-{
-#ifdef PANDA_WITH_ETS
-    Ra().Emit<EtsStobjName>(node, obj_reg, prop_name);
-#else
-    UNREACHABLE();
-#endif  // PANDA_WITH_ETS
-}
-
-void ETSGen::LoadUnionProperty([[maybe_unused]] const ir::AstNode *const node,
-                               [[maybe_unused]] const checker::Type *prop_type, [[maybe_unused]] const VReg obj_reg,
-                               [[maybe_unused]] const util::StringView &prop_name)
-{
-#ifdef PANDA_WITH_ETS
-    Ra().Emit<EtsLdobjName>(node, obj_reg, prop_name);
-    SetAccumulatorType(prop_type);
-#else
-    UNREACHABLE();
-#endif  // PANDA_WITH_ETS
 }
 
 void ETSGen::StorePropertyDynamic(const ir::AstNode *node, const checker::Type *prop_type, VReg obj_reg,
@@ -495,7 +472,7 @@ void ETSGen::StorePropertyDynamic(const ir::AstNode *node, const checker::Type *
     StoreAccumulator(node, prop_name_reg);
 
     // Set property by name
-    Ra().Emit<Call, 3U>(node, method_name, obj_reg, prop_name_reg, prop_value_reg, dummy_reg_);
+    Ra().Emit<Call, 3>(node, method_name, obj_reg, prop_name_reg, prop_value_reg, dummy_reg_);
     SetAccumulatorType(Checker()->GlobalVoidType());
 }
 
@@ -537,7 +514,7 @@ void ETSGen::LoadPropertyDynamic(const ir::AstNode *node, const checker::Type *p
     StoreAccumulator(node, prop_name_object);
 
     // Get property by name
-    Ra().Emit<CallShort, 2U>(node, method_name, obj_reg, prop_name_object);
+    Ra().Emit<CallShort, 2>(node, method_name, obj_reg, prop_name_object);
     SetAccumulatorType(type);
 
     if (prop_type != type && !prop_type->IsETSDynamicType()) {
@@ -555,7 +532,7 @@ void ETSGen::StoreElementDynamic(const ir::AstNode *node, VReg object_reg, VReg 
     StoreAccumulator(node, value_reg);
 
     // Set property by index
-    Ra().Emit<Call, 3U>(node, method_name, object_reg, index, value_reg, dummy_reg_);
+    Ra().Emit<Call, 3>(node, method_name, object_reg, index, value_reg, dummy_reg_);
     SetAccumulatorType(Checker()->GlobalVoidType());
 }
 
@@ -569,7 +546,7 @@ void ETSGen::LoadElementDynamic(const ir::AstNode *node, VReg object_reg, Langua
     StoreAccumulator(node, index_reg);
 
     // Get property by index
-    Ra().Emit<CallShort, 2U>(node, method_name, object_reg, index_reg);
+    Ra().Emit<CallShort, 2>(node, method_name, object_reg, index_reg);
     SetAccumulatorType(Checker()->GlobalBuiltinDynamicType(lang));
 }
 
@@ -634,25 +611,25 @@ void ETSGen::InitLambdaObject(const ir::AstNode *node, checker::Signature *signa
             Ra().Emit<InitobjShort>(node, name, arguments[0], VReg::RegStart());
             break;
         }
-        case 2U: {
+        case 2: {
             CONV_LAMBDA_CTOR_ARG(0);
             CONV_LAMBDA_CTOR_ARG(1);
             Ra().Emit<InitobjShort>(node, name, arguments[0], arguments[1]);
             break;
         }
-        case 3U: {
+        case 3: {
             CONV_LAMBDA_CTOR_ARG(0);
             CONV_LAMBDA_CTOR_ARG(1);
             CONV_LAMBDA_CTOR_ARG(2);
-            Ra().Emit<Initobj>(node, name, arguments[0], arguments[1], arguments[2U], VReg::RegStart());
+            Ra().Emit<Initobj>(node, name, arguments[0], arguments[1], arguments[2], VReg::RegStart());
             break;
         }
-        case 4U: {
+        case 4: {
             CONV_LAMBDA_CTOR_ARG(0);
             CONV_LAMBDA_CTOR_ARG(1);
             CONV_LAMBDA_CTOR_ARG(2);
             CONV_LAMBDA_CTOR_ARG(3);
-            Ra().Emit<Initobj>(node, name, arguments[0], arguments[1], arguments[2U], arguments[3U]);
+            Ra().Emit<Initobj>(node, name, arguments[0], arguments[1], arguments[2], arguments[3]);
             break;
         }
         default: {
@@ -674,15 +651,12 @@ void ETSGen::InitLambdaObject(const ir::AstNode *node, checker::Signature *signa
 
 VReg ETSGen::GetThisReg() const
 {
-    const auto res = Scope()->Find(varbinder::VarBinder::MANDATORY_PARAM_THIS);
+    const auto res = Scope()->Find(binder::Binder::MANDATORY_PARAM_THIS);
     return res.variable->AsLocalVariable()->Vreg();
 }
 
 void ETSGen::LoadDefaultValue([[maybe_unused]] const ir::AstNode *node, [[maybe_unused]] const checker::Type *type)
 {
-    if (type->IsETSUnionType()) {
-        type = Checker()->GetGlobalTypesHolder()->GlobalETSObjectType();
-    }
     if (type->IsETSObjectType() || type->IsETSArrayType()) {
         LoadAccumulatorNull(node, type);
     } else if (type->IsETSBooleanType()) {
@@ -708,7 +682,7 @@ void ETSGen::ReturnAcc(const ir::AstNode *node)
 {
     const auto *const acc_type = GetAccumulatorType();
 
-    if (acc_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT | checker::TypeFlag::ETS_UNION)) {
+    if (acc_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
         Sa().Emit<ReturnObj>(node);
     } else if (acc_type->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
         Sa().Emit<ReturnWide>(node);
@@ -721,7 +695,7 @@ void ETSGen::EmitIsInstance(const ir::AstNode *const node, const VReg lhs)
 {
     if (GetAccumulatorType()->IsETSDynamicType() || GetVRegType(lhs)->IsETSDynamicType()) {
         ASSERT(GetAccumulatorType()->IsETSDynamicType() && GetVRegType(lhs)->IsETSDynamicType());
-        Ra().Emit<CallShort, 2U>(node, Signatures::BUILTIN_JSRUNTIME_INSTANCE_OF, lhs, MoveAccToReg(node));
+        Ra().Emit<CallShort, 2>(node, Signatures::BUILTIN_JSRUNTIME_INSTANCE_OF, lhs, MoveAccToReg(node));
     } else {
         SwapBinaryOpArgs(node, lhs);
         if (!GetVRegType(lhs)->IsETSNullType()) {
@@ -1073,7 +1047,7 @@ void ETSGen::EmitLocalBoxGet(ir::AstNode const *node, checker::Type const *conte
     SetAccumulatorType(content_type);
 }
 
-void ETSGen::EmitLocalBoxSet(ir::AstNode const *node, varbinder::LocalVariable *lhs_var)
+void ETSGen::EmitLocalBoxSet(ir::AstNode const *node, binder::LocalVariable *lhs_var)
 {
     auto *content_type = lhs_var->TsType();
     auto vreg = lhs_var->Vreg();
@@ -1449,7 +1423,7 @@ void ETSGen::CastToInt(const ir::AstNode *node)
 void ETSGen::CastToArrayOrObject(const ir::AstNode *const node, const checker::Type *const target_type,
                                  const bool unchecked)
 {
-    ASSERT(GetAccumulatorType()->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT | checker::TypeFlag::ETS_UNION));
+    ASSERT(GetAccumulatorType()->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT));
 
     const auto *const source_type = GetAccumulatorType();
     if (source_type->IsETSDynamicType() && target_type->IsETSDynamicType()) {
@@ -1482,7 +1456,7 @@ void ETSGen::CastDynamicToObject(const ir::AstNode *node, const checker::Type *t
         return;
     }
 
-    // NOTE: itrubachev. Introduce checker::TypeFlag::LAMBDA_OBJECT and lambda object type itself in es2panda.
+    // TODO(itrubachev) Introduce checker::TypeFlag::LAMBDA_OBJECT and lambda object type itself in es2panda.
     // Now lambda object is any class with invoke method, that seems strange
     if (target_type->IsLambdaObject()) {
         VReg dyn_obj_reg = AllocReg();
@@ -1512,7 +1486,7 @@ void ETSGen::CastDynamicToObject(const ir::AstNode *node, const checker::Type *t
         Sa().Emit<LdaType>(node, util::UString(ss.str(), Allocator()).View());
         StoreAccumulator(node, type_reg);
 
-        Ra().Emit<CallShort, 2U>(node, method_name, dyn_obj_reg, type_reg);
+        Ra().Emit<CallShort, 2>(node, method_name, dyn_obj_reg, type_reg);
         SetAccumulatorType(target_type);
         return;
     }
@@ -1679,7 +1653,7 @@ void ETSGen::CastDynamicTo(const ir::AstNode *node, enum checker::TypeFlag type_
 void ETSGen::EmitCheckedNarrowingReferenceConversion(const ir::AstNode *const node,
                                                      const checker::Type *const target_type)
 {
-    ASSERT(target_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT | checker::TypeFlag::ETS_UNION));
+    ASSERT(target_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT));
 
     if (target_type->IsETSObjectType()) {
         Sa().Emit<Checkcast>(node, target_type->AsETSObjectType()->AssemblerName());
@@ -1904,8 +1878,7 @@ void ETSGen::Negate(const ir::AstNode *node)
 
 void ETSGen::LogicalNot(const ir::AstNode *node)
 {
-    ASSERT(GetAccumulatorType()->IsConditionalExprType());
-    ResolveConditionalResultIfFalse<true, false>(node);
+    ASSERT(GetAccumulatorType()->IsETSBooleanType());
     Sa().Emit<Xori>(node, 1);
 }
 
@@ -2113,27 +2086,21 @@ void ETSGen::BuildTemplateString(const ir::TemplateLiteral *node)
     auto builder = AllocReg();
     StoreAccumulator(node, builder);
 
-    // Just to reduce extra nested level(s):
-    auto const append_expressions = [this, &builder](ArenaVector<ir::Expression *> const &expressions,
-                                                     ArenaVector<ir::TemplateElement *> const &quasis) -> void {
-        auto const num = expressions.size();
-        std::size_t i = 0U;
-
-        while (i < num) {
-            StringBuilderAppend(expressions[i], builder);
-            if (!quasis[++i]->Raw().Empty()) {
-                StringBuilderAppend(quasis[i], builder);
-            }
-        }
-    };
-
     if (auto const &quasis = node->Quasis(); !quasis.empty()) {
         if (!quasis[0]->Raw().Empty()) {
             StringBuilderAppend(quasis[0], builder);
         }
 
         if (auto const &expressions = node->Expressions(); !expressions.empty()) {
-            append_expressions(expressions, quasis);
+            auto const num = expressions.size();
+            std::size_t i = 0U;
+
+            while (i < num) {
+                StringBuilderAppend(expressions[i], builder);
+                if (!quasis[++i]->Raw().Empty()) {
+                    StringBuilderAppend(quasis[i], builder);
+                }
+            }
         }
     }
 
@@ -2268,18 +2235,6 @@ void ETSGen::LoadStringLength(const ir::AstNode *node)
 {
     Ra().Emit<CallVirtAccShort, 0>(node, Signatures::BUILTIN_STRING_LENGTH, dummy_reg_, 0);
     SetAccumulatorType(Checker()->GlobalIntType());
-}
-
-void ETSGen::FloatIsNaN(const ir::AstNode *node)
-{
-    Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_FLOAT_IS_NAN, dummy_reg_, 0);
-    SetAccumulatorType(Checker()->GlobalETSBooleanType());
-}
-
-void ETSGen::DoubleIsNaN(const ir::AstNode *node)
-{
-    Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_DOUBLE_IS_NAN, dummy_reg_, 0);
-    SetAccumulatorType(Checker()->GlobalETSBooleanType());
 }
 
 void ETSGen::LoadStringChar(const ir::AstNode *node, const VReg string_obj, const VReg char_index)

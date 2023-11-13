@@ -132,7 +132,7 @@ public:
 
         if (reg >= VReg::PARAM_START) {
             new_reg = reg - VReg::PARAM_START + reg_count;
-            // NOTE: dbatiz. Remove this else if, and fix the regIndexes
+            // TODO(dbatiz) Remove this else if, and fix the regIndexes
         } else if (reg <= reg_count + VReg::MANDATORY_PARAM_NUM) {
             new_reg = VReg::REG_START - total_regs + VReg::MANDATORY_PARAM_NUM + reg;
         } else {

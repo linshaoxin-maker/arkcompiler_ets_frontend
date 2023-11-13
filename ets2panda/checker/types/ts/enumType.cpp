@@ -15,7 +15,7 @@
 
 #include "enumType.h"
 
-#include "varbinder/variable.h"
+#include "binder/variable.h"
 
 namespace panda::es2panda::checker {
 void EnumType::ToString(std::stringstream &ss) const
@@ -25,7 +25,7 @@ void EnumType::ToString(std::stringstream &ss) const
 
 void EnumType::Identical([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *other)
 {
-    // NOTE: aszilagyi
+    // TODO(aszilagyi)
 }
 
 void EnumType::AssignmentTarget(TypeRelation *relation, Type *source)
@@ -37,14 +37,14 @@ void EnumType::AssignmentTarget(TypeRelation *relation, Type *source)
 
 TypeFacts EnumType::GetTypeFacts() const
 {
-    // NOTE: aszilagyi
+    // TODO(aszilagyi)
     return TypeFacts::NUMBER_FACTS;
 }
 
 Type *EnumType::Instantiate([[maybe_unused]] ArenaAllocator *allocator, [[maybe_unused]] TypeRelation *relation,
                             [[maybe_unused]] GlobalTypesHolder *global_types)
 {
-    // NOTE: aszilagyi
+    // TODO(aszilagyi)
     return this;
 }
 }  // namespace panda::es2panda::checker

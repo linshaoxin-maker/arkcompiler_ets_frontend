@@ -65,16 +65,6 @@ public:
         return right_;
     }
 
-    [[nodiscard]] const Expression *Result() const noexcept
-    {
-        return result_;
-    }
-
-    [[nodiscard]] Expression *Result() noexcept
-    {
-        return result_;
-    }
-
     [[nodiscard]] lexer::TokenType OperatorType() const noexcept
     {
         return operator_;
@@ -85,24 +75,12 @@ public:
         return operator_ = token_type;
     }
 
-    void SetResult(Expression *expr) noexcept
-    {
-        left_ = expr;
-        SetStart(left_->Start());
-    }
-
-    [[nodiscard]] bool IsLogicalExtended() const noexcept
-    {
-        return operator_ == lexer::TokenType::PUNCTUATOR_LOGICAL_AND ||
-               operator_ == lexer::TokenType::PUNCTUATOR_LOGICAL_OR;
-    }
-
-    [[nodiscard]] varbinder::Variable *Target() noexcept
+    [[nodiscard]] binder::Variable *Target() noexcept
     {
         return target_;
     }
 
-    [[nodiscard]] varbinder::Variable *Target() const noexcept
+    [[nodiscard]] binder::Variable *Target() const noexcept
     {
         return target_;
     }
@@ -132,9 +110,8 @@ protected:
 private:
     Expression *left_ = nullptr;
     Expression *right_ = nullptr;
-    Expression *result_ = nullptr;
     lexer::TokenType operator_;
-    varbinder::Variable *target_ {};
+    binder::Variable *target_ {};
     checker::Type *operation_type_ {};
 };
 }  // namespace panda::es2panda::ir

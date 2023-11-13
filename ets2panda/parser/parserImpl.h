@@ -16,7 +16,7 @@
 #ifndef ES2PANDA_PARSER_CORE_PARSER_IMPL_H
 #define ES2PANDA_PARSER_CORE_PARSER_IMPL_H
 
-#include "varbinder/varbinder.h"
+#include "binder/binder.h"
 #include "es2panda.h"
 #include "ir/astNode.h"
 #include "lexer/token/sourceLocation.h"
@@ -102,7 +102,7 @@ enum class CatchClauseType;
 namespace panda::es2panda::parser {
 
 using FunctionSignature = std::tuple<ir::TSTypeParameterDeclaration *, ArenaVector<ir::Expression *>, ir::TypeNode *,
-                                     varbinder::FunctionParamScope *, panda::es2panda::ir::ScriptFunctionFlags>;
+                                     binder::FunctionParamScope *, panda::es2panda::ir::ScriptFunctionFlags>;
 
 class ClassElementDescriptor {
 public:
@@ -123,16 +123,16 @@ public:
     bool is_index_signature {};
     bool class_method {};
     bool class_field {};
-    varbinder::LocalScope *static_field_scope {};
-    varbinder::LocalScope *static_method_scope {};
-    varbinder::LocalScope *instance_field_scope {};
-    varbinder::LocalScope *instance_method_scope {};
+    binder::LocalScope *static_field_scope {};
+    binder::LocalScope *static_method_scope {};
+    binder::LocalScope *instance_field_scope {};
+    binder::LocalScope *instance_method_scope {};
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
 class ArrowFunctionDescriptor {
 public:
-    explicit ArrowFunctionDescriptor(ArenaVector<ir::Expression *> &&p, varbinder::FunctionParamScope *ps,
+    explicit ArrowFunctionDescriptor(ArenaVector<ir::Expression *> &&p, binder::FunctionParamScope *ps,
                                      lexer::SourcePosition sl, ParserStatus ns)
         : params(p), param_scope(ps), start_loc(sl), new_status(ns)
     {
@@ -140,7 +140,7 @@ public:
 
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
     ArenaVector<ir::Expression *> params;
-    varbinder::FunctionParamScope *param_scope;
+    binder::FunctionParamScope *param_scope;
     lexer::SourcePosition start_loc;
     ParserStatus new_status;
     // NOLINTEND(misc-non-private-member-variables-in-classes)
@@ -163,7 +163,6 @@ enum class TypeAnnotationParsingOptions : uint32_t {
     ALLOW_WILDCARD = 1U << 12U,
     IGNORE_FUNCTION_TYPE = 1U << 13U,
     ALLOW_DECLARATION_SITE_VARIANCE = 1U << 14U,
-    DISALLOW_UNION = 1U << 15U,
 };
 
 DEFINE_BITOPS(TypeAnnotationParsingOptions)
@@ -282,9 +281,9 @@ protected:
         return program_->Allocator();
     }
 
-    varbinder::VarBinder *VarBinder()
+    binder::Binder *Binder()
     {
-        return program_->VarBinder();
+        return program_->Binder();
     }
 
     bool CheckModuleAsModifier();
@@ -298,7 +297,7 @@ protected:
     ir::YieldExpression *ParseYieldExpression();
     virtual ir::Expression *ParsePotentialExpressionSequence(ir::Expression *expr, ExpressionParseFlags flags);
     ir::ArrowFunctionExpression *ParseArrowFunctionExpressionBody(ArrowFunctionContext *arrow_function_context,
-                                                                  varbinder::FunctionScope *function_scope,
+                                                                  binder::FunctionScope *function_scope,
                                                                   ArrowFunctionDescriptor *desc,
                                                                   ir::TSTypeParameterDeclaration *type_param_decl,
                                                                   ir::TypeNode *return_type_annotation);
@@ -335,7 +334,7 @@ protected:
     virtual ir::Statement *ParseAssertStatement();
     virtual void ValidateLabeledStatement(lexer::TokenType type);
     ir::BlockStatement *ParseBlockStatement();
-    ir::BlockStatement *ParseBlockStatement(varbinder::Scope *scope);
+    ir::BlockStatement *ParseBlockStatement(binder::Scope *scope);
     ir::EmptyStatement *ParseEmptyStatement();
     ir::Statement *ParseForStatement();
     ir::IfStatement *ParseIfStatement();
@@ -483,7 +482,7 @@ protected:
     virtual ir::ClassElement *ParseClassStaticBlock();
     virtual ParserStatus ValidateArrowParameter(ir::Expression *expr, bool *seen_optional);
     virtual ArrowFunctionDescriptor ConvertToArrowParameter(ir::Expression *expr, bool is_async,
-                                                            varbinder::FunctionParamScope *param_scope);
+                                                            binder::FunctionParamScope *param_scope);
     virtual ir::Expression *ParseNewExpression();
 
     virtual ir::TSTypeParameterDeclaration *ParseFunctionTypeParameters()
@@ -503,7 +502,7 @@ protected:
 
     virtual std::tuple<bool, ir::BlockStatement *, lexer::SourcePosition, bool> ParseFunctionBody(
         const ArenaVector<ir::Expression *> &params, ParserStatus new_status, ParserStatus context_status,
-        varbinder::FunctionScope *func_scope);
+        binder::FunctionScope *func_scope);
     virtual ir::AstNode *ParseImportDefaultSpecifier(ArenaVector<ir::AstNode *> *specifiers);
     virtual ir::Statement *ParseExportDeclaration(StatementParsingFlags flags);
 
@@ -540,7 +539,7 @@ protected:
     ClassBody ParseClassBody(ir::ClassDefinitionModifiers modifiers, ir::ModifierFlags flags = ir::ModifierFlags::NONE,
                              ir::Identifier *ident_node = nullptr);
 
-    virtual varbinder::Decl *BindClassName(ir::Identifier *ident_node);
+    virtual binder::Decl *BindClassName(ir::Identifier *ident_node);
 
     Program *GetProgram() const
     {
@@ -631,8 +630,8 @@ public:
 template <typename T>
 class IterationContext : public SavedStatusContext<ParserStatus::IN_ITERATION> {
 public:
-    explicit IterationContext(ParserContext *ctx, varbinder::VarBinder *varbinder)
-        : SavedStatusContext(ctx), lexical_scope_(varbinder)
+    explicit IterationContext(ParserContext *ctx, binder::Binder *binder)
+        : SavedStatusContext(ctx), lexical_scope_(binder)
     {
     }
 
@@ -646,13 +645,13 @@ public:
     }
 
 private:
-    varbinder::LexicalScope<T> lexical_scope_;
+    binder::LexicalScope<T> lexical_scope_;
 };
 
 class FunctionParameterContext : public SavedStatusContext<ParserStatus::FUNCTION_PARAM> {
 public:
-    explicit FunctionParameterContext(ParserContext *ctx, varbinder::VarBinder *varbinder)
-        : SavedStatusContext(ctx), lexical_scope_(varbinder)
+    explicit FunctionParameterContext(ParserContext *ctx, binder::Binder *binder)
+        : SavedStatusContext(ctx), lexical_scope_(binder)
     {
     }
 
@@ -666,7 +665,7 @@ public:
     ~FunctionParameterContext() = default;
 
 private:
-    varbinder::LexicalScope<varbinder::FunctionParamScope> lexical_scope_;
+    binder::LexicalScope<binder::FunctionParamScope> lexical_scope_;
 };
 
 class SavedParserContext {
@@ -686,9 +685,9 @@ public:
     }
 
 protected:
-    varbinder::VarBinder *VarBinder()
+    binder::Binder *Binder()
     {
-        return parser_->VarBinder();
+        return parser_->Binder();
     }
 
 private:
@@ -777,8 +776,8 @@ private:
 
 class SavedBindingsContext {
 public:
-    explicit SavedBindingsContext(varbinder::VarBinder *varbinder)
-        : varbinder_(varbinder), saved_bindings_(varbinder_->GetScope()->Bindings())
+    explicit SavedBindingsContext(binder::Binder *binder)
+        : binder_(binder), saved_bindings_(binder_->GetScope()->Bindings())
     {
     }
     NO_COPY_SEMANTIC(SavedBindingsContext);
@@ -788,27 +787,27 @@ public:
 protected:
     ArenaAllocator *Allocator() const
     {
-        return varbinder_->Allocator();
+        return binder_->Allocator();
     }
 
-    varbinder::VarBinder *VarBinder() const
+    binder::Binder *Binder() const
     {
-        return varbinder_;
+        return binder_;
     }
 
-    varbinder::Scope::VariableMap SavedBindings() const
+    binder::Scope::VariableMap SavedBindings() const
     {
         return saved_bindings_;
     }
 
 private:
-    varbinder::VarBinder *varbinder_;
-    varbinder::Scope::VariableMap saved_bindings_;
+    binder::Binder *binder_;
+    binder::Scope::VariableMap saved_bindings_;
 };
 
 class ExportDeclarationContext : public SavedBindingsContext {
 public:
-    explicit ExportDeclarationContext(varbinder::VarBinder *varbinder) : SavedBindingsContext(varbinder) {}
+    explicit ExportDeclarationContext(binder::Binder *binder) : SavedBindingsContext(binder) {}
     NO_COPY_SEMANTIC(ExportDeclarationContext);
     NO_MOVE_SEMANTIC(ExportDeclarationContext);
     ~ExportDeclarationContext() = default;
@@ -821,7 +820,7 @@ protected:
 
 class ImportDeclarationContext : public SavedBindingsContext {
 public:
-    explicit ImportDeclarationContext(varbinder::VarBinder *varbinder) : SavedBindingsContext(varbinder) {}
+    explicit ImportDeclarationContext(binder::Binder *binder) : SavedBindingsContext(binder) {}
 
     NO_COPY_SEMANTIC(ImportDeclarationContext);
     NO_MOVE_SEMANTIC(ImportDeclarationContext);

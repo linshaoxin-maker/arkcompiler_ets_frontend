@@ -15,7 +15,7 @@
 
 #include "objectLiteralType.h"
 
-#include "varbinder/variable.h"
+#include "binder/variable.h"
 #include "checker/types/ts/indexInfo.h"
 #include "checker/types/signature.h"
 
@@ -48,15 +48,15 @@ void ObjectLiteralType::ToString(std::stringstream &ss) const
     }
 
     for (auto *it : desc_->properties) {
-        if (it->HasFlag(varbinder::VariableFlags::READONLY)) {
+        if (it->HasFlag(binder::VariableFlags::READONLY)) {
             ss << "readonly ";
         }
         ss << it->Name();
 
-        if (it->HasFlag(varbinder::VariableFlags::OPTIONAL)) {
+        if (it->HasFlag(binder::VariableFlags::OPTIONAL)) {
             ss << "?";
         }
-        if (it->HasFlag(varbinder::VariableFlags::PROPERTY)) {
+        if (it->HasFlag(binder::VariableFlags::PROPERTY)) {
             ss << ": ";
         }
 

@@ -34,7 +34,7 @@ public:
           type_annotation_(type_annotation)
     {
     }
-    // NOTE: csabahurton. friend relationship can be removed once there are getters for private fields
+    // TODO (csabahurton): friend relationship can be removed once there are getters for private fields
     friend class checker::ETSAnalyzer;
 
     TypeNode *TypeAnnotation() const

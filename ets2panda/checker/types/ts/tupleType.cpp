@@ -40,7 +40,7 @@ void TupleType::ToString(std::stringstream &ss) const
     if (named_members_.empty()) {
         for (auto it = desc_->properties.begin(); it != desc_->properties.end(); it++) {
             (*it)->TsType()->ToString(ss);
-            if ((*it)->HasFlag(varbinder::VariableFlags::OPTIONAL)) {
+            if ((*it)->HasFlag(binder::VariableFlags::OPTIONAL)) {
                 ss << "?";
             }
 
@@ -53,7 +53,7 @@ void TupleType::ToString(std::stringstream &ss) const
             const util::StringView &member_name = FindNamedMemberName(*it);
             ss << member_name;
 
-            if ((*it)->HasFlag(varbinder::VariableFlags::OPTIONAL)) {
+            if ((*it)->HasFlag(binder::VariableFlags::OPTIONAL)) {
                 ss << "?";
             }
 
@@ -70,28 +70,26 @@ void TupleType::ToString(std::stringstream &ss) const
 
 void TupleType::Identical(TypeRelation *relation, Type *other)
 {
-    if (!other->IsObjectType() || !other->AsObjectType()->IsTupleType()) {
-        return;
-    }
+    if (other->IsObjectType() && other->AsObjectType()->IsTupleType()) {
+        TupleType *other_tuple = other->AsObjectType()->AsTupleType();
+        if (kind_ == other_tuple->Kind() && desc_->properties.size() == other_tuple->Properties().size()) {
+            for (size_t i = 0; i < desc_->properties.size(); i++) {
+                binder::LocalVariable *target_prop = desc_->properties[i];
+                binder::LocalVariable *source_prop = other_tuple->Properties()[i];
 
-    TupleType *other_tuple = other->AsObjectType()->AsTupleType();
-    if (kind_ == other_tuple->Kind() && desc_->properties.size() == other_tuple->Properties().size()) {
-        for (size_t i = 0; i < desc_->properties.size(); i++) {
-            varbinder::LocalVariable *target_prop = desc_->properties[i];
-            varbinder::LocalVariable *source_prop = other_tuple->Properties()[i];
+                if (target_prop->Flags() != source_prop->Flags()) {
+                    relation->Result(false);
+                    return;
+                }
 
-            if (target_prop->Flags() != source_prop->Flags()) {
-                relation->Result(false);
-                return;
+                relation->IsIdenticalTo(target_prop->TsType(), source_prop->TsType());
+
+                if (!relation->IsTrue()) {
+                    return;
+                }
             }
-
-            relation->IsIdenticalTo(target_prop->TsType(), source_prop->TsType());
-
-            if (!relation->IsTrue()) {
-                return;
-            }
+            relation->Result(true);
         }
-        relation->Result(true);
     }
 }
 
@@ -115,8 +113,8 @@ void TupleType::AssignmentTarget(TypeRelation *relation, Type *source)
         auto *target_prop = desc_->properties[i];
 
         if (i < source_properties.size()) {
-            if (!target_prop->HasFlag(varbinder::VariableFlags::OPTIONAL) &&
-                source_properties[i]->HasFlag(varbinder::VariableFlags::OPTIONAL)) {
+            if (!target_prop->HasFlag(binder::VariableFlags::OPTIONAL) &&
+                source_properties[i]->HasFlag(binder::VariableFlags::OPTIONAL)) {
                 relation->Result(false);
                 return;
             }
@@ -130,7 +128,7 @@ void TupleType::AssignmentTarget(TypeRelation *relation, Type *source)
             continue;
         }
 
-        if (!target_prop->HasFlag(varbinder::VariableFlags::OPTIONAL)) {
+        if (!target_prop->HasFlag(binder::VariableFlags::OPTIONAL)) {
             relation->Result(false);
             return;
         }

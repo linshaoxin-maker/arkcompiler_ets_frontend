@@ -120,7 +120,7 @@ void TemplateLiteral::Compile([[maybe_unused]] compiler::PandaGen *pg) const
 
 checker::Type *TemplateLiteral::Check([[maybe_unused]] checker::TSChecker *checker)
 {
-    // NOTE: aszilagyi.
+    // TODO(aszilagyi)
     return checker->GlobalAnyType();
 }
 

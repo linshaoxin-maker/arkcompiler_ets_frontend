@@ -16,7 +16,7 @@
 #ifndef ES2PANDA_IR_BASE_CATCH_CLAUSE_H
 #define ES2PANDA_IR_BASE_CATCH_CLAUSE_H
 
-#include "varbinder/scope.h"
+#include "binder/scope.h"
 #include "ir/statement.h"
 
 namespace panda::es2panda::ir {
@@ -25,7 +25,7 @@ class Expression;
 
 class CatchClause : public TypedStatement {
 public:
-    explicit CatchClause(varbinder::CatchScope *scope, Expression *param, BlockStatement *body)
+    explicit CatchClause(binder::CatchScope *scope, Expression *param, BlockStatement *body)
         : TypedStatement(AstNodeType::CATCH_CLAUSE), scope_(scope), param_(param), body_(body)
     {
     }
@@ -55,7 +55,7 @@ public:
         return true;
     }
 
-    varbinder::CatchScope *Scope() const override
+    binder::CatchScope *Scope() const override
     {
         return scope_;
     }
@@ -70,7 +70,7 @@ public:
     checker::Type *Check(checker::ETSChecker *checker) override;
 
 private:
-    varbinder::CatchScope *scope_;
+    binder::CatchScope *scope_;
     Expression *param_;
     BlockStatement *body_;
 };

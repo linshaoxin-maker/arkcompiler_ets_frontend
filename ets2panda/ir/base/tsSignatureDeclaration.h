@@ -25,7 +25,7 @@ class TSSignatureDeclaration : public TypedAstNode {
 public:
     enum class TSSignatureDeclarationKind { CALL_SIGNATURE, CONSTRUCT_SIGNATURE };
 
-    explicit TSSignatureDeclaration(varbinder::Scope *scope, TSSignatureDeclarationKind kind,
+    explicit TSSignatureDeclaration(binder::Scope *scope, TSSignatureDeclarationKind kind,
                                     TSTypeParameterDeclaration *type_params, ArenaVector<Expression *> &&params,
                                     TypeNode *return_type_annotation)
         : TypedAstNode(AstNodeType::TS_SIGNATURE_DECLARATION),
@@ -42,7 +42,7 @@ public:
         return true;
     }
 
-    varbinder::Scope *Scope() const override
+    binder::Scope *Scope() const override
     {
         return scope_;
     }
@@ -75,7 +75,7 @@ public:
     checker::Type *Check([[maybe_unused]] checker::ETSChecker *checker) override;
 
 private:
-    varbinder::Scope *scope_;
+    binder::Scope *scope_;
     TSSignatureDeclarationKind kind_;
     TSTypeParameterDeclaration *type_params_;
     ArenaVector<Expression *> params_;

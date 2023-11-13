@@ -205,11 +205,11 @@ void TSDeclGen::GenFunctionType(const checker::ETSFunctionType *ets_function_typ
 
         Out("(");
 
-        GenCommaSeparated(sig->Params(), [this](varbinder::LocalVariable *param) {
+        GenCommaSeparated(sig->Params(), [this](binder::LocalVariable *param) {
             Out(param->Name());
             const auto *param_type = param->TsType();
 
-            if (param->HasFlag(varbinder::VariableFlags::OPTIONAL) ||
+            if (param->HasFlag(binder::VariableFlags::OPTIONAL) ||
                 param_type->HasTypeFlag(checker::TypeFlag::NULLABLE)) {
                 Out("?");
             }

@@ -16,9 +16,9 @@
 #include "TSparser.h"
 
 #include "util/helpers.h"
-#include "varbinder/privateBinding.h"
-#include "varbinder/scope.h"
-#include "varbinder/tsBinding.h"
+#include "binder/privateBinding.h"
+#include "binder/scope.h"
+#include "binder/tsBinding.h"
 #include "lexer/TSLexer.h"
 #include "ir/base/spreadElement.h"
 #include "ir/base/decorator.h"
@@ -194,14 +194,14 @@ ir::TSTypeAliasDeclaration *TSParser::ParseTypeAliasDeclaration()
     }
 
     const util::StringView &ident = Lexer()->GetToken().Ident();
-    varbinder::TSBinding ts_binding(Allocator(), ident);
-    auto *decl = VarBinder()->AddTsDecl<varbinder::TypeAliasDecl>(Lexer()->GetToken().Start(), ts_binding.View());
+    binder::TSBinding ts_binding(Allocator(), ident);
+    auto *decl = Binder()->AddTsDecl<binder::TypeAliasDecl>(Lexer()->GetToken().Start(), ts_binding.View());
 
     auto *id = AllocNode<ir::Identifier>(ident, Allocator());
     id->SetRange(Lexer()->GetToken().Loc());
     Lexer()->NextToken();
 
-    auto type_params_ctx = varbinder::LexicalScope<varbinder::LocalScope>(VarBinder());
+    auto type_params_ctx = binder::LexicalScope<binder::LocalScope>(Binder());
     ir::TSTypeParameterDeclaration *type_param_decl = nullptr;
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
         auto options = TypeAnnotationParsingOptions::THROW_ERROR;
@@ -1098,7 +1098,7 @@ ir::TypeNode *TSParser::ParseTypeLiteralOrMappedType(ir::TypeNode *type_annotati
     Lexer()->NextToken();
 
     auto *literal_type = AllocNode<ir::TSTypeLiteral>(std::move(members));
-    auto *type_var = varbinder::Scope::CreateVar(Allocator(), "__type", varbinder::VariableFlags::TYPE, literal_type);
+    auto *type_var = binder::Scope::CreateVar(Allocator(), "__type", binder::VariableFlags::TYPE, literal_type);
     literal_type->SetVariable(type_var);
     literal_type->SetRange({body_start, body_end});
     return literal_type;
@@ -1182,7 +1182,7 @@ ir::TSUnionType *TSParser::ParseUnionType(ir::TypeNode *type, bool restrict_exte
     lexer::SourcePosition end_loc = types.back()->End();
 
     auto *union_type = AllocNode<ir::TSUnionType>(std::move(types));
-    auto *type_var = varbinder::Scope::CreateVar(Allocator(), "__type", varbinder::VariableFlags::TYPE, union_type);
+    auto *type_var = binder::Scope::CreateVar(Allocator(), "__type", binder::VariableFlags::TYPE, union_type);
     union_type->SetVariable(type_var);
     union_type->SetRange({start_loc, end_loc});
 
@@ -1225,8 +1225,7 @@ ir::TSIntersectionType *TSParser::ParseIntersectionType(ir::Expression *type, bo
     lexer::SourcePosition end_loc = types.back()->End();
 
     auto *intersection_type = AllocNode<ir::TSIntersectionType>(std::move(types));
-    auto *type_var =
-        varbinder::Scope::CreateVar(Allocator(), "__type", varbinder::VariableFlags::TYPE, intersection_type);
+    auto *type_var = binder::Scope::CreateVar(Allocator(), "__type", binder::VariableFlags::TYPE, intersection_type);
     intersection_type->SetVariable(type_var);
     intersection_type->SetRange({start_loc, end_loc});
 
@@ -1429,7 +1428,7 @@ ir::TypeNode *TSParser::ParseParenthesizedOrFunctionType(ir::TypeNode *type_anno
 ir::TypeNode *TSParser::ParseFunctionType(lexer::SourcePosition start_loc, bool is_construction_type, bool throw_error,
                                           bool abstract_constructor)
 {
-    auto type_params_ctx = varbinder::LexicalScope<varbinder::LocalScope>(VarBinder());
+    auto type_params_ctx = binder::LexicalScope<binder::LocalScope>(Binder());
 
     ir::TSTypeParameterDeclaration *type_param_decl = nullptr;
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
@@ -1445,7 +1444,7 @@ ir::TypeNode *TSParser::ParseFunctionType(lexer::SourcePosition start_loc, bool 
         }
     }
 
-    FunctionParameterContext func_param_context(&GetContext(), VarBinder());
+    FunctionParameterContext func_param_context(&GetContext(), Binder());
     auto *func_param_scope = func_param_context.LexicalScope().GetScope();
     auto params = ParseFunctionParams();
 
@@ -1639,7 +1638,7 @@ ir::ArrowFunctionExpression *TSParser::ParsePotentialArrowExpression(ir::Express
         case lexer::TokenType::PUNCTUATOR_LESS_THAN: {
             const auto saved_pos = Lexer()->Save();
 
-            auto type_params_ctx = varbinder::LexicalScope<varbinder::LocalScope>(VarBinder());
+            auto type_params_ctx = binder::LexicalScope<binder::LocalScope>(Binder());
             auto options = TypeAnnotationParsingOptions::NO_OPTS;
             type_param_decl = ParseTypeParameterDeclaration(&options);
             if (type_param_decl == nullptr) {
@@ -1783,7 +1782,7 @@ ir::TSSignatureDeclaration *TSParser::ParseSignatureMember(bool is_call_signatur
         Lexer()->NextToken();  // eat 'new' keyword
     }
 
-    auto type_params_ctx = varbinder::LexicalScope<varbinder::LocalScope>(VarBinder());
+    auto type_params_ctx = binder::LexicalScope<binder::LocalScope>(Binder());
     ir::TSTypeParameterDeclaration *type_param_decl = nullptr;
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
         auto options = TypeAnnotationParsingOptions::THROW_ERROR;
@@ -1794,7 +1793,7 @@ ir::TSSignatureDeclaration *TSParser::ParseSignatureMember(bool is_call_signatur
         }
     }
 
-    FunctionParameterContext func_param_context(&GetContext(), VarBinder());
+    FunctionParameterContext func_param_context(&GetContext(), Binder());
     auto *func_param_scope = func_param_context.LexicalScope().GetScope();
     auto params = ParseFunctionParams();
 
@@ -1924,10 +1923,10 @@ std::tuple<ir::Expression *, bool> TSParser::ParseInterfacePropertyKey()
     return {key, is_computed};
 }
 
-void TSParser::CreateTSVariableForProperty(ir::AstNode *node, const ir::Expression *key, varbinder::VariableFlags flags)
+void TSParser::CreateTSVariableForProperty(ir::AstNode *node, const ir::Expression *key, binder::VariableFlags flags)
 {
-    varbinder::Variable *prop_var = nullptr;
-    bool is_method = (flags & varbinder::VariableFlags::METHOD) != 0;
+    binder::Variable *prop_var = nullptr;
+    bool is_method = (flags & binder::VariableFlags::METHOD) != 0;
     util::StringView prop_name = "__computed";
 
     switch (key->Type()) {
@@ -1937,7 +1936,7 @@ void TSParser::CreateTSVariableForProperty(ir::AstNode *node, const ir::Expressi
         }
         case ir::AstNodeType::NUMBER_LITERAL: {
             prop_name = key->AsNumberLiteral()->Str();
-            flags |= varbinder::VariableFlags::NUMERIC_NAME;
+            flags |= binder::VariableFlags::NUMERIC_NAME;
             break;
         }
         case ir::AstNodeType::STRING_LITERAL: {
@@ -1945,13 +1944,13 @@ void TSParser::CreateTSVariableForProperty(ir::AstNode *node, const ir::Expressi
             break;
         }
         default: {
-            flags |= varbinder::VariableFlags::COMPUTED;
+            flags |= binder::VariableFlags::COMPUTED;
             break;
         }
     }
 
-    prop_var = is_method ? varbinder::Scope::CreateVar<varbinder::MethodDecl>(Allocator(), prop_name, flags, node)
-                         : varbinder::Scope::CreateVar<varbinder::PropertyDecl>(Allocator(), prop_name, flags, node);
+    prop_var = is_method ? binder::Scope::CreateVar<binder::MethodDecl>(Allocator(), prop_name, flags, node)
+                         : binder::Scope::CreateVar<binder::PropertyDecl>(Allocator(), prop_name, flags, node);
 
     node->SetVariable(prop_var);
 }
@@ -1966,14 +1965,14 @@ ir::AstNode *TSParser::ParsePropertyOrMethodSignature(const lexer::SourcePositio
         Lexer()->NextToken();  // eat '?'
     }
 
-    varbinder::VariableFlags flags = varbinder::VariableFlags::NONE;
+    binder::VariableFlags flags = binder::VariableFlags::NONE;
 
     if (is_optional) {
-        flags |= varbinder::VariableFlags::OPTIONAL;
+        flags |= binder::VariableFlags::OPTIONAL;
     }
 
     if (is_readonly) {
-        flags |= varbinder::VariableFlags::READONLY;
+        flags |= binder::VariableFlags::READONLY;
     }
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS ||
@@ -1983,7 +1982,7 @@ ir::AstNode *TSParser::ParsePropertyOrMethodSignature(const lexer::SourcePositio
                              start_loc);
         }
 
-        auto type_params_ctx = varbinder::LexicalScope<varbinder::LocalScope>(VarBinder());
+        auto type_params_ctx = binder::LexicalScope<binder::LocalScope>(Binder());
         ir::TSTypeParameterDeclaration *type_param_decl = nullptr;
         if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
             auto options = TypeAnnotationParsingOptions::THROW_ERROR;
@@ -1994,7 +1993,7 @@ ir::AstNode *TSParser::ParsePropertyOrMethodSignature(const lexer::SourcePositio
             ThrowExpectedToken(lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS);
         }
 
-        FunctionParameterContext func_param_context(&GetContext(), VarBinder());
+        FunctionParameterContext func_param_context(&GetContext(), Binder());
         auto *func_param_scope = func_param_context.LexicalScope().GetScope();
         auto params = ParseFunctionParams();
 
@@ -2009,7 +2008,7 @@ ir::AstNode *TSParser::ParsePropertyOrMethodSignature(const lexer::SourcePositio
         auto *method_signature = AllocNode<ir::TSMethodSignature>(
             func_param_scope, key, type_param_decl, std::move(params), return_type, isComputed, is_optional);
         func_param_scope->BindNode(method_signature);
-        CreateTSVariableForProperty(method_signature, key, flags | varbinder::VariableFlags::METHOD);
+        CreateTSVariableForProperty(method_signature, key, flags | binder::VariableFlags::METHOD);
         method_signature->SetRange({start_loc, Lexer()->GetToken().End()});
         return method_signature;
     }
@@ -2024,7 +2023,7 @@ ir::AstNode *TSParser::ParsePropertyOrMethodSignature(const lexer::SourcePositio
 
     auto *property_signature =
         AllocNode<ir::TSPropertySignature>(key, type_annotation, isComputed, is_optional, is_readonly);
-    CreateTSVariableForProperty(property_signature, key, flags | varbinder::VariableFlags::PROPERTY);
+    CreateTSVariableForProperty(property_signature, key, flags | binder::VariableFlags::PROPERTY);
     property_signature->SetRange({start_loc, Lexer()->GetToken().End()});
     return property_signature;
 }
@@ -2216,7 +2215,7 @@ ir::Expression *TSParser::ParseFunctionParameter()
             {parameter_start, function_parameter->AsTSParameterProperty()->Parameter()->End()});
     }
 
-    VarBinder()->AddParamDecl(function_parameter);
+    Binder()->AddParamDecl(function_parameter);
 
     return function_parameter;
 }
@@ -2460,7 +2459,7 @@ void TSParser::ValidateFunctionOverloadParams(const ArenaVector<ir::Expression *
 
 std::tuple<bool, ir::BlockStatement *, lexer::SourcePosition, bool> TSParser::ParseFunctionBody(
     const ArenaVector<ir::Expression *> &params, ParserStatus new_status, ParserStatus context_status,
-    varbinder::FunctionScope *func_scope)
+    binder::FunctionScope *func_scope)
 {
     bool is_declare = InAmbientContext();
     bool is_overload = false;
@@ -2546,7 +2545,7 @@ ir::AstNode *TSParser::ParseImportDefaultSpecifier(ArenaVector<ir::AstNode *> *s
     specifier->SetRange(specifier->Local()->Range());
     specifiers->push_back(specifier);
 
-    VarBinder()->AddDecl<varbinder::ImportDecl>(local->Start(), "default", local->Name(), specifier);
+    Binder()->AddDecl<binder::ImportDecl>(local->Start(), "default", local->Name(), specifier);
 
     Lexer()->NextToken();  // eat specifier name
 
@@ -2799,22 +2798,22 @@ void TSParser::ThrowIfBodyEmptyError(ir::Statement *consequent)
 void TSParser::CreateFunctionDeclaration(ir::Identifier *ident_node, util::StringView &name, ir::ScriptFunction *func,
                                          const lexer::SourcePosition &start_loc)
 {
-    const auto &bindings = VarBinder()->GetScope()->Bindings();
+    const auto &bindings = Binder()->GetScope()->Bindings();
     auto res = bindings.find(name);
-    varbinder::FunctionDecl *decl {};
+    binder::FunctionDecl *decl {};
 
     if (res == bindings.end()) {
-        decl = VarBinder()->AddDecl<varbinder::FunctionDecl>(ident_node->Start(), Allocator(), name, func);
+        decl = Binder()->AddDecl<binder::FunctionDecl>(ident_node->Start(), Allocator(), name, func);
     } else {
-        varbinder::Decl *current_decl = res->second->Declaration();
+        binder::Decl *current_decl = res->second->Declaration();
 
         if (!current_decl->IsFunctionDecl()) {
-            VarBinder()->ThrowRedeclaration(start_loc, current_decl->Name());
+            Binder()->ThrowRedeclaration(start_loc, current_decl->Name());
         }
 
         decl = current_decl->AsFunctionDecl();
         if (!decl->Node()->AsScriptFunction()->IsOverload()) {
-            VarBinder()->ThrowRedeclaration(start_loc, current_decl->Name());
+            Binder()->ThrowRedeclaration(start_loc, current_decl->Name());
         }
     }
 
@@ -2830,7 +2829,7 @@ ir::ExportDefaultDeclaration *TSParser::ParseExportDefaultDeclaration(const lexe
     ir::AstNode *decl_node = nullptr;
     bool eat_semicolon = false;
 
-    ExportDeclarationContext export_decl_ctx(VarBinder());
+    ExportDeclarationContext export_decl_ctx(Binder());
 
     switch (Lexer()->GetToken().KeywordType()) {
         case lexer::TokenType::KEYW_FUNCTION: {
@@ -2887,7 +2886,7 @@ ir::ExportNamedDeclaration *TSParser::ParseNamedExportDeclaration(const lexer::S
         flags |= ir::ModifierFlags::ABSTRACT;
     }
 
-    ExportDeclarationContext export_decl_ctx(VarBinder());
+    ExportDeclarationContext export_decl_ctx(Binder());
 
     switch (Lexer()->GetToken().KeywordType()) {
         case lexer::TokenType::KEYW_VAR: {
@@ -2952,7 +2951,7 @@ ir::ExportNamedDeclaration *TSParser::ParseNamedExportDeclaration(const lexer::S
 
 ir::Statement *TSParser::ParseImportDeclaration([[maybe_unused]] StatementParsingFlags flags)
 {
-    ImportDeclarationContext import_ctx(VarBinder());
+    ImportDeclarationContext import_ctx(Binder());
 
     char32_t next_char = Lexer()->Lookahead();
     if (next_char == lexer::LEX_CHAR_LEFT_PAREN || next_char == lexer::LEX_CHAR_DOT) {

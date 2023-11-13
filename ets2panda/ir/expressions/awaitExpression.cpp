@@ -72,7 +72,7 @@ void AwaitExpression::Compile(compiler::ETSGen *etsg) const
 
 checker::Type *AwaitExpression::Check([[maybe_unused]] checker::TSChecker *checker)
 {
-    // NOTE: aszilagyi
+    // TODO(aszilagyi)
     return checker->GlobalAnyType();
 }
 

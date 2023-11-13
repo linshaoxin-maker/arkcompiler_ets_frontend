@@ -75,6 +75,7 @@ void ReturnStatement::SetReturnType(checker::ETSChecker *checker, checker::Type 
             if (argument_type == nullptr) {
                 checker->ThrowTypeError("Invalid return statement expression", argument_->Start());
             }
+            // argument_->SetTsType(argument_type);
             argument_->AddBoxingUnboxingFlag(checker->GetBoxingFlag(argument_type));
 
             relation->SetNode(nullptr);

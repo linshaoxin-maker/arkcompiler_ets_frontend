@@ -257,12 +257,9 @@ protected:
 
     template <typename RadixType, typename RadixLimit = void *>
     void ScanNumberLeadingZeroImpl();
-    void ScanNumberLeadingZeroImplNonAllowedCases();
     template <bool RANGE_CHECK(char32_t), int RADIX, typename RadixType, typename RadixLimit>
     void ScanNumberRadix(bool allow_numeric_separator = true);
     void ScanNumber(bool allow_big_int = true);
-    template <bool RANGE_CHECK(char32_t), int RADIX, typename RadixType, typename RadixLimit>
-    void ScanTooLargeNumber(RadixType number);
     virtual void ConvertNumber(const std::string &utf8, NumberFlags flags);
     void ScanDecimalLiteral();
     void ScanDecimalDigits(bool allow_numeric_separator);
@@ -480,23 +477,29 @@ void Lexer::ScanNumberLeadingZeroImpl()
             CheckNumberLiteralEnd();
             return;
         }
+        case LEX_CHAR_0:
+        case LEX_CHAR_1:
+        case LEX_CHAR_2:
+        case LEX_CHAR_3:
+        case LEX_CHAR_4:
+        case LEX_CHAR_5:
+        case LEX_CHAR_6:
+        case LEX_CHAR_7: {
+            ThrowError("Implicit octal literal not allowed");
+        }
+        case LEX_CHAR_8:
+        case LEX_CHAR_9: {
+            ThrowError("NonOctalDecimalIntegerLiteral is not enabled in strict mode code");
+        }
+        case LEX_CHAR_UNDERSCORE: {
+            ThrowError("Numeric separator '_' is not allowed in numbers that start with '0'.");
+        }
         default: {
-            ScanNumberLeadingZeroImplNonAllowedCases();
             break;
         }
     }
 
     ScanNumber();
-}
-
-template <bool RANGE_CHECK(char32_t), int RADIX, typename RadixType, typename RadixLimit>
-void Lexer::ScanTooLargeNumber([[maybe_unused]] RadixType number)
-{
-    if constexpr (std::is_arithmetic_v<RadixLimit>) {
-        if (number > std::numeric_limits<RadixLimit>::max() / RADIX) {
-            ThrowError("Number is too large");
-        }
-    }
 }
 
 template <bool RANGE_CHECK(char32_t), int RADIX, typename RadixType, typename RadixLimit>
@@ -516,7 +519,11 @@ void Lexer::ScanNumberRadix(bool allow_numeric_separator)
         if (RANGE_CHECK(cp)) {
             auto digit = HexValue(cp);
 
-            ScanTooLargeNumber<RANGE_CHECK, RADIX, RadixType, RadixLimit>(number);
+            if constexpr (std::is_arithmetic_v<RadixLimit>) {
+                if (number > std::numeric_limits<RadixLimit>::max() / RADIX) {
+                    ThrowError("Number is too large");
+                }
+            }
 
             number = number * RADIX + digit;
             Iterator().Forward(1);

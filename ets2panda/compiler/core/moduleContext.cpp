@@ -15,8 +15,8 @@
 
 #include "moduleContext.h"
 
-#include "varbinder/scope.h"
-#include "varbinder/variable.h"
+#include "binder/scope.h"
+#include "binder/variable.h"
 #include "compiler/base/lreference.h"
 #include "compiler/core/pandagen.h"
 #include "ir/expressions/literals/stringLiteral.h"
@@ -25,7 +25,7 @@
 #include "ir/module/importDeclaration.h"
 
 namespace panda::es2panda::compiler {
-void CompileImports(PandaGen *pg, varbinder::ModuleScope *scope)
+void CompileImports(PandaGen *pg, binder::ModuleScope *scope)
 {
     for (const auto &[importDecl, decls] : scope->Imports()) {
         pg->ImportModule(importDecl, importDecl->Source()->Str());
@@ -34,12 +34,12 @@ void CompileImports(PandaGen *pg, varbinder::ModuleScope *scope)
         pg->StoreAccumulator(importDecl, module_reg);
 
         for (const auto *decl : decls) {
-            varbinder::Variable *v = scope->FindLocal(decl->LocalName(), varbinder::ResolveBindingOptions::BINDINGS);
+            binder::Variable *v = scope->FindLocal(decl->LocalName());
 
             if (!v->IsModuleVariable()) {
                 ASSERT(decl->ImportName() == "*");
 
-                varbinder::ConstScopeFindResult result(decl->LocalName(), scope, 0, v);
+                binder::ConstScopeFindResult result(decl->LocalName(), scope, 0, v);
                 pg->StoreAccToLexEnv(decl->Node(), result, true);
             } else {
                 v->AsModuleVariable()->ModuleReg() = module_reg;
@@ -48,7 +48,7 @@ void CompileImports(PandaGen *pg, varbinder::ModuleScope *scope)
     }
 }
 
-void CompileExports(PandaGen *pg, const varbinder::ModuleScope *scope)
+void CompileExports(PandaGen *pg, const binder::ModuleScope *scope)
 {
     for (const auto &[exportDecl, decls] : scope->Exports()) {
         if (exportDecl->IsExportAllDeclaration()) {
@@ -78,7 +78,7 @@ void CompileExports(PandaGen *pg, const varbinder::ModuleScope *scope)
     }
 }
 
-void ModuleContext::Compile(PandaGen *pg, varbinder::ModuleScope *scope)
+void ModuleContext::Compile(PandaGen *pg, binder::ModuleScope *scope)
 {
     CompileImports(pg, scope);
     CompileExports(pg, scope);

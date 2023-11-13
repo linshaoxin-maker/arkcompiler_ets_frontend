@@ -1,4 +1,4 @@
-#/usr/bin/env python
+#!/usr/bin/env python
 
 # Copyright (c) 2023 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-def parse_options():
+def parseOptions():
     # panda root default
     panda_env = os.environ.get('PANDA_ROOT')
     arkdir_default = panda_env if panda_env else os.path.join(Path.home(), 'panda')
@@ -43,9 +43,8 @@ def parse_options():
 
     return parser.parse_args()
 
-
 def main():
-    options = parse_options()
+    options = parseOptions()
 
     if not os.path.exists(options.arkdir):
         print("The following ark directory does not exist: {0}".format(options.arkdir))
@@ -76,7 +75,6 @@ def main():
         res = subprocess.call(general_cmd + ['--test262'])
     if options.cts:
         res = subprocess.call(general_cmd + ['--ets-cts'])
-
 
 if __name__ == '__main__':
     main()

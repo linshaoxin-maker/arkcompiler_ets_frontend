@@ -17,7 +17,7 @@
 #define ES2PANDA_CHECKER_CHECKER_CONTEXT_H
 
 #include <macros.h>
-#include "varbinder/variable.h"
+#include "binder/variable.h"
 #include "util/enumbitops.h"
 
 #include <vector>
@@ -49,7 +49,7 @@ enum class CheckerStatus : uint32_t {
 
 DEFINE_BITOPS(CheckerStatus)
 
-using CapturedVarsMap = ArenaUnorderedMap<varbinder::Variable *, lexer::SourcePosition>;
+using CapturedVarsMap = ArenaUnorderedMap<binder::Variable *, lexer::SourcePosition>;
 
 class CheckerContext {
 public:
@@ -112,7 +112,7 @@ public:
         containing_class_ = containing_class;
     }
 
-    void AddCapturedVar(varbinder::Variable *var, const lexer::SourcePosition &pos)
+    void AddCapturedVar(binder::Variable *var, const lexer::SourcePosition &pos)
     {
         captured_vars_.emplace(var, pos);
     }

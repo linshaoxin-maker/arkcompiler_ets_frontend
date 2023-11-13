@@ -29,9 +29,9 @@
 #include "ir/statements/returnStatement.h"
 #include "ir/statements/functionDeclaration.h"
 #include "util/helpers.h"
-#include "varbinder/variable.h"
-#include "varbinder/scope.h"
-#include "varbinder/declaration.h"
+#include "binder/variable.h"
+#include "binder/scope.h"
+#include "binder/declaration.h"
 
 #include "checker/TSchecker.h"
 #include "checker/ts/destructuringContext.h"
@@ -116,11 +116,11 @@ void TSChecker::ThrowReturnTypeCircularityError(ir::ScriptFunction *func)
         func->Start());
 }
 
-std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSChecker::CheckFunctionIdentifierParameter(
+std::tuple<binder::LocalVariable *, binder::LocalVariable *, bool> TSChecker::CheckFunctionIdentifierParameter(
     ir::Identifier *param)
 {
     ASSERT(param->Variable());
-    varbinder::Variable *param_var = param->Variable();
+    binder::Variable *param_var = param->Variable();
     bool is_optional = param->IsOptional();
 
     if (param->TypeAnnotation() == nullptr) {
@@ -128,7 +128,7 @@ std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSCheck
     }
 
     if (is_optional) {
-        param_var->AddFlag(varbinder::VariableFlags::OPTIONAL);
+        param_var->AddFlag(binder::VariableFlags::OPTIONAL);
     }
 
     param->TypeAnnotation()->Check(this);
@@ -154,9 +154,8 @@ Type *TSChecker::CreateParameterTypeForArrayAssignmentPattern(ir::ArrayExpressio
 
     for (uint32_t index = inferred_tuple->FixedLength(); index < array_pattern->Elements().size(); index++) {
         util::StringView member_index = util::Helpers::ToStringView(Allocator(), index);
-        varbinder::LocalVariable *new_member = varbinder::Scope::CreateVar(
-            Allocator(), member_index, varbinder::VariableFlags::PROPERTY | varbinder::VariableFlags::OPTIONAL,
-            nullptr);
+        binder::LocalVariable *new_member = binder::Scope::CreateVar(
+            Allocator(), member_index, binder::VariableFlags::PROPERTY | binder::VariableFlags::OPTIONAL, nullptr);
         new_member->SetTsType(GlobalAnyType());
         new_tuple->AddProperty(new_member);
     }
@@ -180,11 +179,11 @@ Type *TSChecker::CreateParameterTypeForObjectAssignmentPattern(ir::ObjectExpress
         }
 
         ir::Property *prop = it->AsProperty();
-        varbinder::LocalVariable *found_var = new_object->GetProperty(prop->Key()->AsIdentifier()->Name(), true);
+        binder::LocalVariable *found_var = new_object->GetProperty(prop->Key()->AsIdentifier()->Name(), true);
 
         if (found_var != nullptr) {
             if (prop->Value()->IsAssignmentPattern()) {
-                found_var->AddFlag(varbinder::VariableFlags::OPTIONAL);
+                found_var->AddFlag(binder::VariableFlags::OPTIONAL);
             }
 
             continue;
@@ -193,9 +192,9 @@ Type *TSChecker::CreateParameterTypeForObjectAssignmentPattern(ir::ObjectExpress
         ASSERT(prop->Value()->IsAssignmentPattern());
         ir::AssignmentExpression *assignment_pattern = prop->Value()->AsAssignmentPattern();
 
-        varbinder::LocalVariable *new_prop = varbinder::Scope::CreateVar(
-            Allocator(), prop->Key()->AsIdentifier()->Name(),
-            varbinder::VariableFlags::PROPERTY | varbinder::VariableFlags::OPTIONAL, nullptr);
+        binder::LocalVariable *new_prop =
+            binder::Scope::CreateVar(Allocator(), prop->Key()->AsIdentifier()->Name(),
+                                     binder::VariableFlags::PROPERTY | binder::VariableFlags::OPTIONAL, nullptr);
         new_prop->SetTsType(GetBaseTypeOfLiteralType(CheckTypeCached(assignment_pattern->Right())));
         new_object->AddProperty(new_prop);
     }
@@ -204,12 +203,12 @@ Type *TSChecker::CreateParameterTypeForObjectAssignmentPattern(ir::ObjectExpress
     return new_object;
 }
 
-using ReturnedVariable = std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool>;
-ReturnedVariable TSChecker::CheckFunctionAssignmentPatternParameter(ir::AssignmentExpression *param)
+std::tuple<binder::LocalVariable *, binder::LocalVariable *, bool> TSChecker::CheckFunctionAssignmentPatternParameter(
+    ir::AssignmentExpression *param)
 {
     if (param->Left()->IsIdentifier()) {
         ir::Identifier *param_ident = param->Left()->AsIdentifier();
-        varbinder::Variable *param_var = param_ident->Variable();
+        binder::Variable *param_var = param_ident->Variable();
         ASSERT(param_var);
 
         if (param_ident->TypeAnnotation() != nullptr) {
@@ -221,7 +220,7 @@ ReturnedVariable TSChecker::CheckFunctionAssignmentPatternParameter(ir::Assignme
         }
 
         param_var->SetTsType(GetBaseTypeOfLiteralType(param->Right()->Check(this)));
-        param_var->AddFlag(varbinder::VariableFlags::OPTIONAL);
+        param_var->AddFlag(binder::VariableFlags::OPTIONAL);
         return {param_var->AsLocalVariable(), nullptr, true};
     }
 
@@ -247,14 +246,14 @@ ReturnedVariable TSChecker::CheckFunctionAssignmentPatternParameter(ir::Assignme
     }
 
     util::UString pn(ss.str(), Allocator());
-    varbinder::LocalVariable *pattern_var =
-        varbinder::Scope::CreateVar(Allocator(), pn.View(), varbinder::VariableFlags::NONE, param);
+    binder::LocalVariable *pattern_var =
+        binder::Scope::CreateVar(Allocator(), pn.View(), binder::VariableFlags::NONE, param);
     pattern_var->SetTsType(param_type);
-    pattern_var->AddFlag(varbinder::VariableFlags::OPTIONAL);
+    pattern_var->AddFlag(binder::VariableFlags::OPTIONAL);
     return {pattern_var->AsLocalVariable(), nullptr, true};
 }
 
-std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSChecker::CheckFunctionRestParameter(
+std::tuple<binder::LocalVariable *, binder::LocalVariable *, bool> TSChecker::CheckFunctionRestParameter(
     ir::SpreadElement *param, SignatureInfo *signature_info)
 {
     ir::TypeNode *type_annotation = nullptr;
@@ -304,14 +303,14 @@ std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSCheck
     }
 }
 
-std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSChecker::CheckFunctionArrayPatternParameter(
+std::tuple<binder::LocalVariable *, binder::LocalVariable *, bool> TSChecker::CheckFunctionArrayPatternParameter(
     ir::ArrayExpression *param)
 {
     std::stringstream ss;
     CreatePatternParameterName(param, ss);
     util::UString pn(ss.str(), Allocator());
-    varbinder::LocalVariable *pattern_var =
-        varbinder::Scope::CreateVar(Allocator(), pn.View(), varbinder::VariableFlags::NONE, param);
+    binder::LocalVariable *pattern_var =
+        binder::Scope::CreateVar(Allocator(), pn.View(), binder::VariableFlags::NONE, param);
 
     if (param->TypeAnnotation() != nullptr) {
         auto saved_context = SavedCheckerContext(this, CheckerStatus::FORCE_TUPLE);
@@ -326,14 +325,14 @@ std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSCheck
     return {pattern_var->AsLocalVariable(), nullptr, false};
 }
 
-std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSChecker::CheckFunctionObjectPatternParameter(
+std::tuple<binder::LocalVariable *, binder::LocalVariable *, bool> TSChecker::CheckFunctionObjectPatternParameter(
     ir::ObjectExpression *param)
 {
     std::stringstream ss;
     CreatePatternParameterName(param, ss);
     util::UString pn(ss.str(), Allocator());
-    varbinder::LocalVariable *pattern_var =
-        varbinder::Scope::CreateVar(Allocator(), pn.View(), varbinder::VariableFlags::NONE, param);
+    binder::LocalVariable *pattern_var =
+        binder::Scope::CreateVar(Allocator(), pn.View(), binder::VariableFlags::NONE, param);
 
     if (param->TypeAnnotation() != nullptr) {
         auto saved_context = SavedCheckerContext(this, CheckerStatus::FORCE_TUPLE);
@@ -348,16 +347,16 @@ std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSCheck
     return {pattern_var->AsLocalVariable(), nullptr, false};
 }
 
-std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSChecker::CheckFunctionParameter(
+std::tuple<binder::LocalVariable *, binder::LocalVariable *, bool> TSChecker::CheckFunctionParameter(
     ir::Expression *param, SignatureInfo *signature_info)
 {
     if (param->TsType() != nullptr) {
         ASSERT(param->TsType()->Variable());
-        varbinder::Variable *var = param->TsType()->Variable();
-        return {var->AsLocalVariable(), nullptr, var->HasFlag(varbinder::VariableFlags::OPTIONAL)};
+        binder::Variable *var = param->TsType()->Variable();
+        return {var->AsLocalVariable(), nullptr, var->HasFlag(binder::VariableFlags::OPTIONAL)};
     }
 
-    std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> result;
+    std::tuple<binder::LocalVariable *, binder::LocalVariable *, bool> result;
     bool cache = true;
 
     switch (param->Type()) {
@@ -527,7 +526,7 @@ ir::Statement *FindSubsequentFunctionNode(ir::BlockStatement *block, ir::ScriptF
     return nullptr;
 }
 
-void TSChecker::InferFunctionDeclarationType(const varbinder::FunctionDecl *decl, varbinder::Variable *func_var)
+void TSChecker::InferFunctionDeclarationType(const binder::FunctionDecl *decl, binder::Variable *func_var)
 {
     ir::ScriptFunction *body_declaration = decl->Decls().back();
 
@@ -663,7 +662,7 @@ void TSChecker::CheckAllCodePathsInNonVoidFunctionReturnOrThrow(ir::ScriptFuncti
     if (!SearchForReturnOrThrow(func->Body())) {
         ThrowTypeError(err_msg, line_info);
     }
-    // NOTE: aszilagyi. this function is not fully implement the TSC one, in the future if we will have a
+    // TODO(aszilagyi): this function is not fully implement the TSC one, in the future if we will have a
     // noImplicitReturn compiler option for TypeScript we should update this function
 }
 
@@ -712,16 +711,17 @@ bool TSChecker::CallMatchesSignature(const ArenaVector<ir::Expression *> &args, 
 
         if (validate_rest_arg || !throw_error) {
             checker::Type *call_arg_type = GetBaseTypeOfLiteralType(args[index]->Check(this));
-            if (IsTypeAssignableTo(call_arg_type, sig_arg_type)) {
-                continue;
+            if (!IsTypeAssignableTo(call_arg_type, sig_arg_type)) {
+                if (throw_error) {
+                    ThrowTypeError({"Argument of type '", call_arg_type, "' is not assignable to parameter of type '",
+                                    sig_arg_type, "'."},
+                                   args[index]->Start());
+                }
+
+                return false;
             }
 
-            if (throw_error) {
-                ThrowTypeError({"Argument of type '", call_arg_type, "' is not assignable to parameter of type '",
-                                sig_arg_type, "'."},
-                               args[index]->Start());
-            }
-            return false;
+            continue;
         }
 
         ElaborateElementwise(sig_arg_type, args[index], args[index]->Start());

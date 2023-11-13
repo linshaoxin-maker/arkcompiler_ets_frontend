@@ -15,7 +15,7 @@
 
 #include "tsModuleBlock.h"
 
-#include "varbinder/scope.h"
+#include "binder/scope.h"
 #include "ir/astDump.h"
 
 namespace panda::es2panda::ir {

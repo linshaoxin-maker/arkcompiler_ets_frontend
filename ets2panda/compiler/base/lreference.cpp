@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,12 @@
 
 #include "lreference.h"
 
-#include "varbinder/declaration.h"
-#include "varbinder/variableFlags.h"
+#include "binder/declaration.h"
+#include "binder/variableFlags.h"
 #include "compiler/base/destructuring.h"
 #include "compiler/core/function.h"
 #include "compiler/core/pandagen.h"
 #include "compiler/core/ETSGen.h"
-#include "checker/types/ets/etsUnionType.h"
 #include "ir/astNode.h"
 #include "ir/base/spreadElement.h"
 #include "ir/base/classProperty.h"
@@ -42,7 +41,7 @@ LReference::LReferenceBase LReference::CreateBase(CodeGen *cg, const ir::AstNode
         // NOTE: This case is never reached in case of ETS
         case ir::AstNodeType::IDENTIFIER: {
             const util::StringView &name = node->AsIdentifier()->Name();
-            auto res = cg->Scope()->Find(name, varbinder::ResolveBindingOptions::ALL);
+            auto res = cg->Scope()->Find(name, binder::ResolveBindingOptions::ALL);
 
             if (res.variable == nullptr) {
                 res.variable = node->AsIdentifier()->Variable();
@@ -77,7 +76,7 @@ LReference::LReferenceBase LReference::CreateBase(CodeGen *cg, const ir::AstNode
 }
 
 JSLReference::JSLReference(CodeGen *cg, const ir::AstNode *node, ReferenceKind ref_kind,
-                           varbinder::ConstScopeFindResult res, bool is_declaration)
+                           binder::ConstScopeFindResult res, bool is_declaration)
     : LReference(node, ref_kind, res, is_declaration), pg_(static_cast<PandaGen *>(cg))
 {
     if (Kind() != ReferenceKind::MEMBER) {
@@ -174,7 +173,7 @@ void JSLReference::SetValue() const
 }
 
 ETSLReference::ETSLReference(CodeGen *cg, const ir::AstNode *node, ReferenceKind ref_kind,
-                             varbinder::ConstScopeFindResult res, bool is_declaration)
+                             binder::ConstScopeFindResult res, bool is_declaration)
     : LReference(node, ref_kind, res, is_declaration), etsg_(static_cast<ETSGen *>(cg))
 {
     if (Kind() != ReferenceKind::MEMBER) {
@@ -207,10 +206,10 @@ ETSLReference ETSLReference::Create(CodeGen *const cg, const ir::AstNode *const 
 {
     if (node->Type() == ir::AstNodeType::IDENTIFIER) {
         const auto &name = node->AsIdentifier()->Name();
-        auto res = cg->Scope()->FindInFunctionScope(name, varbinder::ResolveBindingOptions::ALL);
+        auto res = cg->Scope()->FindInFunctionScope(name, binder::ResolveBindingOptions::ALL);
         if (res.variable == nullptr) {
-            res = cg->Scope()->FindInGlobal(name, varbinder::ResolveBindingOptions::ALL_VARIABLES |
-                                                      varbinder::ResolveBindingOptions::ALL_METHOD);
+            res = cg->Scope()->FindInGlobal(name, binder::ResolveBindingOptions::ALL_VARIABLES |
+                                                      binder::ResolveBindingOptions::ALL_METHOD);
             if (res.variable == nullptr) {
                 res.variable = node->AsIdentifier()->Variable();
             }
@@ -221,12 +220,12 @@ ETSLReference ETSLReference::Create(CodeGen *const cg, const ir::AstNode *const 
     return std::make_from_tuple<ETSLReference>(CreateBase(cg, node, is_declaration));
 }
 
-ReferenceKind ETSLReference::ResolveReferenceKind(const varbinder::Variable *variable)
+ReferenceKind ETSLReference::ResolveReferenceKind(const binder::Variable *variable)
 {
-    if (variable->HasFlag(varbinder::VariableFlags::SYNTHETIC)) {
+    if (variable->HasFlag(binder::VariableFlags::SYNTHETIC)) {
         return ReferenceKind::METHOD;
     }
-    if (variable->HasFlag(varbinder::VariableFlags::LOCAL)) {
+    if (variable->HasFlag(binder::VariableFlags::LOCAL)) {
         return ReferenceKind::LOCAL;
     }
 
@@ -269,76 +268,67 @@ void ETSLReference::GetValue() const
     }
 }
 
-void ETSLReference::SetValueComputed(const ir::MemberExpression *member_expr) const
-{
-    auto object_type = member_expr->Object()->TsType();
-    if (object_type->IsETSDynamicType()) {
-        auto lang = object_type->AsETSDynamicType()->Language();
-        etsg_->StoreElementDynamic(Node(), base_reg_, prop_reg_, lang);
-    } else {
-        etsg_->StoreArrayElement(Node(), base_reg_, prop_reg_,
-                                 etsg_->GetVRegType(base_reg_)->AsETSArrayType()->ElementType());
-    }
-}
-
-void ETSLReference::SetValueGetterSetter(const ir::MemberExpression *member_expr) const
-{
-    const auto *sig = member_expr->PropVar()->TsType()->AsETSFunctionType()->FindSetter();
-
-    auto arg_reg = etsg_->AllocReg();
-    etsg_->StoreAccumulator(Node(), arg_reg);
-
-    if (sig->Function()->IsStatic()) {
-        etsg_->CallThisStatic0(Node(), arg_reg, sig->InternalName());
-    } else {
-        etsg_->CallThisVirtual1(Node(), base_reg_, sig->InternalName(), arg_reg);
-    }
-}
-
 void ETSLReference::SetValue() const
 {
-    if (Kind() == ReferenceKind::MEMBER) {
-        auto *member_expr = Node()->AsMemberExpression();
-        if (!member_expr->IsIgnoreBox()) {
-            etsg_->ApplyConversion(Node(), member_expr->TsType());
-        }
+    switch (Kind()) {
+        case ReferenceKind::MEMBER: {
+            auto *member_expr = Node()->AsMemberExpression();
+            if (!member_expr->IsIgnoreBox()) {
+                etsg_->ApplyConversion(Node(), member_expr->TsType());
+            }
 
-        if (member_expr->IsComputed()) {
-            SetValueComputed(member_expr);
-            return;
-        }
+            if (member_expr->IsComputed()) {
+                auto object_type = member_expr->Object()->TsType();
+                if (object_type->IsETSDynamicType()) {
+                    auto lang = object_type->AsETSDynamicType()->Language();
+                    etsg_->StoreElementDynamic(Node(), base_reg_, prop_reg_, lang);
+                } else {
+                    etsg_->StoreArrayElement(Node(), base_reg_, prop_reg_,
+                                             etsg_->GetVRegType(base_reg_)->AsETSArrayType()->ElementType());
+                }
+                break;
+            }
 
-        if (member_expr->PropVar()->TsType()->HasTypeFlag(checker::TypeFlag::GETTER_SETTER)) {
-            SetValueGetterSetter(member_expr);
-            return;
-        }
+            if (member_expr->PropVar()->TsType()->HasTypeFlag(checker::TypeFlag::GETTER_SETTER)) {
+                const auto *sig = member_expr->PropVar()->TsType()->AsETSFunctionType()->FindSetter();
 
-        auto &prop_name = member_expr->Property()->AsIdentifier()->Name();
-        if (member_expr->PropVar()->HasFlag(varbinder::VariableFlags::STATIC)) {
-            util::StringView full_name = etsg_->FormClassPropReference(static_obj_ref_->AsETSObjectType(), prop_name);
+                auto arg_reg = etsg_->AllocReg();
+                etsg_->StoreAccumulator(Node(), arg_reg);
+
+                if (sig->Function()->IsStatic()) {
+                    etsg_->CallThisStatic0(Node(), arg_reg, sig->InternalName());
+                } else {
+                    etsg_->CallThisVirtual1(Node(), base_reg_, sig->InternalName(), arg_reg);
+                }
+                break;
+            }
+
+            auto &prop_name = member_expr->Property()->AsIdentifier()->Name();
+            if (member_expr->PropVar()->HasFlag(binder::VariableFlags::STATIC)) {
+                util::StringView full_name =
+                    etsg_->FormClassPropReference(static_obj_ref_->AsETSObjectType(), prop_name);
+                if (static_obj_ref_->IsETSDynamicType()) {
+                    auto lang = static_obj_ref_->AsETSDynamicType()->Language();
+                    etsg_->StorePropertyDynamic(Node(), member_expr->TsType(), base_reg_, prop_name, lang);
+                } else {
+                    etsg_->StoreStaticProperty(Node(), member_expr->TsType(), full_name);
+                }
+                break;
+            }
+
             if (static_obj_ref_->IsETSDynamicType()) {
                 auto lang = static_obj_ref_->AsETSDynamicType()->Language();
                 etsg_->StorePropertyDynamic(Node(), member_expr->TsType(), base_reg_, prop_name, lang);
             } else {
-                etsg_->StoreStaticProperty(Node(), member_expr->TsType(), full_name);
+                auto type = etsg_->Checker()->MaybeBoxedType(member_expr->PropVar(), etsg_->Allocator());
+                etsg_->StoreProperty(Node(), type, base_reg_, prop_name);
             }
-            return;
+            break;
         }
-
-        if (static_obj_ref_->IsETSDynamicType()) {
-            auto lang = static_obj_ref_->AsETSDynamicType()->Language();
-            etsg_->StorePropertyDynamic(Node(), member_expr->TsType(), base_reg_, prop_name, lang);
-        } else if (static_obj_ref_->IsETSUnionType()) {
-            etsg_->StoreUnionProperty(Node(), base_reg_, prop_name);
-        } else {
-            auto type = etsg_->Checker()->MaybeBoxedType(member_expr->PropVar(), etsg_->Allocator());
-            if (type->IsETSUnionType()) {
-                type = type->AsETSUnionType()->GetLeastUpperBoundType();
-            }
-            etsg_->StoreProperty(Node(), type, base_reg_, prop_name);
+        default: {
+            etsg_->StoreVar(Node()->AsIdentifier(), Result());
+            break;
         }
-    } else {
-        etsg_->StoreVar(Node()->AsIdentifier(), Result());
     }
 }
 

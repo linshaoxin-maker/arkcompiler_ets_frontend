@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "varbinder/variableFlags.h"
+#include "binder/variableFlags.h"
 #include "checker/types/ets/etsObjectType.h"
 #include "ir/astNode.h"
 #include "ir/typeNode.h"
@@ -45,10 +45,10 @@
 #include "ir/ets/etsTypeReference.h"
 #include "ir/ets/etsTypeReferencePart.h"
 #include "ir/ets/etsNewClassInstanceExpression.h"
-#include "varbinder/variable.h"
-#include "varbinder/scope.h"
-#include "varbinder/declaration.h"
-#include "varbinder/ETSBinder.h"
+#include "binder/variable.h"
+#include "binder/scope.h"
+#include "binder/declaration.h"
+#include "binder/ETSBinder.h"
 #include "checker/ETSchecker.h"
 #include "checker/types/typeFlag.h"
 #include "checker/types/ets/etsDynamicType.h"
@@ -209,9 +209,7 @@ Type *ETSChecker::CreateTypeParameterType(ir::TSTypeParameter *const param)
                 param->Constraint()->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Name();
             const auto *const type_param_scope = param->Parent()->AsTSTypeParameterDeclaration()->Scope();
 
-            if (auto *const found_param =
-                    type_param_scope->FindLocal(constraint_name, varbinder::ResolveBindingOptions::BINDINGS);
-                found_param != nullptr) {
+            if (auto *const found_param = type_param_scope->FindLocal(constraint_name); found_param != nullptr) {
                 CreateTypeParameterType(found_param->Declaration()->Node()->AsTSTypeParameter());
             }
         }
@@ -362,9 +360,9 @@ void ETSChecker::ResolveDeclaredMembersOfObject(ETSObjectType *type)
     }
 
     auto *decl_node = type->GetDeclNode();
-    varbinder::ClassScope *scope = decl_node->IsTSInterfaceDeclaration()
-                                       ? decl_node->AsTSInterfaceDeclaration()->Scope()->AsClassScope()
-                                       : decl_node->AsClassDefinition()->Scope()->AsClassScope();
+    binder::ClassScope *scope = decl_node->IsTSInterfaceDeclaration()
+                                    ? decl_node->AsTSInterfaceDeclaration()->Scope()->AsClassScope()
+                                    : decl_node->AsClassDefinition()->Scope()->AsClassScope();
 
     for (auto &[_, it] : scope->InstanceFieldScope()->Bindings()) {
         (void)_;
@@ -375,7 +373,7 @@ void ETSChecker::ResolveDeclaredMembersOfObject(ETSObjectType *type)
 
         if (class_prop->TypeAnnotation() != nullptr && class_prop->TypeAnnotation()->IsETSFunctionType()) {
             type->AddProperty<PropertyType::INSTANCE_METHOD>(it->AsLocalVariable());
-            it->AddFlag(varbinder::VariableFlags::METHOD_REFERENCE);
+            it->AddFlag(binder::VariableFlags::METHOD_REFERENCE);
         }
     }
 
@@ -388,7 +386,7 @@ void ETSChecker::ResolveDeclaredMembersOfObject(ETSObjectType *type)
 
         if (class_prop->TypeAnnotation() != nullptr && class_prop->TypeAnnotation()->IsETSFunctionType()) {
             type->AddProperty<PropertyType::STATIC_METHOD>(it->AsLocalVariable());
-            it->AddFlag(varbinder::VariableFlags::METHOD_REFERENCE);
+            it->AddFlag(binder::VariableFlags::METHOD_REFERENCE);
         }
     }
 
@@ -587,30 +585,26 @@ void ETSChecker::ValidateOverriding(ETSObjectType *class_type, const lexer::Sour
             bool found_signature = false;
             for (auto *const implemented : implemented_signatures) {
                 Signature *subst_implemented = AdjustForTypeParameters(*abstract_signature, implemented);
-
                 if (subst_implemented == nullptr) {
                     continue;
                 }
+                if (AreOverrideEquivalent(*abstract_signature, subst_implemented) &&
+                    IsReturnTypeSubstitutable(subst_implemented, *abstract_signature)) {
+                    if (!implemented->Function()->IsOverride() && (implemented->Owner() == class_type)) {
+                        ThrowTypeError("Method overriding is only allowed with 'override' modifier",
+                                       implemented->Function()->Start());
+                    }
 
-                if (!AreOverrideEquivalent(*abstract_signature, subst_implemented) ||
-                    !IsReturnTypeSubstitutable(subst_implemented, *abstract_signature)) {
-                    continue;
+                    if ((*it)->CallSignatures().size() > 1) {
+                        abstract_signature = (*it)->CallSignatures().erase(abstract_signature);
+                        found_signature = true;
+                    } else {
+                        it = abstracts_to_be_implemented.erase(it);
+                        function_overridden = true;
+                    }
+
+                    break;
                 }
-
-                if (!implemented->Function()->IsOverride() && (implemented->Owner() == class_type)) {
-                    ThrowTypeError("Method overriding is only allowed with 'override' modifier",
-                                   implemented->Function()->Start());
-                }
-
-                if ((*it)->CallSignatures().size() > 1) {
-                    abstract_signature = (*it)->CallSignatures().erase(abstract_signature);
-                    found_signature = true;
-                } else {
-                    it = abstracts_to_be_implemented.erase(it);
-                    function_overridden = true;
-                }
-
-                break;
             }
 
             if (function_overridden) {
@@ -639,7 +633,7 @@ void ETSChecker::ValidateOverriding(ETSObjectType *class_type, const lexer::Sour
 }
 
 void ETSChecker::AddImplementedSignature(std::vector<Signature *> *implemented_signatures,
-                                         varbinder::LocalVariable *function, ETSFunctionType *it)
+                                         binder::LocalVariable *function, ETSFunctionType *it)
 {
     if (!function->TsType()->IsETSFunctionType()) {
         return;
@@ -785,14 +779,14 @@ void ETSChecker::CheckImplicitSuper(ETSObjectType *class_type, Signature *ctor_s
 void ETSChecker::CheckConstFields(const ETSObjectType *class_type)
 {
     for (const auto &prop : class_type->Fields()) {
-        if (!prop->Declaration()->IsConstDecl() || !prop->HasFlag(varbinder::VariableFlags::EXPLICIT_INIT_REQUIRED)) {
+        if (!prop->Declaration()->IsConstDecl() || !prop->HasFlag(binder::VariableFlags::EXPLICIT_INIT_REQUIRED)) {
             continue;
         }
         CheckConstFieldInitialized(class_type, prop);
     }
 }
 
-void ETSChecker::CheckConstFieldInitialized(const ETSObjectType *class_type, varbinder::LocalVariable *class_var)
+void ETSChecker::CheckConstFieldInitialized(const ETSObjectType *class_type, binder::LocalVariable *class_var)
 {
     const bool class_var_static = class_var->Declaration()->Node()->AsClassProperty()->IsStatic();
     for (const auto &prop : class_type->Methods()) {
@@ -806,7 +800,7 @@ void ETSChecker::CheckConstFieldInitialized(const ETSObjectType *class_type, var
     }
 }
 
-void ETSChecker::FindAssignment(const ir::AstNode *node, const varbinder::LocalVariable *class_var, bool &initialized)
+void ETSChecker::FindAssignment(const ir::AstNode *node, const binder::LocalVariable *class_var, bool &initialized)
 {
     if (node->IsAssignmentExpression() && node->AsAssignmentExpression()->Target() == class_var) {
         if (initialized) {
@@ -821,14 +815,14 @@ void ETSChecker::FindAssignment(const ir::AstNode *node, const varbinder::LocalV
     FindAssignments(node, class_var, initialized);
 }
 
-void ETSChecker::FindAssignments(const ir::AstNode *node, const varbinder::LocalVariable *class_var, bool &initialized)
+void ETSChecker::FindAssignments(const ir::AstNode *node, const binder::LocalVariable *class_var, bool &initialized)
 {
     node->Iterate([this, class_var, &initialized](ir::AstNode *child_node) {
         FindAssignment(child_node, class_var, initialized);
     });
 }
 
-void ETSChecker::CheckConstFieldInitialized(const Signature *signature, varbinder::LocalVariable *class_var)
+void ETSChecker::CheckConstFieldInitialized(const Signature *signature, binder::LocalVariable *class_var)
 {
     bool initialized = false;
     const auto &stmts = signature->Function()->Body()->AsBlockStatement()->Statements();
@@ -842,14 +836,14 @@ void ETSChecker::CheckConstFieldInitialized(const Signature *signature, varbinde
         }
     }
 
-    // NOTE: szd. control flow
+    // TODO(szd) control flow
     FindAssignments(signature->Function()->Body(), class_var, initialized);
     if (!initialized) {
         ThrowTypeError({"Variable '", class_var->Declaration()->Name(), "' might not have been initialized"},
                        signature->Function()->End());
     }
 
-    class_var->RemoveFlag(varbinder::VariableFlags::EXPLICIT_INIT_REQUIRED);
+    class_var->RemoveFlag(binder::VariableFlags::EXPLICIT_INIT_REQUIRED);
 }
 
 void ETSChecker::CheckInnerClassMembers(const ETSObjectType *class_type)
@@ -911,7 +905,7 @@ Type *ETSChecker::CheckArrayElementAccess(ir::MemberExpression *expr)
         expr->SetPropVar(var->AsLocalVariable());
     }
 
-    // NOTE: apply capture conversion on this type
+    // TODO(user): apply capture conversion on this type
     if (array_type->IsETSArrayType()) {
         return array_type->AsETSArrayType()->ElementType();
     }
@@ -996,7 +990,7 @@ ETSObjectType *ETSChecker::CheckExceptionOrErrorType(checker::Type *type, const 
 Type *ETSChecker::TryToInstantiate(Type *const type, ArenaAllocator *const allocator, TypeRelation *const relation,
                                    GlobalTypesHolder *const global_types)
 {
-    // NOTE: Handle generic functions
+    // TODO(user): Handle generic functions
     auto *return_type = type;
     const bool is_incomplete =
         type->IsETSObjectType() && type->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::INCOMPLETE_INSTANTIATION);
@@ -1007,7 +1001,7 @@ Type *ETSChecker::TryToInstantiate(Type *const type, ArenaAllocator *const alloc
     return return_type;
 }
 
-void ETSChecker::ValidateResolvedProperty(const varbinder::LocalVariable *const property,
+void ETSChecker::ValidateResolvedProperty(const binder::LocalVariable *const property,
                                           const ETSObjectType *const target, const ir::Identifier *const ident,
                                           const PropertySearchFlags flags)
 {
@@ -1040,11 +1034,11 @@ void ETSChecker::ValidateResolvedProperty(const varbinder::LocalVariable *const 
     }
 }
 
-varbinder::Variable *ETSChecker::ResolveInstanceExtension(const ir::MemberExpression *const member_expr)
+binder::Variable *ETSChecker::ResolveInstanceExtension(const ir::MemberExpression *const member_expr)
 {
     auto *global_function_var = Scope()
                                     ->FindInGlobal(member_expr->Property()->AsIdentifier()->Name(),
-                                                   varbinder::ResolveBindingOptions::STATIC_METHODS)
+                                                   binder::ResolveBindingOptions::STATIC_METHODS)
                                     .variable;
 
     if (global_function_var == nullptr || !ExtensionETSFunctionType(this->GetTypeOfVariable(global_function_var))) {
@@ -1062,7 +1056,7 @@ std::vector<ResolveResult *> ETSChecker::ResolveMemberReference(const ir::Member
 
     if (target->IsETSDynamicType() && !target->AsETSDynamicType()->HasDecl()) {
         auto prop_name = member_expr->Property()->AsIdentifier()->Name();
-        varbinder::LocalVariable *prop_var = target->AsETSDynamicType()->GetPropertyDynamic(prop_name, this);
+        binder::LocalVariable *prop_var = target->AsETSDynamicType()->GetPropertyDynamic(prop_name, this);
         resolve_res.emplace_back(Allocator()->New<ResolveResult>(prop_var, ResolvedKind::PROPERTY));
         return resolve_res;
     }
@@ -1123,7 +1117,7 @@ std::vector<ResolveResult *> ETSChecker::ResolveMemberReference(const ir::Member
     }();
     search_flag |= PropertySearchFlags::SEARCH_IN_BASE | PropertySearchFlags::SEARCH_IN_INTERFACES;
 
-    const auto *const target_ref = [member_expr]() -> const varbinder::Variable * {
+    const auto *const target_ref = [member_expr]() -> const binder::Variable * {
         if (member_expr->Object()->IsIdentifier()) {
             return member_expr->Object()->AsIdentifier()->Variable();
         }
@@ -1133,7 +1127,7 @@ std::vector<ResolveResult *> ETSChecker::ResolveMemberReference(const ir::Member
         return nullptr;
     }();
 
-    if (target_ref != nullptr && target_ref->HasFlag(varbinder::VariableFlags::CLASS_OR_INTERFACE)) {
+    if (target_ref != nullptr && target_ref->HasFlag(binder::VariableFlags::CLASS_OR_INTERFACE)) {
         search_flag &= ~(PropertySearchFlags::SEARCH_INSTANCE);
     } else if (member_expr->Object()->IsThisExpression() ||
                (member_expr->Object()->IsIdentifier() && member_expr->ObjType()->GetDeclNode() != nullptr &&
@@ -1146,7 +1140,7 @@ std::vector<ResolveResult *> ETSChecker::ResolveMemberReference(const ir::Member
     }
 
     auto *const prop = target->GetProperty(member_expr->Property()->AsIdentifier()->Name(), search_flag);
-    varbinder::Variable *global_function_var = nullptr;
+    binder::Variable *global_function_var = nullptr;
 
     if (member_expr->Parent()->IsCallExpression() &&
         member_expr->Parent()->AsCallExpression()->Callee() == member_expr) {
@@ -1154,7 +1148,7 @@ std::vector<ResolveResult *> ETSChecker::ResolveMemberReference(const ir::Member
     }
 
     if (global_function_var == nullptr ||
-        (target_ref != nullptr && target_ref->HasFlag(varbinder::VariableFlags::CLASS_OR_INTERFACE))) {
+        (target_ref != nullptr && target_ref->HasFlag(binder::VariableFlags::CLASS_OR_INTERFACE))) {
         /*
             Instance extension function can only be called by class instance, if a property is accessed by
             CLASS or INTERFACE type, it couldn't be an instance extension function call
@@ -1181,7 +1175,7 @@ std::vector<ResolveResult *> ETSChecker::ResolveMemberReference(const ir::Member
 
     resolve_res.emplace_back(Allocator()->New<ResolveResult>(prop, ResolvedKind::PROPERTY));
 
-    if (prop->HasFlag(varbinder::VariableFlags::METHOD) && !IsVariableGetterSetter(prop) &&
+    if (prop->HasFlag(binder::VariableFlags::METHOD) && !IsVariableGetterSetter(prop) &&
         (search_flag & PropertySearchFlags::IS_FUNCTIONAL) == 0) {
         ThrowTypeError("Method used in wrong context", member_expr->Property()->Start());
     }
@@ -1274,13 +1268,13 @@ void ETSChecker::CheckValidInheritance(ETSObjectType *class_type, ir::ClassDefin
         if (!IsSameDeclarationType(it, found)) {
             const char *target_type {};
 
-            if (it->HasFlag(varbinder::VariableFlags::PROPERTY)) {
+            if (it->HasFlag(binder::VariableFlags::PROPERTY)) {
                 target_type = "field";
-            } else if (it->HasFlag(varbinder::VariableFlags::METHOD)) {
+            } else if (it->HasFlag(binder::VariableFlags::METHOD)) {
                 target_type = "method";
-            } else if (it->HasFlag(varbinder::VariableFlags::CLASS)) {
+            } else if (it->HasFlag(binder::VariableFlags::CLASS)) {
                 target_type = "class";
-            } else if (it->HasFlag(varbinder::VariableFlags::INTERFACE)) {
+            } else if (it->HasFlag(binder::VariableFlags::INTERFACE)) {
                 target_type = "interface";
             } else {
                 target_type = "enum";
@@ -1295,7 +1289,7 @@ void ETSChecker::CheckValidInheritance(ETSObjectType *class_type, ir::ClassDefin
 
 void ETSChecker::CheckGetterSetterProperties(ETSObjectType *class_type)
 {
-    auto const check_getter_setter = [this](varbinder::LocalVariable *var, util::StringView name) {
+    auto const check_getter_setter = [this](binder::LocalVariable *var, util::StringView name) {
         auto const *type = var->TsType()->AsETSFunctionType();
         auto const *sig_getter = type->FindGetter();
         auto const *sig_setter = type->FindSetter();
@@ -1332,14 +1326,14 @@ void ETSChecker::CheckGetterSetterProperties(ETSObjectType *class_type)
 
 void ETSChecker::AddElementsToModuleObject(ETSObjectType *module_obj, const util::StringView &str)
 {
-    for (const auto &[name, var] : VarBinder()->GetScope()->Bindings()) {
+    for (const auto &[name, var] : Binder()->GetScope()->Bindings()) {
         if (name.Is(str.Mutf8()) || name.Is(compiler::Signatures::ETS_GLOBAL)) {
             continue;
         }
 
-        if (var->HasFlag(varbinder::VariableFlags::METHOD)) {
+        if (var->HasFlag(binder::VariableFlags::METHOD)) {
             module_obj->AddProperty<checker::PropertyType::STATIC_METHOD>(var->AsLocalVariable());
-        } else if (var->HasFlag(varbinder::VariableFlags::PROPERTY)) {
+        } else if (var->HasFlag(binder::VariableFlags::PROPERTY)) {
             module_obj->AddProperty<checker::PropertyType::STATIC_FIELD>(var->AsLocalVariable());
         } else {
             module_obj->AddProperty<checker::PropertyType::STATIC_DECL>(var->AsLocalVariable());
@@ -1417,7 +1411,7 @@ ETSObjectType *ETSChecker::GetClosestCommonAncestor(ETSObjectType *source, ETSOb
 
     target_type->IsSupertypeOf(Relation(), source_type);
     if (Relation()->IsTrue()) {
-        // NOTE: TorokG. Extending the search to find intersection types
+        // TODO(TorokG): Extending the search to find intersection types
         return target_type;
     }
 
