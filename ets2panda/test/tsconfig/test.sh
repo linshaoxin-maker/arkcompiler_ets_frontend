@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
+set -xe
 
 SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 
@@ -45,10 +45,10 @@ rm -rf "$BUILD"
 ACTUAL=$(mktemp /tmp/actual.XXXXXX)
 STDLIB="$PANDA_ROOT/plugins/ets/stdlib"
 CMD="$PANDA_RUN_PREFIX $ES2PANDA --stdlib=$STDLIB --arktsconfig=$TSCONFIG"
-$CMD 2> /dev/null
-pushd "$TSCONFIG_DIR" &> /dev/null
+$CMD
+pushd "$TSCONFIG_DIR"
 find . -type f -name '*abc' | sort --version-sort > "$ACTUAL"
-popd &> /dev/null
+popd
 
 set +e
 /usr/bin/diff "$EXPECTED" "$ACTUAL"
