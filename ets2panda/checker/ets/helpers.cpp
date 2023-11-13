@@ -2040,7 +2040,7 @@ Type *ETSChecker::GetTypeFromTypeAnnotation(ir::TypeNode *const type_annotation)
         return type;
     }
 
-    if (!type->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT)) {
+    if (!type->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT) && !type->HasTypeFlag(TypeFlag::ETS_UNION)) {
         ThrowTypeError("Non reference types cannot be nullish.", type_annotation->Start());
     }
 
