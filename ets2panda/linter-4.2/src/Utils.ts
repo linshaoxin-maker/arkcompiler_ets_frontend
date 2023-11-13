@@ -918,7 +918,7 @@ export class TsUtils {
     return true;
   }
 
-  private getNonNullableType(t: ts.Type) {
+  public getNonNullableType(t: ts.Type) {
     if (this.isNullableUnionType(t)) {
       return t.getNonNullableType();
     }
