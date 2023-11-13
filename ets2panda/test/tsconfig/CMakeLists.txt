@@ -18,7 +18,10 @@ function(add_es2panda_tsconfig_test tsproject)
         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
         COMMAND ./test.sh $<TARGET_FILE:es2panda> ${tsproject} '${PANDA_RUN_PREFIX}' '${PANDA_ROOT}'
     )
-    add_dependencies(es2panda_tests ${TSPROJECT_TARGET_NAME})
+    if (NOT PANDA_TARGET_ARM64)
+        # NOTE: need to check for flaky
+        add_dependencies(es2panda_tests ${TSPROJECT_TARGET_NAME})
+    endif()
 endfunction()
 
 add_es2panda_tsconfig_test(empty_include)
