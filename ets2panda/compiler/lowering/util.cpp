@@ -40,7 +40,7 @@ ir::Identifier *Gensym(ArenaAllocator *allocator)
     const ArenaString s {allocator->Adapter()};
     const auto str = ss.str();
     auto *arena_pointer = allocator->Alloc(str.size() + 1);
-    std::memmove(arena_pointer, reinterpret_cast<const void *>(str.c_str()), str.size() + 1);
+    memmove_s(arena_pointer, str.size() + 1, reinterpret_cast<const void *>(str.c_str()), str.size() + 1);
     return allocator->New<ir::Identifier>(util::StringView(reinterpret_cast<const char *>(arena_pointer)), allocator);
 }
 
