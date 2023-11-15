@@ -785,7 +785,7 @@ Type *ETSObjectType::Instantiate(ArenaAllocator *const allocator, TypeRelation *
     std::lock_guard guard {*checker->Mutex()};
     auto *const base = GetOriginalBaseType();
 
-    if (!relation->TypeInstantiationPossible(base)) {
+    if (!relation->TypeRecursionPossible(base)) {
         return this;
     }
     relation->IncreaseTypeRecursionCount(base);
@@ -961,7 +961,7 @@ ETSObjectType *ETSObjectType::Substitute(TypeRelation *relation, const Substitut
         }
     }
 
-    if (!relation->TypeInstantiationPossible(base)) {
+    if (!relation->TypeRecursionPossible(base)) {
         return this;
     }
     relation->IncreaseTypeRecursionCount(base);

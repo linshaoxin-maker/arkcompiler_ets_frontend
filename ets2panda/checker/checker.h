@@ -130,7 +130,7 @@ public:
         return supertypeResults_;
     }
 
-    [[nodiscard]] std::unordered_set<const void *> &TypeStack() noexcept
+    [[nodiscard]] std::unordered_map<const void *, Type *> &TypeStack() noexcept
     {
         return typeStack_;
     }
@@ -216,7 +216,7 @@ private:
     RelationHolder uncheckedCastableResults_ {{}, RelationType::UNCHECKED_CASTABLE};
     RelationHolder supertypeResults_ {{}, RelationType::SUPERTYPE};
 
-    std::unordered_set<const void *> typeStack_;
+    std::unordered_map<const void *, Type *> typeStack_;
     std::unordered_set<Type *> namedTypeStack_;
 };
 
@@ -242,20 +242,35 @@ private:
 class TypeStackElement {
 public:
     explicit TypeStackElement(Checker *checker, void *element, std::initializer_list<TypeErrorMessageElement> list,
-                              const lexer::SourcePosition &pos)
-        : checker_(checker), element_(element)
+                              const lexer::SourcePosition &pos, bool isRecursive = false)
+        : checker_(checker), element_(element), isRecursive_(isRecursive)
     {
-        if (!checker->typeStack_.insert(element).second) {
+        if (!checker->typeStack_.insert({element, nullptr}).second && !isRecursive_) {
             checker_->ThrowTypeError(list, pos);
         }
     }
 
-    explicit TypeStackElement(Checker *checker, void *element, std::string_view err, const lexer::SourcePosition &pos)
-        : checker_(checker), element_(element)
+    explicit TypeStackElement(Checker *checker, void *element, std::string_view err, const lexer::SourcePosition &pos,
+                              bool isRecursive = false)
+        : checker_(checker), element_(element), isRecursive_(isRecursive)
     {
-        if (!checker->typeStack_.insert(element).second) {
+        if (!checker->typeStack_.insert({element, nullptr}).second && !isRecursive_) {
             checker_->ThrowTypeError(err, pos);
         }
+    }
+
+    Type *GetElementType()
+    {
+        auto recursiveType = checker_->typeStack_.find(element_);
+        if (recursiveType != checker_->typeStack_.end()) {
+            return recursiveType->second;
+        }
+        return nullptr;
+    }
+
+    void SetElementType(Type *type)
+    {
+        checker_->typeStack_[element_] = type;
     }
 
     ~TypeStackElement()
@@ -269,6 +284,7 @@ public:
 private:
     Checker *checker_;
     void *element_;
+    bool isRecursive_;
 };
 
 class ScopeContext {

@@ -661,7 +661,7 @@ void ETSChecker::CheckInit(ir::Identifier *ident, ir::TypeNode *typeAnnotation, 
         SetArrayPreferredTypeForNestedMemberExpressions(init->AsMemberExpression(), annotationType);
     }
 
-    if (init->IsArrayExpression() && annotationType->IsETSArrayType()) {
+    if (init->IsArrayExpression()) {
         if (annotationType->IsETSTupleType()) {
             ValidateTupleMinElementSize(init->AsArrayExpression(), annotationType->AsETSTupleType());
         }

@@ -89,11 +89,13 @@ enum class TypeFlag : uint64_t {
     ETS_NONNULLISH = 1ULL << 61ULL,               // ETS nonnullish type parameter
     ETS_READONLY = 1ULL << 62ULL,                 // ETS readonly type parameter
     ETS_REQUIRED_TYPE_PARAMETER = 1ULL << 63ULL,  // ETS Required type parameter
+    // just comment out it for now, fix issue with ongoing commit
+    // ETS_RECURSIVE = 1ULL << 64ULL,                // ETS recursive
     ETS_DYNAMIC_TYPE = ETS_OBJECT | ETS_DYNAMIC_FLAG,
     ETS_DYNAMIC_FUNCTION_TYPE = FUNCTION | ETS_DYNAMIC_FLAG,
     ETS_TYPE = BYTE | SHORT | INT | LONG | FLOAT | DOUBLE | CHAR | ETS_BOOLEAN | ETS_VOID | ETS_OBJECT | ETS_ARRAY |
                WILDCARD | ETS_TYPE_PARAMETER | ETS_ENUM | ETS_STRING_ENUM | ETS_DYNAMIC_TYPE | ETS_UNION | ETS_NULL |
-               ETS_UNDEFINED | ETS_NONNULLISH | ETS_READONLY,
+               ETS_UNDEFINED | ETS_NONNULLISH | ETS_READONLY,  // | ETS_RECURSIVE,
     ETS_PRIMITIVE = BYTE | SHORT | INT | LONG | FLOAT | DOUBLE | CHAR | ETS_BOOLEAN,
     ETS_PRIMITIVE_RETURN = ETS_PRIMITIVE | ETS_ENUM,
     ETS_ARRAY_INDEX = BYTE | SHORT | INT,
