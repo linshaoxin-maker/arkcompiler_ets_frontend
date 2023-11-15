@@ -679,6 +679,25 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
         return expr->TsType();
     }
 
+    if (expr->preferredType_ != nullptr) {
+        if (expr->preferredType_->IsETSRecursiveType()) {
+            expr->preferredType_ = checker->CreateETSArrayType(expr->preferredType_);
+        }
+
+        if (expr->preferredType_->IsETSUnionType() && expr->Elements().empty()) {
+            for (auto &type : expr->preferredType_->AsETSUnionType()->ConstituentTypes()) {
+                if (type->IsETSArrayType()) {
+                    expr->preferredType_ = type;
+                    break;
+                }
+            }
+        }
+
+        if (expr->preferredType_->IsETSUnionType()) {
+            expr->preferredType_ = nullptr;
+        }
+    }
+
     if (expr->preferredType_ != nullptr && !expr->preferredType_->IsETSArrayType() &&
         !checker->Relation()->IsSupertypeOf(expr->preferredType_, checker->GlobalETSObjectType())) {
         checker->ThrowTypeError({"Expected type for array literal should be an array type, got ", expr->preferredType_},
@@ -708,6 +727,7 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
     }
 
     expr->SetTsType(expr->preferredType_);
+
     auto *const arrayType = expr->TsType()->AsETSArrayType();
     checker->CreateBuiltinArraySignature(arrayType, arrayType->Rank());
     return expr->TsType();

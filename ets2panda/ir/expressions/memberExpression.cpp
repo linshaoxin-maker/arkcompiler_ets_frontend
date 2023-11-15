@@ -274,7 +274,7 @@ checker::Type *MemberExpression::CheckIndexAccessMethod(checker::ETSChecker *che
     searchFlag |= checker::PropertySearchFlags::SEARCH_IN_BASE | checker::PropertySearchFlags::SEARCH_IN_INTERFACES;
     // NOTE(DZ) maybe we need to exclude static methods: search_flag &= ~(checker::PropertySearchFlags::SEARCH_STATIC);
 
-    if (objType_->HasTypeFlag(checker::TypeFlag::GENERIC)) {
+    if (objType_->HasTypeFlag(checker::TypeFlag::GENERIC | checker::TypeFlag::ETS_RECURSIVE)) {
         searchFlag |= checker::PropertySearchFlags::SEARCH_ALL;
     }
 
@@ -342,7 +342,7 @@ checker::Type *MemberExpression::CheckTupleAccessMethod(checker::ETSChecker *che
 
 checker::Type *MemberExpression::CheckComputed(checker::ETSChecker *checker, checker::Type *baseType)
 {
-    if (baseType->IsETSArrayType() || baseType->IsETSDynamicType()) {
+    if (baseType->IsETSArrayType() || baseType->IsETSDynamicType() || baseType->IsETSRecursiveType()) {
         if (!baseType->IsETSTupleType()) {
             checker->ValidateArrayIndex(property_);
         }
@@ -355,9 +355,13 @@ checker::Type *MemberExpression::CheckComputed(checker::ETSChecker *checker, che
         }
 
         // NOTE: apply capture conversion on this type
-        if (baseType->IsETSArrayType()) {
+        if (baseType->IsETSArrayType() || baseType->IsETSRecursiveType()) {
             if (baseType->IsETSTupleType()) {
                 return CheckTupleAccessMethod(checker, baseType);
+            }
+
+            if (baseType->IsETSRecursiveType()) {
+                return baseType;
             }
 
             if (object_->IsArrayExpression() && property_->IsNumberLiteral()) {
