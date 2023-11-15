@@ -2210,33 +2210,46 @@ export class TypeScriptLinter {
       this.incrementCounters(decl, FaultID.UnknownType);
   }
 
-  private handleCommentDirectives(sourceFile: ts.SourceFile) {
-    // We use a dirty hack to retrieve list of parsed comment directives by accessing
-    // internal properties of SourceFile node. 
+  private handleCommentDirectives(sourceFile: ts.SourceFile): void {
+
+    /*
+     * We use a dirty hack to retrieve list of parsed comment directives by accessing
+     * internal properties of SourceFile node.
+     */
 
     // Handle comment directive '@ts-nocheck'
-    let pragmas = (sourceFile as any)['pragmas'];
+    const pragmas = (sourceFile as any).pragmas;
     if (pragmas && pragmas instanceof Map) {
       for (const pragma of pragmas) {
-        if (pragma[0] !== 'ts-nocheck' || !pragma[1]?.range.kind || !pragma[1]?.range.pos || !pragma[1]?.range.end) {
+        if (pragma[0] !== 'ts-nocheck' || !pragma[1]) {
           continue;
         }
 
-        this.incrementCounters(pragma[1].range as ts.CommentRange, FaultID.ErrorSuppression);
+        /*
+         * The value is either a single entry or an array of entries.
+         * Wrap up single entry with array to simplify processing.
+         */
+        const noCheckEntries: any[] = Array.isArray(pragma[1]) ? pragma[1] : [pragma[1]];
+        for (const entry of noCheckEntries) {
+          this.processNoCheckEntry(entry);
+        }
       }
     }
 
     // Handle comment directives '@ts-ignore' and '@ts-expect-error'
-    let commentDirectives = (sourceFile as any)['commentDirectives'];
+    const commentDirectives = (sourceFile as any).commentDirectives;
     if (commentDirectives && Array.isArray(commentDirectives)) {
       for (const directive of commentDirectives) {
-        if (!directive.range?.pos || !directive.range?.end) continue;
+        if (directive.range?.pos === undefined || directive.range?.end === undefined) {
+          continue;
+        }
 
         const range = directive.range as ts.TextRange;
-        const kind: ts.SyntaxKind = sourceFile.text.slice(range.pos, range.pos + 2) === '/*'
-          ? ts.SyntaxKind.MultiLineCommentTrivia
-          : ts.SyntaxKind.SingleLineCommentTrivia;
-        let commentRange: ts.CommentRange = {
+        const kind: ts.SyntaxKind =
+          sourceFile.text.slice(range.pos, range.pos + 2) === '/*' ?
+            ts.SyntaxKind.MultiLineCommentTrivia :
+            ts.SyntaxKind.SingleLineCommentTrivia;
+        const commentRange: ts.CommentRange = {
           pos: range.pos,
           end: range.end,
           kind
@@ -2245,6 +2258,14 @@ export class TypeScriptLinter {
         this.incrementCounters(commentRange, FaultID.ErrorSuppression);
       }
     }
+  }
+
+  private processNoCheckEntry(entry: any): void {
+    if (entry.range?.kind === undefined || entry.range?.pos === undefined || entry.range?.end === undefined) {
+      return;
+    }
+
+    this.incrementCounters(entry.range as ts.CommentRange, FaultID.ErrorSuppression);
   }
 
   private reportThisKeywordsInScope(scope: ts.Block | ts.Expression): void {
