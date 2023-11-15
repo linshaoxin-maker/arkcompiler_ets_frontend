@@ -79,6 +79,8 @@ public:
     static util::StringView ToStringView(ArenaAllocator *allocator, int32_t number);
     static util::StringView ToStringView(ArenaAllocator *allocator, uint32_t number);
     static bool IsRelativePath(const std::string &path);
+    static bool IsCompatibleExtension(const std::string &extension);
+    static bool EndsWith(const std::string &str, const std::string &suffix);
 
     static const ir::ScriptFunction *GetContainingConstructor(const ir::AstNode *node);
     static const ir::ScriptFunction *GetContainingConstructor(const ir::ClassProperty *node);

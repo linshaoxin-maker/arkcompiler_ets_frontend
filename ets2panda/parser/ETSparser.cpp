@@ -232,7 +232,13 @@ ArenaVector<ir::Statement *> ETSParser::PrepareExternalGlobalClass([[maybe_unuse
         res = ext_sources.find(name);
     } else {
         const util::UString source_file_path(
-            GetProgram()->SourceFilePath().Mutf8() + GetProgram()->GetPackageName().Mutf8(), Allocator());
+            GetProgram()->SourceFilePath().Mutf8() +
+                (!util::Helpers::EndsWith(GetProgram()->SourceFilePath().Mutf8(),
+                                          std::string(panda::os::file::File::GetPathDelim()))
+                     ? std::string(panda::os::file::File::GetPathDelim())
+                     : "") +
+                GetProgram()->GetPackageName().Mutf8(),
+            Allocator());
         GetProgram()->SetSource(GetProgram()->SourceCode(), GetProgram()->SourceFile(), source_file_path.View());
     }
 
@@ -252,11 +258,6 @@ ArenaVector<ir::Statement *> ETSParser::PrepareExternalGlobalClass([[maybe_unuse
     }
 
     return statements;
-}
-
-static bool IsCompitableExtension(const std::string &extension)
-{
-    return extension == ".ets" || extension == ".ts";
 }
 
 void ETSParser::CollectDefaultSources()
@@ -283,7 +284,7 @@ void ETSParser::CollectDefaultSources()
             std::string file_name = entry->d_name;
             std::string::size_type pos = file_name.find_last_of('.');
 
-            if (pos == std::string::npos || !IsCompitableExtension(file_name.substr(pos))) {
+            if (pos == std::string::npos || !util::Helpers::IsCompatibleExtension(file_name.substr(pos))) {
                 continue;
             }
 
@@ -301,7 +302,8 @@ void ETSParser::CollectDefaultSources()
 #else
     for (auto const &path : stdlib) {
         for (auto const &entry : fs::directory_iterator(ResolveImportPath(path))) {
-            if (!fs::is_regular_file(entry) || !IsCompitableExtension(entry.path().extension().string())) {
+            if (!fs::is_regular_file(entry) ||
+                !util::Helpers::IsCompatibleExtension(entry.path().extension().string())) {
                 continue;
             }
 
@@ -442,7 +444,7 @@ std::tuple<std::vector<std::string>, bool> ETSParser::CollectUserSources(const s
         std::string file_name = entry->d_name;
         std::string::size_type pos = file_name.find_last_of('.');
 
-        if (pos == std::string::npos || !IsCompitableExtension(file_name.substr(pos))) {
+        if (pos == std::string::npos || !util::Helpers::IsCompatibleExtension(file_name.substr(pos))) {
             continue;
         }
 
@@ -458,7 +460,7 @@ std::tuple<std::vector<std::string>, bool> ETSParser::CollectUserSources(const s
     closedir(dir);
 #else
     for (auto const &entry : fs::directory_iterator(resolved_path)) {
-        if (!fs::is_regular_file(entry) || !IsCompitableExtension(entry.path().extension().string())) {
+        if (!fs::is_regular_file(entry) || !util::Helpers::IsCompatibleExtension(entry.path().extension().string())) {
             continue;
         }
 
