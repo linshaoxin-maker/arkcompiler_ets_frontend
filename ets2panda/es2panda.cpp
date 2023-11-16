@@ -70,12 +70,16 @@ Compiler::~Compiler()
 
 pandasm::Program *Compiler::Compile(const SourceFile &input, const CompilerOptions &options, uint32_t parse_status)
 {
-    try {
+    // try {
+    //     return compiler_->Compile(compiler::CompilationUnit {input, options, parse_status, ext_});
+    // } catch (const class Error &e) {
+    //     error_ = e;
+    //     return nullptr;
+    // }
+    if (compiler_->Compile(compiler::CompilationUnit {input, options, parse_status, ext_})) {
         return compiler_->Compile(compiler::CompilationUnit {input, options, parse_status, ext_});
-    } catch (const class Error &e) {
-        error_ = e;
-        return nullptr;
     }
+    return nullptr;
 }
 
 void Compiler::DumpAsm(const pandasm::Program *prog)

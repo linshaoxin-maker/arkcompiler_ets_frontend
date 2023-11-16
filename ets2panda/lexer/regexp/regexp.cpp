@@ -86,25 +86,30 @@ static uint32_t HexValue(char32_t cp)
 
 static void ThrowError(std::string_view message)
 {
-    throw RegExpError(message);
+    RegExpError reg_exp_error{message};
 }
 
-void RegExpParser::ParsePattern()
+RegExpError *RegExpParser::ParsePattern()
 {
     ParseDisjunction();
 
     if (iter_.HasNext()) {
-        ThrowError("Invalid closing parenthesis");
+        // ThrowError("Invalid closing parenthesis");
+        auto *reg_exp_error = new RegExpError("Invalid closing parenthesis");
+        return reg_exp_error;
     }
 
     if (!back_references_.empty() && !group_names_.empty()) {
         for (const auto it : back_references_) {
             auto result = group_names_.find(it);
             if (result == group_names_.end()) {
-                ThrowError("Invalid capturing group");
+                // ThrowError("Invalid capturing group");
+                auto *reg_exp_error = new RegExpError("Invalid capturing group");
+                return reg_exp_error;
             }
         }
     }
+    return nullptr;
 }
 
 void RegExpParser::ParseDisjunction()

@@ -978,6 +978,7 @@ bool ETSBinder::ImportGlobalPropertiesForNotDefaultedExports(varbinder::Variable
         str += " is already defined with different type.";
     }
     ThrowError(class_element->Id()->Start(), str);
+    return false;
 }
 
 void ETSBinder::ImportGlobalProperties(const ir::ClassDefinition *const class_def)

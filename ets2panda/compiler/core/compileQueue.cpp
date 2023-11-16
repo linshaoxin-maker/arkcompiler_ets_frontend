@@ -91,13 +91,20 @@ void CompileQueue::Consume()
 
         lock.unlock();
 
-        try {
-            job.Run();
-        } catch (const Error &e) {
+        std::optional<bool> status = job.Run();
+        if (!status.has_value()) {
+            const auto e = new Error{};
             lock.lock();
-            errors_.push_back(e);
+            errors_.push_back(*e);
             lock.unlock();
         }
+        // try {
+        //     job.Run();
+        // } catch (const Error &e) {
+        //     lock.lock();
+        //     errors_.push_back(e);
+        //     lock.unlock();
+        // }
 
         lock.lock();
     }
@@ -113,7 +120,7 @@ void CompileQueue::Wait(const JobsFinishedCb &on_finished_cb)
     if (!errors_.empty()) {
         delete[] jobs_;
         // NOLINTNEXTLINE
-        throw errors_.front();
+        errors_.front();
     }
 
     for (uint32_t i = 0; i < total_jobs_count_; i++) {

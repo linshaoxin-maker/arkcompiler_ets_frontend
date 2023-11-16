@@ -204,19 +204,21 @@ void Lexer::SkipSingleLineComment()
     }
 }
 
-[[noreturn]] void Lexer::ThrowUnexpectedToken(lexer::TokenType token_type) const
+void Lexer::ThrowUnexpectedToken(lexer::TokenType token_type) const
 {
     std::stringstream ss;
     ss << "Unexpected token: '" << TokenToString(token_type) << "'.";
     ThrowError(ss.str());
 }
 
-[[noreturn]] void Lexer::ThrowError(std::string_view message) const
+void Lexer::ThrowError(std::string_view message) const
 {
     lexer::LineIndex index(source_);
     lexer::SourceLocation loc = index.GetLocation(SourcePosition(Iterator().Index(), pos_.line_));
 
-    throw Error(es2panda::ErrorType::SYNTAX, parser_context_->GetProgram()->SourceFile().Utf8(), message, loc.line,
+    // throw Error(es2panda::ErrorType::SYNTAX, parser_context_->GetProgram()->SourceFile().Utf8(), message, loc.line,
+    //             loc.col);
+    Error(es2panda::ErrorType::SYNTAX, parser_context_->GetProgram()->SourceFile().Utf8(), message, loc.line,
                 loc.col);
 }
 
@@ -1529,13 +1531,16 @@ void Lexer::ScanNumberLeadingZeroImplNonAllowedCases()
         case LEX_CHAR_6:
         case LEX_CHAR_7: {
             ThrowError("Implicit octal literal not allowed");
+            break;
         }
         case LEX_CHAR_8:
         case LEX_CHAR_9: {
             ThrowError("NonOctalDecimalIntegerLiteral is not enabled in strict mode code");
+             break;
         }
         case LEX_CHAR_UNDERSCORE: {
             ThrowError("Numeric separator '_' is not allowed in numbers that start with '0'.");
+             break;
         }
         default: {
             break;

@@ -135,13 +135,13 @@ public:
         return reinterpret_cast<ETSBinder *>(this);
     }
 
-    [[noreturn]] void ThrowPrivateFieldMismatch(const lexer::SourcePosition &pos, const util::StringView &name) const;
-    [[noreturn]] void ThrowRedeclaration(const lexer::SourcePosition &pos, const util::StringView &name) const;
-    [[noreturn]] void ThrowUnresolvableVariable(const lexer::SourcePosition &pos, const util::StringView &name) const;
-    [[noreturn]] void ThrowUnresolvableType(const lexer::SourcePosition &pos, const util::StringView &name) const;
-    [[noreturn]] void ThrowTDZ(const lexer::SourcePosition &pos, const util::StringView &name) const;
-    [[noreturn]] void ThrowInvalidCapture(const lexer::SourcePosition &pos, const util::StringView &name) const;
-    [[noreturn]] void ThrowError(const lexer::SourcePosition &pos, const std::string_view &msg) const;
+    void ThrowPrivateFieldMismatch(const lexer::SourcePosition &pos, const util::StringView &name) const;
+    void ThrowRedeclaration(const lexer::SourcePosition &pos, const util::StringView &name) const;
+    void ThrowUnresolvableVariable(const lexer::SourcePosition &pos, const util::StringView &name) const;
+    void ThrowUnresolvableType(const lexer::SourcePosition &pos, const util::StringView &name) const;
+    void ThrowTDZ(const lexer::SourcePosition &pos, const util::StringView &name) const;
+    void ThrowInvalidCapture(const lexer::SourcePosition &pos, const util::StringView &name) const;
+    void ThrowError(const lexer::SourcePosition &pos, const std::string_view &msg) const;
 
     void PropagateDirectEval() const;
 
@@ -349,6 +349,7 @@ T *VarBinder::AddTsDecl(const lexer::SourcePosition &pos, Args &&...args)
     }
 
     ThrowRedeclaration(pos, decl->Name());
+    return nullptr;
 }
 
 template <typename T, typename... Args>
@@ -361,6 +362,7 @@ T *VarBinder::AddDecl(const lexer::SourcePosition &pos, Args &&...args)
     }
 
     ThrowRedeclaration(pos, decl->Name());
+    return nullptr;
 }
 
 template <typename T, typename... Args>
@@ -374,6 +376,7 @@ std::tuple<T *, varbinder::Variable *> VarBinder::NewVarDecl(const lexer::Source
     }
 
     ThrowRedeclaration(pos, decl->Name());
+    return {nullptr, nullptr};
 }
 }  // namespace panda::es2panda::varbinder
 

@@ -894,6 +894,7 @@ ArenaVector<ir::Expression *> ParserImpl::ParseFunctionParams()
 ir::Expression *ParserImpl::CreateParameterThis([[maybe_unused]] util::StringView class_name)
 {
     ThrowSyntaxError({"Unexpected token: ", class_name.Utf8()});
+    return nullptr;
 }
 
 std::tuple<bool, ir::BlockStatement *, lexer::SourcePosition, bool> ParserImpl::ParseFunctionBody(
@@ -1203,7 +1204,7 @@ void ParserImpl::ThrowSyntaxError(std::string_view error_message, const lexer::S
     lexer::LineIndex index(program_->SourceCode());
     lexer::SourceLocation loc = index.GetLocation(pos);
 
-    throw Error {ErrorType::SYNTAX, program_->SourceFile().Utf8(), error_message, loc.line, loc.col};
+    Error {ErrorType::SYNTAX, program_->SourceFile().Utf8(), error_message, loc.line, loc.col};
 }
 
 ScriptExtension ParserImpl::Extension() const

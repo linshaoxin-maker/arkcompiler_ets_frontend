@@ -1018,6 +1018,7 @@ Type *ETSChecker::GetTypeFromEnumReference([[maybe_unused]] varbinder::Variable 
         return CreateETSStringEnumType(enum_decl);
     } else {  // NOLINT(readability-else-after-return)
         ThrowTypeError("Invalid enumeration value type.", enum_decl->Start());
+        return nullptr;
     }
 }
 
@@ -1660,6 +1661,7 @@ std::string ETSChecker::GetStringFromIdentifierValue(checker::Type *case_type) c
         case TypeFlag::ETS_OBJECT: {
             VarBinder()->ThrowError(case_type->AsETSObjectType()->Variable()->Declaration()->Node()->Start(),
                                     "not implemented");
+            return nullptr;
         }
         default: {
             UNREACHABLE();

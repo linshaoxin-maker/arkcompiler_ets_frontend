@@ -156,6 +156,7 @@ ir::Statement *ParserImpl::ParseStatement(StatementParsingFlags flags)
         }
         case lexer::TokenType::KEYW_WITH: {
             ThrowSyntaxError("'With' is deprecated and not supported any more.");
+            return nullptr;
         }
         case lexer::TokenType::KEYW_ENUM: {
             return ParseEnumDeclaration();
@@ -252,6 +253,7 @@ ir::ETSStructDeclaration *ParserImpl::ParseStructStatement([[maybe_unused]] Stat
                                                            [[maybe_unused]] ir::ModifierFlags mod_flags)
 {
     ThrowSyntaxError("Illegal start of expression", Lexer()->GetToken().Start());
+    return nullptr;
 }
 
 // NOLINTNEXTLINE(google-default-arguments)
@@ -1434,6 +1436,7 @@ ir::VariableDeclarator *ParserImpl::ParseVariableDeclarator(VariableParsingFlags
 ir::Statement *ParserImpl::ParsePotentialConstEnum([[maybe_unused]] VariableParsingFlags flags)
 {
     ThrowSyntaxError("Variable declaration expected.");
+    return nullptr;
 }
 
 void ParserImpl::ThrowIfVarDeclaration([[maybe_unused]] VariableParsingFlags flags) {}

@@ -49,12 +49,12 @@ public:
         return lexer_->parser_context_;
     }
 
-    [[noreturn]] void ThrowError(std::string_view msg) const
+    void ThrowError(std::string_view msg) const
     {
         lexer_->ThrowError(msg);
     }
 
-    [[noreturn]] void ThrowUnexpectedStrictModeReservedKeyword() const
+    void ThrowUnexpectedStrictModeReservedKeyword() const
     {
         lexer_->ThrowUnexpectedStrictModeReservedKeyword();
     }

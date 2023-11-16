@@ -576,6 +576,7 @@ Type *ObjectDestructuringContext::GetRestType([[maybe_unused]] const lexer::Sour
     }
 
     checker_->ThrowTypeError("Rest types may only be created from object types.", loc);
+    return nullptr;
 }
 
 Type *ObjectDestructuringContext::ConvertTupleTypeToArrayTypeIfNecessary(ir::AstNode *node, Type *type)

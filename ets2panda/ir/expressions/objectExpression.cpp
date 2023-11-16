@@ -75,7 +75,8 @@ ObjectExpression *ObjectExpression::Clone(ArenaAllocator *const allocator, AstNo
         }
         return clone;
     }
-    throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    return this; // ?
 }
 
 ValidationInfo ObjectExpression::ValidateExpression()

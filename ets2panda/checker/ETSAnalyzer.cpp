@@ -1704,6 +1704,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSEnumDeclaration *st) const
             ets_enum_type = checker->CreateETSStringEnumType(st);
         } else {
             checker->ThrowTypeError("Invalid enumeration value type.", st->Start());
+            return nullptr;
         }
         st->SetTsType(ets_enum_type);
         ets_enum_type->SetVariable(enum_var);

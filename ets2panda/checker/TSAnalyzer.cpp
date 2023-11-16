@@ -364,6 +364,7 @@ checker::Type *TSAnalyzer::Check(ir::BinaryExpression *expr) const
             }
 
             checker->ThrowBinaryLikeError(expr->OperatorType(), left_type, right_type, expr->Start());
+            break;
         }
         case lexer::TokenType::KEYW_INSTANCEOF: {
             return checker->CheckInstanceofExpression(left_type, right_type, expr->Right(), expr);

@@ -19,7 +19,7 @@
 
 namespace panda::es2panda::compiler {
 
-void CompileJob::Run()
+bool CompileJob::Run()
 {
     std::unique_lock<std::mutex> lock(m_);
     cond_.wait(lock, [this] { return dependencies_ == 0; });
@@ -29,6 +29,7 @@ void CompileJob::Run()
     if (dependant_ != nullptr) {
         dependant_->Signal();
     }
+    return true;
 }
 
 void CompileJob::DependsOn(CompileJob *job)

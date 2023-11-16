@@ -74,6 +74,7 @@ checker::Type *TSQualifiedName::Check(checker::ETSChecker *checker)
     }
 
     checker->ThrowTypeError({"'", right_->Name(), "' type does not exist."}, right_->Start());
+    return nullptr;
 }
 
 util::StringView TSQualifiedName::ToString(ArenaAllocator *allocator) const

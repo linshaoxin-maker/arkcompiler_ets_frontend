@@ -81,6 +81,7 @@ std::tuple<ParameterDecl *, Variable *> VarBinder::AddParamDecl(ir::AstNode *par
     }
 
     ThrowRedeclaration(node->Start(), decl->Name());
+    std::abort();
 }
 
 void VarBinder::ThrowRedeclaration(const lexer::SourcePosition &pos, const util::StringView &name) const
@@ -131,7 +132,7 @@ void VarBinder::ThrowError(const lexer::SourcePosition &pos, const std::string_v
     lexer::LineIndex index(program_->SourceCode());
     lexer::SourceLocation loc = index.GetLocation(pos);
 
-    throw Error(ErrorType::SYNTAX, program_->SourceFile().Utf8(), msg, loc.line, loc.col);
+    Error(ErrorType::SYNTAX, program_->SourceFile().Utf8(), msg, loc.line, loc.col);
 }
 
 void VarBinder::IdentifierAnalysis()

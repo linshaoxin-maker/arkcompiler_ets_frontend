@@ -267,9 +267,9 @@ public:
     bool IsVariableUsedInConditionBody(ir::AstNode *parent, varbinder::Variable *search_var);
     bool FindVariableInBinaryExpressionChain(ir::AstNode *parent, varbinder::Variable *search_var);
     bool IsVariableUsedInBinaryExpressionChain(ir::AstNode *parent, varbinder::Variable *search_var);
-    [[noreturn]] void ThrowBinaryLikeError(lexer::TokenType op, Type *left_type, Type *right_type,
+    void ThrowBinaryLikeError(lexer::TokenType op, Type *left_type, Type *right_type,
                                            lexer::SourcePosition line_info);
-    [[noreturn]] void ThrowAssignmentError(Type *source, Type *target, lexer::SourcePosition line_info,
+    void ThrowAssignmentError(Type *source, Type *target, lexer::SourcePosition line_info,
                                            bool is_as_src_left_type = false);
     void ElaborateElementwise(Type *target_type, ir::Expression *source_node, const lexer::SourcePosition &pos);
     void InferSimpleVariableDeclaratorType(ir::VariableDeclarator *declarator);

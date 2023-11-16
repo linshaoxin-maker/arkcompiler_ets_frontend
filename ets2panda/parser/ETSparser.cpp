@@ -869,10 +869,12 @@ ir::Statement *ETSParser::ParseTopLevelStatement(StatementParsingFlags flags)
             [[fallthrough]];
         case lexer::TokenType::KEYW_RETURN: {
             ThrowUnexpectedToken(token_type);
+            return nullptr;
         }
         // Note: let's leave the default processing case separately, because it can be changed in the future.
         default: {
             ThrowUnexpectedToken(token_type);
+            return nullptr;
             // return ParseExpressionStatement(flags);
         }
     }
@@ -1750,6 +1752,7 @@ ir::Statement *ETSParser::ParseTypeDeclaration(bool allow_static)
             }
 
             ThrowUnexpectedToken(Lexer()->GetToken().Type());
+            return nullptr;
         }
         case lexer::TokenType::KEYW_ENUM: {
             return ParseEnumDeclaration(false);
@@ -1789,10 +1792,12 @@ ir::Statement *ETSParser::ParseTypeDeclaration(bool allow_static)
             }
 
             err_msg.append("'");
-            ThrowSyntaxError(err_msg.c_str());
+            ThrowSyntaxError(err_msg.c_str()); // "which" method in class Error commented because of no use
+            return nullptr;
         }
         default: {
             ThrowUnexpectedToken(Lexer()->GetToken().Type());
+            return nullptr;
         }
     }
 }
@@ -2834,12 +2839,14 @@ void ETSParser::ValidateForInStatement()
 ir::DebuggerStatement *ETSParser::ParseDebuggerStatement()
 {
     ThrowUnexpectedToken(lexer::TokenType::KEYW_DEBUGGER);
+    return nullptr;
 }
 
 ir::Statement *ETSParser::ParseFunctionStatement([[maybe_unused]] const StatementParsingFlags flags)
 {
     ASSERT((flags & StatementParsingFlags::GLOBAL) == 0);
     ThrowSyntaxError("Nested functions are not allowed");
+    return nullptr;
 }
 
 void ETSParser::ParsePackageDeclaration(ArenaVector<ir::Statement *> &statements)
@@ -3126,6 +3133,7 @@ ir::AnnotatedExpression *ETSParser::GetAnnotatedExpressionFromParam()
 
             if (Lexer()->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
                 ThrowSyntaxError("Unexpected token, expected an identifier.");
+                return nullptr;
             }
 
             auto *const rest_ident = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
@@ -3138,6 +3146,7 @@ ir::AnnotatedExpression *ETSParser::GetAnnotatedExpressionFromParam()
 
         default: {
             ThrowSyntaxError("Unexpected token, expected an identifier.");
+            return nullptr;
         }
     }
 
@@ -3577,6 +3586,7 @@ ir::Statement *ETSParser::ParseImportDeclaration([[maybe_unused]] StatementParsi
 ir::Statement *ETSParser::ParseExportDeclaration([[maybe_unused]] StatementParsingFlags flags)
 {
     ThrowUnexpectedToken(lexer::TokenType::KEYW_EXPORT);
+    return nullptr;
 }
 
 // NOLINTNEXTLINE(google-default-arguments)
@@ -3727,6 +3737,7 @@ ir::Expression *ETSParser::ParsePrimaryExpression(ExpressionParseFlags flags)
         }
         case lexer::TokenType::KEYW_TYPE: {
             ThrowSyntaxError("Type alias is allowed only as top-level declaration");
+            return nullptr;
         }
         case lexer::TokenType::PUNCTUATOR_FORMAT: {
             return ParseExpressionFormatPlaceholder();
@@ -4366,6 +4377,7 @@ ir::ClassDeclaration *ETSParser::ParseClassStatement([[maybe_unused]] StatementP
                                                      [[maybe_unused]] ir::ModifierFlags mod_flags)
 {
     ThrowSyntaxError("Illegal start of expression", Lexer()->GetToken().Start());
+    return nullptr;
 }
 
 // NOLINTNEXTLINE(google-default-arguments)
@@ -4374,6 +4386,7 @@ ir::ETSStructDeclaration *ETSParser::ParseStructStatement([[maybe_unused]] State
                                                           [[maybe_unused]] ir::ModifierFlags mod_flags)
 {
     ThrowSyntaxError("Illegal start of expression", Lexer()->GetToken().Start());
+    return nullptr;
 }
 
 bool ETSParser::CheckClassElement(ir::AstNode *property, [[maybe_unused]] ir::MethodDefinition *&ctor,
@@ -4578,6 +4591,7 @@ ir::AstNode *ETSParser::ParseFormatPlaceholder()
     }
 
     ThrowSyntaxError(INVALID_FORMAT_NODE, Lexer()->GetToken().Start());
+    return nullptr;
 }
 
 ir::Expression *ETSParser::ParseExpressionFormatPlaceholder(std::optional<ParserImpl::NodeFormatType> node_format)
