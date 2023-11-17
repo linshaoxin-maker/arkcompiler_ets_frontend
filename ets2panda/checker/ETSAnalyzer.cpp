@@ -2152,6 +2152,22 @@ void InferReturnType(ETSChecker *checker, ir::ScriptFunction *containing_func, c
             func_return_type->Instantiate(checker->Allocator(), checker->Relation(), checker->GetGlobalTypesHolder());
         func_return_type->RemoveTypeFlag(checker::TypeFlag::CONSTANT);
     }
+    /*
+    when st_argment is ArrowFunctionExpression, need infer type for st_argment
+    example code:
+    ```
+    return () => {}
+    ```
+    */
+    if (st_argument != nullptr && st_argument->IsArrowFunctionExpression()) {
+        auto arrow_func = st_argument->AsArrowFunctionExpression();
+        auto type_annotation = arrow_func->CreateTypeAnnotation(checker);
+        func_return_type = type_annotation->GetType(checker);
+        checker::AssignmentContext(checker->Relation(), arrow_func, arrow_func->TsType(), func_return_type,
+                                   st_argument->Start(),
+                                   {"Return statement type is not compatible with the enclosing method's return type."},
+                                   checker::TypeRelationFlag::DIRECT_RETURN);
+    }
 
     containing_func->Signature()->SetReturnType(func_return_type);
     containing_func->Signature()->RemoveSignatureFlag(checker::SignatureFlags::NEED_RETURN_TYPE);
@@ -2210,48 +2226,7 @@ void ProcessReturnStatements(ETSChecker *checker, ir::ScriptFunction *containing
         relation->SetNode(st_argument);
 
         if (!relation->IsIdenticalTo(func_return_type, argument_type)) {
-            if (func_return_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT) ||
-                argument_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
-                // function return type should be of reference (object) type
-                relation->SetFlags(checker::TypeRelationFlag::NONE);
-
-                if (!argument_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
-                    argument_type = checker->PrimitiveTypeAsETSBuiltinType(argument_type);
-                    if (argument_type == nullptr) {
-                        checker->ThrowTypeError("Invalid return statement expression", st_argument->Start());
-                    }
-                    st_argument->AddBoxingUnboxingFlag(checker->GetBoxingFlag(argument_type));
-                }
-
-                if (!func_return_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
-                    func_return_type = checker->PrimitiveTypeAsETSBuiltinType(func_return_type);
-                    if (func_return_type == nullptr) {
-                        checker->ThrowTypeError("Invalid return function expression", st->Start());
-                    }
-                }
-
-                func_return_type = checker->FindLeastUpperBound(func_return_type, argument_type);
-                containing_func->Signature()->SetReturnType(func_return_type);
-                containing_func->Signature()->AddSignatureFlag(checker::SignatureFlags::INFERRED_RETURN_TYPE);
-            } else if (func_return_type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE_RETURN) &&
-                       argument_type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE_RETURN)) {
-                // function return type is of primitive type (including enums):
-                relation->SetFlags(checker::TypeRelationFlag::DIRECT_RETURN |
-                                   checker::TypeRelationFlag::IN_ASSIGNMENT_CONTEXT |
-                                   checker::TypeRelationFlag::ASSIGNMENT_CONTEXT);
-                if (relation->IsAssignableTo(func_return_type, argument_type)) {
-                    func_return_type = argument_type;
-                    containing_func->Signature()->SetReturnType(func_return_type);
-                    containing_func->Signature()->AddSignatureFlag(checker::SignatureFlags::INFERRED_RETURN_TYPE);
-                } else if (!relation->IsAssignableTo(argument_type, func_return_type)) {
-                    checker->ThrowTypeError(
-                        "Return statement type is not compatible with previous method's return statement "
-                        "type(s).",
-                        st_argument->Start());
-                }
-            } else {
-                checker->ThrowTypeError("Invalid return statement type(s).", st->Start());
-            }
+            checker->ResolveReturnStatement(func_return_type, argument_type, containing_func, st);
         }
 
         relation->SetNode(nullptr);
