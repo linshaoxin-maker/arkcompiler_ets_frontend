@@ -2234,7 +2234,7 @@ std::string ETSParser::CreateProxyMethodName(const ir::ScriptFunction *const fun
 void ETSParser::AddProxyOverloadToMethodWithDefaultParams(ir::MethodDefinition *method, ir::Identifier *ident_node)
 {
     if (method->IsConstructor()) {
-        return;  // TODO(szd): Fix constructors not working with default params
+        return;  // NOTE(szd): Fix constructors not working with default params
     }
 
     const auto *const function = method->Function();
