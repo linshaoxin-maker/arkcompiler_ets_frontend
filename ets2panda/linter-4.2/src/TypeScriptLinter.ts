@@ -234,12 +234,10 @@ export class TypeScriptLinter {
     if (stopCond?.call(this, node)) {
       return;
     }
-    // #13972: The 'ts.forEachChild' doesn't iterate over in-between punctuation tokens.
-    // As result, we can miss comment directives attached to those. Instead, use 'node.getChildren()'.
-    // to traverse child nodes.
-    for (const child of node.getChildren()) {
-      this.forEachNodeInSubtree(child, cb, stopCond)
-    }
+
+    ts.forEachChild(node, (child) => {
+      this.forEachNodeInSubtree(child, cb, stopCond);
+    });
   }
   private visitSourceFile(sf: ts.SourceFile): void {
     const callback = (node: ts.Node) => {
