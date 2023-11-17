@@ -232,6 +232,8 @@ void Signature::Identical(TypeRelation *relation, Signature *other)
             identical_rest_parameters(this_parameters_number, this->Params(), other->RestVar());
         } else if (i < other_parameters_number) {
             identical_rest_parameters(other_parameters_number, other->Params(), this->RestVar());
+        } else if (other->RestVar() != nullptr && this->RestVar() != nullptr) {
+            relation->IsIdenticalTo(this->RestVar()->TsType(), other->RestVar()->TsType());
         }
     }
 }

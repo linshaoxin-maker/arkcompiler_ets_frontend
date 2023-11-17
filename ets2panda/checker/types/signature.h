@@ -235,6 +235,12 @@ public:
             ss << compiler::Signatures::MANGLE_SEPARATOR;
         }
 
+        if (signature_info_->rest_var != nullptr) {
+            signature_info_->rest_var->TsType()->ToAssemblerType(ss);
+            ss << "[]";
+            ss << compiler::Signatures::MANGLE_SEPARATOR;
+        }
+
         return_type_->ToAssemblerTypeWithRank(ss);
         ss << compiler::Signatures::MANGLE_SEPARATOR;
     }
