@@ -42,6 +42,7 @@
 #include <ir/expressions/literals/stringLiteral.h>
 #include <ir/expressions/memberExpression.h>
 #include <ir/expressions/objectExpression.h>
+#include <ir/expressions/privateIdentifier.h>
 #include <ir/expressions/superExpression.h>
 #include <ir/expressions/typeArgumentsExpression.h>
 #include <ir/module/exportDefaultDeclaration.h>
@@ -2260,6 +2261,9 @@ void ParserImpl::ValidateClassKey(ClassElmentDescriptor *desc, bool isDeclare)
 
 ir::Expression *ParserImpl::ParseClassKey(ClassElmentDescriptor *desc, bool isDeclare)
 {
+    if (desc->isPrivateIdent) {
+        return ParsePrivateIdentifier();
+    }
     ir::Expression *propName = nullptr;
     if (lexer_->GetToken().IsKeyword()) {
         lexer_->GetToken().SetTokenType(lexer::TokenType::LITERAL_IDENT);
@@ -2274,7 +2278,6 @@ ir::Expression *ParserImpl::ParseClassKey(ClassElmentDescriptor *desc, bool isDe
             break;
         }
         case lexer::TokenType::LITERAL_STRING: {
-            ThrowIfPrivateIdent(desc, "Private identifier name can not be string");
             ValidateClassKey(desc, isDeclare);
 
             propName = AllocNode<ir::StringLiteral>(lexer_->GetToken().String());
@@ -2282,7 +2285,6 @@ ir::Expression *ParserImpl::ParseClassKey(ClassElmentDescriptor *desc, bool isDe
             break;
         }
         case lexer::TokenType::LITERAL_NUMBER: {
-            ThrowIfPrivateIdent(desc, "Private identifier name can not be number");
 
             if (lexer_->GetToken().Flags() & lexer::TokenFlags::NUMBER_BIGINT) {
                 propName = AllocNode<ir::BigIntLiteral>(lexer_->GetToken().BigInt());
@@ -2294,8 +2296,6 @@ ir::Expression *ParserImpl::ParseClassKey(ClassElmentDescriptor *desc, bool isDe
             break;
         }
         case lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET: {
-            ThrowIfPrivateIdent(desc, "Unexpected character in private identifier");
-
             lexer_->NextToken();  // eat left square bracket
 
             if (Extension() == ScriptExtension::TS && lexer_->GetToken().Type() == lexer::TokenType::LITERAL_IDENT &&
@@ -2423,6 +2423,62 @@ void ParserImpl::ValidateClassGetter(ClassElmentDescriptor *desc, const ArenaVec
     }
 }
 
+void ParserImpl::ValidatePrivateProperty(ir::Statement *stmt, std::unordered_set<util::StringView> &usedPrivateNames,
+    std::unordered_map<util::StringView, PrivateGetterSetterType> &unusedGetterSetterPairs)
+{
+    if (stmt->IsClassProperty()) {
+        auto *prop = stmt->AsClassProperty();
+        if (!prop->IsPrivate()) {
+            return;
+        }
+        auto name = prop->Key()->AsPrivateIdentifier()->Name();
+        if (usedPrivateNames.find(name) != usedPrivateNames.end()) {
+            ThrowSyntaxError("Redeclaration of class private property", prop->Start());
+        }
+        usedPrivateNames.insert(name);
+        return;
+    }
+
+    if (stmt->IsMethodDefinition()) {
+        auto *methodDef = stmt->AsMethodDefinition();
+        if (!methodDef->IsPrivate()) {
+            return;
+        }
+        auto name = methodDef->Key()->AsPrivateIdentifier()->Name();
+
+        if (methodDef->Kind() == ir::MethodDefinitionKind::METHOD) {
+            if (usedPrivateNames.find(name) != usedPrivateNames.end()) {
+                ThrowSyntaxError("Redeclaration of class private property", methodDef->Start());
+            }
+            usedPrivateNames.insert(name);
+            return;
+        }
+
+        ASSERT(methodDef->Kind() != ir::MethodDefinitionKind::CONSTRUCTOR);
+        PrivateGetterSetterType type = (methodDef->Kind() == ir::MethodDefinitionKind::GET) ?
+                                       PrivateGetterSetterType::GETTER : PrivateGetterSetterType::SETTER;
+        PrivateGetterSetterType unusedType = (methodDef->Kind() == ir::MethodDefinitionKind::GET) ?
+                                             PrivateGetterSetterType::SETTER : PrivateGetterSetterType::GETTER;
+
+        if (methodDef->IsStatic()) {
+            type |= PrivateGetterSetterType::STATIC;
+            unusedType |= PrivateGetterSetterType::STATIC;
+        }
+
+        if (usedPrivateNames.find(name) == usedPrivateNames.end()) {
+            usedPrivateNames.insert(name);
+            unusedGetterSetterPairs[name] = unusedType;
+            return;
+        }
+
+        auto result = unusedGetterSetterPairs.find(name);
+        if (result == unusedGetterSetterPairs.end() || unusedGetterSetterPairs[name] != type) {
+            ThrowSyntaxError("Redeclaration of class private property", methodDef->Start());
+        }
+        unusedGetterSetterPairs.erase(result);
+    }
+}
+
 ir::MethodDefinition *ParserImpl::ParseClassMethod(ClassElmentDescriptor *desc,
                                                    const ArenaVector<ir::Statement *> &properties,
                                                    ir::Expression *propName, lexer::SourcePosition *propEnd,
@@ -2542,21 +2598,7 @@ ir::Statement *ParserImpl::ParseClassProperty(ClassElmentDescriptor *desc,
         propEnd = value->End();
     }
 
-    ir::Expression *privateId = nullptr;
-
-    if (Extension() == ScriptExtension::JS) {
-        if (desc->isPrivateIdent) {
-            ThrowSyntaxError("Private js fields are not supported");
-        }
-    } else {
-        if (desc->isPrivateIdent) {
-            privateId = AllocNode<ir::TSPrivateIdentifier>(propName, value, typeAnnotation);
-            auto privateIdStart = lexer::SourcePosition(propName->Start().index - 1, propName->Start().line);
-            privateId->SetRange({privateIdStart, propName->End()});
-        }
-    }
-
-    property = AllocNode<ir::ClassProperty>(desc->isPrivateIdent ? privateId : propName, value, typeAnnotation,
+    property = AllocNode<ir::ClassProperty>(propName, value, typeAnnotation,
                                             desc->modifiers, std::move(decorators), desc->isComputed,
                                             desc->modifiers & ir::ModifierFlags::DEFINITE);
 
@@ -2570,8 +2612,6 @@ void ParserImpl::CheckClassGeneratorMethod(ClassElmentDescriptor *desc)
         return;
     }
 
-    ThrowIfPrivateIdent(desc, "Unexpected character in private identifier");
-
     desc->isGenerator = true;
     lexer_->NextToken(lexer::LexerNextTokenFlags::KEYWORD_TO_IDENT);
 }
@@ -2582,20 +2622,11 @@ void ParserImpl::CheckClassPrivateIdentifier(ClassElmentDescriptor *desc)
         return;
     }
 
-    if (Extension() == ScriptExtension::JS) {
-        ThrowSyntaxError("JS private class fields are not supported.");
-    }
-
     if (Extension() == ScriptExtension::AS) {
         return;
     }
 
-    if ((desc->modifiers & ~ir::ModifierFlags::READONLY) && (desc->modifiers & ~ir::ModifierFlags::STATIC)) {
-        ThrowSyntaxError("Unexpected modifier on private identifier");
-    }
-
     desc->isPrivateIdent = true;
-    lexer_->NextToken(lexer::LexerNextTokenFlags::KEYWORD_TO_IDENT);
 }
 
 void ParserImpl::CheckFieldKey(ir::Expression *propName)
@@ -2604,9 +2635,9 @@ void ParserImpl::CheckFieldKey(ir::Expression *propName)
         return;
     }
 
-    ASSERT(propName->IsIdentifier() || propName->IsStringLiteral());
+    ASSERT(propName->IsIdentifier() || propName->IsStringLiteral() || propName->IsPrivateIdentifier());
     const util::StringView &stringView = propName->IsIdentifier() ? propName->AsIdentifier()->Name() :
-                                                                    propName->AsStringLiteral()->Str();
+        (propName->IsStringLiteral() ? propName->AsStringLiteral()->Str() : propName->AsPrivateIdentifier()->Name());
     if (stringView.Is("constructor")) {
         ThrowSyntaxError("Classes may not have field named 'constructor'");
     }
@@ -2701,9 +2732,9 @@ ir::Statement *ParserImpl::ParseClassElement(const ArenaVector<ir::Statement *> 
         return ParseStaticBlock(&desc);
     }
 
-    CheckClassPrivateIdentifier(&desc);
     CheckClassGeneratorMethod(&desc);
     ParseClassKeyModifiers(&desc);
+    CheckClassPrivateIdentifier(&desc);
 
     if (!(desc.modifiers & ir::ModifierFlags::STATIC)) {
         context_.Status() |= ParserStatus::ALLOW_THIS_TYPE;
@@ -3063,6 +3094,9 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool i
     auto *static_scope  = staticInitializer->Function()->Scope();
     auto *instance_scope = instanceInitializer->Function()->Scope();
 
+    std::unordered_set<util::StringView> usedPrivateNames;
+    std::unordered_map<util::StringView, PrivateGetterSetterType> unusedGetterSetterPairs;
+
     while (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
         if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
             lexer_->NextToken();
@@ -3089,6 +3123,7 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool i
             continue;
         }
         isCtorContinuousDefined = ctor == nullptr;
+        ValidatePrivateProperty(property, usedPrivateNames, unusedGetterSetterPairs);
         properties.push_back(property);
     }
 
@@ -3100,6 +3135,7 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool i
         ctor->SetRange({startLoc, classBodyEndLoc});
         hasConstructorFuncBody = !isDeclare;
     }
+
     lexer_->NextToken();
 
     ValidateClassConstructor(ctor, properties, isDeclare, hasConstructorFuncBody, hasSuperClass, isExtendsFromNull);

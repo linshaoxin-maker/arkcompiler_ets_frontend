@@ -30,6 +30,7 @@
 #include "ir/expressions/assignmentExpression.h"
 #include "ir/expressions/identifier.h"
 #include "ir/expressions/objectExpression.h"
+#include "ir/expressions/privateIdentifier.h"
 #include "ir/expressions/literals/numberLiteral.h"
 #include "ir/module/exportNamedDeclaration.h"
 #include "ir/module/exportSpecifier.h"
@@ -660,6 +661,10 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
             ResolveReferences(childNode);
             break;
         }
+        case ir::AstNodeType::PRIVATE_IDENTIFIER: {
+            CheckPrivateDeclaration(childNode->AsPrivateIdentifier());
+            break;
+        }
         case ir::AstNodeType::SUPER_EXPRESSION: {
             VariableScope *varScope = scope_->EnclosingVariableScope();
             varScope->AddFlag(VariableScopeFlags::USE_SUPER);
@@ -1007,6 +1012,27 @@ void Binder::ReplaceConstReferenceWithInitialization(const ir::Identifier *ident
             }
             return childNode;
         }, this);
+}
+
+void Binder::CheckPrivateDeclaration(const ir::PrivateIdentifier *privateIdent)
+{
+    auto name = privateIdent->Name();
+    auto scope = scope_;
+    while (scope != nullptr) {
+        if (scope->Node() && scope->Node()->IsClassDefinition()) {
+            const auto *classDef = scope->Node()->AsClassDefinition();
+            if (classDef->Find(name)) {
+                return;
+            }
+        }
+        scope = scope->Parent();
+    }
+
+    auto pos = privateIdent->Start();
+    lexer::LineIndex index(program_->SourceCode());
+    lexer::SourceLocation loc = index.GetLocation(pos);
+
+    throw Error{ErrorType::SYNTAX, "Use private property before declaration", loc.line, loc.col};
 }
 
 }  // namespace panda::es2panda::binder

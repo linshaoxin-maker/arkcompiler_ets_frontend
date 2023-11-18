@@ -32,6 +32,7 @@ class IRNode;
 
 namespace panda::es2panda::ir {
 class ScriptFunction;
+class PrivateNameFindResult;
 } // namespace panda::es2panda::ir
 
 namespace panda::es2panda::binder {
@@ -328,6 +329,8 @@ public:
                          ResolveBindingOptions options = ResolveBindingOptions::BINDINGS) const;
 
     std::pair<uint32_t, uint32_t> Find(const ir::Expression *expr, bool onlyLevel = false) const;
+
+    ir::PrivateNameFindResult FindPrivateName(const util::StringView &name, bool isSetter = false) const;
 
     Decl *FindDecl(const util::StringView &name) const;
 

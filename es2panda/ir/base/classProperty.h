@@ -102,6 +102,11 @@ public:
         return isComputed_;
     }
 
+    bool IsPrivate() const
+    {
+        return key_->IsPrivateIdentifier();
+    }
+
     void SetComputed(bool computed)
     {
         isComputed_ = computed;

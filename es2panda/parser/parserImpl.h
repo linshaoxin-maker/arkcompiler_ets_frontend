@@ -172,6 +172,14 @@ DEFINE_BITOPS(TypeAnnotationParsingOptions)
 
 class ArrowFunctionContext;
 
+enum class PrivateGetterSetterType {
+    GETTER = 0,
+    SETTER = 1 << 0,
+    STATIC = 1 << 1,
+};
+
+DEFINE_BITOPS(PrivateGetterSetterType)
+
 class ParserImpl {
 public:
     explicit ParserImpl(es2panda::ScriptExtension extension);
@@ -297,6 +305,8 @@ private:
     void ValidateClassGetter(ClassElmentDescriptor *desc, const ArenaVector<ir::Statement *> &properties,
                              ir::Expression *propName, ir::ScriptFunction *func, bool hasDecorator,
                              lexer::SourcePosition errorInfo);
+    void ValidatePrivateProperty(ir::Statement *stmt, std::unordered_set<util::StringView> &privateNames,
+        std::unordered_map<util::StringView, PrivateGetterSetterType> &unusedGetterSetterPairs);
     ir::MethodDefinition *ParseClassMethod(ClassElmentDescriptor *desc, const ArenaVector<ir::Statement *> &properties,
                                            ir::Expression *propName, lexer::SourcePosition *propEnd,
                                            ArenaVector<ir::Decorator *> &&decorators, bool isDeclare);
@@ -456,6 +466,7 @@ private:
                                                             ArenaVector<ir::Decorator *> &&decorators);
     ir::Identifier *ParseNamedExport(const lexer::Token &exportedToken);
     void CheckStrictReservedWord() const;
+    ir::PrivateIdentifier *ParsePrivateIdentifier();
 
     // Discard the DISALLOW_CONDITIONAL_TYPES in current status to call function.
     template<class Function,  typename... Args>

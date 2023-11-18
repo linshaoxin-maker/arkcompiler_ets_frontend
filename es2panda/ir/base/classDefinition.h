@@ -19,6 +19,7 @@
 #include <binder/variable.h>
 #include <ir/base/classProperty.h>
 #include <ir/base/methodDefinition.h>
+#include <ir/expressions/privateIdentifier.h>
 #include <util/bitset.h>
 
 namespace panda::es2panda::compiler {
@@ -42,6 +43,22 @@ class TSTypeParameterDeclaration;
 class TSTypeParameterInstantiation;
 class TSClassImplements;
 class TSIndexSignature;
+
+class Result {
+public:
+    uint32_t slot;
+    bool isMethod;
+    bool isStatic;
+    bool isGetter;
+    bool isSetter;
+    uint32_t validateMethodSlot;
+};
+
+class PrivateNameFindResult {
+public:
+    int32_t lexLevel;
+    ir::Result result;
+};
 
 class ClassDefinition : public AstNode {
 public:
@@ -190,6 +207,16 @@ public:
         return needInstanceInitializer_;
     }
 
+    bool HasInstancePrivateMethod() const
+    {
+        return instanceMethodValidation_ != 0;
+    }
+
+    bool HasStaticPrivateMethod() const
+    {
+        return staticMethodValidation_ != 0;
+    }
+
     bool NeedEnv() const
     {
         return slot_ != 0;
@@ -201,11 +228,17 @@ public:
         return computedNames_.find(node)->second;
     }
 
+    bool Find(const util::StringView &name) const
+    {
+        return (privateNames_.count(name) + privateGetters_.count(name) + privateSetters_.count(name) != 0);
+    }
+
     const FunctionExpression *Ctor() const;
 
     util::StringView GetName() const;
 
     void BuildClassEnvironment();
+    Result GetPrivateProperty(const util::StringView &name, bool isSetter) const;
 
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;
@@ -216,11 +249,22 @@ public:
 private:
     compiler::VReg CompileHeritageClause(compiler::PandaGen *pg) const;
     void InitializeClassName(compiler::PandaGen *pg) const;
-    int32_t CreateClassStaticProperties(compiler::PandaGen *pg, util::BitSet &compiled) const;
+    int32_t CreateClassPublicBuffer(compiler::PandaGen *pg, util::BitSet &compiled) const;
+    int32_t CreateClassPrivateBuffer(compiler::PandaGen *pg) const;
     void CompileMissingProperties(compiler::PandaGen *pg, const util::BitSet &compiled, compiler::VReg classReg) const;
     void StaticInitialize(compiler::PandaGen *pg, compiler::VReg classReg) const;
     void InstanceInitialize(compiler::PandaGen *pg, compiler::VReg classReg) const;
     void CompileComputedKeys(compiler::PandaGen *pg) const;
+
+    bool IsMethod(uint32_t slot) const
+    {
+        return slot >= instancePrivateMethodStartSlot_ && slot < privateMethodEndSlot_;
+    }
+
+    bool IsStaticMethod(uint32_t slot) const
+    {
+        return slot >= staticPrivateMethodStartSlot_;
+    }
 
     binder::LocalScope *scope_;
     Identifier *ident_;
@@ -234,12 +278,21 @@ private:
     ArenaVector<Statement *> body_;
     ArenaVector<TSIndexSignature *> indexSignatures_;
     std::unordered_map<const Expression *, uint32_t> computedNames_;
-    uint32_t slot_ {0};
+    std::unordered_map<util::StringView, uint32_t> privateNames_;
+    std::unordered_map<util::StringView, uint32_t> privateGetters_;
+    std::unordered_map<util::StringView, uint32_t> privateSetters_;
     bool declare_;
     bool abstract_;
     bool exportDefault_;
     bool needStaticInitializer_ {false};
     bool needInstanceInitializer_ {false};
+    uint32_t slot_ {0};
+    uint32_t privateFieldCnt_ {0};
+    uint32_t instancePrivateMethodStartSlot_ {0};
+    uint32_t staticPrivateMethodStartSlot_ {0};
+    uint32_t privateMethodEndSlot_ {0};
+    uint32_t instanceMethodValidation_ {0};
+    uint32_t staticMethodValidation_ {0};
 };
 
 }  // namespace panda::es2panda::ir

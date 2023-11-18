@@ -125,7 +125,10 @@ static void CompileFunctionParameterDeclaration(PandaGen *pg, const ir::ScriptFu
 static void CompileField(PandaGen *pg, const ir::ClassProperty *prop, VReg thisReg, int32_t level)
 {
     Operand op;
-    if (prop->IsComputed() && prop->NeedCompileKey()) {
+    ir::PrivateNameFindResult result;
+    if (prop->IsPrivate()) {
+        result = pg->Scope()->FindPrivateName(prop->Key()->AsPrivateIdentifier()->Name());
+    } else if (prop->IsComputed() && prop->NeedCompileKey()) {
         auto slot = prop->Parent()->AsClassDefinition()->GetSlot(prop->Key());
         pg->LoadLexicalVar(prop->Key(), level, slot);
         op = pg->AllocReg();
@@ -141,12 +144,17 @@ static void CompileField(PandaGen *pg, const ir::ClassProperty *prop, VReg thisR
         prop->Value()->Compile(pg);
     }
 
-    pg->DefineClassField(prop, thisReg, op);
+    if (prop->IsPrivate()) {
+        pg->DefineClassPrivateField(prop, result.lexLevel, result.result.slot, thisReg);
+    } else {
+        pg->DefineClassField(prop, thisReg, op);
+    }
 }
 
 static void CompileClassInitializer(PandaGen *pg, const ir::ScriptFunction *decl, bool isStatic)
 {
-    const auto &statements = decl->Parent()->Parent()->Parent()->AsClassDefinition()->Body();
+    const auto *classDef = decl->Parent()->Parent()->Parent()->AsClassDefinition();
+    const auto &statements = classDef->Body();
 
     RegScope rs(pg);
     auto thisReg = pg->AllocReg();
@@ -154,6 +162,11 @@ static void CompileClassInitializer(PandaGen *pg, const ir::ScriptFunction *decl
     pg->StoreAccumulator(decl, thisReg);
     auto [level, slot] = pg->Scope()->Find(nullptr, true);
 
+    if (!isStatic && classDef->HasInstancePrivateMethod()) {
+        ir::PrivateNameFindResult result = pg->Scope()->FindPrivateName("#method");
+        pg->LoadConst(classDef, Constant::JS_UNDEFINED);
+        pg->DefineClassPrivateField(classDef, result.lexLevel, result.result.slot, thisReg);
+    }
     for (auto const &stmt : statements) {
         if (stmt->IsMethodDefinition()) {
             continue;

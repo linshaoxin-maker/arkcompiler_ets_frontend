@@ -296,6 +296,7 @@ public:
 
     void StoreObjProperty(const ir::AstNode *node, VReg obj, const Operand &prop);
     void DefineClassField(const ir::AstNode *node, VReg obj, const Operand &prop);
+    void DefineClassPrivateField(const ir::AstNode *node, uint32_t level, uint32_t slot, VReg obj);
     void StoreOwnProperty(const ir::AstNode *node, VReg obj, const Operand &prop, bool nameSetting = false);
     void DeleteObjProperty(const ir::AstNode *node, VReg obj, const Operand &prop);
     void LoadAccumulator(const ir::AstNode *node, VReg reg);
@@ -480,6 +481,13 @@ public:
     void ToComputedPropertyKey(const ir::AstNode *node);
 
     void ReArrangeIc();
+
+    void CreatePrivateProperty(const ir::AstNode *node, uint32_t num, int32_t bufIdx);
+    void TestIn(const ir::AstNode *node, uint32_t level, uint32_t slot);
+    void LoadPrivateProperty(const ir::AstNode *node, uint32_t level, uint32_t slot);
+    void StorePrivateProperty(const ir::AstNode *node, uint32_t level, uint32_t slot, VReg obj);
+    void ThrowTypeErrorIfFalse(const ir::AstNode *node, util::StringView str);
+    void ThrowTypeError(const ir::AstNode *node, util::StringView str);
 
     /*
      * Since the [Function] is not implemented yet, We compile the test262's framework code
