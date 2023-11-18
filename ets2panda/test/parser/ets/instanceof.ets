@@ -14,9 +14,14 @@
  */
 
 function t(v: Object): int {
-  if (v instanceof String) {
+  if (v instanceof string) {
     return 1;
-  } else {
+  } else if (v instanceof int[]) {
     return 2;
+  } else if (v instanceof Double[]) {
+    return 3;
+  } else {
+    return 4;
   }
 }
+

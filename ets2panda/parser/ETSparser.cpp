@@ -3561,6 +3561,10 @@ ir::Expression *ETSParser::ParseDefaultPrimaryExpression(ExpressionParseFlags fl
     ir::TypeNode *potential_type = ParseTypeAnnotation(&options);
 
     if (potential_type != nullptr) {
+        if (potential_type->IsTSArrayType()) {
+            return potential_type;
+        }
+
         if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD) {
             Lexer()->NextToken();  // eat '.'
         }
@@ -4380,6 +4384,26 @@ bool ETSParser::IsStructKeyword() const
 {
     return (Lexer()->GetToken().Type() == lexer::TokenType::LITERAL_IDENT &&
             Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_STRUCT);
+}
+
+ir::Expression *ETSParser::ParseExpressionOrTypeAnnotation(lexer::TokenType type,
+                                                           [[maybe_unused]] ExpressionParseFlags flags)
+{
+    if (type == lexer::TokenType::KEYW_INSTANCEOF) {
+        TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
+
+        if (Lexer()->GetToken().Type() == lexer::TokenType::LITERAL_NULL) {
+            auto *type_annotation = AllocNode<ir::NullLiteral>();
+            type_annotation->SetRange(Lexer()->GetToken().Loc());
+            Lexer()->NextToken();
+
+            return type_annotation;
+        }
+
+        return ParseTypeAnnotation(&options);
+    }
+
+    return ParseExpression(ExpressionParseFlags::DISALLOW_YIELD);
 }
 
 // NOLINTNEXTLINE(google-default-arguments)

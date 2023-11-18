@@ -18,6 +18,7 @@
 #include "ir/astDump.h"
 #include "checker/TSchecker.h"
 #include "checker/ETSchecker.h"
+#include "compiler/core/ETSGen.h"
 
 namespace panda::es2panda::ir {
 void TSArrayType::TransformChildren(const NodeTransformer &cb)
@@ -37,6 +38,11 @@ void TSArrayType::Dump(ir::AstDumper *dumper) const
 
 void TSArrayType::Compile([[maybe_unused]] compiler::PandaGen *pg) const {}
 
+void TSArrayType::Compile(compiler::ETSGen *etsg) const
+{
+    etsg->LoadAccumulatorNull(this, TsType());
+}
+
 checker::Type *TSArrayType::Check([[maybe_unused]] checker::TSChecker *checker)
 {
     element_type_->Check(checker);
@@ -51,6 +57,10 @@ checker::Type *TSArrayType::GetType([[maybe_unused]] checker::TSChecker *checker
 checker::Type *TSArrayType::Check(checker::ETSChecker *checker)
 {
     element_type_->Check(checker);
+    SetTsType(GetType(checker));
+
+    const auto array_type = TsType()->AsETSArrayType();
+    checker->CreateBuiltinArraySignature(array_type, array_type->Rank());
     return nullptr;
 }
 
