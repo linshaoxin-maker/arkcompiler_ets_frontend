@@ -33,6 +33,7 @@
 #include "ir/expressions/callExpression.h"
 #include "ir/expressions/superExpression.h"
 #include "ir/expressions/assignmentExpression.h"
+#include "ir/expressions/arrayExpression.h"
 #include "ir/expressions/thisExpression.h"
 #include "ir/statements/classDeclaration.h"
 #include "ir/statements/returnStatement.h"
@@ -897,10 +898,11 @@ Type *ETSChecker::ValidateArrayIndex(ir::Expression *expr)
 
 Type *ETSChecker::CheckArrayElementAccess(ir::MemberExpression *expr)
 {
-    Type *array_type = expr->Object()->Check(this);
+    auto *object = expr->Object();
+    Type *object_type = object->Check(this);
 
-    if (!array_type->IsETSArrayType() && !array_type->IsETSDynamicType()) {
-        ThrowTypeError("Indexed access expression can only be used in array type.", expr->Object()->Start());
+    if (!object_type->IsETSArrayType() && !object_type->IsETSDynamicType()) {
+        ThrowTypeError("Indexed access expression can only be used in array type.", object->Start());
     }
 
     ValidateArrayIndex(expr->Property());
@@ -911,13 +913,16 @@ Type *ETSChecker::CheckArrayElementAccess(ir::MemberExpression *expr)
         expr->SetPropVar(var->AsLocalVariable());
     }
 
-    // NOTE: apply capture conversion on this type
-    if (array_type->IsETSArrayType()) {
-        return array_type->AsETSArrayType()->ElementType();
+    // TODO(user): apply capture conversion on this type
+    if (!object_type->IsETSArrayType()) {
+        return GlobalBuiltinDynamicType(object_type->AsETSDynamicType()->Language());
     }
 
-    // Dynamic
-    return GlobalBuiltinDynamicType(array_type->AsETSDynamicType()->Language());
+    if (object->IsArrayExpression()) {
+        return object->AsArrayExpression()->Elements()[expr->Property()->TsType()->AsIntType()->GetValue()]->TsType();
+    }
+
+    return object_type->AsETSArrayType()->ElementType();
 }
 
 ETSObjectType *ETSChecker::CheckThisOrSuperAccess(ir::Expression *node, ETSObjectType *class_type, std::string_view msg)
