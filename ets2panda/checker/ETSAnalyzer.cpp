@@ -20,14 +20,6 @@
 #include "checker/ETSchecker.h"
 #include "checker/ets/castingContext.h"
 #include "checker/ets/typeRelationContext.h"
-#include "ir/base/catchClause.h"
-#include "ir/base/classProperty.h"
-#include "ir/base/classStaticBlock.h"
-#include "ir/expressions/identifier.h"
-#include "ir/expressions/objectExpression.h"
-#include "ir/expressions/arrayExpression.h"
-#include "ir/statements/blockStatement.h"
-#include "ir/statements/returnStatement.h"
 #include "util/helpers.h"
 
 namespace panda::es2panda::checker {
@@ -516,14 +508,20 @@ checker::Type *ETSAnalyzer::Check(ir::BigIntLiteral *expr) const
 
 checker::Type *ETSAnalyzer::Check(ir::BooleanLiteral *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    if (expr->TsType() == nullptr) {
+        expr->SetTsType(checker->CreateETSBooleanType(expr->Value()));
+    }
+    return expr->TsType();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::CharLiteral *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    if (expr->TsType() == nullptr) {
+        expr->SetTsType(checker->Allocator()->New<checker::CharType>(expr->Char()));
+    }
+    return expr->TsType();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::NullLiteral *expr) const
@@ -600,20 +598,44 @@ checker::Type *ETSAnalyzer::Check(ir::ImportSpecifier *st) const
 // compile methods for STATEMENTS in alphabetical order
 checker::Type *ETSAnalyzer::Check(ir::AssertStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    checker->CheckTruthinessOfType(st->test_);
+
+    if (st->Second() != nullptr) {
+        auto *msg_type = st->second_->Check(checker);
+
+        if (!msg_type->IsETSStringType()) {
+            checker->ThrowTypeError("Assert message must be string", st->Second()->Start());
+        }
+    }
+
+    return nullptr;
 }
 
 checker::Type *ETSAnalyzer::Check(ir::BlockStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    checker::ScopeContext scope_ctx(checker, st->Scope());
+
+    for (auto *it : st->Statements()) {
+        it->Check(checker);
+    }
+
+    for (auto [stmt, trailing_block] : st->trailing_blocks_) {
+        auto iterator = std::find(st->Statements().begin(), st->Statements().end(), stmt);
+        ASSERT(iterator != st->Statements().end());
+        st->Statements().insert(iterator + 1, trailing_block);
+        trailing_block->Check(checker);
+    }
+
+    return nullptr;
 }
 
 checker::Type *ETSAnalyzer::Check(ir::BreakStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    st->target_ = checker->FindJumpTarget(st->Type(), st, st->Ident());
+    return nullptr;
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ClassDeclaration *st) const
