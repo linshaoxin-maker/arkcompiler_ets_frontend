@@ -81,7 +81,8 @@ export function lint(options: LintOptions): LintRunResult {
   consoleLog('\n\n\nFiles scanned: ', srcFiles.length);
   consoleLog('\nFiles with problems: ', errorNodes);
 
-  let errorNodesTotal = 0, warningNodes = 0;
+  let errorNodesTotal = 0;
+  let warningNodes = 0;
   for (let i = 0; i < FaultID.LAST_ID; i++) {
     // if Strict mode - count all cases
     if (!linter.strictMode && faultsAttrs[i].migratable) // In relax mode skip migratable
@@ -176,8 +177,9 @@ function transformTscDiagnostics(
 function countProblemFiles(
   nodeCounters: number[], filesNumber: number, tsSrcFile: ts.SourceFile,
   fileNodes: number, fileErrorLines: number, fileWarningLines: number, linter: TypeScriptLinter,
-) {
-  let errorNodes = 0, warningNodes = 0;
+): number {
+  let errorNodes = 0;
+  let warningNodes = 0;
   for (let i = 0; i < FaultID.LAST_ID; i++) {
     let nodeCounterDiff = linter.nodeCounters[i] - nodeCounters[i];
     if (faultsAttrs[i].warning) warningNodes += nodeCounterDiff;
@@ -197,7 +199,7 @@ function countProblemFiles(
   return filesNumber;
 }
 
-function logTotalProblemsInfo(errorNodes: number, warningNodes: number, linter: TypeScriptLinter) {
+function logTotalProblemsInfo(errorNodes: number, warningNodes: number, linter: TypeScriptLinter): void {
   let errorRate = ((errorNodes / linter.totalVisitedNodes) * 100).toFixed(2);
   let warningRate = ((warningNodes / linter.totalVisitedNodes) * 100).toFixed(2);
   consoleLog('\nTotal error constructs (%): ', errorRate);
@@ -206,7 +208,7 @@ function logTotalProblemsInfo(errorNodes: number, warningNodes: number, linter: 
   consoleLog('\nTotal warning lines:', linter.totalWarningLines, ' lines\n');
 }
 
-function logProblemsPercentageByFeatures(linter: TypeScriptLinter) {
+function logProblemsPercentageByFeatures(linter: TypeScriptLinter): void {
   consoleLog('\nPercent by features: ');
   for (let i = 0; i < FaultID.LAST_ID; i++) {
     // if Strict mode - count all cases
@@ -221,7 +223,7 @@ function logProblemsPercentageByFeatures(linter: TypeScriptLinter) {
   }
 }
 
-export function run() {
+export function run(): void {
   const commandLineArgs = process.argv.slice(2);
   if (commandLineArgs.length === 0) {
     logger.info('Command line error: no arguments');
@@ -248,7 +250,7 @@ function getTempFileName() {
   return path.join(os.tmpdir(), Math.floor(Math.random() * 10000000).toString() + '_linter_tmp_file.ts');
 }
 
-function runIDEMode(cmdOptions: CommandLineOptions) {
+function runIDEMode(cmdOptions: CommandLineOptions): void {
   TypeScriptLinter.ideMode = true;
   const tmpFileName = getTempFileName();
   // read data from stdin

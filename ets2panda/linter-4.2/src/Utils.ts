@@ -20,14 +20,14 @@ import { AutofixInfo } from './AutofixInfo';
 import { LinterConfig } from './TypeScriptLinterConfig'
 import { FaultID } from './Problems';
 
-export function logTscDiagnostic(diagnostics: readonly ts.Diagnostic[], log: (message: any, ...args: any[]) => void) {
+export function logTscDiagnostic(diagnostics: readonly ts.Diagnostic[], log: (message: any, ...args: any[]) => void): void {
   diagnostics.forEach((diagnostic) => {
     let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
 
     if (diagnostic.file && diagnostic.start) {
       const { line, character } = ts.getLineAndCharacterOfPosition(diagnostic.file, diagnostic.start);
       message = `${diagnostic.file.fileName} (${line + 1}, ${character + 1}): ${message}`;
-    }
+    };
 
     log(message);
   });
@@ -57,9 +57,9 @@ export function getNodeOrLineEnd(
 ): number {
   const pos = sourceFile.getLineAndCharacterOfPosition(nodeEndPos);
   // TSC counts lines and columns from zero
-  return (pos.line + 1) === nodeStartLine
-    ? pos.character
-    : sourceFile.getLineEndOfPosition(nodeStartPos);
+  return (pos.line + 1) === nodeStartLine ?
+      pos.character :
+      sourceFile.getLineEndOfPosition(nodeStartPos);
 }
 
 export function mergeArrayMaps<K, V>(lhs: Map<K, V[]>, rhs: Map<K, V[]>): Map<K, V[]> {
@@ -97,10 +97,10 @@ export function isAssignmentOperator(tsBinOp: ts.BinaryOperatorToken): boolean {
 
 export enum CheckType {
   Array,
-  String = "String",
-  Set = "Set",
-  Map = "Map",
-  Error = "Error",
+  String = 'String',
+  Set = 'Set',
+  Map = 'Map',
+  Error = 'Error',
 };
 
 export class TsUtils {
@@ -267,20 +267,20 @@ export class TsUtils {
   ];
 
   static readonly STANDARD_LIBRARIES = [
-    "lib.dom.d.ts", "lib.dom.iterable.d.ts", "lib.webworker.d.ts", "lib.webworker.importscripts.d.ts",
-    "lib.webworker.iterable.d.ts", "lib.scripthost.d.ts", "lib.decorators.d.ts", "lib.decorators.legacy.d.ts",
-    "lib.es5.d.ts", "lib.es2015.core.d.ts", "lib.es2015.collection.d.ts", "lib.es2015.generator.d.ts",
-    "lib.es2015.iterable.d.ts", "lib.es2015.promise.d.ts", "lib.es2015.proxy.d.ts", "lib.es2015.reflect.d.ts",
-    "lib.es2015.symbol.d.ts", "lib.es2015.symbol.wellknown.d.ts", "lib.es2016.array.include.d.ts",
-    "lib.es2017.object.d.ts", "lib.es2017.sharedmemory.d.ts", "lib.es2017.string.d.ts", "lib.es2017.intl.d.ts",
-    "lib.es2017.typedarrays.d.ts", "lib.es2018.asyncgenerator.d.ts", "lib.es2018.asynciterable.d.ts",
-    "lib.es2018.intl.d.ts", "lib.es2018.promise.d.ts", "lib.es2018.regexp.d.ts", "lib.es2019.array.d.ts",
-    "lib.es2019.object.d.ts", "lib.es2019.string.d.ts", "lib.es2019.symbol.d.ts", "lib.es2019.intl.d.ts",
-    "lib.es2020.bigint.d.ts", "lib.es2020.date.d.ts", "lib.es2020.promise.d.ts", "lib.es2020.sharedmemory.d.ts",
-    "lib.es2020.string.d.ts", "lib.es2020.symbol.wellknown.d.ts", "lib.es2020.intl.d.ts", "lib.es2020.number.d.ts",
-    "lib.es2021.promise.d.ts", "lib.es2021.string.d.ts", "lib.es2021.weakref.d.ts", "lib.es2021.intl.d.ts",
-    "lib.es2022.array.d.ts", "lib.es2022.error.d.ts", "lib.es2022.intl.d.ts", "lib.es2022.object.d.ts",
-    "lib.es2022.sharedmemory.d.ts", "lib.es2022.string.d.ts", "lib.es2022.regexp.d.ts", "lib.es2023.array.d.ts",
+    'lib.dom.d.ts', 'lib.dom.iterable.d.ts', 'lib.webworker.d.ts', 'lib.webworker.importscripts.d.ts',
+    'lib.webworker.iterable.d.ts', 'lib.scripthost.d.ts', 'lib.decorators.d.ts', 'lib.decorators.legacy.d.ts',
+    'lib.es5.d.ts', 'lib.es2015.core.d.ts', 'lib.es2015.collection.d.ts', 'lib.es2015.generator.d.ts',
+    'lib.es2015.iterable.d.ts', 'lib.es2015.promise.d.ts', 'lib.es2015.proxy.d.ts', 'lib.es2015.reflect.d.ts',
+    'lib.es2015.symbol.d.ts', 'lib.es2015.symbol.wellknown.d.ts', 'lib.es2016.array.include.d.ts',
+    'lib.es2017.object.d.ts', 'lib.es2017.sharedmemory.d.ts', 'lib.es2017.string.d.ts', 'lib.es2017.intl.d.ts',
+    'lib.es2017.typedarrays.d.ts', 'lib.es2018.asyncgenerator.d.ts', 'lib.es2018.asynciterable.d.ts',
+    'lib.es2018.intl.d.ts', 'lib.es2018.promise.d.ts', 'lib.es2018.regexp.d.ts', 'lib.es2019.array.d.ts',
+    'lib.es2019.object.d.ts', 'lib.es2019.string.d.ts', 'lib.es2019.symbol.d.ts', 'lib.es2019.intl.d.ts',
+    'lib.es2020.bigint.d.ts', 'lib.es2020.date.d.ts', 'lib.es2020.promise.d.ts', 'lib.es2020.sharedmemory.d.ts',
+    'lib.es2020.string.d.ts', 'lib.es2020.symbol.wellknown.d.ts', 'lib.es2020.intl.d.ts', 'lib.es2020.number.d.ts',
+    'lib.es2021.promise.d.ts', 'lib.es2021.string.d.ts', 'lib.es2021.weakref.d.ts', 'lib.es2021.intl.d.ts',
+    'lib.es2022.array.d.ts', 'lib.es2022.error.d.ts', 'lib.es2022.intl.d.ts', 'lib.es2022.object.d.ts',
+    'lib.es2022.sharedmemory.d.ts', 'lib.es2022.string.d.ts', 'lib.es2022.regexp.d.ts', 'lib.es2023.array.d.ts',
   ];
 
   static readonly TYPED_ARRAYS = [
@@ -295,7 +295,7 @@ export class TsUtils {
     'Float64Array',
     'BigInt64Array',
     'BigUint64Array',
-  ]
+  ];
 
   static readonly ARKTS_IGNORE_DIRS = ['node_modules', 'oh_modules', 'build', '.preview'];
   static readonly ARKTS_IGNORE_FILES = ['hvigorfile.ts'];
@@ -484,7 +484,7 @@ export class TsUtils {
     return sym;
   }
 
-  private isTypeDeclSyntaxKind(kind: ts.SyntaxKind) {
+  private isTypeDeclSyntaxKind(kind: ts.SyntaxKind): boolean {
     return this.isStructDeclarationKind(kind) ||
       kind === ts.SyntaxKind.EnumDeclaration ||
       kind === ts.SyntaxKind.ClassDeclaration ||
@@ -503,7 +503,7 @@ export class TsUtils {
         // we relax arkts-unique-names for namespace collision with class/interface/enum/type/struct
         const isNamespaceTypeCollision =
           (this.isTypeDeclSyntaxKind(declKind) && tsDeclKind === ts.SyntaxKind.ModuleDeclaration) ||
-          (this.isTypeDeclSyntaxKind(tsDeclKind) && declKind === ts.SyntaxKind.ModuleDeclaration)
+          (this.isTypeDeclSyntaxKind(tsDeclKind) && declKind === ts.SyntaxKind.ModuleDeclaration);
 
         // Don't count declarations with 'Identifier' syntax kind as those
         // usually depict declaring an object's property through assignment.
@@ -757,7 +757,7 @@ export class TsUtils {
       Number(tsExpr.getText()) :
       this.tsTypeChecker.getConstantValue(tsExpr);
 
-    return  tsConstValue !== undefined && typeof tsConstValue === 'number';
+    return tsConstValue !== undefined && typeof tsConstValue === 'number';
   }
 
   public isIntegerConstantValue(
@@ -863,9 +863,10 @@ export class TsUtils {
     return false;
   }
 
-  private processParentTypes(parentTypes: ts.NodeArray<ts.ExpressionWithTypeArguments>, typeB: ts.Type, processInterfaces: boolean): boolean {
+  private processParentTypes(parentTypes: ts.NodeArray<ts.ExpressionWithTypeArguments>, typeB: ts.Type, processInterfaces: boolean): boolean | undefined {
     for (let baseTypeExpr of parentTypes) {
       let baseType = this.tsTypeChecker.getTypeAtLocation(baseTypeExpr);
+
       if (this.isTypeReference(baseType) && baseType.target !== baseType) baseType = baseType.target;
       if (baseType && (baseType.isClass() !== processInterfaces) && this.relatedByInheritanceOrIdentical(baseType, typeB)) {
         return true;
@@ -1062,9 +1063,9 @@ export class TsUtils {
 
   private isDynamicObjectAssignedToStdType(lhsType: ts.Type, rhsExpr: ts.Expression): boolean {
     if (this.isStdLibraryType(lhsType) || this.isPrimitiveType(lhsType)) {
-      let rhsSym = ts.isCallExpression(rhsExpr)
-        ? this.getSymbolOfCallExpression(rhsExpr)
-        : this.tsTypeChecker.getSymbolAtLocation(rhsExpr);
+      let rhsSym = ts.isCallExpression(rhsExpr) ?
+          this.getSymbolOfCallExpression(rhsExpr) :
+          this.tsTypeChecker.getSymbolAtLocation(rhsExpr);
 
       if (rhsSym && this.isLibrarySymbol(rhsSym))
         return true;
@@ -1164,7 +1165,7 @@ export class TsUtils {
       !ts.isIntersectionTypeNode(typeNode) && this.isSupportedTypeNodeKind(typeNode.kind);
   }
 
-  public isStruct(symbol: ts.Symbol) {
+  public isStruct(symbol: ts.Symbol): boolean {
     if (!symbol.declarations) {
       return false;
     }
@@ -1176,11 +1177,11 @@ export class TsUtils {
     return false;
   }
 
-  public isStructDeclarationKind(kind: ts.SyntaxKind) {
+  public isStructDeclarationKind(kind: ts.SyntaxKind): boolean {
     return LinterConfig.tsSyntaxKindNames[kind] === 'StructDeclaration';
   }
 
-  public isStructDeclaration(node: ts.Node) {
+  public isStructDeclaration(node: ts.Node): boolean {
     return this.isStructDeclarationKind(node.kind);
   }
 
@@ -1244,15 +1245,15 @@ export class TsUtils {
   }
 
   public getStartPos(nodeOrComment: ts.Node | ts.CommentRange): number {
-    return (nodeOrComment.kind === ts.SyntaxKind.SingleLineCommentTrivia || nodeOrComment.kind === ts.SyntaxKind.MultiLineCommentTrivia)
-      ? (nodeOrComment as ts.CommentRange).pos
-      : (nodeOrComment as ts.Node).getStart();
+    return (nodeOrComment.kind === ts.SyntaxKind.SingleLineCommentTrivia || nodeOrComment.kind === ts.SyntaxKind.MultiLineCommentTrivia) ?
+        (nodeOrComment as ts.CommentRange).pos :
+        (nodeOrComment as ts.Node).getStart();
   }
 
   public getEndPos(nodeOrComment: ts.Node | ts.CommentRange): number {
-    return (nodeOrComment.kind === ts.SyntaxKind.SingleLineCommentTrivia || nodeOrComment.kind === ts.SyntaxKind.MultiLineCommentTrivia)
-      ? (nodeOrComment as ts.CommentRange).end
-      : (nodeOrComment as ts.Node).getEnd();
+    return (nodeOrComment.kind === ts.SyntaxKind.SingleLineCommentTrivia || nodeOrComment.kind === ts.SyntaxKind.MultiLineCommentTrivia) ?
+        (nodeOrComment as ts.CommentRange).end :
+        (nodeOrComment as ts.Node).getEnd();
   }
 
   public isStdRecordType(type: ts.Type): boolean {
@@ -1302,14 +1303,14 @@ export class TsUtils {
     return this.isLibraryType(this.tsTypeChecker.getTypeAtLocation(node));
   }
 
-  public isLibrarySymbol(sym: ts.Symbol | undefined) {
+  public isLibrarySymbol(sym: ts.Symbol | undefined): boolean {
     if (sym && sym.declarations && sym.declarations.length > 0) {
       const srcFile = sym.declarations[0].getSourceFile();
 
       if (!srcFile) {
         return false;
       }
-      const fileName = srcFile.fileName
+      const fileName = srcFile.fileName;
       // Symbols from both *.ts and *.d.ts files should obey interop rules.
       // We disable such behavior for *.ts files in the test mode due to lack of 'ets'
       // extension support.
@@ -1330,14 +1331,14 @@ export class TsUtils {
     return false;
   }
 
-  public isStdFunctionType(type: ts.Type) {
+  public isStdFunctionType(type: ts.Type): boolean | undefined {
     const sym = type.getSymbol();
     return sym && sym.getName() === 'Function' && this.isGlobalSymbol(sym);
   }
 
   public getScriptKind(srcFile: ts.SourceFile): ts.ScriptKind {
-    const fileName = srcFile.fileName
-    const ext = path.extname(fileName)
+    const fileName = srcFile.fileName;
+    const ext = path.extname(fileName);
     switch (ext.toLowerCase()) {
       case ts.Extension.Js:
         return ts.ScriptKind.JS;
@@ -1358,7 +1359,7 @@ export class TsUtils {
     return this.isStdLibrarySymbol(type.aliasSymbol ?? type.getSymbol());
   }
 
-  public isStdLibrarySymbol(sym: ts.Symbol | undefined) {
+  public isStdLibrarySymbol(sym: ts.Symbol | undefined): boolean {
     if (sym && sym.declarations && sym.declarations.length > 0) {
       const srcFile = sym.declarations[0].getSourceFile();
       return srcFile &&
@@ -1428,7 +1429,7 @@ export class TsUtils {
     while (ts.isObjectLiteralExpression(curNode) || ts.isArrayLiteralExpression(curNode)) {
       const exprType = this.tsTypeChecker.getContextualType(curNode);
       if (exprType !== undefined && !this.isAnonymous(exprType)) {
-        const res = this.isDynamicType(exprType)
+        const res = this.isDynamicType(exprType);
         if (res !== undefined) {
           return res;
         }
@@ -1444,14 +1445,14 @@ export class TsUtils {
     // foo({ ... })
     if (ts.isCallExpression(curNode)) {
       const callExpr = curNode as ts.CallExpression;
-      const type = this.tsTypeChecker.getTypeAtLocation(callExpr.expression)
+      const type = this.tsTypeChecker.getTypeAtLocation(callExpr.expression);
 
       if (this.isAnyType(type)) {
         return true;
       }
 
       let sym: ts.Symbol | undefined = type.symbol;
-      if(this.isLibrarySymbol(sym)) {
+      if (this.isLibrarySymbol(sym)) {
         return true;
       }
 
@@ -1527,7 +1528,7 @@ export class TsUtils {
   }
 
   public hasEsObjectType(node: ts.Node): boolean {
-    const typeNode = this.getVariableDeclarationTypeNode(node)
+    const typeNode = this.getVariableDeclarationTypeNode(node);
     return typeNode !== undefined && this.isEsObjectType(typeNode);
   }
 
@@ -1603,7 +1604,7 @@ export class TsUtils {
 
     let found = false;
     const self = this;
-    function visitNode(tsNode: ts.Node) {
+    function visitNode(tsNode: ts.Node): void {
       // Stop visiting child nodes if finished searching.
       if (found) {
         return;

@@ -138,7 +138,7 @@ export class LinterConfig {
 
   // must detect terminals during parsing
   static terminalTokens: Set<ts.SyntaxKind> = new Set([
-    ts.SyntaxKind.OpenBraceToken, ts.SyntaxKind.CloseBraceToken, ts.SyntaxKind.OpenParenToken, 
+    ts.SyntaxKind.OpenBraceToken, ts.SyntaxKind.CloseBraceToken, ts.SyntaxKind.OpenParenToken,
     ts.SyntaxKind.CloseParenToken, ts.SyntaxKind.OpenBracketToken, ts.SyntaxKind.CloseBracketToken,
     ts.SyntaxKind.DotToken, ts.SyntaxKind.DotDotDotToken, ts.SyntaxKind.SemicolonToken, ts.SyntaxKind.CommaToken,
     ts.SyntaxKind.QuestionDotToken, ts.SyntaxKind.LessThanToken, ts.SyntaxKind.LessThanSlashToken,
@@ -172,7 +172,7 @@ export class LinterConfig {
     [ts.SyntaxKind.RegularExpressionLiteral, FaultID.RegexLiteral],
     [ts.SyntaxKind.TypePredicate, FaultID.IsOperator], [ts.SyntaxKind.YieldExpression, FaultID.YieldExpression],
     [ts.SyntaxKind.IndexSignature, FaultID.IndexMember], [ts.SyntaxKind.WithStatement, FaultID.WithStatement],
-    [ts.SyntaxKind.IndexedAccessType, FaultID.IndexedAccessType],[ts.SyntaxKind.UnknownKeyword, FaultID.UnknownType],
+    [ts.SyntaxKind.IndexedAccessType, FaultID.IndexedAccessType], [ts.SyntaxKind.UnknownKeyword, FaultID.UnknownType],
     [ts.SyntaxKind.InKeyword, FaultID.InOperator], [ts.SyntaxKind.CallSignature, FaultID.CallSignature],
     [ts.SyntaxKind.IntersectionType, FaultID.IntersectionType],
     [ts.SyntaxKind.TypeLiteral, FaultID.ObjectTypeLiteral], [ts.SyntaxKind.ConstructorType, FaultID.ConstructorFuncs],

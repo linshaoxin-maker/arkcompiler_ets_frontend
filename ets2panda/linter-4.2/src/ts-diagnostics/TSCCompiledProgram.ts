@@ -33,9 +33,9 @@ export class TSCCompiledProgram {
   }
 
   public getOriginalProgram(): ts.Program {
-    return this.wasStrict
-      ? this.diagnosticsExtractor.strictProgram
-      : this.diagnosticsExtractor.nonStrictProgram;
+    return this.wasStrict ?
+        this.diagnosticsExtractor.strictProgram :
+        this.diagnosticsExtractor.nonStrictProgram;
   }
 
   public getStrictDiagnostics(fileName: string): ts.Diagnostic[] {
@@ -96,7 +96,7 @@ export function transformDiagnostic(diagnostic: ts.Diagnostic): ProblemInfo {
     start: startPos,
     end: endPos,
     type: 'StrictModeError',
-    severity: ProblemSeverity.ERROR,  // expect strict options to always present
+    severity: ProblemSeverity.ERROR, // expect strict options to always present
     problem: FaultID[faultId],
     suggest: messageText,
     rule: messageText,
