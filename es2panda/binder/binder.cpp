@@ -21,6 +21,7 @@
 #include "ir/astNode.h"
 #include "ir/base/catchClause.h"
 #include "ir/base/classDefinition.h"
+#include "ir/base/classProperty.h"
 #include "ir/base/methodDefinition.h"
 #include "ir/base/property.h"
 #include "ir/base/scriptFunction.h"
@@ -29,6 +30,7 @@
 #include "ir/expressions/assignmentExpression.h"
 #include "ir/expressions/identifier.h"
 #include "ir/expressions/objectExpression.h"
+#include "ir/expressions/privateIdentifier.h"
 #include "ir/expressions/literals/numberLiteral.h"
 #include "ir/module/exportNamedDeclaration.h"
 #include "ir/module/exportSpecifier.h"
@@ -570,6 +572,11 @@ void Binder::BuildClassDefinition(ir::ClassDefinition *classDef)
         ResolveReference(classDef, iter);
     }
 
+    // Ts limitation for new class compilation
+    if (Program()->Extension() == ScriptExtension::JS) {
+        classDef->BuildClassEnvironment();
+    }
+
     if (classDef->Ident()) {
         ScopeFindResult res = scope_->Find(classDef->Ident()->Name());
 
@@ -581,8 +588,12 @@ void Binder::BuildClassDefinition(ir::ClassDefinition *classDef)
 
     ResolveReference(classDef, classDef->Ctor());
 
-    if (classDef->NeedStaticInitializer() && Program()->Extension() == ScriptExtension::JS) {
+    if (classDef->NeedStaticInitializer()) {
         ResolveReference(classDef, classDef->StaticInitializer());
+    }
+
+    if (classDef->NeedInstanceInitializer()) {
+        ResolveReference(classDef, classDef->InstanceInitializer());
     }
 
     for (auto *stmt : classDef->Body()) {
@@ -659,6 +670,10 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
             ResolveReferences(childNode);
             break;
         }
+        case ir::AstNodeType::PRIVATE_IDENTIFIER: {
+            CheckPrivateDeclaration(childNode->AsPrivateIdentifier());
+            break;
+        }
         case ir::AstNodeType::SUPER_EXPRESSION: {
             VariableScope *varScope = scope_->EnclosingVariableScope();
             varScope->AddFlag(VariableScopeFlags::USE_SUPER);
@@ -723,10 +738,23 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
             break;
         }
         case ir::AstNodeType::CLASS_PROPERTY: {
-            const ir::ScriptFunction *ctor = util::Helpers::GetContainingConstructor(childNode->AsClassProperty());
-            auto scopeCtx = LexicalScope<FunctionScope>::Enter(this, ctor->Scope());
-
-            ResolveReferences(childNode);
+            // Ts limitation for new class compilation
+            if (Program()->Extension() == ScriptExtension::TS) {
+                const ir::ScriptFunction *ctor = util::Helpers::GetContainingConstructor(childNode->AsClassProperty());
+                auto scopeCtx = LexicalScope<FunctionScope>::Enter(this, ctor->Scope());
+                ResolveReferences(childNode);
+                break;
+            }
+            auto *prop = childNode->AsClassProperty();
+            ResolveReference(prop, prop->Key());
+            if (prop->Value() != nullptr) {
+                ASSERT(parent->IsClassDefinition());
+                const auto *classDef = parent->AsClassDefinition();
+                const ir::MethodDefinition *method = prop->IsStatic() ? classDef->StaticInitializer() :
+                                                     classDef->InstanceInitializer();
+                auto scopeCtx = LexicalScope<FunctionScope>::Enter(this, method->Function()->Scope());
+                ResolveReference(prop, prop->Value());
+            }
             break;
         }
         case ir::AstNodeType::BLOCK_STATEMENT: {
@@ -993,6 +1021,27 @@ void Binder::ReplaceConstReferenceWithInitialization(const ir::Identifier *ident
             }
             return childNode;
         }, this);
+}
+
+void Binder::CheckPrivateDeclaration(const ir::PrivateIdentifier *privateIdent)
+{
+    auto name = privateIdent->Name();
+    auto scope = scope_;
+    while (scope != nullptr) {
+        if (scope->Node() && scope->Node()->IsClassDefinition()) {
+            const auto *classDef = scope->Node()->AsClassDefinition();
+            if (classDef->Find(name)) {
+                return;
+            }
+        }
+        scope = scope->Parent();
+    }
+
+    auto pos = privateIdent->Start();
+    lexer::LineIndex index(program_->SourceCode());
+    lexer::SourceLocation loc = index.GetLocation(pos);
+
+    throw Error{ErrorType::SYNTAX, "Use private property before declaration", loc.line, loc.col};
 }
 
 }  // namespace panda::es2panda::binder

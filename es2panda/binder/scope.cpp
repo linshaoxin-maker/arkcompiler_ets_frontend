@@ -22,6 +22,7 @@
 #include <binder/variableFlags.h>
 #include <ir/astNode.h>
 #include <ir/base/scriptFunction.h>
+#include <ir/base/classDefinition.h>
 #include <ir/expressions/identifier.h>
 #include <ir/module/exportAllDeclaration.h>
 #include <ir/module/exportNamedDeclaration.h>
@@ -118,6 +119,12 @@ ScopeFindResult Scope::Find(const util::StringView &name, ResolveBindingOptions 
     while (iter != nullptr) {
         Variable *v = iter->FindLocal(name, options);
 
+        if (iter->Node() && iter->Node()->IsClassDefinition()) {
+            if (iter->Node()->AsClassDefinition()->NeedEnv()) {
+                lexLevel++;
+            }
+        }
+
         if (v != nullptr) {
             return {name, const_cast<Scope *>(iter), level, lexLevel, v, concurrentFunc};
         }
@@ -146,6 +153,58 @@ ScopeFindResult Scope::Find(const util::StringView &name, ResolveBindingOptions 
     }
 
     return {name, nullptr, 0, 0, nullptr, concurrentFunc};
+}
+
+std::pair<uint32_t, uint32_t> Scope::Find(const ir::Expression *expr, bool onlyLevel) const
+{
+    uint32_t lexLevel = 0;
+    const auto *iter = this;
+
+    while (iter != nullptr) {
+        if (iter->Node() && iter->Node()->IsClassDefinition()) {
+            if (onlyLevel) {
+                return {lexLevel, 0};
+            }
+            const auto *classDef = iter->Node()->AsClassDefinition();
+            return {lexLevel, classDef->GetSlot(expr)};
+        }
+
+        if (iter->IsVariableScope()) {
+            if (iter->AsVariableScope()->NeedLexEnv()) {
+                lexLevel++;
+            }
+        }
+        iter = iter->Parent();
+    }
+
+    UNREACHABLE();
+}
+
+ir::PrivateNameFindResult Scope::FindPrivateName(const util::StringView &name, bool isSetter) const
+{
+    uint32_t lexLevel = 0;
+    const auto *iter = this;
+
+    while(iter != nullptr) {
+        if (iter->Node() && iter->Node()->IsClassDefinition()) {
+            const auto *classDef = iter->Node()->AsClassDefinition();
+            if (name.Is("#method") || classDef->Find(name)) {
+                return {lexLevel, classDef->GetPrivateProperty(name, isSetter)};
+            }
+            if (classDef->NeedEnv()) {
+                lexLevel++;
+            }
+        }
+
+        if (iter->IsVariableScope()) {
+            if (iter->AsVariableScope()->NeedLexEnv()) {
+                lexLevel++;
+            }
+        }
+        iter = iter->Parent();
+    }
+
+    UNREACHABLE();
 }
 
 Decl *Scope::FindDecl(const util::StringView &name) const
