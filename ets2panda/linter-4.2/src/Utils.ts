@@ -734,6 +734,11 @@ export class TsUtils {
       return false;
     }
 
+    // #14569: Check for Function type.
+    if (this.areCompatibleFunctionals(lhsType, rhsType)) {
+      return false;
+    }
+
     if (rhsType.isUnion()) {
       // Each Class/Interface of the RHS union type must be compatible with LHS type.
       for (const compType of rhsType.types) {
@@ -1531,5 +1536,12 @@ export class TsUtils {
       }
     }
     return type;
+  }
+
+  private areCompatibleFunctionals(lhsType: ts.Type, rhsType: ts.Type): boolean {
+    return (
+      (this.isStdFunctionType(lhsType) || this.isFunctionalType(lhsType)) &&
+      (this.isStdFunctionType(rhsType) || this.isFunctionalType(rhsType))
+    );
   }
 }
