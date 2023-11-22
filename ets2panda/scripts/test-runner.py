@@ -19,7 +19,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 def parse_options():
     # panda root default
     panda_env = os.environ.get('PANDA_ROOT')
