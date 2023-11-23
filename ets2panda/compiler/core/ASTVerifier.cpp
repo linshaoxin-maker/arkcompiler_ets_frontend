@@ -91,6 +91,8 @@ ASTVerifier::ASTVerifier(ArenaAllocator *allocator, util::StringView source_code
     ADD_CHECK(HasType);
     ADD_CHECK(HasVariable);
     ADD_CHECK(HasScope);
+    ADD_CHECK(VerifyChildNode);
+    ADD_CHECK(VerifyScopeNode);
 }
 
 bool ASTVerifier::VerifyFull(const ir::AstNode *ast)
@@ -397,14 +399,108 @@ bool ASTVerifier::HasScope(const ir::AstNode *ast)
         return true;  // we will check only Identifier
     }
     // we will check only local variables of identifiers
-    if (HasVariable(ast) && ast->AsIdentifier()->Variable()->IsLocalVariable() &&
-        ast->AsIdentifier()->Variable()->AsLocalVariable()->GetScope() == nullptr) {
-        const auto *id = ast->AsIdentifier();
-        AddError("NULL_SCOPE_LOCAL_VAR: " + ToStringHelper(ast), id->Start());
+    if (const auto maybe_var = GetLocalScopeVariable(ast)) {
+        const auto var = *maybe_var;
+        const auto scope = var->GetScope();
+        if (scope == nullptr) {
+            AddError("NULL_SCOPE_LOCAL_VAR: " + ToStringHelper(ast), ast->Start());
+            return false;
+        }
+        return ScopeEncloseVariable(var);
+    }
+    return true;
+}
+
+std::optional<varbinder::LocalVariable *> ASTVerifier::GetLocalScopeVariable(const ir::AstNode *ast)
+{
+    if (!ast->IsIdentifier()) {
+        return std::nullopt;
+    }
+
+    if (HasVariable(ast) && ast->AsIdentifier()->Variable()->IsLocalVariable()) {
+        const auto local_var = ast->AsIdentifier()->Variable()->AsLocalVariable();
+        if (local_var->HasFlag(varbinder::VariableFlags::LOCAL)) {
+            return local_var;
+        }
+    }
+    return std::nullopt;
+}
+
+bool ASTVerifier::VerifyChildNode(const ir::AstNode *ast)
+{
+    ASSERT(ast);
+    bool is_ok;
+    ast->Iterate([&](const auto node) {
+        if (ast != node->Parent()) {
+            AddError("INCORRECT_PARENT_REF: " + ToStringHelper(node), node->Start());
+            is_ok = false;
+        }
+    });
+    return is_ok;
+}
+
+bool ASTVerifier::VerifyScopeNode(const ir::AstNode *ast)
+{
+    ASSERT(ast);
+    const auto maybe_var = GetLocalScopeVariable(ast);
+    if (!maybe_var) {
+        return true;
+    }
+    const auto var = *maybe_var;
+    const auto scope = var->GetScope();
+    if (scope == nullptr) {
+        // already checked
         return false;
     }
-    // NOTE(tatiana): Add check that the scope enclose this identifier
-    return true;
+    const auto enclose_scope = scope->EnclosingVariableScope();
+    if (enclose_scope == nullptr) {
+        AddError("NO_ENCLOSING_VAR_SCOPE: " + ToStringHelper(ast), ast->Start());
+        return false;
+    }
+    const auto node = scope->Node();
+    bool is_ok = true;
+    if (!IsInherited(ast, node)) {
+        is_ok = false;
+        AddError("VARIABLE_NOT_ENCLOSE_SCOPE: " + ToStringHelper(ast), ast->Start());
+    }
+    if (!IsInherited<varbinder::Scope>(scope, enclose_scope)) {
+        is_ok = false;
+        AddError("VARIABLE_NOT_ENCLOSE_SCOPE: " + ToStringHelper(ast), ast->Start());
+    }
+    return is_ok;
+}
+
+bool ASTVerifier::ScopeEncloseVariable(const varbinder::LocalVariable *var)
+{
+    ASSERT(var);
+
+    const auto scope = var->GetScope();
+    if (scope == nullptr || var->Declaration() == nullptr) {
+        return true;
+    }
+    const auto node = var->Declaration()->Node();
+    if (node == nullptr) {
+        return true;
+    }
+    const auto var_start = node->Start();
+    bool is_ok = true;
+    if (scope->Bindings().count(var->Name()) == 0) {
+        AddError("SCOPE_DO_NOT_ENCLOSE_LOCAL_VAR: " + ToStringHelper(node), var_start);
+        is_ok = false;
+    }
+    const auto scope_node = scope->Node();
+    auto var_node = node;
+    if (!IsInherited(var_node, scope_node) || scope_node == nullptr) {
+        AddError("SCOPE_NODE_DONT_DOMINATE_VAR_NODE: " + ToStringHelper(node), var_start);
+        is_ok = false;
+    }
+    const auto &decls = scope->Decls();
+    const auto decl_dominate = std::count(decls.begin(), decls.end(), var->Declaration());
+    if (decl_dominate == 0) {
+        AddError("SCOPE_DECL_DONT_DOMINATE_VAR_DECL: " + ToStringHelper(node), var_start);
+        is_ok = false;
+    }
+    return is_ok;
 }
 
 }  // namespace panda::es2panda::compiler

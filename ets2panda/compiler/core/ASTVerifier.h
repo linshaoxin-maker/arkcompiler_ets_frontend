@@ -77,6 +77,8 @@ private:
     bool HasType(const ir::AstNode *ast);
     bool HasVariable(const ir::AstNode *ast);
     bool HasScope(const ir::AstNode *ast);
+    bool VerifyChildNode(const ir::AstNode *ast);
+    bool VerifyScopeNode(const ir::AstNode *ast);
 
     void AddError(const std::string &message, const lexer::SourcePosition &from)
     {
@@ -84,6 +86,19 @@ private:
         encountered_errors_.emplace_back(Error {message, loc});
     }
 
+    bool ScopeEncloseVariable(const varbinder::LocalVariable *var);
+    std::optional<varbinder::LocalVariable *> GetLocalScopeVariable(const ir::AstNode *ast);
+
+    template <typename T>
+    bool IsInherited(const T *child, T *parent)
+    {
+        while (child != nullptr && child != parent) {
+            child = child->Parent();
+        }
+        return child == parent;
+    }
+
+private:
     std::optional<const lexer::LineIndex> index_;
 
     ArenaAllocator *allocator_;

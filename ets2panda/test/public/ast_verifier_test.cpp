@@ -25,6 +25,7 @@
 #include "checker/ETSchecker.h"
 #include "ir/astDump.h"
 #include "ir/expressions/literals/stringLiteral.h"
+#include "ir/expressions/identifier.h"
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 #define TREE(node)                           \
@@ -118,6 +119,53 @@ TEST_F(ASTVerifierTest, WithoutScope)
 
     ASSERT_EQ(has_scope, true);
     ASSERT_EQ(errors.size(), 0);
+}
+
+TEST_F(ASTVerifierTest, ScopeTest)
+{
+    panda::es2panda::compiler::ASTVerifier verifier {Allocator()};
+    panda::es2panda::ir::Identifier ident(panda::es2panda::util::StringView("var_decl"), Allocator());
+    panda::es2panda::varbinder::LetDecl decl("test", &ident);
+    panda::es2panda::varbinder::LocalVariable local(&decl, panda::es2panda::varbinder::VariableFlags::LOCAL);
+    ident.SetVariable(&local);
+
+    panda::es2panda::varbinder::LocalScope scope(Allocator(), nullptr);
+    panda::es2panda::varbinder::FunctionScope parent_scope(Allocator(), nullptr);
+    scope.SetParent(&parent_scope);
+    scope.AddDecl(Allocator(), &decl, panda::es2panda::ScriptExtension::ETS);
+    scope.BindNode(&ident);
+
+    local.SetScope(&scope);
+
+    auto checks = compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
+    checks.insert("HasScope");
+    bool is_ok = verifier.Verify(&ident, checks);
+
+    ASSERT_EQ(is_ok, true);
+}
+
+TEST_F(ASTVerifierTest, ScopeNodeTest)
+{
+    panda::es2panda::compiler::ASTVerifier verifier {Allocator()};
+    panda::es2panda::ir::Identifier ident(panda::es2panda::util::StringView("var_decl"), Allocator());
+    panda::es2panda::varbinder::LetDecl decl("test", &ident);
+    panda::es2panda::varbinder::LocalVariable local(&decl, panda::es2panda::varbinder::VariableFlags::LOCAL);
+    ident.SetVariable(&local);
+
+    panda::es2panda::varbinder::LocalScope scope(Allocator(), nullptr);
+    panda::es2panda::varbinder::FunctionScope parent_scope(Allocator(), nullptr);
+    scope.SetParent(&parent_scope);
+    scope.AddDecl(Allocator(), &decl, panda::es2panda::ScriptExtension::ETS);
+    scope.BindNode(&ident);
+    parent_scope.BindNode(&ident);
+
+    local.SetScope(&scope);
+
+    auto checks = compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
+    checks.insert("VerifyScopeNode");
+    bool is_ok = verifier.Verify(&ident, checks);
+
+    ASSERT_EQ(is_ok, true);
 }
 
 }  // namespace panda::es2panda
