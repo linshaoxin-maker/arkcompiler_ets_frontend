@@ -134,55 +134,84 @@ checker::Type *TSAnalyzer::Check(ir::TSPropertySignature *node) const
 
 checker::Type *TSAnalyzer::Check(ir::TSSignatureDeclaration *node) const
 {
-    (void)node;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    if (node->TsType() != nullptr) {
+        return node->TsType();
+    }
+
+    checker::ScopeContext scope_ctx(checker, node->Scope());
+
+    auto *signature_info = checker->Allocator()->New<checker::SignatureInfo>(checker->Allocator());
+    checker->CheckFunctionParameterDeclarations(node->Params(), signature_info);
+
+    bool is_call_signature = (node->Kind() == ir::TSSignatureDeclaration::TSSignatureDeclarationKind::CALL_SIGNATURE);
+
+    if (node->ReturnTypeAnnotation() == nullptr) {
+        if (is_call_signature) {
+            checker->ThrowTypeError(
+                "Call signature, which lacks return-type annotation, implicitly has an 'any' return type.",
+                node->Start());
+        }
+
+        checker->ThrowTypeError(
+            "Construct signature, which lacks return-type annotation, implicitly has an 'any' return type.",
+            node->Start());
+    }
+
+    node->return_type_annotation_->Check(checker);
+    checker::Type *return_type = node->return_type_annotation_->GetType(checker);
+
+    auto *signature = checker->Allocator()->New<checker::Signature>(signature_info, return_type);
+
+    checker::Type *placeholder_obj = nullptr;
+
+    if (is_call_signature) {
+        placeholder_obj = checker->CreateObjectTypeWithCallSignature(signature);
+    } else {
+        placeholder_obj = checker->CreateObjectTypeWithConstructSignature(signature);
+    }
+
+    node->SetTsType(placeholder_obj);
+    return placeholder_obj;
 }
 // from ets folder
-checker::Type *TSAnalyzer::Check(ir::ETSClassLiteral *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSClassLiteral *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSFunctionType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSFunctionType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSImportDeclaration *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSImportDeclaration *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSLaunchExpression *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSLaunchExpression *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSNewArrayInstanceExpression *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSNewArrayInstanceExpression *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSNewClassInstanceExpression *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSNewClassInstanceExpression *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSNewMultiDimArrayInstanceExpression *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSNewMultiDimArrayInstanceExpression *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ETSPackageDeclaration *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ETSPackageDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
@@ -317,26 +346,121 @@ checker::Type *TSAnalyzer::Check(ir::FunctionExpression *expr) const
 
 checker::Type *TSAnalyzer::Check(ir::Identifier *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    if (expr->Variable() == nullptr) {
+        if (expr->Name().Is("undefined")) {
+            return checker->GlobalUndefinedType();
+        }
+
+        checker->ThrowTypeError({"Cannot find name ", expr->Name()}, expr->Start());
+    }
+
+    const varbinder::Decl *decl = expr->Variable()->Declaration();
+
+    if (decl->IsTypeAliasDecl() || decl->IsInterfaceDecl()) {
+        checker->ThrowTypeError({expr->Name(), " only refers to a type, but is being used as a value here."},
+                                expr->Start());
+    }
+
+    expr->SetTsType(checker->GetTypeOfVariable(expr->Variable()));
+    return expr->TsType();
 }
 
-checker::Type *TSAnalyzer::Check(ir::ImportExpression *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ImportExpression *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
 checker::Type *TSAnalyzer::Check(ir::MemberExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    checker::Type *base_type = checker->CheckNonNullType(expr->Object()->Check(checker), expr->Object()->Start());
+
+    if (expr->IsComputed()) {
+        checker::Type *index_type = expr->Property()->Check(checker);
+        checker::Type *indexed_access_type = checker->GetPropertyTypeForIndexType(base_type, index_type);
+
+        if (indexed_access_type != nullptr) {
+            return indexed_access_type;
+        }
+
+        if (!index_type->HasTypeFlag(checker::TypeFlag::STRING_LIKE | checker::TypeFlag::NUMBER_LIKE)) {
+            checker->ThrowTypeError({"Type ", index_type, " cannot be used as index type"}, expr->Property()->Start());
+        }
+
+        if (index_type->IsNumberType()) {
+            checker->ThrowTypeError("No index signature with a parameter of type 'string' was found on type this type",
+                                    expr->Start());
+        }
+
+        if (index_type->IsStringType()) {
+            checker->ThrowTypeError("No index signature with a parameter of type 'number' was found on type this type",
+                                    expr->Start());
+        }
+
+        switch (expr->Property()->Type()) {
+            case ir::AstNodeType::IDENTIFIER: {
+                checker->ThrowTypeError(
+                    {"Property ", expr->Property()->AsIdentifier()->Name(), " does not exist on this type."},
+                    expr->Property()->Start());
+            }
+            case ir::AstNodeType::NUMBER_LITERAL: {
+                checker->ThrowTypeError(
+                    {"Property ", expr->Property()->AsNumberLiteral()->Str(), " does not exist on this type."},
+                    expr->Property()->Start());
+            }
+            case ir::AstNodeType::STRING_LITERAL: {
+                checker->ThrowTypeError(
+                    {"Property ", expr->Property()->AsStringLiteral()->Str(), " does not exist on this type."},
+                    expr->Property()->Start());
+            }
+            default: {
+                UNREACHABLE();
+            }
+        }
+    }
+
+    varbinder::Variable *prop = checker->GetPropertyOfType(base_type, expr->Property()->AsIdentifier()->Name());
+
+    if (prop != nullptr) {
+        checker::Type *prop_type = checker->GetTypeOfVariable(prop);
+        if (prop->HasFlag(varbinder::VariableFlags::READONLY)) {
+            prop_type->AddTypeFlag(checker::TypeFlag::READONLY);
+        }
+
+        return prop_type;
+    }
+
+    if (base_type->IsObjectType()) {
+        checker::ObjectType *obj_type = base_type->AsObjectType();
+
+        if (obj_type->StringIndexInfo() != nullptr) {
+            checker::Type *index_type = obj_type->StringIndexInfo()->GetType();
+            if (obj_type->StringIndexInfo()->Readonly()) {
+                index_type->AddTypeFlag(checker::TypeFlag::READONLY);
+            }
+
+            return index_type;
+        }
+    }
+
+    checker->ThrowTypeError({"Property ", expr->Property()->AsIdentifier()->Name(), " does not exist on this type."},
+                            expr->Property()->Start());
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::NewExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    checker::Type *callee_type = expr->callee_->Check(checker);
+
+    if (callee_type->IsObjectType()) {
+        checker::ObjectType *callee_obj = callee_type->AsObjectType();
+        return checker->ResolveCallOrNewExpression(callee_obj->ConstructSignatures(), expr->Arguments(), expr->Start());
+    }
+
+    checker->ThrowTypeError("This expression is not callable.", expr->Start());
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::ObjectExpression *expr) const
@@ -345,10 +469,10 @@ checker::Type *TSAnalyzer::Check(ir::ObjectExpression *expr) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::OmittedExpression *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::OmittedExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    return checker->GlobalUndefinedType();
 }
 
 checker::Type *TSAnalyzer::Check(ir::OpaqueTypeNode *expr) const
@@ -357,16 +481,18 @@ checker::Type *TSAnalyzer::Check(ir::OpaqueTypeNode *expr) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::SequenceExpression *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::SequenceExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    // NOTE: aszilagyi.
+    return checker->GlobalAnyType();
 }
 
-checker::Type *TSAnalyzer::Check(ir::SuperExpression *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::SuperExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    // NOTE: aszilagyi.
+    return checker->GlobalAnyType();
 }
 
 checker::Type *TSAnalyzer::Check(ir::TaggedTemplateExpression *expr) const
@@ -407,19 +533,25 @@ checker::Type *TSAnalyzer::Check(ir::YieldExpression *expr) const
 // compile methods for LITERAL EXPRESSIONS in alphabetical order
 checker::Type *TSAnalyzer::Check(ir::BigIntLiteral *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    auto search = checker->BigintLiteralMap().find(expr->Str());
+    if (search != checker->BigintLiteralMap().end()) {
+        return search->second;
+    }
+
+    auto *new_bigint_literal_type = checker->Allocator()->New<checker::BigintLiteralType>(expr->Str(), false);
+    checker->BigintLiteralMap().insert({expr->Str(), new_bigint_literal_type});
+    return new_bigint_literal_type;
 }
 
 checker::Type *TSAnalyzer::Check(ir::BooleanLiteral *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    return expr->Value() ? checker->GlobalTrueType() : checker->GlobalFalseType();
 }
 
-checker::Type *TSAnalyzer::Check(ir::CharLiteral *expr) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::CharLiteral *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -502,22 +634,26 @@ checker::Type *TSAnalyzer::Check(ir::ImportSpecifier *st) const
     UNREACHABLE();
 }
 // compile methods for STATEMENTS in alphabetical order
-checker::Type *TSAnalyzer::Check(ir::AssertStatement *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::AssertStatement *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
 checker::Type *TSAnalyzer::Check(ir::BlockStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    TSChecker *checker = GetTSChecker();
+    checker::ScopeContext scope_ctx(checker, st->Scope());
+
+    for (auto *it : st->Statements()) {
+        it->Check(checker);
+    }
+
+    return nullptr;
 }
 
-checker::Type *TSAnalyzer::Check(ir::BreakStatement *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::BreakStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::ClassDeclaration *st) const
@@ -701,9 +837,8 @@ checker::Type *TSAnalyzer::Check(ir::TSClassImplements *expr) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSConditionalType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSConditionalType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -743,9 +878,8 @@ checker::Type *TSAnalyzer::Check(ir::TSImportEqualsDeclaration *st) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSImportType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSImportType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -755,9 +889,8 @@ checker::Type *TSAnalyzer::Check(ir::TSIndexedAccessType *node) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSInferType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSInferType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -779,9 +912,8 @@ checker::Type *TSAnalyzer::Check(ir::TSInterfaceHeritage *expr) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSIntersectionType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSIntersectionType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -791,15 +923,13 @@ checker::Type *TSAnalyzer::Check(ir::TSLiteralType *node) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSMappedType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSMappedType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSModuleBlock *st) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSModuleBlock *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
@@ -827,10 +957,9 @@ checker::Type *TSAnalyzer::Check(ir::TSNonNullExpression *expr) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSNullKeyword *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSNullKeyword *node) const
 {
-    (void)node;
-    UNREACHABLE();
+    return nullptr;
 }
 
 checker::Type *TSAnalyzer::Check(ir::TSNumberKeyword *node) const
@@ -869,9 +998,8 @@ checker::Type *TSAnalyzer::Check(ir::TSStringKeyword *node) const
     UNREACHABLE();
 }
 
-checker::Type *TSAnalyzer::Check(ir::TSThisType *node) const
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::TSThisType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
