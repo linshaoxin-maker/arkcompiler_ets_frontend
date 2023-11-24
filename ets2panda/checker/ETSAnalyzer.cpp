@@ -20,16 +20,7 @@
 #include "checker/ETSchecker.h"
 #include "checker/ets/castingContext.h"
 #include "checker/ets/typeRelationContext.h"
-#include "ir/base/catchClause.h"
-#include "ir/base/classProperty.h"
-#include "ir/base/classStaticBlock.h"
-#include "ir/expressions/identifier.h"
-#include "ir/expressions/objectExpression.h"
-#include "ir/expressions/arrayExpression.h"
-#include "ir/statements/blockStatement.h"
-#include "ir/statements/returnStatement.h"
 #include "util/helpers.h"
-
 namespace panda::es2panda::checker {
 
 ETSChecker *ETSAnalyzer::GetETSChecker() const
@@ -990,9 +981,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSConditionalType *node) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSConstructorType *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSConstructorType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1014,15 +1004,13 @@ checker::Type *ETSAnalyzer::Check(ir::TSExternalModuleReference *expr) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSFunctionType *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSFunctionType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSImportEqualsDeclaration *st) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSImportEqualsDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
@@ -1032,9 +1020,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSImportType *node) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSIndexedAccessType *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSIndexedAccessType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1052,8 +1039,26 @@ checker::Type *ETSAnalyzer::Check(ir::TSInterfaceBody *expr) const
 
 checker::Type *ETSAnalyzer::Check(ir::TSInterfaceDeclaration *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+
+    checker::ETSObjectType *interface_type {};
+
+    if (st->TsType() == nullptr) {
+        interface_type = checker->BuildInterfaceProperties(st);
+        ASSERT(interface_type != nullptr);
+        interface_type->SetSuperType(checker->GlobalETSObjectType());
+        checker->CheckInvokeMethodsLegitimacy(interface_type);
+        st->SetTsType(interface_type);
+    }
+
+    checker::ScopeContext scope_ctx(checker, st->Scope());
+    auto saved_context = checker::SavedCheckerContext(checker, checker::CheckerStatus::IN_INTERFACE, interface_type);
+
+    for (auto *it : st->Body()->Body()) {
+        it->Check(checker);
+    }
+
+    return nullptr;
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TSInterfaceHeritage *expr) const
@@ -1142,8 +1147,18 @@ checker::Type *ETSAnalyzer::Check(ir::TSParenthesizedType *node) const
 
 checker::Type *ETSAnalyzer::Check(ir::TSQualifiedName *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    checker::Type *base_type = expr->Left()->Check(checker);
+    if (base_type->IsETSObjectType()) {
+        varbinder::Variable *prop =
+            base_type->AsETSObjectType()->GetProperty(expr->Right()->Name(), checker::PropertySearchFlags::SEARCH_DECL);
+
+        if (prop != nullptr) {
+            return checker->GetTypeOfVariable(prop);
+        }
+    }
+
+    checker->ThrowTypeError({"'", expr->Right()->Name(), "' type does not exist."}, expr->Right()->Start());
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TSStringKeyword *node) const
@@ -1166,8 +1181,9 @@ checker::Type *ETSAnalyzer::Check(ir::TSTupleType *node) const
 
 checker::Type *ETSAnalyzer::Check(ir::TSTypeAliasDeclaration *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    st->TypeAnnotation()->Check(checker);
+    return nullptr;
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TSTypeAssertion *expr) const
@@ -1218,9 +1234,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSTypeQuery *node) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSTypeReference *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypeReference *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 

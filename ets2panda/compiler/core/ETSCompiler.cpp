@@ -20,7 +20,6 @@
 #include "compiler/base/lreference.h"
 #include "compiler/core/ETSGen.h"
 #include "compiler/function/functionBuilder.h"
-
 namespace panda::es2panda::compiler {
 
 ETSGen *ETSCompiler::GetETSGen() const
@@ -720,9 +719,8 @@ void ETSCompiler::Compile(const ir::TSConditionalType *node) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSConstructorType *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSConstructorType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -744,15 +742,13 @@ void ETSCompiler::Compile(const ir::TSExternalModuleReference *expr) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSFunctionType *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSFunctionType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSImportEqualsDeclaration *st) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSImportEqualsDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
@@ -762,9 +758,8 @@ void ETSCompiler::Compile(const ir::TSImportType *node) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSIndexedAccessType *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSIndexedAccessType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -780,9 +775,8 @@ void ETSCompiler::Compile(const ir::TSInterfaceBody *expr) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSInterfaceDeclaration *st) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSInterfaceDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
@@ -870,9 +864,8 @@ void ETSCompiler::Compile(const ir::TSParenthesizedType *node) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSQualifiedName *expr) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSQualifiedName *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -894,9 +887,8 @@ void ETSCompiler::Compile(const ir::TSTupleType *node) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSTypeAliasDeclaration *st) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSTypeAliasDeclaration *st) const
 {
-    (void)st;
     UNREACHABLE();
 }
 
@@ -948,9 +940,8 @@ void ETSCompiler::Compile(const ir::TSTypeQuery *node) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSTypeReference *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSTypeReference *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
