@@ -15,9 +15,10 @@
 
 #include "etsPackageDeclaration.h"
 
-#include "ir/astDump.h"
 #include "checker/TSchecker.h"
 #include "compiler/core/ETSGen.h"
+#include "compiler/core/pandagen.h"
+#include "ir/astDump.h"
 
 namespace panda::es2panda::ir {
 void ETSPackageDeclaration::TransformChildren(const NodeTransformer &cb)
@@ -35,19 +36,22 @@ void ETSPackageDeclaration::Dump(ir::AstDumper *dumper) const
     dumper->Add({{"type", "ETSPackageDeclaration"}, {"name", name_}});
 }
 
-void ETSPackageDeclaration::Compile([[maybe_unused]] compiler::PandaGen *pg) const {}
-void ETSPackageDeclaration::Compile([[maybe_unused]] compiler::ETSGen *etsg) const
+void ETSPackageDeclaration::Compile(compiler::PandaGen *pg) const
 {
-    UNREACHABLE();
+    pg->GetAstCompiler()->Compile(this);
+}
+void ETSPackageDeclaration::Compile(compiler::ETSGen *etsg) const
+{
+    etsg->GetAstCompiler()->Compile(this);
 }
 
-checker::Type *ETSPackageDeclaration::Check([[maybe_unused]] checker::TSChecker *checker)
+checker::Type *ETSPackageDeclaration::Check(checker::TSChecker *checker)
 {
-    return nullptr;
+    return checker->GetAnalyzer()->Check(this);
 }
 
-checker::Type *ETSPackageDeclaration::Check([[maybe_unused]] checker::ETSChecker *checker)
+checker::Type *ETSPackageDeclaration::Check(checker::ETSChecker *checker)
 {
-    return nullptr;
+    return checker->GetAnalyzer()->Check(this);
 }
 }  // namespace panda::es2panda::ir
