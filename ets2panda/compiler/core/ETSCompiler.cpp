@@ -20,7 +20,6 @@
 #include "compiler/base/lreference.h"
 #include "compiler/core/ETSGen.h"
 #include "compiler/function/functionBuilder.h"
-
 namespace panda::es2panda::compiler {
 
 ETSGen *ETSCompiler::GetETSGen() const
@@ -684,9 +683,8 @@ void ETSCompiler::Compile(const ir::TSAnyKeyword *node) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSArrayType *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSArrayType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -696,9 +694,8 @@ void ETSCompiler::Compile(const ir::TSAsExpression *expr) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSBigintKeyword *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSBigintKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -798,9 +795,8 @@ void ETSCompiler::Compile(const ir::TSIntersectionType *node) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSLiteralType *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSLiteralType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -828,16 +824,39 @@ void ETSCompiler::Compile(const ir::TSNamedTupleMember *node) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSNeverKeyword *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSNeverKeyword *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
 void ETSCompiler::Compile(const ir::TSNonNullExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSGen *etsg = GetETSGen();
+    compiler::RegScope rs(etsg);
+
+    expr->Expr()->Compile(etsg);
+
+    if (!etsg->GetAccumulatorType()->IsNullishOrNullLike()) {
+        return;
+    }
+
+    if (etsg->GetAccumulatorType()->IsETSNullLike()) {
+        etsg->EmitNullishException(expr);
+        return;
+    }
+
+    auto arg = etsg->AllocReg();
+    etsg->StoreAccumulator(expr, arg);
+    etsg->LoadAccumulator(expr, arg);
+
+    auto end_label = etsg->AllocLabel();
+
+    etsg->BranchIfNotNullish(expr, end_label);
+    etsg->EmitNullishException(expr);
+
+    etsg->SetLabel(expr, end_label);
+    etsg->LoadAccumulator(expr, arg);
+    etsg->ConvertToNonNullish(expr);
 }
 
 void ETSCompiler::Compile(const ir::TSNullKeyword *node) const
@@ -864,9 +883,8 @@ void ETSCompiler::Compile(const ir::TSParameterProperty *expr) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSParenthesizedType *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSParenthesizedType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -906,9 +924,8 @@ void ETSCompiler::Compile(const ir::TSTypeAssertion *expr) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSTypeLiteral *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSTypeLiteral *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -960,9 +977,8 @@ void ETSCompiler::Compile(const ir::TSUndefinedKeyword *node) const
     UNREACHABLE();
 }
 
-void ETSCompiler::Compile(const ir::TSUnionType *node) const
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSUnionType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
