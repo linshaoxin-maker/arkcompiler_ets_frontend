@@ -63,6 +63,11 @@ public:
         return decorators_;
     }
 
+    const ArenaVector<Decorator *> *DecoratorsPtr() const override
+    {
+        return &Decorators();
+    }
+
     bool IsComputed() const
     {
         return is_computed_;
@@ -71,6 +76,11 @@ public:
     void AddDecorators([[maybe_unused]] ArenaVector<ir::Decorator *> &&decorators) override
     {
         decorators_ = std::move(decorators);
+    }
+
+    bool CanHaveDecorator([[maybe_unused]] bool in_ts) const override
+    {
+        return true;
     }
 
     virtual PrivateFieldKind ToPrivateFieldKind(bool is_static) const = 0;
