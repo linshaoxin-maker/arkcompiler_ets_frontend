@@ -42,7 +42,7 @@ TEST_F(ASTVerifierTest, NullParent)
 
     ASSERT_EQ(has_parent, false);
     ASSERT_NE(messages.size(), 0);
-    ASSERT_EQ(messages[0], "NULL_PARENT: STR_LITERAL <null>");
+    ASSERT_EQ(messages[0], "NULL_PARENT: {\n  \"type\": \"StringLiteral\",\n  \"value\": \"\"\n}");
 }
 
 TEST_F(ASTVerifierTest, NullType)
@@ -55,7 +55,7 @@ TEST_F(ASTVerifierTest, NullType)
 
     ASSERT_EQ(has_type, false);
     ASSERT_NE(messages.size(), 0);
-    ASSERT_EQ(messages[0], "NULL_TS_TYPE: STR_LITERAL <null>");
+    ASSERT_EQ(messages[0], "NULL_TS_TYPE: {\n  \"type\": \"StringLiteral\",\n  \"value\": \"\"\n}");
 }
 
 TEST_F(ASTVerifierTest, WithoutScope)

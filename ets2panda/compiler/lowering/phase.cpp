@@ -61,10 +61,6 @@ bool Phase::Apply(CompilerContext *ctx, parser::Program *program)
     }
 
 #ifndef NDEBUG
-    ASTVerifier ast_before;
-    if (!ast_before.IsCorrectProgram(program)) {
-        // NOTE(tatiana): Add some error processing
-    }
     if (!Precondition(ctx, program)) {
         ctx->Checker()->ThrowTypeError({"Precondition check failed for ", util::StringView {Name()}},
                                        lexer::SourcePosition {});
