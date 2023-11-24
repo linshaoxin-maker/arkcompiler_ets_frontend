@@ -23,13 +23,20 @@
 #include "ir/base/catchClause.h"
 #include "ir/base/classProperty.h"
 #include "ir/base/classStaticBlock.h"
+#include "ir/base/property.h"
+#include "ir/base/scriptFunction.h"
 #include "ir/expressions/identifier.h"
-#include "ir/expressions/objectExpression.h"
 #include "ir/expressions/arrayExpression.h"
+#include "ir/expressions/assignmentExpression.h"
+#include "ir/expressions/literals/stringLiteral.h"
+#include "ir/expressions/memberExpression.h"
+#include "ir/expressions/objectExpression.h"
 #include "ir/statements/blockStatement.h"
 #include "ir/statements/returnStatement.h"
+#include "ir/statements/variableDeclaration.h"
+#include "ir/statements/variableDeclarator.h"
+#include "ir/statements/whileStatement.h"
 #include "util/helpers.h"
-
 namespace panda::es2panda::checker {
 
 ETSChecker *ETSAnalyzer::GetETSChecker() const
@@ -150,9 +157,8 @@ checker::Type *ETSAnalyzer::Check(ir::ScriptFunction *node) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::SpreadElement *expr) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::SpreadElement *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -289,11 +295,50 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSWildcardType *node) co
 {
     UNREACHABLE();
 }
+
 // compile methods for EXPRESSIONS in alphabetical order
+
+checker::Type *ETSAnalyzer::GetPreferredType(ir::ArrayExpression *expr) const
+{
+    return expr->preferred_type_;
+}
+
 checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    if (expr->TsType() != nullptr) {
+        return expr->TsType();
+    }
+
+    if (!expr->Elements().empty()) {
+        if (expr->preferred_type_ == nullptr) {
+            expr->preferred_type_ = expr->Elements()[0]->Check(checker);
+        }
+
+        for (auto *element : expr->Elements()) {
+            if (element->IsArrayExpression() && expr->preferred_type_->IsETSArrayType()) {
+                element->AsArrayExpression()->SetPreferredType(expr->preferred_type_->AsETSArrayType()->ElementType());
+            }
+            if (element->IsObjectExpression()) {
+                element->AsObjectExpression()->SetPreferredType(expr->preferred_type_);
+            }
+
+            checker::Type *element_type = element->Check(checker);
+            checker::AssignmentContext(checker->Relation(), element, element_type, expr->preferred_type_,
+                                       element->Start(),
+                                       {"Array element type '", element_type, "' is not assignable to explicit type '",
+                                        GetPreferredType(expr), "'"});
+        }
+    }
+
+    if (expr->preferred_type_ == nullptr) {
+        checker->ThrowTypeError("Can't resolve array type", expr->Start());
+    }
+
+    expr->SetTsType(checker->CreateETSArrayType(expr->preferred_type_));
+    auto array_type = expr->TsType()->AsETSArrayType();
+    checker->CreateBuiltinArraySignature(array_type, array_type->Rank());
+    return expr->TsType();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
@@ -366,8 +411,76 @@ checker::Type *ETSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
 
 checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+
+    if (expr->TsType() != nullptr) {
+        return expr->TsType();
+    }
+
+    auto *left_type = expr->Left()->Check(checker);
+    if (expr->Left()->IsMemberExpression() &&
+        expr->Left()->AsMemberExpression()->Object()->TsType()->IsETSArrayType() &&
+        expr->Left()->AsMemberExpression()->Property()->IsIdentifier() &&
+        expr->Left()->AsMemberExpression()->Property()->AsIdentifier()->Name().Is("length")) {
+        checker->ThrowTypeError("Setting the length of an array is not permitted", expr->Left()->Start());
+    }
+
+    if (expr->Left()->IsIdentifier()) {
+        expr->target_ = expr->Left()->AsIdentifier()->Variable();
+    } else {
+        expr->target_ = expr->Left()->AsMemberExpression()->PropVar();
+    }
+
+    if (expr->target_ != nullptr) {
+        checker->ValidateUnaryOperatorOperand(expr->target_);
+    }
+
+    checker::Type *source_type {};
+    ir::Expression *relation_node = expr->Right();
+    switch (expr->OperatorType()) {
+        case lexer::TokenType::PUNCTUATOR_MULTIPLY_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_EXPONENTIATION_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_DIVIDE_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_MOD_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_MINUS_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_LEFT_SHIFT_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_RIGHT_SHIFT_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_UNSIGNED_RIGHT_SHIFT_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_BITWISE_AND_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_BITWISE_XOR_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_BITWISE_OR_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_PLUS_EQUAL: {
+            std::tie(std::ignore, expr->operation_type_) = checker->CheckBinaryOperator(
+                expr->Left(), expr->Right(), expr, expr->OperatorType(), expr->Start(), true);
+
+            auto unboxed_left = checker->ETSBuiltinTypeAsPrimitiveType(left_type);
+            source_type = unboxed_left == nullptr ? left_type : unboxed_left;
+
+            relation_node = expr;
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_SUBSTITUTION: {
+            if (left_type->IsETSArrayType() && expr->Right()->IsArrayExpression()) {
+                expr->Right()->AsArrayExpression()->SetPreferredType(left_type->AsETSArrayType()->ElementType());
+            }
+            if (expr->Right()->IsObjectExpression()) {
+                expr->Right()->AsObjectExpression()->SetPreferredType(left_type);
+            }
+
+            source_type = expr->Right()->Check(checker);
+            break;
+        }
+        default: {
+            UNREACHABLE();
+            break;
+        }
+    }
+
+    checker::AssignmentContext(checker->Relation(), relation_node, source_type, left_type, expr->Right()->Start(),
+                               {"Initializers type is not assignable to the target type"});
+
+    expr->SetTsType(expr->Left()->TsType());
+    return expr->TsType();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::AwaitExpression *expr) const
@@ -441,11 +554,94 @@ checker::Type *ETSAnalyzer::Check(ir::NewExpression *expr) const
     (void)expr;
     UNREACHABLE();
 }
+checker::Type *ETSAnalyzer::PreferredType(ir::ObjectExpression *expr) const
+{
+    return expr->preferred_type_;
+}
 
 checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    if (expr->TsType() != nullptr) {
+        return expr->TsType();
+    }
+
+    if (expr->PreferredType() == nullptr) {
+        checker->ThrowTypeError({"need to specify target type for class composite"}, expr->Start());
+    }
+    if (!expr->PreferredType()->IsETSObjectType()) {
+        checker->ThrowTypeError({"target type for class composite needs to be an object type"}, expr->Start());
+    }
+
+    if (expr->PreferredType()->IsETSDynamicType()) {
+        for (ir::Expression *prop_expr : expr->Properties()) {
+            ASSERT(prop_expr->IsProperty());
+            ir::Property *prop = prop_expr->AsProperty();
+            ir::Expression *value = prop->Value();
+            value->Check(checker);
+            ASSERT(value->TsType());
+        }
+
+        expr->SetTsType(expr->PreferredType());
+        return expr->PreferredType();
+    }
+
+    checker::ETSObjectType *obj_type = expr->PreferredType()->AsETSObjectType();
+    if (obj_type->HasObjectFlag(checker::ETSObjectFlags::ABSTRACT | checker::ETSObjectFlags::INTERFACE)) {
+        checker->ThrowTypeError({"target type for class composite ", obj_type->Name(), " is not instantiable"},
+                                expr->Start());
+    }
+
+    bool have_empty_constructor = false;
+    for (checker::Signature *sig : obj_type->ConstructSignatures()) {
+        if (sig->Params().empty()) {
+            have_empty_constructor = true;
+            checker->ValidateSignatureAccessibility(obj_type, sig, expr->Start());
+            break;
+        }
+    }
+    if (!have_empty_constructor) {
+        checker->ThrowTypeError({"type ", obj_type->Name(), " has no parameterless constructor"}, expr->Start());
+    }
+
+    for (ir::Expression *prop_expr : expr->Properties()) {
+        ASSERT(prop_expr->IsProperty());
+        ir::Property *prop = prop_expr->AsProperty();
+        ir::Expression *key = prop->Key();
+        ir::Expression *value = prop->Value();
+
+        util::StringView pname;
+        if (key->IsStringLiteral()) {
+            pname = key->AsStringLiteral()->Str();
+        } else if (key->IsIdentifier()) {
+            pname = key->AsIdentifier()->Name();
+        } else {
+            checker->ThrowTypeError({"key in class composite should be either identifier or string literal"},
+                                    expr->Start());
+        }
+        varbinder::LocalVariable *lv = obj_type->GetProperty(
+            pname, checker::PropertySearchFlags::SEARCH_INSTANCE_FIELD | checker::PropertySearchFlags::SEARCH_IN_BASE);
+        if (lv == nullptr) {
+            checker->ThrowTypeError({"type ", obj_type->Name(), " has no property named ", pname}, prop_expr->Start());
+        }
+        checker->ValidatePropertyAccess(lv, obj_type, prop_expr->Start());
+        if (lv->HasFlag(varbinder::VariableFlags::READONLY)) {
+            checker->ThrowTypeError({"cannot assign to readonly property ", pname}, prop_expr->Start());
+        }
+
+        auto *prop_type = checker->GetTypeOfVariable(lv);
+        key->SetTsType(prop_type);
+
+        if (value->IsObjectExpression()) {
+            value->AsObjectExpression()->SetPreferredType(prop_type);
+        }
+        value->SetTsType(value->Check(checker));
+        checker::AssignmentContext(checker->Relation(), value, value->TsType(), prop_type, value->Start(),
+                                   {"value type is not assignable to the property type"});
+    }
+
+    expr->SetTsType(obj_type);
+    return obj_type;
 }
 
 checker::Type *ETSAnalyzer::Check(ir::OmittedExpression *expr) const
@@ -454,9 +650,8 @@ checker::Type *ETSAnalyzer::Check(ir::OmittedExpression *expr) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::OpaqueTypeNode *expr) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::OpaqueTypeNode *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -502,9 +697,8 @@ checker::Type *ETSAnalyzer::Check(ir::UpdateExpression *expr) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::YieldExpression *expr) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::YieldExpression *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 // compile methods for LITERAL EXPRESSIONS in alphabetical order
@@ -932,8 +1126,18 @@ checker::Type *ETSAnalyzer::Check(ir::TryStatement *st) const
 
 checker::Type *ETSAnalyzer::Check(ir::VariableDeclarator *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    ASSERT(st->Id()->IsIdentifier());
+    ir::ModifierFlags flags = ir::ModifierFlags::NONE;
+
+    if (st->Id()->Parent()->Parent()->AsVariableDeclaration()->Kind() ==
+        ir::VariableDeclaration::VariableDeclarationKind::CONST) {
+        flags |= ir::ModifierFlags::CONST;
+    }
+
+    st->SetTsType(checker->CheckVariableDeclaration(st->Id()->AsIdentifier(),
+                                                    st->Id()->AsIdentifier()->TypeAnnotation(), st->Init(), flags));
+    return st->TsType();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::VariableDeclaration *st) const
@@ -944,8 +1148,13 @@ checker::Type *ETSAnalyzer::Check(ir::VariableDeclaration *st) const
 
 checker::Type *ETSAnalyzer::Check(ir::WhileStatement *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    checker::ScopeContext scope_ctx(checker, st->Scope());
+
+    checker->CheckTruthinessOfType(st->Test());
+
+    st->Body()->Check(checker);
+    return nullptr;
 }
 // from ts folder
 checker::Type *ETSAnalyzer::Check(ir::TSAnyKeyword *node) const
