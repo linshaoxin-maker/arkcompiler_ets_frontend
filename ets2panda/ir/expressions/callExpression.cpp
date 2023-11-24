@@ -87,11 +87,11 @@ compiler::VReg CallExpression::CreateSpreadArguments(compiler::PandaGen *pg) con
     return args_obj;
 }
 
-void CallExpression::ConvertRestArguments(checker::ETSChecker *const checker) const
+void CallExpression::ConvertRestArguments(checker::ETSChecker *const checker, checker::Signature *signature) const
 {
-    if (signature_->RestVar() != nullptr) {
+    if (signature->RestVar() != nullptr) {
         std::size_t const argument_count = arguments_.size();
-        std::size_t const parameter_count = signature_->MinArgCount();
+        std::size_t const parameter_count = signature->MinArgCount();
         ASSERT(argument_count >= parameter_count);
 
         auto &arguments = const_cast<ArenaVector<Expression *> &>(arguments_);
@@ -106,10 +106,33 @@ void CallExpression::ConvertRestArguments(checker::ETSChecker *const checker) co
             }
             auto *array_expression = checker->AllocNode<ir::ArrayExpression>(std::move(elements), checker->Allocator());
             array_expression->SetParent(const_cast<CallExpression *>(this));
-            array_expression->SetTsType(signature_->RestVar()->TsType());
+            array_expression->SetTsType(signature->RestVar()->TsType());
             arguments.erase(arguments_.begin() + parameter_count, arguments_.end());
             arguments.emplace_back(array_expression);
         }
+    }
+}
+
+void CallExpression::ConvertArgumentsForFunctionalCall(checker::ETSChecker *const checker) const
+{
+    std::size_t const argument_count = arguments_.size();
+    auto &arguments = const_cast<ArenaVector<Expression *> &>(arguments_);
+
+    for (size_t i = 0; i < argument_count; i++) {
+        auto *param_type = checker->MaybeBoxedType(
+            i < signature_->Params().size() ? signature_->Params()[i] : signature_->RestVar(), checker->Allocator());
+
+        auto *expr = arguments_[i];
+        auto *cast = checker->Allocator()->New<ir::TSAsExpression>(expr, nullptr, false);
+        arguments_[i]->SetParent(cast);
+        cast->SetParent(const_cast<CallExpression *>(this));
+        cast->SetTsType(param_type);
+
+        if (param_type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+            cast->AddBoxingUnboxingFlag(checker->GetBoxingFlag(param_type));
+        }
+
+        arguments[i] = cast;
     }
 }
 
@@ -252,23 +275,49 @@ void CallExpression::Compile(compiler::ETSGen *etsg) const
     bool is_reference = signature_->HasSignatureFlag(checker::SignatureFlags::TYPE);
     bool is_dynamic = callee_->TsType()->HasTypeFlag(checker::TypeFlag::ETS_DYNAMIC_FLAG);
 
-    ConvertRestArguments(const_cast<checker::ETSChecker *>(etsg->Checker()->AsETSChecker()));
+    checker::Signature *signature = signature_;
+    if (is_reference) {
+        auto *func_type = signature_->Owner()
+                              ->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>("invoke0")
+                              ->TsType()
+                              ->AsETSFunctionType();
+        ASSERT(func_type->CallSignatures().size() == 1);
+        signature = func_type->CallSignatures()[0];
+
+        if (signature_->ReturnType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+            AddBoxingUnboxingFlag(const_cast<checker::ETSChecker *>(etsg->Checker()->AsETSChecker())
+                                      ->GetUnboxingFlag(signature_->ReturnType()));
+        }
+
+        ConvertArgumentsForFunctionalCall(const_cast<checker::ETSChecker *>(etsg->Checker()->AsETSChecker()));
+    }
+
+    ConvertRestArguments(const_cast<checker::ETSChecker *>(etsg->Checker()->AsETSChecker()), signature);
 
     compiler::VReg dyn_param2;
 
     // Helper function to avoid branching in non optional cases
-    auto emit_call = [this, etsg, is_static, is_dynamic, &callee_reg, &dyn_param2]() {
+    auto emit_call = [this, etsg, is_static, is_dynamic, &callee_reg, &dyn_param2, signature, is_reference]() {
         if (is_dynamic) {
-            etsg->CallDynamic(this, callee_reg, dyn_param2, signature_, arguments_);
+            etsg->CallDynamic(this, callee_reg, dyn_param2, signature, arguments_);
         } else if (is_static) {
-            etsg->CallStatic(this, signature_, arguments_);
-        } else if (signature_->HasSignatureFlag(checker::SignatureFlags::PRIVATE) || IsETSConstructorCall() ||
+            etsg->CallStatic(this, signature, arguments_);
+        } else if (signature->HasSignatureFlag(checker::SignatureFlags::PRIVATE) || IsETSConstructorCall() ||
                    (callee_->IsMemberExpression() && callee_->AsMemberExpression()->Object()->IsSuperExpression())) {
-            etsg->CallThisStatic(this, callee_reg, signature_, arguments_);
+            etsg->CallThisStatic(this, callee_reg, signature, arguments_);
         } else {
-            etsg->CallThisVirtual(this, callee_reg, signature_, arguments_);
+            etsg->CallThisVirtual(this, callee_reg, signature, arguments_);
         }
-        etsg->SetAccumulatorType(TsType());
+
+        if (GetBoxingUnboxingFlags() != ir::BoxingUnboxingFlags::NONE) {
+            etsg->ApplyConversion(this, nullptr);
+        } else {
+            if (is_reference) {
+                etsg->EmitCheckedNarrowingReferenceConversion(this, signature->ReturnType());
+            } else {
+                etsg->SetAccumulatorType(signature->ReturnType());
+            }
+        }
     };
 
     if (is_dynamic) {
@@ -320,7 +369,7 @@ void CallExpression::Compile(compiler::ETSGen *etsg) const
 
         emit_call();
 
-        if (signature_->ReturnType() != TsType()) {
+        if (signature->ReturnType() != TsType()) {
             etsg->ApplyConversion(this, TsType());
         }
     } else if (!is_reference && callee_->IsIdentifier()) {
@@ -484,7 +533,9 @@ checker::Type *CallExpression::Check(checker::ETSChecker *checker)
 
         ASSERT(signature->Function() != nullptr);
 
-        if (signature->Function()->IsThrowing() || signature->Function()->IsRethrowing()) {
+        if (signature->Function()->IsThrowing() || signature->Function()->IsRethrowing() ||
+            signature->HasSignatureFlag(checker::SignatureFlags::THROWS) ||
+            signature->HasSignatureFlag(checker::SignatureFlags::RETHROWS)) {
             checker->CheckThrowingStatements(this);
         }
 

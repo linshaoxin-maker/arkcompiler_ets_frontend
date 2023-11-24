@@ -42,6 +42,11 @@ public:
         return is_const_;
     }
 
+    void SetUncheckedCast(bool is_unchecked_cast)
+    {
+        is_unchecked_cast_ = is_unchecked_cast;
+    }
+
     void TransformChildren(const NodeTransformer &cb) override;
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;

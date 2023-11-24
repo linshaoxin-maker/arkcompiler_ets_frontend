@@ -149,7 +149,8 @@ private:
     bool IsETSConstructorCall() const;
     checker::Type *InitAnonymousLambdaCallee(checker::ETSChecker *checker, Expression *callee,
                                              checker::Type *callee_type);
-    void ConvertRestArguments(checker::ETSChecker *checker) const;
+    void ConvertRestArguments(checker::ETSChecker *checker, checker::Signature *signature) const;
+    void ConvertArgumentsForFunctionalCall(checker::ETSChecker *checker) const;
 };
 }  // namespace panda::es2panda::ir
 

@@ -249,6 +249,7 @@ void ETSChecker::CreateTypeForClassOrInterfaceTypeParameters(ETSObjectType *type
                                                       : type->GetDeclNode()->AsTSInterfaceDeclaration()->TypeParams();
     type->SetTypeArguments(CreateTypeForTypeParameters(type_params));
     type->AddObjectFlag(ETSObjectFlags::RESOLVED_TYPE_PARAMS);
+    type->AddObjectFlag(ETSObjectFlags::INCOMPLETE_INSTANTIATION);
 }
 
 ETSObjectType *ETSChecker::BuildInterfaceProperties(ir::TSInterfaceDeclaration *interface_decl)
@@ -1410,7 +1411,12 @@ ETSObjectType *ETSChecker::GetTypeargumentedLUB(ETSObjectType *const source, ETS
 
     const util::StringView hash = GetHashFromTypeArguments(params);
 
-    ETSObjectType *template_type = source->GetDeclNode()->AsClassDefinition()->TsType()->AsETSObjectType();
+    ETSObjectType *template_type;
+    if (source->GetDeclNode()->IsClassDefinition()) {
+        template_type = source->GetDeclNode()->AsClassDefinition()->TsType()->AsETSObjectType();
+    } else {
+        template_type = source->GetDeclNode()->AsTSInterfaceDeclaration()->TsType()->AsETSObjectType();
+    }
 
     auto *lub_type = template_type->GetInstantiatedType(hash);
 

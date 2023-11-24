@@ -2023,6 +2023,29 @@ util::StringView ETSChecker::GetHashFromSubstitution(const Substitution *substit
     return util::UString(ss.str(), Allocator()).View();
 }
 
+util::StringView ETSChecker::GetHashFromFunctionType(ir::ETSFunctionType *type)
+{
+    std::stringstream ss;
+    for (auto *p : type->Params()) {
+        auto *const param = p->AsETSParameterExpression();
+        TypeToString(ss, GetTypeFromTypeAnnotation(param->TypeAnnotation()));
+        ss << ";";
+    }
+
+    TypeToString(ss, type->ReturnType()->GetType(this));
+    ss << ";";
+
+    if (type->IsThrowing()) {
+        ss << "throws;";
+    }
+
+    if (type->IsRethrowing()) {
+        ss << "rethrows;";
+    }
+
+    return util::UString(ss.str(), Allocator()).View();
+}
+
 ETSObjectType *ETSChecker::GetOriginalBaseType(Type *const object)
 {
     if (object == nullptr || !object->IsETSObjectType()) {

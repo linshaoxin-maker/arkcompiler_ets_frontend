@@ -39,7 +39,8 @@ bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSType
                                                  ir::TSTypeParameterInstantiation *type_args,
                                                  const lexer::SourcePosition &pos)
 {
-    if (type_param_decl != nullptr && type_args == nullptr) {
+    if (type_param_decl != nullptr && type_args == nullptr &&
+        type->HasObjectFlag(ETSObjectFlags::INCOMPLETE_INSTANTIATION)) {
         checker_->ThrowTypeError({"Type '", type, "' is generic but type argument were not provided."}, pos);
     }
 

@@ -414,17 +414,11 @@ public:
 
     varbinder::Scope *GetTypeArgumentScope() const
     {
-        if (HasObjectFlag(ETSObjectFlags::ENUM) || !HasTypeFlag(TypeFlag::GENERIC)) {
+        auto *type_params = GetTypeParams();
+        if (type_params == nullptr) {
             return nullptr;
         }
-
-        if (HasObjectFlag(ETSObjectFlags::CLASS)) {
-            ASSERT(decl_node_->IsClassDefinition() && decl_node_->AsClassDefinition()->TypeParams());
-            return decl_node_->AsClassDefinition()->TypeParams()->Scope();
-        }
-
-        ASSERT(decl_node_->IsTSInterfaceDeclaration() && decl_node_->AsTSInterfaceDeclaration()->TypeParams());
-        return decl_node_->AsTSInterfaceDeclaration()->TypeParams()->Scope();
+        return type_params->Scope();
     }
 
     InstantiationMap &GetInstantiationMap()
@@ -478,6 +472,7 @@ public:
     void AssignmentTarget(TypeRelation *relation, Type *source) override;
     Type *Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *global_types) override;
     Type *Substitute(TypeRelation *relation, const Substitution *substitution) override;
+    Type *Substitute(TypeRelation *relation, const Substitution *substitution, bool cache);
     void Cast(TypeRelation *relation, Type *target) override;
     bool CastNumericObject(TypeRelation *relation, Type *target);
     void IsSupertypeOf(TypeRelation *relation, Type *source) override;
@@ -551,6 +546,24 @@ private:
     }
     std::unordered_map<util::StringView, const varbinder::LocalVariable *> CollectAllProperties() const;
     void IdenticalUptoNullability(TypeRelation *relation, Type *other);
+    void IdenticalUptoNullabilityAndTypeArguments(TypeRelation *relation, Type *other);
+    void IsGenericSupertypeOf(TypeRelation *relation, Type *source);
+
+    ir::TSTypeParameterDeclaration *GetTypeParams() const
+    {
+        if (HasObjectFlag(ETSObjectFlags::ENUM) || HasObjectFlag(ETSObjectFlags::TYPE_PARAMETER) ||
+            !HasTypeFlag(TypeFlag::GENERIC)) {
+            return nullptr;
+        }
+
+        if (HasObjectFlag(ETSObjectFlags::CLASS)) {
+            ASSERT(decl_node_->IsClassDefinition() && decl_node_->AsClassDefinition()->TypeParams());
+            return decl_node_->AsClassDefinition()->TypeParams();
+        }
+
+        ASSERT(decl_node_->IsTSInterfaceDeclaration() && decl_node_->AsTSInterfaceDeclaration()->TypeParams());
+        return decl_node_->AsTSInterfaceDeclaration()->TypeParams();
+    }
 
     ArenaAllocator *allocator_;
     util::StringView name_;

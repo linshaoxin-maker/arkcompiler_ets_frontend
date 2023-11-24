@@ -112,7 +112,7 @@ void ETSFunctionType::AssignmentTarget(TypeRelation *relation, Type *source)
 
         size_t idx = 0;
         for (; idx != target->MinArgCount(); idx++) {
-            if (!relation->IsIdenticalTo(target->Params()[idx]->TsType(), it->Params()[idx]->TsType())) {
+            if (!relation->IsAssignableTo(target->Params()[idx]->TsType(), it->Params()[idx]->TsType())) {
                 break;
             }
         }
@@ -122,11 +122,11 @@ void ETSFunctionType::AssignmentTarget(TypeRelation *relation, Type *source)
         }
 
         if (target->RestVar() != nullptr &&
-            !relation->IsIdenticalTo(target->RestVar()->TsType(), it->RestVar()->TsType())) {
+            !relation->IsAssignableTo(target->RestVar()->TsType(), it->RestVar()->TsType())) {
             continue;
         }
 
-        if (!relation->IsAssignableTo(target->ReturnType(), it->ReturnType())) {
+        if (!relation->IsAssignableTo(it->ReturnType(), target->ReturnType())) {
             continue;
         }
 
@@ -139,8 +139,9 @@ void ETSFunctionType::AssignmentTarget(TypeRelation *relation, Type *source)
         return;
     }
 
-    if (!target->Function()->IsThrowing()) {
-        if (match->Function()->IsThrowing() || match->Function()->IsRethrowing()) {
+    if (!(target->Function()->IsThrowing() || target->HasSignatureFlag(SignatureFlags::THROWS))) {
+        if (match->Function()->IsThrowing() || match->Function()->IsRethrowing() ||
+            match->HasSignatureFlag(SignatureFlags::THROWS) || match->HasSignatureFlag(SignatureFlags::RETHROWS)) {
             relation->GetChecker()->ThrowTypeError(
                 "Functions that can throw exceptions cannot be assigned to non throwing functions.",
                 relation->GetNode()->Start());

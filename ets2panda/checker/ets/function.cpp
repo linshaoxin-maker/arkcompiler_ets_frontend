@@ -20,6 +20,7 @@
 #include "varbinder/variable.h"
 #include "varbinder/variableFlags.h"
 #include "checker/ETSchecker.h"
+#include "checker/ets/castingContext.h"
 #include "checker/ets/function_helpers.h"
 #include "checker/ets/typeRelationContext.h"
 #include "checker/types/ets/etsAsyncFuncReturnType.h"
@@ -1120,81 +1121,6 @@ void ETSChecker::CheckCapturedVariables()
     }
 }
 
-void ETSChecker::BuildFunctionalInterfaceName(ir::ETSFunctionType *func_type)
-{
-    VarBinder()->AsETSBinder()->BuildFunctionalInterfaceName(func_type);
-}
-
-void ETSChecker::CreateFunctionalInterfaceForFunctionType(ir::ETSFunctionType *func_type)
-{
-    auto *ident_node = Allocator()->New<ir::Identifier>(util::StringView("FunctionalInterface"), Allocator());
-
-    auto interface_ctx = varbinder::LexicalScope<varbinder::ClassScope>(VarBinder());
-    auto *interface_scope = interface_ctx.GetScope();
-
-    ArenaVector<ir::AstNode *> members(Allocator()->Adapter());
-    ir::MethodDefinition *invoke_func = CreateInvokeFunction(func_type);
-    members.push_back(invoke_func);
-
-    auto method_ctx =
-        varbinder::LexicalScope<varbinder::LocalScope>::Enter(VarBinder(), interface_scope->InstanceMethodScope());
-    auto [_, var] = VarBinder()->NewVarDecl<varbinder::FunctionDecl>(invoke_func->Start(), Allocator(),
-                                                                     invoke_func->Id()->Name(), invoke_func);
-    (void)_;
-    var->AddFlag(varbinder::VariableFlags::METHOD);
-    invoke_func->Function()->Id()->SetVariable(var);
-
-    if (func_type->IsThrowing()) {
-        invoke_func->Function()->AddFlag(ir::ScriptFunctionFlags::THROWS);
-    }
-
-    auto *body = Allocator()->New<ir::TSInterfaceBody>(std::move(members));
-
-    ArenaVector<ir::TSInterfaceHeritage *> extends(Allocator()->Adapter());
-    auto *interface_decl =
-        Allocator()->New<ir::TSInterfaceDeclaration>(Allocator(), interface_scope, ident_node, nullptr, body,
-                                                     std::move(extends), false, Language(Language::Id::ETS));
-    interface_decl->AddModifier(ir::ModifierFlags::FUNCTIONAL);
-    func_type->SetFunctionalInterface(interface_decl);
-    invoke_func->SetParent(interface_decl);
-
-    VarBinder()->AsETSBinder()->BuildFunctionType(func_type);
-}
-
-ir::MethodDefinition *ETSChecker::CreateInvokeFunction(ir::ETSFunctionType *func_type)
-{
-    auto *ident_node = Allocator()->New<ir::Identifier>(util::StringView("invoke"), Allocator());
-
-    ArenaVector<ir::Expression *> params(Allocator()->Adapter());
-    auto *func_param_scope = CopyParams(func_type->Params(), params);
-
-    auto param_ctx =
-        varbinder::LexicalScope<varbinder::FunctionParamScope>::Enter(VarBinder(), func_param_scope, false);
-    auto function_ctx = varbinder::LexicalScope<varbinder::FunctionScope>(VarBinder());
-    auto *function_scope = function_ctx.GetScope();
-    function_scope->BindParamScope(func_param_scope);
-    func_param_scope->BindFunctionScope(function_scope);
-
-    ir::ModifierFlags flags = ir::ModifierFlags::ABSTRACT | ir::ModifierFlags::PUBLIC;
-    auto *func = Allocator()->New<ir::ScriptFunction>(function_scope, std::move(params), nullptr, nullptr,
-                                                      func_type->ReturnType(), ir::ScriptFunctionFlags::METHOD, flags,
-                                                      false, Language(Language::Id::ETS));
-
-    function_scope->BindNode(func);
-    func_param_scope->BindNode(func);
-
-    auto *func_expr = Allocator()->New<ir::FunctionExpression>(func);
-    func->SetIdent(ident_node);
-
-    auto *method = Allocator()->New<ir::MethodDefinition>(ir::MethodDefinitionKind::METHOD, ident_node, func_expr,
-                                                          flags, Allocator(), false);
-
-    func_expr->SetParent(method);
-    func->SetParent(func_expr);
-
-    return method;
-}
-
 // Lambda creation for Lambda expressions
 
 void ETSChecker::CreateLambdaObjectForLambdaReference(ir::ArrowFunctionExpression *lambda,
@@ -1241,16 +1167,19 @@ void ETSChecker::CreateLambdaObjectForLambdaReference(ir::ArrowFunctionExpressio
     properties.push_back(ctor);
 
     // Create the synthetic invoke node for the lambda class, which will propagate the call to the proxy method
-    auto *invoke_func = CreateLambdaInvokeProto();
+    auto *invoke0_func = CreateLambdaInvokeProto("invoke0");
 
+    auto *invoke_func = CreateLambdaInvokeProto("invoke");
+
+    properties.push_back(invoke0_func);
     properties.push_back(invoke_func);
 
     // Create the declarations for the synthetic constructor and invoke method
     CreateLambdaFuncDecl(ctor, class_scope->StaticMethodScope());
+    CreateLambdaFuncDecl(invoke0_func, class_scope->InstanceMethodScope());
     CreateLambdaFuncDecl(invoke_func, class_scope->InstanceMethodScope());
 
     // Create the synthetic lambda class node
-    ArenaVector<ir::TSClassImplements *> implements(Allocator()->Adapter());
     auto *ident_node = Allocator()->New<ir::Identifier>(util::StringView("LambdaObject"), Allocator());
     auto *lambda_object =
         Allocator()->New<ir::ClassDefinition>(Allocator(), class_scope, ident_node, std::move(properties),
@@ -1267,6 +1196,7 @@ void ETSChecker::CreateLambdaObjectForLambdaReference(ir::ArrowFunctionExpressio
 
     // Set the parent nodes
     ctor->SetParent(lambda_object);
+    invoke0_func->SetParent(lambda_object);
     invoke_func->SetParent(lambda_object);
     class_scope->BindNode(lambda_object);
 
@@ -1322,14 +1252,16 @@ void ETSChecker::ResolveLambdaObject(ir::ClassDefinition *lambda_object, ETSObje
     ResolveLambdaObjectCtor(lambda_object);
 
     // Resolve the invoke function
-    ResolveLambdaObjectInvoke(lambda_object, lambda, proxy_method, !save_this);
+    ResolveLambdaObjectInvoke(lambda_object, lambda, proxy_method, !save_this, true);
+
+    ResolveLambdaObjectInvoke(lambda_object, lambda, proxy_method, !save_this, false);
 }
 
 void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambda_object, ir::ArrowFunctionExpression *lambda,
-                                           ir::MethodDefinition *proxy_method, bool is_static)
+                                           ir::MethodDefinition *proxy_method, bool is_static, bool iface_override)
 {
     const auto &lambda_body = lambda_object->Body();
-    auto *invoke_func = lambda_body[lambda_body.size() - 1]->AsMethodDefinition()->Function();
+    auto *invoke_func = lambda_body[lambda_body.size() - (iface_override ? 2 : 1)]->AsMethodDefinition()->Function();
     ETSObjectType *lambda_object_type = lambda_object->TsType()->AsETSObjectType();
 
     // Set the implicit 'this' parameters type to the lambda object
@@ -1341,23 +1273,42 @@ void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambda_object, i
     invoke_signature_info->rest_var = nullptr;
 
     // Create the parameters for the invoke function, based on the lambda function's parameters
-    for (auto *it : lambda->Function()->Params()) {
+    auto N = GlobalBuiltinFunctionTypeVariadicThreshold();
+
+    auto params_num = lambda->Function()->Params().size();
+
+    if (params_num < N || !iface_override) {
+        for (auto *it : lambda->Function()->Params()) {
+            auto param_ctx = varbinder::LexicalScope<varbinder::FunctionParamScope>::Enter(
+                VarBinder(), invoke_func->Scope()->ParamScope(), false);
+            auto *const param = it->Clone(Allocator(), it->Parent())->AsETSParameterExpression();
+            auto [_, var] = VarBinder()->AddParamDecl(param);
+            (void)_;
+            var->SetTsType(iface_override ? GlobalETSObjectType() : param->Variable()->TsType());
+            param->Ident()->SetVariable(var);
+            invoke_func->Params().push_back(param);
+            invoke_signature_info->min_arg_count++;
+            invoke_signature_info->params.push_back(var->AsLocalVariable());
+        }
+    } else {
         auto param_ctx = varbinder::LexicalScope<varbinder::FunctionParamScope>::Enter(
             VarBinder(), invoke_func->Scope()->ParamScope(), false);
 
-        auto *const param = it->AsETSParameterExpression();
+        auto *id = AllocNode<ir::Identifier>("p", Allocator());
+        auto *rest_element = AllocNode<ir::SpreadElement>(ir::AstNodeType::REST_ELEMENT, Allocator(), id);
+        auto *const param = AllocNode<ir::ETSParameterExpression>(rest_element, nullptr);
         auto [_, var] = VarBinder()->AddParamDecl(param);
         (void)_;
-        var->SetTsType(param->Variable()->TsType());
+        var->SetTsType(CreateETSArrayType(GlobalETSObjectType()));
         param->Ident()->SetVariable(var);
         invoke_func->Params().push_back(param);
-        invoke_signature_info->min_arg_count++;
-        invoke_signature_info->params.push_back(var->AsLocalVariable());
+        invoke_signature_info->rest_var = var->AsLocalVariable();
     }
 
     // Create the function type for the invoke method
-    auto *invoke_signature =
-        CreateSignature(invoke_signature_info, lambda->Function()->Signature()->ReturnType(), invoke_func);
+    auto *invoke_signature = CreateSignature(
+        invoke_signature_info, iface_override ? GlobalETSObjectType() : lambda->Function()->Signature()->ReturnType(),
+        invoke_func);
     invoke_signature->SetOwner(lambda_object_type);
     invoke_signature->AddSignatureFlag(checker::SignatureFlags::CALL);
 
@@ -1370,7 +1321,7 @@ void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambda_object, i
 
     // Fill out the type information for the body of the invoke function
     auto *resolved_lambda_invoke_function_body =
-        ResolveLambdaObjectInvokeFuncBody(lambda_object, proxy_method, is_static);
+        ResolveLambdaObjectInvokeFuncBody(lambda_object, lambda, proxy_method, is_static, iface_override);
     if (invoke_func->IsAsyncFunc()) {
         return;
     }
@@ -1381,7 +1332,9 @@ void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambda_object, i
 }
 
 ir::Statement *ETSChecker::ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition *lambda_object,
-                                                             ir::MethodDefinition *proxy_method, bool is_static)
+                                                             ir::ArrowFunctionExpression *lambda,
+                                                             ir::MethodDefinition *proxy_method, bool is_static,
+                                                             bool iface_override)
 {
     const auto &lambda_body = lambda_object->Body();
     auto *proxy_signature = proxy_method->Function()->Signature();
@@ -1396,7 +1349,7 @@ ir::Statement *ETSChecker::ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition
         field_ident->SetTsType(field_prop_type);
     } else {
         // Otherwise, we call the proxy method through the saved 'this' field
-        auto *saved_this = lambda_body[lambda_body.size() - 3]->AsClassProperty();
+        auto *saved_this = lambda_body[lambda_body.size() - 4]->AsClassProperty();
         auto *field_prop = saved_this->Key()->AsIdentifier()->Variable();
         field_prop_type = field_prop->TsType()->AsETSObjectType();
         field_ident = Allocator()->New<ir::Identifier>(saved_this->Key()->AsIdentifier()->Name(), Allocator());
@@ -1413,9 +1366,9 @@ ir::Statement *ETSChecker::ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition
     callee->SetTsType(proxy_signature->OwnerVar()->TsType());
 
     // Resolve the proxy method call arguments, first we add the captured fields to the call
-    auto *invoke_func = lambda_body[lambda_body.size() - 1]->AsMethodDefinition()->Function();
+    auto *invoke_func = lambda_body[lambda_body.size() - (iface_override ? 2 : 1)]->AsMethodDefinition()->Function();
     ArenaVector<ir::Expression *> call_params(Allocator()->Adapter());
-    size_t counter = is_static ? lambda_body.size() - 2 : lambda_body.size() - 3;
+    size_t counter = is_static ? lambda_body.size() - 3 : lambda_body.size() - 4;
     for (size_t i = 0; i < counter; i++) {
         if (lambda_body[i]->IsMethodDefinition()) {
             break;
@@ -1429,13 +1382,50 @@ ir::Statement *ETSChecker::ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition
         call_params.push_back(param);
     }
 
-    // Then we add the lambda functions parameters to the call
-    for (auto const *const it : invoke_func->Params()) {
-        auto const *const param = it->AsETSParameterExpression();
+    auto N = GlobalBuiltinFunctionTypeVariadicThreshold();
+
+    auto params_num = lambda->Function()->Params().size();
+
+    if (!iface_override) {
+        for (auto const *const it : invoke_func->Params()) {
+            auto const *const param = it->AsETSParameterExpression();
+            auto *const param_ident = Allocator()->New<ir::Identifier>(param->Ident()->Name(), Allocator());
+            param_ident->SetVariable(param->Variable());
+            param_ident->SetTsType(param->Variable()->TsType());
+            call_params.push_back(param_ident);
+        }
+    } else if (params_num < N) {
+        // Then we add the lambda functions parameters to the call
+        auto nargs = invoke_func->Params().size();
+        for (size_t i = 0; i < nargs; i++) {
+            auto const *const param = invoke_func->Params()[i]->AsETSParameterExpression();
+            auto *const param_ident = Allocator()->New<ir::Identifier>(param->Ident()->Name(), Allocator());
+            param_ident->SetVariable(param->Variable());
+            param_ident->SetTsType(param->Variable()->TsType());
+
+            auto *lambda_param = lambda->Function()->Params()[i]->AsETSParameterExpression();
+            auto *const param_cast =
+                Allocator()->New<ir::TSAsExpression>(param_ident, lambda_param->TypeAnnotation(), false);
+            param_cast->Check(this);
+            call_params.push_back(param_cast);
+        }
+    } else {
+        ASSERT(invoke_func->Params().size() == 1);
+        auto const *const param = invoke_func->Params()[0]->AsETSParameterExpression();
         auto *const param_ident = Allocator()->New<ir::Identifier>(param->Ident()->Name(), Allocator());
         param_ident->SetVariable(param->Variable());
         param_ident->SetTsType(param->Variable()->TsType());
-        call_params.push_back(param_ident);
+
+        for (size_t i = 0; i < params_num; i++) {
+            auto *idx = Allocator()->New<ir::NumberLiteral>(lexer::Number(static_cast<int>(i)));
+            auto *arg = Allocator()->New<ir::MemberExpression>(param_ident, idx,
+                                                               ir::MemberExpressionKind::ELEMENT_ACCESS, true, false);
+
+            auto *lambda_param = lambda->Function()->Params()[i]->AsETSParameterExpression();
+            auto *const param_cast = Allocator()->New<ir::TSAsExpression>(arg, lambda_param->TypeAnnotation(), false);
+            param_cast->Check(this);
+            call_params.push_back(param_cast);
+        }
     }
 
     // Create the synthetic call expression to the proxy method
@@ -1446,6 +1436,11 @@ ir::Statement *ETSChecker::ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition
     if (proxy_signature->ReturnType()->IsETSVoidType()) {
         return Allocator()->New<ir::ExpressionStatement>(resolved_call);
     }
+
+    if (iface_override && resolved_call->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+        resolved_call->AddBoxingUnboxingFlag(GetBoxingFlag(resolved_call->TsType()));
+    }
+
     return Allocator()->New<ir::ReturnStatement>(resolved_call);
 }
 
@@ -1453,7 +1448,7 @@ void ETSChecker::ResolveLambdaObjectCtor(ir::ClassDefinition *lambda_object)
 {
     const auto &lambda_body = lambda_object->Body();
     auto *lambda_object_type = lambda_object->TsType()->AsETSObjectType();
-    auto *ctor_func = lambda_body[lambda_body.size() - 2]->AsMethodDefinition()->Function();
+    auto *ctor_func = lambda_body[lambda_body.size() - 3]->AsMethodDefinition()->Function();
 
     // Set the implicit 'this' parameters type to the lambda object
     auto *this_var = ctor_func->Scope()->ParamScope()->Params().front();
@@ -1971,15 +1966,17 @@ void ETSChecker::CreateLambdaObjectForFunctionReference(ir::AstNode *ref_node, S
 
     // Create the template for the synthetic invoke function which will propagate the function call to the saved
     // instance's referenced function, or the class static function, if this is a static reference
-    auto *invoke_func = CreateLambdaInvokeProto();
+    auto *invoke0_func = CreateLambdaInvokeProto("invoke0");
+    auto *invoke_func = CreateLambdaInvokeProto("invoke");
+    properties.push_back(invoke0_func);
     properties.push_back(invoke_func);
 
     // Create the declarations for the synthetic constructor and invoke method
     CreateLambdaFuncDecl(ctor, class_scope->StaticMethodScope());
+    CreateLambdaFuncDecl(invoke0_func, class_scope->InstanceMethodScope());
     CreateLambdaFuncDecl(invoke_func, class_scope->InstanceMethodScope());
 
     // Create the synthetic lambda class node
-    ArenaVector<ir::TSClassImplements *> implements(Allocator()->Adapter());
     auto *ident_node = Allocator()->New<ir::Identifier>(util::StringView("LambdaObject"), Allocator());
     auto *lambda_object =
         Allocator()->New<ir::ClassDefinition>(Allocator(), class_scope, ident_node, std::move(properties),
@@ -1987,6 +1984,7 @@ void ETSChecker::CreateLambdaObjectForFunctionReference(ir::AstNode *ref_node, S
 
     // Set the parent nodes
     ctor->SetParent(lambda_object);
+    invoke0_func->SetParent(lambda_object);
     invoke_func->SetParent(lambda_object);
     class_scope->BindNode(lambda_object);
 
@@ -2081,11 +2079,11 @@ std::tuple<varbinder::FunctionParamScope *, varbinder::Variable *> ETSChecker::C
     return {param_ctx.GetScope(), nullptr};
 }
 
-ir::MethodDefinition *ETSChecker::CreateLambdaInvokeProto()
+ir::MethodDefinition *ETSChecker::CreateLambdaInvokeProto(util::StringView invoke_name)
 {
     // Create the template for the synthetic 'invoke' method, which will be used when the function type will be
     // called
-    auto *name = Allocator()->New<ir::Identifier>("invoke", Allocator());
+    auto *name = Allocator()->New<ir::Identifier>(invoke_name, Allocator());
     auto *param_scope =
         VarBinder()->Allocator()->New<varbinder::FunctionParamScope>(Allocator(), VarBinder()->GetScope());
     auto *scope = VarBinder()->Allocator()->New<varbinder::FunctionScope>(Allocator(), param_scope);
@@ -2165,13 +2163,15 @@ void ETSChecker::ResolveLambdaObject(ir::ClassDefinition *lambda_object, Signatu
     ResolveLambdaObjectCtor(lambda_object, is_static_reference);
 
     // Resolve the invoke function
-    ResolveLambdaObjectInvoke(lambda_object, signature);
+    ResolveLambdaObjectInvoke(lambda_object, signature, true);
+
+    ResolveLambdaObjectInvoke(lambda_object, signature, false);
 }
 
 void ETSChecker::ResolveLambdaObjectCtor(ir::ClassDefinition *lambda_object, bool is_static_reference)
 {
     const auto &lambda_body = lambda_object->Body();
-    auto *ctor_func = lambda_body[lambda_body.size() - 2]->AsMethodDefinition()->Function();
+    auto *ctor_func = lambda_body[lambda_body.size() - 3]->AsMethodDefinition()->Function();
     ETSObjectType *lambda_object_type = lambda_object->TsType()->AsETSObjectType();
     varbinder::Variable *field_var {};
 
@@ -2229,10 +2229,11 @@ void ETSChecker::ResolveLambdaObjectCtor(ir::ClassDefinition *lambda_object, boo
     fieldinit->Right()->SetTsType(ctor_signature->Params()[0]->TsType());
 }
 
-void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambda_object, Signature *signature_ref)
+void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambda_object, Signature *signature_ref,
+                                           bool iface_override)
 {
     const auto &lambda_body = lambda_object->Body();
-    auto *invoke_func = lambda_body[lambda_body.size() - 1]->AsMethodDefinition()->Function();
+    auto *invoke_func = lambda_body[lambda_body.size() - (iface_override ? 2 : 1)]->AsMethodDefinition()->Function();
     ETSObjectType *lambda_object_type = lambda_object->TsType()->AsETSObjectType();
 
     // Set the implicit 'this' parameters type to the lambda object
@@ -2244,23 +2245,44 @@ void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambda_object, S
     invoke_signature_info->rest_var = nullptr;
 
     // Create the parameters for the invoke function, based on the referenced function's signature
-    for (auto *it : signature_ref->Params()) {
+
+    auto N = GlobalBuiltinFunctionTypeVariadicThreshold();
+
+    auto params_num = signature_ref->Params().size();
+
+    if (params_num < N || !iface_override) {
+        for (auto *it : signature_ref->Params()) {
+            auto param_ctx = varbinder::LexicalScope<varbinder::FunctionParamScope>::Enter(
+                VarBinder(), invoke_func->Scope()->ParamScope(), false);
+
+            auto *param_ident = Allocator()->New<ir::Identifier>(it->Name(), Allocator());
+            auto *param = Allocator()->New<ir::ETSParameterExpression>(param_ident, nullptr);
+            auto [_, var] = VarBinder()->AddParamDecl(param);
+            (void)_;
+            var->SetTsType(iface_override ? GlobalETSObjectType() : it->TsType());
+            param_ident->SetVariable(var);
+            invoke_func->Params().push_back(param);
+            invoke_signature_info->min_arg_count++;
+            invoke_signature_info->params.push_back(var->AsLocalVariable());
+        }
+    } else {
         auto param_ctx = varbinder::LexicalScope<varbinder::FunctionParamScope>::Enter(
             VarBinder(), invoke_func->Scope()->ParamScope(), false);
 
-        auto *param_ident = Allocator()->New<ir::Identifier>(it->Name(), Allocator());
-        auto *param = Allocator()->New<ir::ETSParameterExpression>(param_ident, nullptr);
+        auto *id = AllocNode<ir::Identifier>("p", Allocator());
+        auto *rest_element = AllocNode<ir::SpreadElement>(ir::AstNodeType::REST_ELEMENT, Allocator(), id);
+        auto *const param = AllocNode<ir::ETSParameterExpression>(rest_element, nullptr);
         auto [_, var] = VarBinder()->AddParamDecl(param);
         (void)_;
-        var->SetTsType(it->TsType());
-        param_ident->SetVariable(var);
+        var->SetTsType(CreateETSArrayType(GlobalETSObjectType()));
+        param->Ident()->SetVariable(var);
         invoke_func->Params().push_back(param);
-        invoke_signature_info->min_arg_count++;
-        invoke_signature_info->params.push_back(var->AsLocalVariable());
+        invoke_signature_info->rest_var = var->AsLocalVariable();
     }
 
     // Create the function type for the constructor
-    auto *invoke_signature = CreateSignature(invoke_signature_info, signature_ref->ReturnType(), invoke_func);
+    auto *invoke_signature = CreateSignature(
+        invoke_signature_info, iface_override ? GlobalETSObjectType() : signature_ref->ReturnType(), invoke_func);
     invoke_signature->SetOwner(lambda_object_type);
     invoke_signature->AddSignatureFlag(checker::SignatureFlags::CALL);
 
@@ -2273,7 +2295,8 @@ void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambda_object, S
 
     // Fill out the type information for the body of the invoke function
 
-    auto *resolved_lambda_invoke_function_body = ResolveLambdaObjectInvokeFuncBody(lambda_object, signature_ref);
+    auto *resolved_lambda_invoke_function_body =
+        ResolveLambdaObjectInvokeFuncBody(lambda_object, signature_ref, iface_override);
 
     invoke_func->Body()->AsBlockStatement()->Statements().push_back(resolved_lambda_invoke_function_body);
     if (resolved_lambda_invoke_function_body->IsExpressionStatement()) {
@@ -2282,7 +2305,7 @@ void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambda_object, S
 }
 
 ir::Statement *ETSChecker::ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition *lambda_object,
-                                                             Signature *signature_ref)
+                                                             Signature *signature_ref, bool iface_override)
 {
     const auto &lambda_body = lambda_object->Body();
     bool is_static_reference = signature_ref->HasSignatureFlag(SignatureFlags::STATIC);
@@ -2314,13 +2337,64 @@ ir::Statement *ETSChecker::ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition
     callee->SetTsType(signature_ref->OwnerVar()->TsType());
 
     // Create the parameters for the referenced function call
-    auto *invoke_func = lambda_body[lambda_body.size() - 1]->AsMethodDefinition()->Function();
+    auto *invoke_func = lambda_body[lambda_body.size() - (iface_override ? 2 : 1)]->AsMethodDefinition()->Function();
     ArenaVector<ir::Expression *> call_params(Allocator()->Adapter());
-    for (size_t idx = 0; idx != signature_ref->Params().size(); idx++) {
-        auto *param_ident = Allocator()->New<ir::Identifier>(signature_ref->Params()[idx]->Name(), Allocator());
-        param_ident->SetVariable(invoke_func->Params()[idx]->AsETSParameterExpression()->Variable());
-        param_ident->SetTsType(invoke_func->Params()[idx]->AsETSParameterExpression()->Variable()->TsType());
-        call_params.push_back(param_ident);
+
+    auto N = GlobalBuiltinFunctionTypeVariadicThreshold();
+
+    auto params_num = signature_ref->Params().size();
+
+    if (!iface_override) {
+        for (size_t idx = 0; idx != params_num; idx++) {
+            auto *param_ident = Allocator()->New<ir::Identifier>(signature_ref->Params()[idx]->Name(), Allocator());
+            param_ident->SetVariable(invoke_func->Params()[idx]->AsETSParameterExpression()->Variable());
+            param_ident->SetTsType(invoke_func->Params()[idx]->AsETSParameterExpression()->Variable()->TsType());
+            call_params.push_back(param_ident);
+        }
+    } else if (params_num < N) {
+        // Then we add the lambda functions parameters to the call
+        auto nargs = invoke_func->Params().size();
+        for (size_t i = 0; i < nargs; i++) {
+            auto const *const param = invoke_func->Params()[i]->AsETSParameterExpression();
+            auto *const param_ident = Allocator()->New<ir::Identifier>(param->Ident()->Name(), Allocator());
+            param_ident->SetVariable(param->Variable());
+            param_ident->SetTsType(param->Variable()->TsType());
+
+            auto *type = signature_ref->Params()[i]->TsType();
+            if (type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+                param_ident->AddBoxingUnboxingFlag(GetUnboxingFlag(type));
+                call_params.push_back(param_ident);
+            } else {
+                const checker::CastingContext ctx(Relation(), param_ident, param_ident->TsType(), type,
+                                                  param_ident->Start(), {});
+                auto *const param_cast = Allocator()->New<ir::TSAsExpression>(param_ident, nullptr, false);
+                param_cast->SetUncheckedCast(ctx.UncheckedCast());
+                param_cast->SetTsType(type);
+                call_params.push_back(param_cast);
+            }
+        }
+    } else {
+        ASSERT(invoke_func->Params().size() == 1);
+        auto const *const param = invoke_func->Params()[0]->AsETSParameterExpression();
+        auto *const param_ident = Allocator()->New<ir::Identifier>(param->Ident()->Name(), Allocator());
+        param_ident->SetVariable(param->Variable());
+        param_ident->SetTsType(param->Variable()->TsType());
+
+        for (size_t i = 0; i < params_num; i++) {
+            auto *idx = Allocator()->New<ir::NumberLiteral>(lexer::Number(static_cast<int>(i)));
+            auto *arg = Allocator()->New<ir::MemberExpression>(param_ident, idx,
+                                                               ir::MemberExpressionKind::ELEMENT_ACCESS, true, false);
+
+            auto *type = signature_ref->Params()[i]->TsType();
+            if (type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+                arg->AddBoxingUnboxingFlag(GetUnboxingFlag(type));
+                call_params.push_back(arg);
+            } else {
+                auto *const param_cast = Allocator()->New<ir::TSAsExpression>(arg, nullptr, false);
+                param_cast->SetTsType(type);
+                call_params.push_back(param_cast);
+            }
+        }
     }
 
     // Create the synthetic call expression to the referenced function
@@ -2330,6 +2404,10 @@ ir::Statement *ETSChecker::ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition
 
     if (signature_ref->ReturnType()->IsETSVoidType()) {
         return Allocator()->New<ir::ExpressionStatement>(resolved_call);
+    }
+
+    if (iface_override && resolved_call->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+        resolved_call->AddBoxingUnboxingFlag(GetBoxingFlag(resolved_call->TsType()));
     }
 
     return Allocator()->New<ir::ReturnStatement>(resolved_call);
@@ -2622,4 +2700,22 @@ void ETSChecker::EnsureValidCurlyBrace(ir::CallExpression *call_expr)
 
     ThrowTypeError({"No matching call signature with trailing lambda"}, call_expr->Start());
 }
+
+ETSObjectType *ETSChecker::GetFunctionalInterface(ir::ETSFunctionType *type)
+{
+    auto hash = GetHashFromFunctionType(type);
+    auto it = functional_interface_cache_.find(hash);
+    if (it == functional_interface_cache_.cend()) {
+        return nullptr;
+    }
+    return it->second;
+}
+
+void ETSChecker::CacheFunctionalInterface(ir::ETSFunctionType *type, ETSObjectType *iface_type)
+{
+    auto hash = GetHashFromFunctionType(type);
+    ASSERT(functional_interface_cache_.find(hash) == functional_interface_cache_.cend());
+    functional_interface_cache_.emplace(hash, iface_type);
+}
+
 }  // namespace panda::es2panda::checker
