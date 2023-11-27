@@ -589,6 +589,11 @@ Signature *ETSChecker::ResolveConstructExpression(ETSObjectType *type, const Are
     return ValidateSignatures(type->ConstructSignatures(), nullptr, arguments, pos, "construct");
 }
 
+Signature *ETSChecker::ResolveConstructExpressionParameterless(ETSObjectType *type, const ArenaVector<ir::Expression *> &arguments,
+                                                  const lexer::SourcePosition &pos)
+{
+    return ValidateSignatures(type->ConstructSignatures(), nullptr, arguments, pos, "construct",TypeRelationFlag::NO_THROW);
+}
 /*
  * Object literals do not get checked in the process of call resolution; we need to check them separately
  * afterwards.

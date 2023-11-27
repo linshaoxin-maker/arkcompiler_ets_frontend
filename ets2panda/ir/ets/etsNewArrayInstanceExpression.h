@@ -17,7 +17,9 @@
 #define ES2PANDA_IR_ETS_NEW_ARRAY_INSTANCE_EXPRESSION_H
 
 #include "ir/expression.h"
-
+namespace panda::es2panda::checker{
+class Signature;
+}
 namespace panda::es2panda::ir {
 
 class ETSNewArrayInstanceExpression : public Expression {
@@ -28,10 +30,11 @@ public:
     NO_COPY_SEMANTIC(ETSNewArrayInstanceExpression);
     NO_MOVE_SEMANTIC(ETSNewArrayInstanceExpression);
 
-    explicit ETSNewArrayInstanceExpression(ir::TypeNode *const type_reference, ir::Expression *const dimension)
+    explicit ETSNewArrayInstanceExpression(ArenaAllocator *allocator,ir::TypeNode *const type_reference, ir::Expression *const dimension)
         : Expression(AstNodeType::ETS_NEW_ARRAY_INSTANCE_EXPRESSION),
           type_reference_(type_reference),
-          dimension_(dimension)
+          dimension_(dimension),
+          arguments_(allocator->Adapter())
     {
     }
 
@@ -49,6 +52,8 @@ public:
 private:
     ir::TypeNode *type_reference_;
     ir::Expression *dimension_;
+    ArenaVector<ir::Expression *> arguments_;
+    checker::Signature *signature_{};
 };
 }  // namespace panda::es2panda::ir
 

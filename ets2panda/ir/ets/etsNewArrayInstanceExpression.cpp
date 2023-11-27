@@ -19,6 +19,9 @@
 #include "ir/typeNode.h"
 #include "compiler/core/ETSGen.h"
 #include "checker/ETSchecker.h"
+#include "ir/ets/etsTypeReference.h"
+#include "ir/ets/etsTypeReferencePart.h"
+#include "ir/expressions/identifier.h"
 
 namespace panda::es2panda::ir {
 void ETSNewArrayInstanceExpression::TransformChildren(const NodeTransformer &cb)
@@ -51,6 +54,26 @@ void ETSNewArrayInstanceExpression::Compile([[maybe_unused]] compiler::ETSGen *e
     compiler::VReg dim = etsg->AllocReg();
     etsg->ApplyConversionAndStoreAccumulator(this, dim, dimension_->TsType());
     etsg->NewArray(this, arr, dim, TsType());
+     
+    std::uint32_t elem_num;
+    if(dimension_->TsType()->IsIntType())
+    {
+        elem_num = dimension_->TsType()->AsIntType()->GetValue();
+    }else{
+        elem_num = 0;
+    }
+    const auto index_reg = etsg->AllocReg();
+    for(std::uint32_t i = 0;i < elem_num;i++)
+    {
+        etsg->LoadAccumulatorInt(this, i);
+        etsg->StoreAccumulator(this, index_reg);
+        const compiler::TargetTypeContext ttctx2(etsg,type_reference_->TsType());
+        if(signature_ != nullptr)
+        {
+            etsg->InitObject(this,signature_,arguments_);
+            etsg->StoreArrayElement(this,arr,index_reg,type_reference_->TsType());
+        }
+    }
     etsg->SetVRegType(arr, TsType());
     etsg->LoadAccumulator(this, arr);
 }
@@ -64,7 +87,13 @@ checker::Type *ETSNewArrayInstanceExpression::Check([[maybe_unused]] checker::ET
 {
     auto *element_type = type_reference_->GetType(checker);
     checker->ValidateArrayIndex(dimension_);
-
+    if(element_type->IsETSObjectType()){
+        auto signatures = element_type->AsETSObjectType()->ConstructSignatures();
+        if(signatures.size() != 0)
+        {
+            signature_ = checker->ResolveConstructExpressionParameterless(element_type->AsETSObjectType(),arguments_,Start());
+        }
+    }
     SetTsType(checker->CreateETSArrayType(element_type));
     checker->CreateBuiltinArraySignature(TsType()->AsETSArrayType(), 1);
     return TsType();
@@ -77,7 +106,7 @@ ETSNewArrayInstanceExpression *ETSNewArrayInstanceExpression::Clone(ArenaAllocat
     auto *const type_ref = type_reference_ != nullptr ? type_reference_->Clone(allocator) : nullptr;
     auto *const dimension = dimension_ != nullptr ? dimension_->Clone(allocator)->AsExpression() : nullptr;
 
-    if (auto *const clone = allocator->New<ETSNewArrayInstanceExpression>(type_ref, dimension); clone != nullptr) {
+    if (auto *const clone = allocator->New<ETSNewArrayInstanceExpression>(allocator,type_ref, dimension); clone != nullptr) {
         if (type_ref != nullptr) {
             type_ref->SetParent(clone);
         }
