@@ -300,6 +300,8 @@ public:
                                                       TypeRelationFlag throw_flag = TypeRelationFlag::NONE);
     Signature *ResolveConstructExpression(ETSObjectType *type, const ArenaVector<ir::Expression *> &arguments,
                                           const lexer::SourcePosition &pos);
+    Signature *ResolveConstructExpressionParameterless(ETSObjectType *type,const ArenaVector<ir::Expression *> &arguments,
+                                            const lexer::SourcePosition &pos);
     void CheckObjectLiteralArguments(Signature *sig, ArenaVector<ir::Expression *> const &arguments);
     checker::ETSFunctionType *BuildFunctionSignature(ir::ScriptFunction *func, bool is_construct_sig = false);
     checker::ETSFunctionType *BuildMethodSignature(ir::MethodDefinition *method);
