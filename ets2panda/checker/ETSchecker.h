@@ -124,6 +124,10 @@ public:
     Type *CheckTypeCached(ir::Expression *expr) override;
     void ResolveStructuredTypeMembers([[maybe_unused]] Type *type) override {}
     Type *GetTypeOfVariable([[maybe_unused]] varbinder::Variable *var) override;
+    bool IsETSChecker() override
+    {
+        return true;
+    }
 
     // Object
     ETSObjectType *BuildClassProperties(ir::ClassDefinition *class_def);
@@ -587,7 +591,12 @@ private:
     }
 
     ArenaVector<Type *> CreateTypeForTypeParameters(ir::TSTypeParameterDeclaration *type_params);
+
     Type *CreateTypeParameterType(ir::TSTypeParameter *param);
+
+    using Type2TypeMap = std::unordered_map<std::string_view, std::string_view>;
+    void CheckTypeParameterConstraint(ir::TSTypeParameter *param, Type2TypeMap &extends);
+
     void SetUpTypeParameterConstraint(ir::TSTypeParameter *param);
     ETSObjectType *SetUpParameterType(ir::TSTypeParameter *param);
     ETSObjectType *CreateETSObjectTypeCheckBuiltins(util::StringView name, ir::AstNode *decl_node,

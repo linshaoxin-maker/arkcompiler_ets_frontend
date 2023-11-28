@@ -290,10 +290,12 @@ bool ETSChecker::ValidateProxySignature(Signature *const signature,
         return false;
     }
 
-    const auto num_non_default_params =
-        signature->Params().size() - signature->Function()->Body()->AsBlockStatement()->Statements().size();
+    auto const *const proxy_param = signature->Function()->Params().back()->AsETSParameterExpression();
+    if (!proxy_param->Ident()->Name().Is(ir::PROXY_PARAMETER_NAME)) {
+        return false;
+    }
 
-    if (arguments.size() < num_non_default_params) {
+    if (arguments.size() < proxy_param->GetRequiredParams()) {
         return false;
     }
 
@@ -366,17 +368,25 @@ Signature *ETSChecker::ValidateSignatures(ArenaVector<Signature *> &signatures,
             return nullptr;
         }
 
+        // Just to avoid extra nesting level
+        auto const check_ambiguous = [this, most_specific_signature,
+                                      &pos](Signature const *const proxy_signature) -> void {
+            auto const *const proxy_param = proxy_signature->Function()->Params().back()->AsETSParameterExpression();
+            if (!proxy_param->Ident()->Name().Is(ir::PROXY_PARAMETER_NAME)) {
+                ThrowTypeError({"Proxy parameter '", proxy_param->Ident()->Name(), "' has invalid name."}, pos);
+            }
+
+            if (most_specific_signature->Params().size() == proxy_param->GetRequiredParams()) {
+                ThrowTypeError({"Reference to ", most_specific_signature->Function()->Id()->Name(), " is ambiguous"},
+                               pos);
+            }
+        };
+
         if (!proxy_signatures.empty()) {
             auto *const proxy_signature = ChooseMostSpecificProxySignature(
                 proxy_signatures, arguments, arg_type_inference_required, pos, arguments.size());
             if (proxy_signature != nullptr) {
-                const size_t num_non_default_params =
-                    proxy_signature->Params().size() -
-                    proxy_signature->Function()->Body()->AsBlockStatement()->Statements().size();
-                if (most_specific_signature->Params().size() == num_non_default_params) {
-                    ThrowTypeError(
-                        {"Reference to ", most_specific_signature->Function()->Id()->Name(), " is ambiguous"}, pos);
-                }
+                check_ambiguous(proxy_signature);
             }
         }
 
