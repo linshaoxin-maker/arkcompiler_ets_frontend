@@ -169,6 +169,20 @@ bool Helpers::IsRelativePath(const std::string &path)
     return ((path.find(current_dir_reference) == 0) || (path.find(parent_dir_reference) == 0));
 }
 
+bool Helpers::IsCompatibleExtension(const std::string &extension)
+{
+    return extension == ".ets" || extension == ".ts";
+}
+
+bool Helpers::EndsWith(const std::string &str, const std::string &suffix)
+{
+    if (str.length() < suffix.length()) {
+        return false;
+    }
+    size_t expect_pos = str.length() - suffix.length();
+    return str.find(suffix, expect_pos) == expect_pos;
+}
+
 const ir::ScriptFunction *Helpers::GetContainingConstructor(const ir::AstNode *node)
 {
     const ir::ScriptFunction *iter = GetContainingFunction(node);

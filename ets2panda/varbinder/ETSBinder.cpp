@@ -592,10 +592,27 @@ void ETSBinder::AddSpecifiersToTopBindings(ir::AstNode *const specifier, const i
     }
 
     const auto &ext_records = global_record_table_.Program()->ExternalSources();
-    const util::StringView source_name =
+    util::StringView source_name =
         (import->Module() == nullptr)
             ? import_path->Str()
-            : util::UString(import_path->Str().Mutf8() + import->Module()->Str().Mutf8(), Allocator()).View();
+            : util::UString(import_path->Str().Mutf8() +
+                                (!util::Helpers::EndsWith(import_path->Str().Mutf8(),
+                                                          std::string(panda::os::file::File::GetPathDelim()))
+                                     ? std::string(panda::os::file::File::GetPathDelim())
+                                     : "") +
+                                import->Module()->Str().Mutf8(),
+                            Allocator())
+                  .View();
+
+    // TODO(user): reconsider the file handling in case of import: dismemberment could be omitted?
+    if (!panda::os::file::File::IsDirectory(import->ResolvedSource()->Str().Mutf8())) {
+        const size_t idx = source_name.Utf8().find_last_of('.');
+        if (idx != std::string::npos &&
+            util::Helpers::IsCompatibleExtension(source_name.Substr(idx, source_name.Length()).Mutf8())) {
+            source_name = source_name.Substr(0, idx);
+        }
+    }
+
     const auto record_res = ext_records.find(source_name);
     if (record_res == ext_records.end()) {
         ThrowError(import_path->Start(), "Cannot find import: " + std::string(source_name));
