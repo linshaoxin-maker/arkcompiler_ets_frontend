@@ -918,9 +918,8 @@ checker::Type *ETSAnalyzer::Check(ir::SuperExpression *expr) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TaggedTemplateExpression *expr) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TaggedTemplateExpression *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -944,8 +943,36 @@ checker::Type *ETSAnalyzer::Check(ir::UnaryExpression *expr) const
 
 checker::Type *ETSAnalyzer::Check(ir::UpdateExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    if (expr->TsType() != nullptr) {
+        return expr->TsType();
+    }
+
+    checker::Type *operand_type = expr->argument_->Check(checker);
+    if (expr->Argument()->IsIdentifier()) {
+        checker->ValidateUnaryOperatorOperand(expr->Argument()->AsIdentifier()->Variable());
+    } else {
+        ASSERT(expr->Argument()->IsMemberExpression());
+        varbinder::LocalVariable *prop_var = expr->argument_->AsMemberExpression()->PropVar();
+        if (prop_var != nullptr) {
+            checker->ValidateUnaryOperatorOperand(prop_var);
+        }
+    }
+
+    auto unboxed_type = checker->ETSBuiltinTypeAsPrimitiveType(operand_type);
+
+    if (unboxed_type == nullptr || !unboxed_type->HasTypeFlag(checker::TypeFlag::ETS_NUMERIC)) {
+        checker->ThrowTypeError("Bad operand type, the type of the operand must be numeric type.",
+                                expr->Argument()->Start());
+    }
+
+    if (operand_type->IsETSObjectType()) {
+        expr->Argument()->AddBoxingUnboxingFlag(checker->GetUnboxingFlag(unboxed_type) |
+                                                checker->GetBoxingFlag(unboxed_type));
+    }
+
+    expr->SetTsType(operand_type);
+    return expr->TsType();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::YieldExpression *expr) const
@@ -1633,8 +1660,12 @@ checker::Type *ETSAnalyzer::Check(ir::VariableDeclarator *st) const
 
 checker::Type *ETSAnalyzer::Check(ir::VariableDeclaration *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    for (auto *it : st->Declarators()) {
+        it->Check(checker);
+    }
+
+    return nullptr;
 }
 
 checker::Type *ETSAnalyzer::Check(ir::WhileStatement *st) const
@@ -1656,8 +1687,37 @@ checker::Type *ETSAnalyzer::Check(ir::TSArrayType *node) const
 
 checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
 {
-    (void)expr;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+
+    auto *const target_type = expr->TypeAnnotation()->AsTypeNode()->GetType(checker);
+    // Object expression requires that its type be set by the context before checking. in this case, the target type
+    // provides that context.
+    if (expr->Expr()->IsObjectExpression()) {
+        expr->Expr()->AsObjectExpression()->SetPreferredType(target_type);
+    }
+    auto *const source_type = expr->Expr()->Check(checker);
+
+    const checker::CastingContext ctx(checker->Relation(), expr->Expr(), source_type, target_type,
+                                      expr->Expr()->Start(),
+                                      {"Cannot cast type '", source_type, "' to '", target_type, "'"});
+
+    if (source_type->IsETSDynamicType() && target_type->IsLambdaObject()) {
+        // NOTE: itrubachev. change target_type to created lambdaobject type.
+        // Now target_type is not changed, only construct signature is added to it
+        checker->BuildLambdaObjectClass(target_type->AsETSObjectType(),
+                                        expr->TypeAnnotation()->AsETSFunctionType()->ReturnType());
+    }
+    expr->is_unchecked_cast_ = ctx.UncheckedCast();
+
+    // Make sure the array type symbol gets created for the assembler to be able to emit checkcast.
+    // Because it might not exist, if this particular array type was never created explicitly.
+    if (!expr->is_unchecked_cast_ && target_type->IsETSArrayType()) {
+        auto *const target_array_type = target_type->AsETSArrayType();
+        checker->CreateBuiltinArraySignature(target_array_type, target_array_type->Rank());
+    }
+
+    expr->SetTsType(target_type);
+    return expr->TsType();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TSBigintKeyword *node) const
@@ -1671,9 +1731,8 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSBooleanKeyword *node) c
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSClassImplements *expr) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSClassImplements *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -1754,9 +1813,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSInferType *node) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSInterfaceBody *expr) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSInterfaceBody *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -1766,9 +1824,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSInterfaceDeclaration *st) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSInterfaceHeritage *expr) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSInterfaceHeritage *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -1802,9 +1859,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSModuleDeclaration *st) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSNamedTupleMember *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSNamedTupleMember *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1865,9 +1921,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSThisType *node) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSTupleType *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTupleType *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
@@ -1877,9 +1932,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSTypeAliasDeclaration *st) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSTypeAssertion *expr) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypeAssertion *expr) const
 {
-    (void)expr;
     UNREACHABLE();
 }
 
@@ -1919,9 +1973,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSTypePredicate *node) const
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSTypeQuery *node) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypeQuery *node) const
 {
-    (void)node;
     UNREACHABLE();
 }
 
