@@ -70,7 +70,7 @@ using ArgRange = std::pair<uint32_t, uint32_t>;
 class Checker {
 public:
     explicit Checker();
-    ~Checker() = default;
+    virtual ~Checker() = default;
     NO_COPY_SEMANTIC(Checker);
     NO_MOVE_SEMANTIC(Checker);
 
@@ -137,6 +137,11 @@ public:
     std::unordered_set<const void *> &TypeStack()
     {
         return type_stack_;
+    }
+
+    virtual bool IsETSChecker()
+    {
+        return false;
     }
 
     ETSChecker *AsETSChecker()

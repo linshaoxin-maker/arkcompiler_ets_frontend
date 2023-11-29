@@ -39,6 +39,7 @@ ETSParameterExpression::ETSParameterExpression(AnnotatedExpression *const ident_
         spread_ = ident_or_spread->AsRestElement();
         ASSERT(spread_->Argument()->IsIdentifier());
         ident_ = spread_->Argument()->AsIdentifier();
+        ident_->SetParent(spread_);
         initializer_ = nullptr;  // Just in case!
     } else {
         UNREACHABLE();
@@ -171,12 +172,16 @@ ETSParameterExpression *ETSParameterExpression::Clone(ArenaAllocator *const allo
 
     if (auto *const clone = allocator->New<ETSParameterExpression>(ident_or_spread, initializer); clone != nullptr) {
         ident_or_spread->SetParent(clone);
+
         if (initializer != nullptr) {
             initializer->SetParent(clone);
         }
+
         if (parent != nullptr) {
             clone->SetParent(parent);
         }
+
+        clone->SetRequiredParams(extra_value_);
         return clone;
     }
 
