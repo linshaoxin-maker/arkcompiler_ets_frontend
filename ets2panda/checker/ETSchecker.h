@@ -22,6 +22,7 @@
 #include "varbinder/enumMemberResult.h"
 #include "ir/ts/tsTypeParameter.h"
 #include "ir/ts/tsTypeParameterInstantiation.h"
+#include "lexer/token/tokenType.h"
 #include "util/enumbitops.h"
 #include "util/ustring.h"
 #include "checker/resolveResult.h"
@@ -98,10 +99,12 @@ public:
     Type *GlobalETSNullType() const;
     Type *GlobalETSUndefinedType() const;
     Type *GlobalETSStringLiteralType() const;
+    Type *GlobalETSBigIntLiteralType() const;
     Type *GlobalWildcardType() const;
 
     ETSObjectType *GlobalETSObjectType() const;
     ETSObjectType *GlobalBuiltinETSStringType() const;
+    ETSObjectType *GlobalBuiltinETSBigIntType() const;
     ETSObjectType *GlobalBuiltinTypeType() const;
     ETSObjectType *GlobalBuiltinExceptionType() const;
     ETSObjectType *GlobalBuiltinErrorType() const;
@@ -124,6 +127,10 @@ public:
     Type *CheckTypeCached(ir::Expression *expr) override;
     void ResolveStructuredTypeMembers([[maybe_unused]] Type *type) override {}
     Type *GetTypeOfVariable([[maybe_unused]] varbinder::Variable *var) override;
+    bool IsETSChecker() override
+    {
+        return true;
+    }
 
     // Object
     ETSObjectType *BuildClassProperties(ir::ClassDefinition *class_def);
@@ -177,6 +184,7 @@ public:
     LongType *CreateLongType(int64_t value);
     ShortType *CreateShortType(int16_t value);
     CharType *CreateCharType(char16_t value);
+    ETSBigIntType *CreateETSBigIntLiteralType(util::StringView value);
     ETSStringType *CreateETSStringLiteralType(util::StringView value);
     ETSArrayType *CreateETSArrayType(Type *element_type);
     Type *CreateETSUnionType(ArenaVector<Type *> &&constituent_types);
@@ -203,6 +211,7 @@ public:
     // Arithmetic
     Type *NegateNumericType(Type *type, ir::Expression *node);
     Type *BitwiseNegateIntegralType(Type *type, ir::Expression *node);
+    bool CheckBinaryOperatorForBigInt(Type *left, Type *right, lexer::TokenType operation);
     std::tuple<Type *, Type *> CheckBinaryOperator(ir::Expression *left, ir::Expression *right, ir::Expression *expr,
                                                    lexer::TokenType operation_type, lexer::SourcePosition pos,
                                                    bool force_promotion = false);
@@ -285,11 +294,9 @@ public:
                                 const ArenaVector<ir::Expression *> &arguments,
                                 const std::vector<bool> &arg_type_inference_required);
     Signature *ChooseMostSpecificSignature(ArenaVector<Signature *> &signatures,
-                                           const ArenaVector<ir::Expression *> &arguments,
                                            const std::vector<bool> &arg_type_inference_required,
                                            const lexer::SourcePosition &pos, size_t arguments_size = ULONG_MAX);
     Signature *ChooseMostSpecificProxySignature(ArenaVector<Signature *> &signatures,
-                                                const ArenaVector<ir::Expression *> &arguments,
                                                 const std::vector<bool> &arg_type_inference_required,
                                                 const lexer::SourcePosition &pos, size_t arguments_size);
     Signature *ResolveCallExpression(ArenaVector<Signature *> &signatures,
@@ -402,6 +409,8 @@ public:
     bool IsNullLikeOrVoidExpression(const ir::Expression *expr) const;
     bool IsConstantExpression(ir::Expression *expr, Type *type);
     void ValidateUnaryOperatorOperand(varbinder::Variable *variable);
+    bool TestUnionType(Type *type, TypeFlag test);
+    bool CheckPossibilityPromotion(Type *left, Type *right, TypeFlag test);
     std::tuple<Type *, bool> ApplyBinaryOperatorPromotion(Type *left, Type *right, TypeFlag test,
                                                           bool do_promotion = true);
     checker::Type *ApplyConditionalOperatorPromotion(checker::ETSChecker *checker, checker::Type *unboxed_l,
@@ -587,9 +596,16 @@ private:
     }
 
     ArenaVector<Type *> CreateTypeForTypeParameters(ir::TSTypeParameterDeclaration *type_params);
+
     Type *CreateTypeParameterType(ir::TSTypeParameter *param);
+
+    using Type2TypeMap = std::unordered_map<std::string_view, std::string_view>;
+    void CheckTypeParameterConstraint(ir::TSTypeParameter *param, Type2TypeMap &extends);
+
     void SetUpTypeParameterConstraint(ir::TSTypeParameter *param);
     ETSObjectType *SetUpParameterType(ir::TSTypeParameter *param);
+    ETSObjectType *UpdateGlobalType(ETSObjectType *obj_type, util::StringView name);
+    ETSObjectType *UpdateBoxedGlobalType(ETSObjectType *obj_type, util::StringView name);
     ETSObjectType *CreateETSObjectTypeCheckBuiltins(util::StringView name, ir::AstNode *decl_node,
                                                     ETSObjectFlags flags);
     void CheckProgram(parser::Program *program, bool run_analysis = false);

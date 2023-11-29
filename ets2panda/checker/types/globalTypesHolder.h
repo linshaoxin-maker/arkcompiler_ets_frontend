@@ -108,6 +108,8 @@ enum class GlobalTypeId {
     ETS_FLOAT_BOX_BUILTIN,
     ETS_DOUBLE_BOX_BUILTIN,
     ETS_NEVER_BUILTIN,
+    ETS_BIG_INT_BUILTIN,
+    ETS_BIG_INT,
 
     COUNT,
 };
@@ -183,6 +185,8 @@ public:
     Type *GlobalClassNotFoundExceptionBuiltinType();
     [[nodiscard]] Type *GlobalClassCastExceptionBuiltinType() const noexcept;
     Type *GlobalETSStringBuiltinType();
+    Type *GlobalETSBigIntBuiltinType();
+    Type *GlobalETSBigIntLiteralType();
     Type *GlobalStringBuilderBuiltinType();
     Type *GlobalTypeBuiltinType();
     Type *GlobalTypesBuiltinType();

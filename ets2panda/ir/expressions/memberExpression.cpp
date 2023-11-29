@@ -451,6 +451,15 @@ checker::Type *MemberExpression::Check(checker::ETSChecker *checker)
         return AdjustOptional(checker, CheckUnionMember(checker, base_type));
     }
 
+    if (base_type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+        checker->Relation()->SetNode(this);
+        SetObjectType(checker->PrimitiveTypeAsETSBuiltinType(base_type)->AsETSObjectType());
+        checker->AddBoxingUnboxingFlagToNode(this, obj_type_);
+        auto [res_type, res_var] = ResolveObjectMember(checker);
+        SetPropVar(res_var);
+        return AdjustOptional(checker, res_type);
+    }
+
     checker->ThrowTypeError({"Cannot access property of non-object or non-enum type"}, object_->Start());
 }
 
@@ -460,7 +469,15 @@ MemberExpression *MemberExpression::Clone(ArenaAllocator *const allocator, AstNo
     auto *const object = object_ != nullptr ? object_->Clone(allocator)->AsExpression() : nullptr;
     auto *const property = property_ != nullptr ? property_->Clone(allocator)->AsExpression() : nullptr;
 
-    if (auto *const clone = allocator->New<MemberExpression>(Tag {}, *this, object, property); clone != nullptr) {
+    if (auto *const clone =
+            allocator->New<MemberExpression>(object, property, kind_, computed_, MaybeOptionalExpression::IsOptional());
+        clone != nullptr) {
+        if (object != nullptr) {
+            object->SetParent(clone);
+        }
+        if (property != nullptr) {
+            property->SetParent(clone);
+        }
         if (parent != nullptr) {
             clone->SetParent(parent);
         }

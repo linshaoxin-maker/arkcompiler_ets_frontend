@@ -49,6 +49,7 @@ enum class ETSObjectFlags : uint32_t {
     CHECKED_INVOKE_LEGITIMACY = 1U << 19U,
     UNDEFINED_TYPE = 1U << 20U,
 
+    BUILTIN_BIGINT = 1U << 22U,
     BUILTIN_STRING = 1U << 23U,
     BUILTIN_BOOLEAN = 1U << 24U,
     BUILTIN_BYTE = 1U << 25U,
@@ -61,7 +62,7 @@ enum class ETSObjectFlags : uint32_t {
 
     UNBOXABLE_TYPE = BUILTIN_BOOLEAN | BUILTIN_BYTE | BUILTIN_CHAR | BUILTIN_SHORT | BUILTIN_INT | BUILTIN_LONG |
                      BUILTIN_FLOAT | BUILTIN_DOUBLE,
-    BUILTIN_TYPE = BUILTIN_STRING | UNBOXABLE_TYPE,
+    BUILTIN_TYPE = BUILTIN_STRING | BUILTIN_BIGINT | UNBOXABLE_TYPE,
     VALID_SWITCH_TYPE =
         BUILTIN_BYTE | BUILTIN_CHAR | BUILTIN_SHORT | BUILTIN_INT | BUILTIN_LONG | BUILTIN_STRING | ENUM,
     GLOBAL_CLASS = CLASS | GLOBAL,
@@ -512,11 +513,7 @@ public:
 
     std::tuple<bool, bool> ResolveConditionExpr() const override
     {
-        if (IsNullish() || IsETSStringType()) {
-            return {false, false};
-        }
-
-        return {true, true};
+        return {false, false};
     }
 
 protected:

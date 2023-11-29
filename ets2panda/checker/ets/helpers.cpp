@@ -75,6 +75,10 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
     checker::Type *type = expr->Check(this);
     auto *unboxed_type = ETSBuiltinTypeAsConditionalType(type);
 
+    if (unboxed_type == GlobalBuiltinVoidType() || unboxed_type->IsETSVoidType()) {
+        ThrowTypeError("An expression of type 'void' cannot be tested for truthiness", expr->Start());
+    }
+
     if (unboxed_type != nullptr && !unboxed_type->IsConditionalExprType()) {
         ThrowTypeError("Condition must be of possible condition type", expr->Start());
     }
@@ -439,7 +443,7 @@ void ETSChecker::ValidateResolvedIdentifier(ir::Identifier *const ident, varbind
 
             if (!resolved_type->IsETSObjectType() && !resolved_type->IsETSArrayType() &&
                 !resolved_type->IsETSEnumType() && !resolved_type->IsETSStringEnumType() &&
-                !resolved_type->IsETSUnionType()) {
+                !resolved_type->IsETSUnionType() && !resolved_type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
                 throw_error();
             }
 
@@ -750,8 +754,13 @@ Type *ETSChecker::HandleBooleanLogicalOperatorsExtended(Type *left_type, Type *r
         IsNullLikeOrVoidExpression(expr->Right()) ? std::make_tuple(true, false) : right_type->ResolveConditionExpr();
 
     if (!resolve_left) {
-        // return the UNION type when it is implemented
-        return IsTypeIdenticalTo(left_type, right_type) ? left_type : GlobalETSBooleanType();
+        if (IsTypeIdenticalTo(left_type, right_type)) {
+            return left_type;
+        }
+        ArenaVector<checker::Type *> types(Allocator()->Adapter());
+        types.push_back(left_type);
+        types.push_back(right_type);
+        return CreateETSUnionType(std::move(types));
     }
 
     switch (expr->OperatorType()) {
@@ -1057,8 +1066,11 @@ void ETSChecker::SetPropertiesForModuleObject(checker::ETSObjectType *module_obj
 {
     auto *ets_binder = static_cast<varbinder::ETSBinder *>(VarBinder());
 
-    auto res = ets_binder->GetGlobalRecordTable()->Program()->ExternalSources().find(import_path);
-
+    auto ext_records = ets_binder->GetGlobalRecordTable()->Program()->ExternalSources();
+    auto res = [ets_binder, ext_records, import_path]() {
+        auto r = ext_records.find(import_path);
+        return r != ext_records.end() ? r : ext_records.find(ets_binder->GetResolvedImportPath(import_path));
+    }();
     for (auto [_, var] : res->second.front()->GlobalClassScope()->StaticFieldScope()->Bindings()) {
         (void)_;
         if (var->AsLocalVariable()->Declaration()->Node()->IsExported()) {
@@ -1341,7 +1353,7 @@ bool ETSChecker::IsTypeBuiltinType(Type *type)
 bool ETSChecker::IsReferenceType(const Type *type)
 {
     return type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT) || type->IsETSNullLike() ||
-           type->IsETSStringType();
+           type->IsETSStringType() || type->IsETSBigIntType();
 }
 
 const ir::AstNode *ETSChecker::FindJumpTarget(ir::AstNodeType node_type, const ir::AstNode *node,
@@ -1444,18 +1456,6 @@ Type *ETSChecker::ETSBuiltinTypeAsConditionalType(Type *object_type)
 {
     if ((object_type == nullptr) || !object_type->IsConditionalExprType()) {
         return nullptr;
-    }
-
-    if (object_type->IsETSObjectType()) {
-        if (!object_type->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE)) {
-            return object_type;
-        }
-        auto saved_result = Relation()->IsTrue();
-        Relation()->Result(false);
-
-        UnboxingConverter converter = UnboxingConverter(AsETSChecker(), Relation(), object_type, object_type);
-        Relation()->Result(saved_result);
-        return converter.Result();
     }
 
     return object_type;
@@ -1786,7 +1786,7 @@ void ETSChecker::CheckUnboxedTypesAssignable(TypeRelation *relation, Type *sourc
 void ETSChecker::CheckBoxedSourceTypeAssignable(TypeRelation *relation, Type *source, Type *target)
 {
     checker::SavedTypeRelationFlagsContext saved_type_relation_flag_ctx(
-        relation, TypeRelationFlag::ONLY_CHECK_WIDENING |
+        relation, (relation->ApplyWidening() ? TypeRelationFlag::WIDENING : TypeRelationFlag::NONE) |
                       (relation->ApplyNarrowing() ? TypeRelationFlag::NARROWING : TypeRelationFlag::NONE));
     auto *boxed_source_type = relation->GetChecker()->AsETSChecker()->PrimitiveTypeAsETSBuiltinType(source);
     if (boxed_source_type == nullptr) {
@@ -1804,7 +1804,7 @@ void ETSChecker::CheckBoxedSourceTypeAssignable(TypeRelation *relation, Type *so
         if (unboxed_target_type == nullptr) {
             return;
         }
-        NarrowingConverter(this, relation, unboxed_target_type, source);
+        NarrowingWideningConverter(this, relation, unboxed_target_type, source);
         if (relation->IsTrue()) {
             AddBoxingFlagToPrimitiveType(relation, target);
         }
@@ -2040,7 +2040,7 @@ Type *ETSChecker::GetTypeFromTypeAnnotation(ir::TypeNode *const type_annotation)
         return type;
     }
 
-    if (!type->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT)) {
+    if (!type->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT) && !type->HasTypeFlag(TypeFlag::ETS_UNION)) {
         ThrowTypeError("Non reference types cannot be nullish.", type_annotation->Start());
     }
 

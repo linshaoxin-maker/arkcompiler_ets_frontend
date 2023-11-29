@@ -15,7 +15,6 @@
 
 #include "ETSGen.h"
 
-#include "checker/ets/boxingConverter.h"
 #include "ir/base/scriptFunction.h"
 #include "ir/base/classDefinition.h"
 #include "ir/statement.h"
@@ -40,6 +39,7 @@
 #include "checker/types/typeFlag.h"
 #include "checker/checker.h"
 #include "checker/ETSchecker.h"
+#include "checker/ets/boxingConverter.h"
 #include "checker/types/ets/etsObjectType.h"
 #include "checker/types/ets/types.h"
 #include "parser/program/program.h"
@@ -598,6 +598,11 @@ void ETSGen::LoadThis(const ir::AstNode *node)
     LoadAccumulator(node, GetThisReg());
 }
 
+void ETSGen::CreateBigIntObject(const ir::AstNode *node, VReg arg0)
+{
+    Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_BIGINT_CTOR, arg0, dummy_reg_);
+}
+
 void ETSGen::CreateLambdaObjectFromIdentReference(const ir::AstNode *node, ir::ClassDefinition *lambda_obj)
 {
     auto *ctor = lambda_obj->TsType()->AsETSObjectType()->ConstructSignatures()[0];
@@ -811,6 +816,19 @@ void ETSGen::EmitIsInstance([[maybe_unused]] const ir::AstNode *const node, [[ma
 #endif  // PANDA_WITH_ETS
 }
 
+void ETSGen::LoadConstantObject(const ir::Expression *node, const checker::Type *type)
+{
+    if (type->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_BIGINT)) {
+        LoadAccumulatorBigInt(node, type->AsETSObjectType()->AsETSBigIntType()->GetValue());
+        const VReg value = AllocReg();
+        StoreAccumulator(node, value);
+        CreateBigIntObject(node, value);
+    } else {
+        LoadAccumulatorString(node, type->AsETSObjectType()->AsETSStringType()->GetValue());
+        SetAccumulatorType(node->TsType());
+    }
+}
+
 bool ETSGen::TryLoadConstantExpression(const ir::Expression *node)
 {
     const auto *type = node->TsType();
@@ -855,8 +873,7 @@ bool ETSGen::TryLoadConstantExpression(const ir::Expression *node)
             break;
         }
         case checker::TypeFlag::ETS_OBJECT: {
-            LoadAccumulatorString(node, type->AsETSObjectType()->AsETSStringType()->GetValue());
-            SetAccumulatorType(node->TsType());
+            LoadConstantObject(node, type);
             break;
         }
         default: {
@@ -867,48 +884,8 @@ bool ETSGen::TryLoadConstantExpression(const ir::Expression *node)
     return true;
 }
 
-// NOTE: vpukhov. lower (union_value) as (primitive_type) to be two as-nodes
-static void ApplyUnboxingUnionPrimitive(ETSGen *etsg, const ir::AstNode *node)
+void ETSGen::ApplyConversionCast(const ir::AstNode *node, const checker::Type *target_type)
 {
-    if (node->IsExpression() && node->Parent()->IsTSAsExpression()) {
-        auto const *from_type = node->AsExpression()->TsType();
-        auto const *to_type = node->Parent()->AsTSAsExpression()->TsType();
-        if (from_type->IsETSUnionType() && to_type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
-            etsg->EmitCheckedNarrowingReferenceConversion(
-                node, checker::BoxingConverter::ETSTypeFromSource(etsg->Checker(), to_type));
-        }
-    }
-}
-
-void ETSGen::ApplyConversion(const ir::AstNode *node, const checker::Type *target_type)
-{
-    auto ttctx = TargetTypeContext(this, target_type);
-
-    if ((node->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG) != 0U) {
-        EmitBoxingConversion(node);
-        const auto boxing_flags =
-            static_cast<ir::BoxingUnboxingFlags>(node->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG);
-        node->SetBoxingUnboxingFlags(
-            static_cast<ir::BoxingUnboxingFlags>(node->GetBoxingUnboxingFlags() & ~boxing_flags));
-        return;
-    }
-
-    if ((node->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::UNBOXING_FLAG) != 0U) {
-        if (GetAccumulatorType()->IsNullishOrNullLike()) {  // NOTE: vpukhov. should be a CTE
-            EmitNullishGuardian(node);
-        }
-        ApplyUnboxingUnionPrimitive(this, node);
-        EmitUnboxingConversion(node);
-        const auto unboxing_flags = static_cast<ir::BoxingUnboxingFlags>(node->GetBoxingUnboxingFlags() &
-                                                                         ir::BoxingUnboxingFlags::UNBOXING_FLAG);
-        node->SetBoxingUnboxingFlags(
-            static_cast<ir::BoxingUnboxingFlags>(node->GetBoxingUnboxingFlags() & ~unboxing_flags));
-    }
-
-    if (target_type == nullptr) {
-        return;
-    }
-
     switch (checker::ETSChecker::TypeKind(target_type)) {
         case checker::TypeFlag::DOUBLE: {
             CastToDouble(node);
@@ -938,6 +915,42 @@ void ETSGen::ApplyConversion(const ir::AstNode *node, const checker::Type *targe
             break;
         }
     }
+}
+
+void ETSGen::ApplyConversion(const ir::AstNode *node, const checker::Type *target_type)
+{
+    auto ttctx = TargetTypeContext(this, target_type);
+
+    if ((node->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG) != 0U) {
+        EmitBoxingConversion(node);
+        const auto boxing_flags =
+            static_cast<ir::BoxingUnboxingFlags>(node->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG);
+        node->SetBoxingUnboxingFlags(
+            static_cast<ir::BoxingUnboxingFlags>(node->GetBoxingUnboxingFlags() & ~boxing_flags));
+        return;
+    }
+
+    if ((node->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::UNBOXING_FLAG) != 0U) {
+        if (GetAccumulatorType()->IsNullishOrNullLike()) {  // NOTE: vpukhov. should be a CTE
+            EmitNullishGuardian(node);
+        }
+        EmitUnboxingConversion(node);
+        const auto unboxing_flags = static_cast<ir::BoxingUnboxingFlags>(node->GetBoxingUnboxingFlags() &
+                                                                         ir::BoxingUnboxingFlags::UNBOXING_FLAG);
+        node->SetBoxingUnboxingFlags(
+            static_cast<ir::BoxingUnboxingFlags>(node->GetBoxingUnboxingFlags() & ~unboxing_flags));
+    }
+
+    if (target_type == nullptr) {
+        return;
+    }
+
+    if (target_type->IsETSUnionType()) {
+        SetAccumulatorType(target_type->AsETSUnionType()->GetLeastUpperBoundType());
+        return;
+    }
+
+    ApplyConversionCast(node, target_type);
 }
 
 void ETSGen::ApplyCast(const ir::AstNode *node, const checker::Type *target_type)
@@ -2100,7 +2113,10 @@ void ETSGen::BinaryEqualityRef(const ir::AstNode *node, bool test_equal, VReg lh
         StoreAccumulator(node, rhs);
 
         LoadAccumulator(node, lhs);
-        if (GetVRegType(lhs)->IsETSStringType()) {
+
+        if (GetVRegType(lhs)->IsETSBigIntType()) {
+            CallThisStatic1(node, lhs, Signatures::BUILTIN_BIGINT_EQUALS, rhs);
+        } else if (GetVRegType(lhs)->IsETSStringType()) {
             CallThisStatic1(node, lhs, Signatures::BUILTIN_STRING_EQUALS, rhs);
         } else {
             CallThisVirtual1(node, lhs, Signatures::BUILTIN_OBJECT_EQUALS, rhs);
@@ -2160,6 +2176,7 @@ void ETSGen::LogicalNot(const ir::AstNode *node)
     ASSERT(GetAccumulatorType()->IsConditionalExprType());
     ResolveConditionalResultIfFalse<true, false>(node);
     Sa().Emit<Xori>(node, 1);
+    SetAccumulatorType(Checker()->GlobalETSBooleanType());
 }
 
 void ETSGen::Unary(const ir::AstNode *node, lexer::TokenType op)
@@ -2192,6 +2209,13 @@ void ETSGen::Unary(const ir::AstNode *node, lexer::TokenType op)
 
 void ETSGen::UnaryMinus(const ir::AstNode *node)
 {
+    if (GetAccumulatorType()->IsETSBigIntType()) {
+        const VReg value = AllocReg();
+        StoreAccumulator(node, value);
+        CallThisStatic0(node, value, Signatures::BUILTIN_BIGINT_NEGATE);
+        return;
+    }
+
     switch (checker::ETSChecker::ETSType(GetAccumulatorType())) {
         case checker::TypeFlag::LONG: {
             Sa().Emit<NegWide>(node);
@@ -2356,6 +2380,22 @@ void ETSGen::BuildString(const ir::Expression *node)
     SetAccumulatorType(node->TsType());
 }
 
+void ETSGen::CallBigIntOperator(const ir::Expression *node)
+{
+    RegScope rs(this);
+
+    // Empty big int constructor
+    Ra().Emit<InitobjShort, 0>(node, Signatures::BUILTIN_BIGINT_CTOR_EMPTY, dummy_reg_, dummy_reg_);
+    SetAccumulatorType(Checker()->GlobalBuiltinETSBigIntType());
+    const VReg bigint = AllocReg();
+    StoreAccumulator(node, bigint);
+
+    // NOTE(kkonsw): add implementation for the operators
+    CallThisStatic0(node, bigint, Signatures::BUILTIN_BIGINT_OPERATOR);
+    SetAccumulatorType(Checker()->GlobalLongType());
+    StoreAccumulator(node, bigint);
+}
+
 void ETSGen::BuildTemplateString(const ir::TemplateLiteral *node)
 {
     RegScope rs(this);
@@ -2422,6 +2462,10 @@ void ETSGen::LoadArrayElement(const ir::AstNode *node, VReg object_reg)
 {
     auto *element_type = GetVRegType(object_reg)->AsETSArrayType()->ElementType();
 
+    if (element_type->IsETSUnionType()) {
+        element_type = element_type->AsETSUnionType()->GetLeastUpperBoundType();
+    }
+
     switch (checker::ETSChecker::ETSType(element_type)) {
         case checker::TypeFlag::ETS_BOOLEAN:
         case checker::TypeFlag::BYTE: {
@@ -2472,6 +2516,9 @@ void ETSGen::LoadArrayElement(const ir::AstNode *node, VReg object_reg)
 
 void ETSGen::StoreArrayElement(const ir::AstNode *node, VReg object_reg, VReg index, const checker::Type *element_type)
 {
+    if (element_type->IsETSUnionType()) {
+        element_type = element_type->AsETSUnionType()->GetLeastUpperBoundType();
+    }
     switch (checker::ETSChecker::ETSType(element_type)) {
         case checker::TypeFlag::ETS_BOOLEAN:
         case checker::TypeFlag::BYTE: {
