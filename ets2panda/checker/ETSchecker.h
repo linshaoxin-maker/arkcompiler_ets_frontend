@@ -351,7 +351,7 @@ public:
     checker::ETSFunctionType *BuildFunctionSignature(ir::ScriptFunction *func, bool isConstructSig = false);
     checker::ETSFunctionType *BuildMethodSignature(ir::MethodDefinition *method);
     Signature *CheckEveryAbstractSignatureIsOverridden(ETSFunctionType *target, ETSFunctionType *source);
-    Signature *GetSignatureFromMethodDefinition(const ir::MethodDefinition *methodDef);
+    static Signature *GetSignatureFromMethodDefinition(const ir::MethodDefinition *methodDef);
     void CheckIdenticalOverloads(ETSFunctionType *func, ETSFunctionType *overload,
                                  const ir::MethodDefinition *currentFunc);
     Signature *AdjustForTypeParameters(Signature *source, Signature *target);
@@ -733,6 +733,7 @@ private:
     ETSObjectType *UpdateBoxedGlobalType(ETSObjectType *objType, util::StringView name);
     ETSObjectType *CreateETSObjectTypeCheckBuiltins(util::StringView name, ir::AstNode *declNode, ETSObjectFlags flags);
     void CheckProgram(parser::Program *program, bool runAnalysis = false);
+    void CheckWarnings(parser::Program *program, const CompilerOptions &options);
 
     template <typename UType>
     UType HandleModulo(UType leftValue, UType rightValue);
