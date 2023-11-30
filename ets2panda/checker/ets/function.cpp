@@ -67,7 +67,8 @@
 
 namespace panda::es2panda::checker {
 
-bool ETSChecker::IsCompatibleTypeArgument(Type *type_param, Type *type_argument, const Substitution *substitution)
+bool ETSChecker::IsCompatibleTypeArgument(Type *type_param, Type *type_argument, const Substitution *substitution,
+                                          size_t index)
 {
     ASSERT(type_param->IsETSObjectType() &&
            type_param->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::TYPE_PARAMETER));
@@ -84,6 +85,10 @@ bool ETSChecker::IsCompatibleTypeArgument(Type *type_param, Type *type_argument,
             type_param_obj_supertype =
                 type_param_obj_supertype->Substitute(this->Relation(), substitution)->AsETSObjectType();
         }
+        if (type_argument->IsETSObjectType() &&
+            CheckRecursiveGenerics(type_param_obj_supertype, type_argument->AsETSObjectType(), index)) {
+            return true;
+        }
         type_param_obj_supertype->IsSupertypeOf(Relation(), type_argument);
         if (!Relation()->IsTrue()) {
             return false;
@@ -92,6 +97,9 @@ bool ETSChecker::IsCompatibleTypeArgument(Type *type_param, Type *type_argument,
     for (auto *itf : type_param_obj->Interfaces()) {
         if (!itf->TypeArguments().empty()) {
             itf = itf->Substitute(this->Relation(), substitution)->AsETSObjectType();
+        }
+        if (type_argument->IsETSObjectType() && CheckRecursiveGenerics(itf, type_argument->AsETSObjectType(), index)) {
+            return true;
         }
         itf->IsSupertypeOf(Relation(), type_argument);
         if (!Relation()->IsTrue()) {
@@ -797,6 +805,7 @@ SignatureInfo *ETSChecker::ComposeSignatureInfo(ir::ScriptFunction *func)
 
     if (func->TypeParams() != nullptr) {
         signature_info->type_params = CreateTypeForTypeParameters(func->TypeParams());
+        SetUpConstraintForTypeParameters(func->TypeParams());
     }
 
     for (auto *const it : func->Params()) {

@@ -145,6 +145,11 @@ public:
     void ValidateTupleIndex(const ETSTupleType *tuple, const ir::MemberExpression *expr);
     ETSObjectType *CheckThisOrSuperAccess(ir::Expression *node, ETSObjectType *class_type, std::string_view msg);
     void CreateTypeForClassOrInterfaceTypeParameters(ETSObjectType *type);
+    bool CheckRecursiveGenerics(ETSObjectType *constraint_type, ETSObjectType *arg_ref_type, size_t index);
+    bool CheckRecursiveGenericsParam(ETSObjectType *constraint_type, ETSObjectType *arg_ref_type, size_t index);
+    bool CheckRecursiveGenericsClass(ETSObjectType *constraint_type, ETSObjectType *arg_ref_type, size_t index);
+    bool CheckRecursiveGenericsInterface(ETSObjectType *constraint_type, ETSObjectType *arg_ref_type, size_t index);
+    bool HasInterface(ETSObjectType *arg_ref_type, ETSObjectType *constraint_type);
     void SetTypeParameterType(ir::TSTypeParameter *type_param, Type *type_param_type);
     void ValidateOverriding(ETSObjectType *class_type, const lexer::SourcePosition &pos);
     void AddImplementedSignature(std::vector<Signature *> *implemented_signatures, varbinder::LocalVariable *function,
@@ -263,7 +268,8 @@ public:
     bool TypeInference(Signature *signature, const ArenaVector<ir::Expression *> &arguments,
                        TypeRelationFlag flags = TypeRelationFlag::NONE);
     bool CheckLambdaAssignable(ir::Expression *param, ir::ScriptFunction *lambda);
-    bool IsCompatibleTypeArgument(Type *type_param, Type *type_argument, const Substitution *substitution);
+    bool IsCompatibleTypeArgument(Type *type_param, Type *type_argument, const Substitution *substitution,
+                                  size_t index);
     Substitution *NewSubstitution()
     {
         return Allocator()->New<Substitution>(Allocator()->Adapter());
@@ -618,7 +624,7 @@ private:
     }
 
     ArenaVector<Type *> CreateTypeForTypeParameters(ir::TSTypeParameterDeclaration *type_params);
-
+    void SetUpConstraintForTypeParameters(ir::TSTypeParameterDeclaration *type_params);
     Type *CreateTypeParameterType(ir::TSTypeParameter *param);
 
     using Type2TypeMap = std::unordered_map<std::string_view, std::string_view>;
