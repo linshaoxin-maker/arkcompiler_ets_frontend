@@ -131,7 +131,7 @@ static const Substitution *BuildExplicitSubstitutionForArguments(ETSChecker *che
         constraints_substitution->emplace(type_params[ix], type_arg_types[ix]);
     }
     for (size_t ix = 0; ix < type_arg_types.size(); ix++) {
-        if (!checker->IsCompatibleTypeArgument(type_params[ix], type_arg_types[ix], constraints_substitution)) {
+        if (!checker->IsCompatibleTypeArgument(type_params[ix], type_arg_types[ix], constraints_substitution, ix)) {
             return nullptr;
         }
         substitution->emplace(type_params[ix], type_arg_types[ix]);

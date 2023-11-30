@@ -72,21 +72,25 @@ bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSType
 
     for (size_t type_param_iter = 0; type_param_iter < type_param_decl->Params().size(); ++type_param_iter) {
         auto *const type_arg_type = type_args->Params().at(type_param_iter)->GetType(checker_);
-        auto *const type_param_constraint =
-            type_param_decl->Params().at(type_param_iter)->AsTSTypeParameter()->Constraint();
-        if (type_param_constraint == nullptr) {
+        ir::TSTypeParameter *type_param = type_param_decl->Params().at(type_param_iter)->AsTSTypeParameter();
+        if (type_param->Constraint() == nullptr) {
             continue;
         }
 
         bool assignable = false;
-        auto *constraint_type = type_param_constraint->GetType(checker_);
+        Type *constraint_type = GetConstraintType(type, type_param);
 
         if (!constraint_type->AsETSObjectType()->TypeArguments().empty()) {
             constraint_type = constraint_type->Substitute(checker_->Relation(), substitution);
         }
 
         if (constraint_type->IsETSObjectType() && type_arg_type->IsETSObjectType()) {
-            assignable = ValidateTypeArg(constraint_type->AsETSObjectType(), type_arg_type->AsETSObjectType());
+            if (!checker_->CheckRecursiveGenerics(constraint_type->AsETSObjectType(), type_arg_type->AsETSObjectType(),
+                                                  type_param_iter)) {
+                assignable = ValidateTypeArg(constraint_type->AsETSObjectType(), type_arg_type->AsETSObjectType());
+            } else {
+                assignable = true;
+            }
         } else if (type_arg_type->IsETSUnionType() && !constraint_type->IsETSUnionType()) {
             auto constituent_types = type_arg_type->AsETSUnionType()->ConstituentTypes();
             assignable =
@@ -106,14 +110,29 @@ bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSType
     return false;
 }
 
-bool InstantiationContext::ValidateTypeArg(ETSObjectType *constraint_type, ETSObjectType *arg_ref_type)
+Type *InstantiationContext::GetConstraintType(ETSObjectType *type, ir::TSTypeParameter *param)
 {
-    if (const auto *const found = checker_->AsETSChecker()->Scope()->FindLocal(
-            constraint_type->Name(), varbinder::ResolveBindingOptions::TYPE_ALIASES);
-        found != nullptr) {
-        arg_ref_type = found->TsType()->AsETSObjectType();
+    auto *const type_param_constraint = param->Constraint();
+    Type *constraint_type = nullptr;
+    if (type_param_constraint->IsETSTypeReference() &&
+        type_param_constraint->AsETSTypeReference()->Part()->Name()->IsIdentifier() &&
+        type == type_param_constraint->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Variable()->TsType()) {
+        constraint_type = type;
+    } else {
+        constraint_type = type_param_constraint->GetType(checker_);
     }
 
+    if (const auto *const found = checker_->AsETSChecker()->Scope()->FindLocal(
+            constraint_type->AsETSObjectType()->Name(), varbinder::ResolveBindingOptions::TYPE_ALIASES);
+        found != nullptr) {
+        constraint_type = found->TsType()->AsETSObjectType();
+    }
+
+    return constraint_type;
+}
+
+bool InstantiationContext::ValidateTypeArg(ETSObjectType *constraint_type, ETSObjectType *arg_ref_type)
+{
     auto assignable = checker_->Relation()->IsAssignableTo(arg_ref_type, constraint_type);
     if (constraint_type->HasObjectFlag(ETSObjectFlags::INTERFACE)) {
         for (const auto *const interface : arg_ref_type->Interfaces()) {
@@ -170,13 +189,13 @@ void InstantiationContext::InstantiateType(ETSObjectType *type, ArenaVector<Type
         if (type_arg_types[ix]->IsETSUnionType()) {
             auto union_constituent_types = type_arg_types[ix]->AsETSUnionType()->ConstituentTypes();
             is_compatible_type_arg = std::all_of(union_constituent_types.begin(), union_constituent_types.end(),
-                                                 [this, type_param, constraints_substitution](Type *type_arg) {
+                                                 [this, type_param, constraints_substitution, ix](Type *type_arg) {
                                                      return checker_->IsCompatibleTypeArgument(
-                                                         type_param, type_arg, constraints_substitution);
+                                                         type_param, type_arg, constraints_substitution, ix);
                                                  });
         } else {
             is_compatible_type_arg =
-                checker_->IsCompatibleTypeArgument(type_param, type_arg_types[ix], constraints_substitution);
+                checker_->IsCompatibleTypeArgument(type_param, type_arg_types[ix], constraints_substitution, ix);
         }
         if (!is_compatible_type_arg && !checker_->Relation()->NoThrowGenericTypeAlias()) {
             checker_->ThrowTypeError(

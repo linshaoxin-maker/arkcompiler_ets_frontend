@@ -165,6 +165,100 @@ ArenaVector<ETSObjectType *> ETSChecker::GetInterfaces(ETSObjectType *type)
     return type->Interfaces();
 }
 
+bool ETSChecker::CheckRecursiveGenerics(ETSObjectType *constraint_type, ETSObjectType *arg_ref_type, size_t index)
+{
+    auto arg_ref_decl = arg_ref_type->GetDeclNode();
+    if (arg_ref_decl->IsClassDefinition()) {
+        return (CheckRecursiveGenericsClass(constraint_type, arg_ref_type, index) ||
+                CheckRecursiveGenericsInterface(constraint_type, arg_ref_type, index));
+    }
+    if (arg_ref_decl->IsTSInterfaceDeclaration()) {
+        return CheckRecursiveGenericsInterface(constraint_type, arg_ref_type, index);
+    }
+    if (arg_ref_decl->IsTSTypeParameter()) {
+        return CheckRecursiveGenericsParam(constraint_type, arg_ref_type, index);
+    }
+    return false;
+}
+
+bool ETSChecker::CheckRecursiveGenericsParam(ETSObjectType *constraint_type, ETSObjectType *arg_ref_type, size_t index)
+{
+    return (arg_ref_type->GetDeclNode()->AsTSTypeParameter()->Constraint() != nullptr &&
+            arg_ref_type->GetDeclNode()->AsTSTypeParameter()->Constraint()->IsETSTypeReference() &&
+            arg_ref_type->GetDeclNode()
+                ->AsTSTypeParameter()
+                ->Constraint()
+                ->AsETSTypeReference()
+                ->Part()
+                ->Name()
+                ->IsIdentifier() &&
+            arg_ref_type->GetDeclNode()
+                    ->AsTSTypeParameter()
+                    ->Constraint()
+                    ->AsETSTypeReference()
+                    ->Part()
+                    ->Name()
+                    ->AsIdentifier()
+                    ->Variable() == constraint_type->Variable() &&
+            !constraint_type->TypeArguments().empty() && constraint_type->TypeArguments().size() > index &&
+            constraint_type->TypeArguments().at(index) == arg_ref_type &&
+            !arg_ref_type->HasObjectFlag(ETSObjectFlags::RESOLVED_TYPE_PARAMS));
+}
+
+bool ETSChecker::CheckRecursiveGenericsClass(ETSObjectType *constraint_type, ETSObjectType *arg_ref_type, size_t index)
+{
+    return (arg_ref_type->GetDeclNode()->AsClassDefinition()->Super() != nullptr &&
+            arg_ref_type->GetDeclNode()
+                ->AsClassDefinition()
+                ->Super()
+                ->AsETSTypeReference()
+                ->Part()
+                ->Name()
+                ->IsIdentifier() &&
+            arg_ref_type->GetDeclNode()
+                    ->AsClassDefinition()
+                    ->Super()
+                    ->AsETSTypeReference()
+                    ->Part()
+                    ->Name()
+                    ->AsIdentifier()
+                    ->Variable() == constraint_type->Variable() &&
+            !constraint_type->TypeArguments().empty() && constraint_type->TypeArguments().size() > index &&
+            constraint_type->TypeArguments().at(index) == arg_ref_type &&
+            !arg_ref_type->HasObjectFlag(ETSObjectFlags::RESOLVED_SUPER));
+}
+
+bool ETSChecker::CheckRecursiveGenericsInterface(ETSObjectType *constraint_type, ETSObjectType *arg_ref_type,
+                                                 size_t index)
+{
+    return (HasInterface(arg_ref_type, constraint_type) && !constraint_type->TypeArguments().empty() &&
+            constraint_type->TypeArguments().size() > index &&
+            constraint_type->TypeArguments().at(index) == arg_ref_type &&
+            !arg_ref_type->HasObjectFlag(ETSObjectFlags::RESOLVED_INTERFACES));
+}
+
+bool ETSChecker::HasInterface(ETSObjectType *arg_ref_type, ETSObjectType *constraint_type)
+{
+    if (arg_ref_type->GetDeclNode()->IsClassDefinition() &&
+        !arg_ref_type->GetDeclNode()->AsClassDefinition()->Implements().empty()) {
+        for (auto *it : arg_ref_type->GetDeclNode()->AsClassDefinition()->Implements()) {
+            if (it->Expr()->AsETSTypeReference()->Part()->Name()->IsIdentifier() &&
+                it->Expr()->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Name() == constraint_type->Name()) {
+                return true;
+            }
+        }
+    } else if (arg_ref_type->GetDeclNode()->IsTSInterfaceDeclaration() &&
+               !arg_ref_type->GetDeclNode()->AsTSInterfaceDeclaration()->Extends().empty()) {
+        for (auto *it : arg_ref_type->GetDeclNode()->AsTSInterfaceDeclaration()->Extends()) {
+            if (it->Expr()->AsETSTypeReference()->Part()->Name()->IsIdentifier() &&
+                it->Expr()->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Name() == constraint_type->Name()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void ETSChecker::SetTypeParameterType(ir::TSTypeParameter *type_param, Type *type_param_type)
 {
     auto *var = type_param->Name()->Variable();
@@ -190,13 +284,14 @@ ArenaVector<Type *> ETSChecker::CreateTypeForTypeParameters(ir::TSTypeParameterD
         result.emplace_back(CreateTypeParameterType(type_param));
     }
 
-    // The type parameter might be used in the constraint, like 'K extend Comparable<K>',
-    // so we need to create their type first, then set up the constraint
+    return result;
+}
+
+void ETSChecker::SetUpConstraintForTypeParameters(ir::TSTypeParameterDeclaration *type_params)
+{
     for (auto *const param : type_params->Params()) {
         SetUpTypeParameterConstraint(param);
     }
-
-    return result;
 }
 
 void ETSChecker::CheckTypeParameterConstraint(ir::TSTypeParameter *param, Type2TypeMap &extends)
@@ -308,6 +403,9 @@ void ETSChecker::CreateTypeForClassOrInterfaceTypeParameters(ETSObjectType *type
                                                       ? type->GetDeclNode()->AsClassDefinition()->TypeParams()
                                                       : type->GetDeclNode()->AsTSInterfaceDeclaration()->TypeParams();
     type->SetTypeArguments(CreateTypeForTypeParameters(type_params));
+    // The constraint might be the class or interface itself, like 'class Common<T extends Common<T>>',
+    // so we need to set type arguments first, then set up the constraint.
+    SetUpConstraintForTypeParameters(type_params);
     type->AddObjectFlag(ETSObjectFlags::RESOLVED_TYPE_PARAMS);
 }
 
