@@ -18,6 +18,8 @@
 #include "compiler/core/pandagen.h"
 #include "checker/TSchecker.h"
 #include "ir/astDump.h"
+#include "compiler/core/ETSGen.h"
+#include "checker/ETSchecker.h"
 
 namespace panda::es2panda::ir {
 void BigIntLiteral::TransformChildren([[maybe_unused]] const NodeTransformer &cb) {}
@@ -31,6 +33,16 @@ void BigIntLiteral::Dump(ir::AstDumper *dumper) const
 void BigIntLiteral::Compile(compiler::PandaGen *pg) const
 {
     pg->LoadAccumulatorBigInt(this, src_);
+}
+
+void BigIntLiteral::Compile(compiler::ETSGen *etsg) const
+{
+    compiler::TargetTypeContext ttctx = compiler::TargetTypeContext(etsg, TsType());
+    compiler::RegScope rs {etsg};
+    etsg->LoadAccumulatorBigInt(this, src_);
+    const compiler::VReg value = etsg->AllocReg();
+    etsg->StoreAccumulator(this, value);
+    etsg->CreateBigIntObject(this, value);
 }
 
 checker::Type *BigIntLiteral::Check(checker::TSChecker *checker)
@@ -47,7 +59,8 @@ checker::Type *BigIntLiteral::Check(checker::TSChecker *checker)
 
 checker::Type *BigIntLiteral::Check([[maybe_unused]] checker::ETSChecker *checker)
 {
-    return nullptr;
+    SetTsType(checker->CreateETSBigIntLiteralType(src_));
+    return TsType();
 }
 
 // NOLINTNEXTLINE(google-default-arguments)

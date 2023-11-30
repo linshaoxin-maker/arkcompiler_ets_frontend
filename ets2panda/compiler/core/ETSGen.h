@@ -98,6 +98,7 @@ public:
     void Binary(const ir::AstNode *node, lexer::TokenType op, VReg lhs);
     void Unary(const ir::AstNode *node, lexer::TokenType op);
     void Update(const ir::AstNode *node, lexer::TokenType op);
+    void UpdateBigInt(const ir::Expression *node, VReg arg, lexer::TokenType op);
 
     bool TryLoadConstantExpression(const ir::Expression *node);
     void Condition(const ir::AstNode *node, lexer::TokenType op, VReg lhs, Label *if_false);
@@ -376,6 +377,12 @@ public:
         SetAccumulatorType(Checker()->GlobalETSStringLiteralType());
     }
 
+    void LoadAccumulatorBigInt(const ir::AstNode *node, util::StringView str)
+    {
+        Sa().Emit<LdaStr>(node, str);
+        SetAccumulatorType(Checker()->GlobalETSBigIntType());
+    }
+
     void LoadAccumulatorNull(const ir::AstNode *node, const checker::Type *type)
     {
         Sa().Emit<LdaNull>(node);
@@ -534,6 +541,9 @@ public:
     void NewArray(const ir::AstNode *node, VReg arr, VReg dim, const checker::Type *arr_type);
     void NewObject(const ir::AstNode *node, VReg ctor, util::StringView name);
     void BuildString(const ir::Expression *node);
+    void CallBigIntUnaryOperator(const ir::Expression *node, VReg arg, const util::StringView signature);
+    void CallBigIntBinaryOperator(const ir::Expression *node, VReg lhs, VReg rhs, const util::StringView signature);
+    void CallBigIntBinaryComparison(const ir::Expression *node, VReg lhs, VReg rhs, const util::StringView signature);
     void BuildTemplateString(const ir::TemplateLiteral *node);
     void InitObject(const ir::AstNode *node, checker::Signature *signature,
                     const ArenaVector<ir::Expression *> &arguments)
@@ -618,6 +628,7 @@ public:
     }
 #endif  // PANDA_WITH_ETS
 
+    void CreateBigIntObject(const ir::AstNode *node, VReg arg0);
     void CreateLambdaObjectFromIdentReference(const ir::AstNode *node, ir::ClassDefinition *lambda_obj);
     void CreateLambdaObjectFromMemberReference(const ir::AstNode *node, ir::Expression *obj,
                                                ir::ClassDefinition *lambda_obj);
@@ -642,6 +653,7 @@ private:
 
     void EmitIsInstanceNonNullish(const ir::AstNode *node, VReg obj_reg, checker::ETSObjectType const *cls_type);
 
+    void LoadConstantObject(const ir::Expression *node, const checker::Type *type);
     void StringBuilderAppend(const ir::AstNode *node, VReg builder);
     void AppendString(const ir::Expression *bin_expr, VReg builder);
     void StringBuilder(const ir::Expression *left, const ir::Expression *right, VReg builder);
