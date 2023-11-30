@@ -140,7 +140,7 @@ Type *ETSUnionType::HandleUnionType(ETSUnionType *union_type)
 
 Type *ETSUnionType::Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *global_types)
 {
-    ArenaVector<Type *> copied_constituents(constituent_types_.size(), allocator->Adapter());
+    ArenaVector<Type *> copied_constituents(allocator->Adapter());
 
     for (auto *it : constituent_types_) {
         copied_constituents.push_back(it->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)
