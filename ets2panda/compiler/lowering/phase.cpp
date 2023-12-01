@@ -21,6 +21,7 @@
 #include "compiler/lowering/checkerPhase.h"
 #include "compiler/lowering/ets/generateDeclarations.h"
 #include "compiler/lowering/ets/opAssignment.h"
+#include "compiler/lowering/ets/tupleLowering.h"
 #include "compiler/lowering/ets/unionLowering.h"
 
 namespace panda::es2panda::compiler {
@@ -36,15 +37,13 @@ std::vector<Phase *> GetTrivialPhaseList()
 
 static GenerateTsDeclarationsPhase GENERATE_TS_DECLARATIONS_PHASE;
 static OpAssignmentLowering OP_ASSIGNMENT_LOWERING;
+static TupleLowering TUPLE_LOWERING;  // Can be only applied after checking phase, and OP_ASSIGNMENT_LOWERING phase
 static UnionLowering UNION_LOWERING;
 
 std::vector<Phase *> GetETSPhaseList()
 {
     return std::vector<Phase *> {
-        &CHECKER_PHASE,
-        &GENERATE_TS_DECLARATIONS_PHASE,
-        &OP_ASSIGNMENT_LOWERING,
-        &UNION_LOWERING,
+        &CHECKER_PHASE, &GENERATE_TS_DECLARATIONS_PHASE, &OP_ASSIGNMENT_LOWERING, &TUPLE_LOWERING, &UNION_LOWERING,
     };
 }
 
