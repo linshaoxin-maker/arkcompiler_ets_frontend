@@ -135,9 +135,12 @@ set(ES2PANDA_LIB_SRC
   compiler/function/generatorFunctionBuilder.cpp
   compiler/lowering/checkerPhase.cpp
   compiler/lowering/phase.cpp
+  compiler/lowering/plugin_phase.cpp
   compiler/lowering/util.cpp
+  compiler/lowering/ets/lambdaLowering.cpp
   compiler/lowering/ets/generateDeclarations.cpp
   compiler/lowering/ets/opAssignment.cpp
+  compiler/lowering/ets/tupleLowering.cpp
   compiler/lowering/ets/unionLowering.cpp
   ir/astDump.cpp
   ir/astNode.cpp
@@ -242,6 +245,7 @@ set(ES2PANDA_LIB_SRC
   ir/ets/etsParameterExpression.cpp
   ir/ets/etsPrimitiveType.cpp
   ir/ets/etsScript.cpp
+  ir/ets/etsTuple.cpp
   ir/ets/etsTypeReference.cpp
   ir/ets/etsTypeReferencePart.cpp
   ir/ets/etsUnionType.cpp
@@ -372,6 +376,7 @@ set(ES2PANDA_LIB_SRC
   checker/types/ets/etsFunctionType.cpp
   checker/types/ets/etsObjectType.cpp
   checker/types/ets/etsStringType.cpp
+  checker/types/ets/etsTupleType.cpp
   checker/types/ets/etsTypeParameter.cpp
   checker/types/ets/etsUnionType.cpp
   checker/types/ets/etsVoidType.cpp
@@ -461,6 +466,7 @@ set(ES2PANDA_PUBLIC_SOURCES
   public/es2panda_lib.cpp
   util/generateBin.cpp
   util/options.cpp
+  util/plugin.cpp
 )
 
 

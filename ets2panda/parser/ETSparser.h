@@ -51,7 +51,8 @@ public:
     ETSParser() = delete;
     NO_COPY_SEMANTIC(ETSParser);
     NO_MOVE_SEMANTIC(ETSParser);
-    ~ETSParser() = default;
+
+    ~ETSParser() final = default;
 
     [[nodiscard]] bool IsETSParser() const noexcept override
     {
@@ -139,6 +140,7 @@ private:
     ir::ClassProperty *ParseInterfaceField(const lexer::SourcePosition &start_loc);
     ir::Expression *ParseInitializer();
     ir::ArrayExpression *ParseArrayLiteral();
+    ir::Expression *ParseCoercedNumberLiteral();
     ir::MethodDefinition *ParseInterfaceMethod(ir::ModifierFlags flags);
     std::tuple<ir::ModifierFlags, bool> ParseClassMemberAccessModifiers();
     ir::ModifierFlags ParseClassFieldModifiers(bool seen_static);
@@ -169,6 +171,7 @@ private:
     ir::TSIntersectionType *ParseIntersectionType(ir::Expression *type);
     ir::TypeNode *ParseWildcardType(TypeAnnotationParsingOptions *options);
     ir::TypeNode *ParseFunctionType();
+    ir::TypeNode *ParseETSTupleType(TypeAnnotationParsingOptions *options);
     void CreateClassFunctionDeclaration(ir::MethodDefinition *method);
     std::pair<bool, std::size_t> CheckDefaultParameters(const ir::ScriptFunction *function) const;
     ir::MethodDefinition *CreateProxyMethodDefinition(ir::MethodDefinition const *method,

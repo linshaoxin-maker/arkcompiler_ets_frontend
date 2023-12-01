@@ -15,9 +15,10 @@
 
 #include "memberExpression.h"
 
-#include "compiler/core/pandagen.h"
-#include "compiler/core/ETSGen.h"
 #include "checker/TSchecker.h"
+#include "checker/ets/castingContext.h"
+#include "compiler/core/ETSGen.h"
+#include "compiler/core/pandagen.h"
 
 namespace panda::es2panda::ir {
 MemberExpression::MemberExpression([[maybe_unused]] Tag const tag, MemberExpression const &other,
@@ -135,6 +136,12 @@ bool MemberExpression::CompileComputed(compiler::ETSGen *etsg) const
             } else {
                 etsg->LoadArrayElement(this, obj_reg);
             }
+
+            if (object_->TsType()->IsETSTupleType() && (GetTupleConvertedType() != nullptr)) {
+                etsg->EmitCheckedNarrowingReferenceConversion(this, GetTupleConvertedType());
+            }
+
+            etsg->ApplyConversion(this);
         };
 
         etsg->EmitMaybeOptional(this, load_element, IsOptional());
@@ -226,10 +233,10 @@ void MemberExpression::Compile(compiler::ETSGen *etsg) const
             auto lang = object_type->AsETSDynamicType()->Language();
             etsg->LoadPropertyDynamic(this, OptionalType(), obj_reg, prop_name, lang);
         } else if (object_type->IsETSUnionType()) {
-            etsg->LoadUnionProperty(this, OptionalType(), obj_reg, prop_name);
+            etsg->LoadUnionProperty(this, OptionalType(), IsGenericField(), obj_reg, prop_name);
         } else {
             const auto full_name = etsg->FormClassPropReference(object_type->AsETSObjectType(), prop_name);
-            etsg->LoadProperty(this, OptionalType(), obj_reg, full_name);
+            etsg->LoadProperty(this, OptionalType(), IsGenericField(), obj_reg, full_name);
         }
     };
 
@@ -398,7 +405,12 @@ checker::Type *MemberExpression::CheckComputed(checker::ETSChecker *checker, che
     if (!base_type->IsETSArrayType() && !base_type->IsETSDynamicType()) {
         checker->ThrowTypeError("Indexed access expression can only be used in array type.", Object()->Start());
     }
+
     checker->ValidateArrayIndex(Property());
+
+    if (base_type->IsETSTupleType()) {
+        checker->ValidateTupleIndex(base_type->AsETSTupleType(), this);
+    }
 
     if (Property()->IsIdentifier()) {
         SetPropVar(Property()->AsIdentifier()->Variable()->AsLocalVariable());
@@ -408,7 +420,38 @@ checker::Type *MemberExpression::CheckComputed(checker::ETSChecker *checker, che
 
     // NOTE: apply capture conversion on this type
     if (base_type->IsETSArrayType()) {
-        return base_type->AsETSArrayType()->ElementType();
+        if (!base_type->IsETSTupleType()) {
+            return base_type->AsETSArrayType()->ElementType();
+        }
+
+        auto *const tuple_type_at_idx =
+            base_type->AsETSTupleType()->GetTypeAtIndex(checker->GetTupleElementAccessValue(Property()->TsType()));
+
+        if ((!Parent()->IsAssignmentExpression() || Parent()->AsAssignmentExpression()->Left() != this) &&
+            (!Parent()->IsUpdateExpression())) {
+            // Error never should be thrown by this call, because LUB of types can be converted to any type which LUB
+            // was calculated by casting
+            const checker::CastingContext cast(checker->Relation(), this, base_type->AsETSArrayType()->ElementType(),
+                                               tuple_type_at_idx, Start(), {"Tuple type couldn't be converted "});
+
+            // TODO(mmartin): this can be replaced with the general type mapper, once implemented
+            if ((GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::UNBOXING_FLAG) != 0U) {
+                auto *const saved_node = checker->Relation()->GetNode();
+                if (saved_node == nullptr) {
+                    checker->Relation()->SetNode(this);
+                }
+
+                SetTupleConvertedType(checker->PrimitiveTypeAsETSBuiltinType(tuple_type_at_idx));
+
+                checker->Relation()->SetNode(saved_node);
+            }
+
+            if (tuple_type_at_idx->IsETSObjectType() && base_type->AsETSArrayType()->ElementType()->IsETSObjectType()) {
+                SetTupleConvertedType(tuple_type_at_idx);
+            }
+        }
+
+        return tuple_type_at_idx;
     }
 
     // Dynamic
@@ -469,7 +512,15 @@ MemberExpression *MemberExpression::Clone(ArenaAllocator *const allocator, AstNo
     auto *const object = object_ != nullptr ? object_->Clone(allocator)->AsExpression() : nullptr;
     auto *const property = property_ != nullptr ? property_->Clone(allocator)->AsExpression() : nullptr;
 
-    if (auto *const clone = allocator->New<MemberExpression>(Tag {}, *this, object, property); clone != nullptr) {
+    if (auto *const clone =
+            allocator->New<MemberExpression>(object, property, kind_, computed_, MaybeOptionalExpression::IsOptional());
+        clone != nullptr) {
+        if (object != nullptr) {
+            object->SetParent(clone);
+        }
+        if (property != nullptr) {
+            property->SetParent(clone);
+        }
         if (parent != nullptr) {
             clone->SetParent(parent);
         }
@@ -477,5 +528,23 @@ MemberExpression *MemberExpression::Clone(ArenaAllocator *const allocator, AstNo
     }
 
     throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+}
+
+bool MemberExpression::IsGenericField() const
+{
+    const auto obj_t = object_->TsType();
+    if (!obj_t->IsETSObjectType()) {
+        return false;
+    }
+    auto base_class_t = obj_t->AsETSObjectType()->GetBaseType();
+    if (base_class_t == nullptr) {
+        return false;
+    }
+    const auto &prop_name = property_->AsIdentifier()->Name();
+    auto base_prop = base_class_t->GetProperty(prop_name, checker::PropertySearchFlags::SEARCH_FIELD);
+    if (base_prop == nullptr || base_prop->TsType() == nullptr) {
+        return false;
+    }
+    return TsType()->ToAssemblerName().str() != base_prop->TsType()->ToAssemblerName().str();
 }
 }  // namespace panda::es2panda::ir

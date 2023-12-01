@@ -93,9 +93,19 @@ public:
         return decorators_;
     }
 
+    const ArenaVector<Decorator *> *DecoratorsPtr() const override
+    {
+        return &Decorators();
+    }
+
     void AddDecorators([[maybe_unused]] ArenaVector<ir::Decorator *> &&decorators) override
     {
         decorators_ = std::move(decorators);
+    }
+
+    bool CanHaveDecorator([[maybe_unused]] bool in_ts) const override
+    {
+        return true;
     }
 
     // NOLINTNEXTLINE(google-default-arguments)
@@ -103,7 +113,6 @@ public:
 
     [[nodiscard]] bool ConvertibleToArrayPattern();
     [[nodiscard]] ValidationInfo ValidateExpression();
-
     void TransformChildren(const NodeTransformer &cb) override;
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;
@@ -112,6 +121,8 @@ public:
     checker::Type *Check(checker::TSChecker *checker) override;
     checker::Type *Check(checker::ETSChecker *checker) override;
     checker::Type *CheckPattern(checker::TSChecker *checker);
+    void HandleNestedArrayExpression(checker::ETSChecker *checker, ArrayExpression *current_element, bool is_array,
+                                     bool is_preferred_tuple, std::size_t idx);
 
 private:
     ArenaVector<Decorator *> decorators_;

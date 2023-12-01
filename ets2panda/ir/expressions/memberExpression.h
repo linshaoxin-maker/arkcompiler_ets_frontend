@@ -139,6 +139,16 @@ public:
         ignore_box_ = true;
     }
 
+    checker::Type *GetTupleConvertedType() const noexcept
+    {
+        return tuple_converted_type_;
+    }
+
+    void SetTupleConvertedType(checker::Type *conv_type) noexcept
+    {
+        tuple_converted_type_ = conv_type;
+    }
+
     [[nodiscard]] bool IsPrivateReference() const noexcept;
 
     // NOLINTNEXTLINE(google-default-arguments)
@@ -176,6 +186,8 @@ private:
     checker::Type *CheckUnionMember(checker::ETSChecker *checker, checker::Type *base_type);
 
     void LoadRhs(compiler::PandaGen *pg) const;
+    bool IsGenericField() const;
+
     Expression *object_ = nullptr;
     Expression *property_ = nullptr;
     MemberExpressionKind kind_;
@@ -183,6 +195,7 @@ private:
     bool ignore_box_ {false};
     varbinder::LocalVariable *prop_var_ {};
     checker::ETSObjectType *obj_type_ {};
+    checker::Type *tuple_converted_type_ {};
 };
 }  // namespace panda::es2panda::ir
 
