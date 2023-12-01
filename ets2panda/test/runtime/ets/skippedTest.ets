@@ -24,7 +24,7 @@ function main(): void {
     let n5: double = 44.44;
     console.print(str);
     console.println();
-    console.print(str.charAt(2));
+    console.print(str.getCharByIndex(2));
     console.println();
     console.print(str.length());
     console.println();
