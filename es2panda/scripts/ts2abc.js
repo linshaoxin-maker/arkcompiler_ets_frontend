@@ -31,17 +31,17 @@ if (fs.existsSync(path.join(arkDir, 'build-win'))) {
     throw Error('find build fail').message;
 }
 
-let js2abc;
+let frontendCompiler;
 if (isWin) {
-    js2abc = path.join(arkDir, 'build-win', 'bin', 'es2abc.exe');
+    frontendCompiler = path.join(arkDir, 'build-win', 'bin', 'es2abc.exe');
 } else if (isMac) {
-    js2abc = path.join(arkDir, 'build-mac', 'bin', 'es2abc');
+    frontendCompiler = path.join(arkDir, 'build-mac', 'bin', 'es2abc');
 } else {
-    js2abc = path.join(arkDir, 'build', 'bin', 'es2abc');
+    frontendCompiler = path.join(arkDir, 'build', 'bin', 'es2abc');
 }
 
 function callEs2abc(args) {
-    let proc = spawn(`${js2abc}`, args);
+    let proc = spawn(`${frontendCompiler}`, args);
 
     proc.stderr.on('data', (data) => {
         throw Error(`${data}`).message;
@@ -53,22 +53,12 @@ function callEs2abc(args) {
 }
 
 let args = process.argv.splice(2);
-// keep bc-version to be compatible with old IDE versions
-if (args.length == 1 && args[0] == "--bc-version") {
+if (args.length == 1 && args[0] == "--bc-version") { // keep bc-version to be compatible with old IDE versions
     callEs2abc(args);
     return;
 }
 
-// hard-coded for now, will be modified later
 if (args[0] == "--target-api-version") {
-    if (args[1] == "8") {
-        process.stdout.write("0.0.0.2");
-    } else if (args[1] == "9") {
-        process.stdout.write("9.0.0.0");
-    } else if (args[1] == "10") {
-        process.stdout.write("9.0.0.0");
-    } else {
-        args = ["--bc-version"];
-        callEs2abc(args);
-    }
+    args.push("--target-ark-version");
+    callEs2abc(args);
 }

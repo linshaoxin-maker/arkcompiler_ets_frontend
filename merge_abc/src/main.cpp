@@ -80,8 +80,9 @@ int Run(int argc, const char **argv)
 
     std::string outputFileName = outputFilePath.append(panda::os::file::File::GetPathDelim()).
         append(options->outputFileName());
+    auto targetApi = static_cast<uint8_t>(options->TargetApiVersion());
     if (!panda::pandasm::AsmEmitter::EmitPrograms(panda::os::file::File::GetExtendedFilePath(outputFileName), programs,
-        true)) {
+        true, targetApi)) {
         return 1;
     }
 

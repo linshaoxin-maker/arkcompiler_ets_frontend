@@ -36,12 +36,14 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<std::string> protoBinSuffix("suffix", "", "suffix of proto bin file");
     panda::PandArg<std::string> outputFileName("output", "", "name of merged panda file");
     panda::PandArg<std::string> outputFilePath("outputFilePath", "", "output path for merged panda file");
+    panda::PandArg<int> targetApiVersion("target-api-version", 0, "Specify the target api version for compilation");
 
     argparser_->Add(&opHelp);
     argparser_->Add(&protoPathInput);
     argparser_->Add(&protoBinSuffix);
     argparser_->Add(&outputFileName);
     argparser_->Add(&outputFilePath);
+    argparser_->Add(&targetApiVersion);
 
     if (!argparser_->Parse(argc, argv) || opHelp.GetValue() || protoPathInput.GetValue().empty()) {
         std::stringstream ss;
@@ -67,6 +69,9 @@ bool Options::Parse(int argc, const char **argv)
     }
     if (!outputFilePath.GetValue().empty()) {
         outputFilePath_ = outputFilePath.GetValue();
+    }
+    if (targetApiVersion.GetValue()) {
+        targetApiVersion_ = targetApiVersion.GetValue();
     }
 
     return true;

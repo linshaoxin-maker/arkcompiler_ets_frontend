@@ -102,7 +102,7 @@ void CompileFileJob::Run()
     }
 
     if (options_->optLevel != 0) {
-        util::Helpers::OptimizeProgram(prog, src_->fileName);
+        util::Helpers::OptimizeProgram(prog, src_->fileName, options_->targetApiVersion);
     }
 
     {
