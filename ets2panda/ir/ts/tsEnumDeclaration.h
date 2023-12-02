@@ -19,6 +19,7 @@
 #include "varbinder/scope.h"
 #include "ir/statement.h"
 #include "varbinder/enumMemberResult.h"
+#include "ir/hasDoc.h"
 
 namespace panda::es2panda::varbinder {
 class EnumVariable;
@@ -109,6 +110,15 @@ public:
     checker::Type *Check(checker::TSChecker *checker) override;
     checker::Type *Check(checker::ETSChecker *checker) override;
 
+    HasDoc &Documentation()
+    {
+        return doc_comment_;
+    }
+    const HasDoc &Documentation() const
+    {
+        return doc_comment_;
+    }
+
 private:
     varbinder::LocalScope *scope_;
     ArenaVector<ir::Decorator *> decorators_;
@@ -116,6 +126,7 @@ private:
     ArenaVector<AstNode *> members_;
     util::StringView internal_name_;
     bool is_const_;
+    HasDoc doc_comment_ {};
 };
 }  // namespace panda::es2panda::ir
 

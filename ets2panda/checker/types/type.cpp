@@ -85,7 +85,7 @@ void Type::ToStringAsSrc(std::stringstream &ss) const
 
 void Type::Identical(TypeRelation *relation, Type *other)
 {
-    relation->Result(type_flags_ == other->TypeFlags());
+    relation->Result(TypeFlags() == other->TypeFlags());
 }
 
 bool Type::AssignmentSource([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *target)

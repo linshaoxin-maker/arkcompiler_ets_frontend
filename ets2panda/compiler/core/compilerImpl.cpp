@@ -15,6 +15,8 @@
 
 #include "compilerImpl.h"
 
+#include "docgen/NOdocgen.h"
+#include "docgen/ETSdocgen.h"
 #include "compiler/core/compilerContext.h"
 #include "compiler/core/compileQueue.h"
 #include "compiler/core/compilerImpl.h"
@@ -90,7 +92,7 @@ using EmitCb = std::function<pandasm::Program *(compiler::CompilerContext *)>;
 using PhaseListGetter = std::function<std::vector<compiler::Phase *>()>;
 
 template <typename Parser, typename VarBinder, typename Checker, typename Analyzer, typename AstCompiler,
-          typename CodeGen, typename RegSpiller, typename FunctionEmitter, typename Emitter>
+          typename CodeGen, typename RegSpiller, typename FunctionEmitter, typename Emitter, typename Docgen>
 static pandasm::Program *CreateCompiler(const CompilationUnit &unit, const PhaseListGetter &get_phases,
                                         const EmitCb &emit_cb)
 {
@@ -127,6 +129,22 @@ static pandasm::Program *CreateCompiler(const CompilationUnit &unit, const Phase
 
     emitter.GenAnnotation();
 
+    if (auto &make_doc = unit.options.make_doc; make_doc) {
+        std::ostream *out;
+        std::ofstream fout;
+        if (make_doc.value().output_path.empty()) {
+            out = &std::cout;
+        } else {
+            fout.open(make_doc.value().output_path);
+            if (!fout.is_open()) {
+                throw Error {ErrorType::GENERIC, make_doc.value().output_path, "can't open file"};
+            }
+            out = &fout;
+        }
+        *out << Docgen {}.Generate(&program) << std::endl;
+        return nullptr;
+    }
+
     return emit_cb(&context);
 }
 
@@ -138,26 +156,26 @@ pandasm::Program *CompilerImpl::Compile(const CompilationUnit &unit)
         case ScriptExtension::TS: {
             return CreateCompiler<parser::TSParser, varbinder::TSBinder, checker::TSChecker, checker::TSAnalyzer,
                                   compiler::JSCompiler, compiler::PandaGen, compiler::DynamicRegSpiller,
-                                  compiler::JSFunctionEmitter, compiler::JSEmitter>(unit, compiler::GetTrivialPhaseList,
-                                                                                    emit_cb);
+                                  compiler::JSFunctionEmitter, compiler::JSEmitter, docgen::NODocgen>(
+                unit, compiler::GetTrivialPhaseList, emit_cb);
         }
         case ScriptExtension::AS: {
             return CreateCompiler<parser::ASParser, varbinder::ASBinder, checker::ASChecker, checker::TSAnalyzer,
                                   compiler::JSCompiler, compiler::PandaGen, compiler::DynamicRegSpiller,
-                                  compiler::JSFunctionEmitter, compiler::JSEmitter>(unit, compiler::GetTrivialPhaseList,
-                                                                                    emit_cb);
+                                  compiler::JSFunctionEmitter, compiler::JSEmitter, docgen::NODocgen>(
+                unit, compiler::GetTrivialPhaseList, emit_cb);
         }
         case ScriptExtension::ETS: {
             return CreateCompiler<parser::ETSParser, varbinder::ETSBinder, checker::ETSChecker, checker::ETSAnalyzer,
                                   compiler::ETSCompiler, compiler::ETSGen, compiler::StaticRegSpiller,
-                                  compiler::ETSFunctionEmitter, compiler::ETSEmitter>(unit, compiler::GetETSPhaseList,
-                                                                                      emit_cb);
+                                  compiler::ETSFunctionEmitter, compiler::ETSEmitter, docgen::ETSDocgen>(
+                unit, compiler::GetETSPhaseList, emit_cb);
         }
         case ScriptExtension::JS: {
             return CreateCompiler<parser::JSParser, varbinder::JSBinder, checker::JSChecker, checker::TSAnalyzer,
                                   compiler::JSCompiler, compiler::PandaGen, compiler::DynamicRegSpiller,
-                                  compiler::JSFunctionEmitter, compiler::JSEmitter>(unit, compiler::GetTrivialPhaseList,
-                                                                                    emit_cb);
+                                  compiler::JSFunctionEmitter, compiler::JSEmitter, docgen::NODocgen>(
+                unit, compiler::GetTrivialPhaseList, emit_cb);
         }
         default: {
             UNREACHABLE();

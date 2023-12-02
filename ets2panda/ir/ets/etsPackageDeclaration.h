@@ -46,6 +46,11 @@ public:
     checker::Type *Check([[maybe_unused]] checker::TSChecker *checker) override;
     checker::Type *Check([[maybe_unused]] checker::ETSChecker *checker) override;
 
+    ir::Expression *GetName() const
+    {
+        return name_;
+    }
+
 private:
     ir::Expression *name_;
 };

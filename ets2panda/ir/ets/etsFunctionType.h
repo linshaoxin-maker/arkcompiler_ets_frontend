@@ -100,7 +100,6 @@ private:
     TSTypeParameterDeclaration *type_params_;
     TypeNode *return_type_;
     ir::TSInterfaceDeclaration *functional_interface_ {};
-    checker::Type *ts_type_ {};
     ir::ScriptFunctionFlags func_flags_;
 };
 }  // namespace panda::es2panda::ir

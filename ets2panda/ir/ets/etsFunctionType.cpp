@@ -139,7 +139,7 @@ checker::Type *ETSFunctionType::Check(checker::ETSChecker *checker)
     this_var->SetTsType(interface_type);
     checker->BuildFunctionalInterfaceName(this);
 
-    ts_type_ = interface_type;
+    SetTsType(interface_type);
     return interface_type;
 }
 

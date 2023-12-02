@@ -17,6 +17,7 @@
 #define ES2PANDA_IR_TS_ENUM_MEMBER_H
 
 #include "ir/statement.h"
+#include "ir/hasDoc.h"
 
 namespace panda::es2panda::ir {
 class Expression;
@@ -48,9 +49,19 @@ public:
     checker::Type *Check(checker::TSChecker *checker) override;
     checker::Type *Check(checker::ETSChecker *checker) override;
 
+    HasDoc &Documentation()
+    {
+        return doc_comment_;
+    }
+    const HasDoc &Documentation() const
+    {
+        return doc_comment_;
+    }
+
 private:
     Expression *key_;
     Expression *init_;
+    HasDoc doc_comment_ {};
 };
 }  // namespace panda::es2panda::ir
 
