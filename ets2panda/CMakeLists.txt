@@ -15,6 +15,9 @@ cmake_minimum_required (VERSION 3.5.0)
 
 include(cmake/coverage.cmake)
 
+set(ES2PANDA_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+set(ES2PANDA_BINARY_ROOT ${CMAKE_CURRENT_BINARY_DIR})
+
 project (es2panda)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

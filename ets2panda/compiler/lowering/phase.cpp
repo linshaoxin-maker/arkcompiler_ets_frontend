@@ -50,6 +50,26 @@ std::vector<Phase *> GetETSPhaseList()
 
 bool Phase::Apply(CompilerContext *ctx, parser::Program *program)
 {
+#ifndef NDEBUG
+    const auto check_program = [](const parser::Program *p) {
+        ASTVerifier verifier {p->Allocator(), p->SourceCode()};
+        ArenaVector<const ir::BlockStatement *> to_check {p->Allocator()->Adapter()};
+        to_check.push_back(p->Ast());
+        for (const auto &exteral_source : p->ExternalSources()) {
+            for (const auto external : exteral_source.second) {
+                to_check.push_back(external->Ast());
+            }
+        }
+
+        for (const auto *ast : to_check) {
+            if (!verifier.CheckAll(ast)) {
+                return false;
+            }
+        }
+        return true;
+    };
+#endif
+
     const auto *options = ctx->Options();
     if (options->skip_phases.count(Name()) > 0) {
         return true;
@@ -61,10 +81,7 @@ bool Phase::Apply(CompilerContext *ctx, parser::Program *program)
     }
 
 #ifndef NDEBUG
-    ASTVerifier ast_before;
-    if (!ast_before.IsCorrectProgram(program)) {
-        // NOTE(tatiana): Add some error processing
-    }
+
     if (!Precondition(ctx, program)) {
         ctx->Checker()->ThrowTypeError({"Precondition check failed for ", util::StringView {Name()}},
                                        lexer::SourcePosition {});
@@ -81,10 +98,8 @@ bool Phase::Apply(CompilerContext *ctx, parser::Program *program)
     }
 
 #ifndef NDEBUG
-    ASTVerifier ast_after;
-    if (!ast_after.IsCorrectProgram(program)) {
-        // NOTE(tatiana): Add some error processing
-    }
+    check_program(program);
+
     if (!Postcondition(ctx, program)) {
         ctx->Checker()->ThrowTypeError({"Postcondition check failed for ", util::StringView {Name()}},
                                        lexer::SourcePosition {});

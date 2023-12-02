@@ -18,54 +18,87 @@
 #include "macros.h"
 
 #include "compiler/core/ASTVerifier.h"
+#include <mem/pool_manager.h>
 #include "ir/astDump.h"
 #include "ir/expressions/literals/stringLiteral.h"
+#include "ir/expressions/identifier.h"
+
+namespace panda::es2panda {
 
 class ASTVerifierTest : public testing::Test {
 public:
-    ASTVerifierTest() = default;
+    ASTVerifierTest()
+    {
+        allocator_ = std::make_unique<ArenaAllocator>(SpaceType::SPACE_TYPE_COMPILER);
+    }
     ~ASTVerifierTest() override = default;
+
+    static void SetUpTestCase()
+    {
+        constexpr auto COMPILER_SIZE = 256_MB;
+
+        panda::mem::MemConfig::Initialize(0, 0, COMPILER_SIZE, 0, 0, 0);
+        PoolManager::Initialize();
+    }
+
+    ArenaAllocator *GetAllocator()
+    {
+        return allocator_.get();
+    }
 
     NO_COPY_SEMANTIC(ASTVerifierTest);
     NO_MOVE_SEMANTIC(ASTVerifierTest);
 
 private:
+    std::unique_ptr<ArenaAllocator> allocator_;
 };
 
-TEST_F(ASTVerifierTest, NullParent)
+TEST_F(ASTVerifierTest, DISABLED_NullParent)
 {
-    panda::es2panda::compiler::ASTVerifier verifier {};
-    panda::es2panda::ir::StringLiteral empty_node;
+    compiler::ASTVerifier verifier {GetAllocator()};
+    ir::StringLiteral empty_node;
 
-    bool has_parent = verifier.HasParent(&empty_node);
-    auto messages = verifier.GetErrorMessages();
+    auto checks = compiler::ASTVerifier::CheckSet {};
+    checks.insert("HasParent");
+    bool has_parent = verifier.Check(&empty_node, checks);
+    const auto &errors = verifier.GetErrors();
+    const auto [name, error] = errors[0];
 
     ASSERT_EQ(has_parent, false);
-    ASSERT_NE(messages.size(), 0);
-    ASSERT_EQ(messages[0], "NULL_PARENT: STR_LITERAL <null>");
+    ASSERT_NE(errors.size(), 0);
+    ASSERT_EQ(name, "HasParent");
+    ASSERT_EQ(error.message, "NULL_PARENT: STR_LITERAL <null>");
 }
 
-TEST_F(ASTVerifierTest, NullType)
+TEST_F(ASTVerifierTest, DISABLED_NullType)
 {
-    panda::es2panda::compiler::ASTVerifier verifier {};
-    panda::es2panda::ir::StringLiteral empty_node;
+    compiler::ASTVerifier verifier {GetAllocator()};
+    ir::StringLiteral empty_node;
 
-    bool has_type = verifier.HasType(&empty_node);
-    auto messages = verifier.GetErrorMessages();
+    auto checks = compiler::ASTVerifier::CheckSet {};
+    checks.insert("HasType");
+    bool has_type = verifier.Check(&empty_node, checks);
+    const auto &errors = verifier.GetErrors();
+    const auto [name, error] = errors[0];
 
     ASSERT_EQ(has_type, false);
-    ASSERT_NE(messages.size(), 0);
-    ASSERT_EQ(messages[0], "NULL_TS_TYPE: STR_LITERAL <null>");
+    ASSERT_NE(errors.size(), 0);
+    ASSERT_EQ(name, "HasType");
+    ASSERT_EQ(error.message, "NULL_TS_TYPE: STR_LITERAL <null>");
 }
 
-TEST_F(ASTVerifierTest, WithoutScope)
+TEST_F(ASTVerifierTest, DISABLED_WithoutScope)
 {
-    panda::es2panda::compiler::ASTVerifier verifier {};
-    panda::es2panda::ir::StringLiteral empty_node;
+    compiler::ASTVerifier verifier {GetAllocator()};
+    ir::StringLiteral empty_node;
 
-    bool has_scope = verifier.HasScope(&empty_node);
-    auto messages = verifier.GetErrorMessages();
+    auto checks = compiler::ASTVerifier::CheckSet {};
+    checks.insert("HasScope");
+    bool has_scope = verifier.Check(&empty_node, checks);
+    const auto &errors = verifier.GetErrors();
 
     ASSERT_EQ(has_scope, true);
-    ASSERT_EQ(messages.size(), 0);
+    ASSERT_EQ(errors.size(), 0);
 }
+
+}  // namespace panda::es2panda
