@@ -18,6 +18,6 @@ function main() {
         let a = "aaaddd"
         let b = $$a
     } catch (e) {
-        assert(e.toString() == "$$ operator can only be used with ARKUI plugin")
+        assert(e.toString().equals("$$ operator can only be used with ARKUI plugin"))
     }
 }

@@ -24,7 +24,6 @@ function main(): void {
   let obj: Int[] = [11, 21, 31];
   number = obj?.[x++];
 
-  let a : Int = 11;
-  assert(number == a);
+  assert(number == obj?.[0]);
   assert(x == 1); // 1 as x was incremented
 }

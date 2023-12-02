@@ -51,7 +51,7 @@ function testLocalArray() : void {
 
     arr![2][1] = 42;
 
-    assert arr[2][1].toString() == "42" : "arr[2][1].toString() must be '42'";
+    assert arr[2][1].toString().equals("42") : "arr[2][1].toString() must be '42'";
 }
 
 function bar(arg : Int | null) : Int {

@@ -16,5 +16,5 @@
 function main(): void {
   let str = "constant string literal"; // init with a const string literal without "String" annotation -> str shouldn't be const
   str = "new string value";
-  assert (str + "123"  == "new string value123")
+  assert ((str + "123").equals("new string value123"))
 }

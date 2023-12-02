@@ -1814,12 +1814,12 @@ void ETSGen::Binary(const ir::AstNode *node, lexer::TokenType op, VReg lhs)
         }
         case lexer::TokenType::PUNCTUATOR_STRICT_EQUAL: {
             Label *if_false = AllocLabel();
-            BinaryStrictEquality<JneObj, Jeqz>(node, lhs, if_false);
+            BinaryEquality<JneObj, Jne, Jnez, Jeqz>(node, lhs, if_false);
             break;
         }
         case lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL: {
             Label *if_false = AllocLabel();
-            BinaryStrictEquality<JeqObj, Jnez>(node, lhs, if_false);
+            BinaryEquality<JeqObj, Jeq, Jeqz, Jnez>(node, lhs, if_false);
             break;
         }
         case lexer::TokenType::PUNCTUATOR_LESS_THAN: {
@@ -1921,11 +1921,11 @@ void ETSGen::Condition(const ir::AstNode *node, lexer::TokenType op, VReg lhs, L
 {
     switch (op) {
         case lexer::TokenType::PUNCTUATOR_EQUAL: {
-            BinaryEqualityCondition<JneObj, Jne, Jnez>(node, lhs, if_false);
+            BinaryEqualityCondition<JneObj, Jne, Jnez, Jeqz>(node, lhs, if_false);
             break;
         }
         case lexer::TokenType::PUNCTUATOR_NOT_EQUAL: {
-            BinaryEqualityCondition<JeqObj, Jeq, Jeqz>(node, lhs, if_false);
+            BinaryEqualityCondition<JeqObj, Jeq, Jeqz, Jnez>(node, lhs, if_false);
             break;
         }
         case lexer::TokenType::PUNCTUATOR_LESS_THAN: {
@@ -2059,62 +2059,6 @@ void ETSGen::EmitNullishException(const ir::AstNode *node)
     NewObject(node, exception, Signatures::BUILTIN_NULLPOINTER_EXCEPTION);
     CallThisStatic0(node, exception, Signatures::BUILTIN_NULLPOINTER_EXCEPTION_CTOR);
     EmitThrow(node, exception);
-    SetAccumulatorType(nullptr);
-}
-
-void ETSGen::BinaryEqualityRefDynamic(const ir::AstNode *node, bool test_equal, VReg lhs, VReg rhs, Label *if_false)
-{
-    // NOTE: vpukhov. implement
-    LoadAccumulator(node, lhs);
-    if (test_equal) {
-        Ra().Emit<JneObj>(node, rhs, if_false);
-    } else {
-        Ra().Emit<JeqObj>(node, rhs, if_false);
-    }
-}
-
-void ETSGen::BinaryEqualityRef(const ir::AstNode *node, bool test_equal, VReg lhs, VReg rhs, Label *if_false)
-{
-    Label *if_true = AllocLabel();
-    if (GetVRegType(lhs)->IsETSDynamicType() || GetVRegType(rhs)->IsETSDynamicType()) {
-        BinaryEqualityRefDynamic(node, test_equal, lhs, rhs, if_false);
-        return;
-    }
-
-    if (GetVRegType(lhs)->IsETSNullLike() || GetVRegType(rhs)->IsETSNullLike()) {
-        LoadAccumulator(node, GetVRegType(lhs)->IsETSNullLike() ? rhs : lhs);
-        test_equal ? BranchIfNotNullish(node, if_false) : BranchIfNullish(node, if_false);
-    } else {
-        Label *if_lhs_nullish = AllocLabel();
-
-        auto const rhs_nullish_type = GetVRegType(rhs);
-
-        LoadAccumulator(node, lhs);
-        BranchIfNullish(node, if_lhs_nullish);
-        ConvertToNonNullish(node);
-        StoreAccumulator(node, lhs);
-
-        LoadAccumulator(node, rhs);
-        BranchIfNullish(node, test_equal ? if_false : if_true);
-        ConvertToNonNullish(node);
-        StoreAccumulator(node, rhs);
-
-        LoadAccumulator(node, lhs);
-        if (GetVRegType(lhs)->IsETSStringType()) {
-            CallThisStatic1(node, lhs, Signatures::BUILTIN_STRING_EQUALS, rhs);
-        } else {
-            CallThisVirtual1(node, lhs, Signatures::BUILTIN_OBJECT_EQUALS, rhs);
-        }
-        test_equal ? BranchIfFalse(node, if_false) : BranchIfTrue(node, if_false);
-        JumpTo(node, if_true);
-
-        SetLabel(node, if_lhs_nullish);
-        LoadAccumulator(node, rhs);
-        SetAccumulatorType(rhs_nullish_type);
-        test_equal ? BranchIfNotNullish(node, if_false) : BranchIfNullish(node, if_false);
-        // fallthrough
-    }
-    SetLabel(node, if_true);
     SetAccumulatorType(nullptr);
 }
 

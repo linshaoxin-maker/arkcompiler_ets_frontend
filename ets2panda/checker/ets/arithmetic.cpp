@@ -273,38 +273,58 @@ checker::Type *ETSChecker::CheckBinaryOperatorLogical(ir::Expression *left, ir::
     UNREACHABLE();
 }
 
-std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorStrictEqual(ir::Expression *left, lexer::SourcePosition pos,
-                                                                      checker::Type *const left_type,
-                                                                      checker::Type *const right_type)
-{
-    checker::Type *ts_type {};
-    if (!(left_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) ||
-        !(right_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT))) {
-        ThrowTypeError("Both operands have to be reference types", pos);
-    }
-
-    Relation()->SetNode(left);
-    if (!Relation()->IsCastableTo(left_type, right_type) && !Relation()->IsCastableTo(right_type, left_type)) {
-        ThrowTypeError("The operands of strict equality are not compatible with each other", pos);
-    }
-    ts_type = GlobalETSBooleanType();
-    if (right_type->IsETSDynamicType() && left_type->IsETSDynamicType()) {
-        return {ts_type, GlobalBuiltinJSValueType()};
-    }
-    return {ts_type, GlobalETSObjectType()};
-}
-
 std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorEqual(
     ir::Expression *left, ir::Expression *right, lexer::TokenType operation_type, lexer::SourcePosition pos,
     checker::Type *const left_type, checker::Type *const right_type, Type *unboxed_l, Type *unboxed_r)
 {
     checker::Type *ts_type {};
+    checker::Type *op_type {};
+    ts_type = GlobalETSBooleanType();
+
+    if ((left->IsNullLiteral() || right->IsNullLiteral()) &&
+        (left->IsUndefinedLiteral() || right->IsUndefinedLiteral())) {
+        ts_type = CreateETSBooleanType(operation_type == lexer::TokenType::PUNCTUATOR_EQUAL ||
+                                       operation_type == lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL);
+
+        return {ts_type, GlobalETSUndefinedType()};
+    }
+
+    if (IsReferenceType(left_type) && IsReferenceType(right_type)) {
+        // Reference Equality
+
+        Relation()->SetNode(left);
+        if (!right->IsNullLiteral() && !left->IsNullLiteral() && !right->IsUndefinedLiteral() &&
+            !left->IsUndefinedLiteral() && !Relation()->IsCastableTo(left_type, right_type) &&
+            !Relation()->IsCastableTo(right_type, left_type)) {
+            if (unboxed_l == nullptr || unboxed_r == nullptr) {
+                ThrowTypeError("The operands of reference equality are not compatible with each other", pos);
+            }
+
+        } else {
+            if (left_type->IsETSDynamicType() || right_type->IsETSDynamicType()) {
+                return CheckBinaryOperatorEqualDynamic(left, right, pos);
+            }
+
+            return {ts_type, GlobalETSObjectType()};
+        }
+    }
+
+    // Value Equality
+    auto positive_equal = operation_type == lexer::TokenType::PUNCTUATOR_EQUAL ||
+                          operation_type == lexer::TokenType::PUNCTUATOR_STRICT_EQUAL;
+
+    if (left->IsNullLiteral() || right->IsNullLiteral() || left->IsUndefinedLiteral() || right->IsUndefinedLiteral()) {
+        op_type = left->IsNullLiteral() || left->IsUndefinedLiteral() ? right_type : left_type;
+        ts_type = CreateETSBooleanType(!positive_equal);
+
+        return {ts_type, op_type};
+    }
+
     if (left_type->IsETSEnumType() && right_type->IsETSEnumType()) {
         if (!left_type->AsETSEnumType()->IsSameEnumType(right_type->AsETSEnumType())) {
             ThrowTypeError("Bad operand type, the types of the operands must be the same enum type.", pos);
         }
 
-        ts_type = GlobalETSBooleanType();
         return {ts_type, left_type};
     }
 
@@ -313,35 +333,38 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorEqual(
             ThrowTypeError("Bad operand type, the types of the operands must be the same enum type.", pos);
         }
 
-        ts_type = GlobalETSBooleanType();
         return {ts_type, left_type};
     }
 
-    if (left_type->IsETSDynamicType() || right_type->IsETSDynamicType()) {
-        return CheckBinaryOperatorEqualDynamic(left, right, pos);
-    }
+    if (unboxed_l != nullptr && unboxed_r != nullptr) {
+        if (unboxed_l->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN) &&
+            unboxed_r->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN)) {
+            if (unboxed_l->HasTypeFlag(checker::TypeFlag::CONSTANT) &&
+                unboxed_r->HasTypeFlag(checker::TypeFlag::CONSTANT)) {
+                const bool res = unboxed_l->AsETSBooleanType()->GetValue() == unboxed_r->AsETSBooleanType()->GetValue();
 
-    if (IsReferenceType(left_type) && IsReferenceType(right_type)) {
-        ts_type = GlobalETSBooleanType();
-        auto *op_type = GlobalETSObjectType();
-        return {ts_type, op_type};
-    }
+                ts_type = CreateETSBooleanType(positive_equal ? res : !res);
+                return {ts_type, op_type};
+            }
+            op_type = GlobalETSBooleanType();
 
-    if (unboxed_l != nullptr && unboxed_l->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN) && unboxed_r != nullptr &&
-        unboxed_r->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN)) {
-        if (unboxed_l->HasTypeFlag(checker::TypeFlag::CONSTANT) &&
-            unboxed_r->HasTypeFlag(checker::TypeFlag::CONSTANT)) {
-            bool res = unboxed_l->AsETSBooleanType()->GetValue() == unboxed_r->AsETSBooleanType()->GetValue();
+        } else if (unboxed_l->HasTypeFlag(checker::TypeFlag::CHAR) && unboxed_r->HasTypeFlag(checker::TypeFlag::CHAR)) {
+            if (unboxed_l->HasTypeFlag(checker::TypeFlag::CONSTANT) &&
+                unboxed_r->HasTypeFlag(checker::TypeFlag::CONSTANT)) {
+                const bool res = unboxed_l->AsCharType()->GetValue() == unboxed_r->AsCharType()->GetValue();
 
-            ts_type = CreateETSBooleanType(operation_type == lexer::TokenType::PUNCTUATOR_EQUAL ? res : !res);
-            return {ts_type, ts_type};
+                ts_type = CreateETSBooleanType(positive_equal ? res : !res);
+                return {ts_type, op_type};
+            }
+            op_type = GlobalCharType();
         }
 
-        FlagExpressionWithUnboxing(left_type, unboxed_l, left);
-        FlagExpressionWithUnboxing(right_type, unboxed_r, right);
+        if (op_type != nullptr) {
+            FlagExpressionWithUnboxing(left_type, unboxed_l, left);
+            FlagExpressionWithUnboxing(right_type, unboxed_r, right);
 
-        ts_type = GlobalETSBooleanType();
-        return {ts_type, ts_type};
+            return {ts_type, op_type};
+        }
     }
     return {nullptr, nullptr};
 }
@@ -524,9 +547,7 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left,
             break;
         }
         case lexer::TokenType::PUNCTUATOR_STRICT_EQUAL:
-        case lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL: {
-            return CheckBinaryOperatorStrictEqual(left, pos, left_type, right_type);
-        }
+        case lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL:
         case lexer::TokenType::PUNCTUATOR_EQUAL:
         case lexer::TokenType::PUNCTUATOR_NOT_EQUAL: {
             std::tuple<Type *, Type *> res =

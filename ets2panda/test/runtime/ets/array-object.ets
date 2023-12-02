@@ -36,7 +36,9 @@ function main(): void {
   assert(arr1 == arr1);
   assert(arr1 == object_array);
   assert(arr1 == object);
-  assert(arr1 != arr2);
+
+// TypeError: The operands of reference equality are not compatible with each other
+// assert(arr1 != arr2);
   assert(object.equals(arr1 as Object) == true);
 
 // Cannot cast type 'int[]' to 'Object[]'
