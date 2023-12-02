@@ -531,11 +531,12 @@ checker::Type *ETSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
             func_type->CallSignatures()[0]->SetReturnType(body_type);
         }
 
-        checker::AssignmentContext(
-            checker->Relation(), expr->Function()->Body()->AsExpression(), body_type,
-            func_type->CallSignatures()[0]->ReturnType(), expr->Function()->Start(),
-            {"Return statements return type is not compatible with the containing functions return type"},
-            checker::TypeRelationFlag::DIRECT_RETURN);
+        auto *const return_type = func_type->CallSignatures()[0]->ReturnType();
+        checker::AssignmentContext(checker->Relation(), expr->Function()->Body()->AsExpression(), body_type,
+                                   return_type, expr->Function()->Start(),
+                                   {"Return statement's return type '", body_type,
+                                    "' is not compatible with the arrow function's return type '", return_type, "'."},
+                                   checker::TypeRelationFlag::DIRECT_RETURN);
     }
 
     checker->Context().SetContainingSignature(nullptr);
@@ -1363,10 +1364,11 @@ void CheckReturnType(ETSChecker *checker, checker::Type *func_return_type, check
                                     st_argument->Start());
         }
     } else {
-        checker::AssignmentContext(checker->Relation(), st_argument, argument_type, func_return_type,
-                                   st_argument->Start(),
-                                   {"Return statement type is not compatible with the enclosing method's return type."},
-                                   checker::TypeRelationFlag::DIRECT_RETURN);
+        checker::AssignmentContext(
+            checker->Relation(), st_argument, argument_type, func_return_type, st_argument->Start(),
+            {"Return statement's type '", argument_type,
+             "' is not compatible with the enclosing method's return type '", func_return_type, "'."},
+            checker::TypeRelationFlag::DIRECT_RETURN);
     }
 }
 
@@ -1474,8 +1476,9 @@ void ProcessReturnStatements(ETSChecker *checker, ir::ScriptFunction *containing
                     containing_func->Signature()->AddSignatureFlag(checker::SignatureFlags::INFERRED_RETURN_TYPE);
                 } else if (!relation->IsAssignableTo(argument_type, func_return_type)) {
                     checker->ThrowTypeError(
-                        "Return statement type is not compatible with previous method's return statement "
-                        "type(s).",
+                        {"Return statement's type '", argument_type,
+                         "' is not compatible with the enclosing method's previous return statement type(s) '",
+                         func_return_type, "'."},
                         st_argument->Start());
                 }
             } else {

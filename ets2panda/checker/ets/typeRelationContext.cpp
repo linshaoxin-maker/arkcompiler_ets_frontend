@@ -28,10 +28,11 @@ void AssignmentContext::ValidateArrayTypeInitializerByElement(TypeRelation *rela
 {
     for (uint32_t index = 0; index < node->Elements().size(); index++) {
         ir::Expression *current_array_elem = node->Elements()[index];
-        AssignmentContext(relation, current_array_elem,
-                          current_array_elem->Check(relation->GetChecker()->AsETSChecker()), target->ElementType(),
+        auto *const current_array_element_type = current_array_elem->Check(relation->GetChecker()->AsETSChecker());
+        AssignmentContext(relation, current_array_elem, current_array_element_type, target->ElementType(),
                           current_array_elem->Start(),
-                          {"Array element at index ", index, " is not compatible with the target array element type."});
+                          {"Array element at index ", index, " with type '", current_array_element_type,
+                           "' is not compatible with the target array element type '", target->ElementType(), "'."});
     }
 }
 

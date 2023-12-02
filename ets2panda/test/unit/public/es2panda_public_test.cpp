@@ -57,6 +57,6 @@ TEST_F(Es2PandaLibTest, TypeError)
     impl_->ProceedToState(ctx, ES2PANDA_STATE_ASM_GENERATED);  // don't produce any object files
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_ERROR);
     ASSERT_EQ(std::string(impl_->ContextErrorMessage(ctx)),
-              "TypeError: Initializers type is not assignable to the target type[no-error.ets:1,32]");
+              "TypeError: Type 'string' is not assignable to type 'int'.[no-error.ets:1,32]");
     impl_->DestroyContext(ctx);
 }

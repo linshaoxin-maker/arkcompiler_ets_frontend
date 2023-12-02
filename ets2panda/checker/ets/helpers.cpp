@@ -939,7 +939,8 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
 
     if (annotation_type != nullptr) {
         AssignmentContext(Relation(), init, init_type, annotation_type, init->Start(),
-                          {"Initializers type is not assignable to the target type"});
+                          {"Type '", init_type, "' is not assignable to type '", annotation_type, "'."});
+
         if (is_const && init_type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) &&
             annotation_type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
             binding_var->SetTsType(init->TsType());
@@ -2241,9 +2242,12 @@ bool ETSChecker::TypeInference(Signature *signature, const ArenaVector<ir::Expre
         InferTypesForLambda(lambda, type_ann->AsETSFunctionType());
         Type *const arg_type = arrow_func_expr->Check(this);
 
-        checker::InvocationContext invokation_ctx(
-            Relation(), arguments[index], arg_type, signature->Params()[index]->TsType(), arrow_func_expr->Start(),
-            {"Call argument at index ", index, " is not compatible with the signature's type at that index"}, flags);
+        checker::InvocationContext invokation_ctx(Relation(), arguments[index], arg_type,
+                                                  signature->Params()[index]->TsType(), arrow_func_expr->Start(),
+                                                  {"Call argument at index ", index, " with type '", arg_type,
+                                                   "' is not compatible with the signature's type '",
+                                                   signature->Params()[index]->TsType(), "' at that index"},
+                                                  flags);
 
         invocable &= invokation_ctx.IsInvocable();
     }

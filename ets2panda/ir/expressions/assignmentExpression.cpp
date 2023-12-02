@@ -300,7 +300,7 @@ checker::Type *AssignmentExpression::Check([[maybe_unused]] checker::ETSChecker 
     }
 
     checker::AssignmentContext(checker->Relation(), relation_node, source_type, left_type, right_->Start(),
-                               {"Initializers type is not assignable to the target type"});
+                               {"Type '", source_type, "' is not assignable to type '", left_type, "'."});
 
     SetTsType(left_->TsType());
     return TsType();

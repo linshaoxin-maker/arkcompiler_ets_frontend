@@ -158,8 +158,10 @@ void ETSChecker::EnhanceSubstitutionForType(const ArenaVector<Type *> &type_para
 
 // NOLINTBEGIN(modernize-avoid-c-arrays)
 static constexpr char const INVALID_CALL_ARGUMENT_1[] = "Call argument at index ";
-static constexpr char const INVALID_CALL_ARGUMENT_2[] = " is not compatible with the signature's type at that index.";
-static constexpr char const INVALID_CALL_ARGUMENT_3[] = " is not compatible with the signature's rest parameter type.";
+static constexpr char const INVALID_CALL_ARGUMENT_2[] = " with type '";
+static constexpr char const INVALID_CALL_ARGUMENT_3[] = "' is not compatible with the signature's type '";
+static constexpr char const INVALID_CALL_ARGUMENT_4[] = " is not compatible with the signature's rest parameter type '";
+static constexpr char const INVALID_CALL_ARGUMENT_5[] = "' at that index";
 // NOLINTEND(modernize-avoid-c-arrays)
 
 Signature *ETSChecker::ValidateSignature(Signature *signature, const ir::TSTypeParameterInstantiation *type_arguments,
@@ -234,7 +236,9 @@ Signature *ETSChecker::ValidateSignature(Signature *signature, const ir::TSTypeP
 
         if (auto const invocation_ctx = checker::InvocationContext(
                 Relation(), argument, argument_type, substituted_sig->Params()[index]->TsType(), argument->Start(),
-                {INVALID_CALL_ARGUMENT_1, index, INVALID_CALL_ARGUMENT_2}, flags);
+                {INVALID_CALL_ARGUMENT_1, index, INVALID_CALL_ARGUMENT_2, argument_type, INVALID_CALL_ARGUMENT_3,
+                 substituted_sig->Params()[index]->TsType(), INVALID_CALL_ARGUMENT_5},
+                flags);
             !invocation_ctx.IsInvocable()) {
             return nullptr;
         }
@@ -270,7 +274,10 @@ Signature *ETSChecker::ValidateSignature(Signature *signature, const ir::TSTypeP
                 if (auto const invocation_ctx = checker::InvocationContext(
                         Relation(), argument, argument_type,
                         substituted_sig->RestVar()->TsType()->AsETSArrayType()->ElementType(), argument->Start(),
-                        {INVALID_CALL_ARGUMENT_1, index, INVALID_CALL_ARGUMENT_3}, flags);
+                        {INVALID_CALL_ARGUMENT_1, index, INVALID_CALL_ARGUMENT_2, argument_type,
+                         INVALID_CALL_ARGUMENT_4, substituted_sig->RestVar()->TsType()->AsETSArrayType()->ElementType(),
+                         INVALID_CALL_ARGUMENT_5},
+                        flags);
                     !invocation_ctx.IsInvocable()) {
                     return nullptr;
                 }

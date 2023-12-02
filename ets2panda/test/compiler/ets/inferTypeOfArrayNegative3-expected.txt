@@ -429,4 +429,4 @@
     }
   }
 }
-TypeError: Initializers type is not assignable to the target type [inferTypeOfArrayNegative3.ets:17:8]
+TypeError: Type 'string' is not assignable to type 'double'. [inferTypeOfArrayNegative3.ets:17:8]

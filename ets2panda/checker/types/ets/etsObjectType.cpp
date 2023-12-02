@@ -284,26 +284,41 @@ std::unordered_map<util::StringView, const varbinder::LocalVariable *> ETSObject
 
 void ETSObjectType::ToString(std::stringstream &ss) const
 {
-    ss << name_;
+    if (HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
+        if (IsNullish() && this != GetConstOriginalBaseType() && !name_.Is("NullType") && !IsETSNullLike() &&
+            !name_.Empty()) {
+            ss << lexer::TokenToString(lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS);
+        }
+        GetFunctionalInterfaceInvokeType()->ToString(ss);
+    } else {
+        ss << name_;
+    }
 
     if (IsGeneric()) {
-        auto const type_arguments_size = type_arguments_.size();
         ss << compiler::Signatures::GENERIC_BEGIN;
-        type_arguments_[0]->ToString(ss);
-        for (std::size_t i = 1U; i < type_arguments_size; ++i) {
-            ss << ',';
-            type_arguments_[i]->ToString(ss);
+
+        for (auto arg = type_arguments_.cbegin(); arg != type_arguments_.cend(); ++arg) {
+            (*arg)->ToString(ss);
+
+            if (next(arg) != type_arguments_.cend()) {
+                ss << lexer::TokenToString(lexer::TokenType::PUNCTUATOR_COMMA);
+            }
         }
         ss << compiler::Signatures::GENERIC_END;
     }
 
     if (IsNullish() && this != GetConstOriginalBaseType() && !name_.Is("NullType") && !IsETSNullLike() &&
         !name_.Empty()) {
+        if (HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
+            ss << lexer::TokenToString(lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS);
+        }
         if (ContainsNull()) {
-            ss << "|null";
+            ss << lexer::TokenToString(lexer::TokenType::PUNCTUATOR_BITWISE_OR)
+               << lexer::TokenToString(lexer::TokenType::LITERAL_NULL);
         }
         if (ContainsUndefined()) {
-            ss << "|undefined";
+            ss << lexer::TokenToString(lexer::TokenType::PUNCTUATOR_BITWISE_OR)
+               << lexer::TokenToString(lexer::TokenType::KEYW_UNDEFINED);
         }
     }
 }
