@@ -19,7 +19,9 @@
 #include "varbinder/variable.h"
 #include "ir/expression.h"
 #include "ir/validationInfo.h"
-
+namespace panda::es2panda::checker {
+class ETSAnalyzer;
+}  // namespace panda::es2panda::checker
 namespace panda::es2panda::util {
 class BitSet;
 }  // namespace panda::es2panda::util
@@ -44,8 +46,10 @@ public:
           trailing_comma_(trailing_comma)
     {
     }
-
     explicit ObjectExpression(Tag tag, ObjectExpression const &other, ArenaAllocator *allocator);
+
+    // TODO (vivienvoros): these friend relationships can be removed once there are getters for private fields
+    friend class checker::ETSAnalyzer;
 
     [[nodiscard]] const ArenaVector<Expression *> &Properties() const noexcept
     {
@@ -77,9 +81,19 @@ public:
         return decorators_;
     }
 
+    const ArenaVector<Decorator *> *DecoratorsPtr() const override
+    {
+        return &Decorators();
+    }
+
     void AddDecorators([[maybe_unused]] ArenaVector<ir::Decorator *> &&decorators) override
     {
         decorators_ = std::move(decorators);
+    }
+
+    bool CanHaveDecorator([[maybe_unused]] bool in_ts) const override
+    {
+        return true;
     }
 
     // NOLINTNEXTLINE(google-default-arguments)
@@ -87,7 +101,6 @@ public:
 
     [[nodiscard]] ValidationInfo ValidateExpression();
     [[nodiscard]] bool ConvertibleToObjectPattern();
-
     void SetDeclaration();
     void SetOptional(bool optional);
     void TransformChildren(const NodeTransformer &cb) override;
@@ -100,9 +113,6 @@ public:
     checker::Type *CheckPattern(checker::TSChecker *checker);
 
 private:
-    void CompileStaticProperties(compiler::PandaGen *pg, util::BitSet *compiled) const;
-    void CompileRemainingProperties(compiler::PandaGen *pg, const util::BitSet *compiled) const;
-
     ArenaVector<Decorator *> decorators_;
     ArenaVector<Expression *> properties_;
     checker::Type *preferred_type_ {};

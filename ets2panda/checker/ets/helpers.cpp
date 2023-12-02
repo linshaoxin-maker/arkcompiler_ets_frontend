@@ -786,8 +786,13 @@ Type *ETSChecker::HandleBooleanLogicalOperatorsExtended(Type *left_type, Type *r
         IsNullLikeOrVoidExpression(expr->Right()) ? std::make_tuple(true, false) : right_type->ResolveConditionExpr();
 
     if (!resolve_left) {
-        // return the UNION type when it is implemented
-        return IsTypeIdenticalTo(left_type, right_type) ? left_type : GlobalETSBooleanType();
+        if (IsTypeIdenticalTo(left_type, right_type)) {
+            return left_type;
+        }
+        ArenaVector<checker::Type *> types(Allocator()->Adapter());
+        types.push_back(left_type);
+        types.push_back(right_type);
+        return CreateETSUnionType(std::move(types));
     }
 
     switch (expr->OperatorType()) {
@@ -924,7 +929,11 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
     }
 
     if (init->IsArrayExpression() && annotation_type->IsETSArrayType()) {
-        init->AsArrayExpression()->SetPreferredType(annotation_type->AsETSArrayType()->ElementType());
+        if (annotation_type->IsETSTupleType()) {
+            ValidateTupleMinElementSize(init->AsArrayExpression(), annotation_type->AsETSTupleType());
+        }
+
+        init->AsArrayExpression()->SetPreferredType(annotation_type);
     }
 
     if (init->IsObjectExpression()) {
@@ -1001,7 +1010,7 @@ void ETSChecker::SetArrayPreferredTypeForNestedMemberExpressions(ir::MemberExpre
     // Set explicit target type for array
     if ((object != nullptr) && (object->IsArrayExpression())) {
         ir::ArrayExpression *array = object->AsArrayExpression();
-        array->SetPreferredType(element_type);
+        array->SetPreferredType(CreateETSArrayType(element_type));
     }
 }
 
@@ -1483,18 +1492,6 @@ Type *ETSChecker::ETSBuiltinTypeAsConditionalType(Type *object_type)
 {
     if ((object_type == nullptr) || !object_type->IsConditionalExprType()) {
         return nullptr;
-    }
-
-    if (object_type->IsETSObjectType()) {
-        if (!object_type->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE)) {
-            return object_type;
-        }
-        auto saved_result = Relation()->IsTrue();
-        Relation()->Result(false);
-
-        UnboxingConverter converter = UnboxingConverter(AsETSChecker(), Relation(), object_type, object_type);
-        Relation()->Result(saved_result);
-        return converter.Result();
     }
 
     return object_type;
@@ -2079,7 +2076,7 @@ Type *ETSChecker::GetTypeFromTypeAnnotation(ir::TypeNode *const type_annotation)
         return type;
     }
 
-    if (!type->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT)) {
+    if (!type->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT) && !type->HasTypeFlag(TypeFlag::ETS_UNION)) {
         ThrowTypeError("Non reference types cannot be nullish.", type_annotation->Start());
     }
 
@@ -2295,6 +2292,28 @@ bool ETSChecker::ExtensionETSFunctionType(checker::Type *type)
     }
 
     return false;
+}
+
+void ETSChecker::ValidateTupleMinElementSize(ir::ArrayExpression *const array_expr, ETSTupleType *tuple)
+{
+    if (array_expr->Elements().size() < static_cast<size_t>(tuple->GetMinTupleSize())) {
+        ThrowTypeError({"Few elements in array initializer for tuple with size of ",
+                        static_cast<size_t>(tuple->GetMinTupleSize())},
+                       array_expr->Start());
+    }
+}
+
+void ETSChecker::ModifyPreferredType(ir::ArrayExpression *const array_expr, Type *const new_preferred_type)
+{
+    // After modifying the preferred type of an array expression, it needs to be rechecked at the call site
+    array_expr->SetPreferredType(new_preferred_type);
+    array_expr->SetTsType(nullptr);
+
+    for (auto *const element : array_expr->Elements()) {
+        if (element->IsArrayExpression()) {
+            ModifyPreferredType(element->AsArrayExpression(), nullptr);
+        }
+    }
 }
 
 bool ETSChecker::TryTransformingToStaticInvoke(ir::Identifier *const ident, const Type *resolved_type)

@@ -18,9 +18,9 @@
 
 #include "varbinder/scope.h"
 #include "ir/expression.h"
+#include "ir/ts/tsTypeParameter.h"
 
 namespace panda::es2panda::ir {
-class TSTypeParameter;
 
 class TSTypeParameterDeclaration : public Expression {
 public:
@@ -48,6 +48,14 @@ public:
         return params_;
     }
 
+    void AddParam(TSTypeParameter *param)
+    {
+        if (required_params_ == params_.size() && param->DefaultType() == nullptr) {
+            required_params_++;
+        }
+        params_.push_back(param);
+    }
+
     size_t RequiredParams() const
     {
         return required_params_;
@@ -57,6 +65,7 @@ public:
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;
     void Compile([[maybe_unused]] compiler::PandaGen *pg) const override;
+    void Compile(compiler::ETSGen *etsg) const override;
     checker::Type *Check([[maybe_unused]] checker::TSChecker *checker) override;
     checker::Type *Check([[maybe_unused]] checker::ETSChecker *checker) override;
 

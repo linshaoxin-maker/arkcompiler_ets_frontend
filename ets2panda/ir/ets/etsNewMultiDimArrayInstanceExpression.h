@@ -19,8 +19,13 @@
 #include "ir/expression.h"
 
 namespace panda::es2panda::checker {
+class ETSAnalyzer;
 class Signature;
 }  // namespace panda::es2panda::checker
+
+namespace panda::es2panda::compiler {
+class ETSCompiler;
+}  // namespace panda::es2panda::compiler
 
 namespace panda::es2panda::ir {
 
@@ -39,9 +44,32 @@ public:
           dimensions_(std::move(dimensions))
     {
     }
+    // TODO (csabahurton): these friend relationships can be removed once there are getters for private fields
+    friend class checker::ETSAnalyzer;
+    friend class compiler::ETSCompiler;
 
     explicit ETSNewMultiDimArrayInstanceExpression(ETSNewMultiDimArrayInstanceExpression const &other,
                                                    ArenaAllocator *allocator);
+
+    ir::TypeNode *TypeReference()
+    {
+        return type_reference_;
+    }
+
+    ir::TypeNode const *TypeReference() const
+    {
+        return type_reference_;
+    }
+
+    ArenaVector<ir::Expression *> &Dimensions()
+    {
+        return dimensions_;
+    }
+
+    ArenaVector<ir::Expression *> const &Dimension() const
+    {
+        return dimensions_;
+    }
 
     [[nodiscard]] checker::Signature *Signature() noexcept
     {
@@ -62,10 +90,10 @@ public:
 
     void Dump(ir::AstDumper *dumper) const override;
 
-    void Compile([[maybe_unused]] compiler::PandaGen *pg) const override;
-    void Compile([[maybe_unused]] compiler::ETSGen *etsg) const override;
-    checker::Type *Check([[maybe_unused]] checker::TSChecker *checker) override;
-    checker::Type *Check([[maybe_unused]] checker::ETSChecker *checker) override;
+    void Compile(compiler::PandaGen *pg) const override;
+    void Compile(compiler::ETSGen *etsg) const override;
+    checker::Type *Check(checker::TSChecker *checker) override;
+    checker::Type *Check(checker::ETSChecker *checker) override;
 
 private:
     ir::TypeNode *type_reference_;
