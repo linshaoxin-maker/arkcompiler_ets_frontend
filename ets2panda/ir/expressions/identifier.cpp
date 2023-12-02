@@ -48,7 +48,8 @@ Identifier *Identifier::Clone(ArenaAllocator *const allocator, AstNode *const pa
         }
         return clone;
     }
-    throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    return this; // ?
 }
 
 void Identifier::TransformChildren(const NodeTransformer &cb)

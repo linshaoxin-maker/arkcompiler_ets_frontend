@@ -48,7 +48,8 @@ Property *Property::Clone(ArenaAllocator *const allocator, AstNode *const parent
         return clone;
     }
 
-    throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    return this; // ?
 }
 
 bool Property::ConvertibleToPatternProperty()

@@ -129,7 +129,7 @@ public:
     LexerTemplateString ScanTemplateString();
     void ScanTemplateStringEnd();
     void PushTemplateContext(TemplateLiteralParserContext *ctx);
-    [[noreturn]] void ThrowUnexpectedStrictModeReservedKeyword() const
+    void ThrowUnexpectedStrictModeReservedKeyword() const
     {
         ThrowError("Unexpected strict mode reserved keyword");
     }
@@ -193,8 +193,8 @@ protected:
     void ScanRegExpPattern();
     RegExpFlags ScanRegExpFlags();
 
-    [[noreturn]] void ThrowError(std::string_view message) const;
-    [[noreturn]] void ThrowUnexpectedToken(lexer::TokenType token_type) const;
+    void ThrowError(std::string_view message) const; // noreturn was here
+    void ThrowUnexpectedToken(lexer::TokenType token_type) const; // noreturn was here
 
     void SetTokenStart();
     void SetTokenEnd();
@@ -257,7 +257,7 @@ protected:
     }
 
     template <typename RadixType, typename RadixLimit = void *>
-    void ScanNumberLeadingZeroImpl();
+    bool ScanNumberLeadingZeroImpl();
     void ScanNumberLeadingZeroImplNonAllowedCases();
     template <bool RANGE_CHECK(char32_t), int RADIX, typename RadixType, typename RadixLimit>
     void ScanNumberRadix(bool allow_numeric_separator = true);
@@ -440,7 +440,7 @@ char32_t Lexer::ScanHexEscape()
 }
 
 template <typename RadixType, typename RadixLimit>
-void Lexer::ScanNumberLeadingZeroImpl()
+bool Lexer::ScanNumberLeadingZeroImpl()
 {
     GetToken().type_ = TokenType::LITERAL_NUMBER;
     GetToken().keyword_type_ = TokenType::LITERAL_NUMBER;
@@ -452,7 +452,7 @@ void Lexer::ScanNumberLeadingZeroImpl()
             constexpr auto RADIX = 16;
             ScanNumberRadix<IsHexDigit, RADIX, RadixType, RadixLimit>();
             CheckNumberLiteralEnd();
-            return;
+            return true;
         }
         case LEX_CHAR_LOWERCASE_B:
         case LEX_CHAR_UPPERCASE_B: {
@@ -460,7 +460,7 @@ void Lexer::ScanNumberLeadingZeroImpl()
             constexpr auto RADIX = 2;
             ScanNumberRadix<IsBinaryDigit, RADIX, RadixType, RadixLimit>();
             CheckNumberLiteralEnd();
-            return;
+            return true;
         }
         case LEX_CHAR_LOWERCASE_O:
         case LEX_CHAR_UPPERCASE_O: {
@@ -472,6 +472,7 @@ void Lexer::ScanNumberLeadingZeroImpl()
                 case LEX_CHAR_8:
                 case LEX_CHAR_9: {
                     ThrowError("Invalid octal digit");
+                    return false;
                 }
                 default: {
                     break;
@@ -479,7 +480,7 @@ void Lexer::ScanNumberLeadingZeroImpl()
             }
 
             CheckNumberLiteralEnd();
-            return;
+            return true;
         }
         default: {
             ScanNumberLeadingZeroImplNonAllowedCases();
@@ -488,6 +489,7 @@ void Lexer::ScanNumberLeadingZeroImpl()
     }
 
     ScanNumber();
+    return true;
 }
 
 template <bool RANGE_CHECK(char32_t), int RADIX, typename RadixType, typename RadixLimit>

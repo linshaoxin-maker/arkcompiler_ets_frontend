@@ -1262,6 +1262,7 @@ checker::Type *ETSAnalyzer::Check(ir::ForOfStatement *st) const
 
     if (expr_type == nullptr || (!expr_type->IsETSArrayType() && !expr_type->IsETSStringType())) {
         checker->ThrowTypeError(INVALID_SOURCE_EXPR_TYPE, st->Right()->Start());
+        return nullptr;
     } else if (expr_type->IsETSStringType()) {
         elem_type = checker->GetGlobalTypesHolder()->GlobalCharType();
     } else {
@@ -1703,6 +1704,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSEnumDeclaration *st) const
             ets_enum_type = checker->CreateETSStringEnumType(st);
         } else {
             checker->ThrowTypeError("Invalid enumeration value type.", st->Start());
+            return nullptr;
         }
         st->SetTsType(ets_enum_type);
         ets_enum_type->SetVariable(enum_var);

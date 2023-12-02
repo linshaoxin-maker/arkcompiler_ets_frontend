@@ -41,7 +41,8 @@ TSTypeParameterInstantiation *TSTypeParameterInstantiation::Clone(ArenaAllocator
         }
         return clone;
     }
-    throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    return this; // ?
 }
 
 void TSTypeParameterInstantiation::TransformChildren(const NodeTransformer &cb)

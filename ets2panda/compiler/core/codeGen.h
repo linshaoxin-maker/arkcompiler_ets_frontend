@@ -144,7 +144,7 @@ public:
 
     void SetFirstStmt(const ir::Statement *stmt) noexcept;
 
-    [[noreturn]] static void Unimplemented();
+    static void Unimplemented();
 
     void SetVRegType(VReg vreg, const checker::Type *type);
 

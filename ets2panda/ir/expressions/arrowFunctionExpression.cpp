@@ -88,6 +88,7 @@ ArrowFunctionExpression *ArrowFunctionExpression::Clone(ArenaAllocator *const al
         return clone;
     }
 
-    throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    return this;
 }
 }  // namespace panda::es2panda::ir

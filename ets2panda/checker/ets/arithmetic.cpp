@@ -368,6 +368,7 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorEqualDynamic(ir::Expre
         return {GlobalETSBooleanType(), nullish_obj};
     }
     ThrowTypeError("Unimplemented case in dynamic type comparison.", pos);
+    return {nullptr, nullptr};
 }
 
 std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorLessGreater(

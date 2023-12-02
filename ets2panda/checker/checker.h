@@ -160,8 +160,8 @@ public:
     virtual void ResolveStructuredTypeMembers(Type *type) = 0;
 
     std::string FormatMsg(std::initializer_list<TypeErrorMessageElement> list);
-    [[noreturn]] void ThrowTypeError(std::string_view message, const lexer::SourcePosition &pos);
-    [[noreturn]] void ThrowTypeError(std::initializer_list<TypeErrorMessageElement> list,
+    void ThrowTypeError(std::string_view message, const lexer::SourcePosition &pos);
+    void ThrowTypeError(std::initializer_list<TypeErrorMessageElement> list,
                                      const lexer::SourcePosition &pos);
     void Warning(std::string_view message, const lexer::SourcePosition &pos) const;
     void ReportWarning(std::initializer_list<TypeErrorMessageElement> list, const lexer::SourcePosition &pos);

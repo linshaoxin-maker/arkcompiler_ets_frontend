@@ -115,27 +115,28 @@ enum class ErrorType {
     TYPE,
 };
 
-class Error : public std::exception {
+
+class Error {
 public:
-    Error() noexcept = default;
-    explicit Error(ErrorType type, std::string_view file, std::string_view message) noexcept
+    Error() = default;
+    explicit Error(ErrorType type, std::string_view file, std::string_view message)
         : type_(type), file_(file), message_(message)
     {
     }
-    explicit Error(ErrorType type, std::string_view file, std::string_view message, size_t line, size_t column) noexcept
+    explicit Error(ErrorType type, std::string_view file, std::string_view message, size_t line, size_t column)
         : type_(type), file_(file), message_(message), line_(line), col_(column)
     {
     }
-    ~Error() override = default;
+    ~Error() = default;
     DEFAULT_COPY_SEMANTIC(Error);
     DEFAULT_MOVE_SEMANTIC(Error);
 
-    ErrorType Type() const noexcept
+    ErrorType Type() const
     {
         return type_;
     }
 
-    const char *TypeString() const noexcept
+    const char *TypeString() const
     {
         switch (type_) {
             case ErrorType::SYNTAX:
@@ -149,22 +150,22 @@ public:
         return "Error";
     }
 
-    const char *what() const noexcept override
-    {
-        return message_.c_str();
-    }
+    // const char *what() const noexcept override
+    // {
+    //     return message_.c_str();
+    // }
 
-    int ErrorCode() const noexcept
+    int ErrorCode() const
     {
         return error_code_;
     }
 
-    const std::string &Message() const noexcept
+    const std::string &Message() const
     {
         return message_;
     }
 
-    const std::string &File() const noexcept
+    const std::string &File() const
     {
         return file_;
     }

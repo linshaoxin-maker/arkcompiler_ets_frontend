@@ -54,7 +54,7 @@ public:
         scope_ = scope;
     }
 
-    void Run();
+    bool Run();
     void DependsOn(CompileJob *job);
     void Signal();
 

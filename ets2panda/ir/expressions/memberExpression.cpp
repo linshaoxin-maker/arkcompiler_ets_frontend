@@ -267,16 +267,19 @@ checker::Type *MemberExpression::Check(checker::TSChecker *checker)
                 checker->ThrowTypeError(
                     {"Property ", property_->AsIdentifier()->Name(), " does not exist on this type."},
                     property_->Start());
+                break;
             }
             case ir::AstNodeType::NUMBER_LITERAL: {
                 checker->ThrowTypeError(
                     {"Property ", property_->AsNumberLiteral()->Str(), " does not exist on this type."},
                     property_->Start());
+                break;
             }
             case ir::AstNodeType::STRING_LITERAL: {
                 checker->ThrowTypeError(
                     {"Property ", property_->AsStringLiteral()->Str(), " does not exist on this type."},
                     property_->Start());
+                break;
             }
             default: {
                 UNREACHABLE();
@@ -461,6 +464,7 @@ checker::Type *MemberExpression::Check(checker::ETSChecker *checker)
     }
 
     checker->ThrowTypeError({"Cannot access property of non-object or non-enum type"}, object_->Start());
+    return nullptr;
 }
 
 // NOLINTNEXTLINE(google-default-arguments)
@@ -476,6 +480,7 @@ MemberExpression *MemberExpression::Clone(ArenaAllocator *const allocator, AstNo
         return clone;
     }
 
-    throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    return this; // ?
 }
 }  // namespace panda::es2panda::ir

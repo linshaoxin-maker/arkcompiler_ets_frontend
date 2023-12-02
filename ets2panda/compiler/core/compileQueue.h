@@ -24,6 +24,7 @@
 #include <condition_variable>
 #include <functional>
 #include <mutex>
+#include <optional>
 
 namespace panda::es2panda::varbinder {
 class FunctionScope;

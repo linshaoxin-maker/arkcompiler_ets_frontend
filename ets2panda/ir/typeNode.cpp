@@ -30,7 +30,7 @@ TypeNode *TypeNode::Clone(ArenaAllocator *const allocator, AstNode *const parent
             }
             return clone;
         }
-        throw Error(ErrorType::GENERIC, "", "Unsuccessful allocation during cloning.");
+        Error(ErrorType::GENERIC, "", "Unsuccessful allocation during cloning.");
     }
 
     return this;

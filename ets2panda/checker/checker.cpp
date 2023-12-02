@@ -85,7 +85,7 @@ void Checker::ThrowTypeError(std::string_view message, const lexer::SourcePositi
     lexer::LineIndex index(program_->SourceCode());
     lexer::SourceLocation loc = index.GetLocation(pos);
 
-    throw Error {ErrorType::TYPE, program_->SourceFile().Utf8(), message, loc.line, loc.col};
+    Error {ErrorType::TYPE, program_->SourceFile().Utf8(), message, loc.line, loc.col};
 }
 
 void Checker::Warning(const std::string_view message, const lexer::SourcePosition &pos) const

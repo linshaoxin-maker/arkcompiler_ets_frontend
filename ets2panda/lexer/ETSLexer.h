@@ -40,11 +40,20 @@ public:
     void ScanNumberLeadingZero() override
     {
         const auto saved_lexer_position = Save();
-        try {
-            ScanNumberLeadingZeroImpl<uint32_t, uint32_t>();
-        } catch (...) {
+        // try {
+        //     ScanNumberLeadingZeroImpl<uint32_t, uint32_t>();
+        // } catch (...) {
+        //     Rewind(saved_lexer_position);
+        //     ScanNumberLeadingZeroImpl<uint64_t, uint64_t>();
+        // }
+        if (ScanNumberLeadingZeroImpl<uint32_t, uint32_t>()) {
+            return;
+        } else {
             Rewind(saved_lexer_position);
-            ScanNumberLeadingZeroImpl<uint64_t, uint64_t>();
+            bool res = ScanNumberLeadingZeroImpl<uint64_t, uint64_t>();
+            if (res) {
+                return;
+            }
         }
     }
 

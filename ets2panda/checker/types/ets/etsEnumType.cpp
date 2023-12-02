@@ -317,6 +317,7 @@ ETSFunctionType *ETSEnumInterface::LookupConstantMethod(ETSChecker *const checke
     }
 
     checker->ThrowTypeError({"No enum item method called '", prop->Name(), "'"}, prop->Start());
+    return nullptr;
 }
 
 ETSFunctionType *ETSEnumInterface::LookupTypeMethod(ETSChecker *const checker, const ir::Identifier *const prop) const
@@ -332,6 +333,7 @@ ETSFunctionType *ETSEnumInterface::LookupTypeMethod(ETSChecker *const checker, c
     }
 
     checker->ThrowTypeError({"No enum type method called '", prop->Name(), "'"}, prop->Start());
+    return nullptr;
 }
 
 }  // namespace panda::es2panda::checker

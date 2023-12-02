@@ -916,10 +916,14 @@ ir::RegExpLiteral *ParserImpl::ParseRegularExpression()
 
     lexer::RegExpParser re_parser(regexp, Allocator());
 
-    try {
-        re_parser.ParsePattern();
-    } catch (lexer::RegExpError &e) {
-        ThrowSyntaxError(e.message.c_str());
+    // try {
+    //     re_parser.ParsePattern();
+    // } catch (lexer::RegExpError &e) {
+    //     ThrowSyntaxError(e.message.c_str());
+    // }
+    auto error = re_parser.ParsePattern();
+    if (error != nullptr) {
+        ThrowSyntaxError(error->message.c_str());
     }
 
     auto *regexp_node = AllocNode<ir::RegExpLiteral>(regexp.pattern_str, regexp.flags, regexp.flags_str);
@@ -950,6 +954,7 @@ ir::SuperExpression *ParserImpl::ParseSuperExpression()
     }
 
     ThrowSyntaxError("Unexpected super keyword");
+    return nullptr;
 }
 
 // NOLINTNEXTLINE(google-default-arguments)

@@ -37,7 +37,8 @@ SequenceExpression *SequenceExpression::Clone(ArenaAllocator *const allocator, A
         }
         return clone;
     }
-    throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    return this; // ?
 }
 
 void SequenceExpression::TransformChildren(const NodeTransformer &cb)

@@ -48,7 +48,8 @@ BlockExpression *BlockExpression::Clone(ArenaAllocator *const allocator, AstNode
         }
         return clone;
     }
-    throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    return this;
 }
 
 void BlockExpression::TransformChildren(const NodeTransformer &cb)

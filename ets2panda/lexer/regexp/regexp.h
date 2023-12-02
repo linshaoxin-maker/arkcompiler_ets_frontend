@@ -34,7 +34,7 @@ enum class RegExpFlags : uint32_t {
 
 DEFINE_BITOPS(RegExpFlags)
 
-class RegExpError : std::exception {
+class RegExpError {
 public:
     explicit RegExpError(std::string_view m);
 
@@ -56,7 +56,7 @@ struct RegExp {
 class RegExpParser {
 public:
     explicit RegExpParser(const RegExp &re, ArenaAllocator *allocator);
-    void ParsePattern();
+    RegExpError *ParsePattern();
 
 private:
     void ParseDisjunction();

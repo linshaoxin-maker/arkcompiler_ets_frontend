@@ -58,6 +58,7 @@ NullLiteral *NullLiteral::Clone(ArenaAllocator *const allocator, AstNode *const 
         return clone;
     }
 
-    throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+    return this; // ?
 }
 }  // namespace panda::es2panda::ir

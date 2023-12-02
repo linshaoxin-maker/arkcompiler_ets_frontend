@@ -266,22 +266,21 @@ protected:
     friend class SavedClassPrivateContext;
     friend class ArrowFunctionContext;
 
-    [[noreturn]] void ThrowParameterModifierError(ir::ModifierFlags status) const;
-    [[noreturn]] void ThrowUnexpectedToken(lexer::TokenType token_type) const;
-    [[noreturn]] void ThrowExpectedToken(lexer::TokenType token_type) const;
-    [[noreturn]] void ThrowSyntaxError(std::string_view error_message) const;
-    [[noreturn]] void ThrowSyntaxError(std::initializer_list<std::string_view> list) const;
-    [[noreturn]] void ThrowSyntaxError(std::initializer_list<std::string_view> list,
-                                       const lexer::SourcePosition &pos) const;
-
-    [[noreturn]] void ThrowSyntaxError(std::string_view error_message, const lexer::SourcePosition &pos) const;
+    void ThrowParameterModifierError(ir::ModifierFlags status) const;
+    void ThrowUnexpectedToken(lexer::TokenType token_type) const;
+    void ThrowExpectedToken(lexer::TokenType token_type) const;
+    void ThrowSyntaxError(std::string_view error_message) const;
+    void ThrowSyntaxError(std::initializer_list<std::string_view> list) const;
+    void ThrowSyntaxError(std::initializer_list<std::string_view> list,
+                                        const lexer::SourcePosition &pos) const;
+    void ThrowSyntaxError(std::string_view error_message, const lexer::SourcePosition &pos) const;
 
     template <typename T, typename... Args>
     T *AllocNodeNoSetParent(Args &&...args)
     {
         auto *ret = program_->Allocator()->New<T>(std::forward<Args>(args)...);
         if (ret == nullptr) {
-            throw Error(ErrorType::GENERIC, program_->SourceFile().Utf8(), "Unsuccessful allocation during parsing");
+            Error(ErrorType::GENERIC, program_->SourceFile().Utf8(), "Unsuccessful allocation during parsing");
         }
 
         return ret;
@@ -527,6 +526,7 @@ protected:
         [[maybe_unused]] std::optional<NodeFormatType> node_format = std::nullopt)
     {
         ThrowSyntaxError("Identifier expected");
+        return nullptr;
     }
 
     virtual std::tuple<bool, ir::BlockStatement *, lexer::SourcePosition, bool> ParseFunctionBody(
@@ -552,6 +552,7 @@ protected:
     virtual ir::Statement *ParseInterfaceDeclaration([[maybe_unused]] bool is_static)
     {
         ThrowUnexpectedToken(lexer::TokenType::KEYW_INTERFACE);
+        return nullptr;
     }
 
     // NOLINTNEXTLINE(google-default-arguments)
@@ -559,6 +560,7 @@ protected:
                                                 [[maybe_unused]] bool is_static = false)
     {
         ThrowUnexpectedToken(lexer::TokenType::KEYW_ENUM);
+        return nullptr;
     }
 
     virtual std::tuple<ir::Expression *, ir::TSTypeParameterInstantiation *> ParseSuperClass();

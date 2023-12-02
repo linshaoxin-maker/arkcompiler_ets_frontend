@@ -295,7 +295,7 @@ void CodeGen::SetFirstStmt(const ir::Statement *stmt) noexcept
 
 void CodeGen::Unimplemented()
 {
-    throw Error(ErrorType::GENERIC, "", "Unimplemented code path");
+    Error(ErrorType::GENERIC, "", "Unimplemented code path");
 }
 
 SimpleAllocator &CodeGen::Sa() noexcept
