@@ -15,57 +15,157 @@
 
 #include <gtest/gtest.h>
 #include <algorithm>
+#include "checker/ETSAnalyzer.h"
+#include "ir/expressions/literals/numberLiteral.h"
+#include "ir/expressions/sequenceExpression.h"
 #include "macros.h"
 
 #include "compiler/core/ASTVerifier.h"
+#include "varbinder/ETSBinder.h"
+#include "checker/ETSchecker.h"
 #include "ir/astDump.h"
 #include "ir/expressions/literals/stringLiteral.h"
+#include "ir/expressions/identifier.h"
+
+// NOLINTBEGIN(cppcoreguidelines-macro-usage)
+#define TREE(node)                           \
+    ([&]() {                                 \
+        using namespace panda::es2panda::ir; \
+        return node;                         \
+    }())
+
+#define NODE(Type, ...) allocator->New<Type>(__VA_ARGS__)
+#define NODES(Type, ...)                                     \
+    ([&]() -> ArenaVector<Type *> {                          \
+        auto v = ArenaVector<Type *> {allocator->Adapter()}; \
+        v.insert(v.end(), {__VA_ARGS__});                    \
+        return v;                                            \
+    }())
+// NOLINTEND(cppcoreguidelines-macro-usage)
+
+namespace panda::es2panda {
 
 class ASTVerifierTest : public testing::Test {
 public:
-    ASTVerifierTest() = default;
+    ASTVerifierTest()
+    {
+        allocator_ = std::make_unique<ArenaAllocator>(SpaceType::SPACE_TYPE_COMPILER);
+    }
     ~ASTVerifierTest() override = default;
+
+    static void SetUpTestCase()
+    {
+        constexpr auto COMPILER_SIZE = 256_MB;
+
+        mem::MemConfig::Initialize(0, 0, COMPILER_SIZE, 0, 0, 0);
+        PoolManager::Initialize();
+    }
+
+    ArenaAllocator *Allocator()
+    {
+        return allocator_.get();
+    }
 
     NO_COPY_SEMANTIC(ASTVerifierTest);
     NO_MOVE_SEMANTIC(ASTVerifierTest);
 
 private:
+    std::unique_ptr<ArenaAllocator> allocator_;
 };
 
 TEST_F(ASTVerifierTest, NullParent)
 {
-    panda::es2panda::compiler::ASTVerifier verifier {};
-    panda::es2panda::ir::StringLiteral empty_node;
+    compiler::ASTVerifier verifier {Allocator()};
+    ir::StringLiteral empty_node;
 
-    bool has_parent = verifier.HasParent(&empty_node);
-    auto messages = verifier.GetErrorMessages();
+    auto checks = compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
+    checks.insert("HasParent");
+    bool has_parent = verifier.Verify(&empty_node, checks);
+    const auto &errors = verifier.GetErrors();
+    const auto [name, error] = errors[0];
 
     ASSERT_EQ(has_parent, false);
-    ASSERT_NE(messages.size(), 0);
-    ASSERT_EQ(messages[0], "NULL_PARENT: STR_LITERAL <null>");
+    ASSERT_NE(errors.size(), 0);
+    ASSERT_EQ(name, "HasParent");
+    ASSERT_EQ(error.message, "NULL_PARENT: STR_LITERAL <null>");
 }
 
 TEST_F(ASTVerifierTest, NullType)
 {
-    panda::es2panda::compiler::ASTVerifier verifier {};
-    panda::es2panda::ir::StringLiteral empty_node;
+    compiler::ASTVerifier verifier {Allocator()};
+    ir::StringLiteral empty_node;
 
-    bool has_type = verifier.HasType(&empty_node);
-    auto messages = verifier.GetErrorMessages();
+    auto checks = compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
+    checks.insert("HasType");
+    bool has_type = verifier.Verify(&empty_node, checks);
+    const auto &errors = verifier.GetErrors();
+    const auto [name, error] = errors[0];
 
     ASSERT_EQ(has_type, false);
-    ASSERT_NE(messages.size(), 0);
-    ASSERT_EQ(messages[0], "NULL_TS_TYPE: STR_LITERAL <null>");
+    ASSERT_NE(errors.size(), 0);
+    ASSERT_EQ(name, "HasType");
+    ASSERT_EQ(error.message, "NULL_TS_TYPE: STR_LITERAL <null>");
 }
 
 TEST_F(ASTVerifierTest, WithoutScope)
 {
-    panda::es2panda::compiler::ASTVerifier verifier {};
-    panda::es2panda::ir::StringLiteral empty_node;
+    compiler::ASTVerifier verifier {Allocator()};
+    ir::StringLiteral empty_node;
 
-    bool has_scope = verifier.HasScope(&empty_node);
-    auto messages = verifier.GetErrorMessages();
+    auto checks = compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
+    checks.insert("HasScope");
+    bool has_scope = verifier.Verify(&empty_node, checks);
+    const auto &errors = verifier.GetErrors();
 
     ASSERT_EQ(has_scope, true);
-    ASSERT_EQ(messages.size(), 0);
+    ASSERT_EQ(errors.size(), 0);
 }
+
+TEST_F(ASTVerifierTest, ScopeTest)
+{
+    panda::es2panda::compiler::ASTVerifier verifier {Allocator()};
+    panda::es2panda::ir::Identifier ident(panda::es2panda::util::StringView("var_decl"), Allocator());
+    panda::es2panda::varbinder::LetDecl decl("test", &ident);
+    panda::es2panda::varbinder::LocalVariable local(&decl, panda::es2panda::varbinder::VariableFlags::LOCAL);
+    ident.SetVariable(&local);
+
+    panda::es2panda::varbinder::LocalScope scope(Allocator(), nullptr);
+    panda::es2panda::varbinder::FunctionScope parent_scope(Allocator(), nullptr);
+    scope.SetParent(&parent_scope);
+    scope.AddDecl(Allocator(), &decl, panda::es2panda::ScriptExtension::ETS);
+    scope.BindNode(&ident);
+
+    local.SetScope(&scope);
+
+    auto checks = compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
+    checks.insert("HasScope");
+    bool is_ok = verifier.Verify(&ident, checks);
+
+    ASSERT_EQ(is_ok, true);
+}
+
+TEST_F(ASTVerifierTest, ScopeNodeTest)
+{
+    panda::es2panda::compiler::ASTVerifier verifier {Allocator()};
+    panda::es2panda::ir::Identifier ident(panda::es2panda::util::StringView("var_decl"), Allocator());
+    panda::es2panda::varbinder::LetDecl decl("test", &ident);
+    panda::es2panda::varbinder::LocalVariable local(&decl, panda::es2panda::varbinder::VariableFlags::LOCAL);
+    ident.SetVariable(&local);
+
+    panda::es2panda::varbinder::LocalScope scope(Allocator(), nullptr);
+    panda::es2panda::varbinder::FunctionScope parent_scope(Allocator(), nullptr);
+    scope.SetParent(&parent_scope);
+    scope.AddDecl(Allocator(), &decl, panda::es2panda::ScriptExtension::ETS);
+    scope.BindNode(&ident);
+    parent_scope.BindNode(&ident);
+
+    local.SetScope(&scope);
+
+    auto checks = compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
+    checks.insert("VerifyScopeNode");
+    bool is_ok = verifier.Verify(&ident, checks);
+
+    ASSERT_EQ(is_ok, true);
+}
+
+}  // namespace panda::es2panda
