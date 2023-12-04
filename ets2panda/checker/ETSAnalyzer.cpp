@@ -1280,7 +1280,7 @@ static checker::Type *CheckComputed(checker::ETSChecker *checker, checker::Type 
             const checker::CastingContext cast(checker->Relation(), expr, base_type->AsETSArrayType()->ElementType(),
                                                tuple_type_at_idx, expr->Start(), {"Tuple type couldn't be converted "});
 
-            // TODO(mmartin): this can be replaced with the general type mapper, once implemented
+            // NOTE(mmartin): this can be replaced with the general type mapper, once implemented
             if ((expr->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::UNBOXING_FLAG) != 0U) {
                 auto *const saved_node = checker->Relation()->GetNode();
                 if (saved_node == nullptr) {
