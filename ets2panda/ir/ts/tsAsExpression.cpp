@@ -229,6 +229,10 @@ checker::Type *TSAsExpression::Check(checker::ETSChecker *const checker)
         checker->CreateBuiltinArraySignature(target_array_type, target_array_type->Rank());
     }
 
+    if (target_type == checker->GetGlobalTypesHolder()->GlobalBuiltinNeverType()) {
+        checker->ThrowTypeError("Cast to 'never' is prohibited", expression_->Start());
+    }
+
     SetTsType(target_type);
     return TsType();
 }
