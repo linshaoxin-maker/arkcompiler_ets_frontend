@@ -453,6 +453,12 @@ checker::Type *ETSAnalyzer::Check(ir::ETSStructDeclaration *node) const
     return nullptr;
 }
 
+checker::Type *ETSAnalyzer::Check(ir::ETSTuple *node) const
+{
+    (void)node;
+    UNREACHABLE();
+}
+
 checker::Type *ETSAnalyzer::Check(ir::ETSTypeReference *node) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -524,19 +530,7 @@ checker::Type *ETSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
     checker->AddStatus(checker::CheckerStatus::IN_LAMBDA);
     checker->Context().SetContainingSignature(func_type->CallSignatures()[0]);
 
-    auto *body_type = expr->Function()->Body()->Check(checker);
-
-    if (expr->Function()->Body()->IsExpression()) {
-        if (expr->Function()->ReturnTypeAnnotation() == nullptr) {
-            func_type->CallSignatures()[0]->SetReturnType(body_type);
-        }
-
-        checker::AssignmentContext(
-            checker->Relation(), expr->Function()->Body()->AsExpression(), body_type,
-            func_type->CallSignatures()[0]->ReturnType(), expr->Function()->Start(),
-            {"Return statements return type is not compatible with the containing functions return type"},
-            checker::TypeRelationFlag::DIRECT_RETURN);
-    }
+    expr->Function()->Body()->Check(checker);
 
     checker->Context().SetContainingSignature(nullptr);
     checker->CheckCapturedVariables();
@@ -1545,8 +1539,8 @@ checker::Type *ETSAnalyzer::Check(ir::ReturnStatement *st) const
     }
 
     if ((st->argument_ != nullptr) && st->argument_->IsArrayExpression()) {
-        st->argument_->AsArrayExpression()->SetPreferredType(
-            func_return_type->IsETSArrayType() ? func_return_type->AsETSArrayType()->ElementType() : func_return_type);
+        checker->ModifyPreferredType(st->argument_->AsArrayExpression(), func_return_type);
+        st->argument_->Check(checker);
     }
 
     st->return_type_ = func_return_type;
