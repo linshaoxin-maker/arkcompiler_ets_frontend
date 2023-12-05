@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 - 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -42,4 +42,21 @@ util::UString GenName(ArenaAllocator *const allocator)
     return util::UString {GENSYM_CORE + std::to_string(++gensymCounter), allocator};
 }
 
+// Function to clear expression node types and identifier node variables (for correct re-binding and re-checking)
+void ClearTypesAndVariables(ir::AstNode *node) noexcept
+{
+    node->Iterate([](ir::AstNode *child) -> void {
+        if (child->IsExpression()) {
+            auto *expression = child->AsExpression();
+            if (!expression->IsTypeNode()) {
+                expression->SetTsType(nullptr);
+            }
+            if (expression->IsIdentifier()) {
+                expression->AsIdentifier()->SetVariable(nullptr);
+                return;
+            }
+        }
+        ClearTypesAndVariables(child);
+    });
+}
 }  // namespace ark::es2panda::compiler
