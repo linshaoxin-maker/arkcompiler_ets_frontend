@@ -38,6 +38,8 @@ public:
     bool HasVariable(const ir::AstNode *ast);
     bool HasScope(const ir::AstNode *ast);
     bool HaveScopes(const ir::AstNode *ast);
+    bool IsForLoopCorrectInitialized(const ir::AstNode *ast);
+    bool AreForLoopsCorrectInitialized(const ir::AstNode *ast);
 
     ErrorMessages GetErrorMessages()
     {
@@ -47,8 +49,6 @@ public:
 private:
     ErrorMessages error_messages_;
 };
-
-std::string ToStringHelper(const ir::AstNode *ast);
 
 }  // namespace panda::es2panda::compiler
 
