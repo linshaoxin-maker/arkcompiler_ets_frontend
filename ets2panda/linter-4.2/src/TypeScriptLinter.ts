@@ -617,7 +617,7 @@ export class TypeScriptLinter {
     );
     if (
       !throwExprType.isClassOrInterface() ||
-      !this.tsUtils.isDerivedFrom(throwExprType, CheckType.Error)
+      !this.tsUtils.isOrDerivedFrom(throwExprType, this.tsUtils.isStdErrorType)
     ) {
       this.incrementCounters(node, FaultID.ThrowStatement, false, undefined);
     }
@@ -1600,34 +1600,20 @@ export class TypeScriptLinter {
       undefined,
       ts.NodeBuilderFlags.None
     );
-    const checkClassOrInterface = tsElemAccessBaseExprType.isClassOrInterface() &&
-                                  !this.tsUtils.isGenericArrayType(tsElemAccessBaseExprType) &&
-                                  !this.tsUtils.isDerivedFrom(tsElemAccessBaseExprType, CheckType.Array);
-    const checkThisOrSuper = this.tsUtils.isThisOrSuperExpr(tsElementAccessExpr.expression) &&
-                             !this.tsUtils.isDerivedFrom(tsElemAccessBaseExprType, CheckType.Array);
-
-    // if (this.tsUtils.isEnumType(tsElemAccessBaseExprType)) {
-    //   implement argument expression type check
-    //   let argType = this.tsTypeChecker.getTypeAtLocation(tsElementAccessExpr.argumentExpression);
-    //   if (argType.aliasSymbol == this.tsUtils.trueSymbolAtLocation(tsElementAccessExpr.expression)) {
-    //     return;
-    //   }
-    //   check if constant EnumMember inferred ...
-    //   this.incrementCounters(node, FaultID.PropertyAccessByIndex, autofixable, autofix);
-    // }
     if (
       !this.tsUtils.isLibraryType(tsElemAccessBaseExprType) &&
-      !this.tsUtils.isTypedArray(tsElemAccessBaseExprTypeNode) &&
-      ( checkClassOrInterface ||
-        this.tsUtils.isObjectLiteralType(tsElemAccessBaseExprType) || checkThisOrSuper)
+      !ts.isArrayLiteralExpression(tsElementAccessExpr.expression) &&
+      !this.tsUtils.isOrDerivedFrom(tsElemAccessBaseExprType, this.tsUtils.isArray) &&
+      !this.tsUtils.isOrDerivedFrom(tsElemAccessBaseExprType, this.tsUtils.isTuple) &&
+      !this.tsUtils.isOrDerivedFrom(tsElemAccessBaseExprType, this.tsUtils.isStdRecordType) &&
+      !this.tsUtils.isEnumType(tsElemAccessBaseExprType) &&
+      !this.tsUtils.isEsObjectType(tsElemAccessBaseExprTypeNode)
     ) {
       let autofix = Autofixer.fixPropertyAccessByIndex(node);
       const autofixable = autofix != undefined;
-      if (
-        !this.autofixesInfo.shouldAutofix(node, FaultID.PropertyAccessByIndex)
-      )
+      if (!this.autofixesInfo.shouldAutofix(node, FaultID.PropertyAccessByIndex)) {
         autofix = undefined;
-
+      }
       this.incrementCounters(
         node,
         FaultID.PropertyAccessByIndex,
@@ -1998,21 +1984,8 @@ export class TypeScriptLinter {
         spreadElemNode.expression
       );
       if (spreadExprType) {
-        const spreadExprTypeNode = this.tsTypeChecker.typeToTypeNode(
-          spreadExprType,
-          undefined,
-          ts.NodeBuilderFlags.None
-        );
-        if (
-          spreadExprTypeNode !== undefined &&
-          (ts.isCallLikeExpression(node.parent) ||
-          ts.isArrayLiteralExpression(node.parent))
-        ) {
-          if (
-            ts.isArrayTypeNode(spreadExprTypeNode) ||
-            this.tsUtils.isTypedArray(spreadExprTypeNode) ||
-            this.tsUtils.isDerivedFrom(spreadExprType, CheckType.Array)
-          ) {
+        if (ts.isCallLikeExpression(node.parent) || ts.isArrayLiteralExpression(node.parent)) {
+          if (this.tsUtils.isOrDerivedFrom(spreadExprType, this.tsUtils.isArray)) {
             return;
           }
         }

@@ -94,13 +94,7 @@ export function isAssignmentOperator(tsBinOp: ts.BinaryOperatorToken): boolean {
   return tsBinOp.kind >= ts.SyntaxKind.FirstAssignment && tsBinOp.kind <= ts.SyntaxKind.LastAssignment;
 }
 
-export enum CheckType {
-  Array,
-  String = "String",
-  Set = "Set",
-  Map = "Map",
-  Error = "Error",
-};
+export type CheckType = ((t: ts.Type) => boolean);
 
 export class TsUtils {
   static readonly ES_OBJECT = 'ESObject'
@@ -203,13 +197,6 @@ export class TsUtils {
   static readonly ARKTS_IGNORE_FILES = ['hvigorfile.ts'];
 
   constructor(private tsTypeChecker: ts.TypeChecker, private testMode: boolean) {
-  }
-
-  public isTypedArray(tsType: ts.TypeNode | undefined): boolean {
-    if (tsType === undefined || !ts.isTypeReferenceNode(tsType)) {
-      return false;
-    }
-    return TsUtils.TYPED_ARRAYS.includes(this.entityNameToString(tsType.typeName));
   }
 
   public isType(tsType: ts.TypeNode | undefined, checkType: string): boolean {
@@ -451,24 +438,48 @@ export class TsUtils {
     );
   }
 
+  public isTypedArray(tsType: ts.Type): boolean {
+    const symbol = tsType.symbol;
+    if (!symbol) {
+      return false;
+    }
+    const name = this.tsTypeChecker.getFullyQualifiedName(symbol);
+    return this.isGlobalSymbol(symbol) && TsUtils.TYPED_ARRAYS.includes(name);
+  }
+
+  public isArray(tsType: ts.Type): boolean {
+    return this.isGenericArrayType(tsType) || this.isTypedArray(tsType);
+  }
+
+  public isTuple(tsType: ts.Type): boolean {
+    return this.isTypeReference(tsType) && !!(tsType.objectFlags & ts.ObjectFlags.Tuple);
+  }
+
   // does something similar to relatedByInheritanceOrIdentical function
-  public isDerivedFrom(tsType: ts.Type, checkType: CheckType): tsType is ts.TypeReference {
-    if (this.isTypeReference(tsType) && tsType.target !== tsType) tsType = tsType.target;
+  public isOrDerivedFrom(tsType: ts.Type, checkType: CheckType): tsType is ts.TypeReference {
+    if (this.isTypeReference(tsType) && tsType.target !== tsType) {
+      tsType = tsType.target;
+    }
 
-    const tsTypeNode = this.tsTypeChecker.typeToTypeNode(tsType, undefined, ts.NodeBuilderFlags.None);
-    if (checkType == CheckType.Array && (this.isGenericArrayType(tsType) || this.isTypedArray(tsTypeNode)))
+    if (checkType.call(this, tsType)) {
       return true;
-    if (checkType != CheckType.Array && this.isType(tsTypeNode, checkType.toString()))
-      return true;
-    if (!tsType.symbol || !tsType.symbol.declarations) return false;
+    }
 
-    for (let tsTypeDecl of tsType.symbol.declarations) {
-      if (
-        (!ts.isClassDeclaration(tsTypeDecl) && !ts.isInterfaceDeclaration(tsTypeDecl)) ||
-        !tsTypeDecl.heritageClauses
-      ) continue;
+    if (!tsType.symbol || !tsType.symbol.declarations) {
+      return false;
+    }
+
+    for (const tsTypeDecl of tsType.symbol.declarations) {
+      if (!ts.isClassDeclaration(tsTypeDecl) && !ts.isInterfaceDeclaration(tsTypeDecl)) {
+        continue;
+      }
+      if (!tsTypeDecl.heritageClauses) {
+        continue;
+      }
       for (let heritageClause of tsTypeDecl.heritageClauses) {
-        if (this.processParentTypesCheck(heritageClause.types, checkType)) return true;
+        if (this.processParentTypesCheck(heritageClause.types, checkType)) {
+          return true;
+        }
       }
     }
 
@@ -771,10 +782,14 @@ export class TsUtils {
   }
 
   private processParentTypesCheck(parentTypes: ts.NodeArray<ts.ExpressionWithTypeArguments>, checkType: CheckType): boolean {
-    for (let baseTypeExpr of parentTypes) {
+    for (const baseTypeExpr of parentTypes) {
       let baseType = this.tsTypeChecker.getTypeAtLocation(baseTypeExpr);
-      if (this.isTypeReference(baseType) && baseType.target !== baseType) baseType = baseType.target;
-      if (baseType && this.isDerivedFrom(baseType, checkType)) return true;
+      if (this.isTypeReference(baseType) && baseType.target !== baseType) {
+        baseType = baseType.target;
+      }
+      if (baseType && this.isOrDerivedFrom(baseType, checkType)) {
+        return true;
+      }
     }
     return false;
   }
@@ -1141,6 +1156,15 @@ export class TsUtils {
     return false;
   }
 
+  public isStdErrorType(type: ts.Type): boolean {
+    const symbol = type.symbol;
+    if (!symbol) {
+      return false;
+    }
+    const name = this.tsTypeChecker.getFullyQualifiedName(symbol);
+    return name === 'Error' && this.isGlobalSymbol(symbol);
+  }
+
   public isStdPartialType(type: ts.Type): boolean {
     const sym = type.aliasSymbol;
     return !!sym && sym.getName() === 'Partial' && this.isGlobalSymbol(sym);
@@ -1191,11 +1215,11 @@ export class TsUtils {
       const isEts = (ext === '.ets');
       const isTs = (ext === '.ts' && !srcFile.isDeclarationFile);
       const isStatic = (isEts || (isTs && this.testMode)) && !isThirdPartyCode;
+      const isStdLib = TsUtils.STANDARD_LIBRARIES.includes(path.basename(fileName).toLowerCase());
       // We still need to confirm support for certain API from the
       // TypeScript standard library in ArkTS. Thus, for now do not
       // count standard library modules.
-      return !isStatic &&
-        !TsUtils.STANDARD_LIBRARIES.includes(path.basename(srcFile.fileName).toLowerCase());
+      return !isStatic && !isStdLib;
     }
 
     return false;
@@ -1353,8 +1377,8 @@ export class TsUtils {
     return false;
   }
 
-  public isEsObjectType(typeNode: ts.TypeNode): boolean {
-    return ts.isTypeReferenceNode(typeNode) && ts.isIdentifier(typeNode.typeName) &&
+  public isEsObjectType(typeNode: ts.TypeNode | undefined): boolean {
+    return !!typeNode && ts.isTypeReferenceNode(typeNode) && ts.isIdentifier(typeNode.typeName) &&
       typeNode.typeName.text == TsUtils.ES_OBJECT;
   }
 
