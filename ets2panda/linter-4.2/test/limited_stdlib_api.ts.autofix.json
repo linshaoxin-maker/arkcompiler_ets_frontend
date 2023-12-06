@@ -1,7 +1,85 @@
 {
+    "copyright": [
+        "Copyright (c) 2023-2023 Huawei Device Co., Ltd.",
+        "Licensed under the Apache License, Version 2.0 (the 'License');",
+        "you may not use this file except in compliance with the License.",
+        "You may obtain a copy of the License at",
+        "",
+        "http://www.apache.org/licenses/LICENSE-2.0",
+        "",
+        "Unless required by applicable law or agreed to in writing, software",
+        "distributed under the License is distributed on an 'AS IS' BASIS,",
+        "WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.",
+        "See the License for the specific language governing permissions and",
+        "limitations under the License."
+    ],
     "nodes": [
         {
             "line": 17,
+            "column": 1,
+            "problem": "LimitedStdLibApi",
+            "autofixable": false,
+            "suggest": "",
+            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
+        },
+        {
+            "line": 18,
+            "column": 11,
+            "problem": "LimitedStdLibApi",
+            "autofixable": false,
+            "suggest": "",
+            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
+        },
+        {
+            "line": 19,
+            "column": 11,
+            "problem": "LimitedStdLibApi",
+            "autofixable": false,
+            "suggest": "",
+            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
+        },
+        {
+            "line": 20,
+            "column": 1,
+            "problem": "LimitedStdLibApi",
+            "autofixable": false,
+            "suggest": "",
+            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
+        },
+        {
+            "line": 21,
+            "column": 1,
+            "problem": "LimitedStdLibApi",
+            "autofixable": false,
+            "suggest": "",
+            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
+        },
+        {
+            "line": 22,
+            "column": 1,
+            "problem": "LimitedStdLibApi",
+            "autofixable": false,
+            "suggest": "",
+            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
+        },
+        {
+            "line": 23,
+            "column": 1,
+            "problem": "LimitedStdLibApi",
+            "autofixable": false,
+            "suggest": "",
+            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
+        },
+        {
+            "line": 31,
+            "column": 1,
+            "problem": "LimitedStdLibApi",
+            "autofixable": false,
+            "suggest": "",
+            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
+        },
+        {
+            "line": 32,
             "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
@@ -17,16 +95,8 @@
             "rule": "\"globalThis\" is not supported (arkts-no-globalthis)"
         },
         {
-            "line": 32,
-            "column": 12,
-            "problem": "LimitedStdLibApi",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
-        },
-        {
             "line": 43,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -34,7 +104,7 @@
         },
         {
             "line": 44,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -42,7 +112,7 @@
         },
         {
             "line": 45,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -58,7 +128,7 @@
         },
         {
             "line": 46,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -66,7 +136,7 @@
         },
         {
             "line": 48,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -74,7 +144,7 @@
         },
         {
             "line": 49,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -82,7 +152,7 @@
         },
         {
             "line": 50,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -90,7 +160,7 @@
         },
         {
             "line": 51,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -98,7 +168,7 @@
         },
         {
             "line": 52,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -106,7 +176,7 @@
         },
         {
             "line": 53,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -114,7 +184,7 @@
         },
         {
             "line": 54,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -122,7 +192,7 @@
         },
         {
             "line": 55,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -130,7 +200,7 @@
         },
         {
             "line": 56,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -138,7 +208,7 @@
         },
         {
             "line": 57,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -146,7 +216,7 @@
         },
         {
             "line": 58,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -154,7 +224,7 @@
         },
         {
             "line": 59,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -162,7 +232,7 @@
         },
         {
             "line": 60,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -170,7 +240,7 @@
         },
         {
             "line": 61,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -178,7 +248,7 @@
         },
         {
             "line": 62,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -186,7 +256,7 @@
         },
         {
             "line": 63,
-            "column": 8,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -194,7 +264,7 @@
         },
         {
             "line": 66,
-            "column": 9,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -202,7 +272,7 @@
         },
         {
             "line": 67,
-            "column": 9,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -218,7 +288,7 @@
         },
         {
             "line": 68,
-            "column": 9,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -234,7 +304,7 @@
         },
         {
             "line": 69,
-            "column": 9,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -242,7 +312,7 @@
         },
         {
             "line": 70,
-            "column": 9,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -250,7 +320,7 @@
         },
         {
             "line": 71,
-            "column": 9,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -258,7 +328,7 @@
         },
         {
             "line": 72,
-            "column": 9,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -266,7 +336,7 @@
         },
         {
             "line": 73,
-            "column": 9,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -274,7 +344,7 @@
         },
         {
             "line": 74,
-            "column": 9,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -290,15 +360,7 @@
         },
         {
             "line": 78,
-            "column": 13,
-            "problem": "LimitedStdLibApi",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
-        },
-        {
-            "line": 78,
-            "column": 28,
+            "column": 20,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -306,15 +368,7 @@
         },
         {
             "line": 79,
-            "column": 13,
-            "problem": "LimitedStdLibApi",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
-        },
-        {
-            "line": 79,
-            "column": 32,
+            "column": 24,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -322,15 +376,7 @@
         },
         {
             "line": 80,
-            "column": 13,
-            "problem": "LimitedStdLibApi",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
-        },
-        {
-            "line": 80,
-            "column": 37,
+            "column": 29,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -346,15 +392,7 @@
         },
         {
             "line": 81,
-            "column": 13,
-            "problem": "LimitedStdLibApi",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
-        },
-        {
-            "line": 81,
-            "column": 37,
+            "column": 29,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -362,15 +400,7 @@
         },
         {
             "line": 82,
-            "column": 13,
-            "problem": "LimitedStdLibApi",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
-        },
-        {
-            "line": 82,
-            "column": 26,
+            "column": 18,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -378,15 +408,7 @@
         },
         {
             "line": 83,
-            "column": 13,
-            "problem": "LimitedStdLibApi",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
-        },
-        {
-            "line": 83,
-            "column": 47,
+            "column": 39,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -394,15 +416,7 @@
         },
         {
             "line": 84,
-            "column": 13,
-            "problem": "LimitedStdLibApi",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
-        },
-        {
-            "line": 84,
-            "column": 37,
+            "column": 29,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -410,15 +424,7 @@
         },
         {
             "line": 85,
-            "column": 13,
-            "problem": "LimitedStdLibApi",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
-        },
-        {
-            "line": 85,
-            "column": 26,
+            "column": 18,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -426,15 +432,7 @@
         },
         {
             "line": 86,
-            "column": 13,
-            "problem": "LimitedStdLibApi",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
-        },
-        {
-            "line": 86,
-            "column": 35,
+            "column": 27,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -442,15 +440,7 @@
         },
         {
             "line": 87,
-            "column": 13,
-            "problem": "LimitedStdLibApi",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
-        },
-        {
-            "line": 87,
-            "column": 30,
+            "column": 22,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -458,15 +448,7 @@
         },
         {
             "line": 88,
-            "column": 13,
-            "problem": "LimitedStdLibApi",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
-        },
-        {
-            "line": 88,
-            "column": 40,
+            "column": 32,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -474,15 +456,7 @@
         },
         {
             "line": 89,
-            "column": 13,
-            "problem": "LimitedStdLibApi",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
-        },
-        {
-            "line": 89,
-            "column": 26,
+            "column": 18,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -490,15 +464,7 @@
         },
         {
             "line": 90,
-            "column": 13,
-            "problem": "LimitedStdLibApi",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
-        },
-        {
-            "line": 90,
-            "column": 37,
+            "column": 29,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",
@@ -506,7 +472,7 @@
         },
         {
             "line": 93,
-            "column": 13,
+            "column": 1,
             "problem": "LimitedStdLibApi",
             "autofixable": false,
             "suggest": "",

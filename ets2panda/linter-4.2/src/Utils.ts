@@ -18,7 +18,6 @@ import * as ts from 'typescript';
 import { ProblemInfo } from './ProblemInfo';
 import { AutofixInfo } from './AutofixInfo';
 import { LinterConfig } from './TypeScriptLinterConfig'
-import { FaultID } from "./Problems";
 
 export function logTscDiagnostic(diagnostics: readonly ts.Diagnostic[], log: (message: any, ...args: any[]) => void) {
   diagnostics.forEach((diagnostic) => {
@@ -106,123 +105,26 @@ export enum CheckType {
 export class TsUtils {
   static readonly ES_OBJECT = 'ESObject'
 
-  private static readonly LIMITED_STD_ARRAYBUFFER_API = [
-    // properties
-    // methods
-    'isView'
+  static readonly LIMITED_STD_GLOBAL_FUNC = [
+    'eval', 'isFinite', 'isNaN', 'parseFloat', 'parseInt'
   ];
-
-  private static readonly LIMITED_STD_OBJECT_API = [
-    // properties
-    '__proto__',
-    // methods
-    '__defineGetter__',
-    '__defineSetter__',
-    '__lookupGetter__',
-    '__lookupSetter__',
-    'assign',
-    'create',
-    'defineProperties',
-    'defineProperty',
-    'freeze',
-    'fromEntries',
-    'getOwnPropertyDescriptor',
-    'getOwnPropertyDescriptors',
-    'getOwnPropertySymbols',
-    'getPrototypeOf',
-    'hasOwnProperty',
-    'is',
-    'isExtensible',
-    'isFrozen',
-    'isPrototypeOf',
-    'isSealed',
-    'preventExtensions',
-    'propertyIsEnumerable',
-    'seal',
-    'setPrototypeOf',
+  static readonly LIMITED_STD_GLOBAL_VAR = ['Infinity', 'NaN'];
+  static readonly LIMITED_STD_OBJECT_API = [
+    '__proto__', '__defineGetter__', '__defineSetter__', '__lookupGetter__', '__lookupSetter__', 'assign', 'create',
+    'defineProperties', 'defineProperty', 'freeze', 'fromEntries', 'getOwnPropertyDescriptor', 
+    'getOwnPropertyDescriptors', 'getOwnPropertySymbols', 'getPrototypeOf', 'hasOwnProperty', 'is',
+    'isExtensible', 'isFrozen', 'isPrototypeOf', 'isSealed', 'preventExtensions', 'propertyIsEnumerable',
+    'seal', 'setPrototypeOf'
   ];
-
-  private static readonly LIMITED_STD_PROXYHANDLER_API = [
-    // properties
-    // methods
-    'apply',
-    'construct',
-    'defineProperty',
-    'deleteProperty',
-    'get',
-    'getOwnPropertyDescriptor',
-    'getPrototypeOf',
-    'has',
-    'isExtensible',
-    'ownKeys',
-    'preventExtensions',
-    'set',
-    'setPrototypeOf'
+  static readonly LIMITED_STD_REFLECT_API = [
+    'apply', 'construct', 'defineProperty', 'deleteProperty', 'getOwnPropertyDescriptor', 'getPrototypeOf',
+    'isExtensible', 'preventExtensions', 'setPrototypeOf'
   ];
-
-  private static readonly LIMITED_STD_REFLECT_API = [
-    // properties
-    // methods
-    'apply',
-    'construct',
-    'defineProperty',
-    'deleteProperty',
-    'getOwnPropertyDescriptor',
-    'getPrototypeOf',
-    'isExtensible',
-    'preventExtensions',
-    'setPrototypeOf',
+  static readonly LIMITED_STD_PROXYHANDLER_API = [
+    'apply', 'construct', 'defineProperty', 'deleteProperty', 'get', 'getOwnPropertyDescriptor', 'getPrototypeOf', 
+    'has', 'isExtensible', 'ownKeys', 'preventExtensions', 'set', 'setPrototypeOf'
   ];
-
-  private static readonly LIMITED_STD_SYMBOL_API = [
-      'Symbol',
-      // properties
-      'asyncIterator',
-      'description',
-      'hasInstance',
-      'isConcatSpreadable',
-      'match',
-      'matchAll',
-      'replace',
-      'search',
-      'species',
-      'split',
-      'toPrimitive',
-      'toStringTag',
-      'unscopables',
-      // methods
-      'for',
-      'keyFor',
-      'toString',
-      'valueOf',
-  ];
-
-  private static readonly LIMITED_STD_FUNCTION_API = [
-    // properties
-    // methods
-    'apply',
-    'bind',
-    'call',
-  ];
-
-  static readonly LIMITED_STD_GLOBAL_API = [
-    // properties
-    // methods
-    'eval',
-  ];
-
-  static readonly LIMITED_STD_API = new Map<string, {arr: Array<string>, fault: FaultID}> ([
-    ['Object', {arr: TsUtils.LIMITED_STD_OBJECT_API, fault: FaultID.LimitedStdLibApi}],
-    ['ObjectConstructor', {arr: TsUtils.LIMITED_STD_OBJECT_API, fault: FaultID.LimitedStdLibApi}],
-    ['Reflect', {arr: TsUtils.LIMITED_STD_REFLECT_API, fault: FaultID.LimitedStdLibApi}],
-    ['ProxyHandler', {arr: TsUtils.LIMITED_STD_PROXYHANDLER_API, fault: FaultID.LimitedStdLibApi}],
-    ['ArrayBuffer', {arr: TsUtils.LIMITED_STD_ARRAYBUFFER_API, fault: FaultID.LimitedStdLibApi}],
-    ['ArrayBufferConstructor', {arr: TsUtils.LIMITED_STD_ARRAYBUFFER_API, fault: FaultID.LimitedStdLibApi}],
-    ['Symbol', {arr: TsUtils.LIMITED_STD_SYMBOL_API, fault: FaultID.SymbolType}],
-    ['SymbolConstructor', {arr: TsUtils.LIMITED_STD_SYMBOL_API, fault: FaultID.SymbolType}],
-    ['Function', {arr: TsUtils.LIMITED_STD_FUNCTION_API, fault: FaultID.FunctionApplyBindCall}],
-    ['CallableFunction', {arr: TsUtils.LIMITED_STD_FUNCTION_API, fault: FaultID.FunctionApplyBindCall}],
-  ])
+  static readonly LIMITED_STD_ARRAYBUFFER_API = ['isView'];
 
   static readonly NON_INITIALIZABLE_PROPERTY_DECORATORS = ['Link', 'Consume', 'ObjectLink', 'Prop', 'BuilderParam'];
 
@@ -239,6 +141,8 @@ export class TsUtils {
     'ConstructorParameters', 'ReturnType', 'InstanceType', 'ThisParameterType', 'OmitThisParameter',
     'ThisType', 'Uppercase', 'Lowercase', 'Capitalize', 'Uncapitalize',
   ];
+
+  static readonly ALLOWED_STD_SYMBOL_API = ['iterator']
 
   static readonly ARKUI_DECORATORS = [
     'AnimatableExtend',
@@ -1196,7 +1100,7 @@ export class TsUtils {
 
   public isStdObjectAPI(symbol: ts.Symbol): boolean {
     let parentName = this.getParentSymbolName(symbol);
-    return !!parentName && (parentName === 'Object');
+    return !!parentName && (parentName === 'Object' || parentName === 'ObjectConstructor');
   }
 
   public isStdReflectAPI(symbol: ts.Symbol): boolean {
@@ -1211,22 +1115,18 @@ export class TsUtils {
 
   public isStdArrayAPI(symbol: ts.Symbol): boolean {
     let parentName = this.getParentSymbolName(symbol);
-    return !!parentName && (parentName === 'Array');
+    return !!parentName && (parentName === 'Array' || parentName === 'ArrayConstructor');
   }
 
   public isStdArrayBufferAPI(symbol: ts.Symbol): boolean {
     let parentName = this.getParentSymbolName(symbol);
-    return !!parentName && (parentName === 'ArrayBuffer');
+    return !!parentName && (parentName === 'ArrayBuffer' || parentName === 'ArrayBufferConstructor');
   }
 
-  public isStdSymbol(symbol: ts.Symbol): boolean {
-    const name = this.tsTypeChecker.getFullyQualifiedName(symbol)
-    return name === 'Symbol';
-  }
-
-  public isStdSymbolAPI(symbol: ts.Symbol): boolean {
+  public isSymbolAPI(symbol: ts.Symbol): boolean {
     let parentName = this.getParentSymbolName(symbol);
-    return !!parentName && parentName === 'Symbol';
+    let name = parentName ? parentName : symbol.escapedName;
+    return name === 'Symbol' || name === 'SymbolConstructor';
   }
 
   public isDefaultImport(importSpec: ts.ImportSpecifier): boolean {
@@ -1477,27 +1377,20 @@ export class TsUtils {
       typeNode.typeName.text == TsUtils.ES_OBJECT;
   }
 
-  public isInsideBlock(node: ts.Node): boolean {
-    let par = node.parent
-    while (par) {
-      if (ts.isBlock(par)) {
-        return true;
-      }
-      par = par.parent;
-    }
-    return false;
-  }
+  public isEsObjectAllowed(typeRef: ts.TypeReferenceNode): boolean {
+    let node = typeRef.parent;
 
-  public isEsObjectPossiblyAllowed(typeRef: ts.TypeReferenceNode): boolean {
-    return ts.isVariableDeclaration(typeRef.parent);
-  }
-
-  public isValueAssignableToESObject(node: ts.Node): boolean {
-    if (ts.isArrayLiteralExpression(node) || ts.isObjectLiteralExpression(node)) {
+    if (!this.isVarDeclaration(node)) {
       return false;
     }
-    const valueType = this.tsTypeChecker.getTypeAtLocation(node);
-    return this.isUnsupportedType(valueType) || this.isAnonymousType(valueType)
+
+    while (node) {
+      if (ts.isBlock(node)) {
+        return true;
+      }
+      node = node.parent;
+    }
+    return false;
   }
 
   public getVariableDeclarationTypeNode(node: ts.Node): ts.TypeNode | undefined {
