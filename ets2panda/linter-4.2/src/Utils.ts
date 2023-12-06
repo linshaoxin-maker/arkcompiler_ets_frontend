@@ -124,7 +124,6 @@ export class TsUtils {
     'apply', 'construct', 'defineProperty', 'deleteProperty', 'get', 'getOwnPropertyDescriptor', 'getPrototypeOf', 
     'has', 'isExtensible', 'ownKeys', 'preventExtensions', 'set', 'setPrototypeOf'
   ];
-  static readonly LIMITED_STD_ARRAYBUFFER_API = ['isView'];
 
   static readonly NON_INITIALIZABLE_PROPERTY_DECORATORS = ['Link', 'Consume', 'ObjectLink', 'Prop', 'BuilderParam'];
 

@@ -1864,8 +1864,6 @@ export class TypeScriptLinter {
     ["ObjectConstructor", {arr: TsUtils.LIMITED_STD_OBJECT_API, fault: FaultID.LimitedStdLibApi}],
     ["Reflect", {arr: TsUtils.LIMITED_STD_REFLECT_API, fault: FaultID.LimitedStdLibApi}],
     ["ProxyHandler", {arr: TsUtils.LIMITED_STD_PROXYHANDLER_API, fault: FaultID.LimitedStdLibApi}],
-    ["ArrayBuffer", {arr: TsUtils.LIMITED_STD_ARRAYBUFFER_API, fault: FaultID.LimitedStdLibApi}],
-    ["ArrayBufferConstructor", {arr: TsUtils.LIMITED_STD_ARRAYBUFFER_API, fault: FaultID.LimitedStdLibApi}],
     ["Symbol", {arr: null, fault: FaultID.SymbolType}],
     ["SymbolConstructor", {arr: null, fault: FaultID.SymbolType}],
   ])
