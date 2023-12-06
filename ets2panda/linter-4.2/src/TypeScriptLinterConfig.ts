@@ -92,8 +92,6 @@ export class LinterConfig {
     LinterConfig.nodeDesc[FaultID.ThisType] = '"this" type';
     LinterConfig.nodeDesc[FaultID.IntefaceExtendDifProps] = 'Extends same properties with different types';
     LinterConfig.nodeDesc[FaultID.StructuralIdentity] = 'Use of type structural identity';
-    LinterConfig.nodeDesc[FaultID.TypeOnlyImport] = 'Type-only imports';
-    LinterConfig.nodeDesc[FaultID.TypeOnlyExport] = 'Type-only exports';
     LinterConfig.nodeDesc[FaultID.DefaultImport] = 'Default import declarations';
     LinterConfig.nodeDesc[FaultID.ExportAssignment] = 'Export assignments (export = ..)';
     LinterConfig.nodeDesc[FaultID.ImportAssignment] = 'Import assignments (import = ..)';

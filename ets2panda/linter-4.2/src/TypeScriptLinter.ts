@@ -138,7 +138,6 @@ export class TypeScriptLinter {
     [ts.SyntaxKind.ElementAccessExpression, this.handleElementAccessExpression],
     [ts.SyntaxKind.EnumMember, this.handleEnumMember],
     [ts.SyntaxKind.TypeReference, this.handleTypeReference],
-    [ts.SyntaxKind.ExportDeclaration, this.handleExportDeclaration],
     [ts.SyntaxKind.ExportAssignment, this.handleExportAssignment],
     [ts.SyntaxKind.CallExpression, this.handleCallExpression],
     [ts.SyntaxKind.MetaProperty, this.handleMetaProperty],
@@ -1428,13 +1427,6 @@ export class TypeScriptLinter {
         );
       }
     }
-
-    if (tsImportClause.isTypeOnly) {
-      let autofix: Autofix[] | undefined;
-      if (this.autofixesInfo.shouldAutofix(node, FaultID.TypeOnlyImport))
-        autofix = [Autofixer.dropTypeOnlyFlag(tsImportClause)];
-      this.incrementCounters(node, FaultID.TypeOnlyImport, true, autofix);
-    }
   }
 
   private handleImportSpecifier(node: ts.Node) {
@@ -1685,16 +1677,6 @@ export class TypeScriptLinter {
       return;
     if (firstEnumMemberType !== tsEnumMemberType) {
       this.incrementCounters(node, FaultID.EnumMemberNonConstInit);
-    }
-  }
-
-  private handleExportDeclaration(node: ts.Node) {
-    let tsExportDecl = node as ts.ExportDeclaration;
-    if (tsExportDecl.isTypeOnly) {
-      let autofix: Autofix[] | undefined;
-      if (this.autofixesInfo.shouldAutofix(node, FaultID.TypeOnlyExport))
-        autofix = [Autofixer.dropTypeOnlyFlag(tsExportDecl)];
-      this.incrementCounters(node, FaultID.TypeOnlyExport, true, autofix);
     }
   }
 

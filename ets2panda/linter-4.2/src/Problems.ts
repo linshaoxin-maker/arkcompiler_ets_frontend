@@ -27,7 +27,7 @@ export enum FaultID {
   ConditionalType, MappedType, NamespaceAsObject, ClassAsObject,
   NonDeclarationInNamespace, GeneratorFunction, FunctionContainsThis, PropertyAccessByIndex, JsxElement,
   EnumMemberNonConstInit, ImplementsClass, MethodReassignment, MultipleStaticBlocks, ThisType,
-  IntefaceExtendDifProps, StructuralIdentity, TypeOnlyImport, TypeOnlyExport, DefaultImport, 
+  IntefaceExtendDifProps, StructuralIdentity, DefaultImport, 
   ExportAssignment, ImportAssignment,
   GenericCallNoTypeArgs, ParameterProperties,
   InstanceofUnsupported, ShorthandAmbientModuleDecl, WildcardsInModuleName, UMDModuleDefinition,
@@ -108,11 +108,9 @@ faultsAttrs[FaultID.EnumMerging] = {cookBookRef: '113',};
 faultsAttrs[FaultID.NamespaceAsObject] = {cookBookRef: '114',};
 faultsAttrs[FaultID.NonDeclarationInNamespace] = {cookBookRef: '116',};
 faultsAttrs[FaultID.ImportFromPath] = {cookBookRef: '119',};
-faultsAttrs[FaultID.TypeOnlyImport] = {migratable: true, cookBookRef: '118',};
 faultsAttrs[FaultID.DefaultImport] = {migratable: true, cookBookRef: '120',};
 faultsAttrs[FaultID.ImportAssignment] = {cookBookRef: '121',};
 faultsAttrs[FaultID.ExportAssignment] = {cookBookRef: '126',};
-faultsAttrs[FaultID.TypeOnlyExport] = {migratable: true, cookBookRef: '127',};
 faultsAttrs[FaultID.ShorthandAmbientModuleDecl] = {cookBookRef: '128',};
 faultsAttrs[FaultID.WildcardsInModuleName] = {cookBookRef: '129',};
 faultsAttrs[FaultID.UMDModuleDefinition] = {cookBookRef: '130',};
