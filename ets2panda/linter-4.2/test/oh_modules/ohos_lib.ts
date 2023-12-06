@@ -23,3 +23,10 @@ export function ohFunction2(p: {d: OhosI}): void {}
 
 export function fooOh(): any {}
 export function barOh(a: any) {}
+
+
+export interface OhosInterface {
+  fld: A & {
+    [key: string]: number;
+  };
+}
