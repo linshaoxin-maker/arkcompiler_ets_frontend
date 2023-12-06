@@ -99,25 +99,6 @@ export type CheckType = ((this: TsUtils, t: ts.Type) => boolean);
 export class TsUtils {
   static readonly ES_OBJECT = 'ESObject'
 
-  static readonly LIMITED_STD_GLOBAL_FUNC = [
-    'eval'
-  ];
-  static readonly LIMITED_STD_OBJECT_API = [
-    '__proto__', '__defineGetter__', '__defineSetter__', '__lookupGetter__', '__lookupSetter__', 'assign', 'create',
-    'defineProperties', 'defineProperty', 'freeze', 'fromEntries', 'getOwnPropertyDescriptor', 
-    'getOwnPropertyDescriptors', 'getOwnPropertySymbols', 'getPrototypeOf', 'hasOwnProperty', 'is',
-    'isExtensible', 'isFrozen', 'isPrototypeOf', 'isSealed', 'preventExtensions', 'propertyIsEnumerable',
-    'seal', 'setPrototypeOf'
-  ];
-  static readonly LIMITED_STD_REFLECT_API = [
-    'apply', 'construct', 'defineProperty', 'deleteProperty', 'getOwnPropertyDescriptor', 'getPrototypeOf',
-    'isExtensible', 'preventExtensions', 'setPrototypeOf'
-  ];
-  static readonly LIMITED_STD_PROXYHANDLER_API = [
-    'apply', 'construct', 'defineProperty', 'deleteProperty', 'get', 'getOwnPropertyDescriptor', 'getPrototypeOf', 
-    'has', 'isExtensible', 'ownKeys', 'preventExtensions', 'set', 'setPrototypeOf'
-  ];
-
   static readonly NON_INITIALIZABLE_PROPERTY_DECORATORS = ['Link', 'Consume', 'ObjectLink', 'Prop', 'BuilderParam'];
 
   static readonly NON_INITIALIZABLE_PROPERTY_CLASS_DECORATORS = ['CustomDialog']
@@ -133,8 +114,6 @@ export class TsUtils {
     'ConstructorParameters', 'ReturnType', 'InstanceType', 'ThisParameterType', 'OmitThisParameter',
     'ThisType', 'Uppercase', 'Lowercase', 'Capitalize', 'Uncapitalize',
   ];
-
-  static readonly ALLOWED_STD_SYMBOL_API = ['iterator']
 
   static readonly ARKUI_DECORATORS = [
     'AnimatableExtend',
