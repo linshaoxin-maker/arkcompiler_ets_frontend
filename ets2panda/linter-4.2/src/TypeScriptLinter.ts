@@ -73,6 +73,25 @@ export class TypeScriptLinter {
     TypeScriptLinter.filteredDiagnosticMessages = new Set<ts.DiagnosticMessageChain>();
   }
 
+  private initEtsHandlers(): void {
+
+    /*
+     * some syntax elements are ArkTs-specific and are only implemented inside patched
+     * compiler, so we initialize those handlers if corresponding properties do exist
+     */
+    const etsComponentExpression: ts.SyntaxKind | undefined = (ts.SyntaxKind as any).EtsComponentExpression;
+    if (etsComponentExpression) {
+      this.handlersMap.set(etsComponentExpression, this.handleEtsComponentExpression);
+    }
+  }
+
+  private initCounters(): void {
+    for (let i = 0; i < FaultID.LAST_ID; i++) {
+      this.nodeCounters[i] = 0;
+      this.lineCounters[i] = 0;
+    }
+  }
+
   constructor(
     private tsTypeChecker: ts.TypeChecker,
     private autofixesInfo: AutofixInfoSet,
@@ -87,10 +106,8 @@ export class TypeScriptLinter {
     this.walkedComments = new Set<number>();
     this.libraryTypeCallDiagnosticChecker = new LibraryTypeCallDiagnosticChecker(TypeScriptLinter.filteredDiagnosticMessages);
 
-    for (let i = 0; i < FaultID.LAST_ID; i++) {
-      this.nodeCounters[i] = 0;
-      this.lineCounters[i] = 0;
-    }
+    this.initEtsHandlers();
+    this.initCounters();
   }
 
   readonly handlersMap = new Map([
@@ -1683,7 +1700,6 @@ export class TypeScriptLinter {
     let tsCallExpr = node as ts.CallExpression;
 
     const calleeSym = this.tsUtils.trueSymbolAtLocation(tsCallExpr.expression);
-    const calleeType = this.tsTypeChecker.getTypeAtLocation(tsCallExpr.expression);
     const callSignature = this.tsTypeChecker.getResolvedSignature(tsCallExpr);
 
     this.handleImportCall(tsCallExpr);
@@ -1702,11 +1718,17 @@ export class TypeScriptLinter {
       }
       this.handleStructIdentAndUndefinedInArgs(tsCallExpr, callSignature);
     }
-    this.handleLibraryTypeCall(tsCallExpr, calleeType);
+    this.handleLibraryTypeCall(tsCallExpr);
 
     if (ts.isPropertyAccessExpression(tsCallExpr.expression) && this.tsUtils.hasEsObjectType(tsCallExpr.expression.expression)) {
       this.incrementCounters(node, FaultID.EsObjectType);
     }
+  }
+
+  private handleEtsComponentExpression(node: ts.Node): void {
+    // for all the checks we make EtsComponentExpression is compatible with the CallExpression
+    const etsComponentExpression = node as ts.CallExpression;
+    this.handleLibraryTypeCall(etsComponentExpression);
   }
 
   private handleImportCall(tsCallExpr: ts.CallExpression) {
@@ -1878,8 +1900,9 @@ export class TypeScriptLinter {
     return result;
   }
 
-  private handleLibraryTypeCall(callExpr: ts.CallExpression, calleeType: ts.Type) {
-    let inLibCall = this.tsUtils.isLibraryType(calleeType);
+  private handleLibraryTypeCall(callExpr: ts.CallExpression) {
+    const calleeType = this.tsTypeChecker.getTypeAtLocation(callExpr.expression);
+    const inLibCall = this.tsUtils.isLibraryType(calleeType);
     const diagnosticMessages: Array<ts.DiagnosticMessageChain> = []
     this.libraryTypeCallDiagnosticChecker.configure(inLibCall, diagnosticMessages);
 
