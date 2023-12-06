@@ -1490,12 +1490,11 @@ export class TypeScriptLinter {
         (tsIdentSym.flags & ts.SymbolFlags.Module) !== 0 &&
         (tsIdentSym.flags & ts.SymbolFlags.Transient) !== 0 &&
         tsIdentifier.text === "globalThis"
-      )
+      ) {
         this.incrementCounters(node, FaultID.GlobalThis);
-      else if (this.tsUtils.isGlobalSymbol(tsIdentSym) && TsUtils.LIMITED_STD_GLOBAL_VAR.includes(tsIdentSym.getName()))
-        this.incrementCounters(node, FaultID.LimitedStdLibApi);
-      else
+      } else {
         this.handleRestrictedValues(tsIdentifier, tsIdentSym);
+      }
     }
   }
 

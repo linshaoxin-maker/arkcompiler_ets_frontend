@@ -106,9 +106,8 @@ export class TsUtils {
   static readonly ES_OBJECT = 'ESObject'
 
   static readonly LIMITED_STD_GLOBAL_FUNC = [
-    'eval', 'isFinite', 'isNaN', 'parseFloat', 'parseInt'
+    'eval'
   ];
-  static readonly LIMITED_STD_GLOBAL_VAR = ['Infinity', 'NaN'];
   static readonly LIMITED_STD_OBJECT_API = [
     '__proto__', '__defineGetter__', '__defineSetter__', '__lookupGetter__', '__lookupSetter__', 'assign', 'create',
     'defineProperties', 'defineProperty', 'freeze', 'fromEntries', 'getOwnPropertyDescriptor', 
