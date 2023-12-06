@@ -18,7 +18,7 @@ import * as ts from 'typescript';
 import { ProblemInfo } from './ProblemInfo';
 import { AutofixInfo } from './AutofixInfo';
 import { LinterConfig } from './TypeScriptLinterConfig'
-import { FaultID } from './Problems';
+import { FaultID } from "./Problems";
 
 export function logTscDiagnostic(diagnostics: readonly ts.Diagnostic[], log: (message: any, ...args: any[]) => void) {
   diagnostics.forEach((diagnostic) => {
@@ -63,15 +63,15 @@ export function getNodeOrLineEnd(
 }
 
 export function mergeArrayMaps<K, V>(lhs: Map<K, V[]>, rhs: Map<K, V[]>): Map<K, V[]> {
-  if (lhs.size === 0) {
+  if (lhs.size == 0) {
     return rhs;
   }
-  if (rhs.size === 0) {
+  if (rhs.size == 0) {
     return lhs;
   }
 
   rhs.forEach((values, key) => {
-    if (values.length !== 0) {
+    if (values.length != 0) {
       if (lhs.has(key)) {
         lhs.get(key)!.push(...values);
       } else {
@@ -104,7 +104,7 @@ export enum CheckType {
 };
 
 export class TsUtils {
-  static readonly ES_OBJECT = 'ESObject';
+  static readonly ES_OBJECT = 'ESObject'
 
   private static readonly LIMITED_STD_ARRAYBUFFER_API = [
     // properties
@@ -211,7 +211,7 @@ export class TsUtils {
     'eval',
   ];
 
-  static readonly LIMITED_STD_API = new Map<string, {arr: Array<string>, fault: FaultID}>([
+  static readonly LIMITED_STD_API = new Map<string, {arr: Array<string>, fault: FaultID}> ([
     ['Object', {arr: TsUtils.LIMITED_STD_OBJECT_API, fault: FaultID.LimitedStdLibApi}],
     ['ObjectConstructor', {arr: TsUtils.LIMITED_STD_OBJECT_API, fault: FaultID.LimitedStdLibApi}],
     ['Reflect', {arr: TsUtils.LIMITED_STD_REFLECT_API, fault: FaultID.LimitedStdLibApi}],
@@ -222,11 +222,11 @@ export class TsUtils {
     ['SymbolConstructor', {arr: TsUtils.LIMITED_STD_SYMBOL_API, fault: FaultID.SymbolType}],
     ['Function', {arr: TsUtils.LIMITED_STD_FUNCTION_API, fault: FaultID.FunctionApplyBindCall}],
     ['CallableFunction', {arr: TsUtils.LIMITED_STD_FUNCTION_API, fault: FaultID.FunctionApplyBindCall}],
-  ]);
+  ])
 
   static readonly NON_INITIALIZABLE_PROPERTY_DECORATORS = ['Link', 'Consume', 'ObjectLink', 'Prop', 'BuilderParam'];
 
-  static readonly NON_INITIALIZABLE_PROPERTY_CLASS_DECORATORS = ['CustomDialog'];
+  static readonly NON_INITIALIZABLE_PROPERTY_CLASS_DECORATORS = ['CustomDialog']
 
   static readonly NON_RETURN_FUNCTION_DECORATORS = ['AnimatableExtend', 'Builder', 'Extend', 'Styles'];
 
@@ -314,7 +314,7 @@ export class TsUtils {
     if (tsType === undefined || !ts.isTypeReferenceNode(tsType)) {
       return false;
     }
-    return this.entityNameToString(tsType.typeName) === checkType;
+    return this.entityNameToString(tsType.typeName) == checkType;
   }
 
   public entityNameToString(name: ts.EntityName): string {
@@ -421,7 +421,7 @@ export class TsUtils {
   }
 
   public isEnumType(tsType: ts.Type): boolean {
-    // Note: For some reason, test (tsType.flags & ts.TypeFlags.Enum) !== 0 doesn't work here.
+    // Note: For some reason, test (tsType.flags & ts.TypeFlags.Enum) != 0 doesn't work here.
     // Must use SymbolFlags to figure out if this is an enum type.
     return tsType.symbol && (tsType.symbol.flags & ts.SymbolFlags.Enum) !== 0;
   }
@@ -517,17 +517,17 @@ export class TsUtils {
   public isReferenceType(tsType: ts.Type): boolean {
     const f = tsType.getFlags();
     return (
-      (f & ts.TypeFlags.InstantiableNonPrimitive) !== 0 || (f & ts.TypeFlags.Object) !== 0 ||
-      (f & ts.TypeFlags.Boolean) !== 0 || (f & ts.TypeFlags.Enum) !== 0 || (f & ts.TypeFlags.NonPrimitive) !== 0 ||
-      (f & ts.TypeFlags.Number) !== 0 || (f & ts.TypeFlags.String) !== 0
+      (f & ts.TypeFlags.InstantiableNonPrimitive) != 0 || (f & ts.TypeFlags.Object) != 0 ||
+      (f & ts.TypeFlags.Boolean) != 0 || (f & ts.TypeFlags.Enum) != 0 || (f & ts.TypeFlags.NonPrimitive) != 0 ||
+      (f & ts.TypeFlags.Number) != 0 || (f & ts.TypeFlags.String) != 0
     );
   }
 
   public isPrimitiveType(type: ts.Type): boolean {
     const f = type.getFlags();
     return (
-      (f & ts.TypeFlags.Boolean) !== 0 || (f & ts.TypeFlags.BooleanLiteral) !== 0 ||
-      (f & ts.TypeFlags.Number) !== 0 || (f & ts.TypeFlags.NumberLiteral) !== 0
+      (f & ts.TypeFlags.Boolean) != 0 || (f & ts.TypeFlags.BooleanLiteral) != 0 ||
+      (f & ts.TypeFlags.Number) != 0 || (f & ts.TypeFlags.NumberLiteral) != 0
       // In ArkTS 'string' is not a primitive type. So for the common subset 'string'
       // should be considered as a reference type. That is why next line is commented out.
       //(f & ts.TypeFlags.String) != 0 || (f & ts.TypeFlags.StringLiteral) != 0
@@ -554,9 +554,9 @@ export class TsUtils {
     if (this.isTypeReference(tsType) && tsType.target !== tsType) tsType = tsType.target;
 
     const tsTypeNode = this.tsTypeChecker.typeToTypeNode(tsType, undefined, ts.NodeBuilderFlags.None);
-    if (checkType === CheckType.Array && (this.isGenericArrayType(tsType) || this.isTypedArray(tsTypeNode)))
+    if (checkType == CheckType.Array && (this.isGenericArrayType(tsType) || this.isTypedArray(tsTypeNode)))
       return true;
-    if (checkType !== CheckType.Array && this.isType(tsTypeNode, checkType.toString()))
+    if (checkType != CheckType.Array && this.isType(tsTypeNode, checkType.toString()))
       return true;
     if (!tsType.symbol || !tsType.symbol.declarations) return false;
 
@@ -585,7 +585,7 @@ export class TsUtils {
   }
 
   public isThisOrSuperExpr(tsExpr: ts.Expression): boolean {
-    return (tsExpr.kind === ts.SyntaxKind.ThisKeyword || tsExpr.kind === ts.SyntaxKind.SuperKeyword);
+    return (tsExpr.kind == ts.SyntaxKind.ThisKeyword || tsExpr.kind == ts.SyntaxKind.SuperKeyword);
   }
 
   public isPrototypeSymbol(symbol: ts.Symbol | undefined): boolean {
@@ -787,12 +787,8 @@ export class TsUtils {
     if (this.isTypeReference(typeA) && typeA.target !== typeA) typeA = typeA.target;
     if (this.isTypeReference(typeB) && typeB.target !== typeB) typeB = typeB.target;
 
-    if (typeA === typeB || this.isObject(typeB)) {
-      return true;
-    }
-    if (!typeA.symbol || !typeA.symbol.declarations) {
-      return false;
-    }
+    if (typeA === typeB || this.isObject(typeB)) return true;
+    if (!typeA.symbol || !typeA.symbol.declarations) return false;
 
     for (let typeADecl of typeA.symbol.declarations) {
       if (
@@ -800,7 +796,7 @@ export class TsUtils {
         !typeADecl.heritageClauses
       ) continue;
       for (let heritageClause of typeADecl.heritageClauses) {
-        let processInterfaces = typeA.isClass() ? (heritageClause.token !== ts.SyntaxKind.ExtendsKeyword) : true;
+        let processInterfaces = typeA.isClass() ? (heritageClause.token != ts.SyntaxKind.ExtendsKeyword) : true;
         if (this.processParentTypes(heritageClause.types, typeB, processInterfaces)) return true;
       }
     }
@@ -867,9 +863,7 @@ export class TsUtils {
     for (let baseTypeExpr of parentTypes) {
       let baseType = this.tsTypeChecker.getTypeAtLocation(baseTypeExpr);
       if (this.isTypeReference(baseType) && baseType.target !== baseType) baseType = baseType.target;
-      if (baseType && (baseType.isClass() !== processInterfaces) && this.relatedByInheritanceOrIdentical(baseType, typeB)) {
-        return true;
-      }
+      if (baseType && (baseType.isClass() != processInterfaces) && this.relatedByInheritanceOrIdentical(baseType, typeB)) return true;
     }
     return false;
   }
@@ -891,7 +885,7 @@ export class TsUtils {
       return true;
     }
     let node = this.tsTypeChecker.typeToTypeNode(tsType, undefined, undefined);
-    return node !== undefined && node.kind === ts.SyntaxKind.ObjectKeyword;
+    return node != undefined && node.kind === ts.SyntaxKind.ObjectKeyword;
   }
 
   public isCallToFunctionWithOmittedReturnType(tsExpr: ts.Expression): boolean {
@@ -1005,7 +999,7 @@ export class TsUtils {
     return true;
   }
 
-  private getNonNullableType(t: ts.Type): ts.Type {
+  private getNonNullableType(t: ts.Type) {
     if (this.isNullableUnionType(t)) {
       return t.getNonNullableType();
     }
@@ -1088,7 +1082,7 @@ export class TsUtils {
 
     return true;
   }
-
+  
   private validateField(type: ts.Type, prop: ts.PropertyAssignment): boolean {
     const propName = prop.name.getText();
     const propSym = this.findProperty(type, propName);
@@ -1101,7 +1095,7 @@ export class TsUtils {
     if (ts.isObjectLiteralExpression(initExpr)) {
       if (!this.isObjectLiteralAssignable(propType, initExpr)) {
         return false;
-      }
+      } 
     } else {
       // Only check for structural sub-typing.
       if (this.needToDeduceStructuralIdentity(propType, this.tsTypeChecker.getTypeAtLocation(initExpr), initExpr)) {
@@ -1150,12 +1144,8 @@ export class TsUtils {
 
     if (ts.isTupleTypeNode(typeNode)) {
       for (const elem of typeNode.elements) {
-        if (ts.isTypeNode(elem) && !this.isSupportedType(elem)) {
-          return false;
-        }
-        if (ts.isNamedTupleMember(elem) && !this.isSupportedType(elem.type)) {
-          return false;
-        }
+        if (ts.isTypeNode(elem) && !this.isSupportedType(elem)) return false;
+        if (ts.isNamedTupleMember(elem) && !this.isSupportedType(elem.type)) return false;
       }
       return true;
     }
@@ -1179,7 +1169,7 @@ export class TsUtils {
   public isStructDeclarationKind(kind: ts.SyntaxKind) {
     return LinterConfig.tsSyntaxKindNames[kind] === 'StructDeclaration';
   }
-
+  
   public isStructDeclaration(node: ts.Node) {
     return this.isStructDeclarationKind(node.kind);
   }
@@ -1230,7 +1220,7 @@ export class TsUtils {
   }
 
   public isStdSymbol(symbol: ts.Symbol): boolean {
-    const name = this.tsTypeChecker.getFullyQualifiedName(symbol);
+    const name = this.tsTypeChecker.getFullyQualifiedName(symbol)
     return name === 'Symbol';
   }
 
@@ -1277,12 +1267,12 @@ export class TsUtils {
 
   public isStdRequiredType(type: ts.Type): boolean {
     const sym = type.aliasSymbol;
-    return !!sym && sym.getName() === 'Required' && this.isGlobalSymbol(sym);
+    return !!sym && sym.getName() === "Required" && this.isGlobalSymbol(sym);
   }
-
+  
   public isStdReadonlyType(type: ts.Type): boolean {
     const sym = type.aliasSymbol;
-    return !!sym && sym.getName() === 'Readonly' && this.isGlobalSymbol(sym);
+    return !!sym && sym.getName() === "Readonly" && this.isGlobalSymbol(sym);
   }
 
   public isLibraryType(type: ts.Type): boolean {
@@ -1387,7 +1377,7 @@ export class TsUtils {
 
     if (type.isUnion()) {
       for (let compType of type.types) {
-        let isDynamic = this.isDynamicType(compType);
+        let isDynamic = this.isDynamicType(compType); 
         if (isDynamic || isDynamic === undefined) {
           return isDynamic;
         }
@@ -1407,7 +1397,7 @@ export class TsUtils {
   }
 
   public isObjectType(type: ts.Type): type is ts.ObjectType {
-    return !!(type.flags & ts.TypeFlags.Object);
+    return !!(type.flags & ts.TypeFlags.Object)
   }
 
   private isAnonymous(type: ts.Type): boolean {
@@ -1427,7 +1417,7 @@ export class TsUtils {
     let curNode: ts.Node = expr;
     while (ts.isObjectLiteralExpression(curNode) || ts.isArrayLiteralExpression(curNode)) {
       const exprType = this.tsTypeChecker.getContextualType(curNode);
-      if (exprType !== undefined && !this.isAnonymous(exprType)) {
+      if (exprType !== undefined  && !this.isAnonymous(exprType)) {
         const res = this.isDynamicType(exprType)
         if (res !== undefined) {
           return res;
@@ -1484,11 +1474,11 @@ export class TsUtils {
 
   public isEsObjectType(typeNode: ts.TypeNode): boolean {
     return ts.isTypeReferenceNode(typeNode) && ts.isIdentifier(typeNode.typeName) &&
-      typeNode.typeName.text === TsUtils.ES_OBJECT;
+      typeNode.typeName.text == TsUtils.ES_OBJECT;
   }
 
   public isInsideBlock(node: ts.Node): boolean {
-    let par = node.parent;
+    let par = node.parent
     while (par) {
       if (ts.isBlock(par)) {
         return true;
@@ -1507,7 +1497,7 @@ export class TsUtils {
       return false;
     }
     const valueType = this.tsTypeChecker.getTypeAtLocation(node);
-    return this.isUnsupportedType(valueType) || this.isAnonymousType(valueType);
+    return this.isUnsupportedType(valueType) || this.isAnonymousType(valueType)
   }
 
   public getVariableDeclarationTypeNode(node: ts.Node): ts.TypeNode | undefined {
@@ -1538,8 +1528,8 @@ export class TsUtils {
 
   public isEsObjectSymbol(sym: ts.Symbol): boolean {
     let decl = this.getDeclaration(sym);
-    return !!decl && ts.isTypeAliasDeclaration(decl) && decl.name.escapedText === TsUtils.ES_OBJECT &&
-      decl.type.kind === ts.SyntaxKind.AnyKeyword;
+    return !!decl && ts.isTypeAliasDeclaration(decl) && decl.name.escapedText == TsUtils.ES_OBJECT &&
+      decl.type.kind == ts.SyntaxKind.AnyKeyword;
   }
 
   public isAnonymousType(type: ts.Type): boolean {
@@ -1567,9 +1557,9 @@ export class TsUtils {
 
   // has to be re-implemented with local loop detection
   public typeIsRecursive(topType: ts.Type, type: ts.Type | undefined = undefined): boolean {
-    if (type === undefined) {
+    if (type == undefined) {
       type = topType;
-    } else if (type === topType) {
+    } else if (type == topType) {
       return true;
     } else if (type.aliasSymbol) {
       return false;
@@ -1594,7 +1584,7 @@ export class TsUtils {
     }
     return false;
   }
-
+  
   public isFunctionCalledRecursively(funcExpr: ts.FunctionExpression): boolean {
     if (!funcExpr.name) return false;
 

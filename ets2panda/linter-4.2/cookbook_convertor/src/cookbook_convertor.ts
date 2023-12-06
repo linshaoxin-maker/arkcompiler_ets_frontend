@@ -102,6 +102,8 @@ console.log("                    NUMBER: " + ruleNum)
 	}
     if( doc_lines[ _line ].startsWith( CB_R ) ) {
       let line = doc_lines[ _line ].split( CB_R )[1];
+      //let tegNumStr = line.split(':')[0];
+      //let ruleNum = Number(tegNumStr.split('#')[1]);
       ruleNames[ ruleNum ] = line; //line.split(':')[1];
       _line++;
       needHeader();
@@ -144,6 +146,7 @@ function translateLine( s: string ) : string {
 	let line = s;
 	line = line.replace( CB_BAD,  "TypeScript");
 	line = line.replace( CB_OK,  "ArkTS");
+	//line = line.replace( "|CB_R|", "Recipe");
 	//.. |CB_RULE| replace:: Rule
 	line = line.replace( CB_ERROR, "**Severity: error**" );
 	line = line.replace( CB_WARNING, "**Severity: warning**" );
@@ -297,6 +300,7 @@ console.error(">>>BODY 3 HDR>>>: " + + _line + " -> " + doc_lines[_line]);
     }
     //_line++;
 	while( !isHeader() || doc_lines[ _line ].startsWith( CB_ERROR ) || doc_lines[ _line ].startsWith( CB_WARNING ) ) {
+		//skipEmptyLines();
 		let s = translateLine( doc_lines[_line] );
 
 		mdText.push(s);
@@ -333,6 +337,7 @@ console.error(">>>makeBAD HDR>>>: " + doc_lines[_line]);
 	mdText.push("");
 
     while( _line < doc_lines.length && !isHeader() ) {
+        //skipEmptyLines();
         let s = translateLine( doc_lines[_line] );
         mdText.push( s );
 
@@ -377,6 +382,7 @@ console.error( ">>>makeOK HDR>>>: " + doc_lines[ _line ] );
     mdText.push("");
         
 	while(  _line < doc_lines.length && !isHeader() ) {
+        //skipEmptyLines();
         let s = translateLine( doc_lines[ _line ] );
 
         mdText.push( s );
@@ -411,6 +417,8 @@ console.error( ">>>makeOK HDR>>>: " + doc_lines[ _line ] );
 
 
 function makeSee( ): string {
+    //mdText.push("## See also");
+    //mdText.push("");
     const RECIPE = "Recipe ";
 console.error(">>> #" + recNum + " PASSED: " + doc_lines[_line]);
 	while( _line < doc_lines.length && !doc_lines[ _line ].startsWith( ".." ) ) {
@@ -453,7 +461,10 @@ if( commandLineArgs[0] == '-md') {
     MAKE_MD = true;
 }
 let inFileName = commandLineArgs[0];
+//console.error(inFileName);
 console.log(COPYRIGHT_HEADER);
+//console.log("export const cookBookMsg: string[] = []; \n");
+//console.log("export const cookBookTag: string[] = []; \n");
 console.log( CODE_PROLOGUE );
 syncReadFile( inFileName);
 

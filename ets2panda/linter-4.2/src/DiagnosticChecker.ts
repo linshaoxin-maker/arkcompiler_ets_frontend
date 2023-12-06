@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import type * as ts from 'typescript';
+import * as ts from 'typescript';
 
 export interface DiagnosticChecker {
   checkDiagnosticMessage(msgText: string | ts.DiagnosticMessageChain): boolean;

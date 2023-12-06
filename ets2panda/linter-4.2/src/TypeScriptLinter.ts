@@ -13,23 +13,23 @@
  * limitations under the License.
  */
 
-import * as ts from 'typescript';
-import * as path from 'node:path';
-import { TsUtils, getNodeOrLineEnd, CheckType, isAssignmentOperator } from './Utils';
-import { FaultID, faultsAttrs } from './Problems';
-import { cookBookMsg, cookBookTag } from './CookBookMsg';
-import { LinterConfig } from './TypeScriptLinterConfig';
-import type { Autofix, AutofixInfoSet } from './Autofixer';
-import * as Autofixer from './Autofixer';
-import type { ProblemInfo } from './ProblemInfo';
-import { ProblemSeverity } from './ProblemSeverity';
-import Logger from '../utils/logger';
-import type { DiagnosticChecker } from './DiagnosticChecker';
+import * as ts from "typescript";
+import * as path from "node:path";
+import { TsUtils, getNodeOrLineEnd, CheckType, isAssignmentOperator } from "./Utils";
+import { FaultID, faultsAttrs } from "./Problems";
+import { cookBookMsg, cookBookTag } from "./CookBookMsg";
+import { LinterConfig } from "./TypeScriptLinterConfig";
+import { Autofix, AutofixInfoSet } from "./Autofixer";
+import * as Autofixer from "./Autofixer";
+import { ProblemInfo } from "./ProblemInfo";
+import { ProblemSeverity } from "./ProblemSeverity";
+import Logger from "../utils/logger";
+import { DiagnosticChecker } from "./DiagnosticChecker";
 import {
   ARGUMENT_OF_TYPE_0_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_ERROR_CODE,
   TYPE_0_IS_NOT_ASSIGNABLE_TO_TYPE_1_ERROR_CODE,
   LibraryTypeCallDiagnosticChecker
-} from './LibraryTypeCallDiagnosticChecker';
+} from "./LibraryTypeCallDiagnosticChecker";
 
 const logger = Logger.getLogger();
 
@@ -215,12 +215,12 @@ export class TypeScriptLinter {
     this.lineCounters[faultId]++;
 
     if (faultsAttrs[faultId].warning) {
-      if (line !== this.currentWarningLine) {
+      if (line != this.currentWarningLine) {
         this.currentWarningLine = line;
         ++this.totalWarningLines;
         this.warningLineNumbersString += line + ", ";
       }
-    } else if (line !== this.currentErrorLine) {
+    } else if (line != this.currentErrorLine) {
       this.currentErrorLine = line;
       ++this.totalErrorLines;
       this.errorLineNumbersString += line + ", ";
@@ -474,7 +474,7 @@ export class TypeScriptLinter {
           p.name,
           (decl as ts.PropertyDeclaration).type
         );
-      } else if (decl.kind === ts.SyntaxKind.PropertySignature) {
+      } else if (decl.kind == ts.SyntaxKind.PropertySignature) {
         this.countInterfaceExtendsDifferentPropertyTypes(
           node,
           prop2type,
@@ -597,9 +597,8 @@ export class TypeScriptLinter {
         this.incrementCounters(node, FaultID.InterfaceMerging);
     }
 
-    if (interfaceNode.heritageClauses) {
+    if (interfaceNode.heritageClauses)
       this.interfaceInheritanceLint(node, interfaceNode.heritageClauses);
-    }
 
     this.countDeclarationsWithDuplicateName(interfaceNode.name, interfaceNode);
   }
@@ -678,7 +677,7 @@ export class TypeScriptLinter {
     if (!!baseExprSym && this.tsUtils.symbolHasEsObjectType(baseExprSym)) {
       this.incrementCounters(propertyAccessNode, FaultID.EsObjectType);
     }
-    if (this.isPrototypePropertyAccess(propertyAccessNode, exprSym, baseExprSym, baseExprType)) {
+    if (this.isPrototypePropertyAccess(propertyAccessNode, exprSym, baseExprSym, baseExprType)) { 
       this.incrementCounters(propertyAccessNode.name, FaultID.Prototype);
     }
   }
@@ -710,7 +709,7 @@ export class TypeScriptLinter {
       if (!isRecordObjectInitializer && !isDynamicLiteralInitializer) {
         let autofix: Autofix[] | undefined =
           Autofixer.fixLiteralAsPropertyName(node);
-        let autofixable = autofix !== undefined;
+        let autofixable = autofix != undefined;
         if (
           !this.autofixesInfo.shouldAutofix(node, FaultID.LiteralAsPropertyName)
         ) {
@@ -760,7 +759,7 @@ export class TypeScriptLinter {
             ts.isIdentifier(x.expression.expression)
           )
             decoratorName = x.expression.expression.text;
-
+          
           // special case for property of type CustomDialogController of the @CustomDialog-decorated class
           if (expectedDecorators.includes(TsUtils.NON_INITIALIZABLE_PROPERTY_CLASS_DECORATORS[0])) {
             return expectedDecorators.includes(decoratorName) && propType === 'CustomDialogController'
@@ -940,7 +939,7 @@ export class TypeScriptLinter {
     // Note: Return type can't be inferred for function without body.
     if (ts.isMethodSignature(funcLikeDecl) || !funcLikeDecl.body) {
       // Ambient flag is not exposed, so we apply dirty hack to make it visible
-      const isAmbientDeclaration = !!(funcLikeDecl.flags & (ts.NodeFlags as any).Ambient);
+      const isAmbientDeclaration = !!(funcLikeDecl.flags & (ts.NodeFlags as any)['Ambient']);
       const isSignature = ts.isMethodSignature(funcLikeDecl);
       if ((isSignature || isAmbientDeclaration) && !funcLikeDecl.type) {
         this.incrementCounters(funcLikeDecl, FaultID.LimitedReturnTypeInference);
@@ -1198,7 +1197,7 @@ export class TypeScriptLinter {
       this.incrementCounters(node, FaultID.VarDeclaration);
   }
 
-  private handleVariableDeclaration(node: ts.Node): void {
+  private handleVariableDeclaration(node: ts.Node) {
     let tsVarDecl = node as ts.VariableDeclaration;
     if (
       ts.isArrayBindingPattern(tsVarDecl.name) ||
@@ -1238,11 +1237,11 @@ export class TypeScriptLinter {
     this.handleDefiniteAssignmentAssertion(tsVarDecl);
   }
 
-  private handleEsObjectDelaration(node: ts.VariableDeclaration): void {
+  private handleEsObjectDelaration(node: ts.VariableDeclaration) {
     const isDeclaredESObject = !!node.type && this.tsUtils.isEsObjectType(node.type);
     const initalizerTypeNode = node.initializer && this.tsUtils.getVariableDeclarationTypeNode(node.initializer);
     const isInitializedWithESObject = !!initalizerTypeNode && this.tsUtils.isEsObjectType(initalizerTypeNode);
-    const isLocal = this.tsUtils.isInsideBlock(node);
+    const isLocal = this.tsUtils.isInsideBlock(node)
     if ((isDeclaredESObject || isInitializedWithESObject) && !isLocal) {
       this.incrementCounters(node, FaultID.EsObjectType);
       return;
@@ -1253,7 +1252,7 @@ export class TypeScriptLinter {
     }
   }
 
-  private handleEsObjectAssignment(node: ts.Node, nodeDeclType: ts.TypeNode | undefined, initializer: ts.Node): void {
+  private handleEsObjectAssignment(node: ts.Node, nodeDeclType: ts.TypeNode | undefined, initializer: ts.Node) {
     const isTypeAnnotated = !!nodeDeclType;
     const isDeclaredESObject = !!nodeDeclType && this.tsUtils.isEsObjectType(nodeDeclType);
     const initalizerTypeNode = this.tsUtils.getVariableDeclarationTypeNode(initializer);
@@ -1305,7 +1304,7 @@ export class TypeScriptLinter {
     const visitHClause = (hClause: ts.HeritageClause) => {
       for (const tsTypeExpr of hClause.types) {
         const tsExprType = this.tsTypeChecker.getTypeAtLocation(tsTypeExpr.expression);
-        if (tsExprType.isClass() && hClause.token === ts.SyntaxKind.ImplementsKeyword) {
+        if (tsExprType.isClass() && hClause.token == ts.SyntaxKind.ImplementsKeyword) {
           this.incrementCounters(tsTypeExpr, FaultID.ImplementsClass);
         }
       }
@@ -1441,7 +1440,7 @@ export class TypeScriptLinter {
       ]);
   }
 
-  private handleMethodDeclaration(node: ts.Node): void {
+  private handleMethodDeclaration(node: ts.Node) {
     const tsMethodDecl = node as ts.MethodDeclaration;
     const hasThis = this.scopeContainsThis(tsMethodDecl);
     let isStatic = false;
@@ -1470,7 +1469,7 @@ export class TypeScriptLinter {
       TsUtils.FUNCTION_HAS_NO_RETURN_ERROR_CODE);
   }
 
-  private handleMethodSignature(node: ts.MethodSignature): void {
+  private handleMethodSignature(node: ts.MethodSignature) {
     const tsMethodSign = node as ts.MethodSignature;
     if (!tsMethodSign.type) {
       this.handleMissingReturnType(tsMethodSign);
@@ -1503,13 +1502,13 @@ export class TypeScriptLinter {
     if (ts.isPropertyAssignment(ctx.parent) && ts.isObjectLiteralExpression(ctx.parent.parent)) {
       ctx = ctx.parent.parent;
     }
-    if (ts.isArrowFunction(ctx.parent) && ctx.parent.body === ctx) {
+    if (ts.isArrowFunction(ctx.parent) && ctx.parent.body == ctx) {
       ctx = ctx.parent;
     }
 
     if (ts.isCallExpression(ctx.parent) || ts.isNewExpression(ctx.parent)) {
       let callee = ctx.parent.expression;
-      if (callee !== ctx && this.tsUtils.hasLibraryType(callee)) {
+      if (callee != ctx && this.tsUtils.hasLibraryType(callee)) {
         return true;
       }
     }
@@ -1521,18 +1520,18 @@ export class TypeScriptLinter {
 
     // If module name is duplicated by another declaration, this increases the possibility
     // of finding a lot of false positives. Thus, do not check further in that case.
-    if ((tsIdentSym.flags & ts.SymbolFlags.ValueModule) !== 0) {
+    if ((tsIdentSym.flags & ts.SymbolFlags.ValueModule) != 0) {
       if (!!tsIdentSym && this.tsUtils.symbolHasDuplicateName(tsIdentSym, ts.SyntaxKind.ModuleDeclaration)) {
         return;
       }
     }
 
-    if ((tsIdentSym.flags & illegalValues) === 0 || this.tsUtils.isStruct(tsIdentSym) ||
+    if ((tsIdentSym.flags & illegalValues) == 0 || this.tsUtils.isStruct(tsIdentSym) ||
       !this.identiferUseInValueContext(tsIdentifier, tsIdentSym)) {
       return;
     }
 
-    if ((tsIdentSym.flags & ts.SymbolFlags.Class) !== 0) {
+    if ((tsIdentSym.flags & ts.SymbolFlags.Class) != 0) {
       if (this.isAllowedClassValueContext(tsIdentifier, tsIdentSym)) {
         return;
       }
@@ -1560,8 +1559,8 @@ export class TypeScriptLinter {
       // treat TypeQuery as valid because it's already forbidden (FaultID.TypeQuery)
       (ts.isTypeNode(parent) && !ts.isTypeOfExpression(parent)) ||
       // ElementAccess is allowed for enum types
-      (ts.isElementAccessExpression(parent) &&
-      (parent as ts.ElementAccessExpression).expression === ident && (tsSym.flags & ts.SymbolFlags.Enum)) ||
+      (ts.isElementAccessExpression(parent)
+        && (parent as ts.ElementAccessExpression).expression == ident && (tsSym.flags & ts.SymbolFlags.Enum)) ||
       ts.isExpressionWithTypeArguments(parent) ||
       ts.isExportAssignment(parent) ||
       ts.isExportSpecifier(parent) ||
@@ -1597,10 +1596,19 @@ export class TypeScriptLinter {
     );
     const checkClassOrInterface = tsElemAccessBaseExprType.isClassOrInterface() &&
                                   !this.tsUtils.isGenericArrayType(tsElemAccessBaseExprType) &&
-                                  !this.tsUtils.isDerivedFrom(tsElemAccessBaseExprType, CheckType.Array);
+                                  !this.tsUtils.isDerivedFrom(tsElemAccessBaseExprType, CheckType.Array);   
     const checkThisOrSuper = this.tsUtils.isThisOrSuperExpr(tsElementAccessExpr.expression) &&
                              !this.tsUtils.isDerivedFrom(tsElemAccessBaseExprType, CheckType.Array);
 
+    // if (this.tsUtils.isEnumType(tsElemAccessBaseExprType)) {
+    //   implement argument expression type check
+    //   let argType = this.tsTypeChecker.getTypeAtLocation(tsElementAccessExpr.argumentExpression);
+    //   if (argType.aliasSymbol == this.tsUtils.trueSymbolAtLocation(tsElementAccessExpr.expression)) {
+    //     return;
+    //   }
+    //   check if constant EnumMember inferred ...
+    //   this.incrementCounters(node, FaultID.PropertyAccessByIndex, autofixable, autofix);
+    // }
     if (
       !this.tsUtils.isLibraryType(tsElemAccessBaseExprType) &&
       !this.tsUtils.isTypedArray(tsElemAccessBaseExprTypeNode) &&
@@ -1608,7 +1616,7 @@ export class TypeScriptLinter {
         this.tsUtils.isObjectLiteralType(tsElemAccessBaseExprType) || checkThisOrSuper)
     ) {
       let autofix = Autofixer.fixPropertyAccessByIndex(node);
-      const autofixable = autofix !== undefined;
+      const autofixable = autofix != undefined;
       if (
         !this.autofixesInfo.shouldAutofix(node, FaultID.PropertyAccessByIndex)
       )
@@ -1691,7 +1699,7 @@ export class TypeScriptLinter {
 
     this.handleImportCall(tsCallExpr);
     this.handleRequireCall(tsCallExpr);
-    if (!!calleeSym) {
+    if (!!calleeSym) {  
       if (this.tsUtils.symbolHasEsObjectType(calleeSym)) {
         this.incrementCounters(tsCallExpr, FaultID.EsObjectType);
       }
@@ -1712,6 +1720,7 @@ export class TypeScriptLinter {
   private handleImportCall(tsCallExpr: ts.CallExpression) {
     if (tsCallExpr.expression.kind === ts.SyntaxKind.ImportKeyword) {
       // relax rule#133 "arkts-no-runtime-import"
+      // this.incrementCounters(tsCallExpr, FaultID.DynamicImport);
       const tsArgs = tsCallExpr.arguments;
       if (tsArgs.length > 1 && ts.isObjectLiteralExpression(tsArgs[1])) {
         let objLitExpr = tsArgs[1] as ts.ObjectLiteralExpression;
@@ -1730,7 +1739,7 @@ export class TypeScriptLinter {
     }
   }
 
-  private handleRequireCall(tsCallExpr: ts.CallExpression): void {
+  private handleRequireCall(tsCallExpr: ts.CallExpression) {
     if (
       ts.isIdentifier(tsCallExpr.expression) &&
       tsCallExpr.expression.text === "require" &&
@@ -1745,7 +1754,7 @@ export class TypeScriptLinter {
     }
   }
 
-  private handleGenericCallWithNoTypeArgs(callLikeExpr: ts.CallExpression | ts.NewExpression, callSignature: ts.Signature): void {
+  private handleGenericCallWithNoTypeArgs(callLikeExpr: ts.CallExpression | ts.NewExpression, callSignature: ts.Signature) {
     let tsSyntaxKind = ts.isNewExpression(callLikeExpr)
       ? ts.SyntaxKind.Constructor
       : ts.SyntaxKind.FunctionDeclaration;
@@ -1767,7 +1776,7 @@ export class TypeScriptLinter {
         //   2. Compiler infer 'unknown' from arguments
         // We report error in both cases. It is ok because we cannot use 'unknown'
         // in ArkTS and already have separate check for it.
-        if (typeNode.kind === ts.SyntaxKind.UnknownKeyword) {
+        if (typeNode.kind == ts.SyntaxKind.UnknownKeyword) {
           this.incrementCounters(callLikeExpr, FaultID.GenericCallNoTypeArgs);
           break;
         }
@@ -1775,7 +1784,7 @@ export class TypeScriptLinter {
     }
   }
 
-  private handleStructIdentAndUndefinedInArgs(tsCallOrNewExpr: ts.CallExpression | ts.NewExpression, callSignature: ts.Signature): void {
+  private handleStructIdentAndUndefinedInArgs(tsCallOrNewExpr: ts.CallExpression | ts.NewExpression, callSignature: ts.Signature) {
     if (!tsCallOrNewExpr.arguments) {
       return;
     }
@@ -1788,7 +1797,7 @@ export class TypeScriptLinter {
       let tsArgType = this.tsTypeChecker.getTypeAtLocation(tsArg);
       if (!tsArgType) continue;
 
-      let paramIndex = argIndex < callSignature.parameters.length ? argIndex : callSignature.parameters.length - 1;
+      let paramIndex = argIndex < callSignature.parameters.length ? argIndex : callSignature.parameters.length-1;
       let tsParamSym = callSignature.parameters[paramIndex];
       if (!tsParamSym) continue;
 
@@ -1814,7 +1823,7 @@ export class TypeScriptLinter {
     }
   }
 
-  private checkLimitedStdLib(node: ts.Node, symbol: ts.Symbol): void {
+  private checkLimitedStdLib(node: ts.Node, symbol: ts.Symbol) {
     const parName = this.tsUtils.getParentSymbolName(symbol);
     const res = parName ? TsUtils.LIMITED_STD_API.get(parName) : undefined;
     if (res && res.arr.includes(symbol.name)) {
@@ -1823,7 +1832,7 @@ export class TypeScriptLinter {
     }
     const name = this.tsTypeChecker.getFullyQualifiedName(symbol);
     if (TsUtils.LIMITED_STD_GLOBAL_API.includes(name)) {
-      this.incrementCounters(node, FaultID.LimitedStdLibApi);
+      this.incrementCounters(node, FaultID.LimitedStdLibApi)
       return;
     }
   }
@@ -1843,22 +1852,22 @@ export class TypeScriptLinter {
     return result;
   }
 
-  private handleLibraryTypeCall(callExpr: ts.CallExpression, calleeType: ts.Type): void {
+  private handleLibraryTypeCall(callExpr: ts.CallExpression, calleeType: ts.Type) {
     let inLibCall = this.tsUtils.isLibraryType(calleeType);
-    const diagnosticMessages: Array<ts.DiagnosticMessageChain> = [];
+    const diagnosticMessages: Array<ts.DiagnosticMessageChain> = []
     this.libraryTypeCallDiagnosticChecker.configure(inLibCall, diagnosticMessages);
 
     let nonFilteringRanges = this.findNonFilteringRangesFunctionCalls(callExpr);
     let rangesToFilter: { begin: number, end: number }[] = [];
     if (nonFilteringRanges.length !== 0) {
       let rangesSize = nonFilteringRanges.length;
-      rangesToFilter.push({ begin: callExpr.pos, end: nonFilteringRanges[0].begin });
-      rangesToFilter.push({ begin: nonFilteringRanges[rangesSize - 1].end, end: callExpr.end });
+      rangesToFilter.push({ begin: callExpr.pos, end: nonFilteringRanges[0].begin })
+      rangesToFilter.push({ begin: nonFilteringRanges[rangesSize - 1].end, end: callExpr.end })
       for (let i = 0; i < rangesSize - 1; i++) {
-        rangesToFilter.push({ begin: nonFilteringRanges[i].end, end: nonFilteringRanges[i + 1].begin });
+        rangesToFilter.push({ begin: nonFilteringRanges[i].end, end: nonFilteringRanges[i + 1].begin })
       }
     } else {
-      rangesToFilter.push({ begin: callExpr.pos, end: callExpr.end });
+      rangesToFilter.push({ begin: callExpr.pos, end: callExpr.end })
     }
 
     this.filterStrictDiagnostics({
@@ -1936,7 +1945,7 @@ export class TypeScriptLinter {
 
   private handleMetaProperty(node: ts.Node) {
     let tsMetaProperty = node as ts.MetaProperty;
-    if (tsMetaProperty.name.text === 'target') {
+    if (tsMetaProperty.name.text === "target") {
       this.incrementCounters(node, FaultID.NewTarget);
     }
   }
@@ -2106,9 +2115,9 @@ export class TypeScriptLinter {
     // option is enabled, compiler attempts to infer type from variable references:
     // see https://github.com/microsoft/TypeScript/pull/11263.
     // In this case, we still want to report the error, since ArkTS doesn't allow
-    // to omit both type annotation and initializer.
-    if (((ts.isVariableDeclaration(decl) && ts.isVariableStatement(decl.parent.parent)) || ts.isPropertyDeclaration(decl)) &&
-           !decl.initializer) {
+    // to omit both type annotation and initializer. 
+    if (((ts.isVariableDeclaration(decl) && ts.isVariableStatement(decl.parent.parent)) || ts.isPropertyDeclaration(decl))
+      && !decl.initializer) {
       this.incrementCounters(decl, FaultID.AnyType);
       return;
     }
@@ -2162,7 +2171,7 @@ export class TypeScriptLinter {
       | ts.PropertyDeclaration
       | ts.ParameterDeclaration
   ): void {
-    if (type.aliasSymbol !== undefined) {
+    if (type.aliasSymbol != undefined) {
       return;
     }
     const isObject = type.flags & ts.TypeFlags.Object;
