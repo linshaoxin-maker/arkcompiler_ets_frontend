@@ -39,7 +39,6 @@ export class LinterConfig {
     LinterConfig.nodeDesc[FaultID.ComputedPropertyName] = 'Computed properties';
     LinterConfig.nodeDesc[FaultID.LiteralAsPropertyName] = 'String or integer literal as property name';
     LinterConfig.nodeDesc[FaultID.TypeQuery] = '"typeof" operations';
-    LinterConfig.nodeDesc[FaultID.RegexLiteral] = 'regex literals';
     LinterConfig.nodeDesc[FaultID.IsOperator] = '"is" operations';
     LinterConfig.nodeDesc[FaultID.DestructuringParameter] = 'destructuring parameters';
     LinterConfig.nodeDesc[FaultID.YieldExpression] = '"yield" operations';
@@ -107,7 +106,8 @@ export class LinterConfig {
     LinterConfig.nodeDesc[FaultID.GlobalThis] = 'Use of globalThis';
     LinterConfig.nodeDesc[FaultID.UtilityType] = 'Standard Utility types';
     LinterConfig.nodeDesc[FaultID.PropertyDeclOnFunction] = 'Property declaration on function';
-    LinterConfig.nodeDesc[FaultID.FunctionApplyBindCall] = 'Invoking methods of function objects';
+    LinterConfig.nodeDesc[FaultID.FunctionApplyCall] = 'Invoking methods of function objects';
+    LinterConfig.nodeDesc[FaultID.FunctionBind] = 'Invoking methods of function objects';
     LinterConfig.nodeDesc[FaultID.ConstAssertion] = '"as const" assertion';
     LinterConfig.nodeDesc[FaultID.ImportAssertion] = 'Import assertion';
     LinterConfig.nodeDesc[FaultID.SpreadOperator] = 'Spread operation';
@@ -166,7 +166,6 @@ export class LinterConfig {
     [ts.SyntaxKind.ThisType, FaultID.ThisType],
     [ts.SyntaxKind.TypeQuery, FaultID.TypeQuery],
     [ts.SyntaxKind.DeleteExpression, FaultID.DeleteOperator],
-    [ts.SyntaxKind.RegularExpressionLiteral, FaultID.RegexLiteral],
     [ts.SyntaxKind.TypePredicate, FaultID.IsOperator], [ts.SyntaxKind.YieldExpression, FaultID.YieldExpression],
     [ts.SyntaxKind.IndexSignature, FaultID.IndexMember], [ts.SyntaxKind.WithStatement, FaultID.WithStatement],
     [ts.SyntaxKind.IndexedAccessType, FaultID.IndexedAccessType],[ts.SyntaxKind.UnknownKeyword, FaultID.UnknownType],

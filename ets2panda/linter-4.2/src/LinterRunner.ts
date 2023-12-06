@@ -31,6 +31,7 @@ import { LintOptions } from './LintOptions';
 import { AutofixInfoSet } from './Autofixer';
 import { TSCCompiledProgram, getStrictOptions, transformDiagnostic } from './ts-diagnostics/TSCCompiledProgram';
 import { mergeArrayMaps, pathContainsDirectory, TsUtils } from './Utils';
+import { ProblemSeverity } from './ProblemSeverity';
 
 const logger = Logger.getLogger();
 
@@ -85,8 +86,14 @@ export function lint(options: LintOptions): LintRunResult {
     if (!linter.strictMode && faultsAttrs[i].migratable) // In relax mode skip migratable
       continue;
 
-    if (faultsAttrs[i].warning) warningNodes += linter.nodeCounters[i];
-    else errorNodesTotal += linter.nodeCounters[i];
+    switch (faultsAttrs[i].severity) {
+      case ProblemSeverity.ERROR:
+        errorNodesTotal += linter.nodeCounters[i];
+        break;
+      case ProblemSeverity.WARNING:
+        warningNodes += linter.nodeCounters[i];
+        break;
+    }
   }
   logTotalProblemsInfo(errorNodesTotal, warningNodes, linter);
   logProblemsPercentageByFeatures(linter);
@@ -204,8 +211,14 @@ function countProblemFiles(
   let errorNodes = 0, warningNodes = 0;
   for (let i = 0; i < FaultID.LAST_ID; i++) {
     let nodeCounterDiff = linter.nodeCounters[i] - nodeCounters[i];
-    if (faultsAttrs[i].warning) warningNodes += nodeCounterDiff;
-    else errorNodes += nodeCounterDiff;
+    switch (faultsAttrs[i].severity) {
+      case ProblemSeverity.ERROR:
+        errorNodes += nodeCounterDiff;
+        break;
+      case ProblemSeverity.WARNING:
+        warningNodes += nodeCounterDiff;
+        break;
+    }
   }
 
   if (errorNodes > 0) {

@@ -244,19 +244,6 @@ export class TsUtils {
     return (type.getFlags() & ts.TypeFlags.String) !== 0;
   }
 
-  public isPrimitiveEnumType(type: ts.Type, primitiveType: ts.TypeFlags): boolean {
-    const isNonPrimitive = (type.flags & ts.TypeFlags.NonPrimitive) !== 0;
-    if (!this.isEnumType(type) || !type.isUnion() || isNonPrimitive) {
-      return false;
-    }
-    for (const t of type.types) {
-      if ((t.flags & primitiveType) === 0) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   public isPrimitiveEnumMemberType(type: ts.Type, primitiveType: ts.TypeFlags): boolean {
     const isNonPrimitive = (type.flags & ts.TypeFlags.NonPrimitive) !== 0;
     if (!this.isEnumMemberType(type) || isNonPrimitive) {
@@ -311,10 +298,16 @@ export class TsUtils {
     return false;
   }
 
-  public isEnumType(tsType: ts.Type): boolean {
-    // Note: For some reason, test (tsType.flags & ts.TypeFlags.Enum) != 0 doesn't work here.
-    // Must use SymbolFlags to figure out if this is an enum type.
-    return tsType.symbol && (tsType.symbol.flags & ts.SymbolFlags.Enum) !== 0;
+  static isEnumType(tsType: ts.Type): boolean {
+    // when type equals `typeof <Enum>`, only symbol contains information about it's type.
+    const isEnumSymbol = tsType.symbol && this.isEnum(tsType.symbol);
+    // otherwise, we should analyze flags of the type itself
+    const isEnumType = !!(tsType.flags & ts.TypeFlags.Enum) || !!(tsType.flags & ts.TypeFlags.EnumLiteral);
+    return isEnumSymbol || isEnumType;
+  }
+
+  static isEnum(tsSymbol: ts.Symbol): boolean {
+    return !!(tsSymbol.flags & ts.SymbolFlags.Enum);
   }
 
   public isEnumMemberType(tsType: ts.Type): boolean {
@@ -1008,7 +1001,8 @@ export class TsUtils {
   }
   
   private validateField(type: ts.Type, prop: ts.PropertyAssignment): boolean {
-    const propName = prop.name.getText();
+    const propNameSymbol = this.tsTypeChecker.getSymbolAtLocation(prop.name);
+    const propName = propNameSymbol?.escapedName.toString() ?? prop.name.getText();
     const propSym = this.findProperty(type, propName);
     if (!propSym || !propSym.declarations?.length) {
       return false;

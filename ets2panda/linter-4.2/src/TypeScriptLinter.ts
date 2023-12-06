@@ -194,13 +194,10 @@ export class TypeScriptLinter {
 
     if (TypeScriptLinter.ideMode) {
       const cookBookMsgNum = faultsAttrs[faultId]
-        ? Number(faultsAttrs[faultId].cookBookRef)
+        ? faultsAttrs[faultId].cookBookRef
         : 0;
       const cookBookTg = cookBookTag[cookBookMsgNum];
-      let severity = ProblemSeverity.ERROR;
-      if (faultsAttrs[faultId] && faultsAttrs[faultId].warning)
-        severity = ProblemSeverity.WARNING;
-
+      const severity = faultsAttrs[faultId]?.severity ?? ProblemSeverity.ERROR;
       const badNodeInfo: ProblemInfo = {
         line: line,
         column: character,
@@ -233,16 +230,22 @@ export class TypeScriptLinter {
 
     this.lineCounters[faultId]++;
 
-    if (faultsAttrs[faultId].warning) {
-      if (line != this.currentWarningLine) {
+    switch (faultsAttrs[faultId].severity) {
+      case ProblemSeverity.ERROR: {
+        this.currentErrorLine = line;
+        ++this.totalErrorLines;
+        this.errorLineNumbersString += line + ', ';
+        break;
+      }
+      case ProblemSeverity.WARNING: {
+        if (line === this.currentWarningLine) {
+          break;
+        }
         this.currentWarningLine = line;
         ++this.totalWarningLines;
-        this.warningLineNumbersString += line + ", ";
+        this.warningLineNumbersString += line + ', ';
+        break;
       }
-    } else if (line != this.currentErrorLine) {
-      this.currentErrorLine = line;
-      ++this.totalErrorLines;
-      this.errorLineNumbersString += line + ", ";
     }
   }
 
@@ -1619,7 +1622,7 @@ export class TypeScriptLinter {
       this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isArray) ||
       this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isTuple) ||
       this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isStdRecordType) ||
-      this.tsUtils.isEnumType(type) ||
+      TsUtils.isEnumType(type) ||
       // we allow EsObject here beacuse it is reported later using FaultId.EsObjectType
       this.tsUtils.isEsObjectType(typeNode)
     );
@@ -1798,19 +1801,25 @@ export class TypeScriptLinter {
     }
   }
 
-
-  private static listApplyBindCallApis = [
-    "Function.apply",
-    "Function.call",
-    "Function.bind",
-    "CallableFunction.apply",
-    "CallableFunction.call",
-    "CallableFunction.bind"
+  private static readonly listFunctionApplyCallApis = [
+    'Function.apply',
+    'Function.call',
+    'CallableFunction.apply',
+    'CallableFunction.call'
   ];
-  private handleFunctionApplyBindPropCall(tsCallExpr: ts.CallExpression, calleeSym: ts.Symbol) {
+
+  private static readonly listFunctionBindApis = [
+    'Function.bind',
+    'CallableFunction.bind'
+  ];
+
+  private handleFunctionApplyBindPropCall(tsCallExpr: ts.CallExpression, calleeSym: ts.Symbol): void {
     const exprName = this.tsTypeChecker.getFullyQualifiedName(calleeSym);
-    if (TypeScriptLinter.listApplyBindCallApis.includes(exprName)) {
-      this.incrementCounters(tsCallExpr, FaultID.FunctionApplyBindCall);
+    if (TypeScriptLinter.listFunctionApplyCallApis.includes(exprName)) {
+      this.incrementCounters(tsCallExpr, FaultID.FunctionApplyCall);
+    }
+    if (TypeScriptLinter.listFunctionBindApis.includes(exprName)) {
+      this.incrementCounters(tsCallExpr, FaultID.FunctionBind);
     }
   }
 
@@ -2085,6 +2094,12 @@ export class TypeScriptLinter {
     const symbol = this.tsUtils.trueSymbolAtLocation(computedProperty.expression);
     if (!!symbol && this.tsUtils.isSymbolIterator(symbol)) {
       return
+    }
+    const isEnumMember = !!symbol && !!(symbol.flags & ts.SymbolFlags.EnumMember);
+    const type = this.tsTypeChecker.getTypeAtLocation(computedProperty.expression);
+    const isStringEnumLiteral = TsUtils.isEnumType(type) && !!(type.flags & ts.TypeFlags.StringLiteral);
+    if (isEnumMember && isStringEnumLiteral) {
+      return;
     }
     this.incrementCounters(node, FaultID.ComputedPropertyName);
   }
