@@ -43,43 +43,52 @@ export class TSCCompiledProgram {
   }
 }
 
-export function getStrictOptions(strict: boolean = true) {
+export function getStrictOptions(): {
+  strictNullChecks: boolean;
+  strictFunctionTypes: boolean;
+  strictPropertyInitialization: boolean;
+  noImplicitReturns: boolean;
+} {
   return {
-    strictNullChecks: strict,
-    strictFunctionTypes: strict,
-    strictPropertyInitialization: strict,
-    noImplicitReturns: strict,
-  }
+    strictNullChecks: true,
+    strictFunctionTypes: true,
+    strictPropertyInitialization: true,
+    noImplicitReturns: true
+  };
+}
+
+function isStrict(compilerOptions: ts.CompilerOptions): boolean {
+  const strictOptions = getStrictOptions();
+  let wasStrict = false;
+  // wasStrict evaluates true if any of the strict options was set
+  Object.keys(strictOptions).forEach((x) => {
+    wasStrict = wasStrict || !!compilerOptions[x];
+  });
+  return wasStrict;
 }
 
 function getTwoCompiledVersions(
   program: ts.Program,
-  options: LintOptions,
+  options: LintOptions
 ): { strict: ts.Program; nonStrict: ts.Program; wasStrict: boolean } {
-  const compilerOptions = { ...program.getCompilerOptions()};
-
-  const wasStrict = inverseStrictOptions(compilerOptions);
-  const inversedOptions = getStrictOptions(!wasStrict);
+  const compilerOptions = program.getCompilerOptions();
+  const inversedOptions = getInversedOptions(compilerOptions);
   const withInversedOptions = compile(options, inversedOptions);
-
+  const wasStrict = isStrict(compilerOptions);
   return {
     strict: wasStrict ? program : withInversedOptions,
     nonStrict: wasStrict ? withInversedOptions : program,
-    wasStrict: wasStrict,
-  }
+    wasStrict: wasStrict
+  };
 }
 
-/**
- * Returns true if options were initially strict
- */
-function inverseStrictOptions(compilerOptions: ts.CompilerOptions): boolean {
-  const strictOptions = getStrictOptions();
-  let wasStrict = false;
-  Object.keys(strictOptions).forEach(x => {
-    wasStrict = wasStrict || !!compilerOptions[x];
+function getInversedOptions(compilerOptions: ts.CompilerOptions): ts.CompilerOptions {
+  const newOptions = { ...compilerOptions };
+  const wasStrict = isStrict(compilerOptions);
+  Object.keys(getStrictOptions()).forEach((key) => {
+    newOptions[key] = !wasStrict;
   });
-  // wasStrict evaluates true if any of the strict options was set
-  return wasStrict;
+  return newOptions;
 }
 
 export function transformDiagnostic(diagnostic: ts.Diagnostic): ProblemInfo {

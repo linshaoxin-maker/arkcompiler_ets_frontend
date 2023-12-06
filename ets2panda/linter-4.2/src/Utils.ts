@@ -458,7 +458,7 @@ export class TsUtils {
   }
 
   // does something similar to relatedByInheritanceOrIdentical function
-  public isOrDerivedFrom(tsType: ts.Type, checkType: CheckType): tsType is ts.TypeReference {
+  public isOrDerivedFrom(tsType: ts.Type, checkType: CheckType): boolean {
     if (this.isTypeReference(tsType) && tsType.target !== tsType) {
       tsType = tsType.target;
     }
