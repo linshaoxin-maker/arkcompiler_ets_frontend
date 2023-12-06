@@ -256,7 +256,8 @@ function writeActualResultFile(
     fs.mkdirSync(actualResultsDir);
   }
 
-  const actualResultJSON = JSON.stringify({ nodes: resultNodes }, null, 4);
+  const tabWidth = 4;
+  const actualResultJSON = JSON.stringify({ nodes: resultNodes }, null, tabWidth);
   fs.writeFileSync(path.join(actualResultsDir, testFile + resultExt), actualResultJSON);
 
   if (diff) {
@@ -265,8 +266,9 @@ function writeActualResultFile(
 }
 
 function reportDiff(expected: TestNodeInfo, actual: TestNodeInfo): string {
-  const expectedNode = JSON.stringify({ nodes: [expected] }, null, 4);
-  const actualNode = JSON.stringify({ nodes: [actual] }, null, 4);
+  const tabWidth = 4;
+  const expectedNode = JSON.stringify({ nodes: [expected] }, null, tabWidth);
+  const actualNode = JSON.stringify({ nodes: [actual] }, null, tabWidth);
 
   const diff = `Expected:
 ${expectedNode}

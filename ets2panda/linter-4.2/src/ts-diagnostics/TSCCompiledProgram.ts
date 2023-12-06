@@ -14,17 +14,17 @@
  */
 
 import * as ts from 'typescript';
-import { ProblemInfo } from '../ProblemInfo';
+import type { ProblemInfo } from '../ProblemInfo';
 import { ProblemSeverity } from '../ProblemSeverity';
-import { LintOptions } from '../LintOptions';
+import type { LintOptions } from '../LintOptions';
 import { TypeScriptDiagnosticsExtractor } from './TypeScriptDiagnosticsExtractor';
 import { compile } from '../CompilerWrapper';
 import { getNodeOrLineEnd } from '../Utils';
 import { FaultID, faultsAttrs } from '../Problems';
 
 export class TSCCompiledProgram {
-  private diagnosticsExtractor: TypeScriptDiagnosticsExtractor;
-  private wasStrict: boolean;
+  private readonly diagnosticsExtractor: TypeScriptDiagnosticsExtractor;
+  private readonly wasStrict: boolean;
 
   constructor(program: ts.Program, options: LintOptions) {
     const { strict, nonStrict, wasStrict } = getTwoCompiledVersions(program, options);
@@ -32,13 +32,11 @@ export class TSCCompiledProgram {
     this.wasStrict = wasStrict;
   }
 
-  public getOriginalProgram(): ts.Program {
-    return this.wasStrict
-      ? this.diagnosticsExtractor.strictProgram
-      : this.diagnosticsExtractor.nonStrictProgram;
+  getOriginalProgram(): ts.Program {
+    return this.wasStrict ? this.diagnosticsExtractor.strictProgram : this.diagnosticsExtractor.nonStrictProgram;
   }
 
-  public getStrictDiagnostics(fileName: string): ts.Diagnostic[] {
+  getStrictDiagnostics(fileName: string): ts.Diagnostic[] {
     return this.diagnosticsExtractor.getStrictDiagnostics(fileName);
   }
 }
@@ -105,12 +103,12 @@ export function transformDiagnostic(diagnostic: ts.Diagnostic): ProblemInfo {
     start: startPos,
     end: endPos,
     type: 'StrictModeError',
-    severity: ProblemSeverity.ERROR,  // expect strict options to always present
+    severity: ProblemSeverity.ERROR,
     problem: FaultID[faultId],
     suggest: messageText,
     rule: messageText,
     ruleTag: faultsAttrs[faultId] ? Number(faultsAttrs[faultId].cookBookRef) : 0,
-    autofixable: false,
+    autofixable: false
   };
 }
 
@@ -118,10 +116,10 @@ export function transformDiagnostic(diagnostic: ts.Diagnostic): ProblemInfo {
  * Returns line and column of the diagnostic's node, counts from 1
  */
 function getLineAndColumn(diagnostic: ts.Diagnostic): { line: number; column: number } {
-  let { line, character } = diagnostic.file!.getLineAndCharacterOfPosition(diagnostic.start!);
+  const { line, character } = diagnostic.file!.getLineAndCharacterOfPosition(diagnostic.start!);
   // TSC counts lines and columns from zero
   return {
     line: line + 1,
-    column: character + 1,
-  }
+    column: character + 1
+  };
 }

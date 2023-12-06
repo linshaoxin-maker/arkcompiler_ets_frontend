@@ -685,49 +685,6 @@ All types must be specified explicitly.
     let a: A
     let b: A
 
-.. _R024:
-
-|CB_R| #24: Optional arguments are not supported
-------------------------------------------------
-
-|CB_RULE|
-~~~~~~~~~
-
-Currently, |LANG| does not support optional parameters. Specify an
-optional parameter as a parameter of a nullable type with the
-default value ``null``. Default parameter values are supported for all types.
-
-|CB_BAD|
-~~~~~~~~
-
-.. code-block:: typescript
-
-    // x is an optional parameter:
-    function f(x?: number) {
-        console.log(x) // log undefined or number
-    }
-
-    // x is a required parameter with the default value:
-    function g(x: number = 1) {
-        console.log(x)
-    }
-
-|CB_OK|
-~~~~~~~
-
-.. code-block:: typescript
-
-    // Optional parameters are not supported,
-    // but you can assign a default value ``null`` for the parameter:
-    function f(x: number | null = null) {
-        console.log(x); // log null or number
-    }
-
-    // x is a required argument with the default value:
-    function g(x: number = 1) {
-        console.log(x);
-    }
-
 .. _R025:
 
 |CB_R| #25: Declaring fields in ``constructor`` is not supported
@@ -1094,56 +1051,6 @@ public APIs and decide whether such types are identical. Use other mechanisms
 * :ref:`R030`
 * :ref:`R031`
 * :ref:`R035`
-
-.. _R033:
-
-|CB_R| #33: Optional properties are not supported
--------------------------------------------------
-
-|CB_RULE|
-~~~~~~~~~
-
-|LANG| does not support optional properties. Use properties with default values.
-Use properties of nullable types and the default ``null`` value to distinguish
-whether a value is set or not.
-
-|CB_BAD|
-~~~~~~~~
-
-.. code-block:: typescript
-
-    interface CompilerOptions {
-        strict?: boolean
-        sourcePath?: string
-        targetPath?: string
-    }
-
-    var options: CompilerOptions = {
-        strict: true,
-        sourcepath: "./src",
-    }
-    if option.targetPath == undefined {
-        // set default
-    }
-
-|CB_OK|
-~~~~~~~
-
-.. code:: typescript
-
-    interface CompilerOptions {
-        strict: boolean = false
-        sourcePath: string = ""
-        targetPath: string | null = null
-    }
-
-    let options: CompilerOptions = {
-        strict: true,
-        sourcepath: "./src",
-    }
-    if option.targetPath == null {
-        // set default
-    }
 
 .. _R034:
 
@@ -2823,7 +2730,6 @@ library (for example, ``Int32Array``) are also supported.
     for (let n of a) {
         console.log(n)
     }
-
 |CB_SEE|
 ~~~~~~~~
 
@@ -4180,7 +4086,6 @@ Differences are described in separate recipes.
 * :ref:`R120`
 * :ref:`R121`
 * :ref:`R122`
-* :ref:`R123`
 * :ref:`R124`
 * :ref:`R125`
 * :ref:`R126`
@@ -4433,64 +4338,6 @@ Use explicit ``import ... from ...`` instead.
 
 * :ref:`R120`
 
-.. _R123:
-
-|CB_R| #123: Renaming in export declarations is not supported
--------------------------------------------------------------
-
-|CB_RULE|
-~~~~~~~~~
-
-|LANG| does not support renaming in export declarations. Similar effect
-can be achieved through setting an alias for the exported entity.
-
-|CB_BAD|
-~~~~~~~~
-
-.. code-block:: typescript
-
-    // file1.ts
-    class MyClass {
-        // ...
-    }
-
-    export { MyClass as RenamedClass }
-
-    // file2.ts
-    import { RenamedClass } from "./file1"
-
-    function main(): void {
-        const myObject = new RenamedClass()
-        // ...
-    }
-
-|CB_OK|
-~~~~~~~
-
-.. code-block:: typescript
-
-    // module1
-    class MyClass {
-        // ...
-    }
-
-    export RenamedClass = MyClass
-
-    // module2
-    import RenamedClass from "./module1"
-
-    function main(): void {
-        const myObject = new RenamedClass()
-        // ...
-    }
-
-|CB_SEE|
-~~~~~~~~
-
-* :ref:`R124`
-* :ref:`R125`
-* :ref:`R126`
-
 .. _R124:
 
 |CB_R| #124: Export list declaration is not supported
@@ -4524,7 +4371,6 @@ entities must be explicitly annotated with the ``export`` keyword.
 |CB_SEE|
 ~~~~~~~~
 
-* :ref:`R123`
 * :ref:`R125`
 * :ref:`R126`
 
@@ -4579,7 +4425,6 @@ imported explicitly from the modules that export them.
 |CB_SEE|
 ~~~~~~~~
 
-* :ref:`R123`
 * :ref:`R124`
 * :ref:`R126`
 
@@ -4631,7 +4476,6 @@ Use regular ``export`` / ``import`` instead.
 |CB_SEE|
 ~~~~~~~~
 
-* :ref:`R123`
 * :ref:`R124`
 * :ref:`R125`
 

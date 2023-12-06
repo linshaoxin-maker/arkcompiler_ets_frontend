@@ -15,7 +15,7 @@
 
 export abstract class Logger {
   static init(instance: Logger): void {
-    this.instance_ = instance;
+    this.instance = instance;
   }
 
   static trace(message: string): void {
@@ -45,11 +45,11 @@ export abstract class Logger {
   protected abstract doError(message: string): void;
 
   private static getInstance(): Logger {
-    if (!this.instance_) {
+    if (!this.instance) {
       throw new Error('Not initialized');
     }
-    return this.instance_;
+    return this.instance;
   }
 
-  private static instance_?: Logger;
+  private static instance?: Logger;
 }

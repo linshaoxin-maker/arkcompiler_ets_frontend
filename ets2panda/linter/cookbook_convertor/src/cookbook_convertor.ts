@@ -52,7 +52,7 @@ const T_NBSP = '&nbsp;';
 const T_HR = '<hr style="height:3px;">';
 
 // RST substititions
-const CB_ = '|CB_';
+const CB_PREFIX = '|CB_PREFIX';
 const CB_R = '|CB_R|';
 const CB_RULE = '|CB_RULE|';
 const CB_BAD = '|CB_BAD|';
@@ -70,8 +70,8 @@ const NEW_REC_HEADER = /.. _R\d\d\d:/;
 // should be ".. code-block" but in some places there is error in doc file
 const CODE_BLOCK = '.. code';
 
-let doc_lines: string[];
-let _line: number;
+let docLines: string[];
+let curLine: number;
 let recNum: number;
 
 const tegs: string[] = [];
@@ -86,52 +86,45 @@ const STR_DLMTR = '\'';
 function syncReadFile(filename: string): string[] {
   const contents = readFileSync(filename, 'utf-8');
 
-  doc_lines = contents.split(/\r?\n/);
+  docLines = contents.split(/\r?\n/);
 
   // make table of rule names
-  _line = 0;
+  curLine = 0;
   let ruleNum = -1;
-  while (_line < doc_lines.length) {
-    const line = doc_lines[_line];
+  while (curLine < docLines.length) {
+    const line = docLines[curLine];
     if (NEW_REC_HEADER.test(line)) {
       ruleNum = Number(line.replace(/\D/g, ''));
       console.log('>>>>>>> START RULE ' + ruleNum + ':');
       console.log('                    NUMBER: ' + ruleNum);
     }
-    if (doc_lines[_line].startsWith(CB_R)) {
-      let line = doc_lines[_line].split(CB_R)[1];
-
-      /*
-       * let tegNumStr = line.split(':')[0];
-       * let ruleNum = Number(tegNumStr.split('#')[1]);
-       */
-
-      // line.split(':')[1];
+    if (docLines[curLine].startsWith(CB_R)) {
+      let line = docLines[curLine].split(CB_R)[1];
       ruleNames[ruleNum] = line;
-      _line++;
+      curLine++;
       needHeader();
-      if (doc_lines[_line].startsWith(CB_RULE)) {
-        line = doc_lines[_line].trim().replace(CB_RULE, '').
+      if (docLines[curLine].startsWith(CB_RULE)) {
+        line = docLines[curLine].trim().replace(CB_RULE, '').
           trim();
         ruleNames[ruleNum] = ruleNames[ruleNum] + ' (' + line + ')';
       }
     }
-    _line++;
+    curLine++;
   }
 
   // scan text
-  _line = 0;
-  while (_line < doc_lines.length) {
+  curLine = 0;
+  while (curLine < docLines.length) {
     skipEmptyLines();
-    const line = doc_lines[_line];
+    const line = docLines[curLine];
     if (NEW_REC_HEADER.test(line)) {
       makeRecipe();
     } else {
-      _line++;
+      curLine++;
     }
   }
 
-  return doc_lines;
+  return docLines;
 }
 
 /*
@@ -156,16 +149,11 @@ function translateLine(s: string): string {
   line = line.replace(CB_BAD, 'TypeScript');
   line = line.replace(CB_OK, 'ArkTS');
 
-  /*
-   * line = line.replace( "|CB_R|", "Recipe");
-   * .. |CB_RULE| replace:: Rule
-   */
   line = line.replace(CB_ERROR, '**Severity: error**');
   line = line.replace(CB_WARNING, '**Severity: warning**');
   line = line.replace(CB_SEE, '## See also');
 
   line = replaceAll(line, '|JS|', 'JavaScript');
-  // .. |LANG| replace:: {lang}
   line = replaceAll(line, '|LANG|', 'ArkTS');
   line = replaceAll(line, '|TS|', 'TypeScript');
 
@@ -214,28 +202,28 @@ function setNBSP(s: string): string {
 }
 
 function skipEmptyLines(): void {
-  while (_line < doc_lines.length) {
-    let s = doc_lines[_line];
+  while (curLine < docLines.length) {
+    let s = docLines[curLine];
     s = s.trim();
     if (s !== '') {
       break;
     }
-    _line++;
+    curLine++;
   }
 }
 
 function isHeader(): boolean {
-  return doc_lines[_line].startsWith(CB_) || doc_lines[_line].startsWith('..');
+  return docLines[curLine].startsWith(CB_PREFIX) || docLines[curLine].startsWith('..');
 }
 
 function needHeader(): void {
-  while (_line < doc_lines.length && !isHeader()) {
-    _line++;
+  while (curLine < docLines.length && !isHeader()) {
+    curLine++;
   }
 }
 
 function isFixTitle(): boolean {
-  return doc_lines[_line].trimStart().startsWith(CB_FIX);
+  return docLines[curLine].trimStart().startsWith(CB_FIX);
 }
 
 /*
@@ -245,21 +233,21 @@ function isFixTitle(): boolean {
  */
 
 function makeFixTitle(): void {
-  while (_line < doc_lines.length && !isHeader() && !isFixTitle()) {
-    _line++;
+  while (curLine < docLines.length && !isHeader() && !isFixTitle()) {
+    curLine++;
   }
 
   if (isFixTitle()) {
-    const title = doc_lines[_line].split(CB_FIX)[1].trim();
+    const title = docLines[curLine].split(CB_FIX)[1].trim();
     fixTitles.set(recNum, escapeSym(title));
   }
 }
 
 function makeRecipe(): void {
-  const line = doc_lines[_line];
+  const line = docLines[curLine];
   recNum = Number(line.replace(/\D/g, ''));
   console.log('cookBookMsg[ ' + recNum + ' ] = ' + STR_DLMTR + CL);
-  _line++;
+  curLine++;
   mdText = [];
   makeTag();
   makeBody();
@@ -281,13 +269,12 @@ function makeRecipe(): void {
 
 function makeTag(): void {
   needHeader();
-  console.error('>>>TEG>>>: ' + _line + ' -> ' + doc_lines[_line]);
-  if (!doc_lines[_line].startsWith(CB_R)) {
+  console.error('>>>TEG>>>: ' + curLine + ' -> ' + docLines[curLine]);
+  if (!docLines[curLine].startsWith(CB_R)) {
     return;
   }
-  let line = doc_lines[_line].split(CB_R)[1];
+  let line = docLines[curLine].split(CB_R)[1];
 
-  // .split(':')[1] );
   mdText.push('# ' + translateLine(line));
   mdText.push('');
 
@@ -295,54 +282,51 @@ function makeTag(): void {
   const teg = translateTeg(line);
   const hdr = highlightCode(line);
   console.log(hdr + T_BR + CL);
-  // .split(':')[1];
   tegs[recNum] = teg;
-  _line++;
+  curLine++;
 }
 
 function makeBody(): string {
   let body = '';
   needHeader();
-  console.error('>>>BODY HDR>>>: ' + +_line + ' -> ' + doc_lines[_line]);
-  if (!doc_lines[_line].startsWith(CB_RULE)) {
+  console.error('>>>BODY HDR>>>: ' + +curLine + ' -> ' + docLines[curLine]);
+  if (!docLines[curLine].startsWith(CB_RULE)) {
     return '';
   }
 
-  let line = doc_lines[_line].trim();
-  const md_line = line;
+  let line = docLines[curLine].trim();
+  const mdLine = line;
   line = line.replace(CB_RULE, '');
   line = escapeSym(translateLine(line));
   tegs[recNum] = tegs[recNum].trim() + ' (' + replaceAll(translateTeg(line), '"', '') + ')';
-  _line++;
+  curLine++;
 
   // skip underline
-  _line++;
+  curLine++;
   console.log(T_HR + T_BOLD + 'Rule' + T_END_BOLD + T_BR + CL);
 
   // ("## Rule");
-  mdText.push(md_line.replace(CB_RULE, 'Rule'));
+  mdText.push(mdLine.replace(CB_RULE, 'Rule'));
   mdText.push('');
   needHeader();
-  console.error('>>>BODY 2 HDR>>>: ' + +_line + ' -> ' + doc_lines[_line]);
+  console.error('>>>BODY 2 HDR>>>: ' + +curLine + ' -> ' + docLines[curLine]);
 
-  if (doc_lines[_line].startsWith(CB_META)) {
-    _line++;
+  if (docLines[curLine].startsWith(CB_META)) {
+    curLine++;
     makeFixTitle();
     needHeader();
-    console.error('>>>BODY 3 HDR>>>: ' + +_line + ' -> ' + doc_lines[_line]);
+    console.error('>>>BODY 3 HDR>>>: ' + +curLine + ' -> ' + docLines[curLine]);
   }
 
-  // _line++;
-  while (!isHeader() || doc_lines[_line].startsWith(CB_ERROR) || doc_lines[_line].startsWith(CB_WARNING)) {
-    // skipEmptyLines();
-    let s = translateLine(doc_lines[_line]);
+  while (!isHeader() || docLines[curLine].startsWith(CB_ERROR) || docLines[curLine].startsWith(CB_WARNING)) {
+    let s = translateLine(docLines[curLine]);
 
     mdText.push(s);
     s = highlightCode(s);
     s = escapeSym(s);
     console.log(s + CL);
     body += s;
-    _line++;
+    curLine++;
   }
 
   console.log(T_BR + CL);
@@ -355,39 +339,38 @@ function makeBad(): string {
   let badCode = '';
 
   needHeader();
-  console.error('>>>makeBAD HDR>>>: ' + doc_lines[_line]);
-  if (!doc_lines[_line].startsWith(CB_BAD)) {
+  console.error('>>>makeBAD HDR>>>: ' + docLines[curLine]);
+  if (!docLines[curLine].startsWith(CB_BAD)) {
     return '';
   }
-  _line++;
+  curLine++;
   // skip underline
-  _line++;
+  curLine++;
 
   console.log(T_HR + T_BOLD + 'TypeScript' + T_END_BOLD + T_BR + CL);
 
   mdText.push('## TypeScript');
   mdText.push('');
 
-  while (_line < doc_lines.length && !isHeader()) {
-    // skipEmptyLines();
-    let s = translateLine(doc_lines[_line]);
+  while (curLine < docLines.length && !isHeader()) {
+    let s = translateLine(docLines[curLine]);
     mdText.push(s);
 
     s = highlightCode(s);
     console.log(s + CL);
 
     badCode += s;
-    _line++;
+    curLine++;
   }
 
   skipEmptyLines();
-  if (doc_lines[_line++].startsWith(CODE_BLOCK)) {
+  if (docLines[curLine++].startsWith(CODE_BLOCK)) {
     mdText.push('```');
     console.log(T_CODE + CL);
-    while (_line < doc_lines.length && !isHeader()) {
-      mdText.push(doc_lines[_line]);
-      console.log(setNBSP(escapeSym(doc_lines[_line])) + T_BR + CL);
-      _line++;
+    while (curLine < docLines.length && !isHeader()) {
+      mdText.push(docLines[curLine]);
+      console.log(setNBSP(escapeSym(docLines[curLine])) + T_BR + CL);
+      curLine++;
     }
     console.log(T_END_CODE + T_BR + CL);
 
@@ -402,21 +385,20 @@ function makeOk(): string {
   let goodCode = '';
 
   needHeader();
-  console.error('>>>makeOK HDR>>>: ' + doc_lines[_line]);
-  if (_line >= doc_lines.length || !doc_lines[_line].startsWith(CB_OK)) {
+  console.error('>>>makeOK HDR>>>: ' + docLines[curLine]);
+  if (curLine >= docLines.length || !docLines[curLine].startsWith(CB_OK)) {
     return '';
   }
-  _line++;
+  curLine++;
   // skip underline
-  _line++;
+  curLine++;
   console.log(T_HR + T_BOLD + 'ArkTS' + T_END_BOLD + T_BR + CL);
 
   mdText.push('## ArkTS');
   mdText.push('');
 
-  while (_line < doc_lines.length && !isHeader()) {
-    // skipEmptyLines();
-    let s = translateLine(doc_lines[_line]);
+  while (curLine < docLines.length && !isHeader()) {
+    let s = translateLine(docLines[curLine]);
 
     mdText.push(s);
 
@@ -424,19 +406,19 @@ function makeOk(): string {
     console.log(s + CL);
 
     goodCode += s;
-    _line++;
+    curLine++;
   }
 
   skipEmptyLines();
-  if (doc_lines[_line++].startsWith(CODE_BLOCK)) {
+  if (docLines[curLine++].startsWith(CODE_BLOCK)) {
     console.log(T_CODE + CL);
 
     mdText.push('```');
 
-    while (_line < doc_lines.length && !isHeader()) {
-      mdText.push(doc_lines[_line]);
-      console.log(setNBSP(escapeSym(doc_lines[_line])) + T_BR + CL);
-      _line++;
+    while (curLine < docLines.length && !isHeader()) {
+      mdText.push(docLines[curLine]);
+      console.log(setNBSP(escapeSym(docLines[curLine])) + T_BR + CL);
+      curLine++;
     }
     console.log(T_END_CODE + T_BR + CL);
 
@@ -449,15 +431,10 @@ function makeOk(): string {
 }
 
 function makeSee(): string {
-
-  /*
-   * mdText.push("## See also");
-   * mdText.push("");
-   */
   const RECIPE = 'Recipe ';
-  console.error('>>> #' + recNum + ' PASSED: ' + doc_lines[_line]);
-  while (_line < doc_lines.length && !doc_lines[_line].startsWith('..')) {
-    let s = translateLine(doc_lines[_line]);
+  console.error('>>> #' + recNum + ' PASSED: ' + docLines[curLine]);
+  while (curLine < docLines.length && !docLines[curLine].startsWith('..')) {
+    let s = translateLine(docLines[curLine]);
 
     if (s.split(CB_REF)[1]) {
       s = s.replace('*', '-');
@@ -471,10 +448,10 @@ function makeSee(): string {
 
     mdText.push(s);
 
-    if (doc_lines[_line].startsWith(CB_SEE)) {
-      _line++;
+    if (docLines[curLine].startsWith(CB_SEE)) {
+      curLine++;
     }
-    _line++;
+    curLine++;
   }
 
   mdText.push('');
@@ -496,13 +473,7 @@ if (commandLineArgs[0] === '-md') {
   commandLineArgs = process.argv.slice(3);
 }
 const inFileName = commandLineArgs[0];
-// console.error(inFileName);
 console.log(COPYRIGHT_HEADER);
-
-/*
- * console.log("export const cookBookMsg: string[] = []; \n");
- * console.log("export const cookBookTag: string[] = []; \n");
- */
 console.log(CODE_PROLOGUE);
 syncReadFile(inFileName);
 

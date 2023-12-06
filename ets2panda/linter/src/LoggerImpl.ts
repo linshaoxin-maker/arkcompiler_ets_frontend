@@ -14,31 +14,31 @@
  */
 
 import { Logger as LoggerInterface } from '../lib/Logger';
-import Logger from '../utils/logger';
+import logger from '../utils/logger';
 
 export class LoggerImpl extends LoggerInterface {
   doTrace(message: string): void {
     void this;
-    Logger.getLogger().trace(message);
+    logger.getLogger().trace(message);
   }
 
   doDebug(message: string): void {
     void this;
-    Logger.getLogger().debug(message);
+    logger.getLogger().debug(message);
   }
 
   doInfo(message: string): void {
     void this;
-    Logger.getLogger().info(message);
+    logger.getLogger().info(message);
   }
 
   doWarn(message: string): void {
     void this;
-    Logger.getLogger().warn(message);
+    logger.getLogger().warn(message);
   }
 
   doError(message: string): void {
     void this;
-    Logger.getLogger().error(message);
+    logger.getLogger().error(message);
   }
 }

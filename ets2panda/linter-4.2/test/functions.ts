@@ -55,7 +55,7 @@ function arrowFunctionTest() {
   const sqrt = (x) => Math.sqrt(x); // shortcut syntax
   const even = [1, 2, 3, 4, 5, 6].filter((x) => x % 2 === 0); // shortcut syntax
 
-  const foo = (x: number, y): boolean => x == y; // types are partly omitted
+  const foo = (x: number, y): boolean => x === y; // types are partly omitted
 
   const generic = <T, E>(t: T, e: E) => t; // Generic lambda
 }

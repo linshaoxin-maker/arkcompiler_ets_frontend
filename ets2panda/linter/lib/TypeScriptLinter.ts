@@ -22,7 +22,7 @@ import { faultDesc } from './FaultDesc';
 import { cookBookMsg, cookBookTag } from './CookBookMsg';
 import { LinterConfig } from './TypeScriptLinterConfig';
 import type { Autofix, AutofixInfoSet } from './Autofixer';
-import * as Autofixer from './Autofixer';
+import * as autofixer from './Autofixer';
 import type { ProblemInfo } from './ProblemInfo';
 import { ProblemSeverity } from './ProblemSeverity';
 import { Logger } from './Logger';
@@ -709,9 +709,8 @@ export class TypeScriptLinter {
         }
         isDynamic = isLibraryType || this.tsUtils.isDynamicLiteralInitializer(node.parent);
       }
-
       if (!isRecordObjectInitializer && !isDynamic) {
-        let autofix: Autofix[] | undefined = Autofixer.fixLiteralAsPropertyName(node);
+        let autofix: Autofix[] | undefined = autofixer.fixLiteralAsPropertyName(node);
         const autofixable = autofix !== undefined;
         if (!this.autofixesInfo.shouldAutofix(node, FaultID.LiteralAsPropertyName)) {
           autofix = undefined;
@@ -728,7 +727,6 @@ export class TypeScriptLinter {
         { begin: propName.getStart(), end: propName.getStart() },
         PROPERTY_HAS_NO_INITIALIZER_ERROR_CODE
       );
-
       const classDecorators = ts.getDecorators(node.parent);
       const propType = node.type?.getText();
       this.filterOutDecoratorsDiagnostics(
@@ -847,7 +845,7 @@ export class TypeScriptLinter {
     let autofix: Autofix[] | undefined;
     if (autofixable && this.autofixesInfo.shouldAutofix(funcExpr, FaultID.FunctionExpression)) {
       autofix = [
-        Autofixer.fixFunctionExpression(funcExpr, funcExpr.parameters, newRetTypeNode, ts.getModifiers(funcExpr))
+        autofixer.fixFunctionExpression(funcExpr, funcExpr.parameters, newRetTypeNode, ts.getModifiers(funcExpr))
       ];
     }
     this.incrementCounters(funcExpr, FaultID.FunctionExpression, autofixable, autofix);
@@ -953,7 +951,7 @@ export class TypeScriptLinter {
         if (newRetTypeNode && !isFuncExpr) {
           autofixable = true;
           if (this.autofixesInfo.shouldAutofix(funcLikeDecl, FaultID.LimitedReturnTypeInference)) {
-            autofix = [Autofixer.fixReturnType(funcLikeDecl, newRetTypeNode)];
+            autofix = [autofixer.fixReturnType(funcLikeDecl, newRetTypeNode)];
           }
         }
       }
@@ -1193,7 +1191,7 @@ export class TypeScriptLinter {
     if (tsCatch.variableDeclaration?.type) {
       let autofix: Autofix[] | undefined;
       if (this.autofixesInfo.shouldAutofix(tsCatch, FaultID.CatchWithUnsupportedType)) {
-        autofix = [Autofixer.dropTypeOnVarDecl(tsCatch.variableDeclaration)];
+        autofix = [autofixer.dropTypeOnVarDecl(tsCatch.variableDeclaration)];
       }
       this.incrementCounters(node, FaultID.CatchWithUnsupportedType, true, autofix);
     }
@@ -1306,7 +1304,7 @@ export class TypeScriptLinter {
       if (defaultSpec) {
         let autofix: Autofix[] | undefined;
         if (this.autofixesInfo.shouldAutofix(defaultSpec, FaultID.DefaultImport)) {
-          autofix = [Autofixer.fixDefaultImport(tsImportClause, defaultSpec, nonDefaultSpecs)];
+          autofix = [autofixer.fixDefaultImport(tsImportClause, defaultSpec, nonDefaultSpecs)];
         }
         this.incrementCounters(defaultSpec, FaultID.DefaultImport, true, autofix);
       }
@@ -1328,7 +1326,7 @@ export class TypeScriptLinter {
     if (tsTypeAssertion.type.getText() === 'const') {
       this.incrementCounters(tsTypeAssertion, FaultID.ConstAssertion);
     } else {
-      this.incrementCounters(node, FaultID.TypeAssertion, true, [Autofixer.fixTypeAssertion(tsTypeAssertion)]);
+      this.incrementCounters(node, FaultID.TypeAssertion, true, [autofixer.fixTypeAssertion(tsTypeAssertion)]);
     }
   }
 
@@ -1502,7 +1500,7 @@ export class TypeScriptLinter {
       !ts.isArrayLiteralExpression(tsElementAccessExpr.expression) &&
       !this.isElementAcessAllowed(tsElemAccessBaseExprType)
     ) {
-      let autofix = Autofixer.fixPropertyAccessByIndex(node);
+      let autofix = autofixer.fixPropertyAccessByIndex(node);
       const autofixable = autofix !== undefined;
       if (!this.autofixesInfo.shouldAutofix(node, FaultID.PropertyAccessByIndex)) {
         autofix = undefined;
@@ -2074,8 +2072,9 @@ export class TypeScriptLinter {
         }
 
         const range = directive.range as ts.TextRange;
+        const commentOpen = '/*';
         const kind: ts.SyntaxKind =
-          sourceFile.text.slice(range.pos, range.pos + 2) === '/*' ?
+          sourceFile.text.slice(range.pos, range.pos + commentOpen.length) === commentOpen ?
             ts.SyntaxKind.MultiLineCommentTrivia :
             ts.SyntaxKind.SingleLineCommentTrivia;
         const commentRange: ts.CommentRange = {

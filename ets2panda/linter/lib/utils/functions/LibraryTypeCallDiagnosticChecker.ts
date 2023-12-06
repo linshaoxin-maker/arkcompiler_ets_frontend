@@ -99,7 +99,7 @@ export class LibraryTypeCallDiagnosticChecker implements DiagnosticChecker {
     }
 
     for (const msgChain of this.filteredDiagnosticMessages) {
-      if (typeof msgText == 'string') {
+      if (typeof msgText === 'string') {
         if (msgText === msgChain.messageText) {
           return false;
         }
@@ -139,7 +139,7 @@ export class LibraryTypeCallDiagnosticChecker implements DiagnosticChecker {
       return false;
     }
 
-    if (typeof msgText == 'string') {
+    if (typeof msgText === 'string') {
       return this.checkMessageText(msgText);
     }
 

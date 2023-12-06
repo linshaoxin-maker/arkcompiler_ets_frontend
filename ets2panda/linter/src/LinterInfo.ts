@@ -17,9 +17,12 @@ import type { AutofixInfo } from '../lib/autofixes/AutofixInfo';
 
 export function decodeAutofixInfo(info: string): AutofixInfo {
   const infos = info.split('%');
+  const autofixProblemIdIdx = 0;
+  const autofixStartIdx = 1;
+  const autofixEndIdx = 2;
   return {
-    problemID: infos[0],
-    start: Number.parseInt(infos[1]),
-    end: Number.parseInt(infos[2])
+    problemID: infos[autofixProblemIdIdx],
+    start: Number.parseInt(infos[autofixStartIdx]),
+    end: Number.parseInt(infos[autofixEndIdx])
   };
 }

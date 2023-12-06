@@ -62,7 +62,7 @@ const asyncFun = async function() {
 };
 
 const factorial = function f(n: number): number {
-  return n == 1 ? 1 : n * f(n - 1);
+  return n === 1 ? 1 : n * f(n - 1);
 };
 
 class C {

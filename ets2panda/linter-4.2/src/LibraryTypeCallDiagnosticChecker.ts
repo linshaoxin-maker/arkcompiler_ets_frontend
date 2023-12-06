@@ -13,19 +13,25 @@
  * limitations under the License.
  */
 
-import * as ts from 'typescript';
-import { DiagnosticChecker } from './DiagnosticChecker';
+import type * as ts from 'typescript';
+import type { DiagnosticChecker } from './DiagnosticChecker';
 
-// Current approach relates on error code and error message matching and it is quite fragile,
-// so this place should be checked thoroughly in the case of typescript upgrade
+/*
+ * Current approach relates on error code and error message matching and it is quite fragile,
+ * so this place should be checked thoroughly in the case of typescript upgrade
+ */
 export const TYPE_0_IS_NOT_ASSIGNABLE_TO_TYPE_1_ERROR_CODE = 2322;
-export const TYPE_UNKNOWN_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE = /^Type '(.*)\bunknown\b(.*)' is not assignable to type '.*'\.$/;
+export const TYPE_UNKNOWN_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE =
+  /^Type '(.*)\bunknown\b(.*)' is not assignable to type '.*'\.$/;
 export const TYPE_NULL_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE = /^Type '(.*)\bnull\b(.*)' is not assignable to type '.*'\.$/;
-export const TYPE_UNDEFINED_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE = /^Type '(.*)\bundefined\b(.*)' is not assignable to type '.*'\.$/;
+export const TYPE_UNDEFINED_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE =
+  /^Type '(.*)\bundefined\b(.*)' is not assignable to type '.*'\.$/;
 
 export const ARGUMENT_OF_TYPE_0_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_ERROR_CODE = 2345;
-export const ARGUMENT_OF_TYPE_NULL_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_RE = /^Argument of type '(.*)\bnull\b(.*)' is not assignable to parameter of type '.*'\.$/;
-export const ARGUMENT_OF_TYPE_UNDEFINED_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_RE = /^Argument of type '(.*)\bundefined\b(.*)' is not assignable to parameter of type '.*'\.$/;
+export const ARGUMENT_OF_TYPE_NULL_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_RE =
+  /^Argument of type '(.*)\bnull\b(.*)' is not assignable to parameter of type '.*'\.$/;
+export const ARGUMENT_OF_TYPE_UNDEFINED_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_RE =
+  /^Argument of type '(.*)\bundefined\b(.*)' is not assignable to parameter of type '.*'\.$/;
 
 export class LibraryTypeCallDiagnosticChecker implements DiagnosticChecker {
   inLibCall: boolean = false;
@@ -35,15 +41,16 @@ export class LibraryTypeCallDiagnosticChecker implements DiagnosticChecker {
   constructor(filteredDiagnosticMessages: Set<ts.DiagnosticMessageChain>) {
     this.filteredDiagnosticMessages = filteredDiagnosticMessages;
   }
-  
-  configure(inLibCall: boolean, diagnosticMessages: Array<ts.DiagnosticMessageChain>) {
+
+  configure(inLibCall: boolean, diagnosticMessages: Array<ts.DiagnosticMessageChain>): void {
     this.inLibCall = inLibCall;
     this.diagnosticMessages = diagnosticMessages;
   }
 
   checkMessageText(msg: string): boolean {
     if (this.inLibCall) {
-      const match = msg.match(ARGUMENT_OF_TYPE_NULL_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_RE) ||
+      const match =
+        msg.match(ARGUMENT_OF_TYPE_NULL_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_RE) ||
         msg.match(ARGUMENT_OF_TYPE_UNDEFINED_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_RE) ||
         msg.match(TYPE_UNDEFINED_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE) ||
         msg.match(TYPE_NULL_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE);
@@ -53,7 +60,7 @@ export class LibraryTypeCallDiagnosticChecker implements DiagnosticChecker {
   }
 
   checkMessageChain(chain: ts.DiagnosticMessageChain): boolean {
-    if (chain.code == TYPE_0_IS_NOT_ASSIGNABLE_TO_TYPE_1_ERROR_CODE) {
+    if (chain.code === TYPE_0_IS_NOT_ASSIGNABLE_TO_TYPE_1_ERROR_CODE) {
       if (chain.messageText.match(TYPE_UNKNOWN_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE)) {
         return false;
       }
@@ -64,11 +71,11 @@ export class LibraryTypeCallDiagnosticChecker implements DiagnosticChecker {
         return false;
       }
     }
-    return chain.next == undefined ? true : this.checkMessageChain(chain.next[0]);
-  };
+    return chain.next === undefined ? true : this.checkMessageChain(chain.next[0]);
+  }
 
-  checkFilteredDiagnosticMessages(msgText: ts.DiagnosticMessageChain | string) {
-    if (this.filteredDiagnosticMessages.size == 0) {
+  checkFilteredDiagnosticMessages(msgText: ts.DiagnosticMessageChain | string): boolean {
+    if (this.filteredDiagnosticMessages.size === 0) {
       return true;
     }
 
@@ -77,8 +84,8 @@ export class LibraryTypeCallDiagnosticChecker implements DiagnosticChecker {
     }
 
     for (const msgChain of this.filteredDiagnosticMessages) {
-      if (typeof msgText == 'string') {
-        if (msgText == msgChain.messageText) {
+      if (typeof msgText === 'string') {
+        if (msgText === msgChain.messageText) {
           return false;
         }
         continue;
@@ -91,16 +98,16 @@ export class LibraryTypeCallDiagnosticChecker implements DiagnosticChecker {
           return true;
         }
 
-        if (curMsg.code != curFilteredMsg.code) {
+        if (curMsg.code !== curFilteredMsg.code) {
           return true;
         }
 
-        if (curMsg.messageText != curFilteredMsg.messageText) {
+        if (curMsg.messageText !== curFilteredMsg.messageText) {
           return true;
         }
 
-        curMsg = curMsg.next ? curMsg.next[0]: undefined;
-        curFilteredMsg = curFilteredMsg.next ? curFilteredMsg.next[0]: undefined;
+        curMsg = curMsg.next ? curMsg.next[0] : undefined;
+        curFilteredMsg = curFilteredMsg.next ? curFilteredMsg.next[0] : undefined;
       }
 
       return false;
@@ -117,7 +124,7 @@ export class LibraryTypeCallDiagnosticChecker implements DiagnosticChecker {
       return false;
     }
 
-    if (typeof msgText == 'string') {
+    if (typeof msgText === 'string') {
       return this.checkMessageText(msgText);
     }
 

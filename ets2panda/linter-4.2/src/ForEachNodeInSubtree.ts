@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,19 @@
  * limitations under the License.
  */
 
-export interface AutofixInfo {
-  problemID: string;
-  start: number;
-  end: number;
+import * as ts from 'typescript';
+
+export function forEachNodeInSubtree(
+  node: ts.Node,
+  cb: (n: ts.Node) => void,
+  stopCond?: (n: ts.Node) => boolean
+): void {
+  cb(node);
+  if (stopCond && stopCond(node)) {
+    return;
+  }
+
+  ts.forEachChild(node, (child) => {
+    forEachNodeInSubtree(child, cb, stopCond);
+  });
 }

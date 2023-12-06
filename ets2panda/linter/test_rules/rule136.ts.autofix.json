@@ -18,7 +18,7 @@
         },
         {
             "line": 2,
-            "column": 5,
+            "column": 3,
             "problem": "FunctionContainsThis",
             "autofixable": false,
             "suggest": "",
@@ -50,7 +50,7 @@
         },
         {
             "line": 12,
-            "column": 12,
+            "column": 10,
             "problem": "FunctionContainsThis",
             "autofixable": false,
             "suggest": "",

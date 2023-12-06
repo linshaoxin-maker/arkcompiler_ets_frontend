@@ -32,7 +32,7 @@
         },
         {
             "line": 2,
-            "column": 10,
+            "column": 11,
             "problem": "LiteralAsPropertyName",
             "autofixable": true,
             "suggest": "",
@@ -40,7 +40,7 @@
         },
         {
             "line": 2,
-            "column": 21,
+            "column": 22,
             "problem": "LiteralAsPropertyName",
             "autofixable": true,
             "suggest": "",

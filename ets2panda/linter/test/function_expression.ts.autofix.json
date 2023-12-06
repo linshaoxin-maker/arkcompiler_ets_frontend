@@ -236,8 +236,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 1492,
-                    "end": 1649,
+                    "start": 1493,
+                    "end": 1650,
                     "replacementText": "(p: () => number): void => {\n    let a = factorial(3);\n    let b = p();\n    let c = new C();\n    c.m();\n}"
                 }
             ],
@@ -251,8 +251,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 1663,
-                    "end": 1714,
+                    "start": 1664,
+                    "end": 1715,
                     "replacementText": "(() => {\n    console.log('called immediately');\n})"
                 }
             ],
@@ -282,8 +282,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 1737,
-                    "end": 1782,
+                    "start": 1738,
+                    "end": 1783,
                     "replacementText": "(() => {\n    console.log('index access');\n})"
                 }
             ],
@@ -297,8 +297,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 1793,
-                    "end": 1830,
+                    "start": 1794,
+                    "end": 1831,
                     "replacementText": "(() => {\n    console.log('void');\n})"
                 }
             ],
@@ -312,8 +312,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 1870,
-                    "end": 1912,
+                    "start": 1871,
+                    "end": 1913,
                     "replacementText": "(() => {\n    console.log('async');\n})"
                 }
             ],
@@ -327,8 +327,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 1941,
-                    "end": 1980,
+                    "start": 1942,
+                    "end": 1981,
                     "replacementText": "(() => {\n    console.log('typeof');\n})"
                 }
             ],
@@ -350,8 +350,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 2027,
-                    "end": 2097,
+                    "start": 2028,
+                    "end": 2098,
                     "replacementText": "((p: boolean) => {\n    console.log('Function.bind(this)');\n})"
                 }
             ],
@@ -373,8 +373,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 2132,
-                    "end": 2171,
+                    "start": 2133,
+                    "end": 2172,
                     "replacementText": "() => { console.log('callback'); }"
                 }
             ],
@@ -388,8 +388,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 2195,
-                    "end": 2246,
+                    "start": 2196,
+                    "end": 2247,
                     "replacementText": "(() => { console.log('expr || function(){}'); })"
                 }
             ],
@@ -403,8 +403,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 2282,
-                    "end": 2322,
+                    "start": 2283,
+                    "end": 2323,
                     "replacementText": "(() => { console.log('ternary 1'); })"
                 }
             ],
@@ -418,8 +418,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 2337,
-                    "end": 2377,
+                    "start": 2338,
+                    "end": 2378,
                     "replacementText": "(() => { console.log('ternary 2'); })"
                 }
             ],

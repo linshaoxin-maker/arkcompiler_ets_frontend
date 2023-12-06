@@ -35,6 +35,12 @@ import {
 import { pathContainsDirectory } from './utils/functions/PathHelper';
 import { ProblemSeverity } from './ProblemSeverity';
 
+function toFixedPercent(part: number): string {
+  const percentiles = 100;
+  const precision = 2;
+  return (part * percentiles).toFixed(precision);
+}
+
 function prepareInputFilesList(cmdOptions: CommandLineOptions): string[] {
   let inputFiles = cmdOptions.inputFiles;
   if (cmdOptions.parsedConfigFile) {
@@ -196,27 +202,13 @@ function countProblemFiles(
   }
   if (errorNodes > 0) {
     filesNumber++;
-    const errorRate = (errorNodes / fileNodes * 100).toFixed(2);
-    const warningRate = (warningNodes / fileNodes * 100).toFixed(2);
+    const errorRate = toFixedPercent(errorNodes / fileNodes);
+    const warningRate = toFixedPercent(warningNodes / fileNodes);
     consoleLog(tsSrcFile.fileName, ': ', '\n\tError lines: ', linter.errorLineNumbersString);
     consoleLog(tsSrcFile.fileName, ': ', '\n\tWarning lines: ', linter.warningLineNumbersString);
+    consoleLog(`\n\tError constructs (%): ${errorRate}\t[ of ${fileNodes} constructs ], \t${fileErrorLines} lines`);
     consoleLog(
-      '\n\tError constructs (%): ',
-      errorRate,
-      '\t[ of ',
-      fileNodes,
-      ' constructs ], \t',
-      fileErrorLines,
-      ' lines'
-    );
-    consoleLog(
-      '\n\tWarning constructs (%): ',
-      warningRate,
-      '\t[ of ',
-      fileNodes,
-      ' constructs ], \t',
-      fileWarningLines,
-      ' lines'
+      `\n\tWarning constructs (%): ${warningRate}\t[ of ${fileNodes} constructs ], \t${fileWarningLines} lines`
     );
   }
 
@@ -224,8 +216,8 @@ function countProblemFiles(
 }
 
 function logTotalProblemsInfo(errorNodes: number, warningNodes: number, linter: TypeScriptLinter): void {
-  const errorRate = (errorNodes / linter.totalVisitedNodes * 100).toFixed(2);
-  const warningRate = (warningNodes / linter.totalVisitedNodes * 100).toFixed(2);
+  const errorRate = toFixedPercent(errorNodes / linter.totalVisitedNodes);
+  const warningRate = toFixedPercent(warningNodes / linter.totalVisitedNodes);
   consoleLog('\nTotal error constructs (%): ', errorRate);
   consoleLog('\nTotal warning constructs (%): ', warningRate);
   consoleLog('\nTotal error lines:', linter.totalErrorLines, ' lines\n');
@@ -234,6 +226,8 @@ function logTotalProblemsInfo(errorNodes: number, warningNodes: number, linter: 
 
 function logProblemsPercentageByFeatures(linter: TypeScriptLinter): void {
   consoleLog('\nPercent by features: ');
+  const paddingPercentage = 7;
+  const paddingFaultDescr = 55;
   for (let i = 0; i < FaultID.LAST_ID; i++) {
     // if Strict mode - count all cases
     if (!linter.strictMode && faultsAttrs[i].migratable) {
@@ -242,9 +236,9 @@ function logProblemsPercentageByFeatures(linter: TypeScriptLinter): void {
 
     const nodes = linter.nodeCounters[i];
     const lines = linter.lineCounters[i];
-    const pecentage = (nodes / linter.totalVisitedNodes * 100).toFixed(2).padEnd(7, ' ');
+    const pecentage = toFixedPercent(nodes / linter.totalVisitedNodes).padEnd(paddingPercentage, ' ');
 
-    consoleLog(faultDesc[i].padEnd(55, ' '), pecentage, '[', nodes, ' constructs / ', lines, ' lines]');
+    consoleLog(faultDesc[i].padEnd(paddingFaultDescr, ' '), pecentage, '[', nodes, ' constructs / ', lines, ' lines]');
   }
 }
 

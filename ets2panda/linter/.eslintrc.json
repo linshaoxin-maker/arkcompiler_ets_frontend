@@ -16,7 +16,7 @@
     "consistent-return": ["error", { "treatUndefinedAsUnspecified": false }],
     "curly": ["error", "all"],
     "dot-notation": "error",
-    "eqeqeq": ["error", "smart"],
+    "eqeqeq": ["error", "always"],
     "max-depth": ["error", { "max": 4 }],
     "multiline-comment-style": ["error", "starred-block"],
     "@stylistic/no-confusing-arrow": "error",
@@ -39,7 +39,7 @@
     "@stylistic/arrow-parens": ["error", "always"],
     "@stylistic/arrow-spacing": ["error", { "before": true, "after": true }],
     "@stylistic/block-spacing": ["error", "always"],
-    "@stylistic/brace-style": ["error", "1tbs", { "allowSingleLine": true }],
+    "@stylistic/brace-style": ["error", "1tbs", { "allowSingleLine": false }],
     "@stylistic/comma-dangle": [
       "error",
       {
@@ -165,16 +165,16 @@
     "@typescript-eslint/prefer-readonly": "error",
     "@typescript-eslint/consistent-type-imports": "error",
     // FIXME(knazarov)
-    // need to change metadata in cookbook accordingle. so do it later
+    // need to change metadata in cookbook accordingly. so do it later
     "@typescript-eslint/naming-convention": [
-      "off",
+      "error",
       {
         "selector": "default",
         "format": ["camelCase"]
       },
       {
         "selector": "enumMember",
-        "format": ["UPPER_CASE"]
+        "format": ["PascalCase", "UPPER_CASE"]
       },
       {
         "selector": "variable",

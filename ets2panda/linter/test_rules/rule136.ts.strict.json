@@ -16,7 +16,7 @@
         },
         {
             "line": 2,
-            "column": 5,
+            "column": 3,
             "problem": "FunctionContainsThis",
             "suggest": "",
             "rule": "Using \"this\" inside stand-alone functions is not supported (arkts-no-standalone-this)"
@@ -44,7 +44,7 @@
         },
         {
             "line": 12,
-            "column": 12,
+            "column": 10,
             "problem": "FunctionContainsThis",
             "suggest": "",
             "rule": "Using \"this\" inside stand-alone functions is not supported (arkts-no-standalone-this)"

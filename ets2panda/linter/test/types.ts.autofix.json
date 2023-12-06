@@ -285,8 +285,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 2630,
-                    "end": 2636,
+                    "start": 2631,
+                    "end": 2637,
                     "replacementText": "1 as any"
                 }
             ],
@@ -308,8 +308,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 2657,
-                    "end": 2714,
+                    "start": 2658,
+                    "end": 2715,
                     "replacementText": "document.getElementById('main_canvas') as HTMLCanvasElement"
                 }
             ],

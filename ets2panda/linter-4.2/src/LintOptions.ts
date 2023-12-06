@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-import * as ts from 'typescript';
-import { CommandLineOptions } from './CommandLineOptions';
-import { IsFileFromModuleCallback } from './IsFileFromModuleCallback';
+import type * as ts from 'typescript';
+import type { CommandLineOptions } from './CommandLineOptions';
+import type { IsFileFromModuleCallback } from './IsFileFromModuleCallback';
 
 // common options interface, additional fields may be used by plugins
 export interface LintOptions {
