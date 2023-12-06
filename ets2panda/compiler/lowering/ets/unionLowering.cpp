@@ -153,6 +153,7 @@ ir::TSAsExpression *HandleUnionCastToPrimitive(checker::ETSChecker *checker, ir:
         source_type = union_type->AsETSUnionType()->FindTypeIsCastableToSomeType(expr->Expr(), checker->Relation(),
                                                                                  expr->TsType());
     }
+
     if (source_type != nullptr && expr->Expr()->GetBoxingUnboxingFlags() != ir::BoxingUnboxingFlags::NONE) {
         if (expr->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
             auto *const boxed_expr_type = checker::BoxingConverter::ETSTypeFromSource(checker, expr->TsType());
@@ -228,7 +229,7 @@ ir::ExpressionStatement *GenExpressionStmtWithAssignment(checker::ETSChecker *ch
     return checker->AllocNode<ir::ExpressionStatement>(assignment_for_binary);
 }
 
-ir::BlockStatement *GenBlockStmtForAssignmentBinary(checker::ETSChecker *checker, ir::Identifier *var_decl_id,
+ir::BlockStatement *GenBlockStmtForAssignment(checker::ETSChecker *checker, ir::Identifier *var_decl_id,
                                                     ir::Expression *expr)
 {
     auto local_ctx = varbinder::LexicalScope<varbinder::LocalScope>(checker->VarBinder());
@@ -322,7 +323,7 @@ ir::BlockStatement *ReplaceBinaryExprInStmt(checker::ETSChecker *checker, ir::Ex
         auto *const test = GenInstanceofExpr(checker, union_node, u_type);
         auto *cloned_binary = expr->Clone(checker->Allocator(), expr->Parent())->AsBinaryExpression();
         cloned_binary->Check(checker);
-        auto *const consequent = GenBlockStmtForAssignmentBinary(
+        auto *const consequent = GenBlockStmtForAssignment(
             checker, var_decl_id->AsIdentifier(), ProcessOperandsInBinaryExpr(checker, cloned_binary, u_type));
         instanceof_tree = checker->Allocator()->New<ir::IfStatement>(test, consequent, instanceof_tree);
         test->SetParent(instanceof_tree);
@@ -371,6 +372,10 @@ ir::BlockStatement *HandleBlockWithBinaryAndUnions(checker::ETSChecker *checker,
 
 bool UnionLowering::Perform(public_lib::Context *ctx, parser::Program *program)
 {
+    if (!PerformLogicalLowering(ctx, program)) {
+        return false;
+    }
+
     for (auto &[_, ext_programs] : program->ExternalSources()) {
         (void)_;
         for (auto *ext_prog : ext_programs) {
@@ -396,10 +401,133 @@ bool UnionLowering::Perform(public_lib::Context *ctx, parser::Program *program)
 
         auto handle_binary = [](const ir::AstNode *ast_node) {
             return ast_node->IsBinaryExpression() && ast_node->AsBinaryExpression()->OperationType() != nullptr &&
-                   ast_node->AsBinaryExpression()->OperationType()->IsETSUnionType();
+                   ast_node->AsBinaryExpression()->OperationType()->IsETSUnionType() && !ast_node->AsBinaryExpression()->IsLogicalExtended();
         };
         if (ast->IsBlockStatement() && ast->IsAnyChild(handle_binary)) {
             return HandleBlockWithBinaryAndUnions(checker, ast->AsBlockStatement(), handle_binary);
+        }
+
+        return ast;
+    });
+
+    return true;
+}
+
+ir::VariableDeclaration *GenVariableDeclForUnionBinaryExpr(checker::ETSChecker *checker, varbinder::Scope *scope,
+                                                      ir::BinaryExpression *expr)
+{
+    ASSERT(expr->OperatorType() == lexer::TokenType::PUNCTUATOR_LOGICAL_AND ||
+           expr->OperatorType() == lexer::TokenType::PUNCTUATOR_LOGICAL_OR);
+    auto *var_id = Gensym(checker->Allocator());
+    auto *var = scope->AddDecl<varbinder::LetDecl, varbinder::LocalVariable>(checker->Allocator(), var_id->Name(),
+                                                                             varbinder::VariableFlags::LOCAL);
+    var->SetTsType(expr->OperationType());
+    var_id->SetVariable(var);
+    var_id->SetTsType(var->TsType());
+
+    auto declarator = checker->AllocNode<ir::VariableDeclarator>(var_id);
+    ArenaVector<ir::VariableDeclarator *> declarators(checker->Allocator()->Adapter());
+    declarators.push_back(declarator);
+
+    auto var_kind = ir::VariableDeclaration::VariableDeclarationKind::LET;
+    auto *binary_var_decl =
+        checker->AllocNode<ir::VariableDeclaration>(var_kind, checker->Allocator(), std::move(declarators), false);
+    binary_var_decl->SetRange({expr->Start(), expr->End()});
+    return binary_var_decl;
+}
+
+void InsertTruthyCheckBeforeStmt(ir::Statement *stmt, ir::VariableDeclaration *binary_var_decl,
+                                    ir::IfStatement *truthy_check)
+{
+    if (stmt->IsVariableDeclarator()) {
+        ASSERT(stmt->Parent()->IsVariableDeclaration());
+        stmt = stmt->Parent()->AsVariableDeclaration();
+    }
+    ASSERT(stmt->Parent()->IsBlockStatement());
+    auto *block = stmt->Parent()->AsBlockStatement();
+    binary_var_decl->SetParent(block);
+    truthy_check->SetParent(block);
+    auto it_stmt = std::find(block->Statements().begin(), block->Statements().end(), stmt);
+    block->Statements().insert(it_stmt, {binary_var_decl, truthy_check});
+}
+
+ir::BlockStatement *ReplaceLogicalBinaryExprInStmt(checker::ETSChecker *checker, ir::BlockStatement *block, ir::BinaryExpression *expr)
+{
+    auto *stmt = FindStatementFromNode(expr);
+    ASSERT(stmt->IsVariableDeclarator() || block == stmt->Parent());  // statement with union
+    auto *const binary_var_decl = GenVariableDeclForUnionBinaryExpr(checker, NearestScope(stmt), expr);
+    auto *const var_decl_id = binary_var_decl->Declarators().front()->Id();  // only one declarator was generated
+    ir::IfStatement *truthy_check_stmt = nullptr;
+    auto *cloned_left = expr->Left()->Clone(checker->Allocator(), expr->Left()->Parent())->AsExpression();
+    cloned_left->Check(checker);
+    auto *const left_assignment = GenBlockStmtForAssignment(checker, var_decl_id->AsIdentifier(), expr->Left());
+    auto *const right_assignment = GenBlockStmtForAssignment(checker, var_decl_id->AsIdentifier(), expr->Right());
+    if (expr->Left()->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+        const auto boxing_flags =
+            static_cast<ir::BoxingUnboxingFlags>(expr->Left()->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG);
+        cloned_left->SetBoxingUnboxingFlags(
+            static_cast<ir::BoxingUnboxingFlags>(expr->Left()->GetBoxingUnboxingFlags() & ~boxing_flags));
+    }
+    if (expr->OperatorType() == lexer::TokenType::PUNCTUATOR_LOGICAL_AND) {
+        truthy_check_stmt = checker->Allocator()->New<ir::IfStatement>(cloned_left, right_assignment, left_assignment);
+    } else {
+        truthy_check_stmt = checker->Allocator()->New<ir::IfStatement>(cloned_left, left_assignment, right_assignment);
+    }
+
+    // Replacing a binary expression with an identifier
+    // that was set in one of the branches of the `instanceof_tree` tree
+    stmt->TransformChildrenRecursively([var_decl_id](ir::AstNode *ast) -> ir::AstNode * {
+        if (ast->IsBinaryExpression() && ast->AsBinaryExpression()->OperationType() != nullptr &&
+            ast->AsBinaryExpression()->OperationType()->IsETSUnionType() && ast->AsBinaryExpression()->IsLogicalExtended()) {
+            return var_decl_id;
+        }
+
+        return ast;
+    });
+    InsertTruthyCheckBeforeStmt(stmt, binary_var_decl, truthy_check_stmt);
+    return block;
+}
+
+ir::BlockStatement *HandleBlockWithUnionBinary(checker::ETSChecker *checker, ir::BlockStatement *block,
+                                                  ir::BinaryExpression *bin_expr)
+{
+    if (bin_expr->OperatorType() != lexer::TokenType::PUNCTUATOR_LOGICAL_AND &&
+        bin_expr->OperatorType() != lexer::TokenType::PUNCTUATOR_LOGICAL_OR) {
+        checker->ThrowTypeError("Bad operand type, unions are not allowed in binary expressions except equality.",
+                                bin_expr->Start());
+    }
+    return ReplaceLogicalBinaryExprInStmt(checker, block, bin_expr);
+}
+
+ir::BlockStatement *HandleBlockWithUnionBinaryExprs(checker::ETSChecker *checker, ir::BlockStatement *block,
+                                                   const ir::NodePredicate &handle_binary)
+{
+    ir::BlockStatement *modified_ast_block = block;
+    while (modified_ast_block->IsAnyChild(handle_binary)) {
+        modified_ast_block = HandleBlockWithUnionBinary(
+            checker, modified_ast_block, modified_ast_block->FindChild(handle_binary)->AsBinaryExpression());
+    }
+    return modified_ast_block;
+}
+
+bool UnionLowering::PerformLogicalLowering(public_lib::Context *ctx, parser::Program *program)
+{
+    for (auto &[_, ext_programs] : program->ExternalSources()) {
+        (void)_;
+        for (auto *ext_prog : ext_programs) {
+            PerformLogicalLowering(ctx, ext_prog);
+        }
+    }
+
+    checker::ETSChecker *checker = ctx->checker->AsETSChecker();
+
+    program->Ast()->TransformChildrenRecursively([checker](ir::AstNode *ast) -> ir::AstNode * {
+        auto handle_binary = [](const ir::AstNode *ast_node) {
+            return ast_node->IsBinaryExpression() && ast_node->AsBinaryExpression()->OperationType() != nullptr &&
+                   ast_node->AsBinaryExpression()->OperationType()->IsETSUnionType() && ast_node->AsBinaryExpression()->IsLogicalExtended();
+        };
+        if (ast->IsBlockStatement() && ast->IsAnyChild(handle_binary)) {
+            return HandleBlockWithUnionBinaryExprs(checker, ast->AsBlockStatement(), handle_binary);
         }
 
         return ast;

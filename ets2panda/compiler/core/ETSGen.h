@@ -22,6 +22,7 @@
 #include "compiler/core/ETSfunction.h"
 #include "compiler/core/targetTypeContext.h"
 #include "checker/ETSchecker.h"
+#include "checker/ets/unboxingConverter.h"
 #include "util/helpers.h"
 
 namespace panda::es2panda::compiler {

@@ -416,6 +416,7 @@ public:
                                       bool is_cond_expr = false);
     Type *HandleBooleanLogicalOperators(Type *left_type, Type *right_type, lexer::TokenType token_type);
     Type *HandleBooleanLogicalOperatorsExtended(Type *left_type, Type *right_type, ir::BinaryExpression *expr);
+    Type *CreateBinaryOperationETSUnionType(Type *left_type, Type *right_type, ir::BinaryExpression *expr);
     checker::Type *CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *type_annotation, ir::Expression *init,
                                             ir::ModifierFlags flags);
     void CheckTruthinessOfType(ir::Expression *expr);
@@ -447,7 +448,9 @@ public:
     Type *PrimitiveTypeAsETSBuiltinType(Type *object_type);
     void AddBoxingUnboxingFlagToNode(ir::AstNode *node, Type *boxing_unboxing_type);
     ir::BoxingUnboxingFlags GetBoxingFlag(Type *boxing_type);
+    ir::BoxingUnboxingFlags GetBoxingFlag(TypeFlag type_kind) const;
     ir::BoxingUnboxingFlags GetUnboxingFlag(Type *unboxing_type);
+    ir::BoxingUnboxingFlags GetUnboxingFlag(TypeFlag type_kind) const;
     Type *MaybeBoxedType(const varbinder::Variable *var, ArenaAllocator *allocator) const;
     Type *MaybeBoxedType(const varbinder::Variable *var)
     {

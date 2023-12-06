@@ -776,6 +776,21 @@ bool ETSChecker::IsNullLikeOrVoidExpression(const ir::Expression *expr) const
     return expr->TsType()->IsETSNullLike() || expr->TsType()->IsETSVoidType();
 }
 
+Type *ETSChecker::CreateBinaryOperationETSUnionType(Type *left_type, Type *right_type, ir::BinaryExpression *expr)
+{
+    ArenaVector<checker::Type *> types(Allocator()->Adapter());
+    types.push_back(left_type);
+    types.push_back(right_type);
+    Relation()->SetNode(expr);
+    if (expr->Left()->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+        expr->Left()->SetBoxingUnboxingFlags(GetBoxingFlag(expr->Left()->TsType()));
+    }
+    if (expr->Right()->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+        expr->Right()->SetBoxingUnboxingFlags(GetBoxingFlag(expr->Right()->TsType()));
+    }
+    return CreateETSUnionType(std::move(types));
+}
+
 Type *ETSChecker::HandleBooleanLogicalOperatorsExtended(Type *left_type, Type *right_type, ir::BinaryExpression *expr)
 {
     ASSERT(left_type->IsConditionalExprType() && right_type->IsConditionalExprType());
@@ -786,13 +801,7 @@ Type *ETSChecker::HandleBooleanLogicalOperatorsExtended(Type *left_type, Type *r
         IsNullLikeOrVoidExpression(expr->Right()) ? std::make_tuple(true, false) : right_type->ResolveConditionExpr();
 
     if (!resolve_left) {
-        if (IsTypeIdenticalTo(left_type, right_type)) {
-            return left_type;
-        }
-        ArenaVector<checker::Type *> types(Allocator()->Adapter());
-        types.push_back(left_type);
-        types.push_back(right_type);
-        return CreateETSUnionType(std::move(types));
+        return IsTypeIdenticalTo(left_type, right_type) ? left_type : CreateBinaryOperationETSUnionType(left_type, right_type, expr);
     }
 
     switch (expr->OperatorType()) {
@@ -1563,9 +1572,73 @@ ir::BoxingUnboxingFlags ETSChecker::GetBoxingFlag(Type *boxing_type)
     }
 }
 
+ir::BoxingUnboxingFlags ETSChecker::GetBoxingFlag(TypeFlag type_kind) const
+{
+        switch (type_kind) {
+        case TypeFlag::ETS_BOOLEAN: {
+            return ir::BoxingUnboxingFlags::BOX_TO_BOOLEAN;
+        }
+        case TypeFlag::BYTE: {
+            return ir::BoxingUnboxingFlags::BOX_TO_BYTE;
+        }
+        case TypeFlag::CHAR: {
+            return ir::BoxingUnboxingFlags::BOX_TO_CHAR;
+        }
+        case TypeFlag::SHORT: {
+            return ir::BoxingUnboxingFlags::BOX_TO_SHORT;
+        }
+        case TypeFlag::INT: {
+            return ir::BoxingUnboxingFlags::BOX_TO_INT;
+        }
+        case TypeFlag::LONG: {
+            return ir::BoxingUnboxingFlags::BOX_TO_LONG;
+        }
+        case TypeFlag::FLOAT: {
+            return ir::BoxingUnboxingFlags::BOX_TO_FLOAT;
+        }
+        case TypeFlag::DOUBLE: {
+            return ir::BoxingUnboxingFlags::BOX_TO_DOUBLE;
+        }
+        default:
+            UNREACHABLE();
+    }
+}
+
 ir::BoxingUnboxingFlags ETSChecker::GetUnboxingFlag(Type *unboxing_type)
 {
-    auto type_kind = TypeKind(unboxing_type);
+    auto type_kind = TypeKind(ETSBuiltinTypeAsPrimitiveType(unboxing_type));
+    switch (type_kind) {
+        case TypeFlag::ETS_BOOLEAN: {
+            return ir::BoxingUnboxingFlags::UNBOX_TO_BOOLEAN;
+        }
+        case TypeFlag::BYTE: {
+            return ir::BoxingUnboxingFlags::UNBOX_TO_BYTE;
+        }
+        case TypeFlag::CHAR: {
+            return ir::BoxingUnboxingFlags::UNBOX_TO_CHAR;
+        }
+        case TypeFlag::SHORT: {
+            return ir::BoxingUnboxingFlags::UNBOX_TO_SHORT;
+        }
+        case TypeFlag::INT: {
+            return ir::BoxingUnboxingFlags::UNBOX_TO_INT;
+        }
+        case TypeFlag::LONG: {
+            return ir::BoxingUnboxingFlags::UNBOX_TO_LONG;
+        }
+        case TypeFlag::FLOAT: {
+            return ir::BoxingUnboxingFlags::UNBOX_TO_FLOAT;
+        }
+        case TypeFlag::DOUBLE: {
+            return ir::BoxingUnboxingFlags::UNBOX_TO_DOUBLE;
+        }
+        default:
+            UNREACHABLE();
+    }
+}
+
+ir::BoxingUnboxingFlags ETSChecker::GetUnboxingFlag(TypeFlag type_kind) const
+{
     switch (type_kind) {
         case TypeFlag::ETS_BOOLEAN: {
             return ir::BoxingUnboxingFlags::UNBOX_TO_BOOLEAN;

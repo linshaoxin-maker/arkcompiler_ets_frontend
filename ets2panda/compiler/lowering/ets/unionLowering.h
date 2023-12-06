@@ -24,6 +24,7 @@ class UnionLowering : public Phase {
 public:
     std::string_view Name() override;
     bool Perform(public_lib::Context *ctx, parser::Program *program) override;
+    bool PerformLogicalLowering(public_lib::Context *ctx, parser::Program *program);
     bool Postcondition(public_lib::Context *ctx, const parser::Program *program) override;
 };
 
