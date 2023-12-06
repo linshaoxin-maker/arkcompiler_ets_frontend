@@ -1586,37 +1586,46 @@ export class TypeScriptLinter {
         (ts.isPropertyAccessExpression(context.expression) && context.expression.name == ident));
   }
 
-  private handleElementAccessExpression(node: ts.Node) {
+  private isElementAcessAllowed(type: ts.Type): boolean {
+    if (type.isUnion()) {
+      for (const t of type.types) {
+        if (!this.isElementAcessAllowed(t)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    const typeNode = this.tsTypeChecker.typeToTypeNode(type, undefined, ts.NodeBuilderFlags.None);
+
+    return (
+      this.tsUtils.isLibraryType(type) ||
+      this.tsUtils.isAnyType(type) ||
+      this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isArray) ||
+      this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isTuple) ||
+      this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isStdRecordType) ||
+      this.tsUtils.isEnumType(type) ||
+      // we allow EsObject here beacuse it is reported later using FaultId.EsObjectType
+      this.tsUtils.isEsObjectType(typeNode)
+    );
+  }
+
+  private handleElementAccessExpression(node: ts.Node): void {
     const tsElementAccessExpr = node as ts.ElementAccessExpression;
     const tsElemAccessBaseExprType = this.tsUtils.getNonNullableType(
       this.tsUtils.getTypeOrTypeConstraintAtLocation(tsElementAccessExpr.expression)
     );
-    const tsElemAccessBaseExprTypeNode = this.tsTypeChecker.typeToTypeNode(
-      tsElemAccessBaseExprType,
-      undefined,
-      ts.NodeBuilderFlags.None
-    );
+
     if (
-      !this.tsUtils.isLibraryType(tsElemAccessBaseExprType) &&
-      !this.tsUtils.isAnyType(tsElemAccessBaseExprType) &&
       !ts.isArrayLiteralExpression(tsElementAccessExpr.expression) &&
-      !this.tsUtils.isOrDerivedFrom(tsElemAccessBaseExprType, this.tsUtils.isArray) &&
-      !this.tsUtils.isOrDerivedFrom(tsElemAccessBaseExprType, this.tsUtils.isTuple) &&
-      !this.tsUtils.isOrDerivedFrom(tsElemAccessBaseExprType, this.tsUtils.isStdRecordType) &&
-      !this.tsUtils.isEnumType(tsElemAccessBaseExprType) &&
-      !this.tsUtils.isEsObjectType(tsElemAccessBaseExprTypeNode)
+      !this.isElementAcessAllowed(tsElemAccessBaseExprType)
     ) {
       let autofix = Autofixer.fixPropertyAccessByIndex(node);
-      const autofixable = autofix != undefined;
+      const autofixable = autofix !== undefined;
       if (!this.autofixesInfo.shouldAutofix(node, FaultID.PropertyAccessByIndex)) {
         autofix = undefined;
       }
-      this.incrementCounters(
-        node,
-        FaultID.PropertyAccessByIndex,
-        autofixable,
-        autofix
-      );
+      this.incrementCounters(node, FaultID.PropertyAccessByIndex, autofixable, autofix);
     }
 
     if (this.tsUtils.hasEsObjectType(tsElementAccessExpr.expression)) {
