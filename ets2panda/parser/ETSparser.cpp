@@ -263,7 +263,7 @@ void ETSParser::CollectDefaultSources()
 {
     std::vector<std::string> paths;
     std::vector<std::string> stdlib = {"std/core", "std/math",       "std/containers",
-                                       "std/time", "std/interop/js", "escompat"};
+                                       "std/time", "std/interop/js", "escompat", "escompat/Intl"};
 
 #ifdef USE_UNIX_SYSCALL
     for (auto const &path : stdlib) {

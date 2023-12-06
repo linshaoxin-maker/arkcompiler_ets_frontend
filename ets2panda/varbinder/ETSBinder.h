@@ -196,6 +196,7 @@ import * from "std/containers";
 import * from "std/time";
 import * from "std/interop/js";
 import * from "escompat";
+import * from "escompat/Intl";
 )";
 
     void ResolveReferenceForScope(ir::AstNode *node, Scope *scope);
