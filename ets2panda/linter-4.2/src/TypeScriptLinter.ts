@@ -1608,6 +1608,7 @@ export class TypeScriptLinter {
     );
     if (
       !this.tsUtils.isLibraryType(tsElemAccessBaseExprType) &&
+      !this.tsUtils.isAnyType(tsElemAccessBaseExprType) &&
       !ts.isArrayLiteralExpression(tsElementAccessExpr.expression) &&
       !this.tsUtils.isOrDerivedFrom(tsElemAccessBaseExprType, this.tsUtils.isArray) &&
       !this.tsUtils.isOrDerivedFrom(tsElemAccessBaseExprType, this.tsUtils.isTuple) &&
