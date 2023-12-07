@@ -709,4 +709,3 @@
     }
   }
 }
-TypeError: The type of the object reference must be a non-nullish array or Record type [array_indexing_without_chaining_nullish.ets:19:33]

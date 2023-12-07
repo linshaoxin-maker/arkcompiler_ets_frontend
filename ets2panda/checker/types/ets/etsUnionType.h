@@ -62,6 +62,7 @@ public:
 
     void ToString(std::stringstream &ss) const override;
     void ToAssemblerType(std::stringstream &ss) const override;
+    void ToDebugInfoType(std::stringstream &ss) const override;
     void Identical(TypeRelation *relation, Type *other) override;
     void AssignmentTarget(TypeRelation *relation, Type *source) override;
     bool AssignmentSource(TypeRelation *relation, Type *target) override;

@@ -1358,10 +1358,10 @@ checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
                                     expr->Object()->Start());
         }
 
-        if (!expr->IsOptional() && left_type->IsNullish()) {
-            checker->ThrowTypeError("The type of the object reference must be a non-nullish array or Record type",
-                                    expr->Object()->Start());
-        }
+        // if (!expr->IsOptional() && left_type->IsNullish()) {
+        //     checker->ThrowTypeError("The type of the object reference must be a non-nullish array or Record type",
+        //                             expr->Object()->Start());
+        // }
     }
 
     auto *const base_type = expr->IsOptional() ? checker->GetNonNullishType(left_type) : left_type;
