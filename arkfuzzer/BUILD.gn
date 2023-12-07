@@ -1,0 +1,40 @@
+import("//arkcompiler/ets_frontend/es2panda/es2abc_config.gni")
+import("//arkcompiler/ets_frontend/ets_frontend_config.gni")
+import("//arkcompiler/runtime_core/ark_config.gni")
+
+
+ohos_executable("arkfuzzer") {
+  use_exceptions = true
+
+  sources = [ 
+    "main.cpp",
+    "cov/cov.cpp"
+  ]
+
+  include_dirs = [ 
+    "./cov" 
+  ]
+
+  cflags = []
+  cflags += [ "-fsanitize-coverage=trace-pc-guard" ]
+  
+  ldflags = []
+  ldflags += [ "-Wl,-Bstatic" ]
+  ldflags += [ "-lstdc++" ]
+  ldflags += [ "-Wl,-Bdynamic" ]
+
+  install_enable = false
+
+  part_name = "ets_frontend"
+  subsystem_name = "arkcompiler"
+}
+
+group("arkfuzzer_build") {
+  if (host_os == "linux") {
+    deps = [ ":arkfuzzer(${toolchain_linux})" ]
+  }
+
+  if (host_os == "mac") {
+    deps = [ ":arkfuzzer(${toolchain_mac})" ]
+  }
+}
