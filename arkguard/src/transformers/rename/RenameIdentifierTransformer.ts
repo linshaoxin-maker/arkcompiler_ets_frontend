@@ -125,15 +125,16 @@ namespace secharmony {
         manager.getReservedNames().forEach((name) => {
           reservedNames.push(name);
         });
-        // collect all identifiers of shadow sourceFile
-        shadowIdentifiers = collectIdentifiers(shadowSourceAst, context);
 
         if (nameCache === undefined) {
           nameCache = new Map<string, string>();
         }
-
         let root: Scope = manager.getRootScope();
+
         renameInScope(root);
+
+        // collect all identifiers of shadow sourceFile
+        shadowIdentifiers = collectIdentifiers(shadowSourceAst, context);
         return setParentRecursive(visit(node), true);
       }
 
@@ -148,25 +149,26 @@ namespace secharmony {
         // process symbols in scope, exclude property name.
         renameNamesInScope(scope);
 
-        for (const subScope of scope.children) {
+        let subScope = undefined;
+        for (let index = 0; index < scope.children.length; index++) {
+          subScope = scope.children[index];
           renameInScope(subScope);
+          subScope = undefined;
         }
       }
 
       function renameNamesInScope(scope: Scope): void {
-        if (scope.parent) {
-          scope.parent.importNames.forEach((value) => {
-            scope.importNames.add(value);
-          });
-        }
-
         if (isExcludeScope(scope)) {
           return;
         }
 
         scope.defs.forEach((def) => {
-          if (scope.importNames.has(def.name)) {
-            scope.defs.delete(def);
+          let parentScope = scope;
+          while (parentScope) {
+            if (parentScope.importNames && parentScope.importNames.has(def.name)) {
+              scope.defs.delete(def);
+            }
+            parentScope = parentScope.parent;
           }
         });
 
@@ -254,6 +256,15 @@ namespace secharmony {
           // the anme has already been generated in the current scope
           if (mangledIdentifierNames.has(mangled)) {
             mangled = '';
+          }
+
+          let parentScope = scope.parent;
+          while (parentScope) {
+            if (parentScope.mangledNames.has(mangled) || (parentScope.importNames && parentScope.importNames.has(mangled))) {
+              mangled = '';
+              break;
+            }
+            parentScope = parentScope.parent;
           }
         } while (mangled === '');
 
