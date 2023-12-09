@@ -95,19 +95,41 @@ export class ArkObfuscator {
   }
 
   /**
+   * desc: local user config is first if local config and config both exist
+   * @param config
+   * @private
+   */
+  private resolveConfig(config?: IOptions): boolean {
+    if (!this.mConfigPath && !config) {
+      console.error("config file is not found and no given config.");
+      return false;
+    }
+
+    this.mCustomProfiles = config;
+    if (this.mConfigPath) {
+      const localConfig = FileUtils.readFileAsJson(this.mConfigPath);
+      if (localConfig != undefined) {
+        this.mCustomProfiles = localConfig;
+      }
+    }
+
+    return this.mCustomProfiles != undefined;
+  }
+
+  /**
    * init ArkObfuscator according to user config
    * should be called after constructor
    */
   public init(config?: IOptions): boolean {
-    if (!this.mConfigPath && !config) {
+    if (!this.resolveConfig(config)) {
+      console.error("config is error.");
       return false;
     }
 
-    if (this.mConfigPath) {
-      config = FileUtils.readFileAsJson(this.mConfigPath);
+    if (!this.mCustomProfiles.mOutputDir) {
+      console.error("output directory is not declare in config file.");
+      return false;
     }
-
-    this.mCustomProfiles = config;
 
     if (this.mCustomProfiles.mCompact) {
       this.mTextWriter = createObfTextSingleLineWriter();
@@ -140,9 +162,10 @@ export class ArkObfuscator {
       this.mCustomProfiles.mOutputDir = path.join(path.dirname(this.mConfigPath), this.mCustomProfiles.mOutputDir);
     }
 
-    if (this.mCustomProfiles.mOutputDir && !fs.existsSync(this.mCustomProfiles.mOutputDir)) {
+    if (!fs.existsSync(this.mCustomProfiles.mOutputDir)) {
       fs.mkdirSync(this.mCustomProfiles.mOutputDir);
     }
+
     readProjectProperties(this.mSourceFiles, this.mCustomProfiles);
     this.readPropertyCache(this.mCustomProfiles.mOutputDir);
 
@@ -197,7 +220,7 @@ export class ArkObfuscator {
   }
 
   private readNameCache(sourceFile: string, outputDir: string): void {
-    if (!this.mCustomProfiles.mNameObfuscation.mEnable || !this.mCustomProfiles.mEnableNameCache) {
+    if (!this.mCustomProfiles.mNameObfuscation?.mEnable || !this.mCustomProfiles.mEnableNameCache) {
       return;
     }
 
@@ -208,7 +231,7 @@ export class ArkObfuscator {
   }
 
   private readPropertyCache(outputDir: string): void {
-    if (!this.mCustomProfiles.mNameObfuscation.mRenameProperties || !this.mCustomProfiles.mEnableNameCache) {
+    if (!this.mCustomProfiles.mNameObfuscation?.mRenameProperties || !this.mCustomProfiles.mEnableNameCache) {
       return;
     }
 
@@ -227,7 +250,9 @@ export class ArkObfuscator {
   }
 
   private producePropertyCache(outputDir: string): void {
-    if (this.mCustomProfiles.mNameObfuscation.mRenameProperties && this.mCustomProfiles.mEnableNameCache) {
+    if (this.mCustomProfiles.mNameObfuscation &&
+      this.mCustomProfiles.mNameObfuscation.mRenameProperties &&
+      this.mCustomProfiles.mEnableNameCache) {
       const propertyCachePath: string = path.join(outputDir, PROPERTY_CACHE_FILE);
       writeCache(renamePropertyModule.globalMangledTable, propertyCachePath);
     }
@@ -313,14 +338,14 @@ export class ArkObfuscator {
     if (outputDir && mixedInfo) {
       // the writing file is for the ut.
       const testCasesRootPath = path.join(__dirname, '../', 'test/grammar');
-      let relativePath = '';
-      let resultPath = '';
+      let relativePath;
       if (this.mCustomProfiles.mRenameFileName?.mEnable && mixedInfo.filePath) {
         relativePath = mixedInfo.filePath.replace(testCasesRootPath, '');
       } else {
         relativePath = sourceFilePath.replace(testCasesRootPath, '');
       }
-      resultPath = path.join(outputDir, relativePath);
+
+      let resultPath = path.join(outputDir, relativePath);
       fs.mkdirSync(path.dirname(resultPath), {recursive: true});
       fs.writeFileSync(resultPath, mixedInfo.content);
 
@@ -403,7 +428,10 @@ export class ArkObfuscator {
     if (renameIdentifierModule.nameCache) {
       renameIdentifierModule.nameCache.clear();
     }
+
+    renameIdentifierModule.historyNameCache = undefined;
     return result;
   }
 }
+
 export {ApiExtractor};

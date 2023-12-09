@@ -106,7 +106,6 @@ namespace secharmony {
     return scope.kind === ScopeKind.OBJECT_LITERAL;
   }
 
-  export const mangledIdentifierNames: Set<string> = new Set();
   /**
    * Structure of a scope
    */
@@ -154,6 +153,8 @@ namespace secharmony {
     importNames?: Set<string>;
 
     exportNames?: Set<string>;
+
+    mangledNames?: Set<string>;
 
     /**
      * add a sub scope to current scope
@@ -230,6 +231,7 @@ namespace secharmony {
       'loc': loc,
       'importNames': importNames,
       'exportNames': exportNames,
+      'mangledNames': mangledNames,
       addChild,
       addDefinition,
       addLabel,
@@ -634,16 +636,18 @@ namespace secharmony {
 
       const visitParam = (param: ParameterDeclaration): void => {
         const modifiers = getModifiers(param);
-        if (modifiers && modifiers.length > 0) {
-          const hasParameterPropertyModifier: boolean = modifiers.find(modifier => isParameterPropertyModifier(modifier)) !== undefined;
-          if (isIdentifier(param.name) && hasParameterPropertyModifier) {
-            current.defs.forEach((def) => {
-              if (def.name === param.name.getText()) {
-                current.defs.delete(def);
-                mangledIdentifierNames.add(def.name);
-              }
-            });
-          }
+        if (!modifiers || modifiers.length <= 0) {
+          return;
+        }
+
+        const findRet = modifiers.find(modifier => isParameterPropertyModifier(modifier));
+        if (isIdentifier(param.name) && findRet !== undefined) {
+          current.defs.forEach((def) => {
+            if (def.name === param.name.getText()) {
+              current.defs.delete(def);
+              current.mangledNames.add(def.name);
+            }
+          });
         }
       };
 
