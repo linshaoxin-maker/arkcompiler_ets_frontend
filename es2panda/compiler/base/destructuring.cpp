@@ -79,9 +79,12 @@ static void GenArray(PandaGen *pg, const ir::ArrayExpression *array)
     }
 
     DestructuringIteratorContext dstrCtx(pg, iterator);
+    auto *doneLabel = pg->AllocLabel();
 
     for (const auto *element : array->Elements()) {
         RegScope ers(pg);
+        pg->LoadAccumulator(element, iterator.Done());
+        pg->BranchIfTrue(element, doneLabel);
 
         if (element->IsRestElement()) {
             GenRestElement(pg, element->AsRestElement(), iterator, array->IsDeclaration());
@@ -121,6 +124,8 @@ static void GenArray(PandaGen *pg, const ir::ArrayExpression *array)
 
         lref.SetValue();
     }
+
+    pg->SetLabel(array, doneLabel);
 }
 
 static void GenObjectProperty(PandaGen *pg, const ir::ObjectExpression *object,
