@@ -120,6 +120,7 @@ public:
     void GenJsonContentRecord(const CompilerContext *context);
     void GenRecordNameInfo() const;
     void GenTypeInfoRecord() const;
+    void AddHasTopLevelAwaitRecord(bool hasTLA);
     std::mutex &GetEmitterLock()
     {
         return m_;
