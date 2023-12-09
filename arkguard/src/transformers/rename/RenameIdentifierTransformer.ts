@@ -84,7 +84,7 @@ namespace secharmony {
     return renameIdentifierFactory;
 
     function renameIdentifierFactory(context: TransformationContext): Transformer<Node> {
-      let reservedNames: string[] = [...(profile?.mReservedNames ?? []), 'this', '__global'];
+      let reservedNames: string[] = ['this', '__global'];
       let mangledSymbolNames: Map<Symbol, string> = new Map<Symbol, string>();
       let mangledLabelNames: Map<Label, string> = new Map<Label, string>();
 
@@ -120,10 +120,6 @@ namespace secharmony {
         const shadowSourceAst: SourceFile = TypeUtils.createNewSourceFile(node);
         checker = TypeUtils.createChecker(shadowSourceAst);
         manager.analyze(shadowSourceAst, checker);
-
-        manager.getReservedNames().forEach((name) => {
-          reservedNames.push(name);
-        });
 
         if (nameCache === undefined) {
           nameCache = new Map<string, string>();
@@ -179,7 +175,11 @@ namespace secharmony {
           const original: string = def.name;
           let mangled: string = original;
           // No allow to rename reserved names.
-          if (reservedNames.includes(original) || scope.exportNames.has(def.name) || isSkippedGlobal(openTopLevel, scope)) {
+          if (reservedNames.includes(original) ||
+            profile.mReservedNames?.includes(original) ||
+            manager.getReservedNames().has(original) ||
+            scope.exportNames.has(def.name) ||
+            isSkippedGlobal(openTopLevel, scope)) {
             scope.mangledNames.add(mangled);
             mangledSymbolNames.set(def, mangled);
             return;
@@ -265,7 +265,9 @@ namespace secharmony {
         do {
           mangled = localGenerator.getName()!;
           // if it is a globally reserved name, it needs to be regenerated
-          if (reservedNames.includes(mangled)) {
+          if (reservedNames.includes(mangled) ||
+            profile.mReservedNames?.includes(mangled) ||
+            manager.getReservedNames().has(mangled)) {
             mangled = '';
             continue;
           }
