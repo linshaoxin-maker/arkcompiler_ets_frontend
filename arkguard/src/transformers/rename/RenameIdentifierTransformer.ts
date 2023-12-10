@@ -236,30 +236,6 @@ namespace secharmony {
         return found;
       }
 
-      function searchMangledInChildScope(scope: Scope, name: string): boolean {
-        let found: boolean = false;
-
-        let search = (childScope: Scope): void => {
-          if (found) {
-            return;
-          }
-
-          if (childScope.mangledNames.has(name)) {
-            found = true;
-            return;
-          }
-
-          childScope.children.forEach((child) => {
-            search(child);
-          });
-        };
-
-        scope.children.forEach((child) => {
-          search(child);
-        });
-        return found;
-      }
-
       function getMangled(scope: Scope, localGenerator: INameGenerator): string {
         let mangled: string = '';
         do {
@@ -282,7 +258,7 @@ namespace secharmony {
             continue;
           }
 
-          if (searchMangledInParent(scope, mangled) || searchMangledInChildScope(scope, mangled)) {
+          if (searchMangledInParent(scope, mangled) || manager.getRootScope().constructorReservedParams.has(mangled)) {
             mangled = '';
           }
         } while (mangled === '');

@@ -41,7 +41,6 @@ import type {
   ImportSpecifier,
   InterfaceDeclaration,
   LabeledStatement,
-  Modifier,
   ModuleDeclaration,
   Node,
   ObjectBindingPattern,
@@ -156,6 +155,8 @@ namespace secharmony {
 
     mangledNames?: Set<string>;
 
+    constructorReservedParams?: Set<string>;
+
     /**
      * add a sub scope to current scope
      *
@@ -216,6 +217,8 @@ namespace secharmony {
 
     let mangledNames: Set<string> = new Set<string>();
 
+    let constructorReservedParams: Set<string> = new Set<string>();
+
     // location path
     let loc: string = parent?.loc ? parent.loc + '#' + scopeName : scopeName;
 
@@ -232,6 +235,7 @@ namespace secharmony {
       'importNames': importNames,
       'exportNames': exportNames,
       'mangledNames': mangledNames,
+      'constructorReservedParams': constructorReservedParams,
       addChild,
       addDefinition,
       addLabel,
@@ -307,6 +311,7 @@ namespace secharmony {
      * get reserved names like ViewPU component class name
      */
     getReservedNames(): Set<string>;
+
     /**
      * do scope analysis
      *
@@ -612,9 +617,9 @@ namespace secharmony {
      * @param node
      */
     function analyzeModule(node: ModuleDeclaration): void {
-      /** 
-       * if it is an anonymous scope, generate the scope name with a number, 
-       * which is based on the order of its child scopes in the upper scope 
+      /**
+       * if it is an anonymous scope, generate the scope name with a number,
+       * which is based on the order of its child scopes in the upper scope
        */
       let scopeName: string = node.name.text ?? '$' + current.children.length;
       current = createScope(scopeName, node, ScopeKind.MODULE, true, current);
@@ -641,14 +646,19 @@ namespace secharmony {
         }
 
         const findRet = modifiers.find(modifier => isParameterPropertyModifier(modifier));
-        if (isIdentifier(param.name) && findRet !== undefined) {
-          current.defs.forEach((def) => {
-            if (def.name === param.name.getText()) {
-              current.defs.delete(def);
-              current.mangledNames.add(def.name);
-            }
-          });
+        if (!isIdentifier(param.name) || findRet == undefined) {
+          return;
         }
+
+        current.defs.forEach((def) => {
+          if (def.name !== param.name.getText()) {
+            return;
+          }
+
+          current.defs.delete(def);
+          current.mangledNames.add(def.name);
+          root.constructorReservedParams.add(def.name);
+        });
       };
 
       node.parameters.forEach((param) => {
