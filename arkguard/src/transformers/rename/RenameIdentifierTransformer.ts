@@ -42,7 +42,6 @@ import {
   isEnumScope,
   isInterfaceScope,
   isObjectLiteralScope,
-  mangledIdentifierNames
 } from '../../utils/ScopeAnalyzer';
 
 import type {
@@ -85,7 +84,7 @@ namespace secharmony {
     return renameIdentifierFactory;
 
     function renameIdentifierFactory(context: TransformationContext): Transformer<Node> {
-      let reservedNames: string[] = [...(profile?.mReservedNames ?? []), 'this', '__global'];
+      let reservedNames: string[] = ['this', '__global'];
       let mangledSymbolNames: Map<Symbol, string> = new Map<Symbol, string>();
       let mangledLabelNames: Map<Label, string> = new Map<Label, string>();
 
@@ -122,18 +121,15 @@ namespace secharmony {
         checker = TypeUtils.createChecker(shadowSourceAst);
         manager.analyze(shadowSourceAst, checker);
 
-        manager.getReservedNames().forEach((name) => {
-          reservedNames.push(name);
-        });
-        // collect all identifiers of shadow sourceFile
-        shadowIdentifiers = collectIdentifiers(shadowSourceAst, context);
-
         if (nameCache === undefined) {
           nameCache = new Map<string, string>();
         }
 
         let root: Scope = manager.getRootScope();
         renameInScope(root);
+
+        // collect all identifiers of shadow sourceFile
+        shadowIdentifiers = collectIdentifiers(shadowSourceAst, context);
         return setParentRecursive(visit(node), true);
       }
 
@@ -148,25 +144,23 @@ namespace secharmony {
         // process symbols in scope, exclude property name.
         renameNamesInScope(scope);
 
-        for (const subScope of scope.children) {
+        let subScope = undefined;
+        while (scope.children.length > 0) {
+          subScope = scope.children.pop();
           renameInScope(subScope);
+          subScope = undefined;
         }
       }
 
       function renameNamesInScope(scope: Scope): void {
-        if (scope.parent) {
-          scope.parent.importNames.forEach((value) => {
-            scope.importNames.add(value);
-          });
-        }
-
         if (isExcludeScope(scope)) {
           return;
         }
 
         scope.defs.forEach((def) => {
-          if (scope.importNames.has(def.name)) {
+          if (scope.importNames && scope.importNames.has(def.name)) {
             scope.defs.delete(def);
+            scope.mangledNames.add(def.name);
           }
         });
 
@@ -175,15 +169,18 @@ namespace secharmony {
       }
 
       function renames(scope: Scope, defs: Set<Symbol>, generator: INameGenerator): void {
-        const localCache: Map<string, string> = new Map<string, string>();
         findNoSymbolIdentifiers(scope);
 
         defs.forEach((def) => {
           const original: string = def.name;
           let mangled: string = original;
           // No allow to rename reserved names.
-          if (reservedNames.includes(original) || scope.exportNames.has(def.name) || isSkippedGlobal(openTopLevel, scope)) {
-            mangledIdentifierNames.add(mangled);
+          if (reservedNames.includes(original) ||
+            profile.mReservedNames?.includes(original) ||
+            manager.getReservedNames().has(original) ||
+            scope.exportNames.has(def.name) ||
+            isSkippedGlobal(openTopLevel, scope)) {
+            scope.mangledNames.add(mangled);
             mangledSymbolNames.set(def, mangled);
             return;
           }
@@ -198,15 +195,13 @@ namespace secharmony {
           if (specifyName) {
             mangled = specifyName;
           } else {
-            const sameMangled: string = localCache.get(original);
-            mangled = sameMangled ? sameMangled : getMangled(scope, generator);
+            mangled = getMangled(scope, generator);
           }
 
           // add new names to name cache
           nameCache.set(path, mangled);
-          mangledIdentifierNames.add(mangled);
+          scope.mangledNames.add(mangled);
           mangledSymbolNames.set(def, mangled);
-          localCache.set(original, mangled);
         });
       }
 
@@ -226,17 +221,29 @@ namespace secharmony {
         return isObjectLiteralScope(scope);
       }
 
+      function searchMangledInParent(scope: Scope, name: string): boolean {
+        let found: boolean = false;
+        let parentScope = scope;
+        while (parentScope) {
+          if (parentScope.mangledNames.has(name)) {
+            found = true;
+            break;
+          }
+
+          parentScope = parentScope.parent;
+        }
+
+        return found;
+      }
+
       function getMangled(scope: Scope, localGenerator: INameGenerator): string {
         let mangled: string = '';
         do {
           mangled = localGenerator.getName()!;
           // if it is a globally reserved name, it needs to be regenerated
-          if (reservedNames.includes(mangled)) {
-            mangled = '';
-            continue;
-          }
-
-          if (scope.importNames && scope.importNames.has(mangled)) {
+          if (reservedNames.includes(mangled) ||
+            profile.mReservedNames?.includes(mangled) ||
+            manager.getReservedNames().has(mangled)) {
             mangled = '';
             continue;
           }
@@ -251,8 +258,7 @@ namespace secharmony {
             continue;
           }
 
-          // the anme has already been generated in the current scope
-          if (mangledIdentifierNames.has(mangled)) {
+          if (searchMangledInParent(scope, mangled) || manager.getRootScope().constructorReservedParams.has(mangled)) {
             mangled = '';
           }
         } while (mangled === '');
@@ -335,7 +341,7 @@ namespace secharmony {
 
           const sym: Symbol | undefined = checker.getSymbolAtLocation(targetNode);
           if (!sym) {
-            mangledIdentifierNames.add((targetNode as Identifier).escapedText.toString());
+            scope.mangledNames.add((targetNode as Identifier).escapedText.toString());
           }
         };
 

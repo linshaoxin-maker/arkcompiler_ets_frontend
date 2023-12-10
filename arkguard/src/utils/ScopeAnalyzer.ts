@@ -41,7 +41,6 @@ import type {
   ImportSpecifier,
   InterfaceDeclaration,
   LabeledStatement,
-  Modifier,
   ModuleDeclaration,
   Node,
   ObjectBindingPattern,
@@ -106,7 +105,6 @@ namespace secharmony {
     return scope.kind === ScopeKind.OBJECT_LITERAL;
   }
 
-  export const mangledIdentifierNames: Set<string> = new Set();
   /**
    * Structure of a scope
    */
@@ -154,6 +152,10 @@ namespace secharmony {
     importNames?: Set<string>;
 
     exportNames?: Set<string>;
+
+    mangledNames?: Set<string>;
+
+    constructorReservedParams?: Set<string>;
 
     /**
      * add a sub scope to current scope
@@ -215,6 +217,8 @@ namespace secharmony {
 
     let mangledNames: Set<string> = new Set<string>();
 
+    let constructorReservedParams: Set<string> = new Set<string>();
+
     // location path
     let loc: string = parent?.loc ? parent.loc + '#' + scopeName : scopeName;
 
@@ -230,6 +234,8 @@ namespace secharmony {
       'loc': loc,
       'importNames': importNames,
       'exportNames': exportNames,
+      'mangledNames': mangledNames,
+      'constructorReservedParams': constructorReservedParams,
       addChild,
       addDefinition,
       addLabel,
@@ -305,6 +311,7 @@ namespace secharmony {
      * get reserved names like ViewPU component class name
      */
     getReservedNames(): Set<string>;
+
     /**
      * do scope analysis
      *
@@ -610,9 +617,9 @@ namespace secharmony {
      * @param node
      */
     function analyzeModule(node: ModuleDeclaration): void {
-      /** 
-       * if it is an anonymous scope, generate the scope name with a number, 
-       * which is based on the order of its child scopes in the upper scope 
+      /**
+       * if it is an anonymous scope, generate the scope name with a number,
+       * which is based on the order of its child scopes in the upper scope
        */
       let scopeName: string = node.name.text ?? '$' + current.children.length;
       current = createScope(scopeName, node, ScopeKind.MODULE, true, current);
@@ -634,17 +641,24 @@ namespace secharmony {
 
       const visitParam = (param: ParameterDeclaration): void => {
         const modifiers = getModifiers(param);
-        if (modifiers && modifiers.length > 0) {
-          const hasParameterPropertyModifier: boolean = modifiers.find(modifier => isParameterPropertyModifier(modifier)) !== undefined;
-          if (isIdentifier(param.name) && hasParameterPropertyModifier) {
-            current.defs.forEach((def) => {
-              if (def.name === param.name.getText()) {
-                current.defs.delete(def);
-                mangledIdentifierNames.add(def.name);
-              }
-            });
-          }
+        if (!modifiers || modifiers.length <= 0) {
+          return;
         }
+
+        const findRet = modifiers.find(modifier => isParameterPropertyModifier(modifier));
+        if (!isIdentifier(param.name) || findRet == undefined) {
+          return;
+        }
+
+        current.defs.forEach((def) => {
+          if (def.name !== param.name.getText()) {
+            return;
+          }
+
+          current.defs.delete(def);
+          current.mangledNames.add(def.name);
+          root.constructorReservedParams.add(def.name);
+        });
       };
 
       node.parameters.forEach((param) => {
