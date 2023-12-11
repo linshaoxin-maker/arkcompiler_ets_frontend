@@ -163,7 +163,9 @@ static bool CmpAssemblerTypesWithRank(Signature *sig1, Signature *sig2)
         sig2->Params()[ix]->TsType()->ToAssemblerTypeWithRank(s2);
         if (s1.str() != s2.str()) {
             return false;
-            break;
+        }
+        if (sig1->Params()[ix]->TsType()->TypeFlags() != sig2->Params()[ix]->TsType()->TypeFlags()) {
+            return false;
         }
     }
     return true;
