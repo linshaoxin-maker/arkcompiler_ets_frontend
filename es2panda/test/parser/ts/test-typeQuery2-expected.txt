@@ -1,0 +1,1 @@
+SyntaxError: expected a period. [test-typeQuery2.ts:17:20]

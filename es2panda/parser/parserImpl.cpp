@@ -1088,12 +1088,14 @@ ir::Expression *ParserImpl::ParseTsTypeReferenceOrQuery(TypeAnnotationParsingOpt
             return ParseTsImportType(startLoc, true);
         }
 
-        if (lexer_->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
+        if (lexer_->GetToken().Type() != lexer::TokenType::LITERAL_IDENT &&
+            lexer_->GetToken().Type() != lexer::TokenType::KEYW_THIS) {
             ThrowSyntaxError("Identifier expected.");
         }
     }
 
     ASSERT(lexer_->GetToken().Type() == lexer::TokenType::LITERAL_IDENT ||
+           lexer_->GetToken().Type() == lexer::TokenType::KEYW_THIS ||
            lexer_->GetToken().Type() == lexer::TokenType::KEYW_EXTENDS);
 
     ir::Expression *typeName = AllocNode<ir::Identifier>(lexer_->GetToken().Ident());
@@ -1104,6 +1106,11 @@ ir::Expression *ParserImpl::ParseTsTypeReferenceOrQuery(TypeAnnotationParsingOpt
         lexer_->ForwardToken(lexer::TokenType::PUNCTUATOR_LESS_THAN, 1);
     } else {
         lexer_->NextToken();
+    }
+
+    if (typeName->AsIdentifier()->Name().Is("this") &&
+        lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_PERIOD) {
+        ThrowSyntaxError("expected a period.");
     }
 
     if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD) {
@@ -2062,7 +2069,8 @@ ir::ModifierFlags ParserImpl::ParseModifiers()
             case lexer::TokenType::KEYW_ABSTRACT: {
                 actualStatus = ir::ModifierFlags::ABSTRACT;
                 nextStatus = ir::ModifierFlags::ACCESS | ir::ModifierFlags::ASYNC | ir::ModifierFlags::STATIC |
-                             ir::ModifierFlags::READONLY | ir::ModifierFlags::DECLARE | ir::ModifierFlags::OVERRIDE;
+                             ir::ModifierFlags::READONLY | ir::ModifierFlags::DECLARE | ir::ModifierFlags::OVERRIDE |
+                             ir::ModifierFlags::ACCESSOR;
                 break;
             }
             case lexer::TokenType::KEYW_DECLARE: {
