@@ -778,6 +778,8 @@ ArenaVector<ir::AstNode *> ETSParser::ParseTopLevelStatements(ArenaVector<ir::St
                 }
                 break;
             }
+            case lexer::TokenType::KEYW_NAMESPACE:
+                [[fallthrough]];
             case lexer::TokenType::KEYW_STATIC:
                 [[fallthrough]];
             case lexer::TokenType::KEYW_ABSTRACT:
@@ -1550,8 +1552,10 @@ ir::AstNode *ETSParser::ParseClassElement([[maybe_unused]] const ArenaVector<ir:
         case lexer::TokenType::KEYW_INTERFACE:
         case lexer::TokenType::KEYW_CLASS:
         case lexer::TokenType::KEYW_ENUM: {
-            ThrowSyntaxError(
-                "Local type declaration (class, struct, interface and enum) support is not yet implemented.");
+            if ((GetContext().Status() & ParserStatus::IN_NAMESPACE) == 0) {
+                ThrowSyntaxError(
+                    "Local type declaration (class, struct, interface and enum) support is not yet implemented.");
+            }
             // remove saved_pos nolint
 
             Lexer()->Rewind(saved_pos);
@@ -1576,6 +1580,9 @@ ir::AstNode *ETSParser::ParseClassElement([[maybe_unused]] const ArenaVector<ir:
             return type_decl;
         }
         case lexer::TokenType::KEYW_CONSTRUCTOR: {
+            if ((GetContext().Status() & ParserStatus::IN_NAMESPACE) != 0) {
+                ThrowSyntaxError({"Namespaces should not have a constructor"});
+            }
             if ((memberModifiers & ir::ModifierFlags::ASYNC) != 0) {
                 ThrowSyntaxError({"Constructor should not be async."});
             }
@@ -1609,7 +1616,15 @@ ir::AstNode *ETSParser::ParseClassElement([[maybe_unused]] const ArenaVector<ir:
         return ParseClassGetterSetterMethod(properties, modifiers, memberModifiers);
     }
 
-    auto *member_name = ExpectIdentifier(false, true);
+    if ((GetContext().Status() & ParserStatus::IN_NAMESPACE) != 0) {
+        auto type = Lexer()->GetToken().Type();
+        if (type == lexer::TokenType::KEYW_FUNCTION || type == lexer::TokenType::KEYW_LET ||
+            type == lexer::TokenType::KEYW_CONST) {
+            Lexer()->NextToken();
+        }
+    }
+
+    auto *member_name = ExpectIdentifier();
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS ||
         Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
@@ -1725,6 +1740,15 @@ ir::Statement *ETSParser::ParseTypeDeclaration(bool allow_static)
         }
         case lexer::TokenType::KEYW_INTERFACE: {
             return ParseInterfaceDeclaration(false);
+        }
+        case lexer::TokenType::KEYW_NAMESPACE: {
+            if (!InAmbientContext()) {
+                ThrowSyntaxError("Namespaces are declare only");
+            }
+            GetContext().Status() |= ParserStatus::IN_NAMESPACE;
+            auto *ns = ParseClassDeclaration(modifiers, ir::ModifierFlags::STATIC);
+            GetContext().Status() &= ~ParserStatus::IN_NAMESPACE;
+            return ns;
         }
         case lexer::TokenType::KEYW_CLASS: {
             return ParseClassDeclaration(modifiers);
@@ -4295,7 +4319,7 @@ ir::TSEnumDeclaration *ETSParser::ParseEnumMembers(ir::Identifier *const key, co
     }
 
     auto *const enum_declaration =
-        AllocNode<ir::TSEnumDeclaration>(Allocator(), key, std::move(members), is_const, is_static);
+        AllocNode<ir::TSEnumDeclaration>(Allocator(), key, std::move(members), is_const, is_static, InAmbientContext());
     enum_declaration->SetRange({enum_start, Lexer()->GetToken().End()});
 
     Lexer()->NextToken();  // eat '}'
@@ -4691,6 +4715,7 @@ void ETSParser::CheckDeclare()
         case lexer::TokenType::KEYW_CLASS:
         case lexer::TokenType::KEYW_NAMESPACE:
         case lexer::TokenType::KEYW_ENUM:
+        case lexer::TokenType::KEYW_TYPE:
         case lexer::TokenType::KEYW_ABSTRACT:
         case lexer::TokenType::KEYW_INTERFACE: {
             return;
