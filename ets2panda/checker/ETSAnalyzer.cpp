@@ -1515,17 +1515,17 @@ checker::Type *ETSAnalyzer::Check(ir::UnaryExpression *expr) const
             break;
         }
         case lexer::TokenType::PUNCTUATOR_TILDE: {
-            if (operand_type == nullptr || !operand_type->HasTypeFlag(checker::TypeFlag::ETS_INTEGRAL)) {
-                checker->ThrowTypeError("Bad operand type, the type of the operand must be integral type.",
+            if (operand_type == nullptr || !operand_type->HasTypeFlag(checker::TypeFlag::ETS_NUMERIC)) {
+                checker->ThrowTypeError("Bad operand type, the type of the operand must be numeric type.",
                                         expr->Argument()->Start());
             }
 
             if (operand_type->HasTypeFlag(checker::TypeFlag::CONSTANT)) {
-                expr->SetTsType(checker->BitwiseNegateIntegralType(operand_type, expr));
+                expr->SetTsType(checker->BitwiseNegateNumericType(operand_type, expr));
                 break;
             }
 
-            expr->SetTsType(operand_type);
+            expr->SetTsType(checker->SelectGlobalIntegerTypeForNumeric(operand_type));
             break;
         }
         case lexer::TokenType::PUNCTUATOR_EXCLAMATION_MARK: {
