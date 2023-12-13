@@ -2228,7 +2228,7 @@ ir::FunctionExpression *ParserImpl::ParseFunctionExpression(ParserStatus new_sta
 
         if (IsNamedFunctionExpression()) {
             CheckRestrictedBinding(lexer_->GetToken().KeywordType());
-            ident = ExpectIdentifier();
+            ident = ExpectIdentifier(false, true);
         }
 
         context_.Status() = saved_status;

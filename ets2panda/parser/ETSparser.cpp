@@ -1407,7 +1407,7 @@ void ETSParser::ParseClassFieldDefiniton(ir::Identifier *field_name, ir::Modifie
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA) {
         Lexer()->NextToken();
-        ir::Identifier *next_name = ExpectIdentifier();
+        ir::Identifier *next_name = ExpectIdentifier(false, true);
         ParseClassFieldDefiniton(next_name, modifiers, declarations);
     }
 }
@@ -1695,7 +1695,7 @@ ir::AstNode *ETSParser::ParseClassElement([[maybe_unused]] const ArenaVector<ir:
         return ParseClassGetterSetterMethod(properties, modifiers, memberModifiers);
     }
 
-    auto *member_name = ExpectIdentifier();
+    auto *member_name = ExpectIdentifier(false, true);
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS ||
         Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
@@ -1941,7 +1941,7 @@ ir::Statement *ETSParser::ParseInterfaceDeclaration(bool is_static)
     lexer::SourcePosition interface_start = Lexer()->GetToken().Start();
     Lexer()->NextToken();  // eat interface keyword
 
-    auto *id = ExpectIdentifier();
+    auto *id = ExpectIdentifier(false, true);
     util::StringView ident = FormInterfaceOrEnumDeclarationIdBinding(id);
 
     auto *decl_node = ParseInterfaceBody(id, is_static);
@@ -1965,7 +1965,7 @@ ir::Statement *ETSParser::ParseEnumDeclaration(bool is_const, bool is_static)
     lexer::SourcePosition enum_start = Lexer()->GetToken().Start();
     Lexer()->NextToken();  // eat enum keyword
 
-    auto *key = ExpectIdentifier();
+    auto *key = ExpectIdentifier(false, true);
     util::StringView ident = FormInterfaceOrEnumDeclarationIdBinding(key);
 
     auto *decl_node = ParseEnumMembers(key, enum_start, is_const, is_static);
@@ -2593,7 +2593,7 @@ ir::TypeNode *ETSParser::ParseBaseTypeReference(TypeAnnotationParsingOptions *op
 {
     ir::TypeNode *type_annotation = nullptr;
 
-    switch (Lexer()->GetToken().Type()) {
+    switch (Lexer()->GetToken().KeywordType()) {
         case lexer::TokenType::KEYW_BOOLEAN: {
             type_annotation = ParsePrimitiveType(options, ir::PrimitiveType::BOOLEAN);
             break;
@@ -2703,6 +2703,42 @@ ir::TSIntersectionType *ETSParser::ParseIntersectionType(ir::Expression *type)
     auto *intersection_type = AllocNode<ir::TSIntersectionType>(std::move(types));
     intersection_type->SetRange({start_loc, end_loc});
     return intersection_type;
+}
+
+ir::TypeNode *ETSParser::GetTypeAnnotationOfPrimitiveType([[maybe_unused]] lexer::TokenType token_type,
+                                                          TypeAnnotationParsingOptions *options)
+{
+    ir::TypeNode *type_annotation = nullptr;
+    switch (token_type) {
+        case lexer::TokenType::KEYW_BOOLEAN:
+            type_annotation = ParsePrimitiveType(options, ir::PrimitiveType::BOOLEAN);
+            break;
+        case lexer::TokenType::KEYW_DOUBLE:
+            type_annotation = ParsePrimitiveType(options, ir::PrimitiveType::DOUBLE);
+            break;
+        case lexer::TokenType::KEYW_BYTE:
+            type_annotation = ParsePrimitiveType(options, ir::PrimitiveType::BYTE);
+            break;
+        case lexer::TokenType::KEYW_FLOAT:
+            type_annotation = ParsePrimitiveType(options, ir::PrimitiveType::FLOAT);
+            break;
+        case lexer::TokenType::KEYW_SHORT:
+            type_annotation = ParsePrimitiveType(options, ir::PrimitiveType::SHORT);
+            break;
+        case lexer::TokenType::KEYW_INT:
+            type_annotation = ParsePrimitiveType(options, ir::PrimitiveType::INT);
+            break;
+        case lexer::TokenType::KEYW_CHAR:
+            type_annotation = ParsePrimitiveType(options, ir::PrimitiveType::CHAR);
+            break;
+        case lexer::TokenType::KEYW_LONG:
+            type_annotation = ParsePrimitiveType(options, ir::PrimitiveType::LONG);
+            break;
+        default:
+            type_annotation = ParseTypeReference(options);
+            break;
+    }
+    return type_annotation;
 }
 
 ir::TypeNode *ETSParser::ParseWildcardType(TypeAnnotationParsingOptions *options)
@@ -2834,7 +2870,11 @@ std::pair<ir::TypeNode *, bool> ETSParser::GetTypeAnnotationFromToken(TypeAnnota
                 keyword == lexer::TokenType::KEYW_IN || keyword == lexer::TokenType::KEYW_OUT) {
                 type_annotation = ParseWildcardType(options);
             } else {
-                type_annotation = ParseTypeReference(options);
+                if (Lexer()->GetToken().IsDefinableTypeName()) {
+                    type_annotation = GetTypeAnnotationOfPrimitiveType(Lexer()->GetToken().KeywordType(), options);
+                } else {
+                    type_annotation = ParseTypeReference(options);
+                }
             }
 
             if (((*options) & TypeAnnotationParsingOptions::POTENTIAL_CLASS_LITERAL) != 0 &&
@@ -4396,7 +4436,7 @@ void ETSParser::ParseNumberEnum(ArenaVector<ir::AstNode *> &members)
 
     // Lambda to parse enum member (maybe with initializer)
     auto const parse_member = [this, &members, &current_value]() {
-        auto *const ident = ExpectIdentifier();
+        auto *const ident = ExpectIdentifier(false, true);
         auto [decl, var] = VarBinder()->NewVarDecl<varbinder::LetDecl>(ident->Start(), ident->Name());
         var->SetScope(VarBinder()->GetScope());
         var->AddFlag(varbinder::VariableFlags::STATIC);
@@ -4433,8 +4473,8 @@ void ETSParser::ParseNumberEnum(ArenaVector<ir::AstNode *> &members)
 
             end_loc = ordinal->End();
         } else {
-            // Default enumeration constant value. Equal to 0 for the first item and = previous_value + 1 for all the
-            // others.
+            // Default enumeration constant value. Equal to 0 for the first item and = previous_value + 1 for all
+            // the others.
 
             ordinal = AllocNode<ir::NumberLiteral>(lexer::Number(current_value));
 
@@ -4548,7 +4588,7 @@ ir::ThisExpression *ETSParser::ParseThisExpression()
 
 ir::Identifier *ETSParser::ParseClassIdent([[maybe_unused]] ir::ClassDefinitionModifiers modifiers)
 {
-    return ExpectIdentifier();
+    return ExpectIdentifier(false, true);
 }
 
 // NOLINTNEXTLINE(google-default-arguments)
