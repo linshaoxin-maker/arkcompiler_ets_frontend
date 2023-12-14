@@ -21,6 +21,7 @@
 #include "lexer/token/sourceLocation.h"
 #include "compiler/lowering/checkerPhase.h"
 #include "compiler/lowering/plugin_phase.h"
+#include "compiler/lowering/ets/expandBrackets.h"
 #include "compiler/lowering/ets/generateDeclarations.h"
 #include "compiler/lowering/ets/lambdaLowering.h"
 #include "compiler/lowering/ets/opAssignment.h"
@@ -45,6 +46,7 @@ static OpAssignmentLowering OP_ASSIGNMENT_LOWERING;
 static ObjectIndexLowering OBJECT_INDEX_LOWERING;
 static TupleLowering TUPLE_LOWERING;  // Can be only applied after checking phase, and OP_ASSIGNMENT_LOWERING phase
 static UnionLowering UNION_LOWERING;
+static ExpandBracketsPhase EXPAND_BRACKETS_PHASE;
 static PluginPhase PLUGINS_AFTER_PARSE {"plugins-after-parse", ES2PANDA_STATE_PARSED, &util::Plugin::AfterParse};
 static PluginPhase PLUGINS_AFTER_CHECK {"plugins-after-check", ES2PANDA_STATE_CHECKED, &util::Plugin::AfterCheck};
 static PluginPhase PLUGINS_AFTER_LOWERINGS {"plugins-after-lowering", ES2PANDA_STATE_LOWERED,
@@ -62,6 +64,7 @@ std::vector<Phase *> GetETSPhaseList()
         &OBJECT_INDEX_LOWERING,
         &TUPLE_LOWERING,
         &UNION_LOWERING,
+        &EXPAND_BRACKETS_PHASE,
         &PLUGINS_AFTER_LOWERINGS,
     };
 }
