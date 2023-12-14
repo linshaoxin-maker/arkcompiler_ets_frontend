@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,15 +13,8 @@
  * limitations under the License.
  */
 
-/*---
-flags: [dynamic-ast]
----*/
-
-import { A } from "dynamic_js_import_tests"
-
-function foo(): int {
-    let a = new A();
-    let f: JSValue = (x: int, y: int): int => { return x * x + y * y }
-    let f1: (x: int, y: int) => int = f;
-    return 0;
+function main(): void {
+    let A: Array<number> = new Array<number>();
+    let a: Number[] = new Number[A.length + 2]
+    assert a.length == 2
 }

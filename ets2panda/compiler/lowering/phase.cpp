@@ -21,12 +21,14 @@
 #include "lexer/token/sourceLocation.h"
 #include "compiler/lowering/checkerPhase.h"
 #include "compiler/lowering/plugin_phase.h"
+#include "compiler/lowering/ets/expandBrackets.h"
 #include "compiler/lowering/ets/generateDeclarations.h"
 #include "compiler/lowering/ets/lambdaLowering.h"
 #include "compiler/lowering/ets/opAssignment.h"
 #include "compiler/lowering/ets/tupleLowering.h"
 #include "compiler/lowering/ets/unionLowering.h"
 #include "public/es2panda_lib.h"
+#include "compiler/lowering/ets/promiseVoid.h"
 
 namespace panda::es2panda::compiler {
 
@@ -45,24 +47,19 @@ static OpAssignmentLowering OP_ASSIGNMENT_LOWERING;
 static ObjectIndexLowering OBJECT_INDEX_LOWERING;
 static TupleLowering TUPLE_LOWERING;  // Can be only applied after checking phase, and OP_ASSIGNMENT_LOWERING phase
 static UnionLowering UNION_LOWERING;
+static ExpandBracketsPhase EXPAND_BRACKETS_PHASE;
+static PromiseVoidLowering PROMISE_VOID_LOWERING;
 static PluginPhase PLUGINS_AFTER_PARSE {"plugins-after-parse", ES2PANDA_STATE_PARSED, &util::Plugin::AfterParse};
 static PluginPhase PLUGINS_AFTER_CHECK {"plugins-after-check", ES2PANDA_STATE_CHECKED, &util::Plugin::AfterCheck};
 static PluginPhase PLUGINS_AFTER_LOWERINGS {"plugins-after-lowering", ES2PANDA_STATE_LOWERED,
                                             &util::Plugin::AfterLowerings};
-
 std::vector<Phase *> GetETSPhaseList()
 {
     return std::vector<Phase *> {
-        &PLUGINS_AFTER_PARSE,
-        &LAMBDA_LOWERING,
-        &CHECKER_PHASE,
-        &PLUGINS_AFTER_CHECK,
-        &GENERATE_TS_DECLARATIONS_PHASE,
-        &OP_ASSIGNMENT_LOWERING,
-        &OBJECT_INDEX_LOWERING,
-        &TUPLE_LOWERING,
-        &UNION_LOWERING,
-        &PLUGINS_AFTER_LOWERINGS,
+        &PLUGINS_AFTER_PARSE,    &PROMISE_VOID_LOWERING, &LAMBDA_LOWERING,
+        &CHECKER_PHASE,          &PLUGINS_AFTER_CHECK,   &GENERATE_TS_DECLARATIONS_PHASE,
+        &OP_ASSIGNMENT_LOWERING, &OBJECT_INDEX_LOWERING, &TUPLE_LOWERING,
+        &UNION_LOWERING,         &EXPAND_BRACKETS_PHASE, &PLUGINS_AFTER_LOWERINGS,
     };
 }
 
