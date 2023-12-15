@@ -133,7 +133,8 @@ public:
     ETSObjectType *BuildClassProperties(ir::ClassDefinition *class_def);
     ETSObjectType *BuildAnonymousClassProperties(ir::ClassDefinition *class_def, ETSObjectType *super_type);
     ETSObjectType *BuildInterfaceProperties(ir::TSInterfaceDeclaration *interface_decl);
-    ETSObjectType *GetSuperType(ETSObjectType *type);
+    ETSObjectType *GetClassSuperType(ETSObjectType *type);
+    ETSObjectType *GetInterfaceSuperType(ETSObjectType *type);
     ArenaVector<ETSObjectType *> GetInterfaces(ETSObjectType *type);
     ArenaVector<ETSObjectType *> GetInterfacesOfClass(ETSObjectType *type);
     ArenaVector<ETSObjectType *> GetInterfacesOfInterface(ETSObjectType *type);

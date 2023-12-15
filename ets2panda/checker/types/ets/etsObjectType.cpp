@@ -690,7 +690,7 @@ Type *ETSObjectType::AsSuper(Checker *checker, varbinder::Variable *source_var)
         return checker->GetGlobalTypesHolder()->GlobalETSObjectType()->AsSuper(checker, source_var);
     }
 
-    Type *const super_type = checker->AsETSChecker()->GetSuperType(this);
+    Type *const super_type = checker->AsETSChecker()->GetClassSuperType(this);
 
     if (super_type == nullptr) {
         return nullptr;
