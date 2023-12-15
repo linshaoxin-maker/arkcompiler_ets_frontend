@@ -745,6 +745,7 @@ private:
             }
             case checker::TypeFlag::ETS_ENUM:
             case checker::TypeFlag::ETS_STRING_ENUM:
+            case checker::TypeFlag::ETS_ENUM2_TYPE:
             case checker::TypeFlag::ETS_BOOLEAN:
             case checker::TypeFlag::BYTE:
             case checker::TypeFlag::CHAR:

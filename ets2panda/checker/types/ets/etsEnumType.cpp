@@ -328,4 +328,116 @@ ETSFunctionType *ETSEnumInterface::LookupTypeMethod(ETSChecker *const checker, c
     checker->ThrowTypeError({"No enum type method called '", prop->Name(), "'"}, prop->Start());
 }
 
+std::string EnumDescription(util::StringView name)
+{
+    return "#Enum#" + static_cast<std::string>(name);
+}
+
+ETSEnum2Type::ETSEnum2Type(ETSChecker *checker, util::StringView name, util::StringView assembler_name,
+                           ir::AstNode *decl_node, ETSObjectFlags flags)
+    : ETSObjectType(checker->Allocator(), name, assembler_name, decl_node, flags | ETSObjectFlags::ENUM2)
+{
+    AddTypeFlag(TypeFlag::ETS_ENUM2);
+    CreateLiteralTypes(checker, name, assembler_name, decl_node, flags);
+}
+
+ETSEnum2Type::ETSEnum2Type(ArenaAllocator *allocator, util::StringView name, util::StringView assembler_name,
+                           ir::AstNode *decl_node, ETSObjectFlags flags, ir::Literal *value)
+    : ETSObjectType(allocator, name, assembler_name, decl_node, flags | ETSObjectFlags::ENUM2), value_(value)
+{
+    AddTypeFlag(TypeFlag::ETS_ENUM2);
+    ASSERT(value);
+}
+
+bool ETSEnum2Type::IsSameEnumType(const ETSEnum2Type *const other) const noexcept
+{
+    return GetDeclNode() != nullptr && other->GetDeclNode() == GetDeclNode();
+}
+
+bool ETSEnum2Type::IsLiteralType() const noexcept
+{
+    return value_ != nullptr;
+}
+
+bool ETSEnum2Type::IsSameEnumLiteralType(const ETSEnum2Type *other) const noexcept
+{
+    ASSERT(IsLiteralType() && IsSameEnumType(other));
+    return value_ == other->value_;
+}
+
+bool ETSEnum2Type::AssignmentSource(TypeRelation *const relation, Type *const target)
+{
+    bool result = target->IsETSEnum2Type() && IsSameEnumType(target->AsETSEnum2Type());
+    relation->Result(result);
+    return relation->IsTrue();
+}
+
+void ETSEnum2Type::AssignmentTarget(TypeRelation *const relation, Type *const source)
+{
+    bool result = source->IsETSEnum2Type() && IsSameEnumType(source->AsETSEnum2Type());
+    relation->Result(result);
+}
+
+void ETSEnum2Type::Identical(TypeRelation *const relation, Type *const other)
+{
+    bool result =
+        other->IsETSEnum2Type() && IsSameEnumType(other->AsETSEnum2Type()) && value_ == other->AsETSEnum2Type()->value_;
+    relation->Result(result);
+}
+
+void ETSEnum2Type::Cast(TypeRelation *relation, Type *target)
+{
+    if (target->IsIntType()) {
+        relation->Result(true);
+        return;
+    }
+
+    conversion::Forbidden(relation);
+}
+
+void ETSEnum2Type::CreateLiteralTypes(ETSChecker *checker, util::StringView name, util::StringView assembler_name,
+                                      ir::AstNode *decl_node, ETSObjectFlags flags)
+{
+    ASSERT(decl_node->IsClassDefinition());
+
+    for (auto &it : decl_node->AsClassDefinition()->Body()) {
+        if (!it->IsClassProperty() || !it->AsClassProperty()->Value()->IsCallExpression()) {
+            // @@arr property
+            auto *arr_ident = it->AsClassProperty()->Id();
+            auto *arr_var = arr_ident->Variable();
+            ASSERT(arr_ident->Name() == "@@arr" && arr_var != nullptr);
+
+            auto *array_type = checker->CreateETSArrayType(this);
+            array_type->SetVariable(arr_var);
+            arr_var->SetTsType(array_type);
+
+            break;
+        }
+
+        // if (decl_node->IsClassDefinition()) continue;
+
+        auto *ident = it->AsClassProperty()->Id();
+        auto *var = ident->Variable();
+        auto &create_args = it->AsClassProperty()->Value()->AsCallExpression()->Arguments();
+        ASSERT(create_args.size() == 4);
+        auto *value = create_args[2];
+
+        ir::Literal *literal = nullptr;
+        if (value->IsNumberLiteral()) {
+            literal = value->AsNumberLiteral();
+        } else if (value->IsStringLiteral()) {
+            literal = value->AsStringLiteral();
+        } else {
+            UNREACHABLE();
+        }
+
+        auto *enum_literal_type =
+            Allocator()->New<ETSEnum2Type>(checker->Allocator(), name, assembler_name, decl_node, flags, literal);
+
+        enum_literal_type->SetVariable(var);
+        var->SetTsType(enum_literal_type);
+
+        checker->GetSuperType(enum_literal_type);
+    }
+}
 }  // namespace ark::es2panda::checker

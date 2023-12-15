@@ -492,6 +492,20 @@ ETSStringEnumType *ETSChecker::CreateETSStringEnumType(ir::TSEnumDeclaration con
     return enumType;
 }
 
+bool isEnumClass(ir::AstNode *declNode)
+{
+    if (declNode->IsClassDefinition() && (declNode->AsClassDefinition()->Super() != nullptr) &&
+        declNode->AsClassDefinition()->Super()->IsETSTypeReference()) {
+        auto superType = declNode->AsClassDefinition()->Super()->AsETSTypeReference();
+        auto typeName = superType->BaseName()->Name();
+
+        if (typeName == "EnumIntType" || typeName == "EnumStrType") {
+            return true;
+        }
+    }
+    return false;
+}
+
 ETSObjectType *ETSChecker::CreateNewETSObjectType(util::StringView name, ir::AstNode *declNode, ETSObjectFlags flags)
 {
     util::StringView assemblerName = name;
@@ -542,6 +556,11 @@ ETSObjectType *ETSChecker::CreateNewETSObjectType(util::StringView name, ir::Ast
         return Allocator()->New<ETSDynamicType>(Allocator(), name, assemblerName, declNode, flags, Relation(), lang,
                                                 hasDecl);
         ;
+    }
+
+    if (isEnumClass(declNode)) {
+        auto ret = Allocator()->New<ETSEnum2Type>(this, name, assemblerName, declNode, flags);
+        return ret;
     }
 
     return Allocator()->New<ETSObjectType>(Allocator(), name, assemblerName, declNode, flags, Relation());

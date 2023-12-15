@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021 - 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,14 +13,19 @@
  * limitations under the License.
  */
 
-enum Color {
-  Red,
-  Green,
-  Blue
-}
+#ifndef ES2PANDA_COMPILER_LOWERING_ENUM_LOWERING_H
+#define ES2PANDA_COMPILER_LOWERING_ENUM_LOWERING_H
 
-function main(): void {
-  let i: Color = Color.Red;
-  i = Color.Green;
-  i = i.Blue;	// TODO(aber)
-}
+#include "compiler/lowering/phase.h"
+
+namespace panda::es2panda::compiler {
+
+class EnumLowering : public Phase {
+public:
+    std::string_view Name() override;
+    bool Perform(public_lib::Context *ctx, parser::Program *program) override;
+};
+
+}  // namespace panda::es2panda::compiler
+
+#endif

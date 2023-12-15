@@ -19,6 +19,7 @@
 #include "checker/types/type.h"
 #include "ir/base/property.h"
 #include "ir/ts/tsEnumDeclaration.h"
+#include "checker/types/ets/etsObjectType.h"
 
 template <typename>
 // NOLINTNEXTLINE(readability-identifier-naming)
@@ -213,6 +214,41 @@ public:
 
     ETSStringEnumType() = delete;
     ~ETSStringEnumType() override = default;
+};
+
+std::string EnumDescription(util::StringView name);
+
+// TODO(aber) rename ETSEnum2Type after removal old code
+class ETSEnum2Type : public ETSObjectType {
+public:
+    ETSEnum2Type(ETSChecker *checker, util::StringView name, util::StringView assembler_name, ir::AstNode *decl_node,
+                 ETSObjectFlags flags);
+
+    ETSEnum2Type(ArenaAllocator *allocator, util::StringView name, util::StringView assembler_name,
+                 ir::AstNode *decl_node, ETSObjectFlags flags, ir::Literal *value);
+
+    bool IsSameEnumType(const ETSEnum2Type *other) const noexcept;
+
+    bool IsLiteralType() const noexcept;
+
+    bool IsSameEnumLiteralType(const ETSEnum2Type *other) const noexcept;
+
+    bool AssignmentSource(TypeRelation *relation, Type *target) override;
+    void AssignmentTarget(TypeRelation *relation, Type *source) override;
+    void Identical(TypeRelation *relation, Type *other) override;
+
+    void Cast(TypeRelation *relation, Type *target) override;
+
+    static constexpr std::string_view GetIndexMethodName()
+    {
+        return "std.core.EnumConst.getIndex:i32;";  // TODO(aber) signatures.yaml
+    }
+
+private:
+    void CreateLiteralTypes(ETSChecker *checker, util::StringView name, util::StringView assembler_name,
+                            ir::AstNode *decl_node, ETSObjectFlags flags);
+
+    ir::Literal *value_ = nullptr;
 };
 }  // namespace ark::es2panda::checker
 

@@ -17,5 +17,5 @@ enum Color { Red }
 
 function main(): void {
   let values: Color[] = Color.values();
-  let valuesFail: Color[] = values[0].values();
+  let valuesFail: Color[] = values[0].values();		// TODO(aber)
 }

@@ -56,6 +56,8 @@ enum class ETSObjectFlags : uint32_t {
     BUILTIN_FLOAT = 1U << 30U,
     BUILTIN_DOUBLE = 1U << 31U,
 
+    ENUM2 = 1U << 21U,  // TODO(aber) rename after removal code with ENUM (is it needed at all?!)
+
     UNBOXABLE_TYPE = BUILTIN_BOOLEAN | BUILTIN_BYTE | BUILTIN_CHAR | BUILTIN_SHORT | BUILTIN_INT | BUILTIN_LONG |
                      BUILTIN_FLOAT | BUILTIN_DOUBLE,
     BUILTIN_TYPE = BUILTIN_STRING | BUILTIN_BIGINT | UNBOXABLE_TYPE,

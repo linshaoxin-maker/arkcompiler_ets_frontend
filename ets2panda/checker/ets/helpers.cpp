@@ -1700,6 +1700,11 @@ void ETSChecker::CheckSwitchDiscriminant(ir::Expression *discriminant)
     }
 
     if (discriminantType->IsETSObjectType() &&
+        discriminantType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::ENUM2)) {
+        return;
+    }
+
+    if (discriminantType->IsETSObjectType() &&
         discriminantType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::VALID_SWITCH_TYPE)) {
         if (discriminantType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE)) {
             discriminant->SetBoxingUnboxingFlags(GetUnboxingFlag(ETSBuiltinTypeAsPrimitiveType(discriminantType)));
@@ -1993,6 +1998,14 @@ void ETSChecker::CheckForSameSwitchCases(ArenaVector<ir::SwitchCaseStatement *> 
                 continue;
             }
 
+            if (caseTest->TsType()->IsETSEnum2Type()) {
+                ASSERT(compareCaseTest->TsType()->IsETSEnum2Type());
+                if (caseTest->TsType()->AsETSEnum2Type()->IsSameEnumLiteralType(
+                        compareCaseTest->TsType()->AsETSEnum2Type())) {
+                    ThrowTypeError("Case enum duplicate", caseTest->Start());
+                }
+                continue;
+            }
             if (caseTest->IsIdentifier() || caseTest->IsMemberExpression()) {
                 CheckIdentifierSwitchCase(caseTest, compareCaseTest, cases->at(caseNum)->Start());
                 continue;

@@ -2451,6 +2451,9 @@ checker::Type *ETSAnalyzer::Check(ir::SwitchStatement *st) const
             } else if (caseType->IsETSStringEnumType() && st->Discriminant()->TsType()->IsETSStringEnumType()) {
                 validCaseType = st->Discriminant()->TsType()->AsETSStringEnumType()->IsSameEnumType(
                     caseType->AsETSStringEnumType());
+            } else if (caseType->IsETSEnum2Type() && st->Discriminant()->TsType()->IsETSEnum2Type()) {
+                validCaseType =
+                    st->Discriminant()->TsType()->AsETSEnum2Type()->IsSameEnumType(caseType->AsETSEnum2Type());
             } else {
                 checker::AssignmentContext(
                     checker->Relation(), st->discriminant_, caseType, unboxedDiscType, it->Test()->Start(),
