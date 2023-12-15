@@ -1507,7 +1507,8 @@ void ETSChecker::AddElementsToModuleObject(ETSObjectType *moduleObj, const util:
 
 Type *ETSChecker::FindLeastUpperBound(Type *source, Type *target)
 {
-    ASSERT(source->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT) && target->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT));
+    ASSERT(source->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT | TypeFlag::GENERIC) &&
+           target->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT | TypeFlag::GENERIC));
 
     // GetCommonClass(GenA<A>, GenB<B>) => LUB(GenA, GenB)<T>
     auto commonClass = GetCommonClass(source, target);
@@ -1608,6 +1609,10 @@ ETSObjectType *ETSChecker::GetTypeargumentedLUB(ETSObjectType *const source, ETS
 
     for (uint32_t i = 0; i < source->TypeArguments().size(); i++) {
         params.push_back(FindLeastUpperBound(source->TypeArguments()[i], target->TypeArguments()[i]));
+    }
+
+    if (!source->GetDeclNode()->IsClassDefinition()) {
+        return source;
     }
 
     const util::StringView hash = GetHashFromTypeArguments(params);

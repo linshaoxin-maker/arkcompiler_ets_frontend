@@ -2286,9 +2286,14 @@ ETSObjectType *ETSChecker::GetRelevantArgumentedTypeFromChild(ETSObjectType *con
         return relevantType;
     }
 
-    assert(child->SuperType() != nullptr);
+    for (auto *interface : child->Interfaces()) {
+        auto *result = GetRelevantArgumentedTypeFromChild(interface, target);
+        if (result != nullptr) {
+            return result;
+        }
+    }
 
-    return GetRelevantArgumentedTypeFromChild(child->SuperType(), target);
+    return child->SuperType() == nullptr ? nullptr : GetRelevantArgumentedTypeFromChild(child->SuperType(), target);
 }
 
 static void TypeToString(std::stringstream &ss, Type *tp)
