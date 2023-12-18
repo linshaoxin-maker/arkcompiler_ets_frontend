@@ -214,7 +214,35 @@
                             "type": "Identifier",
                             "name": "a",
                             "typeAnnotation": {
-                              "type": "ETSPrimitiveType",
+                              "type": "ETSUnionType",
+                              "types": [
+                                {
+                                  "type": "ETSPrimitiveType",
+                                  "loc": {
+                                    "start": {
+                                      "line": 17,
+                                      "column": 11
+                                    },
+                                    "end": {
+                                      "line": 17,
+                                      "column": 14
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "ETSUndefinedType",
+                                  "loc": {
+                                    "start": {
+                                      "line": 17,
+                                      "column": 15
+                                    },
+                                    "end": {
+                                      "line": 17,
+                                      "column": 24
+                                    }
+                                  }
+                                }
+                              ],
                               "loc": {
                                 "start": {
                                   "line": 17,
@@ -222,7 +250,7 @@
                                 },
                                 "end": {
                                   "line": 17,
-                                  "column": 14
+                                  "column": 24
                                 }
                               }
                             },
@@ -259,7 +287,7 @@
                         },
                         "end": {
                           "line": 17,
-                          "column": 15
+                          "column": 25
                         }
                       }
                     },
@@ -386,4 +414,3 @@
     }
   }
 }
-TypeError: Bad operand type, the operand of the non-nullish expression must be a nullish type [n_ensureNotNullLocalNotNullable.ets:18:3]

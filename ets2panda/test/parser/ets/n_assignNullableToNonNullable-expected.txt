@@ -735,4 +735,3 @@
     }
   }
 }
-TypeError: Type 'A|null' cannot be assigned to type 'Object' [n_assignNullableToNonNullable.ets:22:9]

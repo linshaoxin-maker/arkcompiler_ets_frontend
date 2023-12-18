@@ -31,6 +31,7 @@
 #include "util/arktsconfig.h"
 #include "util/generateBin.h"
 #include "varbinder/ETSBinder.h"
+#include "checker/types/globalTypesHolder.h"
 
 namespace ark::es2panda {
 

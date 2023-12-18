@@ -21,5 +21,5 @@ class A {
 
 function main(): void {
     let an : A | null = new A();
-    let x : Object = an.foo();
+    let x : Object = an.foo()!;
 }

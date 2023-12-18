@@ -20,7 +20,6 @@
 #include "checker/TSchecker.h"
 #include "checker/ETSchecker.h"
 #include "ir/astDump.h"
-#include "ir/srcDump.h"
 
 namespace ark::es2panda::ir {
 void UnaryExpression::TransformChildren(const NodeTransformer &cb)
@@ -83,4 +82,27 @@ UnaryExpression *UnaryExpression::Clone(ArenaAllocator *const allocator, AstNode
 
     throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
 }
+
+void UnaryExpression::CheckSmartCastCondition() noexcept
+{
+    if (argument_ != nullptr && operator_ == lexer::TokenType::PUNCTUATOR_EXCLAMATION_MARK) {
+        if (argument_->IsIdentifier()) {
+            smartСastСondition_ = argument_->AsIdentifier()->GetSmartCastCondition();
+        } else if (argument_->IsBinaryExpression()) {
+            auto const &smartCastCondition = argument_->AsBinaryExpression()->GetSmartCastCondition();
+            if (smartCastCondition.has_value() &&
+                (smartCastCondition->testedType->DefinitelyETSNullish() ||
+                 argument_->AsBinaryExpression()->OperatorType() == lexer::TokenType::KEYW_INSTANCEOF)) {
+                smartСastСondition_ = smartCastCondition;
+            }
+        } else if (argument_->IsUnaryExpression()) {
+            smartСastСondition_ = argument_->AsUnaryExpression()->GetSmartCastCondition();
+        }
+
+        if (smartСastСondition_.has_value()) {
+            smartСastСondition_->negate = !smartСastСondition_->negate;
+        }
+    }
+}
+
 }  // namespace ark::es2panda::ir

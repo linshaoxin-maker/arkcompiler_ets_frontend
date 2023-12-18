@@ -926,4 +926,3 @@
     }
   }
 }
-TypeError: Type 'A|null' is not compatible with type 'A' at index 1 [n_callMethodWithNullableParam.ets:23:17]

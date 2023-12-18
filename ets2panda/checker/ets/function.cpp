@@ -13,22 +13,13 @@
  * limitations under the License.
  */
 
-#include "varbinder/varbinder.h"
-#include "varbinder/declaration.h"
 #include "varbinder/ETSBinder.h"
-#include "varbinder/scope.h"
-#include "varbinder/variable.h"
-#include "varbinder/variableFlags.h"
 #include "checker/ETSchecker.h"
 #include "checker/ets/castingContext.h"
 #include "checker/ets/function_helpers.h"
 #include "checker/ets/typeRelationContext.h"
 #include "checker/types/ets/etsAsyncFuncReturnType.h"
 #include "checker/types/ets/etsObjectType.h"
-#include "checker/types/type.h"
-#include "checker/types/typeFlag.h"
-#include "ir/astNode.h"
-#include "ir/typeNode.h"
 #include "ir/base/catchClause.h"
 #include "ir/base/classDefinition.h"
 #include "ir/base/classProperty.h"
@@ -57,8 +48,6 @@
 #include "ir/statements/returnStatement.h"
 #include "ir/statements/switchStatement.h"
 #include "ir/statements/whileStatement.h"
-#include "ir/ts/tsArrayType.h"
-#include "ir/ts/tsInterfaceBody.h"
 #include "ir/ts/tsTypeAliasDeclaration.h"
 #include "ir/ts/tsTypeParameter.h"
 #include "ir/ts/tsTypeParameterInstantiation.h"
@@ -1308,6 +1297,8 @@ void ETSChecker::CheckCapturedVariable(ir::AstNode *const node, varbinder::Varia
 
             if (resolved == var) {
                 var->AddFlag(varbinder::VariableFlags::BOXED);
+                // For mutable captured variable [possible] smart-cast is senseless (or even erroneous)
+                Context().RemoveSmartCast(var);
             }
         }
     }

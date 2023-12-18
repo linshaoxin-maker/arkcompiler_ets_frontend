@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-function foo() : Object {
+function foo() : Object | null {
   return new Object();
 }
 

@@ -13,12 +13,38 @@
  * limitations under the License.
  */
 
-type tmp = Long|null;
-
-function foo(t : tmp) : void {
-  t!;
+class A {
+  bar(): string {
+    return "Class A";
+  }
 }
 
-function main() : void {
+class B extends A {}
+
+class C extends B {
+  bar(): string {
+    return "Class C";
+  }
+}
+
+function foo(c: Int|String|A|null|undefined): void {
+  if (c instanceof String)  {
+    assert(c.length == 11);
+  } else if (c instanceof C) {
+    assert(c.bar() == "Class C");
+  } else if (c instanceof Int) {
+    assert(c * c = 49);
+  } else if (c === undefined) {
+     assert(c == undefined);
+  } else {
+     assert(c == null);
+  }
+}
+
+function main(): void {
+  foo("Test string");
+  foo(new Int(7));
+  foo(new C());
   foo(null);
+  foo(undefined);
 }

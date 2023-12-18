@@ -89,7 +89,7 @@ class bar {
         if(b == undefined){
             return -1;
         }
-        return a! + b!;
+        return a! + b;
     }
 
     foo10(a? : Int, b? : Int, c? : Int) : Int {
@@ -101,14 +101,14 @@ class bar {
             return -1;
         }
 
-        return a! + b! + c!;
+        return a! + b! + c;
     }
 
     foo11(a : Int = 5, b? : Int) : Int {
         if(b == undefined){
             return 0;
         }
-        return a + b!;
+        return a + b;
     }
 
     foo12(a? : Int, b : Int = 5, c? : Int) : Int {

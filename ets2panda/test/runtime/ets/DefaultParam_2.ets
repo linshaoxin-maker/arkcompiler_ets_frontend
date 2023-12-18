@@ -86,7 +86,7 @@ function foo9(a? : Int, b? : Int) : Int {
     if(b == undefined){
         return -1;
     }
-    return a! + b!;
+    return a! + b;
 }
 
 function foo10(a? : Int, b? : Int, c? : Int) : Int {
@@ -98,14 +98,14 @@ function foo10(a? : Int, b? : Int, c? : Int) : Int {
         return -1;
     }
 
-    return a! + b! + c!;
+    return a! + b! + c;
 }
 
 function foo11(a : Int = 5, b? : Int) : Int {
     if(b == undefined){
         return 0;
     }
-    return a + b!;
+    return a + b;
 }
 
 function foo12(a? : Int, b : Int = 5, c? : Int) : Int {

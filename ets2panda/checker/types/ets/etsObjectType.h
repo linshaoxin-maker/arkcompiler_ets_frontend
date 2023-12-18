@@ -538,6 +538,8 @@ public:
         return {false, false};
     }
 
+    [[nodiscard]] static std::uint32_t GetPrecedence(ETSObjectType const *type) noexcept;
+
 protected:
     virtual ETSFunctionType *CreateETSFunctionType(const util::StringView &name) const;
 

@@ -27,7 +27,7 @@ public:
     // constituentTypes must be normalized
     explicit ETSUnionType(ETSChecker *checker, ArenaVector<Type *> &&constituentTypes);
 
-    const ArenaVector<Type *> &ConstituentTypes() const
+    [[nodiscard]] const ArenaVector<Type *> &ConstituentTypes() const noexcept
     {
         return constituentTypes_;
     }
@@ -62,6 +62,10 @@ public:
         return assemblerLub_;
     }
 
+    [[nodiscard]] checker::Type *GetAssignableType(ETSChecker *checker, checker::Type *sourceType) const noexcept;
+    [[nodiscard]] std::pair<checker::Type *, checker::Type *> GetComplimentaryType(ETSChecker *checker,
+                                                                                   checker::Type *sourceType);
+
 private:
     static bool EachTypeRelatedToSomeType(TypeRelation *relation, ETSUnionType *source, ETSUnionType *target);
     static bool TypeRelatedToSomeType(TypeRelation *relation, Type *source, ETSUnionType *target);
@@ -72,10 +76,11 @@ private:
     void RelationTarget(TypeRelation *relation, Type *source, RelFN const &relFn);
 
     static void LinearizeAndEraseIdentical(TypeRelation *relation, ArenaVector<Type *> &types);
+    [[nodiscard]] bool ExtractType(ETSChecker *checker, checker::ETSObjectType *sourceType) noexcept;
 
     static Type *ComputeAssemblerLUB(ETSChecker *checker, ETSUnionType *un);
 
-    ArenaVector<Type *> const constituentTypes_;
+    ArenaVector<Type *> constituentTypes_;
     Type *assemblerLub_ {nullptr};
 };
 }  // namespace ark::es2panda::checker

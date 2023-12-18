@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021 - 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,11 +16,8 @@
 #ifndef ES2PANDA_CHECKER_CHECKER_CONTEXT_H
 #define ES2PANDA_CHECKER_CHECKER_CONTEXT_H
 
-#include <macros.h>
+#include "checker/types/type.h"
 #include "varbinder/variable.h"
-#include "util/enumbitops.h"
-
-#include <vector>
 
 namespace ark::es2panda::checker {
 
@@ -45,69 +42,96 @@ enum class CheckerStatus : uint32_t {
     IN_LAMBDA = 1U << 13U,
     IGNORE_VISIBILITY = 1U << 14U,
     IN_INSTANCE_EXTENSION_METHOD = 1U << 15U,
+    IN_TEST_EXPRESSION = 1U << 16U,
 };
 
 DEFINE_BITOPS(CheckerStatus)
 
 using CapturedVarsMap = ArenaUnorderedMap<varbinder::Variable *, lexer::SourcePosition>;
+using SmartCastMap = ArenaMap<varbinder::Variable const *, checker::Type *>;
+using SmartCastArray = std::vector<std::pair<varbinder::Variable const *, checker::Type *>>;
 
-class CheckerContext {
+struct SmartCastCondition final {
+    SmartCastCondition() = default;
+    ~SmartCastCondition() = default;
+
+    DEFAULT_COPY_SEMANTIC(SmartCastCondition);
+    DEFAULT_MOVE_SEMANTIC(SmartCastCondition);
+
+    varbinder::Variable const *variable = nullptr;
+    checker::Type *testedType = nullptr;
+    bool negate = false;
+    bool strict = true;
+};
+
+struct SmartCastConditionTypes final {
+    SmartCastConditionTypes() = default;
+    ~SmartCastConditionTypes() = default;
+
+    DEFAULT_COPY_SEMANTIC(SmartCastConditionTypes);
+    DEFAULT_MOVE_SEMANTIC(SmartCastConditionTypes);
+
+    varbinder::Variable const *variable = nullptr;
+    checker::Type *consequentType = nullptr;
+    checker::Type *alternateType = nullptr;
+};
+
+using SmartCastTypes = std::optional<SmartCastConditionTypes>;
+
+class CheckerContext final {
 public:
-    explicit CheckerContext(ArenaAllocator *allocator, CheckerStatus newStatus)
-        : CheckerContext(allocator, newStatus, nullptr)
+    explicit CheckerContext(Checker *checker, CheckerStatus newStatus) : CheckerContext(checker, newStatus, nullptr) {}
+
+    explicit CheckerContext(Checker *checker, CheckerStatus newStatus, ETSObjectType *containingClass)
+        : CheckerContext(checker, newStatus, containingClass, nullptr)
     {
     }
 
-    explicit CheckerContext(ArenaAllocator *allocator, CheckerStatus newStatus, ETSObjectType *containingClass)
-        : CheckerContext(allocator, newStatus, containingClass, nullptr)
-    {
-    }
+    explicit CheckerContext(Checker *checker, CheckerStatus newStatus, ETSObjectType *containingClass,
+                            Signature *containingSignature);
 
-    explicit CheckerContext(ArenaAllocator *allocator, CheckerStatus newStatus, ETSObjectType *containingClass,
-                            Signature *containingSignature)
-        : status_(newStatus),
-          capturedVars_(allocator->Adapter()),
-          containingClass_(containingClass),
-          containingSignature_(containingSignature)
-    {
-    }
+    CheckerContext() = delete;
+    ~CheckerContext() = default;
 
-    const CapturedVarsMap &CapturedVars() const
+    DEFAULT_COPY_SEMANTIC(CheckerContext);
+    DEFAULT_MOVE_SEMANTIC(CheckerContext);
+
+    [[nodiscard]] const CapturedVarsMap &CapturedVars() const noexcept
     {
         return capturedVars_;
     }
 
-    CapturedVarsMap &CapturedVars()
+    [[nodiscard]] CapturedVarsMap &CapturedVars() noexcept
     {
         return capturedVars_;
     }
 
-    const CheckerStatus &Status() const
+    [[nodiscard]] const CheckerStatus &Status() const noexcept
     {
         return status_;
     }
 
-    ETSObjectType *ContainingClass() const
+    [[nodiscard]] ETSObjectType *ContainingClass() const noexcept
     {
         return containingClass_;
     }
 
-    Signature *ContainingSignature() const
+    [[nodiscard]] Signature *ContainingSignature() const noexcept
     {
         return containingSignature_;
     }
 
-    CheckerStatus &Status()
+    [[nodiscard]] CheckerStatus &Status() noexcept
     {
         return status_;
     }
 
-    void SetContainingSignature(Signature *containingSignature)
+    void SetContainingSignature(Signature *containingSignature) noexcept
     {
         containingSignature_ = containingSignature;
     }
 
-    void SetContainingClass(ETSObjectType *containingClass)
+    void SetContainingClass(ETSObjectType *containingClass) noexcept
     {
         containingClass_ = containingClass;
     }
@@ -117,13 +141,49 @@ public:
         capturedVars_.emplace(var, pos);
     }
 
-    DEFAULT_COPY_SEMANTIC(CheckerContext);
-    DEFAULT_MOVE_SEMANTIC(CheckerContext);
-    ~CheckerContext() = default;
+    //
+    //  Smart casts support:
+    //
+    void RemoveSmartCast(varbinder::Variable const *const variable) noexcept
+    {
+        smartCasts_.erase(variable);
+    }
+
+    void SetSmartCast(varbinder::Variable const *const variable, checker::Type *const smartType) noexcept
+    {
+        smartCasts_.insert_or_assign(variable, smartType);
+    }
+
+    [[nodiscard]] checker::Type *GetSmartCast(varbinder::Variable const *const variable) const noexcept
+    {
+        auto const it = smartCasts_.find(variable);
+        return it == smartCasts_.end() ? nullptr : it->second;
+    }
+
+    [[nodiscard]] SmartCastArray CloneSmartCasts() const noexcept;
+    void RestoreSmartCasts(SmartCastArray const &prevSmartCasts) noexcept;
+    void CombineSmartCasts(SmartCastArray &prevSmartCasts) noexcept;
+
+    void EnterTestExpression() noexcept
+    {
+        status_ |= CheckerStatus::IN_TEST_EXPRESSION;
+    }
+
+    [[nodiscard]] bool IsInTestExpression() const noexcept
+    {
+        return (status_ & CheckerStatus::IN_TEST_EXPRESSION) != 0;
+    }
+
+    void ExitTestExpression() noexcept
+    {
+        status_ &= ~CheckerStatus::IN_TEST_EXPRESSION;
+    }
 
 private:
+    Checker *parent_;
     CheckerStatus status_;
     CapturedVarsMap capturedVars_;
+    SmartCastMap smartCasts_;
     ETSObjectType *containingClass_ {nullptr};
     Signature *containingSignature_ {nullptr};
 };

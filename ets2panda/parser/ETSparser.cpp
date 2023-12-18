@@ -14,7 +14,6 @@
  */
 
 #include "ETSparser.h"
-#include <utility>
 
 #include "macros.h"
 #include "parser/parserFlags.h"

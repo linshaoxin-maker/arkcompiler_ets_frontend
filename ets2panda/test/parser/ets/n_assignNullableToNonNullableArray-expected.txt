@@ -831,4 +831,3 @@
     }
   }
 }
-TypeError: Type 'A[]|null' cannot be assigned to type 'Object[]' [n_assignNullableToNonNullableArray.ets:22:10]

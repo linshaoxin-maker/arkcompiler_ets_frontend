@@ -18,7 +18,6 @@
 #include "compiler/base/catchTable.h"
 #include "compiler/base/condition.h"
 #include "compiler/base/lreference.h"
-#include "compiler/core/ETSGen.h"
 #include "compiler/core/switchBuilder.h"
 #include "compiler/function/functionBuilder.h"
 #include "checker/types/ets/etsDynamicFunctionType.h"
@@ -1001,13 +1000,25 @@ void ETSCompiler::Compile(const ir::Identifier *expr) const
         return;
     }
 
-    auto ttctx = compiler::TargetTypeContext(etsg, expr->TsType());
+    auto *const smartType = expr->TsType();
+    auto ttctx = compiler::TargetTypeContext(etsg, smartType);
 
     ASSERT(expr->Variable() != nullptr);
     if (!expr->Variable()->HasFlag(varbinder::VariableFlags::TYPE_ALIAS)) {
         etsg->LoadVar(expr, expr->Variable());
     } else {
-        etsg->SetAccumulatorType(expr->TsType());
+        etsg->SetAccumulatorType(smartType);
+    }
+
+    //  In case when smart cast type of identifier differs from common variable type
+    //  set the accumulator type to the correct actual value and perform cast if required
+    if (!etsg->Checker()->AsETSChecker()->Relation()->IsIdenticalTo(const_cast<checker::Type *>(smartType),
+                                                                    expr->Variable()->TsType())) {
+        etsg->SetAccumulatorType(smartType);
+        if (smartType->IsETSReferenceType() &&  //! smartType->DefinitelyNotETSNullish() &&
+            (expr->Parent() == nullptr || !expr->Parent()->IsTSAsExpression())) {
+            etsg->CastToReftype(expr, smartType, false);
+        }
     }
 }
 
