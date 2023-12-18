@@ -537,6 +537,8 @@ public:
         return {false, false};
     }
 
+    [[nodiscard]] static std::uint32_t GetPrecedence(ETSObjectType const *type) noexcept;
+
     bool IsPropertiesInstantiated() const
     {
         return propertiesInstantiated_;
