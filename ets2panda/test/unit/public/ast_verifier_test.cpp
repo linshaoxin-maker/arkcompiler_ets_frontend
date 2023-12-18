@@ -14,7 +14,6 @@
  */
 
 #include "checker/ETSchecker.h"
-#include "compiler/core/ASTVerifier.h"
 #include "ir/expressions/literals/stringLiteral.h"
 #include "ir/expressions/identifier.h"
 #include "ir/expressions/literals/numberLiteral.h"
@@ -22,7 +21,9 @@
 #include "macros.h"
 #include "parser/ETSparser.h"
 #include "varbinder/ETSBinder.h"
-#include "public/es2panda_lib.h"
+#include "utils/json_builder.h"
+#include <regex>
+#include "compiler/core/ASTVerifier.h"
 
 #include <algorithm>
 #include <gtest/gtest.h>
@@ -75,21 +76,35 @@ protected:
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
+static void compare_minified(std::string_view actual_json, std::string_view expected_json)
+{
+    std::string message {actual_json};
+    static const std::regex r {R"(\s+)"};
+    auto ss = std::stringstream {};
+
+    std::regex_replace(std::ostream_iterator<char>(ss), message.begin(), message.end(), r, "");
+    ASSERT_EQ(ss.str(), expected_json);
+}
+
 TEST_F(ASTVerifierTest, NullParent)
 {
-    panda::es2panda::compiler::ASTVerifier verifier {Allocator()};
+    compiler::ASTVerifier verifier {Allocator()};
     panda::es2panda::ir::StringLiteral empty_node;
 
-    auto checks = panda::es2panda::compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
-    checks.insert("HasParent");
-    bool has_parent = verifier.Verify(&empty_node, checks);
-    const auto &errors = verifier.GetErrors();
-    const auto [name, error] = errors[0];
-
+    const auto check = "NodeHasParent";
+    auto checks = compiler::ASTVerifier::InvariantSet {};
+    checks.insert(check);
+    const auto &errors = verifier.Verify(&empty_node, checks);
+    bool has_parent = errors.size() == 0;
     ASSERT_EQ(has_parent, false);
     ASSERT_EQ(errors.size(), 1);
-    ASSERT_EQ(name, "HasParent");
-    ASSERT_EQ(error.message, "NULL_PARENT: STR_LITERAL <null>");
+
+    const auto [name, error] = errors[0];
+    ASSERT_EQ(name, check);
+    auto message_expected = JsonObjectBuilder {};
+    message_expected.AddProperty("type", "StringLiteral");
+    message_expected.AddProperty("value", "");
+    compare_minified(error.message, std::move(message_expected).Build());
 }
 
 TEST_F(ASTVerifierTest, NullType)
@@ -97,16 +112,21 @@ TEST_F(ASTVerifierTest, NullType)
     panda::es2panda::compiler::ASTVerifier verifier {Allocator()};
     panda::es2panda::ir::StringLiteral empty_node;
 
-    auto checks = panda::es2panda::compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
-    checks.insert("HasType");
-    bool has_type = verifier.Verify(&empty_node, checks);
-    const auto &errors = verifier.GetErrors();
-    const auto [name, error] = errors[0];
-
+    auto check = "NodeHasType";
+    auto checks = compiler::ASTVerifier::InvariantSet {};
+    checks.insert(check);
+    const auto &errors = verifier.Verify(&empty_node, checks);
+    bool has_type = errors.size() == 0;
     ASSERT_EQ(has_type, false);
     ASSERT_NE(errors.size(), 0);
-    ASSERT_EQ(name, "HasType");
-    ASSERT_EQ(error.message, "NULL_TS_TYPE: STR_LITERAL <null>");
+
+    const auto [name, error] = errors[0];
+    ASSERT_EQ(name, check);
+
+    auto message_expected = JsonObjectBuilder {};
+    message_expected.AddProperty("type", "StringLiteral");
+    message_expected.AddProperty("value", "");
+    compare_minified(error.message, std::move(message_expected).Build());
 }
 
 TEST_F(ASTVerifierTest, WithoutScope)
@@ -114,155 +134,176 @@ TEST_F(ASTVerifierTest, WithoutScope)
     panda::es2panda::compiler::ASTVerifier verifier {Allocator()};
     panda::es2panda::ir::StringLiteral empty_node;
 
-    auto checks = panda::es2panda::compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
-    checks.insert("HasScope");
-    bool has_scope = verifier.Verify(&empty_node, checks);
-    const auto &errors = verifier.GetErrors();
+    auto checks = compiler::ASTVerifier::InvariantSet {};
+    checks.insert("VariableHasScope");
+    const auto &errors = verifier.Verify(&empty_node, checks);
 
-    ASSERT_EQ(has_scope, true);
     ASSERT_EQ(errors.size(), 0);
 }
 
 TEST_F(ASTVerifierTest, ScopeTest)
 {
-    panda::es2panda::compiler::ASTVerifier verifier {Allocator()};
-    panda::es2panda::ir::Identifier ident(panda::es2panda::util::StringView("var_decl"), Allocator());
-    panda::es2panda::varbinder::LetDecl decl("test", &ident);
-    panda::es2panda::varbinder::LocalVariable local(&decl, panda::es2panda::varbinder::VariableFlags::LOCAL);
+    compiler::ASTVerifier verifier {Allocator()};
+    ir::Identifier ident(util::StringView("var_decl"), Allocator());
+    varbinder::LetDecl decl("test", &ident);
+    varbinder::LocalVariable local(&decl, varbinder::VariableFlags::LOCAL);
     ident.SetVariable(&local);
 
-    panda::es2panda::varbinder::LocalScope scope(Allocator(), nullptr);
-    panda::es2panda::varbinder::FunctionScope parent_scope(Allocator(), nullptr);
+    varbinder::LocalScope scope(Allocator(), nullptr);
+    varbinder::FunctionScope parent_scope(Allocator(), nullptr);
     scope.SetParent(&parent_scope);
-    scope.AddDecl(Allocator(), &decl, panda::es2panda::ScriptExtension::ETS);
+    scope.AddDecl(Allocator(), &decl, ScriptExtension::ETS);
     scope.BindNode(&ident);
 
     local.SetScope(&scope);
 
-    auto checks = panda::es2panda::compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
-    checks.insert("HasScope");
-    bool is_ok = verifier.Verify(&ident, checks);
+    auto checks = compiler::ASTVerifier::InvariantSet {};
+    checks.insert("VariableHasScope");
+    const auto &errors = verifier.Verify(&ident, checks);
 
-    ASSERT_EQ(is_ok, true);
+    ASSERT_EQ(errors.size(), 0);
 }
 
 TEST_F(ASTVerifierTest, ScopeNodeTest)
 {
-    panda::es2panda::compiler::ASTVerifier verifier {Allocator()};
-    panda::es2panda::ir::Identifier ident(panda::es2panda::util::StringView("var_decl"), Allocator());
-    panda::es2panda::varbinder::LetDecl decl("test", &ident);
-    panda::es2panda::varbinder::LocalVariable local(&decl, panda::es2panda::varbinder::VariableFlags::LOCAL);
+    compiler::ASTVerifier verifier {Allocator()};
+    ir::Identifier ident(util::StringView("var_decl"), Allocator());
+    varbinder::LetDecl decl("test", &ident);
+    varbinder::LocalVariable local(&decl, varbinder::VariableFlags::LOCAL);
     ident.SetVariable(&local);
 
-    panda::es2panda::varbinder::LocalScope scope(Allocator(), nullptr);
-    panda::es2panda::varbinder::FunctionScope parent_scope(Allocator(), nullptr);
+    varbinder::LocalScope scope(Allocator(), nullptr);
+    varbinder::FunctionScope parent_scope(Allocator(), nullptr);
     scope.SetParent(&parent_scope);
-    scope.AddDecl(Allocator(), &decl, panda::es2panda::ScriptExtension::ETS);
+    scope.AddDecl(Allocator(), &decl, ScriptExtension::ETS);
     scope.BindNode(&ident);
     parent_scope.BindNode(&ident);
 
     local.SetScope(&scope);
 
-    auto checks = panda::es2panda::compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
-    checks.insert("VerifyScopeNode");
-    bool is_ok = verifier.Verify(&ident, checks);
+    auto checks = compiler::ASTVerifier::InvariantSet {};
+    checks.insert("VariableHasEnclosingScope");
+    const auto &errors = verifier.Verify(&ident, checks);
 
-    ASSERT_EQ(is_ok, true);
+    ASSERT_EQ(errors.size(), 0);
 }
 
 TEST_F(ASTVerifierTest, ArithmeticExpressionCorrect1)
 {
-    panda::es2panda::checker::ETSChecker etschecker {};
-    panda::es2panda::compiler::ASTVerifier verifier {Allocator()};
-    auto program = panda::es2panda::parser::Program::NewProgram<panda::es2panda::varbinder::ETSBinder>(Allocator());
-    auto parser = panda::es2panda::parser::ETSParser(&program, panda::es2panda::CompilerOptions {});
+    checker::ETSChecker etschecker {};
+    compiler::ASTVerifier verifier {Allocator()};
+    auto program = parser::Program::NewProgram<varbinder::ETSBinder>(Allocator());
+    auto parser = parser::ETSParser(&program, CompilerOptions {});
 
-    auto left = panda::es2panda::ir::NumberLiteral(panda::es2panda::lexer::Number {1});
-    auto right = panda::es2panda::ir::NumberLiteral(panda::es2panda::lexer::Number {6});
-    auto arithmetic_expression =
-        panda::es2panda::ir::BinaryExpression(&left, &right, panda::es2panda::lexer::TokenType::PUNCTUATOR_PLUS);
+    auto left = ir::NumberLiteral(lexer::Number {1});
+    auto right = ir::NumberLiteral(lexer::Number {6});
+    auto arithmetic_expression = ir::BinaryExpression(&left, &right, lexer::TokenType::PUNCTUATOR_PLUS);
 
     left.SetTsType(etschecker.GlobalIntType());
     right.SetTsType(etschecker.GlobalIntType());
 
-    auto checks = panda::es2panda::compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
-    checks.insert("CheckArithmeticExpression");
-    bool is_correct = verifier.Verify(arithmetic_expression.AsBinaryExpression(), checks);
-    ASSERT_EQ(is_correct, true);
+    auto checks = compiler::ASTVerifier::InvariantSet {};
+    checks.insert("ArithmeticOperationValid");
+    const auto &errors = verifier.Verify(arithmetic_expression.AsBinaryExpression(), checks);
+    ASSERT_EQ(errors.size(), 0);
 }
 
 TEST_F(ASTVerifierTest, ArithmeticExpressionCorrect2)
 {
-    panda::es2panda::checker::ETSChecker etschecker {};
-    panda::es2panda::compiler::ASTVerifier verifier {Allocator()};
-    auto program = panda::es2panda::parser::Program::NewProgram<panda::es2panda::varbinder::ETSBinder>(Allocator());
-    auto parser = panda::es2panda::parser::ETSParser(&program, panda::es2panda::CompilerOptions {});
+    checker::ETSChecker etschecker {};
+    compiler::ASTVerifier verifier {Allocator()};
+    auto program = parser::Program::NewProgram<varbinder::ETSBinder>(Allocator());
+    auto parser = parser::ETSParser(&program, CompilerOptions {});
 
     constexpr uint32_t LEFT1_PARAM = 1;
     constexpr uint32_t LEFT2_PARAM = 12;
     constexpr uint32_t RIGHT2_PARAM = 6;
-    auto left1 = panda::es2panda::ir::NumberLiteral(panda::es2panda::lexer::Number {LEFT1_PARAM});
-    auto left2 = panda::es2panda::ir::NumberLiteral(panda::es2panda::lexer::Number {LEFT2_PARAM});
-    auto right2 = panda::es2panda::ir::NumberLiteral(panda::es2panda::lexer::Number {RIGHT2_PARAM});
-    auto right1 =
-        panda::es2panda::ir::BinaryExpression(&left2, &right2, panda::es2panda::lexer::TokenType::PUNCTUATOR_MULTIPLY);
-    auto arithmetic_expression =
-        panda::es2panda::ir::BinaryExpression(&left1, &right1, panda::es2panda::lexer::TokenType::PUNCTUATOR_PLUS);
+    auto left1 = ir::NumberLiteral(lexer::Number {LEFT1_PARAM});
+    auto left2 = ir::NumberLiteral(lexer::Number {LEFT2_PARAM});
+    auto right2 = ir::NumberLiteral(lexer::Number {RIGHT2_PARAM});
+    auto right1 = ir::BinaryExpression(&left2, &right2, lexer::TokenType::PUNCTUATOR_MULTIPLY);
+    auto arithmetic_expression = ir::BinaryExpression(&left1, &right1, lexer::TokenType::PUNCTUATOR_PLUS);
 
     left1.SetTsType(etschecker.GlobalIntType());
     right1.SetTsType(etschecker.GlobalIntType());
     left2.SetTsType(etschecker.GlobalIntType());
     right2.SetTsType(etschecker.GlobalIntType());
 
-    auto checks = panda::es2panda::compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
-    checks.insert("CheckArithmeticExpression");
-    bool is_correct = verifier.Verify(arithmetic_expression.AsBinaryExpression(), checks);
-    ASSERT_EQ(is_correct, true);
+    auto checks = compiler::ASTVerifier::InvariantSet {};
+    checks.insert("ArithmeticOperationValid");
+    const auto &errors = verifier.Verify(arithmetic_expression.AsBinaryExpression(), checks);
+    ASSERT_EQ(errors.size(), 0);
 }
 
 TEST_F(ASTVerifierTest, ArithmeticExpressionNegative1)
 {
-    panda::es2panda::checker::ETSChecker etschecker {};
-    panda::es2panda::compiler::ASTVerifier verifier {Allocator()};
-    auto program = panda::es2panda::parser::Program::NewProgram<panda::es2panda::varbinder::ETSBinder>(Allocator());
-    auto parser = panda::es2panda::parser::ETSParser(&program, panda::es2panda::CompilerOptions {});
+    checker::ETSChecker etschecker {};
+    compiler::ASTVerifier verifier {Allocator()};
+    auto program = parser::Program::NewProgram<varbinder::ETSBinder>(Allocator());
+    auto parser = parser::ETSParser(&program, CompilerOptions {});
 
     const panda::es2panda::util::StringView left_param("1");
     constexpr uint32_t RIGHT_PARAM = 1;
-    auto left = panda::es2panda::ir::StringLiteral(left_param);
-    auto right = panda::es2panda::ir::NumberLiteral(panda::es2panda::lexer::Number {RIGHT_PARAM});
-    auto arithmetic_expression =
-        panda::es2panda::ir::BinaryExpression(&left, &right, panda::es2panda::lexer::TokenType::PUNCTUATOR_DIVIDE);
+    auto left = ir::StringLiteral(left_param);
+    auto right = ir::NumberLiteral(lexer::Number {RIGHT_PARAM});
+    auto arithmetic_expression = ir::BinaryExpression(&left, &right, lexer::TokenType::PUNCTUATOR_DIVIDE);
 
     left.SetTsType(etschecker.GlobalETSStringLiteralType());
     right.SetTsType(etschecker.GlobalIntType());
 
-    auto checks = panda::es2panda::compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
-    checks.insert("CheckArithmeticExpression");
-    bool is_correct = verifier.Verify(arithmetic_expression.AsBinaryExpression(), checks);
+    auto checks = compiler::ASTVerifier::InvariantSet {};
+    checks.insert("ArithmeticOperationValid");
+    const auto &errors = verifier.Verify(arithmetic_expression.AsBinaryExpression(), checks);
 
-    ASSERT_EQ(is_correct, false);
+    ASSERT_EQ(errors.size(), 0);
 }
 
 TEST_F(ASTVerifierTest, ArithmeticExpressionNegative2)
 {
-    panda::es2panda::checker::ETSChecker etschecker {};
-    panda::es2panda::compiler::ASTVerifier verifier {Allocator()};
-    auto program = panda::es2panda::parser::Program::NewProgram<panda::es2panda::varbinder::ETSBinder>(Allocator());
-    auto parser = panda::es2panda::parser::ETSParser(&program, panda::es2panda::CompilerOptions {});
-    auto left = panda::es2panda::ir::BooleanLiteral(true);
-    auto right = panda::es2panda::ir::NumberLiteral(panda::es2panda::lexer::Number {1});
-    auto arithmetic_expression =
-        panda::es2panda::ir::BinaryExpression(&left, &right, panda::es2panda::lexer::TokenType::PUNCTUATOR_DIVIDE);
+    checker::ETSChecker etschecker {};
+    compiler::ASTVerifier verifier {Allocator()};
+    auto program = parser::Program::NewProgram<varbinder::ETSBinder>(Allocator());
+    auto parser = parser::ETSParser(&program, CompilerOptions {});
+    auto left = ir::BooleanLiteral(true);
+    auto right = ir::NumberLiteral(lexer::Number {1});
+    auto arithmetic_expression = ir::BinaryExpression(&left, &right, lexer::TokenType::PUNCTUATOR_DIVIDE);
 
     left.SetTsType(etschecker.GlobalETSStringLiteralType());
     right.SetTsType(etschecker.GlobalIntType());
 
-    auto checks = panda::es2panda::compiler::ASTVerifier::CheckSet {Allocator()->Adapter()};
-    checks.insert("CheckArithmeticExpression");
-    bool is_correct = verifier.Verify(arithmetic_expression.AsBinaryExpression(), checks);
+    auto checks = compiler::ASTVerifier::InvariantSet {};
+    checks.insert("ArithmeticOperationValid");
+    const auto &errors = verifier.Verify(arithmetic_expression.AsBinaryExpression(), checks);
 
-    ASSERT_EQ(is_correct, false);
+    ASSERT_EQ(errors.size(), 0);
+}
+
+TEST_F(ASTVerifierTest, SequenceExpressionType)
+{
+    compiler::ASTVerifier verifier {Allocator()};
+    auto *allocator = Allocator();
+
+    auto checker = checker::ETSChecker();
+
+    auto *last = TREE(NODE(NumberLiteral, lexer::Number {3}));
+    // clang-format off
+    auto *sequence_expression =
+        TREE(NODE(SequenceExpression,
+                  NODES(Expression,
+                        NODE(NumberLiteral, lexer::Number {1}),
+                        NODE(NumberLiteral, lexer::Number {2}),
+                        last,
+                        )));
+    // clang-format on
+
+    last->SetTsType(checker.GlobalIntType());
+    sequence_expression->SetTsType(checker.GlobalIntType());
+
+    auto checks = compiler::ASTVerifier::InvariantSet {};
+    checks.insert("SequenceExpressionHasLastType");
+    const auto &errors = verifier.Verify(sequence_expression, checks);
+
+    ASSERT_EQ(errors.size(), 0);
 }
 
 constexpr char const *PRIVATE_PROTECTED_PUBLIC_TEST =

@@ -23,13 +23,16 @@
 #include "ir/base/classStaticBlock.h"
 #include "ir/base/methodDefinition.h"
 #include "ir/base/scriptFunction.h"
+#include "ir/ets/etsClassLiteral.h"
 #include "ir/ets/etsFunctionType.h"
 #include "ir/ets/etsNewClassInstanceExpression.h"
 #include "ir/ets/etsParameterExpression.h"
+#include "ir/ets/etsScript.h"
 #include "ir/ets/etsTypeReference.h"
 #include "ir/ets/etsTypeReferencePart.h"
 #include "ir/ets/etsImportDeclaration.h"
 #include "ir/ets/etsScript.h"
+#include "ir/expressions/sequenceExpression.h"
 #include "ir/module/importSpecifier.h"
 #include "ir/module/importNamespaceSpecifier.h"
 #include "ir/module/importDefaultSpecifier.h"
@@ -62,17 +65,45 @@
 #include <algorithm>
 #include <iterator>
 
+#define RECURSIVE_SUFFIX "ForAll"
+
 namespace panda::es2panda::compiler {
 
-template <typename Func>
-ASTVerifier::CheckFunction RecursiveCheck(const Func &func)
-{
-    return [func](const ir::AstNode *ast) -> bool {
-        bool has_parent = func(ast);
-        ast->IterateRecursively([func, &has_parent](ir::AstNode *child) { has_parent &= func(child); });
-        return has_parent;
-    };
-}
+struct ASTVerifier::ErrorContext {
+    explicit ErrorContext() : named_errors_ {}, encountered_errors_ {} {}
+
+    void ProcessEncounteredErrors(util::StringView name)
+    {
+        for (const auto &error : encountered_errors_) {
+            named_errors_.emplace_back(CheckError {name, error});
+        }
+        encountered_errors_.clear();
+    }
+
+    void AddError(const std::string &message)
+    {
+        named_errors_.emplace_back(CheckError {"Unnamed", ASTVerifier::InvariantError {message, "", 0}});
+    }
+
+    void AddInvariantError(const std::string &cause, const ir::AstNode &node, const lexer::SourcePosition &from)
+    {
+        const auto loc = from.line;
+        const auto &&dump = node.DumpJSON();
+        static const std::regex r {R"(\s+)"};  // removing all identation
+        auto ss = std::stringstream {};
+        std::regex_replace(std::ostream_iterator<char>(ss), dump.begin(), dump.end(), r, "");
+        encountered_errors_.emplace_back(ASTVerifier::InvariantError {cause, ss.str(), loc});
+    }
+
+    ASTVerifier::Errors GetErrors()
+    {
+        return named_errors_;
+    }
+
+private:
+    ASTVerifier::Errors named_errors_;
+    std::vector<InvariantError> encountered_errors_;
+};
 
 static bool IsNumericType(const ir::AstNode *ast)
 {
@@ -115,7 +146,7 @@ static bool IsStringType(const ir::AstNode *ast)
 }
 
 template <typename T>
-bool IsContainedIn(const T *child, const T *parent)
+static bool IsContainedIn(const T *child, const T *parent)
 {
     if (child == nullptr || parent == nullptr) {
         return false;
@@ -148,7 +179,8 @@ bool IsVisibleInternalNode(const ir::AstNode *ast, const ir::AstNode *obj_type_d
     return current_top_statement == object_top_statement ||
            (package_name_current == package_name_object && !package_name_current.Empty());
 }
-bool ValidateVariableAccess(const varbinder::LocalVariable *prop_var, const ir::MemberExpression *ast)
+
+static bool ValidateVariableAccess(const varbinder::LocalVariable *prop_var, const ir::MemberExpression *ast)
 {
     const auto *prop_var_decl = prop_var->Declaration();
     if (prop_var_decl == nullptr) {
@@ -189,7 +221,7 @@ bool ValidateVariableAccess(const varbinder::LocalVariable *prop_var, const ir::
     return false;
 }
 
-bool ValidateMethodAccess(const ir::MemberExpression *member_expression, const ir::CallExpression *ast)
+static bool ValidateMethodAccess(const ir::MemberExpression *member_expression, const ir::CallExpression *ast)
 {
     auto *member_obj_type = member_expression->ObjType();
     if (member_obj_type == nullptr) {
@@ -236,693 +268,574 @@ bool ValidateMethodAccess(const ir::MemberExpression *member_expression, const i
     return false;
 }
 
-bool ValidateExport(const varbinder::Variable *var)
-{
-    const auto *decl = var->Declaration();
-    if (decl == nullptr) {
-        return false;
-    }
-    const auto *node = decl->Node();
-    if (node == nullptr) {
-        return false;
-    }
-    return node->IsExported();
-}
+class NodeHasParent {
+public:
+    explicit NodeHasParent([[maybe_unused]] ArenaAllocator &allocator) {}
 
-std::string ToStringHelper(const varbinder::ScopeType type)
-{
-    switch (type) {
-        case varbinder::ScopeType::CATCH: {
-            return "CATCH";
+    ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
+    {
+        const auto is_ets_script = ast->IsETSScript();
+        const auto has_parent = ast->Parent() != nullptr;
+        if (!is_ets_script && !has_parent) {
+            ctx.AddInvariantError("NULL_PARENT", *ast, ast->Start());
+            return ASTVerifier::CheckResult::Failed;
         }
-        case varbinder::ScopeType::CATCH_PARAM: {
-            return "CATCH_PARAM";
+        if (ast->IsProgram()) {
+            return ASTVerifier::CheckResult::Success;
         }
-        case varbinder::ScopeType::CLASS: {
-            return "CLASS";
-        }
-        case varbinder::ScopeType::FUNCTION: {
-            return "FUNCTION";
-        }
-        case varbinder::ScopeType::FUNCTION_PARAM: {
-            return "FUNCTION_PARAM";
-        }
-        case varbinder::ScopeType::GLOBAL: {
-            return "GLOBAL";
-        }
-        case varbinder::ScopeType::LOCAL: {
-            return "LOCAL";
-        }
-        case varbinder::ScopeType::LOOP: {
-            return "LOOP";
-        }
-        case varbinder::ScopeType::LOOP_DECL: {
-            return "LOOP_DECL";
-        }
-        case varbinder::ScopeType::MODULE: {
-            return "MODULE";
-        }
-        case varbinder::ScopeType::PARAM: {
-            return "PARAM";
-        }
-        default: {
-            return "MUST BE UNREACHABLE";
-        }
+        return ASTVerifier::CheckResult::Success;
     }
-}
+};
 
-std::string ToStringHelper(const util::StringView &name)
-{
-    return name == nullptr ? "<null>" : name.Mutf8();
-}
+class IdentifierHasVariable {
+public:
+    explicit IdentifierHasVariable([[maybe_unused]] ArenaAllocator &allocator) {}
 
-std::string ToStringHelper(const varbinder::Scope *scope)
-{
-    if (scope == nullptr) {
-        return "<null>";
+    ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
+    {
+        if (!ast->IsIdentifier()) {
+            return ASTVerifier::CheckResult::Success;
+        }
+        if (ast->AsIdentifier()->Variable() != nullptr) {
+            return ASTVerifier::CheckResult::Success;
+        }
+
+        const auto *id = ast->AsIdentifier();
+        ctx.AddInvariantError("NULL_VARIABLE", *id, id->Start());
+        return ASTVerifier::CheckResult::Failed;
     }
 
-    switch (scope->Type()) {
-        case varbinder::ScopeType::FUNCTION: {
-            return "FUNC_SCOPE " + ToStringHelper(scope->AsFunctionScope()->Name());
-        }
-        case varbinder::ScopeType::LOCAL: {
-            return "LOCAL_SCOPE ";
-        }
-        case varbinder::ScopeType::CATCH: {
-            return "CATCH_SCOPE ";
-        }
-        default: {
-            return "MUST BE UNREACHABLE";
-        }
-    }
-}
+private:
+};
 
-std::string ToStringHelper(const varbinder::Variable *var)
-{
-    if (var == nullptr) {
-        return "<null>";
-    }
+class NodeHasType {
+public:
+    explicit NodeHasType([[maybe_unused]] ArenaAllocator &allocator) {}
 
-    switch (var->Type()) {
-        case varbinder::VariableType::LOCAL: {
-            return "LOCAL_VAR " + ToStringHelper(var->Name());
-        }
-        case varbinder::VariableType::MODULE: {
-            return "MODULE_VAR " + ToStringHelper(var->Name());
-        }
-        case varbinder::VariableType::GLOBAL: {
-            return "GLOBAL_VAR " + ToStringHelper(var->Name());
-        }
-        case varbinder::VariableType::ENUM: {
-            return "ENUM_VAR " + ToStringHelper(var->Name());
-        }
-        default: {
-            return "MUST BE UNREACHABLE";
-        }
-    }
-}
-
-template <typename T>
-std::string ToStringParamsHelper(const ir::AstNode *parent, const ArenaVector<T *> &params)
-{
-    std::string name;
-    if (parent != nullptr) {
-        name = ToStringHelper(parent) + " ";
-    }
-
-    name += "(";
-    for (auto const *param : params) {
-        name += ToStringHelper(param);
-    }
-
-    return name + ")";
-}
-
-template <typename T>
-std::string ToStringParamsHelper(const ArenaVector<T *> &params)
-{
-    std::string name = "(";
-
-    for (auto const *param : params) {
-        name += ToStringHelper(param);
-    }
-
-    return name + ")";
-}
-
-std::string ToStringHelper(const ir::AstNode *ast)
-{
-    if (ast == nullptr) {
-        return "<null>";
-    }
-
-    switch (ast->Type()) {
-        case ir::AstNodeType::IDENTIFIER: {
-            return "ID " + ToStringHelper(ast->AsIdentifier()->Name());
-        }
-        case ir::AstNodeType::CLASS_DEFINITION: {
-            return "CLS_DEF " + ToStringHelper(ast->AsClassDefinition()->Ident());
-        }
-        case ir::AstNodeType::CLASS_DECLARATION: {
-            return "CLS_DECL " + ToStringHelper(ast->AsClassDeclaration()->Definition());
-        }
-        case ir::AstNodeType::BLOCK_STATEMENT: {
-            return "BLOCK " + ToStringHelper(ast->AsBlockStatement()->Scope());
-        }
-        case ir::AstNodeType::SCRIPT_FUNCTION: {
-            auto const *sf = ast->AsScriptFunction();
-            return "SCRIPT_FUN " + ToStringHelper(sf->Scope()) + "::" + ToStringHelper(sf->Id());
-        }
-        case ir::AstNodeType::FUNCTION_EXPRESSION: {
-            return "FUN_EXPR " + ToStringHelper(ast->AsFunctionExpression()->Function());
-        }
-        case ir::AstNodeType::METHOD_DEFINITION: {
-            return "METHOD_DEF " + ToStringHelper(ast->AsMethodDefinition()->Value());
-        }
-        case ir::AstNodeType::ETS_TYPE_REFERENCE_PART: {
-            return "TYPE_REF_PART " + ToStringHelper(ast->AsETSTypeReferencePart()->Name());
-        }
-        case ir::AstNodeType::ETS_TYPE_REFERENCE: {
-            return "TYPE_REF " + ToStringHelper(ast->AsETSTypeReference()->Part());
-        }
-        case ir::AstNodeType::VARIABLE_DECLARATOR: {
-            return "VAR_DECLARATOR " + ToStringHelper(ast->AsVariableDeclarator()->Id());
-        }
-        case ir::AstNodeType::VARIABLE_DECLARATION: {
-            if (ast->AsVariableDeclaration()->Declarators().empty()) {
-                return "VAR_DECLARATION <null>";
+    ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
+    {
+        if (ast->IsTyped()) {
+            if (ast->IsClassDefinition() && ast->AsClassDefinition()->Ident()->Name() == "ETSGLOBAL") {
+                return ASTVerifier::CheckResult::SkipSubtree;
             }
-            return "VAR_DECLARATION " + ToStringHelper(ast->AsVariableDeclaration()->Declarators().at(0));
+            const auto *typed = static_cast<const ir::TypedAstNode *>(ast);
+            if (typed->TsType() == nullptr) {
+                ctx.AddInvariantError("NULL_TS_TYPE", *ast, ast->Start());
+                return ASTVerifier::CheckResult::Failed;
+            }
         }
-        case ir::AstNodeType::CALL_EXPRESSION: {
-            return "CALL_EXPR " + ToStringHelper(ast->AsCallExpression()->Callee()) + "(...)";
-        }
-        case ir::AstNodeType::EXPRESSION_STATEMENT: {
-            return "EXPR_STMT " + ToStringHelper(ast->AsExpressionStatement()->GetExpression());
-        }
-        case ir::AstNodeType::MEMBER_EXPRESSION: {
-            auto const *me = ast->AsMemberExpression();
-            return "MEMBER_EXPR " + ToStringHelper(me->Object()) + "." + ToStringHelper(me->Property());
-        }
-        case ir::AstNodeType::CLASS_STATIC_BLOCK: {
-            return "CLS_STATIC_BLOCK " + ToStringHelper(ast->AsClassStaticBlock()->Function());
-        }
-        case ir::AstNodeType::ETS_PACKAGE_DECLARATION: {
-            return "PKG_DECL ";
-        }
-        case ir::AstNodeType::TS_TYPE_PARAMETER_DECLARATION: {
-            auto params = ast->AsTSTypeParameterDeclaration()->Params();
-            return "PARAM_DECL " + ToStringParamsHelper<ir::TSTypeParameter>(ast->Parent(), params);
-        }
-        case ir::AstNodeType::TS_TYPE_PARAMETER: {
-            return "TYPE_PARAM " + ToStringHelper(ast->AsTSTypeParameter()->Name());
-        }
-        case ir::AstNodeType::TS_TYPE_PARAMETER_INSTANTIATION: {
-            return "PARAM_INSTANTIATION " +
-                   ToStringParamsHelper<ir::TypeNode>(ast->Parent(), ast->AsTSTypeParameterInstantiation()->Params());
-        }
-        case ir::AstNodeType::THROW_STATEMENT: {
-            return "THROW_STMT " + ToStringHelper(ast->AsThrowStatement()->Argument());
-        }
-        case ir::AstNodeType::ETS_NEW_CLASS_INSTANCE_EXPRESSION: {
-            return "NEW_CLS_INSTANCE " + ToStringHelper(ast->AsETSNewClassInstanceExpression()->GetTypeRef());
-        }
-        case ir::AstNodeType::STRING_LITERAL: {
-            return "STR_LITERAL " + ToStringHelper(ast->AsStringLiteral()->Str());
-        }
-        case ir::AstNodeType::TRY_STATEMENT: {
-            return "TRY_STMT " + ToStringHelper(ast->AsTryStatement()->Block());
-        }
-        case ir::AstNodeType::CATCH_CLAUSE: {
-            return "CATCH_CLAUSE ";
-        }
-        case ir::AstNodeType::NUMBER_LITERAL: {
-            return "NUMBER_LITERAL " + ToStringHelper(ast->AsNumberLiteral()->Str());
-        }
-        case ir::AstNodeType::ETS_PARAMETER_EXPRESSION: {
-            return "ETS_PARAM_EXPR " + ToStringHelper(ast->AsETSParameterExpression()->Ident());
-        }
-        case ir::AstNodeType::TS_INTERFACE_DECLARATION: {
-            return "TS_INTERFACE_DECL " + ToStringHelper(ast->AsTSInterfaceDeclaration()->Id());
-        }
-        case ir::AstNodeType::TS_INTERFACE_BODY: {
-            return "TS_INTERFACE_BODY ";
-        }
-        case ir::AstNodeType::ETS_FUNCTION_TYPE: {
-            return "ETS_FUNC_TYPE " + ToStringParamsHelper<ir::Expression>(ast->AsETSFunctionType()->Params());
-        }
-        case ir::AstNodeType::TS_CLASS_IMPLEMENTS: {
-            return "TS_CLASS_IMPL " + ToStringHelper(ast->AsTSClassImplements()->Expr());
-        }
-        default: {
-            return "MUST BE UNREACHABLE";
-        }
-    }
-}
-
-// NOLINTBEGIN(cppcoreguidelines-macro-usage)
-#define ADD_CHECK(Name)                                                                        \
-    {                                                                                          \
-        const auto check = [this](const ir::AstNode *ast) -> bool { return this->Name(ast); }; \
-        checks_.emplace_back(NamedCheck {#Name, check});                                       \
-        all_checks_.insert(#Name);                                                             \
-        checks_.emplace_back(NamedCheck {#Name "Recursive", RecursiveCheck(check)});           \
-        all_checks_.insert(#Name "Recursive");                                                 \
-    }
-// NOLINTEND(cppcoreguidelines-macro-usage)
-
-bool ASTVerifier::HasParent(const ir::AstNode *ast)
-{
-    if (ast != nullptr && !ast->IsETSScript() && ast->Parent() == nullptr) {
-        AddError("NULL_PARENT: " + ToStringHelper(ast), ast->Start());
-        return false;
+        return ASTVerifier::CheckResult::Success;
     }
 
-    return true;
-}
+private:
+};
 
-bool ASTVerifier::HasType(const ir::AstNode *ast)
-{
-    if (ast->IsTyped() && static_cast<const ir::TypedAstNode *>(ast)->TsType() == nullptr) {
-        AddError("NULL_TS_TYPE: " + ToStringHelper(ast), ast->Start());
-        return false;
-    }
-    return true;
-}
+class VariableHasScope {
+public:
+    explicit VariableHasScope(ArenaAllocator &allocator) : allocator_ {allocator} {}
 
-bool ASTVerifier::HasVariable(const ir::AstNode *ast)
-{
-    if (!ast->IsIdentifier() || ast->AsIdentifier()->Variable() != nullptr) {
-        return true;
-    }
-
-    const auto *id = ast->AsIdentifier();
-    AddError("NULL_VARIABLE: " + ToStringHelper(id), id->Start());
-    return false;
-}
-
-bool ASTVerifier::HasScope(const ir::AstNode *ast)
-{
-    if (!ast->IsIdentifier()) {
-        return true;  // we will check only Identifier
-    }
-
-    // we will check only local variables of identifiers
-    if (const auto maybe_var = GetLocalScopeVariable(ast)) {
-        const auto var = *maybe_var;
-        const auto scope = var->GetScope();
-        if (scope == nullptr) {
-            AddError("NULL_SCOPE_LOCAL_VAR: " + ToStringHelper(ast), ast->Start());
-            return false;
+    ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
+    {
+        if (!ast->IsIdentifier()) {
+            return ASTVerifier::CheckResult::Success;  // we will check invariant of Identifier only
         }
-        return ScopeEncloseVariable(var);
-    }
-    return true;
-}
 
-std::optional<varbinder::LocalVariable *> ASTVerifier::GetLocalScopeVariable(const ir::AstNode *ast)
-{
-    if (!ast->IsIdentifier()) {
+        // we will check invariant for only local variables of identifiers
+        if (const auto maybe_var = GetLocalScopeVariable(allocator_, ctx, ast); maybe_var.has_value()) {
+            const auto var = *maybe_var;
+            const auto scope = var->GetScope();
+            if (scope == nullptr) {
+                ctx.AddInvariantError("NULL_SCOPE_LOCAL_VAR", *ast, ast->Start());
+                return ASTVerifier::CheckResult::Failed;
+            }
+            return ScopeEncloseVariable(ctx, var) == true ? ASTVerifier::CheckResult::Success
+                                                          : ASTVerifier::CheckResult::Failed;
+        }
+        return ASTVerifier::CheckResult::Success;
+    }
+
+    static std::optional<varbinder::LocalVariable *> GetLocalScopeVariable(ArenaAllocator &allocator,
+                                                                           ASTVerifier::ErrorContext &ctx,
+                                                                           const ir::AstNode *ast)
+    {
+        if (!ast->IsIdentifier()) {
+            return std::nullopt;
+        }
+
+        auto invariant_has_variable = IdentifierHasVariable {allocator};
+        const auto variable = ast->AsIdentifier()->Variable();
+        if ((invariant_has_variable(ctx, ast) == ASTVerifier::CheckResult::Success) && variable->IsLocalVariable()) {
+            const auto local_var = variable->AsLocalVariable();
+            if (local_var->HasFlag(varbinder::VariableFlags::LOCAL)) {
+                return local_var;
+            }
+        }
         return std::nullopt;
     }
 
-    const auto variable = ast->AsIdentifier()->Variable();
-    if (HasVariable(ast) && variable->IsLocalVariable()) {
-        const auto local_var = variable->AsLocalVariable();
-        if (local_var->HasFlag(varbinder::VariableFlags::LOCAL)) {
-            return local_var;
-        }
-    }
-    return std::nullopt;
-}
+    bool ScopeEncloseVariable(ASTVerifier::ErrorContext &ctx, const varbinder::LocalVariable *var)
+    {
+        ASSERT(var);
 
-bool ASTVerifier::VerifyChildNode(const ir::AstNode *ast)
-{
-    ASSERT(ast);
-    bool is_ok = true;
-    ast->Iterate([&](const auto node) {
-        if (ast != node->Parent()) {
-            AddError("INCORRECT_PARENT_REF: " + ToStringHelper(node), node->Start());
+        const auto scope = var->GetScope();
+        if (scope == nullptr || var->Declaration() == nullptr) {
+            return true;
+        }
+        const auto node = var->Declaration()->Node();
+        if (node == nullptr) {
+            return true;
+        }
+        const auto var_start = node->Start();
+        bool is_ok = true;
+        if (scope->Bindings().count(var->Name()) == 0) {
+            ctx.AddInvariantError("SCOPE_DO_NOT_ENCLOSE_LOCAL_VAR", *node, var_start);
             is_ok = false;
         }
-    });
-    return is_ok;
-}
-
-bool ASTVerifier::VerifyScopeNode(const ir::AstNode *ast)
-{
-    ASSERT(ast);
-    const auto maybe_var = GetLocalScopeVariable(ast);
-    if (!maybe_var) {
-        return true;
-    }
-    const auto var = *maybe_var;
-    const auto scope = var->GetScope();
-    if (scope == nullptr) {
-        // already checked
-        return false;
-    }
-    const auto enclose_scope = scope->EnclosingVariableScope();
-    if (enclose_scope == nullptr) {
-        AddError("NO_ENCLOSING_VAR_SCOPE: " + ToStringHelper(ast), ast->Start());
-        return false;
-    }
-    const auto node = scope->Node();
-    bool is_ok = true;
-    if (!IsContainedIn(ast, node)) {
-        is_ok = false;
-        AddError("VARIABLE_NOT_ENCLOSE_SCOPE: " + ToStringHelper(ast), ast->Start());
-    }
-    if (!IsContainedIn<varbinder::Scope>(scope, enclose_scope)) {
-        is_ok = false;
-        AddError("VARIABLE_NOT_ENCLOSE_SCOPE: " + ToStringHelper(ast), ast->Start());
-    }
-    return is_ok;
-}
-
-bool ASTVerifier::ScopeEncloseVariable(const varbinder::LocalVariable *var)
-{
-    ASSERT(var);
-
-    const auto scope = var->GetScope();
-    if (scope == nullptr || var->Declaration() == nullptr) {
-        return true;
-    }
-    const auto node = var->Declaration()->Node();
-    if (node == nullptr) {
-        return true;
-    }
-    const auto var_start = node->Start();
-    bool is_ok = true;
-    if (scope->Bindings().count(var->Name()) == 0) {
-        AddError("SCOPE_DO_NOT_ENCLOSE_LOCAL_VAR: " + ToStringHelper(node), var_start);
-        is_ok = false;
-    }
-    const auto scope_node = scope->Node();
-    auto var_node = node;
-    if (!IsContainedIn(var_node, scope_node) || scope_node == nullptr) {
-        AddError("SCOPE_NODE_DONT_DOMINATE_VAR_NODE: " + ToStringHelper(node), var_start);
-        is_ok = false;
-    }
-    const auto &decls = scope->Decls();
-    const auto decl_dominate = std::count(decls.begin(), decls.end(), var->Declaration());
-    if (decl_dominate == 0) {
-        AddError("SCOPE_DECL_DONT_DOMINATE_VAR_DECL: " + ToStringHelper(node), var_start);
-        is_ok = false;
-    }
-    return is_ok;
-}
-
-bool ASTVerifier::CheckArithmeticExpression(const ir::AstNode *ast)
-{
-    if (ast == nullptr) {
-        return false;
+        const auto scope_node = scope->Node();
+        auto var_node = node;
+        if (!IsContainedIn(var_node, scope_node) || scope_node == nullptr) {
+            ctx.AddInvariantError("SCOPE_NODE_DONT_DOMINATE_VAR_NODE", *node, var_start);
+            is_ok = false;
+        }
+        const auto &decls = scope->Decls();
+        const auto decl_dominate = std::count(decls.begin(), decls.end(), var->Declaration());
+        if (decl_dominate == 0) {
+            ctx.AddInvariantError("SCOPE_DECL_DONT_DOMINATE_VAR_DECL", *node, var_start);
+            is_ok = false;
+        }
+        return is_ok;
     }
 
-    if (ast->IsBinaryExpression() && ast->AsBinaryExpression()->IsArithmetic()) {
-        if (ast->AsBinaryExpression()->OperatorType() == lexer::TokenType::PUNCTUATOR_PLUS &&
-            IsStringType(ast->AsBinaryExpression()->Left()) && IsStringType(ast->AsBinaryExpression()->Right())) {
+private:
+    ArenaAllocator &allocator_;
+};
+
+class EveryChildHasValidParent {
+public:
+    explicit EveryChildHasValidParent([[maybe_unused]] ArenaAllocator &allocator) {}
+
+    ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
+    {
+        auto result = ASTVerifier::CheckResult::Success;
+        if (ast->IsETSScript()) {
+            return result;
+        }
+        ast->Iterate([&](const ir::AstNode *node) {
+            if (ast != node->Parent()) {
+                ctx.AddInvariantError("INCORRECT_PARENT_REF", *node, node->Start());
+                result = ASTVerifier::CheckResult::Failed;
+            }
+        });
+        return result;
+    }
+
+private:
+};
+
+class VariableHasEnclosingScope {
+public:
+    explicit VariableHasEnclosingScope(ArenaAllocator &allocator) : allocator_ {allocator} {}
+
+    ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
+    {
+        const auto maybe_var = VariableHasScope::GetLocalScopeVariable(allocator_, ctx, ast);
+        if (!maybe_var) {
+            return ASTVerifier::CheckResult::Success;
+        }
+        const auto var = *maybe_var;
+        const auto scope = var->GetScope();
+        if (scope == nullptr) {
+            // already checked
+            return ASTVerifier::CheckResult::Success;
+        }
+        const auto enclose_scope = scope->EnclosingVariableScope();
+        if (enclose_scope == nullptr) {
+            ctx.AddInvariantError("NO_ENCLOSING_VAR_SCOPE", *ast, ast->Start());
+            return ASTVerifier::CheckResult::Failed;
+        }
+        const auto node = scope->Node();
+        auto result = ASTVerifier::CheckResult::Success;
+        if (!IsContainedIn(ast, node)) {
+            result = ASTVerifier::CheckResult::Failed;
+            ctx.AddInvariantError("VARIABLE_NOT_ENCLOSE_SCOPE", *ast, ast->Start());
+        }
+        if (!IsContainedIn<varbinder::Scope>(scope, enclose_scope)) {
+            result = ASTVerifier::CheckResult::Failed;
+            ctx.AddInvariantError("VARIABLE_NOT_ENCLOSE_SCOPE", *ast, ast->Start());
+        }
+        return result;
+    }
+
+private:
+    ArenaAllocator &allocator_;
+};
+
+class SequenceExpressionHasLastType {
+public:
+    explicit SequenceExpressionHasLastType([[maybe_unused]] ArenaAllocator &allocator) {}
+
+    ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
+    {
+        if (!ast->IsSequenceExpression()) {
+            return ASTVerifier::CheckResult::Success;
+        }
+        const auto *expr = ast->AsSequenceExpression();
+        const auto *last = expr->Sequence().back();
+        if (expr->TsType() == nullptr) {
+            ctx.AddInvariantError("Sequence expression type is null", *expr, expr->Start());
+            return ASTVerifier::CheckResult::Failed;
+        }
+        if (last->TsType() == nullptr) {
+            ctx.AddInvariantError("Sequence expression last type is null", *last, last->Start());
+            return ASTVerifier::CheckResult::Failed;
+        }
+        if (expr->TsType() != last->TsType()) {
+            ctx.AddInvariantError("Sequence expression type and last expression type are not the same", *expr,
+                                  expr->Start());
+            return ASTVerifier::CheckResult::Failed;
+        }
+        return ASTVerifier::CheckResult::Success;
+    }
+
+private:
+};
+
+class ForLoopCorrectlyInitialized {
+public:
+    explicit ForLoopCorrectlyInitialized([[maybe_unused]] ArenaAllocator &allocator) {}
+
+    ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
+    {
+        if (ast->IsForInStatement()) {
+            auto const *left = ast->AsForInStatement()->Left();
+            if (left == nullptr) {
+                ctx.AddInvariantError("NULL FOR-IN-LEFT", *ast, ast->Start());
+                return ASTVerifier::CheckResult::Failed;
+            }
+
+            if (!left->IsIdentifier() && !left->IsVariableDeclaration()) {
+                ctx.AddInvariantError("INCORRECT FOR-IN-LEFT", *ast, ast->Start());
+                return ASTVerifier::CheckResult::Failed;
+            }
+        }
+
+        if (ast->IsForOfStatement()) {
+            auto const *left = ast->AsForOfStatement()->Left();
+            if (left == nullptr) {
+                ctx.AddInvariantError("NULL FOR-OF-LEFT", *ast, ast->Start());
+                return ASTVerifier::CheckResult::Failed;
+            }
+
+            if (!left->IsIdentifier() && !left->IsVariableDeclaration()) {
+                ctx.AddInvariantError("INCORRECT FOR-OF-LEFT", *ast, ast->Start());
+                return ASTVerifier::CheckResult::Failed;
+            }
+        }
+
+        if (ast->IsForUpdateStatement()) {
+            // The most important part of for-loop is the test.
+            // But it also can be null. Then there must be break;(return) in the body.
+            auto const *test = ast->AsForUpdateStatement()->Test();
+            if (test == nullptr) {
+                auto const *body = ast->AsForUpdateStatement()->Body();
+                if (body == nullptr) {
+                    ctx.AddInvariantError("NULL FOR-TEST AND FOR-BODY", *ast, ast->Start());
+                    return ASTVerifier::CheckResult::Failed;
+                }
+                bool has_exit = body->IsBreakStatement() || body->IsReturnStatement();
+                body->IterateRecursively([&has_exit](ir::AstNode *child) {
+                    has_exit |= child->IsBreakStatement() || child->IsReturnStatement();
+                });
+                if (!has_exit) {
+                    // an infinite loop
+                    ctx.AddInvariantError("WARNING: NULL FOR-TEST AND FOR-BODY doesn't exit", *ast, ast->Start());
+                }
+                return ASTVerifier::CheckResult::Success;
+            }
+
+            if (!test->IsExpression()) {
+                ctx.AddInvariantError("NULL FOR VAR", *ast, ast->Start());
+                return ASTVerifier::CheckResult::Failed;
+            }
+        }
+        return ASTVerifier::CheckResult::Success;
+    }
+
+private:
+};
+
+class ModifierAccessValid {
+public:
+    explicit ModifierAccessValid([[maybe_unused]] ArenaAllocator &allocator) {}
+
+    ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
+    {
+        if (ast->IsMemberExpression()) {
+            const auto *prop_var = ast->AsMemberExpression()->PropVar();
+            if (prop_var != nullptr && prop_var->HasFlag(varbinder::VariableFlags::PROPERTY) &&
+                !ValidateVariableAccess(prop_var, ast->AsMemberExpression())) {
+                ctx.AddInvariantError("PROPERTY_NOT_VISIBLE_HERE", *ast, ast->Start());
+                return ASTVerifier::CheckResult::Failed;
+            }
+        }
+        if (ast->IsCallExpression()) {
+            const auto *call_expr = ast->AsCallExpression();
+            const auto *callee = call_expr->Callee();
+            if (callee != nullptr && callee->IsMemberExpression()) {
+                const auto *callee_member = callee->AsMemberExpression();
+                const auto *prop_var_callee = callee_member->PropVar();
+                if (prop_var_callee != nullptr && prop_var_callee->HasFlag(varbinder::VariableFlags::METHOD) &&
+                    !ValidateMethodAccess(callee_member, ast->AsCallExpression())) {
+                    ctx.AddInvariantError("PROPERTY_NOT_VISIBLE_HERE", *callee, callee->Start());
+                    return ASTVerifier::CheckResult::Failed;
+                }
+            }
+        }
+        return ASTVerifier::CheckResult::Success;
+    }
+
+private:
+};
+
+class ImportExportAccessValid {
+public:
+    explicit ImportExportAccessValid([[maybe_unused]] ArenaAllocator &allocator) {}
+
+    ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
+    {
+        ASTVerifier::InvariantSet imported_variables {};
+        if (ast->IsETSImportDeclaration()) {
+            const auto import_decl = ast->AsETSImportDeclaration()->Specifiers();
+            const auto name = [](ir::AstNode *const specifier) {
+                if (specifier->IsImportNamespaceSpecifier()) {
+                    return specifier->AsImportNamespaceSpecifier()->Local()->Name();
+                }
+                if (specifier->IsImportSpecifier()) {
+                    return specifier->AsImportSpecifier()->Local()->Name();
+                }
+                return specifier->AsImportDefaultSpecifier()->Local()->Name();
+            };
+            for (const auto import : import_decl) {
+                imported_variables.emplace(name(import));
+            }
+        }
+        if (ast->IsCallExpression()) {
+            const auto *call_expr = ast->AsCallExpression();
+            const auto *callee = call_expr->Callee();
+            if (callee != nullptr && callee->IsIdentifier() &&
+                !HandleImportExportIdentifier(imported_variables, callee->AsIdentifier(), call_expr)) {
+                ctx.AddInvariantError("PROPERTY_NOT_VISIBLE_HERE(NOT_EXPORTED)", *callee, callee->Start());
+                return ASTVerifier::CheckResult::Failed;
+            }
+        }
+        if (ast->IsIdentifier() && !HandleImportExportIdentifier(imported_variables, ast->AsIdentifier(), nullptr)) {
+            ctx.AddInvariantError("PROPERTY_NOT_VISIBLE_HERE(NOT_EXPORTED)", *ast, ast->Start());
+            return ASTVerifier::CheckResult::Failed;
+        }
+        return ASTVerifier::CheckResult::Success;
+    }
+
+private:
+    bool ValidateExport(const varbinder::Variable *var)
+    {
+        const auto *decl = var->Declaration();
+        if (decl == nullptr) {
+            return false;
+        }
+        const auto *node = decl->Node();
+        if (node == nullptr) {
+            return false;
+        }
+        return node->IsExported();
+    }
+
+    bool InvariantImportExportMethod(const ASTVerifier::InvariantSet &imported_variables,
+                                     const varbinder::Variable *var_callee, const ir::AstNode *call_expr,
+                                     util::StringView name)
+    {
+        auto *signature = call_expr->AsCallExpression()->Signature();
+        if (signature->Owner() == nullptr) {
+            // NOTE(vpukhov): Add a synthetic owner for dynamic signatures
+            ASSERT(call_expr->AsCallExpression()->Callee()->TsType()->HasTypeFlag(checker::TypeFlag::ETS_DYNAMIC_FLAG));
             return true;
         }
-        bool is_correct = true;
-        ast->Iterate([&is_correct](ir::AstNode *child) { is_correct &= (IsNumericType(child)); });
-        return is_correct;
-    }
 
-    return true;
-}
-
-bool ASTVerifier::IsForLoopCorrectInitialized(const ir::AstNode *ast)
-{
-    if (ast == nullptr) {
-        return false;
-    }
-
-    if (ast->IsForInStatement()) {
-        auto const *left = ast->AsForInStatement()->Left();
-        if (left == nullptr) {
-            AddError("NULL FOR-IN-LEFT: " + ToStringHelper(ast), ast->Start());
+        if (signature != nullptr && var_callee->Declaration() != nullptr &&
+            var_callee->Declaration()->Node() != nullptr &&
+            !IsContainedIn(var_callee->Declaration()->Node(), signature->Owner()->GetDeclNode()) &&
+            var_callee->Declaration()->Node() != signature->Owner()->GetDeclNode()) {
+            if (imported_variables.find(name.Mutf8()) != imported_variables.end() ||
+                imported_variables.find("") != imported_variables.end()) {
+                return ValidateExport(var_callee);
+            }
             return false;
         }
-
-        if (!left->IsIdentifier() && !left->IsVariableDeclaration()) {
-            AddError("INCORRECT FOR-IN-LEFT: " + ToStringHelper(ast), ast->Start());
-            return false;
-        }
+        return true;
     }
 
-    if (ast->IsForOfStatement()) {
-        auto const *left = ast->AsForOfStatement()->Left();
-        if (left == nullptr) {
-            AddError("NULL FOR-OF-LEFT: " + ToStringHelper(ast), ast->Start());
-            return false;
-        }
-
-        if (!left->IsIdentifier() && !left->IsVariableDeclaration()) {
-            AddError("INCORRECT FOR-OF-LEFT: " + ToStringHelper(ast), ast->Start());
-            return false;
-        }
-    }
-
-    if (ast->IsForUpdateStatement()) {
-        // The most important part of for-loop is the test.
-        // But it also can be null. Then there must be break;(return) in the body.
-        auto const *test = ast->AsForUpdateStatement()->Test();
-        if (test == nullptr) {
-            auto const *body = ast->AsForUpdateStatement()->Body();
-            if (body == nullptr) {
-                AddError("NULL FOR-TEST AND FOR-BODY: " + ToStringHelper(ast), ast->Start());
+    bool InvariantImportExportVariable(const ASTVerifier::InvariantSet &imported_variables,
+                                       const varbinder::Variable *var, const ir::Identifier *ident,
+                                       util::StringView name)
+    {
+        if (!var->HasFlag(varbinder::VariableFlags::LOCAL) && !var->HasFlag(varbinder::VariableFlags::VAR) &&
+            var->HasFlag(varbinder::VariableFlags::INITIALIZED) && var->Declaration() != nullptr &&
+            var->Declaration()->Node() != nullptr && !var->Declaration()->Node()->IsMethodDefinition() &&
+            !var->Declaration()->Node()->IsClassProperty()) {
+            auto var_parent = var->Declaration()->Node()->Parent();
+            if (var_parent != nullptr && !IsContainedIn(ident->Parent(), var_parent) && ident->Parent() != var_parent) {
+                if (var->GetScope() != nullptr && var->GetScope()->Parent() != nullptr &&
+                    var->GetScope()->Parent()->IsGlobalScope() &&
+                    ident->GetTopStatement() == var_parent->GetTopStatement()) {
+                    return true;
+                }
+                if (imported_variables.find(name.Mutf8()) != imported_variables.end() ||
+                    imported_variables.find("") != imported_variables.end()) {
+                    return ValidateExport(var);
+                }
                 return false;
             }
-            bool has_exit = body->IsBreakStatement() || body->IsReturnStatement();
-            body->IterateRecursively([&has_exit](ir::AstNode *child) {
-                has_exit |= child->IsBreakStatement() || child->IsReturnStatement();
+        }
+        return true;
+    }
+
+    bool HandleImportExportIdentifier(ASTVerifier::InvariantSet &imported_variables, const ir::Identifier *ident,
+                                      const ir::AstNode *call_expr)
+    {
+        if (ident->IsReference()) {
+            const auto *var = ident->Variable();
+            if (var != nullptr) {
+                if (var->HasFlag(varbinder::VariableFlags::METHOD) && call_expr != nullptr) {
+                    return InvariantImportExportMethod(imported_variables, var, call_expr, ident->Name());
+                }
+                return InvariantImportExportVariable(imported_variables, var, ident, ident->Name());
+            }
+        }
+        return true;
+    }
+};
+
+class ArithmeticOperationValid {
+public:
+    explicit ArithmeticOperationValid([[maybe_unused]] ArenaAllocator &allocator) {}
+
+    ASTVerifier::CheckResult operator()([[maybe_unused]] ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
+    {
+        if (ast->IsBinaryExpression() && ast->AsBinaryExpression()->IsArithmetic()) {
+            if (ast->AsBinaryExpression()->OperatorType() == lexer::TokenType::PUNCTUATOR_PLUS &&
+                IsStringType(ast->AsBinaryExpression()->Left()) && IsStringType(ast->AsBinaryExpression()->Right())) {
+                return ASTVerifier::CheckResult::Success;
+            }
+            auto result = ASTVerifier::CheckResult::Success;
+            ast->Iterate([&result](ir::AstNode *child) {
+                if (!IsNumericType(child)) {
+                    result = ASTVerifier::CheckResult::Failed;
+                }
             });
-            if (!has_exit) {
-                // an infinite loop
-                AddError("WARNING: NULL FOR-TEST AND FOR-BODY doesn't exit: " + ToStringHelper(ast), ast->Start());
-            }
-            return true;
+            return result;
         }
 
-        if (test->IsExpression()) {
-            AddError("NULL FOR VAR: " + ToStringHelper(ast), ast->Start());
-            return false;
-        }
+        return ASTVerifier::CheckResult::Success;
     }
-    return true;
-}
 
-bool ASTVerifier::AreForLoopsCorrectInitialized(const ir::AstNode *ast)
+private:
+};
+
+template <typename Func>
+static ASTVerifier::InvariantCheck RecursiveInvariant(Func &func)
 {
-    if (ast == nullptr) {
-        return false;
-    }
-
-    bool is_for_initialized = IsForLoopCorrectInitialized(ast);
-    ast->IterateRecursively(
-        [this, &is_for_initialized](ir::AstNode *child) { is_for_initialized &= IsForLoopCorrectInitialized(child); });
-    return is_for_initialized;
-}
-
-bool ASTVerifier::VerifyModifierAccess(const ir::AstNode *ast)
-{
-    if (ast == nullptr) {
-        return false;
-    }
-    if (ast->IsMemberExpression()) {
-        const auto *prop_var = ast->AsMemberExpression()->PropVar();
-        if (prop_var == nullptr || (prop_var->HasFlag(varbinder::VariableFlags::PROPERTY) &&
-                                    !ValidateVariableAccess(prop_var, ast->AsMemberExpression()))) {
-            AddError("PROPERTY_NOT_VISIBLE_HERE: " + ToStringHelper(ast), ast->Start());
-            return false;
-        }
-    }
-    if (ast->IsCallExpression()) {
-        const auto *call_expr = ast->AsCallExpression();
-        const auto *callee = call_expr->Callee();
-        if (callee == nullptr) {
-            return false;
-        }
-        if (callee->IsMemberExpression()) {
-            const auto *callee_member = callee->AsMemberExpression();
-            const auto *prop_var_callee = callee_member->PropVar();
-            if (prop_var_callee == nullptr || (prop_var_callee->HasFlag(varbinder::VariableFlags::METHOD) &&
-                                               !ValidateMethodAccess(callee_member, ast->AsCallExpression()))) {
-                AddError("PROPERTY_NOT_VISIBLE_HERE: " + ToStringHelper(callee), callee->Start());
-                return false;
+    return [&func](ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast) -> ASTVerifier::CheckResult {
+        std::function<void(const ir::AstNode *)> aux;
+        auto result = ASTVerifier::CheckResult::Success;
+        aux = [&ctx, &func, &aux, &result](const ir::AstNode *child) -> void {
+            if (result == ASTVerifier::CheckResult::Failed) {
+                return;
             }
-        }
-    }
-    return true;
-}
-
-bool ASTVerifier::VerifyExportAccess(const ir::AstNode *ast)
-{
-    if (ast == nullptr) {
-        return false;
-    }
-    if (ast->IsETSImportDeclaration()) {
-        const auto import_decl = ast->AsETSImportDeclaration()->Specifiers();
-        const auto name = [](ir::AstNode *const specifier) {
-            if (specifier->IsImportNamespaceSpecifier()) {
-                return specifier->AsImportNamespaceSpecifier()->Local()->Name();
+            const auto new_result = func(ctx, child);
+            if (new_result == ASTVerifier::CheckResult::SkipSubtree) {
+                return;
             }
-            if (specifier->IsImportSpecifier()) {
-                return specifier->AsImportSpecifier()->Local()->Name();
-            }
-            return specifier->AsImportDefaultSpecifier()->Local()->Name();
+            result = new_result;
+            child->Iterate(aux);
         };
-        for (const auto import : import_decl) {
-            imported_variables_.emplace(name(import));
-        }
-    }
-    if (ast->IsCallExpression()) {
-        const auto *call_expr = ast->AsCallExpression();
-        const auto *callee = call_expr->Callee();
-        if (callee != nullptr && callee->IsIdentifier() &&
-            !HandleImportExportIdentifier(callee->AsIdentifier(), call_expr)) {
-            AddError("PROPERTY_NOT_VISIBLE_HERE(NOT_EXPORTED): " + ToStringHelper(callee), callee->Start());
-            return false;
-        }
-    }
-    if (ast->IsIdentifier() && !HandleImportExportIdentifier(ast->AsIdentifier())) {
-        AddError("PROPERTY_NOT_VISIBLE_HERE(NOT_EXPORTED): " + ToStringHelper(ast), ast->Start());
-        return false;
-    }
-    return true;
+        aux(ast);
+        return result;
+    };
 }
 
-bool ASTVerifier::CheckImportExportMethod(const varbinder::Variable *var_callee, const ir::AstNode *call_expr,
-                                          util::StringView name)
-{
-    auto *signature = call_expr->AsCallExpression()->Signature();
-    if (signature->Owner() == nullptr) {
-        // NOTE(vpukhov): Add a synthetic owner for dynamic signatures
-        ASSERT(call_expr->AsCallExpression()->Callee()->TsType()->HasTypeFlag(checker::TypeFlag::ETS_DYNAMIC_FLAG));
-        return true;
+// NOLINTBEGIN(cppcoreguidelines-macro-usage)
+#define ADD_INVARIANT(Name)                                                                                  \
+    {                                                                                                        \
+        auto *invariant = allocator->New<Name>(*allocator);                                                  \
+        invariants_checks_.emplace_back(Invariant {#Name, *invariant});                                      \
+        invariants_names_.insert(#Name);                                                                     \
+        invariants_checks_.emplace_back(Invariant {#Name RECURSIVE_SUFFIX, RecursiveInvariant(*invariant)}); \
+        invariants_names_.insert(#Name RECURSIVE_SUFFIX);                                                    \
     }
+// NOLINTEND(cppcoreguidelines-macro-usage)
 
-    if (signature != nullptr && var_callee->Declaration() != nullptr && var_callee->Declaration()->Node() != nullptr &&
-        !IsContainedIn(var_callee->Declaration()->Node(), signature->Owner()->GetDeclNode()) &&
-        var_callee->Declaration()->Node() != signature->Owner()->GetDeclNode()) {
-        if (imported_variables_.find(name) != imported_variables_.end() ||
-            imported_variables_.find(util::StringView("")) != imported_variables_.end()) {
-            return ValidateExport(var_callee);
-        }
-        return false;
-    }
-    return true;
+ASTVerifier::ASTVerifier(ArenaAllocator *allocator) : invariants_checks_ {}, invariants_names_ {}
+{
+    ADD_INVARIANT(NodeHasParent);
+    ADD_INVARIANT(NodeHasType);
+    ADD_INVARIANT(IdentifierHasVariable);
+    ADD_INVARIANT(VariableHasScope);
+    ADD_INVARIANT(EveryChildHasValidParent);
+    ADD_INVARIANT(VariableHasEnclosingScope);
+    ADD_INVARIANT(ForLoopCorrectlyInitialized);
+    ADD_INVARIANT(ModifierAccessValid);
+    ADD_INVARIANT(ImportExportAccessValid);
+    ADD_INVARIANT(ArithmeticOperationValid);
+    ADD_INVARIANT(SequenceExpressionHasLastType);
 }
 
-bool ASTVerifier::CheckImportExportVariable(const varbinder::Variable *var, const ir::Identifier *ident,
-                                            util::StringView name)
+ASTVerifier::Errors ASTVerifier::VerifyFull(const ir::AstNode *ast)
 {
-    if (!var->HasFlag(varbinder::VariableFlags::LOCAL) && !var->HasFlag(varbinder::VariableFlags::VAR) &&
-        var->HasFlag(varbinder::VariableFlags::INITIALIZED) && var->Declaration() != nullptr &&
-        var->Declaration()->Node() != nullptr && !var->Declaration()->Node()->IsMethodDefinition() &&
-        !var->Declaration()->Node()->IsClassProperty()) {
-        auto var_parent = var->Declaration()->Node()->Parent();
-        if (var_parent != nullptr && !IsContainedIn(ident->Parent(), var_parent) && ident->Parent() != var_parent) {
-            if (var->GetScope() != nullptr && var->GetScope()->Parent() != nullptr &&
-                var->GetScope()->Parent()->IsGlobalScope() &&
-                ident->GetTopStatement() == var_parent->GetTopStatement()) {
-                return true;
-            }
-            if (imported_variables_.find(name) != imported_variables_.end() ||
-                imported_variables_.find(util::StringView("")) != imported_variables_.end()) {
-                return ValidateExport(var);
-            }
-            return false;
-        }
-    }
-    return true;
+    auto recursive_checks = InvariantSet {};
+    std::copy_if(invariants_names_.begin(), invariants_names_.end(),
+                 std::inserter(recursive_checks, recursive_checks.end()),
+                 [](const std::string &s) { return s.find(RECURSIVE_SUFFIX) != s.npos; });
+    return Verify(ast, recursive_checks);
 }
 
-bool ASTVerifier::HandleImportExportIdentifier(const ir::Identifier *ident, const ir::AstNode *call_expr)
+ASTVerifier::Errors ASTVerifier::Verify(const ir::AstNode *ast, const InvariantSet &invariant_set)
 {
-    if (ident->IsReference()) {
-        const auto *var = ident->Variable();
-        if (var != nullptr) {
-            if (var->HasFlag(varbinder::VariableFlags::METHOD) && call_expr != nullptr) {
-                return CheckImportExportMethod(var, call_expr, ident->Name());
-            }
-            return CheckImportExportVariable(var, ident, ident->Name());
-        }
-    }
-    return true;
-}
-
-ASTVerifier::ASTVerifier(ArenaAllocator *allocator, bool save_errors, util::StringView source_code)
-    : save_errors_(save_errors),
-      allocator_ {allocator},
-      named_errors_ {allocator_->Adapter()},
-      encountered_errors_ {allocator_->Adapter()},
-      checks_ {allocator_->Adapter()},
-      all_checks_(allocator_->Adapter())
-{
-    if (!source_code.Empty()) {
-        index_.emplace(source_code);
-    }
-
-    ADD_CHECK(HasParent);
-    ADD_CHECK(HasType);
-    ADD_CHECK(HasVariable);
-    ADD_CHECK(HasScope);
-    ADD_CHECK(VerifyChildNode);
-    ADD_CHECK(VerifyScopeNode);
-    ADD_CHECK(IsForLoopCorrectInitialized);
-    ADD_CHECK(AreForLoopsCorrectInitialized);
-    ADD_CHECK(VerifyModifierAccess);
-    ADD_CHECK(VerifyExportAccess);
-    ADD_CHECK(CheckArithmeticExpression);
-}
-
-bool ASTVerifier::VerifyFull(const ir::AstNode *ast)
-{
-    return Verify(ast, all_checks_);
-}
-
-bool ASTVerifier::Verify(const ir::AstNode *ast, const CheckSet &check_set)
-{
-    bool is_correct = true;
-    auto check_and_report = [&is_correct, this](util::StringView name, const CheckFunction &check,
-                                                const ir::AstNode *node) {
+    ErrorContext ctx {};
+    auto check_and_report = [&ctx](util::StringView name, const InvariantCheck &invariant, const ir::AstNode *node) {
         if (node == nullptr) {
             return;
         }
 
-        is_correct &= check(node);
-        if (!is_correct) {
-            for (const auto &error : encountered_errors_) {
-                named_errors_.emplace_back(NamedError {name, error});
-            }
-            encountered_errors_.clear();
-        }
+        invariant(ctx, node);
+        // if (result == CheckResult::Failed || result == CheckResult::SkipSubtree) {
+        ctx.ProcessEncounteredErrors(name);
+        // }
     };
 
-    const auto contains_checks =
-        std::includes(all_checks_.begin(), all_checks_.end(), check_set.begin(), check_set.end());
-    if (!contains_checks) {
-        auto invalid_checks = CheckSet {allocator_->Adapter()};
-        for (const auto &check : check_set) {
-            if (all_checks_.find(check) == all_checks_.end()) {
-                invalid_checks.insert(check);
+    const auto contains_invariants =
+        std::includes(invariants_names_.begin(), invariants_names_.end(), invariant_set.begin(), invariant_set.end());
+
+    if (!contains_invariants) {
+        auto invalid_invariants = InvariantSet {};
+        for (const auto &invariant : invariant_set) {
+            if (invariants_names_.find(invariant.data()) == invariants_names_.end()) {
+                invalid_invariants.insert(invariant.data());
             }
         }
-        for (const auto &check : invalid_checks) {
-            const auto &message = check.Mutf8() + " check is not found";
-            named_errors_.emplace_back(NamedError {"Check", Error {message, lexer::SourceLocation {}}});
+        for (const auto &invariant : invalid_invariants) {
+            ctx.AddError(std::string {"invariant was not found: "} + invariant.data());
         }
     }
 
-    for (const auto &[name, check] : checks_) {
-        if (check_set.find(name) != check_set.end()) {
-            check_and_report(name, check, ast);
+    for (const auto &invariant_name : invariant_set) {
+        for (const auto &[name, invariant] : invariants_checks_) {
+            if (std::string_view {invariant_name} == name.Utf8()) {
+                check_and_report(name, invariant, ast);
+                break;
+            }
         }
     }
-    return is_correct;
+
+    return ctx.GetErrors();
 }
 
 }  // namespace panda::es2panda::compiler
