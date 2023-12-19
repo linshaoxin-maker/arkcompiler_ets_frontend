@@ -109,7 +109,6 @@ public:
     ETSObjectType *GlobalBuiltinJSRuntimeType() const;
     ETSObjectType *GlobalBuiltinJSValueType() const;
     ETSObjectType *GlobalBuiltinBoxType(const Type *contents) const;
-    ETSObjectType *GlobalBuiltinVoidType() const;
 
     ETSObjectType *GlobalBuiltinFunctionType(size_t nargs) const;
     size_t GlobalBuiltinFunctionTypeVariadicThreshold() const;
@@ -336,7 +335,7 @@ public:
     void CheckObjectLiteralArguments(Signature *sig, ArenaVector<ir::Expression *> const &arguments);
     Signature *ComposeSignature(ir::ScriptFunction *func, SignatureInfo *signatureInfo, Type *returnType,
                                 varbinder::Variable *nameVar);
-    Type *ComposeReturnType(ir::ScriptFunction *func, util::StringView funcName, bool isConstructSig);
+    Type *ComposeReturnType(ir::ScriptFunction *func);
     SignatureInfo *ComposeSignatureInfo(ir::ScriptFunction *func);
     void ValidateMainSignature(ir::ScriptFunction *func);
     checker::ETSFunctionType *BuildFunctionSignature(ir::ScriptFunction *func, bool isConstructSig = false);
@@ -399,12 +398,10 @@ public:
     void ResolveLambdaObjectInvoke(ir::ClassDefinition *lambdaObject, Signature *signatureRef, bool ifaceOverride);
     void ResolveLambdaObjectInvoke(ir::ClassDefinition *lambdaObject, ir::ArrowFunctionExpression *lambda,
                                    ir::MethodDefinition *proxyMethod, bool isStatic, bool ifaceOverride);
-    ir::Statement *ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition *lambdaObject, Signature *signatureRef,
-                                                     bool ifaceOverride);
-    ir::Statement *ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition *lambdaObject,
-                                                     ir::ArrowFunctionExpression *lambda,
-                                                     ir::MethodDefinition *proxyMethod, bool isStatic,
-                                                     bool ifaceOverride);
+    void ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition *lambdaObject, Signature *signatureRef,
+                                           bool ifaceOverride);
+    void ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition *lambdaObject, ir::ArrowFunctionExpression *lambda,
+                                           ir::MethodDefinition *proxyMethod, bool isStatic, bool ifaceOverride);
     void CheckCapturedVariables();
     void CheckCapturedVariableInSubnodes(ir::AstNode *node, varbinder::Variable *var);
     void CheckCapturedVariable(ir::AstNode *node, varbinder::Variable *var);
