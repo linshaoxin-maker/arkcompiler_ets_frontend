@@ -41,6 +41,7 @@
 #include "checker/ETSchecker.h"
 #include "checker/ets/boxingConverter.h"
 #include "checker/types/ets/etsObjectType.h"
+#include "checker/types/ets/etsAsyncFuncReturnType.h"
 #include "checker/types/ets/types.h"
 #include "parser/program/program.h"
 
@@ -712,11 +713,20 @@ VReg ETSGen::GetThisReg() const
 
 void ETSGen::LoadDefaultValue([[maybe_unused]] const ir::AstNode *node, [[maybe_unused]] const checker::Type *type)
 {
+    if (type->IsETSAsyncFuncReturnType()) {
+        LoadDefaultValue(node, type->AsETSAsyncFuncReturnType()->GetPromiseTypeArg());
+        return;
+    }
+
     if (type->IsETSUnionType()) {
         type = Checker()->GetGlobalTypesHolder()->GlobalETSObjectType();
     }
     if (type->IsETSObjectType() || type->IsETSArrayType() || type->IsETSTypeParameter()) {
-        LoadAccumulatorNull(node, type);
+        if (type->IsETSUndefinedType()) {
+            LoadAccumulatorUndefined(node);
+        } else {
+            LoadAccumulatorNull(node, type);
+        }
     } else if (type->IsETSBooleanType()) {
         LoadAccumulatorBoolean(node, type->AsETSBooleanType()->GetValue());
     } else {
@@ -728,12 +738,6 @@ void ETSGen::LoadDefaultValue([[maybe_unused]] const ir::AstNode *node, [[maybe_
 void ETSGen::EmitReturnVoid(const ir::AstNode *node)
 {
     Sa().Emit<ReturnVoid>(node);
-}
-
-void ETSGen::LoadBuiltinVoid(const ir::AstNode *node)
-{
-    LoadStaticProperty(node, Checker()->GlobalBuiltinVoidType(),
-                       FormClassPropReference(Checker()->GlobalBuiltinVoidType(), "void_instance"));
 }
 
 void ETSGen::ReturnAcc(const ir::AstNode *node)
@@ -839,10 +843,11 @@ void ETSGen::InternalCheckCast(const ir::AstNode *node, const es2panda::checker:
 
 void ETSGen::CheckedReferenceNarrowing(const ir::AstNode *node, const checker::Type *target)
 {
-    ASSERT(target->HasTypeFlag(TYPE_FLAG_BYTECODE_REF) && !target->IsETSNullLike());
+    ASSERT(target->HasTypeFlag(TYPE_FLAG_BYTECODE_REF));
+
     // NOTE(vpukhov): implement for nulllike and union targets
-    if (target == Checker()->GlobalETSNullishObjectType()) {
-        SetAccumulatorType(target);
+    if (target->IsETSNullLike()) {
+        EmitCheckCastToNullOrUndefined(node, target);
         return;
     }
 
@@ -2739,6 +2744,38 @@ util::StringView ETSGen::ToAssemblerType(const es2panda::checker::Type *type) co
     std::stringstream ss;
     type->ToAssemblerTypeWithRank(ss);
     return util::UString(ss.str(), Allocator()).View();
+}
+
+void ETSGen::EmitCheckCastToNullOrUndefined(const ir::AstNode *node, const checker::Type *target)
+{
+    ASSERT(target->IsETSNullLike());
+
+    compiler::RegScope rs(this);
+    compiler::VReg res = AllocReg();
+
+    StoreAccumulator(node, res);
+
+    Label *ifTrue = AllocLabel();
+
+    if (target->IsETSNullType()) {
+        BranchIfNull(node, ifTrue);
+        LoadAccumulatorString(node, "Value cannot be casted to Null");
+    } else {
+        BranchIfUndefined(node, ifTrue);
+        LoadAccumulatorString(node, "Value cannot be casted to Undefined");
+    }
+
+    StoreAccumulator(node, res);
+
+    const auto error = AllocReg();
+    NewObject(node, error, compiler::Signatures::BUILTIN_CLASS_CAST_EXCEPTION);
+    CallThisStatic1(node, error, compiler::Signatures::BUILTIN_CLASS_CAST_EXCEPTION_CTOR, res);
+    EmitThrow(node, error);
+
+    SetLabel(node, ifTrue);
+
+    SetAccumulatorType(target);
+    LoadAccumulator(node, res);
 }
 
 }  // namespace ark::es2panda::compiler

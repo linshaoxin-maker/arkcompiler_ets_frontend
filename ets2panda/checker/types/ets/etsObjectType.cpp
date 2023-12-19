@@ -636,7 +636,7 @@ bool ETSObjectType::DefaultObjectTypeChecks(const ETSChecker *const etsChecker, 
 
     if (!source->IsETSObjectType() ||
         !source->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::CLASS | ETSObjectFlags::INTERFACE |
-                                                  ETSObjectFlags::NULL_TYPE)) {
+                                                  ETSObjectFlags::NULL_TYPE | ETSObjectFlags::UNDEFINED_TYPE)) {
         return true;
     }
 

@@ -88,7 +88,6 @@ public:
 
     void LoadDefaultValue(const ir::AstNode *node, const checker::Type *type);
     void EmitReturnVoid(const ir::AstNode *node);
-    void LoadBuiltinVoid(const ir::AstNode *node);
     void ReturnAcc(const ir::AstNode *node);
 
     void EmitIsInstance(const ir::AstNode *node, VReg objReg);
@@ -277,6 +276,26 @@ public:
     void BranchIfNull(const ir::AstNode *node, Label *ifNull)
     {
         Sa().Emit<JeqzObj>(node, ifNull);
+    }
+
+    void BranchIfUndefined([[maybe_unused]] const ir::AstNode *node, [[maybe_unused]] Label *ifUndefined)
+    {
+#ifdef PANDA_WITH_ETS
+        Sa().Emit<EtsIsundefined>(node);
+        Sa().Emit<Jnez>(node, ifUndefined);
+#else
+        UNREACHABLE();
+#endif  // PANDA_WITH_ETS
+    }
+
+    void BranchIfNotUndefined([[maybe_unused]] const ir::AstNode *node, [[maybe_unused]] Label *ifUndefined)
+    {
+#ifdef PANDA_WITH_ETS
+        Sa().Emit<EtsIsundefined>(node);
+        Sa().Emit<Jeqz>(node, ifUndefined);
+#else
+        UNREACHABLE();
+#endif  // PANDA_WITH_ETS
     }
 
     void BranchIfNotNull(const ir::AstNode *node, Label *ifNotNull)
@@ -666,6 +685,7 @@ private:
     const VReg dummyReg_ = VReg::RegStart();
 
     void EmitIsInstanceNonNullish(const ir::AstNode *node, VReg objReg, checker::ETSObjectType const *clsType);
+    void EmitCheckCastToNullOrUndefined(const ir::AstNode *node, const checker::Type *target);
     void EmitUnboxedCall(const ir::AstNode *node, std::string_view signatureFlag, const checker::Type *targetType,
                          const checker::Type *boxedType);
 

@@ -37,20 +37,13 @@ void ETSChecker::InitializeBuiltins(varbinder::ETSBinder *varbinder)
 
     const auto varMap = varbinder->TopScope()->Bindings();
 
-    auto initBuiltin = [varMap](ETSChecker *checker, std::string_view signature) -> util::StringView {
-        const auto iterator = varMap.find(signature);
-        ASSERT(iterator != varMap.end());
-        checker->GetGlobalTypesHolder()->InitializeBuiltin(
-            iterator->first,
-            checker->BuildClassProperties(iterator->second->Declaration()->Node()->AsClassDefinition()));
-        return iterator->first;
-    };
-
-    auto const objectName = initBuiltin(this, compiler::Signatures::BUILTIN_OBJECT_CLASS);
-    auto const voidName = initBuiltin(this, compiler::Signatures::BUILTIN_VOID_CLASS);
+    const auto object = varMap.find("Object");
+    ASSERT(object != varMap.end());
+    GetGlobalTypesHolder()->InitializeBuiltin(
+        object->first, BuildClassProperties(object->second->Declaration()->Node()->AsClassDefinition()));
 
     for (const auto &[name, var] : varMap) {
-        if (name == objectName || name == voidName) {
+        if (name == object->first) {
             continue;
         }
 
@@ -289,11 +282,6 @@ ETSObjectType *ETSChecker::GlobalBuiltinJSRuntimeType() const
 ETSObjectType *ETSChecker::GlobalBuiltinJSValueType() const
 {
     return AsETSObjectType(&GlobalTypesHolder::GlobalJSValueBuiltinType);
-}
-
-ETSObjectType *ETSChecker::GlobalBuiltinVoidType() const
-{
-    return AsETSObjectType(&GlobalTypesHolder::GlobalBuiltinVoidType);
 }
 
 ETSObjectType *ETSChecker::GlobalBuiltinDynamicType(Language lang) const

@@ -287,6 +287,7 @@ public:
 
     void EmitFinalizer(LabelPair trycatchLabelPair,
                        const ArenaVector<std::pair<compiler::LabelPair, const ir::Statement *>> &finalizerInsertions);
+    void EmitFinalizerInsertion(ETSGen *etsg, compiler::LabelPair labelPair, const ir::Statement *statement);
 
 private:
     const ir::TryStatement *tryStmt_ {};
