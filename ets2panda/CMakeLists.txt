@@ -149,6 +149,7 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/ets/tupleLowering.cpp
   compiler/lowering/ets/unionLowering.cpp
   ir/astDump.cpp
+  ir/srcDump.cpp
   ir/astNode.cpp
   ir/irnode.cpp
   ir/typeNode.cpp
