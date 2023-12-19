@@ -19,6 +19,7 @@ limitations under the License.
 
 import os
 import sys
+import platform
 import subprocess
 import argparse
 import time
@@ -26,8 +27,12 @@ import time
 CUR_FILE_DIR = os.path.dirname(__file__)
 TS2PANDA_DIR = os.path.abspath(os.path.join(CUR_FILE_DIR, ".."))
 CODE_ROOT = os.path.abspath(os.path.join(TS2PANDA_DIR, "../../.."))
+
+IS_LINUX_ARM64 = (sys.platform == "linux" and platform.machine().lower() == "aarch64")
+CLANG_TOOLCHAIN = "clang_arm64" if IS_LINUX_ARM64 else "clang_x64"
 DEFAULT_TARGET_DIR = os.path.join(
-    CODE_ROOT, "out/hispark_taurus/clang_x64/obj/arkcompiler/ets_frontend/ts2panda")
+    CODE_ROOT, f"out/hispark_taurus/{CLANG_TOOLCHAIN}/obj/arkcompiler/ets_frontend/ts2panda")
+
 DEFAULT_NODE_MODULE = os.path.join(
     CODE_ROOT, "prebuilts/build-tools/common/ts2abc/node_modules")
 
