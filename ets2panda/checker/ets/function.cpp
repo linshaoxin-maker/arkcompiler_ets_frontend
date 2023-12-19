@@ -788,28 +788,14 @@ Signature *ETSChecker::ComposeSignature(ir::ScriptFunction *func, SignatureInfo 
     return signature;
 }
 
-Type *ETSChecker::ComposeReturnType(ir::ScriptFunction *func, util::StringView funcName, bool isConstructSig)
+Type *ETSChecker::ComposeReturnType(ir::ScriptFunction *func)
 {
     auto *const returnTypeAnnotation = func->ReturnTypeAnnotation();
     checker::Type *returnType {};
 
     if (returnTypeAnnotation == nullptr) {
         // implicit void return type
-        returnType = isConstructSig || func->IsEntryPoint() || funcName.Is(compiler::Signatures::CCTOR)
-                         ? GlobalVoidType()
-                         : GlobalBuiltinVoidType();
-
-        if (returnType == nullptr) {
-            const auto varMap = VarBinder()->TopScope()->Bindings();
-
-            const auto builtinVoid = varMap.find(compiler::Signatures::BUILTIN_VOID_CLASS);
-            ASSERT(builtinVoid != varMap.end());
-
-            BuildClassProperties(builtinVoid->second->Declaration()->Node()->AsClassDefinition());
-
-            ASSERT(GlobalBuiltinVoidType() != nullptr);
-            returnType = GlobalBuiltinVoidType();
-        }
+        returnType = GlobalVoidType();
 
         if (func->IsAsyncFunc()) {
             auto implicitPromiseVoid = [this]() {
@@ -818,13 +804,13 @@ Type *ETSChecker::ComposeReturnType(ir::ScriptFunction *func, util::StringView f
                     promiseGlobal->Instantiate(Allocator(), Relation(), GetGlobalTypesHolder())->AsETSObjectType();
                 promiseType->AddTypeFlag(checker::TypeFlag::GENERIC);
                 promiseType->TypeArguments().clear();
-                promiseType->TypeArguments().emplace_back(GlobalBuiltinVoidType());
+                promiseType->TypeArguments().emplace_back(GlobalVoidType());
                 return promiseType;
             };
 
             returnType = implicitPromiseVoid();
         }
-    } else if (func->IsEntryPoint() && returnTypeAnnotation->GetType(this) == GlobalBuiltinVoidType()) {
+    } else if (func->IsEntryPoint() && returnTypeAnnotation->GetType(this) == GlobalVoidType()) {
         returnType = GlobalVoidType();
     } else {
         returnType = returnTypeAnnotation->GetType(this);
@@ -918,7 +904,7 @@ checker::ETSFunctionType *ETSChecker::BuildFunctionSignature(ir::ScriptFunction 
         ValidateMainSignature(func);
     }
 
-    auto *returnType = ComposeReturnType(func, funcName, isConstructSig);
+    auto *returnType = ComposeReturnType(func);
     auto *signature = ComposeSignature(func, signatureInfo, returnType, nameVar);
     if (isConstructSig) {
         signature->AddSignatureFlag(SignatureFlags::CONSTRUCT);
@@ -1562,12 +1548,6 @@ void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambdaObject, ir
         ResolveLambdaObjectInvokeFuncBody(lambdaObject, lambda, proxyMethod, isStatic, ifaceOverride);
     resolvedLambdaInvokeFunctionBody->SetParent(invokeFunc->Body());
     invokeFunc->Body()->AsBlockStatement()->Statements().push_back(resolvedLambdaInvokeFunctionBody);
-
-    if (resolvedLambdaInvokeFunctionBody->IsExpressionStatement()) {
-        auto *const returnStatement = Allocator()->New<ir::ReturnStatement>(nullptr);
-        returnStatement->SetParent(invokeFunc->Body());
-        invokeFunc->Body()->AsBlockStatement()->Statements().push_back(returnStatement);
-    }
 }
 
 /* Pulled out to appease the Chinese checker */
@@ -2598,12 +2578,6 @@ void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambdaObject, Si
         ResolveLambdaObjectInvokeFuncBody(lambdaObject, signatureRef, ifaceOverride);
     resolvedLambdaInvokeFunctionBody->SetParent(invokeFunc->Body());
     invokeFunc->Body()->AsBlockStatement()->Statements().push_back(resolvedLambdaInvokeFunctionBody);
-
-    if (resolvedLambdaInvokeFunctionBody->IsExpressionStatement()) {
-        auto *const returnStatement = Allocator()->New<ir::ReturnStatement>(nullptr);
-        returnStatement->SetParent(invokeFunc->Body());
-        invokeFunc->Body()->AsBlockStatement()->Statements().push_back(returnStatement);
-    }
 }
 
 static ir::Expression *BuildParamExpression(ETSChecker *checker, ir::Identifier *paramIdent, Type *type)
@@ -2753,7 +2727,8 @@ bool ETSChecker::IsReturnTypeSubstitutable(Signature *const s1, Signature *const
     // type R2 if any of the following is true:
 
     // - If R1 is a primitive type then R2 is identical to R1.
-    if (r1->HasTypeFlag(TypeFlag::ETS_PRIMITIVE | TypeFlag::ETS_ENUM | TypeFlag::ETS_STRING_ENUM)) {
+    if (r1->HasTypeFlag(TypeFlag::ETS_PRIMITIVE | TypeFlag::ETS_ENUM | TypeFlag::ETS_STRING_ENUM |
+                        TypeFlag::ETS_VOID)) {
         return Relation()->IsIdenticalTo(r2, r1);
     }
 

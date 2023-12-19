@@ -111,7 +111,6 @@ public:
     ETSObjectType *GlobalBuiltinJSRuntimeType() const;
     ETSObjectType *GlobalBuiltinJSValueType() const;
     ETSObjectType *GlobalBuiltinBoxType(const Type *contents) const;
-    ETSObjectType *GlobalBuiltinVoidType() const;
 
     ETSObjectType *GlobalBuiltinFunctionType(size_t nargs) const;
     size_t GlobalBuiltinFunctionTypeVariadicThreshold() const;
@@ -340,7 +339,7 @@ public:
     void CheckObjectLiteralArguments(Signature *sig, ArenaVector<ir::Expression *> const &arguments);
     Signature *ComposeSignature(ir::ScriptFunction *func, SignatureInfo *signatureInfo, Type *returnType,
                                 varbinder::Variable *nameVar);
-    Type *ComposeReturnType(ir::ScriptFunction *func, util::StringView funcName, bool isConstructSig);
+    Type *ComposeReturnType(ir::ScriptFunction *func);
     SignatureInfo *ComposeSignatureInfo(ir::ScriptFunction *func);
     void ValidateMainSignature(ir::ScriptFunction *func);
     checker::ETSFunctionType *BuildFunctionSignature(ir::ScriptFunction *func, bool isConstructSig = false);

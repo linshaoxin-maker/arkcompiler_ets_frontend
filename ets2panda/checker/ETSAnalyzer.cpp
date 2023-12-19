@@ -233,23 +233,23 @@ void DoBodyTypeChecking(ETSChecker *checker, ir::MethodDefinition *node, ir::Scr
 
 void CheckGetterSetterTypeConstrains(ETSChecker *checker, ir::ScriptFunction *scriptFunc)
 {
-    if (scriptFunc->IsSetter() && (scriptFunc->Signature()->ReturnType() != checker->GlobalBuiltinVoidType())) {
+    if (scriptFunc->IsSetter() && (scriptFunc->Signature()->ReturnType() != checker->GlobalVoidType())) {
         checker->ThrowTypeError("Setter must have void return type", scriptFunc->Start());
     }
 
-    if (scriptFunc->IsGetter() && (scriptFunc->Signature()->ReturnType() == checker->GlobalBuiltinVoidType())) {
+    if (scriptFunc->IsGetter() && (scriptFunc->Signature()->ReturnType() == checker->GlobalVoidType())) {
         checker->ThrowTypeError("Getter must return a value", scriptFunc->Start());
     }
 
     auto const name = scriptFunc->Id()->Name();
     if (name.Is(compiler::Signatures::GET_INDEX_METHOD)) {
-        if (scriptFunc->Signature()->ReturnType() == checker->GlobalBuiltinVoidType()) {
+        if (scriptFunc->Signature()->ReturnType() == checker->GlobalVoidType()) {
             checker->ThrowTypeError(std::string {ir::INDEX_ACCESS_ERROR_1} + std::string {name.Utf8()} +
                                         std::string {"' shouldn't have void return type."},
                                     scriptFunc->Start());
         }
     } else if (name.Is(compiler::Signatures::SET_INDEX_METHOD)) {
-        if (scriptFunc->Signature()->ReturnType() != checker->GlobalBuiltinVoidType()) {
+        if (scriptFunc->Signature()->ReturnType() != checker->GlobalVoidType()) {
             checker->ThrowTypeError(std::string {ir::INDEX_ACCESS_ERROR_1} + std::string {name.Utf8()} +
                                         std::string {"' should have void return type."},
                                     scriptFunc->Start());
@@ -2121,9 +2121,7 @@ void CheckArgumentVoidType(checker::Type *&funcReturnType, ETSChecker *checker, 
                            ir::ReturnStatement *st)
 {
     if (name.find(compiler::Signatures::ETS_MAIN_WITH_MANGLE_BEGIN) != std::string::npos) {
-        if (funcReturnType == checker->GlobalBuiltinVoidType()) {
-            funcReturnType = checker->GlobalVoidType();
-        } else if (!funcReturnType->IsETSVoidType() && !funcReturnType->IsIntType()) {
+        if (!funcReturnType->IsETSVoidType() && !funcReturnType->IsIntType()) {
             checker->ThrowTypeError("Bad return type, main enable only void or int type.", st->Start());
         }
     }
@@ -2132,8 +2130,8 @@ void CheckArgumentVoidType(checker::Type *&funcReturnType, ETSChecker *checker, 
 void CheckReturnType(ETSChecker *checker, checker::Type *funcReturnType, checker::Type *argumentType,
                      ir::Expression *stArgument, bool isAsync)
 {
-    if (funcReturnType->IsETSVoidType() || funcReturnType == checker->GlobalBuiltinVoidType()) {
-        if (argumentType != checker->GlobalVoidType() && argumentType != checker->GlobalBuiltinVoidType()) {
+    if (funcReturnType->IsETSVoidType() || funcReturnType == checker->GlobalVoidType()) {
+        if (argumentType != checker->GlobalVoidType()) {
             checker->ThrowTypeError("Unexpected return value, enclosing method return type is void.",
                                     stArgument->Start());
         }
@@ -2165,9 +2163,7 @@ void InferReturnType(ETSChecker *checker, ir::ScriptFunction *containingFunc, ch
                      ir::Expression *stArgument)
 {
     //  First (or single) return statement in the function:
-    funcReturnType = stArgument == nullptr
-                         ? containingFunc->IsEntryPoint() ? checker->GlobalVoidType() : checker->GlobalBuiltinVoidType()
-                         : stArgument->Check(checker);
+    funcReturnType = stArgument == nullptr ? checker->GlobalVoidType() : stArgument->Check(checker);
     if (funcReturnType->HasTypeFlag(checker::TypeFlag::CONSTANT)) {
         // remove CONSTANT type modifier if exists
         funcReturnType =
@@ -2210,22 +2206,20 @@ void ProcessReturnStatements(ETSChecker *checker, ir::ScriptFunction *containing
 
     if (stArgument == nullptr) {
         // previous return statement(s) have value
-        if (!funcReturnType->IsETSVoidType() && funcReturnType != checker->GlobalBuiltinVoidType()) {
+        if (!funcReturnType->IsETSVoidType() && funcReturnType != checker->GlobalVoidType()) {
             checker->ThrowTypeError("All return statements in the function should be empty or have a value.",
                                     st->Start());
         }
     } else {
         //  previous return statement(s) don't have any value
-        if (funcReturnType->IsETSVoidType() || funcReturnType == checker->GlobalBuiltinVoidType()) {
+        if (funcReturnType->IsETSVoidType() || funcReturnType == checker->GlobalVoidType()) {
             checker->ThrowTypeError("All return statements in the function should be empty or have a value.",
                                     stArgument->Start());
         }
 
         const auto name = containingFunc->Scope()->InternalName().Mutf8();
         if (name.find(compiler::Signatures::ETS_MAIN_WITH_MANGLE_BEGIN) != std::string::npos) {
-            if (funcReturnType == checker->GlobalBuiltinVoidType()) {
-                funcReturnType = checker->GlobalVoidType();
-            } else if (!funcReturnType->IsETSVoidType() && !funcReturnType->IsIntType()) {
+            if (!funcReturnType->IsETSVoidType() && !funcReturnType->IsIntType()) {
                 checker->ThrowTypeError("Bad return type, main enable only void or int type.", st->Start());
             }
         }
@@ -2276,11 +2270,10 @@ checker::Type *ETSAnalyzer::GetFunctionReturnType(ir::ReturnStatement *st, ir::S
         funcReturnType = returnTypeAnnotation->GetType(checker);
 
         if (st->argument_ == nullptr) {
-            if (!funcReturnType->IsETSVoidType() && funcReturnType != checker->GlobalBuiltinVoidType()) {
+            if (!funcReturnType->IsETSVoidType() && funcReturnType != checker->GlobalVoidType()) {
                 checker->ThrowTypeError("Missing return value.", st->Start());
             }
-            funcReturnType =
-                containingFunc->IsEntryPoint() ? checker->GlobalVoidType() : checker->GlobalBuiltinVoidType();
+            funcReturnType = checker->GlobalVoidType();
         } else {
             const auto name = containingFunc->Scope()->InternalName().Mutf8();
             CheckArgumentVoidType(funcReturnType, checker, name, st);
