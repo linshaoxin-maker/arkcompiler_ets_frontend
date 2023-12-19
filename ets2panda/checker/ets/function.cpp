@@ -229,6 +229,11 @@ Signature *ETSChecker::ValidateSignature(Signature *signature, const ir::TSTypeP
             return nullptr;
         }
 
+        if (argument->IsArrayExpression()) {
+            argument->AsArrayExpression()->GetPrefferedTypeFromFuncParam(
+                this, substituted_sig->Function()->Params()[index], flags);
+        }
+
         auto *const argument_type = argument->Check(this);
 
         if (auto const invocation_ctx = checker::InvocationContext(
