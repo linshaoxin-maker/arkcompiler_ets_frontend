@@ -16,11 +16,17 @@
 #include "checkerPhase.h"
 #include "checker/checker.h"
 #include "compiler/core/ASTVerifier.h"
+#include "varbinder/ETSBinder.h"
 #include "compiler/core/compilerContext.h"
 
 namespace panda::es2panda::compiler {
 bool CheckerPhase::Perform(public_lib::Context *ctx, [[maybe_unused]] parser::Program *program)
 {
+    auto varbinder = ctx->compilerContext->VarBinder();
+    if (ctx->parser->IsETSParser() && varbinder->IsETSBinder()) {
+        varbinder->AsETSBinder()->FillResolvedImportPaths(ctx->parser->AsETSParser()->ResolvedParsedSourcesMap(),
+                                                          ctx->allocator);
+    }
     return ctx->checker->StartChecker(ctx->compilerContext->VarBinder(), *ctx->compilerContext->Options());
 }
 

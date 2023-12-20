@@ -24,6 +24,7 @@
 #include "compiler/lowering/plugin_phase.h"
 #include "compiler/lowering/scopesInit/scopesInitPhase.h"
 #include "compiler/lowering/ets/expandBrackets.h"
+#include "compiler/lowering/ets/topLevelStmts/topLevelStmts.h"
 #include "compiler/lowering/ets/generateDeclarations.h"
 #include "compiler/lowering/ets/lambdaLowering.h"
 #include "compiler/lowering/ets/interfacePropertyDeclarations.h"
@@ -58,6 +59,7 @@ static ExpandBracketsPhase g_expandBracketsPhase;
 static PromiseVoidInferencePhase g_promiseVoidInferencePhase;
 static StructLowering g_structLowering;
 static DefaultParameterLowering g_defaultParameterLowering;
+static TopLevelStatements g_topLevelStatements;
 static PluginPhase g_pluginsAfterParse {"plugins-after-parse", ES2PANDA_STATE_PARSED, &util::Plugin::AfterParse};
 static PluginPhase g_pluginsAfterCheck {"plugins-after-check", ES2PANDA_STATE_CHECKED, &util::Plugin::AfterCheck};
 static PluginPhase g_pluginsAfterLowerings {"plugins-after-lowering", ES2PANDA_STATE_LOWERED,
@@ -72,8 +74,9 @@ static InitScopesPhaseJs g_initScopesPhaseJs;
 std::vector<Phase *> GetETSPhaseList()
 {
     return {
-        &g_defaultParameterLowering,
         &g_pluginsAfterParse,
+        &g_topLevelStatements,
+        &g_defaultParameterLowering,
         &g_initScopesPhaseEts,
         &g_promiseVoidInferencePhase,
         &g_structLowering,

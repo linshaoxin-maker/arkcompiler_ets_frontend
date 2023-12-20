@@ -109,6 +109,11 @@ public:
         return sourceFileFolder_;
     }
 
+    std::string PackagePath() const
+    {
+        return SourceFileFolder().Mutf8() + panda::os::file::File::GetPathDelim().at(0) + GetPackageName().Mutf8();
+    }
+
     util::StringView ResolvedFilePath() const
     {
         return resolvedFilePath_;

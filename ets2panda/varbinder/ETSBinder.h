@@ -46,7 +46,7 @@ public:
           lambdaObjects_(Allocator()->Adapter()),
           dynamicImportVars_(Allocator()->Adapter()),
           importSpecifiers_(Allocator()->Adapter()),
-          resolvedImportPathesMap_(Allocator()->Adapter())
+          resolvedImportPathsMap_(Allocator()->Adapter())
     {
         InitImplicitThisParam();
     }
@@ -202,39 +202,24 @@ public:
         defaultExport_ = defaultExport;
     }
 
-    const ArenaUnorderedMap<util::StringView, util::StringView> &ResolvedImportPathesMap() const
-    {
-        return resolvedImportPathesMap_;
-    }
-
     const util::StringView &GetResolvedImportPath(const util::StringView &path) const
     {
-        ASSERT(resolvedImportPathesMap_.find(path) != resolvedImportPathesMap_.end());
+        ASSERT(resolvedImportPathsMap_.find(path) != resolvedImportPathsMap_.end());
 
-        return resolvedImportPathesMap_.find(path)->second;
+        return resolvedImportPathsMap_.find(path)->second;
     }
 
-    void FillResolvedImportPathes(const std::unordered_map<std::string, std::string> &map, ArenaAllocator *allocator)
+    void FillResolvedImportPaths(const std::unordered_map<std::string, std::string> &map, ArenaAllocator *allocator)
     {
         for (const auto &path : map) {
-            resolvedImportPathesMap_.emplace(util::UString(path.first, allocator).View(),
-                                             util::UString(path.second, allocator).View());
+            resolvedImportPathsMap_.emplace(util::UString(path.first, allocator).View(),
+                                            util::UString(path.second, allocator).View());
         }
     }
 
     bool IsDynamicModuleVariable(const Variable *var) const;
     bool IsDynamicNamespaceVariable(const Variable *var) const;
     const DynamicImportData *DynamicImportDataForVar(const Variable *var) const;
-
-    static constexpr std::string_view DEFAULT_IMPORT_SOURCE_FILE = "<default_import>.ets";
-    static constexpr std::string_view DEFAULT_IMPORT_SOURCE = R"(
-import * from "std/core";
-import * from "std/math";
-import * from "std/containers";
-import * from "std/time";
-import * from "std/interop/js";
-import * from "escompat";
-)";
 
     void ResolveReferenceForScope(ir::AstNode *node, Scope *scope);
     void ResolveReferencesForScope(ir::AstNode const *parent, Scope *scope);
@@ -262,7 +247,7 @@ private:
     DynamicImportVariables dynamicImportVars_;
     ir::Identifier *thisParam_ {};
     ArenaVector<std::pair<util::StringView, util::StringView>> importSpecifiers_;
-    ArenaUnorderedMap<util::StringView, util::StringView> resolvedImportPathesMap_;
+    ArenaUnorderedMap<util::StringView, util::StringView> resolvedImportPathsMap_;
     ir::AstNode *defaultExport_ {};
 };
 

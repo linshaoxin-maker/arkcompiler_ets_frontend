@@ -129,6 +129,11 @@ public:
         return varScope_;
     }
 
+    bool IsETSBinder() const
+    {
+        return Extension() == ScriptExtension::ETS;
+    }
+
     ETSBinder *AsETSBinder()
     {
         ASSERT(Extension() == ScriptExtension::ETS);

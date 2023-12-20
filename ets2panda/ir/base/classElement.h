@@ -58,6 +58,8 @@ public:
         return value_;
     }
 
+    void SetValue(Expression *value) noexcept;
+
     [[nodiscard]] const Expression *Value() const noexcept
     {
         return value_;

@@ -94,9 +94,8 @@ function main() {
 
     impl_->AstNodeForEach(impl_->ProgramAst(impl_->ContextProgram(ctx)), func, &arg);
 
-    std::vector<std::string> expected {"C",        "n",        "string", "constructor", "constructor", "ETSGLOBAL",
-                                       "_$init$_", "_$init$_", "main",   "main",        "c",           "C",
-                                       "console",  "log",      "c",      "n",           "<cctor>"};
+    std::vector<std::string> expected {"C", "n", "string",  "constructor", "constructor", "main",
+                                       "c", "C", "console", "log",         "c",           "n"};
     ASSERT_EQ(arg.ids, expected);
 
     impl_->DestroyContext(ctx);
