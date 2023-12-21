@@ -78,6 +78,7 @@ class C3 {
 }
 
 
+
 class C4 {
   readonly n: number = 0;
   readonly s: string = '';
@@ -117,6 +118,7 @@ class C7 {
   n: number = 0;
   s: string = '';
 }
+
 let o1: Object = {s: '', n: 42} // OK in TS, CTE in ArkTS: no fields 'n' and 's' in Object
 let o2: object = {n: 42, s: ''} // OK in TS, CTE in ArkTS: no fields 'n' and 's' in object
 

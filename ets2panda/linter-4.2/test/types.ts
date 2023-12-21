@@ -98,7 +98,7 @@ type DescribableFunction = {
 function callFunctionObject(fn: DescribableFunction) {
   console.log(fn.description + ' returned ' + fn(5));
 }
-const funcWithDescr: DescribableFunction = (x: number) => x % 2 == 0;
+const funcWithDescr: DescribableFunction = (x: number) => x % 2 === 0;
 funcWithDescr.description = 'isEven';
 callFunctionObject(funcWithDescr);
 

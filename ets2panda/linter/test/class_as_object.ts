@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Something, SomethingFactory, SomethingBar, Bar } from "./oh_modules/ohos_factory";
+import { Something, SomethingFactory, SomethingBar, Bar, Select } from "./oh_modules/ohos_factory";
 
 class C {
     static a = 5
@@ -91,3 +91,33 @@ for (let item = 0; item < Object.keys(Color).length; item++) {
 foo2(() => C);
 
 export { C as H };
+
+// #14228
+let data = new Select<Object>().from(C).eq('key').query(C); // Ok
+invalid_func(C); // Ok
+let a: any;
+a.foo(C); // Ok
+
+let col = 'WHITE';
+console.log(Color[col])
+
+// #14184
+namespace NS {
+    export enum E {
+        A = 'A',
+        B = 'B',
+        C = 'C'
+    }
+}
+
+let s: string = 'B';
+let s2: string = NS.E[s];
+
+for (let item = 0; item < Object.keys(NS.E).length; item++) {
+    console.log(item);
+}
+
+/**
+ * {@link C} - should not report error
+ */
+class JSDocClass {}

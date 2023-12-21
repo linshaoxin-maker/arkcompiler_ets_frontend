@@ -28,7 +28,7 @@ decodeURIComponent('');
 escape('');
 unescape('');
 
-// global and window are not portable, so they are excluded from test suite.
+global.eval('console.log("foo")');
 globalThis.eval('console.log("foo")');
 const evl = "eval('console.log(1)')";
 const res: void = Function(evl)();
@@ -48,11 +48,11 @@ const object1: Obj = {
 };
 
 /// Object
-//Object.__proto__(),
-//Object.__defineGetter__(),
-//Object.__defineSetter__();
-//Object.__lookupGetter__();
-//Object.__lookupSetter__();
+// DO NOT CHECK Object.__proto__(),
+// DO NOT CHECK Object.__defineGetter__(),
+// DO NOT CHECK Object.__defineSetter__();
+// DO NOT CHECK Object.__lookupGetter__();
+// DO NOT CHECK Object.__lookupSetter__();
 Object.assign<C, C>(c, c);
 Object.create(c);
 Object.defineProperties<C>(c, {});
@@ -121,9 +121,3 @@ ArrayBuffer.isView({});
 let a: number[] = [];
 let b = new ArrayBuffer(1);
 Array.isArray(a);
-
-Number.NaN;
-Number.isFinite(1);
-Number.isNaN(2);
-Number.parseFloat('3');
-Number.parseInt('4', 10);

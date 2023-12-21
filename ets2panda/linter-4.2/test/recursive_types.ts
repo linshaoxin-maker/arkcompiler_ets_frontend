@@ -63,7 +63,7 @@ namespace test3 {
                 let cur = parent.get(name);
                 if (cur instanceof Array) {
                     (cur as Array<object | string>).push(value);
-                } else if (cur != undefined) {
+                } else if (cur !== undefined) {
                     let array = [cur, value];
                     parent.set(name, array);
                 }

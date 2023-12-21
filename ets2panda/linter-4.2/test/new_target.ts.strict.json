@@ -17,22 +17,30 @@
         {
             "line": 19,
             "column": 12,
-            "problem": "LimitedStdLibApi"
+            "problem": "LimitedStdLibApi",
+            "suggest": "",
+            "rule": "Usage of standard library is restricted (arkts-limited-stdlib)"
         },
         {
             "line": 19,
             "column": 44,
-            "problem": "Prototype"
+            "problem": "Prototype",
+            "suggest": "",
+            "rule": "Prototype assignment is not supported (arkts-no-prototype-assignment)"
         },
         {
             "line": 19,
             "column": 33,
-            "problem": "NewTarget"
+            "problem": "NewTarget",
+            "suggest": "",
+            "rule": "\"new.target\" is not supported (arkts-no-new-target)"
         },
         {
             "line": 24,
             "column": 7,
-            "problem": "NewTarget"
+            "problem": "NewTarget",
+            "suggest": "",
+            "rule": "\"new.target\" is not supported (arkts-no-new-target)"
         }
     ]
 }

@@ -38,7 +38,7 @@
                 {
                     "start": 658,
                     "end": 709,
-                    "replacementText": "(x: number, y): number => {\r\n    return x * y;\r\n}"
+                    "replacementText": "(x: number, y): number => {\n    return x * y;\n}"
                 }
             ],
             "suggest": "",
@@ -61,7 +61,7 @@
                 {
                     "start": 759,
                     "end": 792,
-                    "replacementText": "() => {\r\n    return 100;\r\n}"
+                    "replacementText": "() => {\n    return 100;\n}"
                 }
             ],
             "suggest": "",
@@ -76,7 +76,7 @@
                 {
                     "start": 813,
                     "end": 863,
-                    "replacementText": "() => {\r\n    return 'get result immediately';\r\n}"
+                    "replacementText": "() => {\n    return 'get result immediately';\n}"
                 }
             ],
             "suggest": "",
@@ -91,7 +91,7 @@
                 {
                     "start": 870,
                     "end": 908,
-                    "replacementText": "() => {\r\n    console.log('foo!');\r\n}"
+                    "replacementText": "() => {\n    console.log('foo!');\n}"
                 }
             ],
             "suggest": "",
@@ -106,7 +106,7 @@
                 {
                     "start": 920,
                     "end": 958,
-                    "replacementText": "() => {\r\n    console.log('bar!');\r\n}"
+                    "replacementText": "() => {\n    console.log('bar!');\n}"
                 }
             ],
             "suggest": "",
@@ -121,7 +121,7 @@
                 {
                     "start": 1023,
                     "end": 1055,
-                    "replacementText": "(e) => {\r\n    return e * 2;\r\n}"
+                    "replacementText": "(e) => {\n    return e * 2;\n}"
                 }
             ],
             "suggest": "",
@@ -136,7 +136,7 @@
                 {
                     "start": 1084,
                     "end": 1122,
-                    "replacementText": "(x) => {\r\n    return x % 2 === 0;\r\n}"
+                    "replacementText": "(x) => {\n    return x % 2 === 0;\n}"
                 }
             ],
             "suggest": "",
@@ -236,9 +236,9 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 1492,
-                    "end": 1649,
-                    "replacementText": "(p: () => number): void => {\r\n    let a = factorial(3);\r\n    let b = p();\r\n    let c = new C();\r\n    c.m();\r\n}"
+                    "start": 1493,
+                    "end": 1650,
+                    "replacementText": "(p: () => number): void => {\n    let a = factorial(3);\n    let b = p();\n    let c = new C();\n    c.m();\n}"
                 }
             ],
             "suggest": "",
@@ -251,9 +251,9 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 1663,
-                    "end": 1714,
-                    "replacementText": "(() => {\r\n    console.log('called immediately');\r\n})"
+                    "start": 1664,
+                    "end": 1715,
+                    "replacementText": "(() => {\n    console.log('called immediately');\n})"
                 }
             ],
             "suggest": "",
@@ -270,13 +270,21 @@
         {
             "line": 82,
             "column": 19,
+            "problem": "PropertyAccessByIndex",
+            "autofixable": true,
+            "suggest": "",
+            "rule": "Indexed access is not supported for fields (arkts-no-props-by-index)"
+        },
+        {
+            "line": 82,
+            "column": 19,
             "problem": "FunctionExpression",
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 1737,
-                    "end": 1782,
-                    "replacementText": "(() => {\r\n    console.log('index access');\r\n})"
+                    "start": 1738,
+                    "end": 1783,
+                    "replacementText": "(() => {\n    console.log('index access');\n})"
                 }
             ],
             "suggest": "",
@@ -289,9 +297,9 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 1793,
-                    "end": 1830,
-                    "replacementText": "(() => {\r\n    console.log('void');\r\n})"
+                    "start": 1794,
+                    "end": 1831,
+                    "replacementText": "(() => {\n    console.log('void');\n})"
                 }
             ],
             "suggest": "",
@@ -304,9 +312,9 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 1870,
-                    "end": 1912,
-                    "replacementText": "(() => {\r\n    console.log('async');\r\n})"
+                    "start": 1871,
+                    "end": 1913,
+                    "replacementText": "(() => {\n    console.log('async');\n})"
                 }
             ],
             "suggest": "",
@@ -319,9 +327,9 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 1941,
-                    "end": 1980,
-                    "replacementText": "(() => {\r\n    console.log('typeof');\r\n})"
+                    "start": 1942,
+                    "end": 1981,
+                    "replacementText": "(() => {\n    console.log('typeof');\n})"
                 }
             ],
             "suggest": "",
@@ -342,9 +350,9 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 2027,
-                    "end": 2097,
-                    "replacementText": "((p: boolean) => {\r\n    console.log('Function.bind(this)');\r\n})"
+                    "start": 2028,
+                    "end": 2098,
+                    "replacementText": "((p: boolean) => {\n    console.log('Function.bind(this)');\n})"
                 }
             ],
             "suggest": "",
@@ -353,7 +361,7 @@
         {
             "line": 104,
             "column": 7,
-            "problem": "FunctionApplyBindCall",
+            "problem": "FunctionBind",
             "autofixable": false,
             "suggest": "",
             "rule": "\"Function.apply\", \"Function.bind\", \"Function.call\" are not supported (arkts-no-func-apply-bind-call)"
@@ -365,8 +373,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 2132,
-                    "end": 2171,
+                    "start": 2133,
+                    "end": 2172,
                     "replacementText": "() => { console.log('callback'); }"
                 }
             ],
@@ -380,8 +388,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 2195,
-                    "end": 2246,
+                    "start": 2196,
+                    "end": 2247,
                     "replacementText": "(() => { console.log('expr || function(){}'); })"
                 }
             ],
@@ -395,8 +403,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 2282,
-                    "end": 2322,
+                    "start": 2283,
+                    "end": 2323,
                     "replacementText": "(() => { console.log('ternary 1'); })"
                 }
             ],
@@ -410,8 +418,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 2337,
-                    "end": 2377,
+                    "start": 2338,
+                    "end": 2378,
                     "replacementText": "(() => { console.log('ternary 2'); })"
                 }
             ],

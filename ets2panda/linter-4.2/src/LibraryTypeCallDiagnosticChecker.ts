@@ -13,19 +13,25 @@
  * limitations under the License.
  */
 
-import * as ts from 'typescript';
-import { DiagnosticChecker } from './DiagnosticChecker';
+import type * as ts from 'typescript';
+import type { DiagnosticChecker } from './DiagnosticChecker';
 
-// Current approach relates on error code and error message matching and it is quite fragile,
-// so this place should be checked thoroughly in the case of typescript upgrade
+/*
+ * Current approach relates on error code and error message matching and it is quite fragile,
+ * so this place should be checked thoroughly in the case of typescript upgrade
+ */
 export const TYPE_0_IS_NOT_ASSIGNABLE_TO_TYPE_1_ERROR_CODE = 2322;
-export const TYPE_UNKNOWN_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE = /^Type '(.*)\bunknown\b(.*)' is not assignable to type '.*'\.$/;
-export const TYPE_NULL_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE = /^Type 'null' is not assignable to type '.*'\.$/;
-export const TYPE_UNDEFINED_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE = /^Type 'undefined' is not assignable to type '.*'\.$/;
+export const TYPE_UNKNOWN_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE =
+  /^Type '(.*)\bunknown\b(.*)' is not assignable to type '.*'\.$/;
+export const TYPE_NULL_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE = /^Type '(.*)\bnull\b(.*)' is not assignable to type '.*'\.$/;
+export const TYPE_UNDEFINED_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE =
+  /^Type '(.*)\bundefined\b(.*)' is not assignable to type '.*'\.$/;
 
 export const ARGUMENT_OF_TYPE_0_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_ERROR_CODE = 2345;
-export const ARGUMENT_OF_TYPE_NULL_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_RE = /^Argument of type 'null' is not assignable to parameter of type '.*'\.$/;
-export const ARGUMENT_OF_TYPE_UNDEFINED_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_RE = /^Argument of type 'undefined' is not assignable to parameter of type '.*'\.$/;
+export const ARGUMENT_OF_TYPE_NULL_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_RE =
+  /^Argument of type '(.*)\bnull\b(.*)' is not assignable to parameter of type '.*'\.$/;
+export const ARGUMENT_OF_TYPE_UNDEFINED_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_RE =
+  /^Argument of type '(.*)\bundefined\b(.*)' is not assignable to parameter of type '.*'\.$/;
 
 export class LibraryTypeCallDiagnosticChecker implements DiagnosticChecker {
   inLibCall: boolean = false;
@@ -43,7 +49,8 @@ export class LibraryTypeCallDiagnosticChecker implements DiagnosticChecker {
 
   checkMessageText(msg: string): boolean {
     if (this.inLibCall) {
-      const match = msg.match(ARGUMENT_OF_TYPE_NULL_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_RE) ||
+      const match =
+        msg.match(ARGUMENT_OF_TYPE_NULL_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_RE) ||
         msg.match(ARGUMENT_OF_TYPE_UNDEFINED_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_RE) ||
         msg.match(TYPE_UNDEFINED_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE) ||
         msg.match(TYPE_NULL_IS_NOT_ASSIGNABLE_TO_TYPE_1_RE);

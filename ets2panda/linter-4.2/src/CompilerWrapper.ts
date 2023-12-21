@@ -16,8 +16,8 @@
 import * as ts from 'typescript';
 import { logTscDiagnostic } from './Utils';
 import { consoleLog } from './TypeScriptLinter';
-import { CommandLineOptions } from './CommandLineOptions';
-import { LintOptions } from './LintOptions';
+import type { CommandLineOptions } from './CommandLineOptions';
+import type { LintOptions } from './LintOptions';
 
 export function compile(options: LintOptions, extraOptions?: any): ts.Program {
   const createProgramOptions = formTscOptions(options.cmdOptions, extraOptions);
@@ -41,28 +41,28 @@ export function compile(options: LintOptions, extraOptions?: any): ts.Program {
 
 function formTscOptions(cmdOptions: CommandLineOptions, extraOptions?: any): ts.CreateProgramOptions {
   if (cmdOptions.parsedConfigFile) {
-    let options: ts.CreateProgramOptions = {
+    const options: ts.CreateProgramOptions = {
       rootNames: cmdOptions.parsedConfigFile.fileNames,
       options: cmdOptions.parsedConfigFile.options,
       projectReferences: cmdOptions.parsedConfigFile.projectReferences,
-      configFileParsingDiagnostics: ts.getConfigFileParsingDiagnostics(cmdOptions.parsedConfigFile),
+      configFileParsingDiagnostics: ts.getConfigFileParsingDiagnostics(cmdOptions.parsedConfigFile)
     };
 
     if (extraOptions) {
       options.options = Object.assign(options.options, extraOptions);
     }
-    
+
     return options;
   }
 
-  let options: ts.CreateProgramOptions = {
+  const options: ts.CreateProgramOptions = {
     rootNames: cmdOptions.inputFiles,
     options: {
       target: ts.ScriptTarget.Latest,
       module: ts.ModuleKind.CommonJS,
       allowJs: true,
-      checkJs: true,
-    },
+      checkJs: true
+    }
   };
 
   if (extraOptions) {

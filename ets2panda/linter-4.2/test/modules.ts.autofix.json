@@ -112,49 +112,10 @@
             "autofixable": false
         },
         {
-            "line": 92,
-            "column": 8,
-            "problem": "TypeOnlyImport",
-            "autofixable": true,
-            "autofix": [
-                {
-                    "start": 1923,
-                    "end": 1947,
-                    "replacementText": "{ APIResponseType }"
-                }
-            ]
-        },
-        {
             "line": 93,
             "column": 1,
             "problem": "ImportAfterStatement",
             "autofixable": false
-        },
-        {
-            "line": 93,
-            "column": 8,
-            "problem": "TypeOnlyImport",
-            "autofixable": true,
-            "autofix": [
-                {
-                    "start": 1969,
-                    "end": 1980,
-                    "replacementText": "* as P"
-                }
-            ]
-        },
-        {
-            "line": 96,
-            "column": 1,
-            "problem": "TypeOnlyExport",
-            "autofixable": true,
-            "autofix": [
-                {
-                    "start": 2014,
-                    "end": 2045,
-                    "replacementText": "export { TypeA as TypeB };"
-                }
-            ]
         },
         {
             "line": 104,

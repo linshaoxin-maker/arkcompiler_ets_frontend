@@ -19,27 +19,29 @@ import { FaultID } from './Problems';
 export class LinterConfig {
   static nodeDesc: string[] = [];
 
-  // The SyntaxKind enum defines additional elements at the end of the enum
-  // that serve as markers (FirstX/LastX). Those elements are initialized
-  // with indices of the previously defined elements. As result, the enum
-  // may return incorrect name for a certain kind index (e.g. 'FirstStatement'
-  // instead of 'VariableStatement').
-  // The following code creates a map with correct syntax kind names.
-  // It can be used when need to print name of syntax kind of certain
-  // AST node in diagnostic messages.
+  /*
+   * The SyntaxKind enum defines additional elements at the end of the enum
+   * that serve as markers (FirstX/LastX). Those elements are initialized
+   * with indices of the previously defined elements. As result, the enum
+   * may return incorrect name for a certain kind index (e.g. 'FirstStatement'
+   * instead of 'VariableStatement').
+   * The following code creates a map with correct syntax kind names.
+   * It can be used when need to print name of syntax kind of certain
+   * AST node in diagnostic messages.
+   */
   static tsSyntaxKindNames: string[] = [];
 
   // Use static init method, as TypeScript 4.2 doesn't support static blocks.
-  static initStatic() {
+  static initStatic(): void {
     // Set the feature descriptions (for the output).
     LinterConfig.nodeDesc[FaultID.AnyType] = '"any" type';
     LinterConfig.nodeDesc[FaultID.SymbolType] = '"symbol" type';
-    LinterConfig.nodeDesc[FaultID.ObjectLiteralNoContextType] = 'Object literals with no context Class or Interface type';
+    LinterConfig.nodeDesc[FaultID.ObjectLiteralNoContextType] =
+      'Object literals with no context Class or Interface type';
     LinterConfig.nodeDesc[FaultID.ArrayLiteralNoContextType] = 'Array literals with no context Array type';
     LinterConfig.nodeDesc[FaultID.ComputedPropertyName] = 'Computed properties';
     LinterConfig.nodeDesc[FaultID.LiteralAsPropertyName] = 'String or integer literal as property name';
     LinterConfig.nodeDesc[FaultID.TypeQuery] = '"typeof" operations';
-    LinterConfig.nodeDesc[FaultID.RegexLiteral] = 'regex literals';
     LinterConfig.nodeDesc[FaultID.IsOperator] = '"is" operations';
     LinterConfig.nodeDesc[FaultID.DestructuringParameter] = 'destructuring parameters';
     LinterConfig.nodeDesc[FaultID.YieldExpression] = '"yield" operations';
@@ -92,8 +94,6 @@ export class LinterConfig {
     LinterConfig.nodeDesc[FaultID.ThisType] = '"this" type';
     LinterConfig.nodeDesc[FaultID.IntefaceExtendDifProps] = 'Extends same properties with different types';
     LinterConfig.nodeDesc[FaultID.StructuralIdentity] = 'Use of type structural identity';
-    LinterConfig.nodeDesc[FaultID.TypeOnlyImport] = 'Type-only imports';
-    LinterConfig.nodeDesc[FaultID.TypeOnlyExport] = 'Type-only exports';
     LinterConfig.nodeDesc[FaultID.DefaultImport] = 'Default import declarations';
     LinterConfig.nodeDesc[FaultID.ExportAssignment] = 'Export assignments (export = ..)';
     LinterConfig.nodeDesc[FaultID.ImportAssignment] = 'Import assignments (import = ..)';
@@ -109,7 +109,8 @@ export class LinterConfig {
     LinterConfig.nodeDesc[FaultID.GlobalThis] = 'Use of globalThis';
     LinterConfig.nodeDesc[FaultID.UtilityType] = 'Standard Utility types';
     LinterConfig.nodeDesc[FaultID.PropertyDeclOnFunction] = 'Property declaration on function';
-    LinterConfig.nodeDesc[FaultID.FunctionApplyBindCall] = 'Invoking methods of function objects';
+    LinterConfig.nodeDesc[FaultID.FunctionApplyCall] = 'Invoking methods of function objects';
+    LinterConfig.nodeDesc[FaultID.FunctionBind] = 'Invoking methods of function objects';
     LinterConfig.nodeDesc[FaultID.ConstAssertion] = '"as const" assertion';
     LinterConfig.nodeDesc[FaultID.ImportAssertion] = 'Import assertion';
     LinterConfig.nodeDesc[FaultID.SpreadOperator] = 'Spread operation';
@@ -119,7 +120,6 @@ export class LinterConfig {
     LinterConfig.nodeDesc[FaultID.UnsupportedDecorators] = 'Unsupported decorators';
     LinterConfig.nodeDesc[FaultID.ImportAfterStatement] = 'Import declaration after other declaration or statement';
     LinterConfig.nodeDesc[FaultID.EsObjectType] = 'Restricted "ESObject" type';
-
     LinterConfig.initTsSyntaxKindNames();
   }
 
@@ -138,48 +138,96 @@ export class LinterConfig {
 
   // must detect terminals during parsing
   static terminalTokens: Set<ts.SyntaxKind> = new Set([
-    ts.SyntaxKind.OpenBraceToken, ts.SyntaxKind.CloseBraceToken, ts.SyntaxKind.OpenParenToken, 
-    ts.SyntaxKind.CloseParenToken, ts.SyntaxKind.OpenBracketToken, ts.SyntaxKind.CloseBracketToken,
-    ts.SyntaxKind.DotToken, ts.SyntaxKind.DotDotDotToken, ts.SyntaxKind.SemicolonToken, ts.SyntaxKind.CommaToken,
-    ts.SyntaxKind.QuestionDotToken, ts.SyntaxKind.LessThanToken, ts.SyntaxKind.LessThanSlashToken,
-    ts.SyntaxKind.GreaterThanToken, ts.SyntaxKind.LessThanEqualsToken, ts.SyntaxKind.GreaterThanEqualsToken,
-    ts.SyntaxKind.EqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsToken, ts.SyntaxKind.EqualsEqualsEqualsToken,
-    ts.SyntaxKind.ExclamationEqualsEqualsToken, ts.SyntaxKind.EqualsGreaterThanToken, ts.SyntaxKind.PlusToken,
-    ts.SyntaxKind.MinusToken, ts.SyntaxKind.AsteriskToken, ts.SyntaxKind.AsteriskAsteriskToken,
-    ts.SyntaxKind.SlashToken, ts.SyntaxKind.PercentToken, ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken,
-    ts.SyntaxKind.LessThanLessThanToken, ts.SyntaxKind.GreaterThanGreaterThanToken,
-    ts.SyntaxKind.GreaterThanGreaterThanGreaterThanToken, ts.SyntaxKind.AmpersandToken, ts.SyntaxKind.BarToken,
-    ts.SyntaxKind.CaretToken, ts.SyntaxKind.ExclamationToken, ts.SyntaxKind.TildeToken,
-    ts.SyntaxKind.AmpersandAmpersandToken, ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken,
-    ts.SyntaxKind.QuestionToken, ts.SyntaxKind.ColonToken, ts.SyntaxKind.AtToken, ts.SyntaxKind.BacktickToken,
-    ts.SyntaxKind.EqualsToken, ts.SyntaxKind.PlusEqualsToken, ts.SyntaxKind.MinusEqualsToken,
-    ts.SyntaxKind.AsteriskEqualsToken, ts.SyntaxKind.AsteriskAsteriskEqualsToken, ts.SyntaxKind.SlashEqualsToken,
-    ts.SyntaxKind.PercentEqualsToken, ts.SyntaxKind.LessThanLessThanEqualsToken,
-    ts.SyntaxKind.GreaterThanGreaterThanEqualsToken, ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken,
-    ts.SyntaxKind.AmpersandEqualsToken, ts.SyntaxKind.BarEqualsToken, ts.SyntaxKind.CaretEqualsToken,
-    ts.SyntaxKind.EndOfFileToken, ts.SyntaxKind.SingleLineCommentTrivia,
-    ts.SyntaxKind.MultiLineCommentTrivia, ts.SyntaxKind.NewLineTrivia, ts.SyntaxKind.WhitespaceTrivia,
-    ts.SyntaxKind.ShebangTrivia, /* We detect and preserve #! on the first line */ ts.SyntaxKind.ConflictMarkerTrivia,
+    ts.SyntaxKind.OpenBraceToken,
+    ts.SyntaxKind.CloseBraceToken,
+    ts.SyntaxKind.OpenParenToken,
+    ts.SyntaxKind.CloseParenToken,
+    ts.SyntaxKind.OpenBracketToken,
+    ts.SyntaxKind.CloseBracketToken,
+    ts.SyntaxKind.DotToken,
+    ts.SyntaxKind.DotDotDotToken,
+    ts.SyntaxKind.SemicolonToken,
+    ts.SyntaxKind.CommaToken,
+    ts.SyntaxKind.QuestionDotToken,
+    ts.SyntaxKind.LessThanToken,
+    ts.SyntaxKind.LessThanSlashToken,
+    ts.SyntaxKind.GreaterThanToken,
+    ts.SyntaxKind.LessThanEqualsToken,
+    ts.SyntaxKind.GreaterThanEqualsToken,
+    ts.SyntaxKind.EqualsEqualsToken,
+    ts.SyntaxKind.ExclamationEqualsToken,
+    ts.SyntaxKind.EqualsEqualsEqualsToken,
+    ts.SyntaxKind.ExclamationEqualsEqualsToken,
+    ts.SyntaxKind.EqualsGreaterThanToken,
+    ts.SyntaxKind.PlusToken,
+    ts.SyntaxKind.MinusToken,
+    ts.SyntaxKind.AsteriskToken,
+    ts.SyntaxKind.AsteriskAsteriskToken,
+    ts.SyntaxKind.SlashToken,
+    ts.SyntaxKind.PercentToken,
+    ts.SyntaxKind.PlusPlusToken,
+    ts.SyntaxKind.MinusMinusToken,
+    ts.SyntaxKind.LessThanLessThanToken,
+    ts.SyntaxKind.GreaterThanGreaterThanToken,
+    ts.SyntaxKind.GreaterThanGreaterThanGreaterThanToken,
+    ts.SyntaxKind.AmpersandToken,
+    ts.SyntaxKind.BarToken,
+    ts.SyntaxKind.CaretToken,
+    ts.SyntaxKind.ExclamationToken,
+    ts.SyntaxKind.TildeToken,
+    ts.SyntaxKind.AmpersandAmpersandToken,
+    ts.SyntaxKind.BarBarToken,
+    ts.SyntaxKind.QuestionQuestionToken,
+    ts.SyntaxKind.QuestionToken,
+    ts.SyntaxKind.ColonToken,
+    ts.SyntaxKind.AtToken,
+    ts.SyntaxKind.BacktickToken,
+    ts.SyntaxKind.EqualsToken,
+    ts.SyntaxKind.PlusEqualsToken,
+    ts.SyntaxKind.MinusEqualsToken,
+    ts.SyntaxKind.AsteriskEqualsToken,
+    ts.SyntaxKind.AsteriskAsteriskEqualsToken,
+    ts.SyntaxKind.SlashEqualsToken,
+    ts.SyntaxKind.PercentEqualsToken,
+    ts.SyntaxKind.LessThanLessThanEqualsToken,
+    ts.SyntaxKind.GreaterThanGreaterThanEqualsToken,
+    ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken,
+    ts.SyntaxKind.AmpersandEqualsToken,
+    ts.SyntaxKind.BarEqualsToken,
+    ts.SyntaxKind.CaretEqualsToken,
+    ts.SyntaxKind.EndOfFileToken,
+    ts.SyntaxKind.SingleLineCommentTrivia,
+    ts.SyntaxKind.MultiLineCommentTrivia,
+    ts.SyntaxKind.NewLineTrivia,
+    ts.SyntaxKind.WhitespaceTrivia,
+    // We detect and preserve #! on the first line
+    ts.SyntaxKind.ShebangTrivia,
+    ts.SyntaxKind.ConflictMarkerTrivia
   ]);
 
   // tokens which can be reported without additional parsing
   static incrementOnlyTokens: Map<ts.SyntaxKind, FaultID> = new Map([
-    [ts.SyntaxKind.AnyKeyword, FaultID.AnyType], [ts.SyntaxKind.SymbolKeyword, FaultID.SymbolType],
+    [ts.SyntaxKind.AnyKeyword, FaultID.AnyType],
+    [ts.SyntaxKind.SymbolKeyword, FaultID.SymbolType],
     [ts.SyntaxKind.ThisType, FaultID.ThisType],
-    [ts.SyntaxKind.ComputedPropertyName, FaultID.ComputedPropertyName],
     [ts.SyntaxKind.TypeQuery, FaultID.TypeQuery],
     [ts.SyntaxKind.DeleteExpression, FaultID.DeleteOperator],
-    [ts.SyntaxKind.RegularExpressionLiteral, FaultID.RegexLiteral],
-    [ts.SyntaxKind.TypePredicate, FaultID.IsOperator], [ts.SyntaxKind.YieldExpression, FaultID.YieldExpression],
-    [ts.SyntaxKind.IndexSignature, FaultID.IndexMember], [ts.SyntaxKind.WithStatement, FaultID.WithStatement],
-    [ts.SyntaxKind.IndexedAccessType, FaultID.IndexedAccessType],[ts.SyntaxKind.UnknownKeyword, FaultID.UnknownType],
-    [ts.SyntaxKind.InKeyword, FaultID.InOperator], [ts.SyntaxKind.CallSignature, FaultID.CallSignature],
+    [ts.SyntaxKind.TypePredicate, FaultID.IsOperator],
+    [ts.SyntaxKind.YieldExpression, FaultID.YieldExpression],
+    [ts.SyntaxKind.IndexSignature, FaultID.IndexMember],
+    [ts.SyntaxKind.WithStatement, FaultID.WithStatement],
+    [ts.SyntaxKind.IndexedAccessType, FaultID.IndexedAccessType],
+    [ts.SyntaxKind.UnknownKeyword, FaultID.UnknownType],
+    [ts.SyntaxKind.CallSignature, FaultID.CallSignature],
     [ts.SyntaxKind.IntersectionType, FaultID.IntersectionType],
-    [ts.SyntaxKind.TypeLiteral, FaultID.ObjectTypeLiteral], [ts.SyntaxKind.ConstructorType, FaultID.ConstructorFuncs],
+    [ts.SyntaxKind.TypeLiteral, FaultID.ObjectTypeLiteral],
+    [ts.SyntaxKind.ConstructorType, FaultID.ConstructorFuncs],
     [ts.SyntaxKind.PrivateIdentifier, FaultID.PrivateIdentifier],
-    [ts.SyntaxKind.ConditionalType, FaultID.ConditionalType], [ts.SyntaxKind.MappedType, FaultID.MappedType],
-    [ts.SyntaxKind.JsxElement, FaultID.JsxElement], [ts.SyntaxKind.JsxSelfClosingElement, FaultID.JsxElement],
+    [ts.SyntaxKind.ConditionalType, FaultID.ConditionalType],
+    [ts.SyntaxKind.MappedType, FaultID.MappedType],
+    [ts.SyntaxKind.JsxElement, FaultID.JsxElement],
+    [ts.SyntaxKind.JsxSelfClosingElement, FaultID.JsxElement],
     [ts.SyntaxKind.ImportEqualsDeclaration, FaultID.ImportAssignment],
-    [ts.SyntaxKind.NamespaceExportDeclaration, FaultID.UMDModuleDefinition],
+    [ts.SyntaxKind.NamespaceExportDeclaration, FaultID.UMDModuleDefinition]
   ]);
 }

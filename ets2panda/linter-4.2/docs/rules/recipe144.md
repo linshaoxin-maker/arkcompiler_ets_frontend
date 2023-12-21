@@ -29,8 +29,6 @@ Properties and functions of the global object: ``eval``
 ``handler.has()``, ``handler.isExtensible()``, ``handler.ownKeys()``,
 ``handler.preventExtensions()``, ``handler.set()``, ``handler.setPrototypeOf()``
 
-``ArrayBuffer``: ``isView``
-
 
 ## See also
 

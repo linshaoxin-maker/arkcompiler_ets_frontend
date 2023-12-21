@@ -1,51 +1,52 @@
 class C {
-    n: number // Compile-time error only with strictPropertyInitialization
-    s: string // Compile-time error only with strictPropertyInitialization
+  n: number; // Compile-time error only with strictPropertyInitialization
+  s: string; // Compile-time error only with strictPropertyInitialization
 }
 
 // Compile-time error only with noImplicitReturns
 function foo(s: string): string {
-    if (s != "") {
-        console.log(s)
-        return s
-    } else {
-        console.log(s)
-    }
+  if (s !== '') {
+    console.log(s);
+    return s;
+  } else {
+    console.log(s);
+  }
 }
 
-let n: number = null // Compile-time error only with strictNullChecks
+let n: number = null; // Compile-time error only with strictNullChecks
 
-function bar(): number {
-}
+function bar(): number {}
 
 function get1(): boolean {
-    return true;
+  return true;
 }
 function get2(): boolean {
-    return false;
+  return false;
 }
 
 function solve(): boolean {
-    if(get1() && get2()) {
-    } else if(!get2()) {
-        return true;
-    } else {
-    }
+  if (get1() && get2()) {
+  } else if (!get2()) {
+    return true;
+  } else {
+  }
 }
 
-
-
-let lr = (): number => {}
-let le = (): number => { if(get()) return 1; }
+let lr = (): number => {};
+let le = (): number => {
+  if (get()) return 1;
+};
 
 class testClass {
-    static readonly lem =  (): number => { if(get()) return 1; }
+  static readonly lem = (): number => {
+    if (get()) return 1;
+  };
 
-    solve(): boolean {
-        if(get1() && get2()) {
-        } else if(!get2()) {
-            return true;
-        } else {
-        }
+  solve(): boolean {
+    if (get1() && get2()) {
+    } else if (!get2()) {
+      return true;
+    } else {
     }
+  }
 }

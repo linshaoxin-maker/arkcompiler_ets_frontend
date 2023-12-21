@@ -90,24 +90,9 @@
             "problem": "ImportAfterStatement"
         },
         {
-            "line": 92,
-            "column": 8,
-            "problem": "TypeOnlyImport"
-        },
-        {
             "line": 93,
             "column": 1,
             "problem": "ImportAfterStatement"
-        },
-        {
-            "line": 93,
-            "column": 8,
-            "problem": "TypeOnlyImport"
-        },
-        {
-            "line": 96,
-            "column": 1,
-            "problem": "TypeOnlyExport"
         },
         {
             "line": 104,

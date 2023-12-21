@@ -260,8 +260,8 @@
             "problem": "UtilityType"
         },
         {
-            "line": 173,
-            "column": 3,
+            "line": 174,
+            "column": 12,
             "problem": "FunctionContainsThis"
         },
         {
@@ -292,11 +292,11 @@
         {
             "line": 178,
             "column": 18,
-            "problem": "FunctionApplyBindCall"
+            "problem": "FunctionApplyCall"
         },
         {
-            "line": 183,
-            "column": 3,
+            "line": 184,
+            "column": 12,
             "problem": "FunctionContainsThis"
         },
         {
@@ -317,11 +317,16 @@
         {
             "line": 187,
             "column": 60,
-            "problem": "FunctionApplyBindCall"
+            "problem": "FunctionBind"
         },
         {
-            "line": 192,
-            "column": 1,
+            "line": 208,
+            "column": 9,
+            "problem": "FunctionContainsThis"
+        },
+        {
+            "line": 209,
+            "column": 9,
             "problem": "FunctionContainsThis"
         },
         {

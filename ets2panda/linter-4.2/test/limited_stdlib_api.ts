@@ -28,17 +28,23 @@ decodeURIComponent('');
 escape('');
 unescape('');
 
-// global and window are not portabe, so they are excluded from test suite
+global.eval('console.log("foo")');
 globalThis.eval('console.log("foo")');
 
 class C {}
 let c = new C();
 
 /// Object
+// DO NOT CHECK IN TYPESCRIPT 4.2 Object.__proto__(),
+// DO NOT CHECK IN TYPESCRIPT 4.2 Object.__defineGetter__(),
+// DO NOT CHECK IN TYPESCRIPT 4.2 Object.__defineSetter__();
+// DO NOT CHECK IN TYPESCRIPT 4.2 Object.__lookupGetter__();
+// DO NOT CHECK IN TYPESCRIPT 4.2 Object.__lookupSetter__();
 Object.assign<C, C>(c, c);
 Object.create(c);
 Object.defineProperties<C>(c, {});
 Object.defineProperty<C>(c, 'p', c);
+// DO NOT CHECK IN TYPESCRIPT 4.2 Object.entries<C>([]);
 Object.freeze(() => {});
 Object.fromEntries<number>([]);
 Object.getOwnPropertyDescriptor(c, 'p');
@@ -85,9 +91,3 @@ if (handler.setPrototypeOf) handler.setPrototypeOf(c, null);
 
 /// Array
 ArrayBuffer.isView({});
-
-Number.NaN;
-Number.isFinite(1);
-Number.isNaN(2);
-Number.parseFloat('3');
-Number.parseInt('4', 10);

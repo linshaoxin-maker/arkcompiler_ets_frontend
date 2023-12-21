@@ -103,14 +103,6 @@
             "rule": "Type guarding is supported with \"instanceof\" and \"as\" (arkts-no-is)"
         },
         {
-            "line": 47,
-            "column": 17,
-            "problem": "RegexLiteral",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "RegExp literals are not supported (arkts-no-regexp-literals)"
-        },
-        {
             "line": 54,
             "column": 26,
             "problem": "ObjectTypeLiteral",
@@ -149,14 +141,6 @@
             "autofixable": true,
             "suggest": "",
             "rule": "Objects with property names that are not identifiers are not supported (arkts-identifiers-as-prop-names)"
-        },
-        {
-            "line": 66,
-            "column": 46,
-            "problem": "ObjectLiteralNoContextType",
-            "autofixable": false,
-            "suggest": "",
-            "rule": "Object literal must correspond to some explicitly declared class or interface (arkts-no-untyped-obj-literals)"
         },
         {
             "line": 67,
@@ -213,6 +197,14 @@
             "autofixable": false,
             "suggest": "",
             "rule": "\"in\" operator is not supported (arkts-no-in)"
+        },
+        {
+            "line": 78,
+            "column": 5,
+            "problem": "PropertyAccessByIndex",
+            "autofixable": false,
+            "suggest": "",
+            "rule": "Indexed access is not supported for fields (arkts-no-props-by-index)"
         },
         {
             "line": 92,
@@ -293,8 +285,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 2630,
-                    "end": 2636,
+                    "start": 2631,
+                    "end": 2637,
                     "replacementText": "1 as any"
                 }
             ],
@@ -316,8 +308,8 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 2657,
-                    "end": 2714,
+                    "start": 2658,
+                    "end": 2715,
                     "replacementText": "document.getElementById('main_canvas') as HTMLCanvasElement"
                 }
             ],

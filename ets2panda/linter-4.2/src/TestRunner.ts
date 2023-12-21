@@ -16,8 +16,9 @@
 import { TypeScriptLinter } from './TypeScriptLinter';
 import { lint } from './LinterRunner';
 import { parseCommandLine } from './CommandLineParser';
-import { Autofix } from './Autofixer';
-import Logger from '../utils/logger';
+import type { CommandLineOptions } from './CommandLineOptions';
+import type { Autofix } from './Autofixer';
+import logger from '../utils/logger';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as ts from 'typescript';
@@ -25,7 +26,7 @@ import * as ts from 'typescript';
 const TEST_DIR = 'test';
 const TAB = '    ';
 
-const logger = Logger.getLogger();
+const loggerInstance = logger.getLogger();
 
 interface TestNodeInfo {
   line: number;
@@ -49,69 +50,57 @@ RESULT_EXT[Mode.RELAX] = '.relax.json';
 RESULT_EXT[Mode.AUTOFIX] = '.autofix.json';
 const AUTOFIX_CONFIG_EXT = '.autofix.cfg.json';
 const AUTOFIX_SKIP_EXT = '.autofix.skip';
-const ARGS_CONFIG_EXT = '.args.json'
+const ARGS_CONFIG_EXT = '.args.json';
 const DIFF_EXT = '.diff';
 
 function runTests(testDirs: string[]): number {
   let hasComparisonFailures = false;
-
-  // Set the IDE mode manually to enable storing information
-  // about found bad nodes and also disable the log output.
   TypeScriptLinter.ideMode = true;
   TypeScriptLinter.testMode = true;
-
-  let passed = 0, failed = 0;
-
-  // Get tests from test directory
-  if (!testDirs?.length) testDirs = [ TEST_DIR ];
+  let passed = 0;
+  let failed = 0;
+  if (!testDirs?.length) {
+    testDirs = [TEST_DIR];
+  }
   for (const testDir of testDirs) {
-    let testFiles: string[] = fs.readdirSync(testDir)
-      .filter((x) => (x.trimEnd().endsWith(ts.Extension.Ts) && !x.trimEnd().endsWith(ts.Extension.Dts)) || x.trimEnd().endsWith(ts.Extension.Tsx));
-
-    logger.info(`\nProcessing "${testDir}" directory:\n`);
-
+    const testFiles: string[] = fs.readdirSync(testDir).filter((x) => {
+      return (
+        x.trimEnd().endsWith(ts.Extension.Ts) && !x.trimEnd().endsWith(ts.Extension.Dts) ||
+        x.trimEnd().endsWith(ts.Extension.Tsx)
+      );
+    });
+    loggerInstance.info(`\nProcessing "${testDir}" directory:\n`);
     // Run each test in Strict, Autofix, and Relax mode:
     for (const testFile of testFiles) {
       if (runTest(testDir, testFile, Mode.STRICT)) {
         failed++;
         hasComparisonFailures = true;
+      } else {
+        passed++;
       }
-      else passed++;
-
       if (runTest(testDir, testFile, Mode.AUTOFIX)) {
         failed++;
         hasComparisonFailures = true;
+      } else {
+        passed++;
       }
-      else passed++;
-
       if (runTest(testDir, testFile, Mode.RELAX)) {
         failed++;
         hasComparisonFailures = true;
+      } else {
+        passed++;
       }
-      else passed++;
     }
   }
-
-  logger.info(`\nSUMMARY: ${passed + failed} total, ${passed} passed or skipped, ${failed} failed.`);
-  logger.info((failed > 0) ? '\nTEST FAILED' : '\nTEST SUCCESSFUL');
-
+  loggerInstance.info(`\nSUMMARY: ${passed + failed} total, ${passed} passed or skipped, ${failed} failed.`);
+  loggerInstance.info(failed > 0 ? '\nTEST FAILED' : '\nTEST SUCCESSFUL');
   process.exit(hasComparisonFailures ? -1 : 0);
 }
 
-function runTest(testDir: string, testFile: string, mode: Mode): boolean {
-  let testFailed = false;
-  if (mode === Mode.AUTOFIX && fs.existsSync(path.join(testDir, testFile + AUTOFIX_SKIP_EXT))) {
-    logger.info(`Skipping test ${testFile} (${Mode[mode]} mode)`);
-    return false;
-  }
-  logger.info(`Running test ${testFile} (${Mode[mode]} mode)`);
-
-  TypeScriptLinter.initGlobals();
-
+function parseArgs(testDir: string, testFile: string, mode: Mode): CommandLineOptions {
   // Configure test parameters and run linter.
   const args: string[] = [path.join(testDir, testFile)];
-  let argsFileName = path.join(testDir, testFile + ARGS_CONFIG_EXT);
-  let currentTestMode = TypeScriptLinter.testMode;
+  const argsFileName = path.join(testDir, testFile + ARGS_CONFIG_EXT);
 
   if (fs.existsSync(argsFileName)) {
     const data = fs.readFileSync(argsFileName).toString();
@@ -121,72 +110,84 @@ function runTest(testDir: string, testFile: string, mode: Mode): boolean {
     }
   }
 
-  if (mode === Mode.RELAX) args.push('--relax');
-  else if (mode === Mode.AUTOFIX) {
+  if (mode === Mode.RELAX) {
+    args.push('--relax');
+  } else if (mode === Mode.AUTOFIX) {
     args.push('--autofix');
-    let autofixCfg = path.join(testDir, testFile + AUTOFIX_CONFIG_EXT);
-    if (fs.existsSync(autofixCfg)) args.push(autofixCfg);
-  }
-  const cmdOptions = parseCommandLine(args);
-  const result = lint({ cmdOptions: cmdOptions });
-  const fileProblems = result.problemsInfos.get( path.normalize(cmdOptions.inputFiles[0]) );
-  if (fileProblems === undefined) {
-    return true;
+    const autofixCfg = path.join(testDir, testFile + AUTOFIX_CONFIG_EXT);
+    if (fs.existsSync(autofixCfg)) {
+      args.push(autofixCfg);
+    }
   }
 
-  TypeScriptLinter.testMode = currentTestMode;
+  return parseCommandLine(args);
+}
 
-  const resultExt = RESULT_EXT[mode];
-  const testResultFileName = testFile + resultExt;
-
-  // Get list of bad nodes from the current run.
-  const resultNodes: TestNodeInfo[] =
-    fileProblems.map<TestNodeInfo>(
-      (x) => ({
-        line: x.line, column: x.column, problem: x.problem, 
-        autofixable: mode === Mode.AUTOFIX ? x.autofixable : undefined, 
-        autofix: mode === Mode.AUTOFIX ? x.autofix : undefined,
-        suggest: x.suggest,
-        rule: x.rule
-      })
-    );
-
+function compareExpectedAndActual(testDir: string, testFile: string, mode: Mode, resultNodes: TestNodeInfo[]): string {
   // Read file with expected test result.
   let expectedResult: { nodes: TestNodeInfo[] };
   let diff: string = '';
+  const resultExt = RESULT_EXT[mode];
+  const testResultFileName = testFile + resultExt;
   try {
     const expectedResultFile = fs.readFileSync(path.join(testDir, testResultFileName)).toString();
     expectedResult = JSON.parse(expectedResultFile);
-
-    if (!expectedResult || !expectedResult.nodes || expectedResult.nodes.length !== resultNodes.length) {
-      testFailed = true;
-      let expectedResultCount = expectedResult && expectedResult.nodes ? expectedResult.nodes.length : 0;
+    if (!expectedResult?.nodes || expectedResult.nodes.length !== resultNodes.length) {
+      const expectedResultCount = expectedResult?.nodes ? expectedResult.nodes.length : 0;
       diff = `Expected count: ${expectedResultCount} vs actual count: ${resultNodes.length}`;
-      logger.info(`${TAB}${diff}`);
+      loggerInstance.info(`${TAB}${diff}`);
     } else {
       diff = expectedAndActualMatch(expectedResult.nodes, resultNodes);
-      testFailed = !!diff;
     }
-
-    if (testFailed) {
-      logger.info(`${TAB}Test failed. Expected and actual results differ.`);
+    if (diff) {
+      loggerInstance.info(`${TAB}Test failed. Expected and actual results differ.`);
     }
-  } catch (error: any) {
-    testFailed = true;
-    logger.info(`${TAB}Test failed. ${error.message ?? error}`);
+  } catch (error) {
+    loggerInstance.info(`${TAB}Test failed. ` + error);
   }
+  return diff;
+}
 
+function runTest(testDir: string, testFile: string, mode: Mode): boolean {
+  const testFailed = false;
+  if (mode === Mode.AUTOFIX && fs.existsSync(path.join(testDir, testFile + AUTOFIX_SKIP_EXT))) {
+    loggerInstance.info(`Skipping test ${testFile} (${Mode[mode]} mode)`);
+    return false;
+  }
+  loggerInstance.info(`Running test ${testFile} (${Mode[mode]} mode)`);
+  TypeScriptLinter.initGlobals();
+  const currentTestMode = TypeScriptLinter.testMode;
+  const cmdOptions = parseArgs(testDir, testFile, mode);
+  const result = lint({ cmdOptions: cmdOptions });
+  const fileProblems = result.problemsInfos.get(path.normalize(cmdOptions.inputFiles[0]));
+  if (fileProblems === undefined) {
+    return true;
+  }
+  TypeScriptLinter.testMode = currentTestMode;
+  // Get list of bad nodes from the current run.
+  const resultNodes: TestNodeInfo[] = fileProblems.map<TestNodeInfo>((x) => {
+    return {
+      line: x.line,
+      column: x.column,
+      problem: x.problem,
+      autofixable: mode === Mode.AUTOFIX ? x.autofixable : undefined,
+      autofix: mode === Mode.AUTOFIX ? x.autofix : undefined,
+      suggest: x.suggest,
+      rule: x.rule
+    };
+  });
+  // Read file with expected test result.
+  const testResult = compareExpectedAndActual(testDir, testFile, mode, resultNodes);
   // Write file with actual test results.
-  writeActualResultFile(testDir, testFile, resultExt, resultNodes, diff);
-
+  writeActualResultFile(testDir, testFile, RESULT_EXT[mode], resultNodes, testResult);
   return testFailed;
 }
 
 function expectedAndActualMatch(expectedNodes: TestNodeInfo[], actualNodes: TestNodeInfo[]): string {
   // Compare expected and actual results.
   for (let i = 0; i < actualNodes.length; i++) {
-    let actual = actualNodes[i];
-    let expect = expectedNodes[i];
+    const actual = actualNodes[i];
+    const expect = expectedNodes[i];
     if (actual.line !== expect.line || actual.column !== expect.column || actual.problem !== expect.problem) {
       return reportDiff(expect, actual);
     }
@@ -205,22 +206,38 @@ function expectedAndActualMatch(expectedNodes: TestNodeInfo[], actualNodes: Test
 }
 
 function autofixArraysMatch(expected: Autofix[] | undefined, actual: Autofix[] | undefined): boolean {
-  if (!expected && !actual) return true;
-  if (!(expected && actual) || expected.length !== actual.length) return false;
+  if (!expected && !actual) {
+    return true;
+  }
+  if (!(expected && actual) || expected.length !== actual.length) {
+    return false;
+  }
   for (let i = 0; i < actual.length; ++i) {
     if (
-      actual[i].start !== expected[i].start || actual[i].end !== expected[i].end || 
+      actual[i].start !== expected[i].start ||
+      actual[i].end !== expected[i].end ||
       actual[i].replacementText.replace(/\r\n/g, '\n') !== expected[i].replacementText.replace(/\r\n/g, '\n')
-    ) return false;
+    ) {
+      return false;
+    }
   }
   return true;
 }
 
-function writeActualResultFile(testDir: string, testFile: string, resultExt: string, resultNodes: TestNodeInfo[], diff: string) {
+function writeActualResultFile(
+  testDir: string,
+  testFile: string,
+  resultExt: string,
+  resultNodes: TestNodeInfo[],
+  diff: string
+): void {
   const actualResultsDir = path.join(testDir, 'results');
-  if (!fs.existsSync(actualResultsDir)) fs.mkdirSync(actualResultsDir);
+  if (!fs.existsSync(actualResultsDir)) {
+    fs.mkdirSync(actualResultsDir);
+  }
 
-  const actualResultJSON = JSON.stringify({ nodes: resultNodes }, null, 4);
+  const tabWidth = 4;
+  const actualResultJSON = JSON.stringify({ nodes: resultNodes }, null, tabWidth);
   fs.writeFileSync(path.join(actualResultsDir, testFile + resultExt), actualResultJSON);
 
   if (diff) {
@@ -229,16 +246,16 @@ function writeActualResultFile(testDir: string, testFile: string, resultExt: str
 }
 
 function reportDiff(expected: TestNodeInfo, actual: TestNodeInfo): string {
-  let expectedNode = JSON.stringify({ nodes: [expected] }, null, 4);
-  let actualNode = JSON.stringify({ nodes: [actual] }, null, 4);
+  const tabWidth = 4;
+  const expectedNode = JSON.stringify({ nodes: [expected] }, null, tabWidth);
+  const actualNode = JSON.stringify({ nodes: [actual] }, null, tabWidth);
 
-  let diff =
-`Expected:
+  const diff = `Expected:
 ${expectedNode}
 Actual:
 ${actualNode}`;
 
-  logger.info(diff);
+  loggerInstance.info(diff);
   return diff;
 }
 
