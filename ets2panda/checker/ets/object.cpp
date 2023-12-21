@@ -921,7 +921,7 @@ void ETSChecker::CheckInnerClassMembers(const ETSObjectType *class_type)
     }
 }
 
-void ETSChecker::ValidateArrayIndex(ir::Expression *const expr, bool relaxed)
+void ETSChecker::ValidateArrayIndex(ir::Expression *const expr)
 {
     auto *const expression_type = expr->Check(this);
     auto const *const unboxed_expression_type = ETSBuiltinTypeAsPrimitiveType(expression_type);
@@ -930,21 +930,6 @@ void ETSChecker::ValidateArrayIndex(ir::Expression *const expr, bool relaxed)
 
     if (expression_type->IsETSObjectType() && (unboxed_expression_type != nullptr)) {
         expr->AddBoxingUnboxingFlag(GetUnboxingFlag(unboxed_expression_type));
-    }
-
-    if (relaxed && index_type != nullptr && index_type->HasTypeFlag(TypeFlag::ETS_FLOATING_POINT)) {
-        if (!expr->IsNumberLiteral()) {
-            return;
-        }
-
-        auto num = expr->AsNumberLiteral()->Number();
-        ASSERT(num.IsReal());
-        double value = num.GetDouble();
-        double intpart;
-        if (std::modf(value, &intpart) != 0.0) {
-            ThrowTypeError("Index fracional part should not be different from 0.0", expr->Start());
-        }
-        return;
     }
 
     if (index_type == nullptr || !index_type->HasTypeFlag(TypeFlag::ETS_ARRAY_INDEX)) {
@@ -959,6 +944,17 @@ void ETSChecker::ValidateArrayIndex(ir::Expression *const expr, bool relaxed)
             "Type '" + message.str() +
                 "' cannot be used as an index type. Only primitive or unboxable integral types can be used as index.",
             expr->Start());
+    }
+
+    if (expr->IsNumberLiteral()) {
+        auto num = expr->AsNumberLiteral()->Number();
+        if (num.IsReal()) {
+            double value = num.GetDouble();
+            double intpart;
+            if (std::modf(value, &intpart) != 0.0) {
+                ThrowTypeError("Index fracional part should not be different from 0.0", expr->Start());
+            }
+        }
     }
 }
 
