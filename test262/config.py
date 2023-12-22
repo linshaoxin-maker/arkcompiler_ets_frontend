@@ -22,9 +22,13 @@ Description: Execute 262 test suite configuration file
 import os
 from multiprocessing import cpu_count
 
+FUZZY_DIR_NAME = 'fuzzy'
+FUZZILLI_DIR_NAME = 'fuzzilli'
+FUZZILLI_OUTPUT_DIR_NAME = 'output'
 DATA_DIR = os.path.join("test262", "data")
 ESHOST_DIR = os.path.join("test262", "eshost")
 HARNESS_DIR = os.path.join("test262", "harness")
+FUZZY_DIR = os.path.join(FUZZY_DIR_NAME, FUZZILLI_DIR_NAME)
 
 BASE_OUT_DIR = os.path.join("out", "test262")
 
@@ -87,10 +91,12 @@ TEST262_GIT_HASH = "6f4601d095a3899d6102f2c320b671495cbe8757"
 HARNESS_GIT_HASH = "9c499f028eb24e67781435c0bb442e00343eb39d"
 ESHOST_GIT_HASH = "fa2d4d27d9d6152002bdef36ee2d17e98b886268"
 ESNEXT_GIT_HASH = "281eb10b2844929a7c0ac04527f5b42ce56509fd"
+FUZZY_GIT_HASH = "79c777839d23114e6f85322eefa6d44af53814ab"
 
 TEST262_GIT_URL = "https://gitee.com/hufeng20/test262.git"
 ESHOST_GIT_URL = "https://gitee.com/hufeng20/eshost.git"
 HARNESS_GIT_URL = "https://gitee.com/hufeng20/test262-harness.git"
+FUZZY_GIT_URL = "https://gitee.com/mirrors_googleprojectzero/fuzzilli.git"
 
 SKIP_LIST_FILE = os.path.join("test262", "skip_tests.json")
 ES2ABC_SKIP_LIST_FILE = os.path.join("test262", "es2abc_skip_tests.json")
@@ -107,7 +113,7 @@ ARK_FRONTEND_LIST = [
     "ts2panda",
     "es2panda"
 ]
-
+ES2ABC_NAME = 'es2abc'
 ARK_FRONTEND_BINARY_LIST = [
     os.path.join(DEFAULT_ARK_DIR, "build", "src", "index.js"),
     os.path.join(DEFAULT_ARK_DIR, "es2abc")
@@ -116,7 +122,7 @@ ARK_FRONTEND_BINARY_LIST = [
 DEFAULT_ARK_FRONTEND = ARK_FRONTEND_LIST[0]
 DEFAULT_ARK_FRONTEND_BINARY = ARK_FRONTEND_BINARY_LIST[0]
 DEFAULT_MERGE_ABC_BINARY = os.path.join(DEFAULT_ARK_DIR, "merge_abc")
-
+FUZZY_DEFAULT_ARK_FRONTEND_BINARY = os.path.join(ARGS_PREFIX, RK3568_PRODUCT_NAME, ARK_DIR_SUFFIX, ES2ABC_NAME)
 ARK_ARCH_LIST = [
     "x64",
     "aarch64",
@@ -127,6 +133,7 @@ DEFAULT_ARK_ARCH = ARK_ARCH_LIST[0]
 DEFAULT_OPT_LEVEL = 2
 DEFAULT_ES2ABC_THREAD_COUNT = 0
 DEFAULT_MERGE_ABC_MODE = 1
+DEFAULT_OPEN_FUZZILLI_MODE = False
 
 OHOS_TYPESCRIPT = "ohos-typescript-4.2.3-r2.tgz"
 OHOS_TYPESCRIPT_TGZ_PATH = f"{CODE_ROOT}/third_party/typescript/build_package/{OHOS_TYPESCRIPT}"
