@@ -58,7 +58,7 @@ function isError(defectInfo: DefectInfo): boolean {
   return defectInfo.category === ARK_TS_ISSUES_ERROR_CATEGORY;
 }
 
-function fillIssueInfo(statistics: Statistics, defectInfo: DefectInfo) {
+function fillIssueInfo(statistics: Statistics, defectInfo: DefectInfo): void {
   const recipeNo = parseInt(defectInfo.ruleDocPath!!.substring(
     'docs/recipe'.length,
     defectInfo.ruleDocPath!!.length - '.md'.length));
@@ -93,7 +93,7 @@ function parse(reportJson: ReportJson): Statistics {
         continue;
       }
 
-      fillIssueInfo(statistics, defectInfo)
+      fillIssueInfo(statistics, defectInfo);
 
       if (isError(defectInfo)) {
         statistics.totalErrors += 1;
@@ -114,7 +114,7 @@ function read(filePath: string): ReportJson {
   return JSON.parse(fs.readFileSync(filePath, { encoding: 'utf8', flag: 'r' }));
 }
 
-function main() {
+function main(): void {
   if (process.argv.length < 3) {
     console.error('Path to input json was not provided, exiting');
     process.exit(1);
@@ -124,4 +124,4 @@ function main() {
 
 // file is stored in project's directory under the following path:
 // <PROJECT_ROOT_DIR>/.idea/code-linter/eslintAgent/output.json
-main()
+main();

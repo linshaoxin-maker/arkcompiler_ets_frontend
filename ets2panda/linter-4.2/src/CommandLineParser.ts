@@ -31,8 +31,8 @@ const logger = Logger.getLogger();
 
 let inputFiles: string[];
 let responseFile = '';
-function addSrcFile(value: string, dummy: string) {
-  if(value.startsWith('@'))
+function addSrcFile(value: string, dummy: string): void {
+  if (value.startsWith('@'))
     responseFile = value;
   else
     inputFiles.push(value);
@@ -56,7 +56,7 @@ const getFiles = (dir: string): string[] => {
   return resultFiles;
 };
 
-function addProjectFolder(projectFolder: string, previous: any ) {
+function addProjectFolder(projectFolder: string, previous: any ): any {
   return previous.concat([projectFolder]);
 }
 
@@ -76,7 +76,7 @@ export function parseCommandLine(commandLineArgs: string[]): CommandLineOptions 
     .option('-p, --project <project_file>', 'path to TS project config file')
     .option('--project-folder <project_folder>', 'path to folder containig TS files to verify', addProjectFolder, [])
     .option('--autofix [autofix.json]', 'fix errors specified by JSON file (all if file is omitted)',
-      (val: string, prev: string|boolean) => { return val.endsWith(JSON_EXT) ? val : true; })
+      (val: string, prev: string | boolean) => { return val.endsWith(JSON_EXT) ? val : true; })
     .addOption(new Option('--warnings-as-errors', 'treat warnings as errors').hideHelp(true));
   program
     .argument('[srcFile...]', 'files to be verified', addSrcFile);
@@ -104,16 +104,16 @@ export function parseCommandLine(commandLineArgs: string[]): CommandLineOptions 
   if (options.TSC_Errors) opts.logTscErrors = true;
   if (options.devecoPluginMode) opts.ideMode = true;
   if (options.testMode) opts.testMode = true;
-  if (options.projectFolder) doProjectFolderArg(options.projectFolder, opts); 
+  if (options.projectFolder) doProjectFolderArg(options.projectFolder, opts);
   if (options.project) doProjectArg(options.project, opts);
   if (options.autofix) doAutofixArg(options.autofix, opts);
   if (options.warningsAsErrors) opts.warningsAsErrors = true;
   return opts;
 }
 
-function doProjectFolderArg(prjFolders: string[], opts: CommandLineOptions) {
-  for( let i = 0; i < prjFolders.length; i++ ) {
-    var prjFolderPath = prjFolders[ i ];
+function doProjectFolderArg(prjFolders: string[], opts: CommandLineOptions): void {
+  for ( let i = 0; i < prjFolders.length; i++ ) {
+    let prjFolderPath = prjFolders[ i ];
     try {
       opts.inputFiles.push(...getFiles(prjFolderPath));
     } catch (error: any) {
@@ -152,7 +152,7 @@ function doProjectArg(cfgPath: string, opts: CommandLineOptions) {
   }
 }
 
-function doAutofixArg(autofixOptVal: string|boolean, opts: CommandLineOptions) {
+function doAutofixArg(autofixOptVal: string | boolean, opts: CommandLineOptions): void {
   if (typeof autofixOptVal === 'string') {
     let autofixInfoStr = fs.readFileSync(autofixOptVal).toString();
     let autofixInfos = JSON.parse(autofixInfoStr);

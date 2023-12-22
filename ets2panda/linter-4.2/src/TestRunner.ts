@@ -60,10 +60,11 @@ function runTests(testDirs: string[]): number {
   TypeScriptLinter.ideMode = true;
   TypeScriptLinter.testMode = true;
 
-  let passed = 0, failed = 0;
+  let passed = 0;
+  let failed = 0;
 
   // Get tests from test directory
-  if (!testDirs?.length) testDirs = [ TEST_DIR ];
+  if (!testDirs?.length) testDirs = [TEST_DIR];
   for (const testDir of testDirs) {
     let testFiles: string[] = fs.readdirSync(testDir)
       .filter((x) => (x.trimEnd().endsWith(ts.Extension.Ts) && !x.trimEnd().endsWith(ts.Extension.Dts)) || x.trimEnd().endsWith(ts.Extension.Tsx));
@@ -143,8 +144,8 @@ function runTest(testDir: string, testFile: string, mode: Mode): boolean {
   const resultNodes: TestNodeInfo[] =
     fileProblems.map<TestNodeInfo>(
       (x) => ({
-        line: x.line, column: x.column, problem: x.problem, 
-        autofixable: mode === Mode.AUTOFIX ? x.autofixable : undefined, 
+        line: x.line, column: x.column, problem: x.problem,
+        autofixable: mode === Mode.AUTOFIX ? x.autofixable : undefined,
         autofix: mode === Mode.AUTOFIX ? x.autofix : undefined,
         suggest: x.suggest,
         rule: x.rule
@@ -209,14 +210,14 @@ function autofixArraysMatch(expected: Autofix[] | undefined, actual: Autofix[] |
   if (!(expected && actual) || expected.length !== actual.length) return false;
   for (let i = 0; i < actual.length; ++i) {
     if (
-      actual[i].start !== expected[i].start || actual[i].end !== expected[i].end || 
+      actual[i].start !== expected[i].start || actual[i].end !== expected[i].end ||
       actual[i].replacementText.replace(/\r\n/g, '\n') !== expected[i].replacementText.replace(/\r\n/g, '\n')
     ) return false;
   }
   return true;
 }
 
-function writeActualResultFile(testDir: string, testFile: string, resultExt: string, resultNodes: TestNodeInfo[], diff: string) {
+function writeActualResultFile(testDir: string, testFile: string, resultExt: string, resultNodes: TestNodeInfo[], diff: string): void {
   const actualResultsDir = path.join(testDir, 'results');
   if (!fs.existsSync(actualResultsDir)) fs.mkdirSync(actualResultsDir);
 

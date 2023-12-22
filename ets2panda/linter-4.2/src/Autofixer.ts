@@ -27,7 +27,7 @@ export const AUTOFIX_ALL: AutofixInfo = {
 // Temporary solution is to disable all risky autofixes, until the
 // algorithm is improved to guarantee that fixes can be applied
 // safely and won't break program code.
-const UNSAFE_FIXES: FaultID[] = [ FaultID.LiteralAsPropertyName, FaultID.PropertyAccessByIndex ];
+const UNSAFE_FIXES: FaultID[] = [FaultID.LiteralAsPropertyName, FaultID.PropertyAccessByIndex];
 
 export interface Autofix {
   replacementText: string;
@@ -45,9 +45,7 @@ export class AutofixInfoSet {
   public shouldAutofix(node: ts.Node, faultID: FaultID): boolean {
     if (UNSAFE_FIXES.includes(faultID)) return false;
     if (this.autofixInfo.length === 0) return false;
-    if (this.autofixInfo.length === 1 && this.autofixInfo[0] === AUTOFIX_ALL) {
-      return true;
-    }
+    if (this.autofixInfo.length === 1 && this.autofixInfo[0] === AUTOFIX_ALL) { return true; }
     return this.autofixInfo.findIndex(
       value => value.start === node.getStart() && value.end === node.getEnd() && value.problemID === FaultID[faultID]
     ) !== -1;
@@ -136,13 +134,13 @@ export function fixTypeAssertion(typeAssertion: ts.TypeAssertion): Autofix {
 
 const printer: ts.Printer = ts.createPrinter();
 
-function numericLiteral2IdentifierName(numeric: ts.NumericLiteral) {
+function numericLiteral2IdentifierName(numeric: ts.NumericLiteral): string {
   return '__' + numeric.getText();
 }
 
-function stringLiteral2IdentifierName(str: ts.StringLiteral) {
+function stringLiteral2IdentifierName(str: ts.StringLiteral): string {
   let text = (str as ts.StringLiteral).getText();
-  return text.substring(1, text.length-1); // cut out starting and ending quoters.
+  return text.substring(1, text.length - 1); // cut out starting and ending quoters.
 }
 
 function propertyName2IdentifierName(name: ts.PropertyName): string {
@@ -155,7 +153,7 @@ function propertyName2IdentifierName(name: ts.PropertyName): string {
   return '';
 }
 
-function indexExpr2IdentifierName(index: ts.Expression) {
+function indexExpr2IdentifierName(index: ts.Expression): string {
   if (index.kind === ts.SyntaxKind.NumericLiteral)
     return numericLiteral2IdentifierName(index as ts.NumericLiteral);
 
@@ -170,9 +168,9 @@ function getReturnTypePosition(funcLikeDecl: ts.FunctionLikeDeclaration): number
     // Find position of the first node or token that follows parameters.
     // After that, iterate over child nodes in reverse order, until found
     // first closing parenthesis.
-    let postParametersPosition = ts.isArrowFunction(funcLikeDecl)
-      ? funcLikeDecl.equalsGreaterThanToken.getStart()
-      : funcLikeDecl.body.getStart();
+    let postParametersPosition = ts.isArrowFunction(funcLikeDecl) ?
+        funcLikeDecl.equalsGreaterThanToken.getStart() :
+        funcLikeDecl.body.getStart();
 
     const children = funcLikeDecl.getChildren();
     for (let i = children.length - 1; i >= 0; i--) {
