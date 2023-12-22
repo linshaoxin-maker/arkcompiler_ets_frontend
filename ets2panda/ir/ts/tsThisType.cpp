@@ -19,6 +19,7 @@
 #include "compiler/core/ETSGen.h"
 #include "compiler/core/pandagen.h"
 #include "ir/astDump.h"
+#include "checker/ETSchecker.h"
 
 namespace panda::es2panda::ir {
 void TSThisType::TransformChildren([[maybe_unused]] const NodeTransformer &cb) {}
@@ -51,5 +52,10 @@ checker::Type *TSThisType::GetType([[maybe_unused]] checker::TSChecker *checker)
 checker::Type *TSThisType::Check([[maybe_unused]] checker::ETSChecker *checker)
 {
     return checker->GetAnalyzer()->Check(this);
+}
+
+checker::Type *TSThisType::GetType([[maybe_unused]] checker::ETSChecker *checker)
+{
+    return checker->Context().ContainingClass();
 }
 }  // namespace panda::es2panda::ir
