@@ -254,6 +254,16 @@ Type *ETSUnionType::Substitute(TypeRelation *relation, const Substitution *subst
     return checker->CreateETSUnionType(std::move(substituted_constituents));
 }
 
+Type *ETSUnionType::Substitute(TypeRelation *relation, const Substitution *substitution)
+{
+    auto *const checker = relation->GetChecker()->AsETSChecker();
+    ArenaVector<Type *> substituted_constituents(checker->Allocator()->Adapter());
+    for (auto *ctype : constituent_types_) {
+        substituted_constituents.push_back(ctype->Substitute(relation, substitution));
+    }
+    return checker->CreateETSUnionType(std::move(substituted_constituents));
+}
+
 void ETSUnionType::Cast(TypeRelation *relation, Type *target)
 {
     auto *const checker = relation->GetChecker()->AsETSChecker();
