@@ -56,7 +56,10 @@ void VariableDeclarator::Compile(compiler::PandaGen *pg) const
     compiler::LReference lref = compiler::LReference::CreateLRef(pg, id_, true);
 
     if (init_) {
+        size_t startCompilePos = pg->Insns().size();
         init_->Compile(pg);
+        size_t endCompilePos = pg->Insns().size();
+        util::Helpers::ScanNode(pg, startCompilePos, endCompilePos, this);
     } else {
         if (decl->Kind() == ir::VariableDeclaration::VariableDeclarationKind::VAR) {
             return;
