@@ -17,5 +17,6 @@ group("ets_frontend_build") {
   deps = [
     "./es2panda:es2panda_build",
     "./merge_abc:merge_proto_abc_build",
+    "./arkfuzzer:arkfuzzer_build",
   ]
 }
