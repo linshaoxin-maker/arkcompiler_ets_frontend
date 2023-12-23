@@ -16,18 +16,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 Description: Use ark to execute fuzzilli test suite
+
+generate abc with javascript
 """
 
 
 import argparse
+import collections
 import os
 import sys
-import tarfile
+import subprocess
+import datetime
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from test262.utils import *
-from test262.config import *
-from config import *
+from test262.utils import report_command
+from test262.config import DEFAULT_TIMEOUT, DEFAULT_THREADS, ARK_FRONTEND_LIST, DEFAULT_ARK_ARCH, ARK_ARCH_LIST, \
+    DEFAULT_OPT_LEVEL, DEFAULT_ES2ABC_THREAD_COUNT, DEFAULT_PRODUCT_NAME, DEFAULT_HOST_PATH, DEFAULT_HOST_TYPE, \
+    DEFAULT_ARK_TOOL, DEFAULT_ARK_AOT_TOOL, DEFAULT_LIBS_DIR, DEFAULT_MERGE_ABC_BINARY, DEFAULT_MERGE_ABC_MODE, \
+    RK3568_PRODUCT_NAME, ARGS_PREFIX, ARK_DIR_SUFFIX, ICUI_DIR_SUFFIX, ARK_JS_RUNTIME_DIR_SUFFIX, ZLIB_DIR_SUFFIX, \
+    LLVM_DIR
+from config import FUZZY_DEFAULT_ARK_FRONTEND_BINARY, DEFAULT_OPEN_FUZZILLI_MODE
 
 
 def parse_args():
@@ -48,7 +56,8 @@ def parse_args():
     parser.add_argument('--es2021', default=False, const='all',
                         nargs='?', choices=['all', 'only'],
                         help='Run test262 - ES2021. ' +
-                             'all: Contains all use cases for es5_tests and es2015_tests and es2021_tests and intl_tests' +
+                             'all: Contains all use cases for es5_tests and es2015_tests and '
+                             'es2021_tests and intl_tests' +
                              'only: Only include use cases for ES2021')
     parser.add_argument('--es2022', default=False, const='all',
                         nargs='?', choices=['all', 'only'],
@@ -124,123 +133,139 @@ def parse_args():
     return parser.parse_args()
 
 
-def run_command(cmd, shell_flag=False, timeout=60000):
-    proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        encoding="utf-8",
-        universal_newlines=True,
-        shell=shell_flag
-    )
-    out, error = proc.communicate(timeout=timeout)
-    ret_code = proc.returncode
-    return ret_code, out, error
+def run_check(runnable, env=None):
+    report_command('Test command:', runnable, env=env)
+
+    if env is not None:
+        full_env = dict(os.environ)
+        full_env.update(env)
+        env = full_env
+
+    proc = subprocess.Popen(runnable, env=env)
+    stdout, stderr = proc.communicate()
+    if stdout:
+        print(f'Out message:{stdout.decode()}')
+    if stderr:
+        print(f'Error message:{stderr.decode()}')
+    return proc.returncode
 
 
-class TestPrepare:
-    def prepare_fuzzilli_code(self):
-        if not os.path.isdir(os.path.join(FUZZY_DIR, '.git')):
-            git_clone(FUZZY_GIT_URL, FUZZY_DIR)
-            git_checkout(FUZZY_GIT_HASH, FUZZY_DIR)
-            current_dir = os.getcwd()
-            fuzzilli_patch_path = os.path.join(current_dir, FUZZY_DIR_NAME, FUZZILLI_PATCH_DIR_NAME, 'fuzzilli.patch')
-            if os.path.exists(fuzzilli_patch_path) and os.path.isfile(fuzzilli_patch_path):
-                git_apply(fuzzilli_patch_path, FUZZY_DIR)
+def get_host_path_type(args):
+    host_path = DEFAULT_HOST_PATH
+    host_type = DEFAULT_HOST_TYPE
+    if args.engine:
+        host_path = args.engine
+        host_type = os.path.split(args.engine.strip())[1]
+    return host_path, host_type
 
-    def get_sysctl_config(self):
-        cmd = ['sysctl', '-a', '|grep', 'kernel.core_pattern']
-        ret, output, error = run_command(cmd)
-        if not ret:
-            lines = output.split('\n')
-            config = {}
-            for line in lines:
-                if line.strip() != '':
-                    key, value = line.split(' = ')
-                    config[key.strip()] = value.strip()
-            return config
 
-    def check_bin_false(self):
-        config = self.get_sysctl_config()
-        if config:
-            kcp_val = config.get('kernel.core_pattern')
-            return kcp_val == '|/bin/false'
+def get_host_args(args, host_type):
+    host_args = ""
+    ark_tool = DEFAULT_ARK_TOOL
+    ark_aot_tool = DEFAULT_ARK_AOT_TOOL
+    libs_dir = DEFAULT_LIBS_DIR
+    ark_frontend = ARK_FRONTEND_LIST[1]
+    ark_frontend_binary = FUZZY_DEFAULT_ARK_FRONTEND_BINARY
+    ark_arch = DEFAULT_ARK_ARCH
+    opt_level = DEFAULT_OPT_LEVEL
+    es2abc_thread_count = DEFAULT_ES2ABC_THREAD_COUNT
+    merge_abc_binary = DEFAULT_MERGE_ABC_BINARY
+    merge_abc_mode = DEFAULT_MERGE_ABC_MODE
+    product_name = RK3568_PRODUCT_NAME
 
-    def init_kernel_core_pattern(self):
-        is_bin_false = self.check_bin_false()
-        if not is_bin_false:
-            cmd = ['sysctl', '-w', 'kernel.core_pattern=|/bin/false']
-            ret, _, error = run_command(cmd)
-            if ret:
-                raise SystemExit(f'Set kernel.core_pattern Error: {error}')
-            return 0
+    if args.product_name:
+        product_name = args.product_name
+        ark_dir = f"{ARGS_PREFIX}{product_name}{ARK_DIR_SUFFIX}"
+        icui_dir = f"{ARGS_PREFIX}{product_name}{ICUI_DIR_SUFFIX}"
+        ark_js_runtime_dir = f"{ARGS_PREFIX}{product_name}{ARK_JS_RUNTIME_DIR_SUFFIX}"
+        zlib_dir = f"{ARGS_PREFIX}{product_name}{ZLIB_DIR_SUFFIX}"
 
-    def fuzzy_compiler(self, profile='es2abc', storage_path=FUZZILLI_OUTPUT_DIR_NAME):
-        _output_dir = os.path.join(FUZZY_DIR, storage_path)
-        if not os.path.exists(_output_dir):
-            mkdir(_output_dir)
-        try:
-            swift_tool = check_swift()
-        except SystemExit:
-            swift_tool = prepare_swift()
+        ark_tool = os.path.join(ark_js_runtime_dir, "ark_js_vm")
+        libs_dir = f"{icui_dir}:{LLVM_DIR}:{ark_js_runtime_dir}:{zlib_dir}"
+        ark_aot_tool = os.path.join(ark_js_runtime_dir, "ark_aot_compiler")
+        merge_abc_binary = os.path.join(ark_dir, "merge_abc")
 
-        # change to child dir
-        os.chdir(FUZZY_DIR)
-        # where es2abc path
-        _DEFAULT_ARK_DIR = f"{CODE_ROOT}/out/rk3568/clang_x64/arkcompiler/ets_frontend"
-        ejs_shell = os.path.join(_DEFAULT_ARK_DIR, "arkfuzzer")
-        cmd = [swift_tool, 'run', '-c', 'release', '-Xlinker="-lrt"', 'FuzzilliCli', f'--profile={profile}',
-               f'--storagePath={_output_dir}', ejs_shell]
-        ret, _, error = run_command(cmd)
+    if args.hostArgs:
+        host_args = args.hostArgs
+
+    if args.ark_tool:
+        ark_tool = args.ark_tool
+
+    if args.ark_aot_tool:
+        ark_aot_tool = args.ark_aot_tool
+
+    if args.libs_dir:
+        libs_dir = args.libs_dir
+
+    if args.ark_frontend:
+        ark_frontend = args.ark_frontend
+
+    if args.ark_frontend_binary:
+        ark_frontend_binary = args.ark_frontend_binary
+
+    if args.opt_level:
+        opt_level = args.opt_level
+
+    if args.es2abc_thread_count:
+        es2abc_thread_count = args.es2abc_thread_count
+
+    if args.merge_abc_binary:
+        merge_abc_binary = args.merge_abc_binary
+
+    if args.merge_abc_mode:
+        merge_abc_mode = args.merge_abc_mode
+
+    if host_type == DEFAULT_HOST_TYPE:
+        host_args = f"-B test262/run_sunspider.py "
+        host_args += f"--ark-tool={ark_tool} "
+        if args.ark_aot:
+            host_args += f"--ark-aot "
+        if args.run_pgo:
+            host_args += f"--run-pgo "
+        host_args += f"--ark-aot-tool={ark_aot_tool} "
+        host_args += f"--libs-dir={libs_dir} "
+        host_args += f"--ark-frontend={ark_frontend} "
+        host_args += f"--ark-frontend-binary={ark_frontend_binary} "
+        host_args += f"--opt-level={opt_level} "
+        host_args += f"--es2abc-thread-count={es2abc_thread_count} "
+        host_args += f"--merge-abc-binary={merge_abc_binary} "
+        host_args += f"--merge-abc-mode={merge_abc_mode} "
+        host_args += f"--product-name={product_name} "
+
+    if args.ark_arch != ark_arch:
+        host_args += f"--ark-arch={args.ark_arch} "
+        host_args += f"--ark-arch-root={args.ark_arch_root} "
+
+    return host_args
+
+
+def run_fuzzy_test(args):
+    host_path, host_type = get_host_path_type(args)
+    host_args = get_host_args(args, host_type)
+    fuzzy_js_file = args.file
+    host_args = host_args.replace(fuzzy_js_file, '')
+    test_cmd = ['python3'] + host_args.strip().split(' ')
+    test_cmd.append(f"--js-file={fuzzy_js_file}")
+    return run_check(test_cmd)
+
+
+Check = collections.namedtuple('Check', ['enabled', 'runner', 'arg'])
+
+
+def main(args):
+    if args.open_fuzzy_mode:
+        print("\nWait a moment..........\n")
+        start_time = datetime.datetime.now()
+        check = Check(True, run_fuzzy_test, args)
+        ret = check.runner(check.arg)
         if ret:
-            raise SystemExit(f'fuzzy compiler error: {error}')
-        return 0
-
-    def prepare_fuzzy_test(self):
-        self.prepare_fuzzilli_code()
-        self.init_kernel_core_pattern()
-        self.fuzzy_compiler()
-
-    def run(self):
-        self.prepare_fuzzy_test()
-
-
-def prepare_swift():
-    print('Start downloading swift……')
-    swift_path = os.path.join(FUZZY_DIR_NAME, 'swift.tar.gz')
-    _cmd = ['wget', '-O', swift_path, SWIFT_DOWNLOAD_URL]
-    ret, output, error = run_command(_cmd)
-    if ret:
-        raise SystemExit(f'Download swift error: {error}')
-    print('Downloading swift finished.')
-    with tarfile.open(swift_path, 'r:gz') as tar:
-        tar.extractall(FUZZY_DIR_NAME)
-
-    current_dir = os.getcwd()
-    swift_path = os.path.join(current_dir, FUZZY_DIR_NAME, 'swift-5.9.2-RELEASE-ubuntu18.04', 'usr', 'bin', 'swift')
-    try:
-        check_swift(swift_path)
-    except SystemExit as e:
-        raise SystemExit(str(e))
-    return swift_path
-
-
-def check_swift(swift_path='swift'):
-    version_cmd = [swift_path, '--version']
-    try:
-        ret, output, error = run_command(version_cmd)
-    except FileNotFoundError:
-        raise SystemExit('Swift not found.')
-    if ret:
-        raise SystemExit('Swift not found.')
-    print(output)
-    return swift_path
-
-
-def main():
-    test_prepare = TestPrepare()
-    test_prepare.run()
+            sys.exit(ret)
+        end_time = datetime.datetime.now()
+        print(f"used time is: {str(end_time - start_time)}")
+    else:
+        print('You should execute the script with open fuzzilli mode by `--open-fuzzy-mode`!')
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(parse_args()))

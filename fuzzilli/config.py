@@ -21,7 +21,7 @@ import os
 
 from test262.config import ARGS_PREFIX, RK3568_PRODUCT_NAME, ARK_DIR_SUFFIX
 
-FUZZY_DIR_NAME = 'arkfuzzer'
+FUZZY_DIR_NAME = 'fuzzilli'
 FUZZILLI_DIR_NAME = 'fuzzilli'
 FUZZILLI_PATCH_DIR_NAME = 'patchs'
 FUZZILLI_OUTPUT_DIR_NAME = 'output'
@@ -30,7 +30,8 @@ FUZZY_DIR = os.path.join(FUZZY_DIR_NAME, FUZZILLI_DIR_NAME)
 FUZZY_GIT_HASH = "79c777839d23114e6f85322eefa6d44af53814ab"
 
 FUZZY_GIT_URL = "https://gitee.com/mirrors_googleprojectzero/fuzzilli.git"
-SWIFT_DOWNLOAD_URL = 'https://download.swift.org/swift-5.9.2-release/ubuntu1804/swift-5.9.2-RELEASE/swift-5.9.2-RELEASE-ubuntu18.04.tar.gz'
+SWIFT_DOWNLOAD_URL = 'https://download.swift.org/swift-5.9.2-release/ubuntu1804/'\
+                      'swift-5.9.2-RELEASE/swift-5.9.2-RELEASE-ubuntu18.04.tar.gz'
 
 FUZZY_DEFAULT_ARK_FRONTEND_BINARY = os.path.join(ARGS_PREFIX, RK3568_PRODUCT_NAME, ARK_DIR_SUFFIX, 'es2abc')
 
