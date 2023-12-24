@@ -31,36 +31,8 @@
                   "shorthand": false,
                   "computed": true,
                   "key": {
-                    "type": "BinaryExpression",
-                    "operator": "+",
-                    "left": {
-                      "type": "NumberLiteral",
-                      "value": 5,
-                      "loc": {
-                        "start": {
-                          "line": 17,
-                          "column": 11
-                        },
-                        "end": {
-                          "line": 17,
-                          "column": 12
-                        }
-                      }
-                    },
-                    "right": {
-                      "type": "NumberLiteral",
-                      "value": 4,
-                      "loc": {
-                        "start": {
-                          "line": 17,
-                          "column": 15
-                        },
-                        "end": {
-                          "line": 17,
-                          "column": 16
-                        }
-                      }
-                    },
+                    "type": "NumberLiteral",
+                    "value": 9,
                     "loc": {
                       "start": {
                         "line": 17,
@@ -268,4 +240,4 @@
     }
   }
 }
-TypeError: Cannot assign to this property because it is readonly. [member_expression_80.ts:19:1]
+TypeError: Property 5 does not exist on this type. [member_expression_80.ts:19:3]

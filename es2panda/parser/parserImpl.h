@@ -201,6 +201,7 @@ public:
     bool IsDtsFile() const;
 
 private:
+    uint32_t parseExpressionRecursionCount_ {0};
     bool IsStartOfMappedType() const;
     bool IsStartOfTsTypePredicate() const;
     bool IsStartOfAbstractConstructorType() const;
@@ -400,6 +401,9 @@ private:
     ir::Expression *ParseCoverParenthesizedExpressionAndArrowParameterList();
     ir::Expression *ParseKeywordExpression();
     ir::Expression *ParseBinaryExpression(ir::Expression *left);
+    ir::Expression *TraverseBinaryExpression(ir::Expression *expr);
+    ir::Expression *ShortcutNumberLiteralBinaryExpression(ir::Expression *lhsExpression, ir::Expression *rhsExpression,
+                                                          lexer::TokenType operatorType);
     ir::CallExpression *ParseCallExpression(ir::Expression *callee, bool isOptionalChain = false, bool isAsync = false);
     ir::ArrowFunctionExpression *ParsePotentialArrowExpression(ir::Expression **returnExpression,
                                                                const lexer::SourcePosition &startLoc,

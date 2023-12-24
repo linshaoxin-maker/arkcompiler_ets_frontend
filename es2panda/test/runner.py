@@ -1520,6 +1520,8 @@ def main():
         runner.add_directory("parser/binder", "js", ["--dump-assembly"])
         runner.add_directory("parser/js/emptySource", "js", ["--dump-assembly"])
         runner.add_directory("parser/js/language/arguments-object", "js", ["--parse-only"])
+        runner.add_directory("parser/js/language/expressions/binary-expressions", "js",
+                             ["--parse-only", "--module", "--dump-ast"])
 
         runners.append(runner)
 
