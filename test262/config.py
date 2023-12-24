@@ -20,7 +20,12 @@ Description: Execute 262 test suite configuration file
 
 
 import os
+import sys
+import platform
 from multiprocessing import cpu_count
+
+IS_LINUX_ARM64 = (sys.platform == "linux" and platform.machine().lower() == "aarch64")
+CLANG_TOOLCHAIN = "clang_arm64" if IS_LINUX_ARM64 else "clang_x64"
 
 DATA_DIR = os.path.join("test262", "data")
 ESHOST_DIR = os.path.join("test262", "eshost")
@@ -30,7 +35,10 @@ BASE_OUT_DIR = os.path.join("out", "test262")
 
 CUR_FILE_DIR = os.path.dirname(__file__)
 CODE_ROOT = os.path.abspath(os.path.join(CUR_FILE_DIR, "../../.."))
-LLVM_DIR = f"{CODE_ROOT}/prebuilts/clang/ohos/linux-x86_64/llvm/lib/"
+if IS_LINUX_ARM64:
+    LLVM_DIR = f"{CODE_ROOT}/prebuilts/clang/ohos/linux-aarch64/llvm/lib/"
+else:
+    LLVM_DIR = f"{CODE_ROOT}/prebuilts/clang/ohos/linux-x86_64/llvm/lib/"
 
 DEFAULT_MODE = 2
 
@@ -48,15 +56,15 @@ RK3568_PRODUCT_NAME = "rk3568"
 DEFAULT_PRODUCT_NAME = HISPARK_TAURUS_PRODUCT_NAME
 
 ARGS_PREFIX = f"{CODE_ROOT}/out/"
-ARK_DIR_SUFFIX = "clang_x64/arkcompiler/ets_frontend"
-ICUI_DIR_SUFFIX = "clang_x64/thirdparty/icu"
-ARK_JS_RUNTIME_DIR_SUFFIX = "clang_x64/arkcompiler/ets_runtime"
-ZLIB_DIR_SUFFIX = "clang_x64/thirdparty/zlib"
+ARK_DIR_SUFFIX = f"/{CLANG_TOOLCHAIN}/arkcompiler/ets_frontend"
+ICUI_DIR_SUFFIX = f"/{CLANG_TOOLCHAIN}/thirdparty/icu"
+ARK_JS_RUNTIME_DIR_SUFFIX = f"/{CLANG_TOOLCHAIN}/arkcompiler/ets_runtime"
+ZLIB_DIR_SUFFIX = f"/{CLANG_TOOLCHAIN}/thirdparty/zlib"
 
-DEFAULT_ARK_DIR = f"{CODE_ROOT}/out/hispark_taurus/clang_x64/arkcompiler/ets_frontend"
-DEFAULT_ICUI_DIR = f"{CODE_ROOT}/out/hispark_taurus/clang_x64/thirdparty/icu"
-DEFAULT_ARK_JS_RUNTIME_DIR = f"{CODE_ROOT}/out/hispark_taurus/clang_x64/arkcompiler/ets_runtime"
-DEFAULT_ZLIB_DIR = f"{CODE_ROOT}/out/hispark_taurus/clang_x64/thirdparty/zlib"
+DEFAULT_ARK_DIR = f"{CODE_ROOT}/out/hispark_taurus/{CLANG_TOOLCHAIN}/arkcompiler/ets_frontend"
+DEFAULT_ICUI_DIR = f"{CODE_ROOT}/out/hispark_taurus/{CLANG_TOOLCHAIN}/thirdparty/icu"
+DEFAULT_ARK_JS_RUNTIME_DIR = f"{CODE_ROOT}/out/hispark_taurus/{CLANG_TOOLCHAIN}/arkcompiler/ets_runtime"
+DEFAULT_ZLIB_DIR = f"{CODE_ROOT}/out/hispark_taurus/{CLANG_TOOLCHAIN}/thirdparty/zlib"
 
 DEFAULT_ARK_TOOL = os.path.join(DEFAULT_ARK_JS_RUNTIME_DIR, "ark_js_vm")
 DEFAULT_LIBS_DIR = f"{DEFAULT_ICUI_DIR}:{LLVM_DIR}:{DEFAULT_ARK_JS_RUNTIME_DIR}:{DEFAULT_ZLIB_DIR}"
