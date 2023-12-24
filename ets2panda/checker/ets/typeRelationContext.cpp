@@ -38,33 +38,13 @@ void AssignmentContext::ValidateArrayTypeInitializerByElement(TypeRelation *rela
     }
 }
 
-bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSTypeParameterDeclaration *type_param_decl,
-                                                 ir::TSTypeParameterInstantiation *type_args,
-                                                 const lexer::SourcePosition &pos)
+Substitution *InstantiationContext::CreateSubstitutionTypeParams(ETSObjectType *type,
+                                                                 ir::TSTypeParameterDeclaration *type_param_decl,
+                                                                 ir::TSTypeParameterInstantiation *type_args,
+                                                                 const lexer::SourcePosition &pos)
 {
-    checker_->CheckNumberOfTypeArguments(type, type_param_decl, type_args, pos);
-
-    if (type_param_decl == nullptr) {
-        result_ = type;
-        return true;
-    }
-
-    auto *substitution = checker_->NewSubstitution();
-    /*
-    The first loop is to create a substitution of type_params & type_args.
-    so that we can replace the type_params in constaints by the right type.
-    e.g:
-        class X <K extends Comparable<T>,T> {}
-        function main(){
-            const myCharClass = new X<Char,String>();
-        }
-    In the case above, the constraints_substitution should store "K->Char" and "T->String".
-    And in the second loop, we use this substitution to replace type_params in constraints.
-    In this case, we will check "Comparable<String>" with "Char", since "Char" doesn't
-    extends "Comparable<String>", we will get an error here.
-    */
-
     ASSERT(type_param_decl != nullptr);
+    auto *substitution = checker_->NewSubstitution();
 
     for (size_t type_param_iter = 0; type_param_iter < type_param_decl->Params().size(); ++type_param_iter) {
         Type *type_arg_type;
@@ -80,6 +60,28 @@ bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSType
         auto *const type_param_type = type->TypeArguments().at(type_param_iter);
         substitution->emplace(type_param_type, type_arg_type);
     }
+
+    return substitution;
+}
+
+/*
+ We replace the type_params in constraints by the right type.
+ e.g:
+     class X <K extends Comparable<T>,T> {}
+     function main(){
+         const myCharClass = new X<Char,String>();
+     }
+ In the case above, the constraints_substitution should store "K->Char" and "T->String".
+ And in the second loop, we use this substitution to replace type_params in constraints.
+ In this case, we will check "Comparable<String>" with "Char", since "Char" doesn't
+ extends "Comparable<String>", we will get an error here.
+*/
+void InstantiationContext::ReplaceSubstitutionTypeParams(ETSObjectType *type,
+                                                         ir::TSTypeParameterDeclaration *type_param_decl,
+                                                         ir::TSTypeParameterInstantiation *type_args,
+                                                         const lexer::SourcePosition &pos)
+{
+    auto *substitution = CreateSubstitutionTypeParams(type, type_param_decl, type_args, pos);
 
     for (size_t type_param_iter = 0; type_param_iter < type_param_decl->Params().size(); ++type_param_iter) {
         ir::TSTypeParameter *type_param = type_param_decl->Params().at(type_param_iter)->AsTSTypeParameter();
@@ -120,6 +122,20 @@ bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSType
                                      type_args->Params().at(type_param_iter)->Start());
         }
     }
+}
+
+bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSTypeParameterDeclaration *type_param_decl,
+                                                 ir::TSTypeParameterInstantiation *type_args,
+                                                 const lexer::SourcePosition &pos)
+{
+    checker_->CheckNumberOfTypeArguments(type, type_param_decl, type_args, pos);
+
+    if (type_param_decl == nullptr) {
+        result_ = type;
+        return true;
+    }
+
+    ReplaceSubstitutionTypeParams(type, type_param_decl, type_args, pos);
 
     return false;
 }

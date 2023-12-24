@@ -453,26 +453,10 @@ std::tuple<std::string, bool> ETSParser::GetSourceRegularPath(const std::string 
     return {path, false};
 }
 
-std::tuple<std::vector<std::string>, bool> ETSParser::CollectUserSources(const std::string &path)
+void ETSParser::CollectUserSourcesFromIndex([[maybe_unused]] const std::string &path,
+                                            [[maybe_unused]] const std::string &resolved_path,
+                                            [[maybe_unused]] std::vector<std::string> &user_paths)
 {
-    std::vector<std::string> user_paths;
-
-    const std::string resolved_path = ResolveImportPath(path);
-    resolved_parsed_sources_.emplace(path, resolved_path);
-    const auto data = GetImportData(resolved_path);
-
-    if (!data.has_decl) {
-        return {user_paths, false};
-    }
-
-    if (!panda::os::file::File::IsDirectory(resolved_path)) {
-        std::string regular_path;
-        bool is_module = false;
-        std::tie(regular_path, is_module) = GetSourceRegularPath(path, resolved_path);
-        user_paths.emplace_back(regular_path);
-        return {user_paths, is_module};
-    }
-
 #ifdef USE_UNIX_SYSCALL
     DIR *dir = opendir(resolved_path.c_str());
     bool is_index = false;
@@ -510,11 +494,34 @@ std::tuple<std::vector<std::string>, bool> ETSParser::CollectUserSources(const s
 
     closedir(dir);
 
-    if (is_index) {
+    if (!is_index) {
+        user_paths.insert(user_paths.end(), tmp_paths.begin(), tmp_paths.end());
+    }
+#endif
+}
+
+std::tuple<std::vector<std::string>, bool> ETSParser::CollectUserSources(const std::string &path)
+{
+    std::vector<std::string> user_paths;
+
+    const std::string resolved_path = ResolveImportPath(path);
+    resolved_parsed_sources_.emplace(path, resolved_path);
+    const auto data = GetImportData(resolved_path);
+
+    if (!data.has_decl) {
         return {user_paths, false};
     }
 
-    user_paths.insert(user_paths.end(), tmp_paths.begin(), tmp_paths.end());
+    if (!panda::os::file::File::IsDirectory(resolved_path)) {
+        std::string regular_path;
+        bool is_module = false;
+        std::tie(regular_path, is_module) = GetSourceRegularPath(path, resolved_path);
+        user_paths.emplace_back(regular_path);
+        return {user_paths, is_module};
+    }
+
+#ifdef USE_UNIX_SYSCALL
+    CollectUserSourcesFromIndex(path, resolved_path, user_paths);
 #else
     if (fs::exists(resolved_path + "/index.ets")) {
         user_paths.emplace_back(path + "/index.ets");

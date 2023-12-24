@@ -547,6 +547,8 @@ private:
     }
     std::unordered_map<util::StringView, const varbinder::LocalVariable *> CollectAllProperties() const;
     void IdenticalUptoNullability(TypeRelation *relation, Type *other);
+    Type *GetOriginalOrBaseType(TypeRelation *relation, Type *original_type);
+    Signature *GetInvokeSignature(const ETSObjectType *type);
 
     ArenaAllocator *allocator_;
     util::StringView name_;

@@ -308,6 +308,19 @@ void ETSObjectType::ToString(std::stringstream &ss) const
     }
 }
 
+Type *ETSObjectType::GetOriginalOrBaseType(TypeRelation *relation, Type *const original_type)
+{
+    auto *const base_type = relation->GetChecker()->AsETSChecker()->GetOriginalBaseType(original_type);
+    return base_type == nullptr ? original_type : base_type;
+}
+
+Signature *ETSObjectType::GetInvokeSignature(const ETSObjectType *type)
+{
+    auto const prop_invoke = type->GetProperty(util::StringView("invoke"), PropertySearchFlags::SEARCH_INSTANCE_METHOD);
+    ASSERT(prop_invoke != nullptr);
+    return prop_invoke->TsType()->AsETSFunctionType()->CallSignatures()[0];
+}
+
 void ETSObjectType::IdenticalUptoNullability(TypeRelation *relation, Type *other)
 {
     relation->Result(false);
@@ -355,34 +368,19 @@ void ETSObjectType::IdenticalUptoNullability(TypeRelation *relation, Type *other
                 return;
             }
 
-            const auto get_original_base_type_or_type = [&relation](Type *const original_type) {
-                auto *const base_type = relation->GetChecker()->AsETSChecker()->GetOriginalBaseType(original_type);
-                return base_type == nullptr ? original_type : base_type;
-            };
-
-            auto *const type_arg_type = get_original_base_type_or_type(type_arguments_[idx]);
-            auto *const other_type_arg_type = get_original_base_type_or_type(other_type_arguments[idx]);
+            auto *const type_arg_type = GetOriginalOrBaseType(relation, type_arguments_[idx]);
+            auto *const other_type_arg_type = GetOriginalOrBaseType(relation, other_type_arguments[idx]);
 
             type_arg_type->Identical(relation, other_type_arg_type);
             if (!relation->IsTrue()) {
                 return;
             }
         }
-    } else {
-        if (HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
-            auto get_invoke_signature = [](const ETSObjectType *type) {
-                auto const prop_invoke =
-                    type->GetProperty(util::StringView("invoke"), PropertySearchFlags::SEARCH_INSTANCE_METHOD);
-                ASSERT(prop_invoke != nullptr);
-                return prop_invoke->TsType()->AsETSFunctionType()->CallSignatures()[0];
-            };
-
-            auto *const this_invoke_signature = get_invoke_signature(this);
-            auto *const other_invoke_signature = get_invoke_signature(other->AsETSObjectType());
-
-            relation->IsIdenticalTo(this_invoke_signature, other_invoke_signature);
-            return;
-        }
+    } else if (HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
+        auto *const this_invoke_signature = GetInvokeSignature(this);
+        auto *const other_invoke_signature = GetInvokeSignature(other->AsETSObjectType());
+        relation->IsIdenticalTo(this_invoke_signature, other_invoke_signature);
+        return;
     }
 
     relation->Result(true);

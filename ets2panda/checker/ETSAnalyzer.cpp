@@ -2150,23 +2150,9 @@ void ProcessReturnStatements(ETSChecker *checker, ir::ScriptFunction *containing
     }
 }
 
-checker::Type *ETSAnalyzer::Check(ir::ReturnStatement *st) const
+checker::Type *ETSAnalyzer::GetFunctionReturnType(ir::ReturnStatement *st, ir::ScriptFunction *containing_func) const
 {
     ETSChecker *checker = GetETSChecker();
-
-    ir::AstNode *ancestor = util::Helpers::FindAncestorGivenByType(st, ir::AstNodeType::SCRIPT_FUNCTION);
-    ASSERT(ancestor && ancestor->IsScriptFunction());
-    auto *containing_func = ancestor->AsScriptFunction();
-
-    if (containing_func->IsConstructor()) {
-        if (st->argument_ != nullptr) {
-            checker->ThrowTypeError("Return statement with expression isn't allowed in constructor.", st->Start());
-        }
-        return nullptr;
-    }
-
-    ASSERT(containing_func->ReturnTypeAnnotation() != nullptr || containing_func->Signature()->ReturnType() != nullptr);
-
     checker::Type *func_return_type = nullptr;
 
     if (auto *const return_type_annotation = containing_func->ReturnTypeAnnotation();
@@ -2220,8 +2206,27 @@ checker::Type *ETSAnalyzer::Check(ir::ReturnStatement *st) const
         checker->ModifyPreferredType(st->argument_->AsArrayExpression(), func_return_type);
         st->argument_->Check(checker);
     }
+    return func_return_type;
+}
 
-    st->return_type_ = func_return_type;
+checker::Type *ETSAnalyzer::Check(ir::ReturnStatement *st) const
+{
+    ETSChecker *checker = GetETSChecker();
+
+    ir::AstNode *ancestor = util::Helpers::FindAncestorGivenByType(st, ir::AstNodeType::SCRIPT_FUNCTION);
+    ASSERT(ancestor && ancestor->IsScriptFunction());
+    auto *containing_func = ancestor->AsScriptFunction();
+
+    if (containing_func->IsConstructor()) {
+        if (st->argument_ != nullptr) {
+            checker->ThrowTypeError("Return statement with expression isn't allowed in constructor.", st->Start());
+        }
+        return nullptr;
+    }
+
+    ASSERT(containing_func->ReturnTypeAnnotation() != nullptr || containing_func->Signature()->ReturnType() != nullptr);
+
+    st->return_type_ = GetFunctionReturnType(st, containing_func);
     return nullptr;
 }
 
