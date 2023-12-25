@@ -17,6 +17,7 @@
 #define ES2PANDA_PARSER_CORE_ETS_PARSER_H
 
 #include <optional>
+#include "parserFlags.h"
 #include "util/arktsconfig.h"
 #include "TypedParser.h"
 
@@ -186,7 +187,9 @@ private:
 
     void ValidateForInStatement() override;
 
-    ir::Expression *ParseCoverParenthesizedExpressionAndArrowParameterList() override;
+    // NOLINTNEXTLINE(google-default-arguments)
+    ir::Expression *ParseCoverParenthesizedExpressionAndArrowParameterList(
+        ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS) override;
     ir::Statement *ParseTryStatement() override;
     ir::DebuggerStatement *ParseDebuggerStatement() override;
     void ParseReExport(lexer::SourcePosition start_loc);
@@ -257,6 +260,7 @@ private:
     // NOLINTNEXTLINE(google-default-arguments)
     ir::Statement *ParseEnumDeclaration(bool is_const = false, bool is_static = false) override;
     ir::Expression *ParseLaunchExpression(ExpressionParseFlags flags);
+    void ValidateInstanceOfExpression(ir::Expression *expr);
     void ValidateRestParameter(ir::Expression *param) override;
     void CheckIndexAccessMethod(ir::ScriptFunction const *function, const lexer::SourcePosition &position) const;
 
@@ -312,7 +316,6 @@ private:
     ir::Statement *CreateStatement(std::string_view source_code, std::string_view file_name = DEFAULT_SOURCE_FILE);
     ir::Statement *CreateFormattedStatement(std::string_view source_code, std::vector<ir::AstNode *> &inserting_nodes,
                                             std::string_view file_name = DEFAULT_SOURCE_FILE);
-    // NOLINTEND(google-default-arguments)
 
     template <typename... Args>
     ir::Statement *CreateFormattedStatement(std::string_view const source_code, std::string_view const file_name,
@@ -329,7 +332,6 @@ private:
                                                       std::string_view file_name = DEFAULT_SOURCE_FILE);
     ir::TypeNode *CreateTypeAnnotation(TypeAnnotationParsingOptions *options, std::string_view source_code,
                                        std::string_view file_name = DEFAULT_SOURCE_FILE);
-    // NOLINTEND(google-default-arguments)
     friend class ExternalSourceParser;
     friend class InnerSourceParser;
 

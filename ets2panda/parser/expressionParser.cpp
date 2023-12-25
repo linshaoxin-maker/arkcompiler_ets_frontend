@@ -420,7 +420,9 @@ void ParserImpl::ValidateArrowFunctionRestParameter([[maybe_unused]] ir::SpreadE
     }
 }
 
-ir::Expression *ParserImpl::ParseCoverParenthesizedExpressionAndArrowParameterList()
+// NOLINTNEXTLINE(google-default-arguments)
+ir::Expression *ParserImpl::ParseCoverParenthesizedExpressionAndArrowParameterList(
+    [[maybe_unused]] ExpressionParseFlags flags)
 {
     ASSERT(lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS);
     lexer::SourcePosition start = lexer_->GetToken().Start();
@@ -492,6 +494,20 @@ void ParserImpl::CheckInvalidDestructuring(const ir::AstNode *object) const
     });
 }
 
+void ParserImpl::ValidateGroupedExpression(ir::Expression *lhs_expression)
+{
+    lexer::TokenType token_type = lexer_->GetToken().Type();
+    if (lhs_expression->IsGrouped() && token_type != lexer::TokenType::PUNCTUATOR_ARROW) {
+        if (lhs_expression->IsSequenceExpression()) {
+            for (auto *seq : lhs_expression->AsSequenceExpression()->Sequence()) {
+                ValidateParenthesizedExpression(seq);
+            }
+        } else {
+            ValidateParenthesizedExpression(lhs_expression);
+        }
+    }
+}
+
 void ParserImpl::ValidateParenthesizedExpression(ir::Expression *lhs_expression)
 {
     switch (lhs_expression->Type()) {
@@ -542,17 +558,9 @@ ir::Expression *ParserImpl::ParsePrefixAssertionExpression()
 
 ir::Expression *ParserImpl::ParseAssignmentExpression(ir::Expression *lhs_expression, ExpressionParseFlags flags)
 {
-    lexer::TokenType token_type = lexer_->GetToken().Type();
-    if (lhs_expression->IsGrouped() && token_type != lexer::TokenType::PUNCTUATOR_ARROW) {
-        if (lhs_expression->IsSequenceExpression()) {
-            for (auto *seq : lhs_expression->AsSequenceExpression()->Sequence()) {
-                ValidateParenthesizedExpression(seq);
-            }
-        } else {
-            ValidateParenthesizedExpression(lhs_expression);
-        }
-    }
+    ValidateGroupedExpression(lhs_expression);
 
+    lexer::TokenType token_type = lexer_->GetToken().Type();
     switch (token_type) {
         case lexer::TokenType::PUNCTUATOR_QUESTION_MARK: {
             lexer_->NextToken();
@@ -1191,7 +1199,7 @@ void ParserImpl::CreateAmendedBinaryExpression(ir::Expression *const left, ir::E
     SetAmendedChildExpression(right, binary_expr);
 }
 
-ir::Expression *ParserImpl::ParseBinaryExpression(ir::Expression *left)
+ir::Expression *ParserImpl::ParseBinaryExpression(ir::Expression *left, ExpressionParseFlags flags)
 {
     lexer::TokenType operator_type = lexer_->GetToken().Type();
     ASSERT(lexer::Token::IsBinaryToken(operator_type));
@@ -1206,7 +1214,12 @@ ir::Expression *ParserImpl::ParseBinaryExpression(ir::Expression *left)
 
     lexer_->NextToken();
 
-    ir::Expression *right_expr = ParseExpression(ExpressionParseFlags::DISALLOW_YIELD);
+    ExpressionParseFlags new_flags = ExpressionParseFlags::DISALLOW_YIELD;
+    if ((operator_type == lexer::TokenType::KEYW_INSTANCEOF) || ((flags & ExpressionParseFlags::INSTANCEOF) != 0)) {
+        new_flags |= ExpressionParseFlags::INSTANCEOF;
+    }
+
+    ir::Expression *right_expr = ParseExpression(new_flags);
     ir::ConditionalExpression *conditional_expr = nullptr;
 
     if (right_expr->IsConditionalExpression() && !right_expr->IsGrouped()) {
