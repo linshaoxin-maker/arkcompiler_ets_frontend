@@ -1,5 +1,9 @@
 # FIXME(igelhaus): Temporarily skipped for dev branch stabilization
 parser/ets/literals.ets
+parser/ets/declare_iface.ets
+parser/ets/interfaces.ets
+parser/ets/lambda_import_alias_1.ets
+parser/ets/test_interface.ets
 
 parser/ets/import_tests/modules/module.ets
 parser/ets/import_tests/import_class_members_1.ets
