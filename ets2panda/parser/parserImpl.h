@@ -229,13 +229,15 @@ protected:
     // ExpressionParser.Cpp
 
     ir::Expression *ParseKeywordExpression();
-    ir::Expression *ParseBinaryExpression(ir::Expression *left);
+    ir::Expression *ParseBinaryExpression(ir::Expression *left,
+                                          ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
     void ValidateUpdateExpression(ir::Expression *return_expression, bool is_chain_expression);
     ir::Expression *ParseMemberExpression(bool ignore_call_expression = false,
                                           ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
     ir::MetaProperty *ParsePotentialNewTarget();
     void CheckInvalidDestructuring(const ir::AstNode *object) const;
     void ValidateParenthesizedExpression(ir::Expression *lhs_expression);
+    void ValidateGroupedExpression(ir::Expression *lhs_expression);
     ir::Expression *ParseImportExpression();
     ir::Expression *ParseOptionalChain(ir::Expression *left_side_expr);
     ir::Expression *ParsePropertyKey(ExpressionParseFlags flags);
@@ -482,7 +484,9 @@ protected:
     virtual void ThrowIllegalNewLineErrorAfterThrow();
     virtual void ThrowIfVarDeclaration(VariableParsingFlags flags);
     virtual ir::Expression *ParsePrefixAssertionExpression();
-    virtual ir::Expression *ParseCoverParenthesizedExpressionAndArrowParameterList();
+    // NOLINTNEXTLINE(google-default-arguments)
+    virtual ir::Expression *ParseCoverParenthesizedExpressionAndArrowParameterList(
+        ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
     virtual void ThrowErrorIfStaticConstructor(ir::ModifierFlags flags);
     virtual std::tuple<bool, bool, bool> ParseComputedClassFieldOrIndexSignature(ir::Expression **prop_name);
     // NOLINTNEXTLINE(google-default-arguments)
