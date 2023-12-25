@@ -194,6 +194,13 @@ public:
     ETSStringType *CreateETSStringLiteralType(util::StringView value);
     ETSArrayType *CreateETSArrayType(Type *element_type);
     Type *CreateETSUnionType(ArenaVector<Type *> &&constituent_types);
+    template <class... Types>
+    Type *CreateETSUnionType(Types &&...types)
+    {
+        ArenaVector<Type *> constituent_types(Allocator()->Adapter());
+        (constituent_types.push_back(types), ...);
+        return CreateETSUnionType(std::move(constituent_types));
+    }
     ETSFunctionType *CreateETSFunctionType(Signature *signature);
     ETSFunctionType *CreateETSFunctionType(Signature *signature, util::StringView name);
     ETSFunctionType *CreateETSFunctionType(ir::ScriptFunction *func, Signature *signature, util::StringView name);
