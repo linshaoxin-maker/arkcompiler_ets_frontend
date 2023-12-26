@@ -143,6 +143,9 @@ void ETSBinder::ResolveReferenceForScope(ir::AstNode *const node, Scope *const s
     switch (node->Type()) {
         case ir::AstNodeType::IDENTIFIER: {
             auto *ident = node->AsIdentifier();
+            if (ident->Variable() != nullptr) {
+                break;
+            }
             if (auto const res = scope->Find(ident->Name(), ResolveBindingOptions::ALL); res.variable != nullptr) {
                 ident->SetVariable(res.variable);
             }
@@ -483,8 +486,9 @@ bool ETSBinder::AddImportNamespaceSpecifiersToTopBindings(ir::AstNode *const spe
 
     std::unordered_set<std::string> exported_names;
     for (auto item : ReExportImports()) {
-        if (import->ResolvedSource()->Str().Is(
-                item->GetProgramPath().Mutf8().substr(0, item->GetProgramPath().Mutf8().find_last_of('.')))) {
+        if (auto source = import->ResolvedSource()->Str().Mutf8(),
+            program = item->GetProgramPath().Mutf8().substr(0, item->GetProgramPath().Mutf8().find_last_of('.'));
+            source == program || (source + "/index") == program) {
             ir::StringLiteral dir_name(util::UString(util::StringView(item->GetProgramPath().Mutf8().substr(
                                                          0, item->GetProgramPath().Mutf8().find_last_of('/'))),
                                                      Allocator())
@@ -590,8 +594,9 @@ bool ETSBinder::AddImportSpecifiersToTopBindings(ir::AstNode *const specifier,
 
     if (var == nullptr) {
         for (auto item : ReExportImports()) {
-            if (import->ResolvedSource()->Str().Is(
-                    item->GetProgramPath().Mutf8().substr(0, item->GetProgramPath().Mutf8().find_last_of('.')))) {
+            if (auto source = import->ResolvedSource()->Str().Mutf8(),
+                program = item->GetProgramPath().Mutf8().substr(0, item->GetProgramPath().Mutf8().find_last_of('.'));
+                source == program || (source + "/index") == program) {
                 ir::StringLiteral dir_name(util::UString(util::StringView(item->GetProgramPath().Mutf8().substr(
                                                              0, item->GetProgramPath().Mutf8().find_last_of('/'))),
                                                          Allocator())
@@ -638,7 +643,22 @@ ArenaVector<parser::Program *> ETSBinder::GetExternalProgram(const util::StringV
     const auto &ext_records = global_record_table_.Program()->ExternalSources();
     auto record_res = [this, ext_records, source_name]() {
         auto res = ext_records.find(source_name);
-        return (res != ext_records.end()) ? res : ext_records.find(GetResolvedImportPath(source_name));
+
+        if (res != ext_records.end()) {
+            return res;
+        }
+
+        if (res = ext_records.find({source_name.Mutf8() + "/index"}); res != ext_records.end()) {
+            return res;
+        }
+
+        res = ext_records.find(GetResolvedImportPath(source_name));
+
+        if (res == ext_records.end()) {
+            res = ext_records.find(GetResolvedImportPath({source_name.Mutf8() + "/index"}));
+        }
+
+        return res;
     }();
     if (record_res == ext_records.end()) {
         ThrowError(import_path->Start(), "Cannot find import: " + std::string(source_name));
