@@ -67,6 +67,7 @@
 
 namespace panda::es2panda::checker {
 
+// NOTE: #14993 merge with InstantiationContext::ValidateTypeArg
 bool ETSChecker::IsCompatibleTypeArgument(ETSTypeParameter *type_param, Type *type_argument,
                                           const Substitution *substitution)
 {
@@ -76,21 +77,8 @@ bool ETSChecker::IsCompatibleTypeArgument(ETSTypeParameter *type_param, Type *ty
     if (!type_argument->IsETSTypeParameter() && !IsReferenceType(type_argument)) {
         return false;
     }
-    if (type_argument->IsETSUnionType()) {
-        auto const &constitutent = type_argument->AsETSUnionType()->ConstituentTypes();
-        return std::all_of(constitutent.begin(), constitutent.end(), [this, type_param, substitution](Type *type_arg) {
-            return IsCompatibleTypeArgument(type_param->AsETSTypeParameter(), type_arg, substitution);
-        });
-    }
-
-    if (auto *constraint = type_param->GetConstraintType(); constraint != nullptr) {
-        constraint = constraint->Substitute(Relation(), substitution);
-        constraint->IsSupertypeOf(Relation(), type_argument);
-        if (!Relation()->IsTrue()) {
-            return false;
-        }
-    }
-    return true;
+    auto *constraint = type_param->GetConstraintType()->Substitute(Relation(), substitution);
+    return Relation()->IsSupertypeOf(constraint, type_argument);
 }
 
 /* A very rough and imprecise partial type inference */
@@ -1056,9 +1044,9 @@ bool ETSChecker::IsOverridableIn(Signature *signature)
         return false;
     }
 
-    if (signature->HasSignatureFlag(SignatureFlags::PUBLIC)) {
-        return FindAncestorGivenByType(signature->Function(), ir::AstNodeType::TS_INTERFACE_DECLARATION) == nullptr ||
-               signature->HasSignatureFlag(SignatureFlags::STATIC);
+    // NOTE: #15095 workaround, separate internal visibility check
+    if (signature->HasSignatureFlag(SignatureFlags::PUBLIC | SignatureFlags::INTERNAL)) {
+        return true;
     }
 
     return signature->HasSignatureFlag(SignatureFlags::PROTECTED);
@@ -1080,7 +1068,6 @@ bool ETSChecker::IsMethodOverridesOther(Signature *target, Signature *source)
         if (Relation()->IsTrue()) {
             CheckThrowMarkers(source, target);
 
-            CheckStaticHide(target, source);
             if (source->HasSignatureFlag(SignatureFlags::STATIC)) {
                 return false;
             }
@@ -1199,7 +1186,8 @@ bool ETSChecker::CheckOverride(Signature *signature, ETSObjectType *site)
                 (it_subst->Function()->IsGetter() && !signature->Function()->IsGetter())) {
                 continue;
             }
-        } else if (!IsMethodOverridesOther(it_subst, signature)) {
+        }
+        if (!IsMethodOverridesOther(it_subst, signature)) {
             continue;
         }
 
@@ -2606,8 +2594,7 @@ bool ETSChecker::IsReturnTypeSubstitutable(Signature *const s1, Signature *const
     // - If R1 is a reference type then R1, adapted to the type parameters of d2 (link to generic methods), is a
     // subtype of R2.
     ASSERT(r1->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT) || r1->IsETSTypeParameter());
-    r2->IsSupertypeOf(Relation(), r1);
-    return Relation()->IsTrue();
+    return Relation()->IsSupertypeOf(r2, r1);
 }
 
 std::string ETSChecker::GetAsyncImplName(const util::StringView &name)

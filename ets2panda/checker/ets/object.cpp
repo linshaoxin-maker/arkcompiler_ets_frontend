@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "boxingConverter.h"
 #include "varbinder/variableFlags.h"
 #include "checker/ets/castingContext.h"
 #include "checker/types/ets/etsObjectType.h"
@@ -166,7 +167,7 @@ ArenaVector<ETSObjectType *> ETSChecker::GetInterfaces(ETSObjectType *type)
     return type->Interfaces();
 }
 
-ArenaVector<Type *> ETSChecker::CreateTypeForTypeParameters(ir::TSTypeParameterDeclaration *type_params)
+ArenaVector<Type *> ETSChecker::CreateTypeForTypeParameters(ir::TSTypeParameterDeclaration const *type_params)
 {
     ArenaVector<Type *> result {Allocator()->Adapter()};
     checker::ScopeContext scope_ctx(this, type_params->Scope());
@@ -248,12 +249,14 @@ void ETSChecker::SetUpTypeParameterConstraint(ir::TSTypeParameter *const param)
             ThrowTypeError("Extends constraint must be an object", param->Constraint()->Start());
         }
         param_type->SetConstraintType(constraint);
+    } else {
+        param_type->SetConstraintType(GlobalETSNullishObjectType());
     }
+
     if (param->DefaultType() != nullptr) {
         traverse_referenced(param->DefaultType());
-        auto *const dflt = param->DefaultType()->GetType(this);
         // NOTE: #14993 ensure default matches constraint
-        param_type->SetDefaultType(dflt);
+        param_type->SetDefaultType(MaybePromotedBuiltinType(param->DefaultType()->GetType(this)));
     }
 }
 
@@ -264,6 +267,8 @@ ETSTypeParameter *ETSChecker::SetUpParameterType(ir::TSTypeParameter *const para
     param_type->AddTypeFlag(TypeFlag::GENERIC);
     param_type->SetDeclNode(param);
     param_type->SetVariable(param->Variable());
+    // NOTE: #15026 recursive type parameter workaround
+    param_type->SetConstraintType(GlobalETSNullishObjectType());
 
     param->Name()->Variable()->SetTsType(param_type);
     return param_type;
@@ -1527,20 +1532,23 @@ Type *ETSChecker::FindLeastUpperBound(Type *source, Type *target)
 
 Type *ETSChecker::GetApparentType(Type *type)
 {
-    if (type->IsETSTypeParameter()) {
-        auto *const param = type->AsETSTypeParameter();
-        return param->HasConstraint() ? param->GetConstraintType() : param;
+    while (type->IsETSTypeParameter()) {
+        type = type->AsETSTypeParameter()->GetConstraintType();
     }
     return type;
 }
 
 Type const *ETSChecker::GetApparentType(Type const *type)
 {
-    if (type->IsETSTypeParameter()) {
-        auto *const param = type->AsETSTypeParameter();
-        return param->HasConstraint() ? param->GetConstraintType() : param;
+    while (type->IsETSTypeParameter()) {
+        type = type->AsETSTypeParameter()->GetConstraintType();
     }
     return type;
+}
+
+Type *ETSChecker::MaybePromotedBuiltinType(Type *type) const
+{
+    return type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) ? checker::BoxingConverter::ETSTypeFromSource(this, type) : type;
 }
 
 Type *ETSChecker::GetCommonClass(Type *source, Type *target)
@@ -1551,13 +1559,11 @@ Type *ETSChecker::GetCommonClass(Type *source, Type *target)
         return source;
     }
 
-    target->IsSupertypeOf(Relation(), source);
-    if (Relation()->IsTrue()) {
+    if (Relation()->IsSupertypeOf(target, source)) {
         return target;
     }
 
-    source->IsSupertypeOf(Relation(), target);
-    if (Relation()->IsTrue()) {
+    if (Relation()->IsSupertypeOf(source, target)) {
         return source;
     }
 
@@ -1590,8 +1596,7 @@ ETSObjectType *ETSChecker::GetClosestCommonAncestor(ETSObjectType *source, ETSOb
     auto *source_base = GetOriginalBaseType(source);
     auto *source_type = source_base == nullptr ? source : source_base;
 
-    target_type->IsSupertypeOf(Relation(), source_type);
-    if (Relation()->IsTrue()) {
+    if (Relation()->IsSupertypeOf(target_type, source_type)) {
         // NOTE: TorokG. Extending the search to find intersection types
         return target_type;
     }
