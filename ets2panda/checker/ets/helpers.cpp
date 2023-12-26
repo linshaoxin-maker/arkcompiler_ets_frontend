@@ -2614,6 +2614,19 @@ void ETSChecker::ModifyPreferredType(ir::ArrayExpression *const array_expr, Type
     }
 }
 
+std::string GenerateImplicitInstantiateArg(varbinder::LocalVariable *instantiate_method, const std::string &class_name)
+{
+    auto call_signatures = instantiate_method->TsType()->AsETSFunctionType()->CallSignatures();
+    ASSERT(!call_signatures.empty());
+    auto method_owner = std::string(call_signatures[0]->Owner()->Name());
+    std::string implicit_instantiate_argument = "()=>{return new " + class_name + "()";
+    if (method_owner != class_name) {
+        implicit_instantiate_argument.append(" as " + method_owner);
+    }
+    implicit_instantiate_argument.append("}");
+    return implicit_instantiate_argument;
+}
+
 bool ETSChecker::TryTransformingToStaticInvoke(ir::Identifier *const ident, const Type *resolved_type)
 {
     ASSERT(ident->Parent()->IsCallExpression());
@@ -2657,7 +2670,8 @@ bool ETSChecker::TryTransformingToStaticInvoke(ir::Identifier *const ident, cons
     call_expr->SetCallee(transformed_callee);
 
     if (instantiate_method != nullptr) {
-        std::string implicit_instantiate_argument = "()=>{return new " + std::string(class_name) + "()}";
+        std::string implicit_instantiate_argument =
+            GenerateImplicitInstantiateArg(instantiate_method, std::string(class_name));
 
         parser::Program program(Allocator(), VarBinder());
         es2panda::CompilerOptions options;
