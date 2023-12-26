@@ -58,7 +58,7 @@ void PandaGen::SetFunctionKind()
     }
 
     auto *func = rootNode_->AsScriptFunction();
-    if (func->IsConcurrent()) {
+    if (func->IsConcurrent() && !func->IsConstructor()) {
         funcKind_ = panda::panda_file::FunctionKind::CONCURRENT_FUNCTION;
         return;
     }
