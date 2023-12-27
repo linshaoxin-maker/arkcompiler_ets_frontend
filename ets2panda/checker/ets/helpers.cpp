@@ -77,11 +77,15 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
     checker::Type *type = expr->Check(this);
     auto *unboxed_type = ETSBuiltinTypeAsConditionalType(type);
 
+    if (unboxed_type == nullptr) {
+        ThrowTypeError("Condition must be of possible condition type", expr->Start());
+    }
+
     if (unboxed_type == GlobalBuiltinVoidType() || unboxed_type->IsETSVoidType()) {
         ThrowTypeError("An expression of type 'void' cannot be tested for truthiness", expr->Start());
     }
 
-    if (unboxed_type != nullptr && !unboxed_type->IsConditionalExprType()) {
+    if (!unboxed_type->IsConditionalExprType()) {
         ThrowTypeError("Condition must be of possible condition type", expr->Start());
     }
 
@@ -153,7 +157,7 @@ Type *ETSChecker::CreateOptionalResultType(Type *type)
     if (type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
         type = PrimitiveTypeAsETSBuiltinType(type);
         ASSERT(type->IsETSObjectType());
-        Relation()->GetNode()->AddBoxingUnboxingFlag(GetBoxingFlag(type));
+        Relation()->GetNode()->AddBoxingUnboxingFlags(GetBoxingFlag(type));
     }
 
     return CreateNullishType(type, checker::TypeFlag::UNDEFINED, Allocator(), Relation(), GetGlobalTypesHolder());
@@ -628,7 +632,7 @@ Type *ETSChecker::ResolveIdentifier(ir::Identifier *const ident)
     SaveCapturedVariable(resolved, ident->Start());
 
     ident->SetVariable(resolved);
-    return resolved->TsType();
+    return GetTypeOfVariable(resolved);
 }
 
 void ETSChecker::ValidateUnaryOperatorOperand(varbinder::Variable *variable)
@@ -778,16 +782,27 @@ bool ETSChecker::IsNullLikeOrVoidExpression(const ir::Expression *expr) const
     return expr->TsType()->IsETSNullLike() || expr->TsType()->IsETSVoidType();
 }
 
+std::tuple<bool, bool> ETSChecker::IsResolvedAndValue(const ir::Expression *expr, Type *type) const
+{
+    auto [is_resolve, is_value] =
+        IsNullLikeOrVoidExpression(expr) ? std::make_tuple(true, false) : type->ResolveConditionExpr();
+
+    const Type *ts_type = expr->TsType();
+    if (!ts_type->ContainsUndefined() && !ts_type->ContainsNull() && !ts_type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+        is_resolve = true;
+        is_value = true;
+    }
+    return std::make_tuple(is_resolve, is_value);
+}
+
 Type *ETSChecker::HandleBooleanLogicalOperatorsExtended(Type *left_type, Type *right_type, ir::BinaryExpression *expr)
 {
     ASSERT(left_type->IsConditionalExprType() && right_type->IsConditionalExprType());
 
-    auto [resolve_left, left_value] =
-        IsNullLikeOrVoidExpression(expr->Left()) ? std::make_tuple(true, false) : left_type->ResolveConditionExpr();
-    auto [resolve_right, right_value] =
-        IsNullLikeOrVoidExpression(expr->Right()) ? std::make_tuple(true, false) : right_type->ResolveConditionExpr();
+    auto [resolve_left, left_value] = IsResolvedAndValue(expr->Left(), left_type);
+    auto [resolve_right, right_value] = IsResolvedAndValue(expr->Right(), right_type);
 
-    if (!resolve_left) {
+    if (!resolve_left && !resolve_right) {
         if (IsTypeIdenticalTo(left_type, right_type)) {
             return left_type;
         }
@@ -874,7 +889,7 @@ void ETSChecker::ResolveReturnStatement(checker::Type *func_return_type, checker
             if (argument_type == nullptr) {
                 ThrowTypeError("Invalid return statement expression", st->Argument()->Start());
             }
-            st->Argument()->AddBoxingUnboxingFlag(GetBoxingFlag(argument_type));
+            st->Argument()->AddBoxingUnboxingFlags(GetBoxingFlag(argument_type));
         }
 
         if (!func_return_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
@@ -1192,6 +1207,13 @@ void ETSChecker::SetPropertiesForModuleObject(checker::ETSObjectType *module_obj
     }
 
     for (auto [_, var] : res->second.front()->GlobalClassScope()->InstanceDeclScope()->Bindings()) {
+        (void)_;
+        if (var->AsLocalVariable()->Declaration()->Node()->IsExported()) {
+            module_obj_type->AddProperty<checker::PropertyType::STATIC_DECL>(var->AsLocalVariable());
+        }
+    }
+
+    for (auto [_, var] : res->second.front()->GlobalClassScope()->TypeAliasScope()->Bindings()) {
         (void)_;
         if (var->AsLocalVariable()->Declaration()->Node()->IsExported()) {
             module_obj_type->AddProperty<checker::PropertyType::STATIC_DECL>(var->AsLocalVariable());
@@ -1583,18 +1605,22 @@ Type *ETSChecker::PrimitiveTypeAsETSBuiltinType(Type *object_type)
     auto saved_result = Relation()->IsTrue();
     Relation()->Result(false);
 
+    if (Checker::GetGlobalTypesHolder()->GlobalIntegerBuiltinType() == nullptr) {
+        InitializeBuiltin(VarBinder()->TopScope()->Bindings().find("Int")->second, "Int");
+    }
+
     BoxingConverter converter = BoxingConverter(AsETSChecker(), Relation(), object_type,
                                                 Checker::GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
     Relation()->Result(saved_result);
     return converter.Result();
 }
 
-void ETSChecker::AddBoxingUnboxingFlagToNode(ir::AstNode *node, Type *boxing_unboxing_type)
+void ETSChecker::AddBoxingUnboxingFlagsToNode(ir::AstNode *node, Type *boxing_unboxing_type)
 {
     if (boxing_unboxing_type->IsETSObjectType()) {
-        node->AddBoxingUnboxingFlag(GetBoxingFlag(boxing_unboxing_type));
+        node->AddBoxingUnboxingFlags(GetBoxingFlag(boxing_unboxing_type));
     } else {
-        node->AddBoxingUnboxingFlag(GetUnboxingFlag(boxing_unboxing_type));
+        node->AddBoxingUnboxingFlags(GetUnboxingFlag(boxing_unboxing_type));
     }
 }
 
@@ -1844,7 +1870,7 @@ void ETSChecker::AddBoxingFlagToPrimitiveType(TypeRelation *relation, Type *targ
 {
     auto boxing_result = PrimitiveTypeAsETSBuiltinType(target);
     if (boxing_result != nullptr) {
-        relation->GetNode()->AddBoxingUnboxingFlag(GetBoxingFlag(boxing_result));
+        relation->GetNode()->AddBoxingUnboxingFlags(GetBoxingFlag(boxing_result));
         relation->Result(true);
     }
 }
@@ -1853,7 +1879,7 @@ void ETSChecker::AddUnboxingFlagToPrimitiveType(TypeRelation *relation, Type *so
 {
     auto unboxing_result = UnboxingConverter(this, relation, source, self).Result();
     if ((unboxing_result != nullptr) && relation->IsTrue()) {
-        relation->GetNode()->AddBoxingUnboxingFlag(GetUnboxingFlag(unboxing_result));
+        relation->GetNode()->AddBoxingUnboxingFlags(GetUnboxingFlag(unboxing_result));
     }
 }
 
@@ -1882,7 +1908,7 @@ void ETSChecker::CheckUnboxedTypesAssignable(TypeRelation *relation, Type *sourc
     }
     relation->IsAssignableTo(unboxed_source_type, unboxed_target_type);
     if (relation->IsTrue()) {
-        relation->GetNode()->AddBoxingUnboxingFlag(
+        relation->GetNode()->AddBoxingUnboxingFlags(
             relation->GetChecker()->AsETSChecker()->GetUnboxingFlag(unboxed_source_type));
     }
 }
@@ -1926,7 +1952,7 @@ void ETSChecker::CheckUnboxedSourceTypeWithWideningAssignable(TypeRelation *rela
         relation->GetChecker()->AsETSChecker()->CheckUnboxedTypeWidenable(relation, target, unboxed_source_type);
     }
     if (!relation->OnlyCheckBoxingUnboxing()) {
-        relation->GetNode()->AddBoxingUnboxingFlag(
+        relation->GetNode()->AddBoxingUnboxingFlags(
             relation->GetChecker()->AsETSChecker()->GetUnboxingFlag(unboxed_source_type));
     }
 }
@@ -2093,6 +2119,14 @@ static void TypeToString(std::stringstream &ss, Type *tp)
         }
         ss << ">";
     }
+
+    if (tp->ContainsNull()) {
+        ss << "|null";
+    }
+
+    if (tp->ContainsUndefined()) {
+        ss << "|undefined";
+    }
 }
 
 util::StringView ETSChecker::GetHashFromTypeArguments(const ArenaVector<Type *> &type_arg_types)
@@ -2176,21 +2210,22 @@ void ETSChecker::CheckNumberOfTypeArguments(Type *const type, ir::TSTypeParamete
                                             ir::TSTypeParameterInstantiation *const type_args,
                                             const lexer::SourcePosition &pos)
 {
-    if (type_param_decl != nullptr && type_args == nullptr) {
+    if (type_param_decl == nullptr) {
+        if (type_args != nullptr) {
+            ThrowTypeError({"Type '", type, "' is not generic."}, pos);
+        } else {
+            return;
+        }
+    }
+
+    size_t minimum_type_args =
+        std::count_if(type_param_decl->Params().begin(), type_param_decl->Params().end(),
+                      [](ir::TSTypeParameter *param) { return param->DefaultType() == nullptr; });
+    if (type_args == nullptr && minimum_type_args > 0) {
         ThrowTypeError({"Type '", type, "' is generic but type argument were not provided."}, pos);
-    }
-
-    if (type_param_decl == nullptr && type_args != nullptr) {
-        ThrowTypeError({"Type '", type, "' is not generic."}, pos);
-    }
-
-    if (type_args == nullptr) {
-        return;
-    }
-
-    ASSERT(type_param_decl != nullptr && type_args != nullptr);
-    if (type_param_decl->Params().size() != type_args->Params().size()) {
-        ThrowTypeError({"Type '", type, "' has ", type_param_decl->Params().size(), " number of type parameters, but ",
+    } else if (type_args != nullptr && ((minimum_type_args > type_args->Params().size()) ||
+                                        (type_param_decl->Params().size() < type_args->Params().size()))) {
+        ThrowTypeError({"Type '", type, "' has ", minimum_type_args, " number of type parameters, but ",
                         type_args->Params().size(), " type arguments were provided."},
                        pos);
     }

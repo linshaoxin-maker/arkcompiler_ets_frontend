@@ -23,6 +23,7 @@
 #include "compiler/core/ETSGen.h"
 #include "compiler/core/switchBuilder.h"
 #include "compiler/function/functionBuilder.h"
+
 namespace panda::es2panda::compiler {
 
 ETSGen *ETSCompiler::GetETSGen() const
@@ -221,6 +222,31 @@ void ETSCompiler::Compile(const ir::ETSNewArrayInstanceExpression *expr) const
     compiler::VReg dim = etsg->AllocReg();
     etsg->ApplyConversionAndStoreAccumulator(expr, dim, expr->dimension_->TsType());
     etsg->NewArray(expr, arr, dim, expr->TsType());
+
+    if (expr->default_constructor_signature_ != nullptr) {
+        compiler::VReg count_reg = etsg->AllocReg();
+        auto *start_label = etsg->AllocLabel();
+        auto *end_label = etsg->AllocLabel();
+        etsg->MoveImmediateToRegister(expr, count_reg, checker::TypeFlag::INT, static_cast<std::int32_t>(0));
+        const auto index_reg = etsg->AllocReg();
+
+        etsg->SetLabel(expr, start_label);
+        etsg->LoadAccumulator(expr, dim);
+        etsg->JumpCompareRegister<compiler::Jle>(expr, count_reg, end_label);
+
+        etsg->LoadAccumulator(expr, count_reg);
+        etsg->StoreAccumulator(expr, index_reg);
+        const compiler::TargetTypeContext ttctx2(etsg, expr->type_reference_->TsType());
+        ArenaVector<ir::Expression *> arguments(expr->allocator_->Adapter());
+        etsg->InitObject(expr, expr->default_constructor_signature_, arguments);
+        etsg->StoreArrayElement(expr, arr, index_reg, expr->type_reference_->TsType());
+
+        etsg->IncrementImmediateRegister(expr, count_reg, checker::TypeFlag::INT, static_cast<std::int32_t>(1));
+        etsg->JumpTo(expr, start_label);
+
+        etsg->SetLabel(expr, end_label);
+    }
+
     etsg->SetVRegType(arr, expr->TsType());
     etsg->LoadAccumulator(expr, arr);
 }
@@ -1678,9 +1704,61 @@ void ETSCompiler::Compile(const ir::TSAsExpression *expr) const
         expr->Expr()->Compile(etsg);
     }
 
-    etsg->ApplyConversion(expr->Expr(), nullptr);
-
     auto *target_type = expr->TsType();
+
+    if ((expr->Expr()->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::UNBOXING_FLAG) != 0U) {
+        etsg->ApplyUnboxingConversion(expr->Expr());
+    }
+
+    if (target_type->IsETSObjectType() &&
+        ((expr->Expr()->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::UNBOXING_FLAG) != 0U ||
+         (expr->Expr()->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG) != 0U) &&
+        checker::ETSChecker::TypeKind(etsg->GetAccumulatorType()) != checker::TypeFlag::ETS_OBJECT) {
+        if (target_type->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::UNBOXABLE_TYPE)) {
+            switch (target_type->AsETSObjectType()->BuiltInKind()) {
+                case checker::ETSObjectFlags::BUILTIN_BOOLEAN: {
+                    etsg->CastToBoolean(expr);
+                    break;
+                }
+                case checker::ETSObjectFlags::BUILTIN_BYTE: {
+                    etsg->CastToChar(expr);
+                    break;
+                }
+                case checker::ETSObjectFlags::BUILTIN_CHAR: {
+                    etsg->CastToByte(expr);
+                    break;
+                }
+                case checker::ETSObjectFlags::BUILTIN_SHORT: {
+                    etsg->CastToShort(expr);
+                    break;
+                }
+                case checker::ETSObjectFlags::BUILTIN_INT: {
+                    etsg->CastToInt(expr);
+                    break;
+                }
+                case checker::ETSObjectFlags::BUILTIN_LONG: {
+                    etsg->CastToLong(expr);
+                    break;
+                }
+                case checker::ETSObjectFlags::BUILTIN_FLOAT: {
+                    etsg->CastToFloat(expr);
+                    break;
+                }
+                case checker::ETSObjectFlags::BUILTIN_DOUBLE: {
+                    etsg->CastToDouble(expr);
+                    break;
+                }
+                default: {
+                    UNREACHABLE();
+                }
+            }
+        }
+    }
+
+    if ((expr->Expr()->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG) != 0U) {
+        etsg->ApplyBoxingConversion(expr->Expr());
+    }
+
     if (target_type->IsETSUnionType()) {
         target_type = target_type->AsETSUnionType()->FindTypeIsCastableToThis(
             expr->expression_, etsg->Checker()->Relation(), expr->expression_->TsType());

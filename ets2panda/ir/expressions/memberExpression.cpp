@@ -19,6 +19,8 @@
 #include "checker/ets/castingContext.h"
 #include "compiler/core/ETSGen.h"
 #include "compiler/core/pandagen.h"
+#include "ir/astDump.h"
+#include "ir/srcDump.h"
 
 namespace panda::es2panda::ir {
 MemberExpression::MemberExpression([[maybe_unused]] Tag const tag, MemberExpression const &other,
@@ -60,6 +62,29 @@ void MemberExpression::Dump(ir::AstDumper *dumper) const
                  {"property", property_},
                  {"computed", computed_},
                  {"optional", IsOptional()}});
+}
+
+void MemberExpression::Dump(ir::SrcDumper *dumper) const
+{
+    ASSERT(object_ != nullptr);
+    ASSERT(property_ != nullptr);
+
+    object_->Dump(dumper);
+    if (IsOptional()) {
+        dumper->Add("?");
+    }
+    if ((MemberExpressionKind::ELEMENT_ACCESS & kind_) != 0U) {
+        dumper->Add("[");
+        property_->Dump(dumper);
+        dumper->Add("]");
+    } else {
+        dumper->Add(".");
+        property_->Dump(dumper);
+    }
+    if ((parent_ != nullptr) && (parent_->IsBlockStatement() || parent_->IsBlockExpression())) {
+        dumper->Add(";");
+        dumper->Endl();
+    }
 }
 
 void MemberExpression::LoadRhs(compiler::PandaGen *pg) const
@@ -205,7 +230,9 @@ void MemberExpression::CheckArrayIndexValue(checker::ETSChecker *checker) const
 {
     std::size_t index;
 
-    if (auto const &number = property_->AsNumberLiteral()->Number(); number.IsInteger()) {
+    auto const &number = property_->AsNumberLiteral()->Number();
+
+    if (number.IsInteger()) {
         auto const value = number.GetLong();
         if (value < 0) {
             checker->ThrowTypeError("Index value cannot be less than zero.", property_->Start());
@@ -220,6 +247,10 @@ void MemberExpression::CheckArrayIndexValue(checker::ETSChecker *checker) const
         index = static_cast<std::size_t>(value);
     } else {
         UNREACHABLE();
+    }
+
+    if (object_->IsArrayExpression() && object_->AsArrayExpression()->Elements().size() <= index) {
+        checker->ThrowTypeError("Index value cannot be greater than or equal to the array size.", property_->Start());
     }
 
     if (object_->IsIdentifier() &&
@@ -267,7 +298,8 @@ checker::Type *MemberExpression::CheckIndexAccessMethod(checker::ETSChecker *che
     if (signature == nullptr) {
         checker->ThrowTypeError("Cannot find index access method with the required signature.", Property()->Start());
     }
-    checker->ValidateSignatureAccessibility(obj_type_, signature, Start(), "Index access method is not visible here.");
+    checker->ValidateSignatureAccessibility(obj_type_, nullptr, signature, Start(),
+                                            "Index access method is not visible here.");
 
     ASSERT(signature->Function() != nullptr);
 
@@ -334,6 +366,11 @@ checker::Type *MemberExpression::CheckComputed(checker::ETSChecker *checker, che
         if (base_type->IsETSArrayType()) {
             if (base_type->IsETSTupleType()) {
                 return CheckTupleAccessMethod(checker, base_type);
+            }
+
+            if (object_->IsArrayExpression() && property_->IsNumberLiteral()) {
+                auto const number = property_->AsNumberLiteral()->Number().GetLong();
+                return object_->AsArrayExpression()->Elements()[number]->Check(checker);
             }
 
             return base_type->AsETSArrayType()->ElementType();

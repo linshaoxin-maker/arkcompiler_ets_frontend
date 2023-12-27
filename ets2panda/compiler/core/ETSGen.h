@@ -412,6 +412,8 @@ public:
 
     void LoadAccumulatorDynamicModule(const ir::AstNode *node, const ir::ETSImportDeclaration *import);
 
+    void ApplyBoxingConversion(const ir::AstNode *node);
+    void ApplyUnboxingConversion(const ir::AstNode *node);
     void ApplyConversion(const ir::AstNode *node)
     {
         if (target_type_ != nullptr) {
@@ -653,6 +655,8 @@ private:
     const VReg dummy_reg_ = VReg::RegStart();
 
     void EmitIsInstanceNonNullish(const ir::AstNode *node, VReg obj_reg, checker::ETSObjectType const *cls_type);
+    void EmitUnboxedCall(const ir::AstNode *node, std::string_view signature_flag, const checker::Type *target_type,
+                         const checker::Type *boxed_type);
 
     void StringBuilderAppend(const ir::AstNode *node, VReg builder);
     void AppendString(const ir::Expression *bin_expr, VReg builder);

@@ -862,6 +862,10 @@ void ETSChecker::CheckConstFieldInitialized(const ETSObjectType *class_type, var
 {
     const bool class_var_static = class_var->Declaration()->Node()->AsClassProperty()->IsStatic();
     for (const auto &prop : class_type->Methods()) {
+        if (!prop->TsType()->IsETSFunctionType()) {
+            continue;
+        }
+
         const auto &call_sigs = prop->TsType()->AsETSFunctionType()->CallSignatures();
         for (const auto *signature : call_sigs) {
             if ((signature->Function()->IsConstructor() && !class_var_static) ||
@@ -941,7 +945,7 @@ void ETSChecker::ValidateArrayIndex(ir::Expression *const expr, bool relaxed)
     Type const *const index_type = ApplyUnaryOperatorPromotion(expression_type);
 
     if (expression_type->IsETSObjectType() && (unboxed_expression_type != nullptr)) {
-        expr->AddBoxingUnboxingFlag(GetUnboxingFlag(unboxed_expression_type));
+        expr->AddBoxingUnboxingFlags(GetUnboxingFlag(unboxed_expression_type));
     }
 
     if (relaxed && index_type != nullptr && index_type->HasTypeFlag(TypeFlag::ETS_FLOATING_POINT)) {
@@ -1040,7 +1044,7 @@ ETSObjectType *ETSChecker::CheckThisOrSuperAccess(ir::Expression *node, ETSObjec
         ThrowTypeError({"'", msg, "' cannot be referenced from a static context"}, node->Start());
     }
 
-    if (class_type->GetDeclNode()->AsClassDefinition()->IsGlobal()) {
+    if (class_type->GetDeclNode()->IsClassDefinition() && class_type->GetDeclNode()->AsClassDefinition()->IsGlobal()) {
         ThrowTypeError({"Cannot reference '", msg, "' in this context."}, node->Start());
     }
 
@@ -1147,6 +1151,73 @@ varbinder::Variable *ETSChecker::ResolveInstanceExtension(const ir::MemberExpres
     return global_function_var;
 }
 
+PropertySearchFlags ETSChecker::GetSearchFlags(const ir::MemberExpression *const member_expr)
+{
+    constexpr auto FUNCTIONAL_FLAGS = PropertySearchFlags::SEARCH_METHOD | PropertySearchFlags::IS_FUNCTIONAL;
+    constexpr auto GETTER_FLAGS = PropertySearchFlags::SEARCH_METHOD | PropertySearchFlags::IS_GETTER;
+    constexpr auto SETTER_FLAGS = PropertySearchFlags::SEARCH_METHOD | PropertySearchFlags::IS_SETTER;
+
+    switch (member_expr->Parent()->Type()) {
+        case ir::AstNodeType::CALL_EXPRESSION: {
+            if (member_expr->Parent()->AsCallExpression()->Callee() == member_expr) {
+                return FUNCTIONAL_FLAGS;
+            }
+
+            break;
+        }
+        case ir::AstNodeType::ETS_NEW_CLASS_INSTANCE_EXPRESSION: {
+            if (member_expr->Parent()->AsETSNewClassInstanceExpression()->GetTypeRef() == member_expr) {
+                return PropertySearchFlags::SEARCH_DECL;
+            }
+
+            break;
+        }
+        case ir::AstNodeType::MEMBER_EXPRESSION: {
+            return PropertySearchFlags::SEARCH_FIELD | PropertySearchFlags::SEARCH_DECL | GETTER_FLAGS;
+        }
+        case ir::AstNodeType::UPDATE_EXPRESSION:
+        case ir::AstNodeType::UNARY_EXPRESSION:
+        case ir::AstNodeType::BINARY_EXPRESSION: {
+            return PropertySearchFlags::SEARCH_FIELD | GETTER_FLAGS;
+        }
+        case ir::AstNodeType::ASSIGNMENT_EXPRESSION: {
+            const auto *const assignment_expr = member_expr->Parent()->AsAssignmentExpression();
+
+            if (assignment_expr->Left() == member_expr) {
+                if (assignment_expr->OperatorType() == lexer::TokenType::PUNCTUATOR_SUBSTITUTION) {
+                    return PropertySearchFlags::SEARCH_FIELD | SETTER_FLAGS;
+                }
+                return PropertySearchFlags::SEARCH_FIELD | GETTER_FLAGS | SETTER_FLAGS;
+            }
+
+            auto const *target_type = assignment_expr->Left()->TsType();
+
+            if (target_type->IsETSObjectType() &&
+                target_type->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
+                return FUNCTIONAL_FLAGS;
+            }
+
+            return PropertySearchFlags::SEARCH_FIELD | GETTER_FLAGS;
+        }
+        default: {
+            break;
+        }
+    }
+
+    return PropertySearchFlags::SEARCH_FIELD | FUNCTIONAL_FLAGS | GETTER_FLAGS;
+}
+
+const varbinder::Variable *ETSChecker::GetTargetRef(const ir::MemberExpression *const member_expr)
+{
+    if (member_expr->Object()->IsIdentifier()) {
+        return member_expr->Object()->AsIdentifier()->Variable();
+    }
+    if (member_expr->Object()->IsMemberExpression()) {
+        return member_expr->Object()->AsMemberExpression()->PropVar();
+    }
+    return nullptr;
+}
+
 // NOLINTNEXTLINE(readability-function-size)
 std::vector<ResolveResult *> ETSChecker::ResolveMemberReference(const ir::MemberExpression *const member_expr,
                                                                 const ETSObjectType *const target)
@@ -1160,72 +1231,10 @@ std::vector<ResolveResult *> ETSChecker::ResolveMemberReference(const ir::Member
         return resolve_res;
     }
 
-    auto search_flag = [member_expr]() -> PropertySearchFlags {
-        constexpr auto FUNCTIONAL_FLAGS = PropertySearchFlags::SEARCH_METHOD | PropertySearchFlags::IS_FUNCTIONAL;
-        constexpr auto GETTER_FLAGS = PropertySearchFlags::SEARCH_METHOD | PropertySearchFlags::IS_GETTER;
-        constexpr auto SETTER_FLAGS = PropertySearchFlags::SEARCH_METHOD | PropertySearchFlags::IS_SETTER;
-
-        switch (member_expr->Parent()->Type()) {
-            case ir::AstNodeType::CALL_EXPRESSION: {
-                if (member_expr->Parent()->AsCallExpression()->Callee() == member_expr) {
-                    return FUNCTIONAL_FLAGS;
-                }
-
-                break;
-            }
-            case ir::AstNodeType::ETS_NEW_CLASS_INSTANCE_EXPRESSION: {
-                if (member_expr->Parent()->AsETSNewClassInstanceExpression()->GetTypeRef() == member_expr) {
-                    return PropertySearchFlags::SEARCH_DECL;
-                }
-
-                break;
-            }
-            case ir::AstNodeType::MEMBER_EXPRESSION: {
-                return PropertySearchFlags::SEARCH_FIELD | PropertySearchFlags::SEARCH_DECL | GETTER_FLAGS;
-            }
-            case ir::AstNodeType::UPDATE_EXPRESSION:
-            case ir::AstNodeType::UNARY_EXPRESSION:
-            case ir::AstNodeType::BINARY_EXPRESSION: {
-                return PropertySearchFlags::SEARCH_FIELD | GETTER_FLAGS;
-            }
-            case ir::AstNodeType::ASSIGNMENT_EXPRESSION: {
-                const auto *const assignment_expr = member_expr->Parent()->AsAssignmentExpression();
-
-                if (assignment_expr->Left() == member_expr) {
-                    if (assignment_expr->OperatorType() == lexer::TokenType::PUNCTUATOR_SUBSTITUTION) {
-                        return PropertySearchFlags::SEARCH_FIELD | SETTER_FLAGS;
-                    }
-                    return PropertySearchFlags::SEARCH_FIELD | GETTER_FLAGS | SETTER_FLAGS;
-                }
-
-                auto const *target_type = assignment_expr->Left()->TsType();
-
-                if (target_type->IsETSObjectType() &&
-                    target_type->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
-                    return FUNCTIONAL_FLAGS;
-                }
-
-                return PropertySearchFlags::SEARCH_FIELD | GETTER_FLAGS;
-            }
-            default: {
-                break;
-            }
-        }
-
-        return PropertySearchFlags::SEARCH_FIELD | FUNCTIONAL_FLAGS | GETTER_FLAGS;
-    }();
+    auto search_flag = GetSearchFlags(member_expr);
     search_flag |= PropertySearchFlags::SEARCH_IN_BASE | PropertySearchFlags::SEARCH_IN_INTERFACES;
 
-    const auto *const target_ref = [member_expr]() -> const varbinder::Variable * {
-        if (member_expr->Object()->IsIdentifier()) {
-            return member_expr->Object()->AsIdentifier()->Variable();
-        }
-        if (member_expr->Object()->IsMemberExpression()) {
-            return member_expr->Object()->AsMemberExpression()->PropVar();
-        }
-        return nullptr;
-    }();
-
+    const auto *const target_ref = GetTargetRef(member_expr);
     if (target_ref != nullptr && target_ref->HasFlag(varbinder::VariableFlags::CLASS_OR_INTERFACE)) {
         search_flag &= ~(PropertySearchFlags::SEARCH_INSTANCE);
     } else if (member_expr->Object()->IsThisExpression() ||
@@ -1285,19 +1294,21 @@ std::vector<ResolveResult *> ETSChecker::ResolveMemberReference(const ir::Member
         ASSERT((prop_type->FindSetter() != nullptr) == prop_type->HasTypeFlag(TypeFlag::SETTER));
 
         auto const &source_pos = member_expr->Property()->Start();
+        auto call_expr =
+            member_expr->Parent()->IsCallExpression() ? member_expr->Parent()->AsCallExpression() : nullptr;
 
         if ((search_flag & PropertySearchFlags::IS_GETTER) != 0) {
             if (!prop_type->HasTypeFlag(TypeFlag::GETTER)) {
                 ThrowTypeError("Cannot read from this property because it is writeonly.", source_pos);
             }
-            ValidateSignatureAccessibility(member_expr->ObjType(), prop_type->FindGetter(), source_pos);
+            ValidateSignatureAccessibility(member_expr->ObjType(), call_expr, prop_type->FindGetter(), source_pos);
         }
 
         if ((search_flag & PropertySearchFlags::IS_SETTER) != 0) {
             if (!prop_type->HasTypeFlag(TypeFlag::SETTER)) {
                 ThrowTypeError("Cannot assign to this property because it is readonly.", source_pos);
             }
-            ValidateSignatureAccessibility(member_expr->ObjType(), prop_type->FindSetter(), source_pos);
+            ValidateSignatureAccessibility(member_expr->ObjType(), call_expr, prop_type->FindSetter(), source_pos);
         }
     }
 

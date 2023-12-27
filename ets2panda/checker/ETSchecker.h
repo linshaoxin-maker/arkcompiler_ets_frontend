@@ -120,6 +120,7 @@ public:
     const GlobalArraySignatureMap &GlobalArrayTypes() const;
 
     void InitializeBuiltins(varbinder::ETSBinder *varbinder);
+    void InitializeBuiltin(varbinder::Variable *var, const util::StringView &name);
     bool StartChecker([[maybe_unused]] varbinder::VarBinder *varbinder, const CompilerOptions &options) override;
     Type *CheckTypeCached(ir::Expression *expr) override;
     void ResolveStructuredTypeMembers([[maybe_unused]] Type *type) override {}
@@ -279,6 +280,10 @@ public:
     void EnhanceSubstitutionForType(const ArenaVector<Type *> &type_params, Type *param_type, Type *argument_type,
                                     Substitution *substitution,
                                     ArenaUnorderedSet<ETSObjectType *> *instantiated_type_params);
+    Signature *ValidateParameterlessConstructor(Signature *signature, const lexer::SourcePosition &pos,
+                                                TypeRelationFlag flags);
+    Signature *CollectParameterlessConstructor(ArenaVector<Signature *> &signatures, const lexer::SourcePosition &pos,
+                                               TypeRelationFlag resolve_flags = TypeRelationFlag::NONE);
     Signature *ValidateSignature(Signature *signature, const ir::TSTypeParameterInstantiation *type_arguments,
                                  const ArenaVector<ir::Expression *> &arguments, const lexer::SourcePosition &pos,
                                  TypeRelationFlag initial_flags, const std::vector<bool> &arg_type_inference_required);
@@ -326,7 +331,8 @@ public:
     [[nodiscard]] bool IsReturnTypeSubstitutable(Signature *s1, Signature *s2);
     void CheckStaticHide(Signature *target, Signature *source);
     void CheckThrowMarkers(Signature *source, Signature *target);
-    void ValidateSignatureAccessibility(ETSObjectType *callee, Signature *signature, const lexer::SourcePosition &pos,
+    void ValidateSignatureAccessibility(ETSObjectType *callee, const ir::CallExpression *call_expr,
+                                        Signature *signature, const lexer::SourcePosition &pos,
                                         char const *error_message = nullptr);
     void CreateLambdaObjectForLambdaReference(ir::ArrowFunctionExpression *lambda, ETSObjectType *functional_interface);
     ir::ClassProperty *CreateLambdaCapturedField(const varbinder::Variable *captured_var, varbinder::ClassScope *scope,
@@ -451,7 +457,7 @@ public:
     Type *ETSBuiltinTypeAsPrimitiveType(Type *object_type);
     Type *ETSBuiltinTypeAsConditionalType(Type *object_type);
     Type *PrimitiveTypeAsETSBuiltinType(Type *object_type);
-    void AddBoxingUnboxingFlagToNode(ir::AstNode *node, Type *boxing_unboxing_type);
+    void AddBoxingUnboxingFlagsToNode(ir::AstNode *node, Type *boxing_unboxing_type);
     ir::BoxingUnboxingFlags GetBoxingFlag(Type *boxing_type);
     ir::BoxingUnboxingFlags GetUnboxingFlag(Type const *unboxing_type) const;
     Type *MaybeBoxedType(const varbinder::Variable *var, ArenaAllocator *allocator) const;
@@ -577,6 +583,9 @@ private:
     void ValidatePropertyOrDeclaratorIdentifier(ir::Identifier *ident, varbinder::Variable *resolved);
     void ValidateAssignmentIdentifier(ir::Identifier *ident, varbinder::Variable *resolved, Type *type);
     bool ValidateBinaryExpressionIdentifier(ir::Identifier *ident, Type *type);
+    std::tuple<bool, bool> IsResolvedAndValue(const ir::Expression *expr, Type *type) const;
+    PropertySearchFlags GetSearchFlags(const ir::MemberExpression *member_expr);
+    const varbinder::Variable *GetTargetRef(const ir::MemberExpression *member_expr);
     void BuildClass(util::StringView name, const ClassBuilder &builder);
     template <bool IS_STATIC>
     std::conditional_t<IS_STATIC, ir::ClassStaticBlock *, ir::MethodDefinition *> CreateClassInitializer(
@@ -645,7 +654,6 @@ private:
         ArenaVector<Signature *> &signatures, const ir::TSTypeParameterInstantiation *type_arguments,
         const ArenaVector<ir::Expression *> &arguments, std::vector<bool> &arg_type_inference_required,
         const lexer::SourcePosition &pos, TypeRelationFlag resolve_flags);
-
     // Trailing lambda
     void MoveTrailingBlockToEnclosingBlockStatement(ir::CallExpression *call_expr);
     void TransformTraillingLambda(ir::CallExpression *call_expr);

@@ -171,6 +171,13 @@ public:
     }
 
 private:
+    Substitution *CreateSubstitutionTypeParams(ETSObjectType *type, ir::TSTypeParameterDeclaration *type_param_decl,
+                                               ir::TSTypeParameterInstantiation *type_args,
+                                               const lexer::SourcePosition &pos);
+
+    void ReplaceSubstitutionTypeParams(ETSObjectType *type, ir::TSTypeParameterDeclaration *type_param_decl,
+                                       ir::TSTypeParameterInstantiation *type_args, const lexer::SourcePosition &pos);
+
     bool ValidateTypeArguments(ETSObjectType *type, ir::TSTypeParameterDeclaration *type_param_decl,
                                ir::TSTypeParameterInstantiation *type_args, const lexer::SourcePosition &pos);
 
