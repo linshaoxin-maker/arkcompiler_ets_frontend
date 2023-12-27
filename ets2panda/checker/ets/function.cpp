@@ -67,7 +67,8 @@
 
 namespace panda::es2panda::checker {
 
-bool ETSChecker::IsCompatibleTypeArgument(Type *type_param, Type *type_argument, const Substitution *substitution)
+bool ETSChecker::IsCompatibleTypeArgument(Type *type_param, Type *type_argument, const Substitution *substitution,
+                                          size_t index)
 {
     ASSERT(type_param->IsETSObjectType() &&
            type_param->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::TYPE_PARAMETER));
@@ -84,6 +85,10 @@ bool ETSChecker::IsCompatibleTypeArgument(Type *type_param, Type *type_argument,
             type_param_obj_supertype =
                 type_param_obj_supertype->Substitute(this->Relation(), substitution)->AsETSObjectType();
         }
+        if (type_argument->IsETSObjectType() &&
+            CheckRecursiveGenerics(type_param_obj_supertype, type_argument->AsETSObjectType(), index)) {
+            return true;
+        }
         type_param_obj_supertype->IsSupertypeOf(Relation(), type_argument);
         if (!Relation()->IsTrue()) {
             return false;
@@ -92,6 +97,9 @@ bool ETSChecker::IsCompatibleTypeArgument(Type *type_param, Type *type_argument,
     for (auto *itf : type_param_obj->Interfaces()) {
         if (!itf->TypeArguments().empty()) {
             itf = itf->Substitute(this->Relation(), substitution)->AsETSObjectType();
+        }
+        if (type_argument->IsETSObjectType() && CheckRecursiveGenerics(itf, type_argument->AsETSObjectType(), index)) {
+            return true;
         }
         itf->IsSupertypeOf(Relation(), type_argument);
         if (!Relation()->IsTrue()) {
@@ -161,6 +169,20 @@ static constexpr char const INVALID_CALL_ARGUMENT_1[] = "Call argument at index 
 static constexpr char const INVALID_CALL_ARGUMENT_2[] = " is not compatible with the signature's type at that index.";
 static constexpr char const INVALID_CALL_ARGUMENT_3[] = " is not compatible with the signature's rest parameter type.";
 // NOLINTEND(modernize-avoid-c-arrays)
+Signature *ETSChecker::ValidateParameterlessConstructor(Signature *signature, const lexer::SourcePosition &pos,
+                                                        TypeRelationFlag flags)
+{
+    std::size_t const parameter_count = signature->MinArgCount();
+    auto const throw_error = (flags & TypeRelationFlag::NO_THROW) == 0;
+
+    if (parameter_count != 0) {
+        if (throw_error) {
+            ThrowTypeError({"No Matching Parameterless Constructor, parameter count ", parameter_count}, pos);
+        }
+        return nullptr;
+    }
+    return signature;
+}
 
 Signature *ETSChecker::ValidateSignature(Signature *signature, const ir::TSTypeParameterInstantiation *type_arguments,
                                          const ArenaVector<ir::Expression *> &arguments,
@@ -304,6 +326,38 @@ bool ETSChecker::ValidateProxySignature(Signature *const signature,
                              arg_type_inference_required) != nullptr;
 }
 
+Signature *ETSChecker::CollectParameterlessConstructor(ArenaVector<Signature *> &signatures,
+                                                       const lexer::SourcePosition &pos, TypeRelationFlag resolve_flags)
+{
+    Signature *compatible_signature = nullptr;
+
+    auto collect_signatures = [&](TypeRelationFlag relation_flags) {
+        for (auto *sig : signatures) {
+            if (auto *concrete_sig = ValidateParameterlessConstructor(sig, pos, relation_flags);
+                concrete_sig != nullptr) {
+                compatible_signature = concrete_sig;
+                break;
+            }
+        }
+    };
+
+    // We are able to provide more specific error messages.
+    if (signatures.size() == 1) {
+        collect_signatures(resolve_flags);
+    } else {
+        collect_signatures(resolve_flags | TypeRelationFlag::NO_THROW);
+    }
+
+    if (compatible_signature == nullptr) {
+        if ((resolve_flags & TypeRelationFlag::NO_THROW) == 0) {
+            ThrowTypeError({"No matching parameterless constructor"}, pos);
+        } else {
+            return nullptr;
+        }
+    }
+    return compatible_signature;
+}
+
 std::pair<ArenaVector<Signature *>, ArenaVector<Signature *>> ETSChecker::CollectSignatures(
     ArenaVector<Signature *> &signatures, const ir::TSTypeParameterInstantiation *type_arguments,
     const ArenaVector<ir::Expression *> &arguments, std::vector<bool> &arg_type_inference_required,
@@ -415,6 +469,35 @@ Signature *ETSChecker::ValidateSignatures(ArenaVector<Signature *> &signatures,
             ChooseMostSpecificProxySignature(proxy_signatures, arg_type_inference_required, pos, arguments.size());
         if (proxy_signature != nullptr) {
             return proxy_signature;
+        }
+    }
+
+    if ((resolve_flags & TypeRelationFlag::NO_THROW) == 0 && !arguments.empty() && !signatures.empty()) {
+        std::stringstream ss;
+
+        if (signatures[0]->Function()->IsConstructor()) {
+            ss << util::Helpers::GetClassDefiniton(signatures[0]->Function())->PrivateId().Mutf8();
+        } else {
+            ss << signatures[0]->Function()->Id()->Name().Mutf8();
+        }
+
+        ss << "(";
+
+        for (uint32_t index = 0; index < arguments.size(); ++index) {
+            if (arguments[index]->IsArrowFunctionExpression()) {
+                // NOTE(peterseres): Refactor this case and add test case
+                break;
+            }
+
+            arguments[index]->Check(this);
+            arguments[index]->TsType()->ToString(ss);
+
+            if (index == arguments.size() - 1) {
+                ss << ")";
+                ThrowTypeError({"No matching ", signature_kind, " signature for ", ss.str().c_str()}, pos);
+            }
+
+            ss << ", ";
         }
     }
 
@@ -704,6 +787,10 @@ Signature *ETSChecker::ComposeSignature(ir::ScriptFunction *func, SignatureInfo 
         signature->AddSignatureFlag(SignatureFlags::NEED_RETURN_TYPE);
     }
 
+    if (return_type_annotation != nullptr && return_type_annotation->IsTSThisType()) {
+        signature->AddSignatureFlag(SignatureFlags::THIS_RETURN_TYPE);
+    }
+
     if (func->IsAbstract()) {
         signature->AddSignatureFlag(SignatureFlags::ABSTRACT);
         signature->AddSignatureFlag(SignatureFlags::VIRTUAL);
@@ -797,6 +884,7 @@ SignatureInfo *ETSChecker::ComposeSignatureInfo(ir::ScriptFunction *func)
 
     if (func->TypeParams() != nullptr) {
         signature_info->type_params = CreateTypeForTypeParameters(func->TypeParams());
+        SetUpConstraintForTypeParameters(func->TypeParams());
     }
 
     for (auto *const it : func->Params()) {
@@ -987,9 +1075,7 @@ bool ETSChecker::IsMethodOverridesOther(Signature *target, Signature *source)
                 return false;
             }
 
-            if (!source->Function()->IsOverride()) {
-                ThrowTypeError("Method overriding requires 'override' modifier", source->Function()->Start());
-            }
+            source->Function()->SetOverride();
             return true;
         }
     }
@@ -1186,15 +1272,35 @@ Signature *ETSChecker::GetSignatureFromMethodDefinition(const ir::MethodDefiniti
     return nullptr;
 }
 
-void ETSChecker::ValidateSignatureAccessibility(ETSObjectType *callee, Signature *signature,
-                                                const lexer::SourcePosition &pos, char const *error_message)
+void ETSChecker::ValidateSignatureAccessibility(ETSObjectType *callee, const ir::CallExpression *call_expr,
+                                                Signature *signature, const lexer::SourcePosition &pos,
+                                                char const *error_message)
 {
     if ((Context().Status() & CheckerStatus::IGNORE_VISIBILITY) != 0U) {
         return;
     }
     if (signature->HasSignatureFlag(SignatureFlags::PRIVATE) ||
         signature->HasSignatureFlag(SignatureFlags::PROTECTED)) {
-        ASSERT(callee->GetDeclNode() && callee->GetDeclNode()->IsClassDefinition());
+        ASSERT(callee->GetDeclNode() &&
+               (callee->GetDeclNode()->IsClassDefinition() || callee->GetDeclNode()->IsTSInterfaceDeclaration()));
+
+        if (callee->GetDeclNode()->IsTSInterfaceDeclaration()) {
+            if (call_expr->Callee()->IsMemberExpression() &&
+                call_expr->Callee()->AsMemberExpression()->Object()->IsThisExpression()) {
+                const auto *enclosing_func =
+                    util::Helpers::FindAncestorGivenByType(call_expr, ir::AstNodeType::SCRIPT_FUNCTION)
+                        ->AsScriptFunction();
+                if (signature->Function()->IsPrivate() && !enclosing_func->IsPrivate()) {
+                    ThrowTypeError({"Cannot reference 'this' in this context."}, enclosing_func->Start());
+                }
+            }
+
+            if (Context().ContainingClass() == callee->GetDeclNode()->AsTSInterfaceDeclaration()->TsType() &&
+                callee->GetDeclNode()->AsTSInterfaceDeclaration()->TsType()->AsETSObjectType()->IsSignatureInherited(
+                    signature)) {
+                return;
+            }
+        }
         if (Context().ContainingClass() == callee->GetDeclNode()->AsClassDefinition()->TsType() &&
             callee->GetDeclNode()->AsClassDefinition()->TsType()->AsETSObjectType()->IsSignatureInherited(signature)) {
             return;
@@ -2661,7 +2767,7 @@ void ETSChecker::ReplaceScope(ir::AstNode *root, ir::AstNode *old_node, varbinde
     root->Iterate([this, old_node, new_scope](ir::AstNode *child) {
         auto *scope = NodeScope(child);
         if (scope != nullptr) {
-            while (scope->Parent()->Node() != old_node) {
+            while (scope->Parent() != nullptr && scope->Parent()->Node() != old_node) {
                 scope = scope->Parent();
             }
             scope->SetParent(new_scope);

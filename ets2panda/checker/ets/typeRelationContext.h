@@ -174,6 +174,8 @@ private:
     bool ValidateTypeArguments(ETSObjectType *type, ir::TSTypeParameterDeclaration *type_param_decl,
                                ir::TSTypeParameterInstantiation *type_args, const lexer::SourcePosition &pos);
 
+    Type *GetConstraintType(ETSObjectType *type, ir::TSTypeParameter *param);
+
     bool ValidateTypeArg(ETSObjectType *constraint_type, ETSObjectType *arg_ref_type);
 
     void InstantiateType(ETSObjectType *type, ir::TSTypeParameterInstantiation *type_args);

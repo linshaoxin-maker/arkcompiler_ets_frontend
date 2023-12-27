@@ -506,6 +506,22 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewArrayInstanceExpression *expr) const
     auto *element_type = expr->type_reference_->GetType(checker);
     checker->ValidateArrayIndex(expr->dimension_, true);
 
+    if (!element_type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && !element_type->IsNullish() &&
+        !element_type->HasTypeFlag(TypeFlag::GENERIC) && !element_type->HasTypeFlag(TypeFlag::ETS_ARRAY) &&
+        element_type->ToAssemblerName().str() != "Ball") {
+        // Check only valid for ETS_PRIMITIVE and IsNullish, GENERIC and ETS_ARRAY are workaround checks for stdlib
+        // Ball is workaround for koala ui lib
+        if (element_type->IsETSObjectType()) {
+            auto *callee_obj = element_type->AsETSObjectType();
+            if (!callee_obj->HasObjectFlag(checker::ETSObjectFlags::ABSTRACT)) {
+                // A workaround check for new Interface[...] in test cases
+                expr->default_constructor_signature_ =
+                    checker->CollectParameterlessConstructor(callee_obj->ConstructSignatures(), expr->Start());
+                checker->ValidateSignatureAccessibility(callee_obj, nullptr, expr->default_constructor_signature_,
+                                                        expr->Start());
+            }
+        }
+    }
     expr->SetTsType(checker->CreateETSArrayType(element_type));
     checker->CreateBuiltinArraySignature(expr->TsType()->AsETSArrayType(), 1);
     return expr->TsType();
@@ -553,7 +569,7 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewClassInstanceExpression *expr) const
         checker->CheckObjectLiteralArguments(signature, expr->GetArguments());
         checker->AddUndefinedParamsForDefaultParams(signature, expr->arguments_, checker);
 
-        checker->ValidateSignatureAccessibility(callee_obj, signature, expr->Start());
+        checker->ValidateSignatureAccessibility(callee_obj, nullptr, signature, expr->Start());
 
         ASSERT(signature->Function() != nullptr);
 
@@ -779,31 +795,7 @@ checker::Type *ETSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
     checker->AddStatus(checker::CheckerStatus::IN_LAMBDA);
     checker->Context().SetContainingSignature(func_type->CallSignatures()[0]);
 
-    auto *body_type = expr->Function()->Body()->Check(checker);
-    if (expr->Function()->Body()->IsExpression()) {
-        /*
-        when function body is ArrowFunctionExpression, need infer type for this function body
-        example code:
-        ```
-        let x = () => () => {}
-        ```
-        */
-        if (expr->Function()->ReturnTypeAnnotation() == nullptr) {
-            if (expr->Function()->Body()->IsArrowFunctionExpression()) {
-                auto *arrow_func = expr->Function()->Body()->AsArrowFunctionExpression();
-                auto *type_annotation = arrow_func->CreateTypeAnnotation(checker);
-                func_type->CallSignatures()[0]->SetReturnType(type_annotation->GetType(checker));
-            } else {
-                func_type->CallSignatures()[0]->SetReturnType(body_type);
-            }
-        }
-
-        checker::AssignmentContext(
-            checker->Relation(), expr->Function()->Body()->AsExpression(), body_type,
-            func_type->CallSignatures()[0]->ReturnType(), expr->Function()->Start(),
-            {"Return statements return type is not compatible with the containing functions return type"},
-            checker::TypeRelationFlag::DIRECT_RETURN);
-    }
+    expr->Function()->Body()->Check(checker);
 
     checker->Context().SetContainingSignature(nullptr);
     checker->CheckCapturedVariables();
@@ -1055,7 +1047,7 @@ checker::Type *ETSAnalyzer::GetReturnType(ir::CallExpression *expr, checker::Typ
 
     if (!is_functional_interface) {
         checker::ETSObjectType *callee_obj = ChooseCalleeObj(checker, expr, callee_type, is_constructor_call);
-        checker->ValidateSignatureAccessibility(callee_obj, signature, expr->Start());
+        checker->ValidateSignatureAccessibility(callee_obj, expr, signature, expr->Start());
     }
 
     ASSERT(signature->Function() != nullptr);
@@ -1072,7 +1064,13 @@ checker::Type *ETSAnalyzer::GetReturnType(ir::CallExpression *expr, checker::Typ
         expr->SetSignature(signature);
     }
 
-    return signature->ReturnType();
+    auto *return_type = signature->ReturnType();
+
+    if (signature->HasSignatureFlag(SignatureFlags::THIS_RETURN_TYPE)) {
+        return_type = ChooseCalleeObj(checker, expr, callee_type, is_constructor_call);
+    }
+
+    return return_type;
 }
 
 checker::Type *ETSAnalyzer::Check(ir::CallExpression *expr) const
@@ -1271,7 +1269,7 @@ checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
     if (base_type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
         checker->Relation()->SetNode(expr);
         expr->SetObjectType(checker->PrimitiveTypeAsETSBuiltinType(base_type)->AsETSObjectType());
-        checker->AddBoxingUnboxingFlagToNode(expr, expr->ObjType());
+        checker->AddBoxingUnboxingFlagsToNode(expr, expr->ObjType());
         auto [res_type, res_var] = expr->ResolveObjectMember(checker);
         expr->SetPropVar(res_var);
         return expr->AdjustOptional(checker, res_type);
@@ -1326,7 +1324,7 @@ checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
     for (checker::Signature *sig : obj_type->ConstructSignatures()) {
         if (sig->Params().empty()) {
             have_empty_constructor = true;
-            checker->ValidateSignatureAccessibility(obj_type, sig, expr->Start());
+            checker->ValidateSignatureAccessibility(obj_type, nullptr, sig, expr->Start());
             break;
         }
     }
@@ -1564,7 +1562,7 @@ checker::Type *ETSAnalyzer::Check(ir::UnaryExpression *expr) const
 
     if (arg_type->IsETSObjectType() && (unboxed_operand_type != nullptr) &&
         unboxed_operand_type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
-        expr->Argument()->AddBoxingUnboxingFlag(checker->GetUnboxingFlag(unboxed_operand_type));
+        expr->Argument()->AddBoxingUnboxingFlags(checker->GetUnboxingFlag(unboxed_operand_type));
     }
 
     return expr->TsType();
@@ -1599,8 +1597,8 @@ checker::Type *ETSAnalyzer::Check(ir::UpdateExpression *expr) const
     }
 
     if (operand_type->IsETSObjectType()) {
-        expr->Argument()->AddBoxingUnboxingFlag(checker->GetUnboxingFlag(unboxed_type) |
-                                                checker->GetBoxingFlag(unboxed_type));
+        expr->Argument()->AddBoxingUnboxingFlags(checker->GetUnboxingFlag(unboxed_type) |
+                                                 checker->GetBoxingFlag(unboxed_type));
     }
 
     expr->SetTsType(operand_type);
@@ -2061,7 +2059,9 @@ void InferReturnType(ETSChecker *checker, ir::ScriptFunction *containing_func, c
                      ir::Expression *st_argument)
 {
     //  First (or single) return statement in the function:
-    func_return_type = st_argument == nullptr ? checker->GlobalBuiltinVoidType() : st_argument->Check(checker);
+    func_return_type = st_argument == nullptr ? containing_func->IsEntryPoint() ? checker->GlobalVoidType()
+                                                                                : checker->GlobalBuiltinVoidType()
+                                              : st_argument->Check(checker);
     if (func_return_type->HasTypeFlag(checker::TypeFlag::CONSTANT)) {
         // remove CONSTANT type modifier if exists
         func_return_type =
@@ -2171,6 +2171,12 @@ checker::Type *ETSAnalyzer::Check(ir::ReturnStatement *st) const
 
     if (auto *const return_type_annotation = containing_func->ReturnTypeAnnotation();
         return_type_annotation != nullptr) {
+        if (return_type_annotation->IsTSThisType() &&
+            (st->Argument() == nullptr || !st->Argument()->IsThisExpression())) {
+            checker->ThrowTypeError(
+                "The only allowed return value is 'this' if the method's return type is the 'this' type", st->Start());
+        }
+
         // Case when function's return type is defined explicitly:
         func_return_type = checker->GetTypeFromTypeAnnotation(return_type_annotation);
 
@@ -2396,6 +2402,14 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
     }
 
     auto *const source_type = expr->Expr()->Check(checker);
+
+    if (target_type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE) &&
+        source_type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
+        auto *const boxed_target_type = checker->PrimitiveTypeAsETSBuiltinType(target_type);
+        if (!checker->Relation()->IsIdenticalTo(source_type, boxed_target_type)) {
+            expr->Expr()->AddAstNodeFlags(ir::AstNodeFlags::CHECKCAST);
+        }
+    }
 
     const checker::CastingContext ctx(checker->Relation(), expr->Expr(), source_type, target_type,
                                       expr->Expr()->Start(),
@@ -2647,7 +2661,33 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTupleType *node) const
 checker::Type *ETSAnalyzer::Check(ir::TSTypeAliasDeclaration *st) const
 {
     ETSChecker *checker = GetETSChecker();
+    if (st->TypeParams() != nullptr) {
+        for (const auto *const param : st->TypeParams()->Params()) {
+            const auto *const res = st->TypeAnnotation()->FindChild([&param](const ir::AstNode *const node) {
+                if (!node->IsIdentifier()) {
+                    return false;
+                }
+
+                return param->Name()->AsIdentifier()->Variable() == node->AsIdentifier()->Variable();
+            });
+
+            if (res == nullptr) {
+                checker->ThrowTypeError(
+                    {"Type alias generic parameter '", param->Name()->Name(), "' is not used in type annotation"},
+                    param->Start());
+            }
+
+            param->Name()->Variable()->SetTsType(
+                checker->CreateNullishType(checker->GlobalETSObjectType(), checker::TypeFlag::NULLISH,
+                                           checker->Allocator(), checker->Relation(), checker->GetGlobalTypesHolder()));
+        }
+    }
+
+    const checker::SavedTypeRelationFlagsContext saved_flags_ctx(checker->Relation(),
+                                                                 checker::TypeRelationFlag::NO_THROW_GENERIC_TYPEALIAS);
+
     st->TypeAnnotation()->Check(checker);
+
     return nullptr;
 }
 
