@@ -187,7 +187,9 @@ void ETSParser::ParseETSGlobalScript(lexer::SourcePosition start_loc, ArenaVecto
                     end(items));
 
         for (const auto &item : items) {
-            parsed_sources_.push_back(ResolveImportPath(item));
+            auto resolved = ResolveImportPath(item);
+            resolved_parsed_sources_.emplace(item, resolved);
+            parsed_sources_.push_back(resolved);
         }
     };
 
