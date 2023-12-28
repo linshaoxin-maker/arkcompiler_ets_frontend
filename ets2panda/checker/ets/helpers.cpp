@@ -683,6 +683,10 @@ std::tuple<Type *, bool> ETSChecker::ApplyBinaryOperatorPromotion(Type *left, Ty
                 return {GlobalLongType(), both_const};
             }
 
+            if (unboxed_l->IsCharType() && unboxed_r->IsCharType()) {
+                return {GlobalCharType(), both_const};
+            }
+
             return {GlobalIntType(), both_const};
         }
 
