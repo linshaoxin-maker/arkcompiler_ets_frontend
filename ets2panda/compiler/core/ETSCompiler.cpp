@@ -761,7 +761,11 @@ void ETSCompiler::Compile(const ir::ConditionalExpression *expr) const
     expr->Alternate()->Compile(etsg);
     etsg->ApplyConversion(expr->Alternate());
     etsg->SetLabel(expr, end_label);
-    etsg->SetAccumulatorType(expr->TsType());
+    if (expr->TsType()->IsETSUnionType()) {
+        etsg->SetAccumulatorType(expr->TsType()->AsETSUnionType()->GetLeastUpperBoundType());
+    } else {
+        etsg->SetAccumulatorType(expr->TsType());
+    }
 }
 
 void ETSCompiler::Compile([[maybe_unused]] const ir::DirectEvalExpression *expr) const

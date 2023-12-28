@@ -26,6 +26,8 @@
 #include "ir/astNode.h"
 #include "ir/expression.h"
 #include "ir/opaqueTypeNode.h"
+#include "ir/expressions/literals/nullLiteral.h"
+#include "ir/expressions/literals/undefinedLiteral.h"
 #include "ir/expressions/binaryExpression.h"
 #include "ir/expressions/identifier.h"
 #include "ir/expressions/memberExpression.h"
@@ -155,9 +157,9 @@ ir::TSAsExpression *HandleUnionCastToPrimitive(checker::ETSChecker *checker, ir:
     }
     if (source_type != nullptr && expr->Expr()->GetBoxingUnboxingFlags() != ir::BoxingUnboxingFlags::NONE) {
         if (expr->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
-            auto *const boxed_expr_type = checker::BoxingConverter::ETSTypeFromSource(checker, expr->TsType());
-            auto *const as_expr = GenAsExpression(checker, boxed_expr_type, expr->Expr(), expr);
-            as_expr->SetBoxingUnboxingFlags(expr->Expr()->GetBoxingUnboxingFlags());
+            auto *const as_expr = GenAsExpression(checker, source_type, expr->Expr(), expr);
+            as_expr->SetBoxingUnboxingFlags(
+                checker->GetUnboxingFlag(checker->ETSBuiltinTypeAsPrimitiveType(source_type)));
             expr->Expr()->SetBoxingUnboxingFlags(ir::BoxingUnboxingFlags::NONE);
             expr->SetExpr(as_expr);
         }
@@ -182,15 +184,24 @@ ir::BinaryExpression *GenInstanceofExpr(checker::ETSChecker *checker, ir::Expres
         rhs_type = checker::conversion::Boxing(checker->Relation(), constituent_type);
         checker->Relation()->SetNode(nullptr);
     }
-    auto *const rhs_expr =
-        checker->Allocator()->New<ir::Identifier>(rhs_type->AsETSObjectType()->Name(), checker->Allocator());
+    if (constituent_type->IsETSStringType()) {
+        rhs_type = checker->GlobalBuiltinETSStringType();
+    }
+    ir::Expression *rhs_expr;
+    if (rhs_type->IsETSUndefinedType()) {
+        rhs_expr = checker->Allocator()->New<ir::UndefinedLiteral>();
+    } else if (rhs_type->IsETSNullType()) {
+        rhs_expr = checker->Allocator()->New<ir::NullLiteral>();
+    } else {
+        rhs_expr = checker->Allocator()->New<ir::Identifier>(rhs_type->AsETSObjectType()->Name(), checker->Allocator());
+        auto rhs_var = NearestScope(union_node)->Find(rhs_expr->AsIdentifier()->Name());
+        rhs_expr->AsIdentifier()->SetVariable(rhs_var.variable);
+    }
     auto *const instanceof_expr =
         checker->Allocator()->New<ir::BinaryExpression>(lhs_expr, rhs_expr, lexer::TokenType::KEYW_INSTANCEOF);
     lhs_expr->SetParent(instanceof_expr);
     rhs_expr->SetParent(instanceof_expr);
-    auto rhs_var = NearestScope(union_node)->Find(rhs_expr->Name());
-    rhs_expr->SetVariable(rhs_var.variable);
-    rhs_expr->SetTsType(rhs_var.variable->TsType());
+    rhs_expr->SetTsType(rhs_type);
     instanceof_expr->SetOperationType(checker->GlobalETSObjectType());
     instanceof_expr->SetTsType(checker->GlobalETSBooleanType());
     return instanceof_expr;
@@ -272,7 +283,10 @@ ir::Expression *ProcessOperandsInBinaryExpr(checker::ETSChecker *checker, ir::Bi
     bool is_lhs_union;
     ir::Expression *union_node =
         (is_lhs_union = expr->Left()->TsType()->IsETSUnionType()) ? expr->Left() : expr->Right();
-    auto *const as_expression = GenAsExpression(checker, constituent_type, union_node, expr);
+    checker::Type *type_to_cast = constituent_type->IsETSNullLike()
+                                      ? union_node->TsType()->AsETSUnionType()->GetLeastUpperBoundType(checker)
+                                      : constituent_type;
+    auto *const as_expression = GenAsExpression(checker, type_to_cast, union_node, expr);
     if (is_lhs_union) {
         expr->SetLeft(as_expression);
         expr->SetRight(SetBoxFlagOrGenAsExpression(checker, constituent_type, expr->Right()));
