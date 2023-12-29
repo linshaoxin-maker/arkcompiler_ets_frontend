@@ -46,6 +46,10 @@ namespace panda::es2panda::lexer {
 class LineIndex;
 }
 
+namespace panda::es2panda::compiler {
+class PandaGen;
+}  // namespace panda::es2panda::compiler
+
 namespace panda::es2panda::util {
 
 enum class SignedNumberLiteral {
@@ -104,6 +108,7 @@ public:
     static std::wstring Utf8ToUtf16(const std::string &utf8);
     template <typename T, typename... Args>
     static T FileStream(const std::string &str, Args &&...args);
+    static void ScanNode(compiler::PandaGen *pg, size_t startCompilePos, size_t endCompilePos, const ir::AstNode *node);
 
     static const uint32_t MAX_DOUBLE_DIGIT = 310;
     static const uint32_t MAX_DOUBLE_PRECISION_DIGIT = 17;

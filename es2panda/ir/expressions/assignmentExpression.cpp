@@ -151,7 +151,10 @@ void AssignmentExpression::Compile(compiler::PandaGen *pg) const
         right_->Compile(pg);
         pg->Binary(this, operator_, lhsReg);
     } else {
+        size_t startCompilePos = pg->Insns().size();
         right_->Compile(pg);
+        size_t endCompilePos = pg->Insns().size();
+        util::Helpers::ScanNode(pg, startCompilePos, endCompilePos, this);
     }
 
     lref.SetValue();

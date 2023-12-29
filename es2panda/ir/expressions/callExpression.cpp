@@ -168,7 +168,10 @@ void CallExpression::Compile(compiler::PandaGen *pg) const
     }
 
     for (const auto *it : arguments_) {
+        size_t startCompilePos = pg->Insns().size();
         it->Compile(pg);
+        size_t endCompilePos = pg->Insns().size();
+        util::Helpers::ScanNode(pg, startCompilePos, endCompilePos, this);
         compiler::VReg arg = pg->AllocReg();
         pg->StoreAccumulator(it, arg);
     }

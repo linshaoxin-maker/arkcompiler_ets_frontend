@@ -115,6 +115,11 @@ public:
         return node_;
     }
 
+    void UpdateNode(const ir::AstNode *node)
+    {
+        node_ = const_cast<ir::AstNode *>(node);
+    }
+
     static constexpr auto MAX_REG_OPERAND = 5;
 
     virtual Formats GetFormats() const = 0;

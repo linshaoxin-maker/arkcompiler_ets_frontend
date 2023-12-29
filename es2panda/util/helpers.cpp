@@ -16,6 +16,7 @@
 #include "helpers.h"
 
 #include <es2panda.h>
+#include <compiler/core/pandagen.h>
 #include <ir/base/classDefinition.h>
 #include <ir/base/classProperty.h>
 #include <ir/base/methodDefinition.h>
@@ -774,4 +775,14 @@ std::wstring Helpers::Utf8ToUtf16(const std::string &utf8)
 }
 #endif
 
+void Helpers::ScanNode(compiler::PandaGen *pg, size_t startCompilePos, size_t endCompilePos, const ir::AstNode *node)
+{
+    size_t cnt = 0;
+    for (auto *ins : pg->Insns()) {
+        cnt++;
+        if (cnt >= startCompilePos && cnt <= endCompilePos) {
+            ins->UpdateNode(node);
+        }
+    }
+}
 }  // namespace panda::es2panda::util
