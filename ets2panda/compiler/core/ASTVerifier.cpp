@@ -23,87 +23,32 @@
 #include "ir/base/classStaticBlock.h"
 #include "ir/base/methodDefinition.h"
 #include "ir/base/scriptFunction.h"
-#include "ir/ets/etsClassLiteral.h"
-#include "ir/ets/etsFunctionType.h"
 #include "ir/ets/etsNewClassInstanceExpression.h"
-#include "ir/ets/etsParameterExpression.h"
 #include "ir/ets/etsScript.h"
-#include "ir/ets/etsTypeReference.h"
-#include "ir/ets/etsTypeReferencePart.h"
 #include "ir/ets/etsImportDeclaration.h"
-#include "ir/ets/etsScript.h"
 #include "ir/expressions/sequenceExpression.h"
 #include "ir/module/importSpecifier.h"
 #include "ir/module/importNamespaceSpecifier.h"
 #include "ir/module/importDefaultSpecifier.h"
 #include "ir/expressions/callExpression.h"
 #include "ir/expressions/binaryExpression.h"
-#include "ir/expressions/functionExpression.h"
 #include "ir/expressions/identifier.h"
-#include "ir/expressions/literals/numberLiteral.h"
-#include "ir/expressions/literals/stringLiteral.h"
 #include "ir/expressions/memberExpression.h"
-#include "ir/statements/blockStatement.h"
 #include "ir/statements/forInStatement.h"
 #include "ir/statements/forOfStatement.h"
 #include "ir/statements/forUpdateStatement.h"
-#include "ir/statements/variableDeclaration.h"
 #include "ir/statements/variableDeclarator.h"
-#include "ir/statements/classDeclaration.h"
 #include "ir/statements/expressionStatement.h"
 #include "ir/statements/throwStatement.h"
-#include "ir/statements/tryStatement.h"
-#include "ir/ts/tsClassImplements.h"
 #include "ir/ts/tsTypeParameter.h"
-#include "ir/ts/tsTypeParameterDeclaration.h"
-#include "ir/ts/tsTypeParameterInstantiation.h"
 #include "lexer/token/tokenType.h"
 #include "util/ustring.h"
 #include "utils/arena_containers.h"
 #include "varbinder/scope.h"
 
-#include <algorithm>
-#include <iterator>
-
-#define RECURSIVE_SUFFIX "ForAll"
+constexpr auto RECURSIVE_SUFFIX = "ForAll";
 
 namespace panda::es2panda::compiler {
-
-struct ASTVerifier::ErrorContext {
-    explicit ErrorContext() : named_errors_ {}, encountered_errors_ {} {}
-
-    void ProcessEncounteredErrors(util::StringView name)
-    {
-        for (const auto &error : encountered_errors_) {
-            named_errors_.emplace_back(CheckError {name, error});
-        }
-        encountered_errors_.clear();
-    }
-
-    void AddError(const std::string &message)
-    {
-        named_errors_.emplace_back(CheckError {"Unnamed", ASTVerifier::InvariantError {message, "", 0}});
-    }
-
-    void AddInvariantError(const std::string &cause, const ir::AstNode &node, const lexer::SourcePosition &from)
-    {
-        const auto loc = from.line;
-        const auto &&dump = node.DumpJSON();
-        static const std::regex r {R"(\s+)"};  // removing all identation
-        auto ss = std::stringstream {};
-        std::regex_replace(std::ostream_iterator<char>(ss), dump.begin(), dump.end(), r, "");
-        encountered_errors_.emplace_back(ASTVerifier::InvariantError {cause, ss.str(), loc});
-    }
-
-    ASTVerifier::Errors GetErrors()
-    {
-        return named_errors_;
-    }
-
-private:
-    ASTVerifier::Errors named_errors_;
-    std::vector<InvariantError> encountered_errors_;
-};
 
 static bool IsNumericType(const ir::AstNode *ast)
 {
@@ -277,13 +222,13 @@ public:
         const auto is_ets_script = ast->IsETSScript();
         const auto has_parent = ast->Parent() != nullptr;
         if (!is_ets_script && !has_parent) {
-            ctx.AddInvariantError("NULL_PARENT", *ast, ast->Start());
-            return ASTVerifier::CheckResult::Failed;
+            ctx.AddInvariantError("NodeHasParent", "NULL_PARENT", *ast);
+            return ASTVerifier::CheckResult::FAILED;
         }
         if (ast->IsProgram()) {
-            return ASTVerifier::CheckResult::Success;
+            return ASTVerifier::CheckResult::SUCCESS;
         }
-        return ASTVerifier::CheckResult::Success;
+        return ASTVerifier::CheckResult::SUCCESS;
     }
 };
 
@@ -294,15 +239,15 @@ public:
     ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
     {
         if (!ast->IsIdentifier()) {
-            return ASTVerifier::CheckResult::Success;
+            return ASTVerifier::CheckResult::SUCCESS;
         }
         if (ast->AsIdentifier()->Variable() != nullptr) {
-            return ASTVerifier::CheckResult::Success;
+            return ASTVerifier::CheckResult::SUCCESS;
         }
 
         const auto *id = ast->AsIdentifier();
-        ctx.AddInvariantError("NULL_VARIABLE", *id, id->Start());
-        return ASTVerifier::CheckResult::Failed;
+        ctx.AddInvariantError("IdentifierHasVariable", "NULL_VARIABLE", *id);
+        return ASTVerifier::CheckResult::FAILED;
     }
 
 private:
@@ -316,15 +261,15 @@ public:
     {
         if (ast->IsTyped()) {
             if (ast->IsClassDefinition() && ast->AsClassDefinition()->Ident()->Name() == "ETSGLOBAL") {
-                return ASTVerifier::CheckResult::SkipSubtree;
+                return ASTVerifier::CheckResult::SKIP_SUBTREE;
             }
             const auto *typed = static_cast<const ir::TypedAstNode *>(ast);
             if (typed->TsType() == nullptr) {
-                ctx.AddInvariantError("NULL_TS_TYPE", *ast, ast->Start());
-                return ASTVerifier::CheckResult::Failed;
+                ctx.AddInvariantError("NodeHasType", "NULL_TS_TYPE", *ast);
+                return ASTVerifier::CheckResult::FAILED;
             }
         }
-        return ASTVerifier::CheckResult::Success;
+        return ASTVerifier::CheckResult::SUCCESS;
     }
 
 private:
@@ -337,7 +282,7 @@ public:
     ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
     {
         if (!ast->IsIdentifier()) {
-            return ASTVerifier::CheckResult::Success;  // we will check invariant of Identifier only
+            return ASTVerifier::CheckResult::SUCCESS;  // we will check invariant of Identifier only
         }
 
         // we will check invariant for only local variables of identifiers
@@ -345,13 +290,13 @@ public:
             const auto var = *maybe_var;
             const auto scope = var->GetScope();
             if (scope == nullptr) {
-                ctx.AddInvariantError("NULL_SCOPE_LOCAL_VAR", *ast, ast->Start());
-                return ASTVerifier::CheckResult::Failed;
+                ctx.AddInvariantError("VariableHasScope", "NULL_SCOPE_LOCAL_VAR", *ast);
+                return ASTVerifier::CheckResult::FAILED;
             }
-            return ScopeEncloseVariable(ctx, var) == true ? ASTVerifier::CheckResult::Success
-                                                          : ASTVerifier::CheckResult::Failed;
+            return ScopeEncloseVariable(ctx, var) ? ASTVerifier::CheckResult::SUCCESS
+                                                  : ASTVerifier::CheckResult::FAILED;
         }
-        return ASTVerifier::CheckResult::Success;
+        return ASTVerifier::CheckResult::SUCCESS;
     }
 
     static std::optional<varbinder::LocalVariable *> GetLocalScopeVariable(ArenaAllocator &allocator,
@@ -364,7 +309,7 @@ public:
 
         auto invariant_has_variable = IdentifierHasVariable {allocator};
         const auto variable = ast->AsIdentifier()->Variable();
-        if ((invariant_has_variable(ctx, ast) == ASTVerifier::CheckResult::Success) && variable->IsLocalVariable()) {
+        if ((invariant_has_variable(ctx, ast) == ASTVerifier::CheckResult::SUCCESS) && variable->IsLocalVariable()) {
             const auto local_var = variable->AsLocalVariable();
             if (local_var->HasFlag(varbinder::VariableFlags::LOCAL)) {
                 return local_var;
@@ -385,22 +330,22 @@ public:
         if (node == nullptr) {
             return true;
         }
-        const auto var_start = node->Start();
+        const auto name = "VariableHasScope";
         bool is_ok = true;
         if (scope->Bindings().count(var->Name()) == 0) {
-            ctx.AddInvariantError("SCOPE_DO_NOT_ENCLOSE_LOCAL_VAR", *node, var_start);
+            ctx.AddInvariantError(name, "SCOPE_DO_NOT_ENCLOSE_LOCAL_VAR", *node);
             is_ok = false;
         }
         const auto scope_node = scope->Node();
         auto var_node = node;
         if (!IsContainedIn(var_node, scope_node) || scope_node == nullptr) {
-            ctx.AddInvariantError("SCOPE_NODE_DONT_DOMINATE_VAR_NODE", *node, var_start);
+            ctx.AddInvariantError(name, "SCOPE_NODE_DONT_DOMINATE_VAR_NODE", *node);
             is_ok = false;
         }
         const auto &decls = scope->Decls();
         const auto decl_dominate = std::count(decls.begin(), decls.end(), var->Declaration());
         if (decl_dominate == 0) {
-            ctx.AddInvariantError("SCOPE_DECL_DONT_DOMINATE_VAR_DECL", *node, var_start);
+            ctx.AddInvariantError(name, "SCOPE_DECL_DONT_DOMINATE_VAR_DECL", *node);
             is_ok = false;
         }
         return is_ok;
@@ -416,14 +361,14 @@ public:
 
     ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
     {
-        auto result = ASTVerifier::CheckResult::Success;
+        auto result = ASTVerifier::CheckResult::SUCCESS;
         if (ast->IsETSScript()) {
             return result;
         }
         ast->Iterate([&](const ir::AstNode *node) {
             if (ast != node->Parent()) {
-                ctx.AddInvariantError("INCORRECT_PARENT_REF", *node, node->Start());
-                result = ASTVerifier::CheckResult::Failed;
+                ctx.AddInvariantError("EveryChildHasValidParent", "INCORRECT_PARENT_REF", *node);
+                result = ASTVerifier::CheckResult::FAILED;
             }
         });
         return result;
@@ -440,28 +385,29 @@ public:
     {
         const auto maybe_var = VariableHasScope::GetLocalScopeVariable(allocator_, ctx, ast);
         if (!maybe_var) {
-            return ASTVerifier::CheckResult::Success;
+            return ASTVerifier::CheckResult::SUCCESS;
         }
         const auto var = *maybe_var;
         const auto scope = var->GetScope();
+        const auto name = "VariableHasEnclosingScope";
         if (scope == nullptr) {
             // already checked
-            return ASTVerifier::CheckResult::Success;
+            return ASTVerifier::CheckResult::SUCCESS;
         }
         const auto enclose_scope = scope->EnclosingVariableScope();
         if (enclose_scope == nullptr) {
-            ctx.AddInvariantError("NO_ENCLOSING_VAR_SCOPE", *ast, ast->Start());
-            return ASTVerifier::CheckResult::Failed;
+            ctx.AddInvariantError(name, "NO_ENCLOSING_VAR_SCOPE", *ast);
+            return ASTVerifier::CheckResult::FAILED;
         }
         const auto node = scope->Node();
-        auto result = ASTVerifier::CheckResult::Success;
+        auto result = ASTVerifier::CheckResult::SUCCESS;
         if (!IsContainedIn(ast, node)) {
-            result = ASTVerifier::CheckResult::Failed;
-            ctx.AddInvariantError("VARIABLE_NOT_ENCLOSE_SCOPE", *ast, ast->Start());
+            result = ASTVerifier::CheckResult::FAILED;
+            ctx.AddInvariantError(name, "VARIABLE_NOT_ENCLOSE_SCOPE", *ast);
         }
         if (!IsContainedIn<varbinder::Scope>(scope, enclose_scope)) {
-            result = ASTVerifier::CheckResult::Failed;
-            ctx.AddInvariantError("VARIABLE_NOT_ENCLOSE_SCOPE", *ast, ast->Start());
+            result = ASTVerifier::CheckResult::FAILED;
+            ctx.AddInvariantError(name, "VARIABLE_NOT_ENCLOSE_SCOPE", *ast);
         }
         return result;
     }
@@ -477,24 +423,24 @@ public:
     ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
     {
         if (!ast->IsSequenceExpression()) {
-            return ASTVerifier::CheckResult::Success;
+            return ASTVerifier::CheckResult::SUCCESS;
         }
         const auto *expr = ast->AsSequenceExpression();
         const auto *last = expr->Sequence().back();
+        const auto name = "SequenceExpressionHasLastType";
         if (expr->TsType() == nullptr) {
-            ctx.AddInvariantError("Sequence expression type is null", *expr, expr->Start());
-            return ASTVerifier::CheckResult::Failed;
+            ctx.AddInvariantError(name, "Sequence expression type is null", *expr);
+            return ASTVerifier::CheckResult::FAILED;
         }
         if (last->TsType() == nullptr) {
-            ctx.AddInvariantError("Sequence expression last type is null", *last, last->Start());
-            return ASTVerifier::CheckResult::Failed;
+            ctx.AddInvariantError(name, "Sequence expression last type is null", *last);
+            return ASTVerifier::CheckResult::FAILED;
         }
         if (expr->TsType() != last->TsType()) {
-            ctx.AddInvariantError("Sequence expression type and last expression type are not the same", *expr,
-                                  expr->Start());
-            return ASTVerifier::CheckResult::Failed;
+            ctx.AddInvariantError(name, "Sequence expression type and last expression type are not the same", *expr);
+            return ASTVerifier::CheckResult::FAILED;
         }
-        return ASTVerifier::CheckResult::Success;
+        return ASTVerifier::CheckResult::SUCCESS;
     }
 
 private:
@@ -506,29 +452,30 @@ public:
 
     ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
     {
+        const auto name = "ForLoopCorrectlyInitialized";
         if (ast->IsForInStatement()) {
             auto const *left = ast->AsForInStatement()->Left();
             if (left == nullptr) {
-                ctx.AddInvariantError("NULL FOR-IN-LEFT", *ast, ast->Start());
-                return ASTVerifier::CheckResult::Failed;
+                ctx.AddInvariantError(name, "NULL FOR-IN-LEFT", *ast);
+                return ASTVerifier::CheckResult::FAILED;
             }
 
             if (!left->IsIdentifier() && !left->IsVariableDeclaration()) {
-                ctx.AddInvariantError("INCORRECT FOR-IN-LEFT", *ast, ast->Start());
-                return ASTVerifier::CheckResult::Failed;
+                ctx.AddInvariantError(name, "INCORRECT FOR-IN-LEFT", *ast);
+                return ASTVerifier::CheckResult::FAILED;
             }
         }
 
         if (ast->IsForOfStatement()) {
             auto const *left = ast->AsForOfStatement()->Left();
             if (left == nullptr) {
-                ctx.AddInvariantError("NULL FOR-OF-LEFT", *ast, ast->Start());
-                return ASTVerifier::CheckResult::Failed;
+                ctx.AddInvariantError(name, "NULL FOR-OF-LEFT", *ast);
+                return ASTVerifier::CheckResult::FAILED;
             }
 
             if (!left->IsIdentifier() && !left->IsVariableDeclaration()) {
-                ctx.AddInvariantError("INCORRECT FOR-OF-LEFT", *ast, ast->Start());
-                return ASTVerifier::CheckResult::Failed;
+                ctx.AddInvariantError(name, "INCORRECT FOR-OF-LEFT", *ast);
+                return ASTVerifier::CheckResult::FAILED;
             }
         }
 
@@ -539,8 +486,8 @@ public:
             if (test == nullptr) {
                 auto const *body = ast->AsForUpdateStatement()->Body();
                 if (body == nullptr) {
-                    ctx.AddInvariantError("NULL FOR-TEST AND FOR-BODY", *ast, ast->Start());
-                    return ASTVerifier::CheckResult::Failed;
+                    ctx.AddInvariantError(name, "NULL FOR-TEST AND FOR-BODY", *ast);
+                    return ASTVerifier::CheckResult::FAILED;
                 }
                 bool has_exit = body->IsBreakStatement() || body->IsReturnStatement();
                 body->IterateRecursively([&has_exit](ir::AstNode *child) {
@@ -548,17 +495,17 @@ public:
                 });
                 if (!has_exit) {
                     // an infinite loop
-                    ctx.AddInvariantError("WARNING: NULL FOR-TEST AND FOR-BODY doesn't exit", *ast, ast->Start());
+                    ctx.AddInvariantError(name, "WARNING: NULL FOR-TEST AND FOR-BODY doesn't exit", *ast);
                 }
-                return ASTVerifier::CheckResult::Success;
+                return ASTVerifier::CheckResult::SUCCESS;
             }
 
             if (!test->IsExpression()) {
-                ctx.AddInvariantError("NULL FOR VAR", *ast, ast->Start());
-                return ASTVerifier::CheckResult::Failed;
+                ctx.AddInvariantError(name, "NULL FOR VAR", *ast);
+                return ASTVerifier::CheckResult::FAILED;
             }
         }
-        return ASTVerifier::CheckResult::Success;
+        return ASTVerifier::CheckResult::SUCCESS;
     }
 
 private:
@@ -570,12 +517,13 @@ public:
 
     ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
     {
+        const auto name = "ModifierAccessValid";
         if (ast->IsMemberExpression()) {
             const auto *prop_var = ast->AsMemberExpression()->PropVar();
             if (prop_var != nullptr && prop_var->HasFlag(varbinder::VariableFlags::PROPERTY) &&
                 !ValidateVariableAccess(prop_var, ast->AsMemberExpression())) {
-                ctx.AddInvariantError("PROPERTY_NOT_VISIBLE_HERE", *ast, ast->Start());
-                return ASTVerifier::CheckResult::Failed;
+                ctx.AddInvariantError(name, "PROPERTY_NOT_VISIBLE_HERE", *ast);
+                return ASTVerifier::CheckResult::FAILED;
             }
         }
         if (ast->IsCallExpression()) {
@@ -586,12 +534,12 @@ public:
                 const auto *prop_var_callee = callee_member->PropVar();
                 if (prop_var_callee != nullptr && prop_var_callee->HasFlag(varbinder::VariableFlags::METHOD) &&
                     !ValidateMethodAccess(callee_member, ast->AsCallExpression())) {
-                    ctx.AddInvariantError("PROPERTY_NOT_VISIBLE_HERE", *callee, callee->Start());
-                    return ASTVerifier::CheckResult::Failed;
+                    ctx.AddInvariantError(name, "PROPERTY_NOT_VISIBLE_HERE", *callee);
+                    return ASTVerifier::CheckResult::FAILED;
                 }
             }
         }
-        return ASTVerifier::CheckResult::Success;
+        return ASTVerifier::CheckResult::SUCCESS;
     }
 
 private:
@@ -619,20 +567,21 @@ public:
                 imported_variables.emplace(name(import));
             }
         }
+        const auto name = "ImportExportAccessValid";
         if (ast->IsCallExpression()) {
             const auto *call_expr = ast->AsCallExpression();
             const auto *callee = call_expr->Callee();
             if (callee != nullptr && callee->IsIdentifier() &&
                 !HandleImportExportIdentifier(imported_variables, callee->AsIdentifier(), call_expr)) {
-                ctx.AddInvariantError("PROPERTY_NOT_VISIBLE_HERE(NOT_EXPORTED)", *callee, callee->Start());
-                return ASTVerifier::CheckResult::Failed;
+                ctx.AddInvariantError(name, "PROPERTY_NOT_VISIBLE_HERE(NOT_EXPORTED)", *callee);
+                return ASTVerifier::CheckResult::FAILED;
             }
         }
         if (ast->IsIdentifier() && !HandleImportExportIdentifier(imported_variables, ast->AsIdentifier(), nullptr)) {
-            ctx.AddInvariantError("PROPERTY_NOT_VISIBLE_HERE(NOT_EXPORTED)", *ast, ast->Start());
-            return ASTVerifier::CheckResult::Failed;
+            ctx.AddInvariantError(name, "PROPERTY_NOT_VISIBLE_HERE(NOT_EXPORTED)", *ast);
+            return ASTVerifier::CheckResult::FAILED;
         }
-        return ASTVerifier::CheckResult::Success;
+        return ASTVerifier::CheckResult::SUCCESS;
     }
 
 private:
@@ -723,35 +672,35 @@ public:
         if (ast->IsBinaryExpression() && ast->AsBinaryExpression()->IsArithmetic()) {
             if (ast->AsBinaryExpression()->OperatorType() == lexer::TokenType::PUNCTUATOR_PLUS &&
                 IsStringType(ast->AsBinaryExpression()->Left()) && IsStringType(ast->AsBinaryExpression()->Right())) {
-                return ASTVerifier::CheckResult::Success;
+                return ASTVerifier::CheckResult::SUCCESS;
             }
-            auto result = ASTVerifier::CheckResult::Success;
+            auto result = ASTVerifier::CheckResult::SUCCESS;
             ast->Iterate([&result](ir::AstNode *child) {
                 if (!IsNumericType(child)) {
-                    result = ASTVerifier::CheckResult::Failed;
+                    result = ASTVerifier::CheckResult::FAILED;
                 }
             });
             return result;
         }
 
-        return ASTVerifier::CheckResult::Success;
+        return ASTVerifier::CheckResult::SUCCESS;
     }
 
 private:
 };
 
 template <typename Func>
-static ASTVerifier::InvariantCheck RecursiveInvariant(Func &func)
+static ASTVerifier::InvariantCheck RecursiveInvariant(const Func &func)
 {
-    return [&func](ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast) -> ASTVerifier::CheckResult {
+    return [func](ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast) -> ASTVerifier::CheckResult {
         std::function<void(const ir::AstNode *)> aux;
-        auto result = ASTVerifier::CheckResult::Success;
+        auto result = ASTVerifier::CheckResult::SUCCESS;
         aux = [&ctx, &func, &aux, &result](const ir::AstNode *child) -> void {
-            if (result == ASTVerifier::CheckResult::Failed) {
+            if (result == ASTVerifier::CheckResult::FAILED) {
                 return;
             }
             const auto new_result = func(ctx, child);
-            if (new_result == ASTVerifier::CheckResult::SkipSubtree) {
+            if (new_result == ASTVerifier::CheckResult::SKIP_SUBTREE) {
                 return;
             }
             result = new_result;
@@ -762,54 +711,46 @@ static ASTVerifier::InvariantCheck RecursiveInvariant(Func &func)
     };
 }
 
-// NOLINTBEGIN(cppcoreguidelines-macro-usage)
-#define ADD_INVARIANT(Name)                                                                                  \
-    {                                                                                                        \
-        auto *invariant = allocator->New<Name>(*allocator);                                                  \
-        invariants_checks_.emplace_back(Invariant {#Name, *invariant});                                      \
-        invariants_names_.insert(#Name);                                                                     \
-        invariants_checks_.emplace_back(Invariant {#Name RECURSIVE_SUFFIX, RecursiveInvariant(*invariant)}); \
-        invariants_names_.insert(#Name RECURSIVE_SUFFIX);                                                    \
-    }
-// NOLINTEND(cppcoreguidelines-macro-usage)
-
-ASTVerifier::ASTVerifier(ArenaAllocator *allocator) : invariants_checks_ {}, invariants_names_ {}
+void ASTVerifier::AddInvariant(const std::string &name, const InvariantCheck &invariant)
 {
-    ADD_INVARIANT(NodeHasParent);
-    ADD_INVARIANT(NodeHasType);
-    ADD_INVARIANT(IdentifierHasVariable);
-    ADD_INVARIANT(VariableHasScope);
-    ADD_INVARIANT(EveryChildHasValidParent);
-    ADD_INVARIANT(VariableHasEnclosingScope);
-    ADD_INVARIANT(ForLoopCorrectlyInitialized);
-    ADD_INVARIANT(ModifierAccessValid);
-    ADD_INVARIANT(ImportExportAccessValid);
-    ADD_INVARIANT(ArithmeticOperationValid);
-    ADD_INVARIANT(SequenceExpressionHasLastType);
+    invariants_checks_[name] = invariant;
+    invariants_names_.insert(name);
+    invariants_checks_[name + RECURSIVE_SUFFIX] = RecursiveInvariant(invariant);
+    invariants_names_.insert(name + RECURSIVE_SUFFIX);
 }
 
-ASTVerifier::Errors ASTVerifier::VerifyFull(const ir::AstNode *ast)
+ASTVerifier::ASTVerifier(ArenaAllocator *allocator)
+{
+    AddInvariant("NodeHasParent", *allocator->New<NodeHasParent>(*allocator));
+    AddInvariant("NodeHasType", *allocator->New<NodeHasType>(*allocator));
+    AddInvariant("IdentifierHasVariable", *allocator->New<IdentifierHasVariable>(*allocator));
+    AddInvariant("VariableHasScope", *allocator->New<VariableHasScope>(*allocator));
+    AddInvariant("EveryChildHasValidParent", *allocator->New<EveryChildHasValidParent>(*allocator));
+    AddInvariant("VariableHasEnclosingScope", *allocator->New<VariableHasEnclosingScope>(*allocator));
+    AddInvariant("ForLoopCorrectlyInitialized", *allocator->New<ForLoopCorrectlyInitialized>(*allocator));
+    AddInvariant("ModifierAccessValid", *allocator->New<ModifierAccessValid>(*allocator));
+    AddInvariant("ImportExportAccessValid", *allocator->New<ImportExportAccessValid>(*allocator));
+    AddInvariant("ArithmeticOperationValid", *allocator->New<ArithmeticOperationValid>(*allocator));
+    AddInvariant("SequenceExpressionHasLastType", *allocator->New<SequenceExpressionHasLastType>(*allocator));
+}
+
+std::tuple<ASTVerifier::Errors, ASTVerifier::Errors> ASTVerifier::VerifyFull(
+    const std::unordered_set<std::string> &warnings, const std::unordered_set<std::string> &asserts,
+    const ir::AstNode *ast)
 {
     auto recursive_checks = InvariantSet {};
     std::copy_if(invariants_names_.begin(), invariants_names_.end(),
                  std::inserter(recursive_checks, recursive_checks.end()),
                  [](const std::string &s) { return s.find(RECURSIVE_SUFFIX) != s.npos; });
-    return Verify(ast, recursive_checks);
+    return Verify(warnings, asserts, ast, recursive_checks);
 }
 
-ASTVerifier::Errors ASTVerifier::Verify(const ir::AstNode *ast, const InvariantSet &invariant_set)
+std::tuple<ASTVerifier::Errors, ASTVerifier::Errors> ASTVerifier::Verify(
+    const std::unordered_set<std::string> &warnings, const std::unordered_set<std::string> &asserts,
+    const ir::AstNode *ast, const InvariantSet &invariant_set)
 {
-    ErrorContext ctx {};
-    auto check_and_report = [&ctx](util::StringView name, const InvariantCheck &invariant, const ir::AstNode *node) {
-        if (node == nullptr) {
-            return;
-        }
-
-        invariant(ctx, node);
-        // if (result == CheckResult::Failed || result == CheckResult::SkipSubtree) {
-        ctx.ProcessEncounteredErrors(name);
-        // }
-    };
+    ErrorContext warning_ctx {};
+    AssertsContext assert_ctx {};
 
     const auto contains_invariants =
         std::includes(invariants_names_.begin(), invariants_names_.end(), invariant_set.begin(), invariant_set.end());
@@ -817,25 +758,24 @@ ASTVerifier::Errors ASTVerifier::Verify(const ir::AstNode *ast, const InvariantS
     if (!contains_invariants) {
         auto invalid_invariants = InvariantSet {};
         for (const auto &invariant : invariant_set) {
-            if (invariants_names_.find(invariant.data()) == invariants_names_.end()) {
+            if (invariants_names_.find(invariant) == invariants_names_.end()) {
                 invalid_invariants.insert(invariant.data());
             }
         }
         for (const auto &invariant : invalid_invariants) {
-            ctx.AddError(std::string {"invariant was not found: "} + invariant.data());
+            assert_ctx.AddError(std::string {"invariant was not found: "} + invariant);
         }
     }
 
     for (const auto &invariant_name : invariant_set) {
-        for (const auto &[name, invariant] : invariants_checks_) {
-            if (std::string_view {invariant_name} == name.Utf8()) {
-                check_and_report(name, invariant, ast);
-                break;
-            }
+        if (warnings.count(invariant_name) > 0) {
+            invariants_checks_[invariant_name](warning_ctx, ast);
+        } else if (asserts.count(invariant_name) > 0) {
+            invariants_checks_[invariant_name](assert_ctx, ast);
         }
     }
 
-    return ctx.GetErrors();
+    return std::make_tuple(warning_ctx.GetErrors(), assert_ctx.GetErrors());
 }
 
 }  // namespace panda::es2panda::compiler

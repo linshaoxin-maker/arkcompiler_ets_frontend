@@ -59,29 +59,21 @@ static PluginPhase PLUGINS_AFTER_PARSE {"plugins-after-parse", ES2PANDA_STATE_PA
 static PluginPhase PLUGINS_AFTER_CHECK {"plugins-after-check", ES2PANDA_STATE_CHECKED, &util::Plugin::AfterCheck};
 static PluginPhase PLUGINS_AFTER_LOWERINGS {"plugins-after-lowering", ES2PANDA_STATE_LOWERED,
                                             &util::Plugin::AfterLowerings};
+// NOLINTBEGIN(fuchsia-statically-constructed-objects)
 static InitScopesPhaseETS INIT_SCOPES_PHASE_ETS;
 static InitScopesPhaseAS INIT_SCOPES_PHASE_AS;
 static InitScopesPhaseTs INIT_SCOPES_PHASE_TS;
 static InitScopesPhaseJs INIT_SCOPES_PHASE_JS;
+// NOLINTEND(fuchsia-statically-constructed-objects)
 
 std::vector<Phase *> GetETSPhaseList()
 {
     return {
-        &PLUGINS_AFTER_PARSE,
-        &INIT_SCOPES_PHASE_ETS,
-        &PROMISE_VOID_INFERENCE_PHASE,
-        &STRUCT_LOWERING,
-        &LAMBDA_CONSTRUCTION_PHASE,
-        &INTERFACE_PROP_DECL_PHASE,
-        &CHECKER_PHASE,
-        &PLUGINS_AFTER_CHECK,
-        &GENERATE_TS_DECLARATIONS_PHASE,
-        &OP_ASSIGNMENT_LOWERING,
-        &OBJECT_INDEX_LOWERING,
-        &TUPLE_LOWERING,
-        &UNION_LOWERING,
-        &EXPAND_BRACKETS_PHASE,
-        &PLUGINS_AFTER_LOWERINGS,
+        &PLUGINS_AFTER_PARSE,    &INIT_SCOPES_PHASE_ETS,     &PROMISE_VOID_INFERENCE_PHASE,
+        &STRUCT_LOWERING,        &LAMBDA_CONSTRUCTION_PHASE, &INTERFACE_PROP_DECL_PHASE,
+        &CHECKER_PHASE,          &PLUGINS_AFTER_CHECK,       &GENERATE_TS_DECLARATIONS_PHASE,
+        &OP_ASSIGNMENT_LOWERING, &OBJECT_INDEX_LOWERING,     &TUPLE_LOWERING,
+        &UNION_LOWERING,         &EXPAND_BRACKETS_PHASE,     &PLUGINS_AFTER_LOWERINGS,
     };
 }
 

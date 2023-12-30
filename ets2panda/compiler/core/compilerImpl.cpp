@@ -158,20 +158,23 @@ static pandasm::Program *CreateCompiler(const CompilationUnit &unit, const Phase
         for (const auto &it : to_check) {
             const auto &source_name = std::get<0>(it);
             const auto &linked_program = std::get<1>(it);
-            verification_ctx.Verify(linked_program->Ast(), phase->Name(), source_name);
+            verification_ctx.Verify(context.Options()->verifier_warnings, context.Options()->verifier_errors,
+                                    linked_program->Ast(), phase->Name(), source_name);
             verification_ctx.IntroduceNewInvariants(phase->Name());
         }
 #endif
     }
 
 #ifndef NDEBUG
-
-    if (auto errors = verification_ctx.DumpErrorsJSON(); errors != "[]") {
-#ifdef ES2PANDA_AST_VERIFIER_ERROR
-        ASSERT_PRINT(false, errors);
-#else
-        LOG(ERROR, ES2PANDA) << errors;
-#endif
+    if (!context.Options()->verifier_warnings.empty()) {
+        if (auto errors = verification_ctx.DumpWarningsJSON(); errors != "[]") {
+            LOG(ERROR, ES2PANDA) << errors;
+        }
+    }
+    if (!context.Options()->verifier_errors.empty()) {
+        if (auto errors = verification_ctx.DumpAssertsJSON(); errors != "[]") {
+            ASSERT_PRINT(false, errors);
+        }
     }
 #endif
 
