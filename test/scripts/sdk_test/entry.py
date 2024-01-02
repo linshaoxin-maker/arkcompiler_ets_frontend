@@ -25,13 +25,12 @@ import utils
 
 
 def run():
-    sdk_url = utils.get_sdk_url()
-
     cmd = ['python', 'run.py']
-    cmd.extend(['--sdkPath', sdk_url])
     cmd.extend(['--hapMode', 'all'])
     cmd.extend(['--compileMode', 'all'])
     cmd.extend(['--logLevel', 'debug'])
+    # 去除下载镜像，抽象到download一起；新增镜像烧录与运行时截图验证（需要连接开发板）
+    cmd.extend(['--runHaps', 'False'])
     cmd.extend(['--logFile', 'log' + '_' + utils.get_time_string() + '.txt'])
 
     current_dir = os.path.dirname(os.path.abspath(__file__))

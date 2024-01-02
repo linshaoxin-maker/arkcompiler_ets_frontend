@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>提交记录</title>
+    <style>
+        .table-wrapper {
+            width: 80%;
+            margin: auto;
+        }
+
+        .table-container {
+            height: 200px;
+            font-family: Arial, sans-serif;
+        }
+
+        table {
+            border-collapse: collapse;
+            border-spacing: 0;
+            width: 100%;
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            color: #333;
+            font-weight: bold;
+            border-bottom: 1px solid #ddd;
+        }
+
+        td {
+            background-color: #fff;
+            color: #333;
+            vertical-align: middle;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        td:hover {
+            background-color: #BBFFFF;
+        }
+
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        caption {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+    </style>
+</head>
+<body>
+<div class="table-wrapper">
+    <div class="table-container">
+        <table>
+            <thead>
+            <caption>提交记录</caption>
+            <tr>
+                <th>项目</th>
+                <th>描述</th>
+                <th>作者</th>
+                <th>时间</th>
+                <th>链接</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for item in data %}
+            <tr>
+                <td>{{ item.project }}</td>
+                <td>{{ item.description }}</td>
+                <td>{{ item.author }}</td>
+                <td>{{ item.time }}</td>
+                <td><a href="{{ item.link }}">点击查看</a></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>
