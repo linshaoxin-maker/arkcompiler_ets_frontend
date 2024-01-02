@@ -22,7 +22,6 @@ import copy
 import logging
 import os
 import time
-
 import pandas
 
 import options
