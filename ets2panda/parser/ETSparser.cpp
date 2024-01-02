@@ -4657,15 +4657,23 @@ void ETSParser::CheckDeclare()
     Lexer()->NextToken();  // eat 'declare'
 
     switch (Lexer()->GetToken().KeywordType()) {
-        case lexer::TokenType::KEYW_LET:
-        case lexer::TokenType::KEYW_CONST:
-        case lexer::TokenType::KEYW_FUNCTION:
-        case lexer::TokenType::KEYW_CLASS:
-        case lexer::TokenType::KEYW_NAMESPACE:
-        case lexer::TokenType::KEYW_ENUM:
         case lexer::TokenType::KEYW_ABSTRACT:
-        case lexer::TokenType::KEYW_INTERFACE: {
+        case lexer::TokenType::KEYW_CLASS:
+        case lexer::TokenType::KEYW_CONST:
+        case lexer::TokenType::KEYW_ENUM:
+        case lexer::TokenType::KEYW_FUNCTION:
+        case lexer::TokenType::KEYW_INTERFACE:
+        case lexer::TokenType::KEYW_LET:
+        case lexer::TokenType::KEYW_NAMESPACE:
+        case lexer::TokenType::KEYW_TYPE: {
             return;
+        }
+        case lexer::TokenType::LITERAL_IDENT: {
+            if (Lexer()->GetToken().Ident().Is("namespace")) {
+                ThrowSyntaxError("Ambient namespace declarations are not yet implemented");
+            }
+
+            [[fallthrough]];
         }
         default: {
             ThrowSyntaxError("Unexpected token.");
