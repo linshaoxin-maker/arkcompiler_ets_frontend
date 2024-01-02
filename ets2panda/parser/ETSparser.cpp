@@ -2344,7 +2344,20 @@ std::string ETSParser::GetNameForTypeNode(const ir::TypeNode *type_annotation, b
     }
 
     if (type_annotation->IsETSTypeReference()) {
-        return adjust_nullish(type_annotation->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Name().Mutf8());
+        std::string type_param_names;
+        auto type_param = type_annotation->AsETSTypeReference()->Part()->TypeParams();
+        if (type_param != nullptr && type_param->IsTSTypeParameterInstantiation()) {
+            type_param_names = "<";
+            auto param_list = type_param->Params();
+            for (auto param : param_list) {
+                std::string type_param_name = GetNameForTypeNode(param);
+                type_param_names += type_param_name + ",";
+            }
+            type_param_names.pop_back();
+            type_param_names += ">";
+        }
+        return adjust_nullish(type_annotation->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Name().Mutf8() +
+                              type_param_names);
     }
 
     if (type_annotation->IsETSFunctionType()) {
