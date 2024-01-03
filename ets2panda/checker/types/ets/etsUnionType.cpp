@@ -49,6 +49,13 @@ ETSUnionType::ETSUnionType(ETSChecker *checker, ArenaVector<Type *> &&constituen
     lub_type_ = ComputeLUB(checker);
 }
 
+void ETSUnionType::ToDebugInfoType(std::stringstream &ss) const
+{
+    for (const auto *t: this->ConstituentTypes()) {
+        t->ToDebugInfoType(ss);
+    }
+}
+
 bool ETSUnionType::EachTypeRelatedToSomeType(TypeRelation *relation, ETSUnionType *source, ETSUnionType *target)
 {
     return std::all_of(source->constituent_types_.begin(), source->constituent_types_.end(),
