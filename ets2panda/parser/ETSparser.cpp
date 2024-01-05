@@ -2437,6 +2437,34 @@ std::tuple<ir::Expression *, ir::TSTypeParameterInstantiation *> ETSParser::Pars
     return {type_name, type_param_inst};
 }
 
+ir::TypeNode *ETSParser::ParseNullUndefinedAsTypeAnnotation(TypeAnnotationParsingOptions *options)
+{
+    ir::Expression *expr = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
+    expr->AsIdentifier()->SetReference();
+    expr->SetRange(Lexer()->GetToken().Loc());
+
+    auto *type_ref_part = AllocNode<ir::ETSTypeReferencePart>(expr, nullptr, nullptr);
+
+    auto *type_reference = AllocNode<ir::ETSTypeReference>(type_ref_part);
+    type_reference->SetRange({Lexer()->GetToken().Start(), Lexer()->GetToken().End()});
+
+    auto nullish_flag = Lexer()->GetToken().Type() == lexer::TokenType::LITERAL_NULL
+                            ? ir::ModifierFlags::NULL_ASSIGNABLE
+                            : ir::ModifierFlags::UNDEFINED_ASSIGNABLE;
+
+    ir::TypeNode *type_annotation = type_reference;
+
+    Lexer()->NextToken();
+    if (((*options) & TypeAnnotationParsingOptions::DISALLOW_UNION) == 0 &&
+        Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_BITWISE_OR) {
+        Lexer()->NextToken();
+        type_annotation = ParseTypeAnnotation(options);
+    }
+
+    type_annotation->AddModifier(nullish_flag);
+    return type_annotation;
+}
+
 ir::TypeNode *ETSParser::ParseTypeReference(TypeAnnotationParsingOptions *options)
 {
     auto start_pos = Lexer()->GetToken().Start();
@@ -2757,6 +2785,11 @@ std::pair<ir::TypeNode *, bool> ETSParser::GetTypeAnnotationFromToken(TypeAnnota
                 (Lexer()->GetToken().Type() == lexer::TokenType::KEYW_CLASS || IsStructKeyword())) {
                 return std::make_pair(type_annotation, false);
             }
+            break;
+        }
+        case lexer::TokenType::LITERAL_NULL:
+        case lexer::TokenType::KEYW_UNDEFINED: {
+            type_annotation = ParseNullUndefinedAsTypeAnnotation(options);
             break;
         }
         case lexer::TokenType::KEYW_BOOLEAN: {

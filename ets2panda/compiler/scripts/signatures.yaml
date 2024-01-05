@@ -120,6 +120,10 @@ defines:
     ref: STATIC_INSTANTIATE_METHOD
   - name: Void
     ref: VOID_OBJECT
+  - name: undefined
+    ref: UNDEFINED
+  - name: 'null'
+    ref: NULL_LITERAL
 
 packages:
   - name: 'std.core'
