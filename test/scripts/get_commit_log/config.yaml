@@ -1,0 +1,7 @@
+crawl_max_page: 10
+# repo list
+repo_list:
+  - 'arkcompiler_ets_frontend'
+  - 'developtools_ace_ets2bundle'
+  - 'third_party_typescript'
+  - 'arkcompiler_runtime_core'
