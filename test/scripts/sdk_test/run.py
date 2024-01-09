@@ -25,8 +25,8 @@ import time
 
 from execution import execute
 from options import process_options
-from preparation import prepare_test_env
 from result import process_test_result
+from preparation import prepare_test_env
 
 
 def run():
@@ -34,12 +34,11 @@ def run():
     try:
         start_time = time.time()
         test_tasks = process_options()
+
+        prepare_test_env()
+
         if not test_tasks:
             logging.error("No test task found, test suite exit!")
-            sys.exit(1)
-
-        if not prepare_test_env():
-            logging.error("Prepare test environment failed, test suite exit!")
             sys.exit(1)
 
         execute(test_tasks)
