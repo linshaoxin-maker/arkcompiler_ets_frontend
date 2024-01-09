@@ -94,6 +94,9 @@ void ETSBinder::LookupTypeArgumentReferences(ir::ETSTypeReference *type_ref)
 void ETSBinder::LookupTypeReference(ir::Identifier *ident, bool allow_dynamic_namespaces)
 {
     const auto &name = ident->Name();
+    if (name == compiler::Signatures::UNDEFINED || name == compiler::Signatures::NULL_LITERAL) {
+        return;
+    }
     auto *iter = GetScope();
 
     while (iter != nullptr) {
