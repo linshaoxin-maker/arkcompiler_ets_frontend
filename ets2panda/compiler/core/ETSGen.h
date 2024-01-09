@@ -543,9 +543,13 @@ public:
     void CastToInt(const ir::AstNode *node);
     void CastToString(const ir::AstNode *node);
     void CastToDynamic(const ir::AstNode *node, const checker::ETSDynamicType *type);
-    void CastDynamicTo(const ir::AstNode *node, enum checker::TypeFlag typeFlag);
-    void CastToArrayOrObject(const ir::AstNode *node, const checker::Type *targetType, bool unchecked);
-    void CastDynamicToObject(const ir::AstNode *node, const checker::Type *targetType);
+    void SetBuiltinTypeMethodName(std::string_view &method_name, checker::TypeFlag type_kind,
+                                  const checker::ETSDynamicType *type);
+    void SetBuiltinObjectMethodName(std::string_view &method_name, checker::TypeFlag type_kind,
+                                    const checker::ETSDynamicType *type);
+    void CastDynamicTo(const ir::AstNode *node, enum checker::TypeFlag type_flag);
+    void CastToArrayOrObject(const ir::AstNode *node, const checker::Type *target_type, bool unchecked);
+    void CastDynamicToObject(const ir::AstNode *node, const checker::Type *target_type);
 
     void InternalCheckCast(const ir::AstNode *node, const checker::Type *target);
     void CheckedReferenceNarrowing(const ir::AstNode *node, const checker::Type *target);
