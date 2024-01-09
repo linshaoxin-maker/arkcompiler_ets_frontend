@@ -144,8 +144,7 @@ Type *ETSTypeParameter::Substitute(TypeRelation *relation, const Substitution *s
         if (this != original && ((ContainsNull() && !repl_type->ContainsNull()) ||
                                  (ContainsUndefined() && !repl_type->ContainsUndefined()))) {
             // this type is explicitly marked as nullish
-            ASSERT(repl_type->IsETSObjectType() || repl_type->IsETSArrayType() || repl_type->IsETSFunctionType() ||
-                   repl_type->IsETSTypeParameter());
+            ASSERT(ETSChecker::IsReferenceType(repl_type));
             auto nullish_flags = TypeFlag(TypeFlags() & TypeFlag::NULLISH);
             auto *new_repl_type = checker->CreateNullishType(repl_type, nullish_flags, checker->Allocator(), relation,
                                                              checker->GetGlobalTypesHolder());
