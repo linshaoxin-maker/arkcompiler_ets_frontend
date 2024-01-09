@@ -28,6 +28,7 @@
 #include "compiler/lowering/ets/interfacePropertyDeclarations.h"
 #include "compiler/lowering/ets/opAssignment.h"
 #include "compiler/lowering/ets/tupleLowering.h"
+#include "compiler/lowering/ets/bigintLowering.h"
 #include "compiler/lowering/ets/unionLowering.h"
 #include "compiler/lowering/ets/structLowering.h"
 #include "compiler/lowering/ets/optionalLowering.h"
@@ -46,6 +47,7 @@ std::vector<Phase *> GetTrivialPhaseList()
     };
 }
 
+static BigIntLowering g_bigintLowering;
 static InterfacePropertyDeclarationsPhase g_interfacePropDeclPhase;
 static GenerateTsDeclarationsPhase g_generateTsDeclarationsPhase;
 static LambdaConstructionPhase g_lambdaConstructionPhase;
@@ -71,14 +73,23 @@ static InitScopesPhaseJs g_initScopesPhaseJs;
 std::vector<Phase *> GetETSPhaseList()
 {
     return {
-        &g_pluginsAfterParse,      &g_initScopesPhaseEts,
-        &g_optionalLowering,       &g_promiseVoidInferencePhase,
-        &g_structLowering,         &g_lambdaConstructionPhase,
-        &g_interfacePropDeclPhase, &g_checkerPhase,
-        &g_pluginsAfterCheck,      &g_generateTsDeclarationsPhase,
-        &g_opAssignmentLowering,   &g_objectIndexLowering,
-        &g_tupleLowering,          &g_unionLowering,
-        &g_expandBracketsPhase,    &g_pluginsAfterLowerings,
+        &g_bigintLowering,
+        &g_pluginsAfterParse,
+        &g_initScopesPhaseEts,
+        &g_optionalLowering,
+        &g_promiseVoidInferencePhase,
+        &g_structLowering,
+        &g_lambdaConstructionPhase,
+        &g_interfacePropDeclPhase,
+        &g_checkerPhase,
+        &g_pluginsAfterCheck,
+        &g_generateTsDeclarationsPhase,
+        &g_opAssignmentLowering,
+        &g_objectIndexLowering,
+        &g_tupleLowering,
+        &g_unionLowering,
+        &g_expandBracketsPhase,
+        &g_pluginsAfterLowerings,
     };
 }
 
