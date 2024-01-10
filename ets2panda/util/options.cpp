@@ -197,6 +197,11 @@ bool Options::Parse(int argc, const char **argv)
         "IdentifierHasVariableForAll,ArithmeticOperationValidForAll,SequenceExpressionHasLastTypeForAll,"
         "ForLoopCorrectlyInitializedForAll,VariableHasEnclosingScopeForAll,ModifierAccessValidForAll,"
         "ImportExportAccessValid");
+    panda::PandArg<bool> verifierAllChecks(
+        "verifier-all-checks", false,
+        "Run verifier checks on every phase, monotonically expanding them on every phase");
+    panda::PandArg<bool> verifierFullProgram("verifier-full-program", false,
+                                             "Analyze full program, including program AST and it's dependencies");
     panda::PandArg<std::string> dumpBeforePhases("dump-before-phases", "",
                                                  "Generate program dump before running phases in the list");
     panda::PandArg<std::string> dumpEtsSrcBeforePhases(
@@ -238,6 +243,8 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&genStdLib);
     argparser_->Add(&plugins);
     argparser_->Add(&skipPhases);
+    argparser_->Add(&verifierAllChecks);
+    argparser_->Add(&verifierFullProgram);
     argparser_->Add(&verifierWarnings);
     argparser_->Add(&verifierErrors);
     argparser_->Add(&dumpBeforePhases);
@@ -438,6 +445,8 @@ bool Options::Parse(int argc, const char **argv)
     compilerOptions_.isEtsModule = opEtsModule.GetValue();
     compilerOptions_.plugins = SplitToStringVector(plugins.GetValue());
     compilerOptions_.skipPhases = SplitToStringSet(skipPhases.GetValue());
+    compilerOptions_.verifierFullProgram = verifierFullProgram.GetValue();
+    compilerOptions_.verifierAllChecks = verifierAllChecks.GetValue();
     compilerOptions_.verifierWarnings = SplitToStringSet(verifierWarnings.GetValue());
     compilerOptions_.verifierErrors = SplitToStringSet(verifierErrors.GetValue());
     compilerOptions_.dumpBeforePhases = SplitToStringSet(dumpBeforePhases.GetValue());

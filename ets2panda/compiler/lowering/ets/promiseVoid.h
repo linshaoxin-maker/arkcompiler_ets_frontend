@@ -22,7 +22,7 @@ namespace panda::es2panda::compiler {
 
 class PromiseVoidInferencePhase : public Phase {
 public:
-    std::string_view Name() override
+    std::string_view Name() const override
     {
         return "PromiseVoidInferencePhase";
     }
