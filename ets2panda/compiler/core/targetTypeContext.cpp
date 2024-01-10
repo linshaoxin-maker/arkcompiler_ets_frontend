@@ -18,7 +18,7 @@
 #include "compiler/core/ETSGen.h"
 
 namespace panda::es2panda::compiler {
-TargetTypeContext::TargetTypeContext(ETSGen *etsg, const checker::Type *targetType)
+TargetTypeContext::TargetTypeContext(ETSGen *etsg, checker::CheckerType *targetType)
     : etsg_(etsg), prev_(etsg->targetType_)
 {
     etsg->targetType_ = targetType;

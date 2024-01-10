@@ -34,7 +34,7 @@
 #include "checker/TSchecker.h"
 
 namespace panda::es2panda::checker {
-void TSChecker::CheckTruthinessOfType(Type *type, lexer::SourcePosition lineInfo)
+void TSChecker::CheckTruthinessOfType(CheckerType *type, lexer::SourcePosition lineInfo)
 {
     if (type->IsVoidType()) {
         ThrowTypeError("An expression of type void cannot be tested for truthiness", lineInfo);
@@ -78,7 +78,7 @@ Type *TSChecker::GetBaseTypeOfLiteralType(Type *type)
 
     if (type->IsUnionType()) {
         auto &constituentTypes = type->AsUnionType()->ConstituentTypes();
-        ArenaVector<Type *> newConstituentTypes(Allocator()->Adapter());
+        UnionType::ConstituentsT newConstituentTypes(Allocator()->Adapter());
 
         newConstituentTypes.reserve(constituentTypes.size());
         for (auto *it : constituentTypes) {
@@ -112,7 +112,7 @@ void TSChecker::CheckReferenceExpression(ir::Expression *expr, const char *inval
 }
 
 void TSChecker::CheckTestingKnownTruthyCallableOrAwaitableType([[maybe_unused]] ir::Expression *condExpr,
-                                                               [[maybe_unused]] Type *type,
+                                                               [[maybe_unused]] CheckerType *type,
                                                                [[maybe_unused]] ir::AstNode *body)
 {
     // NOTE: aszilagyi. rework this
@@ -142,7 +142,7 @@ Type *TSChecker::ExtractDefinitelyFalsyTypes(Type *type)
 
     if (type->IsUnionType()) {
         auto &constituentTypes = type->AsUnionType()->ConstituentTypes();
-        ArenaVector<Type *> newConstituentTypes(Allocator()->Adapter());
+        UnionType::ConstituentsT newConstituentTypes(Allocator()->Adapter());
 
         newConstituentTypes.reserve(constituentTypes.size());
         for (auto &it : constituentTypes) {
@@ -160,7 +160,7 @@ Type *TSChecker::RemoveDefinitelyFalsyTypes(Type *type)
     if ((static_cast<uint64_t>(GetFalsyFlags(type)) & static_cast<uint64_t>(TypeFlag::DEFINITELY_FALSY)) != 0U) {
         if (type->IsUnionType()) {
             auto &constituentTypes = type->AsUnionType()->ConstituentTypes();
-            ArenaVector<Type *> newConstituentTypes(Allocator()->Adapter());
+            UnionType::ConstituentsT newConstituentTypes(Allocator()->Adapter());
 
             for (auto &it : constituentTypes) {
                 if ((static_cast<uint64_t>(GetFalsyFlags(it)) & static_cast<uint64_t>(TypeFlag::DEFINITELY_FALSY)) ==
@@ -186,7 +186,7 @@ Type *TSChecker::RemoveDefinitelyFalsyTypes(Type *type)
     return type;
 }
 
-TypeFlag TSChecker::GetFalsyFlags(Type *type)
+TypeFlag TSChecker::GetFalsyFlags(CheckerType *type)
 {
     if (type->IsStringLiteralType()) {
         return type->AsStringLiteralType()->Value().Empty() ? TypeFlag::STRING_LITERAL : TypeFlag::NONE;
@@ -277,7 +277,7 @@ bool TSChecker::IsVariableUsedInBinaryExpressionChain(ir::AstNode *parent, varbi
     return false;
 }
 
-void TSChecker::ThrowBinaryLikeError(lexer::TokenType op, Type *leftType, Type *rightType,
+void TSChecker::ThrowBinaryLikeError(lexer::TokenType op, CheckerType *leftType, CheckerType *rightType,
                                      lexer::SourcePosition lineInfo)
 {
     if (!HasStatus(CheckerStatus::IN_CONST_CONTEXT)) {
@@ -288,7 +288,8 @@ void TSChecker::ThrowBinaryLikeError(lexer::TokenType op, Type *leftType, Type *
     ThrowTypeError({"operator ", op, " cannot be applied to types ", leftType, " and ", rightType}, lineInfo);
 }
 
-void TSChecker::ThrowAssignmentError(Type *source, Type *target, lexer::SourcePosition lineInfo, bool isAsSrcLeftType)
+void TSChecker::ThrowAssignmentError(CheckerType *source, CheckerType *target, lexer::SourcePosition lineInfo,
+                                     bool isAsSrcLeftType)
 {
     if (isAsSrcLeftType || !target->HasTypeFlag(TypeFlag::LITERAL)) {
         ThrowTypeError({"Type '", AsSrc(source), "' is not assignable to type '", target, "'."}, lineInfo);
@@ -299,9 +300,9 @@ void TSChecker::ThrowAssignmentError(Type *source, Type *target, lexer::SourcePo
 
 Type *TSChecker::GetUnaryResultType(Type *operandType)
 {
-    if (checker::TSChecker::MaybeTypeOfKind(operandType, checker::TypeFlag::BIGINT_LIKE)) {
-        if (operandType->HasTypeFlag(checker::TypeFlag::UNION_OR_INTERSECTION) &&
-            checker::TSChecker::MaybeTypeOfKind(operandType, checker::TypeFlag::NUMBER_LIKE)) {
+    if (TSChecker::MaybeTypeOfKind(operandType, TypeFlag::BIGINT_LIKE)) {
+        if (operandType->HasTypeFlag(TypeFlag::UNION_OR_INTERSECTION) &&
+            TSChecker::MaybeTypeOfKind(operandType, TypeFlag::NUMBER_LIKE)) {
             return GlobalNumberOrBigintType();
         }
 
@@ -381,7 +382,7 @@ Type *TSChecker::GetTypeOfVariable(varbinder::Variable *var)
             [[fallthrough]];
         }
         case varbinder::DeclType::VAR: {
-            ir::AstNode *declarator =
+            auto *declarator =
                 util::Helpers::FindAncestorGivenByType(decl->Node(), ir::AstNodeType::VARIABLE_DECLARATOR);
             ASSERT(declarator);
 
@@ -398,13 +399,13 @@ Type *TSChecker::GetTypeOfVariable(varbinder::Variable *var)
             break;
         }
         case varbinder::DeclType::METHOD: {
-            auto *signatureInfo = Allocator()->New<checker::SignatureInfo>(Allocator());
-            auto *callSignature = Allocator()->New<checker::Signature>(signatureInfo, GlobalAnyType());
+            auto *signatureInfo = Allocator()->New<SignatureInfo>(Allocator());
+            auto *callSignature = Allocator()->New<Signature>(signatureInfo, GlobalAnyType());
             var->SetTsType(CreateFunctionTypeWithSignature(callSignature));
             break;
         }
         case varbinder::DeclType::FUNC: {
-            checker::ScopeContext scopeCtx(this, decl->Node()->AsScriptFunction()->Scope());
+            ScopeContext scopeCtx(this, decl->Node()->AsScriptFunction()->Scope());
             InferFunctionDeclarationType(decl->AsFunctionDecl(), var);
             break;
         }

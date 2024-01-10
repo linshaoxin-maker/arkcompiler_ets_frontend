@@ -163,7 +163,7 @@ Type *TSChecker::CheckOrOperator(Type *leftType, Type *rightType, ir::Expression
     return leftType;
 }
 
-static bool TypeHasCallOrConstructSignatures(Type *type)
+static bool TypeHasCallOrConstructSignatures(CheckerType *type)
 {
     return type->IsObjectType() &&
            (!type->AsObjectType()->CallSignatures().empty() || !type->AsObjectType()->ConstructSignatures().empty());

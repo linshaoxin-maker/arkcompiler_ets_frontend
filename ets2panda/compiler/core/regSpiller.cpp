@@ -24,7 +24,7 @@ CodeGen *RegSpiller::GetCodeGen() const noexcept
     return cg_;
 }
 
-std::pair<RegSpiller::SpillInfo, const checker::Type *> RegSpiller::New() noexcept
+std::pair<RegSpiller::SpillInfo, checker::CheckerType *> RegSpiller::New() noexcept
 {
     const VReg origin {VReg::REG_START - spillIndex_++};
     const auto *const originType = cg_->GetVRegType(origin);

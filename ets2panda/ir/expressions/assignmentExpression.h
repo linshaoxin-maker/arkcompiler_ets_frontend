@@ -146,7 +146,7 @@ private:
     Expression *result_ = nullptr;
     lexer::TokenType operator_;
     varbinder::Variable *target_ {};
-    checker::Type *operationType_ {};
+    checker::CheckerType *operationType_ {};
 };
 }  // namespace panda::es2panda::ir
 

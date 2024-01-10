@@ -28,7 +28,7 @@ public:
         return *ref_;
     }
 
-    const Type *Ref() const
+    CheckerType *Ref() const
     {
         return *ref_;
     }

@@ -329,7 +329,7 @@ void AliveAnalyzer::AnalyzeForLoop(const ir::ForUpdateStatement *forStmt)
 {
     AnalyzeNode(forStmt->Init());
     SetOldPendingExits(PendingExits());
-    const Type *condType {};
+    CheckerType *condType {};
     bool resolveType = false;
     bool res = false;
 

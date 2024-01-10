@@ -57,12 +57,12 @@ ETSGen::ETSGen(ArenaAllocator *allocator, RegSpiller *spiller, CompilerContext *
     ETSFunction::Compile(this);
 }
 
-void ETSGen::SetAccumulatorType(const checker::Type *type)
+void ETSGen::SetAccumulatorType(checker::CheckerType *type)
 {
     SetVRegType(acc_, type);
 }
 
-const checker::Type *ETSGen::GetAccumulatorType() const
+checker::CheckerType *ETSGen::GetAccumulatorType() const
 {
     return GetVRegType(acc_);
 }
@@ -103,7 +103,7 @@ const varbinder::ETSBinder *ETSGen::VarBinder() const noexcept
     return Context()->VarBinder()->AsETSBinder();
 }
 
-const checker::Type *ETSGen::ReturnType() const noexcept
+checker::CheckerType *ETSGen::ReturnType() const noexcept
 {
     return RootNode()->AsScriptFunction()->Signature()->ReturnType();
 }
@@ -124,7 +124,7 @@ VReg ETSGen::Acc() const noexcept
 }
 
 void ETSGen::ApplyConversionAndStoreAccumulator(const ir::AstNode *const node, const VReg vreg,
-                                                const checker::Type *const targetType)
+                                                checker::CheckerType *const targetType)
 {
     ApplyConversion(node, targetType);
     StoreAccumulator(node, vreg);
@@ -385,14 +385,14 @@ util::StringView ETSGen::FormClassPropReference(varbinder::Variable const *const
     return FormClassPropReference(containingObjectType, var->Name());
 }
 
-void ETSGen::StoreStaticOwnProperty(const ir::AstNode *node, const checker::Type *propType,
+void ETSGen::StoreStaticOwnProperty(const ir::AstNode *node, checker::CheckerType *propType,
                                     const util::StringView &name)
 {
     util::StringView fullName = FormClassPropReference(containingObjectType_, name);
     StoreStaticProperty(node, propType, fullName);
 }
 
-void ETSGen::StoreStaticProperty(const ir::AstNode *const node, const checker::Type *propType,
+void ETSGen::StoreStaticProperty(const ir::AstNode *const node, checker::CheckerType *propType,
                                  const util::StringView &fullName)
 {
     if (propType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
@@ -404,7 +404,7 @@ void ETSGen::StoreStaticProperty(const ir::AstNode *const node, const checker::T
     }
 }
 
-void ETSGen::LoadStaticProperty(const ir::AstNode *const node, const checker::Type *propType,
+void ETSGen::LoadStaticProperty(const ir::AstNode *const node, checker::CheckerType *propType,
                                 const util::StringView &fullName)
 {
     if (propType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
@@ -418,7 +418,7 @@ void ETSGen::LoadStaticProperty(const ir::AstNode *const node, const checker::Ty
     SetAccumulatorType(propType);
 }
 
-void ETSGen::StoreProperty(const ir::AstNode *const node, const checker::Type *propType, const VReg objReg,
+void ETSGen::StoreProperty(const ir::AstNode *const node, checker::CheckerType *propType, const VReg objReg,
                            const util::StringView &name)
 {
     const auto fullName = FormClassPropReference(GetVRegType(objReg)->AsETSObjectType(), name);
@@ -435,7 +435,7 @@ void ETSGen::StoreProperty(const ir::AstNode *const node, const checker::Type *p
     }
 }
 
-void ETSGen::LoadProperty(const ir::AstNode *const node, const checker::Type *propType, const VReg objReg,
+void ETSGen::LoadProperty(const ir::AstNode *const node, checker::CheckerType *propType, const VReg objReg,
                           const util::StringView &fullName)
 {
     if (node->IsIdentifier() && node->AsIdentifier()->Variable()->HasFlag(varbinder::VariableFlags::BOXED)) {
@@ -463,7 +463,7 @@ void ETSGen::StoreUnionProperty([[maybe_unused]] const ir::AstNode *node, [[mayb
 }
 
 void ETSGen::LoadUnionProperty([[maybe_unused]] const ir::AstNode *const node,
-                               [[maybe_unused]] const checker::Type *propType, [[maybe_unused]] const VReg objReg,
+                               [[maybe_unused]] checker::CheckerType *propType, [[maybe_unused]] const VReg objReg,
                                [[maybe_unused]] const util::StringView &propName)
 {
 #ifdef PANDA_WITH_ETS
@@ -474,7 +474,7 @@ void ETSGen::LoadUnionProperty([[maybe_unused]] const ir::AstNode *const node,
 #endif  // PANDA_WITH_ETS
 }
 
-void ETSGen::StorePropertyDynamic(const ir::AstNode *node, const checker::Type *propType, VReg objReg,
+void ETSGen::StorePropertyDynamic(const ir::AstNode *node, checker::CheckerType *propType, VReg objReg,
                                   const util::StringView &propName)
 {
     auto const lang = GetVRegType(objReg)->AsETSDynamicType()->Language();
@@ -522,7 +522,7 @@ void ETSGen::StorePropertyDynamic(const ir::AstNode *node, const checker::Type *
     SetAccumulatorType(nullptr);
 }
 
-void ETSGen::LoadPropertyDynamic(const ir::AstNode *node, const checker::Type *propType, VReg objReg,
+void ETSGen::LoadPropertyDynamic(const ir::AstNode *node, checker::CheckerType *propType, VReg objReg,
                                  const util::StringView &propName)
 {
     auto const lang = GetVRegType(objReg)->AsETSDynamicType()->Language();
@@ -710,7 +710,7 @@ VReg ETSGen::GetThisReg() const
     return res.variable->AsLocalVariable()->Vreg();
 }
 
-void ETSGen::LoadDefaultValue([[maybe_unused]] const ir::AstNode *node, [[maybe_unused]] const checker::Type *type)
+void ETSGen::LoadDefaultValue([[maybe_unused]] const ir::AstNode *node, [[maybe_unused]] checker::CheckerType *type)
 {
     if (type->IsETSUnionType()) {
         type = Checker()->GetGlobalTypesHolder()->GlobalETSObjectType();
@@ -751,7 +751,7 @@ void ETSGen::ReturnAcc(const ir::AstNode *node)
 
 void ETSGen::EmitIsInstanceNonNullish([[maybe_unused]] const ir::AstNode *const node,
                                       [[maybe_unused]] const VReg objReg,
-                                      [[maybe_unused]] checker::ETSObjectType const *clsType)
+                                      [[maybe_unused]] checker::CETSObjectType const *clsType)
 {
 #ifdef PANDA_WITH_ETS
     auto const objType = GetVRegType(objReg);
@@ -830,14 +830,14 @@ void ETSGen::EmitIsInstance([[maybe_unused]] const ir::AstNode *const node, [[ma
 #endif  // PANDA_WITH_ETS
 }
 
-void ETSGen::InternalCheckCast(const ir::AstNode *node, const es2panda::checker::Type *target)
+void ETSGen::InternalCheckCast(const ir::AstNode *node, checker::CheckerType *target)
 {
     ASSERT(target->IsETSObjectType() && !target->IsNullishOrNullLike());
     Sa().Emit<Checkcast>(node, ToAssemblerType(target));
     SetAccumulatorType(target);
 }
 
-void ETSGen::CheckedReferenceNarrowing(const ir::AstNode *node, const checker::Type *target)
+void ETSGen::CheckedReferenceNarrowing(const ir::AstNode *node, checker::CheckerType *target)
 {
     ASSERT(target->HasTypeFlag(TYPE_FLAG_BYTECODE_REF) && !target->IsETSNullLike());
     // NOTE(vpukhov): implement for nulllike and union targets
@@ -850,7 +850,7 @@ void ETSGen::CheckedReferenceNarrowing(const ir::AstNode *node, const checker::T
     SetAccumulatorType(target);
 }
 
-void ETSGen::GuardUncheckedType(const ir::AstNode *node, const checker::Type *unchecked, const checker::Type *target)
+void ETSGen::GuardUncheckedType(const ir::AstNode *node, checker::CheckerType *unchecked, checker::CheckerType *target)
 {
     if (unchecked != nullptr) {
         SetAccumulatorType(unchecked);
@@ -928,7 +928,7 @@ bool ETSGen::TryLoadConstantExpression(const ir::Expression *node)
     return true;
 }
 
-void ETSGen::ApplyConversionCast(const ir::AstNode *node, const checker::Type *targetType)
+void ETSGen::ApplyConversionCast(const ir::AstNode *node, checker::CheckerType *targetType)
 {
     switch (checker::ETSChecker::TypeKind(targetType)) {
         case checker::TypeFlag::DOUBLE: {
@@ -978,7 +978,7 @@ void ETSGen::ApplyUnboxingConversion(const ir::AstNode *node)
                                                                       ~(ir::BoxingUnboxingFlags::UNBOXING_FLAG)));
 }
 
-void ETSGen::ApplyConversion(const ir::AstNode *node, const checker::Type *targetType)
+void ETSGen::ApplyConversion(const ir::AstNode *node, checker::CheckerType *targetType)
 {
     auto ttctx = TargetTypeContext(this, targetType);
 
@@ -1010,7 +1010,7 @@ void ETSGen::ApplyConversion(const ir::AstNode *node, const checker::Type *targe
     ApplyConversionCast(node, targetType);
 }
 
-void ETSGen::ApplyCast(const ir::AstNode *node, const checker::Type *targetType)
+void ETSGen::ApplyCast(const ir::AstNode *node, checker::CheckerType *targetType)
 {
     auto typeKind = checker::ETSChecker::TypeKind(targetType);
 
@@ -1042,7 +1042,7 @@ void ETSGen::ApplyCast(const ir::AstNode *node, const checker::Type *targetType)
 }
 
 void ETSGen::EmitUnboxedCall(const ir::AstNode *node, std::string_view signatureFlag,
-                             const checker::Type *const targetType, const checker::Type *const boxedType)
+                             checker::CheckerType *const targetType, checker::CheckerType *const boxedType)
 {
     if (node->HasAstNodeFlags(ir::AstNodeFlags::CHECKCAST)) {
         CheckedReferenceNarrowing(node, boxedType);
@@ -1618,7 +1618,7 @@ void ETSGen::CastToInt(const ir::AstNode *node)
     SetAccumulatorType(Checker()->GlobalIntType());
 }
 
-void ETSGen::CastToArrayOrObject(const ir::AstNode *const node, const checker::Type *const targetType,
+void ETSGen::CastToArrayOrObject(const ir::AstNode *const node, checker::CheckerType *const targetType,
                                  const bool unchecked)
 {
     ASSERT(GetAccumulatorType()->HasTypeFlag(TYPE_FLAG_BYTECODE_REF));
@@ -1648,7 +1648,7 @@ void ETSGen::CastToArrayOrObject(const ir::AstNode *const node, const checker::T
     SetAccumulatorType(targetType);
 }
 
-void ETSGen::CastDynamicToObject(const ir::AstNode *node, const checker::Type *targetType)
+void ETSGen::CastDynamicToObject(const ir::AstNode *node, checker::CheckerType *targetType)
 {
     if (targetType->IsETSStringType()) {
         CastDynamicTo(node, checker::TypeFlag::STRING);
@@ -1787,7 +1787,7 @@ void ETSGen::CastToDynamic(const ir::AstNode *node, const checker::ETSDynamicTyp
 void ETSGen::CastDynamicTo(const ir::AstNode *node, enum checker::TypeFlag typeFlag)
 {
     std::string_view methodName {};
-    checker::Type *objectType {};
+    checker::CheckerType *objectType {};
     auto type = GetAccumulatorType()->AsETSDynamicType();
     switch (typeFlag) {
         case checker::TypeFlag::ETS_BOOLEAN: {
@@ -2524,7 +2524,8 @@ void ETSGen::NewObject(const ir::AstNode *const node, const VReg ctor, const uti
     SetVRegType(ctor, Checker()->GlobalETSObjectType());
 }
 
-void ETSGen::NewArray(const ir::AstNode *const node, const VReg arr, const VReg dim, const checker::Type *const arrType)
+void ETSGen::NewArray(const ir::AstNode *const node, const VReg arr, const VReg dim,
+                      checker::CheckerType *const arrType)
 {
     std::stringstream ss;
     arrType->ToAssemblerTypeWithRank(ss);
@@ -2593,7 +2594,7 @@ void ETSGen::LoadArrayElement(const ir::AstNode *node, VReg objectReg)
     SetAccumulatorType(elementType);
 }
 
-void ETSGen::StoreArrayElement(const ir::AstNode *node, VReg objectReg, VReg index, const checker::Type *elementType)
+void ETSGen::StoreArrayElement(const ir::AstNode *node, VReg objectReg, VReg index, checker::CheckerType *elementType)
 {
     switch (checker::ETSChecker::ETSType(elementType)) {
         case checker::TypeFlag::ETS_BOOLEAN:
@@ -2732,7 +2733,7 @@ bool ETSGen::ExtendWithFinalizer(ir::AstNode *node, const ir::AstNode *originalN
     return ExtendWithFinalizer(parent, originalNode, prevFinnaly);
 }
 
-util::StringView ETSGen::ToAssemblerType(const es2panda::checker::Type *type) const
+util::StringView ETSGen::ToAssemblerType(checker::CheckerType *type) const
 {
     ASSERT(type->HasTypeFlag(TYPE_FLAG_BYTECODE_REF) && !type->IsETSNullLike());
 

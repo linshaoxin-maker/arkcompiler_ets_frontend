@@ -113,11 +113,14 @@ enum class PropertyType {
 };
 
 class ETSObjectType : public Type {
+protected:
 public:
     using PropertyMap = ArenaUnorderedMap<util::StringView, varbinder::LocalVariable *>;
     using InstantiationMap = ArenaUnorderedMap<util::StringView, ETSObjectType *>;
     using PropertyTraverser = std::function<void(const varbinder::LocalVariable *)>;
     using PropertyHolder = std::array<PropertyMap, static_cast<size_t>(PropertyType::COUNT)>;
+    using TypeArgsT = ArenaVector<Type *>;
+    using InterfacesT = ArenaVector<ETSObjectType *>;
 
     explicit ETSObjectType(ArenaAllocator *allocator) : ETSObjectType(allocator, ETSObjectFlags::NO_OPTS) {}
 
@@ -157,7 +160,7 @@ public:
         superType_ = super;
     }
 
-    void SetTypeArguments(ArenaVector<Type *> &&typeArgs)
+    void SetTypeArguments(TypeArgsT &&typeArgs)
     {
         typeArguments_ = std::move(typeArgs);
     }
@@ -203,12 +206,12 @@ public:
         return properties_[static_cast<size_t>(PropertyType::STATIC_DECL)];
     }
 
-    const ArenaVector<Type *> &TypeArguments() const
+    const TypeArgsT &TypeArguments() const
     {
         return typeArguments_;
     }
 
-    ArenaVector<Type *> &TypeArguments()
+    TypeArgsT &TypeArguments()
     {
         return typeArguments_;
     }
@@ -225,12 +228,12 @@ public:
         return constructSignatures_;
     }
 
-    const ArenaVector<ETSObjectType *> &Interfaces() const
+    const InterfacesT &Interfaces() const
     {
         return interfaces_;
     }
 
-    ArenaVector<ETSObjectType *> &Interfaces()
+    InterfacesT &Interfaces()
     {
         return interfaces_;
     }
@@ -240,7 +243,7 @@ public:
         return declNode_;
     }
 
-    const ETSObjectType *SuperType() const
+    CETSObjectType *SuperType() const
     {
         return superType_;
     }
@@ -250,7 +253,7 @@ public:
         return superType_;
     }
 
-    const ETSObjectType *EnclosingType() const
+    CETSObjectType *EnclosingType() const
     {
         return enclosingType_;
     }
@@ -260,7 +263,7 @@ public:
         return enclosingType_;
     }
 
-    ETSObjectType *OutermostClass()
+    CETSObjectType *OutermostClass() const
     {
         auto *iter = enclosingType_;
 
@@ -281,19 +284,19 @@ public:
         return baseType_;
     }
 
-    const ETSObjectType *GetBaseType() const noexcept
+    ETSObjectType *GetBaseType() const noexcept
     {
         return baseType_;
     }
 
-    ETSObjectType const *GetConstOriginalBaseType() const noexcept;
+    CETSObjectType *GetConstOriginalBaseType() const noexcept;
 
     ETSObjectType *GetOriginalBaseType() noexcept
     {
         return const_cast<ETSObjectType *>(GetConstOriginalBaseType());
     }
 
-    bool IsPropertyInherited(const varbinder::Variable *var)
+    bool IsPropertyInherited(const varbinder::Variable *var) const
     {
         if (var->HasFlag(varbinder::VariableFlags::PRIVATE)) {
             return GetProperty(var->Name(), PropertySearchFlags::SEARCH_FIELD | PropertySearchFlags::SEARCH_DECL) ==
@@ -309,7 +312,7 @@ public:
         return true;
     }
 
-    bool IsPropertyOfAscendant(const varbinder::Variable *var)
+    bool IsPropertyOfAscendant(const varbinder::Variable *var) const
     {
         if (this->SuperType() == nullptr) {
             return false;
@@ -323,7 +326,7 @@ public:
         return this->SuperType()->IsPropertyOfAscendant(var);
     }
 
-    bool IsSignatureInherited(Signature *signature)
+    bool IsSignatureInherited(const Signature *signature) const
     {
         if (signature->HasSignatureFlag(SignatureFlags::PRIVATE)) {
             return signature->Owner() == this;
@@ -336,7 +339,7 @@ public:
         return true;
     }
 
-    bool IsDescendantOf(const ETSObjectType *ascendant)
+    bool IsDescendantOf(CETSObjectType *ascendant) const
     {
         if (this->SuperType() == nullptr) {
             return false;
@@ -476,8 +479,8 @@ public:
     bool AssignmentSource(TypeRelation *relation, Type *target) override;
     void AssignmentTarget(TypeRelation *relation, Type *source) override;
     Type *Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes) override;
-    bool SubstituteTypeArgs(TypeRelation *relation, ArenaVector<Type *> &newTypeArgs, const Substitution *substitution);
-    void SetCopiedTypeProperties(TypeRelation *relation, ETSObjectType *copiedType, ArenaVector<Type *> &newTypeArgs,
+    bool SubstituteTypeArgs(TypeRelation *relation, TypeArgsT &newTypeArgs, const Substitution *substitution);
+    void SetCopiedTypeProperties(TypeRelation *relation, ETSObjectType *copiedType, TypeArgsT &&newTypeArgs,
                                  const Substitution *substitution);
     Type *Substitute(TypeRelation *relation, const Substitution *substitution) override;
     void Cast(TypeRelation *relation, Type *target) override;
@@ -554,10 +557,10 @@ private:
     util::StringView name_;
     util::StringView assemblerName_;
     ir::AstNode *declNode_;
-    ArenaVector<ETSObjectType *> interfaces_;
+    InterfacesT interfaces_;
     ETSObjectFlags flags_;
     InstantiationMap instantiationMap_;
-    ArenaVector<Type *> typeArguments_;
+    TypeArgsT typeArguments_;
     ETSObjectType *superType_ {};
     ETSObjectType *enclosingType_ {};
     ETSObjectType *baseType_ {};

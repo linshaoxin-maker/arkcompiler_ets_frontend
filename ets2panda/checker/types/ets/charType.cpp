@@ -50,7 +50,7 @@ bool CharType::AssignmentSource([[maybe_unused]] TypeRelation *relation, [[maybe
     return relation->IsTrue();
 }
 
-void CharType::Cast(TypeRelation *const relation, Type *const target)
+void CharType::Cast(TypeRelation *const relation, Type *target)
 {
     if (target->HasTypeFlag(TypeFlag::CHAR)) {
         conversion::Identity(relation, this, target);

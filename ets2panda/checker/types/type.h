@@ -17,11 +17,10 @@
 #define ES2PANDA_COMPILER_CHECKER_TYPES_TYPE_H
 
 #include "generated/signatures.h"
-#include "checker/types/typeMapping.h"
+#include "checker/types/typeForwardDecls.h"
 #include "checker/types/typeRelation.h"
 #include "checker/types/typeFacts.h"
 
-#include "macros.h"
 #include <sstream>
 #include <variant>
 
@@ -32,20 +31,11 @@ class Variable;
 namespace panda::es2panda::checker {
 class ObjectDescriptor;
 class GlobalTypesHolder;
-class ETSDynamicType;
-class ETSAsyncFuncReturnType;
 class ETSChecker;
-class ETSDynamicFunctionType;
-class ETSTypeParameter;
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DECLARE_TYPENAMES(typeFlag, typeName) class typeName;
-TYPE_MAPPING(DECLARE_TYPENAMES)
-#undef DECLARE_TYPENAMES
-class ETSStringType;
-class ETSBigIntType;
 
-using Substitution = ArenaMap<ETSTypeParameter *, Type *>;
+using Substitution = ArenaMap<CETSTypeParameter *, Type *>;
 
 class Type {
 public:
@@ -101,16 +91,16 @@ public:
         return reinterpret_cast<ETSStringType *>(this);
     }
 
-    const ETSStringType *AsETSStringType() const
+    CETSStringType *AsETSStringType() const
     {
         ASSERT(IsETSObjectType());
-        return reinterpret_cast<const ETSStringType *>(this);
+        return reinterpret_cast<CETSStringType *>(this);
     }
 
-    const ETSBigIntType *AsETSBigIntType() const
+    CETSBigIntType *AsETSBigIntType() const
     {
         ASSERT(IsETSObjectType());
-        return reinterpret_cast<const ETSBigIntType *>(this);
+        return reinterpret_cast<CETSBigIntType *>(this);
     }
 
     bool IsETSDynamicType() const
@@ -145,12 +135,6 @@ public:
     bool IsETSDynamicFunctionType() const
     {
         return TypeFlags() == TypeFlag::ETS_DYNAMIC_FUNCTION_TYPE;
-    }
-
-    ETSDynamicFunctionType *AsETSDynamicFunctionType()
-    {
-        ASSERT(IsETSDynamicFunctionType());
-        return reinterpret_cast<ETSDynamicFunctionType *>(this);
     }
 
     const ETSDynamicFunctionType *AsETSDynamicFunctionType() const
@@ -247,7 +231,7 @@ public:
     virtual void Identical(TypeRelation *relation, Type *other);
     virtual void AssignmentTarget(TypeRelation *relation, Type *source) = 0;
     virtual bool AssignmentSource(TypeRelation *relation, Type *target);
-    virtual void Compare(TypeRelation *relation, Type *other);
+    virtual void Compare(TypeRelation *relation, CheckerType *other) const;
     virtual void Cast(TypeRelation *relation, Type *target);
     virtual void CastTarget(TypeRelation *relation, Type *source);
     virtual void IsSupertypeOf(TypeRelation *relation, Type *source);

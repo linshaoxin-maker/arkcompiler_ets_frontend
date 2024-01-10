@@ -25,7 +25,7 @@ ArenaAllocator *TypeRelation::Allocator()
     return checker_->Allocator();
 }
 
-RelationResult TypeRelation::CacheLookup(const Type *source, const Type *target, const RelationHolder &holder,
+RelationResult TypeRelation::CacheLookup(CheckerType *source, CheckerType *target, const RelationHolder &holder,
                                          RelationType type) const
 {
     if (result_ == RelationResult::CACHE_MISS) {
@@ -81,7 +81,7 @@ bool TypeRelation::IsIdenticalTo(Signature *source, Signature *target)
     return result_ == RelationResult::TRUE;
 }
 
-bool TypeRelation::IsIdenticalTo(IndexInfo *source, IndexInfo *target)
+bool TypeRelation::IsIdenticalTo(const IndexInfo *source, const IndexInfo *target)
 {
     if (source == target) {
         Result(true);

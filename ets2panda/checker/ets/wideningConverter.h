@@ -23,7 +23,7 @@ namespace panda::es2panda::checker {
 
 class WideningConverter : public TypeConverter {
 public:
-    explicit WideningConverter(ETSChecker *checker, TypeRelation *relation, Type *target, Type *source)
+    explicit WideningConverter(ETSChecker *checker, TypeRelation *relation, CheckerType *target, Type *source)
         : TypeConverter(checker, relation, target, source)
     {
         if (!Relation()->ApplyWidening()) {

@@ -155,12 +155,12 @@ public:
         ignoreBox_ = true;
     }
 
-    [[nodiscard]] checker::Type *UncheckedType() const noexcept
+    [[nodiscard]] checker::CheckerType *UncheckedType() const noexcept
     {
         return uncheckedType_;
     }
 
-    checker::Type *GetTupleConvertedType() const noexcept
+    checker::CheckerType *GetTupleConvertedType() const noexcept
     {
         return tupleConvertedType_;
     }

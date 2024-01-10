@@ -31,7 +31,7 @@ class Type;
 
 class ElaborationContext {
 public:
-    ElaborationContext(TSChecker *checker, Type *targetType, Type *sourceType, ir::Expression *sourceNode,
+    ElaborationContext(TSChecker *checker, Type *targetType, CheckerType *sourceType, ir::Expression *sourceNode,
                        const lexer::SourcePosition &startPos)
         : checker_(checker),
           targetType_(targetType),
@@ -51,7 +51,7 @@ protected:
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
     TSChecker *checker_;
     Type *targetType_;
-    Type *sourceType_;
+    CheckerType *sourceType_;
     ir::Expression *sourceNode_;
     const lexer::SourcePosition startPos_;
     ArenaVector<Type *> potentialTypes_;
@@ -60,7 +60,7 @@ protected:
 
 class ArrayElaborationContext : public ElaborationContext {
 public:
-    ArrayElaborationContext(TSChecker *checker, Type *targetType, Type *sourceType, ir::Expression *sourceNode,
+    ArrayElaborationContext(TSChecker *checker, Type *targetType, CheckerType *sourceType, ir::Expression *sourceNode,
                             const lexer::SourcePosition &startPos)
         : ElaborationContext(checker, targetType, sourceType, sourceNode, startPos)
     {
@@ -75,7 +75,7 @@ private:
 
 class ObjectElaborationContext : public ElaborationContext {
 public:
-    ObjectElaborationContext(TSChecker *checker, Type *targetType, Type *sourceType, ir::Expression *sourceNode,
+    ObjectElaborationContext(TSChecker *checker, Type *targetType, CheckerType *sourceType, ir::Expression *sourceNode,
                              const lexer::SourcePosition &startPos)
         : ElaborationContext(checker, targetType, sourceType, sourceNode, startPos)
     {

@@ -40,7 +40,7 @@ public:
         return type_;
     }
 
-    const Type *GetType() const
+    Type *GetType() const
     {
         return type_;
     }
@@ -60,15 +60,15 @@ public:
         return readonly_;
     }
 
-    const lexer::SourcePosition &Pos()
+    const lexer::SourcePosition &Pos() const
     {
         return pos_;
     }
 
     void ToString(std::stringstream &ss, bool numIndex = true) const;
-    void Identical(TypeRelation *relation, IndexInfo *other);
-    void AssignmentTarget(TypeRelation *relation, IndexInfo *source);
-    IndexInfo *Copy(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes);
+    void Identical(TypeRelation *relation, const IndexInfo *other) const;
+    void AssignmentTarget(TypeRelation *relation, const IndexInfo *source) const;
+    IndexInfo *Copy(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes) const;
 
 private:
     Type *type_;

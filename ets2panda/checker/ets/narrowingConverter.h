@@ -23,7 +23,7 @@
 namespace panda::es2panda::checker {
 class NarrowingConverter : public TypeConverter {
 public:
-    explicit NarrowingConverter(ETSChecker *checker, TypeRelation *relation, Type *target, Type *source)
+    explicit NarrowingConverter(ETSChecker *checker, TypeRelation *relation, CheckerType *target, Type *source)
         : TypeConverter(checker, relation, target, source)
     {
         if (!relation->ApplyNarrowing()) {

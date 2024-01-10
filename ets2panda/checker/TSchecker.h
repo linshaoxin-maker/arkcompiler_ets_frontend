@@ -246,30 +246,30 @@ public:
     // Util
     static bool InAssignment(ir::AstNode *node);
     static bool IsAssignmentOperator(lexer::TokenType op);
-    static bool IsLiteralType(const Type *type);
+    static bool IsLiteralType(CheckerType *type);
     static ir::AstNode *FindAncestorUntilGivenType(ir::AstNode *node, ir::AstNodeType stop);
-    static bool MaybeTypeOfKind(const Type *type, TypeFlag flags);
-    static bool MaybeTypeOfKind(const Type *type, ObjectType::ObjectTypeKind kind);
+    static bool MaybeTypeOfKind(CheckerType *type, TypeFlag flags);
+    static bool MaybeTypeOfKind(CheckerType *type, ObjectType::ObjectTypeKind kind);
     static bool IsConstantMemberAccess(ir::Expression *expr);
     static bool IsStringLike(ir::Expression *expr);
     static ir::MemberExpression *ResolveLeftMostMemberExpression(ir::MemberExpression *expr);
 
     // Helpers
-    void CheckTruthinessOfType(Type *type, lexer::SourcePosition lineInfo);
+    void CheckTruthinessOfType(CheckerType *type, lexer::SourcePosition lineInfo);
     Type *CheckNonNullType(Type *type, lexer::SourcePosition lineInfo);
     Type *GetBaseTypeOfLiteralType(Type *type);
     void CheckReferenceExpression(ir::Expression *expr, const char *invalidReferenceMsg,
                                   const char *invalidOptionalChainMsg);
-    void CheckTestingKnownTruthyCallableOrAwaitableType(ir::Expression *condExpr, Type *type, ir::AstNode *body);
+    void CheckTestingKnownTruthyCallableOrAwaitableType(ir::Expression *condExpr, CheckerType *type, ir::AstNode *body);
     Type *ExtractDefinitelyFalsyTypes(Type *type);
     Type *RemoveDefinitelyFalsyTypes(Type *type);
-    TypeFlag GetFalsyFlags(Type *type);
+    TypeFlag GetFalsyFlags(CheckerType *type);
     bool IsVariableUsedInConditionBody(ir::AstNode *parent, varbinder::Variable *searchVar);
     bool FindVariableInBinaryExpressionChain(ir::AstNode *parent, varbinder::Variable *searchVar);
     bool IsVariableUsedInBinaryExpressionChain(ir::AstNode *parent, varbinder::Variable *searchVar);
-    [[noreturn]] void ThrowBinaryLikeError(lexer::TokenType op, Type *leftType, Type *rightType,
+    [[noreturn]] void ThrowBinaryLikeError(lexer::TokenType op, CheckerType *leftType, CheckerType *rightType,
                                            lexer::SourcePosition lineInfo);
-    [[noreturn]] void ThrowAssignmentError(Type *source, Type *target, lexer::SourcePosition lineInfo,
+    [[noreturn]] void ThrowAssignmentError(CheckerType *source, CheckerType *target, lexer::SourcePosition lineInfo,
                                            bool isAsSrcLeftType = false);
     void ElaborateElementwise(Type *targetType, ir::Expression *sourceNode, const lexer::SourcePosition &pos);
     void InferSimpleVariableDeclaratorType(ir::VariableDeclarator *declarator);
@@ -290,8 +290,8 @@ public:
     Type *CreateTupleType(ObjectDescriptor *desc, ArenaVector<ElementFlags> &&elementFlags, ElementFlags combinedFlags,
                           uint32_t minLength, uint32_t fixedLength, bool readonly, NamedTupleMemberPool &&namedMembers);
     Type *CreateUnionType(std::initializer_list<Type *> constituentTypes);
-    Type *CreateUnionType(ArenaVector<Type *> &&constituentTypes);
-    Type *CreateUnionType(ArenaVector<Type *> &constituentTypes);
+    Type *CreateUnionType(UnionType::ConstituentsT &&constituentTypes);
+    Type *CreateUnionType(UnionType::ConstituentsT &constituentTypes);
     Type *CreateObjectTypeWithCallSignature(Signature *callSignature);
     Type *CreateObjectTypeWithConstructSignature(Signature *constructSignature);
 
@@ -303,7 +303,7 @@ public:
                                        ArenaVector<ir::TSSignatureDeclaration *> &signatureDeclarations);
     void ResolveIndexInfosOfObjectType(ObjectType *type, ArenaVector<ir::TSIndexSignature *> &indexDeclarations);
     void ResolveDeclaredMembers(InterfaceType *type);
-    bool ValidateInterfaceMemberRedeclaration(ObjectType *type, varbinder::Variable *prop,
+    bool ValidateInterfaceMemberRedeclaration(CObjectType *type, varbinder::Variable *prop,
                                               const lexer::SourcePosition &locInfo);
     varbinder::Variable *GetPropertyOfType(Type *type, const util::StringView &name, bool getPartial = false,
                                            varbinder::VariableFlags propagateFlags = varbinder::VariableFlags::NONE);
@@ -314,8 +314,8 @@ public:
     void ResolveObjectTypeMembers(ObjectType *type);
     void ResolveInterfaceOrClassTypeMembers(InterfaceType *type);
     Type *CheckComputedPropertyName(ir::Expression *key);
-    Type *GetPropertyTypeForIndexType(Type *type, Type *indexType);
-    IndexInfo *GetApplicableIndexInfo(Type *type, Type *indexType);
+    Type *GetPropertyTypeForIndexType(Type *type, CheckerType *indexType);
+    IndexInfo *GetApplicableIndexInfo(Type *type, CheckerType *indexType);
     ArenaVector<ObjectType *> GetBaseTypes(InterfaceType *type);
     void ResolveStructuredTypeMembers(Type *type) override;
 

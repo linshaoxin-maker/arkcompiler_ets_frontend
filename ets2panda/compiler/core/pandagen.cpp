@@ -1813,7 +1813,7 @@ bool PandaGen::IsEval() const
     return Context()->IsEval();
 }
 
-const checker::Type *PandaGen::GetVRegType(VReg vreg) const
+checker::CheckerType *PandaGen::GetVRegType(VReg vreg) const
 {
     // We assume that all used regs have any type
     if (vreg.GetIndex() > NextReg().GetIndex()) {

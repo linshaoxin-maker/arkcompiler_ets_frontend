@@ -23,6 +23,7 @@ class GlobalTypesHolder;
 
 class UnionType : public Type {
 public:
+    using ConstituentsT = ArenaVector<Type *>;
     UnionType(ArenaAllocator *allocator, std::initializer_list<Type *> types)
         : Type(TypeFlag::UNION),
           constituentTypes_(allocator->Adapter()),
@@ -37,7 +38,7 @@ public:
         }
     }
 
-    explicit UnionType(ArenaAllocator *allocator, ArenaVector<Type *> &&constituentTypes)
+    explicit UnionType(ArenaAllocator *allocator, ConstituentsT &&constituentTypes)
         : Type(TypeFlag::UNION),
           constituentTypes_(std::move(constituentTypes)),
           cachedSyntheticProperties_(allocator->Adapter())
@@ -47,7 +48,7 @@ public:
         }
     }
 
-    explicit UnionType(ArenaAllocator *allocator, ArenaVector<Type *> &constituentTypes)
+    explicit UnionType(ArenaAllocator *allocator, ConstituentsT &constituentTypes)
         : Type(TypeFlag::UNION), constituentTypes_(constituentTypes), cachedSyntheticProperties_(allocator->Adapter())
     {
         for (auto *it : constituentTypes_) {
@@ -55,12 +56,12 @@ public:
         }
     }
 
-    const ArenaVector<Type *> &ConstituentTypes() const
+    const ConstituentsT &ConstituentTypes() const
     {
         return constituentTypes_;
     }
 
-    ArenaVector<Type *> &ConstituentTypes()
+    ConstituentsT &ConstituentTypes()
     {
         return constituentTypes_;
     }
@@ -121,15 +122,15 @@ public:
     TypeFacts GetTypeFacts() const override;
     Type *Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes) override;
 
-    static void RemoveDuplicatedTypes(TypeRelation *relation, ArenaVector<Type *> &constituentTypes);
+    static void RemoveDuplicatedTypes(TypeRelation *relation, ConstituentsT &constituentTypes);
     static Type *HandleUnionType(UnionType *unionType, GlobalTypesHolder *globalTypesHolder);
     static void RemoveRedundantLiteralTypesFromUnion(UnionType *type);
 
 private:
-    static bool EachTypeRelatedToSomeType(TypeRelation *relation, UnionType *source, UnionType *target);
-    static bool TypeRelatedToSomeType(TypeRelation *relation, Type *source, UnionType *target);
+    static bool EachTypeRelatedToSomeType(TypeRelation *relation, CUnionType *source, CUnionType *target);
+    static bool TypeRelatedToSomeType(TypeRelation *relation, Type *source, CUnionType *target);
 
-    ArenaVector<Type *> constituentTypes_;
+    ConstituentsT constituentTypes_;
     TypeFlag constituentFlags_ {TypeFlag::NONE};
     ArenaUnorderedMap<util::StringView, varbinder::Variable *> cachedSyntheticProperties_;
     ObjectType *mergedObjectType_ {};

@@ -175,13 +175,7 @@ void ETSFunctionType::AssignmentTarget(TypeRelation *relation, Type *source)
 Type *ETSFunctionType::Instantiate([[maybe_unused]] ArenaAllocator *allocator, [[maybe_unused]] TypeRelation *relation,
                                    [[maybe_unused]] GlobalTypesHolder *globalTypes)
 {
-    auto *copiedType = relation->GetChecker()->AsETSChecker()->CreateETSFunctionType(name_);
-
-    for (auto *it : callSignatures_) {
-        copiedType->AddCallSignature(it->Copy(allocator, relation, globalTypes));
-    }
-
-    return copiedType;
+    return relation->GetChecker()->AsETSChecker()->CreateETSFunctionType(name_, callSignatures_);
 }
 
 ETSFunctionType *ETSFunctionType::Substitute(TypeRelation *relation, const Substitution *substitution)
@@ -206,7 +200,7 @@ ETSFunctionType *ETSFunctionType::Substitute(TypeRelation *relation, const Subst
     return anyChange ? copiedType : this;
 }
 
-checker::RelationResult ETSFunctionType::CastFunctionParams(TypeRelation *relation, Type *target)
+checker::RelationResult ETSFunctionType::CastFunctionParams(TypeRelation *relation, CheckerType *target)
 {
     auto *targetType = target->AsETSObjectType();
     auto *body = targetType->GetDeclNode()->AsTSInterfaceDeclaration()->Body();

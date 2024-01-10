@@ -80,7 +80,7 @@ bool TSChecker::IsAssignmentOperator(lexer::TokenType op)
     }
 }
 
-bool TSChecker::IsLiteralType(const Type *type)
+bool TSChecker::IsLiteralType(CheckerType *type)
 {
     if (type->IsBooleanType()) {
         return true;
@@ -112,7 +112,7 @@ ir::AstNode *TSChecker::FindAncestorUntilGivenType(ir::AstNode *node, ir::AstNod
     return node;
 }
 
-bool TSChecker::MaybeTypeOfKind(const Type *type, TypeFlag flags)
+bool TSChecker::MaybeTypeOfKind(CheckerType *type, TypeFlag flags)
 {
     if (type->HasTypeFlag(flags)) {
         return true;
@@ -132,7 +132,7 @@ bool TSChecker::MaybeTypeOfKind(const Type *type, TypeFlag flags)
     return false;
 }
 
-bool TSChecker::MaybeTypeOfKind(const Type *type, ObjectType::ObjectTypeKind kind)
+bool TSChecker::MaybeTypeOfKind(CheckerType *type, ObjectType::ObjectTypeKind kind)
 {
     if (type->IsObjectType() && type->AsObjectType()->Kind() == kind) {
         return true;

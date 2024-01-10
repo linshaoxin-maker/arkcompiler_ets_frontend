@@ -18,7 +18,7 @@
 #include "checker/TSchecker.h"
 
 namespace panda::es2panda::checker {
-Type *TupleType::ConvertToArrayType(TSChecker *checker)
+Type *TupleType::ConvertToArrayType(TSChecker *checker) const
 {
     ArenaVector<Type *> unionTypes(checker->Allocator()->Adapter());
 
@@ -74,7 +74,7 @@ void TupleType::Identical(TypeRelation *relation, Type *other)
         return;
     }
 
-    TupleType *otherTuple = other->AsObjectType()->AsTupleType();
+    auto *otherTuple = other->AsObjectType()->AsTupleType();
     if (kind_ == otherTuple->Kind() && desc_->properties.size() == otherTuple->Properties().size()) {
         for (size_t i = 0; i < desc_->properties.size(); i++) {
             varbinder::LocalVariable *targetProp = desc_->properties[i];
@@ -102,7 +102,7 @@ void TupleType::AssignmentTarget(TypeRelation *relation, Type *source)
         return;
     }
 
-    TupleType *sourceTuple = source->AsObjectType()->AsTupleType();
+    auto *sourceTuple = source->AsObjectType()->AsTupleType();
     if (FixedLength() < sourceTuple->MinLength()) {
         relation->Result(false);
         return;

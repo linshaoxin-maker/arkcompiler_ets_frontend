@@ -33,7 +33,17 @@ public:
         return classMethodType_;
     }
 
+    CETSFunctionType *ClassMethodType() const
+    {
+        return classMethodType_;
+    }
+
     ETSFunctionType *ExtensionMethodType()
+    {
+        return extensionFunctionType_;
+    }
+
+    CETSFunctionType *ExtensionMethodType() const
     {
         return extensionFunctionType_;
     }

@@ -27,6 +27,7 @@ Type const *MaybeBoxedType(Checker *checker, varbinder::Variable const *var);
 
 class SignatureInfo {
 public:
+    using ParamsT = ArenaVector<Type *>;
     explicit SignatureInfo(ArenaAllocator *allocator) : typeParams {allocator->Adapter()}, params {allocator->Adapter()}
     {
     }
@@ -54,7 +55,7 @@ public:
     NO_MOVE_SEMANTIC(SignatureInfo);
 
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
-    ArenaVector<Type *> typeParams;
+    ParamsT typeParams;
     uint32_t minArgCount {};
     varbinder::LocalVariable *restVar {};
     ArenaVector<varbinder::LocalVariable *> params;
@@ -129,7 +130,7 @@ public:
         return signatureInfo_->params;
     }
 
-    const Type *ReturnType() const
+    CheckerType *ReturnType() const
     {
         return returnType_;
     }
@@ -149,7 +150,7 @@ public:
         return signatureInfo_->params.size() - signatureInfo_->minArgCount;
     }
 
-    void SetReturnType(Type *type)
+    void SetReturnType(checker::Type *type)
     {
         returnType_ = type;
     }
@@ -174,7 +175,7 @@ public:
         return func_;
     }
 
-    ETSObjectType *Owner()
+    ETSObjectType *Owner() const
     {
         return ownerObj_;
     }
@@ -187,6 +188,11 @@ public:
     const ir::ScriptFunction *Function() const
     {
         return func_;
+    }
+
+    varbinder::LocalVariable *RestVar()
+    {
+        return signatureInfo_->restVar;
     }
 
     const varbinder::LocalVariable *RestVar() const
@@ -247,11 +253,11 @@ public:
 
     void ToString(std::stringstream &ss, const varbinder::Variable *variable, bool printAsMethod = false) const;
     void Identical(TypeRelation *relation, Signature *other);
-    bool CheckFunctionalInterfaces(TypeRelation *relation, Type *source, Type *target);
+    bool CheckFunctionalInterfaces(TypeRelation *relation, CheckerType *source, CheckerType *target) const;
     void AssignmentTarget(TypeRelation *relation, Signature *source);
 
 private:
-    bool IdenticalParameter(TypeRelation *relation, Type *type1, Type *type2);
+    bool IdenticalParameter(TypeRelation *relation, Type *type1, Type *type2) const;
     checker::SignatureInfo *signatureInfo_;
     Type *returnType_;
     ir::ScriptFunction *func_ {};

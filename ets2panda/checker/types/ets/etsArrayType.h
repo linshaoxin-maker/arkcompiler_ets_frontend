@@ -23,12 +23,7 @@ class ETSArrayType : public Type {
 public:
     explicit ETSArrayType(Type *elementType) : Type(TypeFlag::ETS_ARRAY), element_(elementType) {}
 
-    Type *ElementType()
-    {
-        return element_;
-    }
-
-    const Type *ElementType() const
+    Type *ElementType() const
     {
         return element_;
     }

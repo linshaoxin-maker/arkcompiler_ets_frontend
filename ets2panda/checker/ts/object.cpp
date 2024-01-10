@@ -47,8 +47,8 @@ void TSChecker::CheckIndexConstraints(Type *type)
     ObjectType *objType = type->AsObjectType();
     ResolveStructuredTypeMembers(objType);
 
-    IndexInfo *numberInfo = objType->NumberIndexInfo();
-    IndexInfo *stringInfo = objType->StringIndexInfo();
+    const IndexInfo *numberInfo = objType->NumberIndexInfo();
+    const IndexInfo *stringInfo = objType->StringIndexInfo();
     const ArenaVector<varbinder::LocalVariable *> &properties = objType->Properties();
 
     if (numberInfo != nullptr) {
@@ -109,8 +109,8 @@ void TSChecker::ResolveUnionTypeMembers(UnionType *type)
     }
 
     ObjectDescriptor *desc = Allocator()->New<ObjectDescriptor>(Allocator());
-    ArenaVector<Type *> stringInfoTypes(Allocator()->Adapter());
-    ArenaVector<Type *> numberInfoTypes(Allocator()->Adapter());
+    UnionType::ConstituentsT stringInfoTypes(Allocator()->Adapter());
+    UnionType::ConstituentsT numberInfoTypes(Allocator()->Adapter());
     ArenaVector<Signature *> callSignatures(Allocator()->Adapter());
     ArenaVector<Signature *> constructSignatures(Allocator()->Adapter());
 
@@ -293,7 +293,7 @@ varbinder::Variable *TSChecker::GetPropertyOfUnionType(UnionType *type, const ut
     }
 
     varbinder::VariableFlags flags = varbinder::VariableFlags::PROPERTY;
-    ArenaVector<Type *> collectedTypes(Allocator()->Adapter());
+    UnionType::ConstituentsT collectedTypes(Allocator()->Adapter());
 
     for (auto *it : type->ConstituentTypes()) {
         varbinder::Variable *prop = GetPropertyOfType(it, name);
@@ -312,7 +312,7 @@ varbinder::Variable *TSChecker::GetPropertyOfUnionType(UnionType *type, const ut
                 return nullptr;
             }
 
-            ObjectType *objType = it->AsObjectType();
+            CObjectType *objType = it->AsObjectType();
 
             if (objType->StringIndexInfo() == nullptr) {
                 if (getPartial) {
@@ -365,7 +365,7 @@ Type *TSChecker::CheckComputedPropertyName(ir::Expression *key)
     return keyType;
 }
 
-IndexInfo *TSChecker::GetApplicableIndexInfo(Type *type, Type *indexType)
+IndexInfo *TSChecker::GetApplicableIndexInfo(Type *type, CheckerType *indexType)
 {
     ResolveStructuredTypeMembers(type);
     bool getNumberInfo = indexType->HasTypeFlag(TypeFlag::NUMBER_LIKE);
@@ -391,7 +391,7 @@ IndexInfo *TSChecker::GetApplicableIndexInfo(Type *type, Type *indexType)
     return nullptr;
 }
 
-Type *TSChecker::GetPropertyTypeForIndexType(Type *type, Type *indexType)
+Type *TSChecker::GetPropertyTypeForIndexType(Type *type, CheckerType *indexType)
 {
     if (type->IsArrayType()) {
         return type->AsArrayType()->ElementType();
@@ -519,7 +519,7 @@ void TSChecker::ResolveDeclaredMembers(InterfaceType *type)
     }
 }
 
-bool TSChecker::ValidateInterfaceMemberRedeclaration(ObjectType *type, varbinder::Variable *prop,
+bool TSChecker::ValidateInterfaceMemberRedeclaration(CObjectType *type, varbinder::Variable *prop,
                                                      const lexer::SourcePosition &locInfo)
 {
     if (prop->HasFlag(varbinder::VariableFlags::COMPUTED)) {

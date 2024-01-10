@@ -28,7 +28,7 @@ public:
         return element_;
     }
 
-    const Type *ElementType() const
+    CheckerType *ElementType() const
     {
         return element_;
     }

@@ -71,7 +71,7 @@ checker::Type *ETSUnionType::GetType([[maybe_unused]] checker::ETSChecker *check
         return TsType();
     }
 
-    ArenaVector<checker::Type *> types(checker->Allocator()->Adapter());
+    checker::ETSUnionType::ConstituentsT types(checker->Allocator()->Adapter());
 
     for (auto *it : types_) {
         types.push_back(it->GetType(checker));

@@ -34,7 +34,7 @@ public:
         bases_.push_back(base);
     }
 
-    ArenaVector<ObjectType *> &Bases()
+    const ArenaVector<ObjectType *> &Bases() const
     {
         return bases_;
     }
@@ -87,14 +87,14 @@ public:
         return nullptr;
     }
 
-    ArenaVector<Signature *> CallSignatures() override
+    ArenaVector<Signature *> CallSignatures() const override
     {
         ArenaVector<Signature *> signatures(allocator_->Adapter());
         CollectSignatures(&signatures, true);
         return signatures;
     }
 
-    ArenaVector<Signature *> ConstructSignatures() override
+    ArenaVector<Signature *> ConstructSignatures() const override
     {
         ArenaVector<Signature *> signatures(allocator_->Adapter());
         CollectSignatures(&signatures, false);
@@ -121,7 +121,7 @@ public:
         return FindIndexInfo(true);
     }
 
-    ArenaVector<varbinder::LocalVariable *> Properties() override
+    ArenaVector<varbinder::LocalVariable *> Properties() const override
     {
         ArenaVector<varbinder::LocalVariable *> properties(allocator_->Adapter());
         CollectProperties(&properties);
@@ -145,6 +145,7 @@ private:
     std::pair<std::vector<varbinder::Variable *>, size_t> mergedTypeParams_ {};
     std::vector<Type *> typeParamTypes_ {};
 };
+
 }  // namespace panda::es2panda::checker
 
 #endif /* TYPESCRIPT_TYPES_INTERFACE_TYPE_H */

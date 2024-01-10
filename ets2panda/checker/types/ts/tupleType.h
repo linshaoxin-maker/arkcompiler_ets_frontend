@@ -85,7 +85,7 @@ public:
         return res->second;
     }
 
-    Type *ConvertToArrayType(TSChecker *checker);
+    Type *ConvertToArrayType(TSChecker *checker) const;
 
     void ToString(std::stringstream &ss) const override;
     void Identical(TypeRelation *relation, Type *other) override;

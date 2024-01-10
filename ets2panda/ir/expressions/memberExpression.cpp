@@ -299,7 +299,7 @@ checker::Type *MemberExpression::CheckIndexAccessMethod(checker::ETSChecker *che
         arguments.emplace_back(value);
     }
 
-    auto &signatures = checker->GetTypeOfVariable(method)->AsETSFunctionType()->CallSignatures();
+    const auto &signatures = checker->GetTypeOfVariable(method)->AsETSFunctionType()->CallSignatures();
 
     checker::Signature *signature = checker->ValidateSignatures(signatures, nullptr, arguments, Start(), "indexing",
                                                                 checker::TypeRelationFlag::NO_THROW);

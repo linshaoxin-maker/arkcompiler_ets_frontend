@@ -96,7 +96,7 @@ void DestructuringContext::SetInferredTypeForVariable(varbinder::Variable *var, 
     var->SetTsType(inferredType);
 }
 
-void DestructuringContext::ValidateObjectLiteralType(ObjectType *objType, ir::ObjectExpression *objPattern)
+void DestructuringContext::ValidateObjectLiteralType(CObjectType *objType, ir::ObjectExpression *objPattern)
 {
     for (const auto *sourceProp : objType->Properties()) {
         const util::StringView &sourceName = sourceProp->Name();
@@ -247,7 +247,7 @@ Type *ArrayDestructuringContext::NextInferredType([[maybe_unused]] const util::S
 
     ASSERT(inferredType_->IsUnionType());
 
-    ArenaVector<Type *> unionTypes(checker_->Allocator()->Adapter());
+    UnionType::ConstituentsT unionTypes(checker_->Allocator()->Adapter());
 
     for (auto *type : inferredType_->AsUnionType()->ConstituentTypes()) {
         if (type->IsArrayType()) {
@@ -279,7 +279,7 @@ Type *ArrayDestructuringContext::NextInferredType([[maybe_unused]] const util::S
 
 Type *ArrayDestructuringContext::CreateArrayTypeForRest(UnionType *inferredType)
 {
-    ArenaVector<Type *> unionTypes(checker_->Allocator()->Adapter());
+    UnionType::ConstituentsT unionTypes(checker_->Allocator()->Adapter());
     uint32_t savedIdx = index_;
 
     for (auto *it : inferredType->ConstituentTypes()) {
@@ -357,7 +357,7 @@ Type *ArrayDestructuringContext::GetRestType([[maybe_unused]] const lexer::Sourc
         return CreateArrayTypeForRest(inferredType_->AsUnionType());
     }
 
-    ArenaVector<Type *> tupleUnion(checker_->Allocator()->Adapter());
+    UnionType::ConstituentsT tupleUnion(checker_->Allocator()->Adapter());
 
     for (auto *it : inferredType_->AsUnionType()->ConstituentTypes()) {
         ASSERT(it->IsObjectType() && it->AsObjectType()->IsTupleType());
@@ -556,7 +556,7 @@ Type *ObjectDestructuringContext::CreateObjectTypeForRest(ObjectType *objType)
 Type *ObjectDestructuringContext::GetRestType([[maybe_unused]] const lexer::SourcePosition &loc)
 {
     if (inferredType_->IsUnionType()) {
-        ArenaVector<Type *> unionTypes(checker_->Allocator()->Adapter());
+        UnionType::ConstituentsT unionTypes(checker_->Allocator()->Adapter());
 
         for (auto *it : inferredType_->AsUnionType()->ConstituentTypes()) {
             if (it->IsObjectType()) {
@@ -618,7 +618,7 @@ Type *ObjectDestructuringContext::NextInferredType([[maybe_unused]] const util::
     }
 
     if (inferredType_->IsObjectType()) {
-        checker::ObjectType *objType = inferredType_->AsObjectType();
+        ObjectType *objType = inferredType_->AsObjectType();
 
         if (objType->StringIndexInfo() != nullptr) {
             return objType->StringIndexInfo()->GetType();

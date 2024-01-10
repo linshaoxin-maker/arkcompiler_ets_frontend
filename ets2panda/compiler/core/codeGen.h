@@ -67,7 +67,7 @@ private:
 
 class CodeGen {
 public:
-    using TypeMap = ArenaUnorderedMap<VReg, const checker::Type *>;
+    using TypeMap = ArenaUnorderedMap<VReg, checker::CheckerType *>;
 
     explicit CodeGen(ArenaAllocator *allocator, RegSpiller *spiller, CompilerContext *context,
                      varbinder::FunctionScope *scope, ProgramElement *programElement, AstCompiler *astcompiler) noexcept
@@ -105,7 +105,7 @@ public:
     [[nodiscard]] const ArenaVector<IRNode *> &Insns() const noexcept;
 
     [[nodiscard]] VReg AllocReg();
-    [[nodiscard]] VReg AllocRegWithType(const checker::Type *type);
+    [[nodiscard]] VReg AllocRegWithType(checker::CheckerType *type);
     [[nodiscard]] VReg NextReg() const noexcept;
 
     [[nodiscard]] std::uint32_t TotalRegsNum() const noexcept;
@@ -144,9 +144,9 @@ public:
 
     [[noreturn]] static void Unimplemented();
 
-    void SetVRegType(VReg vreg, const checker::Type *type);
+    void SetVRegType(VReg vreg, checker::CheckerType *type);
 
-    [[nodiscard]] virtual const checker::Type *GetVRegType(VReg vreg) const;
+    [[nodiscard]] virtual checker::CheckerType *GetVRegType(VReg vreg) const;
 
     [[nodiscard]] CompilerContext *Context() const noexcept;
 

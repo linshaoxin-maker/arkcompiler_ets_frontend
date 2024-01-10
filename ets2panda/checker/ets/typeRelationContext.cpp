@@ -24,7 +24,7 @@
 
 namespace panda::es2panda::checker {
 void AssignmentContext::ValidateArrayTypeInitializerByElement(TypeRelation *relation, ir::ArrayExpression *node,
-                                                              ETSArrayType *target)
+                                                              CETSArrayType *target)
 {
     if (target->IsETSTupleType()) {
         return;
@@ -110,7 +110,7 @@ bool InstantiationContext::ValidateTypeArg(Type *constraintType, Type *typeArg)
 
 void InstantiationContext::InstantiateType(ETSObjectType *type, ir::TSTypeParameterInstantiation *typeArgs)
 {
-    ArenaVector<Type *> typeArgTypes(checker_->Allocator()->Adapter());
+    ETSObjectType::TypeArgsT typeArgTypes(checker_->Allocator()->Adapter());
     typeArgTypes.reserve(type->TypeArguments().size());
 
     auto flags = ETSObjectFlags::NO_OPTS;
@@ -139,7 +139,7 @@ void InstantiationContext::InstantiateType(ETSObjectType *type, ir::TSTypeParame
     result_->AddObjectFlag(flags);
 }
 
-void InstantiationContext::InstantiateType(ETSObjectType *type, ArenaVector<Type *> &typeArgTypes,
+void InstantiationContext::InstantiateType(ETSObjectType *type, ETSObjectType::TypeArgsT &typeArgTypes,
                                            const lexer::SourcePosition &pos)
 {
     util::StringView hash = checker_->GetHashFromTypeArguments(typeArgTypes);

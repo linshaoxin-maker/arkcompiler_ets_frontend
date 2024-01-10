@@ -148,7 +148,7 @@ private:
     void SetValueGetterSetter(const ir::MemberExpression *memberExpr) const;
 
     ETSGen *etsg_;
-    const checker::Type *staticObjRef_ {};
+    checker::CheckerType *staticObjRef_ {};
     VReg baseReg_ {};
     VReg propReg_ {};
 };

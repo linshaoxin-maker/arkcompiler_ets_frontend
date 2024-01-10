@@ -35,7 +35,7 @@ public:
         relation->Result(source != Result());
     }
 
-    UnboxingConverter(ETSChecker *checker, TypeRelation *relation, Type *source, Type *target)
+    UnboxingConverter(ETSChecker *checker, TypeRelation *relation, Type *source, CheckerType *target)
         : TypeConverter(checker, relation, target, source)
     {
         SetResult(Source());
@@ -49,7 +49,7 @@ public:
         Relation()->Result(Result()->TypeFlags() == target->TypeFlags());
     }
 
-    checker::Type *GlobalTypeFromSource(ETSObjectFlags type);
+    Type *GlobalTypeFromSource(ETSObjectFlags type);
 };
 }  // namespace panda::es2panda::checker
 

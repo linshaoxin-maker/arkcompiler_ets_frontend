@@ -27,7 +27,7 @@ public:
 
     bool StartChecker([[maybe_unused]] varbinder::VarBinder *varbinder, const CompilerOptions &options) override;
 
-    Type *CheckTypeCached([[maybe_unused]] ir::Expression *expr) override
+    checker::Type *CheckTypeCached([[maybe_unused]] ir::Expression *expr) override
     {
         return nullptr;
     }

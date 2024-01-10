@@ -22,7 +22,7 @@
 namespace panda::es2panda::checker {
 class NarrowingWideningConverter : public NarrowingConverter {
 public:
-    explicit NarrowingWideningConverter(ETSChecker *checker, TypeRelation *relation, Type *target, Type *source)
+    explicit NarrowingWideningConverter(ETSChecker *checker, TypeRelation *relation, CheckerType *target, Type *source)
         : NarrowingConverter(checker, relation, target, source)
     {
         if (Relation()->IsTrue() || Relation()->IsError()) {

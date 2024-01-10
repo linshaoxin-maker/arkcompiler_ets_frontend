@@ -79,7 +79,8 @@ public:
         return assignable_;
     }
 
-    void ValidateArrayTypeInitializerByElement(TypeRelation *relation, ir::ArrayExpression *node, ETSArrayType *target);
+    void ValidateArrayTypeInitializerByElement(TypeRelation *relation, ir::ArrayExpression *node,
+                                               CETSArrayType *target);
 
 private:
     TypeRelationFlag flags_ = TypeRelationFlag::IN_ASSIGNMENT_CONTEXT;
@@ -147,7 +148,7 @@ public:
         InstantiateType(type, typeArgs);
     }
 
-    InstantiationContext(ETSChecker *checker, ETSObjectType *type, ArenaVector<Type *> &typeArgs,
+    InstantiationContext(ETSChecker *checker, ETSObjectType *type, ETSObjectType::TypeArgsT &typeArgs,
                          const lexer::SourcePosition &pos)
         : checker_(checker)
     {
@@ -170,8 +171,8 @@ private:
 
     void InstantiateType(ETSObjectType *type, ir::TSTypeParameterInstantiation *typeArgs);
 
-    void InstantiateType(ETSObjectType *type, ArenaVector<Type *> &typeArgTypes, const lexer::SourcePosition &pos);
-    util::StringView GetHashFromTypeArguments(ArenaVector<Type *> &typeArgTypes);
+    void InstantiateType(ETSObjectType *type, ETSObjectType::TypeArgsT &typeArgTypes, const lexer::SourcePosition &pos);
+    util::StringView GetHashFromTypeArguments(ArenaVector<CheckerType *> &typeArgTypes);
 
     ETSChecker *checker_;
     ETSObjectType *result_ {};

@@ -69,7 +69,7 @@ namespace panda::es2panda::checker {
 
 // NOTE: #14993 merge with InstantiationContext::ValidateTypeArg
 bool ETSChecker::IsCompatibleTypeArgument(ETSTypeParameter *typeParam, Type *typeArgument,
-                                          const Substitution *substitution)
+                                          const Substitution *substitution) const
 {
     if (typeArgument->IsWildcardType()) {
         return true;
@@ -82,8 +82,8 @@ bool ETSChecker::IsCompatibleTypeArgument(ETSTypeParameter *typeParam, Type *typ
 }
 
 /* A very rough and imprecise partial type inference */
-bool ETSChecker::EnhanceSubstitutionForType(const ArenaVector<Type *> &typeParams, Type *paramType, Type *argumentType,
-                                            Substitution *substitution,
+bool ETSChecker::EnhanceSubstitutionForType(const SignatureInfo::ParamsT &typeParams, Type *paramType,
+                                            Type *argumentType, Substitution *substitution,
                                             ArenaUnorderedSet<ETSTypeParameter *> *instantiatedTypeParams)
 {
     if (paramType->IsETSTypeParameter()) {
@@ -120,7 +120,7 @@ bool ETSChecker::EnhanceSubstitutionForType(const ArenaVector<Type *> &typeParam
     return true;
 }
 
-bool ETSChecker::EnhanceSubstitutionForObject(const ArenaVector<Type *> &typeParams, ETSObjectType *paramType,
+bool ETSChecker::EnhanceSubstitutionForObject(const SignatureInfo::ParamsT &typeParams, ETSObjectType *paramType,
                                               Type *argumentType, Substitution *substitution,
                                               ArenaUnorderedSet<ETSTypeParameter *> *instantiatedTypeParams)
 {
@@ -143,7 +143,7 @@ bool ETSChecker::EnhanceSubstitutionForObject(const ArenaVector<Type *> &typePar
     }
 
     if (argumentType->IsETSFunctionType() && paramObjType->HasObjectFlag(ETSObjectFlags::FUNCTIONAL_INTERFACE)) {
-        auto &parameterSignatures = paramObjType->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>("invoke")
+        auto &parameterSignatures = paramObjType->GetOwnProperty<PropertyType::INSTANCE_METHOD>("invoke")
                                         ->TsType()
                                         ->AsETSFunctionType()
                                         ->CallSignatures();
@@ -356,7 +356,7 @@ bool ETSChecker::ValidateProxySignature(Signature *const signature,
                              argTypeInferenceRequired) != nullptr;
 }
 
-Signature *ETSChecker::CollectParameterlessConstructor(ArenaVector<Signature *> &signatures,
+Signature *ETSChecker::CollectParameterlessConstructor(const ArenaVector<Signature *> &signatures,
                                                        const lexer::SourcePosition &pos, TypeRelationFlag resolveFlags)
 {
     Signature *compatibleSignature = nullptr;
@@ -388,7 +388,7 @@ Signature *ETSChecker::CollectParameterlessConstructor(ArenaVector<Signature *> 
 }
 
 std::pair<ArenaVector<Signature *>, ArenaVector<Signature *>> ETSChecker::CollectSignatures(
-    ArenaVector<Signature *> &signatures, const ir::TSTypeParameterInstantiation *typeArguments,
+    const ArenaVector<Signature *> &signatures, const ir::TSTypeParameterInstantiation *typeArguments,
     const ArenaVector<ir::Expression *> &arguments, std::vector<bool> &argTypeInferenceRequired,
     const lexer::SourcePosition &pos, TypeRelationFlag resolveFlags)
 {
@@ -477,7 +477,7 @@ Signature *ETSChecker::GetMostSpecificSignature(ArenaVector<Signature *> &compat
     return mostSpecificSignature;
 }
 
-Signature *ETSChecker::ValidateSignatures(ArenaVector<Signature *> &signatures,
+Signature *ETSChecker::ValidateSignatures(const ArenaVector<Signature *> &signatures,
                                           const ir::TSTypeParameterInstantiation *typeArguments,
                                           const ArenaVector<ir::Expression *> &arguments,
                                           const lexer::SourcePosition &pos, std::string_view signatureKind,
@@ -559,8 +559,7 @@ Signature *ETSChecker::ChooseMostSpecificSignature(ArenaVector<Signature *> &sig
     // Collect which signatures are most specific for each parameter.
     ArenaMultiMap<size_t /* parameter index */, Signature *> bestSignaturesForParameter(Allocator()->Adapter());
 
-    const checker::SavedTypeRelationFlagsContext savedTypeRelationFlagCtx(Relation(),
-                                                                          TypeRelationFlag::ONLY_CHECK_WIDENING);
+    const SavedTypeRelationFlagsContext savedTypeRelationFlagCtx(Relation(), TypeRelationFlag::ONLY_CHECK_WIDENING);
 
     for (size_t i = 0; i < paramCount; ++i) {
         if (argTypeInferenceRequired[i]) {
@@ -695,7 +694,7 @@ Signature *ETSChecker::ResolveCallExpression(ArenaVector<Signature *> &signature
     return sig;
 }
 
-Signature *ETSChecker::ResolveCallExpressionAndTrailingLambda(ArenaVector<Signature *> &signatures,
+Signature *ETSChecker::ResolveCallExpressionAndTrailingLambda(const ArenaVector<Signature *> &signatures,
                                                               ir::CallExpression *callExpr,
                                                               const lexer::SourcePosition &pos,
                                                               const TypeRelationFlag throwFlag)
@@ -724,7 +723,7 @@ Signature *ETSChecker::ResolveCallExpressionAndTrailingLambda(ArenaVector<Signat
     return sig;
 }
 
-Signature *ETSChecker::ResolveConstructExpression(ETSObjectType *type, const ArenaVector<ir::Expression *> &arguments,
+Signature *ETSChecker::ResolveConstructExpression(CETSObjectType *type, const ArenaVector<ir::Expression *> &arguments,
                                                   const lexer::SourcePosition &pos)
 {
     return ValidateSignatures(type->ConstructSignatures(), nullptr, arguments, pos, "construct");
@@ -754,7 +753,7 @@ void ETSChecker::CheckObjectLiteralArguments(Signature *signature, ArenaVector<i
     }
 }
 
-checker::ETSFunctionType *ETSChecker::BuildMethodSignature(ir::MethodDefinition *method)
+ETSFunctionType *ETSChecker::BuildMethodSignature(ir::MethodDefinition *method)
 {
     if (method->TsType() != nullptr) {
         return method->TsType()->AsETSFunctionType();
@@ -764,7 +763,7 @@ checker::ETSFunctionType *ETSChecker::BuildMethodSignature(ir::MethodDefinition 
 
     auto *funcType = BuildFunctionSignature(method->Function(), isConstructSig);
 
-    std::vector<checker::ETSFunctionType *> overloads;
+    std::vector<ETSFunctionType *> overloads;
     for (ir::MethodDefinition *const currentFunc : method->Overloads()) {
         auto *const overloadType = BuildFunctionSignature(currentFunc->Function(), isConstructSig);
         CheckIdenticalOverloads(funcType, overloadType, currentFunc);
@@ -856,7 +855,7 @@ Signature *ETSChecker::ComposeSignature(ir::ScriptFunction *func, SignatureInfo 
 Type *ETSChecker::ComposeReturnType(ir::ScriptFunction *func, util::StringView funcName, bool isConstructSig)
 {
     auto *const returnTypeAnnotation = func->ReturnTypeAnnotation();
-    checker::Type *returnType {};
+    Type *returnType {};
 
     if (returnTypeAnnotation == nullptr) {
         // implicit void return type
@@ -881,7 +880,7 @@ Type *ETSChecker::ComposeReturnType(ir::ScriptFunction *func, util::StringView f
                 const auto &promiseGlobal = GlobalBuiltinPromiseType()->AsETSObjectType();
                 auto promiseType =
                     promiseGlobal->Instantiate(Allocator(), Relation(), GetGlobalTypesHolder())->AsETSObjectType();
-                promiseType->AddTypeFlag(checker::TypeFlag::GENERIC);
+                promiseType->AddTypeFlag(TypeFlag::GENERIC);
                 promiseType->TypeArguments().clear();
                 promiseType->TypeArguments().emplace_back(GlobalBuiltinVoidType());
                 return promiseType;
@@ -967,7 +966,7 @@ void ETSChecker::ValidateMainSignature(ir::ScriptFunction *func)
     }
 }
 
-checker::ETSFunctionType *ETSChecker::BuildFunctionSignature(ir::ScriptFunction *func, bool isConstructSig)
+ETSFunctionType *ETSChecker::BuildFunctionSignature(ir::ScriptFunction *func, bool isConstructSig)
 {
     bool isArrow = func->IsArrow();
     auto *nameVar = isArrow ? nullptr : func->Id()->Variable();
@@ -1040,7 +1039,7 @@ checker::ETSFunctionType *ETSChecker::BuildFunctionSignature(ir::ScriptFunction 
     return funcType;
 }
 
-Signature *ETSChecker::CheckEveryAbstractSignatureIsOverridden(ETSFunctionType *target, ETSFunctionType *source)
+Signature *ETSChecker::CheckEveryAbstractSignatureIsOverridden(ETSFunctionType *target, CETSFunctionType *source)
 {
     for (auto targetSig = target->CallSignatures().begin(); targetSig != target->CallSignatures().end();) {
         if (!(*targetSig)->HasSignatureFlag(SignatureFlags::ABSTRACT)) {
@@ -1182,7 +1181,7 @@ Signature *ETSChecker::AdjustForTypeParameters(Signature *source, Signature *tar
     return target->Substitute(Relation(), substitution);
 }
 
-void ETSChecker::ThrowOverrideError(Signature *signature, Signature *overriddenSignature,
+void ETSChecker::ThrowOverrideError(const Signature *signature, const Signature *overriddenSignature,
                                     const OverrideErrorCode &errorCode)
 {
     const char *reason {};
@@ -1214,7 +1213,7 @@ void ETSChecker::ThrowOverrideError(Signature *signature, Signature *overriddenS
                    signature->Function()->Start());
 }
 
-bool ETSChecker::CheckOverride(Signature *signature, ETSObjectType *site)
+bool ETSChecker::CheckOverride(Signature *signature, CETSObjectType *site)
 {
     auto *target = site->GetProperty(signature->Function()->Id()->Name(), PropertySearchFlags::SEARCH_METHOD);
     bool isOverridingAnySignature = false;
@@ -1276,7 +1275,7 @@ void ETSChecker::CheckOverride(Signature *signature)
         isOverriding |= CheckInterfaceOverride(this, interface, signature);
     }
 
-    ETSObjectType *iter = owner->SuperType();
+    CETSObjectType *iter = owner->SuperType();
     while (iter != nullptr) {
         isOverriding |= CheckOverride(signature, iter);
 
@@ -1307,7 +1306,7 @@ Signature *ETSChecker::GetSignatureFromMethodDefinition(const ir::MethodDefiniti
     return nullptr;
 }
 
-void ETSChecker::ValidateSignatureAccessibility(ETSObjectType *callee, const ir::CallExpression *callExpr,
+void ETSChecker::ValidateSignatureAccessibility(CETSObjectType *callee, const ir::CallExpression *callExpr,
                                                 Signature *signature, const lexer::SourcePosition &pos,
                                                 char const *errorMessage)
 {
@@ -1582,9 +1581,8 @@ void ETSChecker::ResolveLambdaObject(ir::ClassDefinition *lambdaObject, ETSObjec
                                      bool saveThis)
 {
     // Create the class type for the lambda
-    auto *lambdaObjectType = Allocator()->New<checker::ETSObjectType>(Allocator(), lambdaObject->Ident()->Name(),
-                                                                      lambdaObject->Ident()->Name(), lambdaObject,
-                                                                      checker::ETSObjectFlags::CLASS);
+    auto *lambdaObjectType = Allocator()->New<ETSObjectType>(
+        Allocator(), lambdaObject->Ident()->Name(), lambdaObject->Ident()->Name(), lambdaObject, ETSObjectFlags::CLASS);
 
     // Add the target function type to the implementing interfaces, this way, we can call the functional interface
     // virtual 'invoke' method and it will propagate the call to the currently stored lambda class 'invoke' function
@@ -1599,7 +1597,7 @@ void ETSChecker::ResolveLambdaObject(ir::ClassDefinition *lambdaObject, ETSObjec
         }
 
         auto *prop = it->AsClassProperty();
-        lambdaObjectType->AddProperty<checker::PropertyType::INSTANCE_FIELD>(
+        lambdaObjectType->AddProperty<PropertyType::INSTANCE_FIELD>(
             prop->Key()->AsIdentifier()->Variable()->AsLocalVariable());
     }
     VarBinder()->AsETSBinder()->BuildLambdaObjectName(lambda);
@@ -1645,14 +1643,13 @@ void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambdaObject, ir
     auto *invokeSignature =
         CreateSignature(invokeSignatureInfo, lambda->Function()->Signature()->ReturnType(), invokeFunc);
     invokeSignature->SetOwner(lambdaObjectType);
-    invokeSignature->AddSignatureFlag(checker::SignatureFlags::CALL);
+    invokeSignature->AddSignatureFlag(SignatureFlags::CALL);
 
     auto *invokeType = CreateETSFunctionType(invokeSignature);
     invokeFunc->SetSignature(invokeSignature);
     invokeFunc->Id()->Variable()->SetTsType(invokeType);
     VarBinder()->AsETSBinder()->BuildFunctionName(invokeFunc);
-    lambdaObjectType->AddProperty<checker::PropertyType::INSTANCE_METHOD>(
-        invokeFunc->Id()->Variable()->AsLocalVariable());
+    lambdaObjectType->AddProperty<PropertyType::INSTANCE_METHOD>(invokeFunc->Id()->Variable()->AsLocalVariable());
 
     // Fill out the type information for the body of the invoke function
     auto *resolvedLambdaInvokeFunctionBody = ResolveLambdaObjectInvokeFuncBody(lambdaObject, proxyMethod, isStatic);
@@ -1756,7 +1753,7 @@ void ETSChecker::ResolveLambdaObjectCtor(ir::ClassDefinition *lambdaObject)
     // Create the function type for the constructor
     auto *ctorSignature = CreateSignature(ctorSignatureInfo, GlobalVoidType(), ctorFunc);
     ctorSignature->SetOwner(lambdaObjectType);
-    ctorSignature->AddSignatureFlag(checker::SignatureFlags::CONSTRUCTOR | checker::SignatureFlags::CONSTRUCT);
+    ctorSignature->AddSignatureFlag(SignatureFlags::CONSTRUCTOR | SignatureFlags::CONSTRUCT);
     lambdaObjectType->AddConstructSignature(ctorSignature);
 
     auto *ctorType = CreateETSFunctionType(ctorSignature);
@@ -1812,10 +1809,9 @@ void ETSChecker::ResolveProxyMethod(ir::MethodDefinition *proxyMethod, ir::Arrow
 
     // Add the proxy method to the current class methods
     if (isStatic) {
-        currentClassType->AddProperty<checker::PropertyType::STATIC_METHOD>(func->Id()->Variable()->AsLocalVariable());
+        currentClassType->AddProperty<PropertyType::STATIC_METHOD>(func->Id()->Variable()->AsLocalVariable());
     } else {
-        currentClassType->AddProperty<checker::PropertyType::INSTANCE_METHOD>(
-            func->Id()->Variable()->AsLocalVariable());
+        currentClassType->AddProperty<PropertyType::INSTANCE_METHOD>(func->Id()->Variable()->AsLocalVariable());
     }
     VarBinder()->AsETSBinder()->BuildFunctionName(func);
 }
@@ -2024,7 +2020,7 @@ varbinder::FunctionParamScope *ETSChecker::CreateProxyMethodParams(ir::ArrowFunc
 
             // When a lambda is defined inside an instance extension function, if "this" is captured inside the lambda,
             // "this" should be binded with the parameter of the proxy method
-            if (this->HasStatus(checker::CheckerStatus::IN_INSTANCE_EXTENSION_METHOD) &&
+            if (this->HasStatus(CheckerStatus::IN_INSTANCE_EXTENSION_METHOD) &&
                 lambda->CapturedVars()[i]->Name() == varbinder::VarBinder::MANDATORY_PARAM_THIS) {
                 paramIdent = Allocator()->New<ir::Identifier>(varbinder::VarBinder::MANDATORY_PARAM_THIS, Allocator());
             } else {
@@ -2406,9 +2402,8 @@ void ETSChecker::ResolveLambdaObject(ir::ClassDefinition *lambdaObject, Signatur
     }
 
     // Create the class type for the lambda
-    auto *lambdaObjectType = Allocator()->New<checker::ETSObjectType>(Allocator(), lambdaObject->Ident()->Name(),
-                                                                      lambdaObject->Ident()->Name(), lambdaObject,
-                                                                      checker::ETSObjectFlags::CLASS);
+    auto *lambdaObjectType = Allocator()->New<ETSObjectType>(
+        Allocator(), lambdaObject->Ident()->Name(), lambdaObject->Ident()->Name(), lambdaObject, ETSObjectFlags::CLASS);
 
     // Add the target function type to the implementing interfaces, this way, we can call the functional interface
     // virtual 'invoke' method and it will propagate the call to the currently stored lambda class 'invoke' function
@@ -2418,7 +2413,7 @@ void ETSChecker::ResolveLambdaObject(ir::ClassDefinition *lambdaObject, Signatur
 
     // Add the field if this is not a static reference to the lambda class type
     if (!isStaticReference) {
-        lambdaObjectType->AddProperty<checker::PropertyType::INSTANCE_FIELD>(fieldVar->AsLocalVariable());
+        lambdaObjectType->AddProperty<PropertyType::INSTANCE_FIELD>(fieldVar->AsLocalVariable());
     }
     VarBinder()->AsETSBinder()->BuildLambdaObjectName(refNode);
 
@@ -2433,7 +2428,7 @@ void ETSChecker::ResolveLambdaObjectCtor(ir::ClassDefinition *lambdaObject, bool
 {
     const auto &lambdaBody = lambdaObject->Body();
     auto *ctorFunc = lambdaBody[lambdaBody.size() - 2]->AsMethodDefinition()->Function();
-    ETSObjectType *lambdaObjectType = lambdaObject->TsType()->AsETSObjectType();
+    auto *lambdaObjectType = lambdaObject->TsType()->AsETSObjectType();
     varbinder::Variable *fieldVar {};
 
     if (!isStaticReference) {
@@ -2460,7 +2455,7 @@ void ETSChecker::ResolveLambdaObjectCtor(ir::ClassDefinition *lambdaObject, bool
     // Create the function type for the constructor
     auto *ctorSignature = CreateSignature(ctorSignatureInfo, GlobalVoidType(), ctorFunc);
     ctorSignature->SetOwner(lambdaObjectType);
-    ctorSignature->AddSignatureFlag(checker::SignatureFlags::CONSTRUCTOR | checker::SignatureFlags::CONSTRUCT);
+    ctorSignature->AddSignatureFlag(SignatureFlags::CONSTRUCTOR | SignatureFlags::CONSTRUCT);
     lambdaObjectType->AddConstructSignature(ctorSignature);
 
     auto *ctorType = CreateETSFunctionType(ctorSignature);
@@ -2494,7 +2489,7 @@ void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambdaObject, Si
 {
     const auto &lambdaBody = lambdaObject->Body();
     auto *invokeFunc = lambdaBody[lambdaBody.size() - 1]->AsMethodDefinition()->Function();
-    ETSObjectType *lambdaObjectType = lambdaObject->TsType()->AsETSObjectType();
+    auto *lambdaObjectType = lambdaObject->TsType()->AsETSObjectType();
 
     // Set the implicit 'this' parameters type to the lambda object
     auto *thisVar = invokeFunc->Scope()->ParamScope()->Params().front();
@@ -2523,14 +2518,13 @@ void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambdaObject, Si
     // Create the function type for the constructor
     auto *invokeSignature = CreateSignature(invokeSignatureInfo, signatureRef->ReturnType(), invokeFunc);
     invokeSignature->SetOwner(lambdaObjectType);
-    invokeSignature->AddSignatureFlag(checker::SignatureFlags::CALL);
+    invokeSignature->AddSignatureFlag(SignatureFlags::CALL);
 
     auto *invokeType = CreateETSFunctionType(invokeSignature);
     invokeFunc->SetSignature(invokeSignature);
     invokeFunc->Id()->Variable()->SetTsType(invokeType);
     VarBinder()->AsETSBinder()->BuildFunctionName(invokeFunc);
-    lambdaObjectType->AddProperty<checker::PropertyType::INSTANCE_METHOD>(
-        invokeFunc->Id()->Variable()->AsLocalVariable());
+    lambdaObjectType->AddProperty<PropertyType::INSTANCE_METHOD>(invokeFunc->Id()->Variable()->AsLocalVariable());
 
     // Fill out the type information for the body of the invoke function
 

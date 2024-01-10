@@ -34,6 +34,7 @@ namespace panda::es2panda::checker {
 class TSChecker;
 class ETSChecker;
 class Type;
+using CheckerType = const Type;
 }  // namespace panda::es2panda::checker
 
 namespace panda::es2panda::varbinder {
@@ -551,7 +552,7 @@ public:
         return tsType_;
     }
 
-    [[nodiscard]] const checker::Type *TsType() const noexcept
+    [[nodiscard]] checker::Type *TsType() const noexcept
     {
         return tsType_;
     }

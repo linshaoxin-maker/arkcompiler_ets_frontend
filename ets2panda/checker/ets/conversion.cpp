@@ -21,26 +21,26 @@
 #include "checker/ets/wideningConverter.h"
 
 namespace panda::es2panda::checker::conversion {
-void Identity(TypeRelation *const relation, Type *const source, Type *const target)
+void Identity(TypeRelation *const relation, Type *source, Type *target)
 {
     relation->IsIdenticalTo(source, target);
 }
 
-void WideningPrimitive(TypeRelation *const relation, Type *const source, Type *const target)
+void WideningPrimitive(TypeRelation *const relation, Type *source, CheckerType *target)
 {
     ASSERT(source->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && target->HasTypeFlag(TypeFlag::ETS_PRIMITIVE));
 
     WideningConverter(relation->GetChecker()->AsETSChecker(), relation, target, source);
 }
 
-void NarrowingPrimitive(TypeRelation *const relation, Type *const source, Type *const target)
+void NarrowingPrimitive(TypeRelation *const relation, Type *source, CheckerType *target)
 {
     ASSERT(source->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && target->HasTypeFlag(TypeFlag::ETS_PRIMITIVE));
 
     NarrowingConverter(relation->GetChecker()->AsETSChecker(), relation, target, source);
 }
 
-void WideningNarrowingPrimitive(TypeRelation *const relation, ByteType *const source, CharType *const target)
+void WideningNarrowingPrimitive(TypeRelation *const relation, ByteType *source, CCharType *target)
 {
     auto *const tempInt = relation->GetChecker()->AsETSChecker()->GetGlobalTypesHolder()->GlobalIntType();
     WideningPrimitive(relation, source, tempInt);
@@ -50,17 +50,17 @@ void WideningNarrowingPrimitive(TypeRelation *const relation, ByteType *const so
     NarrowingPrimitive(relation, tempInt, target);
 }
 
-void WideningReference(TypeRelation *const relation, ETSObjectType *const source, ETSObjectType *const target)
+void WideningReference(TypeRelation *const relation, ETSObjectType *source, ETSObjectType *target)
 {
     relation->IsSupertypeOf(target, source);
 }
 
-void WideningReference(TypeRelation *const relation, ETSArrayType *const source, ETSObjectType *const target)
+void WideningReference(TypeRelation *const relation, ETSArrayType *source, ETSObjectType *target)
 {
     relation->IsSupertypeOf(target, source);
 }
 
-void WideningReference(TypeRelation *const relation, ETSArrayType *const source, ETSArrayType *const target)
+void WideningReference(TypeRelation *const relation, ETSArrayType *source, ETSArrayType *target)
 {
     relation->IsSupertypeOf(target, source);
 }
@@ -179,7 +179,7 @@ bool IsAllowedNarrowingReferenceConversion(TypeRelation *const relation, Type *c
 }
 
 bool IsUncheckedNarrowingReferenceConversion([[maybe_unused]] TypeRelation *const relation,
-                                             [[maybe_unused]] Type *const source, [[maybe_unused]] Type *const target)
+                                             [[maybe_unused]] CheckerType *source, [[maybe_unused]] CheckerType *target)
 {
     ASSERT(source->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT) &&
            target->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT));
@@ -199,7 +199,7 @@ bool IsUncheckedNarrowingReferenceConversion([[maybe_unused]] TypeRelation *cons
     return false;
 }
 
-void NarrowingReferenceImpl(TypeRelation *const relation, Type *const source, Type *const target)
+void NarrowingReferenceImpl(TypeRelation *const relation, Type *source, Type *target)
 {
     ASSERT(target->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT));
 
@@ -216,12 +216,12 @@ void NarrowingReferenceImpl(TypeRelation *const relation, Type *const source, Ty
 }
 }  // namespace
 
-void NarrowingReference(TypeRelation *const relation, ETSObjectType *const source, ETSObjectType *const target)
+void NarrowingReference(TypeRelation *const relation, ETSObjectType *source, ETSObjectType *target)
 {
     NarrowingReferenceImpl(relation, source, target);
 }
 
-void NarrowingReference(TypeRelation *const relation, ETSArrayType *const source, ETSArrayType *const target)
+void NarrowingReference(TypeRelation *const relation, ETSArrayType *source, ETSArrayType *target)
 {
     if (source->ElementType()->IsETSArrayType() && target->ElementType()->IsETSArrayType()) {
         NarrowingReference(relation, source->ElementType()->AsETSArrayType(), target->ElementType()->AsETSArrayType());
@@ -231,7 +231,7 @@ void NarrowingReference(TypeRelation *const relation, ETSArrayType *const source
     NarrowingReferenceImpl(relation, source, target);
 }
 
-void NarrowingReference(TypeRelation *const relation, ETSObjectType *const source, ETSArrayType *const target)
+void NarrowingReference(TypeRelation *const relation, ETSObjectType *source, ETSArrayType *target)
 {
     if (target->ElementType()->IsETSArrayType()) {
         NarrowingReference(relation, source, target->ElementType()->AsETSArrayType());
@@ -248,7 +248,7 @@ static inline void RollbackBoxingIfFailed(TypeRelation *const relation)
     }
 }
 
-ETSObjectType *Boxing(TypeRelation *const relation, Type *const source)
+ETSObjectType *Boxing(TypeRelation *const relation, Type *source)
 {
     auto *const etsChecker = relation->GetChecker()->AsETSChecker();
     const BoxingConverter boxed(etsChecker, relation, source);
@@ -260,7 +260,7 @@ ETSObjectType *Boxing(TypeRelation *const relation, Type *const source)
     return boxedType;
 }
 
-Type *Unboxing(TypeRelation *const relation, ETSObjectType *const source)
+Type *Unboxing(TypeRelation *const relation, ETSObjectType *source)
 {
     auto *const etsChecker = relation->GetChecker()->AsETSChecker();
     const UnboxingConverter unboxed(etsChecker, relation, source);
@@ -272,7 +272,7 @@ Type *Unboxing(TypeRelation *const relation, ETSObjectType *const source)
     return unboxedType;
 }
 
-void UnboxingWideningPrimitive(TypeRelation *const relation, ETSObjectType *const source, Type *const target)
+void UnboxingWideningPrimitive(TypeRelation *const relation, ETSObjectType *source, Type *target)
 {
     auto *const unboxedSource = Unboxing(relation, source);
     if (!relation->IsTrue()) {
@@ -283,7 +283,7 @@ void UnboxingWideningPrimitive(TypeRelation *const relation, ETSObjectType *cons
     RollbackBoxingIfFailed(relation);
 }
 
-void UnboxingNarrowingPrimitive(TypeRelation *const relation, ETSObjectType *const source, Type *const target)
+void UnboxingNarrowingPrimitive(TypeRelation *const relation, ETSObjectType *const source, Type *target)
 {
     auto *const unboxedSource = Unboxing(relation, source);
     if (!relation->IsTrue()) {
@@ -293,7 +293,7 @@ void UnboxingNarrowingPrimitive(TypeRelation *const relation, ETSObjectType *con
     NarrowingPrimitive(relation, target, unboxedSource);
 }
 
-void UnboxingWideningNarrowingPrimitive(TypeRelation *const relation, ETSObjectType *const source, Type *const target)
+void UnboxingWideningNarrowingPrimitive(TypeRelation *const relation, ETSObjectType *const source, CheckerType *target)
 {
     auto *const unboxedSource = Unboxing(relation, source);
     if (!relation->IsTrue()) {
@@ -303,7 +303,7 @@ void UnboxingWideningNarrowingPrimitive(TypeRelation *const relation, ETSObjectT
     WideningNarrowingPrimitive(relation, unboxedSource->AsByteType(), target->AsCharType());
 }
 
-void NarrowingReferenceUnboxing(TypeRelation *const relation, ETSObjectType *const source, Type *const target)
+void NarrowingReferenceUnboxing(TypeRelation *const relation, ETSObjectType *source, Type *const target)
 {
     auto *const boxedTarget = relation->GetChecker()->AsETSChecker()->PrimitiveTypeAsETSBuiltinType(target);
     if (boxedTarget == nullptr) {
@@ -317,7 +317,7 @@ void NarrowingReferenceUnboxing(TypeRelation *const relation, ETSObjectType *con
     Unboxing(relation, boxedTarget->AsETSObjectType());
 }
 
-void BoxingWideningReference(TypeRelation *const relation, Type *const source, ETSObjectType *const target)
+void BoxingWideningReference(TypeRelation *const relation, Type *source, ETSObjectType *target)
 {
     auto *const boxedSource = Boxing(relation, source);
     if (!relation->IsTrue()) {
@@ -328,7 +328,7 @@ void BoxingWideningReference(TypeRelation *const relation, Type *const source, E
     RollbackBoxingIfFailed(relation);
 }
 
-void String(TypeRelation *const relation, Type *const source)
+void String(TypeRelation *const relation, Type *source)
 {
     if (source->HasTypeFlag(TypeFlag::BYTE | TypeFlag::SHORT)) {
         auto *const tempInt = relation->GetChecker()->AsETSChecker()->GetGlobalTypesHolder()->GlobalIntType();

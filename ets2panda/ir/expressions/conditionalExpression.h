@@ -79,8 +79,8 @@ public:
     checker::Type *Check(checker::TSChecker *checker) override;
     checker::Type *Check(checker::ETSChecker *checker) override;
 
-    checker::Type *NumericConditionalCheck(checker::ETSChecker *checker, checker::Type *consequentType,
-                                           checker::Type *alternateType);
+    checker::CheckerType *NumericConditionalCheck(checker::ETSChecker *checker, checker::CheckerType *consequentType,
+                                                  checker::CheckerType *alternateType);
 
     void Accept(ASTVisitorT *v) override
     {

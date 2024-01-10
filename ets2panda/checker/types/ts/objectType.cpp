@@ -53,7 +53,7 @@ void ObjectType::Identical(TypeRelation *relation, Type *other)
         return;
     }
 
-    ObjectType *otherObj = other->AsObjectType();
+    auto *otherObj = other->AsObjectType();
 
     if (desc_->properties.size() != otherObj->Properties().size() ||
         CallSignatures().size() != otherObj->CallSignatures().size() ||
@@ -110,11 +110,11 @@ void ObjectType::Identical(TypeRelation *relation, Type *other)
     }
 }
 
-void ObjectType::AssignProperties(TypeRelation *relation, ObjectType *source)
+void ObjectType::AssignProperties(TypeRelation *relation, CObjectType *source) const
 {
     const ArenaVector<varbinder::LocalVariable *> &targetProperties = Properties();
-    IndexInfo *numberInfo = NumberIndexInfo();
-    IndexInfo *stringInfo = StringIndexInfo();
+    auto *numberInfo = NumberIndexInfo();
+    auto *stringInfo = StringIndexInfo();
 
     for (auto *it : targetProperties) {
         varbinder::LocalVariable *found = source->GetProperty(it->Name(), true);
@@ -152,7 +152,7 @@ void ObjectType::AssignProperties(TypeRelation *relation, ObjectType *source)
     }
 }
 
-void ObjectType::AssignSignatures(TypeRelation *relation, ObjectType *source, bool assignCallSignatures)
+void ObjectType::AssignSignatures(TypeRelation *relation, CObjectType *source, bool assignCallSignatures) const
 {
     ArenaVector<Signature *> targetSignatures = assignCallSignatures ? CallSignatures() : ConstructSignatures();
     ArenaVector<Signature *> sourceSignatures =
@@ -176,10 +176,11 @@ void ObjectType::AssignSignatures(TypeRelation *relation, ObjectType *source, bo
     }
 }
 
-void ObjectType::AssignIndexInfo([[maybe_unused]] TypeRelation *relation, ObjectType *source, bool assignNumberInfo)
+void ObjectType::AssignIndexInfo([[maybe_unused]] TypeRelation *relation, CObjectType *source,
+                                 bool assignNumberInfo) const
 {
-    IndexInfo *targetInfo = assignNumberInfo ? NumberIndexInfo() : StringIndexInfo();
-    IndexInfo *sourceInfo = assignNumberInfo ? source->NumberIndexInfo() : source->StringIndexInfo();
+    auto *targetInfo = assignNumberInfo ? NumberIndexInfo() : StringIndexInfo();
+    auto *sourceInfo = assignNumberInfo ? source->NumberIndexInfo() : source->StringIndexInfo();
 
     if (targetInfo != nullptr) {
         if (sourceInfo != nullptr) {
@@ -199,7 +200,7 @@ void ObjectType::AssignIndexInfo([[maybe_unused]] TypeRelation *relation, Object
     }
 }
 
-void ObjectType::CheckExcessProperties(TypeRelation *relation, ObjectType *source)
+void ObjectType::CheckExcessProperties(TypeRelation *relation, CObjectType *source) const
 {
     for (auto *it : source->Properties()) {
         auto *found = GetProperty(it->Name(), true);
@@ -223,7 +224,7 @@ void ObjectType::AssignmentTarget(TypeRelation *relation, Type *source)
 
     relation->Result(true);
 
-    ObjectType *sourceObj = source->AsObjectType();
+    CObjectType *sourceObj = source->AsObjectType();
 
     if (sourceObj->HasObjectFlag(ObjectFlags::CHECK_EXCESS_PROPS)) {
         CheckExcessProperties(relation, sourceObj);

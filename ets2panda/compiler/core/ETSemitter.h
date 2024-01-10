@@ -17,6 +17,7 @@
 #define ES2PANDA_COMPILER_CORE_ETS_EMITTER_H
 
 #include "emitter.h"
+#include "checker/types/type.h"
 
 namespace panda::es2panda::varbinder {
 class RecordTable;
@@ -72,17 +73,17 @@ public:
 
 private:
     void GenExternalRecord(varbinder::RecordTable *recordTable);
-    void GenGlobalArrayRecord(checker::ETSArrayType *arrayType, checker::Signature *signature);
+    void GenGlobalArrayRecord(checker::CETSArrayType *arrayType, checker::Signature *signature);
     void GenClassRecord(const ir::ClassDefinition *classDef, bool external);
     void GenEnumRecord(const ir::TSEnumDeclaration *enumDecl, bool external);
     void GenAnnotationRecord(std::string_view recordNameView, bool isRuntime = false, bool isType = false);
     void GenInterfaceRecord(const ir::TSInterfaceDeclaration *interfaceDecl, bool external);
     void EmitDefaultFieldValue(pandasm::Field &classField, const ir::Expression *init);
     void GenClassField(const ir::ClassProperty *field, pandasm::Record &classRecord, bool external);
-    void GenField(const checker::Type *tsType, const util::StringView &name, const ir::Expression *value,
+    void GenField(checker::CheckerType *tsType, const util::StringView &name, const ir::Expression *value,
                   uint32_t accesFlags, pandasm::Record &record, bool external);
     void GenInterfaceMethodDefinition(const ir::MethodDefinition *methodDef, bool external);
-    void GenClassInheritedFields(const checker::ETSObjectType *baseType, pandasm::Record &classRecord);
+    void GenClassInheritedFields(checker::CETSObjectType *baseType, pandasm::Record &classRecord);
     pandasm::AnnotationData GenAnnotationSignature(const ir::ClassDefinition *classDef);
     pandasm::AnnotationData GenAnnotationEnclosingClass(std::string_view className);
     pandasm::AnnotationData GenAnnotationEnclosingMethod(const ir::MethodDefinition *methodDef);

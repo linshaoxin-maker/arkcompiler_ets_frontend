@@ -127,17 +127,17 @@ public:
         type_ = AstNodeType::BINARY_EXPRESSION;
     }
 
-    [[nodiscard]] checker::Type *OperationType() noexcept
+    [[nodiscard]] checker::CheckerType *OperationType() noexcept
     {
         return operationType_;
     }
 
-    void SetOperationType(checker::Type *const operationType) noexcept
+    void SetOperationType(checker::CheckerType *const operationType) noexcept
     {
         operationType_ = operationType;
     }
 
-    [[nodiscard]] const checker::Type *OperationType() const noexcept
+    [[nodiscard]] checker::CheckerType *OperationType() const noexcept
     {
         return operationType_;
     }
@@ -164,7 +164,7 @@ private:
     Expression *right_ = nullptr;
     Expression *result_ = nullptr;
     lexer::TokenType operator_;
-    checker::Type *operationType_ {};
+    checker::CheckerType *operationType_ {};
 };
 }  // namespace panda::es2panda::ir
 

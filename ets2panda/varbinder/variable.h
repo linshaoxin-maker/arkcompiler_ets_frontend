@@ -81,6 +81,11 @@ public:
         return flags_;
     }
 
+    checker::Type *TsType()
+    {
+        return tsType_;
+    }
+
     checker::Type *TsType() const
     {
         return tsType_;

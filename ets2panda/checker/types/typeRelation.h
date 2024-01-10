@@ -18,6 +18,7 @@
 
 #include "lexer/token/sourceLocation.h"
 #include "lexer/token/tokenType.h"
+#include "checker/types/typeForwardDecls.h"
 #include "util/ustring.h"
 #include "util/enumbitops.h"
 
@@ -111,19 +112,19 @@ public:
 
 class AsSrc {
 public:
-    explicit AsSrc(const Type *type) : type_(const_cast<Type *>(type)) {}
+    explicit AsSrc(CheckerType *type) : type_(type) {}
 
-    const Type *GetType() const
+    CheckerType *GetType() const
     {
         return type_;
     }
 
 private:
-    Type *type_;
+    CheckerType *type_;
 };
 
 using TypeErrorMessageElement =
-    std::variant<const Type *, AsSrc, char *, util::StringView, lexer::TokenType, size_t, const Signature *>;
+    std::variant<CheckerType *, AsSrc, const char *, util::StringView, lexer::TokenType, size_t, const Signature *>;
 
 class TypeRelation {
 public:
@@ -222,7 +223,7 @@ public:
         return checker_;
     }
 
-    void IncreaseTypeRecursionCount(Type *const type)
+    void IncreaseTypeRecursionCount(CheckerType *const type)
     {
         if (const auto foundType = instantiationRecursionMap_.find(type);
             foundType != instantiationRecursionMap_.end()) {
@@ -233,7 +234,7 @@ public:
         instantiationRecursionMap_.insert({type, 1});
     }
 
-    bool TypeInstantiationPossible(Type *const type)
+    bool TypeInstantiationPossible(CheckerType *const type)
     {
         // This limitation makes sure that no type can be instantiated in infinite recursion. When declaring generic
         // classes with recursive types, so the generic class itself, we need to allow 2 depth of recursion, to make it
@@ -244,7 +245,7 @@ public:
         return foundType == instantiationRecursionMap_.end() ? true : (foundType->second < MAX_RECURSIVE_TYPE_INST);
     }
 
-    void DecreaseTypeRecursionCount(Type *const type)
+    void DecreaseTypeRecursionCount(CheckerType *const type)
     {
         const auto foundType = instantiationRecursionMap_.find(type);
         if (foundType == instantiationRecursionMap_.end()) {
@@ -261,7 +262,7 @@ public:
 
     bool IsIdenticalTo(Type *source, Type *target);
     bool IsIdenticalTo(Signature *source, Signature *target);
-    bool IsIdenticalTo(IndexInfo *source, IndexInfo *target);
+    bool IsIdenticalTo(const IndexInfo *source, const IndexInfo *target);
     bool IsAssignableTo(Type *source, Type *target);
     bool IsComparableTo(Type *source, Type *target);
     bool IsCastableTo(Type *const source, Type *const target);
@@ -300,14 +301,14 @@ public:
     friend class SavedTypeRelationFlagsContext;
 
 private:
-    RelationResult CacheLookup(const Type *source, const Type *target, const RelationHolder &holder,
+    RelationResult CacheLookup(CheckerType *source, CheckerType *target, const RelationHolder &holder,
                                RelationType type) const;
 
     Checker *checker_;
     RelationResult result_ {};
     TypeRelationFlag flags_ {};
     ir::Expression *node_ {};
-    ArenaMap<checker::Type *, int8_t> instantiationRecursionMap_;
+    ArenaMap<CheckerType *, int8_t> instantiationRecursionMap_;
 };
 class SavedTypeRelationFlagsContext {
 public:

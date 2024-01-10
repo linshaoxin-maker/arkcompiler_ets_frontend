@@ -21,7 +21,7 @@
 namespace panda::es2panda::checker {
 
 template <typename TargetType>
-typename TargetType::UType ETSChecker::GetOperand(Type *type)
+typename TargetType::UType ETSChecker::GetOperand(CheckerType *type)
 {
     switch (ETSType(type)) {
         case TypeFlag::BYTE: {
@@ -52,7 +52,7 @@ typename TargetType::UType ETSChecker::GetOperand(Type *type)
 }
 
 template <typename TargetType>
-Type *ETSChecker::PerformRelationOperationOnTypes(Type *left, Type *right, lexer::TokenType operationType)
+Type *ETSChecker::PerformRelationOperationOnTypes(CheckerType *left, CheckerType *right, lexer::TokenType operationType)
 {
     using UType = typename TargetType::UType;
 
@@ -94,7 +94,8 @@ Type *ETSChecker::PerformRelationOperationOnTypes(Type *left, Type *right, lexer
 }
 
 template <typename TargetType>
-Type *ETSChecker::PerformArithmeticOperationOnTypes(Type *left, Type *right, lexer::TokenType operationType)
+Type *ETSChecker::PerformArithmeticOperationOnTypes(CheckerType *left, CheckerType *right,
+                                                    lexer::TokenType operationType)
 {
     using UType = typename TargetType::UType;
 
@@ -184,7 +185,7 @@ inline IntegerUType CastIfFloat(FloatOrIntegerUType num)
 }
 
 template <typename FloatOrIntegerType, typename IntegerType>
-Type *ETSChecker::HandleBitWiseArithmetic(Type *left, Type *right, lexer::TokenType operationType)
+Type *ETSChecker::HandleBitWiseArithmetic(CheckerType *left, CheckerType *right, lexer::TokenType operationType)
 {
     using IntegerUType = typename IntegerType::UType;
     using UnsignedUType = std::make_unsigned_t<IntegerUType>;

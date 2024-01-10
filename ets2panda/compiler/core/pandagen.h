@@ -263,7 +263,7 @@ public:
     bool IsDirectEval() const;
     bool IsEval() const;
 
-    const checker::Type *GetVRegType(VReg vreg) const override;
+    checker::CheckerType *GetVRegType(VReg vreg) const override;
 
 private:
     void LoadEvalBindings(const ir::AstNode *node);

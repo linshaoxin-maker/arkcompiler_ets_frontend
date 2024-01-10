@@ -83,7 +83,7 @@ checker::Type *TSTupleType::GetType(checker::TSChecker *checker)
         checker::ElementFlags memberFlag = checker::ElementFlags::NO_OPTS;
         if (it->IsTSNamedTupleMember()) {
             auto *namedMember = it->AsTSNamedTupleMember();
-            checker::Type *memberType = namedMember->ElementType()->GetType(checker);
+            auto *memberType = namedMember->ElementType()->GetType(checker);
 
             if (namedMember->IsOptional()) {
                 memberVar->AddFlag(varbinder::VariableFlags::OPTIONAL);
@@ -98,7 +98,7 @@ checker::Type *TSTupleType::GetType(checker::TSChecker *checker)
             numberIndexTypes.push_back(memberType);
             namedMembers.insert({memberVar, namedMember->Label()->AsIdentifier()->Name()});
         } else {
-            checker::Type *memberType = it->GetType(checker);
+            auto *memberType = it->GetType(checker);
             memberType->SetVariable(memberVar);
             memberVar->SetTsType(memberType);
             memberFlag = checker::ElementFlags::REQUIRED;

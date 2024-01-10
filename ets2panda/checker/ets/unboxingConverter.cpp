@@ -20,7 +20,7 @@
 
 namespace panda::es2panda::checker {
 
-checker::Type *UnboxingConverter::GlobalTypeFromSource(ETSObjectFlags type)
+Type *UnboxingConverter::GlobalTypeFromSource(ETSObjectFlags type)
 {
     switch (type) {
         case ETSObjectFlags::BUILTIN_BOOLEAN: {

@@ -379,7 +379,7 @@ void ETSObjectType::IdenticalUptoNullability(TypeRelation *relation, Type *other
         }
     } else {
         if (HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
-            auto getInvokeSignature = [](const ETSObjectType *type) {
+            auto getInvokeSignature = [](CETSObjectType *type) {
                 auto const propInvoke =
                     type->GetProperty(util::StringView("invoke"), PropertySearchFlags::SEARCH_INSTANCE_METHOD);
                 ASSERT(propInvoke != nullptr);
@@ -472,7 +472,7 @@ bool ETSObjectType::CastWideningNarrowing(TypeRelation *const relation, Type *co
     return false;
 }
 
-bool ETSObjectType::CastNumericObject(TypeRelation *const relation, Type *const target)
+bool ETSObjectType::CastNumericObject(TypeRelation *const relation, Type *target)
 {
     if (this->IsNullish()) {
         return false;
@@ -700,9 +700,8 @@ Type *ETSObjectType::AsSuper(Checker *checker, varbinder::Variable *sourceVar)
     }
 
     if (HasObjectFlag(ETSObjectFlags::INTERFACE)) {
-        Type *res = nullptr;
         for (auto *const it : checker->AsETSChecker()->GetInterfaces(this)) {
-            res = it->AsSuper(checker, sourceVar);
+            auto *res = it->AsSuper(checker, sourceVar);
             if (res != nullptr) {
                 return res;
             }
@@ -803,7 +802,7 @@ static varbinder::LocalVariable *CopyPropertyWithTypeArguments(varbinder::LocalV
     return copiedProp;
 }
 
-ETSObjectType const *ETSObjectType::GetConstOriginalBaseType() const noexcept
+CETSObjectType *ETSObjectType::GetConstOriginalBaseType() const noexcept
 {
     if (auto *baseIter = GetBaseType(); baseIter != nullptr) {
         auto *baseIterNext = baseIter->GetBaseType();
@@ -816,7 +815,7 @@ ETSObjectType const *ETSObjectType::GetConstOriginalBaseType() const noexcept
     return this;
 }
 
-bool ETSObjectType::SubstituteTypeArgs(TypeRelation *const relation, ArenaVector<Type *> &newTypeArgs,
+bool ETSObjectType::SubstituteTypeArgs(TypeRelation *const relation, TypeArgsT &newTypeArgs,
                                        const Substitution *const substitution)
 {
     bool anyChange = false;
@@ -832,7 +831,7 @@ bool ETSObjectType::SubstituteTypeArgs(TypeRelation *const relation, ArenaVector
 }
 
 void ETSObjectType::SetCopiedTypeProperties(TypeRelation *const relation, ETSObjectType *const copiedType,
-                                            ArenaVector<Type *> &newTypeArgs, const Substitution *const substitution)
+                                            TypeArgsT &&newTypeArgs, const Substitution *const substitution)
 {
     copiedType->typeFlags_ = typeFlags_;
     copiedType->RemoveObjectFlag(ETSObjectFlags::CHECKED_COMPATIBLE_ABSTRACTS |
@@ -854,7 +853,7 @@ Type *ETSObjectType::Substitute(TypeRelation *relation, const Substitution *subs
     auto *const checker = relation->GetChecker()->AsETSChecker();
     auto *base = GetOriginalBaseType();
 
-    ArenaVector<Type *> newTypeArgs {checker->Allocator()->Adapter()};
+    TypeArgsT newTypeArgs {checker->Allocator()->Adapter()};
     const bool anyChange = SubstituteTypeArgs(relation, newTypeArgs, substitution);
     // Lambda types can capture type params in their bodies, normal classes cannot.
     // NOTE: gogabr. determine precise conditions where we do not need to copy.
@@ -874,7 +873,7 @@ Type *ETSObjectType::Substitute(TypeRelation *relation, const Substitution *subs
     relation->IncreaseTypeRecursionCount(base);
 
     auto *const copiedType = checker->CreateNewETSObjectType(name_, declNode_, flags_);
-    SetCopiedTypeProperties(relation, copiedType, newTypeArgs, substitution);
+    SetCopiedTypeProperties(relation, copiedType, std::move(newTypeArgs), substitution);
     GetInstantiationMap().try_emplace(hash, copiedType);
 
     if (superType_ != nullptr) {

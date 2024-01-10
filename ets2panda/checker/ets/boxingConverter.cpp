@@ -21,7 +21,7 @@
 
 namespace panda::es2panda::checker {
 
-checker::ETSObjectType *BoxingConverter::ETSTypeFromSource(ETSChecker const *checker, Type const *source)
+ETSObjectType *BoxingConverter::ETSTypeFromSource(ETSChecker const *checker, CheckerType *source)
 {
     auto getSignature = [](checker::TypeFlag typeKind) {
         switch (typeKind) {

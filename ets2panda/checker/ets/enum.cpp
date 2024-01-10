@@ -115,7 +115,7 @@ template <typename ElementMaker>
 [[nodiscard]] ir::ETSParameterExpression *MakeFunctionParam(ETSChecker *const checker,
                                                             varbinder::ETSBinder *const varbinder,
                                                             varbinder::FunctionParamScope *const scope,
-                                                            const util::StringView &name, Type *const type)
+                                                            const util::StringView &name, Type *type)
 {
     const auto paramCtx = varbinder::LexicalScope<varbinder::FunctionParamScope>::Enter(varbinder, scope, false);
     auto *const paramIdent = checker->Allocator()->New<ir::Identifier>(name, checker->Allocator());
@@ -231,7 +231,7 @@ ir::Identifier *ETSChecker::CreateEnumNamesArray(ETSEnumInterface const *const e
     // clang-format on
 }
 
-ir::Identifier *ETSChecker::CreateEnumValuesArray(ETSEnumType *const enumType)
+ir::Identifier *ETSChecker::CreateEnumValuesArray(CETSEnumType *const enumType)
 {
     return MakeArray(
         this, VarBinder()->AsETSBinder(), enumType, "ValuesArray", GlobalIntType(),

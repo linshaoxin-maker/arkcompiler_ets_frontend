@@ -339,7 +339,7 @@ void ETSEmitter::GenClassField(const ir::ClassProperty *field, pandasm::Record &
              classRecord, external);
 }
 
-void ETSEmitter::GenField(const checker::Type *tsType, const util::StringView &name, const ir::Expression *value,
+void ETSEmitter::GenField(checker::CheckerType *tsType, const util::StringView &name, const ir::Expression *value,
                           uint32_t accesFlags, pandasm::Record &record, bool external)
 {
     auto field = pandasm::Field(Program()->lang);
@@ -374,7 +374,7 @@ void ETSEmitter::GenClassInheritedFields(const checker::ETSObjectType *baseType,
     }
 }
 
-void ETSEmitter::GenGlobalArrayRecord(checker::ETSArrayType *arrayType, checker::Signature *signature)
+void ETSEmitter::GenGlobalArrayRecord(checker::CETSArrayType *arrayType, checker::Signature *signature)
 {
     std::stringstream ss;
     arrayType->ToAssemblerTypeWithRank(ss);

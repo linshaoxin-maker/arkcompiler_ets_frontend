@@ -180,7 +180,7 @@ static bool CmpAssemblerTypesWithRank(Signature *sig1, Signature *sig2)
     return true;
 }
 
-static bool HasSameAssemblySignature(ETSFunctionType *func1, ETSFunctionType *func2)
+static bool HasSameAssemblySignature(CETSFunctionType *func1, CETSFunctionType *func2)
 {
     for (auto *sig1 : func1->CallSignatures()) {
         for (auto *sig2 : func2->CallSignatures()) {
@@ -211,8 +211,7 @@ static bool HasSameAssemblySignature(ETSFunctionType *func1, ETSFunctionType *fu
     return false;
 }
 
-static bool CheckInterfaceOverride(ETSChecker *const checker, ETSObjectType *const interface,
-                                   Signature *const signature)
+static bool CheckInterfaceOverride(ETSChecker *const checker, CETSObjectType *interface, Signature *const signature)
 {
     bool isOverriding = checker->CheckOverride(signature, interface);
 

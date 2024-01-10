@@ -33,18 +33,18 @@ public:
 
     [[nodiscard]] const checker::ETSChecker *Checker() const noexcept;
     [[nodiscard]] const varbinder::ETSBinder *VarBinder() const noexcept;
-    [[nodiscard]] const checker::Type *ReturnType() const noexcept;
+    [[nodiscard]] checker::CheckerType *ReturnType() const noexcept;
     [[nodiscard]] const checker::ETSObjectType *ContainingObjectType() const noexcept;
 
     [[nodiscard]] VReg &Acc() noexcept;
     [[nodiscard]] VReg Acc() const noexcept;
 
-    void SetAccumulatorType(const checker::Type *type);
-    [[nodiscard]] const checker::Type *GetAccumulatorType() const;
+    void SetAccumulatorType(checker::CheckerType *type);
+    [[nodiscard]] checker::CheckerType *GetAccumulatorType() const;
     void CompileAndCheck(const ir::Expression *expr);
 
     [[nodiscard]] VReg StoreException(const ir::AstNode *node);
-    void ApplyConversionAndStoreAccumulator(const ir::AstNode *node, VReg vreg, const checker::Type *targetType);
+    void ApplyConversionAndStoreAccumulator(const ir::AstNode *node, VReg vreg, checker::CheckerType *targetType);
     void StoreAccumulator(const ir::AstNode *node, VReg vreg);
     void LoadAccumulator(const ir::AstNode *node, VReg vreg);
     [[nodiscard]] IRNode *AllocMov(const ir::AstNode *node, VReg vd, VReg vs) override;
@@ -58,27 +58,27 @@ public:
     void LoadDynamicNamespaceVariable(const ir::AstNode *node, varbinder::Variable const *var);
     void StoreVar(const ir::AstNode *node, const varbinder::ConstScopeFindResult &result);
 
-    void LoadStaticProperty(const ir::AstNode *node, const checker::Type *propType, const util::StringView &fullName);
-    void StoreStaticProperty(const ir::AstNode *node, const checker::Type *propType, const util::StringView &fullName);
+    void LoadStaticProperty(const ir::AstNode *node, checker::CheckerType *propType, const util::StringView &fullName);
+    void StoreStaticProperty(const ir::AstNode *node, checker::CheckerType *propType, const util::StringView &fullName);
 
-    void StoreStaticOwnProperty(const ir::AstNode *node, const checker::Type *propType, const util::StringView &name);
+    void StoreStaticOwnProperty(const ir::AstNode *node, checker::CheckerType *propType, const util::StringView &name);
     [[nodiscard]] util::StringView FormClassPropReference(const checker::ETSObjectType *classType,
                                                           const util::StringView &name);
 
-    void StoreProperty(const ir::AstNode *node, const checker::Type *propType, VReg objReg,
+    void StoreProperty(const ir::AstNode *node, checker::CheckerType *propType, VReg objReg,
                        const util::StringView &name);
-    void LoadProperty(const ir::AstNode *node, const checker::Type *propType, VReg objReg,
+    void LoadProperty(const ir::AstNode *node, checker::CheckerType *propType, VReg objReg,
                       const util::StringView &fullName);
-    void StorePropertyDynamic(const ir::AstNode *node, const checker::Type *propType, VReg objReg,
+    void StorePropertyDynamic(const ir::AstNode *node, checker::CheckerType *propType, VReg objReg,
                               const util::StringView &name);
-    void LoadPropertyDynamic(const ir::AstNode *node, const checker::Type *propType, VReg objReg,
+    void LoadPropertyDynamic(const ir::AstNode *node, checker::CheckerType *propType, VReg objReg,
                              const util::StringView &propName);
 
     void StoreElementDynamic(const ir::AstNode *node, VReg objectReg, VReg index);
     void LoadElementDynamic(const ir::AstNode *node, VReg objectReg);
 
     void StoreUnionProperty(const ir::AstNode *node, VReg objReg, const util::StringView &name);
-    void LoadUnionProperty(const ir::AstNode *node, const checker::Type *propType, VReg objReg,
+    void LoadUnionProperty(const ir::AstNode *node, checker::CheckerType *propType, VReg objReg,
                            const util::StringView &propName);
 
     void LoadUndefinedDynamic(const ir::AstNode *node, Language lang);
@@ -86,7 +86,7 @@ public:
     void LoadThis(const ir::AstNode *node);
     [[nodiscard]] VReg GetThisReg() const;
 
-    void LoadDefaultValue(const ir::AstNode *node, const checker::Type *type);
+    void LoadDefaultValue(const ir::AstNode *node, checker::CheckerType *type);
     void EmitReturnVoid(const ir::AstNode *node);
     void LoadBuiltinVoid(const ir::AstNode *node);
     void ReturnAcc(const ir::AstNode *node);
@@ -392,7 +392,7 @@ public:
         SetAccumulatorType(Checker()->GlobalETSBigIntType());
     }
 
-    void LoadAccumulatorNull(const ir::AstNode *node, const checker::Type *type)
+    void LoadAccumulatorNull(const ir::AstNode *node, checker::CheckerType *type)
     {
         Sa().Emit<LdaNull>(node);
         SetAccumulatorType(type);
@@ -425,9 +425,9 @@ public:
             ApplyConversion(node, targetType_);
         }
     }
-    void ApplyConversionCast(const ir::AstNode *node, const checker::Type *targetType);
-    void ApplyConversion(const ir::AstNode *node, const checker::Type *targetType);
-    void ApplyCast(const ir::AstNode *node, const checker::Type *targetType);
+    void ApplyConversionCast(const ir::AstNode *node, checker::CheckerType *targetType);
+    void ApplyConversion(const ir::AstNode *node, checker::CheckerType *targetType);
+    void ApplyCast(const ir::AstNode *node, checker::CheckerType *targetType);
     void EmitUnboxingConversion(const ir::AstNode *node);
     void EmitBoxingConversion(const ir::AstNode *node);
     void SwapBinaryOpArgs(const ir::AstNode *node, VReg lhs);
@@ -439,7 +439,7 @@ public:
 
     void LoadArrayLength(const ir::AstNode *node, VReg arrayReg);
     void LoadArrayElement(const ir::AstNode *node, VReg objectReg);
-    void StoreArrayElement(const ir::AstNode *node, VReg objectReg, VReg index, const checker::Type *elementType);
+    void StoreArrayElement(const ir::AstNode *node, VReg objectReg, VReg index, checker::CheckerType *elementType);
 
     template <typename T>
     void MoveImmediateToRegister(const ir::AstNode *node, VReg reg, const checker::TypeFlag valueType, T const value)
@@ -544,15 +544,15 @@ public:
     void CastToString(const ir::AstNode *node);
     void CastToDynamic(const ir::AstNode *node, const checker::ETSDynamicType *type);
     void CastDynamicTo(const ir::AstNode *node, enum checker::TypeFlag typeFlag);
-    void CastToArrayOrObject(const ir::AstNode *node, const checker::Type *targetType, bool unchecked);
-    void CastDynamicToObject(const ir::AstNode *node, const checker::Type *targetType);
+    void CastToArrayOrObject(const ir::AstNode *node, checker::CheckerType *targetType, bool unchecked);
+    void CastDynamicToObject(const ir::AstNode *node, checker::CheckerType *targetType);
 
-    void InternalCheckCast(const ir::AstNode *node, const checker::Type *target);
-    void CheckedReferenceNarrowing(const ir::AstNode *node, const checker::Type *target);
-    void GuardUncheckedType(const ir::AstNode *node, const checker::Type *unchecked, const checker::Type *target);
+    void InternalCheckCast(const ir::AstNode *node, checker::CheckerType *target);
+    void CheckedReferenceNarrowing(const ir::AstNode *node, checker::CheckerType *target);
+    void GuardUncheckedType(const ir::AstNode *node, checker::CheckerType *unchecked, checker::CheckerType *target);
 
     // Call, Construct
-    void NewArray(const ir::AstNode *node, VReg arr, VReg dim, const checker::Type *arrType);
+    void NewArray(const ir::AstNode *node, VReg arr, VReg dim, checker::CheckerType *arrType);
     void NewObject(const ir::AstNode *node, VReg ctor, util::StringView name);
     void BuildString(const ir::Expression *node);
     void CallBigIntUnaryOperator(const ir::Expression *node, VReg arg, util::StringView signature);
@@ -665,8 +665,8 @@ public:
 private:
     const VReg dummyReg_ = VReg::RegStart();
 
-    void EmitIsInstanceNonNullish(const ir::AstNode *node, VReg objReg, checker::ETSObjectType const *clsType);
-    void EmitUnboxedCall(const ir::AstNode *node, std::string_view signatureFlag, const checker::Type *targetType,
+    void EmitIsInstanceNonNullish(const ir::AstNode *node, VReg objReg, checker::CETSObjectType const *clsType);
+    void EmitUnboxedCall(const ir::AstNode *node, std::string_view signatureFlag, checker::CheckerType *targetType,
                          const checker::Type *boxedType);
 
     void LoadConstantObject(const ir::Expression *node, const checker::Type *type);
@@ -678,7 +678,7 @@ private:
     void UnaryTilde(const ir::AstNode *node);
     void UnaryDollarDollar(const ir::AstNode *node);
 
-    util::StringView ToAssemblerType(const es2panda::checker::Type *type) const;
+    util::StringView ToAssemblerType(const checker::CheckerType *type) const;
 
     template <typename T>
     void StoreValueIntoArray(const ir::AstNode *const node, const VReg arr, const VReg index)
@@ -1159,8 +1159,8 @@ private:
     friend class TargetTypeContext;
 
     VReg acc_ {};
-    const checker::Type *targetType_ {};
-    const checker::ETSObjectType *containingObjectType_ {};
+    checker::CheckerType *targetType_ {};
+    checker::CETSObjectType *containingObjectType_ {};
 };
 
 template <typename T>

@@ -304,7 +304,7 @@ ETSObjectType *ETSChecker::GlobalBuiltinDynamicType(Language lang) const
     return nullptr;
 }
 
-ETSObjectType *ETSChecker::GlobalBuiltinBoxType(const Type *contents) const
+ETSObjectType *ETSChecker::GlobalBuiltinBoxType(CheckerType *contents) const
 {
     switch (TypeKind(contents)) {
         case TypeFlag::ETS_BOOLEAN:
@@ -328,7 +328,7 @@ ETSObjectType *ETSChecker::GlobalBuiltinBoxType(const Type *contents) const
     }
 }
 
-const checker::WrapperDesc &ETSChecker::PrimitiveWrapper() const
+const WrapperDesc &ETSChecker::PrimitiveWrapper() const
 {
     return primitiveWrappers_.Wrappers();
 }
@@ -344,7 +344,7 @@ const GlobalArraySignatureMap &ETSChecker::GlobalArrayTypes() const
 }
 
 // For use in Signature::ToAssemblerType
-const Type *MaybeBoxedType(Checker *checker, const varbinder::Variable *var)
+CheckerType *MaybeBoxedType(Checker *checker, const varbinder::Variable *var)
 {
     return checker->AsETSChecker()->MaybeBoxedType(var);
 }

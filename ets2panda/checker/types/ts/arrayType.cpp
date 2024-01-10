@@ -44,7 +44,7 @@ void ArrayType::AssignmentTarget(TypeRelation *relation, Type *source)
     if (source->IsArrayType()) {
         relation->IsAssignableTo(source->AsArrayType()->ElementType(), element_);
     } else if (source->IsObjectType() && source->AsObjectType()->IsTupleType()) {
-        ObjectType *sourceObj = source->AsObjectType();
+        CObjectType *sourceObj = source->AsObjectType();
         for (auto *it : sourceObj->Properties()) {
             if (!relation->IsAssignableTo(it->TsType(), element_)) {
                 return;
