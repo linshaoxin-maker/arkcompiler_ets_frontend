@@ -1,0 +1,13 @@
+arkcompiler_ets_frontend, 适配ts源码包更改, 王青, 2024-01-08 23:11, /openharmony/arkcompiler_ets_frontend/pulls/1589
+arkcompiler_ets_frontend, Cancel the arkguard build process in CI and upload the lib code., zhangchen168, 2024-01-08 19:04, /openharmony/arkcompiler_ets_frontend/pulls/1570
+developtools_ace_ets2bundle, Bugfix for "js import ets", zengyuan, 2024-01-09 16:16, /openharmony/developtools_ace_ets2bundle/pulls/2956
+developtools_ace_ets2bundle, Fix memory leak, shixiaowei4, 2024-01-09 15:45, /openharmony/developtools_ace_ets2bundle/pulls/2950
+developtools_ace_ets2bundle, Add check for accessors of Sendable classes, zhaoziming_hw, 2024-01-09 01:20, /openharmony/developtools_ace_ets2bundle/pulls/2943
+developtools_ace_ets2bundle, 适配ts源码包更改, 王青, 2024-01-08 23:11, /openharmony/developtools_ace_ets2bundle/pulls/2938
+developtools_ace_ets2bundle, 修复hotreload结合$$热加载报错问题, houhaoyu, 2024-01-08 22:33, /openharmony/developtools_ace_ets2bundle/pulls/2945
+developtools_ace_ets2bundle, 修复optlazyforeach场景错误添加myIds & debugline场景button场景转换错误修复, houhaoyu, 2024-01-08 21:53, /openharmony/developtools_ace_ets2bundle/pulls/2953
+developtools_ace_ets2bundle, Fix atomic tag check, yangbo_404, 2024-01-08 20:22, /openharmony/developtools_ace_ets2bundle/pulls/2952
+developtools_ace_ets2bundle, Alter the install path of tsc and arkguard, zhangchen168, 2024-01-08 19:04, /openharmony/developtools_ace_ets2bundle/pulls/2905
+third_party_typescript, fix check api tag error in 4.0 release, 王青, 2024-01-08 23:11, /openharmony/third_party_typescript/pulls/256
+third_party_typescript, Cancel the tsc build process in CI and upload the lib code., zhangchen168, 2024-01-08 19:04, /openharmony/third_party_typescript/pulls/246
+arkcompiler_runtime_core, 新增riscv64架构的最小适配, 闻飞, 2024-01-08 11:09, /openharmony/arkcompiler_runtime_core/pulls/937

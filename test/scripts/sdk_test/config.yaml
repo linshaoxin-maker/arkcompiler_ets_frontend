@@ -12,6 +12,7 @@
 # limitations under the License.
 
 # Description: configs for test suite
+output_hap_path: [entry, build, default, outputs, default, entry-default-signed.hap]
 
 # environment settings
 deveco_path: D:\Software\Deveco-0602\DevEco Studio
@@ -67,8 +68,11 @@ haps:
     path: D:\sdk-test\DemoApplication_EmptyAbility
     type: [stage, ohosTest, exceed_length_error, error]
     build_path: [entry, build, default]
+    bundle_name: com.example.idestagedemoemptyability
+    ability_name: EntryAbility
     cache_path: [cache, default, default@CompileArkTS, esmodule]
     output_hap_path: [outputs, default, entry-default-unsigned.hap]
+    output_hap_path_signed: [outputs, default, entry-default-signed.hap]
     output_app_path: [outputs, default, app, entry-default.hap]
     inc_modify_file: [entry, src, main, ets, pages, Index.ets]
     description:
@@ -77,8 +81,11 @@ haps:
     path: D:\sdk-test\DemoApplication_EmptyAbility_fa
     type: [fa, ohosTest, exceed_length_error, error]
     build_path: [entry, build, default]
+    bundle_name: com.example.idefademoemptyability
+    ability_name: com.example.idefademoemptyability.MainAbility
     cache_path: [cache, default, default@LegacyCompileArkTS, jsbundle]
     output_hap_path: [outputs, default, entry-default-unsigned.hap]
+    output_hap_path_signed: [outputs, default, entry-default-signed.hap]
     output_app_path: [outputs, default, app, entry-default.hap]
     inc_modify_file: [entry, src, main, ets, MainAbility, pages, index.ets]
     description:
@@ -87,17 +94,23 @@ haps:
     path: D:\sdk-test\DemoApplication_EmptyAbility_compatible8
     type: [compatible8, ohosTest, exceed_length_error, error]
     build_path: [entry, build, default]
+    bundle_name: com.example.idecompatible8demoemptyability
+    ability_name: com.example.idecompatible8demoemptyability.MainAbility
     cache_path: [cache, default, default@LegacyCompileArkTS, jsbundle]
     output_hap_path: [outputs, default, entry-default-unsigned.hap]
+    output_hap_path_signed: [outputs, default, entry-default-signed.hap]
     output_app_path: [outputs, default, app, entry-default.hap]
     inc_modify_file: [entry, src, main, ets, MainAbility, pages, index.ets]
     description:
   - idedemo_03:
     name: IdeJsDemoEmptyAbility
-    path:  D:\sdk-test\DemoApplication_EmptyAbility_js
+    path: D:\sdk-test\DemoApplication_EmptyAbility_js
     type: [js, ohosTest, exceed_length_error, error]
     build_path: [entry, build, default]
+    bundle_name: com.example.idejsdemoemptyability
+    ability_name: com.example.idejsdemoemptyability.MainAbility
     cache_path: [cache, default, default@LegacyCompileJS, jsbundle]
+    output_hap_path_signed: [ outputs, default, entry-default-signed.hap]
     output_hap_path: [outputs, default, entry-default-unsigned.hap]
     output_app_path: [outputs, default, app, entry-default.hap]
     inc_modify_file: [entry, src, main, js, MainAbility, pages, index, index.js]
