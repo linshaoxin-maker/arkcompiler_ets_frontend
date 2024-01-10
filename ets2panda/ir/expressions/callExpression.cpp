@@ -108,7 +108,9 @@ CallExpression::CallExpression(CallExpression const &other, ArenaAllocator *cons
       isTrailingBlockInNewLine_(other.isTrailingBlockInNewLine_)
 {
     callee_ = other.callee_->Clone(allocator, this)->AsExpression();
-    typeParams_ = other.typeParams_->Clone(allocator, this);
+    if (other.typeParams_ != nullptr) {
+        typeParams_ = other.typeParams_->Clone(allocator, this);
+    }
 
     for (auto *const argument : other.arguments_) {
         arguments_.emplace_back(argument->Clone(allocator, this)->AsExpression());

@@ -974,7 +974,8 @@ private:
                     auto ttctx = TargetTypeContext(this, arg->TsType());
                     VReg argReg = AllocReg();
                     arg->Compile(this);
-                    StoreAccumulator(node, argReg);
+                    ApplyConversion(arg, nullptr);
+                    ApplyConversionAndStoreAccumulator(arg, argReg, arg->TsType());
                 }
 
                 Rra().Emit<Range>(node, ctor, arguments.size() + 1, name, ctor);
@@ -1082,7 +1083,8 @@ private:
                     auto ttctx = TargetTypeContext(this, arg->TsType());
                     VReg argReg = AllocReg();
                     arg->Compile(this);
-                    StoreAccumulator(node, argReg);
+                    ApplyConversion(arg, nullptr);
+                    ApplyConversionAndStoreAccumulator(node, argReg, arg->TsType());
                 }
 
                 Rra().Emit<Range>(node, argStart, arguments.size(), name, argStart);
@@ -1134,6 +1136,7 @@ private:
                     // + 2U since we need to skip first 2 args in signature; first args is obj,
                     // second arg is param2
                     auto *argType = signature->Params()[index + 2U]->TsType();
+                    ApplyConversion(arg, nullptr);
                     ApplyConversionAndStoreAccumulator(node, argReg, argType);
                     index++;
                 }

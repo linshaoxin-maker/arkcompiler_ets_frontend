@@ -184,6 +184,7 @@ public:
             }
             const std::set<std::string> withoutAdditionalChecks = {"PromiseVoidInferencePhase",
                                                                    "StructLowering",
+                                                                   "DefaultParameterLowering",
                                                                    "GenerateTsDeclarationsPhase",
                                                                    "InterfacePropertyDeclarationsPhase",
                                                                    "LambdaConstructionPhase",
