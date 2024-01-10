@@ -740,7 +740,7 @@ void InitScopesPhaseETS::DeclareClassMethod(ir::MethodDefinition *method)
 
     ASSERT(VarBinder()->GetScope()->IsClassScope());
 
-    if (method->AsMethodDefinition()->Function()->IsDefaultParamProxy()) {
+    if ((method->AsMethodDefinition()->Function()->Flags() & ir::ScriptFunctionFlags::OVERLOAD) != 0) {
         return;
     }
 
@@ -774,7 +774,7 @@ void InitScopesPhaseETS::DeclareClassMethod(ir::MethodDefinition *method)
         var->AddFlag(varbinder::VariableFlags::METHOD);
         methodName->SetVariable(var);
         for (auto *overload : method->Overloads()) {
-            ASSERT(overload->Function()->IsDefaultParamProxy());
+            ASSERT((overload->Function()->Flags() & ir::ScriptFunctionFlags::OVERLOAD));
             overload->Id()->SetVariable(var);
             overload->SetParent(var->Declaration()->Node());
         }
@@ -785,9 +785,9 @@ void InitScopesPhaseETS::DeclareClassMethod(ir::MethodDefinition *method)
         addOverload(method, found);
         method->Function()->AddFlag(ir::ScriptFunctionFlags::OVERLOAD);
 
-        // default params proxy
+        // default params overloads
         for (auto *overload : method->Overloads()) {
-            ASSERT(overload->Function()->IsDefaultParamProxy());
+            ASSERT((overload->Function()->Flags() & ir::ScriptFunctionFlags::OVERLOAD));
             addOverload(overload, found);
         }
         method->ClearOverloads();

@@ -974,7 +974,8 @@ private:
                     auto ttctx = TargetTypeContext(this, arg->TsType());
                     VReg argReg = AllocReg();
                     arg->Compile(this);
-                    StoreAccumulator(node, argReg);
+                    ApplyConversion(arg, nullptr);
+                    ApplyConversionAndStoreAccumulator(arg, argReg, arg->TsType());
                 }
 
                 Rra().Emit<Range>(node, ctor, arguments.size() + 1, name, ctor);
@@ -1043,28 +1044,27 @@ private:
             return;
         }
 
-        const auto name = signature->InternalName();
         switch (arguments.size()) {
             case 0U: {
-                Ra().Emit<Short, 0>(node, name, dummyReg_, dummyReg_);
+                Ra().Emit<Short, 0>(node, signature->InternalName(), dummyReg_, dummyReg_);
                 break;
             }
             case 1U: {
                 COMPILE_ARG(0);
-                Ra().Emit<Short, 1>(node, name, arg0, dummyReg_);
+                Ra().Emit<Short, 1>(node, signature->InternalName(), arg0, dummyReg_);
                 break;
             }
             case 2U: {
                 COMPILE_ARG(0);
                 COMPILE_ARG(1);
-                Ra().Emit<Short>(node, name, arg0, arg1);
+                Ra().Emit<Short>(node, signature->InternalName(), arg0, arg1);
                 break;
             }
             case 3U: {
                 COMPILE_ARG(0);
                 COMPILE_ARG(1);
                 COMPILE_ARG(2);
-                Ra().Emit<General, 3U>(node, name, arg0, arg1, arg2, dummyReg_);
+                Ra().Emit<General, 3U>(node, signature->InternalName(), arg0, arg1, arg2, dummyReg_);
                 break;
             }
             case 4U: {
@@ -1072,7 +1072,7 @@ private:
                 COMPILE_ARG(1);
                 COMPILE_ARG(2);
                 COMPILE_ARG(3);
-                Ra().Emit<General>(node, name, arg0, arg1, arg2, arg3);
+                Ra().Emit<General>(node, signature->InternalName(), arg0, arg1, arg2, arg3);
                 break;
             }
             default: {
@@ -1082,10 +1082,11 @@ private:
                     auto ttctx = TargetTypeContext(this, arg->TsType());
                     VReg argReg = AllocReg();
                     arg->Compile(this);
-                    StoreAccumulator(node, argReg);
+                    ApplyConversion(arg, nullptr);
+                    ApplyConversionAndStoreAccumulator(node, argReg, arg->TsType());
                 }
 
-                Rra().Emit<Range>(node, argStart, arguments.size(), name, argStart);
+                Rra().Emit<Range>(node, argStart, arguments.size(), signature->InternalName(), argStart);
                 break;
             }
         }
@@ -1134,6 +1135,7 @@ private:
                     // + 2U since we need to skip first 2 args in signature; first args is obj,
                     // second arg is param2
                     auto *argType = signature->Params()[index + 2U]->TsType();
+                    ApplyConversion(arg, nullptr);
                     ApplyConversionAndStoreAccumulator(node, argReg, argType);
                     index++;
                 }
