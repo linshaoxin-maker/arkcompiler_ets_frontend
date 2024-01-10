@@ -617,7 +617,11 @@ void ETSObjectType::IsSupertypeOf(TypeRelation *relation, Type *source)
     }
 
     if (source->IsETSTypeParameter()) {
-        source->AsETSTypeParameter()->ConstraintIsSubtypeOf(relation, this);
+        if (source->AsETSTypeParameter()->HasConstraint()) {
+            IsSupertypeOf(relation, source->AsETSTypeParameter()->GetConstraintType());
+        } else {
+            IsSupertypeOf(relation, etsChecker->GlobalETSObjectType());
+        }
         return;
     }
 
