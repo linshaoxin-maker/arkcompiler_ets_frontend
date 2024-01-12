@@ -81,7 +81,7 @@ TEST_F(ScopesInitPhaseTest, TestForUpdateLoop)
      */
     auto varbinder = varbinder::VarBinder(Allocator());
     auto for_node = NodeGen().CreateForUpdate();
-    compiler::ScopesInitPhaseETS::RunExternalNode(for_node, &varbinder);
+    compiler::InitScopesPhaseETS::RunExternalNode(for_node, &varbinder);
 
     auto block_scope = for_node->Body()->AsBlockStatement()->Scope();
     auto loop_scope = for_node->Scope();
@@ -111,7 +111,7 @@ TEST_F(ScopesInitPhaseTest, CreateWhile)
     auto varbinder = varbinder::VarBinder(Allocator());
     auto while_node = NodeGen().CreateWhile();
 
-    compiler::ScopesInitPhaseETS::RunExternalNode(while_node, &varbinder);
+    compiler::InitScopesPhaseETS::RunExternalNode(while_node, &varbinder);
 
     auto while_scope = while_node->Scope();
     auto body_scope = while_node->Body()->AsBlockStatement()->Scope();

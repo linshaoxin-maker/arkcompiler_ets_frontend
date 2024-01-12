@@ -31,15 +31,19 @@ class TSEnumMember;
 class TSEnumDeclaration : public TypedStatement {
 public:
     explicit TSEnumDeclaration(ArenaAllocator *allocator, Identifier *key, ArenaVector<AstNode *> &&members,
-                               bool is_const, bool is_static = false)
+                               bool is_const, bool is_static = false, bool is_declare = false)
         : TypedStatement(AstNodeType::TS_ENUM_DECLARATION),
           decorators_(allocator->Adapter()),
           key_(key),
           members_(std::move(members)),
-          is_const_(is_const)
+          is_const_(is_const),
+          is_declare_(is_declare)
     {
         if (is_static) {
             AddModifier(ModifierFlags::STATIC);
+        }
+        if (is_declare) {
+            AddModifier(ModifierFlags::DECLARE);
         }
     }
 
@@ -88,6 +92,11 @@ public:
         return is_const_;
     }
 
+    bool IsDeclare() const
+    {
+        return is_declare_;
+    }
+
     const ArenaVector<Decorator *> &Decorators() const
     {
         return decorators_;
@@ -131,6 +140,7 @@ private:
     ArenaVector<AstNode *> members_;
     util::StringView internal_name_;
     bool is_const_;
+    bool is_declare_;
 };
 }  // namespace panda::es2panda::ir
 

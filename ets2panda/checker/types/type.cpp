@@ -61,6 +61,11 @@ bool Type::IsETSStringType() const
     return IsETSObjectType() && AsETSObjectType()->HasObjectFlag(ETSObjectFlags::STRING);
 }
 
+bool Type::IsETSBigIntType() const
+{
+    return IsETSObjectType() && AsETSObjectType()->HasObjectFlag(ETSObjectFlags::BUILTIN_BIGINT);
+}
+
 bool Type::IsETSAsyncFuncReturnType() const
 {
     return IsETSObjectType() && AsETSObjectType()->HasObjectFlag(ETSObjectFlags::ASYNC_FUNC_RETURN_TYPE);
@@ -111,6 +116,11 @@ void Type::CastTarget(TypeRelation *const relation, [[maybe_unused]] Type *sourc
 }
 
 void Type::IsSupertypeOf(TypeRelation *const relation, [[maybe_unused]] Type *source)
+{
+    relation->Result(false);
+}
+
+void Type::IsSubtypeOf(TypeRelation *const relation, [[maybe_unused]] Type *target)
 {
     relation->Result(false);
 }

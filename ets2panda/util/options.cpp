@@ -181,6 +181,8 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<bool> gen_std_lib("gen-stdlib", false, "Gen standard library");
     panda::PandArg<std::string> plugins("plugins", "", "Plugins");
     panda::PandArg<std::string> skip_phases("skip-phases", "", "Phases to skip");
+    panda::PandArg<std::string> verifier_warnings("verifier-warnings", "", "Show warnings form verifier");
+    panda::PandArg<std::string> verifier_errors("verifier-errors", "", "Show warnings form verifier");
     panda::PandArg<std::string> dump_before_phases("dump-before-phases", "",
                                                    "Generate program dump before running phases in the list");
     panda::PandArg<std::string> dump_ets_src_before_phases(
@@ -222,6 +224,8 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&gen_std_lib);
     argparser_->Add(&plugins);
     argparser_->Add(&skip_phases);
+    argparser_->Add(&verifier_warnings);
+    argparser_->Add(&verifier_errors);
     argparser_->Add(&dump_before_phases);
     argparser_->Add(&dump_ets_src_before_phases);
     argparser_->Add(&dump_after_phases);
@@ -420,6 +424,8 @@ bool Options::Parse(int argc, const char **argv)
     compiler_options_.is_ets_module = op_ets_module.GetValue();
     compiler_options_.plugins = SplitToStringVector(plugins.GetValue());
     compiler_options_.skip_phases = SplitToStringSet(skip_phases.GetValue());
+    compiler_options_.verifier_warnings = SplitToStringSet(verifier_warnings.GetValue());
+    compiler_options_.verifier_errors = SplitToStringSet(verifier_errors.GetValue());
     compiler_options_.dump_before_phases = SplitToStringSet(dump_before_phases.GetValue());
     compiler_options_.dump_ets_src_before_phases = SplitToStringSet(dump_ets_src_before_phases.GetValue());
     compiler_options_.dump_after_phases = SplitToStringSet(dump_after_phases.GetValue());

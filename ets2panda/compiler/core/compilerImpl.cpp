@@ -15,6 +15,7 @@
 
 #include "compilerImpl.h"
 
+#include "compiler/core/ASTVerifier.h"
 #include "es2panda.h"
 #include "checker/ETSAnalyzer.h"
 #include "checker/TSAnalyzer.h"
@@ -129,6 +130,9 @@ static pandasm::Program *CreateCompiler(const CompilationUnit &unit, const Phase
     context.SetEmitter(&emitter);
     context.SetParser(&parser);
 
+    auto verifier = ASTVerifier {&allocator};
+    auto verification_ctx = ASTVerifierContext {verifier};
+
     public_lib::Context public_context;
     SetupPublicContext(&public_context, &unit.input, &allocator, compiler_impl->Queue(), &compiler_impl->Plugins(),
                        &parser, &context);
@@ -142,7 +146,37 @@ static pandasm::Program *CreateCompiler(const CompilationUnit &unit, const Phase
         if (!phase->Apply(&public_context, &program)) {
             return nullptr;
         }
+#ifndef NDEBUG
+        using NamedProgram = std::tuple<util::StringView, const parser::Program *>;
+        ArenaVector<NamedProgram> to_check {program.Allocator()->Adapter()};
+        to_check.push_back(std::make_tuple(program.SourceFilePath(), &program));
+        for (const auto &external_source : program.ExternalSources()) {
+            for (const auto *external : external_source.second) {
+                to_check.push_back(std::make_tuple(external->SourceFilePath(), external));
+            }
+        }
+        for (const auto &it : to_check) {
+            const auto &source_name = std::get<0>(it);
+            const auto &linked_program = std::get<1>(it);
+            verification_ctx.Verify(context.Options()->verifier_warnings, context.Options()->verifier_errors,
+                                    linked_program->Ast(), phase->Name(), source_name);
+            verification_ctx.IntroduceNewInvariants(phase->Name());
+        }
+#endif
     }
+
+#ifndef NDEBUG
+    if (!context.Options()->verifier_warnings.empty()) {
+        if (auto errors = verification_ctx.DumpWarningsJSON(); errors != "[]") {
+            LOG(ERROR, ES2PANDA) << errors;
+        }
+    }
+    if (!context.Options()->verifier_errors.empty()) {
+        if (auto errors = verification_ctx.DumpAssertsJSON(); errors != "[]") {
+            ASSERT_PRINT(false, errors);
+        }
+    }
+#endif
 
     emitter.GenAnnotation();
 
