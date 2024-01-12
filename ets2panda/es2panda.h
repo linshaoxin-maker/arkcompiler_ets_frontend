@@ -103,6 +103,8 @@ struct CompilerOptions {
     std::string ts_decl_out {};
     std::vector<std::string> plugins {};
     std::unordered_set<std::string> skip_phases {};
+    std::unordered_set<std::string> verifier_warnings {};
+    std::unordered_set<std::string> verifier_errors {};
     std::unordered_set<std::string> dump_before_phases {};
     std::unordered_set<std::string> dump_ets_src_before_phases {};
     std::unordered_set<std::string> dump_after_phases {};

@@ -161,12 +161,24 @@ void ETSUnionType::LinearizeAndEraseIdentical(TypeRelation *relation, ArenaVecto
         }
     }
     constituent_types = copied_constituents;
+    // Removing subtypes should be in the next iteration, especially needed for proper literals removal
+    auto check_subtyping = [relation](Type *lhs, Type *rhs) {
+        if (lhs == rhs) {
+            return false;
+        }
+        relation->Result(false);
+        lhs->IsSupertypeOf(relation, rhs);
+        bool inheritance_relation = relation->IsTrue();
+        rhs->IsSupertypeOf(relation, lhs);
+        inheritance_relation = inheritance_relation || relation->IsTrue();
+        return inheritance_relation;
+    };
     // Secondly, remove identical types
     auto cmp_it = constituent_types.begin();
     while (cmp_it != constituent_types.end()) {
         auto it = std::next(cmp_it);
         while (it != constituent_types.end()) {
-            if (relation->IsIdenticalTo(*it, *cmp_it)) {
+            if (relation->IsIdenticalTo(*it, *cmp_it) && !check_subtyping(*it, *cmp_it)) {
                 it = constituent_types.erase(it);
             } else {
                 ++it;
@@ -196,9 +208,9 @@ void ETSUnionType::NormalizeTypes(TypeRelation *relation, ArenaVector<Type *> &c
     while (cmp_it != constituent_types.end()) {
         auto new_end = std::remove_if(
             constituent_types.begin(), constituent_types.end(), [relation, checker, cmp_it, number_found](Type *ct) {
-                relation->Result(false);
-                (*cmp_it)->IsSupertypeOf(relation, ct);
-                bool remove_subtype = ct != *cmp_it && relation->IsTrue();
+                bool both_constants = (*cmp_it)->HasTypeFlag(TypeFlag::CONSTANT) && ct->HasTypeFlag(TypeFlag::CONSTANT);
+                relation->IsSupertypeOf((*cmp_it), ct);
+                bool remove_subtype = ct != *cmp_it && !both_constants && relation->IsTrue();
                 bool remove_numeric = number_found && ct->IsETSObjectType() &&
                                       ct->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE) &&
                                       !ct->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::BUILTIN_DOUBLE) &&
@@ -285,26 +297,19 @@ void ETSUnionType::Cast(TypeRelation *relation, Type *target)
 
 void ETSUnionType::IsSupertypeOf(TypeRelation *relation, Type *source)
 {
-    relation->Result(false);
-
-    if (source->IsETSUnionType()) {
-        for (auto const &source_ctype : source->AsETSUnionType()->ConstituentTypes()) {
-            if (IsSupertypeOf(relation, source_ctype), !relation->IsTrue()) {
-                return;
-            }
-        }
-        return;
-    }
-
     for (auto const &ctype : ConstituentTypes()) {
-        if (ctype->IsSupertypeOf(relation, source), relation->IsTrue()) {
+        if (relation->IsSupertypeOf(ctype, source)) {
             return;
         }
     }
+}
 
-    if (source->IsETSTypeParameter()) {
-        source->AsETSTypeParameter()->ConstraintIsSubtypeOf(relation, this);
-        return;
+void ETSUnionType::IsSubtypeOf(TypeRelation *relation, Type *target)
+{
+    for (auto const &ctype : ConstituentTypes()) {
+        if (!relation->IsSupertypeOf(target, ctype)) {
+            return;
+        }
     }
 }
 

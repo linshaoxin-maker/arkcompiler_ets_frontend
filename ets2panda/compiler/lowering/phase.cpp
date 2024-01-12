@@ -29,8 +29,10 @@
 #include "compiler/lowering/ets/opAssignment.h"
 #include "compiler/lowering/ets/tupleLowering.h"
 #include "compiler/lowering/ets/unionLowering.h"
+#include "compiler/lowering/ets/structLowering.h"
 #include "public/es2panda_lib.h"
 #include "compiler/lowering/ets/promiseVoid.h"
+#include "utils/json_builder.h"
 
 namespace panda::es2panda::compiler {
 
@@ -45,59 +47,71 @@ std::vector<Phase *> GetTrivialPhaseList()
 
 static InterfacePropertyDeclarationsPhase INTERFACE_PROP_DECL_PHASE;
 static GenerateTsDeclarationsPhase GENERATE_TS_DECLARATIONS_PHASE;
-static LambdaLowering LAMBDA_LOWERING;
+static LambdaConstructionPhase LAMBDA_CONSTRUCTION_PHASE;
 static OpAssignmentLowering OP_ASSIGNMENT_LOWERING;
 static ObjectIndexLowering OBJECT_INDEX_LOWERING;
 static TupleLowering TUPLE_LOWERING;  // Can be only applied after checking phase, and OP_ASSIGNMENT_LOWERING phase
 static UnionLowering UNION_LOWERING;
 static ExpandBracketsPhase EXPAND_BRACKETS_PHASE;
-static PromiseVoidLowering PROMISE_VOID_LOWERING;
+static PromiseVoidInferencePhase PROMISE_VOID_INFERENCE_PHASE;
+static StructLowering STRUCT_LOWERING;
 static PluginPhase PLUGINS_AFTER_PARSE {"plugins-after-parse", ES2PANDA_STATE_PARSED, &util::Plugin::AfterParse};
 static PluginPhase PLUGINS_AFTER_CHECK {"plugins-after-check", ES2PANDA_STATE_CHECKED, &util::Plugin::AfterCheck};
 static PluginPhase PLUGINS_AFTER_LOWERINGS {"plugins-after-lowering", ES2PANDA_STATE_LOWERED,
                                             &util::Plugin::AfterLowerings};
+// NOLINTBEGIN(fuchsia-statically-constructed-objects)
+static InitScopesPhaseETS INIT_SCOPES_PHASE_ETS;
+static InitScopesPhaseAS INIT_SCOPES_PHASE_AS;
+static InitScopesPhaseTs INIT_SCOPES_PHASE_TS;
+static InitScopesPhaseJs INIT_SCOPES_PHASE_JS;
+// NOLINTEND(fuchsia-statically-constructed-objects)
+
+std::vector<Phase *> GetETSPhaseList()
+{
+    return {
+        &PLUGINS_AFTER_PARSE,    &INIT_SCOPES_PHASE_ETS,     &PROMISE_VOID_INFERENCE_PHASE,
+        &STRUCT_LOWERING,        &LAMBDA_CONSTRUCTION_PHASE, &INTERFACE_PROP_DECL_PHASE,
+        &CHECKER_PHASE,          &PLUGINS_AFTER_CHECK,       &GENERATE_TS_DECLARATIONS_PHASE,
+        &OP_ASSIGNMENT_LOWERING, &OBJECT_INDEX_LOWERING,     &TUPLE_LOWERING,
+        &UNION_LOWERING,         &EXPAND_BRACKETS_PHASE,     &PLUGINS_AFTER_LOWERINGS,
+    };
+}
+
+std::vector<Phase *> GetASPhaseList()
+{
+    return {
+        &INIT_SCOPES_PHASE_AS,
+        &CHECKER_PHASE,
+    };
+}
+
+std::vector<Phase *> GetTSPhaseList()
+{
+    return {
+        &INIT_SCOPES_PHASE_TS,
+        &CHECKER_PHASE,
+    };
+}
+
+std::vector<Phase *> GetJSPhaseList()
+{
+    return {
+        &INIT_SCOPES_PHASE_JS,
+        &CHECKER_PHASE,
+    };
+}
 
 std::vector<Phase *> GetPhaseList(ScriptExtension ext)
 {
-    static ScopesInitPhaseETS scopes_phase_ets;
-    static ScopesInitPhaseAS scopes_phase_as;
-    static ScopesInitPhaseTs scopes_phase_ts;
-    static ScopesInitPhaseJs scopes_phase_js;
-
     switch (ext) {
         case ScriptExtension::ETS:
-            return {
-                &scopes_phase_ets,
-                &PLUGINS_AFTER_PARSE,
-                &PROMISE_VOID_LOWERING,
-                &LAMBDA_LOWERING,
-                &INTERFACE_PROP_DECL_PHASE,
-                &CHECKER_PHASE,
-                &PLUGINS_AFTER_CHECK,
-                &GENERATE_TS_DECLARATIONS_PHASE,
-                &OP_ASSIGNMENT_LOWERING,
-                &OBJECT_INDEX_LOWERING,
-                &TUPLE_LOWERING,
-                &UNION_LOWERING,
-                &EXPAND_BRACKETS_PHASE,
-                &PLUGINS_AFTER_LOWERINGS,
-            };
-
+            return GetETSPhaseList();
         case ScriptExtension::AS:
-            return std::vector<Phase *> {
-                &scopes_phase_as,
-                &CHECKER_PHASE,
-            };
+            return GetASPhaseList();
         case ScriptExtension::TS:
-            return std::vector<Phase *> {
-                &scopes_phase_ts,
-                &CHECKER_PHASE,
-            };
+            return GetTSPhaseList();
         case ScriptExtension::JS:
-            return std::vector<Phase *> {
-                &scopes_phase_js,
-                &CHECKER_PHASE,
-            };
+            return GetJSPhaseList();
         default:
             UNREACHABLE();
     }
@@ -105,25 +119,6 @@ std::vector<Phase *> GetPhaseList(ScriptExtension ext)
 
 bool Phase::Apply(public_lib::Context *ctx, parser::Program *program)
 {
-#ifndef NDEBUG
-    const auto check_program = [](const parser::Program *p) {
-        ASTVerifier verifier {p->Allocator(), false, p->SourceCode()};
-        ArenaVector<const ir::BlockStatement *> to_check {p->Allocator()->Adapter()};
-        to_check.push_back(p->Ast());
-        for (const auto &external_source : p->ExternalSources()) {
-            for (const auto external : external_source.second) {
-                to_check.push_back(external->Ast());
-            }
-        }
-        for (const auto *ast : to_check) {
-            if (!verifier.VerifyFull(ast)) {
-                return false;
-            }
-        }
-        return true;
-    };
-#endif
-
     const auto *options = ctx->compiler_context->Options();
     const auto name = std::string {Name()};
     if (options->skip_phases.count(name) > 0) {
@@ -146,8 +141,6 @@ bool Phase::Apply(public_lib::Context *ctx, parser::Program *program)
     CheckOptionsAfterPhase(options, program, name);
 
 #ifndef NDEBUG
-    check_program(program);
-
     if (!Postcondition(ctx, program)) {
         ctx->checker->ThrowTypeError({"Postcondition check failed for ", util::StringView {Name()}},
                                      lexer::SourcePosition {});

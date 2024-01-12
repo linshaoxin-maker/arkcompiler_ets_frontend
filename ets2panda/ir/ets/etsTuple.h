@@ -75,6 +75,7 @@ public:
     checker::Type *Check([[maybe_unused]] checker::ETSChecker *checker) override;
     checker::Type *GetType([[maybe_unused]] checker::ETSChecker *checker) override;
 
+    void SetNullUndefinedFlags(std::pair<bool, bool> &contains_null_or_undefined, const checker::Type *type);
     checker::Type *CalculateLUBForTuple(checker::ETSChecker *checker, ArenaVector<checker::Type *> &type_list,
                                         checker::Type *spread_type);
 
