@@ -69,6 +69,81 @@ bool ExpandBracketsPhase::Perform(public_lib::Context *ctx, parser::Program *pro
 
         return sequence_expr;
     });
+    program->Ast()->TransformChildrenRecursively([ctx, parser, checker, allocator](ir::AstNode *ast) -> ir::AstNode * {
+        if (!ast->IsAssignmentExpression()) {
+            return ast;
+        }
+        auto *assignment = ast->AsAssignmentExpression();
+        if (!assignment->Left()->IsMemberExpression()) {
+            return ast;
+        }
+        auto *member_expression = assignment->Left()->AsMemberExpression();
+        if (!member_expression->IsComputed()) {
+            return ast;
+        }
+        auto *index = member_expression->Property();
+        auto *index_type = index->TsType();
+        if (auto *unboxed = checker->ETSBuiltinTypeAsPrimitiveType(index_type); unboxed != nullptr) {
+            index_type = unboxed;
+        }
+        if (!index_type->HasTypeFlag(checker::TypeFlag::ETS_FLOATING_POINT)) {
+            return ast;
+        }
+        auto *const scope = NearestScope(assignment);
+        auto expression_ctx = varbinder::LexicalScope<varbinder::Scope>::Enter(checker->VarBinder(), scope);
+        auto *ident = Gensym(allocator);
+        auto *object = member_expression->Object();
+        auto *expr_type = checker->AllocNode<ir::OpaqueTypeNode>(index_type);
+        auto *sequence_expr = parser->CreateFormattedExpression(
+            "let @@I1 = (@@E2) as @@T3;"
+            "if (!isSafeInteger(@@I4)) {"
+            "  throw new TypeError(\"Index fractional part should not be different from 0.0\");"
+            "};"
+            "@@E5[@@I6 as int] = (@@E7);",
+            parser::DEFAULT_SOURCE_FILE, ident, index, expr_type, ident->Clone(allocator), object,
+            ident->Clone(allocator), assignment->Right());
+        sequence_expr->SetParent(assignment->Parent());
+        ScopesInitPhaseETS::RunExternalNode(sequence_expr, ctx->compiler_context->VarBinder());
+        checker->VarBinder()->AsETSBinder()->ResolveReferencesForScope(sequence_expr, scope);
+        sequence_expr->Check(checker);
+        return sequence_expr;
+    });
+    program->Ast()->TransformChildrenRecursively([ctx, parser, checker, allocator](ir::AstNode *ast) -> ir::AstNode * {
+        if (!ast->IsMemberExpression()) {
+            return ast;
+        }
+        auto *member_expression = ast->AsMemberExpression();
+        if (!member_expression->IsComputed()) {
+            return ast;
+        }
+        auto *index = member_expression->Property();
+        auto *index_type = index->TsType();
+        if (auto *unboxed = checker->ETSBuiltinTypeAsPrimitiveType(index_type); unboxed != nullptr) {
+            index_type = unboxed;
+        }
+        if (!index_type->HasTypeFlag(checker::TypeFlag::ETS_FLOATING_POINT)) {
+            return ast;
+        }
+
+        auto *const scope = NearestScope(member_expression);
+        auto expression_ctx = varbinder::LexicalScope<varbinder::Scope>::Enter(checker->VarBinder(), scope);
+        auto *ident = Gensym(allocator);
+        auto *object = member_expression->Object();
+        auto *expr_type = checker->AllocNode<ir::OpaqueTypeNode>(index_type);
+        auto *sequence_expr = parser->CreateFormattedExpression(
+            "let @@I1 = (@@E2) as @@T3;"
+            "if (!isSafeInteger(@@I4)) {"
+            "  throw new TypeError(\"Index fractional part should not be different from 0.0\");"
+            "};"
+            "@@E5[@@I6 as int];",
+            parser::DEFAULT_SOURCE_FILE, ident, index, expr_type, ident->Clone(allocator), object,
+            ident->Clone(allocator));
+        sequence_expr->SetParent(member_expression->Parent());
+        ScopesInitPhaseETS::RunExternalNode(sequence_expr, ctx->compiler_context->VarBinder());
+        checker->VarBinder()->AsETSBinder()->ResolveReferencesForScope(sequence_expr, scope);
+        sequence_expr->Check(checker);
+        return sequence_expr;
+    });
     return true;
 }
 

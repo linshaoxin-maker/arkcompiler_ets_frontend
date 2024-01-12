@@ -146,7 +146,7 @@ public:
                                       const lexer::SourcePosition &pos);
     void ResolveDeclaredMembersOfObject(ETSObjectType *type);
     int32_t GetTupleElementAccessValue(const Type *type) const;
-    void ValidateArrayIndex(ir::Expression *expr, bool relaxed = false);
+    void ValidateArrayIndex(ir::Expression *expr);
     void ValidateTupleIndex(const ETSTupleType *tuple, const ir::MemberExpression *expr);
     ETSObjectType *CheckThisOrSuperAccess(ir::Expression *node, ETSObjectType *class_type, std::string_view msg);
     void CreateTypeForClassOrInterfaceTypeParameters(ETSObjectType *type);

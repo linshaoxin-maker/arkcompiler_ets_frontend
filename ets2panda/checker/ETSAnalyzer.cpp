@@ -505,7 +505,7 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewArrayInstanceExpression *expr) const
     ETSChecker *checker = GetETSChecker();
 
     auto *element_type = expr->type_reference_->GetType(checker);
-    checker->ValidateArrayIndex(expr->dimension_, true);
+    checker->ValidateArrayIndex(expr->dimension_);
 
     if (!element_type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && !element_type->IsNullish() &&
         !element_type->HasTypeFlag(TypeFlag::GENERIC) && !element_type->HasTypeFlag(TypeFlag::ETS_ARRAY) &&
