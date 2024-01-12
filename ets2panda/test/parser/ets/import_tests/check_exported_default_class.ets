@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import ExportDefaultClass from "import_tests/modules/struct_default_module";
+import ExportDefaultClass from "import_tests/modules/class_default_module";
 
 function main() {
   let test_class: ExportDefaultClass = new ExportDefaultClass();

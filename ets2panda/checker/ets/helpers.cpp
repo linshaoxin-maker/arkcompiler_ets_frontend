@@ -775,6 +775,10 @@ std::tuple<Type *, bool> ETSChecker::ApplyBinaryOperatorPromotion(Type *left, Ty
                 return {GlobalLongType(), both_const};
             }
 
+            if (unboxed_l->IsCharType() && unboxed_r->IsCharType()) {
+                return {GlobalCharType(), both_const};
+            }
+
             return {GlobalIntType(), both_const};
         }
 
@@ -1561,7 +1565,7 @@ bool ETSChecker::IsFunctionContainsSignature(ETSFunctionType *func_type, Signatu
 void ETSChecker::CheckFunctionContainsClashingSignature(const ETSFunctionType *func_type, Signature *signature)
 {
     for (auto *it : func_type->CallSignatures()) {
-        SavedTypeRelationFlagsContext strf_ctx(Relation(), TypeRelationFlag::NO_RETURN_TYPE_CHECK);
+        SavedTypeRelationFlagsContext strf_ctx(Relation(), TypeRelationFlag::NONE);
         Relation()->IsIdenticalTo(it, signature);
         if (Relation()->IsTrue() && it->Function()->Id()->Name() == signature->Function()->Id()->Name()) {
             std::stringstream ss;
@@ -1665,7 +1669,7 @@ bool ETSChecker::IsTypeBuiltinType(const Type *type) const
 bool ETSChecker::IsReferenceType(const Type *type)
 {
     return type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT) || type->IsETSNullLike() ||
-           type->IsETSStringType() || type->IsETSTypeParameter() || type->IsETSUnionType();
+           type->IsETSStringType() || type->IsETSTypeParameter() || type->IsETSUnionType() || type->IsETSBigIntType();
 }
 
 const ir::AstNode *ETSChecker::FindJumpTarget(ir::AstNodeType node_type, const ir::AstNode *node,
@@ -2614,6 +2618,19 @@ void ETSChecker::ModifyPreferredType(ir::ArrayExpression *const array_expr, Type
     }
 }
 
+std::string GenerateImplicitInstantiateArg(varbinder::LocalVariable *instantiate_method, const std::string &class_name)
+{
+    auto call_signatures = instantiate_method->TsType()->AsETSFunctionType()->CallSignatures();
+    ASSERT(!call_signatures.empty());
+    auto method_owner = std::string(call_signatures[0]->Owner()->Name());
+    std::string implicit_instantiate_argument = "()=>{return new " + class_name + "()";
+    if (method_owner != class_name) {
+        implicit_instantiate_argument.append(" as " + method_owner);
+    }
+    implicit_instantiate_argument.append("}");
+    return implicit_instantiate_argument;
+}
+
 bool ETSChecker::TryTransformingToStaticInvoke(ir::Identifier *const ident, const Type *resolved_type)
 {
     ASSERT(ident->Parent()->IsCallExpression());
@@ -2657,7 +2674,8 @@ bool ETSChecker::TryTransformingToStaticInvoke(ir::Identifier *const ident, cons
     call_expr->SetCallee(transformed_callee);
 
     if (instantiate_method != nullptr) {
-        std::string implicit_instantiate_argument = "()=>{return new " + std::string(class_name) + "()}";
+        std::string implicit_instantiate_argument =
+            GenerateImplicitInstantiateArg(instantiate_method, std::string(class_name));
 
         parser::Program program(Allocator(), VarBinder());
         es2panda::CompilerOptions options;
