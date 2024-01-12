@@ -187,8 +187,60 @@ void Condition::CompileLogicalAndExpr(ETSGen *etsg, const ir::BinaryExpression *
     etsg->SetLabel(bin_expr, return_right_true_label);
 }
 
+bool Condition::CompileBinaryExprForBigInt(ETSGen *etsg, const ir::BinaryExpression *expr, Label *false_label)
+{
+    if ((expr->Left()->TsType() == nullptr) || (expr->Right()->TsType() == nullptr)) {
+        return false;
+    }
+
+    if (!expr->Left()->TsType()->IsETSBigIntType()) {
+        return false;
+    }
+
+    if (!expr->Right()->TsType()->IsETSBigIntType()) {
+        return false;
+    }
+
+    std::string_view signature = compiler::Signatures::ANY;
+    switch (expr->OperatorType()) {
+        case lexer::TokenType::PUNCTUATOR_LESS_THAN:
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_LESS_THAN;
+            break;
+        case lexer::TokenType::PUNCTUATOR_LESS_THAN_EQUAL:
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_LESS_THAN_EQUAL;
+            break;
+        case lexer::TokenType::PUNCTUATOR_GREATER_THAN:
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_GREATER_THAN;
+            break;
+        case lexer::TokenType::PUNCTUATOR_GREATER_THAN_EQUAL:
+            signature = compiler::Signatures::BUILTIN_BIGINT_OPERATOR_GREATER_THAN_EQUAL;
+            break;
+        default:
+            // Other operations are handled in the CompileBinaryExpr function
+            return false;
+    }
+
+    auto ttctx = TargetTypeContext(etsg, expr->OperationType());
+    RegScope rs(etsg);
+    VReg lhs = etsg->AllocReg();
+    expr->Left()->Compile(etsg);
+    etsg->ApplyConversionAndStoreAccumulator(expr->Left(), lhs, expr->OperationType());
+    expr->Right()->Compile(etsg);
+    etsg->ApplyConversion(expr->Right(), expr->OperationType());
+    compiler::VReg rhs = etsg->AllocReg();
+    etsg->StoreAccumulator(expr, rhs);
+    etsg->CallBigIntBinaryComparison(expr, lhs, rhs, signature);
+    etsg->BranchIfFalse(expr, false_label);
+
+    return true;
+}
+
 bool Condition::CompileBinaryExpr(ETSGen *etsg, const ir::BinaryExpression *bin_expr, Label *false_label)
 {
+    if (CompileBinaryExprForBigInt(etsg, bin_expr, false_label)) {
+        return true;
+    }
+
     switch (bin_expr->OperatorType()) {
         case lexer::TokenType::PUNCTUATOR_EQUAL:
         case lexer::TokenType::PUNCTUATOR_NOT_EQUAL:

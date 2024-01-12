@@ -29,6 +29,7 @@
 #include "compiler/lowering/ets/opAssignment.h"
 #include "compiler/lowering/ets/tupleLowering.h"
 #include "compiler/lowering/ets/unionLowering.h"
+#include "compiler/lowering/ets/structLowering.h"
 #include "public/es2panda_lib.h"
 #include "compiler/lowering/ets/promiseVoid.h"
 
@@ -52,52 +53,74 @@ static TupleLowering TUPLE_LOWERING;  // Can be only applied after checking phas
 static UnionLowering UNION_LOWERING;
 static ExpandBracketsPhase EXPAND_BRACKETS_PHASE;
 static PromiseVoidLowering PROMISE_VOID_LOWERING;
+static StructLowering STRUCT_LOWERING;
 static PluginPhase PLUGINS_AFTER_PARSE {"plugins-after-parse", ES2PANDA_STATE_PARSED, &util::Plugin::AfterParse};
 static PluginPhase PLUGINS_AFTER_CHECK {"plugins-after-check", ES2PANDA_STATE_CHECKED, &util::Plugin::AfterCheck};
 static PluginPhase PLUGINS_AFTER_LOWERINGS {"plugins-after-lowering", ES2PANDA_STATE_LOWERED,
                                             &util::Plugin::AfterLowerings};
 
-std::vector<Phase *> GetPhaseList(ScriptExtension ext)
+// clang-format off
+std::vector<Phase *> GetETSPhaseList()
 {
     static ScopesInitPhaseETS scopes_phase_ets;
-    static ScopesInitPhaseAS scopes_phase_as;
-    static ScopesInitPhaseTs scopes_phase_ts;
-    static ScopesInitPhaseJs scopes_phase_js;
+    return {
+        &scopes_phase_ets,
+        &PLUGINS_AFTER_PARSE,
+        &PROMISE_VOID_LOWERING,
+        &STRUCT_LOWERING,
+        &LAMBDA_LOWERING,
+        &INTERFACE_PROP_DECL_PHASE,
+        &CHECKER_PHASE,
+        &PLUGINS_AFTER_CHECK,
+        &GENERATE_TS_DECLARATIONS_PHASE,
+        &OP_ASSIGNMENT_LOWERING,
+        &OBJECT_INDEX_LOWERING,
+        &TUPLE_LOWERING,
+        &UNION_LOWERING,
+        &EXPAND_BRACKETS_PHASE,
+        &PLUGINS_AFTER_LOWERINGS,
+    };
+}
+// clang-format on
 
+std::vector<Phase *> GetASPhaseList()
+{
+    static ScopesInitPhaseAS scopes_phase_as;
+    return {
+        &scopes_phase_as,
+        &CHECKER_PHASE,
+    };
+}
+
+std::vector<Phase *> GetTSPhaseList()
+{
+    static ScopesInitPhaseTs scopes_phase_ts;
+    return {
+        &scopes_phase_ts,
+        &CHECKER_PHASE,
+    };
+}
+
+std::vector<Phase *> GetJSPhaseList()
+{
+    static ScopesInitPhaseJs scopes_phase_js;
+    return {
+        &scopes_phase_js,
+        &CHECKER_PHASE,
+    };
+}
+
+std::vector<Phase *> GetPhaseList(ScriptExtension ext)
+{
     switch (ext) {
         case ScriptExtension::ETS:
-            return {
-                &scopes_phase_ets,
-                &PLUGINS_AFTER_PARSE,
-                &PROMISE_VOID_LOWERING,
-                &LAMBDA_LOWERING,
-                &INTERFACE_PROP_DECL_PHASE,
-                &CHECKER_PHASE,
-                &PLUGINS_AFTER_CHECK,
-                &GENERATE_TS_DECLARATIONS_PHASE,
-                &OP_ASSIGNMENT_LOWERING,
-                &OBJECT_INDEX_LOWERING,
-                &TUPLE_LOWERING,
-                &UNION_LOWERING,
-                &EXPAND_BRACKETS_PHASE,
-                &PLUGINS_AFTER_LOWERINGS,
-            };
-
+            return GetETSPhaseList();
         case ScriptExtension::AS:
-            return std::vector<Phase *> {
-                &scopes_phase_as,
-                &CHECKER_PHASE,
-            };
+            return GetASPhaseList();
         case ScriptExtension::TS:
-            return std::vector<Phase *> {
-                &scopes_phase_ts,
-                &CHECKER_PHASE,
-            };
+            return GetTSPhaseList();
         case ScriptExtension::JS:
-            return std::vector<Phase *> {
-                &scopes_phase_js,
-                &CHECKER_PHASE,
-            };
+            return GetJSPhaseList();
         default:
             UNREACHABLE();
     }

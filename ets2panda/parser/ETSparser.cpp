@@ -187,7 +187,9 @@ void ETSParser::ParseETSGlobalScript(lexer::SourcePosition start_loc, ArenaVecto
                     end(items));
 
         for (const auto &item : items) {
-            parsed_sources_.push_back(ResolveImportPath(item));
+            auto resolved = ResolveImportPath(item);
+            resolved_parsed_sources_.emplace(item, resolved);
+            parsed_sources_.push_back(resolved);
         }
     };
 
@@ -778,6 +780,8 @@ ArenaVector<ir::AstNode *> ETSParser::ParseTopLevelStatements(ArenaVector<ir::St
                 }
                 break;
             }
+            case lexer::TokenType::KEYW_NAMESPACE:
+                [[fallthrough]];
             case lexer::TokenType::KEYW_STATIC:
                 [[fallthrough]];
             case lexer::TokenType::KEYW_ABSTRACT:
@@ -1550,8 +1554,10 @@ ir::AstNode *ETSParser::ParseClassElement([[maybe_unused]] const ArenaVector<ir:
         case lexer::TokenType::KEYW_INTERFACE:
         case lexer::TokenType::KEYW_CLASS:
         case lexer::TokenType::KEYW_ENUM: {
-            ThrowSyntaxError(
-                "Local type declaration (class, struct, interface and enum) support is not yet implemented.");
+            if ((GetContext().Status() & ParserStatus::IN_NAMESPACE) == 0) {
+                ThrowSyntaxError(
+                    "Local type declaration (class, struct, interface and enum) support is not yet implemented.");
+            }
             // remove saved_pos nolint
 
             Lexer()->Rewind(saved_pos);
@@ -1576,6 +1582,9 @@ ir::AstNode *ETSParser::ParseClassElement([[maybe_unused]] const ArenaVector<ir:
             return type_decl;
         }
         case lexer::TokenType::KEYW_CONSTRUCTOR: {
+            if ((GetContext().Status() & ParserStatus::IN_NAMESPACE) != 0) {
+                ThrowSyntaxError({"Namespaces should not have a constructor"});
+            }
             if ((memberModifiers & ir::ModifierFlags::ASYNC) != 0) {
                 ThrowSyntaxError({"Constructor should not be async."});
             }
@@ -1609,7 +1618,15 @@ ir::AstNode *ETSParser::ParseClassElement([[maybe_unused]] const ArenaVector<ir:
         return ParseClassGetterSetterMethod(properties, modifiers, memberModifiers);
     }
 
-    auto *member_name = ExpectIdentifier(false, true);
+    if ((GetContext().Status() & ParserStatus::IN_NAMESPACE) != 0) {
+        auto type = Lexer()->GetToken().Type();
+        if (type == lexer::TokenType::KEYW_FUNCTION || type == lexer::TokenType::KEYW_LET ||
+            type == lexer::TokenType::KEYW_CONST) {
+            Lexer()->NextToken();
+        }
+    }
+
+    auto *member_name = ExpectIdentifier();
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS ||
         Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
@@ -1726,6 +1743,15 @@ ir::Statement *ETSParser::ParseTypeDeclaration(bool allow_static)
         case lexer::TokenType::KEYW_INTERFACE: {
             return ParseInterfaceDeclaration(false);
         }
+        case lexer::TokenType::KEYW_NAMESPACE: {
+            if (!InAmbientContext()) {
+                ThrowSyntaxError("Namespaces are declare only");
+            }
+            GetContext().Status() |= ParserStatus::IN_NAMESPACE;
+            auto *ns = ParseClassDeclaration(modifiers, ir::ModifierFlags::STATIC);
+            GetContext().Status() &= ~ParserStatus::IN_NAMESPACE;
+            return ns;
+        }
         case lexer::TokenType::KEYW_CLASS: {
             return ParseClassDeclaration(modifiers);
         }
@@ -1800,7 +1826,7 @@ ir::TSTypeAliasDeclaration *ETSParser::ParseTypeAliasDeclaration()
         auto options =
             TypeAnnotationParsingOptions::THROW_ERROR | TypeAnnotationParsingOptions::ALLOW_DECLARATION_SITE_VARIANCE;
         ir::TSTypeParameterDeclaration *params = ParseTypeParameterDeclaration(&options);
-        type_alias_decl->AddTypeParameters(params);
+        type_alias_decl->SetTypeParameters(params);
         params->SetParent(type_alias_decl);
     }
 
@@ -3806,7 +3832,7 @@ ir::Expression *ETSParser::ParsePrimaryExpression(ExpressionParseFlags flags)
             return ParseCharLiteral();
         }
         case lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS: {
-            return ParseCoverParenthesizedExpressionAndArrowParameterList();
+            return ParseCoverParenthesizedExpressionAndArrowParameterList(flags);
         }
         case lexer::TokenType::KEYW_THIS: {
             return ParseThisExpression();
@@ -3907,7 +3933,8 @@ ir::ArrowFunctionExpression *ETSParser::ParseArrowFunctionExpression()
     return arrow_func_node;
 }
 
-ir::Expression *ETSParser::ParseCoverParenthesizedExpressionAndArrowParameterList()
+// NOLINTNEXTLINE(google-default-arguments)
+ir::Expression *ETSParser::ParseCoverParenthesizedExpressionAndArrowParameterList(ExpressionParseFlags flags)
 {
     ASSERT(Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS);
     if (IsArrowFunctionExpressionStart()) {
@@ -3917,7 +3944,12 @@ ir::Expression *ETSParser::ParseCoverParenthesizedExpressionAndArrowParameterLis
     lexer::SourcePosition start = Lexer()->GetToken().Start();
     Lexer()->NextToken();
 
-    ir::Expression *expr = ParseExpression(ExpressionParseFlags::ACCEPT_COMMA);
+    ExpressionParseFlags new_flags = ExpressionParseFlags::ACCEPT_COMMA;
+    if ((flags & ExpressionParseFlags::INSTANCEOF) != 0) {
+        new_flags |= ExpressionParseFlags::INSTANCEOF;
+    };
+
+    ir::Expression *expr = ParseExpression(new_flags);
 
     if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
         ThrowSyntaxError("Unexpected token, expected ')'");
@@ -4289,7 +4321,7 @@ ir::TSEnumDeclaration *ETSParser::ParseEnumMembers(ir::Identifier *const key, co
     }
 
     auto *const enum_declaration =
-        AllocNode<ir::TSEnumDeclaration>(Allocator(), key, std::move(members), is_const, is_static);
+        AllocNode<ir::TSEnumDeclaration>(Allocator(), key, std::move(members), is_const, is_static, InAmbientContext());
     enum_declaration->SetRange({enum_start, Lexer()->GetToken().End()});
 
     Lexer()->NextToken();  // eat '}'
@@ -4595,6 +4627,24 @@ bool ETSParser::IsStructKeyword() const
             Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_STRUCT);
 }
 
+void ETSParser::ValidateInstanceOfExpression(ir::Expression *expr)
+{
+    ValidateGroupedExpression(expr);
+    lexer::TokenType token_type = Lexer()->GetToken().Type();
+    if (token_type == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
+        auto options = TypeAnnotationParsingOptions::NO_OPTS;
+
+        // Run checks to validate type declarations
+        // Should provide helpful messages with incorrect declarations like the following:
+        // instanceof A<String;
+        ParseTypeParameterDeclaration(&options);
+
+        // Display error message even when type declaration is correct
+        // instanceof A<String>;
+        ThrowSyntaxError("Invalid right-hand side in 'instanceof' expression");
+    }
+}
+
 // NOLINTNEXTLINE(google-default-arguments)
 ir::Expression *ETSParser::ParseExpression(ExpressionParseFlags flags)
 {
@@ -4606,6 +4656,10 @@ ir::Expression *ETSParser::ParseExpression(ExpressionParseFlags flags)
     }
 
     ir::Expression *unary_expression_node = ParseUnaryOrPrefixUpdateExpression(flags);
+    if ((flags & ExpressionParseFlags::INSTANCEOF) != 0) {
+        ValidateInstanceOfExpression(unary_expression_node);
+    }
+
     ir::Expression *assignment_expression = ParseAssignmentExpression(unary_expression_node, flags);
 
     if (Lexer()->GetToken().NewLine()) {
@@ -4663,6 +4717,7 @@ void ETSParser::CheckDeclare()
         case lexer::TokenType::KEYW_CLASS:
         case lexer::TokenType::KEYW_NAMESPACE:
         case lexer::TokenType::KEYW_ENUM:
+        case lexer::TokenType::KEYW_TYPE:
         case lexer::TokenType::KEYW_ABSTRACT:
         case lexer::TokenType::KEYW_INTERFACE: {
             return;
