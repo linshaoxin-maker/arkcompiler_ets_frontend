@@ -290,6 +290,32 @@ static void CreateDynamicObject(const ir::AstNode *node, compiler::ETSGen *etsg,
     etsg->CallDynamic(node, obj_reg, qname_reg, signature, arguments);
 }
 
+static void ConvertRestArguments(checker::ETSChecker *const checker, const ir::ETSNewClassInstanceExpression *expr)
+{
+    if (expr->GetSignature()->RestVar() != nullptr) {
+        std::size_t const argument_count = expr->GetArguments().size();
+        std::size_t const parameter_count = expr->GetSignature()->MinArgCount();
+        ASSERT(argument_count >= parameter_count);
+
+        auto &arguments = const_cast<ArenaVector<ir::Expression *> &>(expr->GetArguments());
+        std::size_t i = parameter_count;
+
+        if (i < argument_count && expr->GetArguments()[i]->IsSpreadElement()) {
+            arguments[i] = expr->GetArguments()[i]->AsSpreadElement()->Argument();
+        } else {
+            ArenaVector<ir::Expression *> elements(checker->Allocator()->Adapter());
+            for (; i < argument_count; ++i) {
+                elements.emplace_back(expr->GetArguments()[i]);
+            }
+            auto *array_expression = checker->AllocNode<ir::ArrayExpression>(std::move(elements), checker->Allocator());
+            array_expression->SetParent(const_cast<ir::ETSNewClassInstanceExpression *>(expr));
+            array_expression->SetTsType(expr->GetSignature()->RestVar()->TsType());
+            arguments.erase(expr->GetArguments().begin() + parameter_count, expr->GetArguments().end());
+            arguments.emplace_back(array_expression);
+        }
+    }
+}
+
 void ETSCompiler::Compile(const ir::ETSNewClassInstanceExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
@@ -298,6 +324,7 @@ void ETSCompiler::Compile(const ir::ETSNewClassInstanceExpression *expr) const
         auto *name = expr->GetTypeRef()->AsETSTypeReference()->Part()->Name();
         CreateDynamicObject(expr, etsg, obj_reg, name, expr->signature_, expr->GetArguments());
     } else {
+        ConvertRestArguments(const_cast<checker::ETSChecker *>(etsg->Checker()->AsETSChecker()), expr);
         etsg->InitObject(expr, expr->signature_, expr->GetArguments());
     }
 
@@ -551,8 +578,7 @@ void ETSCompiler::Compile(const ir::BinaryExpression *expr) const
     etsg->ApplyConversionAndStoreAccumulator(expr->Left(), lhs, expr->OperationType());
     expr->Right()->Compile(etsg);
     etsg->ApplyConversion(expr->Right(), expr->OperationType());
-    if (expr->OperatorType() >= lexer::TokenType::PUNCTUATOR_LEFT_SHIFT &&
-        expr->OperatorType() <= lexer::TokenType::PUNCTUATOR_UNSIGNED_RIGHT_SHIFT) {
+    if (expr->OperationType()->IsIntType()) {
         etsg->ApplyCast(expr->Right(), expr->OperationType());
     }
 
@@ -788,7 +814,11 @@ void ETSCompiler::Compile(const ir::ConditionalExpression *expr) const
     expr->Alternate()->Compile(etsg);
     etsg->ApplyConversion(expr->Alternate());
     etsg->SetLabel(expr, end_label);
-    etsg->SetAccumulatorType(expr->TsType());
+    if (expr->TsType()->IsETSUnionType()) {
+        etsg->SetAccumulatorType(expr->TsType()->AsETSUnionType()->GetLeastUpperBoundType());
+    } else {
+        etsg->SetAccumulatorType(expr->TsType());
+    }
 }
 
 void ETSCompiler::Compile([[maybe_unused]] const ir::DirectEvalExpression *expr) const
@@ -1065,7 +1095,13 @@ void ETSCompiler::Compile(const ir::UnaryExpression *expr) const
     if (!etsg->TryLoadConstantExpression(expr->Argument())) {
         expr->Argument()->Compile(etsg);
     }
+
     etsg->ApplyConversion(expr->Argument(), nullptr);
+
+    if (expr->OperatorType() == lexer::TokenType::PUNCTUATOR_TILDE) {
+        etsg->ApplyCast(expr->Argument(), expr->TsType());
+    }
+
     etsg->Unary(expr, expr->OperatorType());
 }
 

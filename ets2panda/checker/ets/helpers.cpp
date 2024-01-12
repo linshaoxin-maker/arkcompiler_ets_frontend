@@ -775,6 +775,10 @@ std::tuple<Type *, bool> ETSChecker::ApplyBinaryOperatorPromotion(Type *left, Ty
                 return {GlobalLongType(), both_const};
             }
 
+            if (unboxed_l->IsCharType() && unboxed_r->IsCharType()) {
+                return {GlobalCharType(), both_const};
+            }
+
             return {GlobalIntType(), both_const};
         }
 
@@ -1561,7 +1565,7 @@ bool ETSChecker::IsFunctionContainsSignature(ETSFunctionType *func_type, Signatu
 void ETSChecker::CheckFunctionContainsClashingSignature(const ETSFunctionType *func_type, Signature *signature)
 {
     for (auto *it : func_type->CallSignatures()) {
-        SavedTypeRelationFlagsContext strf_ctx(Relation(), TypeRelationFlag::NO_RETURN_TYPE_CHECK);
+        SavedTypeRelationFlagsContext strf_ctx(Relation(), TypeRelationFlag::NONE);
         Relation()->IsIdenticalTo(it, signature);
         if (Relation()->IsTrue() && it->Function()->Id()->Name() == signature->Function()->Id()->Name()) {
             std::stringstream ss;
