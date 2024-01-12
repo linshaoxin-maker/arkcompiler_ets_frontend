@@ -139,7 +139,7 @@ template <typename ElementMaker>
                                                varbinder::FunctionParamScope *const param_scope,
                                                ArenaVector<ir::Expression *> &&params,
                                                ArenaVector<ir::Statement *> &&body,
-                                               ir::TypeNode *const return_type_annotation)
+                                               ir::TypeNode *const return_type_annotation, bool is_declare)
 {
     auto *const function_scope =
         varbinder->Allocator()->New<varbinder::FunctionScope>(checker->Allocator(), param_scope);
@@ -149,9 +149,15 @@ template <typename ElementMaker>
     auto *const body_block = checker->Allocator()->New<ir::BlockStatement>(checker->Allocator(), std::move(body));
     body_block->SetScope(function_scope);
 
+    auto flags = ir::ModifierFlags::PUBLIC;
+
+    if (is_declare) {
+        flags |= ir::ModifierFlags::DECLARE;
+    }
+
     auto *const function = checker->Allocator()->New<ir::ScriptFunction>(
         ir::FunctionSignature(nullptr, std::move(params), return_type_annotation), body_block,
-        ir::ScriptFunctionFlags::METHOD, ir::ModifierFlags::PUBLIC, false, Language(Language::Id::ETS));
+        ir::ScriptFunctionFlags::METHOD, flags, is_declare, Language(Language::Id::ETS));
     function->SetScope(function_scope);
 
     varbinder->AsETSBinder()->BuildInternalName(function);
@@ -335,7 +341,7 @@ ETSEnumType::Method ETSChecker::CreateEnumFromIntMethod(ir::Identifier *const na
     auto *const enum_type_annotation = MakeTypeReference(Allocator(), enum_type->GetName());
 
     auto *const function = MakeFunction(this, VarBinder()->AsETSBinder(), param_scope, std::move(params),
-                                        std::move(body), enum_type_annotation);
+                                        std::move(body), enum_type_annotation, enum_type->GetDecl()->IsDeclare());
     function->AddFlag(ir::ScriptFunctionFlags::THROWS);
 
     auto *const ident = MakeQualifiedIdentifier(Allocator(), enum_type->GetDecl(), ETSEnumType::FROM_INT_METHOD_NAME);
@@ -372,7 +378,7 @@ ETSEnumType::Method ETSChecker::CreateEnumToStringMethod(ir::Identifier *const s
 
     auto *const string_type_annotation = MakeTypeReference(Allocator(), GlobalBuiltinETSStringType()->Name());
     auto *const function = MakeFunction(this, VarBinder()->AsETSBinder(), param_scope, std::move(params),
-                                        std::move(body), string_type_annotation);
+                                        std::move(body), string_type_annotation, enum_type->GetDecl()->IsDeclare());
 
     auto *const function_ident =
         MakeQualifiedIdentifier(Allocator(), enum_type->GetDecl(), ETSEnumType::TO_STRING_METHOD_NAME);
@@ -410,7 +416,7 @@ ETSEnumType::Method ETSChecker::CreateEnumGetValueMethod(ir::Identifier *const v
 
     auto *const int_type_annotation = Allocator()->New<ir::ETSPrimitiveType>(ir::PrimitiveType::INT);
     auto *const function = MakeFunction(this, VarBinder()->AsETSBinder(), param_scope, std::move(params),
-                                        std::move(body), int_type_annotation);
+                                        std::move(body), int_type_annotation, enum_type->GetDecl()->IsDeclare());
 
     auto *const function_ident =
         MakeQualifiedIdentifier(Allocator(), enum_type->GetDecl(), ETSEnumType::GET_VALUE_METHOD_NAME);
@@ -449,7 +455,7 @@ ETSEnumType::Method ETSChecker::CreateEnumGetNameMethod(ir::Identifier *const na
     auto *const string_type_annotation = MakeTypeReference(Allocator(), GlobalBuiltinETSStringType()->Name());
 
     auto *const function = MakeFunction(this, VarBinder()->AsETSBinder(), param_scope, std::move(params),
-                                        std::move(body), string_type_annotation);
+                                        std::move(body), string_type_annotation, enum_type->GetDecl()->IsDeclare());
 
     auto *const function_ident =
         MakeQualifiedIdentifier(Allocator(), enum_type->GetDecl(), ETSEnumType::GET_NAME_METHOD_NAME);
@@ -573,7 +579,7 @@ ETSEnumType::Method ETSChecker::CreateEnumValueOfMethod(ir::Identifier *const na
     auto *const enum_type_annotation = MakeTypeReference(Allocator(), enum_type->GetName());
 
     auto *const function = MakeFunction(this, VarBinder()->AsETSBinder(), param_scope, std::move(params),
-                                        std::move(body), enum_type_annotation);
+                                        std::move(body), enum_type_annotation, enum_type->GetDecl()->IsDeclare());
     function->AddFlag(ir::ScriptFunctionFlags::THROWS);
 
     auto *const function_ident =
@@ -605,7 +611,7 @@ ETSEnumType::Method ETSChecker::CreateEnumValuesMethod(ir::Identifier *const ite
         Allocator()->New<ir::TSArrayType>(MakeTypeReference(Allocator(), enum_type->GetName()));
 
     auto *const function = MakeFunction(this, VarBinder()->AsETSBinder(), param_scope, std::move(params),
-                                        std::move(body), enum_array_type_annotation);
+                                        std::move(body), enum_array_type_annotation, enum_type->GetDecl()->IsDeclare());
 
     auto *const function_ident =
         MakeQualifiedIdentifier(Allocator(), enum_type->GetDecl(), ETSEnumType::VALUES_METHOD_NAME);
