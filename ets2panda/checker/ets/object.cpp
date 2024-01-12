@@ -57,7 +57,7 @@
 #include "checker/ets/typeRelationContext.h"
 
 namespace panda::es2panda::checker {
-ETSObjectType *ETSChecker::GetSuperType(ETSObjectType *type)
+ETSObjectType *ETSChecker::GetClassSuperType(ETSObjectType *type)
 {
     if (type->HasObjectFlag(ETSObjectFlags::RESOLVED_SUPER)) {
         return type->SuperType();
@@ -95,7 +95,46 @@ ETSObjectType *ETSChecker::GetSuperType(ETSObjectType *type)
     }
 
     type->SetSuperType(super_obj);
-    GetSuperType(super_obj);
+    GetClassSuperType(super_obj);
+
+    type->AddObjectFlag(ETSObjectFlags::RESOLVED_SUPER);
+    return type->SuperType();
+}
+
+ETSObjectType *ETSChecker::GetInterfaceSuperType(ETSObjectType *type)
+{
+    if (type->HasObjectFlag(ETSObjectFlags::RESOLVED_SUPER)) {
+        return type->SuperType();
+    }
+
+    ASSERT(type->Variable() && type->GetDeclNode()->IsTSInterfaceDeclaration());
+    auto *type_decl = type->GetDeclNode()->AsTSInterfaceDeclaration();
+
+    if (type->SuperType() == nullptr) {
+        type->AddObjectFlag(ETSObjectFlags::RESOLVED_SUPER);
+        if (type != GlobalETSObjectType()) {
+            type->SetSuperType(GlobalETSObjectType());
+        }
+        return GlobalETSObjectType();
+    }
+
+    TypeStackElement tse(this, type, {"Cyclic inheritance involving ", type->Name(), "."}, type_decl->Start());
+
+    Type *super_type = type->SuperType();
+
+    if (!super_type->IsETSObjectType() || !super_type->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::INTERFACE)) {
+        ThrowTypeError({"The super type of '", type->Name(), "' interface is not extensible."}, type_decl->Start());
+    }
+
+    ETSObjectType *super_type_obj = super_type->AsETSObjectType();
+
+    if (!super_type_obj->GetDeclNode()->Parent()->IsTSInterfaceDeclaration()) {
+        ThrowTypeError({"The super type of '", type->Name(), "' interface can only be an interface"},
+                       type_decl->Start());
+    }
+
+    type->SetSuperType(super_type_obj);
+    GetInterfaceSuperType(super_type_obj);
 
     type->AddObjectFlag(ETSObjectFlags::RESOLVED_SUPER);
     return type->SuperType();
@@ -301,7 +340,10 @@ ETSObjectType *ETSChecker::BuildInterfaceProperties(ir::TSInterfaceDeclaration *
         CreateTypeForClassOrInterfaceTypeParameters(interface_type);
     }
 
-    GetInterfacesOfInterface(interface_type);
+    if (!interface_type->HasObjectFlag(ETSObjectFlags::RESOLVED_SUPER)) {
+        GetInterfaceSuperType(interface_type);
+        GetInterfacesOfInterface(interface_type);
+    }
 
     checker::ScopeContext scope_ctx(this, interface_decl->Scope());
     auto saved_context = checker::SavedCheckerContext(this, checker::CheckerStatus::IN_INTERFACE, interface_type);
@@ -354,7 +396,7 @@ ETSObjectType *ETSChecker::BuildClassProperties(ir::ClassDefinition *class_def)
     auto saved_context = checker::SavedCheckerContext(this, new_status, class_type);
 
     if (!class_type->HasObjectFlag(ETSObjectFlags::RESOLVED_SUPER)) {
-        GetSuperType(class_type);
+        GetClassSuperType(class_type);
         GetInterfacesOfClass(class_type);
     }
 
