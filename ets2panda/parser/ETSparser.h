@@ -17,6 +17,7 @@
 #define ES2PANDA_PARSER_CORE_ETS_PARSER_H
 
 #include <optional>
+#include "parserFlags.h"
 #include "util/arktsconfig.h"
 #include "TypedParser.h"
 
@@ -105,6 +106,13 @@ private:
     [[nodiscard]] std::unique_ptr<lexer::Lexer> InitLexer(const SourceFile &source_file) override;
     void ParsePackageDeclaration(ArenaVector<ir::Statement *> &statements);
     ArenaVector<ir::AstNode *> ParseTopLevelStatements(ArenaVector<ir::Statement *> &statements);
+    void ParseTopLevelType(ArenaVector<ir::Statement *> &statements, bool &default_export, std::size_t current_pos,
+                           std::function<ir::Statement *(ETSParser *)> const &parser_function);
+    void ParseTopLevelNextToken(ArenaVector<ir::Statement *> &statements, ArenaVector<ir::AstNode *> &global_properties,
+                                ir::ScriptFunction *init_function);
+    void ParseTokenOfNative(panda::es2panda::lexer::TokenType token_type, ir::ModifierFlags &member_modifiers);
+    void ParseTokenOfFunction(ir::ModifierFlags member_modifiers, lexer::SourcePosition start_loc,
+                              ArenaVector<ir::AstNode *> &global_properties);
 #ifdef USE_FTW
     static int NFTWCallBack(const char *fpath, const struct stat * /*unused*/, int tflag, struct FTW * /*unused*/);
 #endif
@@ -159,9 +167,13 @@ private:
     ir::Expression *CreateParameterThis(util::StringView class_name) override;
 
     // NOLINTNEXTLINE(google-default-arguments)
-    void ParseClassFieldDefiniton(ir::Identifier *field_name, ir::ModifierFlags modifiers,
-                                  ArenaVector<ir::AstNode *> *declarations, ir::ScriptFunction *init_function = nullptr,
-                                  lexer::SourcePosition *let_loc = nullptr);
+    void ParseClassFieldDefinition(ir::Identifier *field_name, ir::ModifierFlags modifiers,
+                                   ArenaVector<ir::AstNode *> *declarations,
+                                   ir::ScriptFunction *init_function = nullptr,
+                                   lexer::SourcePosition *let_loc = nullptr);
+    lexer::SourcePosition InitializeGlobalVariable(ir::Identifier *field_name, ir::Expression *&initializer,
+                                                   ir::ScriptFunction *init_function, lexer::SourcePosition &start_loc,
+                                                   ir::TypeNode *type_annotation);
     std::tuple<ir::Expression *, ir::TSTypeParameterInstantiation *> ParseTypeReferencePart(
         TypeAnnotationParsingOptions *options);
     ir::TypeNode *ParseTypeReference(TypeAnnotationParsingOptions *options);
@@ -187,12 +199,17 @@ private:
 
     void ThrowIfVarDeclaration(VariableParsingFlags flags) override;
     std::pair<ir::TypeNode *, bool> GetTypeAnnotationFromToken(TypeAnnotationParsingOptions *options);
+    ir::TypeNode *ParseLiteralIdent(TypeAnnotationParsingOptions *options);
+    void ParseRightParenthesis(TypeAnnotationParsingOptions *options, ir::TypeNode *&type_annotation,
+                               lexer::LexerPosition saved_pos);
     ir::TypeNode *ParseTypeAnnotation(TypeAnnotationParsingOptions *options) override;
     ir::TSTypeAliasDeclaration *ParseTypeAliasDeclaration() override;
 
     void ValidateForInStatement() override;
 
-    ir::Expression *ParseCoverParenthesizedExpressionAndArrowParameterList() override;
+    // NOLINTNEXTLINE(google-default-arguments)
+    ir::Expression *ParseCoverParenthesizedExpressionAndArrowParameterList(
+        ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS) override;
     ir::Statement *ParseTryStatement() override;
     ir::DebuggerStatement *ParseDebuggerStatement() override;
     void ParseExport(lexer::SourcePosition start_loc);
@@ -264,6 +281,7 @@ private:
     // NOLINTNEXTLINE(google-default-arguments)
     ir::Statement *ParseEnumDeclaration(bool is_const = false, bool is_static = false) override;
     ir::Expression *ParseLaunchExpression(ExpressionParseFlags flags);
+    void ValidateInstanceOfExpression(ir::Expression *expr);
     void ValidateRestParameter(ir::Expression *param) override;
     void CheckIndexAccessMethod(ir::ScriptFunction const *function, const lexer::SourcePosition &position) const;
 
@@ -339,6 +357,7 @@ private:
     ir::TypeNode *CreateTypeAnnotation(TypeAnnotationParsingOptions *options, std::string_view source_code,
                                        std::string_view file_name = DEFAULT_SOURCE_FILE);
     // NOLINTEND(google-default-arguments)
+
     friend class ExternalSourceParser;
     friend class InnerSourceParser;
 
