@@ -744,8 +744,18 @@ Variable *ClassScope::AddBinding(ArenaAllocator *allocator, [[maybe_unused]] Var
 
     SetBindingProps(new_decl, &props, is_static);
 
-    if (FindLocal(new_decl->Name(), ResolveBindingOptions::ALL) != nullptr) {
-        return nullptr;
+    const auto *found_var = FindLocal(new_decl->Name(), ResolveBindingOptions::ALL);
+    if (found_var != nullptr) {
+        if (!new_decl->IsLetOrConstDecl()) {
+            return nullptr;
+        }
+
+        found_var = FindLocal(new_decl->Name(),
+                              ResolveBindingOptions::ALL ^ (is_static ? ResolveBindingOptions::VARIABLES
+                                                                      : ResolveBindingOptions::STATIC_VARIABLES));
+        if (found_var != nullptr) {
+            return nullptr;
+        }
     }
 
     auto *var = props.GetTargetScope()->AddBinding(allocator, nullptr, new_decl, extension);

@@ -14,6 +14,7 @@
  */
 
 #include "typeRelationContext.h"
+#include "boxingConverter.h"
 #include "varbinder/scope.h"
 #include "varbinder/variable.h"
 #include "varbinder/declaration.h"
@@ -61,12 +62,15 @@ bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSType
     extends "Comparable<String>", we will get an error here.
     */
 
-    auto const get_types = [this, &type_args, type](size_t idx) -> std::pair<ETSTypeParameter *, Type *> {
+    auto const is_defaulted = [type_args](size_t idx) {
+        return type_args == nullptr || idx >= type_args->Params().size();
+    };
+
+    auto const get_types = [this, &type_args, type, is_defaulted](size_t idx) -> std::pair<ETSTypeParameter *, Type *> {
         auto *type_param = type->TypeArguments().at(idx)->AsETSTypeParameter();
-        if (type_args != nullptr && idx < type_args->Params().size()) {
-            return {type_param, type_args->Params().at(idx)->GetType(checker_)};
-        }
-        return {type_param, type_param->GetDefaultType()};
+        return {type_param, is_defaulted(idx)
+                                ? type_param->GetDefaultType()
+                                : checker_->MaybePromotedBuiltinType(type_args->Params().at(idx)->GetType(checker_))};
     };
 
     auto *const substitution = checker_->NewSubstitution();
@@ -88,7 +92,7 @@ bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSType
         if (!ValidateTypeArg(constraint, type_arg) && type_args != nullptr &&
             !checker_->Relation()->NoThrowGenericTypeAlias()) {
             checker_->ThrowTypeError({"Type '", type_arg, "' is not assignable to constraint type '", constraint, "'."},
-                                     type_args->Params().at(idx)->Start());
+                                     is_defaulted(idx) ? pos : type_args->Params().at(idx)->Start());
         }
     }
 
@@ -97,16 +101,10 @@ bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSType
 
 bool InstantiationContext::ValidateTypeArg(Type *constraint_type, Type *type_arg)
 {
-    if (!ETSChecker::IsReferenceType(type_arg)) {
-        return false;
+    // NOTE: #14993 enforce ETSChecker::IsReferenceType
+    if (type_arg->IsWildcardType()) {
+        return true;
     }
-
-    if (type_arg->IsETSUnionType()) {
-        auto const &constituent_types = type_arg->AsETSUnionType()->ConstituentTypes();
-        return std::all_of(constituent_types.begin(), constituent_types.end(),
-                           [this, constraint_type](Type *c_type) { return ValidateTypeArg(constraint_type, c_type); });
-    }
-
     return checker_->Relation()->IsAssignableTo(type_arg, constraint_type);
 }
 
