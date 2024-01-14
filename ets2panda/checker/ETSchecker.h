@@ -301,6 +301,16 @@ public:
         return Allocator()->New<ArenaUnorderedSet<ETSTypeParameter *>>(Allocator()->Adapter());
     }
     ArenaVector<Type *> CreateTypeForTypeParameters(ir::TSTypeParameterDeclaration const *typeParams);
+    void SetUpConstraintForTypeParameters(ir::TSTypeParameterDeclaration *typeParams);
+    void CheckRecursiveConstraintForTypeParameters(ir::TSTypeParameterDeclaration *typeParams);
+    void CheckRecursiveConstraintForTypeParameter(ir::TSTypeParameter *param);
+    void CheckRecursiveSuperType(ETSObjectType *type);
+    void CheckRecursiveInterfacesOfClass(ETSObjectType *type);
+    void CheckRecursiveInterfacesOfInterface(ETSObjectType *type);
+    void CheckRecursiveInterfaces(ETSObjectType *type, ir::ETSTypeReference *expr, const lexer::SourcePosition &pos);
+    void CheckTypeArgumentConstraints(ETSObjectType *type, ir::TSTypeParameterInstantiation *typeArgs,
+                                      const lexer::SourcePosition &pos);
+    bool ValidateTypeArg(Type *constraintType, Type *typeArg);
     [[nodiscard]] bool EnhanceSubstitutionForType(const ArenaVector<Type *> &typeParams, Type *paramType,
                                                   Type *argumentType, Substitution *substitution,
                                                   ArenaUnorderedSet<ETSTypeParameter *> *instantiatedTypeParams);

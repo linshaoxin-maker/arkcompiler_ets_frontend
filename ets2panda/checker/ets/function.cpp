@@ -77,7 +77,22 @@ bool ETSChecker::IsCompatibleTypeArgument(ETSTypeParameter *typeParam, Type *typ
     if (!typeArgument->IsETSTypeParameter() && !IsReferenceType(typeArgument)) {
         return false;
     }
+    if (typeParam->GetConstraintType() == nullptr) {
+        return true;
+    }
     auto *constraint = typeParam->GetConstraintType()->Substitute(Relation(), substitution);
+    bool recursiveTypeArg =
+        typeArgument->IsETSTypeParameter() && typeArgument->AsETSTypeParameter()->GetConstraintType() == nullptr;
+    bool recursiveClass = typeArgument->IsETSObjectType() &&
+                          typeArgument->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::CLASS) &&
+                          (!typeArgument->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::RESOLVED_SUPER) ||
+                           !typeArgument->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::RESOLVED_INTERFACES));
+    bool recursiveInterfaces = typeArgument->IsETSObjectType() &&
+                               typeArgument->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::INTERFACE) &&
+                               !typeArgument->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::RESOLVED_INTERFACES);
+    if (recursiveTypeArg || recursiveClass || recursiveInterfaces) {
+        return true;
+    }
     return Relation()->IsSupertypeOf(constraint, typeArgument);
 }
 
@@ -905,6 +920,8 @@ SignatureInfo *ETSChecker::ComposeSignatureInfo(ir::ScriptFunction *func)
 
     if (func->TypeParams() != nullptr) {
         signatureInfo->typeParams = CreateTypeForTypeParameters(func->TypeParams());
+        SetUpConstraintForTypeParameters(func->TypeParams());
+        CheckRecursiveConstraintForTypeParameters(func->TypeParams());
     }
 
     for (auto *const it : func->Params()) {

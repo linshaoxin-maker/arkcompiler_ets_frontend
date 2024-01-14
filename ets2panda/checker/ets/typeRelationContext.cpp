@@ -47,62 +47,9 @@ bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSType
         return true;
     }
 
-    /*
-    The first loop is to create a substitution of typeParams & typeArgs.
-    so that we can replace the typeParams in constaints by the right type.
-    e.g:
-        class X <K extends Comparable<T>,T> {}
-        function main(){
-            const myCharClass = new X<Char,String>();
-        }
-    In the case above, the constraintsSubstitution should store "K->Char" and "T->String".
-    And in the second loop, we use this substitution to replace typeParams in constraints.
-    In this case, we will check "Comparable<String>" with "Char", since "Char" doesn't
-    extends "Comparable<String>", we will get an error here.
-    */
-
-    auto const isDefaulted = [typeArgs](size_t idx) { return typeArgs == nullptr || idx >= typeArgs->Params().size(); };
-
-    auto const getTypes = [this, &typeArgs, type, isDefaulted](size_t idx) -> std::pair<ETSTypeParameter *, Type *> {
-        auto *typeParam = type->TypeArguments().at(idx)->AsETSTypeParameter();
-        return {typeParam, isDefaulted(idx)
-                               ? typeParam->GetDefaultType()
-                               : checker_->MaybePromotedBuiltinType(typeArgs->Params().at(idx)->GetType(checker_))};
-    };
-
-    auto *const substitution = checker_->NewSubstitution();
-
-    for (size_t idx = 0; idx < type->TypeArguments().size(); ++idx) {
-        auto const [typeParam, typeArg] = getTypes(idx);
-        checker_->CheckValidGenericTypeParameter(typeArg, pos);
-        typeArg->Substitute(checker_->Relation(), substitution);
-        ETSChecker::EmplaceSubstituted(substitution, typeParam, typeArg);
-    }
-
-    for (size_t idx = 0; idx < type->TypeArguments().size(); ++idx) {
-        auto const [typeParam, typeArg] = getTypes(idx);
-        if (typeParam->GetConstraintType() == nullptr) {
-            continue;
-        }
-        auto *const constraint = typeParam->GetConstraintType()->Substitute(checker_->Relation(), substitution);
-
-        if (!ValidateTypeArg(constraint, typeArg) && typeArgs != nullptr &&
-            !checker_->Relation()->NoThrowGenericTypeAlias()) {
-            checker_->ThrowTypeError({"Type '", typeArg, "' is not assignable to constraint type '", constraint, "'."},
-                                     isDefaulted(idx) ? pos : typeArgs->Params().at(idx)->Start());
-        }
-    }
+    checker_->CheckTypeArgumentConstraints(type, typeArgs, pos);
 
     return false;
-}
-
-bool InstantiationContext::ValidateTypeArg(Type *constraintType, Type *typeArg)
-{
-    // NOTE: #14993 enforce ETSChecker::IsReferenceType
-    if (typeArg->IsWildcardType()) {
-        return true;
-    }
-    return checker_->Relation()->IsAssignableTo(typeArg, constraintType);
 }
 
 void InstantiationContext::InstantiateType(ETSObjectType *type, ir::TSTypeParameterInstantiation *typeArgs)
