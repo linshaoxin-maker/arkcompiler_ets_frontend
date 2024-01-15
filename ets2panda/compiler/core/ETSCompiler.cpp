@@ -744,7 +744,9 @@ void ETSCompiler::Compile(const ir::CallExpression *expr) const
             expr->Callee()->AsMemberExpression()->Object()->Compile(etsg);
             etsg->StoreAccumulator(expr, calleeReg);
         }
-        EmitCall(expr, calleeReg, isStatic);
+        etsg->EmitMaybeOptionalMember(
+            expr, [this, expr, isStatic, &calleeReg]() { this->EmitCall(expr, calleeReg, isStatic); },
+            expr->IsOptional());
     } else if (expr->Callee()->IsSuperExpression() || expr->Callee()->IsThisExpression()) {
         ASSERT(!isReference && expr->IsETSConstructorCall());
         expr->Callee()->Compile(etsg);  // ctor is not a value!
