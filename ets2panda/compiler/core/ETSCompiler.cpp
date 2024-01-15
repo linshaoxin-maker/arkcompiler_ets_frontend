@@ -547,10 +547,7 @@ void ETSCompiler::Compile(const ir::BinaryExpression *expr) const
         return;
     }
 
-    expr->Left()->Compile(etsg);
-    etsg->ApplyConversionAndStoreAccumulator(expr->Left(), lhs, expr->OperationType());
-    expr->Right()->Compile(etsg);
-    etsg->ApplyConversion(expr->Right(), expr->OperationType());
+    expr->CompileOperands(etsg, lhs);
     if (expr->OperatorType() >= lexer::TokenType::PUNCTUATOR_LEFT_SHIFT &&
         expr->OperatorType() <= lexer::TokenType::PUNCTUATOR_UNSIGNED_RIGHT_SHIFT) {
         etsg->ApplyCast(expr->Right(), expr->OperationType());
