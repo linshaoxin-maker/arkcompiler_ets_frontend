@@ -238,6 +238,12 @@ public:
             ss << compiler::Signatures::MANGLE_SEPARATOR;
         }
 
+        if (signatureInfo_->restVar != nullptr) {
+            signatureInfo_->restVar->TsType()->ToAssemblerType(ss);
+            ss << "[]";
+            ss << compiler::Signatures::MANGLE_SEPARATOR;
+        }
+
         returnType_->ToAssemblerTypeWithRank(ss);
         ss << compiler::Signatures::MANGLE_SEPARATOR;
     }
@@ -251,6 +257,8 @@ public:
                   bool precise = false) const;
     std::string ToString() const;
     void Identical(TypeRelation *relation, Signature *other);
+    void CheckIdenticalParams(TypeRelation *relation, Signature *other, const std::size_t &thisToCheckParametersNumber,
+                              const std::size_t &otherToCheckParametersNumber);
     bool CheckFunctionalInterfaces(TypeRelation *relation, Type *source, Type *target);
     void AssignmentTarget(TypeRelation *relation, Signature *source);
     Signature *BoxPrimitives(ETSChecker *checker);

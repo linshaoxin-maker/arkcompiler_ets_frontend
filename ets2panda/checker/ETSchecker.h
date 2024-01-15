@@ -324,6 +324,14 @@ public:
     bool ValidateProxySignature(Signature *signature, const ir::TSTypeParameterInstantiation *typeArguments,
                                 const ArenaVector<ir::Expression *> &arguments,
                                 const std::vector<bool> &argTypeInferenceRequired);
+    Signature *FindMostSpecificSignature(const ArenaVector<Signature *> &signatures,
+                                         const ArenaMultiMap<size_t, Signature *> &bestSignaturesForParameter,
+                                         size_t paramCount);
+    void EvaluateMostSpecificSearch(Type *&mostSpecificType, Signature *&prevSig, const lexer::SourcePosition &pos,
+                                    Signature *sig, Type *sigType);
+    void SearchAmongMostSpecificTypes(Type *&mostSpecificType, Signature *&prevSig, const lexer::SourcePosition &pos,
+                                      size_t argumentsSize, size_t paramCount, size_t idx, Signature *sig,
+                                      bool lookForClassType);
     Signature *ChooseMostSpecificSignature(ArenaVector<Signature *> &signatures,
                                            const std::vector<bool> &argTypeInferenceRequired,
                                            const lexer::SourcePosition &pos, size_t argumentsSize = ULONG_MAX);

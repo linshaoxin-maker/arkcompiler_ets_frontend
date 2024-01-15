@@ -204,6 +204,59 @@ bool Signature::IdenticalParameter(TypeRelation *relation, Type *type1, Type *ty
     return relation->IsTrue();
 }
 
+void Signature::CheckIdenticalParams(TypeRelation *relation, Signature *other,
+                                     const std::size_t &thisToCheckParametersNumber,
+                                     const std::size_t &otherToCheckParametersNumber)
+{
+    auto const toCheckParametersNumber = std::max(thisToCheckParametersNumber, otherToCheckParametersNumber);
+    auto const parametersNumber = std::min({this->Params().size(), other->Params().size(), toCheckParametersNumber});
+
+    std::size_t i = 0U;
+    for (; i < parametersNumber; ++i) {
+        if (!IdenticalParameter(relation, this->Params()[i]->TsType(), other->Params()[i]->TsType())) {
+            return;
+        }
+    }
+
+    /* "i" could be one of the following three cases:
+        1. == to_check_parameters_number, we have finished the checking and can directly return.
+        2. == other->Params().size(), must be < this_to_check_parameters_number in this case since
+        xxx->Params().size() always >= xxx_to_check_parameters_number. We need to check the remaining
+        mandatory parameters of "this" against ths RestVar of "other".
+        3. == this->Params().size(), must be < other_to_check_parameters_number as described in 2, and
+        we need to check the remaining mandatory parameters of "other" against the RestVar of "this".
+    */
+    if (other->RestVar() != nullptr && this->RestVar() != nullptr) {
+        relation->IsIdenticalTo(this->RestVar()->TsType(), other->RestVar()->TsType());
+    }
+
+    if (i == toCheckParametersNumber) {
+        return;
+    }
+    bool isOtherMandatoryParamsMatched = i < thisToCheckParametersNumber;
+    ArenaVector<varbinder::LocalVariable *> *parameters = nullptr;
+    varbinder::LocalVariable const *restParameter = nullptr;
+
+    if (isOtherMandatoryParamsMatched) {
+        parameters = &this->Params();
+        restParameter = other->RestVar();
+    } else {
+        parameters = &other->Params();
+        restParameter = this->RestVar();
+    }
+
+    if (restParameter == nullptr) {
+        relation->Result(false);
+        return;
+    }
+    auto *const restParameterType = restParameter->TsType()->AsETSArrayType()->ElementType();
+    for (; i < toCheckParametersNumber; ++i) {
+        if (!IdenticalParameter(relation, parameters->at(i)->TsType(), restParameterType)) {
+            return;
+        }
+    }
+}
+
 void Signature::Identical(TypeRelation *relation, Signature *other)
 {
     bool isEts = relation->GetChecker()->IsETSChecker();
@@ -246,43 +299,7 @@ void Signature::Identical(TypeRelation *relation, Signature *other)
            "to_check_parameters_number" is the number of parameters that need to be checked to ensure identical.
            "parameters_number" is the number of parameters that can be checked in Signature::params().
         */
-        auto const toCheckParametersNumber = std::max(thisToCheckParametersNumber, otherToCheckParametersNumber);
-        auto const parametersNumber =
-            std::min({this->Params().size(), other->Params().size(), toCheckParametersNumber});
-
-        std::size_t i = 0U;
-        for (; i < parametersNumber; ++i) {
-            if (!IdenticalParameter(relation, this->Params()[i]->TsType(), other->Params()[i]->TsType())) {
-                return;
-            }
-        }
-
-        /* "i" could be one of the following three cases:
-            1. == to_check_parameters_number, we have finished the checking and can directly return.
-            2. == other->Params().size(), must be < this_to_check_parameters_number in this case since
-            xxx->Params().size() always >= xxx_to_check_parameters_number. We need to check the remaining
-            mandatory parameters of "this" against ths RestVar of "other".
-            3. == this->Params().size(), must be < other_to_check_parameters_number as described in 2, and
-            we need to check the remaining mandatory parameters of "other" against the RestVar of "this".
-        */
-        if (i == toCheckParametersNumber) {
-            return;
-        }
-        bool isOtherMandatoryParamsMatched = i < thisToCheckParametersNumber;
-        ArenaVector<varbinder::LocalVariable *> const &parameters =
-            isOtherMandatoryParamsMatched ? this->Params() : other->Params();
-        varbinder::LocalVariable const *restParameter =
-            isOtherMandatoryParamsMatched ? other->RestVar() : this->RestVar();
-        if (restParameter == nullptr) {
-            relation->Result(false);
-            return;
-        }
-        auto *const restParameterType = restParameter->TsType()->AsETSArrayType()->ElementType();
-        for (; i < toCheckParametersNumber; ++i) {
-            if (!IdenticalParameter(relation, parameters[i]->TsType(), restParameterType)) {
-                return;
-            }
-        }
+        return CheckIdenticalParams(relation, other, thisToCheckParametersNumber, otherToCheckParametersNumber);
     }
 }
 
