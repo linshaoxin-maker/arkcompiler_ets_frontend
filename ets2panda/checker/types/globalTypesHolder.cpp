@@ -158,7 +158,7 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMap
 
     // ETS interop js specific types
     builtinNameMappings_.emplace("JSRuntime", GlobalTypeId::ETS_INTEROP_JSRUNTIME_BUILTIN);
-    builtinNameMappings_.emplace("JSValue", GlobalTypeId::ETS_INTEROP_JSVALUE_BUILTIN);
+    builtinNameMappings_.emplace("ESObject", GlobalTypeId::ETS_INTEROP_JSVALUE_BUILTIN);
 }
 
 Type *GlobalTypesHolder::GlobalNumberType()

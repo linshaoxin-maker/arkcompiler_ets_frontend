@@ -263,7 +263,7 @@ builtins:
   - name: JSRuntime
     package: PKG_STD_INTEROP_JS
     ref: BUILTIN_JSRUNTIME
-  - name: JSValue
+  - name: ESObject
     package: PKG_STD_INTEROP_JS
     ref: BUILTIN_JSVALUE
   - name: Box
