@@ -859,6 +859,7 @@ void InitScopesPhaseETS::VisitETSNewClassInstanceExpression(ir::ETSNewClassInsta
         BindScopeNode(classScope, classDef);
         classDef->SetInternalName(anonymousName.View());
         classDef->Ident()->SetName(anonymousName.View());
+        classDef->Ident()->SetReference();
         CallNode(classDef);
     }
 }
