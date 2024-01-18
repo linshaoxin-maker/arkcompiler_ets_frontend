@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,13 +13,10 @@
  * limitations under the License.
  */
 
-function foo(p1: unknown) {
-   console.log(p1);
+try {
+  class A {
+    [A] = ()=>{A;};
+  }
+} catch (e) {
+  print(e.name);
 }
-
-function bar() {
-  let fooVar: unknown = undefined;
-}
-
-foo("");
-bar();
