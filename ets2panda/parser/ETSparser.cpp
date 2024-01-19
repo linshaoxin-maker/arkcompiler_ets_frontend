@@ -720,6 +720,96 @@ void ETSParser::ParseTopLevelType(ArenaVector<ir::Statement *> &statements, bool
     }
 }
 
+void ETSParser::ParseTopLevelNextTokenDefault(ArenaVector<ir::Statement *> &statements,
+                                              ir::ScriptFunction *initFunction, size_t currentPos,
+                                              lexer::TokenType tokenType, bool defaultExport)
+{
+    if (IsStructKeyword()) {
+        ParseTopLevelType(statements, defaultExport, currentPos,
+                          [](ETSParser *obj) { return obj->ParseTypeDeclaration(false); });
+        return;
+    }
+
+    if (initFunction != nullptr) {
+        if (auto *const statement = ParseTopLevelStatement(); statement != nullptr) {
+            statement->SetParent(initFunction->Body());
+            initFunction->Body()->AsBlockStatement()->Statements().emplace_back(statement);
+        }
+        return;
+    }
+
+    ThrowUnexpectedToken(tokenType);
+}
+
+ir::ModifierFlags ETSParser::ResolveMemberModifiers()
+{
+    auto memberModifiers = ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC;
+
+    if (Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_DECLARE) {
+        CheckDeclare();
+        memberModifiers |= ir::ModifierFlags::DECLARE;
+    }
+    return memberModifiers;
+}
+
+lexer::SourcePosition ETSParser::ParseTopLevelNextTokenResolution(ArenaVector<ir::Statement *> &statements,
+                                                                  ArenaVector<ir::AstNode *> &globalProperties,
+                                                                  ir::ScriptFunction *initFunction, size_t currentPos,
+                                                                  bool defaultExport)
+{
+    lexer::SourcePosition startLoc = Lexer()->GetToken().Start();
+    auto memberModifiers = ResolveMemberModifiers();
+
+    switch (auto const tokenType = Lexer()->GetToken().Type(); tokenType) {
+        case lexer::TokenType::KEYW_CONST: {
+            memberModifiers |= ir::ModifierFlags::CONST;
+            [[fallthrough]];
+        }
+        case lexer::TokenType::KEYW_LET: {
+            Lexer()->NextToken();
+            ParseClassFieldDefinition(ExpectIdentifier(), memberModifiers, &globalProperties, initFunction, &startLoc);
+            break;
+        }
+        case lexer::TokenType::KEYW_ASYNC:
+        case lexer::TokenType::KEYW_NATIVE: {
+            ParseTokenOfNative(tokenType, memberModifiers);
+            [[fallthrough]];
+        }
+        case lexer::TokenType::KEYW_FUNCTION: {
+            ParseTokenOfFunction(memberModifiers, startLoc, globalProperties);
+            break;
+        }
+        case lexer::TokenType::KEYW_NAMESPACE:
+            [[fallthrough]];
+        case lexer::TokenType::KEYW_STATIC:
+            [[fallthrough]];
+        case lexer::TokenType::KEYW_ABSTRACT:
+            [[fallthrough]];
+        case lexer::TokenType::KEYW_FINAL:
+            [[fallthrough]];
+        case lexer::TokenType::KEYW_ENUM:
+            [[fallthrough]];
+        case lexer::TokenType::KEYW_INTERFACE:
+            [[fallthrough]];
+        case lexer::TokenType::KEYW_CLASS: {
+            // NOLINTBEGIN(modernize-avoid-bind)
+            ParseTopLevelType(statements, defaultExport, currentPos,
+                              std::bind(&ETSParser::ParseTypeDeclaration, std::placeholders::_1, false));
+            // NOLINTEND(modernize-avoid-bind)
+            break;
+        }
+        case lexer::TokenType::KEYW_TYPE: {
+            ParseTopLevelType(statements, defaultExport, currentPos, &ETSParser::ParseTypeAliasDeclaration);
+            break;
+        }
+        default: {
+            // If struct is a soft keyword, handle it here, otherwise it's an identifier.
+            ParseTopLevelNextTokenDefault(statements, initFunction, currentPos, tokenType, defaultExport);
+        }
+    }
+    return startLoc;
+}
+
 void ETSParser::ParseTopLevelNextToken(ArenaVector<ir::Statement *> &statements,
                                        ArenaVector<ir::AstNode *> &globalProperties, ir::ScriptFunction *initFunction)
 {
@@ -748,77 +838,8 @@ void ETSParser::ParseTopLevelNextToken(ArenaVector<ir::Statement *> &statements,
             }
         }
 
-        lexer::SourcePosition startLoc = Lexer()->GetToken().Start();
-
-        auto memberModifiers = ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC;
-
-        if (Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_DECLARE) {
-            CheckDeclare();
-            memberModifiers |= ir::ModifierFlags::DECLARE;
-        }
-
-        switch (auto const tokenType = Lexer()->GetToken().Type(); tokenType) {
-            case lexer::TokenType::KEYW_CONST: {
-                memberModifiers |= ir::ModifierFlags::CONST;
-                [[fallthrough]];
-            }
-            case lexer::TokenType::KEYW_LET: {
-                Lexer()->NextToken();
-                auto *memberName = ExpectIdentifier();
-                ParseClassFieldDefinition(memberName, memberModifiers, &globalProperties, initFunction, &startLoc);
-                break;
-            }
-            case lexer::TokenType::KEYW_ASYNC:
-            case lexer::TokenType::KEYW_NATIVE: {
-                ParseTokenOfNative(tokenType, memberModifiers);
-                [[fallthrough]];
-            }
-            case lexer::TokenType::KEYW_FUNCTION: {
-                ParseTokenOfFunction(memberModifiers, startLoc, globalProperties);
-                break;
-            }
-            case lexer::TokenType::KEYW_NAMESPACE:
-                [[fallthrough]];
-            case lexer::TokenType::KEYW_STATIC:
-                [[fallthrough]];
-            case lexer::TokenType::KEYW_ABSTRACT:
-                [[fallthrough]];
-            case lexer::TokenType::KEYW_FINAL:
-                [[fallthrough]];
-            case lexer::TokenType::KEYW_ENUM:
-                [[fallthrough]];
-            case lexer::TokenType::KEYW_INTERFACE:
-                [[fallthrough]];
-            case lexer::TokenType::KEYW_CLASS: {
-                // NOLINTBEGIN(modernize-avoid-bind)
-                ParseTopLevelType(statements, defaultExport, currentPos,
-                                  std::bind(&ETSParser::ParseTypeDeclaration, std::placeholders::_1, false));
-                // NOLINTEND(modernize-avoid-bind)
-                break;
-            }
-            case lexer::TokenType::KEYW_TYPE: {
-                ParseTopLevelType(statements, defaultExport, currentPos, &ETSParser::ParseTypeAliasDeclaration);
-                break;
-            }
-            default: {
-                // If struct is a soft keyword, handle it here, otherwise it's an identifier.
-                if (IsStructKeyword()) {
-                    ParseTopLevelType(statements, defaultExport, currentPos,
-                                      [](ETSParser *obj) { return obj->ParseTypeDeclaration(false); });
-                    break;
-                }
-
-                if (initFunction != nullptr) {
-                    if (auto *const statement = ParseTopLevelStatement(); statement != nullptr) {
-                        statement->SetParent(initFunction->Body());
-                        initFunction->Body()->AsBlockStatement()->Statements().emplace_back(statement);
-                    }
-                    break;
-                }
-
-                ThrowUnexpectedToken(tokenType);
-            }
-        }
+        lexer::SourcePosition startLoc =
+            ParseTopLevelNextTokenResolution(statements, globalProperties, initFunction, currentPos, defaultExport);
 
         GetContext().Status() &= ~ParserStatus::IN_AMBIENT_CONTEXT;
 
@@ -1732,6 +1753,24 @@ ir::MethodDefinition *ETSParser::ParseInterfaceGetterSetterMethod(const ir::Modi
     return method;
 }
 
+ir::Statement *ETSParser::ParseTypeDeclarationAbstractFinal(bool allowStatic, ir::ClassDefinitionModifiers modifiers)
+{
+    auto flags = ParseClassModifiers();
+    if (allowStatic && (flags & ir::ModifierFlags::STATIC) == 0U) {
+        modifiers |= ir::ClassDefinitionModifiers::INNER;
+    }
+
+    if (Lexer()->GetToken().Type() == lexer::TokenType::KEYW_CLASS) {
+        return ParseClassDeclaration(modifiers, flags);
+    }
+
+    if (IsStructKeyword()) {
+        return ParseStructDeclaration(modifiers, flags);
+    }
+
+    ThrowUnexpectedToken(Lexer()->GetToken().Type());
+}
+
 ir::Statement *ETSParser::ParseTypeDeclaration(bool allowStatic)
 {
     auto savedPos = Lexer()->Save();
@@ -1756,20 +1795,7 @@ ir::Statement *ETSParser::ParseTypeDeclaration(bool allowStatic)
         }
         case lexer::TokenType::KEYW_ABSTRACT:
         case lexer::TokenType::KEYW_FINAL: {
-            auto flags = ParseClassModifiers();
-            if (allowStatic && (flags & ir::ModifierFlags::STATIC) == 0U) {
-                modifiers |= ir::ClassDefinitionModifiers::INNER;
-            }
-
-            if (Lexer()->GetToken().Type() == lexer::TokenType::KEYW_CLASS) {
-                return ParseClassDeclaration(modifiers, flags);
-            }
-
-            if (IsStructKeyword()) {
-                return ParseStructDeclaration(modifiers, flags);
-            }
-
-            ThrowUnexpectedToken(Lexer()->GetToken().Type());
+            return ParseTypeDeclarationAbstractFinal(allowStatic, modifiers);
         }
         case lexer::TokenType::KEYW_ENUM: {
             return ParseEnumDeclaration(false);
