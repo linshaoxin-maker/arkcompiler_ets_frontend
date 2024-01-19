@@ -26,7 +26,6 @@
 #include "ir/ets/etsTypeReference.h"
 #include "ir/ets/etsTypeReferencePart.h"
 #include "ir/expressions/identifier.h"
-#include "ir/expressions/thisExpression.h"
 #include "ir/statements/variableDeclarator.h"
 
 namespace panda::es2panda::ir {
@@ -86,7 +85,6 @@ ArrowFunctionExpression::ArrowFunctionExpression(ArrowFunctionExpression const &
     }
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 ArrowFunctionExpression *ArrowFunctionExpression::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
     if (auto *const clone = allocator->New<ArrowFunctionExpression>(*this, allocator); clone != nullptr) {
@@ -133,14 +131,15 @@ ir::TypeNode *ArrowFunctionExpression::CreateTypeAnnotation(checker::ETSChecker 
         */
         returnNode = CreateReturnNodeFromType(checker, Function()->Signature()->ReturnType());
     } else {
-        returnNode = Function()->ReturnTypeAnnotation();
+        returnNode = Function()->ReturnTypeAnnotation()->Clone(checker->Allocator(), nullptr);
+        returnNode->SetTsType(Function()->ReturnTypeAnnotation()->TsType());
     }
 
-    auto origParams = Function()->Params();
-    auto signature = ir::FunctionSignature(nullptr, std::move(origParams), returnNode);
-    auto *funcType =
-        checker->Allocator()->New<ir::ETSFunctionType>(std::move(signature), ir::ScriptFunctionFlags::NONE);
-    returnNode->SetParent(funcType);
+    ArenaVector<ir::Expression *> params {checker->Allocator()->Adapter()};
+    checker->CopyParams(Function()->Params(), params);
+
+    auto signature = ir::FunctionSignature(nullptr, std::move(params), returnNode);
+    auto *funcType = checker->AllocNode<ir::ETSFunctionType>(std::move(signature), ir::ScriptFunctionFlags::NONE);
     return funcType;
 }
 }  // namespace panda::es2panda::ir
