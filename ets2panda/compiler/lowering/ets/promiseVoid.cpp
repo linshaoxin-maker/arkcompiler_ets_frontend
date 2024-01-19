@@ -159,27 +159,31 @@ bool PromiseVoidInferencePhase::Perform(public_lib::Context *ctx, parser::Progra
         return {loc.end, loc.end};
     };
 
-    program->Ast()->TransformChildrenRecursively([checker, genTypeLocation](ir::AstNode *ast) -> ir::AstNode * {
-        if (ast->IsScriptFunction() && ast->AsScriptFunction()->IsAsyncFunc()) {
-            auto *function = ast->AsScriptFunction();
-            auto *returnAnn = function->ReturnTypeAnnotation();
-            const auto hasReturnAnn = returnAnn != nullptr;
-            const auto hasPromiseVoid = CheckForPromiseVoid(returnAnn);
+    const auto transformer = [checker, genTypeLocation](ir::AstNode *ast) -> ir::AstNode * {
+        if (!(ast->IsScriptFunction() && ast->AsScriptFunction()->IsAsyncFunc())) {
+            return ast;
+        }
 
-            if (!hasReturnAnn) {
-                const auto &loc = genTypeLocation(function);
-                function->SetReturnTypeAnnotation(CreatePromiseVoidType(checker, loc));
+        auto *function = ast->AsScriptFunction();
+        auto *returnAnn = function->ReturnTypeAnnotation();
+        const auto hasReturnAnn = returnAnn != nullptr;
+        const auto hasPromiseVoid = CheckForPromiseVoid(returnAnn);
 
-                if (function->HasBody()) {
-                    HandleAsyncScriptFunctionBody(checker, function->Body()->AsBlockStatement());
-                }
-            } else if (hasPromiseVoid && function->HasBody()) {
+        if (!hasReturnAnn) {
+            const auto &loc = genTypeLocation(function);
+            function->SetReturnTypeAnnotation(CreatePromiseVoidType(checker, loc));
+
+            if (function->HasBody()) {
                 HandleAsyncScriptFunctionBody(checker, function->Body()->AsBlockStatement());
             }
+        } else if (hasPromiseVoid && function->HasBody()) {
+            HandleAsyncScriptFunctionBody(checker, function->Body()->AsBlockStatement());
         }
 
         return ast;
-    });
+    };
+
+    program->Ast()->TransformChildrenRecursively(transformer);
 
     return true;
 }
@@ -189,38 +193,40 @@ bool PromiseVoidInferencePhase::Postcondition(public_lib::Context *ctx, const pa
     (void)ctx;
 
     auto checkFunctionBody = [](const ir::BlockStatement *body) -> bool {
-        if (body->IsReturnStatement()) {
-            auto *returnStmt = body->AsReturnStatement();
-            const auto *arg = returnStmt->Argument();
-
-            if (!arg->IsIdentifier()) {
-                return false;
-            }
-
-            const auto *id = arg->AsIdentifier();
-            return id->Name() == compiler::Signatures::VOID_OBJECT;
+        if (!body->IsReturnStatement()) {
+            return true;
         }
+        auto *returnStmt = body->AsReturnStatement();
+        const auto *arg = returnStmt->Argument();
+
+        if (!arg->IsIdentifier()) {
+            return false;
+        }
+
+        const auto *id = arg->AsIdentifier();
+        return id->Name() == compiler::Signatures::VOID_OBJECT;
 
         return true;
     };
 
     auto isOk = true;
-    program->Ast()->IterateRecursively([checkFunctionBody, &isOk](ir::AstNode *ast) {
-        if (ast->IsScriptFunction() && ast->AsScriptFunction()->IsAsyncFunc()) {
-            auto *function = ast->AsScriptFunction();
-            auto *returnAnn = function->ReturnTypeAnnotation();
-            if (!CheckForPromiseVoid(returnAnn)) {
+    auto transformer = [checkFunctionBody, &isOk](ir::AstNode *ast) {
+        if (!(ast->IsScriptFunction() && ast->AsScriptFunction()->IsAsyncFunc())) {
+            return;
+        }
+        auto *function = ast->AsScriptFunction();
+        auto *returnAnn = function->ReturnTypeAnnotation();
+        if (!CheckForPromiseVoid(returnAnn)) {
+            return;
+        }
+        if (function->HasBody()) {
+            if (!checkFunctionBody(function->Body()->AsBlockStatement())) {
+                isOk = false;
                 return;
             }
-            if (function->HasBody()) {
-                if (!checkFunctionBody(function->Body()->AsBlockStatement())) {
-                    isOk = false;
-                    return;
-                }
-            }
         }
-        return;
-    });
+    };
+    program->Ast()->IterateRecursively(transformer);
 
     return isOk;
 }
