@@ -90,4 +90,25 @@ export class TypeUtils {
     let program: Program = createProgram([ast.fileName], option, customHost);
     return program.getTypeChecker();
   }
+
+  public static createObfSourceFile(sourceFilePath: string, content: string): SourceFile {
+    const pathOrExtension: PathAndExtension = FileUtils.getFileSuffix(sourceFilePath);
+    const fileSuffix = pathOrExtension.ext === Extension.DETS ? Extension.DETS : Extension.TS;
+    const { dir, name } = path.parse(sourceFilePath);
+    const targetName: string = path.join(dir, name) + fileSuffix;
+    let ast : SourceFile = createSourceFile(targetName, content, ScriptTarget.ES2015, true);
+    if(pathOrExtension.ext === Extension.JS){
+      //@ts-ignore
+      ast.isJs = true;
+    }
+    return ast;
+  }
+
+  public static tsToJs(ast: SourceFile) {
+    const filePath = ast.fileName;
+    const fileSuffix = Extension.JS;
+    const { dir, name } = path.parse(filePath);
+    const targetName: string = path.join(dir, name) + fileSuffix;
+    ast.fileName = targetName;
+  }
 }

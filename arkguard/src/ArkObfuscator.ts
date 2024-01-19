@@ -53,6 +53,8 @@ import {ListUtil} from './utils/ListUtil';
 import {needReadApiInfo, readProjectProperties} from './common/ApiReader';
 import {ApiExtractor} from './common/ApiExtractor';
 import es6Info from './configs/preset/es6_reserved_properties.json';
+import { Extension, PathAndExtension } from './common/type';
+import { TypeUtils } from './utils/TypeUtils';
 
 export const renameIdentifierModule = require('./transformers/rename/RenameIdentifierTransformer');
 export const renamePropertyModule = require('./transformers/rename/RenamePropertiesTransformer');
@@ -358,7 +360,7 @@ export class ArkObfuscator {
     }
 
     if (typeof content === 'string') {
-      ast = createSourceFile(sourceFilePath, content, ScriptTarget.ES2015, true);
+      ast = TypeUtils.createObfSourceFile(sourceFilePath, content);
     } else {
       ast = content;
     }
@@ -393,6 +395,10 @@ export class ArkObfuscator {
       sourceMapGenerator = getSourceMapGenerator(sourceFilePath);
     }
 
+    //@ts-ignore
+    if (ast.isJs) {
+      TypeUtils.tsToJs(ast);
+    }
     this.createObfsPrinter(ast.isDeclarationFile).writeFile(ast, this.mTextWriter, sourceMapGenerator);
 
     result.filePath = ast.fileName;
