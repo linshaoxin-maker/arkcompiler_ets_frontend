@@ -1123,10 +1123,11 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
         if (init->IsArrowFunctionExpression()) {
             typeAnnotation = init->AsArrowFunctionExpression()->CreateTypeAnnotation(this);
         } else {
-            typeAnnotation = init->AsTSAsExpression()->TypeAnnotation();
+            typeAnnotation = init->AsTSAsExpression()->TypeAnnotation()->Clone(Allocator(), nullptr);
         }
         ident->SetTsTypeAnnotation(typeAnnotation);
         typeAnnotation->SetParent(ident);
+
         annotationType = GetTypeFromTypeAnnotation(typeAnnotation);
         bindingVar->SetTsType(annotationType);
     }
@@ -2501,7 +2502,9 @@ void ETSChecker::InferTypesForLambda(ir::ScriptFunction *lambda, ir::ETSFunction
         const auto *const calleeParam = calleeType->Params()[i]->AsETSParameterExpression()->Ident();
         auto *const lambdaParam = lambda->Params()[i]->AsETSParameterExpression()->Ident();
         if (lambdaParam->TypeAnnotation() == nullptr) {
-            lambdaParam->SetTsTypeAnnotation(calleeParam->TypeAnnotation());
+            auto *const typeAnnotation = calleeParam->TypeAnnotation()->Clone(Allocator(), lambdaParam);
+            lambdaParam->SetTsTypeAnnotation(typeAnnotation);
+            typeAnnotation->SetParent(lambdaParam);
         }
     }
     if (lambda->ReturnTypeAnnotation() == nullptr) {
@@ -2556,7 +2559,7 @@ bool ETSChecker::TypeInference(Signature *signature, const ArenaVector<ir::Expre
     return invocable;
 }
 
-void ETSChecker::AddUndefinedParamsForDefaultParams(const Signature *const signature,
+void ETSChecker::AddUndefinedParamsForDefaultParams(const Signature *const signature, ir::AstNode *parent,
                                                     ArenaVector<panda::es2panda::ir::Expression *> &arguments,
                                                     ETSChecker *checker)
 {
@@ -2564,28 +2567,36 @@ void ETSChecker::AddUndefinedParamsForDefaultParams(const Signature *const signa
         return;
     }
 
+    //  Just to avoid extra nested levels
+    auto const addDefaultLiteral = [&arguments, checker, parent](ir::TypeNode const *const typeAnnotation) -> void {
+        if (typeAnnotation->IsETSPrimitiveType()) {
+            if (typeAnnotation->AsETSPrimitiveType()->GetPrimitiveType() == ir::PrimitiveType::BOOLEAN) {
+                arguments.push_back(checker->Allocator()->New<ir::BooleanLiteral>(false));
+            } else {
+                arguments.push_back(checker->Allocator()->New<ir::NumberLiteral>(lexer::Number(0)));
+            }
+            arguments.back()->SetParent(parent);
+        } else {
+            // A proxy-function is called, so default reference parameters
+            // are initialized with null instead of undefined
+            auto *const nullLiteral = checker->Allocator()->New<ir::NullLiteral>();
+            nullLiteral->SetTsType(checker->GlobalETSNullType());
+            nullLiteral->SetParent(parent);
+            arguments.push_back(nullLiteral);
+        }
+    };
+
     uint32_t num = 0;
-    for (size_t i = arguments.size(); i != signature->Function()->Params().size() - 1; i++) {
+    for (size_t i = arguments.size(); i != signature->Function()->Params().size() - 1U; ++i) {
         if (auto const *const param = signature->Function()->Params()[i]->AsETSParameterExpression();
             !param->IsRestParameter()) {
-            auto const *const typeAnn = param->Ident()->TypeAnnotation();
-            if (typeAnn->IsETSPrimitiveType()) {
-                if (typeAnn->AsETSPrimitiveType()->GetPrimitiveType() == ir::PrimitiveType::BOOLEAN) {
-                    arguments.push_back(checker->Allocator()->New<ir::BooleanLiteral>(false));
-                } else {
-                    arguments.push_back(checker->Allocator()->New<ir::NumberLiteral>(lexer::Number(0)));
-                }
-            } else {
-                // A proxy-function is called, so default reference parameters
-                // are initialized with null instead of undefined
-                auto *const nullLiteral = checker->Allocator()->New<ir::NullLiteral>();
-                nullLiteral->SetTsType(checker->GlobalETSNullType());
-                arguments.push_back(nullLiteral);
-            }
+            addDefaultLiteral(param->Ident()->TypeAnnotation());
             num |= (1U << (arguments.size() - 1));
         }
     }
+
     arguments.push_back(checker->Allocator()->New<ir::NumberLiteral>(lexer::Number(num)));
+    arguments.back()->SetParent(parent);
 }
 
 bool ETSChecker::ExtensionETSFunctionType(checker::Type *type)
@@ -2643,25 +2654,27 @@ void ETSChecker::GenerateGetterSetterBody(ETSChecker *checker, ArenaVector<ir::S
                                           varbinder::FunctionParamScope *paramScope, bool isSetter)
 {
     if (!isSetter) {
-        stmts.push_back(checker->Allocator()->New<ir::ReturnStatement>(field->Key()));
+        stmts.push_back(checker->AllocNode<ir::ReturnStatement>(
+            field->Key()->Clone(checker->Allocator(), nullptr)->AsExpression()));
         return;
     }
 
-    auto *paramIdent = field->Key()->AsIdentifier()->Clone(checker->Allocator());
-    paramIdent->SetTsTypeAnnotation(field->TypeAnnotation()->Clone(checker->Allocator()));
-    paramIdent->TypeAnnotation()->SetParent(paramIdent);
+    auto *const paramIdent = field->Key()->AsIdentifier()->Clone(checker->Allocator(), nullptr);
+    auto *const typeAnnotation = field->TypeAnnotation()->Clone(checker->Allocator(), nullptr);
+    paramIdent->SetTsTypeAnnotation(typeAnnotation);
+    typeAnnotation->SetParent(paramIdent);
 
     auto *paramExpression = checker->AllocNode<ir::ETSParameterExpression>(paramIdent, nullptr);
     paramExpression->SetRange(paramIdent->Range());
-    auto *const paramVar = std::get<2>(paramScope->AddParamDecl(checker->Allocator(), paramExpression));
 
-    paramIdent->SetVariable(paramVar);
+    auto *const paramVar = std::get<2>(paramScope->AddParamDecl(checker->Allocator(), paramExpression));
     paramExpression->SetVariable(paramVar);
 
     params.push_back(paramExpression);
 
     auto *assignmentExpression = checker->AllocNode<ir::AssignmentExpression>(
-        field->Key(), paramExpression, lexer::TokenType::PUNCTUATOR_SUBSTITUTION);
+        field->Key()->Clone(Allocator(), nullptr)->AsExpression(), paramExpression->Clone(Allocator(), nullptr),
+        lexer::TokenType::PUNCTUATOR_SUBSTITUTION);
 
     assignmentExpression->SetRange({field->Start(), field->End()});
 
@@ -2687,16 +2700,16 @@ ir::MethodDefinition *ETSChecker::GenerateDefaultGetterSetter(ir::ClassProperty 
 
     auto *body = checker->AllocNode<ir::BlockStatement>(checker->Allocator(), std::move(stmts));
     auto funcFlags = isSetter ? ir::ScriptFunctionFlags::SETTER : ir::ScriptFunctionFlags::GETTER;
-    auto *const returnTypeAnn = isSetter ? nullptr : field->TypeAnnotation();
+    auto *const returnTypeAnn = isSetter ? nullptr : field->TypeAnnotation()->Clone(checker->Allocator(), nullptr);
     auto *func =
         checker->AllocNode<ir::ScriptFunction>(ir::FunctionSignature(nullptr, std::move(params), returnTypeAnn), body,
-                                               funcFlags, flags, true, Language(Language::Id::ETS));
+                                               ir::ScriptFunction::ScriptFunctionData {funcFlags, flags, true});
 
     func->SetRange(field->Range());
     func->SetScope(functionScope);
     body->SetScope(functionScope);
 
-    auto *methodIdent = field->Key()->AsIdentifier()->Clone(checker->Allocator());
+    auto *methodIdent = field->Key()->AsIdentifier()->Clone(checker->Allocator(), nullptr);
     auto *decl = checker->Allocator()->New<varbinder::FunctionDecl>(
         checker->Allocator(), field->Key()->AsIdentifier()->Name(),
         field->Key()->AsIdentifier()->Variable()->Declaration()->Node());
@@ -2713,7 +2726,7 @@ ir::MethodDefinition *ETSChecker::GenerateDefaultGetterSetter(ir::ClassProperty 
 
     method->Id()->SetMutator();
     method->SetRange(field->Range());
-    method->Function()->SetIdent(method->Id());
+    method->Function()->SetIdent(method->Id()->Clone(checker->Allocator(), nullptr));
     method->Function()->AddModifier(method->Modifiers());
     method->SetVariable(var);
 

@@ -81,7 +81,6 @@ public:
         return signature_;
     }
 
-    // NOLINTNEXTLINE(google-default-arguments)
     [[nodiscard]] ETSNewMultiDimArrayInstanceExpression *Clone(ArenaAllocator *allocator,
                                                                AstNode *parent = nullptr) override;
 

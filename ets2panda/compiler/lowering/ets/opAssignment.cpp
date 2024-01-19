@@ -168,8 +168,9 @@ ir::Expression *HandleOpAssignment(public_lib::Context *ctx, checker::ETSChecker
 
     auto *loweringResult = parser->CreateFormattedExpression(
         newAssignmentStatements, parser::DEFAULT_SOURCE_FILE, ident1, object, ident2, property,
-        ident1->Clone(allocator), ident2 != nullptr ? ident2->Clone(allocator) : nullptr, ident1->Clone(allocator),
-        ident2 != nullptr ? ident2->Clone(allocator) : nullptr, right, exprType);
+        ident1->Clone(allocator, nullptr), ident2 != nullptr ? ident2->Clone(allocator, nullptr) : nullptr,
+        ident1->Clone(allocator, nullptr), ident2 != nullptr ? ident2->Clone(allocator, nullptr) : nullptr, right,
+        exprType);
     loweringResult->SetParent(assignment->Parent());
     InitScopesPhaseETS::RunExternalNode(loweringResult, ctx->compilerContext->VarBinder());
 

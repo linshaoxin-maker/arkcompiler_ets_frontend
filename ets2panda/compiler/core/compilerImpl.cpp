@@ -169,7 +169,9 @@ static pandasm::Program *CreateCompiler(const CompilationUnit &unit, const Phase
             return nullptr;
         }
 #ifndef NDEBUG
-        Verify(program, context, phase, verificationCtx);
+        if (unit.ext == ScriptExtension::ETS) {
+            Verify(program, context, phase, verificationCtx);
+        }
 #endif
     }
 
