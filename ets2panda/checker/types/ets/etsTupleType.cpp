@@ -20,8 +20,12 @@ namespace panda::es2panda::checker {
 void ETSTupleType::ToString(std::stringstream &ss) const
 {
     ss << "[";
-    for (const auto *const type : typeList_) {
-        type->ToString(ss);
+    for (auto it = typeList_.begin(); it != typeList_.end(); it++) {
+        (*it)->ToString(ss);
+
+        if (std::next(it) != typeList_.end()) {
+            ss << ", ";
+        }
     }
 
     if (spreadType_ != nullptr) {

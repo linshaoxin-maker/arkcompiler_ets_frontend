@@ -1010,9 +1010,11 @@ void ETSChecker::ResolveReturnStatement(checker::Type *funcReturnType, checker::
             containingFunc->Signature()->SetReturnType(funcReturnType);
             containingFunc->Signature()->AddSignatureFlag(checker::SignatureFlags::INFERRED_RETURN_TYPE);
         } else if (!Relation()->IsAssignableTo(argumentType, funcReturnType)) {
-            ThrowTypeError(
-                "Return statement type is not compatible with previous method's return statement "
-                "type(s).",
+            const Type *targetType = TryGettingFunctionTypeFromInvokeFunction(funcReturnType);
+            const Type *sourceType = TryGettingFunctionTypeFromInvokeFunction(argumentType);
+
+            Relation()->RaiseError(
+                {"Function cannot have different primitive return types, found '", targetType, "', '", sourceType, "'"},
                 st->Argument()->Start());
         }
     } else {
@@ -1129,8 +1131,11 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
     }
 
     if (annotationType != nullptr) {
+        const Type *targetType = TryGettingFunctionTypeFromInvokeFunction(annotationType);
+        const Type *sourceType = TryGettingFunctionTypeFromInvokeFunction(initType);
+
         AssignmentContext(Relation(), init, initType, annotationType, init->Start(),
-                          {"Initializers type is not assignable to the target type"});
+                          {"Type '", sourceType, "' cannot be assigned to type '", targetType, "'"});
         if (isConst && initType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) &&
             annotationType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
             bindingVar->SetTsType(init->TsType());
@@ -1157,11 +1162,8 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
                        init->Start());
     }
 
-    if (initType->IsNullish() || isConst) {
-        bindingVar->SetTsType(initType);
-    } else {
-        bindingVar->SetTsType(GetNonConstantTypeFromPrimitiveType(initType));
-    }
+    (initType->IsNullish() || isConst) ? bindingVar->SetTsType(initType)
+                                       : bindingVar->SetTsType(GetNonConstantTypeFromPrimitiveType(initType));
 
     return bindingVar->TsType();
 }
@@ -2540,10 +2542,13 @@ bool ETSChecker::TypeInference(Signature *signature, const ArenaVector<ir::Expre
         ASSERT(typeAnn->IsETSFunctionType());
         InferTypesForLambda(lambda, typeAnn->AsETSFunctionType());
         Type *const argType = arrowFuncExpr->Check(this);
+        const Type *targetType = TryGettingFunctionTypeFromInvokeFunction(signature->Params()[index]->TsType());
+        const std::initializer_list<TypeErrorMessageElement> msg = {
+            "Type '", argType, "' is not compatible with type '", targetType, "' at index ", index + 1};
 
-        checker::InvocationContext invokationCtx(
-            Relation(), arguments[index], argType, signature->Params()[index]->TsType(), arrowFuncExpr->Start(),
-            {"Call argument at index ", index, " is not compatible with the signature's type at that index"}, flags);
+        checker::InvocationContext invokationCtx(Relation(), arguments[index], argType,
+                                                 signature->Params()[index]->TsType(), arrowFuncExpr->Start(), msg,
+                                                 flags);
 
         invocable &= invokationCtx.IsInvocable();
     }
@@ -2630,6 +2635,19 @@ std::string GenerateImplicitInstantiateArg(varbinder::LocalVariable *instantiate
     }
     implicitInstantiateArgument.append("}");
     return implicitInstantiateArgument;
+}
+
+const Type *ETSChecker::TryGettingFunctionTypeFromInvokeFunction(const Type *type) const
+{
+    if (type->IsETSObjectType() && type->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
+        auto const propInvoke = type->AsETSObjectType()->GetProperty(util::StringView("invoke"),
+                                                                     PropertySearchFlags::SEARCH_INSTANCE_METHOD);
+        ASSERT(propInvoke != nullptr);
+
+        return propInvoke->TsType();
+    }
+
+    return type;
 }
 
 bool ETSChecker::TryTransformingToStaticInvoke(ir::Identifier *const ident, const Type *resolvedType)
