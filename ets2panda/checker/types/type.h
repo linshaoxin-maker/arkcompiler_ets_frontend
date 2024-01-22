@@ -161,6 +161,13 @@ public:
         return HasTypeFlag(checker::TypeFlag::CONSTANT);
     }
 
+    bool IsETSPrimitiveType() const
+    {
+        return HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE);
+    }
+
+    bool IsETSUnboxableType() const;
+
     TypeFlag TypeFlags() const
     {
         return typeFlags_;

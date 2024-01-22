@@ -16,6 +16,7 @@
 #include <algorithm>
 
 #include "etsUnionType.h"
+#include "checker/ets/boxingConverter.h"
 #include "checker/ets/conversion.h"
 #include "checker/types/globalTypesHolder.h"
 #include "checker/ETSchecker.h"
@@ -65,7 +66,7 @@ Type *ETSUnionType::ComputeLUB(ETSChecker *checker) const
 {
     auto lub = constituentTypes_.front();
     for (auto *t : constituentTypes_) {
-        if (!checker->IsReferenceType(t)) {
+        if (!ETSChecker::IsReferenceType(t)) {
             return checker->GetGlobalTypesHolder()->GlobalETSObjectType();
         }
         if (t->IsETSObjectType() && t->AsETSObjectType()->SuperType() == nullptr) {
@@ -103,33 +104,31 @@ bool ETSUnionType::AssignmentSource(TypeRelation *relation, Type *target)
 void ETSUnionType::AssignmentTarget(TypeRelation *relation, Type *source)
 {
     auto *const checker = relation->GetChecker()->AsETSChecker();
-    auto *const refSource =
-        source->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) ? checker->PrimitiveTypeAsETSBuiltinType(source) : source;
-    auto exactType = std::find_if(
-        constituentTypes_.begin(), constituentTypes_.end(), [checker, relation, source, refSource](Type *ct) {
-            if (ct == refSource && source->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && ct->IsETSObjectType() &&
-                ct->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE)) {
-                relation->GetNode()->SetBoxingUnboxingFlags(checker->GetBoxingFlag(ct));
-                return relation->IsAssignableTo(refSource, ct);
-            }
-            return false;
-        });
+    auto *refSource = source->IsETSPrimitiveType() && !source->IsConstantType()
+                          ? checker->PrimitiveTypeAsETSBuiltinType(source)
+                          : source;
+    auto exactType = std::find_if(constituentTypes_.begin(), constituentTypes_.end(),
+                                  [checker, relation, source, refSource](Type *ct) {
+                                      if (ct == refSource && source->IsETSPrimitiveType() && ct->IsETSUnboxableType()) {
+                                          relation->GetNode()->SetBoxingUnboxingFlags(checker->GetBoxingFlag(ct));
+                                          return relation->IsAssignableTo(refSource, ct);
+                                      }
+                                      return false;
+                                  });
     if (exactType != constituentTypes_.end()) {
         return;
     }
     size_t assignableCount = 0;
     for (auto *it : constituentTypes_) {
-        if (relation->IsAssignableTo(refSource, it)) {
-            if (refSource != source) {
-                relation->IsAssignableTo(source, it);
-                ASSERT(relation->IsTrue());
+        if (relation->IsAssignableTo(source, it)) {
+            if (source->IsETSPrimitiveType()) {
+                relation->GetNode()->SetBoxingUnboxingFlags(
+                    checker->GetBoxingFlag(checker->PrimitiveTypeAsETSBuiltinType(it)));
             }
             ++assignableCount;
             continue;
         }
-        bool assignPrimitive = it->IsETSObjectType() &&
-                               it->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE) &&
-                               source->HasTypeFlag(TypeFlag::ETS_PRIMITIVE);
+        bool assignPrimitive = it->IsETSUnboxableType() && source->IsETSPrimitiveType();
         if (assignPrimitive && relation->IsAssignableTo(source, checker->ETSBuiltinTypeAsPrimitiveType(it))) {
             Type *unboxedIt = checker->ETSBuiltinTypeAsPrimitiveType(it);
             if (unboxedIt != source) {
@@ -196,11 +195,11 @@ void ETSUnionType::NormalizeTypes(TypeRelation *relation, ArenaVector<Type *> &c
     while (cmpIt != constituentTypes.end()) {
         auto newEnd = std::remove_if(
             constituentTypes.begin(), constituentTypes.end(), [relation, checker, cmpIt, numberFound](Type *ct) {
+                bool both_constants = (*cmpIt)->HasTypeFlag(TypeFlag::CONSTANT) && ct->HasTypeFlag(TypeFlag::CONSTANT);
                 relation->Result(false);
                 (*cmpIt)->IsSupertypeOf(relation, ct);
-                bool removeSubtype = ct != *cmpIt && relation->IsTrue();
-                bool removeNumeric = numberFound && ct->IsETSObjectType() &&
-                                     ct->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE) &&
+                bool removeSubtype = ct != *cmpIt && !both_constants && relation->IsTrue();
+                bool removeNumeric = numberFound && ct->IsETSUnboxableType() &&
                                      !ct->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::BUILTIN_DOUBLE) &&
                                      !ct->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::BUILTIN_BOOLEAN);
                 bool removeNever = ct == checker->GetGlobalTypesHolder()->GlobalBuiltinNeverType();
@@ -215,20 +214,33 @@ void ETSUnionType::NormalizeTypes(TypeRelation *relation, ArenaVector<Type *> &c
     }
 }
 
+ArenaVector<Type *> ETSUnionType::BoxTypes(TypeRelation *relation, ArenaVector<Type *> &constituentTypes)
+{
+    auto *const checker = relation->GetChecker()->AsETSChecker();
+    ArenaVector<Type *> boxedConstituentTypes(checker->Allocator()->Adapter());
+    for (auto *it : constituentTypes) {
+        boxedConstituentTypes.push_back(it->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE) && !it->IsConstantType()
+                                            ? BoxingConverter::ETSTypeFromSource(checker, it)
+                                            : it);
+    }
+    return boxedConstituentTypes;
+}
+
 Type *ETSUnionType::Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes)
 {
     ArenaVector<Type *> copiedConstituents(allocator->Adapter());
+
+    ETSUnionType::NormalizeTypes(relation, copiedConstituents);
+    if (copiedConstituents.size() == 1) {
+        return copiedConstituents[0];
+    }
 
     for (auto *it : constituentTypes_) {
         copiedConstituents.push_back(it->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)
                                          ? relation->GetChecker()->AsETSChecker()->PrimitiveTypeAsETSBuiltinType(it)
                                          : it->Instantiate(allocator, relation, globalTypes));
     }
-
     ETSUnionType::NormalizeTypes(relation, copiedConstituents);
-    if (copiedConstituents.size() == 1) {
-        return copiedConstituents[0];
-    }
 
     return allocator->New<ETSUnionType>(relation->GetChecker()->AsETSChecker(), std::move(copiedConstituents));
 }
@@ -246,8 +258,9 @@ Type *ETSUnionType::Substitute(TypeRelation *relation, const Substitution *subst
 void ETSUnionType::Cast(TypeRelation *relation, Type *target)
 {
     auto *const checker = relation->GetChecker()->AsETSChecker();
-    auto *const refTarget =
-        target->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE) ? checker->PrimitiveTypeAsETSBuiltinType(target) : target;
+    auto *const refTarget = target->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE) && !target->IsConstantType()
+                                ? checker->PrimitiveTypeAsETSBuiltinType(target)
+                                : target;
     auto exactType =
         std::find_if(constituentTypes_.begin(), constituentTypes_.end(), [this, relation, refTarget](Type *src) {
             if (src == refTarget && relation->IsCastableTo(src, refTarget)) {
@@ -261,6 +274,13 @@ void ETSUnionType::Cast(TypeRelation *relation, Type *target)
         return;
     }
     for (auto *source : constituentTypes_) {
+        if (source->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && target->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT)) {
+            auto *const unboxedTarget = checker->ETSBuiltinTypeAsPrimitiveType(target);
+            if (relation->IsCastableTo(source, unboxedTarget)) {
+                GetLeastUpperBoundType()->Cast(relation, target);
+                return;
+            }
+        }
         if (relation->IsCastableTo(source, refTarget)) {
             GetLeastUpperBoundType()->Cast(relation, refTarget);
             ASSERT(relation->IsTrue());

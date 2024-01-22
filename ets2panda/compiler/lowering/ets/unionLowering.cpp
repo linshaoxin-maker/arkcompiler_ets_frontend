@@ -152,10 +152,10 @@ ir::TSAsExpression *HandleUnionCastToPrimitive(checker::ETSChecker *checker, ir:
                                                                                expr->TsType());
     }
     if (sourceType != nullptr && expr->Expr()->GetBoxingUnboxingFlags() != ir::BoxingUnboxingFlags::NONE) {
-        if (expr->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+        if (expr->TsType()->IsETSPrimitiveType()) {
             auto *const boxedExprType = checker::BoxingConverter::ETSTypeFromSource(checker, expr->TsType());
             auto *const asExpr = GenAsExpression(checker, boxedExprType, expr->Expr(), expr);
-            asExpr->SetBoxingUnboxingFlags(expr->Expr()->GetBoxingUnboxingFlags());
+            asExpr->SetBoxingUnboxingFlags(checker->GetUnboxingFlag(expr->TsType()));
             expr->Expr()->SetBoxingUnboxingFlags(ir::BoxingUnboxingFlags::NONE);
             expr->SetExpr(asExpr);
         }
@@ -173,12 +173,10 @@ ir::BinaryExpression *GenInstanceofExpr(checker::ETSChecker *checker, ir::Expres
     auto *const lhsExpr = unionNode->Clone(checker->Allocator())->AsExpression();
     lhsExpr->Check(checker);
     lhsExpr->SetBoxingUnboxingFlags(unionNode->GetBoxingUnboxingFlags());
-    auto *rhsType = constituentType;
-    if (!constituentType->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
-        checker->Relation()->SetNode(unionNode);
-        rhsType = checker::conversion::Boxing(checker->Relation(), constituentType);
-        checker->Relation()->SetNode(nullptr);
-    }
+    auto *rhsType = constituentType->IsETSPrimitiveType()
+                        ? checker::BoxingConverter::ETSTypeFromSource(checker, constituentType)
+                        : constituentType;
+    rhsType = rhsType->IsETSStringType() ? checker->GlobalBuiltinETSStringType() : rhsType;
     auto *const rhsExpr =
         checker->Allocator()->New<ir::Identifier>(rhsType->AsETSObjectType()->Name(), checker->Allocator());
     auto *const instanceofExpr =
@@ -205,6 +203,7 @@ ir::VariableDeclaration *GenVariableDeclForBinaryExpr(checker::ETSChecker *check
     varId->SetVariable(var);
     varId->SetTsType(var->TsType());
 
+    // NOTE(aakmaev): init false for default
     auto declarator = checker->AllocNode<ir::VariableDeclarator>(ir::VariableDeclaratorFlag::LET, varId);
     ArenaVector<ir::VariableDeclarator *> declarators(checker->Allocator()->Adapter());
     declarators.push_back(declarator);
@@ -240,45 +239,98 @@ ir::BlockStatement *GenBlockStmtForAssignmentBinary(checker::ETSChecker *checker
     return localBlockStmt;
 }
 
-ir::Expression *SetBoxFlagOrGenAsExpression(checker::ETSChecker *checker, checker::Type *constituentType,
-                                            ir::Expression *otherNode)
+ir::Expression *ProcessUnionOperand(checker::ETSChecker *checker, checker::Type *constituentType,
+                                    ir::Expression *unionNode, checker::Type *otherNodeType)
 {
-    if (constituentType->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::UNBOXABLE_TYPE) &&
-        !otherNode->IsETSUnionType() && otherNode->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
-        auto *unboxedConstituentType = checker->ETSBuiltinTypeAsPrimitiveType(constituentType);
-        if (unboxedConstituentType != otherNode->TsType()) {
-            auto *const primAsExpression =
-                GenAsExpression(checker, unboxedConstituentType, otherNode, otherNode->Parent());
-            primAsExpression->SetBoxingUnboxingFlags(checker->GetBoxingFlag(constituentType));
-            return primAsExpression;
-        }
-        return otherNode;
+    bool isAnyOpIsC = (!constituentType->IsETSPrimitiveType() && !constituentType->IsETSUnboxableType()) ||
+                      (!otherNodeType->IsETSPrimitiveType() && !otherNodeType->IsETSUnboxableType());
+    if (isAnyOpIsC) {
+        return GenAsExpression(checker,
+                               constituentType->IsETSPrimitiveType()
+                                   ? checker->PrimitiveTypeAsETSBuiltinType(constituentType)
+                                   : constituentType,
+                               unionNode, unionNode->Parent());
     }
-    if (otherNode->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
-        otherNode->SetBoxingUnboxingFlags(
-            checker->GetBoxingFlag(checker::BoxingConverter::ETSTypeFromSource(checker, otherNode->TsType())));
+    return UnionCastToPrimitive(checker, checker->PrimitiveTypeAsETSBuiltinType(constituentType)->AsETSObjectType(),
+                                checker->ETSBuiltinTypeAsPrimitiveType(constituentType), unionNode);
+}
+
+ir::Expression *ProcessOtherOperand(checker::ETSChecker *checker, checker::Type *constituentType,
+                                    ir::Expression *otherNode, checker::Type *otherNodeType)
+{
+    bool isConstituentIsC = !constituentType->IsETSPrimitiveType() && !constituentType->IsETSUnboxableType();
+    bool isOtherIsC = !otherNodeType->IsETSPrimitiveType() && !otherNodeType->IsETSUnboxableType();
+    if (otherNodeType->IsETSPrimitiveType() && isConstituentIsC) {
+        return GenAsExpression(checker, checker->PrimitiveTypeAsETSBuiltinType(otherNodeType), otherNode,
+                               otherNode->Parent());
+    }
+    if (!isOtherIsC && otherNodeType->IsETSUnboxableType()) {
+        auto *const unboxedOtherType = checker->ETSBuiltinTypeAsPrimitiveType(otherNodeType);
+        otherNode->SetBoxingUnboxingFlags(checker->GetUnboxingFlag(unboxedOtherType));
+        return GenAsExpression(checker, unboxedOtherType, otherNode, otherNode->Parent());
     }
     return otherNode;
 }
 
+/* There are 8 cases to process operands:
+ * ┌----------------------------------------------┐
+ * |  cType  |  other  |         modification     |
+ * |----------------------------------------------|
+ * |    p    |    p    |       union as p; None   |
+ * |    p    |    b    |       union as p; unbox  |
+ * |    b    |    p    |       union as p; None   |
+ * |    b    |    b    |       union as p; unbox  |
+ * |    p    |    C    |  union as box(p); None   |
+ * |    b    |    C    |       union as b; None   |
+ * |    C    |    p    |       union as C; box(p) |
+ * |    C    |    b    |       union as C; None   |
+ * └----------------------------------------------┘
+ * where cType = constituentType; p = primitive; b = boxed; C = some non-unboxable object.
+ */
 ir::Expression *ProcessOperandsInBinaryExpr(checker::ETSChecker *checker, ir::BinaryExpression *expr,
                                             checker::Type *constituentType)
 {
     ASSERT(expr->OperatorType() == lexer::TokenType::PUNCTUATOR_EQUAL ||
            expr->OperatorType() == lexer::TokenType::PUNCTUATOR_NOT_EQUAL);
     bool isLhsUnion = expr->Left()->TsType()->IsETSUnionType();
-    ir::Expression *unionNode = isLhsUnion ? expr->Left() : expr->Right();
-    auto *const asExpression = GenAsExpression(checker, constituentType, unionNode, expr);
+    auto *const unionNode = isLhsUnion ? expr->Left() : expr->Right();
+    auto *const otherNode = isLhsUnion ? expr->Right() : expr->Left();
+    auto *const unionAsExpr = ProcessUnionOperand(checker, constituentType, unionNode, otherNode->TsType());
+    auto *const otherAsExpr = ProcessOtherOperand(checker, constituentType, otherNode, otherNode->TsType());
     if (isLhsUnion) {
-        expr->SetLeft(asExpression);
-        expr->SetRight(SetBoxFlagOrGenAsExpression(checker, constituentType, expr->Right()));
+        expr->SetLeft(unionAsExpr);
+        expr->SetRight(otherAsExpr);
     } else {
-        expr->SetRight(asExpression);
-        expr->SetLeft(SetBoxFlagOrGenAsExpression(checker, constituentType, expr->Left()));
+        expr->SetRight(unionAsExpr);
+        expr->SetLeft(otherAsExpr);
     }
-    expr->SetOperationType(checker->GlobalETSObjectType());
+    if (expr->Left()->TsType()->IsETSPrimitiveType() && expr->Right()->TsType()->IsETSPrimitiveType()) {
+        expr->SetOperationType(unionAsExpr->TsType());
+    } else {
+        expr->SetOperationType(checker->GlobalETSObjectType());
+    }
     expr->SetTsType(checker->GlobalETSBooleanType());
     return expr;
+}
+
+bool IsIdenticalInstanceofBranch(ir::IfStatement *instanceofBranch, ir::BinaryExpression *test)
+{
+    ASSERT(test->OperatorType() == lexer::TokenType::KEYW_INSTANCEOF);
+    if (instanceofBranch == nullptr) {
+        return false;
+    }
+    auto *const newBranchType = test->Right()->TsType();
+    while (instanceofBranch != nullptr) {
+        auto *const currBranchType = instanceofBranch->Test()->AsBinaryExpression()->Right()->TsType();
+        if (currBranchType == newBranchType) {
+            return true;
+        }
+        if (instanceofBranch->Alternate() == nullptr) {
+            return false;
+        }
+        instanceofBranch = instanceofBranch->Alternate()->AsIfStatement();
+    }
+    return false;
 }
 
 ir::Statement *FindStatementFromNode(ir::Expression *expr)
@@ -316,6 +368,9 @@ ir::BlockStatement *ReplaceBinaryExprInStmt(checker::ETSChecker *checker, ir::Ex
     ir::IfStatement *instanceofTree = nullptr;
     for (auto *uType : unionNode->TsType()->AsETSUnionType()->ConstituentTypes()) {
         auto *const test = GenInstanceofExpr(checker, unionNode, uType);
+        if (IsIdenticalInstanceofBranch(instanceofTree, test)) {
+            continue;
+        }
         auto *clonedBinary = expr->Clone(checker->Allocator(), expr->Parent())->AsBinaryExpression();
         clonedBinary->Check(checker);
         auto *const consequent = GenBlockStmtForAssignmentBinary(
