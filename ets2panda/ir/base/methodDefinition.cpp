@@ -192,11 +192,10 @@ checker::Type *MethodDefinition::Check(checker::ETSChecker *checker)
     return checker->GetAnalyzer()->Check(this);
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 MethodDefinition *MethodDefinition::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
-    auto *const key = key_ != nullptr ? key_->Clone(allocator)->AsExpression() : nullptr;
-    auto *const value = value_ != nullptr ? value_->Clone(allocator)->AsExpression() : nullptr;
+    auto *const key = key_ != nullptr ? key_->Clone(allocator, nullptr)->AsExpression() : nullptr;
+    auto *const value = value_ != nullptr ? value_->Clone(allocator, nullptr)->AsExpression() : nullptr;
 
     if (auto *const clone = allocator->New<MethodDefinition>(kind_, key, value, flags_, allocator, isComputed_);
         clone != nullptr) {

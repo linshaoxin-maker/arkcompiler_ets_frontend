@@ -136,11 +136,10 @@ checker::Type *ClassProperty::Check(checker::ETSChecker *checker)
     return checker->GetAnalyzer()->Check(this);
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 ClassProperty *ClassProperty::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
-    auto *const key = key_->Clone(allocator)->AsExpression();
-    auto *const value = value_->Clone(allocator)->AsExpression();
+    auto *const key = key_->Clone(allocator, nullptr)->AsExpression();
+    auto *const value = value_->Clone(allocator, nullptr)->AsExpression();
     auto *const typeAnnotation = typeAnnotation_->Clone(allocator, this);
 
     if (auto *const clone = allocator->New<ClassProperty>(key, value, typeAnnotation, flags_, allocator, isComputed_);

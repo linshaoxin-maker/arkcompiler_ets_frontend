@@ -384,11 +384,10 @@ checker::Type *MemberExpression::Check(checker::ETSChecker *checker)
     return checker->GetAnalyzer()->Check(this);
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 MemberExpression *MemberExpression::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
-    auto *const object = object_ != nullptr ? object_->Clone(allocator)->AsExpression() : nullptr;
-    auto *const property = property_ != nullptr ? property_->Clone(allocator)->AsExpression() : nullptr;
+    auto *const object = object_ != nullptr ? object_->Clone(allocator, nullptr)->AsExpression() : nullptr;
+    auto *const property = property_ != nullptr ? property_->Clone(allocator, nullptr)->AsExpression() : nullptr;
 
     if (auto *const clone =
             allocator->New<MemberExpression>(object, property, kind_, computed_, MaybeOptionalExpression::IsOptional());

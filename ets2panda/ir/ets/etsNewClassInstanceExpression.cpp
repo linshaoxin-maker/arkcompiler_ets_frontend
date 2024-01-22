@@ -104,7 +104,6 @@ ETSNewClassInstanceExpression::ETSNewClassInstanceExpression(ETSNewClassInstance
     }
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 ETSNewClassInstanceExpression *ETSNewClassInstanceExpression::Clone(ArenaAllocator *const allocator,
                                                                     AstNode *const parent)
 {

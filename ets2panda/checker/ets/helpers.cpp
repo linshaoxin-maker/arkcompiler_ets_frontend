@@ -2647,8 +2647,8 @@ void ETSChecker::GenerateGetterSetterBody(ETSChecker *checker, ArenaVector<ir::S
         return;
     }
 
-    auto *paramIdent = field->Key()->AsIdentifier()->Clone(checker->Allocator());
-    paramIdent->SetTsTypeAnnotation(field->TypeAnnotation()->Clone(checker->Allocator()));
+    auto *paramIdent = field->Key()->AsIdentifier()->Clone(checker->Allocator(), nullptr);
+    paramIdent->SetTsTypeAnnotation(field->TypeAnnotation()->Clone(checker->Allocator(), nullptr));
     paramIdent->TypeAnnotation()->SetParent(paramIdent);
 
     auto *paramExpression = checker->AllocNode<ir::ETSParameterExpression>(paramIdent, nullptr);
@@ -2696,7 +2696,7 @@ ir::MethodDefinition *ETSChecker::GenerateDefaultGetterSetter(ir::ClassProperty 
     func->SetScope(functionScope);
     body->SetScope(functionScope);
 
-    auto *methodIdent = field->Key()->AsIdentifier()->Clone(checker->Allocator());
+    auto *methodIdent = field->Key()->AsIdentifier()->Clone(checker->Allocator(), nullptr);
     auto *decl = checker->Allocator()->New<varbinder::FunctionDecl>(
         checker->Allocator(), field->Key()->AsIdentifier()->Name(),
         field->Key()->AsIdentifier()->Variable()->Declaration()->Node());

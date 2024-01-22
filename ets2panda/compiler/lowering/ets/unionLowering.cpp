@@ -167,7 +167,7 @@ ir::TSAsExpression *HandleUnionCastToPrimitive(checker::ETSChecker *checker, ir:
 ir::BinaryExpression *GenInstanceofExpr(checker::ETSChecker *checker, ir::Expression *unionNode,
                                         checker::Type *constituentType)
 {
-    auto *const lhsExpr = unionNode->Clone(checker->Allocator())->AsExpression();
+    auto *const lhsExpr = unionNode->Clone(checker->Allocator(), nullptr)->AsExpression();
     lhsExpr->Check(checker);
     lhsExpr->SetBoxingUnboxingFlags(unionNode->GetBoxingUnboxingFlags());
     auto *rhsType = constituentType;
