@@ -26,6 +26,7 @@
 #include "compiler/lowering/ets/objectIndexAccess.h"
 #include "compiler/lowering/ets/objectIterator.h"
 #include "compiler/lowering/ets/opAssignment.h"
+#include "compiler/lowering/ets/objectLiteralLowering.h"
 #include "compiler/lowering/ets/optionalLowering.h"
 #include "compiler/lowering/ets/promiseVoid.h"
 #include "compiler/lowering/ets/structLowering.h"
@@ -57,6 +58,7 @@ static LambdaConstructionPhase g_lambdaConstructionPhase;
 static OpAssignmentLowering g_opAssignmentLowering;
 static ObjectIndexLowering g_objectIndexLowering;
 static ObjectIteratorLowering g_objectIteratorLowering;
+static ObjectLiteralLowering g_objectLiteralLowering;
 static TupleLowering g_tupleLowering;  // Can be only applied after checking phase, and OP_ASSIGNMENT_LOWERING phase
 static UnionLowering g_unionLowering;
 static OptionalLowering g_optionalLowering;
@@ -98,6 +100,7 @@ std::vector<Phase *> GetETSPhaseList()
         &g_tupleLowering,
         &g_unionLowering,
         &g_expandBracketsPhase,
+        &g_objectLiteralLowering,
         &g_pluginsAfterLowerings,
     };
 }

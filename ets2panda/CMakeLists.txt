@@ -165,6 +165,7 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/ets/promiseVoid.cpp
   compiler/lowering/ets/structLowering.cpp
   compiler/lowering/ets/defaultParameterLowering.cpp
+  compiler/lowering/ets/objectLiteralLowering.cpp
   ir/astDump.cpp
   ir/srcDump.cpp
   ir/astNode.cpp
