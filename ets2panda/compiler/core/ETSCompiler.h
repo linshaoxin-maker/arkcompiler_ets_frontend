@@ -44,6 +44,7 @@ private:
     bool HandleArrayTypeLengthProperty(const ir::MemberExpression *expr, ETSGen *etsg) const;
     bool HandleEnumTypes(const ir::MemberExpression *expr, ETSGen *etsg) const;
     bool HandleStaticProperties(const ir::MemberExpression *expr, ETSGen *etsg) const;
+    void CheckAccTypeInvariant(const checker::Type *exprType) const;
 
     static bool CompileComputed(compiler::ETSGen *etsg, const ir::MemberExpression *expr);
 

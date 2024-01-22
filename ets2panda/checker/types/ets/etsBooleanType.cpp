@@ -21,7 +21,10 @@
 namespace ark::es2panda::checker {
 void ETSBooleanType::Identical(TypeRelation *relation, Type *other)
 {
-    if (other->IsETSBooleanType()) {
+    bool bothConstants = IsConstantType() && other->IsConstantType() && other->IsETSBooleanType();
+    bool bothNonConstants = !IsConstantType() && !other->IsConstantType();
+    if ((bothConstants && value_ == other->AsETSBooleanType()->GetValue()) ||
+        (bothNonConstants && other->IsETSBooleanType())) {
         relation->Result(true);
     }
 }
@@ -30,6 +33,18 @@ void ETSBooleanType::AssignmentTarget([[maybe_unused]] TypeRelation *relation, [
 {
     if (relation->ApplyUnboxing() && !relation->IsTrue()) {
         relation->GetChecker()->AsETSChecker()->AddUnboxingFlagToPrimitiveType(relation, source, this);
+    }
+    if (!relation->IsTrue() && source->IsETSPrimitiveType() && source->IsConstantType()) {
+        Identical(relation, relation->GetChecker()->AsETSChecker()->GetNonConstantTypeFromPrimitiveType(source));
+    }
+    if (!relation->IsTrue() && source->IsETSUnionType()) {
+        bool allIsAssignable = std::all_of(
+            source->AsETSUnionType()->ConstituentTypes().begin(), source->AsETSUnionType()->ConstituentTypes().end(),
+            [relation, this](Type *src) {
+                Identical(relation, relation->GetChecker()->AsETSChecker()->GetNonConstantTypeFromPrimitiveType(src));
+                return relation->IsTrue();
+            });
+        relation->Result(allIsAssignable);
     }
 }
 
@@ -44,6 +59,11 @@ bool ETSBooleanType::AssignmentSource([[maybe_unused]] TypeRelation *relation, [
 
 void ETSBooleanType::Cast(TypeRelation *const relation, Type *const target)
 {
+    if (IsConstantType() && target->IsETSBooleanType() && !target->IsConstantType()) {
+        relation->Result(true);
+        return;
+    }
+
     if (target->HasTypeFlag(TypeFlag::ETS_BOOLEAN)) {
         conversion::Identity(relation, this, target);
         return;

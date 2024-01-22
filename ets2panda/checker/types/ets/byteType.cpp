@@ -21,7 +21,9 @@
 namespace ark::es2panda::checker {
 void ByteType::Identical(TypeRelation *relation, Type *other)
 {
-    if (other->IsByteType()) {
+    bool bothConstants = IsConstantType() && other->IsConstantType() && other->IsByteType();
+    bool bothNonConstants = !IsConstantType() && !other->IsConstantType();
+    if ((bothConstants && value_ == other->AsByteType()->GetValue()) || (bothNonConstants && other->IsByteType())) {
         relation->Result(true);
     }
 }
@@ -32,6 +34,20 @@ void ByteType::AssignmentTarget(TypeRelation *relation, [[maybe_unused]] Type *s
         relation->GetChecker()->AsETSChecker()->AddUnboxingFlagToPrimitiveType(relation, source, this);
     }
     NarrowingConverter(relation->GetChecker()->AsETSChecker(), relation, this, source);
+    if (!relation->IsTrue() && source->IsETSPrimitiveType() && source->IsConstantType()) {
+        Identical(relation, relation->GetChecker()->AsETSChecker()->GetNonConstantTypeFromPrimitiveType(source));
+    }
+    if (!relation->IsTrue() && source->IsETSUnionType()) {
+        bool allIsAssignable = std::all_of(
+            source->AsETSUnionType()->ConstituentTypes().begin(), source->AsETSUnionType()->ConstituentTypes().end(),
+            [relation, this](Type *src) {
+                Identical(relation, relation->GetChecker()->AsETSChecker()->GetNonConstantTypeFromPrimitiveType(src));
+                bool identical = relation->IsTrue();
+                NarrowingConverter(relation->GetChecker()->AsETSChecker(), relation, this, src);
+                return identical || relation->IsTrue();
+            });
+        relation->Result(allIsAssignable);
+    }
 }
 
 bool ByteType::AssignmentSource([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *target)
@@ -52,6 +68,11 @@ bool ByteType::AssignmentSource([[maybe_unused]] TypeRelation *relation, [[maybe
 
 void ByteType::Cast(TypeRelation *const relation, Type *const target)
 {
+    if (IsConstantType() && target->HasTypeFlag(TypeFlag::BYTE)) {
+        relation->Result(true);
+        return;
+    }
+
     if (target->HasTypeFlag(TypeFlag::BYTE)) {
         conversion::Identity(relation, this, target);
         return;

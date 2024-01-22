@@ -15,7 +15,7 @@
 
 #include <numeric>
 #include "etsUnionType.h"
-
+#include "checker/ets/boxingConverter.h"
 #include "checker/ets/conversion.h"
 #include "checker/types/globalTypesHolder.h"
 #include "checker/ETSchecker.h"
@@ -60,6 +60,34 @@ bool ETSUnionType::TypeRelatedToSomeType(TypeRelation *relation, Type *source, E
                        [relation, source](auto *t) { return relation->IsIdenticalTo(source, t); });
 }
 
+static auto constexpr ETS_NORMALIZABLE_NUMERIC = TypeFlag(TypeFlag::ETS_NUMERIC & ~TypeFlag::CHAR);
+
+static Type *LargestNumeric(Type *t1, Type *t2)
+{
+    static_assert(TypeFlag::DOUBLE > TypeFlag::FLOAT);
+    static_assert(TypeFlag::FLOAT > TypeFlag::LONG);
+    static_assert(TypeFlag::LONG > TypeFlag::INT);
+    static_assert(TypeFlag::INT > TypeFlag::SHORT);
+    static_assert(TypeFlag::SHORT > TypeFlag::BYTE);
+
+    auto v1 = t1->TypeFlags() & ETS_NORMALIZABLE_NUMERIC;
+    auto v2 = t2->TypeFlags() & ETS_NORMALIZABLE_NUMERIC;
+    ASSERT(helpers::math::IsPowerOfTwo(v1));
+    ASSERT(helpers::math::IsPowerOfTwo(v2));
+    return v1 > v2 ? t1 : t2;
+}
+
+static Type *LargestPrimitive(Type *t1, Type *t2)
+{
+    if (t1->IsCharType()) {
+        return t2->IsByteType() || t2->IsETSBooleanType() ? t1 : t2;
+    }
+    if (t2->IsCharType()) {
+        return t1->IsByteType() || t1->IsETSBooleanType() ? t2 : t1;
+    }
+    return t1->IsETSBooleanType() ? t2 : t2->IsETSBooleanType() ? t1 : LargestNumeric(t1, t2);
+}
+
 // This function computes effective runtime representation of union type
 Type *ETSUnionType::ComputeAssemblerLUB(ETSChecker *checker, ETSUnionType *un)
 {
@@ -90,11 +118,21 @@ Type *ETSUnionType::ComputeAssemblerLUB(ETSChecker *checker, ETSUnionType *un)
         } else if (t->IsETSArrayType() && lub->IsETSArrayType()) {
             // NOTE: can compute "common(lub, t)[]"
             return checker->GetGlobalTypesHolder()->GlobalETSObjectType();
+        } else if (t->IsETSPrimitiveType()) {
+            if (lub->IsETSObjectType()) {
+                lub = checker->GetClosestCommonAncestor(lub->AsETSObjectType(),
+                                                        BoxingConverter::ETSTypeFromSource(checker, t));
+            } else if (lub->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+                lub = LargestPrimitive(t, lub);
+            } else {
+                // NOTE: if lub is array
+                return checker->GetGlobalTypesHolder()->GlobalETSObjectType();
+            }
         } else {
             return checker->GetGlobalTypesHolder()->GlobalETSObjectType();
         }
     }
-    return lub;
+    return checker->GetNonConstantTypeFromPrimitiveType(lub);
 }
 
 void ETSUnionType::Identical(TypeRelation *relation, Type *other)
@@ -107,56 +145,97 @@ void ETSUnionType::Identical(TypeRelation *relation, Type *other)
         }
     }
 
+    if (IsNumericUnion() && other->IsETSPrimitiveType()) {
+        relation->IsIdenticalTo(assemblerLub_, other);
+        return;
+    }
+
     relation->Result(false);
 }
 
-static void AmbiguousUnionOperation(TypeRelation *relation)
+template <typename RelFN>
+void ETSUnionType::RelationSource(TypeRelation *relation, Type *target, RelFN const &relFn)
 {
-    auto checker = relation->GetChecker()->AsETSChecker();
-    if (!relation->NoThrow()) {
-        checker->ThrowTypeError({"Ambiguous union type operation"}, relation->GetNode()->Start());
+    auto *const checker = relation->GetChecker()->AsETSChecker();
+    if (IsNumericUnion()) {
+        if (relation->IsAssignableTo(assemblerLub_, target)) {
+            relation->Result(true);
+            return;
+        }
     }
-    conversion::Forbidden(relation);
+
+    auto *const refTarget = checker->MaybePromotedBuiltinType(target);
+    if (target != refTarget && !relation->ApplyUnboxing()) {
+        relation->Result(false);
+        return;
+    }
+    if (relation->IsSupertypeOf(refTarget, this)) {
+        if (refTarget != target) {
+            relation->GetNode()->SetBoxingUnboxingFlags(checker->GetUnboxingFlag(refTarget));
+        }
+        return;
+    }
+    if (target == refTarget && !target->IsETSFunctionType() && !target->IsETSEnumType()) {
+        relation->Result(false);
+        return;
+    }
+    if (!relation->OnlyCheckWidening()) {
+        relation->SetFlags(relation->GetFlags() | TypeRelationFlag::ONLY_CHECK_WIDENING);
+    }
+
+    int related = 0;
+    for (auto *ct : ConstituentTypes()) {
+        if (!relFn(relation, checker->MaybePrimitiveBuiltinType(ct), target)) {
+            continue;
+        }
+        if (ct->IsETSUnboxableObject() && !IsNumericUnion() && !target->IsETSFunctionType() &&
+            !target->IsETSEnumType()) {
+            relation->GetNode()->SetBoxingUnboxingFlags(
+                    checker->GetUnboxingFlag(checker->MaybePrimitiveBuiltinType(ct)));
+        }
+        if (related == 0 || !ct->IsConstantType()) {
+            related++;
+        }
+    }
+    relation->Result(related >= 1);
 }
 
 template <typename RelFN>
 void ETSUnionType::RelationTarget(TypeRelation *relation, Type *source, RelFN const &relFn)
 {
     auto *const checker = relation->GetChecker()->AsETSChecker();
-    auto *const refsource = checker->MaybePromotedBuiltinType(source);
+    auto *const refSource = checker->MaybePromotedBuiltinType(source);
 
-    relation->Result(false);
-
-    if (refsource != source && !relation->ApplyBoxing()) {
+    if (source != refSource && !relation->ApplyBoxing()) {
+        relation->Result(false);
         return;
     }
-
-    if (std::any_of(constituentTypes_.begin(), constituentTypes_.end(),
-                    [relation, refsource, relFn](auto *t) { return relFn(relation, refsource, t); })) {
-        if (refsource != source) {
-            relation->GetNode()->SetBoxingUnboxingFlags(checker->GetBoxingFlag(refsource));
+    if (relation->IsSupertypeOf(this, refSource)) {
+        if (refSource != source) {
+            relation->GetNode()->SetBoxingUnboxingFlags(checker->GetBoxingFlag(refSource));
         }
-        relation->Result(true);
         return;
     }
 
-    if (refsource == source) {
-        relation->IsSupertypeOf(this, refsource);
+    if (source == refSource && !source->IsETSFunctionType() && !source->IsETSEnumType() && !source->IsETSArrayType()) {
+        relation->Result(false);
         return;
     }
 
-    bool related = false;
-    for (auto *ct : ConstituentTypes()) {
-        if (relFn(relation, source, checker->MaybePrimitiveBuiltinType(ct))) {
-            if (related) {
-                AmbiguousUnionOperation(relation);
-            }
+    int related = 0;
+    for (auto *ct : ConstituentTypes()) {  // NOTE(vpukhov): just test if union is supertype of any numeric
+        if (!relFn(relation, checker->MaybePrimitiveBuiltinType(ct), source)) {
+            continue;
+        }
+        if (!IsNumericUnion() && !source->IsETSFunctionType() && !source->IsETSEnumType() &&
+            !source->IsETSArrayType() && !ct->IsETSStringType()) {
             relation->GetNode()->SetBoxingUnboxingFlags(checker->GetBoxingFlag(ct));
-            related = true;
+        }
+        if (related == 0 || !ct->IsConstantType()) {
+            related++;
         }
     }
-
-    relation->Result(related);
+    relation->Result(related >= 1);
 }
 
 bool ETSUnionType::AssignmentSource(TypeRelation *relation, Type *target)
@@ -201,9 +280,14 @@ void ETSUnionType::Cast(TypeRelation *relation, Type *target)
                                      [relation, target](auto *t) { return relation->IsCastableTo(t, target); }));
         return;
     }
-
-    relation->Result(std::all_of(constituentTypes_.begin(), constituentTypes_.end(),
-                                 [relation, target](auto *t) { return relation->IsCastableTo(t, target); }));
+//    relation->Result(std::all_of(constituentTypes_.begin(), constituentTypes_.end(),
+//                                 [relation, target](auto *t) { return relation->IsCastableTo(t, target); }));
+    if (IsNumericUnion()) {
+        relation->IsCastableTo(assemblerLub_, target);
+        return;
+    }
+    auto const relFn = [](TypeRelation *rel, Type *ct, Type *tgt) { return rel->IsCastableTo(ct, tgt); };
+    RelationSource(relation, target, relFn);
 }
 
 void ETSUnionType::CastTarget(TypeRelation *relation, Type *source)
@@ -214,40 +298,123 @@ void ETSUnionType::CastTarget(TypeRelation *relation, Type *source)
     RelationTarget(relation, source, relFn);
 }
 
-static auto constexpr ETS_NORMALIZABLE_NUMERIC = TypeFlag(TypeFlag::ETS_NUMERIC & ~TypeFlag::CHAR);
-
-static Type *LargestNumeric(Type *t1, Type *t2)
+template <typename T>
+static bool CompareValueToLimits(Type *constant)
 {
-    static_assert(TypeFlag::DOUBLE > TypeFlag::FLOAT);
-    static_assert(TypeFlag::FLOAT > TypeFlag::LONG);
-    static_assert(TypeFlag::LONG > TypeFlag::INT);
-    static_assert(TypeFlag::INT > TypeFlag::SHORT);
-    static_assert(TypeFlag::SHORT > TypeFlag::BYTE);
+    if (std::is_integral_v<T> && constant->HasTypeFlag(TypeFlag::ETS_FLOATING_POINT)) {
+        return false;
+    }
+    T low = std::numeric_limits<T>::min();
+    T high = std::numeric_limits<T>::max();
+    T epsilon = std::numeric_limits<T>::epsilon();
+    if (constant->IsByteType()) {
+        auto val = constant->AsByteType()->GetValue();
+        return (val >= low - epsilon) && (val <= high + epsilon);
+    }
+    if (constant->IsShortType()) {
+        auto val = constant->AsShortType()->GetValue();
+        return (val >= low - epsilon) && (val <= high + epsilon);
+    }
+    if (constant->IsCharType()) {
+        auto val = constant->AsCharType()->GetValue();
+        return (val >= low - epsilon) && (val <= high + epsilon);
+    }
+    if (constant->IsIntType()) {
+        auto val = constant->AsIntType()->GetValue();
+        return (val >= low - epsilon) && (val <= high + epsilon);
+    }
+    if (constant->IsLongType()) {
+        auto val = constant->AsLongType()->GetValue();
+        return (val >= low - epsilon) && (val <= high + epsilon);
+    }
+    if (constant->IsFloatType()) {
+        auto val = constant->AsFloatType()->GetValue();
+        return (val >= low - epsilon) && (val <= high + epsilon);
+    }
+    if (constant->IsDoubleType()) {
+        auto val = constant->AsDoubleType()->GetValue();
+        return (val >= low - epsilon) && (val <= high + epsilon);
+    }
+    UNREACHABLE();
+}
 
-    auto v1 = t1->TypeFlags() & ETS_NORMALIZABLE_NUMERIC;
-    auto v2 = t2->TypeFlags() & ETS_NORMALIZABLE_NUMERIC;
-    ASSERT(helpers::math::IsPowerOfTwo(v1));
-    ASSERT(helpers::math::IsPowerOfTwo(v2));
-    return v1 > v2 ? t1 : t2;
+static bool IsConstantFitsToType(Type *constant, Type *target)
+{
+    ASSERT(constant->IsETSPrimitiveType() && target->IsETSPrimitiveType());
+    ASSERT(constant->IsConstantType());
+    if (target->IsConstantType()) {
+        // NOTE: Non-identical constants
+        return false;
+    }
+    if (constant->IsETSBooleanType()) {
+        return target->IsETSBooleanType();
+    }
+    switch (ETSChecker::ETSChecker::ETSType(target)) {
+        case TypeFlag::BYTE: {
+            return CompareValueToLimits<int8_t>(constant);
+        }
+        case TypeFlag::SHORT: {
+            return CompareValueToLimits<int16_t>(constant);
+        }
+        case TypeFlag::CHAR: {
+            return CompareValueToLimits<char16_t>(constant);
+        }
+        case TypeFlag::INT: {
+            return CompareValueToLimits<int32_t>(constant);
+        }
+        case TypeFlag::LONG: {
+            return CompareValueToLimits<int64_t>(constant);
+        }
+        case TypeFlag::FLOAT: {
+            return CompareValueToLimits<float>(constant);
+        }
+        case TypeFlag::DOUBLE: {
+            return CompareValueToLimits<double>(constant);
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
+static bool IsConstantAssignableTo(TypeRelation *relation, Type *constant, Type *target)
+{
+    ASSERT(constant->IsConstantType());
+    auto checker = relation->GetChecker()->AsETSChecker();
+    if (target == checker->GetGlobalTypesHolder()->GlobalETSObjectType()) {
+        return true;
+    }
+    if (constant->IsETSStringType()) {
+        return target->IsETSStringType() && (!target->IsConstantType() || relation->IsIdenticalTo(constant, target));
+    }
+    if (constant->IsETSBigIntType()) {
+        return target->IsETSBigIntType() && (!target->IsConstantType() || relation->IsIdenticalTo(constant, target));
+    }
+    ASSERT(constant->IsETSPrimitiveType());
+    if (!target->IsETSPrimitiveType()) {
+        if (target->IsETSUnboxableObject()) {
+            target = relation->GetChecker()->AsETSChecker()->MaybePrimitiveBuiltinType(target);
+        } else {
+            return false;
+        }
+    }
+    return relation->IsIdenticalTo(constant, target) || IsConstantFitsToType(constant, target);
 }
 
 static std::optional<Type *> TryMergeTypes(TypeRelation *relation, Type *const t1, Type *const t2)
 {
-    auto checker = relation->GetChecker()->AsETSChecker();
-    auto never = checker->GetGlobalTypesHolder()->GlobalBuiltinNeverType();
-    if (relation->IsSupertypeOf(t1, t2) || t2 == never) {
+    if (relation->IsSupertypeOf(t1, t2) || (t2->IsConstantType() && IsConstantAssignableTo(relation, t2, t1))) {
         return t1;
     }
-    if (relation->IsSupertypeOf(t2, t1) || t1 == never) {
+    if (relation->IsSupertypeOf(t2, t1) || (t1->IsConstantType() && IsConstantAssignableTo(relation, t1, t2))) {
         return t2;
     }
-    // NOTE(vpukhov): numerics - clarification required
     return std::nullopt;
 }
 
 void ETSUnionType::LinearizeAndEraseIdentical(TypeRelation *relation, ArenaVector<Type *> &types)
 {
-    auto *const checker = relation->GetChecker()->AsETSChecker();
+//    auto *const checker = relation->GetChecker()->AsETSChecker();
     ASSERT(std::none_of(types.begin(), types.end(), [](auto *t) { return t->IsETSFunctionType(); }));
 
     // Linearize
@@ -271,16 +438,19 @@ void ETSUnionType::LinearizeAndEraseIdentical(TypeRelation *relation, ArenaVecto
     }
     types.resize(insPos);
 
-    // Promote primitives and literal types
-    for (auto &ct : types) {
-        ct = checker->MaybePromotedBuiltinType(checker->GetNonConstantTypeFromPrimitiveType(ct));
+    if (!IsNumericUnion(types)) {
+        PromoteTypes(relation, types);
     }
     // Reduce subtypes
     for (auto cmpIt = types.begin(); cmpIt != types.end(); ++cmpIt) {
         for (auto it = std::next(cmpIt); it != types.end();) {
             if (auto merged = TryMergeTypes(relation, *cmpIt, *it); merged) {
-                *cmpIt = *merged;
-                it = types.erase(it);
+                if (merged == *cmpIt) {
+                    it = types.erase(it);
+                } else {
+                    cmpIt = types.erase(cmpIt);
+                    it = std::next(cmpIt);
+                }
             } else {
                 it++;
             }
@@ -288,18 +458,42 @@ void ETSUnionType::LinearizeAndEraseIdentical(TypeRelation *relation, ArenaVecto
     }
 }
 
+void ETSUnionType::EliminateNever(TypeRelation *relation, ArenaVector<Type *> &types)
+{
+    auto checker = relation->GetChecker()->AsETSChecker();
+    auto const isNever = [checker](Type *ct) {
+        return ct == checker->GetGlobalTypesHolder()->GlobalBuiltinNeverType();
+    };
+    auto it = std::remove_if(types.begin(), types.end(), isNever);
+    types.erase(it, types.end());
+}
+
 void ETSUnionType::NormalizeTypes(TypeRelation *relation, ArenaVector<Type *> &types)
 {
     if (types.size() == 1) {
         return;
     }
-    auto const isNumeric = [](auto *ct) { return ct->HasTypeFlag(ETS_NORMALIZABLE_NUMERIC); };
-    if (std::all_of(types.begin(), types.end(), isNumeric)) {
-        types[0] = std::accumulate(std::next(types.begin()), types.end(), types[0], LargestNumeric);
-        types.resize(1);
-        return;
-    }
+    EliminateNever(relation, types);
     LinearizeAndEraseIdentical(relation, types);
+    if (IsNumericUnion(types)) {
+        auto const isNotNormalizableNumeric = [](Type *ct) {
+            return !ct->HasTypeFlag(ETS_NORMALIZABLE_NUMERIC) || ct->IsConstantType();
+        };
+        auto bound = std::partition(types.begin(), types.end(), isNotNormalizableNumeric);
+        if (bound != types.end()) {
+            size_t newEnd = std::distance(types.begin(), bound);
+            types[newEnd] = std::accumulate(std::next(bound), types.end(), *bound, LargestNumeric);
+            types.resize(newEnd + 1);
+        }
+    }
+}
+
+void ETSUnionType::PromoteTypes(TypeRelation *relation, ArenaVector<Type *> &types)
+{
+    auto *const checker = relation->GetChecker()->AsETSChecker();
+    for (auto &ct : types) {
+        ct = !ct->IsConstantType() ? checker->MaybePromotedBuiltinType(ct) : ct;
+    }
 }
 
 Type *ETSUnionType::Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes)
@@ -340,15 +534,31 @@ void ETSUnionType::IsSubtypeOf(TypeRelation *relation, Type *target)
     }
 }
 
+static checker::Type *FindAssignableSmartNumericType(checker::ETSChecker *checker,
+                                                     const std::vector<checker::Type *> &types,
+                                                     checker::Type *sourceType, bool isRefUnion)
+{
+    auto *const relation = checker->Relation();
+    auto flags = relation->GetFlags();
+    if (isRefUnion) {
+        flags |= TypeRelationFlag::ASSIGNMENT_CONTEXT | TypeRelationFlag::ONLY_CHECK_BOXING_UNBOXING |
+                 TypeRelationFlag::ONLY_CHECK_WIDENING;
+    }
+    checker::SavedTypeRelationFlagsContext savedTypeRelationFlagCtx(relation, flags);
+    auto foundType = std::find_if(types.begin(), types.end(),
+                                  [relation, sourceType](Type *t) { return relation->IsAssignableTo(sourceType, t); });
+    auto *const assignableType =
+        foundType != types.end() ? *foundType : checker->GetNonConstantTypeFromPrimitiveType(sourceType);
+    ASSERT(assignableType != nullptr);
+    return isRefUnion ? checker->MaybePromotedBuiltinType(assignableType) : assignableType;
+}
+
 //  NOTE! When calling this method we assume that 'AssignmentTarget(...)' check was passes successfully,
 //  thus the required assignable type always exists.
 checker::Type *ETSUnionType::GetAssignableType(checker::ETSChecker *checker, checker::Type *sourceType) const noexcept
 {
-    if (sourceType->IsETSTypeParameter()) {
-        return sourceType;
-    }
-
-    if (sourceType->IsETSUnionType() || sourceType->IsETSArrayType() || sourceType->IsETSFunctionType()) {
+    if (sourceType->IsETSTypeParameter() || sourceType->IsETSUnionType() || sourceType->IsETSArrayType() ||
+        sourceType->IsETSFunctionType() || sourceType->IsETSEnumType()) {
         return sourceType;
     }
 
@@ -359,12 +569,13 @@ checker::Type *ETSUnionType::GetAssignableType(checker::ETSChecker *checker, che
         return sourceType;
     }
 
-    std::map<std::uint32_t, checker::Type *> numericTypes {};
+    std::map<std::uint32_t, std::vector<checker::Type *>> numericTypes {};
     bool const isBool = objectType != nullptr ? objectType->HasObjectFlag(ETSObjectFlags::BUILTIN_BOOLEAN)
                                               : sourceType->HasTypeFlag(TypeFlag::ETS_BOOLEAN);
     bool const isChar = objectType != nullptr ? objectType->HasObjectFlag(ETSObjectFlags::BUILTIN_CHAR)
                                               : sourceType->HasTypeFlag(TypeFlag::CHAR);
-    if (checker::Type *assignableType = GetAssignableBuiltinType(checker, objectType, isBool, isChar, numericTypes);
+    if (checker::Type *assignableType =
+            GetAssignableTypeAndCollectNumerics(checker, sourceType, isBool, isChar, numericTypes);
         assignableType != nullptr) {
         return assignableType;
     }
@@ -372,9 +583,9 @@ checker::Type *ETSUnionType::GetAssignableType(checker::ETSChecker *checker, che
     if (auto const sourceId =
             objectType != nullptr ? ETSObjectType::GetPrecedence(checker, objectType) : Type::GetPrecedence(sourceType);
         sourceId > 0U) {
-        for (auto const [id, type] : numericTypes) {
+        for (auto const &[id, types] : numericTypes) {
             if (id >= sourceId) {
-                return type;
+                return FindAssignableSmartNumericType(checker, types, sourceType, IsReferenceUnion());
             }
         }
     }
@@ -388,36 +599,54 @@ checker::Type *ETSUnionType::GetAssignableType(checker::ETSChecker *checker, che
     return nullptr;
 }
 
-checker::Type *ETSUnionType::GetAssignableBuiltinType(
-    checker::ETSChecker *checker, checker::ETSObjectType *sourceType, bool const isBool, bool const isChar,
-    std::map<std::uint32_t, checker::Type *> &numericTypes) const noexcept
+checker::Type *ETSUnionType::GetAssignableTypeAndCollectNumerics(
+    checker::ETSChecker *checker, checker::Type *sourceType, bool const isBool, bool const isChar,
+    std::map<std::uint32_t, std::vector<checker::Type *>> &numericTypes) const noexcept
 {
     checker::Type *assignableType = nullptr;
+    auto *const objectType = sourceType->IsETSObjectType() ? sourceType->AsETSObjectType() : nullptr;
 
     for (auto *constituentType : constituentTypes_) {
-        if (!constituentType->IsETSObjectType()) {
+        bool isTypeBool = false;
+        bool isTypeChar = false;
+        std::uint32_t id;
+        if (constituentType->IsETSObjectType()) {
+            auto *const type = constituentType->AsETSObjectType();
+            isTypeBool = type->HasObjectFlag(ETSObjectFlags::BUILTIN_BOOLEAN);
+            isTypeChar = type->HasObjectFlag(ETSObjectFlags::BUILTIN_CHAR);
+            id = ETSObjectType::GetPrecedence(checker, type);
+        } else if (constituentType->IsETSPrimitiveType()) {
+            isTypeBool = constituentType->IsETSBooleanType();
+            isTypeChar = constituentType->IsCharType();
+            id = Type::GetPrecedence(constituentType);
+        } else {
             continue;
         }
 
-        auto *const type = constituentType->AsETSObjectType();
-        if (type->HasObjectFlag(ETSObjectFlags::BUILTIN_BOOLEAN)) {
+        if (isTypeBool) {
             if (isBool) {
                 assignableType = constituentType;
-                break;
             }
-        } else if (type->HasObjectFlag(ETSObjectFlags::BUILTIN_CHAR)) {
+        } else if (isTypeChar) {
             if (isChar) {
                 assignableType = constituentType;
-                break;
             }
-        } else if (auto const id = ETSObjectType::GetPrecedence(checker, type); id > 0U) {
-            numericTypes.emplace(id, constituentType);
-        } else if (assignableType == nullptr && sourceType != nullptr &&
-                   checker->Relation()->IsSupertypeOf(type, sourceType)) {
+        } else if (id > 0U) {
+            numericTypes[id].push_back(constituentType);
+        } else if (assignableType == nullptr && objectType != nullptr &&
+                   checker->Relation()->IsSupertypeOf(constituentType, objectType)) {
             assignableType = constituentType;
+        }
+
+        if (assignableType != nullptr && sourceType != nullptr &&
+            checker->Relation()->IsIdenticalTo(sourceType, assignableType)) {
+            break;
         }
     }
 
+    if (IsReferenceUnion() && assignableType != nullptr) {
+        return checker->MaybePromotedBuiltinType(assignableType);
+    }
     return assignableType;
 }
 
@@ -584,7 +813,7 @@ Type *ETSUnionType::FindTypeIsCastableToSomeType(ir::Expression *node, TypeRelat
     if (relation->GetNode() == nullptr) {
         nodeWasSet = true;
         relation->SetNode(node);
-        relation->SetFlags(TypeRelationFlag::CASTING_CONTEXT);
+        relation->SetFlags(TypeRelationFlag::CASTING_CONTEXT | checker::TypeRelationFlag::ONLY_CHECK_WIDENING);
     }
     auto isCastablePred = [](TypeRelation *r, Type *sourceType, Type *targetType) {
         if (targetType->IsETSUnionType()) {
@@ -624,7 +853,7 @@ Type *ETSUnionType::FindTypeIsCastableToSomeType(ir::Expression *node, TypeRelat
 Type *ETSUnionType::FindUnboxableType() const
 {
     auto it = std::find_if(constituentTypes_.begin(), constituentTypes_.end(),
-                           [](Type *t) { return t->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE); });
+                           [](Type *t) { return t->IsETSUnboxableObject(); });
     if (it != constituentTypes_.end()) {
         return *it;
     }
@@ -638,10 +867,21 @@ bool ETSUnionType::HasObjectType(ETSObjectFlags flag) const
     return it != constituentTypes_.end();
 }
 
+bool ETSUnionType::IsNumericUnion() const
+{
+    return std::all_of(constituentTypes_.begin(), constituentTypes_.end(),
+                       [](Type *t) { return t->HasTypeFlag(ETS_NORMALIZABLE_NUMERIC); });
+}
+
+bool ETSUnionType::IsNumericUnion(ArenaVector<Type *> &types)
+{
+    return std::all_of(types.begin(), types.end(), [](Type *t) { return t->HasTypeFlag(ETS_NORMALIZABLE_NUMERIC); });
+}
+
 Type *ETSUnionType::FindExactOrBoxedType(ETSChecker *checker, Type *const type) const
 {
     auto it = std::find_if(constituentTypes_.begin(), constituentTypes_.end(), [checker, type](Type *ct) {
-        if (ct->IsETSObjectType() && ct->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE)) {
+        if (ct->IsETSUnboxableObject()) {
             auto *const unboxedCt = checker->ETSBuiltinTypeAsPrimitiveType(ct);
             return unboxedCt == type;
         }

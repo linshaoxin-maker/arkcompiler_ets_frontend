@@ -81,8 +81,13 @@ void ETSArrayType::Identical(TypeRelation *relation, Type *other)
 void ETSArrayType::AssignmentTarget(TypeRelation *relation, Type *source)
 {
     if (source->IsETSArrayType()) {
-        if (AsETSArrayType()->ElementType()->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) ||
-            source->AsETSArrayType()->ElementType()->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+        auto *const node = relation->GetNode();
+        if (node != nullptr && node->IsArrayExpression() &&
+            std::all_of(node->AsArrayExpression()->Elements().begin(), node->AsArrayExpression()->Elements().end(),
+                        [](ir::Expression *e) { return e->TsType() != nullptr && e->TsType()->IsConstantType(); })) {
+            relation->SetFlags(relation->GetFlags() | TypeRelationFlag::NARROWING);
+        } else if (AsETSArrayType()->ElementType()->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) ||
+                   source->AsETSArrayType()->ElementType()->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
             return;
         }
         relation->IsAssignableTo(source->AsETSArrayType()->ElementType(), element_);
