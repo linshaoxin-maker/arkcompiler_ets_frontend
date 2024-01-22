@@ -48,7 +48,6 @@ public:
         }
 
         relation->SetFlags(flags_);
-
         if (!relation->IsAssignableTo(source, target)) {
             if (((flags_ & TypeRelationFlag::UNBOXING) != 0) && !relation->IsTrue() && source->IsETSObjectType() &&
                 !target->IsETSObjectType()) {

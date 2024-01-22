@@ -55,10 +55,15 @@ checker::Type *UndefinedLiteral::Check(checker::TSChecker *checker)
     return checker->GlobalUndefinedType();
 }
 
-checker::Type *UndefinedLiteral::Check([[maybe_unused]] checker::ETSChecker *checker)
+checker::Type *UndefinedLiteral::Check(checker::ETSChecker *checker)
 {
     SetTsType(checker->GlobalETSUndefinedType());
     return TsType();
+}
+
+checker::Type *UndefinedLiteral::GetType(checker::ETSChecker *checker)
+{
+    return Check(checker);
 }
 
 UndefinedLiteral *UndefinedLiteral::Clone(ArenaAllocator *allocator, AstNode *parent)

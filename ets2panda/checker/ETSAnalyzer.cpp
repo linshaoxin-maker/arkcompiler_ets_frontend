@@ -670,7 +670,7 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
         }
 
         const bool isPreferredTuple = expr->preferredType_->IsETSTupleType();
-        auto *targetElementType = expr->GetPreferredType();
+        auto *targetElementType = checker->GetNonConstantTypeFromPrimitiveType(expr->GetPreferredType());
         Type *targetElementTypeSecondary = nullptr;
         if (isPreferredTuple && !isArray) {
             targetElementTypeSecondary = targetElementType->AsETSTupleType()->ElementType();
@@ -1150,15 +1150,6 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ImportExpression *expr) c
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::SetAndAdjustType(ETSChecker *checker, ir::MemberExpression *expr,
-                                             ETSObjectType *objectType) const
-{
-    expr->SetObjectType(objectType);
-    auto [resType, resVar] = expr->ResolveObjectMember(checker);
-    expr->SetPropVar(resVar);
-    return expr->AdjustType(checker, resType);
-}
-
 std::pair<checker::Type *, util::StringView> SearchReExportsType(Type *baseType, ir::MemberExpression *expr,
                                                                  util::StringView aliasName)
 {
@@ -1211,11 +1202,11 @@ checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
             return expr->AdjustType(checker, checker->GlobalIntType());
         }
 
-        return SetAndAdjustType(checker, expr, checker->GlobalETSObjectType());
+        return expr->SetAndAdjustType(checker, checker->GlobalETSObjectType());
     }
 
     if (baseType->IsETSObjectType()) {
-        return SetAndAdjustType(checker, expr, baseType->AsETSObjectType());
+        return expr->SetAndAdjustType(checker, baseType->AsETSObjectType());
     }
 
     if (baseType->IsETSEnumType() || baseType->IsETSStringEnumType()) {

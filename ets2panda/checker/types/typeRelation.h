@@ -58,6 +58,7 @@ enum class TypeRelationFlag : uint32_t {
     NO_CHECK_TRAILING_LAMBDA = 1U << 23U,
     NO_THROW_GENERIC_TYPEALIAS = 1U << 24U,
     OVERRIDING_CONTEXT = 1U << 25U,
+    NO_CACHE_LOOKUP = 1U << 25U,
 
     ASSIGNMENT_CONTEXT = WIDENING | BOXING | UNBOXING,
     CASTING_CONTEXT = NARROWING | WIDENING | BOXING | UNBOXING | UNCHECKED_CAST,
@@ -208,6 +209,11 @@ public:
         return (flags_ & TypeRelationFlag::NO_THROW_GENERIC_TYPEALIAS) != 0;
     }
 
+    [[nodiscard]] bool NoCacheLookup() const noexcept
+    {
+        return (flags_ & TypeRelationFlag::NO_CACHE_LOOKUP) != 0;
+    }
+
     [[nodiscard]] bool IsOverridingCheck() const noexcept
     {
         return (flags_ & TypeRelationFlag::OVERRIDING_CONTEXT) != 0;
@@ -273,10 +279,7 @@ public:
     //  NOTE: special overloading to be used mainly in ETSCompiler where types and nodes are 'const'.
     //  Unfortunately now we cannot have only a single method with 'const Types *' because it affects
     //  a lot of non-const references... :(((
-    bool IsIdenticalTo(Type const *source, Type const *target)
-    {
-        return IsIdenticalTo(const_cast<Type *>(source), const_cast<Type *>(target));
-    }
+    bool IsIdenticalTo(Type const *source, Type const *target);
     bool IsIdenticalTo(Type *source, Type *target);
     bool IsIdenticalTo(IndexInfo *source, IndexInfo *target);
     bool IsCompatibleTo(Signature *source, Signature *target);
@@ -301,6 +304,11 @@ public:
     void SetNode(ir::Expression *node)
     {
         node_ = node;
+    }
+
+    TypeRelationFlag GetFlags()
+    {
+        return flags_;
     }
 
     void SetFlags(TypeRelationFlag flags)

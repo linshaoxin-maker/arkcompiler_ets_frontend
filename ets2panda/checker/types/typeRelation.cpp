@@ -60,7 +60,7 @@ bool TypeRelation::IsIdenticalTo(Type *source, Type *target)
     }
 
     result_ = CacheLookup(source, target, checker_->IdenticalResults(), RelationType::IDENTICAL);
-    if (result_ == RelationResult::CACHE_MISS) {
+    if (result_ == RelationResult::CACHE_MISS || NoCacheLookup()) {
         checker_->ResolveStructuredTypeMembers(source);
         checker_->ResolveStructuredTypeMembers(target);
         result_ = RelationResult::FALSE;
@@ -69,6 +69,11 @@ bool TypeRelation::IsIdenticalTo(Type *source, Type *target)
     }
 
     return IsTrue();
+}
+
+bool TypeRelation::IsIdenticalTo(const Type *source, const Type *target)
+{
+    return IsIdenticalTo(const_cast<Type *>(source), const_cast<Type *>(target));
 }
 
 bool TypeRelation::IsCompatibleTo(Signature *source, Signature *target)
@@ -101,7 +106,7 @@ bool TypeRelation::IsIdenticalTo(IndexInfo *source, IndexInfo *target)
 bool TypeRelation::IsAssignableTo(Type *source, Type *target)
 {
     result_ = CacheLookup(source, target, checker_->AssignableResults(), RelationType::ASSIGNABLE);
-    if (result_ == RelationResult::CACHE_MISS) {
+    if (result_ == RelationResult::CACHE_MISS || NoCacheLookup()) {
         if (IsIdenticalTo(source, target)) {
             return true;
         }
@@ -132,7 +137,7 @@ bool TypeRelation::IsComparableTo(Type *source, Type *target)
         }
     }
 
-    if (result_ == RelationResult::CACHE_MISS) {
+    if (result_ == RelationResult::CACHE_MISS || NoCacheLookup()) {
         if (IsAssignableTo(source, target)) {
             return true;
         }
@@ -150,7 +155,7 @@ bool TypeRelation::IsCastableTo(Type *const source, Type *const target)
 {
     result_ = CacheLookup(source, target, checker_->UncheckedCastableResult(), RelationType::UNCHECKED_CASTABLE);
 
-    if (result_ == RelationResult::CACHE_MISS) {
+    if (result_ == RelationResult::CACHE_MISS || NoCacheLookup()) {
         result_ = RelationResult::FALSE;
         flags_ |= TypeRelationFlag::UNCHECKED_CAST;
 
@@ -179,7 +184,7 @@ bool TypeRelation::IsCastableTo(Type *const source, Type *const target)
 bool TypeRelation::IsSupertypeOf(Type *super, Type *sub)
 {
     result_ = CacheLookup(super, sub, checker_->SupertypeResults(), RelationType::SUPERTYPE);
-    if (result_ == RelationResult::CACHE_MISS) {
+    if (result_ == RelationResult::CACHE_MISS || NoCacheLookup()) {
         if (IsIdenticalTo(super, sub)) {
             return true;
         }

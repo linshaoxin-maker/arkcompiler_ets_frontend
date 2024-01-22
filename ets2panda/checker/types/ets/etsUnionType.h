@@ -24,7 +24,7 @@ class GlobalTypesHolder;
 
 class ETSUnionType : public Type {
 public:
-    // constituentTypes must be normalized
+    // constituentTypes must be normalized and boxed
     explicit ETSUnionType(ETSChecker *checker, ArenaVector<Type *> &&constituentTypes);
 
     [[nodiscard]] const ArenaVector<Type *> &ConstituentTypes() const noexcept
@@ -51,9 +51,20 @@ public:
     bool HasObjectType(ETSObjectFlags flag) const;
     bool HasUndefinedType() const;
 
+    bool IsNumericUnion() const;
+
+    static bool IsNumericUnion(ArenaVector<Type *> &types);
+
+    bool IsReferenceUnion() const
+    {
+        return !IsNumericUnion() && !assemblerLub_->IsETSBooleanType();
+    }
+
     Type *FindExactOrBoxedType(ETSChecker *checker, Type *type) const;
 
     static void NormalizeTypes(TypeRelation *relation, ArenaVector<Type *> &types);
+
+    static void PromoteTypes(TypeRelation *relation, ArenaVector<Type *> &types);
 
     std::tuple<bool, bool> ResolveConditionExpr() const override;
 
@@ -83,12 +94,13 @@ private:
     void RelationTarget(TypeRelation *relation, Type *source, RelFN const &relFn);
 
     static void LinearizeAndEraseIdentical(TypeRelation *relation, ArenaVector<Type *> &types);
+    static void EliminateNever(TypeRelation *relation, ArenaVector<Type *> &types);
     [[nodiscard]] bool ExtractType(ETSChecker *checker, checker::ETSObjectType *sourceType) noexcept;
     [[nodiscard]] bool ExtractType(ETSChecker *checker, checker::ETSArrayType *sourceType) noexcept;
 
-    [[nodiscard]] checker::Type *GetAssignableBuiltinType(
-        checker::ETSChecker *checker, checker::ETSObjectType *sourceType, bool isBool, bool isChar,
-        std::map<std::uint32_t, checker::Type *> &numericTypes) const noexcept;
+    [[nodiscard]] checker::Type *GetAssignableTypeAndCollectNumerics(
+        checker::ETSChecker *checker, checker::Type *sourceType, bool isBool, bool isChar,
+        std::map<std::uint32_t, std::vector<checker::Type *>> &numericTypes) const noexcept;
 
     static Type *ComputeAssemblerLUB(ETSChecker *checker, ETSUnionType *un);
 

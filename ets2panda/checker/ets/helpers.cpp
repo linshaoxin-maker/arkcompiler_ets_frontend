@@ -316,8 +316,8 @@ std::tuple<Type *, bool> ETSChecker::ApplyBinaryOperatorPromotion(Type *left, Ty
 checker::Type *ETSChecker::ApplyConditionalOperatorPromotion(checker::ETSChecker *checker, checker::Type *unboxedL,
                                                              checker::Type *unboxedR)
 {
-    if ((unboxedL->HasTypeFlag(checker::TypeFlag::CONSTANT) && unboxedL->IsIntType()) ||
-        (unboxedR->HasTypeFlag(checker::TypeFlag::CONSTANT) && unboxedR->IsIntType())) {
+    if ((unboxedL->IsConstantType() && unboxedL->IsIntType()) ||
+        (unboxedR->IsConstantType() && unboxedR->IsIntType())) {
         int value = unboxedL->IsIntType() ? unboxedL->AsIntType()->GetValue() : unboxedR->AsIntType()->GetValue();
         checker::Type *otherType = !unboxedL->IsIntType() ? unboxedL : unboxedR;
 
@@ -532,7 +532,7 @@ void ETSChecker::ResolveReturnStatement(checker::Type *funcReturnType, checker::
     }
 }
 
-checker::Type *ETSChecker::CheckArrayElements(ir::Identifier *ident, ir::ArrayExpression *init)
+checker::Type *ETSChecker::CheckArrayElements(ir::ArrayExpression *init)
 {
     ArenaVector<ir::Expression *> elements = init->AsArrayExpression()->Elements();
     checker::Type *annotationType = nullptr;
@@ -548,11 +548,12 @@ checker::Type *ETSChecker::CheckArrayElements(ir::Identifier *ident, ir::ArrayEx
             if (primEType != nullptr && primType != nullptr && primEType->HasTypeFlag(TypeFlag::ETS_NUMERIC) &&
                 primType->HasTypeFlag(TypeFlag::ETS_NUMERIC)) {
                 type = GlobalDoubleType();
-            } else if (IsTypeIdenticalTo(type, eType)) {
+            } else if (IsTypeIdenticalTo(GetNonConstantTypeFromPrimitiveType(type),
+                                         GetNonConstantTypeFromPrimitiveType(eType))) {
+                type = GetNonConstantTypeFromPrimitiveType(type);
                 continue;
             } else {
-                // NOTE: Create union type when implemented here
-                ThrowTypeError({"Union type is not implemented yet!"}, ident->Start());
+                type = CreateETSUnionType({type, eType});
             }
         }
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
@@ -629,7 +630,7 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
 
     if (typeAnnotation == nullptr) {
         if (init->IsArrayExpression()) {
-            annotationType = CheckArrayElements(ident, init->AsArrayExpression());
+            annotationType = CheckArrayElements(init->AsArrayExpression());
             bindingVar->SetTsType(annotationType);
         }
 
@@ -735,11 +736,8 @@ checker::Type *ETSChecker::ResolveSmartType(checker::Type *sourceType, checker::
     }
 
     // Nothing to do with identical types:
-    auto *nonConstSourceType = !sourceType->IsConstantType() ? sourceType : sourceType->Clone(this);
-    nonConstSourceType->RemoveTypeFlag(TypeFlag::CONSTANT);
-
-    auto *nonConstTargetType = !targetType->IsConstantType() ? targetType : targetType->Clone(this);
-    nonConstTargetType->RemoveTypeFlag(TypeFlag::CONSTANT);
+    auto *nonConstSourceType = GetNonConstantTypeFromPrimitiveType(sourceType);
+    auto *nonConstTargetType = GetNonConstantTypeFromPrimitiveType(targetType);
 
     if (Relation()->IsIdenticalTo(nonConstSourceType, nonConstTargetType) ||
         Relation()->IsIdenticalTo(GlobalBuiltinJSValueType(), nonConstTargetType)) {
@@ -1530,6 +1528,10 @@ Type *ETSChecker::CheckSwitchDiscriminant(ir::Expression *discriminant)
     if (discriminantType->IsETSObjectType() &&
         discriminantType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::BUILTIN_STRING | ETSObjectFlags::STRING |
                                                            ETSObjectFlags::ENUM)) {
+        return discriminantType;
+    }
+
+    if (discriminantType->IsETSUnionType()) {
         return discriminantType;
     }
 

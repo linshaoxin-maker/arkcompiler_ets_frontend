@@ -31,6 +31,25 @@ ETSGen *ETSCompiler::GetETSGen() const
     return static_cast<ETSGen *>(GetCodeGen());
 }
 
+void ETSCompiler::CheckAccTypeInvariant(const checker::Type *exprType) const
+{
+    ETSGen *etsg = GetETSGen();
+    auto *const relation = etsg->Checker()->Relation();
+    auto *const source = const_cast<checker::Type *>(etsg->GetAccumulatorType());
+    auto *const target = const_cast<checker::Type *>(exprType);
+    bool srcConst = source->IsConstantType();
+    bool trgConst = target->IsConstantType();
+    srcConst ? source->RemoveTypeFlag(checker::TypeFlag::CONSTANT) : (void)srcConst;
+    trgConst ? target->RemoveTypeFlag(checker::TypeFlag::CONSTANT) : (void)trgConst;
+
+    checker::SavedTypeRelationFlagsContext savedTypeRelationFlagCtx(
+        relation, relation->GetFlags() | checker::TypeRelationFlag::NO_CACHE_LOOKUP);
+    ASSERT(relation->IsIdenticalTo(source, target));
+
+    srcConst ? source->AddTypeFlag(checker::TypeFlag::CONSTANT) : (void)srcConst;
+    trgConst ? target->AddTypeFlag(checker::TypeFlag::CONSTANT) : (void)trgConst;
+}
+
 void ETSCompiler::Compile([[maybe_unused]] const ir::NamedType *node) const
 {
     UNREACHABLE();
@@ -1046,7 +1065,7 @@ void ETSCompiler::Compile(const ir::Identifier *expr) const
         }
     }
 
-    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), smartType));
+    CheckAccTypeInvariant(smartType);
 }
 
 void ETSCompiler::Compile([[maybe_unused]] const ir::ImportExpression *expr) const
@@ -1360,7 +1379,7 @@ void ETSCompiler::Compile(const ir::UnaryExpression *expr) const
 
     etsg->Unary(expr, expr->OperatorType());
 
-    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), expr->TsType()));
+    CheckAccTypeInvariant(expr->TsType());
 }
 
 void ETSCompiler::Compile(const ir::UpdateExpression *expr) const
@@ -1441,21 +1460,21 @@ void ETSCompiler::Compile([[maybe_unused]] const ir::BigIntLiteral *expr) const
     const compiler::VReg value = etsg->AllocReg();
     etsg->StoreAccumulator(expr, value);
     etsg->CreateBigIntObject(expr, value);
-    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), expr->TsType()));
+    CheckAccTypeInvariant(expr->TsType());
 }
 
 void ETSCompiler::Compile(const ir::BooleanLiteral *expr) const
 {
     ETSGen *etsg = GetETSGen();
     etsg->LoadAccumulatorBoolean(expr, expr->Value());
-    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), expr->TsType()));
+    CheckAccTypeInvariant(expr->TsType());
 }
 
 void ETSCompiler::Compile(const ir::CharLiteral *expr) const
 {
     ETSGen *etsg = GetETSGen();
     etsg->LoadAccumulatorChar(expr, expr->Char());
-    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), expr->TsType()));
+    CheckAccTypeInvariant(expr->TsType());
 }
 
 void ETSCompiler::Compile(const ir::NullLiteral *expr) const
@@ -1488,7 +1507,7 @@ void ETSCompiler::Compile(const ir::NumberLiteral *expr) const
         etsg->LoadAccumulatorDouble(expr, expr->Number().GetDouble());
     }
 
-    ASSERT(etsg->Checker()->Relation()->IsIdenticalTo(etsg->GetAccumulatorType(), expr->TsType()));
+    CheckAccTypeInvariant(expr->TsType());
 }
 
 void ETSCompiler::Compile([[maybe_unused]] const ir::RegExpLiteral *expr) const
