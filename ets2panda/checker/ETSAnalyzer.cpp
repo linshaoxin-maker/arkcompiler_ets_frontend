@@ -1023,8 +1023,20 @@ static checker::Signature *ResolveCallForETSExtensionFuncHelperType(checker::ETS
 
 checker::Type *ETSAnalyzer::Check(ir::BlockExpression *st) const
 {
-    (void)st;
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    checker::ScopeContext scopeCtx(checker, st->Scope());
+
+    if (st->TsType() == nullptr) {
+        for (auto *const node : st->Statements()) {
+            node->Check(checker);
+        }
+
+        auto lastStmt = st->Statements().back();
+        ASSERT(lastStmt->IsExpressionStatement());
+        st->SetTsType(lastStmt->AsExpressionStatement()->GetExpression()->TsType());
+    }
+
+    return st->TsType();
 }
 
 ArenaVector<checker::Signature *> GetUnionTypeSignatures(ETSChecker *checker, checker::ETSUnionType *etsUnionType)
@@ -1438,8 +1450,9 @@ void ETSAnalyzer::CheckObjectExprProps(const ir::ObjectExpression *expr) const
             checker->ThrowTypeError({"key in class composite should be either identifier or string literal"},
                                     expr->Start());
         }
-        varbinder::LocalVariable *lv = objType->GetProperty(pname, checker::PropertySearchFlags::SEARCH_INSTANCE_FIELD |
-                                                                       checker::PropertySearchFlags::SEARCH_IN_BASE);
+        varbinder::LocalVariable *lv = objType->GetProperty(
+            pname, checker::PropertySearchFlags::SEARCH_INSTANCE_FIELD | checker::PropertySearchFlags::SEARCH_IN_BASE |
+                       checker::PropertySearchFlags::SEARCH_INSTANCE_METHOD);
         if (lv == nullptr) {
             checker->ThrowTypeError({"type ", objType->Name(), " has no property named ", pname}, propExpr->Start());
         }
@@ -1473,7 +1486,7 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::OmittedExpression *expr) 
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::OpaqueTypeNode *expr) const
+checker::Type *ETSAnalyzer::Check(ir::OpaqueTypeNode *expr) const
 {
     return expr->TsType();
 }
