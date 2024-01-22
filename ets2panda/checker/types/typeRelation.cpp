@@ -95,9 +95,10 @@ bool TypeRelation::IsIdenticalTo(IndexInfo *source, IndexInfo *target)
 }
 
 // NOTE: applyNarrowing -> flag
-bool TypeRelation::IsAssignableTo(Type *source, Type *target)
+bool TypeRelation::IsAssignableTo(Type *source, Type *target, bool cacheLookUp)
 {
-    result_ = CacheLookup(source, target, checker_->AssignableResults(), RelationType::ASSIGNABLE);
+    result_ = cacheLookUp ? CacheLookup(source, target, checker_->AssignableResults(), RelationType::ASSIGNABLE)
+                          : RelationResult::CACHE_MISS;
     if (result_ == RelationResult::CACHE_MISS) {
         if (IsIdenticalTo(source, target)) {
             return true;

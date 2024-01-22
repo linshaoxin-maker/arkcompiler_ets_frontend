@@ -21,17 +21,33 @@
 namespace ark::es2panda::checker {
 void IntType::Identical(TypeRelation *relation, Type *other)
 {
-    if (other->IsIntType()) {
+    bool bothConstants = IsConstantType() && other->IsConstantType() && other->IsIntType();
+    bool bothNonConstants = !IsConstantType() && !other->IsConstantType();
+    if ((bothConstants && value_ == other->AsIntType()->GetValue()) || (bothNonConstants && other->IsIntType())) {
         relation->Result(true);
     }
 }
 
-void IntType::AssignmentTarget(TypeRelation *relation, [[maybe_unused]] Type *source)
+void IntType::AssignmentTarget(TypeRelation *relation, Type *source)
 {
     if (relation->ApplyUnboxing() && !relation->IsTrue()) {
         relation->GetChecker()->AsETSChecker()->AddUnboxingFlagToPrimitiveType(relation, source, this);
     }
     NarrowingWideningConverter(relation->GetChecker()->AsETSChecker(), relation, this, source);
+    if (!relation->IsTrue() && source->IsETSPrimitiveType() && source->IsConstantType()) {
+        Identical(relation, relation->GetChecker()->AsETSChecker()->GetNonConstantTypeFromPrimitiveType(source));
+    }
+    if (!relation->IsTrue() && source->IsETSUnionType()) {
+        bool allIsAssignable = std::all_of(
+            source->AsETSUnionType()->ConstituentTypes().begin(), source->AsETSUnionType()->ConstituentTypes().end(),
+            [relation, this](Type *src) {
+                Identical(relation, relation->GetChecker()->AsETSChecker()->GetNonConstantTypeFromPrimitiveType(src));
+                bool identical = relation->IsTrue();
+                NarrowingWideningConverter(relation->GetChecker()->AsETSChecker(), relation, this, src);
+                return identical || relation->IsTrue();
+            });
+        relation->Result(allIsAssignable);
+    }
 }
 
 bool IntType::AssignmentSource([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *target)
@@ -52,6 +68,11 @@ bool IntType::AssignmentSource([[maybe_unused]] TypeRelation *relation, [[maybe_
 
 void IntType::Cast(TypeRelation *const relation, Type *const target)
 {
+    if (IsConstantType() && target->HasTypeFlag(TypeFlag::INT)) {
+        relation->Result(true);
+        return;
+    }
+
     if (target->HasTypeFlag(TypeFlag::INT)) {
         conversion::Identity(relation, this, target);
         return;

@@ -20,20 +20,27 @@
 namespace ark::es2panda::checker {
 void ETSStringType::Identical(TypeRelation *relation, Type *other)
 {
-    if (other->IsETSStringType()) {
+    bool bothConstants = IsConstantType() && other->IsConstantType() && other->IsETSStringType();
+    bool bothNonConstants = !IsConstantType() && !other->IsConstantType();
+    if ((bothConstants && value_ == other->AsETSStringType()->GetValue()) ||
+        (bothNonConstants && other->IsETSStringType())) {
         relation->Result(true);
     }
 }
 
 bool ETSStringType::AssignmentSource([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *target)
 {
-    relation->Result(target->IsETSStringType());
+    bool bothConstants = IsConstantType() && target->IsConstantType();
+    relation->Result(target->IsETSStringType() &&
+                     ((bothConstants && value_ == target->AsETSStringType()->GetValue()) || !bothConstants));
     return relation->IsTrue();
 }
 
 void ETSStringType::AssignmentTarget([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *source)
 {
-    if (source->IsETSStringType()) {
+    bool bothConstants = IsConstantType() && source->IsConstantType();
+    if (source->IsETSStringType() &&
+        ((bothConstants && value_ == source->AsETSStringType()->GetValue()) || !bothConstants)) {
         relation->Result(true);
     }
 }
@@ -43,4 +50,14 @@ Type *ETSStringType::Instantiate([[maybe_unused]] ArenaAllocator *allocator, [[m
 {
     return this;
 }
+
+void ETSStringType::IsSupertypeOf(TypeRelation *relation, Type *source)
+{
+    if (IsConstantType()) {
+        relation->Result(false);
+        return;
+    }
+    ETSObjectType::IsSupertypeOf(relation, source);
+}
+
 }  // namespace ark::es2panda::checker

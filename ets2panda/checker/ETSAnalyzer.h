@@ -51,7 +51,6 @@ private:
                                          bool isFunctionalInterface, bool isUnionTypeWithFunctionalInterface) const;
     checker::Type *GetReturnType(ir::CallExpression *expr, checker::Type *calleeType) const;
     checker::Type *GetFunctionReturnType(ir::ReturnStatement *st, ir::ScriptFunction *containingFunc) const;
-    checker::Type *SetAndAdjustType(ETSChecker *checker, ir::MemberExpression *expr, ETSObjectType *objectType) const;
 
     checker::Type *GetCalleeType(ETSChecker *checker, ir::ETSNewClassInstanceExpression *expr) const
     {

@@ -29,6 +29,7 @@
 #include "ir/astNode.h"
 #include "ir/expression.h"
 #include "ir/opaqueTypeNode.h"
+#include "ir/expressions/literals/booleanLiteral.h"
 #include "ir/expressions/literals/nullLiteral.h"
 #include "ir/expressions/literals/undefinedLiteral.h"
 #include "ir/expressions/binaryExpression.h"
@@ -109,7 +110,9 @@ static varbinder::LocalVariable *CreateUnionFieldClassProperty(checker::ETSCheck
 static void HandleUnionPropertyAccess(checker::ETSChecker *checker, varbinder::VarBinder *vbind,
                                       ir::MemberExpression *expr)
 {
-    ASSERT(expr->PropVar() == nullptr);
+    if (expr->PropVar() != nullptr) {
+        return;
+    }
     [[maybe_unused]] auto parent = expr->Parent();
     ASSERT(!(parent->IsCallExpression() && parent->AsCallExpression()->Callee() == expr &&
              parent->AsCallExpression()->Signature()->HasSignatureFlag(checker::SignatureFlags::TYPE)));
@@ -138,31 +141,171 @@ static ir::TSAsExpression *UnionCastToPrimitive(checker::ETSChecker *checker, ch
                                                 checker::Type *unboxedPrim, ir::Expression *unionNode)
 {
     auto *const unionAsRefExpression = GenAsExpression(checker, unboxableRef, unionNode, nullptr);
-    return GenAsExpression(checker, unboxedPrim, unionAsRefExpression, unionNode->Parent());
+    auto *const refAsPrimExpressoin = GenAsExpression(checker, unboxedPrim, unionAsRefExpression, unionNode->Parent());
+    unionAsRefExpression->SetParent(refAsPrimExpressoin);
+    return refAsPrimExpressoin;
 }
 
 static ir::TSAsExpression *HandleUnionCastToPrimitive(checker::ETSChecker *checker, ir::TSAsExpression *expr)
 {
     auto *const unionType = expr->Expr()->TsType()->AsETSUnionType();
+    if (unionType->IsNumericUnion()) {
+        return expr;
+    }
     auto *sourceType = unionType->FindExactOrBoxedType(checker, expr->TsType());
     if (sourceType == nullptr) {
-        sourceType = unionType->AsETSUnionType()->FindTypeIsCastableToSomeType(expr->Expr(), checker->Relation(),
-                                                                               expr->TsType());
+        sourceType =
+            checker->GetNonConstantTypeFromPrimitiveType(unionType->AsETSUnionType()->FindTypeIsCastableToSomeType(
+                expr->Expr(), checker->Relation(), expr->TsType()));
     }
-    if (sourceType != nullptr && expr->Expr()->GetBoxingUnboxingFlags() != ir::BoxingUnboxingFlags::NONE) {
-        if (expr->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
-            auto *const asExpr = GenAsExpression(checker, sourceType, expr->Expr(), expr);
-            asExpr->SetBoxingUnboxingFlags(
-                checker->GetUnboxingFlag(checker->ETSBuiltinTypeAsPrimitiveType(sourceType)));
-            expr->Expr()->SetBoxingUnboxingFlags(ir::BoxingUnboxingFlags::NONE);
-            expr->SetExpr(asExpr);
+    expr->Expr()->SetBoxingUnboxingFlags(ir::BoxingUnboxingFlags::NONE);
+    bool canCastToUnboxable =
+        sourceType != nullptr && (sourceType->IsETSUnboxableObject() || sourceType->IsETSPrimitiveType());
+    if (canCastToUnboxable) {
+        if (expr->TsType()->IsETSPrimitiveType()) {
+            auto *const asPrimSource =
+                UnionCastToPrimitive(checker, checker->MaybePromotedBuiltinType(sourceType)->AsETSObjectType(),
+                                     checker->MaybePrimitiveBuiltinType(sourceType), expr->Expr());
+            expr->SetExpr(asPrimSource);
         }
         return expr;
     }
-    auto *const unboxableUnionType = sourceType != nullptr ? sourceType : unionType->FindUnboxableType();
-    auto *const unboxedUnionType = checker->ETSBuiltinTypeAsPrimitiveType(unboxableUnionType);
-    expr->SetExpr(UnionCastToPrimitive(checker, unboxableUnionType->AsETSObjectType(), unboxedUnionType, expr->Expr()));
+    auto *const unboxableUnionType = unionType->FindUnboxableType();
+    auto *const unboxableType =
+        checker->MaybePromotedBuiltinType(unboxableUnionType != nullptr ? unboxableUnionType : expr->TsType());
+    auto *const unboxedType = checker->MaybePrimitiveBuiltinType(unboxableType);
+    expr->SetExpr(UnionCastToPrimitive(checker, unboxableType->AsETSObjectType(), unboxedType, expr->Expr()));
     return expr;
+}
+
+ir::BinaryExpression *HandleBinaryExpressionWithUnion(public_lib::Context *ctx, ir::BinaryExpression *binExpr)
+{
+    checker::ETSChecker *checker = ctx->checker->AsETSChecker();
+    if (binExpr->Left()->TsType()->IsETSUnionType() && binExpr->Left()->TsType()->AsETSUnionType()->IsNumericUnion()) {
+        auto *lub = binExpr->Left()->TsType()->AsETSUnionType()->GetAssemblerLUB();
+        ASSERT(lub->IsETSPrimitiveType());
+        binExpr->SetLeft(GenAsExpression(checker, lub, binExpr->Left(), binExpr->Left()->Parent()));
+        binExpr->SetOperationType(lub);
+        binExpr->SetTsType(binExpr->TsType()->IsETSUnionType() ? lub : binExpr->TsType());
+    }
+    if (binExpr->Right()->TsType()->IsETSUnionType() &&
+        binExpr->Right()->TsType()->AsETSUnionType()->IsNumericUnion()) {
+        auto *lub = binExpr->Right()->TsType()->AsETSUnionType()->GetAssemblerLUB();
+        ASSERT(lub->IsETSPrimitiveType());
+        binExpr->SetRight(GenAsExpression(checker, lub, binExpr->Right(), binExpr->Right()->Parent()));
+        binExpr->SetOperationType(lub);
+        binExpr->SetTsType(binExpr->TsType()->IsETSUnionType() ? lub : binExpr->TsType());
+    }
+    if (!binExpr->OperationType()->IsETSUnionType()) {
+        return binExpr;
+    }
+    if (binExpr->OperatorType() != lexer::TokenType::PUNCTUATOR_EQUAL &&
+        binExpr->OperatorType() != lexer::TokenType::PUNCTUATOR_NOT_EQUAL) {
+        ctx->checker->ThrowTypeError(
+            "Bad operand type, non-primitive unions are not allowed in binary expressions except equality.",
+            binExpr->Start());
+    }
+    return binExpr;
+}
+
+// As soon as we have primitive unions (unions with only primitive types/constants) and
+// literal types (aka reduced unions) for compatibility we need to process the instanceof properly
+ir::Expression *HandleInstanceofWithPrimitive(public_lib::Context *ctx, ir::BinaryExpression *binExpr)
+{
+    ASSERT(binExpr->OperatorType() == lexer::TokenType::KEYW_INSTANCEOF);
+    auto *const checker = ctx->checker->AsETSChecker();
+    auto *const relation = checker->Relation();
+    auto *const parser = ctx->parser->AsETSParser();
+    auto *const lhsType = binExpr->Left()->TsType();
+    auto *const rhsType = binExpr->Right()->TsType();
+    auto *const maybePrimRhsType = checker->MaybePrimitiveBuiltinType(rhsType);
+    if (lhsType->IsConstantType()) {
+        bool isIdentical =
+            relation->IsIdenticalTo(checker->GetNonConstantTypeFromPrimitiveType(lhsType), maybePrimRhsType);
+        auto *const newExpr = checker->AllocNode<ir::BooleanLiteral>(isIdentical);
+        newExpr->SetParent(binExpr->Parent());
+        return newExpr;
+    }
+    if (lhsType->IsETSPrimitiveType()) {
+        checker->ThrowTypeError(
+            "Bad operand type, the left type of instanceof expression must be reduced union or reference type.",
+            binExpr->Left()->Start());
+    }
+    ASSERT(lhsType->IsETSUnionType() && !lhsType->AsETSUnionType()->IsReferenceUnion());
+    auto *const unionType = lhsType->AsETSUnionType();
+    ir::Expression *newBinExpr = checker->AllocNode<ir::BooleanLiteral>(false);
+    for (auto *ct : unionType->ConstituentTypes()) {
+        ASSERT(ct->IsETSPrimitiveType());
+        auto *const nonConstCt = checker->GetNonConstantTypeFromPrimitiveType(ct);
+        if (!relation->IsIdenticalTo(nonConstCt, maybePrimRhsType)) {
+            continue;
+        }
+        auto *const unionEqullity = parser->CreateFormattedExpression(
+            "@@E1 == " + ct->ToString(), binExpr->Left()->Clone(checker->Allocator(), newBinExpr));
+        unionEqullity->Check(checker);
+        newBinExpr = parser->CreateFormattedExpression(
+            "@@E1 || @@E2", newBinExpr, HandleBinaryExpressionWithUnion(ctx, unionEqullity->AsBinaryExpression()));
+    }
+    newBinExpr->SetParent(binExpr->Parent());
+    InitScopesPhaseETS::RunExternalNode(newBinExpr, ctx->compilerContext->VarBinder());
+    newBinExpr->Check(checker);
+    return newBinExpr;
+}
+
+static bool CastToPrimitiveLoweringAppliable(const ir::AstNode *astNode)
+{
+    if (!astNode->IsTSAsExpression()) {
+        return false;
+    }
+    auto *const asExpr = astNode->AsTSAsExpression();
+    auto *const exprType = asExpr->Expr()->TsType();
+    return exprType != nullptr && exprType->IsETSUnionType() && asExpr->TsType()->IsETSPrimitiveType();
+}
+
+static bool BinaryLoweringAppliable(const ir::AstNode *astNode)
+{
+    if (!astNode->IsBinaryExpression()) {
+        return false;
+    }
+    auto *binary = astNode->AsBinaryExpression();
+    if (binary->OperatorType() == lexer::TokenType::PUNCTUATOR_NULLISH_COALESCING) {
+        return false;
+    }
+    auto *const lhsType = binary->Left()->TsType();
+    auto *const rhsType = binary->Right()->TsType();
+    if (lhsType == nullptr || rhsType == nullptr) {
+        return false;
+    }
+    if (lhsType->IsETSReferenceType() && rhsType->IsETSReferenceType()) {
+        return false;
+    }
+    if (!lhsType->IsETSUnionType() && !rhsType->IsETSUnionType()) {
+        return false;
+    }
+    return binary->OperationType() != nullptr && binary->OperationType()->IsETSUnionType();
+}
+
+static bool InstanceofLoweringAppliable(const ir::AstNode *astNode)
+{
+    if (!astNode->IsBinaryExpression()) {
+        return false;
+    }
+    auto *binary = astNode->AsBinaryExpression();
+    if (binary->OperatorType() != lexer::TokenType::KEYW_INSTANCEOF) {
+        return false;
+    }
+    auto *const lhsType = binary->Left()->TsType();
+    auto *const rhsType = binary->Right()->TsType();
+    if (lhsType == nullptr || rhsType == nullptr) {
+        return false;
+    }
+    if (lhsType->IsETSReferenceType() && rhsType->IsETSReferenceType()) {
+        return false;
+    }
+    if (rhsType->IsETSUnionType()) {
+        return false;
+    }
+    return lhsType->IsETSPrimitiveType() || lhsType->IsETSUnionType();
 }
 
 bool UnionLowering::Perform(public_lib::Context *ctx, parser::Program *program)
@@ -177,7 +320,7 @@ bool UnionLowering::Perform(public_lib::Context *ctx, parser::Program *program)
     checker::ETSChecker *checker = ctx->checker->AsETSChecker();
 
     program->Ast()->TransformChildrenRecursively(
-        [checker](ir::AstNode *ast) -> ir::AstNode * {
+        [ctx, checker](ir::AstNode *ast) -> ir::AstNode * {
             if (ast->IsMemberExpression() && ast->AsMemberExpression()->Object()->TsType() != nullptr) {
                 auto *objType =
                     checker->GetApparentType(checker->GetNonNullishType(ast->AsMemberExpression()->Object()->TsType()));
@@ -187,11 +330,16 @@ bool UnionLowering::Perform(public_lib::Context *ctx, parser::Program *program)
                 }
             }
 
-            if (ast->IsTSAsExpression() && ast->AsTSAsExpression()->Expr()->TsType() != nullptr &&
-                ast->AsTSAsExpression()->Expr()->TsType()->IsETSUnionType() &&
-                ast->AsTSAsExpression()->TsType() != nullptr &&
-                ast->AsTSAsExpression()->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+            if (CastToPrimitiveLoweringAppliable(ast)) {
                 return HandleUnionCastToPrimitive(checker, ast->AsTSAsExpression());
+            }
+
+            if (BinaryLoweringAppliable(ast)) {
+                return HandleBinaryExpressionWithUnion(ctx, ast->AsBinaryExpression());
+            }
+
+            if (InstanceofLoweringAppliable(ast)) {
+                return HandleInstanceofWithPrimitive(ctx, ast->AsBinaryExpression());
             }
 
             return ast;

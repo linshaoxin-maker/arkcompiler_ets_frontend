@@ -278,7 +278,7 @@ public:
     bool IsIdenticalTo(Type *source, Type *target);
     bool IsIdenticalTo(IndexInfo *source, IndexInfo *target);
     bool IsCompatibleTo(Signature *source, Signature *target);
-    bool IsAssignableTo(Type *source, Type *target);
+    bool IsAssignableTo(Type *source, Type *target, bool cacheLookUp = true);
     bool IsComparableTo(Type *source, Type *target);
     bool IsCastableTo(Type *const source, Type *const target);
     bool IsSupertypeOf(Type *super, Type *sub);
@@ -299,6 +299,11 @@ public:
     void SetNode(ir::Expression *node)
     {
         node_ = node;
+    }
+
+    TypeRelationFlag GetFlags()
+    {
+        return flags_;
     }
 
     void SetFlags(TypeRelationFlag flags)

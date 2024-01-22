@@ -170,6 +170,11 @@ public:
         return HasTypeFlag(checker::TypeFlag::CONSTANT);
     }
 
+    bool IsETSPrimitiveType() const
+    {
+        return HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE);
+    }
+
     TypeFlag TypeFlags() const
     {
         return typeFlags_;

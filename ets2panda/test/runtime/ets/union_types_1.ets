@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,19 +13,21 @@
  * limitations under the License.
  */
 
-class A {
-    num: int = 42;
-    foo() {}
+function bar(str: string): double {
+    const value = (new Number(str)).valueOf()
+    const str2 = value == null ? undefined : (new Number(str)).toString()
+    if (str2 == str) {
+        return value
+    }
+    return 0.0
 }
 
-class B {}
+function foo(a : int | null) : Int | null {
+    return a;
+}
 
-function main() {
-    let x : String | short | A = 5 as short;
-    assert (x as short) * 2 == 10: "Error! Must be 10";
-    x = "STRSTR";
-    assert (x as String).equals("STRSTR"): "Error! Must be `STRSTR`";
-    x = new A();
-    assert (x as A).num == 42: "Error! Field of A must be `42`";
-    x = new B();  // CTE
+function main() : void {
+    let f = foo(5);
+    assert f == 5;
+    assert bar("3.14") == 3.14;
 }

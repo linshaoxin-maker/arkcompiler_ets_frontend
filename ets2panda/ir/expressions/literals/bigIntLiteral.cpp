@@ -60,6 +60,11 @@ checker::Type *BigIntLiteral::Check([[maybe_unused]] checker::ETSChecker *checke
     return checker->GetAnalyzer()->Check(this);
 }
 
+checker::Type *BigIntLiteral::GetType(checker::ETSChecker *checker)
+{
+    return checker->GetAnalyzer()->Check(this);
+}
+
 BigIntLiteral *BigIntLiteral::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
     if (auto *const clone = allocator->New<BigIntLiteral>(src_); clone != nullptr) {

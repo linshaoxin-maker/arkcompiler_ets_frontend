@@ -60,6 +60,11 @@ checker::Type *BooleanLiteral::Check([[maybe_unused]] checker::ETSChecker *check
     return checker->GetAnalyzer()->Check(this);
 }
 
+checker::Type *BooleanLiteral::GetType(checker::ETSChecker *checker)
+{
+    return checker->GetAnalyzer()->Check(this);
+}
+
 BooleanLiteral *BooleanLiteral::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
     if (auto *const clone = allocator->New<BooleanLiteral>(boolean_); clone != nullptr) {
