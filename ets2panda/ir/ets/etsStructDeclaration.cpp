@@ -75,7 +75,6 @@ checker::Type *ETSStructDeclaration::Check(checker::ETSChecker *checker)
     return checker->GetAnalyzer()->Check(this);
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 ETSStructDeclaration *ETSStructDeclaration::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
     auto *const def = def_ != nullptr ? def_->Clone(allocator, this)->AsClassDefinition() : nullptr;

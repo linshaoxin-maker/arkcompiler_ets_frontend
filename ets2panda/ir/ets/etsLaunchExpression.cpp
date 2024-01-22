@@ -75,10 +75,9 @@ bool ETSLaunchExpression::IsStaticCall() const
     return expr_->Signature()->HasSignatureFlag(checker::SignatureFlags::STATIC);
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 ETSLaunchExpression *ETSLaunchExpression::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
-    auto *const expr = expr_ != nullptr ? expr_->Clone(allocator) : nullptr;
+    auto *const expr = expr_ != nullptr ? expr_->Clone(allocator, nullptr) : nullptr;
 
     if (auto *const clone = allocator->New<ETSLaunchExpression>(expr); clone != nullptr) {
         if (expr != nullptr) {

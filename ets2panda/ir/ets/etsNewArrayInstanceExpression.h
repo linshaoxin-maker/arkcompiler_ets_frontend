@@ -74,8 +74,7 @@ public:
         dimension_ = dimension;
     }
 
-    // NOLINTNEXTLINE(google-default-arguments)
-    [[nodiscard]] ETSNewArrayInstanceExpression *Clone(ArenaAllocator *allocator, AstNode *parent = nullptr) override;
+    [[nodiscard]] ETSNewArrayInstanceExpression *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
     void TransformChildren(const NodeTransformer &cb) override;
     void Iterate(const NodeTraverser &cb) const override;

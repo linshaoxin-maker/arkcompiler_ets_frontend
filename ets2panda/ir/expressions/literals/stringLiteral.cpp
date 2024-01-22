@@ -87,7 +87,6 @@ checker::Type *StringLiteral::Check(checker::ETSChecker *checker)
     return checker->GetAnalyzer()->Check(this);
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 StringLiteral *StringLiteral::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
     if (auto *const clone = allocator->New<StringLiteral>(str_); clone != nullptr) {

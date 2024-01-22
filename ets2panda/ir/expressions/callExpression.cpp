@@ -119,7 +119,6 @@ CallExpression::CallExpression(CallExpression const &other, ArenaAllocator *cons
     }
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 CallExpression *CallExpression::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
     if (auto *const clone = allocator->New<CallExpression>(*this, allocator); clone != nullptr) {
