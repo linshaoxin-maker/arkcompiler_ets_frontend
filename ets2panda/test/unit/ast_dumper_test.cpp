@@ -31,7 +31,6 @@
 #include "util/generateBin.h"
 #include "util/options.h"
 #include "libpandabase/mem/mem.h"
-#include "test/utils/panda_executable_path_getter.h"
 
 class ASTDumperTest : public testing::Test {
 public:
@@ -41,19 +40,12 @@ public:
 
         panda::mem::MemConfig::Initialize(0, 0, COMPILER_SIZE, 0, 0, 0);
         panda::PoolManager::Initialize(panda::PoolType::MMAP);
-
-        es2panda_path_ = test::utils::PandaExecutablePathGetter {}.Get();
     }
     ~ASTDumperTest() override
     {
         panda::PoolManager::Finalize();
         panda::mem::MemConfig::Finalize();
     };
-
-    std::string Es2pandaPath()
-    {
-        return es2panda_path_;
-    }
 
     static panda::pandasm::Program *GetProgram(int argc, const char **argv, std::string_view file_name,
                                                std::string_view src)
@@ -78,7 +70,6 @@ public:
     NO_MOVE_SEMANTIC(ASTDumperTest);
 
 private:
-    std::string es2panda_path_;
 };
 
 TEST_F(ASTDumperTest, DumpJsonSimple)
@@ -93,8 +84,8 @@ TEST_F(ASTDumperTest, DumpJsonSimple)
         }";
 
     int argc = 1;
-    auto es2panda_path = Es2pandaPath();
-    const char *argv = es2panda_path.c_str();
+    // NOLINTNEXTLINE(modernize-avoid-c-arrays)
+    const char *argv = "../../../bin/es2panda";
 
     auto program = std::unique_ptr<panda::pandasm::Program> {GetProgram(argc, &argv, FILE_NAME, SRC)};
 
@@ -119,8 +110,8 @@ TEST_F(ASTDumperTest, DumpJsonUTF16Char)
         }";
 
     int argc = 1;
-    auto es2panda_path = Es2pandaPath();
-    const char *argv = es2panda_path.c_str();
+    // NOLINTNEXTLINE(modernize-avoid-c-arrays)
+    const char *argv = "../../../bin/es2panda";
 
     auto program = std::unique_ptr<panda::pandasm::Program> {GetProgram(argc, &argv, FILE_NAME, SRC)};
 
@@ -143,12 +134,11 @@ TEST_F(ASTDumperTest, DumpEtsSrcSimple)
         }";
 
     int argc = 1;
-    auto es2panda_path_with_args =
-        Es2pandaPath() +
+    const char *argv =
+        "../../../bin/es2panda "
         "--extension=ets "
         "--dump-ets-src-before-phases=\"plugins-after-parse:lambda-lowering:checker:plugins-after-check:generate-ts-"
         "declarations:op-assignment:tuple-lowering:union-property-access:plugins-after-lowering\"";
-    const char *argv = es2panda_path_with_args.c_str();
 
     auto program = std::unique_ptr<panda::pandasm::Program> {GetProgram(argc, &argv, FILE_NAME, SRC)};
 
