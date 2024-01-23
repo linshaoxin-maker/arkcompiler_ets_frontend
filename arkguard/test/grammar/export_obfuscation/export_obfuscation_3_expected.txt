@@ -12,21 +12,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-class o {
+class d1 {
     constructor() {
         this.head = false;
     }
-    compare(r, s) {
+    compare(j1, k1) {
         if (!this.head) {
             throw new Error('List is empty');
         }
-        return r > s;
+        return j1 > k1;
     }
-    o(r, s) {
-        const t = s;
-        s = r;
+    b1(g1, h1) {
+        const i1 = h1;
+        h1 = g1;
     }
 }
-function n(p, q) {
-    return p + q;
+function c1(e1, f1) {
+    return e1 + f1;
 }

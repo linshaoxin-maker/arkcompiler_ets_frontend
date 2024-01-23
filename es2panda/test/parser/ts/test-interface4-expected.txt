@@ -10,6 +10,8 @@
             "type": "TSMethodSignature",
             "computed": false,
             "optional": false,
+            "isGetAccessor": false,
+            "isSetAccessor": false,
             "key": {
               "type": "Identifier",
               "name": "func",
@@ -108,6 +110,8 @@
             "type": "TSMethodSignature",
             "computed": false,
             "optional": false,
+            "isGetAccessor": false,
+            "isSetAccessor": false,
             "key": {
               "type": "Identifier",
               "name": "is",

@@ -36,7 +36,8 @@ DynamicContext::~DynamicContext()
 LabelContext::LabelContext(PandaGen *pg, const ir::LabelledStatement *labelledStmt)
     : DynamicContext(pg, LabelTarget(labelledStmt->Ident()->Name())), labelledStmt_(labelledStmt)
 {
-    if (!labelledStmt->Body()->IsBlockStatement() && !labelledStmt->Body()->IsIfStatement()) {
+    if (!labelledStmt->Body()->IsBlockStatement() && !labelledStmt->Body()->IsIfStatement() &&
+        !labelledStmt->Body()->IsBreakStatement()) {
         return;
     }
 
@@ -53,7 +54,7 @@ LabelContext::~LabelContext()
     pg_->SetLabel(labelledStmt_, label_);
 }
 
-LexEnvContext::LexEnvContext(LoopEnvScope *envScope, PandaGen *pg, LabelTarget target)
+LexEnvContext::LexEnvContext(VariableEnvScope *envScope, PandaGen *pg, LabelTarget target)
     : DynamicContext(pg, target), envScope_(envScope)
 {
     if (!envScope_->HasEnv()) {

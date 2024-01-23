@@ -398,7 +398,7 @@ ohos_static_library("es2panda_lib") {
     "${target_out_dir}",
     "//third_party/icu/icu4c/source/common",
     "//third_party/icu/icu4c/source/i18n",
-    "//third_party/icu/icu4c/source ",
+    "//third_party/icu/icu4c/source",
   ]
 
   deps = [
@@ -480,6 +480,12 @@ ohos_executable("es2panda") {
     } else {
       libs = [ libcpp_static_lib ]
     }
+  }
+
+  # The default stack size of the Windows platform is 1024 kb, which might lead to stack overflow.
+  # Here is to set the stack size of es2abc.exe to 10M, which is the default value for Linux platform.
+  if (is_mingw) {
+    ldflags += [ "-Wl,--stack,10485760" ]
   }
 
   output_name = "es2abc"
