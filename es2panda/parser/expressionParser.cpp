@@ -1410,6 +1410,10 @@ ir::Expression *ParserImpl::ParseOptionalChain(ir::Expression *leftSideExpr)
         ThrowSyntaxError("Tagged Template Literals are not allowed in optionalChain");
     }
 
+    if (tokenType == lexer::TokenType::PUNCTUATOR_LESS_THAN && Extension() == ScriptExtension::TS) {
+        return leftSideExpr;
+    }
+
     return returnExpression;
 }
 
@@ -1527,7 +1531,8 @@ bool ParserImpl::IsGenericInstantiation()
         case lexer::TokenType::PUNCTUATOR_COMMA:
         case lexer::TokenType::PUNCTUATOR_NULLISH_COALESCING:
         case lexer::TokenType::PUNCTUATOR_LOGICAL_AND_EQUAL:
-        case lexer::TokenType::PUNCTUATOR_LOGICAL_OR_EQUAL: {
+        case lexer::TokenType::PUNCTUATOR_LOGICAL_OR_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_QUESTION_DOT: {
             return true;
         }
         default: {
