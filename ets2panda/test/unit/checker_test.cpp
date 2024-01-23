@@ -16,14 +16,15 @@
 #include <gtest/gtest.h>
 #include "macros.h"
 #include "public/es2panda_lib.h"
+#include "test/utils/panda_executable_path_getter.h"
 
 class CheckerTest : public testing::Test {
 public:
     CheckerTest()
     {
         impl_ = es2panda_GetImpl(ES2PANDA_LIB_VERSION);
-        // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-        char const *argv[] = {"../../../bin/es2panda test"};
+        auto es2panda_path = test::utils::PandaExecutablePathGetter {}.Get();
+        char const *argv[] = {es2panda_path.c_str()};
         cfg_ = impl_->CreateConfig(1, argv);
     }
 

@@ -31,6 +31,7 @@
 #include "util/arktsconfig.h"
 #include "util/generateBin.h"
 #include "varbinder/ETSBinder.h"
+#include "test/utils/panda_executable_path_getter.h"
 
 namespace panda::es2panda {
 
@@ -38,6 +39,7 @@ class UnionNormalizationTest : public testing::Test {
 public:
     UnionNormalizationTest()
     {
+        es2panda_path_ = test::utils::PandaExecutablePathGetter {}.Get();
         allocator_ = std::make_unique<ArenaAllocator>(SpaceType::SPACE_TYPE_COMPILER);
         publicContext_ = std::make_unique<public_lib::Context>();
     }
@@ -54,6 +56,11 @@ public:
     ArenaAllocator *Allocator()
     {
         return allocator_.get();
+    }
+
+    std::string Es2pandaPath()
+    {
+                return es2panda_path_;
     }
 
     void InitializeChecker(const char **argv, std::string_view fileName, std::string_view src,
@@ -166,6 +173,7 @@ protected:
     static constexpr uint8_t IDX2 = 2;
 
 private:
+    std::string es2panda_path_;
     std::unique_ptr<ArenaAllocator> allocator_;
     std::unique_ptr<public_lib::Context> publicContext_;
 };
@@ -173,8 +181,8 @@ private:
 TEST_F(UnionNormalizationTest, UnionWithObject)
 {
     // Test normalization: int | Object | string ==> Object
-    // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    const char *argv = "../../../bin/es2panda";
+    auto es2panda_path = Es2pandaPath();
+    const char *argv = es2panda_path.c_str();
     checker::ETSChecker checker;
     auto program = parser::Program::NewProgram<varbinder::ETSBinder>(Allocator());
     InitializeChecker(&argv, "_.ets", "", &checker, &program);
@@ -194,8 +202,8 @@ TEST_F(UnionNormalizationTest, UnionWithObject)
 TEST_F(UnionNormalizationTest, UnionWithIdenticalTypes1)
 {
     // Test normalization: number | Base | string | number ==> number | Base | string
-    // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    const char *argv = "../../../bin/es2panda";
+    auto es2panda_path = Es2pandaPath();
+    const char *argv = es2panda_path.c_str();
     checker::ETSChecker checker;
     auto program = parser::Program::NewProgram<varbinder::ETSBinder>(Allocator());
     InitializeChecker(&argv, "_.ets", "class Base {}", &checker, &program);
@@ -223,8 +231,8 @@ TEST_F(UnionNormalizationTest, UnionWithIdenticalTypes1)
 TEST_F(UnionNormalizationTest, UnionWithIdenticalTypes2)
 {
     // Test normalization: Base | int | Base | double | short | number ==> Base | number
-    // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    const char *argv = "../../../bin/es2panda";
+    auto es2panda_path = Es2pandaPath();
+    const char *argv = es2panda_path.c_str();
     checker::ETSChecker checker;
     auto program = parser::Program::NewProgram<varbinder::ETSBinder>(Allocator());
     InitializeChecker(&argv, "_.ets", "class Base {}", &checker, &program);
@@ -253,8 +261,8 @@ TEST_F(UnionNormalizationTest, UnionWithIdenticalTypes2)
 TEST_F(UnionNormalizationTest, UnionWithNumeric1)
 {
     // Test normalization: boolean | int | double | short ==> boolean | double
-    // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    const char *argv = "../../../bin/es2panda";
+    auto es2panda_path = Es2pandaPath();
+    const char *argv = es2panda_path.c_str();
     checker::ETSChecker checker;
     auto program = parser::Program::NewProgram<varbinder::ETSBinder>(Allocator());
     InitializeChecker(&argv, "_.ets", "", &checker, &program);
@@ -278,8 +286,8 @@ TEST_F(UnionNormalizationTest, UnionWithNumeric1)
 TEST_F(UnionNormalizationTest, UnionWithNumeric2)
 {
     // Test normalization: string | int | Base | double | short ==> string | Base | double
-    // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    const char *argv = "../../../bin/es2panda";
+    auto es2panda_path = Es2pandaPath();
+    const char *argv = es2panda_path.c_str();
     checker::ETSChecker checker;
     auto program = parser::Program::NewProgram<varbinder::ETSBinder>(Allocator());
     InitializeChecker(&argv, "_.ets", "class Base {}", &checker, &program);
@@ -308,8 +316,8 @@ TEST_F(UnionNormalizationTest, UnionWithNumeric2)
 TEST_F(UnionNormalizationTest, UnionWithSubTypes)
 {
     // Test 4 cases of normalization
-    // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    const char *argv = "../../../bin/es2panda";
+    auto es2panda_path = Es2pandaPath();
+    const char *argv = es2panda_path.c_str();
     checker::ETSChecker checker;
     auto program = parser::Program::NewProgram<varbinder::ETSBinder>(Allocator());
     static constexpr std::string_view SRC =
@@ -378,8 +386,8 @@ TEST_F(UnionNormalizationTest, UnionWithSubTypes)
 TEST_F(UnionNormalizationTest, UnionLinearization)
 {
     // Test 3 cases of normalization
-    // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    const char *argv = "../../../bin/es2panda";
+    auto es2panda_path = Es2pandaPath();
+    const char *argv = es2panda_path.c_str();
     checker::ETSChecker checker;
     auto program = parser::Program::NewProgram<varbinder::ETSBinder>(Allocator());
     static constexpr std::string_view SRC =
@@ -436,8 +444,8 @@ TEST_F(UnionNormalizationTest, UnionLinearization)
 TEST_F(UnionNormalizationTest, UnionWithNever)
 {
     // Test normalization: int | never | number ==> number
-    // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    const char *argv = "../../../bin/es2panda";
+    auto es2panda_path = Es2pandaPath();
+    const char *argv = es2panda_path.c_str();
     checker::ETSChecker checker;
     auto program = parser::Program::NewProgram<varbinder::ETSBinder>(Allocator());
     InitializeChecker(&argv, "_.ets", "", &checker, &program);
