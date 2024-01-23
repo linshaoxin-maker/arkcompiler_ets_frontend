@@ -186,10 +186,6 @@ void ETSParser::ParseETSGlobalScript(lexer::SourcePosition startLoc, ArenaVector
                                 return found;
                             }),
                     end(items));
-
-        for (const auto &item : items) {
-            parsedSources_.push_back(ResolveImportPath(item));
-        }
     };
     // clang-format on
 
@@ -286,7 +282,7 @@ static bool IsCompitableExtension(const std::string &extension)
     return extension == ".ets" || extension == ".ts";
 }
 
-void ETSParser::CollectDefaultSources()
+std::vector<std::string> ETSParser::CollectDefaultSources()
 {
     std::vector<std::string> paths;
     std::vector<std::string> stdlib = {"std/core", "std/math",       "std/containers",
@@ -317,9 +313,9 @@ void ETSParser::CollectDefaultSources()
             std::string filePath = path + "/" + entry->d_name;
 
             if (fileName == "Object.ets") {
-                parsedSources_.emplace(parsedSources_.begin(), filePath);
+                paths.emplace(paths.begin(), filePath);
             } else {
-                parsedSources_.emplace_back(filePath);
+                paths.emplace_back(filePath);
             }
         }
 
@@ -338,13 +334,14 @@ void ETSParser::CollectDefaultSources()
             baseName.append(entry.path().string().substr(pos, entry.path().string().size()));
 
             if (entry.path().filename().string() == "Object.ets") {
-                parsedSources_.emplace(parsedSources_.begin(), baseName);
+                paths.emplace(paths.begin(), baseName);
             } else {
-                parsedSources_.emplace_back(baseName);
+                paths.emplace_back(baseName);
             }
         }
     }
 #endif
+    return paths;
 }
 
 ETSParser::ImportData ETSParser::GetImportData(const std::string &path)
@@ -596,9 +593,7 @@ void ETSParser::ParseDefaultSources()
     ParseImportDeclarations(statements);
     GetContext().Status() &= ~ParserStatus::IN_DEFAULT_IMPORTS;
 
-    CollectDefaultSources();
-
-    ParseSources(parsedSources_, true);
+    ParseSources(CollectDefaultSources(), true);
 }
 
 void ETSParser::ParseSource(const SourceFile &sourceFile)
