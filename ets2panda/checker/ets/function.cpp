@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 - 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -67,6 +67,7 @@
 
 namespace panda::es2panda::checker {
 
+// NOTE: #14993 merge with InstantiationContext::ValidateTypeArg
 bool ETSChecker::IsCompatibleTypeArgument(ETSTypeParameter *typeParam, Type *typeArgument,
                                           const Substitution *substitution)
 {
@@ -76,21 +77,8 @@ bool ETSChecker::IsCompatibleTypeArgument(ETSTypeParameter *typeParam, Type *typ
     if (!typeArgument->IsETSTypeParameter() && !IsReferenceType(typeArgument)) {
         return false;
     }
-    if (typeArgument->IsETSUnionType()) {
-        auto const &constitutent = typeArgument->AsETSUnionType()->ConstituentTypes();
-        return std::all_of(constitutent.begin(), constitutent.end(), [this, typeParam, substitution](Type *typeArg) {
-            return IsCompatibleTypeArgument(typeParam->AsETSTypeParameter(), typeArg, substitution);
-        });
-    }
-
-    if (auto *constraint = typeParam->GetConstraintType(); constraint != nullptr) {
-        constraint = constraint->Substitute(Relation(), substitution);
-        constraint->IsSupertypeOf(Relation(), typeArgument);
-        if (!Relation()->IsTrue()) {
-            return false;
-        }
-    }
-    return true;
+    auto *constraint = typeParam->GetConstraintType()->Substitute(Relation(), substitution);
+    return Relation()->IsSupertypeOf(constraint, typeArgument);
 }
 
 /* A very rough and imprecise partial type inference */
@@ -194,6 +182,104 @@ Signature *ETSChecker::ValidateParameterlessConstructor(Signature *signature, co
     return signature;
 }
 
+bool ETSChecker::ValidateSignatureRequiredParams(Signature *substitutedSig,
+                                                 const ArenaVector<ir::Expression *> &arguments, TypeRelationFlag flags,
+                                                 const std::vector<bool> &argTypeInferenceRequired, bool throwError)
+{
+    std::size_t const argumentCount = arguments.size();
+    std::size_t const parameterCount = substitutedSig->MinArgCount();
+    auto count = std::min(parameterCount, argumentCount);
+    for (std::size_t index = 0; index < count; ++index) {
+        auto &argument = arguments[index];
+
+        if (argument->IsObjectExpression()) {
+            if (substitutedSig->Params()[index]->TsType()->IsETSObjectType()) {
+                // No chance to check the argument at this point
+                continue;
+            }
+            return false;
+        }
+
+        if (argument->IsMemberExpression()) {
+            SetArrayPreferredTypeForNestedMemberExpressions(arguments[index]->AsMemberExpression(),
+                                                            substitutedSig->Params()[index]->TsType());
+        } else if (argument->IsSpreadElement()) {
+            if (throwError) {
+                ThrowTypeError("Spread argument cannot be passed for ordinary parameter.", argument->Start());
+            }
+            return false;
+        }
+
+        if (argTypeInferenceRequired[index]) {
+            ASSERT(argument->IsArrowFunctionExpression());
+            auto *const arrowFuncExpr = argument->AsArrowFunctionExpression();
+            ir::ScriptFunction *const lambda = arrowFuncExpr->Function();
+            if (CheckLambdaAssignable(substitutedSig->Function()->Params()[index], lambda)) {
+                continue;
+            }
+            return false;
+        }
+
+        if (argument->IsArrayExpression()) {
+            argument->AsArrayExpression()->GetPrefferedTypeFromFuncParam(
+                this, substitutedSig->Function()->Params()[index], flags);
+        }
+
+        auto *const argumentType = argument->Check(this);
+
+        auto const invocationCtx = checker::InvocationContext(
+            Relation(), argument, argumentType, substitutedSig->Params()[index]->TsType(), argument->Start(),
+            {INVALID_CALL_ARGUMENT_1, index, INVALID_CALL_ARGUMENT_2}, flags);
+        if (!invocationCtx.IsInvocable()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool ETSChecker::ValidateSignatureRestParams(Signature *substitutedSig, const ArenaVector<ir::Expression *> &arguments,
+                                             TypeRelationFlag flags, bool throwError)
+{
+    std::size_t const argumentCount = arguments.size();
+    std::size_t const parameterCount = substitutedSig->MinArgCount();
+    auto count = std::min(parameterCount, argumentCount);
+    auto const restCount = argumentCount - count;
+
+    for (std::size_t index = count; index < argumentCount; ++index) {
+        auto &argument = arguments[index];
+
+        if (!argument->IsSpreadElement()) {
+            auto const invocationCtx = checker::InvocationContext(
+                Relation(), argument, argument->Check(this),
+                substitutedSig->RestVar()->TsType()->AsETSArrayType()->ElementType(), argument->Start(),
+                {INVALID_CALL_ARGUMENT_1, index, INVALID_CALL_ARGUMENT_3}, flags);
+            if (!invocationCtx.IsInvocable()) {
+                return false;
+            }
+            continue;
+        }
+
+        if (restCount > 1U) {
+            if (throwError) {
+                ThrowTypeError("Spread argument for the rest parameter can be only one.", argument->Start());
+            }
+            return false;
+        }
+
+        auto *const restArgument = argument->AsSpreadElement()->Argument();
+
+        auto const invocationCtx = checker::InvocationContext(
+            Relation(), restArgument, restArgument->Check(this), substitutedSig->RestVar()->TsType(), argument->Start(),
+            {INVALID_CALL_ARGUMENT_1, index, INVALID_CALL_ARGUMENT_3}, flags);
+        if (!invocationCtx.IsInvocable()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 Signature *ETSChecker::ValidateSignature(Signature *signature, const ir::TSTypeParameterInstantiation *typeArguments,
                                          const ArenaVector<ir::Expression *> &arguments,
                                          const lexer::SourcePosition &pos, TypeRelationFlag flags,
@@ -222,86 +308,18 @@ Signature *ETSChecker::ValidateSignature(Signature *signature, const ir::TSTypeP
         }
     }
 
+    auto count = std::min(parameterCount, argumentCount);
     // Check all required formal parameter(s) first
-    auto const count = std::min(parameterCount, argumentCount);
-    std::size_t index = 0U;
-    for (; index < count; ++index) {
-        auto &argument = arguments[index];
-
-        if (argument->IsObjectExpression()) {
-            if (substitutedSig->Params()[index]->TsType()->IsETSObjectType()) {
-                // No chance to check the argument at this point
-                continue;
-            }
-            return nullptr;
-        }
-
-        if (argument->IsMemberExpression()) {
-            SetArrayPreferredTypeForNestedMemberExpressions(arguments[index]->AsMemberExpression(),
-                                                            substitutedSig->Params()[index]->TsType());
-        } else if (argument->IsSpreadElement()) {
-            if (throwError) {
-                ThrowTypeError("Spread argument cannot be passed for ordinary parameter.", argument->Start());
-            }
-            return nullptr;
-        }
-
-        if (argTypeInferenceRequired[index]) {
-            ASSERT(argument->IsArrowFunctionExpression());
-            auto *const arrowFuncExpr = argument->AsArrowFunctionExpression();
-            ir::ScriptFunction *const lambda = arrowFuncExpr->Function();
-            if (CheckLambdaAssignable(substitutedSig->Function()->Params()[index], lambda)) {
-                continue;
-            }
-            return nullptr;
-        }
-
-        auto *const argumentType = argument->Check(this);
-
-        if (auto const invocationCtx = checker::InvocationContext(
-                Relation(), argument, argumentType, substitutedSig->Params()[index]->TsType(), argument->Start(),
-                {INVALID_CALL_ARGUMENT_1, index, INVALID_CALL_ARGUMENT_2}, flags);
-            !invocationCtx.IsInvocable()) {
-            return nullptr;
-        }
+    if (!ValidateSignatureRequiredParams(substitutedSig, arguments, flags, argTypeInferenceRequired, throwError)) {
+        return nullptr;
     }
 
     // Check rest parameter(s) if any exists
-    if (hasRestParameter && index < argumentCount) {
-        auto const restCount = argumentCount - index;
-
-        for (; index < argumentCount; ++index) {
-            auto &argument = arguments[index];
-
-            if (argument->IsSpreadElement()) {
-                if (restCount > 1U) {
-                    if (throwError) {
-                        ThrowTypeError("Spread argument for the rest parameter can be only one.", argument->Start());
-                    }
-                    return nullptr;
-                }
-
-                auto *const restArgument = argument->AsSpreadElement()->Argument();
-                auto *const argumentType = restArgument->Check(this);
-
-                if (auto const invocationCtx = checker::InvocationContext(
-                        Relation(), restArgument, argumentType, substitutedSig->RestVar()->TsType(), argument->Start(),
-                        {INVALID_CALL_ARGUMENT_1, index, INVALID_CALL_ARGUMENT_3}, flags);
-                    !invocationCtx.IsInvocable()) {
-                    return nullptr;
-                }
-            } else {
-                auto *const argumentType = argument->Check(this);
-
-                if (auto const invocationCtx = checker::InvocationContext(
-                        Relation(), argument, argumentType,
-                        substitutedSig->RestVar()->TsType()->AsETSArrayType()->ElementType(), argument->Start(),
-                        {INVALID_CALL_ARGUMENT_1, index, INVALID_CALL_ARGUMENT_3}, flags);
-                    !invocationCtx.IsInvocable()) {
-                    return nullptr;
-                }
-            }
-        }
+    if (!hasRestParameter || count >= argumentCount) {
+        return substitutedSig;
+    }
+    if (!ValidateSignatureRestParams(substitutedSig, arguments, flags, throwError)) {
+        return nullptr;
     }
 
     return substitutedSig;
@@ -1047,9 +1065,9 @@ bool ETSChecker::IsOverridableIn(Signature *signature)
         return false;
     }
 
-    if (signature->HasSignatureFlag(SignatureFlags::PUBLIC)) {
-        return FindAncestorGivenByType(signature->Function(), ir::AstNodeType::TS_INTERFACE_DECLARATION) == nullptr ||
-               signature->HasSignatureFlag(SignatureFlags::STATIC);
+    // NOTE: #15095 workaround, separate internal visibility check
+    if (signature->HasSignatureFlag(SignatureFlags::PUBLIC | SignatureFlags::INTERNAL)) {
+        return true;
     }
 
     return signature->HasSignatureFlag(SignatureFlags::PROTECTED);
@@ -1071,7 +1089,6 @@ bool ETSChecker::IsMethodOverridesOther(Signature *target, Signature *source)
         if (Relation()->IsTrue()) {
             CheckThrowMarkers(source, target);
 
-            CheckStaticHide(target, source);
             if (source->HasSignatureFlag(SignatureFlags::STATIC)) {
                 return false;
             }
@@ -1158,6 +1175,38 @@ Signature *ETSChecker::AdjustForTypeParameters(Signature *source, Signature *tar
     return target->Substitute(Relation(), substitution);
 }
 
+void ETSChecker::ThrowOverrideError(Signature *signature, Signature *overriddenSignature,
+                                    const OverrideErrorCode &errorCode)
+{
+    const char *reason {};
+    switch (errorCode) {
+        case OverrideErrorCode::OVERRIDDEN_STATIC: {
+            reason = "overridden method is static.";
+            break;
+        }
+        case OverrideErrorCode::OVERRIDDEN_FINAL: {
+            reason = "overridden method is final.";
+            break;
+        }
+        case OverrideErrorCode::INCOMPATIBLE_RETURN: {
+            reason = "overriding return type is not compatible with the other return type.";
+            break;
+        }
+        case OverrideErrorCode::OVERRIDDEN_WEAKER: {
+            reason = "overridden method has weaker access privilege.";
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+
+    ThrowTypeError({signature->Function()->Id()->Name(), signature, " in ", signature->Owner(), " cannot override ",
+                    overriddenSignature->Function()->Id()->Name(), overriddenSignature, " in ",
+                    overriddenSignature->Owner(), " because ", reason},
+                   signature->Function()->Start());
+}
+
 bool ETSChecker::CheckOverride(Signature *signature, ETSObjectType *site)
 {
     auto *target = site->GetProperty(signature->Function()->Id()->Name(), PropertySearchFlags::SEARCH_METHOD);
@@ -1189,40 +1238,15 @@ bool ETSChecker::CheckOverride(Signature *signature, ETSObjectType *site)
                 (itSubst->Function()->IsGetter() && !signature->Function()->IsGetter())) {
                 continue;
             }
-        } else if (!IsMethodOverridesOther(itSubst, signature)) {
+        }
+        if (!IsMethodOverridesOther(itSubst, signature)) {
             continue;
         }
 
         auto [success, errorCode] = CheckOverride(signature, itSubst);
 
         if (!success) {
-            const char *reason {};
-            switch (errorCode) {
-                case OverrideErrorCode::OVERRIDDEN_STATIC: {
-                    reason = "overridden method is static.";
-                    break;
-                }
-                case OverrideErrorCode::OVERRIDDEN_FINAL: {
-                    reason = "overridden method is final.";
-                    break;
-                }
-                case OverrideErrorCode::INCOMPATIBLE_RETURN: {
-                    reason = "overriding return type is not compatible with the other return type.";
-                    break;
-                }
-                case OverrideErrorCode::OVERRIDDEN_WEAKER: {
-                    reason = "overridden method has weaker access privilege.";
-                    break;
-                }
-                default: {
-                    UNREACHABLE();
-                }
-            }
-
-            ThrowTypeError({signature->Function()->Id()->Name(), signature, " in ", signature->Owner(),
-                            " cannot override ", it->Function()->Id()->Name(), it, " in ", it->Owner(), " because ",
-                            reason},
-                           signature->Function()->Start());
+            ThrowOverrideError(signature, it, errorCode);
         }
 
         isOverridingAnySignature = true;
@@ -2590,8 +2614,7 @@ bool ETSChecker::IsReturnTypeSubstitutable(Signature *const s1, Signature *const
     // - If R1 is a reference type then R1, adapted to the type parameters of d2 (link to generic methods), is a
     // subtype of R2.
     ASSERT(r1->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT) || r1->IsETSTypeParameter());
-    r2->IsSupertypeOf(Relation(), r1);
-    return Relation()->IsTrue();
+    return Relation()->IsSupertypeOf(r2, r1);
 }
 
 std::string ETSChecker::GetAsyncImplName(const util::StringView &name)
