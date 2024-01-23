@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "boxingConverter.h"
 #include "varbinder/variableFlags.h"
 #include "checker/ets/castingContext.h"
 #include "checker/types/ets/etsObjectType.h"
@@ -55,6 +56,7 @@
 #include "checker/types/ets/etsDynamicType.h"
 #include "checker/types/ets/types.h"
 #include "checker/ets/typeRelationContext.h"
+#include "ir/ets/etsUnionType.h"
 
 namespace panda::es2panda::checker {
 ETSObjectType *ETSChecker::GetSuperType(ETSObjectType *type)
@@ -165,7 +167,7 @@ ArenaVector<ETSObjectType *> ETSChecker::GetInterfaces(ETSObjectType *type)
     return type->Interfaces();
 }
 
-ArenaVector<Type *> ETSChecker::CreateTypeForTypeParameters(ir::TSTypeParameterDeclaration *typeParams)
+ArenaVector<Type *> ETSChecker::CreateTypeForTypeParameters(ir::TSTypeParameterDeclaration const *typeParams)
 {
     ArenaVector<Type *> result {Allocator()->Adapter()};
     checker::ScopeContext scopeCtx(this, typeParams->Scope());
@@ -247,12 +249,14 @@ void ETSChecker::SetUpTypeParameterConstraint(ir::TSTypeParameter *const param)
             ThrowTypeError("Extends constraint must be an object", param->Constraint()->Start());
         }
         paramType->SetConstraintType(constraint);
+    } else {
+        paramType->SetConstraintType(GlobalETSNullishObjectType());
     }
+
     if (param->DefaultType() != nullptr) {
         traverseReferenced(param->DefaultType());
-        auto *const dflt = param->DefaultType()->GetType(this);
         // NOTE: #14993 ensure default matches constraint
-        paramType->SetDefaultType(dflt);
+        paramType->SetDefaultType(MaybePromotedBuiltinType(param->DefaultType()->GetType(this)));
     }
 }
 
@@ -263,6 +267,8 @@ ETSTypeParameter *ETSChecker::SetUpParameterType(ir::TSTypeParameter *const para
     paramType->AddTypeFlag(TypeFlag::GENERIC);
     paramType->SetDeclNode(param);
     paramType->SetVariable(param->Variable());
+    // NOTE: #15026 recursive type parameter workaround
+    paramType->SetConstraintType(GlobalETSNullishObjectType());
 
     param->Name()->Variable()->SetTsType(paramType);
     return paramType;
@@ -405,6 +411,12 @@ void ETSChecker::ResolveDeclaredMembersOfObject(ETSObjectType *type)
         if (classProp->TypeAnnotation() != nullptr && classProp->TypeAnnotation()->IsETSFunctionType()) {
             type->AddProperty<PropertyType::INSTANCE_METHOD>(it->AsLocalVariable());
             it->AddFlag(varbinder::VariableFlags::METHOD_REFERENCE);
+        } else if (classProp->TypeAnnotation() != nullptr && classProp->TypeAnnotation()->IsETSTypeReference()) {
+            bool hasFunctionType = HasETSFunctionType(classProp->TypeAnnotation());
+            if (hasFunctionType) {
+                type->AddProperty<PropertyType::INSTANCE_METHOD>(it->AsLocalVariable());
+                it->AddFlag(varbinder::VariableFlags::METHOD_REFERENCE);
+            }
         }
     }
 
@@ -418,6 +430,12 @@ void ETSChecker::ResolveDeclaredMembersOfObject(ETSObjectType *type)
         if (classProp->TypeAnnotation() != nullptr && classProp->TypeAnnotation()->IsETSFunctionType()) {
             type->AddProperty<PropertyType::STATIC_METHOD>(it->AsLocalVariable());
             it->AddFlag(varbinder::VariableFlags::METHOD_REFERENCE);
+        } else if (classProp->TypeAnnotation() != nullptr && classProp->TypeAnnotation()->IsETSTypeReference()) {
+            bool hasFunctionType = HasETSFunctionType(classProp->TypeAnnotation());
+            if (hasFunctionType) {
+                type->AddProperty<PropertyType::STATIC_METHOD>(it->AsLocalVariable());
+                it->AddFlag(varbinder::VariableFlags::METHOD_REFERENCE);
+            }
         }
     }
 
@@ -471,6 +489,39 @@ void ETSChecker::ResolveDeclaredMembersOfObject(ETSObjectType *type)
     }
 
     type->AddObjectFlag(ETSObjectFlags::RESOLVED_MEMBERS);
+}
+
+bool ETSChecker::HasETSFunctionType(ir::TypeNode *typeAnnotation)
+{
+    if (typeAnnotation->IsETSFunctionType()) {
+        return true;
+    }
+    std::unordered_set<ir::TypeNode *> childrenSet;
+
+    if (typeAnnotation->IsETSTypeReference()) {
+        auto *typeDecl =
+            typeAnnotation->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Variable()->Declaration();
+        if (typeDecl != nullptr && typeDecl->IsTypeAliasDecl()) {
+            typeAnnotation = typeDecl->Node()->AsTSTypeAliasDeclaration()->TypeAnnotation();
+            if (typeAnnotation->IsETSUnionType()) {
+                for (auto *type : typeAnnotation->AsETSUnionType()->Types()) {
+                    if (type->IsETSTypeReference()) {
+                        childrenSet.insert(type);
+                    }
+                }
+            } else {
+                childrenSet.insert(typeAnnotation);
+            }
+        }
+
+        for (auto *child : childrenSet) {
+            if (HasETSFunctionType(child)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 std::vector<Signature *> ETSChecker::CollectAbstractSignaturesFromObject(const ETSObjectType *objType)
@@ -1456,7 +1507,8 @@ void ETSChecker::AddElementsToModuleObject(ETSObjectType *moduleObj, const util:
 
 Type *ETSChecker::FindLeastUpperBound(Type *source, Type *target)
 {
-    ASSERT(source->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT) && target->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT));
+    ASSERT(source->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT | TypeFlag::GENERIC) &&
+           target->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT | TypeFlag::GENERIC));
 
     // GetCommonClass(GenA<A>, GenB<B>) => LUB(GenA, GenB)<T>
     auto commonClass = GetCommonClass(source, target);
@@ -1477,20 +1529,23 @@ Type *ETSChecker::FindLeastUpperBound(Type *source, Type *target)
 
 Type *ETSChecker::GetApparentType(Type *type)
 {
-    if (type->IsETSTypeParameter()) {
-        auto *const param = type->AsETSTypeParameter();
-        return param->HasConstraint() ? param->GetConstraintType() : param;
+    while (type->IsETSTypeParameter()) {
+        type = type->AsETSTypeParameter()->GetConstraintType();
     }
     return type;
 }
 
 Type const *ETSChecker::GetApparentType(Type const *type)
 {
-    if (type->IsETSTypeParameter()) {
-        auto *const param = type->AsETSTypeParameter();
-        return param->HasConstraint() ? param->GetConstraintType() : param;
+    while (type->IsETSTypeParameter()) {
+        type = type->AsETSTypeParameter()->GetConstraintType();
     }
     return type;
+}
+
+Type *ETSChecker::MaybePromotedBuiltinType(Type *type) const
+{
+    return type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) ? checker::BoxingConverter::ETSTypeFromSource(this, type) : type;
 }
 
 Type *ETSChecker::GetCommonClass(Type *source, Type *target)
@@ -1501,13 +1556,11 @@ Type *ETSChecker::GetCommonClass(Type *source, Type *target)
         return source;
     }
 
-    target->IsSupertypeOf(Relation(), source);
-    if (Relation()->IsTrue()) {
+    if (Relation()->IsSupertypeOf(target, source)) {
         return target;
     }
 
-    source->IsSupertypeOf(Relation(), target);
-    if (Relation()->IsTrue()) {
+    if (Relation()->IsSupertypeOf(source, target)) {
         return source;
     }
 
@@ -1540,8 +1593,7 @@ ETSObjectType *ETSChecker::GetClosestCommonAncestor(ETSObjectType *source, ETSOb
     auto *sourceBase = GetOriginalBaseType(source);
     auto *sourceType = sourceBase == nullptr ? source : sourceBase;
 
-    targetType->IsSupertypeOf(Relation(), sourceType);
-    if (Relation()->IsTrue()) {
+    if (Relation()->IsSupertypeOf(targetType, sourceType)) {
         // NOTE: TorokG. Extending the search to find intersection types
         return targetType;
     }
@@ -1557,6 +1609,10 @@ ETSObjectType *ETSChecker::GetTypeargumentedLUB(ETSObjectType *const source, ETS
 
     for (uint32_t i = 0; i < source->TypeArguments().size(); i++) {
         params.push_back(FindLeastUpperBound(source->TypeArguments()[i], target->TypeArguments()[i]));
+    }
+
+    if (!source->GetDeclNode()->IsClassDefinition()) {
+        return source;
     }
 
     const util::StringView hash = GetHashFromTypeArguments(params);

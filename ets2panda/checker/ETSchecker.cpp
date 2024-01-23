@@ -226,6 +226,11 @@ Type *ETSChecker::GlobalETSStringLiteralType() const
     return GetGlobalTypesHolder()->GlobalETSStringLiteralType();
 }
 
+Type *ETSChecker::GlobalETSBigIntType() const
+{
+    return GetGlobalTypesHolder()->GlobalETSBigIntBuiltinType();
+}
+
 Type *ETSChecker::GlobalWildcardType() const
 {
     return GetGlobalTypesHolder()->GlobalWildcardType();
@@ -244,6 +249,11 @@ ETSObjectType *ETSChecker::GlobalETSNullishObjectType() const
 ETSObjectType *ETSChecker::GlobalBuiltinETSStringType() const
 {
     return AsETSObjectType(&GlobalTypesHolder::GlobalETSStringBuiltinType);
+}
+
+ETSObjectType *ETSChecker::GlobalBuiltinETSBigIntType() const
+{
+    return AsETSObjectType(&GlobalTypesHolder::GlobalETSBigIntBuiltinType);
 }
 
 ETSObjectType *ETSChecker::GlobalBuiltinTypeType() const
@@ -342,6 +352,21 @@ const Type *MaybeBoxedType(Checker *checker, const varbinder::Variable *var)
 void ETSChecker::HandleUpdatedCallExpressionNode(ir::CallExpression *callExpr)
 {
     VarBinder()->AsETSBinder()->HandleCustomNodes(callExpr);
+}
+
+Type *ETSChecker::SelectGlobalIntegerTypeForNumeric(Type *type)
+{
+    switch (ETSType(type)) {
+        case checker::TypeFlag::FLOAT: {
+            return GlobalIntType();
+        }
+        case checker::TypeFlag::DOUBLE: {
+            return GlobalLongType();
+        }
+        default: {
+            return type;
+        }
+    }
 }
 
 }  // namespace panda::es2panda::checker

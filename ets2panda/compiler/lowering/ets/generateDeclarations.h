@@ -24,8 +24,9 @@ class GenerateTsDeclarationsPhase : public Phase {
 public:
     std::string_view Name() override
     {
-        return "generate-ts-declarations";
+        return "GenerateTsDeclarationsPhase";
     }
+
     bool Perform(public_lib::Context *ctx, parser::Program *program) override;
 };
 
