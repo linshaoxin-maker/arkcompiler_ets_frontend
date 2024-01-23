@@ -24,8 +24,9 @@ class ExpandBracketsPhase : public Phase {
 public:
     std::string_view Name() override
     {
-        return "expand-brackets";
+        return "ExpandBracketsPhase";
     }
+
     bool Perform(public_lib::Context *ctx, parser::Program *program) override;
 };
 

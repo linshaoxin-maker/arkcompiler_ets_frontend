@@ -22,7 +22,7 @@ namespace panda::es2panda::compiler {
 class CheckerPhase : public Phase {
     std::string_view Name() override
     {
-        return "checker";
+        return "CheckerPhase";
     }
 
     bool Perform(public_lib::Context *ctx, parser::Program *program) override;
