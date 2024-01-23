@@ -60,7 +60,7 @@ public:
 
     std::string Es2pandaPath()
     {
-        return es2panda_path_;
+                return es2panda_path_;
     }
 
     void InitializeChecker(const char **argv, std::string_view fileName, std::string_view src,
