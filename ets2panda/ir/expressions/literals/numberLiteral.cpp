@@ -74,6 +74,11 @@ checker::Type *NumberLiteral::Check(checker::ETSChecker *checker)
     return checker->GetAnalyzer()->Check(this);
 }
 
+checker::Type *NumberLiteral::GetType(checker::ETSChecker *checker)
+{
+    return checker->GetAnalyzer()->Check(this);
+}
+
 // NOLINTNEXTLINE(google-default-arguments)
 NumberLiteral *NumberLiteral::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {

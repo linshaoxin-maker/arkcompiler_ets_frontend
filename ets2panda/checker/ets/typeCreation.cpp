@@ -14,7 +14,6 @@
  */
 
 #include "checker/ETSchecker.h"
-#include "checker/ets/boxingConverter.h"
 #include "checker/types/ets/byteType.h"
 #include "checker/types/ets/charType.h"
 #include "checker/types/ets/etsDynamicFunctionType.h"
@@ -130,17 +129,13 @@ Type *ETSChecker::CreateETSUnionType(ArenaVector<Type *> &&constituentTypes)
         return nullptr;
     }
 
-    ArenaVector<Type *> newConstituentTypes(Allocator()->Adapter());
-
-    for (auto *it : constituentTypes) {
-        newConstituentTypes.push_back(
-            it->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE) ? BoxingConverter::ETSTypeFromSource(this, it) : it);
+    ETSUnionType::NormalizeTypes(Relation(), constituentTypes);
+    if (constituentTypes.size() == 1) {
+        return constituentTypes[0];
     }
 
+    ArenaVector<Type *> newConstituentTypes = ETSUnionType::BoxTypes(Relation(), constituentTypes);
     ETSUnionType::NormalizeTypes(Relation(), newConstituentTypes);
-    if (newConstituentTypes.size() == 1) {
-        return newConstituentTypes[0];
-    }
     return Allocator()->New<ETSUnionType>(this, std::move(newConstituentTypes));
 }
 

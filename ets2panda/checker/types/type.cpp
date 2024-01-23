@@ -61,6 +61,11 @@ bool Type::IsETSStringType() const
     return IsETSObjectType() && AsETSObjectType()->HasObjectFlag(ETSObjectFlags::STRING);
 }
 
+bool Type::IsETSUnboxableType() const
+{
+    return IsETSObjectType() && AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE);
+}
+
 bool Type::IsETSAsyncFuncReturnType() const
 {
     return IsETSObjectType() && AsETSObjectType()->HasObjectFlag(ETSObjectFlags::ASYNC_FUNC_RETURN_TYPE);

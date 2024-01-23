@@ -24,7 +24,7 @@ class GlobalTypesHolder;
 
 class ETSUnionType : public Type {
 public:
-    // constituentTypes must be normalized
+    // constituentTypes must be normalized and boxed
     explicit ETSUnionType(ETSChecker *checker, ArenaVector<Type *> &&constituentTypes);
 
     const ArenaVector<Type *> &ConstituentTypes() const
@@ -58,6 +58,8 @@ public:
     Type *FindExactOrBoxedType(ETSChecker *checker, Type *type) const;
 
     static void NormalizeTypes(TypeRelation *relation, ArenaVector<Type *> &constituentTypes);
+
+    static ArenaVector<Type *> BoxTypes(TypeRelation *relation, ArenaVector<Type *> &constituentTypes);
 
     std::tuple<bool, bool> ResolveConditionExpr() const override
     {

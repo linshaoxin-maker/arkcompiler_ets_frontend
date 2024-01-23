@@ -21,7 +21,8 @@
 namespace panda::es2panda::checker {
 void IntType::Identical(TypeRelation *relation, Type *other)
 {
-    if (other->IsIntType()) {
+    bool bothConstants = HasTypeFlag(TypeFlag::CONSTANT) && other->HasTypeFlag(TypeFlag::CONSTANT);
+    if (other->IsIntType() && ((bothConstants && value_ == other->AsIntType()->GetValue()) || !bothConstants)) {
         relation->Result(true);
     }
 }

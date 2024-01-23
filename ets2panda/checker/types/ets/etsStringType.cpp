@@ -20,20 +20,26 @@
 namespace panda::es2panda::checker {
 void ETSStringType::Identical(TypeRelation *relation, Type *other)
 {
-    if (other->IsETSStringType()) {
+    bool bothConstants = HasTypeFlag(TypeFlag::CONSTANT) && other->HasTypeFlag(TypeFlag::CONSTANT);
+    if (other->IsETSStringType() &&
+        ((bothConstants && value_ == other->AsETSStringType()->GetValue()) || !bothConstants)) {
         relation->Result(true);
     }
 }
 
 bool ETSStringType::AssignmentSource([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *target)
 {
-    relation->Result(target->IsETSStringType());
+    bool bothConstants = HasTypeFlag(TypeFlag::CONSTANT) && target->HasTypeFlag(TypeFlag::CONSTANT);
+    relation->Result(target->IsETSStringType() &&
+                     ((bothConstants && value_ == target->AsETSStringType()->GetValue()) || !bothConstants));
     return relation->IsTrue();
 }
 
 void ETSStringType::AssignmentTarget([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *source)
 {
-    if (source->IsETSStringType()) {
+    bool bothConstants = HasTypeFlag(TypeFlag::CONSTANT) && source->HasTypeFlag(TypeFlag::CONSTANT);
+    if (source->IsETSStringType() &&
+        ((bothConstants && value_ == source->AsETSStringType()->GetValue()) || !bothConstants)) {
         relation->Result(true);
     }
 }
