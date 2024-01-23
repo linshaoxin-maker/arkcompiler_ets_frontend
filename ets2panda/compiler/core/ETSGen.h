@@ -92,6 +92,7 @@ public:
     void ReturnAcc(const ir::AstNode *node);
 
     void EmitIsInstance(const ir::AstNode *node, VReg objReg);
+    void EmitIsInstanceDynamic(const ir::AstNode *node, VReg objReg);
 
     void Binary(const ir::AstNode *node, lexer::TokenType op, VReg lhs);
     void Unary(const ir::AstNode *node, lexer::TokenType op);
@@ -588,6 +589,16 @@ public:
         Ra().Emit<CallShort, 0>(node, name, dummyReg_, dummyReg_);
     }
 
+    void CallStatic1(const ir::AstNode *const node, const util::StringView name, const VReg arg0)
+    {
+        Ra().Emit<CallShort, 1U>(node, name, arg0, dummyReg_);
+    }
+
+    void CallStatic2(const ir::AstNode *const node, const util::StringView name, const VReg arg0, const VReg arg1)
+    {
+        Ra().Emit<CallShort, 2U>(node, name, arg0, arg1);
+    }
+
     void CallThisStatic0(const ir::AstNode *const node, const VReg ctor, const util::StringView name)
     {
         Ra().Emit<CallShort, 1>(node, name, ctor, dummyReg_);
@@ -974,6 +985,7 @@ private:
     void CallImpl(const ir::AstNode *node, checker::Signature *signature,
                   const ArenaVector<ir::Expression *> &arguments)
     {
+        ASSERT(signature != nullptr);
         RegScope rs(this);
         const auto name = signature->InternalName();
 

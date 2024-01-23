@@ -778,16 +778,17 @@ void ETSGen::EmitIsInstanceNonNullish([[maybe_unused]] const ir::AstNode *const 
 #endif  // PANDA_WITH_ETS
 }
 
-void ETSGen::EmitIsInstance([[maybe_unused]] const ir::AstNode *const node, [[maybe_unused]] const VReg objReg)
+void ETSGen::EmitIsInstance(const ir::AstNode *const node, const VReg objReg)
 {
 #ifdef PANDA_WITH_ETS
-    auto const *rhsType = node->AsBinaryExpression()->Right()->TsType()->AsETSObjectType();
+    ASSERT(node->IsBinaryExpression());
+    ASSERT(node->AsBinaryExpression()->OperatorType() == lexer::TokenType::KEYW_INSTANCEOF);
+
     auto const *lhsType = GetVRegType(objReg);
+    auto const *rhsType = node->AsBinaryExpression()->Right()->TsType()->AsETSObjectType();
 
     if (rhsType->IsETSDynamicType() || lhsType->IsETSDynamicType()) {
-        ASSERT(rhsType->IsETSDynamicType() && lhsType->IsETSDynamicType());
-        Ra().Emit<CallShort, 2U>(node, Signatures::BUILTIN_JSRUNTIME_INSTANCE_OF, objReg, MoveAccToReg(node));
-        SetAccumulatorType(Checker()->GlobalETSBooleanType());
+        EmitIsInstanceDynamic(node, objReg);
         return;
     }
 
@@ -823,6 +824,82 @@ void ETSGen::EmitIsInstance([[maybe_unused]] const ir::AstNode *const node, [[ma
 #else
     UNREACHABLE();
 #endif  // PANDA_WITH_ETS
+}
+
+void ETSGen::EmitIsInstanceDynamic(const ir::AstNode *node, VReg objReg)
+{
+    ASSERT(node->IsBinaryExpression());
+    ASSERT(node->AsBinaryExpression()->OperatorType() == lexer::TokenType::KEYW_INSTANCEOF);
+
+    auto const *lhsType = GetVRegType(objReg);
+    auto const *rhsType = node->AsBinaryExpression()->Right()->TsType()->AsETSObjectType();
+    ASSERT(rhsType->IsETSDynamicType() || lhsType->IsETSDynamicType());
+
+    if (rhsType->IsETSDynamicType()) {
+        ASSERT(node->AsBinaryExpression()->Right()->TsType()->AsETSDynamicType()->HasDecl());
+        if (lhsType->IsETSDynamicType()) {
+            const RegScope rs(this);
+            VReg dynTypeReg = MoveAccToReg(node);
+            // Semantics:
+            //      let dyn_val: JSValue = ...
+            //      dyn_value instanceof DynamicDecl
+            // Bytecode:
+            //      call runtime intrinsic_dynamic
+            CallStatic2(node, Signatures::BUILTIN_JSRUNTIME_INSTANCE_OF_DYNAMIC, objReg, dynTypeReg);
+        } else if (lhsType == Checker()->GlobalETSObjectType()) {
+            // Semantics:
+            //      let obj: Object = ...
+            //      obj instanceof DynamicDecl
+            // Bytecode:
+            //      if (isinstance <dynamic type name>) {
+            //          checkcast <dynamic type name>
+            //          return call runtime intrinsic_dynamic
+            //      }
+            //      return false
+            Label *if_false = AllocLabel();
+            Language lang = rhsType->AsETSDynamicType()->Language();
+            const RegScope rs(this);
+            VReg dynTypeReg = MoveAccToReg(node);
+            LoadAccumulator(node, objReg);
+            Sa().Emit<Isinstance>(node, Checker()->GlobalBuiltinDynamicType(lang)->AssemblerName());
+            BranchIfFalse(node, if_false);
+            LoadAccumulator(node, objReg);
+            Sa().Emit<Checkcast>(node, Checker()->GlobalBuiltinDynamicType(lang)->AssemblerName());
+            CallStatic2(node, Signatures::BUILTIN_JSRUNTIME_INSTANCE_OF_DYNAMIC, objReg, dynTypeReg);
+            SetLabel(node, if_false);
+        } else {
+            // Semantics:
+            //      let obj: EtsType = ...
+            //      obj instanceof DynamicDecl
+            // Bytecode:
+            //      False
+            Sa().Emit<Ldai>(node, 0);
+        }
+    } else {
+        if (lhsType->IsETSDynamicType()) {
+            if (rhsType == Checker()->GlobalETSObjectType()) {
+                // Semantics:
+                //      let dyn_val: JSValue = ...
+                //      dyn_val instanceof Object
+                // Bytecode:
+                //      True
+                Sa().Emit<Ldai>(node, 1);
+            } else {
+                // Semantics:
+                //      let dyn_val: JSValue = ...
+                //      dyn_val instanceof EtsType
+                // Bytecode:
+                //      lda.type + call runtime instrinsic_static
+                Sa().Emit<LdaType>(node, rhsType->AsETSObjectType()->AssemblerName());
+                const RegScope rs(this);
+                VReg typeReg = MoveAccToReg(node);
+                CallStatic2(node, Signatures::BUILTIN_JSRUNTIME_INSTANCE_OF_STATIC, objReg, typeReg);
+            }
+        } else {
+            UNREACHABLE();
+        }
+    }
+    SetAccumulatorType(Checker()->GlobalETSBooleanType());
 }
 
 void ETSGen::InternalCheckCast(const ir::AstNode *node, const es2panda::checker::Type *target)

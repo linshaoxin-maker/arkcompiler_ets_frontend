@@ -17,19 +17,8 @@
 flags: [dynamic-ast]
 ---*/
 
-import { A, B, jsfunc } from "dynamic_js_import_tests"
+import { A } from "dynamic_js_import_tests"
 
-function foo(): int {
-  let a = new A();
-  if (a instanceof A) {
-    return 1;
-  } else {
-    let x = jsfunc();
-    let b = x instanceof B;
-    if (b) {
-      return 2;
-    } else {
-      return 3;
-    }
-  }
+function fn(o: A): boolean {
+    return o instanceof JSValue;
 }

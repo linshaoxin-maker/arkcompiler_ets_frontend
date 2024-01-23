@@ -16,6 +16,7 @@
 #ifndef ES2PANDA_IR_EXPRESSION_BINARY_EXPRESSION_H
 #define ES2PANDA_IR_EXPRESSION_BINARY_EXPRESSION_H
 
+#include "compiler/core/vReg.h"
 #include "ir/expression.h"
 #include "lexer/token/tokenType.h"
 
@@ -151,6 +152,7 @@ public:
     void Dump(ir::SrcDumper *dumper) const override;
     void Compile(compiler::PandaGen *pg) const override;
     void Compile(compiler::ETSGen *etsg) const override;
+    void CompileOperands(compiler::ETSGen *etsg, compiler::VReg lhs) const;
     checker::Type *Check(checker::TSChecker *checker) override;
     checker::Type *Check(checker::ETSChecker *checker) override;
 
