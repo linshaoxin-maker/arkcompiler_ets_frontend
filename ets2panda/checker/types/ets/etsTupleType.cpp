@@ -44,6 +44,10 @@ void ETSTupleType::Identical([[maybe_unused]] TypeRelation *const relation, Type
         return;
     }
 
+    if ((ContainsNull() != other->ContainsNull()) || (ContainsUndefined() != other->ContainsUndefined())) {
+        return;
+    }
+
     const auto *const otherTuple = other->AsETSTupleType();
 
     if (GetMinTupleSize() != otherTuple->GetMinTupleSize()) {
@@ -86,6 +90,20 @@ bool ETSTupleType::AssignmentSource(TypeRelation *const relation, Type *const ta
 
 void ETSTupleType::AssignmentTarget(TypeRelation *const relation, Type *const source)
 {
+    if (source->IsETSNullType()) {
+        relation->Result(ContainsNull());
+        return;
+    }
+
+    if (source->IsETSUndefinedType()) {
+        relation->Result(ContainsUndefined());
+        return;
+    }
+
+    if ((source->ContainsNull() && !ContainsNull()) || (source->ContainsUndefined() && !ContainsUndefined())) {
+        return;
+    }
+
     if (!(source->IsETSTupleType() || (source->IsETSArrayType() && HasSpreadType()))) {
         return;
     }
