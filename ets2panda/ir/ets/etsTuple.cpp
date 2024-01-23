@@ -15,7 +15,6 @@
 
 #include "etsTuple.h"
 
-#include "checker/ETSchecker.h"
 #include "checker/types/ets/etsTupleType.h"
 #include "ir/astDump.h"
 
@@ -79,53 +78,6 @@ checker::Type *ETSTuple::Check([[maybe_unused]] checker::ETSChecker *const check
     return GetType(checker);
 }
 
-checker::Type *ETSTuple::CalculateLUBForTuple(checker::ETSChecker *const checker,
-                                              ArenaVector<checker::Type *> &typeList, checker::Type *const spreadType)
-{
-    if (typeList.empty()) {
-        return spreadType == nullptr ? checker->GlobalETSObjectType() : spreadType;
-    }
-
-    bool allElementsAreSame = std::all_of(typeList.begin(), typeList.end(), [&checker, &typeList](auto *element) {
-        return checker->Relation()->IsIdenticalTo(typeList[0], element);
-    });
-
-    if (spreadType != nullptr) {
-        allElementsAreSame = allElementsAreSame && checker->Relation()->IsIdenticalTo(typeList[0], spreadType);
-    }
-
-    // If only one type present in the tuple, that will be the holder array type. If any two not identical types
-    // present, primitives will be boxed, and LUB is calculated for all of them.
-    // That makes it possible to assign eg. `[int, int, ...int[]]` tuple type to `int[]` array type. Because a `short[]`
-    // array already isn't assignable to `int[]` array, that preserve that the `[int, short, ...int[]]` tuple type's
-    // element type will be calculated to `Object[]`, which is not assignable to `int[]` array either.
-    if (allElementsAreSame) {
-        return typeList[0];
-    }
-
-    auto *const savedRelationNode = checker->Relation()->GetNode();
-    checker->Relation()->SetNode(this);
-
-    auto getBoxedTypeOrType = [&checker](checker::Type *const type) {
-        auto *const boxedType = checker->PrimitiveTypeAsETSBuiltinType(type);
-        return boxedType == nullptr ? type : boxedType;
-    };
-
-    checker::Type *lubType = getBoxedTypeOrType(typeList[0]);
-
-    for (std::size_t idx = 1; idx < typeList.size(); ++idx) {
-        lubType = checker->FindLeastUpperBound(lubType, getBoxedTypeOrType(typeList[idx]));
-    }
-
-    if (spreadType != nullptr) {
-        lubType = checker->FindLeastUpperBound(lubType, getBoxedTypeOrType(spreadType));
-    }
-
-    checker->Relation()->SetNode(savedRelationNode);
-
-    return lubType;
-}
-
 checker::Type *ETSTuple::GetType(checker::ETSChecker *const checker)
 {
     if (TsType() != nullptr) {
@@ -153,6 +105,68 @@ checker::Type *ETSTuple::GetType(checker::ETSChecker *const checker)
 
     SetTsType(tupleType);
     return TsType();
+}
+
+checker::Type *ETSTuple::CalculateLUBForTuple(checker::ETSChecker *const checker,
+                                              ArenaVector<checker::Type *> &typeList, checker::Type *const spreadType)
+{
+    if (typeList.empty()) {
+        return spreadType == nullptr ? checker->GlobalETSObjectType() : spreadType;
+    }
+
+    bool allElementsAreSame = std::all_of(typeList.begin(), typeList.end(), [&checker, &typeList](auto *element) {
+        return checker->Relation()->IsIdenticalTo(typeList[0], element);
+    });
+
+    if (spreadType != nullptr) {
+        allElementsAreSame = allElementsAreSame && checker->Relation()->IsIdenticalTo(typeList[0], spreadType);
+    }
+
+    // If only one type present in the tuple, that will be the holder array type. If any two not identical types
+    // present, primitives will be boxed, and LUB is calculated for all of them.
+    // That makes it possible to assign eg. `[int, int, ...int[]]` tuple type to `int[]` array type. Because a
+    // `short[]` array already isn't assignable to `int[]` array, that preserve that the `[int, short, ...int[]]`
+    // tuple type's element type will be calculated to `Object[]`, which is not assignable to `int[]` array either.
+    if (allElementsAreSame) {
+        return typeList[0];
+    }
+
+    auto getBoxedTypeOrType = [&checker](checker::Type *const type) {
+        auto *const boxedType = checker->PrimitiveTypeAsETSBuiltinType(type);
+        return boxedType == nullptr ? type : boxedType;
+    };
+
+    checker::Type *lubType = getBoxedTypeOrType(typeList[0]);
+    auto *const nullishEtsObjectType = checker->CreateNullishType(
+        checker->GlobalETSObjectType(), checker::TypeFlag::NULLISH | checker::TypeFlag::NULL_TYPE, checker->Allocator(),
+        checker->Relation(), checker->GetGlobalTypesHolder());
+
+    const auto getConstraintTypeFromTypeParam =
+        [&nullishEtsObjectType](const checker::ETSTypeParameter *const typeParam) {
+            if (typeParam->HasConstraint()) {
+                return typeParam->GetConstraintType();
+            }
+
+            return nullishEtsObjectType;
+        };
+
+    for (std::size_t idx = 1; idx < typeList.size(); ++idx) {
+        if (typeList[idx]->IsETSTypeParameter()) {
+            lubType = getConstraintTypeFromTypeParam(typeList[idx]->AsETSTypeParameter());
+            continue;
+        }
+        lubType = checker->FindLeastUpperBound(lubType, getBoxedTypeOrType(typeList[idx]));
+    }
+
+    if (spreadType != nullptr) {
+        if (spreadType->IsETSTypeParameter()) {
+            lubType = getConstraintTypeFromTypeParam(spreadType->AsETSTypeParameter());
+        } else {
+            lubType = checker->FindLeastUpperBound(lubType, getBoxedTypeOrType(spreadType));
+        }
+    }
+
+    return lubType;
 }
 
 }  // namespace panda::es2panda::ir
