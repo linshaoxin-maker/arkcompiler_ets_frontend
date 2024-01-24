@@ -21,6 +21,7 @@
 #include "ir/expressions/blockExpression.h"
 #include "ir/ets/etsUnionType.h"
 #include "ir/ets/etsTuple.h"
+#include "ir/ets/etsNullishTypes.h"
 
 namespace panda::es2panda::ir::visitor {
 
