@@ -87,13 +87,13 @@ template <typename ElementMaker>
     for (const auto *const member : enumType->GetMembers()) {
         elements.push_back(elementMaker(member->AsTSEnumMember()));
     }
-
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const arrayExpr = checker->Allocator()->New<ir::ArrayExpression>(std::move(elements), checker->Allocator());
     arrayExpr->SetPreferredType(elementType);
     arrayExpr->SetTsType(checker->CreateETSArrayType(elementType));
 
     auto *const arrayIdent = MakeQualifiedIdentifier(checker->Allocator(), enumType->GetDecl(), name);
-
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const arrayClassProp = checker->Allocator()->New<ir::ClassProperty>(
         arrayIdent, arrayExpr, nullptr,
         ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC | ir::ModifierFlags::CONST, checker->Allocator(), false);
@@ -118,7 +118,9 @@ template <typename ElementMaker>
                                                             const util::StringView &name, Type *const type)
 {
     const auto paramCtx = varbinder::LexicalScope<varbinder::FunctionParamScope>::Enter(varbinder, scope, false);
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const paramIdent = checker->Allocator()->New<ir::Identifier>(name, checker->Allocator());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const param = checker->Allocator()->New<ir::ETSParameterExpression>(paramIdent, nullptr);
     auto *const paramVar = std::get<1>(varbinder->AddParamDecl(param));
     paramVar->SetTsType(type);
@@ -130,8 +132,11 @@ template <typename ElementMaker>
 
 [[nodiscard]] ir::ETSTypeReference *MakeTypeReference(panda::ArenaAllocator *allocator, const util::StringView &name)
 {
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const ident = allocator->New<ir::Identifier>(name, allocator);
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const referencePart = allocator->New<ir::ETSTypeReferencePart>(ident);
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     return allocator->New<ir::ETSTypeReference>(referencePart);
 }
 
@@ -141,10 +146,11 @@ template <typename ElementMaker>
                                                ArenaVector<ir::Statement *> &&body,
                                                ir::TypeNode *const returnTypeAnnotation, bool isDeclare)
 {
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const functionScope = varbinder->Allocator()->New<varbinder::FunctionScope>(checker->Allocator(), paramScope);
     functionScope->BindParamScope(paramScope);
     paramScope->BindFunctionScope(functionScope);
-
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const bodyBlock = checker->Allocator()->New<ir::BlockStatement>(checker->Allocator(), std::move(body));
     bodyBlock->SetScope(functionScope);
 
@@ -154,6 +160,7 @@ template <typename ElementMaker>
         flags |= ir::ModifierFlags::DECLARE;
     }
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const function = checker->Allocator()->New<ir::ScriptFunction>(
         ir::FunctionSignature(nullptr, std::move(params), returnTypeAnnotation), bodyBlock,
         ir::ScriptFunctionFlags::METHOD, flags, isDeclare, Language(Language::Id::ETS));
@@ -170,9 +177,10 @@ template <typename ElementMaker>
 void MakeMethodDef(ETSChecker *const checker, varbinder::ETSBinder *const varbinder, ir::Identifier *const ident,
                    ir::ScriptFunction *const function)
 {
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const functionExpr = checker->Allocator()->New<ir::FunctionExpression>(function);
     function->SetParent(functionExpr);
-
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const methodDef = checker->Allocator()->New<ir::MethodDefinition>(
         ir::MethodDefinitionKind::METHOD, ident, functionExpr, ir::ModifierFlags::PUBLIC, checker->Allocator(), false);
     methodDef->SetParent(varbinder->Program()->GlobalClass());
@@ -224,6 +232,7 @@ ir::Identifier *ETSChecker::CreateEnumNamesArray(ETSEnumInterface const *const e
     return MakeArray(this, VarBinder()->AsETSBinder(), enumType, "NamesArray", GlobalBuiltinETSStringType(),
                     [this](const ir::TSEnumMember *const member) {
                         auto *const enumNameStringLiteral =
+                            // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
                             Allocator()->New<ir::StringLiteral>(member->Key()->AsIdentifier()->Name());
                         enumNameStringLiteral->SetTsType(GlobalBuiltinETSStringType());
                         return enumNameStringLiteral;
@@ -236,6 +245,7 @@ ir::Identifier *ETSChecker::CreateEnumValuesArray(ETSEnumType *const enumType)
     return MakeArray(
         this, VarBinder()->AsETSBinder(), enumType, "ValuesArray", GlobalIntType(),
         [this](const ir::TSEnumMember *const member) {
+            // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
             auto *const enumValueLiteral = Allocator()->New<ir::NumberLiteral>(lexer::Number(
                 member->AsTSEnumMember()->Init()->AsNumberLiteral()->Number().GetValue<ETSEnumType::ValueType>()));
             enumValueLiteral->SetTsType(GlobalIntType());
@@ -245,6 +255,7 @@ ir::Identifier *ETSChecker::CreateEnumValuesArray(ETSEnumType *const enumType)
 
 ir::Identifier *ETSChecker::CreateEnumStringValuesArray(ETSEnumInterface *const enumType)
 {
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     return MakeArray(this, VarBinder()->AsETSBinder(), enumType, "StringValuesArray", GlobalETSStringLiteralType(),
                      [this, isStringEnum = enumType->IsETSStringEnumType()](const ir::TSEnumMember *const member) {
                          auto const stringValue =
@@ -256,6 +267,7 @@ ir::Identifier *ETSChecker::CreateEnumStringValuesArray(ETSEnumInterface *const 
                                                                              .GetValue<ETSEnumType::ValueType>()),
                                                           Allocator())
                                                 .View();
+                         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
                          auto *const enumValueStringLiteral = Allocator()->New<ir::StringLiteral>(stringValue);
                          enumValueStringLiteral->SetTsType(GlobalETSStringLiteralType());
                          return enumValueStringLiteral;
@@ -264,6 +276,7 @@ ir::Identifier *ETSChecker::CreateEnumStringValuesArray(ETSEnumInterface *const 
 
 ir::Identifier *ETSChecker::CreateEnumItemsArray(ETSEnumInterface *const enumType)
 {
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const enumTypeIdent = Allocator()->New<ir::Identifier>(enumType->GetName(), Allocator());
     enumTypeIdent->SetTsType(enumType);
 
@@ -271,7 +284,9 @@ ir::Identifier *ETSChecker::CreateEnumItemsArray(ETSEnumInterface *const enumTyp
         this, VarBinder()->AsETSBinder(), enumType, "ItemsArray", enumType,
         [this, enumTypeIdent](const ir::TSEnumMember *const member) {
             auto *const enumMemberIdent =
+                // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
                 Allocator()->New<ir::Identifier>(member->AsTSEnumMember()->Key()->AsIdentifier()->Name(), Allocator());
+            // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
             auto *const enumMemberExpr = Allocator()->New<ir::MemberExpression>(
                 enumTypeIdent, enumMemberIdent, ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
             enumMemberExpr->SetTsType(member->AsTSEnumMember()->Key()->AsIdentifier()->Variable()->TsType());
@@ -283,15 +298,20 @@ ETSEnumType::Method ETSChecker::CreateEnumFromIntMethod(ir::Identifier *const na
                                                         ETSEnumInterface *const enumType)
 {
     auto *const paramScope =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         VarBinder()->Allocator()->New<varbinder::FunctionParamScope>(Allocator(), Program()->GlobalScope());
 
     auto *const inputOrdinalIdent =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         MakeFunctionParam(this, VarBinder()->AsETSBinder(), paramScope, "ordinal", GlobalIntType());
 
     auto *const inArraySizeExpr = [this, namesArrayIdent, inputOrdinalIdent]() {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const lengthIdent = Allocator()->New<ir::Identifier>("length", Allocator());
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const valuesArrayLengthExpr = Allocator()->New<ir::MemberExpression>(
             namesArrayIdent, lengthIdent, ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const expr = Allocator()->New<ir::BinaryExpression>(inputOrdinalIdent, valuesArrayLengthExpr,
                                                                   lexer::TokenType::PUNCTUATOR_LESS_THAN);
         expr->SetOperationType(GlobalIntType());
@@ -301,24 +321,29 @@ ETSEnumType::Method ETSChecker::CreateEnumFromIntMethod(ir::Identifier *const na
 
     auto *const returnEnumStmt = [this, inputOrdinalIdent, enumType]() {
         inputOrdinalIdent->SetTsType(enumType);
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         return Allocator()->New<ir::ReturnStatement>(inputOrdinalIdent);
     }();
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const ifOrdinalExistsStmt = Allocator()->New<ir::IfStatement>(inArraySizeExpr, returnEnumStmt, nullptr);
 
     auto *const throwNoEnumStmt = [this, inputOrdinalIdent, enumType]() {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const exceptionReference = MakeTypeReference(Allocator(), "Exception");
 
         util::UString messageString(util::StringView("No enum constant in "), Allocator());
         messageString.Append(enumType->GetName());
         messageString.Append(" with ordinal value ");
 
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const message = Allocator()->New<ir::StringLiteral>(messageString.View());
         auto *const newExprArg =
+            // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
             Allocator()->New<ir::BinaryExpression>(message, inputOrdinalIdent, lexer::TokenType::PUNCTUATOR_PLUS);
         ArenaVector<ir::Expression *> newExprArgs(Allocator()->Adapter());
         newExprArgs.push_back(newExprArg);
-
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const newExpr = Allocator()->New<ir::ETSNewClassInstanceExpression>(
             exceptionReference, std::move(newExprArgs),
             GlobalBuiltinExceptionType()->GetDeclNode()->AsClassDefinition());
@@ -326,7 +351,7 @@ ETSEnumType::Method ETSChecker::CreateEnumFromIntMethod(ir::Identifier *const na
         newExpr->SetSignature(
             ResolveConstructExpression(GlobalBuiltinExceptionType(), newExpr->GetArguments(), newExpr->Start()));
         newExpr->SetTsType(GlobalBuiltinExceptionType());
-
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         return Allocator()->New<ir::ThrowStatement>(newExpr);
     }();
 
@@ -337,9 +362,10 @@ ETSEnumType::Method ETSChecker::CreateEnumFromIntMethod(ir::Identifier *const na
     body.push_back(ifOrdinalExistsStmt);
     body.push_back(throwNoEnumStmt);
     body.push_back(returnEnumStmt);
-
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const enumTypeAnnotation = MakeTypeReference(Allocator(), enumType->GetName());
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const function = MakeFunction(this, VarBinder()->AsETSBinder(), paramScope, std::move(params),
                                         std::move(body), enumTypeAnnotation, enumType->GetDecl()->IsDeclare());
     function->AddFlag(ir::ScriptFunctionFlags::THROWS);
@@ -348,6 +374,7 @@ ETSEnumType::Method ETSChecker::CreateEnumFromIntMethod(ir::Identifier *const na
     function->SetIdent(ident);
     function->Scope()->BindInternalName(ident->Name());
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     MakeMethodDef(this, VarBinder()->AsETSBinder(), ident, function);
 
     return {MakeGlobalSignature(this, function, enumType), nullptr};
@@ -357,15 +384,18 @@ ETSEnumType::Method ETSChecker::CreateEnumToStringMethod(ir::Identifier *const s
                                                          ETSEnumInterface *const enumType)
 {
     auto *const paramScope =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         VarBinder()->Allocator()->New<varbinder::FunctionParamScope>(Allocator(), Program()->GlobalClassScope());
-
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const inputEnumIdent = MakeFunctionParam(this, VarBinder()->AsETSBinder(), paramScope, "ordinal", enumType);
 
     auto *const returnStmt = [this, inputEnumIdent, stringValuesArrayIdent]() {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const arrayAccessExpr = Allocator()->New<ir::MemberExpression>(
             stringValuesArrayIdent, inputEnumIdent, ir::MemberExpressionKind::ELEMENT_ACCESS, true, false);
         arrayAccessExpr->SetTsType(GlobalETSStringLiteralType());
 
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         return Allocator()->New<ir::ReturnStatement>(arrayAccessExpr);
     }();
 
@@ -375,15 +405,17 @@ ETSEnumType::Method ETSChecker::CreateEnumToStringMethod(ir::Identifier *const s
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
     params.push_back(inputEnumIdent);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const stringTypeAnnotation = MakeTypeReference(Allocator(), GlobalBuiltinETSStringType()->Name());
     auto *const function = MakeFunction(this, VarBinder()->AsETSBinder(), paramScope, std::move(params),
                                         std::move(body), stringTypeAnnotation, enumType->GetDecl()->IsDeclare());
 
     auto *const functionIdent =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), ETSEnumType::TO_STRING_METHOD_NAME);
     function->SetIdent(functionIdent);
     function->Scope()->BindInternalName(functionIdent->Name());
-
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     MakeMethodDef(this, VarBinder()->AsETSBinder(), functionIdent, function);
 
     return {
@@ -395,15 +427,18 @@ ETSEnumType::Method ETSChecker::CreateEnumGetValueMethod(ir::Identifier *const v
                                                          ETSEnumType *const enumType)
 {
     auto *const paramScope =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         VarBinder()->Allocator()->New<varbinder::FunctionParamScope>(Allocator(), Program()->GlobalClassScope());
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const inputEnumIdent = MakeFunctionParam(this, VarBinder()->AsETSBinder(), paramScope, "e", enumType);
 
     auto *const returnStmt = [this, inputEnumIdent, valuesArrayIdent]() {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const arrayAccessExpr = Allocator()->New<ir::MemberExpression>(
             valuesArrayIdent, inputEnumIdent, ir::MemberExpressionKind::ELEMENT_ACCESS, true, false);
         arrayAccessExpr->SetTsType(GlobalIntType());
-
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         return Allocator()->New<ir::ReturnStatement>(arrayAccessExpr);
     }();
 
@@ -412,7 +447,7 @@ ETSEnumType::Method ETSChecker::CreateEnumGetValueMethod(ir::Identifier *const v
 
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
     params.push_back(inputEnumIdent);
-
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const intTypeAnnotation = Allocator()->New<ir::ETSPrimitiveType>(ir::PrimitiveType::INT);
     auto *const function = MakeFunction(this, VarBinder()->AsETSBinder(), paramScope, std::move(params),
                                         std::move(body), intTypeAnnotation, enumType->GetDecl()->IsDeclare());
@@ -432,15 +467,17 @@ ETSEnumType::Method ETSChecker::CreateEnumGetNameMethod(ir::Identifier *const na
                                                         ETSEnumInterface *const enumType)
 {
     auto *const paramScope =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         VarBinder()->Allocator()->New<varbinder::FunctionParamScope>(Allocator(), Program()->GlobalScope());
-
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const inputEnumIdent = MakeFunctionParam(this, VarBinder()->AsETSBinder(), paramScope, "ordinal", enumType);
 
     auto *const returnStmt = [this, inputEnumIdent, namesArrayIdent]() {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const arrayAccessExpr = Allocator()->New<ir::MemberExpression>(
             namesArrayIdent, inputEnumIdent, ir::MemberExpressionKind::ELEMENT_ACCESS, true, false);
         arrayAccessExpr->SetTsType(GlobalBuiltinETSStringType());
-
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         return Allocator()->New<ir::ReturnStatement>(arrayAccessExpr);
     }();
 
@@ -449,13 +486,14 @@ ETSEnumType::Method ETSChecker::CreateEnumGetNameMethod(ir::Identifier *const na
 
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
     params.push_back(inputEnumIdent);
-
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const stringTypeAnnotation = MakeTypeReference(Allocator(), GlobalBuiltinETSStringType()->Name());
 
     auto *const function = MakeFunction(this, VarBinder()->AsETSBinder(), paramScope, std::move(params),
                                         std::move(body), stringTypeAnnotation, enumType->GetDecl()->IsDeclare());
 
     auto *const functionIdent =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), ETSEnumType::GET_NAME_METHOD_NAME);
     function->SetIdent(functionIdent);
     function->Scope()->BindInternalName(functionIdent->Name());
@@ -470,14 +508,17 @@ ETSEnumType::Method ETSChecker::CreateEnumValueOfMethod(ir::Identifier *const na
                                                         ETSEnumInterface *const enumType)
 {
     auto *const paramScope =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         VarBinder()->Allocator()->New<varbinder::FunctionParamScope>(Allocator(), Program()->GlobalScope());
 
     auto *const inputNameIdent =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         MakeFunctionParam(this, VarBinder()->AsETSBinder(), paramScope, "name", GlobalBuiltinETSStringType());
 
     varbinder::LexicalScope<varbinder::LoopDeclarationScope> loopDeclScope(VarBinder());
 
     auto *const forLoopIIdent = [this]() {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const ident = Allocator()->New<ir::Identifier>("i", Allocator());
         ident->SetTsType(GlobalIntType());
         auto [decl, var] = VarBinder()->NewVarDecl<varbinder::LetDecl>(ident->Start(), ident->Name());
@@ -490,22 +531,28 @@ ETSEnumType::Method ETSChecker::CreateEnumValueOfMethod(ir::Identifier *const na
     }();
 
     auto *const forLoopInitVarDecl = [this, forLoopIIdent]() {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const init = Allocator()->New<ir::NumberLiteral>("0");
         init->SetTsType(GlobalIntType());
         auto *const decl =
+            // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
             Allocator()->New<ir::VariableDeclarator>(ir::VariableDeclaratorFlag::LET, forLoopIIdent, init);
         decl->SetTsType(GlobalIntType());
         ArenaVector<ir::VariableDeclarator *> decls(Allocator()->Adapter());
         decls.push_back(decl);
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         return Allocator()->New<ir::VariableDeclaration>(ir::VariableDeclaration::VariableDeclarationKind::LET,
                                                          Allocator(), std::move(decls), false);
     }();
 
     auto *const forLoopTest = [this, namesArrayIdent, forLoopIIdent]() {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const lengthIdent = Allocator()->New<ir::Identifier>("length", Allocator());
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const arrayLengthExpr = Allocator()->New<ir::MemberExpression>(
             namesArrayIdent, lengthIdent, ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
         arrayLengthExpr->SetTsType(GlobalIntType());
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const binaryExpr = Allocator()->New<ir::BinaryExpression>(forLoopIIdent, arrayLengthExpr,
                                                                         lexer::TokenType::PUNCTUATOR_LESS_THAN);
         binaryExpr->SetOperationType(GlobalIntType());
@@ -515,22 +562,25 @@ ETSEnumType::Method ETSChecker::CreateEnumValueOfMethod(ir::Identifier *const na
 
     auto *const forLoopUpdate = [this, forLoopIIdent]() {
         auto *const incrementExpr =
+            // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
             Allocator()->New<ir::UpdateExpression>(forLoopIIdent, lexer::TokenType::PUNCTUATOR_PLUS_PLUS, true);
         incrementExpr->SetTsType(GlobalIntType());
         return incrementExpr;
     }();
 
     auto *const ifStmt = [this, namesArrayIdent, forLoopIIdent, inputNameIdent]() {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const namesArrayElementExpr = Allocator()->New<ir::MemberExpression>(
             namesArrayIdent, forLoopIIdent, ir::MemberExpressionKind::ELEMENT_ACCESS, true, false);
         namesArrayElementExpr->SetTsType(GlobalBuiltinETSStringType());
-
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const namesEqualExpr = Allocator()->New<ir::BinaryExpression>(inputNameIdent, namesArrayElementExpr,
                                                                             lexer::TokenType::PUNCTUATOR_EQUAL);
         namesEqualExpr->SetOperationType(GlobalBuiltinETSStringType());
         namesEqualExpr->SetTsType(GlobalETSBooleanType());
-
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const returnStmt = Allocator()->New<ir::ReturnStatement>(forLoopIIdent);
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         return Allocator()->New<ir::IfStatement>(namesEqualExpr, returnStmt, nullptr);
     }();
 
@@ -538,6 +588,7 @@ ETSEnumType::Method ETSChecker::CreateEnumValueOfMethod(ir::Identifier *const na
     loopScope.GetScope()->BindDecls(loopDeclScope.GetScope());
 
     auto *const forLoop =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         Allocator()->New<ir::ForUpdateStatement>(forLoopInitVarDecl, forLoopTest, forLoopUpdate, ifStmt);
     loopScope.GetScope()->BindNode(forLoop);
     forLoop->SetScope(loopScope.GetScope());
@@ -547,23 +598,24 @@ ETSEnumType::Method ETSChecker::CreateEnumValueOfMethod(ir::Identifier *const na
         util::UString messageString(util::StringView("No enum constant "), Allocator());
         messageString.Append(enumType->GetName());
         messageString.Append('.');
-
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const message = Allocator()->New<ir::StringLiteral>(messageString.View());
         auto *const newExprArg =
+            // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
             Allocator()->New<ir::BinaryExpression>(message, inputNameIdent, lexer::TokenType::PUNCTUATOR_PLUS);
 
         ArenaVector<ir::Expression *> newExprArgs(Allocator()->Adapter());
         newExprArgs.push_back(newExprArg);
-
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const exceptionReference = MakeTypeReference(Allocator(), "Exception");
-
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const newExpr = Allocator()->New<ir::ETSNewClassInstanceExpression>(
             exceptionReference, std::move(newExprArgs),
             GlobalBuiltinExceptionType()->GetDeclNode()->AsClassDefinition());
         newExpr->SetSignature(
             ResolveConstructExpression(GlobalBuiltinExceptionType(), newExpr->GetArguments(), newExpr->Start()));
         newExpr->SetTsType(GlobalBuiltinExceptionType());
-
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         return Allocator()->New<ir::ThrowStatement>(newExpr);
     }();
 
@@ -573,7 +625,7 @@ ETSEnumType::Method ETSChecker::CreateEnumValueOfMethod(ir::Identifier *const na
 
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
     params.push_back(inputNameIdent);
-
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const enumTypeAnnotation = MakeTypeReference(Allocator(), enumType->GetName());
 
     auto *const function = MakeFunction(this, VarBinder()->AsETSBinder(), paramScope, std::move(params),
@@ -581,6 +633,7 @@ ETSEnumType::Method ETSChecker::CreateEnumValueOfMethod(ir::Identifier *const na
     function->AddFlag(ir::ScriptFunctionFlags::THROWS);
 
     auto *const functionIdent =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), ETSEnumType::VALUE_OF_METHOD_NAME);
     function->SetIdent(functionIdent);
     function->Scope()->BindInternalName(functionIdent->Name());
@@ -597,8 +650,9 @@ ETSEnumType::Method ETSChecker::CreateEnumValuesMethod(ir::Identifier *const ite
                                                        ETSEnumInterface *const enumType)
 {
     auto *const paramScope =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         VarBinder()->Allocator()->New<varbinder::FunctionParamScope>(Allocator(), Program()->GlobalScope());
-
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const returnStmt = Allocator()->New<ir::ReturnStatement>(itemsArrayIdent);
     ArenaVector<ir::Statement *> body(Allocator()->Adapter());
     body.push_back(returnStmt);
@@ -606,6 +660,7 @@ ETSEnumType::Method ETSChecker::CreateEnumValuesMethod(ir::Identifier *const ite
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
 
     auto *const enumArrayTypeAnnotation =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         Allocator()->New<ir::TSArrayType>(MakeTypeReference(Allocator(), enumType->GetName()));
 
     auto *const function = MakeFunction(this, VarBinder()->AsETSBinder(), paramScope, std::move(params),
