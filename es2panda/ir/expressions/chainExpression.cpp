@@ -20,6 +20,7 @@
 #include <ir/astDump.h>
 #include <ir/expressions/callExpression.h>
 #include <ir/expressions/memberExpression.h>
+#include <ir/ts/tsNonNullExpression.h>
 
 namespace panda::es2panda::ir {
 
@@ -39,6 +40,8 @@ void ChainExpression::Compile(compiler::PandaGen *pg) const
 
     if (expression_->IsMemberExpression()) {
         expression_->AsMemberExpression()->Compile(pg);
+    } else if (expression_->IsTSNonNullExpression()) {
+        expression_->AsTSNonNullExpression()->Expr()->AsMemberExpression()->Compile(pg);
     } else {
         assert(expression_->IsCallExpression());
         expression_->AsCallExpression()->Compile(pg);
