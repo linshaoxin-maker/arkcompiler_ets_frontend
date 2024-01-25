@@ -90,6 +90,8 @@ checker::Type *ETSTypeReferencePart::Check(checker::ETSChecker *checker)
 checker::Type *ETSTypeReferencePart::GetType(checker::ETSChecker *checker)
 {
     if (prev_ == nullptr) {
+        // name_->Check(checker);
+
         if (name_->IsIdentifier()) {
             if ((name_->AsIdentifier()->Variable() != nullptr) &&
                 (name_->AsIdentifier()->Variable()->Declaration()->IsTypeAliasDecl())) {
