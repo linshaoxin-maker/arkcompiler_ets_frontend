@@ -1541,7 +1541,8 @@ void ETSChecker::CreateLambdaObjectForLambdaReference(ir::ArrowFunctionExpressio
     classScope->BindNode(lambdaObject);
 
     // Build the lambda object in the binder
-    VarBinder()->AsETSBinder()->BuildLambdaObject(lambda, lambdaObject, proxyMethod->Function()->Signature());
+    VarBinder()->AsETSBinder()->BuildLambdaObject(lambda, lambdaObject, proxyMethod->Function()->Signature(),
+                                                  lambda->Function()->IsExternal());
 
     // Resolve the proxy method
     ResolveProxyMethod(currentClassDef, proxyMethod, lambda);
@@ -1880,7 +1881,8 @@ void ETSChecker::ResolveProxyMethod(ir::ClassDefinition *const classDefinition, 
     auto *currentClassType = Context().ContainingClass();
 
     // Build the proxy method in the binder
-    varbinder->BuildProxyMethod(func, currentClassType->GetDeclNode()->AsClassDefinition()->InternalName(), isStatic);
+    varbinder->BuildProxyMethod(func, currentClassType->GetDeclNode()->AsClassDefinition()->InternalName(), isStatic,
+                                lambda->Function()->IsExternal());
 
     // If the proxy method is not static, set the implicit 'this' parameters type to the current class
     if (!isStatic) {
@@ -2360,7 +2362,8 @@ void ETSChecker::CreateLambdaObjectForFunctionReference(ir::AstNode *refNode, Si
     classScope->BindNode(lambdaObject);
 
     // Build the lambda object in the binder
-    VarBinder()->AsETSBinder()->BuildLambdaObject(refNode, lambdaObject, trueSignature);
+    VarBinder()->AsETSBinder()->BuildLambdaObject(refNode, lambdaObject, trueSignature,
+                                                  invokeFunc->Function()->IsExternal());
 
     // Resolve the lambda object
     ResolveLambdaObject(lambdaObject, trueSignature, functionalInterface, refNode);
@@ -2906,7 +2909,9 @@ ir::MethodDefinition *ETSChecker::CreateAsyncProxy(ir::MethodDefinition *asyncMe
                                                    bool createDecl)
 {
     ir::ScriptFunction *asyncFunc = asyncMethod->Function();
-    VarBinder()->AsETSBinder()->GetRecordTable()->Signatures().push_back(asyncFunc->Scope());
+    if (!asyncFunc->IsExternal()) {
+        VarBinder()->AsETSBinder()->GetRecordTable()->Signatures().push_back(asyncFunc->Scope());
+    }
 
     ir::MethodDefinition *implMethod = CreateAsyncImplMethod(asyncMethod, classDef);
     varbinder::FunctionScope *implFuncScope = implMethod->Function()->Scope();
@@ -2935,7 +2940,8 @@ ir::MethodDefinition *ETSChecker::CreateAsyncProxy(ir::MethodDefinition *asyncMe
             CreateLambdaFuncDecl(implMethod, classDef->Scope()->AsClassScope()->InstanceMethodScope());
         }
     }
-    VarBinder()->AsETSBinder()->BuildProxyMethod(implMethod->Function(), classDef->InternalName(), isStatic);
+    VarBinder()->AsETSBinder()->BuildProxyMethod(implMethod->Function(), classDef->InternalName(), isStatic,
+                                                 asyncFunc->IsExternal());
     implMethod->SetParent(asyncMethod->Parent());
 
     return implMethod;
