@@ -1418,6 +1418,10 @@ ir::Expression *ParserImpl::ParseOptionalChain(ir::Expression *leftSideExpr)
         ThrowSyntaxError("Tagged Template Literals are not allowed in optionalChain");
     }
 
+    if (returnExpression == nullptr) {
+        ThrowSyntaxError("Unexpected token");
+    }
+
     return returnExpression;
 }
 
