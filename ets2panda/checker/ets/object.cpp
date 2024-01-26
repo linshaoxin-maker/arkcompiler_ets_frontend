@@ -185,14 +185,156 @@ ArenaVector<Type *> ETSChecker::CreateTypeForTypeParameters(ir::TSTypeParameterD
     for (auto *const typeParam : typeParams->Params()) {
         result.emplace_back(SetUpParameterType(typeParam));
     }
+    return result;
+}
 
-    // The type parameter might be used in the constraint, like 'K extend Comparable<K>',
-    // so we need to create their type first, then set up the constraint
+void ETSChecker::SetUpConstraintForTypeParameters(ir::TSTypeParameterDeclaration *typeParams)
+{
     for (auto *const param : typeParams->Params()) {
         SetUpTypeParameterConstraint(param);
     }
+}
 
-    return result;
+void ETSChecker::CheckRecursiveConstraintForTypeParameters(ir::TSTypeParameterDeclaration *typeParams)
+{
+    for (auto *const param : typeParams->Params()) {
+        CheckRecursiveConstraintForTypeParameter(param);
+    }
+}
+
+void ETSChecker::CheckRecursiveConstraintForTypeParameter(ir::TSTypeParameter *param)
+{
+    if (param->Constraint() != nullptr && param->Constraint()->IsETSTypeReference() &&
+        param->Constraint()->AsETSTypeReference()->Part()->TypeParams() != nullptr) {
+        auto *typeParams = param->Constraint()->AsETSTypeReference()->Part()->TypeParams();
+        auto *const type = param->Name()->Variable()->TsType();
+        // Check if param is used as it's constraint's parameter, if it is used, we need to check
+        // all the parameters in it's constraints.
+        for (auto *const constraintParam : typeParams->Params()) {
+            if (type == constraintParam->TsType()) {
+                auto *baseType = GetOriginalBaseType(param->Constraint()->TsType()->AsETSObjectType());
+                CheckTypeArgumentConstraints(baseType, typeParams, param->Constraint()->Start());
+            }
+        }
+    }
+}
+
+void ETSChecker::CheckRecursiveSuperType(ETSObjectType *type)
+{
+    auto *classDef = type->GetDeclNode()->AsClassDefinition();
+    auto *superObj = type->SuperType();
+    if (superObj != nullptr && !superObj->TypeArguments().empty()) {
+        for (auto *const superTypeParam : superObj->TypeArguments()) {
+            if (type == superTypeParam) {
+                auto *baseType = GetOriginalBaseType(superObj);
+                auto *typeParams = classDef->Super()->AsETSTypeReference()->Part()->TypeParams();
+                CheckTypeArgumentConstraints(baseType, typeParams, classDef->Super()->Start());
+            }
+        }
+    }
+}
+
+void ETSChecker::CheckRecursiveInterfacesOfClass(ETSObjectType *type)
+{
+    auto *classDef = type->GetDeclNode()->AsClassDefinition();
+    if (!type->Interfaces().empty()) {
+        for (auto *const it : classDef->Implements()) {
+            CheckRecursiveInterfaces(type, it->Expr()->AsETSTypeReference(), it->Start());
+        }
+    }
+}
+
+void ETSChecker::CheckRecursiveInterfacesOfInterface(ETSObjectType *type)
+{
+    auto *interfaceDecl = type->GetDeclNode()->AsTSInterfaceDeclaration();
+    if (!type->Interfaces().empty()) {
+        for (auto *const it : interfaceDecl->Extends()) {
+            CheckRecursiveInterfaces(type, it->Expr()->AsETSTypeReference(), it->Start());
+        }
+    }
+}
+
+void ETSChecker::CheckRecursiveInterfaces(ETSObjectType *type, ir::ETSTypeReference *expr,
+                                          const lexer::SourcePosition &pos)
+{
+    ETSObjectType *interfaceType = expr->TsType()->AsETSObjectType();
+    if (!interfaceType->TypeArguments().empty()) {
+        for (auto *const interfaceTypeParam : interfaceType->TypeArguments()) {
+            if (type == interfaceTypeParam) {
+                auto *baseType = GetOriginalBaseType(interfaceType);
+                auto *typeParams = expr->Part()->TypeParams();
+                CheckTypeArgumentConstraints(baseType, typeParams, pos);
+            }
+        }
+    }
+}
+
+void ETSChecker::CheckTypeArgumentConstraints(ETSObjectType *type, ir::TSTypeParameterInstantiation *typeArgs,
+                                              const lexer::SourcePosition &pos)
+{
+    auto const isDefaulted = [typeArgs](size_t idx) { return typeArgs == nullptr || idx >= typeArgs->Params().size(); };
+
+    auto const getTypes = [this, &typeArgs, type, isDefaulted](size_t idx) -> std::pair<ETSTypeParameter *, Type *> {
+        auto *typeParam = type->TypeArguments().at(idx)->AsETSTypeParameter();
+        return {typeParam, isDefaulted(idx) ? typeParam->GetDefaultType()
+                                            : MaybePromotedBuiltinType(typeArgs->Params().at(idx)->GetType(this))};
+    };
+
+    auto *const substitution = NewSubstitution();
+
+    /*
+    The first loop is to create a substitution of typeParams & typeArgs.
+    so that we can replace the typeParams in constaints by the right type.
+    e.g:
+        class X <K extends Comparable<T>,T> {}
+        function main(){
+            const myCharClass = new X<Char,String>();
+        }
+    In the case above, the constraintsSubstitution should store "K->Char" and "T->String".
+    And in the second loop, we use this substitution to replace typeParams in constraints.
+    In this case, we will check "Comparable<String>" with "Char", since "Char" doesn't
+    extends "Comparable<String>", we will get an error here.
+    */
+    for (size_t idx = 0; idx < type->TypeArguments().size(); ++idx) {
+        auto const [typeParam, typeArg] = getTypes(idx);
+        CheckValidGenericTypeParameter(typeArg, pos);
+        typeArg->Substitute(Relation(), substitution);
+        ETSChecker::EmplaceSubstituted(substitution, typeParam, typeArg);
+    }
+
+    for (size_t idx = 0; idx < type->TypeArguments().size(); ++idx) {
+        auto const [typeParam, typeArg] = getTypes(idx);
+        if (typeParam->GetConstraintType() == nullptr) {
+            continue;
+        }
+        auto *const constraint = typeParam->GetConstraintType()->Substitute(Relation(), substitution);
+
+        bool recursiveTypeArg =
+            typeArg->IsETSTypeParameter() && typeArg->AsETSTypeParameter()->GetConstraintType() == nullptr;
+        bool recursiveClass = typeArg->IsETSObjectType() &&
+                              typeArg->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::CLASS) &&
+                              (!typeArg->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::RESOLVED_SUPER) ||
+                               !typeArg->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::RESOLVED_INTERFACES));
+        bool recursiveInterface = typeArg->IsETSObjectType() &&
+                                  typeArg->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::INTERFACE) &&
+                                  !typeArg->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::RESOLVED_INTERFACES);
+        if (recursiveTypeArg || recursiveClass || recursiveInterface) {
+            continue;
+        }
+        if (!ValidateTypeArg(constraint, typeArg) && typeArgs != nullptr && !Relation()->NoThrowGenericTypeAlias()) {
+            ThrowTypeError({"Type '", typeArg, "' is not assignable to constraint type '", constraint, "'."},
+                           isDefaulted(idx) ? pos : typeArgs->Params().at(idx)->Start());
+        }
+    }
+}
+
+bool ETSChecker::ValidateTypeArg(Type *constraintType, Type *typeArg)
+{
+    // NOTE: #14993 enforce ETSChecker::IsReferenceType
+    if (typeArg->IsWildcardType()) {
+        return true;
+    }
+    return Relation()->IsAssignableTo(typeArg, constraintType);
 }
 
 void ETSChecker::CheckTypeParameterConstraint(ir::TSTypeParameter *param, Type2TypeMap &extends)
@@ -267,9 +409,6 @@ ETSTypeParameter *ETSChecker::SetUpParameterType(ir::TSTypeParameter *const para
     paramType->AddTypeFlag(TypeFlag::GENERIC);
     paramType->SetDeclNode(param);
     paramType->SetVariable(param->Variable());
-    // NOTE: #15026 recursive type parameter workaround
-    paramType->SetConstraintType(GlobalETSNullishObjectType());
-
     param->Name()->Variable()->SetTsType(paramType);
     return paramType;
 }
@@ -284,6 +423,11 @@ void ETSChecker::CreateTypeForClassOrInterfaceTypeParameters(ETSObjectType *type
                                                      ? type->GetDeclNode()->AsClassDefinition()->TypeParams()
                                                      : type->GetDeclNode()->AsTSInterfaceDeclaration()->TypeParams();
     type->SetTypeArguments(CreateTypeForTypeParameters(typeParams));
+
+    // The constraint might be the class or interface itself, like 'class Common<T extends Common<T>>',
+    // so we need to set type arguments first, then set up the constraint.
+    SetUpConstraintForTypeParameters(typeParams);
+    CheckRecursiveConstraintForTypeParameters(typeParams);
     type->AddObjectFlag(ETSObjectFlags::RESOLVED_TYPE_PARAMS);
 }
 
@@ -313,7 +457,7 @@ ETSObjectType *ETSChecker::BuildInterfaceProperties(ir::TSInterfaceDeclaration *
     auto savedContext = checker::SavedCheckerContext(this, checker::CheckerStatus::IN_INTERFACE, interfaceType);
 
     ResolveDeclaredMembersOfObject(interfaceType);
-
+    CheckRecursiveInterfacesOfInterface(interfaceType);
     return interfaceType;
 }
 
@@ -371,6 +515,9 @@ ETSObjectType *ETSChecker::BuildClassProperties(ir::ClassDefinition *classDef)
     checker::ScopeContext scopeCtx(this, classScope);
 
     ResolveDeclaredMembersOfObject(classType);
+
+    CheckRecursiveSuperType(classType);
+    CheckRecursiveInterfacesOfClass(classType);
 
     return classType;
 }
@@ -719,6 +866,7 @@ void ETSChecker::ValidateOverriding(ETSObjectType *classType, const lexer::Sourc
         if (isGetterSetter && !functionOverridden) {
             for (auto *field : classType->Fields()) {
                 if (field->Name() == (*it)->Name()) {
+                    field->Declaration()->Node()->AddModifier(ir::ModifierFlags::SETTER);
                     it = abstractsToBeImplemented.erase(it);
                     functionOverridden = true;
                     break;
@@ -813,6 +961,7 @@ void ETSChecker::CheckClassDefinition(ir::ClassDefinition *classDef)
     }
 
     ValidateOverriding(classType, classDef->Start());
+    TransformProperties(classType);
     CheckValidInheritance(classType, classDef);
     CheckConstFields(classType);
     CheckGetterSetterProperties(classType);
@@ -1441,7 +1590,7 @@ void ETSChecker::CheckValidInheritance(ETSObjectType *classType, ir::ClassDefini
             continue;
         }
 
-        if (!IsSameDeclarationType(it, found)) {
+        if (!IsSameDeclarationType(it, found) && !it->HasFlag(varbinder::VariableFlags::GETTER_SETTER)) {
             const char *targetType {};
 
             if (it->HasFlag(varbinder::VariableFlags::PROPERTY)) {
@@ -1465,6 +1614,64 @@ void ETSChecker::CheckValidInheritance(ETSObjectType *classType, ir::ClassDefini
                             it->Name(), " is inherited with a different declaration type"},
                            classDef->Super()->Start());
         }
+    }
+}
+
+void ETSChecker::TransformProperties(ETSObjectType *classType)
+{
+    auto propertyList = classType->Fields();
+    auto *const classDef = classType->GetDeclNode()->AsClassDefinition();
+
+    for (auto *const field : propertyList) {
+        ASSERT(field->Declaration()->Node()->IsClassProperty());
+        auto *const classProp = field->Declaration()->Node()->AsClassProperty();
+
+        if ((field->Declaration()->Node()->Modifiers() & ir::ModifierFlags::SETTER) == 0U) {
+            continue;
+        }
+
+        field->AddFlag(varbinder::VariableFlags::GETTER_SETTER);
+
+        auto *const scope = this->Scope();
+        ASSERT(scope->IsClassScope());
+
+        ir::MethodDefinition *getter = GenerateDefaultGetterSetter(classProp, scope->AsClassScope(), false, this);
+        classDef->Body().push_back(getter);
+        classType->AddProperty<checker::PropertyType::INSTANCE_METHOD>(getter->Variable()->AsLocalVariable());
+
+        auto *const methodScope = scope->AsClassScope()->InstanceMethodScope();
+        auto name = getter->Key()->AsIdentifier()->Name();
+
+        auto *const decl = Allocator()->New<varbinder::FunctionDecl>(Allocator(), name, getter);
+        auto *const var = methodScope->AddDecl(Allocator(), decl, ScriptExtension::ETS);
+        var->AddFlag(varbinder::VariableFlags::METHOD);
+
+        if (var == nullptr) {
+            auto *const prevDecl = methodScope->FindDecl(name);
+            ASSERT(prevDecl->IsFunctionDecl());
+            prevDecl->Node()->AsMethodDefinition()->AddOverload(getter);
+
+            if (!classProp->IsReadonly()) {
+                ir::MethodDefinition *const setter =
+                    GenerateDefaultGetterSetter(classProp, scope->AsClassScope(), true, this);
+
+                classType->AddProperty<checker::PropertyType::INSTANCE_METHOD>(setter->Variable()->AsLocalVariable());
+                prevDecl->Node()->AsMethodDefinition()->AddOverload(setter);
+            }
+
+            getter->Function()->Id()->SetVariable(
+                methodScope->FindLocal(name, varbinder::ResolveBindingOptions::BINDINGS));
+            continue;
+        }
+
+        if (!classProp->IsReadonly()) {
+            ir::MethodDefinition *const setter =
+                GenerateDefaultGetterSetter(classProp, scope->AsClassScope(), true, this);
+
+            classType->AddProperty<checker::PropertyType::INSTANCE_METHOD>(setter->Variable()->AsLocalVariable());
+            getter->AddOverload(setter);
+        }
+        getter->Function()->Id()->SetVariable(var);
     }
 }
 

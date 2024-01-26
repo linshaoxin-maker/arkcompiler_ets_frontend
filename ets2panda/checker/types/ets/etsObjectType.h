@@ -482,6 +482,7 @@ public:
     Type *Substitute(TypeRelation *relation, const Substitution *substitution) override;
     void Cast(TypeRelation *relation, Type *target) override;
     bool CastNumericObject(TypeRelation *relation, Type *target);
+    bool DefaultObjectTypeChecks(const ETSChecker *etsChecker, TypeRelation *relation, Type *source);
     void IsSupertypeOf(TypeRelation *relation, Type *source) override;
     Type *AsSuper(Checker *checker, varbinder::Variable *sourceVar) override;
 
@@ -546,9 +547,11 @@ private:
     }
     std::unordered_map<util::StringView, const varbinder::LocalVariable *> CollectAllProperties() const;
     void IdenticalUptoNullability(TypeRelation *relation, Type *other);
-    bool CastWideningNarrowing(TypeRelation *relation, Type *target, TypeFlag unboxFlags, TypeFlag wideningFlags,
-                               TypeFlag narrowingFlags);
-
+    bool CastWideningNarrowing(TypeRelation *relation, Type *target, TypeFlag unbox_flags, TypeFlag widening_flags,
+                               TypeFlag narrowing_flags);
+    bool CastNumericBuiltinObject(TypeRelation *relation, Type *target);
+    bool CastNumericBuiltinByte(TypeRelation *relation, Type *target);
+    bool CastWideningNarrowingBuiltinType(TypeRelation *relation, Type *target, TypeFlag unbox_flags);
     ArenaAllocator *allocator_;
     util::StringView name_;
     util::StringView assemblerName_;

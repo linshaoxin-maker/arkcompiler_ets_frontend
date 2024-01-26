@@ -14,7 +14,6 @@
  */
 
 #include "etsObjectType.h"
-
 #include "varbinder/declaration.h"
 #include "checker/ETSchecker.h"
 #include "checker/ets/conversion.h"
@@ -321,7 +320,7 @@ void ETSObjectType::IdenticalUptoNullability(TypeRelation *relation, Type *other
         return;
     }
 
-    if (relation->IgnoreTypeParameters() || (this == other)) {
+    if ((relation->IgnoreTypeParameters() && !HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) || (this == other)) {
         relation->Result(true);
         return;
     }
@@ -457,12 +456,8 @@ bool ETSObjectType::CastWideningNarrowing(TypeRelation *const relation, Type *co
     return false;
 }
 
-bool ETSObjectType::CastNumericObject(TypeRelation *const relation, Type *const target)
+bool ETSObjectType::CastNumericBuiltinByte(TypeRelation *const relation, Type *const target)
 {
-    if (this->IsNullish()) {
-        return false;
-    }
-
     if (this->HasObjectFlag(ETSObjectFlags::BUILTIN_BYTE)) {
         if (target->HasTypeFlag(TypeFlag::BYTE)) {
             conversion::Unboxing(relation, this);
@@ -478,58 +473,106 @@ bool ETSObjectType::CastNumericObject(TypeRelation *const relation, Type *const 
             return true;
         }
     }
-    TypeFlag unboxFlags = TypeFlag::NONE;
-    TypeFlag wideningFlags = TypeFlag::NONE;
-    TypeFlag narrowingFlags = TypeFlag::NONE;
+    return false;
+}
+
+bool ETSObjectType::CastWideningNarrowingBuiltinType(TypeRelation *const relation, Type *const target,
+                                                     TypeFlag unbox_flags)
+{
+    TypeFlag widening_flags = TypeFlag::NONE;
+    TypeFlag narrowing_flags = TypeFlag::NONE;
+
+    switch (unbox_flags) {
+        case TypeFlag::SHORT:
+            widening_flags = TypeFlag::INT | TypeFlag::LONG | TypeFlag::FLOAT | TypeFlag::DOUBLE;
+            narrowing_flags = TypeFlag::BYTE | TypeFlag::CHAR;
+            break;
+        case TypeFlag::CHAR:
+            widening_flags = TypeFlag::INT | TypeFlag::LONG | TypeFlag::FLOAT | TypeFlag::DOUBLE;
+            narrowing_flags = TypeFlag::BYTE | TypeFlag::SHORT;
+            break;
+        case TypeFlag::INT:
+            widening_flags = TypeFlag::LONG | TypeFlag::FLOAT | TypeFlag::DOUBLE;
+            narrowing_flags = TypeFlag::BYTE | TypeFlag::SHORT | TypeFlag::CHAR;
+            break;
+        case TypeFlag::LONG:
+            widening_flags = TypeFlag::FLOAT | TypeFlag::DOUBLE;
+            narrowing_flags = TypeFlag::BYTE | TypeFlag::SHORT | TypeFlag::CHAR | TypeFlag::INT;
+            break;
+        case TypeFlag::FLOAT:
+            widening_flags = TypeFlag::DOUBLE;
+            narrowing_flags = TypeFlag::BYTE | TypeFlag::SHORT | TypeFlag::CHAR | TypeFlag::INT | TypeFlag::LONG;
+            break;
+        case TypeFlag::DOUBLE:
+            widening_flags = TypeFlag::NONE;
+            narrowing_flags =
+                TypeFlag::BYTE | TypeFlag::SHORT | TypeFlag::CHAR | TypeFlag::INT | TypeFlag::LONG | TypeFlag::FLOAT;
+            break;
+        default:
+            UNREACHABLE();
+    }
+
+    return CastWideningNarrowing(relation, target, unbox_flags, widening_flags, narrowing_flags);
+}
+
+bool ETSObjectType::CastNumericBuiltinObject(TypeRelation *const relation, Type *const target)
+{
+    TypeFlag unbox_flags = TypeFlag::NONE;
+
     if (this->HasObjectFlag(ETSObjectFlags::BUILTIN_SHORT)) {
-        unboxFlags = TypeFlag::SHORT;
-        wideningFlags = TypeFlag::INT | TypeFlag::LONG | TypeFlag::FLOAT | TypeFlag::DOUBLE;
-        narrowingFlags = TypeFlag::BYTE | TypeFlag::CHAR;
-        if (CastWideningNarrowing(relation, target, unboxFlags, wideningFlags, narrowingFlags)) {
+        unbox_flags = TypeFlag::SHORT;
+        if (CastWideningNarrowingBuiltinType(relation, target, unbox_flags)) {
             return true;
         }
     }
     if (this->HasObjectFlag(ETSObjectFlags::BUILTIN_CHAR)) {
-        unboxFlags = TypeFlag::CHAR;
-        wideningFlags = TypeFlag::INT | TypeFlag::LONG | TypeFlag::FLOAT | TypeFlag::DOUBLE;
-        narrowingFlags = TypeFlag::BYTE | TypeFlag::SHORT;
-        if (CastWideningNarrowing(relation, target, unboxFlags, wideningFlags, narrowingFlags)) {
+        unbox_flags = TypeFlag::CHAR;
+        if (CastWideningNarrowingBuiltinType(relation, target, unbox_flags)) {
             return true;
         }
     }
     if (this->HasObjectFlag(ETSObjectFlags::BUILTIN_INT)) {
-        unboxFlags = TypeFlag::INT;
-        wideningFlags = TypeFlag::LONG | TypeFlag::FLOAT | TypeFlag::DOUBLE;
-        narrowingFlags = TypeFlag::BYTE | TypeFlag::SHORT | TypeFlag::CHAR;
-        if (CastWideningNarrowing(relation, target, unboxFlags, wideningFlags, narrowingFlags)) {
+        unbox_flags = TypeFlag::INT;
+        if (CastWideningNarrowingBuiltinType(relation, target, unbox_flags)) {
             return true;
         }
     }
     if (this->HasObjectFlag(ETSObjectFlags::BUILTIN_LONG)) {
-        unboxFlags = TypeFlag::LONG;
-        wideningFlags = TypeFlag::FLOAT | TypeFlag::DOUBLE;
-        narrowingFlags = TypeFlag::BYTE | TypeFlag::SHORT | TypeFlag::CHAR | TypeFlag::INT;
-        if (CastWideningNarrowing(relation, target, unboxFlags, wideningFlags, narrowingFlags)) {
+        unbox_flags = TypeFlag::LONG;
+        if (CastWideningNarrowingBuiltinType(relation, target, unbox_flags)) {
             return true;
         }
     }
     if (this->HasObjectFlag(ETSObjectFlags::BUILTIN_FLOAT)) {
-        unboxFlags = TypeFlag::FLOAT;
-        wideningFlags = TypeFlag::DOUBLE;
-        narrowingFlags = TypeFlag::BYTE | TypeFlag::SHORT | TypeFlag::CHAR | TypeFlag::INT | TypeFlag::LONG;
-        if (CastWideningNarrowing(relation, target, unboxFlags, wideningFlags, narrowingFlags)) {
+        unbox_flags = TypeFlag::FLOAT;
+        if (CastWideningNarrowingBuiltinType(relation, target, unbox_flags)) {
             return true;
         }
     }
     if (this->HasObjectFlag(ETSObjectFlags::BUILTIN_DOUBLE)) {
-        unboxFlags = TypeFlag::DOUBLE;
-        wideningFlags = TypeFlag::NONE;
-        narrowingFlags =
-            TypeFlag::BYTE | TypeFlag::SHORT | TypeFlag::CHAR | TypeFlag::INT | TypeFlag::LONG | TypeFlag::FLOAT;
-        if (CastWideningNarrowing(relation, target, unboxFlags, wideningFlags, narrowingFlags)) {
+        unbox_flags = TypeFlag::DOUBLE;
+        if (CastWideningNarrowingBuiltinType(relation, target, unbox_flags)) {
             return true;
         }
     }
+
+    return false;
+}
+
+bool ETSObjectType::CastNumericObject(TypeRelation *const relation, Type *const target)
+{
+    if (this->IsNullish()) {
+        return false;
+    }
+
+    if (CastNumericBuiltinByte(relation, target)) {
+        return true;
+    }
+
+    if (CastNumericBuiltinObject(relation, target)) {
+        return true;
+    }
+
     if (this->HasObjectFlag(ETSObjectFlags::BUILTIN_BOOLEAN)) {
         if (target->HasTypeFlag(TypeFlag::ETS_BOOLEAN)) {
             conversion::Unboxing(relation, this);
@@ -604,6 +647,40 @@ void ETSObjectType::Cast(TypeRelation *const relation, Type *const target)
     conversion::Forbidden(relation);
 }
 
+bool ETSObjectType::DefaultObjectTypeChecks(const ETSChecker *const etsChecker, TypeRelation *const relation,
+                                            Type *const source)
+{
+    // 3.8.3 Subtyping among Array Types
+    auto const *const base = GetConstOriginalBaseType();
+    if (base == etsChecker->GlobalETSObjectType() && source->IsETSArrayType()) {
+        relation->Result(true);
+        return true;
+    }
+
+    if (source->IsETSTypeParameter()) {
+        IsSupertypeOf(relation, source->AsETSTypeParameter()->GetConstraintType());
+        return true;
+    }
+
+    if (!source->IsETSObjectType() ||
+        !source->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::CLASS | ETSObjectFlags::INTERFACE |
+                                                  ETSObjectFlags::NULL_TYPE)) {
+        return true;
+    }
+
+    if ((!ContainsNull() && source->ContainsNull()) || (!ContainsUndefined() && source->ContainsUndefined())) {
+        return true;
+    }
+    // All classes and interfaces are subtypes of Object
+    if (base == etsChecker->GlobalETSObjectType() || base == etsChecker->GlobalETSNullishObjectType()) {
+        relation->Result(true);
+        return true;
+    }
+
+    IdenticalUptoNullability(relation, source);
+    return relation->IsTrue();
+}
+
 void ETSObjectType::IsSupertypeOf(TypeRelation *relation, Type *source)
 {
     relation->Result(false);
@@ -620,30 +697,7 @@ void ETSObjectType::IsSupertypeOf(TypeRelation *relation, Type *source)
         return;
     }
 
-    // 3.8.3 Subtyping among Array Types
-    auto const *const base = GetConstOriginalBaseType();
-    if (base == etsChecker->GlobalETSObjectType() && source->IsETSArrayType()) {
-        relation->Result(true);
-        return;
-    }
-
-    if (!source->IsETSObjectType() ||
-        !source->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::CLASS | ETSObjectFlags::INTERFACE |
-                                                  ETSObjectFlags::NULL_TYPE)) {
-        return;
-    }
-
-    if ((!ContainsNull() && source->ContainsNull()) || (!ContainsUndefined() && source->ContainsUndefined())) {
-        return;
-    }
-    // All classes and interfaces are subtypes of Object
-    if (base == etsChecker->GlobalETSObjectType() || base == etsChecker->GlobalETSNullishObjectType()) {
-        relation->Result(true);
-        return;
-    }
-
-    IdenticalUptoNullability(relation, source);
-    if (relation->IsTrue()) {
+    if (DefaultObjectTypeChecks(etsChecker, relation, source)) {
         return;
     }
 
@@ -769,7 +823,8 @@ static varbinder::LocalVariable *CopyPropertyWithTypeArguments(varbinder::LocalV
                                                                const Substitution *substitution)
 {
     auto *const checker = relation->GetChecker()->AsETSChecker();
-    auto *const copiedPropType = checker->GetTypeOfVariable(prop)->Substitute(relation, substitution);
+    auto *const varType = ETSChecker::IsVariableGetterSetter(prop) ? prop->TsType() : checker->GetTypeOfVariable(prop);
+    auto *const copiedPropType = varType->Substitute(relation, substitution);
     auto *const copiedProp = prop->Copy(checker->Allocator(), prop->Declaration());
     copiedPropType->SetVariable(copiedProp);
     copiedProp->SetTsType(copiedPropType);
