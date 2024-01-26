@@ -1042,7 +1042,6 @@ private:
         if (ResolveStringFromNullishBuiltin<Short, General, Range>(node, signature, arguments)) {
             return;
         }
-
         const auto name = signature->InternalName();
         switch (arguments.size()) {
             case 0U: {

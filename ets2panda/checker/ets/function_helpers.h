@@ -150,18 +150,17 @@ static const Substitution *BuildExplicitSubstitutionForArguments(ETSChecker *che
 }
 
 static Signature *MaybeSubstituteTypeParameters(ETSChecker *checker, Signature *signature,
-                                                const ir::TSTypeParameterInstantiation *typeArguments,
-                                                const ArenaVector<ir::Expression *> &arguments,
-                                                const lexer::SourcePosition &pos, TypeRelationFlag flags)
+                                                const ETSChecker::CallData &data, const lexer::SourcePosition &pos,
+                                                TypeRelationFlag flags)
 {
-    if (typeArguments == nullptr && signature->GetSignatureInfo()->typeParams.empty()) {
+    if (data.typeArguments == nullptr && signature->GetSignatureInfo()->typeParams.empty()) {
         return signature;
     }
 
     const Substitution *substitution =
-        (typeArguments != nullptr)
-            ? BuildExplicitSubstitutionForArguments(checker, signature, typeArguments->Params(), pos, flags)
-            : BuildImplicitSubstitutionForArguments(checker, signature, arguments);
+        (data.typeArguments != nullptr)
+            ? BuildExplicitSubstitutionForArguments(checker, signature, data.typeArguments->Params(), pos, flags)
+            : BuildImplicitSubstitutionForArguments(checker, signature, data.arguments);
     return (substitution == nullptr) ? nullptr : signature->Substitute(checker->Relation(), substitution);
 }
 

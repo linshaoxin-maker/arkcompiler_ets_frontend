@@ -335,12 +335,13 @@ void ETSEmitter::GenInterfaceMethodDefinition(const ir::MethodDefinition *method
 
 void ETSEmitter::GenClassField(const ir::ClassProperty *field, pandasm::Record &classRecord, bool external)
 {
-    GenField(field->TsType(), field->Id()->Name(), field->Value(), TranslateModifierFlags(field->Modifiers()),
-             classRecord, external);
+    auto emittedField = GenField(field->TsType(), field->Id()->Name(), field->Value(),
+                                 TranslateModifierFlags(field->Modifiers()), external);
+    classRecord.fieldList.emplace_back(std::move(emittedField));
 }
 
-void ETSEmitter::GenField(checker::CheckerType *tsType, const util::StringView &name, const ir::Expression *value,
-                          uint32_t accesFlags, pandasm::Record &record, bool external)
+pandasm::Field ETSEmitter::GenField(checker::CheckerType *tsType, const util::StringView &name,
+                                    const ir::Expression *value, uint32_t accesFlags, bool external)
 {
     auto field = pandasm::Field(Program()->lang);
     std::stringstream ss;
@@ -357,7 +358,7 @@ void ETSEmitter::GenField(checker::CheckerType *tsType, const util::StringView &
         EmitDefaultFieldValue(field, value);
     }
 
-    record.fieldList.emplace_back(std::move(field));
+    return field;
 }
 
 void ETSEmitter::GenClassInheritedFields(const checker::ETSObjectType *baseType, pandasm::Record &classRecord)

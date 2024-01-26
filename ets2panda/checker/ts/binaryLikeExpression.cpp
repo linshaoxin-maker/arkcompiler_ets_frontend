@@ -223,4 +223,46 @@ void TSChecker::CheckAssignmentOperator(lexer::TokenType op, ir::Expression *lef
         }
     }
 }
+
+Type *TSChecker::CheckAssignmentExprOperatorType(ir::AssignmentExpression *expr)
+{
+    auto *leftType = expr->Left()->Check(this);
+
+    if (leftType->HasTypeFlag(checker::TypeFlag::READONLY)) {
+        ThrowTypeError("Cannot assign to this property because it is readonly.", expr->Left()->Start());
+    }
+
+    if (expr->OperatorType() == lexer::TokenType::PUNCTUATOR_SUBSTITUTION) {
+        ElaborateElementwise(leftType, expr->Right(), expr->Left()->Start());
+        return CheckTypeCached(expr->Right());
+    }
+
+    auto *rightType = expr->Right()->Check(this);
+    switch (expr->OperatorType()) {
+        case lexer::TokenType::PUNCTUATOR_MULTIPLY_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_EXPONENTIATION_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_DIVIDE_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_MOD_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_MINUS_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_LEFT_SHIFT_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_RIGHT_SHIFT_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_UNSIGNED_RIGHT_SHIFT_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_BITWISE_AND_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_BITWISE_XOR_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_BITWISE_OR_EQUAL: {
+            return CheckBinaryOperator(leftType, rightType, expr->Left(), expr->Right(), expr, expr->OperatorType());
+        }
+        case lexer::TokenType::PUNCTUATOR_PLUS_EQUAL: {
+            return CheckPlusOperator(leftType, rightType, expr->Left(), expr->Right(), expr, expr->OperatorType());
+        }
+        case lexer::TokenType::PUNCTUATOR_SUBSTITUTION: {
+            CheckAssignmentOperator(expr->OperatorType(), expr->Left(), leftType, rightType);
+            return rightType;
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+}
+
 }  // namespace panda::es2panda::checker

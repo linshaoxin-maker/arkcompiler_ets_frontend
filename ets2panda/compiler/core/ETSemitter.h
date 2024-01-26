@@ -80,8 +80,8 @@ private:
     void GenInterfaceRecord(const ir::TSInterfaceDeclaration *interfaceDecl, bool external);
     void EmitDefaultFieldValue(pandasm::Field &classField, const ir::Expression *init);
     void GenClassField(const ir::ClassProperty *field, pandasm::Record &classRecord, bool external);
-    void GenField(checker::CheckerType *tsType, const util::StringView &name, const ir::Expression *value,
-                  uint32_t accesFlags, pandasm::Record &record, bool external);
+    pandasm::Field GenField(checker::CheckerType *tsType, const util::StringView &name, const ir::Expression *value,
+                            uint32_t accesFlags, bool external);
     void GenInterfaceMethodDefinition(const ir::MethodDefinition *methodDef, bool external);
     void GenClassInheritedFields(checker::CETSObjectType *baseType, pandasm::Record &classRecord);
     pandasm::AnnotationData GenAnnotationSignature(const ir::ClassDefinition *classDef);

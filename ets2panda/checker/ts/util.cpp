@@ -118,13 +118,11 @@ bool TSChecker::MaybeTypeOfKind(CheckerType *type, TypeFlag flags)
         return true;
     }
 
-    if (type->HasTypeFlag(TypeFlag::UNION_OR_INTERSECTION)) {
-        if (type->IsUnionType()) {
-            const auto &constituentTypes = type->AsUnionType()->ConstituentTypes();
-            for (auto *it : constituentTypes) {
-                if (MaybeTypeOfKind(it, flags)) {
-                    return true;
-                }
+    if (type->HasTypeFlag(TypeFlag::UNION_OR_INTERSECTION) && type->IsUnionType()) {
+        const auto &constituentTypes = type->AsUnionType()->ConstituentTypes();
+        for (auto *it : constituentTypes) {
+            if (MaybeTypeOfKind(it, flags)) {
+                return true;
             }
         }
     }
@@ -138,13 +136,11 @@ bool TSChecker::MaybeTypeOfKind(CheckerType *type, ObjectType::ObjectTypeKind ki
         return true;
     }
 
-    if (type->HasTypeFlag(TypeFlag::UNION_OR_INTERSECTION)) {
-        if (type->IsUnionType()) {
-            const auto &constituentTypes = type->AsUnionType()->ConstituentTypes();
-            for (auto *it : constituentTypes) {
-                if (MaybeTypeOfKind(it, kind)) {
-                    return true;
-                }
+    if (type->HasTypeFlag(TypeFlag::UNION_OR_INTERSECTION) && type->IsUnionType()) {
+        const auto &constituentTypes = type->AsUnionType()->ConstituentTypes();
+        for (auto *it : constituentTypes) {
+            if (MaybeTypeOfKind(it, kind)) {
+                return true;
             }
         }
     }

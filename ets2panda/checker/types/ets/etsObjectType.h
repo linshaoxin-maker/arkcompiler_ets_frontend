@@ -484,6 +484,7 @@ public:
                                  const Substitution *substitution);
     Type *Substitute(TypeRelation *relation, const Substitution *substitution) override;
     void Cast(TypeRelation *relation, Type *target) override;
+    bool UnboxableConversion(TypeRelation *relation, Type *target);
     bool CastNumericObject(TypeRelation *relation, Type *target);
     bool DefaultObjectTypeChecks(const ETSChecker *etsChecker, TypeRelation *relation, Type *source);
     void IsSupertypeOf(TypeRelation *relation, Type *source) override;
@@ -550,8 +551,15 @@ private:
     }
     ArenaMap<util::StringView, const varbinder::LocalVariable *> CollectAllProperties() const;
     void IdenticalUptoNullability(TypeRelation *relation, Type *other);
-    bool CastWideningNarrowing(TypeRelation *relation, Type *target, TypeFlag unboxFlags, TypeFlag wideningFlags,
-                               TypeFlag narrowingFlags);
+
+    struct CastFlags {
+        TypeFlag unbox;
+        TypeFlag widening;
+        TypeFlag narrowing;
+    };
+
+    bool CastWideningNarrowing(TypeRelation *relation, Type *target, CastFlags flags);
+    std::optional<CastFlags> GetWideningFlags();
 
     ArenaAllocator *allocator_;
     util::StringView name_;

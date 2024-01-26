@@ -369,4 +369,21 @@ Type *ETSChecker::SelectGlobalIntegerTypeForNumeric(Type *type)
     }
 }
 
+ArithmeticChecker::CheckBinaryT ETSChecker::CheckBinaryOperator(ir::Expression *left, ir::Expression *right,
+                                                                ir::Expression *expr, lexer::TokenType operationType,
+                                                                bool forcePromotion)
+{
+    auto leftType = left->Check(this);
+    auto rightType = right->Check(this);
+    ArithmeticChecker::BinaryOpData data {
+        left, right, expr, operationType, expr->Start(),
+    };
+    return arithmeticChecker_->CheckBinaryOperator(data, leftType, rightType, forcePromotion);
+}
+
+Type *ETSChecker::CheckUnaryExpression(ir::UnaryExpression *expr, checker::Type *operandType, checker::Type *argType)
+{
+    return arithmeticChecker_->CheckUnaryOperatorHelper(expr, operandType, argType);
+}
+
 }  // namespace panda::es2panda::checker

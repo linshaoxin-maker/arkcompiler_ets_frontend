@@ -296,6 +296,20 @@ public:
     Type *CreateObjectTypeWithConstructSignature(Signature *constructSignature);
 
     // Object
+
+    struct PropertiesCheck {
+        ArenaVector<checker::Type *> computedNumberPropTypes;
+        ArenaVector<checker::Type *> computedStringPropTypes;
+        ObjectDescriptor *const desc;  // NOLINT(readability-identifier-naming)
+        bool seenSpread = false;
+    };
+    void CheckSpreadElement(ObjectDescriptor *desc, ir::SpreadElement *spread,
+                            const std::unordered_map<util::StringView, lexer::SourcePosition> &propertiesMap);
+    PropertiesCheck CheckObjectExpression(ir::ObjectExpression *expr);
+    Type *GetTypeForProperty(ir::Property *prop);
+    static varbinder::VariableFlags GetFlagsForProperty(const ir::Property *prop);
+    static const util::StringView &GetPropertyName(const ir::Expression *key);
+
     void ResolvePropertiesOfObjectType(ObjectType *type, ir::AstNode *member,
                                        ArenaVector<ir::TSSignatureDeclaration *> &signatureDeclarations,
                                        ArenaVector<ir::TSIndexSignature *> &indexDeclarations, bool isInterface);
@@ -361,6 +375,8 @@ public:
     Type *CheckInExpression(Type *leftType, Type *rightType, ir::Expression *leftExpr, ir::Expression *rightExpr,
                             ir::AstNode *expr);
     void CheckAssignmentOperator(lexer::TokenType op, ir::Expression *leftExpr, Type *leftType, Type *valueType);
+
+    Type *CheckAssignmentExprOperatorType(ir::AssignmentExpression *expr);
 
 private:
     NumberLiteralPool numberLiteralMap_;
