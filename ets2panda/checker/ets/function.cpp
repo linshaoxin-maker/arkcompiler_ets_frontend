@@ -675,10 +675,12 @@ Signature *ETSChecker::ResolveCallExpressionAndTrailingLambda(ArenaVector<Signat
         return sig;
     }
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto arguments = ExtendArgumentsWithFakeLamda(callExpr);
     sig = ValidateSignatures(signatures, callExpr->TypeParams(), arguments, pos, "call",
                              TypeRelationFlag::NO_THROW | TypeRelationFlag::NO_CHECK_TRAILING_LAMBDA);
     if (sig != nullptr) {
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         TransformTraillingLambda(callExpr);
         TypeInference(sig, callExpr->Arguments());
         return sig;
@@ -1387,6 +1389,7 @@ void ETSChecker::CreateFunctionalInterfaceForFunctionType(ir::ETSFunctionType *f
     auto *interfaceScope = interfaceCtx.GetScope();
 
     ArenaVector<ir::AstNode *> members(Allocator()->Adapter());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     ir::MethodDefinition *invokeFunc = CreateInvokeFunction(funcType);
     members.push_back(invokeFunc);
 
@@ -1423,6 +1426,7 @@ ir::MethodDefinition *ETSChecker::CreateInvokeFunction(ir::ETSFunctionType *func
     auto *identNode = Allocator()->New<ir::Identifier>(util::StringView("invoke"), Allocator());
 
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *funcParamScope = CopyParams(funcType->Params(), params);
 
     auto paramCtx = varbinder::LexicalScope<varbinder::FunctionParamScope>::Enter(VarBinder(), funcParamScope, false);
@@ -1475,6 +1479,7 @@ void ETSChecker::CreateLambdaObjectForLambdaReference(ir::ArrowFunctionExpressio
     ArenaVector<ir::AstNode *> properties(Allocator()->Adapter());
     for (const auto *it : capturedVars) {
         if (it->HasFlag(varbinder::VariableFlags::LOCAL)) {
+            // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
             properties.push_back(CreateLambdaCapturedField(it, classScope, idx, lambda->Start()));
             idx++;
         } else if (!it->HasFlag(varbinder::VariableFlags::STATIC) &&
@@ -1486,19 +1491,23 @@ void ETSChecker::CreateLambdaObjectForLambdaReference(ir::ArrowFunctionExpressio
     // If the lambda captured a property in the current class, we have to make a synthetic class property to store
     // 'this' in it
     if (saveThis) {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         properties.push_back(CreateLambdaCapturedThis(classScope, idx, lambda->Start()));
         idx++;
     }
 
     // Create the synthetic proxy method node for the current class definiton, which we will use in the lambda
     // 'invoke' method to propagate the function call to the current class
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *proxyMethod = CreateProxyMethodForLambda(currentClassDef, lambda, properties, !saveThis);
 
     // Create the synthetic constructor node for the lambda class, to be able to save captured variables
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *ctor = CreateLambdaImplicitCtor(properties);
     properties.push_back(ctor);
 
     // Create the synthetic invoke node for the lambda class, which will propagate the call to the proxy method
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *invokeFunc = CreateLambdaInvokeProto();
 
     properties.push_back(invokeFunc);
@@ -1537,6 +1546,7 @@ void ETSChecker::CreateLambdaObjectForLambdaReference(ir::ArrowFunctionExpressio
     // Resolve the proxy method
     ResolveProxyMethod(proxyMethod, lambda);
     if (lambda->Function()->IsAsyncFunc()) {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         ir::MethodDefinition *asyncImpl = CreateAsyncProxy(proxyMethod, currentClassDef);
         ir::ScriptFunction *asyncImplFunc = asyncImpl->Function();
         currentClassDef->Body().push_back(asyncImpl);
@@ -1549,6 +1559,7 @@ void ETSChecker::CreateLambdaObjectForLambdaReference(ir::ArrowFunctionExpressio
     }
 
     // Resolve the lambda object
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     ResolveLambdaObject(lambdaObject, functionalInterface, lambda, proxyMethod, saveThis);
 }
 
@@ -1584,6 +1595,7 @@ void ETSChecker::ResolveLambdaObject(ir::ClassDefinition *lambdaObject, ETSObjec
     ResolveLambdaObjectCtor(lambdaObject);
 
     // Resolve the invoke function
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     ResolveLambdaObjectInvoke(lambdaObject, lambda, proxyMethod, !saveThis);
 }
 
@@ -1631,6 +1643,7 @@ void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambdaObject, ir
         invokeFunc->Id()->Variable()->AsLocalVariable());
 
     // Fill out the type information for the body of the invoke function
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *resolvedLambdaInvokeFunctionBody = ResolveLambdaObjectInvokeFuncBody(lambdaObject, proxyMethod, isStatic);
     if (invokeFunc->IsAsyncFunc()) {
         return;
@@ -1887,6 +1900,7 @@ ir::MethodDefinition *ETSChecker::CreateProxyMethodForLambda(ir::ClassDefinition
                                                              ir::ArrowFunctionExpression *lambda,
                                                              ArenaVector<ir::AstNode *> &captured, bool isStatic)
 {
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *func = CreateProxyFunc(lambda, captured, isStatic);
 
     // Create the synthetic proxy method
@@ -2120,6 +2134,7 @@ ir::MethodDefinition *ETSChecker::CreateLambdaImplicitCtor(ArenaVector<ir::AstNo
 {
     // Create the parameters for the synthetic constructor node for the lambda class
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *funcParamScope = CreateLambdaCtorImplicitParams(params, properties);
 
     // Create the scopes for the synthetic constructor node
@@ -2132,6 +2147,7 @@ ir::MethodDefinition *ETSChecker::CreateLambdaImplicitCtor(ArenaVector<ir::AstNo
     ArenaVector<ir::Statement *> statements(Allocator()->Adapter());
     for (auto *it : properties) {
         auto *field = it->AsClassProperty()->Key()->AsIdentifier();
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         statements.push_back(CreateLambdaCtorFieldInit(field->Name(), field->Variable()));
     }
 
@@ -2239,6 +2255,7 @@ void ETSChecker::CreateLambdaObjectForFunctionReference(ir::AstNode *refNode, Si
 
     // Create the synthetic constructor node, where we will initialize the synthetic field (if present) to the
     // instance object
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *ctor = CreateLambdaImplicitCtor(refNode->Range(), isStaticReference);
     properties.push_back(ctor);
 
@@ -2269,6 +2286,7 @@ void ETSChecker::CreateLambdaObjectForFunctionReference(ir::AstNode *refNode, Si
     VarBinder()->AsETSBinder()->BuildLambdaObject(refNode, lambdaObject, signature);
 
     // Resolve the lambda object
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     ResolveLambdaObject(lambdaObject, signature, functionalInterface, refNode);
 }
 
@@ -2298,6 +2316,7 @@ ir::MethodDefinition *ETSChecker::CreateLambdaImplicitCtor(const lexer::SourceRa
     ArenaVector<ir::Statement *> statements(Allocator()->Adapter());
 
     // Create the parameters for the synthetic constructor
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto [funcParamScope, var] = CreateLambdaCtorImplicitParam(params, pos, isStaticReference);
 
     // Create the scopes
@@ -2308,6 +2327,7 @@ ir::MethodDefinition *ETSChecker::CreateLambdaImplicitCtor(const lexer::SourceRa
     // If the reference refers to a static function, the constructor will be empty, otherwise, we have to make a
     // synthetic initializer to initialize the lambda class field
     if (!isStaticReference) {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         statements.push_back(CreateLambdaCtorFieldInit(util::StringView("field0"), var));
     }
 
@@ -2459,6 +2479,7 @@ void ETSChecker::ResolveLambdaObject(ir::ClassDefinition *lambdaObject, Signatur
     ResolveLambdaObjectCtor(lambdaObject, isStaticReference);
 
     // Resolve the invoke function
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     ResolveLambdaObjectInvoke(lambdaObject, signature);
 }
 
@@ -2568,6 +2589,7 @@ void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambdaObject, Si
 
     // Fill out the type information for the body of the invoke function
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *resolvedLambdaInvokeFunctionBody = ResolveLambdaObjectInvokeFuncBody(lambdaObject, signatureRef);
 
     invokeFunc->Body()->AsBlockStatement()->Statements().push_back(resolvedLambdaInvokeFunctionBody);
@@ -2699,6 +2721,7 @@ ir::MethodDefinition *ETSChecker::CreateAsyncImplMethod(ir::MethodDefinition *as
         varbinder::LexicalScope<varbinder::ClassScope>::Enter(VarBinder(), classDef->Scope()->AsClassScope());
     auto *body = asyncFunc->Body();
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     varbinder::FunctionParamScope *paramScope = CopyParams(asyncFunc->Params(), params);
 
     // Set impl method return type "Object" because it may return Promise as well as Promise parameter's type
@@ -2724,6 +2747,7 @@ ir::MethodDefinition *ETSChecker::CreateAsyncImplMethod(ir::MethodDefinition *as
     returnTypeAnn->SetTsType(retType);
 
     ir::MethodDefinition *implMethod =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         CreateMethod(implName.View(), modifiers, flags, std::move(params), paramScope, returnTypeAnn, body);
     asyncFunc->SetBody(nullptr);
     returnTypeAnn->SetParent(implMethod->Function());
@@ -2739,6 +2763,7 @@ ir::MethodDefinition *ETSChecker::CreateAsyncProxy(ir::MethodDefinition *asyncMe
     ir::ScriptFunction *asyncFunc = asyncMethod->Function();
     VarBinder()->AsETSBinder()->GetRecordTable()->Signatures().push_back(asyncFunc->Scope());
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     ir::MethodDefinition *implMethod = CreateAsyncImplMethod(asyncMethod, classDef);
     varbinder::FunctionScope *implFuncScope = implMethod->Function()->Scope();
     for (auto *decl : asyncFunc->Scope()->Decls()) {
@@ -2814,6 +2839,7 @@ varbinder::FunctionParamScope *ETSChecker::CopyParams(const ArenaVector<ir::Expr
 
     for (auto *const it : params) {
         auto *const paramOld = it->AsETSParameterExpression();
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *const paramNew = paramOld->Clone(Allocator(), paramOld->Parent())->AsETSParameterExpression();
 
         auto *const var = std::get<1>(VarBinder()->AddParamDecl(paramNew));
@@ -2890,6 +2916,7 @@ void ETSChecker::TransformTraillingLambda(ir::CallExpression *callExpr)
 
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
     auto *funcNode =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         AllocNode<ir::ScriptFunction>(ir::FunctionSignature(nullptr, std::move(params), nullptr), trailingBlock,
                                       ir::ScriptFunctionFlags::ARROW, false, Language(Language::Id::ETS));
     funcNode->SetScope(funcScope);
@@ -2900,6 +2927,7 @@ void ETSChecker::TransformTraillingLambda(ir::CallExpression *callExpr)
     ReplaceScope(funcNode->Body(), trailingBlock, funcScope);
     callExpr->SetTrailingBlock(nullptr);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *arrowFuncNode = AllocNode<ir::ArrowFunctionExpression>(Allocator(), funcNode);
     arrowFuncNode->SetRange(trailingBlock->Range());
     arrowFuncNode->SetParent(callExpr);
@@ -2917,6 +2945,7 @@ ArenaVector<ir::Expression *> ETSChecker::ExtendArgumentsWithFakeLamda(ir::CallE
     auto *body = AllocNode<ir::BlockStatement>(Allocator(), std::move(statements));
     body->SetScope(funcScope);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *funcNode = AllocNode<ir::ScriptFunction>(ir::FunctionSignature(nullptr, std::move(params), nullptr), body,
                                                    ir::ScriptFunctionFlags::ARROW, false, Language(Language::Id::ETS));
     funcNode->SetScope(funcScope);

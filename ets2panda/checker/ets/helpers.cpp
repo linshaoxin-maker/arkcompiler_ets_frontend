@@ -707,6 +707,7 @@ Type *ETSChecker::ResolveIdentifier(ir::Identifier *const ident)
         resolved = FindVariableInGlobal(ident);
     }
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     ValidateResolvedIdentifier(ident, resolved);
 
     if (resolved->HasFlag(varbinder::VariableFlags::METHOD)) {
@@ -1241,6 +1242,7 @@ Type *ETSChecker::GetTypeFromClassReference(varbinder::Variable *var)
 void ETSChecker::ValidateGenericTypeAliasForClonedNode(ir::TSTypeAliasDeclaration *const typeAliasNode,
                                                        const ir::TSTypeParameterInstantiation *const exactTypeParams)
 {
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const clonedNode = typeAliasNode->TypeAnnotation()->Clone(Allocator(), typeAliasNode);
 
     // Basic check, we really don't want to change the original type nodes, more precise checking should be made
@@ -1304,6 +1306,7 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
     }
 
     if (typeParams == nullptr) {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         return GetReferencedTypeBase(name);
     }
 
@@ -1311,6 +1314,7 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
         origTypeParam->Check(this);
     }
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     Type *const aliasType = GetReferencedTypeBase(name);
     auto *const aliasSub = NewSubstitution();
 
@@ -1325,6 +1329,7 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
         }
     }
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     ValidateGenericTypeAliasForClonedNode(typeAliasNode->AsTSTypeAliasDeclaration(), typeParams);
 
     return aliasType->Substitute(Relation(), aliasSub);
@@ -1341,6 +1346,7 @@ Type *ETSChecker::GetTypeFromEnumReference([[maybe_unused]] varbinder::Variable 
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         return CreateETSEnumType(enumDecl);
     } else if (itemInit->IsStringLiteral()) {  // NOLINT(readability-else-after-return)
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         return CreateETSStringEnumType(enumDecl);
     } else {  // NOLINT(readability-else-after-return)
         ThrowTypeError("Invalid enumeration value type.", enumDecl->Start());

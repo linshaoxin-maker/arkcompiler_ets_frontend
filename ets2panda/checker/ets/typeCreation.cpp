@@ -387,6 +387,7 @@ ETSEnumType *ETSChecker::CreateETSEnumType(ir::TSEnumDeclaration const *const en
         memberVar->SetTsType(enumLiteralType);
     }
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const namesArrayIdent = CreateEnumNamesArray(enumType);
 
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
@@ -411,6 +412,7 @@ ETSEnumType *ETSChecker::CreateETSEnumType(ir::TSEnumDeclaration const *const en
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const stringValuesArrayIdent = CreateEnumStringValuesArray(enumType);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const toStringMethod = CreateEnumToStringMethod(stringValuesArrayIdent, enumType);
     enumType->SetToStringMethod(toStringMethod);
 

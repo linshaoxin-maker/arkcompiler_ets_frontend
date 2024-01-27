@@ -229,6 +229,7 @@ void MakeMethodDef(ETSChecker *const checker, varbinder::ETSBinder *const varbin
 ir::Identifier *ETSChecker::CreateEnumNamesArray(ETSEnumInterface const *const enumType)
 {
     // clang-format off
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     return MakeArray(this, VarBinder()->AsETSBinder(), enumType, "NamesArray", GlobalBuiltinETSStringType(),
                     [this](const ir::TSEnumMember *const member) {
                         auto *const enumNameStringLiteral =
@@ -242,6 +243,7 @@ ir::Identifier *ETSChecker::CreateEnumNamesArray(ETSEnumInterface const *const e
 
 ir::Identifier *ETSChecker::CreateEnumValuesArray(ETSEnumType *const enumType)
 {
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     return MakeArray(
         this, VarBinder()->AsETSBinder(), enumType, "ValuesArray", GlobalIntType(),
         [this](const ir::TSEnumMember *const member) {
@@ -370,6 +372,7 @@ ETSEnumType::Method ETSChecker::CreateEnumFromIntMethod(ir::Identifier *const na
                                         std::move(body), enumTypeAnnotation, enumType->GetDecl()->IsDeclare());
     function->AddFlag(ir::ScriptFunctionFlags::THROWS);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const ident = MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), ETSEnumType::FROM_INT_METHOD_NAME);
     function->SetIdent(ident);
     function->Scope()->BindInternalName(ident->Name());
@@ -453,6 +456,7 @@ ETSEnumType::Method ETSChecker::CreateEnumGetValueMethod(ir::Identifier *const v
                                         std::move(body), intTypeAnnotation, enumType->GetDecl()->IsDeclare());
 
     auto *const functionIdent =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), ETSEnumType::GET_VALUE_METHOD_NAME);
     function->SetIdent(functionIdent);
     function->Scope()->BindInternalName(functionIdent->Name());
@@ -667,6 +671,7 @@ ETSEnumType::Method ETSChecker::CreateEnumValuesMethod(ir::Identifier *const ite
                                         std::move(body), enumArrayTypeAnnotation, enumType->GetDecl()->IsDeclare());
 
     auto *const functionIdent =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), ETSEnumType::VALUES_METHOD_NAME);
     function->SetIdent(functionIdent);
     function->Scope()->BindInternalName(functionIdent->Name());
