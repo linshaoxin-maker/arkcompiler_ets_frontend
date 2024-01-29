@@ -2265,13 +2265,55 @@ ir::MethodDefinition *ETSParser::CreateProxyConstructorDefinition(ir::MethodDefi
     return CreateConstructorDefinition(method->Modifiers(), proxyMethod, DEFAULT_PROXY_FILE);
 }
 
+std::string ETSParser::ParseTypeParamStrForProxyMethodDefinition(
+    const ir::TSTypeParameterDeclaration *typeParamDeclaration) const
+{
+    std::string typeParamsStr;
+
+    if (typeParamDeclaration != nullptr) {
+        typeParamsStr += "<";
+
+        auto const &typeParameters = typeParamDeclaration->Params();
+        auto const numberOfTypeParams = typeParameters.size();
+
+        for (size_t idx = 0U; idx < numberOfTypeParams; ++idx) {
+            typeParamsStr += typeParameters[idx]->Name()->Name().Mutf8();
+            typeParamsStr += (idx < numberOfTypeParams - 1) ? ", " : "";
+        }
+
+        typeParamsStr += ">";
+    }
+
+    return typeParamsStr;
+}
+
+std::string ETSParser::ParseParamStrForProxyMethodDefinition(const ir::ScriptFunction *function,
+                                                             const size_t parametersNumber) const
+{
+    std::string paramsStr;
+
+    for (size_t i = 0U; i < parametersNumber; ++i) {
+        if (auto const *const param = function->Params()[i]->AsETSParameterExpression(); param->IsDefault()) {
+            std::string proxyIf = "if (((" + std::string {ir::PROXY_PARAMETER_NAME} + " >> " + std::to_string(i) +
+                                  ") & 0x1) == 1) { " + param->Ident()->Name().Mutf8() + " = " +
+                                  param->LexerSaved().Mutf8() + " } ";
+            paramsStr += proxyIf;
+        }
+    }
+
+    return paramsStr;
+}
+
 ir::MethodDefinition *ETSParser::CreateProxyMethodDefinition(ir::MethodDefinition const *const method,
                                                              ir::Identifier const *const identNode)
 {
     ASSERT(!method->IsConstructor());
 
     const auto *const function = method->Function();
-    std::string proxyMethod = function->Id()->Name().Mutf8() + "_proxy(";
+    std::string proxyMethod = function->Id()->Name().Mutf8() + "_proxy";
+    std::string typeParamsStr = ETSParser::ParseTypeParamStrForProxyMethodDefinition(function->TypeParams());
+
+    proxyMethod += typeParamsStr + "(";
 
     for (const auto *const it : function->Params()) {
         auto const *const param = it->AsETSParameterExpression();
@@ -2288,15 +2330,7 @@ ir::MethodDefinition *ETSParser::CreateProxyMethodDefinition(ir::MethodDefinitio
     }
     proxyMethod += " { ";
 
-    auto const parametersNumber = function->Params().size();
-    for (size_t i = 0U; i < parametersNumber; ++i) {
-        if (auto const *const param = function->Params()[i]->AsETSParameterExpression(); param->IsDefault()) {
-            std::string proxyIf = "if (((" + std::string {ir::PROXY_PARAMETER_NAME} + " >> " + std::to_string(i) +
-                                  ") & 0x1) == 1) { " + param->Ident()->Name().Mutf8() + " = " +
-                                  param->LexerSaved().Mutf8() + " } ";
-            proxyMethod += proxyIf;
-        }
-    }
+    proxyMethod += ParseParamStrForProxyMethodDefinition(function, function->Params().size());
 
     proxyMethod += ' ';
     if (returnType != "void") {
@@ -2313,7 +2347,7 @@ ir::MethodDefinition *ETSParser::CreateProxyMethodDefinition(ir::MethodDefinitio
     }
 
     proxyMethod += function->Id()->Name().Mutf8();
-    proxyMethod += '(';
+    proxyMethod += typeParamsStr + '(';
 
     for (const auto *const it : function->Params()) {
         proxyMethod += it->AsETSParameterExpression()->Ident()->Name().Mutf8() + ", ";
