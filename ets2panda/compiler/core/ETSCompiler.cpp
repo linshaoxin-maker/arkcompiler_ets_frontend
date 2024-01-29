@@ -1768,8 +1768,9 @@ void ETSCompiler::Compile(const ir::VariableDeclarator *st) const
     if (st->Id()->AsIdentifier()->Variable()->HasFlag(varbinder::VariableFlags::BOXED)) {
         etsg->EmitLocalBoxCtor(st->Id());
         etsg->StoreAccumulator(st, lref.Variable()->AsLocalVariable()->Vreg());
-        etsg->SetAccumulatorType(lref.Variable()->TsType());
     }
+
+    etsg->SetAccumulatorType(lref.Variable()->TsType());
 
     if (st->Init() != nullptr) {
         if (!etsg->TryLoadConstantExpression(st->Init())) {
