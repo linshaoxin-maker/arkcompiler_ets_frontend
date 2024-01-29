@@ -193,6 +193,10 @@ private:
     ir::TypeNode *ParseFunctionType();
     ir::TypeNode *ParseETSTupleType(TypeAnnotationParsingOptions *options);
     std::pair<bool, std::size_t> CheckDefaultParameters(const ir::ScriptFunction *function) const;
+    std::string ParseTypeParamStrForProxyMethodDefinition(
+        const ir::TSTypeParameterDeclaration *typeParamDeclaration) const;
+    std::string ParseParamStrForProxyMethodDefinition(const ir::ScriptFunction *function,
+                                                      const size_t parametersNumber) const;
     ir::MethodDefinition *CreateProxyMethodDefinition(ir::MethodDefinition const *method,
                                                       ir::Identifier const *identNode);
     ir::MethodDefinition *CreateProxyConstructorDefinition(ir::MethodDefinition const *method);
