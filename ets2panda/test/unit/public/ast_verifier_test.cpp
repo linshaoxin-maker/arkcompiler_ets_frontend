@@ -263,7 +263,7 @@ TEST_F(ASTVerifierTest, ArithmeticExpressionNegative1)
     const auto [warnings, errors] =
         verifier.Verify({{"ArithmeticOperationValid"}}, {{}}, arithmeticExpression.AsBinaryExpression(), checks);
 
-    ASSERT_EQ(warnings.size(), 0);
+    ASSERT_EQ(warnings.size(), 1);
 }
 
 TEST_F(ASTVerifierTest, ArithmeticExpressionNegative2)
@@ -284,7 +284,7 @@ TEST_F(ASTVerifierTest, ArithmeticExpressionNegative2)
     const auto [warnings, errors] =
         verifier.Verify({{"ArithmeticOperationValid"}}, {{}}, arithmeticExpression.AsBinaryExpression(), checks);
 
-    ASSERT_EQ(warnings.size(), 0);
+    ASSERT_EQ(warnings.size(), 1);
 }
 
 TEST_F(ASTVerifierTest, SequenceExpressionType)

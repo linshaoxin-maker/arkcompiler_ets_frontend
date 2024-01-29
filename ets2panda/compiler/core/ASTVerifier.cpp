@@ -50,7 +50,7 @@ constexpr auto RECURSIVE_SUFFIX = "ForAll";
 
 namespace panda::es2panda::compiler {
 
-static bool IsNumericType(const ir::AstNode *ast)
+static bool IsBooleanType(const ir::AstNode *ast)
 {
     if (ast == nullptr) {
         return false;
@@ -66,8 +66,49 @@ static bool IsNumericType(const ir::AstNode *ast)
         return false;
     }
 
+    if (typedAst->TsType()->HasTypeFlag(checker::TypeFlag::ETS_OBJECT) &&
+        ast->HasBoxingUnboxingFlags(ir::BoxingUnboxingFlags::UNBOXING_FLAG)) {
+        return typedAst->TsType()->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_BOOLEAN);
+    }
+
+    return typedAst->TsType()->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN) ||
+           typedAst->TsType()->HasTypeFlag(checker::TypeFlag::BOOLEAN_LIKE);
+}
+
+static bool IsValidTypeForBinaryOp(const ir::AstNode *ast, bool isBitwise)
+{
+    if (ast == nullptr) {
+        return false;
+    }
+
+    if (!ast->IsTyped()) {
+        return false;
+    }
+
+    auto typedAst = static_cast<const ir::TypedAstNode *>(ast);
+
+    if (typedAst->TsType() == nullptr) {
+        return false;
+    }
+
+    if (IsBooleanType(ast)) {
+        return isBitwise;
+    }
+
+    if (typedAst->TsType()->HasTypeFlag(checker::TypeFlag::ETS_OBJECT) &&
+        typedAst->TsType()->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_BIGINT)) {
+        return true;
+    }
+
+    if (typedAst->TsType()->HasTypeFlag(checker::TypeFlag::ETS_OBJECT) &&
+        ast->HasBoxingUnboxingFlags(ir::BoxingUnboxingFlags::UNBOXING_FLAG)) {
+        return typedAst->TsType()->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_TYPE) &&
+               !typedAst->TsType()->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_BOOLEAN);
+    }
+
     return typedAst->TsType()->HasTypeFlag(checker::TypeFlag::ETS_NUMERIC) ||
            typedAst->TsType()->HasTypeFlag(checker::TypeFlag::NUMBER_LITERAL) ||
+           typedAst->TsType()->HasTypeFlag(checker::TypeFlag::BIGINT) ||
            typedAst->TsType()->HasTypeFlag(checker::TypeFlag::BIGINT_LITERAL);
 }
 
@@ -85,6 +126,11 @@ static bool IsStringType(const ir::AstNode *ast)
 
     if (typedAst->TsType() == nullptr) {
         return false;
+    }
+
+    if (typedAst->TsType()->HasTypeFlag(checker::TypeFlag::ETS_OBJECT)) {
+        return typedAst->TsType()->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::STRING) ||
+               typedAst->TsType()->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_STRING);
     }
 
     return typedAst->TsType()->HasTypeFlag(checker::TypeFlag::STRING_LIKE);
@@ -669,21 +715,23 @@ public:
 
     ASTVerifier::CheckResult operator()([[maybe_unused]] ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
     {
-        if (ast->IsBinaryExpression() && ast->AsBinaryExpression()->IsArithmetic()) {
-            if (ast->AsBinaryExpression()->OperatorType() == lexer::TokenType::PUNCTUATOR_PLUS &&
-                IsStringType(ast->AsBinaryExpression()->Left()) && IsStringType(ast->AsBinaryExpression()->Right())) {
-                return ASTVerifier::CheckResult::SUCCESS;
-            }
-            auto result = ASTVerifier::CheckResult::SUCCESS;
-            ast->Iterate([&result](ir::AstNode *child) {
-                if (!IsNumericType(child)) {
-                    result = ASTVerifier::CheckResult::FAILED;
-                }
-            });
-            return result;
+        if (!ast->IsBinaryExpression() || !ast->AsBinaryExpression()->IsArithmetic()) {
+            return ASTVerifier::CheckResult::SUCCESS;
         }
-
-        return ASTVerifier::CheckResult::SUCCESS;
+        if ((ast->AsBinaryExpression()->OperatorType() == lexer::TokenType::PUNCTUATOR_PLUS ||
+             ast->AsBinaryExpression()->OperatorType() == lexer::TokenType::PUNCTUATOR_PLUS_EQUAL) &&
+            (IsStringType(ast->AsBinaryExpression()->Left()) || IsStringType(ast->AsBinaryExpression()->Right()))) {
+            return ASTVerifier::CheckResult::SUCCESS;
+        }
+        auto result = ASTVerifier::CheckResult::SUCCESS;
+        bool isBitwise = ast->AsBinaryExpression()->IsBitwise();
+        ast->Iterate([&result, &ctx, &isBitwise](ir::AstNode *child) {
+            if (!IsValidTypeForBinaryOp(child, isBitwise)) {
+                ctx.AddInvariantError("ArithmeticOperationValid", "Not a valid type", *child);
+                result = ASTVerifier::CheckResult::FAILED;
+            }
+        });
+        return result;
     }
 
 private:
