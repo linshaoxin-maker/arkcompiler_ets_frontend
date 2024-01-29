@@ -1065,6 +1065,22 @@ checker::Type *ETSChecker::CheckArrayElements(ir::Identifier *ident, ir::ArrayEx
     return annotationType;
 }
 
+checker::Type *ETSChecker::FixOptionalVariableType(varbinder::Variable *const bindingVar, ir::ModifierFlags flags)
+{
+    if ((flags & ir::ModifierFlags::OPTIONAL) != 0) {
+        auto type = bindingVar->TsType();
+        if (type->IsETSUnionType()) {
+            auto constituentTypes = type->AsETSUnionType()->ConstituentTypes();
+            constituentTypes.push_back(GlobalETSUndefinedType());
+            type = CreateETSUnionType(std::move(constituentTypes));
+        } else {
+            type = CreateETSUnionType({GlobalETSUndefinedType(), type});
+        }
+        bindingVar->SetTsType(type);
+    }
+    return bindingVar->TsType();
+}
+
 checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *typeAnnotation,
                                                     ir::Expression *init, ir::ModifierFlags flags)
 {
@@ -1081,7 +1097,7 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
     }
 
     if (init == nullptr) {
-        return annotationType;
+        return FixOptionalVariableType(bindingVar, flags);
     }
 
     if (typeAnnotation == nullptr) {
@@ -1156,7 +1172,7 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
             annotationType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
             bindingVar->SetTsType(init->TsType());
         }
-        return bindingVar->TsType();
+        return FixOptionalVariableType(bindingVar, flags);
     }
 
     if (initType->IsETSObjectType() && initType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::ENUM) &&
@@ -1167,7 +1183,7 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
 
     isConst ? bindingVar->SetTsType(initType) : bindingVar->SetTsType(GetNonConstantTypeFromPrimitiveType(initType));
 
-    return bindingVar->TsType();
+    return FixOptionalVariableType(bindingVar, flags);
 }
 
 void ETSChecker::SetArrayPreferredTypeForNestedMemberExpressions(ir::MemberExpression *expr, Type *annotationType)
