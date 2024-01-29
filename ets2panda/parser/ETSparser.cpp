@@ -1009,13 +1009,19 @@ void ETSParser::ParseClassFieldDefinition(ir::Identifier *fieldName, ir::Modifie
                                           lexer::SourcePosition *letLoc)
 {
     lexer::SourcePosition startLoc = letLoc != nullptr ? *letLoc : Lexer()->GetToken().Start();
-    lexer::SourcePosition endLoc = startLoc;
+    lexer::SourcePosition endLoc = fieldName->End();
     ir::TypeNode *typeAnnotation = nullptr;
     TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
+    bool optionalField = false;
 
+    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_QUESTION_MARK) {
+        Lexer()->NextToken();  // eat '?'
+        optionalField = true;
+    }
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COLON) {
         Lexer()->NextToken();  // eat ':'
         typeAnnotation = ParseTypeAnnotation(&options);
+        endLoc = typeAnnotation->End();
     }
 
     ir::Expression *initializer = nullptr;
@@ -1030,7 +1036,7 @@ void ETSParser::ParseClassFieldDefinition(ir::Identifier *fieldName, ir::Modifie
     // performed multiple times.
     if (initFunction != nullptr && (modifiers & ir::ModifierFlags::CONST) == 0U && initializer != nullptr &&
         !initializer->IsArrowFunctionExpression()) {
-        endLoc = InitializeGlobalVariable(fieldName, initializer, initFunction, startLoc, typeAnnotation);
+        InitializeGlobalVariable(fieldName, initializer, initFunction, startLoc, typeAnnotation);
     }
 
     bool isDeclare = (modifiers & ir::ModifierFlags::DECLARE) != 0;
@@ -1038,14 +1044,12 @@ void ETSParser::ParseClassFieldDefinition(ir::Identifier *fieldName, ir::Modifie
     if (isDeclare && initializer != nullptr) {
         ThrowSyntaxError("Initializers are not allowed in ambient contexts.");
     }
+
     auto *field = AllocNode<ir::ClassProperty>(fieldName, initializer, typeAnnotation, modifiers, Allocator(), false);
-    startLoc = fieldName->Start();
-    if (initializer != nullptr) {
-        endLoc = initializer->End();
-    } else {
-        endLoc = typeAnnotation != nullptr ? typeAnnotation->End() : fieldName->End();
+    field->SetRange({fieldName->Start(), initializer != nullptr ? initializer->End() : endLoc});
+    if (optionalField) {
+        field->AddModifier(ir::ModifierFlags::OPTIONAL);
     }
-    field->SetRange({startLoc, endLoc});
 
     fieldMap_.insert({fieldName->Name(), field});
     declarations->push_back(field);
@@ -1812,6 +1816,12 @@ ir::ClassProperty *ETSParser::ParseInterfaceField()
     auto *name = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
     name->SetRange(Lexer()->GetToken().Loc());
     Lexer()->NextToken();
+    bool optionalField = false;
+
+    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_QUESTION_MARK) {
+        Lexer()->NextToken();  // eat '?'
+        optionalField = true;
+    }
 
     ir::TypeNode *typeAnnotation = nullptr;
     if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_COLON) {
@@ -1836,6 +1846,9 @@ ir::ClassProperty *ETSParser::ParseInterfaceField()
 
     auto *field = AllocNode<ir::ClassProperty>(name, nullptr, typeAnnotation->Clone(Allocator(), nullptr),
                                                fieldModifiers, Allocator(), false);
+    if (optionalField) {
+        field->AddModifier(ir::ModifierFlags::OPTIONAL);
+    }
     field->SetEnd(Lexer()->GetToken().End());
 
     return field;
@@ -3108,6 +3121,13 @@ ir::AnnotatedExpression *ETSParser::ParseVariableDeclaratorKey([[maybe_unused]] 
 {
     ir::Identifier *init = ExpectIdentifier();
     ir::TypeNode *typeAnnotation = nullptr;
+    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_QUESTION_MARK) {
+        if ((flags & VariableParsingFlags::FOR_OF) != 0U) {
+            ThrowSyntaxError("Optional variable is not allowed in for of statements");
+        }
+        Lexer()->NextToken();  // eat '?'
+        init->AddModifier(ir::ModifierFlags::OPTIONAL);
+    }
 
     if (auto const tokenType = Lexer()->GetToken().Type(); tokenType == lexer::TokenType::PUNCTUATOR_COLON) {
         Lexer()->NextToken();  // eat ':'
@@ -3164,6 +3184,7 @@ ir::VariableDeclarator *ETSParser::ParseVariableDeclarator(ir::Expression *init,
     auto declarator = AllocNode<ir::VariableDeclarator>(GetFlag(flags), init);
     declarator->SetRange({startLoc, endLoc});
 
+    // NOTE (psiket)  Transfer the OPTIONAL flag from the init to the declarator?
     return declarator;
 }
 

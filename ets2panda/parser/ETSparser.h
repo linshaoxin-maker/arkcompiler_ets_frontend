@@ -184,6 +184,7 @@ private:
     ir::ScriptFunctionFlags ParseFunctionThrowMarker(bool isRethrowsAllowed) override;
     ir::Expression *CreateParameterThis(util::StringView className) override;
 
+    ir::TypeNode *ConvertToOptionalUnionType(ir::TypeNode *typeNode);
     // NOLINTNEXTLINE(google-default-arguments)
     void ParseClassFieldDefinition(ir::Identifier *fieldName, ir::ModifierFlags modifiers,
                                    ArenaVector<ir::AstNode *> *declarations, ir::ScriptFunction *initFunction = nullptr,
