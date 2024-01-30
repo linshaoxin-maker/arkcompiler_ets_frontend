@@ -302,6 +302,29 @@ public:
     void EmitNullishGuardian(const ir::AstNode *node);
 
     template <typename F>
+    void EmitMaybeOptionalMember(const ir::Expression *node, F const &compile, bool isOptional)
+    {
+        if (isOptional) {
+            compiler::Label *ifNotNullish = AllocLabel();
+            compiler::Label *endLabel = AllocLabel();
+            auto *const type = node->TsType();
+
+            BranchIfNotNull(node, ifNotNullish);
+            LoadAccumulatorUndefined(node);
+            Branch(node, endLabel);
+
+            SetLabel(node, ifNotNullish);
+            SetAccumulatorType(node->TsType());
+            compile();
+            ApplyConversion(node, node->TsType());
+            SetLabel(node, endLabel);
+            SetAccumulatorType(type);
+        } else {
+            compile();
+        }
+    }
+
+    template <typename F>
     void EmitMaybeOptional(const ir::Expression *node, F const &compile, bool isOptional)
     {
         auto *const type = GetAccumulatorType();

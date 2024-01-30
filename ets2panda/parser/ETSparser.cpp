@@ -4101,6 +4101,7 @@ ir::Expression *ETSParser::ParsePostPrimaryExpression(ir::Expression *primaryExp
                                                       [[maybe_unused]] bool *isChainExpression)
 {
     ir::Expression *returnExpression = primaryExpr;
+    bool isOptionalExpression = false;
 
     while (true) {
         switch (Lexer()->GetToken().Type()) {
@@ -4116,6 +4117,7 @@ ir::Expression *ETSParser::ParsePostPrimaryExpression(ir::Expression *primaryExp
                     returnExpression = ParseCallExpression(returnExpression, true, false);
                     continue;
                 }
+                isOptionalExpression = true;
 
                 returnExpression = ParsePropertyAccess(returnExpression, true);
                 continue;
@@ -4144,7 +4146,7 @@ ir::Expression *ETSParser::ParsePostPrimaryExpression(ir::Expression *primaryExp
                     break;
                 }
 
-                returnExpression = ParseCallExpression(returnExpression, false, false);
+                returnExpression = ParseCallExpression(returnExpression, isOptionalExpression, false);
                 continue;
             }
             case lexer::TokenType::PUNCTUATOR_EXCLAMATION_MARK: {
