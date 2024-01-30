@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,8 +13,15 @@
  * limitations under the License.
  */
 
-import { PandaGen } from "./pandagen";
-
-export interface Pass {
-    run(pandaGen: PandaGen): void;
+function func() {
+  let a = 1;
+  let obj = {
+    set a(run) {
+      run()
+    },
+    [a]: 1,
+    "b": 2,
+    a: func
+  }
 }
+func();
