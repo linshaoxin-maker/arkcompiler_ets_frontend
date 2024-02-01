@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-import json
 import os
 import stat
 import zipfile
@@ -29,15 +27,15 @@ def get_tool(url):
     print(f"Getting RKDevTool from {url}")
     r = requests.get(url, stream=True)
     total = int(r.headers.get('content-length'), 0)
-    flags = os.O_WRONLY | os.O_CREAT 
+    flags = os.O_WRONLY | os.O_CREAT
     modes = stat.S_IWUSR | stat.S_IRUSR
-    
+
     with os.fdopen(os.open(r".\RKDevTool.zip", flags, modes), "wb") as f, tqdm(
-        desc="RKDevTool.zip",
-        total=total,
-        unit='iB',
-        unit_scale=True,
-        unit_divisor=1024,
+            desc="RKDevTool.zip",
+            total=total,
+            unit='iB',
+            unit_scale=True,
+            unit_divisor=1024,
     ) as bar:
         for byte in r.iter_content(chunk_size=1024):
             size = f.write(byte)

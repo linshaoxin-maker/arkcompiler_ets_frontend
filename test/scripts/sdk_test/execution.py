@@ -24,12 +24,13 @@ import re
 import shutil
 import signal
 import subprocess
+import time
 import zipfile
-
 import json5
-
 import options
 import utils
+
+from utils import get_running_screenshot, verify_runtime
 
 
 class IncrementalTest:
@@ -47,8 +48,12 @@ class IncrementalTest:
 
         logging.debug(f"new module hap file: {new_module_name_output_file}")
 
+        picture_suffix = 'debug'
+        if not is_debug:
+            picture_suffix = 'release'
         passed = validate(inc_task, task, is_debug, stdout,
-                          stderr, new_module_name_output_file)
+                          stderr, f'incremental_compile_change_module_name_{picture_suffix}',
+                          new_module_name_output_file)
         logging.debug(f"validate new module hap file, passed {passed}")
         if not passed:
             return
@@ -172,7 +177,10 @@ class IncrementalTest:
 
         logging.info(f"==========> Running {test_name} for task: {task.name}")
         [stdout, stderr] = compile_project(task, is_debug)
-        passed = validate(inc_task, task, is_debug, stdout, stderr)
+        picture_suffix = 'debug'
+        if not is_debug:
+            picture_suffix = 'release'
+        passed = validate(inc_task, task, is_debug, stdout, stderr, f'incremental_compile_no_change_{picture_suffix}')
         if passed:
             IncrementalTest.validate_compile_incremental_file(
                 task, inc_task, is_debug, [])
@@ -193,7 +201,10 @@ class IncrementalTest:
                 'patch_lines_2').get('tail'))
 
         [stdout, stderr] = compile_project(task, is_debug)
-        passed = validate(inc_task, task, is_debug, stdout, stderr)
+        picture_suffix = 'debug'
+        if not is_debug:
+            picture_suffix = 'release'
+        passed = validate(inc_task, task, is_debug, stdout, stderr, f'incremental_compile_add_oneline_{picture_suffix}')
         if passed:
             modified_files = [os.path.join(*modify_file_item)]
             IncrementalTest.validate_compile_incremental_file(
@@ -238,7 +249,10 @@ class IncrementalTest:
             file.write(patch_lines.get('tail'))
 
         [stdout, stderr] = compile_project(task, is_debug)
-        passed = validate(inc_task, task, is_debug, stdout, stderr)
+        picture_suffix = 'debug'
+        if not is_debug:
+            picture_suffix = 'release'
+        passed = validate(inc_task, task, is_debug, stdout, stderr, f'incremental_compile_add_file_{picture_suffix}')
         if passed:
             modified_files = [os.path.join(*modify_file_item)]
             IncrementalTest.validate_compile_incremental_file(
@@ -254,9 +268,11 @@ class IncrementalTest:
 
         logging.info(f"==========> Running {test_name} for task: {task.name}")
         # this test is after 'add_file', and in test 'add_file' already done remove file,
-        # so here just call compile
         [stdout, stderr] = compile_project(task, is_debug)
-        passed = validate(inc_task, task, is_debug, stdout, stderr)
+        picture_suffix = 'debug'
+        if not is_debug:
+            picture_suffix = 'release'
+        passed = validate(inc_task, task, is_debug, stdout, stderr, f'incremental_compile_delete_file_{picture_suffix}')
         if passed:
             modify_file_item = task.inc_modify_file
             modified_files = [os.path.join(*modify_file_item)]
@@ -271,7 +287,10 @@ class IncrementalTest:
         logging.info(f"==========> Running {test_name} for task: {task.name}")
         hap_mode = not is_debug
         [stdout, stderr] = compile_project(task, hap_mode)
-        validate(inc_task, task, hap_mode, stdout, stderr)
+        picture_suffix = 'debug'
+        if not is_debug:
+            picture_suffix = 'release'
+        validate(inc_task, task, hap_mode, stdout, stderr, f'incremental_compile_reverse_hap_mode_{picture_suffix}')
 
     @staticmethod
     def compile_incremental_modify_module_name(task, is_debug):
@@ -312,6 +331,7 @@ class IncrementalTest:
             [stdout, stderr] = compile_project(task, is_debug)
             IncrementalTest.validate_module_name_change(
                 task, inc_task, is_debug, stdout, stderr, new_module_name)
+
         except Exception as e:
             logging.exception(e)
         finally:
@@ -426,6 +446,8 @@ class OtherTest:
             passed = validate_compile_output(test_info, task, is_debug)
             if passed:
                 test_info.result = options.TaskResult.passed
+        if options.arguments.run_haps:
+            run_compile_output(test_info, task, 'other_tests_break_continue_compile_debug')
 
     @staticmethod
     def compile_full_with_error(task, is_debug):
@@ -520,6 +542,7 @@ class OtherTest:
                '-p', 'module=entry@ohosTest', 'assembleHap']
         [stdout, stderr] = compile_project(task, True, cmd)
         [is_success, time_string] = is_compile_success(stdout)
+
         if not is_success:
             test_info.result = options.TaskResult.failed
             test_info.error_message = stderr
@@ -751,11 +774,19 @@ def validate_compile_output(info, task, is_debug, output_file=''):
     return passed
 
 
-def run_compile_output(info, task_path):
-    # TODO:
-    # 1)install hap
-    # 2)run hap and verify
-    return False
+def run_compile_output(info, task, picture_name):
+    get_running_screenshot(task, picture_name)
+    time.sleep(2)
+    runtime_passed = verify_runtime(task, picture_name)
+    if not runtime_passed:
+        logging.error(f'The runtime of the {task.name} is inconsistent with the reference screenshot,'
+                      f' when running {picture_name}')
+        info.runtime_result = options.TaskResult.failed
+        info.error_message = "The runtime result is inconsistent with the reference"
+    else:
+        info.runtime_result = options.TaskResult.passed
+
+    return runtime_passed
 
 
 def is_compile_success(compile_stdout):
@@ -763,11 +794,10 @@ def is_compile_success(compile_stdout):
     match_result = re.search(pattern, compile_stdout)
     if not match_result:
         return [False, '']
-
     return [True, match_result.group(0)]
 
 
-def validate(compilation_info, task, is_debug, stdout, stderr, output_file=''):
+def validate(compilation_info, task, is_debug, stdout, stderr, picture_name, output_file=''):
     info = {}
     if is_debug:
         info = compilation_info.debug_info
@@ -784,7 +814,7 @@ def validate(compilation_info, task, is_debug, stdout, stderr, output_file=''):
     passed = validate_compile_output(info, task, is_debug, output_file)
 
     if options.arguments.run_haps:
-        passed &= run_compile_output(info)
+        runtime_passed = run_compile_output(info, task, picture_name)
 
     if passed:
         collect_compile_time(info, time_string)
@@ -851,8 +881,11 @@ def compile_incremental(task, is_debug):
         return
 
     if options.arguments.compile_mode == 'incremental':
+        picture_suffix = 'debug'
+        if not is_debug:
+            picture_suffix = 'release'
         passed = validate(task.full_compilation_info,
-                          task, is_debug, stdout, stderr)
+                          task, is_debug, stdout, stderr, f'incremental_compile_first{picture_suffix}')
         if not passed:
             logging.error(
                 "Incremental compile failed due to first compile failed!")
@@ -939,14 +972,14 @@ def execute_full_compile(task):
     if options.arguments.hap_mode in ['all', 'release']:
         [stdout, stderr] = compile_project(task, False)
         passed = validate(task.full_compilation_info,
-                          task, False, stdout, stderr)
+                          task, False, stdout, stderr, 'full_compile_release')
         if passed:
             backup_compile_output(task, False)
         clean_compile(task)
     if options.arguments.hap_mode in ['all', 'debug']:
         [stdout, stderr] = compile_project(task, True)
         passed = validate(task.full_compilation_info,
-                          task, True, stdout, stderr)
+                          task, True, stdout, stderr, 'full_compile_debug')
         if passed:
             backup_compile_output(task, True)
         clean_compile(task)

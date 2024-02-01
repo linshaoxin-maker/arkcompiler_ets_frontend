@@ -42,6 +42,7 @@ class TaskResult(Enum):
 class CompilationInfo:
     def __init__(self):
         self.result = TaskResult.undefind
+        self.runtime_result = TaskResult.undefind
         self.error_message = ''
         self.time = 0
         self.abc_size = 0
@@ -73,12 +74,14 @@ class TestTask:
     def __init__(self):
         self.name = ''
         self.path = ''
+        self.bundle_name = ''
+        self.ability_name = ''
         self.type = ''
         self.build_path = []
         self.output_hap_path = ''
+        self.output_hap_path_signed = ''
         self.output_app_path = ''
         self.inc_modify_file = []
-
         self.full_compilation_info = FullCompilationInfo()
         self.incre_compilation_info = {}
         self.other_tests = {}
@@ -132,7 +135,7 @@ def get_ark_disasm_path(task_path):
     profile_file = os.path.join(task_path, 'build-profile.json5')
     with open(profile_file, 'r') as file:
         profile_data = json5.load(file)
-    return os.path.join(sdk_path, str(profile_data['app']['products'][0]['compileSdkVersion']),
+    return os.path.join(sdk_path, str(profile_data['app']['compileSdkVersion']),
                         'toolchains', ark_disasm)
 
 
@@ -156,10 +159,13 @@ def create_test_tasks():
             task = TestTask()
             task.name = hap['name']
             task.path = hap['path']
+            task.bundle_name = hap['bundle_name']
+            task.ability_name = hap['ability_name']
             task.type = hap['type']
             task.build_path = hap['build_path']
             task.cache_path = hap['cache_path']
             task.output_hap_path = hap['output_hap_path']
+            task.output_hap_path_signed = hap['output_hap_path_signed']
             task.output_app_path = hap['output_app_path']
             task.inc_modify_file = hap['inc_modify_file']
             task.backup_info.cache_path = os.path.join(task.path, 'test_suite_cache')
