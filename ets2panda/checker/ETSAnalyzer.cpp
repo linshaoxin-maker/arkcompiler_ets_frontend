@@ -505,15 +505,10 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewArrayInstanceExpression *expr) const
     auto *elementType = expr->typeReference_->GetType(checker);
     checker->ValidateArrayIndex(expr->dimension_, true);
 
-    if (!elementType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && !elementType->IsNullish() &&
-        !elementType->HasTypeFlag(TypeFlag::GENERIC) && !elementType->HasTypeFlag(TypeFlag::ETS_ARRAY) &&
-        elementType->ToAssemblerName().str() != "Ball") {
-        // Check only valid for ETS_PRIMITIVE and IsNullish, GENERIC and ETS_ARRAY are workaround checks for stdlib
-        // Ball is workaround for koala ui lib
+    if (!elementType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && !elementType->IsNullish()) {
         if (elementType->IsETSObjectType()) {
             auto *calleeObj = elementType->AsETSObjectType();
             if (!calleeObj->HasObjectFlag(checker::ETSObjectFlags::ABSTRACT)) {
-                // A workaround check for new Interface[...] in test cases
                 expr->defaultConstructorSignature_ =
                     checker->CollectParameterlessConstructor(calleeObj->ConstructSignatures(), expr->Start());
                 checker->ValidateSignatureAccessibility(calleeObj, nullptr, expr->defaultConstructorSignature_,
