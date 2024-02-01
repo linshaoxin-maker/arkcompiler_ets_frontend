@@ -34,10 +34,11 @@ def run():
     try:
         start_time = time.time()
         test_tasks = process_options()
+
         if not test_tasks:
             logging.error("No test task found, test suite exit!")
             sys.exit(1)
-
+            
         if not prepare_test_env():
             logging.error("Prepare test environment failed, test suite exit!")
             sys.exit(1)
