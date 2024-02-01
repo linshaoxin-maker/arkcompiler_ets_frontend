@@ -97,14 +97,15 @@ ETSNewClassInstanceExpression::ETSNewClassInstanceExpression(ETSNewClassInstance
     : Expression(static_cast<Expression const &>(other)), arguments_(allocator->Adapter()), signature_(other.signature_)
 {
     typeReference_ = other.typeReference_->Clone(allocator, this)->AsExpression();
-    classDef_ = other.classDef_->Clone(allocator, this)->AsClassDefinition();
+    if (other.classDef_ != nullptr) {
+        classDef_ = other.classDef_->Clone(allocator, this)->AsClassDefinition();
+    }
 
     for (auto *const argument : other.arguments_) {
         arguments_.emplace_back(argument->Clone(allocator, this)->AsExpression());
     }
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 ETSNewClassInstanceExpression *ETSNewClassInstanceExpression::Clone(ArenaAllocator *const allocator,
                                                                     AstNode *const parent)
 {

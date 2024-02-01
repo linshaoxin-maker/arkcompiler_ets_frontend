@@ -1036,11 +1036,11 @@ void ETSBinder::BuildETSNewClassInstanceExpression(ir::ETSNewClassInstanceExpres
 
 void ETSBinder::BuildImportDeclaration(ir::ETSImportDeclaration *decl)
 {
-    if (decl->Source()->Str() == Program()->AbsoluteName()) {
+    if (decl->Source()->Str() == Program()->SourceFile().GetAbsolutePath()) {
         return;
     }
 
-    auto specifiers = decl->Specifiers();
+    const auto &specifiers = decl->Specifiers();
 
     for (auto specifier : specifiers) {
         AddSpecifiersToTopBindings(specifier, decl, decl->Source());

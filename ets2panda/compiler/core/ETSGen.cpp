@@ -144,6 +144,7 @@ void ETSGen::StoreAccumulator(const ir::AstNode *const node, const VReg vreg)
 {
     const auto *const accType = GetAccumulatorType();
 
+    ASSERT(accType != nullptr);
     if (accType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
         Ra().Emit<StaObj>(node, vreg);
     } else if (accType->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
@@ -159,6 +160,7 @@ void ETSGen::LoadAccumulator(const ir::AstNode *node, VReg vreg)
 {
     const auto *const vregType = GetVRegType(vreg);
 
+    ASSERT(vregType != nullptr);
     if (vregType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
         Ra().Emit<LdaObj>(node, vreg);
     } else if (vregType->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
@@ -981,6 +983,13 @@ void ETSGen::ApplyUnboxingConversion(const ir::AstNode *node)
 void ETSGen::ApplyConversion(const ir::AstNode *node, const checker::Type *targetType)
 {
     auto ttctx = TargetTypeContext(this, targetType);
+
+    if (node->HasAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE)) {
+        Ra().Emit<CallAccShort, 0>(
+            node, node->AsExpression()->TsType()->AsETSEnumType()->GetValueMethod().globalSignature->InternalName(),
+            dummyReg_, 0);
+        node->RemoveAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
+    }
 
     if ((node->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG) != 0U) {
         ApplyBoxingConversion(node);
@@ -2380,8 +2389,12 @@ void ETSGen::StringBuilderAppend(const ir::AstNode *node, VReg builder)
         signature = Signatures::BUILTIN_STRING_BUILDER_APPEND_BUILTIN_STRING;
     }
 
-    if ((GetAccumulatorType()->IsETSObjectType() || GetAccumulatorType()->IsETSTypeParameter()) &&
-        !GetAccumulatorType()->IsETSStringType()) {
+    const checker::Type *accumulatorType = GetAccumulatorType();
+    bool isNullOrUndefined = accumulatorType->ContainsNull() || accumulatorType->ContainsUndefined();
+    bool isETSRefType = accumulatorType->IsETSObjectType() || accumulatorType->IsETSTypeParameter() ||
+                        accumulatorType->IsETSArrayType();
+    bool isStringType = accumulatorType->IsETSStringType();
+    if (isETSRefType && (!isStringType || isNullOrUndefined)) {
         if (Checker()->MayHaveNullValue(GetAccumulatorType())) {
             Label *ifnull = AllocLabel();
             Label *end = AllocLabel();

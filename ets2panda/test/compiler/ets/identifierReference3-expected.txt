@@ -447,11 +447,11 @@
                       "loc": {
                         "start": {
                           "line": 16,
-                          "column": 1
+                          "column": 5
                         },
                         "end": {
                           "line": 16,
-                          "column": 16
+                          "column": 15
                         }
                       }
                     }
@@ -547,7 +547,7 @@
               },
               "end": {
                 "line": 16,
-                "column": 11
+                "column": 15
               }
             }
           }
@@ -586,4 +586,4 @@
     }
   }
 }
-TypeError: Initializers type is not assignable to the target type [identifierReference3.ets:20:9]
+TypeError: Type 'string' cannot be assigned to type 'int' [identifierReference3.ets:20:9]

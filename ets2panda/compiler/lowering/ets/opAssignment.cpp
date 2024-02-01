@@ -87,32 +87,51 @@ void AdjustBoxingUnboxingFlags(ir::Expression *newExpr, const ir::Expression *ol
     }
 }
 
-ir::Expression *HandleOpAssignment(public_lib::Context *ctx, checker::ETSChecker *checker, parser::ETSParser *parser,
-                                   ir::AssignmentExpression *assignment)
+static ir::Expression *CreateLoweringResult([[maybe_unused]] public_lib::Context *ctx,
+                                            ir::AssignmentExpression *assignment, ir::Expression *loweringResult)
 {
-    if (assignment->TsType() == nullptr) {  // hasn't been through checker
-        return assignment;
+    // Adjust [un]boxing flag
+    ir::AssignmentExpression *newAssignment = nullptr;
+
+    if (loweringResult->IsAssignmentExpression()) {
+        newAssignment = loweringResult->AsAssignmentExpression();
+    } else if (loweringResult->IsBlockExpression()) {
+        auto stmts = loweringResult->AsBlockExpression()->Statements();
+        if (!stmts.empty() && stmts.back()->IsExpressionStatement() &&
+            stmts.back()->AsExpressionStatement()->GetExpression()->IsAssignmentExpression()) {
+            newAssignment = stmts.back()->AsExpressionStatement()->GetExpression()->AsAssignmentExpression();
+        } else {
+            UNREACHABLE();
+        }
+    } else {
+        UNREACHABLE();
     }
 
-    const auto opEqual = assignment->OperatorType();
-    ASSERT(opEqual != lexer::TokenType::PUNCTUATOR_SUBSTITUTION);
-    ASSERT(parser != nullptr);
+    // NOTE(gogabr): make sure that the checker never puts both a boxing and an unboxing flag on the same node.
+    // Then this code will become unnecessary.
+    AdjustBoxingUnboxingFlags(newAssignment, assignment);
 
-    auto *const allocator = checker->Allocator();
+    return loweringResult;
+}
 
-    auto *const left = assignment->Left();
-    auto *const right = assignment->Right();
-    auto *const scope = NearestScope(assignment);
+ir::OpaqueTypeNode *CreateOpaqueTypeNode(public_lib::Context *ctx, checker::Type *lcType)
+{
+    auto checker = ctx->checker->AsETSChecker();
+    // Create proxy TypeNode for left hand of assignment expression
+    if (auto *lcTypeAsPrimitive = checker->ETSBuiltinTypeAsPrimitiveType(lcType); lcTypeAsPrimitive != nullptr) {
+        lcType = lcTypeAsPrimitive;
+    }
+    return checker->AllocNode<ir::OpaqueTypeNode>(lcType);
+}
 
-    std::string newAssignmentStatements {};
-
-    ir::Identifier *ident1;
+std::tuple<ir::Identifier *, ir::Identifier *, ir::Expression *, ir::Expression *, std::string> CreateTemporaryVar(
+    ir::Expression *left, ArenaAllocator *allocator)
+{
+    std::string newStatements {};
+    ir::Identifier *ident1 = nullptr;
     ir::Identifier *ident2 = nullptr;
     ir::Expression *object = nullptr;
     ir::Expression *property = nullptr;
-
-    checker::SavedCheckerContext scc {checker, checker::CheckerStatus::IGNORE_VISIBILITY};
-
     // Create temporary variable(s) if left hand of assignment is not defined by simple identifier[s]
     if (left->IsIdentifier()) {
         ident1 = left->AsIdentifier();
@@ -123,26 +142,23 @@ ir::Expression *HandleOpAssignment(public_lib::Context *ctx, checker::ETSChecker
             ident1 = object->AsIdentifier();
         } else {
             ident1 = Gensym(allocator);
-            newAssignmentStatements = "let @@I1 = (@@E2); ";
+            newStatements = "let @@I1 = (@@E2); ";
         }
 
         if (property = memberExpression->Property(); property->IsIdentifier()) {
             ident2 = property->AsIdentifier();
         } else {
             ident2 = Gensym(allocator);
-            newAssignmentStatements += "let @@I3 = (@@E4); ";
+            newStatements += "let @@I3 = (@@E4); ";
         }
     } else {
         UNREACHABLE();
     }
+    return std::make_tuple(ident1, ident2, object, property, newStatements);
+}
 
-    // Create proxy TypeNode for left hand of assignment expression
-    auto *lcType = left->TsType();
-    if (auto *lcTypeAsPrimitive = checker->ETSBuiltinTypeAsPrimitiveType(lcType); lcTypeAsPrimitive != nullptr) {
-        lcType = lcTypeAsPrimitive;
-    }
-    auto *exprType = checker->AllocNode<ir::OpaqueTypeNode>(lcType);
-
+std::tuple<std::string, std::string> GenerateCodeStringForExpression(ir::Identifier *ident2, ir::Expression *left)
+{
     // Generate ArkTS code string for new lowered assignment expression:
     std::string leftHand = "@@I5";
     std::string rightHand = "@@I7";
@@ -158,51 +174,42 @@ ir::Expression *HandleOpAssignment(public_lib::Context *ctx, checker::ETSChecker
             UNREACHABLE();
         }
     }
+    return std::make_tuple(leftHand, rightHand);
+}
+
+ir::Expression *HandleOpAssignment(public_lib::Context *ctx, checker::ETSChecker *checker, parser::ETSParser *parser,
+                                   ArenaAllocator *allocator, ir::AssignmentExpression *assignment)
+{
+    const auto opEqual = assignment->OperatorType();
+    ASSERT(opEqual != lexer::TokenType::PUNCTUATOR_SUBSTITUTION);
+
+    auto *const left = assignment->Left();
+    auto *const right = assignment->Right();
+    auto *const scope = NearestScope(assignment);
+
+    checker::SavedCheckerContext scc {checker, checker::CheckerStatus::IGNORE_VISIBILITY};
+
+    // Create temporary variable(s) if left hand of assignment is not defined by simple identifier[s]
+    auto [ident1, ident2, object, property, newAssignmentStatements] = CreateTemporaryVar(left, allocator);
+    // Generate ArkTS code string for new lowered assignment expression:
+    auto [leftHand, rightHand] = GenerateCodeStringForExpression(ident2, left);
 
     newAssignmentStatements += leftHand + " = (" + rightHand + ' ' +
                                std::string {lexer::TokenToString(OpEqualToOp(opEqual))} + " (@@E9)) as @@T10";
-    // std::cout << "Lowering statements: " << new_assignment_statements << std::endl;
-
-    // Parse ArkTS code string and create and process corresponding AST node(s)
     auto expressionCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(checker->VarBinder(), scope);
 
     auto *loweringResult = parser->CreateFormattedExpression(
         newAssignmentStatements, parser::DEFAULT_SOURCE_FILE, ident1, object, ident2, property,
-        ident1->Clone(allocator), ident2 != nullptr ? ident2->Clone(allocator) : nullptr, ident1->Clone(allocator),
-        ident2 != nullptr ? ident2->Clone(allocator) : nullptr, right, exprType);
+        ident1->Clone(allocator, nullptr), ident2 != nullptr ? ident2->Clone(allocator, nullptr) : nullptr,
+        ident1->Clone(allocator, nullptr), ident2 != nullptr ? ident2->Clone(allocator, nullptr) : nullptr, right,
+        CreateOpaqueTypeNode(ctx, left->TsType()));
     loweringResult->SetParent(assignment->Parent());
     InitScopesPhaseETS::RunExternalNode(loweringResult, ctx->compilerContext->VarBinder());
 
     checker->VarBinder()->AsETSBinder()->ResolveReferencesForScope(loweringResult, scope);
     loweringResult->Check(checker);
 
-    // Adjust [un]boxing flag
-    ir::AssignmentExpression *newAssignment;
-    if (loweringResult->IsAssignmentExpression()) {
-        newAssignment = loweringResult->AsAssignmentExpression();
-    } else if (loweringResult->IsBlockExpression() && !loweringResult->AsBlockExpression()->Statements().empty() &&
-               loweringResult->AsBlockExpression()->Statements().back()->IsExpressionStatement() &&
-               loweringResult->AsBlockExpression()
-                   ->Statements()
-                   .back()
-                   ->AsExpressionStatement()
-                   ->GetExpression()
-                   ->IsAssignmentExpression()) {
-        newAssignment = loweringResult->AsBlockExpression()
-                            ->Statements()
-                            .back()
-                            ->AsExpressionStatement()
-                            ->GetExpression()
-                            ->AsAssignmentExpression();
-    } else {
-        UNREACHABLE();
-    }
-
-    // NOTE(gogabr): make sure that the checker never puts both a boxing and an unboxing flag on the same node.
-    // Then this code will become unnecessary.
-    AdjustBoxingUnboxingFlags(newAssignment, assignment);
-
-    return loweringResult;
+    return CreateLoweringResult(ctx, assignment, loweringResult);
 }
 
 bool OpAssignmentLowering::Perform(public_lib::Context *ctx, parser::Program *program)
@@ -217,12 +224,15 @@ bool OpAssignmentLowering::Perform(public_lib::Context *ctx, parser::Program *pr
     }
 
     auto *const parser = ctx->parser->AsETSParser();
+    ASSERT(parser != nullptr);
     checker::ETSChecker *checker = ctx->checker->AsETSChecker();
 
     program->Ast()->TransformChildrenRecursively([ctx, checker, parser](ir::AstNode *ast) -> ir::AstNode * {
         if (ast->IsAssignmentExpression() &&
             ast->AsAssignmentExpression()->OperatorType() != lexer::TokenType::PUNCTUATOR_SUBSTITUTION) {
-            return HandleOpAssignment(ctx, checker, parser, ast->AsAssignmentExpression());
+            if (ast->AsAssignmentExpression()->TsType() != nullptr) {  // hasn't been through checker
+                return HandleOpAssignment(ctx, checker, parser, checker->Allocator(), ast->AsAssignmentExpression());
+            }
         }
 
         return ast;

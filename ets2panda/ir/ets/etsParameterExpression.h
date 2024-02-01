@@ -23,9 +23,6 @@ class ETSAnalyzer;
 }  // namespace panda::es2panda::checker
 
 namespace panda::es2panda::ir {
-// NOLINTBEGIN(modernize-avoid-c-arrays)
-inline constexpr char const PROXY_PARAMETER_NAME[] = "$proxy_mask$";
-// NOLINTEND(modernize-avoid-c-arrays)
 
 class ETSParameterExpression final : public Expression {
 public:
@@ -78,8 +75,7 @@ public:
         extraValue_ = value;
     }
 
-    // NOLINTNEXTLINE(google-default-arguments)
-    [[nodiscard]] ETSParameterExpression *Clone(ArenaAllocator *allocator, AstNode *parent = nullptr) override;
+    [[nodiscard]] ETSParameterExpression *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
     void Iterate(const NodeTraverser &cb) const override;
     void TransformChildren(const NodeTransformer &cb) override;
@@ -89,6 +85,10 @@ public:
     void Compile(compiler::ETSGen *etsg) const override;
     checker::Type *Check(checker::TSChecker *checker) override;
     checker::Type *Check(checker::ETSChecker *checker) override;
+    void SetInitializer(Expression *initExpr = nullptr)
+    {
+        initializer_ = initExpr;
+    };
 
     void Accept(ASTVisitorT *v) override
     {

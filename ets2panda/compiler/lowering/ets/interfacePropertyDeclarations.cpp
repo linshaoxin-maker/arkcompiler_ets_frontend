@@ -45,18 +45,16 @@ static ir::MethodDefinition *GenerateGetterOrSetter(checker::ETSChecker *const c
     ArenaVector<ir::Expression *> params(checker->Allocator()->Adapter());
 
     if (isSetter) {
-        auto paramIdent = field->Key()->AsIdentifier()->Clone(checker->Allocator());
-        paramIdent->SetTsTypeAnnotation(field->TypeAnnotation()->Clone(checker->Allocator()));
+        auto paramIdent = field->Key()->AsIdentifier()->Clone(checker->Allocator(), nullptr);
+        paramIdent->SetTsTypeAnnotation(field->TypeAnnotation()->Clone(checker->Allocator(), nullptr));
         paramIdent->TypeAnnotation()->SetParent(paramIdent);
 
-        auto paramExpression = checker->AllocNode<ir::ETSParameterExpression>(paramIdent, nullptr);
+        auto *const paramExpression = checker->AllocNode<ir::ETSParameterExpression>(paramIdent, nullptr);
         paramExpression->SetRange(paramIdent->Range());
-        const auto [_, __, param_var] = paramScope->AddParamDecl(checker->Allocator(), paramExpression);
-        (void)_;
-        (void)__;
+        auto *const paramVar = std::get<2>(paramScope->AddParamDecl(checker->Allocator(), paramExpression));
 
-        paramIdent->SetVariable(param_var);
-        paramExpression->SetVariable(param_var);
+        paramIdent->SetVariable(paramVar);
+        paramExpression->SetVariable(paramVar);
 
         params.push_back(paramExpression);
     }
@@ -73,7 +71,7 @@ static ir::MethodDefinition *GenerateGetterOrSetter(checker::ETSChecker *const c
 
     func->SetScope(functionScope);
 
-    auto methodIdent = field->Key()->AsIdentifier()->Clone(checker->Allocator());
+    auto methodIdent = field->Key()->AsIdentifier()->Clone(checker->Allocator(), nullptr);
     auto *decl = checker->Allocator()->New<varbinder::VarDecl>(field->Key()->AsIdentifier()->Name());
     auto var = functionScope->AddDecl(checker->Allocator(), decl, ScriptExtension::ETS);
 
@@ -122,6 +120,7 @@ static ir::Expression *UpdateInterfacePropertys(checker::ETSChecker *const check
 
         auto *decl = checker->Allocator()->New<varbinder::FunctionDecl>(checker->Allocator(), name, getter);
         auto var = methodScope->AddDecl(checker->Allocator(), decl, ScriptExtension::ETS);
+        var->AddFlag(varbinder::VariableFlags::METHOD);
 
         if (var == nullptr) {
             auto prevDecl = methodScope->FindDecl(name);

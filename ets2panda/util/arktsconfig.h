@@ -80,7 +80,7 @@ public:
     explicit ArkTsConfig(std::string configPath) : configPath_(std::move(configPath)) {}
     bool Parse();
 
-    std::string ResolvePath(const std::string &path);
+    std::optional<std::string> ResolvePath(const std::string &path) const;
 
     std::string ConfigPath() const
     {

@@ -321,7 +321,7 @@ static std::string TrimPath(const std::string &path)
     return trimmedPath;
 }
 
-std::string ArkTsConfig::ResolvePath(const std::string &path)
+std::optional<std::string> ArkTsConfig::ResolvePath(const std::string &path) const
 {
     for (const auto &[alias, paths] : paths_) {
         auto trimmedAlias = TrimPath(alias);
@@ -334,7 +334,7 @@ std::string ArkTsConfig::ResolvePath(const std::string &path)
             return resolved;
         }
     }
-    return "";
+    return std::nullopt;
 }
 
 #ifdef ARKTSCONFIG_USE_FILESYSTEM

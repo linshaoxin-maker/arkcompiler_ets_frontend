@@ -160,10 +160,6 @@ static pandasm::Program *CreateCompiler(const CompilationUnit &unit, const Phase
                        &parser, &context);
 
     parser.ParseScript(unit.input, unit.options.compilationMode == CompilationMode::GEN_STD_LIB);
-    if constexpr (std::is_same_v<Parser, parser::ETSParser> && std::is_same_v<VarBinder, varbinder::ETSBinder>) {
-        reinterpret_cast<varbinder::ETSBinder *>(varbinder)->FillResolvedImportPathes(parser.ResolvedParsedSourcesMap(),
-                                                                                      &allocator);
-    }
     for (auto *phase : getPhases(unit.ext)) {
         if (!phase->Apply(&publicContext, &program)) {
             return nullptr;

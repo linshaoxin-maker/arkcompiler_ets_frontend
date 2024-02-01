@@ -450,7 +450,7 @@ public:
     {                                                       \
         return ((member_name)&flag) != 0U;                  \
     }                                                       \
-    void Remove##flag_type(flag_type flag) noexcept         \
+    void Remove##flag_type(flag_type flag) const noexcept   \
     {                                                       \
         (member_name) &= ~flag;                             \
     }
@@ -484,9 +484,8 @@ public:
     [[nodiscard]] ir::BlockStatement *GetTopStatement();
     [[nodiscard]] const ir::BlockStatement *GetTopStatement() const;
 
-    // NOLINTNEXTLINE(google-default-arguments)
     [[nodiscard]] virtual AstNode *Clone([[maybe_unused]] ArenaAllocator *const allocator,
-                                         [[maybe_unused]] AstNode *const parent = nullptr)
+                                         [[maybe_unused]] AstNode *const parent)
     {
         UNREACHABLE();
     }

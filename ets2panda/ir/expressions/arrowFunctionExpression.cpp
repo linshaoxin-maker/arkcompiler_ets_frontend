@@ -86,7 +86,6 @@ ArrowFunctionExpression::ArrowFunctionExpression(ArrowFunctionExpression const &
     }
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 ArrowFunctionExpression *ArrowFunctionExpression::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
     if (auto *const clone = allocator->New<ArrowFunctionExpression>(*this, allocator); clone != nullptr) {

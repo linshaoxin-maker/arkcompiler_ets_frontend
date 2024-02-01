@@ -974,7 +974,8 @@ private:
                     auto ttctx = TargetTypeContext(this, arg->TsType());
                     VReg argReg = AllocReg();
                     arg->Compile(this);
-                    StoreAccumulator(node, argReg);
+                    ApplyConversion(arg, nullptr);
+                    ApplyConversionAndStoreAccumulator(arg, argReg, arg->TsType());
                 }
 
                 Rra().Emit<Range>(node, ctor, arguments.size() + 1, name, ctor);
@@ -984,12 +985,66 @@ private:
     }
 
     template <typename Short, typename General, typename Range>
+    bool ResolveStringFromNullishBuiltin(const ir::AstNode *node, checker::Signature *signature,
+                                         const ArenaVector<ir::Expression *> &arguments)
+    {
+        if (signature->InternalName() != Signatures::BUILTIN_STRING_FROM_NULLISH_CTOR) {
+            return false;
+        }
+        auto argExpr = arguments[0];
+        if (argExpr->IsExpression()) {
+            if (argExpr->AsExpression()->IsNullLiteral()) {
+                LoadAccumulatorString(node, "null");
+                return true;
+            }
+            if (argExpr->AsExpression()->IsUndefinedLiteral()) {
+                LoadAccumulatorString(node, "undefined");
+                return true;
+            }
+        }
+
+        Label *isNull = AllocLabel();
+        Label *end = AllocLabel();
+#ifdef PANDA_WITH_ETS
+        Label *isUndefined = AllocLabel();
+#endif
+        COMPILE_ARG(0);
+        LoadAccumulator(node, arg0);
+        if (argExpr->TsType()->IsNullish()) {
+            BranchIfNull(node, isNull);
+#ifdef PANDA_WITH_ETS
+            Sa().Emit<EtsIsundefined>(node);
+            BranchIfTrue(node, isUndefined);
+#endif
+        }
+        LoadAccumulator(node, arg0);
+        CastToString(node);
+        StoreAccumulator(node, arg0);
+        Ra().Emit<Short, 1>(node, Signatures::BUILTIN_STRING_FROM_STRING_CTOR, arg0, dummyReg_);
+        JumpTo(node, end);
+        if (argExpr->TsType()->IsNullish()) {
+            SetLabel(node, isNull);
+            LoadAccumulatorString(node, "null");
+#ifdef PANDA_WITH_ETS
+            JumpTo(node, end);
+            SetLabel(node, isUndefined);
+            LoadAccumulatorString(node, "undefined");
+#endif
+        }
+        SetLabel(node, end);
+        return true;
+    }
+
+    template <typename Short, typename General, typename Range>
     void CallImpl(const ir::AstNode *node, checker::Signature *signature,
                   const ArenaVector<ir::Expression *> &arguments)
     {
         RegScope rs(this);
-        const auto name = signature->InternalName();
+        if (ResolveStringFromNullishBuiltin<Short, General, Range>(node, signature, arguments)) {
+            return;
+        }
 
+        const auto name = signature->InternalName();
         switch (arguments.size()) {
             case 0U: {
                 Ra().Emit<Short, 0>(node, name, dummyReg_, dummyReg_);
@@ -1028,7 +1083,8 @@ private:
                     auto ttctx = TargetTypeContext(this, arg->TsType());
                     VReg argReg = AllocReg();
                     arg->Compile(this);
-                    StoreAccumulator(node, argReg);
+                    ApplyConversion(arg, nullptr);
+                    ApplyConversionAndStoreAccumulator(node, argReg, arg->TsType());
                 }
 
                 Rra().Emit<Range>(node, argStart, arguments.size(), name, argStart);
@@ -1080,6 +1136,7 @@ private:
                     // + 2U since we need to skip first 2 args in signature; first args is obj,
                     // second arg is param2
                     auto *argType = signature->Params()[index + 2U]->TsType();
+                    ApplyConversion(arg, nullptr);
                     ApplyConversionAndStoreAccumulator(node, argReg, argType);
                     index++;
                 }

@@ -351,11 +351,11 @@
                       "loc": {
                         "start": {
                           "line": 20,
-                          "column": 1
+                          "column": 5
                         },
                         "end": {
                           "line": 22,
-                          "column": 3
+                          "column": 2
                         }
                       }
                     }
@@ -478,8 +478,8 @@
                 "column": 5
               },
               "end": {
-                "line": 20,
-                "column": 11
+                "line": 22,
+                "column": 2
               }
             }
           }
@@ -518,4 +518,4 @@
     }
   }
 }
-TypeError: value type is not assignable to the property type [objectLiteralWrongValueType.ets:21:8]
+TypeError: Type 'string' is not compatible with type 'int' at property 'f' [objectLiteralWrongValueType.ets:21:8]

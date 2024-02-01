@@ -36,7 +36,6 @@ Identifier::Identifier([[maybe_unused]] Tag const tag, Identifier const &other, 
     }
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 Identifier *Identifier::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
     if (auto *const clone = allocator->New<Identifier>(Tag {}, *this, allocator); clone != nullptr) {

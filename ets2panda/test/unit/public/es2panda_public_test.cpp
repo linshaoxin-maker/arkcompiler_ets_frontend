@@ -57,7 +57,7 @@ TEST_F(Es2PandaLibTest, TypeError)
     impl_->ProceedToState(ctx, ES2PANDA_STATE_ASM_GENERATED);
     ASSERT_EQ(impl_->ContextState(ctx), ES2PANDA_STATE_ERROR);
     ASSERT_EQ(std::string(impl_->ContextErrorMessage(ctx)),
-              "TypeError: Initializers type is not assignable to the target type[type-error.ets:1,32]");
+              "TypeError: Type 'string' cannot be assigned to type 'int'[type-error.ets:1,32]");
     impl_->DestroyContext(ctx);
 }
 
@@ -94,9 +94,8 @@ function main() {
 
     impl_->AstNodeForEach(impl_->ProgramAst(impl_->ContextProgram(ctx)), func, &arg);
 
-    std::vector<std::string> expected {"C",        "n",        "string", "constructor", "constructor", "ETSGLOBAL",
-                                       "_$init$_", "_$init$_", "main",   "main",        "c",           "C",
-                                       "console",  "log",      "c",      "n",           "<cctor>"};
+    std::vector<std::string> expected {"C", "n", "string",  "constructor", "constructor", "main",
+                                       "c", "C", "console", "log",         "c",           "n"};
     ASSERT_EQ(arg.ids, expected);
 
     impl_->DestroyContext(ctx);

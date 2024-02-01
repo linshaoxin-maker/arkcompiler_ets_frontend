@@ -13,12 +13,14 @@
  * limitations under the License.
  */
 
+#include "util/error_handler.h"
 #include "scopesInitPhase.h"
 
 namespace panda::es2panda::compiler {
 bool ScopesInitPhase::Perform(PhaseContext *ctx, parser::Program *program)
 {
     Prepare(ctx, program);
+    program->VarBinder()->InitTopScope();
     HandleBlockStmt(program->Ast(), GetScope());
     Finalize();
     return true;
@@ -320,10 +322,7 @@ void ScopesInitPhase::IterateNoTParams(ir::ClassDefinition *classDef)
 
 void ScopesInitPhase::ThrowSyntaxError(std::string_view errorMessage, const lexer::SourcePosition &pos) const
 {
-    lexer::LineIndex index(program_->SourceCode());
-    lexer::SourceLocation loc = index.GetLocation(pos);
-
-    throw Error {ErrorType::SYNTAX, program_->SourceFilePath().Utf8(), errorMessage, loc.line, loc.col};
+    util::ErrorHandler::ThrowSyntaxError(Program(), errorMessage, pos);
 }
 
 void ScopesInitPhase::CreateFuncDecl(ir::ScriptFunction *func)
@@ -740,7 +739,7 @@ void InitScopesPhaseETS::DeclareClassMethod(ir::MethodDefinition *method)
 
     ASSERT(VarBinder()->GetScope()->IsClassScope());
 
-    if (method->AsMethodDefinition()->Function()->IsDefaultParamProxy()) {
+    if ((method->AsMethodDefinition()->Function()->Flags() & ir::ScriptFunctionFlags::OVERLOAD) != 0) {
         return;
     }
 
@@ -774,7 +773,7 @@ void InitScopesPhaseETS::DeclareClassMethod(ir::MethodDefinition *method)
         var->AddFlag(varbinder::VariableFlags::METHOD);
         methodName->SetVariable(var);
         for (auto *overload : method->Overloads()) {
-            ASSERT(overload->Function()->IsDefaultParamProxy());
+            ASSERT((overload->Function()->Flags() & ir::ScriptFunctionFlags::OVERLOAD));
             overload->Id()->SetVariable(var);
             overload->SetParent(var->Declaration()->Node());
         }
@@ -785,13 +784,21 @@ void InitScopesPhaseETS::DeclareClassMethod(ir::MethodDefinition *method)
         addOverload(method, found);
         method->Function()->AddFlag(ir::ScriptFunctionFlags::OVERLOAD);
 
-        // default params proxy
+        // default params overloads
         for (auto *overload : method->Overloads()) {
-            ASSERT(overload->Function()->IsDefaultParamProxy());
+            ASSERT((overload->Function()->Flags() & ir::ScriptFunctionFlags::OVERLOAD));
             addOverload(overload, found);
         }
         method->ClearOverloads();
     }
+}
+
+void InitScopesPhaseETS::VisitETSReExportDeclaration(ir::ETSReExportDeclaration *reExport)
+{
+    if (reExport->GetETSImportDeclarations()->Language().IsDynamic()) {
+        VarBinder()->AsETSBinder()->AddDynamicImport(reExport->GetETSImportDeclarations());
+    }
+    VarBinder()->AsETSBinder()->AddReExportImport(reExport);
 }
 
 void InitScopesPhaseETS::VisitETSParameterExpression(ir::ETSParameterExpression *paramExpr)

@@ -21,33 +21,32 @@
 #include "ir/expressions/blockExpression.h"
 #include "ir/ets/etsUnionType.h"
 #include "ir/ets/etsTuple.h"
+#include "ir/statements/functionDeclaration.h"
+#include "ir/expressions/functionExpression.h"
+#include "ir/base/scriptFunction.h"
+#include "ir/base/methodDefinition.h"
+#include "ir/base/classProperty.h"
+#include "ir/expressions/identifier.h"
+#include "ir/statements/variableDeclaration.h"
+#include "ir/statements/variableDeclarator.h"
 
 namespace panda::es2panda::ir::visitor {
 
-/**
- * Children should declare VisitNode methods (might be virtual might be not)
- * for all classes or provide default behaviour using
- * template <T> VisitNode(T *t) {}
- */
-class IterateAstVisitor : public ASTAbstractVisitor {
+namespace detail {
+class DefaultBehaviourAstVisitor : public ASTAbstractVisitor {
 public:
-    IterateAstVisitor() = default;
-    virtual ~IterateAstVisitor() = 0;
-    NO_COPY_SEMANTIC(IterateAstVisitor);
-    NO_MOVE_SEMANTIC(IterateAstVisitor);
+    DefaultBehaviourAstVisitor() = default;
+    virtual ~DefaultBehaviourAstVisitor() = 0;
+    NO_COPY_SEMANTIC(DefaultBehaviourAstVisitor);
+    NO_MOVE_SEMANTIC(DefaultBehaviourAstVisitor);
 
-    void Iterate(ir::AstNode *node)
-    {
-        if (node != nullptr) {
-            node->Iterate([this](ir::AstNode *child) { child->Accept(this); });
-        }
-    }
+    virtual void HandleNode(ir::AstNode *node) = 0;
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DECLARE_CLASSES(nodeType, className)        \
-    void Visit##className(className *node) override \
-    {                                               \
-        Iterate(static_cast<ir::AstNode *>(node));  \
+#define DECLARE_CLASSES(nodeType, className)          \
+    void Visit##className(className *node) override   \
+    {                                                 \
+        HandleNode(static_cast<ir::AstNode *>(node)); \
     }
 
     AST_NODE_MAPPING(DECLARE_CLASSES)
@@ -61,7 +60,49 @@ public:
 
 #undef DECLARE_CLASSES
 };
-inline IterateAstVisitor::~IterateAstVisitor() = default;
+inline DefaultBehaviourAstVisitor::~DefaultBehaviourAstVisitor() = default;
+}  // namespace detail
+
+/**
+ * Children should declare VisitNode methods (might be virtual might be not)
+ * for all classes or provide default behaviour using
+ * template <T> VisitNode(T *t) {}
+ */
+class IterateAstVisitor : public detail::DefaultBehaviourAstVisitor {
+public:
+    IterateAstVisitor() = default;
+
+    void Iterate(ir::AstNode *node)
+    {
+        if (node != nullptr) {
+            node->Iterate([this](ir::AstNode *child) { child->Accept(this); });
+        }
+    }
+
+    void HandleNode(ir::AstNode *node) final
+    {
+        Iterate(node);
+    }
+};
+
+class EmptyAstVisitor : public detail::DefaultBehaviourAstVisitor {
+public:
+    EmptyAstVisitor() = default;
+
+    void HandleNode(ir::AstNode * /*node*/) final {}
+};
+
+class AbortAstVisitor : public detail::DefaultBehaviourAstVisitor {
+public:
+    AbortAstVisitor() = default;
+
+    void HandleNode(ir::AstNode * /*node*/) final
+    {
+        UNREACHABLE();
+    }
+};
+
+using CustomAstVisitor = detail::DefaultBehaviourAstVisitor;
 
 }  // namespace panda::es2panda::ir::visitor
 
