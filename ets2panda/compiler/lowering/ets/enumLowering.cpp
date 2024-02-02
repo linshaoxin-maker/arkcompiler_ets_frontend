@@ -365,6 +365,10 @@ ir::AstNode *CreateEnumClassFromEnumDeclaration(ir::TSEnumDeclaration *enum_decl
 
 bool EnumLowering::Perform(public_lib::Context *ctx, parser::Program *program)
 {
+    if (program->Extension() != ScriptExtension::ETS) {
+        return true;
+    }
+
     checker::ETSChecker *checker = ctx->checker->AsETSChecker();
 
     for (auto &[_, ext_programs] : program->ExternalSources()) {
