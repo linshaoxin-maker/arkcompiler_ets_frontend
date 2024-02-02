@@ -2380,8 +2380,11 @@ void ETSGen::StringBuilderAppend(const ir::AstNode *node, VReg builder)
         signature = Signatures::BUILTIN_STRING_BUILDER_APPEND_BUILTIN_STRING;
     }
 
-    if ((GetAccumulatorType()->IsETSObjectType() || GetAccumulatorType()->IsETSTypeParameter()) &&
-        !GetAccumulatorType()->IsETSStringType()) {
+    const checker::Type *accumulatorType = GetAccumulatorType();
+    bool isNullOrUndefined = accumulatorType->ContainsNull() || accumulatorType->ContainsUndefined();
+    bool isETSObjectOrTypeParam = accumulatorType->IsETSObjectType() || accumulatorType->IsETSTypeParameter();
+    bool isStringType = accumulatorType->IsETSStringType();
+    if (isETSObjectOrTypeParam && (!isStringType || isNullOrUndefined)) {
         if (Checker()->MayHaveNullValue(GetAccumulatorType())) {
             Label *ifnull = AllocLabel();
             Label *end = AllocLabel();
