@@ -28,7 +28,7 @@ case "$ARGUMENT" in
 esac
 done
 
-python $PANDA_ROOT/tools/es2panda/scripts/test_runner.py \
+python3 $PANDA_ROOT/tools/es2panda/scripts/test_runner.py \
     --builddir $PANDA_BINARY_ROOT --arkdir $PANDA_ROOT --all
 
 gcov $PANDA_BINARY_ROOT/tools/es2panda/CMakeFiles/es2panda-lib.dir/*/*
