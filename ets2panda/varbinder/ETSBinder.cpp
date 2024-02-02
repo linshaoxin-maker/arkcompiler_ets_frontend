@@ -605,34 +605,42 @@ bool ETSBinder::AddImportSpecifiersToTopBindings(ir::AstNode *const specifier,
     }();
 
     if (var == nullptr) {
-        for (auto item : ReExportImports()) {
-            if (auto source = import->ResolvedSource()->Str().Mutf8(),
-                program = item->GetProgramPath().Mutf8().substr(0, item->GetProgramPath().Mutf8().find_last_of('.'));
-                source == program || (source + "/index") == program) {
-                // clang-format off
-                ir::StringLiteral dirName(util::UString(util::StringView(item->GetProgramPath().Mutf8().substr(
-                                                            0, item->GetProgramPath().Mutf8().find_last_of('/'))),
-                                                        Allocator())
-                                            .View());
-                // clang-format on
-                dirName.SetStart(item->GetETSImportDeclarations()->Source()->Start());
-
-                viewedReExport.push_back(item->GetETSImportDeclarations());
-                AddSpecifiersToTopBindings(
-                    specifier, item->GetETSImportDeclarations(),
-                    dirName.Str().Is(".") ? item->GetETSImportDeclarations()->Source() : &dirName, viewedReExport);
-                return true;
-            }
+        if (HandleMissingImportedElement(specifier, imported, import, viewedReExport, importPath)) {
+            return true;
         }
-        ThrowError(importPath->Start(), "Cannot find imported element " + imported.Mutf8());
-    }
-
-    if (var->Declaration()->Node()->IsDefaultExported()) {
+    } else if (var->Declaration()->Node()->IsDefaultExported()) {
         ThrowError(importPath->Start(), "Use the default import syntax to import a default exported element");
     }
 
     insertForeignBinding(localName, var);
     return true;
+}
+
+bool ETSBinder::HandleMissingImportedElement(ir::AstNode *const specifier, const util::StringView &imported,
+                                             const ir::ETSImportDeclaration *import,
+                                             std::vector<ir::ETSImportDeclaration *> &viewedReExport,
+                                             const ir::StringLiteral *importPath)
+{
+    for (auto item : ReExportImports()) {
+        if (auto source = import->ResolvedSource()->Str().Mutf8(),
+            program = item->GetProgramPath().Mutf8().substr(0, item->GetProgramPath().Mutf8().find_last_of('.'));
+            source == program || (source + "/index") == program) {
+            // clang-format off
+            ir::StringLiteral dirName(util::UString(util::StringView(item->GetProgramPath().Mutf8().substr(
+                                                        0, item->GetProgramPath().Mutf8().find_last_of('/'))),
+                                                    Allocator())
+                                        .View());
+            // clang-format on
+            dirName.SetStart(item->GetETSImportDeclarations()->Source()->Start());
+
+            viewedReExport.push_back(item->GetETSImportDeclarations());
+            AddSpecifiersToTopBindings(specifier, item->GetETSImportDeclarations(),
+                                       dirName.Str().Is(".") ? item->GetETSImportDeclarations()->Source() : &dirName,
+                                       viewedReExport);
+            return true;
+        }
+    }
+    ThrowError(importPath->Start(), "Cannot find imported element " + imported.Mutf8());
 }
 
 varbinder::Variable *ETSBinder::FindStaticBinding(const ArenaVector<parser::Program *> &recordRes,
@@ -1036,7 +1044,7 @@ void ETSBinder::BuildETSNewClassInstanceExpression(ir::ETSNewClassInstanceExpres
 
 void ETSBinder::BuildImportDeclaration(ir::ETSImportDeclaration *decl)
 {
-    if (decl->Source()->Str() == Program()->AbsoluteName()) {
+    if (decl->Source()->Str() == Program()->SourceFile().GetAbsolutePath()) {
         return;
     }
 

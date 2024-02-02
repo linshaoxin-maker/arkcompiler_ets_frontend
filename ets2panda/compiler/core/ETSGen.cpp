@@ -14,7 +14,6 @@
  */
 
 #include "ETSGen.h"
-
 #include "ir/base/scriptFunction.h"
 #include "ir/base/classDefinition.h"
 #include "ir/statement.h"
@@ -982,6 +981,13 @@ void ETSGen::ApplyConversion(const ir::AstNode *node, const checker::Type *targe
 {
     auto ttctx = TargetTypeContext(this, targetType);
 
+    if (node->HasAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE)) {
+        Ra().Emit<CallAccShort, 0>(
+            node, node->AsExpression()->TsType()->AsETSEnumType()->GetValueMethod().globalSignature->InternalName(),
+            dummyReg_, 0);
+        node->RemoveAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
+    }
+
     if ((node->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG) != 0U) {
         ApplyBoxingConversion(node);
         return;
@@ -1703,11 +1709,10 @@ void ETSGen::CastToString(const ir::AstNode *const node)
     SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalETSStringBuiltinType());
 }
 
-void ETSGen::CastToDynamic(const ir::AstNode *node, const checker::ETSDynamicType *type)
+void ETSGen::SetBuiltinTypeMethodName(std::string_view &methodName, checker::TypeFlag type_kind,
+                                      const checker::ETSDynamicType *type)
 {
-    std::string_view methodName {};
-    auto typeKind = checker::ETSChecker::TypeKind(GetAccumulatorType());
-    switch (typeKind) {
+    switch (type_kind) {
         case checker::TypeFlag::ETS_BOOLEAN: {
             methodName = compiler::Signatures::Dynamic::NewBooleanBuiltin(type->Language());
             break;
@@ -1740,6 +1745,15 @@ void ETSGen::CastToDynamic(const ir::AstNode *node, const checker::ETSDynamicTyp
             methodName = compiler::Signatures::Dynamic::NewDoubleBuiltin(type->Language());
             break;
         }
+        default:
+            break;
+    }
+}
+
+void ETSGen::SetBuiltinObjectMethodName(std::string_view &methodName, checker::TypeFlag type_kind,
+                                        const checker::ETSDynamicType *type)
+{
+    switch (type_kind) {
         case checker::TypeFlag::ETS_OBJECT:
         case checker::TypeFlag::ETS_TYPE_PARAMETER: {
             if (GetAccumulatorType()->IsETSStringType()) {
@@ -1756,15 +1770,22 @@ void ETSGen::CastToDynamic(const ir::AstNode *node, const checker::ETSDynamicTyp
             methodName = compiler::Signatures::Dynamic::NewObjectBuiltin(type->Language());
             break;
         }
-        case checker::TypeFlag::ETS_DYNAMIC_TYPE: {
-            SetAccumulatorType(type);
-            return;
-        }
-        default: {
-            UNREACHABLE();
-        }
+        default:
+            break;
     }
+}
 
+void ETSGen::CastToDynamic(const ir::AstNode *node, const checker::ETSDynamicType *type)
+{
+    std::string_view methodName {};
+    auto type_kind = checker::ETSChecker::TypeKind(GetAccumulatorType());
+    SetBuiltinTypeMethodName(methodName, type_kind, type);
+    SetBuiltinObjectMethodName(methodName, type_kind, type);
+
+    if (type_kind == checker::TypeFlag::ETS_DYNAMIC_TYPE) {
+        SetAccumulatorType(type);
+        return;
+    }
     ASSERT(!methodName.empty());
 
     RegScope rs(this);
@@ -2380,7 +2401,8 @@ void ETSGen::StringBuilderAppend(const ir::AstNode *node, VReg builder)
         signature = Signatures::BUILTIN_STRING_BUILDER_APPEND_BUILTIN_STRING;
     }
 
-    if ((GetAccumulatorType()->IsETSObjectType() || GetAccumulatorType()->IsETSTypeParameter()) &&
+    if ((GetAccumulatorType()->IsETSObjectType() || GetAccumulatorType()->IsETSTypeParameter() ||
+         GetAccumulatorType()->IsETSArrayType()) &&
         !GetAccumulatorType()->IsETSStringType()) {
         if (Checker()->MayHaveNullValue(GetAccumulatorType())) {
             Label *ifnull = AllocLabel();
