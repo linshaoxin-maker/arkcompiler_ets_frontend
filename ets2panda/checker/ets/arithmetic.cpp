@@ -527,6 +527,16 @@ Type *ETSChecker::CheckBinaryOperatorNullishCoalescing(ir::Expression *right, le
         return FindLeastUpperBound(nonNullishLeftType, boxedRightType);
     }
 
+    if (leftType->IsETSFunctionType() || rightType->IsETSFunctionType()) {
+        Relation()->SetNode(right);
+        bool isObject = leftType->IsObjectType();
+        if (isObject ? Relation()->IsAssignableTo(leftType, rightType)
+                     : Relation()->IsAssignableTo(rightType, leftType)) {
+            return isObject ? rightType : leftType;
+        }
+        return GlobalETSObjectType();
+    }
+
     return FindLeastUpperBound(nonNullishLeftType, rightType);
 }
 
