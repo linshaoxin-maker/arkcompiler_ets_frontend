@@ -1727,9 +1727,9 @@ void ETSGen::CastToInt(const ir::AstNode *node)
         }
         case checker::TypeFlag::ETS_ENUM2_TYPE: {
             RegScope rs(this);
-            VReg obj_reg = AllocReg();
-            StoreAccumulator(node, obj_reg);
-            Ra().Emit<CallShort, 1>(node, checker::ETSEnum2Type::GetIndexMethodName(), obj_reg, dummy_reg_);
+            VReg objReg = AllocReg();
+            StoreAccumulator(node, objReg);
+            Ra().Emit<CallShort, 1>(node, checker::ETSEnum2Type::GetIndexMethodName(), objReg, dummyReg_);
 
             break;
         }

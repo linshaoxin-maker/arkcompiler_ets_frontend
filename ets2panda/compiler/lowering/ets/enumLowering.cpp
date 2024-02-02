@@ -363,12 +363,6 @@ ir::AstNode *CreateEnumClassFromEnumDeclaration(ir::TSEnumDeclaration *enum_decl
     return class_decl;
 }
 
-std::string_view EnumLowering::Name()
-{
-    static std::string const NAME = "enum-property-access";
-    return NAME;
-}
-
 bool EnumLowering::Perform(public_lib::Context *ctx, parser::Program *program)
 {
     checker::ETSChecker *checker = ctx->checker->AsETSChecker();
@@ -383,7 +377,7 @@ bool EnumLowering::Perform(public_lib::Context *ctx, parser::Program *program)
     program->Ast()->TransformChildrenRecursively([checker, ctx, program](ir::AstNode *ast) -> ir::AstNode * {
         if (ast->IsTSEnumDeclaration()) {
             return CreateEnumClassFromEnumDeclaration(ast->AsTSEnumDeclaration(), checker,
-                                                      ctx->compiler_context->VarBinder()->AsETSBinder(), program);
+                                                      ctx->compilerContext->VarBinder()->AsETSBinder(), program);
         }
         return ast;
     });

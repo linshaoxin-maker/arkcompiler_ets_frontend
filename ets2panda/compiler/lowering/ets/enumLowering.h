@@ -22,7 +22,10 @@ namespace panda::es2panda::compiler {
 
 class EnumLowering : public Phase {
 public:
-    std::string_view Name() override;
+    std::string_view Name() override
+    {
+        return "EnumLowering";
+    }
     bool Perform(public_lib::Context *ctx, parser::Program *program) override;
 };
 
