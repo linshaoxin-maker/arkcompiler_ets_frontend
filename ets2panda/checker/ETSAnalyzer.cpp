@@ -506,9 +506,7 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewArrayInstanceExpression *expr) const
     checker->ValidateArrayIndex(expr->dimension_, true);
 
     if (!elementType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && !elementType->IsNullish() &&
-        !elementType->HasTypeFlag(TypeFlag::GENERIC) && !elementType->HasTypeFlag(TypeFlag::ETS_ARRAY) &&
         elementType->ToAssemblerName().str() != "Ball") {
-        // Check only valid for ETS_PRIMITIVE and IsNullish, GENERIC and ETS_ARRAY are workaround checks for stdlib
         // Ball is workaround for koala ui lib
         if (elementType->IsETSObjectType()) {
             auto *calleeObj = elementType->AsETSObjectType();
@@ -725,7 +723,7 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
                         currentElement->Start());
                 }
 
-                const checker::CastingContext cast(
+                checker::AssignmentContext(
                     checker->Relation(), currentElement, elementType, compareType, currentElement->Start(),
                     {"Array initializer's type is not assignable to tuple type at index: ", idx});
 
@@ -1145,6 +1143,7 @@ checker::Type *ETSAnalyzer::Check(ir::CallExpression *expr) const
     }
 
     if (expr->Signature()->HasSignatureFlag(checker::SignatureFlags::NEED_RETURN_TYPE)) {
+        checker::SavedCheckerContext savedCtx(checker, checker->Context().Status(), expr->Signature()->Owner());
         expr->Signature()->OwnerVar()->Declaration()->Node()->Check(checker);
         returnType = expr->Signature()->ReturnType();
         // NOTE(vpukhov): #14902 substituted signature is not updated
@@ -1255,6 +1254,15 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ImportExpression *expr) c
     UNREACHABLE();
 }
 
+checker::Type *ETSAnalyzer::SetAndAdjustType(ETSChecker *checker, ir::MemberExpression *expr,
+                                             ETSObjectType *objectType) const
+{
+    expr->SetObjectType(objectType);
+    auto [resType, resVar] = expr->ResolveObjectMember(checker);
+    expr->SetPropVar(resVar);
+    return expr->AdjustType(checker, resType);
+}
+
 checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -1285,15 +1293,16 @@ checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
         return expr->AdjustType(checker, expr->CheckComputed(checker, baseType));
     }
 
-    if (baseType->IsETSArrayType() && expr->Property()->AsIdentifier()->Name().Is("length")) {
-        return expr->AdjustType(checker, checker->GlobalIntType());
+    if (baseType->IsETSArrayType()) {
+        if (expr->Property()->AsIdentifier()->Name().Is("length")) {
+            return expr->AdjustType(checker, checker->GlobalIntType());
+        }
+
+        return SetAndAdjustType(checker, expr, checker->GlobalETSObjectType());
     }
 
     if (baseType->IsETSObjectType()) {
-        expr->SetObjectType(baseType->AsETSObjectType());
-        auto [resType, resVar] = expr->ResolveObjectMember(checker);
-        expr->SetPropVar(resVar);
-        return expr->AdjustType(checker, resType);
+        return SetAndAdjustType(checker, expr, baseType->AsETSObjectType());
     }
 
     if (baseType->IsETSEnumType() || baseType->IsETSStringEnumType()) {
