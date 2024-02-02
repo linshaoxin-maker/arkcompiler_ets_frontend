@@ -506,9 +506,7 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewArrayInstanceExpression *expr) const
     checker->ValidateArrayIndex(expr->dimension_, true);
 
     if (!elementType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && !elementType->IsNullish() &&
-        !elementType->HasTypeFlag(TypeFlag::GENERIC) && !elementType->HasTypeFlag(TypeFlag::ETS_ARRAY) &&
         elementType->ToAssemblerName().str() != "Ball") {
-        // Check only valid for ETS_PRIMITIVE and IsNullish, GENERIC and ETS_ARRAY are workaround checks for stdlib
         // Ball is workaround for koala ui lib
         if (elementType->IsETSObjectType()) {
             auto *calleeObj = elementType->AsETSObjectType();
@@ -725,7 +723,7 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
                         currentElement->Start());
                 }
 
-                const checker::CastingContext cast(
+                checker::AssignmentContext(
                     checker->Relation(), currentElement, elementType, compareType, currentElement->Start(),
                     {"Array initializer's type is not assignable to tuple type at index: ", idx});
 
@@ -1145,6 +1143,7 @@ checker::Type *ETSAnalyzer::Check(ir::CallExpression *expr) const
     }
 
     if (expr->Signature()->HasSignatureFlag(checker::SignatureFlags::NEED_RETURN_TYPE)) {
+        checker::SavedCheckerContext savedCtx(checker, checker->Context().Status(), expr->Signature()->Owner());
         expr->Signature()->OwnerVar()->Declaration()->Node()->Check(checker);
         returnType = expr->Signature()->ReturnType();
         // NOTE(vpukhov): #14902 substituted signature is not updated
