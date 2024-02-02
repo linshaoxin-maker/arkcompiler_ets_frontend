@@ -57,7 +57,6 @@ public:
 
     Type *GetConstraintType() const
     {
-        ASSERT(constraint_ != nullptr);
         return constraint_;
     }
 

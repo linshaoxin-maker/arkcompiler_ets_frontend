@@ -177,6 +177,7 @@ public:
     varbinder::Variable *ResolveInstanceExtension(const ir::MemberExpression *memberExpr);
     void CheckImplicitSuper(ETSObjectType *classType, Signature *ctorSig);
     void CheckValidInheritance(ETSObjectType *classType, ir::ClassDefinition *classDef);
+    void TransformProperties(ETSObjectType *classType);
     void CheckGetterSetterProperties(ETSObjectType *classType);
     void AddElementsToModuleObject(ETSObjectType *moduleObj, const util::StringView &str);
     Type *FindLeastUpperBound(Type *source, Type *target);
@@ -300,6 +301,16 @@ public:
         return Allocator()->New<ArenaUnorderedSet<ETSTypeParameter *>>(Allocator()->Adapter());
     }
     ArenaVector<Type *> CreateTypeForTypeParameters(ir::TSTypeParameterDeclaration const *typeParams);
+    void SetUpConstraintForTypeParameters(ir::TSTypeParameterDeclaration *typeParams);
+    void CheckRecursiveConstraintForTypeParameters(ir::TSTypeParameterDeclaration *typeParams);
+    void CheckRecursiveConstraintForTypeParameter(ir::TSTypeParameter *param);
+    void CheckRecursiveSuperType(ETSObjectType *type);
+    void CheckRecursiveInterfacesOfClass(ETSObjectType *type);
+    void CheckRecursiveInterfacesOfInterface(ETSObjectType *type);
+    void CheckRecursiveInterfaces(ETSObjectType *type, ir::ETSTypeReference *expr, const lexer::SourcePosition &pos);
+    void CheckTypeArgumentConstraints(ETSObjectType *type, ir::TSTypeParameterInstantiation *typeArgs,
+                                      const lexer::SourcePosition &pos);
+    bool ValidateTypeArg(Type *constraintType, Type *typeArg);
     [[nodiscard]] bool EnhanceSubstitutionForType(const ArenaVector<Type *> &typeParams, Type *paramType,
                                                   Type *argumentType, Substitution *substitution,
                                                   ArenaUnorderedSet<ETSTypeParameter *> *instantiatedTypeParams);
@@ -313,6 +324,11 @@ public:
     Signature *ValidateSignature(Signature *signature, const ir::TSTypeParameterInstantiation *typeArguments,
                                  const ArenaVector<ir::Expression *> &arguments, const lexer::SourcePosition &pos,
                                  TypeRelationFlag initialFlags, const std::vector<bool> &argTypeInferenceRequired);
+    bool ValidateSignatureRequiredParams(Signature *substitutedSig, const ArenaVector<ir::Expression *> &arguments,
+                                         TypeRelationFlag flags, const std::vector<bool> &argTypeInferenceRequired,
+                                         bool throwError);
+    bool ValidateSignatureRestParams(Signature *substitutedSig, const ArenaVector<ir::Expression *> &arguments,
+                                     TypeRelationFlag flags, bool throwError);
     Signature *ValidateSignatures(ArenaVector<Signature *> &signatures,
                                   const ir::TSTypeParameterInstantiation *typeArguments,
                                   const ArenaVector<ir::Expression *> &arguments, const lexer::SourcePosition &pos,
@@ -541,6 +557,13 @@ public:
     void ValidateTupleMinElementSize(ir::ArrayExpression *arrayExpr, ETSTupleType *tuple);
     void ModifyPreferredType(ir::ArrayExpression *arrayExpr, Type *newPreferredType);
     Type *SelectGlobalIntegerTypeForNumeric(Type *type);
+    const Type *TryGettingFunctionTypeFromInvokeFunction(const Type *type) const;
+
+    void GenerateGetterSetterBody(ETSChecker *checker, ArenaVector<ir::Statement *> &stmts,
+                                  ArenaVector<ir::Expression *> &params, ir::ClassProperty *field,
+                                  varbinder::FunctionParamScope *paramScope, bool isSetter);
+    static ir::MethodDefinition *GenerateDefaultGetterSetter(ir::ClassProperty *field, varbinder::ClassScope *scope,
+                                                             bool isSetter, ETSChecker *checker);
 
     // Exception
     ETSObjectType *CheckExceptionOrErrorType(checker::Type *type, lexer::SourcePosition pos);
