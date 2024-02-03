@@ -95,6 +95,7 @@ bool Options::CollectInputFilesFromFileList(const std::string &input, const std:
 {
     std::ifstream ifs;
     std::string line;
+    int lineIndex {0};
     ifs.open(panda::os::file::File::GetExtendedFilePath(input));
     if (!ifs.is_open()) {
         std::cerr << "Failed to open source list: " << input << std::endl;
@@ -104,10 +105,15 @@ bool Options::CollectInputFilesFromFileList(const std::string &input, const std:
     constexpr size_t ITEM_COUNT_MERGE = 5;  // item list: [filePath; recordName; moduleKind; sourceFile, pkgName]
     constexpr size_t ITEM_COUNT_NOT_MERGE = 5;  // item list: [filePath; recordName; moduleKind; sourceFile; outputfile]
     while (std::getline(ifs, line)) {
+        ++lineIndex;
+        if (line.empty()) {
+            continue;
+        }
         std::vector<std::string> itemList = GetStringItems(line, LIST_ITEM_SEPERATOR);
         if ((compilerOptions_.mergeAbc && itemList.size() != ITEM_COUNT_MERGE) ||
             (!compilerOptions_.mergeAbc && itemList.size() != ITEM_COUNT_NOT_MERGE)) {
-            std::cerr << "Failed to parse input file" << std::endl;
+            std::cerr << "Failed to parse input file list " + input + " at line: " +
+                std::to_string(lineIndex) << std::endl;
             return false;
         }
 
@@ -402,14 +408,18 @@ bool Options::Parse(int argc, const char **argv)
             return false;
         }
 
+        bool validInput {true};
         auto fpath = inputAbs.Value();
         if (isInputFileList) {
-            CollectInputFilesFromFileList(fpath, extension);
+            validInput = CollectInputFilesFromFileList(fpath, extension);
         } else if (panda::os::file::File::IsDirectory(fpath)) {
-            CollectInputFilesFromFileDirectory(fpath, extension);
+            validInput = CollectInputFilesFromFileDirectory(fpath, extension);
         } else {
             es2panda::SourceFile src(sourceFile_, recordName_, scriptKind_, GetScriptExtension(sourceFile_, extension));
             sourceFiles_.push_back(src);
+        }
+        if (!validInput) {
+            throw Error(ErrorType::GENERIC, "Failed to collect source files from " + fpath);
         }
     } else if (!base64InputIsEmpty) {
         // input content is base64 string
