@@ -583,6 +583,8 @@ public:
                                                               ETSEnumInterface *enumType);
     [[nodiscard]] ETSEnumType::Method CreateEnumValuesMethod(ir::Identifier *itemsArrayIdent,
                                                              ETSEnumInterface *enumType);
+    [[nodiscard]] ir::StringLiteral *CreateEnumStringLiteral(ETSEnumInterface *const enumType,
+                                                             const ir::TSEnumMember *const member);
 
     // Dynamic interop
     template <typename T>
@@ -673,6 +675,8 @@ private:
                                                               Signature *invokeSignature,
                                                               ir::TypeNode *retTypeAnnotation);
 
+    void ClassInitializerFromImport(ir::ETSImportDeclaration *import, varbinder::FunctionScope *scope,
+                                    ArenaVector<ir::Statement *> *statements);
     void EmitDynamicModuleClassInitCall();
 
     DynamicCallIntrinsicsMap *DynamicCallIntrinsics(bool isConstruct)

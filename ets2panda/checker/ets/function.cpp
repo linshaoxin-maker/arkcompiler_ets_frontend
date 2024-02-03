@@ -2888,9 +2888,8 @@ ir::MethodDefinition *ETSChecker::CreateMethod(const util::StringView &name, ir:
 {
     auto *nameId = Allocator()->New<ir::Identifier>(name, Allocator());
     auto *scope = VarBinder()->Allocator()->New<varbinder::FunctionScope>(Allocator(), paramScope);
-    ir::ScriptFunction *func =
-        Allocator()->New<ir::ScriptFunction>(ir::FunctionSignature(nullptr, std::move(params), returnType), body, flags,
-                                             modifiers, false, Language(Language::Id::ETS));
+    auto *const func = AllocNode<ir::ScriptFunction>(ir::FunctionSignature(nullptr, std::move(params), returnType),
+                                                     body, ir::ScriptFunction::ScriptFunctionData {flags, modifiers});
     func->SetScope(scope);
     func->SetIdent(nameId);
     body->SetParent(func);

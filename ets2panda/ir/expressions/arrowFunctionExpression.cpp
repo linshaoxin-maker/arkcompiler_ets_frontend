@@ -105,11 +105,9 @@ ir::TypeNode *ArrowFunctionExpression::CreateReturnNodeFromType(checker::ETSChec
     Construct a synthetic Node with the correct ts_type_.
     */
     ASSERT(returnType != nullptr);
-    ir::TypeNode *returnNode = nullptr;
-    auto *ident = checker->Allocator()->New<ir::Identifier>(util::StringView(""), checker->Allocator());
-    ir::ETSTypeReferencePart *part = checker->Allocator()->New<ir::ETSTypeReferencePart>(ident);
-    returnNode = checker->Allocator()->New<ir::ETSTypeReference>(part);
-    part->SetParent(returnNode);
+    auto *ident = checker->AllocNode<ir::Identifier>(util::StringView(""), checker->Allocator());
+    auto *const part = checker->AllocNode<ir::ETSTypeReferencePart>(ident);
+    auto *returnNode = checker->AllocNode<ir::ETSTypeReference>(part);
     returnNode->SetTsType(returnType);
     return returnNode;
 }
