@@ -467,8 +467,9 @@ ir::MethodDefinition *ParserImpl::ParseClassMethod(ClassElementDescriptor *desc,
     *propEnd = func->End();
     func->AddFlag(ir::ScriptFunctionFlags::METHOD);
 
-    auto *ident =
-        !propName->IsArrowFunctionExpression() ? propName->Clone(Allocator(), nullptr)->AsExpression() : propName;
+    auto *ident = !(propName->IsArrowFunctionExpression() || propName->IsFunctionExpression())
+                      ? propName->Clone(Allocator(), nullptr)->AsExpression()
+                      : propName;
     auto *method = AllocNode<ir::MethodDefinition>(desc->methodKind, ident, funcExpr, desc->modifiers, Allocator(),
                                                    desc->isComputed);
     method->SetRange(funcExpr->Range());

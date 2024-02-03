@@ -64,7 +64,8 @@ checker::Type *FunctionExpression::Check([[maybe_unused]] checker::ETSChecker *c
 
 FunctionExpression *FunctionExpression::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
-    auto *const func = func_->Clone(allocator, nullptr)->AsScriptFunction();
+    // Note (zelentsov) : need to implement ScriptFunction::Clone
+    auto *const func = func_;  // ->Clone(allocator, nullptr)->AsScriptFunction();
 
     if (auto *const clone = allocator->New<FunctionExpression>(func); clone != nullptr) {
         func->SetParent(clone);

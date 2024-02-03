@@ -104,7 +104,7 @@ ir::TypeNode *ArrowFunctionExpression::CreateReturnNodeFromType(checker::ETSChec
     */
     ASSERT(returnType != nullptr);
     auto *ident = checker->AllocNode<ir::Identifier>(util::StringView(""), checker->Allocator());
-    ir::ETSTypeReferencePart *part = checker->AllocNode<ir::ETSTypeReferencePart>(ident);
+    auto *part = checker->AllocNode<ir::ETSTypeReferencePart>(ident);
     auto *returnNode = checker->AllocNode<ir::ETSTypeReference>(part);
     returnNode->SetTsType(returnType);
     return returnNode;
