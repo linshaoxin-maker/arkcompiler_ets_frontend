@@ -66,7 +66,6 @@ import type {TransformPlugin} from '../TransformPlugin';
 import {TransformerOrder} from '../TransformPlugin';
 import {getNameGenerator, NameGeneratorType} from '../../generator/NameFactory';
 import {TypeUtils} from '../../utils/TypeUtils';
-import {collectIdentifiersAndStructs} from '../../utils/TransformUtil';
 import {NodeUtils} from '../../utils/NodeUtils';
 import {ApiExtractor} from '../../common/ApiExtractor';
 import { globalMangledTable, historyMangledTable, reservedProperties } from './RenamePropertiesTransformer';
@@ -115,11 +114,7 @@ namespace secharmony {
 
       let checker: TypeChecker = undefined;
       let manager: ScopeManager = createScopeManager();
-      let shadowIdentifiers: Identifier[] = undefined;
-      let shadowStructs: StructDeclaration[] = undefined;
 
-      let identifierIndex: number = 0;
-      let structIndex: number = 0;
       return renameTransformer;
 
       /**
@@ -132,9 +127,8 @@ namespace secharmony {
           return node;
         }
 
-        const shadowSourceAst: SourceFile = TypeUtils.createNewSourceFile(node);
-        checker = TypeUtils.createChecker(shadowSourceAst);
-        manager.analyze(shadowSourceAst, checker, exportObfuscation);
+        checker = TypeUtils.createChecker(node);
+        manager.analyze(node, checker, exportObfuscation);
 
         // the reservedNames of manager contain the struct name.
         if (!exportObfuscation) {
@@ -151,9 +145,6 @@ namespace secharmony {
         renameInScope(root);
         root = undefined;
         // collect all identifiers of shadow sourceFile
-        const identifiersAndStructs = collectIdentifiersAndStructs(shadowSourceAst, context);
-        shadowIdentifiers = identifiersAndStructs.shadowIdentifiers;
-        shadowStructs = identifiersAndStructs.shadowStructs;
 
         let ret: Node = visit(node);
         ret = tryRemoveVirtualConstructor(ret);
@@ -397,26 +388,21 @@ namespace secharmony {
         }
 
         if (isLabeledStatement(node.parent) || isBreakOrContinueStatement(node.parent)) {
-          identifierIndex += 1;
           return updateLabelNode(node);
         }
 
-        const shadowNode: Identifier = shadowIdentifiers[identifierIndex];
-        identifierIndex += 1;
-        return updateNameNode(node, shadowNode);
+        return updateNameNode(node);
       }
 
       function tryRemoveVirtualConstructor(node: Node): Node {
         if (isStructDeclaration(node)) {
-          const shadowNode: StructDeclaration = shadowStructs[structIndex];
-          structIndex++;
-          const sourceFile = NodeUtils.getSourceFileOfNode(shadowNode);
+          const sourceFile = NodeUtils.getSourceFileOfNode(node);
           const tempStructMembers: ClassElement[] = [];
           if (sourceFile && sourceFile.isDeclarationFile) {
             for (let index = 0; index < node.members.length; index++) {
               const member = node.members[index];
               // @ts-ignore
-              if (isConstructorDeclaration(member) && shadowNode.members[index].virtual) {
+              if (isConstructorDeclaration(member) && node.members[index].virtual) {
                 continue;
               }
               tempStructMembers.push(member);
@@ -429,7 +415,7 @@ namespace secharmony {
         return visitEachChild(node, tryRemoveVirtualConstructor, context);
       }
 
-      function updateNameNode(node: Identifier, shadowNode: Identifier): Node {
+      function updateNameNode(node: Identifier): Node {
         // skip property in property access expression
         if (NodeUtils.isPropertyAccessNode(node)) {
           return node;
@@ -439,11 +425,11 @@ namespace secharmony {
           return node;
         }
         
-        let sym: Symbol | undefined = checker.getSymbolAtLocation(shadowNode);
+        let sym: Symbol | undefined = checker.getSymbolAtLocation(node);
         let mangledPropertyNameOfNoSymbolImportExport = '';
-        if ((!sym || sym.name === 'default')) {
-          if (exportObfuscation && noSymbolIdentifier.has(shadowNode.escapedText as string) && trySearchImportExportSpecifier(shadowNode)) {
-            mangledPropertyNameOfNoSymbolImportExport = mangleNoSymbolImportExportPropertyName(shadowNode.escapedText as string);
+        if (node && (!sym || sym.name === 'default')) {
+          if (exportObfuscation && noSymbolIdentifier.has(node.escapedText as string) && trySearchImportExportSpecifier(node)) {
+            mangledPropertyNameOfNoSymbolImportExport = mangleNoSymbolImportExportPropertyName(node.escapedText as string);
           } else {
             return node;
           }
