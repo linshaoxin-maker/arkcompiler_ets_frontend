@@ -564,7 +564,6 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewClassInstanceExpression *expr) const
         auto *signature = checker->ResolveConstructExpression(calleeObj, expr->GetArguments(), expr->Start());
 
         checker->CheckObjectLiteralArguments(signature, expr->GetArguments());
-        checker->AddUndefinedParamsForDefaultParams(signature, expr->arguments_, checker);
 
         checker->ValidateSignatureAccessibility(calleeObj, nullptr, signature, expr->Start());
 
@@ -1087,7 +1086,6 @@ checker::Type *ETSAnalyzer::GetReturnType(ir::CallExpression *expr, checker::Typ
         ResolveSignature(checker, expr, calleeType, isFunctionalInterface, isUnionTypeWithFunctionalInterface);
 
     checker->CheckObjectLiteralArguments(signature, expr->Arguments());
-    checker->AddUndefinedParamsForDefaultParams(signature, expr->Arguments(), checker);
 
     if (!isFunctionalInterface) {
         checker::ETSObjectType *calleeObj = ChooseCalleeObj(checker, expr, calleeType, isConstructorCall);

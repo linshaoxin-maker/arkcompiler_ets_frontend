@@ -172,8 +172,7 @@ public:
 
     [[nodiscard]] bool IsPrivateReference() const noexcept;
 
-    // NOLINTNEXTLINE(google-default-arguments)
-    [[nodiscard]] MemberExpression *Clone(ArenaAllocator *allocator, AstNode *parent = nullptr) override;
+    [[nodiscard]] MemberExpression *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
     void TransformChildren(const NodeTransformer &cb) override;
     void Iterate(const NodeTraverser &cb) const override;

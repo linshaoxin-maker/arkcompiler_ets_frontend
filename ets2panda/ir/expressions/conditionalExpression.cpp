@@ -82,12 +82,11 @@ checker::Type *ConditionalExpression::Check(checker::ETSChecker *checker)
     return checker->GetAnalyzer()->Check(this);
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 ConditionalExpression *ConditionalExpression::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
-    auto *const test = test_ != nullptr ? test_->Clone(allocator)->AsExpression() : nullptr;
-    auto *const consequent = consequent_ != nullptr ? consequent_->Clone(allocator)->AsExpression() : nullptr;
-    auto *const alternate = alternate_ != nullptr ? alternate_->Clone(allocator)->AsExpression() : nullptr;
+    auto *const test = test_ != nullptr ? test_->Clone(allocator, nullptr)->AsExpression() : nullptr;
+    auto *const consequent = consequent_ != nullptr ? consequent_->Clone(allocator, nullptr)->AsExpression() : nullptr;
+    auto *const alternate = alternate_ != nullptr ? alternate_->Clone(allocator, nullptr)->AsExpression() : nullptr;
 
     if (auto *const clone = allocator->New<ConditionalExpression>(test, consequent, alternate); clone != nullptr) {
         if (test != nullptr) {

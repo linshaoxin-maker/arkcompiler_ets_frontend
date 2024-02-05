@@ -107,10 +107,9 @@ checker::Type *ETSTypeReference::GetType(checker::ETSChecker *checker)
     return type;
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 ETSTypeReference *ETSTypeReference::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
-    auto *const partClone = part_ != nullptr ? part_->Clone(allocator)->AsETSTypeReferencePart() : nullptr;
+    auto *const partClone = part_ != nullptr ? part_->Clone(allocator, nullptr)->AsETSTypeReferencePart() : nullptr;
 
     if (auto *const clone = allocator->New<ETSTypeReference>(partClone); clone != nullptr) {
         if (partClone != nullptr) {
