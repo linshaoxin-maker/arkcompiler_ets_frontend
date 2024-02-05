@@ -15,7 +15,6 @@
 
 import * from "std/math";
 
-// TODO(aber)
 enum from { from, from1, from2 };
 
 function main(): void {
