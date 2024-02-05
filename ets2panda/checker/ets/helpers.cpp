@@ -2289,6 +2289,21 @@ ETSObjectType *ETSChecker::GetRelevantArgumentedTypeFromChild(ETSObjectType *con
         return relevantType;
     }
 
+    for (auto interface : child->Interfaces()) {
+        if (interface->GetDeclNode() == target->GetDeclNode()) {
+            auto *relevantType =
+                CreateNewETSObjectType(interface->Name(), interface->GetDeclNode(), interface->ObjectFlags());
+
+            ArenaVector<Type *> params = interface->TypeArguments();
+
+            relevantType->SetTypeArguments(std::move(params));
+            relevantType->SetEnclosingType(interface->EnclosingType());
+            relevantType->SetSuperType(interface->SuperType());
+
+            return relevantType;
+        }
+    }
+
     ASSERT(child->SuperType() != nullptr);
 
     return GetRelevantArgumentedTypeFromChild(child->SuperType(), target);
