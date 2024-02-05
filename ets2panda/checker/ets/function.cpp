@@ -1090,6 +1090,10 @@ bool ETSChecker::IsMethodOverridesOther(Signature *target, Signature *source)
         return true;
     }
 
+    if (source->HasSignatureFlag(SignatureFlags::STATIC) != target->HasSignatureFlag(SignatureFlags::STATIC)) {
+        return false;
+    }
+
     if (IsOverridableIn(target)) {
         SavedTypeRelationFlagsContext savedFlagsCtx(Relation(), TypeRelationFlag::NO_RETURN_TYPE_CHECK);
         Relation()->IsIdenticalTo(target, source);
@@ -1106,19 +1110,6 @@ bool ETSChecker::IsMethodOverridesOther(Signature *target, Signature *source)
     }
 
     return false;
-}
-
-void ETSChecker::CheckStaticHide(Signature *target, Signature *source)
-{
-    if (!target->HasSignatureFlag(SignatureFlags::STATIC) && source->HasSignatureFlag(SignatureFlags::STATIC)) {
-        ThrowTypeError("A static method hides an instance method.", source->Function()->Body()->Start());
-    }
-
-    if ((target->HasSignatureFlag(SignatureFlags::STATIC) ||
-         (source->HasSignatureFlag(SignatureFlags::STATIC) || !source->Function()->IsOverride())) &&
-        !IsReturnTypeSubstitutable(target, source)) {
-        ThrowTypeError("Hiding method is not return-type-substitutable for other method.", source->Function()->Start());
-    }
 }
 
 void ETSChecker::CheckThrowMarkers(Signature *source, Signature *target)
@@ -1139,10 +1130,6 @@ void ETSChecker::CheckThrowMarkers(Signature *source, Signature *target)
 std::tuple<bool, OverrideErrorCode> ETSChecker::CheckOverride(Signature *signature, Signature *other)
 {
     if (other->HasSignatureFlag(SignatureFlags::STATIC)) {
-        if (signature->Function()->IsOverride()) {
-            return {false, OverrideErrorCode::OVERRIDDEN_STATIC};
-        }
-
         ASSERT(signature->HasSignatureFlag(SignatureFlags::STATIC));
         return {true, OverrideErrorCode::NO_ERROR};
     }
@@ -1187,10 +1174,6 @@ void ETSChecker::ThrowOverrideError(Signature *signature, Signature *overriddenS
 {
     const char *reason {};
     switch (errorCode) {
-        case OverrideErrorCode::OVERRIDDEN_STATIC: {
-            reason = "overridden method is static.";
-            break;
-        }
         case OverrideErrorCode::OVERRIDDEN_FINAL: {
             reason = "overridden method is final.";
             break;
@@ -1226,13 +1209,6 @@ bool ETSChecker::CheckOverride(Signature *signature, ETSObjectType *site)
     for (auto *it : target->TsType()->AsETSFunctionType()->CallSignatures()) {
         auto *itSubst = AdjustForTypeParameters(signature, it);
 
-        if (signature->Owner()->HasObjectFlag(ETSObjectFlags::INTERFACE) &&
-            Relation()->IsIdenticalTo(itSubst->Owner(), GlobalETSObjectType()) &&
-            !itSubst->HasSignatureFlag(SignatureFlags::PRIVATE)) {
-            ThrowTypeError("Cannot override non-private method of the class Object from an interface.",
-                           signature->Function()->Start());
-        }
-
         if (itSubst == nullptr) {
             continue;
         }
@@ -1254,6 +1230,13 @@ bool ETSChecker::CheckOverride(Signature *signature, ETSObjectType *site)
 
         if (!success) {
             ThrowOverrideError(signature, it, errorCode);
+        }
+
+        if (signature->Owner()->HasObjectFlag(ETSObjectFlags::INTERFACE) &&
+            Relation()->IsIdenticalTo(itSubst->Owner(), GlobalETSObjectType()) &&
+            !itSubst->HasSignatureFlag(SignatureFlags::PRIVATE)) {
+            ThrowTypeError("Cannot override non-private method of the class Object from an interface.",
+                           signature->Function()->Start());
         }
 
         isOverridingAnySignature = true;
