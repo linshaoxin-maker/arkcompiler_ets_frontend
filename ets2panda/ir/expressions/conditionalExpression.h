@@ -61,10 +61,7 @@ public:
         return alternate_;
     }
 
-    void SetTest(Expression *const test) noexcept
-    {
-        test_ = test;
-    }
+    void SetTest(Expression *const test) noexcept;
 
     // NOLINTNEXTLINE(google-default-arguments)
     [[nodiscard]] ConditionalExpression *Clone(ArenaAllocator *allocator, AstNode *parent = nullptr) override;
