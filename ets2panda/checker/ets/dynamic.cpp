@@ -403,8 +403,14 @@ ir::ClassStaticBlock *ETSChecker::CreateDynamicModuleClassInitializer(
                                                                ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
 
                 ArenaVector<ir::Expression *> callParams(Allocator()->Adapter());
-                callParams.push_back(import->ResolvedSource());
-
+                // Note(rsipka): this check could be avoided with appropriate language extensions
+                if (ark::os::file::File::IsRegularFile(import->ResolvedSource()->Str().Mutf8())) {
+                    callParams.push_back(AllocNode<ir::StringLiteral>(
+                        util::UString(ark::os::RemoveExtension(import->ResolvedSource()->Str().Mutf8()), Allocator())
+                            .View()));
+                } else {
+                    callParams.push_back(import->ResolvedSource());
+                }
                 auto *loadCall = AllocNode<ir::CallExpression>(callee, std::move(callParams), nullptr, false);
 
                 auto *moduleClassId =
