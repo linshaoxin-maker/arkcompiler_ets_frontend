@@ -3309,4 +3309,3 @@
     }
   }
 }
-TypeError: Property 'ordinal' does not exist on type 'Color' [enum20.ets:19:23]
