@@ -260,7 +260,7 @@
             "type": "ClassProperty",
             "key": {
               "type": "Identifier",
-              "name": "@@arr",
+              "name": "arr",
               "decorators": [],
               "loc": {
                 "start": {
@@ -1149,7 +1149,7 @@
                         },
                         "property": {
                           "type": "Identifier",
-                          "name": "@@arr",
+                          "name": "arr",
                           "decorators": [],
                           "loc": {
                             "start": {
@@ -1433,7 +1433,7 @@
                               },
                               "property": {
                                 "type": "Identifier",
-                                "name": "@@arr",
+                                "name": "arr",
                                 "decorators": [],
                                 "loc": {
                                   "start": {
@@ -2029,7 +2029,7 @@
             "type": "ClassProperty",
             "key": {
               "type": "Identifier",
-              "name": "@@arr",
+              "name": "arr",
               "decorators": [],
               "loc": {
                 "start": {
@@ -2918,7 +2918,7 @@
                         },
                         "property": {
                           "type": "Identifier",
-                          "name": "@@arr",
+                          "name": "arr",
                           "decorators": [],
                           "loc": {
                             "start": {
@@ -3202,7 +3202,7 @@
                               },
                               "property": {
                                 "type": "Identifier",
-                                "name": "@@arr",
+                                "name": "arr",
                                 "decorators": [],
                                 "loc": {
                                   "start": {

@@ -402,10 +402,10 @@ void ETSEnum2Type::CreateLiteralTypes(ETSChecker *checker, util::StringView name
 
     for (auto &it : decl_node->AsClassDefinition()->Body()) {
         if (!it->IsClassProperty() || !it->AsClassProperty()->Value()->IsCallExpression()) {
-            // @@arr property
+            // arr property
             auto *arr_ident = it->AsClassProperty()->Id();
             auto *arr_var = arr_ident->Variable();
-            ASSERT(arr_ident->Name() == "@@arr" && arr_var != nullptr);
+            ASSERT(arr_ident->Name() == "arr" && arr_var != nullptr);
 
             auto *array_type = checker->CreateETSArrayType(this);
             array_type->SetVariable(arr_var);

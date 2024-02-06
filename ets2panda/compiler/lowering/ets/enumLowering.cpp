@@ -37,7 +37,7 @@ const char *ENUM_INT_BASE_CLASS_NAME = "EnumIntType";
 const char *ENUM_STR_BASE_CLASS_NAME = "EnumStrType";
 const char *ENUM_CONSTANT_CREATE_METHOD_NAME = "create";
 const char *ENUM_VALUE_OF_LIB_FUNCTION_NAME = "enumValueOf";
-const char *ENUM_CONSTANT_ARRAY_NAME = "@@arr";
+const char *ENUM_CONSTANT_ARRAY_NAME = "arr";
 
 auto CreateIdentifierRef(util::StringView const name, checker::ETSChecker *checker)
 {

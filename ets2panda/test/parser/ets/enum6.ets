@@ -22,5 +22,5 @@ enum Color {
 function main(): void {
   let i: Color = Color.Red;
   i = Color.Green;
-  i = i.Blue;	// TODO(aber)
+  i = i.Blue;
 }
