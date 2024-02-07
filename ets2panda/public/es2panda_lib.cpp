@@ -1833,8 +1833,7 @@ extern "C" es2panda_AstNode *CreateNewArrayInstanceExpression(es2panda_Context *
     auto *irTyperef = reinterpret_cast<ir::AstNode *>(typeReference)->AsExpression()->AsTypeNode();
     auto *irDim = reinterpret_cast<ir::AstNode *>(dimension)->AsExpression();
 
-    return reinterpret_cast<es2panda_AstNode *>(
-        allocator->New<ir::ETSNewArrayInstanceExpression>(allocator, irTyperef, irDim));
+    return reinterpret_cast<es2panda_AstNode *>(allocator->New<ir::ETSNewArrayInstanceExpression>(irTyperef, irDim));
 }
 
 extern "C" es2panda_AstNode *NewArrayInstanceExpressionTypeReference(es2panda_AstNode *ast)
@@ -2023,8 +2022,8 @@ extern "C" es2panda_AstNode *CreateScriptFunction(es2panda_Context *context, es2
     auto irModifierFlags = E2pToIrModifierFlags(modifierFlags);
 
     ir::FunctionSignature sig(irTypeParams, std::move(irParams), irReturnTypeAnnotation);
-    auto func = allocator->New<ir::ScriptFunction>(std::move(sig), nullptr, irFunctionFlags, irModifierFlags, isDeclare,
-                                                   Language::FromString("ets").value());
+    auto func = allocator->New<ir::ScriptFunction>(
+        std::move(sig), nullptr, ir::ScriptFunction::ScriptFunctionData {irFunctionFlags, irModifierFlags, isDeclare});
     return reinterpret_cast<es2panda_AstNode *>(func);
 }
 

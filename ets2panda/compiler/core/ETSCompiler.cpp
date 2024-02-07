@@ -15,14 +15,13 @@
 
 #include "ETSCompiler.h"
 
-#include "checker/types/ets/etsDynamicFunctionType.h"
 #include "compiler/base/catchTable.h"
-#include "checker/types/ts/enumLiteralType.h"
 #include "compiler/base/condition.h"
 #include "compiler/base/lreference.h"
 #include "compiler/core/ETSGen.h"
 #include "compiler/core/switchBuilder.h"
 #include "compiler/function/functionBuilder.h"
+#include "checker/types/ets/etsDynamicFunctionType.h"
 
 namespace panda::es2panda::compiler {
 
@@ -216,14 +215,14 @@ void ETSCompiler::Compile(const ir::ETSNewArrayInstanceExpression *expr) const
     compiler::RegScope rs(etsg);
     compiler::TargetTypeContext ttctx(etsg, etsg->Checker()->GlobalIntType());
 
-    expr->dimension_->Compile(etsg);
+    expr->Dimension()->Compile(etsg);
 
     compiler::VReg arr = etsg->AllocReg();
     compiler::VReg dim = etsg->AllocReg();
-    etsg->ApplyConversionAndStoreAccumulator(expr, dim, expr->dimension_->TsType());
+    etsg->ApplyConversionAndStoreAccumulator(expr, dim, expr->Dimension()->TsType());
     etsg->NewArray(expr, arr, dim, expr->TsType());
 
-    if (expr->defaultConstructorSignature_ != nullptr) {
+    if (expr->Signature() != nullptr) {
         compiler::VReg countReg = etsg->AllocReg();
         auto *startLabel = etsg->AllocLabel();
         auto *endLabel = etsg->AllocLabel();
@@ -236,10 +235,10 @@ void ETSCompiler::Compile(const ir::ETSNewArrayInstanceExpression *expr) const
 
         etsg->LoadAccumulator(expr, countReg);
         etsg->StoreAccumulator(expr, indexReg);
-        const compiler::TargetTypeContext ttctx2(etsg, expr->typeReference_->TsType());
-        ArenaVector<ir::Expression *> arguments(expr->allocator_->Adapter());
-        etsg->InitObject(expr, expr->defaultConstructorSignature_, arguments);
-        etsg->StoreArrayElement(expr, arr, indexReg, expr->typeReference_->TsType());
+        const compiler::TargetTypeContext ttctx2(etsg, expr->TypeReference()->TsType());
+        ArenaVector<ir::Expression *> arguments(GetCodeGen()->Allocator()->Adapter());
+        etsg->InitObject(expr, expr->Signature(), arguments);
+        etsg->StoreArrayElement(expr, arr, indexReg, expr->TypeReference()->TsType());
 
         etsg->IncrementImmediateRegister(expr, countReg, checker::TypeFlag::INT, static_cast<std::int32_t>(1));
         etsg->JumpTo(expr, startLabel);
@@ -328,15 +327,13 @@ void ETSCompiler::Compile(const ir::ETSNewClassInstanceExpression *expr) const
         etsg->InitObject(expr, expr->signature_, expr->GetArguments());
     }
 
-    if (expr->GetBoxingUnboxingFlags() == ir::BoxingUnboxingFlags::NONE) {
-        etsg->SetAccumulatorType(expr->TsType());
-    }
+    etsg->SetAccumulatorType(expr->TsType());
 }
 
 void ETSCompiler::Compile(const ir::ETSNewMultiDimArrayInstanceExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
-    etsg->InitObject(expr, expr->signature_, expr->dimensions_);
+    etsg->InitObject(expr, expr->Signature(), expr->Dimensions());
     etsg->SetAccumulatorType(expr->TsType());
 }
 
@@ -659,11 +656,12 @@ void ETSCompiler::Compile(const ir::BinaryExpression *expr) const
     etsg->Binary(expr, expr->OperatorType(), lhs);
 }
 
-static void ConvertRestArguments(checker::ETSChecker *const checker, const ir::CallExpression *expr)
+static void ConvertRestArguments(checker::ETSChecker *const checker, const ir::CallExpression *expr,
+                                 checker::Signature *signature)
 {
-    if (expr->Signature()->RestVar() != nullptr) {
+    if (signature->RestVar() != nullptr) {
         std::size_t const argumentCount = expr->Arguments().size();
-        std::size_t const parameterCount = expr->Signature()->MinArgCount();
+        std::size_t const parameterCount = signature->MinArgCount();
         ASSERT(argumentCount >= parameterCount);
 
         auto &arguments = const_cast<ArenaVector<ir::Expression *> &>(expr->Arguments());
@@ -678,10 +676,34 @@ static void ConvertRestArguments(checker::ETSChecker *const checker, const ir::C
             }
             auto *arrayExpression = checker->AllocNode<ir::ArrayExpression>(std::move(elements), checker->Allocator());
             arrayExpression->SetParent(const_cast<ir::CallExpression *>(expr));
-            arrayExpression->SetTsType(expr->Signature()->RestVar()->TsType());
+            arrayExpression->SetTsType(signature->RestVar()->TsType());
             arguments.erase(expr->Arguments().begin() + parameterCount, expr->Arguments().end());
             arguments.emplace_back(arrayExpression);
         }
+    }
+}
+
+void ConvertArgumentsForFunctionalCall(checker::ETSChecker *const checker, const ir::CallExpression *expr)
+{
+    std::size_t const argumentCount = expr->Arguments().size();
+    auto &arguments = const_cast<ArenaVector<ir::Expression *> &>(expr->Arguments());
+    auto *signature = expr->Signature();
+
+    for (size_t i = 0; i < argumentCount; i++) {
+        auto *paramType = checker->MaybeBoxedType(
+            i < signature->Params().size() ? signature->Params()[i] : signature->RestVar(), checker->Allocator());
+
+        auto *arg = arguments[i];
+        auto *cast = checker->Allocator()->New<ir::TSAsExpression>(arg, nullptr, false);
+        arguments[i]->SetParent(cast);
+        cast->SetParent(const_cast<ir::CallExpression *>(expr));
+        cast->SetTsType(paramType);
+
+        if (paramType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+            cast->AddBoxingUnboxingFlags(checker->GetBoxingFlag(paramType));
+        }
+
+        arguments[i] = cast;
     }
 }
 
@@ -787,13 +809,15 @@ void ETSCompiler::CompileDynamic(const ir::CallExpression *expr, compiler::VReg 
     etsg->StoreAccumulator(expr, dynParam2);
     etsg->CallDynamic(expr, calleeReg, dynParam2, expr->Signature(), expr->Arguments());
     etsg->SetAccumulatorType(expr->Signature()->ReturnType());
+
     if (etsg->GetAccumulatorType() != expr->TsType()) {
         etsg->ApplyConversion(expr, expr->TsType());
     }
 }
 
 // Helper function to avoid branching in non optional cases
-void ETSCompiler::EmitCall(const ir::CallExpression *expr, compiler::VReg &calleeReg, bool isStatic) const
+void ETSCompiler::EmitCall(const ir::CallExpression *expr, compiler::VReg &calleeReg, bool isStatic,
+                           checker::Signature *signature, bool isReference) const
 {
     ETSGen *etsg = GetETSGen();
     if (expr->Callee()->GetBoxingUnboxingFlags() != ir::BoxingUnboxingFlags::NONE) {
@@ -804,12 +828,40 @@ void ETSCompiler::EmitCall(const ir::CallExpression *expr, compiler::VReg &calle
     } else if (expr->Signature()->HasSignatureFlag(checker::SignatureFlags::PRIVATE) || expr->IsETSConstructorCall() ||
                (expr->Callee()->IsMemberExpression() &&
                 expr->Callee()->AsMemberExpression()->Object()->IsSuperExpression())) {
-        etsg->CallThisStatic(expr, calleeReg, expr->Signature(), expr->Arguments());
+        etsg->CallThisStatic(expr, calleeReg, signature, expr->Arguments());
     } else {
-        etsg->CallThisVirtual(expr, calleeReg, expr->Signature(), expr->Arguments());
+        etsg->CallThisVirtual(expr, calleeReg, signature, expr->Arguments());
+    }
+
+    if (isReference) {
+        etsg->CheckedReferenceNarrowing(expr, signature->ReturnType());
+    } else {
+        etsg->SetAccumulatorType(signature->ReturnType());
     }
 
     etsg->GuardUncheckedType(expr, expr->UncheckedType(), expr->OptionalType());
+}
+
+static checker::Signature *ConvertArgumentsForFunctionReference(ETSGen *etsg, const ir::CallExpression *expr)
+{
+    checker::Signature *origSignature = expr->Signature();
+
+    auto *funcType =
+        origSignature->Owner()
+            ->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>(checker::FUNCTIONAL_INTERFACE_INVOKE_METHOD_NAME)
+            ->TsType()
+            ->AsETSFunctionType();
+    ASSERT(funcType->CallSignatures().size() == 1);
+    checker::Signature *signature = funcType->CallSignatures()[0];
+
+    if (signature->ReturnType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+        expr->AddBoxingUnboxingFlags(const_cast<checker::ETSChecker *>(etsg->Checker()->AsETSChecker())
+                                         ->GetUnboxingFlag(signature->ReturnType()));
+    }
+
+    ConvertArgumentsForFunctionalCall(const_cast<checker::ETSChecker *>(etsg->Checker()->AsETSChecker()), expr);
+
+    return signature;
 }
 
 void ETSCompiler::Compile(const ir::CallExpression *expr) const
@@ -829,7 +881,12 @@ void ETSCompiler::Compile(const ir::CallExpression *expr) const
     bool isReference = expr->Signature()->HasSignatureFlag(checker::SignatureFlags::TYPE);
     bool isDynamic = expr->Callee()->TsType()->HasTypeFlag(checker::TypeFlag::ETS_DYNAMIC_FLAG);
 
-    ConvertRestArguments(const_cast<checker::ETSChecker *>(etsg->Checker()->AsETSChecker()), expr);
+    checker::Signature *signature = expr->Signature();
+    if (isReference) {
+        signature = ConvertArgumentsForFunctionReference(etsg, expr);
+    }
+
+    ConvertRestArguments(const_cast<checker::ETSChecker *>(etsg->Checker()->AsETSChecker()), expr, signature);
 
     if (isDynamic) {
         CompileDynamic(expr, calleeReg);
@@ -838,24 +895,27 @@ void ETSCompiler::Compile(const ir::CallExpression *expr) const
             etsg->LoadThis(expr);
             etsg->StoreAccumulator(expr, calleeReg);
         }
-        EmitCall(expr, calleeReg, isStatic);
+        EmitCall(expr, calleeReg, isStatic, signature, isReference);
     } else if (!isReference && expr->Callee()->IsMemberExpression()) {
         if (!isStatic) {
             expr->Callee()->AsMemberExpression()->Object()->Compile(etsg);
             etsg->StoreAccumulator(expr, calleeReg);
         }
-        EmitCall(expr, calleeReg, isStatic);
+        EmitCall(expr, calleeReg, isStatic, signature, isReference);
     } else if (expr->Callee()->IsSuperExpression() || expr->Callee()->IsThisExpression()) {
         ASSERT(!isReference && expr->IsETSConstructorCall());
         expr->Callee()->Compile(etsg);  // ctor is not a value!
         etsg->SetVRegType(calleeReg, etsg->GetAccumulatorType());
-        EmitCall(expr, calleeReg, isStatic);
+        EmitCall(expr, calleeReg, isStatic, signature, isReference);
     } else {
         ASSERT(isReference);
         etsg->CompileAndCheck(expr->Callee());
         etsg->StoreAccumulator(expr, calleeReg);
         etsg->EmitMaybeOptional(
-            expr, [this, expr, isStatic, &calleeReg]() { this->EmitCall(expr, calleeReg, isStatic); },
+            expr,
+            [this, expr, isStatic, &calleeReg, signature, isReference]() {
+                this->EmitCall(expr, calleeReg, isStatic, signature, isReference);
+            },
             expr->IsOptional());
     }
 }

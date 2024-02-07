@@ -16,7 +16,7 @@
 #include "wildcardType.h"
 
 namespace panda::es2panda::checker {
-void WildcardType::ToString(std::stringstream &ss) const
+void WildcardType::ToString(std::stringstream &ss, [[maybe_unused]] bool precise) const
 {
     ss << "wildcard";
 }

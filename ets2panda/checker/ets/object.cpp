@@ -285,9 +285,10 @@ void ETSChecker::CreateTypeForClassOrInterfaceTypeParameters(ETSObjectType *type
                                                      : type->GetDeclNode()->AsTSInterfaceDeclaration()->TypeParams();
     type->SetTypeArguments(CreateTypeForTypeParameters(typeParams));
     type->AddObjectFlag(ETSObjectFlags::RESOLVED_TYPE_PARAMS);
+    type->AddObjectFlag(ETSObjectFlags::INCOMPLETE_INSTANTIATION);
 }
 
-ETSObjectType *ETSChecker::BuildInterfaceProperties(ir::TSInterfaceDeclaration *interfaceDecl)
+ETSObjectType *ETSChecker::BuildBasicInterfaceProperties(ir::TSInterfaceDeclaration *interfaceDecl)
 {
     auto *var = interfaceDecl->Id()->Variable();
     ASSERT(var);
@@ -309,6 +310,14 @@ ETSObjectType *ETSChecker::BuildInterfaceProperties(ir::TSInterfaceDeclaration *
 
     GetInterfacesOfInterface(interfaceType);
 
+    interfaceType->SetSuperType(GlobalETSObjectType());
+
+    return interfaceType;
+}
+
+ETSObjectType *ETSChecker::BuildInterfaceProperties(ir::TSInterfaceDeclaration *interfaceDecl)
+{
+    auto *interfaceType = BuildBasicInterfaceProperties(interfaceDecl);
     checker::ScopeContext scopeCtx(this, interfaceDecl->Scope());
     auto savedContext = checker::SavedCheckerContext(this, checker::CheckerStatus::IN_INTERFACE, interfaceType);
 
@@ -317,7 +326,7 @@ ETSObjectType *ETSChecker::BuildInterfaceProperties(ir::TSInterfaceDeclaration *
     return interfaceType;
 }
 
-ETSObjectType *ETSChecker::BuildClassProperties(ir::ClassDefinition *classDef)
+ETSObjectType *ETSChecker::BuildBasicClassProperties(ir::ClassDefinition *classDef)
 {
     if (classDef->IsFinal() && classDef->IsAbstract()) {
         ThrowTypeError("Cannot use both 'final' and 'abstract' modifiers.", classDef->Start());
@@ -327,7 +336,6 @@ ETSObjectType *ETSChecker::BuildClassProperties(ir::ClassDefinition *classDef)
     ASSERT(var);
 
     const util::StringView &className = classDef->Ident()->Name();
-    auto *classScope = classDef->Scope();
 
     checker::ETSObjectType *classType {};
     if (var->TsType() == nullptr) {
@@ -368,10 +376,17 @@ ETSObjectType *ETSChecker::BuildClassProperties(ir::ClassDefinition *classDef)
         return classType;
     }
 
-    checker::ScopeContext scopeCtx(this, classScope);
+    return classType;
+}
+
+ETSObjectType *ETSChecker::BuildClassProperties(ir::ClassDefinition *classDef)
+{
+    auto *classType = BuildBasicClassProperties(classDef);
+
+    auto savedContext = checker::SavedCheckerContext(this, checker::CheckerStatus::IN_CLASS, classType);
+    checker::ScopeContext scopeCtx(this, classDef->Scope());
 
     ResolveDeclaredMembersOfObject(classType);
-
     return classType;
 }
 
@@ -435,34 +450,51 @@ static void ResolveDeclaredMethodsOfObject(ETSChecker *checker, ETSObjectType *t
 {
     for (auto &[_, it] : scope->InstanceMethodScope()->Bindings()) {
         (void)_;
-        auto *node = it->Declaration()->Node()->AsMethodDefinition();
+        auto *method = it->Declaration()->Node()->AsMethodDefinition();
+        auto *function = method->Function();
 
-        if (node->Function()->IsProxy()) {
+        function->Id()->SetVariable(method->Id()->Variable());
+        for (ir::MethodDefinition *const overload : method->Overloads()) {
+            overload->Function()->Id()->SetVariable(overload->Id()->Variable());
+        }
+
+        if (function->IsProxy()) {
             continue;
         }
 
-        it->AddFlag(checker->GetAccessFlagFromNode(node));
-        auto *funcType = checker->BuildMethodSignature(node);
+        it->AddFlag(checker->GetAccessFlagFromNode(method));
+        auto *funcType = checker->BuildMethodSignature(method);
         it->SetTsType(funcType);
         funcType->SetVariable(it);
-        node->SetTsType(funcType);
+        method->SetTsType(funcType);
         type->AddProperty<PropertyType::INSTANCE_METHOD>(it->AsLocalVariable());
     }
 
     for (auto &[_, it] : scope->StaticMethodScope()->Bindings()) {
         (void)_;
-        if (!it->Declaration()->Node()->IsMethodDefinition() ||
-            it->Declaration()->Node()->AsMethodDefinition()->Function()->IsProxy()) {
+        if (!it->Declaration()->Node()->IsMethodDefinition()) {
             continue;
         }
-        auto *node = it->Declaration()->Node()->AsMethodDefinition();
-        it->AddFlag(checker->GetAccessFlagFromNode(node));
-        auto *funcType = checker->BuildMethodSignature(node);
+
+        auto *method = it->Declaration()->Node()->AsMethodDefinition();
+        auto *function = method->Function();
+
+        function->Id()->SetVariable(method->Id()->Variable());
+        for (ir::MethodDefinition *const overload : method->Overloads()) {
+            overload->Function()->Id()->SetVariable(overload->Id()->Variable());
+        }
+
+        if (function->IsProxy()) {
+            continue;
+        }
+
+        it->AddFlag(checker->GetAccessFlagFromNode(method));
+        auto *funcType = checker->BuildMethodSignature(method);
         it->SetTsType(funcType);
         funcType->SetVariable(it);
-        node->SetTsType(funcType);
+        method->SetTsType(funcType);
 
-        if (node->IsConstructor()) {
+        if (method->IsConstructor()) {
             type->AddConstructSignature(funcType->CallSignatures());
             continue;
         }
@@ -846,6 +878,7 @@ void ETSChecker::CreateAsyncProxyMethods(ir::ClassDefinition *classDef)
         }
     }
     for (auto *it : asyncImpls) {
+        it->SetParent(classDef);
         it->Check(this);
         classDef->Body().push_back(it);
     }
@@ -997,7 +1030,7 @@ void ETSChecker::ValidateArrayIndex(ir::Expression *const expr, bool relaxed)
         double value = num.GetDouble();
         double intpart;
         if (std::modf(value, &intpart) != 0.0) {
-            ThrowTypeError("Index fracional part should not be different from 0.0", expr->Start());
+            ThrowTypeError("Index fractional part should be zero.", expr->Start());
         }
         return;
     }
@@ -1492,6 +1525,7 @@ void ETSChecker::TransformProperties(ETSObjectType *classType)
 
         ir::MethodDefinition *getter = GenerateDefaultGetterSetter(classProp, scope->AsClassScope(), false, this);
         classDef->Body().push_back(getter);
+        getter->SetParent(classDef);
         classType->AddProperty<checker::PropertyType::INSTANCE_METHOD>(getter->Variable()->AsLocalVariable());
 
         auto *const methodScope = scope->AsClassScope()->InstanceMethodScope();
@@ -1509,6 +1543,7 @@ void ETSChecker::TransformProperties(ETSObjectType *classType)
             if (!classProp->IsReadonly()) {
                 ir::MethodDefinition *const setter =
                     GenerateDefaultGetterSetter(classProp, scope->AsClassScope(), true, this);
+                setter->SetParent(classDef);
 
                 classType->AddProperty<checker::PropertyType::INSTANCE_METHOD>(setter->Variable()->AsLocalVariable());
                 prevDecl->Node()->AsMethodDefinition()->AddOverload(setter);
@@ -1522,6 +1557,7 @@ void ETSChecker::TransformProperties(ETSObjectType *classType)
         if (!classProp->IsReadonly()) {
             ir::MethodDefinition *const setter =
                 GenerateDefaultGetterSetter(classProp, scope->AsClassScope(), true, this);
+            setter->SetParent(classDef);
 
             classType->AddProperty<checker::PropertyType::INSTANCE_METHOD>(setter->Variable()->AsLocalVariable());
             getter->AddOverload(setter);
@@ -1586,7 +1622,8 @@ void ETSChecker::AddElementsToModuleObject(ETSObjectType *moduleObj, const util:
 
 Type *ETSChecker::FindLeastUpperBound(Type *source, Type *target)
 {
-    ASSERT(source->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT) && target->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT));
+    ASSERT(source->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT | TypeFlag::ETS_TYPE_PARAMETER));
+    ASSERT(target->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT | TypeFlag::ETS_TYPE_PARAMETER));
 
     // GetCommonClass(GenA<A>, GenB<B>) => LUB(GenA, GenB)<T>
     auto commonClass = GetCommonClass(source, target);
@@ -1695,7 +1732,12 @@ ETSObjectType *ETSChecker::GetTypeargumentedLUB(ETSObjectType *const source, ETS
         return source;
     }
 
-    ETSObjectType *templateType = source->GetDeclNode()->AsClassDefinition()->TsType()->AsETSObjectType();
+    ETSObjectType *templateType;
+    if (source->GetDeclNode()->IsClassDefinition()) {
+        templateType = source->GetDeclNode()->AsClassDefinition()->TsType()->AsETSObjectType();
+    } else {
+        templateType = source->GetDeclNode()->AsTSInterfaceDeclaration()->TsType()->AsETSObjectType();
+    }
 
     auto *lubType = templateType->GetInstantiatedType(hash);
 
