@@ -58,6 +58,11 @@ public:
 
     [[nodiscard]] TSAsExpression *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
+    bool IsUncheckedCast() const
+    {
+        return isUncheckedCast_;
+    }
+    
     void SetUncheckedCast(bool isUncheckedCast) noexcept
     {
         isUncheckedCast_ = isUncheckedCast;
