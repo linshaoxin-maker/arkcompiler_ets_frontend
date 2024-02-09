@@ -62,10 +62,10 @@ checker::Type *FunctionExpression::Check([[maybe_unused]] checker::ETSChecker *c
     return checker->GetAnalyzer()->Check(this);
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 FunctionExpression *FunctionExpression::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
-    auto *const func = func_->Clone(allocator)->AsScriptFunction();
+    // Note (zelentsov) : need to implement ScriptFunction::Clone
+    auto *const func = func_;  // ->Clone(allocator, nullptr)->AsScriptFunction();
 
     if (auto *const clone = allocator->New<FunctionExpression>(func); clone != nullptr) {
         func->SetParent(clone);
