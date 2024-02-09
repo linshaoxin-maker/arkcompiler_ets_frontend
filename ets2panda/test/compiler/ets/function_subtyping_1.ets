@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 
+class A {}
+class B extends A {}
+
 function main(): void {
-  let Object_: Object = null as Object;
-  let Int_ = Object_ as Int;
+    let x: (p: B) => A = (p: A): B => { return new B() }
 }

@@ -51,9 +51,21 @@ public:
         return test_;
     }
 
+    void SetTest(Expression *expr) noexcept
+    {
+        test_ = expr;
+        test_->SetParent(this);
+    }
+
     [[nodiscard]] const Expression *Consequent() const noexcept
     {
         return consequent_;
+    }
+
+    void SetConsequent(Expression *expr) noexcept
+    {
+        consequent_ = expr;
+        consequent_->SetParent(this);
     }
 
     [[nodiscard]] const Expression *Alternate() const noexcept
@@ -61,13 +73,13 @@ public:
         return alternate_;
     }
 
-    void SetTest(Expression *const test) noexcept
+    void SetAlternate(Expression *expr) noexcept
     {
-        test_ = test;
+        alternate_ = expr;
+        alternate_->SetParent(this);
     }
 
-    // NOLINTNEXTLINE(google-default-arguments)
-    [[nodiscard]] ConditionalExpression *Clone(ArenaAllocator *allocator, AstNode *parent = nullptr) override;
+    [[nodiscard]] ConditionalExpression *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
     void TransformChildren(const NodeTransformer &cb) override;
     void Iterate(const NodeTraverser &cb) const override;

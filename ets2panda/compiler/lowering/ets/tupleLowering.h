@@ -22,7 +22,7 @@ namespace panda::es2panda::compiler {
 
 class TupleLowering : public Phase {
 public:
-    std::string_view Name() override
+    std::string_view Name() const override
     {
         return "TupleLowering";
     }

@@ -40,7 +40,9 @@ void ChainExpression::Dump(ir::AstDumper *dumper) const
 
 void ChainExpression::Dump(ir::SrcDumper *dumper) const
 {
-    dumper->Add("ChainExpression");
+    dumper->Add("(");  // affects precedence
+    expression_->Dump(dumper);
+    dumper->Add(")");
 }
 
 void ChainExpression::Compile(compiler::PandaGen *pg) const
@@ -76,10 +78,9 @@ checker::Type *ChainExpression::Check(checker::ETSChecker *checker)
     return checker->GetAnalyzer()->Check(this);
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 ChainExpression *ChainExpression::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
-    auto *const expression = expression_ != nullptr ? expression_->Clone(allocator)->AsExpression() : nullptr;
+    auto *const expression = expression_ != nullptr ? expression_->Clone(allocator, nullptr)->AsExpression() : nullptr;
 
     if (auto *const clone = allocator->New<ChainExpression>(expression); clone != nullptr) {
         if (expression != nullptr) {

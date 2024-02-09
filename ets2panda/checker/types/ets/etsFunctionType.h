@@ -103,23 +103,24 @@ public:
 
     void ToAssemblerType([[maybe_unused]] std::stringstream &ss) const override
     {
-        ss << "ets.lang.Object";
+        UNREACHABLE();
     }
 
-    void ToDebugInfoType(std::stringstream &ss) const override
+    void ToDebugInfoType([[maybe_unused]] std::stringstream &ss) const override
     {
-        ss << "ets.lang.Object";
+        UNREACHABLE();
     }
 
     Signature *FirstAbstractSignature();
-    void ToString(std::stringstream &ss) const override;
+    void ToString(std::stringstream &ss, bool precise) const override;
     void Identical(TypeRelation *relation, Type *other) override;
     void AssignmentTarget(TypeRelation *relation, Type *source) override;
     bool AssignmentSource(TypeRelation *relation, Type *target) override;
     Type *Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes) override;
     ETSFunctionType *Substitute(TypeRelation *relation, const Substitution *substitution) override;
     void Cast(TypeRelation *relation, Type *target) override;
-    checker::RelationResult CastFunctionParams(TypeRelation *relation, Type *target);
+    checker::RelationResult CastFunctionParams(TypeRelation *relation, Signature *targetInvokeSig);
+    ETSFunctionType *BoxPrimitives(ETSChecker *checker);
 
 private:
     ArenaVector<Signature *> callSignatures_;
