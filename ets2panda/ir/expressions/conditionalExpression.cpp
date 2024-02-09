@@ -22,6 +22,12 @@
 #include "ir/srcDump.h"
 
 namespace panda::es2panda::ir {
+void ConditionalExpression::SetTest(Expression *const test) noexcept
+{
+    test_ = test;
+    test_->SetParent(this);
+}
+
 void ConditionalExpression::TransformChildren(const NodeTransformer &cb)
 {
     test_ = cb(test_)->AsExpression();

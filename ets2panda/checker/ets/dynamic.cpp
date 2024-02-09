@@ -135,6 +135,7 @@ ir::ScriptFunction *ETSChecker::CreateDynamicCallIntrinsic(ir::Expression *calle
     signature->AddSignatureFlag(SignatureFlags::STATIC);
 
     func->SetSignature(signature);
+    signature->SetOwner(Context().ContainingClass());
 
     return func;
 }
@@ -488,6 +489,7 @@ ir::MethodDefinition *ETSChecker::CreateClassMethod(varbinder::ClassScope *class
     } else {
         classType->AddProperty<PropertyType::INSTANCE_METHOD>(var->AsLocalVariable());
     }
+    signature->SetOwner(classType);
 
     return method;
 }
@@ -538,9 +540,9 @@ ir::MethodDefinition *ETSChecker::CreateLambdaObjectClassInvokeMethod(varbinder:
                 callLambda->Check(this);
             }
 
-            auto *castToRetTypeExpr = Allocator()->New<ir::TSAsExpression>(callLambda, retTypeAnnotation, false);
+            auto *castToRetTypeExpr = AllocNode<ir::TSAsExpression>(callLambda, retTypeAnnotation, false);
             castToRetTypeExpr->SetTsType(invokeSignature->ReturnType());
-            auto *retStatement = Allocator()->New<ir::ReturnStatement>(castToRetTypeExpr);
+            auto *retStatement = AllocNode<ir::ReturnStatement>(castToRetTypeExpr);
             statements->push_back(retStatement);
 
             *returnType = invokeSignature->ReturnType();
