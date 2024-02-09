@@ -100,8 +100,8 @@ void InterfaceType::Identical(TypeRelation *relation, Type *other)
         return;
     }
 
-    IndexInfo *targetNumberInfo = NumberIndexInfo();
-    IndexInfo *sourceNumberInfo = otherInterface->NumberIndexInfo();
+    auto *targetNumberInfo = NumberIndexInfo();
+    auto *sourceNumberInfo = otherInterface->NumberIndexInfo();
 
     if ((targetNumberInfo != nullptr && sourceNumberInfo == nullptr) ||
         (targetNumberInfo == nullptr && sourceNumberInfo != nullptr)) {

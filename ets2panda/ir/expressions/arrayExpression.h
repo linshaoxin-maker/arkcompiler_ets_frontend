@@ -94,7 +94,7 @@ public:
         preferredType_ = preferredType;
     }
 
-    [[nodiscard]] checker::Type *GetPreferredType() noexcept
+    [[nodiscard]] checker::CheckerType *GetPreferredType() noexcept
     {
         return preferredType_;
     }

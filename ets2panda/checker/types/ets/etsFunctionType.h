@@ -119,7 +119,7 @@ public:
     Type *Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes) override;
     ETSFunctionType *Substitute(TypeRelation *relation, const Substitution *substitution) override;
     void Cast(TypeRelation *relation, Type *target) override;
-    checker::RelationResult CastFunctionParams(TypeRelation *relation, Type *target);
+    checker::RelationResult CastFunctionParams(TypeRelation *relation, CheckerType *target);
 
 private:
     ArenaVector<Signature *> callSignatures_;

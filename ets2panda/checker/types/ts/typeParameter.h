@@ -21,27 +21,27 @@
 namespace panda::es2panda::checker {
 class TypeParameter : public Type {
 public:
-    TypeParameter(Type *constraint, Type *defaultType)
+    TypeParameter(CheckerType *constraint, CheckerType *defaultType)
         : Type(TypeFlag::TYPE_PARAMETER), constraint_(constraint), default_(defaultType)
     {
     }
 
-    const Type *ConstraintType() const
+    CheckerType *ConstraintType() const
     {
         return constraint_;
     }
 
-    Type *DefaultType()
+    CheckerType *DefaultType()
     {
         return default_;
     }
 
-    Type **DefaultTypeRef()
+    CheckerType **DefaultTypeRef()
     {
         return &default_;
     }
 
-    void SetDefaultType(Type *type)
+    void SetDefaultType(CheckerType *type)
     {
         default_ = type;
     }
@@ -53,8 +53,8 @@ public:
     Type *Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes) override;
 
 private:
-    Type *constraint_;
-    Type *default_;
+    CheckerType *constraint_;
+    CheckerType *default_;
 };
 }  // namespace panda::es2panda::checker
 

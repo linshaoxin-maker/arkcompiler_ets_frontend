@@ -116,7 +116,7 @@ std::string TSDeclGen::GetKeyName(const ir::Expression *key)
     return key->AsIdentifier()->Name().Mutf8();
 }
 
-void TSDeclGen::GenType(const checker::Type *checkerType)
+void TSDeclGen::GenType(checker::CheckerType *checkerType)
 {
     // NOTE: vpukhov. rewrite when nullish type is implemented with union
     GenTypeNonNullish(checkerType);
@@ -130,7 +130,7 @@ void TSDeclGen::GenType(const checker::Type *checkerType)
     }
 }
 
-void TSDeclGen::GenTypeNonNullish(const checker::Type *checkerType)
+void TSDeclGen::GenTypeNonNullish(checker::CheckerType *checkerType)
 {
     ASSERT(checkerType != nullptr);
     DebugPrint("  GenType: ");
@@ -317,7 +317,7 @@ void TSDeclGen::GenObjectType(const checker::ETSObjectType *objectType)
     const auto &typeArgs = objectType->TypeArguments();
     if (!typeArgs.empty()) {
         Out("<");
-        GenCommaSeparated(typeArgs, [this](checker::Type *arg) { GenType(arg); });
+        GenCommaSeparated(typeArgs, [this](checker::CheckerType *arg) { GenType(arg); });
         Out(">");
     }
 }

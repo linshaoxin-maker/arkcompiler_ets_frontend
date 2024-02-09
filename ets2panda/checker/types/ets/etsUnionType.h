@@ -24,10 +24,12 @@ class GlobalTypesHolder;
 
 class ETSUnionType : public Type {
 public:
-    // constituentTypes must be normalized
-    explicit ETSUnionType(ETSChecker *checker, ArenaVector<Type *> &&constituentTypes);
+    using ConstituentsT = ArenaVector<Type *>;
 
-    const ArenaVector<Type *> &ConstituentTypes() const
+    // constituentTypes must be normalized
+    explicit ETSUnionType(ETSChecker *checker, ConstituentsT &&constituentTypes);
+
+    const ConstituentsT &ConstituentTypes() const
     {
         return constituentTypes_;
     }
@@ -58,7 +60,7 @@ public:
 
     Type *FindExactOrBoxedType(ETSChecker *checker, Type *type) const;
 
-    static void NormalizeTypes(TypeRelation *relation, ArenaVector<Type *> &constituentTypes);
+    static void NormalizeTypes(TypeRelation *relation, ConstituentsT &constituentTypes);
 
     std::tuple<bool, bool> ResolveConditionExpr() const override
     {
@@ -74,11 +76,11 @@ private:
     static bool EachTypeRelatedToSomeType(TypeRelation *relation, ETSUnionType *source, ETSUnionType *target);
     static bool TypeRelatedToSomeType(TypeRelation *relation, Type *source, ETSUnionType *target);
 
-    static void LinearizeAndEraseIdentical(TypeRelation *relation, ArenaVector<Type *> &constituentTypes);
+    static void LinearizeAndEraseIdentical(TypeRelation *relation, ConstituentsT &constituentTypes);
 
     Type *ComputeLUB(ETSChecker *checker) const;
 
-    ArenaVector<Type *> const constituentTypes_;
+    ConstituentsT const constituentTypes_;
     Type *lubType_ {nullptr};
 };
 }  // namespace panda::es2panda::checker

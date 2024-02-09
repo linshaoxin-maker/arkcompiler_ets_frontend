@@ -56,7 +56,7 @@ public:
         return returnType_;
     }
 
-    const checker::Type *ReturnType() const noexcept
+    checker::CheckerType *ReturnType() const noexcept
     {
         return returnType_;
     }

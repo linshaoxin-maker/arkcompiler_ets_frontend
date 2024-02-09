@@ -22,9 +22,9 @@
 namespace panda::es2panda::checker::conversion {
 void Identity(TypeRelation *relation, Type *source, Type *target);
 
-void WideningPrimitive(TypeRelation *relation, Type *source, Type *target);
-void NarrowingPrimitive(TypeRelation *relation, Type *source, Type *target);
-void WideningNarrowingPrimitive(TypeRelation *relation, ByteType *source, CharType *target);
+void WideningPrimitive(TypeRelation *relation, Type *source, CheckerType *target);
+void NarrowingPrimitive(TypeRelation *relation, Type *source, CheckerType *target);
+void WideningNarrowingPrimitive(TypeRelation *relation, ByteType *source, CCharType *target);
 
 void WideningReference(TypeRelation *relation, ETSObjectType *source, ETSObjectType *target);
 void WideningReference(TypeRelation *relation, ETSArrayType *source, ETSObjectType *target);
@@ -37,7 +37,7 @@ void NarrowingReference(TypeRelation *relation, ETSArrayType *source, ETSArrayTy
 ETSObjectType *Boxing(TypeRelation *relation, Type *source);
 Type *Unboxing(TypeRelation *relation, ETSObjectType *source);
 
-void UnboxingWideningNarrowingPrimitive(TypeRelation *relation, ETSObjectType *source, Type *target);
+void UnboxingWideningNarrowingPrimitive(TypeRelation *relation, ETSObjectType *source, CheckerType *target);
 void UnboxingNarrowingPrimitive(TypeRelation *relation, ETSObjectType *source, Type *target);
 void UnboxingWideningPrimitive(TypeRelation *relation, ETSObjectType *source, Type *target);
 void NarrowingReferenceUnboxing(TypeRelation *relation, ETSObjectType *source, Type *target);

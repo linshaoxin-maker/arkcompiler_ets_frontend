@@ -146,12 +146,12 @@ public:
         return optional_;
     }
 
-    void SetOptionalType(checker::Type *optionalType)
+    void SetOptionalType(checker::CheckerType *optionalType)
     {
         optionalType_ = optionalType;
     }
 
-    [[nodiscard]] const checker::Type *OptionalType() const noexcept
+    [[nodiscard]] checker::CheckerType *OptionalType() const noexcept
     {
         return optionalType_ != nullptr ? optionalType_ : TsType();
     }
@@ -170,7 +170,7 @@ protected:
     }
 
 private:
-    checker::Type *optionalType_ {};
+    checker::CheckerType *optionalType_ {};
     bool optional_;
 };
 

@@ -47,8 +47,8 @@ void TSChecker::CheckIndexConstraints(Type *type)
     ObjectType *objType = type->AsObjectType();
     ResolveStructuredTypeMembers(objType);
 
-    IndexInfo *numberInfo = objType->NumberIndexInfo();
-    IndexInfo *stringInfo = objType->StringIndexInfo();
+    const IndexInfo *numberInfo = objType->NumberIndexInfo();
+    const IndexInfo *stringInfo = objType->StringIndexInfo();
     const ArenaVector<varbinder::LocalVariable *> &properties = objType->Properties();
 
     if (numberInfo != nullptr) {
@@ -109,8 +109,8 @@ void TSChecker::ResolveUnionTypeMembers(UnionType *type)
     }
 
     ObjectDescriptor *desc = Allocator()->New<ObjectDescriptor>(Allocator());
-    ArenaVector<Type *> stringInfoTypes(Allocator()->Adapter());
-    ArenaVector<Type *> numberInfoTypes(Allocator()->Adapter());
+    UnionType::ConstituentsT stringInfoTypes(Allocator()->Adapter());
+    UnionType::ConstituentsT numberInfoTypes(Allocator()->Adapter());
     ArenaVector<Signature *> callSignatures(Allocator()->Adapter());
     ArenaVector<Signature *> constructSignatures(Allocator()->Adapter());
 
@@ -293,7 +293,7 @@ varbinder::Variable *TSChecker::GetPropertyOfUnionType(UnionType *type, const ut
     }
 
     varbinder::VariableFlags flags = varbinder::VariableFlags::PROPERTY;
-    ArenaVector<Type *> collectedTypes(Allocator()->Adapter());
+    UnionType::ConstituentsT collectedTypes(Allocator()->Adapter());
 
     for (auto *it : type->ConstituentTypes()) {
         varbinder::Variable *prop = GetPropertyOfType(it, name);
@@ -312,7 +312,7 @@ varbinder::Variable *TSChecker::GetPropertyOfUnionType(UnionType *type, const ut
                 return nullptr;
             }
 
-            ObjectType *objType = it->AsObjectType();
+            CObjectType *objType = it->AsObjectType();
 
             if (objType->StringIndexInfo() == nullptr) {
                 if (getPartial) {
@@ -365,7 +365,7 @@ Type *TSChecker::CheckComputedPropertyName(ir::Expression *key)
     return keyType;
 }
 
-IndexInfo *TSChecker::GetApplicableIndexInfo(Type *type, Type *indexType)
+IndexInfo *TSChecker::GetApplicableIndexInfo(Type *type, CheckerType *indexType)
 {
     ResolveStructuredTypeMembers(type);
     bool getNumberInfo = indexType->HasTypeFlag(TypeFlag::NUMBER_LIKE);
@@ -391,7 +391,7 @@ IndexInfo *TSChecker::GetApplicableIndexInfo(Type *type, Type *indexType)
     return nullptr;
 }
 
-Type *TSChecker::GetPropertyTypeForIndexType(Type *type, Type *indexType)
+Type *TSChecker::GetPropertyTypeForIndexType(Type *type, CheckerType *indexType)
 {
     if (type->IsArrayType()) {
         return type->AsArrayType()->ElementType();
@@ -519,7 +519,142 @@ void TSChecker::ResolveDeclaredMembers(InterfaceType *type)
     }
 }
 
-bool TSChecker::ValidateInterfaceMemberRedeclaration(ObjectType *type, varbinder::Variable *prop,
+Type *TSChecker::GetTypeForProperty(ir::Property *prop)
+{
+    if (prop->IsAccessor()) {
+        checker::Type *funcType = prop->Value()->Check(this);
+
+        if (prop->Kind() == ir::PropertyKind::SET) {
+            return GlobalAnyType();
+        }
+
+        ASSERT(funcType->IsObjectType() && funcType->AsObjectType()->IsFunctionType());
+        return funcType->AsObjectType()->CallSignatures()[0]->ReturnType();
+    }
+
+    if (prop->IsShorthand()) {
+        return prop->Key()->Check(this);
+    }
+
+    return prop->Value()->Check(this);
+}
+
+varbinder::VariableFlags TSChecker::GetFlagsForProperty(const ir::Property *prop)
+{
+    if (!prop->IsMethod()) {
+        return varbinder::VariableFlags::PROPERTY;
+    }
+
+    varbinder::VariableFlags propFlags = varbinder::VariableFlags::METHOD;
+
+    if (prop->IsAccessor() && prop->Kind() == ir::PropertyKind::GET) {
+        propFlags |= varbinder::VariableFlags::READONLY;
+    }
+
+    return propFlags;
+}
+
+const util::StringView &TSChecker::GetPropertyName(const ir::Expression *key)
+{
+    if (key->IsIdentifier()) {
+        return key->AsIdentifier()->Name();
+    }
+
+    if (key->IsStringLiteral()) {
+        return key->AsStringLiteral()->Str();
+    }
+
+    ASSERT(key->IsNumberLiteral());
+    return key->AsNumberLiteral()->Str();
+}
+
+void TSChecker::CheckSpreadElement(ObjectDescriptor *desc, ir::SpreadElement *spread,
+                                   const std::unordered_map<util::StringView, lexer::SourcePosition> &propertiesMap)
+{
+    checker::Type *const spreadType = spread->Argument()->Check(this);
+
+    // NOTE: aszilagyi. handle union of object types
+    if (!spreadType->IsObjectType()) {
+        ThrowTypeError("Spread types may only be created from object types.", spread->Start());
+    }
+
+    for (auto *spreadProp : spreadType->AsObjectType()->Properties()) {
+        auto found = propertiesMap.find(spreadProp->Name());
+        if (found != propertiesMap.end()) {
+            ThrowTypeError({found->first, " is specified more than once, so this usage will be overwritten."},
+                           found->second);
+        }
+
+        // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
+        varbinder::LocalVariable *foundMember = desc->FindProperty(spreadProp->Name());
+        if (foundMember != nullptr) {
+            foundMember->SetTsType(spreadProp->TsType());
+            continue;
+        }
+
+        desc->properties.push_back(spreadProp);  // NOLINT(clang-analyzer-core.CallAndMessage)
+    }
+}
+
+TSChecker::PropertiesCheck TSChecker::CheckObjectExpression(ir::ObjectExpression *expr)
+{
+    std::unordered_map<util::StringView, lexer::SourcePosition> allPropertiesMap;
+    PropertiesCheck result = {ArenaVector<checker::Type *>(Allocator()->Adapter()),
+                              ArenaVector<checker::Type *>(Allocator()->Adapter()),
+                              Allocator()->New<checker::ObjectDescriptor>(Allocator())};
+    for (auto *it : expr->Properties()) {
+        if (!it->IsProperty()) {
+            ASSERT(it->IsSpreadElement());
+            result.seenSpread = true;
+            CheckSpreadElement(result.desc, it->AsSpreadElement(), allPropertiesMap);
+            continue;
+        }
+        auto *prop = it->AsProperty();
+        if (prop->IsComputed()) {
+            checker::Type *computedNameType = CheckComputedPropertyName(prop->Key());
+
+            if (computedNameType->IsNumberType()) {
+                result.computedNumberPropTypes.push_back(prop->Value()->Check(this));
+                continue;
+            }
+
+            if (computedNameType->IsStringType()) {
+                result.computedStringPropTypes.push_back(prop->Value()->Check(this));
+                continue;
+            }
+        }
+
+        checker::Type *propType = GetTypeForProperty(prop);
+        varbinder::VariableFlags flags = GetFlagsForProperty(prop);
+        const util::StringView &propName = GetPropertyName(prop->Key());
+
+        auto *memberVar = varbinder::Scope::CreateVar(Allocator(), propName, flags, it);
+
+        if (HasStatus(checker::CheckerStatus::IN_CONST_CONTEXT)) {
+            memberVar->AddFlag(varbinder::VariableFlags::READONLY);
+        } else {
+            propType = GetBaseTypeOfLiteralType(propType);
+        }
+
+        memberVar->SetTsType(propType);
+
+        if (prop->Key()->IsNumberLiteral()) {
+            memberVar->AddFlag(varbinder::VariableFlags::NUMERIC_NAME);
+        }
+
+        allPropertiesMap.emplace(propName, it->Start());
+        varbinder::LocalVariable *foundMember = result.desc->FindProperty(propName);
+        if (foundMember != nullptr) {
+            foundMember->SetTsType(propType);
+            continue;
+        }
+
+        result.desc->properties.push_back(memberVar);
+    }
+    return result;
+}
+
+bool TSChecker::ValidateInterfaceMemberRedeclaration(CObjectType *type, varbinder::Variable *prop,
                                                      const lexer::SourcePosition &locInfo)
 {
     if (prop->HasFlag(varbinder::VariableFlags::COMPUTED)) {

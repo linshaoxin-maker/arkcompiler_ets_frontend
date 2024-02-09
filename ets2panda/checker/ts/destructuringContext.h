@@ -53,7 +53,7 @@ public:
         return inferredType_;
     }
 
-    void ValidateObjectLiteralType(ObjectType *objType, ir::ObjectExpression *objPattern);
+    void ValidateObjectLiteralType(CObjectType *objType, ir::ObjectExpression *objPattern);
     void HandleDestructuringAssignment(ir::Identifier *ident, Type *inferredType, Type *defaultType);
     void HandleAssignmentPattern(ir::AssignmentExpression *assignmentPattern, Type *inferredType, bool validateDefault);
     void SetInferredTypeForVariable(varbinder::Variable *var, Type *inferredType, const lexer::SourcePosition &loc);

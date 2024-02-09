@@ -370,7 +370,7 @@ checker::Type *ObjectExpression::CheckPattern(checker::TSChecker *checker)
         desc->properties.insert(desc->properties.begin(), patternVar);
     }
 
-    checker::Type *returnType = checker->Allocator()->New<checker::ObjectLiteralType>(desc);
+    auto *returnType = checker->Allocator()->New<checker::ObjectLiteralType>(desc);
     returnType->AsObjectType()->AddObjectFlag(checker::ObjectFlags::RESOLVED_MEMBERS);
     return returnType;
 }

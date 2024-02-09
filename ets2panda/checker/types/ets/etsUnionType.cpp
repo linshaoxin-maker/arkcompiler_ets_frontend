@@ -42,7 +42,7 @@ void ETSUnionType::ToDebugInfoType(std::stringstream &ss) const
     lubType_->ToDebugInfoType(ss);
 }
 
-ETSUnionType::ETSUnionType(ETSChecker *checker, ArenaVector<Type *> &&constituentTypes)
+ETSUnionType::ETSUnionType(ETSChecker *checker, ConstituentsT &&constituentTypes)
     : Type(TypeFlag::ETS_UNION), constituentTypes_(std::move(constituentTypes))
 {
     ASSERT(constituentTypes_.size() > 1);
@@ -147,11 +147,11 @@ void ETSUnionType::AssignmentTarget(TypeRelation *relation, Type *source)
     relation->Result(assignableCount != 0U);
 }
 
-void ETSUnionType::LinearizeAndEraseIdentical(TypeRelation *relation, ArenaVector<Type *> &constituentTypes)
+void ETSUnionType::LinearizeAndEraseIdentical(TypeRelation *relation, ConstituentsT &constituentTypes)
 {
     auto *const checker = relation->GetChecker()->AsETSChecker();
     // Firstly, make linearization
-    ArenaVector<Type *> copiedConstituents(checker->Allocator()->Adapter());
+    ConstituentsT copiedConstituents(checker->Allocator()->Adapter());
     for (auto *ct : constituentTypes) {
         if (ct->IsETSUnionType()) {
             auto otherTypes = ct->AsETSUnionType()->ConstituentTypes();
@@ -188,7 +188,7 @@ void ETSUnionType::LinearizeAndEraseIdentical(TypeRelation *relation, ArenaVecto
     }
 }
 
-void ETSUnionType::NormalizeTypes(TypeRelation *relation, ArenaVector<Type *> &constituentTypes)
+void ETSUnionType::NormalizeTypes(TypeRelation *relation, ConstituentsT &constituentTypes)
 {
     auto *const checker = relation->GetChecker()->AsETSChecker();
     auto etsObject = std::find(constituentTypes.begin(), constituentTypes.end(),
@@ -201,7 +201,7 @@ void ETSUnionType::NormalizeTypes(TypeRelation *relation, ArenaVector<Type *> &c
     LinearizeAndEraseIdentical(relation, constituentTypes);
     // Find number type to remove other numeric types
     auto numberFound =
-        std::find_if(constituentTypes.begin(), constituentTypes.end(), [](Type *const ct) {
+        std::find_if(constituentTypes.begin(), constituentTypes.end(), [](CheckerType *const ct) {
             return ct->IsETSObjectType() && ct->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::BUILTIN_DOUBLE);
         }) != constituentTypes.end();
     auto cmpIt = constituentTypes.begin();
@@ -229,7 +229,7 @@ void ETSUnionType::NormalizeTypes(TypeRelation *relation, ArenaVector<Type *> &c
 
 Type *ETSUnionType::Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes)
 {
-    ArenaVector<Type *> copiedConstituents(allocator->Adapter());
+    ConstituentsT copiedConstituents(allocator->Adapter());
 
     for (auto *it : constituentTypes_) {
         copiedConstituents.push_back(it->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)
@@ -248,7 +248,7 @@ Type *ETSUnionType::Instantiate(ArenaAllocator *allocator, TypeRelation *relatio
 Type *ETSUnionType::Substitute(TypeRelation *relation, const Substitution *substitution)
 {
     auto *const checker = relation->GetChecker()->AsETSChecker();
-    ArenaVector<Type *> substitutedConstituents(checker->Allocator()->Adapter());
+    ConstituentsT substitutedConstituents(checker->Allocator()->Adapter());
     for (auto *ctype : constituentTypes_) {
         substitutedConstituents.push_back(ctype->Substitute(relation, substitution));
     }
@@ -414,7 +414,7 @@ Type *ETSUnionType::FindUnboxableType() const
 bool ETSUnionType::HasObjectType(ETSObjectFlags flag) const
 {
     auto it = std::find_if(constituentTypes_.begin(), constituentTypes_.end(),
-                           [flag](Type *t) { return t->AsETSObjectType()->HasObjectFlag(flag); });
+                           [flag](CheckerType *t) { return t->AsETSObjectType()->HasObjectFlag(flag); });
     return it != constituentTypes_.end();
 }
 

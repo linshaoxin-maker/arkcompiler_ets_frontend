@@ -159,7 +159,7 @@ public:
     void Compile(compiler::ETSGen *etsg) const override;
     checker::Type *Check([[maybe_unused]] checker::TSChecker *checker) override;
     checker::Type *Check([[maybe_unused]] checker::ETSChecker *checker) override;
-    checker::Type *InferType(checker::TSChecker *checker, varbinder::Variable *bindingVar) const;
+    checker::CheckerType *InferType(checker::TSChecker *checker, varbinder::Variable *bindingVar) const;
 
     void Accept(ASTVisitorT *v) override
     {

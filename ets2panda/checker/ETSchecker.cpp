@@ -304,7 +304,7 @@ ETSObjectType *ETSChecker::GlobalBuiltinDynamicType(Language lang) const
     return nullptr;
 }
 
-ETSObjectType *ETSChecker::GlobalBuiltinBoxType(const Type *contents) const
+ETSObjectType *ETSChecker::GlobalBuiltinBoxType(CheckerType *contents) const
 {
     switch (TypeKind(contents)) {
         case TypeFlag::ETS_BOOLEAN:
@@ -328,7 +328,7 @@ ETSObjectType *ETSChecker::GlobalBuiltinBoxType(const Type *contents) const
     }
 }
 
-const checker::WrapperDesc &ETSChecker::PrimitiveWrapper() const
+const WrapperDesc &ETSChecker::PrimitiveWrapper() const
 {
     return primitiveWrappers_.Wrappers();
 }
@@ -344,7 +344,7 @@ const GlobalArraySignatureMap &ETSChecker::GlobalArrayTypes() const
 }
 
 // For use in Signature::ToAssemblerType
-const Type *MaybeBoxedType(Checker *checker, const varbinder::Variable *var)
+CheckerType *MaybeBoxedType(Checker *checker, const varbinder::Variable *var)
 {
     return checker->AsETSChecker()->MaybeBoxedType(var);
 }
@@ -367,6 +367,23 @@ Type *ETSChecker::SelectGlobalIntegerTypeForNumeric(Type *type)
             return type;
         }
     }
+}
+
+ArithmeticChecker::CheckBinaryT ETSChecker::CheckBinaryOperator(ir::Expression *left, ir::Expression *right,
+                                                                ir::Expression *expr, lexer::TokenType operationType,
+                                                                bool forcePromotion)
+{
+    auto leftType = left->Check(this);
+    auto rightType = right->Check(this);
+    ArithmeticChecker::BinaryOpData data {
+        left, right, expr, operationType, expr->Start(),
+    };
+    return arithmeticChecker_->CheckBinaryOperator(data, leftType, rightType, forcePromotion);
+}
+
+Type *ETSChecker::CheckUnaryExpression(ir::UnaryExpression *expr, checker::Type *operandType, checker::Type *argType)
+{
+    return arithmeticChecker_->CheckUnaryOperatorHelper(expr, operandType, argType);
 }
 
 }  // namespace panda::es2panda::checker

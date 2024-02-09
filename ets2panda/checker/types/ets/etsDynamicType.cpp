@@ -98,7 +98,7 @@ void ETSDynamicType::CastTarget(TypeRelation *relation, Type *source)
     conversion::Forbidden(relation);
 }
 
-bool ETSDynamicType::IsConvertible(Type const *target)
+bool ETSDynamicType::IsConvertible(CheckerType *target)
 {
     return target->IsETSDynamicType() || (target->IsETSObjectType() && !target->IsETSNullLike()) ||
            target->IsETSArrayType() ||

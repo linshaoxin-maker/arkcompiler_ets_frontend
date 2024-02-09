@@ -51,7 +51,7 @@ public:
 
     void ToAssemblerType(std::stringstream &ss) const override;
 
-    static bool IsConvertible(Type const *target);
+    static bool IsConvertible(CheckerType *target);
 
 private:
     mutable PropertyMap propertiesCache_;

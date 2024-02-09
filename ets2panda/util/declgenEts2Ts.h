@@ -46,12 +46,12 @@ private:
     void ThrowError(std::string_view message, const lexer::SourcePosition &pos);
     std::string GetKeyName(const ir::Expression *key);
 
-    void GenType(const checker::Type *checkerType);
-    void GenTypeNonNullish(const checker::Type *checkerType);
-    void GenFunctionType(const checker::ETSFunctionType *functionType, const ir::MethodDefinition *methodDef = nullptr);
-    void GenTypeParameterType(const checker::ETSTypeParameter *typeParam);
-    void GenObjectType(const checker::ETSObjectType *objectType);
-    void GenEnumType(const checker::ETSEnumType *enumType);
+    void GenType(checker::CheckerType *checkerType);
+    void GenTypeNonNullish(checker::CheckerType *checkerType);
+    void GenFunctionType(checker::CETSFunctionType *functionType, const ir::MethodDefinition *methodDef = nullptr);
+    void GenTypeParameterType(checker::CETSTypeParameter *typeParam);
+    void GenObjectType(checker::CETSObjectType *objectType);
+    void GenEnumType(checker::CETSEnumType *enumType);
 
     void GenImportDeclaration(const ir::ETSImportDeclaration *importDeclaration);
     void GenTypeAliasDeclaration(const ir::TSTypeAliasDeclaration *typeAlias);

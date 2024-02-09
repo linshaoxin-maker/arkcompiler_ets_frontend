@@ -91,12 +91,12 @@ public:
         return kind_;
     }
 
-    virtual ArenaVector<Signature *> CallSignatures()
+    virtual ArenaVector<Signature *> CallSignatures() const
     {
         return desc_->callSignatures;
     }
 
-    virtual ArenaVector<Signature *> ConstructSignatures()
+    virtual ArenaVector<Signature *> ConstructSignatures() const
     {
         return desc_->constructSignatures;
     }
@@ -121,7 +121,7 @@ public:
         return desc_->numberIndexInfo;
     }
 
-    virtual ArenaVector<varbinder::LocalVariable *> Properties()
+    virtual ArenaVector<varbinder::LocalVariable *> Properties() const
     {
         return desc_->properties;
     }
@@ -188,10 +188,10 @@ public:
     void Identical(TypeRelation *relation, Type *other) override;
     void AssignmentTarget(TypeRelation *relation, Type *source) override;
 
-    void CheckExcessProperties(TypeRelation *relation, ObjectType *source);
-    void AssignProperties(TypeRelation *relation, ObjectType *source);
-    void AssignSignatures(TypeRelation *relation, ObjectType *source, bool assignCallSignatures = true);
-    void AssignIndexInfo(TypeRelation *relation, ObjectType *source, bool assignNumberInfo = true);
+    void CheckExcessProperties(TypeRelation *relation, CObjectType *source) const;
+    void AssignProperties(TypeRelation *relation, CObjectType *source) const;
+    void AssignSignatures(TypeRelation *relation, CObjectType *source, bool assignCallSignatures = true) const;
+    void AssignIndexInfo(TypeRelation *relation, CObjectType *source, bool assignNumberInfo = true) const;
 
 protected:
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes)

@@ -47,7 +47,7 @@
 namespace panda::es2panda::checker {
 
 ir::ETSParameterExpression *ETSChecker::AddParam(varbinder::FunctionParamScope *paramScope, util::StringView name,
-                                                 checker::Type *type)
+                                                 Type *type)
 {
     auto paramCtx = varbinder::LexicalScope<varbinder::FunctionParamScope>::Enter(VarBinder(), paramScope, false);
     auto *paramIdent = AllocNode<ir::Identifier>(name, Allocator());

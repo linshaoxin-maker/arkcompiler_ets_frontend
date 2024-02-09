@@ -131,7 +131,7 @@ ETSArrayType *ETSChecker::CreateETSArrayType(Type *elementType)
     return arrayType;
 }
 
-Type *ETSChecker::CreateETSUnionType(ArenaVector<Type *> &&constituentTypes)
+Type *ETSChecker::CreateETSUnionType(ETSUnionType::ConstituentsT &&constituentTypes)
 {
     if (constituentTypes.empty()) {
         return nullptr;
@@ -141,7 +141,7 @@ Type *ETSChecker::CreateETSUnionType(ArenaVector<Type *> &&constituentTypes)
 
     for (auto *it : constituentTypes) {
         newConstituentTypes.push_back(
-            it->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE) ? BoxingConverter::ETSTypeFromSource(this, it) : it);
+            it->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) ? BoxingConverter::ETSTypeFromSource(this, it) : it);
     }
 
     ETSUnionType::NormalizeTypes(Relation(), newConstituentTypes);
@@ -153,7 +153,12 @@ Type *ETSChecker::CreateETSUnionType(ArenaVector<Type *> &&constituentTypes)
 
 ETSFunctionType *ETSChecker::CreateETSFunctionType(ArenaVector<Signature *> &signatures)
 {
-    auto *funcType = Allocator()->New<ETSFunctionType>(signatures[0]->Function()->Id()->Name(), Allocator());
+    return CreateETSFunctionType(signatures[0]->Function()->Id()->Name(), signatures);
+}
+
+ETSFunctionType *ETSChecker::CreateETSFunctionType(util::StringView name, ArenaVector<Signature *> &signatures)
+{
+    auto *funcType = Allocator()->New<ETSFunctionType>(name, Allocator());
 
     for (auto *it : signatures) {
         funcType->AddCallSignature(it);
@@ -370,7 +375,7 @@ ETSObjectType *ETSChecker::CreateETSObjectType(util::StringView name, ir::AstNod
     return objType;
 }
 
-ETSEnumType *ETSChecker::CreateETSEnumType(ir::TSEnumDeclaration const *const enumDecl)
+ETSEnumType *ETSChecker::CreateETSEnumType(const ir::TSEnumDeclaration *const enumDecl)
 {
     varbinder::Variable *enumVar = enumDecl->Key()->Variable();
     ASSERT(enumVar != nullptr);
@@ -528,7 +533,7 @@ ETSObjectType *ETSChecker::CreateNewETSObjectType(util::StringView name, ir::Ast
     return Allocator()->New<ETSObjectType>(Allocator(), name, assemblerName, declNode, flags);
 }
 
-std::tuple<util::StringView, SignatureInfo *> ETSChecker::CreateBuiltinArraySignatureInfo(ETSArrayType *arrayType,
+std::tuple<util::StringView, SignatureInfo *> ETSChecker::CreateBuiltinArraySignatureInfo(CETSArrayType *arrayType,
                                                                                           size_t dim)
 {
     std::stringstream ss;

@@ -103,7 +103,7 @@ TypeFacts Type::GetTypeFacts() const
     return TypeFacts::NONE;
 }
 
-void Type::Compare([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *other) {}
+void Type::Compare([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] CheckerType *other) const {}
 
 void Type::Cast(TypeRelation *const relation, [[maybe_unused]] Type *target)
 {

@@ -77,7 +77,7 @@ Type *TSChecker::HandleFunctionReturn(ir::ScriptFunction *func)
         return func->Body()->Check(this);
     }
 
-    ArenaVector<Type *> returnTypes(Allocator()->Adapter());
+    UnionType::ConstituentsT returnTypes(Allocator()->Adapter());
     CollectTypesFromReturnStatements(func->Body(), &returnTypes);
 
     if (returnTypes.empty()) {
@@ -559,7 +559,7 @@ void TSChecker::InferFunctionDeclarationType(const varbinder::FunctionDecl *decl
 
         ScopeContext scopeCtx(this, func->Scope());
 
-        auto *overloadSignatureInfo = Allocator()->New<checker::SignatureInfo>(Allocator());
+        auto *overloadSignatureInfo = Allocator()->New<SignatureInfo>(Allocator());
         CheckFunctionParameterDeclarations(func->Params(), overloadSignatureInfo);
 
         Type *returnType = GlobalAnyType();
@@ -569,15 +569,15 @@ void TSChecker::InferFunctionDeclarationType(const varbinder::FunctionDecl *decl
             returnType = func->ReturnTypeAnnotation()->GetType(this);
         }
 
-        Signature *overloadSignature = Allocator()->New<checker::Signature>(overloadSignatureInfo, returnType, func);
+        Signature *overloadSignature = Allocator()->New<Signature>(overloadSignatureInfo, returnType, func);
         descWithOverload->callSignatures.push_back(overloadSignature);
     }
 
     ScopeContext scopeCtx(this, bodyDeclaration->Scope());
 
-    auto *signatureInfo = Allocator()->New<checker::SignatureInfo>(Allocator());
+    auto *signatureInfo = Allocator()->New<SignatureInfo>(Allocator());
     CheckFunctionParameterDeclarations(bodyDeclaration->Params(), signatureInfo);
-    auto *bodyCallSignature = Allocator()->New<checker::Signature>(signatureInfo, GlobalResolvingReturnType());
+    auto *bodyCallSignature = Allocator()->New<Signature>(signatureInfo, GlobalResolvingReturnType());
 
     if (descWithOverload->callSignatures.empty()) {
         Type *funcType = CreateFunctionTypeWithSignature(bodyCallSignature);
@@ -693,7 +693,7 @@ ArgRange TSChecker::GetArgRange(const ArenaVector<Signature *> &signatures,
 bool TSChecker::CallMatchesSignature(const ArenaVector<ir::Expression *> &args, Signature *signature, bool throwError)
 {
     for (size_t index = 0; index < args.size(); index++) {
-        checker::Type *sigArgType = nullptr;
+        Type *sigArgType = nullptr;
         bool validateRestArg = false;
 
         if (index >= signature->Params().size()) {
@@ -705,7 +705,7 @@ bool TSChecker::CallMatchesSignature(const ArenaVector<ir::Expression *> &args, 
         }
 
         if (validateRestArg || !throwError) {
-            checker::Type *callArgType = GetBaseTypeOfLiteralType(args[index]->Check(this));
+            Type *callArgType = GetBaseTypeOfLiteralType(args[index]->Check(this));
             if (IsTypeAssignableTo(callArgType, sigArgType)) {
                 continue;
             }
@@ -732,7 +732,7 @@ Type *TSChecker::ResolveCallOrNewExpression(const ArenaVector<Signature *> &sign
         ThrowTypeError("This expression is not callable.", errPos);
     }
 
-    ArenaVector<checker::Signature *> potentialSignatures(Allocator()->Adapter());
+    ArenaVector<Signature *> potentialSignatures(Allocator()->Adapter());
     bool haveSignatureWithRest = false;
 
     auto argRange = GetArgRange(signatures, &potentialSignatures, arguments.size(), &haveSignatureWithRest);
@@ -753,7 +753,7 @@ Type *TSChecker::ResolveCallOrNewExpression(const ArenaVector<Signature *> &sign
                        errPos);
     }
 
-    checker::Type *returnType = nullptr;
+    Type *returnType = nullptr;
     for (auto *it : potentialSignatures) {
         if (CallMatchesSignature(arguments, it, potentialSignatures.size() == 1)) {
             returnType = it->ReturnType();

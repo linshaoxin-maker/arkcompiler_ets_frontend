@@ -23,22 +23,23 @@ namespace panda::es2panda::checker {
 
 class ETSTupleType : public ETSArrayType {
     using TupleSizeType = int32_t;
+    using ElementT = Type;
 
 public:
-    explicit ETSTupleType(ArenaAllocator *const allocator, Type *const elementType = nullptr,
-                          Type *const spreadType = nullptr)
+    explicit ETSTupleType(ArenaAllocator *const allocator, ElementT *const elementType = nullptr,
+                          ElementT *const spreadType = nullptr)
         : ETSArrayType(elementType), typeList_(allocator->Adapter()), spreadType_(spreadType)
     {
         typeFlags_ |= TypeFlag::ETS_TUPLE;
     }
 
-    explicit ETSTupleType(ArenaAllocator *const allocator, const TupleSizeType size, Type *const elementType = nullptr,
-                          Type *const spreadType = nullptr)
+    explicit ETSTupleType(ArenaAllocator *const allocator, const TupleSizeType size,
+                          ElementT *const elementType = nullptr, ElementT *const spreadType = nullptr)
         : ETSArrayType(elementType), typeList_(allocator->Adapter()), spreadType_(spreadType), size_(size)
     {
         typeFlags_ |= TypeFlag::ETS_TUPLE;
     }
-    explicit ETSTupleType(const ArenaVector<Type *> &typeList, Type *const elementType = nullptr,
+    explicit ETSTupleType(const ArenaVector<ElementT *> &typeList, ElementT *const elementType = nullptr,
                           Type *const spreadType = nullptr)
         : ETSArrayType(elementType),
           typeList_(typeList),
@@ -58,7 +59,7 @@ public:
         return size_ + (spreadType_ == nullptr ? 0 : 1);
     }
 
-    [[nodiscard]] ArenaVector<Type *> GetTupleTypesList() const
+    [[nodiscard]] ArenaVector<ElementT *> GetTupleTypesList() const
     {
         return typeList_;
     }
@@ -68,12 +69,12 @@ public:
         return spreadType_ != nullptr;
     }
 
-    [[nodiscard]] Type *GetSpreadType() const
+    [[nodiscard]] ElementT *GetSpreadType() const
     {
         return spreadType_;
     }
 
-    void SetSpreadType(Type *const newSpreadType)
+    void SetSpreadType(ElementT *const newSpreadType)
     {
         spreadType_ = newSpreadType;
     }
@@ -90,8 +91,8 @@ public:
     Type *Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes) override;
 
 private:
-    ArenaVector<Type *> typeList_;
-    Type *spreadType_ {};
+    ArenaVector<ElementT *> typeList_;
+    ElementT *spreadType_ {};
     TupleSizeType size_ {0};
 };
 

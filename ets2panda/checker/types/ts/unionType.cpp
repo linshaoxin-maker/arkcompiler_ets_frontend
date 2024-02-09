@@ -29,13 +29,13 @@ void UnionType::ToString(std::stringstream &ss) const
     }
 }
 
-bool UnionType::EachTypeRelatedToSomeType(TypeRelation *relation, UnionType *source, UnionType *target)
+bool UnionType::EachTypeRelatedToSomeType(TypeRelation *relation, CUnionType *source, CUnionType *target)
 {
     return std::all_of(source->constituentTypes_.begin(), source->constituentTypes_.end(),
                        [relation, target](auto *s) { return TypeRelatedToSomeType(relation, s, target); });
 }
 
-bool UnionType::TypeRelatedToSomeType(TypeRelation *relation, Type *source, UnionType *target)
+bool UnionType::TypeRelatedToSomeType(TypeRelation *relation, Type *source, CUnionType *target)
 {
     return std::any_of(target->constituentTypes_.begin(), target->constituentTypes_.end(),
                        [relation, source](auto *t) { return relation->IsIdenticalTo(source, t); });
@@ -86,7 +86,7 @@ TypeFacts UnionType::GetTypeFacts() const
     return facts;
 }
 
-void UnionType::RemoveDuplicatedTypes(TypeRelation *relation, ArenaVector<Type *> &constituentTypes)
+void UnionType::RemoveDuplicatedTypes(TypeRelation *relation, ConstituentsT &constituentTypes)
 {
     auto compare = constituentTypes.begin();
 
@@ -170,7 +170,7 @@ void UnionType::RemoveRedundantLiteralTypesFromUnion(UnionType *type)
 
 Type *UnionType::Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes)
 {
-    ArenaVector<Type *> copiedConstituents(constituentTypes_.size(), allocator->Adapter());
+    ConstituentsT copiedConstituents(constituentTypes_.size(), allocator->Adapter());
 
     for (auto *it : constituentTypes_) {
         copiedConstituents.push_back(it->Instantiate(allocator, relation, globalTypes));

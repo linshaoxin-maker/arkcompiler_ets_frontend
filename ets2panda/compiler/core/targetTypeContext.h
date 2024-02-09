@@ -17,17 +17,14 @@
 #define ES2PANDA_COMPILER_CORE_TARGET_TYPE_CONTEXT_H
 
 #include "macros.h"
-
-namespace panda::es2panda::checker {
-class Type;
-}  // namespace panda::es2panda::checker
+#include "checker/types/type.h"
 
 namespace panda::es2panda::compiler {
 class ETSGen;
 
 class TargetTypeContext {
 public:
-    explicit TargetTypeContext(ETSGen *etsg, const checker::Type *targetType);
+    explicit TargetTypeContext(ETSGen *etsg, checker::CheckerType *targetType);
     NO_COPY_SEMANTIC(TargetTypeContext);
     NO_MOVE_SEMANTIC(TargetTypeContext);
 
@@ -38,7 +35,7 @@ public:
 
 private:
     ETSGen *etsg_;
-    const checker::Type *prev_;
+    checker::CheckerType *prev_;
 };
 }  // namespace panda::es2panda::compiler
 

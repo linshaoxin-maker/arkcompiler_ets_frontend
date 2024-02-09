@@ -55,7 +55,7 @@ Type *TSChecker::CreateStringLiteralType(const util::StringView &str)
 
 Type *TSChecker::CreateUnionType(std::initializer_list<Type *> constituentTypes)
 {
-    ArenaVector<Type *> newConstituentTypes(Allocator()->Adapter());
+    UnionType::ConstituentsT newConstituentTypes(Allocator()->Adapter());
 
     for (auto *it : constituentTypes) {
         newConstituentTypes.push_back(it);
@@ -64,9 +64,9 @@ Type *TSChecker::CreateUnionType(std::initializer_list<Type *> constituentTypes)
     return CreateUnionType(std::move(newConstituentTypes));
 }
 
-Type *TSChecker::CreateUnionType(ArenaVector<Type *> &constituentTypes)
+Type *TSChecker::CreateUnionType(UnionType::ConstituentsT &constituentTypes)
 {
-    ArenaVector<Type *> newConstituentTypes(Allocator()->Adapter());
+    UnionType::ConstituentsT newConstituentTypes(Allocator()->Adapter());
 
     for (auto *it : constituentTypes) {
         if (it->IsUnionType()) {
@@ -91,13 +91,13 @@ Type *TSChecker::CreateUnionType(ArenaVector<Type *> &constituentTypes)
     return UnionType::HandleUnionType(newUnionType, GetGlobalTypesHolder());
 }
 
-Type *TSChecker::CreateUnionType(ArenaVector<Type *> &&constituentTypes)
+Type *TSChecker::CreateUnionType(UnionType::ConstituentsT &&constituentTypes)
 {
     if (constituentTypes.empty()) {
         return nullptr;
     }
 
-    ArenaVector<Type *> newConstituentTypes(Allocator()->Adapter());
+    UnionType::ConstituentsT newConstituentTypes(Allocator()->Adapter());
 
     for (auto *it : constituentTypes) {
         if (it->IsUnionType()) {
@@ -154,7 +154,7 @@ Type *TSChecker::CreateTupleType(ObjectDescriptor *desc, ArenaVector<ElementFlag
                                  ElementFlags combinedFlags, uint32_t minLength, uint32_t fixedLength, bool readonly)
 {
     desc->stringIndexInfo = Allocator()->New<IndexInfo>(GlobalAnyType(), "x", readonly);
-    checker::NamedTupleMemberPool namedMembers(Allocator()->Adapter());
+    NamedTupleMemberPool namedMembers(Allocator()->Adapter());
     return Allocator()->New<TupleType>(desc, std::move(elementFlags), combinedFlags, minLength, fixedLength, readonly,
                                        std::move(namedMembers));
 }

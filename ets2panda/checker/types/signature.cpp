@@ -173,7 +173,7 @@ void Signature::ToString(std::stringstream &ss, const varbinder::Variable *varia
 }
 
 namespace {
-std::size_t GetToCheckParamCount(Signature *signature, bool isEts)
+std::size_t GetToCheckParamCount(const Signature *signature, bool isEts)
 {
     auto paramNumber = static_cast<ssize_t>(signature->Params().size());
     if (!isEts || signature->Function() == nullptr) {
@@ -188,7 +188,7 @@ std::size_t GetToCheckParamCount(Signature *signature, bool isEts)
 }
 }  // namespace
 
-bool Signature::IdenticalParameter(TypeRelation *relation, Type *type1, Type *type2)
+bool Signature::IdenticalParameter(TypeRelation *relation, Type *type1, Type *type2) const
 {
     if (!CheckFunctionalInterfaces(relation, type1, type2)) {
         relation->IsIdenticalTo(type1, type2);
@@ -278,7 +278,7 @@ void Signature::Identical(TypeRelation *relation, Signature *other)
     }
 }
 
-bool Signature::CheckFunctionalInterfaces(TypeRelation *relation, Type *source, Type *target)
+bool Signature::CheckFunctionalInterfaces(TypeRelation *relation, CheckerType *source, CheckerType *target) const
 {
     if (!source->IsETSObjectType() || !source->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
         return false;

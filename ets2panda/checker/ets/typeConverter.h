@@ -23,18 +23,18 @@ class ETSChecker;
 
 class TypeConverter {
 public:
-    TypeConverter(ETSChecker *checker, TypeRelation *relation, Type *target, Type *source);
+    TypeConverter(ETSChecker *checker, TypeRelation *relation, CheckerType *target, Type *source);
     Type *Result() const;
-    void SetResult(Type *result);
+    void SetResult(checker::Type *result);
     Type *Source() const;
-    Type *Target() const;
+    CheckerType *Target() const;
     TypeRelation *Relation() const;
     ETSChecker *Checker() const;
 
 private:
     ETSChecker *checker_;
     TypeRelation *relation_;
-    Type *target_;
+    CheckerType *target_;
     Type *source_;
     Type *result_ {};
 };

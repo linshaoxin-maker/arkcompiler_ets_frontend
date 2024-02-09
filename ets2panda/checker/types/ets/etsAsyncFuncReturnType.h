@@ -35,7 +35,7 @@ public:
     void AssignmentTarget(TypeRelation *relation, Type *source) override;
     bool AssignmentSource(TypeRelation *relation, Type *target) override;
 
-    const Type *GetPromiseTypeArg() const
+    CheckerType *GetPromiseTypeArg() const
     {
         return promiseType_->TypeArguments()[0];
     }

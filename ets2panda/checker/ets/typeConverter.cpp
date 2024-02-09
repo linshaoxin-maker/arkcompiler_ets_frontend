@@ -16,7 +16,7 @@
 #include "typeConverter.h"
 
 namespace panda::es2panda::checker {
-TypeConverter::TypeConverter(ETSChecker *checker, TypeRelation *relation, Type *target, Type *source)
+TypeConverter::TypeConverter(ETSChecker *checker, TypeRelation *relation, CheckerType *target, Type *source)
     : checker_(checker), relation_(relation), target_(target), source_(source)
 {
 }
@@ -26,7 +26,7 @@ Type *TypeConverter::Result() const
     return result_;
 }
 
-void TypeConverter::SetResult(Type *result)
+void TypeConverter::SetResult(checker::Type *result)
 {
     result_ = result;
 }
@@ -36,7 +36,7 @@ Type *TypeConverter::Source() const
     return source_;
 }
 
-Type *TypeConverter::Target() const
+CheckerType *TypeConverter::Target() const
 {
     return target_;
 }

@@ -18,6 +18,7 @@
 
 #include <macros.h>
 #include "varbinder/variable.h"
+#include "checker/types/type.h"
 #include "util/enumbitops.h"
 
 #include <vector>

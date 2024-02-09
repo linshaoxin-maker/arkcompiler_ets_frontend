@@ -61,9 +61,9 @@ using StringLiteralPool = std::unordered_map<util::StringView, Type *>;
 using NumberLiteralPool = std::unordered_map<double, Type *>;
 using FunctionParamsResolveResult = std::variant<std::vector<varbinder::LocalVariable *> &, bool>;
 using InterfacePropertyMap =
-    std::unordered_map<util::StringView, std::pair<varbinder::LocalVariable *, InterfaceType *>>;
-using TypeOrNode = std::variant<Type *, ir::AstNode *>;
-using IndexInfoTypePair = std::pair<Type *, Type *>;
+    std::unordered_map<util::StringView, std::pair<varbinder::LocalVariable *, const InterfaceType *>>;
+using TypeOrNode = std::variant<CheckerType *, ir::AstNode *>;
+using IndexInfoTypePair = std::pair<CheckerType *, CheckerType *>;
 using PropertyMap = std::unordered_map<util::StringView, varbinder::LocalVariable *>;
 using ArgRange = std::pair<uint32_t, uint32_t>;
 
@@ -187,7 +187,7 @@ public:
     bool IsTypeEqualityComparableTo(Type *source, Type *target);
     bool IsAllTypesAssignableTo(Type *source, Type *target);
     void SetAnalyzer(SemanticAnalyzer *analyzer);
-    checker::SemanticAnalyzer *GetAnalyzer() const;
+    SemanticAnalyzer *GetAnalyzer() const;
 
     friend class ScopeContext;
     friend class TypeStackElement;
@@ -221,8 +221,8 @@ private:
 
 class TypeStackElement {
 public:
-    explicit TypeStackElement(Checker *checker, void *element, std::initializer_list<TypeErrorMessageElement> list,
-                              const lexer::SourcePosition &pos)
+    explicit TypeStackElement(Checker *checker, const void *element,
+                              std::initializer_list<TypeErrorMessageElement> list, const lexer::SourcePosition &pos)
         : checker_(checker), element_(element)
     {
         if (!checker->typeStack_.insert(element).second) {
@@ -230,7 +230,8 @@ public:
         }
     }
 
-    explicit TypeStackElement(Checker *checker, void *element, std::string_view err, const lexer::SourcePosition &pos)
+    explicit TypeStackElement(Checker *checker, const void *element, std::string_view err,
+                              const lexer::SourcePosition &pos)
         : checker_(checker), element_(element)
     {
         if (!checker->typeStack_.insert(element).second) {
@@ -248,7 +249,7 @@ public:
 
 private:
     Checker *checker_;
-    void *element_;
+    const void *element_;
 };
 
 class ScopeContext {

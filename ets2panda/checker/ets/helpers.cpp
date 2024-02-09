@@ -74,7 +74,7 @@
 namespace panda::es2panda::checker {
 void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
 {
-    checker::Type *type = expr->Check(this);
+    auto *type = expr->Check(this);
     auto *unboxedType = ETSBuiltinTypeAsConditionalType(type);
 
     if (unboxedType == nullptr) {
@@ -96,7 +96,7 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
 }
 
 // NOTE: vpukhov. this entire function is isolated work-around until nullish type are not unions
-Type *ETSChecker::CreateNullishType(Type *type, checker::TypeFlag nullishFlags, ArenaAllocator *allocator,
+Type *ETSChecker::CreateNullishType(Type *type, TypeFlag nullishFlags, ArenaAllocator *allocator,
                                     TypeRelation *relation, GlobalTypesHolder *globalTypes)
 {
     ASSERT((nullishFlags & ~TypeFlag::NULLISH) == 0);
@@ -106,10 +106,10 @@ Type *ETSChecker::CreateNullishType(Type *type, checker::TypeFlag nullishFlags, 
     // Doesnt work for primitive array types, because instantiated type is equal to original one
 
     if ((nullishFlags & TypeFlag::NULL_TYPE) != 0) {
-        nullish->AddTypeFlag(checker::TypeFlag::NULL_TYPE);
+        nullish->AddTypeFlag(TypeFlag::NULL_TYPE);
     }
     if ((nullishFlags & TypeFlag::UNDEFINED) != 0) {
-        nullish->AddTypeFlag(checker::TypeFlag::UNDEFINED);
+        nullish->AddTypeFlag(TypeFlag::UNDEFINED);
         if (nullish->IsETSObjectType()) {
             nullish->AsETSObjectType()->SetAssemblerName(GlobalETSObjectType()->AssemblerName());
         }
@@ -118,10 +118,28 @@ Type *ETSChecker::CreateNullishType(Type *type, checker::TypeFlag nullishFlags, 
     return nullish;
 }
 
-void ETSChecker::CheckNonNullishType([[maybe_unused]] Type *type, [[maybe_unused]] lexer::SourcePosition lineInfo)
+void ETSChecker::CheckNonNullishType([[maybe_unused]] CheckerType *type,
+                                     [[maybe_unused]] lexer::SourcePosition lineInfo)
 {
     // NOTE: vpukhov. enable check when type inference is implemented
     (void)type;
+}
+
+// NOTE: vpukhov. rewrite with union types
+CheckerType *ETSChecker::GetNonNullishType(CheckerType *type) const
+{
+    if (type->IsETSArrayType()) {
+        return type;  // give up
+    }
+    if (type->IsETSTypeParameter()) {
+        return type->AsETSTypeParameter()->GetOriginal();
+    }
+
+    while (type->IsNullish()) {
+        type = type->AsETSObjectType()->GetBaseType();
+        ASSERT(type != nullptr);
+    }
+    return type;
 }
 
 // NOTE: vpukhov. rewrite with union types
@@ -141,32 +159,15 @@ Type *ETSChecker::GetNonNullishType(Type *type) const
     return type;
 }
 
-// NOTE: vpukhov. rewrite with union types
-const Type *ETSChecker::GetNonNullishType(const Type *type) const
-{
-    if (type->IsETSArrayType()) {
-        return type;  // give up
-    }
-    if (type->IsETSTypeParameter()) {
-        return type->AsETSTypeParameter()->GetOriginal();
-    }
-
-    while (type->IsNullish()) {
-        type = type->AsETSObjectType()->GetBaseType();
-        ASSERT(type != nullptr);
-    }
-    return type;
-}
-
 Type *ETSChecker::CreateOptionalResultType(Type *type)
 {
-    if (type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+    if (type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
         type = PrimitiveTypeAsETSBuiltinType(type);
         ASSERT(type->IsETSObjectType());
         Relation()->GetNode()->AddBoxingUnboxingFlags(GetBoxingFlag(type));
     }
 
-    return CreateNullishType(type, checker::TypeFlag::UNDEFINED, Allocator(), Relation(), GetGlobalTypesHolder());
+    return CreateNullishType(type, TypeFlag::UNDEFINED, Allocator(), Relation(), GetGlobalTypesHolder());
 }
 
 // NOTE(vpukhov): #14595 could be implemented with relation
@@ -190,27 +191,22 @@ static bool MatchConstitutentOrConstraint(P const &pred, const Type *type)
     return false;
 }
 
-bool ETSChecker::MayHaveNullValue(const Type *type) const
+bool ETSChecker::MayHaveNullValue(CheckerType *type) const
 {
     const auto pred = [](const Type *t) { return t->ContainsNull() || t->IsETSNullType(); };
     return MatchConstitutentOrConstraint(pred, type);
 }
 
-bool ETSChecker::MayHaveUndefinedValue(const Type *type) const
+bool ETSChecker::MayHaveUndefinedValue(CheckerType *type) const
 {
     const auto pred = [](const Type *t) { return t->ContainsUndefined() || t->IsETSUndefinedType(); };
     return MatchConstitutentOrConstraint(pred, type);
 }
 
-bool ETSChecker::MayHaveNulllikeValue(const Type *type) const
+bool ETSChecker::MayHaveNulllikeValue(CheckerType *type) const
 {
     const auto pred = [](const Type *t) { return t->IsNullishOrNullLike(); };
     return MatchConstitutentOrConstraint(pred, type);
-}
-
-bool ETSChecker::IsConstantExpression(ir::Expression *expr, Type *type)
-{
-    return (type->HasTypeFlag(TypeFlag::CONSTANT) && (expr->IsIdentifier() || expr->IsMemberExpression()));
 }
 
 Type *ETSChecker::GetNonConstantTypeFromPrimitiveType(Type *type)
@@ -262,11 +258,76 @@ Type *ETSChecker::GetNonConstantTypeFromPrimitiveType(Type *type)
     return type;
 }
 
-Type *ETSChecker::GetTypeOfVariable(varbinder::Variable *const var)
+ETSChecker::EnclosedObjects ETSChecker::GetEnclosedObjects(ir::AstNode *start)
+{
+    ETSChecker::EnclosedObjects res {};
+    auto *iter = start;
+    while (iter != nullptr) {
+        if (iter->IsMethodDefinition()) {
+            auto *methodDef = iter->AsMethodDefinition();
+            ASSERT(methodDef->TsType());
+            res.method = methodDef->Function()->Signature();
+        }
+
+        if (iter->IsClassDefinition()) {
+            auto *classDef = iter->AsClassDefinition();
+
+            if (classDef->TsType() == nullptr) {
+                res.klass = BuildClassProperties(classDef);
+            } else {
+                res.klass = classDef->TsType()->AsETSObjectType();
+            }
+
+            ASSERT(classDef->TsType());
+        }
+
+        iter = iter->Parent();
+    }
+    return res;
+}
+
+Type *GetVariableType(ETSChecker *checker, varbinder::Variable *var)
+{
+    auto decl = var->Declaration();
+    switch (decl->Type()) {
+        case varbinder::DeclType::CLASS: {
+            auto *classDef = decl->Node()->AsClassDefinition();
+            checker->BuildClassProperties(classDef);
+            return classDef->TsType();
+        }
+        case varbinder::DeclType::ENUM_LITERAL:
+        case varbinder::DeclType::CONST:
+        case varbinder::DeclType::LET:
+        case varbinder::DeclType::VAR: {
+            auto *declNode = decl->Node();
+
+            if (decl->Node()->IsIdentifier()) {
+                declNode = declNode->Parent();
+            }
+
+            return declNode->Check(checker);
+        }
+        case varbinder::DeclType::FUNC:
+        case varbinder::DeclType::IMPORT: {
+            return decl->Node()->Check(checker);
+        }
+        case varbinder::DeclType::TYPE_ALIAS: {
+            return checker->GetTypeFromTypeAliasReference(var);
+        }
+        case varbinder::DeclType::INTERFACE: {
+            return checker->BuildInterfaceProperties(decl->Node()->AsTSInterfaceDeclaration());
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+}
+
+Type *ETSChecker::GetTypeOfVariable(varbinder::Variable *var)
 {
     if (IsVariableGetterSetter(var)) {
         auto *propType = var->TsType()->AsETSFunctionType();
-        if (propType->HasTypeFlag(checker::TypeFlag::GETTER)) {
+        if (propType->HasTypeFlag(TypeFlag::GETTER)) {
             return propType->FindGetter()->ReturnType();
         }
         return propType->FindSetter()->Params()[0]->TsType();
@@ -284,74 +345,17 @@ Type *ETSChecker::GetTypeOfVariable(varbinder::Variable *const var)
         }
     }
 
-    varbinder::Decl *decl = var->Declaration();
+    auto *decl = var->Declaration();
 
     // Before computing the given variables type, we have to make a new checker context frame so that the checking is
     // done in the proper context, and have to enter the scope where the given variable is declared, so reference
     // resolution works properly
-    checker::SavedCheckerContext savedContext(this, CheckerStatus::NO_OPTS);
-    checker::ScopeContext scopeCtx(this, var->GetScope());
-    auto *iter = decl->Node()->Parent();
-    while (iter != nullptr) {
-        if (iter->IsMethodDefinition()) {
-            auto *methodDef = iter->AsMethodDefinition();
-            ASSERT(methodDef->TsType());
-            Context().SetContainingSignature(methodDef->Function()->Signature());
-        }
-
-        if (iter->IsClassDefinition()) {
-            auto *classDef = iter->AsClassDefinition();
-            ETSObjectType *containingClass {};
-
-            if (classDef->TsType() == nullptr) {
-                containingClass = BuildClassProperties(classDef);
-            } else {
-                containingClass = classDef->TsType()->AsETSObjectType();
-            }
-
-            ASSERT(classDef->TsType());
-            Context().SetContainingClass(containingClass);
-        }
-
-        iter = iter->Parent();
-    }
-
-    switch (decl->Type()) {
-        case varbinder::DeclType::CLASS: {
-            auto *classDef = decl->Node()->AsClassDefinition();
-            BuildClassProperties(classDef);
-            return classDef->TsType();
-        }
-        case varbinder::DeclType::ENUM_LITERAL:
-        case varbinder::DeclType::CONST:
-        case varbinder::DeclType::LET:
-        case varbinder::DeclType::VAR: {
-            auto *declNode = decl->Node();
-
-            if (decl->Node()->IsIdentifier()) {
-                declNode = declNode->Parent();
-            }
-
-            return declNode->Check(this);
-        }
-        case varbinder::DeclType::FUNC: {
-            return decl->Node()->Check(this);
-        }
-        case varbinder::DeclType::IMPORT: {
-            return decl->Node()->Check(this);
-        }
-        case varbinder::DeclType::TYPE_ALIAS: {
-            return GetTypeFromTypeAliasReference(var);
-        }
-        case varbinder::DeclType::INTERFACE: {
-            return BuildInterfaceProperties(decl->Node()->AsTSInterfaceDeclaration());
-        }
-        default: {
-            UNREACHABLE();
-        }
-    }
-
-    return var->TsType();
+    SavedCheckerContext savedContext(this, CheckerStatus::NO_OPTS);
+    ScopeContext scopeCtx(this, var->GetScope());
+    auto enclosed = GetEnclosedObjects(decl->Node()->Parent());
+    Context().SetContainingClass(enclosed.klass);
+    Context().SetContainingSignature(enclosed.method);
+    return GetVariableType(this, var);
 }
 
 // Determine if unchecked cast is needed and yield guaranteed source type
@@ -373,7 +377,7 @@ Type *ETSChecker::GuaranteedTypeForUncheckedPropertyAccess(varbinder::Variable *
     }
     if (IsVariableGetterSetter(prop)) {
         auto *method = prop->TsType()->AsETSFunctionType();
-        if (!method->HasTypeFlag(checker::TypeFlag::GETTER)) {
+        if (!method->HasTypeFlag(TypeFlag::GETTER)) {
             return nullptr;
         }
         return GuaranteedTypeForUncheckedCallReturn(method->FindGetter());
@@ -393,7 +397,7 @@ Type *ETSChecker::GuaranteedTypeForUncheckedPropertyAccess(varbinder::Variable *
 // Determine if substituted method cast requires cast from erased type
 Type *ETSChecker::GuaranteedTypeForUncheckedCallReturn(Signature *sig)
 {
-    if (sig->HasSignatureFlag(checker::SignatureFlags::THIS_RETURN_TYPE)) {
+    if (sig->HasSignatureFlag(SignatureFlags::THIS_RETURN_TYPE)) {
         return sig->ReturnType();
     }
     auto *baseSig = sig->Function()->Signature();
@@ -403,7 +407,7 @@ Type *ETSChecker::GuaranteedTypeForUncheckedCallReturn(Signature *sig)
     return GuaranteedTypeForUncheckedCast(baseSig->ReturnType(), sig->ReturnType());
 }
 
-void ETSChecker::ValidatePropertyAccess(varbinder::Variable *var, ETSObjectType *obj, const lexer::SourcePosition &pos)
+void ETSChecker::ValidatePropertyAccess(varbinder::Variable *var, CETSObjectType *obj, const lexer::SourcePosition &pos)
 {
     if ((Context().Status() & CheckerStatus::IGNORE_VISIBILITY) != 0U) {
         return;
@@ -439,8 +443,8 @@ varbinder::Variable *ETSChecker::FindVariableInFunctionScope(const util::StringV
     return Scope()->FindInFunctionScope(name, varbinder::ResolveBindingOptions::ALL).variable;
 }
 
-std::pair<const varbinder::Variable *, const ETSObjectType *> ETSChecker::FindVariableInClassOrEnclosing(
-    const util::StringView name, const ETSObjectType *classType)
+std::pair<const varbinder::Variable *, CETSObjectType *> ETSChecker::FindVariableInClassOrEnclosing(
+    const util::StringView name, CETSObjectType *classType)
 {
     const auto searchFlags = PropertySearchFlags::SEARCH_ALL | PropertySearchFlags::SEARCH_IN_BASE |
                              PropertySearchFlags::SEARCH_IN_INTERFACES;
@@ -509,7 +513,7 @@ void ETSChecker::NotResolvedError(ir::Identifier *const ident)
     }
 }
 
-void ETSChecker::ValidateCallExpressionIdentifier(ir::Identifier *const ident, Type *const type)
+void ETSChecker::ValidateCallExpressionIdentifier(ir::Identifier *const ident, CheckerType *const type)
 {
     if (ident->Parent()->AsCallExpression()->Callee() == ident && !type->IsETSFunctionType() &&
         !type->IsETSDynamicType() &&
@@ -528,7 +532,7 @@ void ETSChecker::ValidateNewClassInstanceIdentifier(ir::Identifier *const ident,
 }
 
 void ETSChecker::ValidateMemberIdentifier(ir::Identifier *const ident, varbinder::Variable *const resolved,
-                                          Type *const type)
+                                          CheckerType *const type)
 {
     if (ident->Parent()->AsMemberExpression()->IsComputed()) {
         if (!resolved->Declaration()->PossibleTDZ()) {
@@ -572,7 +576,7 @@ void ETSChecker::ValidatePropertyOrDeclaratorIdentifier(ir::Identifier *const id
 }
 
 void ETSChecker::ValidateAssignmentIdentifier(ir::Identifier *const ident, varbinder::Variable *const resolved,
-                                              Type *const type)
+                                              CheckerType *const type)
 {
     const auto *const assignmentExpr = ident->Parent()->AsAssignmentExpression();
     if (assignmentExpr->Left() == ident && !resolved->Declaration()->PossibleTDZ()) {
@@ -599,7 +603,7 @@ void ETSChecker::ValidateAssignmentIdentifier(ir::Identifier *const ident, varbi
     }
 }
 
-bool ETSChecker::ValidateBinaryExpressionIdentifier(ir::Identifier *const ident, Type *const type)
+bool ETSChecker::ValidateBinaryExpressionIdentifier(ir::Identifier *const ident, CheckerType *const type)
 {
     const auto *const binaryExpr = ident->Parent()->AsBinaryExpression();
     bool isFinished = false;
@@ -712,7 +716,7 @@ Type *ETSChecker::ResolveIdentifier(ir::Identifier *const ident)
         ASSERT(resolved->TsType()->IsETSFunctionType() &&
                !resolved->TsType()->AsETSFunctionType()->CallSignatures().empty());
         const auto *const funcType = resolved->TsType()->AsETSFunctionType();
-        if (!funcType->CallSignatures().front()->Owner()->HasObjectFlag(checker::ETSObjectFlags::GLOBAL)) {
+        if (!funcType->CallSignatures().front()->Owner()->HasObjectFlag(ETSObjectFlags::GLOBAL)) {
             // In the case of function references, it is not enough to find the first method field and use it's function
             // type, because at the position of the call we should be able to work with every possible signature, even
             // with ones that came from base classes.
@@ -749,71 +753,46 @@ void ETSChecker::ValidateUnaryOperatorOperand(varbinder::Variable *variable)
     }
 }
 
-std::tuple<Type *, bool> ETSChecker::ApplyBinaryOperatorPromotion(Type *left, Type *right, TypeFlag test,
-                                                                  bool doPromotion)
+Type *ETSChecker::GetCommonPrimitive(Type *type1, Type *type2)
 {
-    Type *unboxedL = ETSBuiltinTypeAsPrimitiveType(left);
-    Type *unboxedR = ETSBuiltinTypeAsPrimitiveType(right);
-    bool bothConst = false;
-
-    if (unboxedL == nullptr || unboxedR == nullptr) {
-        return {nullptr, false};
+    if (type1->IsDoubleType() || type2->IsDoubleType()) {
+        return GlobalDoubleType();
     }
-
-    if (!unboxedL->HasTypeFlag(test) || !unboxedR->HasTypeFlag(test)) {
-        return {nullptr, false};
+    if (type1->IsFloatType() || type2->IsFloatType()) {
+        return GlobalFloatType();
     }
-
-    if (unboxedL->HasTypeFlag(TypeFlag::CONSTANT) && unboxedR->HasTypeFlag(TypeFlag::CONSTANT)) {
-        bothConst = true;
+    if (type1->IsLongType() || type2->IsLongType()) {
+        return GlobalLongType();
     }
-    if (doPromotion) {
-        if (unboxedL->HasTypeFlag(TypeFlag::ETS_NUMERIC) && unboxedR->HasTypeFlag(TypeFlag::ETS_NUMERIC)) {
-            if (unboxedL->IsDoubleType() || unboxedR->IsDoubleType()) {
-                return {GlobalDoubleType(), bothConst};
-            }
-
-            if (unboxedL->IsFloatType() || unboxedR->IsFloatType()) {
-                return {GlobalFloatType(), bothConst};
-            }
-
-            if (unboxedL->IsLongType() || unboxedR->IsLongType()) {
-                return {GlobalLongType(), bothConst};
-            }
-
-            if (unboxedL->IsCharType() && unboxedR->IsCharType()) {
-                return {GlobalCharType(), bothConst};
-            }
-
-            return {GlobalIntType(), bothConst};
-        }
-
-        if (IsTypeIdenticalTo(unboxedL, unboxedR)) {
-            return {unboxedL, bothConst};
-        }
+    if (type1->IsIntType() || type2->IsIntType() || type1->IsCharType() || type2->IsCharType()) {
+        return GlobalIntType();
     }
-
-    return {unboxedR, bothConst};
+    if (type1->IsShortType() || type2->IsShortType()) {
+        return GlobalShortType();
+    }
+    if (type1->IsByteType() || type2->IsByteType()) {
+        return GlobalByteType();
+    }
+    UNREACHABLE();
 }
 
-checker::Type *ETSChecker::ApplyConditionalOperatorPromotion(checker::ETSChecker *checker, checker::Type *unboxedL,
-                                                             checker::Type *unboxedR)
+Type *ETSChecker::ApplyConditionalOperatorPromotion(ETSChecker *checker, Type *unboxedL, Type *unboxedR)
 {
-    if ((unboxedL->HasTypeFlag(checker::TypeFlag::CONSTANT) && unboxedL->IsIntType()) ||
-        (unboxedR->HasTypeFlag(checker::TypeFlag::CONSTANT) && unboxedR->IsIntType())) {
+    if ((unboxedL->HasTypeFlag(TypeFlag::CONSTANT) && unboxedL->IsIntType()) ||
+        (unboxedR->HasTypeFlag(TypeFlag::CONSTANT) && unboxedR->IsIntType())) {
         int value = unboxedL->IsIntType() ? unboxedL->AsIntType()->GetValue() : unboxedR->AsIntType()->GetValue();
-        checker::Type *otherType = !unboxedL->IsIntType() ? unboxedL : unboxedR;
+        Type *otherType = !unboxedL->IsIntType() ? unboxedL : unboxedR;
 
-        switch (checker::ETSChecker::ETSType(otherType)) {
-            case checker::TypeFlag::BYTE:
-            case checker::TypeFlag::CHAR: {
+        switch (ETSChecker::ETSType(otherType)) {
+            case TypeFlag::BYTE:
+            case TypeFlag::CHAR: {
                 if (value <= static_cast<int>(std::numeric_limits<char>::max()) &&
                     value >= static_cast<int>(std::numeric_limits<char>::min())) {
                     return checker->GetNonConstantTypeFromPrimitiveType(otherType);
                 }
                 break;
             }
-            case checker::TypeFlag::SHORT: {
+            case TypeFlag::SHORT: {
                 if (value <= std::numeric_limits<int16_t>::max() && value >= std::numeric_limits<int16_t>::min()) {
                     return checker->GlobalShortType();
                 }
@@ -825,27 +804,7 @@ checker::Type *ETSChecker::ApplyConditionalOperatorPromotion(checker::ETSChecker
         }
         return checker->GlobalIntType();
     }
-
-    if (unboxedL->IsDoubleType() || unboxedR->IsDoubleType()) {
-        return checker->GlobalDoubleType();
-    }
-    if (unboxedL->IsFloatType() || unboxedR->IsFloatType()) {
-        return checker->GlobalFloatType();
-    }
-    if (unboxedL->IsLongType() || unboxedR->IsLongType()) {
-        return checker->GlobalLongType();
-    }
-    if (unboxedL->IsIntType() || unboxedR->IsIntType() || unboxedL->IsCharType() || unboxedR->IsCharType()) {
-        return checker->GlobalIntType();
-    }
-    if (unboxedL->IsShortType() || unboxedR->IsShortType()) {
-        return checker->GlobalShortType();
-    }
-    if (unboxedL->IsByteType() || unboxedR->IsByteType()) {
-        return checker->GlobalByteType();
-    }
-
-    UNREACHABLE();
+    return GetCommonPrimitive(unboxedL, unboxedR);
 }
 
 Type *ETSChecker::ApplyUnaryOperatorPromotion(Type *type, const bool createConst, const bool doPromotion,
@@ -880,12 +839,12 @@ bool ETSChecker::IsNullLikeOrVoidExpression(const ir::Expression *expr) const
     return expr->TsType()->IsETSNullLike() || expr->TsType()->IsETSVoidType();
 }
 
-std::tuple<bool, bool> ETSChecker::IsResolvedAndValue(const ir::Expression *expr, Type *type) const
+std::tuple<bool, bool> ETSChecker::IsResolvedAndValue(const ir::Expression *expr, CheckerType *type) const
 {
     auto [isResolve, isValue] =
         IsNullLikeOrVoidExpression(expr) ? std::make_tuple(true, false) : type->ResolveConditionExpr();
 
-    const Type *tsType = expr->TsType();
+    CheckerType *tsType = expr->TsType();
     if (!tsType->ContainsUndefined() && !tsType->ContainsNull() && !tsType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
         isResolve = true;
         isValue = true;
@@ -904,7 +863,7 @@ Type *ETSChecker::HandleBooleanLogicalOperatorsExtended(Type *leftType, Type *ri
         if (IsTypeIdenticalTo(leftType, rightType)) {
             return leftType;
         }
-        ArenaVector<checker::Type *> types(Allocator()->Adapter());
+        ArenaVector<Type *> types(Allocator()->Adapter());
         types.push_back(leftType);
         types.push_back(rightType);
         return CreateETSUnionType(std::move(types));
@@ -937,52 +896,15 @@ Type *ETSChecker::HandleBooleanLogicalOperatorsExtended(Type *leftType, Type *ri
     UNREACHABLE();
 }
 
-Type *ETSChecker::HandleBooleanLogicalOperators(Type *leftType, Type *rightType, lexer::TokenType tokenType)
+void ETSChecker::ResolveReturnStatement(Type *funcReturnType, Type *argumentType, ir::ScriptFunction *containingFunc,
+                                        ir::ReturnStatement *st)
 {
-    using UType = typename ETSBooleanType::UType;
-    ASSERT(leftType->IsETSBooleanType() && rightType->IsETSBooleanType());
-
-    if (!leftType->HasTypeFlag(checker::TypeFlag::CONSTANT) || !rightType->HasTypeFlag(checker::TypeFlag::CONSTANT)) {
-        return GlobalETSBooleanType();
-    }
-
-    UType leftValue = leftType->AsETSBooleanType()->GetValue();
-    UType rightValue = rightType->AsETSBooleanType()->GetValue();
-
-    switch (tokenType) {
-        case lexer::TokenType::PUNCTUATOR_BITWISE_XOR: {
-            return CreateETSBooleanType(leftValue ^ rightValue);
-        }
-        case lexer::TokenType::PUNCTUATOR_BITWISE_AND: {
-            return CreateETSBooleanType((static_cast<uint8_t>(leftValue) & static_cast<uint8_t>(rightValue)) != 0);
-        }
-        case lexer::TokenType::PUNCTUATOR_BITWISE_OR: {
-            return CreateETSBooleanType((static_cast<uint8_t>(leftValue) | static_cast<uint8_t>(rightValue)) != 0);
-        }
-        case lexer::TokenType::PUNCTUATOR_LOGICAL_OR: {
-            return CreateETSBooleanType(leftValue || rightValue);
-        }
-        case lexer::TokenType::PUNCTUATOR_LOGICAL_AND: {
-            return CreateETSBooleanType(leftValue && rightValue);
-        }
-        default: {
-            break;
-        }
-    }
-
-    UNREACHABLE();
-    return nullptr;
-}
-
-void ETSChecker::ResolveReturnStatement(checker::Type *funcReturnType, checker::Type *argumentType,
-                                        ir::ScriptFunction *containingFunc, ir::ReturnStatement *st)
-{
-    if (funcReturnType->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT) ||
-        argumentType->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
+    if (funcReturnType->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT) ||
+        argumentType->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT)) {
         // function return type should be of reference (object) type
-        Relation()->SetFlags(checker::TypeRelationFlag::NONE);
+        Relation()->SetFlags(TypeRelationFlag::NONE);
 
-        if (!argumentType->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
+        if (!argumentType->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT)) {
             argumentType = PrimitiveTypeAsETSBuiltinType(argumentType);
             if (argumentType == nullptr) {
                 ThrowTypeError("Invalid return statement expression", st->Argument()->Start());
@@ -990,7 +912,7 @@ void ETSChecker::ResolveReturnStatement(checker::Type *funcReturnType, checker::
             st->Argument()->AddBoxingUnboxingFlags(GetBoxingFlag(argumentType));
         }
 
-        if (!funcReturnType->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
+        if (!funcReturnType->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT)) {
             funcReturnType = PrimitiveTypeAsETSBuiltinType(funcReturnType);
             if (funcReturnType == nullptr) {
                 ThrowTypeError("Invalid return function expression", st->Start());
@@ -999,17 +921,16 @@ void ETSChecker::ResolveReturnStatement(checker::Type *funcReturnType, checker::
 
         funcReturnType = FindLeastUpperBound(funcReturnType, argumentType);
         containingFunc->Signature()->SetReturnType(funcReturnType);
-        containingFunc->Signature()->AddSignatureFlag(checker::SignatureFlags::INFERRED_RETURN_TYPE);
-    } else if (funcReturnType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE_RETURN) &&
-               argumentType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE_RETURN)) {
+        containingFunc->Signature()->AddSignatureFlag(SignatureFlags::INFERRED_RETURN_TYPE);
+    } else if (funcReturnType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE_RETURN) &&
+               argumentType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE_RETURN)) {
         // function return type is of primitive type (including enums):
-        Relation()->SetFlags(checker::TypeRelationFlag::DIRECT_RETURN |
-                             checker::TypeRelationFlag::IN_ASSIGNMENT_CONTEXT |
-                             checker::TypeRelationFlag::ASSIGNMENT_CONTEXT);
+        Relation()->SetFlags(TypeRelationFlag::DIRECT_RETURN | TypeRelationFlag::IN_ASSIGNMENT_CONTEXT |
+                             TypeRelationFlag::ASSIGNMENT_CONTEXT);
         if (Relation()->IsAssignableTo(funcReturnType, argumentType)) {
             funcReturnType = argumentType;
             containingFunc->Signature()->SetReturnType(funcReturnType);
-            containingFunc->Signature()->AddSignatureFlag(checker::SignatureFlags::INFERRED_RETURN_TYPE);
+            containingFunc->Signature()->AddSignatureFlag(SignatureFlags::INFERRED_RETURN_TYPE);
         } else if (!Relation()->IsAssignableTo(argumentType, funcReturnType)) {
             const Type *targetType = TryGettingFunctionTypeFromInvokeFunction(funcReturnType);
             const Type *sourceType = TryGettingFunctionTypeFromInvokeFunction(argumentType);
@@ -1023,10 +944,10 @@ void ETSChecker::ResolveReturnStatement(checker::Type *funcReturnType, checker::
     }
 }
 
-checker::Type *ETSChecker::CheckArrayElements(ir::Identifier *ident, ir::ArrayExpression *init)
+ETSArrayType *ETSChecker::CheckArrayElements(ir::Identifier *ident, ir::ArrayExpression *init)
 {
     ArenaVector<ir::Expression *> elements = init->AsArrayExpression()->Elements();
-    checker::Type *annotationType = nullptr;
+    ETSArrayType *annotationType = nullptr;
     if (elements.empty()) {
         annotationType = Allocator()->New<ETSArrayType>(GlobalETSObjectType());
     } else {
@@ -1050,76 +971,64 @@ checker::Type *ETSChecker::CheckArrayElements(ir::Identifier *ident, ir::ArrayEx
     return annotationType;
 }
 
-checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *typeAnnotation,
-                                                    ir::Expression *init, ir::ModifierFlags flags)
+void ETSChecker::VerifyInitializerTypeAnnotation(const ir::Identifier *ident, const ir::Expression *init,
+                                                 const ir::TypeNode *typeAnnotation)
 {
-    const util::StringView &varName = ident->Name();
-    ASSERT(ident->Variable());
-    varbinder::Variable *const bindingVar = ident->Variable();
-    checker::Type *annotationType = nullptr;
-
-    const bool isConst = (flags & ir::ModifierFlags::CONST) != 0;
-
-    if (typeAnnotation != nullptr) {
-        annotationType = GetTypeFromTypeAnnotation(typeAnnotation);
-        bindingVar->SetTsType(annotationType);
+    if (typeAnnotation == nullptr && init->IsObjectExpression()) {
+        ThrowTypeError(
+            {"Cannot infer type for ", ident->Name(), " because class composite needs an explicit target type"},
+            ident->Start());
     }
-
-    if (init == nullptr) {
-        return annotationType;
-    }
-
-    if (typeAnnotation == nullptr) {
-        if (init->IsArrayExpression()) {
-            annotationType = CheckArrayElements(ident, init->AsArrayExpression());
-            bindingVar->SetTsType(annotationType);
-        }
-
-        if (init->IsObjectExpression()) {
-            ThrowTypeError(
-                {"Cannot infer type for ", ident->Name(), " because class composite needs an explicit target type"},
-                ident->Start());
-        }
-    }
-
     if (init->IsMemberExpression() && init->AsMemberExpression()->Object()->IsObjectExpression()) {
         ThrowTypeError({"Class composite must be constructed separately before referring their members."},
                        ident->Start());
     }
+}
 
+void ETSChecker::HandleInitializerArrayLike(ir::Identifier *ident, ir::Expression *init, ir::TypeNode *typeAnnotation,
+                                            Type *annotationType)
+{
+    if (typeAnnotation == nullptr && init->IsArrayExpression()) {
+        annotationType = CheckArrayElements(ident, init->AsArrayExpression());
+    }
     if ((init->IsMemberExpression()) && (annotationType != nullptr)) {
         SetArrayPreferredTypeForNestedMemberExpressions(init->AsMemberExpression(), annotationType);
     }
-
     if (init->IsArrayExpression() && annotationType->IsETSArrayType()) {
         if (annotationType->IsETSTupleType()) {
             ValidateTupleMinElementSize(init->AsArrayExpression(), annotationType->AsETSTupleType());
         }
-
         init->AsArrayExpression()->SetPreferredType(annotationType);
     }
+}
 
+std::pair<Type *, Type *> ETSChecker::CheckVariableInitializer(ir::Identifier *ident, ir::Expression *init,
+                                                               ir::TypeNode *typeAnnotation)
+{
+    Type *annotationType = typeAnnotation != nullptr ? GetTypeFromTypeAnnotation(typeAnnotation) : nullptr;
+    if (init == nullptr) {
+        return {nullptr, annotationType};
+    }
+    VerifyInitializerTypeAnnotation(ident, init, typeAnnotation);
+    HandleInitializerArrayLike(ident, init, typeAnnotation, annotationType);
     if (init->IsObjectExpression()) {
         init->AsObjectExpression()->SetPreferredType(annotationType);
     }
-
     if (typeAnnotation != nullptr && typeAnnotation->IsETSFunctionType() && init->IsArrowFunctionExpression()) {
-        auto *const arrowFuncExpr = init->AsArrowFunctionExpression();
-        ir::ScriptFunction *const lambda = arrowFuncExpr->Function();
+        ir::ScriptFunction *const lambda = init->AsArrowFunctionExpression()->Function();
         if (lambda->Params().size() == typeAnnotation->AsETSFunctionType()->Params().size() &&
             NeedTypeInference(lambda)) {
             InferTypesForLambda(lambda, typeAnnotation->AsETSFunctionType());
         }
     }
-    checker::Type *initType = init->Check(this);
-
+    // NOTE: move type check in `CheckEtsFunctionType` to another place and rid of `SetTsType` call;
+    ident->Variable()->SetTsType(annotationType);
+    auto initType = init->Check(this);
     if (initType == nullptr) {
         ThrowTypeError("Cannot get the expression type", init->Start());
     }
-
-    if (typeAnnotation == nullptr &&
-        (init->IsArrowFunctionExpression() ||
-         (init->IsTSAsExpression() && init->AsTSAsExpression()->Expr()->IsArrowFunctionExpression()))) {
+    const auto maybeArrow = init->IsTSAsExpression() ? init->AsTSAsExpression()->Expr() : init;
+    if (typeAnnotation == nullptr && maybeArrow->IsArrowFunctionExpression()) {
         if (init->IsArrowFunctionExpression()) {
             typeAnnotation = init->AsArrowFunctionExpression()->CreateTypeAnnotation(this);
         } else {
@@ -1128,10 +1037,24 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
         ident->SetTsTypeAnnotation(typeAnnotation);
         typeAnnotation->SetParent(ident);
         annotationType = GetTypeFromTypeAnnotation(typeAnnotation);
-        bindingVar->SetTsType(annotationType);
     }
+    return {initType, annotationType};
+}
 
-    if (annotationType != nullptr) {
+Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *typeAnnotation, ir::Expression *init,
+                                           ir::ModifierFlags flags)
+{
+    const util::StringView &varName = ident->Name();
+    ASSERT(ident->Variable());
+    varbinder::Variable *const bindingVar = ident->Variable();
+
+    const bool isConst = (flags & ir::ModifierFlags::CONST) != 0;
+
+    auto [initType, annotationType] = CheckVariableInitializer(ident, init, typeAnnotation);
+    Type *result = nullptr;
+    if (init == nullptr) {
+        result = annotationType;
+    } else if (annotationType != nullptr) {
         const Type *targetType = TryGettingFunctionTypeFromInvokeFunction(annotationType);
         const Type *sourceType = TryGettingFunctionTypeFromInvokeFunction(initType);
 
@@ -1139,34 +1062,34 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
                           {"Type '", sourceType, "' cannot be assigned to type '", targetType, "'"});
         if (isConst && initType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) &&
             annotationType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
-            bindingVar->SetTsType(init->TsType());
+            result = init->TsType();
+        } else {
+            result = annotationType;
         }
-        return bindingVar->TsType();
-    }
+    } else {
+        if (initType->IsETSNullLike()) {
+            TypeFlag nullishFlags {0};
 
-    if (initType->IsETSNullLike()) {
-        TypeFlag nullishFlags {0};
-
-        if (initType->IsETSNullType()) {
-            nullishFlags = TypeFlag::NULL_TYPE;
+            if (initType->IsETSNullType()) {
+                nullishFlags = TypeFlag::NULL_TYPE;
+            } else if (initType->IsETSUndefinedType()) {
+                nullishFlags = TypeFlag::UNDEFINED;
+            }
+            initType = CreateNullishType(GetGlobalTypesHolder()->GlobalETSObjectType(), nullishFlags, Allocator(),
+                                         Relation(), GetGlobalTypesHolder());
         }
-        if (initType->IsETSUndefinedType()) {
-            nullishFlags = TypeFlag::UNDEFINED;
+
+        if (initType->IsETSObjectType() && initType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::ENUM) &&
+            !init->IsMemberExpression()) {
+            ThrowTypeError(
+                {"Cannot assign type '", initType->AsETSObjectType()->Name(), "' for variable ", varName, "."},
+                init->Start());
         }
-        initType = CreateNullishType(GetGlobalTypesHolder()->GlobalETSObjectType(), nullishFlags, Allocator(),
-                                     Relation(), GetGlobalTypesHolder());
+
+        result = (initType->IsNullish() || isConst) ? initType : GetNonConstantTypeFromPrimitiveType(initType);
     }
-
-    if (initType->IsETSObjectType() && initType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::ENUM) &&
-        !init->IsMemberExpression()) {
-        ThrowTypeError({"Cannot assign type '", initType->AsETSObjectType()->Name(), "' for variable ", varName, "."},
-                       init->Start());
-    }
-
-    (initType->IsNullish() || isConst) ? bindingVar->SetTsType(initType)
-                                       : bindingVar->SetTsType(GetNonConstantTypeFromPrimitiveType(initType));
-
-    return bindingVar->TsType();
+    bindingVar->SetTsType(result);
+    return result;
 }
 
 void ETSChecker::SetArrayPreferredTypeForNestedMemberExpressions(ir::MemberExpression *expr, Type *annotationType)
@@ -1375,7 +1298,7 @@ std::vector<util::StringView> ETSChecker::GetNameForSynteticObjectType(const uti
     return syntheticName;
 }
 
-void ETSChecker::SetPropertiesForModuleObject(checker::ETSObjectType *moduleObjType, const util::StringView &importPath)
+void ETSChecker::SetPropertiesForModuleObject(ETSObjectType *moduleObjType, const util::StringView &importPath)
 {
     auto *etsBinder = static_cast<varbinder::ETSBinder *>(VarBinder());
 
@@ -1391,33 +1314,33 @@ void ETSChecker::SetPropertiesForModuleObject(checker::ETSObjectType *moduleObjT
     for (auto [_, var] : res->second.front()->GlobalClassScope()->StaticFieldScope()->Bindings()) {
         (void)_;
         if (var->AsLocalVariable()->Declaration()->Node()->IsExported()) {
-            moduleObjType->AddProperty<checker::PropertyType::STATIC_FIELD>(var->AsLocalVariable());
+            moduleObjType->AddProperty<PropertyType::STATIC_FIELD>(var->AsLocalVariable());
         }
     }
 
     for (auto [_, var] : res->second.front()->GlobalClassScope()->StaticMethodScope()->Bindings()) {
         (void)_;
         if (var->AsLocalVariable()->Declaration()->Node()->IsExported()) {
-            moduleObjType->AddProperty<checker::PropertyType::STATIC_METHOD>(var->AsLocalVariable());
+            moduleObjType->AddProperty<PropertyType::STATIC_METHOD>(var->AsLocalVariable());
         }
     }
 
     for (auto [_, var] : res->second.front()->GlobalClassScope()->InstanceDeclScope()->Bindings()) {
         (void)_;
         if (var->AsLocalVariable()->Declaration()->Node()->IsExported()) {
-            moduleObjType->AddProperty<checker::PropertyType::STATIC_DECL>(var->AsLocalVariable());
+            moduleObjType->AddProperty<PropertyType::STATIC_DECL>(var->AsLocalVariable());
         }
     }
 
     for (auto [_, var] : res->second.front()->GlobalClassScope()->TypeAliasScope()->Bindings()) {
         (void)_;
         if (var->AsLocalVariable()->Declaration()->Node()->IsExported()) {
-            moduleObjType->AddProperty<checker::PropertyType::STATIC_DECL>(var->AsLocalVariable());
+            moduleObjType->AddProperty<PropertyType::STATIC_DECL>(var->AsLocalVariable());
         }
     }
 }
 
-void ETSChecker::SetrModuleObjectTsType(ir::Identifier *local, checker::ETSObjectType *moduleObjType)
+void ETSChecker::SetrModuleObjectTsType(ir::Identifier *local, ETSObjectType *moduleObjType)
 {
     auto *etsBinder = static_cast<varbinder::ETSBinder *>(VarBinder());
 
@@ -1474,8 +1397,9 @@ Type *ETSChecker::GetReferencedTypeBase(ir::Expression *name)
     }
 }
 
-void ETSChecker::ConcatConstantString(util::UString &target, Type *type)
+void ETSChecker::ConcatConstantString(util::UString &target, CheckerType *type)
 {
+    auto getStringVal = [](auto *underlying) -> std::string { return std::to_string(underlying->GetValue()); };
     switch (ETSType(type)) {
         case TypeFlag::ETS_OBJECT: {
             ASSERT(type->IsETSStringType());
@@ -1488,8 +1412,7 @@ void ETSChecker::ConcatConstantString(util::UString &target, Type *type)
             break;
         }
         case TypeFlag::BYTE: {
-            ByteType::UType value = type->AsByteType()->GetValue();
-            target.Append(std::to_string(value));
+            target.Append(getStringVal(type->AsByteType()));
             break;
         }
         case TypeFlag::CHAR: {
@@ -1499,28 +1422,23 @@ void ETSChecker::ConcatConstantString(util::UString &target, Type *type)
             break;
         }
         case TypeFlag::SHORT: {
-            ShortType::UType value = type->AsShortType()->GetValue();
-            target.Append(std::to_string(value));
+            target.Append(getStringVal(type->AsShortType()));
             break;
         }
         case TypeFlag::INT: {
-            IntType::UType value = type->AsIntType()->GetValue();
-            target.Append(std::to_string(value));
+            target.Append(getStringVal(type->AsIntType()));
             break;
         }
         case TypeFlag::LONG: {
-            LongType::UType value = type->AsLongType()->GetValue();
-            target.Append(std::to_string(value));
+            target.Append(getStringVal(type->AsLongType()));
             break;
         }
         case TypeFlag::FLOAT: {
-            FloatType::UType value = type->AsFloatType()->GetValue();
-            target.Append(std::to_string(value));
+            target.Append(getStringVal(type->AsFloatType()));
             break;
         }
         case TypeFlag::DOUBLE: {
-            DoubleType::UType value = type->AsDoubleType()->GetValue();
-            target.Append(std::to_string(value));
+            target.Append(getStringVal(type->AsDoubleType()));
             break;
         }
         default: {
@@ -1529,11 +1447,11 @@ void ETSChecker::ConcatConstantString(util::UString &target, Type *type)
     }
 }
 
-Type *ETSChecker::HandleStringConcatenation(Type *leftType, Type *rightType)
+Type *ETSChecker::HandleStringConcatenation(CheckerType *leftType, CheckerType *rightType)
 {
     ASSERT(leftType->IsETSStringType() || rightType->IsETSStringType());
 
-    if (!leftType->HasTypeFlag(checker::TypeFlag::CONSTANT) || !rightType->HasTypeFlag(checker::TypeFlag::CONSTANT)) {
+    if (!leftType->HasTypeFlag(TypeFlag::CONSTANT) || !rightType->HasTypeFlag(TypeFlag::CONSTANT)) {
         return GlobalETSStringLiteralType();
     }
 
@@ -1650,7 +1568,7 @@ util::StringView ETSChecker::GetContainingObjectNameFromSignature(Signature *sig
     return {""};
 }
 
-bool ETSChecker::IsTypeBuiltinType(const Type *type) const
+bool ETSChecker::IsTypeBuiltinType(CheckerType *type) const
 {
     if (!type->IsETSObjectType()) {
         return false;
@@ -1672,10 +1590,10 @@ bool ETSChecker::IsTypeBuiltinType(const Type *type) const
     }
 }
 
-bool ETSChecker::IsReferenceType(const Type *type)
+bool ETSChecker::IsReferenceType(CheckerType *type)
 {
-    return type->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT) || type->IsETSNullLike() ||
-           type->IsETSStringType() || type->IsETSTypeParameter() || type->IsETSUnionType() || type->IsETSBigIntType();
+    return type->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT) || type->IsETSNullLike() || type->IsETSStringType() ||
+           type->IsETSTypeParameter() || type->IsETSUnionType() || type->IsETSBigIntType();
 }
 
 const ir::AstNode *ETSChecker::FindJumpTarget(ir::AstNodeType nodeType, const ir::AstNode *node,
@@ -1750,6 +1668,13 @@ void ETSChecker::CheckSwitchDiscriminant(ir::Expression *discriminant)
                    discriminant->Start());
 }
 
+void ETSChecker::FlagExpressionWithUnboxing(CheckerType *type, CheckerType *unboxedType, ir::Expression *typeExpression)
+{
+    if (type->IsETSObjectType() && (unboxedType != nullptr)) {
+        typeExpression->AddBoxingUnboxingFlags(GetUnboxingFlag(unboxedType));
+    }
+}
+
 Type *ETSChecker::ETSBuiltinTypeAsPrimitiveType(Type *objectType)
 {
     if (objectType == nullptr) {
@@ -1774,7 +1699,41 @@ Type *ETSChecker::ETSBuiltinTypeAsPrimitiveType(Type *objectType)
     return converter.Result();
 }
 
+CheckerType *ETSChecker::ETSBuiltinTypeAsPrimitiveType(CheckerType *objectType)
+{
+    if (objectType == nullptr) {
+        return nullptr;
+    }
+
+    if (objectType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) || objectType->HasTypeFlag(TypeFlag::ETS_ENUM) ||
+        objectType->HasTypeFlag(TypeFlag::ETS_STRING_ENUM)) {
+        return objectType;
+    }
+
+    if (!objectType->IsETSObjectType() ||
+        !objectType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE)) {
+        return nullptr;
+    }
+
+    auto savedResult = Relation()->IsTrue();
+    Relation()->Result(false);
+
+    UnboxingConverter converter = UnboxingConverter(AsETSChecker(), Relation(), const_cast<Type *>(objectType),
+                                                    objectType);  // Actually it never changes
+    Relation()->Result(savedResult);
+    return converter.Result();
+}
+
 Type *ETSChecker::ETSBuiltinTypeAsConditionalType(Type *objectType)
+{
+    if ((objectType == nullptr) || !objectType->IsConditionalExprType()) {
+        return nullptr;
+    }
+
+    return objectType;
+}
+
+CheckerType *ETSChecker::ETSBuiltinTypeAsConditionalType(CheckerType *objectType)
 {
     if ((objectType == nullptr) || !objectType->IsConditionalExprType()) {
         return nullptr;
@@ -1810,7 +1769,7 @@ Type *ETSChecker::PrimitiveTypeAsETSBuiltinType(Type *objectType)
     return converter.Result();
 }
 
-void ETSChecker::AddBoxingUnboxingFlagsToNode(ir::AstNode *node, Type *boxingUnboxingType)
+void ETSChecker::AddBoxingUnboxingFlagsToNode(ir::AstNode *node, CheckerType *boxingUnboxingType)
 {
     if (boxingUnboxingType->IsETSObjectType()) {
         node->AddBoxingUnboxingFlags(GetBoxingFlag(boxingUnboxingType));
@@ -1819,7 +1778,7 @@ void ETSChecker::AddBoxingUnboxingFlagsToNode(ir::AstNode *node, Type *boxingUnb
     }
 }
 
-ir::BoxingUnboxingFlags ETSChecker::GetBoxingFlag(Type *const boxingType)
+ir::BoxingUnboxingFlags ETSChecker::GetBoxingFlag(CheckerType *const boxingType)
 {
     auto typeKind = TypeKind(ETSBuiltinTypeAsPrimitiveType(boxingType));
     switch (typeKind) {
@@ -1852,7 +1811,7 @@ ir::BoxingUnboxingFlags ETSChecker::GetBoxingFlag(Type *const boxingType)
     }
 }
 
-ir::BoxingUnboxingFlags ETSChecker::GetUnboxingFlag(Type const *const unboxingType) const
+ir::BoxingUnboxingFlags ETSChecker::GetUnboxingFlag(CheckerType const *const unboxingType) const
 {
     auto typeKind = TypeKind(unboxingType);
     switch (typeKind) {
@@ -1909,7 +1868,7 @@ Type *ETSChecker::MaybeBoxedType(const varbinder::Variable *var, ArenaAllocator 
             default: {
                 Type *box = GetGlobalTypesHolder()->GlobalBoxBuiltinType()->Instantiate(allocator, Relation(),
                                                                                         GetGlobalTypesHolder());
-                box->AddTypeFlag(checker::TypeFlag::GENERIC);
+                box->AddTypeFlag(TypeFlag::GENERIC);
                 box->AsETSObjectType()->TypeArguments().emplace_back(varType);
                 return box;
             }
@@ -1960,7 +1919,7 @@ void ETSChecker::CheckForSameSwitchCases(ArenaVector<ir::SwitchCaseStatement *> 
     }
 }
 
-std::string ETSChecker::GetStringFromIdentifierValue(checker::Type *caseType) const
+std::string ETSChecker::GetStringFromIdentifierValue(CheckerType *caseType) const
 {
     const auto identifierTypeKind = ETSChecker::TypeKind(caseType);
     switch (identifierTypeKind) {
@@ -2005,7 +1964,7 @@ bool IsConstantMemberOrIdentifierExpression(ir::Expression *expression)
 bool ETSChecker::CompareIdentifiersValuesAreDifferent(ir::Expression *compareValue, const std::string &caseValue)
 {
     if (IsConstantMemberOrIdentifierExpression(compareValue)) {
-        checker::Type *compareCaseType = compareValue->TsType();
+        Type *compareCaseType = compareValue->TsType();
 
         const auto compareCaseValue = GetStringFromIdentifierValue(compareCaseType);
         return caseValue != compareCaseValue;
@@ -2023,7 +1982,7 @@ void ETSChecker::CheckIdentifierSwitchCase(ir::Expression *currentCase, ir::Expr
         ThrowTypeError("Constant expression required", pos);
     }
 
-    checker::Type *caseType = currentCase->TsType();
+    Type *caseType = currentCase->TsType();
 
     if (!CompareIdentifiersValuesAreDifferent(compareCase, GetStringFromIdentifierValue(caseType))) {
         ThrowTypeError("Variable has same value with another switch case", pos);
@@ -2080,7 +2039,7 @@ void ETSChecker::AddUnboxingFlagToPrimitiveType(TypeRelation *relation, Type *so
 
 void ETSChecker::CheckUnboxedTypeWidenable(TypeRelation *relation, Type *target, Type *self)
 {
-    checker::SavedTypeRelationFlagsContext savedTypeRelationFlagCtx(
+    SavedTypeRelationFlagsContext savedTypeRelationFlagCtx(
         relation, TypeRelationFlag::ONLY_CHECK_WIDENING |
                       (relation->ApplyNarrowing() ? TypeRelationFlag::NARROWING : TypeRelationFlag::NONE));
     // NOTE: vpukhov. handle union type
@@ -2110,7 +2069,7 @@ void ETSChecker::CheckUnboxedTypesAssignable(TypeRelation *relation, Type *sourc
 
 void ETSChecker::CheckBoxedSourceTypeAssignable(TypeRelation *relation, Type *source, Type *target)
 {
-    checker::SavedTypeRelationFlagsContext savedTypeRelationFlagCtx(
+    SavedTypeRelationFlagsContext savedTypeRelationFlagCtx(
         relation, (relation->ApplyWidening() ? TypeRelationFlag::WIDENING : TypeRelationFlag::NONE) |
                       (relation->ApplyNarrowing() ? TypeRelationFlag::NARROWING : TypeRelationFlag::NONE));
     auto *boxedSourceType = relation->GetChecker()->AsETSChecker()->PrimitiveTypeAsETSBuiltinType(source);
@@ -2294,7 +2253,7 @@ ETSObjectType *ETSChecker::GetRelevantArgumentedTypeFromChild(ETSObjectType *con
     return GetRelevantArgumentedTypeFromChild(child->SuperType(), target);
 }
 
-static void TypeToString(std::stringstream &ss, Type *tp)
+static void TypeToString(std::stringstream &ss, CheckerType *tp)
 {
     if (tp->IsETSTypeParameter()) {
         ss << tp->AsETSTypeParameter()->GetDeclNode()->Start().index;
@@ -2326,12 +2285,12 @@ static void TypeToString(std::stringstream &ss, Type *tp)
     }
 }
 
-void ETSChecker::EmplaceSubstituted(Substitution *substitution, ETSTypeParameter *tparam, Type *typeArg)
+void ETSChecker::EmplaceSubstituted(Substitution *substitution, CETSTypeParameter *tparam, Type *typeArg)
 {
     substitution->emplace(tparam, typeArg);
 }
 
-util::StringView ETSChecker::GetHashFromTypeArguments(const ArenaVector<Type *> &typeArgTypes)
+util::StringView ETSChecker::GetHashFromTypeArguments(const ETSObjectType::TypeArgsT &typeArgTypes)
 {
     std::stringstream ss;
 
@@ -2398,7 +2357,7 @@ Type *ETSChecker::GetTypeFromTypeAnnotation(ir::TypeNode *const typeAnnotation)
     return CreateNullishType(type, nullishFlags, Allocator(), Relation(), GetGlobalTypesHolder());
 }
 
-void ETSChecker::CheckValidGenericTypeParameter(Type *const argType, const lexer::SourcePosition &pos)
+void ETSChecker::CheckValidGenericTypeParameter(CheckerType *const argType, const lexer::SourcePosition &pos)
 {
     if (!argType->IsETSEnumType() && !argType->IsETSStringEnumType()) {
         return;
@@ -2408,7 +2367,8 @@ void ETSChecker::CheckValidGenericTypeParameter(Type *const argType, const lexer
     ThrowTypeError("Type '" + ss.str() + "' is not valid for generic type arguments", pos);
 }
 
-void ETSChecker::CheckNumberOfTypeArguments(ETSObjectType *const type, ir::TSTypeParameterInstantiation *const typeArgs,
+void ETSChecker::CheckNumberOfTypeArguments(CETSObjectType *const type,
+                                            ir::TSTypeParameterInstantiation *const typeArgs,
                                             const lexer::SourcePosition &pos)
 {
     auto const &typeParams = type->TypeArguments();
@@ -2547,9 +2507,8 @@ bool ETSChecker::TypeInference(Signature *signature, const ArenaVector<ir::Expre
         const std::initializer_list<TypeErrorMessageElement> msg = {
             "Type '", argType, "' is not compatible with type '", targetType, "' at index ", index + 1};
 
-        checker::InvocationContext invokationCtx(Relation(), arguments[index], argType,
-                                                 signature->Params()[index]->TsType(), arrowFuncExpr->Start(), msg,
-                                                 flags);
+        InvocationContext invokationCtx(Relation(), arguments[index], argType, signature->Params()[index]->TsType(),
+                                        arrowFuncExpr->Start(), msg, flags);
 
         invocable &= invokationCtx.IsInvocable();
     }
@@ -2588,7 +2547,7 @@ void ETSChecker::AddUndefinedParamsForDefaultParams(const Signature *const signa
     arguments.push_back(checker->Allocator()->New<ir::NumberLiteral>(lexer::Number(num)));
 }
 
-bool ETSChecker::ExtensionETSFunctionType(checker::Type *type)
+bool ETSChecker::ExtensionETSFunctionType(CheckerType *type)
 {
     if (!type->IsETSFunctionType()) {
         return false;
@@ -2603,7 +2562,7 @@ bool ETSChecker::ExtensionETSFunctionType(checker::Type *type)
     return false;
 }
 
-void ETSChecker::ValidateTupleMinElementSize(ir::ArrayExpression *const arrayExpr, ETSTupleType *tuple)
+void ETSChecker::ValidateTupleMinElementSize(const ir::ArrayExpression *const arrayExpr, CETSTupleType *tuple)
 {
     if (arrayExpr->Elements().size() < static_cast<size_t>(tuple->GetMinTupleSize())) {
         ThrowTypeError({"Few elements in array initializer for tuple with size of ",
@@ -2625,7 +2584,8 @@ void ETSChecker::ModifyPreferredType(ir::ArrayExpression *const arrayExpr, Type 
     }
 }
 
-std::string GenerateImplicitInstantiateArg(varbinder::LocalVariable *instantiateMethod, const std::string &className)
+std::string GenerateImplicitInstantiateArg(const varbinder::LocalVariable *instantiateMethod,
+                                           const std::string &className)
 {
     auto callSignatures = instantiateMethod->TsType()->AsETSFunctionType()->CallSignatures();
     ASSERT(!callSignatures.empty());
@@ -2638,35 +2598,35 @@ std::string GenerateImplicitInstantiateArg(varbinder::LocalVariable *instantiate
     return implicitInstantiateArgument;
 }
 
-void ETSChecker::GenerateGetterSetterBody(ETSChecker *checker, ArenaVector<ir::Statement *> &stmts,
-                                          ArenaVector<ir::Expression *> &params, ir::ClassProperty *const field,
-                                          varbinder::FunctionParamScope *paramScope, bool isSetter)
+void ETSChecker::GenerateGetterSetterBody(ArenaVector<ir::Statement *> &stmts, ArenaVector<ir::Expression *> &params,
+                                          ir::ClassProperty *const field, varbinder::FunctionParamScope *paramScope,
+                                          bool isSetter)
 {
     if (!isSetter) {
-        stmts.push_back(checker->Allocator()->New<ir::ReturnStatement>(field->Key()));
+        stmts.push_back(Allocator()->New<ir::ReturnStatement>(field->Key()));
         return;
     }
 
-    auto *paramIdent = field->Key()->AsIdentifier()->Clone(checker->Allocator());
-    paramIdent->SetTsTypeAnnotation(field->TypeAnnotation()->Clone(checker->Allocator()));
+    auto *paramIdent = field->Key()->AsIdentifier()->Clone(Allocator(), nullptr);
+    paramIdent->SetTsTypeAnnotation(field->TypeAnnotation()->Clone(Allocator(), nullptr));
     paramIdent->TypeAnnotation()->SetParent(paramIdent);
 
-    auto *paramExpression = checker->AllocNode<ir::ETSParameterExpression>(paramIdent, nullptr);
+    auto *paramExpression = AllocNode<ir::ETSParameterExpression>(paramIdent, nullptr);
     paramExpression->SetRange(paramIdent->Range());
-    auto *const paramVar = std::get<2>(paramScope->AddParamDecl(checker->Allocator(), paramExpression));
+    auto *const paramVar = std::get<2>(paramScope->AddParamDecl(Allocator(), paramExpression));
 
     paramIdent->SetVariable(paramVar);
     paramExpression->SetVariable(paramVar);
 
     params.push_back(paramExpression);
 
-    auto *assignmentExpression = checker->AllocNode<ir::AssignmentExpression>(
-        field->Key(), paramExpression, lexer::TokenType::PUNCTUATOR_SUBSTITUTION);
+    auto *assignmentExpression =
+        AllocNode<ir::AssignmentExpression>(field->Key(), paramExpression, lexer::TokenType::PUNCTUATOR_SUBSTITUTION);
 
     assignmentExpression->SetRange({field->Start(), field->End()});
 
-    stmts.push_back(checker->AllocNode<ir::ExpressionStatement>(assignmentExpression));
-    stmts.push_back(checker->Allocator()->New<ir::ReturnStatement>(nullptr));
+    stmts.push_back(AllocNode<ir::ExpressionStatement>(assignmentExpression));
+    stmts.push_back(Allocator()->New<ir::ReturnStatement>(nullptr));
 }
 
 ir::MethodDefinition *ETSChecker::GenerateDefaultGetterSetter(ir::ClassProperty *const field,
@@ -2683,7 +2643,7 @@ ir::MethodDefinition *ETSChecker::GenerateDefaultGetterSetter(ir::ClassProperty 
 
     ArenaVector<ir::Expression *> params(checker->Allocator()->Adapter());
     ArenaVector<ir::Statement *> stmts(checker->Allocator()->Adapter());
-    checker->GenerateGetterSetterBody(checker, stmts, params, field, paramScope, isSetter);
+    checker->GenerateGetterSetterBody(stmts, params, field, paramScope, isSetter);
 
     auto *body = checker->AllocNode<ir::BlockStatement>(checker->Allocator(), std::move(stmts));
     auto funcFlags = isSetter ? ir::ScriptFunctionFlags::SETTER : ir::ScriptFunctionFlags::GETTER;
@@ -2721,6 +2681,7 @@ ir::MethodDefinition *ETSChecker::GenerateDefaultGetterSetter(ir::ClassProperty 
     functionScope->BindNode(func);
 
     checker->VarBinder()->AsETSBinder()->ResolveMethodDefinition(method);
+    // NOTE: Replace to ScopesInitPhase
     functionScope->BindName(classScope->Node()->AsClassDefinition()->InternalName());
     method->Check(checker);
 
@@ -2740,7 +2701,7 @@ const Type *ETSChecker::TryGettingFunctionTypeFromInvokeFunction(const Type *typ
     return type;
 }
 
-bool ETSChecker::TryTransformingToStaticInvoke(ir::Identifier *const ident, const Type *resolvedType)
+bool ETSChecker::TryTransformingToStaticInvoke(ir::Identifier *const ident, CheckerType *resolvedType)
 {
     ASSERT(ident->Parent()->IsCallExpression());
     ASSERT(ident->Parent()->AsCallExpression()->Callee() == ident);

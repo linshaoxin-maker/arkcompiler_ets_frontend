@@ -121,12 +121,12 @@ public:
         typeParams_ = typeParams;
     }
 
-    [[nodiscard]] checker::Type *UncheckedType() const noexcept
+    [[nodiscard]] checker::CheckerType *UncheckedType() const noexcept
     {
         return uncheckedType_;
     }
 
-    void SetUncheckedType(checker::Type *type) noexcept
+    void SetUncheckedType(checker::CheckerType *type) noexcept
     {
         uncheckedType_ = type;
     }
@@ -179,13 +179,13 @@ protected:
     // for trailing lambda feature in ets
     ir::BlockStatement *trailingBlock_ {};
     bool isTrailingBlockInNewLine_ {false};
-    checker::Type *uncheckedType_ {};
+    checker::CheckerType *uncheckedType_ {};
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 
 private:
     bool IsETSConstructorCall() const;
-    checker::Type *InitAnonymousLambdaCallee(checker::ETSChecker *checker, Expression *callee,
-                                             checker::Type *calleeType);
+    checker::CheckerType *InitAnonymousLambdaCallee(checker::ETSChecker *checker, Expression *callee,
+                                                    checker::CheckerType *calleeType);
 };
 }  // namespace panda::es2panda::ir
 

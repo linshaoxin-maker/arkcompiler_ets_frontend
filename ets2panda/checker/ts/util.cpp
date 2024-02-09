@@ -80,7 +80,7 @@ bool TSChecker::IsAssignmentOperator(lexer::TokenType op)
     }
 }
 
-bool TSChecker::IsLiteralType(const Type *type)
+bool TSChecker::IsLiteralType(CheckerType *type)
 {
     if (type->IsBooleanType()) {
         return true;
@@ -112,19 +112,17 @@ ir::AstNode *TSChecker::FindAncestorUntilGivenType(ir::AstNode *node, ir::AstNod
     return node;
 }
 
-bool TSChecker::MaybeTypeOfKind(const Type *type, TypeFlag flags)
+bool TSChecker::MaybeTypeOfKind(CheckerType *type, TypeFlag flags)
 {
     if (type->HasTypeFlag(flags)) {
         return true;
     }
 
-    if (type->HasTypeFlag(TypeFlag::UNION_OR_INTERSECTION)) {
-        if (type->IsUnionType()) {
-            const auto &constituentTypes = type->AsUnionType()->ConstituentTypes();
-            for (auto *it : constituentTypes) {
-                if (MaybeTypeOfKind(it, flags)) {
-                    return true;
-                }
+    if (type->HasTypeFlag(TypeFlag::UNION_OR_INTERSECTION) && type->IsUnionType()) {
+        const auto &constituentTypes = type->AsUnionType()->ConstituentTypes();
+        for (auto *it : constituentTypes) {
+            if (MaybeTypeOfKind(it, flags)) {
+                return true;
             }
         }
     }
@@ -132,19 +130,17 @@ bool TSChecker::MaybeTypeOfKind(const Type *type, TypeFlag flags)
     return false;
 }
 
-bool TSChecker::MaybeTypeOfKind(const Type *type, ObjectType::ObjectTypeKind kind)
+bool TSChecker::MaybeTypeOfKind(CheckerType *type, ObjectType::ObjectTypeKind kind)
 {
     if (type->IsObjectType() && type->AsObjectType()->Kind() == kind) {
         return true;
     }
 
-    if (type->HasTypeFlag(TypeFlag::UNION_OR_INTERSECTION)) {
-        if (type->IsUnionType()) {
-            const auto &constituentTypes = type->AsUnionType()->ConstituentTypes();
-            for (auto *it : constituentTypes) {
-                if (MaybeTypeOfKind(it, kind)) {
-                    return true;
-                }
+    if (type->HasTypeFlag(TypeFlag::UNION_OR_INTERSECTION) && type->IsUnionType()) {
+        const auto &constituentTypes = type->AsUnionType()->ConstituentTypes();
+        for (auto *it : constituentTypes) {
+            if (MaybeTypeOfKind(it, kind)) {
+                return true;
             }
         }
     }

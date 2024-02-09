@@ -18,7 +18,7 @@
 #include <utility>
 
 namespace panda::es2panda::checker {
-IndexInfo *IndexInfo::Copy(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes)
+IndexInfo *IndexInfo::Copy(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes) const
 {
     return allocator->New<IndexInfo>(type_->Instantiate(allocator, relation, globalTypes), paramName_, readonly_);
 }
@@ -40,12 +40,12 @@ void IndexInfo::ToString(std::stringstream &ss, bool numIndex) const
     type_->ToString(ss);
 }
 
-void IndexInfo::Identical(TypeRelation *relation, IndexInfo *other)
+void IndexInfo::Identical(TypeRelation *relation, const IndexInfo *other) const
 {
     relation->IsIdenticalTo(type_, other->GetType());
 }
 
-void IndexInfo::AssignmentTarget(TypeRelation *relation, IndexInfo *source)
+void IndexInfo::AssignmentTarget(TypeRelation *relation, const IndexInfo *source) const
 {
     relation->IsAssignableTo(source->GetType(), type_);
 }

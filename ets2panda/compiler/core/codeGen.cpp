@@ -88,19 +88,19 @@ VReg CodeGen::AllocReg()
     return vreg;
 }
 
-VReg CodeGen::AllocRegWithType(const checker::Type *const type)
+VReg CodeGen::AllocRegWithType(checker::CheckerType *const type)
 {
     const VReg vreg(usedRegs_--);
     SetVRegType(vreg, type);
     return vreg;
 }
 
-void CodeGen::SetVRegType(const VReg vreg, const checker::Type *const type)
+void CodeGen::SetVRegType(const VReg vreg, checker::CheckerType *const type)
 {
     typeMap_.insert_or_assign(vreg, type);
 }
 
-const checker::Type *CodeGen::GetVRegType(const VReg vreg) const
+checker::CheckerType *CodeGen::GetVRegType(const VReg vreg) const
 {
     const auto it = typeMap_.find(vreg);
     return it != typeMap_.end() ? it->second : nullptr;

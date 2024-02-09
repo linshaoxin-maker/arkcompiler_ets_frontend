@@ -54,7 +54,7 @@ public:
     virtual void Finalize() noexcept = 0;
 
     [[nodiscard]] CodeGen *GetCodeGen() const noexcept;
-    [[nodiscard]] std::pair<SpillInfo, const checker::Type *> New() noexcept;
+    [[nodiscard]] std::pair<SpillInfo, checker::CheckerType *> New() noexcept;
     void Adjust(const std::unordered_set<VReg> &regs) noexcept;
 
 protected:
