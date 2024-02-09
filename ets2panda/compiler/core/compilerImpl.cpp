@@ -14,6 +14,7 @@
  */
 
 #include "compilerImpl.h"
+#include <optional>
 
 #include "compiler/core/ASTVerifier.h"
 #include "es2panda.h"
@@ -35,6 +36,7 @@
 #include "parser/TSparser.h"
 #include "parser/ETSparser.h"
 #include "parser/program/program.h"
+#include "util/ustring.h"
 #include "varbinder/JSBinder.h"
 #include "varbinder/ASBinder.h"
 #include "varbinder/TSBinder.h"
@@ -47,6 +49,10 @@
 #include "util/declgenEts2Ts.h"
 
 namespace ark::es2panda::compiler {
+
+using EmitCb = std::function<pandasm::Program *(compiler::CompilerContext *)>;
+using PhaseList = std::vector<compiler::Phase *>;
+using PhaseListGetter = std::function<PhaseList(ScriptExtension)>;
 
 void CompilerImpl::HandleContextLiterals(CompilerContext *context)
 {
@@ -74,6 +80,7 @@ ark::pandasm::Program *CompilerImpl::Emit(CompilerContext *context)
     return emitter->Finalize(context->DumpDebugInfo(), Signatures::ETS_GLOBAL);
 }
 
+#ifndef NDEBUG
 class ASTVerificationRunner {
 public:
     class Result {
@@ -116,7 +123,7 @@ public:
                 const ast_verifier::InvariantNameSet &accumulatedChecks)
     {
         for (const auto &[sourceName, ast] : astToCheck) {
-            const auto source = Source(sourceName, phaseName);
+            const auto source = Source {sourceName, phaseName};
             auto messages = verifier_.Verify(ast, accumulatedChecks);
             auto &sourcedReport = report_[source];
             std::copy(messages.begin(), messages.end(), std::back_inserter(sourcedReport));
@@ -173,6 +180,47 @@ private:
     std::unordered_set<std::string> treatAsErrors_;
 };
 
+using ApplyPhase = std::function<bool(Phase *)>;
+using VerifyPhase = std::function<void(util::StringView)>;
+using VerificationStrategy = std::function<bool(const PhaseList &)>;
+
+static std::optional<VerificationStrategy> BuildVerificationStrategy(const ApplyPhase &apply, const VerifyPhase &verify,
+                                                                     ScriptExtension extention,
+                                                                     const CompilerContext &context)
+{
+    const auto runAllChecks = context.Options()->verifierAllChecks;
+
+    const auto runAll = [apply, verify](const PhaseList &phases) {
+        for (auto *phase : phases) {
+            if (!apply(phase)) {
+                return false;
+            }
+            verify(phase->Name());
+        }
+        return true;
+    };
+
+    const auto runLast = [apply, verify](const PhaseList &phases) {
+        for (auto *phase : phases) {
+            if (!apply(phase)) {
+                return false;
+            }
+        }
+        verify(ast_verifier::VerificationContext::LAST_PHASE);
+        return true;
+    };
+
+    if (extention == ScriptExtension::ETS) {
+        if (runAllChecks) {
+            return std::make_optional(runAll);
+        }
+        return std::make_optional(runLast);
+    }
+    return std::nullopt;
+}
+
+#endif
+
 template <typename CodeGen, typename RegSpiller, typename FunctionEmitter, typename Emitter, typename AstCompiler>
 static CompilerContext::CodeGenCb MakeCompileJob()
 {
@@ -201,49 +249,6 @@ static void SetupPublicContext(public_lib::Context *context, const SourceFile *s
     context->compilerContext = compilerContext;
     context->emitter = compilerContext->GetEmitter();
 }
-
-#ifndef NDEBUG
-
-static bool RunVerifierAndPhases(ArenaAllocator &allocator, const CompilerContext &context,
-                                 public_lib::Context &publicContext, const std::vector<Phase *> &phases,
-                                 parser::Program &program)
-{
-    auto runner = ASTVerificationRunner(allocator, context);
-    auto verificationCtx = ast_verifier::VerificationContext {};
-    const auto runAllChecks = context.Options()->verifierAllChecks;
-
-    for (auto *phase : phases) {
-        if (!phase->Apply(&publicContext, &program)) {
-            return false;
-        }
-
-        if (runAllChecks) {
-            auto ast = runner.ExtractAst(program);
-            runner.Verify(ast, std::string {phase->Name()}, verificationCtx.AccumulatedChecks());
-        }
-        verificationCtx.IntroduceNewInvariants(phase->Name());
-    }
-
-    if (!runAllChecks) {
-        auto ast = runner.ExtractAst(program);
-        runner.Verify(ast, "AfterAllPhases", verificationCtx.AccumulatedChecks());
-    }
-
-    auto result = runner.DumpMessages();
-    if (auto warnings = result.Warnings().Build(); warnings != "[]") {
-        LOG(WARNING, ES2PANDA) << warnings;
-    }
-
-    if (auto errors = result.Errors().Build(); errors != "[]") {
-        ASSERT_PRINT(false, errors);
-    }
-
-    return true;
-}
-#endif
-
-using EmitCb = std::function<pandasm::Program *(compiler::CompilerContext *)>;
-using PhaseListGetter = std::function<std::vector<compiler::Phase *>(ScriptExtension)>;
 
 template <typename Parser, typename VarBinder, typename Checker, typename Analyzer, typename AstCompiler,
           typename CodeGen, typename RegSpiller, typename FunctionEmitter, typename Emitter>
@@ -280,23 +285,46 @@ static pandasm::Program *CreateCompiler(const CompilationUnit &unit, const Phase
     }
 
     const auto phases = getPhases(unit.ext);
-#ifndef NDEBUG
-    if (unit.ext == ScriptExtension::ETS) {
-        if (!RunVerifierAndPhases(allocator, context, publicContext, phases, program)) {
-            return nullptr;
-        }
-    } else {
-        for (auto *phase : phases) {
-            if (!phase->Apply(&publicContext, &program)) {
-                return nullptr;
+    const auto apply = [&publicContext, &program](Phase *phase) -> bool {
+        return phase->Apply(&publicContext, &program);
+    };
+    const auto applyAll = [&apply](const PhaseList &phaseList) {
+        for (auto *phase : phaseList) {
+            if (!apply(phase)) {
+                return false;
             }
         }
+        return true;
+    };
+
+#ifndef NDEBUG
+    auto runner = ASTVerificationRunner(allocator, context);
+    auto verificationCtx = ast_verifier::VerificationContext {};
+
+    const auto verify = [&verificationCtx, &runner, &program](util::StringView phaseName) {
+        verificationCtx.IntroduceNewInvariants(phaseName);
+        auto ast = runner.ExtractAst(program);
+        runner.Verify(ast, std::string {phaseName}, verificationCtx.AccumulatedChecks());
+    };
+
+    const auto doVerify = BuildVerificationStrategy(apply, verify, unit.ext, context);
+    auto success = doVerify ? (*doVerify)(phases) : applyAll(phases);
+    if (!success) {
+        return nullptr;
     }
+
+    auto result = runner.DumpMessages();
+    if (auto warnings = result.Warnings().Build(); warnings != "[]") {
+        LOG(WARNING, ES2PANDA) << warnings;
+    }
+
+    if (auto errors = result.Errors().Build(); errors != "[]") {
+        ASSERT_PRINT(false, errors);
+    }
+
 #else
-    for (auto *phase : phases) {
-        if (!phase->Apply(&publicContext, &program)) {
-            return nullptr;
-        }
+    if (!applyAll(phases)) {
+        return nullptr;
     }
 #endif
 

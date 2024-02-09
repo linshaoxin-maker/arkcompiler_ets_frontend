@@ -91,45 +91,55 @@ using InvariantNameSet = std::unordered_set<std::string>;
 
 class VerificationContext final {
 public:
+    VerificationContext()
+    {
+        introducedChecks_["ScopesInitPhase"] = std::make_optional(InvariantNameSet {
+            "NodeHasParentForAll",
+            "EveryChildHasValidParentForAll",
+            "VariableHasScopeForAll",
+        });
+        introducedChecks_["CheckerPhase"] = std::make_optional(InvariantNameSet {
+            "NodeHasTypeForAll",
+            "IdentifierHasVariableForAll",
+            "ArithmeticOperationValidForAll",
+            "SequenceExpressionHasLastTypeForAll",
+            "ForLoopCorrectlyInitializedForAll",
+            "VariableHasEnclosingScopeForAll",
+            "ModifierAccessValidForAll",
+            "ImportExportAccessValid",
+        });
+
+        const std::set<std::string> phasesWithoutNewChecks = {"OptionalLowering",
+                                                              "PromiseVoidInferencePhase",
+                                                              "StructLowering",
+                                                              "GenerateTsDeclarationsPhase",
+                                                              "InterfacePropertyDeclarationsPhase",
+                                                              "LambdaConstructionPhase",
+                                                              "ObjectIndexLowering",
+                                                              "OpAssignmentLowering",
+                                                              "PromiseVoidInferencePhase",
+                                                              "TupleLowering",
+                                                              "UnionLowering",
+                                                              "ExpandBracketsPhase"};
+        for (const auto &phase : phasesWithoutNewChecks) {
+            introducedChecks_[phase] = std::make_optional(InvariantNameSet {});
+        }
+
+        introducedChecks_.emplace(LAST_PHASE, std::make_optional(InvariantNameSet {}));
+        for (const auto &[_, checks] : introducedChecks_) {
+            introducedChecks_.at(LAST_PHASE)->insert(checks->begin(), checks->end());
+        }
+    }
+
     void IntroduceNewInvariants(util::StringView phaseName)
     {
-        auto invariantSet = [phaseName]() -> std::optional<InvariantNameSet> {
-            if (phaseName == "ScopesInitPhase") {
-                return {{
-                    "NodeHasParentForAll",
-                    "EveryChildHasValidParentForAll",
-                    "VariableHasScopeForAll",
-                }};
-            }
-            if (phaseName == "CheckerPhase") {
-                return {{
-                    "NodeHasTypeForAll",
-                    "IdentifierHasVariableForAll",
-                    "ArithmeticOperationValidForAll",
-                    "SequenceExpressionHasLastTypeForAll",
-                    "ForLoopCorrectlyInitializedForAll",
-                    "VariableHasEnclosingScopeForAll",
-                    "ModifierAccessValidForAll",
-                    "ImportExportAccessValid",
-                }};
-            }
-            const std::set<std::string> withoutAdditionalChecks = {"OptionalLowering",
-                                                                   "PromiseVoidInferencePhase",
-                                                                   "StructLowering",
-                                                                   "GenerateTsDeclarationsPhase",
-                                                                   "InterfacePropertyDeclarationsPhase",
-                                                                   "LambdaConstructionPhase",
-                                                                   "ObjectIndexLowering",
-                                                                   "OpAssignmentLowering",
-                                                                   "PromiseVoidInferencePhase",
-                                                                   "TupleLowering",
-                                                                   "UnionLowering",
-                                                                   "ExpandBracketsPhase"};
-            if (withoutAdditionalChecks.count(phaseName.Mutf8()) > 0) {
-                return {{}};
-            };
+        auto invariantSet = [phaseName, this]() -> std::optional<InvariantNameSet> {
             if (phaseName.Utf8().find("plugins-after") != std::string_view::npos) {
                 return {{}};
+            }
+            const auto phase = phaseName.Mutf8();
+            if (introducedChecks_.find(phase) != introducedChecks_.end()) {
+                return introducedChecks_.at(phase);
             }
             return std::nullopt;
         }();
@@ -146,7 +156,10 @@ public:
         return accumulatedChecks_;
     }
 
+    static constexpr const char *LAST_PHASE = "LastPhase";
+
 private:
+    std::unordered_map<std::string, std::optional<InvariantNameSet>> introducedChecks_ {};
     InvariantNameSet accumulatedChecks_ {};
 };
 

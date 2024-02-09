@@ -454,10 +454,10 @@ public:
         if (ast->IsETSPackageDeclaration()) {
             return {CheckDecision::CORRECT, CheckAction::SKIP_SUBTREE};
         }
-        if (IsImportLike(ast)) {
+        if (IsImportLikeStatement(ast)) {
             return {CheckDecision::CORRECT, CheckAction::SKIP_SUBTREE};
         }
-        if (IsExportLike(ast)) {
+        if (IsExportLikeStatement(ast)) {
             return {CheckDecision::CORRECT, CheckAction::SKIP_SUBTREE};
         }
 
@@ -485,12 +485,9 @@ public:
     }
 
 private:
-    bool IsImportLike(const ir::AstNode *ast) const
+    bool IsImportLikeStatement(const ir::AstNode *ast) const
     {
         if (ast->IsETSImportDeclaration()) {
-            return true;
-        }
-        if (ast->IsImportExpression()) {
             return true;
         }
         if (ast->IsImportSpecifier()) {
@@ -505,7 +502,7 @@ private:
         return false;
     }
 
-    bool IsExportLike(const ir::AstNode *ast) const
+    bool IsExportLikeStatement(const ir::AstNode *ast) const
     {
         if (ast->IsExportDefaultDeclaration()) {
             return true;
