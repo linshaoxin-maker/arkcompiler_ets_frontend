@@ -1463,6 +1463,8 @@ checker::Type *ETSAnalyzer::Check(ir::SequenceExpression *expr) const
     for (auto *it : expr->Sequence()) {
         it->Check(checker);
     }
+    ASSERT(!expr->Sequence().empty());
+    expr->SetTsType(expr->Sequence().back()->TsType());
     return nullptr;
 }
 
