@@ -86,22 +86,20 @@ static const Substitution *BuildImplicitSubstitutionForArguments(ETSChecker *che
                                                                  const ArenaVector<ir::Expression *> &arguments)
 {
     Substitution *substitution = checker->NewSubstitution();
-    auto *instantiatedTypeParams = checker->NewInstantiatedTypeParamsSet();
     auto *sigInfo = signature->GetSignatureInfo();
-    auto &typeParams = sigInfo->typeParams;
     for (size_t ix = 0; ix < arguments.size(); ix++) {
         auto *arg = arguments[ix];
         if (arg->IsObjectExpression()) {
             continue;
         }
-        auto *argType = arg->Check(checker);
-        argType = MaybeBoxedType(checker, argType, arg);
-        auto *paramType = (ix < signature->MinArgCount()) ? sigInfo->params[ix]->TsType() : sigInfo->restVar->TsType();
+        auto *argType = MaybeBoxedType(checker, arg->Check(checker), arg);
+        auto *paramType = (ix < signature->MinArgCount()) ? sigInfo->params[ix]->TsType()
+                          : sigInfo->restVar != nullptr   ? sigInfo->restVar->TsType()
+                                                          : nullptr;
         if (paramType == nullptr) {
             continue;
         }
-        if (!checker->EnhanceSubstitutionForType(typeParams, paramType, argType, substitution,
-                                                 instantiatedTypeParams)) {
+        if (!checker->EnhanceSubstitutionForType(sigInfo->typeParams, paramType, argType, substitution)) {
             return nullptr;
         }
     }
@@ -161,7 +159,10 @@ static Signature *MaybeSubstituteTypeParameters(ETSChecker *checker, Signature *
     const Substitution *substitution =
         (typeArguments != nullptr)
             ? BuildExplicitSubstitutionForArguments(checker, signature, typeArguments->Params(), pos, flags)
-            : BuildImplicitSubstitutionForArguments(checker, signature, arguments);
+            : (signature->GetSignatureInfo()->params.empty()
+                   ? nullptr
+                   : BuildImplicitSubstitutionForArguments(checker, signature, arguments));
+
     return (substitution == nullptr) ? nullptr : signature->Substitute(checker->Relation(), substitution);
 }
 
