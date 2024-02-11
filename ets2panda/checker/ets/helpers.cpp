@@ -1378,11 +1378,16 @@ std::vector<util::StringView> ETSChecker::GetNameForSynteticObjectType(const uti
 void ETSChecker::SetPropertiesForModuleObject(checker::ETSObjectType *moduleObjType, const util::StringView &importPath)
 {
     auto *etsBinder = static_cast<varbinder::ETSBinder *>(VarBinder());
-
     auto extRecords = etsBinder->GetGlobalRecordTable()->Program()->ExternalSources();
     auto res = [etsBinder, extRecords, importPath]() {
         auto r = extRecords.find(importPath);
-        return r != extRecords.end() ? r : extRecords.find(etsBinder->GetResolvedImportPath(importPath));
+        if (r == extRecords.end()) {
+            r = extRecords.find(etsBinder->GetResolvedImportPath(importPath));
+        }
+
+        return r != extRecords.end()
+                   ? r
+                   : extRecords.find(etsBinder->GetResolvedImportPath({importPath.Mutf8() + "/index"}));
     }();
 
     // Check imported properties before assigning them to module object

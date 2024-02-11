@@ -655,7 +655,8 @@ ArenaVector<parser::Program *> ETSBinder::GetExternalProgram(const util::StringV
                                                              const ir::StringLiteral *importPath)
 {
     const auto &extRecords = globalRecordTable_.Program()->ExternalSources();
-    auto recordRes = [this, extRecords, sourceName]() {
+    util::StringView sourceFolderPath = globalRecordTable_.Program()->SourceFileFolder();
+    auto recordRes = [this, extRecords, sourceName, sourceFolderPath, importPath]() {
         auto res = extRecords.find(sourceName);
         if (res != extRecords.end()) {
             return res;
@@ -667,7 +668,14 @@ ArenaVector<parser::Program *> ETSBinder::GetExternalProgram(const util::StringV
 
         res = extRecords.find(GetResolvedImportPath(sourceName));
         if (res == extRecords.end()) {
-            res = extRecords.find(GetResolvedImportPath({sourceName.Mutf8() + "/index"}));
+            std::string indexFilePath = sourceName.Mutf8() + "/index";
+            if (util::Helpers::IsRealPath({sourceFolderPath.Mutf8() + "/" + indexFilePath})) {
+                res = extRecords.find(GetResolvedImportPath({indexFilePath}));
+            } else {
+                ThrowError(importPath->Start(),
+                           "Import target should be a file, a package or a folder, which contains an 'index.ts' "
+                           "or 'index.ets' file.");
+            }
         }
 
         return res;

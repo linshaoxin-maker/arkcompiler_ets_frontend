@@ -1913,7 +1913,7 @@ checker::Type *ETSAnalyzer::Check(ir::ImportNamespaceSpecifier *st) const
     checker->SetPropertiesForModuleObject(
         lastObjectType,
         (importDecl->Module() != nullptr)
-            ? util::UString(importPath.Mutf8() + importDecl->Module()->Str().Mutf8(), checker->Allocator()).View()
+            ? util::UString(importPath.Mutf8() + "/" + importDecl->Module()->Str().Mutf8(), checker->Allocator()).View()
             : importPath);
     checker->SetrModuleObjectTsType(st->Local(), lastObjectType);
 
