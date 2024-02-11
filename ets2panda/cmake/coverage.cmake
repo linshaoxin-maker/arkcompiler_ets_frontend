@@ -30,6 +30,7 @@ if(ENABLE_ES2PANDA_COVERAGE)
     collect_coverage_for_target(
         TARGET_NAME es2panda_coverage
         INCLUDE_DIR_PATTERN '*/es2panda/*'
+        EXCLUDE_DIR_PATTERN '*/es2panda/public/*'
     )
 else()
     message(STATUS "Coverage will not be calculated (may be enabled by -DENABLE_ES2PANDA_COVERAGE=true ).")
