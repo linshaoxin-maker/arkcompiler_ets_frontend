@@ -1528,7 +1528,7 @@ ETSFunctionType *ETSChecker::FindFunctionInVectorGivenByName(util::StringView na
 bool ETSChecker::IsFunctionContainsSignature(ETSFunctionType *funcType, Signature *signature)
 {
     for (auto *it : funcType->CallSignatures()) {
-        Relation()->IsIdenticalTo(it, signature);
+        Relation()->IsCompatibleTo(it, signature);
         if (Relation()->IsTrue()) {
             return true;
         }
@@ -1541,7 +1541,7 @@ void ETSChecker::CheckFunctionContainsClashingSignature(const ETSFunctionType *f
 {
     for (auto *it : funcType->CallSignatures()) {
         SavedTypeRelationFlagsContext strfCtx(Relation(), TypeRelationFlag::NONE);
-        Relation()->IsIdenticalTo(it, signature);
+        Relation()->IsCompatibleTo(it, signature);
         if (Relation()->IsTrue() && it->Function()->Id()->Name() == signature->Function()->Id()->Name()) {
             std::stringstream ss;
             it->ToString(ss, nullptr, true);
