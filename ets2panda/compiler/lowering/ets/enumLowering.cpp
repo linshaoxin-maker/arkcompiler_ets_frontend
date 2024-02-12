@@ -30,7 +30,7 @@
 
 #include "ir/ts/tsEnumDeclaration.h"
 
-namespace panda::es2panda::compiler {
+namespace ark::es2panda::compiler {
 
 // const char* EnumConstantClassName = "EnumConst";
 const char *ENUM_INT_BASE_CLASS_NAME = "EnumIntType";
@@ -389,4 +389,4 @@ bool EnumLowering::Perform(public_lib::Context *ctx, parser::Program *program)
     return true;
 }
 
-}  // namespace panda::es2panda::compiler
+}  // namespace ark::es2panda::compiler
