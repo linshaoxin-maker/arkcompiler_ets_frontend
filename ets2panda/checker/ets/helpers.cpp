@@ -1253,7 +1253,6 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
     if (annotationType != nullptr) {
         const Type *targetType = TryGettingFunctionTypeFromInvokeFunction(annotationType);
         const Type *sourceType = TryGettingFunctionTypeFromInvokeFunction(initType);
-
         AssignmentContext(Relation(), init, initType, annotationType, init->Start(),
                           {"Type '", sourceType, "' cannot be assigned to type '", targetType, "'"});
         if (isConst && initType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) &&
