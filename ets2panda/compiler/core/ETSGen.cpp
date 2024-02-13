@@ -2599,6 +2599,11 @@ void ETSGen::LoadArrayElement(const ir::AstNode *node, VReg objectReg)
             Ra().Emit<LdarrObj>(node, objectReg);
             break;
         }
+        // WARNING: this seems to fix assert bu cause later run-time verifier failures
+        case checker::TypeFlag::ETS_ENUM2_TYPE: {
+            Ra().Emit<LdarrObj>(node, objectReg);
+            break;
+        }
 
         default: {
             UNREACHABLE();
