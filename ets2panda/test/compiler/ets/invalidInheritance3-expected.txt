@@ -702,4 +702,3 @@
     }
   }
 }
-TypeError: Cannot inherit from class A, because field a is inherited with a different declaration type [invalidInheritance3.ets:20:17]
