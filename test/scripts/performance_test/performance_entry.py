@@ -177,8 +177,8 @@ class MailHelper():
                 if len(dic) > 0:
                     df_inserted = pd.DataFrame(dic, index=self.time_index)
                     df = df._append(df_inserted)
-                    if len(df) > 10:
-                        df = df[1:len(df)]
+                if len(df) > 10:
+                    df = df[1:len(df)]
                 df.to_csv(csv_filename)
                 y_lable = 'build time (s)' if log_type < performance_config.LogType.SIZE else 'size (Byte)'
                 self.draw_pic(df, pic_name, title_name, y_lable)
