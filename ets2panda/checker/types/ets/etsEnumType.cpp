@@ -48,6 +48,11 @@ void ETSEnumInterface::AssignmentTarget(TypeRelation *const relation, Type *cons
 
 void ETSEnumInterface::Cast(TypeRelation *relation, Type *target)
 {
+    if (target->HasTypeFlag(TypeFlag::ENUM | TypeFlag::ETS_ENUM | TypeFlag::ETS_STRING_ENUM)) {
+        conversion::Identity(relation, this, target);
+        return;
+    }
+
     if (target->IsIntType()) {
         relation->Result(true);
         return;
@@ -87,7 +92,7 @@ void ETSEnumInterface::ToDebugInfoType(std::stringstream &ss) const
     ToDebugInfoTypeImpl<UType>(ss);
 }
 
-void ETSEnumInterface::ToString(std::stringstream &ss) const
+void ETSEnumInterface::ToString(std::stringstream &ss, [[maybe_unused]] bool precise) const
 {
     ss << decl_->Key()->Name();
 }
