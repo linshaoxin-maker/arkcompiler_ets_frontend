@@ -13,22 +13,22 @@
  * limitations under the License.
  */
 
-#ifndef ES2PANDA_COMPILER_LOWERING_ENUM_LOWERING_H
-#define ES2PANDA_COMPILER_LOWERING_ENUM_LOWERING_H
+#ifndef ES2PANDA_COMPILER_LOWERING_ENUM_LOWERING_PREPHASE_H
+#define ES2PANDA_COMPILER_LOWERING_ENUM_LOWERING_PREPHASE_H
 
 #include "compiler/lowering/phase.h"
 
 namespace ark::es2panda::compiler {
 
-class EnumLowering : public Phase {
+class EnumLoweringPrePhase : public Phase {
 public:
     std::string_view Name() override
     {
-        return "EnumLowering";
+        return "EnumLoweringPrePhase";
     }
     bool Perform(public_lib::Context *ctx, parser::Program *program) override;
 };
 
 }  // namespace ark::es2panda::compiler
 
-#endif
+#endif  // ES2PANDA_COMPILER_LOWERING_ENUM_LOWERING_PREPHASE_H

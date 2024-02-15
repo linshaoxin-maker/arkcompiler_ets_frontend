@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "enumLowering.h"
+#include "enumLoweringPrePhase.h"
 #include "compiler/lowering/scopesInit/scopesInitPhase.h"
 
 #include "varbinder/variableFlags.h"
@@ -363,7 +363,7 @@ ir::AstNode *CreateEnumClassFromEnumDeclaration(ir::TSEnumDeclaration *enum_decl
     return class_decl;
 }
 
-bool EnumLowering::Perform(public_lib::Context *ctx, parser::Program *program)
+bool EnumLoweringPrePhase::Perform(public_lib::Context *ctx, parser::Program *program)
 {
     if (program->Extension() != ScriptExtension::ETS) {
         return true;
