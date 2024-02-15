@@ -32,8 +32,7 @@ class ETSAnalyzer;
 namespace ark::es2panda::ir {
 
 // NOLINTBEGIN(modernize-avoid-c-arrays)
-inline constexpr char const INDEX_ACCESS_ERROR_1[] = "The special index access method '";
-inline constexpr char const INDEX_ACCESS_ERROR_2[] = "' cannot be asynchronous.";
+inline constexpr char const PREDEFINED_METHOD[] = "The special predefined method '";
 // NOLINTEND(modernize-avoid-c-arrays)
 
 enum class MemberExpressionKind : uint32_t {
@@ -69,7 +68,7 @@ public:
     {
     }
 
-    explicit MemberExpression(Tag tag, MemberExpression const &other, Expression *object, Expression *property);
+    explicit MemberExpression(Tag tag, MemberExpression const &other, ArenaAllocator *allocator);
 
     // NOTE (csabahurton): these friend relationships can be removed once there are getters for private fields
     friend class compiler::JSCompiler;
@@ -83,6 +82,12 @@ public:
     [[nodiscard]] const Expression *Object() const noexcept
     {
         return object_;
+    }
+
+    void SetObject(Expression *object) noexcept
+    {
+        object_ = object;
+        object_->SetParent(this);
     }
 
     [[nodiscard]] Expression *Property() noexcept
@@ -160,20 +165,9 @@ public:
         return uncheckedType_;
     }
 
-    checker::Type *GetTupleConvertedType() const noexcept
-    {
-        return tupleConvertedType_;
-    }
-
-    void SetTupleConvertedType(checker::Type *convType) noexcept
-    {
-        tupleConvertedType_ = convType;
-    }
-
     [[nodiscard]] bool IsPrivateReference() const noexcept;
 
-    // NOLINTNEXTLINE(google-default-arguments)
-    [[nodiscard]] MemberExpression *Clone(ArenaAllocator *allocator, AstNode *parent = nullptr) override;
+    [[nodiscard]] MemberExpression *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
     void TransformChildren(const NodeTransformer &cb) override;
     void Iterate(const NodeTraverser &cb) const override;
@@ -200,6 +194,7 @@ protected:
         ignoreBox_ = other.ignoreBox_;
         propVar_ = other.propVar_;
         // Note! Probably, we need to do 'Instantiate(...)' but we haven't access to 'Relation()' here...
+        uncheckedType_ = other.uncheckedType_;
         objType_ = other.objType_;
     }
 
@@ -211,6 +206,8 @@ private:
     checker::Type *AdjustType(checker::ETSChecker *checker, checker::Type *type);
     checker::Type *CheckComputed(checker::ETSChecker *checker, checker::Type *baseType);
     checker::Type *CheckUnionMember(checker::ETSChecker *checker, checker::Type *baseType);
+    checker::Type *TraverseUnionMember(checker::ETSChecker *checker, checker::ETSUnionType *unionType,
+                                       checker::Type *commonPropType);
 
     void CheckArrayIndexValue(checker::ETSChecker *checker) const;
     checker::Type *CheckIndexAccessMethod(checker::ETSChecker *checker);
@@ -226,7 +223,6 @@ private:
     checker::Type *uncheckedType_ {};
     varbinder::LocalVariable *propVar_ {};
     checker::ETSObjectType *objType_ {};
-    checker::Type *tupleConvertedType_ {};
 };
 }  // namespace ark::es2panda::ir
 

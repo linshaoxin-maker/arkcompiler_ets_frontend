@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
 
 #ifndef ES2PANDA_COMPILER_LOWERING_OBJECT_INDEX_ACCESS_H
 #define ES2PANDA_COMPILER_LOWERING_OBJECT_INDEX_ACCESS_H
@@ -27,7 +26,7 @@ namespace ark::es2panda::compiler {
 
 class ObjectIndexLowering : public Phase {
 public:
-    std::string_view Name() override
+    std::string_view Name() const override
     {
         return "ObjectIndexLowering";
     }

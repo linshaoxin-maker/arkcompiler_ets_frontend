@@ -71,10 +71,21 @@ public:
     ir::Expression *CreateFormattedExpression(std::string_view const sourceCode, std::string_view const fileName,
                                               Args &&...args)
     {
+        std::vector<ir::AstNode *> insertingNodes {args...};
+        return CreateFormattedExpression(sourceCode, insertingNodes, fileName);
+    }
+
+    ir::Statement *CreateFormattedStatement(std::string_view sourceCode, std::vector<ir::AstNode *> &insertingNodes,
+                                            std::string_view fileName = DEFAULT_SOURCE_FILE);
+
+    template <typename... Args>
+    ir::Statement *CreateFormattedStatement(std::string_view const sourceCode, std::string_view const fileName,
+                                            Args &&...args)
+    {
         std::vector<ir::AstNode *> insertingNodes {};
         insertingNodes.reserve(sizeof...(Args));
         (insertingNodes.emplace_back(std::forward<Args>(args)), ...);
-        return CreateFormattedExpression(sourceCode, insertingNodes, fileName);
+        return CreateFormattedStatement(sourceCode, insertingNodes, fileName);
     }
 
     ArenaVector<ir::Statement *> CreateStatements(std::string_view sourceCode,
@@ -88,8 +99,7 @@ public:
     ArenaVector<ir::Statement *> CreateFormattedStatements(std::string_view const sourceCode,
                                                            std::string_view const fileName, Args &&...args)
     {
-        std::vector<ir::AstNode *> insertingNodes {};
-        (insertingNodes.emplace(std::forward<Args>(args)), ...);
+        std::vector<ir::AstNode *> insertingNodes {args...};
         return CreateFormattedStatements(sourceCode, insertingNodes, fileName);
     }
 
@@ -199,7 +209,7 @@ private:
     ir::MethodDefinition *CreateProxyConstructorDefinition(ir::MethodDefinition const *const method);
     void AddProxyOverloadToMethodWithDefaultParams(ir::MethodDefinition *method, ir::Identifier *identNode = nullptr);
     static std::string PrimitiveTypeToName(ir::PrimitiveType type);
-    std::string GetNameForTypeNode(const ir::TypeNode *typeAnnotation, bool adjust = true) const;
+    std::string GetNameForTypeNode(const ir::TypeNode *typeAnnotation) const;
     std::string GetNameForETSUnionType(const ir::TypeNode *typeAnnotation) const;
     ir::TSInterfaceDeclaration *ParseInterfaceBody(ir::Identifier *name, bool isStatic);
     bool IsArrowFunctionExpressionStart();
@@ -231,8 +241,11 @@ private:
     ir::AstNode *ParseTypeLiteralOrInterfaceMember() override;
     void ParseNameSpaceSpecifier(ArenaVector<ir::AstNode *> *specifiers, bool isReExport = false);
     bool CheckModuleAsModifier();
+    ir::Expression *ParseFunctionParameterExpression(ir::AnnotatedExpression *paramIdent,
+                                                     ir::ETSUndefinedType *defaultUndef);
     ir::Expression *ParseFunctionParameter() override;
     ir::AnnotatedExpression *GetAnnotatedExpressionFromParam();
+    ir::ETSUnionType *CreateOptionalParameterTypeNode(ir::TypeNode *typeAnnotation, ir::ETSUndefinedType *defaultUndef);
     // NOLINTNEXTLINE(google-default-arguments)
     ir::Expression *ParseUnaryOrPrefixUpdateExpression(
         ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS) override;
@@ -266,6 +279,10 @@ private:
     ir::AstNode *ParseInnerRest(const ArenaVector<ir::AstNode *> &properties, ir::ClassDefinitionModifiers modifiers,
                                 ir::ModifierFlags memberModifiers, ir::Identifier *identNode,
                                 const lexer::SourcePosition &startLoc);
+
+    ir::ClassDefinition *CreateClassDefinitionForNewExpression(ArenaVector<ir::Expression *> &arguments,
+                                                               ir::TypeNode *typeReference,
+                                                               ir::TypeNode *baseTypeReference);
     ir::Expression *ParseNewExpression() override;
     ir::Expression *ParseAsyncExpression();
     ir::Expression *ParseAwaitExpression();
@@ -298,7 +315,7 @@ private:
     ir::Expression *ParseLaunchExpression(ExpressionParseFlags flags);
     void ValidateInstanceOfExpression(ir::Expression *expr);
     void ValidateRestParameter(ir::Expression *param) override;
-    void CheckIndexAccessMethod(ir::ScriptFunction const *function, const lexer::SourcePosition &position) const;
+    void CheckPredefinedMethods(ir::ScriptFunction const *function, const lexer::SourcePosition &position) const;
 
     bool CheckClassElement(ir::AstNode *property, ir::MethodDefinition *&ctor,
                            ArenaVector<ir::AstNode *> &properties) override;
@@ -349,29 +366,14 @@ private:
     inline static constexpr char const DEFAULT_PROXY_FILE[] = "<default_method>.ets";
     // NOLINTEND(modernize-avoid-c-arrays)
 
-    // NOLINTBEGIN(google-default-arguments)
     ir::Statement *CreateStatement(std::string_view sourceCode, std::string_view fileName = DEFAULT_SOURCE_FILE);
-    ir::Statement *CreateFormattedStatement(std::string_view sourceCode, std::vector<ir::AstNode *> &insertingNodes,
-                                            std::string_view fileName = DEFAULT_SOURCE_FILE);
-    // NOLINTEND(google-default-arguments)
 
-    template <typename... Args>
-    ir::Statement *CreateFormattedStatement(std::string_view const sourceCode, std::string_view const fileName,
-                                            Args &&...args)
-    {
-        std::vector<ir::AstNode *> insertingNodes {};
-        (insertingNodes.emplace(std::forward<Args>(args)), ...);
-        return CreateFormattedStatement(sourceCode, insertingNodes, fileName);
-    }
-
-    // NOLINTBEGIN(google-default-arguments)
     ir::MethodDefinition *CreateMethodDefinition(ir::ModifierFlags modifiers, std::string_view sourceCode,
                                                  std::string_view fileName = DEFAULT_SOURCE_FILE);
     ir::MethodDefinition *CreateConstructorDefinition(ir::ModifierFlags modifiers, std::string_view sourceCode,
                                                       std::string_view fileName = DEFAULT_SOURCE_FILE);
     ir::TypeNode *CreateTypeAnnotation(TypeAnnotationParsingOptions *options, std::string_view sourceCode,
                                        std::string_view fileName = DEFAULT_SOURCE_FILE);
-    // NOLINTEND(google-default-arguments)
 
     friend class ExternalSourceParser;
     friend class InnerSourceParser;
