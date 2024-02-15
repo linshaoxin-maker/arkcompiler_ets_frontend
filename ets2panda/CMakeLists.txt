@@ -150,6 +150,7 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/phase.cpp
   compiler/lowering/plugin_phase.cpp
   compiler/lowering/util.cpp
+  compiler/lowering/ets/enumLoweringPostPhase.cpp
   compiler/lowering/ets/enumLoweringPrePhase.cpp
   compiler/lowering/ets/lambdaLowering.cpp
   compiler/lowering/ets/generateDeclarations.cpp

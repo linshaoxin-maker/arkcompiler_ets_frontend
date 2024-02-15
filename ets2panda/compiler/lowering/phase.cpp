@@ -21,6 +21,7 @@
 #include "compiler/lowering/ets/expandBrackets.h"
 #include "compiler/lowering/ets/recordLowering.h"
 #include "compiler/lowering/ets/enumLoweringPrePhase.h"
+#include "compiler/lowering/ets/enumLoweringPostPhase.h"
 #include "compiler/lowering/ets/generateDeclarations.h"
 #include "compiler/lowering/ets/lambdaLowering.h"
 #include "compiler/lowering/ets/interfacePropertyDeclarations.h"
@@ -67,6 +68,7 @@ static RecordLowering g_recordLowering;
 static StructLowering g_structLowering;
 static DefaultParameterLowering g_defaultParameterLowering;
 static EnumLoweringPrePhase g_enumLoweringPrePhase;
+static EnumLoweringPostPhase g_enumLoweringPostPhase;
 static PluginPhase g_pluginsAfterParse {"plugins-after-parse", ES2PANDA_STATE_PARSED, &util::Plugin::AfterParse};
 static PluginPhase g_pluginsAfterCheck {"plugins-after-check", ES2PANDA_STATE_CHECKED, &util::Plugin::AfterCheck};
 static PluginPhase g_pluginsAfterLowerings {"plugins-after-lowering", ES2PANDA_STATE_LOWERED,
@@ -101,6 +103,7 @@ std::vector<Phase *> GetETSPhaseList()
         &g_tupleLowering,
         &g_unionLowering,
         &g_expandBracketsPhase,
+        &g_enumLoweringPostPhase,
         &g_pluginsAfterLowerings,
     };
 }

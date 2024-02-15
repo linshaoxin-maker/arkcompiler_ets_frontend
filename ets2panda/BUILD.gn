@@ -160,6 +160,7 @@ libes2panda_sources = [
   "compiler/lowering/checkerPhase.cpp",
   "compiler/lowering/ets/bigintLowering.cpp",
   "compiler/lowering/ets/defaultParameterLowering.cpp",
+  "compiler/lowering/ets/enumLoweringPostPhase.cpp",
   "compiler/lowering/ets/enumLoweringPrePhase.cpp",
   "compiler/lowering/ets/expandBrackets.cpp",
   "compiler/lowering/ets/generateDeclarations.cpp",
