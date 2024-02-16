@@ -42,6 +42,16 @@ public:
         return test_;
     }
 
+    Expression *Test()
+    {
+        return test_;
+    }
+
+    void SetTest(Expression *test)
+    {
+        test_ = test;
+    }
+
     Statement *Consequent()
     {
         return consequent_;
