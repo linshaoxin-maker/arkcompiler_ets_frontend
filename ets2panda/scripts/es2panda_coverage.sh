@@ -16,7 +16,7 @@
 
 set -e
 
-export PATH=~/.venv-panda/bin:$PATH
+# export PATH=~/.venv-panda/bin:$PATH
 
 for ARGUMENT in "$@"
 do
@@ -30,17 +30,18 @@ case "$ARGUMENT" in
 esac
 done
 
-# echo "before activate"
-# source $PANDA_ROOT/scripts/python/venv-utils.sh
-# activate_venv
-# set +e
-# echo "after activate"
+echo nproc=`nproc`
+echo "before activate"
+source $PANDA_ROOT/scripts/python/venv-utils.sh
+activate_venv
+set +e
+echo "after activate"
 
-bash -c "python3 $PANDA_ROOT/tools/es2panda/scripts/test_runner.py \
-    --builddir $PANDA_BINARY_ROOT --arkdir $PANDA_ROOT --all"
+python3 $PANDA_ROOT/tools/es2panda/scripts/test_runner.py \
+    --builddir $PANDA_BINARY_ROOT --arkdir $PANDA_ROOT --all
 
-# set -e
-# deactivate_venv
+set -e
+deactivate_venv
 
 gcov $PANDA_BINARY_ROOT/tools/es2panda/CMakeFiles/es2panda-lib.dir/*/*
 
