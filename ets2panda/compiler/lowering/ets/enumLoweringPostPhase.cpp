@@ -211,7 +211,6 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
                     }
                     // ok now we need  to replace 'if (v)' to 'if (v.getValue() != 0)'
                     // NOTE: what about string as enum constant?
-                    auto *parent = ast->Parent();
                     ir::AstNode *node = nullptr;
                     if (ast->IsIfStatement()) {
                         node = CreateCallExpression_if(ast, ctx->compilerContext);
@@ -227,7 +226,6 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
                         std::cout << "ERRPR: can't create proper substitution!" << std::endl;
                         return ast;
                     }
-                    node->SetParent(parent);
                     if (0)
                         std::cout << "Updated node: " << node->DumpJSON() << std::endl;
 
@@ -236,8 +234,17 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
                     // ..
                 }
             } else if (test->IsCallExpression()) {
-                // simple callexpression with default non-zero test
-                // need  to checkif we'recalling to getValue() fo enum constant
+                // simple call expression with default non-zero test, i.e.
+                //
+                //   if (v.getValue())
+                //
+                // this iwll always be treated as 'true' sine getValue() returns the EnumConst
+                // object,but not the enum  value
+                //
+                // need  to checkif we're calling to getValue() for enum constant
+                // and convert it intobinary expression with '!= 0' test, i.e.
+                //
+                //   if (v.getValue() != 0)
             }
         }
         return ast;
