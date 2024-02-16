@@ -30,40 +30,82 @@
 
 namespace ark::es2panda::compiler {
 
-ir::AstNode *CreateCallExpression(ir::AstNode *ast, CompilerContext *ctx)
+ir::CallExpression *CreateCallExpression(ir::Identifier *id, checker::ETSChecker *checker)
 {
-    // only identifiers allowed here!
-    ASSERT(ast->IsIfStatement() && ast->AsIfStatement()->Test()->IsIdentifier());
-
-    auto *checker = ctx->Checker()->AsETSChecker();
-    [[maybe_unused]] auto *id =
-        checker->AllocNode<ir::Identifier>(ast->AsIfStatement()->Test()->AsIdentifier()->Name(),
-                                           checker->Allocator());  // ast->AsIfStatement()->Test()->AsIdentifier();
-    id->SetReference();
     auto *const callee = checker->AllocNode<ir::Identifier>(util::StringView("getValue"), checker->Allocator());
     callee->SetReference();
-
     ir::Expression *const accessor =
-        checker->AllocNode<ir::MemberExpression>(id,  // ast->AsIfStatement()->Test()->AsIdentifier(),
-                                                 callee, ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
+        checker->AllocNode<ir::MemberExpression>(id, callee, ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
     id->SetParent(accessor);
     callee->SetParent(accessor);
 
     ir::CallExpression *callExpression = checker->AllocNode<ir::CallExpression>(
         accessor, ArenaVector<ir::Expression *>(checker->Allocator()->Adapter()), nullptr, false);
     accessor->SetParent(callExpression);
+    return callExpression;
+}
 
+ir::Expression *CreateTestExpre(ir::Identifier *id, checker::ETSChecker *checker)
+{
+    auto *callExpression = CreateCallExpression(id, checker);
     auto *right = checker->AllocNode<ir::NumberLiteral>(util::StringView("0"));
     ir::Expression *testExpr =
         checker->AllocNode<ir::BinaryExpression>(callExpression, right, lexer::TokenType::PUNCTUATOR_NOT_EQUAL);
-    // testExpr->SetTsType(testExpr->Check(checker));
     callExpression->SetParent(testExpr);
     right->SetParent(testExpr);
+    return testExpr;
+}
+
+ir::AstNode *CreateCallExpression_if(ir::AstNode *ast, CompilerContext *ctx)
+{
+    // only identifiers allowed here!
+    ASSERT(ast->IsIfStatement() && ast->AsIfStatement()->Test()->IsIdentifier());
+
+    auto *checker = ctx->Checker()->AsETSChecker();
+    [[maybe_unused]] auto *id =
+        checker->AllocNode<ir::Identifier>(ast->AsIfStatement()->Test()->AsIdentifier()->Name(), checker->Allocator());
+    id->SetReference();
+
+    auto *testExpr = CreateTestExpre(id, checker);
 
     auto *test = checker->AllocNode<ir::IfStatement>(testExpr, ast->AsIfStatement()->Consequent(),
                                                      ast->AsIfStatement()->Alternate());
     testExpr->SetParent(test);
     return test;
+}
+
+ir::AstNode *CreateCallExpression_while(ir::AstNode *ast, CompilerContext *ctx)
+{
+    // only identifiers allowed here!
+    ASSERT(ast->IsWhileStatement() && ast->AsWhileStatement()->Test()->IsIdentifier());
+
+    auto *checker = ctx->Checker()->AsETSChecker();
+    [[maybe_unused]] auto *id = checker->AllocNode<ir::Identifier>(
+        ast->AsWhileStatement()->Test()->AsIdentifier()->Name(), checker->Allocator());
+    id->SetReference();
+
+    auto *testExpr = CreateTestExpre(id, checker);
+
+    auto *expr = checker->AllocNode<ir::WhileStatement>(testExpr, ast->AsWhileStatement()->Body());
+    testExpr->SetParent(expr);
+    return expr;
+}
+
+ir::AstNode *CreateCallExpression_do_while(ir::AstNode *ast, CompilerContext *ctx)
+{
+    // only identifiers allowed here!
+    ASSERT(ast->IsDoWhileStatement() && ast->AsDoWhileStatement()->Test()->IsIdentifier());
+
+    auto *checker = ctx->Checker()->AsETSChecker();
+    [[maybe_unused]] auto *id = checker->AllocNode<ir::Identifier>(
+        ast->AsDoWhileStatement()->Test()->AsIdentifier()->Name(), checker->Allocator());
+    id->SetReference();
+
+    auto *testExpr = CreateTestExpre(id, checker);
+
+    auto *expr = checker->AllocNode<ir::DoWhileStatement>(ast->AsDoWhileStatement()->Body(), testExpr);
+    testExpr->SetParent(expr);
+    return expr;
 }
 
 bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *program)
@@ -93,65 +135,65 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
             // }
             //
             // so the foo(1) should be translated to foo(Color.Blue)
-        } else if (ast->IsIfStatement()) {
+        } else if (ast->IsBinaryExpression()) {
+            // auto *rightExpr = AllocNode<ir::BinaryExpression>(left, rightExpr, operatorType);
+            [[maybe_unused]] auto *left = ast->AsBinaryExpression()->Left();
+            [[maybe_unused]] auto *right = ast->AsBinaryExpression()->Right();
+
+        } else if (ast->IsIfStatement() || ast->IsWhileStatement() || ast->IsDoWhileStatement()) {
             // so far let's put this only for test script
-            if (program->SourceFile().GetFileName() == util::StringView("40.01")) {
-                std::cout << "File: " << program->SourceFile().GetFileName()
-                          << ": test statement: " << ast->AsIfStatement()->Test()->DumpJSON() << std::endl;
-                auto *test = ast->AsIfStatement()->Test();
-                if (test->IsIdentifier()) {
-                    std::cout << "Found Identifier:  " << test->AsIdentifier()->Name() << std::endl;
-                    // we got simple variable test expression, test against  non-zero value
-                    ASSERT(test->AsIdentifier()->Variable() != nullptr);
-                    auto *type = checker->GetTypeOfVariable(test->AsIdentifier()->Variable());
-                    ASSERT(type != nullptr);
-                    if (type->IsETSEnum2Type()) {
-                        std::cout << "Found type: ETSEnum2Type: " << type << std::endl;
-                        // ok now we need  to replace 'if (v)' to 'if (v.getValue() != 0)'
-                        // NOTE: what about string as enum constant?
-                        auto *parent = ast->Parent();
-                        auto *const scope = NearestScope(test);
-                        auto expressionCtx =
-                            varbinder::LexicalScope<varbinder::Scope>::Enter(checker->VarBinder(), scope);
-                        auto *node = CreateCallExpression(ast, ctx->compilerContext);
-                        node->SetParent(parent);
-                        std::cout << "Updated node: " << node->DumpJSON() << std::endl;
+            const ir::Expression *test = nullptr;
+            if (ast->IsIfStatement())
+                test = ast->AsIfStatement()->Test();
+            if (ast->IsWhileStatement())
+                test = ast->AsWhileStatement()->Test();
+            if (ast->IsDoWhileStatement())
+                test = ast->AsDoWhileStatement()->Test();
 
-                        InitScopesPhaseETS::RunExternalNode(node, ctx->compilerContext->VarBinder());
+            std::cout << "File: " << program->SourceFile().GetFileName() << ": test statement: " << test->DumpJSON()
+                      << std::endl;
+            if (test->IsIdentifier()) {
+                std::cout << "Found Identifier:  " << test->AsIdentifier()->Name() << std::endl;
+                // we got simple variable test expression, test against  non-zero value
+                // ASSERT(test->AsIdentifier()->Variable() != nullptr);
+                if (test->AsIdentifier()->Variable() == nullptr) {
+                    return ast;
+                }
+                auto *type = checker->GetTypeOfVariable(test->AsIdentifier()->Variable());
+                ASSERT(type != nullptr);
+                if (type->IsETSEnum2Type()) {
+                    std::cout << "Found type: ETSEnum2Type: " << type << std::endl;
+                    // ok now we need  to replace 'if (v)' to 'if (v.getValue() != 0)'
+                    // NOTE: what about string as enum constant?
+                    auto *parent = ast->Parent();
+                    auto *const scope = NearestScope(test);
+                    auto expressionCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(checker->VarBinder(), scope);
+                    ir::AstNode *node = nullptr;
+                    if (ast->IsIfStatement())
+                        node = CreateCallExpression_if(ast, ctx->compilerContext);
+                    if (ast->IsWhileStatement())
+                        node = CreateCallExpression_while(ast, ctx->compilerContext);
+                    if (ast->IsDoWhileStatement())
+                        node = CreateCallExpression_do_while(ast, ctx->compilerContext);
 
-                        checker->VarBinder()->AsETSBinder()->ResolveReferencesForScope(node, scope);
-                        node->Check(checker);
-                        return node;
-                    } else {
-                        // ..
+                    if (node == nullptr) {
+                        std::cout << "ERRPR: can't create proper substitution!" << std::endl;
+                        return ast;
                     }
-                } else if (test->IsCallExpression()) {
-                    // simple callexpression with default non-zero test
-                    // need  to checkif we'recalling to getValue() fo enum constant
-                }
+                    node->SetParent(parent);
+                    std::cout << "Updated node: " << node->DumpJSON() << std::endl;
 
-                // check & update conditional expression with explicit cast to new type
-                // e.g. for the following
-                //
-                // enum Color {Red, Blue, Green, Yellow};
-                // function main():void {
-                //   let v: Color = Color.Blue;
-                //   if (v) {...}
-                // }
-                //
-                // so the if (v) should be translated to the if (v.getValue() == true) ??
-                //
-                [[maybe_unused]] auto *consequent = ast->AsIfStatement()->Consequent();
-                [[maybe_unused]] auto *alternate = ast->AsIfStatement()->Alternate();
-                // std::cout << "File name: " << program->SourceFile().GetFileName() << std::endl;
-                if (0 && program->SourceFile().GetFileName().Compare(util::StringView("40.01")) == 0) {
-                    std::cout << program->SourceFile().GetFileName()
-                              << ": conditional expression: " << ast->AsIfStatement()->DumpJSON() << std::endl;
-                    if (0 && consequent != nullptr)
-                        std::cout << "consequent: " << consequent->DumpJSON() << std::endl;
-                    if (0 && alternate != nullptr)
-                        std::cout << "alternate: " << alternate->DumpJSON() << std::endl;
+                    InitScopesPhaseETS::RunExternalNode(node, ctx->compilerContext->VarBinder());
+
+                    checker->VarBinder()->AsETSBinder()->ResolveReferencesForScope(node, scope);
+                    node->Check(checker);
+                    return node;
+                } else {
+                    // ..
                 }
+            } else if (test->IsCallExpression()) {
+                // simple callexpression with default non-zero test
+                // need  to checkif we'recalling to getValue() fo enum constant
             }
         }
         return ast;
