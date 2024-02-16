@@ -45,14 +45,22 @@ ir::CallExpression *CreateCallExpression(ir::Identifier *id, checker::ETSChecker
     return callExpression;
 }
 
-ir::Expression *CreateTestExpression(ir::Identifier *id, checker::ETSChecker *checker)
+ir::Expression *CreateTestExpression(ir::Identifier *id, checker::ETSChecker *checker, CompilerContext *ctx)
 {
+    auto *const scope = NearestScope(id);
+    ASSERT(scope != nullptr);
+    auto expressionCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(checker->VarBinder(), scope);
     auto *callExpression = CreateCallExpression(id, checker);
     auto *right = checker->AllocNode<ir::NumberLiteral>(util::StringView("0"));
     ir::Expression *testExpr =
         checker->AllocNode<ir::BinaryExpression>(callExpression, right, lexer::TokenType::PUNCTUATOR_NOT_EQUAL);
     callExpression->SetParent(testExpr);
     right->SetParent(testExpr);
+
+    InitScopesPhaseETS::RunExternalNode(testExpr, ctx->VarBinder());
+    checker->VarBinder()->AsETSBinder()->ResolveReferencesForScope(testExpr, scope);
+    testExpr->Check(checker);
+
     return testExpr;
 }
 
@@ -68,7 +76,7 @@ ir::AstNode *CreateCallExpression_if(ir::AstNode *ast, CompilerContext *ctx)
     //     checker->Allocator());
     // id->SetReference();
 
-    auto *testExpr = CreateTestExpression(id, checker);
+    auto *testExpr = CreateTestExpression(id, checker, ctx);
 
     // auto *test = checker->AllocNode<ir::IfStatement>(testExpr, ast->AsIfStatement()->Consequent(),
     //                                                  ast->AsIfStatement()->Alternate());
@@ -88,7 +96,7 @@ ir::AstNode *CreateCallExpression_while(ir::AstNode *ast, CompilerContext *ctx)
     //     ast->AsWhileStatement()->Test()->AsIdentifier()->Name(), checker->Allocator());
     // id->SetReference();
 
-    auto *testExpr = CreateTestExpression(id, checker);
+    auto *testExpr = CreateTestExpression(id, checker, ctx);
 
     // auto *expr = checker->AllocNode<ir::WhileStatement>(testExpr, ast->AsWhileStatement()->Body());
     ast->AsWhileStatement()->SetTest(testExpr);
@@ -107,7 +115,7 @@ ir::AstNode *CreateCallExpression_do_while(ir::AstNode *ast, CompilerContext *ct
     //     ast->AsDoWhileStatement()->Test()->AsIdentifier()->Name(), checker->Allocator());
     // id->SetReference();
 
-    auto *testExpr = CreateTestExpression(id, checker);
+    auto *testExpr = CreateTestExpression(id, checker, ctx);
 
     // auto *expr = checker->AllocNode<ir::DoWhileStatement>(ast->AsDoWhileStatement()->Body(), testExpr);
     ast->AsDoWhileStatement()->SetTest(testExpr);
@@ -126,7 +134,7 @@ ir::AstNode *CreateCallExpression_for_update(ir::AstNode *ast, CompilerContext *
     //                                               checker->Allocator());
     // id->SetReference();
 
-    auto *testExpr = CreateTestExpression(id, checker);
+    auto *testExpr = CreateTestExpression(id, checker, ctx);
 
     // auto *expr = checker->AllocNode<ir::ForUpdateStatement>(ast->AsForUpdateStatement()->Init(), testExpr,
     //                                                         ast->AsForUpdateStatement()->Update(),
@@ -198,13 +206,12 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
                 auto *type = checker->GetTypeOfVariable(test->AsIdentifier()->Variable());
                 ASSERT(type != nullptr);
                 if (type->IsETSEnum2Type()) {
-                    std::cout << "Found type: ETSEnum2Type: " << type << std::endl;
+                    if (0) {
+                        std::cout << "Found type: ETSEnum2Type: " << type << std::endl;
+                    }
                     // ok now we need  to replace 'if (v)' to 'if (v.getValue() != 0)'
                     // NOTE: what about string as enum constant?
                     auto *parent = ast->Parent();
-                    auto *const scope = NearestScope(test);
-                    ASSERT(scope != nullptr);
-                    auto expressionCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(checker->VarBinder(), scope);
                     ir::AstNode *node = nullptr;
                     if (ast->IsIfStatement()) {
                         node = CreateCallExpression_if(ast, ctx->compilerContext);
@@ -224,11 +231,6 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
                     if (0)
                         std::cout << "Updated node: " << node->DumpJSON() << std::endl;
 
-                    InitScopesPhaseETS::RunExternalNode(node, ctx->compilerContext->VarBinder());
-
-                    checker->VarBinder()->AsETSBinder()->ResolveReferencesForScope(node, scope);
-
-                    node->Check(checker);
                     return node;
                 } else {
                     // ..
