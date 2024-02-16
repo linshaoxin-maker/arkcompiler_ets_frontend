@@ -85,8 +85,8 @@ std::vector<Phase *> GetETSPhaseList()
     return {
         &g_defaultParameterLowering,
         &g_bigintLowering,
-        &g_enumLoweringPrePhase,
         &g_pluginsAfterParse,
+        &g_enumLoweringPrePhase,
         &g_initScopesPhaseEts,
         &g_optionalLowering,
         &g_promiseVoidInferencePhase,

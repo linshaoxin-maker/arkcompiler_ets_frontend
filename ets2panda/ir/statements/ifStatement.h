@@ -42,6 +42,10 @@ public:
         return test_;
     }
 
+    Statement *Consequent()
+    {
+        return consequent_;
+    }
     const Statement *Consequent() const
     {
         return consequent_;
