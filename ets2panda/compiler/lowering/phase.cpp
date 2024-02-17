@@ -23,6 +23,7 @@
 #include "compiler/lowering/plugin_phase.h"
 #include "compiler/lowering/scopesInit/scopesInitPhase.h"
 #include "compiler/lowering/ets/expandBrackets.h"
+#include "compiler/lowering/ets/recordLowering.h"
 #include "compiler/lowering/ets/generateDeclarations.h"
 #include "compiler/lowering/ets/lambdaLowering.h"
 #include "compiler/lowering/ets/interfacePropertyDeclarations.h"
@@ -30,6 +31,7 @@
 #include "compiler/lowering/ets/tupleLowering.h"
 #include "compiler/lowering/ets/unionLowering.h"
 #include "compiler/lowering/ets/structLowering.h"
+#include "compiler/lowering/ets/optionalLowering.h"
 #include "public/es2panda_lib.h"
 #include "compiler/lowering/ets/promiseVoid.h"
 #include "utils/json_builder.h"
@@ -52,8 +54,10 @@ static OpAssignmentLowering g_opAssignmentLowering;
 static ObjectIndexLowering g_objectIndexLowering;
 static TupleLowering g_tupleLowering;  // Can be only applied after checking phase, and OP_ASSIGNMENT_LOWERING phase
 static UnionLowering g_unionLowering;
+static OptionalLowering g_optionalLowering;
 static ExpandBracketsPhase g_expandBracketsPhase;
 static PromiseVoidInferencePhase g_promiseVoidInferencePhase;
+static RecordLowering g_recordLowering;
 static StructLowering g_structLowering;
 static PluginPhase g_pluginsAfterParse {"plugins-after-parse", ES2PANDA_STATE_PARSED, &util::Plugin::AfterParse};
 static PluginPhase g_pluginsAfterCheck {"plugins-after-check", ES2PANDA_STATE_CHECKED, &util::Plugin::AfterCheck};
@@ -69,11 +73,12 @@ static InitScopesPhaseJs g_initScopesPhaseJs;
 std::vector<Phase *> GetETSPhaseList()
 {
     return {
-        &g_pluginsAfterParse,    &g_initScopesPhaseEts,      &g_promiseVoidInferencePhase,
-        &g_structLowering,       &g_lambdaConstructionPhase, &g_interfacePropDeclPhase,
-        &g_checkerPhase,         &g_pluginsAfterCheck,       &g_generateTsDeclarationsPhase,
-        &g_opAssignmentLowering, &g_objectIndexLowering,     &g_tupleLowering,
-        &g_unionLowering,        &g_expandBracketsPhase,     &g_pluginsAfterLowerings,
+        &g_pluginsAfterParse,           &g_initScopesPhaseEts,    &g_optionalLowering,
+        &g_promiseVoidInferencePhase,   &g_structLowering,        &g_lambdaConstructionPhase,
+        &g_interfacePropDeclPhase,      &g_checkerPhase,          &g_pluginsAfterCheck,
+        &g_generateTsDeclarationsPhase, &g_opAssignmentLowering,  &g_recordLowering,
+        &g_objectIndexLowering,         &g_tupleLowering,         &g_unionLowering,
+        &g_expandBracketsPhase,         &g_pluginsAfterLowerings,
     };
 }
 
