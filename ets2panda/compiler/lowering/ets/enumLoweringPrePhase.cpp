@@ -64,15 +64,12 @@ auto CreateETSParameterExpression(util::StringView const par_name, util::StringV
 ir::MethodDefinition *CreateMethodValueOf(const util::StringView &enum_name,
                                           ir::TSTypeParameterInstantiation *tp_par_inst, checker::ETSChecker *checker)
 {
-    auto *key = checker->AllocNode<ir::Identifier>("valueOf", checker->Allocator());
-
     ArenaVector<ir::Expression *> params(checker->Allocator()->Adapter());
     params.push_back(CreateETSParameterExpression("name", "string", checker));
 
     auto *ret_type = CreateETSTypeReference(enum_name, checker);
 
     ArenaVector<ir::Statement *> statements(checker->Allocator()->Adapter());
-    auto *callee = CreateIdentifierRef(ENUM_VALUE_OF_LIB_FUNCTION_NAME, checker);
     ArenaVector<ir::Expression *> args(checker->Allocator()->Adapter());
     auto *arg0_obj = CreateIdentifierRef(enum_name, checker);
     auto *arg0_prop = CreateIdentifierRef(ENUM_CONSTANT_ARRAY_NAME, checker);
@@ -80,22 +77,26 @@ ir::MethodDefinition *CreateMethodValueOf(const util::StringView &enum_name,
                                                             ir::MemberExpressionKind::PROPERTY_ACCESS, false, false));
     auto *arg1 = CreateIdentifierRef("name", checker);
     args.push_back(arg1);
-    auto *express = checker->AllocNode<ir::CallExpression>(callee, std::move(args), tp_par_inst, false);
-    auto *argument = checker->AllocNode<ir::TSAsExpression>(express, ret_type, false);
-    statements.push_back(checker->AllocNode<ir::ReturnStatement>(argument));
+
+    auto *callee = CreateIdentifierRef(ENUM_VALUE_OF_LIB_FUNCTION_NAME, checker);
+    auto *express = checker->AllocNode<ir::CallExpression>(std::move(callee), std::move(args), tp_par_inst, false);
+    auto *argument = checker->AllocNode<ir::TSAsExpression>(std::move(express), ret_type, false);
+    statements.push_back(checker->AllocNode<ir::ReturnStatement>(std::move(argument)));
     auto *body = checker->AllocNode<ir::BlockStatement>(checker->Allocator(), std::move(statements));
 
     auto *func = checker->AllocNode<ir::ScriptFunction>(
-        ir::FunctionSignature(nullptr, std::move(params), ret_type), body,
+        ir::FunctionSignature(nullptr, std::move(params), ret_type->Clone(checker->Allocator(), nullptr)), body,
         ir::ScriptFunctionFlags::HAS_RETURN | ir::ScriptFunctionFlags::THROWS, false, Language(Language::Id::ETS));
     func->AddModifier(ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC);
+    auto *key = checker->AllocNode<ir::Identifier>("valueOf", checker->Allocator());
     func->SetIdent(key);
 
     auto *value = checker->AllocNode<ir::FunctionExpression>(func);
 
     auto flags = ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC;
 
-    auto *method = checker->AllocNode<ir::MethodDefinition>(ir::MethodDefinitionKind::METHOD, key, value, flags,
+    auto *method = checker->AllocNode<ir::MethodDefinition>(ir::MethodDefinitionKind::METHOD,
+                                                            key->Clone(checker->Allocator(), nullptr), value, flags,
                                                             checker->Allocator(), false);
 
     return method;
@@ -104,7 +105,36 @@ ir::MethodDefinition *CreateMethodValueOf(const util::StringView &enum_name,
 ir::MethodDefinition *CreateMethodCreate(const util::StringView &enum_name, bool is_int_enum,
                                          checker::ETSChecker *checker)
 {
-    auto *key = checker->AllocNode<ir::Identifier>("create", checker->Allocator());
+    auto id = checker->AllocNode<ir::Identifier>("ret", checker->Allocator());
+    auto init = checker->AllocNode<ir::ETSNewClassInstanceExpression>(
+        CreateETSTypeReference(enum_name, checker), ArenaVector<ir::Expression *>(checker->Allocator()->Adapter()),
+        nullptr);
+    auto declarator = checker->AllocNode<ir::VariableDeclarator>(ir::VariableDeclaratorFlag::LET, id, init);
+    ArenaVector<ir::VariableDeclarator *> declarators(checker->Allocator()->Adapter());
+    declarators.push_back(std::move(declarator));
+
+    auto var_kind = ir::VariableDeclaration::VariableDeclarationKind::LET;
+    auto *var_decl =
+        checker->AllocNode<ir::VariableDeclaration>(var_kind, checker->Allocator(), std::move(declarators), false);
+
+    ArenaVector<ir::Statement *> statements(checker->Allocator()->Adapter());
+    statements.push_back(std::move(var_decl));
+
+    auto *callee_obj = CreateIdentifierRef("ret", checker);
+    auto *callee_prop = CreateIdentifierRef("init", checker);
+    auto *callee = checker->AllocNode<ir::MemberExpression>(std::move(callee_obj), std::move(callee_prop),
+                                                            ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
+    ArenaVector<ir::Expression *> args(checker->Allocator()->Adapter());
+    args.push_back(CreateIdentifierRef("typ", checker));
+    args.push_back(CreateIdentifierRef("name", checker));
+    args.push_back(CreateIdentifierRef("val", checker));
+    args.push_back(CreateIdentifierRef("idx", checker));
+    auto *expression = checker->AllocNode<ir::CallExpression>(std::move(callee), std::move(args), nullptr, false);
+    statements.push_back(checker->AllocNode<ir::ExpressionStatement>(expression));
+
+    statements.push_back(checker->AllocNode<ir::ReturnStatement>(CreateIdentifierRef("ret", checker)));
+
+    auto *body = checker->AllocNode<ir::BlockStatement>(checker->Allocator(), std::move(statements));
 
     ArenaVector<ir::Expression *> params(checker->Allocator()->Adapter());
     params.push_back(CreateETSParameterExpression("typ", "string", checker));
@@ -112,56 +142,26 @@ ir::MethodDefinition *CreateMethodCreate(const util::StringView &enum_name, bool
     params.push_back(CreateETSParameterExpression("val", is_int_enum ? "Int" : "string", checker));
     params.push_back(CreateETSParameterExpression("idx", "Int", checker));
 
-    auto id = checker->AllocNode<ir::Identifier>("ret", checker->Allocator());
-    auto init = checker->AllocNode<ir::ETSNewClassInstanceExpression>(
-        CreateETSTypeReference(enum_name, checker), ArenaVector<ir::Expression *>(checker->Allocator()->Adapter()),
-        nullptr);
-    auto declarator = checker->AllocNode<ir::VariableDeclarator>(ir::VariableDeclaratorFlag::LET, id, init);
-    ArenaVector<ir::VariableDeclarator *> declarators(checker->Allocator()->Adapter());
-    declarators.push_back(declarator);
-
-    auto var_kind = ir::VariableDeclaration::VariableDeclarationKind::LET;
-    auto *var_decl =
-        checker->AllocNode<ir::VariableDeclaration>(var_kind, checker->Allocator(), std::move(declarators), false);
-
-    ArenaVector<ir::Statement *> statements(checker->Allocator()->Adapter());
-    statements.push_back(var_decl);
-
-    auto *callee_obj = CreateIdentifierRef("ret", checker);
-    auto *callee_prop = CreateIdentifierRef("init", checker);
-    auto *callee = checker->AllocNode<ir::MemberExpression>(callee_obj, callee_prop,
-                                                            ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
-    ArenaVector<ir::Expression *> args(checker->Allocator()->Adapter());
-    args.push_back(CreateIdentifierRef("typ", checker));
-    args.push_back(CreateIdentifierRef("name", checker));
-    args.push_back(CreateIdentifierRef("val", checker));
-    args.push_back(CreateIdentifierRef("idx", checker));
-    auto *expression = checker->AllocNode<ir::CallExpression>(callee, std::move(args), nullptr, false);
-    statements.push_back(checker->AllocNode<ir::ExpressionStatement>(expression));
-
-    statements.push_back(checker->AllocNode<ir::ReturnStatement>(callee_obj));
-
-    auto *body = checker->AllocNode<ir::BlockStatement>(checker->Allocator(), std::move(statements));
-
     auto *func = checker->AllocNode<ir::ScriptFunction>(
         ir::FunctionSignature(nullptr, std::move(params), CreateETSTypeReference(enum_name, checker)), body,
         ir::ScriptFunctionFlags::HAS_RETURN, false, Language(Language::Id::ETS));
     func->AddModifier(ir::ModifierFlags::STATIC | ir::ModifierFlags::PRIVATE);
+
+    auto *key = CreateIdentifierRef(ENUM_CONSTANT_CREATE_METHOD_NAME, checker);
     func->SetIdent(key);
     auto *value = checker->AllocNode<ir::FunctionExpression>(func);
 
     auto flags = ir::ModifierFlags::STATIC | ir::ModifierFlags::PRIVATE;
 
-    auto *method = checker->AllocNode<ir::MethodDefinition>(ir::MethodDefinitionKind::METHOD, key, value, flags,
-                                                            checker->Allocator(), false);
+    auto *method = checker->AllocNode<ir::MethodDefinition>(
+        ir::MethodDefinitionKind::METHOD, std::move(key->Clone(checker->Allocator(), nullptr)->AsIdentifier()),
+        std::move(value), flags, checker->Allocator(), false);
 
     return method;
 }
 
 ir::MethodDefinition *CreateMethodValues(const util::StringView &enum_name, checker::ETSChecker *checker)
 {
-    auto *key = checker->AllocNode<ir::Identifier>("values", checker->Allocator());
-
     ArenaVector<ir::Expression *> params(checker->Allocator()->Adapter());
 
     ArenaVector<ir::Statement *> statements(checker->Allocator()->Adapter());
@@ -177,14 +177,15 @@ ir::MethodDefinition *CreateMethodValues(const util::StringView &enum_name, chec
                                                ir::ScriptFunctionFlags::HAS_RETURN, false, Language(Language::Id::ETS));
 
     func->AddModifier(ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC);
+    auto *key = checker->AllocNode<ir::Identifier>("values", checker->Allocator());
     func->SetIdent(key);
     auto *value = checker->AllocNode<ir::FunctionExpression>(func);
 
     auto flags = ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC;
 
-    auto *method = checker->AllocNode<ir::MethodDefinition>(ir::MethodDefinitionKind::METHOD, key, value, flags,
+    auto *method = checker->AllocNode<ir::MethodDefinition>(ir::MethodDefinitionKind::METHOD,
+                                                            key->Clone(checker->Allocator(), nullptr), value, flags,
                                                             checker->Allocator(), false);
-
     return method;
 }
 
@@ -205,7 +206,8 @@ ir::MethodDefinition *CreateConstructor(checker::ETSChecker *checker)
     func->SetIdent(key);
     auto *value = checker->AllocNode<ir::FunctionExpression>(func);
 
-    auto *method = checker->AllocNode<ir::MethodDefinition>(ir::MethodDefinitionKind::CONSTRUCTOR, key, value,
+    auto *method = checker->AllocNode<ir::MethodDefinition>(ir::MethodDefinitionKind::CONSTRUCTOR,
+                                                            key->Clone(checker->Allocator(), nullptr), value,
                                                             ir::ModifierFlags::NONE, checker->Allocator(), false);
 
     return method;
@@ -242,18 +244,14 @@ ir::ClassProperty *CreateEnumConstantArray(const util::StringView &enum_name, Ar
 ir::ClassProperty *CreateEnumConstantClassProperty(const util::StringView &enum_name, const ir::TSEnumMember *member,
                                                    int idx, checker::ETSChecker *checker)
 {
-    auto *key = checker->AllocNode<ir::Identifier>(member->Name(), checker->Allocator());
-
-    auto *callee_obj = CreateIdentifierRef(enum_name, checker);
-    auto *callee_prop = CreateIdentifierRef(ENUM_CONSTANT_CREATE_METHOD_NAME, checker);
-    auto *callee = checker->AllocNode<ir::MemberExpression>(callee_obj, callee_prop,
-                                                            ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
-
     ArenaVector<ir::Expression *> args(checker->Allocator()->Adapter());
+
     util::UString enum_desc(checker::EnumDescription(enum_name), checker->Allocator());
     args.push_back(checker->AllocNode<ir::StringLiteral>(enum_desc.View()));
+
     util::UString enum_const_name(member->Name(), checker->Allocator());
     args.push_back(checker->AllocNode<ir::StringLiteral>(enum_const_name.View()));
+
     if (member->Init()->IsNumberLiteral()) {
         args.push_back(checker->AllocNode<ir::NumberLiteral>(member->Init()->AsNumberLiteral()->Number()));
     } else if (member->Init()->IsStringLiteral()) {
@@ -263,12 +261,17 @@ ir::ClassProperty *CreateEnumConstantClassProperty(const util::StringView &enum_
     }
     args.push_back(checker->AllocNode<ir::NumberLiteral>(lexer::Number(idx)));
 
-    auto *value = checker->AllocNode<ir::CallExpression>(callee, std::move(args), nullptr, false);
+    auto *callee_obj = CreateIdentifierRef(enum_name, checker);
+    auto *callee_prop = CreateIdentifierRef(ENUM_CONSTANT_CREATE_METHOD_NAME, checker);
+    auto *callee = checker->AllocNode<ir::MemberExpression>(std::move(callee_obj), std::move(callee_prop),
+                                                            ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
+    auto *value = checker->AllocNode<ir::CallExpression>(std::move(callee), std::move(args), nullptr, false);
 
     auto prop_modif =
         ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC | ir::ModifierFlags::READONLY | ir::ModifierFlags::CONST;
     auto *type_annot = CreateETSTypeReference(enum_name, checker);
 
+    auto *key = checker->AllocNode<ir::Identifier>(member->Name(), checker->Allocator());
     auto *class_prop =
         checker->AllocNode<ir::ClassProperty>(key, value, type_annot, prop_modif, checker->Allocator(), false);
 
