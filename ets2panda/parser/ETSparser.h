@@ -71,9 +71,7 @@ public:
     ir::Expression *CreateFormattedExpression(std::string_view const sourceCode, std::string_view const fileName,
                                               Args &&...args)
     {
-        std::vector<ir::AstNode *> insertingNodes {};
-        insertingNodes.reserve(sizeof...(Args));
-        (insertingNodes.emplace_back(std::forward<Args>(args)), ...);
+        std::vector<ir::AstNode *> insertingNodes {args...};
         return CreateFormattedExpression(sourceCode, insertingNodes, fileName);
     }
 
@@ -88,8 +86,7 @@ public:
     ArenaVector<ir::Statement *> CreateFormattedStatements(std::string_view const sourceCode,
                                                            std::string_view const fileName, Args &&...args)
     {
-        std::vector<ir::AstNode *> insertingNodes {};
-        (insertingNodes.emplace(std::forward<Args>(args)), ...);
+        std::vector<ir::AstNode *> insertingNodes {args...};
         return CreateFormattedStatements(sourceCode, insertingNodes, fileName);
     }
 
@@ -194,12 +191,8 @@ private:
     ir::TypeNode *ParseFunctionType();
     ir::TypeNode *ParseETSTupleType(TypeAnnotationParsingOptions *options);
     std::pair<bool, std::size_t> CheckDefaultParameters(const ir::ScriptFunction *function) const;
-    ir::MethodDefinition *CreateProxyMethodDefinition(ir::MethodDefinition const *const method,
-                                                      ir::Identifier const *const identNode);
-    ir::MethodDefinition *CreateProxyConstructorDefinition(ir::MethodDefinition const *const method);
-    void AddProxyOverloadToMethodWithDefaultParams(ir::MethodDefinition *method, ir::Identifier *identNode = nullptr);
     static std::string PrimitiveTypeToName(ir::PrimitiveType type);
-    std::string GetNameForTypeNode(const ir::TypeNode *typeAnnotation, bool adjust = true) const;
+    std::string GetNameForTypeNode(const ir::TypeNode *typeAnnotation) const;
     std::string GetNameForETSUnionType(const ir::TypeNode *typeAnnotation) const;
     ir::TSInterfaceDeclaration *ParseInterfaceBody(ir::Identifier *name, bool isStatic);
     bool IsArrowFunctionExpressionStart();
@@ -231,8 +224,11 @@ private:
     ir::AstNode *ParseTypeLiteralOrInterfaceMember() override;
     void ParseNameSpaceSpecifier(ArenaVector<ir::AstNode *> *specifiers, bool isReExport = false);
     bool CheckModuleAsModifier();
+    ir::Expression *ParseFunctionParameterExpression(ir::AnnotatedExpression *paramIdent,
+                                                     ir::ETSUndefinedType *defaultUndef);
     ir::Expression *ParseFunctionParameter() override;
     ir::AnnotatedExpression *GetAnnotatedExpressionFromParam();
+    ir::ETSUnionType *CreateOptionalParameterTypeNode(ir::TypeNode *typeAnnotation, ir::ETSUndefinedType *defaultUndef);
     // NOLINTNEXTLINE(google-default-arguments)
     ir::Expression *ParseUnaryOrPrefixUpdateExpression(
         ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS) override;
@@ -266,6 +262,10 @@ private:
     ir::AstNode *ParseInnerRest(const ArenaVector<ir::AstNode *> &properties, ir::ClassDefinitionModifiers modifiers,
                                 ir::ModifierFlags memberModifiers, ir::Identifier *identNode,
                                 const lexer::SourcePosition &startLoc);
+
+    ir::ClassDefinition *CreateClassDefinitionForNewExpression(ArenaVector<ir::Expression *> &arguments,
+                                                               ir::TypeNode *typeReference,
+                                                               ir::TypeNode *baseTypeReference);
     ir::Expression *ParseNewExpression() override;
     ir::Expression *ParseAsyncExpression();
     ir::Expression *ParseAwaitExpression();
@@ -346,7 +346,6 @@ private:
     // and correct parent and, probably, variable set to the node(s) after obtaining
     // NOLINTBEGIN(modernize-avoid-c-arrays)
     inline static constexpr char const DEFAULT_SOURCE_FILE[] = "<auxiliary_tmp>.ets";
-    inline static constexpr char const DEFAULT_PROXY_FILE[] = "<default_method>.ets";
     // NOLINTEND(modernize-avoid-c-arrays)
 
     // NOLINTBEGIN(google-default-arguments)

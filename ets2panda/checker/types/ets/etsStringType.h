@@ -43,12 +43,12 @@ public:
     void AssignmentTarget(TypeRelation *relation, Type *source) override;
     Type *Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes) override;
 
-    void ToString(std::stringstream &ss) const override
+    void ToString(std::stringstream &ss, [[maybe_unused]] bool precise) const override
     {
         ss << lexer::TokenToString(lexer::TokenType::KEYW_STRING);
     }
 
-    void ToAssemblerType([[maybe_unused]] std::stringstream &ss) const override
+    void ToAssemblerType(std::stringstream &ss) const override
     {
         ss << compiler::Signatures::BUILTIN_STRING;
     }
@@ -60,10 +60,6 @@ public:
 
     std::tuple<bool, bool> ResolveConditionExpr() const override
     {
-        if (IsNullish()) {
-            return {false, false};
-        }
-
         return {IsConstantType(), IsConstantType() ? (GetValue().Length() != 0) : false};
     }
 
