@@ -103,7 +103,7 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
             [[maybe_unused]] auto *right = ast->AsBinaryExpression()->Right();
 
         } else if (ast->IsIfStatement() || ast->IsWhileStatement() || ast->IsDoWhileStatement() ||
-                   ast->IsForUpdateStatement()) {
+                   ast->IsForUpdateStatement() || ast->IsConditionalExpression()) {
             // so far let's put this only for test script
             ir::Expression *test = nullptr;
             ir::Expression *testExpr = nullptr;
@@ -116,7 +116,12 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
                 test = ast->AsDoWhileStatement()->Test();
             if (ast->IsForUpdateStatement())
                 test = ast->AsForUpdateStatement()->Test();
+            if (ast->IsConditionalExpression())
+                test = ast->AsConditionalExpression()->Test();
 
+            if (test == nullptr) {
+                return ast;
+            }
             if (test->IsIdentifier()) {
                 // we got simple variable test expression, test against  non-zero value
                 if (test->AsIdentifier()->Variable() == nullptr) {
@@ -182,6 +187,8 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
                 ast->AsDoWhileStatement()->SetTest(testExpr);
             } else if (ast->IsForUpdateStatement()) {
                 ast->AsForUpdateStatement()->SetTest(testExpr);
+            } else if (ast->IsConditionalExpression()) {
+                ast->AsConditionalExpression()->SetTest(testExpr);
             }
             testExpr->SetParent(ast);
             return ast;
