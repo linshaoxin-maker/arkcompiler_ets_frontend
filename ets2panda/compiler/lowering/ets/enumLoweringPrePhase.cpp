@@ -87,9 +87,8 @@ ir::MethodDefinition *CreateMethodValueOf(const util::StringView &enum_name,
 
     auto *func = checker->AllocNode<ir::ScriptFunction>(
         ir::FunctionSignature(nullptr, std::move(params), ret_type), body,
-        ir::ScriptFunctionFlags::HAS_RETURN | ir::ScriptFunctionFlags::THROWS,
-        ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC, false, Language(Language::Id::ETS));
-
+        ir::ScriptFunctionFlags::HAS_RETURN | ir::ScriptFunctionFlags::THROWS, false, Language(Language::Id::ETS));
+    func->AddModifier(ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC);
     func->SetIdent(key);
 
     auto *value = checker->AllocNode<ir::FunctionExpression>(func);
@@ -146,9 +145,8 @@ ir::MethodDefinition *CreateMethodCreate(const util::StringView &enum_name, bool
 
     auto *func = checker->AllocNode<ir::ScriptFunction>(
         ir::FunctionSignature(nullptr, std::move(params), CreateETSTypeReference(enum_name, checker)), body,
-        ir::ScriptFunctionFlags::HAS_RETURN, ir::ModifierFlags::STATIC | ir::ModifierFlags::PRIVATE, false,
-        Language(Language::Id::ETS));
-
+        ir::ScriptFunctionFlags::HAS_RETURN, false, Language(Language::Id::ETS));
+    func->AddModifier(ir::ModifierFlags::STATIC | ir::ModifierFlags::PRIVATE);
     func->SetIdent(key);
     auto *value = checker->AllocNode<ir::FunctionExpression>(func);
 
@@ -174,10 +172,11 @@ ir::MethodDefinition *CreateMethodValues(const util::StringView &enum_name, chec
     statements.push_back(checker->AllocNode<ir::ReturnStatement>(argument));
     auto *body = checker->AllocNode<ir::BlockStatement>(checker->Allocator(), std::move(statements));
 
-    auto *func = checker->AllocNode<ir::ScriptFunction>(
-        ir::FunctionSignature(nullptr, std::move(params), nullptr), body, ir::ScriptFunctionFlags::HAS_RETURN,
-        ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC, false, Language(Language::Id::ETS));
+    auto *func =
+        checker->AllocNode<ir::ScriptFunction>(ir::FunctionSignature(nullptr, std::move(params), nullptr), body,
+                                               ir::ScriptFunctionFlags::HAS_RETURN, false, Language(Language::Id::ETS));
 
+    func->AddModifier(ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC);
     func->SetIdent(key);
     auto *value = checker->AllocNode<ir::FunctionExpression>(func);
 
@@ -285,10 +284,10 @@ void CreateCCtor(ArenaVector<ir::AstNode *> &properties, const lexer::SourcePosi
     ArenaVector<ir::Statement *> statements(checker->Allocator()->Adapter());
 
     auto *body = checker->AllocNode<ir::BlockStatement>(checker->Allocator(), std::move(statements));
-    auto *func =
-        checker->AllocNode<ir::ScriptFunction>(ir::FunctionSignature(nullptr, std::move(params), nullptr), body,
-                                               ir::ScriptFunctionFlags::STATIC_BLOCK | ir::ScriptFunctionFlags::HIDDEN,
-                                               ir::ModifierFlags::STATIC, false, Language(Language::Id::ETS));
+    auto *func = checker->AllocNode<ir::ScriptFunction>(
+        ir::FunctionSignature(nullptr, std::move(params), nullptr), body,
+        ir::ScriptFunctionFlags::STATIC_BLOCK | ir::ScriptFunctionFlags::HIDDEN, false, Language(Language::Id::ETS));
+    func->AddModifier(ir::ModifierFlags::STATIC);
     func->SetIdent(id);
 
     auto *func_expr = checker->AllocNode<ir::FunctionExpression>(func);
