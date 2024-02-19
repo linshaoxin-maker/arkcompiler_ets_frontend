@@ -400,6 +400,11 @@ public:
     void ResolveProxyMethod(ir::MethodDefinition *proxyMethod, ir::ArrowFunctionExpression *lambda);
     void ResolveLambdaObject(ir::ClassDefinition *lambdaObject, Signature *signature,
                              ETSObjectType *functionalInterface, ir::AstNode *refNode);
+    void HandleAsyncLambda(ir::ArrowFunctionExpression *lambda, ir::MethodDefinition *proxyMethod,
+                           ir::ClassDefinition *currentClassDef);
+    void CreateFieldsForCapturedVars(const ArenaVector<varbinder::Variable *> &capturedVars,
+                                     ArenaVector<ir::AstNode *> &properties, varbinder::ClassScope *classScope,
+                                     ir::ArrowFunctionExpression *lambda, size_t &idx, bool &saveThis);
     void ResolveLambdaObject(ir::ClassDefinition *lambdaObject, ETSObjectType *functionalInterface,
                              ir::ArrowFunctionExpression *lambda, ir::MethodDefinition *proxyMethod, bool saveThis);
     void ResolveLambdaObjectCtor(ir::ClassDefinition *lambdaObject, bool isStaticReference);
