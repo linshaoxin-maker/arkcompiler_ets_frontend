@@ -39,9 +39,9 @@ const char *ENUM_CONSTANT_CREATE_METHOD_NAME = "create";
 const char *ENUM_VALUE_OF_LIB_FUNCTION_NAME = "enumValueOf";
 const char *ENUM_CONSTANT_ARRAY_NAME = "arr";
 
-auto CreateIdentifierRef(util::StringView const name, checker::ETSChecker *checker)
+ir::Identifier *CreateIdentifierRef(util::StringView const name, checker::ETSChecker *checker)
 {
-    auto *ret = checker->Allocator()->New<ir::Identifier>(name, checker->Allocator());
+    auto *ret = checker->AllocNode<ir::Identifier>(name, checker->Allocator());
     ret->SetReference();
     return ret;
 }
@@ -49,16 +49,16 @@ auto CreateIdentifierRef(util::StringView const name, checker::ETSChecker *check
 auto CreateETSTypeReference(util::StringView const name, checker::ETSChecker *checker)
 {
     auto *name_ident = CreateIdentifierRef(name, checker);
-    auto *reference_part = checker->Allocator()->New<ir::ETSTypeReferencePart>(name_ident);
-    return checker->Allocator()->New<ir::ETSTypeReference>(reference_part);
+    auto *reference_part = checker->AllocNode<ir::ETSTypeReferencePart>(name_ident);
+    return checker->AllocNode<ir::ETSTypeReference>(reference_part);
 }
 
 auto CreateETSParameterExpression(util::StringView const par_name, util::StringView const type_name,
                                   checker::ETSChecker *checker)
 {
     auto *type_annot = CreateETSTypeReference(type_name, checker);
-    auto *name = checker->Allocator()->New<ir::Identifier>(par_name, type_annot, checker->Allocator());
-    return checker->Allocator()->New<ir::ETSParameterExpression>(name, nullptr);
+    auto *name = checker->AllocNode<ir::Identifier>(par_name, type_annot, checker->Allocator());
+    return checker->AllocNode<ir::ETSParameterExpression>(name, nullptr);
 }
 
 ir::MethodDefinition *CreateMethodValueOf(const util::StringView &enum_name,
