@@ -30,9 +30,11 @@
 
 namespace ark::es2panda::compiler {
 
+const char *ENUM_GETVALUE_METHOD_NAME = "getValue";
+
 ir::CallExpression *CreateCallExpression(ir::Identifier *id, checker::ETSChecker *checker)
 {
-    auto *const callee = checker->AllocNode<ir::Identifier>(util::StringView("getValue"), checker->Allocator());
+    auto *const callee = checker->AllocNode<ir::Identifier>(ENUM_GETVALUE_METHOD_NAME, checker->Allocator());
     callee->SetReference();
     ir::Expression *const accessor =
         checker->AllocNode<ir::MemberExpression>(id, callee, ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
@@ -45,12 +47,16 @@ ir::CallExpression *CreateCallExpression(ir::Identifier *id, checker::ETSChecker
     return callExpression;
 }
 
-ir::Expression *CreateTestExpression(ir::Identifier *id, checker::ETSChecker *checker, CompilerContext *ctx)
+ir::Expression *CreateTestExpression(ir::Identifier *id, CompilerContext *ctx, ir::CallExpression *callExpression)
 {
     auto *const scope = NearestScope(id);
+    auto *checker = ctx->Checker()->AsETSChecker();
     ASSERT(scope != nullptr);
     auto expressionCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(checker->VarBinder(), scope);
-    auto *callExpression = CreateCallExpression(id, checker);
+    if (callExpression == nullptr) {
+        callExpression = CreateCallExpression(id, checker);
+    }
+
     auto *right = checker->AllocNode<ir::NumberLiteral>(util::StringView("0"));
     ir::Expression *testExpr =
         checker->AllocNode<ir::BinaryExpression>(callExpression, right, lexer::TokenType::PUNCTUATOR_NOT_EQUAL);
@@ -69,14 +75,13 @@ ir::AstNode *CreateCallExpression_if(ir::AstNode *ast, CompilerContext *ctx)
     // only identifiers allowed here!
     ASSERT(ast->IsIfStatement() && ast->AsIfStatement()->Test()->IsIdentifier());
 
-    auto *checker = ctx->Checker()->AsETSChecker();
     auto *id = ast->AsIfStatement()->Test()->AsIdentifier();
     // auto *id =
     //     checker->AllocNode<ir::Identifier>(ast->AsIfStatement()->Test()->AsIdentifier()->Name(),
     //     checker->Allocator());
     // id->SetReference();
 
-    auto *testExpr = CreateTestExpression(id, checker, ctx);
+    auto *testExpr = CreateTestExpression(id, ctx, nullptr);
 
     // auto *test = checker->AllocNode<ir::IfStatement>(testExpr, ast->AsIfStatement()->Consequent(),
     //                                                  ast->AsIfStatement()->Alternate());
@@ -90,13 +95,12 @@ ir::AstNode *CreateCallExpression_while(ir::AstNode *ast, CompilerContext *ctx)
     // only identifiers allowed here!
     ASSERT(ast->IsWhileStatement() && ast->AsWhileStatement()->Test()->IsIdentifier());
 
-    auto *checker = ctx->Checker()->AsETSChecker();
     auto *id = ast->AsWhileStatement()->Test()->AsIdentifier();
     // auto *id = checker->AllocNode<ir::Identifier>(
     //     ast->AsWhileStatement()->Test()->AsIdentifier()->Name(), checker->Allocator());
     // id->SetReference();
 
-    auto *testExpr = CreateTestExpression(id, checker, ctx);
+    auto *testExpr = CreateTestExpression(id, ctx, nullptr);
 
     // auto *expr = checker->AllocNode<ir::WhileStatement>(testExpr, ast->AsWhileStatement()->Body());
     ast->AsWhileStatement()->SetTest(testExpr);
@@ -109,13 +113,12 @@ ir::AstNode *CreateCallExpression_do_while(ir::AstNode *ast, CompilerContext *ct
     // only identifiers allowed here!
     ASSERT(ast->IsDoWhileStatement() && ast->AsDoWhileStatement()->Test()->IsIdentifier());
 
-    auto *checker = ctx->Checker()->AsETSChecker();
     auto *id = ast->AsDoWhileStatement()->Test()->AsIdentifier();
     // auto *id = checker->AllocNode<ir::Identifier>(
     //     ast->AsDoWhileStatement()->Test()->AsIdentifier()->Name(), checker->Allocator());
     // id->SetReference();
 
-    auto *testExpr = CreateTestExpression(id, checker, ctx);
+    auto *testExpr = CreateTestExpression(id, ctx, nullptr);
 
     // auto *expr = checker->AllocNode<ir::DoWhileStatement>(ast->AsDoWhileStatement()->Body(), testExpr);
     ast->AsDoWhileStatement()->SetTest(testExpr);
@@ -128,13 +131,12 @@ ir::AstNode *CreateCallExpression_for_update(ir::AstNode *ast, CompilerContext *
     // only identifiers allowed here!
     ASSERT(ast->IsForUpdateStatement() && ast->AsForUpdateStatement()->Test()->IsIdentifier());
 
-    auto *checker = ctx->Checker()->AsETSChecker();
     auto *id = ast->AsForUpdateStatement()->Test()->AsIdentifier();
     // auto *id = checker->AllocNode<ir::Identifier>(ast->AsForUpdateStatement()->Test()->AsIdentifier()->Name(),
     //                                               checker->Allocator());
     // id->SetReference();
 
-    auto *testExpr = CreateTestExpression(id, checker, ctx);
+    auto *testExpr = CreateTestExpression(id, ctx, nullptr);
 
     // auto *expr = checker->AllocNode<ir::ForUpdateStatement>(ast->AsForUpdateStatement()->Init(), testExpr,
     //                                                         ast->AsForUpdateStatement()->Update(),
@@ -180,7 +182,7 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
         } else if (ast->IsIfStatement() || ast->IsWhileStatement() || ast->IsDoWhileStatement() ||
                    ast->IsForUpdateStatement()) {
             // so far let's put this only for test script
-            const ir::Expression *test = nullptr;
+            ir::Expression *test = nullptr;
             if (ast->IsIfStatement())
                 test = ast->AsIfStatement()->Test();
             if (ast->IsWhileStatement())
@@ -205,46 +207,84 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
                 }
                 auto *type = checker->GetTypeOfVariable(test->AsIdentifier()->Variable());
                 ASSERT(type != nullptr);
-                if (type->IsETSEnum2Type()) {
-                    if (0) {
-                        std::cout << "Found type: ETSEnum2Type: " << type << std::endl;
-                    }
-                    // ok now we need  to replace 'if (v)' to 'if (v.getValue() != 0)'
-                    // NOTE: what about string as enum constant?
-                    ir::AstNode *node = nullptr;
-                    if (ast->IsIfStatement()) {
-                        node = CreateCallExpression_if(ast, ctx->compilerContext);
-                    } else if (ast->IsWhileStatement()) {
-                        node = CreateCallExpression_while(ast, ctx->compilerContext);
-                    } else if (ast->IsDoWhileStatement()) {
-                        node = CreateCallExpression_do_while(ast, ctx->compilerContext);
-                    } else if (ast->IsForUpdateStatement()) {
-                        node = CreateCallExpression_for_update(ast, ctx->compilerContext);
-                    }
 
-                    if (node == nullptr) {
-                        std::cout << "ERRPR: can't create proper substitution!" << std::endl;
-                        return ast;
-                    }
-                    if (0)
-                        std::cout << "Updated node: " << node->DumpJSON() << std::endl;
-
-                    return node;
-                } else {
-                    // ..
+                if (!type->IsETSEnum2Type()) {
+                    return ast;
                 }
+                if (0) {
+                    std::cout << "Found type: ETSEnum2Type: " << type << std::endl;
+                }
+                // ok now we need  to replace 'if (v)' to 'if (v.getValue() != 0)'
+                // NOTE: what about string as enum constant?
+                ir::AstNode *node = nullptr;
+                if (ast->IsIfStatement()) {
+                    node = CreateCallExpression_if(ast, ctx->compilerContext);
+                } else if (ast->IsWhileStatement()) {
+                    node = CreateCallExpression_while(ast, ctx->compilerContext);
+                } else if (ast->IsDoWhileStatement()) {
+                    node = CreateCallExpression_do_while(ast, ctx->compilerContext);
+                } else if (ast->IsForUpdateStatement()) {
+                    node = CreateCallExpression_for_update(ast, ctx->compilerContext);
+                }
+
+                if (node == nullptr) {
+                    std::cout << "ERROR: can't create proper substitution!" << std::endl;
+                    return ast;
+                }
+
+                if (0)
+                    std::cout << "Updated node: " << node->DumpJSON() << std::endl;
+
+                return node;
             } else if (test->IsCallExpression()) {
                 // simple call expression with default non-zero test, i.e.
                 //
                 //   if (v.getValue())
                 //
-                // this iwll always be treated as 'true' sine getValue() returns the EnumConst
+                // this wll always be treated as 'true' since getValue() returns the EnumConst
                 // object,but not the enum  value
                 //
                 // need  to checkif we're calling to getValue() for enum constant
-                // and convert it intobinary expression with '!= 0' test, i.e.
+                // and convert it into binary expression with '!= 0' test, i.e.
                 //
                 //   if (v.getValue() != 0)
+                //
+                // same for loop expressions.
+                //
+                if (ir::Expression *callee = test->AsCallExpression()->Callee();
+                    (callee != nullptr) && (callee->IsMemberExpression())) {
+                    if ((callee->AsMemberExpression()->Object() != nullptr) &&
+                        callee->AsMemberExpression()->Object()->IsIdentifier()) {
+                        auto *id = callee->AsMemberExpression()->Object()->AsIdentifier();
+                        if (id->Variable() == nullptr) {
+                            return ast;
+                        }
+                        auto *type = checker->GetTypeOfVariable(id->Variable());
+                        ASSERT(type != nullptr);
+                        if (!type->IsETSEnum2Type()) {
+                            return ast;  // do not modify it,  it is not ETSEnum2Type
+                        }
+
+                        if (ir::Expression *prop = callee->AsMemberExpression()->Property(); prop != nullptr) {
+                            if (prop->IsIdentifier() && (prop->AsIdentifier()->Name() == ENUM_GETVALUE_METHOD_NAME)) {
+                                //  now we need tow rap it to the binary expression .. != 0
+                                auto *testExpr = CreateTestExpression(prop->AsIdentifier(), ctx->compilerContext,
+                                                                      test->AsCallExpression());
+                                if (ast->IsIfStatement()) {
+                                    ast->AsIfStatement()->SetTest(testExpr);
+                                } else if (ast->IsWhileStatement()) {
+                                    ast->AsWhileStatement()->SetTest(testExpr);
+                                } else if (ast->IsDoWhileStatement()) {
+                                    ast->AsDoWhileStatement()->SetTest(testExpr);
+                                } else if (ast->IsForUpdateStatement()) {
+                                    ast->AsForUpdateStatement()->SetTest(testExpr);
+                                }
+                                testExpr->SetParent(ast);
+                                return ast;
+                            }
+                        }
+                    }
+                }
             }
         }
         return ast;
