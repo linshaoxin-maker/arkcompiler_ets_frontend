@@ -70,83 +70,6 @@ ir::Expression *CreateTestExpression(ir::Identifier *id, CompilerContext *ctx, i
     return testExpr;
 }
 
-ir::AstNode *CreateCallExpression_if(ir::AstNode *ast, CompilerContext *ctx)
-{
-    // only identifiers allowed here!
-    ASSERT(ast->IsIfStatement() && ast->AsIfStatement()->Test()->IsIdentifier());
-
-    auto *id = ast->AsIfStatement()->Test()->AsIdentifier();
-    // auto *id =
-    //     checker->AllocNode<ir::Identifier>(ast->AsIfStatement()->Test()->AsIdentifier()->Name(),
-    //     checker->Allocator());
-    // id->SetReference();
-
-    auto *testExpr = CreateTestExpression(id, ctx, nullptr);
-
-    // auto *test = checker->AllocNode<ir::IfStatement>(testExpr, ast->AsIfStatement()->Consequent(),
-    //                                                  ast->AsIfStatement()->Alternate());
-    ast->AsIfStatement()->SetTest(testExpr);
-    testExpr->SetParent(ast);
-    return ast;
-}
-
-ir::AstNode *CreateCallExpression_while(ir::AstNode *ast, CompilerContext *ctx)
-{
-    // only identifiers allowed here!
-    ASSERT(ast->IsWhileStatement() && ast->AsWhileStatement()->Test()->IsIdentifier());
-
-    auto *id = ast->AsWhileStatement()->Test()->AsIdentifier();
-    // auto *id = checker->AllocNode<ir::Identifier>(
-    //     ast->AsWhileStatement()->Test()->AsIdentifier()->Name(), checker->Allocator());
-    // id->SetReference();
-
-    auto *testExpr = CreateTestExpression(id, ctx, nullptr);
-
-    // auto *expr = checker->AllocNode<ir::WhileStatement>(testExpr, ast->AsWhileStatement()->Body());
-    ast->AsWhileStatement()->SetTest(testExpr);
-    testExpr->SetParent(ast);
-    return ast;
-}
-
-ir::AstNode *CreateCallExpression_do_while(ir::AstNode *ast, CompilerContext *ctx)
-{
-    // only identifiers allowed here!
-    ASSERT(ast->IsDoWhileStatement() && ast->AsDoWhileStatement()->Test()->IsIdentifier());
-
-    auto *id = ast->AsDoWhileStatement()->Test()->AsIdentifier();
-    // auto *id = checker->AllocNode<ir::Identifier>(
-    //     ast->AsDoWhileStatement()->Test()->AsIdentifier()->Name(), checker->Allocator());
-    // id->SetReference();
-
-    auto *testExpr = CreateTestExpression(id, ctx, nullptr);
-
-    // auto *expr = checker->AllocNode<ir::DoWhileStatement>(ast->AsDoWhileStatement()->Body(), testExpr);
-    ast->AsDoWhileStatement()->SetTest(testExpr);
-    testExpr->SetParent(ast);
-    return ast;
-}
-
-ir::AstNode *CreateCallExpression_for_update(ir::AstNode *ast, CompilerContext *ctx)
-{
-    // only identifiers allowed here!
-    ASSERT(ast->IsForUpdateStatement() && ast->AsForUpdateStatement()->Test()->IsIdentifier());
-
-    auto *id = ast->AsForUpdateStatement()->Test()->AsIdentifier();
-    // auto *id = checker->AllocNode<ir::Identifier>(ast->AsForUpdateStatement()->Test()->AsIdentifier()->Name(),
-    //                                               checker->Allocator());
-    // id->SetReference();
-
-    auto *testExpr = CreateTestExpression(id, ctx, nullptr);
-
-    // auto *expr = checker->AllocNode<ir::ForUpdateStatement>(ast->AsForUpdateStatement()->Init(), testExpr,
-    //                                                         ast->AsForUpdateStatement()->Update(),
-    //                                                         ast->AsForUpdateStatement()->Body());
-    // testExpr->SetParent(expr);
-    ast->AsForUpdateStatement()->SetTest(testExpr);
-    testExpr->SetParent(ast);
-    return ast;
-}
-
 bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *program)
 {
     if (program->Extension() != ScriptExtension::ETS) {
@@ -162,7 +85,7 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
         }
     }
 
-    program->Ast()->TransformChildrenRecursively([checker, ctx, program](ir::AstNode *ast) -> ir::AstNode * {
+    program->Ast()->TransformChildrenRecursively([checker, ctx](ir::AstNode *ast) -> ir::AstNode * {
         if (ast->IsCallExpression()) {
             // check & update call expression with explicit cast to new type
             // e.g. for the following
@@ -183,6 +106,8 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
                    ast->IsForUpdateStatement()) {
             // so far let's put this only for test script
             ir::Expression *test = nullptr;
+            ir::Expression *testExpr = nullptr;
+
             if (ast->IsIfStatement())
                 test = ast->AsIfStatement()->Test();
             if (ast->IsWhileStatement())
@@ -192,16 +117,8 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
             if (ast->IsForUpdateStatement())
                 test = ast->AsForUpdateStatement()->Test();
 
-            if (0) {
-                std::cout << "File: " << program->SourceFile().GetFileName() << ": test statement: " << test->DumpJSON()
-                          << std::endl;
-            }
             if (test->IsIdentifier()) {
-                if (0) {
-                    std::cout << "Found Identifier:  " << test->AsIdentifier()->Name() << std::endl;
-                }
                 // we got simple variable test expression, test against  non-zero value
-                // ASSERT(test->AsIdentifier()->Variable() != nullptr);
                 if (test->AsIdentifier()->Variable() == nullptr) {
                     return ast;
                 }
@@ -211,31 +128,10 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
                 if (!type->IsETSEnum2Type()) {
                     return ast;
                 }
-                if (0) {
-                    std::cout << "Found type: ETSEnum2Type: " << type << std::endl;
-                }
                 // ok now we need  to replace 'if (v)' to 'if (v.getValue() != 0)'
                 // NOTE: what about string as enum constant?
-                ir::AstNode *node = nullptr;
-                if (ast->IsIfStatement()) {
-                    node = CreateCallExpression_if(ast, ctx->compilerContext);
-                } else if (ast->IsWhileStatement()) {
-                    node = CreateCallExpression_while(ast, ctx->compilerContext);
-                } else if (ast->IsDoWhileStatement()) {
-                    node = CreateCallExpression_do_while(ast, ctx->compilerContext);
-                } else if (ast->IsForUpdateStatement()) {
-                    node = CreateCallExpression_for_update(ast, ctx->compilerContext);
-                }
+                testExpr = CreateTestExpression(test->AsIdentifier(), ctx->compilerContext, nullptr);
 
-                if (node == nullptr) {
-                    std::cout << "ERROR: can't create proper substitution!" << std::endl;
-                    return ast;
-                }
-
-                if (0)
-                    std::cout << "Updated node: " << node->DumpJSON() << std::endl;
-
-                return node;
             } else if (test->IsCallExpression()) {
                 // simple call expression with default non-zero test, i.e.
                 //
@@ -268,24 +164,27 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
                         if (ir::Expression *prop = callee->AsMemberExpression()->Property(); prop != nullptr) {
                             if (prop->IsIdentifier() && (prop->AsIdentifier()->Name() == ENUM_GETVALUE_METHOD_NAME)) {
                                 //  now we need tow rap it to the binary expression .. != 0
-                                auto *testExpr = CreateTestExpression(prop->AsIdentifier(), ctx->compilerContext,
-                                                                      test->AsCallExpression());
-                                if (ast->IsIfStatement()) {
-                                    ast->AsIfStatement()->SetTest(testExpr);
-                                } else if (ast->IsWhileStatement()) {
-                                    ast->AsWhileStatement()->SetTest(testExpr);
-                                } else if (ast->IsDoWhileStatement()) {
-                                    ast->AsDoWhileStatement()->SetTest(testExpr);
-                                } else if (ast->IsForUpdateStatement()) {
-                                    ast->AsForUpdateStatement()->SetTest(testExpr);
-                                }
-                                testExpr->SetParent(ast);
-                                return ast;
+                                testExpr = CreateTestExpression(prop->AsIdentifier(), ctx->compilerContext,
+                                                                test->AsCallExpression());
                             }
                         }
                     }
                 }
             }
+            if (testExpr == nullptr) {
+                return ast;
+            }
+            if (ast->IsIfStatement()) {
+                ast->AsIfStatement()->SetTest(testExpr);
+            } else if (ast->IsWhileStatement()) {
+                ast->AsWhileStatement()->SetTest(testExpr);
+            } else if (ast->IsDoWhileStatement()) {
+                ast->AsDoWhileStatement()->SetTest(testExpr);
+            } else if (ast->IsForUpdateStatement()) {
+                ast->AsForUpdateStatement()->SetTest(testExpr);
+            }
+            testExpr->SetParent(ast);
+            return ast;
         }
         return ast;
     });
