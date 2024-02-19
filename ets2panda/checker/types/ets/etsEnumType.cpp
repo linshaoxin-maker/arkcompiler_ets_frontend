@@ -334,8 +334,8 @@ std::string EnumDescription(util::StringView name)
 }
 
 ETSEnum2Type::ETSEnum2Type(ETSChecker *checker, util::StringView name, util::StringView assembler_name,
-                           ir::AstNode *decl_node, ETSObjectFlags flags)
-    : ETSObjectType(checker->Allocator(), name, assembler_name, decl_node, flags | ETSObjectFlags::ENUM2)
+                           ir::AstNode *decl_node, ETSObjectFlags flags, TypeRelation *relation)
+    : ETSObjectType(checker->Allocator(), name, assembler_name, decl_node, flags | ETSObjectFlags::ENUM2, relation)
 {
     AddTypeFlag(TypeFlag::ETS_ENUM2);
     CreateLiteralTypes(checker, name, assembler_name, decl_node, flags);

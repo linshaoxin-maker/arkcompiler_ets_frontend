@@ -559,7 +559,7 @@ ETSObjectType *ETSChecker::CreateNewETSObjectType(util::StringView name, ir::Ast
     }
 
     if (isEnumClass(declNode)) {
-        auto ret = Allocator()->New<ETSEnum2Type>(this, name, assemblerName, declNode, flags);
+        auto ret = Allocator()->New<ETSEnum2Type>(this, name, assemblerName, declNode, flags, Relation());
         return ret;
     }
 

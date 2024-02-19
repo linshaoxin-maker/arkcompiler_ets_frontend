@@ -222,7 +222,7 @@ std::string EnumDescription(util::StringView name);
 class ETSEnum2Type : public ETSObjectType {
 public:
     ETSEnum2Type(ETSChecker *checker, util::StringView name, util::StringView assembler_name, ir::AstNode *decl_node,
-                 ETSObjectFlags flags);
+                 ETSObjectFlags flags, TypeRelation *relation);
 
     ETSEnum2Type(ArenaAllocator *allocator, util::StringView name, util::StringView assembler_name,
                  ir::AstNode *decl_node, ETSObjectFlags flags, ir::Literal *value);
