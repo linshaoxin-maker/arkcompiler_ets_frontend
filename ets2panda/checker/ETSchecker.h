@@ -605,6 +605,7 @@ public:
     template <typename T, typename... Args>
     T *AllocNode(Args &&...args)
     {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *ret = Allocator()->New<T>(std::forward<Args>(args)...);
         ret->Iterate([ret](auto *child) { child->SetParent(ret); });
         return ret;

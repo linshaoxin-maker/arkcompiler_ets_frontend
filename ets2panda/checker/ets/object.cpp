@@ -800,6 +800,7 @@ void ETSChecker::CheckClassDefinition(ir::ClassDefinition *classDef)
             it->Check(this);
         }
     }
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     CreateAsyncProxyMethods(classDef);
 
     if (classDef->IsGlobal()) {
@@ -836,9 +837,11 @@ void ETSChecker::CreateAsyncProxyMethods(ir::ClassDefinition *classDef)
     for (auto *it : classDef->Body()) {
         if (IsAsyncMethod(it)) {
             auto *method = it->AsMethodDefinition();
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
             asyncImpls.push_back(CreateAsyncProxy(method, classDef));
             auto *proxy = asyncImpls.back();
             for (auto *overload : method->Overloads()) {
+                // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
                 auto *impl = CreateAsyncProxy(overload, classDef, false);
                 impl->Function()->Id()->SetVariable(proxy->Function()->Id()->Variable());
                 proxy->AddOverload(impl);

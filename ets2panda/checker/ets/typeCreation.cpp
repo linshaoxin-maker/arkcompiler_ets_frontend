@@ -387,29 +387,39 @@ ETSEnumType *ETSChecker::CreateETSEnumType(ir::TSEnumDeclaration const *const en
         memberVar->SetTsType(enumLiteralType);
     }
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const namesArrayIdent = CreateEnumNamesArray(enumType);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const getNameMethod = CreateEnumGetNameMethod(namesArrayIdent, enumType);
     enumType->SetGetNameMethod(getNameMethod);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const valueOfMethod = CreateEnumValueOfMethod(namesArrayIdent, enumType);
     enumType->SetValueOfMethod(valueOfMethod);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const fromIntMethod = CreateEnumFromIntMethod(namesArrayIdent, enumType);
     enumType->SetFromIntMethod(fromIntMethod);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const valuesArrayIdent = CreateEnumValuesArray(enumType);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const getValueMethod = CreateEnumGetValueMethod(valuesArrayIdent, enumType);
     enumType->SetGetValueMethod(getValueMethod);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const stringValuesArrayIdent = CreateEnumStringValuesArray(enumType);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const toStringMethod = CreateEnumToStringMethod(stringValuesArrayIdent, enumType);
     enumType->SetToStringMethod(toStringMethod);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const itemsArrayIdent = CreateEnumItemsArray(enumType);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const valuesMethod = CreateEnumValuesMethod(itemsArrayIdent, enumType);
     enumType->SetValuesMethod(valuesMethod);
 
@@ -444,23 +454,29 @@ ETSStringEnumType *ETSChecker::CreateETSStringEnumType(ir::TSEnumDeclaration con
 
     auto *const namesArrayIdent = CreateEnumNamesArray(enumType);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const getNameMethod = CreateEnumGetNameMethod(namesArrayIdent, enumType);
     enumType->SetGetNameMethod(getNameMethod);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const valueOfMethod = CreateEnumValueOfMethod(namesArrayIdent, enumType);
     enumType->SetValueOfMethod(valueOfMethod);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const fromIntMethod = CreateEnumFromIntMethod(namesArrayIdent, enumType);
     enumType->SetFromIntMethod(fromIntMethod);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const stringValuesArrayIdent = CreateEnumStringValuesArray(enumType);
 
     auto const toStringMethod = CreateEnumToStringMethod(stringValuesArrayIdent, enumType);
     enumType->SetToStringMethod(toStringMethod);
     enumType->SetGetValueMethod(toStringMethod);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const itemsArrayIdent = CreateEnumItemsArray(enumType);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const valuesMethod = CreateEnumValuesMethod(itemsArrayIdent, enumType);
     enumType->SetValuesMethod(valuesMethod);
 

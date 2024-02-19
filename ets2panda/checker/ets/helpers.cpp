@@ -514,6 +514,7 @@ void ETSChecker::ValidateCallExpressionIdentifier(ir::Identifier *const ident, T
     if (ident->Parent()->AsCallExpression()->Callee() == ident && !type->IsETSFunctionType() &&
         !type->IsETSDynamicType() &&
         (!type->IsETSObjectType() || !type->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) &&
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         !TryTransformingToStaticInvoke(ident, type)) {
         ThrowError(ident);
     }
@@ -622,6 +623,7 @@ void ETSChecker::ValidateResolvedIdentifier(ir::Identifier *const ident, varbind
 
     switch (ident->Parent()->Type()) {
         case ir::AstNodeType::CALL_EXPRESSION: {
+            // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
             ValidateCallExpressionIdentifier(ident, resolvedType);
             break;
         }
@@ -706,6 +708,7 @@ Type *ETSChecker::ResolveIdentifier(ir::Identifier *const ident)
         resolved = FindVariableInGlobal(ident);
     }
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     ValidateResolvedIdentifier(ident, resolved);
 
     if (resolved->HasFlag(varbinder::VariableFlags::METHOD)) {
@@ -1028,6 +1031,7 @@ checker::Type *ETSChecker::CheckArrayElements(ir::Identifier *ident, ir::ArrayEx
     ArenaVector<ir::Expression *> elements = init->AsArrayExpression()->Elements();
     checker::Type *annotationType = nullptr;
     if (elements.empty()) {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         annotationType = Allocator()->New<ETSArrayType>(GlobalETSObjectType());
     } else {
         auto type = elements[0]->Check(this);
@@ -1045,6 +1049,7 @@ checker::Type *ETSChecker::CheckArrayElements(ir::Identifier *ident, ir::ArrayEx
                 ThrowTypeError({"Union type is not implemented yet!"}, ident->Start());
             }
         }
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         annotationType = Allocator()->New<ETSArrayType>(type);
     }
     return annotationType;
@@ -1121,6 +1126,7 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
         (init->IsArrowFunctionExpression() ||
          (init->IsTSAsExpression() && init->AsTSAsExpression()->Expr()->IsArrowFunctionExpression()))) {
         if (init->IsArrowFunctionExpression()) {
+            // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
             typeAnnotation = init->AsArrowFunctionExpression()->CreateTypeAnnotation(this);
         } else {
             typeAnnotation = init->AsTSAsExpression()->TypeAnnotation();
@@ -1239,6 +1245,7 @@ Type *ETSChecker::GetTypeFromClassReference(varbinder::Variable *var)
 void ETSChecker::ValidateGenericTypeAliasForClonedNode(ir::TSTypeAliasDeclaration *const typeAliasNode,
                                                        const ir::TSTypeParameterInstantiation *const exactTypeParams)
 {
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const clonedNode = typeAliasNode->TypeAnnotation()->Clone(Allocator(), typeAliasNode);
 
     // Basic check, we really don't want to change the original type nodes, more precise checking should be made
@@ -1302,6 +1309,7 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
     }
 
     if (typeParams == nullptr) {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         return GetReferencedTypeBase(name);
     }
 
@@ -1309,6 +1317,7 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
         origTypeParam->Check(this);
     }
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     Type *const aliasType = GetReferencedTypeBase(name);
     auto *const aliasSub = NewSubstitution();
 
@@ -1323,6 +1332,7 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
         }
     }
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     ValidateGenericTypeAliasForClonedNode(typeAliasNode->AsTSTypeAliasDeclaration(), typeParams);
 
     return aliasType->Substitute(Relation(), aliasSub);
@@ -1336,8 +1346,10 @@ Type *ETSChecker::GetTypeFromEnumReference([[maybe_unused]] varbinder::Variable 
 
     auto const *const enumDecl = var->Declaration()->Node()->AsTSEnumDeclaration();
     if (auto *const itemInit = enumDecl->Members().front()->AsTSEnumMember()->Init(); itemInit->IsNumberLiteral()) {
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         return CreateETSEnumType(enumDecl);
     } else if (itemInit->IsStringLiteral()) {  // NOLINT(readability-else-after-return)
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         return CreateETSStringEnumType(enumDecl);
     } else {  // NOLINT(readability-else-after-return)
         ThrowTypeError("Invalid enumeration value type.", enumDecl->Start());
@@ -1460,6 +1472,7 @@ Type *ETSChecker::GetReferencedTypeBase(ir::Expression *name)
             return GetTypeFromClassReference(refVar);
         }
         case ir::AstNodeType::TS_ENUM_DECLARATION: {
+            // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
             return GetTypeFromEnumReference(refVar);
         }
         case ir::AstNodeType::TS_TYPE_PARAMETER: {
@@ -2573,13 +2586,16 @@ void ETSChecker::AddUndefinedParamsForDefaultParams(const Signature *const signa
             auto const *const typeAnn = param->Ident()->TypeAnnotation();
             if (typeAnn->IsETSPrimitiveType()) {
                 if (typeAnn->AsETSPrimitiveType()->GetPrimitiveType() == ir::PrimitiveType::BOOLEAN) {
+                    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
                     arguments.push_back(checker->Allocator()->New<ir::BooleanLiteral>(false));
                 } else {
+                    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
                     arguments.push_back(checker->Allocator()->New<ir::NumberLiteral>(lexer::Number(0)));
                 }
             } else {
                 // A proxy-function is called, so default reference parameters
                 // are initialized with null instead of undefined
+                // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
                 auto *const nullLiteral = checker->Allocator()->New<ir::NullLiteral>();
                 nullLiteral->SetTsType(checker->GlobalETSNullType());
                 arguments.push_back(nullLiteral);
@@ -2587,6 +2603,7 @@ void ETSChecker::AddUndefinedParamsForDefaultParams(const Signature *const signa
             num |= (1U << (arguments.size() - 1));
         }
     }
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     arguments.push_back(checker->Allocator()->New<ir::NumberLiteral>(lexer::Number(num)));
 }
 
@@ -2772,10 +2789,12 @@ bool ETSChecker::TryTransformingToStaticInvoke(ir::Identifier *const ident, cons
                        ident->Start());
     }
     // clang-format on
-
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *classId = AllocNode<ir::Identifier>(className, Allocator());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *methodId = AllocNode<ir::Identifier>(propertyName, Allocator());
     auto *transformedCallee =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         AllocNode<ir::MemberExpression>(classId, methodId, ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
 
     classId->SetRange(ident->Range());
@@ -2793,6 +2812,7 @@ bool ETSChecker::TryTransformingToStaticInvoke(ir::Identifier *const ident, cons
         parser::Program program(Allocator(), VarBinder());
         es2panda::CompilerOptions options;
         auto parser = parser::ETSParser(&program, options, parser::ParserStatus::NO_OPTS);
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         auto *argExpr = parser.CreateExpression(implicitInstantiateArgument);
         compiler::InitScopesPhaseETS::RunExternalNode(argExpr, &program);
 
