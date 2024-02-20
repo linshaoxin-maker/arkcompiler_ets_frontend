@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,20 +21,14 @@ class Person {
     residence: Residence = new Residence();
 }
 
+function dummy(): Person | null {
+    return null;
+}
+
 function main(): void {
-    let john: Person | null = null;
+    let john: Person | null = dummy();
     let test = john?.residence?.numberOfRooms;
     assert (test == null);
     let nullsafety_test = john?.residence?.numberOfRooms ?? "unknown";
     assert (nullsafety_test == "unknown");
-
-    let isNull: boolean = false;
-
-    try {
-        let numbers : int = john.residence.numberOfRooms;
-    } catch (e: NullPointerException) {
-      isNull = true;
-    }
-
-    assert (isNull == true);
 }

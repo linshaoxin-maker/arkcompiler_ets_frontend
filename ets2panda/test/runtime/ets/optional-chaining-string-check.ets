@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +17,13 @@ class Person {
     name: String = "Bill";
 }
 
+function dummy(): Person | null {
+    return null;
+}
+
 function main(): void {
   let bill : Person = new Person();
-  let name = bill?.name;
+  let name = bill.name;
 
   assert(name == "Bill");
   assert(name.length == 4);
@@ -27,16 +31,11 @@ function main(): void {
   name = bill.name;
   assert(name == "Bill");
 
-  let juan: Person | null = null;
+  let juan: Person | null = dummy();
   name = juan?.name ?? "Juan";
   assert (name.length == 4);
 
   let test = false;
 
-  try {
-    name = juan.name;
-  } catch (e: NullPointerException) {
-    test = true;
-  }
-  assert(test = true);
+  assert(juan?.name === undefined);
 }

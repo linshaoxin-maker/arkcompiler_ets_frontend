@@ -21,10 +21,6 @@
 #include "checker/types/typeRelation.h"
 #include "checker/types/typeFacts.h"
 
-#include "macros.h"
-#include <sstream>
-#include <variant>
-
 namespace ark::es2panda::varbinder {
 class Variable;
 }  // namespace ark::es2panda::varbinder
@@ -86,14 +82,17 @@ public:
 
     bool IsETSStringType() const;
     bool IsETSBigIntType() const;
-    bool IsETSNullType() const;
-    bool IsETSUndefinedType() const;
-    bool IsETSNullLike() const;
+    bool IsETSReferenceType() const;
     bool IsETSAsyncFuncReturnType() const;
-    bool IsNullish() const;
-    bool IsNullishOrNullLike() const;
-    bool ContainsNull() const;
-    bool ContainsUndefined() const;
+    bool IsETSUnboxableObject() const;
+
+    bool PossiblyETSNull() const;
+    bool PossiblyETSUndefined() const;
+    bool PossiblyETSNullish() const;
+    bool DefinitelyETSNullish() const;
+    bool DefinitelyNotETSNullish() const;
+
+    bool PossiblyETSString() const;
 
     ETSStringType *AsETSStringType()
     {
@@ -224,15 +223,21 @@ public:
     }
 
     bool IsLambdaObject() const;
-    virtual void ToString(std::stringstream &ss) const = 0;
+    virtual void ToString(std::stringstream &ss, bool precise) const = 0;
+    void ToString(std::stringstream &ss) const;
+    [[nodiscard]] std::string ToString() const;
+    [[nodiscard]] std::string ToStringPrecise() const;
+
     virtual void ToStringAsSrc(std::stringstream &ss) const;
+    std::string ToStringAsSrc() const;
+
     virtual TypeFacts GetTypeFacts() const;
     virtual void ToAssemblerType([[maybe_unused]] std::stringstream &ss) const {};
     virtual void ToDebugInfoType([[maybe_unused]] std::stringstream &ss) const {};
     virtual void ToAssemblerTypeWithRank([[maybe_unused]] std::stringstream &ss) const
     {
         ToAssemblerType(ss);
-    };
+    }
 
     virtual uint32_t Rank() const
     {
@@ -254,7 +259,10 @@ public:
     virtual void IsSubtypeOf(TypeRelation *relation, Type *target);
     virtual Type *AsSuper(Checker *checker, varbinder::Variable *sourceVar);
 
+    [[nodiscard]] static std::uint32_t GetPrecedence(Type const *type) noexcept;
+
     virtual Type *Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes);
+    [[nodiscard]] virtual Type *Clone(Checker *checker);
     virtual Type *Substitute(TypeRelation *relation, const Substitution *substitution);
 
 protected:

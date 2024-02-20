@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-type tmp = Long;
+type tmp = Long|null;
 
 function foo(t : tmp) : void {
   t!;

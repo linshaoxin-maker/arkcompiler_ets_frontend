@@ -26,16 +26,9 @@
 #include "compiler/debugger/debuginfoDumper.h"
 #include "compiler/base/catchTable.h"
 #include "es2panda.h"
-#include "ir/statements/blockStatement.h"
 #include "parser/program/program.h"
 #include "checker/types/type.h"
 #include "generated/isa.h"
-#include "macros.h"
-
-#include <string>
-#include <string_view>
-#include <tuple>
-#include <utility>
 
 namespace ark::es2panda::compiler {
 using LiteralPair = std::pair<pandasm::LiteralArray::Literal, pandasm::LiteralArray::Literal>;

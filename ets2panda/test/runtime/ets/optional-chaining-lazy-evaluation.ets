@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,15 +13,24 @@
  * limitations under the License.
  */
 
+function foo1(): Int[] | null {
+    return null;
+}
+
+function foo2(): Int[] | null {
+    let obj_tmp: Int[] = [11, 21, 31];
+    return obj_tmp;
+}
+
 function main(): void {
   let x: int = 0;
 
-  let potentiallyNullObj: Int[] | null = null;
+  let potentiallyNullObj: Int[] | null = foo1();
   let number: Int | undefined = potentiallyNullObj?.[x++] ?? 2;
   assert(number == 2);
   assert(x == 0); // 0 as x was not incremented
 
-  let obj: Int[] | null = [11, 21, 31];
+  let obj: Int[] | null = foo2();
   number = obj?.[x++];
 
   let a : Int = 11;

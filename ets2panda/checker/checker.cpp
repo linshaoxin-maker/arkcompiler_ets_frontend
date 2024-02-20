@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -35,7 +35,7 @@
 namespace ark::es2panda::checker {
 Checker::Checker()
     : allocator_(SpaceType::SPACE_TYPE_COMPILER, nullptr, true),
-      context_(&allocator_, CheckerStatus::NO_OPTS),
+      context_(this, CheckerStatus::NO_OPTS),
       globalTypes_(allocator_.New<GlobalTypesHolder>(&allocator_)),
       relation_(allocator_.New<TypeRelation>(this))
 {
@@ -198,7 +198,7 @@ bool Checker::AreTypesComparable(Type *source, Type *target)
 
 bool Checker::IsTypeEqualityComparableTo(Type *source, Type *target)
 {
-    return target->IsNullish() || IsTypeComparableTo(source, target);
+    return IsTypeComparableTo(source, target);
 }
 
 parser::Program *Checker::Program() const

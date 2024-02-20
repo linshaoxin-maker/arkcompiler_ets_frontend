@@ -30,9 +30,12 @@ function typeOf(o : Object) : int {
     return -1;
 }
 
+function dummy(): Int | null {
+    return 5;
+}
+
 function testLocalIdentifier() : void {
-    let i : Int = 5
-    let a : Int | null = i;
+    let a : Int | null = dummy();
     let b = a!;
 
     assert typeOf(b) == 1: "b must be type Int";
@@ -87,12 +90,16 @@ function baz() : Byte | null {
     return null;
 }
 
+function aux(): Object | null {
+   return null;
+}
+
 function testNPE() : void {
-    let o : Object | null = null;
+    let o : Object | null = aux();
     let npe_caught = false;
 
     try {
-        o!;
+        (o as Object | null)!;
         assert false : "this must not be executed";
     } catch (ex: NullPointerException) {
         npe_caught = true;

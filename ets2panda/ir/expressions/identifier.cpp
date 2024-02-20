@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021 - 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +15,6 @@
 
 #include "identifier.h"
 
-#include "varbinder/scope.h"
 #include "checker/ETSchecker.h"
 #include "checker/TSchecker.h"
 #include "compiler/core/pandagen.h"
@@ -36,13 +35,19 @@ Identifier::Identifier([[maybe_unused]] Tag const tag, Identifier const &other, 
     }
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 Identifier *Identifier::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
     if (auto *const clone = allocator->New<Identifier>(Tag {}, *this, allocator); clone != nullptr) {
+        clone->SetTsType(TsType());
         if (parent != nullptr) {
             clone->SetParent(parent);
         }
+
+        if (this->IsReference()) {
+            clone->SetReference();
+        }
+
+        clone->SetRange(Range());
         return clone;
     }
     throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
@@ -122,5 +127,28 @@ checker::Type *Identifier::Check(checker::TSChecker *checker)
 checker::Type *Identifier::Check(checker::ETSChecker *checker)
 {
     return checker->GetAnalyzer()->Check(this);
+}
+
+void Identifier::CheckSmartCastCondition(checker::ETSChecker *checker)
+{
+    //  Smart cast for extended conditional check can be applied only to the variables of reference types.
+    if (auto const *const variableType = variable_->TsType(); !variableType->IsETSReferenceType()) {
+        return;
+    }
+
+    // Check that identifier is a part of logical OR/AND or negation operator (other cases are not interested)
+    if (parent_->IsBinaryExpression()) {
+        auto const operation = parent_->AsBinaryExpression()->OperatorType();
+        if (operation != lexer::TokenType::PUNCTUATOR_LOGICAL_OR &&
+            operation != lexer::TokenType::PUNCTUATOR_LOGICAL_AND) {
+            return;
+        }
+    } else if (!parent_->IsUnaryExpression() && !parent_->IsIfStatement()) {
+        return;
+    }
+
+    if (TsType()->PossiblyETSNullish()) {
+        smartCastCondition_ = {Variable(), checker->GlobalETSNullType(), true, false};
+    }
 }
 }  // namespace ark::es2panda::ir

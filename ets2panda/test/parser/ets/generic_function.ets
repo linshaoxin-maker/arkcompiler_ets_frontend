@@ -14,10 +14,10 @@
  */
 
 interface Comparable2 {
-  localeCompare(other: Object): int;
+  localeCompare(other: Object|null): int;
 }
 
-function compare<T extends Comparable2>(x: T, y: T): int {
+function compare<T extends Comparable2>(x: T|null, y: T|null): int {
   if (x == null) return y == null ? 0 : -1;
   if (y == null) return 1;
   return x.localeCompare(y);
