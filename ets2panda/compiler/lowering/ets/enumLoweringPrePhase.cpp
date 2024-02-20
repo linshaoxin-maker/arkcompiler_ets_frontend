@@ -16,7 +16,6 @@
 #include "enumLoweringPrePhase.h"
 #include "compiler/lowering/scopesInit/scopesInitPhase.h"
 
-#include "utils/arena_containers.h"
 #include "varbinder/variableFlags.h"
 #include "varbinder/ETSBinder.h"
 #include "checker/ETSchecker.h"
@@ -293,7 +292,6 @@ void CreateCCtor(ArenaVector<ir::AstNode *> &properties, const lexer::SourcePosi
         ir::ScriptFunctionFlags::STATIC_BLOCK | ir::ScriptFunctionFlags::HIDDEN, false, Language(Language::Id::ETS));
     func->AddModifier(ir::ModifierFlags::STATIC);
     func->SetIdent(id);
-    ASSERT(body->Parent() == func);
 
     auto *func_expr = checker->AllocNode<ir::FunctionExpression>(func);
     auto *static_block = checker->AllocNode<ir::ClassStaticBlock>(func_expr, checker->Allocator());
@@ -353,7 +351,6 @@ ir::AstNode *CreateEnumClassFromEnumDeclaration(ir::TSEnumDeclaration *enum_decl
                      ir::ClassDefinitionModifiers::CLASS_DECL | ir::ClassDefinitionModifiers::DECLARATION;
     auto *class_def = checker->AllocNode<ir::ClassDefinition>(checker->Allocator(), ident, std::move(body), def_modif,
                                                               Language(Language::Id::ETS));
-    ASSERT(ident->Parent() == class_def);
     if (is_int_enum) {
         class_def->SetSuper(CreateETSTypeReference(ENUM_INT_BASE_CLASS_NAME, checker));
     } else {

@@ -66,10 +66,6 @@ public:
           kind_(kind),
           computed_(computed)
     {
-        // if (object_ != nullptr)
-        //     object_->SetParent(this);
-        // if (property_ != nullptr)
-        //     property_->SetParent(this);
     }
 
     explicit MemberExpression(Tag tag, MemberExpression const &other, ArenaAllocator *allocator);

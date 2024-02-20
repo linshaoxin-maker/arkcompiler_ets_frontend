@@ -690,13 +690,7 @@ public:
                 if (ast->IsClassDeclaration() && parent != nullptr && parent->IsETSNewClassInstanceExpression()) {
                     return;
                 }
-                if (0) {
-                    std::cout << "Ast: " << ast->DumpJSON() << std::endl
-                              << "Node: " << node->DumpJSON() << std::endl
-                              << "Node->Parent: " << parent->DumpJSON() << std::endl
-                              << "has incorrect parent! " << parent << std::endl;
-                    ASSERT(false);
-                }
+
                 ctx.AddCheckMessage("INCORRECT_PARENT_REF", *node, node->Start());
                 result = {CheckDecision::INCORRECT, CheckAction::CONTINUE};
             }
