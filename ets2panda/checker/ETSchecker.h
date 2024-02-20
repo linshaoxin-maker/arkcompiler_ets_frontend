@@ -129,6 +129,9 @@ public:
     Type *CheckTypeCached(ir::Expression *expr) override;
     void ResolveStructuredTypeMembers([[maybe_unused]] Type *type) override {}
     Type *GetTypeOfVariable([[maybe_unused]] varbinder::Variable *var) override;
+    Type *GetTypeForGetterSetter(varbinder::Variable *var);
+    Type *GetTypeForDynamicModuleVariable(varbinder::Variable *var);
+    void SetUpContextForNodeHierarchy(ir::AstNode *iter);
     Type *GuaranteedTypeForUncheckedCast(Type *base, Type *substituted);
     Type *GuaranteedTypeForUncheckedCallReturn(Signature *sig);
     Type *GuaranteedTypeForUncheckedPropertyAccess(varbinder::Variable *prop);
