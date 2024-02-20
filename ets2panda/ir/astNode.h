@@ -252,7 +252,22 @@ public:
 
     void SetParent(AstNode *const parent) noexcept
     {
+        if (mark_ & 0x01) {
+            ASSERT(parent_ == nullptr);
+            if (parent_ != nullptr)
+                ASSERT(parent_ == parent);
+        }
         parent_ = parent;
+    }
+
+    void SetMark(size_t bit)
+    {
+        mark_ |= bit;
+    }
+
+    size_t GetMark()
+    {
+        return mark_;
     }
 
     [[nodiscard]] varbinder::Variable *Variable() const noexcept
@@ -438,7 +453,7 @@ public:
                                                             \
     bool Has##flag_type(flag_type flag) const noexcept      \
     {                                                       \
-        return ((member_name)&flag) != 0U;                  \
+        return ((member_name) & flag) != 0U;                \
     }                                                       \
     void Remove##flag_type(flag_type flag) const noexcept   \
     {                                                       \
@@ -524,6 +539,8 @@ protected:
     mutable AstNodeFlags astNodeFlags_ {};
     mutable BoxingUnboxingFlags boxingUnboxingFlags_ {};
     // NOLINTEND(misc-non-private-member-variables-in-classes)
+
+    size_t mark_;
 };
 
 template <typename T>
