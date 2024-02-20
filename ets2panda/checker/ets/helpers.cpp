@@ -1319,8 +1319,11 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
 
     for (std::size_t idx = 0; idx < typeAliasNode->TypeParams()->Params().size(); ++idx) {
         auto *typeAliasType = typeAliasNode->TypeParams()->Params().at(idx)->Name()->Variable()->TsType();
+        auto insideAliasType = typeParams->Params().at(idx)->GetType(this);
+        insideAliasType = MaybePromotedBuiltinType(insideAliasType);
+
         if (typeAliasType->IsETSTypeParameter()) {
-            aliasSub->insert({typeAliasType->AsETSTypeParameter(), typeParams->Params().at(idx)->TsType()});
+            EmplaceSubstituted(aliasSub, typeAliasType->AsETSTypeParameter(), insideAliasType);
         }
     }
 
