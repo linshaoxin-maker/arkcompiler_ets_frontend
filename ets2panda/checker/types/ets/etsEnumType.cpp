@@ -338,12 +338,12 @@ ETSEnum2Type::ETSEnum2Type(ETSChecker *checker, util::StringView name, util::Str
     : ETSObjectType(checker->Allocator(), name, assembler_name, decl_node, flags | ETSObjectFlags::ENUM2, relation)
 {
     AddTypeFlag(TypeFlag::ETS_ENUM2);
-    CreateLiteralTypes(checker, name, assembler_name, decl_node, flags);
+    CreateLiteralTypes(checker, name, assembler_name, decl_node, flags, relation);
 }
 
 ETSEnum2Type::ETSEnum2Type(ArenaAllocator *allocator, util::StringView name, util::StringView assembler_name,
-                           ir::AstNode *decl_node, ETSObjectFlags flags, ir::Literal *value)
-    : ETSObjectType(allocator, name, assembler_name, decl_node, flags | ETSObjectFlags::ENUM2), value_(value)
+                           ir::AstNode *decl_node, ETSObjectFlags flags, ir::Literal *value, TypeRelation *relation)
+    : ETSObjectType(allocator, name, assembler_name, decl_node, flags | ETSObjectFlags::ENUM2, relation), value_(value)
 {
     AddTypeFlag(TypeFlag::ETS_ENUM2);
     ASSERT(value);
@@ -396,7 +396,7 @@ void ETSEnum2Type::Cast(TypeRelation *relation, Type *target)
 }
 
 void ETSEnum2Type::CreateLiteralTypes(ETSChecker *checker, util::StringView name, util::StringView assembler_name,
-                                      ir::AstNode *decl_node, ETSObjectFlags flags)
+                                      ir::AstNode *decl_node, ETSObjectFlags flags, TypeRelation *relation)
 {
     ASSERT(decl_node->IsClassDefinition());
 
@@ -431,8 +431,8 @@ void ETSEnum2Type::CreateLiteralTypes(ETSChecker *checker, util::StringView name
             UNREACHABLE();
         }
 
-        auto *enum_literal_type =
-            Allocator()->New<ETSEnum2Type>(checker->Allocator(), name, assembler_name, decl_node, flags, literal);
+        auto *enum_literal_type = Allocator()->New<ETSEnum2Type>(checker->Allocator(), name, assembler_name, decl_node,
+                                                                 flags, literal, relation);
 
         enum_literal_type->SetVariable(var);
         var->SetTsType(enum_literal_type);

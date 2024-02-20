@@ -139,7 +139,7 @@ ir::MethodDefinition *CreateMethodCreate(const util::StringView &enum_name, bool
     ArenaVector<ir::Expression *> params(checker->Allocator()->Adapter());
     params.push_back(CreateETSParameterExpression("typ", "string", checker));
     params.push_back(CreateETSParameterExpression("name", "string", checker));
-    params.push_back(CreateETSParameterExpression("val", is_int_enum ? "Int" : "string", checker));
+    params.push_back(CreateETSParameterExpression("val", is_int_enum ? "Int" : "String", checker));
     params.push_back(CreateETSParameterExpression("idx", "Int", checker));
 
     auto *func = checker->AllocNode<ir::ScriptFunction>(

@@ -225,7 +225,7 @@ public:
                  ETSObjectFlags flags, TypeRelation *relation);
 
     ETSEnum2Type(ArenaAllocator *allocator, util::StringView name, util::StringView assembler_name,
-                 ir::AstNode *decl_node, ETSObjectFlags flags, ir::Literal *value);
+                 ir::AstNode *decl_node, ETSObjectFlags flags, ir::Literal *value, TypeRelation *relation);
 
     bool IsSameEnumType(const ETSEnum2Type *other) const noexcept;
 
@@ -246,7 +246,7 @@ public:
 
 private:
     void CreateLiteralTypes(ETSChecker *checker, util::StringView name, util::StringView assembler_name,
-                            ir::AstNode *decl_node, ETSObjectFlags flags);
+                            ir::AstNode *decl_node, ETSObjectFlags flags, TypeRelation *relation);
 
     ir::Literal *value_ = nullptr;
 };
