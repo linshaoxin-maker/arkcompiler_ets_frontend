@@ -14,6 +14,6 @@
  */
 
 function main() : void {
-  let a : int;
+  let a : int|undefined;
   a!;
 }

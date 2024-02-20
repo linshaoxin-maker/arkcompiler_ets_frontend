@@ -17,7 +17,7 @@
 
 #include "checker/ETSchecker.h"
 #include "checker/TSchecker.h"
-#include "checker/ets/castingContext.h"
+#include "checker/types/ets/etsTupleType.h"
 #include "checker/ets/typeRelationContext.h"
 #include "checker/ts/destructuringContext.h"
 #include "compiler/core/ETSGen.h"
@@ -53,7 +53,6 @@ ArrayExpression::ArrayExpression([[maybe_unused]] Tag const tag, ArrayExpression
     }
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 ArrayExpression *ArrayExpression::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
     if (auto *const clone = allocator->New<ArrayExpression>(Tag {}, *this, allocator); clone != nullptr) {

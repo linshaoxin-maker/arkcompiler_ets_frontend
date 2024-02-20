@@ -13,8 +13,12 @@
  * limitations under the License.
  */
 
+function dummy(): String[] | null {
+    return null;
+}
+
 function main(): void {
-    let a: String[] | null = null;
+    let a: String[] | null = dummy();
     let b = a?.[1];
     let d: String = "foo";
     let c: String = b ?? d;

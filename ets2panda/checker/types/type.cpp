@@ -18,43 +18,9 @@
 #include "checker/types/typeFlag.h"
 #include "checker/types/typeRelation.h"
 #include "checker/types/ets/etsObjectType.h"
+#include "checker/checker.h"
 
 namespace ark::es2panda::checker {
-bool Type::IsETSNullType() const
-{
-    return IsETSObjectType() && AsETSObjectType()->HasObjectFlag(ETSObjectFlags::NULL_TYPE);
-}
-
-bool Type::IsETSUndefinedType() const
-{
-    return IsETSObjectType() && AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNDEFINED_TYPE);
-}
-
-bool Type::IsETSNullLike() const
-{
-    // NOTE: vpukhov. should be true for 'null|undefined'
-    return IsETSUndefinedType() || IsETSNullType();
-}
-
-bool Type::IsNullish() const
-{
-    return HasTypeFlag(TypeFlag::NULLISH);
-}
-
-bool Type::IsNullishOrNullLike() const
-{
-    return IsNullish() || IsETSNullLike();
-}
-
-bool Type::ContainsNull() const
-{
-    return HasTypeFlag(TypeFlag::NULL_TYPE);
-}
-
-bool Type::ContainsUndefined() const
-{
-    return HasTypeFlag(TypeFlag::UNDEFINED);
-}
 
 bool Type::IsETSStringType() const
 {
@@ -83,9 +49,35 @@ bool Type::IsLambdaObject() const
     return false;
 }
 
+void Type::ToString(std::stringstream &ss) const
+{
+    ToString(ss, false);
+}
+
 void Type::ToStringAsSrc(std::stringstream &ss) const
 {
     ToString(ss);
+}
+
+std::string Type::ToString() const
+{
+    std::stringstream ss {};
+    ToString(ss);
+    return ss.str();
+}
+
+std::string Type::ToStringAsSrc() const
+{
+    std::stringstream ss;
+    ToStringAsSrc(ss);
+    return ss.str();
+}
+
+std::string Type::ToStringPrecise() const
+{
+    std::stringstream ss;
+    ToString(ss, true);
+    return ss.str();
 }
 
 void Type::Identical(TypeRelation *relation, Type *other)
@@ -136,8 +128,35 @@ Type *Type::Instantiate([[maybe_unused]] ArenaAllocator *allocator, [[maybe_unus
     return nullptr;
 }
 
+Type *Type::Clone(Checker *const checker)
+{
+    return Instantiate(checker->Allocator(), checker->Relation(), checker->GetGlobalTypesHolder());
+}
+
 Type *Type::Substitute([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] const Substitution *substitution)
 {
     return this;
+}
+
+std::uint32_t Type::GetPrecedence(Type const *type) noexcept
+{
+    ASSERT(type != nullptr);
+    if (type->HasTypeFlag(TypeFlag::BYTE))
+        return 1U;
+    if (type->HasTypeFlag(TypeFlag::CHAR))
+        return 2U;
+    if (type->HasTypeFlag(TypeFlag::SHORT))
+        return 3U;
+    if (type->HasTypeFlag(TypeFlag::INT))
+        return 4U;
+    if (type->HasTypeFlag(TypeFlag::LONG))
+        return 5U;
+    if (type->HasTypeFlag(TypeFlag::FLOAT))
+        return 6U;
+    if (type->HasTypeFlag(TypeFlag::DOUBLE))
+        return 7U;
+    if (type->HasTypeFlag(TypeFlag::BIGINT))
+        return 8U;
+    return 0U;
 }
 }  // namespace ark::es2panda::checker

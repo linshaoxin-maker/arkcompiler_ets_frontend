@@ -86,7 +86,7 @@ function main() : void {
 
   {
     let b_as_a: A = new B();
-    assert b_as_a.name == c'A';
+    assert b_as_a.name == c'B';
     assert b_as_a.get_name() == c'B';
     assert b_as_a.get_name_a() == c'A';
   }
@@ -103,14 +103,14 @@ function main() : void {
 
   {
     let c_as_a: A = new C();
-    assert c_as_a.name == c'A';
+    assert c_as_a.name == c'C';
     assert c_as_a.get_name() == c'C';
     assert c_as_a.get_name_a() == c'A';
   }
 
   {
     let c_as_b: B = new C();
-    assert c_as_b.name == c'B';
+    assert c_as_b.name == c'C';
     assert c_as_b.get_name() == c'C';
     assert c_as_b.super_name() == c'B';
     assert c_as_b.get_name_a() == c'A';

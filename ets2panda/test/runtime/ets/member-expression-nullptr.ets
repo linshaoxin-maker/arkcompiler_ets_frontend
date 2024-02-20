@@ -33,14 +33,18 @@ class Person {
     residence: Residence = new Residence();
 }
 
+function aux(): Person | null {
+  return null;
+}
+
 function main(): void {
     a = 0;
     let test = false;
-    let john: Person | null = null;
+    let john: Person | null = aux();
 
     try {
-        let residence = john.residence;
-    } catch (e: NullPointerException) {
+        let residence = (john as Person).residence;
+    } catch (e: ClassCastException) {
         test = true;
     }
     assert(test == true);
@@ -49,7 +53,7 @@ function main(): void {
     assert(test == false);
 
     try {
-        let numbers: int = john.residence.numberOfRooms;
+        let numbers: int = john!.residence.numberOfRooms;
     } catch (e: NullPointerException) {
         test = true;
     }
@@ -58,7 +62,7 @@ function main(): void {
     test = false;
     assert(test == false);
     try {
-        let numbers: int = foo() + bar() + john.residence.numberOfRooms;
+        let numbers: int = foo() + bar() + john!.residence.numberOfRooms;
     } catch (e: NullPointerException) {
         test = true;
     }

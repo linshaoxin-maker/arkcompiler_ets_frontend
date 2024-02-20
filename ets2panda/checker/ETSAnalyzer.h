@@ -17,6 +17,7 @@
 #define ES2PANDA_CHECKER_ETSANALYZER_H
 
 #include "checker/SemanticAnalyzer.h"
+#include "checker/ETSchecker.h"
 
 namespace ark::es2panda::checker {
 
@@ -37,7 +38,8 @@ public:
     checker::Type *PreferredType(ir::ObjectExpression *expr) const;
     checker::Type *GetPreferredType(ir::ArrayExpression *expr) const;
     void CheckObjectExprProps(const ir::ObjectExpression *expr) const;
-    std::tuple<Type *, ir::Expression *> CheckAssignmentExprOperatorType(ir::AssignmentExpression *expr) const;
+    std::tuple<Type *, ir::Expression *> CheckAssignmentExprOperatorType(ir::AssignmentExpression *expr,
+                                                                         Type *leftType) const;
 
 private:
     ETSChecker *GetETSChecker() const;
@@ -47,6 +49,17 @@ private:
     checker::Type *GetReturnType(ir::CallExpression *expr, checker::Type *calleeType) const;
     checker::Type *GetFunctionReturnType(ir::ReturnStatement *st, ir::ScriptFunction *containingFunc) const;
     checker::Type *SetAndAdjustType(ETSChecker *checker, ir::MemberExpression *expr, ETSObjectType *objectType) const;
+
+    checker::Type *GetCalleeType(ETSChecker *checker, ir::ETSNewClassInstanceExpression *expr) const
+    {
+        checker::Type *calleeType = expr->GetTypeRef()->Check(checker);
+
+        if (!calleeType->IsETSObjectType()) {
+            checker->ThrowTypeError("This expression is not constructible.", expr->Start());
+        }
+
+        return calleeType;
+    }
 };
 
 }  // namespace ark::es2panda::checker

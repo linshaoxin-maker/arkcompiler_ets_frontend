@@ -553,3 +553,4 @@
     }
   }
 }
+TypeError: Cannot cast 'null' or 'undefined' type to any other type. [cast_expressions6.ets:17:25]
