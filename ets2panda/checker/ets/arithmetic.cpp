@@ -322,10 +322,20 @@ checker::Type *ETSChecker::CheckBinaryOperatorBitwise(ir::Expression *left, ir::
     FlagExpressionWithUnboxing(rightType, unboxedR, right);
 
     if (promotedType == nullptr && !bothConst) {
+        if ((left->Parent() == right->Parent()) &&
+            (!left->Parent()->IsPostBitSet(ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) &&
+            (rightType->IsETSEnum2Type() || leftType->IsETSEnum2Type())) {
+            std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] set it to update AST later!" << std::endl;
+            left->Parent()->SetPostBit(ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED);
+            return nullptr;
+        }
+
+        std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 5" << std::endl;
         ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", pos);
     }
 
     if (bothConst) {
+        // std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 53" << std::endl;
         return HandleBitwiseOperationOnTypes(leftType, rightType, operationType);
     }
 
@@ -637,6 +647,15 @@ static std::tuple<Type *, Type *> CheckBinaryOperatorHelper(ETSChecker *checker,
     return {tsType, tsType};
 }
 
+static bool checkIfBitSet(ir::Expression *expr)
+{
+    if (expr->IsBinaryExpression() &&
+        expr->AsBinaryExpression()->IsPostBitSet(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) {
+        return true;
+    }
+    return false;
+}
+
 std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left, ir::Expression *right,
                                                            ir::Expression *expr, lexer::TokenType op,
                                                            lexer::SourcePosition pos, bool forcePromotion)
@@ -644,7 +663,14 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left,
     checker::Type *const leftType = left->Check(this);
     checker::Type *const rightType = right->Check(this);
     if ((leftType == nullptr) || (rightType == nullptr)) {
-        ThrowTypeError("Unexpected type error in binary expression", pos);
+        if (checkIfBitSet(left) || checkIfBitSet(right)) {
+            std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] set it to update AST later!" << std::endl;
+            expr->SetPostBit(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED);
+            return {nullptr, nullptr};
+        } else {
+            std::cout << "Erroneos expression:" << expr->DumpJSON() << std::endl;
+            ThrowTypeError("Unexpected type error in binary expression", pos);
+        }
     }
 
     const bool isLogicalExtendedOperator =

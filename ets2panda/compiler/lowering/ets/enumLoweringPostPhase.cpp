@@ -32,7 +32,7 @@ namespace ark::es2panda::compiler {
 
 const char *ENUM_GETVALUE_METHOD_NAME = "getValue";
 
-ir::CallExpression *CreateCallExpression(ir::Identifier *id, checker::ETSChecker *checker)
+ir::CallExpression *CreateCallExpression(ir::Expression *id, checker::ETSChecker *checker)
 {
     auto *const callee = checker->AllocNode<ir::Identifier>(ENUM_GETVALUE_METHOD_NAME, checker->Allocator());
     callee->SetReference();
@@ -70,6 +70,76 @@ ir::Expression *CreateTestExpression(ir::Identifier *id, CompilerContext *ctx, i
     return testExpr;
 }
 
+ir::Expression *checkBinaryBranch(ir::Expression *ast, CompilerContext *ctx)
+{
+    // auto updateExpression = [ctx](ir::Expression *id) -> ir::Expression * {
+    //
+    // };
+    if (ast->IsMemberExpression()) {
+        // i.e. we have following:
+        //   enum Color {Red, Blue, Green, Yellow};
+        //
+        // so for such 'imcomplete' accessors like
+        //   Color.Red
+        //
+        // we'd need to replace it with
+        //   color.Red.getValue()
+        if (auto *object = ast->AsMemberExpression()->Object(); object != nullptr) {
+            // ..
+            if (object->IsIdentifier() && object->AsIdentifier()->Variable() != nullptr) {
+                // ..
+                auto *checker = ctx->Checker()->AsETSChecker();
+                auto *type = checker->GetTypeOfVariable(object->AsIdentifier()->Variable());
+                ASSERT(type != nullptr);
+
+                if (!type->IsETSEnum2Type()) {
+                    std::cout << "[DEBUG] Not a ETSEnum2Type object!" << std::endl;
+                    return ast;
+                }
+                std::cout << "[DEBUG] Found ETSEnum2Type identifier!" << std::endl;
+
+                // auto *const scope = NearestScope(ast);
+                // ASSERT(scope != nullptr);
+                // auto expressionCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(checker->VarBinder(), scope);
+
+                // auto *parent = ast->Parent();
+                auto *callExpr =
+                    CreateCallExpression(ast->AsMemberExpression()->Clone(checker->Allocator(), nullptr), checker);
+                // callExpr->SetParent(parent);
+                //
+                // InitScopesPhaseETS::RunExternalNode(callExpr, ctx->VarBinder());
+                // checker->VarBinder()->AsETSBinder()->ResolveReferencesForScope(callExpr, scope);
+                // callExpr->Check(checker);
+                // ASSERT(callExpr->Variable() != nullptr);
+
+                return callExpr;
+            }
+        }
+    } else if (ast->IsIdentifier()) {
+    } else {
+        std::cout << "[DEBUG] Neither MemberExpression nor identifier!" << std::endl;
+    }
+    return ast;
+}
+
+ir::AstNode *UpdateMemberExpression(ir::AstNode *ast, CompilerContext *ctx)
+{
+    [[maybe_unused]] auto *checker = ctx->Checker()->AsETSChecker();
+    auto *const scope = NearestScope(ast);
+    ASSERT(scope != nullptr);
+    auto expressionCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(checker->VarBinder(), scope);
+
+    ast->AsBinaryExpression()->SetLeft(checkBinaryBranch(
+        ast->AsBinaryExpression()->Left()->Clone(checker->Allocator(), nullptr)->AsExpression(), ctx));
+    ast->AsBinaryExpression()->SetRight(checkBinaryBranch(
+        ast->AsBinaryExpression()->Right()->Clone(checker->Allocator(), nullptr)->AsExpression(), ctx));
+
+    InitScopesPhaseETS::RunExternalNode(ast, ctx->VarBinder());
+    checker->VarBinder()->AsETSBinder()->ResolveReferencesForScope(ast, scope);
+    ast->Check(checker);
+    return ast;
+}
+
 bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *program)
 {
     if (program->Extension() != ScriptExtension::ETS) {
@@ -98,10 +168,14 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
             //
             // so the foo(1) should be translated to foo(Color.Blue)
         } else if (ast->IsBinaryExpression()) {
-            // auto *rightExpr = AllocNode<ir::BinaryExpression>(left, rightExpr, operatorType);
-            [[maybe_unused]] auto *left = ast->AsBinaryExpression()->Left();
-            [[maybe_unused]] auto *right = ast->AsBinaryExpression()->Right();
-
+            if (ast->AsBinaryExpression()->IsPostBitSet(
+                    ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) {
+                return UpdateMemberExpression(ast, ctx->compilerContext);
+            } else {
+                // std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] Skip this one, no need to update!" <<
+                // std::endl;
+                return ast;
+            }
         } else if (ast->IsIfStatement() || ast->IsWhileStatement() || ast->IsDoWhileStatement() ||
                    ast->IsForUpdateStatement() || ast->IsConditionalExpression()) {
             // so far let's put this only for test script

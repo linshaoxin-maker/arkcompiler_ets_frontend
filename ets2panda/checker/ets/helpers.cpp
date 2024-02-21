@@ -78,7 +78,12 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
     auto *unboxedType = ETSBuiltinTypeAsConditionalType(type);
 
     if (unboxedType == nullptr) {
-        ThrowTypeError("Condition must be of possible condition type", expr->Start());
+        std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 1" << std::endl;
+        if (expr->IsBinaryExpression() &&
+            (!expr->AsBinaryExpression()->IsPostBitSet(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED))) {
+            ThrowTypeError("Condition must be of possible condition type", expr->Start());
+        }
+        return;
     }
 
     if (unboxedType == GlobalBuiltinVoidType() || unboxedType->IsETSVoidType()) {
@@ -86,7 +91,11 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
     }
 
     if (!unboxedType->IsConditionalExprType()) {
-        ThrowTypeError("Condition must be of possible condition type", expr->Start());
+        std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 2" << std::endl;
+        if (expr->IsBinaryExpression() &&
+            (!expr->AsBinaryExpression()->IsPostBitSet(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED))) {
+            ThrowTypeError("Condition must be of possible condition type", expr->Start());
+        }
     }
 
     if (unboxedType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
@@ -865,6 +874,7 @@ Type *ETSChecker::ApplyUnaryOperatorPromotion(Type *type, const bool createConst
 
 bool ETSChecker::IsNullLikeOrVoidExpression(const ir::Expression *expr) const
 {
+    ASSERT((expr != nullptr) && (expr->TsType() != nullptr));
     return expr->TsType()->DefinitelyETSNullish() || expr->TsType()->IsETSVoidType();
 }
 

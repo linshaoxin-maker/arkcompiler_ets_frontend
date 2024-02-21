@@ -109,6 +109,12 @@ enum class BoxingUnboxingFlags : uint32_t {
     UNBOXING_FLAG = UNBOX_TO_BOOLEAN | UNBOX_TO_BYTE | UNBOX_TO_SHORT | UNBOX_TO_CHAR | UNBOX_TO_INT | UNBOX_TO_LONG |
                     UNBOX_TO_FLOAT | UNBOX_TO_DOUBLE,
 };
+
+enum PostProcessingBits : uint64_t {
+#define BIT(x) ((uint64_t)1 << x)
+    ENUM_LOWERING_POST_PROCESSING_REQUIRED = BIT(0),
+};
+
 }  // namespace ark::es2panda::ir
 
 #endif
