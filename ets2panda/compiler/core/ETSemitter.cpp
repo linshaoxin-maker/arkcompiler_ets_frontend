@@ -94,7 +94,6 @@ static pandasm::Function GenScriptFunction(CompilerContext const *context, const
     auto *paramScope = funcScope->ParamScope();
 
     auto func = pandasm::Function(funcScope->InternalName().Mutf8(), EXTENSION);
-
     func.params.reserve(paramScope->Params().size());
 
     for (const auto *var : paramScope->Params()) {
@@ -103,22 +102,25 @@ static pandasm::Function GenScriptFunction(CompilerContext const *context, const
         func.params.emplace_back(pandasm::Type(ss.str(), var->TsType()->Rank()), EXTENSION);
     }
 
-    std::stringstream ss;
-
     if (scriptFunc->IsConstructor() || scriptFunc->IsStaticBlock()) {
         func.returnType = pandasm::Type(Signatures::PRIMITIVE_VOID, 0);
     } else {
+        std::stringstream ss;
         const auto *returnType = scriptFunc->Signature()->ReturnType();
-
         returnType->ToAssemblerType(ss);
         ASSERT(!ss.str().empty());
         func.returnType = pandasm::Type(ss.str(), returnType->Rank());
     }
 
+    uint32_t accessFlags = 0;
     if (!scriptFunc->IsStaticBlock()) {
         const auto *methodDef = util::Helpers::GetContainingClassMethodDefinition(scriptFunc);
-        func.metadata->SetAccessFlags(TranslateModifierFlags(methodDef->Modifiers()));
+        accessFlags |= TranslateModifierFlags(methodDef->Modifiers());
     }
+    if (scriptFunc->HasRestParameter()) {
+        accessFlags |= ACC_VARARGS;
+    }
+    func.metadata->SetAccessFlags(accessFlags);
 
     return func;
 }

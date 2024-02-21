@@ -236,6 +236,11 @@ public:
             ss << compiler::Signatures::MANGLE_SEPARATOR;
         }
 
+        if (signatureInfo_->restVar != nullptr) {
+            MaybeBoxedType(context->Checker(), signatureInfo_->restVar)->ToAssemblerTypeWithRank(ss);
+            ss << compiler::Signatures::MANGLE_SEPARATOR;
+        }
+
         returnType_->ToAssemblerTypeWithRank(ss);
         ss << compiler::Signatures::MANGLE_SEPARATOR;
     }
