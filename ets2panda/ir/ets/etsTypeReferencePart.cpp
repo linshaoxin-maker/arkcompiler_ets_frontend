@@ -100,7 +100,11 @@ checker::Type *ETSTypeReferencePart::GetType(checker::ETSChecker *checker)
         ASSERT(baseType != nullptr);
         if (baseType->IsETSObjectType()) {
             checker::InstantiationContext ctx(checker, baseType->AsETSObjectType(), typeParams_, Start());
-            return ctx.Result();
+            checker::ETSObjectType *ctxResult = ctx.Result();
+            if (!ctxResult->HasObjectFlag(checker::ETSObjectFlags::RESOLVED_MEMBERS)) {
+                checker->AddUnfinishedType(ctxResult);
+            }
+            return ctxResult;
         }
 
         return baseType;
@@ -110,13 +114,12 @@ checker::Type *ETSTypeReferencePart::GetType(checker::ETSChecker *checker)
     return checker->GetReferencedTypeFromBase(baseType, name_);
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 ETSTypeReferencePart *ETSTypeReferencePart::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
-    auto *const nameClone = name_ != nullptr ? name_->Clone(allocator)->AsExpression() : nullptr;
+    auto *const nameClone = name_ != nullptr ? name_->Clone(allocator, nullptr)->AsExpression() : nullptr;
     auto *const typeParamsClone =
-        typeParams_ != nullptr ? typeParams_->Clone(allocator)->AsTSTypeParameterInstantiation() : nullptr;
-    auto *const prevClone = prev_ != nullptr ? prev_->Clone(allocator)->AsETSTypeReferencePart() : nullptr;
+        typeParams_ != nullptr ? typeParams_->Clone(allocator, nullptr)->AsTSTypeParameterInstantiation() : nullptr;
+    auto *const prevClone = prev_ != nullptr ? prev_->Clone(allocator, nullptr)->AsETSTypeReferencePart() : nullptr;
     if (auto *const clone = allocator->New<ETSTypeReferencePart>(nameClone, typeParamsClone, prevClone);
         clone != nullptr) {
         if (nameClone != nullptr) {
@@ -135,6 +138,7 @@ ETSTypeReferencePart *ETSTypeReferencePart::Clone(ArenaAllocator *const allocato
             clone->SetParent(parent);
         }
 
+        clone->SetRange(Range());
         return clone;
     }
 

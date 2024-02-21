@@ -23,14 +23,14 @@ class GlobalTypesHolder;
 
 class ETSAsyncFuncReturnType : public ETSObjectType {
 public:
-    ETSAsyncFuncReturnType(ArenaAllocator *allocator, ETSObjectType *promiseType)
-        : ETSObjectType(allocator, ETSObjectFlags::ASYNC_FUNC_RETURN_TYPE), promiseType_(promiseType)
+    ETSAsyncFuncReturnType(ArenaAllocator *allocator, TypeRelation *relation, ETSObjectType *promiseType)
+        : ETSObjectType(allocator, ETSObjectFlags::ASYNC_FUNC_RETURN_TYPE, relation), promiseType_(promiseType)
     {
         ASSERT(promiseType->TypeArguments().size() == 1);
         SetAssemblerName(compiler::Signatures::BUILTIN_OBJECT);
     }
 
-    void ToString(std::stringstream &ss) const override;
+    void ToString(std::stringstream &ss, bool precise) const override;
     void Identical(TypeRelation *relation, Type *other) override;
     void AssignmentTarget(TypeRelation *relation, Type *source) override;
     bool AssignmentSource(TypeRelation *relation, Type *target) override;

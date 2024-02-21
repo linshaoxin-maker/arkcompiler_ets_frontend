@@ -326,16 +326,6 @@ public:
         return (flags_ & ModifierFlags::NATIVE) != 0;
     }
 
-    [[nodiscard]] bool IsNullAssignable() const noexcept
-    {
-        return (flags_ & ModifierFlags::NULL_ASSIGNABLE) != 0;
-    }
-
-    [[nodiscard]] bool IsUndefinedAssignable() const noexcept
-    {
-        return (flags_ & ModifierFlags::UNDEFINED_ASSIGNABLE) != 0;
-    }
-
     [[nodiscard]] bool IsConst() const noexcept
     {
         return (flags_ & ModifierFlags::CONST) != 0;
@@ -484,9 +474,8 @@ public:
     [[nodiscard]] ir::BlockStatement *GetTopStatement();
     [[nodiscard]] const ir::BlockStatement *GetTopStatement() const;
 
-    // NOLINTNEXTLINE(google-default-arguments)
     [[nodiscard]] virtual AstNode *Clone([[maybe_unused]] ArenaAllocator *const allocator,
-                                         [[maybe_unused]] AstNode *const parent = nullptr)
+                                         [[maybe_unused]] AstNode *const parent)
     {
         UNREACHABLE();
     }
