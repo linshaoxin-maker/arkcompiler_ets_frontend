@@ -72,9 +72,28 @@ ir::Expression *CreateTestExpression(ir::Identifier *id, CompilerContext *ctx, i
 
 ir::Expression *checkBinaryBranch(ir::Expression *ast, CompilerContext *ctx)
 {
-    // auto updateExpression = [ctx](ir::Expression *id) -> ir::Expression * {
-    //
-    // };
+    auto updateExpression = [ctx](ir::Expression *object, ir::Expression *ast) -> ir::Expression * {
+        if (object->IsIdentifier() && object->AsIdentifier()->Variable() != nullptr) {
+            // ..
+            auto *checker = ctx->Checker()->AsETSChecker();
+            auto *type = checker->GetTypeOfVariable(object->AsIdentifier()->Variable());
+            ASSERT(type != nullptr);
+
+            if (!type->IsETSEnum2Type()) {
+                if (0)
+                    std::cout << "[DEBUG] Not a ETSEnum2Type object!" << std::endl;
+                return ast;
+            }
+            if (0)
+                std::cout << "[DEBUG] Found ETSEnum2Type identifier!" << std::endl;
+
+            auto *callExpr =
+                CreateCallExpression(ast /*->AsMemberExpression()->Clone(checker->Allocator(), nullptr)*/, checker);
+
+            return callExpr;
+        }
+        return ast;
+    };
     if (ast->IsMemberExpression()) {
         // i.e. we have following:
         //   enum Color {Red, Blue, Green, Yellow};
@@ -86,38 +105,13 @@ ir::Expression *checkBinaryBranch(ir::Expression *ast, CompilerContext *ctx)
         //   color.Red.getValue()
         if (auto *object = ast->AsMemberExpression()->Object(); object != nullptr) {
             // ..
-            if (object->IsIdentifier() && object->AsIdentifier()->Variable() != nullptr) {
-                // ..
-                auto *checker = ctx->Checker()->AsETSChecker();
-                auto *type = checker->GetTypeOfVariable(object->AsIdentifier()->Variable());
-                ASSERT(type != nullptr);
-
-                if (!type->IsETSEnum2Type()) {
-                    std::cout << "[DEBUG] Not a ETSEnum2Type object!" << std::endl;
-                    return ast;
-                }
-                std::cout << "[DEBUG] Found ETSEnum2Type identifier!" << std::endl;
-
-                // auto *const scope = NearestScope(ast);
-                // ASSERT(scope != nullptr);
-                // auto expressionCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(checker->VarBinder(), scope);
-
-                // auto *parent = ast->Parent();
-                auto *callExpr =
-                    CreateCallExpression(ast->AsMemberExpression()->Clone(checker->Allocator(), nullptr), checker);
-                // callExpr->SetParent(parent);
-                //
-                // InitScopesPhaseETS::RunExternalNode(callExpr, ctx->VarBinder());
-                // checker->VarBinder()->AsETSBinder()->ResolveReferencesForScope(callExpr, scope);
-                // callExpr->Check(checker);
-                // ASSERT(callExpr->Variable() != nullptr);
-
-                return callExpr;
-            }
+            return updateExpression(object, ast);
         }
     } else if (ast->IsIdentifier()) {
+        return updateExpression(ast->AsIdentifier(), ast);
     } else {
-        std::cout << "[DEBUG] Neither MemberExpression nor identifier!" << std::endl;
+        if (0)
+            std::cout << "[DEBUG] Neither MemberExpression nor identifier!" << std::endl;
     }
     return ast;
 }
