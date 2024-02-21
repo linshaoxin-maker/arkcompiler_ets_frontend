@@ -20,12 +20,12 @@
 #include "ir/ets/etsTuple.h"
 
 namespace ark::es2panda::checker {
-void ETSTupleType::ToString(std::stringstream &ss) const
+void ETSTupleType::ToString(std::stringstream &ss, bool precise) const
 {
     ss << "[";
 
     for (auto it = typeList_.begin(); it != typeList_.end(); it++) {
-        (*it)->ToString(ss);
+        (*it)->ToString(ss, precise);
 
         if (std::next(it) != typeList_.end()) {
             ss << ", ";
@@ -34,7 +34,7 @@ void ETSTupleType::ToString(std::stringstream &ss) const
 
     if (spreadType_ != nullptr) {
         ss << ", ...";
-        spreadType_->ToString(ss);
+        spreadType_->ToString(ss, precise);
         ss << "[]";
     }
 
@@ -147,7 +147,7 @@ Type *ETSTupleType::Substitute(TypeRelation *relation, const Substitution *subst
     }
 
     auto *newSpreadType = spreadType_ == nullptr ? nullptr : spreadType_->Substitute(relation, substitution);
-    auto *newElementType = ir::ETSTuple::CalculateLUBForTuple(checker, newTypeList, newSpreadType);
+    auto *newElementType = ir::ETSTuple::CalculateLUBForTuple(checker, newTypeList, &newSpreadType);
     return checker->Allocator()->New<ETSTupleType>(std::move(newTypeList), newElementType, newSpreadType);
 }
 

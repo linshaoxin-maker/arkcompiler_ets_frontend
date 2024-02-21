@@ -15,8 +15,10 @@
 
 import { Foo } from "@package/component1/lib"
 import { Bar } from "@package/component2"
+import { Baz } from "@package/component22"
 
 function main() : void {
   Foo();
   Bar();
+  Baz();
 }
