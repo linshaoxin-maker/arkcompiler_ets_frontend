@@ -1584,7 +1584,8 @@ void ETSChecker::AddElementsToModuleObject(ETSObjectType *moduleObj, const util:
 
 Type *ETSChecker::FindLeastUpperBound(Type *source, Type *target)
 {
-    ASSERT(source->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT) && target->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT));
+    ASSERT((source->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT) || source->HasTypeFlag(TypeFlag::ETS_TYPE_PARAMETER)) &&
+           (target->HasTypeFlag(TypeFlag::ETS_ARRAY_OR_OBJECT) || target->HasTypeFlag(TypeFlag::ETS_TYPE_PARAMETER)));
 
     // GetCommonClass(GenA<A>, GenB<B>) => LUB(GenA, GenB)<T>
     auto commonClass = GetCommonClass(source, target);
@@ -1651,6 +1652,18 @@ Type *ETSChecker::GetCommonClass(Type *source, Type *target)
 
         if (source->AsETSObjectType()->GetDeclNode() == target->AsETSObjectType()->GetDeclNode()) {
             return source;
+        }
+
+        for (auto interface : source->AsETSObjectType()->Interfaces()) {
+            if (interface->GetDeclNode() == target->AsETSObjectType()->GetDeclNode()) {
+                return target;
+            }
+        }
+
+        for (auto interface : target->AsETSObjectType()->Interfaces()) {
+            if (interface->GetDeclNode() == source->AsETSObjectType()->GetDeclNode()) {
+                return source;
+            }
         }
 
         return GetClosestCommonAncestor(source->AsETSObjectType(), target->AsETSObjectType());
