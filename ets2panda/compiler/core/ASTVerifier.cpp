@@ -441,9 +441,7 @@ public:
          *         varbinder and checker
          */
         if (ast->AsIdentifier()->Variable() != nullptr || ast->AsIdentifier()->IsReference() ||
-            ast->AsIdentifier()->Name().Empty() || ast->AsIdentifier()->Name() == "Void" ||
-            ast->AsIdentifier()->Name().Utf8().find("lambda$invoke$") == 0 ||
-            (ast->AsIdentifier()->Parent() != nullptr && ast->AsIdentifier()->Parent()->IsProperty())) {
+            ast->AsIdentifier()->Name().Empty() || ast->AsIdentifier()->Name().Utf8().find("lambda$invoke$") == 0) {
             return {CheckDecision::CORRECT, CheckAction::CONTINUE};
         }
 
@@ -574,9 +572,7 @@ public:
          *         Should removed in future
          */
         if (ast->AsIdentifier()->IsReference() || ast->AsIdentifier()->TypeAnnotation() != nullptr ||
-            ast->AsIdentifier()->Name().Empty() || ast->AsIdentifier()->Name().Utf8().find("Void") == 0 ||
-            ast->AsIdentifier()->Name().Utf8().find("lambda$invoke$") == 0 ||
-            (ast->AsIdentifier()->Parent() != nullptr && ast->AsIdentifier()->Parent()->IsProperty())) {
+            ast->AsIdentifier()->Name().Empty() || ast->AsIdentifier()->Name().Utf8().find("lambda$invoke$") == 0) {
             return {CheckDecision::CORRECT, CheckAction::CONTINUE};
         }
 
@@ -609,10 +605,8 @@ public:
          *         Should removed in future
          */
         if (ast->AsIdentifier()->IsReference() || ast->AsIdentifier()->TypeAnnotation() != nullptr ||
-            ast->AsIdentifier()->Name().Empty() || ast->AsIdentifier()->Name().Utf8().find("Void") == 0 ||
-            ast->AsIdentifier()->Name().Utf8().find("field") == 0 ||
-            ast->AsIdentifier()->Name().Utf8().find("lambda$invoke$") == 0 ||
-            (ast->AsIdentifier()->Parent() != nullptr && ast->AsIdentifier()->Parent()->IsProperty())) {
+            ast->AsIdentifier()->Name().Empty() || ast->AsIdentifier()->Name().Utf8().find("field") == 0 ||
+            ast->AsIdentifier()->Name().Utf8().find("lambda$invoke$") == 0) {
             return std::nullopt;
         }
 
