@@ -440,7 +440,8 @@ public:
          *         That should be removed in future after fix issues in
          *         varbinder and checker
          */
-        if (ast->AsIdentifier()->Variable() != nullptr || ast->AsIdentifier()->IsReference() ||
+        if (ast->AsIdentifier()->Variable() != nullptr ||
+            // ast->AsIdentifier()->IsReference() ||
             ast->AsIdentifier()->Name().Empty() || ast->AsIdentifier()->Name().Utf8().find("lambda$invoke$") == 0) {
             return {CheckDecision::CORRECT, CheckAction::CONTINUE};
         }
@@ -571,8 +572,10 @@ public:
          * NOTICE: That is temporary exclusion for identifies without variable
          *         Should removed in future
          */
-        if (ast->AsIdentifier()->IsReference() || ast->AsIdentifier()->TypeAnnotation() != nullptr ||
-            ast->AsIdentifier()->Name().Empty() || ast->AsIdentifier()->Name().Utf8().find("lambda$invoke$") == 0) {
+        if (
+            // ast->AsIdentifier()->IsReference() ||
+            ast->AsIdentifier()->TypeAnnotation() != nullptr || ast->AsIdentifier()->Name().Empty() ||
+            ast->AsIdentifier()->Name().Utf8().find("lambda$invoke$") == 0) {
             return {CheckDecision::CORRECT, CheckAction::CONTINUE};
         }
 
@@ -604,8 +607,10 @@ public:
          * NOTICE: That is temporary exclusion for identifies without variable and scope
          *         Should removed in future
          */
-        if (ast->AsIdentifier()->IsReference() || ast->AsIdentifier()->TypeAnnotation() != nullptr ||
-            ast->AsIdentifier()->Name().Empty() || ast->AsIdentifier()->Name().Utf8().find("field") == 0 ||
+        if (
+            // ast->AsIdentifier()->IsReference() ||
+            ast->AsIdentifier()->TypeAnnotation() != nullptr || ast->AsIdentifier()->Name().Empty() ||
+            ast->AsIdentifier()->Name().Utf8().find("field") == 0 ||
             ast->AsIdentifier()->Name().Utf8().find("lambda$invoke$") == 0) {
             return std::nullopt;
         }
