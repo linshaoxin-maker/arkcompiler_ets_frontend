@@ -133,6 +133,10 @@ public:
                                           const ir::ETSImportDeclaration *import,
                                           const ArenaVector<parser::Program *> &recordRes,
                                           std::vector<ir::ETSImportDeclaration *> viewedReExport);
+    bool HandleMissingImportedElement(ir::AstNode *specifier, const util::StringView &imported,
+                                      const ir::ETSImportDeclaration *import,
+                                      std::vector<ir::ETSImportDeclaration *> &viewedReExport,
+                                      const ir::StringLiteral *importPath);
     Variable *FindImportSpecifiersVariable(const util::StringView &imported,
                                            const varbinder::Scope::VariableMap &globalBindings,
                                            const ArenaVector<parser::Program *> &recordRes);
