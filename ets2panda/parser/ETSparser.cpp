@@ -26,7 +26,6 @@
 #include "varbinder/ETSBinder.h"
 #include "lexer/lexer.h"
 #include "lexer/ETSLexer.h"
-#include "checker/types/ets/etsEnumType.h"
 #include "ir/astNode.h"
 #include "ir/base/classDefinition.h"
 #include "ir/base/decorator.h"
@@ -3973,61 +3972,71 @@ ir::TSEnumDeclaration *ETSParser::ParseEnumMembers(ir::Identifier *const key, co
     return enumDeclaration;
 }
 
-void ETSParser::ParseNumberEnum(ArenaVector<ir::AstNode *> &members)
+void ETSParser::ParseEnumMember(ArenaVector<ir::AstNode *> &members, checker::ETSEnumType::ValueType &currentValue)
 {
-    checker::ETSEnumType::ValueType currentValue {};
+    auto *const ident = ExpectIdentifier(false, true);
 
-    // Lambda to parse enum member (maybe with initializer)
-    auto const parseMember = [this, &members, &currentValue]() {
-        auto *const ident = ExpectIdentifier(false, true);
+    ir::NumberLiteral *ordinal;
+    lexer::SourcePosition endLoc;
 
-        ir::NumberLiteral *ordinal;
-        lexer::SourcePosition endLoc;
+    bool isIdent = false;
+    bool isAssignment = false;
+    ir::Expression *identNode;
+    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SUBSTITUTION) {
+        // Case when user explicitly set the value for enumeration constant
 
-        if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SUBSTITUTION) {
-            // Case when user explicitly set the value for enumeration constant
-
-            bool minusSign = false;
-
+        bool minusSign = false;
+        Lexer()->NextToken();
+        if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PLUS) {
             Lexer()->NextToken();
-            if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PLUS) {
-                Lexer()->NextToken();
-            } else if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_MINUS) {
-                minusSign = true;
-                Lexer()->NextToken();
-            }
+        } else if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_MINUS) {
+            minusSign = true;
+            Lexer()->NextToken();
+        }
 
-            if (Lexer()->GetToken().Type() != lexer::TokenType::LITERAL_NUMBER) {
-                ThrowSyntaxError(INVALID_ENUM_TYPE);
-            }
+        if (Lexer()->GetToken().Type() != lexer::TokenType::LITERAL_NUMBER &&
+            Lexer()->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
+            ThrowSyntaxError(INVALID_ENUM_TYPE);
+        }
 
+        if (Lexer()->GetToken().Type() == lexer::TokenType::LITERAL_IDENT) {
+            isIdent = true;
+            identNode = ParseExpression();
+            endLoc = identNode->End();
+        } else {
             ordinal = ParseNumberLiteral()->AsNumberLiteral();
+            isAssignment = true;
+            endLoc = ordinal->End();
+        }
+        if (!isIdent) {
             if (!ordinal->Number().CanGetValue<checker::ETSEnumType::ValueType>()) {
                 ThrowSyntaxError(INVALID_ENUM_VALUE);
             } else if (minusSign) {
                 ordinal->Number().Negate();
             }
-
             currentValue = ordinal->Number().GetValue<checker::ETSEnumType::ValueType>();
-
-            endLoc = ordinal->End();
-        } else {
-            // Default enumeration constant value. Equal to 0 for the first item and = previous_value + 1 for all
-            // the others.
-
-            ordinal = AllocNode<ir::NumberLiteral>(lexer::Number(currentValue));
-
-            endLoc = ident->End();
         }
+    } else {
+        // Default enumeration constant value. Equal to 0 for the first item and = previous_value + 1 for all
+        // the others.
+        ordinal = AllocNode<ir::NumberLiteral>(lexer::Number(currentValue));
+        endLoc = ident->End();
+    }
 
-        auto *const member = AllocNode<ir::TSEnumMember>(ident, ordinal);
-        member->SetRange({ident->Start(), endLoc});
-        members.emplace_back(member);
+    ir::Expression *init = isIdent ? identNode : ordinal;
+    ir::TSEnumMember *member = AllocNode<ir::TSEnumMember>(ident, init);
+    member->SetIsExpression(isIdent);
+    member->SetIsAssignment(!isAssignment);
+    member->SetRange({ident->Start(), endLoc});
+    members.emplace_back(member);
 
-        ++currentValue;
-    };
+    ++currentValue;
+}
 
-    parseMember();
+void ETSParser::ParseNumberEnum(ArenaVector<ir::AstNode *> &members)
+{
+    checker::ETSEnumType::ValueType currentValue {};
+    ParseEnumMember(members, currentValue);
 
     while (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
         if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_COMMA) {
@@ -4040,7 +4049,7 @@ void ETSParser::ParseNumberEnum(ArenaVector<ir::AstNode *> &members)
             break;
         }
 
-        parseMember();
+        ParseEnumMember(members, currentValue);
     }
 }
 
