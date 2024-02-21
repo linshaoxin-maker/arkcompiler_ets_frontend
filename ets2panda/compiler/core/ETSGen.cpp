@@ -90,7 +90,7 @@ void ETSGen::CompileAndCheck(const ir::Expression *expr)
         return;
     }
 
-    ASSERT(!"Type mismatch after Expression::Compile");
+    ASSERT_PRINT(false, "Type mismatch after Expression::Compile");
 }
 
 const checker::ETSChecker *ETSGen::Checker() const noexcept
