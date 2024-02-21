@@ -1155,6 +1155,31 @@ void ETSGen::ApplyCast(const ir::AstNode *node, const checker::Type *targetType)
     }
 }
 
+void ETSGen::ApplyCastToBoxingFlags(const ir::AstNode *node, const ir::BoxingUnboxingFlags targetType)
+{
+    switch (targetType) {
+        case ir::BoxingUnboxingFlags::BOX_TO_DOUBLE: {
+            CastToDouble(node);
+            break;
+        }
+        case ir::BoxingUnboxingFlags::BOX_TO_FLOAT: {
+            CastToFloat(node);
+            break;
+        }
+        case ir::BoxingUnboxingFlags::BOX_TO_LONG: {
+            CastToLong(node);
+            break;
+        }
+        case ir::BoxingUnboxingFlags::BOX_TO_INT: {
+            CastToInt(node);
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+}
+
 void ETSGen::EmitUnboxedCall(const ir::AstNode *node, std::string_view signatureFlag,
                              const checker::Type *const targetType, const checker::Type *const boxedType)
 {
@@ -1225,6 +1250,8 @@ void ETSGen::EmitBoxingConversion(const ir::AstNode *node)
         static_cast<ir::BoxingUnboxingFlags>(ir::BoxingUnboxingFlags::BOXING_FLAG & node->GetBoxingUnboxingFlags());
 
     RegScope rs(this);
+
+    ApplyCastToBoxingFlags(node, boxingFlag);
 
     switch (boxingFlag) {
         case ir::BoxingUnboxingFlags::BOX_TO_BOOLEAN: {
@@ -1476,6 +1503,9 @@ void ETSGen::CastToByte([[maybe_unused]] const ir::AstNode *node)
             Sa().Emit<I32toi8>(node);
             break;
         }
+        case checker::TypeFlag::ETS_OBJECT: {
+            break;
+        }
         default: {
             UNREACHABLE();
         }
@@ -1518,6 +1548,9 @@ void ETSGen::CastToChar([[maybe_unused]] const ir::AstNode *node)
         case checker::TypeFlag::DOUBLE: {
             Sa().Emit<F64toi32>(node);
             Sa().Emit<I32tou16>(node);
+            break;
+        }
+        case checker::TypeFlag::ETS_OBJECT: {
             break;
         }
         default: {
@@ -1567,6 +1600,9 @@ void ETSGen::CastToShort([[maybe_unused]] const ir::AstNode *node)
             Sa().Emit<I32toi16>(node);
             break;
         }
+        case checker::TypeFlag::ETS_OBJECT: {
+            break;
+        }
         default: {
             UNREACHABLE();
         }
@@ -1599,6 +1635,9 @@ void ETSGen::CastToDouble(const ir::AstNode *node)
         }
         case checker::TypeFlag::FLOAT: {
             Sa().Emit<F32tof64>(node);
+            break;
+        }
+        case checker::TypeFlag::ETS_OBJECT: {
             break;
         }
         case checker::TypeFlag::ETS_DYNAMIC_TYPE: {
@@ -1645,6 +1684,9 @@ void ETSGen::CastToFloat(const ir::AstNode *node)
             Sa().Emit<F64tof32>(node);
             break;
         }
+        case checker::TypeFlag::ETS_OBJECT: {
+            break;
+        }
         default: {
             UNREACHABLE();
         }
@@ -1682,6 +1724,9 @@ void ETSGen::CastToLong(const ir::AstNode *node)
         }
         case checker::TypeFlag::DOUBLE: {
             Sa().Emit<F64toi64>(node);
+            break;
+        }
+        case checker::TypeFlag::ETS_OBJECT: {
             break;
         }
         default: {
@@ -1722,6 +1767,9 @@ void ETSGen::CastToInt(const ir::AstNode *node)
         }
         case checker::TypeFlag::DOUBLE: {
             Sa().Emit<F64toi32>(node);
+            break;
+        }
+        case checker::TypeFlag::ETS_OBJECT: {
             break;
         }
         default: {
