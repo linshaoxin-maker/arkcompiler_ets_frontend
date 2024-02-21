@@ -31,7 +31,137 @@
 #include "utils/json_builder.h"
 #include "varbinder/variable.h"
 
-namespace ark::es2panda::compiler {
+namespace ark::es2panda::compiler::ast_verifier {
+
+enum class CheckSeverity { ERROR, WARNING, UNKNOWN };
+inline std::string CheckSeverityString(CheckSeverity value)
+{
+    switch (value) {
+        case CheckSeverity::ERROR:
+            return "error";
+        case CheckSeverity::WARNING:
+            return "warning";
+        default:
+            UNREACHABLE();
+    }
+}
+
+class CheckMessage {
+public:
+    explicit CheckMessage(util::StringView name, util::StringView cause, util::StringView message, size_t line)
+        : invariantName_ {name}, cause_ {cause}, message_ {message}, line_ {line}
+    {
+    }
+
+    std::string Invariant() const
+    {
+        return invariantName_;
+    }
+
+    std::function<void(JsonObjectBuilder &)> DumpJSON(CheckSeverity severity, const std::string &sourceName,
+                                                      const std::string &phaseName) const
+    {
+        return [sourceName, phaseName, severity, this](JsonObjectBuilder &body) {
+            body.AddProperty("severity", CheckSeverityString(severity));
+            body.AddProperty("invariant", invariantName_);
+            body.AddProperty("cause", cause_);
+            body.AddProperty("ast", message_);
+            body.AddProperty("line", line_ + 1);
+            body.AddProperty("source", sourceName);
+            body.AddProperty("phase", phaseName);
+        };
+    }
+
+private:
+    std::string invariantName_;
+    std::string cause_;
+    std::string message_;
+    size_t line_;
+};
+using Messages = std::vector<CheckMessage>;
+
+enum class CheckDecision { CORRECT, INCORRECT };
+enum class CheckAction { CONTINUE, SKIP_SUBTREE };
+using CheckResult = std::tuple<CheckDecision, CheckAction>;
+class CheckContext;
+using InvariantCheck = std::function<CheckResult(CheckContext &ctx, const ir::AstNode *)>;
+using Invariants = std::unordered_map<std::string, InvariantCheck>;
+
+using InvariantNameSet = std::unordered_set<std::string>;
+
+class VerificationContext final {
+public:
+    VerificationContext()
+    {
+        introducedChecks_["ScopesInitPhase"] = std::make_optional(InvariantNameSet {
+            "NodeHasParentForAll",
+            "EveryChildHasValidParentForAll",
+            "VariableHasScopeForAll",
+        });
+        introducedChecks_["CheckerPhase"] = std::make_optional(InvariantNameSet {
+            "NodeHasTypeForAll",
+            "IdentifierHasVariableForAll",
+            "ArithmeticOperationValidForAll",
+            "SequenceExpressionHasLastTypeForAll",
+            "ForLoopCorrectlyInitializedForAll",
+            "VariableHasEnclosingScopeForAll",
+            "ModifierAccessValidForAll",
+            "ImportExportAccessValid",
+        });
+
+        const std::set<std::string> phasesWithoutNewChecks = {"OptionalLowering",
+                                                              "PromiseVoidInferencePhase",
+                                                              "StructLowering",
+                                                              "GenerateTsDeclarationsPhase",
+                                                              "InterfacePropertyDeclarationsPhase",
+                                                              "LambdaConstructionPhase",
+                                                              "ObjectIndexLowering",
+                                                              "OpAssignmentLowering",
+                                                              "PromiseVoidInferencePhase",
+                                                              "TupleLowering",
+                                                              "UnionLowering",
+                                                              "ExpandBracketsPhase"};
+        for (const auto &phase : phasesWithoutNewChecks) {
+            introducedChecks_[phase] = std::make_optional(InvariantNameSet {});
+        }
+
+        introducedChecks_.emplace(LAST_PHASE, std::make_optional(InvariantNameSet {}));
+        for (const auto &[_, checks] : introducedChecks_) {
+            introducedChecks_.at(LAST_PHASE)->insert(checks->begin(), checks->end());
+        }
+    }
+
+    void IntroduceNewInvariants(util::StringView phaseName)
+    {
+        auto invariantSet = [phaseName, this]() -> std::optional<InvariantNameSet> {
+            if (phaseName.Utf8().find("plugins-after") != std::string_view::npos) {
+                return {{}};
+            }
+            const auto phase = phaseName.Mutf8();
+            if (introducedChecks_.find(phase) != introducedChecks_.end()) {
+                return introducedChecks_.at(phase);
+            }
+            return std::nullopt;
+        }();
+
+        ASSERT_PRINT(invariantSet.has_value(),
+                     std::string {"Invariant set does not contain value for "} + phaseName.Mutf8());
+        for (const auto &check : *invariantSet) {
+            accumulatedChecks_.insert(check);
+        }
+    }
+
+    const InvariantNameSet &AccumulatedChecks() const
+    {
+        return accumulatedChecks_;
+    }
+
+    static constexpr const char *LAST_PHASE = "LastPhase";
+
+private:
+    std::unordered_map<std::string, std::optional<InvariantNameSet>> introducedChecks_ {};
+    InvariantNameSet accumulatedChecks_ {};
+};
 
 /*
  * ASTVerifier used for checking various invariants that should hold during AST transformation in lowerings
@@ -39,100 +169,18 @@ namespace ark::es2panda::compiler {
  */
 class ASTVerifier final {
 public:
-    struct InvariantError {
-        std::string cause;
-        std::string message;
-        size_t line;
-    };
-    struct CheckError {
-        explicit CheckError(std::string name, InvariantError error)
-            : invariantName_ {std::move(name)}, error_ {std::move(error)}
-        {
-        }
-        std::function<void(JsonObjectBuilder &)> DumpJSON() const
-        {
-            return [&](JsonObjectBuilder &body) {
-                body.AddProperty("invariant", invariantName_);
-                body.AddProperty("cause", error_.cause);
-                body.AddProperty("message", error_.message);
-                body.AddProperty("line", error_.line + 1);
-            };
-        }
-        const std::string &GetName() const
-        {
-            return invariantName_;
-        }
-
-    private:
-        std::string invariantName_;
-        InvariantError error_;
-    };
-    using Errors = std::vector<CheckError>;
-
-    enum class CheckResult { FAILED, SUCCESS, SKIP_SUBTREE };
-    class ErrorContext {
-    public:
-        explicit ErrorContext() = default;
-
-        void AddError(const std::string &message)
-        {
-            errors_.emplace_back(CheckError {"Unnamed", ASTVerifier::InvariantError {message, "", 0}});
-        }
-
-        virtual void AddInvariantError(const std::string &name, const std::string &cause, const ir::AstNode &node)
-        {
-            errors_.emplace_back(
-                CheckError {name, ASTVerifier::InvariantError {cause, node.DumpJSON(), node.Start().line}});
-        }
-
-        ASTVerifier::Errors GetErrors()
-        {
-            return errors_;
-        }
-
-    private:
-        Errors errors_;
-    };
-
-    class AssertsContext : public ErrorContext {
-    public:
-        void AddInvariantError(const std::string &name, const std::string &cause, const ir::AstNode &node) override
-        {
-            ASTVerifier::ErrorContext::AddInvariantError(name, cause, node);
-            // NOTE(tatiana): add ASSERT here
-        }
-    };
-
-    class NoneContext : public ErrorContext {
-    public:
-        void AddInvariantError([[maybe_unused]] const std::string &name, [[maybe_unused]] const std::string &cause,
-                               [[maybe_unused]] const ir::AstNode &node) override
-        {
-        }
-    };
-    using InvariantCheck = std::function<CheckResult(ErrorContext &ctx, const ir::AstNode *)>;
-    struct Invariant {
-        util::StringView invariantName;
-        InvariantCheck invariant;
-    };
-    using Invariants = std::map<std::string, InvariantCheck>;
-
     NO_COPY_SEMANTIC(ASTVerifier);
     NO_MOVE_SEMANTIC(ASTVerifier);
 
     explicit ASTVerifier(ArenaAllocator *allocator);
     ~ASTVerifier() = default;
 
-    using InvariantSet = std::unordered_set<std::string>;
-
     /**
      * @brief Run all existing invariants on some ast node (and consequently it's children)
      * @param ast AstNode which will be analyzed
-     * @return Errors report of analysis
+     * @return Messages report of analysis
      */
-    std::tuple<ASTVerifier::Errors, ASTVerifier::Errors> VerifyFull(const std::unordered_set<std::string> &warnings,
-                                                                    const std::unordered_set<std::string> &asserts,
-                                                                    const ir::AstNode *ast);
+    Messages VerifyFull(const ir::AstNode *ast);
 
     /**
      * @brief Run some particular invariants on some ast node
@@ -140,111 +188,48 @@ public:
      * name can be suffixed by `ForAll` string to include recursive analysis of provided node
      * I.e. 'HasParent' invariant can be named 'HasParentRecursive' to traverse all child nodes as well
      * @param ast AstNode which will be analyzed
-     * @param invariant_set Set of strings which will be used as invariant names
-     * @return Errors report of analysis
+     * @param invariantSet Set of invariants to check
+     * @return Messages report of analysis
      */
-    std::tuple<ASTVerifier::Errors, ASTVerifier::Errors> Verify(const std::unordered_set<std::string> &warnings,
-                                                                const std::unordered_set<std::string> &asserts,
-                                                                const ir::AstNode *ast,
-                                                                const InvariantSet &invariantSet);
+    Messages Verify(const ir::AstNode *ast, const InvariantNameSet &invariantSet);
 
 private:
-    void AddInvariant(const std::string &name, const InvariantCheck &invariant);
+    static constexpr const char *RECURSIVE_SUFFIX = "ForAll";
+
+    static InvariantCheck RecursiveInvariant(const InvariantCheck &func)
+    {
+        return [func](CheckContext &ctx, const ir::AstNode *ast) -> CheckResult {
+            std::function<void(const ir::AstNode *)> aux;
+            auto finalDecision = CheckDecision::CORRECT;
+            aux = [&ctx, func, &aux, &finalDecision](const ir::AstNode *child) -> void {
+                const auto [decision, action] = func(ctx, child);
+                if (decision == CheckDecision::INCORRECT) {
+                    finalDecision = CheckDecision::INCORRECT;
+                }
+                if (action == CheckAction::SKIP_SUBTREE) {
+                    return;
+                }
+                child->Iterate(aux);
+            };
+            aux(ast);
+            return {finalDecision, CheckAction::CONTINUE};
+        };
+    }
+
+    template <typename T>
+    void AddInvariant(ArenaAllocator *allocator, const std::string &name)
+    {
+        auto check = *allocator->New<T>(*allocator);
+        invariantsChecks_[name] = check;
+        invariantsNames_.insert(name);
+        invariantsChecks_[name + RECURSIVE_SUFFIX] = RecursiveInvariant(check);
+        invariantsNames_.insert(name + RECURSIVE_SUFFIX);
+    }
 
     Invariants invariantsChecks_;
-    InvariantSet invariantsNames_;
+    InvariantNameSet invariantsNames_;
 };
 
-class ASTVerifierContext final {
-public:
-    explicit ASTVerifierContext(ASTVerifier &verifier) : verifier_ {verifier} {}
-
-    void IntroduceNewInvariants(util::StringView phaseName)
-    {
-        auto invariantSet = [phaseName]() -> std::optional<ASTVerifier::InvariantSet> {
-            (void)phaseName;
-            if (phaseName == "ScopesInitPhase") {
-                return {{
-                    "NodeHasParentForAll",
-                    "EveryChildHasValidParentForAll",
-                    "VariableHasScopeForAll",
-                }};
-            }
-            if (phaseName == "CheckerPhase") {
-                return {{
-                    "NodeHasTypeForAll",
-                    "IdentifierHasVariableForAll",
-                    "ArithmeticOperationValidForAll",
-                    "SequenceExpressionHasLastTypeForAll",
-                    "ForLoopCorrectlyInitializedForAll",
-                    "VariableHasEnclosingScopeForAll",
-                    "ModifierAccessValidForAll",
-                    "ImportExportAccessValid",
-                }};
-            }
-            const std::set<std::string> withoutAdditionalChecks = {"PromiseVoidInferencePhase",
-                                                                   "StructLowering",
-                                                                   "GenerateTsDeclarationsPhase",
-                                                                   "InterfacePropertyDeclarationsPhase",
-                                                                   "LambdaConstructionPhase",
-                                                                   "ObjectIndexLowering",
-                                                                   "OpAssignmentLowering",
-                                                                   "PromiseVoidInferencePhase",
-                                                                   "TupleLowering",
-                                                                   "UnionLowering",
-                                                                   "ExpandBracketsPhase"};
-            if (withoutAdditionalChecks.count(phaseName.Mutf8()) > 0) {
-                return {{}};
-            }
-            if (phaseName.Utf8().find("plugins") != std::string_view::npos) {
-                return {{}};
-            }
-            return std::nullopt;
-        }();
-
-        ASSERT_PRINT(invariantSet.has_value(),
-                     std::string {"Invariant set does not contain value for "} + phaseName.Mutf8());
-        const auto &s = *invariantSet;
-        accumulatedChecks_.insert(s.begin(), s.end());
-    }
-
-    bool Verify(const std::unordered_set<std::string> &warnings, const std::unordered_set<std::string> &errors,
-                const ir::AstNode *ast, util::StringView phaseName, util::StringView sourceName)
-    {
-        auto [warns, asserts] = verifier_.Verify(warnings, errors, ast, accumulatedChecks_);
-        std::for_each(warns.begin(), warns.end(), [this, &sourceName, &phaseName](ASTVerifier::CheckError &e) {
-            warnings_.Add([e, sourceName, phaseName](JsonObjectBuilder &err) {
-                err.AddProperty("from", sourceName.Utf8());
-                err.AddProperty("phase", phaseName.Utf8());
-                err.AddProperty("error", e.DumpJSON());
-            });
-        });
-        std::for_each(asserts.begin(), asserts.end(), [this, &sourceName, &phaseName](ASTVerifier::CheckError &e) {
-            asserts_.Add([e, sourceName, phaseName](JsonObjectBuilder &err) {
-                err.AddProperty("from", sourceName.Utf8());
-                err.AddProperty("phase", phaseName.Utf8());
-                err.AddProperty("error", e.DumpJSON());
-            });
-        });
-        return warns.empty() && asserts.empty();
-    }
-
-    std::string DumpWarningsJSON()
-    {
-        return std::move(warnings_).Build();
-    }
-    std::string DumpAssertsJSON()
-    {
-        return std::move(asserts_).Build();
-    }
-
-private:
-    ASTVerifier &verifier_;
-    JsonArrayBuilder warnings_;
-    JsonArrayBuilder asserts_;
-    ASTVerifier::InvariantSet accumulatedChecks_ {};
-};
-
-}  // namespace ark::es2panda::compiler
+}  // namespace ark::es2panda::compiler::ast_verifier
 
 #endif  // ES2PANDA_COMPILER_CORE_ASTVERIFIER_H
