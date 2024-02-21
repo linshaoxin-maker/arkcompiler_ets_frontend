@@ -826,29 +826,44 @@
                         }
                       },
                       "consequent": {
-                        "type": "ReturnStatement",
-                        "argument": {
-                          "type": "NumberLiteral",
-                          "value": 0,
-                          "loc": {
-                            "start": {
-                              "line": 20,
-                              "column": 33
+                        "type": "BlockStatement",
+                        "statements": [
+                          {
+                            "type": "ReturnStatement",
+                            "argument": {
+                              "type": "NumberLiteral",
+                              "value": 0,
+                              "loc": {
+                                "start": {
+                                  "line": 20,
+                                  "column": 33
+                                },
+                                "end": {
+                                  "line": 20,
+                                  "column": 34
+                                }
+                              }
                             },
-                            "end": {
-                              "line": 20,
-                              "column": 34
+                            "loc": {
+                              "start": {
+                                "line": 20,
+                                "column": 26
+                              },
+                              "end": {
+                                "line": 20,
+                                "column": 35
+                              }
                             }
                           }
-                        },
+                        ],
                         "loc": {
                           "start": {
                             "line": 20,
                             "column": 26
                           },
                           "end": {
-                            "line": 20,
-                            "column": 35
+                            "line": 21,
+                            "column": 11
                           }
                         }
                       },
@@ -859,8 +874,8 @@
                           "column": 5
                         },
                         "end": {
-                          "line": 20,
-                          "column": 35
+                          "line": 21,
+                          "column": 11
                         }
                       }
                     },

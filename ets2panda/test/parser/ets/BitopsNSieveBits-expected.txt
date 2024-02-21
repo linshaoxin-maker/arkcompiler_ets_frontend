@@ -1261,151 +1261,176 @@
                                     "type": "BlockStatement",
                                     "statements": [
                                       {
-                                        "type": "ExpressionStatement",
-                                        "expression": {
-                                          "type": "AssignmentExpression",
-                                          "operator": "&=",
-                                          "left": {
-                                            "type": "MemberExpression",
-                                            "object": {
-                                              "type": "Identifier",
-                                              "name": "isPrime",
-                                              "decorators": [],
-                                              "loc": {
-                                                "start": {
-                                                  "line": 29,
-                                                  "column": 11
-                                                },
-                                                "end": {
-                                                  "line": 29,
-                                                  "column": 18
-                                                }
-                                              }
-                                            },
-                                            "property": {
-                                              "type": "BinaryExpression",
-                                              "operator": ">>",
+                                        "type": "BlockStatement",
+                                        "statements": [
+                                          {
+                                            "type": "ExpressionStatement",
+                                            "expression": {
+                                              "type": "AssignmentExpression",
+                                              "operator": "&=",
                                               "left": {
-                                                "type": "Identifier",
-                                                "name": "j",
-                                                "decorators": [],
-                                                "loc": {
-                                                  "start": {
-                                                    "line": 29,
-                                                    "column": 19
-                                                  },
-                                                  "end": {
-                                                    "line": 29,
-                                                    "column": 20
-                                                  }
-                                                }
-                                              },
-                                              "right": {
-                                                "type": "NumberLiteral",
-                                                "value": 5,
-                                                "loc": {
-                                                  "start": {
-                                                    "line": 29,
-                                                    "column": 24
-                                                  },
-                                                  "end": {
-                                                    "line": 29,
-                                                    "column": 25
-                                                  }
-                                                }
-                                              },
-                                              "loc": {
-                                                "start": {
-                                                  "line": 29,
-                                                  "column": 19
-                                                },
-                                                "end": {
-                                                  "line": 29,
-                                                  "column": 25
-                                                }
-                                              }
-                                            },
-                                            "computed": true,
-                                            "optional": false,
-                                            "loc": {
-                                              "start": {
-                                                "line": 29,
-                                                "column": 11
-                                              },
-                                              "end": {
-                                                "line": 29,
-                                                "column": 26
-                                              }
-                                            }
-                                          },
-                                          "right": {
-                                            "type": "UnaryExpression",
-                                            "operator": "~",
-                                            "prefix": true,
-                                            "argument": {
-                                              "type": "BinaryExpression",
-                                              "operator": "<<",
-                                              "left": {
-                                                "type": "NumberLiteral",
-                                                "value": 1,
-                                                "loc": {
-                                                  "start": {
-                                                    "line": 29,
-                                                    "column": 32
-                                                  },
-                                                  "end": {
-                                                    "line": 29,
-                                                    "column": 33
-                                                  }
-                                                }
-                                              },
-                                              "right": {
-                                                "type": "BinaryExpression",
-                                                "operator": "&",
-                                                "left": {
+                                                "type": "MemberExpression",
+                                                "object": {
                                                   "type": "Identifier",
-                                                  "name": "j",
+                                                  "name": "isPrime",
                                                   "decorators": [],
                                                   "loc": {
                                                     "start": {
                                                       "line": 29,
-                                                      "column": 38
+                                                      "column": 11
                                                     },
                                                     "end": {
                                                       "line": 29,
-                                                      "column": 39
+                                                      "column": 18
                                                     }
                                                   }
                                                 },
-                                                "right": {
-                                                  "type": "NumberLiteral",
-                                                  "value": 31,
+                                                "property": {
+                                                  "type": "BinaryExpression",
+                                                  "operator": ">>",
+                                                  "left": {
+                                                    "type": "Identifier",
+                                                    "name": "j",
+                                                    "decorators": [],
+                                                    "loc": {
+                                                      "start": {
+                                                        "line": 29,
+                                                        "column": 19
+                                                      },
+                                                      "end": {
+                                                        "line": 29,
+                                                        "column": 20
+                                                      }
+                                                    }
+                                                  },
+                                                  "right": {
+                                                    "type": "NumberLiteral",
+                                                    "value": 5,
+                                                    "loc": {
+                                                      "start": {
+                                                        "line": 29,
+                                                        "column": 24
+                                                      },
+                                                      "end": {
+                                                        "line": 29,
+                                                        "column": 25
+                                                      }
+                                                    }
+                                                  },
                                                   "loc": {
                                                     "start": {
                                                       "line": 29,
-                                                      "column": 42
+                                                      "column": 19
                                                     },
                                                     "end": {
                                                       "line": 29,
-                                                      "column": 44
+                                                      "column": 25
+                                                    }
+                                                  }
+                                                },
+                                                "computed": true,
+                                                "optional": false,
+                                                "loc": {
+                                                  "start": {
+                                                    "line": 29,
+                                                    "column": 11
+                                                  },
+                                                  "end": {
+                                                    "line": 29,
+                                                    "column": 26
+                                                  }
+                                                }
+                                              },
+                                              "right": {
+                                                "type": "UnaryExpression",
+                                                "operator": "~",
+                                                "prefix": true,
+                                                "argument": {
+                                                  "type": "BinaryExpression",
+                                                  "operator": "<<",
+                                                  "left": {
+                                                    "type": "NumberLiteral",
+                                                    "value": 1,
+                                                    "loc": {
+                                                      "start": {
+                                                        "line": 29,
+                                                        "column": 32
+                                                      },
+                                                      "end": {
+                                                        "line": 29,
+                                                        "column": 33
+                                                      }
+                                                    }
+                                                  },
+                                                  "right": {
+                                                    "type": "BinaryExpression",
+                                                    "operator": "&",
+                                                    "left": {
+                                                      "type": "Identifier",
+                                                      "name": "j",
+                                                      "decorators": [],
+                                                      "loc": {
+                                                        "start": {
+                                                          "line": 29,
+                                                          "column": 38
+                                                        },
+                                                        "end": {
+                                                          "line": 29,
+                                                          "column": 39
+                                                        }
+                                                      }
+                                                    },
+                                                    "right": {
+                                                      "type": "NumberLiteral",
+                                                      "value": 31,
+                                                      "loc": {
+                                                        "start": {
+                                                          "line": 29,
+                                                          "column": 42
+                                                        },
+                                                        "end": {
+                                                          "line": 29,
+                                                          "column": 44
+                                                        }
+                                                      }
+                                                    },
+                                                    "loc": {
+                                                      "start": {
+                                                        "line": 29,
+                                                        "column": 37
+                                                      },
+                                                      "end": {
+                                                        "line": 29,
+                                                        "column": 45
+                                                      }
+                                                    }
+                                                  },
+                                                  "loc": {
+                                                    "start": {
+                                                      "line": 29,
+                                                      "column": 31
+                                                    },
+                                                    "end": {
+                                                      "line": 29,
+                                                      "column": 46
                                                     }
                                                   }
                                                 },
                                                 "loc": {
                                                   "start": {
                                                     "line": 29,
-                                                    "column": 37
+                                                    "column": 30
                                                   },
                                                   "end": {
                                                     "line": 29,
-                                                    "column": 45
+                                                    "column": 46
                                                   }
                                                 }
                                               },
                                               "loc": {
                                                 "start": {
                                                   "line": 29,
-                                                  "column": 31
+                                                  "column": 11
                                                 },
                                                 "end": {
                                                   "line": 29,
@@ -1416,33 +1441,23 @@
                                             "loc": {
                                               "start": {
                                                 "line": 29,
-                                                "column": 30
+                                                "column": 11
                                               },
                                               "end": {
                                                 "line": 29,
-                                                "column": 46
+                                                "column": 47
                                               }
                                             }
-                                          },
-                                          "loc": {
-                                            "start": {
-                                              "line": 29,
-                                              "column": 11
-                                            },
-                                            "end": {
-                                              "line": 29,
-                                              "column": 46
-                                            }
                                           }
-                                        },
+                                        ],
                                         "loc": {
                                           "start": {
-                                            "line": 29,
-                                            "column": 11
+                                            "line": 28,
+                                            "column": 49
                                           },
                                           "end": {
-                                            "line": 29,
-                                            "column": 47
+                                            "line": 30,
+                                            "column": 10
                                           }
                                         }
                                       }
@@ -1453,8 +1468,8 @@
                                         "column": 49
                                       },
                                       "end": {
-                                        "line": 30,
-                                        "column": 10
+                                        "line": 31,
+                                        "column": 8
                                       }
                                     }
                                   },
@@ -1464,8 +1479,8 @@
                                       "column": 9
                                     },
                                     "end": {
-                                      "line": 30,
-                                      "column": 10
+                                      "line": 31,
+                                      "column": 8
                                     }
                                   }
                                 }

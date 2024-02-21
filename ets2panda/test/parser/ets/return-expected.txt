@@ -451,16 +451,31 @@
                               }
                             },
                             "consequent": {
-                              "type": "ReturnStatement",
-                              "argument": null,
+                              "type": "BlockStatement",
+                              "statements": [
+                                {
+                                  "type": "ReturnStatement",
+                                  "argument": null,
+                                  "loc": {
+                                    "start": {
+                                      "line": 19,
+                                      "column": 17
+                                    },
+                                    "end": {
+                                      "line": 19,
+                                      "column": 24
+                                    }
+                                  }
+                                }
+                              ],
                               "loc": {
                                 "start": {
                                   "line": 19,
                                   "column": 17
                                 },
                                 "end": {
-                                  "line": 19,
-                                  "column": 24
+                                  "line": 20,
+                                  "column": 4
                                 }
                               }
                             },
@@ -471,8 +486,8 @@
                                 "column": 5
                               },
                               "end": {
-                                "line": 19,
-                                "column": 24
+                                "line": 20,
+                                "column": 4
                               }
                             }
                           }

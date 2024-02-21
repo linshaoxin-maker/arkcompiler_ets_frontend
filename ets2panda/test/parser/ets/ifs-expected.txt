@@ -194,29 +194,44 @@
                         }
                       },
                       "consequent": {
-                        "type": "ReturnStatement",
-                        "argument": {
-                          "type": "NumberLiteral",
-                          "value": 0,
-                          "loc": {
-                            "start": {
-                              "line": 17,
-                              "column": 21
+                        "type": "BlockStatement",
+                        "statements": [
+                          {
+                            "type": "ReturnStatement",
+                            "argument": {
+                              "type": "NumberLiteral",
+                              "value": 0,
+                              "loc": {
+                                "start": {
+                                  "line": 17,
+                                  "column": 21
+                                },
+                                "end": {
+                                  "line": 17,
+                                  "column": 22
+                                }
+                              }
                             },
-                            "end": {
-                              "line": 17,
-                              "column": 22
+                            "loc": {
+                              "start": {
+                                "line": 17,
+                                "column": 14
+                              },
+                              "end": {
+                                "line": 17,
+                                "column": 23
+                              }
                             }
                           }
-                        },
+                        ],
                         "loc": {
                           "start": {
                             "line": 17,
                             "column": 14
                           },
                           "end": {
-                            "line": 17,
-                            "column": 23
+                            "line": 18,
+                            "column": 5
                           }
                         }
                       },
@@ -227,8 +242,8 @@
                           "column": 3
                         },
                         "end": {
-                          "line": 17,
-                          "column": 23
+                          "line": 18,
+                          "column": 5
                         }
                       }
                     },
@@ -249,29 +264,44 @@
                         }
                       },
                       "consequent": {
-                        "type": "ReturnStatement",
-                        "argument": {
-                          "type": "NumberLiteral",
-                          "value": 1,
-                          "loc": {
-                            "start": {
-                              "line": 18,
-                              "column": 21
+                        "type": "BlockStatement",
+                        "statements": [
+                          {
+                            "type": "ReturnStatement",
+                            "argument": {
+                              "type": "NumberLiteral",
+                              "value": 1,
+                              "loc": {
+                                "start": {
+                                  "line": 18,
+                                  "column": 21
+                                },
+                                "end": {
+                                  "line": 18,
+                                  "column": 22
+                                }
+                              }
                             },
-                            "end": {
-                              "line": 18,
-                              "column": 22
+                            "loc": {
+                              "start": {
+                                "line": 18,
+                                "column": 14
+                              },
+                              "end": {
+                                "line": 18,
+                                "column": 23
+                              }
                             }
                           }
-                        },
+                        ],
                         "loc": {
                           "start": {
                             "line": 18,
                             "column": 14
                           },
                           "end": {
-                            "line": 18,
-                            "column": 23
+                            "line": 19,
+                            "column": 7
                           }
                         }
                       },
@@ -295,164 +325,254 @@
                               }
                             },
                             "consequent": {
-                              "type": "ReturnStatement",
-                              "argument": {
-                                "type": "NumberLiteral",
-                                "value": 2,
-                                "loc": {
-                                  "start": {
-                                    "line": 20,
-                                    "column": 23
+                              "type": "BlockStatement",
+                              "statements": [
+                                {
+                                  "type": "ReturnStatement",
+                                  "argument": {
+                                    "type": "NumberLiteral",
+                                    "value": 2,
+                                    "loc": {
+                                      "start": {
+                                        "line": 20,
+                                        "column": 23
+                                      },
+                                      "end": {
+                                        "line": 20,
+                                        "column": 24
+                                      }
+                                    }
                                   },
-                                  "end": {
-                                    "line": 20,
-                                    "column": 24
+                                  "loc": {
+                                    "start": {
+                                      "line": 20,
+                                      "column": 16
+                                    },
+                                    "end": {
+                                      "line": 20,
+                                      "column": 25
+                                    }
                                   }
                                 }
-                              },
+                              ],
                               "loc": {
                                 "start": {
                                   "line": 20,
                                   "column": 16
                                 },
                                 "end": {
-                                  "line": 20,
-                                  "column": 25
+                                  "line": 21,
+                                  "column": 9
                                 }
                               }
                             },
                             "alternate": {
-                              "type": "IfStatement",
-                              "test": {
-                                "type": "BooleanLiteral",
-                                "value": false,
-                                "loc": {
-                                  "start": {
-                                    "line": 22,
-                                    "column": 11
-                                  },
-                                  "end": {
-                                    "line": 22,
-                                    "column": 16
-                                  }
-                                }
-                              },
-                              "consequent": {
-                                "type": "ReturnStatement",
-                                "argument": {
-                                  "type": "NumberLiteral",
-                                  "value": 3,
-                                  "loc": {
-                                    "start": {
-                                      "line": 22,
-                                      "column": 25
-                                    },
-                                    "end": {
-                                      "line": 22,
-                                      "column": 26
-                                    }
-                                  }
-                                },
-                                "loc": {
-                                  "start": {
-                                    "line": 22,
-                                    "column": 18
-                                  },
-                                  "end": {
-                                    "line": 22,
-                                    "column": 27
-                                  }
-                                }
-                              },
-                              "alternate": {
-                                "type": "IfStatement",
-                                "test": {
-                                  "type": "BooleanLiteral",
-                                  "value": false,
-                                  "loc": {
-                                    "start": {
-                                      "line": 23,
-                                      "column": 16
-                                    },
-                                    "end": {
-                                      "line": 23,
-                                      "column": 21
-                                    }
-                                  }
-                                },
-                                "consequent": {
-                                  "type": "ReturnStatement",
-                                  "argument": {
-                                    "type": "NumberLiteral",
-                                    "value": 4,
+                              "type": "BlockStatement",
+                              "statements": [
+                                {
+                                  "type": "IfStatement",
+                                  "test": {
+                                    "type": "BooleanLiteral",
+                                    "value": false,
                                     "loc": {
                                       "start": {
-                                        "line": 23,
-                                        "column": 30
+                                        "line": 22,
+                                        "column": 11
+                                      },
+                                      "end": {
+                                        "line": 22,
+                                        "column": 16
+                                      }
+                                    }
+                                  },
+                                  "consequent": {
+                                    "type": "BlockStatement",
+                                    "statements": [
+                                      {
+                                        "type": "ReturnStatement",
+                                        "argument": {
+                                          "type": "NumberLiteral",
+                                          "value": 3,
+                                          "loc": {
+                                            "start": {
+                                              "line": 22,
+                                              "column": 25
+                                            },
+                                            "end": {
+                                              "line": 22,
+                                              "column": 26
+                                            }
+                                          }
+                                        },
+                                        "loc": {
+                                          "start": {
+                                            "line": 22,
+                                            "column": 18
+                                          },
+                                          "end": {
+                                            "line": 22,
+                                            "column": 27
+                                          }
+                                        }
+                                      }
+                                    ],
+                                    "loc": {
+                                      "start": {
+                                        "line": 22,
+                                        "column": 18
                                       },
                                       "end": {
                                         "line": 23,
-                                        "column": 31
+                                        "column": 11
+                                      }
+                                    }
+                                  },
+                                  "alternate": {
+                                    "type": "BlockStatement",
+                                    "statements": [
+                                      {
+                                        "type": "IfStatement",
+                                        "test": {
+                                          "type": "BooleanLiteral",
+                                          "value": false,
+                                          "loc": {
+                                            "start": {
+                                              "line": 23,
+                                              "column": 16
+                                            },
+                                            "end": {
+                                              "line": 23,
+                                              "column": 21
+                                            }
+                                          }
+                                        },
+                                        "consequent": {
+                                          "type": "BlockStatement",
+                                          "statements": [
+                                            {
+                                              "type": "ReturnStatement",
+                                              "argument": {
+                                                "type": "NumberLiteral",
+                                                "value": 4,
+                                                "loc": {
+                                                  "start": {
+                                                    "line": 23,
+                                                    "column": 30
+                                                  },
+                                                  "end": {
+                                                    "line": 23,
+                                                    "column": 31
+                                                  }
+                                                }
+                                              },
+                                              "loc": {
+                                                "start": {
+                                                  "line": 23,
+                                                  "column": 23
+                                                },
+                                                "end": {
+                                                  "line": 23,
+                                                  "column": 32
+                                                }
+                                              }
+                                            }
+                                          ],
+                                          "loc": {
+                                            "start": {
+                                              "line": 23,
+                                              "column": 23
+                                            },
+                                            "end": {
+                                              "line": 24,
+                                              "column": 11
+                                            }
+                                          }
+                                        },
+                                        "alternate": {
+                                          "type": "BlockStatement",
+                                          "statements": [
+                                            {
+                                              "type": "ReturnStatement",
+                                              "argument": {
+                                                "type": "NumberLiteral",
+                                                "value": 5,
+                                                "loc": {
+                                                  "start": {
+                                                    "line": 24,
+                                                    "column": 19
+                                                  },
+                                                  "end": {
+                                                    "line": 24,
+                                                    "column": 20
+                                                  }
+                                                }
+                                              },
+                                              "loc": {
+                                                "start": {
+                                                  "line": 24,
+                                                  "column": 12
+                                                },
+                                                "end": {
+                                                  "line": 24,
+                                                  "column": 21
+                                                }
+                                              }
+                                            }
+                                          ],
+                                          "loc": {
+                                            "start": {
+                                              "line": 24,
+                                              "column": 12
+                                            },
+                                            "end": {
+                                              "line": 25,
+                                              "column": 4
+                                            }
+                                          }
+                                        },
+                                        "loc": {
+                                          "start": {
+                                            "line": 23,
+                                            "column": 12
+                                          },
+                                          "end": {
+                                            "line": 25,
+                                            "column": 4
+                                          }
+                                        }
+                                      }
+                                    ],
+                                    "loc": {
+                                      "start": {
+                                        "line": 23,
+                                        "column": 12
+                                      },
+                                      "end": {
+                                        "line": 25,
+                                        "column": 4
                                       }
                                     }
                                   },
                                   "loc": {
                                     "start": {
-                                      "line": 23,
-                                      "column": 23
+                                      "line": 22,
+                                      "column": 7
                                     },
                                     "end": {
-                                      "line": 23,
-                                      "column": 32
+                                      "line": 25,
+                                      "column": 4
                                     }
-                                  }
-                                },
-                                "alternate": {
-                                  "type": "ReturnStatement",
-                                  "argument": {
-                                    "type": "NumberLiteral",
-                                    "value": 5,
-                                    "loc": {
-                                      "start": {
-                                        "line": 24,
-                                        "column": 19
-                                      },
-                                      "end": {
-                                        "line": 24,
-                                        "column": 20
-                                      }
-                                    }
-                                  },
-                                  "loc": {
-                                    "start": {
-                                      "line": 24,
-                                      "column": 12
-                                    },
-                                    "end": {
-                                      "line": 24,
-                                      "column": 21
-                                    }
-                                  }
-                                },
-                                "loc": {
-                                  "start": {
-                                    "line": 23,
-                                    "column": 12
-                                  },
-                                  "end": {
-                                    "line": 24,
-                                    "column": 21
                                   }
                                 }
-                              },
+                              ],
                               "loc": {
                                 "start": {
                                   "line": 22,
                                   "column": 7
                                 },
                                 "end": {
-                                  "line": 24,
-                                  "column": 21
+                                  "line": 25,
+                                  "column": 4
                                 }
                               }
                             },
@@ -462,8 +582,8 @@
                                 "column": 5
                               },
                               "end": {
-                                "line": 24,
-                                "column": 21
+                                "line": 25,
+                                "column": 4
                               }
                             }
                           }

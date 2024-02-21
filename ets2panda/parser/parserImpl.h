@@ -261,6 +261,7 @@ protected:
     std::tuple<ForStatementKind, ir::Expression *, ir::Expression *> ParseForInOf(ir::AstNode *initNode,
                                                                                   ExpressionParseFlags exprFlags,
                                                                                   bool isAwait);
+    std::tuple<ir::AstNode *, ir::Expression *, bool> ParseInitOrLeftNode(VariableParsingFlags varFlags, bool isAwait);
     std::tuple<ir::Expression *, ir::Expression *> ParseForUpdate(bool isAwait);
     ir::SwitchCaseStatement *ParseSwitchCaseStatement(bool *seenDefault);
     virtual ir::Expression *ParseCatchParam();
@@ -350,9 +351,11 @@ protected:
     ArenaVector<ir::Statement *> ParseStatementList(StatementParsingFlags flags = StatementParsingFlags::ALLOW_LEXICAL);
     virtual ir::Statement *ParseAssertStatement();
     virtual void ValidateLabeledStatement(lexer::TokenType type);
-    ir::BlockStatement *ParseBlockStatement();
+    ir::Statement *ParseStatementBody(StatementParsingFlags flags);
+    ir::BlockStatement *ParseBlockStatement(bool inBraces = true,
+                                            StatementParsingFlags flags = StatementParsingFlags::NONE);
     ir::EmptyStatement *ParseEmptyStatement();
-    ir::Statement *ParseForStatement();
+    ir::Statement *ParseForStatement(StatementParsingFlags flags = StatementParsingFlags::NONE);
     ir::IfStatement *ParseIfStatement();
     virtual ir::Statement *ParseFunctionStatement(StatementParsingFlags flags);
     // NOLINTNEXTLINE(google-default-arguments)
@@ -367,8 +370,8 @@ protected:
     ir::Statement *ParseLetStatement(StatementParsingFlags flags);
     ir::BreakStatement *ParseBreakStatement();
     ir::ContinueStatement *ParseContinueStatement();
-    ir::DoWhileStatement *ParseDoWhileStatement();
-    ir::WhileStatement *ParseWhileStatement();
+    ir::DoWhileStatement *ParseDoWhileStatement(StatementParsingFlags flags = StatementParsingFlags::NONE);
+    ir::WhileStatement *ParseWhileStatement(StatementParsingFlags flags = StatementParsingFlags::NONE);
     ir::SwitchStatement *ParseSwitchStatement();
     ir::ReturnStatement *ParseReturnStatement();
     ir::Statement *ParseExpressionStatement(StatementParsingFlags flags = StatementParsingFlags::NONE);

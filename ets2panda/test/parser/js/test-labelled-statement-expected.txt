@@ -245,7 +245,22 @@
         },
         "body": {
           "type": "BlockStatement",
-          "statements": [],
+          "statements": [
+            {
+              "type": "BlockStatement",
+              "statements": [],
+              "loc": {
+                "start": {
+                  "line": 23,
+                  "column": 14
+                },
+                "end": {
+                  "line": 23,
+                  "column": 16
+                }
+              }
+            }
+          ],
           "loc": {
             "start": {
               "line": 23,
@@ -253,7 +268,7 @@
             },
             "end": {
               "line": 23,
-              "column": 16
+              "column": 17
             }
           }
         },
@@ -264,7 +279,7 @@
           },
           "end": {
             "line": 23,
-            "column": 16
+            "column": 17
           }
         }
       },
@@ -275,7 +290,7 @@
         },
         "end": {
           "line": 23,
-          "column": 16
+          "column": 17
         }
       }
     },
@@ -313,7 +328,22 @@
         "type": "DoWhileStatement",
         "body": {
           "type": "BlockStatement",
-          "statements": [],
+          "statements": [
+            {
+              "type": "BlockStatement",
+              "statements": [],
+              "loc": {
+                "start": {
+                  "line": 25,
+                  "column": 7
+                },
+                "end": {
+                  "line": 25,
+                  "column": 9
+                }
+              }
+            }
+          ],
           "loc": {
             "start": {
               "line": 25,
@@ -321,7 +351,7 @@
             },
             "end": {
               "line": 25,
-              "column": 9
+              "column": 15
             }
           }
         },
@@ -613,30 +643,45 @@
                         "type": "BlockStatement",
                         "statements": [
                           {
-                            "type": "BreakStatement",
-                            "label": {
-                              "type": "Identifier",
-                              "name": "a",
-                              "decorators": [],
-                              "loc": {
-                                "start": {
-                                  "line": 38,
-                                  "column": 13
+                            "type": "BlockStatement",
+                            "statements": [
+                              {
+                                "type": "BreakStatement",
+                                "label": {
+                                  "type": "Identifier",
+                                  "name": "a",
+                                  "decorators": [],
+                                  "loc": {
+                                    "start": {
+                                      "line": 38,
+                                      "column": 13
+                                    },
+                                    "end": {
+                                      "line": 38,
+                                      "column": 14
+                                    }
+                                  }
                                 },
-                                "end": {
-                                  "line": 38,
-                                  "column": 14
+                                "loc": {
+                                  "start": {
+                                    "line": 38,
+                                    "column": 7
+                                  },
+                                  "end": {
+                                    "line": 38,
+                                    "column": 15
+                                  }
                                 }
                               }
-                            },
+                            ],
                             "loc": {
                               "start": {
-                                "line": 38,
-                                "column": 7
+                                "line": 37,
+                                "column": 5
                               },
                               "end": {
-                                "line": 38,
-                                "column": 15
+                                "line": 39,
+                                "column": 6
                               }
                             }
                           }
@@ -647,8 +692,8 @@
                             "column": 5
                           },
                           "end": {
-                            "line": 39,
-                            "column": 6
+                            "line": 40,
+                            "column": 4
                           }
                         }
                       },
@@ -658,8 +703,8 @@
                           "column": 5
                         },
                         "end": {
-                          "line": 39,
-                          "column": 6
+                          "line": 40,
+                          "column": 4
                         }
                       }
                     },
@@ -669,8 +714,8 @@
                         "column": 5
                       },
                       "end": {
-                        "line": 39,
-                        "column": 6
+                        "line": 40,
+                        "column": 4
                       }
                     }
                   }
@@ -831,30 +876,45 @@
                           "type": "BlockStatement",
                           "statements": [
                             {
-                              "type": "BreakStatement",
-                              "label": {
-                                "type": "Identifier",
-                                "name": "b",
-                                "decorators": [],
-                                "loc": {
-                                  "start": {
-                                    "line": 52,
-                                    "column": 13
+                              "type": "BlockStatement",
+                              "statements": [
+                                {
+                                  "type": "BreakStatement",
+                                  "label": {
+                                    "type": "Identifier",
+                                    "name": "b",
+                                    "decorators": [],
+                                    "loc": {
+                                      "start": {
+                                        "line": 52,
+                                        "column": 13
+                                      },
+                                      "end": {
+                                        "line": 52,
+                                        "column": 14
+                                      }
+                                    }
                                   },
-                                  "end": {
-                                    "line": 52,
-                                    "column": 14
+                                  "loc": {
+                                    "start": {
+                                      "line": 52,
+                                      "column": 7
+                                    },
+                                    "end": {
+                                      "line": 52,
+                                      "column": 15
+                                    }
                                   }
                                 }
-                              },
+                              ],
                               "loc": {
                                 "start": {
-                                  "line": 52,
-                                  "column": 7
+                                  "line": 51,
+                                  "column": 5
                                 },
                                 "end": {
-                                  "line": 52,
-                                  "column": 15
+                                  "line": 53,
+                                  "column": 6
                                 }
                               }
                             }
@@ -865,8 +925,8 @@
                               "column": 5
                             },
                             "end": {
-                              "line": 53,
-                              "column": 6
+                              "line": 54,
+                              "column": 4
                             }
                           }
                         },
@@ -876,8 +936,8 @@
                             "column": 5
                           },
                           "end": {
-                            "line": 53,
-                            "column": 6
+                            "line": 54,
+                            "column": 4
                           }
                         }
                       },
@@ -887,8 +947,8 @@
                           "column": 5
                         },
                         "end": {
-                          "line": 53,
-                          "column": 6
+                          "line": 54,
+                          "column": 4
                         }
                       }
                     },
@@ -898,8 +958,8 @@
                         "column": 5
                       },
                       "end": {
-                        "line": 53,
-                        "column": 6
+                        "line": 54,
+                        "column": 4
                       }
                     }
                   }
