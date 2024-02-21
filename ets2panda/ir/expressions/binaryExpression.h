@@ -86,39 +86,46 @@ public:
                operator_ == lexer::TokenType::PUNCTUATOR_LOGICAL_OR;
     }
 
-    [[nodiscard]] bool IsArithmetic() const noexcept
+    [[nodiscard]] bool IsBitwise() const noexcept
     {
-        return operator_ == lexer::TokenType::PUNCTUATOR_PLUS || operator_ == lexer::TokenType::PUNCTUATOR_MINUS ||
-               operator_ == lexer::TokenType::PUNCTUATOR_MULTIPLY || operator_ == lexer::TokenType::PUNCTUATOR_DIVIDE ||
-               operator_ == lexer::TokenType::PUNCTUATOR_MOD || operator_ == lexer::TokenType::PUNCTUATOR_BITWISE_OR ||
+        return operator_ == lexer::TokenType::PUNCTUATOR_BITWISE_OR ||
                operator_ == lexer::TokenType::PUNCTUATOR_BITWISE_XOR ||
                operator_ == lexer::TokenType::PUNCTUATOR_BITWISE_AND ||
-               operator_ == lexer::TokenType::PUNCTUATOR_PLUS_EQUAL ||
-               operator_ == lexer::TokenType::PUNCTUATOR_MINUS_EQUAL ||
-               operator_ == lexer::TokenType::PUNCTUATOR_MULTIPLY_EQUAL ||
-               operator_ == lexer::TokenType::PUNCTUATOR_DIVIDE_EQUAL ||
-               operator_ == lexer::TokenType::PUNCTUATOR_MOD_EQUAL ||
                operator_ == lexer::TokenType::PUNCTUATOR_BITWISE_AND_EQUAL ||
                operator_ == lexer::TokenType::PUNCTUATOR_BITWISE_OR_EQUAL ||
                operator_ == lexer::TokenType::PUNCTUATOR_BITWISE_XOR_EQUAL;
     }
 
+    [[nodiscard]] bool IsArithmetic() const noexcept
+    {
+        return operator_ == lexer::TokenType::PUNCTUATOR_PLUS || operator_ == lexer::TokenType::PUNCTUATOR_MINUS ||
+               operator_ == lexer::TokenType::PUNCTUATOR_MULTIPLY || operator_ == lexer::TokenType::PUNCTUATOR_DIVIDE ||
+               operator_ == lexer::TokenType::PUNCTUATOR_MOD || operator_ == lexer::TokenType::PUNCTUATOR_PLUS_EQUAL ||
+               operator_ == lexer::TokenType::PUNCTUATOR_MINUS_EQUAL ||
+               operator_ == lexer::TokenType::PUNCTUATOR_MULTIPLY_EQUAL ||
+               operator_ == lexer::TokenType::PUNCTUATOR_DIVIDE_EQUAL ||
+               operator_ == lexer::TokenType::PUNCTUATOR_MOD_EQUAL || IsBitwise();
+    }
+
     void SetLeft(Expression *expr) noexcept
     {
         left_ = expr;
+        left_->SetParent(this);
         SetStart(left_->Start());
     }
 
     void SetRight(Expression *expr) noexcept
     {
         right_ = expr;
+        right_->SetParent(this);
         SetEnd(right_->End());
     }
 
     void SetResult(Expression *expr) noexcept
     {
-        left_ = expr;
-        SetStart(left_->Start());
+        result_ = expr;
+        result_->SetParent(this);
+        SetStart(result_->Start());
     }
 
     void SetOperator(lexer::TokenType operatorType) noexcept
@@ -142,8 +149,7 @@ public:
         return operationType_;
     }
 
-    // NOLINTNEXTLINE(google-default-arguments)
-    [[nodiscard]] BinaryExpression *Clone(ArenaAllocator *allocator, AstNode *parent = nullptr) override;
+    [[nodiscard]] BinaryExpression *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
     void TransformChildren(const NodeTransformer &cb) override;
     void Iterate(const NodeTraverser &cb) const override;
