@@ -85,7 +85,7 @@ void TSDeclGen::Generate()
 }
 
 template <class T, class CB>
-void TSDeclGen::GenCommaSeparated(const T &container, const CB &cb)
+void TSDeclGen::GenSeparated(const T &container, const CB &cb, const char *separator)
 {
     if (container.empty()) {
         return;
@@ -93,7 +93,7 @@ void TSDeclGen::GenCommaSeparated(const T &container, const CB &cb)
 
     cb(container[0]);
     for (std::size_t i = 1; i < container.size(); ++i) {
-        Out(", ");
+        Out(separator);
         cb(container[i]);
     }
 }
@@ -170,6 +170,8 @@ void TSDeclGen::GenTypeNonNullish(const checker::Type *checkerType)
         GenObjectType(checkerType->AsETSObjectType());
     } else if (checkerType->IsETSTypeParameter()) {
         GenTypeParameterType(checkerType->AsETSTypeParameter());
+    } else if (checkerType->IsETSUnionType()) {
+        GenUnionType(checkerType->AsETSUnionType());
     } else {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TYPE_CHECKS(typeFlag, typeName)              \
@@ -225,7 +227,7 @@ void TSDeclGen::GenFunctionType(const checker::ETSFunctionType *etsFunctionType,
 
         Out("(");
 
-        GenCommaSeparated(sig->Params(), [this](varbinder::LocalVariable *param) {
+        GenSeparated(sig->Params(), [this](varbinder::LocalVariable *param) {
             Out(param->Name());
             const auto *paramType = param->TsType();
 
@@ -317,9 +319,15 @@ void TSDeclGen::GenObjectType(const checker::ETSObjectType *objectType)
     const auto &typeArgs = objectType->TypeArguments();
     if (!typeArgs.empty()) {
         Out("<");
-        GenCommaSeparated(typeArgs, [this](checker::Type *arg) { GenType(arg); });
+        GenSeparated(typeArgs, [this](checker::Type *arg) { GenType(arg); });
         Out(">");
     }
+}
+
+void TSDeclGen::GenUnionType(const checker::ETSUnionType *unionType)
+{
+    GenSeparated(
+        unionType->ConstituentTypes(), [this](checker::Type *arg) { GenType(arg); }, " | ");
 }
 
 void TSDeclGen::GenTypeParameterType(const checker::ETSTypeParameter *typeParam)
@@ -331,7 +339,7 @@ void TSDeclGen::GenTypeParameters(const ir::TSTypeParameterDeclaration *typePara
 {
     if (typeParams != nullptr) {
         Out("<");
-        GenCommaSeparated(typeParams->Params(), [this](ir::TSTypeParameter *param) {
+        GenSeparated(typeParams->Params(), [this](ir::TSTypeParameter *param) {
             Out(param->Name()->Name());
             auto *constraint = param->Constraint();
             if (constraint != nullptr) {
@@ -376,7 +384,7 @@ void TSDeclGen::GenImportDeclaration(const ir::ETSImportDeclaration *importDecla
 
     const auto &specifiers = importDeclaration->Specifiers();
     Out("import { ");
-    GenCommaSeparated(specifiers, [this, &importDeclaration](ir::AstNode *specifier) {
+    GenSeparated(specifiers, [this, &importDeclaration](ir::AstNode *specifier) {
         if (!specifier->IsImportSpecifier()) {
             ThrowError("Only import specifiers are supported", importDeclaration->Start());
         }
@@ -481,7 +489,7 @@ void TSDeclGen::GenClassDeclaration(const ir::ClassDeclaration *classDecl)
         if (!interfaces.empty()) {
             Out(" implements ");
             ASSERT(classDef->TsType()->IsETSObjectType());
-            GenCommaSeparated(interfaces, [this](checker::ETSObjectType *interface) { GenType(interface); });
+            GenSeparated(interfaces, [this](checker::ETSObjectType *interface) { GenType(interface); });
         }
 
         Out(" {");

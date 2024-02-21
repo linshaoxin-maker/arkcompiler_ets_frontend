@@ -52,6 +52,7 @@ private:
     void GenTypeParameterType(const checker::ETSTypeParameter *typeParam);
     void GenObjectType(const checker::ETSObjectType *objectType);
     void GenEnumType(const checker::ETSEnumType *enumType);
+    void GenUnionType(const checker::ETSUnionType *unionType);
 
     void GenImportDeclaration(const ir::ETSImportDeclaration *importDeclaration);
     void GenTypeAliasDeclaration(const ir::TSTypeAliasDeclaration *typeAlias);
@@ -67,7 +68,7 @@ private:
     void GenTypeParameters(const ir::TSTypeParameterDeclaration *typeParams);
 
     template <class T, class CB>
-    void GenCommaSeparated(const T &container, const CB &cb);
+    void GenSeparated(const T &container, const CB &cb, const char *separator = ", ");
 
     void Out() {}
     template <class F, class... T>
