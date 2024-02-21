@@ -338,7 +338,7 @@ protected:
     ir::Literal *ParseNumberLiteral();
     ir::CharLiteral *ParseCharLiteral();
     ir::StringLiteral *ParseStringLiteral();
-    ir::UndefinedLiteral *ParseUndefinedLiteral();
+    virtual ir::UndefinedLiteral *ParseUndefinedLiteral();
     virtual ir::ThisExpression *ParseThisExpression();
     ir::RegExpLiteral *ParseRegularExpression();
     ir::SuperExpression *ParseSuperExpression();

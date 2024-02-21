@@ -313,6 +313,7 @@ private:
     bool ParsePotentialNonNullExpression(ir::Expression **expression, lexer::SourcePosition startLoc) override;
     void MarkNodeAsExported(ir::AstNode *node, lexer::SourcePosition startPos, bool defaultExport,
                             std::size_t numOfElements = 1);
+    ir::UndefinedLiteral *ParseUndefinedLiteral() override;
 
     std::shared_ptr<ArkTsConfig> ArkTSConfig() const
     {

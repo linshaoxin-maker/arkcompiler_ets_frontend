@@ -684,6 +684,16 @@ void ETSParser::MarkNodeAsExported(ir::AstNode *node, lexer::SourcePosition star
     node->AddModifier(flag);
 }
 
+ir::UndefinedLiteral *ETSParser::ParseUndefinedLiteral()
+{
+    ASSERT(Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_UNDEFINED);
+    auto *undefinedNode = AllocNode<ir::UndefinedLiteral>();
+    undefinedNode->SetRange(Lexer()->GetToken().Loc());
+
+    Lexer()->NextToken();
+    return undefinedNode;
+}
+
 ArenaVector<ir::AstNode *> ETSParser::ParseTopLevelStatements(ArenaVector<ir::Statement *> &statements)
 {
     ArenaVector<ir::AstNode *> globalProperties(Allocator()->Adapter());
@@ -2661,7 +2671,7 @@ ir::TypeNode *ETSParser::ParseUnionType(ir::TypeNode *const firstType)
         if (Lexer()->GetToken().Type() == lexer::TokenType::LITERAL_NULL) {
             nullishModifiers |= ir::ModifierFlags::NULL_ASSIGNABLE;
             Lexer()->NextToken();
-        } else if (Lexer()->GetToken().Type() == lexer::TokenType::KEYW_UNDEFINED) {
+        } else if (Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_UNDEFINED) {
             nullishModifiers |= ir::ModifierFlags::UNDEFINED_ASSIGNABLE;
             Lexer()->NextToken();
         } else {
@@ -3969,6 +3979,10 @@ ir::Expression *ETSParser::ParsePrimaryExpression(ExpressionParseFlags flags)
             return ParseExpressionFormatPlaceholder();
         }
         default: {
+            if (Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_UNDEFINED) {
+                return ParseUndefinedLiteral();
+            }
+
             return ParseDefaultPrimaryExpression(flags);
         }
     }
