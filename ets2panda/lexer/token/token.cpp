@@ -113,6 +113,7 @@ bool Token::IsDefinableTypeName() const
         case TokenType::KEYW_STRING:
         case TokenType::KEYW_NUMBER:
         case TokenType::KEYW_BIGINT:
+        case TokenType::KEYW_VOID:
             return true;
         default:
             return false;

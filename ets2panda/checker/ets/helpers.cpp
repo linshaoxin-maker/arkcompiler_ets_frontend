@@ -81,7 +81,7 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
         ThrowTypeError("Condition must be of possible condition type", expr->Start());
     }
 
-    if (unboxedType == GlobalBuiltinVoidType() || unboxedType->IsETSVoidType()) {
+    if (unboxedType == GlobalVoidType() || unboxedType->IsETSVoidType()) {
         ThrowTypeError("An expression of type 'void' cannot be tested for truthiness", expr->Start());
     }
 
@@ -114,7 +114,7 @@ Type *ETSChecker::CreateNullishType(Type *type, checker::TypeFlag nullishFlags, 
             nullish->AsETSObjectType()->SetAssemblerName(GlobalETSObjectType()->AssemblerName());
         }
     }
-    ASSERT(!nullish->HasTypeFlag(TypeFlag::ETS_PRIMITIVE));
+    ASSERT(!nullish->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) || nullish->IsETSVoidType());
     return nullish;
 }
 
@@ -161,9 +161,13 @@ const Type *ETSChecker::GetNonNullishType(const Type *type) const
 Type *ETSChecker::CreateOptionalResultType(Type *type)
 {
     if (type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
-        type = PrimitiveTypeAsETSBuiltinType(type);
-        ASSERT(type->IsETSObjectType());
-        Relation()->GetNode()->AddBoxingUnboxingFlags(GetBoxingFlag(type));
+        if (type->IsETSVoidType()) {
+            type = GlobalETSUndefinedType();
+        } else {
+            type = PrimitiveTypeAsETSBuiltinType(type);
+            ASSERT(type->IsETSObjectType());
+            Relation()->GetNode()->AddBoxingUnboxingFlags(GetBoxingFlag(type));
+        }
     }
 
     return CreateNullishType(type, checker::TypeFlag::UNDEFINED, Allocator(), Relation(), GetGlobalTypesHolder());

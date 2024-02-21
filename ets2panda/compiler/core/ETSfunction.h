@@ -36,8 +36,11 @@ private:
     static void GenerateEnumMembers(ETSGen *etsg, const ir::AstNode *node, VReg arrayObj,
                                     const ir::TSEnumMember *enumMember, int32_t index);
     static void CompileSourceBlock(ETSGen *etsg, const ir::BlockStatement *block);
+    static void CompileAsStaticBlock(ETSGen *etsg);
+    static void CompileAsConstructor(ETSGen *etsg, const ir::ScriptFunction *scriptFunc);
     static void CompileFunction(ETSGen *etsg);
     static void CallImplicitCtor(ETSGen *etsg);
+    static void ExtendWithDefaultReturn(ETSGen *etsg, const ir::AstNode *node, const ir::ScriptFunction *scriptFunc);
 };
 }  // namespace ark::es2panda::compiler
 

@@ -2558,6 +2558,34 @@ std::tuple<ir::Expression *, ir::TSTypeParameterInstantiation *> ETSParser::Pars
     return {typeName, typeParamInst};
 }
 
+ir::TypeNode *ETSParser::ParseNullUndefinedAsTypeAnnotation(TypeAnnotationParsingOptions *options)
+{
+    ir::Expression *expr = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
+    expr->AsIdentifier()->SetReference();
+    expr->SetRange(Lexer()->GetToken().Loc());
+
+    auto *typeRefPart = AllocNode<ir::ETSTypeReferencePart>(expr, nullptr, nullptr);
+
+    auto *typeReference = AllocNode<ir::ETSTypeReference>(typeRefPart);
+    typeReference->SetRange({Lexer()->GetToken().Start(), Lexer()->GetToken().End()});
+
+    auto nullishFlag = Lexer()->GetToken().Type() == lexer::TokenType::LITERAL_NULL
+                           ? ir::ModifierFlags::NULL_ASSIGNABLE
+                           : ir::ModifierFlags::UNDEFINED_ASSIGNABLE;
+
+    ir::TypeNode *typeAnnotation = typeReference;
+
+    Lexer()->NextToken();
+    if (((*options) & TypeAnnotationParsingOptions::DISALLOW_UNION) == 0 &&
+        Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_BITWISE_OR) {
+        Lexer()->NextToken();
+        typeAnnotation = ParseTypeAnnotation(options);
+    }
+
+    typeAnnotation->AddModifier(nullishFlag);
+    return typeAnnotation;
+}
+
 ir::TypeNode *ETSParser::ParseTypeReference(TypeAnnotationParsingOptions *options)
 {
     auto startPos = Lexer()->GetToken().Start();
@@ -2735,6 +2763,9 @@ ir::TypeNode *ETSParser::GetTypeAnnotationOfPrimitiveType([[maybe_unused]] lexer
         case lexer::TokenType::KEYW_LONG:
             typeAnnotation = ParsePrimitiveType(options, ir::PrimitiveType::LONG);
             break;
+        case lexer::TokenType::KEYW_VOID:
+            typeAnnotation = ParsePrimitiveType(options, ir::PrimitiveType::VOID);
+            break;
         default:
             typeAnnotation = ParseTypeReference(options);
             break;
@@ -2868,6 +2899,15 @@ std::pair<ir::TypeNode *, bool> ETSParser::GetTypeAnnotationFromToken(TypeAnnota
                 (Lexer()->GetToken().Type() == lexer::TokenType::KEYW_CLASS || IsStructKeyword())) {
                 return std::make_pair(typeAnnotation, false);
             }
+            break;
+        }
+        case lexer::TokenType::KEYW_VOID: {
+            typeAnnotation = ParsePrimitiveType(options, ir::PrimitiveType::VOID);
+            break;
+        }
+        case lexer::TokenType::LITERAL_NULL:
+        case lexer::TokenType::KEYW_UNDEFINED: {
+            typeAnnotation = ParseNullUndefinedAsTypeAnnotation(options);
             break;
         }
         case lexer::TokenType::KEYW_BOOLEAN: {

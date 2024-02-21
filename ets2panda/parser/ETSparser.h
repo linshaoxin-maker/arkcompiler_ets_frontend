@@ -184,6 +184,7 @@ private:
                                                    ir::TypeNode *typeAnnotation);
     std::tuple<ir::Expression *, ir::TSTypeParameterInstantiation *> ParseTypeReferencePart(
         TypeAnnotationParsingOptions *options);
+    ir::TypeNode *ParseNullUndefinedAsTypeAnnotation(TypeAnnotationParsingOptions *options);
     ir::TypeNode *ParseTypeReference(TypeAnnotationParsingOptions *options);
     ir::TypeNode *ParseBaseTypeReference(TypeAnnotationParsingOptions *options);
     ir::TypeNode *ParsePrimitiveType(TypeAnnotationParsingOptions *options, ir::PrimitiveType type);
