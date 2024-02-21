@@ -78,7 +78,8 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
     auto *unboxedType = ETSBuiltinTypeAsConditionalType(type);
 
     if (unboxedType == nullptr) {
-        std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 1" << std::endl;
+        if (0)
+            std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 1" << std::endl;
         if (expr->IsBinaryExpression() &&
             (!expr->AsBinaryExpression()->IsPostBitSet(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED))) {
             ThrowTypeError("Condition must be of possible condition type", expr->Start());
@@ -91,7 +92,8 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
     }
 
     if (!unboxedType->IsConditionalExprType()) {
-        std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 2" << std::endl;
+        if (0)
+            std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 2" << std::endl;
         if (expr->IsBinaryExpression() &&
             (!expr->AsBinaryExpression()->IsPostBitSet(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED))) {
             ThrowTypeError("Condition must be of possible condition type", expr->Start());
