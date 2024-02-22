@@ -212,6 +212,11 @@ public:
         return (flags_ & TypeRelationFlag::NO_THROW_GENERIC_TYPEALIAS) != 0;
     }
 
+    [[nodiscard]] TypeRelationFlag GetTypeRelationFlags() const noexcept
+    {
+        return flags_;
+    }
+
     const Checker *GetChecker() const
     {
         return checker_;
