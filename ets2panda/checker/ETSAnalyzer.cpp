@@ -2054,6 +2054,13 @@ checker::Type *ETSAnalyzer::Check(ir::ForOfStatement *st) const
     relation->SetNode(nullptr);
     relation->SetFlags(checker::TypeRelationFlag::NONE);
 
+    if (iterType->Variable() == nullptr && !iterType->IsETSObjectType() && elemType->IsETSObjectType() &&
+        st->Left()->IsVariableDeclaration()) {
+        for (auto &declarator : st->Left()->AsVariableDeclaration()->Declarators()) {
+            checker->AddBoxingUnboxingFlagsToNode(declarator->Id(), iterType);
+        }
+    }
+
     st->Body()->Check(checker);
 
     return nullptr;
