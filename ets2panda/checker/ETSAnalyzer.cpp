@@ -1015,6 +1015,12 @@ static checker::Signature *ResolveCallForETSExtensionFuncHelperType(checker::ETS
         type->ClassMethodType()->CallSignatures(), expr, expr->Start(), checker::TypeRelationFlag::NO_THROW);
 
     if (signature != nullptr) {
+        if (expr->Callee()->IsMemberExpression()) {
+            auto memberExpr = expr->Callee()->AsMemberExpression();
+            auto var = type->ClassMethodType()->Variable();
+            memberExpr->Property()->AsIdentifier()->SetVariable(var);
+        }
+
         return signature;
     }
 
@@ -1290,6 +1296,7 @@ checker::Type *ETSAnalyzer::SetAndAdjustType(ETSChecker *checker, ir::MemberExpr
     expr->SetObjectType(objectType);
     auto [resType, resVar] = expr->ResolveObjectMember(checker);
     expr->SetPropVar(resVar);
+    expr->Property()->AsIdentifier()->SetVariable(resVar);
     return expr->AdjustType(checker, resType);
 }
 
@@ -1336,6 +1343,7 @@ checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
         checker->AddBoxingUnboxingFlagsToNode(expr, expr->ObjType());
         auto [resType, resVar] = expr->ResolveObjectMember(checker);
         expr->SetPropVar(resVar);
+        expr->Property()->AsIdentifier()->SetVariable(resVar);
         return expr->AdjustType(checker, resType);
     }
 

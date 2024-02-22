@@ -112,8 +112,10 @@ void HandleUnionPropertyAccess(checker::ETSChecker *checker, varbinder::VarBinde
         !parent->AsCallExpression()->Signature()->HasSignatureFlag(checker::SignatureFlags::TYPE)) {
         return;
     }
-    expr->SetPropVar(
-        CreateUnionFieldClassProperty(checker, vbind, expr->TsType(), expr->Property()->AsIdentifier()->Name()));
+
+    auto var = CreateUnionFieldClassProperty(checker, vbind, expr->TsType(), expr->Property()->AsIdentifier()->Name());
+    expr->SetPropVar(var);
+    expr->Property()->AsIdentifier()->SetVariable(var);
     ASSERT(expr->PropVar() != nullptr);
 }
 

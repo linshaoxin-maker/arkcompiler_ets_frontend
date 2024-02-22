@@ -76,6 +76,7 @@ static ir::MethodDefinition *GenerateGetterOrSetter(checker::ETSChecker *const c
     auto var = functionScope->AddDecl(checker->Allocator(), decl, ScriptExtension::ETS);
 
     methodIdent->SetVariable(var);
+    methodIdent->SetTsTypeAnnotation(nullptr);
 
     auto *funcExpr = checker->AllocNode<ir::FunctionExpression>(func);
     funcExpr->SetRange(func->Range());
@@ -94,8 +95,8 @@ static ir::MethodDefinition *GenerateGetterOrSetter(checker::ETSChecker *const c
     return method;
 }
 
-static ir::Expression *UpdateInterfacePropertys(checker::ETSChecker *const checker,
-                                                ir::TSInterfaceBody *const interface)
+static ir::Expression *UpdateInterfaceProperties(checker::ETSChecker *const checker,
+                                                 ir::TSInterfaceBody *const interface)
 {
     if (interface->Body().empty()) {
         return interface;
@@ -166,7 +167,7 @@ bool InterfacePropertyDeclarationsPhase::Perform(public_lib::Context *ctx, parse
     checker::ETSChecker *const checker = ctx->checker->AsETSChecker();
 
     program->Ast()->TransformChildrenRecursively([checker](ir::AstNode *const ast) -> ir::AstNode * {
-        return ast->IsTSInterfaceBody() ? UpdateInterfacePropertys(checker, ast->AsTSInterfaceBody()) : ast;
+        return ast->IsTSInterfaceBody() ? UpdateInterfaceProperties(checker, ast->AsTSInterfaceBody()) : ast;
     });
 
     return true;

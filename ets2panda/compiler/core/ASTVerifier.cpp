@@ -435,6 +435,42 @@ public:
             return {CheckDecision::CORRECT, CheckAction::CONTINUE};
         }
 
+        const auto *id = ast->AsIdentifier();
+        if (id->Parent() != nullptr && id->Parent()->IsMemberExpression() && id->Name().Is("length")) {
+            // NOTE(kkonsw): confirm whether this case should be allowed
+            return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+        }
+
+        if (id->Parent() != nullptr && id->Parent()->IsLabelledStatement()) {
+            // NOTE(kkonsw): confirm whether this case should be allowed
+            return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+        }
+
+        if (id->Parent()->IsImportSpecifier()) {
+            // NOTE(kkonsw): confirm whether this case should be allowed
+            return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+        }
+
+        if (id->Parent()->IsImportNamespaceSpecifier()) {
+            // NOTE(kkonsw): confirm whether this case should be allowed
+            return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+        }
+
+        if (id->Parent()->IsImportDefaultSpecifier()) {
+            // NOTE(kkonsw): confirm whether this case should be allowed
+            return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+        }
+
+        if (id->Parent()->IsTSQualifiedName()) {
+            // NOTE(kkonsw): confirm whether this case should be allowed
+            return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+        }
+
+        if (id->Parent()->Parent() != nullptr && id->Parent()->Parent()->IsETSNewClassInstanceExpression()) {
+            // NOTE(kkonsw): confirm whether this case should be allowed
+            return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+        }
+
         /*
          * NOTICE: That is temporary fix for identifies without variable
          *         That should be removed in future after fix issues in
@@ -446,7 +482,16 @@ public:
             return {CheckDecision::CORRECT, CheckAction::CONTINUE};
         }
 
-        const auto *id = ast->AsIdentifier();
+        // NOTE(kkonsw): skip package declarations
+        auto parent = ast->Parent();
+        while (parent != nullptr) {
+            if (parent->IsETSPackageDeclaration()) {
+                return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+            }
+
+            parent = parent->Parent();
+        }
+
         ctx.AddCheckMessage("NULL_VARIABLE", *id, id->Start());
         return {CheckDecision::INCORRECT, CheckAction::CONTINUE};
     }
@@ -603,6 +648,52 @@ public:
             return std::nullopt;
         }
 
+        const auto *id = ast->AsIdentifier();
+        if (id->Parent()->IsMemberExpression() && id->Name().Is("length")) {
+            // NOTE(kkonsw): confirm whether this case should be allowed
+            return std::nullopt;
+        }
+
+        if (id->Parent()->IsLabelledStatement()) {
+            // NOTE(kkonsw): confirm whether this case should be allowed
+            return std::nullopt;
+        }
+
+        if (id->Parent()->IsImportSpecifier()) {
+            // NOTE(kkonsw): confirm whether this case should be allowed
+            return std::nullopt;
+        }
+
+        if (id->Parent()->IsImportNamespaceSpecifier()) {
+            // NOTE(kkonsw): confirm whether this case should be allowed
+            return std::nullopt;
+        }
+
+        if (id->Parent()->IsImportDefaultSpecifier()) {
+            // NOTE(kkonsw): confirm whether this case should be allowed
+            return std::nullopt;
+        }
+
+        if (id->Parent()->IsTSQualifiedName()) {
+            // NOTE(kkonsw): confirm whether this case should be allowed
+            return std::nullopt;
+        }
+
+        if (id->Parent()->Parent() != nullptr && id->Parent()->Parent()->IsETSNewClassInstanceExpression()) {
+            // NOTE(kkonsw): confirm whether this case should be allowed
+            return std::nullopt;
+        }
+
+        // NOTE(kkonsw): skip package declarations
+        auto parent = ast->Parent();
+        while (parent != nullptr) {
+            if (parent->IsETSPackageDeclaration()) {
+                return std::nullopt;
+            }
+
+            parent = parent->Parent();
+        }
+
         /*
          * NOTICE: That is temporary exclusion for identifies without variable and scope
          *         Should removed in future
@@ -725,7 +816,28 @@ public:
         const auto node = scope->Node();
         auto result = std::make_tuple(CheckDecision::CORRECT, CheckAction::CONTINUE);
         if (!IsContainedIn(ast, node)) {
+            if (node->Parent() != nullptr && node->Parent()->IsCatchClause()) {
+                // NOTE(kkonsw): confirm whether this case should be allowed
+                return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+            }
+
             result = {CheckDecision::INCORRECT, CheckAction::CONTINUE};
+
+            // NOTE(kkonsw): skip check for lambdas with references outside of lambda
+            auto parent = node->Parent();
+            while (parent != nullptr) {
+                if (parent->IsFunctionExpression()) {
+                    auto script = parent->AsFunctionExpression()->Function();
+                    if (script->Id()->Name().Utf8().find("lambda$invoke$") == 0) {
+                        return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+                    }
+
+                    break;
+                }
+
+                parent = parent->Parent();
+            }
+
             ctx.AddCheckMessage("VARIABLE_NOT_ENCLOSE_SCOPE", *ast, ast->Start());
         }
         if (!IsContainedIn<varbinder::Scope>(scope, encloseScope)) {
