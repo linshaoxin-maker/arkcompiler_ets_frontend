@@ -478,8 +478,12 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorLessGreater(
     }
 
     if (promotedType == nullptr && !bothConst) {
-        if (0)
-            std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 6" << std::endl;
+        if ((left->Parent() == right->Parent()) &&
+            (!left->Parent()->IsPostBitSet(ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) &&
+            (rightType->IsETSEnum2Type() || leftType->IsETSEnum2Type())) {
+            left->Parent()->SetPostBit(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED);
+            return {nullptr, nullptr};
+        }
         ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", pos);
     }
 
