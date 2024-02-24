@@ -1320,12 +1320,6 @@ checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
         return SetAndAdjustType(checker, expr, baseType->AsETSObjectType());
     }
 
-    if (baseType->IsETSEnumType() || baseType->IsETSStringEnumType()) {
-        auto [memberType, memberVar] = expr->ResolveEnumMember(checker, baseType);
-        expr->SetPropVar(memberVar);
-        return expr->AdjustType(checker, memberType);
-    }
-
     if (baseType->IsETSUnionType()) {
         return expr->AdjustType(checker, expr->CheckUnionMember(checker, baseType));
     }
@@ -2445,12 +2439,6 @@ checker::Type *ETSAnalyzer::Check(ir::SwitchStatement *st) const
             validCaseType = true;
             if (caseType->HasTypeFlag(checker::TypeFlag::CHAR)) {
                 validCaseType = comparedExprType->HasTypeFlag(checker::TypeFlag::ETS_INTEGRAL);
-            } else if (caseType->IsETSEnumType() && st->Discriminant()->TsType()->IsETSEnumType()) {
-                validCaseType =
-                    st->Discriminant()->TsType()->AsETSEnumType()->IsSameEnumType(caseType->AsETSEnumType());
-            } else if (caseType->IsETSStringEnumType() && st->Discriminant()->TsType()->IsETSStringEnumType()) {
-                validCaseType = st->Discriminant()->TsType()->AsETSStringEnumType()->IsSameEnumType(
-                    caseType->AsETSStringEnumType());
             } else if (caseType->IsETSEnum2Type() && st->Discriminant()->TsType()->IsETSEnum2Type()) {
                 validCaseType =
                     st->Discriminant()->TsType()->AsETSEnum2Type()->IsSameEnumType(caseType->AsETSEnum2Type());
@@ -2655,29 +2643,9 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSConstructorType *node) 
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSEnumDeclaration *st) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSEnumDeclaration *st) const
 {
-    ETSChecker *checker = GetETSChecker();
-    varbinder::Variable *enumVar = st->Key()->Variable();
-    ASSERT(enumVar != nullptr);
-
-    if (enumVar->TsType() == nullptr) {
-        checker::Type *etsEnumType;
-        if (auto *const itemInit = st->Members().front()->AsTSEnumMember()->Init(); itemInit->IsNumberLiteral()) {
-            etsEnumType = checker->CreateETSEnumType(st);
-        } else if (itemInit->IsStringLiteral()) {
-            etsEnumType = checker->CreateETSStringEnumType(st);
-        } else {
-            checker->ThrowTypeError("Invalid enumeration value type.", st->Start());
-        }
-        st->SetTsType(etsEnumType);
-        etsEnumType->SetVariable(enumVar);
-        enumVar->SetTsType(etsEnumType);
-    } else if (st->TsType() == nullptr) {
-        st->SetTsType(enumVar->TsType());
-    }
-
-    return st->TsType();
+    UNREACHABLE();
 }
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSEnumMember *st) const

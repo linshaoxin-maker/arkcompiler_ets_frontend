@@ -764,12 +764,13 @@ bool ETSCompiler::IsSucceedCompilationProxyMemberExpr(const ir::CallExpression *
     ETSGen *etsg = GetETSGen();
     auto *const calleeObject = expr->callee_->AsMemberExpression()->Object();
     auto const *const enumInterface = [calleeType = calleeObject->TsType()]() -> checker::ETSEnumInterface const * {
-        if (calleeType->IsETSEnumType()) {
-            return calleeType->AsETSEnumType();
-        }
-        if (calleeType->IsETSStringEnumType()) {
-            return calleeType->AsETSStringEnumType();
-        }
+        (void)calleeType;
+        // if (calleeType->IsETSEnumType()) {
+        //     return calleeType->AsETSEnumType();
+        // }
+        // if (calleeType->IsETSStringEnumType()) {
+        //     return calleeType->AsETSStringEnumType();
+        // }
         return nullptr;
     }();
 
@@ -1085,19 +1086,6 @@ void ETSCompiler::Compile(const ir::MemberExpression *expr) const
         auto ttctx = compiler::TargetTypeContext(etsg, expr->TsType());
         etsg->LoadArrayLength(expr, objReg);
         etsg->ApplyConversion(expr, expr->TsType());
-        return;
-    }
-
-    if (objectType->IsETSEnumType() || objectType->IsETSStringEnumType()) {
-        auto const *const enumInterface = [objectType, expr]() -> checker::ETSEnumInterface const * {
-            if (objectType->IsETSEnumType()) {
-                return expr->TsType()->AsETSEnumType();
-            }
-            return expr->TsType()->AsETSStringEnumType();
-        }();
-
-        auto ttctx = compiler::TargetTypeContext(etsg, expr->TsType());
-        etsg->LoadAccumulatorInt(expr, enumInterface->GetOrdinal());
         return;
     }
 
@@ -2057,18 +2045,18 @@ void ETSCompiler::CompileCast(const ir::TSAsExpression *expr) const
             etsg->CastToDynamic(expr, targetType->AsETSDynamicType());
             break;
         }
-        case checker::TypeFlag::ETS_STRING_ENUM:
-            [[fallthrough]];
-        case checker::TypeFlag::ETS_ENUM: {
-            auto *const signature = expr->TsType()->IsETSEnumType()
-                                        ? expr->TsType()->AsETSEnumType()->FromIntMethod().globalSignature
-                                        : expr->TsType()->AsETSStringEnumType()->FromIntMethod().globalSignature;
-            ArenaVector<ir::Expression *> arguments(etsg->Allocator()->Adapter());
-            arguments.push_back(expr->expression_);
-            etsg->CallStatic(expr, signature, arguments);
-            etsg->SetAccumulatorType(signature->ReturnType());
-            break;
-        }
+        // case checker::TypeFlag::ETS_STRING_ENUM:
+        //     [[fallthrough]];
+        // case checker::TypeFlag::ETS_ENUM: {
+        //     auto *const signature = expr->TsType()->IsETSEnumType()
+        //                                 ? expr->TsType()->AsETSEnumType()->FromIntMethod().globalSignature
+        //                                 : expr->TsType()->AsETSStringEnumType()->FromIntMethod().globalSignature;
+        //     ArenaVector<ir::Expression *> arguments(etsg->Allocator()->Adapter());
+        //     arguments.push_back(expr->expression_);
+        //     etsg->CallStatic(expr, signature, arguments);
+        //     etsg->SetAccumulatorType(signature->ReturnType());
+        //     break;
+        // }
         default: {
             UNREACHABLE();
         }

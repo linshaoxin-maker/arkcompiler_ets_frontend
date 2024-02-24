@@ -95,6 +95,7 @@ std::vector<Phase *> GetETSPhaseList()
         &g_interfacePropDeclPhase,
         &g_checkerPhase,
         &g_pluginsAfterCheck,
+        &g_enumLoweringPostPhase,
         &g_generateTsDeclarationsPhase,
         &g_opAssignmentLowering,
         &g_recordLowering,
@@ -103,7 +104,6 @@ std::vector<Phase *> GetETSPhaseList()
         &g_tupleLowering,
         &g_unionLowering,
         &g_expandBracketsPhase,
-        &g_enumLoweringPostPhase,
         &g_pluginsAfterLowerings,
     };
 }

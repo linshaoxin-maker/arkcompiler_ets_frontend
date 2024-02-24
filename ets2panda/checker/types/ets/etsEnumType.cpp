@@ -177,7 +177,7 @@ bool ETSEnumInterface::IsSameEnumLiteralType(const ETSEnumInterface *const other
     return member_ == other->member_;
 }
 
-[[maybe_unused]] static const ETSEnumInterface *SpecifyEnumInterface(const checker::Type *enumType)
+[[maybe_unused]] static const ETSEnumInterface *SpecifyEnumInterface([[maybe_unused]] const checker::Type *enumType)
 {
     if (enumType->IsETSEnumType()) {
         return enumType->AsETSEnumType();

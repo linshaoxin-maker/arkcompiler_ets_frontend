@@ -302,20 +302,6 @@ checker::Type *ETSChecker::CheckBinaryOperatorBitwise(ir::Expression *left, ir::
     // NOTE (mmartin): These need to be done for other binary expressions, but currently it's not defined precisely when
     // to apply this conversion
 
-    if (leftType->IsETSEnumType()) {
-        if (0)
-            std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 50" << std::endl;
-        left->AddAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
-        unboxedL = GlobalIntType();
-    }
-
-    if (rightType->IsETSEnumType()) {
-        if (0)
-            std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 51" << std::endl;
-        right->AddAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
-        unboxedR = GlobalIntType();
-    }
-
     if (leftType->IsETSUnionType() || rightType->IsETSUnionType()) {
         ThrowTypeError("Bad operand type, unions are not allowed in binary expressions except equality.", pos);
     }
@@ -411,26 +397,9 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorEqual(
     checker::Type *const leftType, checker::Type *const rightType, Type *unboxedL, Type *unboxedR)
 {
     checker::Type *tsType {};
-    if (leftType->IsETSEnumType() && rightType->IsETSEnumType()) {
-        if (!leftType->AsETSEnumType()->IsSameEnumType(rightType->AsETSEnumType())) {
-            ThrowTypeError("Bad operand type, the types of the operands must be the same enum type.", pos);
-        }
-
-        tsType = GlobalETSBooleanType();
-        return {tsType, leftType};
-    }
 
     if (leftType->IsETSEnum2Type() && rightType->IsETSEnum2Type()) {
         if (!leftType->AsETSEnum2Type()->IsSameEnumType(rightType->AsETSEnum2Type())) {
-            ThrowTypeError("Bad operand type, the types of the operands must be the same enum type.", pos);
-        }
-
-        tsType = GlobalETSBooleanType();
-        return {tsType, leftType};
-    }
-
-    if (leftType->IsETSStringEnumType() && rightType->IsETSStringEnumType()) {
-        if (!leftType->AsETSStringEnumType()->IsSameEnumType(rightType->AsETSStringEnumType())) {
             ThrowTypeError("Bad operand type, the types of the operands must be the same enum type.", pos);
         }
 
