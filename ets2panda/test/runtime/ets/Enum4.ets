@@ -64,6 +64,7 @@ function main(): void {
   // cons.print( "ToString: Color.Red = '" + Color.Red.toString() + "', = Red = '" + red1.toString() + "', ValueOf(Red) = '" + red2.toString() + "'\n")
 
   assert(red1 as int == 1)
+  assert(red1 == 2)
   assert(red1.getValue() == 2)
   assert(red1.getName() == "Red")
   assert(red1.toString() == "2")
