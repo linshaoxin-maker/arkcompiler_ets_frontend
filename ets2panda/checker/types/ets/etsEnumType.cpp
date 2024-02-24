@@ -52,10 +52,10 @@ void ETSEnumInterface::AssignmentTarget(TypeRelation *const relation, [[maybe_un
 
 void ETSEnumInterface::Cast(TypeRelation *relation, Type *target)
 {
-    if (target->HasTypeFlag(TypeFlag::ENUM | TypeFlag::ETS_ENUM | TypeFlag::ETS_STRING_ENUM)) {
-        conversion::Identity(relation, this, target);
-        return;
-    }
+    // if (target->HasTypeFlag(TypeFlag::ENUM | TypeFlag::ETS_ENUM | TypeFlag::ETS_STRING_ENUM)) {
+    //     conversion::Identity(relation, this, target);
+    //     return;
+    // }
 
     if (target->IsIntType()) {
         relation->Result(true);

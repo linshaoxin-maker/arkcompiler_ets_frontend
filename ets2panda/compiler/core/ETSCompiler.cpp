@@ -759,57 +759,6 @@ void ETSCompiler::Compile(const ir::BlockExpression *expr) const
     UNREACHABLE();
 }
 
-bool ETSCompiler::IsSucceedCompilationProxyMemberExpr(const ir::CallExpression *expr) const
-{
-    ETSGen *etsg = GetETSGen();
-    auto *const calleeObject = expr->callee_->AsMemberExpression()->Object();
-    auto const *const enumInterface = [calleeType = calleeObject->TsType()]() -> checker::ETSEnumInterface const * {
-        (void)calleeType;
-        // if (calleeType->IsETSEnumType()) {
-        //     return calleeType->AsETSEnumType();
-        // }
-        // if (calleeType->IsETSStringEnumType()) {
-        //     return calleeType->AsETSStringEnumType();
-        // }
-        return nullptr;
-    }();
-
-    if (enumInterface != nullptr) {
-        ArenaVector<ir::Expression *> arguments(etsg->Allocator()->Adapter());
-
-        checker::Signature *const signature = [expr, calleeObject, enumInterface, &arguments]() {
-            const auto &memberProxyMethodName = expr->Signature()->InternalName();
-
-            if (memberProxyMethodName == checker::ETSEnumType::TO_STRING_METHOD_NAME) {
-                arguments.push_back(calleeObject);
-                return enumInterface->ToStringMethod().globalSignature;
-            }
-            if (memberProxyMethodName == checker::ETSEnumType::GET_VALUE_METHOD_NAME) {
-                arguments.push_back(calleeObject);
-                return enumInterface->GetValueMethod().globalSignature;
-            }
-            if (memberProxyMethodName == checker::ETSEnumType::GET_NAME_METHOD_NAME) {
-                arguments.push_back(calleeObject);
-                return enumInterface->GetNameMethod().globalSignature;
-            }
-            if (memberProxyMethodName == checker::ETSEnumType::VALUES_METHOD_NAME) {
-                return enumInterface->ValuesMethod().globalSignature;
-            }
-            if (memberProxyMethodName == checker::ETSEnumType::VALUE_OF_METHOD_NAME) {
-                arguments.push_back(expr->Arguments().front());
-                return enumInterface->ValueOfMethod().globalSignature;
-            }
-            UNREACHABLE();
-        }();
-
-        ASSERT(signature->ReturnType() == expr->Signature()->ReturnType());
-        etsg->CallStatic(expr, signature, arguments);
-        etsg->SetAccumulatorType(expr->TsType());
-    }
-
-    return enumInterface != nullptr;
-}
-
 void ETSCompiler::CompileDynamic(const ir::CallExpression *expr, compiler::VReg &calleeReg) const
 {
     ETSGen *etsg = GetETSGen();
@@ -916,13 +865,6 @@ void ETSCompiler::Compile(const ir::CallExpression *expr) const
     ETSGen *etsg = GetETSGen();
     compiler::RegScope rs(etsg);
     compiler::VReg calleeReg = etsg->AllocReg();
-
-    const auto isProxy = expr->Signature()->HasSignatureFlag(checker::SignatureFlags::PROXY);
-    if (isProxy && expr->Callee()->IsMemberExpression()) {
-        if (IsSucceedCompilationProxyMemberExpr(expr)) {
-            return;
-        }
-    }
 
     bool isStatic = expr->Signature()->HasSignatureFlag(checker::SignatureFlags::STATIC);
     bool isReference = expr->Signature()->HasSignatureFlag(checker::SignatureFlags::TYPE);
@@ -2045,18 +1987,6 @@ void ETSCompiler::CompileCast(const ir::TSAsExpression *expr) const
             etsg->CastToDynamic(expr, targetType->AsETSDynamicType());
             break;
         }
-        // case checker::TypeFlag::ETS_STRING_ENUM:
-        //     [[fallthrough]];
-        // case checker::TypeFlag::ETS_ENUM: {
-        //     auto *const signature = expr->TsType()->IsETSEnumType()
-        //                                 ? expr->TsType()->AsETSEnumType()->FromIntMethod().globalSignature
-        //                                 : expr->TsType()->AsETSStringEnumType()->FromIntMethod().globalSignature;
-        //     ArenaVector<ir::Expression *> arguments(etsg->Allocator()->Adapter());
-        //     arguments.push_back(expr->expression_);
-        //     etsg->CallStatic(expr, signature, arguments);
-        //     etsg->SetAccumulatorType(signature->ReturnType());
-        //     break;
-        // }
         default: {
             UNREACHABLE();
         }

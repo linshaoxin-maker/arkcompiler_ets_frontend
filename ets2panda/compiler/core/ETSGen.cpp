@@ -1102,13 +1102,6 @@ void ETSGen::ApplyConversion(const ir::AstNode *node, const checker::Type *targe
 {
     auto ttctx = TargetTypeContext(this, targetType);
 
-    // if (node->HasAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE)) {
-    //     Ra().Emit<CallAccShort, 0>(
-    //         node, node->AsExpression()->TsType()->AsETSEnumType()->GetValueMethod().globalSignature->InternalName(),
-    //         dummyReg_, 0);
-    //     node->RemoveAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
-    // }
-
     if ((node->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG) != 0U) {
         ApplyBoxingConversion(node);
         return;
@@ -1702,8 +1695,6 @@ void ETSGen::CastToInt(const ir::AstNode *node)
         }
         case checker::TypeFlag::ETS_BOOLEAN:
         case checker::TypeFlag::CHAR:
-        // case checker::TypeFlag::ETS_ENUM:
-        // case checker::TypeFlag::ETS_STRING_ENUM:
         case checker::TypeFlag::BYTE:
         case checker::TypeFlag::SHORT: {
             break;
@@ -2572,9 +2563,6 @@ void ETSGen::LoadArrayElement(const ir::AstNode *node, VReg objectReg)
             Ra().Emit<Ldarr16>(node, objectReg);
             break;
         }
-        // case checker::TypeFlag::ETS_STRING_ENUM:
-        //     [[fallthrough]];
-        // case checker::TypeFlag::ETS_ENUM:
         case checker::TypeFlag::INT: {
             Ra().Emit<Ldarr>(node, objectReg);
             break;
@@ -2626,9 +2614,6 @@ void ETSGen::StoreArrayElement(const ir::AstNode *node, VReg objectReg, VReg ind
             Ra().Emit<Starr16>(node, objectReg, index);
             break;
         }
-        // case checker::TypeFlag::ETS_STRING_ENUM:
-        //     [[fallthrough]];
-        // case checker::TypeFlag::ETS_ENUM:
         case checker::TypeFlag::INT: {
             Ra().Emit<Starr>(node, objectReg, index);
             break;

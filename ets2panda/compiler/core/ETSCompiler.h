@@ -34,7 +34,6 @@ public:
 #undef DECLARE_ETSCOMPILER_COMPILE_METHOD
 
 private:
-    bool IsSucceedCompilationProxyMemberExpr(const ir::CallExpression *expr) const;
     void CompileDynamic(const ir::CallExpression *expr, compiler::VReg &calleeReg) const;
     void CompileCastUnboxable(const ir::TSAsExpression *expr) const;
     void CompileCast(const ir::TSAsExpression *expr) const;
