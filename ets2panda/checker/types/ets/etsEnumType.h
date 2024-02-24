@@ -190,7 +190,7 @@ private:
 class ETSEnumType : public ETSEnumInterface, public ETSEnumValueType<std::int32_t> {
 public:
     explicit ETSEnumType(const ir::TSEnumDeclaration *enumDecl, UType ordinal, const ir::TSEnumMember *member = nullptr)
-        : ETSEnumInterface(enumDecl, ordinal, member, TypeFlag::ETS_ENUM)
+        : ETSEnumInterface(enumDecl, ordinal, member, TypeFlag::ETS_ENUM2_TYPE)
     {
     }
 
@@ -205,7 +205,7 @@ class ETSStringEnumType : public ETSEnumInterface, public ETSEnumValueType<std::
 public:
     explicit ETSStringEnumType(const ir::TSEnumDeclaration *enumDecl, UType ordinal,
                                const ir::TSEnumMember *member = nullptr)
-        : ETSEnumInterface(enumDecl, ordinal, member, TypeFlag::ETS_STRING_ENUM)
+        : ETSEnumInterface(enumDecl, ordinal, member, TypeFlag::ETS_ENUM2_TYPE)
     {
     }
 

@@ -26,7 +26,6 @@
 #include "ir/statements/blockStatement.h"
 #include "ir/statements/classDeclaration.h"
 #include "ir/ts/tsClassImplements.h"
-#include "ir/ts/tsEnumMember.h"
 #include "ir/ts/tsInterfaceBody.h"
 #include "ir/ts/tsTypeAliasDeclaration.h"
 #include "ir/ts/tsTypeParameter.h"
@@ -72,8 +71,6 @@ void TSDeclGen::Generate()
         ResetState();
         if (globalStatement->IsETSImportDeclaration()) {
             GenImportDeclaration(globalStatement->AsETSImportDeclaration());
-        } else if (globalStatement->IsTSEnumDeclaration()) {
-            GenEnumDeclaration(globalStatement->AsTSEnumDeclaration());
         } else if (globalStatement->IsClassDeclaration()) {
             GenClassDeclaration(globalStatement->AsClassDeclaration());
         } else if (globalStatement->IsTSInterfaceDeclaration()) {
@@ -154,8 +151,8 @@ void TSDeclGen::GenType(const checker::Type *checkerType)
         case checker::TypeFlag::ETS_NONNULLISH:
             Out(checkerType->ToString());
             return;
-        case checker::TypeFlag::ETS_ENUM:
-            GenEnumType(checkerType->AsETSEnumType());
+        case checker::TypeFlag::ETS_ENUM2_TYPE:
+            //     GenEnumType(checkerType->AsETSEnumType());
             return;
         case checker::TypeFlag::ETS_OBJECT:
         case checker::TypeFlag::ETS_DYNAMIC_TYPE:
@@ -254,32 +251,6 @@ void TSDeclGen::GenFunctionType(const checker::ETSFunctionType *etsFunctionType,
                 Out(" { return {} as any; }");
             }
         }
-    }
-}
-
-void TSDeclGen::GenEnumType(const checker::ETSEnumType *enumType)
-{
-    for (auto *member : enumType->GetMembers()) {
-        Out(INDENT);
-        if (!member->IsTSEnumMember()) {
-            ThrowError("Member of enum not of type TSEnumMember", member->Start());
-        }
-
-        const auto *enumMember = member->AsTSEnumMember();
-        Out(GetKeyName(enumMember->Key()));
-        const auto *init = enumMember->Init();
-        if (init != nullptr) {
-            Out(" = ");
-
-            if (!init->IsLiteral()) {
-                ThrowError("Only literal enum initializers are supported", member->Start());
-            }
-
-            GenLiteral(init->AsLiteral());
-        }
-
-        Out(",");
-        OutEndl();
     }
 }
 
@@ -407,20 +378,6 @@ void TSDeclGen::GenTypeAliasDeclaration(const ir::TSTypeAliasDeclaration *typeAl
     Out("export type ", name, " = ");
     GenType(aliasedType);
     Out(";");
-    OutEndl(2U);
-}
-
-void TSDeclGen::GenEnumDeclaration(const ir::TSEnumDeclaration *enumDecl)
-{
-    const auto enumName = GetKeyName(enumDecl->Key());
-    DebugPrint("GenEnumDeclaration: " + enumName);
-    Out("export enum ", enumName, " {");
-    OutEndl();
-
-    ASSERT(enumDecl->TsType()->IsETSEnumType());
-    GenEnumType(enumDecl->TsType()->AsETSEnumType());
-
-    Out("}");
     OutEndl(2U);
 }
 

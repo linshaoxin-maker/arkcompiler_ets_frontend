@@ -29,21 +29,25 @@ ETSEnumInterface::ETSEnumInterface(const ir::TSEnumDeclaration *const enumDecl, 
 {
 }
 
-bool ETSEnumInterface::AssignmentSource(TypeRelation *const relation, Type *const target)
+bool ETSEnumInterface::AssignmentSource(TypeRelation *const relation, [[maybe_unused]] Type *const target)
 {
-    auto const result = target->IsETSEnumType()
-                            ? IsSameEnumType(target->AsETSEnumType())
-                            : (target->IsETSStringEnumType() ? IsSameEnumType(target->AsETSStringEnumType()) : false);
-    relation->Result(result);
+    // auto const result = target->IsETSEnumType()
+    //                         ? IsSameEnumType(target->AsETSEnumType())
+    //                         : (target->IsETSStringEnumType() ? IsSameEnumType(target->AsETSStringEnumType()) :
+    //                         false);
+    // relation->Result(result);
+    relation->Result(false);
     return relation->IsTrue();
 }
 
-void ETSEnumInterface::AssignmentTarget(TypeRelation *const relation, Type *const source)
+void ETSEnumInterface::AssignmentTarget(TypeRelation *const relation, [[maybe_unused]] Type *const source)
 {
-    auto const result = source->IsETSEnumType()
-                            ? IsSameEnumType(source->AsETSEnumType())
-                            : (source->IsETSStringEnumType() ? IsSameEnumType(source->AsETSStringEnumType()) : false);
-    relation->Result(result);
+    // auto const result = source->IsETSEnumType()
+    //                         ? IsSameEnumType(source->AsETSEnumType())
+    //                         : (source->IsETSStringEnumType() ? IsSameEnumType(source->AsETSStringEnumType()) :
+    //                         false);
+    // relation->Result(result);
+    relation->Result(false);
 }
 
 void ETSEnumInterface::Cast(TypeRelation *relation, Type *target)
@@ -70,12 +74,13 @@ Type *ETSEnumInterface::Instantiate([[maybe_unused]] ArenaAllocator *allocator, 
 void ETSEnumInterface::Identical(TypeRelation *const relation, Type *const other)
 {
     ETSEnumInterface const *const otherEnumType = [other]() -> ETSEnumInterface const * {
-        if (other->IsETSEnumType()) {
-            return other->AsETSEnumType();
-        }
-        if (other->IsETSStringEnumType()) {
-            return other->AsETSStringEnumType();
-        }
+        (void)other;
+        // if (other->IsETSEnumType()) {
+        //     return other->AsETSEnumType();
+        // }
+        // if (other->IsETSStringEnumType()) {
+        //     return other->AsETSStringEnumType();
+        // }
         return nullptr;
     }();
 
@@ -143,16 +148,17 @@ ETSEnumInterface *ETSEnumInterface::LookupConstant(ETSChecker *const checker, co
         checker->ThrowTypeError({"No enum constant named '", prop->Name(), "' in enum '", this, "'"}, prop->Start());
     }
 
-    auto *const enumInterface =
-        [enumType = member->Key()->AsIdentifier()->Variable()->TsType()]() -> checker::ETSEnumInterface * {
-        if (enumType->IsETSEnumType()) {
-            return enumType->AsETSEnumType();
-        }
-        return enumType->AsETSStringEnumType();
-    }();
-
-    ASSERT(enumInterface->IsLiteralType());
-    return enumInterface;
+    // auto *const enumInterface =
+    //     [enumType = member->Key()->AsIdentifier()->Variable()->TsType()]() -> checker::ETSEnumInterface * {
+    //     if (enumType->IsETSEnumType()) {
+    //         return enumType->AsETSEnumType();
+    //     }
+    //     return enumType->AsETSStringEnumType();
+    // }();
+    //
+    // ASSERT(enumInterface->IsLiteralType());
+    // return enumInterface;
+    return nullptr;
 }
 
 ETSFunctionType *ETSEnumInterface::LookupMethod(ETSChecker *checker, const ir::Expression *const expression,
@@ -179,12 +185,12 @@ bool ETSEnumInterface::IsSameEnumLiteralType(const ETSEnumInterface *const other
 
 [[maybe_unused]] static const ETSEnumInterface *SpecifyEnumInterface([[maybe_unused]] const checker::Type *enumType)
 {
-    if (enumType->IsETSEnumType()) {
-        return enumType->AsETSEnumType();
-    }
-    if (enumType->IsETSStringEnumType()) {
-        return enumType->AsETSStringEnumType();
-    }
+    // if (enumType->IsETSEnumType()) {
+    //     return enumType->AsETSEnumType();
+    // }
+    // if (enumType->IsETSStringEnumType()) {
+    //     return enumType->AsETSStringEnumType();
+    // }
     return nullptr;
 }
 
