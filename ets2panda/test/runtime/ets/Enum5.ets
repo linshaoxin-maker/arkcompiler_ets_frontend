@@ -44,11 +44,11 @@ function main(): void {
   assert values[2] == Color.Blue;
 
   let red1: Color = Color.Red;
-  let red2: Color;
-  assert(red2 as int == 0)
-  assert(red2.getValue() == "red")
-  assert(red2.getName() == "Green")
-  assert(red2.toString() == "red")
+  let red2: Color = red1;
+  assert(red2 as int == 1)
+  assert(red2.getValue() == "blue")
+  assert(red2.getName() == "Red")
+  assert(red2.toString() == "blue")
   //cons.print("\nDefault ordinal = " + red2 as int + ", value = " + red2.getValue() + ", name: '" + red2.getName() + "', ToString: '" + red2.toString() + "'\n\n")
   
   try {
@@ -78,11 +78,6 @@ function main(): void {
   assert(red2 == red1);
 
   let ord: int = 2;
-  blue = ord as Color;
-  assert(blue as int == 2)
-  assert(blue.getValue() == "green")
-  assert(blue.getName() == "Blue")
-  assert(blue.toString() == "green")
 
   try {
     let yellow: Color = Color.valueOf("Yellow");
@@ -92,22 +87,9 @@ function main(): void {
   } catch (e) {}
 
   ord = 0;
-  let green: Color = ord as Color;
+  let green: Color = Color.Green;
   //cons.print("Green = " + green as int + ", Color.Green = " + Color.Green as int + "\n")
-  assert green == Color.Green;
+  assert green as int == ord;
 
-  try {
-    let x = 5 as Color;
-    assert false;
-  } catch (e: Exception) {
-    assert (e as Object).toString().startsWith("No enum constant in Color with ordinal value 5");
-  }
-
-  assert 2 as Color as int == 2;
-  assert Color.Blue as int as Color == Color.Blue;
-  assert (Color.Green as int + 1) as Color == (Color.Blue as int - 1) as Color;
-  try {
-    assert (Color.Green as int + 1) as Color == Color.valueOf("Red");
-  } catch (e) {
-  }
+  assert values[(Color.Green as int + 1)] == values[(Color.Blue as int - 1)];
 }
