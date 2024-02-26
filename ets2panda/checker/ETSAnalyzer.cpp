@@ -2597,7 +2597,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
     }
 
     // NOTE: this is to address spec/enum/issue14636_1.ets test failure
-    if (targetType->IsETSEnum2Type() && sourceType->IsETSEnum2Type()) {
+    if (targetType->IsETSEnum2Type() && sourceType->IsETSEnum2Type() &&
+        targetType->AsETSEnum2Type()->IsSameEnumType(sourceType->AsETSEnum2Type())) {
         extraFlags |= TypeRelationFlag::NO_THROW;
     }
 
