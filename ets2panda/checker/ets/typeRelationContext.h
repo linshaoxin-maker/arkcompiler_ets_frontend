@@ -49,7 +49,8 @@ public:
 
         // NOTE (oeotvos) The narrowing flag will be applied here. It means, that the result of "let tmp: int = 1.5"
         // will be 1, which could cause problems.
-        if (source->HasTypeFlag(TypeFlag::CONSTANT)) {
+        if (source->HasTypeFlag(TypeFlag::CONSTANT) ||
+            (node->IsTSAsExpression() && node->AsTSAsExpression()->IsConst())) {
             flags_ |= TypeRelationFlag::NARROWING;
         }
 
