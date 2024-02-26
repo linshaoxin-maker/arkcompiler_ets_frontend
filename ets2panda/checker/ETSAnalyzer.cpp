@@ -2573,6 +2573,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSArrayType *node) const
 checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
+    TypeRelationFlag extraFlags = TypeRelationFlag::NONE;
 
     auto *const targetType = expr->TypeAnnotation()->AsTypeNode()->GetType(checker);
     // Object expression requires that its type be set by the context before checking. in this case, the target type
@@ -2595,8 +2596,13 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
         }
     }
 
+    // NOTE: this is to address spec/enum/issue14636_1.ets test failure
+    if (targetType->IsETSEnum2Type() && sourceType->IsETSEnum2Type()) {
+        extraFlags |= TypeRelationFlag::NO_THROW;
+    }
+
     const checker::CastingContext ctx(checker->Relation(), expr->Expr(), sourceType, targetType, expr->Expr()->Start(),
-                                      {"Cannot cast type '", sourceType, "' to '", targetType, "'"});
+                                      {"Cannot cast type '", sourceType, "' to '", targetType, "'"}, extraFlags);
 
     if (sourceType->IsETSDynamicType() && targetType->IsLambdaObject()) {
         // NOTE: itrubachev. change targetType to created lambdaobject type.
