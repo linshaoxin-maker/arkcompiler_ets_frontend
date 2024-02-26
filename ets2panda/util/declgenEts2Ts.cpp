@@ -152,8 +152,6 @@ void TSDeclGen::GenType(const checker::Type *checkerType)
             Out(checkerType->ToString());
             return;
         case checker::TypeFlag::ETS_ENUM2_TYPE:
-            //     GenEnumType(checkerType->AsETSEnumType());
-            return;
         case checker::TypeFlag::ETS_OBJECT:
         case checker::TypeFlag::ETS_DYNAMIC_TYPE:
             GenObjectType(checkerType->AsETSObjectType());
