@@ -106,41 +106,48 @@ public:
     [[nodiscard]] Method ToStringMethod() const noexcept;
     void SetToStringMethod(Method const &method) noexcept
     {
+        ASSERT(false);
         toStringMethod_ = method;
     }
 
     [[nodiscard]] Method GetValueMethod() const noexcept;
     void SetGetValueMethod(Method const &method) noexcept
     {
+        ASSERT(false);
         getValueMethod_ = method;
     }
 
     [[nodiscard]] Method GetNameMethod() const noexcept;
     void SetGetNameMethod(Method const &method) noexcept
     {
+        ASSERT(false);
         getNameMethod_ = method;
     }
 
     [[nodiscard]] Method ValueOfMethod() const noexcept;
     void SetValueOfMethod(Method const &method) noexcept
     {
+        ASSERT(false);
         valueOfMethod_ = method;
     }
 
     [[nodiscard]] Method ValuesMethod() const noexcept;
     void SetValuesMethod(Method const &method) noexcept
     {
+        ASSERT(false);
         valuesMethod_ = method;
     }
 
     [[nodiscard]] Method FromIntMethod() const noexcept;
     void SetFromIntMethod(Method const &method) noexcept
     {
+        ASSERT(false);
         fromIntMethod_ = method;
     }
 
     std::tuple<bool, bool> ResolveConditionExpr() const override
     {
+        ASSERT(false);
         return {true, !GetMembers().empty()};
     }
 
@@ -165,6 +172,7 @@ private:
     template <typename T>
     void ToAssemblerTypeImpl(std::stringstream &ss) const noexcept
     {
+        ASSERT(false);
         if constexpr (std::is_same_v<T, int64_t>) {
             ss << compiler::Signatures::PRIMITIVE_LONG;
         } else if constexpr (std::is_same_v<T, int32_t>) {
@@ -177,6 +185,7 @@ private:
     template <typename T>
     void ToDebugInfoTypeImpl(std::stringstream &ss) const noexcept
     {
+        ASSERT(false);
         if constexpr (std::is_same_v<T, int64_t>) {
             ss << compiler::Signatures::TYPE_DESCRIPTOR_LONG;
         } else if constexpr (std::is_same_v<T, int32_t>) {
@@ -192,6 +201,7 @@ public:
     explicit ETSEnumType(const ir::TSEnumDeclaration *enumDecl, UType ordinal, const ir::TSEnumMember *member = nullptr)
         : ETSEnumInterface(enumDecl, ordinal, member, TypeFlag::ETS_ENUM2_TYPE)
     {
+        ASSERT(false);
     }
 
     NO_COPY_SEMANTIC(ETSEnumType);
@@ -207,6 +217,7 @@ public:
                                const ir::TSEnumMember *member = nullptr)
         : ETSEnumInterface(enumDecl, ordinal, member, TypeFlag::ETS_ENUM2_TYPE)
     {
+        ASSERT(false);
     }
 
     NO_COPY_SEMANTIC(ETSStringEnumType);
