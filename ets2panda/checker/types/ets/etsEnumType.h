@@ -56,7 +56,7 @@ public:
 
     static constexpr std::string_view GetIndexMethodName()
     {
-        return "std.core.EnumConst.getIndex:i32;";  // TODO(aber) signatures.yaml
+        return "std.core.EnumConstant.getIndex:i32;";  // TODO(aber) signatures.yaml
     }
 
 private:
