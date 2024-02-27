@@ -18,6 +18,7 @@
 
 #include <optional>
 #include "parserFlags.h"
+#include "checker/types/ets/etsEnumType.h"
 #include "util/arktsconfig.h"
 #include "util/pathHandler.h"
 #include "TypedParser.h"
@@ -285,6 +286,7 @@ private:
     ir::TSEnumDeclaration *ParseEnumMembers(ir::Identifier *key, const lexer::SourcePosition &enumStart, bool isConst,
                                             bool isStatic) override;
     void ParseNumberEnum(ArenaVector<ir::AstNode *> &members);
+    void ParseEnumMember(ArenaVector<ir::AstNode *> &members, checker::ETSEnumType::ValueType &currentValue);
     void ParseStringEnum(ArenaVector<ir::AstNode *> &members);
 
     ir::Statement *ParseInterfaceDeclaration(bool isStatic) override;

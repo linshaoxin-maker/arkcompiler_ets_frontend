@@ -125,7 +125,9 @@ public:
                                                                    "PromiseVoidInferencePhase",
                                                                    "TupleLowering",
                                                                    "UnionLowering",
-                                                                   "ExpandBracketsPhase"};
+                                                                   "ExpandBracketsPhase",
+                                                                   "EnumConstantExpression",
+                                                                   "EnumMemberDefaultValue"};
             if (withoutAdditionalChecks.count(phaseName.Mutf8()) > 0) {
                 return {{}};
             };

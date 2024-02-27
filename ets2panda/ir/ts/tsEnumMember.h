@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -43,6 +43,31 @@ public:
         return init_;
     }
 
+    void SetInit(Expression *init)
+    {
+        init_ = init;
+    }
+
+    bool GetIsAssignment() const noexcept
+    {
+        return isAssignment_;
+    }
+
+    void SetIsAssignment(bool isassignment)
+    {
+        isAssignment_ = isassignment;
+    }
+
+    bool GetIsExpression() const noexcept
+    {
+        return isExpression_;
+    }
+
+    void SetIsExpression(bool isexpr)
+    {
+        isExpression_ = isexpr;
+    }
+
     [[nodiscard]] util::StringView Name() const;
 
     void TransformChildren(const NodeTransformer &cb) override;
@@ -62,6 +87,8 @@ public:
 private:
     Expression *key_;
     Expression *init_;
+    bool isAssignment_ = true;
+    bool isExpression_ = false;
 };
 }  // namespace ark::es2panda::ir
 

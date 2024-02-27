@@ -24,6 +24,8 @@
 #include "compiler/lowering/plugin_phase.h"
 #include "compiler/lowering/scopesInit/scopesInitPhase.h"
 #include "compiler/lowering/ets/expandBrackets.h"
+#include "compiler/lowering/ets/enumConstantExpressionLowering.h"
+#include "compiler/lowering/ets/enumMemberDefaultValueLowering.h"
 #include "compiler/lowering/ets/generateDeclarations.h"
 #include "compiler/lowering/ets/lambdaLowering.h"
 #include "compiler/lowering/ets/interfacePropertyDeclarations.h"
@@ -53,6 +55,8 @@ static GenerateTsDeclarationsPhase g_generateTsDeclarationsPhase;
 static LambdaConstructionPhase g_lambdaConstructionPhase;
 static OpAssignmentLowering g_opAssignmentLowering;
 static ObjectIndexLowering g_objectIndexLowering;
+static EnumConstantExpressionLowering g_enumConstantLowering;
+static EnumMemberDefaultValueLowering g_enumDefaultValueLowering;
 static TupleLowering g_tupleLowering;  // Can be only applied after checking phase, and OP_ASSIGNMENT_LOWERING phase
 static UnionLowering g_unionLowering;
 static OptionalLowering g_optionalLowering;
@@ -81,6 +85,8 @@ std::vector<Phase *> GetETSPhaseList()
         &g_promiseVoidInferencePhase,
         &g_structLowering,
         &g_lambdaConstructionPhase,
+        &g_enumConstantLowering,
+        &g_enumDefaultValueLowering,
         &g_interfacePropDeclPhase,
         &g_checkerPhase,
         &g_pluginsAfterCheck,
