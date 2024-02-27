@@ -83,6 +83,21 @@ public:
         signature_ = signature;
     }
 
+    [[nodiscard]] checker::Signature *DefaultConstructorSignature() noexcept
+    {
+        return defaultConstructorSignature_;
+    }
+
+    [[nodiscard]] const checker::Signature *DefaultConstructorSignature() const noexcept
+    {
+        return defaultConstructorSignature_;
+    }
+
+    void SetDefaultConstructorSignature(checker::Signature *signature) noexcept
+    {
+        defaultConstructorSignature_ = signature;
+    }
+
     [[nodiscard]] ETSNewMultiDimArrayInstanceExpression *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
     void TransformChildren(const NodeTransformer &cb) override;
@@ -104,6 +119,7 @@ private:
     ir::TypeNode *typeReference_;
     ArenaVector<ir::Expression *> dimensions_;
     checker::Signature *signature_ {};
+    checker::Signature *defaultConstructorSignature_ {};
 };
 }  // namespace ark::es2panda::ir
 
