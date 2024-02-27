@@ -191,8 +191,6 @@ checker::Type *ETSChecker::CheckBinaryOperatorMulDivMod(ir::Expression *left, ir
     }
 
     if (promotedType == nullptr && !bothConst) {
-        if (1)
-            std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 1" << std::endl;
         ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", pos);
     }
 
@@ -212,8 +210,6 @@ checker::Type *ETSChecker::CheckBinaryOperatorPlus(ir::Expression *left, ir::Exp
     if (leftType->IsETSStringType() || rightType->IsETSStringType()) {
         if (operationType == lexer::TokenType::PUNCTUATOR_MINUS ||
             operationType == lexer::TokenType::PUNCTUATOR_MINUS_EQUAL) {
-            if (1)
-                std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 2" << std::endl;
             ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", pos);
         }
 
@@ -231,8 +227,6 @@ checker::Type *ETSChecker::CheckBinaryOperatorPlus(ir::Expression *left, ir::Exp
     FlagExpressionWithUnboxing(rightType, unboxedR, right);
 
     if (promotedType == nullptr && !bothConst) {
-        if (1)
-            std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 3" << std::endl;
         ThrowTypeError("Bad operand type, the types of the operands must be numeric type or String.", pos);
     }
 
@@ -260,8 +254,6 @@ checker::Type *ETSChecker::CheckBinaryOperatorShift(ir::Expression *left, ir::Ex
 
     if (promotedLeftType == nullptr || !promotedLeftType->HasTypeFlag(checker::TypeFlag::ETS_NUMERIC) ||
         promotedRightType == nullptr || !promotedRightType->HasTypeFlag(checker::TypeFlag::ETS_NUMERIC)) {
-        if (1)
-            std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 4" << std::endl;
         ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", pos);
     }
 
@@ -308,8 +300,6 @@ checker::Type *ETSChecker::CheckBinaryOperatorBitwise(ir::Expression *left, ir::
 
     if (unboxedL != nullptr && unboxedL->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN) && unboxedR != nullptr &&
         unboxedR->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN)) {
-        if (1)
-            std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 52" << std::endl;
         FlagExpressionWithUnboxing(leftType, unboxedL, left);
         FlagExpressionWithUnboxing(rightType, unboxedR, right);
         return HandleBooleanLogicalOperators(unboxedL, unboxedR, operationType);
@@ -325,19 +315,14 @@ checker::Type *ETSChecker::CheckBinaryOperatorBitwise(ir::Expression *left, ir::
         if ((left->Parent() == right->Parent()) &&
             (!left->Parent()->IsPostBitSet(ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) &&
             (rightType->IsETSEnum2Type() || leftType->IsETSEnum2Type())) {
-            if (1)
-                std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] set it to update AST later!" << std::endl;
             left->Parent()->SetPostBit(ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED);
             return nullptr;
         }
 
-        if (1)
-            std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 5" << std::endl;
         ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", pos);
     }
 
     if (bothConst) {
-        // if(1) std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 53" << std::endl;
         return HandleBitwiseOperationOnTypes(leftType, rightType, operationType);
     }
 
@@ -478,8 +463,6 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorLessGreater(
     }
 
     if (promotedType == nullptr && !bothConst) {
-        if (1)
-            std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 6" << std::endl;
         if ((left->Parent() == right->Parent()) &&
             (!left->Parent()->IsPostBitSet(ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) &&
             (rightType->IsETSEnum2Type() || leftType->IsETSEnum2Type())) {
@@ -657,13 +640,9 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left,
     checker::Type *const rightType = right->Check(this);
     if ((leftType == nullptr) || (rightType == nullptr)) {
         if (checkIfBitSet(left) || checkIfBitSet(right)) {
-            if (1)
-                std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] set it to update AST later!" << std::endl;
             expr->SetPostBit(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED);
             return {nullptr, nullptr};
         } else {
-            if (1)
-                std::cout << "Erroneos expression:" << expr->DumpJSON() << std::endl;
             ThrowTypeError("Unexpected type error in binary expression", pos);
         }
     }
