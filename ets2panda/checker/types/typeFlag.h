@@ -82,13 +82,13 @@ enum class TypeFlag : uint64_t {
     ETS_NULL = 1ULL << 57ULL,                   // ETS null
     ETS_UNDEFINED = 1ULL << 58ULL,              // ETS undefined
     ETS_NONNULLISH = 1ULL << 59ULL,             // ETS nonnullish type parameter
-    ETS_ENUM2 = 1ULL << 60ULL,                  // ETS Enum TODO(aber) rename after removal old
+    ETS_ENUM = 1ULL << 60ULL,                   // ETS Enum
     ETS_DYNAMIC_TYPE = ETS_OBJECT | ETS_DYNAMIC_FLAG,
-    ETS_ENUM2_TYPE = ETS_OBJECT | ETS_ENUM2,  // ETS Enum TODO(aber) rename
+    ETS_ENUM_TYPE = ETS_OBJECT | ETS_ENUM,  // ETS Enum type
     ETS_DYNAMIC_FUNCTION_TYPE = FUNCTION | ETS_DYNAMIC_FLAG,
     ETS_TYPE = BYTE | SHORT | INT | LONG | FLOAT | DOUBLE | CHAR | ETS_BOOLEAN | ETS_VOID | ETS_OBJECT | ETS_ARRAY |
                WILDCARD | ETS_TYPE_PARAMETER | ETS_DYNAMIC_TYPE | ETS_UNION | ETS_NULL | ETS_UNDEFINED |
-               ETS_NONNULLISH | ETS_ENUM2_TYPE,
+               ETS_NONNULLISH | ETS_ENUM_TYPE,
     ETS_PRIMITIVE = BYTE | SHORT | INT | LONG | FLOAT | DOUBLE | CHAR | ETS_BOOLEAN | ETS_VOID,
     ETS_PRIMITIVE_RETURN = BYTE | SHORT | INT | LONG | FLOAT | DOUBLE | CHAR | ETS_BOOLEAN,
     ETS_ARRAY_INDEX = BYTE | SHORT | INT,

@@ -37,7 +37,7 @@ class ETSAsyncFuncReturnType;
 class ETSChecker;
 class ETSDynamicFunctionType;
 class ETSTypeParameter;
-class ETSEnum2Type;
+class ETSEnumType;
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_TYPENAMES(typeFlag, typeName) class typeName;
@@ -134,22 +134,21 @@ public:
         return reinterpret_cast<const ETSDynamicType *>(this);
     }
 
-    // TODO(aber) rename after
-    bool IsETSEnum2Type() const
+    bool IsETSEnumType() const
     {
-        return IsETSObjectType() && HasTypeFlag(TypeFlag::ETS_ENUM2);
+        return IsETSObjectType() && HasTypeFlag(TypeFlag::ETS_ENUM);
     }
 
-    ETSEnum2Type *AsETSEnum2Type()
+    ETSEnumType *AsETSEnumType()
     {
-        ASSERT(IsETSEnum2Type());
-        return reinterpret_cast<ETSEnum2Type *>(this);
+        ASSERT(IsETSEnumType());
+        return reinterpret_cast<ETSEnumType *>(this);
     }
 
-    const ETSEnum2Type *AsETSEnum2Type() const
+    const ETSEnumType *AsETSEnumType() const
     {
-        ASSERT(IsETSEnum2Type());
-        return reinterpret_cast<const ETSEnum2Type *>(this);
+        ASSERT(IsETSEnumType());
+        return reinterpret_cast<const ETSEnumType *>(this);
     }
 
     ETSAsyncFuncReturnType *AsETSAsyncFuncReturnType()

@@ -650,10 +650,10 @@ void ETSGen::CreateLambdaObjectFromMemberReference(const ir::AstNode *node, ir::
 }
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage, readability-container-size-empty)
-#define CONV_LAMBDA_CTOR_ARG(idx)                                  \
-    ASSERT((idx) < arguments.size());                              \
-    auto *paramType##idx = signature->Params()[(idx)] -> TsType(); \
-    auto ttctx##idx = TargetTypeContext(this, paramType##idx);     \
+#define CONV_LAMBDA_CTOR_ARG(idx)                                \
+    ASSERT((idx) < arguments.size());                            \
+    auto *paramType##idx = signature->Params()[(idx)]->TsType(); \
+    auto ttctx##idx = TargetTypeContext(this, paramType##idx);   \
     ApplyConversion(node, paramType##idx)
 
 void ETSGen::InitLambdaObject(const ir::AstNode *node, checker::Signature *signature, std::vector<VReg> &arguments)
@@ -1716,11 +1716,11 @@ void ETSGen::CastToInt(const ir::AstNode *node)
             Sa().Emit<F64toi32>(node);
             break;
         }
-        case checker::TypeFlag::ETS_ENUM2_TYPE: {
+        case checker::TypeFlag::ETS_ENUM_TYPE: {
             RegScope rs(this);
             VReg objReg = AllocReg();
             StoreAccumulator(node, objReg);
-            Ra().Emit<CallShort, 1>(node, checker::ETSEnum2Type::GetIndexMethodName(), objReg, dummyReg_);
+            Ra().Emit<CallShort, 1>(node, checker::ETSEnumType::GetIndexMethodName(), objReg, dummyReg_);
 
             break;
         }
@@ -2588,7 +2588,7 @@ void ETSGen::LoadArrayElement(const ir::AstNode *node, VReg objectReg)
             break;
         }
         // WARNING: this seems to fix assert bu cause later run-time verifier failures
-        case checker::TypeFlag::ETS_ENUM2_TYPE: {
+        case checker::TypeFlag::ETS_ENUM_TYPE: {
             Ra().Emit<LdarrObj>(node, objectReg);
             break;
         }
@@ -2634,7 +2634,7 @@ void ETSGen::StoreArrayElement(const ir::AstNode *node, VReg objectReg, VReg ind
         case checker::TypeFlag::ETS_OBJECT:
         case checker::TypeFlag::ETS_TYPE_PARAMETER:
         case checker::TypeFlag::ETS_UNION:
-        case checker::TypeFlag::ETS_ENUM2_TYPE:
+        case checker::TypeFlag::ETS_ENUM_TYPE:
         case checker::TypeFlag::ETS_DYNAMIC_TYPE: {
             Ra().Emit<StarrObj>(node, objectReg, index);
             break;

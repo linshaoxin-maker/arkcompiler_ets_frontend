@@ -1979,7 +1979,7 @@ void ETSCompiler::CompileCast(const ir::TSAsExpression *expr) const
         case checker::TypeFlag::ETS_UNION:
         case checker::TypeFlag::ETS_NULL:
         case checker::TypeFlag::ETS_UNDEFINED:
-        case checker::TypeFlag::ETS_ENUM2_TYPE: {
+        case checker::TypeFlag::ETS_ENUM_TYPE: {
             etsg->CastToReftype(expr, targetType, expr->isUncheckedCast_);
             break;
         }

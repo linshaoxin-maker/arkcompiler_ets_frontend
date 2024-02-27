@@ -111,8 +111,7 @@ enum class BoxingUnboxingFlags : uint32_t {
 };
 
 enum PostProcessingBits : uint64_t {
-#define BIT(x) ((uint64_t)1 << x)
-    ENUM_LOWERING_POST_PROCESSING_REQUIRED = BIT(0),
+    ENUM_LOWERING_POST_PROCESSING_REQUIRED = (1LLU << 0LLU),
 };
 
 }  // namespace ark::es2panda::ir

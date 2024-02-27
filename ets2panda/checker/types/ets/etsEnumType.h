@@ -21,32 +21,23 @@
 #include "ir/ts/tsEnumDeclaration.h"
 #include "checker/types/ets/etsObjectType.h"
 
-template <typename>
-// NOLINTNEXTLINE(readability-identifier-naming)
-inline constexpr bool dependent_false_v = false;
-
-namespace ark::es2panda::varbinder {
-class LocalVariable;
-}  // namespace ark::es2panda::varbinder
-
 namespace ark::es2panda::checker {
 
 std::string EnumDescription(util::StringView name);
 
-// TODO(aber) rename ETSEnum2Type after removal old code
-class ETSEnum2Type : public ETSObjectType {
+class ETSEnumType : public ETSObjectType {
 public:
-    ETSEnum2Type(ETSChecker *checker, util::StringView name, util::StringView assembler_name, ir::AstNode *decl_node,
-                 ETSObjectFlags flags, TypeRelation *relation);
+    ETSEnumType(ETSChecker *checker, util::StringView name, util::StringView assemblerName, ir::AstNode *declNode,
+                ETSObjectFlags flags, TypeRelation *relation);
 
-    ETSEnum2Type(ArenaAllocator *allocator, util::StringView name, util::StringView assembler_name,
-                 ir::AstNode *decl_node, ETSObjectFlags flags, ir::Literal *value, TypeRelation *relation);
+    ETSEnumType(ArenaAllocator *allocator, util::StringView name, util::StringView assemblerName, ir::AstNode *declNode,
+                ETSObjectFlags flags, ir::Literal *value, TypeRelation *relation);
 
-    bool IsSameEnumType(const ETSEnum2Type *other) const noexcept;
+    bool IsSameEnumType(const ETSEnumType *other) const noexcept;
 
     bool IsLiteralType() const noexcept;
 
-    bool IsSameEnumLiteralType(const ETSEnum2Type *other) const noexcept;
+    bool IsSameEnumLiteralType(const ETSEnumType *other) const noexcept;
 
     bool AssignmentSource(TypeRelation *relation, Type *target) override;
     void AssignmentTarget(TypeRelation *relation, Type *source) override;
@@ -56,12 +47,12 @@ public:
 
     static constexpr std::string_view GetIndexMethodName()
     {
-        return "std.core.EnumConstant.getIndex:i32;";  // TODO(aber) signatures.yaml
+        return "std.core.EnumConstant.getIndex:i32;";  // NOTE(aber) signatures.yaml
     }
 
 private:
-    void CreateLiteralTypes(ETSChecker *checker, util::StringView name, util::StringView assembler_name,
-                            ir::AstNode *decl_node, ETSObjectFlags flags, TypeRelation *relation);
+    void CreateLiteralTypes(ETSChecker *checker, util::StringView name, util::StringView assemblerName,
+                            ir::AstNode *declNode, ETSObjectFlags flags, TypeRelation *relation);
 
     ir::Literal *value_ = nullptr;
 };

@@ -314,7 +314,7 @@ checker::Type *ETSChecker::CheckBinaryOperatorBitwise(ir::Expression *left, ir::
     if (promotedType == nullptr && !bothConst) {
         if ((left->Parent() == right->Parent()) &&
             (!left->Parent()->IsPostBitSet(ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) &&
-            (rightType->IsETSEnum2Type() || leftType->IsETSEnum2Type())) {
+            (rightType->IsETSEnumType() || leftType->IsETSEnumType())) {
             left->Parent()->SetPostBit(ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED);
             return nullptr;
         }
@@ -383,8 +383,8 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorEqual(
 {
     checker::Type *tsType {};
 
-    if (leftType->IsETSEnum2Type() && rightType->IsETSEnum2Type()) {
-        if (!leftType->AsETSEnum2Type()->IsSameEnumType(rightType->AsETSEnum2Type())) {
+    if (leftType->IsETSEnumType() && rightType->IsETSEnumType()) {
+        if (!leftType->AsETSEnumType()->IsSameEnumType(rightType->AsETSEnumType())) {
             ThrowTypeError("Bad operand type, the types of the operands must be the same enum type.", pos);
         }
 
@@ -465,7 +465,7 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorLessGreater(
     if (promotedType == nullptr && !bothConst) {
         if ((left->Parent() == right->Parent()) &&
             (!left->Parent()->IsPostBitSet(ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) &&
-            (rightType->IsETSEnum2Type() || leftType->IsETSEnum2Type())) {
+            (rightType->IsETSEnumType() || leftType->IsETSEnumType())) {
             left->Parent()->SetPostBit(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED);
             return {nullptr, nullptr};
         }
@@ -623,13 +623,10 @@ static std::tuple<Type *, Type *> CheckBinaryOperatorHelper(ETSChecker *checker,
     return {tsType, tsType};
 }
 
-static bool checkIfBitSet(ir::Expression *expr)
+bool CheckIfBitSet(ir::Expression *expr)
 {
-    if (expr->IsBinaryExpression() &&
-        expr->AsBinaryExpression()->IsPostBitSet(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) {
-        return true;
-    }
-    return false;
+    return (expr->IsBinaryExpression() &&
+            expr->AsBinaryExpression()->IsPostBitSet(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED));
 }
 
 std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left, ir::Expression *right,
@@ -639,12 +636,11 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left,
     checker::Type *const leftType = left->Check(this);
     checker::Type *const rightType = right->Check(this);
     if ((leftType == nullptr) || (rightType == nullptr)) {
-        if (checkIfBitSet(left) || checkIfBitSet(right)) {
+        if (CheckIfBitSet(left) || CheckIfBitSet(right)) {
             expr->SetPostBit(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED);
             return {nullptr, nullptr};
-        } else {
-            ThrowTypeError("Unexpected type error in binary expression", pos);
         }
+        ThrowTypeError("Unexpected type error in binary expression", pos);
     }
 
     const bool isLogicalExtendedOperator =

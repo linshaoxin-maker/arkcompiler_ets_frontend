@@ -78,8 +78,6 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
     auto *unboxedType = ETSBuiltinTypeAsConditionalType(type);
 
     if (unboxedType == nullptr) {
-        if (0)
-            std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 1" << std::endl;
         if (expr->IsBinaryExpression() &&
             (expr->AsBinaryExpression()->IsPostBitSet(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED))) {
             return;
@@ -92,12 +90,7 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
     }
 
     if (!unboxedType->IsConditionalExprType()) {
-        if (0)
-            std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 2" << std::endl;
-        if (expr->IsBinaryExpression() &&
-            (!expr->AsBinaryExpression()->IsPostBitSet(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED))) {
-            ThrowTypeError("Condition must be of possible condition type", expr->Start());
-        }
+        ThrowTypeError("Condition must be of possible condition type", expr->Start());
     }
 
     if (unboxedType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
@@ -1977,10 +1970,10 @@ void ETSChecker::CheckForSameSwitchCases(ArenaVector<ir::SwitchCaseStatement *> 
                 continue;
             }
 
-            if (caseTest->TsType()->IsETSEnum2Type()) {
-                ASSERT(compareCaseTest->TsType()->IsETSEnum2Type());
-                if (caseTest->TsType()->AsETSEnum2Type()->IsSameEnumLiteralType(
-                        compareCaseTest->TsType()->AsETSEnum2Type())) {
+            if (caseTest->TsType()->IsETSEnumType()) {
+                ASSERT(compareCaseTest->TsType()->IsETSEnumType());
+                if (caseTest->TsType()->AsETSEnumType()->IsSameEnumLiteralType(
+                        compareCaseTest->TsType()->AsETSEnumType())) {
                     ThrowTypeError("Case enum duplicate", caseTest->Start());
                 }
                 continue;

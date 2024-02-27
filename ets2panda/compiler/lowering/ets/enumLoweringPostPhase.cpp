@@ -30,18 +30,18 @@
 
 namespace ark::es2panda::compiler {
 
-const char *ENUM_GETVALUE_METHOD_NAME = "getValue";
+const char *g_enumGetvalueMethodName = "getValue";
 
 ir::CallExpression *CreateCallExpression(ir::Expression *id, checker::ETSChecker *checker)
 {
-    auto *const callee = checker->AllocNode<ir::Identifier>(ENUM_GETVALUE_METHOD_NAME, checker->Allocator());
+    auto *const callee = checker->AllocNode<ir::Identifier>(g_enumGetvalueMethodName, checker->Allocator());
     callee->SetReference();
     ir::Expression *const accessor =
         checker->AllocNode<ir::MemberExpression>(id, callee, ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
     id->SetParent(accessor);
     callee->SetParent(accessor);
 
-    ir::CallExpression *callExpression = checker->AllocNode<ir::CallExpression>(
+    auto *callExpression = checker->AllocNode<ir::CallExpression>(
         accessor, ArenaVector<ir::Expression *>(checker->Allocator()->Adapter()), nullptr, false);
     accessor->SetParent(callExpression);
     return callExpression;
@@ -70,25 +70,19 @@ ir::Expression *CreateTestExpression(ir::Identifier *id, CompilerContext *ctx, i
     return testExpr;
 }
 
-ir::Expression *checkBinaryBranch(ir::Expression *ast, CompilerContext *ctx)
+ir::Expression *CheckBinaryBranch(ir::Expression *ast, CompilerContext *ctx)
 {
     auto updateExpression = [ctx](ir::Expression *object, ir::Expression *ast) -> ir::Expression * {
         if (object->IsIdentifier() && object->AsIdentifier()->Variable() != nullptr) {
-            // ..
             auto *checker = ctx->Checker()->AsETSChecker();
             auto *type = checker->GetTypeOfVariable(object->AsIdentifier()->Variable());
             ASSERT(type != nullptr);
 
-            if (!type->IsETSEnum2Type()) {
-                if (0)
-                    std::cout << "[DEBUG] Not a ETSEnum2Type object!" << std::endl;
+            if (!type->IsETSEnumType()) {
                 return ast;
             }
-            if (0)
-                std::cout << "[DEBUG] Found ETSEnum2Type identifier!" << std::endl;
 
-            auto *callExpr =
-                CreateCallExpression(ast /*->AsMemberExpression()->Clone(checker->Allocator(), nullptr)*/, checker);
+            auto *callExpr = CreateCallExpression(ast, checker);
 
             return callExpr;
         }
@@ -96,22 +90,18 @@ ir::Expression *checkBinaryBranch(ir::Expression *ast, CompilerContext *ctx)
     };
     if (ast->IsMemberExpression()) {
         // i.e. we have following:
-        //   enum Color {Red, Blue, Green, Yellow};
+        //   'enum Color {Red, Blue, Green, Yellow}'
         //
-        // so for such 'imcomplete' accessors like
-        //   Color.Red
+        // so for such 'imcomplete' accessors like:
+        //   'Color.Red'
         //
         // we'd need to replace it with
-        //   color.Red.getValue()
+        //   'color.Red.getValue()'
         if (auto *object = ast->AsMemberExpression()->Object(); object != nullptr) {
-            // ..
             return updateExpression(object, ast);
         }
     } else if (ast->IsIdentifier()) {
         return updateExpression(ast->AsIdentifier(), ast);
-    } else {
-        if (0)
-            std::cout << "[DEBUG] Neither MemberExpression nor identifier!" << std::endl;
     }
     return ast;
 }
@@ -123,9 +113,9 @@ ir::AstNode *UpdateMemberExpression(ir::AstNode *ast, CompilerContext *ctx)
     ASSERT(scope != nullptr);
     auto expressionCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(checker->VarBinder(), scope);
 
-    ast->AsBinaryExpression()->SetLeft(checkBinaryBranch(
+    ast->AsBinaryExpression()->SetLeft(CheckBinaryBranch(
         ast->AsBinaryExpression()->Left()->Clone(checker->Allocator(), nullptr)->AsExpression(), ctx));
-    ast->AsBinaryExpression()->SetRight(checkBinaryBranch(
+    ast->AsBinaryExpression()->SetRight(CheckBinaryBranch(
         ast->AsBinaryExpression()->Right()->Clone(checker->Allocator(), nullptr)->AsExpression(), ctx));
 
     InitScopesPhaseETS::RunExternalNode(ast, ctx->VarBinder());
@@ -142,63 +132,50 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
 
     [[maybe_unused]] checker::ETSChecker *checker = ctx->checker->AsETSChecker();
 
-    for (auto &[_, ext_programs] : program->ExternalSources()) {
+    for (auto &[_, extPrograms] : program->ExternalSources()) {
         (void)_;
-        for (auto *ext_prog : ext_programs) {
-            Perform(ctx, ext_prog);
+        for (auto *extProg : extPrograms) {
+            Perform(ctx, extProg);
         }
     }
 
     program->Ast()->TransformChildrenRecursively([checker, ctx](ir::AstNode *ast) -> ir::AstNode * {
-        if (ast->IsCallExpression()) {
-            // check & update call expression with explicit cast to new type
-            // e.g. for the following
-            //
-            // enum Color {Red, Blue, Green, Yellow};
-            // function foo(a:Color) {..}
-            // function main():void {
-            //   foo(1);
-            // }
-            //
-            // so the foo(1) should be translated to foo(Color.Blue)
-        } else if (ast->IsBinaryExpression()) {
+        if (ast->IsBinaryExpression()) {
             if (ast->AsBinaryExpression()->IsPostBitSet(
                     ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) {
                 return UpdateMemberExpression(ast, ctx->compilerContext);
-            } else {
-                // std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] Skip this one, no need to update!" <<
-                // std::endl;
-                return ast;
             }
-        } else if (ast->IsIfStatement() || ast->IsWhileStatement() || ast->IsDoWhileStatement() ||
-                   ast->IsForUpdateStatement() || ast->IsConditionalExpression()) {
-            // so far let's put this only for test script
+            return ast;
+        }
+        if (ast->IsIfStatement() || ast->IsWhileStatement() || ast->IsDoWhileStatement() ||
+            ast->IsForUpdateStatement() || ast->IsConditionalExpression()) {
             ir::Expression *test = nullptr;
             ir::Expression *testExpr = nullptr;
 
-            if (ast->IsIfStatement())
+            if (ast->IsIfStatement()) {
                 test = ast->AsIfStatement()->Test();
-            if (ast->IsWhileStatement())
+            } else if (ast->IsWhileStatement()) {
                 test = ast->AsWhileStatement()->Test();
-            if (ast->IsDoWhileStatement())
+            } else if (ast->IsDoWhileStatement()) {
                 test = ast->AsDoWhileStatement()->Test();
-            if (ast->IsForUpdateStatement())
+            } else if (ast->IsForUpdateStatement()) {
                 test = ast->AsForUpdateStatement()->Test();
-            if (ast->IsConditionalExpression())
+            } else if (ast->IsConditionalExpression()) {
                 test = ast->AsConditionalExpression()->Test();
+            }
 
             if (test == nullptr) {
                 return ast;
             }
             if (test->IsIdentifier()) {
-                // we got simple variable test expression, test against  non-zero value
+                // we got simple variable test expression, test against non-zero value
                 if (test->AsIdentifier()->Variable() == nullptr) {
                     return ast;
                 }
                 auto *type = checker->GetTypeOfVariable(test->AsIdentifier()->Variable());
                 ASSERT(type != nullptr);
 
-                if (!type->IsETSEnum2Type()) {
+                if (!type->IsETSEnumType()) {
                     return ast;
                 }
                 // ok now we need  to replace 'if (v)' to 'if (v.getValue() != 0)'
@@ -208,7 +185,7 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
             } else if (test->IsCallExpression()) {
                 // simple call expression with default non-zero test, i.e.
                 //
-                //   if (v.getValue())
+                //   'if (v.getValue())'
                 //
                 // this wll always be treated as 'true' since getValue() returns the EnumConst
                 // object,but not the enum  value
@@ -216,7 +193,7 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
                 // need  to checkif we're calling to getValue() for enum constant
                 // and convert it into binary expression with '!= 0' test, i.e.
                 //
-                //   if (v.getValue() != 0)
+                //   'if (v.getValue() != 0)'
                 //
                 // same for loop expressions.
                 //
@@ -230,13 +207,13 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
                         }
                         auto *type = checker->GetTypeOfVariable(id->Variable());
                         ASSERT(type != nullptr);
-                        if (!type->IsETSEnum2Type()) {
-                            return ast;  // do not modify it,  it is not ETSEnum2Type
+                        if (!type->IsETSEnumType()) {
+                            return ast;
                         }
 
                         if (ir::Expression *prop = callee->AsMemberExpression()->Property(); prop != nullptr) {
-                            if (prop->IsIdentifier() && (prop->AsIdentifier()->Name() == ENUM_GETVALUE_METHOD_NAME)) {
-                                //  now we need tow rap it to the binary expression .. != 0
+                            if (prop->IsIdentifier() && (prop->AsIdentifier()->Name() == g_enumGetvalueMethodName)) {
+                                //  now we need to wrap it to the binary expression .. != 0
                                 testExpr = CreateTestExpression(prop->AsIdentifier(), ctx->compilerContext,
                                                                 test->AsCallExpression());
                             }

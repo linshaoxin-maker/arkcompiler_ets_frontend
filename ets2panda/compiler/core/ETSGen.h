@@ -743,7 +743,7 @@ private:
                 BinaryNumberComparison<CmpWide, CondCompare>(node, lhs, ifFalse);
                 break;
             }
-            case checker::TypeFlag::ETS_ENUM2_TYPE:
+            case checker::TypeFlag::ETS_ENUM_TYPE:
             case checker::TypeFlag::ETS_BOOLEAN:
             case checker::TypeFlag::BYTE:
             case checker::TypeFlag::CHAR:

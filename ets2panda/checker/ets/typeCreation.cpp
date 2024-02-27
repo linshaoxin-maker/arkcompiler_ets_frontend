@@ -365,7 +365,7 @@ ETSObjectType *ETSChecker::CreateETSObjectType(util::StringView name, ir::AstNod
     return objType;
 }
 
-bool isEnumClass(ir::AstNode *declNode)
+bool IsEnumClass(ir::AstNode *declNode)
 {
     if (declNode->IsClassDefinition() && (declNode->AsClassDefinition()->Super() != nullptr) &&
         declNode->AsClassDefinition()->Super()->IsETSTypeReference()) {
@@ -431,8 +431,8 @@ ETSObjectType *ETSChecker::CreateNewETSObjectType(util::StringView name, ir::Ast
         ;
     }
 
-    if (isEnumClass(declNode)) {
-        auto ret = Allocator()->New<ETSEnum2Type>(this, name, assemblerName, declNode, flags, Relation());
+    if (IsEnumClass(declNode)) {
+        auto ret = Allocator()->New<ETSEnumType>(this, name, assemblerName, declNode, flags, Relation());
         return ret;
     }
 

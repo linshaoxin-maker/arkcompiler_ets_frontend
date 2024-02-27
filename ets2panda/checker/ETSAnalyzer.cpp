@@ -2439,9 +2439,9 @@ checker::Type *ETSAnalyzer::Check(ir::SwitchStatement *st) const
             validCaseType = true;
             if (caseType->HasTypeFlag(checker::TypeFlag::CHAR)) {
                 validCaseType = comparedExprType->HasTypeFlag(checker::TypeFlag::ETS_INTEGRAL);
-            } else if (caseType->IsETSEnum2Type() && st->Discriminant()->TsType()->IsETSEnum2Type()) {
+            } else if (caseType->IsETSEnumType() && st->Discriminant()->TsType()->IsETSEnumType()) {
                 validCaseType =
-                    st->Discriminant()->TsType()->AsETSEnum2Type()->IsSameEnumType(caseType->AsETSEnum2Type());
+                    st->Discriminant()->TsType()->AsETSEnumType()->IsSameEnumType(caseType->AsETSEnumType());
             } else {
                 checker::AssignmentContext(
                     checker->Relation(), st->discriminant_, caseType, unboxedDiscType, it->Test()->Start(),
@@ -2597,8 +2597,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
     }
 
     // NOTE: this is to address spec/enum/issue14636_1.ets test failure
-    if (targetType->IsETSEnum2Type() && sourceType->IsETSEnum2Type() &&
-        targetType->AsETSEnum2Type()->IsSameEnumType(sourceType->AsETSEnum2Type())) {
+    if (targetType->IsETSEnumType() && sourceType->IsETSEnumType() &&
+        targetType->AsETSEnumType()->IsSameEnumType(sourceType->AsETSEnumType())) {
         extraFlags |= TypeRelationFlag::NO_THROW;
     }
 
