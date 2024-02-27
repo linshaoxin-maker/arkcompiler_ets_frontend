@@ -32,14 +32,14 @@ class Identifier;
 class BreakStatement : public Statement {
 public:
     explicit BreakStatement() : Statement(AstNodeType::BREAK_STATEMENT) {}
-    explicit BreakStatement(Identifier *ident) : Statement(AstNodeType::BREAK_STATEMENT), ident_(ident) {}
+    explicit BreakStatement(util::StringView const label) : Statement(AstNodeType::BREAK_STATEMENT), label_(label) {}
 
     friend checker::ETSAnalyzer;
     friend compiler::ETSCompiler;
 
-    const Identifier *Ident() const
+    const util::StringView &Label() const
     {
-        return ident_;
+        return label_;
     }
 
     const ir::AstNode *Target() const
@@ -62,7 +62,7 @@ public:
     }
 
 private:
-    Identifier *ident_ {};
+    util::StringView label_ {};
     const ir::AstNode *target_ {};
 };
 }  // namespace ark::es2panda::ir

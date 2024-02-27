@@ -28,8 +28,8 @@ class Identifier;
 
 class LabelledStatement : public Statement {
 public:
-    explicit LabelledStatement(Identifier *ident, Statement *body)
-        : Statement(AstNodeType::LABELLED_STATEMENT), ident_(ident), body_(body)
+    explicit LabelledStatement(util::StringView const name, Statement *body)
+        : Statement(AstNodeType::LABELLED_STATEMENT), name_(name), body_(body)
     {
     }
 
@@ -41,9 +41,9 @@ public:
         return body_;
     }
 
-    const Identifier *Ident() const
+    const util::StringView &Name() const
     {
-        return ident_;
+        return name_;
     }
 
     const ir::AstNode *GetReferencedStatement() const;
@@ -70,7 +70,7 @@ public:
     }
 
 private:
-    Identifier *ident_;
+    util::StringView name_;
     Statement *body_;
 };
 }  // namespace ark::es2panda::ir

@@ -1497,7 +1497,7 @@ void ETSCompiler::Compile(const ir::BlockStatement *st) const
 template <typename CodeGen>
 static void CompileImpl(const ir::BreakStatement *self, [[maybe_unused]] CodeGen *cg)
 {
-    compiler::Label *target = cg->ControlFlowChangeBreak(self->Ident());
+    compiler::Label *target = cg->ControlFlowChangeBreak(self->Label());
     cg->Branch(self, target);
 }
 
@@ -1517,7 +1517,7 @@ void ETSCompiler::Compile([[maybe_unused]] const ir::ClassDeclaration *st) const
 
 static void CompileImpl(const ir::ContinueStatement *self, ETSGen *etsg)
 {
-    compiler::Label *target = etsg->ControlFlowChangeContinue(self->Ident());
+    compiler::Label *target = etsg->ControlFlowChangeContinue(self->Label());
     etsg->Branch(self, target);
 }
 

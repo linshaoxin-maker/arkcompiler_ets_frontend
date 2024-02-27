@@ -1978,7 +1978,7 @@ checker::Type *ETSAnalyzer::Check(ir::BlockStatement *st) const
 checker::Type *ETSAnalyzer::Check(ir::BreakStatement *st) const
 {
     ETSChecker *checker = GetETSChecker();
-    st->target_ = checker->FindJumpTarget(st->Type(), st, st->Ident());
+    st->target_ = checker->FindJumpTarget(st->Type(), st, st->Label());
     return nullptr;
 }
 
@@ -1992,7 +1992,7 @@ checker::Type *ETSAnalyzer::Check(ir::ClassDeclaration *st) const
 checker::Type *ETSAnalyzer::Check(ir::ContinueStatement *st) const
 {
     ETSChecker *checker = GetETSChecker();
-    st->target_ = checker->FindJumpTarget(st->Type(), st, st->Ident());
+    st->target_ = checker->FindJumpTarget(st->Type(), st, st->Label());
     return nullptr;
 }
 

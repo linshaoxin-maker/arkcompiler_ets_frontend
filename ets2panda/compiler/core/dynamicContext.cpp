@@ -42,7 +42,7 @@ DynamicContext::~DynamicContext()
 }
 
 LabelContext::LabelContext(CodeGen *cg, const ir::LabelledStatement *labelledStmt)
-    : DynamicContext(cg, LabelTarget(labelledStmt->Ident()->Name())), labelledStmt_(labelledStmt)
+    : DynamicContext(cg, LabelTarget(labelledStmt->Name())), labelledStmt_(labelledStmt)
 {
     if (!labelledStmt->Body()->IsBlockStatement()) {
         return;
@@ -263,10 +263,10 @@ void ETSTryContext::EmitFinalizer(
                 etsg->ReturnAcc(tryStmt_);
             }
         } else if (insertion.second->IsBreakStatement()) {
-            compiler::Label *target = etsg->ControlFlowChangeBreak(insertion.second->AsBreakStatement()->Ident());
+            compiler::Label *target = etsg->ControlFlowChangeBreak(insertion.second->AsBreakStatement()->Label());
             etsg->Branch(tryStmt_, target);
         } else if (insertion.second->IsContinueStatement()) {
-            compiler::Label *target = etsg->ControlFlowChangeContinue(insertion.second->AsContinueStatement()->Ident());
+            compiler::Label *target = etsg->ControlFlowChangeContinue(insertion.second->AsContinueStatement()->Label());
             etsg->Branch(tryStmt_, target);
         } else {
             UNREACHABLE();
