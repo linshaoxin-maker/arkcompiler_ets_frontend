@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 - 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021 - 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -72,21 +72,21 @@ ir::Expression *CreateTestExpression(ir::Identifier *id, CompilerContext *ctx, i
 
 ir::Expression *CheckBinaryBranch(ir::Expression *ast, CompilerContext *ctx)
 {
-    auto updateExpression = [ctx](ir::Expression *object, ir::Expression *ast) -> ir::Expression * {
+    auto updateExpression = [ctx](ir::Expression *object, ir::Expression *node) -> ir::Expression * {
         if (object->IsIdentifier() && object->AsIdentifier()->Variable() != nullptr) {
             auto *checker = ctx->Checker()->AsETSChecker();
             auto *type = checker->GetTypeOfVariable(object->AsIdentifier()->Variable());
             ASSERT(type != nullptr);
 
             if (!type->IsETSEnumType()) {
-                return ast;
+                return node;
             }
 
-            auto *callExpr = CreateCallExpression(ast, checker);
+            auto *callExpr = CreateCallExpression(node, checker);
 
             return callExpr;
         }
-        return ast;
+        return node;
     };
     if (ast->IsMemberExpression()) {
         // i.e. we have following:
