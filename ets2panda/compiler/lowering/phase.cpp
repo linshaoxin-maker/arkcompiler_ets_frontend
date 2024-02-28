@@ -15,23 +15,28 @@
 
 #include "phase.h"
 #include "checker/checker.h"
-#include "compiler/core/ASTVerifier.h"
 #include "compiler/core/compilerContext.h"
-#include "compiler/lowering/ets/objectIndexAccess.h"
-#include "lexer/token/sourceLocation.h"
 #include "compiler/lowering/checkerPhase.h"
-#include "compiler/lowering/plugin_phase.h"
-#include "compiler/lowering/scopesInit/scopesInitPhase.h"
+#include "compiler/lowering/ets/defaultParameterLowering.h"
 #include "compiler/lowering/ets/expandBrackets.h"
+#include "compiler/lowering/ets/recordLowering.h"
 #include "compiler/lowering/ets/generateDeclarations.h"
 #include "compiler/lowering/ets/lambdaLowering.h"
 #include "compiler/lowering/ets/interfacePropertyDeclarations.h"
+#include "compiler/lowering/ets/objectIndexAccess.h"
+#include "compiler/lowering/ets/objectIterator.h"
 #include "compiler/lowering/ets/opAssignment.h"
-#include "compiler/lowering/ets/tupleLowering.h"
-#include "compiler/lowering/ets/unionLowering.h"
-#include "compiler/lowering/ets/structLowering.h"
-#include "public/es2panda_lib.h"
+#include "compiler/lowering/ets/optionalLowering.h"
 #include "compiler/lowering/ets/promiseVoid.h"
+#include "compiler/lowering/ets/structLowering.h"
+#include "compiler/lowering/ets/tupleLowering.h"
+#include "compiler/lowering/ets/bigintLowering.h"
+#include "compiler/lowering/ets/unionLowering.h"
+#include "compiler/lowering/plugin_phase.h"
+#include "compiler/lowering/scopesInit/scopesInitPhase.h"
+#include "ets/defaultParameterLowering.h"
+#include "lexer/token/sourceLocation.h"
+#include "public/es2panda_lib.h"
 #include "utils/json_builder.h"
 
 namespace ark::es2panda::compiler {
@@ -45,16 +50,21 @@ std::vector<Phase *> GetTrivialPhaseList()
     };
 }
 
+static BigIntLowering g_bigintLowering;
 static InterfacePropertyDeclarationsPhase g_interfacePropDeclPhase;
 static GenerateTsDeclarationsPhase g_generateTsDeclarationsPhase;
 static LambdaConstructionPhase g_lambdaConstructionPhase;
 static OpAssignmentLowering g_opAssignmentLowering;
 static ObjectIndexLowering g_objectIndexLowering;
+static ObjectIteratorLowering g_objectIteratorLowering;
 static TupleLowering g_tupleLowering;  // Can be only applied after checking phase, and OP_ASSIGNMENT_LOWERING phase
 static UnionLowering g_unionLowering;
+static OptionalLowering g_optionalLowering;
 static ExpandBracketsPhase g_expandBracketsPhase;
 static PromiseVoidInferencePhase g_promiseVoidInferencePhase;
+static RecordLowering g_recordLowering;
 static StructLowering g_structLowering;
+static DefaultParameterLowering g_defaultParameterLowering;
 static PluginPhase g_pluginsAfterParse {"plugins-after-parse", ES2PANDA_STATE_PARSED, &util::Plugin::AfterParse};
 static PluginPhase g_pluginsAfterCheck {"plugins-after-check", ES2PANDA_STATE_CHECKED, &util::Plugin::AfterCheck};
 static PluginPhase g_pluginsAfterLowerings {"plugins-after-lowering", ES2PANDA_STATE_LOWERED,
@@ -69,11 +79,26 @@ static InitScopesPhaseJs g_initScopesPhaseJs;
 std::vector<Phase *> GetETSPhaseList()
 {
     return {
-        &g_pluginsAfterParse,    &g_initScopesPhaseEts,      &g_promiseVoidInferencePhase,
-        &g_structLowering,       &g_lambdaConstructionPhase, &g_interfacePropDeclPhase,
-        &g_checkerPhase,         &g_pluginsAfterCheck,       &g_generateTsDeclarationsPhase,
-        &g_opAssignmentLowering, &g_objectIndexLowering,     &g_tupleLowering,
-        &g_unionLowering,        &g_expandBracketsPhase,     &g_pluginsAfterLowerings,
+        &g_defaultParameterLowering,
+        &g_bigintLowering,
+        &g_pluginsAfterParse,
+        &g_initScopesPhaseEts,
+        &g_optionalLowering,
+        &g_promiseVoidInferencePhase,
+        &g_structLowering,
+        &g_lambdaConstructionPhase,
+        &g_interfacePropDeclPhase,
+        &g_checkerPhase,
+        &g_pluginsAfterCheck,
+        &g_generateTsDeclarationsPhase,
+        &g_opAssignmentLowering,
+        &g_recordLowering,
+        &g_objectIndexLowering,
+        &g_objectIteratorLowering,
+        &g_tupleLowering,
+        &g_unionLowering,
+        &g_expandBracketsPhase,
+        &g_pluginsAfterLowerings,
     };
 }
 

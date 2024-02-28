@@ -49,6 +49,7 @@ enum class ScriptExtension {
     TS,
     AS,
     ETS,
+    INVALID,
 };
 
 enum class CompilationMode {
@@ -68,6 +69,8 @@ inline Language ToLanguage(ScriptExtension ext)
             return Language(Language::Id::AS);
         case ScriptExtension::ETS:
             return Language(Language::Id::ETS);
+        default:
+            UNREACHABLE();
     }
     UNREACHABLE();
 }
@@ -99,6 +102,8 @@ struct CompilerOptions {
     bool dumpAsm {};
     bool dumpDebugInfo {};
     bool parseOnly {};
+    bool verifierAllChecks {};
+    bool verifierFullProgram {};
     std::string stdLib {};
     std::string tsDeclOut {};
     std::vector<std::string> plugins {};

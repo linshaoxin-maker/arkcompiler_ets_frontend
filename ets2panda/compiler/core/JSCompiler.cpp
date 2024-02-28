@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 - 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -542,6 +542,18 @@ void JSCompiler::Compile([[maybe_unused]] const ir::ETSTypeReference *expr) cons
 
 void JSCompiler::Compile([[maybe_unused]] const ir::ETSTypeReferencePart *expr) const
 {
+    UNREACHABLE();
+}
+
+void JSCompiler::Compile(const ir::ETSNullType *node) const
+{
+    (void)node;
+    UNREACHABLE();
+}
+
+void JSCompiler::Compile(const ir::ETSUndefinedType *node) const
+{
+    (void)node;
     UNREACHABLE();
 }
 
@@ -1229,6 +1241,27 @@ void JSCompiler::Compile(const ir::ThisExpression *expr) const
     }
 }
 
+void JSCompiler::Compile([[maybe_unused]] const ir::TypeofExpression *expr) const
+{
+    PandaGen *pg = GetPandaGen();
+
+    if (expr->Argument()->IsIdentifier()) {
+        const auto *ident = expr->Argument()->AsIdentifier();
+
+        auto res = pg->Scope()->Find(ident->Name());
+        if (res.variable == nullptr) {
+            pg->LoadConst(expr, compiler::Constant::JS_GLOBAL);
+            pg->LoadObjByName(expr, ident->Name());
+        } else {
+            pg->LoadVar(ident, res);
+        }
+    } else {
+        expr->Argument()->Compile(pg);
+    }
+
+    pg->TypeOf(expr);
+}
+
 void JSCompiler::Compile(const ir::UnaryExpression *expr) const
 {
     PandaGen *pg = GetPandaGen();
@@ -1267,24 +1300,6 @@ void JSCompiler::Compile(const ir::UnaryExpression *expr) const
                 // Deleting any value or a result of an expression returns True.
                 pg->LoadConst(expr, compiler::Constant::JS_TRUE);
             }
-            break;
-        }
-        case lexer::TokenType::KEYW_TYPEOF: {
-            if (expr->Argument()->IsIdentifier()) {
-                const auto *ident = expr->Argument()->AsIdentifier();
-
-                auto res = pg->Scope()->Find(ident->Name());
-                if (res.variable == nullptr) {
-                    pg->LoadConst(expr, compiler::Constant::JS_GLOBAL);
-                    pg->LoadObjByName(expr, ident->Name());
-                } else {
-                    pg->LoadVar(ident, res);
-                }
-            } else {
-                expr->Argument()->Compile(pg);
-            }
-
-            pg->TypeOf(expr);
             break;
         }
         case lexer::TokenType::KEYW_VOID: {

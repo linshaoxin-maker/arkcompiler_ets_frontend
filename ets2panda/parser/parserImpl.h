@@ -232,6 +232,7 @@ protected:
     void ValidateUpdateExpression(ir::Expression *returnExpression, bool isChainExpression);
     ir::Expression *ParseMemberExpression(bool ignoreCallExpression = false,
                                           ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
+    ir::Expression *SetupChainExpr(ir::Expression *const top, lexer::SourcePosition startLoc);
     ir::MetaProperty *ParsePotentialNewTarget();
     void CheckInvalidDestructuring(const ir::AstNode *object) const;
     void ValidateParenthesizedExpression(ir::Expression *lhsExpression);
@@ -490,6 +491,10 @@ protected:
     // NOLINTNEXTLINE(google-default-arguments)
     virtual ir::Expression *ParseUnaryOrPrefixUpdateExpression(
         ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
+    virtual ir::Expression *ParsePrimaryExpressionWithLiterals(ExpressionParseFlags flags);
+    ir::Expression *ParseHashMaskOperator();
+    ir::Expression *ParseClassExpression();
+    ir::Expression *ParsePunctuators(ExpressionParseFlags flags);
     // NOLINTNEXTLINE(google-default-arguments)
     virtual ir::Expression *ParsePrimaryExpression(ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
     virtual ir::Expression *ParsePostPrimaryExpression(ir::Expression *primaryExpr, lexer::SourcePosition startLoc,

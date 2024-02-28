@@ -1,8 +1,0 @@
-{
-  "IdentifierCache": {
-    "#Person5": "b1"
-  },
-  "MemberMethodCache": {
-    "prop_func:20:22": "q"
-  }
-}

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -76,6 +76,8 @@
     _(SCRIPT_FUNCTION, ScriptFunction)                                                    \
     _(SEQUENCE_EXPRESSION, SequenceExpression)                                            \
     _(STRING_LITERAL, StringLiteral)                                                      \
+    _(ETS_NULL_TYPE, ETSNullType)                                                         \
+    _(ETS_UNDEFINED_TYPE, ETSUndefinedType)                                               \
     _(ETS_FUNCTION_TYPE, ETSFunctionType)                                                 \
     _(ETS_WILDCARD_TYPE, ETSWildcardType)                                                 \
     _(ETS_PRIMITIVE_TYPE, ETSPrimitiveType)                                               \
@@ -154,6 +156,7 @@
     _(TEMPLATE_ELEMENT, TemplateElement)                                                  \
     _(TEMPLATE_LITERAL, TemplateLiteral)                                                  \
     _(THIS_EXPRESSION, ThisExpression)                                                    \
+    _(TYPEOF_EXPRESSION, TypeofExpression)                                                \
     _(THROW_STATEMENT, ThrowStatement)                                                    \
     _(TRY_STATEMENT, TryStatement)                                                        \
     _(UNARY_EXPRESSION, UnaryExpression)                                                  \

@@ -81,6 +81,8 @@ namespace panda::es2panda::parser {
 
 ir::YieldExpression *ParserImpl::ParseYieldExpression()
 {
+    // Prevent stack overflow caused by nesting too many yields. For example: yield yield...
+    CHECK_PARSER_RECURSIVE_DEPTH;
     ASSERT(lexer_->GetToken().Type() == lexer::TokenType::KEYW_YIELD);
 
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
@@ -150,6 +152,8 @@ ir::TSAsExpression *ParserImpl::ParseTsAsExpression(ir::Expression *expr, [[mayb
     if (Extension() == ScriptExtension::TS && lexer_->GetToken().Type() == lexer::TokenType::LITERAL_IDENT &&
         lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_AS &&
         !(flags & ExpressionParseFlags::EXP_DISALLOW_AS)) {
+        // Prevent stack overflow caused by nesting too many as. For example: a as Int as Int...
+        CHECK_PARSER_RECURSIVE_DEPTH;
         return ParseTsAsExpression(asExpr, flags);
     }
 
@@ -863,7 +867,7 @@ ir::Expression *ParserImpl::ParseAssignmentExpression(ir::Expression *lhsExpress
     return lhsExpression;
 }
 
-ir::TemplateLiteral *ParserImpl::ParseTemplateLiteral()
+ir::TemplateLiteral *ParserImpl::ParseTemplateLiteral(bool isTaggedTemplate)
 {
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
 
@@ -873,14 +877,18 @@ ir::TemplateLiteral *ParserImpl::ParseTemplateLiteral()
     while (true) {
         lexer_->ResetTokenEnd();
         const auto startPos = lexer_->Save();
-
+        if (isTaggedTemplate) {
+            lexer_->AssignTokenTaggedTemplate();
+        }
         lexer_->ScanString<LEX_CHAR_BACK_TICK>();
         util::StringView cooked = lexer_->GetToken().String();
+        bool escapeError = lexer_->GetToken().EscapeError();
 
         lexer_->Rewind(startPos);
         auto [raw, end, scanExpression] = lexer_->ScanTemplateString();
 
         auto *element = AllocNode<ir::TemplateElement>(raw.View(), cooked);
+        element->SetEscapeError(escapeError);
         element->SetRange({lexer::SourcePosition {startPos.iterator.Index(), startPos.line},
                            lexer::SourcePosition {end, lexer_->Line()}});
         quasis.push_back(element);
@@ -1099,6 +1107,8 @@ ir::Expression *ParserImpl::ParsePrimaryExpression(ExpressionParseFlags flags)
             return regexpNode;
         }
         case lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET: {
+            // Prevent stack overflow caused by nesting too many '['. For example: [[[...
+            CHECK_PARSER_RECURSIVE_DEPTH;
             return ParseArrayExpression(CarryAllowTsParamAndPatternFlags(flags));
         }
         case lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS: {
@@ -1620,7 +1630,7 @@ bool ParserImpl::ParsePotentialTsGenericFunctionCall(ir::Expression **returnExpr
     }
 
     if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_BACK_TICK) {
-        ir::TemplateLiteral *propertyNode = ParseTemplateLiteral();
+        ir::TemplateLiteral *propertyNode = ParseTemplateLiteral(true);
         lexer::SourcePosition endLoc = propertyNode->End();
 
         *returnExpression = AllocNode<ir::TaggedTemplateExpression>(*returnExpression, propertyNode, typeParams);
@@ -1718,7 +1728,7 @@ ir::Expression *ParserImpl::ParsePostPrimaryExpression(ir::Expression *primaryEx
                 continue;
             }
             case lexer::TokenType::PUNCTUATOR_BACK_TICK: {
-                ir::TemplateLiteral *propertyNode = ParseTemplateLiteral();
+                ir::TemplateLiteral *propertyNode = ParseTemplateLiteral(true);
                 lexer::SourcePosition endLoc = propertyNode->End();
 
                 returnExpression = AllocNode<ir::TaggedTemplateExpression>(returnExpression, propertyNode, nullptr);
@@ -2368,6 +2378,8 @@ ir::Expression *ParserImpl::ParseUnaryOrPrefixUpdateExpression(ExpressionParseFl
     lexer::TokenType operatorType = lexer_->GetToken().Type();
     lexer::SourcePosition start = lexer_->GetToken().Start();
     lexer_->NextToken();
+    // Prevent stack overflow caused by nesting too many unary opration. For example: !!!!!!...
+    CHECK_PARSER_RECURSIVE_DEPTH;
     ir::Expression *argument = ParseUnaryOrPrefixUpdateExpression();
 
     if (lexer::Token::IsUpdateToken(operatorType)) {
