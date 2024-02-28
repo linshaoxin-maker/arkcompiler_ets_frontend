@@ -250,21 +250,7 @@
                     },
                     {
                       "type": "LabelledStatement",
-                      "label": {
-                        "type": "Identifier",
-                        "name": "label",
-                        "decorators": [],
-                        "loc": {
-                          "start": {
-                            "line": 18,
-                            "column": 2
-                          },
-                          "end": {
-                            "line": 18,
-                            "column": 7
-                          }
-                        }
-                      },
+                      "label": "label",
                       "body": {
                         "type": "SwitchStatement",
                         "discriminant": {
@@ -430,21 +416,7 @@
                             "consequent": [
                               {
                                 "type": "BreakStatement",
-                                "label": {
-                                  "type": "Identifier",
-                                  "name": "label",
-                                  "decorators": [],
-                                  "loc": {
-                                    "start": {
-                                      "line": 24,
-                                      "column": 10
-                                    },
-                                    "end": {
-                                      "line": 24,
-                                      "column": 15
-                                    }
-                                  }
-                                },
+                                "label": "label",
                                 "loc": {
                                   "start": {
                                     "line": 24,

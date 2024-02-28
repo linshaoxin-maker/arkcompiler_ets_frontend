@@ -319,7 +319,7 @@
                           "consequent": [
                             {
                               "type": "BreakStatement",
-                              "label": null,
+                              "label": "",
                               "loc": {
                                 "start": {
                                   "line": 23,

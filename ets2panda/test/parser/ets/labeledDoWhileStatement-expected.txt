@@ -265,21 +265,7 @@
                     },
                     {
                       "type": "LabelledStatement",
-                      "label": {
-                        "type": "Identifier",
-                        "name": "label1",
-                        "decorators": [],
-                        "loc": {
-                          "start": {
-                            "line": 19,
-                            "column": 3
-                          },
-                          "end": {
-                            "line": 19,
-                            "column": 9
-                          }
-                        }
-                      },
+                      "label": "label1",
                       "body": {
                         "type": "DoWhileStatement",
                         "body": {
@@ -419,21 +405,7 @@
                                 "statements": [
                                   {
                                     "type": "ContinueStatement",
-                                    "label": {
-                                      "type": "Identifier",
-                                      "name": "label1",
-                                      "decorators": [],
-                                      "loc": {
-                                        "start": {
-                                          "line": 23,
-                                          "column": 16
-                                        },
-                                        "end": {
-                                          "line": 23,
-                                          "column": 22
-                                        }
-                                      }
-                                    },
+                                    "label": "label1",
                                     "loc": {
                                       "start": {
                                         "line": 23,
@@ -462,21 +434,7 @@
                                 "statements": [
                                   {
                                     "type": "BreakStatement",
-                                    "label": {
-                                      "type": "Identifier",
-                                      "name": "label1",
-                                      "decorators": [],
-                                      "loc": {
-                                        "start": {
-                                          "line": 25,
-                                          "column": 13
-                                        },
-                                        "end": {
-                                          "line": 25,
-                                          "column": 19
-                                        }
-                                      }
-                                    },
+                                    "label": "label1",
                                     "loc": {
                                       "start": {
                                         "line": 25,

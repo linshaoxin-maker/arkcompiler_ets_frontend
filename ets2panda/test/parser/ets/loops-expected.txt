@@ -340,7 +340,7 @@
                       },
                       "body": {
                         "type": "ContinueStatement",
-                        "label": null,
+                        "label": "",
                         "loc": {
                           "start": {
                             "line": 17,
@@ -541,7 +541,7 @@
                       },
                       "body": {
                         "type": "ContinueStatement",
-                        "label": null,
+                        "label": "",
                         "loc": {
                           "start": {
                             "line": 19,
@@ -787,7 +787,7 @@
                         "statements": [
                           {
                             "type": "ContinueStatement",
-                            "label": null,
+                            "label": "",
                             "loc": {
                               "start": {
                                 "line": 23,
@@ -1017,7 +1017,7 @@
                       },
                       "body": {
                         "type": "BreakStatement",
-                        "label": null,
+                        "label": "",
                         "loc": {
                           "start": {
                             "line": 31,
@@ -1626,21 +1626,7 @@
                   "statements": [
                     {
                       "type": "LabelledStatement",
-                      "label": {
-                        "type": "Identifier",
-                        "name": "loop1",
-                        "decorators": [],
-                        "loc": {
-                          "start": {
-                            "line": 47,
-                            "column": 3
-                          },
-                          "end": {
-                            "line": 47,
-                            "column": 8
-                          }
-                        }
-                      },
+                      "label": "loop1",
                       "body": {
                         "type": "ForUpdateStatement",
                         "init": {
@@ -1779,21 +1765,7 @@
                           "statements": [
                             {
                               "type": "LabelledStatement",
-                              "label": {
-                                "type": "Identifier",
-                                "name": "loop2",
-                                "decorators": [],
-                                "loc": {
-                                  "start": {
-                                    "line": 49,
-                                    "column": 5
-                                  },
-                                  "end": {
-                                    "line": 49,
-                                    "column": 10
-                                  }
-                                }
-                              },
+                              "label": "loop2",
                               "body": {
                                 "type": "ForUpdateStatement",
                                 "init": {
@@ -1932,21 +1904,7 @@
                                   "statements": [
                                     {
                                       "type": "BreakStatement",
-                                      "label": {
-                                        "type": "Identifier",
-                                        "name": "loop1",
-                                        "decorators": [],
-                                        "loc": {
-                                          "start": {
-                                            "line": 51,
-                                            "column": 13
-                                          },
-                                          "end": {
-                                            "line": 51,
-                                            "column": 18
-                                          }
-                                        }
-                                      },
+                                      "label": "loop1",
                                       "loc": {
                                         "start": {
                                           "line": 51,
@@ -2164,21 +2122,7 @@
                   "statements": [
                     {
                       "type": "LabelledStatement",
-                      "label": {
-                        "type": "Identifier",
-                        "name": "loop1",
-                        "decorators": [],
-                        "loc": {
-                          "start": {
-                            "line": 58,
-                            "column": 3
-                          },
-                          "end": {
-                            "line": 58,
-                            "column": 8
-                          }
-                        }
-                      },
+                      "label": "loop1",
                       "body": {
                         "type": "ForUpdateStatement",
                         "init": {
@@ -2317,21 +2261,7 @@
                           "statements": [
                             {
                               "type": "LabelledStatement",
-                              "label": {
-                                "type": "Identifier",
-                                "name": "loop2",
-                                "decorators": [],
-                                "loc": {
-                                  "start": {
-                                    "line": 60,
-                                    "column": 5
-                                  },
-                                  "end": {
-                                    "line": 60,
-                                    "column": 10
-                                  }
-                                }
-                              },
+                              "label": "loop2",
                               "body": {
                                 "type": "ForUpdateStatement",
                                 "init": {
@@ -2470,21 +2400,7 @@
                                   "statements": [
                                     {
                                       "type": "ContinueStatement",
-                                      "label": {
-                                        "type": "Identifier",
-                                        "name": "loop1",
-                                        "decorators": [],
-                                        "loc": {
-                                          "start": {
-                                            "line": 62,
-                                            "column": 16
-                                          },
-                                          "end": {
-                                            "line": 62,
-                                            "column": 21
-                                          }
-                                        }
-                                      },
+                                      "label": "loop1",
                                       "loc": {
                                         "start": {
                                           "line": 62,

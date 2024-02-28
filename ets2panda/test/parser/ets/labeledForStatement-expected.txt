@@ -207,21 +207,7 @@
                   "statements": [
                     {
                       "type": "LabelledStatement",
-                      "label": {
-                        "type": "Identifier",
-                        "name": "label1",
-                        "decorators": [],
-                        "loc": {
-                          "start": {
-                            "line": 17,
-                            "column": 3
-                          },
-                          "end": {
-                            "line": 17,
-                            "column": 9
-                          }
-                        }
-                      },
+                      "label": "label1",
                       "body": {
                         "type": "ForUpdateStatement",
                         "init": {
@@ -408,21 +394,7 @@
                                 "statements": [
                                   {
                                     "type": "ContinueStatement",
-                                    "label": {
-                                      "type": "Identifier",
-                                      "name": "label1",
-                                      "decorators": [],
-                                      "loc": {
-                                        "start": {
-                                          "line": 20,
-                                          "column": 16
-                                        },
-                                        "end": {
-                                          "line": 20,
-                                          "column": 22
-                                        }
-                                      }
-                                    },
+                                    "label": "label1",
                                     "loc": {
                                       "start": {
                                         "line": 20,
@@ -451,21 +423,7 @@
                                 "statements": [
                                   {
                                     "type": "BreakStatement",
-                                    "label": {
-                                      "type": "Identifier",
-                                      "name": "label1",
-                                      "decorators": [],
-                                      "loc": {
-                                        "start": {
-                                          "line": 22,
-                                          "column": 13
-                                        },
-                                        "end": {
-                                          "line": 22,
-                                          "column": 19
-                                        }
-                                      }
-                                    },
+                                    "label": "label1",
                                     "loc": {
                                       "start": {
                                         "line": 22,
@@ -536,21 +494,7 @@
                     },
                     {
                       "type": "LabelledStatement",
-                      "label": {
-                        "type": "Identifier",
-                        "name": "label2",
-                        "decorators": [],
-                        "loc": {
-                          "start": {
-                            "line": 26,
-                            "column": 3
-                          },
-                          "end": {
-                            "line": 26,
-                            "column": 9
-                          }
-                        }
-                      },
+                      "label": "label2",
                       "body": {
                         "type": "ForUpdateStatement",
                         "init": {
@@ -930,21 +874,7 @@
                                       "statements": [
                                         {
                                           "type": "ContinueStatement",
-                                          "label": {
-                                            "type": "Identifier",
-                                            "name": "label2",
-                                            "decorators": [],
-                                            "loc": {
-                                              "start": {
-                                                "line": 30,
-                                                "column": 18
-                                              },
-                                              "end": {
-                                                "line": 30,
-                                                "column": 24
-                                              }
-                                            }
-                                          },
+                                          "label": "label2",
                                           "loc": {
                                             "start": {
                                               "line": 30,
@@ -973,21 +903,7 @@
                                       "statements": [
                                         {
                                           "type": "BreakStatement",
-                                          "label": {
-                                            "type": "Identifier",
-                                            "name": "label2",
-                                            "decorators": [],
-                                            "loc": {
-                                              "start": {
-                                                "line": 32,
-                                                "column": 15
-                                              },
-                                              "end": {
-                                                "line": 32,
-                                                "column": 21
-                                              }
-                                            }
-                                          },
+                                          "label": "label2",
                                           "loc": {
                                             "start": {
                                               "line": 32,

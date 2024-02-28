@@ -8407,7 +8407,7 @@
                               "statements": [
                                 {
                                   "type": "ContinueStatement",
-                                  "label": null,
+                                  "label": "",
                                   "loc": {
                                     "start": {
                                       "line": 54,
