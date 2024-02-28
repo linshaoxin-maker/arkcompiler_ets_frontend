@@ -81,10 +81,10 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
         if (0)
             std::cout << __func__ << ":" << __LINE__ << ": [DEBUG] got 1" << std::endl;
         if (expr->IsBinaryExpression() &&
-            (!expr->AsBinaryExpression()->IsPostBitSet(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED))) {
-            ThrowTypeError("Condition must be of possible condition type", expr->Start());
+            (expr->AsBinaryExpression()->IsPostBitSet(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED))) {
+            return;
         }
-        return;
+        ThrowTypeError("Condition must be of possible condition type", expr->Start());
     }
 
     if (unboxedType == GlobalBuiltinVoidType() || unboxedType->IsETSVoidType()) {
