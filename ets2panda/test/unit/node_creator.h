@@ -25,6 +25,9 @@
 #include "ir/expressions/binaryExpression.h"
 #include "ir/expressions/updateExpression.h"
 
+#ifndef ES2PANDA_TEST_UNIT_NODE_CREATOR_H
+#define ES2PANDA_TEST_UNIT_NODE_CREATOR_H
+
 namespace panda::es2panda::gtests {
 
 class NodeGenerator {
@@ -83,3 +86,5 @@ private:
     ArenaAllocator *const alloc_;
 };
 }  // namespace panda::es2panda::gtests
+
+#endif
