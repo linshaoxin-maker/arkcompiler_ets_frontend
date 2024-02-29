@@ -215,7 +215,7 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<bool> opTypeDtsBuiltin("type-dts-builtin", false, "Enable builtin type extractor for .d.ts file");
 
     // compiler
-    panda::PandArg<bool> opEnableAbcInput("enable-abc-input", false, "Support for abc files as input");
+    panda::PandArg<bool> opEnableAbcInput("enable-abc-input", false, "Support abc files as input");
     panda::PandArg<bool> opDumpAsmProgram("dump-asm-program", false, "Dump pandasm program");
     panda::PandArg<bool> opDumpAssembly("dump-assembly", false, "Dump pandasm");
     panda::PandArg<bool> opDebugInfo("debug-info", false, "Compile with debug info");
