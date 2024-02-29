@@ -112,7 +112,11 @@ static char const *StringViewToCString(ArenaAllocator *allocator, util::StringVi
         return utf8.data();
     }
     char *res = reinterpret_cast<char *>(allocator->Alloc(utf8.size() + 1));
-    memmove(res, utf8.cbegin(), utf8.size());
+    auto err = memmove_s(res, utf8.size() + 1, utf8.cbegin(), utf8.size());
+    ASSERT(err == EOK);
+    if (err != EOK) {
+        return nullptr;
+    }
     res[utf8.size()] = '\0';
     return res;
     // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic, readability-simplify-subscript-expr)
@@ -122,8 +126,11 @@ static char const *ArenaStrdup(ArenaAllocator *allocator, char const *src)
 {
     size_t len = strlen(src);
     char *res = reinterpret_cast<char *>(allocator->Alloc(len + 1));
-    memmove(res, src, len);
-
+    auto err = memmove_s(res, len + 1, src, len);
+    ASSERT(err == EOK);
+    if (err != EOK) {
+        return nullptr;
+    }
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     res[len] = '\0';
     return res;
