@@ -599,7 +599,7 @@ class AbcToAsmTest(Test):
         abc_to_asm_output = abc_to_asm_out.decode("utf-8", errors="ignore") + abc_to_asm_err.decode("utf-8", errors="ignore")
         try:
             self.passed = gen_abc_output == abc_to_asm_output and process.returncode in [0, 1]
-        except: Exception:
+        except Exception:
             self.passed = False
         
         if os.path.exists(output_abc_file)
