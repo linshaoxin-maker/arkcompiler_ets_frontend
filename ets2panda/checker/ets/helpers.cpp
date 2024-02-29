@@ -1041,7 +1041,6 @@ checker::Type *ETSChecker::CheckArrayElements(ir::Identifier *ident, ir::ArrayEx
 checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *typeAnnotation,
                                                     ir::Expression *init, ir::ModifierFlags flags)
 {
-    const util::StringView &varName = ident->Name();
     ASSERT(ident->Variable());
     varbinder::Variable *const bindingVar = ident->Variable();
     checker::Type *annotationType = nullptr;
@@ -1130,12 +1129,6 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
             bindingVar->SetTsType(init->TsType());
         }
         return bindingVar->TsType();
-    }
-
-    if (initType->IsETSObjectType() && initType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::ENUM) &&
-        !init->IsMemberExpression()) {
-        ThrowTypeError({"Cannot assign type '", initType->AsETSObjectType()->Name(), "' for variable ", varName, "."},
-                       init->Start());
     }
 
     isConst ? bindingVar->SetTsType(initType) : bindingVar->SetTsType(GetNonConstantTypeFromPrimitiveType(initType));

@@ -151,9 +151,6 @@ public:
                          const lexer::SourcePosition &pos)
         : checker_(checker)
     {
-        if (type->HasObjectFlag(ETSObjectFlags::ENUM)) {
-            return;
-        }
         InstantiateType(type, typeArgs, pos);
     }
 
