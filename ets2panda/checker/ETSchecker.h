@@ -452,6 +452,8 @@ public:
                                       bool isCondExpr = false);
     Type *HandleBooleanLogicalOperators(Type *leftType, Type *rightType, lexer::TokenType tokenType);
     Type *HandleBooleanLogicalOperatorsExtended(Type *leftType, Type *rightType, ir::BinaryExpression *expr);
+    void VariableDeclCheckHelper(ir::Identifier *ident, ir::TypeNode *typeAnnotation, ir::Expression *init,
+                                 checker::Type *annotationType, varbinder::Variable *const bindingVar);
     checker::Type *CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *typeAnnotation, ir::Expression *init,
                                             ir::ModifierFlags flags);
     void CheckTruthinessOfType(ir::Expression *expr);
@@ -493,6 +495,7 @@ public:
     Type *MaybePromotedBuiltinType(Type *type) const;
     Type const *MaybePromotedBuiltinType(Type const *type) const;
     Type *MaybePrimitiveBuiltinType(Type *type) const;
+    void CompareSwitchCases(size_t caseNum, ArenaVector<ir::SwitchCaseStatement *> *cases);
     void CheckForSameSwitchCases(ArenaVector<ir::SwitchCaseStatement *> *cases);
     std::string GetStringFromIdentifierValue(checker::Type *caseType) const;
     bool CompareIdentifiersValuesAreDifferent(ir::Expression *compareValue, const std::string &caseValue);

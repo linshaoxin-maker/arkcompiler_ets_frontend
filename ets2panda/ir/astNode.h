@@ -650,6 +650,7 @@ protected:
         : Annotated<AstNode>(type, typeAnnotation)
     {
     }
+
     explicit AnnotatedAstNode(AstNodeType const type) : Annotated<AstNode>(type) {}
     explicit AnnotatedAstNode(AstNodeType const type, ModifierFlags const flags) : Annotated<AstNode>(type, flags) {}
 

@@ -124,13 +124,131 @@ ir::AstNode *UpdateMemberExpression(ir::AstNode *ast, CompilerContext *ctx)
     return ast;
 }
 
+ir::Expression *GetTestExpression(ir::AstNode *ast)
+{
+    ASSERT(ast != nullptr);
+    ASSERT(ast->IsIfStatement() || ast->IsWhileStatement() || ast->IsDoWhileStatement() ||
+           ast->IsForUpdateStatement() || ast->IsConditionalExpression());
+    ir::Expression *test = nullptr;
+
+    if (ast->IsIfStatement()) {
+        test = ast->AsIfStatement()->Test();
+    } else if (ast->IsWhileStatement()) {
+        test = ast->AsWhileStatement()->Test();
+    } else if (ast->IsDoWhileStatement()) {
+        test = ast->AsDoWhileStatement()->Test();
+    } else if (ast->IsForUpdateStatement()) {
+        test = ast->AsForUpdateStatement()->Test();
+    } else if (ast->IsConditionalExpression()) {
+        test = ast->AsConditionalExpression()->Test();
+    }
+    return test;
+}
+
+void SetTestExpression(ir::Expression *testExpr, ir::AstNode *ast)
+{
+    ASSERT(testExpr != nullptr);
+    ASSERT(ast->IsIfStatement() || ast->IsWhileStatement() || ast->IsDoWhileStatement() ||
+           ast->IsForUpdateStatement() || ast->IsConditionalExpression());
+
+    if (ast->IsIfStatement()) {
+        ast->AsIfStatement()->SetTest(testExpr);
+    } else if (ast->IsWhileStatement()) {
+        ast->AsWhileStatement()->SetTest(testExpr);
+    } else if (ast->IsDoWhileStatement()) {
+        ast->AsDoWhileStatement()->SetTest(testExpr);
+    } else if (ast->IsForUpdateStatement()) {
+        ast->AsForUpdateStatement()->SetTest(testExpr);
+    } else if (ast->IsConditionalExpression()) {
+        ast->AsConditionalExpression()->SetTest(testExpr);
+    }
+    testExpr->SetParent(ast);
+}
+
+ir::Expression *UpdateCallExpression(ir::Expression *test, public_lib::Context *ctx)
+{
+    checker::ETSChecker *checker = ctx->checker->AsETSChecker();
+    // simple call expression with default non-zero test, i.e.
+    //
+    //   'if (v.getValue())'
+    //
+    // this wll always be treated as 'true' since getValue() returns the EnumConst
+    // object,but not the enum  value
+    //
+    // need  to checkif we're calling to getValue() for enum constant
+    // and convert it into binary expression with '!= 0' test, i.e.
+    //
+    //   'if (v.getValue() != 0)'
+    //
+    // same for loop expressions.
+    //
+    ir::Expression *callee = test->AsCallExpression()->Callee();
+    if (!((callee != nullptr) && (callee->IsMemberExpression()))) {
+        return nullptr;
+    }
+
+    if ((callee->AsMemberExpression()->Object() != nullptr) && callee->AsMemberExpression()->Object()->IsIdentifier()) {
+        auto *id = callee->AsMemberExpression()->Object()->AsIdentifier();
+        if (id->Variable() == nullptr) {
+            return nullptr;
+        }
+
+        auto *type = checker->GetTypeOfVariable(id->Variable());
+        ASSERT(type != nullptr);
+        if (!type->IsETSEnumType()) {
+            return nullptr;
+        }
+
+        if (ir::Expression *prop = callee->AsMemberExpression()->Property(); prop != nullptr) {
+            if (prop->IsIdentifier() && (prop->AsIdentifier()->Name() == g_enumGetvalueMethodName)) {
+                //  now we need to wrap it to the binary expression .. != 0
+                return CreateTestExpression(prop->AsIdentifier(), ctx->compilerContext, test->AsCallExpression());
+            }
+        }
+    }
+    return nullptr;
+}
+
+ir::AstNode *UpdateTestNode(ir::AstNode *ast, public_lib::Context *ctx)
+{
+    checker::ETSChecker *checker = ctx->checker->AsETSChecker();
+    ir::Expression *testExpr = nullptr;
+    ir::Expression *test = GetTestExpression(ast);
+    if (test == nullptr) {
+        return ast;
+    }
+
+    if (test->IsIdentifier()) {
+        // we got simple variable test expression, test against non-zero value
+        if (test->AsIdentifier()->Variable() == nullptr) {
+            return ast;
+        }
+        auto *type = checker->GetTypeOfVariable(test->AsIdentifier()->Variable());
+        ASSERT(type != nullptr);
+
+        if (!type->IsETSEnumType()) {
+            return ast;
+        }
+        // ok now we need  to replace 'if (v)' to 'if (v.getValue() != 0)'
+        // NOTE: what about string as enum constant?
+        testExpr = CreateTestExpression(test->AsIdentifier(), ctx->compilerContext, nullptr);
+    } else if (test->IsCallExpression()) {
+        testExpr = UpdateCallExpression(test, ctx);
+    }
+
+    if (testExpr == nullptr) {
+        return ast;
+    }
+
+    SetTestExpression(testExpr, ast);
+    return ast;
+}
+
 bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *program)
 {
     if (program->Extension() != ScriptExtension::ETS) {
         return true;
     }
-
-    [[maybe_unused]] checker::ETSChecker *checker = ctx->checker->AsETSChecker();
 
     for (auto &[_, extPrograms] : program->ExternalSources()) {
         (void)_;
@@ -139,7 +257,7 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
         }
     }
 
-    program->Ast()->TransformChildrenRecursively([checker, ctx](ir::AstNode *ast) -> ir::AstNode * {
+    program->Ast()->TransformChildrenRecursively([ctx](ir::AstNode *ast) -> ir::AstNode * {
         if (ast->IsBinaryExpression()) {
             if (ast->AsBinaryExpression()->IsPostBitSet(
                     ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) {
@@ -149,99 +267,11 @@ bool EnumLoweringPostPhase::Perform(public_lib::Context *ctx, parser::Program *p
         }
         if (ast->IsIfStatement() || ast->IsWhileStatement() || ast->IsDoWhileStatement() ||
             ast->IsForUpdateStatement() || ast->IsConditionalExpression()) {
-            ir::Expression *test = nullptr;
-            ir::Expression *testExpr = nullptr;
-
-            if (ast->IsIfStatement()) {
-                test = ast->AsIfStatement()->Test();
-            } else if (ast->IsWhileStatement()) {
-                test = ast->AsWhileStatement()->Test();
-            } else if (ast->IsDoWhileStatement()) {
-                test = ast->AsDoWhileStatement()->Test();
-            } else if (ast->IsForUpdateStatement()) {
-                test = ast->AsForUpdateStatement()->Test();
-            } else if (ast->IsConditionalExpression()) {
-                test = ast->AsConditionalExpression()->Test();
-            }
-
-            if (test == nullptr) {
-                return ast;
-            }
-            if (test->IsIdentifier()) {
-                // we got simple variable test expression, test against non-zero value
-                if (test->AsIdentifier()->Variable() == nullptr) {
-                    return ast;
-                }
-                auto *type = checker->GetTypeOfVariable(test->AsIdentifier()->Variable());
-                ASSERT(type != nullptr);
-
-                if (!type->IsETSEnumType()) {
-                    return ast;
-                }
-                // ok now we need  to replace 'if (v)' to 'if (v.getValue() != 0)'
-                // NOTE: what about string as enum constant?
-                testExpr = CreateTestExpression(test->AsIdentifier(), ctx->compilerContext, nullptr);
-
-            } else if (test->IsCallExpression()) {
-                // simple call expression with default non-zero test, i.e.
-                //
-                //   'if (v.getValue())'
-                //
-                // this wll always be treated as 'true' since getValue() returns the EnumConst
-                // object,but not the enum  value
-                //
-                // need  to checkif we're calling to getValue() for enum constant
-                // and convert it into binary expression with '!= 0' test, i.e.
-                //
-                //   'if (v.getValue() != 0)'
-                //
-                // same for loop expressions.
-                //
-                if (ir::Expression *callee = test->AsCallExpression()->Callee();
-                    (callee != nullptr) && (callee->IsMemberExpression())) {
-                    if ((callee->AsMemberExpression()->Object() != nullptr) &&
-                        callee->AsMemberExpression()->Object()->IsIdentifier()) {
-                        auto *id = callee->AsMemberExpression()->Object()->AsIdentifier();
-                        if (id->Variable() == nullptr) {
-                            return ast;
-                        }
-                        auto *type = checker->GetTypeOfVariable(id->Variable());
-                        ASSERT(type != nullptr);
-                        if (!type->IsETSEnumType()) {
-                            return ast;
-                        }
-
-                        if (ir::Expression *prop = callee->AsMemberExpression()->Property(); prop != nullptr) {
-                            if (prop->IsIdentifier() && (prop->AsIdentifier()->Name() == g_enumGetvalueMethodName)) {
-                                //  now we need to wrap it to the binary expression .. != 0
-                                testExpr = CreateTestExpression(prop->AsIdentifier(), ctx->compilerContext,
-                                                                test->AsCallExpression());
-                            }
-                        }
-                    }
-                }
-            }
-            if (testExpr == nullptr) {
-                return ast;
-            }
-            if (ast->IsIfStatement()) {
-                ast->AsIfStatement()->SetTest(testExpr);
-            } else if (ast->IsWhileStatement()) {
-                ast->AsWhileStatement()->SetTest(testExpr);
-            } else if (ast->IsDoWhileStatement()) {
-                ast->AsDoWhileStatement()->SetTest(testExpr);
-            } else if (ast->IsForUpdateStatement()) {
-                ast->AsForUpdateStatement()->SetTest(testExpr);
-            } else if (ast->IsConditionalExpression()) {
-                ast->AsConditionalExpression()->SetTest(testExpr);
-            }
-            testExpr->SetParent(ast);
-            return ast;
+            return UpdateTestNode(ast, ctx);
         }
         return ast;
     });
 
     return true;
 }
-
 }  // namespace ark::es2panda::compiler

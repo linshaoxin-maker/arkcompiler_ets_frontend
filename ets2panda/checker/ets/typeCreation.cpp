@@ -371,7 +371,6 @@ bool IsEnumClass(ir::AstNode *declNode)
         declNode->AsClassDefinition()->Super()->IsETSTypeReference()) {
         auto superType = declNode->AsClassDefinition()->Super()->AsETSTypeReference();
         auto typeName = superType->BaseName()->Name();
-
         if (typeName == "EnumIntType" || typeName == "EnumStrType") {
             return true;
         }

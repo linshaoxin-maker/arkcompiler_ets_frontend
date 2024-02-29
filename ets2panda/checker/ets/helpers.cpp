@@ -1038,24 +1038,9 @@ checker::Type *ETSChecker::CheckArrayElements(ir::Identifier *ident, ir::ArrayEx
     return annotationType;
 }
 
-checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *typeAnnotation,
-                                                    ir::Expression *init, ir::ModifierFlags flags)
+void ETSChecker::VariableDeclCheckHelper(ir::Identifier *ident, ir::TypeNode *typeAnnotation, ir::Expression *init,
+                                         checker::Type *annotationType, varbinder::Variable *const bindingVar)
 {
-    ASSERT(ident->Variable());
-    varbinder::Variable *const bindingVar = ident->Variable();
-    checker::Type *annotationType = nullptr;
-
-    const bool isConst = (flags & ir::ModifierFlags::CONST) != 0;
-
-    if (typeAnnotation != nullptr) {
-        annotationType = typeAnnotation->GetType(this);
-        bindingVar->SetTsType(annotationType);
-    }
-
-    if (init == nullptr) {
-        return annotationType;
-    }
-
     if (typeAnnotation == nullptr) {
         if (init->IsArrayExpression()) {
             annotationType = CheckArrayElements(ident, init->AsArrayExpression());
@@ -1098,6 +1083,27 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
             InferTypesForLambda(lambda, typeAnnotation->AsETSFunctionType());
         }
     }
+}
+checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *typeAnnotation,
+                                                    ir::Expression *init, ir::ModifierFlags flags)
+{
+    ASSERT(ident->Variable());
+    varbinder::Variable *const bindingVar = ident->Variable();
+    checker::Type *annotationType = nullptr;
+
+    const bool isConst = (flags & ir::ModifierFlags::CONST) != 0;
+
+    if (typeAnnotation != nullptr) {
+        annotationType = typeAnnotation->GetType(this);
+        bindingVar->SetTsType(annotationType);
+    }
+
+    if (init == nullptr) {
+        return annotationType;
+    }
+
+    VariableDeclCheckHelper(ident, typeAnnotation, init, annotationType, bindingVar);
+
     checker::Type *initType = init->Check(this);
 
     if (initType == nullptr) {
@@ -1952,41 +1958,46 @@ Type *ETSChecker::MaybeBoxedType(const varbinder::Variable *var, ArenaAllocator 
     return varType;
 }
 
+void ETSChecker::CompareSwitchCases(size_t caseNum, ArenaVector<ir::SwitchCaseStatement *> *cases)
+{
+    for (size_t compareCase = caseNum + 1; compareCase < cases->size(); compareCase++) {
+        auto *caseTest = cases->at(caseNum)->Test();
+        auto *compareCaseTest = cases->at(compareCase)->Test();
+
+        if (caseTest == nullptr || compareCaseTest == nullptr) {
+            continue;
+        }
+
+        if (caseTest->TsType()->IsETSEnumType()) {
+            ASSERT(compareCaseTest->TsType()->IsETSEnumType());
+            if (caseTest->TsType()->AsETSEnumType()->IsSameEnumLiteralType(
+                    compareCaseTest->TsType()->AsETSEnumType())) {
+                ThrowTypeError("Case enum duplicate", caseTest->Start());
+            }
+            continue;
+        }
+        if (caseTest->IsIdentifier() || caseTest->IsMemberExpression()) {
+            CheckIdentifierSwitchCase(caseTest, compareCaseTest, cases->at(caseNum)->Start());
+            continue;
+        }
+
+        if (compareCaseTest->IsIdentifier() || compareCaseTest->IsMemberExpression()) {
+            CheckIdentifierSwitchCase(compareCaseTest, caseTest, cases->at(compareCase)->Start());
+            continue;
+        }
+
+        if (GetStringFromLiteral(caseTest) != GetStringFromLiteral(compareCaseTest)) {
+            continue;
+        }
+
+        ThrowTypeError("Case duplicate", cases->at(compareCase)->Start());
+    }
+}
+
 void ETSChecker::CheckForSameSwitchCases(ArenaVector<ir::SwitchCaseStatement *> *cases)
 {
     for (size_t caseNum = 0; caseNum < cases->size(); caseNum++) {
-        for (size_t compareCase = caseNum + 1; compareCase < cases->size(); compareCase++) {
-            auto *caseTest = cases->at(caseNum)->Test();
-            auto *compareCaseTest = cases->at(compareCase)->Test();
-
-            if (caseTest == nullptr || compareCaseTest == nullptr) {
-                continue;
-            }
-
-            if (caseTest->TsType()->IsETSEnumType()) {
-                ASSERT(compareCaseTest->TsType()->IsETSEnumType());
-                if (caseTest->TsType()->AsETSEnumType()->IsSameEnumLiteralType(
-                        compareCaseTest->TsType()->AsETSEnumType())) {
-                    ThrowTypeError("Case enum duplicate", caseTest->Start());
-                }
-                continue;
-            }
-            if (caseTest->IsIdentifier() || caseTest->IsMemberExpression()) {
-                CheckIdentifierSwitchCase(caseTest, compareCaseTest, cases->at(caseNum)->Start());
-                continue;
-            }
-
-            if (compareCaseTest->IsIdentifier() || compareCaseTest->IsMemberExpression()) {
-                CheckIdentifierSwitchCase(compareCaseTest, caseTest, cases->at(compareCase)->Start());
-                continue;
-            }
-
-            if (GetStringFromLiteral(caseTest) != GetStringFromLiteral(compareCaseTest)) {
-                continue;
-            }
-
-            ThrowTypeError("Case duplicate", cases->at(compareCase)->Start());
-        }
+        CompareSwitchCases(caseNum, cases);
     }
 }
 

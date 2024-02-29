@@ -998,6 +998,21 @@ static bool CompileComputed(compiler::ETSGen *etsg, const ir::MemberExpression *
     return true;
 }
 
+void CompileStaticVariable(ETSGen *etsg, const ir::MemberExpression *expr, const util::StringView &propName)
+{
+    auto ttctx = compiler::TargetTypeContext(etsg, expr->TsType());
+
+    if (expr->PropVar()->TsType()->HasTypeFlag(checker::TypeFlag::GETTER_SETTER)) {
+        checker::Signature *sig = expr->PropVar()->TsType()->AsETSFunctionType()->FindGetter();
+        etsg->CallStatic0(expr, sig->InternalName());
+        etsg->SetAccumulatorType(expr->TsType());
+        return;
+    }
+
+    util::StringView fullName = etsg->FormClassPropReference(expr->Object()->TsType()->AsETSObjectType(), propName);
+    etsg->LoadStaticProperty(expr, expr->TsType(), fullName);
+}
+
 void ETSCompiler::Compile(const ir::MemberExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
@@ -1032,17 +1047,7 @@ void ETSCompiler::Compile(const ir::MemberExpression *expr) const
     }
 
     if (etsg->Checker()->IsVariableStatic(expr->PropVar())) {
-        auto ttctx = compiler::TargetTypeContext(etsg, expr->TsType());
-
-        if (expr->PropVar()->TsType()->HasTypeFlag(checker::TypeFlag::GETTER_SETTER)) {
-            checker::Signature *sig = expr->PropVar()->TsType()->AsETSFunctionType()->FindGetter();
-            etsg->CallStatic0(expr, sig->InternalName());
-            etsg->SetAccumulatorType(expr->TsType());
-            return;
-        }
-
-        util::StringView fullName = etsg->FormClassPropReference(expr->Object()->TsType()->AsETSObjectType(), propName);
-        etsg->LoadStaticProperty(expr, expr->TsType(), fullName);
+        CompileStaticVariable(etsg, expr, propName);
         return;
     }
 
@@ -1938,40 +1943,24 @@ void ETSCompiler::CompileCast(const ir::TSAsExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
     auto *targetType = etsg->Checker()->GetApparentType(expr->TsType());
+    std::map<checker::TypeFlag, void (*)(const ir::TSAsExpression *, ETSGen *)> castHandlers {
+        {checker::TypeFlag::ETS_BOOLEAN,
+         [](const ir::TSAsExpression *expr, ETSGen *etsg) { etsg->CastToBoolean(expr); }},
+        {checker::TypeFlag::CHAR, [](const ir::TSAsExpression *expr, ETSGen *etsg) { etsg->CastToChar(expr); }},
+        {checker::TypeFlag::BYTE, [](const ir::TSAsExpression *expr, ETSGen *etsg) { etsg->CastToByte(expr); }},
+        {checker::TypeFlag::SHORT, [](const ir::TSAsExpression *expr, ETSGen *etsg) { etsg->CastToShort(expr); }},
+        {checker::TypeFlag::INT, [](const ir::TSAsExpression *expr, ETSGen *etsg) { etsg->CastToInt(expr); }},
+        {checker::TypeFlag::LONG, [](const ir::TSAsExpression *expr, ETSGen *etsg) { etsg->CastToLong(expr); }},
+        {checker::TypeFlag::FLOAT, [](const ir::TSAsExpression *expr, ETSGen *etsg) { etsg->CastToFloat(expr); }},
+        {checker::TypeFlag::DOUBLE, [](const ir::TSAsExpression *expr, ETSGen *etsg) { etsg->CastToDouble(expr); }}};
+
+    auto result = castHandlers.find(checker::ETSChecker::TypeKind(targetType));
+    if (result != castHandlers.end()) {
+        result->second(expr, etsg);
+        return;
+    }
 
     switch (checker::ETSChecker::TypeKind(targetType)) {
-        case checker::TypeFlag::ETS_BOOLEAN: {
-            etsg->CastToBoolean(expr);
-            break;
-        }
-        case checker::TypeFlag::CHAR: {
-            etsg->CastToChar(expr);
-            break;
-        }
-        case checker::TypeFlag::BYTE: {
-            etsg->CastToByte(expr);
-            break;
-        }
-        case checker::TypeFlag::SHORT: {
-            etsg->CastToShort(expr);
-            break;
-        }
-        case checker::TypeFlag::INT: {
-            etsg->CastToInt(expr);
-            break;
-        }
-        case checker::TypeFlag::LONG: {
-            etsg->CastToLong(expr);
-            break;
-        }
-        case checker::TypeFlag::FLOAT: {
-            etsg->CastToFloat(expr);
-            break;
-        }
-        case checker::TypeFlag::DOUBLE: {
-            etsg->CastToDouble(expr);
-            break;
-        }
         case checker::TypeFlag::ETS_ARRAY:
         case checker::TypeFlag::ETS_OBJECT:
         case checker::TypeFlag::ETS_TYPE_PARAMETER:

@@ -94,7 +94,9 @@ void ETSEnumType::Cast(TypeRelation *relation, Type *target)
 void ETSEnumType::CreateLiteralTypes(ETSChecker *checker, util::StringView name, util::StringView assemblerName,
                                      ir::AstNode *declNode, ETSObjectFlags flags, TypeRelation *relation)
 {
+#if !defined(NDEBUG)
     const int32_t argsCount = 4;
+#endif
     const int32_t argIdx = 2;
 
     ASSERT(declNode->IsClassDefinition());
