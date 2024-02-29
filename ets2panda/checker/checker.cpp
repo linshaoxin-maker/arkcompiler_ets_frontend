@@ -57,6 +57,8 @@ std::string Checker::FormatMsg(std::initializer_list<TypeErrorMessageElement> li
             ss << std::get<char *>(it);
         } else if (std::holds_alternative<util::StringView>(it)) {
             ss << std::get<util::StringView>(it);
+        } else if (std::holds_alternative<std::string_view>(it)) {
+            ss << std::get<std::string_view>(it);
         } else if (std::holds_alternative<lexer::TokenType>(it)) {
             ss << TokenToString(std::get<lexer::TokenType>(it));
         } else if (std::holds_alternative<const Type *>(it)) {

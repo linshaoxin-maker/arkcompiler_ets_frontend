@@ -75,7 +75,8 @@ bool Type::IsLambdaObject() const
 {
     if (IsETSObjectType() && (AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::FUNCTIONAL_INTERFACE) ||
                               AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::CLASS))) {
-        auto *invoke = AsETSObjectType()->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>("invoke");
+        auto *invoke =
+            AsETSObjectType()->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>(util::StringView {"invoke"});
         if (invoke != nullptr && invoke->TsType() != nullptr && invoke->TsType()->IsETSFunctionType()) {
             return true;
         }

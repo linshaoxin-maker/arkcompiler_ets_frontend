@@ -189,7 +189,7 @@ public:
         Val value_ {};
     };
 
-    explicit AstDumper(const ir::AstNode *node, util::StringView sourceCode = "");
+    explicit AstDumper(const ir::AstNode *node, util::StringView sourceCode = util::StringView {""});
 
     void Add(std::initializer_list<Property> props);
     void Add(const AstDumper::Property &prop);

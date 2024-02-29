@@ -119,11 +119,11 @@ bool ArrayExpression::ConvertibleToArrayPattern()
 ValidationInfo ArrayExpression::ValidateExpression()
 {
     if (optional_) {
-        return {"Unexpected token '?'.", Start()};
+        return {util::StringView {"Unexpected token '?'."}, Start()};
     }
 
     if (TypeAnnotation() != nullptr) {
-        return {"Unexpected token.", TypeAnnotation()->Start()};
+        return {util::StringView {"Unexpected token."}, TypeAnnotation()->Start()};
     }
 
     ValidationInfo info;
@@ -390,8 +390,9 @@ void ArrayExpression::GetPrefferedTypeFromFuncParam(checker::ETSChecker *checker
     }
     bool isAssignable = true;
     for (auto elem : elements_) {
-        auto assignCtx = checker::AssignmentContext(checker->Relation(), elem, elem->Check(checker), paramType,
-                                                    elem->Start(), {""}, checker::TypeRelationFlag::NO_THROW | flags);
+        auto assignCtx =
+            checker::AssignmentContext(checker->Relation(), elem, elem->Check(checker), paramType, elem->Start(),
+                                       {util::StringView {""}}, checker::TypeRelationFlag::NO_THROW | flags);
         isAssignable &= assignCtx.IsAssignable();
     }
     if (isAssignable) {

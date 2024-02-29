@@ -80,11 +80,11 @@ ObjectExpression *ObjectExpression::Clone(ArenaAllocator *const allocator, AstNo
 ValidationInfo ObjectExpression::ValidateExpression()
 {
     if (optional_) {
-        return {"Unexpected token '?'.", Start()};
+        return {util::StringView {"Unexpected token '?'."}, Start()};
     }
 
     if (TypeAnnotation() != nullptr) {
-        return {"Unexpected token.", TypeAnnotation()->Start()};
+        return {util::StringView {"Unexpected token."}, TypeAnnotation()->Start()};
     }
 
     ValidationInfo info;
@@ -94,7 +94,7 @@ ValidationInfo ObjectExpression::ValidateExpression()
         switch (it->Type()) {
             case AstNodeType::OBJECT_EXPRESSION:
             case AstNodeType::ARRAY_EXPRESSION: {
-                return {"Unexpected token.", it->Start()};
+                return {util::StringView {"Unexpected token."}, it->Start()};
             }
             case AstNodeType::SPREAD_ELEMENT: {
                 info = it->AsSpreadElement()->ValidateExpression();
@@ -106,7 +106,8 @@ ValidationInfo ObjectExpression::ValidateExpression()
 
                 if (prop->Kind() == PropertyKind::PROTO) {
                     if (foundProto) {
-                        return {"Duplicate __proto__ fields are not allowed in object literals", prop->Key()->Start()};
+                        return {util::StringView {"Duplicate __proto__ fields are not allowed in object literals"},
+                                prop->Key()->Start()};
                     }
 
                     foundProto = true;

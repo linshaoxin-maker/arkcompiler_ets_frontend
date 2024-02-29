@@ -657,7 +657,7 @@ private:
         return isConstruct ? &dynamicNewIntrinsics_ : &dynamicCallIntrinsics_;
     }
 
-    using Type2TypeMap = std::unordered_map<std::string_view, std::string_view>;
+    using Type2TypeMap = std::unordered_map<util::StringView, util::StringView>;
     void CheckTypeParameterConstraint(ir::TSTypeParameter *param, Type2TypeMap &extends);
 
     void SetUpTypeParameterConstraint(ir::TSTypeParameter *param);

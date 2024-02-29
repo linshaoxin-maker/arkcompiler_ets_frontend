@@ -41,7 +41,7 @@ void ETSFunction::CallImplicitCtor(ETSGen *etsg)
     auto *superType = etsg->ContainingObjectType()->SuperType();
 
     if (superType == nullptr) {
-        etsg->CallThisStatic0(etsg->RootNode(), etsg->GetThisReg(), Signatures::BUILTIN_OBJECT_CTOR);
+        etsg->CallThisStatic0(etsg->RootNode(), etsg->GetThisReg(), util::StringView {Signatures::BUILTIN_OBJECT_CTOR});
 
         return;
     }
@@ -60,7 +60,7 @@ void ETSFunction::CompileSourceBlock(ETSGen *etsg, const ir::BlockStatement *blo
     auto const checkInitializer = [](ArenaVector<ir::AstNode *> const &nodes) -> bool {
         for (auto const *const node : nodes) {
             if (node->IsMethodDefinition() && node->AsClassElement()->Key()->IsIdentifier()) {
-                if (node->AsClassElement()->Id()->Name() == compiler::Signatures::INIT_METHOD) {
+                if (node->AsClassElement()->Id()->Name() == util::StringView {compiler::Signatures::INIT_METHOD}) {
                     return false;
                 }
             }

@@ -55,7 +55,7 @@ checker::ETSObjectType *BoxingConverter::ETSTypeFromSource(ETSChecker const *che
     };
 
     auto wrapMap = checker->PrimitiveWrapper();
-    return wrapMap.find(getSignature(checker::ETSChecker::TypeKind(source)))->second.first;
+    return wrapMap.find(util::StringView {getSignature(checker::ETSChecker::TypeKind(source))})->second.first;
 }
 
 }  // namespace panda::es2panda::checker

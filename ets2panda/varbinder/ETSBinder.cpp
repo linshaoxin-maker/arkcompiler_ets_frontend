@@ -285,7 +285,7 @@ void ETSBinder::ResolveMethodDefinition(ir::MethodDefinition *methodDef)
     auto paramScopeCtx = LexicalScope<FunctionParamScope>::Enter(this, func->Scope()->ParamScope());
 
     auto params = func->Scope()->ParamScope()->Params();
-    if (!params.empty() && params.front()->Name() == MANDATORY_PARAM_THIS) {
+    if (!params.empty() && params.front()->Name() == util::StringView {MANDATORY_PARAM_THIS}) {
         return;  // Implicit this parameter is already inserted by ResolveReferences(), don't insert it twice.
     }
 
@@ -661,13 +661,13 @@ ArenaVector<parser::Program *> ETSBinder::GetExternalProgram(const util::StringV
             return res;
         }
 
-        if (res = extRecords.find({sourceName.Mutf8() + "/index"}); res != extRecords.end()) {
+        if (res = extRecords.find(util::StringView {sourceName.Mutf8() + "/index"}); res != extRecords.end()) {
             return res;
         }
 
         res = extRecords.find(GetResolvedImportPath(sourceName));
         if (res == extRecords.end()) {
-            res = extRecords.find(GetResolvedImportPath({sourceName.Mutf8() + "/index"}));
+            res = extRecords.find(GetResolvedImportPath(util::StringView {sourceName.Mutf8() + "/index"}));
         }
 
         return res;
@@ -867,7 +867,7 @@ void ETSBinder::BuildFunctionName(const ir::ScriptFunction *func) const
 
 void ETSBinder::FormLambdaName(util::UString &name, const util::StringView &signature)
 {
-    name.Append(compiler::Signatures::LAMBDA_SEPARATOR);
+    name.Append(util::StringView {compiler::Signatures::LAMBDA_SEPARATOR});
     auto replaced = std::string(signature.Utf8());
     std::replace(replaced.begin(), replaced.end(), '.', '-');
     std::replace(replaced.begin(), replaced.end(), ':', '-');
@@ -935,7 +935,7 @@ void ETSBinder::BuildFunctionalInterfaceName(ir::ETSFunctionType *funcType)
     functionalInterface->Id()->SetName(functionalInterfaceName.View());
     util::UString internalName(Program()->GetPackageName(), Allocator());
     if (!(internalName.View().Empty())) {
-        internalName.Append(compiler::Signatures::METHOD_SEPARATOR);
+        internalName.Append(util::StringView {compiler::Signatures::METHOD_SEPARATOR});
     }
     internalName.Append(functionalInterface->Id()->Name());
     functionalInterface->SetInternalName(internalName.View());
@@ -949,10 +949,10 @@ void ETSBinder::BuildFunctionalInterfaceName(ir::ETSFunctionType *funcType)
 
     util::UString invokeInternalName(Program()->GetPackageName(), Allocator());
     if (!(invokeInternalName.View().Empty())) {
-        invokeInternalName.Append(compiler::Signatures::METHOD_SEPARATOR);
+        invokeInternalName.Append(util::StringView {compiler::Signatures::METHOD_SEPARATOR});
     }
     invokeInternalName.Append(invokeFuncScope->Name());
-    invokeInternalName.Append(compiler::Signatures::METHOD_SEPARATOR);
+    invokeInternalName.Append(util::StringView {compiler::Signatures::METHOD_SEPARATOR});
     invokeInternalName.Append(invokeFunc->Id()->Name());
     std::stringstream invokeSignatureSs;
     invokeFunc->Signature()->ToAssemblerType(GetCompilerContext(), invokeSignatureSs);
@@ -962,7 +962,7 @@ void ETSBinder::BuildFunctionalInterfaceName(ir::ETSFunctionType *funcType)
 
 void ETSBinder::InitImplicitThisParam()
 {
-    thisParam_ = Allocator()->New<ir::Identifier>("this", Allocator());
+    thisParam_ = Allocator()->New<ir::Identifier>(util::StringView {"this"}, Allocator());
 }
 
 void ETSBinder::BuildProgram()

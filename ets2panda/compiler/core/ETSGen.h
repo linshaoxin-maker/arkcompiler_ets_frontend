@@ -750,7 +750,8 @@ private:
     void BinaryDynamicStrictEquality(const ir::AstNode *node, VReg lhs, Label *ifFalse)
     {
         ASSERT(GetAccumulatorType()->IsETSDynamicType() && GetVRegType(lhs)->IsETSDynamicType());
-        Ra().Emit<CallShort, 2U>(node, Signatures::BUILTIN_JSRUNTIME_STRICT_EQUAL, lhs, MoveAccToReg(node));
+        Ra().Emit<CallShort, 2U>(node, util::StringView {Signatures::BUILTIN_JSRUNTIME_STRICT_EQUAL}, lhs,
+                                 MoveAccToReg(node));
         Ra().Emit<DynCompare>(node, ifFalse);
     }
 

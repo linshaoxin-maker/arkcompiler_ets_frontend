@@ -218,7 +218,7 @@ void ETSTryContext::EmitFinalizer(
     }
     auto *etsg = static_cast<ETSGen *>(Cg());
 
-    CatchTable *finalizerTable = AddNewCathTable("", trycatchLabelPair);
+    CatchTable *finalizerTable = AddNewCathTable(util::StringView {""}, trycatchLabelPair);
     // First compile of the finaly clause, executed if the statement executed normally
     tryStmt_->FinallyBlock()->Compile(etsg);
 

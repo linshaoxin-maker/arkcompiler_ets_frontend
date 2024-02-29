@@ -1095,7 +1095,8 @@ ir::TypeNode *TSParser::ParseTypeLiteralOrMappedType(ir::TypeNode *typeAnnotatio
     Lexer()->NextToken();
 
     auto *literalType = AllocNode<ir::TSTypeLiteral>(std::move(members));
-    auto *typeVar = varbinder::Scope::CreateVar(Allocator(), "__type", varbinder::VariableFlags::TYPE, literalType);
+    auto *typeVar = varbinder::Scope::CreateVar(Allocator(), util::StringView {"__type"},
+                                                varbinder::VariableFlags::TYPE, literalType);
     literalType->SetVariable(typeVar);
     literalType->SetRange({bodyStart, bodyEnd});
     return literalType;
@@ -1179,7 +1180,8 @@ ir::TSUnionType *TSParser::ParseUnionType(ir::TypeNode *type, bool restrictExten
     lexer::SourcePosition endLoc = types.back()->End();
 
     auto *unionType = AllocNode<ir::TSUnionType>(std::move(types));
-    auto *typeVar = varbinder::Scope::CreateVar(Allocator(), "__type", varbinder::VariableFlags::TYPE, unionType);
+    auto *typeVar = varbinder::Scope::CreateVar(Allocator(), util::StringView {"__type"},
+                                                varbinder::VariableFlags::TYPE, unionType);
     unionType->SetVariable(typeVar);
     unionType->SetRange({startLoc, endLoc});
 
@@ -1222,8 +1224,8 @@ ir::TSIntersectionType *TSParser::ParseIntersectionType(ir::Expression *type, bo
     lexer::SourcePosition endLoc = types.back()->End();
 
     auto *intersectionType = AllocNode<ir::TSIntersectionType>(std::move(types));
-    auto *typeVar =
-        varbinder::Scope::CreateVar(Allocator(), "__type", varbinder::VariableFlags::TYPE, intersectionType);
+    auto *typeVar = varbinder::Scope::CreateVar(Allocator(), util::StringView {"__type"},
+                                                varbinder::VariableFlags::TYPE, intersectionType);
     intersectionType->SetVariable(typeVar);
     intersectionType->SetRange({startLoc, endLoc});
 
@@ -1914,7 +1916,7 @@ void TSParser::CreateTSVariableForProperty(ir::AstNode *node, const ir::Expressi
 {
     varbinder::Variable *propVar = nullptr;
     bool isMethod = (flags & varbinder::VariableFlags::METHOD) != 0;
-    util::StringView propName = "__computed";
+    util::StringView propName = util::StringView {"__computed"};
 
     switch (key->Type()) {
         case ir::AstNodeType::IDENTIFIER: {

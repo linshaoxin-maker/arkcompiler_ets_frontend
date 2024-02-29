@@ -284,7 +284,7 @@ checker::Type *MemberExpression::CheckIndexAccessMethod(checker::ETSChecker *che
     std::string_view const methodName =
         isSetter ? compiler::Signatures::SET_INDEX_METHOD : compiler::Signatures::GET_INDEX_METHOD;
 
-    auto *const method = objType_->GetProperty(methodName, searchFlag);
+    auto *const method = objType_->GetProperty(util::StringView {methodName}, searchFlag);
     if (method == nullptr || !method->HasFlag(varbinder::VariableFlags::METHOD)) {
         checker->ThrowTypeError("Object type doesn't have proper index access method.", Start());
     }
@@ -326,7 +326,8 @@ checker::Type *MemberExpression::CheckTupleAccessMethod(checker::ETSChecker *che
         // Error never should be thrown by this call, because LUB of types can be converted to any type which
         // LUB was calculated by casting
         const checker::CastingContext cast(checker->Relation(), this, baseType->AsETSArrayType()->ElementType(),
-                                           tupleTypeAtIdx, Start(), {"Tuple type couldn't be converted "});
+                                           tupleTypeAtIdx, Start(),
+                                           {util::StringView {"Tuple type couldn't be converted "}});
 
         // NOTE(mmartin): this can be replaced with the general type mapper, once implemented
         if ((GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::UNBOXING_FLAG) != 0U) {

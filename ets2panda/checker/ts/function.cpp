@@ -104,10 +104,12 @@ void TSChecker::ThrowReturnTypeCircularityError(ir::ScriptFunction *func)
     }
 
     if (func->Id() != nullptr) {
-        ThrowTypeError({func->Id()->AsIdentifier()->Name(),
-                        " implicitly has return type 'any' because it does not have a return type annotation and is "
-                        "referenced directly or indirectly in one of its return expressions."},
-                       func->Id()->Start());
+        ThrowTypeError(
+            {func->Id()->AsIdentifier()->Name(),
+             util::StringView {
+                 " implicitly has return type 'any' because it does not have a return type annotation and is "
+                 "referenced directly or indirectly in one of its return expressions."}},
+            func->Id()->Start());
     }
 
     ThrowTypeError(
@@ -124,7 +126,8 @@ std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSCheck
     bool isOptional = param->IsOptional();
 
     if (param->TypeAnnotation() == nullptr) {
-        ThrowTypeError({"Parameter ", param->Name(), " implicitly has any type."}, param->Start());
+        ThrowTypeError({util::StringView {"Parameter "}, param->Name(), util::StringView {" implicitly has any type."}},
+                       param->Start());
     }
 
     if (isOptional) {
@@ -711,9 +714,10 @@ bool TSChecker::CallMatchesSignature(const ArenaVector<ir::Expression *> &args, 
             }
 
             if (throwError) {
-                ThrowTypeError(
-                    {"Argument of type '", callArgType, "' is not assignable to parameter of type '", sigArgType, "'."},
-                    args[index]->Start());
+                ThrowTypeError({util::StringView {"Argument of type '"}, callArgType,
+                                util::StringView {"' is not assignable to parameter of type '"}, sigArgType,
+                                util::StringView {"'."}},
+                               args[index]->Start());
             }
             return false;
         }
@@ -739,17 +743,21 @@ Type *TSChecker::ResolveCallOrNewExpression(const ArenaVector<Signature *> &sign
 
     if (potentialSignatures.empty()) {
         if (haveSignatureWithRest) {
-            ThrowTypeError({"Expected at least ", argRange.first, " arguments, but got ", arguments.size(), "."},
+            ThrowTypeError({util::StringView {"Expected at least "}, argRange.first,
+                            util::StringView {" arguments, but got "}, arguments.size(), util::StringView {"."}},
                            errPos);
         }
 
         if (signatures.size() == 1 && argRange.first == argRange.second) {
             lexer::SourcePosition loc =
                 (argRange.first > arguments.size()) ? errPos : arguments[argRange.second]->Start();
-            ThrowTypeError({"Expected ", argRange.first, " arguments, but got ", arguments.size(), "."}, loc);
+            ThrowTypeError({util::StringView {"Expected "}, argRange.first, util::StringView {" arguments, but got "},
+                            arguments.size(), util::StringView {"."}},
+                           loc);
         }
 
-        ThrowTypeError({"Expected ", argRange.first, "-", argRange.second, " arguments, but got ", arguments.size()},
+        ThrowTypeError({util::StringView {"Expected "}, argRange.first, util::StringView {"-"}, argRange.second,
+                        util::StringView {" arguments, but got "}, arguments.size()},
                        errPos);
     }
 

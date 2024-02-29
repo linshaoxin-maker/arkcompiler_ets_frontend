@@ -158,7 +158,7 @@ public:
     template <typename... Elements>
     static std::string AppendAll(Elements &&...elems);
 
-    static std::pair<std::string_view, std::string_view> SplitSignature(std::string_view signature);
+    static std::pair<util::StringView, util::StringView> SplitSignature(util::StringView signature);
 
 private:
     template <LogLevel LOG_L, typename... Elements>

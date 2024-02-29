@@ -70,8 +70,10 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMap
     globalTypes_[static_cast<size_t>(GlobalTypeId::STRING_OR_NUMBER)] =
         allocator->New<UnionType>(allocator, std::initializer_list<Type *> {GlobalStringType(), GlobalNumberType()});
     globalTypes_[static_cast<size_t>(GlobalTypeId::ZERO)] = allocator->New<NumberLiteralType>(0);
-    globalTypes_[static_cast<size_t>(GlobalTypeId::EMPTY_STRING)] = allocator->New<StringLiteralType>("");
-    globalTypes_[static_cast<size_t>(GlobalTypeId::ZERO_BIGINT)] = allocator->New<BigintLiteralType>("0n", false);
+    globalTypes_[static_cast<size_t>(GlobalTypeId::EMPTY_STRING)] =
+        allocator->New<StringLiteralType>(util::StringView {""});
+    globalTypes_[static_cast<size_t>(GlobalTypeId::ZERO_BIGINT)] =
+        allocator->New<BigintLiteralType>(util::StringView {"0n"}, false);
     globalTypes_[static_cast<size_t>(GlobalTypeId::PRIMITIVE)] = allocator->New<UnionType>(
         allocator,
         std::initializer_list<Type *> {GlobalNumberType(), GlobalStringType(), GlobalBigintType(), GlobalBooleanType(),
@@ -93,13 +95,13 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMap
     globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_VOID)] = allocator->New<ETSVoidType>();
     auto *globalNullType = allocator->New<ETSObjectType>(allocator);
     globalNullType->AsETSObjectType()->AddObjectFlag(ETSObjectFlags::NULL_TYPE);
-    globalNullType->AsETSObjectType()->SetName("null");
-    globalNullType->AsETSObjectType()->SetAssemblerName("null has no symbol!");
+    globalNullType->AsETSObjectType()->SetName(util::StringView {"null"});
+    globalNullType->AsETSObjectType()->SetAssemblerName(util::StringView {"null has no symbol!"});
     globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_NULL)] = globalNullType;
     auto *globalUndefinedType = allocator->New<ETSObjectType>(allocator);
     globalUndefinedType->AsETSObjectType()->AddObjectFlag(ETSObjectFlags::UNDEFINED_TYPE);
-    globalUndefinedType->AsETSObjectType()->SetName("undefined");
-    globalUndefinedType->AsETSObjectType()->SetAssemblerName("undefined has no symbol!");
+    globalUndefinedType->AsETSObjectType()->SetName(util::StringView {"undefined"});
+    globalUndefinedType->AsETSObjectType()->SetAssemblerName(util::StringView {"undefined has no symbol!"});
     globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_UNDEFINED)] = globalUndefinedType;
     globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_WILDCARD)] = allocator->New<WildcardType>();
 

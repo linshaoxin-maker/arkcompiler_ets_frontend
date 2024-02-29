@@ -153,7 +153,7 @@ Type *TSChecker::CreateConstructorTypeWithSignature(Signature *constructSignatur
 Type *TSChecker::CreateTupleType(ObjectDescriptor *desc, ArenaVector<ElementFlags> &&elementFlags,
                                  ElementFlags combinedFlags, uint32_t minLength, uint32_t fixedLength, bool readonly)
 {
-    desc->stringIndexInfo = Allocator()->New<IndexInfo>(GlobalAnyType(), "x", readonly);
+    desc->stringIndexInfo = Allocator()->New<IndexInfo>(GlobalAnyType(), util::StringView {"x"}, readonly);
     checker::NamedTupleMemberPool namedMembers(Allocator()->Adapter());
     return Allocator()->New<TupleType>(desc, std::move(elementFlags), combinedFlags, minLength, fixedLength, readonly,
                                        std::move(namedMembers));
@@ -163,7 +163,7 @@ Type *TSChecker::CreateTupleType(ObjectDescriptor *desc, ArenaVector<ElementFlag
                                  ElementFlags combinedFlags, uint32_t minLength, uint32_t fixedLength, bool readonly,
                                  NamedTupleMemberPool &&namedMembers)
 {
-    desc->stringIndexInfo = Allocator()->New<IndexInfo>(GlobalAnyType(), "x", readonly);
+    desc->stringIndexInfo = Allocator()->New<IndexInfo>(GlobalAnyType(), util::StringView {"x"}, readonly);
 
     return Allocator()->New<TupleType>(desc, std::move(elementFlags), combinedFlags, minLength, fixedLength, readonly,
                                        std::move(namedMembers));

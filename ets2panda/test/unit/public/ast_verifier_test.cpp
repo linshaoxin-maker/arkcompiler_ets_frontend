@@ -150,7 +150,7 @@ TEST_F(ASTVerifierTest, ScopeTest)
 {
     ASTVerifier verifier {Allocator()};
     Identifier ident(StringView("var_decl"), Allocator());
-    LetDecl decl("test", &ident);
+    LetDecl decl(StringView {"test"}, &ident);
     LocalVariable local(&decl, VariableFlags::LOCAL);
     ident.SetVariable(&local);
 
@@ -173,7 +173,7 @@ TEST_F(ASTVerifierTest, ScopeNodeTest)
 {
     ASTVerifier verifier {Allocator()};
     Identifier ident(StringView("var_decl"), Allocator());
-    LetDecl decl("test", &ident);
+    LetDecl decl(StringView {"test"}, &ident);
     LocalVariable local(&decl, VariableFlags::LOCAL);
     ident.SetVariable(&local);
 

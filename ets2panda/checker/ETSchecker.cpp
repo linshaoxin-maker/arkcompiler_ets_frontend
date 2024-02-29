@@ -38,7 +38,7 @@ void ETSChecker::InitializeBuiltins(varbinder::ETSBinder *varbinder)
     const auto varMap = varbinder->TopScope()->Bindings();
 
     auto initBuiltin = [varMap](ETSChecker *checker, std::string_view signature) -> util::StringView {
-        const auto iterator = varMap.find(signature);
+        const auto iterator = varMap.find(util::StringView {signature});
         ASSERT(iterator != varMap.end());
         checker->GetGlobalTypesHolder()->InitializeBuiltin(
             iterator->first,

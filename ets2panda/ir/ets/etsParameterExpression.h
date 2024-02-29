@@ -99,7 +99,7 @@ private:
     Identifier *ident_;
     Expression *initializer_;
     SpreadElement *spread_ = nullptr;
-    util::StringView savedLexer_ = "";
+    util::StringView savedLexer_ = util::StringView {""};
     std::size_t extraValue_ = 0U;
 };
 }  // namespace panda::es2panda::ir

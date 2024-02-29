@@ -27,7 +27,7 @@ public:
         : ETSObjectType(allocator, ETSObjectFlags::ASYNC_FUNC_RETURN_TYPE), promiseType_(promiseType)
     {
         ASSERT(promiseType->TypeArguments().size() == 1);
-        SetAssemblerName(compiler::Signatures::BUILTIN_OBJECT);
+        SetAssemblerName(util::StringView {compiler::Signatures::BUILTIN_OBJECT});
     }
 
     void ToString(std::stringstream &ss) const override;

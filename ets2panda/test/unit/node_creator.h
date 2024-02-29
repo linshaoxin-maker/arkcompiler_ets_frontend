@@ -31,7 +31,7 @@ class NodeGenerator {
 public:
     explicit NodeGenerator(ArenaAllocator *alloc) : alloc_(alloc) {}
     // x = 1
-    ir::VariableDeclaration *CreateVarDecl(bool declare, util::StringView name = "x")
+    ir::VariableDeclaration *CreateVarDecl(bool declare, util::StringView name = util::StringView {"x"})
     {
         auto varDecl = alloc_->New<ir::VariableDeclarator>(ir::VariableDeclaratorFlag::LET, CreateId(name));
         ArenaVector<ir::VariableDeclarator *> tmp {alloc_->Adapter()};
@@ -46,13 +46,13 @@ public:
     }
 
     // x = x + 1
-    ir::UpdateExpression *CreateIncrement(util::StringView name = "x", bool isPrefix = false)
+    ir::UpdateExpression *CreateIncrement(util::StringView name = util::StringView {"x"}, bool isPrefix = false)
     {
         return alloc_->New<ir::UpdateExpression>(CreateId(name), lexer::TokenType::PUNCTUATOR_PLUS_PLUS, isPrefix);
     }
 
     // x < 10
-    ir::BinaryExpression *CreateLessCmpExpr(util::StringView name = "x")
+    ir::BinaryExpression *CreateLessCmpExpr(util::StringView name = util::StringView {"x"})
     {
         const int anyLoopLimit = 10;
         return alloc_->New<ir::BinaryExpression>(CreateId(name),
@@ -60,7 +60,7 @@ public:
                                                  lexer::TokenType::PUNCTUATOR_LESS_THAN);
     }
 
-    ir::BlockStatement *CreateBlockWithDeclare(util::StringView name = "x")
+    ir::BlockStatement *CreateBlockWithDeclare(util::StringView name = util::StringView {"x"})
     {
         auto varDecl = CreateVarDecl(true, name);
         ArenaVector<ir::Statement *> tmp {alloc_->Adapter()};

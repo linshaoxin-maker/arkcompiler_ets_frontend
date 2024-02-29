@@ -369,8 +369,9 @@ static void GetSpreadElementType(checker::TSChecker *checker, checker::Type *spr
         }
     }
 
-    checker->ThrowTypeError(
-        {"Type '", spreadType, "' must have a '[Symbol.iterator]()' method that returns an iterator."}, loc);
+    checker->ThrowTypeError({util::StringView {"Type '"}, spreadType,
+                             util::StringView {"' must have a '[Symbol.iterator]()' method that returns an iterator."}},
+                            loc);
 }
 
 checker::Type *TSAnalyzer::Check(ir::ArrayExpression *expr) const
@@ -491,9 +492,9 @@ checker::Type *TSAnalyzer::Check(ir::AssignmentExpression *expr) const
 
     if (expr->Left()->IsIdentifier() && expr->Left()->AsIdentifier()->Variable() != nullptr &&
         expr->Left()->AsIdentifier()->Variable()->Declaration()->IsConstDecl()) {
-        checker->ThrowTypeError(
-            {"Cannot assign to ", expr->Left()->AsIdentifier()->Name(), " because it is a constant."},
-            expr->Left()->Start());
+        checker->ThrowTypeError({util::StringView {"Cannot assign to "}, expr->Left()->AsIdentifier()->Name(),
+                                 util::StringView {" because it is a constant."}},
+                                expr->Left()->Start());
     }
 
     auto *leftType = expr->Left()->Check(checker);
@@ -708,14 +709,15 @@ checker::Type *TSAnalyzer::Check(ir::Identifier *expr) const
             return checker->GlobalUndefinedType();
         }
 
-        checker->ThrowTypeError({"Cannot find name ", expr->Name()}, expr->Start());
+        checker->ThrowTypeError({util::StringView {"Cannot find name "}, expr->Name()}, expr->Start());
     }
 
     const varbinder::Decl *decl = expr->Variable()->Declaration();
 
     if (decl->IsTypeAliasDecl() || decl->IsInterfaceDecl()) {
-        checker->ThrowTypeError({expr->Name(), " only refers to a type, but is being used as a value here."},
-                                expr->Start());
+        checker->ThrowTypeError(
+            {expr->Name(), util::StringView {" only refers to a type, but is being used as a value here."}},
+            expr->Start());
     }
 
     expr->SetTsType(checker->GetTypeOfVariable(expr->Variable()));
@@ -741,34 +743,38 @@ checker::Type *TSAnalyzer::Check(ir::MemberExpression *expr) const
         }
 
         if (!indexType->HasTypeFlag(checker::TypeFlag::STRING_LIKE | checker::TypeFlag::NUMBER_LIKE)) {
-            checker->ThrowTypeError({"Type ", indexType, " cannot be used as index type"}, expr->Property()->Start());
+            checker->ThrowTypeError(
+                {util::StringView {"Type "}, indexType, util::StringView {" cannot be used as index type"}},
+                expr->Property()->Start());
         }
 
         if (indexType->IsNumberType()) {
-            checker->ThrowTypeError("No index signature with a parameter of type 'string' was found on type this type",
-                                    expr->Start());
+            checker->ThrowTypeError(
+                {util::StringView {"No index signature with a parameter of type 'string' was found on type this type"}},
+                expr->Start());
         }
 
         if (indexType->IsStringType()) {
-            checker->ThrowTypeError("No index signature with a parameter of type 'number' was found on type this type",
-                                    expr->Start());
+            checker->ThrowTypeError(
+                {util::StringView {"No index signature with a parameter of type 'number' was found on type this type"}},
+                expr->Start());
         }
 
         switch (expr->Property()->Type()) {
             case ir::AstNodeType::IDENTIFIER: {
-                checker->ThrowTypeError(
-                    {"Property ", expr->Property()->AsIdentifier()->Name(), " does not exist on this type."},
-                    expr->Property()->Start());
+                checker->ThrowTypeError({util::StringView {"Property "}, expr->Property()->AsIdentifier()->Name(),
+                                         util::StringView {" does not exist on this type."}},
+                                        expr->Property()->Start());
             }
             case ir::AstNodeType::NUMBER_LITERAL: {
-                checker->ThrowTypeError(
-                    {"Property ", expr->Property()->AsNumberLiteral()->Str(), " does not exist on this type."},
-                    expr->Property()->Start());
+                checker->ThrowTypeError({util::StringView {"Property "}, expr->Property()->AsNumberLiteral()->Str(),
+                                         util::StringView {" does not exist on this type."}},
+                                        expr->Property()->Start());
             }
             case ir::AstNodeType::STRING_LITERAL: {
-                checker->ThrowTypeError(
-                    {"Property ", expr->Property()->AsStringLiteral()->Str(), " does not exist on this type."},
-                    expr->Property()->Start());
+                checker->ThrowTypeError({util::StringView {"Property "}, expr->Property()->AsStringLiteral()->Str(),
+                                         util::StringView {" does not exist on this type."}},
+                                        expr->Property()->Start());
             }
             default: {
                 UNREACHABLE();
@@ -800,7 +806,8 @@ checker::Type *TSAnalyzer::Check(ir::MemberExpression *expr) const
         }
     }
 
-    checker->ThrowTypeError({"Property ", expr->Property()->AsIdentifier()->Name(), " does not exist on this type."},
+    checker->ThrowTypeError({util::StringView {"Property "}, expr->Property()->AsIdentifier()->Name(),
+                             util::StringView {" does not exist on this type."}},
                             expr->Property()->Start());
     return nullptr;
 }
@@ -944,7 +951,9 @@ checker::Type *TSAnalyzer::Check(ir::ObjectExpression *expr) const
             auto found = allPropertiesMap.find(spreadProp->Name());
             if (found != allPropertiesMap.end()) {
                 checker->ThrowTypeError(
-                    {found->first, " is specified more than once, so this usage will be overwritten."}, found->second);
+                    {found->first,
+                     util::StringView {" is specified more than once, so this usage will be overwritten."}},
+                    found->second);
             }
 
             varbinder::LocalVariable *foundMember = desc->FindProperty(spreadProp->Name());
@@ -969,12 +978,12 @@ checker::Type *TSAnalyzer::Check(ir::ObjectExpression *expr) const
 
         if (hasComputedNumberProperty) {
             desc->numberIndexInfo = checker->Allocator()->New<checker::IndexInfo>(
-                checker->CreateUnionType(std::move(computedNumberPropTypes)), "x", inConstContext);
+                checker->CreateUnionType(std::move(computedNumberPropTypes)), util::StringView {"x"}, inConstContext);
         }
 
         if (hasComputedStringProperty) {
             desc->stringIndexInfo = checker->Allocator()->New<checker::IndexInfo>(
-                checker->CreateUnionType(std::move(computedStringPropTypes)), "x", inConstContext);
+                checker->CreateUnionType(std::move(computedStringPropTypes)), util::StringView {"x"}, inConstContext);
         }
     }
 
@@ -1097,7 +1106,8 @@ checker::Type *TSAnalyzer::Check(ir::UnaryExpression *expr) const
 
             if (expr->operator_ == lexer::TokenType::PUNCTUATOR_PLUS) {
                 if (checker::TSChecker::MaybeTypeOfKind(operandType, checker::TypeFlag::BIGINT_LIKE)) {
-                    checker->ThrowTypeError({"Operator '+' cannot be applied to type '", operandType, "'"},
+                    checker->ThrowTypeError({util::StringView {"Operator '+' cannot be applied to type '"}, operandType,
+                                             util::StringView {"'"}},
                                             expr->Start());
                 }
 
@@ -1424,7 +1434,9 @@ checker::Type *TSAnalyzer::Check(ir::ReturnStatement *st) const
         }
 
         checker->IsTypeAssignableTo(returnType, funcReturnType,
-                                    {"Type '", returnType, "' is not assignable to type '", funcReturnType, "'."},
+                                    {util::StringView {"Type '"}, returnType,
+                                     util::StringView {"' is not assignable to type '"}, funcReturnType,
+                                     util::StringView {"'."}},
                                     st->Start());
     }
 
@@ -1457,7 +1469,8 @@ checker::Type *TSAnalyzer::Check(ir::SwitchStatement *st) const
 
             if (!checker->IsTypeEqualityComparableTo(comparedExprType, caseType) &&
                 !checker->IsTypeComparableTo(caseType, comparedExprType)) {
-                checker->ThrowTypeError({"Type ", caseType, " is not comparable to type ", comparedExprType},
+                checker->ThrowTypeError({util::StringView {"Type "}, caseType,
+                                         util::StringView {" is not comparable to type "}, comparedExprType},
                                         it->Test()->Start());
             }
         }
@@ -1524,23 +1537,25 @@ static void CheckSimpleVariableDeclaration(checker::TSChecker *checker, ir::Vari
         }
 
         if (initializerType->IsNullType()) {
-            checker->ThrowTypeError(
-                {"Cannot infer type for variable '", declarator->Id()->AsIdentifier()->Name(), "'."},
-                declarator->Id()->Start());
+            checker->ThrowTypeError({util::StringView {"Cannot infer type for variable '"},
+                                     declarator->Id()->AsIdentifier()->Name(), util::StringView {"'."}},
+                                    declarator->Id()->Start());
         }
 
         bindingVar->SetTsType(initializerType);
     } else {
-        checker->ThrowTypeError({"Variable ", declarator->Id()->AsIdentifier()->Name(), " implicitly has an any type."},
+        checker->ThrowTypeError({util::StringView {"Variable "}, declarator->Id()->AsIdentifier()->Name(),
+                                 util::StringView {" implicitly has an any type."}},
                                 declarator->Id()->Start());
     }
 
     if (previousType != nullptr) {
-        checker->IsTypeIdenticalTo(bindingVar->TsType(), previousType,
-                                   {"Subsequent variable declaration must have the same type. Variable '",
-                                    bindingVar->Name(), "' must be of type '", previousType, "', but here has type '",
-                                    bindingVar->TsType(), "'."},
-                                   declarator->Id()->Start());
+        checker->IsTypeIdenticalTo(
+            bindingVar->TsType(), previousType,
+            {util::StringView {"Subsequent variable declaration must have the same type. Variable '"},
+             bindingVar->Name(), util::StringView {"' must be of type '"}, previousType,
+             util::StringView {"', but here has type '"}, bindingVar->TsType(), util::StringView {"'."}},
+            declarator->Id()->Start());
     }
 
     checker->RemoveStatus(checker::CheckerStatus::IN_CONST_CONTEXT);
@@ -1680,9 +1695,10 @@ checker::Type *TSAnalyzer::Check(ir::TSAsExpression *expr) const
 
     checker->IsTypeComparableTo(
         targetType, exprType,
-        {"Conversion of type '", exprType, "' to type '", targetType,
-         "' may be a mistake because neither type sufficiently overlaps with the other. If this was ",
-         "intentional, convert the expression to 'unknown' first."},
+        {util::StringView {"Conversion of type '"}, exprType, util::StringView {"' to type '"}, targetType,
+         util::StringView {
+             "' may be a mistake because neither type sufficiently overlaps with the other. If this was "},
+         util::StringView {"intentional, convert the expression to 'unknown' first."}},
         expr->Start());
 
     return targetType;
@@ -1725,17 +1741,17 @@ checker::Type *TSAnalyzer::Check(ir::TSConstructorType *node) const
 static varbinder::EnumMemberResult EvaluateIdentifier(checker::TSChecker *checker, varbinder::EnumVariable *enumVar,
                                                       const ir::Identifier *expr)
 {
-    if (expr->Name() == "NaN") {
+    if (expr->Name() == util::StringView {"NaN"}) {
         return std::nan("");
     }
-    if (expr->Name() == "Infinity") {
+    if (expr->Name() == util::StringView {"Infinity"}) {
         return std::numeric_limits<double>::infinity();
     }
 
     varbinder::Variable *enumMember = expr->AsIdentifier()->Variable();
 
     if (enumMember == nullptr) {
-        checker->ThrowTypeError({"Cannot find name ", expr->AsIdentifier()->Name()},
+        checker->ThrowTypeError({util::StringView {"Cannot find name "}, expr->AsIdentifier()->Name()},
                                 enumVar->Declaration()->Node()->Start());
     }
 
@@ -2099,7 +2115,9 @@ checker::Type *TSAnalyzer::Check(ir::TSIndexedAccessType *node) const
     checker::Type *indexType = checker->CheckTypeCached(node->indexType_);
 
     if (!indexType->HasTypeFlag(checker::TypeFlag::STRING_LIKE | checker::TypeFlag::NUMBER_LIKE)) {
-        checker->ThrowTypeError({"Type ", indexType, " cannot be used as index type"}, node->IndexType()->Start());
+        checker->ThrowTypeError(
+            {util::StringView {"Type "}, indexType, util::StringView {" cannot be used as index type"}},
+            node->IndexType()->Start());
     }
 
     if (indexType->IsNumberType()) {
@@ -2156,8 +2174,10 @@ static void CheckInheritedPropertiesAreIdentical(checker::TSChecker *checker, ch
                 checker::Type *sourceType = checker->GetTypeOfVariable(inheritedProp);
                 checker::Type *targetType = checker->GetTypeOfVariable(res->second.first);
                 checker->IsTypeIdenticalTo(sourceType, targetType,
-                                           {"Interface '", type, "' cannot simultaneously extend types '",
-                                            res->second.second, "' and '", base->AsInterfaceType(), "'."},
+                                           {util::StringView {"Interface '"}, type,
+                                            util::StringView {"' cannot simultaneously extend types '"},
+                                            res->second.second, util::StringView {"' and '"}, base->AsInterfaceType(),
+                                            util::StringView {"'."}},
                                            locInfo);
             }
         }
@@ -2186,9 +2206,11 @@ checker::Type *TSAnalyzer::Check(ir::TSInterfaceDeclaration *st) const
         CheckInheritedPropertiesAreIdentical(checker, resolvedInterface, st->Id()->Start());
 
         for (auto *base : resolvedInterface->Bases()) {
-            checker->IsTypeAssignableTo(
-                resolvedInterface, base,
-                {"Interface '", st->Id()->Name(), "' incorrectly extends interface '", base, "'"}, st->Id()->Start());
+            checker->IsTypeAssignableTo(resolvedInterface, base,
+                                        {util::StringView {"Interface '"}, st->Id()->Name(),
+                                         util::StringView {"' incorrectly extends interface '"}, base,
+                                         util::StringView {"'"}},
+                                        st->Id()->Start());
         }
 
         checker->CheckIndexConstraints(resolvedInterface);
@@ -2293,8 +2315,9 @@ checker::Type *TSAnalyzer::Check(ir::TSQualifiedName *expr) const
         }
     }
 
-    checker->ThrowTypeError({"Property ", expr->Right()->Name(), " does not exist on this type."},
-                            expr->Right()->Start());
+    checker->ThrowTypeError(
+        {util::StringView {"Property "}, expr->Right()->Name(), util::StringView {" does not exist on this type."}},
+        expr->Right()->Start());
     return nullptr;
 }
 

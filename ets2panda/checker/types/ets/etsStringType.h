@@ -25,7 +25,7 @@ public:
         : ETSObjectType(allocator, ETSObjectFlags::CLASS | ETSObjectFlags::STRING | ETSObjectFlags::RESOLVED_SUPER)
     {
         SetSuperType(super);
-        SetAssemblerName(compiler::Signatures::BUILTIN_STRING);
+        SetAssemblerName(util::StringView {compiler::Signatures::BUILTIN_STRING});
     }
 
     explicit ETSStringType(ArenaAllocator *allocator, ETSObjectType *super, util::StringView value)
@@ -33,7 +33,7 @@ public:
           value_(value)
     {
         SetSuperType(super);
-        SetAssemblerName(compiler::Signatures::BUILTIN_STRING);
+        SetAssemblerName(util::StringView {compiler::Signatures::BUILTIN_STRING});
         AddTypeFlag(TypeFlag::CONSTANT);
         variable_ = super->Variable();
     }

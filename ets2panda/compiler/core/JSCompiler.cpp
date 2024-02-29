@@ -257,7 +257,7 @@ static void CompileMissingProperties(compiler::PandaGen *pg, const util::BitSet 
     compiler::VReg computedInstanceFieldsArray {};
     uint32_t computedInstanceFieldsIndex = 0;
 
-    pg->LoadObjByName(node, "prototype");
+    pg->LoadObjByName(node, util::StringView {"prototype"});
     pg->StoreAccumulator(node, protoReg);
 
     if (node->HasComputedInstanceField()) {
@@ -1217,7 +1217,7 @@ void JSCompiler::Compile(const ir::TemplateLiteral *expr) const
 void JSCompiler::Compile(const ir::ThisExpression *expr) const
 {
     PandaGen *pg = GetPandaGen();
-    auto res = pg->Scope()->Find(varbinder::VarBinder::MANDATORY_PARAM_THIS);
+    auto res = pg->Scope()->Find(util::StringView {varbinder::VarBinder::MANDATORY_PARAM_THIS});
 
     ASSERT(res.variable && res.variable->IsLocalVariable());
     pg->LoadAccFromLexEnv(expr, res);
@@ -1405,7 +1405,7 @@ void JSCompiler::Compile(const ir::ExportDefaultDeclaration *st) const
 {
     PandaGen *pg = GetPandaGen();
     st->Decl()->Compile(pg);
-    pg->StoreModuleVar(st, "default");
+    pg->StoreModuleVar(st, util::StringView {"default"});
 }
 
 void JSCompiler::Compile(const ir::ExportNamedDeclaration *st) const

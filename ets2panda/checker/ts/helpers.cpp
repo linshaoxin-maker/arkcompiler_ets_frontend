@@ -197,7 +197,8 @@ TypeFlag TSChecker::GetFalsyFlags(Type *type)
     }
 
     if (type->IsBigintLiteralType()) {
-        return type->AsBigintLiteralType()->Value() == "0n" ? TypeFlag::BIGINT_LITERAL : TypeFlag::NONE;
+        return type->AsBigintLiteralType()->Value() == util::StringView {"0n"} ? TypeFlag::BIGINT_LITERAL
+                                                                               : TypeFlag::NONE;
     }
 
     if (type->IsBooleanLiteralType()) {

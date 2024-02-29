@@ -418,22 +418,22 @@ void PandaGen::LoadConst(const ir::AstNode *node, Constant id)
 
 void PandaGen::GetFunctionObject(const ir::AstNode *node)
 {
-    LoadAccFromLexEnv(node, Scope()->Find(varbinder::VarBinder::MANDATORY_PARAM_FUNC));
+    LoadAccFromLexEnv(node, Scope()->Find(util::StringView {varbinder::VarBinder::MANDATORY_PARAM_FUNC}));
 }
 
 void PandaGen::GetNewTarget(const ir::AstNode *node)
 {
-    LoadAccFromLexEnv(node, Scope()->Find(varbinder::VarBinder::MANDATORY_PARAM_NEW_TARGET));
+    LoadAccFromLexEnv(node, Scope()->Find(util::StringView {varbinder::VarBinder::MANDATORY_PARAM_NEW_TARGET}));
 }
 
 void PandaGen::GetThis(const ir::AstNode *node)
 {
-    LoadAccFromLexEnv(node, Scope()->Find(varbinder::VarBinder::MANDATORY_PARAM_THIS));
+    LoadAccFromLexEnv(node, Scope()->Find(util::StringView {varbinder::VarBinder::MANDATORY_PARAM_THIS}));
 }
 
 void PandaGen::SetThis(const ir::AstNode *node)
 {
-    StoreAccToLexEnv(node, Scope()->Find(varbinder::VarBinder::MANDATORY_PARAM_THIS), true);
+    StoreAccToLexEnv(node, Scope()->Find(util::StringView {varbinder::VarBinder::MANDATORY_PARAM_THIS}), true);
 }
 
 void PandaGen::LoadVar(const ir::Identifier *node, const varbinder::ConstScopeFindResult &result)
@@ -492,7 +492,7 @@ void PandaGen::LoadAccFromArgs(const ir::AstNode *node)
         return;
     }
 
-    auto res = Scope()->Find(varbinder::VarBinder::FUNCTION_ARGUMENTS);
+    auto res = Scope()->Find(util::StringView {varbinder::VarBinder::FUNCTION_ARGUMENTS});
     ASSERT(res.scope);
 
     GetUnmappedArgs(node);
@@ -1410,7 +1410,7 @@ void PandaGen::CreateArray(const ir::AstNode *node, const ArenaVector<ir::Expres
             LoadAccumulatorInt(node, i);
         }
 
-        StOwnByName(node, obj, "length");
+        StOwnByName(node, obj, util::StringView {"length"});
     }
 
     LoadAccumulator(node, obj);
@@ -1799,7 +1799,7 @@ void PandaGen::DirectEval(const ir::AstNode *node, uint32_t parserStatus)
 
 void PandaGen::LoadLexicalContext(const ir::AstNode *node)
 {
-    auto result = Scope()->Find(varbinder::VarBinder::LEXICAL_CONTEXT_PARAM);
+    auto result = Scope()->Find(util::StringView {varbinder::VarBinder::LEXICAL_CONTEXT_PARAM});
     LoadLexicalVar(node, result.lexLevel, result.variable->AsLocalVariable()->LexIdx());
 }
 

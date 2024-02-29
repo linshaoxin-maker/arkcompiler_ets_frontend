@@ -125,7 +125,8 @@ checker::Type *TSTupleType::GetType(checker::TSChecker *checker)
         numberIndexType = checker->CreateUnionType(std::move(numberIndexTypes));
     }
 
-    desc->numberIndexInfo = checker->Allocator()->New<checker::IndexInfo>(numberIndexType, "x", false);
+    desc->numberIndexInfo =
+        checker->Allocator()->New<checker::IndexInfo>(numberIndexType, util::StringView {"x"}, false);
 
     SetTsType(checker->CreateTupleType(desc, std::move(elementFlags), combinedFlags, minLength, fixedLength, false,
                                        std::move(namedMembers)));

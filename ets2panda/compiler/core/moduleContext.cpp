@@ -37,7 +37,7 @@ void CompileImports(PandaGen *pg, varbinder::ModuleScope *scope)
             varbinder::Variable *v = scope->FindLocal(decl->LocalName(), varbinder::ResolveBindingOptions::BINDINGS);
 
             if (!v->IsModuleVariable()) {
-                ASSERT(decl->ImportName() == "*");
+                ASSERT(decl->ImportName() == util::StringView {"*"});
 
                 varbinder::ConstScopeFindResult result(decl->LocalName(), scope, 0, v);
                 pg->StoreAccToLexEnv(decl->Node(), result, true);

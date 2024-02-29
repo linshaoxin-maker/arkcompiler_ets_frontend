@@ -28,14 +28,14 @@ class PrimitiveWrappers {
 public:
     explicit PrimitiveWrappers(ArenaAllocator *allocator) : wrappers_(allocator->Adapter())
     {
-        wrappers_.insert({"Boolean", {nullptr, ETSObjectFlags::BUILTIN_BOOLEAN}});
-        wrappers_.insert({"Byte", {nullptr, ETSObjectFlags::BUILTIN_BYTE}});
-        wrappers_.insert({"Char", {nullptr, ETSObjectFlags::BUILTIN_CHAR}});
-        wrappers_.insert({"Short", {nullptr, ETSObjectFlags::BUILTIN_SHORT}});
-        wrappers_.insert({"Int", {nullptr, ETSObjectFlags::BUILTIN_INT}});
-        wrappers_.insert({"Long", {nullptr, ETSObjectFlags::BUILTIN_LONG}});
-        wrappers_.insert({"Float", {nullptr, ETSObjectFlags::BUILTIN_FLOAT}});
-        wrappers_.insert({"Double", {nullptr, ETSObjectFlags::BUILTIN_DOUBLE}});
+        wrappers_.insert({util::StringView {"Boolean"}, {nullptr, ETSObjectFlags::BUILTIN_BOOLEAN}});
+        wrappers_.insert({util::StringView {"Byte"}, {nullptr, ETSObjectFlags::BUILTIN_BYTE}});
+        wrappers_.insert({util::StringView {"Char"}, {nullptr, ETSObjectFlags::BUILTIN_CHAR}});
+        wrappers_.insert({util::StringView {"Short"}, {nullptr, ETSObjectFlags::BUILTIN_SHORT}});
+        wrappers_.insert({util::StringView {"Int"}, {nullptr, ETSObjectFlags::BUILTIN_INT}});
+        wrappers_.insert({util::StringView {"Long"}, {nullptr, ETSObjectFlags::BUILTIN_LONG}});
+        wrappers_.insert({util::StringView {"Float"}, {nullptr, ETSObjectFlags::BUILTIN_FLOAT}});
+        wrappers_.insert({util::StringView {"Double"}, {nullptr, ETSObjectFlags::BUILTIN_DOUBLE}});
     }
     NO_COPY_SEMANTIC(PrimitiveWrappers);
     NO_MOVE_SEMANTIC(PrimitiveWrappers);

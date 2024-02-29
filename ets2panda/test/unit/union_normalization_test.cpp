@@ -147,8 +147,9 @@ public:
 
     static checker::Type *FindTypeAlias(checker::ETSChecker *checker, std::string_view aliasName)
     {
-        auto *foundVar =
-            checker->Scope()->FindLocal(aliasName, varbinder::ResolveBindingOptions::ALL)->AsLocalVariable();
+        auto *foundVar = checker->Scope()
+                             ->FindLocal(util::StringView {aliasName}, varbinder::ResolveBindingOptions::ALL)
+                             ->AsLocalVariable();
         if (foundVar == nullptr) {
             return nullptr;
         }
@@ -444,7 +445,7 @@ TEST_F(UnionNormalizationTest, UnionStringLiterals)
     // Test normalization: string | "abc" ==> string
     ArenaVector<checker::Type *> unionConstituents1(checker.Allocator()->Adapter());
     unionConstituents1.emplace_back(checker.GlobalBuiltinETSStringType());
-    unionConstituents1.emplace_back(checker.CreateETSStringLiteralType("abc"));
+    unionConstituents1.emplace_back(checker.CreateETSStringLiteralType(util::StringView {"abc"}));
 
     // Create union type, which will be normalized inside creation function
     auto *const normalizedType1 = checker.CreateETSUnionType(std::move(unionConstituents1));
@@ -454,7 +455,7 @@ TEST_F(UnionNormalizationTest, UnionStringLiterals)
 
     // Test normalization: "abc" | string | string ==> string
     ArenaVector<checker::Type *> unionConstituents2(checker.Allocator()->Adapter());
-    unionConstituents2.emplace_back(checker.CreateETSStringLiteralType("abc"));
+    unionConstituents2.emplace_back(checker.CreateETSStringLiteralType(util::StringView {"abc"}));
     unionConstituents2.emplace_back(checker.GlobalBuiltinETSStringType());
     unionConstituents2.emplace_back(checker.GlobalBuiltinETSStringType());
 
@@ -467,9 +468,9 @@ TEST_F(UnionNormalizationTest, UnionStringLiterals)
     // Test normalization: number | "abc" | string | "xy" ==> number | string
     ArenaVector<checker::Type *> unionConstituents3(checker.Allocator()->Adapter());
     unionConstituents3.emplace_back(checker.GlobalDoubleType());
-    unionConstituents3.emplace_back(checker.CreateETSStringLiteralType("abc"));
+    unionConstituents3.emplace_back(checker.CreateETSStringLiteralType(util::StringView {"abc"}));
     unionConstituents3.emplace_back(checker.GlobalBuiltinETSStringType());
-    unionConstituents3.emplace_back(checker.CreateETSStringLiteralType("xy"));
+    unionConstituents3.emplace_back(checker.CreateETSStringLiteralType(util::StringView {"xy"}));
 
     // Create union type, which will be normalized inside creation function
     auto *const normalizedType3 = checker.CreateETSUnionType(std::move(unionConstituents3));

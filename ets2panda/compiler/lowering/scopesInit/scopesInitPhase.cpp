@@ -223,15 +223,16 @@ void ScopesInitPhase::VisitFunctionDeclaration(ir::FunctionDeclaration *funcDecl
 void ScopesInitPhase::VisitExportAllDeclaration(ir::ExportAllDeclaration *exportAllDecl)
 {
     Iterate(exportAllDecl);
-    const auto name = exportAllDecl->Exported() != nullptr ? exportAllDecl->Exported()->Name() : "*";
-    auto *decl = VarBinder()->AddDecl<varbinder::ExportDecl>(exportAllDecl->Start(), name, "*");
+    const auto name = exportAllDecl->Exported() != nullptr ? exportAllDecl->Exported()->Name() : util::StringView {"*"};
+    auto *decl = VarBinder()->AddDecl<varbinder::ExportDecl>(exportAllDecl->Start(), name, util::StringView {"*"});
     VarBinder()->GetScope()->AsModuleScope()->AddExportDecl(exportAllDecl, decl);
 }
 
 void ScopesInitPhase::VisitImportNamespaceSpecifier(ir::ImportNamespaceSpecifier *importSpec)
 {
     Iterate(importSpec);
-    VarBinder()->AddDecl<varbinder::ImportDecl>(importSpec->Start(), "*", importSpec->Local()->Name(), importSpec);
+    VarBinder()->AddDecl<varbinder::ImportDecl>(importSpec->Start(), util::StringView {"*"},
+                                                importSpec->Local()->Name(), importSpec);
 }
 
 void ScopesInitPhase::VisitImportSpecifier(ir::ImportSpecifier *importSpec)
@@ -246,7 +247,8 @@ void ScopesInitPhase::VisitImportDefaultSpecifier(ir::ImportDefaultSpecifier *im
 {
     Iterate(importSpec);
     const auto *local = importSpec->Local();
-    VarBinder()->AddDecl<varbinder::ImportDecl>(local->Start(), "default", local->Name(), importSpec);
+    VarBinder()->AddDecl<varbinder::ImportDecl>(local->Start(), util::StringView {"default"}, local->Name(),
+                                                importSpec);
 }
 
 void ScopesInitPhase::VisitExportDefaultDeclaration(ir::ExportDefaultDeclaration *exportDecl)

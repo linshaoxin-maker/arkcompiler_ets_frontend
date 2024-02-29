@@ -300,17 +300,17 @@ ir::TSEnumMember *ETSEnumInterface::FindMember(const util::StringView &name) con
 ETSFunctionType *ETSEnumInterface::LookupConstantMethod(ETSChecker *const checker,
                                                         const ir::Identifier *const prop) const
 {
-    if (prop->Name() == TO_STRING_METHOD_NAME) {
+    if (prop->Name() == util::StringView {TO_STRING_METHOD_NAME}) {
         ASSERT(toStringMethod_.memberProxyType != nullptr);
         return toStringMethod_.memberProxyType;
     }
 
-    if (prop->Name() == GET_VALUE_METHOD_NAME) {
+    if (prop->Name() == util::StringView {GET_VALUE_METHOD_NAME}) {
         ASSERT(getValueMethod_.memberProxyType != nullptr);
         return getValueMethod_.memberProxyType;
     }
 
-    if (prop->Name() == GET_NAME_METHOD_NAME) {
+    if (prop->Name() == util::StringView {GET_NAME_METHOD_NAME}) {
         ASSERT(getNameMethod_.memberProxyType != nullptr);
         return getNameMethod_.memberProxyType;
     }
@@ -320,12 +320,12 @@ ETSFunctionType *ETSEnumInterface::LookupConstantMethod(ETSChecker *const checke
 
 ETSFunctionType *ETSEnumInterface::LookupTypeMethod(ETSChecker *const checker, const ir::Identifier *const prop) const
 {
-    if (prop->Name() == VALUES_METHOD_NAME) {
+    if (prop->Name() == util::StringView {VALUES_METHOD_NAME}) {
         ASSERT(valuesMethod_.memberProxyType != nullptr);
         return valuesMethod_.memberProxyType;
     }
 
-    if (prop->Name() == VALUE_OF_METHOD_NAME) {
+    if (prop->Name() == util::StringView {VALUE_OF_METHOD_NAME}) {
         ASSERT(valueOfMethod_.memberProxyType != nullptr);
         return valueOfMethod_.memberProxyType;
     }

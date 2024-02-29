@@ -566,7 +566,7 @@ ir::TypeNode *ASParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *option
             break;
         }
         case lexer::TokenType::KEYW_VOID: {
-            util::StringView name = "void";
+            util::StringView name = util::StringView {"void"};
             auto *typeName = AllocNode<ir::Identifier>(name, Allocator());
             typeName->SetRange(Lexer()->GetToken().Loc());
             type = AllocNode<ir::NamedType>(typeName);
@@ -575,7 +575,7 @@ ir::TypeNode *ASParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *option
             break;
         }
         case lexer::TokenType::KEYW_THIS: {
-            util::StringView name = "this";
+            util::StringView name = util::StringView {"this"};
             auto *typeName = AllocNode<ir::Identifier>(name, Allocator());
             typeName->SetRange(Lexer()->GetToken().Loc());
             type = AllocNode<ir::NamedType>(typeName);
@@ -585,7 +585,7 @@ ir::TypeNode *ASParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *option
         }
         case lexer::TokenType::LITERAL_FALSE:
         case lexer::TokenType::LITERAL_TRUE: {
-            util::StringView name = "bool";
+            util::StringView name = util::StringView {"bool"};
             auto *typeName = AllocNode<ir::Identifier>(name, Allocator());
             typeName->SetRange(Lexer()->GetToken().Loc());
             type = AllocNode<ir::NamedType>(typeName);
@@ -594,7 +594,7 @@ ir::TypeNode *ASParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *option
             break;
         }
         case lexer::TokenType::LITERAL_NULL: {
-            util::StringView name = "null";
+            util::StringView name = util::StringView {"null"};
             auto *typeName = AllocNode<ir::Identifier>(name, Allocator());
             typeName->SetRange(Lexer()->GetToken().Loc());
             type = AllocNode<ir::NamedType>(typeName);
@@ -603,7 +603,7 @@ ir::TypeNode *ASParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *option
             break;
         }
         case lexer::TokenType::LITERAL_STRING: {
-            util::StringView name = "string";
+            util::StringView name = util::StringView {"string"};
             auto *typeName = AllocNode<ir::Identifier>(name, Allocator());
             typeName->SetRange(Lexer()->GetToken().Loc());
             type = AllocNode<ir::NamedType>(typeName);
@@ -714,7 +714,7 @@ ir::TypeNode *ASParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *option
 
         const lexer::SourcePosition &startPos = type->Start();
 
-        util::StringView name = "Array";
+        util::StringView name = util::StringView {"Array"};
         auto *typeName = AllocNode<ir::Identifier>(name, Allocator());
         typeName->SetRange(Lexer()->GetToken().Loc());
 

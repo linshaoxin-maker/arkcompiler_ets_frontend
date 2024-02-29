@@ -2115,7 +2115,7 @@ extern "C" es2panda_AstNode *CreateStringLiteral(es2panda_Context *context, char
     auto *allocator = ctx->allocator;
     auto *str = ArenaStrdup(allocator, string);
 
-    return reinterpret_cast<es2panda_AstNode *>(allocator->New<ir::StringLiteral>(str));
+    return reinterpret_cast<es2panda_AstNode *>(allocator->New<ir::StringLiteral>(util::StringView {str}));
 }
 
 extern "C" char const *StringLiteralString(es2panda_Context *context, es2panda_AstNode *ast)

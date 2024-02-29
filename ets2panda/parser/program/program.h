@@ -171,7 +171,7 @@ public:
     void SetSource(const panda::es2panda::SourceFile &sourceFile)
     {
         sourceCode_ = util::UString(sourceFile.source, Allocator()).View();
-        sourceFilePath_ = util::Path(sourceFile.filePath, Allocator());
+        sourceFilePath_ = util::Path(util::StringView {sourceFile.filePath}, Allocator());
         sourceFileFolder_ = util::UString(sourceFile.fileFolder, Allocator()).View();
         absoluteName_ = sourceFilePath_.GetAbsolutePath();
         resolvedFilePath_ = util::UString(sourceFile.resolvedPath, Allocator()).View();

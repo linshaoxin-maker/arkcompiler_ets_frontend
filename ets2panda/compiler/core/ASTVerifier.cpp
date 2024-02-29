@@ -260,7 +260,8 @@ public:
     ASTVerifier::CheckResult operator()(ASTVerifier::ErrorContext &ctx, const ir::AstNode *ast)
     {
         if (ast->IsTyped()) {
-            if (ast->IsClassDefinition() && ast->AsClassDefinition()->Ident()->Name() == "ETSGLOBAL") {
+            if (ast->IsClassDefinition() &&
+                ast->AsClassDefinition()->Ident()->Name() == util::StringView {"ETSGLOBAL"}) {
                 return ASTVerifier::CheckResult::SKIP_SUBTREE;
             }
             const auto *typed = static_cast<const ir::TypedAstNode *>(ast);

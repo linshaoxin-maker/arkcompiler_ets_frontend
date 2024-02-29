@@ -76,12 +76,15 @@ ETSObjectType *ETSChecker::GetSuperType(ETSObjectType *type)
         return GlobalETSObjectType();
     }
 
-    TypeStackElement tse(this, type, {"Cyclic inheritance involving ", type->Name(), "."}, classDef->Ident()->Start());
+    TypeStackElement tse(this, type,
+                         {util::StringView {"Cyclic inheritance involving "}, type->Name(), util::StringView {"."}},
+                         classDef->Ident()->Start());
 
     Type *superType = classDef->Super()->AsTypeNode()->GetType(this);
 
     if (!superType->IsETSObjectType() || !superType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::CLASS)) {
-        ThrowTypeError({"The super type of '", classDef->Ident()->Name(), "' class is not extensible."},
+        ThrowTypeError({util::StringView {"The super type of '"}, classDef->Ident()->Name(),
+                        util::StringView {"' class is not extensible."}},
                        classDef->Super()->Start());
     }
 
@@ -89,7 +92,9 @@ ETSObjectType *ETSChecker::GetSuperType(ETSObjectType *type)
 
     // struct node has class defination, too
     if (superObj->GetDeclNode()->Parent()->IsETSStructDeclaration()) {
-        ThrowTypeError({"struct ", classDef->Ident()->Name(), " is not extensible."}, classDef->Super()->Start());
+        ThrowTypeError(
+            {util::StringView {"struct "}, classDef->Ident()->Name(), util::StringView {" is not extensible."}},
+            classDef->Super()->Start());
     }
 
     if (superObj->GetDeclNode()->IsFinal()) {
@@ -143,7 +148,9 @@ ArenaVector<ETSObjectType *> ETSChecker::GetInterfacesOfInterface(ETSObjectType 
 
     const auto *declNode = type->GetDeclNode()->AsTSInterfaceDeclaration();
 
-    TypeStackElement tse(this, type, {"Cyclic inheritance involving ", type->Name(), "."}, declNode->Id()->Start());
+    TypeStackElement tse(this, type,
+                         {util::StringView {"Cyclic inheritance involving "}, type->Name(), util::StringView {"."}},
+                         declNode->Id()->Start());
 
     std::unordered_set<Type *> extendsSet;
     for (auto *it : declNode->Extends()) {
@@ -197,24 +204,27 @@ ArenaVector<Type *> ETSChecker::CreateTypeForTypeParameters(ir::TSTypeParameterD
 
 void ETSChecker::CheckTypeParameterConstraint(ir::TSTypeParameter *param, Type2TypeMap &extends)
 {
-    const auto typeParamName = param->Name()->Name().Utf8();
+    const auto typeParamName = util::StringView {param->Name()->Name().Utf8()};
     const auto constraintName =
-        param->Constraint()->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Name().Utf8();
+        util::StringView {param->Constraint()->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Name().Utf8()};
     if (typeParamName == constraintName) {
-        ThrowTypeError({"Type parameter '", typeParamName, "' cannot extend/implement itself."},
+        ThrowTypeError({util::StringView {"Type parameter '"}, typeParamName,
+                        util::StringView {"' cannot extend/implement itself."}},
                        param->Constraint()->Start());
     }
 
     auto it = extends.find(typeParamName);
     if (it != extends.cend()) {
-        ThrowTypeError({"Type parameter '", typeParamName, "' is duplicated in the list."},
-                       param->Constraint()->Start());
+        ThrowTypeError(
+            {util::StringView {"Type parameter '"}, typeParamName, util::StringView {"' is duplicated in the list."}},
+            param->Constraint()->Start());
     }
 
     it = extends.find(constraintName);
     while (it != extends.cend()) {
-        if (it->second == typeParamName) {
-            ThrowTypeError({"Type parameter '", typeParamName, "' has circular constraint dependency."},
+        if (util::StringView {it->second} == typeParamName) {
+            ThrowTypeError({util::StringView {"Type parameter '"}, typeParamName,
+                            util::StringView {"' has circular constraint dependency."}},
                            param->Constraint()->Start());
         }
         it = extends.find(it->second);
@@ -733,9 +743,9 @@ void ETSChecker::ValidateOverriding(ETSObjectType *classType, const lexer::Sourc
 
     if (!abstractsToBeImplemented.empty() && throwError) {
         auto unimplementedSignature = abstractsToBeImplemented.front()->CallSignatures().front();
-        ThrowTypeError({classType->Name(), " is not abstract and does not override abstract method ",
-                        unimplementedSignature->Function()->Id()->Name(), unimplementedSignature, " in ",
-                        GetContainingObjectNameFromSignature(unimplementedSignature)},
+        ThrowTypeError({classType->Name(), util::StringView {" is not abstract and does not override abstract method "},
+                        unimplementedSignature->Function()->Id()->Name(), unimplementedSignature,
+                        util::StringView {" in "}, GetContainingObjectNameFromSignature(unimplementedSignature)},
                        pos);
     }
 
@@ -918,7 +928,8 @@ void ETSChecker::FindAssignment(const ir::AstNode *node, const varbinder::LocalV
 {
     if (node->IsAssignmentExpression() && node->AsAssignmentExpression()->Target() == classVar) {
         if (initialized) {
-            ThrowTypeError({"Variable '", classVar->Declaration()->Name(), "' might already have been initialized"},
+            ThrowTypeError({util::StringView {"Variable '"}, classVar->Declaration()->Name(),
+                            util::StringView {"' might already have been initialized"}},
                            node->Start());
         }
 
@@ -952,7 +963,8 @@ void ETSChecker::CheckConstFieldInitialized(const Signature *signature, varbinde
     // NOTE: szd. control flow
     FindAssignments(signature->Function()->Body(), classVar, initialized);
     if (!initialized) {
-        ThrowTypeError({"Variable '", classVar->Declaration()->Name(), "' might not have been initialized"},
+        ThrowTypeError({util::StringView {"Variable '"}, classVar->Declaration()->Name(),
+                        util::StringView {"' might not have been initialized"}},
                        signature->Function()->End());
     }
 
@@ -1062,7 +1074,9 @@ ETSObjectType *ETSChecker::CheckThisOrSuperAccess(ir::Expression *node, ETSObjec
 
     if (node->Parent()->IsCallExpression() && (node->Parent()->AsCallExpression()->Callee() == node)) {
         if (Context().ContainingSignature() == nullptr) {
-            ThrowTypeError({"Call to '", msg, "' must be first statement in constructor"}, node->Start());
+            ThrowTypeError(
+                {util::StringView {"Call to '"}, msg, util::StringView {"' must be first statement in constructor"}},
+                node->Start());
         }
 
         auto *sig = Context().ContainingSignature();
@@ -1656,13 +1670,15 @@ void ETSChecker::CheckInvokeMethodsLegitimacy(ETSObjectType *const classType)
     auto searchFlag = PropertySearchFlags::SEARCH_IN_INTERFACES | PropertySearchFlags::SEARCH_IN_BASE |
                       PropertySearchFlags::SEARCH_STATIC_METHOD;
 
-    auto *const invokeMethod = classType->GetProperty(compiler::Signatures::STATIC_INVOKE_METHOD, searchFlag);
+    auto *const invokeMethod =
+        classType->GetProperty(util::StringView {compiler::Signatures::STATIC_INVOKE_METHOD}, searchFlag);
     if (invokeMethod == nullptr) {
         classType->AddObjectFlag(ETSObjectFlags::CHECKED_INVOKE_LEGITIMACY);
         return;
     }
 
-    auto *const instantiateMethod = classType->GetProperty(compiler::Signatures::STATIC_INSTANTIATE_METHOD, searchFlag);
+    auto *const instantiateMethod =
+        classType->GetProperty(util::StringView {compiler::Signatures::STATIC_INSTANTIATE_METHOD}, searchFlag);
     if (instantiateMethod != nullptr) {
         ThrowTypeError({"Static ", compiler::Signatures::STATIC_INVOKE_METHOD, " method and static ",
                         compiler::Signatures::STATIC_INSTANTIATE_METHOD, " method both exist in class/interface ",
