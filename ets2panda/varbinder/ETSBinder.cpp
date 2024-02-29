@@ -479,6 +479,24 @@ void ETSBinder::ImportAllForeignBindings(ir::AstNode *const specifier,
     }
 }
 
+void ETSBinder::AddSpecifiers(const ir::ETSImportDeclaration *decl, const util::StringView &specifierName,
+                              ir::StringLiteral *dirName, std::unordered_set<std::string> &exportedNames,
+                              const lexer::SourcePosition &pos)
+{
+    for (auto it : decl->Specifiers()) {
+        if (it->IsImportNamespaceSpecifier() && !specifierName.Empty()) {
+            std::cerr << "Warning: import with alias cannot be used with re-export\n";
+            continue;
+        }
+
+        AddSpecifiersToTopBindings(it, decl, dirName);
+        if (it->IsImportSpecifier() && !exportedNames.insert(it->AsImportSpecifier()->Local()->Name().Mutf8()).second) {
+            ThrowError(pos, "Ambiguous import \"" + it->AsImportSpecifier()->Local()->Name().Mutf8() +
+                                "\" has multiple matching exports");
+        }
+    }
+}
+
 bool ETSBinder::AddImportNamespaceSpecifiersToTopBindings(ir::AstNode *const specifier,
                                                           const varbinder::Scope::VariableMap &globalBindings,
                                                           const parser::Program *const importProgram,
@@ -507,23 +525,9 @@ bool ETSBinder::AddImportNamespaceSpecifiersToTopBindings(ir::AstNode *const spe
             // clang-format on
             dirName.SetStart(item->GetETSImportDeclarations()->Source()->Start());
 
-            for (auto it : item->GetETSImportDeclarations()->Specifiers()) {
-                if (it->IsImportNamespaceSpecifier() &&
-                    !specifier->AsImportNamespaceSpecifier()->Local()->Name().Empty()) {
-                    std::cerr << "Warning: import with alias cannot be used with re-export\n";
-                    continue;
-                }
-
-                AddSpecifiersToTopBindings(it, item->GetETSImportDeclarations(),
-                                           dirName.Str().Is(".") ? item->GetETSImportDeclarations()->Source()
-                                                                 : &dirName);
-                if (it->IsImportSpecifier() &&
-                    !exportedNames.insert(it->AsImportSpecifier()->Local()->Name().Mutf8()).second) {
-                    ThrowError(import->Start(), "Ambiguous import \"" +
-                                                    it->AsImportSpecifier()->Local()->Name().Mutf8() +
-                                                    "\" has multiple matching exports");
-                }
-            }
+            auto *dirPath = dirName.Str().Is(".") ? item->GetETSImportDeclarations()->Source() : &dirName;
+            AddSpecifiers(item->GetETSImportDeclarations(), specifier->AsImportNamespaceSpecifier()->Local()->Name(),
+                          dirPath, exportedNames, import->Start());
         }
     }
 
@@ -559,6 +563,26 @@ Variable *ETSBinder::FindImportSpecifiersVariable(const util::StringView &import
     return foundVar->second;
 }
 
+const util::StringView &ETSBinder::GetLocalName(const ir::ImportSpecifier *importSpecifier,
+                                                const util::StringView &imported,
+                                                const ir::StringLiteral *const importPath)
+{
+    if (importSpecifier->Local() != nullptr) {
+        auto fnc = [&importPath, &imported](const auto &savedSpecifier) {
+            return importPath->Str() != savedSpecifier.first && imported == savedSpecifier.second;
+        };
+        if (!std::any_of(importSpecifiers_.begin(), importSpecifiers_.end(), fnc)) {
+            TopScope()->EraseBinding(imported);
+        }
+
+        importSpecifiers_.push_back(std::make_pair(importPath->Str(), imported));
+
+        return importSpecifier->Local()->Name();
+    }
+
+    return imported;
+}
+
 bool ETSBinder::AddImportSpecifiersToTopBindings(ir::AstNode *const specifier,
                                                  const varbinder::Scope::VariableMap &globalBindings,
                                                  const ir::ETSImportDeclaration *const import,
@@ -578,31 +602,13 @@ bool ETSBinder::AddImportSpecifiersToTopBindings(ir::AstNode *const specifier,
     };
 
     const auto *const importSpecifier = specifier->AsImportSpecifier();
-
     if (!importSpecifier->Imported()->IsIdentifier()) {
         return true;
     }
 
     const auto &imported = importSpecifier->Imported()->AsIdentifier()->Name();
-
     auto *const var = FindImportSpecifiersVariable(imported, globalBindings, recordRes);
-
-    const auto &localName = [this, importSpecifier, &imported, &importPath]() {
-        if (importSpecifier->Local() != nullptr) {
-            auto fnc = [&importPath, &imported](const auto &savedSpecifier) {
-                return importPath->Str() != savedSpecifier.first && imported == savedSpecifier.second;
-            };
-            if (!std::any_of(importSpecifiers_.begin(), importSpecifiers_.end(), fnc)) {
-                TopScope()->EraseBinding(imported);
-            }
-
-            importSpecifiers_.push_back(std::make_pair(importPath->Str(), imported));
-
-            return importSpecifier->Local()->Name();
-        }
-
-        return imported;
-    }();
+    const auto &localName = GetLocalName(importSpecifier, imported, importPath);
 
     if (var == nullptr) {
         for (auto item : ReExportImports()) {
@@ -681,6 +687,30 @@ ArenaVector<parser::Program *> ETSBinder::GetExternalProgram(const util::StringV
     return recordRes->second;
 }
 
+util::StringView ETSBinder::GetSourceName(const ir::ETSImportDeclaration *const import, ir::StringLiteral *path)
+{
+    if (import->Module() == nullptr) {
+        return path->Str();
+    }
+    char pathDelimiter = panda::os::file::File::GetPathDelim().at(0);
+    auto strImportPath = path->Str().Mutf8();
+    if (strImportPath.find(pathDelimiter) == (strImportPath.size() - 1)) {
+        return util::UString(strImportPath + import->Module()->Str().Mutf8(), Allocator()).View();
+    }
+
+    std::string importFilePath;
+    if (!import->Source()->Str().Is(path->Str().Mutf8()) && !import->Source()->Str().Empty() &&
+        import->Source()->Str().Mutf8().substr(0, 1) == ".") {
+        importFilePath = import->Source()->Str().Mutf8().substr(import->Source()->Str().Mutf8().find_first_not_of('.'));
+        if (importFilePath.size() == 1) {
+            importFilePath = "";
+        }
+    }
+
+    return util::UString(strImportPath + importFilePath + pathDelimiter + import->Module()->Str().Mutf8(), Allocator())
+        .View();
+}
+
 void ETSBinder::AddSpecifiersToTopBindings(ir::AstNode *const specifier, const ir::ETSImportDeclaration *const import,
                                            ir::StringLiteral *path,
                                            std::vector<ir::ETSImportDeclaration *> viewedReExport)
@@ -692,31 +722,7 @@ void ETSBinder::AddSpecifiersToTopBindings(ir::AstNode *const specifier, const i
         return;
     }
 
-    const util::StringView sourceName = [import, importPath, this, &path]() {
-        if (import->Module() == nullptr) {
-            return importPath->Str();
-        }
-        char pathDelimiter = panda::os::file::File::GetPathDelim().at(0);
-        auto strImportPath = importPath->Str().Mutf8();
-        if (strImportPath.find(pathDelimiter) == (strImportPath.size() - 1)) {
-            return util::UString(strImportPath + import->Module()->Str().Mutf8(), Allocator()).View();
-        }
-
-        std::string importFilePath;
-        if (!import->Source()->Str().Is(path->Str().Mutf8()) && !import->Source()->Str().Empty() &&
-            import->Source()->Str().Mutf8().substr(0, 1) == ".") {
-            importFilePath =
-                import->Source()->Str().Mutf8().substr(import->Source()->Str().Mutf8().find_first_not_of('.'));
-            if (importFilePath.size() == 1) {
-                importFilePath = "";
-            }
-        }
-
-        return util::UString(strImportPath + importFilePath + pathDelimiter + import->Module()->Str().Mutf8(),
-                             Allocator())
-            .View();
-    }();
-
+    auto sourceName = GetSourceName(import, path);
     auto record = GetExternalProgram(sourceName, importPath);
     const auto *const importProgram = record.front();
     const auto *const importGlobalScope = importProgram->GlobalScope();
