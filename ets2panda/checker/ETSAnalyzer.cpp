@@ -526,6 +526,29 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewArrayInstanceExpression *expr) const
     return expr->TsType();
 }
 
+ETSObjectType *ETSAnalyzer::CheckExprClassDefinitionHelper(ir::ETSNewClassInstanceExpression *expr,
+                                                           ETSObjectType *calleeObj, ETSChecker *checker) const
+{
+    if (!calleeObj->HasObjectFlag(checker::ETSObjectFlags::ABSTRACT) && calleeObj->GetDeclNode()->IsFinal()) {
+        checker->ThrowTypeError({"Class ", calleeObj->Name(), " cannot be both 'abstract' and 'final'."},
+                                calleeObj->GetDeclNode()->Start());
+    }
+
+    bool fromInterface = calleeObj->HasObjectFlag(checker::ETSObjectFlags::INTERFACE);
+    auto *classType = checker->BuildAnonymousClassProperties(
+        expr->ClassDefinition(), fromInterface ? checker->GlobalETSObjectType() : calleeObj);
+    if (fromInterface) {
+        classType->AddInterface(calleeObj);
+        calleeObj = checker->GlobalETSObjectType();
+    }
+    expr->ClassDefinition()->SetTsType(classType);
+    checker->CheckClassDefinition(expr->ClassDefinition());
+    checker->CheckInnerClassMembers(classType);
+    expr->SetTsType(classType);
+
+    return calleeObj;
+}
+
 checker::Type *ETSAnalyzer::Check(ir::ETSNewClassInstanceExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -539,22 +562,7 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewClassInstanceExpression *expr) const
     expr->SetTsType(calleeObj);
 
     if (expr->ClassDefinition() != nullptr) {
-        if (!calleeObj->HasObjectFlag(checker::ETSObjectFlags::ABSTRACT) && calleeObj->GetDeclNode()->IsFinal()) {
-            checker->ThrowTypeError({"Class ", calleeObj->Name(), " cannot be both 'abstract' and 'final'."},
-                                    calleeObj->GetDeclNode()->Start());
-        }
-
-        bool fromInterface = calleeObj->HasObjectFlag(checker::ETSObjectFlags::INTERFACE);
-        auto *classType = checker->BuildAnonymousClassProperties(
-            expr->ClassDefinition(), fromInterface ? checker->GlobalETSObjectType() : calleeObj);
-        if (fromInterface) {
-            classType->AddInterface(calleeObj);
-            calleeObj = checker->GlobalETSObjectType();
-        }
-        expr->ClassDefinition()->SetTsType(classType);
-        checker->CheckClassDefinition(expr->ClassDefinition());
-        checker->CheckInnerClassMembers(classType);
-        expr->SetTsType(classType);
+        calleeObj = CheckExprClassDefinitionHelper(expr, calleeObj, checker);
     } else if (calleeObj->HasObjectFlag(checker::ETSObjectFlags::ABSTRACT)) {
         checker->ThrowTypeError({calleeObj->Name(), " is abstract therefore cannot be instantiated."}, expr->Start());
     }
@@ -679,6 +687,61 @@ checker::Type *ETSAnalyzer::GetPreferredType(ir::ArrayExpression *expr) const
     return expr->preferredType_;
 }
 
+void ETSAnalyzer::CheckNonEmptyElemetsHelper(ir::ArrayExpression *expr, bool isArray, ETSChecker *checker) const
+{
+    if (expr->preferredType_ == nullptr) {
+        expr->preferredType_ = expr->Elements()[0]->Check(checker);
+    }
+
+    const bool isPreferredTuple = expr->preferredType_->IsETSTupleType();
+    auto *const targetElementType =
+        isPreferredTuple && !isArray ? expr->preferredType_->AsETSTupleType()->ElementType() : expr->preferredType_;
+
+    for (std::size_t idx = 0; idx < expr->elements_.size(); ++idx) {
+        auto *const currentElement = expr->elements_[idx];
+
+        if (currentElement->IsArrayExpression()) {
+            expr->HandleNestedArrayExpression(checker, currentElement->AsArrayExpression(), isArray, isPreferredTuple,
+                                              idx);
+        }
+
+        if (currentElement->IsObjectExpression()) {
+            currentElement->AsObjectExpression()->SetPreferredType(expr->preferredType_);
+        }
+
+        checker::Type *elementType = currentElement->Check(checker);
+
+        if (elementType->IsETSArrayType() || !isPreferredTuple) {
+            checker::AssignmentContext(checker->Relation(), currentElement, elementType, targetElementType,
+                                       currentElement->Start(),
+                                       {"Array element type '", elementType, "' is not assignable to explicit type '",
+                                        expr->GetPreferredType(), "'"});
+            continue;
+        }
+
+        auto *const compareType = expr->preferredType_->AsETSTupleType()->GetTypeAtIndex(idx);
+
+        if (compareType == nullptr) {
+            checker->ThrowTypeError({"Too many elements in array initializer for tuple with size of ",
+                                     static_cast<uint32_t>(expr->preferredType_->AsETSTupleType()->GetTupleSize())},
+                                    currentElement->Start());
+        }
+
+        const checker::CastingContext cast(
+            checker->Relation(), currentElement, elementType, compareType, currentElement->Start(),
+            {"Array initializer's type is not assignable to tuple type at index: ", idx});
+
+        elementType = compareType;
+
+        checker::AssignmentContext(checker->Relation(), currentElement, elementType, targetElementType,
+                                   currentElement->Start(),
+                                   {"Array element type '", elementType, "' is not assignable to explicit type '",
+                                    expr->GetPreferredType(), "'"});
+    }
+
+    expr->SetPreferredType(targetElementType);
+}
+
 checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -693,52 +756,7 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
     }
 
     if (!expr->Elements().empty()) {
-        if (expr->preferredType_ == nullptr) {
-            expr->preferredType_ = expr->Elements()[0]->Check(checker);
-        }
-
-        const bool isPreferredTuple = expr->preferredType_->IsETSTupleType();
-        auto *const targetElementType =
-            isPreferredTuple && !isArray ? expr->preferredType_->AsETSTupleType()->ElementType() : expr->preferredType_;
-
-        for (std::size_t idx = 0; idx < expr->elements_.size(); ++idx) {
-            auto *const currentElement = expr->elements_[idx];
-
-            if (currentElement->IsArrayExpression()) {
-                expr->HandleNestedArrayExpression(checker, currentElement->AsArrayExpression(), isArray,
-                                                  isPreferredTuple, idx);
-            }
-
-            if (currentElement->IsObjectExpression()) {
-                currentElement->AsObjectExpression()->SetPreferredType(expr->preferredType_);
-            }
-
-            checker::Type *elementType = currentElement->Check(checker);
-
-            if (!elementType->IsETSArrayType() && isPreferredTuple) {
-                auto *const compareType = expr->preferredType_->AsETSTupleType()->GetTypeAtIndex(idx);
-
-                if (compareType == nullptr) {
-                    checker->ThrowTypeError(
-                        {"Too many elements in array initializer for tuple with size of ",
-                         static_cast<uint32_t>(expr->preferredType_->AsETSTupleType()->GetTupleSize())},
-                        currentElement->Start());
-                }
-
-                const checker::CastingContext cast(
-                    checker->Relation(), currentElement, elementType, compareType, currentElement->Start(),
-                    {"Array initializer's type is not assignable to tuple type at index: ", idx});
-
-                elementType = compareType;
-            }
-
-            checker::AssignmentContext(checker->Relation(), currentElement, elementType, targetElementType,
-                                       currentElement->Start(),
-                                       {"Array element type '", elementType, "' is not assignable to explicit type '",
-                                        expr->GetPreferredType(), "'"});
-        }
-
-        expr->SetPreferredType(targetElementType);
+        CheckNonEmptyElemetsHelper(expr, isArray, checker);
     }
 
     if (expr->preferredType_ == nullptr) {
@@ -807,34 +825,13 @@ checker::Type *ETSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
     return expr->TsType();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *expr) const
+void ETSAnalyzer::CheckOperatorTypeHelper(ir::AssignmentExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
-
-    if (expr->TsType() != nullptr) {
-        return expr->TsType();
-    }
-
     auto *leftType = expr->Left()->Check(checker);
-    if (expr->Left()->IsMemberExpression() &&
-        expr->Left()->AsMemberExpression()->Object()->TsType()->IsETSArrayType() &&
-        expr->Left()->AsMemberExpression()->Property()->IsIdentifier() &&
-        expr->Left()->AsMemberExpression()->Property()->AsIdentifier()->Name().Is("length")) {
-        checker->ThrowTypeError("Setting the length of an array is not permitted", expr->Left()->Start());
-    }
-
-    if (expr->Left()->IsIdentifier()) {
-        expr->target_ = expr->Left()->AsIdentifier()->Variable();
-    } else {
-        expr->target_ = expr->Left()->AsMemberExpression()->PropVar();
-    }
-
-    if (expr->target_ != nullptr) {
-        checker->ValidateUnaryOperatorOperand(expr->target_);
-    }
-
     checker::Type *sourceType {};
     ir::Expression *relationNode = expr->Right();
+
     switch (expr->OperatorType()) {
         case lexer::TokenType::PUNCTUATOR_MULTIPLY_EQUAL:
         case lexer::TokenType::PUNCTUATOR_EXPONENTIATION_EQUAL:
@@ -874,9 +871,36 @@ checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *expr) const
             break;
         }
     }
-
     checker::AssignmentContext(checker->Relation(), relationNode, sourceType, leftType, expr->Right()->Start(),
                                {"Initializers type is not assignable to the target type"});
+}
+
+checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *expr) const
+{
+    ETSChecker *checker = GetETSChecker();
+
+    if (expr->TsType() != nullptr) {
+        return expr->TsType();
+    }
+
+    if (expr->Left()->IsMemberExpression() &&
+        expr->Left()->AsMemberExpression()->Object()->TsType()->IsETSArrayType() &&
+        expr->Left()->AsMemberExpression()->Property()->IsIdentifier() &&
+        expr->Left()->AsMemberExpression()->Property()->AsIdentifier()->Name().Is("length")) {
+        checker->ThrowTypeError("Setting the length of an array is not permitted", expr->Left()->Start());
+    }
+
+    if (expr->Left()->IsIdentifier()) {
+        expr->target_ = expr->Left()->AsIdentifier()->Variable();
+    } else {
+        expr->target_ = expr->Left()->AsMemberExpression()->PropVar();
+    }
+
+    if (expr->target_ != nullptr) {
+        checker->ValidateUnaryOperatorOperand(expr->target_);
+    }
+
+    CheckOperatorTypeHelper(expr);
 
     expr->SetTsType(expr->Left()->TsType());
     return expr->TsType();
@@ -1327,6 +1351,46 @@ checker::Type *ETSAnalyzer::PreferredType(ir::ObjectExpression *expr) const
     return expr->preferredType_;
 }
 
+void ETSAnalyzer::CheckPropertiesHelper(ir::ObjectExpression *expr, checker::ETSObjectType *objType) const
+{
+    ETSChecker *checker = GetETSChecker();
+    for (ir::Expression *propExpr : expr->Properties()) {
+        ASSERT(propExpr->IsProperty());
+        ir::Property *prop = propExpr->AsProperty();
+        ir::Expression *key = prop->Key();
+        ir::Expression *value = prop->Value();
+
+        util::StringView pname;
+        if (key->IsStringLiteral()) {
+            pname = key->AsStringLiteral()->Str();
+        } else if (key->IsIdentifier()) {
+            pname = key->AsIdentifier()->Name();
+        } else {
+            checker->ThrowTypeError({"key in class composite should be either identifier or string literal"},
+                                    expr->Start());
+        }
+        varbinder::LocalVariable *lv = objType->GetProperty(pname, checker::PropertySearchFlags::SEARCH_INSTANCE_FIELD |
+                                                                       checker::PropertySearchFlags::SEARCH_IN_BASE);
+        if (lv == nullptr) {
+            checker->ThrowTypeError({"type ", objType->Name(), " has no property named ", pname}, propExpr->Start());
+        }
+        checker->ValidatePropertyAccess(lv, objType, propExpr->Start());
+        if (lv->HasFlag(varbinder::VariableFlags::READONLY)) {
+            checker->ThrowTypeError({"cannot assign to readonly property ", pname}, propExpr->Start());
+        }
+
+        auto *propType = checker->GetTypeOfVariable(lv);
+        key->SetTsType(propType);
+
+        if (value->IsObjectExpression()) {
+            value->AsObjectExpression()->SetPreferredType(propType);
+        }
+        value->SetTsType(value->Check(checker));
+        checker::AssignmentContext(checker->Relation(), value, value->TsType(), propType, value->Start(),
+                                   {"value type is not assignable to the property type"});
+    }
+}
+
 checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -1372,41 +1436,7 @@ checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
         checker->ThrowTypeError({"type ", objType->Name(), " has no parameterless constructor"}, expr->Start());
     }
 
-    for (ir::Expression *propExpr : expr->Properties()) {
-        ASSERT(propExpr->IsProperty());
-        ir::Property *prop = propExpr->AsProperty();
-        ir::Expression *key = prop->Key();
-        ir::Expression *value = prop->Value();
-
-        util::StringView pname;
-        if (key->IsStringLiteral()) {
-            pname = key->AsStringLiteral()->Str();
-        } else if (key->IsIdentifier()) {
-            pname = key->AsIdentifier()->Name();
-        } else {
-            checker->ThrowTypeError({"key in class composite should be either identifier or string literal"},
-                                    expr->Start());
-        }
-        varbinder::LocalVariable *lv = objType->GetProperty(pname, checker::PropertySearchFlags::SEARCH_INSTANCE_FIELD |
-                                                                       checker::PropertySearchFlags::SEARCH_IN_BASE);
-        if (lv == nullptr) {
-            checker->ThrowTypeError({"type ", objType->Name(), " has no property named ", pname}, propExpr->Start());
-        }
-        checker->ValidatePropertyAccess(lv, objType, propExpr->Start());
-        if (lv->HasFlag(varbinder::VariableFlags::READONLY)) {
-            checker->ThrowTypeError({"cannot assign to readonly property ", pname}, propExpr->Start());
-        }
-
-        auto *propType = checker->GetTypeOfVariable(lv);
-        key->SetTsType(propType);
-
-        if (value->IsObjectExpression()) {
-            value->AsObjectExpression()->SetPreferredType(propType);
-        }
-        value->SetTsType(value->Check(checker));
-        checker::AssignmentContext(checker->Relation(), value, value->TsType(), propType, value->Start(),
-                                   {"value type is not assignable to the property type"});
-    }
+    CheckPropertiesHelper(expr, objType);
 
     expr->SetTsType(objType);
     return objType;
@@ -2396,18 +2426,20 @@ checker::Type *ETSAnalyzer::Check(ir::TryStatement *st) const
 
     for (auto *catchClause : st->CatchClauses()) {
         auto exceptionType = catchClause->Check(checker);
-        if ((exceptionType != nullptr) && (catchClause->Param() != nullptr)) {
-            auto *clauseType = exceptionType->AsETSObjectType();
 
-            for (auto *exception : exceptions) {
-                checker->Relation()->IsIdenticalTo(clauseType, exception);
-                if (checker->Relation()->IsTrue()) {
-                    checker->ThrowTypeError("Redeclaration of exception type", catchClause->Start());
-                }
-            }
-
-            exceptions.push_back(clauseType);
+        if ((exceptionType == nullptr) || (catchClause->Param() == nullptr)) {
+            continue;
         }
+        auto *clauseType = exceptionType->AsETSObjectType();
+
+        for (auto *exception : exceptions) {
+            checker->Relation()->IsIdenticalTo(clauseType, exception);
+            if (checker->Relation()->IsTrue()) {
+                checker->ThrowTypeError("Redeclaration of exception type", catchClause->Start());
+            }
+        }
+
+        exceptions.push_back(clauseType);
     }
 
     bool defaultCatchFound = false;

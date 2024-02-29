@@ -887,6 +887,49 @@ ir::ClassDefinition *TypedParser::ParseClassDefinition(ir::ClassDefinitionModifi
     return classDefinition;
 }
 
+ir::AstNode *TypedParser::CheckDescription(ClassElementDescriptor *desc, const ArenaVector<ir::AstNode *> &properties)
+{
+    ir::TypeNode *typeAnnotation = ParseClassKeyAnnotation();
+    ir::AstNode *property = nullptr;
+    ir::Expression *propName = ParseClassKey(desc);
+
+    if (desc->isIndexSignature) {
+        if (!desc->decorators.empty()) {
+            ThrowSyntaxError("Decorators are not valid here.", desc->decorators.front()->Start());
+        }
+
+        ValidateIndexSignatureTypeAnnotation(typeAnnotation);
+
+        if (typeAnnotation == nullptr) {
+            ThrowSyntaxError("An index signature must have a type annotation");
+        }
+
+        if ((desc->modifiers & ir::ModifierFlags::DECLARE) != 0) {
+            ThrowSyntaxError("'declare' modifier cannot appear on an index signature.");
+        }
+
+        property =
+            AllocNode<ir::TSIndexSignature>(propName, typeAnnotation, desc->modifiers & ir::ModifierFlags::READONLY);
+
+        property->SetRange({property->AsTSIndexSignature()->Param()->Start(),
+                            property->AsTSIndexSignature()->TypeAnnotation()->End()});
+    } else {
+        ValidateClassMethodStart(desc, typeAnnotation);
+        property = ParseClassProperty(desc, properties, propName, typeAnnotation);
+
+        if (!desc->decorators.empty()) {
+            if (desc->isPrivateIdent) {
+                ThrowSyntaxError("Decorators are not valid here");
+            }
+
+            property->AddDecorators(std::move(desc->decorators));
+        }
+    }
+
+    ASSERT(property != nullptr);
+    return property;
+}
+
 // NOLINTNEXTLINE(google-default-arguments)
 ir::AstNode *TypedParser::ParseClassElement(const ArenaVector<ir::AstNode *> &properties,
                                             ir::ClassDefinitionModifiers modifiers, ir::ModifierFlags flags,
@@ -920,8 +963,6 @@ ir::AstNode *TypedParser::ParseClassElement(const ArenaVector<ir::AstNode *> &pr
         GetContext().Status() |= ParserStatus::ALLOW_THIS_TYPE;
     }
 
-    ir::Expression *propName = ParseClassKey(&desc);
-
     if (desc.methodKind == ir::MethodDefinitionKind::CONSTRUCTOR && !desc.decorators.empty()) {
         ThrowSyntaxError("Decorators are not valid here.", desc.decorators.front()->Start());
     }
@@ -937,44 +978,8 @@ ir::AstNode *TypedParser::ParseClassElement(const ArenaVector<ir::AstNode *> &pr
         Lexer()->NextToken();
     }
 
-    ir::TypeNode *typeAnnotation = ParseClassKeyAnnotation();
+    ir::AstNode *property = CheckDescription(&desc, properties);
 
-    ir::AstNode *property = nullptr;
-
-    if (desc.isIndexSignature) {
-        if (!desc.decorators.empty()) {
-            ThrowSyntaxError("Decorators are not valid here.", desc.decorators.front()->Start());
-        }
-
-        ValidateIndexSignatureTypeAnnotation(typeAnnotation);
-
-        if (typeAnnotation == nullptr) {
-            ThrowSyntaxError("An index signature must have a type annotation");
-        }
-
-        if ((desc.modifiers & ir::ModifierFlags::DECLARE) != 0) {
-            ThrowSyntaxError("'declare' modifier cannot appear on an index signature.");
-        }
-
-        property =
-            AllocNode<ir::TSIndexSignature>(propName, typeAnnotation, desc.modifiers & ir::ModifierFlags::READONLY);
-
-        property->SetRange({property->AsTSIndexSignature()->Param()->Start(),
-                            property->AsTSIndexSignature()->TypeAnnotation()->End()});
-    } else {
-        ValidateClassMethodStart(&desc, typeAnnotation);
-        property = ParseClassProperty(&desc, properties, propName, typeAnnotation);
-
-        if (!desc.decorators.empty()) {
-            if (desc.isPrivateIdent) {
-                ThrowSyntaxError("Decorators are not valid here");
-            }
-
-            property->AddDecorators(std::move(desc.decorators));
-        }
-    }
-
-    ASSERT(property != nullptr);
     if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_SEMI_COLON &&
         Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE &&
         ((Lexer()->GetToken().Flags() & lexer::TokenFlags::NEW_LINE) == 0) &&
@@ -1155,16 +1160,16 @@ ir::Expression *TypedParser::ParseQualifiedReference(ir::Expression *typeName, E
         } else if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_FORMAT) {
             propName = ParseIdentifierFormatPlaceholder();
         } else if (Lexer()->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
-            if ((flags & ExpressionParseFlags::POTENTIAL_CLASS_LITERAL) != 0) {
-                if (Lexer()->GetToken().Type() == lexer::TokenType::KEYW_CLASS) {
-                    typeName->SetRange({startLoc, Lexer()->GetToken().End()});
-                    return typeName;
-                }
-                if (Lexer()->GetToken().Type() == lexer::TokenType::KEYW_THIS) {
-                    return nullptr;
-                }
+            if ((flags & ExpressionParseFlags::POTENTIAL_CLASS_LITERAL) == 0) {
+                ThrowSyntaxError("Identifier expected");
             }
-
+            if (Lexer()->GetToken().Type() == lexer::TokenType::KEYW_CLASS) {
+                typeName->SetRange({startLoc, Lexer()->GetToken().End()});
+                return typeName;
+            }
+            if (Lexer()->GetToken().Type() == lexer::TokenType::KEYW_THIS) {
+                return nullptr;
+            }
             ThrowSyntaxError("Identifier expected");
         } else {
             propName = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
