@@ -602,7 +602,7 @@ class AbcToAsmTest(Test):
         except Exception:
             self.passed = False
         
-        if os.path.exists(output_abc_file)
+        if os.path.exists(output_abc_file):
             os.remove(test_abc_path)
         return self
 
