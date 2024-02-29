@@ -39,6 +39,11 @@ private:
     void CompileCastUnboxable(const ir::TSAsExpression *expr) const;
     void CompileCast(const ir::TSAsExpression *expr) const;
     void EmitCall(const ir::CallExpression *expr, compiler::VReg &calleeReg, bool isStatic) const;
+    void CompilePropertyLength(const ir::MemberExpression *expr, const checker::Type *objectType) const;
+    void CompilePropertyEnum(const ir::MemberExpression *expr, const checker::Type *objectType) const;
+    void CompilePropertyStatic(const ir::MemberExpression *expr, const util::StringView &name) const;
+    void CompileProperty(const ir::MemberExpression *expr, const checker::Type *objectType,
+                         const util::StringView &name) const;
 
     ETSGen *GetETSGen() const;
 };
