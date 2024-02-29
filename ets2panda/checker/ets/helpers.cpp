@@ -1678,7 +1678,7 @@ void ETSChecker::CheckSwitchDiscriminant(ir::Expression *discriminant)
     }
 
     if (discriminantType->IsETSObjectType() &&
-        discriminantType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::ENUM2)) {
+        discriminantType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::ENUM)) {
         return;
     }
 

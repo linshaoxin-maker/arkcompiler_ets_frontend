@@ -32,6 +32,7 @@ enum class ETSObjectFlags : uint32_t {
     INSTANCE = 1U << 2U,
     ABSTRACT = 1U << 3U,
     GLOBAL = 1U << 4U,
+    ENUM = 1U << 5U,
     FUNCTIONAL = 1U << 6U,
     RESOLVED_INTERFACES = 1U << 7U,
     RESOLVED_SUPER = 1U << 8U,
@@ -54,8 +55,6 @@ enum class ETSObjectFlags : uint32_t {
     BUILTIN_LONG = 1U << 29U,
     BUILTIN_FLOAT = 1U << 30U,
     BUILTIN_DOUBLE = 1U << 31U,
-
-    ENUM2 = 1U << 21U,  // NOTE(aber) rename after removal code with ENUM
 
     UNBOXABLE_TYPE = BUILTIN_BOOLEAN | BUILTIN_BYTE | BUILTIN_CHAR | BUILTIN_SHORT | BUILTIN_INT | BUILTIN_LONG |
                      BUILTIN_FLOAT | BUILTIN_DOUBLE,

@@ -31,7 +31,7 @@ std::string EnumDescription(util::StringView name)
 
 ETSEnumType::ETSEnumType(ETSChecker *checker, util::StringView name, util::StringView assemblerName,
                          ir::AstNode *declNode, ETSObjectFlags flags, TypeRelation *relation)
-    : ETSObjectType(checker->Allocator(), name, assemblerName, declNode, flags | ETSObjectFlags::ENUM2, relation)
+    : ETSObjectType(checker->Allocator(), name, assemblerName, declNode, flags | ETSObjectFlags::ENUM, relation)
 {
     AddTypeFlag(TypeFlag::ETS_ENUM);
     CreateLiteralTypes(checker, name, assemblerName, declNode, flags, relation);
@@ -39,7 +39,7 @@ ETSEnumType::ETSEnumType(ETSChecker *checker, util::StringView name, util::Strin
 
 ETSEnumType::ETSEnumType(ArenaAllocator *allocator, util::StringView name, util::StringView assemblerName,
                          ir::AstNode *declNode, ETSObjectFlags flags, ir::Literal *value, TypeRelation *relation)
-    : ETSObjectType(allocator, name, assemblerName, declNode, flags | ETSObjectFlags::ENUM2, relation), value_(value)
+    : ETSObjectType(allocator, name, assemblerName, declNode, flags | ETSObjectFlags::ENUM, relation), value_(value)
 {
     AddTypeFlag(TypeFlag::ETS_ENUM);
     ASSERT(value);
