@@ -142,11 +142,7 @@ bool ETSChecker::CheckBinaryOperatorForBigInt(Type *left, Type *right, ir::Expre
         return false;
     }
 
-    if (!left->IsETSBigIntType()) {
-        return false;
-    }
-
-    if (!right->IsETSBigIntType()) {
+    if (!left->IsETSBigIntType() || !right->IsETSBigIntType()) {
         return false;
     }
 
@@ -657,7 +653,7 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left,
             case lexer::TokenType::PUNCTUATOR_LESS_THAN_EQUAL:
                 return {GlobalETSBooleanType(), GlobalETSBooleanType()};
             default:
-                return {leftType, rightType};
+                return {GlobalBuiltinETSBigIntType(), GlobalBuiltinETSBigIntType()};
         }
     };
 

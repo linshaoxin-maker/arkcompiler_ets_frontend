@@ -320,8 +320,9 @@ ETSObjectType *ETSChecker::CreateETSObjectTypeCheckBuiltins(util::StringView nam
             return GlobalBuiltinETSBigIntType();
         }
 
-        GetGlobalTypesHolder()->GlobalTypes()[static_cast<size_t>(GlobalTypeId::ETS_BIG_INT_BUILTIN)] =
-            CreateNewETSObjectType(name, declNode, flags | ETSObjectFlags::BUILTIN_BIGINT);
+        auto bigintEtsObject = CreateNewETSObjectType(name, declNode, flags | ETSObjectFlags::BUILTIN_BIGINT);
+        bigintEtsObject->AddTypeFlag(checker::TypeFlag::ETS_BIGINT);
+        GetGlobalTypesHolder()->GlobalTypes()[static_cast<size_t>(GlobalTypeId::ETS_BIG_INT_BUILTIN)] = bigintEtsObject;
         GetGlobalTypesHolder()->GlobalTypes()[static_cast<size_t>(GlobalTypeId::ETS_BIG_INT)] =
             Allocator()->New<ETSBigIntType>(Allocator(), GlobalBuiltinETSBigIntType());
 

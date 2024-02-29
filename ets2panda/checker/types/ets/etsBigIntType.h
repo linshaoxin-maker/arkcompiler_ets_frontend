@@ -26,6 +26,7 @@ public:
                         ETSObjectFlags::CLASS | ETSObjectFlags::BUILTIN_BIGINT | ETSObjectFlags::RESOLVED_SUPER)
     {
         SetSuperType(super);
+        typeFlags_ |= TypeFlag::ETS_BIGINT;
     }
 
     explicit ETSBigIntType(ArenaAllocator *allocator, ETSObjectType *super, TypeRelation *relation,
