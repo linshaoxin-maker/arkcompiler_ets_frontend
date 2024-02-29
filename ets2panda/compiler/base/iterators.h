@@ -63,6 +63,9 @@ public:
     void Value() const;
     void Close(bool abruptCompletion) const;
 
+private:
+    void HandleInnerResult(bool abruptCompletion, VReg completion, VReg innerResult, VReg innerResultType) const;
+
 protected:
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
     PandaGen *pg_;

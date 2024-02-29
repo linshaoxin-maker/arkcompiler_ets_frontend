@@ -289,6 +289,9 @@ public:
                        const ArenaVector<std::pair<compiler::LabelPair, const ir::Statement *>> &finalizerInsertions);
 
 private:
+    void HandleFinalizerInsertions(
+        const ArenaVector<std::pair<compiler::LabelPair, const ir::Statement *>> &finalizerInsertions);
+
     const ir::TryStatement *tryStmt_ {};
     const bool hasFinalizer_ {};
 };

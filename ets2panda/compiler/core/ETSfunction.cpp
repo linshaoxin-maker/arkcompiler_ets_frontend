@@ -55,20 +55,19 @@ void ETSFunction::CallImplicitCtor(ETSGen *etsg)
     etsg->CallThisStatic0(etsg->RootNode(), etsg->GetThisReg(), (*res)->InternalName());
 }
 
-void ETSFunction::CompileSourceBlock(ETSGen *etsg, const ir::BlockStatement *block)
+void ETSFunction::HandleEnumConstructorStatic(ETSGen *etsg)
 {
+    auto *scriptFunc = etsg->RootNode()->AsScriptFunction();
+
     auto const checkInitializer = [](ArenaVector<ir::AstNode *> const &nodes) -> bool {
         for (auto const *const node : nodes) {
-            if (node->IsMethodDefinition() && node->AsClassElement()->Key()->IsIdentifier()) {
-                if (node->AsClassElement()->Id()->Name() == compiler::Signatures::INIT_METHOD) {
-                    return false;
-                }
+            if (node->IsMethodDefinition() && node->AsClassElement()->Key()->IsIdentifier() &&
+                (node->AsClassElement()->Id()->Name() == compiler::Signatures::INIT_METHOD)) {
+                return false;
             }
         }
         return true;
     };
-
-    auto *scriptFunc = etsg->RootNode()->AsScriptFunction();
 
     if (scriptFunc->IsEnum()) {
         // NOTE: add enum methods
@@ -105,6 +104,13 @@ void ETSFunction::CompileSourceBlock(ETSGen *etsg, const ir::BlockStatement *blo
             prop->AsClassProperty()->Compile(etsg);
         }
     }
+}
+
+void ETSFunction::CompileSourceBlock(ETSGen *etsg, const ir::BlockStatement *block)
+{
+    HandleEnumConstructorStatic(etsg);
+
+    auto *scriptFunc = etsg->RootNode()->AsScriptFunction();
 
     const auto &statements = block->Statements();
 
