@@ -261,36 +261,9 @@ Type *ETSChecker::GetNonConstantTypeFromPrimitiveType(Type *type)
     }
     return type;
 }
-
-Type *ETSChecker::GetTypeOfVariable(varbinder::Variable *const var)
+varbinder::Decl *ETSChecker::SetContainingDataToContext(varbinder::Variable *var)
 {
-    if (IsVariableGetterSetter(var)) {
-        auto *propType = var->TsType()->AsETSFunctionType();
-        if (propType->HasTypeFlag(checker::TypeFlag::GETTER)) {
-            return propType->FindGetter()->ReturnType();
-        }
-        return propType->FindSetter()->Params()[0]->TsType();
-    }
-
-    if (var->TsType() != nullptr) {
-        return var->TsType();
-    }
-
-    // NOTE: kbaladurin. forbid usage of imported entities as types without declarations
-    if (VarBinder()->AsETSBinder()->IsDynamicModuleVariable(var)) {
-        auto *importData = VarBinder()->AsETSBinder()->DynamicImportDataForVar(var);
-        if (importData->import->IsPureDynamic()) {
-            return GlobalBuiltinDynamicType(importData->import->Language());
-        }
-    }
-
-    varbinder::Decl *decl = var->Declaration();
-
-    // Before computing the given variables type, we have to make a new checker context frame so that the checking is
-    // done in the proper context, and have to enter the scope where the given variable is declared, so reference
-    // resolution works properly
-    checker::SavedCheckerContext savedContext(this, CheckerStatus::NO_OPTS);
-    checker::ScopeContext scopeCtx(this, var->GetScope());
+    auto decl = var->Declaration();
     auto *iter = decl->Node()->Parent();
     while (iter != nullptr) {
         if (iter->IsMethodDefinition()) {
@@ -315,6 +288,38 @@ Type *ETSChecker::GetTypeOfVariable(varbinder::Variable *const var)
 
         iter = iter->Parent();
     }
+    return decl;
+}
+
+Type *ETSChecker::GetTypeOfVariable(varbinder::Variable *const var)
+{
+    if (IsVariableGetterSetter(var)) {
+        auto *propType = var->TsType()->AsETSFunctionType();
+        if (propType->HasTypeFlag(checker::TypeFlag::GETTER)) {
+            return propType->FindGetter()->ReturnType();
+        }
+        return propType->FindSetter()->Params()[0]->TsType();
+    }
+
+    if (var->TsType() != nullptr) {
+        return var->TsType();
+    }
+
+    // NOTE: kbaladurin. forbid usage of imported entities as types without declarations
+    if (VarBinder()->AsETSBinder()->IsDynamicModuleVariable(var)) {
+        auto *importData = VarBinder()->AsETSBinder()->DynamicImportDataForVar(var);
+        if (importData->import->IsPureDynamic()) {
+            return GlobalBuiltinDynamicType(importData->import->Language());
+        }
+    }
+
+    // Before computing the given variables type, we have to make a new checker context frame so that the checking is
+    // done in the proper context, and have to enter the scope where the given variable is declared, so reference
+    // resolution works properly
+    checker::SavedCheckerContext savedContext(this, CheckerStatus::NO_OPTS);
+    checker::ScopeContext scopeCtx(this, var->GetScope());
+
+    auto decl = SetContainingDataToContext(var);
 
     switch (decl->Type()) {
         case varbinder::DeclType::CLASS: {
@@ -326,17 +331,10 @@ Type *ETSChecker::GetTypeOfVariable(varbinder::Variable *const var)
         case varbinder::DeclType::CONST:
         case varbinder::DeclType::LET:
         case varbinder::DeclType::VAR: {
-            auto *declNode = decl->Node();
-
-            if (decl->Node()->IsIdentifier()) {
-                declNode = declNode->Parent();
-            }
-
+            auto *declNode = decl->Node()->IsIdentifier() ? decl->Node()->Parent() : decl->Node();
             return declNode->Check(this);
         }
-        case varbinder::DeclType::FUNC: {
-            return decl->Node()->Check(this);
-        }
+        case varbinder::DeclType::FUNC:
         case varbinder::DeclType::IMPORT: {
             return decl->Node()->Check(this);
         }
@@ -756,11 +754,11 @@ std::tuple<Type *, bool> ETSChecker::ApplyBinaryOperatorPromotion(Type *left, Ty
     bool bothConst = false;
 
     if (unboxedL == nullptr || unboxedR == nullptr) {
-        return {nullptr, false};
+        return std::tuple<Type *, bool> {nullptr, false};
     }
 
     if (!unboxedL->HasTypeFlag(test) || !unboxedR->HasTypeFlag(test)) {
-        return {nullptr, false};
+        return std::tuple<Type *, bool> {nullptr, false};
     }
 
     if (unboxedL->HasTypeFlag(TypeFlag::CONSTANT) && unboxedR->HasTypeFlag(TypeFlag::CONSTANT)) {
@@ -769,30 +767,30 @@ std::tuple<Type *, bool> ETSChecker::ApplyBinaryOperatorPromotion(Type *left, Ty
     if (doPromotion) {
         if (unboxedL->HasTypeFlag(TypeFlag::ETS_NUMERIC) && unboxedR->HasTypeFlag(TypeFlag::ETS_NUMERIC)) {
             if (unboxedL->IsDoubleType() || unboxedR->IsDoubleType()) {
-                return {GlobalDoubleType(), bothConst};
+                return std::tuple<Type *, bool> {GlobalDoubleType(), bothConst};
             }
 
             if (unboxedL->IsFloatType() || unboxedR->IsFloatType()) {
-                return {GlobalFloatType(), bothConst};
+                return std::tuple<Type *, bool> {GlobalFloatType(), bothConst};
             }
 
             if (unboxedL->IsLongType() || unboxedR->IsLongType()) {
-                return {GlobalLongType(), bothConst};
+                return std::tuple<Type *, bool> {GlobalLongType(), bothConst};
             }
 
             if (unboxedL->IsCharType() && unboxedR->IsCharType()) {
-                return {GlobalCharType(), bothConst};
+                return std::tuple<Type *, bool> {GlobalCharType(), bothConst};
             }
 
-            return {GlobalIntType(), bothConst};
+            return std::tuple<Type *, bool> {GlobalIntType(), bothConst};
         }
 
         if (IsTypeIdenticalTo(unboxedL, unboxedR)) {
-            return {unboxedL, bothConst};
+            return std::tuple<Type *, bool> {unboxedL, bothConst};
         }
     }
 
-    return {unboxedR, bothConst};
+    return std::tuple<Type *, bool> {unboxedR, bothConst};
 }
 
 checker::Type *ETSChecker::ApplyConditionalOperatorPromotion(checker::ETSChecker *checker, checker::Type *unboxedL,
@@ -2550,6 +2548,26 @@ bool ETSChecker::TypeInference(Signature *signature, const ArenaVector<ir::Expre
     return invocable;
 }
 
+void ETSChecker::AddArgumentsForUndefinedParams(const ir::ETSParameterExpression *param,
+                                                ArenaVector<panda::es2panda::ir::Expression *> &arguments,
+                                                ETSChecker *checker)
+{
+    auto const *const typeAnn = param->Ident()->TypeAnnotation();
+    if (typeAnn->IsETSPrimitiveType()) {
+        if (typeAnn->AsETSPrimitiveType()->GetPrimitiveType() == ir::PrimitiveType::BOOLEAN) {
+            arguments.push_back(checker->Allocator()->New<ir::BooleanLiteral>(false));
+        } else {
+            arguments.push_back(checker->Allocator()->New<ir::NumberLiteral>(lexer::Number(0)));
+        }
+    } else {
+        // A proxy-function is called, so default reference parameters
+        // are initialized with null instead of undefined
+        auto *const nullLiteral = checker->Allocator()->New<ir::NullLiteral>();
+        nullLiteral->SetTsType(checker->GlobalETSNullType());
+        arguments.push_back(nullLiteral);
+    }
+}
+
 void ETSChecker::AddUndefinedParamsForDefaultParams(const Signature *const signature,
                                                     ArenaVector<panda::es2panda::ir::Expression *> &arguments,
                                                     ETSChecker *checker)
@@ -2562,20 +2580,7 @@ void ETSChecker::AddUndefinedParamsForDefaultParams(const Signature *const signa
     for (size_t i = arguments.size(); i != signature->Function()->Params().size() - 1; i++) {
         if (auto const *const param = signature->Function()->Params()[i]->AsETSParameterExpression();
             !param->IsRestParameter()) {
-            auto const *const typeAnn = param->Ident()->TypeAnnotation();
-            if (typeAnn->IsETSPrimitiveType()) {
-                if (typeAnn->AsETSPrimitiveType()->GetPrimitiveType() == ir::PrimitiveType::BOOLEAN) {
-                    arguments.push_back(checker->Allocator()->New<ir::BooleanLiteral>(false));
-                } else {
-                    arguments.push_back(checker->Allocator()->New<ir::NumberLiteral>(lexer::Number(0)));
-                }
-            } else {
-                // A proxy-function is called, so default reference parameters
-                // are initialized with null instead of undefined
-                auto *const nullLiteral = checker->Allocator()->New<ir::NullLiteral>();
-                nullLiteral->SetTsType(checker->GlobalETSNullType());
-                arguments.push_back(nullLiteral);
-            }
+            AddArgumentsForUndefinedParams(param, arguments, checker);
             num |= (1U << (arguments.size() - 1));
         }
     }
