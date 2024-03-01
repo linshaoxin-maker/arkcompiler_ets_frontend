@@ -356,15 +356,13 @@ ir::Expression *ParserImpl::ParseClassKey(ClassElementDescriptor *desc)
     }
 
     switch (lexer_->GetToken().Type()) {
-        case lexer::TokenType::LITERAL_IDENT: {
+        case lexer::TokenType::LITERAL_IDENT:
             ValidateClassKey(desc);
-
             propName = AllocNode<ir::Identifier>(lexer_->GetToken().Ident(), Allocator());
             propName->SetRange(lexer_->GetToken().Loc());
             propName->AsIdentifier()->SetPrivate(desc->isPrivateIdent);
             break;
-        }
-        case lexer::TokenType::LITERAL_STRING: {
+        case lexer::TokenType::LITERAL_STRING:
             ThrowIfPrivateIdent(desc, "Private identifier name can not be string");
 
             if (lexer_->GetToken().Ident().Is("constructor")) {
@@ -378,8 +376,7 @@ ir::Expression *ParserImpl::ParseClassKey(ClassElementDescriptor *desc)
             propName = AllocNode<ir::StringLiteral>(lexer_->GetToken().String());
             propName->SetRange(lexer_->GetToken().Loc());
             break;
-        }
-        case lexer::TokenType::LITERAL_NUMBER: {
+        case lexer::TokenType::LITERAL_NUMBER:
             ThrowIfPrivateIdent(desc, "Private identifier name can not be number");
 
             if ((lexer_->GetToken().Flags() & lexer::TokenFlags::NUMBER_BIGINT) != 0) {
@@ -390,7 +387,6 @@ ir::Expression *ParserImpl::ParseClassKey(ClassElementDescriptor *desc)
 
             propName->SetRange(lexer_->GetToken().Loc());
             break;
-        }
         case lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET: {
             ThrowIfPrivateIdent(desc, "Unexpected character in private identifier");
             auto [isComputed, invalidComputedProperty, isIndexSignature] =
@@ -400,9 +396,8 @@ ir::Expression *ParserImpl::ParseClassKey(ClassElementDescriptor *desc)
             desc->isIndexSignature = isIndexSignature;
             break;
         }
-        default: {
+        default:
             ThrowSyntaxError("Unexpected token in class property");
-        }
     }
 
     lexer_->NextToken(lexer::NextTokenFlags::KEYWORD_TO_IDENT);

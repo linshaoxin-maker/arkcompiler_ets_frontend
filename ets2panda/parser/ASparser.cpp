@@ -551,11 +551,10 @@ ir::TypeNode *ASParser::ParseParenthesizedOrFunctionType(bool throwError)
     return type;
 }
 
-ir::TypeNode *ASParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *options)
+ir::TypeNode *ASParser::GetAnnotationType(bool &throwError, TypeAnnotationParsingOptions *options)
 {
     ir::TypeNode *type = nullptr;
 
-    bool throwError = (((*options) & TypeAnnotationParsingOptions::THROW_ERROR) != 0);
     switch (Lexer()->GetToken().Type()) {
         case lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS: {
             type = ParseParenthesizedOrFunctionType(throwError);
@@ -654,6 +653,17 @@ ir::TypeNode *ASParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *option
 
             return nullptr;
         }
+    }
+    return type;
+}
+
+ir::TypeNode *ASParser::ParseTypeAnnotation(TypeAnnotationParsingOptions *options)
+{
+    bool throwError = (((*options) & TypeAnnotationParsingOptions::THROW_ERROR) != 0);
+    ir::TypeNode *type = GetAnnotationType(throwError, options);
+
+    if (type == nullptr) {
+        return nullptr;
     }
 
     bool isNullable = false;
@@ -844,6 +854,28 @@ void ASParser::ValidateArrowFunctionRestParameter([[maybe_unused]] ir::SpreadEle
     }
 }
 
+void ASParser::HandlePunctuatorPeriod(ir::NamedType *clause, ir::Identifier *name, lexer::SourcePosition &end)
+{
+    ir::NamedType *current = clause->AsNamedType();
+
+    while (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD) {
+        Lexer()->NextToken();
+
+        if (Lexer()->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
+            ThrowSyntaxError("Identifier expected");
+        }
+
+        name = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
+        name->SetRange(Lexer()->GetToken().Loc());
+        auto *next = AllocNode<ir::NamedType>(name);
+        current->SetRange(Lexer()->GetToken().Loc());
+        current->SetNext(next);
+        current = next;
+        end = Lexer()->GetToken().End();
+        Lexer()->NextToken();
+    }
+}
+
 ArenaVector<ir::TSInterfaceHeritage *> ASParser::ParseInterfaceExtendsClause()
 {
     Lexer()->NextToken();  // eat extends keyword
@@ -860,23 +892,7 @@ ArenaVector<ir::TSInterfaceHeritage *> ASParser::ParseInterfaceExtendsClause()
     extendsClause->SetRange(Lexer()->GetToken().Loc());
     Lexer()->NextToken();
 
-    ir::NamedType *current = extendsClause->AsNamedType();
-    while (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD) {
-        Lexer()->NextToken();
-
-        if (Lexer()->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
-            ThrowSyntaxError("Identifier expected");
-        }
-
-        extendsName = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
-        extendsName->SetRange(Lexer()->GetToken().Loc());
-        auto *next = AllocNode<ir::NamedType>(extendsName);
-        current->SetRange(Lexer()->GetToken().Loc());
-        current->SetNext(next);
-        current = next;
-        heritageEnd = Lexer()->GetToken().End();
-        Lexer()->NextToken();
-    }
+    HandlePunctuatorPeriod(extendsClause, extendsName, heritageEnd);
 
     if (Lexer()->Lookahead() == lexer::LEX_CHAR_LESS_THAN) {
         Lexer()->ForwardToken(lexer::TokenType::PUNCTUATOR_LESS_THAN, 1);
@@ -1089,22 +1105,7 @@ ArenaVector<ir::TSClassImplements *> ASParser::ParseClassImplementClause()
         Lexer()->NextToken();
 
         ir::NamedType *current = implementsClause->AsNamedType();
-        while (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD) {
-            Lexer()->NextToken();
-
-            if (Lexer()->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
-                ThrowSyntaxError("Identifier expected");
-            }
-
-            implementsName = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
-            implementsName->SetRange(Lexer()->GetToken().Loc());
-            auto *next = AllocNode<ir::NamedType>(implementsName);
-            current->SetRange(Lexer()->GetToken().Loc());
-            current->SetNext(next);
-            current = next;
-            implementsEnd = Lexer()->GetToken().End();
-            Lexer()->NextToken();
-        }
+        HandlePunctuatorPeriod(implementsClause, implementsName, implementsEnd);
 
         ir::TSTypeParameterInstantiation *implTypeParams = nullptr;
         if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_SHIFT) {

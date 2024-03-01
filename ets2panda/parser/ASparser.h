@@ -96,6 +96,8 @@ private:
     ParserStatus ValidateArrowParameter(ir::Expression *expr, bool *seenOptional) override;
     void ThrowIllegalBreakError() override;
     void ThrowIllegalContinueError() override;
+    void HandlePunctuatorPeriod(ir::NamedType *clause, ir::Identifier *name, lexer::SourcePosition &end);
+    ir::TypeNode *GetAnnotationType(bool &throwError, TypeAnnotationParsingOptions *options);
 };
 }  // namespace panda::es2panda::parser
 
