@@ -33,6 +33,26 @@
 #include "ir/ts/tsAsExpression.h"
 
 namespace panda::es2panda::compiler {
+
+ir::SequenceExpression *ConstructSequenceExpression(checker::ETSChecker *const checker,
+                                                    std::initializer_list<ir::Expression *> list,
+                                                    ir::UpdateExpression *const update)
+{
+    // Construct sequence expression order
+    ArenaVector<ir::Expression *> expressionList(checker->Allocator()->Adapter());
+    for (const auto &it : list) {
+        expressionList.push_back(it);
+    }
+    //  --------------
+
+    // Check the new sequence expression
+    auto *const sequenceExpr = checker->AllocNode<ir::SequenceExpression>(std::move(expressionList));
+    sequenceExpr->SetParent(update->Parent());
+    sequenceExpr->Check(checker);
+    // --------------
+    return sequenceExpr;
+}
+
 static ir::Expression *ConvertTupleUpdate(checker::ETSChecker *const checker, ir::UpdateExpression *const update)
 {
     // Converts `tuple[n]++` to
@@ -130,17 +150,9 @@ static ir::Expression *ConvertTupleUpdate(checker::ETSChecker *const checker, ir
     // --------------
 
     // Construct sequence expression order
-    ArenaVector<ir::Expression *> expressionList(checker->Allocator()->Adapter());
-    expressionList.push_back(tupleAsType);
-    expressionList.push_back(gensym2Assignment);
-    expressionList.push_back(tupleAssignment);
-    expressionList.push_back(finalTupleNode);
-    // --------------
+    auto *const sequenceExpr =
+        ConstructSequenceExpression(checker, {tupleAsType, gensym2Assignment, tupleAssignment, finalTupleNode}, update);
 
-    // Check the new sequence expression
-    auto *const sequenceExpr = checker->AllocNode<ir::SequenceExpression>(std::move(expressionList));
-    sequenceExpr->SetParent(update->Parent());
-    sequenceExpr->Check(checker);
     // --------------
 
     // Set back TsType of argument (not necessarily needed now, but there can be a phase later, that need to get the
