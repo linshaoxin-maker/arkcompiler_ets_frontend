@@ -17,6 +17,7 @@
 #define ES2PANDA_IR_TS_TUPLE_TYPE_H
 
 #include "ir/typeNode.h"
+#include "checker/types/ts/types.h"
 
 namespace panda::es2panda::ir {
 enum class TSTupleKind { NONE, NAMED, DEFAULT };
@@ -49,6 +50,8 @@ public:
     }
 
 private:
+    void HandleTupleMemberOptionality(TSNamedTupleMember *namedMember, varbinder::LocalVariable *memberVar,
+                                      checker::ElementFlags &memberFlag, uint32_t &minLength);
     ArenaVector<TypeNode *> elementTypes_;
 };
 }  // namespace panda::es2panda::ir

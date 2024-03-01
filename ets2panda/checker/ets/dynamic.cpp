@@ -197,8 +197,29 @@ template Signature *ETSChecker::ResolveDynamicCallExpression<varbinder::LocalVar
     ir::Expression *callee, const ArenaVector<varbinder::LocalVariable *> &arguments, Language lang, bool is_construct);
 
 template <bool IS_STATIC>
-std::conditional_t<IS_STATIC, ir::ClassStaticBlock *, ir::MethodDefinition *> ETSChecker::CreateClassInitializer(
-    varbinder::ClassScope *classScope, const ClassInitializerBuilder &builder, ETSObjectType *type)
+std::conditional_t<IS_STATIC, ir::ClassStaticBlock *, ir::MethodDefinition *> ETSChecker::AllocNewMethodDefNonStatic(
+    ETSObjectType *type, Signature *signature, ir::Identifier *id, ir::FunctionExpression *funcExpr,
+    varbinder::ClassScope *classScope, ir::ScriptFunction *func)
+{
+    if constexpr (IS_STATIC) {
+        auto *staticBlock = AllocNode<ir::ClassStaticBlock>(funcExpr, Allocator());
+        staticBlock->AddModifier(ir::ModifierFlags::STATIC);
+        return staticBlock;
+    } else {
+        type->AddConstructSignature(signature);
+
+        auto *ctor = Allocator()->New<ir::MethodDefinition>(ir::MethodDefinitionKind::CONSTRUCTOR, id, funcExpr,
+                                                            ir::ModifierFlags::NONE, Allocator(), false);
+        auto *funcType = CreateETSFunctionType(signature, id->Name());
+        ctor->SetTsType(funcType);
+        funcExpr->SetParent(classScope->Node()->AsClassDeclaration()->Definition());
+        func->SetParent(ctor);
+        return ctor;
+    }
+}
+
+template <bool IS_STATIC>
+varbinder::LocalScope *GetMethodScope(varbinder::ClassScope *classScope)
 {
     varbinder::LocalScope *methodScope = nullptr;
     if constexpr (IS_STATIC) {
@@ -206,6 +227,15 @@ std::conditional_t<IS_STATIC, ir::ClassStaticBlock *, ir::MethodDefinition *> ET
     } else {
         methodScope = classScope->InstanceMethodScope();
     }
+    return methodScope;
+}
+
+template <bool IS_STATIC>
+std::conditional_t<IS_STATIC, ir::ClassStaticBlock *, ir::MethodDefinition *> ETSChecker::CreateClassInitializer(
+    varbinder::ClassScope *classScope, const ClassInitializerBuilder &builder, ETSObjectType *type)
+{
+    varbinder::LocalScope *methodScope = GetMethodScope<IS_STATIC>(classScope);
+
     auto classCtx = varbinder::LexicalScope<varbinder::LocalScope>::Enter(VarBinder(), methodScope);
 
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
@@ -256,21 +286,7 @@ std::conditional_t<IS_STATIC, ir::ClassStaticBlock *, ir::MethodDefinition *> ET
     VarBinder()->AsETSBinder()->BuildFunctionName(func);
     VarBinder()->Functions().push_back(func->Scope());
 
-    if constexpr (IS_STATIC) {
-        auto *staticBlock = AllocNode<ir::ClassStaticBlock>(funcExpr, Allocator());
-        staticBlock->AddModifier(ir::ModifierFlags::STATIC);
-        return staticBlock;
-    } else {
-        type->AddConstructSignature(signature);
-
-        auto *ctor = Allocator()->New<ir::MethodDefinition>(ir::MethodDefinitionKind::CONSTRUCTOR, id, funcExpr,
-                                                            ir::ModifierFlags::NONE, Allocator(), false);
-        auto *funcType = CreateETSFunctionType(signature, id->Name());
-        ctor->SetTsType(funcType);
-        funcExpr->SetParent(classScope->Node()->AsClassDeclaration()->Definition());
-        func->SetParent(ctor);
-        return ctor;
-    }
+    return AllocNewMethodDefNonStatic<IS_STATIC>(type, signature, id, funcExpr, classScope, func);
 }
 
 ir::ClassStaticBlock *ETSChecker::CreateDynamicCallClassInitializer(varbinder::ClassScope *classScope, Language lang,
