@@ -232,6 +232,84 @@ checker::Type *ArrayExpression::Check(checker::TSChecker *checker)
     return checker->GetAnalyzer()->Check(this);
 }
 
+static checker::Type *CheckAssignmentPattern(checker::TSChecker *checker, Expression *element)
+{
+    checker::Type *elementType = nullptr;
+    auto *assignmentPattern = element->AsAssignmentPattern();
+    if (assignmentPattern->Left()->IsIdentifier()) {
+        const ir::Identifier *ident = assignmentPattern->Left()->AsIdentifier();
+        ASSERT(ident->Variable());
+        varbinder::Variable *bindingVar = ident->Variable();
+        checker::Type *initializerType = checker->GetBaseTypeOfLiteralType(assignmentPattern->Right()->Check(checker));
+        bindingVar->SetTsType(initializerType);
+        elementType = initializerType;
+    } else if (assignmentPattern->Left()->IsArrayPattern()) {
+        auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::FORCE_TUPLE);
+        auto destructuringContext = checker::ArrayDestructuringContext(
+            checker, assignmentPattern->Left()->AsArrayPattern(), false, true, nullptr, assignmentPattern->Right());
+        destructuringContext.Start();
+        elementType = destructuringContext.InferredType();
+    } else {
+        ASSERT(assignmentPattern->Left()->IsObjectPattern());
+        auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::FORCE_TUPLE);
+        auto destructuringContext = checker::ObjectDestructuringContext(
+            checker, assignmentPattern->Left()->AsObjectPattern(), false, true, nullptr, assignmentPattern->Right());
+        destructuringContext.Start();
+        elementType = destructuringContext.InferredType();
+    }
+    return elementType;
+}
+
+static checker::Type *CheckElement(checker::TSChecker *checker, Expression *element, checker::ElementFlags &memberFlag,
+                                   bool &addOptional)
+{
+    checker::Type *elementType = nullptr;
+    switch (element->Type()) {
+        case ir::AstNodeType::REST_ELEMENT: {
+            elementType = checker->Allocator()->New<checker::ArrayType>(checker->GlobalAnyType());
+            memberFlag = checker::ElementFlags::REST;
+            addOptional = false;
+            break;
+        }
+        case ir::AstNodeType::OBJECT_PATTERN: {
+            elementType = element->AsObjectPattern()->CheckPattern(checker);
+            memberFlag = checker::ElementFlags::REQUIRED;
+            addOptional = false;
+            break;
+        }
+        case ir::AstNodeType::ARRAY_PATTERN: {
+            elementType = element->AsArrayPattern()->CheckPattern(checker);
+            memberFlag = checker::ElementFlags::REQUIRED;
+            addOptional = false;
+            break;
+        }
+        case ir::AstNodeType::ASSIGNMENT_PATTERN: {
+            elementType = CheckAssignmentPattern(checker, element);
+            memberFlag = addOptional ? checker::ElementFlags::OPTIONAL : checker::ElementFlags::REQUIRED;
+            break;
+        }
+        case ir::AstNodeType::OMITTED_EXPRESSION: {
+            elementType = checker->GlobalAnyType();
+            memberFlag = checker::ElementFlags::REQUIRED;
+            addOptional = false;
+            break;
+        }
+        case ir::AstNodeType::IDENTIFIER: {
+            const ir::Identifier *ident = element->AsIdentifier();
+            ASSERT(ident->Variable());
+            elementType = checker->GlobalAnyType();
+            ident->Variable()->SetTsType(elementType);
+            memberFlag = checker::ElementFlags::REQUIRED;
+            addOptional = false;
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+    return elementType;
+}
+
 checker::Type *ArrayExpression::CheckPattern(checker::TSChecker *checker)
 {
     checker::ObjectDescriptor *desc = checker->Allocator()->New<checker::ObjectDescriptor>(checker->Allocator());
@@ -242,86 +320,10 @@ checker::Type *ArrayExpression::CheckPattern(checker::TSChecker *checker)
     bool addOptional = true;
 
     for (auto it = elements_.rbegin(); it != elements_.rend(); it++) {
-        checker::Type *elementType = nullptr;
         checker::ElementFlags memberFlag = checker::ElementFlags::NO_OPTS;
-
-        switch ((*it)->Type()) {
-            case ir::AstNodeType::REST_ELEMENT: {
-                elementType = checker->Allocator()->New<checker::ArrayType>(checker->GlobalAnyType());
-                memberFlag = checker::ElementFlags::REST;
-                addOptional = false;
-                break;
-            }
-            case ir::AstNodeType::OBJECT_PATTERN: {
-                elementType = (*it)->AsObjectPattern()->CheckPattern(checker);
-                memberFlag = checker::ElementFlags::REQUIRED;
-                addOptional = false;
-                break;
-            }
-            case ir::AstNodeType::ARRAY_PATTERN: {
-                elementType = (*it)->AsArrayPattern()->CheckPattern(checker);
-                memberFlag = checker::ElementFlags::REQUIRED;
-                addOptional = false;
-                break;
-            }
-            case ir::AstNodeType::ASSIGNMENT_PATTERN: {
-                auto *assignmentPattern = (*it)->AsAssignmentPattern();
-
-                if (assignmentPattern->Left()->IsIdentifier()) {
-                    const ir::Identifier *ident = assignmentPattern->Left()->AsIdentifier();
-                    ASSERT(ident->Variable());
-                    varbinder::Variable *bindingVar = ident->Variable();
-                    checker::Type *initializerType =
-                        checker->GetBaseTypeOfLiteralType(assignmentPattern->Right()->Check(checker));
-                    bindingVar->SetTsType(initializerType);
-                    elementType = initializerType;
-                } else if (assignmentPattern->Left()->IsArrayPattern()) {
-                    auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::FORCE_TUPLE);
-                    auto destructuringContext =
-                        checker::ArrayDestructuringContext(checker, assignmentPattern->Left()->AsArrayPattern(), false,
-                                                           true, nullptr, assignmentPattern->Right());
-                    destructuringContext.Start();
-                    elementType = destructuringContext.InferredType();
-                } else {
-                    ASSERT(assignmentPattern->Left()->IsObjectPattern());
-                    auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::FORCE_TUPLE);
-                    auto destructuringContext =
-                        checker::ObjectDestructuringContext(checker, assignmentPattern->Left()->AsObjectPattern(),
-                                                            false, true, nullptr, assignmentPattern->Right());
-                    destructuringContext.Start();
-                    elementType = destructuringContext.InferredType();
-                }
-
-                if (addOptional) {
-                    memberFlag = checker::ElementFlags::OPTIONAL;
-                } else {
-                    memberFlag = checker::ElementFlags::REQUIRED;
-                }
-
-                break;
-            }
-            case ir::AstNodeType::OMITTED_EXPRESSION: {
-                elementType = checker->GlobalAnyType();
-                memberFlag = checker::ElementFlags::REQUIRED;
-                addOptional = false;
-                break;
-            }
-            case ir::AstNodeType::IDENTIFIER: {
-                const ir::Identifier *ident = (*it)->AsIdentifier();
-                ASSERT(ident->Variable());
-                elementType = checker->GlobalAnyType();
-                ident->Variable()->SetTsType(elementType);
-                memberFlag = checker::ElementFlags::REQUIRED;
-                addOptional = false;
-                break;
-            }
-            default: {
-                UNREACHABLE();
-            }
-        }
+        checker::Type *elementType = CheckElement(checker, *it, memberFlag, addOptional);
 
         util::StringView memberIndex = util::Helpers::ToStringView(checker->Allocator(), index - 1);
-
         auto *memberVar =
             varbinder::Scope::CreateVar(checker->Allocator(), memberIndex, varbinder::VariableFlags::PROPERTY, *it);
 
