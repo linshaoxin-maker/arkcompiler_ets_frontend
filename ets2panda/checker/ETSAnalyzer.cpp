@@ -542,16 +542,24 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewArrayInstanceExpression *expr) const
         // Ball is workaround for koala ui lib
         if (elementType->IsETSObjectType()) {
             auto *calleeObj = elementType->AsETSObjectType();
-            if (!calleeObj->HasObjectFlag(checker::ETSObjectFlags::ABSTRACT)) {
+            if (!calleeObj->HasObjectFlag(checker::ETSObjectFlags::ABSTRACT) &&
+                !calleeObj->HasObjectFlag(checker::ETSObjectFlags::INTERFACE)) {
                 // A workaround check for new Interface[...] in test cases
                 expr->SetSignature(
                     checker->CollectParameterlessConstructor(calleeObj->ConstructSignatures(), expr->Start()));
                 checker->ValidateSignatureAccessibility(calleeObj, nullptr, expr->Signature(), expr->Start());
+            } else if (calleeObj->HasObjectFlag(checker::ETSObjectFlags::INTERFACE)) {
+                checker->ThrowTypeError("Interfaces cannot be created using an array creation expression.",
+                                        expr->Start());
+            } else {
+                checker->ThrowTypeError("Abstract classes cannot be created using an array creation expression.",
+                                        expr->Start());
             }
         }
     }
     expr->SetTsType(checker->CreateETSArrayType(elementType));
     checker->CreateBuiltinArraySignature(expr->TsType()->AsETSArrayType(), 1);
+
     return expr->TsType();
 }
 
