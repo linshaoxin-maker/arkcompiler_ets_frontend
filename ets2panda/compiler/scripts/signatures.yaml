@@ -417,6 +417,7 @@ signatures:
 
   - callee: BUILTIN_RUNTIME
     method_name: failedTypeCastException
+    static: true
     params: [BUILTIN_OBJECT, BUILTIN_STRING]
     return_type: BUILTIN_CLASS_CAST_EXCEPTION
     ref: BUILTIN_RUNTIME_FAILED_TYPE_CAST_EXCEPTION
@@ -561,6 +562,7 @@ signatures:
 
   - callee: BUILTIN_RUNTIME
     method_name: typeOf
+    static: true
     params: [BUILTIN_OBJECT]
     return_type: BUILTIN_STRING
     ref: BUILTIN_RUNTIME_TYPEOF
@@ -633,60 +635,70 @@ signatures:
 
   - callee: BUILTIN_BOOLEAN
     method_name: valueOf
+    static: true
     params: [PRIMITIVE_BOOLEAN]
     return_type: BUILTIN_BOOLEAN
     ref: BUILTIN_BOOLEAN_VALUE_OF
 
   - callee: BUILTIN_CHAR
     method_name: valueOf
+    static: true
     params: [PRIMITIVE_CHAR]
     return_type: BUILTIN_CHAR
     ref: BUILTIN_CHAR_VALUE_OF
 
   - callee: BUILTIN_BYTE
     method_name: valueOf
+    static: true
     params: [PRIMITIVE_BYTE]
     return_type: BUILTIN_BYTE
     ref: BUILTIN_BYTE_VALUE_OF
 
   - callee: BUILTIN_SHORT
     method_name: valueOf
+    static: true
     params: [PRIMITIVE_SHORT]
     return_type: BUILTIN_SHORT
     ref: BUILTIN_SHORT_VALUE_OF
 
   - callee: BUILTIN_INT
     method_name: valueOf
+    static: true
     params: [PRIMITIVE_INT]
     return_type: BUILTIN_INT
     ref: BUILTIN_INT_VALUE_OF
 
   - callee: BUILTIN_LONG
     method_name: valueOf
+    static: true
     params: [PRIMITIVE_LONG]
     return_type: BUILTIN_LONG
     ref: BUILTIN_LONG_VALUE_OF
 
   - callee: BUILTIN_FLOAT
     method_name: valueOf
+    static: true
     params: [PRIMITIVE_FLOAT]
     return_type: BUILTIN_FLOAT
     ref: BUILTIN_FLOAT_VALUE_OF
 
   - callee: BUILTIN_DOUBLE
     method_name: valueOf
+    static: true
     params: [PRIMITIVE_DOUBLE]
     return_type: BUILTIN_DOUBLE
     ref: BUILTIN_DOUBLE_VALUE_OF
 
   - callee: BUILTIN_FLOAT
     method_name: isNaN
+    static: true
     params: [PRIMITIVE_FLOAT]
     return_type: PRIMITIVE_BOOLEAN
     ref: BUILTIN_FLOAT_IS_NAN
 
   - callee: BUILTIN_DOUBLE
     method_name: isNaN
+    static: true
     params: [PRIMITIVE_DOUBLE]
     return_type: PRIMITIVE_BOOLEAN
     ref: BUILTIN_DOUBLE_IS_NAN
@@ -742,60 +754,70 @@ signatures:
   # BUILTIN_JSRUNTIME_NEW_JSVALUE_<TYPE>
   - callee: BUILTIN_JSRUNTIME
     method_name: newJSValueBoolean
+    static: true
     params: [PRIMITIVE_BOOLEAN]
     return_type: BUILTIN_JSVALUE
     ref: BUILTIN_JSRUNTIME_NEW_JSVALUE_BOOLEAN
 
   - callee: BUILTIN_JSRUNTIME
     method_name: newJSValueByte
+    static: true
     params: [PRIMITIVE_BYTE]
     return_type: BUILTIN_JSVALUE
     ref: BUILTIN_JSRUNTIME_NEW_JSVALUE_BYTE
 
   - callee: BUILTIN_JSRUNTIME
     method_name: newJSValueChar
+    static: true
     params: [PRIMITIVE_CHAR]
     return_type: BUILTIN_JSVALUE
     ref: BUILTIN_JSRUNTIME_NEW_JSVALUE_CHAR
 
   - callee: BUILTIN_JSRUNTIME
     method_name: newJSValueShort
+    static: true
     params: [PRIMITIVE_SHORT]
     return_type: BUILTIN_JSVALUE
     ref: BUILTIN_JSRUNTIME_NEW_JSVALUE_SHORT
 
   - callee: BUILTIN_JSRUNTIME
     method_name: newJSValueInt
+    static: true
     params: [PRIMITIVE_INT]
     return_type: BUILTIN_JSVALUE
     ref: BUILTIN_JSRUNTIME_NEW_JSVALUE_INT
 
   - callee: BUILTIN_JSRUNTIME
     method_name: newJSValueLong
+    static: true
     params: [PRIMITIVE_LONG]
     return_type: BUILTIN_JSVALUE
     ref: BUILTIN_JSRUNTIME_NEW_JSVALUE_LONG
 
   - callee: BUILTIN_JSRUNTIME
     method_name: newJSValueFloat
+    static: true
     params: [PRIMITIVE_FLOAT]
     return_type: BUILTIN_JSVALUE
     ref: BUILTIN_JSRUNTIME_NEW_JSVALUE_FLOAT
 
   - callee: BUILTIN_JSRUNTIME
     method_name: newJSValueDouble
+    static: true
     params: [PRIMITIVE_DOUBLE]
     return_type: BUILTIN_JSVALUE
     ref: BUILTIN_JSRUNTIME_NEW_JSVALUE_DOUBLE
 
   - callee: BUILTIN_JSRUNTIME
     method_name: newJSValueString
+    static: true
     params: [BUILTIN_STRING]
     return_type: BUILTIN_JSVALUE
     ref: BUILTIN_JSRUNTIME_NEW_JSVALUE_STRING
 
   - callee: BUILTIN_JSRUNTIME
     method_name: newJSValueObject
+    static: true
     params: [BUILTIN_OBJECT]
     return_type: BUILTIN_JSVALUE
     ref: BUILTIN_JSRUNTIME_NEW_JSVALUE_OBJECT
@@ -803,60 +825,70 @@ signatures:
   # BUILTIN_JSRUNTIME_GET_VALUE_<TYPE>
   - callee: BUILTIN_JSRUNTIME
     method_name: getValueBoolean
+    static: true
     params: [BUILTIN_JSVALUE]
     return_type: PRIMITIVE_BOOLEAN
     ref: BUILTIN_JSRUNTIME_GET_VALUE_BOOLEAN
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getValueByte
+    static: true
     params: [BUILTIN_JSVALUE]
     return_type: PRIMITIVE_BYTE
     ref: BUILTIN_JSRUNTIME_GET_VALUE_BYTE
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getValueChar
+    static: true
     params: [BUILTIN_JSVALUE]
     return_type: PRIMITIVE_CHAR
     ref: BUILTIN_JSRUNTIME_GET_VALUE_CHAR
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getValueShort
+    static: true
     params: [BUILTIN_JSVALUE]
     return_type: PRIMITIVE_SHORT
     ref: BUILTIN_JSRUNTIME_GET_VALUE_SHORT
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getValueInt
+    static: true
     params: [BUILTIN_JSVALUE]
     return_type: PRIMITIVE_INT
     ref: BUILTIN_JSRUNTIME_GET_VALUE_INT
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getValueLong
+    static: true
     params: [BUILTIN_JSVALUE]
     return_type: PRIMITIVE_LONG
     ref: BUILTIN_JSRUNTIME_GET_VALUE_LONG
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getValueFloat
+    static: true
     params: [BUILTIN_JSVALUE]
     return_type: PRIMITIVE_FLOAT
     ref: BUILTIN_JSRUNTIME_GET_VALUE_FLOAT
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getValueDouble
+    static: true
     params: [BUILTIN_JSVALUE]
     return_type: PRIMITIVE_DOUBLE
     ref: BUILTIN_JSRUNTIME_GET_VALUE_DOUBLE
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getValueString
+    static: true
     params: [BUILTIN_JSVALUE]
     return_type: BUILTIN_STRING
     ref: BUILTIN_JSRUNTIME_GET_VALUE_STRING
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getValueObject
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_OBJECT] # 2nd argument is ClassClass
     return_type: BUILTIN_OBJECT
     ref: BUILTIN_JSRUNTIME_GET_VALUE_OBJECT
@@ -864,60 +896,70 @@ signatures:
   # BUILTIN_JSRUNTIME_GET_PROPERTY_<TYPE>
   - callee: BUILTIN_JSRUNTIME
     method_name: getPropertyBoolean
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING]
     return_type: PRIMITIVE_BOOLEAN
     ref: BUILTIN_JSRUNTIME_GET_PROPERTY_BOOLEAN
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getPropertyByte
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING]
     return_type: PRIMITIVE_BYTE
     ref: BUILTIN_JSRUNTIME_GET_PROPERTY_BYTE
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getPropertyChar
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING]
     return_type: PRIMITIVE_CHAR
     ref: BUILTIN_JSRUNTIME_GET_PROPERTY_CHAR
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getPropertyShort
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING]
     return_type: PRIMITIVE_SHORT
     ref: BUILTIN_JSRUNTIME_GET_PROPERTY_SHORT
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getPropertyInt
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING]
     return_type: PRIMITIVE_INT
     ref: BUILTIN_JSRUNTIME_GET_PROPERTY_INT
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getPropertyLong
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING]
     return_type: PRIMITIVE_LONG
     ref: BUILTIN_JSRUNTIME_GET_PROPERTY_LONG
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getPropertyFloat
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING]
     return_type: PRIMITIVE_FLOAT
     ref: BUILTIN_JSRUNTIME_GET_PROPERTY_FLOAT
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getPropertyDouble
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING]
     return_type: PRIMITIVE_DOUBLE
     ref: BUILTIN_JSRUNTIME_GET_PROPERTY_DOUBLE
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getPropertyString
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING]
     return_type: BUILTIN_STRING
     ref: BUILTIN_JSRUNTIME_GET_PROPERTY_STRING
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getPropertyJSValue
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING]
     return_type: BUILTIN_JSVALUE
     ref: BUILTIN_JSRUNTIME_GET_PROPERTY_JSVALUE
@@ -925,60 +967,70 @@ signatures:
   # BUILTIN_JSRUNTIME_SET_PROPERTY_<TYPE>
   - callee: BUILTIN_JSRUNTIME
     method_name: setPropertyBoolean
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING, PRIMITIVE_BOOLEAN]
     return_type: PRIMITIVE_VOID
     ref: BUILTIN_JSRUNTIME_SET_PROPERTY_BOOLEAN
 
   - callee: BUILTIN_JSRUNTIME
     method_name: setPropertyByte
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING, PRIMITIVE_BYTE]
     return_type: PRIMITIVE_VOID
     ref: BUILTIN_JSRUNTIME_SET_PROPERTY_BYTE
 
   - callee: BUILTIN_JSRUNTIME
     method_name: setPropertyChar
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING, PRIMITIVE_CHAR]
     return_type: PRIMITIVE_VOID
     ref: BUILTIN_JSRUNTIME_SET_PROPERTY_CHAR
 
   - callee: BUILTIN_JSRUNTIME
     method_name: setPropertyShort
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING, PRIMITIVE_SHORT]
     return_type: PRIMITIVE_VOID
     ref: BUILTIN_JSRUNTIME_SET_PROPERTY_SHORT
 
   - callee: BUILTIN_JSRUNTIME
     method_name: setPropertyInt
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING, PRIMITIVE_INT]
     return_type: PRIMITIVE_VOID
     ref: BUILTIN_JSRUNTIME_SET_PROPERTY_INT
 
   - callee: BUILTIN_JSRUNTIME
     method_name: setPropertyLong
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING, PRIMITIVE_LONG]
     return_type: PRIMITIVE_VOID
     ref: BUILTIN_JSRUNTIME_SET_PROPERTY_LONG
 
   - callee: BUILTIN_JSRUNTIME
     method_name: setPropertyFloat
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING, PRIMITIVE_FLOAT]
     return_type: PRIMITIVE_VOID
     ref: BUILTIN_JSRUNTIME_SET_PROPERTY_FLOAT
 
   - callee: BUILTIN_JSRUNTIME
     method_name: setPropertyDouble
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING, PRIMITIVE_DOUBLE]
     return_type: PRIMITIVE_VOID
     ref: BUILTIN_JSRUNTIME_SET_PROPERTY_DOUBLE
 
   - callee: BUILTIN_JSRUNTIME
     method_name: setPropertyString
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING, BUILTIN_STRING]
     return_type: PRIMITIVE_VOID
     ref: BUILTIN_JSRUNTIME_SET_PROPERTY_STRING
 
   - callee: BUILTIN_JSRUNTIME
     method_name: setPropertyJSValue
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_STRING, BUILTIN_JSVALUE]
     return_type: PRIMITIVE_VOID
     ref: BUILTIN_JSRUNTIME_SET_PROPERTY_JSVALUE
@@ -1040,6 +1092,7 @@ signatures:
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getElementJSValue
+    static: true
     params: [BUILTIN_JSVALUE, PRIMITIVE_INT]
     return_type: BUILTIN_JSVALUE
     ref: BUILTIN_JSRUNTIME_GET_ELEMENT_JSVALUE
@@ -1119,18 +1172,21 @@ signatures:
 
   - callee: BUILTIN_JSRUNTIME
     method_name: getUndefined
+    static: true
     params: []
     return_type: BUILTIN_JSVALUE
     ref: BUILTIN_JSRUNTIME_GET_UNDEFINED
 
   - callee: BUILTIN_JSRUNTIME
     method_name: strictEqual
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_JSVALUE]
     return_type: PRIMITIVE_BOOLEAN
     ref: BUILTIN_JSRUNTIME_STRICT_EQUAL
 
   - callee: BUILTIN_JSRUNTIME
     method_name: instanceOf
+    static: true
     params: [BUILTIN_JSVALUE, BUILTIN_JSVALUE]
     return_type: PRIMITIVE_BOOLEAN
     ref: BUILTIN_JSRUNTIME_INSTANCE_OF
@@ -1299,6 +1355,7 @@ signatures:
 
   - callee: BUILTIN_JSRUNTIME
     method_name: createObject
+    static: true
     params: []
     return_type: BUILTIN_JSVALUE
     ref: BUILTIN_JSRUNTIME_CREATE_OBJECT
