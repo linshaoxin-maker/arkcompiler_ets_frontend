@@ -174,7 +174,11 @@ Arkguard只混淆参数名和局部变量名(通过将它们重新命名为随�
 
 #### -remove-log
 
-删除所有`console.*`语句。
+删除以下场景中对 console.* 语句的调用，要求console.*语句返回值未被调用。
+1. 文件顶层的调用
+2. 代码块Block中的调用
+3. 模块Module中的调用
+4. switch语句中的调用
 
 #### `-print-namecache` filepath
 
@@ -196,10 +200,8 @@ Arkguard只混淆参数名和局部变量名(通过将它们重新命名为随�
 **注意**：编译生成的源码文件中的注释默认会被全部删除，不支持配置保留。
 ### 保留选项
 
-保留选项只有在使用`enable-property-obfuscation`或`enable-toplevel-obfuscation`以及`-remove-comments`选项时发挥作用。
-
 #### `-keep-property-name` [,identifiers,...]
-
+该选项在开启`-enable-property-obfuscation`时生效
 指定你想保留的属性名。比如下面的例子:
 ```
 -keep-property-name
@@ -209,6 +211,7 @@ lastName
 ```
 
 `-keep-comments`
+该选项在开启`-remove-comments`时生效，且不支持同时开启`-enable-export-obfuscation`
 保留JsDoc注释的方法与上述属性名的保留方法类似。比如保留某个声明文件中类名为Human的类上方的JsDoc注释：
 ```
 -keep-comments
