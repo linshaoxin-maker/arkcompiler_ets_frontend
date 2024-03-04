@@ -971,6 +971,11 @@ void ETSCompiler::Compile([[maybe_unused]] const ir::ClassExpression *expr) cons
     UNREACHABLE();
 }
 
+void ETSCompiler::Compile([[maybe_unused]] const ir::ETSReExportDeclaration *stmt) const
+{
+    UNREACHABLE();
+}
+
 void ETSCompiler::Compile(const ir::ConditionalExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
