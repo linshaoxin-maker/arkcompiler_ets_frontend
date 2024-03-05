@@ -139,8 +139,9 @@ checker::Type *ETSAnalyzer::Check(ir::MethodDefinition *node) const
     }
 
     // NOTE: aszilagyi. make it correctly check for open function not have body
-    if (!scriptFunc->HasBody() && !(node->IsAbstract() || node->IsNative() || node->IsDeclare() ||
-                                    checker->HasStatus(checker::CheckerStatus::IN_INTERFACE))) {
+    if (!scriptFunc->HasBody() &&
+        !(node->IsAbstract() || node->IsNative() || node->IsDeclare() || node->IsOverloadSignature() ||
+          checker->HasStatus(checker::CheckerStatus::IN_INTERFACE))) {
         checker->ThrowTypeError("Only abstract or native methods can't have body.", scriptFunc->Start());
     }
 
@@ -166,7 +167,9 @@ checker::Type *ETSAnalyzer::Check(ir::MethodDefinition *node) const
     DoBodyTypeChecking(checker, node, scriptFunc);
     CheckPredefinedMethodReturnType(checker, scriptFunc);
 
-    checker->CheckOverride(node->TsType()->AsETSFunctionType()->FindSignature(node->Function()));
+    if (!node->IsOverloadSignature()) {
+        checker->CheckOverride(node->TsType()->AsETSFunctionType()->FindSignature(node->Function()));
+    }
 
     for (auto *it : node->Overloads()) {
         it->Check(checker);
@@ -192,7 +195,8 @@ void ETSAnalyzer::CheckMethodModifiers(ir::MethodDefinition *node) const
             node->Start());
     }
 
-    if ((node->IsAbstract() || (!node->Function()->HasBody() && !node->IsNative() && !node->IsDeclare())) &&
+    if ((node->IsAbstract() ||
+         (!node->Function()->HasBody() && !node->IsNative() && !node->IsDeclare() && !node->IsOverloadSignature())) &&
         !(checker->HasStatus(checker::CheckerStatus::IN_ABSTRACT) ||
           checker->HasStatus(checker::CheckerStatus::IN_INTERFACE))) {
         checker->ThrowTypeError("Non abstract class has abstract method.", node->Start());
@@ -491,7 +495,6 @@ checker::Type *ETSAnalyzer::Check(ir::ETSParameterExpression *expr) const
         } else {
             paramType = !expr->IsRestParameter() ? expr->Ident()->Check(checker) : expr->spread_->Check(checker);
             if (expr->IsDefault()) {
-                std::cout << __LINE__ << std::endl;
                 [[maybe_unused]] auto *const initType = expr->Initializer()->Check(checker);
             }
         }

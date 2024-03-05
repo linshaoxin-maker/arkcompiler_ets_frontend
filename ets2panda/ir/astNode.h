@@ -311,6 +311,11 @@ public:
         flags_ |= ModifierFlags::OVERRIDE;
     }
 
+    void SetOverloadSignature() noexcept
+    {
+        flags_ |= ModifierFlags::OVERLOAD_SIGNATURE;
+    }
+
     [[nodiscard]] bool IsAsync() const noexcept
     {
         return (flags_ & ModifierFlags::ASYNC) != 0;
@@ -382,6 +387,11 @@ public:
         }
 
         return (flags_ & ModifierFlags::DEFAULT_EXPORT) != 0;
+    }
+
+    [[nodiscard]] bool IsOverloadSignature() const noexcept
+    {
+        return (flags_ & ModifierFlags::OVERLOAD_SIGNATURE) != 0;
     }
 
     [[nodiscard]] bool IsDeclare() const noexcept
