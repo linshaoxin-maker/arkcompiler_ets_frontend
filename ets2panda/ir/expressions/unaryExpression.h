@@ -65,12 +65,6 @@ public:
 
     [[nodiscard]] UnaryExpression *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
-    void CheckSmartCastCondition() noexcept;
-    std::optional<checker::SmartCastCondition> const &GetSmartCastCondition() const noexcept
-    {
-        return smartCastCondition_;
-    }
-
     void TransformChildren(const NodeTransformer &cb) override;
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;
@@ -88,7 +82,6 @@ public:
 private:
     Expression *argument_;
     lexer::TokenType operator_;
-    std::optional<checker::SmartCastCondition> smartCastCondition_ = std::nullopt;
 };
 }  // namespace ark::es2panda::ir
 
