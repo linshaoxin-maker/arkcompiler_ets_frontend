@@ -1137,32 +1137,35 @@ Signature *ETSChecker::AdjustForTypeParameters(Signature *source, Signature *tar
     return target->Substitute(Relation(), substitution);
 }
 
-void ETSChecker::ThrowOverrideError(Signature *signature, Signature *overriddenSignature,
-                                    const OverrideErrorCode &errorCode)
+void ETSChecker::ThrowOverrideError(Signature *signature,
+                                    const ArenaVector<std::pair<std::string, OverrideErrorCode>> &overriddenSignatures)
 {
-    const char *reason {};
-    switch (errorCode) {
-        case OverrideErrorCode::OVERRIDDEN_FINAL: {
-            reason = "overridden method is final.";
-            break;
+    std::string msg;
+    for (size_t i = 0; i < overriddenSignatures.size(); i++) {
+        auto [name, errorCode] = overriddenSignatures[i];
+        msg += FormatMsg({name.c_str(), " because "});
+        switch (errorCode) {
+            case OverrideErrorCode::OVERRIDDEN_FINAL: {
+                msg += "overridden method is final";
+                break;
+            }
+            case OverrideErrorCode::INCOMPATIBLE_RETURN: {
+                msg += "overriding return type is not compatible with the other return type";
+                break;
+            }
+            case OverrideErrorCode::OVERRIDDEN_WEAKER: {
+                msg += "overridden method has weaker access privilege";
+                break;
+            }
+            default: {
+                UNREACHABLE();
+            }
         }
-        case OverrideErrorCode::INCOMPATIBLE_RETURN: {
-            reason = "overriding return type is not compatible with the other return type.";
-            break;
-        }
-        case OverrideErrorCode::OVERRIDDEN_WEAKER: {
-            reason = "overridden method has weaker access privilege.";
-            break;
-        }
-        default: {
-            UNREACHABLE();
-        }
+        msg += (i == (overriddenSignatures.size() - 1)) ? "." : "; ";
     }
-
-    ThrowTypeError({signature->Function()->Id()->Name(), signature, " in ", signature->Owner(), " cannot override ",
-                    overriddenSignature->Function()->Id()->Name(), overriddenSignature, " in ",
-                    overriddenSignature->Owner(), " because ", reason},
-                   signature->Function()->Start());
+    ThrowTypeError(
+        {signature->Function()->Id()->Name(), signature, " in ", signature->Owner(), " cannot override ", msg.c_str()},
+        signature->Function()->Start());
 }
 
 bool ETSChecker::CheckOverride(Signature *signature, ETSObjectType *site)
@@ -1174,7 +1177,7 @@ bool ETSChecker::CheckOverride(Signature *signature, ETSObjectType *site)
         return isOverridingAnySignature;
     }
 
-    bool suitableSignatureFound = false;
+    ArenaVector<std::pair<std::string, OverrideErrorCode>> badOverriddenSignatures(Allocator()->Adapter());
     for (auto *it : target->TsType()->AsETSFunctionType()->CallSignatures()) {
         auto *itSubst = AdjustForTypeParameters(signature, it);
 
@@ -1196,11 +1199,6 @@ bool ETSChecker::CheckOverride(Signature *signature, ETSObjectType *site)
         }
 
         auto errorCode = CheckOverride(signature, itSubst);
-        if (errorCode == OverrideErrorCode::NO_ERROR) {
-            suitableSignatureFound = true;
-        } else if (!suitableSignatureFound) {
-            ThrowOverrideError(signature, it, errorCode);
-        }
 
         if (signature->Owner()->HasObjectFlag(ETSObjectFlags::INTERFACE) &&
             Relation()->IsIdenticalTo(itSubst->Owner(), GlobalETSObjectType()) &&
@@ -1209,8 +1207,21 @@ bool ETSChecker::CheckOverride(Signature *signature, ETSObjectType *site)
                            signature->Function()->Start());
         }
 
-        isOverridingAnySignature = true;
+        if (errorCode == OverrideErrorCode::NO_ERROR) {
+            isOverridingAnySignature = true;
+        } else {
+            std::stringstream ss;
+            ss << itSubst->Function()->Id()->Name();
+            itSubst->ToString(ss, nullptr, true);
+            ss << " in ";
+            itSubst->Owner()->ToString(ss, false);
+            badOverriddenSignatures.push_back({ss.str(), errorCode});
+        }
+
         it->AddSignatureFlag(SignatureFlags::VIRTUAL);
+    }
+    if (!badOverriddenSignatures.empty() && !isOverridingAnySignature) {
+        ThrowOverrideError(signature, badOverriddenSignatures);
     }
 
     return isOverridingAnySignature;
