@@ -292,10 +292,9 @@ bool ETSChecker::ValidateSignatureRequiredParams(Signature *substitutedSig,
             flags);
 
         if (!invocationCtx.IsInvocable()) {
-            if (CheckOptionalLambdaFunction(argument, substitutedSig, index)) {
-                continue;
+            if (!CheckOptionalLambdaFunction(argument, substitutedSig, index)) {
+                return false;
             }
-            return false;
         }
     }
 
