@@ -21,70 +21,103 @@
 
 namespace panda::es2panda::util {
 
-int GenerateProgram(panda::pandasm::Program *prog, const util::Options *options, const ReporterFun &reporter)
-{
-    std::map<std::string, size_t> stat;
-    std::map<std::string, size_t> *statp = options->OptLevel() != 0 ? &stat : nullptr;
-    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps maps {};
-    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps *mapsp = options->OptLevel() != 0 ? &maps : nullptr;
+class ProgramGenerator {
+public:
+    ProgramGenerator(panda::pandasm::Program *prog, const util::Options *options, const ReporterFun &reporter)
+        : prog_(prog), options_(options), reporter_(reporter)
+    {
+        statp_ = options_->OptLevel() != 0 ? &stat_ : nullptr;
+        mapsp_ = options_->OptLevel() != 0 ? &maps_ : nullptr;
+    }
 
 #ifdef PANDA_WITH_BYTECODE_OPTIMIZER
-    if (options->OptLevel() != 0) {
-        panda::Logger::ComponentMask componentMask;
-        componentMask.set(panda::Logger::Component::ASSEMBLER);
-        componentMask.set(panda::Logger::Component::COMPILER);
-        componentMask.set(panda::Logger::Component::BYTECODE_OPTIMIZER);
+    int OptimizeBytecode() const
+    {
+        if (options_->OptLevel() != 0) {
+            panda::Logger::ComponentMask componentMask;
+            componentMask.set(panda::Logger::Component::ASSEMBLER);
+            componentMask.set(panda::Logger::Component::COMPILER);
+            componentMask.set(panda::Logger::Component::BYTECODE_OPTIMIZER);
 
-        panda::Logger::InitializeStdLogging(Logger::LevelFromString(options->LogLevel()), componentMask);
+            panda::Logger::InitializeStdLogging(Logger::LevelFromString(options_->LogLevel()), componentMask);
 
-        if (!panda::pandasm::AsmEmitter::Emit(options->CompilerOutput(), *prog, statp, mapsp, true)) {
-            reporter("Failed to emit binary data: " + panda::pandasm::AsmEmitter::GetLastError());
-            return 1;
+            if (!panda::pandasm::AsmEmitter::Emit(options_->CompilerOutput(), *prog_, statp_, mapsp_, true)) {
+                reporter_("Failed to emit binary data: " + panda::pandasm::AsmEmitter::GetLastError());
+                return 1;
+            }
+
+            panda::bytecodeopt::g_options.SetOptLevel(options_->OptLevel());
+            // Set default value instead of maximum set in panda::bytecodeopt::SetCompilerOptions()
+            panda::compiler::CompilerLogger::Init({"all"});
+            panda::compiler::g_options.SetCompilerMaxBytecodeSize(
+                panda::compiler::g_options.GetCompilerMaxBytecodeSize());
+            panda::bytecodeopt::OptimizeBytecode(prog_, mapsp_, options_->CompilerOutput(), options_->IsDynamic(),
+                                                 true);
         }
-
-        panda::bytecodeopt::g_options.SetOptLevel(options->OptLevel());
-        // Set default value instead of maximum set in panda::bytecodeopt::SetCompilerOptions()
-        panda::compiler::CompilerLogger::Init({"all"});
-        panda::compiler::g_options.SetCompilerMaxBytecodeSize(panda::compiler::g_options.GetCompilerMaxBytecodeSize());
-        panda::bytecodeopt::OptimizeBytecode(prog, mapsp, options->CompilerOutput(), options->IsDynamic(), true);
+        return 0;
     }
 #endif
 
-    if (options->CompilerOptions().dumpAsm) {
-        es2panda::Compiler::DumpAsm(prog);
-    }
+    int GenerateProgram() const
+    {
+#ifdef PANDA_WITH_BYTECODE_OPTIMIZER
+        if (OptimizeBytecode() == 1) {
+            return 1;
+        }
+#endif
 
-    if (!panda::pandasm::AsmEmitter::AssignProfileInfo(prog)) {
-        reporter("AssignProfileInfo failed");
-        return 1;
-    }
+        if (options_->CompilerOptions().dumpAsm) {
+            es2panda::Compiler::DumpAsm(prog_);
+        }
 
-    if (!panda::pandasm::AsmEmitter::Emit(options->CompilerOutput(), *prog, statp, mapsp, true)) {
-        reporter("Failed to emit binary data: " + panda::pandasm::AsmEmitter::GetLastError());
-        return 1;
-    }
+        if (!panda::pandasm::AsmEmitter::AssignProfileInfo(prog_)) {
+            reporter_("AssignProfileInfo failed");
+            return 1;
+        }
 
-    if (options->SizeStat()) {
-        size_t totalSize = 0;
-        std::cout << "Panda file size statistic:" << std::endl;
-        constexpr std::array<std::string_view, 2> INFO_STATS = {"instructions_number", "codesize"};
+        if (!panda::pandasm::AsmEmitter::Emit(options_->CompilerOutput(), *prog_, statp_, mapsp_, true)) {
+            reporter_("Failed to emit binary data: " + panda::pandasm::AsmEmitter::GetLastError());
+            return 1;
+        }
 
-        for (const auto &[name, size] : stat) {
-            if (find(INFO_STATS.begin(), INFO_STATS.end(), name) != INFO_STATS.end()) {
-                continue;
+        if (options_->SizeStat()) {
+            size_t totalSize = 0;
+            std::cout << "Panda file size statistic:" << std::endl;
+            constexpr std::array<std::string_view, 2> INFO_STATS = {"instructions_number", "codesize"};
+
+            for (const auto &[name, size] : stat_) {
+                if (find(INFO_STATS.begin(), INFO_STATS.end(), name) != INFO_STATS.end()) {
+                    continue;
+                }
+                std::cout << name << " section: " << size << std::endl;
+                totalSize += size;
             }
-            std::cout << name << " section: " << size << std::endl;
-            totalSize += size;
+
+            for (const auto &name : INFO_STATS) {
+                std::cout << name << ": " << stat_.at(std::string(name)) << std::endl;
+            }
+
+            std::cout << "total: " << totalSize << std::endl;
         }
 
-        for (const auto &name : INFO_STATS) {
-            std::cout << name << ": " << stat.at(std::string(name)) << std::endl;
-        }
-
-        std::cout << "total: " << totalSize << std::endl;
+        return 0;
     }
 
-    return 0;
+private:
+    panda::pandasm::Program *prog_;
+    const util::Options *options_;
+    const ReporterFun &reporter_;
+
+    std::map<std::string, size_t> stat_;
+    std::map<std::string, size_t> *statp_;
+    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps maps_ {};
+    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps *mapsp_;
+};
+
+int GenerateProgram(panda::pandasm::Program *prog, const util::Options *options, const ReporterFun &reporter)
+{
+    const auto &generator = ProgramGenerator {prog, options, reporter};
+    return generator.GenerateProgram();
 }
 
 }  // namespace panda::es2panda::util

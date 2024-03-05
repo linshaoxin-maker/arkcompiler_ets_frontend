@@ -240,12 +240,139 @@ void ObjectExpression::Compile([[maybe_unused]] compiler::PandaGen *pg) const
     pg->GetAstCompiler()->Compile(this);
 }
 
+class PatternChecker {
+public:
+    explicit PatternChecker(checker::TSChecker *checker) : checker_ {checker}
+    {
+        Reset();
+    }
+
+    void Reset()
+    {
+        bindingVar_ = nullptr;
+        patternParamType_ = checker_->GlobalAnyType();
+    }
+
+    void ProcessShorthand(es2panda::ir::Property *prop)
+    {
+        switch (prop->Value()->Type()) {
+            case ir::AstNodeType::IDENTIFIER: {
+                const ir::Identifier *ident = prop->Value()->AsIdentifier();
+                ASSERT(ident->Variable());
+                bindingVar_ = ident->Variable();
+                break;
+            }
+            case ir::AstNodeType::ASSIGNMENT_PATTERN: {
+                auto *assignmentPattern = prop->Value()->AsAssignmentPattern();
+                patternParamType_ = assignmentPattern->Right()->Check(checker_);
+                ASSERT(assignmentPattern->Left()->AsIdentifier()->Variable());
+                bindingVar_ = assignmentPattern->Left()->AsIdentifier()->Variable();
+                isOptional_ = true;
+                break;
+            }
+            default: {
+                UNREACHABLE();
+            }
+        }
+    }
+
+    void ProcessLong(es2panda::ir::Property *prop, varbinder::LocalVariable *foundVar)
+    {
+        switch (prop->Value()->Type()) {
+            case ir::AstNodeType::IDENTIFIER: {
+                bindingVar_ = prop->Value()->AsIdentifier()->Variable();
+                break;
+            }
+            case ir::AstNodeType::ARRAY_PATTERN: {
+                patternParamType_ = prop->Value()->AsArrayPattern()->CheckPattern(checker_);
+                break;
+            }
+            case ir::AstNodeType::OBJECT_PATTERN: {
+                patternParamType_ = prop->Value()->AsObjectPattern()->CheckPattern(checker_);
+                break;
+            }
+            case ir::AstNodeType::ASSIGNMENT_PATTERN: {
+                HandleAssignmentPattern(prop, foundVar);
+                break;
+            }
+            default: {
+                UNREACHABLE();
+            }
+        }
+    }
+
+    checker::Type *PatternParamType() const
+    {
+        return patternParamType_;
+    }
+
+    varbinder::Variable *BindingVar() const
+    {
+        return bindingVar_;
+    }
+
+    bool IsOptional() const
+    {
+        return isOptional_;
+    }
+
+private:
+    void HandleAssignmentPattern(es2panda::ir::Property *prop, varbinder::LocalVariable *foundVar)
+    {
+        auto *assignmentPattern = prop->Value()->AsAssignmentPattern();
+
+        if (assignmentPattern->Left()->IsIdentifier()) {
+            bindingVar_ = assignmentPattern->Left()->AsIdentifier()->Variable();
+            patternParamType_ = checker_->GetBaseTypeOfLiteralType(assignmentPattern->Right()->Check(checker_));
+            isOptional_ = true;
+            return;
+        }
+
+        if (assignmentPattern->Left()->IsArrayPattern()) {
+            auto savedContext = checker::SavedCheckerContext(checker_, checker::CheckerStatus::FORCE_TUPLE);
+            auto destructuringContext =
+                checker::ArrayDestructuringContext(checker_, assignmentPattern->Left()->AsArrayPattern(), false, true,
+                                                   nullptr, assignmentPattern->Right());
+
+            if (foundVar != nullptr) {
+                destructuringContext.SetInferredType(
+                    checker_->CreateUnionType({foundVar->TsType(), destructuringContext.InferredType()}));
+            }
+
+            destructuringContext.Start();
+            patternParamType_ = destructuringContext.InferredType();
+            isOptional_ = true;
+            return;
+        }
+
+        ASSERT(assignmentPattern->Left()->IsObjectPattern());
+        auto savedContext = checker::SavedCheckerContext(checker_, checker::CheckerStatus::FORCE_TUPLE);
+        auto destructuringContext = checker::ObjectDestructuringContext(
+            checker_, assignmentPattern->Left()->AsObjectPattern(), false, true, nullptr, assignmentPattern->Right());
+
+        std::cout << prop->DumpJSON() << std::endl;
+
+        if (foundVar != nullptr) {
+            destructuringContext.SetInferredType(
+                checker_->CreateUnionType({foundVar->TsType(), destructuringContext.InferredType()}));
+        }
+
+        destructuringContext.Start();
+        patternParamType_ = destructuringContext.InferredType();
+        isOptional_ = true;
+    }
+
+    checker::TSChecker *checker_;
+    checker::Type *patternParamType_ {};
+    varbinder::Variable *bindingVar_ {};
+    bool isOptional_ = false;
+};
+
 checker::Type *ObjectExpression::CheckPattern(checker::TSChecker *checker)
 {
     checker::ObjectDescriptor *desc = checker->Allocator()->New<checker::ObjectDescriptor>(checker->Allocator());
 
-    bool isOptional = false;
-
+    auto patternChecker = PatternChecker {checker};
     for (auto it = properties_.rbegin(); it != properties_.rend(); it++) {
         if ((*it)->IsRestElement()) {
             ASSERT((*it)->AsRestElement()->Argument()->IsIdentifier());
@@ -264,95 +391,17 @@ checker::Type *ObjectExpression::CheckPattern(checker::TSChecker *checker)
         }
 
         varbinder::LocalVariable *foundVar = desc->FindProperty(prop->Key()->AsIdentifier()->Name());
-        checker::Type *patternParamType = checker->GlobalAnyType();
-        varbinder::Variable *bindingVar = nullptr;
 
+        patternChecker.Reset();
         if (prop->IsShorthand()) {
-            switch (prop->Value()->Type()) {
-                case ir::AstNodeType::IDENTIFIER: {
-                    const ir::Identifier *ident = prop->Value()->AsIdentifier();
-                    ASSERT(ident->Variable());
-                    bindingVar = ident->Variable();
-                    break;
-                }
-                case ir::AstNodeType::ASSIGNMENT_PATTERN: {
-                    auto *assignmentPattern = prop->Value()->AsAssignmentPattern();
-                    patternParamType = assignmentPattern->Right()->Check(checker);
-                    ASSERT(assignmentPattern->Left()->AsIdentifier()->Variable());
-                    bindingVar = assignmentPattern->Left()->AsIdentifier()->Variable();
-                    isOptional = true;
-                    break;
-                }
-                default: {
-                    UNREACHABLE();
-                }
-            }
+            patternChecker.ProcessShorthand(prop);
         } else {
-            switch (prop->Value()->Type()) {
-                case ir::AstNodeType::IDENTIFIER: {
-                    bindingVar = prop->Value()->AsIdentifier()->Variable();
-                    break;
-                }
-                case ir::AstNodeType::ARRAY_PATTERN: {
-                    patternParamType = prop->Value()->AsArrayPattern()->CheckPattern(checker);
-                    break;
-                }
-                case ir::AstNodeType::OBJECT_PATTERN: {
-                    patternParamType = prop->Value()->AsObjectPattern()->CheckPattern(checker);
-                    break;
-                }
-                case ir::AstNodeType::ASSIGNMENT_PATTERN: {
-                    auto *assignmentPattern = prop->Value()->AsAssignmentPattern();
-
-                    if (assignmentPattern->Left()->IsIdentifier()) {
-                        bindingVar = assignmentPattern->Left()->AsIdentifier()->Variable();
-                        patternParamType =
-                            checker->GetBaseTypeOfLiteralType(assignmentPattern->Right()->Check(checker));
-                        isOptional = true;
-                        break;
-                    }
-
-                    if (assignmentPattern->Left()->IsArrayPattern()) {
-                        auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::FORCE_TUPLE);
-                        auto destructuringContext =
-                            checker::ArrayDestructuringContext(checker, assignmentPattern->Left()->AsArrayPattern(),
-                                                               false, true, nullptr, assignmentPattern->Right());
-
-                        if (foundVar != nullptr) {
-                            destructuringContext.SetInferredType(
-                                checker->CreateUnionType({foundVar->TsType(), destructuringContext.InferredType()}));
-                        }
-
-                        destructuringContext.Start();
-                        patternParamType = destructuringContext.InferredType();
-                        isOptional = true;
-                        break;
-                    }
-
-                    ASSERT(assignmentPattern->Left()->IsObjectPattern());
-                    auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::FORCE_TUPLE);
-                    auto destructuringContext =
-                        checker::ObjectDestructuringContext(checker, assignmentPattern->Left()->AsObjectPattern(),
-                                                            false, true, nullptr, assignmentPattern->Right());
-
-                    if (foundVar != nullptr) {
-                        destructuringContext.SetInferredType(
-                            checker->CreateUnionType({foundVar->TsType(), destructuringContext.InferredType()}));
-                    }
-
-                    destructuringContext.Start();
-                    patternParamType = destructuringContext.InferredType();
-                    isOptional = true;
-                    break;
-                }
-                default: {
-                    UNREACHABLE();
-                }
-            }
+            patternChecker.ProcessLong(prop, foundVar);
         }
+        varbinder::Variable *bindingVar = patternChecker.BindingVar();
 
         if (bindingVar != nullptr) {
-            bindingVar->SetTsType(patternParamType);
+            bindingVar->SetTsType(patternChecker.PatternParamType());
         }
 
         if (foundVar != nullptr) {
@@ -361,9 +410,9 @@ checker::Type *ObjectExpression::CheckPattern(checker::TSChecker *checker)
 
         varbinder::LocalVariable *patternVar = varbinder::Scope::CreateVar(
             checker->Allocator(), prop->Key()->AsIdentifier()->Name(), varbinder::VariableFlags::PROPERTY, *it);
-        patternVar->SetTsType(patternParamType);
+        patternVar->SetTsType(patternChecker.PatternParamType());
 
-        if (isOptional) {
+        if (patternChecker.IsOptional()) {
             patternVar->AddFlag(varbinder::VariableFlags::OPTIONAL);
         }
 
