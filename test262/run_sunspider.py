@@ -124,12 +124,13 @@ def output(retcode, msg):
         sys.stderr.write("Unknown Error: " + str(retcode))
 
 
-def exec_command(cmd_args, timeout=DEFAULT_TIMEOUT):
+def exec_command(cmd_args, timeout=DEFAULT_TIMEOUT, customCwd=None):
     proc = subprocess.Popen(cmd_args,
                             stderr=subprocess.PIPE,
                             stdout=subprocess.PIPE,
                             close_fds=True,
-                            start_new_session=True)
+                            start_new_session=True,
+                            cwd=customCwd)
     cmd_string = " ".join(cmd_args)
     code_format = 'utf-8'
     if platform.system() == "Windows":
@@ -399,7 +400,16 @@ class ArkProgram():
                         is_dependency_proto_existed = os.path.exists(out_dependency_proto)
                         if not is_dependency_proto_existed:
                             self.gen_dependency_proto(dependency)
-
+        # execute arkguard
+        js_file_allpath = os.path.join(os.path.dirname(os.path.abspath(__file__)),'../',js_file)
+        cmd_args = ['node', '--no-warnings', '--loader=ts-node/esm', './src/cli/SecHarmony.ts', js_file_allpath,
+                            '--config-path', './scripts/test262Config.json']
+        retcode = exec_command(cmd_args, customCwd = '/mnt/data/zwx1285830/ohos/openharmony/arkcompiler/ets_frontend/arkguard')
+        #with open('/mnt/data/zwx1285830/ohos/openharmony/arkcompiler/ets_frontend/test262/log.txt', 'a') as file: file.write(' '.join(map(str, cmd_args)) +'\n')
+        if retcode == 1:
+            return retcode
+        #with open('/mnt/data/zwx1285830/ohos/openharmony/arkcompiler/ets_frontend/test262/log.txt', 'a') as file: file.write(open(js_file_allpath).read() +'\n')
+        
         if self.ark_frontend == ARK_FRONTEND_LIST[0]:
             mod_opt_index = 3
             if merge_abc_mode != "0":

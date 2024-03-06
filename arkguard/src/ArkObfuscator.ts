@@ -57,6 +57,7 @@ import {needReadApiInfo, readProjectProperties, readProjectPropertiesByCollected
 import {ApiExtractor} from './common/ApiExtractor';
 import es6Info from './configs/preset/es6_reserved_properties.json';
 import {EventList, TimeSumPrinter, TimeTracker} from './utils/PrinterUtils';
+import filterFileArray from './configs/test262filename/filterFilenameList.json'
 
 export const renameIdentifierModule = require('./transformers/rename/RenameIdentifierTransformer');
 export const renamePropertyModule = require('./transformers/rename/RenamePropertiesTransformer');
@@ -379,6 +380,29 @@ export class ArkObfuscator {
     return updatedCache;
   }
 
+  private getPathAfterDataSecondLevel(fullPath) {  
+    // 使用'/'分割路径字符串  
+    const pathParts = fullPath.split('/');  
+    
+    // 找到'test262'的索引  
+    const dataIndex = pathParts.indexOf('test262');  
+    
+    // 如果'test262'不存在于路径中，直接返回原始路径  
+    if (dataIndex === -1) {  
+      return fullPath;  
+    }  
+    
+    // 计算'test262'后第二级路径的索引  
+    const secondLevelIndex = dataIndex + 2;  
+    
+    // 确保索引没有超出数组长度  
+    if (secondLevelIndex < pathParts.length) {  
+      // 返回'test262'后第二级及之后的路径  
+      return pathParts.slice(secondLevelIndex).join('/');  
+    }  
+
+  }  
+
   /**
    * Obfuscate single source file with path provided
    *
@@ -391,7 +415,17 @@ export class ArkObfuscator {
       fs.copyFileSync(sourceFilePath, path.join(outputDir, fileName));
       return;
     }
+    
+    // 将路径mnt/data/zwx1285830/ohos/openharmony/arkcompiler/ets_frontend/out/test262/test_es2022/language/asi/S7.9_A11_T4.js切割，
+    // 得到language/asi/S7.9.2_A1_T1.js
+    const test262Filename = this.getPathAfterDataSecondLevel(sourceFilePath)
 
+    // 判断文件是否需要过滤  
+    const isFileInArray = filterFileArray.includes(test262Filename);
+    if(isFileInArray) {
+      return
+    }
+    
     // Add the whitelist of file name obfuscation for ut.
     if (this.mCustomProfiles.mRenameFileName?.mEnable) {
       this.mCustomProfiles.mRenameFileName.mReservedFileNames.push(this.mConfigPath);
@@ -413,8 +447,9 @@ export class ArkObfuscator {
         relativePath = sourceFilePath.replace(testCasesRootPath, '');
       }
       resultPath = path.join(this.mCustomProfiles.mOutputDir, relativePath);
-      fs.mkdirSync(path.dirname(resultPath), {recursive: true});
-      fs.writeFileSync(resultPath, mixedInfo.content);
+      // fs.mkdirSync(path.dirname(resultPath), {recursive: true});
+      // 将混淆后的文件直接映射到源文件中
+      fs.writeFileSync(sourceFilePath, mixedInfo.content);
 
       if (this.mCustomProfiles.mEnableSourceMap && mixedInfo.sourceMap) {
         fs.writeFileSync(path.join(resultPath + '.map'),
