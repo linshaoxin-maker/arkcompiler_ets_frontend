@@ -41,6 +41,7 @@
 #include "checker/ETSchecker.h"
 #include "checker/ets/boxingConverter.h"
 #include "checker/types/ets/etsObjectType.h"
+#include "checker/types/ets/etsEnumType.h"
 #include "checker/types/ets/types.h"
 #include "parser/program/program.h"
 
@@ -1101,13 +1102,6 @@ void ETSGen::ApplyConversion(const ir::AstNode *node, const checker::Type *targe
 {
     auto ttctx = TargetTypeContext(this, targetType);
 
-    if (node->HasAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE)) {
-        Ra().Emit<CallAccShort, 0>(
-            node, node->AsExpression()->TsType()->AsETSEnumType()->GetValueMethod().globalSignature->InternalName(),
-            dummyReg_, 0);
-        node->RemoveAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
-    }
-
     if ((node->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG) != 0U) {
         ApplyBoxingConversion(node);
         return;
@@ -1701,8 +1695,6 @@ void ETSGen::CastToInt(const ir::AstNode *node)
         }
         case checker::TypeFlag::ETS_BOOLEAN:
         case checker::TypeFlag::CHAR:
-        case checker::TypeFlag::ETS_ENUM:
-        case checker::TypeFlag::ETS_STRING_ENUM:
         case checker::TypeFlag::BYTE:
         case checker::TypeFlag::SHORT: {
             break;
@@ -1722,6 +1714,14 @@ void ETSGen::CastToInt(const ir::AstNode *node)
         }
         case checker::TypeFlag::DOUBLE: {
             Sa().Emit<F64toi32>(node);
+            break;
+        }
+        case checker::TypeFlag::ETS_ENUM_TYPE: {
+            RegScope rs(this);
+            VReg objReg = AllocReg();
+            StoreAccumulator(node, objReg);
+            Ra().Emit<CallShort, 1>(node, checker::ETSEnumType::GetIndexMethodName(), objReg, dummyReg_);
+
             break;
         }
         default: {
@@ -2563,9 +2563,6 @@ void ETSGen::LoadArrayElement(const ir::AstNode *node, VReg objectReg)
             Ra().Emit<Ldarr16>(node, objectReg);
             break;
         }
-        case checker::TypeFlag::ETS_STRING_ENUM:
-            [[fallthrough]];
-        case checker::TypeFlag::ETS_ENUM:
         case checker::TypeFlag::INT: {
             Ra().Emit<Ldarr>(node, objectReg);
             break;
@@ -2587,6 +2584,11 @@ void ETSGen::LoadArrayElement(const ir::AstNode *node, VReg objectReg)
         case checker::TypeFlag::ETS_TYPE_PARAMETER:
         case checker::TypeFlag::ETS_UNION:
         case checker::TypeFlag::ETS_DYNAMIC_TYPE: {
+            Ra().Emit<LdarrObj>(node, objectReg);
+            break;
+        }
+        // WARNING: this seems to fix assert bu cause later run-time verifier failures
+        case checker::TypeFlag::ETS_ENUM_TYPE: {
             Ra().Emit<LdarrObj>(node, objectReg);
             break;
         }
@@ -2612,9 +2614,6 @@ void ETSGen::StoreArrayElement(const ir::AstNode *node, VReg objectReg, VReg ind
             Ra().Emit<Starr16>(node, objectReg, index);
             break;
         }
-        case checker::TypeFlag::ETS_STRING_ENUM:
-            [[fallthrough]];
-        case checker::TypeFlag::ETS_ENUM:
         case checker::TypeFlag::INT: {
             Ra().Emit<Starr>(node, objectReg, index);
             break;
@@ -2635,6 +2634,7 @@ void ETSGen::StoreArrayElement(const ir::AstNode *node, VReg objectReg, VReg ind
         case checker::TypeFlag::ETS_OBJECT:
         case checker::TypeFlag::ETS_TYPE_PARAMETER:
         case checker::TypeFlag::ETS_UNION:
+        case checker::TypeFlag::ETS_ENUM_TYPE:
         case checker::TypeFlag::ETS_DYNAMIC_TYPE: {
             Ra().Emit<StarrObj>(node, objectReg, index);
             break;

@@ -294,16 +294,6 @@ checker::Type *ETSChecker::CheckBinaryOperatorBitwise(ir::Expression *left, ir::
     // NOTE (mmartin): These need to be done for other binary expressions, but currently it's not defined precisely when
     // to apply this conversion
 
-    if (leftType->IsETSEnumType()) {
-        left->AddAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
-        unboxedL = GlobalIntType();
-    }
-
-    if (rightType->IsETSEnumType()) {
-        right->AddAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
-        unboxedR = GlobalIntType();
-    }
-
     if (leftType->IsETSUnionType() || rightType->IsETSUnionType()) {
         ThrowTypeError("Bad operand type, unions are not allowed in binary expressions except equality.", pos);
     }
@@ -322,6 +312,13 @@ checker::Type *ETSChecker::CheckBinaryOperatorBitwise(ir::Expression *left, ir::
     FlagExpressionWithUnboxing(rightType, unboxedR, right);
 
     if (promotedType == nullptr && !bothConst) {
+        if ((left->Parent() == right->Parent()) &&
+            (!left->Parent()->IsPostBitSet(ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) &&
+            (rightType->IsETSEnumType() || leftType->IsETSEnumType())) {
+            left->Parent()->SetPostBit(ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED);
+            return nullptr;
+        }
+
         ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", pos);
     }
 
@@ -385,17 +382,9 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorEqual(
     checker::Type *const leftType, checker::Type *const rightType, Type *unboxedL, Type *unboxedR)
 {
     checker::Type *tsType {};
+
     if (leftType->IsETSEnumType() && rightType->IsETSEnumType()) {
         if (!leftType->AsETSEnumType()->IsSameEnumType(rightType->AsETSEnumType())) {
-            ThrowTypeError("Bad operand type, the types of the operands must be the same enum type.", pos);
-        }
-
-        tsType = GlobalETSBooleanType();
-        return {tsType, leftType};
-    }
-
-    if (leftType->IsETSStringEnumType() && rightType->IsETSStringEnumType()) {
-        if (!leftType->AsETSStringEnumType()->IsSameEnumType(rightType->AsETSStringEnumType())) {
             ThrowTypeError("Bad operand type, the types of the operands must be the same enum type.", pos);
         }
 
@@ -474,6 +463,12 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorLessGreater(
     }
 
     if (promotedType == nullptr && !bothConst) {
+        if ((left->Parent() == right->Parent()) &&
+            (!left->Parent()->IsPostBitSet(ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) &&
+            (rightType->IsETSEnumType() || leftType->IsETSEnumType())) {
+            left->Parent()->SetPostBit(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED);
+            return {nullptr, nullptr};
+        }
         ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", pos);
     }
 
@@ -628,6 +623,12 @@ static std::tuple<Type *, Type *> CheckBinaryOperatorHelper(ETSChecker *checker,
     return {tsType, tsType};
 }
 
+bool CheckIfBitSet(ir::Expression *expr)
+{
+    return (expr->IsBinaryExpression() &&
+            expr->AsBinaryExpression()->IsPostBitSet(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED));
+}
+
 std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left, ir::Expression *right,
                                                            ir::Expression *expr, lexer::TokenType op,
                                                            lexer::SourcePosition pos, bool forcePromotion)
@@ -635,6 +636,10 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left,
     checker::Type *const leftType = left->Check(this);
     checker::Type *const rightType = right->Check(this);
     if ((leftType == nullptr) || (rightType == nullptr)) {
+        if (CheckIfBitSet(left) || CheckIfBitSet(right)) {
+            expr->SetPostBit(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED);
+            return {nullptr, nullptr};
+        }
         ThrowTypeError("Unexpected type error in binary expression", pos);
     }
 

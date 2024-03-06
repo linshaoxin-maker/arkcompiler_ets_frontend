@@ -1319,12 +1319,6 @@ checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
         return SetAndAdjustType(checker, expr, baseType->AsETSObjectType());
     }
 
-    if (baseType->IsETSEnumType() || baseType->IsETSStringEnumType()) {
-        auto [memberType, memberVar] = expr->ResolveEnumMember(checker, baseType);
-        expr->SetPropVar(memberVar);
-        return expr->AdjustType(checker, memberType);
-    }
-
     if (baseType->IsETSUnionType()) {
         return expr->AdjustType(checker, expr->CheckUnionMember(checker, baseType));
     }
@@ -2447,9 +2441,6 @@ checker::Type *ETSAnalyzer::Check(ir::SwitchStatement *st) const
             } else if (caseType->IsETSEnumType() && st->Discriminant()->TsType()->IsETSEnumType()) {
                 validCaseType =
                     st->Discriminant()->TsType()->AsETSEnumType()->IsSameEnumType(caseType->AsETSEnumType());
-            } else if (caseType->IsETSStringEnumType() && st->Discriminant()->TsType()->IsETSStringEnumType()) {
-                validCaseType = st->Discriminant()->TsType()->AsETSStringEnumType()->IsSameEnumType(
-                    caseType->AsETSStringEnumType());
             } else {
                 checker::AssignmentContext(
                     checker->Relation(), st->discriminant_, caseType, unboxedDiscType, it->Test()->Start(),
@@ -2581,6 +2572,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSArrayType *node) const
 checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
+    TypeRelationFlag extraFlags = TypeRelationFlag::NONE;
 
     auto *const targetType = expr->TypeAnnotation()->AsTypeNode()->GetType(checker);
     // Object expression requires that its type be set by the context before checking. in this case, the target type
@@ -2603,8 +2595,14 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
         }
     }
 
+    // NOTE: this is to address spec/enum/issue14636_1.ets test failure
+    if (targetType->IsETSEnumType() && sourceType->IsETSEnumType() &&
+        targetType->AsETSEnumType()->IsSameEnumType(sourceType->AsETSEnumType())) {
+        extraFlags |= TypeRelationFlag::NO_THROW;
+    }
+
     const checker::CastingContext ctx(checker->Relation(), expr->Expr(), sourceType, targetType, expr->Expr()->Start(),
-                                      {"Cannot cast type '", sourceType, "' to '", targetType, "'"});
+                                      {"Cannot cast type '", sourceType, "' to '", targetType, "'"}, extraFlags);
 
     if (sourceType->IsETSDynamicType() && targetType->IsLambdaObject()) {
         // NOTE: itrubachev. change targetType to created lambdaobject type.
@@ -2651,29 +2649,9 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSConstructorType *node) 
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSEnumDeclaration *st) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSEnumDeclaration *st) const
 {
-    ETSChecker *checker = GetETSChecker();
-    varbinder::Variable *enumVar = st->Key()->Variable();
-    ASSERT(enumVar != nullptr);
-
-    if (enumVar->TsType() == nullptr) {
-        checker::Type *etsEnumType;
-        if (auto *const itemInit = st->Members().front()->AsTSEnumMember()->Init(); itemInit->IsNumberLiteral()) {
-            etsEnumType = checker->CreateETSEnumType(st);
-        } else if (itemInit->IsStringLiteral()) {
-            etsEnumType = checker->CreateETSStringEnumType(st);
-        } else {
-            checker->ThrowTypeError("Invalid enumeration value type.", st->Start());
-        }
-        st->SetTsType(etsEnumType);
-        etsEnumType->SetVariable(enumVar);
-        enumVar->SetTsType(etsEnumType);
-    } else if (st->TsType() == nullptr) {
-        st->SetTsType(enumVar->TsType());
-    }
-
-    return st->TsType();
+    UNREACHABLE();
 }
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSEnumMember *st) const

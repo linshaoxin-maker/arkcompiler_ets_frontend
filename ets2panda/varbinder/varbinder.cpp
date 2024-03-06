@@ -308,6 +308,7 @@ void VarBinder::BuildVarDeclaratorId(ir::AstNode *childNode)
             }
 
             auto *variable = scope_->FindLocal(name, varbinder::ResolveBindingOptions::BINDINGS);
+            ASSERT(variable != nullptr);
             ident->SetVariable(variable);
             BuildSignatureDeclarationBaseParams(ident->TypeAnnotation());
             variable->AddFlag(VariableFlags::INITIALIZED);

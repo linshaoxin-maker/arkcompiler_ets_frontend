@@ -743,8 +743,7 @@ private:
                 BinaryNumberComparison<CmpWide, CondCompare>(node, lhs, ifFalse);
                 break;
             }
-            case checker::TypeFlag::ETS_ENUM:
-            case checker::TypeFlag::ETS_STRING_ENUM:
+            case checker::TypeFlag::ETS_ENUM_TYPE:
             case checker::TypeFlag::ETS_BOOLEAN:
             case checker::TypeFlag::BYTE:
             case checker::TypeFlag::CHAR:
@@ -1147,13 +1146,6 @@ void ETSGen::LoadAccumulatorNumber(const ir::AstNode *node, T number, checker::T
         case checker::TypeFlag::DOUBLE: {
             Sa().Emit<FldaiWide>(node, static_cast<checker::DoubleType::UType>(number));
             SetAccumulatorType(Checker()->GlobalDoubleType());
-            break;
-        }
-        case checker::TypeFlag::ETS_STRING_ENUM:
-            [[fallthrough]];
-        case checker::TypeFlag::ETS_ENUM: {
-            Sa().Emit<Ldai>(node, static_cast<checker::ETSEnumInterface::UType>(number));
-            SetAccumulatorType(Checker()->GlobalIntType());
             break;
         }
         default: {

@@ -220,8 +220,6 @@ public:
                                                                  ETSFunctionType *extensionFunctionType);
     ETSTypeParameter *CreateTypeParameter();
     ETSObjectType *CreateETSObjectType(util::StringView name, ir::AstNode *declNode, ETSObjectFlags flags);
-    ETSEnumType *CreateETSEnumType(ir::TSEnumDeclaration const *enumDecl);
-    ETSStringEnumType *CreateETSStringEnumType(ir::TSEnumDeclaration const *enumDecl);
     std::tuple<util::StringView, SignatureInfo *> CreateBuiltinArraySignatureInfo(ETSArrayType *arrayType, size_t dim);
     Signature *CreateBuiltinArraySignature(ETSArrayType *arrayType, size_t dim);
     IntType *CreateIntTypeFromType(Type *type);
@@ -439,7 +437,6 @@ public:
     void ValidateGenericTypeAliasForClonedNode(ir::TSTypeAliasDeclaration *typeAliasNode,
                                                const ir::TSTypeParameterInstantiation *exactTypeParams);
     Type *HandleTypeAlias(ir::Expression *name, const ir::TSTypeParameterInstantiation *typeParams);
-    Type *GetTypeFromEnumReference(varbinder::Variable *var);
     Type *GetTypeFromTypeParameterReference(varbinder::LocalVariable *var, const lexer::SourcePosition &pos);
     Type *GetNonConstantTypeFromPrimitiveType(Type *type) const;
     bool IsNullLikeOrVoidExpression(const ir::Expression *expr) const;
@@ -455,6 +452,8 @@ public:
                                       bool isCondExpr = false);
     Type *HandleBooleanLogicalOperators(Type *leftType, Type *rightType, lexer::TokenType tokenType);
     Type *HandleBooleanLogicalOperatorsExtended(Type *leftType, Type *rightType, ir::BinaryExpression *expr);
+    void VariableDeclCheckHelper(ir::Identifier *ident, ir::TypeNode *typeAnnotation, ir::Expression *init,
+                                 checker::Type *annotationType, varbinder::Variable *const bindingVar);
     checker::Type *CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *typeAnnotation, ir::Expression *init,
                                             ir::ModifierFlags flags);
     void CheckTruthinessOfType(ir::Expression *expr);
@@ -496,6 +495,7 @@ public:
     Type *MaybePromotedBuiltinType(Type *type) const;
     Type const *MaybePromotedBuiltinType(Type const *type) const;
     Type *MaybePrimitiveBuiltinType(Type *type) const;
+    void CompareSwitchCases(size_t caseNum, ArenaVector<ir::SwitchCaseStatement *> *cases);
     void CheckForSameSwitchCases(ArenaVector<ir::SwitchCaseStatement *> *cases);
     std::string GetStringFromIdentifierValue(checker::Type *caseType) const;
     bool CompareIdentifiersValuesAreDifferent(ir::Expression *compareValue, const std::string &caseValue);
@@ -517,7 +517,6 @@ public:
     void CheckUnboxedTypesAssignable(TypeRelation *relation, Type *source, Type *target);
     void CheckBoxedSourceTypeAssignable(TypeRelation *relation, Type *source, Type *target);
     void CheckUnboxedSourceTypeWithWideningAssignable(TypeRelation *relation, Type *source, Type *target);
-    void CheckValidGenericTypeParameter(Type *argType, const lexer::SourcePosition &pos);
     void ValidateResolvedProperty(const varbinder::LocalVariable *property, const ETSObjectType *target,
                                   const ir::Identifier *ident, PropertySearchFlags flags);
     bool IsValidSetterLeftSide(const ir::MemberExpression *member);
@@ -552,24 +551,6 @@ public:
 
     static Type *TryToInstantiate(Type *type, ArenaAllocator *allocator, TypeRelation *relation,
                                   GlobalTypesHolder *globalTypes);
-    // Enum
-    [[nodiscard]] ir::Identifier *CreateEnumNamesArray(ETSEnumInterface const *enumType);
-    [[nodiscard]] ir::Identifier *CreateEnumValuesArray(ETSEnumType *enumType);
-    [[nodiscard]] ir::Identifier *CreateEnumStringValuesArray(ETSEnumInterface *enumType);
-    [[nodiscard]] ir::Identifier *CreateEnumItemsArray(ETSEnumInterface *enumType);
-    [[nodiscard]] ETSEnumType::Method CreateEnumFromIntMethod(ir::Identifier *namesArrayIdent,
-                                                              ETSEnumInterface *enumType);
-    [[nodiscard]] ETSEnumType::Method CreateEnumGetValueMethod(ir::Identifier *valuesArrayIdent, ETSEnumType *enumType);
-    [[nodiscard]] ETSEnumType::Method CreateEnumToStringMethod(ir::Identifier *stringValuesArrayIdent,
-                                                               ETSEnumInterface *enumType);
-    [[nodiscard]] ETSEnumType::Method CreateEnumGetNameMethod(ir::Identifier *namesArrayIdent,
-                                                              ETSEnumInterface *enumType);
-    [[nodiscard]] ETSEnumType::Method CreateEnumValueOfMethod(ir::Identifier *namesArrayIdent,
-                                                              ETSEnumInterface *enumType);
-    [[nodiscard]] ETSEnumType::Method CreateEnumValuesMethod(ir::Identifier *itemsArrayIdent,
-                                                             ETSEnumInterface *enumType);
-    [[nodiscard]] ir::StringLiteral *CreateEnumStringLiteral(ETSEnumInterface *const enumType,
-                                                             const ir::TSEnumMember *const member);
 
     // Dynamic interop
     template <typename T>

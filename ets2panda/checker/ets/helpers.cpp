@@ -78,6 +78,10 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
     auto *unboxedType = ETSBuiltinTypeAsConditionalType(type);
 
     if (unboxedType == nullptr) {
+        if (expr->IsBinaryExpression() &&
+            (expr->AsBinaryExpression()->IsPostBitSet(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED))) {
+            return;
+        }
         ThrowTypeError("Condition must be of possible condition type", expr->Start());
     }
 
@@ -570,8 +574,7 @@ void ETSChecker::ValidateMemberIdentifier(ir::Identifier *const ident, varbinder
         return;
     }
 
-    if (!IsReferenceType(type) && !type->IsETSEnumType() && !type->IsETSStringEnumType() &&
-        !type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+    if (!IsReferenceType(type) && !type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
         ThrowError(ident);
     }
 }
@@ -896,6 +899,7 @@ Type *ETSChecker::ApplyUnaryOperatorPromotion(Type *type, const bool createConst
 
 bool ETSChecker::IsNullLikeOrVoidExpression(const ir::Expression *expr) const
 {
+    ASSERT((expr != nullptr) && (expr->TsType() != nullptr));
     return expr->TsType()->DefinitelyETSNullish() || expr->TsType()->IsETSVoidType();
 }
 
@@ -1065,25 +1069,9 @@ checker::Type *ETSChecker::CheckArrayElements(ir::Identifier *ident, ir::ArrayEx
     return annotationType;
 }
 
-checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *typeAnnotation,
-                                                    ir::Expression *init, ir::ModifierFlags flags)
+void ETSChecker::VariableDeclCheckHelper(ir::Identifier *ident, ir::TypeNode *typeAnnotation, ir::Expression *init,
+                                         checker::Type *annotationType, varbinder::Variable *const bindingVar)
 {
-    const util::StringView &varName = ident->Name();
-    ASSERT(ident->Variable());
-    varbinder::Variable *const bindingVar = ident->Variable();
-    checker::Type *annotationType = nullptr;
-
-    const bool isConst = (flags & ir::ModifierFlags::CONST) != 0;
-
-    if (typeAnnotation != nullptr) {
-        annotationType = typeAnnotation->GetType(this);
-        bindingVar->SetTsType(annotationType);
-    }
-
-    if (init == nullptr) {
-        return annotationType;
-    }
-
     if (typeAnnotation == nullptr) {
         if (init->IsArrayExpression()) {
             annotationType = CheckArrayElements(ident, init->AsArrayExpression());
@@ -1126,6 +1114,27 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
             InferTypesForLambda(lambda, typeAnnotation->AsETSFunctionType());
         }
     }
+}
+checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *typeAnnotation,
+                                                    ir::Expression *init, ir::ModifierFlags flags)
+{
+    ASSERT(ident->Variable());
+    varbinder::Variable *const bindingVar = ident->Variable();
+    checker::Type *annotationType = nullptr;
+
+    const bool isConst = (flags & ir::ModifierFlags::CONST) != 0;
+
+    if (typeAnnotation != nullptr) {
+        annotationType = typeAnnotation->GetType(this);
+        bindingVar->SetTsType(annotationType);
+    }
+
+    if (init == nullptr) {
+        return annotationType;
+    }
+
+    VariableDeclCheckHelper(ident, typeAnnotation, init, annotationType, bindingVar);
+
     checker::Type *initType = init->Check(this);
 
     if (initType == nullptr) {
@@ -1157,12 +1166,6 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
             bindingVar->SetTsType(init->TsType());
         }
         return bindingVar->TsType();
-    }
-
-    if (initType->IsETSObjectType() && initType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::ENUM) &&
-        !init->IsMemberExpression()) {
-        ThrowTypeError({"Cannot assign type '", initType->AsETSObjectType()->Name(), "' for variable ", varName, "."},
-                       init->Start());
     }
 
     isConst ? bindingVar->SetTsType(initType) : bindingVar->SetTsType(GetNonConstantTypeFromPrimitiveType(initType));
@@ -1329,22 +1332,6 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
     return aliasType->Substitute(Relation(), aliasSub);
 }
 
-Type *ETSChecker::GetTypeFromEnumReference([[maybe_unused]] varbinder::Variable *var)
-{
-    if (var->TsType() != nullptr) {
-        return var->TsType();
-    }
-
-    auto const *const enumDecl = var->Declaration()->Node()->AsTSEnumDeclaration();
-    if (auto *const itemInit = enumDecl->Members().front()->AsTSEnumMember()->Init(); itemInit->IsNumberLiteral()) {
-        return CreateETSEnumType(enumDecl);
-    } else if (itemInit->IsStringLiteral()) {  // NOLINT(readability-else-after-return)
-        return CreateETSStringEnumType(enumDecl);
-    } else {  // NOLINT(readability-else-after-return)
-        ThrowTypeError("Invalid enumeration value type.", enumDecl->Start());
-    }
-}
-
 Type *ETSChecker::GetTypeFromTypeParameterReference(varbinder::LocalVariable *var, const lexer::SourcePosition &pos)
 {
     ASSERT(var->Declaration()->Node()->IsTSTypeParameter());
@@ -1458,9 +1445,6 @@ Type *ETSChecker::GetReferencedTypeBase(ir::Expression *name)
         case ir::AstNodeType::STRUCT_DECLARATION:
         case ir::AstNodeType::CLASS_DEFINITION: {
             return GetTypeFromClassReference(refVar);
-        }
-        case ir::AstNodeType::TS_ENUM_DECLARATION: {
-            return GetTypeFromEnumReference(refVar);
         }
         case ir::AstNodeType::TS_TYPE_PARAMETER: {
             return GetTypeFromTypeParameterReference(refVar, name->Start());
@@ -1731,6 +1715,11 @@ void ETSChecker::CheckSwitchDiscriminant(ir::Expression *discriminant)
     }
 
     if (discriminantType->IsETSObjectType() &&
+        discriminantType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::ENUM)) {
+        return;
+    }
+
+    if (discriminantType->IsETSObjectType() &&
         discriminantType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::VALID_SWITCH_TYPE)) {
         if (discriminantType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE)) {
             discriminant->SetBoxingUnboxingFlags(GetUnboxingFlag(ETSBuiltinTypeAsPrimitiveType(discriminantType)));
@@ -1750,8 +1739,7 @@ Type *ETSChecker::ETSBuiltinTypeAsPrimitiveType(Type *objectType)
         return nullptr;
     }
 
-    if (objectType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) || objectType->HasTypeFlag(TypeFlag::ETS_ENUM) ||
-        objectType->HasTypeFlag(TypeFlag::ETS_STRING_ENUM)) {
+    if (objectType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
         return objectType;
     }
 
@@ -2001,45 +1989,46 @@ Type *ETSChecker::MaybeBoxedType(const varbinder::Variable *var, ArenaAllocator 
     return varType;
 }
 
+void ETSChecker::CompareSwitchCases(size_t caseNum, ArenaVector<ir::SwitchCaseStatement *> *cases)
+{
+    for (size_t compareCase = caseNum + 1; compareCase < cases->size(); compareCase++) {
+        auto *caseTest = cases->at(caseNum)->Test();
+        auto *compareCaseTest = cases->at(compareCase)->Test();
+
+        if (caseTest == nullptr || compareCaseTest == nullptr) {
+            continue;
+        }
+
+        if (caseTest->TsType()->IsETSEnumType()) {
+            ASSERT(compareCaseTest->TsType()->IsETSEnumType());
+            if (caseTest->TsType()->AsETSEnumType()->IsSameEnumLiteralType(
+                    compareCaseTest->TsType()->AsETSEnumType())) {
+                ThrowTypeError("Case enum duplicate", caseTest->Start());
+            }
+            continue;
+        }
+        if (caseTest->IsIdentifier() || caseTest->IsMemberExpression()) {
+            CheckIdentifierSwitchCase(caseTest, compareCaseTest, cases->at(caseNum)->Start());
+            continue;
+        }
+
+        if (compareCaseTest->IsIdentifier() || compareCaseTest->IsMemberExpression()) {
+            CheckIdentifierSwitchCase(compareCaseTest, caseTest, cases->at(compareCase)->Start());
+            continue;
+        }
+
+        if (GetStringFromLiteral(caseTest) != GetStringFromLiteral(compareCaseTest)) {
+            continue;
+        }
+
+        ThrowTypeError("Case duplicate", cases->at(compareCase)->Start());
+    }
+}
+
 void ETSChecker::CheckForSameSwitchCases(ArenaVector<ir::SwitchCaseStatement *> *cases)
 {
-    //  Just to avoid extra nesting level
-    auto const checkEnumType = [this](ir::Expression const *const caseTest, ETSEnumType const *const type) -> void {
-        if (caseTest->TsType()->AsETSEnumType()->IsSameEnumLiteralType(type)) {
-            ThrowTypeError("Case duplicate", caseTest->Start());
-        }
-    };
-
     for (size_t caseNum = 0; caseNum < cases->size(); caseNum++) {
-        for (size_t compareCase = caseNum + 1; compareCase < cases->size(); compareCase++) {
-            auto *caseTest = cases->at(caseNum)->Test();
-            auto *compareCaseTest = cases->at(compareCase)->Test();
-
-            if (caseTest == nullptr || compareCaseTest == nullptr) {
-                continue;
-            }
-
-            if (caseTest->TsType()->IsETSEnumType()) {
-                checkEnumType(caseTest, compareCaseTest->TsType()->AsETSEnumType());
-                continue;
-            }
-
-            if (caseTest->IsIdentifier() || caseTest->IsMemberExpression()) {
-                CheckIdentifierSwitchCase(caseTest, compareCaseTest, cases->at(caseNum)->Start());
-                continue;
-            }
-
-            if (compareCaseTest->IsIdentifier() || compareCaseTest->IsMemberExpression()) {
-                CheckIdentifierSwitchCase(compareCaseTest, caseTest, cases->at(compareCase)->Start());
-                continue;
-            }
-
-            if (GetStringFromLiteral(caseTest) != GetStringFromLiteral(compareCaseTest)) {
-                continue;
-            }
-
-            ThrowTypeError("Case duplicate", cases->at(compareCase)->Start());
-        }
+        CompareSwitchCases(caseNum, cases);
     }
 }
 
@@ -2446,16 +2435,6 @@ ETSObjectType *ETSChecker::GetOriginalBaseType(Type *const object)
     }
 
     return object->AsETSObjectType()->GetOriginalBaseType();
-}
-
-void ETSChecker::CheckValidGenericTypeParameter(Type *const argType, const lexer::SourcePosition &pos)
-{
-    if (!argType->IsETSEnumType() && !argType->IsETSStringEnumType()) {
-        return;
-    }
-    std::stringstream ss;
-    argType->ToString(ss);
-    ThrowTypeError("Type '" + ss.str() + "' is not valid for generic type arguments", pos);
 }
 
 void ETSChecker::CheckNumberOfTypeArguments(ETSObjectType *const type, ir::TSTypeParameterInstantiation *const typeArgs,
