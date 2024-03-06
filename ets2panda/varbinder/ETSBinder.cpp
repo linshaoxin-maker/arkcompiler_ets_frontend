@@ -95,6 +95,9 @@ void ETSBinder::LookupTypeArgumentReferences(ir::ETSTypeReference *typeRef)
 void ETSBinder::LookupTypeReference(ir::Identifier *ident, bool allowDynamicNamespaces)
 {
     const auto &name = ident->Name();
+    if (name == compiler::Signatures::UNDEFINED || name == compiler::Signatures::NULL_LITERAL) {
+        return;
+    }
     auto *iter = GetScope();
 
     while (iter != nullptr) {
@@ -181,7 +184,7 @@ void ETSBinder::LookupIdentReference(ir::Identifier *ident)
         auto *outerFunction = GetScope()->EnclosingVariableScope()->Node();
 
         if ((!outerFunction->IsScriptFunction() || !outerFunction->AsScriptFunction()->IsArrow()) &&
-            !res.variable->IsGlobalVariable() && res.level > 1) {
+            !res.variable->IsGlobalVariable() && res.variable->HasFlag(VariableFlags::LOCAL) && res.level > 1) {
             ThrowInvalidCapture(ident->Start(), name);
         }
     }
@@ -944,7 +947,7 @@ void ETSBinder::BuildImportDeclaration(ir::ETSImportDeclaration *decl)
         return;
     }
 
-    auto specifiers = decl->Specifiers();
+    const auto &specifiers = decl->Specifiers();
 
     for (auto specifier : specifiers) {
         AddSpecifiersToTopBindings(specifier, decl, decl->Source());
