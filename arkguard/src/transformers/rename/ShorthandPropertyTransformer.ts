@@ -68,7 +68,20 @@ namespace secharmony {
          */
         if (isShorthandPropertyAssignment((node))) {
           // update parent
-          return factory.createPropertyAssignment(factory.createIdentifier(node.name.text), node.name);
+          if (node.objectAssignmentInitializer) {
+            return factory.createPropertyAssignment(
+              node.name,
+              factory.createAssignment(
+                factory.createIdentifier(node.name.text),
+                node.objectAssignmentInitializer
+              )
+            );
+          }
+          
+          return factory.createPropertyAssignment(
+            factory.createIdentifier(node.name.text),
+            node.name
+          );
         }
         /**
          * orinal ObjectBinding:
@@ -87,8 +100,12 @@ namespace secharmony {
          * exclude, eg let [name, age] = ['akira', 22];
          */
         if (isElementsInObjectBindingPattern(node) && !node.propertyName && !node.dotDotDotToken) {
-          return factory.createBindingElement(node.dotDotDotToken, factory.createIdentifier((node.name as Identifier).text),
-            node.name, node.initializer);
+          return factory.createBindingElement(
+            node.dotDotDotToken,
+            factory.createIdentifier((node.name as Identifier).text),
+            node.name,
+            node.initializer
+          );
         }
 
         return visitEachChild(node, transformShortHandProperty, context);
