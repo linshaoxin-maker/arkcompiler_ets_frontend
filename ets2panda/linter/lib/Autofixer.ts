@@ -147,6 +147,45 @@ export function fixTypeAssertion(typeAssertion: ts.TypeAssertion): Autofix {
   return { start: typeAssertion.getStart(), end: typeAssertion.getEnd(), replacementText: text };
 }
 
+export function fixArrayForInStatement(tsForInStmt: ts.ForInStatement): Autofix[] {
+  const varName: string = (tsForInStmt.initializer as ts.VariableDeclarationList).declarations[0].getText();
+  const arrName: string = (tsForInStmt.expression as ts.Identifier).escapedText.toString();
+
+  const varListExpression = ts.factory.createVariableDeclarationList(
+    [ts.factory.createVariableDeclaration(
+      ts.factory.createIdentifier(varName),
+      undefined,
+      undefined,
+      ts.factory.createNumericLiteral('0')
+    )],
+    ts.NodeFlags.Let
+  );
+
+  const bonaryExpression = ts.factory.createBinaryExpression(
+    ts.createIdentifier(varName),
+    ts.factory.createToken(ts.SyntaxKind.LessThanToken),
+    ts.factory.createPropertyAccessExpression(
+      ts.factory.createIdentifier(arrName),
+      ts.factory.createIdentifier('length')
+    )
+  );
+
+  const prefixExpression = ts.factory.createPrefixUnaryExpression(
+    ts.SyntaxKind.PlusPlusToken,
+    ts.factory.createIdentifier(varName)
+  );
+
+  const forExpression = ts.factory.createForStatement(
+    varListExpression,
+    bonaryExpression,
+    prefixExpression,
+    tsForInStmt.statement
+  );
+
+  const text = printer.printNode(ts.EmitHint.Unspecified, forExpression, tsForInStmt.getSourceFile());
+  return [{ start: tsForInStmt.getStart(), end: tsForInStmt.getEnd(), replacementText: text }];
+}
+
 const printer: ts.Printer = ts.createPrinter({
   omitTrailingSemicolon: false,
   removeComments: false,

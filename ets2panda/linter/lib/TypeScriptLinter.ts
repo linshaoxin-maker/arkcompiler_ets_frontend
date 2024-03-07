@@ -651,7 +651,13 @@ export class TypeScriptLinter {
     if (ts.isArrayLiteralExpression(tsForInInit) || ts.isObjectLiteralExpression(tsForInInit)) {
       this.incrementCounters(tsForInInit, FaultID.DestructuringAssignment);
     }
-    this.incrementCounters(node, FaultID.ForInStatement);
+
+    let autofix: Autofix[] | undefined = Autofixer.fixArrayForInStatement(tsForInStmt);
+    const autofixable = autofix !== undefined;
+    if (!this.autofixesInfo.shouldAutofix(node, FaultID.ForInStatement)) {
+      autofix = undefined;
+    }
+    this.incrementCounters(node, FaultID.ForInStatement, autofixable, autofix);
   }
 
   private handleForOfStatement(node: ts.Node): void {
