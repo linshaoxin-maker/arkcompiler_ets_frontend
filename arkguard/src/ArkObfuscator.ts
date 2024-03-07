@@ -380,7 +380,7 @@ export class ArkObfuscator {
     return updatedCache;
   }
 
-  private getPathAfterDataSecondLevel(fullPath) {  
+  private getPathAfterTest262SecondLevel(fullPath) {  
     // 使用'/'分割路径字符串  
     const pathParts = fullPath.split('/');  
     
@@ -416,14 +416,14 @@ export class ArkObfuscator {
       return;
     }
 
-     // 将路径mnt/data/zwx1285830/ohos/openharmony/arkcompiler/ets_frontend/out/test262/test_es2022/language/asi/S7.9_A11_T4.js切割，
+    // 将路径mnt/data/zwx1285830/ohos/openharmony/arkcompiler/ets_frontend/out/test262/test_es2022/language/asi/S7.9_A11_T4.js切割，
     // 得到language/asi/S7.9.2_A1_T1.js
-    const test262Filename = this.getPathAfterDataSecondLevel(sourceFilePath)
+    const test262Filename = this.getPathAfterTest262SecondLevel(sourceFilePath)
 
     // 判断文件是否需要过滤  
     const isFileInArray = filterFileArray.includes(test262Filename);
     if(isFileInArray) {
-      return
+      return;
     }
 
     // Add the whitelist of file name obfuscation for ut.
