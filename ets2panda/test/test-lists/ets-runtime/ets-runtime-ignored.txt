@@ -58,5 +58,9 @@ lambdaExpressionWithRestParameter.ets
 castSequence.ets
 
 # ignored due to interface implementation modification
-local-class-standard-example1.ets 
+local-class-standard-example1.ets
 local-class-standard-example2.ets
+
+# verifier false positive for 64 bit instructions on union types.
+# Issue: #16216
+union_wide_property_access.ets
