@@ -1071,7 +1071,7 @@
                           "consequent": [
                             {
                               "type": "BreakStatement",
-                              "label": null,
+                              "label": "",
                               "loc": {
                                 "start": {
                                   "line": 36,
@@ -1145,7 +1145,7 @@
                           "consequent": [
                             {
                               "type": "BreakStatement",
-                              "label": null,
+                              "label": "",
                               "loc": {
                                 "start": {
                                   "line": 38,
@@ -1175,7 +1175,7 @@
                           "consequent": [
                             {
                               "type": "BreakStatement",
-                              "label": null,
+                              "label": "",
                               "loc": {
                                 "start": {
                                   "line": 39,

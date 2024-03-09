@@ -24,25 +24,22 @@
 namespace ark::es2panda::ir {
 void LabelledStatement::TransformChildren(const NodeTransformer &cb)
 {
-    ident_ = cb(ident_)->AsIdentifier();
     body_ = cb(body_)->AsStatement();
 }
 
 void LabelledStatement::Iterate(const NodeTraverser &cb) const
 {
-    cb(ident_);
     cb(body_);
 }
 
 void LabelledStatement::Dump(ir::AstDumper *dumper) const
 {
-    dumper->Add({{"type", "LabelledStatement"}, {"label", ident_}, {"body", body_}});
+    dumper->Add({{"type", "LabelledStatement"}, {"label", name_}, {"body", body_}});
 }
 
 void LabelledStatement::Dump(ir::SrcDumper *dumper) const
 {
-    ASSERT(ident_ != nullptr);
-    ident_->Dump(dumper);
+    dumper->Add(std::string(name_));
     dumper->Add(":");
     dumper->Endl();
     body_->Dump(dumper);

@@ -1672,14 +1672,14 @@ bool ETSChecker::IsTypeBuiltinType(const Type *type) const
 }
 
 const ir::AstNode *ETSChecker::FindJumpTarget(ir::AstNodeType nodeType, const ir::AstNode *node,
-                                              const ir::Identifier *target)
+                                              const util::StringView &target)
 {
     const auto *iter = node->Parent();
 
     while (iter != nullptr) {
         switch (iter->Type()) {
             case ir::AstNodeType::LABELLED_STATEMENT: {
-                if (const auto *labelled = iter->AsLabelledStatement(); labelled->Ident()->Name() == target->Name()) {
+                if (const auto *labelled = iter->AsLabelledStatement(); labelled->Name() == target) {
                     return nodeType == ir::AstNodeType::CONTINUE_STATEMENT ? labelled->GetReferencedStatement()
                                                                            : labelled;
                 }

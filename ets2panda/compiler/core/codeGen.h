@@ -132,8 +132,8 @@ public:
     void SetLabel(const ir::AstNode *node, Label *label);
     void Branch(const ir::AstNode *node, class Label *label);
     [[nodiscard]] bool CheckControlFlowChange() const;
-    Label *ControlFlowChangeBreak(const ir::Identifier *label = nullptr);
-    [[nodiscard]] Label *ControlFlowChangeContinue(const ir::Identifier *label);
+    Label *ControlFlowChangeBreak(const util::StringView &label = "");
+    [[nodiscard]] Label *ControlFlowChangeContinue(const util::StringView &label);
 
     uint32_t TryDepth() const;
     [[nodiscard]] CatchTable *CreateCatchTable(util::StringView exceptionType = "");

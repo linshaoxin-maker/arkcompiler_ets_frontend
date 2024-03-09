@@ -460,11 +460,7 @@ ir::BreakStatement *ParserImpl::ParseBreakStatement()
         ThrowSyntaxError("Undefined label");
     }
 
-    auto *identNode = AllocNode<ir::Identifier>(label, Allocator());
-    identNode->SetReference();
-    identNode->SetRange(lexer_->GetToken().Loc());
-
-    auto *breakStatement = AllocNode<ir::BreakStatement>(identNode);
+    auto *breakStatement = AllocNode<ir::BreakStatement>(label);
     breakStatement->SetRange({startLoc, lexer_->GetToken().End()});
 
     lexer_->NextToken();
@@ -516,11 +512,7 @@ ir::ContinueStatement *ParserImpl::ParseContinueStatement()
         ThrowSyntaxError("Undefined label");
     }
 
-    auto *identNode = AllocNode<ir::Identifier>(label, Allocator());
-    identNode->SetReference();
-    identNode->SetRange(lexer_->GetToken().Loc());
-
-    auto *continueStatement = AllocNode<ir::ContinueStatement>(identNode);
+    auto *continueStatement = AllocNode<ir::ContinueStatement>(label);
     continueStatement->SetRange({startLoc, lexer_->GetToken().End()});
 
     lexer_->NextToken();
@@ -1007,17 +999,13 @@ ir::LabelledStatement *ParserImpl::ParseLabelledStatement(const lexer::LexerPosi
 
     SavedParserContext newCtx(this, ParserStatus::IN_LABELED, actualLabel);
 
-    auto *identNode = AllocNode<ir::Identifier>(actualLabel, Allocator());
-    identNode->SetReference();
-    identNode->SetRange(pos.GetToken().Loc());
-
     lexer_->NextToken();
 
     ValidateLabeledStatement(Lexer()->GetToken().Type());
 
     ir::Statement *body = ParseStatement(StatementParsingFlags::LABELLED);
 
-    auto *labeledStatement = AllocNode<ir::LabelledStatement>(identNode, body);
+    auto *labeledStatement = AllocNode<ir::LabelledStatement>(actualLabel, body);
     labeledStatement->SetRange({pos.GetToken().Start(), body->End()});
 
     return labeledStatement;

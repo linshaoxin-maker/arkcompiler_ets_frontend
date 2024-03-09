@@ -336,21 +336,7 @@
                     },
                     {
                       "type": "LabelledStatement",
-                      "label": {
-                        "type": "Identifier",
-                        "name": "label1",
-                        "decorators": [],
-                        "loc": {
-                          "start": {
-                            "line": 20,
-                            "column": 5
-                          },
-                          "end": {
-                            "line": 20,
-                            "column": 11
-                          }
-                        }
-                      },
+                      "label": "label1",
                       "body": {
                         "type": "ForUpdateStatement",
                         "init": {
@@ -608,7 +594,7 @@
                                     },
                                     {
                                       "type": "BreakStatement",
-                                      "label": null,
+                                      "label": "",
                                       "loc": {
                                         "start": {
                                           "line": 26,
@@ -707,21 +693,7 @@
                                     },
                                     {
                                       "type": "ContinueStatement",
-                                      "label": {
-                                        "type": "Identifier",
-                                        "name": "label1",
-                                        "decorators": [],
-                                        "loc": {
-                                          "start": {
-                                            "line": 29,
-                                            "column": 26
-                                          },
-                                          "end": {
-                                            "line": 29,
-                                            "column": 32
-                                          }
-                                        }
-                                      },
+                                      "label": "label1",
                                       "loc": {
                                         "start": {
                                           "line": 29,
@@ -1266,21 +1238,7 @@
                         "statements": [
                           {
                             "type": "LabelledStatement",
-                            "label": {
-                              "type": "Identifier",
-                              "name": "label1",
-                              "decorators": [],
-                              "loc": {
-                                "start": {
-                                  "line": 41,
-                                  "column": 9
-                                },
-                                "end": {
-                                  "line": 41,
-                                  "column": 15
-                                }
-                              }
-                            },
+                            "label": "label1",
                             "body": {
                               "type": "SwitchStatement",
                               "discriminant": {
@@ -1402,7 +1360,7 @@
                                     },
                                     {
                                       "type": "BreakStatement",
-                                      "label": null,
+                                      "label": "",
                                       "loc": {
                                         "start": {
                                           "line": 46,
@@ -1501,21 +1459,7 @@
                                     },
                                     {
                                       "type": "BreakStatement",
-                                      "label": {
-                                        "type": "Identifier",
-                                        "name": "label1",
-                                        "decorators": [],
-                                        "loc": {
-                                          "start": {
-                                            "line": 49,
-                                            "column": 23
-                                          },
-                                          "end": {
-                                            "line": 49,
-                                            "column": 29
-                                          }
-                                        }
-                                      },
+                                      "label": "label1",
                                       "loc": {
                                         "start": {
                                           "line": 49,

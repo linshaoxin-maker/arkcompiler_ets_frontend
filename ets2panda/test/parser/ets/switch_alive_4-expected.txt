@@ -256,7 +256,7 @@
                           "consequent": [
                             {
                               "type": "BreakStatement",
-                              "label": null,
+                              "label": "",
                               "loc": {
                                 "start": {
                                   "line": 19,
@@ -299,7 +299,7 @@
                           "consequent": [
                             {
                               "type": "BreakStatement",
-                              "label": null,
+                              "label": "",
                               "loc": {
                                 "start": {
                                   "line": 21,

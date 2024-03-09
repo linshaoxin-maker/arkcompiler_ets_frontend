@@ -22,28 +22,23 @@
 #include "ir/srcDump.h"
 
 namespace ark::es2panda::ir {
-void ContinueStatement::TransformChildren(const NodeTransformer &cb)
-{
-    if (ident_ != nullptr) {
-        ident_ = cb(ident_)->AsIdentifier();
-    }
-}
+void ContinueStatement::TransformChildren(const NodeTransformer & /*cb*/) {}
 
-void ContinueStatement::Iterate(const NodeTraverser &cb) const
-{
-    if (ident_ != nullptr) {
-        cb(ident_);
-    }
-}
+void ContinueStatement::Iterate(const NodeTraverser & /*cb*/) const {}
 
 void ContinueStatement::Dump(ir::AstDumper *dumper) const
 {
-    dumper->Add({{"type", "ContinueStatement"}, {"label", AstDumper::Nullish(ident_)}});
+    dumper->Add({{"type", "ContinueStatement"}, {"label", label_}});
 }
 
 void ContinueStatement::Dump(ir::SrcDumper *dumper) const
 {
-    dumper->Add("continue;");
+    dumper->Add("continue");
+    if (!label_.Empty()) {
+        dumper->Add(" ");
+        dumper->Add(std::string(label_));
+    }
+    dumper->Add(";");
 }
 
 void ContinueStatement::Compile(compiler::PandaGen *pg) const

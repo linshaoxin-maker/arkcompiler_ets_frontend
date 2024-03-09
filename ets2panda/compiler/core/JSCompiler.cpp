@@ -1473,7 +1473,7 @@ void JSCompiler::Compile(const ir::BlockStatement *st) const
 template <typename CodeGen>
 static void CompileImpl(const ir::BreakStatement *self, [[maybe_unused]] CodeGen *cg)
 {
-    compiler::Label *target = cg->ControlFlowChangeBreak(self->Ident());
+    compiler::Label *target = cg->ControlFlowChangeBreak(self->Label());
     cg->Branch(self, target);
 }
 void JSCompiler::Compile(const ir::BreakStatement *st) const
@@ -1492,7 +1492,7 @@ void JSCompiler::Compile(const ir::ClassDeclaration *st) const
 
 static void CompileImpl(const ir::ContinueStatement *self, PandaGen *cg)
 {
-    compiler::Label *target = cg->ControlFlowChangeContinue(self->Ident());
+    compiler::Label *target = cg->ControlFlowChangeContinue(self->Label());
     cg->Branch(self, target);
 }
 

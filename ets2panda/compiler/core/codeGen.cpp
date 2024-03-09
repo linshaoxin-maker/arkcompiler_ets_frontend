@@ -199,11 +199,11 @@ bool CodeGen::CheckControlFlowChange() const
     return false;
 }
 
-Label *CodeGen::ControlFlowChangeBreak(const ir::Identifier *label)
+Label *CodeGen::ControlFlowChangeBreak(const util::StringView &label)
 {
     auto *iter = dynamicContext_;
 
-    util::StringView labelName = label != nullptr ? label->Name() : LabelTarget::BREAK_LABEL;
+    util::StringView labelName = label.Empty() ? LabelTarget::BREAK_LABEL : label;
     Label *breakTarget = nullptr;
 
     while (iter != nullptr) {
@@ -226,10 +226,10 @@ Label *CodeGen::ControlFlowChangeBreak(const ir::Identifier *label)
     return breakTarget;
 }
 
-Label *CodeGen::ControlFlowChangeContinue(const ir::Identifier *label)
+Label *CodeGen::ControlFlowChangeContinue(const util::StringView &label)
 {
     auto *iter = dynamicContext_;
-    util::StringView labelName = label != nullptr ? label->Name() : LabelTarget::CONTINUE_LABEL;
+    util::StringView labelName = label.Empty() ? LabelTarget::CONTINUE_LABEL : label;
     Label *continueTarget = nullptr;
 
     while (iter != nullptr) {

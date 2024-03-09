@@ -31,15 +31,17 @@ namespace ark::es2panda::ir {
 class ContinueStatement : public Statement {
 public:
     explicit ContinueStatement() : Statement(AstNodeType::CONTINUE_STATEMENT) {}
-    explicit ContinueStatement(Identifier *ident) : Statement(AstNodeType::CONTINUE_STATEMENT), ident_(ident) {}
+    explicit ContinueStatement(util::StringView const label) : Statement(AstNodeType::CONTINUE_STATEMENT), label_(label)
+    {
+    }
 
     // NOTE (csabahurton): these friend relationships can be removed once there are getters for private fields
     friend class checker::ETSAnalyzer;
     friend class compiler::ETSCompiler;
 
-    const Identifier *Ident() const
+    const util::StringView &Label() const
     {
-        return ident_;
+        return label_;
     }
 
     const ir::AstNode *Target() const
@@ -62,7 +64,7 @@ public:
     }
 
 private:
-    Identifier *ident_ {};
+    util::StringView label_ {};
     const ir::AstNode *target_ {};
 };
 }  // namespace ark::es2panda::ir

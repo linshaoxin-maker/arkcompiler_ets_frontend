@@ -1127,8 +1127,6 @@ ir::MethodDefinition *ETSParser::ParseClassMethodDefinition(ir::Identifier *meth
                                                    funcExpr, modifiers, Allocator(), false);
     method->SetRange(funcExpr->Range());
 
-    func->Id()->SetReference();
-
     fieldMap_.insert({methodName->Name(), method});
 
     return method;

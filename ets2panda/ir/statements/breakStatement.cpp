@@ -24,31 +24,21 @@
 #include "checker/ETSchecker.h"
 
 namespace ark::es2panda::ir {
-void BreakStatement::TransformChildren(const NodeTransformer &cb)
-{
-    if (ident_ != nullptr) {
-        ident_ = cb(ident_)->AsIdentifier();
-    }
-}
+void BreakStatement::TransformChildren(const NodeTransformer & /*cb*/) {}
 
-void BreakStatement::Iterate(const NodeTraverser &cb) const
-{
-    if (ident_ != nullptr) {
-        cb(ident_);
-    }
-}
+void BreakStatement::Iterate(const NodeTraverser & /*cb*/) const {}
 
 void BreakStatement::Dump(ir::AstDumper *dumper) const
 {
-    dumper->Add({{"type", "BreakStatement"}, {"label", AstDumper::Nullish(ident_)}});
+    dumper->Add({{"type", "BreakStatement"}, {"label", label_}});
 }
 
 void BreakStatement::Dump(ir::SrcDumper *dumper) const
 {
     dumper->Add("break");
-    if (ident_ != nullptr) {
+    if (!label_.Empty()) {
         dumper->Add(" ");
-        ident_->Dump(dumper);
+        dumper->Add(std::string(label_));
     }
     dumper->Add(";");
 }
