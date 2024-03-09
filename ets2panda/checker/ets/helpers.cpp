@@ -1318,8 +1318,11 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
 
     for (std::size_t idx = 0; idx < typeAliasNode->TypeParams()->Params().size(); ++idx) {
         auto *typeAliasType = typeAliasNode->TypeParams()->Params().at(idx)->Name()->Variable()->TsType();
+        auto insideAliasType = typeParams->Params().at(idx)->GetType(this);
+        insideAliasType = MaybePromotedBuiltinType(insideAliasType);
+
         if (typeAliasType->IsETSTypeParameter()) {
-            aliasSub->insert({typeAliasType->AsETSTypeParameter(), typeParams->Params().at(idx)->TsType()});
+            EmplaceSubstituted(aliasSub, typeAliasType->AsETSTypeParameter(), insideAliasType);
         }
     }
 
@@ -1558,7 +1561,7 @@ ETSFunctionType *ETSChecker::FindFunctionInVectorGivenByName(util::StringView na
 bool ETSChecker::IsFunctionContainsSignature(ETSFunctionType *funcType, Signature *signature)
 {
     for (auto *it : funcType->CallSignatures()) {
-        Relation()->IsIdenticalTo(it, signature);
+        Relation()->IsCompatibleTo(it, signature);
         if (Relation()->IsTrue()) {
             return true;
         }
@@ -1571,7 +1574,7 @@ void ETSChecker::CheckFunctionContainsClashingSignature(const ETSFunctionType *f
 {
     for (auto *it : funcType->CallSignatures()) {
         SavedTypeRelationFlagsContext strfCtx(Relation(), TypeRelationFlag::NONE);
-        Relation()->IsIdenticalTo(it, signature);
+        Relation()->IsCompatibleTo(it, signature);
         if (Relation()->IsTrue() && it->Function()->Id()->Name() == signature->Function()->Id()->Name()) {
             std::stringstream ss;
             it->ToString(ss, nullptr, true);
