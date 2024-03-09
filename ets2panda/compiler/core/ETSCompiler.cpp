@@ -2057,6 +2057,10 @@ void ETSCompiler::CompileCast(const ir::TSAsExpression *expr) const
             etsg->CastToDouble(expr);
             break;
         }
+        case checker::TypeFlag::BIG_INT_OBJECT: {
+            etsg->CastToBigint(expr);
+            break;
+        }
         case checker::TypeFlag::ETS_ARRAY:
         case checker::TypeFlag::ETS_OBJECT:
         case checker::TypeFlag::ETS_TYPE_PARAMETER:

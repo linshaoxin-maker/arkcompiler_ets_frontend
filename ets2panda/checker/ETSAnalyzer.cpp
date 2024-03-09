@@ -2595,6 +2595,16 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
 
     auto *const sourceType = expr->Expr()->Check(checker);
 
+    if (targetType->HasTypeFlag(checker::TypeFlag::ETS_BIGINT)) {
+        if ((sourceType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE) &&
+             !sourceType->HasTypeFlag(checker::TypeFlag::VOID)) ||
+            sourceType->HasTypeFlag(checker::TypeFlag::ETS_BIGINT)) {
+            expr->SetTsType(checker->GlobalBuiltinETSBigIntType());
+            return expr->TsType();
+        }
+        checker->ThrowTypeError({"Cast non primitive type to BigInt is prohibited."}, expr->Start());
+    }
+
     if (targetType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE) &&
         sourceType->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT | checker::TypeFlag::TYPE_PARAMETER)) {
         auto *const boxedTargetType = checker->PrimitiveTypeAsETSBuiltinType(targetType);
