@@ -13,19 +13,27 @@
  * limitations under the License.
  */
 
-#include "generateDeclarations.h"
-#include "checker/checker.h"
-#include "compiler/core/ASTVerifier.h"
-#include "compiler/core/compilerContext.h"
-#include "util/declgenEts2Ts.h"
 
-namespace ark::es2panda::compiler {
-
-bool GenerateTsDeclarationsPhase::Perform(public_lib::Context *ctx, parser::Program *program)
+class GlobalClass
 {
-    auto *checker = ctx->checker;
-    return (ctx->compilerContext->Options()->tsDeclOut.empty() ||
-            util::GenerateTsDeclarations(checker->AsETSChecker(), program, ctx->compilerContext->Options()->tsDeclOut));
+    static capture_param_method(param : int)
+    {
+        class LocalClass
+        {
+            method()
+            {
+                assert(param == 1)
+            }
+        }
+
+        let lc = new LocalClass();
+        lc.method()
+    }
 }
 
-}  // namespace ark::es2panda::compiler
+function main() : int
+{
+    GlobalClass.capture_param_method(1);
+
+    return 0;
+}

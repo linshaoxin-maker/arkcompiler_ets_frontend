@@ -14,10 +14,9 @@
  */
 
 #include "lambdaLowering.h"
-#include "checker/checker.h"
+#include "checker/ETSchecker.h"
 #include "compiler/core/ASTVerifier.h"
 #include "compiler/core/compilerContext.h"
-#include "util/declgenEts2Ts.h"
 
 namespace ark::es2panda::compiler {
 static ir::AstNode *ConvertExpression(checker::ETSChecker *const checker, ir::ArrowFunctionExpression *const arrow)
@@ -27,13 +26,21 @@ static ir::AstNode *ConvertExpression(checker::ETSChecker *const checker, ir::Ar
     auto *const expr = function->Body()->AsExpression();
 
     ArenaVector<ir::Statement *> statements(checker->Allocator()->Adapter());
-    statements.emplace_back(checker->AllocNode<ir::ReturnStatement>(expr));
+
+    if ((function->ReturnTypeAnnotation() != nullptr && function->ReturnTypeAnnotation()->IsETSPrimitiveType() &&
+         function->ReturnTypeAnnotation()->AsETSPrimitiveType()->GetPrimitiveType() == ir::PrimitiveType::VOID)) {
+        statements.emplace_back(checker->AllocNode<ir::ExpressionStatement>(expr));
+    } else {
+        statements.emplace_back(checker->AllocNode<ir::ReturnStatement>(expr));
+        function->AddFlag(ir::ScriptFunctionFlags::HAS_RETURN);
+    }
+
     auto *const block = checker->AllocNode<ir::BlockStatement>(checker->Allocator(), std::move(statements));
+
     block->SetScope(scope);
     block->SetParent(function);
 
     function->SetBody(block);
-    function->AddFlag(ir::ScriptFunctionFlags::HAS_RETURN);
 
     return arrow;
 }
