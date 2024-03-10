@@ -47,10 +47,10 @@ void Literals::GetTemplateObject(PandaGen *pg, const ir::TaggedTemplateExpressio
         pg->StoreAccumulator(element, indexReg);
 
         pg->LoadAccumulatorString(element, element->Raw());
-        pg->StoreObjByValue(element, rawArr, indexReg);
+        pg->DefineFieldByValue(element, rawArr, indexReg);
 
         pg->LoadAccumulatorString(element, element->Cooked());
-        pg->StoreObjByValue(element, cookedArr, indexReg);
+        pg->DefineFieldByValue(element, cookedArr, indexReg);
 
         elemIndex++;
     }
@@ -63,14 +63,14 @@ void Literals::GetTemplateObject(PandaGen *pg, const ir::TaggedTemplateExpressio
     pg->StoreAccumulator(lit, indexReg);
 
     pg->LoadAccumulator(lit, rawArr);
-    pg->StoreObjByValue(lit, templateArg, indexReg);
+    pg->DefineFieldByValue(lit, templateArg, indexReg);
 
     elemIndex++;
     pg->LoadAccumulatorInt(lit, elemIndex);
     pg->StoreAccumulator(lit, indexReg);
 
     pg->LoadAccumulator(lit, cookedArr);
-    pg->StoreObjByValue(lit, templateArg, indexReg);
+    pg->DefineFieldByValue(lit, templateArg, indexReg);
 
     pg->GetTemplateObject(lit, templateArg);
 }
