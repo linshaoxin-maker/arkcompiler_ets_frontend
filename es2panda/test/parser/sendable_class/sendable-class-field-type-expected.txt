@@ -14,7 +14,6 @@ label_0:
 	ldhole
 	sta v0
 	callruntime.definesendableclass 0x0, .Person, _2, 0x0, v0
-	ldundefined
 	returnundefined
 label_2: 
 }
