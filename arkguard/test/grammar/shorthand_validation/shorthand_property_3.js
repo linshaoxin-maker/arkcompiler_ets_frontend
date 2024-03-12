@@ -14,6 +14,7 @@
  */
 
 const assert = require('assert');
+
 let x;
 
 async function* fn() {
