@@ -229,6 +229,7 @@ bool ETSChecker::ValidateSignatureRequiredParams(Signature *substitutedSig,
     for (std::size_t index = 0; index < count; ++index) {
         auto &argument = arguments[index];
 
+std::cout << "aaaaaaaa\n";
         if (argument->IsObjectExpression()) {
             if (substitutedSig->Params()[index]->TsType()->IsETSObjectType()) {
                 // No chance to check the argument at this point
@@ -236,7 +237,7 @@ bool ETSChecker::ValidateSignatureRequiredParams(Signature *substitutedSig,
             }
             return false;
         }
-
+std::cout << "bbbbbbbbbbbbb\n";
         if (argument->IsMemberExpression()) {
             SetArrayPreferredTypeForNestedMemberExpressions(arguments[index]->AsMemberExpression(),
                                                             substitutedSig->Params()[index]->TsType());
@@ -246,7 +247,7 @@ bool ETSChecker::ValidateSignatureRequiredParams(Signature *substitutedSig,
             }
             return false;
         }
-
+std::cout << "ccccccccccccccccc\n";
         if (argTypeInferenceRequired[index]) {
             ASSERT(argument->IsArrowFunctionExpression());
             auto *const arrowFuncExpr = argument->AsArrowFunctionExpression();
@@ -256,15 +257,15 @@ bool ETSChecker::ValidateSignatureRequiredParams(Signature *substitutedSig,
             }
             return false;
         }
-
+std::cout << "ddddddddddddddddd\n";
         if (argument->IsArrayExpression()) {
             argument->AsArrayExpression()->GetPrefferedTypeFromFuncParam(
                 this, substitutedSig->Function()->Params()[index], flags);
         }
-
+std::cout << "eeeeeeeeeeeeeeeeeeee\n";
         auto *const argumentType = argument->Check(this);
         const Type *targetType = TryGettingFunctionTypeFromInvokeFunction(substitutedSig->Params()[index]->TsType());
-
+std::cout << "ffffffffffffffffffffffff\n";
         auto const invocationCtx = checker::InvocationContext(
             Relation(), argument, argumentType, substitutedSig->Params()[index]->TsType(), argument->Start(),
             {"Type '", argumentType, "' is not compatible with type '", targetType, "' at index ", index + 1}, flags);
@@ -1638,7 +1639,7 @@ static ArenaVector<ir::Expression *> ResolveCallParametersForLambdaFuncBody(ETSC
         auto *const paramIdent = allocator->New<ir::Identifier>(param->Ident()->Name(), allocator);
         paramIdent->SetVariable(param->Variable());
         paramIdent->SetTsType(param->Variable()->TsType());
-
+ 
         for (size_t i = 0; i < paramsNum; i++) {
             auto *idx = allocator->New<ir::NumberLiteral>(lexer::Number(static_cast<int>(i)));
             auto *arg = allocator->New<ir::MemberExpression>(paramIdent, idx, ir::MemberExpressionKind::ELEMENT_ACCESS,

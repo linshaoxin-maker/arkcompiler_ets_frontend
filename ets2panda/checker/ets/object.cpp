@@ -1233,6 +1233,13 @@ void ETSChecker::ValidateResolvedProperty(const varbinder::LocalVariable *const 
     const Utype x = (flagsNum ^ (flagsNum >> 3U)) & 7U;
     const auto newFlags = PropertySearchFlags {flagsNum ^ (x | (x << 3U))};
 
+    std::cout << "[ValidateResolvedProperty:] ETSObjectType = " << target << std::endl;
+    std::cout << "[ValidateResolvedProperty:] ETSObjectType->GetDeclNode = " << target->GetDeclNode() << std::endl;
+    std::cout << "[ValidateResolvedProperty:] LocalVariable = " << property << std::endl;
+    std::cout << "[ValidateResolvedProperty:] Identifier = " << ident << std::endl;
+    std::cout << "[ValidateResolvedProperty:] Identifier->Parent = " << ident->Parent() << std::endl;
+    std::cout << "[ValidateResolvedProperty:] Identifier->Name() = " << ident->Name() << std::endl;
+
     const auto *const newProp = target->GetProperty(ident->Name(), newFlags);
     if (newProp == nullptr) {
         ThrowTypeError({"Property '", ident->Name(), "' does not exist on type '", target->Name(), "'"},

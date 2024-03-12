@@ -258,6 +258,10 @@ static pandasm::Program *CreateCompiler(const CompilationUnit &unit, const Phase
     auto analyzer = Analyzer(&checker);
     checker.SetAnalyzer(&analyzer);
 
+    if (unit.options.isEval && unit.ext == ScriptExtension::ETS) {
+        checker.CreateDebugInfoLookup(unit.options.evalExpr);
+    }
+
     auto *varbinder = program.VarBinder();
     varbinder->SetProgram(&program);
 

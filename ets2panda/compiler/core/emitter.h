@@ -74,6 +74,8 @@ protected:
     void GenSourceFileDebugInfo(pandasm::Function *func);
     void GenFunctionCatchTables(ark::pandasm::Function *func);
     void GenVariablesDebugInfo(pandasm::Function *func);
+    void GenClassesDebugInfo();
+
     util::StringView SourceCode() const;
 
     const CodeGen *Cg() const

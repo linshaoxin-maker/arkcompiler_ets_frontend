@@ -149,6 +149,11 @@ public:
         return false;
     }
 
+    virtual void CreateDebugInfoLookup([[maybe_unused]] const std::string &debugInfoPath)
+    {
+        return;
+    }
+
     ETSChecker *AsETSChecker()
     {
         return reinterpret_cast<ETSChecker *>(this);

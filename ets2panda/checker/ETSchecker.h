@@ -30,6 +30,7 @@
 #include "lexer/token/tokenType.h"
 #include "util/ustring.h"
 #include "checker/resolveResult.h"
+#include "compiler/debugger/debugInfoLookup.h"
 
 namespace ark::es2panda::varbinder {
 class VarBinder;
@@ -136,6 +137,11 @@ public:
     bool IsETSChecker() override
     {
         return true;
+    }
+
+    void CreateDebugInfoLookup(const std::string &debugInfoPath) override
+    {
+        debugInfoLookup_ = DebugInfoLookup(debugInfoPath, this);
     }
 
     // Object
@@ -630,12 +636,23 @@ public:
     ir::ETSParameterExpression *AddParam(varbinder::FunctionParamScope *paramScope, util::StringView name,
                                          checker::Type *type);
 
-private:
     using ClassBuilder = std::function<void(varbinder::ClassScope *, ArenaVector<ir::AstNode *> *)>;
-    using ClassInitializerBuilder = std::function<void(varbinder::FunctionScope *, ArenaVector<ir::Statement *> *,
-                                                       ArenaVector<ir::Expression *> *)>;
+    void BuildClass(util::StringView name, const ClassBuilder &builder);
+
     using MethodBuilder = std::function<void(varbinder::FunctionScope *, ArenaVector<ir::Statement *> *,
                                              ArenaVector<ir::Expression *> *, Type **)>;
+
+    template <bool IS_STATIC>
+    ir::MethodDefinition *CreateClassMethod(varbinder::ClassScope *classScope, util::StringView const name,
+                                            ir::ModifierFlags modifierFlags, const MethodBuilder &builder, bool isEmpty = false);
+
+    ir::MethodDefinition *CreateClassMethod(bool isStatic, varbinder::ClassScope *classScope, 
+                                                        util::StringView const name,
+                                                        ir::ModifierFlags modifierFlags, const MethodBuilder &builder, bool isEmpty = false);
+
+private:
+    using ClassInitializerBuilder = std::function<void(varbinder::FunctionScope *, ArenaVector<ir::Statement *> *,
+                                                       ArenaVector<ir::Expression *> *)>;
 
     std::pair<const ir::Identifier *, ir::TypeNode *> GetTargetIdentifierAndType(ir::Identifier *ident);
     [[noreturn]] void ThrowError(ir::Identifier *ident);
@@ -656,7 +673,7 @@ private:
     PropertySearchFlags GetSearchFlags(const ir::MemberExpression *memberExpr, const varbinder::Variable *targetRef);
     PropertySearchFlags GetInitialSearchFlags(const ir::MemberExpression *memberExpr);
     const varbinder::Variable *GetTargetRef(const ir::MemberExpression *memberExpr);
-    void BuildClass(util::StringView name, const ClassBuilder &builder);
+
     Type *GetTypeOfSetterGetter([[maybe_unused]] varbinder::Variable *var);
     void IterateInVariableContext([[maybe_unused]] varbinder::Variable *const var);
 
@@ -668,9 +685,9 @@ private:
     std::conditional_t<IS_STATIC, ir::ClassStaticBlock *, ir::MethodDefinition *> CreateClassInitializer(
         varbinder::ClassScope *classScope, const ClassInitializerBuilder &builder, ETSObjectType *type = nullptr);
 
-    template <bool IS_STATIC>
-    ir::MethodDefinition *CreateClassMethod(varbinder::ClassScope *classScope, std::string_view name,
-                                            ir::ModifierFlags modifierFlags, const MethodBuilder &builder);
+    // template <bool IS_STATIC>
+    // ir::MethodDefinition *CreateClassMethod(varbinder::ClassScope *classScope, std::string_view name,
+    //                                         ir::ModifierFlags modifierFlags, const MethodBuilder &builder);
 
     template <typename T>
     ir::ScriptFunction *CreateDynamicCallIntrinsic(ir::Expression *callee, const ArenaVector<T *> &arguments,
@@ -746,6 +763,8 @@ private:
     TypeMapping apparentTypes_;
     std::array<DynamicCallNamesMap, 2U> dynamicCallNames_;
     std::recursive_mutex mtx_;
+
+    std::optional<DebugInfoLookup> debugInfoLookup_;
 };
 
 }  // namespace ark::es2panda::checker

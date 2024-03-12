@@ -28,6 +28,8 @@
 #include <memory>
 #include <optional>
 
+#include "compiler/debugger/debugInfoLookup.h"
+
 namespace ark::es2panda::aot {
 using mem::MemConfig;
 

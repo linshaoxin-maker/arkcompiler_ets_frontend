@@ -16,7 +16,7 @@
 #ifndef ES2PANDA_COMPILER_CHECKER_TYPES_TYPE_H
 #define ES2PANDA_COMPILER_CHECKER_TYPES_TYPE_H
 
-#include "generated/signatures.h"
+#include "tools/es2panda/generated/signatures.h"
 #include "checker/types/typeMapping.h"
 #include "checker/types/typeRelation.h"
 #include "checker/types/typeFacts.h"

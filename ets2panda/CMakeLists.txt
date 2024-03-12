@@ -140,6 +140,8 @@ set(ES2PANDA_LIB_SRC
   compiler/core/targetTypeContext.cpp
   compiler/core/vReg.cpp
   compiler/debugger/debuginfoDumper.cpp
+  compiler/debugger/debugInfoLookup.cpp
+  compiler/debugger/evaluate/classDeclarationCreator.cpp
   compiler/function/asyncFunctionBuilder.cpp
   compiler/function/asyncGeneratorFunctionBuilder.cpp
   compiler/function/functionBuilder.cpp
@@ -482,7 +484,7 @@ panda_target_compile_options(es2panda-lib
 )
 
 panda_target_link_libraries(es2panda-lib
-  PUBLIC arkbase hmicuuc.z
+  PUBLIC arkbase hmicuuc.z arkfile arkdisassembler
   PRIVATE arkassembler
 )
 

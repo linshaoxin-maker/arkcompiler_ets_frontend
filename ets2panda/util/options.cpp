@@ -171,6 +171,7 @@ bool Options::Parse(int argc, const char **argv)
     ark::PandArg<int> opOptLevel("opt-level", 0, "Compiler optimization level (options: 0 | 1 | 2)");
     ark::PandArg<bool> opEtsModule("ets-module", false, "Compile the input as ets-module");
     ark::PandArg<std::string> opTsDeclOut("gen-ts-decl", "", "For given .ets file, generate .ts interop file");
+    ark::PandArg<std::string> opEvalExpr("eval-expr", "", "Evaluate expression");
 
     auto constexpr DEFAULT_THREAD_COUNT = 0;
     ark::PandArg<int> opThreadCount("thread", DEFAULT_THREAD_COUNT, "Number of worker threads");
@@ -256,6 +257,7 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&dumpEtsSrcBeforePhases);
     argparser_->Add(&arktsConfig);
     argparser_->Add(&opTsDeclOut);
+    argparser_->Add(&opEvalExpr);
 
     argparser_->PushBackTail(&inputFile);
     argparser_->EnableTail();
@@ -373,6 +375,8 @@ bool Options::Parse(int argc, const char **argv)
     compilerOptions_.dumpEtsSrcBeforePhases = SplitToStringSet(dumpEtsSrcBeforePhases.GetValue());
     compilerOptions_.dumpAfterPhases = SplitToStringSet(dumpBeforePhases.GetValue());
     compilerOptions_.dumpEtsSrcAfterPhases = SplitToStringSet(dumpEtsSrcAfterPhases.GetValue());
+    compilerOptions_.isEval = !opEvalExpr.GetValue().empty();
+    compilerOptions_.evalExpr = opEvalExpr.GetValue();
 
     return true;
 }
