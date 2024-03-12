@@ -454,8 +454,8 @@ set(ES2PANDA_LIB_SRC
   util/declgenEts2Ts.cpp
   util/errorHandler.cpp
   util/helpers.cpp
+  util/importPathManager.cpp
   util/path.cpp
-  util/pathHandler.cpp
   util/ustring.cpp
 )
 
