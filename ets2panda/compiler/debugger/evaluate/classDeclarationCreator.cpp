@@ -17,11 +17,15 @@
 #include "libpandafile/include/type.h"
 #include "checker/ETSchecker.h"
 #include "libpandafile/method_data_accessor-inl.h"
+#include "libpandafile/debug_data_accessor-inl.h"
+#include "libpandafile/proto_data_accessor-inl.h"
+#include "compiler/debugger/debugInfoLookup.h"
 
 namespace ark::es2panda {
 
 void ClassDeclarationCreator::CreateClassDeclaration(const util::StringView &identName, panda_file::ClassDataAccessor *cda)
 {
+    std::cout << cda << std::endl;
     ASSERT(cda != nullptr);
 
     checker::ETSChecker::ClassBuilder classBuilder = [&](varbinder::ClassScope *scope,
@@ -48,21 +52,37 @@ void ClassDeclarationCreator::CreateFieldsProperties(varbinder::ClassScope *scop
                                                      checker::ETSObjectType *classType,
                                                      panda_file::ClassDataAccessor *cda)
 {
-    cda->EnumerateFields([&](panda_file::FieldDataAccessor &fda) -> void {
-        const char *name = reinterpret_cast<const char *>(cda->GetPandaFile().GetStringData(fda.GetNameId()).data);
-        checker::Type *type = ToCheckerType(panda_file::Type::GetTypeFromFieldEncoding(fda.GetType()));
+    const auto &pf = cda->GetPandaFile();
 
+    cda->EnumerateFields([&](panda_file::FieldDataAccessor &fda) -> void {
+        const char *name = utf::Mutf8AsCString(pf.GetStringData(fda.GetNameId()).data);
+        std::cout << name << std::endl;
+        checker::Type *checkerType = nullptr;
+
+std::cout << "++++++++++++++++++++++++++" << std::endl;
+        auto pandaType = panda_file::Type::GetTypeFromFieldEncoding(fda.GetType());
+        if (pandaType.IsReference()) {
+            auto typeId = panda_file::FieldDataAccessor::GetTypeId(pf, fda.GetFieldId());
+            std::string refName = utf::Mutf8AsCString(pf.GetStringData(typeId).data);
+            // Remove L and ; symbols
+            refName.erase(refName.begin());
+            refName.erase(refName.size() - 1, 1);
+            checkerType = ResolveReferenceType(refName);
+        } else {
+            checkerType = ToCheckerType(pandaType);
+        }
+std::cout << "=========================" << std::endl;
         auto *fieldIdent = checker_->AllocNode<ir::Identifier>(name, allocator_);
         auto *field = checker_->AllocNode<ir::ClassProperty>(
             fieldIdent, nullptr, nullptr, ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC, allocator_, false);
-        field->SetTsType(type);
-
+        field->SetTsType(checkerType);
+std::cout << "----------------------------" << std::endl;
         auto *decl = allocator_->New<varbinder::LetDecl>(fieldIdent->Name());
         decl->BindNode(field);
 
         auto *var = scope->AddDecl(allocator_, decl, checker_->VarBinder()->Extension());
         var->AddFlag(varbinder::VariableFlags::PROPERTY);
-        var->SetTsType(type);
+        var->SetTsType(checkerType);
         fieldIdent->SetVariable(var);
 
         bool isStatic = fda.IsStatic();
@@ -77,36 +97,52 @@ void ClassDeclarationCreator::CreateFieldsProperties(varbinder::ClassScope *scop
 
 std::vector<checker::Type *> ClassDeclarationCreator::GetFunctionParameters(panda_file::MethodDataAccessor &mda)
 {
-    std::vector<checker::Type *> parameters;
+    const auto &pf = mda.GetPandaFile();
 
-    mda.EnumerateTypesInProto([&](panda_file::Type type, panda_file::File::EntityId classId) -> void{
-        if (type.GetId() == panda_file::Type::TypeId::REFERENCE) {
-            // NOTE: todo
-            (void) classId;
-            return;
+    std::vector<checker::Type *> parameters;
+ 
+    // auto debugInfoId = mda.GetDebugInfoId();
+    // if (!debugInfoId) {
+    //     return parameters;
+    // }
+    
+    // panda_file::DebugInfoDataAccessor dda(pf, debugInfoId.value());
+    // panda_file::ProtoDataAccessor pda(pf, mda.GetProtoId());
+
+    // size_t idxRef = 0;
+
+    // dda.EnumerateParameters([&](panda_file::File::EntityId &paramId) {
+    //     if (paramId.IsValid()) {
+    //         auto refType = pda.GetReferenceType(idxRef++);
+    //         info.signature = utf::Mutf8AsCString(pf.GetStringData(refType).data);
+    //         paramNames.push_back(utf::Mutf8AsCString(pf.GetStringData(paramId).data));
+    //     } else {
+    //         std::cout << "dda.EnumerateParameters error" << std::endl;
+    //     }
+    // });
+
+    mda.EnumerateTypesInProto([&](panda_file::Type type, panda_file::File::EntityId classId) -> void {
+        checker::Type *checkerType = nullptr;
+
+        if (type.IsReference()) {
+            checkerType = ResolveReferenceType(utf::Mutf8AsCString(pf.GetStringData(classId).data));
+        } else {
+            checkerType = ToCheckerType(type);
         }
-        parameters.push_back(ToCheckerType(type));
+
+        parameters.push_back(checkerType);
     },
     true); // true -- skip this parameter
- 
+
     return parameters;
 }
 
-ir::ETSParameterExpression *ClassDeclarationCreator::AddParam(varbinder::FunctionParamScope *paramScope, 
-                                                              util::StringView name,
-                                                              checker::Type *type)
+checker::Type *ClassDeclarationCreator::ResolveReferenceType(const std::string &refName)
 {
-    auto paramCtx = varbinder::LexicalScope<varbinder::FunctionParamScope>::Enter(checker_->VarBinder(), paramScope, false);
-
-    auto *paramIdent = checker_->AllocNode<ir::Identifier>(name, allocator_);
-    auto *param = checker_->AllocNode<ir::ETSParameterExpression>(paramIdent, nullptr);
-    auto *paramVar = std::get<1>(checker_->VarBinder()->AddParamDecl(param));
-    
-    paramVar->SetTsType(type);
-    param->Ident()->SetVariable(paramVar);
-    param->Ident()->SetTsType(type);
-    
-    return param;
+    std::cout << "NAME = " << refName << std::endl;
+    util::UString name(refName, allocator_);
+    auto *ident = checker_->AllocNode<ir::Identifier>(name.View(), allocator_);
+    return checker_->ResolveIdentifier(ident);
 }
 
 void ClassDeclarationCreator::CreateFunctionProperties(varbinder::ClassScope *classScope,
@@ -147,7 +183,7 @@ void ClassDeclarationCreator::CreateFunctionProperties(varbinder::ClassScope *cl
             
             if (!isStatic) {
                 util::UString thisParamName(std::string("this"), allocator_);
-                auto *thisParam = AddParam(paramScope, thisParamName.View(), classType);
+                auto *thisParam = checker_->AddParam(paramScope, thisParamName.View(), classType);
                 fparams->push_back(thisParam);
             }
 
@@ -202,8 +238,14 @@ checker::Type *ClassDeclarationCreator::ToCheckerType(panda_file::Type pandaFile
         case panda_file::Type::TypeId::F64:
             return checker_->GetGlobalTypesHolder()->GlobalDoubleType();
         case panda_file::Type::TypeId::REFERENCE:
+            std::cout << "reference" << std::endl;		
+            [[fallthrough]];
         case panda_file::Type::TypeId::TAGGED:
+            std::cout << "tagged" << std::endl;
+            [[fallthrough]];
         case panda_file::Type::TypeId::INVALID:
+            std::cout << "invalid" << std::endl;
+            [[fallthrough]];
         default:
             break;
     }

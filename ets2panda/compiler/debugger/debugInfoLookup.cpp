@@ -30,6 +30,8 @@ namespace ark::es2panda {
 DebugInfoLookup::DebugInfoLookup(std::string_view pathToPfs, checker::ETSChecker *checker)
     : checker_(checker), allocator_(checker->Allocator()), classDeclCreator_(checker_, allocator_)
 {
+    classDeclCreator_.SetDebugInfoLookup(this);
+
     for (auto &entry : std::filesystem::directory_iterator(pathToPfs)) {
         ExtractInfoFromFile(entry.path().string());
     }
@@ -95,6 +97,7 @@ void DebugInfoLookup::LookupByName(const util::StringView &identName)
 {
     std::string identNameStr = std::string(identName);
     std::cout << "LookupByName = " << identNameStr << std::endl;
+    
     if (auto record = recordNameSet_.find(identNameStr); record != recordNameSet_.end()) {
         auto it = classRecordInfo_.find(identNameStr);
         if (it != classRecordInfo_.end()) {

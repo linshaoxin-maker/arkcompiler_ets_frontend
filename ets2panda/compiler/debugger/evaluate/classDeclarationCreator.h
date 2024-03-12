@@ -29,6 +29,8 @@ namespace checker {
 class ETSChecker;
 }
 
+class DebugInfoLookup;
+
 // Help to create class declaration using information obtained from given .abc file
 class ClassDeclarationCreator {
 public:
@@ -45,6 +47,11 @@ public:
 
     checker::Type *ToCheckerType(panda_file::Type pandaFileType);
 
+    void SetDebugInfoLookup(DebugInfoLookup *other)
+    {
+        debugInfoLookup_ = other;
+    }
+
 private:
     using MethodBuilder = std::function<void(varbinder::FunctionScope *scope, 
                                              ArenaVector<ir::Statement *> *stms,
@@ -53,9 +60,7 @@ private:
          
     std::vector<checker::Type *> GetFunctionParameters(panda_file::MethodDataAccessor &mda);
 
-    ir::ETSParameterExpression *AddParam(varbinder::FunctionParamScope *paramScope, 
-                                         util::StringView name,
-                                         checker::Type *type);
+    checker::Type *ResolveReferenceType(const std::string &refName);
 
     void CreateClassBody(varbinder::ClassScope *scope, ArenaVector<ir::AstNode *> *classBody,
                          panda_file::ClassDataAccessor *cda);
@@ -72,6 +77,7 @@ private:
 private:
     checker::ETSChecker *checker_ {nullptr};
     ArenaAllocator *allocator_ {nullptr};
+    DebugInfoLookup *debugInfoLookup_ {nullptr};
 };
 
 }  // namespace ark::es2panda

@@ -375,9 +375,13 @@ ir::ClassStaticBlock *ETSChecker::CreateDynamicCallClassInitializer(varbinder::C
 void ETSChecker::BuildClass(util::StringView name, const ClassBuilder &builder)
 {
     auto *classId = AllocNode<ir::Identifier>(name, Allocator());
+    std::cout << "{" << classId->Start().index << " " << classId->Name() << std::endl;
+    std::cout << "ppppppppppppppppppppppppppppppp\n";
+    ASSERT(classId != nullptr)
     auto [decl, var] = VarBinder()->NewVarDecl<varbinder::ClassDecl>(classId->Start(), classId->Name());
+    std::cout << "llllllllllllll\n";
     classId->SetVariable(var);
-
+std::cout << "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz\n";
     auto classCtx = varbinder::LexicalScope<varbinder::ClassScope>(VarBinder());
 
     auto *classDef = AllocNode<ir::ClassDefinition>(Allocator(), classId, ir::ClassDefinitionModifiers::DECLARATION,
@@ -388,12 +392,12 @@ void ETSChecker::BuildClass(util::StringView name, const ClassBuilder &builder)
         Allocator()->New<checker::ETSObjectType>(Allocator(), classDef->Ident()->Name(), classDef->Ident()->Name(),
                                                  classDef, checker::ETSObjectFlags::CLASS, Relation());
     classDef->SetTsType(classDefType);
-
+std::cout << "fffffffffffffffffffffffff\n";
     auto *classDecl = AllocNode<ir::ClassDeclaration>(classDef, Allocator());
     classDecl->SetParent(VarBinder()->TopScope()->Node());
     classDef->Scope()->BindNode(classDecl);
     decl->BindNode(classDef);
-
+std::cout << "gggggggggggggggggg\n";
     VarBinder()->Program()->Ast()->Statements().push_back(classDecl);
 
     varbinder::BoundContext boundCtx(VarBinder()->AsETSBinder()->GetGlobalRecordTable(), classDef);

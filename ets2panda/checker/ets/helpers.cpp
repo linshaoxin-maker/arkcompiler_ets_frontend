@@ -451,9 +451,9 @@ std::pair<const varbinder::Variable *, const ETSObjectType *> ETSChecker::FindVa
     return {resolved, classType};
 }
 
-varbinder::Variable *ETSChecker::FindVariableInGlobal(const ir::Identifier *const identifier)
+varbinder::Variable *ETSChecker::FindVariableInGlobal(const util::StringView name)
 {
-    return Scope()->FindInGlobal(identifier->Name(), varbinder::ResolveBindingOptions::ALL).variable;
+    return Scope()->FindInGlobal(name, varbinder::ResolveBindingOptions::ALL).variable;
 }
 
 bool ETSChecker::IsVariableStatic(const varbinder::Variable *var)
@@ -821,18 +821,18 @@ Type *ETSChecker::ResolveIdentifier(ir::Identifier *const ident)
     if (resolved == nullptr) {
         // If the reference is not found already in the current class, then it is not bound to the class, so we have to
         // find the reference in the global class first, then in the global scope
-        resolved = FindVariableInGlobal(ident);
+        resolved = FindVariableInGlobal(ident->Name());
     }
 
     if (UNLIKELY(debugInfoLookup_.has_value()) && resolved == nullptr) {
         // Lookup identifier in debug info
         // if ident is class then this funtion create declaration of this class
-        std::cout << "income ident = " << ident->Name() << "; type = " << static_cast<int>(ident->Parent()->Type()) << std::endl;
+        std::cout << "income ident = " << ident->Name() << std::endl;
         debugInfoLookup_->LookupByName(ident->Name());
 
         resolved = FindVariableInFunctionScope(ident->Name());
         if (resolved == nullptr) {
-            resolved = FindVariableInGlobal(ident);
+            resolved = FindVariableInGlobal(ident->Name());
         }
     }
     
