@@ -20,6 +20,7 @@
 #include <ir/base/classProperty.h>
 #include <ir/base/methodDefinition.h>
 #include <ir/expressions/privateIdentifier.h>
+#include <ir/ts/tsTypeReference.h>
 #include <util/bitset.h>
 
 namespace panda::es2panda::compiler {
@@ -43,6 +44,7 @@ enum class FieldType {
     STRING = (1 << 1),
     BOOLEAN = (1 << 2),
     TS_TYPE_REF = (1 << 3),
+    BIGINT = (1 << 4),
 };
 DEFINE_BITOPS(FieldType)
 
