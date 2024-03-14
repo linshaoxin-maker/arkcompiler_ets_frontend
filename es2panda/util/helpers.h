@@ -36,6 +36,7 @@ class StringLiteral;
 
 namespace panda::es2panda {
 struct CompilerOptions;
+enum class ErrorType;
 }  // namespace panda::es2panda
 
 namespace panda::es2panda::binder {
@@ -47,6 +48,11 @@ struct Program;
 
 namespace panda::es2panda::lexer {
 class LineIndex;
+class SourcePosition;
+}
+
+namespace panda::es2panda::parser {
+class Program;
 }
 
 namespace panda::es2panda::util {
@@ -110,6 +116,8 @@ public:
     static bool ShouldCheckConcurrent(const binder::Scope *scope, const util::StringView name);
     static void SendableCheckForClassStaticInitializer(const util::StringView name, const binder::Scope *&iter,
         ir::ScriptFunction *&concurrentFunc);
+    static void ThrowError(ErrorType type, const parser::Program *program, const lexer::SourcePosition &pos,
+        const std::string_view &msg);
 
     static const uint32_t MAX_DOUBLE_DIGIT = 310;
     static const uint32_t MAX_DOUBLE_PRECISION_DIGIT = 17;
@@ -123,6 +131,7 @@ public:
     static constexpr std::string_view SHOW_SOURCE = "show source";
     static constexpr std::string_view USE_CONCURRENT = "use concurrent";
     static constexpr std::string_view USE_SENDABLE = "use sendable";
+    static constexpr std::string_view BIGINT_NAME = "BigInt";
     static const uint64_t FNV_PRIME = 1099511628211U;
     static const uint64_t FNV_OFFSET = 14695981039346656037U;
 private:

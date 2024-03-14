@@ -248,6 +248,8 @@ private:
     void StaticInitialize(compiler::PandaGen *pg, compiler::VReg classReg) const;
     void InstanceInitialize(compiler::PandaGen *pg, compiler::VReg classReg) const;
     void CompileComputedKeys(compiler::PandaGen *pg) const;
+    void AddFieldType(FieldType &fieldType, const Expression *typeAnnotation) const;
+    void AddFieldTypeForTypeReference(const TSTypeReference *typeReference, FieldType &fieldType) const;
     int32_t CreateFieldTypeBuffer(compiler::PandaGen *pg) const;
     void CompileSendableClass(compiler::PandaGen *pg) const;
     void CompileGetterOrSetter(compiler::PandaGen *pg, compiler::VReg dest, const MethodDefinition *prop) const;
