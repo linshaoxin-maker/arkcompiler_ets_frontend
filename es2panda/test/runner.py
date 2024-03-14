@@ -894,6 +894,13 @@ class CompilerTest(Test):
         es2abc_cmd.extend(["--output=" + test_abc_path])
         es2abc_cmd.append(self.path)
         self.log_cmd(es2abc_cmd)
+        
+        # execute arkguard
+        js_file_allpath = os.path.join(os.path.dirname(os.path.abspath(__file__)),'../',self.path)
+        cmd_args = ['node', '--no-warnings', '--loader=ts-node/esm', './src/cli/SecHarmony.ts', js_file_allpath,
+                            '--config-path', './scripts/test262Config.json']
+        customCwd = '/mnt/data/zwx1285830/ohos/openharmony/arkcompiler/ets_frontend/arkguard'
+        process = subprocess.Popen(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=customCwd)
 
         process = subprocess.Popen(es2abc_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = process.communicate()
