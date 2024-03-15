@@ -1,0 +1,24 @@
+{
+    "nodes": [
+        {
+            "line": 22,
+            "column": 5,
+            "problem": "MultipleStaticBlocks",
+            "autofixable": true,
+            "autofix": [
+                {
+                    "start": 664,
+                    "end": 699,
+                    "replacementText": "static {\n    C.s = \"aa\";\n    C.s = C.s + \"bb\";\n}"
+                },
+                {
+                    "start": 705,
+                    "end": 746,
+                    "replacementText": ""
+                }
+            ],
+            "suggest": "",
+            "rule": "Only one static block is supported (arkts-no-multiple-static-blocks)"
+        }
+    ]
+}
