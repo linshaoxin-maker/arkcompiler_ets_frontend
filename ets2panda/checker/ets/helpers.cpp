@@ -264,6 +264,7 @@ void ETSChecker::IterateInVariableContext(varbinder::Variable *const var)
     // done in the proper context, and have to enter the scope where the given variable is declared, so reference
     // resolution works properly
     auto *iter = var->Declaration()->Node()->Parent();
+
     while (iter != nullptr) {
         if (iter->IsMethodDefinition()) {
             auto *methodDef = iter->AsMethodDefinition();
@@ -450,9 +451,9 @@ std::pair<const varbinder::Variable *, const ETSObjectType *> ETSChecker::FindVa
     return {resolved, classType};
 }
 
-varbinder::Variable *ETSChecker::FindVariableInGlobal(const ir::Identifier *const identifier)
+varbinder::Variable *ETSChecker::FindVariableInGlobal(const util::StringView name)
 {
-    return Scope()->FindInGlobal(identifier->Name(), varbinder::ResolveBindingOptions::ALL).variable;
+    return Scope()->FindInGlobal(name, varbinder::ResolveBindingOptions::ALL).variable;
 }
 
 bool ETSChecker::IsVariableStatic(const varbinder::Variable *var)
@@ -820,15 +821,32 @@ Type *ETSChecker::ResolveIdentifier(ir::Identifier *const ident)
     if (resolved == nullptr) {
         // If the reference is not found already in the current class, then it is not bound to the class, so we have to
         // find the reference in the global class first, then in the global scope
-        resolved = FindVariableInGlobal(ident);
+        resolved = FindVariableInGlobal(ident->Name());
     }
 
-    ValidateResolvedIdentifier(ident, resolved);
+    if (UNLIKELY(debugInfoLookup_.has_value()) && resolved == nullptr) {
+        // Lookup identifier in debug info
+        // if ident is class then this funtion create declaration of this class
+        std::cout << "income ident = " << ident->Name() << std::endl;
+        debugInfoLookup_->LookupByName(ident->Name());
 
+        resolved = FindVariableInFunctionScope(ident->Name());
+        if (resolved == nullptr) {
+            resolved = FindVariableInGlobal(ident->Name());
+        }
+    }
+    
+    ValidateResolvedIdentifier(ident, resolved);
     ValidatePropertyAccess(resolved, Context().ContainingClass(), ident->Start());
     SaveCapturedVariable(resolved, ident);
 
     ident->SetVariable(resolved);
+
+    // static int indicator = 0;
+    // if (ident->Name() == "A" && indicator-- == 0) {
+    //     std::cout << Program()->Dump() << std::endl;
+    // }
+
     return GetTypeOfVariable(resolved);
 }
 

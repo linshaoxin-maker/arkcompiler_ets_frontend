@@ -152,6 +152,23 @@ void DebugInfoDumper::WriteVariableInfo(const pandasm::debuginfo::LocalVariable 
     ss_ << "}";
 }
 
+void DebugInfoDumper::WriteSignature(const ark::pandasm::Function &function)
+{
+    ss_ << std::endl;
+    indent_++;
+    Indent();
+    ss_ << "\"signature\": {";
+    WriteProperty("retType", function.returnType.GetName());
+
+    indent_++;
+    WrapArray("params", function.params, false);
+
+    ss_ << std::endl;
+    indent_--;
+    Indent();
+    ss_ << "},";
+}
+
 void DebugInfoDumper::Dump()
 {
     ss_ << "{\n";
@@ -165,30 +182,21 @@ void DebugInfoDumper::Dump()
         indent_++;
         Indent();
         ss_ << "{";
+
         WriteProperty("name", iter->first);
-        ss_ << std::endl;
-
-        indent_++;
-        Indent();
-        ss_ << "\"signature\": {";
-        WriteProperty("retType", iter->second.returnType.GetName());
-        indent_++;
-        WrapArray("params", iter->second.params, false);
-        indent_ -= 2U;
-        ss_ << std::endl;
-        Indent();
-        ss_ << "},";
-
+        WriteSignature(iter->second);
         WrapArray("ins", iter->second.ins);
         WrapArray("variables", iter->second.localVariableDebug);
+        indent_--;
         WriteProperty("sourceFile", iter->second.sourceFile);
         WriteProperty("sourceCode", iter->second.sourceCode);
         // icSize - parameterLength - funcName
         WriteMetaData(iter->second.metadata->GetAnnotations());
 
-        indent_--;
+        ss_ << std::endl;
         Indent();
         ss_ << "}";
+        indent_--;
 
         if (std::next(iter) != prog_->functionTable.end()) {
             ss_ << ",";
@@ -197,7 +205,6 @@ void DebugInfoDumper::Dump()
         ss_ << std::endl;
     }
 
-    indent_--;
     Indent();
     ss_ << "]" << std::endl;
     ss_ << "}";

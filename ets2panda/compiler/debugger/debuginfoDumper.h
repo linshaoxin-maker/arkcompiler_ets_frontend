@@ -41,6 +41,7 @@ private:
     void WriteProperty(const char *key, const Value &value, bool comma = true);
     void WritePosInfo(const pandasm::debuginfo::Ins &posInfo);
     void WriteVariableInfo(const pandasm::debuginfo::LocalVariable &localVariableDebug);
+    void WriteSignature(const ark::pandasm::Function &function);
     void Indent();
 
     const pandasm::Program *prog_;

@@ -102,6 +102,7 @@ struct CompilerOptions {
     bool dumpAsm {};
     bool dumpDebugInfo {};
     bool parseOnly {};
+    std::string evalExpr {};
     bool verifierAllChecks {};
     bool verifierFullProgram {};
     std::string stdLib {};

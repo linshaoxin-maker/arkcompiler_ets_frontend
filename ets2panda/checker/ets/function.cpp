@@ -1285,7 +1285,7 @@ void ETSChecker::CheckCapturedVariable(ir::AstNode *const node, varbinder::Varia
             }
 
             if (resolved == nullptr) {
-                resolved = FindVariableInGlobal(identNode);
+                resolved = FindVariableInGlobal(identNode->Name());
             }
 
             if (resolved == var) {
@@ -1638,7 +1638,7 @@ static ArenaVector<ir::Expression *> ResolveCallParametersForLambdaFuncBody(ETSC
         auto *const paramIdent = allocator->New<ir::Identifier>(param->Ident()->Name(), allocator);
         paramIdent->SetVariable(param->Variable());
         paramIdent->SetTsType(param->Variable()->TsType());
-
+ 
         for (size_t i = 0; i < paramsNum; i++) {
             auto *idx = allocator->New<ir::NumberLiteral>(lexer::Number(static_cast<int>(i)));
             auto *arg = allocator->New<ir::MemberExpression>(paramIdent, idx, ir::MemberExpressionKind::ELEMENT_ACCESS,

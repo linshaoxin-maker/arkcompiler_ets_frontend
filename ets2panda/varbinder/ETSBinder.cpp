@@ -134,7 +134,7 @@ void ETSBinder::LookupTypeReference(ir::Identifier *ident, bool allowDynamicName
             }
         }
     }
-
+    return;
     ThrowUnresolvableType(ident->Start(), name);
 }
 

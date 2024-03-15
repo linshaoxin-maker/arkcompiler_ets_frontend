@@ -375,9 +375,13 @@ ir::ClassStaticBlock *ETSChecker::CreateDynamicCallClassInitializer(varbinder::C
 void ETSChecker::BuildClass(util::StringView name, const ClassBuilder &builder)
 {
     auto *classId = AllocNode<ir::Identifier>(name, Allocator());
+    std::cout << "{" << classId->Start().index << " " << classId->Name() << std::endl;
+    std::cout << "ppppppppppppppppppppppppppppppp\n";
+    ASSERT(classId != nullptr)
     auto [decl, var] = VarBinder()->NewVarDecl<varbinder::ClassDecl>(classId->Start(), classId->Name());
+    std::cout << "llllllllllllll\n";
     classId->SetVariable(var);
-
+std::cout << "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz\n";
     auto classCtx = varbinder::LexicalScope<varbinder::ClassScope>(VarBinder());
 
     auto *classDef = AllocNode<ir::ClassDefinition>(Allocator(), classId, ir::ClassDefinitionModifiers::DECLARATION,
@@ -388,12 +392,12 @@ void ETSChecker::BuildClass(util::StringView name, const ClassBuilder &builder)
         Allocator()->New<checker::ETSObjectType>(Allocator(), classDef->Ident()->Name(), classDef->Ident()->Name(),
                                                  classDef, checker::ETSObjectFlags::CLASS, Relation());
     classDef->SetTsType(classDefType);
-
+std::cout << "fffffffffffffffffffffffff\n";
     auto *classDecl = AllocNode<ir::ClassDeclaration>(classDef, Allocator());
     classDecl->SetParent(VarBinder()->TopScope()->Node());
     classDef->Scope()->BindNode(classDecl);
     decl->BindNode(classDef);
-
+std::cout << "gggggggggggggggggg\n";
     VarBinder()->Program()->Ast()->Statements().push_back(classDecl);
 
     varbinder::BoundContext boundCtx(VarBinder()->AsETSBinder()->GetGlobalRecordTable(), classDef);
@@ -530,8 +534,8 @@ static void AddMethodToClass(varbinder::ClassScope *classScope, varbinder::Varia
 }
 
 template <bool IS_STATIC>
-ir::MethodDefinition *ETSChecker::CreateClassMethod(varbinder::ClassScope *classScope, const std::string_view name,
-                                                    ir::ModifierFlags modifierFlags, const MethodBuilder &builder)
+ir::MethodDefinition *ETSChecker::CreateClassMethod(varbinder::ClassScope *classScope, util::StringView const name,
+                                                    ir::ModifierFlags modifierFlags, const MethodBuilder &builder, bool isEmpty)
 {
     auto classCtx = varbinder::LexicalScope<varbinder::LocalScope>::Enter(VarBinder(), classScope->StaticMethodScope());
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
@@ -539,14 +543,31 @@ ir::MethodDefinition *ETSChecker::CreateClassMethod(varbinder::ClassScope *class
     auto *scope = Allocator()->New<varbinder::FunctionScope>(Allocator(), paramScope);
     auto *id = AllocNode<ir::Identifier>(name, Allocator());
 
+    scope->BindParamScope(paramScope);
+    paramScope->BindFunctionScope(scope);
+    
     ArenaVector<ir::Statement *> statements(Allocator()->Adapter());
     Type *returnType = nullptr;
 
     builder(scope, &statements, &params, &returnType);
 
-    auto *body = AllocNode<ir::BlockStatement>(Allocator(), std::move(statements));
-    body->SetScope(scope);
+    ir::BlockStatement *body = nullptr;
+    if (!isEmpty) {
+        body = AllocNode<ir::BlockStatement>(Allocator(), std::move(statements));
+        body->SetScope(scope);
+    }
 
+    auto *signatureInfo = CreateSignatureInfo();
+    signatureInfo->restVar = nullptr;
+    signatureInfo->minArgCount = params.size() + !IS_STATIC;
+    for (size_t idx = 0; idx < params.size(); ++idx) {
+        auto *paramId = static_cast<ir::ETSParameterExpression *>(params[idx])->Ident();
+        auto *paramExpr = static_cast<ir::ETSParameterExpression *>(params[idx]->Clone(Allocator(), paramId->Parent()));
+        signatureInfo->params.push_back(paramExpr->Variable()->AsLocalVariable());
+    }
+
+    std::cout << signatureInfo->minArgCount << std::endl;
+    
     auto *func = AllocNode<ir::ScriptFunction>(
         ir::FunctionSignature(nullptr, std::move(params), nullptr), body,
         ir::ScriptFunction::ScriptFunctionData {ir::ScriptFunctionFlags::METHOD, modifierFlags});
@@ -555,11 +576,7 @@ ir::MethodDefinition *ETSChecker::CreateClassMethod(varbinder::ClassScope *class
     scope->BindNode(func);
     func->SetIdent(id);
     paramScope->BindNode(func);
-    scope->BindParamScope(paramScope);
-    paramScope->BindFunctionScope(scope);
 
-    auto *signatureInfo = CreateSignatureInfo();
-    signatureInfo->restVar = nullptr;
     auto *signature = CreateSignature(signatureInfo, returnType, func);
     if constexpr (IS_STATIC) {
         signature->AddSignatureFlag(SignatureFlags::STATIC);
@@ -589,6 +606,16 @@ ir::MethodDefinition *ETSChecker::CreateClassMethod(varbinder::ClassScope *class
     AddMethodToClass<IS_STATIC>(classScope, var, signature);
 
     return method;
+}
+
+ir::MethodDefinition *ETSChecker::CreateClassMethod(bool isStatic, varbinder::ClassScope *classScope, 
+                                                    util::StringView const name,
+                                                    ir::ModifierFlags modifierFlags, const MethodBuilder &builder, bool isEmpty)
+{
+    if (isStatic) {
+        return CreateClassMethod<true>(classScope, name, modifierFlags, builder, isEmpty);
+    }
+    return CreateClassMethod<false>(classScope, name, modifierFlags, builder, isEmpty);
 }
 
 ir::MethodDefinition *ETSChecker::CreateDynamicModuleClassInitMethod(varbinder::ClassScope *classScope)
