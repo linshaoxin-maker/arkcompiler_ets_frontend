@@ -709,7 +709,7 @@ export class TsUtils {
     return false;
   }
 
-  private findProperty(type: ts.Type, name: string): ts.Symbol | undefined {
+  findProperty(type: ts.Type, name: string): ts.Symbol | undefined {
     const properties = this.tsTypeChecker.getPropertiesOfType(type);
     if (properties?.length) {
       for (const prop of properties) {
@@ -822,8 +822,7 @@ export class TsUtils {
     return true;
   }
 
-  private validateField(type: ts.Type, prop: ts.PropertyAssignment): boolean {
-    // Issue 15497: Use unescaped property name to find correpsponding property.
+  getPropertySymbol(type: ts.Type, prop: ts.PropertyAssignment): ts.Symbol | undefined {
     const propNameSymbol = this.tsTypeChecker.getSymbolAtLocation(prop.name);
     const propName = propNameSymbol ?
       ts.symbolName(propNameSymbol) :
@@ -831,6 +830,12 @@ export class TsUtils {
         ts.idText(prop.name) :
         prop.name.getText();
     const propSym = this.findProperty(type, propName);
+    return propSym;
+  }
+
+  private validateField(type: ts.Type, prop: ts.PropertyAssignment): boolean {
+    // Issue 15497: Use unescaped property name to find correpsponding property.
+    const propSym = this.getPropertySymbol(type, prop);
     if (!propSym?.declarations?.length) {
       return false;
     }
@@ -1604,5 +1609,67 @@ export class TsUtils {
     }
 
     return undefined;
+  }
+
+  static destructuringAssignmentHasSpreadOperator(node: ts.AssignmentPattern): boolean {
+    if (ts.isArrayLiteralExpression(node)) {
+      return node.elements.some((x) => {
+        if (ts.isSpreadElement(x)) {
+          return true;
+        }
+        if (ts.isObjectLiteralExpression(x) || ts.isArrayLiteralExpression(x)) {
+          return TsUtils.destructuringAssignmentHasSpreadOperator(x);
+        }
+        return false;
+      });
+    }
+
+    return node.properties.some((x) => {
+      if (ts.isSpreadAssignment(x)) {
+        return true;
+      }
+      if (ts.isPropertyAssignment(x) &&
+        (ts.isObjectLiteralExpression(x.initializer) || ts.isArrayLiteralExpression(x.initializer))
+      ) {
+        return TsUtils.destructuringAssignmentHasSpreadOperator(x.initializer);
+      }
+      return false;
+    });
+  }
+
+  static destructuringDeclarationHasSpreadOperator(node: ts.BindingPattern): boolean {
+    return node.elements.some((x) => {
+      if (ts.isBindingElement(x)) {
+        if (x.dotDotDotToken) {
+          return true;
+        }
+        if (ts.isArrayBindingPattern(x.name) || ts.isObjectBindingPattern(x.name)) {
+          return TsUtils.destructuringDeclarationHasSpreadOperator(x.name);
+        }
+      }
+      return false;
+    });
+  }
+
+  static hasNestedObjectDestructuring(node: ts.ArrayBindingOrAssignmentPattern): boolean {
+    if (ts.isArrayLiteralExpression(node)) {
+      return node.elements.some((x) => {
+        const elem = ts.isSpreadElement(x) ? x.expression : x;
+        if (ts.isArrayLiteralExpression(elem)) {
+          return TsUtils.hasNestedObjectDestructuring(elem);
+        }
+        return ts.isObjectLiteralExpression(elem);
+      });
+    }
+
+    return node.elements.some((x) => {
+      if (ts.isBindingElement(x)) {
+        if (ts.isArrayBindingPattern(x.name)) {
+          return TsUtils.hasNestedObjectDestructuring(x.name);
+        }
+        return ts.isObjectBindingPattern(x.name);
+      }
+      return false;
+    });
   }
 }

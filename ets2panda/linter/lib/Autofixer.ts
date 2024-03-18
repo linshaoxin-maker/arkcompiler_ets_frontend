@@ -32,11 +32,7 @@ export const AUTOFIX_ALL: AutofixInfo = {
  * algorithm is improved to guarantee that fixes can be applied
  * safely and won't break program code.
  */
-const UNSAFE_FIXES: FaultID[] = [
-  FaultID.LiteralAsPropertyName,
-  FaultID.PropertyAccessByIndex,
-  FaultID.PrivateIdentifier
-];
+const UNSAFE_FIXES: FaultID[] = [];
 
 export interface Autofix {
   replacementText: string;
@@ -100,12 +96,13 @@ export function fixPropertyAccessByIndex(node: ts.Node): Autofix[] | undefined {
 export function fixFunctionExpression(
   funcExpr: ts.FunctionExpression,
   params: ts.NodeArray<ts.ParameterDeclaration> = funcExpr.parameters,
+  typeParams: ts.NodeArray<ts.TypeParameterDeclaration> | undefined = funcExpr.typeParameters,
   retType: ts.TypeNode | undefined = funcExpr.type,
   modifiers: readonly ts.Modifier[] | undefined
 ): Autofix {
   let arrowFunc: ts.Expression = ts.factory.createArrowFunction(
     modifiers,
-    undefined,
+    typeParams,
     params,
     retType,
     ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
@@ -145,6 +142,38 @@ export function fixTypeAssertion(typeAssertion: ts.TypeAssertion): Autofix {
   const asExpr = ts.factory.createAsExpression(typeAssertion.expression, typeAssertion.type);
   const text = printer.printNode(ts.EmitHint.Unspecified, asExpr, typeAssertion.getSourceFile());
   return { start: typeAssertion.getStart(), end: typeAssertion.getEnd(), replacementText: text };
+}
+
+export function fixCommaOperator(tsNode: ts.Node): Autofix[] {
+  const tsExprNode = tsNode as ts.BinaryExpression;
+  const text = recursiveCommaOperator(tsExprNode);
+  return [{ start: tsExprNode.parent.getStart(), end: tsExprNode.parent.getEnd(), replacementText: text }];
+}
+
+function recursiveCommaOperator(tsExprNode: ts.BinaryExpression): string {
+  let text = '';
+  if (tsExprNode.operatorToken.kind !== ts.SyntaxKind.CommaToken) {
+    const midExpr = ts.factory.createExpressionStatement(tsExprNode);
+    const midText = printer.printNode(ts.EmitHint.Unspecified, midExpr, tsExprNode.getSourceFile());
+    return midText;
+  }
+
+  if (tsExprNode.left.kind === ts.SyntaxKind.BinaryExpression) {
+    text += recursiveCommaOperator(tsExprNode.left as ts.BinaryExpression);
+
+    const rightExpr = ts.factory.createExpressionStatement(tsExprNode.right);
+    const rightText = printer.printNode(ts.EmitHint.Unspecified, rightExpr, tsExprNode.getSourceFile());
+    text += '\n' + rightText;
+  } else {
+    const leftExpr = ts.factory.createExpressionStatement(tsExprNode.left);
+    const rightExpr = ts.factory.createExpressionStatement(tsExprNode.right);
+
+    const leftText = printer.printNode(ts.EmitHint.Unspecified, leftExpr, tsExprNode.getSourceFile());
+    const rightText = printer.printNode(ts.EmitHint.Unspecified, rightExpr, tsExprNode.getSourceFile());
+    text = leftText + '\n' + rightText;
+  }
+
+  return text;
 }
 
 const printer: ts.Printer = ts.createPrinter({

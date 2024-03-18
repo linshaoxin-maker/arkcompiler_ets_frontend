@@ -134,7 +134,6 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMap
     builtinNameMappings_.emplace("LongBox", GlobalTypeId::ETS_LONG_BOX_BUILTIN);
     builtinNameMappings_.emplace("FloatBox", GlobalTypeId::ETS_FLOAT_BOX_BUILTIN);
     builtinNameMappings_.emplace("DoubleBox", GlobalTypeId::ETS_DOUBLE_BOX_BUILTIN);
-    builtinNameMappings_.emplace("void", GlobalTypeId::ETS_VOID_BUILTIN);
     builtinNameMappings_.emplace("never", GlobalTypeId::ETS_NEVER_BUILTIN);
 
     // ETS escompat layer
@@ -143,7 +142,6 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMap
     builtinNameMappings_.emplace("Error", GlobalTypeId::ETS_ERROR_BUILTIN);
     builtinNameMappings_.emplace("OutOfMemoryError", GlobalTypeId::ETS_OUT_OF_MEMORY_ERROR_BUILTIN);
     builtinNameMappings_.emplace("NoSuchMethodError", GlobalTypeId::ETS_NO_SUCH_METHOD_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("AssertionError", GlobalTypeId::ETS_ASSERTION_ERROR_BUILTIN);
     builtinNameMappings_.emplace("DivideByZeroError", GlobalTypeId::ETS_DIVIDE_BY_ZERO_ERROR_BUILTIN);
     builtinNameMappings_.emplace("NullPointerError", GlobalTypeId::ETS_NULL_POINTER_ERROR_BUILTIN);
     builtinNameMappings_.emplace("UncatchedExceptionError", GlobalTypeId::ETS_UNCATCHED_EXCEPTION_ERROR_BUILTIN);
@@ -331,11 +329,6 @@ Type *GlobalTypesHolder::GlobalETSStringLiteralType()
 Type *GlobalTypesHolder::GlobalETSVoidType()
 {
     return globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_VOID));
-}
-
-Type *GlobalTypesHolder::GlobalBuiltinVoidType()
-{
-    return globalTypes_.at(static_cast<std::size_t>(GlobalTypeId::ETS_VOID_BUILTIN));
 }
 
 Type *GlobalTypesHolder::GlobalETSObjectType()

@@ -25,6 +25,7 @@
 #include "checker/types/ets/shortType.h"
 #include "generated/signatures.h"
 #include "ir/base/classDefinition.h"
+#include "ir/statements/classDeclaration.h"
 #include "ir/base/scriptFunction.h"
 #include "ir/ets/etsScript.h"
 #include "ir/expressions/identifier.h"
@@ -228,7 +229,6 @@ std::map<util::StringView, GlobalTypeId> &GetNameToTypeIdMap()
         {compiler::Signatures::BUILTIN_LONG_BOX_CLASS, GlobalTypeId::ETS_LONG_BOX_BUILTIN},
         {compiler::Signatures::BUILTIN_FLOAT_BOX_CLASS, GlobalTypeId::ETS_FLOAT_BOX_BUILTIN},
         {compiler::Signatures::BUILTIN_DOUBLE_BOX_CLASS, GlobalTypeId::ETS_DOUBLE_BOX_BUILTIN},
-        {compiler::Signatures::BUILTIN_VOID_CLASS, GlobalTypeId::ETS_VOID_BUILTIN},
     };
 
     return nameToTypeId;
@@ -244,7 +244,6 @@ std::map<util::StringView, std::function<ETSObjectType *(const ETSChecker *)>> &
         {compiler::Signatures::BUILTIN_ERROR_CLASS, &ETSChecker::GlobalBuiltinErrorType},
         {compiler::Signatures::BUILTIN_TYPE_CLASS, &ETSChecker::GlobalBuiltinTypeType},
         {compiler::Signatures::BUILTIN_PROMISE_CLASS, &ETSChecker::GlobalBuiltinPromiseType},
-        {compiler::Signatures::BUILTIN_VOID_CLASS, &ETSChecker::GlobalBuiltinVoidType},
     };
 
     return nameToGlobalType;
@@ -382,41 +381,51 @@ ETSEnumType *ETSChecker::CreateETSEnumType(ir::TSEnumDeclaration const *const en
         memberVar->SetTsType(enumLiteralType);
     }
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const namesArrayIdent = CreateEnumNamesArray(enumType);
 
     auto *identClone = namesArrayIdent->Clone(Allocator(), nullptr);
     identClone->SetTsType(namesArrayIdent->TsType());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const getNameMethod = CreateEnumGetNameMethod(identClone, enumType);
     enumType->SetGetNameMethod(getNameMethod);
 
     identClone = namesArrayIdent->Clone(Allocator(), nullptr);
     identClone->SetTsType(namesArrayIdent->TsType());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const valueOfMethod = CreateEnumValueOfMethod(identClone, enumType);
     enumType->SetValueOfMethod(valueOfMethod);
 
     identClone = namesArrayIdent->Clone(Allocator(), nullptr);
     identClone->SetTsType(namesArrayIdent->TsType());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const fromIntMethod = CreateEnumFromIntMethod(identClone, enumType);
     enumType->SetFromIntMethod(fromIntMethod);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const valuesArrayIdent = CreateEnumValuesArray(enumType);
 
     identClone = valuesArrayIdent->Clone(Allocator(), nullptr);
     identClone->SetTsType(valuesArrayIdent->TsType());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const getValueMethod = CreateEnumGetValueMethod(identClone, enumType);
     enumType->SetGetValueMethod(getValueMethod);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const stringValuesArrayIdent = CreateEnumStringValuesArray(enumType);
 
     identClone = stringValuesArrayIdent->Clone(Allocator(), nullptr);
     identClone->SetTsType(stringValuesArrayIdent->TsType());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const toStringMethod = CreateEnumToStringMethod(identClone, enumType);
     enumType->SetToStringMethod(toStringMethod);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const itemsArrayIdent = CreateEnumItemsArray(enumType);
 
     identClone = itemsArrayIdent->Clone(Allocator(), nullptr);
     identClone->SetTsType(itemsArrayIdent->TsType());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const valuesMethod = CreateEnumValuesMethod(identClone, enumType);
     enumType->SetValuesMethod(valuesMethod);
 
@@ -449,23 +458,28 @@ ETSStringEnumType *ETSChecker::CreateETSStringEnumType(ir::TSEnumDeclaration con
         memberVar->SetTsType(enumLiteralType);
     }
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const namesArrayIdent = CreateEnumNamesArray(enumType);
 
     auto *identClone = namesArrayIdent->Clone(Allocator(), nullptr);
     identClone->SetTsType(namesArrayIdent->TsType());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const getNameMethod = CreateEnumGetNameMethod(identClone, enumType);
     enumType->SetGetNameMethod(getNameMethod);
 
     identClone = namesArrayIdent->Clone(Allocator(), nullptr);
     identClone->SetTsType(namesArrayIdent->TsType());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const valueOfMethod = CreateEnumValueOfMethod(identClone, enumType);
     enumType->SetValueOfMethod(valueOfMethod);
 
     identClone = namesArrayIdent->Clone(Allocator(), nullptr);
     identClone->SetTsType(namesArrayIdent->TsType());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const fromIntMethod = CreateEnumFromIntMethod(identClone, enumType);
     enumType->SetFromIntMethod(fromIntMethod);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const stringValuesArrayIdent = CreateEnumStringValuesArray(enumType);
 
     identClone = stringValuesArrayIdent->Clone(Allocator(), nullptr);
@@ -474,10 +488,12 @@ ETSStringEnumType *ETSChecker::CreateETSStringEnumType(ir::TSEnumDeclaration con
     enumType->SetToStringMethod(toStringMethod);
     enumType->SetGetValueMethod(toStringMethod);
 
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *const itemsArrayIdent = CreateEnumItemsArray(enumType);
 
     identClone = itemsArrayIdent->Clone(Allocator(), nullptr);
     identClone->SetTsType(itemsArrayIdent->TsType());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto const valuesMethod = CreateEnumValuesMethod(identClone, enumType);
     enumType->SetValuesMethod(valuesMethod);
 
@@ -499,6 +515,14 @@ ETSObjectType *ETSChecker::CreateNewETSObjectType(util::StringView name, ir::Ast
 
     auto *containingObjType = util::Helpers::GetContainingObjectType(declNode->Parent());
 
+    if (declNode->IsClassDefinition()) {
+        if (declNode->AsClassDefinition()->IsLocal()) {
+            util::UString localName(declNode->AsClassDefinition()->LocalPrefix(), Allocator());
+            localName.Append(name);
+            assemblerName = localName.View();
+        }
+    }
+
     if (containingObjType != nullptr) {
         prefix = containingObjType->AssemblerName();
     } else if (const auto *topStatement = declNode->GetTopStatement();
@@ -507,14 +531,13 @@ ETSObjectType *ETSChecker::CreateNewETSObjectType(util::StringView name, ir::Ast
         ASSERT(declNode->IsTSInterfaceDeclaration());
         assemblerName = declNode->AsTSInterfaceDeclaration()->InternalName();
     } else {
-        auto *program = static_cast<ir::ETSScript *>(declNode->GetTopStatement())->Program();
-        prefix = program->GetPackageName();
+        prefix = static_cast<ir::ETSScript *>(declNode->GetTopStatement())->Program()->GetPackageName();
     }
 
     if (!prefix.Empty()) {
         util::UString fullPath(prefix, Allocator());
         fullPath.Append('.');
-        fullPath.Append(name);
+        fullPath.Append(assemblerName);
         assemblerName = fullPath.View();
     }
 

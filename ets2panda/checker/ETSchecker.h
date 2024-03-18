@@ -54,6 +54,7 @@ using DynamicCallIntrinsicsMap = ArenaUnorderedMap<Language, ArenaUnorderedMap<u
 using DynamicLambdaObjectSignatureMap = ArenaUnorderedMap<std::string, Signature *>;
 using FunctionalInterfaceMap = ArenaUnorderedMap<util::StringView, ETSObjectType *>;
 using TypeMapping = ArenaUnorderedMap<Type const *, Type *>;
+using DynamicCallNamesMap = ArenaMap<ArenaVector<util::StringView>, uint32_t>;
 
 class ETSChecker final : public Checker {
 public:
@@ -61,6 +62,8 @@ public:
         // NOLINTNEXTLINE(readability-redundant-member-init)
         : Checker(),
           arrayTypes_(Allocator()->Adapter()),
+          localClasses_(Allocator()->Adapter()),
+          localClassInstantiations_(Allocator()->Adapter()),
           globalArraySignatures_(Allocator()->Adapter()),
           primitiveWrappers_(Allocator()),
           cachedComputedAbstracts_(Allocator()->Adapter()),
@@ -68,7 +71,8 @@ public:
           dynamicNewIntrinsics_(Allocator()->Adapter()),
           dynamicLambdaSignatureCache_(Allocator()->Adapter()),
           functionalInterfaceCache_(Allocator()->Adapter()),
-          apparentTypes_(Allocator()->Adapter())
+          apparentTypes_(Allocator()->Adapter()),
+          dynamicCallNames_ {{DynamicCallNamesMap(Allocator()->Adapter()), DynamicCallNamesMap(Allocator()->Adapter())}}
     {
     }
 
@@ -109,7 +113,6 @@ public:
     ETSObjectType *GlobalBuiltinJSRuntimeType() const;
     ETSObjectType *GlobalBuiltinJSValueType() const;
     ETSObjectType *GlobalBuiltinBoxType(const Type *contents) const;
-    ETSObjectType *GlobalBuiltinVoidType() const;
 
     ETSObjectType *GlobalBuiltinFunctionType(size_t nargs) const;
     size_t GlobalBuiltinFunctionTypeVariadicThreshold() const;
@@ -159,6 +162,7 @@ public:
     void AddImplementedSignature(std::vector<Signature *> *implementedSignatures, varbinder::LocalVariable *function,
                                  ETSFunctionType *it);
     void CheckInnerClassMembers(const ETSObjectType *classType);
+    void CheckLocalClass(ir::ClassDefinition *classDef, CheckerStatus &checkerStatus);
     void CheckClassDefinition(ir::ClassDefinition *classDef);
     void FindAssignment(const ir::AstNode *node, const varbinder::LocalVariable *classVar, bool &initialized);
     void FindAssignments(const ir::AstNode *node, const varbinder::LocalVariable *classVar, bool &initialized);
@@ -176,6 +180,8 @@ public:
     varbinder::Variable *ResolveInstanceExtension(const ir::MemberExpression *memberExpr);
     void CheckImplicitSuper(ETSObjectType *classType, Signature *ctorSig);
     void CheckValidInheritance(ETSObjectType *classType, ir::ClassDefinition *classDef);
+    void CheckProperties(ETSObjectType *classType, ir::ClassDefinition *classDef, varbinder::LocalVariable *it,
+                         varbinder::LocalVariable *found, ETSObjectType *interfaceFound);
     void TransformProperties(ETSObjectType *classType);
     void CheckGetterSetterProperties(ETSObjectType *classType);
     void AddElementsToModuleObject(ETSObjectType *moduleObj, const util::StringView &str);
@@ -235,6 +241,8 @@ public:
     Type *NegateNumericType(Type *type, ir::Expression *node);
     Type *BitwiseNegateNumericType(Type *type, ir::Expression *node);
     bool CheckBinaryOperatorForBigInt(Type *left, Type *right, ir::Expression *expr, lexer::TokenType op);
+    void CheckBinaryPlusMultDivOperandsForUnionType(const Type *leftType, const Type *rightType,
+                                                    const ir::Expression *left, const ir::Expression *right);
     std::tuple<Type *, Type *> CheckBinaryOperator(ir::Expression *left, ir::Expression *right, ir::Expression *expr,
                                                    lexer::TokenType operationType, lexer::SourcePosition pos,
                                                    bool forcePromotion = false);
@@ -288,6 +296,7 @@ public:
     bool TypeInference(Signature *signature, const ArenaVector<ir::Expression *> &arguments,
                        TypeRelationFlag flags = TypeRelationFlag::NONE);
     bool CheckLambdaAssignable(ir::Expression *param, ir::ScriptFunction *lambda);
+    bool CheckLambdaAssignableUnion(ir::AstNode *typeAnn, ir::ScriptFunction *lambda);
     bool IsCompatibleTypeArgument(ETSTypeParameter *typeParam, Type *typeArgument, const Substitution *substitution);
     Substitution *NewSubstitution()
     {
@@ -305,6 +314,8 @@ public:
                                                     Type *argumentType, Substitution *substitution);
     [[nodiscard]] bool EnhanceSubstitutionForUnion(const ArenaVector<Type *> &typeParams, ETSUnionType *paramUn,
                                                    Type *argumentType, Substitution *substitution);
+    [[nodiscard]] bool EnhanceSubstitutionForArray(const ArenaVector<Type *> &typeParams, ETSArrayType *paramType,
+                                                   Type *argumentType, Substitution *substitution);
     Signature *ValidateParameterlessConstructor(Signature *signature, const lexer::SourcePosition &pos,
                                                 TypeRelationFlag flags);
     Signature *CollectParameterlessConstructor(ArenaVector<Signature *> &signatures, const lexer::SourcePosition &pos,
@@ -315,6 +326,7 @@ public:
     bool ValidateSignatureRequiredParams(Signature *substitutedSig, const ArenaVector<ir::Expression *> &arguments,
                                          TypeRelationFlag flags, const std::vector<bool> &argTypeInferenceRequired,
                                          bool throwError);
+    bool CheckOptionalLambdaFunction(ir::Expression *argument, Signature *substitutedSig, std::size_t index);
     bool ValidateSignatureRestParams(Signature *substitutedSig, const ArenaVector<ir::Expression *> &arguments,
                                      TypeRelationFlag flags, bool throwError);
     Signature *ValidateSignatures(ArenaVector<Signature *> &signatures,
@@ -336,7 +348,7 @@ public:
     void CheckObjectLiteralArguments(Signature *sig, ArenaVector<ir::Expression *> const &arguments);
     Signature *ComposeSignature(ir::ScriptFunction *func, SignatureInfo *signatureInfo, Type *returnType,
                                 varbinder::Variable *nameVar);
-    Type *ComposeReturnType(ir::ScriptFunction *func, util::StringView funcName, bool isConstructSig);
+    Type *ComposeReturnType(ir::ScriptFunction *func);
     SignatureInfo *ComposeSignatureInfo(ir::ScriptFunction *func);
     void ValidateMainSignature(ir::ScriptFunction *func);
     checker::ETSFunctionType *BuildFunctionSignature(ir::ScriptFunction *func, bool isConstructSig = false);
@@ -349,8 +361,8 @@ public:
     void ThrowOverrideError(Signature *signature, Signature *overriddenSignature, const OverrideErrorCode &errorCode);
     void CheckOverride(Signature *signature);
     bool CheckOverride(Signature *signature, ETSObjectType *site);
-    std::tuple<bool, OverrideErrorCode> CheckOverride(Signature *signature, Signature *other);
-    bool IsMethodOverridesOther(Signature *target, Signature *source);
+    OverrideErrorCode CheckOverride(Signature *signature, Signature *other);
+    bool IsMethodOverridesOther(Signature *base, Signature *derived);
     bool IsOverridableIn(Signature *signature);
     [[nodiscard]] bool AreOverrideEquivalent(Signature *s1, Signature *s2);
     [[nodiscard]] bool IsReturnTypeSubstitutable(Signature *s1, Signature *s2);
@@ -399,12 +411,10 @@ public:
     void ResolveLambdaObjectInvoke(ir::ClassDefinition *lambdaObject, Signature *signatureRef, bool ifaceOverride);
     void ResolveLambdaObjectInvoke(ir::ClassDefinition *lambdaObject, ir::ArrowFunctionExpression *lambda,
                                    ir::MethodDefinition *proxyMethod, bool isStatic, bool ifaceOverride);
-    ir::Statement *ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition *lambdaObject, Signature *signatureRef,
-                                                     bool ifaceOverride);
-    ir::Statement *ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition *lambdaObject,
-                                                     ir::ArrowFunctionExpression *lambda,
-                                                     ir::MethodDefinition *proxyMethod, bool isStatic,
-                                                     bool ifaceOverride);
+    void ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition *lambdaObject, Signature *signatureRef,
+                                           bool ifaceOverride);
+    void ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition *lambdaObject, ir::ArrowFunctionExpression *lambda,
+                                           ir::MethodDefinition *proxyMethod, bool isStatic, bool ifaceOverride);
     void CheckCapturedVariables();
     void CheckCapturedVariableInSubnodes(ir::AstNode *node, varbinder::Variable *var);
     void CheckCapturedVariable(ir::AstNode *node, varbinder::Variable *var);
@@ -455,6 +465,8 @@ public:
                                       bool isCondExpr = false);
     Type *HandleBooleanLogicalOperators(Type *leftType, Type *rightType, lexer::TokenType tokenType);
     Type *HandleBooleanLogicalOperatorsExtended(Type *leftType, Type *rightType, ir::BinaryExpression *expr);
+
+    checker::Type *FixOptionalVariableType(varbinder::Variable *const bindingVar, ir::ModifierFlags flags);
     checker::Type *CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *typeAnnotation, ir::Expression *init,
                                             ir::ModifierFlags flags);
     void CheckTruthinessOfType(ir::Expression *expr);
@@ -506,11 +518,13 @@ public:
     std::pair<const varbinder::Variable *, const ETSObjectType *> FindVariableInClassOrEnclosing(
         util::StringView name, const ETSObjectType *classType);
     varbinder::Variable *FindVariableInGlobal(const ir::Identifier *identifier);
+    void ExtraCheckForResolvedError(ir::Identifier *ident);
     void ValidateResolvedIdentifier(ir::Identifier *ident, varbinder::Variable *resolved);
     static bool IsVariableStatic(const varbinder::Variable *var);
     static bool IsVariableGetterSetter(const varbinder::Variable *var);
     bool IsSameDeclarationType(varbinder::LocalVariable *target, varbinder::LocalVariable *compare);
-    void SaveCapturedVariable(varbinder::Variable *var, const lexer::SourcePosition &pos);
+    void SaveCapturedVariable(varbinder::Variable *var, ir::Identifier *ident);
+    bool SaveCapturedVariableInLocalClass(varbinder::Variable *var, ir::Identifier *ident);
     void AddBoxingFlagToPrimitiveType(TypeRelation *relation, Type *target);
     void AddUnboxingFlagToPrimitiveType(TypeRelation *relation, Type *source, Type *self);
     void CheckUnboxedTypeWidenable(TypeRelation *relation, Type *target, Type *self);
@@ -527,6 +541,8 @@ public:
     void CheckNumberOfTypeArguments(ETSObjectType *type, ir::TSTypeParameterInstantiation *typeArgs,
                                     const lexer::SourcePosition &pos);
     ir::BlockStatement *FindFinalizerOfTryStatement(ir::AstNode *startFrom, const ir::AstNode *p);
+    void CheckExceptionClauseType(const std::vector<checker::ETSObjectType *> &exceptions, ir::CatchClause *catchClause,
+                                  checker::Type *clauseType);
     void CheckRethrowingFunction(ir::ScriptFunction *func);
     ETSObjectType *GetRelevantArgumentedTypeFromChild(ETSObjectType *child, ETSObjectType *target);
     util::StringView GetHashFromTypeArguments(const ArenaVector<Type *> &typeArgTypes);
@@ -547,6 +563,7 @@ public:
     static ir::MethodDefinition *GenerateDefaultGetterSetter(ir::ClassProperty *field, varbinder::ClassScope *scope,
                                                              bool isSetter, ETSChecker *checker);
 
+    bool IsInLocalClass(const ir::AstNode *node) const;
     // Exception
     ETSObjectType *CheckExceptionOrErrorType(checker::Type *type, lexer::SourcePosition pos);
 
@@ -575,8 +592,8 @@ public:
     template <typename T>
     Signature *ResolveDynamicCallExpression(ir::Expression *callee, const ArenaVector<T *> &arguments, Language lang,
                                             bool isConstruct);
+    ir::ClassProperty *CreateStaticReadonlyField(varbinder::ClassScope *scope, const char *name);
     void BuildDynamicCallClass(bool isConstruct);
-    void BuildDynamicNewClass(bool isConstruct);
     void BuildDynamicImportClass();
     void BuildLambdaObjectClass(ETSObjectType *functionalInterface, ir::TypeNode *retTypeAnnotation);
     // Trailing lambda
@@ -591,6 +608,16 @@ public:
     void ResolveReturnStatement(checker::Type *funcReturnType, checker::Type *argumentType,
                                 ir::ScriptFunction *containingFunc, ir::ReturnStatement *st);
 
+    auto *DynamicCallNames(bool isConstruct)
+    {
+        return &dynamicCallNames_[static_cast<uint32_t>(isConstruct)];
+    }
+
+    const auto *DynamicCallNames(bool isConstruct) const
+    {
+        return &dynamicCallNames_[static_cast<uint32_t>(isConstruct)];
+    }
+
     std::recursive_mutex *Mutex()
     {
         return &mtx_;
@@ -599,13 +626,18 @@ public:
     template <typename T, typename... Args>
     T *AllocNode(Args &&...args)
     {
-        auto *ret = Allocator()->New<T>(std::forward<Args>(args)...);
-        ret->Iterate([ret](auto *child) { child->SetParent(ret); });
-        return ret;
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
+        return util::NodeAllocator::ForceSetParent<T>(Allocator(), std::forward<Args>(args)...);
     }
 
     ETSObjectType *GetCachedFunctionlInterface(ir::ETSFunctionType *type);
     void CacheFunctionalInterface(ir::ETSFunctionType *type, ETSObjectType *ifaceType);
+    const ArenaList<ir::ClassDefinition *> &GetLocalClasses() const;
+    const ArenaList<ir::ETSNewClassInstanceExpression *> &GetLocalClassInstantiations() const;
+    void AddToLocalClassInstantiationList(ir::ETSNewClassInstanceExpression *newExpr);
+
+    ir::ETSParameterExpression *AddParam(varbinder::FunctionParamScope *paramScope, util::StringView name,
+                                         checker::Type *type);
 
 private:
     using ClassBuilder = std::function<void(varbinder::ClassScope *, ArenaVector<ir::AstNode *> *)>;
@@ -615,10 +647,11 @@ private:
                                              ArenaVector<ir::Expression *> *, Type **)>;
 
     std::pair<const ir::Identifier *, ir::TypeNode *> GetTargetIdentifierAndType(ir::Identifier *ident);
-    void ThrowError(ir::Identifier *ident);
+    [[noreturn]] void ThrowError(ir::Identifier *ident);
     void WrongContextErrorClassifyByType(ir::Identifier *ident, varbinder::Variable *resolved);
     void CheckEtsFunctionType(ir::Identifier *ident, ir::Identifier const *id, ir::TypeNode const *annotation);
-    void NotResolvedError(ir::Identifier *ident);
+    [[noreturn]] void NotResolvedError(ir::Identifier *ident, const varbinder::Variable *classVar,
+                                       const ETSObjectType *classType);
     void ValidateCallExpressionIdentifier(ir::Identifier *ident, Type *type);
     void ValidateNewClassInstanceIdentifier(ir::Identifier *ident, varbinder::Variable *resolved);
     void ValidateMemberIdentifier(ir::Identifier *ident, varbinder::Variable *resolved, Type *type);
@@ -644,9 +677,6 @@ private:
     std::conditional_t<IS_STATIC, ir::ClassStaticBlock *, ir::MethodDefinition *> CreateClassInitializer(
         varbinder::ClassScope *classScope, const ClassInitializerBuilder &builder, ETSObjectType *type = nullptr);
 
-    ir::ETSParameterExpression *AddParam(varbinder::FunctionParamScope *paramScope, util::StringView name,
-                                         checker::Type *type);
-
     template <bool IS_STATIC>
     ir::MethodDefinition *CreateClassMethod(varbinder::ClassScope *classScope, std::string_view name,
                                             ir::ModifierFlags modifierFlags, const MethodBuilder &builder);
@@ -654,6 +684,7 @@ private:
     template <typename T>
     ir::ScriptFunction *CreateDynamicCallIntrinsic(ir::Expression *callee, const ArenaVector<T *> &arguments,
                                                    Language lang);
+    void CreateDynamicCallQualifiedName(ir::Expression *callee, bool isConstruct);
     ir::ClassStaticBlock *CreateDynamicCallClassInitializer(varbinder::ClassScope *classScope, Language lang,
                                                             bool isConstruct);
     ir::ClassStaticBlock *CreateDynamicModuleClassInitializer(varbinder::ClassScope *classScope,
@@ -712,6 +743,8 @@ private:
     bool TryTransformingToStaticInvoke(ir::Identifier *ident, const Type *resolvedType);
 
     ArrayMap arrayTypes_;
+    ArenaList<ir::ClassDefinition *> localClasses_;
+    ArenaList<ir::ETSNewClassInstanceExpression *> localClassInstantiations_;
     GlobalArraySignatureMap globalArraySignatures_;
     PrimitiveWrappers primitiveWrappers_;
     ComputedAbstracts cachedComputedAbstracts_;
@@ -720,6 +753,7 @@ private:
     DynamicLambdaObjectSignatureMap dynamicLambdaSignatureCache_;
     FunctionalInterfaceMap functionalInterfaceCache_;
     TypeMapping apparentTypes_;
+    std::array<DynamicCallNamesMap, 2U> dynamicCallNames_;
     std::recursive_mutex mtx_;
 };
 

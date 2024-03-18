@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -84,6 +84,8 @@ enum class ResolveBindingOptions : uint32_t {
     ALL_VARIABLES = VARIABLES | STATIC_VARIABLES,
     ALL_METHOD = METHODS | STATIC_METHODS,
     ALL_DECLARATION = DECLARATION | STATIC_DECLARATION,
+    ALL_STATIC = STATIC_VARIABLES | STATIC_METHODS | STATIC_DECLARATION,
+    ALL_NON_STATIC = VARIABLES | METHODS | DECLARATION,
 
     LAST = TYPE_ALIASES,
     ALL = (LAST << 1U) - 1U,
@@ -137,22 +139,21 @@ enum class VariableFlags : uint64_t {
     PROTECTED = 1U << 19U,
     PRIVATE = 1U << 20U,
     SYNTHETIC = 1U << 21U,
-    METHOD_REFERENCE = 1U << 22U,
-    LOCAL = 1U << 23U,
+    LOCAL = 1U << 22U,
 
-    LEXICAL = 1U << 24U,
-    LOOP_DECL = 1U << 25U,
-    PER_ITERATION = 1U << 26U,
-    LEXICAL_VAR = 1U << 27U,
-    HOIST = 1U << 28U,
-    VAR = 1U << 29U,
-    INITIALIZED = 1U << 30U,
-    LEXICAL_BOUND = 1U << 31U,
+    LEXICAL = 1U << 23U,
+    LOOP_DECL = 1U << 24U,
+    PER_ITERATION = 1U << 25U,
+    LEXICAL_VAR = 1U << 26U,
+    HOIST = 1U << 27U,
+    VAR = 1U << 28U,
+    INITIALIZED = 1U << 29U,
+    LEXICAL_BOUND = 1U << 30U,
 
-    BUILTIN_TYPE = 1ULL << 32ULL,
+    BUILTIN_TYPE = 1ULL << 31ULL,
 
-    BOXED = 1ULL << 33ULL,
-    GETTER_SETTER = 1ULL << 34ULL,
+    BOXED = 1ULL << 32ULL,
+    GETTER_SETTER = 1ULL << 33ULL,
 
     HOIST_VAR = HOIST | VAR,
     CLASS_OR_INTERFACE = CLASS | INTERFACE,

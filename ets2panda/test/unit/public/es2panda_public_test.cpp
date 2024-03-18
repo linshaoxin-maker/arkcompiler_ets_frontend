@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,14 +16,16 @@
 #include <gtest/gtest.h>
 #include "macros.h"
 #include "public/es2panda_lib.h"
+#include "test/utils/panda_executable_path_getter.h"
 
 class Es2PandaLibTest : public testing::Test {
 public:
     Es2PandaLibTest()
     {
         impl_ = es2panda_GetImpl(ES2PANDA_LIB_VERSION);
+        auto es2pandaPath = test::utils::PandaExecutablePathGetter {}.Get();
         // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-        char const *argv[] = {"../../../bin/es2panda"};
+        char const *argv[] = {es2pandaPath.c_str()};
         cfg_ = impl_->CreateConfig(1, argv);
     }
 
@@ -94,9 +96,8 @@ function main() {
 
     impl_->AstNodeForEach(impl_->ProgramAst(impl_->ContextProgram(ctx)), func, &arg);
 
-    std::vector<std::string> expected {"C",        "n",        "string", "constructor", "constructor", "ETSGLOBAL",
-                                       "_$init$_", "_$init$_", "main",   "main",        "c",           "C",
-                                       "console",  "log",      "c",      "n",           "<cctor>"};
+    std::vector<std::string> expected {"C", "n", "string",  "constructor", "constructor", "main",
+                                       "c", "C", "console", "log",         "c",           "n"};
     ASSERT_EQ(arg.ids, expected);
 
     impl_->DestroyContext(ctx);

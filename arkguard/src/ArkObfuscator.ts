@@ -55,9 +55,11 @@ import {
 import {ListUtil} from './utils/ListUtil';
 import {needReadApiInfo, readProjectProperties, readProjectPropertiesByCollectedPaths} from './common/ApiReader';
 import {ApiExtractor} from './common/ApiExtractor';
-import es6Info from './configs/preset/es6_reserved_properties.json';
+import esInfo from './configs/preset/es_reserved_properties.json';
 import filterFileArray from './configs/test262filename/filterFilenameList.json';
 import {EventList, TimeSumPrinter, TimeTracker} from './utils/PrinterUtils';
+import { ProjectInfo } from './common/type';
+export {FileUtils} from './utils/FileUtils';
 
 export const renameIdentifierModule = require('./transformers/rename/RenameIdentifierTransformer');
 export const renamePropertyModule = require('./transformers/rename/RenamePropertiesTransformer');
@@ -101,6 +103,11 @@ export class ArkObfuscator {
 
   private mTransformers: TransformerFactory<Node>[];
 
+  private projectInfo: ProjectInfo | undefined;
+  
+  // If isKeptCurrentFile is true, both identifier and property obfuscation are skipped.
+  static mIsKeptCurrentFile: boolean = false;
+
   public constructor(sourceFiles?: string[], configPath?: string) {
     this.mSourceFiles = sourceFiles;
     this.mConfigPath = configPath;
@@ -125,6 +132,37 @@ export class ArkObfuscator {
     nameObfuscationConfig.mReservedNames = ListUtil.uniqueMergeList(newReservedNames,
       nameObfuscationConfig?.mReservedNames);
   }
+
+  public setKeepSourceOfPaths(mKeepSourceOfPaths: Set<string>): void {
+    this.mCustomProfiles.mKeepFileSourceCode.mKeepSourceOfPaths = mKeepSourceOfPaths;
+  }
+
+  public get customProfiles(): IOptions {
+    return this.mCustomProfiles;
+  }
+
+  public get configPath(): string {
+    return this.mConfigPath;
+  }
+
+  public static get isKeptCurrentFile() {
+    return ArkObfuscator.mIsKeptCurrentFile;
+  }
+
+  public static set isKeptCurrentFile(isKeptFile: boolean) {
+    ArkObfuscator.mIsKeptCurrentFile = isKeptFile;
+  }
+
+  private isCurrentFileInKeepPaths(customProfiles: IOptions, originalFilePath: string): boolean {
+    const keepFileSourceCode = customProfiles.mKeepFileSourceCode;
+    if (keepFileSourceCode === undefined || keepFileSourceCode.mKeepSourceOfPaths.size === 0) {
+      return false;
+    }
+    const keepPaths: Set<string> = keepFileSourceCode.mKeepSourceOfPaths;
+    const originalPath = FileUtils.toUnixPath(originalFilePath);
+    return keepPaths.has(originalPath);
+  }
+
   /**
    * init ArkObfuscator according to user config
    * should be called after constructor
@@ -153,13 +191,14 @@ export class ArkObfuscator {
 
     this.initPerformancePrinter();
     // load transformers
-    this.mTransformers = TransformerManager.getInstance(this.mCustomProfiles).getTransformers();
+    this.mTransformers = TransformerManager.getInstance(this.mCustomProfiles, this.projectInfo).getTransformers();
 
     if (needReadApiInfo(this.mCustomProfiles)) {
       this.mCustomProfiles.mNameObfuscation.mReservedProperties = ListUtil.uniqueMergeList(
         this.mCustomProfiles.mNameObfuscation.mReservedProperties,
         this.mCustomProfiles.mNameObfuscation.mReservedNames,
-        es6Info);
+        [...esInfo.es2015, ...esInfo.es2016, ...esInfo.es2017, ...esInfo.es2018, ...esInfo.es2019, ...esInfo.es2020,
+          ...esInfo.es2021]);
     }
 
     return true;
@@ -470,8 +509,9 @@ export class ArkObfuscator {
    * @param historyNameCache
    * @param originalFilePath When filename obfuscation is enabled, it is used as the source code path.
    */
-  public async obfuscate(content: SourceFile | string, sourceFilePath: string, previousStageSourceMap?: sourceMap.RawSourceMap, 
-    historyNameCache?: Map<string, string>, originalFilePath?: string): Promise<ObfuscationResultType> {
+  public async obfuscate(content: SourceFile | string, sourceFilePath: string, previousStageSourceMap?: sourceMap.RawSourceMap,
+    historyNameCache?: Map<string, string>, originalFilePath?: string, pathInfo?: ProjectInfo): Promise<ObfuscationResultType> {
+    this.projectInfo = pathInfo;
     let ast: SourceFile;
     let result: ObfuscationResultType = { content: undefined };
     if (this.isObfsIgnoreFile(sourceFilePath)) {
@@ -494,18 +534,24 @@ export class ArkObfuscator {
     if (historyNameCache && historyNameCache.size > 0 && this.mCustomProfiles.mNameObfuscation) {
       renameIdentifierModule.historyNameCache = historyNameCache;
     }
-
-    if (this.mCustomProfiles.mRenameFileName?.mEnable ) {
-      orignalFilePathForSearching = originalFilePath ? originalFilePath : ast.fileName;
+    originalFilePath = originalFilePath ?? ast.fileName;
+    if (this.mCustomProfiles.mRenameFileName?.mEnable) {
+      orignalFilePathForSearching = originalFilePath;
     }
+    ArkObfuscator.isKeptCurrentFile = this.isCurrentFileInKeepPaths(this.mCustomProfiles, originalFilePath);
 
-    if (!this.mCustomProfiles.mRemoveDeclarationComments || !this.mCustomProfiles.mRemoveDeclarationComments.mEnable) {
-      //@ts-ignore
-      ast.reservedComments = undefined;
+    if (ast.isDeclarationFile) {
+      if (!this.mCustomProfiles.mRemoveDeclarationComments || !this.mCustomProfiles.mRemoveDeclarationComments.mEnable) {
+        //@ts-ignore
+        ast.reservedComments = undefined;
+      } else {
+        //@ts-ignore
+        ast.reservedComments ??= this.mCustomProfiles.mRemoveDeclarationComments.mReservedComments ? 
+          this.mCustomProfiles.mRemoveDeclarationComments.mReservedComments : [];
+      }
     } else {
       //@ts-ignore
-      ast.reservedComments ??= this.mCustomProfiles.mRemoveDeclarationComments.mReservedComments ? 
-        this.mCustomProfiles.mRemoveDeclarationComments.mReservedComments : [];
+      ast.reservedComments = this.mCustomProfiles.mRemoveComments? [] : undefined;
     }
 
     performancePrinter?.singleFilePrinter?.startEvent(EventList.OBFUSCATE_AST, performancePrinter.timeSumPrinter);
@@ -535,7 +581,7 @@ export class ArkObfuscator {
       }
       result.sourceMap = sourceMapJson;
       let nameCache = renameIdentifierModule.nameCache;
-      if (this.mCustomProfiles.mEnableNameCache && nameCache) {
+      if (this.mCustomProfiles.mEnableNameCache) {
         const consumer = await new sourceMap.SourceMapConsumer(sourceMapJson as sourceMap.RawSourceMap);
         let newIdentifierCache: Object = this.convertLineInfoForCache(consumer, IDENTIFIER_CACHE);
         let newMemberMethodCache: Object = this.convertLineInfoForCache(consumer, MEM_METHOD_CACHE);

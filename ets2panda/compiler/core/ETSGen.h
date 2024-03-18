@@ -88,7 +88,6 @@ public:
 
     void LoadDefaultValue(const ir::AstNode *node, const checker::Type *type);
     void EmitReturnVoid(const ir::AstNode *node);
-    void LoadBuiltinVoid(const ir::AstNode *node);
     void ReturnAcc(const ir::AstNode *node);
 
     void BranchIfIsInstance(const ir::AstNode *node, VReg srcReg, const checker::Type *target, Label *ifTrue);
@@ -258,6 +257,26 @@ public:
         Sa().Emit<JeqzObj>(node, ifNull);
     }
 
+    void BranchIfUndefined([[maybe_unused]] const ir::AstNode *node, [[maybe_unused]] Label *ifUndefined)
+    {
+#ifdef PANDA_WITH_ETS
+        Sa().Emit<EtsIsundefined>(node);
+        Sa().Emit<Jnez>(node, ifUndefined);
+#else
+        UNREACHABLE();
+#endif  // PANDA_WITH_ETS
+    }
+
+    void BranchIfNotUndefined([[maybe_unused]] const ir::AstNode *node, [[maybe_unused]] Label *ifUndefined)
+    {
+#ifdef PANDA_WITH_ETS
+        Sa().Emit<EtsIsundefined>(node);
+        Sa().Emit<Jeqz>(node, ifUndefined);
+#else
+        UNREACHABLE();
+#endif  // PANDA_WITH_ETS
+    }
+
     void BranchIfNotNull(const ir::AstNode *node, Label *ifNotNull)
     {
         Sa().Emit<JnezObj>(node, ifNotNull);
@@ -377,6 +396,8 @@ public:
     void EmitLocalBoxCtor(ir::AstNode const *node);
     void EmitLocalBoxGet(ir::AstNode const *node, checker::Type const *contentType);
     void EmitLocalBoxSet(ir::AstNode const *node, varbinder::LocalVariable *lhsVar);
+    void EmitPropertyBoxSet(const ir::AstNode *node, const checker::Type *propType, VReg objectReg,
+                            const util::StringView &name);
 
     void LoadArrayLength(const ir::AstNode *node, VReg arrayReg);
     void LoadArrayElement(const ir::AstNode *node, VReg objectReg);
@@ -562,6 +583,12 @@ public:
         CallDynamicImpl<CallShort, Call, CallRange>(node, obj, param2, signature, arguments);
     }
 
+    void CallDynamic(const ir::AstNode *node, VReg &obj, VReg &param2, VReg &param3, checker::Signature *signature,
+                     const ArenaVector<ir::Expression *> &arguments)
+    {
+        CallDynamicImpl<CallShort, Call, CallRange>(node, obj, param2, param3, signature, arguments);
+    }
+
 #ifdef PANDA_WITH_ETS
     // The functions below use ETS specific instructions.
     // Compilation of es2panda fails if ETS plugin is disabled
@@ -704,6 +731,7 @@ private:
     void BinaryDynamicStrictEquality(const ir::AstNode *node, VReg lhs, Label *ifFalse)
     {
         ASSERT(GetAccumulatorType()->IsETSDynamicType() && GetVRegType(lhs)->IsETSDynamicType());
+        RegScope scope(this);
         Ra().Emit<CallShort, 2U>(node, Signatures::BUILTIN_JSRUNTIME_STRICT_EQUAL, lhs, MoveAccToReg(node));
         Ra().Emit<DynCompare>(node, ifFalse);
     }
@@ -990,18 +1018,18 @@ private:
 
         switch (arguments.size()) {
             case 0U: {
-                Ra().Emit<Short, 0>(node, signature->InternalName(), dummyReg_, dummyReg_);
+                Ra().Emit<Short, 0U>(node, signature->InternalName(), dummyReg_, dummyReg_);
                 break;
             }
             case 1U: {
                 COMPILE_ARG(0);
-                Ra().Emit<Short, 1>(node, signature->InternalName(), arg0, dummyReg_);
+                Ra().Emit<Short, 1U>(node, signature->InternalName(), arg0, dummyReg_);
                 break;
             }
             case 2U: {
                 COMPILE_ARG(0);
                 COMPILE_ARG(1);
-                Ra().Emit<Short>(node, signature->InternalName(), arg0, arg1);
+                Ra().Emit<Short, 2U>(node, signature->InternalName(), arg0, arg1);
                 break;
             }
             case 3U: {
@@ -1016,7 +1044,7 @@ private:
                 COMPILE_ARG(1);
                 COMPILE_ARG(2);
                 COMPILE_ARG(3);
-                Ra().Emit<General>(node, signature->InternalName(), arg0, arg1, arg2, arg3);
+                Ra().Emit<General, 4U>(node, signature->InternalName(), arg0, arg1, arg2, arg3);
                 break;
             }
             default: {
@@ -1033,14 +1061,15 @@ private:
     }
 #undef COMPILE_ARG
 
-#define COMPILE_ARG(idx)                                                                                       \
-    ASSERT((idx) < arguments.size());                                                                          \
-    ASSERT((idx) + 2U < signature->Params().size() || signature->RestVar() != nullptr);                        \
-    auto *paramType##idx = (idx) + 2U < signature->Params().size() ? signature->Params()[(idx) + 2U]->TsType() \
-                                                                   : signature->RestVar()->TsType();           \
-    auto ttctx##idx = TargetTypeContext(this, paramType##idx);                                                 \
-    VReg arg##idx = AllocReg();                                                                                \
-    arguments[idx]->Compile(this);                                                                             \
+#define COMPILE_ARG(idx, shift)                                                              \
+    ASSERT((idx) < arguments.size());                                                        \
+    ASSERT((idx) + (shift) < signature->Params().size() || signature->RestVar() != nullptr); \
+    auto *paramType##idx = (idx) + (shift) < signature->Params().size()                      \
+                               ? signature->Params()[(idx) + (shift)]->TsType()              \
+                               : signature->RestVar()->TsType();                             \
+    auto ttctx##idx = TargetTypeContext(this, paramType##idx);                               \
+    VReg arg##idx = AllocReg();                                                              \
+    arguments[idx]->Compile(this);                                                           \
     ApplyConversionAndStoreAccumulator(arguments[idx], arg##idx, paramType##idx)
 
     template <typename Short, typename General, typename Range>
@@ -1056,13 +1085,13 @@ private:
                 break;
             }
             case 1U: {
-                COMPILE_ARG(0);
+                COMPILE_ARG(0, 2U);
                 Ra().Emit<General, 3U>(node, name, obj, param2, arg0, dummyReg_);
                 break;
             }
             case 2U: {
-                COMPILE_ARG(0);
-                COMPILE_ARG(1);
+                COMPILE_ARG(0, 2U);
+                COMPILE_ARG(1, 2U);
                 Ra().Emit<General>(node, name, obj, param2, arg0, arg1);
                 break;
             }
@@ -1081,6 +1110,42 @@ private:
                 }
 
                 Rra().Emit<Range>(node, obj, arguments.size() + 2U, name, obj);
+                break;
+            }
+        }
+    }
+
+    template <typename Short, typename General, typename Range>
+    void CallDynamicImpl(const ir::AstNode *node, VReg &obj, VReg &param2, VReg &param3, checker::Signature *signature,
+                         const ArenaVector<ir::Expression *> &arguments)
+    {
+        RegScope rs(this);
+        const auto name = signature->InternalName();
+
+        switch (arguments.size()) {
+            case 0U: {
+                Ra().Emit<General, 3U>(node, name, obj, param2, param3, dummyReg_);
+                break;
+            }
+            case 1U: {
+                COMPILE_ARG(0, 3U);
+                Ra().Emit<General>(node, name, obj, param2, param3, arg0);
+                break;
+            }
+            default: {
+                size_t index = 0;
+                for (const auto *arg : arguments) {
+                    auto ttctx = TargetTypeContext(this, arg->TsType());
+                    VReg argReg = AllocReg();
+                    arg->Compile(this);
+                    // + 3U since we need to skip first 3 args in signature; first arg is obj,
+                    // second arg is param2, third is param3
+                    auto *argType = signature->Params()[index + 3U]->TsType();
+                    ApplyConversionAndStoreAccumulator(node, argReg, argType);
+                    index++;
+                }
+
+                Rra().Emit<Range>(node, obj, arguments.size() + 3U, name, obj);
                 break;
             }
         }

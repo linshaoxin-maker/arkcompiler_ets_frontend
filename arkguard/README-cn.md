@@ -200,10 +200,7 @@ Arkguard只混淆参数名和局部变量名(通过将它们重新命名为随�
 **注意**：编译生成的源码文件中的注释默认会被全部删除，不支持配置保留。
 ### 保留选项
 
-保留选项只有在使用`enable-property-obfuscation`或`enable-toplevel-obfuscation`以及`-remove-comments`选项时发挥作用。
-
-#### `-keep-property-name` [,identifiers,...]
-
+#### `-keep-property-name` [,identifiers,...] 
 指定你想保留的属性名。比如下面的例子:
 ```
 -keep-property-name
@@ -211,13 +208,25 @@ age
 firstName
 lastName
 ```
+**注意**：该选项在开启`-enable-property-obfuscation`时生效
 
-`-keep-comments`
-保留JsDoc注释的方法与上述属性名的保留方法类似。比如保留某个声明文件中类名为Human的类上方的JsDoc注释：
+`-keep-comments` 
+保留声明文件中元素上方的JsDoc注释。比如想保留声明文件中Human类上方的JsDoc注释，可进行以下配置：
 ```
 -keep-comments
 Human
 ```
+**注意**：
+1. 该选项在开启`-remove-comments`时生效
+2. 当声明文件中某个元素名称被混淆时，该元素上方的JsDoc注释无法通过`-keep-comments`保留。比如当在`-keep-comments`中配置了
+exportClass时，如果下面的类名被混淆，其JsDoc注释无法被保留：
+```
+/**
+** @class exportClass
+*/
+export class exportClass {}
+```
+
 **哪些属性名应该被保留?**
 
 为了保障混淆的正确性，我们建议你保留所有不通过点语法访问的属性。
@@ -298,6 +307,17 @@ const module2 = import(moduleName)    // 动态引用方式无法识别moduleNam
 
 保留指定路径的`.d.ts`文件中的名称。这里的文件路径可以是一个目录，这种情况下目录中所有`.d.ts`文件中的名称都会被保留。
 如果在构建HAR时使用了这个选项，那么文件中的名称会被合并到最后的`obfuscation.txt`文件中。
+
+#### `-keep` path
+保留指定路径中的所有名称(例如变量名、类名、属性名等)不被混淆。这个路径可以是文件与文件夹，若是文件夹，则文件夹下的文件及子文件夹中文件都不混淆。  
+路径仅支持相对路径，`./`与`../`为相对于混淆配置文件所在目录。
+```
+-keep
+./src/main/ets/fileName.ts   // fileName.ts中的名称不混淆
+../folder                    // folder目录下文件及子文件夹中的名称都不混淆
+../oh_modules/json5          // 引用的三方库json5里所有文件中的名称都不混淆
+```
+注：该功能不影响文件名混淆`-enable-filename-obfuscation`的功能
 
 ### 注释
 

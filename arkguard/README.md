@@ -218,8 +218,6 @@ Remove all comments including single line, multi line and JsDoc comments, in a p
 **Note**: `-keep-comments` doesn't work for comments in generated source files, which will be deleted.
 ### Keep options
 
-Keep options are useful only when you use `enable-property-obfuscation`, `enable-toplevel-obfuscation` and `-keep-comments`.
-
 #### `-keep-property-name` [,identifiers,...]
 
 Specifies property names that you want to keep. For example,
@@ -229,13 +227,27 @@ age
 firstName
 lastName
 ```
+**Note**: This option is avaliable when `-enable-property-obfuscation` is enabled.
 
 `-keep-comments`
-You can have the following configs to keep certain JsDoc comments above a class, for example, class human:
+To retain JsDoc comments above elements in declaration files, such as preserving the JsDoc comment above the Human class, 
+you can make the following configuration:
 ```
 -keep-comments
 Human
 ```
+**Note**:
+1. This option is avaliable when `-remove-comments` is enabled.
+2. If the name of an element is obfuscated, the JsDoc comments 
+above that element cannot be kept using `-keep-comments`. For example, when you have exportClass in `-keep-comments`,
+you should make sure that the following class will not be obfuscated, or the JsDoc comments above the class will still be removed:
+```
+/**
+** @class exportClass
+*/
+export class exportClass {}
+```
+
 **What property names should be kept?**
 
 For safety, we would suggest keeping all property names that are not accessed through dot syntax.
@@ -317,6 +329,17 @@ const module2 = import(moduleName)   // dynamic reference cannot identify whethe
 Specifies to keep names in the given `.d.ts` file. Here filepath can be also a directory. If so, then the names in all
 `d.ts` files under the given directory will be kept.
 If your are building HAR with this option, then the kept names will be merged into the resulting `obfuscation.txt`.
+
+#### `-keep` path
+Names(such as variable names, class names, property names, etc.) in the specified path are not obfuscated. This path can be a file or a folder. If it is a folder, the files in the folder and the files in subfolders will not be obfuscated.  
+The path only supports relative paths, `./` and `../` are relative to the directory where the obfuscation configuration file is located.
+```
+-keep
+./src/main/ets/fileName.ts  // The names in fileName.ts are not obfusated.
+../folder                   // The names of files and subfolders in the folder directory are not obfusated.
+../oh_modules/json5         // The names of all files in the referenced library json5 are not obfusated.
+```
+Note: This option does not affect the function of file name obfuscation `-enable-filename-obfuscation`
 
 ### Comments
 

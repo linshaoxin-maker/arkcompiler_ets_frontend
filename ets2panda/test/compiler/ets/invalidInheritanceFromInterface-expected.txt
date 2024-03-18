@@ -762,35 +762,7 @@
                 "expression": false,
                 "params": [],
                 "returnType": {
-                  "type": "ETSTypeReference",
-                  "part": {
-                    "type": "ETSTypeReferencePart",
-                    "name": {
-                      "type": "Identifier",
-                      "name": "void",
-                      "decorators": [],
-                      "loc": {
-                        "start": {
-                          "line": 29,
-                          "column": 18
-                        },
-                        "end": {
-                          "line": 29,
-                          "column": 22
-                        }
-                      }
-                    },
-                    "loc": {
-                      "start": {
-                        "line": 29,
-                        "column": 18
-                      },
-                      "end": {
-                        "line": 29,
-                        "column": 24
-                      }
-                    }
-                  },
+                  "type": "ETSPrimitiveType",
                   "loc": {
                     "start": {
                       "line": 29,
@@ -798,7 +770,7 @@
                     },
                     "end": {
                       "line": 29,
-                      "column": 24
+                      "column": 22
                     }
                   }
                 },
@@ -1129,4 +1101,4 @@
     }
   }
 }
-TypeError: Cannot inherit from interface A because field x is inherited with a different declaration type [invalidInheritanceFromInterface.ets:16:1]
+TypeError: This expression is not callable. [invalidInheritanceFromInterface.ets:25:15]
