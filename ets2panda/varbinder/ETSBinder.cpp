@@ -14,6 +14,7 @@
  */
 
 #include "ETSBinder.h"
+#include <string>
 
 #include "ir/expressions/blockExpression.h"
 #include "ir/expressions/identifier.h"
@@ -60,6 +61,7 @@
 #include "util/ustring.h"
 #include "checker/types/type.h"
 #include "checker/types/ets/types.h"
+#include "variable.h"
 
 namespace ark::es2panda::varbinder {
 
@@ -473,7 +475,23 @@ void ETSBinder::ImportAllForeignBindings(ir::AstNode *const specifier,
             continue;
         }
 
-        if (!importGlobalScope->IsForeignBinding(bindingName) && !var->Declaration()->Node()->IsDefaultExported()) {
+        const bool exported = var->Declaration()->Node()->IsClassDefinition()
+                                  ? var->Declaration()->Node()->Parent()->IsExported()
+                                  : var->Declaration()->Node()->IsExported();
+        if (!importGlobalScope->IsForeignBinding(bindingName) && !var->Declaration()->Node()->IsDefaultExported() &&
+            exported) {
+            auto variable = Program()->GlobalClassScope()->FindLocal(bindingName, ResolveBindingOptions::ALL);
+            if (variable != nullptr && var != variable) {
+                auto type = var->Declaration()->Node()->IsClassDefinition() ? "Class '"
+                            : var->Declaration()->IsFunctionDecl()          ? "Function '"
+                                                                            : "Variable '";
+                auto str = util::Helpers::AppendAll(type, bindingName.Utf8(), "'");
+
+                str += variable->Declaration()->Type() == var->Declaration()->Type()
+                           ? " is already defined."
+                           : " is already defined with different type.";
+                ThrowError(import->Source()->Start(), str);
+            }
             InsertForeignBinding(specifier, import, bindingName, var);
         }
     }
@@ -615,7 +633,6 @@ bool ETSBinder::AddImportSpecifiersToTopBindings(ir::AstNode *const specifier,
 
         TopScope()->InsertForeignBinding(name, var);
     };
-
     const auto *const importSpecifier = specifier->AsImportSpecifier();
 
     if (!importSpecifier->Imported()->IsIdentifier()) {
@@ -686,7 +703,7 @@ ArenaVector<parser::Program *> ETSBinder::GetExternalProgram(const util::StringV
 {
     const auto &extRecords = globalRecordTable_.Program()->ExternalSources();
 
-    auto [name, _] = GetModuleNameFromSource(sourceName);
+    auto [name, _] = GetModuleInfo(sourceName);
     auto res = extRecords.find(name);
     if (res == extRecords.end()) {
         ThrowError(importPath->Start(), "Cannot find import: " + importPath->Str().Mutf8());
@@ -713,20 +730,10 @@ void ETSBinder::AddSpecifiersToTopBindings(ir::AstNode *const specifier, const i
     const auto *const importGlobalScope = importProgram->GlobalScope();
     const auto &globalBindings = importGlobalScope->Bindings();
 
-    auto insertForeignBinding = [this, specifier, import](const util::StringView &name, Variable *var) {
-        if (import->Language().IsDynamic()) {
-            dynamicImportVars_.emplace(var, DynamicImportData {import, specifier, var});
-        }
-
-        TopScope()->InsertForeignBinding(name, var);
-    };
-
-    if (AddImportNamespaceSpecifiersToTopBindings(specifier, globalBindings, importProgram, importGlobalScope,
-                                                  import)) {
-        return;
-    }
-
-    if (AddImportSpecifiersToTopBindings(specifier, globalBindings, import, record, std::move(viewedReExport))) {
+    if (importProgram->SourceFilePath() == Program()->SourceFilePath() ||
+        AddImportNamespaceSpecifiersToTopBindings(specifier, globalBindings, importProgram, importGlobalScope,
+                                                  import) ||
+        AddImportSpecifiersToTopBindings(specifier, globalBindings, import, record, std::move(viewedReExport))) {
         return;
     }
 
@@ -735,12 +742,12 @@ void ETSBinder::AddSpecifiersToTopBindings(ir::AstNode *const specifier, const i
 
     auto item = std::find_if(globalBindings.begin(), globalBindings.end(), predicateFunc);
     if (item == globalBindings.end()) {
-        insertForeignBinding(specifier->AsImportDefaultSpecifier()->Local()->Name(),
+        InsertForeignBinding(specifier, import, specifier->AsImportDefaultSpecifier()->Local()->Name(),
                              FindStaticBinding(record, importPath));
         return;
     }
 
-    insertForeignBinding(specifier->AsImportDefaultSpecifier()->Local()->Name(), item->second);
+    InsertForeignBinding(specifier, import, specifier->AsImportDefaultSpecifier()->Local()->Name(), item->second);
 }
 
 void ETSBinder::HandleCustomNodes(ir::AstNode *childNode)
@@ -1001,6 +1008,31 @@ bool ETSBinder::ImportGlobalPropertiesForNotDefaultedExports(varbinder::Variable
         return false;
     }
 
+    auto variable = Program()->GlobalClassScope()->FindLocal(name, ResolveBindingOptions::ALL);
+    if (variable != nullptr && var != variable) {
+        if (variable->Declaration()->IsFunctionDecl() && var->Declaration()->IsFunctionDecl()) {
+            auto *const currentNode = variable->Declaration()->Node();
+            auto *const method = var->Declaration()->Node()->AsMethodDefinition();
+
+            if (!currentNode->AsMethodDefinition()->HasOverload(method)) {
+                currentNode->AsMethodDefinition()->AddOverload(method);
+                method->Function()->Id()->SetVariable(variable);
+                method->Function()->AddFlag(ir::ScriptFunctionFlags::OVERLOAD);
+                method->Function()->AddFlag(ir::ScriptFunctionFlags::EXTERNAL_OVERLOAD);
+            }
+
+            return true;
+        }
+
+        auto type = var->Declaration()->Node()->IsClassDefinition() ? "Class '"
+                    : var->Declaration()->IsFunctionDecl()          ? "Function '"
+                                                                    : "Variable '";
+        auto str = util::Helpers::AppendAll(type, name.Utf8(), "'");
+        str += variable->Declaration()->Type() == var->Declaration()->Type()
+                   ? " is already defined."
+                   : " is already defined with different type.";
+        ThrowError(classElement->Id()->Start(), str);
+    }
     const auto insRes = TopScope()->InsertForeignBinding(name, var);
     if (!(!insRes.second && insRes.first != TopScope()->Bindings().end()) || !(insRes.first->second != var)) {
         return true;
@@ -1012,17 +1044,16 @@ bool ETSBinder::ImportGlobalPropertiesForNotDefaultedExports(varbinder::Variable
             currentNode->AsMethodDefinition()->AddOverload(method);
             method->Function()->Id()->SetVariable(insRes.first->second);
             method->Function()->AddFlag(ir::ScriptFunctionFlags::OVERLOAD);
+            method->Function()->AddFlag(ir::ScriptFunctionFlags::EXTERNAL_OVERLOAD);
         }
         return true;
     }
 
-    auto str = util::Helpers::AppendAll("Variable '", name.Utf8(), "'");
-    if (insRes.first->second->Declaration()->Type() == var->Declaration()->Type()) {
-        str += " is already defined.";
-    } else {
-        str += " is already defined with different type.";
-    }
-    ThrowError(classElement->Id()->Start(), str);
+    ThrowError(classElement->Id()->Start(),
+               util::Helpers::AppendAll("Variable '", name.Utf8(),
+                                        insRes.first->second->Declaration()->Type() == var->Declaration()->Type()
+                                            ? "' is already defined."
+                                            : "' is already defined with different type."));
 }
 
 void ETSBinder::ImportGlobalProperties(const ir::ClassDefinition *const classDef)

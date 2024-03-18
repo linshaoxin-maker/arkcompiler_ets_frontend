@@ -80,7 +80,8 @@ enum class ScriptFunctionFlags : uint32_t {
     SETTER = 1U << 16U,
     ENTRY_POINT = 1U << 17U,
     INSTANCE_EXTENSION_METHOD = 1U << 18U,
-    HAS_RETURN = 1U << 19U
+    HAS_RETURN = 1U << 19U,
+    EXTERNAL_OVERLOAD = 1U << 20U
 };
 
 enum class TSOperatorType { READONLY, KEYOF, UNIQUE };
