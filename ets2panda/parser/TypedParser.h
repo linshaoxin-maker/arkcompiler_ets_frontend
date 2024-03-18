@@ -64,6 +64,8 @@ protected:
     ir::AstNode *ParseClassElement(const ArenaVector<ir::AstNode *> &properties, ir::ClassDefinitionModifiers modifiers,
                                    ir::ModifierFlags flags = ir::ModifierFlags::NONE,
                                    ir::Identifier *identNode = nullptr) override;
+    ir::AstNode *ParsePropertyOrIndexSignature(ClassElementDescriptor &desc,
+                                               const ArenaVector<ir::AstNode *> &properties);
 
     static bool CheckClassElementInterfaceBody(ir::AstNode *property, ArenaVector<ir::AstNode *> &properties);
     bool CheckClassElement(ir::AstNode *property, ir::MethodDefinition *&ctor,

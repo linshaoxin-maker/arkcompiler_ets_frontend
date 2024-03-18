@@ -24,46 +24,52 @@
 
 namespace panda::es2panda {
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define LANGUAGES(_)   \
-    _(AS, "as", false) \
-    _(JS, "js", true)  \
-    _(TS, "ts", true)  \
-    _(ETS, "ets", false)
-
 class Language {
 public:
     enum class Id {
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TO_ENUM(e, s, d) e,
-        LANGUAGES(TO_ENUM)
-#undef TO_ENUM
-            COUNT
+        AS,
+        JS,
+        TS,
+        ETS,
+
+        COUNT
     };
 
     constexpr explicit Language(Id id) : id_(id) {}
 
     constexpr std::string_view ToString() const
     {
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TO_STR(e, s, d) \
-    if (id_ == Id::e) { \
-        return s;       \
-    }
-        LANGUAGES(TO_STR)
-#undef TO_STR
+        if (id_ == Id::AS) {
+            return "as";
+        }
+        if (id_ == Id::JS) {
+            return "js";
+        }
+        if (id_ == Id::TS) {
+            return "ts";
+        }
+        if (id_ == Id::ETS) {
+            return "ets";
+        }
+
         UNREACHABLE();
     }
 
     static std::optional<Language> FromString(std::string_view str)
     {
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define FROM_STR(e, s, d)       \
-    if (str == (s)) {           \
-        return Language(Id::e); \
-    }
-        LANGUAGES(FROM_STR)
-#undef FROM_STR
+        if (str == "as") {
+            return Language(Id::AS);
+        }
+        if (str == "js") {
+            return Language(Id::JS);
+        }
+        if (str == "ts") {
+            return Language(Id::TS);
+        }
+        if (str == "ets") {
+            return Language(Id::ETS);
+        }
+
         return {};
     }
 
@@ -74,13 +80,19 @@ public:
 
     bool IsDynamic() const
     {
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TO_DYN(e, s, d) \
-    if (id_ == Id::e) { \
-        return d;       \
-    }
-        LANGUAGES(TO_DYN)
-#undef TO_DYN
+        if (id_ == Id::AS) {
+            return false;
+        }
+        if (id_ == Id::JS) {
+            return true;
+        }
+        if (id_ == Id::TS) {
+            return true;
+        }
+        if (id_ == Id::ETS) {
+            return false;
+        }
+
         UNREACHABLE();
     }
 
@@ -101,17 +113,17 @@ public:
     static std::array<Language, COUNT> All()
     {
         return {
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TO_LANG(e, s, d) Language(Id::e),
-            LANGUAGES(TO_LANG)
-#undef TO_LANG
+            Language(Id::AS),
+            Language(Id::JS),
+            Language(Id::TS),
+            Language(Id::ETS),
+
         };
     }
 
 private:
     Id id_;
 };
-
 }  // namespace panda::es2panda
 
 // NOLINTNEXTLINE(cert-dcl58-cpp)

@@ -137,10 +137,16 @@ public:
                                            const varbinder::Scope::VariableMap &globalBindings,
                                            const ArenaVector<parser::Program *> &recordRes);
     Variable *FindStaticBinding(const ArenaVector<parser::Program *> &recordRes, const ir::StringLiteral *importPath);
+    util::StringView GetSourceName(const ir::ETSImportDeclaration *import, ir::StringLiteral *path);
+    const util::StringView &GetLocalName(const ir::ImportSpecifier *importSpecifier, const util::StringView &imported,
+                                         const ir::StringLiteral *importPath);
     void AddSpecifiersToTopBindings(
         ir::AstNode *specifier, const ir::ETSImportDeclaration *import, ir::StringLiteral *path,
         std::vector<ir::ETSImportDeclaration *> viewedReExport = std::vector<ir::ETSImportDeclaration *>());
     void AddDynamicSpecifiersToTopBindings(ir::AstNode *specifier, const ir::ETSImportDeclaration *import);
+    void AddSpecifiers(const ir::ETSImportDeclaration *decl, const util::StringView &specifierName,
+                       ir::StringLiteral *dirName, std::unordered_set<std::string> &exportedNames,
+                       const lexer::SourcePosition &pos);
 
     void ResolveInterfaceDeclaration(ir::TSInterfaceDeclaration *decl);
     void ResolveMethodDefinition(ir::MethodDefinition *methodDef);

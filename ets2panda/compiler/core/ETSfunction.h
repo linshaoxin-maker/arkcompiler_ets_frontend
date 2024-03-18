@@ -38,6 +38,7 @@ private:
     static void CompileSourceBlock(ETSGen *etsg, const ir::BlockStatement *block);
     static void CompileFunction(ETSGen *etsg);
     static void CallImplicitCtor(ETSGen *etsg);
+    static void HandleEnumConstructorStatic(ETSGen *etsg);
 };
 }  // namespace panda::es2panda::compiler
 

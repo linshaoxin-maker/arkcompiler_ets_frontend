@@ -1229,31 +1229,32 @@ void JSCompiler::Compile(const ir::ThisExpression *expr) const
     }
 }
 
+void HandleIdentifier(PandaGen *pg, const ir::UnaryExpression *expr)
+{
+    auto result = pg->Scope()->Find(expr->Argument()->AsIdentifier()->Name());
+    if (result.variable == nullptr || (result.scope->IsGlobalScope() && result.variable->IsGlobalVariable())) {
+        compiler::RegScope rs(pg);
+        compiler::VReg variable = pg->AllocReg();
+        compiler::VReg global = pg->AllocReg();
+        pg->LoadConst(expr, compiler::Constant::JS_GLOBAL);
+        pg->StoreAccumulator(expr, global);
+        pg->LoadAccumulatorString(expr, expr->Argument()->AsIdentifier()->Name());
+        pg->StoreAccumulator(expr, variable);
+        pg->DeleteObjProperty(expr, global, variable);
+    } else {
+        // Otherwise it is a local variable which can't be deleted and we just
+        // return false.
+        pg->LoadConst(expr, compiler::Constant::JS_FALSE);
+    }
+}
+
 void JSCompiler::Compile(const ir::UnaryExpression *expr) const
 {
     PandaGen *pg = GetPandaGen();
     switch (expr->OperatorType()) {
         case lexer::TokenType::KEYW_DELETE: {
             if (expr->Argument()->IsIdentifier()) {
-                auto result = pg->Scope()->Find(expr->Argument()->AsIdentifier()->Name());
-                if (result.variable == nullptr ||
-                    (result.scope->IsGlobalScope() && result.variable->IsGlobalVariable())) {
-                    compiler::RegScope rs(pg);
-                    compiler::VReg variable = pg->AllocReg();
-                    compiler::VReg global = pg->AllocReg();
-
-                    pg->LoadConst(expr, compiler::Constant::JS_GLOBAL);
-                    pg->StoreAccumulator(expr, global);
-
-                    pg->LoadAccumulatorString(expr, expr->Argument()->AsIdentifier()->Name());
-                    pg->StoreAccumulator(expr, variable);
-
-                    pg->DeleteObjProperty(expr, global, variable);
-                } else {
-                    // Otherwise it is a local variable which can't be deleted and we just
-                    // return false.
-                    pg->LoadConst(expr, compiler::Constant::JS_FALSE);
-                }
+                HandleIdentifier(pg, expr);
             } else if (expr->Argument()->IsMemberExpression()) {
                 compiler::RegScope rs(pg);
                 compiler::VReg object = pg->AllocReg();

@@ -68,18 +68,9 @@ static void GenRestElement(PandaGen *pg, const ir::SpreadElement *restElement,
     lref.SetValue();
 }
 
-static void GenArray(PandaGen *pg, const ir::ArrayExpression *array)
+static DestructuringIterator GenDestructingIterator(PandaGen *pg, const ir::ArrayExpression *array)
 {
     DestructuringIterator iterator(pg, array);
-
-    if (array->Elements().empty()) {
-        iterator.Close(false);
-        return;
-    }
-
-    TryContext tryCtx(pg);
-    const auto &labelSet = tryCtx.LabelSet();
-    pg->SetLabel(array, labelSet.TryBegin());
 
     for (const auto *element : array->Elements()) {
         RegScope ers(pg);
@@ -120,6 +111,21 @@ static void GenArray(PandaGen *pg, const ir::ArrayExpression *array)
 
         lref.SetValue();
     }
+
+    return iterator;
+}
+
+static void GenArray(PandaGen *pg, const ir::ArrayExpression *array)
+{
+    if (array->Elements().empty()) {
+        return;
+    }
+
+    TryContext tryCtx(pg);
+    const auto &labelSet = tryCtx.LabelSet();
+    pg->SetLabel(array, labelSet.TryBegin());
+
+    auto iterator = GenDestructingIterator(pg, array);
 
     pg->SetLabel(array, labelSet.TryEnd());
 

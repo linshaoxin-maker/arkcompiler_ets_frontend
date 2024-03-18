@@ -617,6 +617,22 @@ private:
     void ValidateGetterSetter(const ir::MemberExpression *memberExpr, const varbinder::LocalVariable *prop,
                               PropertySearchFlags searchFlag);
     void ValidateVarDeclaratorOrClassProperty(const ir::MemberExpression *memberExpr, varbinder::LocalVariable *prop);
+    void AddElementsToBestSignaturesForParameter(const std::vector<bool> &argTypeInferenceRequired,
+                                                 ArenaVector<Signature *> &signatures, size_t paramCount,
+                                                 ArenaMultiMap<size_t, Signature *> &bestSignaturesForParameter,
+                                                 const lexer::SourcePosition &pos, size_t argumentsSize);
+    template <typename F>
+    void SearchAmongTypesForSignatures(Type *mostSpecificType, size_t argumentsSize, size_t paramCount, size_t i,
+                                       const F &evaluateResult, Signature *sig, bool lookForClassType);
+    varbinder::Decl *SetContainingDataToContext(varbinder::Variable *var);
+    void ResolveAsyncProxyMethod(ir::MethodDefinition *proxyMethod, ir::ClassDefinition *currentClassDef,
+                                 ir::ArrowFunctionExpression *lambda);
+    void AddArgumentsForUndefinedParams(const ir::ETSParameterExpression *param,
+                                        ArenaVector<panda::es2panda::ir::Expression *> &arguments, ETSChecker *checker);
+    template <bool IS_STATIC>
+    std::conditional_t<IS_STATIC, ir::ClassStaticBlock *, ir::MethodDefinition *> AllocNewMethodDefNonStatic(
+        ETSObjectType *type, Signature *signature, ir::Identifier *id, ir::FunctionExpression *funcExpr,
+        varbinder::ClassScope *classScope, ir::ScriptFunction *func);
     std::tuple<bool, bool> IsResolvedAndValue(const ir::Expression *expr, Type *type) const;
     PropertySearchFlags GetSearchFlags(const ir::MemberExpression *memberExpr, const varbinder::Variable *targetRef);
     PropertySearchFlags GetInitialSearchFlags(const ir::MemberExpression *memberExpr);

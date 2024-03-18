@@ -887,39 +887,9 @@ ir::ClassDefinition *TypedParser::ParseClassDefinition(ir::ClassDefinitionModifi
     return classDefinition;
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
-ir::AstNode *TypedParser::ParseClassElement(const ArenaVector<ir::AstNode *> &properties,
-                                            ir::ClassDefinitionModifiers modifiers, ir::ModifierFlags flags,
-                                            [[maybe_unused]] ir::Identifier *identNode)
+ir::AstNode *TypedParser::ParsePropertyOrIndexSignature(ClassElementDescriptor &desc,
+                                                        const ArenaVector<ir::AstNode *> &properties)
 {
-    if (Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_STATIC &&
-        Lexer()->Lookahead() == lexer::LEX_CHAR_LEFT_BRACE) {
-        return ParseClassStaticBlock();
-    }
-
-    ClassElementDescriptor desc(Allocator());
-
-    desc.methodKind = ir::MethodDefinitionKind::METHOD;
-    desc.newStatus = ParserStatus::ALLOW_SUPER;
-    desc.hasSuperClass = (modifiers & ir::ClassDefinitionModifiers::HAS_SUPER) != 0;
-    desc.propStart = Lexer()->GetToken().Start();
-
-    ParseDecorators(desc.decorators);
-
-    desc.modifiers = ParseModifiers();
-
-    if (((desc.modifiers & ir::ModifierFlags::ABSTRACT) != 0) && ((flags & ir::ModifierFlags::ABSTRACT) == 0)) {
-        ThrowSyntaxError("Abstract methods can only appear within an abstract class.");
-    }
-
-    char32_t nextCp = Lexer()->Lookahead();
-    CheckClassGeneratorMethod(&desc, &nextCp);
-    ParseClassAccessor(&desc, &nextCp);
-
-    if ((desc.modifiers & ir::ModifierFlags::STATIC) == 0) {
-        GetContext().Status() |= ParserStatus::ALLOW_THIS_TYPE;
-    }
-
     ir::Expression *propName = ParseClassKey(&desc);
 
     if (desc.methodKind == ir::MethodDefinitionKind::CONSTRUCTOR && !desc.decorators.empty()) {
@@ -937,9 +907,8 @@ ir::AstNode *TypedParser::ParseClassElement(const ArenaVector<ir::AstNode *> &pr
         Lexer()->NextToken();
     }
 
-    ir::TypeNode *typeAnnotation = ParseClassKeyAnnotation();
-
     ir::AstNode *property = nullptr;
+    ir::TypeNode *typeAnnotation = ParseClassKeyAnnotation();
 
     if (desc.isIndexSignature) {
         if (!desc.decorators.empty()) {
@@ -973,6 +942,43 @@ ir::AstNode *TypedParser::ParseClassElement(const ArenaVector<ir::AstNode *> &pr
             property->AddDecorators(std::move(desc.decorators));
         }
     }
+    return property;
+}
+
+// NOLINTNEXTLINE(google-default-arguments)
+ir::AstNode *TypedParser::ParseClassElement(const ArenaVector<ir::AstNode *> &properties,
+                                            ir::ClassDefinitionModifiers modifiers, ir::ModifierFlags flags,
+                                            [[maybe_unused]] ir::Identifier *identNode)
+{
+    if (Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_STATIC &&
+        Lexer()->Lookahead() == lexer::LEX_CHAR_LEFT_BRACE) {
+        return ParseClassStaticBlock();
+    }
+
+    ClassElementDescriptor desc(Allocator());
+
+    desc.methodKind = ir::MethodDefinitionKind::METHOD;
+    desc.newStatus = ParserStatus::ALLOW_SUPER;
+    desc.hasSuperClass = (modifiers & ir::ClassDefinitionModifiers::HAS_SUPER) != 0;
+    desc.propStart = Lexer()->GetToken().Start();
+
+    ParseDecorators(desc.decorators);
+
+    desc.modifiers = ParseModifiers();
+
+    if (((desc.modifiers & ir::ModifierFlags::ABSTRACT) != 0) && ((flags & ir::ModifierFlags::ABSTRACT) == 0)) {
+        ThrowSyntaxError("Abstract methods can only appear within an abstract class.");
+    }
+
+    char32_t nextCp = Lexer()->Lookahead();
+    CheckClassGeneratorMethod(&desc, &nextCp);
+    ParseClassAccessor(&desc, &nextCp);
+
+    if ((desc.modifiers & ir::ModifierFlags::STATIC) == 0) {
+        GetContext().Status() |= ParserStatus::ALLOW_THIS_TYPE;
+    }
+
+    ir::AstNode *property = ParsePropertyOrIndexSignature(desc, properties);
 
     ASSERT(property != nullptr);
     if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_SEMI_COLON &&
@@ -1010,6 +1016,87 @@ void TypedParser::ParseOptionalClassElement(ClassElementDescriptor *desc)
     Lexer()->NextToken();
 }
 
+static ir::ModifierFlags GetActualStatus(lexer::TokenType kwType)
+{
+    switch (kwType) {
+        case lexer::TokenType::KEYW_PUBLIC: {
+            return ir::ModifierFlags::PUBLIC;
+        }
+        case lexer::TokenType::KEYW_PRIVATE: {
+            return ir::ModifierFlags::PRIVATE;
+        }
+        case lexer::TokenType::KEYW_PROTECTED: {
+            return ir::ModifierFlags::PROTECTED;
+        }
+        case lexer::TokenType::KEYW_INTERNAL: {
+            return ir::ModifierFlags::INTERNAL;
+        }
+        case lexer::TokenType::KEYW_STATIC: {
+            return ir::ModifierFlags::STATIC;
+        }
+        case lexer::TokenType::KEYW_ASYNC: {
+            return ir::ModifierFlags::ASYNC;
+        }
+        case lexer::TokenType::KEYW_ABSTRACT: {
+            return ir::ModifierFlags::ABSTRACT;
+        }
+        case lexer::TokenType::KEYW_DECLARE: {
+            return ir::ModifierFlags::DECLARE;
+        }
+        case lexer::TokenType::KEYW_READONLY: {
+            return ir::ModifierFlags::READONLY;
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+    return ir::ModifierFlags::NONE;
+}
+
+static ir::ModifierFlags GetNextStatus(lexer::TokenType kwType)
+{
+    switch (kwType) {
+        case lexer::TokenType::KEYW_PUBLIC: {
+            return ir::ModifierFlags::ASYNC | ir::ModifierFlags::STATIC | ir::ModifierFlags::READONLY |
+                   ir::ModifierFlags::DECLARE | ir::ModifierFlags::ABSTRACT;
+        }
+        case lexer::TokenType::KEYW_PRIVATE: {
+            return ir::ModifierFlags::ASYNC | ir::ModifierFlags::STATIC | ir::ModifierFlags::READONLY |
+                   ir::ModifierFlags::DECLARE | ir::ModifierFlags::ABSTRACT;
+        }
+        case lexer::TokenType::KEYW_PROTECTED: {
+            return ir::ModifierFlags::ASYNC | ir::ModifierFlags::STATIC | ir::ModifierFlags::READONLY |
+                   ir::ModifierFlags::DECLARE | ir::ModifierFlags::ABSTRACT;
+        }
+        case lexer::TokenType::KEYW_INTERNAL: {
+            return ir::ModifierFlags::ASYNC | ir::ModifierFlags::STATIC | ir::ModifierFlags::READONLY |
+                   ir::ModifierFlags::DECLARE | ir::ModifierFlags::ABSTRACT | ir::ModifierFlags::PROTECTED;
+        }
+        case lexer::TokenType::KEYW_STATIC: {
+            return ir::ModifierFlags::ASYNC | ir::ModifierFlags::READONLY | ir::ModifierFlags::DECLARE |
+                   ir::ModifierFlags::ABSTRACT;
+        }
+        case lexer::TokenType::KEYW_ASYNC: {
+            return ir::ModifierFlags::READONLY | ir::ModifierFlags::DECLARE | ir::ModifierFlags::ABSTRACT;
+        }
+        case lexer::TokenType::KEYW_ABSTRACT: {
+            return ir::ModifierFlags::ACCESS | ir::ModifierFlags::ASYNC | ir::ModifierFlags::STATIC |
+                   ir::ModifierFlags::READONLY | ir::ModifierFlags::DECLARE;
+        }
+        case lexer::TokenType::KEYW_DECLARE: {
+            return ir::ModifierFlags::ACCESS | ir::ModifierFlags::ASYNC | ir::ModifierFlags::STATIC |
+                   ir::ModifierFlags::READONLY;
+        }
+        case lexer::TokenType::KEYW_READONLY: {
+            return ir::ModifierFlags::ASYNC | ir::ModifierFlags::DECLARE | ir::ModifierFlags::ABSTRACT;
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+    return ir::ModifierFlags::NONE;
+}
+
 ir::ModifierFlags TypedParser::ParseModifiers()
 {
     ir::ModifierFlags resultStatus = ir::ModifierFlags::NONE;
@@ -1027,66 +1114,8 @@ ir::ModifierFlags TypedParser::ParseModifiers()
             ThrowSyntaxError("Keyword must not contain escaped characters");
         }
 
-        ir::ModifierFlags actualStatus = ir::ModifierFlags::NONE;
-        ir::ModifierFlags nextStatus = ir::ModifierFlags::NONE;
-
-        switch (Lexer()->GetToken().KeywordType()) {
-            case lexer::TokenType::KEYW_PUBLIC: {
-                actualStatus = ir::ModifierFlags::PUBLIC;
-                nextStatus = ir::ModifierFlags::ASYNC | ir::ModifierFlags::STATIC | ir::ModifierFlags::READONLY |
-                             ir::ModifierFlags::DECLARE | ir::ModifierFlags::ABSTRACT;
-                break;
-            }
-            case lexer::TokenType::KEYW_PRIVATE: {
-                actualStatus = ir::ModifierFlags::PRIVATE;
-                nextStatus = ir::ModifierFlags::ASYNC | ir::ModifierFlags::STATIC | ir::ModifierFlags::READONLY |
-                             ir::ModifierFlags::DECLARE | ir::ModifierFlags::ABSTRACT;
-                break;
-            }
-            case lexer::TokenType::KEYW_PROTECTED: {
-                actualStatus = ir::ModifierFlags::PROTECTED;
-                nextStatus = ir::ModifierFlags::ASYNC | ir::ModifierFlags::STATIC | ir::ModifierFlags::READONLY |
-                             ir::ModifierFlags::DECLARE | ir::ModifierFlags::ABSTRACT;
-                break;
-            }
-            case lexer::TokenType::KEYW_INTERNAL: {
-                actualStatus = ir::ModifierFlags::INTERNAL;
-                nextStatus = ir::ModifierFlags::ASYNC | ir::ModifierFlags::STATIC | ir::ModifierFlags::READONLY |
-                             ir::ModifierFlags::DECLARE | ir::ModifierFlags::ABSTRACT | ir::ModifierFlags::PROTECTED;
-                break;
-            }
-            case lexer::TokenType::KEYW_STATIC: {
-                actualStatus = ir::ModifierFlags::STATIC;
-                nextStatus = ir::ModifierFlags::ASYNC | ir::ModifierFlags::READONLY | ir::ModifierFlags::DECLARE |
-                             ir::ModifierFlags::ABSTRACT;
-                break;
-            }
-            case lexer::TokenType::KEYW_ASYNC: {
-                actualStatus = ir::ModifierFlags::ASYNC;
-                nextStatus = ir::ModifierFlags::READONLY | ir::ModifierFlags::DECLARE | ir::ModifierFlags::ABSTRACT;
-                break;
-            }
-            case lexer::TokenType::KEYW_ABSTRACT: {
-                actualStatus = ir::ModifierFlags::ABSTRACT;
-                nextStatus = ir::ModifierFlags::ACCESS | ir::ModifierFlags::ASYNC | ir::ModifierFlags::STATIC |
-                             ir::ModifierFlags::READONLY | ir::ModifierFlags::DECLARE;
-                break;
-            }
-            case lexer::TokenType::KEYW_DECLARE: {
-                actualStatus = ir::ModifierFlags::DECLARE;
-                nextStatus = ir::ModifierFlags::ACCESS | ir::ModifierFlags::ASYNC | ir::ModifierFlags::STATIC |
-                             ir::ModifierFlags::READONLY;
-                break;
-            }
-            case lexer::TokenType::KEYW_READONLY: {
-                actualStatus = ir::ModifierFlags::READONLY;
-                nextStatus = ir::ModifierFlags::ASYNC | ir::ModifierFlags::DECLARE | ir::ModifierFlags::ABSTRACT;
-                break;
-            }
-            default: {
-                UNREACHABLE();
-            }
-        }
+        ir::ModifierFlags actualStatus = GetActualStatus(Lexer()->GetToken().KeywordType());
+        ir::ModifierFlags nextStatus = GetNextStatus(Lexer()->GetToken().KeywordType());
 
         nextCp = Lexer()->Lookahead();
         if (nextCp == lexer::LEX_CHAR_COLON || nextCp == lexer::LEX_CHAR_COMMA ||

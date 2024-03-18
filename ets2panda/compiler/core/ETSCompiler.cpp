@@ -965,6 +965,85 @@ static bool CompileComputed(compiler::ETSGen *etsg, const ir::MemberExpression *
     return false;
 }
 
+void ETSCompiler::CompilePropertyLength(const ir::MemberExpression *expr, const checker::Type *objectType) const
+{
+    ETSGen *etsg = GetETSGen();
+    auto ottctx = compiler::TargetTypeContext(etsg, objectType);
+    etsg->CompileAndCheck(expr->Object());
+
+    auto const loadLength = [expr, etsg]() {
+        compiler::VReg objReg = etsg->AllocReg();
+        etsg->StoreAccumulator(expr, objReg);
+
+        auto ttctx = compiler::TargetTypeContext(etsg, expr->OptionalType());
+        etsg->LoadArrayLength(expr, objReg);
+        etsg->ApplyConversion(expr, expr->TsType());
+    };
+
+    etsg->EmitMaybeOptional(expr, loadLength, expr->IsOptional());
+}
+
+void ETSCompiler::CompilePropertyEnum(const ir::MemberExpression *expr, const checker::Type *objectType) const
+{
+    ETSGen *etsg = GetETSGen();
+    auto const *const enumInterface = [objectType, expr]() -> checker::ETSEnumInterface const * {
+        if (objectType->IsETSEnumType()) {
+            return expr->OptionalType()->AsETSEnumType();
+        }
+        return expr->OptionalType()->AsETSStringEnumType();
+    }();
+
+    auto ttctx = compiler::TargetTypeContext(etsg, expr->OptionalType());
+    etsg->LoadAccumulatorInt(expr, enumInterface->GetOrdinal());
+}
+
+void ETSCompiler::CompilePropertyStatic(const ir::MemberExpression *expr, const util::StringView &name) const
+{
+    ETSGen *etsg = GetETSGen();
+    auto ttctx = compiler::TargetTypeContext(etsg, expr->OptionalType());
+
+    if (expr->PropVar()->TsType()->HasTypeFlag(checker::TypeFlag::GETTER_SETTER)) {
+        checker::Signature *sig = expr->PropVar()->TsType()->AsETSFunctionType()->FindGetter();
+        etsg->CallStatic0(expr, sig->InternalName());
+        etsg->SetAccumulatorType(expr->TsType());
+        return;
+    }
+
+    util::StringView fullName = etsg->FormClassPropReference(expr->Object()->TsType()->AsETSObjectType(), name);
+    etsg->LoadStaticProperty(expr, expr->OptionalType(), fullName);
+}
+
+void ETSCompiler::CompileProperty(const ir::MemberExpression *expr, const checker::Type *objectType,
+                                  const util::StringView &name) const
+{
+    ETSGen *etsg = GetETSGen();
+    auto ottctx = compiler::TargetTypeContext(etsg, expr->Object()->TsType());
+    etsg->CompileAndCheck(expr->Object());
+
+    auto const loadProperty = [expr, etsg, name, objectType]() {
+        etsg->ApplyConversion(expr->Object());
+        compiler::VReg objReg = etsg->AllocReg();
+        etsg->StoreAccumulator(expr, objReg);
+
+        auto ttctx = compiler::TargetTypeContext(etsg, expr->OptionalType());
+
+        if (expr->PropVar()->TsType()->HasTypeFlag(checker::TypeFlag::GETTER_SETTER)) {
+            checker::Signature *sig = expr->PropVar()->TsType()->AsETSFunctionType()->FindGetter();
+            etsg->CallThisVirtual0(expr, objReg, sig->InternalName());
+        } else if (objectType->IsETSDynamicType()) {
+            etsg->LoadPropertyDynamic(expr, expr->OptionalType(), objReg, name);
+        } else if (objectType->IsETSUnionType()) {
+            etsg->LoadUnionProperty(expr, expr->OptionalType(), objReg, name);
+        } else {
+            const auto fullName = etsg->FormClassPropReference(objectType->AsETSObjectType(), name);
+            etsg->LoadProperty(expr, expr->OptionalType(), objReg, fullName);
+        }
+        etsg->GuardUncheckedType(expr, expr->UncheckedType(), expr->OptionalType());
+    };
+
+    etsg->EmitMaybeOptional(expr, loadProperty, expr->IsOptional());
+}
+
 void ETSCompiler::Compile(const ir::MemberExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
@@ -987,75 +1066,20 @@ void ETSCompiler::Compile(const ir::MemberExpression *expr) const
     auto &propName = expr->Property()->AsIdentifier()->Name();
 
     if (objectType->IsETSArrayType() && propName.Is("length")) {
-        auto ottctx = compiler::TargetTypeContext(etsg, objectType);
-        etsg->CompileAndCheck(expr->Object());
-
-        auto const loadLength = [expr, etsg]() {
-            compiler::VReg objReg = etsg->AllocReg();
-            etsg->StoreAccumulator(expr, objReg);
-
-            auto ttctx = compiler::TargetTypeContext(etsg, expr->OptionalType());
-            etsg->LoadArrayLength(expr, objReg);
-            etsg->ApplyConversion(expr, expr->TsType());
-        };
-
-        etsg->EmitMaybeOptional(expr, loadLength, expr->IsOptional());
+        CompilePropertyLength(expr, objectType);
         return;
     }
 
     if (objectType->IsETSEnumType() || objectType->IsETSStringEnumType()) {
-        auto const *const enumInterface = [objectType, expr]() -> checker::ETSEnumInterface const * {
-            if (objectType->IsETSEnumType()) {
-                return expr->OptionalType()->AsETSEnumType();
-            }
-            return expr->OptionalType()->AsETSStringEnumType();
-        }();
-
-        auto ttctx = compiler::TargetTypeContext(etsg, expr->OptionalType());
-        etsg->LoadAccumulatorInt(expr, enumInterface->GetOrdinal());
+        CompilePropertyEnum(expr, objectType);
         return;
     }
 
     if (etsg->Checker()->IsVariableStatic(expr->PropVar())) {
-        auto ttctx = compiler::TargetTypeContext(etsg, expr->OptionalType());
-
-        if (expr->PropVar()->TsType()->HasTypeFlag(checker::TypeFlag::GETTER_SETTER)) {
-            checker::Signature *sig = expr->PropVar()->TsType()->AsETSFunctionType()->FindGetter();
-            etsg->CallStatic0(expr, sig->InternalName());
-            etsg->SetAccumulatorType(expr->TsType());
-            return;
-        }
-
-        util::StringView fullName = etsg->FormClassPropReference(expr->Object()->TsType()->AsETSObjectType(), propName);
-        etsg->LoadStaticProperty(expr, expr->OptionalType(), fullName);
+        CompilePropertyStatic(expr, propName);
         return;
     }
-
-    auto ottctx = compiler::TargetTypeContext(etsg, expr->Object()->TsType());
-    etsg->CompileAndCheck(expr->Object());
-
-    auto const loadProperty = [expr, etsg, propName, objectType]() {
-        etsg->ApplyConversion(expr->Object());
-        compiler::VReg objReg = etsg->AllocReg();
-        etsg->StoreAccumulator(expr, objReg);
-
-        auto ttctx = compiler::TargetTypeContext(etsg, expr->OptionalType());
-
-        if (expr->PropVar()->TsType()->HasTypeFlag(checker::TypeFlag::GETTER_SETTER)) {
-            checker::Signature *sig = expr->PropVar()->TsType()->AsETSFunctionType()->FindGetter();
-            etsg->CallThisVirtual0(expr, objReg, sig->InternalName());
-        } else if (objectType->IsETSDynamicType()) {
-            etsg->LoadPropertyDynamic(expr, expr->OptionalType(), objReg, propName);
-        } else if (objectType->IsETSUnionType()) {
-            etsg->LoadUnionProperty(expr, expr->OptionalType(), objReg, propName);
-        } else {
-            const auto fullName = etsg->FormClassPropReference(objectType->AsETSObjectType(), propName);
-            etsg->LoadProperty(expr, expr->OptionalType(), objReg, fullName);
-        }
-        etsg->GuardUncheckedType(expr, expr->UncheckedType(), expr->OptionalType());
-    };
-
-    etsg->EmitMaybeOptional(expr, loadProperty, expr->IsOptional());
+    CompileProperty(expr, objectType, propName);
 }
 
 void ETSCompiler::Compile([[maybe_unused]] const ir::NewExpression *expr) const
