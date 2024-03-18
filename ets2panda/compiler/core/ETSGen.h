@@ -561,6 +561,16 @@ public:
         Ra().Emit<CallShort, 0>(node, name, dummyReg_, dummyReg_);
     }
 
+    void CallStatic1(const ir::AstNode *const node, const util::StringView name, const VReg arg0)
+    {
+        Ra().Emit<CallShort, 1U>(node, name, arg0, dummyReg_);
+    }
+
+    void CallStatic2(const ir::AstNode *const node, const util::StringView name, const VReg arg0, const VReg arg1)
+    {
+        Ra().Emit<CallShort, 2U>(node, name, arg0, arg1);
+    }
+
     void CallThisStatic0(const ir::AstNode *const node, const VReg ctor, const util::StringView name)
     {
         Ra().Emit<CallShort, 1>(node, name, ctor, dummyReg_);
@@ -1011,6 +1021,7 @@ private:
     void CallImpl(const ir::AstNode *node, checker::Signature const *signature,
                   const ArenaVector<ir::Expression *> &arguments)
     {
+        ASSERT(signature != nullptr);
         RegScope rs(this);
         if (ResolveStringFromNullishBuiltin<Short, General, Range>(node, signature, arguments)) {
             return;
