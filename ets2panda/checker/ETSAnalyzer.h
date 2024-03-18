@@ -40,10 +40,14 @@ public:
 private:
     ETSChecker *GetETSChecker() const;
     void CheckMethodModifiers(ir::MethodDefinition *node) const;
+    void CheckProperties(ir::ObjectExpression *expr, checker::ETSObjectType *objType) const;
     checker::Signature *ResolveSignature(ETSChecker *checker, ir::CallExpression *expr, checker::Type *calleeType,
                                          bool isFunctionalInterface, bool isUnionTypeWithFunctionalInterface) const;
     checker::Type *GetReturnType(ir::CallExpression *expr, checker::Type *calleeType) const;
     checker::Type *GetFunctionReturnType(ir::ReturnStatement *st, ir::ScriptFunction *containingFunc) const;
+    checker::Type *GetSourceType(ir::AssignmentExpression *expr, ir::Expression **relationNode) const;
+    checker::Type *GetElementType(ir::ArrayExpression *expr, ir::Expression *element, std::size_t idx) const;
+    void CheckClassDefiniton(ir::ETSNewClassInstanceExpression *expr, checker::ETSObjectType *calleeObj) const;
 };
 
 }  // namespace panda::es2panda::checker
