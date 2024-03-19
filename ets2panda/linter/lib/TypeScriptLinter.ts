@@ -815,13 +815,8 @@ export class TypeScriptLinter {
     // Filter out non-initializable property decorators from strict diagnostics.
     if (this.tscStrictDiagnostics && this.sourceFile) {
       if (
-        decorators?.some((x) => {
-          let decoratorName = '';
-          if (ts.isIdentifier(x.expression)) {
-            decoratorName = x.expression.text;
-          } else if (ts.isCallExpression(x.expression) && ts.isIdentifier(x.expression.expression)) {
-            decoratorName = x.expression.expression.text;
-          }
+        decorators?.some((decorator) => {
+          const decoratorName = TsUtils.getDecoratorName(decorator);
           // special case for property of type CustomDialogController of the @CustomDialog-decorated class
           if (expectedDecorators.includes(NON_INITIALIZABLE_PROPERTY_CLASS_DECORATORS[0])) {
             return expectedDecorators.includes(decoratorName) && propType === 'CustomDialogController';
@@ -1323,11 +1318,19 @@ export class TypeScriptLinter {
     }
     this.countClassMembersWithDuplicateName(tsClassDecl);
 
+    const isSendableClass = TsUtils.hasSendableDecorator(tsClassDecl);
     const visitHClause = (hClause: ts.HeritageClause): void => {
       for (const tsTypeExpr of hClause.types) {
-        const tsExprType = this.tsTypeChecker.getTypeAtLocation(tsTypeExpr.expression);
-        if (tsExprType.isClass() && hClause.token === ts.SyntaxKind.ImplementsKeyword) {
-          this.incrementCounters(tsTypeExpr, FaultID.ImplementsClass);
+        const tsExprType = TsUtils.reduceReference(this.tsTypeChecker.getTypeAtLocation(tsTypeExpr));
+        if (tsExprType.isClass()) {
+          if (hClause.token === ts.SyntaxKind.ImplementsKeyword) {
+            this.incrementCounters(tsTypeExpr, FaultID.ImplementsClass);
+          }
+
+          const isSendableBaseType = TsUtils.isSendableType(tsExprType);
+          if (isSendableClass && !isSendableBaseType || !isSendableClass && isSendableBaseType) {
+            this.incrementCounters(tsTypeExpr, FaultID.SendableClassInheritance);
+          }
         }
       }
     };

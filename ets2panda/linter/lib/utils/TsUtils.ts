@@ -234,7 +234,7 @@ export class TsUtils {
   }
 
   // does something similar to relatedByInheritanceOrIdentical function
-  isOrDerivedFrom(tsType: ts.Type, checkType: CheckType): boolean {
+  isOrDerivedFrom(tsType: ts.Type, checkType: CheckType, checkedBaseTypes?: Set<ts.Type>): boolean {
     tsType = TsUtils.reduceReference(tsType);
 
     if (checkType.call(this, tsType)) {
@@ -245,6 +245,9 @@ export class TsUtils {
       return false;
     }
 
+    // Avoid type recursion in heritage by caching checked types.
+    (checkedBaseTypes ||= new Set<ts.Type>()).add(tsType);
+
     for (const tsTypeDecl of tsType.symbol.declarations) {
       const isClassOrInterfaceDecl = ts.isClassDeclaration(tsTypeDecl) || ts.isInterfaceDeclaration(tsTypeDecl);
       const isDerived = isClassOrInterfaceDecl && !!tsTypeDecl.heritageClauses;
@@ -252,7 +255,7 @@ export class TsUtils {
         continue;
       }
       for (const heritageClause of tsTypeDecl.heritageClauses) {
-        if (this.processParentTypesCheck(heritageClause.types, checkType)) {
+        if (this.processParentTypesCheck(heritageClause.types, checkType, checkedBaseTypes)) {
           return true;
         }
       }
@@ -584,10 +587,18 @@ export class TsUtils {
     return false;
   }
 
-  private processParentTypesCheck(parentTypes: ts.NodeArray<ts.Expression>, checkType: CheckType): boolean {
+  private processParentTypesCheck(
+    parentTypes: ts.NodeArray<ts.Expression>,
+    checkType: CheckType,
+    checkedBaseTypes: Set<ts.Type>
+  ): boolean {
     for (const baseTypeExpr of parentTypes) {
       const baseType = TsUtils.reduceReference(this.tsTypeChecker.getTypeAtLocation(baseTypeExpr));
-      if (baseType && this.isOrDerivedFrom(baseType, checkType)) {
+      if (
+        baseType &&
+        !checkedBaseTypes.has(baseType) &&
+        this.isOrDerivedFrom(baseType, checkType, checkedBaseTypes)
+      ) {
         return true;
       }
     }
@@ -1670,6 +1681,42 @@ export class TsUtils {
         return ts.isObjectBindingPattern(x.name);
       }
       return false;
+    });
+  }
+
+  static getDecoratorName(decorator: ts.Decorator): string {
+    let decoratorName = '';
+    if (ts.isIdentifier(decorator.expression)) {
+      decoratorName = decorator.expression.text;
+    } else if (ts.isCallExpression(decorator.expression) && ts.isIdentifier(decorator.expression.expression)) {
+      decoratorName = decorator.expression.expression.text;
+    }
+    return decoratorName;
+  }
+
+  static isSendableType(type: ts.Type): boolean {
+    const sym = type.getSymbol();
+    if (!sym) {
+      return false;
+    }
+
+    // class with @Sendable decorator
+    if (type.isClass()) {
+      if (sym.declarations?.length) {
+        const decl = sym.declarations[0];
+        if (ts.isClassDeclaration(decl) && TsUtils.hasSendableDecorator(decl)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static hasSendableDecorator(decl: ts.ClassDeclaration): boolean {
+    const decorators = ts.getDecorators(decl);
+    return decorators !== undefined && decorators.some((x) => {
+      return TsUtils.getDecoratorName(x) === 'Sendable';
     });
   }
 }
