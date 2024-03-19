@@ -716,11 +716,12 @@ VReg ETSGen::GetThisReg() const
     return res.variable->AsLocalVariable()->Vreg();
 }
 
-void ETSGen::LoadDefaultValue([[maybe_unused]] const ir::AstNode *node, [[maybe_unused]] const checker::Type *type)
+const checker::Type *ETSGen::LoadDefaultValue([[maybe_unused]] const ir::AstNode *node,
+                                              [[maybe_unused]] const checker::Type *type)
 {
     if (type->IsETSAsyncFuncReturnType()) {
         LoadDefaultValue(node, type->AsETSAsyncFuncReturnType()->GetPromiseTypeArg());
-        return;
+        return type;
     }
 
     if (type->IsETSUnionType()) {
@@ -741,6 +742,8 @@ void ETSGen::LoadDefaultValue([[maybe_unused]] const ir::AstNode *node, [[maybe_
         const auto ttctx = TargetTypeContext(this, type);
         LoadAccumulatorInt(node, 0);
     }
+
+    return type;
 }
 
 void ETSGen::EmitReturnVoid(const ir::AstNode *node)
