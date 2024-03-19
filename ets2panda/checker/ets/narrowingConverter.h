@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 - 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021 - 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -103,6 +103,75 @@ private:
         }
     }
 
+    template <typename SType>
+    int CalculateIntValue(SType value)
+    {
+        if (std::isinf(value)) {
+            if (std::signbit(value)) {
+                return std::numeric_limits<int32_t>::min();
+            }
+            return std::numeric_limits<int32_t>::max();
+        }
+        if (std::isnan(value)) {
+            return 0;
+        }
+        return static_cast<int32_t>(value);
+    }
+
+    template <typename From, typename To>
+    To CastFloatingPointToIntOrLong(From value)
+    {
+        if (std::isinf(value)) {
+            if (std::signbit(value)) {
+                return std::numeric_limits<To>::min();
+            }
+            return std::numeric_limits<To>::max();
+        }
+        ASSERT(std::is_floating_point_v<From>);
+        ASSERT(std::is_integral_v<To>);
+        To minInt = std::numeric_limits<To>::min();
+        To maxInt = std::numeric_limits<To>::max();
+        auto floatMinInt = static_cast<From>(minInt);
+        auto floatMaxInt = static_cast<From>(maxInt);
+
+        if (value > floatMinInt) {
+            if (value < floatMaxInt) {
+                return static_cast<To>(value);
+            }
+            return maxInt;
+        }
+        if (std::isnan(value)) {
+            return 0;
+        }
+        return minInt;
+    }
+
+    template <typename TType, typename SType>
+    TType CalculateNarrowedValue(Type *target, Type *source, SType value)
+    {
+        switch (ETSChecker::ETSChecker::ETSType(target)) {
+            case TypeFlag::BYTE:
+            case TypeFlag::CHAR:
+            case TypeFlag::SHORT: {
+                return CalculateIntValue<SType>(value);
+            }
+            case TypeFlag::INT:
+            case TypeFlag::LONG: {
+                if (source->HasTypeFlag(checker::TypeFlag::DOUBLE) || source->HasTypeFlag(checker::TypeFlag::FLOAT)) {
+                    return CastFloatingPointToIntOrLong<SType, TType>(value);
+                }
+                return static_cast<TType>(value);
+            }
+            case TypeFlag::FLOAT:
+            case TypeFlag::DOUBLE: {
+                return static_cast<TType>(value);
+            }
+            default: {
+                UNREACHABLE();
+            }
+        }
+    }
+
     template <typename TargetType, typename SourceType>
     void ApplyNarrowing()
     {
@@ -112,7 +181,9 @@ private:
         if (Source()->HasTypeFlag(TypeFlag::CONSTANT)) {
             SType value = reinterpret_cast<SourceType *>(Source())->GetValue();
             if (Relation()->InCastingContext() || util::Helpers::IsTargetFitInSourceRange<TType, SType>(value)) {
-                Relation()->GetNode()->SetTsType(Checker()->Allocator()->New<TargetType>(static_cast<TType>(value)));
+                auto narrowedValue = CalculateNarrowedValue<TType, SType>(Target(), Source(), value);
+                TargetType *newType = Checker()->Allocator()->New<TargetType>(narrowedValue);
+                Relation()->GetNode()->SetTsType(newType);
                 Relation()->Result(true);
                 return;
             }
