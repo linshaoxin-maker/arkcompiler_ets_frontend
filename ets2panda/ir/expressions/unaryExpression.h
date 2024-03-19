@@ -58,6 +58,11 @@ public:
         return argument_;
     }
 
+    [[nodiscard]] Expression *Argument() noexcept
+    {
+        return argument_;
+    }
+
     [[nodiscard]] UnaryExpression *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
     void TransformChildren(const NodeTransformer &cb) override;
