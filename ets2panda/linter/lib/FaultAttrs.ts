@@ -105,3 +105,4 @@ faultsAttrs[FaultID.ClassAsObject] = new FaultAttributes(149, ProblemSeverity.WA
 faultsAttrs[FaultID.ImportAfterStatement] = new FaultAttributes(150);
 faultsAttrs[FaultID.EsObjectType] = new FaultAttributes(151, ProblemSeverity.WARNING);
 faultsAttrs[FaultID.FunctionApplyCall] = new FaultAttributes(152);
+faultsAttrs[FaultID.SendableClassInheritance] = new FaultAttributes(153);

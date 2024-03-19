@@ -94,6 +94,7 @@ export enum FaultID {
   StrictDiagnostic,
   ImportAfterStatement,
   EsObjectType,
+  SendableClassInheritance,
   // this should always be last enum
   LAST_ID
 }
