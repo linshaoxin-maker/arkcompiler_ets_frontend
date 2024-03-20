@@ -65,7 +65,7 @@ panda::pandasm::Program *Compiler::AbcToAsmProgram(const std::string &fname, con
             "could not be used as the input.");
     }
     if (!abcToAsmCompiler_->OpenAbcFile(fname)) {
-        return nullptr;
+        throw Error(ErrorType::GENERIC, "Open abc file " + fname + " failed.");
     }
     panda::pandasm::Program *prog = new panda::pandasm::Program();
     (void)abcToAsmCompiler_->FillProgramData(*prog);
