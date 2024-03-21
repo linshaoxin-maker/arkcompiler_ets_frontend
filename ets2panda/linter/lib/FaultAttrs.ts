@@ -106,3 +106,4 @@ faultsAttrs[FaultID.ImportAfterStatement] = new FaultAttributes(150);
 faultsAttrs[FaultID.EsObjectType] = new FaultAttributes(151, ProblemSeverity.WARNING);
 faultsAttrs[FaultID.FunctionApplyCall] = new FaultAttributes(152);
 faultsAttrs[FaultID.SendableClassInheritance] = new FaultAttributes(153);
+faultsAttrs[FaultID.SendableDefiniteAssignment] = new FaultAttributes(155);

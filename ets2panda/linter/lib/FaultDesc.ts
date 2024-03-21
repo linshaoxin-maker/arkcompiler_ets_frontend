@@ -98,3 +98,4 @@ faultDesc[FaultID.StrictDiagnostic] = 'Strict diagnostic';
 faultDesc[FaultID.ImportAfterStatement] = 'Import declaration after other declaration or statement';
 faultDesc[FaultID.EsObjectType] = 'Restricted "ESObject" type';
 faultDesc[FaultID.SendableClassInheritance] = 'Sendable class inheritance';
+faultDesc[FaultID.SendableDefiniteAssignment] = 'Use of definite assignment assertion in "Sendable" class';

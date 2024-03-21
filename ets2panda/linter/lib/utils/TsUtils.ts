@@ -27,6 +27,7 @@ import { isAssignmentOperator } from './functions/isAssignmentOperator';
 import { forEachNodeInSubtree } from './functions/ForEachNodeInSubtree';
 import { FaultID } from '../Problems';
 import type { IsEtsFileCallback } from '../IsEtsFileCallback';
+import { SENDABLE_DECORATOR } from './consts/SendableAPI';
 
 export type CheckType = (this: TsUtils, t: ts.Type) => boolean;
 export class TsUtils {
@@ -1716,7 +1717,7 @@ export class TsUtils {
   static hasSendableDecorator(decl: ts.ClassDeclaration): boolean {
     const decorators = ts.getDecorators(decl);
     return decorators !== undefined && decorators.some((x) => {
-      return TsUtils.getDecoratorName(x) === 'Sendable';
+      return TsUtils.getDecoratorName(x) === SENDABLE_DECORATOR;
     });
   }
 }

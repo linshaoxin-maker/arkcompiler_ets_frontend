@@ -1321,14 +1321,20 @@ export class TypeScriptLinter {
     const isSendableClass = TsUtils.hasSendableDecorator(tsClassDecl);
     const visitHClause = (hClause: ts.HeritageClause): void => {
       for (const tsTypeExpr of hClause.types) {
+
+        /*
+         * Always resolve type from 'tsTypeExpr' node, not from 'tsTypeExpr.expression' node,
+         * as for the latter, type checker will return incorrect type result for classes in
+         * 'extends' clause. Additionally, reduce reference, as mostly type checker returns
+         * the TypeReference type objects for classes and interfaces.
+         */
         const tsExprType = TsUtils.reduceReference(this.tsTypeChecker.getTypeAtLocation(tsTypeExpr));
         if (tsExprType.isClass()) {
           if (hClause.token === ts.SyntaxKind.ImplementsKeyword) {
             this.incrementCounters(tsTypeExpr, FaultID.ImplementsClass);
           }
-
           const isSendableBaseType = TsUtils.isSendableType(tsExprType);
-          if (isSendableClass && !isSendableBaseType || !isSendableClass && isSendableBaseType) {
+          if (isSendableClass !== isSendableBaseType) {
             this.incrementCounters(tsTypeExpr, FaultID.SendableClassInheritance);
           }
         }
@@ -1344,8 +1350,12 @@ export class TypeScriptLinter {
       }
     }
 
+    this.processClassStaticBlocks(tsClassDecl);
+  }
+
+  private processClassStaticBlocks(classDecl: ts.ClassDeclaration): void {
     let hasStaticBlock = false;
-    for (const element of tsClassDecl.members) {
+    for (const element of classDecl.members) {
       if (ts.isClassStaticBlockDeclaration(element)) {
         if (hasStaticBlock) {
           this.incrementCounters(element, FaultID.MultipleStaticBlocks);
@@ -2068,9 +2078,18 @@ export class TypeScriptLinter {
   }
 
   private handleDefiniteAssignmentAssertion(decl: ts.VariableDeclaration | ts.PropertyDeclaration): void {
-    if (decl.exclamationToken !== undefined) {
-      this.incrementCounters(decl, FaultID.DefiniteAssignment);
+    if (decl.exclamationToken === undefined) {
+      return;
     }
+
+    if (decl.kind === ts.SyntaxKind.PropertyDeclaration) {
+      const parentDecl = decl.parent;
+      if (parentDecl.kind === ts.SyntaxKind.ClassDeclaration && TsUtils.hasSendableDecorator(parentDecl)) {
+        this.incrementCounters(decl, FaultID.SendableDefiniteAssignment);
+        return;
+      }
+    }
+    this.incrementCounters(decl, FaultID.DefiniteAssignment);
   }
 
   private readonly validatedTypesSet = new Set<ts.Type>();
