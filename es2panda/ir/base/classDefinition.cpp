@@ -543,6 +543,10 @@ static void AddFieldType(FieldType &fieldType, const Expression *typeAnnotation)
             fieldType |= FieldType::BIGINT;
             break;
         }
+        case AstNodeType::TS_BIGINT_KEYWORD: {
+            fieldType |= FieldType::BIGINT;
+            break;
+        }
         default: {
             UNREACHABLE();
         }
