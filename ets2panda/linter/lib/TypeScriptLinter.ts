@@ -2068,9 +2068,18 @@ export class TypeScriptLinter {
   }
 
   private handleDefiniteAssignmentAssertion(decl: ts.VariableDeclaration | ts.PropertyDeclaration): void {
-    if (decl.exclamationToken !== undefined) {
-      this.incrementCounters(decl, FaultID.DefiniteAssignment);
+    if (decl.exclamationToken === undefined) {
+      return;
     }
+
+    if (decl.kind === ts.SyntaxKind.PropertyDeclaration) {
+      const parentDecl = decl.parent;
+      if (parentDecl.kind === ts.SyntaxKind.ClassDeclaration && TsUtils.hasSendableDecorator(parentDecl)) {
+        this.incrementCounters(decl, FaultID.SendableDefiniteAssignment);
+        return;
+      }
+    }
+    this.incrementCounters(decl, FaultID.DefiniteAssignment);
   }
 
   private readonly validatedTypesSet = new Set<ts.Type>();
