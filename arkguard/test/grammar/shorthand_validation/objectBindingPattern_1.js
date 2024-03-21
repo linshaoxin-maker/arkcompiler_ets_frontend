@@ -12,11 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const assert = require('assert');
-let x;
-async function* d1() {
-    for await ({ x: x = 'x' in {} } of [{}]) {
-        assert.strictEqual(x, false);
-    }
-}
-d1().next();
+
+const person = {  
+  firstName: 'John',  
+  age: 20  
+}; 
+
+const { firstName: personName, age: personAge } = person; 

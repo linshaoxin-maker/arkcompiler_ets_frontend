@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 const assert = require('assert');
-let g, h;
-const j = function l() { };
-const k = function () { };
-async function i() {
-    for await ({ g: g = j, h: h = k } of [{}]) {
-        assert.strictEqual(g, j);
-        assert.strictEqual(h, k);
+let t, u;
+const e1 = function g1() { };
+const f1 = function () { };
+async function d1() {
+    for await ({ t: t = e1, u: u = f1 } of [{}]) {
+        assert.strictEqual(t, e1);
+        assert.strictEqual(u, f1);
     }
 }
-let promise = i();
+d1();

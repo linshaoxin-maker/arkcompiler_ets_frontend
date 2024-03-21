@@ -24,8 +24,7 @@ async function fn() {
   for await ({ xFnexp = f1, fnexp = f2 } of [{}]) {
     assert.strictEqual(xFnexp, f1);
     assert.strictEqual(fnexp, f2);
-
   }
 }
 
-let promise = fn();
+fn();

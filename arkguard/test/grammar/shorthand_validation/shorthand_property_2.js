@@ -15,17 +15,12 @@
 
 const assert = require('assert');
 
-let xFnexp, fnexp;
-
-const f1 = function* x() {};
-const f2 = function* () {};
+let x;
 
 async function* fn() {
-  for await ({ xFnexp = f1, fnexp = f2 } of [{}]) {
-    assert.strictEqual(xFnexp, f1);
-    assert.strictEqual(fnexp, f2);
-
+  for await ({ x = 1 } of [{}]) {
+    assert.strictEqual(x, 1);
   }
 }
 
-let promise = fn().next();
+fn().next();

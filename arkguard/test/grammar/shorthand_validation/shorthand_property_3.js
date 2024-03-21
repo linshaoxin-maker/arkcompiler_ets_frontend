@@ -18,10 +18,9 @@ const assert = require('assert');
 let x;
 
 async function* fn() {
-  for await ({ x = 1 } of [{}]) {
-    assert.strictEqual(x, 1);
-
+  for await ({ x = 'x' in {} } of [{}]) {
+    assert.strictEqual(x, false);
   }
 }
 
-let promise = fn().next();
+fn().next();

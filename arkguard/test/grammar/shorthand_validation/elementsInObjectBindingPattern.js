@@ -12,11 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const assert = require('assert');
-let x;
-async function* d1() {
-    for await ({ x: x = 'x' in {} } of [{}]) {
-        assert.strictEqual(x, false);
-    }
-}
-d1().next();
+
+let [name1, age1] = ['akira', 22];
+let {name2, ...rest} = {'name2': 'akira', age2 : 22}
+
+

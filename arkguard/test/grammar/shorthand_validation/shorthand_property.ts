@@ -12,11 +12,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const assert = require('assert');
-let x;
-async function* d1() {
-    for await ({ x: x = 'x' in {} } of [{}]) {
-        assert.strictEqual(x, false);
+
+import assert from 'assert';
+
+namespace A {
+  let xFnexp, fnexp;
+
+  const f1 = function x() {};
+  const f2 = function () {};
+
+  async function fn() {
+    for await ({ xFnexp = f1, fnexp = f2 } of [{ xFnexp, fnexp }]) {
+      assert.strictEqual(xFnexp, f1);
+      assert.strictEqual(fnexp, f2);
     }
+  }
+
+  fn();
 }
-d1().next();
