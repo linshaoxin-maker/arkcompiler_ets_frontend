@@ -178,3 +178,4 @@ cookBookTag[150] = '"import" statements after other statements are not allowed (
 cookBookTag[151] = 'Usage of "ESObject" type is restricted (arkts-limited-esobj)';
 cookBookTag[152] = '"Function.apply", "Function.call" are not supported (arkts-no-func-apply-call)';
 cookBookTag[153] = 'The inheritance for "Sendable" classes is limited (arkts-sendable-class-inheritance)';
+cookBookTag[155] = 'Definite assignment assertion in not allowed in "Sendable" classes and interfaces (arkts-sendable-definite-assignment)';
