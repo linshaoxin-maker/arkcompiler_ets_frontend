@@ -1696,13 +1696,30 @@ export class TsUtils {
   }
 
   static isSendableType(type: ts.Type): boolean {
+    if ((type.flags & (ts.TypeFlags.Boolean | ts.TypeFlags.Number | ts.TypeFlags.String |
+                       ts.TypeFlags.BigInt | ts.TypeFlags.Null | ts.TypeFlags.Undefined |
+                       ts.TypeFlags.TypeParameter)) !== 0) {
+      return true;
+    }
+
+    // Only the sendable nullish union type is supported
+    if ((type.flags & ts.TypeFlags.Union) !== 0 && TsUtils.isNullishSendableType(type as ts.UnionType)) {
+      return true;
+    }
+
+    return this.isSendableClass(type);
+  }
+
+  static isSendableClass(type: ts.Type): boolean {
     const sym = type.getSymbol();
     if (!sym) {
       return false;
     }
 
+    const targetType = TsUtils.reduceReference(type);
+
     // class with @Sendable decorator
-    if (type.isClass()) {
+    if (targetType.isClass()) {
       if (sym.declarations?.length) {
         const decl = sym.declarations[0];
         if (ts.isClassDeclaration(decl) && TsUtils.hasSendableDecorator(decl)) {
@@ -1714,10 +1731,55 @@ export class TsUtils {
     return false;
   }
 
+  static isNullishSendableType(type: ts.UnionType): boolean {
+    const types = type?.types;
+    if (!types || types.length > 3) {
+      return false;
+    }
+
+    let nullCount = 0;
+    let undefinedCount = 0;
+    let sendableCount = 0;
+
+    for (const type of types) {
+      if ((type.flags & ts.TypeFlags.Null) !== 0) {
+        nullCount++;
+      } else if ((type.flags & ts.TypeFlags.Undefined) !== 0) {
+        undefinedCount++;
+      } else {
+        if (!TsUtils.isSendableType(type)) {
+          return false;
+        }
+        sendableCount++;
+      }
+    }
+    return nullCount <= 1 && undefinedCount <= 1 && sendableCount === 1;
+  }
+
   static hasSendableDecorator(decl: ts.ClassDeclaration): boolean {
     const decorators = ts.getDecorators(decl);
     return decorators !== undefined && decorators.some((x) => {
       return TsUtils.getDecoratorName(x) === SENDABLE_DECORATOR;
     });
+  }
+
+  static hasNonSendableDecorator(decl: ts.ClassDeclaration): boolean {
+    const decorators = ts.getDecorators(decl);
+    return decorators !== undefined && decorators.some((x) => {
+      return TsUtils.getDecoratorName(x) !== 'Sendable';
+    });
+  }
+
+  static isInSendableClassAndHasDecorators(declaration: ts.HasDecorators): boolean {
+    const classNode = TsUtils.getClassNodeFromDeclaration(declaration);
+    return !!classNode && TsUtils.hasSendableDecorator(classNode) && ts.getDecorators(declaration) !== undefined;
+  }
+  
+  private static getClassNodeFromDeclaration(declaration: ts.HasDecorators): ts.ClassDeclaration | undefined {
+    if (declaration.kind === ts.SyntaxKind.Parameter) {
+      return ts.isClassDeclaration(declaration.parent?.parent) ? declaration.parent?.parent : undefined;
+    } else {
+      return ts.isClassDeclaration(declaration.parent) ? declaration.parent : undefined;
+    }
   }
 }

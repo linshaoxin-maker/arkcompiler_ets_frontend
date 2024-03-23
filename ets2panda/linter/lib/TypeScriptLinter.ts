@@ -565,6 +565,9 @@ export class TypeScriptLinter {
 
   private handleParameter(node: ts.Node): void {
     const tsParam = node as ts.ParameterDeclaration;
+    if (TsUtils.isInSendableClassAndHasDecorators(tsParam)) {
+      this.incrementCounters(node, FaultID.SendableClassDecorator);
+    }
     this.handleDeclarationDestructuring(tsParam);
     this.handleDeclarationInferredType(tsParam);
   }
@@ -756,6 +759,26 @@ export class TypeScriptLinter {
     );
     this.handleDeclarationInferredType(node);
     this.handleDefiniteAssignmentAssertion(node);
+    this.handleSendableClassProperty(node);
+  }
+
+  private handleSendableClassProperty(node: ts.PropertyDeclaration): void {
+    const typeNode = node.type;
+    if (!typeNode) {
+      return;
+    }
+    const classNode = node.parent;
+    if (!ts.isClassDeclaration(classNode) || !TsUtils.hasSendableDecorator(classNode)) {
+      return;
+    }
+    if (TsUtils.isInSendableClassAndHasDecorators(node)) {
+      this.incrementCounters(node, FaultID.SendableClassDecorator);
+    }
+    const type = this.tsTypeChecker.getTypeFromTypeNode(typeNode);
+    const isSendablePropType = TsUtils.isSendableType(type);
+    if (!isSendablePropType) {
+      this.incrementCounters(node, FaultID.SendablePropType);
+    }
   }
 
   private handlePropertyAssignment(node: ts.PropertyAssignment): void {
@@ -1319,6 +1342,9 @@ export class TypeScriptLinter {
     this.countClassMembersWithDuplicateName(tsClassDecl);
 
     const isSendableClass = TsUtils.hasSendableDecorator(tsClassDecl);
+    if (isSendableClass && TsUtils.hasNonSendableDecorator(tsClassDecl)) {
+      this.incrementCounters(tsClassDecl, FaultID.SendableClassDecorator);
+    }
     const visitHClause = (hClause: ts.HeritageClause): void => {
       for (const tsTypeExpr of hClause.types) {
 
@@ -1333,7 +1359,8 @@ export class TypeScriptLinter {
           if (hClause.token === ts.SyntaxKind.ImplementsKeyword) {
             this.incrementCounters(tsTypeExpr, FaultID.ImplementsClass);
           }
-          const isSendableBaseType = TsUtils.isSendableType(tsExprType);
+
+          const isSendableBaseType = TsUtils.isSendableClass(tsExprType);
           if (isSendableClass !== isSendableBaseType) {
             this.incrementCounters(tsTypeExpr, FaultID.SendableClassInheritance);
           }
@@ -1452,6 +1479,9 @@ export class TypeScriptLinter {
 
   private handleMethodDeclaration(node: ts.Node): void {
     const tsMethodDecl = node as ts.MethodDeclaration;
+    if (TsUtils.isInSendableClassAndHasDecorators(tsMethodDecl)) {
+      this.incrementCounters(node, FaultID.SendableClassDecorator);
+    }
     let isStatic = false;
     if (tsMethodDecl.modifiers) {
       for (const mod of tsMethodDecl.modifiers) {
@@ -1915,6 +1945,26 @@ export class TypeScriptLinter {
       this.handleStructIdentAndUndefinedInArgs(tsNewExpr, callSignature);
       this.handleGenericCallWithNoTypeArgs(tsNewExpr, callSignature);
     }
+    this.handleSendableGenericTypes(tsNewExpr);
+  }
+
+  private handleSendableGenericTypes(node: ts.NewExpression): void {
+    const type = this.tsTypeChecker.getTypeAtLocation(node);
+    if (!TsUtils.isSendableType(type)) {
+      return;
+    }
+
+    const typeArgs = node.typeArguments;
+    if (!typeArgs || typeArgs.length === 0) {
+      return;
+    }
+
+    for (const arg of typeArgs) {
+      const argType = this.tsTypeChecker.getTypeFromTypeNode(arg);
+      if (!TsUtils.isSendableType(argType)) {
+        this.incrementCounters(node, FaultID.SendableGenericTypes);
+      }
+    }
   }
 
   private handleAsExpression(node: ts.Node): void {
@@ -1930,6 +1980,9 @@ export class TypeScriptLinter {
       TsUtils.isBooleanLikeType(exprType) && this.tsUtils.isStdBooleanType(targetType)
     ) {
       this.incrementCounters(node, FaultID.TypeAssertion);
+    }
+    if (!TsUtils.isSendableClass(exprType) && TsUtils.isSendableClass(targetType)) {
+      this.incrementCounters(tsAsExpr, FaultID.SendableAsExpr);
     }
   }
 
@@ -2008,7 +2061,10 @@ export class TypeScriptLinter {
     }
   }
 
-  private handleGetAccessor(node: ts.Node): void {
+  private handleGetAccessor(node: ts.GetAccessorDeclaration): void {
+    if (TsUtils.isInSendableClassAndHasDecorators(node)) {
+      this.incrementCounters(node, FaultID.SendableClassDecorator);
+    }
 
     /**
      * Reserved if needed
@@ -2017,7 +2073,10 @@ export class TypeScriptLinter {
     void this;
   }
 
-  private handleSetAccessor(node: ts.Node): void {
+  private handleSetAccessor(node: ts.SetAccessorDeclaration): void {
+    if (TsUtils.isInSendableClassAndHasDecorators(node)) {
+      this.incrementCounters(node, FaultID.SendableClassDecorator);
+    }
 
     /**
      * Reserved if needed
@@ -2221,7 +2280,6 @@ export class TypeScriptLinter {
 
   private handleConstructorDeclaration(node: ts.Node): void {
     const ctorDecl = node as ts.ConstructorDeclaration;
-
     if (ctorDecl.parameters.some((x) => {
       return TsUtils.hasAccessModifier(x);
     })) {
