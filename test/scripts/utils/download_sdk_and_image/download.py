@@ -162,11 +162,11 @@ def check_zip_file(file_path):
 
 def get_remote_download_name(task_name):
     if is_windows():
-        if 'sdk' in task_name:
+        if 'sdk' in task_name.lower():
             return 'ohos-sdk-full.tar.gz'
         return 'dayu200.tar.gz'
     elif is_mac():
-        if 'sdk' in task_name:
+        if 'sdk' in task_name.lower():
             return 'L2-MAC-SDK-FULL.tar.gz'
         return 'dayu200.tar.gz'
     else:
@@ -226,7 +226,7 @@ def get_the_unzip_file(download_url, save_path):
     else:
         print('The downloaded file is not a valid gzip or zip file.')
 
-    if 'sdk' in download_name:
+    if 'sdk' in download_name.lower():
         unpack_sdk_file(save_path)
 
     return True
@@ -263,7 +263,7 @@ def delete_redundant_files(task_name, file_name, download_save_path, is_save):
         date_time = re.search(r"\d{8}", file_name).group()
         new_file_path = os.path.join(download_save_path, f'{date_time}-{task_name}')
         if not os.path.exists(new_file_path):
-            temp_file_name = 'sdk_temp' if 'sdk' in task_name else 'dayu200_xts'
+            temp_file_name = 'sdk_temp' if 'sdk' in task_name.lower() else 'dayu200_xts'
             temp_file_path = os.path.join(download_save_path, temp_file_name)
             os.rename(temp_file_path, new_file_path)
     subdirs_and_files = [subdir_or_file for subdir_or_file in os.listdir(download_save_path)]
