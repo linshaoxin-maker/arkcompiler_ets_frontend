@@ -838,6 +838,10 @@ export class TypeScriptLinter {
     if (!ts.isClassDeclaration(classNode) || !TsUtils.hasSendableDecorator(classNode)) {
       return;
     }
+    // check captured variables for sendable class
+    if (TsUtils.hasSendableDecorator(node.parent as ts.ClassDeclaration)) {
+      this.scanCapturedVarsInSendableScope(node);
+    }
     if (TsUtils.isInSendableClassAndHasDecorators(node)) {
       this.incrementCounters(node, FaultID.SendableClassDecorator);
     }
@@ -1591,6 +1595,10 @@ export class TypeScriptLinter {
       { begin: tsMethodDecl.parameters.end, end: tsMethodDecl.body?.getStart() ?? tsMethodDecl.parameters.end },
       FUNCTION_HAS_NO_RETURN_ERROR_CODE
     );
+    // check captured variables for sendable class
+    if (TsUtils.hasSendableDecorator(node.parent as ts.ClassDeclaration)) {
+      this.scanCapturedVarsInSendableScope(node);
+    }
   }
 
   private handleMethodSignature(node: ts.MethodSignature): void {
@@ -1606,6 +1614,10 @@ export class TypeScriptLinter {
       return;
     }
     this.reportThisKeywordsInScope(classStaticBlockDecl.body);
+    // check captured variables for sendable class
+    if (TsUtils.hasSendableDecorator(node.parent as ts.ClassDeclaration)) {
+      this.scanCapturedVarsInSendableScope(node);
+    }
   }
 
   private handleIdentifier(node: ts.Node): void {
@@ -2449,6 +2461,33 @@ export class TypeScriptLinter {
     if (!this.tsUtils.isAllowedIndexSignature(node as ts.IndexSignatureDeclaration)) {
       this.incrementCounters(node, FaultID.IndexMember);
     }
+  }
+
+  private scanCapturedVarsInSendableScope( scope: ts.Node ): void {
+    const callback = (node: ts.Node): void => {
+      if (node.kind === ts.SyntaxKind.Identifier) {
+        const symbol = this.tsTypeChecker.getSymbolAtLocation(node);
+        if (symbol ===undefined) {
+          this.incrementCounters(node, FaultID.SendableCapturedVars);
+          return;
+        }
+        if ( !(symbol.getFlags() & (ts.SymbolFlags.Variable)) )
+          return;
+        if( this.tsTypeChecker.isArgumentsSymbol(symbol))
+          return;
+        const decl = symbol.getDeclarations();
+        if (decl && decl[0].kind === ts.SyntaxKind.Parameter)
+          return;
+        if (decl && decl[0].kind === ts.SyntaxKind.PropertyDeclaration)
+          return;
+        let declPosition = decl?.[0].getStart();
+        if(declPosition && (declPosition >= scope.getStart()) && (declPosition < scope.getEnd()) )
+          return;
+        this.incrementCounters(node, FaultID.SendableCapturedVars);
+      }
+    };
+    const stopCondition = null; // scan all subtree
+    forEachNodeInSubtree(scope, callback);
   }
 
   private createSyncAutofixes(symbol: ts.Symbol, autofixes: Autofix[]): Autofix[] {
