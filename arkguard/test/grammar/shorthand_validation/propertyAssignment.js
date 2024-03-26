@@ -12,5 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const { x: x, y: y } = { x: 1, y: 2 };
-const { x: a, y: b } = { x: x, y: y };
+
+let word = 'hello';
+let info = { word };

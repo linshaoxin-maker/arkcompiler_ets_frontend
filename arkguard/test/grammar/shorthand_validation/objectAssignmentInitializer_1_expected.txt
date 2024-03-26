@@ -12,8 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const o = {
-    l: 'John',
-    m: 20
-};
-const { l: p, m: q } = o;
+const assert = require('assert');
+let xFnexp, fnexp;
+const f1 = function x() { };
+const f2 = function () { };
+async function fn() {
+    for await ({ xFnexp: xFnexp = f1, fnexp: fnexp = f2 } of [{}]) {
+        assert.strictEqual(xFnexp, f1);
+        assert.strictEqual(fnexp, f2);
+    }
+}
+fn();

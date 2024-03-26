@@ -12,10 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-const person = {  
-  firstName: 'John',  
-  age: 20  
-}; 
-
-const { firstName: personName, age: personAge } = person; 
+import assert from 'assert';
+namespace A {
+    let b, c;
+    const d = function f() { };
+    const e = function () { };
+    async function a() {
+        for await ({ xFnexp: b = d, fnexp: c = e } of [{ xFnexp: b, fnexp: c }]) {
+            assert.strictEqual(b, d);
+            assert.strictEqual(c, e);
+        }
+    }
+    a();
+}

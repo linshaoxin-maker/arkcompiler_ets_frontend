@@ -12,16 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import assert from 'assert';
-namespace v {
-    let x, y;
-    const z = function b1() { };
-    const a1 = function () { };
-    async function w() {
-        for await ({ t: x = z, u: y = a1 } of [{ t: x, u: y }]) {
-            assert.strictEqual(x, z);
-            assert.strictEqual(y, a1);
-        }
-    }
-    w();
+
+function foo() {
+    return { x: 1, y: 2 };
 }
+
+const { x, y } = foo();
+const {x: a, y: b} = {x, y}

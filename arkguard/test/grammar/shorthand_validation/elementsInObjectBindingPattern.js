@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 
+// exclude
 let [name1, age1] = ['akira', 22];
 let {name2, ...rest} = {'name2': 'akira', age2 : 22}
 
-
+// include
+let { x, y } = { x: 1, y: 2 };

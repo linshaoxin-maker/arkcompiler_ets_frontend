@@ -10,9 +10,9 @@
         "mNameGeneratorType": 1,
         "mDictionaryList": [],
         "mReservedProperties": [ "strictEqual" ],
-        "mRenameProperties": true,
+        "mRenameProperties": false,
         "mKeepStringProperty": false,
-        "mTopLevel": true
+        "mTopLevel": false
     },
     "mEnableSourceMap": false,
     "mEnableNameCache": false

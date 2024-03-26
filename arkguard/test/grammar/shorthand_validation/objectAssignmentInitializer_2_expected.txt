@@ -14,9 +14,9 @@
  */
 const assert = require('assert');
 let x;
-async function* d1() {
-    for await ({ x: x = 'x' in {} } of [{}]) {
-        assert.strictEqual(x, false);
+async function* fn() {
+    for await ({ x: x = 1 } of [{}]) {
+        assert.strictEqual(x, 1);
     }
 }
-d1().next();
+fn().next();
