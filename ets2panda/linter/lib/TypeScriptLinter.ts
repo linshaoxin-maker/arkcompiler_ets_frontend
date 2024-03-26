@@ -518,9 +518,12 @@ export class TypeScriptLinter {
     if (TsUtils.isDestructuringAssignmentLHS(objectLiteralExpr)) {
       return;
     }
-    // issue 13082: Allow initializing struct instances with object literal.
+
     const objectLiteralType = this.tsTypeChecker.getContextualType(objectLiteralExpr);
-    if (
+    if (objectLiteralType && TsUtils.isSendableClass(objectLiteralType)) {
+      this.incrementCounters(node, FaultID.SendableObjectInitialization);
+    } else if (
+      // issue 13082: Allow initializing struct instances with object literal.
       !this.tsUtils.isStructObjectInitializer(objectLiteralExpr) &&
       !this.tsUtils.isDynamicLiteralInitializer(objectLiteralExpr) &&
       !this.tsUtils.isObjectLiteralAssignable(objectLiteralType, objectLiteralExpr)
@@ -540,6 +543,12 @@ export class TypeScriptLinter {
     }
     const arrayLitNode = node as ts.ArrayLiteralExpression;
     let noContextTypeForArrayLiteral = false;
+
+    const arrayLitType = this.tsTypeChecker.getContextualType(arrayLitNode);
+    if (arrayLitType && TsUtils.isSendableClass(arrayLitType)) {
+      this.incrementCounters(node, FaultID.SendableObjectInitialization);
+      return;
+    }
 
     /*
      * check that array literal consists of inferrable types
@@ -1962,7 +1971,7 @@ export class TypeScriptLinter {
     for (const arg of typeArgs) {
       const argType = this.tsTypeChecker.getTypeFromTypeNode(arg);
       if (!TsUtils.isSendableType(argType)) {
-        this.incrementCounters(node, FaultID.SendableGenericTypes);
+        this.incrementCounters(arg, FaultID.SendableGenericTypes);
       }
     }
   }
@@ -2056,7 +2065,10 @@ export class TypeScriptLinter {
 
   private handleComputedPropertyName(node: ts.Node): void {
     const computedProperty = node as ts.ComputedPropertyName;
-    if (!this.tsUtils.isValidComputedPropertyName(computedProperty, false)) {
+    const classNode = computedProperty.parent?.parent;
+    if (classNode && ts.isClassDeclaration(classNode) && TsUtils.hasSendableDecorator(classNode)) {
+      this.incrementCounters(node, FaultID.SendableComputedPropName);
+    } else if (!this.tsUtils.isValidComputedPropertyName(computedProperty, false)) {
       this.incrementCounters(node, FaultID.ComputedPropertyName);
     }
   }

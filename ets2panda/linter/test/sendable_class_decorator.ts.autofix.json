@@ -19,42 +19,42 @@
             "column": 1,
             "problem": "SendableClassDecorator",
             "autofixable": false,
-            "rule": "No decorators can be used in a sendable class and only `@Sendable` can be used on a sendable class declaration (arkts-sendable-class-decorator)"
+            "rule": "Only \"@Sendable\" decorator can be used on \"Sendable\" class (arkts-sendable-class-decorator)"
         },
         {
             "line": 38,
             "column": 5,
             "problem": "SendableClassDecorator",
             "autofixable": false,
-            "rule": "No decorators can be used in a sendable class and only `@Sendable` can be used on a sendable class declaration (arkts-sendable-class-decorator)"
+            "rule": "Only \"@Sendable\" decorator can be used on \"Sendable\" class (arkts-sendable-class-decorator)"
         },
         {
             "line": 43,
             "column": 5,
             "problem": "SendableClassDecorator",
             "autofixable": false,
-            "rule": "No decorators can be used in a sendable class and only `@Sendable` can be used on a sendable class declaration (arkts-sendable-class-decorator)"
+            "rule": "Only \"@Sendable\" decorator can be used on \"Sendable\" class (arkts-sendable-class-decorator)"
         },
         {
             "line": 46,
             "column": 15,
             "problem": "SendableClassDecorator",
             "autofixable": false,
-            "rule": "No decorators can be used in a sendable class and only `@Sendable` can be used on a sendable class declaration (arkts-sendable-class-decorator)"
+            "rule": "Only \"@Sendable\" decorator can be used on \"Sendable\" class (arkts-sendable-class-decorator)"
         },
         {
             "line": 48,
             "column": 5,
             "problem": "SendableClassDecorator",
             "autofixable": false,
-            "rule": "No decorators can be used in a sendable class and only `@Sendable` can be used on a sendable class declaration (arkts-sendable-class-decorator)"
+            "rule": "Only \"@Sendable\" decorator can be used on \"Sendable\" class (arkts-sendable-class-decorator)"
         },
         {
             "line": 52,
             "column": 5,
             "problem": "SendableClassDecorator",
             "autofixable": false,
-            "rule": "No decorators can be used in a sendable class and only `@Sendable` can be used on a sendable class declaration (arkts-sendable-class-decorator)"
+            "rule": "Only \"@Sendable\" decorator can be used on \"Sendable\" class (arkts-sendable-class-decorator)"
         },
         {
             "line": 19,

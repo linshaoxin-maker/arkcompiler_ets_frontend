@@ -1702,8 +1702,8 @@ export class TsUtils {
       return true;
     }
 
-    // Only the sendable nullish union type is supported
-    if ((type.flags & ts.TypeFlags.Union) !== 0 && TsUtils.isNullishSendableType(type as ts.UnionType)) {
+    // Only the sendable union type is supported
+    if ((type.flags & ts.TypeFlags.Union) !== 0 && TsUtils.isSendableUnionType(type as ts.UnionType)) {
       return true;
     }
 
@@ -1731,29 +1731,15 @@ export class TsUtils {
     return false;
   }
 
-  static isNullishSendableType(type: ts.UnionType): boolean {
+  static isSendableUnionType(type: ts.UnionType): boolean {
     const types = type?.types;
-    if (!types || types.length > 3) {
+    if (!types) {
       return false;
     }
 
-    let nullCount = 0;
-    let undefinedCount = 0;
-    let sendableCount = 0;
-
-    for (const type of types) {
-      if ((type.flags & ts.TypeFlags.Null) !== 0) {
-        nullCount++;
-      } else if ((type.flags & ts.TypeFlags.Undefined) !== 0) {
-        undefinedCount++;
-      } else {
-        if (!TsUtils.isSendableType(type)) {
-          return false;
-        }
-        sendableCount++;
-      }
-    }
-    return nullCount <= 1 && undefinedCount <= 1 && sendableCount === 1;
+    return types.every((type) => {
+      return TsUtils.isSendableType(type);
+    });
   }
 
   static hasSendableDecorator(decl: ts.ClassDeclaration): boolean {
@@ -1774,12 +1760,11 @@ export class TsUtils {
     const classNode = TsUtils.getClassNodeFromDeclaration(declaration);
     return !!classNode && TsUtils.hasSendableDecorator(classNode) && ts.getDecorators(declaration) !== undefined;
   }
-  
+
   private static getClassNodeFromDeclaration(declaration: ts.HasDecorators): ts.ClassDeclaration | undefined {
     if (declaration.kind === ts.SyntaxKind.Parameter) {
       return ts.isClassDeclaration(declaration.parent?.parent) ? declaration.parent?.parent : undefined;
-    } else {
-      return ts.isClassDeclaration(declaration.parent) ? declaration.parent : undefined;
     }
+    return ts.isClassDeclaration(declaration.parent) ? declaration.parent : undefined;
   }
 }

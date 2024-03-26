@@ -101,5 +101,8 @@ faultDesc[FaultID.SendableClassInheritance] = 'Sendable class inheritance';
 faultDesc[FaultID.SendablePropType] = 'Sendable class property';
 faultDesc[FaultID.SendableDefiniteAssignment] = 'Use of definite assignment assertion in "Sendable" class';
 faultDesc[FaultID.SendableGenericTypes] = 'Sendable generic types';
-faultDesc[FaultID.SendableAsExpr] = 'Sendable as expr';
 faultDesc[FaultID.SendableClassDecorator] = 'Sendable class decorator';
+faultDesc[FaultID.SendableObjectInitialization] = 'Object literal or array literal is not allowed to \
+                                                                   initialize a "Sendable" object';
+faultDesc[FaultID.SendableComputedPropName] = 'Sendable computed property name';
+faultDesc[FaultID.SendableAsExpr] = 'Sendable as expr';

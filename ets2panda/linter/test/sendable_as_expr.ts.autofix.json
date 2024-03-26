@@ -19,14 +19,14 @@
             "column": 10,
             "problem": "SendableAsExpr",
             "autofixable": false,
-            "rule": "Non-sendable data can not be cast to \"Sendable\" data (arkts-sendable-as-expr)"
+            "rule": "Casting \"Non-sendable\" data to \"Sendable\" type is not allowed (arkts-sendable-as-expr)"
         },
         {
             "line": 27,
             "column": 10,
             "problem": "SendableAsExpr",
             "autofixable": false,
-            "rule": "Non-sendable data can not be cast to \"Sendable\" data (arkts-sendable-as-expr)"
+            "rule": "Casting \"Non-sendable\" data to \"Sendable\" type is not allowed (arkts-sendable-as-expr)"
         }
     ]
 }

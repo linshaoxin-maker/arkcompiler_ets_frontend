@@ -16,24 +16,24 @@
     "nodes": [
         {
             "line": 25,
-            "column": 12,
+            "column": 39,
             "problem": "SendableGenericTypes",
             "autofixable": false,
-            "rule": "Only \"Sendable\" data types are allowed as type arguments of generic \"Sendable\" type (arkts-sendable-generic-types)"
+            "rule": "Type arguments of generic \"Sendable\" type must be a \"Sendable\" data type (arkts-sendable-generic-types)"
         },
         {
             "line": 26,
-            "column": 12,
+            "column": 31,
             "problem": "SendableGenericTypes",
             "autofixable": false,
-            "rule": "Only \"Sendable\" data types are allowed as type arguments of generic \"Sendable\" type (arkts-sendable-generic-types)"
+            "rule": "Type arguments of generic \"Sendable\" type must be a \"Sendable\" data type (arkts-sendable-generic-types)"
         },
         {
             "line": 26,
-            "column": 12,
+            "column": 41,
             "problem": "SendableGenericTypes",
             "autofixable": false,
-            "rule": "Only \"Sendable\" data types are allowed as type arguments of generic \"Sendable\" type (arkts-sendable-generic-types)"
+            "rule": "Type arguments of generic \"Sendable\" type must be a \"Sendable\" data type (arkts-sendable-generic-types)"
         },
         {
             "line": 28,
@@ -61,10 +61,10 @@
         },
         {
             "line": 33,
-            "column": 12,
+            "column": 26,
             "problem": "SendableGenericTypes",
             "autofixable": false,
-            "rule": "Only \"Sendable\" data types are allowed as type arguments of generic \"Sendable\" type (arkts-sendable-generic-types)"
+            "rule": "Type arguments of generic \"Sendable\" type must be a \"Sendable\" data type (arkts-sendable-generic-types)"
         },
         {
             "line": 20,

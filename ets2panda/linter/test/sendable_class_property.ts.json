@@ -15,104 +15,150 @@
     ],
     "nodes": [
         {
-            "line": 33,
+            "line": 38,
             "column": 3,
             "problem": "SendablePropType",
-            "rule": "Properties in \"Sendable\" classes and interfaces must have a Sendable data type (arkts-sendable-prop-types)"
+            "rule": "Properties in \"Sendable\" classes must have a Sendable data type (arkts-sendable-prop-types)"
         },
         {
-            "line": 34,
+            "line": 39,
             "column": 3,
             "problem": "SendablePropType",
-            "rule": "Properties in \"Sendable\" classes and interfaces must have a Sendable data type (arkts-sendable-prop-types)"
+            "rule": "Properties in \"Sendable\" classes must have a Sendable data type (arkts-sendable-prop-types)"
         },
         {
-            "line": 35,
+            "line": 40,
             "column": 3,
             "problem": "SendablePropType",
-            "rule": "Properties in \"Sendable\" classes and interfaces must have a Sendable data type (arkts-sendable-prop-types)"
+            "rule": "Properties in \"Sendable\" classes must have a Sendable data type (arkts-sendable-prop-types)"
         },
         {
-            "line": 36,
+            "line": 41,
             "column": 3,
             "problem": "SendablePropType",
-            "rule": "Properties in \"Sendable\" classes and interfaces must have a Sendable data type (arkts-sendable-prop-types)"
+            "rule": "Properties in \"Sendable\" classes must have a Sendable data type (arkts-sendable-prop-types)"
         },
         {
-            "line": 37,
+            "line": 42,
             "column": 3,
             "problem": "SendablePropType",
-            "rule": "Properties in \"Sendable\" classes and interfaces must have a Sendable data type (arkts-sendable-prop-types)"
+            "rule": "Properties in \"Sendable\" classes must have a Sendable data type (arkts-sendable-prop-types)"
         },
         {
-            "line": 20,
+            "line": 43,
+            "column": 3,
+            "problem": "SendablePropType",
+            "rule": "Properties in \"Sendable\" classes must have a Sendable data type (arkts-sendable-prop-types)"
+        },
+        {
+            "line": 44,
+            "column": 3,
+            "problem": "SendablePropType",
+            "rule": "Properties in \"Sendable\" classes must have a Sendable data type (arkts-sendable-prop-types)"
+        },
+        {
+            "line": 45,
+            "column": 3,
+            "problem": "SendableComputedPropName",
+            "rule": "Computed property names are not allowed in \"Sendable\" classes (arkts-sendable-computed-prop-name)"
+        },
+        {
+            "line": 23,
             "column": 3,
             "problem": "StrictDiagnostic",
             "suggest": "Property 'prop1' has no initializer and is not definitely assigned in the constructor.",
             "rule": "Property 'prop1' has no initializer and is not definitely assigned in the constructor."
         },
         {
-            "line": 21,
+            "line": 24,
             "column": 3,
             "problem": "StrictDiagnostic",
             "suggest": "Property 'prop2' has no initializer and is not definitely assigned in the constructor.",
             "rule": "Property 'prop2' has no initializer and is not definitely assigned in the constructor."
         },
         {
-            "line": 22,
+            "line": 25,
             "column": 3,
             "problem": "StrictDiagnostic",
             "suggest": "Property 'prop3' has no initializer and is not definitely assigned in the constructor.",
             "rule": "Property 'prop3' has no initializer and is not definitely assigned in the constructor."
         },
         {
-            "line": 23,
+            "line": 26,
             "column": 3,
             "problem": "StrictDiagnostic",
             "suggest": "Property 'prop4' has no initializer and is not definitely assigned in the constructor.",
             "rule": "Property 'prop4' has no initializer and is not definitely assigned in the constructor."
         },
         {
-            "line": 24,
+            "line": 27,
             "column": 3,
             "problem": "StrictDiagnostic",
             "suggest": "Property 'prop5' has no initializer and is not definitely assigned in the constructor.",
             "rule": "Property 'prop5' has no initializer and is not definitely assigned in the constructor."
         },
         {
-            "line": 25,
+            "line": 28,
             "column": 3,
             "problem": "StrictDiagnostic",
             "suggest": "Property 'prop6' has no initializer and is not definitely assigned in the constructor.",
             "rule": "Property 'prop6' has no initializer and is not definitely assigned in the constructor."
         },
         {
-            "line": 27,
+            "line": 30,
             "column": 3,
             "problem": "StrictDiagnostic",
             "suggest": "Property 'prop8' has no initializer and is not definitely assigned in the constructor.",
             "rule": "Property 'prop8' has no initializer and is not definitely assigned in the constructor."
         },
         {
+            "line": 32,
+            "column": 3,
+            "problem": "StrictDiagnostic",
+            "suggest": "Property 'prop10' has no initializer and is not definitely assigned in the constructor.",
+            "rule": "Property 'prop10' has no initializer and is not definitely assigned in the constructor."
+        },
+        {
             "line": 33,
+            "column": 3,
+            "problem": "StrictDiagnostic",
+            "suggest": "Property 'prop11' has no initializer and is not definitely assigned in the constructor.",
+            "rule": "Property 'prop11' has no initializer and is not definitely assigned in the constructor."
+        },
+        {
+            "line": 38,
             "column": 3,
             "problem": "StrictDiagnostic",
             "suggest": "Property 'prop1' has no initializer and is not definitely assigned in the constructor.",
             "rule": "Property 'prop1' has no initializer and is not definitely assigned in the constructor."
         },
         {
-            "line": 34,
+            "line": 39,
             "column": 3,
             "problem": "StrictDiagnostic",
             "suggest": "Property 'prop2' has no initializer and is not definitely assigned in the constructor.",
             "rule": "Property 'prop2' has no initializer and is not definitely assigned in the constructor."
         },
         {
-            "line": 35,
+            "line": 40,
             "column": 3,
             "problem": "StrictDiagnostic",
             "suggest": "Property 'prop3' has no initializer and is not definitely assigned in the constructor.",
             "rule": "Property 'prop3' has no initializer and is not definitely assigned in the constructor."
+        },
+        {
+            "line": 43,
+            "column": 3,
+            "problem": "StrictDiagnostic",
+            "suggest": "Property 'prop6' has no initializer and is not definitely assigned in the constructor.",
+            "rule": "Property 'prop6' has no initializer and is not definitely assigned in the constructor."
+        },
+        {
+            "line": 45,
+            "column": 3,
+            "problem": "StrictDiagnostic",
+            "suggest": "Property '[\"aaa\"]' has no initializer and is not definitely assigned in the constructor.",
+            "rule": "Property '[\"aaa\"]' has no initializer and is not definitely assigned in the constructor."
         }
     ]
 }

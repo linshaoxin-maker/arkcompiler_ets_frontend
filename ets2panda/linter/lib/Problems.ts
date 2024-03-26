@@ -98,8 +98,10 @@ export enum FaultID {
   SendablePropType,
   SendableDefiniteAssignment,
   SendableGenericTypes,
-  SendableAsExpr,
   SendableClassDecorator,
+  SendableObjectInitialization,
+  SendableComputedPropName,
+  SendableAsExpr,
   // this should always be last enum
   LAST_ID
 }

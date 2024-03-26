@@ -16,6 +16,9 @@
 class NonSendableClass2 {}
 
 @Sendable
+class SendableClass10 {}
+
+@Sendable
 class SendableClass4<T, U> {
   prop1: number; // OK
   prop2: string; // OK
@@ -25,7 +28,9 @@ class SendableClass4<T, U> {
   prop6: null; // OK
   prop7: undefined; // OK
   prop8: U; // OK
-  prop9: T | null | undefined; // OK
+  prop9: T | number | undefined; // OK
+  prop10: alias0; // OK
+  prop11: alias1; // OK
 }
 
 @Sendable
@@ -35,4 +40,12 @@ class SendableClass3 {
   prop3: NonSendableClass2 | null; // ERROR, sendable class property cannot be non-sendable-class union type
   prop4: NonSendableClass2 | undefined; // ERROR, sendable class property cannot be non-sendable-class union type
   prop5: NonSendableClass2 | null | undefined; // ERROR, sendable class property cannot be non-sendable-class union type
+  prop6: alias2; // ERROR, sendable class property cannot be non-sendable-type
+  prop7: alias3; // ERROR, sendable class property cannot be non-sendable-type
+  ["aaa"]: number; // ERROR, sendable class property name cannot be computed property
 }
+
+type alias0 = number | null;
+type alias1 = SendableClass10;
+type alias2 = NonSendableClass2;
+type alias3 = NonSendableClass2 | undefined;
