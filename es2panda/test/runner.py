@@ -69,32 +69,10 @@ def check_timeout(value):
     return ivalue
 
 
-def get_args():
-    parser = argparse.ArgumentParser(description="Regression test runner")
+def add_test_execution_control_arguments(parser):
     parser.add_argument(
         'build_dir', type=lambda arg: is_directory(parser, arg),
         help='panda build directory')
-    parser.add_argument(
-        '--test262', '-t', action='store_true', dest='test262', default=False,
-        help='run test262 tests')
-    parser.add_argument(
-        '--error', action='store_true', dest='error', default=False,
-        help='capture stderr')
-    parser.add_argument(
-        '--abc-to-asm', action='store_true', dest='abc_to_asm',
-        default=False, help='run abc2asm tests')
-    parser.add_argument(
-        '--regression', '-r', action='store_true', dest='regression',
-        default=False, help='run regression tests')
-    parser.add_argument(
-        '--compiler', '-c', action='store_true', dest='compiler',
-        default=False, help='run compiler tests')
-    parser.add_argument(
-        '--tsc', action='store_true', dest='tsc',
-        default=False, help='run tsc tests')
-    parser.add_argument(
-        '--type-extractor', action='store_true', dest='type_extractor',
-        default=False, help='run type extractor tests')
     parser.add_argument(
         '--no-progress', action='store_false', dest='progress', default=True,
         help='don\'t show progress bar')
@@ -105,11 +83,14 @@ def get_args():
         '--update', action='store_true', dest='update', default=False,
         help='update skiplist')
     parser.add_argument(
-        '--no-run-gc-in-place', action='store_true', dest='no_gip', default=False,
-        help='enable --run-gc-in-place mode')
-    parser.add_argument(
         '--filter', '-f', action='store', dest='filter',
         default="*", help='test filter regexp')
+    parser.add_argument(
+        '--test-list', dest='test_list', default=None, type=lambda arg: is_file(parser, arg),
+        help='run tests listed in file')
+
+
+def add_timeout_setting_arguments(parser):
     parser.add_argument(
         '--es2panda-timeout', type=check_timeout,
         dest='es2panda_timeout', default=60, help='es2panda translator timeout')
@@ -119,6 +100,9 @@ def get_args():
     parser.add_argument(
         '--timeout', type=check_timeout,
         dest='timeout', default=10, help='JS runtime timeout')
+
+
+def add_compilation_execution_options_arguments(parser):
     parser.add_argument(
         '--gc-type', dest='gc_type', default="g1-gc", help='Type of garbage collector')
     parser.add_argument(
@@ -140,14 +124,11 @@ def get_args():
         '--arm32-qemu', action='store_true', dest='arm32_qemu', default=False,
         help='launch all binaries in qemu arm')
     parser.add_argument(
-        '--test-list', dest='test_list', default=None, type=lambda arg: is_file(parser, arg),
-        help='run tests listed in file')
-    parser.add_argument(
         '--aot-args', action='append', dest='aot_args', default=[],
         help='Additional arguments that will passed to ark_aot')
-    parser.add_argument(
-        '--verbose', '-v', action='store_true', dest='verbose', default=False,
-        help='Enable verbose output')
+
+
+def add_environment_path_setting_arguments(parser):
     parser.add_argument(
         '--js-runtime', dest='js_runtime_path', default=None, type=lambda arg: is_directory(parser, arg),
         help='the path of js vm runtime')
@@ -156,6 +137,30 @@ def get_args():
     parser.add_argument(
         '--tsc-path', dest='tsc_path', default=None, type=lambda arg: is_directory(parser, arg),
         help='the path of tsc')
+
+
+def add_test_releate_arguments(parser):
+    parser.add_argument(
+        '--test262', '-t', action='store_true', dest='test262', default=False,
+        help='run test262 tests')
+    parser.add_argument(
+        '--error', action='store_true', dest='error', default=False,
+        help='capture stderr')
+    parser.add_argument(
+        '--abc-to-asm', action='store_true', dest='abc_to_asm',
+        default=False, help='run abc2asm tests')
+    parser.add_argument(
+        '--regression', '-r', action='store_true', dest='regression',
+        default=False, help='run regression tests')
+    parser.add_argument(
+        '--compiler', '-c', action='store_true', dest='compiler',
+        default=False, help='run compiler tests')
+    parser.add_argument(
+        '--tsc', action='store_true', dest='tsc',
+        default=False, help='run tsc tests')
+    parser.add_argument(
+        '--type-extractor', action='store_true', dest='type_extractor',
+        default=False, help='run type extractor tests')
     parser.add_argument('--hotfix', dest='hotfix', action='store_true', default=False,
         help='run hotfix tests')
     parser.add_argument('--hotreload', dest='hotreload', action='store_true', default=False,
@@ -168,6 +173,26 @@ def get_args():
         help='run bytecode tests')
     parser.add_argument('--debugger', dest='debugger', action='store_true', default=False,
         help='run debugger tests')
+
+
+def add_miscellaneous_arguments(parser):
+    parser.add_argument(
+        '--no-run-gc-in-place', action='store_true', dest='no_gip', default=False,
+        help='enable --run-gc-in-place mode')
+    parser.add_argument(
+        '--verbose', '-v', action='store_true', dest='verbose', default=False,
+        help='Enable verbose output')
+
+
+def get_args():
+    parser = argparse.ArgumentParser(description="Regression test runner")
+    # classify the parameters according to their purposes.
+    add_test_execution_control_arguments(parser)
+    add_timeout_setting_arguments(parser)
+    add_compilation_execution_options_arguments(parser)
+    add_environment_path_setting_arguments(parser)
+    add_test_releate_arguments(parser)
+    add_miscellaneous_arguments(parser)
 
     return parser.parse_args()
 
@@ -621,30 +646,49 @@ class Test262Runner(Runner):
     def __init__(self, args):
         Runner.__init__(self, args, "Test262 ark"),
 
+        self.setup_environment(args)
+        self.setup_skiplists(args)
+        self.setup_runtime(args)
+        self.setup_aot(args)
+        self.setup_test262(args)
+
+    def setup_environment(self, args):
         self.cmd_env = os.environ.copy()
         for san in ["ASAN_OPTIONS", "TSAN_OPTIONS", "MSAN_OPTIONS", "LSAN_OPTIONS"]:
             # we don't want to interpret asan failures as SyntaxErrors
             self.cmd_env[san] = ":exitcode=255"
 
+    def setup_skiplists(self, args):
         self.update = args.update
         self.enable_skiplists = False if self.update else args.skip
         self.normal_skiplist_file = "test262skiplist.txt"
         self.long_flaky_skiplist_files = ["test262skiplist-long.txt", "test262skiplist-flaky.txt"]
         self.normal_skiplist = set([])
+        self.skiplist_name_list = self.long_flaky_skiplist_files if self.update else []
+        self.skiplist_bco_name = ""
+        if self.enable_skiplists:
+            self.skiplist_name_list.append(self.normal_skiplist_file)
+            self.skiplist_name_list.extend(self.long_flaky_skiplist_files)
+
+            if args.bco:
+                self.skiplist_bco_name = "test262skiplist-bco.txt"
+            if args.arm64_compiler_skip:
+                self.skiplist_name_list.append("test262skiplist-compiler-arm64.txt")
+
+    def setup_runtime(self, args):
         self.runtime = path.join(args.build_dir, 'bin', 'ark')
         if not path.isfile(self.runtime):
             raise Exception("Cannot find runtime binary: %s" % self.runtime)
-
         self.runtime_args = [
             '--boot-panda-files=%s/pandastdlib/arkstdlib.abc'
             % args.build_dir,
             '--load-runtimes=ecmascript',
             '--gc-type=%s' % args.gc_type,
         ]
-
         if not args.no_gip:
             self.runtime_args += ['--run-gc-in-place']
 
+    def setup_aot(self, args):
         if args.aot:
             self.arkaot = path.join(args.build_dir, 'bin', 'ark_aot')
             if not path.isfile(self.arkaot):
@@ -664,28 +708,15 @@ class Test262Runner(Runner):
         else:
             self.aot_args = []
 
-        self.skiplist_name_list = self.long_flaky_skiplist_files if self.update else []
-        self.skiplist_bco_name = ""
-
-        if self.enable_skiplists:
-            self.skiplist_name_list.append(self.normal_skiplist_file)
-            self.skiplist_name_list.extend(self.long_flaky_skiplist_files)
-
-            if args.bco:
-                self.skiplist_bco_name = "test262skiplist-bco.txt"
-            if args.arm64_compiler_skip:
-                self.skiplist_name_list.append("test262skiplist-compiler-arm64.txt")
-
+    def setup_test262(self, args):
         self.tmp_dir = path.join(path.sep, 'tmp', 'panda', 'test262')
         os.makedirs(self.tmp_dir, exist_ok=True)
-
         self.util = test262util.Test262Util()
         self.test262_dir = self.util.generate(
             '281eb10b2844929a7c0ac04527f5b42ce56509fd',
             args.build_dir,
             path.join(self.test_root, "test262harness.js"),
             args.progress)
-
         self.add_directory(self.test262_dir, "js", args.test_list, [])
 
     def add_directory(self, directory, extension, test_list_path, flags):
