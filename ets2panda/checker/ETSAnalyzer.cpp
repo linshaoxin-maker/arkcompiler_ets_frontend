@@ -130,6 +130,10 @@ checker::Type *ETSAnalyzer::Check(ir::MethodDefinition *node) const
 
     auto *scriptFunc = node->Function();
 
+    if (scriptFunc == nullptr) {
+        checker->ThrowTypeError("Invalid function expression", node->Start());
+    }
+
     if (scriptFunc->IsProxy()) {
         return nullptr;
     }
@@ -190,6 +194,10 @@ void ETSAnalyzer::CheckMethodModifiers(ir::MethodDefinition *node) const
             "Invalid method modifier(s): an abstract method can't have private, override, static, final or native "
             "modifier.",
             node->Start());
+    }
+
+    if (node->Function() == nullptr) {
+        checker->ThrowTypeError("Invalid function expression", node->Start());
     }
 
     if ((node->IsAbstract() || (!node->Function()->HasBody() && !node->IsNative() && !node->IsDeclare())) &&
