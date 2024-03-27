@@ -14,6 +14,7 @@
  */
 
 #include "options.h"
+#include "compiler_options.h"
 
 #include <fstream>
 #include <set>
@@ -244,6 +245,9 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<bool> opuseDefineSemantic("use-define-semantic", false, "Compile ts class fields "\
         "in accordance with ECMAScript2022");
 
+    // optimizer
+    panda::PandArg<bool> opBranchElimination("branch-elimination", false, "Enable branch elimination optimization");
+
     // patchfix && hotreload
     panda::PandArg<std::string> opDumpSymbolTable("dump-symbol-table", "", "dump symbol table to file");
     panda::PandArg<std::string> opInputSymbolTable("input-symbol-table", "", "input symbol table file");
@@ -297,6 +301,7 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&opNpmModuleEntryList);
     argparser_->Add(&opMergeAbc);
     argparser_->Add(&opuseDefineSemantic);
+    argparser_->Add(&opBranchElimination);
 
     argparser_->Add(&opDumpSymbolTable);
     argparser_->Add(&opInputSymbolTable);
@@ -508,6 +513,8 @@ bool Options::Parse(int argc, const char **argv)
     compilerOptions_.patchFixOptions.generatePatch = generatePatch;
     compilerOptions_.patchFixOptions.hotReload = hotReload;
     compilerOptions_.patchFixOptions.coldFix = coldFix;
+
+    panda::compiler::options.SetCompilerBranchElimination(opBranchElimination.GetValue());
 
     return true;
 }
