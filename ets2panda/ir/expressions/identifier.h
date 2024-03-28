@@ -50,7 +50,7 @@ public:
     NO_MOVE_SEMANTIC(Identifier);
 
 public:
-    explicit Identifier(ArenaAllocator *const allocator) : Identifier("", allocator) {}
+    explicit Identifier(ArenaAllocator *const allocator) : Identifier(util::StringView {""}, allocator) {}
     explicit Identifier(util::StringView const name, ArenaAllocator *const allocator)
         : AnnotatedExpression(AstNodeType::IDENTIFIER), name_(name), decorators_(allocator->Adapter())
     {

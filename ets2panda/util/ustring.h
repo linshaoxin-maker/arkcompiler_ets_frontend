@@ -31,9 +31,9 @@ public:
     explicit StringView() noexcept = default;
     explicit StringView(const ArenaString *str) noexcept : sv_(*str) {}
     // NOLINTNEXTLINE(google-explicit-constructor)
-    StringView(std::string_view sv) noexcept : sv_(sv) {}
+    explicit StringView(std::string_view sv) noexcept : sv_(sv) {}
     // NOLINTNEXTLINE(google-explicit-constructor)
-    StringView(const char *str) noexcept : sv_(str == nullptr ? "" : str) {}
+    explicit StringView(const char *str) noexcept : sv_(str == nullptr ? "" : str) {}
     DEFAULT_COPY_SEMANTIC(StringView);
     DEFAULT_MOVE_SEMANTIC(StringView);
     ~StringView() = default;

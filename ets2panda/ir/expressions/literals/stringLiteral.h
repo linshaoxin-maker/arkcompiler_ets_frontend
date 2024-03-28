@@ -28,7 +28,7 @@ public:
     NO_COPY_SEMANTIC(StringLiteral);
     NO_MOVE_SEMANTIC(StringLiteral);
 
-    explicit StringLiteral() : StringLiteral("") {}
+    explicit StringLiteral() : StringLiteral(util::StringView {""}) {}
     explicit StringLiteral(util::StringView str) : Literal(AstNodeType::STRING_LITERAL), str_(str) {}
 
     [[nodiscard]] const util::StringView &Str() const noexcept

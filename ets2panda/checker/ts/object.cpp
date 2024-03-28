@@ -147,11 +147,13 @@ void TSChecker::ResolveUnionTypeMembers(UnionType *type)
     desc->constructSignatures = constructSignatures;
 
     if (!stringInfoTypes.empty()) {
-        desc->stringIndexInfo = Allocator()->New<IndexInfo>(CreateUnionType(std::move(stringInfoTypes)), "x", false);
+        desc->stringIndexInfo =
+            Allocator()->New<IndexInfo>(CreateUnionType(std::move(stringInfoTypes)), util::StringView {"x"}, false);
     }
 
     if (!numberInfoTypes.empty()) {
-        desc->numberIndexInfo = Allocator()->New<IndexInfo>(CreateUnionType(std::move(numberInfoTypes)), "x", false);
+        desc->numberIndexInfo =
+            Allocator()->New<IndexInfo>(CreateUnionType(std::move(numberInfoTypes)), util::StringView {"x"}, false);
     }
 
     ObjectType *mergedType = Allocator()->New<ObjectLiteralType>(desc);

@@ -74,7 +74,8 @@ class ParserContext {
 public:
     explicit ParserContext(const Program *program, ParserStatus status);
 
-    explicit ParserContext(ParserContext *current, ParserStatus newStatus, util::StringView label = "")
+    explicit ParserContext(ParserContext *current, ParserStatus newStatus,
+                           util::StringView label = util::StringView {""})
         : program_(current->program_), prev_(current), label_(label), lang_(current->lang_)
     {
         ParserStatus currentStatus = current->status_;

@@ -142,8 +142,8 @@ static void CheckExtensionIsShadowedInCurrentClassOrInterface(checker::ETSChecke
             continue;
         }
 
-        checker->ReportWarning({"extension is shadowed by a instance member function '", funcType->Name(),
-                                funcSignature, "' in class ", objType->Name()},
+        checker->ReportWarning({util::StringView {"extension is shadowed by a instance member function '"},
+                                funcType->Name(), funcSignature, util::StringView {"' in class "}, objType->Name()},
                                extensionFunc->Body()->Start());
         return;
     }
@@ -540,7 +540,8 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewClassInstanceExpression *expr) const
 
     if (expr->ClassDefinition() != nullptr) {
         if (!calleeObj->HasObjectFlag(checker::ETSObjectFlags::ABSTRACT) && calleeObj->GetDeclNode()->IsFinal()) {
-            checker->ThrowTypeError({"Class ", calleeObj->Name(), " cannot be both 'abstract' and 'final'."},
+            checker->ThrowTypeError({util::StringView {"Class "}, calleeObj->Name(),
+                                     util::StringView {" cannot be both 'abstract' and 'final'."}},
                                     calleeObj->GetDeclNode()->Start());
         }
 
@@ -556,7 +557,8 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewClassInstanceExpression *expr) const
         checker->CheckInnerClassMembers(classType);
         expr->SetTsType(classType);
     } else if (calleeObj->HasObjectFlag(checker::ETSObjectFlags::ABSTRACT)) {
-        checker->ThrowTypeError({calleeObj->Name(), " is abstract therefore cannot be instantiated."}, expr->Start());
+        checker->ThrowTypeError(
+            {calleeObj->Name(), util::StringView {" is abstract therefore cannot be instantiated."}}, expr->Start());
     }
 
     if (calleeType->IsETSDynamicType() && !calleeType->AsETSDynamicType()->HasDecl()) {
@@ -727,15 +729,16 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
 
                 const checker::CastingContext cast(
                     checker->Relation(), currentElement, elementType, compareType, currentElement->Start(),
-                    {"Array initializer's type is not assignable to tuple type at index: ", idx});
+                    {util::StringView {"Array initializer's type is not assignable to tuple type at index: "}, idx});
 
                 elementType = compareType;
             }
 
             checker::AssignmentContext(checker->Relation(), currentElement, elementType, targetElementType,
                                        currentElement->Start(),
-                                       {"Array element type '", elementType, "' is not assignable to explicit type '",
-                                        expr->GetPreferredType(), "'"});
+                                       {util::StringView {"Array element type '"}, elementType,
+                                        util::StringView {"' is not assignable to explicit type '"},
+                                        expr->GetPreferredType(), util::StringView {"'"}});
         }
 
         expr->SetPreferredType(targetElementType);
@@ -784,8 +787,10 @@ checker::Type *ETSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
         ```
         here the enclosing class of arrow function should be Class A
         */
-        checker->Context().SetContainingClass(
-            checker->Scope()->Find(varbinder::VarBinder::MANDATORY_PARAM_THIS).variable->TsType()->AsETSObjectType());
+        checker->Context().SetContainingClass(checker->Scope()
+                                                  ->Find(util::StringView {varbinder::VarBinder::MANDATORY_PARAM_THIS})
+                                                  .variable->TsType()
+                                                  ->AsETSObjectType());
     }
 
     checker::SavedCheckerContext savedContext(checker, checker->Context().Status(),
@@ -876,7 +881,7 @@ checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *expr) const
     }
 
     checker::AssignmentContext(checker->Relation(), relationNode, sourceType, leftType, expr->Right()->Start(),
-                               {"Initializers type is not assignable to the target type"});
+                               {util::StringView {"Initializers type is not assignable to the target type"}});
 
     expr->SetTsType(expr->Left()->TsType());
     return expr->TsType();
@@ -892,7 +897,7 @@ checker::Type *ETSAnalyzer::Check(ir::AwaitExpression *expr) const
     checker::Type *argType = ETSChecker::GetApparentType(expr->argument_->Check(checker));
     // Check the argument type of await expression
     if (!argType->IsETSObjectType() ||
-        (argType->AsETSObjectType()->AssemblerName() != compiler::Signatures::BUILTIN_PROMISE)) {
+        (argType->AsETSObjectType()->AssemblerName() != util::StringView {compiler::Signatures::BUILTIN_PROMISE})) {
         checker->ThrowTypeError("'await' expressions require Promise object as argument.", expr->Argument()->Start());
     }
 
@@ -936,8 +941,9 @@ static checker::Signature *ResolveCallExtensionFunction(checker::ETSFunctionType
     auto *signature =
         checker->ResolveCallExpressionAndTrailingLambda(functionType->CallSignatures(), expr, expr->Start());
     if (!signature->Function()->IsExtensionMethod()) {
-        checker->ThrowTypeError({"Property '", memberExpr->Property()->AsIdentifier()->Name(),
-                                 "' does not exist on type '", memberExpr->ObjType()->Name(), "'"},
+        checker->ThrowTypeError({util::StringView {"Property '"}, memberExpr->Property()->AsIdentifier()->Name(),
+                                 util::StringView {"' does not exist on type '"}, memberExpr->ObjType()->Name(),
+                                 util::StringView {"'"}},
                                 memberExpr->Property()->Start());
     }
     expr->SetSignature(signature);
@@ -977,11 +983,12 @@ ArenaVector<checker::Signature *> GetUnionTypeSignatures(ETSChecker *checker, ch
     for (auto *constituentType : etsUnionType->ConstituentTypes()) {
         if (constituentType->IsETSObjectType()) {
             ArenaVector<checker::Signature *> tmpCallSignatures(checker->Allocator()->Adapter());
-            tmpCallSignatures = constituentType->AsETSObjectType()
-                                    ->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>("invoke")
-                                    ->TsType()
-                                    ->AsETSFunctionType()
-                                    ->CallSignatures();
+            tmpCallSignatures =
+                constituentType->AsETSObjectType()
+                    ->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>(util::StringView {"invoke"})
+                    ->TsType()
+                    ->AsETSFunctionType()
+                    ->CallSignatures();
             callSignatures.insert(callSignatures.end(), tmpCallSignatures.begin(), tmpCallSignatures.end());
         }
         if (constituentType->IsETSFunctionType()) {
@@ -1010,7 +1017,7 @@ ArenaVector<checker::Signature *> &ChooseSignatures(ETSChecker *checker, checker
     }
     if (isFunctionalInterface) {
         return calleeType->AsETSObjectType()
-            ->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>("invoke")
+            ->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>(util::StringView {"invoke"})
             ->TsType()
             ->AsETSFunctionType()
             ->CallSignatures();
@@ -1356,7 +1363,8 @@ checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
 
     checker::ETSObjectType *objType = expr->PreferredType()->AsETSObjectType();
     if (objType->HasObjectFlag(checker::ETSObjectFlags::ABSTRACT | checker::ETSObjectFlags::INTERFACE)) {
-        checker->ThrowTypeError({"target type for class composite ", objType->Name(), " is not instantiable"},
+        checker->ThrowTypeError({util::StringView {"target type for class composite "}, objType->Name(),
+                                 util::StringView {" is not instantiable"}},
                                 expr->Start());
     }
 
@@ -1369,7 +1377,9 @@ checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
         }
     }
     if (!haveEmptyConstructor) {
-        checker->ThrowTypeError({"type ", objType->Name(), " has no parameterless constructor"}, expr->Start());
+        checker->ThrowTypeError(
+            {util::StringView {"type "}, objType->Name(), util::StringView {" has no parameterless constructor"}},
+            expr->Start());
     }
 
     for (ir::Expression *propExpr : expr->Properties()) {
@@ -1390,11 +1400,14 @@ checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
         varbinder::LocalVariable *lv = objType->GetProperty(pname, checker::PropertySearchFlags::SEARCH_INSTANCE_FIELD |
                                                                        checker::PropertySearchFlags::SEARCH_IN_BASE);
         if (lv == nullptr) {
-            checker->ThrowTypeError({"type ", objType->Name(), " has no property named ", pname}, propExpr->Start());
+            checker->ThrowTypeError(
+                {util::StringView {"type "}, objType->Name(), util::StringView {" has no property named "}, pname},
+                propExpr->Start());
         }
         checker->ValidatePropertyAccess(lv, objType, propExpr->Start());
         if (lv->HasFlag(varbinder::VariableFlags::READONLY)) {
-            checker->ThrowTypeError({"cannot assign to readonly property ", pname}, propExpr->Start());
+            checker->ThrowTypeError({util::StringView {"cannot assign to readonly property "}, pname},
+                                    propExpr->Start());
         }
 
         auto *propType = checker->GetTypeOfVariable(lv);
@@ -1405,7 +1418,7 @@ checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
         }
         value->SetTsType(value->Check(checker));
         checker::AssignmentContext(checker->Relation(), value, value->TsType(), propType, value->Start(),
-                                   {"value type is not assignable to the property type"});
+                                   {util::StringView {"value type is not assignable to the property type"}});
     }
 
     expr->SetTsType(objType);
@@ -1502,7 +1515,8 @@ checker::Type *ETSAnalyzer::Check(ir::ThisExpression *expr) const
     here when "this" is used inside an extension function, we need to bind "this" to the first
     parameter(MANDATORY_PARAM_THIS), and capture the paramter's variable other than containing class's variable
     */
-    auto *variable = checker->AsETSChecker()->Scope()->Find(varbinder::VarBinder::MANDATORY_PARAM_THIS).variable;
+    auto *variable =
+        checker->AsETSChecker()->Scope()->Find(util::StringView {varbinder::VarBinder::MANDATORY_PARAM_THIS}).variable;
     if (checker->HasStatus(checker::CheckerStatus::IN_INSTANCE_EXTENSION_METHOD)) {
         ASSERT(variable != nullptr);
         expr->SetTsType(variable->TsType());
@@ -2009,7 +2023,7 @@ checker::Type *GetIteratorType(ETSChecker *checker, checker::Type *elemType, ir:
     if (left->IsIdentifier()) {
         if (auto *const variable = left->AsIdentifier()->Variable(); variable != nullptr) {
             if (variable->Declaration()->IsConstDecl()) {
-                checker->ThrowTypeError({INVALID_CONST_ASSIGNMENT, variable->Name()},
+                checker->ThrowTypeError({util::StringView {INVALID_CONST_ASSIGNMENT}, variable->Name()},
                                         variable->Declaration()->Node()->Start());
             }
         }
@@ -2137,9 +2151,10 @@ void CheckReturnType(ETSChecker *checker, checker::Type *funcReturnType, checker
                                     stArgument->Start());
         }
     } else {
-        checker::AssignmentContext(checker->Relation(), stArgument, argumentType, funcReturnType, stArgument->Start(),
-                                   {"Return statement type is not compatible with the enclosing method's return type."},
-                                   checker::TypeRelationFlag::DIRECT_RETURN);
+        checker::AssignmentContext(
+            checker->Relation(), stArgument, argumentType, funcReturnType, stArgument->Start(),
+            {util::StringView {"Return statement type is not compatible with the enclosing method's return type."}},
+            checker::TypeRelationFlag::DIRECT_RETURN);
     }
 }
 
@@ -2167,10 +2182,10 @@ void InferReturnType(ETSChecker *checker, ir::ScriptFunction *containingFunc, ch
         auto arrowFunc = stArgument->AsArrowFunctionExpression();
         auto typeAnnotation = arrowFunc->CreateTypeAnnotation(checker);
         funcReturnType = typeAnnotation->GetType(checker);
-        checker::AssignmentContext(checker->Relation(), arrowFunc, arrowFunc->TsType(), funcReturnType,
-                                   stArgument->Start(),
-                                   {"Return statement type is not compatible with the enclosing method's return type."},
-                                   checker::TypeRelationFlag::DIRECT_RETURN);
+        checker::AssignmentContext(
+            checker->Relation(), arrowFunc, arrowFunc->TsType(), funcReturnType, stArgument->Start(),
+            {util::StringView {"Return statement type is not compatible with the enclosing method's return type."}},
+            checker::TypeRelationFlag::DIRECT_RETURN);
     }
 
     containingFunc->Signature()->SetReturnType(funcReturnType);
@@ -2353,16 +2368,18 @@ checker::Type *ETSAnalyzer::Check(ir::SwitchStatement *st) const
             } else {
                 checker::AssignmentContext(
                     checker->Relation(), st->discriminant_, caseType, unboxedDiscType, it->Test()->Start(),
-                    {"Switch case type ", caseType, " is not comparable to discriminant type ", comparedExprType},
+                    {util::StringView {"Switch case type "}, caseType,
+                     util::StringView {" is not comparable to discriminant type "}, comparedExprType},
                     (comparedExprType->IsETSObjectType() ? checker::TypeRelationFlag::NO_WIDENING
                                                          : checker::TypeRelationFlag::NO_UNBOXING) |
                         checker::TypeRelationFlag::NO_BOXING);
             }
 
             if (!validCaseType) {
-                checker->ThrowTypeError(
-                    {"Switch case type ", caseType, " is not comparable to discriminant type ", comparedExprType},
-                    it->Test()->Start());
+                checker->ThrowTypeError({util::StringView {"Switch case type "}, caseType,
+                                         util::StringView {" is not comparable to discriminant type "},
+                                         comparedExprType},
+                                        it->Test()->Start());
             }
         }
 
@@ -2503,7 +2520,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
     }
 
     const checker::CastingContext ctx(checker->Relation(), expr->Expr(), sourceType, targetType, expr->Expr()->Start(),
-                                      {"Cannot cast type '", sourceType, "' to '", targetType, "'"});
+                                      {util::StringView {"Cannot cast type '"}, sourceType, util::StringView {"' to '"},
+                                       targetType, util::StringView {"'"}});
 
     if (sourceType->IsETSDynamicType() && targetType->IsLambdaObject()) {
         // NOTE: itrubachev. change targetType to created lambdaobject type.
@@ -2729,7 +2747,9 @@ checker::Type *ETSAnalyzer::Check(ir::TSQualifiedName *expr) const
         }
     }
 
-    checker->ThrowTypeError({"'", expr->Right()->Name(), "' type does not exist."}, expr->Right()->Start());
+    checker->ThrowTypeError(
+        {util::StringView {"'"}, expr->Right()->Name(), util::StringView {"' type does not exist."}},
+        expr->Right()->Start());
 }
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSStringKeyword *node) const
@@ -2762,9 +2782,9 @@ checker::Type *ETSAnalyzer::Check(ir::TSTypeAliasDeclaration *st) const
             });
 
             if (res == nullptr) {
-                checker->ThrowTypeError(
-                    {"Type alias generic parameter '", param->Name()->Name(), "' is not used in type annotation"},
-                    param->Start());
+                checker->ThrowTypeError({util::StringView {"Type alias generic parameter '"}, param->Name()->Name(),
+                                         util::StringView {"' is not used in type annotation"}},
+                                        param->Start());
             }
         }
     }

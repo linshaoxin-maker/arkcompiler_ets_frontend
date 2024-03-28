@@ -74,10 +74,10 @@ util::StringView Helpers::LiteralToPropName(const ir::Expression *lit)
             return lit->AsNumberLiteral()->Str();
         }
         case ir::AstNodeType::NULL_LITERAL: {
-            return "null";
+            return util::StringView {"null"};
         }
         case ir::AstNodeType::UNDEFINED_LITERAL: {
-            return "undefined";
+            return util::StringView {"undefined"};
         }
         default: {
             UNREACHABLE();
@@ -524,7 +524,7 @@ util::StringView Helpers::FunctionName(ArenaAllocator *allocator, const ir::Scri
     }
 
     if (func->Parent()->IsFunctionDeclaration()) {
-        return "*default*";
+        return util::StringView {"*default*"};
     }
 
     const ir::AstNode *parent = func->Parent()->Parent();
@@ -678,16 +678,16 @@ std::string Helpers::UTF16toUTF8(const char16_t c)
     return std::string(reinterpret_cast<const char *>(utf8Ch.ch.data()), utf8Ch.n);
 }
 
-std::pair<std::string_view, std::string_view> Helpers::SplitSignature(std::string_view signature)
+std::pair<util::StringView, util::StringView> Helpers::SplitSignature(util::StringView signature)
 {
-    auto idx = signature.find_last_of(':');
-    auto stripped = signature.substr(0, idx);
+    auto idx = signature.Utf8().find_last_of(':');
+    auto stripped = signature.Utf8().substr(0, idx);
     idx = stripped.find_last_of('.');
     auto fullClassName = stripped.substr(0, idx);
     auto methodName = stripped.substr(idx + 1);
     idx = fullClassName.find_last_of('.');
     auto className = fullClassName.substr(idx + 1);
-    return {className, methodName};
+    return {util::StringView {className}, util::StringView {methodName}};
 }
 
 }  // namespace panda::es2panda::util

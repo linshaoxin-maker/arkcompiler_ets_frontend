@@ -640,7 +640,7 @@ ir::MethodDefinition *ParserImpl::BuildImplicitConstructor(ir::ClassDefinitionMo
     ArenaVector<ir::Statement *> statements(Allocator()->Adapter());
 
     if ((modifiers & ir::ClassDefinitionModifiers::HAS_SUPER) != 0U) {
-        util::StringView argsStr = "args";
+        util::StringView argsStr = util::StringView {"args"};
         params.push_back(AllocNode<ir::SpreadElement>(ir::AstNodeType::REST_ELEMENT, Allocator(),
                                                       AllocNode<ir::Identifier>(argsStr, Allocator())));
         ArenaVector<ir::Expression *> callArgs(Allocator()->Adapter());
@@ -659,7 +659,7 @@ ir::MethodDefinition *ParserImpl::BuildImplicitConstructor(ir::ClassDefinitionMo
                                                false, context_.GetLanguge());
 
     auto *funcExpr = AllocNode<ir::FunctionExpression>(func);
-    auto *key = AllocNode<ir::Identifier>("constructor", Allocator());
+    auto *key = AllocNode<ir::Identifier>(util::StringView {"constructor"}, Allocator());
 
     if ((modifiers & ir::ClassDefinitionModifiers::SET_CTOR_ID) != 0U) {
         func->SetIdent(key);

@@ -229,7 +229,7 @@ bool Condition::CompileBinaryExprForBigInt(ETSGen *etsg, const ir::BinaryExpress
     etsg->ApplyConversion(expr->Right(), expr->OperationType());
     compiler::VReg rhs = etsg->AllocReg();
     etsg->StoreAccumulator(expr, rhs);
-    etsg->CallBigIntBinaryComparison(expr, lhs, rhs, signature);
+    etsg->CallBigIntBinaryComparison(expr, lhs, rhs, util::StringView {signature});
     etsg->BranchIfFalse(expr, falseLabel);
 
     return true;

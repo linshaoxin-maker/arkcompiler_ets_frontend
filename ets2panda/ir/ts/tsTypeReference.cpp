@@ -103,7 +103,7 @@ checker::Type *TSTypeReference::GetType([[maybe_unused]] checker::TSChecker *che
     varbinder::Variable *var = typeName_->AsIdentifier()->Variable();
 
     if (var == nullptr) {
-        checker->ThrowTypeError({"Cannot find name ", typeName_->AsIdentifier()->Name()}, Start());
+        checker->ThrowTypeError({util::StringView {"Cannot find name "}, typeName_->AsIdentifier()->Name()}, Start());
     }
 
     SetTsType(checker->GetTypeReferenceType(this, var));

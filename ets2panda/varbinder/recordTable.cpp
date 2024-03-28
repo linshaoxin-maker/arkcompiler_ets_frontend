@@ -65,14 +65,14 @@ util::StringView BoundContext::FormRecordName() const
 
         util::UString recordName(recordTable_->program_->Allocator());
         recordName.Append(packageName);
-        recordName.Append(compiler::Signatures::METHOD_SEPARATOR);
+        recordName.Append(util::StringView {compiler::Signatures::METHOD_SEPARATOR});
         recordName.Append(recordIdent_->Name());
         return recordName.View();
     }
 
     util::UString recordName(recordTable_->program_->Allocator());
     recordName.Append(prev_->FormRecordName());
-    recordName.Append(compiler::Signatures::METHOD_SEPARATOR);
+    recordName.Append(util::StringView {compiler::Signatures::METHOD_SEPARATOR});
     recordName.Append(recordIdent_->Name());
     return recordName.View();
 }

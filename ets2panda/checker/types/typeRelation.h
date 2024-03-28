@@ -122,8 +122,8 @@ private:
     Type *type_;
 };
 
-using TypeErrorMessageElement =
-    std::variant<const Type *, AsSrc, char *, util::StringView, lexer::TokenType, size_t, const Signature *>;
+using TypeErrorMessageElement = std::variant<const Type *, AsSrc, char *, util::StringView, std::string_view,
+                                             lexer::TokenType, size_t, const Signature *>;
 
 class TypeRelation {
 public:

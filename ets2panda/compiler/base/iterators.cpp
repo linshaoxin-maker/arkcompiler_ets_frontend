@@ -32,7 +32,7 @@ Iterator::Iterator(PandaGen *pg, const ir::AstNode *node, IteratorType type)
     }
 
     pg_->StoreAccumulator(node, iterator_);
-    pg_->LoadObjByName(node_, "next");
+    pg_->LoadObjByName(node_, util::StringView {"next"});
     pg_->StoreAccumulator(node_, method_);
 
     pg_->ThrowIfNotObject(node_);
@@ -68,14 +68,14 @@ void Iterator::Next() const
 
 void Iterator::Complete() const
 {
-    pg_->LoadObjByName(node_, "done");
+    pg_->LoadObjByName(node_, util::StringView {"done"});
     pg_->ToBoolean(node_);
 }
 
 void Iterator::Value() const
 {
     pg_->LoadAccumulator(node_, nextResult_);
-    pg_->LoadObjByName(node_, "value");
+    pg_->LoadObjByName(node_, util::StringView {"value"});
 }
 
 void Iterator::Close(bool abruptCompletion) const
@@ -103,7 +103,7 @@ void Iterator::Close(bool abruptCompletion) const
     pg_->SetLabel(node_, labelSet.TryBegin());
 
     // 4. Let innerResult be GetMethod(iterator, "return").
-    GetMethod("return");
+    GetMethod(util::StringView {"return"});
 
     // 5. If innerResult.[[Type]] is normal, then
     {

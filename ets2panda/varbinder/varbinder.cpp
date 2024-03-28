@@ -142,8 +142,8 @@ void VarBinder::IdentifierAnalysis()
     ASSERT(varScope_ == topScope_);
 
     functionScopes_.push_back(topScope_);
-    topScope_->BindName(MAIN);
-    topScope_->BindInternalName(BuildFunctionName(MAIN, 0));
+    topScope_->BindName(util::StringView {MAIN});
+    topScope_->BindInternalName(BuildFunctionName(util::StringView {MAIN}, 0));
 
     topScope_->CheckDirectEval(compilerCtx_);
 
@@ -167,8 +167,8 @@ bool VarBinder::InstantiateArgumentsImpl(Scope **scope, Scope *iter, const ir::A
     if (node->AsScriptFunction()->IsArrow()) {
         return false;
     }
-    auto *argumentsVariable =
-        (*scope)->AddDecl<ConstDecl, LocalVariable>(Allocator(), FUNCTION_ARGUMENTS, VariableFlags::INITIALIZED);
+    auto *argumentsVariable = (*scope)->AddDecl<ConstDecl, LocalVariable>(
+        Allocator(), util::StringView {FUNCTION_ARGUMENTS}, VariableFlags::INITIALIZED);
     if (iter->IsFunctionParamScope()) {
         if (argumentsVariable == nullptr) {
             return true;
@@ -634,7 +634,7 @@ LocalVariable *VarBinder::AddMandatoryParam(const std::string_view &name)
 {
     ASSERT(scope_->IsFunctionParamScope());
 
-    auto *decl = Allocator()->New<ParameterDecl>(name);
+    auto *decl = Allocator()->New<ParameterDecl>(util::StringView {name});
     auto *param = Allocator()->New<LocalVariable>(decl, VariableFlags::VAR);
 
     auto &funcParams = scope_->AsFunctionParamScope()->Params();
@@ -648,15 +648,15 @@ LocalVariable *VarBinder::AddMandatoryParam(const std::string_view &name)
 
 void VarBinder::LookUpMandatoryReferences(const FunctionScope *funcScope, bool needLexicalFuncObj)
 {
-    LookupReference(MANDATORY_PARAM_NEW_TARGET);
-    LookupReference(MANDATORY_PARAM_THIS);
+    LookupReference(util::StringView {MANDATORY_PARAM_NEW_TARGET});
+    LookupReference(util::StringView {MANDATORY_PARAM_THIS});
 
     if (funcScope->HasFlag(ScopeFlags::USE_ARGS)) {
-        LookupReference(FUNCTION_ARGUMENTS);
+        LookupReference(util::StringView {FUNCTION_ARGUMENTS});
     }
 
     if (needLexicalFuncObj) {
-        LookupReference(MANDATORY_PARAM_FUNC);
+        LookupReference(util::StringView {MANDATORY_PARAM_FUNC});
     }
 }
 

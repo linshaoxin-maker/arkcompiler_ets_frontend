@@ -122,7 +122,7 @@ public:
     explicit ETSObjectType(ArenaAllocator *allocator) : ETSObjectType(allocator, ETSObjectFlags::NO_OPTS) {}
 
     explicit ETSObjectType(ArenaAllocator *allocator, ETSObjectFlags flags)
-        : ETSObjectType(allocator, "", "", nullptr, flags)
+        : ETSObjectType(allocator, util::StringView {""}, util::StringView {""}, nullptr, flags)
     {
     }
 
@@ -392,7 +392,7 @@ public:
     ETSFunctionType *GetFunctionalInterfaceInvokeType()
     {
         ASSERT(HasObjectFlag(ETSObjectFlags::FUNCTIONAL));
-        auto *invoke = GetOwnProperty<PropertyType::INSTANCE_METHOD>("invoke");
+        auto *invoke = GetOwnProperty<PropertyType::INSTANCE_METHOD>(util::StringView {"invoke"});
         ASSERT(invoke && invoke->TsType() && invoke->TsType()->IsETSFunctionType());
         return invoke->TsType()->AsETSFunctionType();
     }

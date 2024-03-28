@@ -143,10 +143,11 @@ bool ETSChecker::EnhanceSubstitutionForObject(const ArenaVector<Type *> &typePar
     }
 
     if (argumentType->IsETSFunctionType() && paramObjType->HasObjectFlag(ETSObjectFlags::FUNCTIONAL_INTERFACE)) {
-        auto &parameterSignatures = paramObjType->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>("invoke")
-                                        ->TsType()
-                                        ->AsETSFunctionType()
-                                        ->CallSignatures();
+        auto &parameterSignatures =
+            paramObjType->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>(util::StringView {"invoke"})
+                ->TsType()
+                ->AsETSFunctionType()
+                ->CallSignatures();
         auto &argumentSignatures = argumentType->AsETSFunctionType()->CallSignatures();
         ASSERT(argumentSignatures.size() == 1);
         ASSERT(parameterSignatures.size() == 1);
@@ -832,7 +833,7 @@ Type *ETSChecker::ComposeReturnType(ir::ScriptFunction *func, util::StringView f
         if (returnType == nullptr) {
             const auto varMap = VarBinder()->TopScope()->Bindings();
 
-            const auto builtinVoid = varMap.find(compiler::Signatures::BUILTIN_VOID_CLASS);
+            const auto builtinVoid = varMap.find(util::StringView {compiler::Signatures::BUILTIN_VOID_CLASS});
             ASSERT(builtinVoid != varMap.end());
 
             BuildClassProperties(builtinVoid->second->Declaration()->Node()->AsClassDefinition());
@@ -1989,8 +1990,9 @@ varbinder::FunctionParamScope *ETSChecker::CreateProxyMethodParams(ir::ArrowFunc
             // When a lambda is defined inside an instance extension function, if "this" is captured inside the lambda,
             // "this" should be binded with the parameter of the proxy method
             if (this->HasStatus(checker::CheckerStatus::IN_INSTANCE_EXTENSION_METHOD) &&
-                lambda->CapturedVars()[i]->Name() == varbinder::VarBinder::MANDATORY_PARAM_THIS) {
-                paramIdent = Allocator()->New<ir::Identifier>(varbinder::VarBinder::MANDATORY_PARAM_THIS, Allocator());
+                lambda->CapturedVars()[i]->Name() == util::StringView {varbinder::VarBinder::MANDATORY_PARAM_THIS}) {
+                paramIdent = Allocator()->New<ir::Identifier>(
+                    util::StringView {varbinder::VarBinder::MANDATORY_PARAM_THIS}, Allocator());
             } else {
                 paramIdent = Allocator()->New<ir::Identifier>(capturedVar->Name(), Allocator());
             }
@@ -2113,7 +2115,7 @@ ir::MethodDefinition *ETSChecker::CreateLambdaImplicitCtor(ArenaVector<ir::AstNo
 
     // Create the name for the synthetic constructor
     auto *funcExpr = Allocator()->New<ir::FunctionExpression>(func);
-    auto *key = Allocator()->New<ir::Identifier>("constructor", Allocator());
+    auto *key = Allocator()->New<ir::Identifier>(util::StringView {"constructor"}, Allocator());
     func->SetIdent(key);
     auto *ctor = Allocator()->New<ir::MethodDefinition>(ir::MethodDefinitionKind::CONSTRUCTOR, key, funcExpr,
                                                         ir::ModifierFlags::NONE, Allocator(), false);
@@ -2225,7 +2227,7 @@ ir::AstNode *ETSChecker::CreateLambdaImplicitField(varbinder::ClassScope *scope,
     auto fieldCtx = varbinder::LexicalScope<varbinder::LocalScope>::Enter(VarBinder(), scope->InstanceFieldScope());
 
     // Create the synthetic class property node
-    auto *fieldIdent = Allocator()->New<ir::Identifier>("field0", Allocator());
+    auto *fieldIdent = Allocator()->New<ir::Identifier>(util::StringView {"field0"}, Allocator());
     auto *field =
         Allocator()->New<ir::ClassProperty>(fieldIdent, nullptr, nullptr, ir::ModifierFlags::NONE, Allocator(), false);
 
@@ -2269,7 +2271,7 @@ ir::MethodDefinition *ETSChecker::CreateLambdaImplicitCtor(const lexer::SourceRa
 
     // Create the synthetic constructor
     auto *funcExpr = Allocator()->New<ir::FunctionExpression>(func);
-    auto *key = Allocator()->New<ir::Identifier>("constructor", Allocator());
+    auto *key = Allocator()->New<ir::Identifier>(util::StringView {"constructor"}, Allocator());
     func->SetIdent(key);
     auto *ctor = Allocator()->New<ir::MethodDefinition>(ir::MethodDefinitionKind::CONSTRUCTOR, key, funcExpr,
                                                         ir::ModifierFlags::NONE, Allocator(), false);
@@ -2291,7 +2293,7 @@ std::tuple<varbinder::FunctionParamScope *, varbinder::Variable *> ETSChecker::C
     // since when initializing the lambda class, we don't need to save the instance object which we tried to get the
     // function reference through
     if (!isStaticReference) {
-        auto *paramIdent = Allocator()->New<ir::Identifier>("field0", Allocator());
+        auto *paramIdent = Allocator()->New<ir::Identifier>(util::StringView {"field0"}, Allocator());
         auto *param = Allocator()->New<ir::ETSParameterExpression>(paramIdent, nullptr);
         paramIdent->SetRange(pos);
         auto [_, var] = VarBinder()->AddParamDecl(param);
@@ -2308,7 +2310,7 @@ ir::MethodDefinition *ETSChecker::CreateLambdaInvokeProto()
 {
     // Create the template for the synthetic 'invoke' method, which will be used when the function type will be
     // called
-    auto *name = Allocator()->New<ir::Identifier>("invoke", Allocator());
+    auto *name = Allocator()->New<ir::Identifier>(util::StringView {"invoke"}, Allocator());
     auto *paramScope =
         VarBinder()->Allocator()->New<varbinder::FunctionParamScope>(Allocator(), VarBinder()->GetScope());
     auto *scope = VarBinder()->Allocator()->New<varbinder::FunctionScope>(Allocator(), paramScope);
@@ -2524,7 +2526,7 @@ ir::Statement *ETSChecker::ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition
         // reference
         auto *fieldProp = lambdaBody[0]->AsClassProperty()->Key()->AsIdentifier()->Variable();
         fieldPropType = fieldProp->TsType()->AsETSObjectType();
-        fieldIdent = Allocator()->New<ir::Identifier>("field0", Allocator());
+        fieldIdent = Allocator()->New<ir::Identifier>(util::StringView {"field0"}, Allocator());
         fieldIdent->SetVariable(fieldProp);
         fieldIdent->SetTsType(fieldPropType);
     }
@@ -2624,7 +2626,8 @@ ir::MethodDefinition *ETSChecker::CreateAsyncImplMethod(ir::MethodDefinition *as
     varbinder::FunctionParamScope *paramScope = CopyParams(asyncFunc->Params(), params);
 
     // Set impl method return type "Object" because it may return Promise as well as Promise parameter's type
-    auto *objectId = Allocator()->New<ir::Identifier>(compiler::Signatures::BUILTIN_OBJECT_CLASS, Allocator());
+    auto *objectId =
+        Allocator()->New<ir::Identifier>(util::StringView {compiler::Signatures::BUILTIN_OBJECT_CLASS}, Allocator());
     objectId->SetReference();
     VarBinder()->AsETSBinder()->LookupTypeReference(objectId, false);
     auto *returnTypeAnn =
@@ -2855,6 +2858,6 @@ void ETSChecker::EnsureValidCurlyBrace(ir::CallExpression *callExpr)
         return;
     }
 
-    ThrowTypeError({"No matching call signature with trailing lambda"}, callExpr->Start());
+    ThrowTypeError({util::StringView {"No matching call signature with trailing lambda"}}, callExpr->Start());
 }
 }  // namespace panda::es2panda::checker

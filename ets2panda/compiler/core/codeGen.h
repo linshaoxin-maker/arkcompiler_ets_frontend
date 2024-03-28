@@ -136,8 +136,9 @@ public:
     [[nodiscard]] Label *ControlFlowChangeContinue(const ir::Identifier *label);
 
     uint32_t TryDepth() const;
-    [[nodiscard]] CatchTable *CreateCatchTable(util::StringView exceptionType = "");
-    [[nodiscard]] CatchTable *CreateCatchTable(LabelPair tryLabelPair, util::StringView exceptionType = "");
+    [[nodiscard]] CatchTable *CreateCatchTable(util::StringView exceptionType = util::StringView {""});
+    [[nodiscard]] CatchTable *CreateCatchTable(LabelPair tryLabelPair,
+                                               util::StringView exceptionType = util::StringView {""});
     void SortCatchTables();
 
     void SetFirstStmt(const ir::Statement *stmt) noexcept;

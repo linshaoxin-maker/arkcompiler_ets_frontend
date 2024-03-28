@@ -73,11 +73,11 @@ void Identifier::Iterate(const NodeTraverser &cb) const
 ValidationInfo Identifier::ValidateExpression()
 {
     if ((flags_ & IdentifierFlags::OPTIONAL) != 0U) {
-        return {"Unexpected token '?'.", Start()};
+        return {util::StringView {"Unexpected token '?'."}, Start()};
     }
 
     if (TypeAnnotation() != nullptr) {
-        return {"Unexpected token.", TypeAnnotation()->Start()};
+        return {util::StringView {"Unexpected token."}, TypeAnnotation()->Start()};
     }
 
     ValidationInfo info;

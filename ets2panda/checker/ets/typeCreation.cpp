@@ -215,23 +215,23 @@ ETSExtensionFuncHelperType *ETSChecker::CreateETSExtensionFuncHelperType(ETSFunc
 std::map<util::StringView, GlobalTypeId> &GetNameToTypeIdMap()
 {
     static std::map<util::StringView, GlobalTypeId> nameToTypeId = {
-        {compiler::Signatures::BUILTIN_BIGINT_CLASS, GlobalTypeId::ETS_BIG_INT_BUILTIN},
-        {compiler::Signatures::BUILTIN_STRING_CLASS, GlobalTypeId::ETS_STRING_BUILTIN},
-        {compiler::Signatures::BUILTIN_OBJECT_CLASS, GlobalTypeId::ETS_OBJECT_BUILTIN},
-        {compiler::Signatures::BUILTIN_EXCEPTION_CLASS, GlobalTypeId::ETS_EXCEPTION_BUILTIN},
-        {compiler::Signatures::BUILTIN_ERROR_CLASS, GlobalTypeId::ETS_ERROR_BUILTIN},
-        {compiler::Signatures::BUILTIN_TYPE_CLASS, GlobalTypeId::ETS_TYPE_BUILTIN},
-        {compiler::Signatures::BUILTIN_PROMISE_CLASS, GlobalTypeId::ETS_PROMISE_BUILTIN},
-        {compiler::Signatures::BUILTIN_BOX_CLASS, GlobalTypeId::ETS_BOX_BUILTIN},
-        {compiler::Signatures::BUILTIN_BOOLEAN_BOX_CLASS, GlobalTypeId::ETS_BOOLEAN_BOX_BUILTIN},
-        {compiler::Signatures::BUILTIN_BYTE_BOX_CLASS, GlobalTypeId::ETS_BYTE_BOX_BUILTIN},
-        {compiler::Signatures::BUILTIN_CHAR_BOX_CLASS, GlobalTypeId::ETS_CHAR_BOX_BUILTIN},
-        {compiler::Signatures::BUILTIN_SHORT_BOX_CLASS, GlobalTypeId::ETS_SHORT_BOX_BUILTIN},
-        {compiler::Signatures::BUILTIN_INT_BOX_CLASS, GlobalTypeId::ETS_INT_BOX_BUILTIN},
-        {compiler::Signatures::BUILTIN_LONG_BOX_CLASS, GlobalTypeId::ETS_LONG_BOX_BUILTIN},
-        {compiler::Signatures::BUILTIN_FLOAT_BOX_CLASS, GlobalTypeId::ETS_FLOAT_BOX_BUILTIN},
-        {compiler::Signatures::BUILTIN_DOUBLE_BOX_CLASS, GlobalTypeId::ETS_DOUBLE_BOX_BUILTIN},
-        {compiler::Signatures::BUILTIN_VOID_CLASS, GlobalTypeId::ETS_VOID_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_BIGINT_CLASS}, GlobalTypeId::ETS_BIG_INT_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_STRING_CLASS}, GlobalTypeId::ETS_STRING_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_OBJECT_CLASS}, GlobalTypeId::ETS_OBJECT_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_EXCEPTION_CLASS}, GlobalTypeId::ETS_EXCEPTION_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_ERROR_CLASS}, GlobalTypeId::ETS_ERROR_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_TYPE_CLASS}, GlobalTypeId::ETS_TYPE_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_PROMISE_CLASS}, GlobalTypeId::ETS_PROMISE_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_BOX_CLASS}, GlobalTypeId::ETS_BOX_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_BOOLEAN_BOX_CLASS}, GlobalTypeId::ETS_BOOLEAN_BOX_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_BYTE_BOX_CLASS}, GlobalTypeId::ETS_BYTE_BOX_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_CHAR_BOX_CLASS}, GlobalTypeId::ETS_CHAR_BOX_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_SHORT_BOX_CLASS}, GlobalTypeId::ETS_SHORT_BOX_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_INT_BOX_CLASS}, GlobalTypeId::ETS_INT_BOX_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_LONG_BOX_CLASS}, GlobalTypeId::ETS_LONG_BOX_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_FLOAT_BOX_CLASS}, GlobalTypeId::ETS_FLOAT_BOX_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_DOUBLE_BOX_CLASS}, GlobalTypeId::ETS_DOUBLE_BOX_BUILTIN},
+        {util::StringView {compiler::Signatures::BUILTIN_VOID_CLASS}, GlobalTypeId::ETS_VOID_BUILTIN},
     };
 
     return nameToTypeId;
@@ -240,14 +240,14 @@ std::map<util::StringView, GlobalTypeId> &GetNameToTypeIdMap()
 std::map<util::StringView, std::function<ETSObjectType *(const ETSChecker *)>> &GetNameToGlobalTypeMap()
 {
     static std::map<util::StringView, std::function<ETSObjectType *(const ETSChecker *)>> nameToGlobalType = {
-        {compiler::Signatures::BUILTIN_BIGINT_CLASS, &ETSChecker::GlobalBuiltinETSBigIntType},
-        {compiler::Signatures::BUILTIN_STRING_CLASS, &ETSChecker::GlobalBuiltinETSStringType},
-        {compiler::Signatures::BUILTIN_OBJECT_CLASS, &ETSChecker::GlobalETSObjectType},
-        {compiler::Signatures::BUILTIN_EXCEPTION_CLASS, &ETSChecker::GlobalBuiltinExceptionType},
-        {compiler::Signatures::BUILTIN_ERROR_CLASS, &ETSChecker::GlobalBuiltinErrorType},
-        {compiler::Signatures::BUILTIN_TYPE_CLASS, &ETSChecker::GlobalBuiltinTypeType},
-        {compiler::Signatures::BUILTIN_PROMISE_CLASS, &ETSChecker::GlobalBuiltinPromiseType},
-        {compiler::Signatures::BUILTIN_VOID_CLASS, &ETSChecker::GlobalBuiltinVoidType},
+        {util::StringView {compiler::Signatures::BUILTIN_BIGINT_CLASS}, &ETSChecker::GlobalBuiltinETSBigIntType},
+        {util::StringView {compiler::Signatures::BUILTIN_STRING_CLASS}, &ETSChecker::GlobalBuiltinETSStringType},
+        {util::StringView {compiler::Signatures::BUILTIN_OBJECT_CLASS}, &ETSChecker::GlobalETSObjectType},
+        {util::StringView {compiler::Signatures::BUILTIN_EXCEPTION_CLASS}, &ETSChecker::GlobalBuiltinExceptionType},
+        {util::StringView {compiler::Signatures::BUILTIN_ERROR_CLASS}, &ETSChecker::GlobalBuiltinErrorType},
+        {util::StringView {compiler::Signatures::BUILTIN_TYPE_CLASS}, &ETSChecker::GlobalBuiltinTypeType},
+        {util::StringView {compiler::Signatures::BUILTIN_PROMISE_CLASS}, &ETSChecker::GlobalBuiltinPromiseType},
+        {util::StringView {compiler::Signatures::BUILTIN_VOID_CLASS}, &ETSChecker::GlobalBuiltinVoidType},
     };
 
     return nameToGlobalType;
@@ -256,15 +256,15 @@ std::map<util::StringView, std::function<ETSObjectType *(const ETSChecker *)>> &
 std::map<util::StringView, std::function<Type *(const ETSChecker *)>> &GetNameToGlobalBoxTypeMap()
 {
     static std::map<util::StringView, std::function<Type *(const ETSChecker *)>> nameToGlobalBoxType = {
-        {compiler::Signatures::BUILTIN_BOX_CLASS, &ETSChecker::GlobalETSObjectType},
-        {compiler::Signatures::BUILTIN_BOOLEAN_BOX_CLASS, &ETSChecker::GlobalETSBooleanType},
-        {compiler::Signatures::BUILTIN_BYTE_BOX_CLASS, &ETSChecker::GlobalByteType},
-        {compiler::Signatures::BUILTIN_CHAR_BOX_CLASS, &ETSChecker::GlobalCharType},
-        {compiler::Signatures::BUILTIN_SHORT_BOX_CLASS, &ETSChecker::GlobalShortType},
-        {compiler::Signatures::BUILTIN_INT_BOX_CLASS, &ETSChecker::GlobalIntType},
-        {compiler::Signatures::BUILTIN_LONG_BOX_CLASS, &ETSChecker::GlobalLongType},
-        {compiler::Signatures::BUILTIN_FLOAT_BOX_CLASS, &ETSChecker::GlobalFloatType},
-        {compiler::Signatures::BUILTIN_DOUBLE_BOX_CLASS, &ETSChecker::GlobalDoubleType},
+        {util::StringView {compiler::Signatures::BUILTIN_BOX_CLASS}, &ETSChecker::GlobalETSObjectType},
+        {util::StringView {compiler::Signatures::BUILTIN_BOOLEAN_BOX_CLASS}, &ETSChecker::GlobalETSBooleanType},
+        {util::StringView {compiler::Signatures::BUILTIN_BYTE_BOX_CLASS}, &ETSChecker::GlobalByteType},
+        {util::StringView {compiler::Signatures::BUILTIN_CHAR_BOX_CLASS}, &ETSChecker::GlobalCharType},
+        {util::StringView {compiler::Signatures::BUILTIN_SHORT_BOX_CLASS}, &ETSChecker::GlobalShortType},
+        {util::StringView {compiler::Signatures::BUILTIN_INT_BOX_CLASS}, &ETSChecker::GlobalIntType},
+        {util::StringView {compiler::Signatures::BUILTIN_LONG_BOX_CLASS}, &ETSChecker::GlobalLongType},
+        {util::StringView {compiler::Signatures::BUILTIN_FLOAT_BOX_CLASS}, &ETSChecker::GlobalFloatType},
+        {util::StringView {compiler::Signatures::BUILTIN_DOUBLE_BOX_CLASS}, &ETSChecker::GlobalDoubleType},
     };
 
     return nameToGlobalBoxType;
@@ -306,7 +306,7 @@ ETSObjectType *ETSChecker::UpdateGlobalType(ETSObjectType *objType, util::String
             GetGlobalTypesHolder()->GlobalTypes()[static_cast<size_t>(id->second)] = objType;
         }
 
-        if (name == compiler::Signatures::BUILTIN_OBJECT_CLASS) {
+        if (name == util::StringView {compiler::Signatures::BUILTIN_OBJECT_CLASS}) {
             auto *nullish =
                 CreateNullishType(objType, checker::TypeFlag::NULLISH, Allocator(), Relation(), GetGlobalTypesHolder());
             GetGlobalTypesHolder()->GlobalTypes()[static_cast<size_t>(GlobalTypeId::ETS_NULLISH_OBJECT)] = nullish;
@@ -319,7 +319,7 @@ ETSObjectType *ETSChecker::UpdateGlobalType(ETSObjectType *objType, util::String
 ETSObjectType *ETSChecker::CreateETSObjectTypeCheckBuiltins(util::StringView name, ir::AstNode *declNode,
                                                             ETSObjectFlags flags)
 {
-    if (name == compiler::Signatures::BUILTIN_BIGINT_CLASS) {
+    if (name == util::StringView {compiler::Signatures::BUILTIN_BIGINT_CLASS}) {
         if (GlobalBuiltinETSBigIntType() != nullptr) {
             return GlobalBuiltinETSBigIntType();
         }
@@ -332,7 +332,7 @@ ETSObjectType *ETSChecker::CreateETSObjectTypeCheckBuiltins(util::StringView nam
         return GlobalBuiltinETSBigIntType();
     }
 
-    if (name == compiler::Signatures::BUILTIN_STRING_CLASS) {
+    if (name == util::StringView {compiler::Signatures::BUILTIN_STRING_CLASS}) {
         if (GlobalBuiltinETSStringType() != nullptr) {
             return GlobalBuiltinETSStringType();
         }

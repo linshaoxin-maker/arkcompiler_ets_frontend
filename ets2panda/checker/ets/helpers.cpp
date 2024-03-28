@@ -430,7 +430,7 @@ void ETSChecker::ValidatePropertyAccess(varbinder::Variable *var, ETSObjectType 
             return;
         }
 
-        ThrowTypeError({"Property ", var->Name(), " is not visible here."}, pos);
+        ThrowTypeError({util::StringView {"Property "}, var->Name(), util::StringView {" is not visible here."}}, pos);
     }
 }
 
@@ -473,16 +473,16 @@ bool ETSChecker::IsVariableGetterSetter(const varbinder::Variable *var)
 
 void ETSChecker::ThrowError(ir::Identifier *const ident)
 {
-    ThrowTypeError({"Unresolved reference ", ident->Name()}, ident->Start());
+    ThrowTypeError({util::StringView {"Unresolved reference "}, ident->Name()}, ident->Start());
 }
 
 void ETSChecker::CheckEtsFunctionType(ir::Identifier *const ident, ir::Identifier const *const id,
                                       ir::TypeNode const *const annotation)
 {
     if (annotation == nullptr) {
-        ThrowTypeError(
-            {"Cannot infer type for ", id->Name(), " because method reference needs an explicit target type"},
-            id->Start());
+        ThrowTypeError({util::StringView {"Cannot infer type for "}, id->Name(),
+                        util::StringView {" because method reference needs an explicit target type"}},
+                       id->Start());
     }
 
     const auto *const targetType = GetTypeOfVariable(id->Variable());
@@ -501,11 +501,14 @@ void ETSChecker::NotResolvedError(ir::Identifier *const ident)
     }
 
     if (IsVariableStatic(class_var)) {
-        ThrowTypeError(
-            {"Static property '", ident->Name(), "' must be accessed through it's class '", class_type->Name(), "'"},
-            ident->Start());
+        ThrowTypeError({util::StringView {"Static property '"}, ident->Name(),
+                        util::StringView {"' must be accessed through it's class '"}, class_type->Name(),
+                        util::StringView {"'"}},
+                       ident->Start());
     } else {
-        ThrowTypeError({"Property '", ident->Name(), "' must be accessed through 'this'"}, ident->Start());
+        ThrowTypeError(
+            {util::StringView {"Property '"}, ident->Name(), util::StringView {"' must be accessed through 'this'"}},
+            ident->Start());
     }
 }
 
@@ -700,8 +703,8 @@ Type *ETSChecker::ResolveIdentifier(ir::Identifier *const ident)
 
     auto *resolved = FindVariableInFunctionScope(ident->Name());
     if (resolved == nullptr) {
-        // If the reference is not found already in the current class, then it is not bound to the class, so we have to
-        // find the reference in the global class first, then in the global scope
+        // If the reference is not found already in the current class, then it is not bound to the class, so we
+        // have to find the reference in the global class first, then in the global scope
         resolved = FindVariableInGlobal(ident);
     }
 
@@ -712,10 +715,10 @@ Type *ETSChecker::ResolveIdentifier(ir::Identifier *const ident)
                !resolved->TsType()->AsETSFunctionType()->CallSignatures().empty());
         const auto *const funcType = resolved->TsType()->AsETSFunctionType();
         if (!funcType->CallSignatures().front()->Owner()->HasObjectFlag(checker::ETSObjectFlags::GLOBAL)) {
-            // In the case of function references, it is not enough to find the first method field and use it's function
-            // type, because at the position of the call we should be able to work with every possible signature, even
-            // with ones that came from base classes.
-            // NOTE: szd.  find a better way than making a synthetic variable
+            // In the case of function references, it is not enough to find the first method field and use it's
+            // function type, because at the position of the call we should be able to work with every possible
+            // signature, even with ones that came from base classes. NOTE: szd.  find a better way than making
+            // a synthetic variable
             resolved = funcType->CallSignatures().front()->Owner()->CreateSyntheticVarFromEverySignature(
                 ident->Name(), PropertySearchFlags::SEARCH_METHOD | PropertySearchFlags::SEARCH_IN_BASE);
         }
@@ -737,12 +740,12 @@ void ETSChecker::ValidateUnaryOperatorOperand(varbinder::Variable *variable)
     if (variable->Declaration()->IsConstDecl()) {
         if (HasStatus(CheckerStatus::IN_CONSTRUCTOR | CheckerStatus::IN_STATIC_BLOCK) &&
             !variable->HasFlag(varbinder::VariableFlags::EXPLICIT_INIT_REQUIRED)) {
-            ThrowTypeError({"Cannot reassign constant field ", variable->Name()},
+            ThrowTypeError({util::StringView {"Cannot reassign constant field "}, variable->Name()},
                            variable->Declaration()->Node()->Start());
         }
         if (!HasStatus(CheckerStatus::IN_CONSTRUCTOR | CheckerStatus::IN_STATIC_BLOCK) &&
             !variable->HasFlag(varbinder::VariableFlags::EXPLICIT_INIT_REQUIRED)) {
-            ThrowTypeError({"Cannot assign to a constant variable ", variable->Name()},
+            ThrowTypeError({util::StringView {"Cannot assign to a constant variable "}, variable->Name()},
                            variable->Declaration()->Node()->Start());
         }
     }
@@ -1073,9 +1076,9 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
         }
 
         if (init->IsObjectExpression()) {
-            ThrowTypeError(
-                {"Cannot infer type for ", ident->Name(), " because class composite needs an explicit target type"},
-                ident->Start());
+            ThrowTypeError({util::StringView {"Cannot infer type for "}, ident->Name(),
+                            util::StringView {" because class composite needs an explicit target type"}},
+                           ident->Start());
         }
     }
 
@@ -1130,7 +1133,7 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
 
     if (annotationType != nullptr) {
         AssignmentContext(Relation(), init, initType, annotationType, init->Start(),
-                          {"Initializers type is not assignable to the target type"});
+                          {util::StringView {"Initializers type is not assignable to the target type"}});
         if (isConst && initType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) &&
             annotationType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
             bindingVar->SetTsType(init->TsType());
@@ -1153,7 +1156,8 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
 
     if (initType->IsETSObjectType() && initType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::ENUM) &&
         !init->IsMemberExpression()) {
-        ThrowTypeError({"Cannot assign type '", initType->AsETSObjectType()->Name(), "' for variable ", varName, "."},
+        ThrowTypeError({util::StringView {"Cannot assign type '"}, initType->AsETSObjectType()->Name(),
+                        util::StringView {"' for variable "}, varName, util::StringView {"."}},
                        init->Start());
     }
 
@@ -1241,8 +1245,9 @@ void ETSChecker::ValidateGenericTypeAliasForClonedNode(ir::TSTypeAliasDeclaratio
     // Basic check, we really don't want to change the original type nodes, more precise checking should be made
     ASSERT(clonedNode != typeAliasNode->TypeAnnotation());
 
-    // Currently only reference types are checked. This should be extended for other types in a follow up patch, but for
-    // complete usability, if the type isn't a simple reference type, then doN't check type alias declaration at all.
+    // Currently only reference types are checked. This should be extended for other types in a follow up patch,
+    // but for complete usability, if the type isn't a simple reference type, then doN't check type alias
+    // declaration at all.
     bool checkTypealias = true;
 
     // Only transforming a temporary cloned node, so no modification is made in the AST
@@ -1347,7 +1352,7 @@ Type *ETSChecker::GetTypeFromTypeParameterReference(varbinder::LocalVariable *va
     if ((var->Declaration()->Node()->AsTSTypeParameter()->Parent()->Parent()->IsClassDefinition() ||
          var->Declaration()->Node()->AsTSTypeParameter()->Parent()->Parent()->IsTSInterfaceDeclaration()) &&
         HasStatus(CheckerStatus::IN_STATIC_CONTEXT)) {
-        ThrowTypeError({"Cannot make a static reference to the non-static type ", var->Name()}, pos);
+        ThrowTypeError({util::StringView {"Cannot make a static reference to the non-static type "}, var->Name()}, pos);
     }
 
     return var->TsType();
@@ -1577,10 +1582,11 @@ void ETSChecker::CheckFunctionContainsClashingSignature(const ETSFunctionType *f
             ss.str(std::string {});  // Clear buffer
             signature->ToString(ss, nullptr, true);
             auto sigStr2 = ss.str();
-            ThrowTypeError({"Function '", it->Function()->Id()->Name(), sigStr1.c_str(),
-                            "' is redeclared with different signature '", signature->Function()->Id()->Name(),
-                            sigStr2.c_str(), "'"},
-                           signature->Function()->ReturnTypeAnnotation()->Start());
+            ThrowTypeError(
+                {util::StringView {"Function '"}, it->Function()->Id()->Name(), util::StringView {sigStr1.c_str()},
+                 util::StringView {"' is redeclared with different signature '"}, signature->Function()->Id()->Name(),
+                 util::StringView {sigStr2.c_str()}, util::StringView {"'"}},
+                signature->Function()->ReturnTypeAnnotation()->Start());
         }
     }
 }
@@ -1644,7 +1650,7 @@ util::StringView ETSChecker::GetContainingObjectNameFromSignature(Signature *sig
     }
 
     UNREACHABLE();
-    return {""};
+    return {util::StringView {""}};
 }
 
 bool ETSChecker::IsTypeBuiltinType(const Type *type) const
@@ -1741,10 +1747,11 @@ void ETSChecker::CheckSwitchDiscriminant(ir::Expression *discriminant)
         return;
     }
 
-    ThrowTypeError({"Incompatible types. Found: ", discriminantType,
-                    ", required: char , byte , short , int, long , Char , Byte , Short , Int, Long , String "
-                    "or an enum type"},
-                   discriminant->Start());
+    ThrowTypeError(
+        {util::StringView {"Incompatible types. Found: "}, discriminantType,
+         util::StringView {", required: char , byte , short , int, long , Char , Byte , Short , Int, Long , String "},
+         util::StringView {"or an enum type"}},
+        discriminant->Start());
 }
 
 Type *ETSChecker::ETSBuiltinTypeAsPrimitiveType(Type *objectType)
@@ -1798,7 +1805,8 @@ Type *ETSChecker::PrimitiveTypeAsETSBuiltinType(Type *objectType)
     Relation()->Result(false);
 
     if (Checker::GetGlobalTypesHolder()->GlobalIntegerBuiltinType() == nullptr) {
-        InitializeBuiltin(VarBinder()->TopScope()->Bindings().find("Int")->second, "Int");
+        InitializeBuiltin(VarBinder()->TopScope()->Bindings().find(util::StringView {"Int"})->second,
+                          util::StringView {"Int"});
     }
 
     BoxingConverter converter = BoxingConverter(AsETSChecker(), Relation(), objectType,
@@ -2166,7 +2174,8 @@ void ETSChecker::CheckThrowingStatements(ir::AstNode *node)
 
     if (ancestorFunction == nullptr) {
         ThrowTypeError(
-            "This statement can cause an exception, therefore it must be enclosed in a try statement with a default "
+            "This statement can cause an exception, therefore it must be enclosed in a try statement with a "
+            "default "
             "catch clause",
             node->Start());
     }
@@ -2180,13 +2189,15 @@ void ETSChecker::CheckThrowingStatements(ir::AstNode *node)
     if (!CheckThrowingPlacement(node, ancestorFunction)) {
         if (ancestorFunction->AsScriptFunction()->IsRethrowing() && !node->IsThrowStatement()) {
             ThrowTypeError(
-                "This statement can cause an exception, re-throwing functions can throw exception only by their "
+                "This statement can cause an exception, re-throwing functions can throw exception only by "
+                "their "
                 "parameters.",
                 node->Start());
         }
 
         ThrowTypeError(
-            "This statement can cause an exception, therefore it must be enclosed in a try statement with a default "
+            "This statement can cause an exception, therefore it must be enclosed in a try statement with a "
+            "default "
             "catch clause",
             node->Start());
     }
@@ -2410,7 +2421,7 @@ void ETSChecker::CheckNumberOfTypeArguments(ETSObjectType *const type, ir::TSTyp
     auto const &typeParams = type->TypeArguments();
     if (typeParams.empty()) {
         if (typeArgs != nullptr) {
-            ThrowTypeError({"Type '", type, "' is not generic."}, pos);
+            ThrowTypeError({util::StringView {"Type '"}, type, util::StringView {"' is not generic."}}, pos);
         }
         return;
     }
@@ -2419,13 +2430,16 @@ void ETSChecker::CheckNumberOfTypeArguments(ETSObjectType *const type, ir::TSTyp
         return param->AsETSTypeParameter()->GetDefaultType() == nullptr;
     });
     if (typeArgs == nullptr && minimumTypeArgs > 0) {
-        ThrowTypeError({"Type '", type, "' is generic but type argument were not provided."}, pos);
+        ThrowTypeError(
+            {util::StringView {"Type '"}, type, util::StringView {"' is generic but type argument were not provided."}},
+            pos);
     }
 
     if (typeArgs != nullptr &&
         ((minimumTypeArgs > typeArgs->Params().size()) || (typeParams.size() < typeArgs->Params().size()))) {
-        ThrowTypeError({"Type '", type, "' has ", minimumTypeArgs, " number of type parameters, but ",
-                        typeArgs->Params().size(), " type arguments were provided."},
+        ThrowTypeError({util::StringView {"Type '"}, type, util::StringView {"' has "}, minimumTypeArgs,
+                        util::StringView {" number of type parameters, but "}, typeArgs->Params().size(),
+                        util::StringView {" type arguments were provided."}},
                        pos);
     }
 }
@@ -2542,7 +2556,9 @@ bool ETSChecker::TypeInference(Signature *signature, const ArenaVector<ir::Expre
 
         checker::InvocationContext invokationCtx(
             Relation(), arguments[index], argType, signature->Params()[index]->TsType(), arrowFuncExpr->Start(),
-            {"Call argument at index ", index, " is not compatible with the signature's type at that index"}, flags);
+            {util::StringView {"Call argument at index "}, index,
+             util::StringView {" is not compatible with the signature's type at that index"}},
+            flags);
 
         invocable &= invokationCtx.IsInvocable();
     }
@@ -2647,23 +2663,29 @@ bool ETSChecker::TryTransformingToStaticInvoke(ir::Identifier *const ident, cons
                                      PropertySearchFlags::SEARCH_STATIC_METHOD;
     // clang-format off
     auto *instantiateMethod =
-        resolvedType->AsETSObjectType()->GetProperty(compiler::Signatures::STATIC_INSTANTIATE_METHOD, searchFlag);
+        resolvedType->AsETSObjectType()->GetProperty(
+            util::StringView{compiler::Signatures::STATIC_INSTANTIATE_METHOD}, searchFlag);
     if (instantiateMethod != nullptr) {
         propertyName = compiler::Signatures::STATIC_INSTANTIATE_METHOD;
     } else if (auto *invokeMethod =
-                    resolvedType->AsETSObjectType()->GetProperty(compiler::Signatures::STATIC_INVOKE_METHOD, searchFlag);
+                    resolvedType->AsETSObjectType()->GetProperty(
+                        util::StringView{compiler::Signatures::STATIC_INVOKE_METHOD}, searchFlag);
                 invokeMethod != nullptr) {
         propertyName = compiler::Signatures::STATIC_INVOKE_METHOD;
     } else {
-        ThrowTypeError({"No static ", compiler::Signatures::STATIC_INVOKE_METHOD, " method and static ",
-                        compiler::Signatures::STATIC_INSTANTIATE_METHOD, " method in ", className, ". ", className,
-                        "() is not allowed."},
+        auto err = std::initializer_list<TypeErrorMessageElement>{util::StringView{"No static "},
+                        util::StringView{compiler::Signatures::STATIC_INVOKE_METHOD},
+                        util::StringView{" method and static "},
+                        util::StringView{compiler::Signatures::STATIC_INSTANTIATE_METHOD},
+                        util::StringView{" method in "}, className, util::StringView{". "}, className,
+                        util::StringView{"() is not allowed."}};
+        ThrowTypeError(err,
                        ident->Start());
     }
     // clang-format on
 
     auto *classId = AllocNode<ir::Identifier>(className, Allocator());
-    auto *methodId = AllocNode<ir::Identifier>(propertyName, Allocator());
+    auto *methodId = AllocNode<ir::Identifier>(util::StringView {propertyName}, Allocator());
     auto *transformedCallee =
         AllocNode<ir::MemberExpression>(classId, methodId, ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
 

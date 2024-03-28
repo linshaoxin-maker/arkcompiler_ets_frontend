@@ -163,14 +163,14 @@ public:
     {
         auto invariantSet = [phaseName]() -> std::optional<ASTVerifier::InvariantSet> {
             (void)phaseName;
-            if (phaseName == "ScopesInitPhase") {
+            if (phaseName == util::StringView {"ScopesInitPhase"}) {
                 return {{
                     "NodeHasParentForAll",
                     "EveryChildHasValidParentForAll",
                     "VariableHasScopeForAll",
                 }};
             }
-            if (phaseName == "CheckerPhase") {
+            if (phaseName == util::StringView {"CheckerPhase"}) {
                 return {{
                     "NodeHasTypeForAll",
                     "IdentifierHasVariableForAll",

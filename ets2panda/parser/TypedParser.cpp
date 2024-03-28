@@ -1151,7 +1151,7 @@ ir::Expression *TypedParser::ParseQualifiedReference(ir::Expression *typeName, E
         if ((flags & ExpressionParseFlags::IMPORT) != 0 &&
             Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_MULTIPLY) {
             Lexer()->NextToken();  // eat '*'
-            propName = AllocNode<ir::Identifier>(varbinder::VarBinder::STAR_IMPORT, Allocator());
+            propName = AllocNode<ir::Identifier>(util::StringView {varbinder::VarBinder::STAR_IMPORT}, Allocator());
         } else if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_FORMAT) {
             propName = ParseIdentifierFormatPlaceholder();
         } else if (Lexer()->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
@@ -1178,7 +1178,6 @@ ir::Expression *TypedParser::ParseQualifiedReference(ir::Expression *typeName, E
         if (Lexer()->GetToken().Type() == lexer::TokenType::LITERAL_IDENT) {
             Lexer()->NextToken();
         }
-
     } while (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD);
 
     typeName->SetRange({startLoc, Lexer()->GetToken().End()});

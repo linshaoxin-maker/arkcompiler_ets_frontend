@@ -518,7 +518,7 @@ void ETSGen::StorePropertyDynamic(const ir::AstNode *node, const checker::Type *
     StoreAccumulator(node, propNameReg);
 
     // Set property by name
-    Ra().Emit<Call, 3U>(node, methodName, objReg, propNameReg, propValueReg, dummyReg_);
+    Ra().Emit<Call, 3U>(node, util::StringView {methodName}, objReg, propNameReg, propValueReg, dummyReg_);
     SetAccumulatorType(nullptr);
 }
 
@@ -561,7 +561,7 @@ void ETSGen::LoadPropertyDynamic(const ir::AstNode *node, const checker::Type *p
     StoreAccumulator(node, propNameObject);
 
     // Get property by name
-    Ra().Emit<CallShort, 2U>(node, methodName, objReg, propNameObject);
+    Ra().Emit<CallShort, 2U>(node, util::StringView {methodName}, objReg, propNameObject);
     SetAccumulatorType(type);
 
     if (propType != type && !propType->IsETSDynamicType()) {
@@ -580,7 +580,7 @@ void ETSGen::StoreElementDynamic(const ir::AstNode *node, VReg objectReg, VReg i
     StoreAccumulator(node, valueReg);
 
     // Set property by index
-    Ra().Emit<Call, 3U>(node, methodName, objectReg, index, valueReg, dummyReg_);
+    Ra().Emit<Call, 3U>(node, util::StringView {methodName}, objectReg, index, valueReg, dummyReg_);
     SetAccumulatorType(Checker()->GlobalVoidType());
 }
 
@@ -595,14 +595,15 @@ void ETSGen::LoadElementDynamic(const ir::AstNode *node, VReg objectReg)
     StoreAccumulator(node, indexReg);
 
     // Get property by index
-    Ra().Emit<CallShort, 2U>(node, methodName, objectReg, indexReg);
+    Ra().Emit<CallShort, 2U>(node, util::StringView {methodName}, objectReg, indexReg);
     SetAccumulatorType(Checker()->GlobalBuiltinDynamicType(lang));
 }
 
 void ETSGen::LoadUndefinedDynamic(const ir::AstNode *node, Language lang)
 {
     RegScope rs(this);
-    Ra().Emit<CallShort, 0>(node, Signatures::Dynamic::GetUndefinedBuiltin(lang), dummyReg_, dummyReg_);
+    Ra().Emit<CallShort, 0>(node, util::StringView {Signatures::Dynamic::GetUndefinedBuiltin(lang)}, dummyReg_,
+                            dummyReg_);
     SetAccumulatorType(Checker()->GlobalBuiltinDynamicType(lang));
 }
 
@@ -613,7 +614,7 @@ void ETSGen::LoadThis(const ir::AstNode *node)
 
 void ETSGen::CreateBigIntObject(const ir::AstNode *node, VReg arg0)
 {
-    Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_BIGINT_CTOR, arg0, dummyReg_);
+    Ra().Emit<InitobjShort>(node, util::StringView {Signatures::BUILTIN_BIGINT_CTOR}, arg0, dummyReg_);
 }
 
 void ETSGen::CreateLambdaObjectFromIdentReference(const ir::AstNode *node, ir::ClassDefinition *lambdaObj)
@@ -706,7 +707,7 @@ void ETSGen::InitLambdaObject(const ir::AstNode *node, checker::Signature *signa
 
 VReg ETSGen::GetThisReg() const
 {
-    const auto res = Scope()->Find(varbinder::VarBinder::MANDATORY_PARAM_THIS);
+    const auto res = Scope()->Find(util::StringView {varbinder::VarBinder::MANDATORY_PARAM_THIS});
     return res.variable->AsLocalVariable()->Vreg();
 }
 
@@ -733,7 +734,7 @@ void ETSGen::EmitReturnVoid(const ir::AstNode *node)
 void ETSGen::LoadBuiltinVoid(const ir::AstNode *node)
 {
     LoadStaticProperty(node, Checker()->GlobalBuiltinVoidType(),
-                       FormClassPropReference(Checker()->GlobalBuiltinVoidType(), "void_instance"));
+                       FormClassPropReference(Checker()->GlobalBuiltinVoidType(), util::StringView {"void_instance"}));
 }
 
 void ETSGen::ReturnAcc(const ir::AstNode *node)
@@ -791,7 +792,8 @@ void ETSGen::EmitIsInstance([[maybe_unused]] const ir::AstNode *const node, [[ma
 
     if (rhsType->IsETSDynamicType() || lhsType->IsETSDynamicType()) {
         ASSERT(rhsType->IsETSDynamicType() && lhsType->IsETSDynamicType());
-        Ra().Emit<CallShort, 2U>(node, Signatures::BUILTIN_JSRUNTIME_INSTANCE_OF, objReg, MoveAccToReg(node));
+        Ra().Emit<CallShort, 2U>(node, util::StringView {Signatures::BUILTIN_JSRUNTIME_INSTANCE_OF}, objReg,
+                                 MoveAccToReg(node));
         SetAccumulatorType(Checker()->GlobalETSBooleanType());
         return;
     }
@@ -1041,7 +1043,7 @@ void ETSGen::EmitUnboxedCall(const ir::AstNode *node, std::string_view signature
         CheckedReferenceNarrowing(node, boxedType);
     }
 
-    Ra().Emit<CallVirtAccShort, 0>(node, signatureFlag, dummyReg_, 0);
+    Ra().Emit<CallVirtAccShort, 0>(node, util::StringView {signatureFlag}, dummyReg_, 0);
     SetAccumulatorType(targetType);
 }
 
@@ -1107,42 +1109,42 @@ void ETSGen::EmitBoxingConversion(const ir::AstNode *node)
 
     switch (boxingFlag) {
         case ir::BoxingUnboxingFlags::BOX_TO_BOOLEAN: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_BOOLEAN_VALUE_OF, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_BOOLEAN_VALUE_OF}, dummyReg_, 0);
             SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalETSBooleanBuiltinType());
             break;
         }
         case ir::BoxingUnboxingFlags::BOX_TO_BYTE: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_BYTE_VALUE_OF, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_BYTE_VALUE_OF}, dummyReg_, 0);
             SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalByteBuiltinType());
             break;
         }
         case ir::BoxingUnboxingFlags::BOX_TO_CHAR: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_CHAR_VALUE_OF, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_CHAR_VALUE_OF}, dummyReg_, 0);
             SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalCharBuiltinType());
             break;
         }
         case ir::BoxingUnboxingFlags::BOX_TO_SHORT: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_SHORT_VALUE_OF, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_SHORT_VALUE_OF}, dummyReg_, 0);
             SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalShortBuiltinType());
             break;
         }
         case ir::BoxingUnboxingFlags::BOX_TO_INT: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_INT_VALUE_OF, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_INT_VALUE_OF}, dummyReg_, 0);
             SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
             break;
         }
         case ir::BoxingUnboxingFlags::BOX_TO_LONG: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_LONG_VALUE_OF, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_LONG_VALUE_OF}, dummyReg_, 0);
             SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalLongBuiltinType());
             break;
         }
         case ir::BoxingUnboxingFlags::BOX_TO_FLOAT: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_FLOAT_VALUE_OF, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_FLOAT_VALUE_OF}, dummyReg_, 0);
             SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalFloatBuiltinType());
             break;
         }
         case ir::BoxingUnboxingFlags::BOX_TO_DOUBLE: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_DOUBLE_VALUE_OF, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_DOUBLE_VALUE_OF}, dummyReg_, 0);
             SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
             break;
         }
@@ -1173,31 +1175,32 @@ void ETSGen::EmitLocalBoxCtor(ir::AstNode const *node)
     auto *contentType = node->AsIdentifier()->Variable()->TsType();
     switch (checker::ETSChecker::TypeKind(contentType)) {
         case checker::TypeFlag::ETS_BOOLEAN:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_BOOLEAN_BOX_CTOR, dummyReg_, dummyReg_);
+            Ra().Emit<InitobjShort>(node, util::StringView {Signatures::BUILTIN_BOOLEAN_BOX_CTOR}, dummyReg_,
+                                    dummyReg_);
             break;
         case checker::TypeFlag::BYTE:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_BYTE_BOX_CTOR, dummyReg_, dummyReg_);
+            Ra().Emit<InitobjShort>(node, util::StringView {Signatures::BUILTIN_BYTE_BOX_CTOR}, dummyReg_, dummyReg_);
             break;
         case checker::TypeFlag::CHAR:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_CHAR_BOX_CTOR, dummyReg_, dummyReg_);
+            Ra().Emit<InitobjShort>(node, util::StringView {Signatures::BUILTIN_CHAR_BOX_CTOR}, dummyReg_, dummyReg_);
             break;
         case checker::TypeFlag::SHORT:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_SHORT_BOX_CTOR, dummyReg_, dummyReg_);
+            Ra().Emit<InitobjShort>(node, util::StringView {Signatures::BUILTIN_SHORT_BOX_CTOR}, dummyReg_, dummyReg_);
             break;
         case checker::TypeFlag::INT:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_INT_BOX_CTOR, dummyReg_, dummyReg_);
+            Ra().Emit<InitobjShort>(node, util::StringView {Signatures::BUILTIN_INT_BOX_CTOR}, dummyReg_, dummyReg_);
             break;
         case checker::TypeFlag::LONG:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_LONG_BOX_CTOR, dummyReg_, dummyReg_);
+            Ra().Emit<InitobjShort>(node, util::StringView {Signatures::BUILTIN_LONG_BOX_CTOR}, dummyReg_, dummyReg_);
             break;
         case checker::TypeFlag::FLOAT:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_FLOAT_BOX_CTOR, dummyReg_, dummyReg_);
+            Ra().Emit<InitobjShort>(node, util::StringView {Signatures::BUILTIN_FLOAT_BOX_CTOR}, dummyReg_, dummyReg_);
             break;
         case checker::TypeFlag::DOUBLE:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_DOUBLE_BOX_CTOR, dummyReg_, dummyReg_);
+            Ra().Emit<InitobjShort>(node, util::StringView {Signatures::BUILTIN_DOUBLE_BOX_CTOR}, dummyReg_, dummyReg_);
             break;
         default:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_BOX_CTOR, dummyReg_, dummyReg_);
+            Ra().Emit<InitobjShort>(node, util::StringView {Signatures::BUILTIN_BOX_CTOR}, dummyReg_, dummyReg_);
             break;
     }
     SetAccumulatorType(Checker()->GlobalBuiltinBoxType(contentType));
@@ -1207,31 +1210,31 @@ void ETSGen::EmitLocalBoxGet(ir::AstNode const *node, checker::Type const *conte
 {
     switch (checker::ETSChecker::TypeKind(contentType)) {
         case checker::TypeFlag::ETS_BOOLEAN:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_BOOLEAN_BOX_GET, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_BOOLEAN_BOX_GET}, dummyReg_, 0);
             break;
         case checker::TypeFlag::BYTE:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_BYTE_BOX_GET, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_BYTE_BOX_GET}, dummyReg_, 0);
             break;
         case checker::TypeFlag::CHAR:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_CHAR_BOX_GET, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_CHAR_BOX_GET}, dummyReg_, 0);
             break;
         case checker::TypeFlag::SHORT:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_SHORT_BOX_GET, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_SHORT_BOX_GET}, dummyReg_, 0);
             break;
         case checker::TypeFlag::INT:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_INT_BOX_GET, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_INT_BOX_GET}, dummyReg_, 0);
             break;
         case checker::TypeFlag::LONG:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_LONG_BOX_GET, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_LONG_BOX_GET}, dummyReg_, 0);
             break;
         case checker::TypeFlag::FLOAT:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_FLOAT_BOX_GET, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_FLOAT_BOX_GET}, dummyReg_, 0);
             break;
         case checker::TypeFlag::DOUBLE:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_DOUBLE_BOX_GET, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_DOUBLE_BOX_GET}, dummyReg_, 0);
             break;
         default:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_BOX_GET, dummyReg_, 0);
+            Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_BOX_GET}, dummyReg_, 0);
             CheckedReferenceNarrowing(node, contentType);
             break;
     }
@@ -1244,31 +1247,31 @@ void ETSGen::EmitLocalBoxSet(ir::AstNode const *node, varbinder::LocalVariable *
     auto vreg = lhsVar->Vreg();
     switch (checker::ETSChecker::TypeKind(contentType)) {
         case checker::TypeFlag::ETS_BOOLEAN:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_BOOLEAN_BOX_SET, vreg, 1);
+            Ra().Emit<CallAccShort, 1>(node, util::StringView {Signatures::BUILTIN_BOOLEAN_BOX_SET}, vreg, 1);
             break;
         case checker::TypeFlag::BYTE:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_BYTE_BOX_SET, vreg, 1);
+            Ra().Emit<CallAccShort, 1>(node, util::StringView {Signatures::BUILTIN_BYTE_BOX_SET}, vreg, 1);
             break;
         case checker::TypeFlag::CHAR:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_CHAR_BOX_SET, vreg, 1);
+            Ra().Emit<CallAccShort, 1>(node, util::StringView {Signatures::BUILTIN_CHAR_BOX_SET}, vreg, 1);
             break;
         case checker::TypeFlag::SHORT:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_SHORT_BOX_SET, vreg, 1);
+            Ra().Emit<CallAccShort, 1>(node, util::StringView {Signatures::BUILTIN_SHORT_BOX_SET}, vreg, 1);
             break;
         case checker::TypeFlag::INT:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_INT_BOX_SET, vreg, 1);
+            Ra().Emit<CallAccShort, 1>(node, util::StringView {Signatures::BUILTIN_INT_BOX_SET}, vreg, 1);
             break;
         case checker::TypeFlag::LONG:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_LONG_BOX_SET, vreg, 1);
+            Ra().Emit<CallAccShort, 1>(node, util::StringView {Signatures::BUILTIN_LONG_BOX_SET}, vreg, 1);
             break;
         case checker::TypeFlag::FLOAT:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_FLOAT_BOX_SET, vreg, 1);
+            Ra().Emit<CallAccShort, 1>(node, util::StringView {Signatures::BUILTIN_FLOAT_BOX_SET}, vreg, 1);
             break;
         case checker::TypeFlag::DOUBLE:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_DOUBLE_BOX_SET, vreg, 1);
+            Ra().Emit<CallAccShort, 1>(node, util::StringView {Signatures::BUILTIN_DOUBLE_BOX_SET}, vreg, 1);
             break;
         default:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_BOX_SET, vreg, 1);
+            Ra().Emit<CallAccShort, 1>(node, util::StringView {Signatures::BUILTIN_BOX_SET}, vreg, 1);
             break;
     }
     SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalVoidType());
@@ -1682,7 +1685,7 @@ void ETSGen::CastDynamicToObject(const ir::AstNode *node, const checker::Type *t
         Sa().Emit<LdaType>(node, util::UString(ss.str(), Allocator()).View());
         StoreAccumulator(node, typeReg);
 
-        Ra().Emit<CallShort, 2U>(node, methodName, dynObjReg, typeReg);
+        Ra().Emit<CallShort, 2U>(node, util::StringView {methodName}, dynObjReg, typeReg);
         Sa().Emit<Checkcast>(node, util::UString(ss.str(), Allocator()).View());  // trick verifier
         SetAccumulatorType(targetType);
         return;
@@ -1699,7 +1702,7 @@ void ETSGen::CastToString(const ir::AstNode *const node)
     } else {
         ASSERT(sourceType->HasTypeFlag(checker::TypeFlag::ETS_OBJECT));
     }
-    Ra().Emit<CallVirtAccShort, 0>(node, Signatures::BUILTIN_OBJECT_TO_STRING, dummyReg_, 0);
+    Ra().Emit<CallVirtAccShort, 0>(node, util::StringView {Signatures::BUILTIN_OBJECT_TO_STRING}, dummyReg_, 0);
     SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalETSStringBuiltinType());
 }
 
@@ -1773,7 +1776,7 @@ void ETSGen::CastToDynamic(const ir::AstNode *node, const checker::ETSDynamicTyp
     StoreAccumulator(node, valReg);
 
     // Create new JSValue and initialize it
-    Ra().Emit<CallShort, 1>(node, methodName, valReg, dummyReg_);
+    Ra().Emit<CallShort, 1>(node, util::StringView {methodName}, valReg, dummyReg_);
     SetAccumulatorType(Checker()->GlobalBuiltinDynamicType(type->Language()));
 }
 
@@ -1839,7 +1842,7 @@ void ETSGen::CastDynamicTo(const ir::AstNode *node, enum checker::TypeFlag typeF
     StoreAccumulator(node, dynObjReg);
 
     // Get value from dynamic object
-    Ra().Emit<CallShort, 1>(node, methodName, dynObjReg, dummyReg_);
+    Ra().Emit<CallShort, 1>(node, util::StringView {methodName}, dynObjReg, dummyReg_);
     SetAccumulatorType(objectType);
 }
 
@@ -2111,8 +2114,8 @@ void ETSGen::EmitNullishGuardian(const ir::AstNode *node)
 void ETSGen::EmitNullishException(const ir::AstNode *node)
 {
     VReg exception = StoreException(node);
-    NewObject(node, exception, Signatures::BUILTIN_NULLPOINTER_EXCEPTION);
-    CallThisStatic0(node, exception, Signatures::BUILTIN_NULLPOINTER_EXCEPTION_CTOR);
+    NewObject(node, exception, util::StringView {Signatures::BUILTIN_NULLPOINTER_EXCEPTION});
+    CallThisStatic0(node, exception, util::StringView {Signatures::BUILTIN_NULLPOINTER_EXCEPTION_CTOR});
     EmitThrow(node, exception);
     SetAccumulatorType(nullptr);
 }
@@ -2157,11 +2160,11 @@ void ETSGen::BinaryEqualityRef(const ir::AstNode *node, bool testEqual, VReg lhs
         LoadAccumulator(node, lhs);
 
         if (GetVRegType(lhs)->IsETSBigIntType()) {
-            CallThisStatic1(node, lhs, Signatures::BUILTIN_BIGINT_EQUALS, rhs);
+            CallThisStatic1(node, lhs, util::StringView {Signatures::BUILTIN_BIGINT_EQUALS}, rhs);
         } else if (GetVRegType(lhs)->IsETSStringType()) {
-            CallThisStatic1(node, lhs, Signatures::BUILTIN_STRING_EQUALS, rhs);
+            CallThisStatic1(node, lhs, util::StringView {Signatures::BUILTIN_STRING_EQUALS}, rhs);
         } else {
-            CallThisVirtual1(node, lhs, Signatures::BUILTIN_OBJECT_EQUALS, rhs);
+            CallThisVirtual1(node, lhs, util::StringView {Signatures::BUILTIN_OBJECT_EQUALS}, rhs);
         }
         testEqual ? BranchIfFalse(node, ifFalse) : BranchIfTrue(node, ifFalse);
         JumpTo(node, ifTrue);
@@ -2254,7 +2257,7 @@ void ETSGen::UnaryMinus(const ir::AstNode *node)
     if (GetAccumulatorType()->IsETSBigIntType()) {
         const VReg value = AllocReg();
         StoreAccumulator(node, value);
-        CallThisStatic0(node, value, Signatures::BUILTIN_BIGINT_NEGATE);
+        CallThisStatic0(node, value, util::StringView {Signatures::BUILTIN_BIGINT_NEGATE});
         return;
     }
 
@@ -2289,7 +2292,7 @@ void ETSGen::UnaryTilde(const ir::AstNode *node)
     if (GetAccumulatorType()->IsETSBigIntType()) {
         const VReg value = AllocReg();
         StoreAccumulator(node, value);
-        CallThisStatic0(node, value, Signatures::BUILTIN_BIGINT_OPERATOR_BITWISE_NOT);
+        CallThisStatic0(node, value, util::StringView {Signatures::BUILTIN_BIGINT_OPERATOR_BITWISE_NOT});
         SetAccumulatorType(Checker()->GlobalETSBigIntType());
         return;
     }
@@ -2316,7 +2319,7 @@ void ETSGen::UnaryDollarDollar(const ir::AstNode *node)
 {
     RegScope rs(this);
     VReg exception = StoreException(node);
-    Sa().Emit<LdaStr>(node, "$$ operator can only be used with ARKUI plugin");
+    Sa().Emit<LdaStr>(node, util::StringView {"$$ operator can only be used with ARKUI plugin"});
     StoreAccumulator(node, exception);
     EmitThrow(node, exception);
 }
@@ -2342,11 +2345,13 @@ void ETSGen::UpdateBigInt(const ir::Expression *node, VReg arg, lexer::TokenType
 {
     switch (op) {
         case lexer::TokenType::PUNCTUATOR_PLUS_PLUS: {
-            CallBigIntUnaryOperator(node, arg, compiler::Signatures::BUILTIN_BIGINT_OPERATOR_INCREMENT);
+            CallBigIntUnaryOperator(node, arg,
+                                    util::StringView {compiler::Signatures::BUILTIN_BIGINT_OPERATOR_INCREMENT});
             break;
         }
         case lexer::TokenType::PUNCTUATOR_MINUS_MINUS: {
-            CallBigIntUnaryOperator(node, arg, compiler::Signatures::BUILTIN_BIGINT_OPERATOR_DECREMENT);
+            CallBigIntUnaryOperator(node, arg,
+                                    util::StringView {compiler::Signatures::BUILTIN_BIGINT_OPERATOR_DECREMENT});
             break;
         }
         default: {
@@ -2375,9 +2380,9 @@ void ETSGen::StringBuilderAppend(const ir::AstNode *node, VReg builder)
 
     auto search = typeFlagToSignaturesMap.find(checker::ETSChecker::ETSType(GetAccumulatorType()));
     if (search != typeFlagToSignaturesMap.end()) {
-        signature = search->second;
+        signature = util::StringView {search->second};
     } else {
-        signature = Signatures::BUILTIN_STRING_BUILDER_APPEND_BUILTIN_STRING;
+        signature = util::StringView {Signatures::BUILTIN_STRING_BUILDER_APPEND_BUILTIN_STRING};
     }
 
     if ((GetAccumulatorType()->IsETSObjectType() || GetAccumulatorType()->IsETSTypeParameter()) &&
@@ -2386,15 +2391,15 @@ void ETSGen::StringBuilderAppend(const ir::AstNode *node, VReg builder)
             Label *ifnull = AllocLabel();
             Label *end = AllocLabel();
             BranchIfNull(node, ifnull);
-            Ra().Emit<CallVirtAccShort, 0>(node, Signatures::BUILTIN_OBJECT_TO_STRING, dummyReg_, 0);
+            Ra().Emit<CallVirtAccShort, 0>(node, util::StringView {Signatures::BUILTIN_OBJECT_TO_STRING}, dummyReg_, 0);
             JumpTo(node, end);
 
             SetLabel(node, ifnull);
-            LoadAccumulatorString(node, "null");
+            LoadAccumulatorString(node, util::StringView {"null"});
 
             SetLabel(node, end);
         } else {
-            Ra().Emit<CallVirtAccShort, 0>(node, Signatures::BUILTIN_OBJECT_TO_STRING, dummyReg_, 0);
+            Ra().Emit<CallVirtAccShort, 0>(node, util::StringView {Signatures::BUILTIN_OBJECT_TO_STRING}, dummyReg_, 0);
         }
     }
 
@@ -2434,14 +2439,14 @@ void ETSGen::BuildString(const ir::Expression *node)
 {
     RegScope rs(this);
 
-    Ra().Emit<InitobjShort, 0>(node, Signatures::BUILTIN_STRING_BUILDER_CTOR, dummyReg_, dummyReg_);
+    Ra().Emit<InitobjShort, 0>(node, util::StringView {Signatures::BUILTIN_STRING_BUILDER_CTOR}, dummyReg_, dummyReg_);
     SetAccumulatorType(Checker()->GlobalStringBuilderBuiltinType());
 
     auto builder = AllocReg();
     StoreAccumulator(node, builder);
 
     AppendString(node, builder);
-    CallThisStatic0(node, builder, Signatures::BUILTIN_STRING_BUILDER_TO_STRING);
+    CallThisStatic0(node, builder, util::StringView {Signatures::BUILTIN_STRING_BUILDER_TO_STRING});
 
     SetAccumulatorType(node->TsType());
 }
@@ -2472,7 +2477,7 @@ void ETSGen::BuildTemplateString(const ir::TemplateLiteral *node)
 {
     RegScope rs(this);
 
-    Ra().Emit<InitobjShort, 0>(node, Signatures::BUILTIN_STRING_BUILDER_CTOR, dummyReg_, dummyReg_);
+    Ra().Emit<InitobjShort, 0>(node, util::StringView {Signatures::BUILTIN_STRING_BUILDER_CTOR}, dummyReg_, dummyReg_);
     SetAccumulatorType(Checker()->GlobalStringBuilderBuiltinType());
 
     auto builder = AllocReg();
@@ -2502,7 +2507,7 @@ void ETSGen::BuildTemplateString(const ir::TemplateLiteral *node)
         }
     }
 
-    CallThisStatic0(node, builder, Signatures::BUILTIN_STRING_BUILDER_TO_STRING);
+    CallThisStatic0(node, builder, util::StringView {Signatures::BUILTIN_STRING_BUILDER_TO_STRING});
 
     SetAccumulatorType(Checker()->GlobalBuiltinETSStringType());
 }
@@ -2633,25 +2638,25 @@ void ETSGen::StoreArrayElement(const ir::AstNode *node, VReg objectReg, VReg ind
 
 void ETSGen::LoadStringLength(const ir::AstNode *node)
 {
-    Ra().Emit<CallVirtAccShort, 0>(node, Signatures::BUILTIN_STRING_LENGTH, dummyReg_, 0);
+    Ra().Emit<CallVirtAccShort, 0>(node, util::StringView {Signatures::BUILTIN_STRING_LENGTH}, dummyReg_, 0);
     SetAccumulatorType(Checker()->GlobalIntType());
 }
 
 void ETSGen::FloatIsNaN(const ir::AstNode *node)
 {
-    Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_FLOAT_IS_NAN, dummyReg_, 0);
+    Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_FLOAT_IS_NAN}, dummyReg_, 0);
     SetAccumulatorType(Checker()->GlobalETSBooleanType());
 }
 
 void ETSGen::DoubleIsNaN(const ir::AstNode *node)
 {
-    Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_DOUBLE_IS_NAN, dummyReg_, 0);
+    Ra().Emit<CallAccShort, 0>(node, util::StringView {Signatures::BUILTIN_DOUBLE_IS_NAN}, dummyReg_, 0);
     SetAccumulatorType(Checker()->GlobalETSBooleanType());
 }
 
 void ETSGen::LoadStringChar(const ir::AstNode *node, const VReg stringObj, const VReg charIndex)
 {
-    Ra().Emit<CallVirtShort>(node, Signatures::BUILTIN_STRING_CHAR_AT, stringObj, charIndex);
+    Ra().Emit<CallVirtShort>(node, util::StringView {Signatures::BUILTIN_STRING_CHAR_AT}, stringObj, charIndex);
     SetAccumulatorType(Checker()->GlobalCharType());
 }
 

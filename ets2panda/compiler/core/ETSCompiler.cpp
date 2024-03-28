@@ -470,7 +470,8 @@ void ETSCompiler::Compile(const ir::AwaitExpression *expr) const
     compiler::VReg argumentReg = etsg->AllocReg();
     expr->Argument()->Compile(etsg);
     etsg->StoreAccumulator(expr, argumentReg);
-    etsg->CallThisVirtual0(expr->Argument(), argumentReg, compiler::Signatures::BUILTIN_PROMISE_AWAIT_RESOLUTION);
+    etsg->CallThisVirtual0(expr->Argument(), argumentReg,
+                           util::StringView {compiler::Signatures::BUILTIN_PROMISE_AWAIT_RESOLUTION});
     etsg->CastToArrayOrObject(expr->Argument(), expr->TsType(), IS_UNCHECKED_CAST);
     etsg->SetAccumulatorType(expr->TsType());
 }
@@ -609,10 +610,10 @@ static bool CompileBigInt(compiler::ETSGen *etsg, const ir::BinaryExpression *ex
         case lexer::TokenType::PUNCTUATOR_LESS_THAN:
         case lexer::TokenType::PUNCTUATOR_GREATER_THAN_EQUAL:
         case lexer::TokenType::PUNCTUATOR_LESS_THAN_EQUAL:
-            etsg->CallBigIntBinaryComparison(expr, lhs, rhs, signature);
+            etsg->CallBigIntBinaryComparison(expr, lhs, rhs, util::StringView {signature});
             break;
         default:
-            etsg->CallBigIntBinaryOperator(expr, lhs, rhs, signature);
+            etsg->CallBigIntBinaryOperator(expr, lhs, rhs, util::StringView {signature});
             break;
     }
 
@@ -711,22 +712,22 @@ bool ETSCompiler::IsSucceedCompilationProxyMemberExpr(const ir::CallExpression *
         checker::Signature *const signature = [expr, calleeObject, enumInterface, &arguments]() {
             const auto &memberProxyMethodName = expr->Signature()->InternalName();
 
-            if (memberProxyMethodName == checker::ETSEnumType::TO_STRING_METHOD_NAME) {
+            if (memberProxyMethodName == util::StringView {checker::ETSEnumType::TO_STRING_METHOD_NAME}) {
                 arguments.push_back(calleeObject);
                 return enumInterface->ToStringMethod().globalSignature;
             }
-            if (memberProxyMethodName == checker::ETSEnumType::GET_VALUE_METHOD_NAME) {
+            if (memberProxyMethodName == util::StringView {checker::ETSEnumType::GET_VALUE_METHOD_NAME}) {
                 arguments.push_back(calleeObject);
                 return enumInterface->GetValueMethod().globalSignature;
             }
-            if (memberProxyMethodName == checker::ETSEnumType::GET_NAME_METHOD_NAME) {
+            if (memberProxyMethodName == util::StringView {checker::ETSEnumType::GET_NAME_METHOD_NAME}) {
                 arguments.push_back(calleeObject);
                 return enumInterface->GetNameMethod().globalSignature;
             }
-            if (memberProxyMethodName == checker::ETSEnumType::VALUES_METHOD_NAME) {
+            if (memberProxyMethodName == util::StringView {checker::ETSEnumType::VALUES_METHOD_NAME}) {
                 return enumInterface->ValuesMethod().globalSignature;
             }
-            if (memberProxyMethodName == checker::ETSEnumType::VALUE_OF_METHOD_NAME) {
+            if (memberProxyMethodName == util::StringView {checker::ETSEnumType::VALUE_OF_METHOD_NAME}) {
                 arguments.push_back(expr->Arguments().front());
                 return enumInterface->ValueOfMethod().globalSignature;
             }
@@ -1072,7 +1073,7 @@ void ETSCompiler::Compile(const ir::ObjectExpression *expr) const
     if (expr->TsType()->IsETSDynamicType()) {
         auto *signatureInfo = etsg->Allocator()->New<checker::SignatureInfo>(etsg->Allocator());
         auto *createObjSig = etsg->Allocator()->New<checker::Signature>(
-            signatureInfo, nullptr, compiler::Signatures::BUILTIN_JSRUNTIME_CREATE_OBJECT);
+            signatureInfo, nullptr, util::StringView {compiler::Signatures::BUILTIN_JSRUNTIME_CREATE_OBJECT});
         compiler::VReg dummyReg = compiler::VReg::RegStart();
         etsg->CallDynamic(expr, dummyReg, dummyReg, createObjSig,
                           ArenaVector<ir::Expression *>(etsg->Allocator()->Adapter()));
@@ -1367,15 +1368,16 @@ static void ThrowError(compiler::ETSGen *const etsg, const ir::AssertStatement *
     if (st->Second() != nullptr) {
         st->Second()->Compile(etsg);
     } else {
-        etsg->LoadAccumulatorString(st, "Assertion failed.");
+        etsg->LoadAccumulatorString(st, util::StringView {"Assertion failed."});
     }
 
     const auto message = etsg->AllocReg();
     etsg->StoreAccumulator(st, message);
 
     const auto assertionError = etsg->AllocReg();
-    etsg->NewObject(st, assertionError, compiler::Signatures::BUILTIN_ASSERTION_ERROR);
-    etsg->CallThisStatic1(st, assertionError, compiler::Signatures::BUILTIN_ASSERTION_ERROR_CTOR, message);
+    etsg->NewObject(st, assertionError, util::StringView {compiler::Signatures::BUILTIN_ASSERTION_ERROR});
+    etsg->CallThisStatic1(st, assertionError, util::StringView {compiler::Signatures::BUILTIN_ASSERTION_ERROR_CTOR},
+                          message);
     etsg->EmitThrow(st, assertionError);
 }
 // compile methods for STATEMENTS in alphabetical order

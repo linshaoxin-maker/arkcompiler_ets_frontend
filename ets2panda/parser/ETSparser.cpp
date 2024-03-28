@@ -227,7 +227,7 @@ void ETSParser::ParseETSGlobalScript(lexer::SourcePosition startLoc, ArenaVector
 
 void ETSParser::CreateGlobalClass()
 {
-    auto *ident = AllocNode<ir::Identifier>(compiler::Signatures::ETS_GLOBAL, Allocator());
+    auto *ident = AllocNode<ir::Identifier>(util::StringView {compiler::Signatures::ETS_GLOBAL}, Allocator());
 
     auto *classDef = AllocNode<ir::ClassDefinition>(Allocator(), ident, ir::ClassDefinitionModifiers::GLOBAL,
                                                     ir::ModifierFlags::ABSTRACT, Language(Language::Id::ETS));
@@ -623,7 +623,7 @@ ir::ScriptFunction *ETSParser::AddInitMethod(ArenaVector<ir::AstNode *> &globalP
     auto const createFunction =
         [this](std::string_view const functionName, ir::ScriptFunctionFlags functionFlags,
                ir::ModifierFlags const functionModifiers) -> std::pair<ir::ScriptFunction *, ir::MethodDefinition *> {
-        auto *initIdent = AllocNode<ir::Identifier>(functionName, Allocator());
+        auto *initIdent = AllocNode<ir::Identifier>(util::StringView {functionName}, Allocator());
         ir::ScriptFunction *initFunc;
 
         {
@@ -1002,22 +1002,21 @@ void ETSParser::CreateCCtor(ArenaVector<ir::AstNode *> &properties, const lexer:
 
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
 
-    auto *id = AllocNode<ir::Identifier>(compiler::Signatures::CCTOR, Allocator());
+    auto *id = AllocNode<ir::Identifier>(util::StringView {compiler::Signatures::CCTOR}, Allocator());
 
     ArenaVector<ir::Statement *> statements(Allocator()->Adapter());
 
     // Add the call to special '_$init$_' method containing all the top-level variable initializations (as assignments)
     // and statements to the end of static constructor of the global class.
     if (inGlobalClass) {
-        if (auto const it = std::find_if(properties.begin(), properties.end(),
-                                         [](ir::AstNode const *const item) {
-                                             return item->IsMethodDefinition() &&
-                                                    item->AsMethodDefinition()->Id()->Name() ==
-                                                        compiler::Signatures::INIT_METHOD;
-                                         });
-            it != properties.end()) {
+        const auto predicate = [](ir::AstNode const *const item) {
+            return item->IsMethodDefinition() &&
+                   item->AsMethodDefinition()->Id()->Name() == util::StringView {compiler::Signatures::INIT_METHOD};
+        };
+        if (auto const it = std::find_if(properties.begin(), properties.end(), predicate); it != properties.end()) {
             if (!(*it)->AsMethodDefinition()->Function()->Body()->AsBlockStatement()->Statements().empty()) {
-                auto *const callee = AllocNode<ir::Identifier>(compiler::Signatures::INIT_METHOD, Allocator());
+                auto *const callee =
+                    AllocNode<ir::Identifier>(util::StringView {compiler::Signatures::INIT_METHOD}, Allocator());
                 callee->SetReference();
 
                 auto *const callExpr = AllocNode<ir::CallExpression>(
@@ -3111,7 +3110,7 @@ void ETSParser::ParsePackageDeclaration(ArenaVector<ir::Statement *> &statements
             baseName = baseName.substr(0, idx);
         }
 
-        GetProgram()->SetPackageName(baseName);
+        GetProgram()->SetPackageName(util::StringView {baseName});
 
         return;
     }
@@ -3173,7 +3172,7 @@ std::tuple<ir::ImportSource *, std::vector<std::string>> ETSParser::ParseFromCla
 
         util::UString baseName(importPath.Mutf8().substr(0, pos), Allocator());
         if (baseName.View().Is(".") || baseName.View().Is("..")) {
-            baseName.Append(panda::os::file::File::GetPathDelim());
+            baseName.Append(util::StringView {panda::os::file::File::GetPathDelim()});
         }
 
         module = AllocNode<ir::StringLiteral>(util::UString(importPath.Mutf8().substr(pos + 1), Allocator()).View());
@@ -3522,7 +3521,8 @@ ir::Expression *ETSParser::ParseFunctionParameter()
 
 ir::Expression *ETSParser::CreateParameterThis(const util::StringView className)
 {
-    auto *paramIdent = AllocNode<ir::Identifier>(varbinder::TypedBinder::MANDATORY_PARAM_THIS, Allocator());
+    auto *paramIdent =
+        AllocNode<ir::Identifier>(util::StringView {varbinder::TypedBinder::MANDATORY_PARAM_THIS}, Allocator());
     paramIdent->SetRange(Lexer()->GetToken().Loc());
 
     ir::Expression *classTypeName = AllocNode<ir::Identifier>(className, Allocator());
@@ -4252,9 +4252,9 @@ ir::Expression *ETSParser::ParseNewExpression()
         auto modifiers = ir::ClassDefinitionModifiers::ANONYMOUS | ir::ClassDefinitionModifiers::HAS_SUPER;
         auto [ctor, properties, bodyRange] = ParseClassBody(modifiers);
 
-        auto newIdent = AllocNode<ir::Identifier>("#0", Allocator());
+        auto newIdent = AllocNode<ir::Identifier>(util::StringView {"#0"}, Allocator());
         classDefinition = AllocNode<ir::ClassDefinition>(
-            "#0", newIdent, nullptr, nullptr, std::move(implements), ctor,  // remove name
+            util::StringView {"#0"}, newIdent, nullptr, nullptr, std::move(implements), ctor,  // remove name
             typeReference, std::move(properties), modifiers, ir::ModifierFlags::NONE, Language(Language::Id::ETS));
 
         classDefinition->SetRange(bodyRange);
@@ -4591,7 +4591,7 @@ bool ETSParser::CheckClassElement(ir::AstNode *property, [[maybe_unused]] ir::Me
             ThrowSyntaxError("Only one static block is allowed", property->Start());
         }
 
-        auto *id = AllocNode<ir::Identifier>(compiler::Signatures::CCTOR, Allocator());
+        auto *id = AllocNode<ir::Identifier>(util::StringView {compiler::Signatures::CCTOR}, Allocator());
         property->AsClassStaticBlock()->Function()->SetIdent(id);
     }
 

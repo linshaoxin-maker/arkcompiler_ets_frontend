@@ -65,7 +65,7 @@ void ExportDeclarationContext::BindExportDecl(ir::AstNode *exportDecl)
             continue;
         }
 
-        util::StringView exportName(exportDecl->IsExportDefaultDeclaration() ? "default" : name);
+        util::StringView exportName(exportDecl->IsExportDefaultDeclaration() ? util::StringView {"default"} : name);
 
         variable->AddFlag(varbinder::VariableFlags::LOCAL_EXPORT);
         auto *decl =

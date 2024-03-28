@@ -80,7 +80,7 @@ static void StoreLocalExport(PandaGen *pg, const ir::AstNode *node, varbinder::V
     auto range = pg->Scope()->AsModuleScope()->LocalExports().equal_range(variable);
 
     for (auto it = range.first; it != range.second; ++it) {
-        if (it->second != "default") {
+        if (it->second != util::StringView {"default"}) {
             pg->StoreModuleVar(node, it->second);
         }
     }

@@ -220,21 +220,19 @@ void MakeMethodDef(ETSChecker *const checker, varbinder::ETSBinder *const varbin
 
 ir::Identifier *ETSChecker::CreateEnumNamesArray(ETSEnumInterface const *const enumType)
 {
-    // clang-format off
-    return MakeArray(this, VarBinder()->AsETSBinder(), enumType, "NamesArray", GlobalBuiltinETSStringType(),
-                    [this](const ir::TSEnumMember *const member) {
-                        auto *const enumNameStringLiteral =
-                            Allocator()->New<ir::StringLiteral>(member->Key()->AsIdentifier()->Name());
-                        enumNameStringLiteral->SetTsType(GlobalBuiltinETSStringType());
-                        return enumNameStringLiteral;
-                    });
-    // clang-format on
+    return MakeArray(this, VarBinder()->AsETSBinder(), enumType, util::StringView {"NamesArray"},
+                     GlobalBuiltinETSStringType(), [this](const ir::TSEnumMember *const member) {
+                         auto *const enumNameStringLiteral =
+                             Allocator()->New<ir::StringLiteral>(member->Key()->AsIdentifier()->Name());
+                         enumNameStringLiteral->SetTsType(GlobalBuiltinETSStringType());
+                         return enumNameStringLiteral;
+                     });
 }
 
 ir::Identifier *ETSChecker::CreateEnumValuesArray(ETSEnumType *const enumType)
 {
     return MakeArray(
-        this, VarBinder()->AsETSBinder(), enumType, "ValuesArray", GlobalIntType(),
+        this, VarBinder()->AsETSBinder(), enumType, util::StringView {"ValuesArray"}, GlobalIntType(),
         [this](const ir::TSEnumMember *const member) {
             auto *const enumValueLiteral = Allocator()->New<ir::NumberLiteral>(lexer::Number(
                 member->AsTSEnumMember()->Init()->AsNumberLiteral()->Number().GetValue<ETSEnumType::ValueType>()));
@@ -245,7 +243,8 @@ ir::Identifier *ETSChecker::CreateEnumValuesArray(ETSEnumType *const enumType)
 
 ir::Identifier *ETSChecker::CreateEnumStringValuesArray(ETSEnumInterface *const enumType)
 {
-    return MakeArray(this, VarBinder()->AsETSBinder(), enumType, "StringValuesArray", GlobalETSStringLiteralType(),
+    return MakeArray(this, VarBinder()->AsETSBinder(), enumType, util::StringView {"StringValuesArray"},
+                     GlobalETSStringLiteralType(),
                      [this, isStringEnum = enumType->IsETSStringEnumType()](const ir::TSEnumMember *const member) {
                          auto const stringValue =
                              isStringEnum ? member->AsTSEnumMember()->Init()->AsStringLiteral()->Str()
@@ -268,7 +267,7 @@ ir::Identifier *ETSChecker::CreateEnumItemsArray(ETSEnumInterface *const enumTyp
     enumTypeIdent->SetTsType(enumType);
 
     return MakeArray(
-        this, VarBinder()->AsETSBinder(), enumType, "ItemsArray", enumType,
+        this, VarBinder()->AsETSBinder(), enumType, util::StringView {"ItemsArray"}, enumType,
         [this, enumTypeIdent](const ir::TSEnumMember *const member) {
             auto *const enumMemberIdent =
                 Allocator()->New<ir::Identifier>(member->AsTSEnumMember()->Key()->AsIdentifier()->Name(), Allocator());
@@ -286,10 +285,10 @@ ETSEnumType::Method ETSChecker::CreateEnumFromIntMethod(ir::Identifier *const na
         VarBinder()->Allocator()->New<varbinder::FunctionParamScope>(Allocator(), Program()->GlobalScope());
 
     auto *const inputOrdinalIdent =
-        MakeFunctionParam(this, VarBinder()->AsETSBinder(), paramScope, "ordinal", GlobalIntType());
+        MakeFunctionParam(this, VarBinder()->AsETSBinder(), paramScope, util::StringView {"ordinal"}, GlobalIntType());
 
     auto *const inArraySizeExpr = [this, namesArrayIdent, inputOrdinalIdent]() {
-        auto *const lengthIdent = Allocator()->New<ir::Identifier>("length", Allocator());
+        auto *const lengthIdent = Allocator()->New<ir::Identifier>(util::StringView {"length"}, Allocator());
         auto *const valuesArrayLengthExpr = Allocator()->New<ir::MemberExpression>(
             namesArrayIdent, lengthIdent, ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
         auto *const expr = Allocator()->New<ir::BinaryExpression>(inputOrdinalIdent, valuesArrayLengthExpr,
@@ -307,7 +306,7 @@ ETSEnumType::Method ETSChecker::CreateEnumFromIntMethod(ir::Identifier *const na
     auto *const ifOrdinalExistsStmt = Allocator()->New<ir::IfStatement>(inArraySizeExpr, returnEnumStmt, nullptr);
 
     auto *const throwNoEnumStmt = [this, inputOrdinalIdent, enumType]() {
-        auto *const exceptionReference = MakeTypeReference(Allocator(), "Exception");
+        auto *const exceptionReference = MakeTypeReference(Allocator(), util::StringView {"Exception"});
 
         util::UString messageString(util::StringView("No enum constant in "), Allocator());
         messageString.Append(enumType->GetName());
@@ -344,7 +343,8 @@ ETSEnumType::Method ETSChecker::CreateEnumFromIntMethod(ir::Identifier *const na
                                         std::move(body), enumTypeAnnotation, enumType->GetDecl()->IsDeclare());
     function->AddFlag(ir::ScriptFunctionFlags::THROWS);
 
-    auto *const ident = MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), ETSEnumType::FROM_INT_METHOD_NAME);
+    auto *const ident =
+        MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), util::StringView {ETSEnumType::FROM_INT_METHOD_NAME});
     function->SetIdent(ident);
     function->Scope()->BindInternalName(ident->Name());
 
@@ -359,7 +359,8 @@ ETSEnumType::Method ETSChecker::CreateEnumToStringMethod(ir::Identifier *const s
     auto *const paramScope =
         VarBinder()->Allocator()->New<varbinder::FunctionParamScope>(Allocator(), Program()->GlobalClassScope());
 
-    auto *const inputEnumIdent = MakeFunctionParam(this, VarBinder()->AsETSBinder(), paramScope, "ordinal", enumType);
+    auto *const inputEnumIdent =
+        MakeFunctionParam(this, VarBinder()->AsETSBinder(), paramScope, util::StringView {"ordinal"}, enumType);
 
     auto *const returnStmt = [this, inputEnumIdent, stringValuesArrayIdent]() {
         auto *const arrayAccessExpr = Allocator()->New<ir::MemberExpression>(
@@ -379,16 +380,16 @@ ETSEnumType::Method ETSChecker::CreateEnumToStringMethod(ir::Identifier *const s
     auto *const function = MakeFunction(this, VarBinder()->AsETSBinder(), paramScope, std::move(params),
                                         std::move(body), stringTypeAnnotation, enumType->GetDecl()->IsDeclare());
 
-    auto *const functionIdent =
-        MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), ETSEnumType::TO_STRING_METHOD_NAME);
+    auto *const functionIdent = MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(),
+                                                        util::StringView {ETSEnumType::TO_STRING_METHOD_NAME});
     function->SetIdent(functionIdent);
     function->Scope()->BindInternalName(functionIdent->Name());
 
     MakeMethodDef(this, VarBinder()->AsETSBinder(), functionIdent, function);
 
-    return {
-        MakeGlobalSignature(this, function, GlobalETSStringLiteralType()),
-        MakeProxyFunctionType(this, ETSEnumType::TO_STRING_METHOD_NAME, {}, function, GlobalETSStringLiteralType())};
+    return {MakeGlobalSignature(this, function, GlobalETSStringLiteralType()),
+            MakeProxyFunctionType(this, util::StringView {ETSEnumType::TO_STRING_METHOD_NAME}, {}, function,
+                                  GlobalETSStringLiteralType())};
 }
 
 ETSEnumType::Method ETSChecker::CreateEnumGetValueMethod(ir::Identifier *const valuesArrayIdent,
@@ -397,7 +398,8 @@ ETSEnumType::Method ETSChecker::CreateEnumGetValueMethod(ir::Identifier *const v
     auto *const paramScope =
         VarBinder()->Allocator()->New<varbinder::FunctionParamScope>(Allocator(), Program()->GlobalClassScope());
 
-    auto *const inputEnumIdent = MakeFunctionParam(this, VarBinder()->AsETSBinder(), paramScope, "e", enumType);
+    auto *const inputEnumIdent =
+        MakeFunctionParam(this, VarBinder()->AsETSBinder(), paramScope, util::StringView {"e"}, enumType);
 
     auto *const returnStmt = [this, inputEnumIdent, valuesArrayIdent]() {
         auto *const arrayAccessExpr = Allocator()->New<ir::MemberExpression>(
@@ -417,15 +419,16 @@ ETSEnumType::Method ETSChecker::CreateEnumGetValueMethod(ir::Identifier *const v
     auto *const function = MakeFunction(this, VarBinder()->AsETSBinder(), paramScope, std::move(params),
                                         std::move(body), intTypeAnnotation, enumType->GetDecl()->IsDeclare());
 
-    auto *const functionIdent =
-        MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), ETSEnumType::GET_VALUE_METHOD_NAME);
+    auto *const functionIdent = MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(),
+                                                        util::StringView {ETSEnumType::GET_VALUE_METHOD_NAME});
     function->SetIdent(functionIdent);
     function->Scope()->BindInternalName(functionIdent->Name());
 
     MakeMethodDef(this, VarBinder()->AsETSBinder(), functionIdent, function);
 
     return {MakeGlobalSignature(this, function, GlobalIntType()),
-            MakeProxyFunctionType(this, ETSEnumType::GET_VALUE_METHOD_NAME, {}, function, GlobalIntType())};
+            MakeProxyFunctionType(this, util::StringView {ETSEnumType::GET_VALUE_METHOD_NAME}, {}, function,
+                                  GlobalIntType())};
 }
 
 ETSEnumType::Method ETSChecker::CreateEnumGetNameMethod(ir::Identifier *const namesArrayIdent,
@@ -434,7 +437,8 @@ ETSEnumType::Method ETSChecker::CreateEnumGetNameMethod(ir::Identifier *const na
     auto *const paramScope =
         VarBinder()->Allocator()->New<varbinder::FunctionParamScope>(Allocator(), Program()->GlobalScope());
 
-    auto *const inputEnumIdent = MakeFunctionParam(this, VarBinder()->AsETSBinder(), paramScope, "ordinal", enumType);
+    auto *const inputEnumIdent =
+        MakeFunctionParam(this, VarBinder()->AsETSBinder(), paramScope, util::StringView {"ordinal"}, enumType);
 
     auto *const returnStmt = [this, inputEnumIdent, namesArrayIdent]() {
         auto *const arrayAccessExpr = Allocator()->New<ir::MemberExpression>(
@@ -456,14 +460,15 @@ ETSEnumType::Method ETSChecker::CreateEnumGetNameMethod(ir::Identifier *const na
                                         std::move(body), stringTypeAnnotation, enumType->GetDecl()->IsDeclare());
 
     auto *const functionIdent =
-        MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), ETSEnumType::GET_NAME_METHOD_NAME);
+        MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), util::StringView {ETSEnumType::GET_NAME_METHOD_NAME});
     function->SetIdent(functionIdent);
     function->Scope()->BindInternalName(functionIdent->Name());
 
     MakeMethodDef(this, VarBinder()->AsETSBinder(), functionIdent, function);
 
     return {MakeGlobalSignature(this, function, GlobalBuiltinETSStringType()),
-            MakeProxyFunctionType(this, ETSEnumType::GET_NAME_METHOD_NAME, {}, function, GlobalBuiltinETSStringType())};
+            MakeProxyFunctionType(this, util::StringView {ETSEnumType::GET_NAME_METHOD_NAME}, {}, function,
+                                  GlobalBuiltinETSStringType())};
 }
 
 ETSEnumType::Method ETSChecker::CreateEnumValueOfMethod(ir::Identifier *const namesArrayIdent,
@@ -472,13 +477,13 @@ ETSEnumType::Method ETSChecker::CreateEnumValueOfMethod(ir::Identifier *const na
     auto *const paramScope =
         VarBinder()->Allocator()->New<varbinder::FunctionParamScope>(Allocator(), Program()->GlobalScope());
 
-    auto *const inputNameIdent =
-        MakeFunctionParam(this, VarBinder()->AsETSBinder(), paramScope, "name", GlobalBuiltinETSStringType());
+    auto *const inputNameIdent = MakeFunctionParam(this, VarBinder()->AsETSBinder(), paramScope,
+                                                   util::StringView {"name"}, GlobalBuiltinETSStringType());
 
     varbinder::LexicalScope<varbinder::LoopDeclarationScope> loopDeclScope(VarBinder());
 
     auto *const forLoopIIdent = [this]() {
-        auto *const ident = Allocator()->New<ir::Identifier>("i", Allocator());
+        auto *const ident = Allocator()->New<ir::Identifier>(util::StringView {"i"}, Allocator());
         ident->SetTsType(GlobalIntType());
         auto [decl, var] = VarBinder()->NewVarDecl<varbinder::LetDecl>(ident->Start(), ident->Name());
         ident->SetVariable(var);
@@ -490,7 +495,7 @@ ETSEnumType::Method ETSChecker::CreateEnumValueOfMethod(ir::Identifier *const na
     }();
 
     auto *const forLoopInitVarDecl = [this, forLoopIIdent]() {
-        auto *const init = Allocator()->New<ir::NumberLiteral>("0");
+        auto *const init = Allocator()->New<ir::NumberLiteral>(util::StringView {"0"});
         init->SetTsType(GlobalIntType());
         auto *const decl =
             Allocator()->New<ir::VariableDeclarator>(ir::VariableDeclaratorFlag::LET, forLoopIIdent, init);
@@ -502,7 +507,7 @@ ETSEnumType::Method ETSChecker::CreateEnumValueOfMethod(ir::Identifier *const na
     }();
 
     auto *const forLoopTest = [this, namesArrayIdent, forLoopIIdent]() {
-        auto *const lengthIdent = Allocator()->New<ir::Identifier>("length", Allocator());
+        auto *const lengthIdent = Allocator()->New<ir::Identifier>(util::StringView {"length"}, Allocator());
         auto *const arrayLengthExpr = Allocator()->New<ir::MemberExpression>(
             namesArrayIdent, lengthIdent, ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
         arrayLengthExpr->SetTsType(GlobalIntType());
@@ -555,7 +560,7 @@ ETSEnumType::Method ETSChecker::CreateEnumValueOfMethod(ir::Identifier *const na
         ArenaVector<ir::Expression *> newExprArgs(Allocator()->Adapter());
         newExprArgs.push_back(newExprArg);
 
-        auto *const exceptionReference = MakeTypeReference(Allocator(), "Exception");
+        auto *const exceptionReference = MakeTypeReference(Allocator(), util::StringView {"Exception"});
 
         auto *const newExpr = Allocator()->New<ir::ETSNewClassInstanceExpression>(
             exceptionReference, std::move(newExprArgs),
@@ -581,14 +586,14 @@ ETSEnumType::Method ETSChecker::CreateEnumValueOfMethod(ir::Identifier *const na
     function->AddFlag(ir::ScriptFunctionFlags::THROWS);
 
     auto *const functionIdent =
-        MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), ETSEnumType::VALUE_OF_METHOD_NAME);
+        MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), util::StringView {ETSEnumType::VALUE_OF_METHOD_NAME});
     function->SetIdent(functionIdent);
     function->Scope()->BindInternalName(functionIdent->Name());
 
     MakeMethodDef(this, VarBinder()->AsETSBinder(), functionIdent, function);
 
     return {MakeGlobalSignature(this, function, enumType),
-            MakeProxyFunctionType(this, ETSEnumType::VALUE_OF_METHOD_NAME,
+            MakeProxyFunctionType(this, util::StringView {ETSEnumType::VALUE_OF_METHOD_NAME},
                                   {function->Params()[0]->AsETSParameterExpression()->Variable()->AsLocalVariable()},
                                   function, enumType)};
 }
@@ -612,13 +617,14 @@ ETSEnumType::Method ETSChecker::CreateEnumValuesMethod(ir::Identifier *const ite
                                         std::move(body), enumArrayTypeAnnotation, enumType->GetDecl()->IsDeclare());
 
     auto *const functionIdent =
-        MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), ETSEnumType::VALUES_METHOD_NAME);
+        MakeQualifiedIdentifier(Allocator(), enumType->GetDecl(), util::StringView {ETSEnumType::VALUES_METHOD_NAME});
     function->SetIdent(functionIdent);
     function->Scope()->BindInternalName(functionIdent->Name());
 
     MakeMethodDef(this, VarBinder()->AsETSBinder(), functionIdent, function);
 
     return {MakeGlobalSignature(this, function, CreateETSArrayType(enumType)),
-            MakeProxyFunctionType(this, ETSEnumType::VALUES_METHOD_NAME, {}, function, CreateETSArrayType(enumType))};
+            MakeProxyFunctionType(this, util::StringView {ETSEnumType::VALUES_METHOD_NAME}, {}, function,
+                                  CreateETSArrayType(enumType))};
 }
 }  // namespace panda::es2panda::checker

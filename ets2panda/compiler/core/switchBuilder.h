@@ -35,7 +35,10 @@ template <typename CodeGen>
 class SwitchBuilder {
 public:
     SwitchBuilder(CodeGen *cg, const ir::SwitchStatement *stmt)
-        : cg_(cg), end_(cg->AllocLabel()), labelCtx_(cg, LabelTarget(end_, LabelTarget::BREAK_LABEL)), stmt_(stmt)
+        : cg_(cg),
+          end_(cg->AllocLabel()),
+          labelCtx_(cg, LabelTarget(end_, util::StringView {LabelTarget::BREAK_LABEL})),
+          stmt_(stmt)
     {
         for (size_t i = 0; i < stmt_->Cases().size(); i++) {
             caseLabels_.push_back(cg_->AllocLabel());

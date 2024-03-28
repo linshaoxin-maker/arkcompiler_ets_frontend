@@ -119,8 +119,8 @@ static void Verify(const parser::Program &program, const CompilerContext &contex
         const auto &sourceName = std::get<0>(it);
         const auto &linkedProgram = std::get<1>(it);
         verificationCtx.Verify(context.Options()->verifierWarnings, context.Options()->verifierErrors,
-                               linkedProgram->Ast(), phase->Name(), sourceName);
-        verificationCtx.IntroduceNewInvariants(phase->Name());
+                               linkedProgram->Ast(), util::StringView {phase->Name()}, sourceName);
+        verificationCtx.IntroduceNewInvariants(util::StringView {phase->Name()});
     }
 }
 #endif

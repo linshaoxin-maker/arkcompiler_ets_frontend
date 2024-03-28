@@ -85,7 +85,7 @@ void FunctionBuilder::ResumeGenerator(const ir::AstNode *node, VReg completionTy
 VReg FunctionBuilder::FunctionReg(const ir::ScriptFunction *node) const
 {
     varbinder::FunctionScope *scope = node->Scope();
-    auto res = scope->Find(varbinder::VarBinder::MANDATORY_PARAM_FUNC);
+    auto res = scope->Find(util::StringView {varbinder::VarBinder::MANDATORY_PARAM_FUNC});
     ASSERT(res.level == 0 && res.variable->IsLocalVariable());
     return res.variable->AsLocalVariable()->Vreg();
 }
@@ -182,7 +182,7 @@ void FunctionBuilder::YieldStar(const ir::AstNode *node)
     pg_->Condition(node, lexer::TokenType::PUNCTUATOR_STRICT_EQUAL, receivedType, returnCompletion);
 
     // i. Let throw be ? GetMethod(iterator, "throw").
-    iterator.GetMethod("throw");
+    iterator.GetMethod(util::StringView {"throw"});
 
     // ii. If throw is not undefined, then
     pg_->BranchIfNotUndefined(node, callMethod);
@@ -204,7 +204,7 @@ void FunctionBuilder::YieldStar(const ir::AstNode *node)
     pg_->SetLabel(node, returnCompletion);
     pg_->StoreConst(node, exitReturn, Constant::JS_TRUE);
     // ii. Let return be ? GetMethod(iterator, "return").
-    iterator.GetMethod("return");
+    iterator.GetMethod(util::StringView {"return"});
 
     // iii. If return is undefined, then
     pg_->BranchIfNotUndefined(node, callMethod);

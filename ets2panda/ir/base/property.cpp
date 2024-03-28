@@ -109,7 +109,7 @@ ValidationInfo Property::ValidateExpression()
 
     if (value_ != nullptr) {
         if (value_->IsAssignmentPattern()) {
-            return {"Invalid shorthand property initializer.", value_->Start()};
+            return {util::StringView {"Invalid shorthand property initializer."}, value_->Start()};
         }
 
         if (value_->IsObjectExpression()) {

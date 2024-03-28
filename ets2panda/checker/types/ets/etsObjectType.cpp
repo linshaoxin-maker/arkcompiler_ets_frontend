@@ -430,7 +430,7 @@ void ETSObjectType::AssignmentTarget(TypeRelation *const relation, Type *source)
 
     if (HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
         EnsurePropertiesInstantiated();
-        auto found = properties_[static_cast<size_t>(PropertyType::INSTANCE_METHOD)].find("invoke");
+        auto found = properties_[static_cast<size_t>(PropertyType::INSTANCE_METHOD)].find(util::StringView {"invoke"});
         ASSERT(found != properties_[static_cast<size_t>(PropertyType::INSTANCE_METHOD)].end());
         relation->IsAssignableTo(source, found->second->TsType());
         return;
