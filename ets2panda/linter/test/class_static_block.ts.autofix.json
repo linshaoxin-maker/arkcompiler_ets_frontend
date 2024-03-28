@@ -7,13 +7,13 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 659,
-                    "end": 693,
+                    "start": 642,
+                    "end": 674,
                     "replacementText": "static {\n    C.s = 'string';\n    C.n = C.s.length;\n}"
                 },
                 {
-                    "start": 720,
-                    "end": 756,
+                    "start": 698,
+                    "end": 732,
                     "replacementText": ""
                 }
             ],

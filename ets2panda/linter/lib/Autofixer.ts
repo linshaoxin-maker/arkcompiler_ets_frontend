@@ -69,20 +69,20 @@ export class AutofixInfoSet {
   }
 }
 
-export function fixMultipleStaticBlocks( nodes: ts.Node[]): Autofix[] | undefined {
-  let autofix: Autofix[] | undefined = [];
+export function fixMultipleStaticBlocks(nodes: ts.Node[]): Autofix[] | undefined {
+  const autofix: Autofix[] | undefined = [];
   let body = (nodes[0] as ts.ClassStaticBlockDeclaration).body;
   let bodyStatements: ts.Statement[] = [];
   bodyStatements = bodyStatements.concat(body.statements);
-  for( let i = 1; i < nodes.length; i++) {
-    bodyStatements = bodyStatements.concat( (nodes[i] as ts.ClassStaticBlockDeclaration).body.statements);
-    autofix[i] = { start: nodes[i].getStart(), end: nodes[i].getEnd(), replacementText: "" }
+  for (let i = 1; i < nodes.length; i++) {
+    bodyStatements = bodyStatements.concat((nodes[i] as ts.ClassStaticBlockDeclaration).body.statements);
+    autofix[i] = { start: nodes[i].getStart(), end: nodes[i].getEnd(), replacementText: '' };
   }
   body = ts.factory.createBlock(bodyStatements, true);
   // static blocks shouldn't have modifiers
-  let statickBlock = ts.factory.createClassStaticBlockDeclaration(body);
+  const statickBlock = ts.factory.createClassStaticBlockDeclaration(body);
   const text = printer.printNode(ts.EmitHint.Unspecified, statickBlock, nodes[0].getSourceFile());
-  autofix[0] = { start: nodes[0].getStart(), end: nodes[0].getEnd(), replacementText: text }
+  autofix[0] = { start: nodes[0].getStart(), end: nodes[0].getEnd(), replacementText: text };
   return autofix;
 }
 

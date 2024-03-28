@@ -1,4 +1,4 @@
- /*
+/*
  * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1324,21 +1324,21 @@ export class TypeScriptLinter {
     }
 
     let staticBlocksCntr = 0;
-    let staticBlockNodes: ts.Node[] = [];
+    const staticBlockNodes: ts.Node[] = [];
     for (const element of tsClassDecl.members) {
       if (ts.isClassStaticBlockDeclaration(element)) {
         staticBlockNodes[staticBlocksCntr] = element;
-        staticBlocksCntr ++;
+        staticBlocksCntr++;
       }
     }
     if (staticBlocksCntr > 1) {
       let autofix: Autofix[] | undefined = [];
-      let autofixable = this.autofixesInfo.shouldAutofix(node, FaultID.MultipleStaticBlocks);
+      const autofixable = this.autofixesInfo.shouldAutofix(node, FaultID.MultipleStaticBlocks);
 
       autofix = Autofixer.fixMultipleStaticBlocks(staticBlockNodes);
       // autofixes for all additional static blocks are the same
-      for(let i = 1; i < staticBlocksCntr; i++) {
-        this.incrementCounters( staticBlockNodes[i], FaultID.MultipleStaticBlocks, autofixable, autofix);
+      for (let i = 1; i < staticBlocksCntr; i++) {
+        this.incrementCounters(staticBlockNodes[i], FaultID.MultipleStaticBlocks, autofixable, autofix);
       }
     }
   }

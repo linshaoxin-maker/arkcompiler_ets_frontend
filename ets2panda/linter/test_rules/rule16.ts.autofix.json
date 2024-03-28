@@ -7,13 +7,13 @@
             "autofixable": true,
             "autofix": [
                 {
-                    "start": 664,
-                    "end": 699,
+                    "start": 646,
+                    "end": 679,
                     "replacementText": "static {\n    C.s = \"aa\";\n    C.s = C.s + \"bb\";\n}"
                 },
                 {
-                    "start": 705,
-                    "end": 746,
+                    "start": 684,
+                    "end": 723,
                     "replacementText": ""
                 }
             ],
