@@ -60,6 +60,7 @@ protected:
     // NOLINTNEXTLINE(google-default-arguments)
     ir::ClassDefinition *ParseClassDefinition(ir::ClassDefinitionModifiers modifiers,
                                               ir::ModifierFlags flags = ir::ModifierFlags::NONE) override;
+    ir::AstNode *CheckDescription(ClassElementDescriptor *desc, const ArenaVector<ir::AstNode *> &properties);
     // NOLINTNEXTLINE(google-default-arguments)
     ir::AstNode *ParseClassElement(const ArenaVector<ir::AstNode *> &properties, ir::ClassDefinitionModifiers modifiers,
                                    ir::ModifierFlags flags = ir::ModifierFlags::NONE,

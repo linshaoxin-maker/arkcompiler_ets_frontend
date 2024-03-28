@@ -29,6 +29,12 @@ public:
     AST_NODE_MAPPING(DECLARE_ETSANALYZER_CHECK_METHOD)
 #undef DECLARE_ETSANALYZER_CHECK_METHOD
 
+    void CheckOperatorTypeHelper(ir::AssignmentExpression *expr) const;
+    void CheckPropertiesHelper(ir::ObjectExpression *expr, checker::ETSObjectType *objType) const;
+    ETSObjectType *CheckExprClassDefinitionHelper(ir::ETSNewClassInstanceExpression *expr, ETSObjectType *calleeObj,
+                                                  ETSChecker *checker) const;
+    void CheckNonEmptyElemetsHelper(ir::ArrayExpression *expr, bool isArray, ETSChecker *checker) const;
+
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_ETSANALYZER_CHECK_METHOD(_, __, nodeType, ___) \
     virtual checker::Type *Check(ir::nodeType *node) const override;
