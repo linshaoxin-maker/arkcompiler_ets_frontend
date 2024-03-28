@@ -1556,69 +1556,104 @@ class BytecodeRunner(Runner):
     def test_path(self, src):
         return src
 
+
+def add_directory_for_regression(runners, args):
+    runner = RegressionRunner(args)
+    runner.add_directory("parser/concurrent", "js", ["--module", "--dump-ast"])
+    runner.add_directory("parser/js", "js", ["--parse-only", "--dump-ast"])
+    runner.add_directory("parser/script", "ts", ["--parse-only", "--dump-ast"])
+    runner.add_directory("parser/ts", "ts",
+                            ["--parse-only", "--module", "--dump-ast"])
+    runner.add_directory("parser/ts/type_checker", "ts",
+                            ["--parse-only", "--enable-type-check", "--module", "--dump-ast"])
+    runner.add_directory("parser/ts/cases/declaration", "d.ts",
+                            ["--parse-only", "--module", "--dump-ast"], TSDeclarationTest)
+    runner.add_directory("parser/commonjs", "js", ["--commonjs", "--parse-only", "--dump-ast"])
+    runner.add_directory("parser/binder", "js", ["--dump-assembly"])
+    runner.add_directory("parser/js/emptySource", "js", ["--dump-assembly"])
+    runner.add_directory("parser/js/language/arguments-object", "js", ["--parse-only"])
+    runner.add_directory("parser/js/language/statements/for-statement", "js", ["--parse-only", "--dump-ast"])
+    runner.add_directory("parser/js/language/expressions/optional-chain", "js", ["--parse-only", "--dump-ast"])
+    runner.add_directory("parser/sendable_class", "ts", ["--dump-assembly", "--dump-literal-buffer", "--module"])
+    runner.add_directory("parser/unicode", "js", ["--parse-only"])
+    runner.add_directory("parser/ts/stack_overflow", "ts", ["--parse-only", "--dump-ast"])
+
+    runners.append(runner)
+
+    transformer_runner = TransformerRunner(args)
+    transformer_runner.add_directory("parser/ts/transformed_cases", "ts",
+                                        ["--parse-only", "--module", "--dump-transformed-ast",
+                                        "--check-transformed-ast-structure"])
+
+    runners.append(transformer_runner)
+
+
+def add_directory_for_asm(runners, args):
+    runner = AbcToAsmRunner(args)
+    runner.add_directory("abc2asm/js", "js", [])
+    runner.add_directory("abc2asm/ts", "ts", [])
+    runner.add_directory("compiler/js", "js", [])
+    runner.add_directory("compiler/ts/cases/compiler", "ts", [])
+    runner.add_directory("compiler/ts/projects", "ts", ["--module"])
+    runner.add_directory("compiler/ts/projects", "ts", ["--module", "--merge-abc"])
+    runner.add_directory("compiler/dts", "d.ts", ["--module", "--opt-level=0"])
+    runner.add_directory("compiler/commonjs", "js", ["--commonjs"])
+    runner.add_directory("compiler/recordsource/with-on", "js", ["--record-source"])
+    runner.add_directory("compiler/recordsource/with-off", "js", [])
+    runner.add_directory("parser/concurrent", "js", ["--module"])
+    runner.add_directory("parser/js", "js", [])
+    runner.add_directory("parser/script", "ts", [])
+    runner.add_directory("parser/ts", "ts", ["--module"])
+    runner.add_directory("parser/ts/type_checker", "ts", ["--enable-type-check", "--module"])
+    runner.add_directory("parser/commonjs", "js", ["--commonjs"])
+    runner.add_directory("parser/binder", "js", [])
+    runner.add_directory("parser/js/emptySource", "js", [])
+    runner.add_directory("parser/js/language/arguments-object", "js", [])
+    runner.add_directory("parser/js/language/statements/for-statement", "js", [])
+    runner.add_directory("parser/js/language/expressions/optional-chain", "js", [])
+    runner.add_directory("parser/sendable_class", "ts", ["--module"])
+    runner.add_directory("parser/unicode", "js", [])
+    runner.add_directory("parser/ts/stack_overflow", "ts", [])
+
+    runners.append(runner)
+
+
+def add_directory_for_compiler(runners, args):
+    runner = CompilerRunner(args)
+    runner.add_directory("compiler/js", "js", [])
+    runner.add_directory("compiler/ts/cases", "ts", [])
+    runner.add_directory("compiler/ts/projects", "ts", ["--module"])
+    runner.add_directory("compiler/ts/projects", "ts", ["--module", "--merge-abc"])
+    runner.add_directory("compiler/dts", "d.ts", ["--module", "--opt-level=0"])
+    runner.add_directory("compiler/commonjs", "js", ["--commonjs"])
+    runner.add_directory("compiler/recordsource/with-on", "js", ["--record-source"])
+    runner.add_directory("compiler/recordsource/with-off", "js", [])
+    runner.add_directory("compiler/interpreter/lexicalEnv", "js", [])
+
+    runners.append(runner)
+
+
+
+def add_directory_for_bytecode(runners, args):
+    runner = BytecodeRunner(args)
+    runner.add_directory("bytecode/commonjs", "js", ["--commonjs", "--dump-assembly"])
+    runner.add_directory("bytecode/js", "js", ["--dump-assembly"])
+    runner.add_directory("bytecode/ts/api11", "ts", ["--dump-assembly", "--module", "--target-api-version=11"])
+    runner.add_directory("bytecode/ts/api12", "ts", ["--dump-assembly", "--module", "--target-api-version=12"])
+
+    runners.append(runner)
+
+
 def main():
     args = get_args()
 
     runners = []
 
     if args.regression:
-        runner = RegressionRunner(args)
-        runner.add_directory("parser/concurrent", "js", ["--module", "--dump-ast"])
-        runner.add_directory("parser/js", "js", ["--parse-only", "--dump-ast"])
-        runner.add_directory("parser/script", "ts", ["--parse-only", "--dump-ast"])
-        runner.add_directory("parser/ts", "ts",
-                             ["--parse-only", "--module", "--dump-ast"])
-        runner.add_directory("parser/ts/type_checker", "ts",
-                             ["--parse-only", "--enable-type-check", "--module", "--dump-ast"])
-        runner.add_directory("parser/ts/cases/declaration", "d.ts",
-                             ["--parse-only", "--module", "--dump-ast"], TSDeclarationTest)
-        runner.add_directory("parser/commonjs", "js", ["--commonjs", "--parse-only", "--dump-ast"])
-        runner.add_directory("parser/binder", "js", ["--dump-assembly"])
-        runner.add_directory("parser/js/emptySource", "js", ["--dump-assembly"])
-        runner.add_directory("parser/js/language/arguments-object", "js", ["--parse-only"])
-        runner.add_directory("parser/js/language/statements/for-statement", "js", ["--parse-only", "--dump-ast"])
-        runner.add_directory("parser/js/language/expressions/optional-chain", "js", ["--parse-only", "--dump-ast"])
-        runner.add_directory("parser/sendable_class", "ts", ["--dump-assembly", "--dump-literal-buffer", "--module"])
-        runner.add_directory("parser/unicode", "js", ["--parse-only"])
-        runner.add_directory("parser/ts/stack_overflow", "ts", ["--parse-only", "--dump-ast"])
+        add_directory_for_regression(runners, args)
 
-        runners.append(runner)
-
-        transformer_runner = TransformerRunner(args)
-        transformer_runner.add_directory("parser/ts/transformed_cases", "ts",
-                                         ["--parse-only", "--module", "--dump-transformed-ast",
-                                          "--check-transformed-ast-structure"])
-
-        runners.append(transformer_runner)
-        
     if args.abc_to_asm:
-        runner = AbcToAsmRunner(args)
-        runner.add_directory("abc2asm/js", "js", [])
-        runner.add_directory("abc2asm/ts", "ts", [])
-        runner.add_directory("compiler/js", "js", [])
-        runner.add_directory("compiler/ts/cases/compiler", "ts", [])
-        runner.add_directory("compiler/ts/projects", "ts", ["--module"])
-        runner.add_directory("compiler/ts/projects", "ts", ["--module", "--merge-abc"])
-        runner.add_directory("compiler/dts", "d.ts", ["--module", "--opt-level=0"])
-        runner.add_directory("compiler/commonjs", "js", ["--commonjs"])
-        runner.add_directory("compiler/recordsource/with-on", "js", ["--record-source"])
-        runner.add_directory("compiler/recordsource/with-off", "js", [])
-        runner.add_directory("parser/concurrent", "js", ["--module"])
-        runner.add_directory("parser/js", "js", [])
-        runner.add_directory("parser/script", "ts", [])
-        runner.add_directory("parser/ts", "ts", ["--module"])
-        runner.add_directory("parser/ts/type_checker", "ts", ["--enable-type-check", "--module"])
-        runner.add_directory("parser/commonjs", "js", ["--commonjs"])
-        runner.add_directory("parser/binder", "js", [])
-        runner.add_directory("parser/js/emptySource", "js", [])
-        runner.add_directory("parser/js/language/arguments-object", "js", [])
-        runner.add_directory("parser/js/language/statements/for-statement", "js", [])
-        runner.add_directory("parser/js/language/expressions/optional-chain", "js", [])
-        runner.add_directory("parser/sendable_class", "ts", ["--module"])
-        runner.add_directory("parser/unicode", "js", [])
-        runner.add_directory("parser/ts/stack_overflow", "ts", [])
-
-        runners.append(runner)
+        add_directory_for_asm(runners, args)
 
     if args.test262:
         runners.append(Test262Runner(args))
@@ -1627,18 +1662,7 @@ def main():
         runners.append(TSCRunner(args))
 
     if args.compiler:
-        runner = CompilerRunner(args)
-        runner.add_directory("compiler/js", "js", [])
-        runner.add_directory("compiler/ts/cases", "ts", [])
-        runner.add_directory("compiler/ts/projects", "ts", ["--module"])
-        runner.add_directory("compiler/ts/projects", "ts", ["--module", "--merge-abc"])
-        runner.add_directory("compiler/dts", "d.ts", ["--module", "--opt-level=0"])
-        runner.add_directory("compiler/commonjs", "js", ["--commonjs"])
-        runner.add_directory("compiler/recordsource/with-on", "js", ["--record-source"])
-        runner.add_directory("compiler/recordsource/with-off", "js", [])
-        runner.add_directory("compiler/interpreter/lexicalEnv", "js", [])
-
-        runners.append(runner)
+        add_directory_for_compiler(runners, args)
 
     if args.hotfix:
         runners.append(HotfixRunner(args))
@@ -1659,13 +1683,7 @@ def main():
         runners.append(TypeExtractorRunner(args))
 
     if args.bytecode:
-        runner = BytecodeRunner(args)
-        runner.add_directory("bytecode/commonjs", "js", ["--commonjs", "--dump-assembly"])
-        runner.add_directory("bytecode/js", "js", ["--dump-assembly"])
-        runner.add_directory("bytecode/ts/api11", "ts", ["--dump-assembly", "--module", "--target-api-version=11"])
-        runner.add_directory("bytecode/ts/api12", "ts", ["--dump-assembly", "--module", "--target-api-version=12"])
-
-        runners.append(runner)
+        add_directory_for_bytecode(runners, args)
 
     failed_tests = 0
 
