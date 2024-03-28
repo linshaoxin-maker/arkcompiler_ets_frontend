@@ -371,6 +371,9 @@ private:
                                        std::string_view fileName = DEFAULT_SOURCE_FILE);
     // NOLINTEND(google-default-arguments)
 
+    ir::ClassDefinition *GetClassDefiniton(ir::TypeNode *typeReference);
+    ir::Expression *GetParamExpression(ir::AnnotatedExpression *paramIdent, bool defaultUndefined);
+
     friend class ExternalSourceParser;
     friend class InnerSourceParser;
 

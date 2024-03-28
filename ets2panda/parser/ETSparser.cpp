@@ -3408,39 +3408,9 @@ static constexpr char const ONLY_ARRAY_FOR_REST[] = "Rest parameter should be of
 static constexpr char const EXPLICIT_PARAM_TYPE[] = "Parameter declaration should have an explicit type annotation.";
 // NOLINTEND(modernize-avoid-c-arrays)
 
-ir::Expression *ETSParser::ParseFunctionParameter()
+ir::Expression *ETSParser::GetParamExpression(ir::AnnotatedExpression *paramIdent, bool defaultUndefined)
 {
     ir::ETSParameterExpression *paramExpression;
-    auto *const paramIdent = GetAnnotatedExpressionFromParam();
-
-    bool defaultUndefined = false;
-    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_QUESTION_MARK) {
-        if (paramIdent->IsRestElement()) {
-            ThrowSyntaxError(NO_DEFAULT_FOR_REST);
-        }
-        defaultUndefined = true;
-        Lexer()->NextToken();  // eat '?'
-    }
-
-    const bool isArrow = (GetContext().Status() & ParserStatus::ARROW_FUNCTION) != 0;
-
-    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COLON) {
-        Lexer()->NextToken();  // eat ':'
-
-        TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
-        ir::TypeNode *typeAnnotation = ParseTypeAnnotation(&options);
-
-        if (paramIdent->IsRestElement() && !typeAnnotation->IsTSArrayType()) {
-            ThrowSyntaxError(ONLY_ARRAY_FOR_REST);
-        }
-
-        typeAnnotation->SetParent(paramIdent);
-        paramIdent->SetTsTypeAnnotation(typeAnnotation);
-        paramIdent->SetEnd(typeAnnotation->End());
-
-    } else if (!isArrow && !defaultUndefined) {
-        ThrowSyntaxError(EXPLICIT_PARAM_TYPE);
-    }
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SUBSTITUTION) {
         if (paramIdent->IsRestElement()) {
@@ -3518,6 +3488,42 @@ ir::Expression *ETSParser::ParseFunctionParameter()
     }
 
     return paramExpression;
+}
+
+ir::Expression *ETSParser::ParseFunctionParameter()
+{
+    auto *const paramIdent = GetAnnotatedExpressionFromParam();
+
+    bool defaultUndefined = false;
+    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_QUESTION_MARK) {
+        if (paramIdent->IsRestElement()) {
+            ThrowSyntaxError(NO_DEFAULT_FOR_REST);
+        }
+        defaultUndefined = true;
+        Lexer()->NextToken();  // eat '?'
+    }
+
+    const bool isArrow = (GetContext().Status() & ParserStatus::ARROW_FUNCTION) != 0;
+
+    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COLON) {
+        Lexer()->NextToken();  // eat ':'
+
+        TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
+        ir::TypeNode *typeAnnotation = ParseTypeAnnotation(&options);
+
+        if (paramIdent->IsRestElement() && !typeAnnotation->IsTSArrayType()) {
+            ThrowSyntaxError(ONLY_ARRAY_FOR_REST);
+        }
+
+        typeAnnotation->SetParent(paramIdent);
+        paramIdent->SetTsTypeAnnotation(typeAnnotation);
+        paramIdent->SetEnd(typeAnnotation->End());
+
+    } else if (!isArrow && !defaultUndefined) {
+        ThrowSyntaxError(EXPLICIT_PARAM_TYPE);
+    }
+
+    return GetParamExpression(paramIdent, defaultUndefined);
 }
 
 ir::Expression *ETSParser::CreateParameterThis(const util::StringView className)
@@ -4176,6 +4182,26 @@ ir::Expression *ETSParser::ParsePotentialAsExpression(ir::Expression *primaryExp
     return asExpression;
 }
 
+ir::ClassDefinition *ETSParser::GetClassDefiniton(ir::TypeNode *typeReference)
+{
+    ir::ClassDefinition *classDefinition {};
+
+    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
+        ArenaVector<ir::TSClassImplements *> implements(Allocator()->Adapter());
+        auto modifiers = ir::ClassDefinitionModifiers::ANONYMOUS | ir::ClassDefinitionModifiers::HAS_SUPER;
+        auto [ctor, properties, bodyRange] = ParseClassBody(modifiers);
+
+        auto newIdent = AllocNode<ir::Identifier>("#0", Allocator());
+        classDefinition = AllocNode<ir::ClassDefinition>(
+            "#0", newIdent, nullptr, nullptr, std::move(implements), ctor,  // remove name
+            typeReference, std::move(properties), modifiers, ir::ModifierFlags::NONE, Language(Language::Id::ETS));
+
+        classDefinition->SetRange(bodyRange);
+    }
+
+    return classDefinition;
+}
+
 ir::Expression *ETSParser::ParseNewExpression()
 {
     lexer::SourcePosition start = Lexer()->GetToken().Start();
@@ -4245,20 +4271,7 @@ ir::Expression *ETSParser::ParseNewExpression()
         Lexer()->NextToken();
     }
 
-    ir::ClassDefinition *classDefinition {};
-
-    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
-        ArenaVector<ir::TSClassImplements *> implements(Allocator()->Adapter());
-        auto modifiers = ir::ClassDefinitionModifiers::ANONYMOUS | ir::ClassDefinitionModifiers::HAS_SUPER;
-        auto [ctor, properties, bodyRange] = ParseClassBody(modifiers);
-
-        auto newIdent = AllocNode<ir::Identifier>("#0", Allocator());
-        classDefinition = AllocNode<ir::ClassDefinition>(
-            "#0", newIdent, nullptr, nullptr, std::move(implements), ctor,  // remove name
-            typeReference, std::move(properties), modifiers, ir::ModifierFlags::NONE, Language(Language::Id::ETS));
-
-        classDefinition->SetRange(bodyRange);
-    }
+    ir::ClassDefinition *classDefinition = GetClassDefiniton(typeReference);
 
     auto *newExprNode =
         AllocNode<ir::ETSNewClassInstanceExpression>(typeReference, std::move(arguments), classDefinition);
