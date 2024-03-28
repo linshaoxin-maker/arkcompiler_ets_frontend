@@ -129,42 +129,49 @@ checker::Type *ETSAnalyzer::Check(ir::MethodDefinition *node) const
     ETSChecker *checker = GetETSChecker();
 
     auto *scriptFunc = node->Function();
+    bool scriptFuncIsNotNull = node->Function() != nullptr;
 
-    if (scriptFunc->IsProxy()) {
-        return nullptr;
+    if (scriptFuncIsNotNull) {
+        if (scriptFunc->IsProxy()) {
+            return nullptr;
+        }
     }
 
-    if (node->Id()->Variable() == nullptr) {
+    if (node->Id()->Variable() == nullptr && scriptFuncIsNotNull) {
         node->Id()->SetVariable(scriptFunc->Id()->Variable());
     }
 
     // NOTE: aszilagyi. make it correctly check for open function not have body
-    if (!scriptFunc->HasBody() && !(node->IsAbstract() || node->IsNative() || node->IsDeclare() ||
-                                    checker->HasStatus(checker::CheckerStatus::IN_INTERFACE))) {
-        checker->ThrowTypeError("Only abstract or native methods can't have body.", scriptFunc->Start());
-    }
+    if (scriptFuncIsNotNull) {
+        if (!scriptFunc->HasBody() && !(node->IsAbstract() || node->IsNative() || node->IsDeclare() ||
+                                        checker->HasStatus(checker::CheckerStatus::IN_INTERFACE))) {
+            checker->ThrowTypeError("Only abstract or native methods can't have body.", scriptFunc->Start());
+        }
 
-    if (scriptFunc->ReturnTypeAnnotation() == nullptr &&
-        (node->IsNative() || (node->IsDeclare() && !node->IsConstructor()))) {
-        checker->ThrowTypeError("Native and Declare methods should have explicit return type.", scriptFunc->Start());
+        if (scriptFunc->ReturnTypeAnnotation() == nullptr &&
+            (node->IsNative() || (node->IsDeclare() && !node->IsConstructor()))) {
+            checker->ThrowTypeError("Native and Declare methods should have explicit return type.",
+                                    scriptFunc->Start());
+        }
     }
-
     if (node->TsType() == nullptr) {
         node->SetTsType(checker->BuildMethodSignature(node));
     }
 
     this->CheckMethodModifiers(node);
 
-    if (node->IsNative() && scriptFunc->ReturnTypeAnnotation() == nullptr) {
-        checker->ThrowTypeError("'Native' method should have explicit return type", scriptFunc->Start());
-    }
+    if (scriptFuncIsNotNull) {
+        if (node->IsNative() && scriptFunc->ReturnTypeAnnotation() == nullptr) {
+            checker->ThrowTypeError("'Native' method should have explicit return type", scriptFunc->Start());
+        }
 
-    if (node->IsNative() && (scriptFunc->IsGetter() || scriptFunc->IsSetter())) {
-        checker->ThrowTypeError("'Native' modifier is invalid for Accessors", scriptFunc->Start());
-    }
+        if (node->IsNative() && (scriptFunc->IsGetter() || scriptFunc->IsSetter())) {
+            checker->ThrowTypeError("'Native' modifier is invalid for Accessors", scriptFunc->Start());
+        }
 
-    DoBodyTypeChecking(checker, node, scriptFunc);
-    CheckPredefinedMethodReturnType(checker, scriptFunc);
+        DoBodyTypeChecking(checker, node, scriptFunc);
+        CheckPredefinedMethodReturnType(checker, scriptFunc);
+    }
 
     checker->CheckOverride(node->TsType()->AsETSFunctionType()->FindSignature(node->Function()));
 
@@ -172,8 +179,10 @@ checker::Type *ETSAnalyzer::Check(ir::MethodDefinition *node) const
         it->Check(checker);
     }
 
-    if (scriptFunc->IsRethrowing()) {
-        checker->CheckRethrowingFunction(scriptFunc);
+    if (scriptFuncIsNotNull) {
+        if (scriptFunc->IsRethrowing()) {
+            checker->CheckRethrowingFunction(scriptFunc);
+        }
     }
 
     return node->TsType();
@@ -192,7 +201,11 @@ void ETSAnalyzer::CheckMethodModifiers(ir::MethodDefinition *node) const
             node->Start());
     }
 
-    if ((node->IsAbstract() || (!node->Function()->HasBody() && !node->IsNative() && !node->IsDeclare())) &&
+    if (node->IsAbstract() && !(checker->HasStatus(checker::CheckerStatus::IN_ABSTRACT) ||
+                                checker->HasStatus(checker::CheckerStatus::IN_INTERFACE))) {
+        checker->ThrowTypeError("Non abstract class has abstract method.", node->Start());
+    }
+    if ((node->Function() != nullptr && !node->Function()->HasBody() && !node->IsNative() && !node->IsDeclare()) &&
         !(checker->HasStatus(checker::CheckerStatus::IN_ABSTRACT) ||
           checker->HasStatus(checker::CheckerStatus::IN_INTERFACE))) {
         checker->ThrowTypeError("Non abstract class has abstract method.", node->Start());
