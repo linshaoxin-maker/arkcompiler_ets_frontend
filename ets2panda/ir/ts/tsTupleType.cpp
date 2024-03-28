@@ -61,6 +61,18 @@ void TSTupleType::Compile(compiler::ETSGen *etsg) const
     etsg->GetAstCompiler()->Compile(this);
 }
 
+void TSTupleType::HandleTupleMemberOptionality(TSNamedTupleMember *namedMember, varbinder::LocalVariable *memberVar,
+                                               checker::ElementFlags &memberFlag, uint32_t &minLength)
+{
+    if (namedMember->IsOptional()) {
+        memberVar->AddFlag(varbinder::VariableFlags::OPTIONAL);
+        memberFlag = checker::ElementFlags::OPTIONAL;
+    } else {
+        memberFlag = checker::ElementFlags::REQUIRED;
+        minLength++;
+    }
+}
+
 checker::Type *TSTupleType::GetType(checker::TSChecker *checker)
 {
     if (TsType() != nullptr) {
@@ -82,17 +94,9 @@ checker::Type *TSTupleType::GetType(checker::TSChecker *checker)
 
         checker::ElementFlags memberFlag = checker::ElementFlags::NO_OPTS;
         if (it->IsTSNamedTupleMember()) {
-            auto *namedMember = it->AsTSNamedTupleMember();
+            auto namedMember = it->AsTSNamedTupleMember();
             checker::Type *memberType = namedMember->ElementType()->GetType(checker);
-
-            if (namedMember->IsOptional()) {
-                memberVar->AddFlag(varbinder::VariableFlags::OPTIONAL);
-                memberFlag = checker::ElementFlags::OPTIONAL;
-            } else {
-                memberFlag = checker::ElementFlags::REQUIRED;
-                minLength++;
-            }
-
+            HandleTupleMemberOptionality(it->AsTSNamedTupleMember(), memberVar, memberFlag, minLength);
             memberType->SetVariable(memberVar);
             memberVar->SetTsType(memberType);
             numberIndexTypes.push_back(memberType);
@@ -113,8 +117,6 @@ checker::Type *TSTupleType::GetType(checker::TSChecker *checker)
         index++;
     }
 
-    uint32_t fixedLength = desc->properties.size();
-
     checker::Type *numberIndexType = nullptr;
 
     if (numberIndexTypes.empty()) {
@@ -127,8 +129,8 @@ checker::Type *TSTupleType::GetType(checker::TSChecker *checker)
 
     desc->numberIndexInfo = checker->Allocator()->New<checker::IndexInfo>(numberIndexType, "x", false);
 
-    SetTsType(checker->CreateTupleType(desc, std::move(elementFlags), combinedFlags, minLength, fixedLength, false,
-                                       std::move(namedMembers)));
+    SetTsType(checker->CreateTupleType(desc, std::move(elementFlags), combinedFlags, minLength, desc->properties.size(),
+                                       false, std::move(namedMembers)));
     return TsType();
 }
 
