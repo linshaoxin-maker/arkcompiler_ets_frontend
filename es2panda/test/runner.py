@@ -610,11 +610,18 @@ class AbcToAsmTest(Test):
             print(self.path)
             print("**********Gen abc cmd**********")
             print(gen_abc_cmd)
-            print(gen_abc_output)
+            true_name = ("%s.dump" % (path.splitext(self.path)[0])).replace("/", "_")
+            true_path = os.path.join('true_dump', true_name)
+            with open(true_path, 'w') as file:
+                file.write(gen_abc_output)
             print("**********Abc to asm cmd***********")
             print(abc_to_asm_cmd)
-            print(abc_to_asm_output)
-        os.remove(output_abc_file)
+            false_name = ("%s.dump" % (path.splitext(self.path)[0])).replace("/", "_")
+            false_path = os.path.join('false_dump', true_name)
+            with open(false_path, 'w') as file:
+                file.write(abc_to_asm_output)
+        else:
+            os.remove(output_abc_file)
         return self
 
 class Test262Runner(Runner):
@@ -1592,6 +1599,12 @@ def main():
         runners.append(transformer_runner)
         
     if args.abc_to_asm:
+        if os.path.exists('true_dump'):
+            shutil.rmtree('true_dump')
+        os.makedirs('true_dump')
+        if os.path.exists('false_dump'):
+            shutil.rmtree('false_dump')
+        os.makedirs('false_dump')
         runner = AbcToAsmRunner(args)
         runner.add_directory("abc2asm/js", "js", [])
         runner.add_directory("abc2asm/ts", "ts", [])

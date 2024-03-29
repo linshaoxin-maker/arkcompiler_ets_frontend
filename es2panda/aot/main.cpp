@@ -159,6 +159,9 @@ static bool GenerateProgram(const std::map<std::string, panda::es2panda::util::P
 {
     DumpProgramInfos(programsInfo, options);
 
+    /*if (options->CompilerOptions().enableAbcInput) {
+        return true;
+    }*/
     if (programsInfo.size() == 1) {
         auto *prog = &(programsInfo.begin()->second->program);
         if (options->OutputFiles().empty() && options->CompilerOutput().empty()) {
