@@ -43,6 +43,20 @@
             "problem": "SendableClassInheritance",
             "autofixable": false,
             "rule": "The inheritance for \"Sendable\" classes is limited (arkts-sendable-class-inheritance)"
+        },
+        {
+            "line": 35,
+            "column": 34,
+            "problem": "SendableClassInheritance",
+            "autofixable": false,
+            "rule": "The inheritance for \"Sendable\" classes is limited (arkts-sendable-class-inheritance)"
+        },
+        {
+            "line": 48,
+            "column": 38,
+            "problem": "SendableClassInheritance",
+            "autofixable": false,
+            "rule": "The inheritance for \"Sendable\" classes is limited (arkts-sendable-class-inheritance)"
         }
     ]
 }

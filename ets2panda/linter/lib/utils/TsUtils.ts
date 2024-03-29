@@ -1695,7 +1695,7 @@ export class TsUtils {
     return decoratorName;
   }
 
-  static isSendableType(type: ts.Type): boolean {
+  isSendableType(type: ts.Type): boolean {
     if ((type.flags & (ts.TypeFlags.Boolean | ts.TypeFlags.Number | ts.TypeFlags.String |
                        ts.TypeFlags.BigInt | ts.TypeFlags.Null | ts.TypeFlags.Undefined |
                        ts.TypeFlags.TypeParameter)) !== 0) {
@@ -1703,14 +1703,21 @@ export class TsUtils {
     }
 
     // Only the sendable union type is supported
-    if ((type.flags & ts.TypeFlags.Union) !== 0 && TsUtils.isSendableUnionType(type as ts.UnionType)) {
+    if ((type.flags & ts.TypeFlags.Union) !== 0 && (type.flags & ts.TypeFlags.EnumLiteral) === 0 &&
+         this.isSendableUnionType(type as ts.UnionType)) {
       return true;
     }
 
-    return this.isSendableClass(type);
+    // Const enum type is supported
+    if ((type.flags & (ts.TypeFlags.Enum | ts.TypeFlags.EnumLiteral)) !== 0 &&
+         TsUtils.isConstEnumType(type)) {
+      return true;
+    }
+
+    return this.isSendableClassOrInterface(type);
   }
 
-  static isSendableClass(type: ts.Type): boolean {
+  isSendableClassOrInterface(type: ts.Type): boolean {
     const sym = type.getSymbol();
     if (!sym) {
       return false;
@@ -1722,23 +1729,45 @@ export class TsUtils {
     if (targetType.isClass()) {
       if (sym.declarations?.length) {
         const decl = sym.declarations[0];
-        if (ts.isClassDeclaration(decl) && TsUtils.hasSendableDecorator(decl)) {
-          return true;
+        if (ts.isClassDeclaration(decl)) {
+          return TsUtils.hasSendableDecorator(decl);
         }
       }
     }
+    // ISendable interface, or a class/interface that implements/extends ISendable interface
+    return this.isOrDerivedFrom(type, TsUtils.isISendableInterface);
+  }
 
+  static isConstEnumType(type: ts.Type): boolean {
+    const targetType = TsUtils.reduceReference(type);
+    const sym = targetType.symbol;
+    if (!sym) {
+      return false;
+    }
+    return TsUtils.isConstEnum(sym);
+  }
+
+  static isConstEnum(sym: ts.Symbol): boolean {
+
+    /*
+     * The check in the second part is used when there is only one member in the enum
+     * In this case we need to go through the Parent to get the enum symbol
+     */
+    if (sym.flags === ts.SymbolFlags.ConstEnum || sym.flags === ts.SymbolFlags.EnumMember && (sym as any).parent &&
+                                                  (sym as any).parent.flags === ts.SymbolFlags.ConstEnum) {
+      return true;
+    }
     return false;
   }
 
-  static isSendableUnionType(type: ts.UnionType): boolean {
+  isSendableUnionType(type: ts.UnionType): boolean {
     const types = type?.types;
     if (!types) {
       return false;
     }
 
     return types.every((type) => {
-      return TsUtils.isSendableType(type);
+      return this.isSendableType(type);
     });
   }
 
@@ -1766,5 +1795,11 @@ export class TsUtils {
       return ts.isClassDeclaration(declaration.parent.parent) ? declaration.parent.parent : undefined;
     }
     return ts.isClassDeclaration(declaration.parent) ? declaration.parent : undefined;
+  }
+
+  static isISendableInterface(type: ts.Type): boolean {
+    const sym = type.getSymbol();
+    return sym !== undefined && TsUtils.isObjectType(type) && (type.objectFlags & ts.ObjectFlags.Interface) !== 0 &&
+      sym.name === 'ISendable';
   }
 }

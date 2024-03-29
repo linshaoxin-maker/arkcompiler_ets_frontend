@@ -28,3 +28,24 @@ class BadInheritance2 extends SendableClass {} // ERROR, no @Sendable decorator
 
 @Sendable
 class GoodInheritance extends SendableClass {} // OK
+
+// Implement ISendable interface
+interface ISendable {}
+
+class BadSendableImpl implements ISendable {} // ERROR, no @Sendable decorator
+
+class BadInterfaceImpl extends BadSendableImpl {} // OK, BadSendableImpl is not Sendable, as it has an error
+
+@Sendable
+class GoodSendableImpl implements ISendable {} // OK
+
+@Sendable
+class GoodInterfaceImpl extends GoodSendableImpl {} // OK
+
+// Implement interface extending ISendable
+interface ISendableExt extends ISendable {}
+
+class BadInterfaceExtImpl implements ISendableExt {} // ERROR, no @Sendable decorator
+
+@Sendable
+class GoodInterfaceExtImpl implements ISendableExt {} // OK, class implements interface that extends ISendable

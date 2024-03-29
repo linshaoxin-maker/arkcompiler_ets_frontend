@@ -784,7 +784,7 @@ export class TypeScriptLinter {
       this.incrementCounters(node, FaultID.SendableClassDecorator);
     }
     const type = this.tsTypeChecker.getTypeFromTypeNode(typeNode);
-    const isSendablePropType = TsUtils.isSendableType(type);
+    const isSendablePropType = this.tsUtils.isSendableType(type);
     if (!isSendablePropType) {
       this.incrementCounters(node, FaultID.SendablePropType);
     }
@@ -834,6 +834,24 @@ export class TypeScriptLinter {
     const propName = node.name;
     if (!!propName && ts.isNumericLiteral(propName)) {
       this.incrementCounters(node, FaultID.LiteralAsPropertyName);
+    }
+    this.handleSendableInterfaceProperty(node);
+  }
+
+  private handleSendableInterfaceProperty(node: ts.PropertySignature): void {
+    const typeNode = node.type;
+    if (!typeNode) {
+      return;
+    }
+    const interfaceNode = node.parent;
+    const interfaceNodeType = this.tsTypeChecker.getTypeAtLocation(interfaceNode);
+    if (!ts.isInterfaceDeclaration(interfaceNode) || !this.tsUtils.isSendableType(interfaceNodeType)) {
+      return;
+    }
+    const type = this.tsTypeChecker.getTypeFromTypeNode(typeNode);
+    const isSendablePropType = this.tsUtils.isSendableType(type);
+    if (!isSendablePropType) {
+      this.incrementCounters(node, FaultID.SendablePropType);
     }
   }
 
@@ -1368,11 +1386,11 @@ export class TypeScriptLinter {
           if (hClause.token === ts.SyntaxKind.ImplementsKeyword) {
             this.incrementCounters(tsTypeExpr, FaultID.ImplementsClass);
           }
+        }
 
-          const isSendableBaseType = TsUtils.isSendableClass(tsExprType);
-          if (isSendableClass !== isSendableBaseType) {
-            this.incrementCounters(tsTypeExpr, FaultID.SendableClassInheritance);
-          }
+        const isSendableBaseType = this.tsUtils.isSendableClassOrInterface(tsExprType);
+        if (isSendableClass !== isSendableBaseType) {
+          this.incrementCounters(tsTypeExpr, FaultID.SendableClassInheritance);
         }
       }
     };
@@ -1959,7 +1977,7 @@ export class TypeScriptLinter {
 
   private handleSendableGenericTypes(node: ts.NewExpression): void {
     const type = this.tsTypeChecker.getTypeAtLocation(node);
-    if (!TsUtils.isSendableType(type)) {
+    if (!this.tsUtils.isSendableType(type)) {
       return;
     }
 
@@ -1970,7 +1988,7 @@ export class TypeScriptLinter {
 
     for (const arg of typeArgs) {
       const argType = this.tsTypeChecker.getTypeFromTypeNode(arg);
-      if (!TsUtils.isSendableType(argType)) {
+      if (!this.tsUtils.isSendableType(argType)) {
         this.incrementCounters(arg, FaultID.SendableGenericTypes);
       }
     }
@@ -1990,7 +2008,7 @@ export class TypeScriptLinter {
     ) {
       this.incrementCounters(node, FaultID.TypeAssertion);
     }
-    if (!TsUtils.isSendableClass(exprType) && TsUtils.isSendableClass(targetType)) {
+    if (!this.tsUtils.isSendableClassOrInterface(exprType) && this.tsUtils.isSendableClassOrInterface(targetType)) {
       this.incrementCounters(tsAsExpr, FaultID.SendableAsExpr);
     }
   }
@@ -2065,12 +2083,24 @@ export class TypeScriptLinter {
 
   private handleComputedPropertyName(node: ts.Node): void {
     const computedProperty = node as ts.ComputedPropertyName;
-    const classNode = computedProperty.parent?.parent;
-    if (classNode && ts.isClassDeclaration(classNode) && TsUtils.hasSendableDecorator(classNode)) {
+    if (this.isSendableInvalidCompPropName(computedProperty)) {
       this.incrementCounters(node, FaultID.SendableComputedPropName);
     } else if (!this.tsUtils.isValidComputedPropertyName(computedProperty, false)) {
       this.incrementCounters(node, FaultID.ComputedPropertyName);
     }
+  }
+
+  private isSendableInvalidCompPropName(compProp: ts.ComputedPropertyName): boolean {
+    const declNode = compProp.parent?.parent;
+    if (declNode && ts.isClassDeclaration(declNode) && TsUtils.hasSendableDecorator(declNode)) {
+      return true;
+    } else if (declNode && ts.isInterfaceDeclaration(declNode)) {
+      const declNodeType = this.tsTypeChecker.getTypeAtLocation(declNode);
+      if (this.tsUtils.isSendableClassOrInterface(declNodeType)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private handleGetAccessor(node: ts.GetAccessorDeclaration): void {
