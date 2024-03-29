@@ -54,6 +54,11 @@ import { forEachNodeInSubtree } from './utils/functions/ForEachNodeInSubtree';
 import { LIMITED_STD_API } from './utils/consts/LimitedStdAPI';
 import type { IsEtsFileCallback } from './IsEtsFileCallback';
 import { SupportedStdCallApiChecker } from './utils/functions/SupportedStdCallAPI';
+import {
+  ARKTS_COLLECTIONS_D_ETS,
+  COLLECTIONS_ARRAY_TYPE,
+  COLLECTIONS_NAMESPACE
+} from './utils/consts/SupportedDetsIndexableTypes';
 
 export function consoleLog(...args: unknown[]): void {
   if (TypeScriptLinter.ideMode) {
@@ -194,7 +199,8 @@ export class TypeScriptLinter {
     [ts.SyntaxKind.ExpressionWithTypeArguments, this.handleExpressionWithTypeArguments],
     [ts.SyntaxKind.ComputedPropertyName, this.handleComputedPropertyName],
     [ts.SyntaxKind.Constructor, this.handleConstructorDeclaration],
-    [ts.SyntaxKind.PrivateIdentifier, this.handlePrivateIdentifier]
+    [ts.SyntaxKind.PrivateIdentifier, this.handlePrivateIdentifier],
+    [ts.SyntaxKind.IndexSignature, this.handleIndexSignature]
   ]);
 
   private getLineAndCharacterOfNode(node: ts.Node | ts.CommentRange): ts.LineAndCharacter {
@@ -2315,6 +2321,20 @@ export class TypeScriptLinter {
     }
 
     this.incrementCounters(node, FaultID.PrivateIdentifier, autofixable, autofix);
+  }
+
+  private handleIndexSignature(node: ts.Node): void {
+    // For now, relax index signature only for 'collections.Array<T>'.
+    if (path.basename(node.getSourceFile().fileName).toLowerCase() === ARKTS_COLLECTIONS_D_ETS) {
+      const parentDecl = node.parent;
+      if (ts.isClassDeclaration(parentDecl) && parentDecl.name && parentDecl.name.text === COLLECTIONS_ARRAY_TYPE) {
+        if (ts.isModuleBlock(parentDecl.parent) && parentDecl.parent.parent.name.text === COLLECTIONS_NAMESPACE) {
+          return;
+        }
+      }
+    }
+
+    this.incrementCounters(node, FaultID.IndexMember);
   }
 
   private createSyncAutofixes(symbol: ts.Symbol, autofixes: Autofix[]): Autofix[] {
