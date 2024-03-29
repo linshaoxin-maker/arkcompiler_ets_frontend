@@ -520,7 +520,7 @@ export class TypeScriptLinter {
     }
 
     const objectLiteralType = this.tsTypeChecker.getContextualType(objectLiteralExpr);
-    if (objectLiteralType && TsUtils.isSendableClass(objectLiteralType)) {
+    if (objectLiteralType && this.tsUtils.isSendableType(objectLiteralType)) {
       this.incrementCounters(node, FaultID.SendableObjectInitialization);
     } else if (
       // issue 13082: Allow initializing struct instances with object literal.
@@ -545,7 +545,7 @@ export class TypeScriptLinter {
     let noContextTypeForArrayLiteral = false;
 
     const arrayLitType = this.tsTypeChecker.getContextualType(arrayLitNode);
-    if (arrayLitType && TsUtils.isSendableClass(arrayLitType)) {
+    if (arrayLitType && this.tsUtils.isSendableType(arrayLitType)) {
       this.incrementCounters(node, FaultID.SendableObjectInitialization);
       return;
     }

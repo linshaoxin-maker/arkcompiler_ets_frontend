@@ -1752,7 +1752,7 @@ export class TsUtils {
   static hasNonSendableDecorator(decl: ts.ClassDeclaration): boolean {
     const decorators = ts.getDecorators(decl);
     return decorators !== undefined && decorators.some((x) => {
-      return TsUtils.getDecoratorName(x) !== 'Sendable';
+      return TsUtils.getDecoratorName(x) !== SENDABLE_DECORATOR;
     });
   }
 
@@ -1763,7 +1763,7 @@ export class TsUtils {
 
   private static getClassNodeFromDeclaration(declaration: ts.HasDecorators): ts.ClassDeclaration | undefined {
     if (declaration.kind === ts.SyntaxKind.Parameter) {
-      return ts.isClassDeclaration(declaration.parent?.parent) ? declaration.parent?.parent : undefined;
+      return ts.isClassDeclaration(declaration.parent.parent) ? declaration.parent.parent : undefined;
     }
     return ts.isClassDeclaration(declaration.parent) ? declaration.parent : undefined;
   }
