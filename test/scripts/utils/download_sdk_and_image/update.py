@@ -23,6 +23,7 @@ import os
 import shutil
 import sys
 
+import psutil
 import yaml
 
 
@@ -142,10 +143,24 @@ async def update_dayu_to_output_path(file_path, output_path):
     await copy_image_async(file_path, output_path)
 
 
-async def copy_image_async(file_path, output_path):
+def kill_process_by_name(process_name):
+    for proc in psutil.process_iter(['name']):
+        if proc.info['name'] == process_name:
+            proc.kill()
+
+
+async def copy_image_async(file_path, output_path, try_times=5):
     if os.path.exists(output_path):
         loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, shutil.rmtree, output_path)
+        for i in range(try_times):
+            try:
+                if 'sdk' in file_path.lower():
+                    kill_process_by_name('hdc.exe')
+                await loop.run_in_executor(None, shutil.rmtree, output_path)
+                break
+            except Exception:
+                print(f"Failed to delete directory,retry: {i + 1}/{try_times}")
+
     print(f'Copy from {file_path} to {output_path}, please wait!!!')
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, shutil.copytree, file_path, output_path)

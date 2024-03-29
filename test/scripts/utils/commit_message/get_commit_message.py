@@ -42,7 +42,7 @@ def get_url(name, page):
     url_prefix = 'https://gitee.com/openharmony/'
     url_suffix = f'/pulls?assignee_id=&author_id=&label_ids=&label_text=&milestone_id=&page={page}' \
                  f'&priority=&project_type=&scope=&search=&single_label_id=&single_label_text=&' \
-                 f'sort=created_at+desc&status=merged&target_project=&tester_id='
+                 f'sort=closed_at+desc&status=merged&target_project=&tester_id='
     url = url_prefix + name + url_suffix
 
     return url
@@ -129,6 +129,7 @@ def retry_after_crawl_failed(repo_list, commit_start_time, commit_end_time):
                   f' were successfully retrieved')
             return True
         except Exception:
+            clean_log()
             print(f"get data failed! retrying... ({i + 1}/{max_retries})")
             times.sleep(try_in)
 

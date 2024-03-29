@@ -66,16 +66,20 @@ def prepare_image():
     return True
 
 
+def remove_file_or_dir(path):
+    try:
+        if os.path.isfile(path) or os.path.islink(path):
+            os.remove(path)
+        elif os.path.isdir(path):
+            shutil.rmtree(path)
+    except OSError as e:
+        logging.error(f"Error: {e.filename} - {e.strerror}.")
+
+
 def clean_log():
-    output_log_file = options.configs.get('log_file')
-    daily_report_file = options.configs.get('output_html_file')
-    pictures_dic = options.configs.get('pictures_dic')
-    if os.path.exists(output_log_file):
-        os.remove(output_log_file)
-    if os.path.exists(daily_report_file):
-        os.remove(daily_report_file)
-    if os.path.exists(pictures_dic):
-        shutil.rmtree(pictures_dic)
+    output_file_paths = options.configs['output_file_paths']
+    for key, path in output_file_paths.items():
+        remove_file_or_dir(path)
 
 
 def prepare_test_env():

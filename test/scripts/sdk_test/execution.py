@@ -290,7 +290,7 @@ class IncrementalTest:
         profile_file_backup = profile_file + ".bak"
         shutil.copyfile(profile_file, profile_file_backup)
 
-        with open(profile_file, 'r') as file:
+        with open(profile_file, 'r', encoding='utf-8') as file:
             profile_data = json5.load(file)
         new_module_name = "new_entry"
         logging.debug(f"profile_data is: {profile_data}")
@@ -298,7 +298,7 @@ class IncrementalTest:
             if module['name'] == task.hap_module:
                 module['name'] = new_module_name
                 break
-        with open(profile_file, 'w') as file:
+        with open(profile_file, 'w', encoding='utf-8') as file:
             json5.dump(profile_data, file)
 
         # modify module.json5 for stage mode

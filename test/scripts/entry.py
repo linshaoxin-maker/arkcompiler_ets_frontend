@@ -32,9 +32,9 @@ def prepare_test():
         prepared = prepared and sdk_prepared
     if not arguments.skip_download_dayu:
         dayu_prepared = get_the_image('dayu', '', None, None)
-        job(['python', './utils/flash_image/burn_image.py'])
+        job(['python3', './utils/flash_image/burn_image.py'])
         prepared = prepared and dayu_prepared
-    job(['python', './utils/commit_message/get_commit_message.py'])
+    job(['python3', './utils/commit_message/get_commit_message.py'])
     return prepared
 
 
@@ -57,9 +57,9 @@ def run():
         return
 
     job(os.path.join(".", "auto_xts_test", "run.bat"))
-    job(f'python {os.path.join(".", "sdk_test", "entry.py")}')
-    job(f'python {os.path.join(".", "performance_test", "performance_entry.py")}')
-    job(f'python {os.path.join(".", "utils", "send_email", "send_email.py")}')
+    job(f'python3 {os.path.join(".", "sdk_test", "entry.py")}')
+    job(f'python3 {os.path.join(".", "performance_test", "performance_entry.py")}')
+    job(f'python3 {os.path.join(".", "utils", "send_email", "send_email.py")}')
 
 
 if __name__ == '__main__':
