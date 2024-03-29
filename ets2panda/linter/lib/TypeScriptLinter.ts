@@ -194,7 +194,8 @@ export class TypeScriptLinter {
     [ts.SyntaxKind.ExpressionWithTypeArguments, this.handleExpressionWithTypeArguments],
     [ts.SyntaxKind.ComputedPropertyName, this.handleComputedPropertyName],
     [ts.SyntaxKind.Constructor, this.handleConstructorDeclaration],
-    [ts.SyntaxKind.PrivateIdentifier, this.handlePrivateIdentifier]
+    [ts.SyntaxKind.PrivateIdentifier, this.handlePrivateIdentifier],
+    [ts.SyntaxKind.IndexSignature, this.handleIndexSignature]
   ]);
 
   private getLineAndCharacterOfNode(node: ts.Node | ts.CommentRange): ts.LineAndCharacter {
@@ -1618,10 +1619,10 @@ export class TypeScriptLinter {
     }
   }
 
-  private isElementAcessAllowed(type: ts.Type): boolean {
+  private isElementAcessAllowed(type: ts.Type, argType: ts.Type): boolean {
     if (type.isUnion()) {
       for (const t of type.types) {
-        if (!this.isElementAcessAllowed(t)) {
+        if (!this.isElementAcessAllowed(t, argType)) {
           return false;
         }
       }
@@ -1629,6 +1630,10 @@ export class TypeScriptLinter {
     }
 
     const typeNode = this.tsTypeChecker.typeToTypeNode(type, undefined, ts.NodeBuilderFlags.None);
+
+    if (TsUtils.isArkTSCollectionsArrayType(type)) {
+      return TsUtils.isNumberLikeType(argType);
+    }
 
     return (
       this.tsUtils.isLibraryType(type) ||
@@ -1648,12 +1653,13 @@ export class TypeScriptLinter {
     const tsElemAccessBaseExprType = TsUtils.getNonNullableType(
       this.tsUtils.getTypeOrTypeConstraintAtLocation(tsElementAccessExpr.expression)
     );
+    const tsElemAccessArgType = this.tsTypeChecker.getTypeAtLocation(tsElementAccessExpr.argumentExpression);
 
     if (
       // unnamed types do not have symbol, so need to check that explicitly
       !this.tsUtils.isLibrarySymbol(tsElementAccessExprSymbol) &&
       !ts.isArrayLiteralExpression(tsElementAccessExpr.expression) &&
-      !this.isElementAcessAllowed(tsElemAccessBaseExprType)
+      !this.isElementAcessAllowed(tsElemAccessBaseExprType, tsElemAccessArgType)
     ) {
       let autofix = Autofixer.fixPropertyAccessByIndex(node);
       let autofixable = false;
@@ -2315,6 +2321,12 @@ export class TypeScriptLinter {
     }
 
     this.incrementCounters(node, FaultID.PrivateIdentifier, autofixable, autofix);
+  }
+
+  private handleIndexSignature(node: ts.Node): void {
+    if (!this.tsUtils.isAllowedIndexSignature(node as ts.IndexSignatureDeclaration)) {
+      this.incrementCounters(node, FaultID.IndexMember);
+    }
   }
 
   private createSyncAutofixes(symbol: ts.Symbol, autofixes: Autofix[]): Autofix[] {

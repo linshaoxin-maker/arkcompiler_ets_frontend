@@ -27,6 +27,11 @@ import { isAssignmentOperator } from './functions/isAssignmentOperator';
 import { forEachNodeInSubtree } from './functions/ForEachNodeInSubtree';
 import { FaultID } from '../Problems';
 import type { IsEtsFileCallback } from '../IsEtsFileCallback';
+import {
+  ARKTS_COLLECTIONS_D_ETS,
+  COLLECTIONS_ARRAY_TYPE,
+  COLLECTIONS_NAMESPACE
+} from './consts/SupportedDetsIndexableTypes';
 
 export type CheckType = (this: TsUtils, t: ts.Type) => boolean;
 export class TsUtils {
@@ -1680,5 +1685,45 @@ export class TsUtils {
       }
       return false;
     });
+  }
+
+  isAllowedIndexSignature(node: ts.IndexSignatureDeclaration): boolean {
+    // For now, relax index signature only for 'collections.Array<T>.[_: number]: T'.
+
+    if (node.parameters.length !== 1) {
+      return false;
+    }
+
+    const paramType = this.tsTypeChecker.getTypeAtLocation(node.parameters[0]);
+    if ((paramType.flags & ts.TypeFlags.Number) === 0) {
+      return false;
+    }
+
+    return TsUtils.isArkTSCollectionsArrayDeclaration(node.parent);
+  }
+
+  static isArkTSCollectionsArrayType(type: ts.Type): boolean {
+    const symbol = type.aliasSymbol ?? type.getSymbol();
+    if (symbol?.declarations === undefined || symbol.declarations.length < 1) {
+      return false;
+    }
+
+    return TsUtils.isArkTSCollectionsArrayDeclaration(symbol.declarations[0]);
+  }
+
+  private static isArkTSCollectionsArrayDeclaration(decl: ts.Declaration): boolean {
+    if (!ts.isClassDeclaration(decl) || !decl.name || decl.name.text !== COLLECTIONS_ARRAY_TYPE) {
+      return false;
+    }
+
+    if (!ts.isModuleBlock(decl.parent) || decl.parent.parent.name.text !== COLLECTIONS_NAMESPACE) {
+      return false;
+    }
+
+    if (path.basename(decl.getSourceFile().fileName).toLowerCase() !== ARKTS_COLLECTIONS_D_ETS) {
+      return false;
+    }
+
+    return true;
   }
 }
