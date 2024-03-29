@@ -2467,18 +2467,18 @@ export class TypeScriptLinter {
     const callback = (node: ts.Node): void => {
       if (node.kind === ts.SyntaxKind.Identifier) {
         const symbol = this.tsTypeChecker.getSymbolAtLocation(node);
-        if (symbol ===undefined) {
+        if (symbol === undefined) {
           this.incrementCounters(node, FaultID.SendableCapturedVars);
           return;
         }
-        if ( !(symbol.getFlags() & (ts.SymbolFlags.Variable)) )
-          return;
+        //if ( !(symbol.getFlags() & (ts.SymbolFlags.Variable)) )
+        //  return;
         if( this.tsTypeChecker.isArgumentsSymbol(symbol))
           return;
         const decl = symbol.getDeclarations();
-        if (decl && decl[0].kind === ts.SyntaxKind.Parameter)
-          return;
         if (decl && decl[0].kind === ts.SyntaxKind.PropertyDeclaration)
+          return;
+        if (decl && decl[0].kind === ts.SyntaxKind.ImportSpecifier)
           return;
         let declPosition = decl?.[0].getStart();
         if(declPosition && (declPosition >= scope.getStart()) && (declPosition < scope.getEnd()) )
@@ -2486,7 +2486,7 @@ export class TypeScriptLinter {
         this.incrementCounters(node, FaultID.SendableCapturedVars);
       }
     };
-    const stopCondition = null; // scan all subtree
+    // scan all subtree
     forEachNodeInSubtree(scope, callback);
   }
 

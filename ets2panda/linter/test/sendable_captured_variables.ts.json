@@ -1,39 +1,60 @@
 {
     "nodes": [
         {
-            "line": 23,
+            "line": 33,
             "column": 13,
             "problem": "SendableCapturedVars",
             "suggest": "",
             "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
         },
         {
-            "line": 24,
-            "column": 17,
+            "line": 34,
+            "column": 14,
             "problem": "SendableCapturedVars",
             "suggest": "",
             "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
         },
         {
-            "line": 26,
+            "line": 37,
             "column": 11,
             "problem": "SendableCapturedVars",
             "suggest": "",
             "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
         },
         {
-            "line": 31,
+            "line": 39,
+            "column": 7,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 44,
+            "column": 3,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 44,
             "column": 22,
             "problem": "SendableCapturedVars",
             "suggest": "",
             "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
         },
         {
-            "line": 32,
-            "column": 7,
-            "problem": "AnyType",
+            "line": 46,
+            "column": 11,
+            "problem": "SendableCapturedVars",
             "suggest": "",
-            "rule": "Use explicit types instead of \"any\", \"unknown\" (arkts-no-any-unknown)"
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 47,
+            "column": 8,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
         }
     ]
 }

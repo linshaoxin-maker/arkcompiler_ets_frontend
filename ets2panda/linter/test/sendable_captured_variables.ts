@@ -14,22 +14,39 @@
  */
 
 
-import { hfpProfileSwitchMenuStyle } from "./object_literals.ts"
+import {  libPi, libString, libFoo, libClass, libClassVar  } from "./sendable_captured_varaibles_lib"
 
 let local = 'local';
 
+function foo(): string {
+	return "local foo";
+}
+
+class localClass { }
+
+let localObj: localClass = {};
+
 @Sendable
 class SendableClass {
+	static pi: number = libPi;
+	static hdr: string = libString;
 	public p = local; // error
-    static ps = local; // error
+	static ps = local; // error
+
 	public foo(x: string): string {
 		let s = local;  //error
-    		let ss = this.p + x;
-            return s + ss;
+    	let ss = this.p + x;
+		s = foo(); // error
+		s = libFoo();
+        return s + ss;
 	}
 	static {
 		SendableClass.ps = local; //error
-		let pps = hfpProfileSwitchMenuStyle;
+		let pps: string = libString;
+		let lc: localClass; //error
+		lc = localObj; //error
+		let c: libClass;
+		c =  libClassVar;
 	}
 
 }
