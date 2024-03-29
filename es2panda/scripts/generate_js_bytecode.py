@@ -22,7 +22,7 @@ import os
 import subprocess
 import platform
 import argparse
-
+import replace_var
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -62,6 +62,10 @@ def run_command(cmd, execution_path):
 
 
 def gen_abc_info(input_arguments):
+    replace_result = replace_var.replace_var(input_arguments.src_js, input_arguments.merge_abc, input_arguments.generate_patch)
+    if replace_result:
+        input_arguments.src_js = replace_result;
+
     frontend_tool_path = input_arguments.frontend_tool_path
 
     (path, name) = os.path.split(frontend_tool_path)
