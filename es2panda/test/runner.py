@@ -552,6 +552,14 @@ class RegressionRunner(Runner):
     def __init__(self, args):
         Runner.__init__(self, args, "Regression")
 
+    def add_all_test_cases_to_directory(self, directory, extension, flags):
+        start_path = path.join(self.test_root, directory)
+        for root, dirs, files in os.walk(start_path):
+            for name in dirs:
+                full_path = path.join(root, name)
+                suffix_path = full_path.replace(start_path, directory).lstrip(os.sep)
+                self.add_directory(suffix_path, extension, flags)
+
     def add_directory(self, directory, extension, flags, func=Test):
         glob_expression = path.join(
             self.test_root, directory, "*.%s" % (extension))
@@ -566,6 +574,14 @@ class RegressionRunner(Runner):
 class AbcToAsmRunner(Runner):
     def __init__(self, args):
         Runner.__init__(self, args, "Abc2asm")
+
+    def add_all_test_cases_to_directory(self, directory, extension, flags):
+        start_path = path.join(self.test_root, directory)
+        for root, dirs, files in os.walk(start_path):
+            for name in dirs:
+                full_path = path.join(root, name)
+                suffix_path = full_path.replace(start_path, directory).lstrip(os.sep)
+                self.add_directory(suffix_path, extension, flags)
 
     def add_directory(self, directory, extension, flags, func=Test):
         glob_expression = path.join(
@@ -1564,11 +1580,11 @@ def main():
     if args.regression:
         runner = RegressionRunner(args)
         runner.add_directory("parser/concurrent", "js", ["--module", "--dump-ast"])
-        runner.add_directory("parser/js", "js", ["--parse-only", "--dump-ast"])
+        runner.add_all_test_cases_to_directory("parser/js/test_cases", "js", ["--parse-only", "--dump-ast"])
         runner.add_directory("parser/script", "ts", ["--parse-only", "--dump-ast"])
-        runner.add_directory("parser/ts", "ts",
+        runner.add_all_test_cases_to_directory("parser/ts/test_cases", "ts",
                              ["--parse-only", "--module", "--dump-ast"])
-        runner.add_directory("parser/ts/type_checker", "ts",
+        runner.add_all_test_cases_to_directory("parser/ts/type_checker", "ts",
                              ["--parse-only", "--enable-type-check", "--module", "--dump-ast"])
         runner.add_directory("parser/ts/cases/declaration", "d.ts",
                              ["--parse-only", "--module", "--dump-ast"], TSDeclarationTest)
@@ -1596,7 +1612,7 @@ def main():
         runner.add_directory("abc2asm/js", "js", [])
         runner.add_directory("abc2asm/ts", "ts", [])
         runner.add_directory("compiler/js", "js", [])
-        runner.add_directory("compiler/ts/cases/compiler", "ts", [])
+        runner.add_all_test_cases_to_directory("compiler/ts/cases/compiler", "ts", [])
         runner.add_directory("compiler/ts/projects", "ts", ["--module"])
         runner.add_directory("compiler/ts/projects", "ts", ["--module", "--merge-abc"])
         runner.add_directory("compiler/dts", "d.ts", ["--module", "--opt-level=0"])
@@ -1607,7 +1623,7 @@ def main():
         runner.add_directory("parser/js", "js", [])
         runner.add_directory("parser/script", "ts", [])
         runner.add_directory("parser/ts", "ts", ["--module"])
-        runner.add_directory("parser/ts/type_checker", "ts", ["--enable-type-check", "--module"])
+        runner.add_all_test_cases_to_directory("parser/ts/type_checker", "ts", ["--enable-type-check", "--module"])
         runner.add_directory("parser/commonjs", "js", ["--commonjs"])
         runner.add_directory("parser/binder", "js", [])
         runner.add_directory("parser/js/emptySource", "js", [])
