@@ -2516,7 +2516,7 @@ export class TypeScriptLinter {
     }
   }
 
-  private scanCapturedVarsInSendableScope( scope: ts.Node ): void {
+  private scanCapturedVarsInSendableScope(scope: ts.Node): void {
     const callback = (node: ts.Node): void => {
       if (node.kind === ts.SyntaxKind.Identifier) {
         const symbol = this.tsTypeChecker.getSymbolAtLocation(node);
@@ -2524,18 +2524,20 @@ export class TypeScriptLinter {
           this.incrementCounters(node, FaultID.SendableCapturedVars);
           return;
         }
-        //if ( !(symbol.getFlags() & (ts.SymbolFlags.Variable)) )
-        //  return;
-        if( this.tsTypeChecker.isArgumentsSymbol(symbol))
+        if (this.tsTypeChecker.isArgumentsSymbol(symbol)) {
           return;
+        }
         const decl = symbol.getDeclarations();
-        if (decl && decl[0].kind === ts.SyntaxKind.PropertyDeclaration)
+        if (decl && decl[0].kind === ts.SyntaxKind.PropertyDeclaration) {
           return;
-        if (decl && decl[0].kind === ts.SyntaxKind.ImportSpecifier)
+        }
+        if (decl && decl[0].kind === ts.SyntaxKind.ImportSpecifier) {
           return;
-        let declPosition = decl?.[0].getStart();
-        if(declPosition && (declPosition >= scope.getStart()) && (declPosition < scope.getEnd()) )
+        }
+        const declPosition = decl?.[0].getStart();
+        if (declPosition && declPosition >= scope.getStart() && declPosition < scope.getEnd()) {
           return;
+        }
         this.incrementCounters(node, FaultID.SendableCapturedVars);
       }
     };

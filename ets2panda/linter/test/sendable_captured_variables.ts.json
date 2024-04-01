@@ -1,20 +1,6 @@
 {
     "nodes": [
         {
-            "line": 33,
-            "column": 13,
-            "problem": "SendableCapturedVars",
-            "suggest": "",
-            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
-        },
-        {
-            "line": 34,
-            "column": 14,
-            "problem": "SendableCapturedVars",
-            "suggest": "",
-            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
-        },
-        {
             "line": 37,
             "column": 11,
             "problem": "SendableCapturedVars",
