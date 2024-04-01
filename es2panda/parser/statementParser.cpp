@@ -670,7 +670,9 @@ ir::ClassDeclaration *ParserImpl::ParseClassDeclaration(bool idRequired, ArenaVe
                                                         bool isDeclare, bool isAbstract, bool isExported)
 {
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
-    ir::ClassDefinition *classDefinition = ParseClassDefinition(true, idRequired, isDeclare, isAbstract);
+    bool isClassDecoratorPresent = !decorators.empty();
+    ir::ClassDefinition *classDefinition = ParseClassDefinition(true, idRequired, isDeclare, isAbstract,
+                                                                isClassDecoratorPresent);
     if (isExported && !idRequired) {
         classDefinition->SetAsExportDefault();
     }

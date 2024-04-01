@@ -1,0 +1,1 @@
+SyntaxError: Class decorators can't be used with static private identifier. [test-static-private-property-in-class-decorator.ts:23:12]

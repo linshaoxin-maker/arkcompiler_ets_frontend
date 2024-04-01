@@ -2725,7 +2725,7 @@ void ParserImpl::CheckClassGeneratorMethod(ClassElmentDescriptor *desc)
     lexer_->NextToken(lexer::LexerNextTokenFlags::KEYWORD_TO_IDENT);
 }
 
-void ParserImpl::CheckClassPrivateIdentifier(ClassElmentDescriptor *desc)
+void ParserImpl::CheckClassPrivateIdentifier(ClassElmentDescriptor *desc, bool isClassDecoratorPresent)
 {
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_HASH_MARK) {
         return;
@@ -2735,6 +2735,11 @@ void ParserImpl::CheckClassPrivateIdentifier(ClassElmentDescriptor *desc)
         return;
     }
 
+    if (Extension() == ScriptExtension::TS && isClassDecoratorPresent &&
+        (desc->modifiers & ir::ModifierFlags::STATIC)) {
+        ThrowSyntaxError("Class decorators can't be used with static private identifier.");
+    }
+    
     desc->isPrivateIdent = true;
 
     if (Extension() == ScriptExtension::TS && program_.TargetApiVersion() <= 10) {
@@ -2807,7 +2812,8 @@ ArenaVector<ir::Decorator *> ParserImpl::ParseDecorators()
 
 ir::Statement *ParserImpl::ParseClassElement(const ArenaVector<ir::Statement *> &properties,
     ArenaVector<ir::TSIndexSignature *> *indexSignatures, bool hasSuperClass, bool isDeclare, bool isAbstractClass,
-    bool isExtendsFromNull, std::pair<binder::FunctionScope *, binder::FunctionScope *> implicitScopes)
+    bool isExtendsFromNull, std::pair<binder::FunctionScope *, binder::FunctionScope *> implicitScopes,
+    bool isClassDecoratorPresent)
 {
     ClassElmentDescriptor desc;
 
@@ -2846,7 +2852,7 @@ ir::Statement *ParserImpl::ParseClassElement(const ArenaVector<ir::Statement *> 
 
     CheckClassGeneratorMethod(&desc);
     ParseClassKeyModifiers(&desc);
-    CheckClassPrivateIdentifier(&desc);
+    CheckClassPrivateIdentifier(&desc, isClassDecoratorPresent);
 
     if (desc.isPrivateIdent && !decorators.empty()) {
         ThrowSyntaxError("Decorators are not valid here.", decorators.front()->Start());
@@ -3089,7 +3095,7 @@ ir::Identifier *ParserImpl::SetIdentNodeInClassDefinition(bool isDeclare, binder
 }
 
 ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool idRequired, bool isDeclare,
-                                                      bool isAbstract)
+                                                      bool isAbstract, bool isClassDecoratorPresent)
 {
     isDeclare = isDeclare | (context_.Status() & ParserStatus::IN_AMBIENT_CONTEXT);
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
@@ -3164,7 +3170,8 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(bool isDeclaration, bool i
         }
 
         ir::Statement *property = ParseClassElement(properties, &indexSignatures, hasSuperClass, isDeclare, isAbstract,
-                                                    isExtendsFromNull, std::make_pair(static_scope, instance_scope));
+                                                    isExtendsFromNull, std::make_pair(static_scope, instance_scope),
+                                                    isClassDecoratorPresent);
 
         if (property->IsEmptyStatement()) {
             continue;
