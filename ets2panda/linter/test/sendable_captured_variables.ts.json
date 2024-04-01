@@ -1,0 +1,46 @@
+{
+    "nodes": [
+        {
+            "line": 37,
+            "column": 11,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 39,
+            "column": 7,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 44,
+            "column": 3,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 44,
+            "column": 22,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 46,
+            "column": 11,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 47,
+            "column": 8,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        }
+    ]
+}

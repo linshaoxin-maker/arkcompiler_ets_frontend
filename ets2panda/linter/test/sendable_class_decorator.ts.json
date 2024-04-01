@@ -22,6 +22,13 @@
         },
         {
             "line": 38,
+            "column": 6,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 38,
             "column": 5,
             "problem": "SendableClassDecorator",
             "rule": "Only \"@Sendable\" decorator can be used on \"Sendable\" class (arkts-sendable-class-decorator)"
@@ -31,6 +38,20 @@
             "column": 5,
             "problem": "SendableClassDecorator",
             "rule": "Only \"@Sendable\" decorator can be used on \"Sendable\" class (arkts-sendable-class-decorator)"
+        },
+        {
+            "line": 43,
+            "column": 6,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 46,
+            "column": 16,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
         },
         {
             "line": 46,

@@ -525,7 +525,7 @@ export class TypeScriptLinter {
     }
 
     const objectLiteralType = this.tsTypeChecker.getContextualType(objectLiteralExpr);
-    if (objectLiteralType && this.tsUtils.isSendableType(objectLiteralType)) {
+    if (objectLiteralType && this.tsUtils.typeContainsSendableClassOrInterface(objectLiteralType)) {
       this.incrementCounters(node, FaultID.SendableObjectInitialization);
     } else if (
       // issue 13082: Allow initializing struct instances with object literal.
@@ -550,7 +550,7 @@ export class TypeScriptLinter {
     let noContextTypeForArrayLiteral = false;
 
     const arrayLitType = this.tsTypeChecker.getContextualType(arrayLitNode);
-    if (arrayLitType && this.tsUtils.isSendableType(arrayLitType)) {
+    if (arrayLitType && this.tsUtils.typeContainsSendableClassOrInterface(arrayLitType)) {
       this.incrementCounters(node, FaultID.SendableObjectInitialization);
       return;
     }
@@ -837,6 +837,10 @@ export class TypeScriptLinter {
     const classNode = node.parent;
     if (!ts.isClassDeclaration(classNode) || !TsUtils.hasSendableDecorator(classNode)) {
       return;
+    }
+    // check captured variables for sendable class
+    if (TsUtils.hasSendableDecorator(node.parent as ts.ClassDeclaration)) {
+      this.scanCapturedVarsInSendableScope(node);
     }
     if (TsUtils.isInSendableClassAndHasDecorators(node)) {
       this.incrementCounters(node, FaultID.SendableClassDecorator);
@@ -1427,42 +1431,95 @@ export class TypeScriptLinter {
     this.countClassMembersWithDuplicateName(tsClassDecl);
 
     const isSendableClass = TsUtils.hasSendableDecorator(tsClassDecl);
-    if (isSendableClass && TsUtils.hasNonSendableDecorator(tsClassDecl)) {
-      this.incrementCounters(tsClassDecl, FaultID.SendableClassDecorator);
-    }
-    const visitHClause = (hClause: ts.HeritageClause): void => {
-      for (const tsTypeExpr of hClause.types) {
-
-        /*
-         * Always resolve type from 'tsTypeExpr' node, not from 'tsTypeExpr.expression' node,
-         * as for the latter, type checker will return incorrect type result for classes in
-         * 'extends' clause. Additionally, reduce reference, as mostly type checker returns
-         * the TypeReference type objects for classes and interfaces.
-         */
-        const tsExprType = TsUtils.reduceReference(this.tsTypeChecker.getTypeAtLocation(tsTypeExpr));
-        if (tsExprType.isClass()) {
-          if (hClause.token === ts.SyntaxKind.ImplementsKeyword) {
-            this.incrementCounters(tsTypeExpr, FaultID.ImplementsClass);
-          }
-        }
-
-        const isSendableBaseType = this.tsUtils.isSendableClassOrInterface(tsExprType);
-        if (isSendableClass !== isSendableBaseType) {
-          this.incrementCounters(tsTypeExpr, FaultID.SendableClassInheritance);
-        }
+    if (isSendableClass) {
+      if (TsUtils.hasNonSendableDecorator(tsClassDecl)) {
+        this.incrementCounters(tsClassDecl, FaultID.SendableClassDecorator);
       }
-    };
+      tsClassDecl.typeParameters?.forEach((typeParamDecl) => {
+        this.checkSendableTypeParameter(typeParamDecl);
+      });
+    }
 
     if (tsClassDecl.heritageClauses) {
       for (const hClause of tsClassDecl.heritageClauses) {
         if (!hClause) {
           continue;
         }
-        visitHClause(hClause);
+        this.checkClassDeclarationHeritageClause(hClause, isSendableClass);
       }
     }
 
     this.processClassStaticBlocks(tsClassDecl);
+  }
+
+  private checkClassDeclarationHeritageClause(hClause: ts.HeritageClause, isSendableClass: boolean): void {
+    for (const tsTypeExpr of hClause.types) {
+
+      /*
+       * Always resolve type from 'tsTypeExpr' node, not from 'tsTypeExpr.expression' node,
+       * as for the latter, type checker will return incorrect type result for classes in
+       * 'extends' clause. Additionally, reduce reference, as mostly type checker returns
+       * the TypeReference type objects for classes and interfaces.
+       */
+      const tsExprType = TsUtils.reduceReference(this.tsTypeChecker.getTypeAtLocation(tsTypeExpr));
+      const isSendableBaseType = this.tsUtils.isSendableClassOrInterface(tsExprType);
+      if (tsExprType.isClass() && hClause.token === ts.SyntaxKind.ImplementsKeyword) {
+        this.incrementCounters(tsTypeExpr, FaultID.ImplementsClass);
+      }
+      if (!isSendableClass) {
+        // Non-Sendable class can not implements sendable interface / extends sendable class
+        if (isSendableBaseType) {
+          this.incrementCounters(tsTypeExpr, FaultID.SendableClassInheritance);
+        }
+        continue;
+      }
+
+      /*
+       * Sendable class can implements any interface / extends only sendable class
+       * Sendable class can not extends sendable class variable(local / import)
+       */
+      if (hClause.token === ts.SyntaxKind.ExtendsKeyword) {
+        if (!isSendableBaseType) {
+          this.incrementCounters(tsTypeExpr, FaultID.SendableClassInheritance);
+          continue;
+        }
+        if (!this.isValidSendableClassExtends(tsTypeExpr)) {
+          this.incrementCounters(tsTypeExpr, FaultID.SendableClassInheritance);
+        }
+      }
+    }
+  }
+
+  private isValidSendableClassExtends(tsTypeExpr: ts.ExpressionWithTypeArguments): boolean {
+    const expr = tsTypeExpr.expression;
+    const sym = this.tsTypeChecker.getSymbolAtLocation(expr);
+    if (sym && (sym.flags & ts.SymbolFlags.Class) === 0) {
+      // handle non-class situation(local / import)
+      if ((sym.flags & ts.SymbolFlags.Alias) !== 0) {
+
+        /*
+         * Sendable class can not extends imported sendable class variable
+         * Sendable class can extends imported sendable class
+         */
+        const realSym = this.tsTypeChecker.getAliasedSymbol(sym);
+        if (realSym && (realSym.flags & ts.SymbolFlags.Class) === 0) {
+          return false;
+        }
+        return true;
+      }
+      return false;
+    }
+    return true;
+  }
+
+  private checkSendableTypeParameter(typeParamDecl: ts.TypeParameterDeclaration): void {
+    const defaultTypeNode = typeParamDecl.default;
+    if (defaultTypeNode) {
+      const defType = this.tsTypeChecker.getTypeFromTypeNode(defaultTypeNode);
+      if (!this.tsUtils.isSendableType(defType)) {
+        this.incrementCounters(defaultTypeNode, FaultID.SendableGenericTypes);
+      }
+    }
   }
 
   private processClassStaticBlocks(classDecl: ts.ClassDeclaration): void {
@@ -1591,6 +1648,10 @@ export class TypeScriptLinter {
       { begin: tsMethodDecl.parameters.end, end: tsMethodDecl.body?.getStart() ?? tsMethodDecl.parameters.end },
       FUNCTION_HAS_NO_RETURN_ERROR_CODE
     );
+    // check captured variables for sendable class
+    if (TsUtils.hasSendableDecorator(node.parent as ts.ClassDeclaration)) {
+      this.scanCapturedVarsInSendableScope(node);
+    }
   }
 
   private handleMethodSignature(node: ts.MethodSignature): void {
@@ -1606,6 +1667,10 @@ export class TypeScriptLinter {
       return;
     }
     this.reportThisKeywordsInScope(classStaticBlockDecl.body);
+    // check captured variables for sendable class
+    if (TsUtils.hasSendableDecorator(node.parent as ts.ClassDeclaration)) {
+      this.scanCapturedVarsInSendableScope(node);
+    }
   }
 
   private handleIdentifier(node: ts.Node): void {
@@ -2449,6 +2514,35 @@ export class TypeScriptLinter {
     if (!this.tsUtils.isAllowedIndexSignature(node as ts.IndexSignatureDeclaration)) {
       this.incrementCounters(node, FaultID.IndexMember);
     }
+  }
+
+  private scanCapturedVarsInSendableScope(scope: ts.Node): void {
+    const callback = (node: ts.Node): void => {
+      if (node.kind === ts.SyntaxKind.Identifier) {
+        const symbol = this.tsTypeChecker.getSymbolAtLocation(node);
+        if (symbol === undefined) {
+          this.incrementCounters(node, FaultID.SendableCapturedVars);
+          return;
+        }
+        if (this.tsTypeChecker.isArgumentsSymbol(symbol)) {
+          return;
+        }
+        const decl = symbol.getDeclarations();
+        if (decl && decl[0].kind === ts.SyntaxKind.PropertyDeclaration) {
+          return;
+        }
+        if (decl && decl[0].kind === ts.SyntaxKind.ImportSpecifier) {
+          return;
+        }
+        const declPosition = decl?.[0].getStart();
+        if (declPosition && declPosition >= scope.getStart() && declPosition < scope.getEnd()) {
+          return;
+        }
+        this.incrementCounters(node, FaultID.SendableCapturedVars);
+      }
+    };
+    // scan all subtree
+    forEachNodeInSubtree(scope, callback);
   }
 
   private createSyncAutofixes(symbol: ts.Symbol, autofixes: Autofix[]): Autofix[] {

@@ -15,21 +15,38 @@
     ],
     "nodes": [
         {
+            "line": 20,
+            "column": 10,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 21,
+            "column": 10,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
             "line": 25,
             "column": 39,
             "problem": "SendableGenericTypes",
+            "suggest": "",
             "rule": "Type arguments of generic \"Sendable\" type must be a \"Sendable\" data type (arkts-sendable-generic-types)"
         },
         {
             "line": 26,
             "column": 31,
             "problem": "SendableGenericTypes",
+            "suggest": "",
             "rule": "Type arguments of generic \"Sendable\" type must be a \"Sendable\" data type (arkts-sendable-generic-types)"
         },
         {
             "line": 26,
             "column": 41,
             "problem": "SendableGenericTypes",
+            "suggest": "",
             "rule": "Type arguments of generic \"Sendable\" type must be a \"Sendable\" data type (arkts-sendable-generic-types)"
         },
         {
@@ -57,6 +74,7 @@
             "line": 33,
             "column": 26,
             "problem": "SendableGenericTypes",
+            "suggest": "",
             "rule": "Type arguments of generic \"Sendable\" type must be a \"Sendable\" data type (arkts-sendable-generic-types)"
         },
         {
