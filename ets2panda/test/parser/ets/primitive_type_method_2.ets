@@ -13,15 +13,8 @@
  * limitations under the License.
  */
 
-class A {
-	static foo(): void {}
+function toString1(value: number): string {
+    return value.toString(value);
 }
 
-class B extends A {
-	foo: number = 10
-}
-
-function main(): void {
-    A.foo()
-    new B().foo
-}
+function main(): void {}

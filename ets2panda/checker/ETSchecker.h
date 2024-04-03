@@ -354,7 +354,7 @@ public:
     checker::ETSFunctionType *BuildFunctionSignature(ir::ScriptFunction *func, bool isConstructSig = false);
     checker::ETSFunctionType *BuildMethodSignature(ir::MethodDefinition *method);
     Signature *CheckEveryAbstractSignatureIsOverridden(ETSFunctionType *target, ETSFunctionType *source);
-    Signature *GetSignatureFromMethodDefinition(const ir::MethodDefinition *methodDef);
+    static Signature *GetSignatureFromMethodDefinition(const ir::MethodDefinition *methodDef);
     void CheckIdenticalOverloads(ETSFunctionType *func, ETSFunctionType *overload,
                                  const ir::MethodDefinition *currentFunc);
     Signature *AdjustForTypeParameters(Signature *source, Signature *target);
@@ -503,7 +503,6 @@ public:
     Type *PrimitiveTypeAsETSBuiltinType(Type *objectType);
     void AddBoxingUnboxingFlagsToNode(ir::AstNode *node, Type *boxingUnboxingType);
     ir::BoxingUnboxingFlags GetBoxingFlag(Type *boxingType);
-    Type *GetBoxedType(ir::BoxingUnboxingFlags flag) const;
     ir::BoxingUnboxingFlags GetUnboxingFlag(Type const *unboxingType) const;
     util::StringView TypeToName(Type *type) const;
     Type *MaybeBoxedType(const varbinder::Variable *var, ArenaAllocator *allocator) const;
@@ -512,6 +511,7 @@ public:
         return MaybeBoxedType(var, Allocator());
     }
     Type *MaybeBoxExpression(ir::Expression *expr);
+    Type *MaybeUnboxExpression(ir::Expression *expr);
     Type *MaybePromotedBuiltinType(Type *type) const;
     Type const *MaybePromotedBuiltinType(Type const *type) const;
     Type *MaybePrimitiveBuiltinType(Type *type) const;
@@ -723,6 +723,7 @@ private:
     ETSObjectType *UpdateBoxedGlobalType(ETSObjectType *objType, util::StringView name);
     ETSObjectType *CreateETSObjectTypeCheckBuiltins(util::StringView name, ir::AstNode *declNode, ETSObjectFlags flags);
     void CheckProgram(parser::Program *program, bool runAnalysis = false);
+    void CheckWarnings(parser::Program *program, const CompilerOptions &options);
 
     template <typename UType>
     UType HandleModulo(UType leftValue, UType rightValue);

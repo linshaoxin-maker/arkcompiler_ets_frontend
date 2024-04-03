@@ -130,6 +130,10 @@ checker::Type *ETSAnalyzer::Check(ir::MethodDefinition *node) const
 
     auto *scriptFunc = node->Function();
 
+    if (scriptFunc == nullptr) {
+        checker->ThrowTypeError("Invalid function expression", node->Start());
+    }
+
     if (scriptFunc->IsProxy()) {
         return nullptr;
     }
@@ -190,6 +194,10 @@ void ETSAnalyzer::CheckMethodModifiers(ir::MethodDefinition *node) const
             "Invalid method modifier(s): an abstract method can't have private, override, static, final or native "
             "modifier.",
             node->Start());
+    }
+
+    if (node->Function() == nullptr) {
+        checker->ThrowTypeError("Invalid function expression", node->Start());
     }
 
     if ((node->IsAbstract() || (!node->Function()->HasBody() && !node->IsNative() && !node->IsDeclare())) &&
@@ -1073,12 +1081,9 @@ checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
     }
 
     if (baseType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
-        checker->Relation()->SetNode(expr);
-        expr->SetObjectType(checker->PrimitiveTypeAsETSBuiltinType(baseType)->AsETSObjectType());
-        checker->AddBoxingUnboxingFlagsToNode(expr, expr->ObjType());
-        auto [resType, resVar] = expr->ResolveObjectMember(checker);
-        expr->SetPropVar(resVar);
-        return expr->AdjustType(checker, resType);
+        checker->ThrowTypeError(
+            {"Property '", expr->Property()->AsIdentifier()->Name(), "' does not exist on type '", baseType, "'"},
+            expr->Object()->Start());
     }
 
     checker->ThrowTypeError({"Cannot access property of non-object or non-enum type"}, expr->Object()->Start());
@@ -1325,13 +1330,7 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TypeofExpression *expr) c
     }
 
     expr->Argument()->Check(checker);
-    auto *unboxedType = checker->ETSBuiltinTypeAsPrimitiveType(expr->Argument()->TsType());
-
-    if (unboxedType != nullptr && unboxedType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
-        checker->FlagExpressionWithUnboxing(expr->Argument()->TsType(), unboxedType, expr->Argument());
-    }
-    expr->SetTsType(GetETSChecker()->GlobalETSStringLiteralType());
-
+    expr->SetTsType(GetETSChecker()->GlobalBuiltinETSStringType());
     return expr->TsType();
 }
 
@@ -1380,7 +1379,7 @@ checker::Type *ETSAnalyzer::Check(ir::UnaryExpression *expr) const
         }
     }
 
-    SetTsTypeForUnaryExpression(checker, expr, operandType, argType);
+    SetTsTypeForUnaryExpression(checker, expr, operandType);
 
     if ((argType != nullptr) && argType->IsETSObjectType() && (unboxedOperandType != nullptr) &&
         unboxedOperandType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {

@@ -14,14 +14,39 @@
  */
 
 class A {
-	static foo(): void {}
-}
+    foo(a: Double | undefined): Int {
+        return 1;
+    }
+    private foo(a: double): Int {
+        return 0;
+    }
 
-class B extends A {
-	foo: number = 10
+    foo2(a: Int | undefined): Int {
+        return 1;
+    }
+    private foo2(a: int): Int {
+        return 0;
+    }
+
+    foo3(a: Number | undefined): Int {
+        return 1;
+    }
+    private foo3(a: number): Int {
+        return 0;
+    }
+
+    foo4(a: Number | undefined): Int {
+        return 1;
+    }
+    protected foo4(a: number): Int {
+        return 0;
+    }
+
 }
 
 function main(): void {
-    A.foo()
-    new B().foo
+    assert( new A().foo(3.0) == 1)
+    assert( new A().foo2(3) == 1)
+    assert( new A().foo3(3.0) == 1)
+    assert( new A().foo4(3.0) == 1)
 }

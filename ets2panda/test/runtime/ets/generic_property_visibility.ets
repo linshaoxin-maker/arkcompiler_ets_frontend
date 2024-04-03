@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-class A {
-	static foo(): void {}
+class DataNode<Data> {
+    private data: Data|undefined = undefined
+    static attach<Data>(): int {
+        const node = new DataNode<Data>()
+        node.data = undefined
+        return 1
+    }
 }
 
-class B extends A {
-	foo: number = 10
-}
-
-function main(): void {
-    A.foo()
-    new B().foo
+function main() {
+    assert DataNode.attach<Object>() == 1
 }

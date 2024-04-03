@@ -14,14 +14,15 @@
  */
 
 class A {
-	static foo(): void {}
-}
-
-class B extends A {
-	foo: number = 10
+    private foo(a: Double | undefined) : int {
+        return 0;
+    }
+    private foo(a: double) : int {
+        return 1;
+    }
 }
 
 function main(): void {
-    A.foo()
-    new B().foo
+    new A().foo(2.0)
 }
+

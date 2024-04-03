@@ -14,14 +14,22 @@
  */
 
 class A {
-	static foo(): void {}
+    public prop = 1;
 }
 
-class B extends A {
-	foo: number = 10
+class B {
+    public prop = 2;
 }
 
-function main(): void {
-    A.foo()
-    new B().foo
+function getProp(p: int) {
+    return p;
+}
+
+function myFunc(p: A | B) {
+    assert getProp(p.prop) == 2
+}
+
+function main() {
+    let bb = new B();
+    myFunc(bb);
 }

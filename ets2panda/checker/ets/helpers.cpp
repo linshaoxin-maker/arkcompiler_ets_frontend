@@ -121,59 +121,71 @@ Type *ETSChecker::GetNonNullishType(Type *type)
 }
 
 // NOTE(vpukhov): can be implemented with relation if etscompiler will support it
-template <bool VISIT_NONNULLISH, typename P>
-static bool MatchConstituentOrConstraint(P const &pred, const Type *type)
+template <typename Pred, typename Trv>
+static bool MatchConstituentOrConstraint(const Type *type, Pred const &pred, Trv const &trv)
 {
-    auto const traverse = [](P const &p, const Type *t) {
-        return MatchConstituentOrConstraint<VISIT_NONNULLISH, P>(p, t);
+    auto const traverse = [&pred, &trv](const Type *ttype) {
+        return MatchConstituentOrConstraint<Pred, Trv>(ttype, pred, trv);
     };
     if (pred(type)) {
         return true;
     }
+    if (!trv(type)) {
+        return false;
+    }
     if (type->IsETSUnionType()) {
         for (auto const &ctype : type->AsETSUnionType()->ConstituentTypes()) {
-            if (traverse(pred, ctype)) {
+            if (traverse(ctype)) {
                 return true;
             }
         }
         return false;
     }
     if (type->IsETSTypeParameter()) {
-        return traverse(pred, type->AsETSTypeParameter()->GetConstraintType());
+        return traverse(type->AsETSTypeParameter()->GetConstraintType());
     }
-    if constexpr (VISIT_NONNULLISH) {
-        if (type->IsETSNonNullishType()) {
-            auto tparam = type->AsETSNonNullishType()->GetUnderlying();
-            return traverse(pred, tparam->GetConstraintType());
-        }
+    if (type->IsETSNonNullishType()) {
+        auto tparam = type->AsETSNonNullishType()->GetUnderlying();
+        return traverse(tparam->GetConstraintType());
     }
     return false;
 }
 
+template <typename Pred>
+static bool MatchConstituentOrConstraint(const Type *type, Pred const &pred)
+{
+    return MatchConstituentOrConstraint(type, pred, []([[maybe_unused]] const Type *t) { return true; });
+}
+
 bool Type::PossiblyETSNull() const
 {
-    const auto pred = [](const Type *t) { return t->IsETSNullType(); };
-    return MatchConstituentOrConstraint<false>(pred, this);
+    return MatchConstituentOrConstraint(
+        this, [](const Type *t) { return t->IsETSNullType(); },
+        [](const Type *t) { return !t->IsETSNonNullishType(); });
 }
 
 bool Type::PossiblyETSUndefined() const
 {
-    const auto pred = [](const Type *t) { return t->IsETSUndefinedType(); };
-    return MatchConstituentOrConstraint<false>(pred, this);
+    return MatchConstituentOrConstraint(
+        this, [](const Type *t) { return t->IsETSUndefinedType(); },
+        [](const Type *t) { return !t->IsETSNonNullishType(); });
 }
 
 bool Type::PossiblyETSNullish() const
 {
-    const auto pred = [](const Type *t) { return t->IsETSNullType() || t->IsETSUndefinedType(); };
-    return MatchConstituentOrConstraint<false>(pred, this);
+    return MatchConstituentOrConstraint(
+        this, [](const Type *t) { return t->IsETSNullType() || t->IsETSUndefinedType(); },
+        [](const Type *t) { return !t->IsETSNonNullishType(); });
 }
 
 bool Type::DefinitelyETSNullish() const
 {
-    const auto pred = [](const Type *t) {
-        return !(t->IsTypeParameter() || t->IsETSUnionType() || t->IsETSNullType() || t->IsETSUndefinedType());
-    };
-    return !MatchConstituentOrConstraint<false>(pred, this);
+    return !MatchConstituentOrConstraint(
+        this,
+        [](const Type *t) {
+            return !(t->IsTypeParameter() || t->IsETSUnionType() || t->IsETSNullType() || t->IsETSUndefinedType());
+        },
+        [](const Type *t) { return !t->IsETSNonNullishType(); });
 }
 
 bool Type::DefinitelyNotETSNullish() const
@@ -183,10 +195,28 @@ bool Type::DefinitelyNotETSNullish() const
 
 bool Type::PossiblyETSString() const
 {
-    const auto pred = [](const Type *t) {
+    return MatchConstituentOrConstraint(this, [](const Type *t) {
         return t->IsETSStringType() || (t->IsETSObjectType() && t->AsETSObjectType()->IsGlobalETSObjectType());
-    };
-    return MatchConstituentOrConstraint<true>(pred, this);
+    });
+}
+
+static bool IsValueTypedObjectType(ETSObjectType const *t)
+{
+    return t->IsGlobalETSObjectType() || t->HasObjectFlag(ETSObjectFlags::VALUE_TYPED);
+}
+
+bool Type::PossiblyETSValueTyped() const
+{
+    return MatchConstituentOrConstraint(this, [](const Type *t) {
+        return t->IsNullType() || t->IsUndefinedType() ||
+               (t->IsETSObjectType() && IsValueTypedObjectType(t->AsETSObjectType()));
+    });
+}
+
+bool Type::PossiblyETSValueTypedExceptNullish() const
+{
+    return MatchConstituentOrConstraint(
+        this, [](const Type *t) { return t->IsETSObjectType() && IsValueTypedObjectType(t->AsETSObjectType()); });
 }
 
 bool Type::IsETSReferenceType() const
@@ -412,7 +442,9 @@ void ETSChecker::ValidatePropertyAccess(varbinder::Variable *var, ETSObjectType 
     }
 
     if (var->HasFlag(varbinder::VariableFlags::PRIVATE) || var->HasFlag(varbinder::VariableFlags::PROTECTED)) {
-        if (Context().ContainingClass() == obj && obj->IsPropertyInherited(var)) {
+        if ((Context().ContainingClass() == obj ||
+             Context().ContainingClass()->GetOriginalBaseType() == obj->GetOriginalBaseType()) &&
+            obj->IsPropertyInherited(var)) {
             return;
         }
 
@@ -1823,16 +1855,13 @@ void ETSChecker::CheckSwitchDiscriminant(ir::Expression *discriminant)
 {
     ASSERT(discriminant->TsType());
 
-    auto discriminantType = discriminant->TsType();
+    auto discriminantType = MaybeUnboxExpression(discriminant);
     if (discriminantType->HasTypeFlag(TypeFlag::VALID_SWITCH_TYPE)) {
         return;
     }
 
     if (discriminantType->IsETSObjectType() &&
-        discriminantType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::VALID_SWITCH_TYPE)) {
-        if (discriminantType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::UNBOXABLE_TYPE)) {
-            discriminant->SetBoxingUnboxingFlags(GetUnboxingFlag(ETSBuiltinTypeAsPrimitiveType(discriminantType)));
-        }
+        discriminantType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::BUILTIN_STRING | ETSObjectFlags::ENUM)) {
         return;
     }
 
@@ -1937,6 +1966,15 @@ Type *ETSChecker::MaybeBoxExpression(ir::Expression *expr)
     return promoted;
 }
 
+Type *ETSChecker::MaybeUnboxExpression(ir::Expression *expr)
+{
+    auto *primitive = MaybePrimitiveBuiltinType(expr->TsType());
+    if (primitive != expr->TsType()) {
+        expr->AddBoxingUnboxingFlags(GetUnboxingFlag(primitive));
+    }
+    return primitive;
+}
+
 ir::BoxingUnboxingFlags ETSChecker::GetBoxingFlag(Type *const boxingType)
 {
     auto typeKind = TypeKind(ETSBuiltinTypeAsPrimitiveType(boxingType));
@@ -1964,38 +2002,6 @@ ir::BoxingUnboxingFlags ETSChecker::GetBoxingFlag(Type *const boxingType)
         }
         case TypeFlag::DOUBLE: {
             return ir::BoxingUnboxingFlags::BOX_TO_DOUBLE;
-        }
-        default:
-            UNREACHABLE();
-    }
-}
-
-Type *ETSChecker::GetBoxedType(ir::BoxingUnboxingFlags flag) const
-{
-    switch (flag) {
-        case ir::BoxingUnboxingFlags::UNBOX_TO_BOOLEAN: {
-            return GlobalETSBooleanType();
-        }
-        case ir::BoxingUnboxingFlags::UNBOX_TO_BYTE: {
-            return GlobalByteType();
-        }
-        case ir::BoxingUnboxingFlags::UNBOX_TO_CHAR: {
-            return GlobalCharType();
-        }
-        case ir::BoxingUnboxingFlags::UNBOX_TO_SHORT: {
-            return GlobalShortType();
-        }
-        case ir::BoxingUnboxingFlags::UNBOX_TO_INT: {
-            return GlobalIntType();
-        }
-        case ir::BoxingUnboxingFlags::UNBOX_TO_LONG: {
-            return GlobalLongType();
-        }
-        case ir::BoxingUnboxingFlags::UNBOX_TO_FLOAT: {
-            return GlobalFloatType();
-        }
-        case ir::BoxingUnboxingFlags::UNBOX_TO_DOUBLE: {
-            return GlobalDoubleType();
         }
         default:
             UNREACHABLE();
