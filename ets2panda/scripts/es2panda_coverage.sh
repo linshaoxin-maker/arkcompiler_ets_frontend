@@ -28,8 +28,15 @@ case "$ARGUMENT" in
 esac
 done
 
-python $PANDA_ROOT/tools/es2panda/scripts/test_runner.py \
+source $PANDA_ROOT/scripts/python/venv-utils.sh
+activate_venv
+set +e
+
+python3 $PANDA_ROOT/tools/es2panda/scripts/test_runner.py \
     --builddir $PANDA_BINARY_ROOT --arkdir $PANDA_ROOT --all
+
+set -e
+deactivate_venv
 
 gcov $PANDA_BINARY_ROOT/tools/es2panda/CMakeFiles/es2panda-lib.dir/*/*
 
