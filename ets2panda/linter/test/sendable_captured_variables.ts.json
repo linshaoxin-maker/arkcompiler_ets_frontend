@@ -15,42 +15,46 @@
     ],
     "nodes": [
         {
-            "line": 18,
-            "column": 10,
+            "line": 37,
+            "column": 13,
             "problem": "SendableCapturedVars",
             "suggest": "",
             "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
         },
         {
-            "line": 18,
-            "column": 27,
-            "problem": "SendableObjectInitialization",
-            "rule": "Objects of \"Sendable\" type can not be initialized using object literal or array literal (arkts-sendable-obj-init)"
-        },
-        {
-            "line": 19,
-            "column": 10,
+            "line": 39,
+            "column": 9,
             "problem": "SendableCapturedVars",
             "suggest": "",
             "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
         },
         {
-            "line": 19,
-            "column": 27,
-            "problem": "SendableObjectInitialization",
-            "rule": "Objects of \"Sendable\" type can not be initialized using object literal or array literal (arkts-sendable-obj-init)"
+            "line": 45,
+            "column": 5,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
         },
         {
-            "line": 22,
-            "column": 26,
-            "problem": "SendableObjectInitialization",
-            "rule": "Objects of \"Sendable\" type can not be initialized using object literal or array literal (arkts-sendable-obj-init)"
+            "line": 45,
+            "column": 24,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
         },
         {
-            "line": 23,
-            "column": 26,
-            "problem": "SendableObjectInitialization",
-            "rule": "Objects of \"Sendable\" type can not be initialized using object literal or array literal (arkts-sendable-obj-init)"
+            "line": 47,
+            "column": 13,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 48,
+            "column": 10,
+            "problem": "SendableCapturedVars",
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
         }
     ]
 }

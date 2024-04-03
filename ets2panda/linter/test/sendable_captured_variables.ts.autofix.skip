@@ -15,42 +15,44 @@
     ],
     "nodes": [
         {
-            "line": 18,
-            "column": 10,
-            "problem": "SendableCapturedVars",
-            "suggest": "",
-            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
-        },
-        {
-            "line": 18,
-            "column": 27,
-            "problem": "SendableObjectInitialization",
-            "rule": "Objects of \"Sendable\" type can not be initialized using object literal or array literal (arkts-sendable-obj-init)"
-        },
-        {
-            "line": 19,
-            "column": 10,
-            "problem": "SendableCapturedVars",
-            "suggest": "",
-            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
-        },
-        {
-            "line": 19,
-            "column": 27,
-            "problem": "SendableObjectInitialization",
-            "rule": "Objects of \"Sendable\" type can not be initialized using object literal or array literal (arkts-sendable-obj-init)"
-        },
-        {
-            "line": 22,
-            "column": 26,
-            "problem": "SendableObjectInitialization",
-            "rule": "Objects of \"Sendable\" type can not be initialized using object literal or array literal (arkts-sendable-obj-init)"
-        },
-        {
             "line": 23,
-            "column": 26,
-            "problem": "SendableObjectInitialization",
-            "rule": "Objects of \"Sendable\" type can not be initialized using object literal or array literal (arkts-sendable-obj-init)"
+            "column": 13,
+            "problem": "SendableCapturedVars",
+            "autofixable": false,
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 24,
+            "column": 17,
+            "problem": "SendableCapturedVars",
+            "autofixable": false,
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 26,
+            "column": 11,
+            "problem": "SendableCapturedVars",
+            "autofixable": false,
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 31,
+            "column": 22,
+            "problem": "SendableCapturedVars",
+            "autofixable": false,
+            "suggest": "",
+            "rule": "Only imported variables can be captured by \"Sendable\" classes (arkts-sendable-imported-variables)"
+        },
+        {
+            "line": 32,
+            "column": 7,
+            "problem": "AnyType",
+            "autofixable": false,
+            "suggest": "",
+            "rule": "Use explicit types instead of \"any\", \"unknown\" (arkts-no-any-unknown)"
         }
     ]
 }
