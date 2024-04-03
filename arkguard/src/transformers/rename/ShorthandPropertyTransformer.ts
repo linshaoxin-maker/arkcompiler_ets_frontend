@@ -72,15 +72,31 @@ namespace secharmony {
          */
         if (isShorthandPropertyAssignment((node))) {
           // update parent
-          return factory.createPropertyAssignment(factory.createIdentifier(node.name.text), node.name);
+          if (node.objectAssignmentInitializer) {
+            return factory.createPropertyAssignment(
+              node.name,
+              factory.createAssignment(
+                factory.createIdentifier(node.name.text),
+                node.objectAssignmentInitializer
+              )
+            );
+          }
+
+          return factory.createPropertyAssignment(
+            factory.createIdentifier(node.name.text),
+            node.name
+          );
         }
+
         /**
          * orinal ObjectBinding:
-         * `const { x, y } = { x: 1, y: 2 };`
-         * `const { x: a, y: b} = { x, y };`
+         * `function foo() { return { x: 1, y: 2}; }`
+         * `const { x, y } = foo();`
+         * `const { x: a, y: b } = { x, y }`
          * obfuscated ObjectBinding:
-         * `const { x: a, y: b } = { x: 1, y: 2 };`
-         * `const { x: c, y: d } = { x: a, y: b };`
+         * `function foo() { return { x: 1, y: 2 }; }`
+         * `const { x, y } = foo();`
+         * `const { x: a, y: b } = { x: x, y: y };`
          */
         if (isObjectBindingPattern(node) && NodeUtils.isObjectBindingPatternAssignment(node)) {
           return node;
@@ -89,10 +105,16 @@ namespace secharmony {
         /**
          * exclude, eg {name, ...rest}= {'name': 'akira', age : 22}
          * exclude, eg let [name, age] = ['akira', 22];
+         * ElementsInObjectBinding example:
+         * `let { x, y } = { x: 1, y: 2 };`
          */
         if (isElementsInObjectBindingPattern(node) && !node.propertyName && !node.dotDotDotToken) {
-          return factory.createBindingElement(node.dotDotDotToken, factory.createIdentifier((node.name as Identifier).text),
-            node.name, node.initializer);
+          return factory.createBindingElement(
+            node.dotDotDotToken,
+            factory.createIdentifier((node.name as Identifier).text),
+            node.name,
+            node.initializer
+          );
         }
 
         return visitEachChild(node, transformShortHandProperty, context);
