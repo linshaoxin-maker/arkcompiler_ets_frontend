@@ -14,7 +14,6 @@
  */
 
 #include "options.h"
-#include "compiler_options.h"
 
 #include <fstream>
 #include <set>
@@ -27,6 +26,7 @@
 #include <dirent.h>
 #endif
 
+#include "compiler_options.h"
 #include "os/file.h"
 
 #include "mergeProgram.h"
