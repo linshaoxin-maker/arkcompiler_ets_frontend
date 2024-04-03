@@ -744,6 +744,16 @@ checker::ETSFunctionType *ETSChecker::BuildMethodSignature(ir::MethodDefinition 
 
     bool isConstructSig = method->IsConstructor();
 
+    // If we are building non std method, we need to add "_$static_" to avoid name collision
+    if (method->IsStatic() && !this->Context().ContainingClass()->HasObjectFlag(checker::ETSObjectFlags::GLOBAL)) {
+        auto name = util::UString(Allocator());
+
+        name.Append("_$static_");
+        name.Append(method->Function()->Id()->Name().Mutf8());
+
+        method->Function()->Id()->SetName(name.View());
+    }
+
     auto *funcType = BuildFunctionSignature(method->Function(), isConstructSig);
 
     std::vector<checker::ETSFunctionType *> overloads;
@@ -1164,7 +1174,16 @@ void ETSChecker::ThrowOverrideError(Signature *signature, Signature *overriddenS
 
 bool ETSChecker::CheckOverride(Signature *signature, ETSObjectType *site)
 {
-    auto *target = site->GetProperty(signature->Function()->Id()->Name(), PropertySearchFlags::SEARCH_METHOD);
+    auto id = util::UString(Allocator());
+    std::string staticPrefix = "_$static_";
+
+    if (signature->Function()->IsStatic() && signature->Function()->Id()->Name().Mutf8().rfind(staticPrefix, 0) == 0) {
+        id.Append(signature->Function()->Id()->Name().Mutf8().substr(staticPrefix.length()));
+    } else {
+        id.Append(signature->Function()->Id()->Name().Mutf8());
+    }
+
+    auto *target = site->GetProperty(id.View(), PropertySearchFlags::SEARCH_METHOD);
     bool isOverridingAnySignature = false;
 
     if (target == nullptr) {

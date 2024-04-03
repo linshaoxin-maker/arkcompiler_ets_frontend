@@ -57,7 +57,8 @@ module Signatures
     end
 
     data.signatures.each do |signature|
-        method_name = signature.method_name.start_with?('$') ? refs[signature.method_name[1..-1]] : signature.method_name
+        method_name = signature.static ? "_$static_" : ''
+        method_name += signature.method_name.start_with?('$') ? refs[signature.method_name[1..-1]] : signature.method_name
         sig = "%s.%s:" % [refs[signature.callee], method_name]
 
         signature.params.each do |param|
