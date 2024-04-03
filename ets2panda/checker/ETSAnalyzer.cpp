@@ -465,6 +465,16 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewMultiDimArrayInstanceExpression *exp
     ETSChecker *checker = GetETSChecker();
     auto *elementType = expr->TypeReference()->GetType(checker);
 
+    if (!elementType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+        if (elementType->IsETSObjectType()) {
+            auto *calleeObj = elementType->AsETSObjectType();
+            expr->SetDefaultConstructorSignature(
+                checker->CollectParameterlessConstructor(calleeObj->ConstructSignatures(), expr->Start()));
+            checker->ValidateSignatureAccessibility(calleeObj, nullptr, expr->DefaultConstructorSignature(),
+                                                    expr->Start());
+        }
+    }
+
     for (auto *dim : expr->Dimensions()) {
         checker->ValidateArrayIndex(dim, true);
         elementType = checker->CreateETSArrayType(elementType);

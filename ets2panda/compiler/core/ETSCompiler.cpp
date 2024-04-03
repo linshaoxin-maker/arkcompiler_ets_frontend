@@ -23,6 +23,7 @@
 #include "compiler/core/switchBuilder.h"
 #include "compiler/function/functionBuilder.h"
 #include "checker/types/ets/etsDynamicFunctionType.h"
+#include "generated/isa.h"
 #include "parser/ETSparser.h"
 #include "programElement.h"
 
@@ -226,7 +227,7 @@ void ETSCompiler::Compile(const ir::ETSNewArrayInstanceExpression *expr) const
 
     compiler::VReg arr = etsg->AllocReg();
     compiler::VReg dim = etsg->AllocReg();
-    etsg->ApplyConversionAndStoreAccumulator(expr, dim, expr->Dimension()->TsType());
+    etsg->ApplyConversionAndStoreAccumulator(expr->Dimension(), dim, expr->Dimension()->TsType());
     etsg->NewArray(expr, arr, dim, expr->TsType());
 
     if (expr->Signature() != nullptr) {
@@ -333,11 +334,80 @@ void ETSCompiler::Compile(const ir::ETSNewClassInstanceExpression *expr) const
     etsg->SetAccumulatorType(expr->TsType());
 }
 
+static void StoreArrayDimension(const ir::ETSNewMultiDimArrayInstanceExpression *expr, compiler::VReg &multiDimArray,
+                                compiler::VReg &subArray, compiler::ETSGen *etsg, std::vector<compiler::VReg> &indexReg)
+{
+    const uint32_t index = expr->Dimensions().size() - 1;
+    etsg->LoadAccumulator(expr, multiDimArray);
+    etsg->StoreAccumulator(expr, subArray);
+    etsg->LoadArrayLength(expr, subArray);
+    etsg->StoreAccumulator(expr, indexReg[0]);
+    const compiler::TargetTypeContext ttctx(etsg, etsg->Checker()->GlobalIntType());
+    for (uint32_t i = 0; i < index; ++i) {
+        etsg->LoadAccumulatorInt(expr, static_cast<std::int32_t>(0));
+        etsg->LoadArrayElement(expr, subArray);
+        etsg->StoreAccumulator(expr, subArray);
+        etsg->LoadArrayLength(expr, subArray);
+        etsg->StoreAccumulator(expr, indexReg[i + 1]);
+    }
+}
+
+static void StoreSubArray(const ir::ETSNewMultiDimArrayInstanceExpression *expr, compiler::VReg &multiDimArray,
+                          compiler::VReg &subArray, compiler::ETSGen *etsg, std::vector<compiler::VReg> &countReg)
+{
+    const uint32_t index = expr->Dimensions().size() - 1;
+    etsg->LoadAccumulator(expr, multiDimArray);
+    etsg->StoreAccumulator(expr, subArray);
+    for (uint32_t i = 0; i < index; ++i) {
+        etsg->LoadAccumulator(expr, countReg[i]);
+        etsg->LoadArrayElement(expr, subArray);
+        etsg->StoreAccumulator(expr, subArray);
+    }
+}
+
 void ETSCompiler::Compile(const ir::ETSNewMultiDimArrayInstanceExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
+    compiler::RegScope rs(etsg);
     etsg->InitObject(expr, expr->Signature(), expr->Dimensions());
     etsg->SetAccumulatorType(expr->TsType());
+
+    if (expr->DefaultConstructorSignature() != nullptr) {
+        auto multiDimArray = etsg->AllocReg();
+        etsg->StoreAccumulator(expr, multiDimArray);
+        auto subArray = etsg->AllocReg();
+        std::vector<Label *> startLabel;
+        std::vector<Label *> endLabel;
+        std::vector<compiler::VReg> countReg;
+        std::vector<compiler::VReg> indexReg;
+        const uint32_t index = expr->Dimensions().size() - 1;
+        for (uint32_t i = 0; i < expr->Dimensions().size(); ++i) {
+            startLabel.push_back(etsg->AllocLabel());
+            endLabel.push_back(etsg->AllocLabel());
+            countReg.push_back(etsg->AllocReg());
+            indexReg.push_back(etsg->AllocReg());
+        }
+        StoreArrayDimension(expr, multiDimArray, subArray, etsg, indexReg);
+        for (uint32_t i = 0; i < expr->Dimensions().size(); ++i) {
+            etsg->MoveImmediateToRegister(expr, countReg[i], checker::TypeFlag::INT, static_cast<std::int32_t>(0));
+            etsg->SetLabel(expr, startLabel[i]);
+            etsg->LoadAccumulator(expr, indexReg[i]);
+            etsg->JumpCompareRegister<compiler::Jle>(expr, countReg[i], endLabel[i]);
+        }
+        StoreSubArray(expr, multiDimArray, subArray, etsg, countReg);
+        const compiler::TargetTypeContext ttctx2(etsg, expr->TypeReference()->TsType());
+        ArenaVector<ir::Expression *> arguments(GetCodeGen()->Allocator()->Adapter());
+        etsg->InitObject(expr, expr->DefaultConstructorSignature(), arguments);
+        etsg->StoreArrayElement(expr, subArray, countReg[index], expr->TypeReference()->TsType());
+        for (uint32_t i = 0; i < expr->Dimensions().size(); ++i) {
+            uint32_t j = expr->Dimensions().size() - 1 - i;
+            etsg->IncrementImmediateRegister(expr, countReg[j], checker::TypeFlag::INT, static_cast<std::int32_t>(1));
+            etsg->JumpTo(expr, startLabel[j]);
+            etsg->SetLabel(expr, endLabel[j]);
+        }
+        etsg->LoadAccumulator(expr, multiDimArray);
+        etsg->SetAccumulatorType(expr->TsType());
+    }
 }
 
 void ETSCompiler::Compile([[maybe_unused]] const ir::ETSPackageDeclaration *st) const

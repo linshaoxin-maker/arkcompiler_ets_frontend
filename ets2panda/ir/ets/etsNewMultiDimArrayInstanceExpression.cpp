@@ -81,7 +81,8 @@ ETSNewMultiDimArrayInstanceExpression::ETSNewMultiDimArrayInstanceExpression(
     ETSNewMultiDimArrayInstanceExpression const &other, ArenaAllocator *const allocator)
     : Expression(static_cast<Expression const &>(other)),
       dimensions_(allocator->Adapter()),
-      signature_(other.signature_)
+      signature_(other.signature_),
+      defaultConstructorSignature_(other.defaultConstructorSignature_)
 {
     typeReference_ = other.typeReference_->Clone(allocator, this);
 
