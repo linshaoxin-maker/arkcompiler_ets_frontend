@@ -562,6 +562,9 @@ ArenaVector<ir::AstNode *> TypedParser::ParseTypeLiteralOrInterface()
 
         if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_COMMA &&
             Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
+            if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SUBSTITUTION) {
+                ThrowSyntaxError("Interface member initialization is prohibited");
+            }
             if (!Lexer()->GetToken().NewLine()) {
                 ThrowSyntaxError("',' expected");
             }
