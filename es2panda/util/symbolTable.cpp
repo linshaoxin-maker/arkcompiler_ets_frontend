@@ -27,7 +27,7 @@ const size_t MODULE_ITEM_NUMBER = 1;
 bool SymbolTable::Initialize()
 {
     if (!symbolTable_.empty() && !ReadSymbolTable(symbolTable_)) {
-        std::cerr << "Failed to open the symbol table file'" << std::endl;
+        std::cerr << "Failed to open the symbol table file" << std::endl;
         return false;
     }
 
@@ -36,10 +36,10 @@ bool SymbolTable::Initialize()
         fs.open(panda::os::file::File::GetExtendedFilePath(dumpSymbolTable_),
             std::ios_base::out | std::ios_base::trunc);
         if (!fs.is_open()) {
-            std::cerr << "Failed to create or open the output symbol table file '"
-                      << dumpSymbolTable_ << "' during symbol table initialization." << std::endl
-                      << "This error could be due to invalid file path, lack of write permissions, "
-                      << "or the file being in use by another process." << std::endl;
+            std::cerr << "Failed to create or open the output symbol table file '" <<
+                         dumpSymbolTable_ << "' during symbol table initialization." << std::endl <<
+                         "This error could be due to invalid file path, lack of write permissions, " <<
+                         "or the file being in use by another process." << std::endl;
             return false;
         }
         fs.close();
@@ -74,10 +74,10 @@ bool SymbolTable::ReadSymbolTable(const std::string &symbolTable)
     std::string line;
     ifs.open(panda::os::file::File::GetExtendedFilePath(symbolTable));
     if (!ifs.is_open()) {
-        std::cerr << "Failed to open the symbol table file '"
-                  << symbolTable << "' during symbol table reading." << std::endl
-                  << "Please check if the file exists, the path is correct, "
-                  << "and your program has the necessary permissions to access the file." << std::endl;
+        std::cerr << "Failed to open the symbol table file '" <<
+                     symbolTable << "' during symbol table reading." << std::endl <<
+                     "Please check if the file exists, the path is correct, " <<
+                     "and your program has the necessary permissions to access the file." << std::endl;
         return false;
     }
 
@@ -114,9 +114,10 @@ bool SymbolTable::ReadSymbolTable(const std::string &symbolTable)
             auto moduleItems = GetStringItems(itemList[0], SECOND_LEVEL_SEPERATOR);
             originModuleInfo_.insert(std::pair<std::string, std::string>(moduleItems[0], moduleItems[1]));
         } else {
-            std::cerr << "Failed to read the symbol table line: '" << line
-                      << "' from the symbol table file '" << symbolTable << "' due to unrecognized format." << std::endl
-                      << "Please verify the format of the symbol table." << std::endl;
+            std::cerr << "Failed to read the symbol table line: '" << line <<
+                         "' from the symbol table file '" << symbolTable <<
+                         "' due to unrecognized format." << std::endl <<
+                         "Please verify the format of the symbol table." << std::endl;
         }
     }
     return true;
