@@ -13,22 +13,13 @@
  * limitations under the License.
  */
 
-#include "varbinder/varbinder.h"
-#include "varbinder/declaration.h"
 #include "varbinder/ETSBinder.h"
-#include "varbinder/scope.h"
-#include "varbinder/variable.h"
-#include "varbinder/variableFlags.h"
 #include "checker/ETSchecker.h"
 #include "checker/ets/castingContext.h"
 #include "checker/ets/function_helpers.h"
 #include "checker/ets/typeRelationContext.h"
 #include "checker/types/ets/etsAsyncFuncReturnType.h"
 #include "checker/types/ets/etsObjectType.h"
-#include "checker/types/type.h"
-#include "checker/types/typeFlag.h"
-#include "ir/astNode.h"
-#include "ir/typeNode.h"
 #include "ir/base/catchClause.h"
 #include "ir/base/classDefinition.h"
 #include "ir/base/classProperty.h"
@@ -290,17 +281,18 @@ bool ETSChecker::ValidateSignatureRequiredParams(Signature *substitutedSig,
                 this, substitutedSig->Function()->Params()[index], flags);
         }
 
-        auto *const argumentType = argument->Check(this);
-        const Type *targetType = TryGettingFunctionTypeFromInvokeFunction(substitutedSig->Params()[index]->TsType());
+        auto *argumentType = argument->Check(this);
+        auto *targetType = substitutedSig->Params()[index]->TsType();
 
-        auto const invocationCtx = checker::InvocationContext(
-            Relation(), argument, argumentType, substitutedSig->Params()[index]->TsType(), argument->Start(),
-            {"Type '", argumentType, "' is not compatible with type '", targetType, "' at index ", index + 1}, flags);
+        auto const invocationCtx =
+            checker::InvocationContext(Relation(), argument, argumentType, targetType, argument->Start(),
+                                       {"Type '", argumentType, "' is not compatible with type '",
+                                        TryGettingFunctionTypeFromInvokeFunction(targetType), "' at index ", index + 1},
+                                       flags);
         if (!invocationCtx.IsInvocable()) {
-            if (CheckOptionalLambdaFunction(argument, substitutedSig, index)) {
-                continue;
+            if (!CheckOptionalLambdaFunction(argument, substitutedSig, index)) {
+                return false;
             }
-            return false;
         }
     }
 
@@ -430,6 +422,27 @@ Signature *ETSChecker::CollectParameterlessConstructor(ArenaVector<Signature *> 
     return compatibleSignature;
 }
 
+bool IsSignatureAccessible(Signature *sig, ETSObjectType *containingClass, TypeRelation *relation)
+{
+    // NOTE(vivienvoros): this check can be removed if signature is implicitly declared as public according to the spec.
+    if (!sig->HasSignatureFlag(SignatureFlags::PUBLIC | SignatureFlags::PROTECTED | SignatureFlags::PRIVATE |
+                               SignatureFlags::INTERNAL)) {
+        return true;
+    }
+
+    // NOTE(vivienvoros): take care of SignatureFlags::INTERNAL and SignatureFlags::INTERNAL_PROTECTED
+    if (sig->HasSignatureFlag(SignatureFlags::INTERNAL) && !sig->HasSignatureFlag(SignatureFlags::PROTECTED)) {
+        return true;
+    }
+
+    if (sig->HasSignatureFlag(SignatureFlags::PUBLIC) || sig->Owner() == containingClass ||
+        (sig->HasSignatureFlag(SignatureFlags::PROTECTED) && relation->IsSupertypeOf(sig->Owner(), containingClass))) {
+        return true;
+    }
+
+    return false;
+}
+
 ArenaVector<Signature *> ETSChecker::CollectSignatures(ArenaVector<Signature *> &signatures,
                                                        const ir::TSTypeParameterInstantiation *typeArguments,
                                                        const ArenaVector<ir::Expression *> &arguments,
@@ -437,12 +450,23 @@ ArenaVector<Signature *> ETSChecker::CollectSignatures(ArenaVector<Signature *> 
 {
     ArenaVector<Signature *> compatibleSignatures(Allocator()->Adapter());
     std::vector<bool> argTypeInferenceRequired = FindTypeInferenceArguments(arguments);
+    Signature *notVisibleSignature = nullptr;
 
     auto collectSignatures = [&](TypeRelationFlag relationFlags) {
         for (auto *sig : signatures) {
+            if (notVisibleSignature != nullptr &&
+                !IsSignatureAccessible(sig, Context().ContainingClass(), Relation())) {
+                continue;
+            }
             auto *concreteSig =
                 ValidateSignature(sig, typeArguments, arguments, pos, relationFlags, argTypeInferenceRequired);
-            if (concreteSig != nullptr) {
+            if (concreteSig == nullptr) {
+                continue;
+            }
+            if (notVisibleSignature == nullptr &&
+                !IsSignatureAccessible(sig, Context().ContainingClass(), Relation())) {
+                notVisibleSignature = concreteSig;
+            } else {
                 compatibleSignatures.push_back(concreteSig);
             }
         }
@@ -467,6 +491,12 @@ ArenaVector<Signature *> ETSChecker::CollectSignatures(ArenaVector<Signature *> 
                 break;
             }
         }
+    }
+
+    if (compatibleSignatures.empty() && notVisibleSignature != nullptr) {
+        ThrowTypeError(
+            {"Signature ", notVisibleSignature->Function()->Id()->Name(), notVisibleSignature, " is not visible here."},
+            pos);
     }
     return compatibleSignatures;
 }
@@ -1134,32 +1164,35 @@ Signature *ETSChecker::AdjustForTypeParameters(Signature *source, Signature *tar
     return target->Substitute(Relation(), substitution);
 }
 
-void ETSChecker::ThrowOverrideError(Signature *signature, Signature *overriddenSignature,
-                                    const OverrideErrorCode &errorCode)
+void ETSChecker::ThrowOverrideError(Signature *signature,
+                                    const ArenaVector<std::pair<std::string, OverrideErrorCode>> &overriddenSignatures)
 {
-    const char *reason {};
-    switch (errorCode) {
-        case OverrideErrorCode::OVERRIDDEN_FINAL: {
-            reason = "overridden method is final.";
-            break;
+    std::string msg;
+    for (size_t i = 0; i < overriddenSignatures.size(); i++) {
+        auto [name, errorCode] = overriddenSignatures[i];
+        msg += FormatMsg({name.c_str(), " because "});
+        switch (errorCode) {
+            case OverrideErrorCode::OVERRIDDEN_FINAL: {
+                msg += "overridden method is final";
+                break;
+            }
+            case OverrideErrorCode::INCOMPATIBLE_RETURN: {
+                msg += "overriding return type is not compatible with the other return type";
+                break;
+            }
+            case OverrideErrorCode::OVERRIDDEN_WEAKER: {
+                msg += "overridden method has weaker access privilege";
+                break;
+            }
+            default: {
+                UNREACHABLE();
+            }
         }
-        case OverrideErrorCode::INCOMPATIBLE_RETURN: {
-            reason = "overriding return type is not compatible with the other return type.";
-            break;
-        }
-        case OverrideErrorCode::OVERRIDDEN_WEAKER: {
-            reason = "overridden method has weaker access privilege.";
-            break;
-        }
-        default: {
-            UNREACHABLE();
-        }
+        msg += (i == (overriddenSignatures.size() - 1)) ? "." : "; ";
     }
-
-    ThrowTypeError({signature->Function()->Id()->Name(), signature, " in ", signature->Owner(), " cannot override ",
-                    overriddenSignature->Function()->Id()->Name(), overriddenSignature, " in ",
-                    overriddenSignature->Owner(), " because ", reason},
-                   signature->Function()->Start());
+    ThrowTypeError(
+        {signature->Function()->Id()->Name(), signature, " in ", signature->Owner(), " cannot override ", msg.c_str()},
+        signature->Function()->Start());
 }
 
 bool ETSChecker::CheckOverride(Signature *signature, ETSObjectType *site)
@@ -1171,7 +1204,7 @@ bool ETSChecker::CheckOverride(Signature *signature, ETSObjectType *site)
         return isOverridingAnySignature;
     }
 
-    bool suitableSignatureFound = false;
+    ArenaVector<std::pair<std::string, OverrideErrorCode>> badOverriddenSignatures(Allocator()->Adapter());
     for (auto *it : target->TsType()->AsETSFunctionType()->CallSignatures()) {
         auto *itSubst = AdjustForTypeParameters(signature, it);
 
@@ -1193,11 +1226,6 @@ bool ETSChecker::CheckOverride(Signature *signature, ETSObjectType *site)
         }
 
         auto errorCode = CheckOverride(signature, itSubst);
-        if (errorCode == OverrideErrorCode::NO_ERROR) {
-            suitableSignatureFound = true;
-        } else if (!suitableSignatureFound) {
-            ThrowOverrideError(signature, it, errorCode);
-        }
 
         if (signature->Owner()->HasObjectFlag(ETSObjectFlags::INTERFACE) &&
             Relation()->IsIdenticalTo(itSubst->Owner(), GlobalETSObjectType()) &&
@@ -1206,8 +1234,21 @@ bool ETSChecker::CheckOverride(Signature *signature, ETSObjectType *site)
                            signature->Function()->Start());
         }
 
-        isOverridingAnySignature = true;
+        if (errorCode == OverrideErrorCode::NO_ERROR) {
+            isOverridingAnySignature = true;
+        } else {
+            std::stringstream ss;
+            ss << itSubst->Function()->Id()->Name();
+            itSubst->ToString(ss, nullptr, true);
+            ss << " in ";
+            itSubst->Owner()->ToString(ss, false);
+            badOverriddenSignatures.push_back({ss.str(), errorCode});
+        }
+
         it->AddSignatureFlag(SignatureFlags::VIRTUAL);
+    }
+    if (!badOverriddenSignatures.empty() && !isOverridingAnySignature) {
+        ThrowOverrideError(signature, badOverriddenSignatures);
     }
 
     return isOverridingAnySignature;
@@ -1323,6 +1364,8 @@ void ETSChecker::CheckCapturedVariable(ir::AstNode *const node, varbinder::Varia
 
             if (resolved == var) {
                 var->AddFlag(varbinder::VariableFlags::BOXED);
+                // For mutable captured variable [possible] smart-cast is senseless (or even erroneous)
+                Context().RemoveSmartCast(var);
             }
         }
     }
