@@ -736,6 +736,101 @@ void ETSChecker::CheckObjectLiteralArguments(Signature *signature, ArenaVector<i
     }
 }
 
+bool ETSChecker::IsCompatibleOverloadSignature(ir::MethodDefinition *currentFunc, ir::MethodDefinition *method)
+{
+    if (currentFunc->Function()->Params().size() > method->Function()->Params().size()) {
+        return false;
+    }
+
+    bool isCompatible = true;
+    size_t nparams = currentFunc->Function()->Params().size();
+    for (size_t narg = 0; narg < nparams; narg++) {
+        auto &firstParam = currentFunc->Function()->Params()[narg];
+        auto &secondParam = method->Function()->Params()[narg];
+        if (firstParam->IsSpreadElement() || secondParam->IsSpreadElement()) {
+            break;
+        }
+        Relation()->SetNode(firstParam);
+        isCompatible &= Relation()->IsCastableTo(firstParam->Check(this), secondParam->Check(this));
+        Relation()->SetNode(nullptr);
+    }
+
+    if (!isCompatible) {
+        return false;
+    }
+
+    if (currentFunc->Function()->Params().size() < method->Function()->Params().size()) {
+        for (size_t narg = currentFunc->Function()->Params().size() - 1; narg < method->Function()->Params().size();
+             narg++) {
+            auto &param = method->Function()->Params()[narg];
+            isCompatible &= param->IsOptionalDeclaration();
+        }
+    }
+
+    return Relation()->IsIdenticalTo(currentFunc->Function()->Signature()->ReturnType(),
+                                     method->Function()->Signature()->ReturnType());
+}
+
+bool ETSChecker::CheckSignatureHasImpl(ir::MethodDefinition *method, checker::ETSFunctionType *methodFuncType,
+                                       ir::MethodDefinition *const currentFunc, checker::ETSFunctionType *funcType)
+{
+    bool isConstructSig = method->IsConstructor();
+    [[maybe_unused]] auto *const overloadType = BuildFunctionSignature(currentFunc->Function(), isConstructSig);
+    currentFunc->SetTsType(overloadType);
+    methodFuncType->AddCallSignature(currentFunc->Function()->Signature());
+    funcType->AddCallSignature(currentFunc->Function()->Signature());
+    if (IsCompatibleOverloadSignature(method, currentFunc) && currentFunc->Function()->HasBody()) {
+        method->SetOverloadSignature();
+        return true;
+    }
+    return false;
+}
+
+bool ETSChecker::IsFunctionHasNoImpl(ir::ScriptFunction *const currentFunc)
+{
+    return currentFunc == nullptr || (!currentFunc->HasBody() && !currentFunc->IsNative() &&
+                                      !currentFunc->IsAbstract() && !currentFunc->IsExternal());
+}
+
+checker::ETSFunctionType *ETSChecker::CheckSignatureOverload(ir::MethodDefinition *method,
+                                                             checker::ETSFunctionType *funcType)
+{
+    std::vector<ir::MethodDefinition *> methods;
+    ir::MethodDefinition *overloadFunc = nullptr;
+    bool isConstructSig = method->IsConstructor();
+    funcType->CallSignatures().pop_back();
+    methods.push_back(method);
+    for (auto *currentFunc : method->Overloads()) {
+        if (overloadFunc != nullptr && !methods.empty()) {
+            auto *const overloadType = BuildFunctionSignature(currentFunc->Function(), isConstructSig);
+            currentFunc->SetTsType(overloadType);
+            funcType->AddCallSignature(currentFunc->Function()->Signature());
+            continue;
+        }
+        if (IsFunctionHasNoImpl(currentFunc->Function())) {
+            methods.push_back(currentFunc);
+        }
+        if (currentFunc->Function()->HasBody() || currentFunc->Function()->IsNative()) {
+            overloadFunc = currentFunc;
+        }
+    }
+
+    if (overloadFunc != nullptr && !methods.empty()) {
+        bool isOverloadApplied = true;
+        for (auto *currentFunc : methods) {
+            auto *const overloadType = BuildFunctionSignature(currentFunc->Function(), isConstructSig);
+            currentFunc->SetTsType(overloadType);
+            overloadType->CallSignatures().pop_back();
+            isOverloadApplied &= CheckSignatureHasImpl(currentFunc, overloadType, overloadFunc, funcType);
+        }
+        if (isOverloadApplied) {
+            method->Id()->Variable()->SetTsType(funcType);
+            return funcType;
+        }
+    }
+    return nullptr;
+}
+
 checker::ETSFunctionType *ETSChecker::BuildMethodSignature(ir::MethodDefinition *method)
 {
     if (method->TsType() != nullptr) {
@@ -745,6 +840,13 @@ checker::ETSFunctionType *ETSChecker::BuildMethodSignature(ir::MethodDefinition 
     bool isConstructSig = method->IsConstructor();
 
     auto *funcType = BuildFunctionSignature(method->Function(), isConstructSig);
+
+    // Collect all methods without implementation
+    if (IsFunctionHasNoImpl(method->Function())) {
+        if (CheckSignatureOverload(method, funcType) != nullptr) {
+            return funcType;
+        }
+    }
 
     std::vector<checker::ETSFunctionType *> overloads;
     for (ir::MethodDefinition *const currentFunc : method->Overloads()) {

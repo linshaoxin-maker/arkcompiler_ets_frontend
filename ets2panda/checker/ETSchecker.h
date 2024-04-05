@@ -334,6 +334,10 @@ public:
                                   const ArenaVector<ir::Expression *> &arguments, const lexer::SourcePosition &pos,
                                   std::string_view signatureKind,
                                   TypeRelationFlag resolveFlags = TypeRelationFlag::NONE);
+    bool IsFunctionHasNoImpl(ir::ScriptFunction *const currentFunc);
+    bool CheckSignatureHasImpl(ir::MethodDefinition *method, checker::ETSFunctionType *methodFuncType,
+                               ir::MethodDefinition *const currentFunc, checker::ETSFunctionType *funcType);
+    checker::ETSFunctionType *CheckSignatureOverload(ir::MethodDefinition *method, checker::ETSFunctionType *funcType);
     Signature *ChooseMostSpecificSignature(ArenaVector<Signature *> &signatures,
                                            const std::vector<bool> &argTypeInferenceRequired,
                                            const lexer::SourcePosition &pos, size_t argumentsSize = ULONG_MAX);
@@ -353,6 +357,7 @@ public:
     void ValidateMainSignature(ir::ScriptFunction *func);
     checker::ETSFunctionType *BuildFunctionSignature(ir::ScriptFunction *func, bool isConstructSig = false);
     checker::ETSFunctionType *BuildMethodSignature(ir::MethodDefinition *method);
+    bool IsCompatibleOverloadSignature(ir::MethodDefinition *currentFunc, ir::MethodDefinition *method);
     Signature *CheckEveryAbstractSignatureIsOverridden(ETSFunctionType *target, ETSFunctionType *source);
     Signature *GetSignatureFromMethodDefinition(const ir::MethodDefinition *methodDef);
     void CheckIdenticalOverloads(ETSFunctionType *func, ETSFunctionType *overload,
