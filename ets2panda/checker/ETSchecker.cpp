@@ -24,7 +24,8 @@
 #include "varbinder/ETSBinder.h"
 #include "parser/program/program.h"
 #include "checker/ets/aliveAnalyzer.h"
-
+#include "checker/ets/etsWarningAnalyzer.h"
+#include "checker/types/globalTypesHolder.h"
 #include "ir/base/scriptFunction.h"
 #include "util/helpers.h"
 
@@ -202,6 +203,10 @@ bool ETSChecker::StartChecker([[maybe_unused]] varbinder::VarBinder *varbinder, 
         std::cout << Program()->Dump() << std::endl;
     }
 
+    if (options.etsHasWarnings) {
+        CheckWarnings(Program(), options);
+    }
+
     return true;
 }
 
@@ -227,6 +232,14 @@ void ETSChecker::CheckProgram(parser::Program *program, bool runAnalysis)
     ASSERT(VarBinder()->AsETSBinder()->GetExternalRecordTable().find(program)->second);
 
     SetProgram(savedProgram);
+}
+
+void ETSChecker::CheckWarnings(parser::Program *program, const CompilerOptions &options)
+{
+    const auto etsWarningCollection = options.etsWarningCollection;
+    for (const auto warning : etsWarningCollection) {
+        ETSWarningAnalyzer(Program()->Ast(), program, warning, options.etsWerror);
+    }
 }
 
 Type *ETSChecker::CheckTypeCached(ir::Expression *expr)
@@ -318,6 +331,12 @@ Type *ETSChecker::GlobalWildcardType() const
 ETSObjectType *ETSChecker::GlobalETSObjectType() const
 {
     return AsETSObjectType(&GlobalTypesHolder::GlobalETSObjectType);
+}
+
+ETSUnionType *ETSChecker::GlobalETSNullishType() const
+{
+    auto *ret = (GetGlobalTypesHolder()->*&GlobalTypesHolder::GlobalETSNullishType)();
+    return ret != nullptr ? ret->AsETSUnionType() : nullptr;
 }
 
 ETSUnionType *ETSChecker::GlobalETSNullishObjectType() const
