@@ -85,9 +85,13 @@ function compareContent(filePath) {
   const resultPathAndExtension = FileUtils.getFileSuffix(filePath);
   const resultCachePath = resultPathAndExtension.path + '.ts.cache.json';
   const expectationCachePath = sourcePathAndExtension.path + '_expected_cache.txt';
+  const resultMapPath = resultPathAndExtension.path + '.ts.map';
+  const expectationMapPath = sourcePathAndExtension.path + '_expected_map.txt';
   const hasExpectationFile = fs.existsSync(expectationPath);
   const hasExpectationCache = fs.existsSync(expectationCachePath);
   const hasResultCache = fs.existsSync(resultCachePath);
+  const hasExpectationMap = fs.existsSync(expectationMapPath);
+  const hasResultMap = fs.existsSync(resultMapPath);
   const compareExpected = function(filePath, actual, expectation) {
     if (actual.replace(/(\n|\r\n)/g, '') === expectation.replace(/(\n|\r\n)/g, '')) {
       contentcomparationSuccessCount++;
@@ -101,17 +105,21 @@ function compareContent(filePath) {
       });
     }
   }
-  if (hasExpectationFile || (hasExpectationCache && hasResultCache)) {
-    if (hasExpectationFile) {
-      let actual = fs.readFileSync(filePath).toString();
-      let expectation = fs.readFileSync(expectationPath).toString();
-      compareExpected(filePath, actual, expectation);
-    }
-    if (hasExpectationCache) {
-      let actual = fs.readFileSync(resultCachePath).toString();
-      let expectation = fs.readFileSync(expectationCachePath).toString();
-      compareExpected(filePath, actual, expectation);
-    }
+
+  if (hasExpectationFile) {
+    let actual = fs.readFileSync(filePath).toString();
+    let expectation = fs.readFileSync(expectationPath).toString();
+    compareExpected(filePath, actual, expectation);
+  }
+  if (hasExpectationCache && hasResultCache) {
+    let actual = fs.readFileSync(resultCachePath).toString();
+    let expectation = fs.readFileSync(expectationCachePath).toString();
+    compareExpected(filePath, actual, expectation);
+  }
+  if (hasExpectationMap && hasResultMap) {
+    let actual = fs.readFileSync(resultMapPath).toString();
+    let expectation = fs.readFileSync(expectationMapPath).toString();
+    compareExpected(filePath, actual, expectation);
   }
 }
 
