@@ -121,5 +121,6 @@ void CompileQueue::Wait(const JobsFinishedCb &onFinishedCb)
     }
 
     delete[] jobs_;
+    jobs_ = nullptr;
 }
 }  // namespace panda::es2panda::compiler

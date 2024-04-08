@@ -207,22 +207,10 @@ CatchTable *ETSCatchContext::AddNewCathTable(const util::StringView assemblerTyp
     return catchTable;
 }
 
-void ETSTryContext::EmitFinalizer(
-    LabelPair trycatchLabelPair,
+void ETSTryContext::HandleFinalizerInsertions(
     const ArenaVector<std::pair<compiler::LabelPair, const ir::Statement *>> &finalizerInsertions)
 {
-    ASSERT(tryStmt_);
-
-    if (!hasFinalizer_ || (tryStmt_->FinallyBlock() == nullptr)) {
-        return;
-    }
     auto *etsg = static_cast<ETSGen *>(Cg());
-
-    CatchTable *finalizerTable = AddNewCathTable("", trycatchLabelPair);
-    // First compile of the finaly clause, executed if the statement executed normally
-    tryStmt_->FinallyBlock()->Compile(etsg);
-
-    etsg->Branch(tryStmt_, finalizerTable->LabelSet().CatchEnd());
 
     for (std::pair<compiler::LabelPair, const ir::Statement *> insertion : finalizerInsertions) {
         etsg->SetLabel(tryStmt_, insertion.first.Begin());
@@ -272,6 +260,26 @@ void ETSTryContext::EmitFinalizer(
             UNREACHABLE();
         }
     }
+}
+
+void ETSTryContext::EmitFinalizer(
+    LabelPair trycatchLabelPair,
+    const ArenaVector<std::pair<compiler::LabelPair, const ir::Statement *>> &finalizerInsertions)
+{
+    ASSERT(tryStmt_);
+
+    if (!hasFinalizer_ || (tryStmt_->FinallyBlock() == nullptr)) {
+        return;
+    }
+    auto *etsg = static_cast<ETSGen *>(Cg());
+
+    CatchTable *finalizerTable = AddNewCathTable("", trycatchLabelPair);
+    // First compile of the finaly clause, executed if the statement executed normally
+    tryStmt_->FinallyBlock()->Compile(etsg);
+
+    etsg->Branch(tryStmt_, finalizerTable->LabelSet().CatchEnd());
+
+    HandleFinalizerInsertions(finalizerInsertions);
 
     etsg->SetLabel(tryStmt_, finalizerTable->LabelSet().CatchBegin());
 
