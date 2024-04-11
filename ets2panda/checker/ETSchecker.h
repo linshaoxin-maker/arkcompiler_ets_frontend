@@ -471,6 +471,10 @@ public:
     Type *GetTypeFromClassReference(varbinder::Variable *var);
     void ValidateGenericTypeAliasForClonedNode(ir::TSTypeAliasDeclaration *typeAliasNode,
                                                const ir::TSTypeParameterInstantiation *exactTypeParams);
+    void MakePropertiesNullish(ETSObjectType *classType);
+    ir::ClassDefinition *CreatePartialClassDeclaration(ir::ClassDefinition *classDef);
+    void CreateConstructorForPartialType(ir::ClassDefinition *partialClassDef, checker::ETSObjectType *partialType);
+    Type *HandlePartialType(const ir::TSTypeParameterInstantiation *typeParams);
     Type *HandleTypeAlias(ir::Expression *name, const ir::TSTypeParameterInstantiation *typeParams);
     Type *GetTypeFromEnumReference(varbinder::Variable *var);
     Type *GetTypeFromTypeParameterReference(varbinder::LocalVariable *var, const lexer::SourcePosition &pos);
@@ -690,6 +694,10 @@ private:
         std::function<void(ArenaVector<ir::Statement *> *, ArenaVector<ir::Expression *> *)>;
     using MethodBuilder = std::function<void(ArenaVector<ir::Statement *> *, ArenaVector<ir::Expression *> *, Type **)>;
 
+    using ClassBuilderWithScope = std::function<void(varbinder::ClassScope *, ArenaVector<ir::AstNode *> *)>;
+    using ClassInitializerBuilderWithScope = std::function<void(
+        varbinder::FunctionScope *, ArenaVector<ir::Statement *> *, ArenaVector<ir::Expression *> *)>;
+
     std::pair<const ir::Identifier *, ir::TypeNode *> GetTargetIdentifierAndType(ir::Identifier *ident);
     [[noreturn]] void ThrowError(ir::Identifier *ident);
     void WrongContextErrorClassifyByType(ir::Identifier *ident, varbinder::Variable *resolved);
@@ -737,6 +745,15 @@ private:
 
     ir::MethodDefinition *CreateLambdaObjectClassInvokeMethod(Signature *invokeSignature,
                                                               ir::TypeNode *retTypeAnnotation);
+
+    void BuildPartialClass(util::StringView name, const ClassBuilderWithScope &builder);
+    ir::ETSParameterExpression *AddParamWithScope(varbinder::FunctionParamScope *paramScope, util::StringView name,
+                                                  checker::Type *type);
+    std::pair<ir::ScriptFunction *, ir::Identifier *> CreateNonStaticScriptFunction(
+        varbinder::FunctionScope *scope, const ClassInitializerBuilderWithScope &builder);
+    ir::MethodDefinition *CreateNonStaticClassInitializer(varbinder::ClassScope *classScope,
+                                                          const ClassInitializerBuilderWithScope &builder,
+                                                          ETSObjectType *type);
 
     void ClassInitializerFromImport(ir::ETSImportDeclaration *import, ArenaVector<ir::Statement *> *statements);
     void EmitDynamicModuleClassInitCall();

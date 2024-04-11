@@ -566,13 +566,12 @@ void ETSChecker::InferAliasLambdaType(ir::TypeNode *localTypeAnnotation, ir::Exp
     if (localTypeAnnotation != nullptr && localTypeAnnotation->IsETSTypeReference()) {
         bool isAnnotationTypeAlias = true;
         while (localTypeAnnotation->IsETSTypeReference() && isAnnotationTypeAlias) {
-            auto *node = localTypeAnnotation->AsETSTypeReference()
-                             ->Part()
-                             ->Name()
-                             ->AsIdentifier()
-                             ->Variable()
-                             ->Declaration()
-                             ->Node();
+            auto *nodeVar = localTypeAnnotation->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Variable();
+            if (nodeVar == nullptr) {
+                break;
+            }
+
+            auto *node = nodeVar->Declaration()->Node();
 
             isAnnotationTypeAlias = node->IsTSTypeAliasDeclaration();
             if (isAnnotationTypeAlias) {
@@ -1082,6 +1081,240 @@ static void CheckExpandedType(Type *expandedAliasType, std::set<util::StringView
     }
 }
 
+// Copy of CreateScriptFunction from 'dynamic.cpp' with the unnecessary branches removed.
+// Copy is necessary anyway, because the implementation of the template function is not defined in the header file
+std::pair<ir::ScriptFunction *, ir::Identifier *> ETSChecker::CreateNonStaticScriptFunction(
+    varbinder::FunctionScope *scope, const ClassInitializerBuilderWithScope &builder)
+{
+    ArenaVector<ir::Statement *> statements(Allocator()->Adapter());
+    ArenaVector<ir::Expression *> params(Allocator()->Adapter());
+
+    ir::ScriptFunction *func {};
+    ir::Identifier *id {};
+
+    builder(scope, &statements, &params);
+    auto *body = AllocNode<ir::BlockStatement>(Allocator(), std::move(statements));
+    body->SetScope(scope);
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
+    id = AllocNode<ir::Identifier>(compiler::Signatures::CTOR, Allocator());
+    auto funcSignature = ir::FunctionSignature(nullptr, std::move(params), nullptr);
+    func = AllocNode<ir::ScriptFunction>(Allocator(),
+                                         ir::ScriptFunction::ScriptFunctionData {
+                                             body, std::move(funcSignature),
+                                             ir::ScriptFunctionFlags::CONSTRUCTOR | ir::ScriptFunctionFlags::EXPRESSION,
+                                             ir::ModifierFlags::PUBLIC});
+
+    func->SetScope(scope);
+    scope->BindNode(func);
+    func->SetIdent(id);
+
+    return std::make_pair(func, id);
+}
+
+// Copy of CreateClassInitializer from 'dynamic.cpp' with the unnecessary branches removed.
+// Copy is necessary anyway, because the implementation of the template function is not defined in the header file
+ir::MethodDefinition *ETSChecker::CreateNonStaticClassInitializer(varbinder::ClassScope *classScope,
+                                                                  const ClassInitializerBuilderWithScope &builder,
+                                                                  ETSObjectType *type)
+{
+    varbinder::LocalScope *methodScope = nullptr;
+    methodScope = classScope->InstanceMethodScope();
+    auto classCtx = varbinder::LexicalScope<varbinder::LocalScope>::Enter(VarBinder(), methodScope);
+
+    auto *paramScope = Allocator()->New<varbinder::FunctionParamScope>(Allocator(), classScope);
+    auto *scope = Allocator()->New<varbinder::FunctionScope>(Allocator(), paramScope);
+
+    auto [func, id] = CreateNonStaticScriptFunction(scope, builder);
+
+    paramScope->BindNode(func);
+    scope->BindParamScope(paramScope);
+    paramScope->BindFunctionScope(scope);
+
+    auto *signatureInfo = CreateSignatureInfo();
+    signatureInfo->restVar = nullptr;
+    auto *signature = CreateSignature(signatureInfo, GlobalVoidType(), func);
+    func->SetSignature(signature);
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
+    auto *funcExpr = AllocNode<ir::FunctionExpression>(func);
+
+    VarBinder()->AsETSBinder()->BuildInternalName(func);
+    VarBinder()->AsETSBinder()->BuildFunctionName(func);
+    VarBinder()->Functions().push_back(func->Scope());
+
+    type->AddConstructSignature(signature);
+
+    auto *ctor =
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
+        AllocNode<ir::MethodDefinition>(ir::MethodDefinitionKind::CONSTRUCTOR, id->Clone(Allocator(), nullptr),
+                                        funcExpr, ir::ModifierFlags::NONE, Allocator(), false);
+    auto *funcType = CreateETSFunctionType(signature, id->Name());
+    ctor->SetTsType(funcType);
+    return ctor;
+}
+
+void ETSChecker::BuildPartialClass(util::StringView name, const ClassBuilderWithScope &builder)
+{
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
+    auto *classId = AllocNode<ir::Identifier>(name, Allocator());
+    auto [decl, var] = VarBinder()->NewVarDecl<varbinder::ClassDecl>(classId->Start(), classId->Name());
+    classId->SetVariable(var);
+
+    auto classCtx = varbinder::LexicalScope<varbinder::ClassScope>(VarBinder());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
+    auto *classDef = AllocNode<ir::ClassDefinition>(Allocator(), classId, ir::ClassDefinitionModifiers::DECLARATION,
+                                                    ir::ModifierFlags::NONE, Language(Language::Id::ETS));
+    classDef->SetScope(classCtx.GetScope());
+
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
+    auto *classDecl = AllocNode<ir::ClassDeclaration>(classDef, Allocator());
+    classDecl->SetParent(VarBinder()->TopScope()->Node());
+    classDef->Scope()->BindNode(classDecl);
+    decl->BindNode(classDef);
+
+    VarBinder()->Program()->Ast()->Statements().push_back(classDecl);
+
+    varbinder::BoundContext boundCtx(VarBinder()->AsETSBinder()->GetGlobalRecordTable(), classDef);
+
+    ArenaVector<ir::AstNode *> classBody(Allocator()->Adapter());
+
+    builder(classCtx.GetScope(), &classBody);
+
+    classDef->AddProperties(std::move(classBody));
+}
+
+ir::ClassDefinition *ETSChecker::CreatePartialClassDeclaration(ir::ClassDefinition *classDef)
+{
+    auto newClassName = util::UString(classDef->Ident()->Name().Mutf8() + "$partial", Allocator()).View();
+    // Check if we've already generated the partial class, then don't do it again
+    if (auto *var = VarBinder()->TopScope()->FindLocal(newClassName, varbinder::ResolveBindingOptions::ALL);
+        var != nullptr) {
+        return var->Declaration()->Node()->AsClassDefinition();
+    }
+
+    ir::ClassDefinition *newClassDefinition = nullptr;
+
+    // Build the new Partial class based on the 'T' type parameter of 'Partial<T>'
+    BuildPartialClass(newClassName, [this, &classDef, &newClassDefinition](varbinder::ClassScope *scope,
+                                                                           ArenaVector<ir::AstNode *> *classBody) {
+        auto *newClassDef = scope->Node()->AsClassDeclaration()->Definition();
+
+        for (auto *prop : classDef->Body()) {
+            if (prop->IsClassProperty()) {
+                auto *propClone = prop->Clone(Allocator(), newClassDef);
+
+                // Convert property to nullish type
+                ArenaVector<ir::TypeNode *> types(Allocator()->Adapter());
+                types.push_back(propClone->AsClassProperty()->TypeAnnotation());
+                types.push_back(AllocNode<ir::ETSUndefinedType>());
+                auto *unionType = AllocNode<ir::ETSUnionType>(std::move(types));
+                propClone->AsClassProperty()->SetTypeAnnotation(unionType);
+
+                // Set new parents
+                unionType->SetParent(propClone);
+                propClone->SetParent(newClassDef);
+
+                // Handle bindings, variables
+                propClone->SetVariable(Allocator()->New<varbinder::LocalVariable>(
+                    Allocator()->New<varbinder::LetDecl>(propClone->AsClassProperty()->Id()->Name()),
+                    varbinder::VariableFlags::PROPERTY));
+                propClone->Variable()->SetScope(newClassDef->Scope()->AsClassScope()->InstanceDeclScope());
+                propClone->Variable()->Declaration()->BindNode(propClone);
+                newClassDef->Scope()->AddBinding(Allocator(), propClone->Variable(),
+                                                 propClone->Variable()->Declaration(), ScriptExtension::ETS);
+
+                // Put the new property into the class declaration
+                classBody->emplace_back(propClone);
+            }
+
+            if (prop->IsMethodDefinition() && !prop->AsMethodDefinition()->IsConstructor()) {
+                ThrowTypeError("Base type of Partial can only contain fields", prop->Start());
+            }
+        }
+
+        newClassDefinition = newClassDef;
+    });
+
+    newClassDefinition->SetSuper(classDef->Super() != nullptr
+                                     ? classDef->Super()->Clone(Allocator(), newClassDefinition)->AsExpression()
+                                     : nullptr);
+
+    newClassDefinition->SetVariable(newClassDefinition->Ident()->Variable());
+
+    return newClassDefinition;
+}
+
+ir::ETSParameterExpression *ETSChecker::AddParamWithScope(varbinder::FunctionParamScope *paramScope,
+                                                          util::StringView name, checker::Type *type)
+{
+    auto paramCtx = varbinder::LexicalScope<varbinder::FunctionParamScope>::Enter(VarBinder(), paramScope, false);
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
+    auto *paramIdent = AllocNode<ir::Identifier>(name, Allocator());
+    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
+    auto *param = AllocNode<ir::ETSParameterExpression>(paramIdent, nullptr);
+    auto *paramVar = std::get<1>(VarBinder()->AddParamDecl(param));
+    paramVar->SetTsType(type);
+    param->Ident()->SetVariable(paramVar);
+    param->Ident()->SetTsType(type);
+    return param;
+}
+
+void ETSChecker::CreateConstructorForPartialType(ir::ClassDefinition *partialClassDef,
+                                                 checker::ETSObjectType *partialType)
+{
+    // CreateNonStaticClassInitializer uses the name of the class definition related to the record. The
+    // 'partialClassDef' definition was already added to the record table, hence we need to set it manually after
+    // creating the context
+    varbinder::BoundContext boundCtx(VarBinder()->AsETSBinder()->GetRecordTable(), partialClassDef);
+    VarBinder()->AsETSBinder()->GetRecordTable()->SetClassDefinition(partialClassDef);
+
+    auto *scope = partialClassDef->Scope()->AsClassScope();
+
+    auto *ctor = CreateNonStaticClassInitializer(
+        scope,
+        [this, &partialType](varbinder::FunctionScope *ctorScope, ArenaVector<ir::Statement *> * /*statements*/,
+                             ArenaVector<ir::Expression *> *params) {
+            ir::ETSParameterExpression *thisParam = AddParamWithScope(
+                ctorScope->Parent()->AsFunctionParamScope(), varbinder::VarBinder::MANDATORY_PARAM_THIS, partialType);
+            params->push_back(thisParam);
+        },
+        partialType);
+
+    ctor->Function()->Signature()->SetOwner(partialType);
+    ctor->SetParent(partialClassDef);
+    ctor->Function()->Id()->SetVariable(Allocator()->New<varbinder::LocalVariable>(
+        Allocator()->New<varbinder::MethodDecl>(ctor->Function()->Id()->Name()), varbinder::VariableFlags::METHOD));
+    ctor->Id()->SetVariable(ctor->Function()->Id()->Variable());
+    partialClassDef->Body().emplace_back(ctor);
+}
+
+Type *ETSChecker::HandlePartialType([[maybe_unused]] const ir::TSTypeParameterInstantiation *const typeParams)
+{
+    if (typeParams->Params().size() != 1) {
+        ThrowTypeError("Invalid number of type parameters for Partial type", typeParams->Start());
+    }
+
+    auto *const typeParamNode = typeParams->Params()[0];
+    auto *const typeToBePartial = typeParamNode->Check(this)->AsETSObjectType();
+
+    // Allow only class types, as interfaces will translate properties into getter/setters, and the current Partial type
+    // implementation only allows structures containing only fields
+    if (!typeToBePartial->IsETSObjectType() ||
+        !typeToBePartial->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::CLASS)) {
+        ThrowTypeError("Only class types can be partial", typeParamNode->Start());
+    }
+
+    auto *partialClassDef =
+        CreatePartialClassDeclaration(typeToBePartial->Variable()->Declaration()->Node()->AsClassDefinition());
+
+    partialClassDef->Check(this);
+    auto *const partialType = partialClassDef->TsType()->AsETSObjectType();
+    partialType->SetAssemblerName(partialClassDef->InternalName());
+
+    CreateConstructorForPartialType(partialClassDef, partialType);
+
+    return partialType;
+}
+
 Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypeParameterInstantiation *const typeParams)
 {
     ASSERT(name->IsIdentifier() && name->AsIdentifier()->Variable() &&
@@ -1097,6 +1330,12 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
         }
 
         ThrowTypeError("Type alias declaration is not generic, but type parameters were provided", typeParams->Start());
+    }
+
+    if (name->AsIdentifier()->Name().Is(compiler::Signatures::PARTIAL_TYPE_NAME)) {
+        // Handle 'Partial<T>' types
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
+        return HandlePartialType(typeParams);
     }
 
     if (typeParams == nullptr) {
