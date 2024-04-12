@@ -2680,11 +2680,7 @@ void ETSGen::AppendString(const ir::Expression *const expr, const VReg builder)
 
 void ETSGen::StringBuilder(const ir::Expression *const left, const ir::Expression *const right, const VReg builder)
 {
-    if (left->IsBinaryExpression()) {
-        AppendString(left->AsBinaryExpression(), builder);
-    } else {
-        StringBuilderAppend(left, builder);
-    }
+    StringBuilderAppend(left, builder);
 
     StringBuilderAppend(right, builder);
 }
