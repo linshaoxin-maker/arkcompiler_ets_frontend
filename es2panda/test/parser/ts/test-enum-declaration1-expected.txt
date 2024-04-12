@@ -1,1 +1,0 @@
-SyntaxError: Variable 'a' has already been declared. [test-enum-declaration1.ts:19:5]

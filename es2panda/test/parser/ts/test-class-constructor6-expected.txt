@@ -1,1 +1,0 @@
-SyntaxError: Constructor implementation is missing. [test-class-constructor6.ts:19:5]
