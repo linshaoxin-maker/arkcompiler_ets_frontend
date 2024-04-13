@@ -426,7 +426,8 @@ export class ArkObfuscator {
       }
       resultPath = path.join(this.mCustomProfiles.mOutputDir, relativePath);
       fs.mkdirSync(path.dirname(resultPath), {recursive: true});
-      fs.writeFileSync(resultPath, mixedInfo.content);
+       // 将混淆后的文件直接映射到源文件中
+       fs.writeFileSync(sourceFilePath, mixedInfo.content);
 
       if (this.mCustomProfiles.mEnableSourceMap && mixedInfo.sourceMap) {
         fs.writeFileSync(path.join(resultPath + '.map'),
