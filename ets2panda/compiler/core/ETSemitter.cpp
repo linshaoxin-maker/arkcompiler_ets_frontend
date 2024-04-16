@@ -134,6 +134,10 @@ static pandasm::Function GenScriptFunction(public_lib::Context const *context, c
     }
     func.metadata->SetAccessFlags(accessFlags);
 
+    if (scriptFunc->IsExternal()) {
+        func.metadata->SetAttribute(Signatures::EXTERNAL);
+    }
+
     return func;
 }
 
@@ -207,9 +211,8 @@ void ETSEmitter::GenAnnotation()
     const auto *varbinder = static_cast<varbinder::ETSBinder *>(Context()->parserProgram->VarBinder());
 
     auto *globalRecordTable = varbinder->GetGlobalRecordTable();
-
     for (auto *classDecl : globalRecordTable->ClassDefinitions()) {
-        GenClassRecord(classDecl, false);
+        GenClassRecord(classDecl, classDecl->IsFromExternal());
     }
 
     for (auto *interfaceDecl : globalRecordTable->InterfaceDeclarations()) {
@@ -251,9 +254,10 @@ void ETSEmitter::GenExternalRecord(varbinder::RecordTable *recordTable)
     }
 
     for (auto *signature : recordTable->Signatures()) {
-        auto func = GenScriptFunction(Context(), signature->Node()->AsScriptFunction());
+        auto scriptFunc = signature->Node()->AsScriptFunction();
+        auto func = GenScriptFunction(Context(), scriptFunc);
 
-        if (!isGenStdLib) {
+        if (!isGenStdLib || 0 != (scriptFunc->Flags() & ir::ScriptFunctionFlags::EXTERNAL)) {
             func.metadata->SetAttribute(Signatures::EXTERNAL);
         }
 
@@ -333,7 +337,7 @@ void ETSEmitter::GenInterfaceMethodDefinition(const ir::MethodDefinition *method
     auto *scriptFunc = methodDef->Function();
     auto func = GenScriptFunction(Context(), scriptFunc);
 
-    if (external) {
+    if (external || 0 != (scriptFunc->Flags() & ir::ScriptFunctionFlags::EXTERNAL)) {
         func.metadata->SetAttribute(Signatures::EXTERNAL);
     }
 

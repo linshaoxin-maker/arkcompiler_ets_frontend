@@ -214,6 +214,11 @@ void ETSChecker::CheckProgram(parser::Program *program, bool runAnalysis)
     for (auto &[_, extPrograms] : program->ExternalSources()) {
         (void)_;
         for (auto *extProg : extPrograms) {
+            checker::SavedCheckerContext savedContext(this, this->Context().Status(),
+                                                      this->Context().ContainingClass());
+            if (!VarBinder()->IsGenStdLib()) {
+                AddStatus(CheckerStatus::IN_EXTERNAL_MODULE);
+            }
             CheckProgram(extProg, VarBinder()->IsGenStdLib());
         }
     }

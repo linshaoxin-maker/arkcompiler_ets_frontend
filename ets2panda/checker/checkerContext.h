@@ -51,6 +51,7 @@ enum class CheckerStatus : uint32_t {
     MEET_BREAK = 1U << 21U,
     MEET_CONTINUE = 1U << 22U,
     MEET_THROW = 1U << 23U,
+    IN_EXTERNAL_MODULE = 1U << 24U,
 };
 
 DEFINE_BITOPS(CheckerStatus)

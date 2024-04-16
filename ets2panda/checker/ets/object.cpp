@@ -337,6 +337,9 @@ ETSObjectType *ETSChecker::BuildBasicClassProperties(ir::ClassDefinition *classD
     auto *enclosingClass = Context().ContainingClass();
     classType->SetEnclosingType(enclosingClass);
     CheckerStatus newStatus = CheckerStatus::IN_CLASS;
+    if (HasStatus(CheckerStatus::IN_EXTERNAL_MODULE)) {
+        newStatus |= CheckerStatus::IN_EXTERNAL_MODULE;
+    }
 
     if (classDef->IsInner()) {
         newStatus |= CheckerStatus::INNER_CLASS;
@@ -859,6 +862,9 @@ void ETSChecker::CheckClassDefinition(ir::ClassDefinition *classDef)
     classDef->SetClassDefinitionChecked();
     auto *classType = classDef->TsType()->AsETSObjectType();
     auto newStatus = checker::CheckerStatus::IN_CLASS;
+    if (HasStatus(CheckerStatus::IN_EXTERNAL_MODULE)) {
+        newStatus |= CheckerStatus::IN_EXTERNAL_MODULE;
+    }
     classType->SetEnclosingType(Context().ContainingClass());
 
     if (classDef->IsInner()) {
