@@ -103,14 +103,14 @@ def get_download_url(task_name, image_date):
 
 
 def retry_after_download_failed(download_url, temp_file, temp_file_name, max_retries=3):
+    is_success = False
     for i in range(max_retries):
         try:
-            download(download_url, temp_file, temp_file_name)
-            return True
+            is_success = download(download_url, temp_file, temp_file_name)
         except Exception as e:
             print(f"download failed! retrying... ({i + 1}/{max_retries})")
             time.sleep(2)
-    return False
+    return is_success
 
 
 def download_progress_bar(response, temp, temp_file_name):
@@ -128,12 +128,43 @@ def download_progress_bar(response, temp, temp_file_name):
             pbar.update(len(chunk))
 
 
+def supports_resume(download_url):
+    with httpx.Client() as client:
+        response = client.head(download_url)
+        return response.headers.get("Accept-Ranges") == "bytes"
+
+
 def download(download_url, temp_file, temp_file_name):
-    with httpx.stream('GET', download_url) as response:
-        flags = os.O_WRONLY | os.O_CREAT
-        mode = stat.S_IWUSR | stat.S_IRUSR
-        with os.fdopen(os.open(temp_file, flags, mode), 'wb') as temp:
-            download_progress_bar(response, temp, temp_file_name)
+    existing_size = 0
+    if os.path.exists(temp_file):
+        existing_size = os.path.getsize(temp_file)
+
+    headers = {}
+    if existing_size:
+        headers['Range'] = f'bytes={existing_size}-'
+
+    with httpx.Client() as client:
+        response = client.head(download_url)
+        total_file_size = int(response.headers['Content-Length'])
+        free_space = shutil.disk_usage(os.path.dirname(temp_file)).free
+        if free_space < total_file_size - existing_size:
+            print('Insufficient disk space; download has been halted.')
+            return False
+
+        if existing_size >= total_file_size:
+            print(f"{temp_file_name} has already been downloaded.")
+            return True
+
+        resume_supported = supports_resume(download_url)
+        # If the server supports resuming from breakpoints, it will continue to append modifications to the file.
+        mode = 'ab' if resume_supported else 'wb'
+        flags = os.O_WRONLY | os.O_CREAT | (os.O_APPEND if resume_supported else 0)
+        file_mode = stat.S_IWUSR | stat.S_IRUSR
+
+        with client.stream('GET', download_url, headers=headers) as response:
+            with os.fdopen(os.open(temp_file, flags, file_mode), mode) as temp:
+                download_progress_bar(response, temp, temp_file_name)
+
     return True
 
 
@@ -162,12 +193,12 @@ def check_zip_file(file_path):
 
 def get_remote_download_name(task_name):
     if is_windows():
-        if 'sdk' in task_name:
+        if 'sdk' in task_name.lower():
             return 'ohos-sdk-full.tar.gz'
         return 'dayu200.tar.gz'
     elif is_mac():
-        if 'sdk' in task_name:
-            return 'L2-MAC-SDK-FULL.tar.gz'
+        if 'sdk' in task_name.lower():
+            return 'L2-SDK-MAC-FULL.tar.gz'
         return 'dayu200.tar.gz'
     else:
         print('Unsuport platform to get sdk from daily build')
@@ -184,7 +215,7 @@ def get_api_version(json_path):
 
 def copy_to_output_path(file_name, file_path, output_path_list):
     update_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'update.py')
-    cmd = ['python', update_file_path]
+    cmd = ['python3', update_file_path]
     if 'sdk' in file_name.lower():
         sdk_temp_file = os.path.join(file_path, 'sdk_temp')
         cmd.extend(['--sdkFilePath', sdk_temp_file])
@@ -226,7 +257,7 @@ def get_the_unzip_file(download_url, save_path):
     else:
         print('The downloaded file is not a valid gzip or zip file.')
 
-    if 'sdk' in download_name:
+    if 'sdk' in download_name.lower():
         unpack_sdk_file(save_path)
 
     return True
@@ -251,7 +282,7 @@ def get_task_config(file_name):
     configs = parse_configs()
     download_list = configs['download_list']
     for item in download_list:
-        if item['name'] in file_name:
+        if file_name in item['name']:
             url = item['url']
             date = item['date']
             output_path_list = item['output_path_list']
@@ -263,7 +294,7 @@ def delete_redundant_files(task_name, file_name, download_save_path, is_save):
         date_time = re.search(r"\d{8}", file_name).group()
         new_file_path = os.path.join(download_save_path, f'{date_time}-{task_name}')
         if not os.path.exists(new_file_path):
-            temp_file_name = 'sdk_temp' if 'sdk' in task_name else 'dayu200_xts'
+            temp_file_name = 'sdk_temp' if 'sdk' in task_name.lower() else 'dayu200_xts'
             temp_file_path = os.path.join(download_save_path, temp_file_name)
             os.rename(temp_file_path, new_file_path)
     subdirs_and_files = [subdir_or_file for subdir_or_file in os.listdir(download_save_path)]
@@ -271,18 +302,28 @@ def delete_redundant_files(task_name, file_name, download_save_path, is_save):
         if not subdir_or_file[0].isdigit():
             path = os.path.join(download_save_path, subdir_or_file)
             if os.path.isdir(path):
-                shutil.rmtree(path)
+                shutil.rmtree(path, ignore_errors=True)
             elif os.path.isfile(path):
                 os.remove(path)
 
 
-def write_download_url_to_txt(task_name, download_url):
-    download_url_txt = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                    'download_url.txt')
-    flags = os.O_WRONLY | os.O_CREAT
+def write_download_url_to_json(task_name, download_url):
+    download_url_json = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                     'download_url.json')
+    flags = os.O_RDWR | os.O_CREAT
     mode = stat.S_IWUSR | stat.S_IRUSR
-    with os.fdopen(os.open(download_url_txt, flags, mode), 'a+', encoding='utf-8') as file:
-        file.write(f'{task_name}, {download_url}\n')
+    try:
+        with os.fdopen(os.open(download_url_json, flags, mode), 'r+', encoding='utf-8') as file:
+            try:
+                data = json.load(file)
+            except json.JSONDecodeError:
+                data = []
+            data.append({"task_name": task_name, "download_url": download_url})
+            file.seek(0)
+            json.dump(data, file, indent=4)
+            file.truncate()
+    except IOError as e:
+        print(f"Write download url error: {e}")
 
 
 def get_the_image(task_name, download_url, image_date, output_path_list):
@@ -305,13 +346,13 @@ def get_the_image(task_name, download_url, image_date, output_path_list):
 
     copy_to_output_path(file_name, download_save_path, output_path_list)
     delete_redundant_files(task_name, file_name, download_save_path, is_save)
-    write_download_url_to_txt(task_name, download_url)
+    write_download_url_to_json(task_name, download_url)
 
     return True
 
 
 def clean_download_log():
-    download_url_txt = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'download_url.txt')
+    download_url_txt = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'download_url.json')
     if os.path.exists(download_url_txt):
         os.remove(download_url_txt)
 

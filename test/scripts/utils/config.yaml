@@ -66,6 +66,8 @@ commit_log_report_file : "../get_commit_log/commit_log.html"
 attatchment_files :
     - "../../auto_xts_test/result/details_report.html"
     - "../../auto_xts_test/result/failures_report.html"
+    - "../../sdk_test/pictures.zip"
+    - "../../sdk_test/sdk_test_log.txt"
     - "../../performance_test/mail_data/performance_logs.zip"
 image_files:
     "../../performance_test/mail_data/debug_full_time.jpg": performance00

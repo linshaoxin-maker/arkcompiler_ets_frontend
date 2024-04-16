@@ -46,7 +46,6 @@ def get_log_level(arg_log_level):
 def init_logger(log_level, log_file):
     logging.basicConfig(filename=log_file,
                         level=get_log_level(log_level),
-                        encoding=get_encoding(),
                         format='[%(asctime)s %(filename)s:%(lineno)d]: [%(levelname)s] %(message)s')
     logging.info("Test command:")
     logging.info(" ".join(sys.argv))

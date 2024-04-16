@@ -25,7 +25,7 @@ import utils
 
 
 def run():
-    cmd = ['python', 'run.py']
+    cmd = ['python3', 'run.py']
     cmd.extend(['--hapMode', 'all'])
     cmd.extend(['--compileMode', 'all'])
     cmd.extend(['--logLevel', 'debug'])

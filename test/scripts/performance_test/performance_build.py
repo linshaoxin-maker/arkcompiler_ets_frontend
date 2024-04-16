@@ -25,7 +25,7 @@ import zipfile
 import json5
 
 import performance_config
-
+import performance_monitor
 
 class PerformanceBuild():
     def __init__(self, config_input, mail_obj):
@@ -173,6 +173,8 @@ class PerformanceBuild():
         self.get_bytecode_size(is_debug)
 
     def start_build(self, is_debug):
+        node_memory_monitor = performance_monitor.MemoryMonitor('node.exe')
+        node_memory_monitor.start()
         if self.config.developing_test_data_path:
             # test data
             self.collect_build_data(is_debug, os.path.join(os.path.dirname(__file__),
@@ -188,6 +190,7 @@ class PerformanceBuild():
                               stderr=sys.stderr,
                               stdout=sys.stdout).communicate(timeout=self.timeout)
         report_path = (set(os.listdir(report_dir)) - set(reports_before)).pop()
+        node_memory_monitor.stop(report_path)
         self.collect_build_data(is_debug, os.path.join(report_dir, report_path))
         return True
         

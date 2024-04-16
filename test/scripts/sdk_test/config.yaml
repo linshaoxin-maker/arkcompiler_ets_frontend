@@ -25,9 +25,11 @@ api_version_file_name_map:
   '5.0.0(12)': "HarmonyOS-NEXT-DB0"
 
 # output settings
-output_html_file: ./sdk_test_report.html
-log_file: ./sdk_test_log.txt
-pictures_dic: ./pictures
+output_file_paths:
+  output_html_file: ./sdk_test_report.html
+  log_file: ./sdk_test_log.txt
+  pictures_dic: ./pictures
+  pictures_zip: ./pictures.zip
 
 # descriptions about test haps list
 # each hap have the following attributes:
@@ -83,7 +85,7 @@ haps:
     cache_path: [cache, default, default@CompileArkTS, esmodule]
     output_hap_path: [outputs, default, entry-default-unsigned.hap]
     output_hap_path_signed: [outputs, default, entry-default-signed.hap]
-    output_app_path: [outputs, default, app, entry-default.hap]
+    output_app_path: [outputs, default, entry-default-unsigned.hap]
     inc_modify_file: [entry, src, main, ets, pages, Index.ets]
     description:
   - idedemo_01:
@@ -97,7 +99,7 @@ haps:
     cache_path: [cache, default, default@LegacyCompileArkTS, jsbundle]
     output_hap_path: [outputs, default, entry-default-unsigned.hap]
     output_hap_path_signed: [outputs, default, entry-default-signed.hap]
-    output_app_path: [outputs, default, app, entry-default.hap]
+    output_app_path: [outputs, default, entry-default-unsigned.hap]
     inc_modify_file: [entry, src, main, ets, MainAbility, pages, index.ets]
     description:
   - idedemo_02:
@@ -111,7 +113,7 @@ haps:
     cache_path: [cache, default, default@LegacyCompileArkTS, jsbundle]
     output_hap_path: [outputs, default, entry-default-unsigned.hap]
     output_hap_path_signed: [outputs, default, entry-default-signed.hap]
-    output_app_path: [outputs, default, app, entry-default.hap]
+    output_app_path: [outputs, default, entry-default-unsigned.hap]
     inc_modify_file: [entry, src, main, ets, MainAbility, pages, index.ets]
     description:
   - idedemo_03:
@@ -122,10 +124,10 @@ haps:
     build_path: [entry, build, default]
     bundle_name: com.example.idejsdemoemptyability
     ability_name: com.example.idejsdemoemptyability.MainAbility
-    cache_path: [cache, default, default@LegacyCompileJS, jsbundle]
+    cache_path: [cache, default, default@LegacyBuildJS, jsbundle]
     output_hap_path_signed: [ outputs, default, entry-default-signed.hap]
     output_hap_path: [outputs, default, entry-default-unsigned.hap]
-    output_app_path: [outputs, default, app, entry-default.hap]
+    output_app_path: [outputs, default, entry-default-unsigned.hap]
     inc_modify_file: [entry, src, main, js, MainAbility, pages, index, index.js]
     description:
 
