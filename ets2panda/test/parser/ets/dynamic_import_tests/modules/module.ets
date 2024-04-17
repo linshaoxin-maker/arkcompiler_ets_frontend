@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +14,7 @@
  */
 
 export declare function foo(p: A): void;
-
+export declare function optional_foo(p?: A): void;
 export declare class A {
     f1: string;
     static f2: double;
@@ -23,8 +23,8 @@ export declare class A {
 
     foo(p: double): string;
     static bar(): double;
+    optional_foo(p?: double): string;
 }
-
 export declare interface I {
     f1(p: string): double;
     f2(p: double): string;
