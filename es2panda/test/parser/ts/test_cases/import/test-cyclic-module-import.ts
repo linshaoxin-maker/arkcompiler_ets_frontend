@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,17 +14,23 @@
  */
 
 
-function Observed(constructor_: any, _?: any) {
-    return class extends constructor_ {}
-}
-
-@Observed
-class NVJSONLabelModel extends Object {
-    static a: number = NVJSONLabelModel.func();
-
-    static func():number {
-        return 1;
+// @declaration: true
+declare module "ModuleSub" {
+    import TargetModule = require('TargetModule');
+    class ModuleSub {
+        public static StaticVar: number;
+        public InsVar: number;
+        public main: TargetModule;
+        constructor();
     }
+    export = ModuleSub;
 }
 
-print(NVJSONLabelModel.func());
+declare module "TargetModule" {
+    import ModuleSub = require('ModuleSub');
+    class TargetModule {
+        public moduleSub: ModuleSub;
+        constructor();
+    }
+    export = TargetModule;
+}
