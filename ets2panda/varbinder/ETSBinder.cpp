@@ -276,10 +276,7 @@ void ETSBinder::BuildMethodDefinition(ir::MethodDefinition *methodDef)
     if (methodDef->Function()->TypeParams() != nullptr) {
         auto scopeCtx = LexicalScope<LocalScope>::Enter(this, methodDef->Function()->TypeParams()->Scope());
         ResolveReferences(methodDef->Function()->TypeParams());
-        ResolveMethodDefinition(methodDef);
-        return;
     }
-
     ResolveMethodDefinition(methodDef);
 }
 
@@ -516,7 +513,6 @@ bool ETSBinder::AddImportNamespaceSpecifiersToTopBindings(ir::AstNode *const spe
 
         for (auto it : item->GetETSImportDeclarations()->Specifiers()) {
             if (it->IsImportNamespaceSpecifier() && !specifier->AsImportNamespaceSpecifier()->Local()->Name().Empty()) {
-                std::cerr << "Warning: import with alias cannot be used with re-export\n";
                 continue;
             }
 
@@ -622,7 +618,14 @@ bool ETSBinder::AddImportSpecifiersToTopBindings(ir::AstNode *const specifier,
         return true;
     }
 
-    const auto &imported = importSpecifier->Imported()->AsIdentifier()->Name();
+    auto imported = importSpecifier->Imported()->Name();
+
+    for (auto const item : import->Specifiers()) {
+        if (item->IsImportSpecifier() && item->AsImportSpecifier()->Local()->Name().Is(imported.Mutf8()) &&
+            !item->AsImportSpecifier()->Local()->Name().Is(item->AsImportSpecifier()->Imported()->Name().Mutf8())) {
+            imported = item->AsImportSpecifier()->Imported()->Name();
+        }
+    }
 
     auto *const var = FindImportSpecifiersVariable(imported, globalBindings, recordRes);
 

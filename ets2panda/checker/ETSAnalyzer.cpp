@@ -137,10 +137,6 @@ checker::Type *ETSAnalyzer::Check(ir::MethodDefinition *node) const
         return nullptr;
     }
 
-    if (node->Id()->Variable() == nullptr) {
-        node->Id()->SetVariable(scriptFunc->Id()->Variable());
-    }
-
     // NOTE: aszilagyi. make it correctly check for open function not have body
     if (!scriptFunc->HasBody() && !(node->IsAbstract() || node->IsNative() || node->IsDeclare() ||
                                     checker->HasStatus(checker::CheckerStatus::IN_INTERFACE))) {
@@ -646,6 +642,13 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
 checker::Type *ETSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
+
+    if (checker->HasStatus(checker::CheckerStatus::IN_LAMBDA)) {
+        ASSERT(checker->Context().ContainingLambda() != nullptr);
+        checker->Context().ContainingLambda()->AddChildLambda(expr);
+        expr->SetParentLambda(checker->Context().ContainingLambda());
+    }
+
     if (expr->TsType() != nullptr) {
         return expr->TsType();
     }
@@ -685,6 +688,7 @@ checker::Type *ETSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
                                               checker->Context().ContainingClass());
     checker->AddStatus(checker::CheckerStatus::IN_LAMBDA);
     checker->Context().SetContainingSignature(funcType->CallSignatures()[0]);
+    checker->Context().SetContainingLambda(expr);
 
     expr->Function()->Body()->Check(checker);
 
@@ -693,7 +697,7 @@ checker::Type *ETSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
 
     for (auto [var, _] : checker->Context().CapturedVars()) {
         (void)_;
-        expr->CapturedVars().push_back(var);
+        expr->AddCapturedVar(var);
     }
 
     expr->SetTsType(funcType);
@@ -1105,6 +1109,21 @@ checker::Type *ETSAnalyzer::SetAndAdjustType(ETSChecker *checker, ir::MemberExpr
     return expr->AdjustType(checker, resType);
 }
 
+std::pair<checker::Type *, util::StringView> SearchReExportsType(Type *baseType, ir::MemberExpression *expr,
+                                                                 util::StringView aliasName)
+{
+    for (auto item : baseType->AsETSObjectType()->ReExports()) {
+        auto name = item->AsETSObjectType()->GetReExportAliasValue(aliasName);
+        if (item->GetProperty(name, PropertySearchFlags::SEARCH_ALL) != nullptr) {
+            return std::make_pair(item, name);
+        }
+        if (auto reExportType = SearchReExportsType(item, expr, name); reExportType.first != nullptr) {
+            return reExportType;
+        }
+    }
+    return std::make_pair(nullptr, util::StringView());
+}
+
 checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
 {
     if (expr->TsType() != nullptr) {
@@ -1119,6 +1138,18 @@ checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
     if (baseType->DefinitelyETSNullish() && expr->Object()->IsIdentifier()) {
         baseType = expr->Object()->AsIdentifier()->Variable()->TsType();
     }
+
+    if (baseType->IsETSObjectType() && !baseType->AsETSObjectType()->ReExports().empty() &&
+        baseType->AsETSObjectType()->GetProperty(expr->Property()->AsIdentifier()->Name(),
+                                                 PropertySearchFlags::SEARCH_ALL) == nullptr) {
+        if (auto reExportType = SearchReExportsType(baseType, expr, expr->Property()->AsIdentifier()->Name());
+            reExportType.first != nullptr) {
+            baseType = reExportType.first;
+            expr->object_->AsIdentifier()->SetTsType(baseType);
+            expr->property_->AsIdentifier()->SetName(reExportType.second);
+        }
+    }
+
     checker->CheckNonNullish(expr->Object());
 
     if (expr->IsComputed()) {
@@ -1635,7 +1666,6 @@ checker::Type *ETSAnalyzer::Check(ir::ImportNamespaceSpecifier *st) const
     }
 
     auto *importDecl = st->Parent()->AsETSImportDeclaration();
-    auto importPath = importDecl->ResolvedSource()->Str();
 
     if (importDecl->IsPureDynamic()) {
         auto *type = checker->GlobalBuiltinDynamicType(importDecl->Language());
@@ -1643,39 +1673,7 @@ checker::Type *ETSAnalyzer::Check(ir::ImportNamespaceSpecifier *st) const
         return type;
     }
 
-    auto [moduleName, isPackageModule] = checker->VarBinder()->AsETSBinder()->GetModuleInfo(importPath);
-
-    std::vector<util::StringView> syntheticNames = checker->GetNameForSynteticObjectType(moduleName);
-
-    ASSERT(!syntheticNames.empty());
-
-    auto assemblerName = syntheticNames[0];
-    if (!isPackageModule) {
-        assemblerName = util::UString(assemblerName.Mutf8().append(".").append(compiler::Signatures::ETS_GLOBAL),
-                                      checker->Allocator())
-                            .View();
-    }
-
-    auto *moduleObjectType = checker->Allocator()->New<checker::ETSObjectType>(
-        checker->Allocator(), syntheticNames[0], assemblerName, st->Local()->AsIdentifier(),
-        checker::ETSObjectFlags::CLASS, checker->Relation());
-
-    auto *rootDecl = checker->Allocator()->New<varbinder::ClassDecl>(syntheticNames[0]);
-    varbinder::LocalVariable *rootVar =
-        checker->Allocator()->New<varbinder::LocalVariable>(rootDecl, varbinder::VariableFlags::NONE);
-    rootVar->SetTsType(moduleObjectType);
-
-    syntheticNames.erase(syntheticNames.begin());
-    checker::ETSObjectType *lastObjectType(moduleObjectType);
-
-    for (const auto &syntheticName : syntheticNames) {
-        lastObjectType = CreateSyntheticType(checker, syntheticName, lastObjectType, st->Local()->AsIdentifier());
-    }
-
-    checker->SetPropertiesForModuleObject(lastObjectType, importPath);
-    checker->SetrModuleObjectTsType(st->Local(), lastObjectType);
-
-    return moduleObjectType;
+    return checker->GetImportSpecifierObjectType(importDecl, st->Local()->AsIdentifier());
 }
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ImportSpecifier *st) const
@@ -1705,18 +1703,16 @@ checker::Type *ETSAnalyzer::Check(ir::BlockStatement *st) const
     ETSChecker *checker = GetETSChecker();
     checker::ScopeContext scopeCtx(checker, st->Scope());
 
-    auto it = st->Statements().begin();
-    while (it != st->Statements().end()) {
-        (*it)->Check(checker);
+    for (size_t i = 0; i < st->Statements().size(); i++) {
+        auto el = st->Statements()[i];
+        el->Check(checker);
 
         //  NOTE! Processing of trailing blocks was moved here so that smart casts could be applied correctly
-        if (auto const tb = st->trailingBlocks_.find(*it); tb != st->trailingBlocks_.end()) {
+        if (auto const tb = st->trailingBlocks_.find(el); tb != st->trailingBlocks_.end()) {
             auto *const trailingBlock = tb->second;
             trailingBlock->Check(checker);
-            it = st->Statements().emplace(std::next(it), trailingBlock);
+            st->Statements().emplace(std::next(st->Statements().begin() + i), trailingBlock);
         }
-
-        ++it;
     }
 
     //  Remove possible smart casts for variables declared in inner scope:
@@ -2288,6 +2284,10 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
         checker->CreateBuiltinArraySignature(targetArrayType, targetArrayType->Rank());
     }
 
+    if (targetType == checker->GetGlobalTypesHolder()->GlobalBuiltinNeverType()) {
+        checker->ThrowTypeError("Cast to 'never' is prohibited", expr->Start());
+    }
+
     checker->ComputeApparentType(targetType);
     expr->SetTsType(targetType);
     return expr->TsType();
@@ -2469,7 +2469,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSNonNullExpression *expr) const
 
         expr->SetTsType(checker->GetNonNullishType(exprType));
     }
-
+    expr->SetOriginalType(expr->TsType());
     return expr->TsType();
 }
 
