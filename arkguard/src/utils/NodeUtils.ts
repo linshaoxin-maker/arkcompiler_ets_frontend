@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import type {ClassElement, Expression, Identifier, Node, ObjectBindingPattern, SourceFile, StructDeclaration} from 'typescript';
+import type {ClassElement, Expression, Identifier, Node, NodeArray, ObjectBindingPattern, SourceFile, StructDeclaration} from 'typescript';
 import {
   SyntaxKind,
   factory,
@@ -222,17 +222,13 @@ export class NodeUtils {
 
   public static tryRemoveVirtualConstructor(node: StructDeclaration): StructDeclaration {
     const sourceFile = NodeUtils.getSourceFileOfNode(node);
-    const tempStructMembers: ClassElement[] = [];
     if (sourceFile && sourceFile.isDeclarationFile && NodeUtils.isInETSFile(sourceFile)) {
-      for (let member of node.members) {
+      const membersWithoutVirtualConstructor = node.members.filter(member => {
         // @ts-ignore
-        if (!isConstructorDeclaration(member) || !member.virtual) {
-          tempStructMembers.push(member);
-        }
-      }
-      const structMembersWithVirtualConstructor = factory.createNodeArray(tempStructMembers);
+        return !isConstructorDeclaration(member) || !member.virtual;
+      });
       return factory.updateStructDeclaration(node, node.modifiers, node.name, 
-        node.typeParameters, node.heritageClauses, structMembersWithVirtualConstructor);
+        node.typeParameters, node.heritageClauses, membersWithoutVirtualConstructor);
     }
     return node;
   }
