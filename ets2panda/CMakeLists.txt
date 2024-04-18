@@ -351,6 +351,13 @@ set(ES2PANDA_LIB_SRC
   parser/JSparser.cpp
   parser/parserImpl.cpp
   parser/ETSparser.cpp
+  parser/ETSparserChecker.cpp
+  parser/ETSparserClassHandling.cpp
+  parser/ETSparserCreator.cpp
+  parser/ETSparserDeclarations.cpp
+  parser/ETSparserEnumHandling.cpp
+  parser/ETSparserFunctionHandling.cpp
+  parser/ETSparserHelpers.cpp
   parser/TSparser.cpp
   parser/TypedParser.cpp
   parser/program/program.cpp
