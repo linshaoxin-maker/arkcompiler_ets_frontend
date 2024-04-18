@@ -330,6 +330,8 @@ const char *TokenToString(TokenType type)  // NOLINT(readability-function-size)
             return "double";
         case TokenType::KEYW_EXPORT:
             return "export";
+        case TokenType::KEYW_FINAL:
+            return "final";
         case TokenType::KEYW_FINALLY:
             return "finally";
         case TokenType::KEYW_FLOAT:

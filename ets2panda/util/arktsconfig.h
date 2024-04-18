@@ -111,6 +111,10 @@ public:
     {
         return dynamicPaths_;
     }
+    const std::vector<std::string> &SystemArkTS() const
+    {
+        return systemArkTS_;
+    }
 #ifdef ARKTSCONFIG_USE_FILESYSTEM
     const std::vector<Pattern> &Include() const
     {
@@ -137,6 +141,7 @@ private:
     std::unordered_map<std::string, std::vector<std::string>> paths_ {};
     std::unordered_map<std::string, DynamicImportData> dynamicPaths_ {};
     std::vector<std::string> files_ {};
+    std::vector<std::string> systemArkTS_ {};
 #ifdef ARKTSCONFIG_USE_FILESYSTEM
     std::vector<Pattern> include_ {};
     std::vector<Pattern> exclude_ {};

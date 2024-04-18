@@ -318,6 +318,9 @@ bool ArkTsConfig::Parse()
     static const std::string INCLUDE = "include";
     static const std::string OUT_DIR = "outDir";
     static const std::string ROOT_DIR = "rootDir";
+    static const std::string LANGUAGE = "language";
+    static const std::string HAS_DECL = "hasDecl";
+    static const std::string SYSTEM_ARKTS = "systemArkTS";
 
     ASSERT(!isParsed_);
     isParsed_ = true;
@@ -362,6 +365,16 @@ bool ArkTsConfig::Parse()
     }
 
 #ifdef ARKTSCONFIG_USE_FILESYSTEM
+    // Parse "systemArkTS"
+    auto systemArkTSFlags = arktsConfig->GetValue<JsonObject::ArrayT>(SYSTEM_ARKTS);
+    if (systemArkTSFlags != nullptr) {
+        systemArkTS_ = {};
+        ASSERT(!systemArkTSFlags->empty());
+        for (auto &flag : *systemArkTSFlags) {
+            systemArkTS_.emplace_back(*flag.Get<JsonObject::StringT>());
+        }
+    }
+
     // Parse "include" and "exclude"
     auto consPattern = [&arktsConfigDir](const auto &val) { return Pattern {val, arktsConfigDir}; };
     return ParseCollection(arktsConfig.get(), include_, INCLUDE, consPattern) &&
@@ -378,6 +391,7 @@ void ArkTsConfig::Inherit(const ArkTsConfig &base)
     rootDir_ = base.rootDir_;
     paths_ = base.paths_;
     files_ = base.files_;
+    systemArkTS_ = base.systemArkTS_;
 #ifdef ARKTSCONFIG_USE_FILESYSTEM
     include_ = base.include_;
     exclude_ = base.exclude_;

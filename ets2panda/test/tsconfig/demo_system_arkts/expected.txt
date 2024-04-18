@@ -1,0 +1,8 @@
+ETS Warning: Prohibit top-level statements. [index.ets:19:5]
+ETS Warning: Suggest 'final' modifier for method. [test_1.ets:17:8]
+ETS Warning: Implicit Unboxing to int in Assignment Expression. [test_2.ets:21:9]
+ETS Warning: Prohibit top-level statements. [test_2.ets:16:5]
+ETS Warning: Suggest 'final' modifier for method. [test_2.ets:20:10]
+./build/include/test_1.abc
+./build/include/test_2.abc
+./build/src/index.abc

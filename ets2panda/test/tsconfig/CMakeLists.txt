@@ -26,6 +26,7 @@ function(add_es2panda_tsconfig_test tsproject)
 endfunction()
 
 add_es2panda_tsconfig_test(empty_include)
+add_es2panda_tsconfig_test(demo_system_arkts)
 add_es2panda_tsconfig_test(ets)
 add_es2panda_tsconfig_test(extends)
 add_es2panda_tsconfig_test(include)

@@ -209,10 +209,24 @@ void ETSChecker::CheckProgram(parser::Program *program, bool runAnalysis)
 
 void ETSChecker::CheckWarnings(parser::Program *program, const CompilerOptions &options)
 {
+    auto *savedProgram = Program();
+    SetProgram(program);
+
+    for (auto &[_, extPrograms] : program->ExternalSources()) {
+        (void)_;
+        if (program->Kind() == parser::ScriptKind::MODULE) {
+            for (auto *extProg : extPrograms) {
+                CheckWarnings(extProg, options);
+            }
+        }
+    }
+    ASSERT(Program()->Ast()->IsProgram());
     const auto etsWarningCollection = options.etsWarningCollection;
     for (const auto warning : etsWarningCollection) {
-        ETSWarningAnalyzer(Program()->Ast(), program, warning, options.etsWerror);
+        ETSWarningAnalyzer(Program()->Ast(), program, warning, options.etsWerror, options.etsAutoFix);
     }
+    ASSERT(VarBinder()->AsETSBinder()->GetExternalRecordTable().find(program)->second);
+    SetProgram(savedProgram);
 }
 
 Type *ETSChecker::CheckTypeCached(ir::Expression *expr)

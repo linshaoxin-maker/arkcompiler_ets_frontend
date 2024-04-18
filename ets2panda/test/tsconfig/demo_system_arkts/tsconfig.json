@@ -1,0 +1,21 @@
+{
+  "files": [
+    "src/index.ets",
+    "include/test_1.ets",
+    "include/test_2.ets"
+  ],
+  "compilerOptions": {
+    "outDir": "build",
+    "paths": {
+      "std": ["../../../../../runtime_core/static_core/plugins/ets/stdlib/std"],
+      "escompat": ["../../../../../runtime_core/static_core/plugins/ets/stdlib/escompat"],
+      "import_tests": ["../../../../../runtime_core/static_core/tools/es2panda/test/parser/ets/import_tests"],
+      "dynamic_import_tests": ["../../../../../runtime_core/static_core/tools/es2panda/test/parser/ets/dynamic_import_tests"]
+    },
+    "dynamicPaths": {
+      "dynamic_js_import_tests": {"language": "js", "hasDecl": false},
+      "dynamic_import_tests": {"language": "js", "hasDecl": true}
+    }
+  },
+  "systemArkTS": ["--ets-warnings-all"]
+}
