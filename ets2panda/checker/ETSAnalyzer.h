@@ -36,14 +36,13 @@ public:
     virtual checker::Type *Check(ir::nodeType *node) const override;
     AST_NODE_REINTERPRET_MAPPING(DECLARE_ETSANALYZER_CHECK_METHOD)
 #undef DECLARE_ETSANALYZER_CHECK_METHOD
-    checker::Type *PreferredType(ir::ObjectExpression *expr) const;
-    checker::Type *GetPreferredType(ir::ArrayExpression *expr) const;
     void CheckObjectExprProps(const ir::ObjectExpression *expr) const;
     std::tuple<Type *, ir::Expression *> CheckAssignmentExprOperatorType(ir::AssignmentExpression *expr,
                                                                          Type *leftType) const;
 
 private:
     ETSChecker *GetETSChecker() const;
+    void SetPreferredDynamicTypeForChildNodes(Language lang, const ArenaVector<ir::Expression *> &children) const;
     void CheckInstantatedClass(ir::ETSNewClassInstanceExpression *expr, ETSObjectType *&calleeObj) const;
     void CheckLocalClassInstantiation(ir::ETSNewClassInstanceExpression *expr, ETSObjectType *calleeObj) const;
     void CheckMethodModifiers(ir::MethodDefinition *node) const;
