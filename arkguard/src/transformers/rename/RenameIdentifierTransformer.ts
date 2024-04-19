@@ -113,20 +113,27 @@ namespace secharmony {
     if (!profile || !profile.mEnable) {
       return null;
     }
-
     let options: NameGeneratorOptions = {};
     if (profile.mNameGeneratorType === NameGeneratorType.HEX) {
       options.hexWithPrefixSuffix = true;
     }
+    const defaultRervedNames: string[] = ['this', '__global'];
+    let reservedNames: string[] = profile?.mReservedNames ?? []
+    defaultRervedNames.forEach(tempName => { reservedNames.push(tempName); });
     let generator: INameGenerator = getNameGenerator(profile.mNameGeneratorType, options);
 
+    // if toplevel obfuscation is enabled.
     const openTopLevel: boolean = option?.mNameObfuscation?.mTopLevel;
+    let reservedToplevelNames: Set<string> = new Set(); 
+    if (openTopLevel) {
+      profile?.mReservedToplevelNames?.forEach(item => reservedToplevelNames.add(item));
+      defaultRervedNames.forEach(tempName => { reservedToplevelNames.add(tempName); });
+    }
+
     const exportObfuscation: boolean = option?.mExportObfuscation;
     return renameIdentifierFactory;
 
     function renameIdentifierFactory(context: TransformationContext): Transformer<Node> {
-      let reservedNames: string[] = [...(profile?.mReservedNames ?? []), 'this', '__global'];
-      profile?.mReservedToplevelNames?.forEach(item => reservedProperties.add(item));
       let mangledSymbolNames: Map<Symbol, MangledSymbolInfo> = new Map<Symbol, MangledSymbolInfo>();
       let mangledLabelNames: Map<Label, string> = new Map<Label, string>();
       noSymbolIdentifier.clear();
@@ -265,34 +272,49 @@ namespace secharmony {
       }
 
       function getPropertyMangledName(original: string): string {
-        if (reservedProperties.has(original)) {
+        if (reservedToplevelNames.has(original)) {
+          return original;
+        }
+        /**
+         * If both export obfuscation and property obfuscation are enabled, then the same names of toplevel and property 
+         * will be obfuscated into the same name.
+         * example:
+         * export func() {}  // test1.ts
+         * import module from './test1'  // test2.ts
+         * module.func();
+         */
+        if (profile.mRenameProperties && reservedProperties.has(original)) {
           return original;
         }
 
-        const historyName: string = historyMangledTable?.get(original);
-        let mangledName: string = historyName ? historyName : globalMangledTable.get(original);
+        let historyName: string = historyToplevelMangledTable.get(original);
+        let mangledName: string = historyName ?? toplevelNameMangledTable.get(original);
+
+        if (profile.mRenameProperties && !mangledName) {
+          mangledName = globalMangledTable.get(original)
+        }
 
         while (!mangledName) {
           let tmpName = generator.getName();
-          if (reservedProperties.has(tmpName) || tmpName === original) {
+          if (reservedToplevelNames.has(tmpName) || reservedProperties.has(tmpName) || tmpName === original) {
             continue;
           }
 
-          let isInGlobalMangledTable = false;
-          for (const value of globalMangledTable.values()) {
+          let isInToplevelMangledTable = false;
+          for (const value of toplevelNameMangledTable.values()) {
             if (value === tmpName) {
-              isInGlobalMangledTable = true;
+              isInToplevelMangledTable = true;
               break;
             }
           }
 
-          if (isInGlobalMangledTable) {
+          if (isInToplevelMangledTable) {
             continue;
           }
 
           let isInHistoryMangledTable = false;
           if (historyMangledTable) {
-            for (const value of historyMangledTable.values()) {
+            for (const value of historyToplevelMangledTable.values()) {
               if (value === tmpName) {
                 isInHistoryMangledTable = true;
                 break;
@@ -306,7 +328,7 @@ namespace secharmony {
           }
         }
 
-        globalMangledTable.set(original, mangledName);
+        toplevelNameMangledTable.set(original, mangledName);
         return mangledName;
       }
 
@@ -637,7 +659,8 @@ namespace secharmony {
 
   export let nameCache: Map<string, string | Map<string, string>> = new Map();
   export let historyNameCache: Map<string, string> = undefined;
-  export let globalNameCache: Map<string, string> = new Map();
+  export let toplevelNameMangledTable: Map<string, string> = new Map();
+  export let historyToplevelMangledTable: Map<string, string> = new Map();
   export let identifierLineMap: Map<Identifier, string> = new Map();
   export let classMangledName: Map<Node, string> = new Map();
 }
