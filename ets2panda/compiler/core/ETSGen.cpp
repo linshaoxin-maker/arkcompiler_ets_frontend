@@ -545,7 +545,7 @@ void ETSGen::StorePropertyDynamic(const ir::AstNode *node, const checker::Type *
 
     // Set property by name
     Ra().Emit<Call, 3U>(node, methodName, objReg, propNameReg, propValueReg, dummyReg_);
-    SetAccumulatorType(nullptr);
+    SetAccumulatorType(Checker()->GlobalBuiltinJSValueType());
 }
 
 void ETSGen::LoadPropertyDynamic(const ir::AstNode *node, const checker::Type *propType, VReg objReg,
@@ -978,9 +978,8 @@ void ETSGen::GuardUncheckedType(const ir::AstNode *node, const checker::Type *un
     if (unchecked != nullptr) {
         SetAccumulatorType(unchecked);
         CheckedReferenceNarrowing(node, Checker()->MaybePromotedBuiltinType(target));
-    } else {
-        SetAccumulatorType(target);
     }
+    SetAccumulatorType(target);
 }
 
 void ETSGen::EmitFailedTypeCastException(const ir::AstNode *node, const VReg src, checker::Type const *target)
@@ -1218,6 +1217,9 @@ void ETSGen::EmitUnboxedCall(const ir::AstNode *node, std::string_view signature
 
     Ra().Emit<CallVirtAccShort, 0>(node, signatureFlag, dummyReg_, 0);
     SetAccumulatorType(targetType);
+    if (node->IsExpression()) {
+        const_cast<ir::Expression *>(node->AsExpression())->SetTsType(const_cast<checker::Type *>(targetType));
+    }
 }
 
 void ETSGen::EmitUnboxingConversion(const ir::AstNode *node)
@@ -1281,50 +1283,56 @@ void ETSGen::EmitBoxingConversion(const ir::AstNode *node)
     RegScope rs(this);
 
     ApplyCastToBoxingFlags(node, boxingFlag);
+    checker::Type *boxedType;
 
     switch (boxingFlag) {
         case ir::BoxingUnboxingFlags::BOX_TO_BOOLEAN: {
             Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_BOOLEAN_VALUE_OF, dummyReg_, 0);
-            SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalETSBooleanBuiltinType());
+            boxedType = Checker()->GetGlobalTypesHolder()->GlobalETSBooleanBuiltinType();
             break;
         }
         case ir::BoxingUnboxingFlags::BOX_TO_BYTE: {
             Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_BYTE_VALUE_OF, dummyReg_, 0);
-            SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalByteBuiltinType());
+            boxedType = Checker()->GetGlobalTypesHolder()->GlobalByteBuiltinType();
             break;
         }
         case ir::BoxingUnboxingFlags::BOX_TO_CHAR: {
             Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_CHAR_VALUE_OF, dummyReg_, 0);
-            SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalCharBuiltinType());
+            boxedType = Checker()->GetGlobalTypesHolder()->GlobalCharBuiltinType();
             break;
         }
         case ir::BoxingUnboxingFlags::BOX_TO_SHORT: {
             Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_SHORT_VALUE_OF, dummyReg_, 0);
-            SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalShortBuiltinType());
+            boxedType = Checker()->GetGlobalTypesHolder()->GlobalShortBuiltinType();
             break;
         }
         case ir::BoxingUnboxingFlags::BOX_TO_INT: {
             Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_INT_VALUE_OF, dummyReg_, 0);
-            SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
+            boxedType = Checker()->GetGlobalTypesHolder()->GlobalIntegerBuiltinType();
             break;
         }
         case ir::BoxingUnboxingFlags::BOX_TO_LONG: {
             Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_LONG_VALUE_OF, dummyReg_, 0);
-            SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalLongBuiltinType());
+            boxedType = Checker()->GetGlobalTypesHolder()->GlobalLongBuiltinType();
             break;
         }
         case ir::BoxingUnboxingFlags::BOX_TO_FLOAT: {
             Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_FLOAT_VALUE_OF, dummyReg_, 0);
-            SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalFloatBuiltinType());
+            boxedType = Checker()->GetGlobalTypesHolder()->GlobalFloatBuiltinType();
             break;
         }
         case ir::BoxingUnboxingFlags::BOX_TO_DOUBLE: {
             Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_DOUBLE_VALUE_OF, dummyReg_, 0);
-            SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+            boxedType = Checker()->GetGlobalTypesHolder()->GlobalDoubleBuiltinType();
             break;
         }
         default:
             UNREACHABLE();
+    }
+
+    SetAccumulatorType(boxedType);
+    if (node->IsExpression()) {
+        const_cast<ir::Expression *>(node->AsExpression())->SetTsType(boxedType);
     }
 }
 
@@ -1448,6 +1456,7 @@ void ETSGen::EmitLocalBoxSet(ir::AstNode const *node, varbinder::LocalVariable *
             Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_BOX_SET, vreg, 1);
             break;
     }
+
     SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalVoidType());
 }
 
@@ -1496,6 +1505,7 @@ void ETSGen::EmitPropertyBoxSet(const ir::AstNode *const node, const checker::Ty
             Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_BOX_SET, field, 1);
             break;
     }
+
     SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalVoidType());
 }
 
