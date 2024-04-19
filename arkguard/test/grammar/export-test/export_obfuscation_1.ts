@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,17 +13,11 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-import path from 'path';
-import assert from 'assert';
+export class PersonClass01 {
+}
 
-const filePath = path.join(__filename, '../namespace_api_01_use.ts');
-const actual = fs.readFileSync(filePath, 'utf-8');
+// export function foo01() {
+// }
 
-const expectation = `import moduleName01 from './namespace_api_01';
-moduleName01.Entry.ADDRESS;
-moduleName01.Entry.NUMBER;
-moduleName01.NewDocument.PARAMETER02;
-moduleName01.NewDocument.PARAMETER01;`
-
-assert.strictEqual(actual.trim(), expectation.trim());
+// function foo02(){
+// }

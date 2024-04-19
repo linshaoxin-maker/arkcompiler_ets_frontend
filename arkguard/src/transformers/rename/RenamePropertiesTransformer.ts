@@ -57,6 +57,7 @@ import {collectPropertyNamesAndStrings, isViewPUBasedClass} from '../../utils/Oh
 import { ArkObfuscator, performancePrinter } from '../../ArkObfuscator';
 import { EventList } from '../../utils/PrinterUtils';
 import { needToBeReserved } from '../../utils/TransformUtil';
+import { getPropertyName } from '../../utils/NameUtils';
 
 namespace secharmony {
   /**
@@ -82,7 +83,7 @@ namespace secharmony {
     if (!profile || !profile.mEnable || !profile.mRenameProperties) {
       return null;
     }
-
+    const exportObfuscation: boolean = option?.mExportObfuscation;
     return renamePropertiesFactory;
 
     function renamePropertiesFactory(context: TransformationContext): Transformer<Node> {
@@ -193,7 +194,7 @@ namespace secharmony {
           return node;
         }
 
-        let mangledName: string = getPropertyName(original);
+        let mangledName: string = getPropertyName(original, generator, reservedProperties, universalReservedProperties, historyMangledTable, globalMangledTable);
 
         if (isStringLiteralLike(node)) {
           return factory.createStringLiteral(mangledName);
@@ -209,48 +210,6 @@ namespace secharmony {
         }
 
         return factory.createPrivateIdentifier('#' + mangledName);
-      }
-
-      function getPropertyName(original: string): string {
-        const historyName: string = historyMangledTable?.get(original);
-        let mangledName: string = historyName ? historyName : globalMangledTable.get(original);
-
-        while (!mangledName) {
-          let tmpName = generator.getName();
-          if (needToBeReserved(reservedProperties, universalReservedProperties, tmpName) ||
-            tmpName === original) {
-            continue;
-          }
-
-          let isInGlobalMangledTable = false;
-          for (const value of globalMangledTable.values()) {
-            if (value === tmpName) {
-              isInGlobalMangledTable = true;
-              break;
-            }
-          }
-
-          if (isInGlobalMangledTable) {
-            continue;
-          }
-
-          let isInHistoryMangledTable = false;
-          if (historyMangledTable) {
-            for (const value of historyMangledTable.values()) {
-              if (value === tmpName) {
-                isInHistoryMangledTable = true;
-                break;
-              }
-            }
-          }
-
-          if (!isInHistoryMangledTable) {
-            mangledName = tmpName;
-            break;
-          }
-        }
-        globalMangledTable.set(original, mangledName);
-        return mangledName;
       }
 
       function visitEnumInitializer(childNode: Node): void {

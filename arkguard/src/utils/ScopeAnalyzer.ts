@@ -259,7 +259,7 @@ namespace secharmony {
     }
 
     function addDefinition(def: Symbol, obfuscateAsProperty: boolean = false): void {
-      if (current.kind === ScopeKind.GLOBAL || obfuscateAsProperty) {
+      if (obfuscateAsProperty) {
         Reflect.set(def, 'obfuscateAsProperty', true);
       }
       current.defs.add(def);
@@ -397,7 +397,7 @@ namespace secharmony {
       if (!defSymbols) {
         return;
       }
-      current.addDefinition(defSymbols);
+      current.addDefinition(defSymbols, true);
     }
 
     /**
@@ -501,17 +501,18 @@ namespace secharmony {
     function analyzeImportNames(node: ImportSpecifier): void {
       try {
         const propetyNameNode: Identifier | undefined = node.propertyName;
-        if (exportObfuscation && propetyNameNode && isIdentifier(propetyNameNode)) {
-          let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
-          if (!propertySymbol) {
-            noSymbolIdentifier.add(propetyNameNode.escapedText as string);
-          } else {
-            current.addDefinition(propertySymbol);
+        if (exportObfuscation) {
+          if (propetyNameNode) {
+            let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
+            if (!propertySymbol) {
+              noSymbolIdentifier.add(propetyNameNode.escapedText as string);
+            } else {
+              current.addDefinition(propertySymbol, true);
+            }
           }
-
           const nameSymbol = checker.getSymbolAtLocation(node.name);
           if (nameSymbol) {
-            current.addDefinition(nameSymbol);
+            current.addDefinition(nameSymbol, true);
           }
         } else {
           const nameText = propetyNameNode ? propetyNameNode.text : node.name.text;
@@ -572,10 +573,12 @@ namespace secharmony {
       current.exportNames.add(node.name.text);
       addExportSymbolInScope(node);
       const propetyNameNode: Identifier | undefined = node.propertyName;
-      if (exportObfuscation && propetyNameNode && isIdentifier(propetyNameNode)) {
-        let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
-        if (!propertySymbol) {
-          noSymbolIdentifier.add(propetyNameNode.escapedText as string);
+      if (exportObfuscation && propetyNameNode) {
+        if (propetyNameNode) {
+          let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
+          if (!propertySymbol) {
+            noSymbolIdentifier.add(propetyNameNode.escapedText as string);
+          }
         }
       }
       forEachChild(node, analyzeScope);
