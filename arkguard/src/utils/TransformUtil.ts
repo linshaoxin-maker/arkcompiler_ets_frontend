@@ -33,6 +33,14 @@ import type {
   TransformationContext 
 } from 'typescript';
 
+import {
+  globalMangledTable,
+  historyMangledTable,
+  reservedProperties,
+} from '../transformers/rename/RenamePropertiesTransformer';
+
+import {INameGenerator} from '../generator/INameGenerator';
+
 /**
  * collect exist identifier names in current source file
  * @param sourceFile
@@ -98,4 +106,50 @@ export function isSuperCallStatement(node: Node): boolean {
   return isExpressionStatement(node) &&
     isCallExpression(node.expression) &&
     node.expression.expression.kind === SyntaxKind.SuperKeyword;
+}
+
+export function getPropertyMangledName(original: string, generator: INameGenerator): string {
+  if (reservedProperties.has(original)) {
+    return original;
+  }
+
+  const historyName: string = historyMangledTable?.get(original);
+  let mangledName: string = historyName ? historyName : globalMangledTable.get(original);
+
+  while (!mangledName) {
+    let tmpName = generator.getName();
+    if (reservedProperties.has(tmpName) || tmpName === original) {
+      continue;
+    }
+
+    let isInGlobalMangledTable = false;
+    for (const value of globalMangledTable.values()) {
+      if (value === tmpName) {
+        isInGlobalMangledTable = true;
+        break;
+      }
+    }
+
+    if (isInGlobalMangledTable) {
+      continue;
+    }
+
+    let isInHistoryMangledTable = false;
+    if (historyMangledTable) {
+      for (const value of historyMangledTable.values()) {
+        if (value === tmpName) {
+          isInHistoryMangledTable = true;
+          break;
+        }
+      }
+    }
+
+    if (!isInHistoryMangledTable) {
+      mangledName = tmpName;
+      break;
+    }
+  }
+
+  globalMangledTable.set(original, mangledName);
+  return mangledName;
 }

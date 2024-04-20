@@ -49,18 +49,18 @@ export class DisorderNameGenerator implements INameGenerator {
   }
 
   public getName(): string {
-    let generatedName: string = String.fromCharCode(this.CHAR_CODE_A + this.mCharIndexList[this.mCharIndex]);
+    let generatedNames: string = String.fromCharCode(this.CHAR_CODE_A + this.mCharIndexList[this.mCharIndex]);
     if (this.mLoopNumber > 0) {
-      generatedName += this.mLoopNumber;
+      generatedNames += this.mLoopNumber;
     }
 
     // update elements after generate name
     this.updateElements();
-    if (this.mReservedNames?.has(generatedName)) {
+    if (this.mReservedNames?.has(generatedNames)) {
       return this.getName();
     }
 
-    return generatedName;
+    return generatedNames;
   }
 
   public reset(): void {
