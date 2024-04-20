@@ -13,18 +13,18 @@
  * limitations under the License.
  */
 
-import { Logger } from '../lib/Logger';
+import { Logger } from '../lib/linter_1_1/lib/Logger';
 import { LoggerImpl } from './LoggerImpl';
 Logger.init(new LoggerImpl());
 
-import { TypeScriptLinter } from '../lib/TypeScriptLinter';
-import { lint } from '../lib/LinterRunner';
+import { TypeScriptLinter } from '../lib/linter_1_1/lib/TypeScriptLinter';
+import { lint } from '../lib/linter_1_1/lib/LinterRunner';
 import { parseCommandLine } from './CommandLineParser';
-import type { Autofix } from '../lib/autofixes/Autofixer';
+import type { Autofix } from '../lib/linter_1_1/lib/Autofixer';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as ts from 'typescript';
-import type { CommandLineOptions } from '../lib/CommandLineOptions';
+import type { CommandLineOptions } from '../lib/linter_1_1/lib/CommandLineOptions';
 import { compileLintOptions } from './Compiler';
 
 const TEST_DIR = 'test';

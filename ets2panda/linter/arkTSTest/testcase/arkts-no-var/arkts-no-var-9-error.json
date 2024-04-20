@@ -1,0 +1,34 @@
+{
+  "arktsVersion_1_0": [
+    {
+      "messageText": "Use \"let\" instead of \"var\" (arkts-no-var)",
+      "expectLineAndCharacter": {
+        "line": 17,
+        "character": 1
+      }
+    },
+    {
+      "messageText": "Use \"let\" instead of \"var\" (arkts-no-var)",
+      "expectLineAndCharacter": {
+        "line": 19,
+        "character": 6
+      }
+    }
+  ],
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Use \"let\" instead of \"var\" (arkts-no-var)",
+      "expectLineAndCharacter": {
+        "line": 17,
+        "character": 1
+      }
+    },
+    {
+      "messageText": "Use \"let\" instead of \"var\" (arkts-no-var)",
+      "expectLineAndCharacter": {
+        "line": 19,
+        "character": 6
+      }
+    }
+  ]
+}

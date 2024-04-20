@@ -14,7 +14,7 @@
  */
 
 import * as ts from 'typescript';
-import type { CommandLineOptions } from '../../lib/CommandLineOptions';
+import type { CommandLineOptions } from '../../lib/linter_1_1/lib/CommandLineOptions';
 
 export function formTscOptions(
   cmdOptions: CommandLineOptions,
