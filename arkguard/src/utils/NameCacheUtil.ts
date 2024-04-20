@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+import { toplevelNameMangledTable } from '../ArkObfuscator';
 import {FileUtils} from './FileUtils';
 
 export const NAME_CACHE_SUFFIX: string = '.cache.json';
@@ -28,6 +29,7 @@ export function writeCache(cache: Map<string, string>, destFileName: string): vo
   }
 
   const cacheString: string = JSON.stringify(Object.fromEntries(cache), null, spaceOfNameCache);
+  console.log("---topvel---", toplevelNameMangledTable);
   FileUtils.writeFile(destFileName, cacheString);
 }
 

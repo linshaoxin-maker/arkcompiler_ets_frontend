@@ -81,7 +81,7 @@ import type { MangledSymbolInfo } from '../../common/type';
 import {TransformerOrder} from '../TransformPlugin';
 import {getNameGenerator, NameGeneratorType} from '../../generator/NameFactory';
 import {TypeUtils} from '../../utils/TypeUtils';
-import {collectIdentifiersAndStructs} from '../../utils/TransformUtil';
+import {collectIdentifiersAndStructs, isValueInMap} from '../../utils/TransformUtil';
 import {NodeUtils} from '../../utils/NodeUtils';
 import {ApiExtractor} from '../../common/ApiExtractor';
 import {
@@ -90,7 +90,7 @@ import {
   reservedProperties,
   globalSwappedMangledTable
 } from './RenamePropertiesTransformer';
-import {performancePrinter, ArkObfuscator} from '../../ArkObfuscator';
+import {performancePrinter, ArkObfuscator, toplevelNameMangledTable, historyToplevelMangledTable} from '../../ArkObfuscator';
 import { EventList } from '../../utils/PrinterUtils';
 import { isViewPUBasedClass } from '../../utils/OhsUtil';
 
@@ -109,6 +109,7 @@ namespace secharmony {
    * @param option
    */
   const createRenameIdentifierFactory = function (option: IOptions): TransformerFactory<Node> {
+    console.log('--------33-----------')
     const profile: INameObfuscationOption | undefined = option?.mNameObfuscation;
     if (!profile || !profile.mEnable) {
       return null;
@@ -124,12 +125,15 @@ namespace secharmony {
 
     // if toplevel obfuscation is enabled.
     const openTopLevel: boolean = option?.mNameObfuscation?.mTopLevel;
-    let reservedToplevelNames: Set<string> = new Set(); 
+    let reservedToplevelNames: Set<string> = new Set();
+    console.trace('--------22-----------')
     if (openTopLevel) {
       profile?.mReservedToplevelNames?.forEach(item => reservedToplevelNames.add(item));
       defaultRervedNames.forEach(tempName => { reservedToplevelNames.add(tempName); });
+      console.trace('-------------------')
+      console.log("+++++++++", toplevelNameMangledTable)
     }
-
+    const propertyObfuscation: boolean = profile.mRenameProperties;
     const exportObfuscation: boolean = option?.mExportObfuscation;
     return renameIdentifierFactory;
 
@@ -283,49 +287,41 @@ namespace secharmony {
          * import module from './test1'  // test2.ts
          * module.func();
          */
-        if (profile.mRenameProperties && reservedProperties.has(original)) {
+        if (exportObfuscation && propertyObfuscation && reservedProperties.has(original)) {
           return original;
         }
 
         let historyName: string = historyToplevelMangledTable.get(original);
         let mangledName: string = historyName ?? toplevelNameMangledTable.get(original);
 
-        if (profile.mRenameProperties && !mangledName) {
-          mangledName = globalMangledTable.get(original)
+        if (exportObfuscation && propertyObfuscation && !mangledName) {
+          mangledName = historyMangledTable?.get(original) ?? globalMangledTable.get(original);
         }
 
         while (!mangledName) {
           let tmpName = generator.getName();
-          if (reservedToplevelNames.has(tmpName) || reservedProperties.has(tmpName) || tmpName === original) {
+          if (reservedToplevelNames.has(tmpName) || tmpName === original) {
             continue;
           }
 
-          let isInToplevelMangledTable = false;
-          for (const value of toplevelNameMangledTable.values()) {
-            if (value === tmpName) {
-              isInToplevelMangledTable = true;
-              break;
-            }
+          if (exportObfuscation && propertyObfuscation && reservedProperties.has(tmpName)) {
+            continue;
           }
 
+          let isInToplevelMangledTable = isValueInMap(toplevelNameMangledTable, tmpName);
           if (isInToplevelMangledTable) {
             continue;
           }
 
           let isInHistoryMangledTable = false;
           if (historyMangledTable) {
-            for (const value of historyToplevelMangledTable.values()) {
-              if (value === tmpName) {
-                isInHistoryMangledTable = true;
-                break;
-              }
+            isInHistoryMangledTable = isValueInMap(historyToplevelMangledTable, tmpName);
+            if (!isInHistoryMangledTable) {
+              mangledName = tmpName;
+              break;
             }
           }
 
-          if (!isInHistoryMangledTable) {
-            mangledName = tmpName;
-            break;
-          }
         }
 
         toplevelNameMangledTable.set(original, mangledName);
@@ -388,7 +384,7 @@ namespace secharmony {
             continue;
           }
 
-          if ((profile.mRenameProperties && manager.getRootScope().constructorReservedParams.has(mangled)) ||
+          if ((propertyObfuscation && manager.getRootScope().constructorReservedParams.has(mangled)) ||
             ApiExtractor.mConstructorPropertySet?.has(mangled)) {
             mangled = '';
           }
@@ -659,8 +655,7 @@ namespace secharmony {
 
   export let nameCache: Map<string, string | Map<string, string>> = new Map();
   export let historyNameCache: Map<string, string> = undefined;
-  export let toplevelNameMangledTable: Map<string, string> = new Map();
-  export let historyToplevelMangledTable: Map<string, string> = new Map();
+
   export let identifierLineMap: Map<Identifier, string> = new Map();
   export let classMangledName: Map<Node, string> = new Map();
 }

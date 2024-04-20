@@ -64,7 +64,8 @@ import {TypeUtils} from './utils/TypeUtils';
 export const renameIdentifierModule = require('./transformers/rename/RenameIdentifierTransformer');
 export const renamePropertyModule = require('./transformers/rename/RenamePropertiesTransformer');
 export const renameFileNameModule = require('./transformers/rename/RenameFileNameTransformer');
-
+export let toplevelNameMangledTable: Map<string, string> = new Map();
+export let historyToplevelMangledTable: Map<string, string> = new Map();
 export {getMapFromJson, readProjectPropertiesByCollectedPaths, deleteLineInfoForNameString};
 export let orignalFilePathForSearching: string | undefined;
 export interface PerformancePrinter {

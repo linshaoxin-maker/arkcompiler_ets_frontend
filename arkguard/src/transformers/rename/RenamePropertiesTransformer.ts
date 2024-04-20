@@ -56,6 +56,7 @@ import {NodeUtils} from '../../utils/NodeUtils';
 import {collectPropertyNamesAndStrings, isViewPUBasedClass} from '../../utils/OhsUtil';
 import { ArkObfuscator, performancePrinter } from '../../ArkObfuscator';
 import { EventList } from '../../utils/PrinterUtils';
+import { historyToplevelMangledTable, toplevelNameMangledTable } from '../../ArkObfuscator';
 
 namespace secharmony {
   /**
@@ -80,7 +81,7 @@ namespace secharmony {
     if (!profile || !profile.mEnable || !profile.mRenameProperties) {
       return null;
     }
-
+    const exportObfuscation: boolean = option?.mExportObfuscation;
     return renamePropertiesFactory;
 
     function renamePropertiesFactory(context: TransformationContext): Transformer<Node> {
@@ -212,9 +213,12 @@ namespace secharmony {
         if (reservedProperties.has(original)) {
           return original;
         }
+        let mangledName: string = undefined;
+        if (exportObfuscation) {
+          mangledName = historyToplevelMangledTable.get(original) ?? toplevelNameMangledTable.get(original);
+        }
 
-        const historyName: string = historyMangledTable?.get(original);
-        let mangledName: string = historyName ? historyName : globalMangledTable.get(original);
+        mangledName = mangledName ?? (historyMangledTable?.get(original) ?? globalMangledTable.get(original));
 
         while (!mangledName) {
           let tmpName = generator.getName();
