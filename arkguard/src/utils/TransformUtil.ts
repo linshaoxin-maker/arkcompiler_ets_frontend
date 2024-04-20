@@ -99,14 +99,3 @@ export function isSuperCallStatement(node: Node): boolean {
     isCallExpression(node.expression) &&
     node.expression.expression.kind === SyntaxKind.SuperKeyword;
 }
-
-export function isValueInMap(map: Map<string, string>, targetValue: string): boolean {
-  let isInMap: boolean = false;
-  for (const value of map.values()) {
-    if (value === targetValue) {
-      isInMap = true;
-      break;
-    }
-  }
-  return isInMap;
-}

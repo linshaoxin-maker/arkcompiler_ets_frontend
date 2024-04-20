@@ -60,12 +60,11 @@ import {EventList, TimeSumPrinter, TimeTracker} from './utils/PrinterUtils';
 import type { ProjectInfo } from './common/type';
 export {FileUtils} from './utils/FileUtils';
 import {TypeUtils} from './utils/TypeUtils';
+import { ToplevelObf } from './common/ToplevelObf';
 
 export const renameIdentifierModule = require('./transformers/rename/RenameIdentifierTransformer');
 export const renamePropertyModule = require('./transformers/rename/RenamePropertiesTransformer');
 export const renameFileNameModule = require('./transformers/rename/RenameFileNameTransformer');
-export let toplevelNameMangledTable: Map<string, string> = new Map();
-export let historyToplevelMangledTable: Map<string, string> = new Map();
 export {getMapFromJson, readProjectPropertiesByCollectedPaths, deleteLineInfoForNameString};
 export let orignalFilePathForSearching: string | undefined;
 export interface PerformancePrinter {
@@ -109,6 +108,8 @@ export class ArkObfuscator {
   // If isKeptCurrentFile is true, both identifier and property obfuscation are skipped.
   static mIsKeptCurrentFile: boolean = false;
 
+  static mToplevelObf: ToplevelObf | undefined;
+
   public constructor(sourceFiles?: string[], configPath?: string) {
     this.mSourceFiles = sourceFiles;
     this.mConfigPath = configPath;
@@ -145,7 +146,7 @@ export class ArkObfuscator {
   public get configPath(): string {
     return this.mConfigPath;
   }
-
+  
   public static get isKeptCurrentFile(): boolean {
     return ArkObfuscator.mIsKeptCurrentFile;
   }
@@ -198,6 +199,9 @@ export class ArkObfuscator {
       this.mCompilerOptions.sourceMap = true;
     }
 
+    if (this.mCustomProfiles.mNameObfuscation?.mTopLevel || this.mCustomProfiles.mExportObfuscation) {
+      ArkObfuscator.mToplevelObf = new ToplevelObf(this.mCustomProfiles.mNameObfuscation.mReservedToplevelNames, true)
+    }
     this.initPerformancePrinter();
     // load transformers
     this.mTransformers = new TransformerManager(this.mCustomProfiles).getTransformers();
