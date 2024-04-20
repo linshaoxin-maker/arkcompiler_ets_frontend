@@ -1,0 +1,95 @@
+.language ECMAScript
+
+.function any .!#(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .!#foo(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .^1!#(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .^1!#foo(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .^2!#(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .^3!#(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .func_main_0(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	newlexenv 0x2
+	lda a1
+	stlexvar 0x0, 0x0
+	lda a2
+	stlexvar 0x0, 0x1
+	createobjectwithbuffer 0x0, _0
+	sta v0
+	definefunc 0x1, .!#foo, 0x0
+	definefieldbyname 0x2, a, v0
+	lda v0
+	sttoglobalrecord 0x4, A
+	createobjectwithbuffer 0x5, _1
+	sta v0
+	definefunc 0x6, .^1!#foo, 0x0
+	definefieldbyname 0x7, a, v0
+	lda v0
+	trystglobalbyname 0x9, A
+	definefunc 0xa, .!#, 0x0
+	createobjectwithbuffer 0xb, _2
+	sta v0
+	definefunc 0xc, .^1!#, 0x0
+	definefieldbyname 0xd, a#b^1, v0
+	lda v0
+	stconsttoglobalrecord 0xf, obj
+	createobjectwithbuffer 0x10, _3
+	sta v0
+	definefunc 0x11, .^2!#, 0x0
+	definefieldbyname 0x12, c.b, v0
+	lda v0
+	stconsttoglobalrecord 0x14, obj2
+	createobjectwithbuffer 0x15, _4
+	sta v0
+	definefunc 0x16, .^3!#, 0x0
+	definefieldbyname 0x17, c\b, v0
+	lda v0
+	stconsttoglobalrecord 0x19, obj3
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+

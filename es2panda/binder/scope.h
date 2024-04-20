@@ -372,9 +372,59 @@ public:
         return tsBindings_.InTSBindings(name);
     }
 
+    virtual const util::StringView &GetScopeName()
+    {
+        if (parent_) {
+            return parent_->GetScopeName();
+        }
+        return scopeName_;
+    }
+
+    virtual uint32_t GetDuplicateScopeIndex(const util::StringView &childScopeName)
+    {
+        auto it = scopesIndex_.find(childScopeName);
+        if (it == scopesIndex_.end()) {
+            scopesIndex_.insert({childScopeName, 0});
+            return 0;
+        } else {
+            return ++it->second;
+        }
+    }
+
+    virtual void SetScopeName(const util::StringView &ident)
+    {
+        if (hasScopeNameSet_ || parent_ == nullptr) {
+            return;
+        }
+
+        auto identStr = util::Helpers::IsSpecialScopeName(ident) ? "" : ident.Mutf8();
+        std::stringstream ss;
+
+        ss << parent_->GetScopeName();
+        auto scopeTag = GetScopeTag();
+
+        std::stringstream selfScopeName;
+        selfScopeName << scopeTag << identStr;
+        scopeDuplicateIndex_ = parent_->GetDuplicateScopeIndex(
+            util::UString(selfScopeName.str(), allocator_).View());
+        if (scopeDuplicateIndex_ > 0) {
+            ss << util::Helpers::DUPLICATED_SEPERATOR
+               << util::Helpers::ToStringView(allocator_, scopeDuplicateIndex_);
+        }
+        ss << selfScopeName.str();
+
+        scopeName_ = util::UString(ss.str(), allocator_).View();
+        hasScopeNameSet_ = true;
+    }
+
 protected:
     explicit Scope(ArenaAllocator *allocator, Scope *parent)
-        : parent_(parent), decls_(allocator->Adapter()), bindings_(allocator->Adapter()), tsBindings_(allocator)
+        : parent_(parent),
+          decls_(allocator->Adapter()),
+          bindings_(allocator->Adapter()),
+          tsBindings_(allocator),
+          scopesIndex_(allocator->Adapter()),
+          allocator_(allocator)
     {
     }
 
@@ -400,6 +450,31 @@ protected:
     ir::AstNode *node_ {};
     const compiler::IRNode *startIns_ {};
     const compiler::IRNode *endIns_ {};
+    ArenaUnorderedMap<util::StringView, uint32_t> scopesIndex_;
+    util::StringView scopeName_ {};
+    ArenaAllocator *allocator_ {};
+    uint32_t scopeDuplicateIndex_ = 0;
+    util::StringView selfScopeName_ {};
+    bool hasScopeNameSet_ { false };
+
+protected:
+    virtual util::StringView GetSelfScopeName()
+    {
+        std::stringstream ss;
+
+        if (scopeDuplicateIndex_ > 0) {
+            ss << util::Helpers::DUPLICATED_SEPERATOR
+               << util::Helpers::ToStringView(allocator_, scopeDuplicateIndex_);
+        }
+
+        return util::UString(ss.str(), allocator_).View();
+    }
+
+private:
+    virtual util::StringView GetScopeTag()
+    {
+        return util::UString(std::string{util::Helpers::STRING_EMPTY}, allocator_).View();
+    }
 };
 
 class VariableScope : public Scope {
@@ -513,6 +588,15 @@ public:
 
     std::tuple<ParameterDecl *, const ir::AstNode *> AddParamDecl(ArenaAllocator *allocator, const ir::AstNode *param);
 
+    uint32_t GetDuplicateScopeIndex(const util::StringView &childScopeName) override
+    {
+        if (parent_) {
+            return parent_->GetDuplicateScopeIndex(childScopeName);
+        }
+
+        return 0;
+    }
+
 protected:
     explicit ParamScope(ArenaAllocator *allocator, Scope *parent)
         : Scope(allocator, parent), params_(allocator->Adapter())
@@ -560,6 +644,10 @@ public:
         params_.erase(params_.begin());
         bindings_.erase(thisParam);
     }
+
+    const util::StringView &GetScopeName() override;
+
+    uint32_t GetDuplicateScopeIndex(const util::StringView &childScopeName) override;
 
     friend class FunctionScope;
     template <typename E, typename T>
@@ -623,11 +711,7 @@ public:
         return ScopeType::FUNCTION;
     }
 
-    void BindName(util::StringView name, util::StringView internalName)
-    {
-        name_ = name;
-        internalName_ = internalName;
-    }
+    virtual void BindName(util::StringView name, util::StringView recordName);
 
     const util::StringView &Name() const
     {
@@ -652,9 +736,25 @@ public:
     bool AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                     [[maybe_unused]] ScriptExtension extension) override;
 
-private:
+    void SetScopeName(const util::StringView &ident) override;
+
+    const util::StringView &GetScopeName() override
+    {
+        if (!hasScopeNameSet_) {
+            SetScopeName(GetSelfScopeName());
+        }
+        return scopeName_;
+    }
+
+protected:
+    util::StringView GetSelfScopeName() override;
+
     util::StringView name_ {};
     util::StringView internalName_ {};
+
+private:
+    util::StringView GetScopeTag() override;
+
     bool inFunctionScopes_ {false};
 };
 
@@ -669,6 +769,15 @@ public:
 
     bool AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                     [[maybe_unused]] ScriptExtension extension) override;
+
+    uint32_t GetDuplicateScopeIndex(const util::StringView &childScopeName) override
+    {
+        if (parent_) {
+            return parent_->GetDuplicateScopeIndex(childScopeName);
+        }
+
+        return 0;
+    }
 };
 
 class ClassScope : public VariableScope {
@@ -711,11 +820,25 @@ public:
         return (privateNames_.count(name) + privateGetters_.count(name) + privateSetters_.count(name) != 0);
     }
 
+    const util::StringView &GetScopeName() override
+    {
+        if (!hasScopeNameSet_) {
+            SetScopeName(GetSelfScopeName());
+        }
+        return scopeName_;
+    }
+
     Result GetPrivateProperty(const util::StringView &name, bool isSetter) const;
     void AddPrivateName(std::vector<const ir::Statement *> privateProperties, uint32_t privateFieldCnt,
                         uint32_t instancePrivateMethodCnt, uint32_t staticPrivateMethodCnt);
     friend class ir::ClassDefinition;
+
+protected:
+    util::StringView GetSelfScopeName() override;
+
 private:
+    util::StringView GetScopeTag() override;
+
     bool IsMethod(uint32_t slot) const
     {
         return slot >= instancePrivateMethodStartSlot_ && slot < privateMethodEndSlot_;
@@ -750,6 +873,15 @@ public:
     bool AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                     [[maybe_unused]] ScriptExtension extension) override;
 
+    uint32_t GetDuplicateScopeIndex(const util::StringView &childScopeName) override
+    {
+        if (parent_) {
+            return parent_->GetDuplicateScopeIndex(childScopeName);
+        }
+
+        return 0;
+    }
+
     friend class CatchScope;
 };
 
@@ -764,6 +896,17 @@ public:
 
     bool AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                     [[maybe_unused]] ScriptExtension extension) override;
+
+    uint32_t GetDuplicateScopeIndex(const util::StringView &childScopeName) override
+    {
+        if (parent_) {
+            return parent_->GetDuplicateScopeIndex(childScopeName);
+        }
+
+        return 0;
+    }
+
+    friend class CatchScope;
 };
 
 class LoopScope : public VariableScope {
@@ -781,6 +924,15 @@ public:
                     [[maybe_unused]] ScriptExtension extension) override
     {
         return AddLocal(allocator, currentVariable, newDecl, extension);
+    }
+
+    uint32_t GetDuplicateScopeIndex(const util::StringView &childScopeName) override
+    {
+        if (parent_) {
+            return parent_->GetDuplicateScopeIndex(childScopeName);
+        }
+
+        return 0;
     }
 
 protected:
@@ -802,6 +954,15 @@ public:
         return AddLocal(allocator, currentVariable, newDecl, extension);
     }
 
+    uint32_t GetDuplicateScopeIndex(const util::StringView &childScopeName) override
+    {
+        if (parent_) {
+            return parent_->GetDuplicateScopeIndex(childScopeName);
+        }
+
+        return 0;
+    }
+
 protected:
     ScopeType staticBlockType_ {ScopeType::STATIC_BLOCK};
 };
@@ -820,6 +981,21 @@ public:
 
     bool AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                     [[maybe_unused]] ScriptExtension extension) override;
+
+    void SetScopeName(const util::StringView &ident) override;
+
+    void BindName(util::StringView name, util::StringView recordName) override
+    {
+        name_ = name; // func_main_0
+        std::stringstream ss;
+        ss << recordName << name;
+        internalName_ = util::UString(ss.str(), allocator_).View();
+    }
+
+    const util::StringView &GetScopeName() override
+    {
+        return scopeName_;
+    }
 };
 
 class ModuleScope : public FunctionScope {
@@ -840,6 +1016,21 @@ public:
 
     bool AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                     [[maybe_unused]] ScriptExtension extension) override;
+
+    void SetScopeName(const util::StringView &ident) override;
+
+    void BindName(util::StringView name, util::StringView recordName) override
+    {
+        name_ = name; // func_main_0
+        std::stringstream ss;
+        ss << recordName << name;
+        internalName_ = util::UString(ss.str(), allocator_).View();
+    }
+
+    const util::StringView &GetScopeName() override
+    {
+        return scopeName_;
+    }
 };
 
 class TSModuleScope : public FunctionScope {
@@ -899,7 +1090,12 @@ public:
         return variableNames_.find(name) != variableNames_.end();
     }
 
+protected:
+    util::StringView GetSelfScopeName() override;
+
 private:
+    util::StringView GetScopeTag() override;
+
     ExportBindings *exportBindings_;
     ArenaSet<util::StringView> variableNames_;
 };
@@ -912,6 +1108,7 @@ public:
         paramScope_ = allocator->New<FunctionParamScope>(allocator, parent);
         paramScope_->BindFunctionScope(this);
         SetParent(paramScope_);
+        scopeDuplicateIndex_ = parent->GetDuplicateScopeIndex(GetScopeTag());
     }
 
     ScopeType Type() const override
@@ -941,7 +1138,14 @@ public:
     bool AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                     [[maybe_unused]] ScriptExtension extension) override;
 
+    void SetScopeName(const util::StringView &ident) override;
+
+protected:
+    util::StringView GetSelfScopeName() override;
+
 private:
+    util::StringView GetScopeTag() override;
+
     VariableMap *enumMemberBindings_;
     ArenaSet<util::StringView> variableNames_;
 };

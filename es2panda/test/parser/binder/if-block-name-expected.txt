@@ -1,0 +1,74 @@
+.language ECMAScript
+
+.function any .!#(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldtrue
+	return
+label_2: 
+}
+
+.function any .!#foo(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .^1!#(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldtrue
+	return
+label_2: 
+}
+
+.function any .^1!#foo(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .^2!#foo(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .func_main_0(any a0, any a1, any a2) {
+label_6: 
+label_0: 
+	newlexenv 0x2
+	lda a1
+	stlexvar 0x0, 0x0
+	lda a2
+	stlexvar 0x0, 0x1
+	definefunc 0x0, .!#, 0x0
+	callarg0 0x1
+	isfalse
+	jnez label_1
+label_2: 
+	definefunc 0x3, .!#foo, 0x0
+	jmp label_3
+label_1: 
+	definefunc 0x4, .^1!#, 0x0
+	callarg0 0x5
+	isfalse
+	jnez label_4
+label_5: 
+	definefunc 0x7, .^1!#foo, 0x0
+	jmp label_3
+label_4: 
+	definefunc 0x8, .^2!#foo, 0x0
+label_3: 
+	ldundefined
+	returnundefined
+label_7: 
+}
+
+

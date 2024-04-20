@@ -1,0 +1,97 @@
+.language ECMAScript
+
+.function any .(A%#A(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	lda a2
+	return
+label_2: 
+}
+
+.function any .(B%#B(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	definefunc 0x0, .(B%B!#B, 0x0
+	lda a2
+	return
+label_2: 
+}
+
+.function any .(B%B!#B(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .(B>#B(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .(C%#C(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	lda a2
+	return
+label_2: 
+}
+
+.function any .(C>#foo(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .(C?#foo(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .(C^1>#foo(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .func_main_0(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldhole
+	sta v0
+	defineclasswithbuffer 0x0, .(A%#A, _0, 0x0, v0
+	sta v0
+	ldobjbyname 0x1, prototype
+	lda v0
+	sttoglobalrecord 0x3, A
+	ldhole
+	sta v0
+	defineclasswithbuffer 0x4, .(B%#B, _1, 0x0, v0
+	sta v0
+	ldobjbyname 0x5, prototype
+	lda v0
+	sttoglobalrecord 0x7, B
+	ldhole
+	sta v0
+	defineclasswithbuffer 0x8, .(C%#C, _2, 0x0, v0
+	sta v0
+	ldobjbyname 0x9, prototype
+	lda v0
+	sttoglobalrecord 0xb, C
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+

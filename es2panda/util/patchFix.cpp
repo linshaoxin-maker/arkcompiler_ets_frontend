@@ -515,37 +515,19 @@ bool PatchFix::CompareClassHash(std::vector<std::pair<std::string, std::string>>
     return true;
 }
 
-void PatchFix::CheckAndRestoreSpecialFunctionName(uint32_t globalIndexForSpecialFunc, std::string &funcInternalName,
-    std::string recordName)
-{
-    auto it = originRecordHashFunctionNames_->find(recordName);
-    if (it != originRecordHashFunctionNames_->end()) {
-        if (it->second.size() == 0 || globalIndexForSpecialFunc > it->second.size()) {
-            // anonymous, special or duplicate function added
-            std::cerr << "[Patch] Found new anonymous, special(containing '.' or '\\') or duplicate name function "
-                    << funcInternalName << " not supported!" << std::endl;
-            patchError_ = true;
-            return;
-        }
-        std::string originalName = it->second.at(std::to_string(globalIndexForSpecialFunc));
-        // special name function in the same position must have the same real function name as original
-        if (originalName.substr(originalName.find_last_of("#")) !=
-            funcInternalName.substr(funcInternalName.find_last_of("#"))) {
-            std::cerr << "[Patch] Found new anonymous, special(containing '.' or '\\') or duplicate name function "
-                    << funcInternalName << " not supported!" << std::endl;
-            patchError_ = true;
-            return;
-        }
-        funcInternalName = originalName;
-    }
-}
-
 void PatchFix::HandleFunction(const compiler::PandaGen *pg, panda::pandasm::Function *func,
     LiteralBuffers &literalBuffers)
 {
     std::string funcName = func->name;
     auto originFunction = originFunctionInfo_->find(funcName);
     if (originFunction == originFunctionInfo_->end()) {
+        if (IsHotFix() && IsAnonymousOrSpecialOrDuplicateFunction(funcName)) {
+            // anonymous, special or duplicate function added in hotfix mode
+            std::cerr << "[Patch] Found new anonymous, special(containing '.' or '\\') or duplicate name function "
+                    << funcName << " not supported!" << std::endl;
+            patchError_ = true;
+            return;
+        }
         newFuncNames_.insert(funcName);
         CollectFuncDefineIns(func);
         return;
@@ -594,14 +576,6 @@ void PatchFix::DumpFunctionInfo(const compiler::PandaGen *pg, panda::pandasm::Fu
 
     std::vector<std::pair<std::string, std::string>> hashList = GenerateFunctionAndClassHash(func, literalBuffers);
     ss << hashList.back().second << SymbolTable::SECOND_LEVEL_SEPERATOR;
-
-    auto internalNameStr = pg->InternalName().Mutf8();
-    if (internalNameStr.find("#") != std::string::npos) {
-        ss << (pg->Binder()->SpecialFuncNameIndexMap()).at(internalNameStr) << SymbolTable::SECOND_LEVEL_SEPERATOR;
-    } else {
-        // index 0 for all the normal name functions
-        ss << "0" << SymbolTable::SECOND_LEVEL_SEPERATOR;
-    }
 
     ss << SymbolTable::FIRST_LEVEL_SEPERATOR;
     for (size_t i = 0; i < hashList.size() - 1; ++i) {

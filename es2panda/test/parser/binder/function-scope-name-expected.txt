@@ -1,0 +1,136 @@
+.language ECMAScript
+
+.function any .!#(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .!#asyncFoo(any a0, any a1, any a2) {
+	mov v0, a0
+	mov v1, a1
+	mov v2, a2
+	asyncfunctionenter
+	sta v3
+LABEL_0: 
+	ldundefined
+	asyncfunctionresolve v3
+	return
+LABEL_1: 
+LABEL_2: 
+	sta v4
+	asyncfunctionreject v3
+	return
+LABEL_3: 
+}
+
+.catchall LABEL_0, LABEL_1, LABEL_2
+
+.function any .!#bar(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	definefunc 0x0, .!bar!#bar, 0x0
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .!#f(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .!#foo(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .!#genFoo(any a0, any a1, any a2) {
+	mov v0, a0
+	mov v1, a1
+	mov v2, a2
+	creategeneratorobj v0
+	sta v3
+	ldundefined
+	suspendgenerator v3
+	lda v3
+	resumegenerator
+	sta v5
+	lda v3
+	getresumemode
+	sta v4
+	ldai 0x0
+	eq 0x0, v4
+	jeqz LABEL_4
+	lda v5
+	return
+LABEL_4: 
+	ldai 0x1
+	eq 0x1, v4
+	jeqz LABEL_5
+	lda v5
+	throw
+LABEL_5: 
+	lda v5
+	ldundefined
+	return
+LABEL_1: 
+LABEL_2: 
+	throw
+LABEL_3: 
+}
+
+.catchall LABEL_0, LABEL_1, LABEL_2
+
+.function any .!bar!#bar(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .^1!#(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .func_main_0(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	newlexenv 0x2
+	lda a1
+	stlexvar 0x0, 0x0
+	lda a2
+	stlexvar 0x0, 0x1
+	definefunc 0x0, .!#bar, 0x0
+	stglobalvar 0x1, bar
+	ldundefined
+	stglobalvar 0x2, f
+	definefunc 0x3, .!#genFoo, 0x0
+	stglobalvar 0x4, genFoo
+	definefunc 0x5, .!#asyncFoo, 0x0
+	stglobalvar 0x6, asyncFoo
+	definefunc 0x7, .!#foo, 0x0
+	stglobalvar 0x8, foo
+	definefunc 0x9, .!#, 0x0
+	definefunc 0xa, .^1!#, 0x0
+	definefunc 0xb, .!#f, 0x0
+	stglobalvar 0xc, f
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+

@@ -1,0 +1,130 @@
+.language ECMAScript
+
+.function any .!#(any a0, any a1, any a2, any a3) {
+label_1: 
+label_0: 
+	ldfalse
+	return
+label_2: 
+}
+
+.function any .!#enumerable(any a0, any a1, any a2, any a3) {
+label_1: 
+label_0: 
+	newlexenv 0x1
+	lda a3
+	stlexvar 0x0, 0x0
+	definefunc 0x0, .!enumerable!#, 0x3
+	return
+label_2: 
+}
+
+.function any .!enumerable!#(any a0, any a1, any a2, any a3, any a4, any a5) {
+label_1: 
+label_0: 
+	ldlexvar 0x0, 0x0
+	sta v0
+	lda.str xxx
+	sta v1
+	lda v0
+	callarg1 0x0, v1
+	stobjbyname 0x2, enumerable, a5
+	tryldglobalbyname 0x4, print
+	sta v0
+	lda.str Hello
+	sta v1
+	lda v0
+	callarg1 0x5, v1
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .(Greeter%#Greeter(any a0, any a1, any a2, any a3) {
+label_1: 
+label_0: 
+	lda a3
+	stobjbyname 0x0, greeting, a2
+	lda a2
+	return
+label_2: 
+}
+
+.function any .(Greeter>#greet(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	lda.str Hello, 
+	sta v0
+	lda a2
+	ldobjbyname 0x0, greeting
+	add2 0x2, v0
+	return
+label_2: 
+}
+
+.function any .func_main_0(any a0, any a1, any a2) {
+label_4: 
+label_0: 
+	definefunc 0x0, .!#enumerable, 0x1
+	stglobalvar 0x1, enumerable
+	ldhole
+	sta v0
+	defineclasswithbuffer 0x2, .(Greeter%#Greeter, _0, 0x1, v0
+	sta v0
+	ldobjbyname 0x3, prototype
+	lda v0
+	sttoglobalrecord 0x5, Greeter
+	ldglobalvar 0x6, enumerable
+	sta v0
+	definefunc 0x7, .!#, 0x1
+	sta v1
+	lda v0
+	callarg1 0x8, v1
+	sttoglobalrecord 0xa, ##var_1
+	tryldglobalbyname 0xb, Object
+	sta v0
+	ldobjbyname 0xc, getOwnPropertyDescriptor
+	sta v1
+	tryldglobalbyname 0xe, Greeter
+	ldobjbyname 0xf, prototype
+	sta v2
+	lda.str greet
+	sta v3
+	lda v1
+	callthis2 0x11, v0, v2, v3
+	sttoglobalrecord 0x13, ##var_2
+	tryldglobalbyname 0x14, Object
+	sta v0
+	ldobjbyname 0x15, defineProperty
+	sta v1
+	tryldglobalbyname 0x17, Greeter
+	ldobjbyname 0x18, prototype
+	sta v2
+	lda.str greet
+	sta v3
+	tryldglobalbyname 0x1a, ##var_1
+	sta v4
+	tryldglobalbyname 0x1b, Greeter
+	ldobjbyname 0x1c, prototype
+	sta v5
+	lda.str greet
+	sta v6
+	tryldglobalbyname 0x1e, ##var_2
+	sta v7
+	lda v4
+	callargs3 0x1f, v5, v6, v7
+	sta v4
+	istrue
+	jnez label_3
+label_2: 
+	tryldglobalbyname 0x21, ##var_2
+	sta v4
+label_3: 
+	lda v1
+	callthis3 0x22, v0, v2, v3, v4
+	ldundefined
+	returnundefined
+label_5: 
+}
+
+
