@@ -32,7 +32,7 @@ export class ToplevelObf {
 
   clear(): void {
     this.reservedToplevelNames.clear();
-    if(this.historyToplevelMangledTable) {
+    if (this.historyToplevelMangledTable) {
       this.historyToplevelMangledTable.clear();
     }
     this.toplevelNameMangledTable.clear();

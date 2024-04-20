@@ -65,6 +65,7 @@ import { ToplevelObf } from './common/ToplevelObf';
 export const renameIdentifierModule = require('./transformers/rename/RenameIdentifierTransformer');
 export const renamePropertyModule = require('./transformers/rename/RenamePropertiesTransformer');
 export const renameFileNameModule = require('./transformers/rename/RenameFileNameTransformer');
+
 export {getMapFromJson, readProjectPropertiesByCollectedPaths, deleteLineInfoForNameString};
 export let orignalFilePathForSearching: string | undefined;
 export interface PerformancePrinter {
@@ -146,7 +147,7 @@ export class ArkObfuscator {
   public get configPath(): string {
     return this.mConfigPath;
   }
-  
+
   public static get isKeptCurrentFile(): boolean {
     return ArkObfuscator.mIsKeptCurrentFile;
   }
@@ -200,7 +201,7 @@ export class ArkObfuscator {
     }
 
     if (this.mCustomProfiles.mNameObfuscation?.mTopLevel || this.mCustomProfiles.mExportObfuscation) {
-      ArkObfuscator.mToplevelObf = new ToplevelObf(this.mCustomProfiles.mNameObfuscation.mReservedToplevelNames, true)
+      ArkObfuscator.mToplevelObf = new ToplevelObf(this.mCustomProfiles.mNameObfuscation.mReservedToplevelNames, true);
     }
     this.initPerformancePrinter();
     // load transformers

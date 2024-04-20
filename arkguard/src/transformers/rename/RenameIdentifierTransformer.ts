@@ -81,6 +81,7 @@ import type { MangledSymbolInfo } from '../../common/type';
 import {TransformerOrder} from '../TransformPlugin';
 import {getNameGenerator, NameGeneratorType} from '../../generator/NameFactory';
 import {TypeUtils} from '../../utils/TypeUtils';
+import {collectIdentifiersAndStructs} from '../../utils/TransformUtil';
 import {NodeUtils} from '../../utils/NodeUtils';
 import {ApiExtractor} from '../../common/ApiExtractor';
 import {
@@ -114,14 +115,16 @@ namespace secharmony {
     if (!profile || !profile.mEnable) {
       return null;
     }
+
     let options: NameGeneratorOptions = {};
     if (profile.mNameGeneratorType === NameGeneratorType.HEX) {
       options.hexWithPrefixSuffix = true;
     }
+    let generator: INameGenerator = getNameGenerator(profile.mNameGeneratorType, options);
+
     const defaultRervedNames: string[] = ['this', '__global'];
     let reservedNames: string[] = profile?.mReservedNames ?? []
     defaultRervedNames.forEach(tempName => { reservedNames.push(tempName); });
-    let generator: INameGenerator = getNameGenerator(profile.mNameGeneratorType, options);
 
     const exportObfuscation: boolean = option?.mExportObfuscation;
     // if toplevel obfuscation is enabled.
@@ -242,7 +245,7 @@ namespace secharmony {
           // No allow to rename reserved names.
           if ((!Reflect.has(def, 'obfuscateAsProperty') && reservedNames.includes(original)) ||
             (!exportObfuscation && scope.exportNames.has(def.name)) ||
-            isSkippedGlobal(topLevelObfConfig?.isEnableToplevelObf, scope)) {
+            isSkippedGlobal(!!topLevelObfConfig?.isEnableToplevelObf, scope)) {
             scope.mangledNames.add(mangled);
             return;
           }
