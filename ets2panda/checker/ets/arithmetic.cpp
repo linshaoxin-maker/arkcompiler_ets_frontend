@@ -305,16 +305,6 @@ checker::Type *ETSChecker::CheckBinaryOperatorBitwise(ir::Expression *left, ir::
     // NOTE (mmartin): These need to be done for other binary expressions, but currently it's not defined precisely when
     // to apply this conversion
 
-    if (leftType->IsETSEnumType()) {
-        left->AddAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
-        unboxedL = GlobalIntType();
-    }
-
-    if (rightType->IsETSEnumType()) {
-        right->AddAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
-        unboxedR = GlobalIntType();
-    }
-
     if (leftType->IsETSUnionType() || rightType->IsETSUnionType()) {
         ThrowTypeError("Bad operand type, unions are not allowed in binary expressions except equality.", pos);
     }
@@ -333,6 +323,13 @@ checker::Type *ETSChecker::CheckBinaryOperatorBitwise(ir::Expression *left, ir::
     FlagExpressionWithUnboxing(rightType, unboxedR, right);
 
     if (promotedType == nullptr && !bothConst) {
+        if ((left->Parent() == right->Parent()) &&
+            (!left->Parent()->IsPostBitSet(ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) &&
+            (rightType->IsETSEnumType() || leftType->IsETSEnumType())) {
+            left->Parent()->SetPostBit(ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED);
+            return nullptr;
+        }
+
         ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", pos);
     }
 
@@ -398,15 +395,6 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorEqual(
     checker::Type *tsType {};
     if (leftType->IsETSEnumType() && rightType->IsETSEnumType()) {
         if (!leftType->AsETSEnumType()->IsSameEnumType(rightType->AsETSEnumType())) {
-            ThrowTypeError("Bad operand type, the types of the operands must be the same enum type.", pos);
-        }
-
-        tsType = GlobalETSBooleanType();
-        return {tsType, leftType};
-    }
-
-    if (leftType->IsETSStringEnumType() && rightType->IsETSStringEnumType()) {
-        if (!leftType->AsETSStringEnumType()->IsSameEnumType(rightType->AsETSStringEnumType())) {
             ThrowTypeError("Bad operand type, the types of the operands must be the same enum type.", pos);
         }
 
@@ -485,6 +473,12 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorLessGreater(
     }
 
     if (promotedType == nullptr && !bothConst) {
+        if ((left->Parent() == right->Parent()) &&
+            (!left->Parent()->IsPostBitSet(ir::PostProcessingBits::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) &&
+            (rightType->IsETSEnumType() || leftType->IsETSEnumType())) {
+            left->Parent()->SetPostBit(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED);
+            return {GlobalETSBooleanType(), GlobalETSBooleanType()};
+        }
         ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", pos);
     }
 
@@ -641,6 +635,31 @@ static std::tuple<Type *, Type *> CheckBinaryOperatorHelper(ETSChecker *checker,
     return {tsType, tsType};
 }
 
+bool TransferLoweringPostProcessingRequired(ir::Expression *from, ir::Expression *to)
+{
+    if (from->IsBinaryExpression() &&
+        from->AsBinaryExpression()->IsPostBitSet(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED)) {
+        to->SetPostBit(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED);
+        return true;
+    }
+    return false;
+}
+
+std::tuple<Type *, Type *> ETSChecker::GetBigIntOperatorTypesForBinaryOperator(lexer::TokenType operationType,
+                                                                               checker::Type *const leftType,
+                                                                               checker::Type *rightType)
+{
+    switch (operationType) {
+        case lexer::TokenType::PUNCTUATOR_GREATER_THAN:
+        case lexer::TokenType::PUNCTUATOR_LESS_THAN:
+        case lexer::TokenType::PUNCTUATOR_GREATER_THAN_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_LESS_THAN_EQUAL:
+            return {GlobalETSBooleanType(), GlobalETSBooleanType()};
+        default:
+            return {leftType, rightType};
+    }
+}
+
 std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left, ir::Expression *right,
                                                            ir::Expression *expr, lexer::TokenType operationType,
                                                            lexer::SourcePosition pos, bool forcePromotion)
@@ -648,6 +667,9 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left,
     checker::Type *const leftType = left->Check(this);
 
     if (leftType == nullptr) {
+        if (TransferLoweringPostProcessingRequired(left, expr)) {
+            return {nullptr, nullptr};
+        }
         ThrowTypeError("Unexpected type error in binary expression", left->Start());
     }
 
@@ -663,6 +685,9 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left,
     }
 
     if (rightType == nullptr) {
+        if (TransferLoweringPostProcessingRequired(right, expr)) {
+            return {nullptr, nullptr};
+        }
         ThrowTypeError("Unexpected type error in binary expression", pos);
     }
 
@@ -673,27 +698,18 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left,
     Type *unboxedR = isLogicalExtendedOperator ? ETSBuiltinTypeAsConditionalType(rightType)
                                                : ETSBuiltinTypeAsPrimitiveType(rightType);
 
-    checker::Type *tsType {};
     bool isEqualOp = (operationType > lexer::TokenType::PUNCTUATOR_SUBSTITUTION &&
                       operationType < lexer::TokenType::PUNCTUATOR_ARROW) &&
                      !forcePromotion;
 
     if (CheckBinaryOperatorForBigInt(leftType, rightType, expr, operationType)) {
-        switch (operationType) {
-            case lexer::TokenType::PUNCTUATOR_GREATER_THAN:
-            case lexer::TokenType::PUNCTUATOR_LESS_THAN:
-            case lexer::TokenType::PUNCTUATOR_GREATER_THAN_EQUAL:
-            case lexer::TokenType::PUNCTUATOR_LESS_THAN_EQUAL:
-                return {GlobalETSBooleanType(), GlobalETSBooleanType()};
-            default:
-                return {leftType, rightType};
-        }
+        return GetBigIntOperatorTypesForBinaryOperator(operationType, leftType, rightType);
     };
 
     auto checkMap = GetCheckMap();
     if (checkMap.find(operationType) != checkMap.end()) {
         auto check = checkMap[operationType];
-        tsType = check(this, left, right, operationType, pos, isEqualOp, leftType, rightType, unboxedL, unboxedR);
+        auto tsType = check(this, left, right, operationType, pos, isEqualOp, leftType, rightType, unboxedL, unboxedR);
         return {tsType, tsType};
     }
 

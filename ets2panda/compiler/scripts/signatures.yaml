@@ -359,6 +359,16 @@ builtins:
   - name: FunctionN
     package: PKG_STD_CORE
     ref: BUILTIN_FUNCTIONN
+  - name: EnumConstant
+    package: PKG_STD_CORE
+    ref: BUILTIN_ENUM_CONSTANT
+  - name: EnumIntType
+    package: PKG_STD_CORE
+    ref: BUILTIN_ENUM_INT
+  - name: EnumStrType
+    package: PKG_STD_CORE
+    ref: BUILTIN_ENUM_STRING
+
 
 signatures:
   - callee: BUILTIN_OBJECT
@@ -1314,6 +1324,12 @@ signatures:
     params: []
     return_type: BUILTIN_JSVALUE
     ref: BUILTIN_JSRUNTIME_CREATE_OBJECT
+
+  - callee: BUILTIN_ENUM_CONSTANT
+    method_name: getIndex
+    params: []
+    return_type: PRIMITIVE_INT
+    ref: BUILTIN_ENUM_CONSTANT_GET_INDEX
 
 dynamiclangs:
   - name: js

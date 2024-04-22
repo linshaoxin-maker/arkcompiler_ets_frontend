@@ -16,10 +16,19 @@
 #ifndef ES2PANDA_CHECKER_ETS_CHECKER_H
 #define ES2PANDA_CHECKER_ETS_CHECKER_H
 
+#include "checker/checkerContext.h"
+#include "varbinder/scope.h"
 #include "checker/checker.h"
-
-#include "checker/types/ets/types.h"
 #include "checker/ets/primitiveWrappers.h"
+#include "checker/ets/typeConverter.h"
+#include "checker/types/ets/etsObjectType.h"
+#include "checker/types/ets/etsTupleType.h"
+#include "checker/types/ets/types.h"
+#include "checker/types/globalTypesHolder.h"
+#include "ir/ts/tsTypeParameter.h"
+#include "ir/ts/tsTypeParameterInstantiation.h"
+#include "lexer/token/tokenType.h"
+#include "util/ustring.h"
 #include "checker/resolveResult.h"
 
 namespace ark::es2panda::varbinder {
@@ -69,11 +78,6 @@ public:
           dynamicCallNames_ {{DynamicCallNamesMap(Allocator()->Adapter()), DynamicCallNamesMap(Allocator()->Adapter())}}
     {
     }
-
-    ~ETSChecker() override = default;
-
-    NO_COPY_SEMANTIC(ETSChecker);
-    NO_MOVE_SEMANTIC(ETSChecker);
 
     [[nodiscard]] static inline TypeFlag ETSType(const Type *const type) noexcept
     {
@@ -133,7 +137,6 @@ public:
     Type *GuaranteedTypeForUncheckedCast(Type *base, Type *substituted);
     Type *GuaranteedTypeForUncheckedCallReturn(Signature *sig);
     Type *GuaranteedTypeForUncheckedPropertyAccess(varbinder::Variable *prop);
-
     [[nodiscard]] bool IsETSChecker() const noexcept override
     {
         return true;
@@ -230,8 +233,6 @@ public:
                                                                  ETSFunctionType *extensionFunctionType);
     ETSTypeParameter *CreateTypeParameter();
     ETSObjectType *CreateETSObjectType(util::StringView name, ir::AstNode *declNode, ETSObjectFlags flags);
-    ETSEnumType *CreateETSEnumType(ir::TSEnumDeclaration const *enumDecl);
-    ETSStringEnumType *CreateETSStringEnumType(ir::TSEnumDeclaration const *enumDecl);
     std::tuple<util::StringView, SignatureInfo *> CreateBuiltinArraySignatureInfo(ETSArrayType *arrayType, size_t dim);
     Signature *CreateBuiltinArraySignature(ETSArrayType *arrayType, size_t dim);
     IntType *CreateIntTypeFromType(Type *type);
@@ -281,6 +282,11 @@ public:
                                                               checker::Type *rightType, Type *unboxedL, Type *unboxedR);
     std::tuple<Type *, Type *> CheckBinaryOperatorInstanceOf(lexer::SourcePosition pos, checker::Type *leftType,
                                                              checker::Type *rightType);
+
+    std::tuple<Type *, Type *> GetBigIntOperatorTypesForBinaryOperator(lexer::TokenType operationType,
+                                                                       checker::Type *const leftType,
+                                                                       checker::Type *rightType);
+
     checker::Type *CheckBinaryOperatorNullishCoalescing(ir::Expression *right, lexer::SourcePosition pos,
                                                         checker::Type *leftType, checker::Type *rightType);
     Type *HandleArithmeticOperationOnTypes(Type *left, Type *right, lexer::TokenType operationType);
@@ -459,7 +465,6 @@ public:
     void ValidateGenericTypeAliasForClonedNode(ir::TSTypeAliasDeclaration *typeAliasNode,
                                                const ir::TSTypeParameterInstantiation *exactTypeParams);
     Type *HandleTypeAlias(ir::Expression *name, const ir::TSTypeParameterInstantiation *typeParams);
-    Type *GetTypeFromEnumReference(varbinder::Variable *var);
     Type *GetTypeFromTypeParameterReference(varbinder::LocalVariable *var, const lexer::SourcePosition &pos);
     Type *GetNonConstantTypeFromPrimitiveType(Type *type) const;
     bool IsNullLikeOrVoidExpression(const ir::Expression *expr) const;
@@ -477,6 +482,8 @@ public:
     Type *HandleBooleanLogicalOperatorsExtended(Type *leftType, Type *rightType, ir::BinaryExpression *expr);
 
     checker::Type *FixOptionalVariableType(varbinder::Variable *const bindingVar, ir::ModifierFlags flags);
+    void VariableDeclCheckHelper(ir::Identifier *ident, ir::TypeNode *typeAnnotation, ir::Expression *init,
+                                 checker::Type *annotationType, varbinder::Variable *const bindingVar);
     checker::Type *CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *typeAnnotation, ir::Expression *init,
                                             ir::ModifierFlags flags);
     void CheckTruthinessOfType(ir::Expression *expr);
@@ -522,6 +529,7 @@ public:
     Type *MaybePromotedBuiltinType(Type *type) const;
     Type const *MaybePromotedBuiltinType(Type const *type) const;
     Type *MaybePrimitiveBuiltinType(Type *type) const;
+    void CompareSwitchCases(size_t caseNum, ArenaVector<ir::SwitchCaseStatement *> *cases);
     void CheckForSameSwitchCases(ArenaVector<ir::SwitchCaseStatement *> const &cases);
     std::string GetStringFromIdentifierValue(checker::Type *caseType) const;
     bool CompareIdentifiersValuesAreDifferent(ir::Expression *compareValue, const std::string &caseValue);
@@ -545,7 +553,6 @@ public:
     void CheckUnboxedTypesAssignable(TypeRelation *relation, Type *source, Type *target);
     void CheckBoxedSourceTypeAssignable(TypeRelation *relation, Type *source, Type *target);
     void CheckUnboxedSourceTypeWithWideningAssignable(TypeRelation *relation, Type *source, Type *target);
-    void CheckValidGenericTypeParameter(Type *argType, const lexer::SourcePosition &pos);
     void ValidateResolvedProperty(const varbinder::LocalVariable *property, const ETSObjectType *target,
                                   const ir::Identifier *ident, PropertySearchFlags flags);
     bool IsValidSetterLeftSide(const ir::MemberExpression *member);
@@ -594,24 +601,6 @@ public:
 
     static Type *TryToInstantiate(Type *type, ArenaAllocator *allocator, TypeRelation *relation,
                                   GlobalTypesHolder *globalTypes);
-    // Enum
-    [[nodiscard]] ir::Identifier *CreateEnumNamesArray(ETSEnumInterface const *enumType);
-    [[nodiscard]] ir::Identifier *CreateEnumValuesArray(ETSEnumType *enumType);
-    [[nodiscard]] ir::Identifier *CreateEnumStringValuesArray(ETSEnumInterface *enumType);
-    [[nodiscard]] ir::Identifier *CreateEnumItemsArray(ETSEnumInterface *enumType);
-    [[nodiscard]] ETSEnumType::Method CreateEnumFromIntMethod(ir::Identifier *namesArrayIdent,
-                                                              ETSEnumInterface *enumType);
-    [[nodiscard]] ETSEnumType::Method CreateEnumGetValueMethod(ir::Identifier *valuesArrayIdent, ETSEnumType *enumType);
-    [[nodiscard]] ETSEnumType::Method CreateEnumToStringMethod(ir::Identifier *stringValuesArrayIdent,
-                                                               ETSEnumInterface *enumType);
-    [[nodiscard]] ETSEnumType::Method CreateEnumGetNameMethod(ir::Identifier *namesArrayIdent,
-                                                              ETSEnumInterface *enumType);
-    [[nodiscard]] ETSEnumType::Method CreateEnumValueOfMethod(ir::Identifier *namesArrayIdent,
-                                                              ETSEnumInterface *enumType);
-    [[nodiscard]] ETSEnumType::Method CreateEnumValuesMethod(ir::Identifier *itemsArrayIdent,
-                                                             ETSEnumInterface *enumType);
-    [[nodiscard]] ir::StringLiteral *CreateEnumStringLiteral(ETSEnumInterface *const enumType,
-                                                             const ir::TSEnumMember *const member);
 
     // Dynamic interop
     template <typename T>
@@ -661,6 +650,8 @@ public:
     void AddToLocalClassInstantiationList(ir::ETSNewClassInstanceExpression *newExpr);
 
     ir::ETSParameterExpression *AddParam(util::StringView name, ir::TypeNode *type);
+
+    static bool IsEnumCanBeImplicitlyConvertedTo(Type *type);
 
 private:
     using ClassBuilder = std::function<void(ArenaVector<ir::AstNode *> *)>;

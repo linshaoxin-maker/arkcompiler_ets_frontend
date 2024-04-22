@@ -670,16 +670,42 @@
                                 }
                               },
                               {
-                                "type": "NumberLiteral",
-                                "value": 10,
+                                "type": "TSAsExpression",
+                                "expression": {
+                                  "type": "NumberLiteral",
+                                  "value": 10,
+                                  "loc": {
+                                    "start": {
+                                      "line": 21,
+                                      "column": 33
+                                    },
+                                    "end": {
+                                      "line": 21,
+                                      "column": 35
+                                    }
+                                  }
+                                },
+                                "typeAnnotation": {
+                                  "type": "ETSPrimitiveType",
+                                  "loc": {
+                                    "start": {
+                                      "line": 21,
+                                      "column": 27
+                                    },
+                                    "end": {
+                                      "line": 21,
+                                      "column": 30
+                                    }
+                                  }
+                                },
                                 "loc": {
                                   "start": {
-                                    "line": 21,
-                                    "column": 33
+                                    "line": 1,
+                                    "column": 1
                                   },
                                   "end": {
-                                    "line": 21,
-                                    "column": 35
+                                    "line": 1,
+                                    "column": 1
                                   }
                                 }
                               }

@@ -49,6 +49,11 @@ public:
         return test_;
     }
 
+    void SetTest(Expression *test)
+    {
+        test_ = test;
+    }
+
     [[nodiscard]] const Statement *Consequent() const noexcept
     {
         return consequent_;

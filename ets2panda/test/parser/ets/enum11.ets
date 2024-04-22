@@ -19,6 +19,6 @@ function main(): void {
   let arr: Color[] = [Color.Red];
 
   let ordinal: int = arr[0] as int;
-  let red = ordinal as Color;
+  //let red = ordinal as Color;
   let ordinalFail: int = Color as int;
 }

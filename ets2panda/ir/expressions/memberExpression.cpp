@@ -140,24 +140,6 @@ checker::Type *MemberExpression::Check(checker::TSChecker *checker)
     return checker->GetAnalyzer()->Check(this);
 }
 
-std::pair<checker::Type *, varbinder::LocalVariable *> MemberExpression::ResolveEnumMember(checker::ETSChecker *checker,
-                                                                                           checker::Type *type) const
-{
-    auto const *const enumInterface = [type]() -> checker::ETSEnumInterface const * {
-        if (type->IsETSEnumType()) {
-            return type->AsETSEnumType();
-        }
-        return type->AsETSStringEnumType();
-    }();
-
-    if (parent_->Type() == ir::AstNodeType::CALL_EXPRESSION && parent_->AsCallExpression()->Callee() == this) {
-        return {enumInterface->LookupMethod(checker, object_, property_->AsIdentifier()), nullptr};
-    }
-
-    auto *const literalType = enumInterface->LookupConstant(checker, object_, property_->AsIdentifier());
-    return {literalType, literalType->GetMemberVar()};
-}
-
 std::pair<checker::Type *, varbinder::LocalVariable *> MemberExpression::ResolveObjectMember(
     checker::ETSChecker *checker) const
 {
@@ -203,8 +185,6 @@ checker::Type *MemberExpression::TraverseUnionMember(checker::ETSChecker *checke
         if (apparent->IsETSObjectType()) {
             SetObjectType(apparent->AsETSObjectType());
             addPropType(ResolveObjectMember(checker).first);
-        } else if (apparent->IsETSEnumType() || apparent->IsETSStringEnumType()) {
-            addPropType(ResolveEnumMember(checker, apparent).first);
         } else {
             checker->ThrowTypeError({"Type ", unionType, " is illegal in union member expression."}, Start());
         }
@@ -326,8 +306,10 @@ checker::Type *MemberExpression::CheckTupleAccessMethod(checker::ETSChecker *che
         (!Parent()->IsUpdateExpression())) {
         // Error never should be thrown by this call, because LUB of types can be converted to any type which
         // LUB was calculated by casting
-        const checker::CastingContext cast(checker->Relation(), this, baseType->AsETSArrayType()->ElementType(),
-                                           tupleTypeAtIdx, Start(), {"Tuple type couldn't be converted "});
+        if (baseType->AsETSArrayType()->ElementType() != tupleTypeAtIdx) {
+            const checker::CastingContext cast(checker->Relation(), this, baseType->AsETSArrayType()->ElementType(),
+                                               tupleTypeAtIdx, Start(), {"Tuple type couldn't be converted "});
+        }
     }
 
     return tupleTypeAtIdx;

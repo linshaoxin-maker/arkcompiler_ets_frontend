@@ -239,6 +239,20 @@ void DefaultParameterLowering::CreateOverloadFunction(ir::MethodDefinition *meth
     overloadMethod->SetParent(method);  // NOTE(aleksisch): It's incorrect and don't exist in class body
 }
 
+ir::Expression *DefaultParameterLowering::CreateInializerExpression(ir::ETSParameterExpression *par,
+                                                                    checker::ETSChecker *checker)
+{
+    ir::Expression *clone = nullptr;
+    if (par->Initializer()->IsArrowFunctionExpression()) {
+        clone = par->Initializer();
+    } else {
+        auto *value = par->Initializer()->Clone(checker->Allocator(), nullptr)->AsExpression();
+        auto *type = par->TypeAnnotation()->Clone(checker->Allocator(), nullptr)->AsTypeNode();
+        clone = checker->AllocNode<ir::TSAsExpression>(value, type, false);
+    }
+    return clone;
+}
+
 void DefaultParameterLowering::RemoveInitializers(ArenaVector<ir::Expression *> params)
 {
     std::for_each(params.begin(), params.end(), [](ir::Expression *expr) {
@@ -290,18 +304,9 @@ void DefaultParameterLowering::ProcessGlobalFunctionDefinition(ir::MethodDefinit
         //              calls foo(0, 1, 2)
         auto pt = it;
         do {
-            // extract default value from pt and make the function call argument out of it
-            // for now simple put whole parameter node to vector
-            ir::Expression *clone = nullptr;
-            auto *par = (*pt)->AsETSParameterExpression();
-            if (par->Initializer()->IsArrowFunctionExpression()) {
-                clone = par->Initializer();
-            } else {
-                clone = par->Initializer()->Clone(checker->Allocator(), nullptr)->AsExpression();
-            }
-            if (clone != nullptr) {
-                defaultArgs.push_back(clone);
-            }
+            // extract default value from pt and make the function call argument out of it.
+            // use 'as' expression to force type cast for further signature check & assign.
+            defaultArgs.push_back(CreateInializerExpression((*pt)->AsETSParameterExpression(), checker));
         } while (params.rbegin() != pt--);
 
         // ok, now we need to copy the 'valid' (for now) arguments from original function

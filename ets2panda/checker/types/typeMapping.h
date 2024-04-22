@@ -60,8 +60,6 @@
     _(TypeFlag::WILDCARD, WildcardType)                                \
     _(TypeFlag::ETS_TYPE_PARAMETER, ETSTypeParameter)                  \
     _(TypeFlag::ETS_NONNULLISH, ETSNonNullishType)                     \
-    _(TypeFlag::ETS_ENUM, ETSEnumType)                                 \
-    _(TypeFlag::ETS_STRING_ENUM, ETSStringEnumType)                    \
     _(TypeFlag::ETS_EXTENSION_FUNC_HELPER, ETSExtensionFuncHelperType) \
     _(TypeFlag::ETS_TUPLE, ETSTupleType)
 

@@ -79,4 +79,11 @@ checker::Type *AssertStatement::Check([[maybe_unused]] checker::ETSChecker *chec
 {
     return checker->GetAnalyzer()->Check(this);
 }
+
+void AssertStatement::SetTest(Expression *test)
+{
+    test_ = test;
+    test_->SetParent(this);
+}
+
 }  // namespace ark::es2panda::ir

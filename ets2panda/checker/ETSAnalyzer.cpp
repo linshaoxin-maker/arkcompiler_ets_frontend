@@ -1141,12 +1141,6 @@ checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
         return SetAndAdjustType(checker, expr, baseType->AsETSObjectType());
     }
 
-    if (baseType->IsETSEnumType() || baseType->IsETSStringEnumType()) {
-        auto [memberType, memberVar] = expr->ResolveEnumMember(checker, baseType);
-        expr->SetPropVar(memberVar);
-        return expr->AdjustType(checker, memberType);
-    }
-
     if (baseType->IsETSUnionType()) {
         return expr->AdjustType(checker, expr->CheckUnionMember(checker, baseType));
     }
@@ -2243,6 +2237,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSArrayType *node) const
 checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
+    TypeRelationFlag extraFlags = TypeRelationFlag::NONE;
 
     if (expr->TsType() != nullptr) {
         return expr->TsType();
@@ -2268,13 +2263,21 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
         }
     }
 
+    // NOTE: this is to address spec/enum/issue14636_1.ets test failure
+    if (targetType->IsETSEnumType() && sourceType->IsETSEnumType() &&
+        targetType->AsETSEnumType()->IsSameEnumType(sourceType->AsETSEnumType())) {
+        extraFlags |= TypeRelationFlag::NO_THROW;
+    }
+
     if (sourceType->DefinitelyETSNullish() && !targetType->PossiblyETSNullish()) {
         checker->ThrowTypeError("Cannot cast 'null' or 'undefined' to non-nullish type.", expr->Expr()->Start());
     }
 
-    const checker::CastingContext ctx(checker->Relation(), expr->Expr(), sourceType, targetType, expr->Expr()->Start(),
-                                      {"Cannot cast type '", sourceType, "' to '", targetType, "'"});
-
+    // clang-format off
+    const checker::CastingContext ctx(checker->Relation(), expr->Expr(), sourceType, targetType,
+                                        expr->Expr()->Start(), {
+                                        "Cannot cast type '", sourceType, "' to '", targetType, "'"}, extraFlags);
+    // clang-format on
     if (sourceType->IsETSDynamicType() && targetType->IsLambdaObject()) {
         // NOTE: itrubachev. change targetType to created lambdaobject type.
         // Now targetType is not changed, only construct signature is added to it
@@ -2320,29 +2323,9 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSConstructorType *node) 
     UNREACHABLE();
 }
 
-checker::Type *ETSAnalyzer::Check(ir::TSEnumDeclaration *st) const
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSEnumDeclaration *st) const
 {
-    ETSChecker *checker = GetETSChecker();
-    varbinder::Variable *enumVar = st->Key()->Variable();
-    ASSERT(enumVar != nullptr);
-
-    if (enumVar->TsType() == nullptr) {
-        checker::Type *etsEnumType;
-        if (auto *const itemInit = st->Members().front()->AsTSEnumMember()->Init(); itemInit->IsNumberLiteral()) {
-            etsEnumType = checker->CreateETSEnumType(st);
-        } else if (itemInit->IsStringLiteral()) {
-            etsEnumType = checker->CreateETSStringEnumType(st);
-        } else {
-            checker->ThrowTypeError("Invalid enumeration value type.", st->Start());
-        }
-        st->SetTsType(etsEnumType);
-        etsEnumType->SetVariable(enumVar);
-        enumVar->SetTsType(etsEnumType);
-    } else if (st->TsType() == nullptr) {
-        st->SetTsType(enumVar->TsType());
-    }
-
-    return st->TsType();
+    UNREACHABLE();
 }
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSEnumMember *st) const

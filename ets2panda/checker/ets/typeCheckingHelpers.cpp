@@ -78,6 +78,10 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
     auto *const conditionType = ETSBuiltinTypeAsConditionalType(testType);
 
     if (conditionType == nullptr || !conditionType->IsConditionalExprType()) {
+        if (expr->IsBinaryExpression() &&
+            (expr->AsBinaryExpression()->IsPostBitSet(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED))) {
+            return;
+        }
         ThrowTypeError("Condition must be of possible condition type", expr->Start());
     }
 
@@ -542,24 +546,6 @@ Type *ETSChecker::GetTypeFromClassReference(varbinder::Variable *var)
     return classType;
 }
 
-Type *ETSChecker::GetTypeFromEnumReference([[maybe_unused]] varbinder::Variable *var)
-{
-    if (var->TsType() != nullptr) {
-        return var->TsType();
-    }
-
-    auto const *const enumDecl = var->Declaration()->Node()->AsTSEnumDeclaration();
-    if (auto *const itemInit = enumDecl->Members().front()->AsTSEnumMember()->Init(); itemInit->IsNumberLiteral()) {
-        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-        return CreateETSEnumType(enumDecl);
-    } else if (itemInit->IsStringLiteral()) {  // NOLINT(readability-else-after-return)
-        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-        return CreateETSStringEnumType(enumDecl);
-    } else {  // NOLINT(readability-else-after-return)
-        ThrowTypeError("Invalid enumeration value type.", enumDecl->Start());
-    }
-}
-
 Type *ETSChecker::GetTypeFromTypeParameterReference(varbinder::LocalVariable *var, const lexer::SourcePosition &pos)
 {
     ASSERT(var->Declaration()->Node()->IsTSTypeParameter());
@@ -600,8 +586,7 @@ Type *ETSChecker::ETSBuiltinTypeAsPrimitiveType(Type *objectType)
         return nullptr;
     }
 
-    if (objectType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) || objectType->HasTypeFlag(TypeFlag::ETS_ENUM) ||
-        objectType->HasTypeFlag(TypeFlag::ETS_STRING_ENUM)) {
+    if (objectType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
         return objectType;
     }
 

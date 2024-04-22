@@ -764,58 +764,7 @@ void ETSCompiler::Compile(const ir::BlockExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
     compiler::LocalRegScope lrs(etsg, expr->Scope());
-
     etsg->CompileStatements(expr->Statements());
-}
-
-bool ETSCompiler::IsSucceedCompilationProxyMemberExpr(const ir::CallExpression *expr) const
-{
-    ETSGen *etsg = GetETSGen();
-    auto *const calleeObject = expr->callee_->AsMemberExpression()->Object();
-    auto const *const enumInterface = [calleeType = calleeObject->TsType()]() -> checker::ETSEnumInterface const * {
-        if (calleeType->IsETSEnumType()) {
-            return calleeType->AsETSEnumType();
-        }
-        if (calleeType->IsETSStringEnumType()) {
-            return calleeType->AsETSStringEnumType();
-        }
-        return nullptr;
-    }();
-
-    if (enumInterface != nullptr) {
-        ArenaVector<ir::Expression *> arguments(etsg->Allocator()->Adapter());
-
-        checker::Signature *const signature = [expr, calleeObject, enumInterface, &arguments]() {
-            const auto &memberProxyMethodName = expr->Signature()->InternalName();
-
-            if (memberProxyMethodName == checker::ETSEnumType::TO_STRING_METHOD_NAME) {
-                arguments.push_back(calleeObject);
-                return enumInterface->ToStringMethod().globalSignature;
-            }
-            if (memberProxyMethodName == checker::ETSEnumType::GET_VALUE_METHOD_NAME) {
-                arguments.push_back(calleeObject);
-                return enumInterface->GetValueMethod().globalSignature;
-            }
-            if (memberProxyMethodName == checker::ETSEnumType::GET_NAME_METHOD_NAME) {
-                arguments.push_back(calleeObject);
-                return enumInterface->GetNameMethod().globalSignature;
-            }
-            if (memberProxyMethodName == checker::ETSEnumType::VALUES_METHOD_NAME) {
-                return enumInterface->ValuesMethod().globalSignature;
-            }
-            if (memberProxyMethodName == checker::ETSEnumType::VALUE_OF_METHOD_NAME) {
-                arguments.push_back(expr->Arguments().front());
-                return enumInterface->ValueOfMethod().globalSignature;
-            }
-            UNREACHABLE();
-        }();
-
-        ASSERT(signature->ReturnType() == expr->Signature()->ReturnType());
-        etsg->CallStatic(expr, signature, arguments);
-        etsg->SetAccumulatorType(expr->TsType());
-    }
-
-    return enumInterface != nullptr;
 }
 
 void ETSCompiler::CompileDynamic(const ir::CallExpression *expr, compiler::VReg &calleeReg) const
@@ -903,13 +852,6 @@ void ETSCompiler::Compile(const ir::CallExpression *expr) const
     ETSGen *etsg = GetETSGen();
     compiler::RegScope rs(etsg);
     compiler::VReg calleeReg = etsg->AllocReg();
-
-    const auto isProxy = expr->Signature()->HasSignatureFlag(checker::SignatureFlags::PROXY);
-    if (isProxy && expr->Callee()->IsMemberExpression()) {
-        if (IsSucceedCompilationProxyMemberExpr(expr)) {
-            return;
-        }
-    }
 
     bool isStatic = expr->Signature()->HasSignatureFlag(checker::SignatureFlags::STATIC);
     bool isReference = expr->Signature()->HasSignatureFlag(checker::SignatureFlags::TYPE);
@@ -1060,6 +1002,21 @@ bool ETSCompiler::CompileComputed(compiler::ETSGen *etsg, const ir::MemberExpres
     return true;
 }
 
+void CompileStaticVariable(ETSGen *etsg, const ir::MemberExpression *expr, const util::StringView &propName)
+{
+    auto ttctx = compiler::TargetTypeContext(etsg, expr->TsType());
+
+    if (expr->PropVar()->TsType()->HasTypeFlag(checker::TypeFlag::GETTER_SETTER)) {
+        checker::Signature *sig = expr->PropVar()->TsType()->AsETSFunctionType()->FindGetter();
+        etsg->CallStatic0(expr, sig->InternalName());
+        etsg->SetAccumulatorType(expr->TsType());
+        return;
+    }
+
+    util::StringView fullName = etsg->FormClassPropReference(expr->Object()->TsType()->AsETSObjectType(), propName);
+    etsg->LoadStaticProperty(expr, expr->TsType(), fullName);
+}
+
 void ETSCompiler::Compile(const ir::MemberExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
@@ -1078,16 +1035,14 @@ void ETSCompiler::Compile(const ir::MemberExpression *expr) const
         return;
     }
 
-    if (HandleEnumTypes(expr, etsg)) {
-        return;
-    }
+    auto &propName = expr->Property()->AsIdentifier()->Name();
 
-    if (HandleStaticProperties(expr, etsg)) {
+    if (etsg->Checker()->IsVariableStatic(expr->PropVar())) {
+        CompileStaticVariable(etsg, expr, propName);
         return;
     }
 
     auto *const objectType = etsg->Checker()->GetApparentType(expr->Object()->TsType());
-    auto &propName = expr->Property()->AsIdentifier()->Name();
 
     auto ottctx = compiler::TargetTypeContext(etsg, expr->Object()->TsType());
     etsg->CompileAndCheck(expr->Object());
@@ -1143,24 +1098,6 @@ bool ETSCompiler::HandleArrayTypeLengthProperty(const ir::MemberExpression *expr
     return false;
 }
 
-bool ETSCompiler::HandleEnumTypes(const ir::MemberExpression *expr, ETSGen *etsg) const
-{
-    auto *const objectType = etsg->Checker()->GetApparentType(expr->Object()->TsType());
-    if (objectType->IsETSEnumType() || objectType->IsETSStringEnumType()) {
-        auto const *const enumInterface = [objectType, expr]() -> checker::ETSEnumInterface const * {
-            if (objectType->IsETSEnumType()) {
-                return expr->TsType()->AsETSEnumType();
-            }
-            return expr->TsType()->AsETSStringEnumType();
-        }();
-
-        auto ttctx = compiler::TargetTypeContext(etsg, expr->TsType());
-        etsg->LoadAccumulatorInt(expr, enumInterface->GetOrdinal());
-        return true;
-    }
-    return false;
-}
-
 bool ETSCompiler::HandleStaticProperties(const ir::MemberExpression *expr, ETSGen *etsg) const
 {
     auto &propName = expr->Property()->AsIdentifier()->Name();
@@ -1169,7 +1106,7 @@ bool ETSCompiler::HandleStaticProperties(const ir::MemberExpression *expr, ETSGe
         auto ttctx = compiler::TargetTypeContext(etsg, expr->TsType());
 
         if (expr->PropVar()->TsType()->HasTypeFlag(checker::TypeFlag::GETTER_SETTER)) {
-            checker::Signature *sig = variable->TsType()->AsETSFunctionType()->FindGetter();
+            checker::Signature *sig = expr->PropVar()->TsType()->AsETSFunctionType()->FindGetter();
             etsg->CallStatic0(expr, sig->InternalName());
             etsg->SetAccumulatorType(expr->TsType());
             return true;
@@ -2035,64 +1972,44 @@ void ETSCompiler::CompileCast(const ir::TSAsExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
     auto *targetType = etsg->Checker()->GetApparentType(expr->TsType());
+    std::map<checker::TypeFlag, void (*)(const ir::TSAsExpression *, ETSGen *)> castHandlers {
+        {checker::TypeFlag::ETS_BOOLEAN,
+         [](const ir::TSAsExpression *expression, ETSGen *etsgen) { etsgen->CastToBoolean(expression); }},
+        {checker::TypeFlag::CHAR,
+         [](const ir::TSAsExpression *expression, ETSGen *etsgen) { etsgen->CastToChar(expression); }},
+        {checker::TypeFlag::BYTE,
+         [](const ir::TSAsExpression *expression, ETSGen *etsgen) { etsgen->CastToByte(expression); }},
+        {checker::TypeFlag::SHORT,
+         [](const ir::TSAsExpression *expression, ETSGen *etsgen) { etsgen->CastToShort(expression); }},
+        {checker::TypeFlag::INT,
+         [](const ir::TSAsExpression *expression, ETSGen *etsgen) { etsgen->CastToInt(expression); }},
+        {checker::TypeFlag::LONG,
+         [](const ir::TSAsExpression *expression, ETSGen *etsgen) { etsgen->CastToLong(expression); }},
+        {checker::TypeFlag::FLOAT,
+         [](const ir::TSAsExpression *expression, ETSGen *etsgen) { etsgen->CastToFloat(expression); }},
+        {checker::TypeFlag::DOUBLE,
+         [](const ir::TSAsExpression *expression, ETSGen *etsgen) { etsgen->CastToDouble(expression); }}};
+
+    auto result = castHandlers.find(checker::ETSChecker::TypeKind(targetType));
+    if (result != castHandlers.end()) {
+        result->second(expr, etsg);
+        return;
+    }
 
     switch (checker::ETSChecker::TypeKind(targetType)) {
-        case checker::TypeFlag::ETS_BOOLEAN: {
-            etsg->CastToBoolean(expr);
-            break;
-        }
-        case checker::TypeFlag::CHAR: {
-            etsg->CastToChar(expr);
-            break;
-        }
-        case checker::TypeFlag::BYTE: {
-            etsg->CastToByte(expr);
-            break;
-        }
-        case checker::TypeFlag::SHORT: {
-            etsg->CastToShort(expr);
-            break;
-        }
-        case checker::TypeFlag::INT: {
-            etsg->CastToInt(expr);
-            break;
-        }
-        case checker::TypeFlag::LONG: {
-            etsg->CastToLong(expr);
-            break;
-        }
-        case checker::TypeFlag::FLOAT: {
-            etsg->CastToFloat(expr);
-            break;
-        }
-        case checker::TypeFlag::DOUBLE: {
-            etsg->CastToDouble(expr);
-            break;
-        }
         case checker::TypeFlag::ETS_ARRAY:
         case checker::TypeFlag::ETS_OBJECT:
         case checker::TypeFlag::ETS_TYPE_PARAMETER:
         case checker::TypeFlag::ETS_NONNULLISH:
         case checker::TypeFlag::ETS_UNION:
         case checker::TypeFlag::ETS_NULL:
-        case checker::TypeFlag::ETS_UNDEFINED: {
+        case checker::TypeFlag::ETS_UNDEFINED:
+        case checker::TypeFlag::ETS_ENUM_TYPE: {
             etsg->CastToReftype(expr, targetType, expr->isUncheckedCast_);
             break;
         }
         case checker::TypeFlag::ETS_DYNAMIC_TYPE: {
             etsg->CastToDynamic(expr, targetType->AsETSDynamicType());
-            break;
-        }
-        case checker::TypeFlag::ETS_STRING_ENUM:
-            [[fallthrough]];
-        case checker::TypeFlag::ETS_ENUM: {
-            auto *const signature = expr->TsType()->IsETSEnumType()
-                                        ? expr->TsType()->AsETSEnumType()->FromIntMethod().globalSignature
-                                        : expr->TsType()->AsETSStringEnumType()->FromIntMethod().globalSignature;
-            ArenaVector<ir::Expression *> arguments(etsg->Allocator()->Adapter());
-            arguments.push_back(expr->expression_);
-            etsg->CallStatic(expr, signature, arguments);
-            etsg->SetAccumulatorType(signature->ReturnType());
             break;
         }
         default: {

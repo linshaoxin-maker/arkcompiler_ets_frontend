@@ -42,6 +42,7 @@ class DefaultParameterLowering : public Phase {
                                                      ArenaVector<ir::Expression *> funcCallArgs);
     void CreateOverloadFunction(ir::MethodDefinition *method, ArenaVector<ir::Expression *> funcCallArgs,
                                 ArenaVector<ir::Expression *> funcDefinitionArgs, CompilerContext *ctx);
+    ir::Expression *CreateInializerExpression(ir::ETSParameterExpression *par, checker::ETSChecker *checker);
     void RemoveInitializers(ArenaVector<ir::Expression *> params);
     void ProcessGlobalFunctionDefinition(ir::MethodDefinition *method, CompilerContext *ctx);
 
