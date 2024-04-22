@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-import { TypeScriptLinter } from '../lib/TypeScriptLinter';
+import { TypeScriptLinter } from '../lib/linter_1_1/lib/TypeScriptLinter';
 import { parseCommandLine } from './CommandLineParser';
-import { Logger } from '../lib/Logger';
+import { Logger } from '../lib/linter_1_1/lib/Logger';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as readline from 'node:readline';
 import * as path from 'node:path';
-import type { CommandLineOptions } from '../lib/CommandLineOptions';
-import { lint } from '../lib/LinterRunner';
+import type { CommandLineOptions } from '../lib/linter_1_1/lib/CommandLineOptions';
+import { lint } from '../lib/linter_1_1/lib/LinterRunner';
 import { compileLintOptions } from './Compiler';
 
 export function run(): void {

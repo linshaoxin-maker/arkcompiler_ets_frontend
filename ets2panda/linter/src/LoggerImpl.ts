@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Logger as LoggerInterface } from '../lib/Logger';
+import { Logger as LoggerInterface } from '../lib/linter_1_1/lib/Logger';
 import Logger from '../utils/logger';
 
 export class LoggerImpl extends LoggerInterface {

@@ -14,12 +14,12 @@
  */
 
 import * as ts from 'typescript';
-import type { CommandLineOptions } from '../lib/CommandLineOptions';
+import type { CommandLineOptions } from '../lib/linter_1_1/lib/CommandLineOptions';
 import { formTscOptions } from './ts-compiler/FormTscOptions';
-import { logTscDiagnostic } from '../lib/utils/functions/LogTscDiagnostic';
-import { consoleLog } from '../lib/TypeScriptLinter';
-import type { LintOptions } from '../lib/LintOptions';
-import { TSCCompiledProgramWithDiagnostics } from '../lib/ts-diagnostics/TSCCompiledProgram';
+import { logTscDiagnostic } from '../lib/linter_1_1/lib/utils/functions/LogTscDiagnostic';
+import { consoleLog } from '../lib/linter_1_1/lib/TypeScriptLinter';
+import type { LintOptions } from '../lib/linter_1_1/lib/LintOptions';
+import { TSCCompiledProgramWithDiagnostics } from '../lib/linter_1_1/lib/ts-diagnostics/TSCCompiledProgram';
 
 function compile(cmdOptions: CommandLineOptions, overrideCompilerOptions: ts.CompilerOptions): ts.Program {
   const createProgramOptions = formTscOptions(cmdOptions, overrideCompilerOptions);

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Logger } from '../lib/Logger';
+import { Logger } from '../lib/linter_1_1/lib/Logger';
 import { LoggerImpl } from './LoggerImpl';
 Logger.init(new LoggerImpl());
 

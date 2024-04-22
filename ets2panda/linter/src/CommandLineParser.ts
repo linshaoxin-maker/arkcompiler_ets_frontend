@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-import { Logger } from '../lib/Logger';
-import { logTscDiagnostic } from '../lib/utils/functions/LogTscDiagnostic';
-import type { CommandLineOptions } from '../lib/CommandLineOptions';
+import { Logger } from '../lib/linter_1_1/lib/Logger';
+import { logTscDiagnostic } from '../lib/linter_1_1/lib/utils/functions/LogTscDiagnostic';
+import type { CommandLineOptions } from '../lib/linter_1_1/lib/CommandLineOptions';
 import { Command, Option } from 'commander';
 import * as ts from 'typescript';
 import * as fs from 'node:fs';
