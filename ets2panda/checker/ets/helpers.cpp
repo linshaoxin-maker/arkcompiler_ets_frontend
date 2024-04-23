@@ -1877,10 +1877,6 @@ void ETSChecker::CheckNumberOfTypeArguments(ETSObjectType *const type, ir::TSTyp
         return;
     }
 
-    if (typeArgs == nullptr) {
-        return;
-    }
-
     size_t minimumTypeArgs = std::count_if(typeParams.begin(), typeParams.end(), [](Type *param) {
         return param->AsETSTypeParameter()->GetDefaultType() == nullptr;
     });
