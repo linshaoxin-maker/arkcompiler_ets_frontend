@@ -1,7 +1,7 @@
 {
     "mCompact": false,
     "mRemoveComments": true,
-    "mOutputDir": "../../../local",
+    "mOutputDir": "../../../local/keepPaths/SourceCode",
     "mDisableHilog": false,
     "mDisableConsole": true,
     "mSimplify": false,

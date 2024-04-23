@@ -1,7 +1,7 @@
 {
     "mCompact": false,
     "mRemoveComments": true,
-    "mOutputDir": "../../local",
+    "mOutputDir": "../../local/namecache_removecomments",
     "mDisableHilog": false,
     "mDisableConsole": false,
     "mSimplify": false,

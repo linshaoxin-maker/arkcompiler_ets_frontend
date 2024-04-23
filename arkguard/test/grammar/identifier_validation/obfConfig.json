@@ -1,7 +1,7 @@
 {
     "mCompact": false,
     "mRemoveComments": false,
-    "mOutputDir": "../../local",
+    "mOutputDir": "../../local/identifier_validation",
     "mDisableHilog": false,
     "mDisableConsole": false,
     "mSimplify": false,

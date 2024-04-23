@@ -1,7 +1,7 @@
 {
     "mCompact": false,
     "mRemoveComments": true,
-    "mOutputDir": "../../local",
+    "mOutputDir": "../../local/obfuscation_validation",
     "mDisableHilog": false,
     "mDisableConsole": false,
     "mSimplify": false,

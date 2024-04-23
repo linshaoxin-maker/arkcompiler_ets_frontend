@@ -1,7 +1,7 @@
 {
     "mCompact": false,
     "mRemoveComments": false,
-    "mOutputDir": "../../../local",
+    "mOutputDir": "../../../local/rename_file_name_ohmurl/ohmurl_file_normalized",
     "mDisableHilog": false,
     "mDisableConsole": false,
     "mSimplify": false,

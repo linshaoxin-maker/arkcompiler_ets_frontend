@@ -1,7 +1,7 @@
 {
     "mCompact": false,
     "mRemoveComments": false,
-    "mOutputDir": "../../../local",
+    "mOutputDir": "../../../local/shorthand/toplevelConfig",
     "mDisableHilog": false,
     "mDisableConsole": false,
     "mSimplify": false,

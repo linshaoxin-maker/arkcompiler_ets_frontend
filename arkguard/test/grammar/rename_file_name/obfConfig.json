@@ -1,7 +1,7 @@
 {
     "mCompact": false,
     "mRemoveComments": false,
-    "mOutputDir": "../../local",
+    "mOutputDir": "../../local/rename_file_name",
     "mDisableHilog": false,
     "mDisableConsole": false,
     "mSimplify": false,
