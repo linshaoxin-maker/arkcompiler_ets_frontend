@@ -396,6 +396,7 @@ ohos_static_library("es2panda_lib") {
     "//third_party/icu/icu4c/source/common",
     "//third_party/icu/icu4c/source/i18n",
     "//third_party/icu/icu4c/source",
+    "//third_party/json/include",
   ]
 
   deps = [
@@ -453,6 +454,7 @@ ohos_executable("es2panda") {
   }
 
   sources = [
+    "aot/resolveDepsRelation.cpp",
     "aot/emitFiles.cpp",
     "aot/main.cpp",
     "aot/options.cpp",
@@ -469,7 +471,10 @@ ohos_executable("es2panda") {
     ":es2panda_lib",
     "//arkcompiler/ets_frontend/merge_abc:panda_assembly_proto_static",
   ]
-  external_deps = [ "zlib:libz" ]
+  external_deps = [ 
+    "zlib:libz", 
+    "json:nlohmann_json_static",
+  ]
 
   ldflags = []
   if (is_linux) {

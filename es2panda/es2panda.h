@@ -23,6 +23,7 @@
 #include <util/symbolTable.h>
 #include <abc2program/abc2program_compiler.h>
 
+#include <any>
 #include <string>
 #include <unordered_map>
 
@@ -75,6 +76,18 @@ struct PatchFixOptions {
     bool coldFix {false};
 };
 
+
+struct PkgInfo {
+    std::string version;
+};
+
+struct CompileContextInfo {
+    std::vector<std::string> compileEntries;
+    std::string projectRootPath {};
+    std::vector<std::string> hspPkgNames;
+    std::unordered_map<std::string, PkgInfo> pkgContextInfo;
+};
+
 struct CompilerOptions {
     bool enableAbcInput {false};
     bool dumpAsmProgram {false};
@@ -104,6 +117,8 @@ struct CompilerOptions {
     bool bcMinVersion {false};
     int targetApiVersion {0};
     bool targetBcVersion {false};
+    std::string compileContextInfoPath {};
+    CompileContextInfo compileContextInfo {};
     std::unordered_map<std::string, std::string> cacheFiles;
     std::string transformLib {};
     bool branchElimination {false};
