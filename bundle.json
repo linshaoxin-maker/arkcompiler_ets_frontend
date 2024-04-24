@@ -19,7 +19,8 @@
         "deps": {
             "components": [
                 "runtime_core",
-                "zlib"
+                "zlib",
+                "json"
             ],
             "third_party": [
                 "bounds_checking_function",
