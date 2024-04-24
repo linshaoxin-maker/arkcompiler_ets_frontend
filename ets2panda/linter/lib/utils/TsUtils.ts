@@ -37,6 +37,7 @@ import {
   ISENDABLE_TYPE
 } from './consts/SupportedDetsIndexableTypes';
 import type { NameGenerator } from './functions/NameGenerator';
+import { USE_SHARED } from './consts/SharedModuleAPI';
 
 export type CheckType = (this: TsUtils, t: ts.Type) => boolean;
 export class TsUtils {
@@ -2191,5 +2192,21 @@ export class TsUtils {
     } while (newName !== undefined);
 
     return newName;
+  }
+
+  static isSharedModule(sourceFile: ts.SourceFile): boolean {
+    const statements = sourceFile.statements;
+    for (const statement of statements) {
+      if (ts.isImportDeclaration(statement)) {
+        continue;
+      }
+      if (ts.isExpressionStatement(statement) && ts.isStringLiteral(statement.expression)) {
+        if (statement.expression.text === USE_SHARED) {
+          return true;
+        }
+      }
+      return false;
+    }
+    return false;
   }
 }
