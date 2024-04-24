@@ -12,18 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import assert from 'assert';
-import {foo11} from './toplevel_1'
-
-assert.strictEqual(foo11(1, 3), 4);
-
-function foo15(para3: number, para4: number){
-  return para3 - para4;
+import { g } from './toplevel_1';
+assert.strictEqual(g(1, 3), 4);
+function q(u: number, v: number) {
+    return u - v;
 }
-assert.strictEqual(foo15(3, 1), 2);
-
-class className1 {
-  prop1: number;
-  method1(): void {};
+assert.strictEqual(q(3, 1), 2);
+class t {
+    j: number;
+    k(): void { }
+    ;
 }

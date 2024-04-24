@@ -23,7 +23,7 @@ assert.strictEqual(foo11(1, 2), 3);
 function foo12(para3: number, para4: number){
   return para3 - para4;
 }
-assert.strictEqual(foo12(3, 1), 1);
+assert.strictEqual(foo12(3, 1), 2);
 
 namespace ns13 {
   function foo14(para3: string, para4: string): string {

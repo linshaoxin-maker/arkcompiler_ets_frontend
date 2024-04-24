@@ -13,30 +13,24 @@
  * limitations under the License.
  */
 
-import { ApiExtractor } from "../ArkObfuscator";
-import type { ToplevelObf } from "../common/ToplevelObf";
-import type { INameGenerator } from "../generator/INameGenerator";
-import { Scope } from "./ScopeAnalyzer";
-//import { globalMangledTable, historyMangledTable, reservedProperties } from "../transformers/rename/RenamePropertiesTransformer";
-
-export function isValueInMap(map: Map<string, string>, targetValue: string): boolean {
-  let isInMap: boolean = false;
-  for (const value of map.values()) {
-    if (value === targetValue) {
-      isInMap = true;
-      break;
-    }
-  }
-  return isInMap;
-}
+import { ApiExtractor } from '../ArkObfuscator';
+import type { ToplevelObf } from '../common/ToplevelObf';
+import type { INameGenerator } from '../generator/INameGenerator';
+import type { Scope } from './ScopeAnalyzer';
 
 export function getNewNameForToplevel(original: string, generator: INameGenerator, topvelObfIns: ToplevelObf, exportObfuscation: boolean, propertyObfuscation: boolean,
-  globalMangledTable, historyMangledTable, reservedProperties, scope, manager) {
+  globalMangledTable, historyMangledTable, reservedProperties, scope: Scope, currFileConstructorParams: Set<string>) {
     let mangledName = undefined;
     while (!mangledName) {
       let tmpName = generator.getName();
-      const isExistedName: boolean = isInExsitngList(tmpName, original, topvelObfIns, exportObfuscation, propertyObfuscation, globalMangledTable, historyMangledTable, reservedProperties)
-      if (isExistedName) {
+      if (tmpName === original) {
+        continue;
+      }
+      const isExistedToplevelName: boolean = isInExsitngToplevelNames(tmpName, topvelObfIns);
+      if (isExistedToplevelName) {
+        continue;
+      }
+      if (exportObfuscation && propertyObfuscation && isInExsitngPropertyNames(tmpName, globalMangledTable, historyMangledTable, reservedProperties)) {
         continue;
       }
       if (scope && scope.exportNames && scope.exportNames.has(tmpName)) {
@@ -45,8 +39,7 @@ export function getNewNameForToplevel(original: string, generator: INameGenerato
       if (searchMangledInParent(scope, tmpName)) {
         continue;
       }
-      if ((propertyObfuscation && manager.getRootScope().constructorReservedParams.has(tmpName)) ||
-      ApiExtractor.mConstructorPropertySet?.has(tmpName)) {
+      if ((propertyObfuscation && currFileConstructorParams.has(tmpName)) || ApiExtractor.mConstructorPropertySet?.has(tmpName)) {
         continue;
       }
       mangledName = tmpName;
@@ -59,43 +52,46 @@ export function getNewNameForProerty(original: string, generator: INameGenerator
   let mangledName = undefined;
   while (!mangledName) {
     let tmpName = generator.getName();
-    const isExistedName: boolean = isInExsitngList(tmpName, original, topvelObfIns, exportObfuscation, propertyObfuscation, globalMangledTable, historyMangledTable, reservedProperties)
-    if (isExistedName) {
+    if (tmpName === original) {
       continue;
+    }
+    const isExistedToplevelName: boolean = isInExsitngToplevelNames(tmpName, topvelObfIns);
+    if (isExistedToplevelName) {
+      continue;
+    }
+    if (exportObfuscation && propertyObfuscation && isInExsitngPropertyNames(tmpName, globalMangledTable, historyMangledTable, reservedProperties)) {
+       continue;
     }
     mangledName = tmpName;
   }
   return mangledName;
 }
 
-function isInExsitngList(tmpName: string, original, topvelObfIns: ToplevelObf | undefined, exportObfuscation: boolean, propertyObfuscation: boolean,
-  globalMangledTable, historyMangledTable, reservedProperties): boolean {
-  if (tmpName === original) {
-    return true;
-  }
+function isInExsitngToplevelNames(tmpName: string, topvelObfIns: ToplevelObf | undefined): boolean {
   if (topvelObfIns) {
-    if (topvelObfIns.reservedToplevelNames.has(tmpName) || isValueInMap(topvelObfIns.toplevelNameMangledTable, tmpName)) {
-      return true;
-    }
-
-    if (topvelObfIns.historyToplevelMangledTable && isValueInMap(topvelObfIns.historyToplevelMangledTable, tmpName)) {
-      return true;
-    }
-  }
-
-  if (exportObfuscation && propertyObfuscation) {
-    if (reservedProperties.has(tmpName)) {
-      return true;
-    }
-    if (isValueInMap(globalMangledTable, tmpName)) {
-      return true;
-    }
-
-    if (historyMangledTable && isValueInMap(historyMangledTable, tmpName)) {
-      return true;
-    }
+    return topvelObfIns.reservedToplevelNames.has(tmpName) ||
+    isValueInMap(topvelObfIns.toplevelNameMangledTable, tmpName) ||
+    (topvelObfIns.historyToplevelMangledTable && isValueInMap(topvelObfIns.historyToplevelMangledTable, tmpName));
   }
   return false;
+}
+
+function isInExsitngPropertyNames(tmpName: string, globalMangledTable: Map<string, string>, historyMangledTable: Map<string, string>,
+  reservedProperties: Set<string>): boolean {
+  return reservedProperties.has(tmpName) || 
+    isValueInMap(globalMangledTable, tmpName) || 
+    (historyMangledTable && isValueInMap(historyMangledTable, tmpName));
+}
+
+function isValueInMap(map: Map<string, string>, targetValue: string): boolean {
+  let isInMap: boolean = false;
+  for (const value of map.values()) {
+    if (value === targetValue) {
+      isInMap = true;
+      break;
+    }
+  }
+  return isInMap;
 }
 
 export function searchMangledInParent(scope: Scope | undefined, name: string): boolean {

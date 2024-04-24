@@ -20,6 +20,7 @@ export class ToplevelObf {
   public toplevelNameMangledTable: Map<string, string>;
 
   constructor(reservedToplevelNames: string[], isEnabledToplevel: boolean) {
+    console.trace("====+++++++++++=========")
     this.isEnableToplevelObf = isEnabledToplevel;
     this.reservedToplevelNames = new Set(reservedToplevelNames);
     this.historyToplevelMangledTable = undefined;

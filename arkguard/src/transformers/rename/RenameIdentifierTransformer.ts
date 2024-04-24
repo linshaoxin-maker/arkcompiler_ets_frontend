@@ -298,7 +298,8 @@ namespace secharmony {
           mangledName = historyMangledTable?.get(original) ?? globalMangledTable.get(original);
         }
         if (!mangledName) {
-          mangledName = getNewNameForToplevel(original, generator, topLevelObfConfig, exportObfuscation, propertyObfuscation, globalMangledTable, historyMangledTable, reservedProperties, scope, manager);
+          mangledName = getNewNameForToplevel(original, generator, topLevelObfConfig, exportObfuscation, propertyObfuscation, globalMangledTable,
+            historyMangledTable, reservedProperties, scope, manager.getRootScope().constructorReservedParams);
         }
 
         topLevelObfConfig?.toplevelNameMangledTable.set(original, mangledName);
