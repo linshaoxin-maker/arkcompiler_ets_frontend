@@ -14,7 +14,6 @@
  */
 abstract class SettingType {
     private constructor() { }
-    ;
     static get INT(): SettingType & {
         set m(f: number);
         set o(e: number);

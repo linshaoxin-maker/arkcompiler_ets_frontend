@@ -14,7 +14,7 @@
  */
 
 abstract class SettingType_2 {
-  private constructor() {};
+  private constructor() {}
   static get INT(): SettingType_2 & {
       get name_get_prop_2(): "INT";
       get orignal_get_prop_2(): 0;
@@ -26,7 +26,7 @@ abstract class SettingType_2 {
       get orignal_get_prop_2(): 1;
   }{
       return new DOUBLE_2;
-  };
+  }
 }
 
 class Int_2 {

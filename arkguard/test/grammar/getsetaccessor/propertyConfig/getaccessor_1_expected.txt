@@ -14,7 +14,6 @@
  */
 abstract class SettingType_2 {
     private constructor() { }
-    ;
     static get INT(): SettingType_2 & {
         get j(): "INT";
         get k(): 0;
@@ -27,7 +26,6 @@ abstract class SettingType_2 {
     } {
         return new DOUBLE_2;
     }
-    ;
 }
 class Int_2 {
     get j(): "INT" {

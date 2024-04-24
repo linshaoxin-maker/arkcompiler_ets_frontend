@@ -14,7 +14,7 @@
  */
 
 abstract class SettingType {
-  private constructor() {};
+  private constructor() {}
   static get INT(): SettingType & {
       set name_set_prop_2(para: number);
       set orignal_set_prop_2(para: number);

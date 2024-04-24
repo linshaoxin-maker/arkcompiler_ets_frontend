@@ -14,21 +14,18 @@
  */
 abstract class SettingType {
     private constructor() { }
-    ;
     static get INT(): SettingType & {
         set name_set_2(f: number);
         set orignal_set_2(e: number);
     } {
         return new Int;
     }
-    ;
     static get DOUBLE(): SettingType & {
         name_set_2(): "DOUBLE";
         orignal_set_2(): 1;
     } {
         return new DOUBLE;
     }
-    ;
 }
 class Int {
     set name_set_2(d: number) {

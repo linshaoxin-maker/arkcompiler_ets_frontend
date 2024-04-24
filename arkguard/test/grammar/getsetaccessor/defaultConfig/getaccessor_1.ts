@@ -14,19 +14,19 @@
  */
 
 abstract class SettingType_1 {
-  private constructor() {};
+  private constructor() {}
   static get INT(): SettingType_1 & {
       get name_get_2(): "INT";
       get orignal_get_2(): 0;
   }{
       return new Int_1;
-  };
+  }
   static get DOUBLE(): SettingType_1 & {
       get name_get_2(): "DOUBLE";
       get orignal_get_2(): 1;
   }{
       return new DOUBLE_1;
-  };
+  }
 }
 
 class Int_1 {
