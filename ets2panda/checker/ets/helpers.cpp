@@ -1069,7 +1069,7 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
 
     if (typeParams == nullptr) {
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-        return GetReferencedTypeBase(name);
+        return GetReferencedTypeBase(name, false);
     }
 
     for (auto *const origTypeParam : typeParams->Params()) {
@@ -1077,7 +1077,7 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
     }
 
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-    Type *const aliasType = GetReferencedTypeBase(name);
+    Type *const aliasType = GetReferencedTypeBase(name, false);
     auto *const aliasSub = NewSubstitution();
 
     if (typeAliasNode->TypeParams()->Params().size() != typeParams->Params().size()) {
@@ -1193,19 +1193,30 @@ Type *ETSChecker::GetReferencedTypeFromBase([[maybe_unused]] Type *baseType, [[m
     return nullptr;
 }
 
-Type *ETSChecker::GetReferencedTypeBase(ir::Expression *name)
+Type *ETSChecker::GetReferencedTypeBase(ir::Expression *name, bool allowDynamic)
 {
     if (name->IsTSQualifiedName()) {
         auto *qualified = name->AsTSQualifiedName();
         return qualified->Check(this);
     }
 
-    ASSERT(name->IsIdentifier() && name->AsIdentifier()->Variable() != nullptr);
+    bool isIdentWithVar = name->IsIdentifier() && name->AsIdentifier()->Variable() != nullptr;
+    // NOTE: for dynamic expression identifiers have no variable yet
+    // if there is variable in identifier it means it is not dynamic one
+    ASSERT(allowDynamic || isIdentWithVar);
 
-    // NOTE: kbaladurin. forbid usage imported entities as types without declarations
-    auto *importData = VarBinder()->AsETSBinder()->DynamicImportDataForVar(name->AsIdentifier()->Variable());
-    if (importData != nullptr && importData->import->IsPureDynamic()) {
-        return GlobalBuiltinDynamicType(importData->import->Language());
+    if (allowDynamic && !isIdentWithVar) {
+        auto dynamicExprType = name->Check(this);
+        if (dynamicExprType->IsETSDynamicType()) {
+            return dynamicExprType;
+        }
+        if (name->IsIdentifier()) {
+            ThrowTypeError({"Cannot find type '", name->AsIdentifier()->Name(), "'."}, name->Start());
+        } else {
+            ThrowTypeError(
+                {"type mismatch: dynamic type expected, got: '", util::StringView(dynamicExprType->ToString()), "'."},
+                name->Start());
+        }
     }
 
     auto *refVar = name->AsIdentifier()->Variable()->AsLocalVariable();

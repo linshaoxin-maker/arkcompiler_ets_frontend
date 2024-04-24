@@ -273,7 +273,7 @@ static std::pair<VReg, VReg> LoadDynamicName(compiler::ETSGen *etsg, const ir::A
     return {qnameStart, qnameLen};
 }
 
-static void CreateDynamicObject(const ir::AstNode *node, compiler::ETSGen *etsg, const ir::Expression *typeRef,
+static void CreateDynamicObject(const ir::Expression *node, compiler::ETSGen *etsg, const ir::Expression *typeRef,
                                 checker::Signature *signature, const ArenaVector<ir::Expression *> &arguments)
 {
     auto objReg = etsg->AllocReg();
@@ -287,8 +287,16 @@ static void CreateDynamicObject(const ir::AstNode *node, compiler::ETSGen *etsg,
 
     etsg->StoreAccumulator(node, objReg);
 
-    auto [qnameStart, qnameLen] = LoadDynamicName(etsg, node, callInfo.name, true);
-    etsg->CallDynamic(node, objReg, qnameStart, qnameLen, signature, arguments);
+    if (!callInfo.name.empty()) {
+        auto [qnameStart, qnameLen] = LoadDynamicName(etsg, node, callInfo.name, true);
+        etsg->CallDynamic(node, objReg, qnameStart, qnameLen, signature, arguments);
+    } else {
+        compiler::VReg dynParam2 = etsg->AllocReg();
+        auto lang = node->TsType()->AsETSDynamicType()->Language();
+        etsg->LoadUndefinedDynamic(node, lang);
+        etsg->StoreAccumulator(node, dynParam2);
+        etsg->CallDynamic(node, objReg, dynParam2, signature, arguments);
+    }
 }
 
 static void ConvertRestArguments(checker::ETSChecker *const checker, const ir::ETSNewClassInstanceExpression *expr)

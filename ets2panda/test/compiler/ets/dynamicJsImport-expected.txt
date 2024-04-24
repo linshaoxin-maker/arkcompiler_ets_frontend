@@ -335,7 +335,7 @@
                                 "type": "ETSTypeReferencePart",
                                 "name": {
                                   "type": "Identifier",
-                                  "name": "B",
+                                  "name": "JSValue",
                                   "decorators": [],
                                   "loc": {
                                     "start": {
@@ -344,7 +344,7 @@
                                     },
                                     "end": {
                                       "line": 24,
-                                      "column": 13
+                                      "column": 19
                                     }
                                   }
                                 },
@@ -355,7 +355,7 @@
                                   },
                                   "end": {
                                     "line": 24,
-                                    "column": 15
+                                    "column": 21
                                   }
                                 }
                               },
@@ -366,7 +366,7 @@
                                 },
                                 "end": {
                                   "line": 24,
-                                  "column": 15
+                                  "column": 21
                                 }
                               }
                             },
@@ -395,33 +395,33 @@
                                   "loc": {
                                     "start": {
                                       "line": 24,
-                                      "column": 20
+                                      "column": 26
                                     },
                                     "end": {
                                       "line": 24,
-                                      "column": 21
+                                      "column": 27
                                     }
                                   }
                                 },
                                 "loc": {
                                   "start": {
                                     "line": 24,
-                                    "column": 20
+                                    "column": 26
                                   },
                                   "end": {
                                     "line": 24,
-                                    "column": 22
+                                    "column": 28
                                   }
                                 }
                               },
                               "loc": {
                                 "start": {
                                   "line": 24,
-                                  "column": 20
+                                  "column": 26
                                 },
                                 "end": {
                                   "line": 24,
-                                  "column": 22
+                                  "column": 28
                                 }
                               }
                             },
@@ -435,11 +435,11 @@
                                   "loc": {
                                     "start": {
                                       "line": 24,
-                                      "column": 22
+                                      "column": 28
                                     },
                                     "end": {
                                       "line": 24,
-                                      "column": 24
+                                      "column": 30
                                     }
                                   }
                                 },
@@ -450,11 +450,11 @@
                                   "loc": {
                                     "start": {
                                       "line": 24,
-                                      "column": 25
+                                      "column": 31
                                     },
                                     "end": {
                                       "line": 24,
-                                      "column": 26
+                                      "column": 32
                                     }
                                   }
                                 },
@@ -463,11 +463,11 @@
                                 "loc": {
                                   "start": {
                                     "line": 24,
-                                    "column": 22
+                                    "column": 28
                                   },
                                   "end": {
                                     "line": 24,
-                                    "column": 26
+                                    "column": 32
                                   }
                                 }
                               },
@@ -477,11 +477,11 @@
                                 "loc": {
                                   "start": {
                                     "line": 24,
-                                    "column": 28
+                                    "column": 34
                                   },
                                   "end": {
                                     "line": 24,
-                                    "column": 29
+                                    "column": 35
                                   }
                                 }
                               },
@@ -491,11 +491,11 @@
                                 "loc": {
                                   "start": {
                                     "line": 24,
-                                    "column": 31
+                                    "column": 37
                                   },
                                   "end": {
                                     "line": 24,
-                                    "column": 34
+                                    "column": 40
                                   }
                                 }
                               }
@@ -503,7 +503,7 @@
                             "loc": {
                               "start": {
                                 "line": 24,
-                                "column": 16
+                                "column": 22
                               },
                               "end": {
                                 "line": 25,

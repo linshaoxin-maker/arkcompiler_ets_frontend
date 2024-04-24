@@ -460,7 +460,7 @@ public:
                                       ir::ETSImportDeclaration *importDecl = nullptr);
     void SetrModuleObjectTsType(ir::Identifier *local, checker::ETSObjectType *moduleObjType);
     Type *GetReferencedTypeFromBase(Type *baseType, ir::Expression *name);
-    Type *GetReferencedTypeBase(ir::Expression *name);
+    Type *GetReferencedTypeBase(ir::Expression *name, bool allowDynamic);
     Type *GetTypeFromInterfaceReference(varbinder::Variable *var);
     Type *GetTypeFromTypeAliasReference(varbinder::Variable *var);
     Type *GetTypeFromClassReference(varbinder::Variable *var);

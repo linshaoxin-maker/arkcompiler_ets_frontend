@@ -2547,16 +2547,17 @@ checker::Type *ETSAnalyzer::Check(ir::TSQualifiedName *expr) const
 {
     ETSChecker *checker = GetETSChecker();
     checker::Type *baseType = expr->Left()->Check(checker);
-    if (baseType->IsETSObjectType()) {
-        varbinder::Variable *prop =
+    varbinder::Variable *prop {};
+    if (baseType->IsETSDynamicType()) {
+        prop = baseType->AsETSDynamicType()->GetPropertyDynamic(expr->Right()->Name(), checker);
+    } else if (baseType->IsETSObjectType()) {
+        prop =
             baseType->AsETSObjectType()->GetProperty(expr->Right()->Name(), checker::PropertySearchFlags::SEARCH_DECL);
-
-        if (prop != nullptr) {
-            return checker->GetTypeOfVariable(prop);
-        }
     }
-
-    checker->ThrowTypeError({"'", expr->Right()->Name(), "' type does not exist."}, expr->Right()->Start());
+    if (prop == nullptr) {
+        checker->ThrowTypeError({"'", expr->Right()->Name(), "' type does not exist."}, expr->Right()->Start());
+    }
+    return checker->GetTypeOfVariable(prop);
 }
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSStringKeyword *node) const

@@ -27,5 +27,5 @@ flags: [dynamic-ast]
 import { A } from "dynamic_js_import_tests"
 
 function main(): void {
-    let a: JSValue = { name: "Edalyn", age: 30, location: "Boiling_isles" };
+    let a: A = { name: "Edalyn", age: 30, location: "Boiling_isles" }; // `A` is not a type use `JSValue` explicitly
 }

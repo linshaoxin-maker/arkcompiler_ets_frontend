@@ -1,0 +1,1 @@
+SyntaxError: Cannot find type 'A'. [dynamic_object_is_not_a_type.ets:30:12]

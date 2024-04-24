@@ -93,7 +93,7 @@ void ETSBinder::LookupTypeArgumentReferences(ir::ETSTypeReference *typeRef)
     }
 }
 
-void ETSBinder::LookupTypeReference(ir::Identifier *ident, bool allowDynamicNamespaces)
+void ETSBinder::LookupTypeReference(ir::Identifier *ident, bool allowDynamic)
 {
     const auto &name = ident->Name();
     if (name == compiler::Signatures::UNDEFINED || name == compiler::Signatures::NULL_LITERAL) {
@@ -105,16 +105,6 @@ void ETSBinder::LookupTypeReference(ir::Identifier *ident, bool allowDynamicName
         auto res = iter->Find(name, ResolveBindingOptions::DECLARATION | ResolveBindingOptions::TYPE_ALIASES);
         if (res.variable == nullptr) {
             break;
-        }
-
-        if (IsDynamicModuleVariable(res.variable)) {
-            ident->SetVariable(res.variable);
-            return;
-        }
-
-        if (allowDynamicNamespaces && IsDynamicNamespaceVariable(res.variable)) {
-            ident->SetVariable(res.variable);
-            return;
         }
 
         switch (res.variable->Declaration()->Node()->Type()) {
@@ -135,6 +125,10 @@ void ETSBinder::LookupTypeReference(ir::Identifier *ident, bool allowDynamicName
         }
     }
 
+    if (allowDynamic) {
+        LookupIdentReference(ident);
+        return;
+    }
     ThrowUnresolvableType(ident->Start(), name);
 }
 
@@ -753,11 +747,8 @@ void ETSBinder::HandleCustomNodes(ir::AstNode *childNode)
             auto *typeRef = childNode->AsETSTypeReference();
             auto *baseName = typeRef->BaseName();
             ASSERT(baseName->IsReference());
-            // We allow to resolve following types in pure dynamic mode:
-            // import * as I from "@dynamic"
-            // let x : I.X.Y
-            bool allowDynamicNamespaces = typeRef->Part()->Name() != baseName;
-            LookupTypeReference(baseName, allowDynamicNamespaces);
+            bool allowDynamic = typeRef->Part()->IsDynamicTypeAllowed();
+            LookupTypeReference(baseName, allowDynamic);
             LookupTypeArgumentReferences(typeRef);
             break;
         }
