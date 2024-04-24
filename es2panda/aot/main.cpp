@@ -16,6 +16,7 @@
 #include <abc2program/program_dump.h>
 #include <assembly-program.h>
 #include <assembly-emitter.h>
+#include <resolveDepsRelation.h>
 #include <emitFiles.h>
 #include <es2panda.h>
 #include <mem/arena_allocator.h>
@@ -212,6 +213,15 @@ static bool GenerateAbcFiles(const std::map<std::string, panda::es2panda::util::
     return true;
 }
 
+static bool ResolveDepsRelations(const std::map<std::string, panda::es2panda::util::ProgramCache*> &programsInfo,
+                                 const std::unique_ptr<panda::es2panda::aot::Options> &options, 
+                                 std::unordered_map<std::string, std::unordered_set<std::string>> &resolveDepsRelation,
+                                 std::unordered_set<std::string> &generatedRecords)
+{
+    panda::es2panda::aot::DepsRelationResolver depsRelationResolver(programsInfo, options, resolveDepsRelation, generatedRecords);
+    return depsRelationResolver.Resolve();
+}
+
 int Run(int argc, const char **argv)
 {
     auto options = std::make_unique<Options>();
@@ -241,6 +251,12 @@ int Run(int argc, const char **argv)
         es2panda::util::ModuleHelpers::CompileNpmModuleEntryList(options->NpmModuleEntryList(),
             options->CompilerOptions(), programsInfo, &allocator);
         expectedProgsCount++;
+    }
+
+    std::unordered_map<std::string, std::unordered_set<std::string>> resolveDepsRelation {};
+    std::unordered_set<std::string> generatedRecords {};
+    if (!ResolveDepsRelations(programsInfo, options, resolveDepsRelation, generatedRecords)) {
+        return 1;
     }
 
     if (!GenerateAbcFiles(programsInfo, options, expectedProgsCount)) {
