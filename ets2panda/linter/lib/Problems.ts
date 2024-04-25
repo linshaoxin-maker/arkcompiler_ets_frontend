@@ -102,6 +102,7 @@ export enum FaultID {
   SendableObjectInitialization,
   SendableComputedPropName,
   SendableAsExpr,
+  SharedNoSideEffectImport,
   // this should always be last enum
   LAST_ID
 }
