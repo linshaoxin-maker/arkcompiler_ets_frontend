@@ -462,10 +462,11 @@ class ArkProgram():
 
         if merge_abc_mode != "0":
             if "dynamic-import" in js_file:
-                return self.gen_apart_abc(dependencies)
+                retcode = self.gen_apart_abc(dependencies)
             else:
-                return self.gen_merged_abc(dependencies, file_name_pre, proto_bin_file)
-
+                retcode = self.gen_merged_abc(dependencies, file_name_pre, proto_bin_file)
+        cmd_args = [frontend_tool, '--enable-abc-input', '--output' ,self.abc_file, self.abc_file]
+        retcode = exec_command(cmd_args)
         return retcode
 
     def compile_aot(self):
