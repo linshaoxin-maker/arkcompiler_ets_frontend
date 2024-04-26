@@ -24,7 +24,8 @@ export const LIMITED_STD_OBJECT_API = [
   'defineProperties',
   'defineProperty',
   'freeze',
-  'fromEntries',   // was relaxed but revert
+  // was relaxed but revert
+  'fromEntries',
   'getOwnPropertyDescriptor',
   'getOwnPropertyDescriptors',
   'getOwnPropertySymbols',

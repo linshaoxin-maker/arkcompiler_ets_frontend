@@ -1072,7 +1072,7 @@ export class TypeScriptLinter {
         this.tsUtils.isOrDerivedFrom(rhsType, TsUtils.isTuple);
       const hasNestedObjectDestructuring = TsUtils.hasNestedObjectDestructuring(tsLhsExpr);
 
-      if ( (!TypeScriptLinter.useRelaxedRules || !isArrayOrTuple) || hasNestedObjectDestructuring ||
+      if (!TypeScriptLinter.useRelaxedRules || !isArrayOrTuple || hasNestedObjectDestructuring ||
         TsUtils.destructuringAssignmentHasSpreadOperator(tsLhsExpr)
       ) {
         this.incrementCounters(node, FaultID.DestructuringAssignment);
@@ -1181,7 +1181,7 @@ export class TypeScriptLinter {
       );
       const hasNestedObjectDestructuring = TsUtils.hasNestedObjectDestructuring(decl.name);
 
-      if ( (!TypeScriptLinter.useRelaxedRules || !isArrayOrTuple) || hasNestedObjectDestructuring ||
+      if (!TypeScriptLinter.useRelaxedRules || !isArrayOrTuple || hasNestedObjectDestructuring ||
         TsUtils.destructuringDeclarationHasSpreadOperator(decl.name)
       ) {
         this.incrementCounters(decl, faultId);
@@ -1867,7 +1867,8 @@ export class TypeScriptLinter {
     }
     const lookup = TypeScriptLinter.LimitedApis.get(parName);
     if (lookup !== undefined && (lookup.arr === null || lookup.arr.includes(name)) &&
-      (!TypeScriptLinter.useRelaxedRules || !this.supportedStdCallApiChecker.isSupportedStdCallAPI(callExpr, parName, name))
+      (!TypeScriptLinter.useRelaxedRules ||
+       !this.supportedStdCallApiChecker.isSupportedStdCallAPI(callExpr, parName, name))
     ) {
       this.incrementCounters(callExpr, lookup.fault);
     }
@@ -2031,7 +2032,8 @@ export class TypeScriptLinter {
     if (ts.isSpreadElement(node)) {
       const spreadExprType = this.tsUtils.getTypeOrTypeConstraintAtLocation(node.expression);
       if (spreadExprType &&
-        ( TypeScriptLinter.useRelaxedRules || ts.isCallLikeExpression(node.parent) || ts.isArrayLiteralExpression(node.parent)) &&
+        (TypeScriptLinter.useRelaxedRules ||
+         ts.isCallLikeExpression(node.parent) || ts.isArrayLiteralExpression(node.parent)) &&
         this.tsUtils.isOrDerivedFrom(spreadExprType, this.tsUtils.isArray)) {
         return;
       }
