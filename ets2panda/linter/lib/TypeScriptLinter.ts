@@ -1867,7 +1867,7 @@ export class TypeScriptLinter {
     }
     const lookup = TypeScriptLinter.LimitedApis.get(parName);
     if (lookup !== undefined && (lookup.arr === null || lookup.arr.includes(name)) &&
-      !this.supportedStdCallApiChecker.isSupportedStdCallAPI(callExpr, parName, name)
+      (!TypeScriptLinter.useRelaxedRules || !this.supportedStdCallApiChecker.isSupportedStdCallAPI(callExpr, parName, name))
     ) {
       this.incrementCounters(callExpr, lookup.fault);
     }
