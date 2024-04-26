@@ -34,11 +34,11 @@ public:
     // NOTE (somas): this friend relationship can be removed once there are getters for private fields
     friend class checker::ETSAnalyzer;
 
-    const Expression *Test() const
+    Expression *Test() const
     {
         return test_;
     }
-
+    void SetTest(Expression *test);
     const Expression *Second() const
     {
         return second_;

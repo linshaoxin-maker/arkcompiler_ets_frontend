@@ -455,4 +455,12 @@ Type *ETSChecker::SelectGlobalIntegerTypeForNumeric(Type *type)
     }
 }
 
+bool ETSChecker::IsEnumCanBeImplicitlyConvertedTo(Type *type)
+{
+    return type->HasTypeFlag(TypeFlag::ETS_NUMERIC) || type->HasTypeFlag(TypeFlag::STRING) ||
+           (type->HasTypeFlag(checker::TypeFlag::ETS_OBJECT) &&
+            (type->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::STRING) ||
+             type->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_STRING)));
+}
+
 }  // namespace ark::es2panda::checker

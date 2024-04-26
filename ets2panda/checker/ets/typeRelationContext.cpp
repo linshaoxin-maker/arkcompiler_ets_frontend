@@ -87,7 +87,6 @@ bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSType
 
     for (size_t idx = 0; idx < type->TypeArguments().size(); ++idx) {
         auto const [typeParam, typeArg] = getTypes(idx);
-        checker_->CheckValidGenericTypeParameter(typeArg, pos);
         typeArg->Substitute(checker_->Relation(), substitution);
         ETSChecker::EmplaceSubstituted(substitution, typeParam, typeArg);
     }

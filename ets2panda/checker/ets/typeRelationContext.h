@@ -60,7 +60,12 @@ public:
         }
 
         if (!relation->IsTrue() && (flags_ & TypeRelationFlag::NO_THROW) == 0) {
-            relation->RaiseError(list, pos);
+            // The EnumLoweringPostPhase will replace the enum with .valueOf() invocation and rechek the assignement
+            if (source->IsETSEnumType() && ETSChecker::IsEnumCanBeImplicitlyConvertedTo(target)) {
+                node->SetPostBit(ir::ENUM_LOWERING_POST_PROCESSING_REQUIRED);
+            } else {
+                relation->RaiseError(list, pos);
+            }
         }
 
         relation->SetNode(nullptr);
@@ -145,9 +150,6 @@ public:
                          const lexer::SourcePosition &pos)
         : checker_(checker)
     {
-        if (type->HasObjectFlag(ETSObjectFlags::ENUM)) {
-            return;
-        }
         InstantiateType(type, typeArgs, pos);
     }
 

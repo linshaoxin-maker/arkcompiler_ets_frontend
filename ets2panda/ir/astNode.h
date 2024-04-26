@@ -509,6 +509,16 @@ public:
      *      ASTVisitorT::accept(this, v);
      *  }
      */
+
+    // for some cases we mgt need to postpone potentially erroneous node processing at the checker
+    // but only set types for its' identifiers, thus making lowering knows what type of objects
+    // are reffered at the node. based on that the loewring could do some additional transformations
+    // and the must re-start checker again. in order to track that we would use bit register per each
+    // affected lowering.
+    void ClearPostBit(PostProcessingBits bit);
+    bool IsPostBitSet(PostProcessingBits bit) const;
+    void SetPostBit(PostProcessingBits bit);
+
 protected:
     AstNode(AstNode const &other);
 
@@ -525,6 +535,8 @@ protected:
     ModifierFlags flags_ {};
     mutable AstNodeFlags astNodeFlags_ {};
     mutable BoxingUnboxingFlags boxingUnboxingFlags_ {};
+    // post processing bits per lowerings
+    uint64_t post_ {};
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
@@ -629,6 +641,7 @@ protected:
         : Annotated<AstNode>(type, typeAnnotation)
     {
     }
+
     explicit AnnotatedAstNode(AstNodeType const type) : Annotated<AstNode>(type) {}
     explicit AnnotatedAstNode(AstNodeType const type, ModifierFlags const flags) : Annotated<AstNode>(type, flags) {}
 

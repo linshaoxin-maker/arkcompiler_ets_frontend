@@ -456,7 +456,7 @@ private:
 
     ir::TSTypeParameterDeclaration *GetTypeParams() const
     {
-        if (HasObjectFlag(ETSObjectFlags::ENUM) || !HasTypeFlag(TypeFlag::GENERIC)) {
+        if (!HasTypeFlag(TypeFlag::GENERIC)) {
             return nullptr;
         }
 

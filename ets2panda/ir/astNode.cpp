@@ -122,4 +122,20 @@ std::string AstNode::DumpEtsSrc() const
     ir::SrcDumper dumper {this};
     return dumper.Str();
 }
+
+void AstNode::ClearPostBit(PostProcessingBits bit)
+{
+    post_ &= bit;
+}
+
+bool AstNode::IsPostBitSet(PostProcessingBits bit) const
+{
+    return (bit & post_) != 0;
+}
+
+void AstNode::SetPostBit(PostProcessingBits bit)
+{
+    post_ |= bit;
+}
+
 }  // namespace ark::es2panda::ir

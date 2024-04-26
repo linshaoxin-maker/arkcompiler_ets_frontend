@@ -348,16 +348,42 @@
                             },
                             "arguments": [
                               {
-                                "type": "NumberLiteral",
-                                "value": 101,
+                                "type": "TSAsExpression",
+                                "expression": {
+                                  "type": "NumberLiteral",
+                                  "value": 101,
+                                  "loc": {
+                                    "start": {
+                                      "line": 18,
+                                      "column": 28
+                                    },
+                                    "end": {
+                                      "line": 18,
+                                      "column": 31
+                                    }
+                                  }
+                                },
+                                "typeAnnotation": {
+                                  "type": "ETSPrimitiveType",
+                                  "loc": {
+                                    "start": {
+                                      "line": 18,
+                                      "column": 24
+                                    },
+                                    "end": {
+                                      "line": 18,
+                                      "column": 27
+                                    }
+                                  }
+                                },
                                 "loc": {
                                   "start": {
-                                    "line": 18,
-                                    "column": 28
+                                    "line": 1,
+                                    "column": 1
                                   },
                                   "end": {
-                                    "line": 18,
-                                    "column": 31
+                                    "line": 1,
+                                    "column": 1
                                   }
                                 }
                               }
@@ -752,16 +778,42 @@
                             },
                             "arguments": [
                               {
-                                "type": "NumberLiteral",
-                                "value": 99,
+                                "type": "TSAsExpression",
+                                "expression": {
+                                  "type": "NumberLiteral",
+                                  "value": 99,
+                                  "loc": {
+                                    "start": {
+                                      "line": 21,
+                                      "column": 30
+                                    },
+                                    "end": {
+                                      "line": 21,
+                                      "column": 32
+                                    }
+                                  }
+                                },
+                                "typeAnnotation": {
+                                  "type": "ETSPrimitiveType",
+                                  "loc": {
+                                    "start": {
+                                      "line": 21,
+                                      "column": 24
+                                    },
+                                    "end": {
+                                      "line": 21,
+                                      "column": 27
+                                    }
+                                  }
+                                },
                                 "loc": {
                                   "start": {
-                                    "line": 21,
-                                    "column": 30
+                                    "line": 1,
+                                    "column": 1
                                   },
                                   "end": {
-                                    "line": 21,
-                                    "column": 32
+                                    "line": 1,
+                                    "column": 1
                                   }
                                 }
                               }
@@ -1441,28 +1493,43 @@
                             },
                             "arguments": [
                               {
-                                "type": "MemberExpression",
-                                "object": {
-                                  "type": "ThisExpression",
-                                  "loc": {
-                                    "start": {
-                                      "line": 1,
-                                      "column": 1
-                                    },
-                                    "end": {
-                                      "line": 1,
-                                      "column": 1
+                                "type": "TSAsExpression",
+                                "expression": {
+                                  "type": "MemberExpression",
+                                  "object": {
+                                    "type": "ThisExpression",
+                                    "loc": {
+                                      "start": {
+                                        "line": 1,
+                                        "column": 1
+                                      },
+                                      "end": {
+                                        "line": 1,
+                                        "column": 1
+                                      }
                                     }
-                                  }
-                                },
-                                "property": {
-                                  "type": "Identifier",
-                                  "name": "fc",
-                                  "decorators": [],
+                                  },
+                                  "property": {
+                                    "type": "Identifier",
+                                    "name": "fc",
+                                    "decorators": [],
+                                    "loc": {
+                                      "start": {
+                                        "line": 30,
+                                        "column": 33
+                                      },
+                                      "end": {
+                                        "line": 30,
+                                        "column": 35
+                                      }
+                                    }
+                                  },
+                                  "computed": false,
+                                  "optional": false,
                                   "loc": {
                                     "start": {
                                       "line": 30,
-                                      "column": 33
+                                      "column": 28
                                     },
                                     "end": {
                                       "line": 30,
@@ -1470,16 +1537,27 @@
                                     }
                                   }
                                 },
-                                "computed": false,
-                                "optional": false,
+                                "typeAnnotation": {
+                                  "type": "ETSPrimitiveType",
+                                  "loc": {
+                                    "start": {
+                                      "line": 30,
+                                      "column": 24
+                                    },
+                                    "end": {
+                                      "line": 30,
+                                      "column": 27
+                                    }
+                                  }
+                                },
                                 "loc": {
                                   "start": {
-                                    "line": 30,
-                                    "column": 28
+                                    "line": 1,
+                                    "column": 1
                                   },
                                   "end": {
-                                    "line": 30,
-                                    "column": 35
+                                    "line": 1,
+                                    "column": 1
                                   }
                                 }
                               }
@@ -2068,11 +2146,41 @@
                             },
                             "arguments": [
                               {
-                                "type": "MemberExpression",
-                                "object": {
-                                  "type": "Identifier",
-                                  "name": "C",
-                                  "decorators": [],
+                                "type": "TSAsExpression",
+                                "expression": {
+                                  "type": "MemberExpression",
+                                  "object": {
+                                    "type": "Identifier",
+                                    "name": "C",
+                                    "decorators": [],
+                                    "loc": {
+                                      "start": {
+                                        "line": 36,
+                                        "column": 27
+                                      },
+                                      "end": {
+                                        "line": 36,
+                                        "column": 28
+                                      }
+                                    }
+                                  },
+                                  "property": {
+                                    "type": "Identifier",
+                                    "name": "fs",
+                                    "decorators": [],
+                                    "loc": {
+                                      "start": {
+                                        "line": 36,
+                                        "column": 29
+                                      },
+                                      "end": {
+                                        "line": 36,
+                                        "column": 31
+                                      }
+                                    }
+                                  },
+                                  "computed": false,
+                                  "optional": false,
                                   "loc": {
                                     "start": {
                                       "line": 36,
@@ -2080,35 +2188,31 @@
                                     },
                                     "end": {
                                       "line": 36,
-                                      "column": 28
-                                    }
-                                  }
-                                },
-                                "property": {
-                                  "type": "Identifier",
-                                  "name": "fs",
-                                  "decorators": [],
-                                  "loc": {
-                                    "start": {
-                                      "line": 36,
-                                      "column": 29
-                                    },
-                                    "end": {
-                                      "line": 36,
                                       "column": 31
                                     }
                                   }
                                 },
-                                "computed": false,
-                                "optional": false,
+                                "typeAnnotation": {
+                                  "type": "ETSPrimitiveType",
+                                  "loc": {
+                                    "start": {
+                                      "line": 36,
+                                      "column": 23
+                                    },
+                                    "end": {
+                                      "line": 36,
+                                      "column": 26
+                                    }
+                                  }
+                                },
                                 "loc": {
                                   "start": {
-                                    "line": 36,
-                                    "column": 27
+                                    "line": 1,
+                                    "column": 1
                                   },
                                   "end": {
-                                    "line": 36,
-                                    "column": 31
+                                    "line": 1,
+                                    "column": 1
                                   }
                                 }
                               }

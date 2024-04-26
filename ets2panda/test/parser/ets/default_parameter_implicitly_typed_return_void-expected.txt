@@ -726,16 +726,70 @@
                                 }
                               },
                               {
-                                "type": "StringLiteral",
-                                "value": "another",
+                                "type": "TSAsExpression",
+                                "expression": {
+                                  "type": "StringLiteral",
+                                  "value": "another",
+                                  "loc": {
+                                    "start": {
+                                      "line": 16,
+                                      "column": 61
+                                    },
+                                    "end": {
+                                      "line": 16,
+                                      "column": 70
+                                    }
+                                  }
+                                },
+                                "typeAnnotation": {
+                                  "type": "ETSTypeReference",
+                                  "part": {
+                                    "type": "ETSTypeReferencePart",
+                                    "name": {
+                                      "type": "Identifier",
+                                      "name": "string",
+                                      "decorators": [],
+                                      "loc": {
+                                        "start": {
+                                          "line": 16,
+                                          "column": 52
+                                        },
+                                        "end": {
+                                          "line": 16,
+                                          "column": 58
+                                        }
+                                      }
+                                    },
+                                    "loc": {
+                                      "start": {
+                                        "line": 16,
+                                        "column": 52
+                                      },
+                                      "end": {
+                                        "line": 16,
+                                        "column": 60
+                                      }
+                                    }
+                                  },
+                                  "loc": {
+                                    "start": {
+                                      "line": 16,
+                                      "column": 52
+                                    },
+                                    "end": {
+                                      "line": 16,
+                                      "column": 60
+                                    }
+                                  }
+                                },
                                 "loc": {
                                   "start": {
-                                    "line": 16,
-                                    "column": 61
+                                    "line": 1,
+                                    "column": 1
                                   },
                                   "end": {
-                                    "line": 16,
-                                    "column": 70
+                                    "line": 1,
+                                    "column": 1
                                   }
                                 }
                               }
@@ -1005,30 +1059,138 @@
                                 }
                               },
                               {
-                                "type": "StringLiteral",
-                                "value": "default",
+                                "type": "TSAsExpression",
+                                "expression": {
+                                  "type": "StringLiteral",
+                                  "value": "default",
+                                  "loc": {
+                                    "start": {
+                                      "line": 16,
+                                      "column": 38
+                                    },
+                                    "end": {
+                                      "line": 16,
+                                      "column": 47
+                                    }
+                                  }
+                                },
+                                "typeAnnotation": {
+                                  "type": "ETSTypeReference",
+                                  "part": {
+                                    "type": "ETSTypeReferencePart",
+                                    "name": {
+                                      "type": "Identifier",
+                                      "name": "string",
+                                      "decorators": [],
+                                      "loc": {
+                                        "start": {
+                                          "line": 16,
+                                          "column": 29
+                                        },
+                                        "end": {
+                                          "line": 16,
+                                          "column": 35
+                                        }
+                                      }
+                                    },
+                                    "loc": {
+                                      "start": {
+                                        "line": 16,
+                                        "column": 29
+                                      },
+                                      "end": {
+                                        "line": 16,
+                                        "column": 37
+                                      }
+                                    }
+                                  },
+                                  "loc": {
+                                    "start": {
+                                      "line": 16,
+                                      "column": 29
+                                    },
+                                    "end": {
+                                      "line": 16,
+                                      "column": 37
+                                    }
+                                  }
+                                },
                                 "loc": {
                                   "start": {
-                                    "line": 16,
-                                    "column": 38
+                                    "line": 1,
+                                    "column": 1
                                   },
                                   "end": {
-                                    "line": 16,
-                                    "column": 47
+                                    "line": 1,
+                                    "column": 1
                                   }
                                 }
                               },
                               {
-                                "type": "StringLiteral",
-                                "value": "another",
+                                "type": "TSAsExpression",
+                                "expression": {
+                                  "type": "StringLiteral",
+                                  "value": "another",
+                                  "loc": {
+                                    "start": {
+                                      "line": 16,
+                                      "column": 61
+                                    },
+                                    "end": {
+                                      "line": 16,
+                                      "column": 70
+                                    }
+                                  }
+                                },
+                                "typeAnnotation": {
+                                  "type": "ETSTypeReference",
+                                  "part": {
+                                    "type": "ETSTypeReferencePart",
+                                    "name": {
+                                      "type": "Identifier",
+                                      "name": "string",
+                                      "decorators": [],
+                                      "loc": {
+                                        "start": {
+                                          "line": 16,
+                                          "column": 52
+                                        },
+                                        "end": {
+                                          "line": 16,
+                                          "column": 58
+                                        }
+                                      }
+                                    },
+                                    "loc": {
+                                      "start": {
+                                        "line": 16,
+                                        "column": 52
+                                      },
+                                      "end": {
+                                        "line": 16,
+                                        "column": 60
+                                      }
+                                    }
+                                  },
+                                  "loc": {
+                                    "start": {
+                                      "line": 16,
+                                      "column": 52
+                                    },
+                                    "end": {
+                                      "line": 16,
+                                      "column": 60
+                                    }
+                                  }
+                                },
                                 "loc": {
                                   "start": {
-                                    "line": 16,
-                                    "column": 61
+                                    "line": 1,
+                                    "column": 1
                                   },
                                   "end": {
-                                    "line": 16,
-                                    "column": 70
+                                    "line": 1,
+                                    "column": 1
                                   }
                                 }
                               }

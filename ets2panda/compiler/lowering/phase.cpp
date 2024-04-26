@@ -21,6 +21,8 @@
 #include "compiler/lowering/ets/expandBrackets.h"
 #include "compiler/lowering/ets/recordLowering.h"
 #include "compiler/lowering/ets/topLevelStmts/topLevelStmts.h"
+#include "compiler/lowering/ets/enumLoweringPrePhase.h"
+#include "compiler/lowering/ets/enumLoweringPostPhase.h"
 #include "compiler/lowering/ets/lambdaLowering.h"
 #include "compiler/lowering/ets/interfacePropertyDeclarations.h"
 #include "compiler/lowering/ets/objectIndexAccess.h"
@@ -68,6 +70,8 @@ static StructLowering g_structLowering;
 static DefaultParameterLowering g_defaultParameterLowering;
 static TopLevelStatements g_topLevelStatements;
 static LocalClassConstructionPhase g_localClassLowering;
+static EnumLoweringPrePhase g_enumLoweringPrePhase;
+static EnumLoweringPostPhase g_enumLoweringPostPhase;
 static PluginPhase g_pluginsAfterParse {"plugins-after-parse", ES2PANDA_STATE_PARSED, &util::Plugin::AfterParse};
 static PluginPhase g_pluginsAfterCheck {"plugins-after-check", ES2PANDA_STATE_CHECKED, &util::Plugin::AfterCheck};
 static PluginPhase g_pluginsAfterLowerings {"plugins-after-lowering", ES2PANDA_STATE_LOWERED,
@@ -91,6 +95,7 @@ std::vector<Phase *> GetETSPhaseList()
         &g_topLevelStatements,
         &g_defaultParameterLowering,
         &g_bigintLowering,
+        &g_enumLoweringPrePhase,
         &g_initScopesPhaseEts,
         &g_optionalLowering,
         &g_promiseVoidInferencePhase,
@@ -99,6 +104,7 @@ std::vector<Phase *> GetETSPhaseList()
         &g_interfacePropDeclPhase,
         &g_checkerPhase,
         &g_pluginsAfterCheck,
+        &g_enumLoweringPostPhase,
         &g_opAssignmentLowering,
         &g_recordLowering,
         &g_objectIndexLowering,

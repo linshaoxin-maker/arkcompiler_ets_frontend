@@ -3660,7 +3660,7 @@ ir::TSEnumDeclaration *ETSParser::ParseEnumMembers(ir::Identifier *const key, co
 
 void ETSParser::ParseNumberEnum(ArenaVector<ir::AstNode *> &members)
 {
-    checker::ETSEnumType::ValueType currentValue {};
+    int32_t currentValue = 0;
 
     // Lambda to parse enum member (maybe with initializer)
     auto const parseMember = [this, &members, &currentValue]() {
@@ -3690,11 +3690,11 @@ void ETSParser::ParseNumberEnum(ArenaVector<ir::AstNode *> &members)
             if (minusSign) {
                 ordinal->Number().Negate();
             }
-            if (!ordinal->Number().CanGetValue<checker::ETSEnumType::ValueType>()) {
+            if (!ordinal->Number().CanGetValue<int32_t>()) {
                 ThrowSyntaxError(INVALID_ENUM_VALUE);
             }
 
-            currentValue = ordinal->Number().GetValue<checker::ETSEnumType::ValueType>();
+            currentValue = ordinal->Number().GetValue<int32_t>();
 
             endLoc = ordinal->End();
         } else {

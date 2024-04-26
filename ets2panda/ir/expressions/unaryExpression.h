@@ -63,6 +63,12 @@ public:
         return argument_;
     }
 
+    void SetArgument(Expression *argument) noexcept
+    {
+        argument_ = argument;
+        argument_->SetParent(this);
+        SetEnd(argument_->End());
+    }
     [[nodiscard]] UnaryExpression *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
     void TransformChildren(const NodeTransformer &cb) override;

@@ -154,6 +154,8 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/ets/topLevelStmts/globalClassHandler.cpp
   compiler/lowering/ets/topLevelStmts/globalDeclTransformer.cpp
   compiler/lowering/ets/topLevelStmts/topLevelStmts.cpp
+  compiler/lowering/ets/enumLoweringPostPhase.cpp
+  compiler/lowering/ets/enumLoweringPrePhase.cpp
   compiler/lowering/ets/lambdaLowering.cpp
   compiler/lowering/ets/localClassLowering.cpp
   compiler/lowering/ets/objectIndexAccess.cpp
@@ -376,7 +378,6 @@ set(ES2PANDA_LIB_SRC
   checker/ets/function.cpp
   checker/ets/validateHelpers.cpp
   checker/ets/typeCheckingHelpers.cpp
-  checker/ets/enum.cpp
   checker/ets/helpers.cpp
   checker/ets/narrowingConverter.cpp
   checker/ets/narrowingWideningConverter.cpp

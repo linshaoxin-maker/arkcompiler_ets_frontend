@@ -52,6 +52,11 @@ public:
         return test_;
     }
 
+    void SetTest(Expression *test)
+    {
+        test_ = test;
+    }
+
     Expression *Update()
     {
         return update_;

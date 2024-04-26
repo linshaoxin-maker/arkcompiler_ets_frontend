@@ -141,8 +141,7 @@ void ETSChecker::ValidateMemberIdentifier(ir::Identifier *const ident, varbinder
         return;
     }
 
-    if (!IsReferenceType(type) && !type->IsETSEnumType() && !type->IsETSStringEnumType() &&
-        !type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+    if (!IsReferenceType(type) && !type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
         ThrowError(ident);
     }
 }

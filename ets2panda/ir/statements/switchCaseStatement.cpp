@@ -101,8 +101,6 @@ void SwitchCaseStatement::CheckAndTestCase(checker::ETSChecker *checker, checker
             validCaseType = comparedExprType->HasTypeFlag(checker::TypeFlag::ETS_INTEGRAL);
         } else if (caseType->IsETSEnumType() && comparedExprType->IsETSEnumType()) {
             validCaseType = comparedExprType->AsETSEnumType()->IsSameEnumType(caseType->AsETSEnumType());
-        } else if (caseType->IsETSStringEnumType() && comparedExprType->IsETSStringEnumType()) {
-            validCaseType = comparedExprType->AsETSStringEnumType()->IsSameEnumType(caseType->AsETSStringEnumType());
         } else {
             checker::AssignmentContext(
                 checker->Relation(), node, caseType, unboxedDiscType, test_->Start(),

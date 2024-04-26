@@ -52,6 +52,11 @@ public:
         return test_;
     }
 
+    void SetTest(Expression *test)
+    {
+        test_ = test;
+    }
+
     void TransformChildren(const NodeTransformer &cb) override;
 
     void Iterate(const NodeTraverser &cb) const override;

@@ -51,12 +51,10 @@ private:
     void GenFunctionBody(const ir::MethodDefinition *methodDef, const checker::Signature *sig, const bool isConstructor,
                          const bool isSetter);
     void GenObjectType(const checker::ETSObjectType *objectType);
-    void GenEnumType(const checker::ETSEnumType *enumType);
     void GenUnionType(const checker::ETSUnionType *unionType);
 
     void GenImportDeclaration(const ir::ETSImportDeclaration *importDeclaration);
     void GenTypeAliasDeclaration(const ir::TSTypeAliasDeclaration *typeAlias);
-    void GenEnumDeclaration(const ir::TSEnumDeclaration *enumDecl);
     void GenInterfaceDeclaration(const ir::TSInterfaceDeclaration *interfaceDecl);
     void GenClassDeclaration(const ir::ClassDeclaration *classDecl);
     void GenMethodDeclaration(const ir::MethodDefinition *methodDef);

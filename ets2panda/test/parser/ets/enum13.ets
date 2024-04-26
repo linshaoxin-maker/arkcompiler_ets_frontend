@@ -16,8 +16,8 @@
 enum Color { Red }
 
 function test(c: Color): void throws {
-  let red: Color = Color.valueOf("Red");
-  let redFail: Color = c.valueOf("Red");
+  let red: Color = Color.getValueOf("Red");
+  let redFail: Color = c.getValueOf("Red");
 }
 
 function main(): void {
