@@ -2471,7 +2471,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSNonNullExpression *expr) const
 
         expr->SetTsType(checker->GetNonNullishType(exprType));
     }
-
+    expr->SetOriginalType(expr->TsType());
     return expr->TsType();
 }
 
