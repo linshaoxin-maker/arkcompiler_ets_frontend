@@ -590,21 +590,31 @@ export class ArkObfuscator {
       if (this.mCustomProfiles.mEnableNameCache) {
         let newIdentifierCache!: Object;
         let newMemberMethodCache!: Object;
-        // let newIdentifierCache_old!: Object;
-        // let newMemberMethodCache_old!: Object;
+        let newIdentifierCache_old!: Object;
+        let newMemberMethodCache_old!: Object;
         if (previousStageSourceMap) {
           // The process in sdk, need to use sourcemap mapping.
           newIdentifierCache = this.convertLineBasedOnSourceMapOptimize(IDENTIFIER_CACHE, previousStageSourceMap, true);
           newMemberMethodCache = this.convertLineBasedOnSourceMapOptimize(MEM_METHOD_CACHE, previousStageSourceMap, true);
-          // const consumer = await new sourceMap.SourceMapConsumer(previousStageSourceMap);
-          // newIdentifierCache_old = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE, consumer);
-          // newMemberMethodCache_old = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE, consumer);
+          const consumer = await new sourceMap.SourceMapConsumer(previousStageSourceMap);
+          newIdentifierCache_old = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE, consumer);
+          newMemberMethodCache_old = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE, consumer);
         } else {
           // The process in Arkguard.
           newIdentifierCache = this.convertLineBasedOnSourceMapOptimize(IDENTIFIER_CACHE, previousStageSourceMap, false);
           newMemberMethodCache = this.convertLineBasedOnSourceMapOptimize(MEM_METHOD_CACHE, previousStageSourceMap, false);
-          // newIdentifierCache_old = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE);
-          // newMemberMethodCache_old = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE);
+          newIdentifierCache_old = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE);
+          newMemberMethodCache_old = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE);
+        }
+        if (JSON.stringify(newIdentifierCache) === JSON.stringify(newIdentifierCache_old)) {
+          console.log("newIdentifierCache compare pass");
+        } else {
+          console.log(`newIdentifierCache compare fail, expect ${JSON.stringify(newIdentifierCache_old)}, but got ${JSON.stringify(newIdentifierCache)}`);
+        }
+        if (JSON.stringify(newMemberMethodCache) === JSON.stringify(newMemberMethodCache_old)) {
+          console.log("newMemberMethodCache compare pass");
+        } else {
+          console.log(`newMemberMethodCache compare fail, expect ${JSON.stringify(newMemberMethodCache_old)}, but got ${JSON.stringify(newMemberMethodCache)}`);
         }
         nameCache.set(IDENTIFIER_CACHE, newIdentifierCache);
         nameCache.set(MEM_METHOD_CACHE, newMemberMethodCache);
