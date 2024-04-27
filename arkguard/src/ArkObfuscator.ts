@@ -93,6 +93,11 @@ type ObfuscationResultType = {
 };
 
 const JSON_TEXT_INDENT_LENGTH: number = 2;
+
+let obfuscate_sum_time = 0;
+let pos_sum_time_before = 0;
+let pos_sum_time_after = 0;
+
 export class ArkObfuscator {
   // Used only for testing
   private mWriteOriginalFile: boolean = false;
@@ -516,6 +521,7 @@ export class ArkObfuscator {
    */
   public async obfuscate(content: SourceFile | string, sourceFilePath: string, previousStageSourceMap?: RawSourceMap,
     historyNameCache?: Map<string, string>, originalFilePath?: string, projectInfo?: ProjectInfo): Promise<ObfuscationResultType> {
+    let obfuscate_t1 = Date.now();
     ArkObfuscator.projectInfo = projectInfo;
     let ast: SourceFile;
     let result: ObfuscationResultType = { content: undefined };
@@ -597,11 +603,23 @@ export class ArkObfuscator {
         let newMemberMethodCache_old!: Object;
         if (previousStageSourceMap) {
           // The process in sdk, need to use sourcemap mapping.
+          let after_t1 = Date.now();
           newIdentifierCache = this.convertLineBasedOnSourceMapOptimize(IDENTIFIER_CACHE, previousStageSourceMap, true);
           newMemberMethodCache = this.convertLineBasedOnSourceMapOptimize(MEM_METHOD_CACHE, previousStageSourceMap, true);
+          let after_t2 = Date.now();
+          let after_cost_time = (after_t2 - after_t1) / 1000;
+          pos_sum_time_after += after_cost_time;
+          fs.appendFileSync('1.log', `  [after get original position] total time ${pos_sum_time_after}, about ${pos_sum_time_after / obfuscate_sum_time * 100}%,
+                                        current time ${after_cost_time}\n`);
+          let before_t1 = Date.now();
           const consumer = await new sourceMap.SourceMapConsumer(previousStageSourceMap as sourceMap.RawSourceMap);
           newIdentifierCache_old = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE, consumer);
           newMemberMethodCache_old = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE, consumer);
+          let before_t2 = Date.now();
+          let before_cost_time = (before_t2 - before_t1) / 1000;
+          pos_sum_time_before += before_cost_time;
+          fs.appendFileSync('1.log', `  [befor get original position] total time ${pos_sum_time_before}, about ${pos_sum_time_before / obfuscate_sum_time * 100}%,
+                                        current time ${before_cost_time}\n`);
         } else {
           // The process in Arkguard.
           newIdentifierCache = this.convertLineBasedOnSourceMapOptimize(IDENTIFIER_CACHE, previousStageSourceMap, false);
@@ -634,6 +652,9 @@ export class ArkObfuscator {
     }
 
     renameIdentifierModule.historyNameCache = undefined;
+    let obfuscate_t2 = Date.now();
+    let obfuscate_cost_time = (obfuscate_t2 - obfuscate_t1) / 1000;
+    fs.appendFileSync('1.log', `[obfuscate] total time ${obfuscate_sum_time}, current time ${obfuscate_cost_time} ${sourceFilePath}\n`);
     return result;
   }
 }
