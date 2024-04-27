@@ -43,6 +43,8 @@ import {TransformerManager} from './transformers/TransformerManager';
 import {getSourceMapGenerator} from './utils/SourceMapUtil';
 import
 {
+  decodeSourcemap,
+  ExistingDecodedSourceMap,
   Source,
   SourceMapLink,
   SourceMapSegmentObj,
@@ -423,7 +425,7 @@ export class ArkObfuscator {
       }
       const [scopeName, oldStartLine, oldStartColumn, oldEndLine, oldEndColumn] = key.split(':');
       let newKey: string = key;
-      if (saveOldInfo) {
+      if (!saveNewInfo) {
         newKey = `${scopeName}:${oldStartLine}:${oldEndLine}`;
         updatedCache[newKey] = value;
         continue;
@@ -431,7 +433,8 @@ export class ArkObfuscator {
       // 1: only one file processed at a time; 0: the first file
       const sourceFileName = previousMap.sources.length === 1 ? previousMap.sources[0] : '';
       const source: Source = new Source(sourceFileName, null);
-      let sourceMapLink = new SourceMapLink(previousMap, [source]);
+      const decodedSourceMap: ExistingDecodedSourceMap = decodeSourcemap(previousMap);
+      let sourceMapLink = new SourceMapLink(decodedSourceMap, [source]);
       // TODO(huangyu): check who is the owner of `traceSegment`? Link or Source or BaseSource?
       const startPosition: SourceMapSegmentObj | null = sourceMapLink.traceSegment(parseInt(oldStartLine), parseInt(oldStartColumn), "");
       if (!startPosition) {
@@ -511,7 +514,7 @@ export class ArkObfuscator {
    * @param historyNameCache
    * @param originalFilePath When filename obfuscation is enabled, it is used as the source code path.
    */
-  public async obfuscate(content: SourceFile | string, sourceFilePath: string, previousStageSourceMap?: sourceMap.RawSourceMap,
+  public async obfuscate(content: SourceFile | string, sourceFilePath: string, previousStageSourceMap?: RawSourceMap,
     historyNameCache?: Map<string, string>, originalFilePath?: string, projectInfo?: ProjectInfo): Promise<ObfuscationResultType> {
     ArkObfuscator.projectInfo = projectInfo;
     let ast: SourceFile;
@@ -596,7 +599,7 @@ export class ArkObfuscator {
           // The process in sdk, need to use sourcemap mapping.
           newIdentifierCache = this.convertLineBasedOnSourceMapOptimize(IDENTIFIER_CACHE, previousStageSourceMap, true);
           newMemberMethodCache = this.convertLineBasedOnSourceMapOptimize(MEM_METHOD_CACHE, previousStageSourceMap, true);
-          const consumer = await new sourceMap.SourceMapConsumer(previousStageSourceMap);
+          const consumer = await new sourceMap.SourceMapConsumer(previousStageSourceMap as sourceMap.RawSourceMap);
           newIdentifierCache_old = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE, consumer);
           newMemberMethodCache_old = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE, consumer);
         } else {

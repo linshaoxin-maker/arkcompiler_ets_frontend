@@ -26,7 +26,7 @@ enum SegmentIndex {
   NAME_INDEX = 4
 }
 
-interface ExistingDecodedSourceMap {
+export interface ExistingDecodedSourceMap {
   file?: string;
   mappings: SourceMapSegment[][];
   names?: string[];
@@ -196,7 +196,7 @@ export class SourceMapLink implements BaseSource {
   }
 }
 
-function decodeSourcemap(map: RawSourceMap): ExistingDecodedSourceMap | null {
+export function decodeSourcemap(map: RawSourceMap): ExistingDecodedSourceMap | null {
   if (!map) {
     return null;
   }
