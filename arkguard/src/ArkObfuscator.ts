@@ -385,37 +385,7 @@ export class ArkObfuscator {
     return (suffix !== 'js' && suffix !== 'ts' && suffix !== 'ets');
   }
 
-  private convertLineBasedOnSourceMap(targetCache: string, consumer?: sourceMap.SourceMapConsumer): Object {
-    let originalCache : Map<string, string> = renameIdentifierModule.nameCache.get(targetCache);
-    let updatedCache: Object = {};
-    for (const [key, value] of originalCache) {
-      let newKey: string = key;
-      if (!key.includes(':')) {
-        // The identifier which is not functionlike do not save line info.
-        updatedCache[newKey] = value;
-        continue;
-      }
-      const [scopeName, oldStartLine, oldStartColum, oldEndLine, oldEndColum] = key.split(':');
-      if (consumer) {
-        const startPosition = consumer.originalPositionFor({line: Number(oldStartLine), column: Number(oldStartColum)});
-        const startLine = startPosition.line;
-        const endPosition = consumer.originalPositionFor({line: Number(oldEndLine), column: Number(oldEndColum)});
-        const endLine = endPosition.line;
-        newKey = `${scopeName}:${startLine}:${endLine}`;
-        // Do not save methods that do not exist in the source code, e.g. 'build' in ArkUI.
-        if (startLine && endLine) {
-          updatedCache[newKey] = value;
-        }
-      } else {
-        // In Arkguard, we save line info of source code, so do not need to use sourcemap mapping.
-        newKey = `${scopeName}:${oldStartLine}:${oldEndLine}`;
-        updatedCache[newKey] = value;
-      }
-    }
-    return updatedCache;
-  }
-
-  private convertLineBasedOnSourceMapOptimize(targetCache: string, previousMap: RawSourceMap, saveNewInfo: boolean): Map<string, string> {
+  private convertLineBasedOnSourceMap(targetCache: string, previousMap: RawSourceMap, saveNewInfo: boolean): Map<string, string> {
     let originalCache : Map<string, string> = renameIdentifierModule.nameCache.get(targetCache);
     let updatedCache: Map<string, string> = new Map<string, string>();
     for (const [key, value] of originalCache) {
@@ -427,23 +397,25 @@ export class ArkObfuscator {
       const [scopeName, oldStartLine, oldStartColumn, oldEndLine, oldEndColumn] = key.split(':');
       let newKey: string = key;
       if (!saveNewInfo) {
+        // In Arkguard, we save line info of source code, so do not need to use sourcemap mapping.
         newKey = `${scopeName}:${oldStartLine}:${oldEndLine}`;
         updatedCache[newKey] = value;
         continue;
       }
-      // 1: Only one file processed at a time; 0: The first file
-      const sourceFileName = previousMap.sources.length === 1 ? previousMap.sources[0] : '';
+      // 1: Only one file in the source map; 0: The first and the only one.
+      const sourceFileName = previousMap?.sources?.length === 1 ? previousMap.sources[0] : '';
       const source: Source = new Source(sourceFileName, null);
       const decodedSourceMap: ExistingDecodedSourceMap = decodeSourcemap(previousMap);
       let sourceMapLink = new SourceMapLink(decodedSourceMap, [source]);
-      // 1: The line number in originalCache starts from 1 while in source map starts from 0, minus 1 to get the correct original position.
-      const startPosition: SourceMapSegmentObj | null = sourceMapLink.traceSegment(Number(oldStartLine) - 1, Number(oldStartColumn) - 1, "");
+      const startPosition: SourceMapSegmentObj | null = sourceMapLink.traceSegment(
+        // 1: The line number in originalCache starts from 1 while in source map starts from 0.
+        Number(oldStartLine) - 1, Number(oldStartColumn) - 1, ""); // Minus 1 to get the correct original position.
       if (!startPosition) {
         // Do not save methods that do not exist in the source code, e.g. 'build' in ArkUI.
         continue;
       }
-      // 1: Same as above.
-      const endPosition: SourceMapSegmentObj | null = sourceMapLink.traceSegment(Number(oldEndLine) - 1, Number(oldEndColumn) - 1, "");
+      const endPosition: SourceMapSegmentObj | null = sourceMapLink.traceSegment(
+        Number(oldEndLine) - 1, Number(oldEndColumn) - 1, ""); // 1: Same as above.
       if (!endPosition) {
         // Do not save methods that do not exist in the source code, e.g. 'build' in ArkUI.
         continue;
@@ -595,16 +567,14 @@ export class ArkObfuscator {
       if (this.mCustomProfiles.mEnableNameCache) {
         let newIdentifierCache!: Object;
         let newMemberMethodCache!: Object;
-        let newIdentifierCache_old!: Object;
-        let newMemberMethodCache_old!: Object;
         if (previousStageSourceMap) {
           // The process in sdk, need to use sourcemap mapping.
-          newIdentifierCache = this.convertLineBasedOnSourceMapOptimize(IDENTIFIER_CACHE, previousStageSourceMap, true);
-          newMemberMethodCache = this.convertLineBasedOnSourceMapOptimize(MEM_METHOD_CACHE, previousStageSourceMap, true);
+          newIdentifierCache = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE, previousStageSourceMap, true);
+          newMemberMethodCache = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE, previousStageSourceMap, true);
         } else {
           // The process in Arkguard.
-          newIdentifierCache = this.convertLineBasedOnSourceMapOptimize(IDENTIFIER_CACHE, previousStageSourceMap, false);
-          newMemberMethodCache = this.convertLineBasedOnSourceMapOptimize(MEM_METHOD_CACHE, previousStageSourceMap, false);
+          newIdentifierCache = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE, previousStageSourceMap, false);
+          newMemberMethodCache = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE, previousStageSourceMap, false);
         }
         nameCache.set(IDENTIFIER_CACHE, newIdentifierCache);
         nameCache.set(MEM_METHOD_CACHE, newMemberMethodCache);
