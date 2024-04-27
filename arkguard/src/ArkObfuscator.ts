@@ -41,7 +41,13 @@ import type {IOptions} from './configs/IOptions';
 import {FileUtils} from './utils/FileUtils';
 import {TransformerManager} from './transformers/TransformerManager';
 import {getSourceMapGenerator} from './utils/SourceMapUtil';
-import { mergeSourceMap } from './utils/SourceMapMergingUtil';
+import
+{
+  Source,
+  SourceMapLink,
+  SourceMapSegmentObj,
+  mergeSourceMap
+} from './utils/SourceMapMergingUtil';
 
 import {
   deleteLineInfoForNameString,
@@ -406,6 +412,44 @@ export class ArkObfuscator {
     return updatedCache;
   }
 
+  private convertLineBasedOnSourceMapOptimize(targetCache: string, previousMap: RawSourceMap, saveNewInfo: boolean): Map<string, string> {
+    let originalCache : Map<string, string> = renameIdentifierModule.nameCache.get(targetCache);
+    let updatedCache: Map<string, string> = new Map<string, string>();
+    for (const [key, value] of originalCache) {
+      if (!key.includes(':')) {
+        // No need to save line info for identifier which is not function-like, i.e. key without ':' here.
+        updatedCache[key] = value;
+        continue;
+      }
+      const [scopeName, oldStartLine, oldStartColumn, oldEndLine, oldEndColumn] = key.split(':');
+      let newKey: string = key;
+      if (saveOldInfo) {
+        newKey = `${scopeName}:${oldStartLine}:${oldEndLine}`;
+        updatedCache[newKey] = value;
+        continue;
+      }
+      // 1: only one file processed at a time; 0: the first file
+      const sourceFileName = previousMap.sources.length === 1 ? previousMap.sources[0] : '';
+      const source: Source = new Source(sourceFileName, null);
+      let sourceMapLink = new SourceMapLink(previousMap, [source]);
+      // TODO(huangyu): check who is the owner of `traceSegment`? Link or Source or BaseSource?
+      const startPosition: SourceMapSegmentObj | null = sourceMapLink.traceSegment(parseInt(oldStartLine), parseInt(oldStartColumn), "");
+      if (!startPosition) {
+        // Do not save methods that do not exist in the source code, e.g. 'build' in ArkUI.
+        continue;
+      }
+      const endPosition: SourceMapSegmentObj | null = sourceMapLink.traceSegment(parseInt(oldEndLine), parseInt(oldEndColumn), "");
+      if (!endPosition) {
+        // Do not save methods that do not exist in the source code, e.g. 'build' in ArkUI.
+        continue;
+      }
+      const startLine = startPosition.line;
+      const endLine = endPosition.line;
+      newKey = `${scopeName}:${startLine}:${endLine}`;
+      updatedCache[newKey] = value;
+    }
+    return updatedCache;
+  }
   /**
    * Obfuscate single source file with path provided
    *
@@ -546,15 +590,21 @@ export class ArkObfuscator {
       if (this.mCustomProfiles.mEnableNameCache) {
         let newIdentifierCache!: Object;
         let newMemberMethodCache!: Object;
+        // let newIdentifierCache_old!: Object;
+        // let newMemberMethodCache_old!: Object;
         if (previousStageSourceMap) {
           // The process in sdk, need to use sourcemap mapping.
-          const consumer = await new sourceMap.SourceMapConsumer(previousStageSourceMap);
-          newIdentifierCache = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE, consumer);
-          newMemberMethodCache = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE, consumer);
+          newIdentifierCache = this.convertLineBasedOnSourceMapOptimize(IDENTIFIER_CACHE, previousStageSourceMap, true);
+          newMemberMethodCache = this.convertLineBasedOnSourceMapOptimize(MEM_METHOD_CACHE, previousStageSourceMap, true);
+          // const consumer = await new sourceMap.SourceMapConsumer(previousStageSourceMap);
+          // newIdentifierCache_old = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE, consumer);
+          // newMemberMethodCache_old = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE, consumer);
         } else {
           // The process in Arkguard.
-          newIdentifierCache = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE);
-          newMemberMethodCache = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE);
+          newIdentifierCache = this.convertLineBasedOnSourceMapOptimize(IDENTIFIER_CACHE, previousStageSourceMap, false);
+          newMemberMethodCache = this.convertLineBasedOnSourceMapOptimize(MEM_METHOD_CACHE, previousStageSourceMap, false);
+          // newIdentifierCache_old = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE);
+          // newMemberMethodCache_old = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE);
         }
         nameCache.set(IDENTIFIER_CACHE, newIdentifierCache);
         nameCache.set(MEM_METHOD_CACHE, newMemberMethodCache);
