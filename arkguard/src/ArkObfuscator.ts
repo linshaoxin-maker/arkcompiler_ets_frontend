@@ -435,24 +435,25 @@ export class ArkObfuscator {
         updatedCache[newKey] = value;
         continue;
       }
-      // 1: only one file processed at a time; 0: the first file
+      // 1: Only one file processed at a time; 0: The first file
       const sourceFileName = previousMap.sources.length === 1 ? previousMap.sources[0] : '';
       const source: Source = new Source(sourceFileName, null);
       const decodedSourceMap: ExistingDecodedSourceMap = decodeSourcemap(previousMap);
       let sourceMapLink = new SourceMapLink(decodedSourceMap, [source]);
-      // TODO(huangyu): check who is the owner of `traceSegment`? Link or Source or BaseSource?
-      const startPosition: SourceMapSegmentObj | null = sourceMapLink.traceSegment(parseInt(oldStartLine), parseInt(oldStartColumn), "");
+      // 1: The line number in originalCache starts from 1 while in source map starts from 0, minus 1 to get the correct original position.
+      const startPosition: SourceMapSegmentObj | null = sourceMapLink.traceSegment(Number(oldStartLine) - 1, Number(oldStartColumn) - 1, "");
       if (!startPosition) {
         // Do not save methods that do not exist in the source code, e.g. 'build' in ArkUI.
         continue;
       }
-      const endPosition: SourceMapSegmentObj | null = sourceMapLink.traceSegment(parseInt(oldEndLine), parseInt(oldEndColumn), "");
+      // 1: Same as above.
+      const endPosition: SourceMapSegmentObj | null = sourceMapLink.traceSegment(Number(oldEndLine) - 1, Number(oldEndColumn) - 1, "");
       if (!endPosition) {
         // Do not save methods that do not exist in the source code, e.g. 'build' in ArkUI.
         continue;
       }
-      const startLine = startPosition.line;
-      const endLine = endPosition.line;
+      const startLine = startPosition.line + 1; // 1: The final line number in updatedCache should starts from 1.
+      const endLine = endPosition.line + 1; // 1: Same as above.
       newKey = `${scopeName}:${startLine}:${endLine}`;
       updatedCache[newKey] = value;
     }
@@ -522,6 +523,7 @@ export class ArkObfuscator {
   public async obfuscate(content: SourceFile | string, sourceFilePath: string, previousStageSourceMap?: RawSourceMap,
     historyNameCache?: Map<string, string>, originalFilePath?: string, projectInfo?: ProjectInfo): Promise<ObfuscationResultType> {
     let obfuscate_t1 = Date.now();
+    fs.appendFileSync('1.log', `${sourceFilePath}\n`);
     ArkObfuscator.projectInfo = projectInfo;
     let ast: SourceFile;
     let result: ObfuscationResultType = { content: undefined };
@@ -609,8 +611,7 @@ export class ArkObfuscator {
           let after_t2 = Date.now();
           let after_cost_time = (after_t2 - after_t1) / 1000;
           pos_sum_time_after += after_cost_time;
-          fs.appendFileSync('1.log', `  [after get original position] total time ${pos_sum_time_after}, about ${pos_sum_time_after / obfuscate_sum_time * 100}%,
-                                        current time ${after_cost_time}\n`);
+          fs.appendFileSync('1.log', `  [after get original position] total time ${pos_sum_time_after}, about ${pos_sum_time_after / obfuscate_sum_time * 100}%, current time ${after_cost_time}\n`);
           let before_t1 = Date.now();
           const consumer = await new sourceMap.SourceMapConsumer(previousStageSourceMap as sourceMap.RawSourceMap);
           newIdentifierCache_old = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE, consumer);
@@ -618,24 +619,42 @@ export class ArkObfuscator {
           let before_t2 = Date.now();
           let before_cost_time = (before_t2 - before_t1) / 1000;
           pos_sum_time_before += before_cost_time;
-          fs.appendFileSync('1.log', `  [befor get original position] total time ${pos_sum_time_before}, about ${pos_sum_time_before / obfuscate_sum_time * 100}%,
-                                        current time ${before_cost_time}\n`);
+          fs.appendFileSync('1.log', `  [befor get original position] total time ${pos_sum_time_before}, about ${pos_sum_time_before / obfuscate_sum_time * 100}%, current time ${before_cost_time}\n`);
         } else {
           // The process in Arkguard.
+          let after_t1 = Date.now();
           newIdentifierCache = this.convertLineBasedOnSourceMapOptimize(IDENTIFIER_CACHE, previousStageSourceMap, false);
           newMemberMethodCache = this.convertLineBasedOnSourceMapOptimize(MEM_METHOD_CACHE, previousStageSourceMap, false);
+          let after_t2 = Date.now();
+          let after_cost_time = (after_t2 - after_t1) / 1000;
+          pos_sum_time_after += after_cost_time;
+          fs.appendFileSync('1.log', `  [after get original position] total time ${pos_sum_time_after}, about ${pos_sum_time_after / obfuscate_sum_time * 100}%,
+          current time ${after_cost_time}\n`);
+          let before_t1 = Date.now();
           newIdentifierCache_old = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE);
           newMemberMethodCache_old = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE);
+          let before_t2 = Date.now();
+          let before_cost_time = (before_t2 - before_t1) / 1000;
+          pos_sum_time_before += before_cost_time;
+                    fs.appendFileSync('1.log', `  [befor get original position] total time ${pos_sum_time_before}, about ${pos_sum_time_before / obfuscate_sum_time * 100}%,
+                                        current time ${before_cost_time}\n`);
+
         }
         if (JSON.stringify(newIdentifierCache) === JSON.stringify(newIdentifierCache_old)) {
-          console.log("newIdentifierCache compare pass");
+          fs.appendFileSync('1.log', `newIdentifierCache compare pass\n`);
+          fs.appendFileSync('1.log', `both  ${JSON.stringify(newIdentifierCache, null, 2)}\n`);
         } else {
-          console.log(`newIdentifierCache compare fail, expect ${JSON.stringify(newIdentifierCache_old)}, but got ${JSON.stringify(newIdentifierCache)}`);
+          fs.appendFileSync('1.log', `newIdentifierCache compare fail\n`);
+          fs.appendFileSync('1.log', `expect ${JSON.stringify(newIdentifierCache_old, null, 2)}\n`);
+          fs.appendFileSync('1.log', `buggot ${JSON.stringify(newIdentifierCache, null, 2)}\n`);
         }
         if (JSON.stringify(newMemberMethodCache) === JSON.stringify(newMemberMethodCache_old)) {
-          console.log("newMemberMethodCache compare pass");
+          fs.appendFileSync('1.log', `newMemberMethodCache compare pass\n`);
+          fs.appendFileSync('1.log', `both  ${JSON.stringify(newMemberMethodCache, null, 2)}\n`);
         } else {
-          console.log(`newMemberMethodCache compare fail, expect ${JSON.stringify(newMemberMethodCache_old)}, but got ${JSON.stringify(newMemberMethodCache)}`);
+          fs.appendFileSync('1.log', `newMemberMethodCache compare fail\n`);
+          fs.appendFileSync('1.log', `expect ${JSON.stringify(newMemberMethodCache_old, null, 2)}\n`);
+          fs.appendFileSync('1.log', `buggot ${JSON.stringify(newMemberMethodCache, null, 2)}\n`);
         }
         nameCache.set(IDENTIFIER_CACHE, newIdentifierCache);
         nameCache.set(MEM_METHOD_CACHE, newMemberMethodCache);
@@ -654,6 +673,7 @@ export class ArkObfuscator {
     renameIdentifierModule.historyNameCache = undefined;
     let obfuscate_t2 = Date.now();
     let obfuscate_cost_time = (obfuscate_t2 - obfuscate_t1) / 1000;
+    obfuscate_sum_time += obfuscate_cost_time;
     fs.appendFileSync('1.log', `[obfuscate] total time ${obfuscate_sum_time}, current time ${obfuscate_cost_time} ${sourceFilePath}\n`);
     return result;
   }
