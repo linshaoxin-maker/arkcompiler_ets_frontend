@@ -1,1 +1,0 @@
-SyntaxError: Decorators are not valid here. [test-static-blocks-in-class7.ts:19:3]

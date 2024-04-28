@@ -1,1 +1,0 @@
-SyntaxError: Interface name cannot be 'boolean' [test-interface1.ts:17:11]

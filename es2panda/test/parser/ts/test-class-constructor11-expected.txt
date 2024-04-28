@@ -1,1 +1,0 @@
-SyntaxError: A super call must be a root-level statement within a constructor of a derived class that contains initialized properties, parameter properties, or private identifiers. [test-class-constructor11.ts:19:5]

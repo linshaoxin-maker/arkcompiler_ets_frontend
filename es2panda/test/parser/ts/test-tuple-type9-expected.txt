@@ -1,1 +1,0 @@
-SyntaxError: A required element cannot follow an optional element [test-tuple-type9.ts:18:50]

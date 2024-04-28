@@ -1,1 +1,0 @@
-SyntaxError: Unexpected token, expected an identifier. [test_decorator1.ts:17:14]
