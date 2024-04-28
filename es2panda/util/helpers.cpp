@@ -15,6 +15,7 @@
 
 #include "helpers.h"
 
+#include <es2panda.h>
 #include <binder/scope.h>
 #include <es2panda.h>
 #include <ir/base/classDefinition.h>
@@ -367,6 +368,9 @@ const ir::ScriptFunction *Helpers::GetContainingFunction(const ir::AstNode *node
 
 const ir::ClassDefinition *Helpers::GetClassDefiniton(const ir::ScriptFunction *node)
 {
+    if (node == nullptr) {
+        throw Error(ErrorType::GENERIC, "The passed pointer node is empty");
+    }
     ASSERT(node->IsConstructor() || node->IsMethod());
     ASSERT(node->Parent()->IsFunctionExpression());
     ASSERT(node->Parent()->Parent()->IsMethodDefinition());

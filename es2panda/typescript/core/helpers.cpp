@@ -30,6 +30,7 @@
 #include <binder/variable.h>
 #include <binder/scope.h>
 
+#include <es2panda.h>
 #include <typescript/checker.h>
 #include <typescript/core/typeElaborationContext.h>
 
@@ -289,6 +290,9 @@ void Checker::ThrowBinaryLikeError(lexer::TokenType op, Type *leftType, Type *ri
 
 void Checker::ThrowAssignmentError(Type *source, Type *target, lexer::SourcePosition lineInfo, bool isAsSrcLeftType)
 {
+    if (target == nullptr) {
+        throw Error(ErrorType::GENERIC, "The passed pointer target is empty");
+    }
     if (isAsSrcLeftType || !target->HasTypeFlag(TypeFlag::LITERAL)) {
         ThrowTypeError({"Type '", AsSrc(source), "' is not assignable to type '", target, "'."}, lineInfo);
     }
@@ -471,6 +475,9 @@ Type *Checker::GetTypeFromClassOrInterfaceReference([[maybe_unused]] const ir::T
     if (!resolvedType) {
         ObjectDescriptor *desc = allocator_->New<ObjectDescriptor>(allocator_);
         resolvedType = allocator_->New<InterfaceType>(allocator_, var->Name(), desc);
+        if (resolvedType == nullptr) {
+            throw Error(ErrorType::GENERIC, "Failed to create resolvedType pointer");
+        }
         resolvedType->SetVariable(var);
         var->SetTsType(resolvedType);
     }

@@ -234,7 +234,7 @@ void ObjectExpression::EmitCreateObjectWithBuffer(compiler::PandaGen *pg, compil
         return;
     }
 
-    uint32_t bufIdx = pg->AddLiteralBuffer(buf);
+    uint32_t bufIdx = static_cast<uint32_t>(pg->AddLiteralBuffer(buf));
     pg->CreateObjectWithBuffer(this, bufIdx);
 }
 

@@ -267,6 +267,9 @@ void AddEnumValueDeclaration(checker::Checker *checker, double number, binder::E
 
     if (!res) {
         auto *decl = checker->Allocator()->New<binder::EnumDecl>(memberStr);
+        if (decl == nullptr) {
+            throw Error(ErrorType::GENERIC, "Failed to allocate decl pointer");
+        }
         decl->BindNode(variable->Declaration()->Node());
         enumScope->AddDecl(checker->Allocator(), decl, ScriptExtension::TS);
         res = enumScope->FindEnumMemberVariable(memberStr);

@@ -16,6 +16,8 @@
 #ifndef ES2PANDA_PARSER_INCLUDE_AST_CLASS_DEFINITION_H
 #define ES2PANDA_PARSER_INCLUDE_AST_CLASS_DEFINITION_H
 
+#include <cstdint>
+
 #include <binder/variable.h>
 #include <ir/base/classProperty.h>
 #include <ir/base/methodDefinition.h>
@@ -38,7 +40,7 @@ class LocalScope;
 
 namespace panda::es2panda::ir {
 
-enum class FieldType {
+enum class FieldType : uint32_t {
     NONE = 0,
     NUMBER = (1 << 0),
     STRING = (1 << 1),

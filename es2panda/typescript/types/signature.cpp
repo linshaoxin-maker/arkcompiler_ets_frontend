@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <es2panda.h>
 #include "signature.h"
 
 namespace panda::es2panda::checker {
@@ -20,6 +21,9 @@ namespace panda::es2panda::checker {
 Signature *Signature::Copy(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes)
 {
     checker::SignatureInfo *copiedInfo = allocator->New<checker::SignatureInfo>(signatureInfo_, allocator);
+    if (copiedInfo == nullptr) {
+        throw Error(ErrorType::GENERIC, "Failed to create copiedInfo pointer");
+    }
 
     for (auto *it : copiedInfo->params) {
         it->SetTsType(it->TsType()->Instantiate(allocator, relation, globalTypes));

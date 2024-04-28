@@ -246,6 +246,10 @@ checker::Type *ArrayExpression::Check(checker::Checker *checker) const
             binder::LocalVariable *tupleMember =
                 binder::Scope::CreateVar(checker->Allocator(), memberIndex, binder::VariableFlags::PROPERTY, nullptr);
 
+            if (tupleMember == nullptr) {
+                throw Error(ErrorType::GENERIC, "Failed to create tupleMember pointer");
+            }
+            
             if (inConstContext) {
                 tupleMember->AddFlag(binder::VariableFlags::READONLY);
             }

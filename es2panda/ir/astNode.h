@@ -16,6 +16,7 @@
 #ifndef ES2PANDA_IR_ASTNODE_H
 #define ES2PANDA_IR_ASTNODE_H
 
+#include <cstdint>
 #include <functional>
 #include <macros.h>
 
@@ -60,7 +61,7 @@ enum class AstNodeFlags {
 
 DEFINE_BITOPS(AstNodeFlags)
 
-enum class ModifierFlags {
+enum class ModifierFlags : uint32_t {
     NONE = 0,
     STATIC = 1 << 0,
     ASYNC = 1 << 1,
@@ -81,7 +82,7 @@ enum class ModifierFlags {
 
 DEFINE_BITOPS(ModifierFlags)
 
-enum class ScriptFunctionFlags {
+enum class ScriptFunctionFlags : uint32_t {
     NONE = 0,
     GENERATOR = 1 << 0,
     ASYNC = 1 << 1,

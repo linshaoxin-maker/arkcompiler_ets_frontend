@@ -61,6 +61,9 @@ checker::Type *TSTypeLiteral::GetType(checker::Checker *checker) const
 
     checker::ObjectDescriptor *desc = checker->Allocator()->New<checker::ObjectDescriptor>(checker->Allocator());
     checker::Type *type = checker->Allocator()->New<checker::ObjectLiteralType>(desc);
+    if (type == nullptr) {
+        throw Error(ErrorType::GENERIC, "Failed to allocate type poniter");
+    }
     type->SetVariable(Variable());
 
     checker->NodeCache().insert({this, type});
