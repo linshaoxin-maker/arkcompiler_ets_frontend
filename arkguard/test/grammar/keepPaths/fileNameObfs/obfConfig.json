@@ -1,7 +1,7 @@
 {
     "mCompact": false,
     "mRemoveComments": true,
-    "mOutputDir": "../../../local",
+    "mOutputDir": "../../../local/keepPaths/fileNameObfs",
     "mDisableHilog": false,
     "mDisableConsole": true,
     "mSimplify": false,

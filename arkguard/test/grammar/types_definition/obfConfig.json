@@ -1,7 +1,7 @@
 {
     "mCompact": false,
     "mRemoveComments": false,
-    "mOutputDir": "../../local/advanced_type",
+    "mOutputDir": "../../local/types_definition",
     "mDisableHilog": false,
     "mDisableConsole": false,
     "mSimplify": false,

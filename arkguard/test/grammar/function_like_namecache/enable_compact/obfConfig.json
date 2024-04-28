@@ -1,7 +1,7 @@
 {
     "mCompact": true,
     "mRemoveComments": false,
-    "mOutputDir": "../../../local",
+    "mOutputDir": "../../../local/function_like_namecache/enable_compact",
     "mDisableHilog": false,
     "mDisableConsole": false,
     "mSimplify": false,

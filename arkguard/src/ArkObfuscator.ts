@@ -227,14 +227,10 @@ export class ArkObfuscator {
     if (!path.isAbsolute(this.mCustomProfiles.mOutputDir)) {
       this.mCustomProfiles.mOutputDir = path.join(path.dirname(this.mConfigPath), this.mCustomProfiles.mOutputDir);
     }
-    if (this.mCustomProfiles.mOutputDir && !fs.existsSync(this.mCustomProfiles.mOutputDir)) {
-      fs.mkdirSync(this.mCustomProfiles.mOutputDir);
-    }
 
     performancePrinter?.filesPrinter?.startEvent(EventList.ALL_FILES_OBFUSCATION);
     readProjectProperties(this.mSourceFiles, this.mCustomProfiles);
-    const propertyCachePath = path.join(this.mCustomProfiles.mOutputDir, 
-                                        path.basename(this.mSourceFiles[0])) // Get dir name
+    const propertyCachePath = this.mCustomProfiles.mOutputDir;
     this.readPropertyCache(propertyCachePath);
 
     // support directory and file obfuscate
@@ -264,15 +260,7 @@ export class ArkObfuscator {
    * @private
    */
   private async obfuscateDir(dirName: string, dirPrefix: string): Promise<void> {
-    const currentDir: string = FileUtils.getPathWithoutPrefix(dirName, dirPrefix);
     let newDir: string = this.mCustomProfiles.mOutputDir;
-    // there is no need to create directory because the directory names will be obfuscated.
-    if (!this.mCustomProfiles.mRenameFileName?.mEnable) {
-      newDir = path.join(this.mCustomProfiles.mOutputDir, currentDir);
-      if (!fs.existsSync(newDir)) {
-        fs.mkdirSync(newDir);
-      }
-    }
 
     const fileNames: string[] = fs.readdirSync(dirName);
     for (let fileName of fileNames) {
@@ -317,6 +305,32 @@ export class ArkObfuscator {
   private produceNameCache(namecache: { [k: string]: string | {}}, resultPath: string): void {
     const nameCachePath: string = resultPath + NAME_CACHE_SUFFIX;
     fs.writeFileSync(nameCachePath, JSON.stringify(namecache, null, JSON_TEXT_INDENT_LENGTH));
+  }
+
+  public writeOutput(mixedInfo: ObfuscationResultType, outputDir: string, sourceFilePath: string): void {
+    const customProfiles: IOptions = this.mCustomProfiles;
+    if (outputDir && mixedInfo) {
+      // the writing file is for the ut.
+      const testCasesRootPath = path.dirname(this.mConfigPath);
+      let relativePath = '';
+      if (customProfiles.mRenameFileName?.mEnable && mixedInfo.filePath) {
+        relativePath = mixedInfo.filePath.replace(testCasesRootPath, '');
+      } else {
+        relativePath = sourceFilePath.replace(testCasesRootPath, '');
+      }
+      let resultPath: string = path.join(customProfiles.mOutputDir, relativePath);
+      fs.mkdirSync(path.dirname(resultPath), {recursive: true});
+      fs.writeFileSync(resultPath, mixedInfo.content);
+
+      if (customProfiles.mEnableSourceMap && mixedInfo.sourceMap) {
+        fs.writeFileSync(path.join(resultPath + '.map'),
+          JSON.stringify(mixedInfo.sourceMap, null, JSON_TEXT_INDENT_LENGTH));
+      }
+
+      if (customProfiles.mEnableNameCache && customProfiles.mEnableNameCache && mixedInfo.nameCache) {
+        this.produceNameCache(mixedInfo.nameCache, resultPath);
+      }
+    }
   }
 
   private producePropertyCache(outputDir: string): void {
@@ -416,7 +430,7 @@ export class ArkObfuscator {
   public async obfuscateFile(sourceFilePath: string, outputDir: string): Promise<void> {
     const fileName: string = FileUtils.getFileName(sourceFilePath);
     if (this.isObfsIgnoreFile(fileName)) {
-      fs.copyFileSync(sourceFilePath, path.join(outputDir, fileName));
+      this.writeOutput({content: fs.readFileSync(sourceFilePath, 'utf-8')}, outputDir, sourceFilePath);
       return;
     }
 
@@ -429,35 +443,7 @@ export class ArkObfuscator {
     performancePrinter?.filesPrinter?.startEvent(sourceFilePath);
     const mixedInfo: ObfuscationResultType = await this.obfuscate(content, sourceFilePath);
     performancePrinter?.filesPrinter?.endEvent(sourceFilePath, undefined, true);
-
-    if (this.mWriteOriginalFile && mixedInfo) {
-      // Write the obfuscated content directly to orignal file.
-      fs.writeFileSync(sourceFilePath, mixedInfo.content);
-      return;
-    }
-    if (outputDir && mixedInfo) {
-      // the writing file is for the ut.
-      const testCasesRootPath = path.join(__dirname, '../', 'test/grammar');
-      let relativePath = '';
-      let resultPath = '';
-      if (this.mCustomProfiles.mRenameFileName?.mEnable && mixedInfo.filePath) {
-        relativePath = mixedInfo.filePath.replace(testCasesRootPath, '');
-      } else {
-        relativePath = sourceFilePath.replace(testCasesRootPath, '');
-      }
-      resultPath = path.join(this.mCustomProfiles.mOutputDir, relativePath);
-      fs.mkdirSync(path.dirname(resultPath), {recursive: true});
-      fs.writeFileSync(resultPath, mixedInfo.content);
-
-      if (this.mCustomProfiles.mEnableSourceMap && mixedInfo.sourceMap) {
-        fs.writeFileSync(path.join(resultPath + '.map'),
-          JSON.stringify(mixedInfo.sourceMap, null, JSON_TEXT_INDENT_LENGTH));
-      }
-
-      if (this.mCustomProfiles.mEnableNameCache && this.mCustomProfiles.mEnableNameCache) {
-        this.produceNameCache(mixedInfo.nameCache, resultPath);
-      }
-    }
+    this.writeOutput(mixedInfo, outputDir, sourceFilePath);
   }
 
   /**

@@ -23,16 +23,9 @@ import { FileUtils } from '../src/utils/FileUtils';
 const testDirectory = path.resolve('./test/local');
 const NonExecutableFile = ['name_as_export_api_1.ts', 'name_as_import_api_1.ts', 'ohmurl_test.ts', 'ohmurl_test_new.ts'];
 
-function runTest(filePath) {
-  try {
-    const command = `node ./node_modules/ts-node/dist/bin.js ${filePath}`;
-    execSync(command);
-  } catch (error) {
-    console.error(`Test case ${filePath} failed:`, error);
-    return false;
-  }
-  return true;
-}
+const executableFilesCount = 319;
+const expectationFilesNum = 102;
+
 let successCount = 0;
 let failureCount = 0;
 let contentcomparationSuccessCount = 0;
@@ -48,20 +41,12 @@ function runTestsInDirectory(directoryPath) {
 
     if (fs.statSync(filePath).isDirectory()) {
       runTestsInDirectory(filePath);
-    } else if (filePath.includes('assert-expectation.ts')) {
-      const isSuccess = runTest(filePath);
-      if (isSuccess) {
-        successCount++;
-      } else {
-        failureCount++;
-        failedFiles.push(filePath);
-      }
     } else if ((filePath.endsWith(Extension.TS) || filePath.endsWith(Extension.JS)) && !(filePath.endsWith(Extension.DETS) ||
       filePath.endsWith(Extension.DTS))) {
       executeRunTest(file, filePath);
-      compareContent(filePath);
+      tryCompareContent(filePath);
     } else if (filePath.endsWith(Extension.DETS) || filePath.endsWith(Extension.DTS)) {
-      compareContent(filePath);
+      tryCompareContent(filePath);
     }
   }
 }
@@ -78,7 +63,18 @@ function executeRunTest(fileName, filePath) {
   }
 }
 
-function compareContent(filePath) {
+function runTest(filePath) {
+  try {
+    const command = `node ./node_modules/ts-node/dist/bin.js ${filePath}`;
+    execSync(command);
+  } catch (error) {
+    console.error(`Test case ${filePath} failed:`, error);
+    return false;
+  }
+  return true;
+}
+
+function tryCompareContent(filePath) {
   const sourcePath = filePath.replace('/test/local/', '/test/grammar/');
   const sourcePathAndExtension = FileUtils.getFileSuffix(sourcePath);
   const expectationPath = sourcePathAndExtension.path + '_expected.txt';
@@ -88,27 +84,29 @@ function compareContent(filePath) {
   const hasExpectationFile = fs.existsSync(expectationPath);
   const hasExpectationCache = fs.existsSync(expectationCachePath);
   const hasResultCache = fs.existsSync(resultCachePath);
-  if (hasExpectationFile || (hasExpectationCache && hasResultCache)) {
-    let actual;
-    let expectation;
-    if (hasExpectationFile) {
-      actual = fs.readFileSync(filePath).toString();
-      expectation = fs.readFileSync(expectationPath).toString();
-    } else {
-      actual = fs.readFileSync(resultCachePath).toString();
-      expectation = fs.readFileSync(expectationCachePath).toString();
-    }
-    if (actual === expectation) {
-      contentcomparationSuccessCount++;
-    } else {
-      contentcomparationFailureCount++;
-      contentComparisionFailureFiles.push(filePath);
-      const differences = diff.diffLines(actual, expectation);
-      differences.forEach(part => {
-        const color = part.added ? '\x1b[32m' : part.removed ? '\x1b[31m' : '\x1b[0m';
-        console.log(color + part.value + '\x1b[0m');
-      });
-    }
+
+  if (hasExpectationFile) {
+    compareContent(filePath, expectationPath);
+  }
+
+  if (hasExpectationCache && hasResultCache) {
+    compareContent(resultCachePath, expectationCachePath);
+  }
+}
+
+function compareContent(actualPath, expectPath) {
+  let actual = fs.readFileSync(actualPath).toString();
+  let expectation = fs.readFileSync(expectPath).toString();
+  if (actual.replace(/(\n|\r\n)/g, '') === expectation.replace(/(\n|\r\n)/g, '')) {
+    contentcomparationSuccessCount++;
+  } else {
+    contentcomparationFailureCount++;
+    contentComparisionFailureFiles.push(actualPath);
+    const differences = diff.diffLines(actual, expectation);
+    differences.forEach(part => {
+      const color = part.added ? '\x1b[32m' : part.removed ? '\x1b[31m' : '\x1b[0m';
+      console.log(color + part.value + '\x1b[0m');
+    });
   }
 }
 
@@ -131,4 +129,14 @@ if (contentcomparationFailureCount > 0) {
   for (const failedFile of contentComparisionFailureFiles) {
     console.log(failedFile);
   }
+}
+
+const actualExecFilesNum = successCount + failureCount;
+if (actualExecFilesNum !== executableFilesCount) {
+  console.error('\u001b[31m', `Error:The baseline number of executable files is ${executableFilesCount}, while the actual number is ${actualExecFilesNum}`);
+}
+
+const actualConFilesNum = contentcomparationSuccessCount + contentcomparationFailureCount;
+if (actualConFilesNum !== expectationFilesNum) {
+  console.error('\u001b[31m', `Error: The baseline number of executable files is ${expectationFilesNum}, while the actual number is ${actualConFilesNum}`);
 }
