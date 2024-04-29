@@ -454,6 +454,7 @@ ohos_executable("es2panda") {
   }
 
   sources = [
+    "aot/analyseCompileDepsInfo.cpp",
     "aot/resolveDepsRelation.cpp",
     "aot/emitFiles.cpp",
     "aot/main.cpp",

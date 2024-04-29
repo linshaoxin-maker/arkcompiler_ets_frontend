@@ -16,6 +16,7 @@
 #include <abc2program/program_dump.h>
 #include <assembly-program.h>
 #include <assembly-emitter.h>
+#include <analyseCompileDepsInfo.h>
 #include <resolveDepsRelation.h>
 #include <emitFiles.h>
 #include <es2panda.h>
@@ -282,6 +283,12 @@ int Run(int argc, const char **argv)
         for (auto deps : value) {
             std::cout << deps << std::endl;
         }
+    }
+
+    std::unordered_map<std::string, std::unordered_set<std::string>> compileDepsInfo {};
+    std::unordered_set<std::string> generatedRecords {};
+    if (!AnalyseCompileDepsInfo(programsInfo, options, compileDepsInfo, generatedRecords)) {
+        return 1;
     }
 
     if (!GenerateAbcFiles(programsInfo, options, expectedProgsCount)) {
