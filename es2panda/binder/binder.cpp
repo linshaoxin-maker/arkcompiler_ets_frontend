@@ -260,6 +260,9 @@ void Binder::InstantiateArguments()
     auto *iter = scope_;
     while (true) {
         Scope *scope = iter->IsFunctionParamScope() ? iter : iter->EnclosingVariableScope();
+        if (scope == nullptr) {
+            throw Error(ErrorType::GENERIC, "Unsuccessful in acquiring the scope");
+        }
 
         const auto *node = scope->Node();
 

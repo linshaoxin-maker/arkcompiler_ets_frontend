@@ -19,6 +19,7 @@
 #include <gen/isa.h>
 #include <lexer/token/sourceLocation.h>
 #include <macros.h>
+#include "es2panda.h"
 
 namespace panda::es2panda::ir {
 class AstNode;
@@ -124,6 +125,9 @@ private:
         ir::AstNode *invalidNode = nullptr;
         bool isInvalid = GetSourceLocationFlag() == lexer::SourceLocationFlag::INVALID_SOURCE_LOCATION;
         auto *ret = Allocator()->New<T>(isInvalid ? invalidNode : node, std::forward<Args>(args)...);
+        if (ret == nullptr) {
+            throw Error(ErrorType::GENERIC, "Unsuccessful allocation in adding a AstNode");
+        }
         UpdateIcSlot(ret);
         return ret;
     }
