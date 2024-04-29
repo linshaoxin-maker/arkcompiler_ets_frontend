@@ -37,7 +37,7 @@ public:
     {
         constexpr auto COMPILER_SIZE = 8192_MB;
 
-        MemConfig::Initialize(0, 0, COMPILER_SIZE, 0);
+        MemConfig::Initialize(0, 0, static_cast<size_t>(COMPILER_SIZE), 0);
         PoolManager::Initialize(PoolType::MMAP);
     }
 
