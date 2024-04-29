@@ -41,7 +41,15 @@ import type {IOptions} from './configs/IOptions';
 import {FileUtils} from './utils/FileUtils';
 import {TransformerManager} from './transformers/TransformerManager';
 import {getSourceMapGenerator} from './utils/SourceMapUtil';
-import { mergeSourceMap } from './utils/SourceMapMergingUtil';
+import
+{
+  decodeSourcemap,
+  ExistingDecodedSourceMap,
+  Source,
+  SourceMapLink,
+  SourceMapSegmentObj,
+  mergeSourceMap
+} from './utils/SourceMapMergingUtil';
 
 import {
   deleteLineInfoForNameString,
@@ -86,6 +94,7 @@ type ObfuscationResultType = {
 };
 
 const JSON_TEXT_INDENT_LENGTH: number = 2;
+
 export class ArkObfuscator {
   // Used only for testing
   private mWriteOriginalFile: boolean = false;
@@ -377,36 +386,48 @@ export class ArkObfuscator {
     return (suffix !== 'js' && suffix !== 'ts' && suffix !== 'ets');
   }
 
-  private convertLineBasedOnSourceMap(targetCache: string, consumer?: sourceMap.SourceMapConsumer): Object {
+  private convertLineBasedOnSourceMap(targetCache: string, previousMap: RawSourceMap, saveNewInfo: boolean): Map<string, string> {
     let originalCache : Map<string, string> = renameIdentifierModule.nameCache.get(targetCache);
-    let updatedCache: Object = {};
+    let updatedCache: Map<string, string> = new Map<string, string>();
     for (const [key, value] of originalCache) {
-      let newKey: string = key;
       if (!key.includes(':')) {
-        // The identifier which is not functionlike do not save line info.
-        updatedCache[newKey] = value;
+        // No need to save line info for identifier which is not function-like, i.e. key without ':' here.
+        updatedCache[key] = value;
         continue;
       }
-      const [scopeName, oldStartLine, oldStartColum, oldEndLine, oldEndColum] = key.split(':');
-      if (consumer) {
-        const startPosition = consumer.originalPositionFor({line: Number(oldStartLine), column: Number(oldStartColum)});
-        const startLine = startPosition.line;
-        const endPosition = consumer.originalPositionFor({line: Number(oldEndLine), column: Number(oldEndColum)});
-        const endLine = endPosition.line;
-        newKey = `${scopeName}:${startLine}:${endLine}`;
-        // Do not save methods that do not exist in the source code, e.g. 'build' in ArkUI.
-        if (startLine && endLine) {
-          updatedCache[newKey] = value;
-        }
-      } else {
+      const [scopeName, oldStartLine, oldStartColumn, oldEndLine, oldEndColumn] = key.split(':');
+      let newKey: string = key;
+      if (!saveNewInfo) {
         // In Arkguard, we save line info of source code, so do not need to use sourcemap mapping.
         newKey = `${scopeName}:${oldStartLine}:${oldEndLine}`;
         updatedCache[newKey] = value;
+        continue;
       }
+      // 1: Only one file in the source map; 0: The first and the only one.
+      const sourceFileName = previousMap?.sources?.length === 1 ? previousMap.sources[0] : '';
+      const source: Source = new Source(sourceFileName, null);
+      const decodedSourceMap: ExistingDecodedSourceMap = decodeSourcemap(previousMap);
+      let sourceMapLink = new SourceMapLink(decodedSourceMap, [source]);
+      const startPosition: SourceMapSegmentObj | null = sourceMapLink.traceSegment(
+        // 1: The line number in originalCache starts from 1 while in source map starts from 0.
+        Number(oldStartLine) - 1, Number(oldStartColumn) - 1, ""); // Minus 1 to get the correct original position.
+      if (!startPosition) {
+        // Do not save methods that do not exist in the source code, e.g. 'build' in ArkUI.
+        continue;
+      }
+      const endPosition: SourceMapSegmentObj | null = sourceMapLink.traceSegment(
+        Number(oldEndLine) - 1, Number(oldEndColumn) - 1, ""); // 1: Same as above.
+      if (!endPosition) {
+        // Do not save methods that do not exist in the source code, e.g. 'build' in ArkUI.
+        continue;
+      }
+      const startLine = startPosition.line + 1; // 1: The final line number in updatedCache should starts from 1.
+      const endLine = endPosition.line + 1; // 1: Same as above.
+      newKey = `${scopeName}:${startLine}:${endLine}`;
+      updatedCache[newKey] = value;
     }
     return updatedCache;
   }
-
   /**
    * Obfuscate single source file with path provided
    *
@@ -468,7 +489,7 @@ export class ArkObfuscator {
    * @param historyNameCache
    * @param originalFilePath When filename obfuscation is enabled, it is used as the source code path.
    */
-  public async obfuscate(content: SourceFile | string, sourceFilePath: string, previousStageSourceMap?: sourceMap.RawSourceMap,
+  public async obfuscate(content: SourceFile | string, sourceFilePath: string, previousStageSourceMap?: RawSourceMap,
     historyNameCache?: Map<string, string>, originalFilePath?: string, projectInfo?: ProjectInfo): Promise<ObfuscationResultType> {
     ArkObfuscator.projectInfo = projectInfo;
     let ast: SourceFile;
@@ -549,13 +570,12 @@ export class ArkObfuscator {
         let newMemberMethodCache!: Object;
         if (previousStageSourceMap) {
           // The process in sdk, need to use sourcemap mapping.
-          const consumer = await new sourceMap.SourceMapConsumer(previousStageSourceMap);
-          newIdentifierCache = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE, consumer);
-          newMemberMethodCache = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE, consumer);
+          newIdentifierCache = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE, previousStageSourceMap, true);
+          newMemberMethodCache = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE, previousStageSourceMap, true);
         } else {
           // The process in Arkguard.
-          newIdentifierCache = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE);
-          newMemberMethodCache = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE);
+          newIdentifierCache = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE, previousStageSourceMap, false);
+          newMemberMethodCache = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE, previousStageSourceMap, false);
         }
         nameCache.set(IDENTIFIER_CACHE, newIdentifierCache);
         nameCache.set(MEM_METHOD_CACHE, newMemberMethodCache);

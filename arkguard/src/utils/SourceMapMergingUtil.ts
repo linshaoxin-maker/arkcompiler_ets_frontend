@@ -26,7 +26,7 @@ enum SegmentIndex {
   NAME_INDEX = 4
 }
 
-interface ExistingDecodedSourceMap {
+export interface ExistingDecodedSourceMap {
   file?: string;
   mappings: SourceMapSegment[][];
   names?: string[];
@@ -40,7 +40,7 @@ interface BaseSource {
   traceSegment(line: number, column: number, name: string): SourceMapSegmentObj | null;
 }
 
-class Source implements BaseSource {
+export class Source implements BaseSource {
   readonly content: string | null;
   readonly filename: string;
   isOriginal = true;
@@ -55,7 +55,7 @@ class Source implements BaseSource {
   }
 }
 
-interface SourceMapSegmentObj {
+export interface SourceMapSegmentObj {
   column: number;
   line: number;
   name: string;
@@ -65,7 +65,7 @@ interface SourceMapSegmentObj {
 type MappingsNameType =  { mappings: readonly SourceMapSegment[][]; names?: readonly string[] };
 type TracedMappingsType= { mappings: SourceMapSegment[][], names: string[], sources: string[] };
 
-class Link implements BaseSource {
+export class SourceMapLink implements BaseSource {
   readonly mappings: readonly SourceMapSegment[][];
   readonly names?: readonly string[];
   readonly sources: BaseSource[];
@@ -196,7 +196,7 @@ class Link implements BaseSource {
   }
 }
 
-function decodeSourcemap(map: RawSourceMap): ExistingDecodedSourceMap | null {
+export function decodeSourcemap(map: RawSourceMap): ExistingDecodedSourceMap | null {
   if (!map) {
     return null;
   }
@@ -224,12 +224,12 @@ export function mergeSourceMap(previousMap: RawSourceMap, currentMap: RawSourceM
   const source: Source = new Source(sourceFileName, null);
   generateChain(sourcemapChain, previousMap);
   generateChain(sourcemapChain, currentMap);
-  const collapsedSourcemap: Link = sourcemapChain.reduce(
-    (source: BaseSource, map: ExistingDecodedSourceMap): Link => {
-      return new Link(map, [source]);
+  const collapsedSourcemap: SourceMapLink = sourcemapChain.reduce(
+    (source: BaseSource, map: ExistingDecodedSourceMap): SourceMapLink => {
+      return new SourceMapLink(map, [source]);
     },
     source
-  ) as Link;
+  ) as SourceMapLink;
   const tracedMappings: TracedMappingsType = collapsedSourcemap.traceMappings();
   const result: RawSourceMap = new SourceMap({ ...tracedMappings, file: previousMap.file }) as RawSourceMap;
   result.sourceRoot = previousMap.sourceRoot;
