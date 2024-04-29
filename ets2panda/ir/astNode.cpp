@@ -27,7 +27,26 @@ AstNode::AstNode(AstNode const &other)
         variable_ = other.variable_;
     }
     flags_ = other.flags_;
+    astNodeFlags_ = other.astNodeFlags_;
     // boxing_unboxing_flags_ {};  leave default value!
+}
+
+[[nodiscard]] bool ir::AstNode::IsExported() const noexcept
+{
+    if (UNLIKELY(IsClassDefinition())) {
+        return parent_->IsExported();
+    }
+
+    return (flags_ & ModifierFlags::EXPORT) != 0;
+}
+
+[[nodiscard]] bool ir::AstNode::IsDefaultExported() const noexcept
+{
+    if (UNLIKELY(IsClassDefinition())) {
+        return parent_->IsDefaultExported();
+    }
+
+    return (flags_ & ModifierFlags::DEFAULT_EXPORT) != 0;
 }
 
 [[nodiscard]] bool ir::AstNode::IsExportedType() const noexcept
@@ -47,6 +66,15 @@ bool AstNode::IsScopeBearer() const noexcept
 varbinder::Scope *AstNode::Scope() const noexcept
 {
     UNREACHABLE();
+}
+
+[[nodiscard]] bool ir::AstNode::HasExportAlias() const noexcept
+{
+    if (UNLIKELY(IsClassDefinition())) {
+        return parent_->HasExportAlias();
+    }
+
+    return (astNodeFlags_ & AstNodeFlags::HAS_EXPORT_ALIAS) != 0;
 }
 
 void AstNode::ClearScope() noexcept
