@@ -4064,6 +4064,7 @@ void ETSParser::CheckDeclare()
         case lexer::TokenType::KEYW_ENUM:
         case lexer::TokenType::KEYW_TYPE:
         case lexer::TokenType::KEYW_ABSTRACT:
+        case lexer::TokenType::KEYW_FINAL:
         case lexer::TokenType::KEYW_INTERFACE: {
             return;
         }
