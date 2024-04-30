@@ -1082,6 +1082,9 @@ checker::Type *ETSAnalyzer::Check(ir::Identifier *expr) const
         ETSChecker *checker = GetETSChecker();
 
         auto *identType = checker->ResolveIdentifier(expr);
+        if (identType->IsETSTypeParameter() && identType->AsETSTypeParameter()->IdenticalToFinalConstraint()) {
+            identType = identType->AsETSTypeParameter()->GetConstraintType();
+        }
         if (expr->Variable() != nullptr && (expr->Parent() == nullptr || !expr->Parent()->IsAssignmentExpression() ||
                                             expr != expr->Parent()->AsAssignmentExpression()->Left())) {
             if (auto *const smartType = checker->Context().GetSmartCast(expr->Variable()); smartType != nullptr) {

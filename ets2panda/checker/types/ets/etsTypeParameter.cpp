@@ -131,4 +131,17 @@ ETSTypeParameter *ETSTypeParameter::GetOriginal() const
     return GetDeclNode()->Name()->Variable()->TsType()->AsETSTypeParameter();
 }
 
+bool ETSTypeParameter::IdenticalToFinalConstraint() const
+{
+    if (constraint_ == nullptr) {
+        return false;
+    }
+
+    if (constraint_->Variable() != nullptr && constraint_->Variable()->Declaration() != nullptr) {
+        auto declNode = constraint_->Variable()->Declaration()->Node();
+        return declNode != nullptr && declNode->IsFinal();
+    }
+    return false;
+}
+
 }  // namespace ark::es2panda::checker
