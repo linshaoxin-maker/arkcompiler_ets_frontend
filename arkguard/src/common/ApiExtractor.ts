@@ -80,6 +80,7 @@ export namespace ApiExtractor {
     CONSTRUCTOR_PROPERTY = 5
   }
 
+  let sdkApisExportNameSet: Set<string> = new Set<string>();
   let mCurrentExportedPropertySet: Set<string> = new Set<string>();
   let mCurrentExportNameSet: Set<string> = new Set<string>();
   export let mPropertySet: Set<string> = new Set<string>();
@@ -478,7 +479,7 @@ export namespace ApiExtractor {
       case ApiType.API:
         mCurrentExportNameSet.clear();
         forEachChild(sourceFile, visitExport);
-
+        mCurrentExportNameSet.forEach(exportNames => sdkApisExportNameSet.add(exportNames));
         forEachChild(sourceFile, visitPropertyAndName);
         mCurrentExportNameSet.clear();
         break;

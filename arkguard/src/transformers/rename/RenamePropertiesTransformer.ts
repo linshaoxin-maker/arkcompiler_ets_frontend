@@ -56,6 +56,7 @@ import {NodeUtils} from '../../utils/NodeUtils';
 import {collectPropertyNamesAndStrings, isViewPUBasedClass} from '../../utils/OhsUtil';
 import { ArkObfuscator, performancePrinter } from '../../ArkObfuscator';
 import { EventList } from '../../utils/PrinterUtils';
+import { getNewNameForProerty } from '../../utils/NameUtils';
 
 namespace secharmony {
   /**
@@ -80,7 +81,7 @@ namespace secharmony {
     if (!profile || !profile.mEnable || !profile.mRenameProperties) {
       return null;
     }
-
+    const exportObfuscation: boolean = option?.mExportObfuscation;
     return renamePropertiesFactory;
 
     function renamePropertiesFactory(context: TransformationContext): Transformer<Node> {
@@ -212,43 +213,17 @@ namespace secharmony {
         if (reservedProperties.has(original)) {
           return original;
         }
-
-        const historyName: string = historyMangledTable?.get(original);
-        let mangledName: string = historyName ? historyName : globalMangledTable.get(original);
-
-        while (!mangledName) {
-          let tmpName = generator.getName();
-          if (reservedProperties.has(tmpName) || tmpName === original) {
-            continue;
-          }
-
-          let isInGlobalMangledTable = false;
-          for (const value of globalMangledTable.values()) {
-            if (value === tmpName) {
-              isInGlobalMangledTable = true;
-              break;
-            }
-          }
-
-          if (isInGlobalMangledTable) {
-            continue;
-          }
-
-          let isInHistoryMangledTable = false;
-          if (historyMangledTable) {
-            for (const value of historyMangledTable.values()) {
-              if (value === tmpName) {
-                isInHistoryMangledTable = true;
-                break;
-              }
-            }
-          }
-
-          if (!isInHistoryMangledTable) {
-            mangledName = tmpName;
-            break;
-          }
+        let mangledName: string = undefined;
+        if (exportObfuscation) {
+          mangledName = ArkObfuscator.mToplevelObf?.historyToplevelMangledTable?.get(original) ??
+            ArkObfuscator.mToplevelObf?.toplevelNameMangledTable.get(original);
         }
+
+        mangledName = mangledName ?? (historyMangledTable?.get(original) ?? globalMangledTable.get(original));
+        if (!mangledName) {
+          mangledName = getNewNameForProerty(original, generator, ArkObfuscator.mToplevelObf, exportObfuscation, true, globalMangledTable, historyMangledTable, reservedProperties);
+        }
+
         globalMangledTable.set(original, mangledName);
         return mangledName;
       }
