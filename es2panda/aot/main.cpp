@@ -16,7 +16,6 @@
 #include <abc2program/program_dump.h>
 #include <assembly-program.h>
 #include <assembly-emitter.h>
-#include <analyseCompileDepsInfo.h>
 #include <resolveDepsRelation.h>
 #include <emitFiles.h>
 #include <es2panda.h>
@@ -216,17 +215,11 @@ static bool GenerateAbcFiles(const std::map<std::string, panda::es2panda::util::
 
 static bool ResolveDepsRelations(const std::map<std::string, panda::es2panda::util::ProgramCache*> &programsInfo,
                                  const std::unique_ptr<panda::es2panda::aot::Options> &options, 
-                                 std::unordered_map<std::string, std::unordered_set<std::string>> *resolveDepsRelation)
+                                 std::unordered_map<std::string, std::unordered_set<std::string>> &resolveDepsRelation,
+                                 std::unordered_set<std::string> &generatedRecords)
 {
-    panda::es2panda::aot::ResolveDepsRelation depsRelation(options, programsInfo, resolveDepsRelation);
-    bool res = true;
-    try {
-        depsRelation.Resolve();
-    } catch (const class Error &e) {
-        res = false;
-        std::cerr << e.Message() << std::endl;
-    }
-    return res;
+    panda::es2panda::aot::DepsRelationResolver depsRelationResolver(programsInfo, options, resolveDepsRelation, generatedRecords);
+    return depsRelationResolver.Resolve();
 }
 
 int Run(int argc, const char **argv)
@@ -260,14 +253,6 @@ int Run(int argc, const char **argv)
         return ret;
     }
 
-    for(const auto &key : options->CompilerOptions().compileContextInfo.compileEntries) {
-        std::cout << "compileEntry" << key << std::endl; 
-    }
-
-    for(const auto &[key, value] : programsInfo) {
-        std::cout << "duanshiyi" << key << std::endl; 
-    }
-
     if (!options->NpmModuleEntryList().empty()) {
         es2panda::util::ModuleHelpers::CompileNpmModuleEntryList(options->NpmModuleEntryList(),
             options->CompilerOptions(), programsInfo, &allocator);
@@ -275,19 +260,8 @@ int Run(int argc, const char **argv)
     }
 
     std::unordered_map<std::string, std::unordered_set<std::string>> resolveDepsRelation {};
-    if (!ResolveDepsRelations(programsInfo, options, &resolveDepsRelation)) {
-        return 1;
-    }
-    for (auto &[key, value] : resolveDepsRelation) {
-        std::cout << "compile Entry" << key << std::endl;
-        for (auto deps : value) {
-            std::cout << deps << std::endl;
-        }
-    }
-
-    std::unordered_map<std::string, std::unordered_set<std::string>> compileDepsInfo {};
     std::unordered_set<std::string> generatedRecords {};
-    if (!AnalyseCompileDepsInfo(programsInfo, options, compileDepsInfo, generatedRecords)) {
+    if (!ResolveDepsRelations(programsInfo, options, resolveDepsRelation, generatedRecords)) {
         return 1;
     }
 

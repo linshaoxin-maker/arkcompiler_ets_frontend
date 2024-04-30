@@ -17,30 +17,7 @@
 
 namespace panda::es2panda::aot {
 
-void ResolveDepsRelation::Resolve()
-{
-    for (auto recordName : compileContextInfo_.compileEntries) {
-        for (auto &[key, value] : progsInfo_) {
-            for (auto &[recordKey, record] : value->program.record_table) {
-                if (recordKey == recordName) {
-                    if (resolveDepsRelation_->find(key) == resolveDepsRelation_->end()) {
-                        std::unordered_set<std::string> depsSet{};
-                        resolveDepsRelation_->insert(std::pair<std::string, std::unordered_set<std::string>>(key, depsSet));
-                    }
-                    CollectRecord(recordName, key);
-                    break;
-                }
-            }
-        }
-        // try {
-        //     CollectRecordKey(recordName);
-        // } catch (std::exception &error) {
-        //     throw Error(ErrorType::GENERIC, error.what());
-        // }
-    }
-}
-
-std::string ResolveDepsRelation::RecordNameForliteralKey(std::string literalKey)
+std::string DepsRelationResolver::RecordNameForliteralKey(std::string literalKey)
 {
     size_t pos = literalKey.rfind('_');
     if (pos != std::string::npos) {
@@ -52,7 +29,7 @@ std::string ResolveDepsRelation::RecordNameForliteralKey(std::string literalKey)
 }
 
 
-bool ResolveDepsRelation::CheckIsHspOHMUrl(std::string ohmUrl)
+bool DepsRelationResolver::CheckIsHspOHMUrl(std::string ohmUrl)
 {
     size_t prev = 0;
     constexpr int pos = 3;
@@ -71,7 +48,7 @@ bool ResolveDepsRelation::CheckIsHspOHMUrl(std::string ohmUrl)
     return it != compileContextInfo_.hspPkgNames.end();
 }
 
-bool ResolveDepsRelation::CheckShouldCollectDepsLiteralValue(std::string literalValue)
+bool DepsRelationResolver::CheckShouldCollectDepsLiteralValue(std::string literalValue)
 {
     const std::string normalizedPrefix = "@normalized:N";
     if (literalValue.substr(0, normalizedPrefix.length()) == normalizedPrefix &&
@@ -81,7 +58,7 @@ bool ResolveDepsRelation::CheckShouldCollectDepsLiteralValue(std::string literal
     return false;
 }
 
-std::string ResolveDepsRelation::TransformRecordName(std::string ohmUrl)
+std::string DepsRelationResolver::TransformRecordName(std::string ohmUrl)
 {
     size_t prev = 0;
     constexpr int pos = 2;
@@ -91,52 +68,206 @@ std::string ResolveDepsRelation::TransformRecordName(std::string ohmUrl)
     return ohmUrl.substr(prev, ohmUrl.length());
 }
 
-void ResolveDepsRelation::CollectRecord(std::string recordName, std::string compileEntryKey) {
-    for (auto &[key, value] : progsInfo_) {
-        for (auto &[recordKey, record] : value->program.record_table) {
-            if (recordKey == recordName) {
-                CollectRecordDepsRelation(recordName, &value->program, compileEntryKey);
-                break;
+void DepsRelationResolver::FillRecord2ProgramMap(std::unordered_map<std::string, std::string> &record2ProgramMap)
+{
+    for (const auto &progInfo : progsInfo_) {
+        if (progInfo.first.find("npmEntries.txt") != std::string::npos) {
+            for (const auto &record : progInfo.second->program.record_table) {
+                if (record.second.field_list.empty()) {
+                    generatedRecords_.insert(record.second.name);
+                    continue;
+                }
+                resolveDepsRelation_[progInfo.first].insert(record.second.name);
             }
+            continue;
+        }
+        for (const auto &record : progInfo.second->program.record_table) {
+            if (record.second.field_list.empty()) {
+                generatedRecords_.insert(record.second.name);
+                continue;
+            }
+            record2ProgramMap[record.second.name] = progInfo.first;
         }
     }
 }
 
-void ResolveDepsRelation::CollectRecordDepsRelation(std::string recordName, const panda::pandasm::Program *program,
-                                                    std::string compileEntryKey)
+bool DepsRelationResolver::AddValidRecord(const std::string &recordName,
+                                          const std::unordered_map<std::string, std::string> &record2ProgramMap)
 {
-    // resolve static deps
-    for (auto &literalarrayPair : program->literalarray_table) {
-        std::cout << "literalarrayKey:" << literalarrayPair.first << std::endl;
+    const auto progkeyItr = record2ProgramMap.find(recordName);
+    if (progkeyItr == record2ProgramMap.end()) {
+        std::cerr << "Failed to find record: " << recordName << std::endl;
+        return false;
+    }
+
+    const auto progItr = progsInfo_.find(progkeyItr->second);
+    if (progItr == progsInfo_.end()) {
+        std::cerr << "Failed to find program for file: " << progkeyItr->second << std::endl;
+        return false;
+    }
+
+    resolveDepsRelation_[progkeyItr->second].insert(recordName);
+    return true;
+}
+
+std::vector<std::string> SplitNormalizedOhmurl(const std::string &ohmurl) {
+    // format of ohmurl: "@normalized:N&<moduleName>&<bundleName>&normalizedImport&<version>"
+    static constexpr char NORMALIZED_OHMURL_SEPARATOR = '&';
+    std::string normalizedImport {};
+    std::string pkgName {};
+    std::vector<std::string> items;
+
+    size_t start = 0;
+    size_t pos = ohmurl.find(NORMALIZED_OHMURL_SEPARATOR);
+    while (pos != std::string::npos) {
+        std::string item = ohmurl.substr(start, pos - start);
+        items.emplace_back(item);
+        start = pos + 1;
+        pos = ohmurl.find(NORMALIZED_OHMURL_SEPARATOR, start);
+    }
+    std::string tail = ohmurl.substr(start);
+    items.emplace_back(tail);
+
+    return items;
+}
+
+std::string GetPkgNameFromNormalizedOhmurl(const std::string &ohmurl) {
+    static constexpr char SLASH_TAG = '/';
+    static constexpr size_t NORMALIZED_IMPORT_POS = 3U;
+
+    std::string normalizedImport {};
+    std::string pkgName {};
+    auto items = SplitNormalizedOhmurl(ohmurl);
+
+    normalizedImport = items[NORMALIZED_IMPORT_POS];
+    size_t pos = normalizedImport.find(SLASH_TAG);
+    if (pos != std::string::npos) {
+        pkgName = normalizedImport.substr(0, pos);
+    }
+    if (normalizedImport[0] == '@') {
+        pos = normalizedImport.find(SLASH_TAG, pos + 1);
+        if (pos != std::string::npos) {
+            pkgName = normalizedImport.substr(0, pos);
+        }
+    }
+    return pkgName;
+}
+
+std::string GetRecordNameFromNormalizedOhmurl(const std::string &ohmurl) {
+    // format of recordName: "<bundleName>&normalizedImport&<version>"
+    static constexpr size_t BUNDLE_NAME_POS = 2U;
+    static constexpr size_t NORMALIZED_IMPORT_POS = 3U;
+    static constexpr size_t VERSION_POS = 4U;
+    std::string recordName {};
+    auto items = SplitNormalizedOhmurl(ohmurl);
+
+    recordName += items[BUNDLE_NAME_POS] + '&' + items[NORMALIZED_IMPORT_POS] + '&' + items[VERSION_POS];
+    return recordName;
+}
+
+bool IsHspPackage(const std::string &ohmurl, const std::vector<std::string> &hspPkgNames)
+{
+    auto pkgName = GetPkgNameFromNormalizedOhmurl(ohmurl);
+    if (std::find(hspPkgNames.begin(), hspPkgNames.end(), pkgName) != hspPkgNames.end()) {
+        return true;
+    }
+    return false;
+}
+
+bool DepsRelationResolver::Resolve()
+{
+    std::unordered_map<std::string, std::string> record2ProgramMap{};
+    FillRecord2ProgramMap(record2ProgramMap);
+
+    for (auto &entryRecord : compileContextInfo_.compileEntries) {
+        if (!AddValidRecord(entryRecord, record2ProgramMap)) {
+            return false;
+        }
+        unresolvedDeps_.push(entryRecord);
+        resolvedDeps_.insert(entryRecord);
+
+        while (!unresolvedDeps_.empty()) {
+            auto depRecord = unresolvedDeps_.front();
+            unresolvedDeps_.pop();
+            const auto progkeyItr = record2ProgramMap.find(depRecord);
+            if (progkeyItr == record2ProgramMap.end()) {
+                std::cerr << "Failed to find compile record: " << depRecord << std::endl;
+                return false;
+            }
+            const auto progItr = progsInfo_.find(progkeyItr->second);
+            if (progItr == progsInfo_.end()) {
+                std::cerr << "Failed to find program for file: " << progkeyItr->second << std::endl;
+                return false;
+            }
+            resolveDepsRelation_[progkeyItr->second].insert(depRecord);
+
+            CollectStaticImportDepsRelation(progItr->second->program, depRecord);
+            CollectDynamicImportDepsRelation(progItr->second->program, depRecord);
+        }
+    }
+    return true;
+}
+
+void DepsRelationResolver::CollectStaticImportDepsRelation(const panda::pandasm::Program &program, const std::string &recordName)
+{
+    for (auto &literalarrayPair : program.literalarray_table) {
+        std::cout << "literalarrayKey: " << literalarrayPair.first << std::endl;
         std::string literalKeyRecord = RecordNameForliteralKey(literalarrayPair.first);
         if (literalKeyRecord != recordName) {
             continue;
         }
         for (auto& literal : literalarrayPair.second.literals_) {
-            std::visit([this, &compileEntryKey](auto&& element) {
-                std::cout<< "literalValue:" << element <<std::endl;
+            std::visit([this](auto&& element) {
+                // std::cout<< "literalValue: " << element <<std::endl;
                 if constexpr (std::is_same_v<std::decay_t<decltype(element)>, std::string>) {
+                    std::cout<< "literalValue: " << element <<std::endl;
                     if (this->CheckShouldCollectDepsLiteralValue(element)) {
-                        auto recordSet = this->resolveDepsRelation_->find(compileEntryKey);
                         auto collectRecord = this->TransformRecordName(element);
-                        std::cout << "collectRecord:" << collectRecord << std::endl;
-                        if (std::find(recordSet->second.begin(), recordSet->second.end(), collectRecord) ==
-                            recordSet->second.end()) {
-                            recordSet->second.insert(collectRecord);
-                            this->bfsQueue_.push(collectRecord);
+                        std::cout << "collectRecord: " << collectRecord << std::endl;
+                        if (!resolvedDeps_.count(collectRecord)) {
+                            unresolvedDeps_.push(collectRecord);
+                            resolvedDeps_.insert(collectRecord);
                         }
                     }
                 }
             }, literal.value_);
         }
     }
-    // dynamic collection
+}
 
-
-    while (!bfsQueue_.empty()) {
-        std::string targetRecord = bfsQueue_.front();
-        bfsQueue_.pop();
-        CollectRecord(targetRecord, compileEntryKey);
+void DepsRelationResolver::CollectDynamicImportDepsRelation(const panda::pandasm::Program &program, const std::string &recordName)
+{
+    for (const auto &func: program.function_table) {
+        size_t regs_num = func.second.regs_num;
+        if (func.second.name.find(recordName) == std::string::npos) {
+            continue;
+        }
+        for (uint32_t i = 0; i < func.second.ins.size(); i++) {
+            const auto inst = func.second.ins[i];
+            if (inst.opcode == pandasm::Opcode::DYNAMICIMPORT) {
+                std::string dynamicImportOhmurl;
+                for (uint32_t j = i; j >= 0; j--) {
+                    if (func.second.ins[j].opcode == pandasm::Opcode::LDA_STR) {
+                        dynamicImportOhmurl = func.second.ins[j].ToString("", true, regs_num);
+                        // std::string dynamicImportOhmurl1 = func.second.ins[j].OperandsToString(true, regs_num);
+                        break;
+                    }
+                }
+                // skipping variable dynamicImport
+                if (dynamicImportOhmurl.find("@normalized:") == std::string::npos) {
+                    continue;
+                }
+                // skipping HSP package
+                if (IsHspPackage(dynamicImportOhmurl, compileContextInfo_.hspPkgNames)) {
+                    continue;
+                }
+                auto dynamicImportRecord = GetRecordNameFromNormalizedOhmurl(dynamicImportOhmurl);
+                if (!resolvedDeps_.count(dynamicImportRecord)) {
+                    unresolvedDeps_.push(dynamicImportRecord);
+                    resolvedDeps_.insert(dynamicImportRecord);
+                }
+            }
+        }
     }
 }
 
