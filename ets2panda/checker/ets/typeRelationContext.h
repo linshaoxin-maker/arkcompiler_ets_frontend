@@ -41,6 +41,23 @@ public:
         flags_ |= flags;
         relation->SetNode(node);
 
+        if(source->IsETSTypeParameter()){
+            auto constraintType = source->AsETSTypeParameter()->GetConstraintType();
+            if(constraintType->Variable()&& constraintType->Variable()->Declaration()){ 
+                auto  declNode = constraintType->Variable()->Declaration()->Node();
+                    if(declNode && declNode->IsFinal())
+                        source = constraintType;
+            }
+        }
+        if(target->IsETSTypeParameter()){
+            auto constraintType = target->AsETSTypeParameter()->GetConstraintType();
+            if(constraintType->Variable()&& constraintType->Variable()->Declaration()){ 
+                auto  declNode = constraintType->Variable()->Declaration()->Node();
+                    if(declNode && declNode->IsFinal())
+                        target = constraintType;
+            }
+        }
+
         // NOTE (oeotvos) The narrowing flag will be applied here. It means, that the result of "let tmp: int = 1.5"
         // will be 1, which could cause problems.
         if (source->HasTypeFlag(TypeFlag::CONSTANT)) {
