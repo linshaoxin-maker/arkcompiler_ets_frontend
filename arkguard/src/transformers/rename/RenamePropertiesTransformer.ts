@@ -54,6 +54,7 @@ import type {TransformPlugin} from '../TransformPlugin';
 import {TransformerOrder} from '../TransformPlugin';
 import {NodeUtils} from '../../utils/NodeUtils';
 import {collectPropertyNamesAndStrings, isViewPUBasedClass} from '../../utils/OhsUtil';
+import {getPropertyMangledName} from '../../utils/TransformUtil';
 import { ArkObfuscator, performancePrinter } from '../../ArkObfuscator';
 import { EventList } from '../../utils/PrinterUtils';
 
@@ -190,7 +191,7 @@ namespace secharmony {
           return node;
         }
 
-        let mangledName: string = getPropertyName(original);
+        let mangledName: string = getPropertyMangledName(original, generator);
 
         if (isStringLiteralLike(node)) {
           return factory.createStringLiteral(mangledName);
@@ -206,51 +207,6 @@ namespace secharmony {
         }
 
         return factory.createPrivateIdentifier('#' + mangledName);
-      }
-
-      function getPropertyName(original: string): string {
-        if (reservedProperties.has(original)) {
-          return original;
-        }
-
-        const historyName: string = historyMangledTable?.get(original);
-        let mangledName: string = historyName ? historyName : globalMangledTable.get(original);
-
-        while (!mangledName) {
-          let tmpName = generator.getName();
-          if (reservedProperties.has(tmpName) || tmpName === original) {
-            continue;
-          }
-
-          let isInGlobalMangledTable = false;
-          for (const value of globalMangledTable.values()) {
-            if (value === tmpName) {
-              isInGlobalMangledTable = true;
-              break;
-            }
-          }
-
-          if (isInGlobalMangledTable) {
-            continue;
-          }
-
-          let isInHistoryMangledTable = false;
-          if (historyMangledTable) {
-            for (const value of historyMangledTable.values()) {
-              if (value === tmpName) {
-                isInHistoryMangledTable = true;
-                break;
-              }
-            }
-          }
-
-          if (!isInHistoryMangledTable) {
-            mangledName = tmpName;
-            break;
-          }
-        }
-        globalMangledTable.set(original, mangledName);
-        return mangledName;
       }
 
       function visitEnumInitializer(childNode: Node): void {

@@ -81,15 +81,10 @@ import type { MangledSymbolInfo } from '../../common/type';
 import {TransformerOrder} from '../TransformPlugin';
 import {getNameGenerator, NameGeneratorType} from '../../generator/NameFactory';
 import {TypeUtils} from '../../utils/TypeUtils';
-import {collectIdentifiersAndStructs} from '../../utils/TransformUtil';
+import {collectIdentifiersAndStructs, getPropertyMangledName} from '../../utils/TransformUtil';
 import {NodeUtils} from '../../utils/NodeUtils';
 import {ApiExtractor} from '../../common/ApiExtractor';
-import {
-  globalMangledTable,
-  historyMangledTable,
-  reservedProperties,
-  globalSwappedMangledTable
-} from './RenamePropertiesTransformer';
+import {reservedProperties, globalSwappedMangledTable} from './RenamePropertiesTransformer';
 import {performancePrinter, ArkObfuscator} from '../../ArkObfuscator';
 import { EventList } from '../../utils/PrinterUtils';
 import { isViewPUBasedClass } from '../../utils/OhsUtil';
@@ -248,7 +243,7 @@ namespace secharmony {
           if (historyName) {
             mangled = historyName;
           } else if (Reflect.has(def, 'obfuscateAsProperty')) {
-            mangled = getPropertyMangledName(original);
+            mangled = getPropertyMangledName(original, generator);
           } else {
             mangled = getMangled(scope, generator);
           }
@@ -262,52 +257,6 @@ namespace secharmony {
           scope.mangledNames.add(mangled);
           mangledSymbolNames.set(def, symbolInfo);
         });
-      }
-
-      function getPropertyMangledName(original: string): string {
-        if (reservedProperties.has(original)) {
-          return original;
-        }
-
-        const historyName: string = historyMangledTable?.get(original);
-        let mangledName: string = historyName ? historyName : globalMangledTable.get(original);
-
-        while (!mangledName) {
-          let tmpName = generator.getName();
-          if (reservedProperties.has(tmpName) || tmpName === original) {
-            continue;
-          }
-
-          let isInGlobalMangledTable = false;
-          for (const value of globalMangledTable.values()) {
-            if (value === tmpName) {
-              isInGlobalMangledTable = true;
-              break;
-            }
-          }
-
-          if (isInGlobalMangledTable) {
-            continue;
-          }
-
-          let isInHistoryMangledTable = false;
-          if (historyMangledTable) {
-            for (const value of historyMangledTable.values()) {
-              if (value === tmpName) {
-                isInHistoryMangledTable = true;
-                break;
-              }
-            }
-          }
-
-          if (!isInHistoryMangledTable) {
-            mangledName = tmpName;
-            break;
-          }
-        }
-
-        globalMangledTable.set(original, mangledName);
-        return mangledName;
       }
 
       function isExcludeScope(scope: Scope): boolean {
@@ -606,7 +555,7 @@ namespace secharmony {
       function mangleNoSymbolImportExportPropertyName(original: string): string {
         const path: string = '#' + original;
         const historyName: string = historyNameCache?.get(path);
-        let mangled = historyName ?? getPropertyMangledName(original);
+        let mangled = historyName ?? getPropertyMangledName(original, generator);
         if (nameCache && nameCache.get(IDENTIFIER_CACHE)) {
           (nameCache.get(IDENTIFIER_CACHE) as Map<string, string>).set(path, mangled);
         }

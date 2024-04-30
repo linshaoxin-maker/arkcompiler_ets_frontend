@@ -30,14 +30,9 @@ import {
 } from 'typescript';
 
 import type {
-  Block,
-  CaseClause,
-  DefaultClause,
   LeftHandSideExpression,
-  ModuleBlock,
   Node,
   NodeArray,
-  SourceFile,
   Statement,
   TransformationContext,
   Transformer,
@@ -133,7 +128,7 @@ namespace secharmony {
           return false;
         }
 
-        if (!node.expression || !isCallExpression(node.expression)) {
+        if (!isCallExpression(node.expression) || !node.expression) {
           return false;
         }
 
