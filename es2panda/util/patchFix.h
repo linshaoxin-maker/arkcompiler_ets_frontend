@@ -57,7 +57,6 @@ public:
         funcDefinedClasses_(allocator_.Adapter()) {
             originFunctionInfo_ = symbolTable_->GetOriginFunctionInfo();
             originModuleInfo_ = symbolTable_->GetOriginModuleInfo();
-            originRecordHashFunctionNames_ = symbolTable_->GetOriginRecordHashFunctionNames();
             patchMain0_ = recordName_ + ".patch_main_0";
             patchMain1_ = recordName_ + ".patch_main_1";
             funcMain0_ = recordName_ + ".func_main_0";
@@ -73,8 +72,6 @@ public:
     void ProcessFunction(const compiler::PandaGen *pg, panda::pandasm::Function *func, LiteralBuffers &literalBuffers);
     void ProcessModule(const std::string &recordName, std::vector<panda::pandasm::LiteralArray::Literal> &moduleBuffer);
     void ProcessJsonContentRecord(const std::string &recordName, const std::string &jsonFileContent);
-    void CheckAndRestoreSpecialFunctionName(uint32_t globalIndexForSpecialFunc, std::string &funcName,
-        std::string recordName);
     bool IsDumpSymbolTable() const;
     bool IsHotFix() const;
     bool IsColdFix() const;
@@ -126,8 +123,6 @@ private:
     ArenaAllocator allocator_;
     ArenaUnorderedMap<std::string, util::SymbolTable::OriginFunctionInfo> *originFunctionInfo_ {nullptr};
     ArenaUnorderedMap<std::string, std::string> *originModuleInfo_ {nullptr};
-    ArenaUnorderedMap<std::string, std::unordered_map<std::string, std::string>> *originRecordHashFunctionNames_ {
-        nullptr};
     ArenaUnorderedMap<std::string, uint32_t> topScopeLexEnvs_;
     ArenaSet<std::string> patchFuncNames_;
     ArenaSet<std::string> newFuncNames_;

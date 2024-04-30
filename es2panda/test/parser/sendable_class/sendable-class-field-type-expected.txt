@@ -1,6 +1,33 @@
 .language ECMAScript
 
-.function any .#14695981039346656037#(any a0, any a1, any a2, any a3) {
+.function any .!#Test(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldhole
+	sta v0
+	callruntime.definesendableclass 0x0, .!Test(Pet%#Pet, _2, 0x0, v0
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .!Test(Pet%#Pet(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	lda a2
+	return
+label_2: 
+}
+
+.function any .(Person%#Person(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	lda a2
+	return
+label_2: 
+}
+
+.function any .<#City(any a0, any a1, any a2, any a3) {
 label_1: 
 label_0: 
 	lda.str BEIJING
@@ -16,40 +43,13 @@ label_0:
 label_2: 
 }
 
-.function any .Person(any a0, any a1, any a2) {
-label_1: 
-label_0: 
-	lda a2
-	return
-label_2: 
-}
-
-.function any .Pet(any a0, any a1, any a2) {
-label_1: 
-label_0: 
-	lda a2
-	return
-label_2: 
-}
-
-.function any .Test(any a0, any a1, any a2) {
-label_1: 
-label_0: 
-	ldhole
-	sta v0
-	callruntime.definesendableclass 0x0, .Pet, _2, 0x0, v0
-	ldundefined
-	returnundefined
-label_2: 
-}
-
 .function any .func_main_0(any a0, any a1, any a2) {
 label_4: 
 label_0: 
-	definefunc 0x0, .Test, 0x0
+	definefunc 0x0, .!#Test, 0x0
 	ldundefined
 	sta v0
-	definefunc 0x1, .#14695981039346656037#, 0x1
+	definefunc 0x1, .<#City, 0x1
 	sta v1
 	lda v0
 	istrue
@@ -62,7 +62,7 @@ label_3:
 	callarg1 0x2, v0
 	ldhole
 	sta v0
-	callruntime.definesendableclass 0x4, .Person, _4, 0x0, v0
+	callruntime.definesendableclass 0x4, .(Person%#Person, _4, 0x0, v0
 	ldundefined
 	returnundefined
 label_5: 

@@ -24,11 +24,14 @@
 #include <ir/base/scriptFunction.h>
 #include <ir/base/classDefinition.h>
 #include <ir/expressions/identifier.h>
+#include <ir/expressions/literals/stringLiteral.h>
 #include <ir/expressions/privateIdentifier.h>
 #include <ir/module/exportAllDeclaration.h>
 #include <ir/module/exportNamedDeclaration.h>
 #include <ir/module/exportSpecifier.h>
 #include <ir/module/importDeclaration.h>
+#include <ir/ts/tsModuleDeclaration.h>
+#include <ir/ts/tsEnumDeclaration.h>
 #include <macros.h>
 #include <util/concurrent.h>
 #include <util/ustring.h>
@@ -255,6 +258,32 @@ void ClassScope::AddPrivateName(std::vector<const ir::Statement *> privateProper
     }
 }
 
+util::StringView ClassScope::GetSelfScopeName()
+{
+    std::stringstream ss;
+    if (!parent_ || !node_ || !node_->IsClassDefinition()) {
+        return util::UString(ss.str(), allocator_).View();
+    }
+
+    if (node_->AsClassDefinition()->Ident()) {
+        util::StringView selfName = node_->AsClassDefinition()->Ident()->Name();
+        ss << selfName;
+        return util::UString(ss.str(), allocator_).View();
+    }
+    // nested and anonymous class  a = class {} , class A { b = class {} }
+    if (node_->Parent() && node_->Parent()->Parent()) {
+        ss << util::Helpers::GetName(allocator_, node_->Parent()->Parent());
+        return util::UString(ss.str(), allocator_).View();
+    }
+
+    return util::UString(ss.str(), allocator_).View();
+}
+
+util::StringView ClassScope::GetScopeTag()
+{
+    return util::UString(std::string{util::Helpers::CLASS_SCOPE_TAG}, allocator_).View();
+}
+
 PrivateNameFindResult Scope::FindPrivateName(const util::StringView &name, bool isSetter) const
 {
     uint32_t lexLevel = 0;
@@ -432,6 +461,57 @@ bool FunctionParamScope::AddBinding([[maybe_unused]] ArenaAllocator *allocator,
     UNREACHABLE();
 }
 
+const util::StringView &FunctionParamScope::GetScopeName()
+{
+    if (functionScope_) {
+        return functionScope_->GetScopeName();
+    }
+
+    // FunctionParam should have the same name with FunctionScope
+    // Get scope name from parent in case the functionScope_ is nullptr
+    if (parent_) {
+        return parent_->GetScopeName();
+    }
+
+    return scopeName_;
+}
+
+uint32_t FunctionParamScope::GetDuplicateScopeIndex(const util::StringView &childScopeName)
+{
+    if (functionScope_) {
+        return functionScope_->GetDuplicateScopeIndex(childScopeName);
+    }
+
+    if (parent_) {
+        return parent_->GetDuplicateScopeIndex(childScopeName);
+    }
+
+    return 0;
+}
+
+void FunctionScope::BindName(util::StringView name, util::StringView recordName)
+{
+    name_ = name;
+    std::stringstream ss;
+    ss << recordName;
+
+    Scope *parent = parent_;
+    if ((parent != nullptr) && (parent->IsFunctionParamScope())) {
+        parent = parent->Parent();
+    }
+
+    // In case the parent is nullptr
+    if (parent != nullptr) {
+        ss << parent->GetScopeName();
+    }
+    if (scopeDuplicateIndex_ > 0) {
+        ss << util::Helpers::DUPLICATED_SEPERATOR
+           << util::Helpers::ToStringView(allocator_, scopeDuplicateIndex_);
+    }
+    ss << GetScopeTag() << "#" << GetSelfScopeName();
+    internalName_ = util::UString(ss.str(), allocator_).View();
+}
+
 bool FunctionScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                                [[maybe_unused]] ScriptExtension extension)
 {
@@ -463,11 +543,157 @@ bool FunctionScope::AddBinding(ArenaAllocator *allocator, Variable *currentVaria
     }
 }
 
+void FunctionScope::SetScopeName(const util::StringView &ident)
+{
+    if (hasScopeNameSet_) {
+        return;
+    }
+    auto identStr = util::Helpers::IsSpecialScopeName(ident) ? "" : ident.Mutf8();
+    Scope *parent = parent_;
+    if ((parent != nullptr) && (parent->IsFunctionParamScope())) {
+        parent = parent->Parent();
+    }
+
+    // In case the parent is nullptr
+    if (parent != nullptr) {
+        std::stringstream ss;
+        ss << parent->GetScopeName();
+        auto scopeTag = GetScopeTag();
+
+        std::stringstream selfScopeName;
+        selfScopeName << scopeTag << identStr;
+        scopeDuplicateIndex_ = parent->GetDuplicateScopeIndex(
+            util::UString(selfScopeName.str(), allocator_).View());
+        // if (identStr == util::Helpers::STRING_EMPTY) {
+        //     ss << util::Helpers::DUPLICATED_SEPERATOR
+        //        << util::Helpers::ToStringView(allocator_, scopeDuplicateIndex_ + 1);
+        // } else if (scopeDuplicateIndex_ > 0) {
+        //     ss << util::Helpers::DUPLICATED_SEPERATOR
+        //        << util::Helpers::ToStringView(allocator_, scopeDuplicateIndex_);
+        // }
+        if (scopeDuplicateIndex_ > 0) {
+            ss << util::Helpers::DUPLICATED_SEPERATOR
+               << util::Helpers::ToStringView(allocator_, scopeDuplicateIndex_);
+        }
+        ss << selfScopeName.str();
+        this->scopeName_ = util::UString(ss.str(), allocator_).View();
+    } else {
+        this->scopeName_ = util::UString(identStr, allocator_).View();
+    }
+
+    paramScope_->scopeName_ = this->scopeName_;
+    paramScope_->hasScopeNameSet_ = true;
+    hasScopeNameSet_ = true;
+}
+
+util::StringView FunctionScope::GetScopeTag()
+{
+    if (IsFunctionScope() && (node_->IsScriptFunction() && node_->AsScriptFunction()->IsConstructor())) {
+        return util::UString(std::string{util::Helpers::CTOR_TAG}, allocator_).View();
+    }
+    if (parent_ && parent_->Parent() && parent_->Parent()->IsClassScope()) {
+        bool res = node_ && node_->Parent() && node_->Parent()->Parent();
+        const ir::AstNode *parent = nullptr;
+        parent = res ? node_->Parent()->Parent() : nullptr;
+        if (parent && parent->IsMethodDefinition()) {
+            if (parent->AsMethodDefinition()->IsStatic()) {
+                return util::UString(std::string{util::Helpers::STATIC_MEMBER_FUNCTION_TAG}, allocator_).View();
+            }
+        }
+        return util::UString(std::string{util::Helpers::MEMBER_FUNCTION_TAG}, allocator_).View();
+    }
+    return util::UString(std::string{util::Helpers::FUNCTION_TAG}, allocator_).View();
+}
+
+util::StringView FunctionScope::GetSelfScopeName()
+{
+    if (parent_ && node_ && node_->IsScriptFunction()) {
+        auto selfName = util::Helpers::FunctionName(allocator_, node_->AsScriptFunction());
+        if (!util::Helpers::IsSpecialScopeName(selfName)) {
+            return selfName;
+        }
+    }
+    return util::UString(std::string{util::Helpers::STRING_EMPTY}, allocator_).View();
+}
+
+// This function should not be called because the name has been set in ResolveReference()
+util::StringView TSModuleScope::GetSelfScopeName()
+{
+    std::stringstream ss;
+    if (parent_ != nullptr && parent_->Parent()) { // parent_ is FuncionParam
+        scopeDuplicateIndex_ = parent_->Parent()->GetDuplicateScopeIndex(GetScopeTag());
+    }
+    // if (scopeDuplicateIndex_ > 0) {
+    //     ss << util::Helpers::DUPLICATED_SEPERATOR
+    //        << util::Helpers::ToStringView(allocator_, scopeDuplicateIndex_);
+    // }
+    if (node_ && node_->IsScriptFunction()) {
+        auto scriptFunction = node_->AsScriptFunction();
+        if (scriptFunction->Params().size() > 0 && scriptFunction->Params()[0]->IsIdentifier()) {
+            ss << scriptFunction->Params()[0]->AsIdentifier()->Name();
+        }
+    }
+    if (node_ && node_->IsTSModuleDeclaration()) {
+        auto tsModuleNode = node_->AsTSModuleDeclaration();
+        if (tsModuleNode->Name()->IsIdentifier()) {
+            ss << tsModuleNode->Name()->AsIdentifier()->Name();
+        } else if (tsModuleNode->Name()->IsStringLiteral()) {
+            ss << tsModuleNode->Name()->AsStringLiteral()->Str();
+        }
+    }
+    return util::UString(ss.str(), allocator_).View();
+}
+
+util::StringView TSModuleScope::GetScopeTag()
+{
+    return util::UString(std::string{util::Helpers::NAMESPACE_TAG}, allocator_).View();
+}
+
 bool TSEnumScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                              [[maybe_unused]] ScriptExtension extension)
 {
     ASSERT(newDecl->Type() == DeclType::ENUM);
     return enumMemberBindings_->insert({newDecl->Name(), allocator->New<EnumVariable>(newDecl, false)}).second;
+}
+
+void TSEnumScope::SetScopeName(const util::StringView &ident)
+{
+    Scope *parent = parent_;
+    if (hasScopeNameSet_ || parent == nullptr) {
+        return;
+    }
+
+    if (parent->IsFunctionParamScope() && parent->Parent()) {
+        parent = parent->Parent();
+    }
+
+    std::stringstream ss;
+    ss << parent->GetScopeName();
+    ss << GetScopeTag();
+    ss << GetSelfScopeName();
+    scopeName_ = util::UString(ss.str(), allocator_).View();
+    hasScopeNameSet_ = true;
+}
+
+util::StringView TSEnumScope::GetSelfScopeName()
+{
+    std::stringstream ss;
+    if (node_ && node_->IsScriptFunction()) {
+        // if (scopeDuplicateIndex_ > 0) {
+        //     ss << util::Helpers::DUPLICATED_SEPERATOR
+        //        << util::Helpers::ToStringView(allocator_, scopeDuplicateIndex_);
+        // }
+        auto scriptFunction = node_->AsScriptFunction();
+        if (scriptFunction->Params().size() > 0 && scriptFunction->Params()[0]->IsIdentifier()) {
+            ss << scriptFunction->Params()[0]->AsIdentifier()->Name();
+        }
+    }
+    return util::UString(ss.str(), allocator_).View();
+}
+
+util::StringView TSEnumScope::GetScopeTag()
+{
+    return util::UString(std::string{util::Helpers::ENUM_TAG}, allocator_).View();
 }
 
 bool GlobalScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
@@ -501,6 +727,11 @@ bool GlobalScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariabl
     }
 
     return true;
+}
+
+void GlobalScope::SetScopeName(const util::StringView &ident)
+{
+    hasScopeNameSet_ = true;
 }
 
 // ModuleScope
@@ -581,6 +812,11 @@ bool ModuleScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariabl
     }
 }
 
+void ModuleScope::SetScopeName(const util::StringView &ident)
+{
+    hasScopeNameSet_ = true;
+}
+
 // LocalScope
 
 bool LocalScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
@@ -618,5 +854,4 @@ bool CatchScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariable
 
     return AddLocal(allocator, currentVariable, newDecl, extension);
 }
-
 }  // namespace panda::es2panda::binder

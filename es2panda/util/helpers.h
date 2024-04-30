@@ -109,6 +109,7 @@ public:
     static bool IsPattern(const ir::AstNode *node);
     static std::vector<const ir::Identifier *> CollectBindingNames(const ir::AstNode *node);
     static util::StringView FunctionName(ArenaAllocator *allocator, const ir::ScriptFunction *func);
+    static util::StringView GetName(ArenaAllocator *allocator, const ir::AstNode *node);
     static std::tuple<util::StringView, bool> ParamName(ArenaAllocator *allocator, const ir::AstNode *param,
                                                         uint32_t index);
     static bool IsChild(const ir::AstNode *parent, const ir::AstNode *child);
@@ -136,6 +137,7 @@ public:
     static void ThrowError(ErrorType type, const parser::Program *program, const lexer::SourcePosition &pos,
         const std::string_view &msg);
     static bool IsUseShared(const ir::Statement *statement);
+    static bool IsSpecialScopeName(const util::StringView &str);
 
     static const uint32_t MAX_DOUBLE_DIGIT = 310;
     static const uint32_t MAX_DOUBLE_PRECISION_DIGIT = 17;
@@ -150,6 +152,15 @@ public:
     static constexpr std::string_view USE_CONCURRENT = "use concurrent";
     static constexpr std::string_view USE_SENDABLE = "use sendable";
     static constexpr std::string_view USE_SHARED = "use shared";
+    static constexpr std::string_view STRING_EMPTY = "";
+    static constexpr std::string_view CLASS_SCOPE_TAG = "(";
+    static constexpr std::string_view FUNCTION_TAG = "!";
+    static constexpr std::string_view MEMBER_FUNCTION_TAG = ">";
+    static constexpr std::string_view CTOR_TAG = "%";
+    static constexpr std::string_view NAMESPACE_TAG = "&";
+    static constexpr std::string_view ENUM_TAG = "<";
+    static constexpr std::string_view STATIC_MEMBER_FUNCTION_TAG = "?";
+    static constexpr std::string_view DUPLICATED_SEPERATOR = "^";
     static const uint64_t FNV_PRIME = 1099511628211U;
     static const uint64_t FNV_OFFSET = 14695981039346656037U;
     static const int32_t DEFAULT_TARGET_API_VERSION = 12;

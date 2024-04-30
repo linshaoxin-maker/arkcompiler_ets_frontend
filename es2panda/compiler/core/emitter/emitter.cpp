@@ -168,7 +168,10 @@ uint32_t FunctionEmitter::UpdateForReturnIns(const ir::AstNode *astNode, panda::
     uint32_t columnNum = INVALID_COL;
     if (pandaIns->opcode == pandasm::Opcode::RETURNUNDEFINED || pandaIns->opcode == pandasm::Opcode::RETURN) {
         while (astNode != nullptr && !astNode->IsScriptFunction()) {
-            if (astNode->IsBlockStatement() && astNode->AsBlockStatement()->Scope()->Node()->IsScriptFunction()) {
+            if (astNode->IsBlockStatement() &&
+                astNode->AsBlockStatement()->Scope() &&
+                astNode->AsBlockStatement()->Scope()->Node() &&
+                astNode->AsBlockStatement()->Scope()->Node()->IsScriptFunction()) {
                 astNode = astNode->AsBlockStatement()->Scope()->Node();
                 break;
             }

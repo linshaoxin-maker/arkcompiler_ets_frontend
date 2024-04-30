@@ -1,0 +1,111 @@
+.language ECMAScript
+
+.function any .(C%#C(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	lda a2
+	return
+label_2: 
+}
+
+.function any .(C>#(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	lda.str via get
+	return
+label_2: 
+}
+
+.function any .^1(C%#C(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	lda a2
+	return
+label_2: 
+}
+
+.function any .^1(C>#(any a0, any a1, any a2, any a3) {
+label_1: 
+label_0: 
+	lda a3
+	stglobalvar 0x0, value
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .func_main_0(any a0, any a1, any a2) {
+label_5: 
+label_0: 
+	ldundefined
+	stglobalvar 0x0, value
+	ldundefined
+	stglobalvar 0x1, C
+	ldundefined
+	stglobalvar 0x2, empty
+	tryldglobalbyname 0x3, Object
+	sta v0
+	ldobjbyname 0x4, create
+	sta v1
+	ldnull
+	sta v2
+	lda v1
+	callthis1 0x6, v0, v2
+	stglobalvar 0x8, empty
+	ldhole
+	sta v0
+	lda.str x
+	sta v1
+	ldglobalvar 0x9, empty
+	isin 0xa, v1
+	callruntime.topropertykey
+	sta v1
+	defineclasswithbuffer 0xb, .(C%#C, _0, 0x0, v0
+	sta v0
+	ldobjbyname 0xc, prototype
+	sta v2
+	ldundefined
+	sta v3
+	lda v2
+	definemethod 0xe, .(C>#, 0x0
+	sta v4
+	ldtrue
+	definegettersetterbyvalue v2, v1, v4, v3
+	lda v0
+	stglobalvar 0xf, C
+	ldglobalvar 0x10, C
+	ldobjbyname 0x11, prototype
+	ldobjbyname 0x13, false
+	stglobalvar 0x15, value
+	ldhole
+	sta v0
+	lda.str x
+	sta v1
+	ldglobalvar 0x16, empty
+	isin 0x17, v1
+	callruntime.topropertykey
+	sta v1
+	defineclasswithbuffer 0x18, .^1(C%#C, _1, 0x0, v0
+	sta v0
+	ldobjbyname 0x19, prototype
+	sta v2
+	ldundefined
+	sta v3
+	lda v2
+	definemethod 0x1b, .^1(C>#, 0x1
+	sta v4
+	ldtrue
+	definegettersetterbyvalue v2, v1, v3, v4
+	lda v0
+	stglobalvar 0x1c, C
+	ldglobalvar 0x1d, C
+	ldobjbyname 0x1e, prototype
+	sta v0
+	lda.str via set
+	stobjbyname 0x20, false, v0
+	ldundefined
+	returnundefined
+label_6: 
+}
+
+

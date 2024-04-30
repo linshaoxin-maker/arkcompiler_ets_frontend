@@ -498,52 +498,53 @@ util::StringView Helpers::FunctionName(ArenaAllocator *allocator, const ir::Scri
 
         parent = parent->Parent()->Parent();
     }
+    return GetName(allocator, parent);
+}
 
-    switch (parent->Type()) {
+util::StringView Helpers::GetName(ArenaAllocator *allocator, const ir::AstNode *node)
+{
+    switch (node->Type()) {
         case ir::AstNodeType::VARIABLE_DECLARATOR: {
-            const ir::VariableDeclarator *varDecl = parent->AsVariableDeclarator();
-
+            const ir::VariableDeclarator *varDecl = node->AsVariableDeclarator();
             if (varDecl->Id()->IsIdentifier()) {
                 return varDecl->Id()->AsIdentifier()->Name();
             }
-
             break;
         }
         case ir::AstNodeType::METHOD_DEFINITION: {
-            const ir::MethodDefinition *methodDef = parent->AsMethodDefinition();
-
+            const ir::MethodDefinition *methodDef = node->AsMethodDefinition();
             if (methodDef->Key()->IsIdentifier()) {
                 return methodDef->Key()->AsIdentifier()->Name();
             }
-
             break;
         }
         case ir::AstNodeType::ASSIGNMENT_EXPRESSION: {
-            const ir::AssignmentExpression *assignment = parent->AsAssignmentExpression();
-
+            const ir::AssignmentExpression *assignment = node->AsAssignmentExpression();
             if (assignment->Left()->IsIdentifier()) {
                 return assignment->Left()->AsIdentifier()->Name();
             }
-
             break;
         }
         case ir::AstNodeType::ASSIGNMENT_PATTERN: {
-            const ir::AssignmentExpression *assignment = parent->AsAssignmentPattern();
-
+            const ir::AssignmentExpression *assignment = node->AsAssignmentPattern();
             if (assignment->Left()->IsIdentifier()) {
                 return assignment->Left()->AsIdentifier()->Name();
             }
-
             break;
         }
         case ir::AstNodeType::PROPERTY: {
-            const ir::Property *prop = parent->AsProperty();
-
+            const ir::Property *prop = node->AsProperty();
             if (prop->Kind() != ir::PropertyKind::PROTO &&
                 Helpers::IsConstantPropertyKey(prop->Key(), prop->IsComputed())) {
                 return Helpers::LiteralToPropName(allocator, prop->Key());
             }
-
+            break;
+        }
+        case ir::AstNodeType::CLASS_PROPERTY: {
+            const ir::ClassProperty *prop = node->AsClassProperty();
+            if (Helpers::IsConstantPropertyKey(prop->Key(), prop->IsComputed())) {
+                return Helpers::LiteralToPropName(allocator, prop->Key());
+            }
             break;
         }
         case ir::AstNodeType::EXPORT_DEFAULT_DECLARATION: {
@@ -953,6 +954,15 @@ bool Helpers::IsUseShared(const ir::Statement *statement)
     }
 
     return statement->AsExpressionStatement()->GetExpression()->AsStringLiteral()->Str().Is(USE_SHARED);
+}
+
+bool Helpers::IsSpecialScopeName(const util::StringView &name)
+{
+    auto identStr = name.Mutf8();
+    return identStr.find("\\") != std::string::npos
+           || identStr.find(".") != std::string::npos
+           || identStr.find("#") != std::string::npos
+           || identStr.find("^") != std::string::npos;
 }
 
 }  // namespace panda::es2panda::util

@@ -48,26 +48,6 @@ bool SymbolTable::Initialize()
     return true;
 }
 
-void SymbolTable::ReadRecordHashFunctionNames(std::string recordName, std::string funcInternalName,
-                                              std::string specialFuncIndex)
-{
-    auto recordHashFunctionNames = originRecordHashFunctionNames_.find(recordName);
-    if (specialFuncIndex == "0") {
-        // 0: not anonymous, special or duplicate function
-        if (recordHashFunctionNames == originRecordHashFunctionNames_.end())  {
-            std::unordered_map<std::string, std::string> functionIndexNameMap {};
-            originRecordHashFunctionNames_.insert({recordName, functionIndexNameMap});
-        }
-    } else {
-        if (recordHashFunctionNames != originRecordHashFunctionNames_.end()) {
-            recordHashFunctionNames->second.insert({specialFuncIndex, funcInternalName});
-        } else {
-            std::unordered_map<std::string, std::string> functionIndexNameMap {{specialFuncIndex, funcInternalName}};
-            originRecordHashFunctionNames_.insert({recordName, functionIndexNameMap});
-        }
-    }
-}
-
 bool SymbolTable::ReadSymbolTable(const std::string &symbolTable)
 {
     std::ifstream ifs;
@@ -94,8 +74,6 @@ bool SymbolTable::ReadSymbolTable(const std::string &symbolTable)
             info.recordName = funcItems[0].substr(0, funcItems[0].find_last_of("."));
             info.funcInternalName = funcItems[1];
             info.funcHash = funcItems[2];
-            // index of function in its record's special function array
-            std::string specialFuncIndex{funcItems[3]};
 
             for (size_t i = 0; i < classItems.size(); i = i + 2) {
                 info.classHash.insert(std::pair<std::string, std::string>(classItems[i], classItems[i + 1]));
@@ -108,7 +86,6 @@ bool SymbolTable::ReadSymbolTable(const std::string &symbolTable)
             }
 
             originFunctionInfo_.insert(std::pair<std::string, OriginFunctionInfo>(info.funcInternalName, info));
-            ReadRecordHashFunctionNames(info.recordName, info.funcInternalName, specialFuncIndex);
         } else if (itemList.size() == MODULE_ITEM_NUMBER) {
             // read module info
             auto moduleItems = GetStringItems(itemList[0], SECOND_LEVEL_SEPERATOR);
