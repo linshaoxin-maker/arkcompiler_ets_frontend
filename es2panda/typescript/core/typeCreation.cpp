@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include <es2panda.h>
 #include <typescript/checker.h>
 #include <typescript/types/indexInfo.h>
 
@@ -127,9 +126,6 @@ Type *Checker::CreateUnionType(ArenaVector<Type *> &&constituentTypes)
 Type *Checker::CreateObjectTypeWithCallSignature(Signature *callSignature)
 {
     auto *objType = allocator_->New<ObjectLiteralType>(allocator_->New<ObjectDescriptor>(allocator_));
-    if (objType == nullptr) {
-        throw Error(ErrorType::GENERIC, "Failed to create objType pointer");
-    }
     objType->AddCallSignature(callSignature);
     return objType;
 }
@@ -137,9 +133,6 @@ Type *Checker::CreateObjectTypeWithCallSignature(Signature *callSignature)
 Type *Checker::CreateObjectTypeWithConstructSignature(Signature *constructSignature)
 {
     auto *objType = allocator_->New<ObjectLiteralType>(allocator_->New<ObjectDescriptor>(allocator_));
-    if (objType == nullptr) {
-        throw Error(ErrorType::GENERIC, "Failed to create objType pointer");
-    }
     objType->AddConstructSignature(constructSignature);
     return objType;
 }
@@ -147,9 +140,6 @@ Type *Checker::CreateObjectTypeWithConstructSignature(Signature *constructSignat
 Type *Checker::CreateFunctionTypeWithSignature(Signature *callSignature)
 {
     auto *funcObjType = allocator_->New<FunctionType>(allocator_->New<ObjectDescriptor>(allocator_));
-    if (funcObjType == nullptr) {
-        throw Error(ErrorType::GENERIC, "Failed to create funcObjType pointer");
-    }
     funcObjType->AddCallSignature(callSignature);
     return funcObjType;
 }
@@ -157,9 +147,6 @@ Type *Checker::CreateFunctionTypeWithSignature(Signature *callSignature)
 Type *Checker::CreateConstructorTypeWithSignature(Signature *constructSignature)
 {
     auto *constructObjType = allocator_->New<ConstructorType>(allocator_->New<ObjectDescriptor>(allocator_));
-    if (constructObjType == nullptr) {
-        throw Error(ErrorType::GENERIC, "Failed to create constructObjType pointer");
-    }
     constructObjType->AddConstructSignature(constructSignature);
     return constructObjType;
 }
@@ -167,9 +154,6 @@ Type *Checker::CreateConstructorTypeWithSignature(Signature *constructSignature)
 Type *Checker::CreateTupleType(ObjectDescriptor *desc, ArenaVector<ElementFlags> &&elementFlags,
                                ElementFlags combinedFlags, uint32_t minLength, uint32_t fixedLength, bool readonly)
 {
-    if (desc == nullptr) {
-        throw Error(ErrorType::GENERIC, "The passed pointer desc is empty");
-    }
     desc->stringIndexInfo = allocator_->New<IndexInfo>(GlobalAnyType(), "x", readonly);
     return allocator_->New<TupleType>(desc, std::move(elementFlags), combinedFlags, minLength, fixedLength, readonly);
 }
@@ -178,9 +162,6 @@ Type *Checker::CreateTupleType(ObjectDescriptor *desc, ArenaVector<ElementFlags>
                                ElementFlags combinedFlags, uint32_t minLength, uint32_t fixedLength, bool readonly,
                                NamedTupleMemberPool &&namedMembers)
 {
-    if (desc == nullptr) {
-        throw Error(ErrorType::GENERIC, "The passed pointer desc is empty");
-    }
     desc->stringIndexInfo = allocator_->New<IndexInfo>(GlobalAnyType(), "x", readonly);
 
     if (!namedMembers.empty()) {

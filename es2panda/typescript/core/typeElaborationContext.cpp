@@ -15,7 +15,6 @@
 
 #include "typeElaborationContext.h"
 
-#include <es2panda.h>
 #include <util/helpers.h>
 #include <binder/scope.h>
 #include <ir/expressions/identifier.h>
@@ -131,9 +130,6 @@ void ObjectElaborationContext::Start()
                     break;
                 }
             }
-        }
-        if (propKeyType == nullptr) {
-            throw Error(ErrorType::GENERIC, "Failed to create propKeyType pointer");
         }
 
         Type *targetElementType = nullptr;

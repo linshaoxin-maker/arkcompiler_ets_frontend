@@ -15,7 +15,6 @@
 
 #include "objectDescriptor.h"
 
-#include <es2panda.h>
 #include <binder/variable.h>
 #include <typescript/types/indexInfo.h>
 #include <typescript/types/signature.h>
@@ -37,9 +36,6 @@ void ObjectDescriptor::Copy(ArenaAllocator *allocator, ObjectDescriptor *copiedD
                             GlobalTypesHolder *globalTypes)
 {
     // kézzel másolás
-    if (copiedDesc == nullptr) {
-        throw Error(ErrorType::GENERIC, "The passed pointer copiedDesc is empty");
-    }
     for (auto *it : properties) {
         auto *copiedProp = it->Copy(allocator, it->Declaration());
         copiedProp->SetTsType(it->TsType()->Instantiate(allocator, relation, globalTypes));

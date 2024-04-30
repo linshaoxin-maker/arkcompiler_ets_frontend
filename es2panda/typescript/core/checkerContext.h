@@ -16,14 +16,13 @@
 #ifndef ES2PANDA_PARSER_CORE_CHECKER_CONTEXT_H
 #define ES2PANDA_PARSER_CORE_CHECKER_CONTEXT_H
 
-#include <cstdint>
 #include <macros.h>
 #include <util/enumbitops.h>
 
 #include <vector>
 
 namespace panda::es2panda::checker {
-enum class CheckerStatus : uint32_t {
+enum class CheckerStatus {
     NO_OPTS = 0,
     FORCE_TUPLE = 1 << 0,
     IN_CONST_CONTEXT = 1 << 1,

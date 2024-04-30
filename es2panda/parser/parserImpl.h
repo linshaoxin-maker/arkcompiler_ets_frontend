@@ -30,7 +30,6 @@
 #include <util/enumbitops.h>
 #include <util/ustring.h>
 
-#include <cstdint>
 #include <memory>
 #include <sstream>
 #include <unordered_map>
@@ -118,7 +117,7 @@ class VariableDeclarator;
 enum class PropertyKind;
 enum class TSTupleKind;
 enum class MethodDefinitionKind;
-enum class ModifierFlags : uint32_t;
+enum class ModifierFlags;
 }  // namespace panda::es2panda::ir
 
 namespace panda::es2panda::parser {

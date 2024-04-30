@@ -68,7 +68,7 @@ public:
 private:
     VariableDeclarationKind kind_;
     ArenaVector<VariableDeclarator *> declarators_;
-    bool declare_ = false;
+    bool declare_;
 };
 
 }  // namespace panda::es2panda::ir

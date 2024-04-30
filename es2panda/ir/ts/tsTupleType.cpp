@@ -60,10 +60,7 @@ checker::Type *TSTupleType::GetType(checker::Checker *checker) const
 
         auto *memberVar =
             binder::Scope::CreateVar(checker->Allocator(), memberIndex, binder::VariableFlags::PROPERTY, it);
-        if (memberVar == nullptr) {
-            throw Error(ErrorType::GENERIC, "Failed to allocate memberVar pointer");
-        }
-        
+
         checker::ElementFlags memberFlag = checker::ElementFlags::NO_OPTS;
         if (it->IsTSNamedTupleMember()) {
             const ir::TSNamedTupleMember *namedMember = it->AsTSNamedTupleMember();

@@ -16,7 +16,6 @@
 #ifndef ES2PANDA_COMPILER_TYPESCRIPT_TYPES_UNION_TYPE_H
 #define ES2PANDA_COMPILER_TYPESCRIPT_TYPES_UNION_TYPE_H
 
-#include <es2panda.h>
 #include "type.h"
 
 namespace panda::es2panda::checker {
@@ -65,9 +64,6 @@ public:
 
     void AddConstituentType(Type *type, TypeRelation *relation)
     {
-        if (type == nullptr) {
-            throw Error(ErrorType::GENERIC, "The passed pointer type is empty");
-        }
         if ((HasConstituentFlag(TypeFlag::NUMBER) && type->IsNumberLiteralType()) ||
             (HasConstituentFlag(TypeFlag::STRING) && type->IsStringLiteralType()) ||
             (HasConstituentFlag(TypeFlag::BIGINT) && type->IsBigintLiteralType()) ||

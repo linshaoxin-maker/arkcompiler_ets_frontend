@@ -15,7 +15,6 @@
 
 #include "typeRelation.h"
 
-#include <es2panda.h>
 #include <typescript/checker.h>
 #include <typescript/types/indexInfo.h>
 #include <typescript/types/signature.h>
@@ -52,9 +51,6 @@ ArenaAllocator *TypeRelation::Allocator()
 RelationResult TypeRelation::CacheLookup(const Type *source, const Type *target, const RelationHolder &holder,
                                          RelationType type) const
 {
-    if (source == nullptr) {
-        throw Error(ErrorType::GENERIC, "The passed pointer source is empty");
-    }
     if (result_ == RelationResult::CACHE_MISS) {
         return result_;
     }
@@ -144,9 +140,6 @@ bool TypeRelation::IsAssignableTo(Type *source, Type *target)
 
 bool TypeRelation::IsComparableTo(Type *source, Type *target)
 {
-    if (target == nullptr) {
-        throw Error(ErrorType::GENERIC, "The passed pointer target is empty");
-    }
     result_ = CacheLookup(source, target, checker_->ComparableResults(), RelationType::COMPARABLE);
 
     if (result_ == RelationResult::CACHE_MISS) {

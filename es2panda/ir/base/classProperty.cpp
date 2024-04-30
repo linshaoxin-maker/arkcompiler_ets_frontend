@@ -90,9 +90,6 @@ void ClassProperty::UpdateSelf(const NodeUpdater &cb, binder::Binder *binder)
 {
     if (!IsStatic()) {
         const ir::ScriptFunction *ctor = util::Helpers::GetContainingConstructor(this);
-        if (ctor == nullptr) {
-            throw Error(ErrorType::GENERIC, "Failed to get containing constructor");
-        }
         auto scopeCtx = binder::LexicalScope<binder::FunctionScope>::Enter(binder, ctor->Scope());
 
         UpdateChildNodes(cb);

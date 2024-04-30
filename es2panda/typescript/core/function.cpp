@@ -35,7 +35,6 @@
 
 #include <util/helpers.h>
 
-#include <es2panda.h>
 #include <typescript/checker.h>
 #include <typescript/core/destructuringContext.h>
 #include <typescript/types/objectDescriptor.h>
@@ -158,9 +157,6 @@ Type *Checker::CreateParameterTypeForArrayAssignmentPattern(const ir::ArrayExpre
         util::StringView memberIndex = util::Helpers::ToStringView(allocator_, index);
         binder::LocalVariable *newMember = binder::Scope::CreateVar(
             allocator_, memberIndex, binder::VariableFlags::PROPERTY | binder::VariableFlags::OPTIONAL, nullptr);
-        if (newMember == nullptr) {
-            throw Error(ErrorType::GENERIC, "Failed to create newMember pointer");
-        }
         newMember->SetTsType(GlobalAnyType());
         newTuple->AddProperty(newMember);
     }
@@ -199,9 +195,6 @@ Type *Checker::CreateParameterTypeForObjectAssignmentPattern(const ir::ObjectExp
         binder::LocalVariable *newProp =
             binder::Scope::CreateVar(allocator_, prop->Key()->AsIdentifier()->Name(),
                                      binder::VariableFlags::PROPERTY | binder::VariableFlags::OPTIONAL, nullptr);
-        if (newProp == nullptr) {
-            throw Error(ErrorType::GENERIC, "Failed to create newProp pointer");
-        }
         newProp->SetTsType(GetBaseTypeOfLiteralType(CheckTypeCached(assignmentPattern->Right())));
         newObject->AddProperty(newProp);
     }

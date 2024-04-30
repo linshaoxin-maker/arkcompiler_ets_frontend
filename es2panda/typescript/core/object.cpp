@@ -35,7 +35,6 @@
 #include <binder/variable.h>
 #include <binder/scope.h>
 
-#include <es2panda.h>
 #include <typescript/checker.h>
 #include <typescript/types/indexInfo.h>
 
@@ -375,9 +374,6 @@ Type *Checker::CheckComputedPropertyName(const ir::Expression *key)
 IndexInfo *Checker::GetApplicableIndexInfo(Type *type, Type *indexType)
 {
     ResolveStructuredTypeMembers(type);
-    if (indexType == nullptr) {
-        throw Error(ErrorType::GENERIC, "The passed pointer indexType is empty");
-    }
     bool getNumberInfo = indexType->HasTypeFlag(TypeFlag::NUMBER_LIKE);
 
     if (type->IsObjectType()) {
@@ -407,9 +403,6 @@ Type *Checker::GetPropertyTypeForIndexType(Type *type, Type *indexType)
         return type->AsArrayType()->ElementType();
     }
 
-    if (indexType == nullptr) {
-        throw Error(ErrorType::GENERIC, "The passed pointer indexType is empty");
-    }
     if (indexType->HasTypeFlag(TypeFlag::STRING_LITERAL | TypeFlag::NUMBER_LITERAL)) {
         binder::Variable *prop = nullptr;
 

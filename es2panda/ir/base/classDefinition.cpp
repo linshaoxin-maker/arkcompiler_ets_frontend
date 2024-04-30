@@ -135,9 +135,6 @@ int32_t ClassDefinition::CreateClassPublicBuffer(compiler::PandaGen *pg, util::B
     int32_t fieldTypeBufIdx) const
 {
     auto *buf = pg->NewLiteralBuffer();
-    if (buf == nullptr) {
-        throw Error(ErrorType::GENERIC, "Unsuccessful allocation in adding the buf pointer");
-    }
     compiler::LiteralBuffer staticBuf(pg->Allocator());
     uint32_t instancePropertyCount = 0;
     std::unordered_map<util::StringView, size_t> propNameMap;
@@ -261,10 +258,6 @@ int32_t ClassDefinition::CreateClassPrivateBuffer(compiler::PandaGen *pg) const
                 UNREACHABLE();
             }
         }
-        if (value == nullptr || methodAffiliate == nullptr) {
-            throw Error(ErrorType::GENERIC, "Unsuccessful in acquiring the pointer");
-        }
-
         literalBuf->Add(value);
         literalBuf->Add(methodAffiliate);
     }
