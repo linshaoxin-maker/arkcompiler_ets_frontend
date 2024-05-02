@@ -52,7 +52,6 @@ built-ins/Atomics/wait/bigint/non-shared-bufferdata-throws.js
 built-ins/Atomics/wait/bigint/value-not-equal.js
 built-ins/Atomics/wait/bigint/waiterlist-order-of-operations-is-fifo.js
 built-ins/Atomics/wait/bigint/was-woken-before-timeout.js
-built-ins/Atomics/waitAsync/bigint/bad-range.js
 built-ins/Atomics/waitAsync/bigint/false-for-timeout-agent.js
 built-ins/Atomics/waitAsync/bigint/false-for-timeout.js
 built-ins/Atomics/waitAsync/bigint/nan-for-timeout-agent.js
@@ -5479,7 +5478,6 @@ built-ins/Atomics/wait/wait-index-value-not-equal.js
 built-ins/Atomics/wait/waiterlist-block-indexedposition-wake.js
 built-ins/Atomics/wait/waiterlist-order-of-operations-is-fifo.js
 built-ins/Atomics/wait/was-woken-before-timeout.js
-built-ins/Atomics/waitAsync/bad-range.js
 built-ins/Atomics/waitAsync/bigint/good-views.js
 built-ins/Atomics/waitAsync/bigint/negative-index-throws.js
 built-ins/Atomics/waitAsync/bigint/non-bigint64-typedarray-throws.js

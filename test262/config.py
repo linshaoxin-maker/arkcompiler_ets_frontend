@@ -40,6 +40,7 @@ TEST_ES2015_DIR = os.path.join(DATA_DIR, "test_es2015")
 TEST_ES2021_DIR = os.path.join(DATA_DIR, "test_es2021")
 TEST_ES2022_DIR = os.path.join(DATA_DIR, "test_es2022")
 TEST_ES2023_DIR = os.path.join(DATA_DIR, "test_es2023")
+TEST_ES2024_DIR = os.path.join(DATA_DIR, "test_es2024")
 TEST_INTL_DIR = os.path.join(DATA_DIR, "test_intl")
 TEST_CI_DIR = os.path.join(DATA_DIR, "test_CI")
 
@@ -75,6 +76,7 @@ INTL_LIST_FILE = os.path.join("test262", "intl_tests.txt")
 ES2021_LIST_FILE = os.path.join("test262", "es2021_tests.txt")
 ES2022_LIST_FILE = os.path.join("test262", "es2022_tests.txt")
 ES2023_LIST_FILE = os.path.join("test262", "es2023_tests.txt")
+ES2024_LIST_FILE = os.path.join("test262", "es2024_tests.txt")
 CI_LIST_FILE = os.path.join("test262", "CI_tests.txt")
 MODULE_LIST = []
 DYNAMIC_IMPORT_LIST = []
