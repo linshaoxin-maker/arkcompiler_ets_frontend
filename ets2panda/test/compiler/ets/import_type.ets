@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 
-import * from "import_tests/packages";
-import * from "import_tests/packages/subpackage-1";
+import type {A, B, D} from './export_type.ets'
 
-// Throw error: Variable 'foo' re-declared with different type.
+let a = new A();
+class C implements B {};
+let c = new C()
+let d = new D()
