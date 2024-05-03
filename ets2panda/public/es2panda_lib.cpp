@@ -418,6 +418,7 @@ static es2panda_Context *CreateContext(es2panda_Config *config, std::string cons
 {
     auto *cfg = reinterpret_cast<ConfigImpl *>(config);
     auto *res = new Context;
+    res->config = cfg;
     res->input = source;
     res->sourceFileName = fileName;
 
