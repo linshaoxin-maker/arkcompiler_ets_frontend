@@ -1902,6 +1902,11 @@ ETSObjectType *ETSChecker::GetOriginalBaseType(Type *const object)
 
 void ETSChecker::CheckValidGenericTypeParameter(Type *const argType, const lexer::SourcePosition &pos)
 {
+    // #15866 This code can be removed if type inference works properly
+    if (argType == nullptr) {
+        ThrowTypeError("Type argument is not defined", pos);
+    }
+
     if (!argType->IsETSEnumType() && !argType->IsETSStringEnumType()) {
         return;
     }
