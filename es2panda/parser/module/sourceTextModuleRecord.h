@@ -20,6 +20,7 @@
 
 namespace panda::es2panda::binder {
 class ModuleScope;
+class Variable;
 }
 
 namespace panda::es2panda::ir {
@@ -50,8 +51,8 @@ public:
         int moduleRequestIdx_;
         util::StringView localName_;
         util::StringView importName_;
-        const ir::Identifier *localId_;
-        const ir::Identifier *importId_;
+        const ir::Identifier *localId_ {nullptr};
+        const ir::Identifier *importId_ {nullptr};
 
         ImportEntry(const util::StringView localName, const util::StringView importName, int moduleRequestIdx,
                     const ir::Identifier *localId, const ir::Identifier *importId)
@@ -66,9 +67,10 @@ public:
         util::StringView exportName_;
         util::StringView localName_;
         util::StringView importName_;
-        const ir::Identifier *exportId_;
-        const ir::Identifier *localId_;
-        const ir::Identifier *importId_;
+        const ir::Identifier *exportId_ {nullptr};
+        const ir::Identifier *localId_ {nullptr};
+        const ir::Identifier *importId_ {nullptr};
+        bool isConstant_ {false};
 
         explicit ExportEntry(int moduleRequest) : moduleRequestIdx_(moduleRequest) {}
         ExportEntry(const util::StringView exportName, const util::StringView localName,
@@ -79,6 +81,11 @@ public:
                     const ir::Identifier *exportId, const ir::Identifier *importId)
             : moduleRequestIdx_(moduleRequest), exportName_(exportName), importName_(importName),
               exportId_(exportId), importId_(importId) {}
+
+        void SetAsConstant()
+        {
+            isConstant_ = true;
+        }
     };
 
     template <typename T, typename... Args>
@@ -152,7 +159,7 @@ public:
 private:
     bool HasDuplicateExport(util::StringView exportName) const;
     void ConvertLocalExportToIndirect(ImportEntry *importEntry, ExportEntry *exportEntry);
-    void CheckAndAssignIndex(binder::ModuleScope *moduleScope, util::StringView name, uint32_t *inde) const;
+    binder::Variable *CheckAndAssignIndex(binder::ModuleScope *moduleScope, util::StringView name, uint32_t *idx) const;
 
     ArenaAllocator *allocator_;
     ModuleRequestMap moduleRequestsMap_;

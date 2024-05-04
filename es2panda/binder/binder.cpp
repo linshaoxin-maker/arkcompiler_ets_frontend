@@ -314,7 +314,7 @@ void Binder::LookupIdentReference(ir::Identifier *ident)
     if (res.level != 0) {
         ASSERT(res.variable);
         if (!res.variable->Declaration()->IsDeclare() && !ident->Parent()->IsTSTypeReference() &&
-            !ident->Parent()->IsTSTypeQuery()) {
+            !ident->Parent()->IsTSTypeQuery() && !(bindingFlags_ & ResolveBindingFlags::TS_BEFORE_TRANSFORM)) {
             util::Concurrent::ProcessConcurrent(Program()->GetLineIndex(), ident, res, program_);
             res.variable->SetLexical(res.scope, program_->PatchFixHelper());
         }
@@ -352,8 +352,9 @@ void Binder::StoreAndCheckSpecialFunctionName(std::string &internalNameStr, std:
                 internalNameStr, recordName);
             return;
         }
-        // else: must be coldfix or hotreload mode
-        ASSERT(program_->PatchFixHelper()->IsColdFix() || program_->PatchFixHelper()->IsHotReload());
+        // else: must be coldfix or hotreload mode or coldreload mode
+        ASSERT(program_->PatchFixHelper()->IsColdFix() || program_->PatchFixHelper()->IsHotReload() ||
+               program_->PatchFixHelper()->IsColdReload());
     }
 }
 

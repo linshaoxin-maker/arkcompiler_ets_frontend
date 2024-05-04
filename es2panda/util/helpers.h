@@ -19,6 +19,7 @@
 #include <binder/variableFlags.h>
 #include <mem/arena_allocator.h>
 #include <os/file.h>
+#include <os/library_loader.h>
 #include <util/ustring.h>
 
 #include <cmath>
@@ -64,6 +65,15 @@ enum class SignedNumberLiteral {
     NEGATIVE = 2
 };
 
+class FileSuffix {
+public:
+    static constexpr std::string_view DLL = ".dll";
+    static constexpr std::string_view SO = ".so";
+    static constexpr std::string_view DYLIB = ".dylib";
+};
+
+using AopTransformFuncDef = int (*)(const char *);
+
 class Helpers {
 public:
     Helpers() = delete;
@@ -105,7 +115,13 @@ public:
     static bool IsObjectPropertyValue(const ArenaVector<ir::Expression *> &properties, const ir::AstNode *ident);
     static SignedNumberLiteral GetSignedNumberLiteral(const ir::Expression *expr);
 
+    static void SetConstantLocalExportSlots(const std::string &record, const std::unordered_set<uint32_t> &slots);
+    static void AnalysisProgram(panda::pandasm::Program *prog, const std::string &inputFile);
     static void OptimizeProgram(panda::pandasm::Program *prog, const std::string &inputFile);
+    static bool CheckAopTransformPath(const std::string &libPath);
+    static AopTransformFuncDef LoadAopTransformLibFunc(const std::string &libPath,
+        const std::string &funcName, os::library_loader::LibraryHandle &handler);
+    static bool AopTransform(const std::string &inputFile, const std::string &libPath);
     template <typename T>
     static T BaseName(T const &path, T const &delims = std::string(panda::os::file::File::GetPathDelim()));
     static bool ReadFileToBuffer(const std::string &file, std::stringstream &ss);

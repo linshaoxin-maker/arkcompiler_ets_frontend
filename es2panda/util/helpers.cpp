@@ -44,6 +44,7 @@
 
 #ifdef ENABLE_BYTECODE_OPT
 #include <bytecode_optimizer/bytecodeopt_options.h>
+#include <bytecode_optimizer/bytecode_analysis_results.h>
 #include <bytecode_optimizer/optimize_bytecode.h>
 #else
 #include <assembly-type.h>
@@ -57,6 +58,7 @@
 #else
 #include <unistd.h>
 #endif
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 
@@ -639,19 +641,15 @@ SignedNumberLiteral Helpers::GetSignedNumberLiteral(const ir::Expression *expr)
     return SignedNumberLiteral::UNRECOGNIZED;
 }
 
-void Helpers::OptimizeProgram(panda::pandasm::Program *prog,  const std::string &inputFile)
+void Helpers::SetConstantLocalExportSlots(const std::string &record, const std::unordered_set<uint32_t> &slots)
 {
-    std::map<std::string, size_t> stat;
-    std::map<std::string, size_t> *statp = &stat;
-    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps maps{};
-    panda::pandasm::AsmEmitter::PandaFileToPandaAsmMaps *mapsp = &maps;
+    bool ignored;
+    auto &result = panda::bytecodeopt::BytecodeAnalysisResults::GetOrCreateBytecodeAnalysisResult(record, ignored);
+    result.SetConstantLocalExportSlots(slots);
+}
 
-#ifdef PANDA_WITH_BYTECODE_OPTIMIZER
-    const uint32_t COMPONENT_MASK = panda::Logger::Component::ASSEMBLER |
-                                    panda::Logger::Component::BYTECODE_OPTIMIZER |
-                                    panda::Logger::Component::COMPILER;
-    panda::Logger::InitializeStdLogging(panda::Logger::Level::ERROR, COMPONENT_MASK);
-
+static std::string GetTempOutputName(const std::string &inputFile)
+{
     std::string pid;
 #ifdef PANDA_TARGET_WINDOWS
     pid = std::to_string(GetCurrentProcessId());
@@ -659,13 +657,122 @@ void Helpers::OptimizeProgram(panda::pandasm::Program *prog,  const std::string 
     pid = std::to_string(getpid());
 #endif
     const std::string outputSuffix = ".unopt.abc";
-    std::string tempOutput = panda::os::file::File::GetExtendedFilePath(inputFile + pid + outputSuffix);
+    return panda::os::file::File::GetExtendedFilePath(inputFile + pid + outputSuffix);
+}
+
+void Helpers::AnalysisProgram(panda::pandasm::Program *prog, const std::string &inputFile)
+{
+    std::map<std::string, size_t> stat;
+    std::map<std::string, size_t> *statp = &stat;
+
+#ifdef PANDA_WITH_BYTECODE_OPTIMIZER
+    auto tempOutput = GetTempOutputName(inputFile);
+    bool exists = false;
+    auto mapsp = &panda::bytecodeopt::BytecodeAnalysisResults::GetOrCreateBytecodeMaps(tempOutput, exists);
+    ASSERT(!exists);
+
+    const uint32_t COMPONENT_MASK = panda::Logger::Component::ASSEMBLER |
+                                    panda::Logger::Component::BYTECODE_OPTIMIZER |
+                                    panda::Logger::Component::COMPILER;
+    panda::Logger::InitializeStdLogging(panda::Logger::Level::ERROR, COMPONENT_MASK);
+
     if (panda::pandasm::AsmEmitter::Emit(tempOutput, *prog, statp, mapsp, true)) {
+        panda::bytecodeopt::AnalysisBytecode(prog, mapsp, tempOutput, true, true);
+    } else {
+        panda::bytecodeopt::BytecodeAnalysisResults::DeleteBytecodeMaps(tempOutput);
+    }
+#endif
+}
+
+void Helpers::OptimizeProgram(panda::pandasm::Program *prog, const std::string &inputFile)
+{
+    std::map<std::string, size_t> stat;
+    std::map<std::string, size_t> *statp = &stat;
+    auto tempOutput = GetTempOutputName(inputFile);
+
+#ifdef PANDA_WITH_BYTECODE_OPTIMIZER
+    const uint32_t COMPONENT_MASK = panda::Logger::Component::ASSEMBLER |
+                                    panda::Logger::Component::BYTECODE_OPTIMIZER |
+                                    panda::Logger::Component::COMPILER;
+    panda::Logger::InitializeStdLogging(panda::Logger::Level::ERROR, COMPONENT_MASK);
+
+    bool exists = false;
+    auto mapsp = &panda::bytecodeopt::BytecodeAnalysisResults::GetOrCreateBytecodeMaps(tempOutput, exists);
+    if (!exists) {
+        exists = panda::pandasm::AsmEmitter::Emit(tempOutput, *prog, statp, mapsp, true);
+    }
+    if (exists) {
         panda::bytecodeopt::OptimizeBytecode(prog, mapsp, tempOutput, true, true);
+        std::remove(tempOutput.c_str());
+    }
+    panda::bytecodeopt::BytecodeAnalysisResults::DeleteBytecodeMaps(tempOutput);
+
+#endif
+}
+
+bool Helpers::CheckAopTransformPath(const std::string &libPath)
+{
+    std::string lowerLibPath = libPath;
+    std::transform(libPath.begin(), libPath.end(), lowerLibPath.begin(), ::tolower);
+    bool isValidSuffix = false;
+#ifdef PANDA_TARGET_WINDOWS
+    isValidSuffix = FileExtensionIs(lowerLibPath, FileSuffix::DLL);
+    std::string supportSuffix = std::string(FileSuffix::DLL);
+#else
+    isValidSuffix = FileExtensionIs(lowerLibPath, FileSuffix::SO)
+        || FileExtensionIs(lowerLibPath, FileSuffix::DYLIB);
+    std::string supportSuffix = std::string(FileSuffix::SO) + "|" + std::string(FileSuffix::DYLIB);
+#endif
+    //check file suffix(.so|.dll)
+    if (!isValidSuffix) {
+        std::string msg = "aop transform file suffix support " + supportSuffix + ", error file: " + libPath;
+        std::cout << msg << std::endl;
+        return false;
+    }
+    return true;
+}
+
+AopTransformFuncDef Helpers::LoadAopTransformLibFunc(const std::string &libPath,
+    const std::string &funcName, os::library_loader::LibraryHandle &handler)
+{
+    auto loadRes = os::library_loader::Load(libPath);
+    if (!loadRes.HasValue()) {
+        std::string msg = "os::library_loader::Load error: " + loadRes.Error().ToString();
+        std::cout << msg << std::endl;
+        return nullptr;
+    }
+    handler = std::move(loadRes.Value());
+
+    auto initRes = os::library_loader::ResolveSymbol(handler, funcName);
+    if (!initRes.HasValue()) {
+        std::string msg = "os::library_loader::ResolveSymbol get func Transform error: " + initRes.Error().ToString();
+        std::cout << msg << std::endl;
+        return nullptr;
     }
 
-    std::remove(tempOutput.c_str());
-#endif
+    return reinterpret_cast<AopTransformFuncDef>(initRes.Value());
+}
+
+bool Helpers::AopTransform(const std::string &inputFile, const std::string &libPath)
+{
+    if (!CheckAopTransformPath(libPath)) {
+        return false;
+    }
+
+    os::library_loader::LibraryHandle handler(nullptr);
+    AopTransformFuncDef transform = LoadAopTransformLibFunc(libPath, "Transform", handler);
+    if (transform == nullptr) {
+        return false;
+    }
+
+    //invoke Transform, untransformed ABC to transformed ABC, result define: 0:success, other:fail
+    int res = transform(inputFile.c_str());
+    if (res != 0) {
+        std::string msg = "Transform exec fail: " + libPath;
+        std::cout << msg << std::endl;
+        return false;
+    }
+    return true;
 }
 
 bool Helpers::ReadFileToBuffer(const std::string &file, std::stringstream &ss)

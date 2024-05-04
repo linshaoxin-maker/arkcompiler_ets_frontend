@@ -71,6 +71,7 @@ struct PatchFixOptions {
     std::string symbolTable {};
     bool generatePatch {false};
     bool hotReload {false};
+    bool coldReload {false};
     bool coldFix {false};
 };
 
@@ -103,6 +104,9 @@ struct CompilerOptions {
     bool bcMinVersion {false};
     int targetApiVersion {0};
     std::unordered_map<std::string, std::string> cacheFiles;
+    std::string transformLib {};
+    bool branchElimination {false};
+    bool requireGlobalOptimization {false};
 };
 
 enum class ErrorType {

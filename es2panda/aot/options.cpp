@@ -26,6 +26,7 @@
 #include <dirent.h>
 #endif
 
+#include "compiler_options.h"
 #include "os/file.h"
 
 #include "mergeProgram.h"
@@ -283,12 +284,16 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<bool> opuseDefineSemantic("use-define-semantic", false, "Compile ts class fields "\
         "in accordance with ECMAScript2022");
 
+    // optimizer
+    panda::PandArg<bool> opBranchElimination("branch-elimination", false, "Enable branch elimination optimization");
+
     // patchfix && hotreload
     panda::PandArg<std::string> opDumpSymbolTable("dump-symbol-table", "", "dump symbol table to file");
     panda::PandArg<std::string> opInputSymbolTable("input-symbol-table", "", "input symbol table file");
     panda::PandArg<bool> opGeneratePatch("generate-patch", false, "generate patch abc, default as hotfix mode unless "\
         "the cold-fix argument is set");
     panda::PandArg<bool> opHotReload("hot-reload", false, "compile as hot-reload mode");
+    panda::PandArg<bool> opColdReload("cold-reload", false, "compile as cold-reload mode");
     panda::PandArg<bool> opColdFix("cold-fix", false, "generate patch abc as cold-fix mode");
 
     // version
@@ -297,6 +302,9 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<int> targetApiVersion("target-api-version", util::Helpers::DEFAULT_TARGET_API_VERSION,
         "Specify the targeting api version for es2abc to generated the corresponding version of bytecode");
 
+    // aop transform
+    panda::PandArg<std::string> transformLib("transform-lib", "", "aop transform lib file path");
+    
     // tail arguments
     panda::PandArg<std::string> inputFile("input", "", "input file");
 
@@ -334,16 +342,20 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&opNpmModuleEntryList);
     argparser_->Add(&opMergeAbc);
     argparser_->Add(&opuseDefineSemantic);
+    argparser_->Add(&opBranchElimination);
 
     argparser_->Add(&opDumpSymbolTable);
     argparser_->Add(&opInputSymbolTable);
     argparser_->Add(&opGeneratePatch);
     argparser_->Add(&opHotReload);
+    argparser_->Add(&opColdReload);
     argparser_->Add(&opColdFix);
 
     argparser_->Add(&bcVersion);
     argparser_->Add(&bcMinVersion);
     argparser_->Add(&targetApiVersion);
+
+    argparser_->Add(&transformLib);
 
     argparser_->PushBackTail(&inputFile);
     argparser_->EnableTail();
@@ -523,6 +535,7 @@ bool Options::Parse(int argc, const char **argv)
 
     bool generatePatch = opGeneratePatch.GetValue();
     bool hotReload = opHotReload.GetValue();
+    bool coldReload = opColdReload.GetValue();
     bool coldFix = opColdFix.GetValue();
     if (generatePatch && hotReload) {
         errorMsg_ = "--generate-patch and --hot-reload can not be used simultaneously";
@@ -534,7 +547,28 @@ bool Options::Parse(int argc, const char **argv)
     }
     compilerOptions_.patchFixOptions.generatePatch = generatePatch;
     compilerOptions_.patchFixOptions.hotReload = hotReload;
+    compilerOptions_.patchFixOptions.coldReload = coldReload;
     compilerOptions_.patchFixOptions.coldFix = coldFix;
+
+    bool transformLibIsEmpty = transformLib.GetValue().empty();
+    if (!transformLibIsEmpty) {
+        auto libName = transformLib.GetValue();
+        // check file exist or not
+        auto transformLibAbs = panda::os::file::File::GetAbsolutePath(libName);
+        if (!transformLibAbs) {
+            std::cerr << "Failed to find file '" << libName << "' during transformLib file resolution" << std::endl
+                      << "Please check if the file name is correct, the file exists at the specified path, "
+                      << "and your project has the necessary permissions to access it." << std::endl;
+            return false;
+        }
+        compilerOptions_.transformLib = transformLibAbs.Value();
+    }
+
+    compilerOptions_.branchElimination = opBranchElimination.GetValue();
+    compilerOptions_.requireGlobalOptimization = compilerOptions_.optLevel > 0 &&
+                                                 compilerOptions_.branchElimination &&
+                                                 compilerOptions_.mergeAbc;
+    panda::compiler::options.SetCompilerBranchElimination(compilerOptions_.branchElimination);
 
     return true;
 }

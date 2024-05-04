@@ -187,13 +187,11 @@ void ParserImpl::ParseProgram(ScriptKind kind)
     auto statements = ParseStatementList(StatementParsingFlags::STMT_GLOBAL_LEXICAL);
 
     // For close-source har, check 'use shared' when parsing its transformed js code after obfuscation.
-    if (Extension() == ScriptExtension::JS) {
-        for (auto statement : statements) {
-            if (program_.IsShared()) {
-                break;
-            }
-            program_.SetShared(util::Helpers::IsUseShared(statement));
+    for (auto statement : statements) {
+        if (program_.IsShared()) {
+            break;
         }
+        program_.SetShared(util::Helpers::IsUseShared(statement));
     }
 
     if (IsDtsFile() && !CheckTopStatementsForRequiredDeclare(statements)) {
@@ -2934,6 +2932,8 @@ ir::MethodDefinition *ParserImpl::CreateImplicitMethod(ir::Expression *superClas
 
     auto *paramScope = Binder()->Allocator()->New<binder::FunctionParamScope>(Allocator(), Binder()->GetScope());
     auto *scope = Binder()->Allocator()->New<binder::FunctionScope>(Allocator(), paramScope);
+    ASSERT(paramScope != nullptr);
+    ASSERT(scope != nullptr);
 
     bool isConstructor = (funcFlag == ir::ScriptFunctionFlags::CONSTRUCTOR);
     if (isConstructor && hasSuperClass) {

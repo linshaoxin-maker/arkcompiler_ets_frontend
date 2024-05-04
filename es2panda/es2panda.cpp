@@ -172,14 +172,18 @@ util::PatchFix *Compiler::InitPatchFixHelper(const SourceFile &input, const Comp
     bool needDumpSymbolFile = !options.patchFixOptions.dumpSymbolTable.empty();
     bool needGeneratePatch = options.patchFixOptions.generatePatch && !options.patchFixOptions.symbolTable.empty();
     bool isHotReload = options.patchFixOptions.hotReload;
+    bool isColdReload = options.patchFixOptions.coldReload;
     bool isColdFix = options.patchFixOptions.coldFix;
-    if (symbolTable && (needDumpSymbolFile || needGeneratePatch || isHotReload)) {
+    if (symbolTable && (needDumpSymbolFile || needGeneratePatch || isHotReload || isColdReload)) {
         util::PatchFixKind patchFixKind = util::PatchFixKind::DUMPSYMBOLTABLE;
         if (needGeneratePatch) {
             patchFixKind = isColdFix ? util::PatchFixKind::COLDFIX : util::PatchFixKind::HOTFIX;
         }
         if (isHotReload) {
             patchFixKind = util::PatchFixKind::HOTRELOAD;
+        }
+        if (isColdReload) {
+            patchFixKind = util::PatchFixKind::COLDRELOAD;
         }
         patchFixHelper = new util::PatchFix(needDumpSymbolFile, needGeneratePatch, patchFixKind, input.recordName,
             symbolTable);
@@ -216,7 +220,9 @@ int Compiler::CompileFiles(CompilerOptions &options,
     }
 
     bool failed = false;
-    auto queue = new compiler::CompileFileQueue(options.fileThreadCount, &options, progsInfo, symbolTable, allocator);
+    std::unordered_set<std::string> optimizationPendingProgs;
+    auto queue = new compiler::CompileFileQueue(options.fileThreadCount, &options, progsInfo,
+                                                optimizationPendingProgs, symbolTable, allocator);
 
     try {
         queue->Schedule();
@@ -232,6 +238,20 @@ int Compiler::CompileFiles(CompilerOptions &options,
     if (symbolTable) {
         delete symbolTable;
         symbolTable = nullptr;
+    }
+
+    if (options.requireGlobalOptimization) {
+        auto postAnalysisOptimizeQueue = new compiler::PostAnalysisOptimizeFileQueue(options.fileThreadCount,
+                                                                                     progsInfo,
+                                                                                     optimizationPendingProgs);
+        try {
+            postAnalysisOptimizeQueue->Schedule();
+            postAnalysisOptimizeQueue->Consume();
+            postAnalysisOptimizeQueue->Wait();
+        } catch (const class Error &e) {
+            // Optimization failed, but the program can still be used as unoptimized
+        }
+        delete postAnalysisOptimizeQueue;
     }
 
     return failed ? 1 : 0;

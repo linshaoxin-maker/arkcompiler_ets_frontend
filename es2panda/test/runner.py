@@ -154,6 +154,8 @@ def get_args():
         help='run hotreload tests')
     parser.add_argument('--coldfix', dest='coldfix', action='store_true', default=False,
         help='run coldfix tests')
+    parser.add_argument('--coldreload', dest='coldreload', action='store_true', default=False,
+        help='run coldreload tests')
     parser.add_argument('--base64', dest='base64', action='store_true', default=False,
         help='run base64 tests')
     parser.add_argument('--bytecode', dest='bytecode', action='store_true', default=False,
@@ -164,6 +166,8 @@ def get_args():
         help='run debug tests')
     parser.add_argument('--enable-arkguard', action='store_true', dest='enable_arkguard', default=False,
         help='enable arkguard for compiler tests')
+    parser.add_argument('--aop-transform', dest='aop_transform', action='store_true', default=False,
+        help='run debug tests')
 
     return parser.parse_args()
 
@@ -275,6 +279,48 @@ class TSCTest(Test):
 
         return self
 
+class TestAop:
+    def __init__(self, cmd, compare_str, compare_abc_str, remove_file):
+        self.cmd = cmd
+        self.compare_str = compare_str
+        self.compare_abc_str = compare_abc_str
+        self.remove_file = remove_file
+        self.path = ''
+        self.output = None
+        self.error = None
+        self.passed = None
+        self.skipped = None
+        self.reproduce = ""
+
+    def log_cmd(self, cmd):
+        self.reproduce += ''.join(["\n", ' '.join(cmd)])
+
+    def run(self, runner):
+        cmd = self.cmd
+        self.log_cmd(cmd)
+
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = process.communicate()
+        self.output = out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore")
+
+        if self.compare_str == '':
+            self.passed = True
+        else :
+            self.passed = self.output.startswith(self.compare_str) and process.returncode in [0, 1]
+            if self.remove_file != '' and os.path.exists(self.remove_file):
+                os.remove(self.remove_file)
+
+        if not self.passed:
+            self.error = err.decode("utf-8", errors="ignore")
+
+        abc_path = path.join(os.getcwd(), 'test_aop.abc')
+        if os.path.exists(abc_path):
+            if self.compare_abc_str != '':
+                with open(abc_path, "r") as abc_file:
+                    self.passed = self.passed and abc_file.read() == self.compare_abc_str
+            os.remove(abc_path)
+
+        return self
 
 class Runner:
     def __init__(self, args, name):
@@ -580,6 +626,21 @@ class CompilerTest(Test):
 
         process = subprocess.Popen(es2abc_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = process.communicate()
+        if "--dump-assembly" in self.flags:
+            pa_expected_path = "".join([self.get_path_to_expected()[:self.get_path_to_expected().rfind(".txt")],
+                                       ".pa.txt"])
+            self.output = out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore")
+            try:
+                with open(pa_expected_path, 'r') as fp:
+                    expected = fp.read()
+                self.passed = expected == self.output and process.returncode in [0, 1]
+            except Exception:
+                self.passed = False
+            if not self.passed:
+                self.error = err.decode("utf-8", errors="ignore")
+                if os.path.exists(test_abc_path):
+                    os.remove(test_abc_path)
+                return self
         if err:
             self.passed = False
             self.error = err.decode("utf-8", errors="ignore")
@@ -617,6 +678,9 @@ class CompilerProjectTest(Test):
         self.project = project
         self.test_paths = test_paths
         self.files_info_path = os.path.join(os.path.join(self.projects_path, self.project), 'filesInfo.txt')
+        # Skip execution if --dump-assembly exists in flags
+        self.requires_execution = "--dump-assembly" not in self.flags
+        self.file_record_mapping = None
 
     def remove_project(self, runner):
         project_path = runner.build_dir + "/" + self.project
@@ -655,11 +719,25 @@ class CompilerProjectTest(Test):
                 self.remove_project(runner)
                 return self
 
+    def gen_record_name(self, test_path):
+        record_name = os.path.relpath(test_path, os.path.dirname(self.files_info_path)).split('.')[0]
+        if (self.file_record_mapping != None and record_name in self.file_record_mapping):
+            record_name = self.file_record_mapping[record_name]
+        return record_name
+
     def gen_files_info(self, runner):
+        record_names_path = os.path.join(os.path.join(self.projects_path, self.project), 'recordnames.txt')
+        if path.exists(record_names_path):
+            with open(record_names_path) as mapping_fp:
+                mapping_lines = mapping_fp.readlines()
+                self.file_record_mapping = {}
+                for mapping_line in mapping_lines:
+                    cur_mapping = mapping_line[:-1].split(":")
+                    self.file_record_mapping[cur_mapping[0]] = cur_mapping[1]
         fd = os.open(self.files_info_path, os.O_RDWR | os.O_CREAT | os.O_TRUNC)
         f = os.fdopen(fd, "w")
         for test_path in self.test_paths:
-            record_name = os.path.relpath(test_path, os.path.dirname(self.files_info_path)).split('.')[0]
+            record_name = self.gen_record_name(test_path)
             module_kind = "esm"
             file_info = ('%s;%s;%s;%s;%s' % (test_path, record_name, module_kind, test_path, record_name))
             f.writelines(file_info + '\n')
@@ -680,8 +758,25 @@ class CompilerProjectTest(Test):
         es2abc_cmd.extend(['%s%s' % ("--output=", output_abc_name)])
         es2abc_cmd.append('@' + os.path.join(os.path.dirname(exec_file_path), "filesInfo.txt"))
         self.log_cmd(es2abc_cmd)
+        self.path = exec_file_path
         process = subprocess.Popen(es2abc_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = process.communicate()
+
+        if "--dump-assembly" in self.flags:
+            pa_expected_path = "".join([self.get_path_to_expected()[:self.get_path_to_expected().rfind(".txt")],
+                                        ".pa.txt"])
+            self.output = out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore")
+            try:
+                with open(pa_expected_path, 'r') as fp:
+                    expected = fp.read()
+                self.passed = expected == self.output and process.returncode in [0, 1]
+            except Exception:
+                self.passed = False
+            if not self.passed:
+                self.error = err.decode("utf-8", errors="ignore")
+                self.remove_project(runner)
+                return self
+
         if err:
             self.passed = False
             self.error = err.decode("utf-8", errors="ignore")
@@ -695,6 +790,10 @@ class CompilerProjectTest(Test):
             self.gen_merged_abc(runner)
         else:
             self.gen_single_abc(runner)
+
+        if (not self.requires_execution):
+            self.remove_project(runner)
+            return self
 
         # Run test files that need to be executed in the project.
         for test_path in self.test_paths:
@@ -816,6 +915,8 @@ class PatchTest(Test):
             mode_arg = ["--hot-reload"]
         elif self.mode == 'coldfix':
             mode_arg = ["--generate-patch", "--cold-fix"]
+        elif self.mode == 'coldreload':
+            mode_arg = ["--cold-reload"]
 
         patch_test_cmd = runner.cmd_prefix + [runner.es2panda, '--module']
         patch_test_cmd.extend(mode_arg)
@@ -923,6 +1024,14 @@ class ColdfixRunner(PatchRunner):
             path.join(self.test_root, "coldfix", "coldfix-noerror")]
         self.add_directory()
         self.tests += list(map(lambda t: PatchTest(t, "coldfix"), self.tests_in_dirs))
+
+
+class ColdreloadRunner(PatchRunner):
+    def __init__(self, args):
+        PatchRunner.__init__(self, args, "Coldreload")
+        self.test_directory = [path.join(self.test_root, "coldreload")]
+        self.add_directory()
+        self.tests += list(map(lambda t: PatchTest(t, "coldreload"), self.tests_in_dirs))
 
 
 class DebuggerTest(Test):
@@ -1170,6 +1279,13 @@ def add_directory_for_compiler(runners, args):
     compiler_test_infos.append(CompilerTestInfo("compiler/recordsource/with-on", "js", ["--record-source"]))
     compiler_test_infos.append(CompilerTestInfo("compiler/recordsource/with-off", "js", []))
     compiler_test_infos.append(CompilerTestInfo("compiler/interpreter/lexicalEnv", "js", []))
+    compiler_test_infos.append(CompilerTestInfo("optimizer/js/branch-elimination", "js",
+                                                ["--module", "--branch-elimination", "--dump-assembly"]))
+    # This directory of test cases is for dump-assembly comparison only, and is not executed.
+    # Check CompilerProjectTest for more details.
+    compiler_test_infos.append(CompilerTestInfo("optimizer/ts/branch-elimination/projects", "ts",
+                                                ["--module", "--branch-elimination", "--merge-abc", "--dump-assembly",
+                                                "--file-threads=8"]))
 
     if args.enable_arkguard:
         prepare_for_obfuscation(compiler_test_infos, runner.test_root)
@@ -1183,6 +1299,7 @@ def add_directory_for_bytecode(runners, args):
     runner = BytecodeRunner(args)
     runner.add_directory("bytecode/commonjs", "js", ["--commonjs", "--dump-assembly"])
     runner.add_directory("bytecode/js", "js", ["--dump-assembly"])
+    runner.add_directory("bytecode/ts/cases", "ts", ["--dump-assembly"])
     runner.add_directory("bytecode/ts/api11", "ts", ["--dump-assembly", "--module", "--target-api-version=11"])
     runner.add_directory("bytecode/ts/api12", "ts", ["--dump-assembly", "--module", "--target-api-version=12"])
     runner.add_directory("bytecode/watch-expression", "js", ["--debugger-evaluate-expression", "--dump-assembly"])
@@ -1194,6 +1311,53 @@ def add_directory_for_debug(runners, args):
     runner.add_directory("debug/parser", "js", ["--parse-only", "--dump-ast"])
 
     runners.append(runner)
+
+def add_cmd_for_aop_transform(runners, args):
+    runner = AopTransform(args)
+
+    aop_file_path = path.join(runner.test_root + "/aop/")
+    lib_suffix = '.so'
+    #cpp src, deal type, result compare str, abc compare str
+    msg_list = [
+        ["correct_modify.cpp", "compile", "aop_transform_start", "new_abc_content"],
+        ["correct_no_modify.cpp", "compile", "aop_transform_start", ""],
+        ["exec_error.cpp", "compile", "Transform exec fail", ""],
+        ["no_func_transform.cpp", "compile", "os::library_loader::ResolveSymbol get func Transform error", ""],
+        ["error_format.cpp", "copy_lib", "os::library_loader::Load error", ""],
+        ["".join(["no_exist", lib_suffix]), "dirct_use", "Failed to find file", ""],
+        ["error_suffix.xxx", "direct_use", "aop transform file suffix support", ""]
+    ]
+    for i in range(0, len(msg_list)):
+        cpp_file = ''.join([aop_file_path, msg_list[i][0]])
+        if msg_list[i][1] == 'compile':
+            lib_file = cpp_file.replace('.cpp', lib_suffix)
+            remove_file = lib_file
+            runner.add_cmd(["g++", "--share", "-o", lib_file, cpp_file], "", "", "")
+        elif msg_list[i][1] == 'copy_lib':
+            lib_file = cpp_file.replace('.cpp', lib_suffix)
+            remove_file = lib_file
+            if not os.path.exists(lib_file):
+                with open(cpp_file, "rb") as source_file:
+                    with open(lib_file, "wb") as target_file:
+                        target_file.write(source_file.read())
+        elif msg_list[i][1] == 'direct_use':
+            lib_file = cpp_file
+            remove_file = ""
+
+        js_file = path.join(aop_file_path, "test_aop.js")
+        runner.add_cmd([runner.es2panda, "--merge-abc", "--transform-lib", lib_file, js_file], msg_list[i][2], msg_list[i][3], remove_file)
+
+    runners.append(runner)
+
+class AopTransform(Runner):
+    def __init__(self, args):
+        Runner.__init__(self, args, "AopTransform")
+    
+    def add_cmd(self, cmd, compare_str, compare_abc_str, remove_file, func=TestAop):
+        self.tests += [func(cmd, compare_str, compare_abc_str, remove_file)]
+
+    def test_path(self, src):
+        return src
 
 def main():
     args = get_args()
@@ -1221,6 +1385,9 @@ def main():
     if args.coldfix:
         runners.append(ColdfixRunner(args))
 
+    if args.coldreload:
+        runners.append(ColdreloadRunner(args))
+
     if args.debugger:
         runners.append(DebuggerRunner(args))
 
@@ -1229,6 +1396,9 @@ def main():
 
     if args.bytecode:
         add_directory_for_bytecode(runners, args)
+
+    if args.aop_transform:
+        add_cmd_for_aop_transform(runners, args)
 
     if args.debug:
         add_directory_for_debug(runners, args)

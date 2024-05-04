@@ -41,7 +41,14 @@ import type {IOptions} from './configs/IOptions';
 import {FileUtils} from './utils/FileUtils';
 import {TransformerManager} from './transformers/TransformerManager';
 import {getSourceMapGenerator} from './utils/SourceMapUtil';
-import { mergeSourceMap } from './utils/SourceMapMergingUtil';
+import {
+  decodeSourcemap,
+  ExistingDecodedSourceMap,
+  Source,
+  SourceMapLink,
+  SourceMapSegmentObj,
+  mergeSourceMap
+} from './utils/SourceMapMergingUtil';
 
 import {
   deleteLineInfoForNameString,
@@ -57,10 +64,13 @@ import {needReadApiInfo, readProjectProperties, readProjectPropertiesByCollected
 import {ApiExtractor} from './common/ApiExtractor';
 import esInfo from './configs/preset/es_reserved_properties.json';
 import {EventList, TimeSumPrinter, TimeTracker} from './utils/PrinterUtils';
-import type { ProjectInfo } from './common/type';
+import { Extension, type ProjectInfo } from './common/type';
 export {FileUtils} from './utils/FileUtils';
 export { MemoryUtils } from './utils/MemoryUtils';
 import {TypeUtils} from './utils/TypeUtils';
+import { handleReservedConfig } from './utils/TransformUtil';
+export { separateUniversalReservedItem, containWildcards, wildcardTransformer } from './utils/TransformUtil';
+export type { ReservedNameInfo } from './utils/TransformUtil';
 
 export const renameIdentifierModule = require('./transformers/rename/RenameIdentifierTransformer');
 export const renamePropertyModule = require('./transformers/rename/RenamePropertiesTransformer');
@@ -145,6 +155,13 @@ export class ArkObfuscator {
     this.mCustomProfiles.mKeepFileSourceCode.mKeepSourceOfPaths = mKeepSourceOfPaths;
   }
 
+  public handleTsHarComments(sourceFile: SourceFile, originalPath: string | undefined): void {
+    if (ArkObfuscator.projectInfo?.useTsHar && (originalPath?.endsWith(Extension.ETS) && !originalPath?.endsWith(Extension.DETS))) {
+      // @ts-ignore
+      sourceFile.writeTsHarComments = true;
+    }
+  }
+
   public get customProfiles(): IOptions {
     return this.mCustomProfiles;
   }
@@ -191,8 +208,13 @@ export class ArkObfuscator {
 
     if (this.mConfigPath) {
       config = FileUtils.readFileAsJson(this.mConfigPath);
+      // this.mConfigPath from Arkguard unit test
+      handleReservedConfig(config, 'mNameObfuscation', 'mReservedProperties', 'mUniversalReservedProperties');
     }
 
+    handleReservedConfig(config, 'mNameObfuscation', 'mReservedToplevelNames', 'mUniversalReservedToplevelNames');
+    handleReservedConfig(config, 'mRenameFileName', 'mReservedFileNames', 'mUniversalReservedFileNames');
+    handleReservedConfig(config, 'mRemoveDeclarationComments', 'mReservedComments', 'mUniversalReservedComments', 'mEnable');
     this.mCustomProfiles = config;
 
     if (this.mCustomProfiles.mCompact) {
@@ -359,7 +381,8 @@ export class ArkObfuscator {
     // set print options
     let printerOptions: PrinterOptions = {};
     let removeOption = this.mCustomProfiles.mRemoveDeclarationComments;
-    let keepDeclarationComments = !removeOption || !removeOption.mEnable || (removeOption.mReservedComments && removeOption.mReservedComments.length > 0);
+    let hasReservedList = removeOption?.mReservedComments?.length || removeOption?.mUniversalReservedComments?.length;
+    let keepDeclarationComments = hasReservedList || !(removeOption?.mEnable);
     
     if (isDeclarationFile && keepDeclarationComments) {
       printerOptions.removeComments = false;
@@ -377,32 +400,40 @@ export class ArkObfuscator {
     return (suffix !== 'js' && suffix !== 'ts' && suffix !== 'ets');
   }
 
-  private convertLineBasedOnSourceMap(targetCache: string, consumer?: sourceMap.SourceMapConsumer): Object {
+  private convertLineBasedOnSourceMap(targetCache: string, sourceMapLink?: SourceMapLink): Map<string, string> {
     let originalCache : Map<string, string> = renameIdentifierModule.nameCache.get(targetCache);
-    let updatedCache: Object = {};
+    let updatedCache: Map<string, string> = new Map<string, string>();
     for (const [key, value] of originalCache) {
-      let newKey: string = key;
       if (!key.includes(':')) {
-        // The identifier which is not functionlike do not save line info.
-        updatedCache[newKey] = value;
+        // No need to save line info for identifier which is not function-like, i.e. key without ':' here.
+        updatedCache[key] = value;
         continue;
       }
-      const [scopeName, oldStartLine, oldStartColum, oldEndLine, oldEndColum] = key.split(':');
-      if (consumer) {
-        const startPosition = consumer.originalPositionFor({line: Number(oldStartLine), column: Number(oldStartColum)});
-        const startLine = startPosition.line;
-        const endPosition = consumer.originalPositionFor({line: Number(oldEndLine), column: Number(oldEndColum)});
-        const endLine = endPosition.line;
-        newKey = `${scopeName}:${startLine}:${endLine}`;
-        // Do not save methods that do not exist in the source code, e.g. 'build' in ArkUI.
-        if (startLine && endLine) {
-          updatedCache[newKey] = value;
-        }
-      } else {
+      const [scopeName, oldStartLine, oldStartColumn, oldEndLine, oldEndColumn] = key.split(':');
+      let newKey: string = key;
+      if (!sourceMapLink) {
         // In Arkguard, we save line info of source code, so do not need to use sourcemap mapping.
         newKey = `${scopeName}:${oldStartLine}:${oldEndLine}`;
         updatedCache[newKey] = value;
+        continue;
       }
+      const startPosition: SourceMapSegmentObj | null = sourceMapLink.traceSegment(
+        // 1: The line number in originalCache starts from 1 while in source map starts from 0.
+        Number(oldStartLine) - 1, Number(oldStartColumn) - 1, ""); // Minus 1 to get the correct original position.
+      if (!startPosition) {
+        // Do not save methods that do not exist in the source code, e.g. 'build' in ArkUI.
+        continue;
+      }
+      const endPosition: SourceMapSegmentObj | null = sourceMapLink.traceSegment(
+        Number(oldEndLine) - 1, Number(oldEndColumn) - 1, ""); // 1: Same as above.
+      if (!endPosition) {
+        // Do not save methods that do not exist in the source code, e.g. 'build' in ArkUI.
+        continue;
+      }
+      const startLine = startPosition.line + 1; // 1: The final line number in updatedCache should starts from 1.
+      const endLine = endPosition.line + 1; // 1: Same as above.
+      newKey = `${scopeName}:${startLine}:${endLine}`;
+      updatedCache[newKey] = value;
     }
     return updatedCache;
   }
@@ -468,7 +499,7 @@ export class ArkObfuscator {
    * @param historyNameCache
    * @param originalFilePath When filename obfuscation is enabled, it is used as the source code path.
    */
-  public async obfuscate(content: SourceFile | string, sourceFilePath: string, previousStageSourceMap?: sourceMap.RawSourceMap,
+  public async obfuscate(content: SourceFile | string, sourceFilePath: string, previousStageSourceMap?: RawSourceMap,
     historyNameCache?: Map<string, string>, originalFilePath?: string, projectInfo?: ProjectInfo): Promise<ObfuscationResultType> {
     ArkObfuscator.projectInfo = projectInfo;
     let ast: SourceFile;
@@ -503,14 +534,21 @@ export class ArkObfuscator {
       if (!this.mCustomProfiles.mRemoveDeclarationComments || !this.mCustomProfiles.mRemoveDeclarationComments.mEnable) {
         //@ts-ignore
         ast.reservedComments = undefined;
+        //@ts-ignore
+        ast.universalReservedComments = undefined;
       } else {
         //@ts-ignore
         ast.reservedComments ??= this.mCustomProfiles.mRemoveDeclarationComments.mReservedComments ? 
           this.mCustomProfiles.mRemoveDeclarationComments.mReservedComments : [];
+        //@ts-ignore
+        ast.universalReservedComments =
+          this.mCustomProfiles.mRemoveDeclarationComments.mUniversalReservedComments ?? [];
       }
     } else {
       //@ts-ignore
-      ast.reservedComments = this.mCustomProfiles.mRemoveComments? [] : undefined;
+      ast.reservedComments = this.mCustomProfiles.mRemoveComments ? [] : undefined;
+      //@ts-ignore
+      ast.universalReservedComments = this.mCustomProfiles.mRemoveComments ? [] : undefined;
     }
 
     performancePrinter?.singleFilePrinter?.startEvent(EventList.OBFUSCATE_AST, performancePrinter.timeSumPrinter);
@@ -527,7 +565,7 @@ export class ArkObfuscator {
     if (sourceFilePath.endsWith(".js")) {
       TypeUtils.tsToJs(ast);
     }
-
+    this.handleTsHarComments(ast, originalFilePath);
     performancePrinter?.singleFilePrinter?.startEvent(EventList.CREATE_PRINTER, performancePrinter.timeSumPrinter);
     this.createObfsPrinter(ast.isDeclarationFile).writeFile(ast, this.mTextWriter, sourceMapGenerator);
     performancePrinter?.singleFilePrinter?.endEvent(EventList.CREATE_PRINTER, performancePrinter.timeSumPrinter);
@@ -549,9 +587,13 @@ export class ArkObfuscator {
         let newMemberMethodCache!: Object;
         if (previousStageSourceMap) {
           // The process in sdk, need to use sourcemap mapping.
-          const consumer = await new sourceMap.SourceMapConsumer(previousStageSourceMap);
-          newIdentifierCache = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE, consumer);
-          newMemberMethodCache = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE, consumer);
+          // 1: Only one file in the source map; 0: The first and the only one.
+          const sourceFileName = previousStageSourceMap.sources?.length === 1 ? previousStageSourceMap.sources[0] : '';
+          const source: Source = new Source(sourceFileName, null);
+          const decodedSourceMap: ExistingDecodedSourceMap = decodeSourcemap(previousStageSourceMap);
+          let sourceMapLink: SourceMapLink = new SourceMapLink(decodedSourceMap, [source]);
+          newIdentifierCache = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE, sourceMapLink);
+          newMemberMethodCache = this.convertLineBasedOnSourceMap(MEM_METHOD_CACHE, sourceMapLink);
         } else {
           // The process in Arkguard.
           newIdentifierCache = this.convertLineBasedOnSourceMap(IDENTIFIER_CACHE);
