@@ -163,6 +163,7 @@ DestructuringIteratorContext::~DestructuringIteratorContext()
     pg_->StoreAccumulator(node, iterator_.Result());
     pg_->LoadAccumulator(node, iterator_.Done());
 
+    ASSERT(end != nullptr);
     pg_->BranchIfTrue(node, end);
     pg_->LoadAccumulator(node, iterator_.Result());
     iterator_.Close(true);

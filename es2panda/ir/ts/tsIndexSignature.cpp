@@ -61,6 +61,7 @@ checker::Type *TSIndexSignature::Check(checker::Checker *checker) const
     checker::ObjectDescriptor *desc = checker->Allocator()->New<checker::ObjectDescriptor>(checker->Allocator());
     checker::ObjectType *placeholder = checker->Allocator()->New<checker::ObjectLiteralType>(desc);
 
+    ASSERT(placeholder != nullptr);
     if (Kind() == ir::TSIndexSignature::TSIndexSignatureKind::NUMBER) {
         placeholder->Desc()->numberIndexInfo = info;
     } else {

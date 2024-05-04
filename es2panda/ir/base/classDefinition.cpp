@@ -14,7 +14,6 @@
  */
 
 #include "classDefinition.h"
-
 #include "binder/binder.h"
 #include "binder/scope.h"
 #include "compiler/base/literals.h"
@@ -130,8 +129,44 @@ void ClassDefinition::InitializeClassName(compiler::PandaGen *pg) const
     lref.SetValue();
 }
 
+void CreateAndAddLiteralToBuffer(compiler::PandaGen *pg, const ir::MethodDefinition *prop,
+                                 size_t bufferPos, compiler::LiteralBuffer *literalBuf)
+{
+    const ir::FunctionExpression *func = prop->Value()->AsFunctionExpression();
+    const util::StringView &internalName = func->Function()->Scope()->InternalName();
+
+    LiteralTag litTag = (prop->Kind() == MethodDefinitionKind::METHOD) ?  LiteralTag::METHOD :
+                        ((prop->Kind() == MethodDefinitionKind::SET) ? LiteralTag::SETTER : LiteralTag::GETTER);
+
+    Literal *value = pg->Allocator()->New<TaggedLiteral>(litTag, internalName);
+    literalBuf->ResetLiteral(bufferPos + 1, value);
+    Literal *methodAffiliate = pg->Allocator()->New<TaggedLiteral>(LiteralTag::METHODAFFILIATE,
+                                                                    func->Function()->FormalParamsLength());
+    literalBuf->ResetLiteral(bufferPos + 2, methodAffiliate); // bufferPos + 2 is saved for method affiliate
+}
+
+void ClassDefinition::FinalizeClassPublicBuffer(compiler::PandaGen *pg, compiler::LiteralBuffer *buf,
+                                                compiler::LiteralBuffer *staticBuf,
+                                                int32_t fieldTypeBufIdx, uint32_t instancePropertyCount) const
+{
+    ASSERT(buf != nullptr);
+    /* Static items are stored at the end of the buffer */
+    buf->Insert(staticBuf);
+
+    /* The last literal item represents the offset of the first static property. The regular property literal count
+        * is divided by 2 as key/value pairs count as one. */
+    buf->Add(pg->Allocator()->New<NumberLiteral>(instancePropertyCount));
+
+    if (IsSendable()) {
+        std::string recordName = std::string(pg->Binder()->Program()->RecordName());
+        std::string fieldTypeIdxStr = recordName + "_" + std::to_string(fieldTypeBufIdx);
+        util::UString fieldTypeLitId(fieldTypeIdxStr, pg->Allocator());
+        buf->Add(pg->Allocator()->New<TaggedLiteral>(LiteralTag::LITERALARRAY, fieldTypeLitId.View()));
+    }
+}
+
 // NOLINTNEXTLINE(google-runtime-references)
-int32_t ClassDefinition::CreateClassPublicBuffer(compiler::PandaGen *pg, util::BitSet &compiled,
+uint32_t ClassDefinition::CreateClassPublicBuffer(compiler::PandaGen *pg, util::BitSet &compiled,
     int32_t fieldTypeBufIdx) const
 {
     auto *buf = pg->NewLiteralBuffer();
@@ -188,38 +223,15 @@ int32_t ClassDefinition::CreateClassPublicBuffer(compiler::PandaGen *pg, util::B
         } else {
             bufferPos = res.first->second;
         }
-
-        const ir::FunctionExpression *func = prop->Value()->AsFunctionExpression();
-        const util::StringView &internalName = func->Function()->Scope()->InternalName();
-
-        LiteralTag litTag = (prop->Kind() == MethodDefinitionKind::METHOD) ?  LiteralTag::METHOD :
-                            ((prop->Kind() == MethodDefinitionKind::SET) ? LiteralTag::SETTER : LiteralTag::GETTER);
-
-        Literal *value = pg->Allocator()->New<TaggedLiteral>(litTag, internalName);
-        literalBuf->ResetLiteral(bufferPos + 1, value);
-        Literal *methodAffiliate = pg->Allocator()->New<TaggedLiteral>(LiteralTag::METHODAFFILIATE,
-                                                                       func->Function()->FormalParamsLength());
-        literalBuf->ResetLiteral(bufferPos + 2, methodAffiliate); // bufferPos + 2 is saved for method affiliate
+        CreateAndAddLiteralToBuffer(pg, prop, bufferPos, literalBuf);
         compiled.Set(i);
     }
 
-    /* Static items are stored at the end of the buffer */
-    buf->Insert(&staticBuf);
-
-    /* The last literal item represents the offset of the first static property. The regular property literal count
-     * is divided by 2 as key/value pairs count as one. */
-    buf->Add(pg->Allocator()->New<NumberLiteral>(instancePropertyCount));
-
-    if (IsSendable()) {
-        std::string recordName = std::string(pg->Binder()->Program()->RecordName());
-        std::string fieldTypeIdxStr = recordName + "_" + std::to_string(fieldTypeBufIdx);
-        util::UString fieldTypeLitId(fieldTypeIdxStr, pg->Allocator());
-        buf->Add(pg->Allocator()->New<TaggedLiteral>(LiteralTag::LITERALARRAY, fieldTypeLitId.View()));
-    }
+    FinalizeClassPublicBuffer(pg, buf, &staticBuf, fieldTypeBufIdx, instancePropertyCount);
     return pg->AddLiteralBuffer(buf);
 }
 
-int32_t ClassDefinition::CreateClassPrivateBuffer(compiler::PandaGen *pg) const
+uint32_t ClassDefinition::CreateClassPrivateBuffer(compiler::PandaGen *pg) const
 {
     auto *buf = pg->NewLiteralBuffer();
     compiler::LiteralBuffer staticBuf(pg->Allocator());
@@ -258,6 +270,8 @@ int32_t ClassDefinition::CreateClassPrivateBuffer(compiler::PandaGen *pg) const
                 UNREACHABLE();
             }
         }
+        ASSERT(value != nullptr);
+        ASSERT(methodAffiliate != nullptr);
         literalBuf->Add(value);
         literalBuf->Add(methodAffiliate);
     }
@@ -398,7 +412,7 @@ void ClassDefinition::Compile(compiler::PandaGen *pg) const
         CompileComputedKeys(pg);
     }
 
-    int32_t bufIdx = CreateClassPublicBuffer(pg, compiled);
+    uint32_t bufIdx = CreateClassPublicBuffer(pg, compiled);
     pg->DefineClassWithBuffer(this, ctorId, bufIdx, baseReg);
 
     pg->StoreAccumulator(this, classReg);
@@ -412,7 +426,7 @@ void ClassDefinition::Compile(compiler::PandaGen *pg) const
     CompileMissingProperties(pg, compiled, classReg);
 
     if (hasPrivateElement_) {
-        int32_t bufIdx = CreateClassPrivateBuffer(pg);
+        uint32_t bufIdx = CreateClassPrivateBuffer(pg);
         pg->CreatePrivateProperty(this, scope_->privateFieldCnt_, bufIdx);
     }
 
@@ -635,7 +649,7 @@ bool ClassDefinition::IsTypeParam(const util::StringView &propertyName) const
     return false;
 }
 
-int32_t ClassDefinition::CreateFieldTypeBuffer(compiler::PandaGen *pg) const
+uint32_t ClassDefinition::CreateFieldTypeBuffer(compiler::PandaGen *pg) const
 {
     ASSERT(IsSendable());
     auto *instanceBuf = pg->NewLiteralBuffer();
@@ -668,6 +682,7 @@ int32_t ClassDefinition::CreateFieldTypeBuffer(compiler::PandaGen *pg) const
         buf->Add(pg->Allocator()->New<NumberLiteral>(static_cast<uint8_t>(fieldType)));
     }
 
+    ASSERT(instanceBuf != nullptr);
     instanceBuf->Insert(&staticBuf);
     instanceBuf->Add(pg->Allocator()->New<NumberLiteral>(instanceFieldCnt));
     return pg->AddLiteralBuffer(instanceBuf);
@@ -684,8 +699,8 @@ void ClassDefinition::CompileSendableClass(compiler::PandaGen *pg) const
     util::StringView ctorId = ctor_->Function()->Scope()->InternalName();
     util::BitSet compiled(body_.size());
 
-    int32_t fieldTypeBufIdx = CreateFieldTypeBuffer(pg);
-    int32_t bufIdx = CreateClassPublicBuffer(pg, compiled, fieldTypeBufIdx);
+    uint32_t fieldTypeBufIdx = CreateFieldTypeBuffer(pg);
+    uint32_t bufIdx = CreateClassPublicBuffer(pg, compiled, fieldTypeBufIdx);
     pg->DefineSendableClass(this, ctorId, bufIdx, baseReg);
 
     pg->StoreAccumulator(this, classReg);

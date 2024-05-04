@@ -60,6 +60,7 @@ checker::Type *TSTupleType::GetType(checker::Checker *checker) const
 
         auto *memberVar =
             binder::Scope::CreateVar(checker->Allocator(), memberIndex, binder::VariableFlags::PROPERTY, it);
+        ASSERT(memberVar != nullptr);
 
         checker::ElementFlags memberFlag = checker::ElementFlags::NO_OPTS;
         if (it->IsTSNamedTupleMember()) {

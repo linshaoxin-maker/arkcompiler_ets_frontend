@@ -118,6 +118,8 @@ void AssignmentExpression::Compile(compiler::PandaGen *pg) const
         operator_ == lexer::TokenType::PUNCTUATOR_LOGICAL_NULLISH_EQUAL) {
         auto *skipRight = pg->AllocLabel();
         auto *endLabel = pg->AllocLabel();
+        ASSERT(skipRight != nullptr);
+        ASSERT(endLabel != nullptr);
         compiler::VReg lhsReg = pg->AllocReg();
 
         lref.GetValue();

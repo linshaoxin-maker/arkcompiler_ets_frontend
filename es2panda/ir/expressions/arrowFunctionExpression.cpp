@@ -55,6 +55,7 @@ checker::Type *ArrowFunctionExpression::Check(checker::Checker *checker) const
 
     auto *signature =
         checker->Allocator()->New<checker::Signature>(signatureInfo, checker->GlobalResolvingReturnType());
+    ASSERT(signature != nullptr);
     checker::Type *funcType = checker->CreateFunctionTypeWithSignature(signature);
 
     if (funcVar && !funcVar->TsType()) {

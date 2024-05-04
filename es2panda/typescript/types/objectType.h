@@ -21,6 +21,7 @@
 #include <typescript/types/objectDescriptor.h>
 #include <binder/variable.h>
 
+#include <cstdint>
 #include <util/ustring.h>
 #include <util/enumbitops.h>
 
@@ -37,7 +38,7 @@ class IndexInfo;
 OBJECT_TYPE_MAPPING(DECLARE_OBJECT_TYPENAMES)
 #undef DECLARE_OBJECT_TYPENAMES
 
-enum class ObjectFlags {
+enum class ObjectFlags : uint32_t {
     NO_OPTS = 0,
     CHECK_EXCESS_PROPS = 1 << 0,
     RESOLVED_MEMBERS = 1 << 1,

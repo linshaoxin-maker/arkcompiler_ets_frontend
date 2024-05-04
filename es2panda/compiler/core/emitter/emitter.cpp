@@ -370,6 +370,7 @@ Emitter::Emitter(const CompilerContext *context)
 Emitter::~Emitter()
 {
     delete prog_;
+    delete rec_;
 }
 
 void Emitter::SetPkgNameField(const std::string &pkgName)

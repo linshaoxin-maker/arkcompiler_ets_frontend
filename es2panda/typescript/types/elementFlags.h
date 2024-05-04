@@ -16,11 +16,12 @@
 #ifndef ES2PANDA_COMPILER_TYPESCRIPT_TYPES_ELEMENT_FLAGS_H
 #define ES2PANDA_COMPILER_TYPESCRIPT_TYPES_ELEMENT_FLAGS_H
 
+#include <cstdint>
 #include <util/enumbitops.h>
 
 namespace panda::es2panda::checker {
 
-enum class ElementFlags {
+enum class ElementFlags : uint32_t {
     NO_OPTS = 0,
     REQUIRED = 1 << 0,  // T
     OPTIONAL = 1 << 1,  // T?

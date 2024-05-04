@@ -267,6 +267,7 @@ void AddEnumValueDeclaration(checker::Checker *checker, double number, binder::E
 
     if (!res) {
         auto *decl = checker->Allocator()->New<binder::EnumDecl>(memberStr);
+        ASSERT(decl != nullptr);
         decl->BindNode(variable->Declaration()->Node());
         enumScope->AddDecl(checker->Allocator(), decl, ScriptExtension::TS);
         res = enumScope->FindEnumMemberVariable(memberStr);

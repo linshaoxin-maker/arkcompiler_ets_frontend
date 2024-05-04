@@ -304,6 +304,7 @@ public:
 
     bool AddTsDecl(ArenaAllocator *allocator, Decl *decl, [[maybe_unused]] ScriptExtension extension)
     {
+        ASSERT(decl != nullptr);
         decls_.push_back(decl);
         return AddBinding(allocator, FindLocal(decl->Name(), ResolveBindingOptions::ALL), decl, extension);
     }
@@ -611,7 +612,7 @@ public:
     }
 
 protected:
-    T *paramScope_;
+    T *paramScope_ = nullptr;
 };
 
 class FunctionScope : public ScopeWithParamScope<VariableScope, FunctionParamScope> {
@@ -1112,6 +1113,8 @@ VariableType *Scope::AddDecl(ArenaAllocator *allocator, util::StringView name, V
     auto *decl = allocator->New<DeclType>(name);
     auto *variable = allocator->New<VariableType>(decl, flags);
 
+    ASSERT(decl != nullptr);
+    ASSERT(variable != nullptr);
     decls_.push_back(decl);
     bindings_.insert({decl->Name(), variable});
 
@@ -1123,6 +1126,7 @@ VariableType *Scope::CreateVar(ArenaAllocator *allocator, util::StringView name,
                                const ir::AstNode *node)
 {
     auto *decl = allocator->New<DeclType>(name);
+    ASSERT(decl != nullptr);
     auto *variable = allocator->New<VariableType>(decl, flags);
     decl->BindNode(node);
     return variable;

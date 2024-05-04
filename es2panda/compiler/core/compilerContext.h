@@ -57,12 +57,12 @@ public:
         return emitter_.get();
     }
 
-    int32_t LiteralCount() const
+    uint32_t LiteralCount() const
     {
         return literalBufferIdx_;
     }
 
-    int32_t NewLiteralIndex()
+    uint32_t NewLiteralIndex()
     {
         std::lock_guard lock(m_);
         return literalBufferIdx_++;
@@ -116,12 +116,12 @@ public:
     bool IsRecordSource() const
     {
         return isRecordSource_;
-; 
+;
     }
 
 private:
     binder::Binder *binder_;
-    int32_t literalBufferIdx_ {0};
+    uint32_t literalBufferIdx_ {0};
     std::mutex m_;
     bool isDebug_;
     bool isDebuggerEvaluateExpressionMode_;

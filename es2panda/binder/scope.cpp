@@ -373,6 +373,7 @@ bool Scope::AddLocal(ArenaAllocator *allocator, Variable *currentVariable, Decl 
 
 bool ParamScope::AddParam(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl, VariableFlags flags)
 {
+    ASSERT(newDecl != nullptr);
     ASSERT(newDecl->IsParameterDecl());
 
     if (currentVariable) {
@@ -393,6 +394,7 @@ std::tuple<ParameterDecl *, const ir::AstNode *> ParamScope::AddParamDecl(ArenaA
 
     auto *decl = NewDecl<ParameterDecl>(allocator, name);
 
+    ASSERT(decl != nullptr);
     if (!AddParam(allocator, FindLocal(name), decl, VariableFlags::VAR)) {
         return {decl, param};
     }
@@ -406,6 +408,7 @@ std::tuple<ParameterDecl *, const ir::AstNode *> ParamScope::AddParamDecl(ArenaA
 
     for (const auto *binding : bindings) {
         auto *varDecl = NewDecl<VarDecl>(allocator, binding->Name());
+        ASSERT(varDecl != nullptr);
         varDecl->BindNode(binding);
 
         if (FindLocal(varDecl->Name())) {

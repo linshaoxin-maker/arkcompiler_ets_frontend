@@ -59,6 +59,7 @@ void TryStatement::CompileFinally(compiler::PandaGen *pg, compiler::TryContext *
     pg->SetLabel(this, labelSet.CatchEnd());
 
     compiler::Label *label = pg->AllocLabel();
+    ASSERT(label != nullptr);
     pg->LoadAccumulator(this, tryCtx->FinalizerRun());
 
     pg->BranchIfNotUndefined(this, label);

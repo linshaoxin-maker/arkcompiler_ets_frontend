@@ -21,56 +21,63 @@
 
 namespace panda::es2panda::compiler {
 
+bool Condition::CompileBinaryExpression(PandaGen *pg, const ir::BinaryExpression *binExpr, Label *falseLabel)
+{
+    switch (binExpr->OperatorType()) {
+        case lexer::TokenType::PUNCTUATOR_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_NOT_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_STRICT_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_LESS_THAN:
+        case lexer::TokenType::PUNCTUATOR_LESS_THAN_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_GREATER_THAN:
+        case lexer::TokenType::PUNCTUATOR_GREATER_THAN_EQUAL: {
+            // This is a special case
+            // These operators are expressed via cmp instructions and the following
+            // if-else branches. Condition also expressed via cmp instruction and
+            // the following if-else.
+            // the goal of this method is to merge these two sequences of instructions.
+            RegScope rs(pg);
+            VReg lhs = pg->AllocReg();
+
+            binExpr->Left()->Compile(pg);
+            pg->StoreAccumulator(binExpr, lhs);
+            binExpr->Right()->Compile(pg);
+            pg->Condition(binExpr, binExpr->OperatorType(), lhs, falseLabel);
+            return true;
+        }
+        case lexer::TokenType::PUNCTUATOR_LOGICAL_AND: {
+            binExpr->Left()->Compile(pg);
+            pg->BranchIfFalse(binExpr, falseLabel);
+
+            binExpr->Right()->Compile(pg);
+            pg->BranchIfFalse(binExpr, falseLabel);
+            return true;
+        }
+        case lexer::TokenType::PUNCTUATOR_LOGICAL_OR: {
+            auto *endLabel = pg->AllocLabel();
+
+            ASSERT(endLabel != nullptr);
+            binExpr->Left()->Compile(pg);
+            pg->BranchIfTrue(binExpr, endLabel);
+
+            binExpr->Right()->Compile(pg);
+            pg->BranchIfFalse(binExpr, falseLabel);
+            pg->SetLabel(binExpr, endLabel);
+            return true;
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
 void Condition::Compile(PandaGen *pg, const ir::Expression *expr, Label *falseLabel)
 {
     if (expr->IsBinaryExpression()) {
         const auto *binExpr = expr->AsBinaryExpression();
-
-        switch (binExpr->OperatorType()) {
-            case lexer::TokenType::PUNCTUATOR_EQUAL:
-            case lexer::TokenType::PUNCTUATOR_NOT_EQUAL:
-            case lexer::TokenType::PUNCTUATOR_STRICT_EQUAL:
-            case lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL:
-            case lexer::TokenType::PUNCTUATOR_LESS_THAN:
-            case lexer::TokenType::PUNCTUATOR_LESS_THAN_EQUAL:
-            case lexer::TokenType::PUNCTUATOR_GREATER_THAN:
-            case lexer::TokenType::PUNCTUATOR_GREATER_THAN_EQUAL: {
-                // This is a special case
-                // These operators are expressed via cmp instructions and the following
-                // if-else branches. Condition also expressed via cmp instruction and
-                // the following if-else.
-                // the goal of this method is to merge these two sequences of instructions.
-                RegScope rs(pg);
-                VReg lhs = pg->AllocReg();
-
-                binExpr->Left()->Compile(pg);
-                pg->StoreAccumulator(binExpr, lhs);
-                binExpr->Right()->Compile(pg);
-                pg->Condition(binExpr, binExpr->OperatorType(), lhs, falseLabel);
-                return;
-            }
-            case lexer::TokenType::PUNCTUATOR_LOGICAL_AND: {
-                binExpr->Left()->Compile(pg);
-                pg->BranchIfFalse(binExpr, falseLabel);
-
-                binExpr->Right()->Compile(pg);
-                pg->BranchIfFalse(binExpr, falseLabel);
-                return;
-            }
-            case lexer::TokenType::PUNCTUATOR_LOGICAL_OR: {
-                auto *endLabel = pg->AllocLabel();
-
-                binExpr->Left()->Compile(pg);
-                pg->BranchIfTrue(binExpr, endLabel);
-
-                binExpr->Right()->Compile(pg);
-                pg->BranchIfFalse(binExpr, falseLabel);
-                pg->SetLabel(binExpr, endLabel);
-                return;
-            }
-            default: {
-                break;
-            }
+        if (CompileBinaryExpression(pg, binExpr, falseLabel)) {
+            return;
         }
     } else if (expr->IsUnaryExpression() &&
                expr->AsUnaryExpression()->OperatorType() == lexer::TokenType::PUNCTUATOR_EXCLAMATION_MARK) {

@@ -24,13 +24,13 @@
 namespace panda::es2panda::compiler {
 class ModuleRecordEmitter {
 public:
-    explicit ModuleRecordEmitter(parser::SourceTextModuleRecord *moduleRecord, int32_t bufferIdx)
+    explicit ModuleRecordEmitter(parser::SourceTextModuleRecord *moduleRecord, uint32_t bufferIdx)
         : moduleRecord_(moduleRecord), bufferIdx_(bufferIdx) {}
     ~ModuleRecordEmitter() = default;
     NO_COPY_SEMANTIC(ModuleRecordEmitter);
     NO_MOVE_SEMANTIC(ModuleRecordEmitter);
 
-    int32_t Index() const
+    uint32_t Index() const
     {
         return bufferIdx_;
     }
@@ -56,7 +56,7 @@ private:
     void GenStarExportEntries();
 
     parser::SourceTextModuleRecord *moduleRecord_;
-    int32_t bufferIdx_ {};
+    uint32_t bufferIdx_ {};
     std::vector<panda::pandasm::LiteralArray::Literal> buffer_;
     std::unordered_set<uint32_t> constant_local_export_slots_;
 };

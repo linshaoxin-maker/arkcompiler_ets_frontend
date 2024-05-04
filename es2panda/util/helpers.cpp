@@ -369,6 +369,7 @@ const ir::ScriptFunction *Helpers::GetContainingFunction(const ir::AstNode *node
 
 const ir::ClassDefinition *Helpers::GetClassDefiniton(const ir::ScriptFunction *node)
 {
+    ASSERT(node != nullptr);
     ASSERT(node->IsConstructor() || node->IsMethod());
     ASSERT(node->Parent()->IsFunctionExpression());
     ASSERT(node->Parent()->Parent()->IsMethodDefinition());

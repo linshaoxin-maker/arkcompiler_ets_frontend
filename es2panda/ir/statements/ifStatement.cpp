@@ -45,6 +45,7 @@ void IfStatement::Dump(ir::AstDumper *dumper) const
 void IfStatement::Compile(compiler::PandaGen *pg) const
 {
     auto *consequentEnd = pg->AllocLabel();
+    ASSERT(consequentEnd != nullptr);
     compiler::Label *statementEnd = consequentEnd;
 
     compiler::Condition::Compile(pg, test_, consequentEnd);
