@@ -93,13 +93,15 @@ bool SymbolTable::ReadSymbolTable(const std::string &symbolTable)
 
             info.recordName = funcItems[0].substr(0, funcItems[0].find_last_of("."));
             info.funcInternalName = funcItems[1];
+            // 2: retrieves the element at index 2 from the funcItems array
             info.funcHash = funcItems[2];
             // index of function in its record's special function array
             std::string specialFuncIndex{funcItems[3]};
-
+            // 2: the step size of the loop, ensuring that the loop processes a complete pair of class information for each iteration
             for (size_t i = 0; i < classItems.size(); i = i + 2) {
                 info.classHash.insert(std::pair<std::string, std::string>(classItems[i], classItems[i + 1]));
             }
+            // 3: the step size of the loop, ensuring that the loop processes a complete lexical environment entry for each iteration
             for (size_t i = 0; i < lexItems.size(); i = i + 3) {
                 auto name = std::string(lexItems[i]);
                 auto slot = std::atoi(std::string(lexItems[i + 1]).c_str());

@@ -170,6 +170,8 @@ namespace panda::es2panda::parser {
     {
         uint32_t index = 0;
         for (auto it = localExportEntries_.begin(); it != localExportEntries_.end();
+             it = localExportEntries_.upper_bound(it->first)) {
+            CheckAndAssignIndex(moduleScope, it->first, &index);
              it = localExportEntries_.upper_bound(it->first))
         {
             auto variable = CheckAndAssignIndex(moduleScope, it->first, &index);

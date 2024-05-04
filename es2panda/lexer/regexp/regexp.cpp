@@ -574,6 +574,7 @@ uint32_t RegExpParser::ParseLegacyOctalEscape()
         return octalValue;
     }
 
+    // 8 is to move three places to the left
     uint32_t newValue = octalValue * 8 + DigitValue(Peek());
     constexpr uint32_t MAX_OCTAL_VALUE = 0xFF;
 

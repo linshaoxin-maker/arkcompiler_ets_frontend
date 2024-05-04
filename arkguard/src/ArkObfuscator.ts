@@ -129,7 +129,7 @@ export class ArkObfuscator {
     this.mTransformers = [];
   }
 
-  public setWriteOriginalFile(flag: boolean) {
+  public setWriteOriginalFile(flag: boolean): void {
     this.mWriteOriginalFile = flag;
   }
 

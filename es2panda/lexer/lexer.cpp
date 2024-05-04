@@ -46,7 +46,8 @@ char32_t Lexer::ScanUnicodeEscapeSequence()
         Iterator().Forward(1);
         return ScanUnicodeCodePointEscape();
     }
-
+    
+    // 4: a template parameter to the expected fixed length when scanning Unicode escape sequences
     return ScanHexEscape<4>();
 }
 
@@ -324,6 +325,7 @@ void Lexer::ScanDecimalNumbers(bool allowNumericSeparator)
                 }
 
                 GetToken().flags_ |= TokenFlags::NUMBER_HAS_UNDERSCORE;
+                // 2: move iterator forward by two characters
                 Iterator().Forward(2);
                 allowNumericOnNext = false;
                 break;
@@ -590,6 +592,7 @@ void Lexer::ScanStringUnicodePart(util::UString *str)
         }
         case LEX_CHAR_LOWERCASE_X: {
             Iterator().Forward(1);
+            // 4: a template parameter to the expected fixed length when scanning Unicode escape sequences
             str->Append(ScanHexEscape<2>());
             return;
         }
