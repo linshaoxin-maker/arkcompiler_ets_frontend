@@ -40,6 +40,7 @@ bool MergeProgram::GetProtoFiles(const std::string &protoBinPath, const std::str
         return false;
     }
     do {
+        // 2 represents comparing the first two characters 
         if (fileInfo.attrib & _A_SUBDIR) {
             if((!strncmp(fileInfo.name, ".", 1)) || (!strncmp(fileInfo.name, "..", 2))) {
                 continue;
@@ -65,6 +66,7 @@ bool MergeProgram::GetProtoFiles(const std::string &protoBinPath, const std::str
     dirent *dir = nullptr;
     std::string pathPrefix = protoBinPath + "/";
     while ((dir = readdir(protoBin)) != nullptr) {
+        // 2 represents comparing the first two characters
         if((!strncmp(dir->d_name, ".", 1)) || (!strncmp(dir->d_name, "..", 2))) {
             continue;
         }

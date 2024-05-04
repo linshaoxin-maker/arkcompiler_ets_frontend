@@ -1601,7 +1601,8 @@ util::StringView GetTSPropertyName(ir::Expression *key)
     }
 }
 
-void ParserImpl::CheckObjectTypeForDuplicatedProperties(ir::Expression *member, ArenaVector<ir::Expression *> const &members)
+void ParserImpl::CheckObjectTypeForDuplicatedProperties(ir::Expression *member,
+    ArenaVector<ir::Expression *> const &members)
 {
     ir::Expression *key = nullptr;
 
@@ -3845,6 +3846,7 @@ ir::TSTypeParameterInstantiation *ParserImpl::ParseTsTypeParameterInstantiation(
                 break;
             }
             case lexer::TokenType::PUNCTUATOR_UNSIGNED_RIGHT_SHIFT: {
+                // 2 is to backward by two tokens 
                 lexer_->BackwardToken(lexer::TokenType::PUNCTUATOR_GREATER_THAN, 2);
                 break;
             }

@@ -62,8 +62,8 @@ interface SourceMapSegmentObj {
   source: Source;
 }
 
-type MappingsNameType =  { mappings: readonly SourceMapSegment[][]; names?: readonly string[] };
-type TracedMappingsType= { mappings: SourceMapSegment[][], names: string[], sources: string[] };
+type MappingsNameType = { mappings: readonly SourceMapSegment[][]; names?: readonly string[] };
+type TracedMappingsType = { mappings: SourceMapSegment[][], names: string[], sources: string[] };
 
 class Link implements BaseSource {
   readonly mappings: readonly SourceMapSegment[][];
@@ -98,7 +98,7 @@ class Link implements BaseSource {
         }
         // segment[2] records the line number of the code before transform, segment[3] records the column number of the code before transform.
         // segment[4] records the name from the names array.
-        assert(segment.length >= 4, 'The length of the mapping segment is incorrect.')
+        assert(segment.length >= 4, 'The length of the mapping segment is incorrect.');
         let line: number = segment[SegmentIndex.TRANSFORMED_LINE_INDEX];
         let column: number = segment[SegmentIndex.TRANSFORMED_COLUMN_INDEX];
         // If the length of the segment is 5, it will have name content.
@@ -106,7 +106,7 @@ class Link implements BaseSource {
         const traced = source.traceSegment(line, column, name);
 
         if (traced) {
-          this.analyzeTracedSource(traced, tracedSources, sourceIndexMap, sourcesContent)
+          this.analyzeTracedSource(traced, tracedSources, sourceIndexMap, sourcesContent);
           let sourceIndex = sourceIndexMap.get(traced.source.filename);
           const targetSegment: SourceMapSegment = [segment[SegmentIndex.ORIGINAL_COLUMN_INDEX], sourceIndex, traced.line, traced.column];
           this.recordTracedName(traced, tracednames, nameIndexMap, targetSegment);
@@ -201,7 +201,7 @@ function decodeSourcemap(map: RawSourceMap): ExistingDecodedSourceMap | null {
     return null;
   }
   if (map.mappings === '') {
-    return { mappings: [], names: [],  sources: [], version: 3 }; // 3 is the sourcemap version.
+    return { mappings: [], names: [], sources: [], version: 3 }; // 3 is the sourcemap version.
   }
   const mappings: SourceMapSegment[][] = decode(map.mappings);
   return { ...map, mappings: mappings};
