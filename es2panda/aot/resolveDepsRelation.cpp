@@ -17,57 +17,6 @@
 
 namespace panda::es2panda::aot {
 
-std::string DepsRelationResolver::RecordNameForliteralKey(std::string literalKey)
-{
-    size_t pos = literalKey.rfind('_');
-    if (pos != std::string::npos) {
-        return literalKey.substr(0, pos);
-    } else {
-        std::cerr << "The literalKey format is error!" << std::endl;
-    }
-    return literalKey;
-}
-
-
-bool DepsRelationResolver::CheckIsHspOHMUrl(std::string ohmUrl)
-{
-    size_t prev = 0;
-    constexpr int pos = 3;
-    for (int i = 0; i < pos; i++) {
-        prev = ohmUrl.find('&', prev) + 1;
-    }
-    size_t behindPos = ohmUrl.find('&', prev);
-    std::string normalizedPath =  ohmUrl.substr(prev, behindPos);
-    
-    size_t slashPos = normalizedPath.find('/', 0);
-    if (normalizedPath[0] == '@') {
-        slashPos = normalizedPath.find('/', slashPos + 1);
-    }
-    std::string pkgName =  normalizedPath.substr(0, slashPos);
-    auto it = std::find(compileContextInfo_.hspPkgNames.begin(), compileContextInfo_.hspPkgNames.end(), pkgName);
-    return it != compileContextInfo_.hspPkgNames.end();
-}
-
-bool DepsRelationResolver::CheckShouldCollectDepsLiteralValue(std::string literalValue)
-{
-    const std::string normalizedPrefix = "@normalized:N";
-    if (literalValue.substr(0, normalizedPrefix.length()) == normalizedPrefix &&
-        !CheckIsHspOHMUrl(literalValue)) {
-        return true;
-    }
-    return false;
-}
-
-std::string DepsRelationResolver::TransformRecordName(std::string ohmUrl)
-{
-    size_t prev = 0;
-    constexpr int pos = 2;
-    for (int i = 0; i < pos; i++) {
-        prev = ohmUrl.find('&', prev) + 1;
-    }
-    return ohmUrl.substr(prev, ohmUrl.length());
-}
-
 void DepsRelationResolver::FillRecord2ProgramMap(std::unordered_map<std::string, std::string> &record2ProgramMap)
 {
     for (const auto &progInfo : progsInfo_) {
@@ -165,10 +114,17 @@ std::string GetRecordNameFromNormalizedOhmurl(const std::string &ohmurl) {
     return recordName;
 }
 
-bool IsHspPackage(const std::string &ohmurl, const std::vector<std::string> &hspPkgNames)
+bool IsHspPackage(const std::string &ohmurl, const std::set<std::string> &hspPkgNames)
 {
     auto pkgName = GetPkgNameFromNormalizedOhmurl(ohmurl);
     if (std::find(hspPkgNames.begin(), hspPkgNames.end(), pkgName) != hspPkgNames.end()) {
+        return true;
+    }
+    return false;
+}
+bool DepsRelationResolver::CheckShouldCollectDepsLiteralValue(std::string ohmurl)
+{
+    if (ohmurl.find("@normalized:N") != std::string::npos && !IsHspPackage(ohmurl, compileContextInfo_.externalPkgNames)) {
         return true;
     }
     return false;
@@ -201,37 +157,44 @@ bool DepsRelationResolver::Resolve()
             }
             resolveDepsRelation_[progkeyItr->second].insert(depRecord);
 
-            CollectStaticImportDepsRelation(progItr->second->program, depRecord);
+            CollectStaticImportDepsRelation(progItr->second->program);
             CollectDynamicImportDepsRelation(progItr->second->program, depRecord);
         }
     }
     return true;
 }
 
-void DepsRelationResolver::CollectStaticImportDepsRelation(const panda::pandasm::Program &program, const std::string &recordName)
+void DepsRelationResolver::CollectStaticImportDepsRelationWithLiteral(panda::pandasm::LiteralArray::Literal literal)
 {
-    for (auto &literalarrayPair : program.literalarray_table) {
-        std::cout << "literalarrayKey: " << literalarrayPair.first << std::endl;
-        std::string literalKeyRecord = RecordNameForliteralKey(literalarrayPair.first);
-        if (literalKeyRecord != recordName) {
-            continue;
-        }
-        for (auto& literal : literalarrayPair.second.literals_) {
-            std::visit([this](auto&& element) {
-                // std::cout<< "literalValue: " << element <<std::endl;
-                if constexpr (std::is_same_v<std::decay_t<decltype(element)>, std::string>) {
-                    std::cout<< "literalValue: " << element <<std::endl;
-                    if (this->CheckShouldCollectDepsLiteralValue(element)) {
-                        auto collectRecord = this->TransformRecordName(element);
-                        std::cout << "collectRecord: " << collectRecord << std::endl;
-                        if (!resolvedDeps_.count(collectRecord)) {
-                            unresolvedDeps_.push(collectRecord);
-                            resolvedDeps_.insert(collectRecord);
-                        }
-                    }
+    std::visit([this](auto&& element) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(element)>, std::string>) {
+            if (this->CheckShouldCollectDepsLiteralValue(element)) {
+                auto collectRecord = GetRecordNameFromNormalizedOhmurl(element);
+                if (!this->resolvedDeps_.count(collectRecord)) {
+                    this->unresolvedDeps_.push(collectRecord);
+                    this->resolvedDeps_.insert(collectRecord);
                 }
-            }, literal.value_);
+            }
         }
+    }, literal.value_);
+}
+
+void DepsRelationResolver::CollectStaticImportDepsRelation(const panda::pandasm::Program &program)
+{
+    auto &recordTable = program.record_table;
+    std::string literal_array_key;
+    for (auto &pair : recordTable) {
+        for (auto &field : pair.second.field_list) {
+            if (field.name == "moduleRecordIdx") {
+                literal_array_key = field.metadata->GetValue().value().GetValue<std::string>();
+                goto find_literal_array_key;
+            }
+        }
+    }
+    find_literal_array_key:
+    auto itr = program.literalarray_table.find(literal_array_key);
+    for (auto& literal : itr->second.literals_) {
+        CollectStaticImportDepsRelationWithLiteral(literal);
     }
 }
 
@@ -258,7 +221,7 @@ void DepsRelationResolver::CollectDynamicImportDepsRelation(const panda::pandasm
                     continue;
                 }
                 // skipping HSP package
-                if (IsHspPackage(dynamicImportOhmurl, compileContextInfo_.hspPkgNames)) {
+                if (IsHspPackage(dynamicImportOhmurl, compileContextInfo_.externalPkgNames)) {
                     continue;
                 }
                 auto dynamicImportRecord = GetRecordNameFromNormalizedOhmurl(dynamicImportOhmurl);

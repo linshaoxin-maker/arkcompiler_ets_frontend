@@ -215,8 +215,8 @@ static bool GenerateAbcFiles(const std::map<std::string, panda::es2panda::util::
 
 static bool ResolveDepsRelations(const std::map<std::string, panda::es2panda::util::ProgramCache*> &programsInfo,
                                  const std::unique_ptr<panda::es2panda::aot::Options> &options, 
-                                 std::unordered_map<std::string, std::unordered_set<std::string>> &resolveDepsRelation,
-                                 std::unordered_set<std::string> &generatedRecords)
+                                 std::map<std::string, std::set<std::string>> &resolveDepsRelation,
+                                 std::set<std::string> &generatedRecords)
 {
     panda::es2panda::aot::DepsRelationResolver depsRelationResolver(programsInfo, options, resolveDepsRelation, generatedRecords);
     return depsRelationResolver.Resolve();
@@ -259,8 +259,8 @@ int Run(int argc, const char **argv)
         expectedProgsCount++;
     }
 
-    std::unordered_map<std::string, std::unordered_set<std::string>> resolveDepsRelation {};
-    std::unordered_set<std::string> generatedRecords {};
+    std::map<std::string, std::set<std::string>> resolveDepsRelation {};
+    std::set<std::string> generatedRecords {};
     if (!ResolveDepsRelations(programsInfo, options, resolveDepsRelation, generatedRecords)) {
         return 1;
     }
