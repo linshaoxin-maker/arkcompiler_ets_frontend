@@ -25,11 +25,18 @@
 #include <compiler/base/catchTable.h>
 #include <es2panda.h>
 #include <gen/isa.h>
+#include "ir/base/classDefinition.h"
+#include "ir/base/decorator.h"
 #include <ir/base/methodDefinition.h>
+#include "ir/base/property.h"
 #include <ir/base/scriptFunction.h>
+#include <ir/expressions/callExpression.h>
 #include <ir/expressions/functionExpression.h>
 #include <ir/expressions/literal.h>
+#include "ir/expressions/literals/numberLiteral.h"
+#include "ir/expressions/objectExpression.h"
 #include <ir/statements/blockStatement.h>
+#include <ir/statements/classDeclaration.h>
 #include <macros.h>
 #include <parser/program/program.h>
 #include <util/helpers.h>
@@ -69,6 +76,7 @@ void FunctionEmitter::Generate(util::PatchFix *patchFixHelper)
     GenLiteralBuffers();
     GenFunctionSource();
     GenConcurrentFunctionModuleRequests();
+    GenAnnotations();
     if (patchFixHelper != nullptr) {
         patchFixHelper->ProcessFunction(pg_, func_, literalBuffers_);
     }
@@ -204,6 +212,44 @@ void FunctionEmitter::GenInstructionDebugInfo(const IRNode *ins, panda::pandasm:
         offset_ += insLen;
         pandaIns->ins_debug.column_number = columnNum;
     }
+}
+
+void FunctionEmitter::GenAnnotations()
+{
+    if (!pg_->RootNode()->IsScriptFunction()) {
+        return;
+    }
+    
+    auto *scriptFunction = pg_->RootNode()->AsScriptFunction();
+    if (scriptFunction->Parent() && scriptFunction->Parent()->Parent() && !scriptFunction->Parent()->Parent()->IsMethodDefinition()) {
+        return;
+    }
+
+    auto *methodDefinition = scriptFunction->Parent()->Parent()->AsMethodDefinition();
+    std::vector<pandasm::AnnotationData> annotations;
+    for (auto *anno: methodDefinition->Annotations()) {
+        auto *callExpr = anno->Expr()->AsCallExpression();
+        std::string annoName{callExpr->Callee()->AsIdentifier()->Name()};
+
+        pandasm::AnnotationData annotation(annoName);
+        auto *arg = callExpr->Arguments()[0]->AsObjectExpression();
+        for (auto *objExprElem: arg->Properties()) {
+            std::string elemName{objExprElem->AsProperty()->Key()->AsIdentifier()->Name()};
+            auto *elemValue = objExprElem->AsProperty()->Value();
+            if (elemValue->Type() == ir::AstNodeType::NUMBER_LITERAL) {
+                double doubleValue = elemValue->AsNumberLiteral()->Number();
+                pandasm::AnnotationElement ele(elemName, std::make_unique<pandasm::ScalarValue>(
+                    pandasm::ScalarValue::Create<pandasm::Value::Type::F64>(doubleValue)));
+                annotation.AddElement(std::move(ele));
+            } else {
+                UNREACHABLE();
+            }
+        }
+
+        annotations.emplace_back(annotation);
+    }
+
+    func_->metadata->AddAnnotations(annotations);
 }
 
 void FunctionEmitter::GenFunctionInstructions()
@@ -419,6 +465,34 @@ void Emitter::AddFunction(FunctionEmitter *func, CompilerContext *context)
 
     auto *function = func->Function();
     prog_->function_table.emplace(function->name, std::move(*function));
+}
+
+void Emitter::addAnnotationRecord(const std::string &annoName, const ir::ClassDeclaration *classDecl)
+{
+    pandasm::Record record(annoName, pandasm::extensions::Language::ECMASCRIPT);
+    record.metadata->SetAccessFlags(panda::ACC_ANNOTATION);
+
+    for (auto bodyItem: classDecl->Definition()->Body()) {
+        auto key = bodyItem->AsClassProperty()->Key();
+        auto annoField = panda::pandasm::Field(panda::panda_file::SourceLang::ECMASCRIPT);
+        annoField.name = std::string(key->AsIdentifier()->Name());
+
+        auto keyType = bodyItem->AsClassProperty()->TypeAnnotation()->Type();
+        if (keyType == ir::AstNodeType::TS_NUMBER_KEYWORD) {
+            annoField.type = panda::pandasm::Type("f64", 0);
+            auto value = bodyItem->AsClassProperty()->Value();
+            if (value != nullptr) {
+                double number = value->AsNumberLiteral()->Number();
+                annoField.metadata->SetValue(panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::F64>(static_cast<double>(number)));
+            }
+        } else {
+            UNREACHABLE();
+        }
+
+        record.field_list.emplace_back(std::move(annoField));
+    }
+
+    prog_->record_table.emplace(annoName, std::move(record));
 }
 
 void Emitter::AddSourceTextModuleRecord(ModuleRecordEmitter *module, CompilerContext *context)

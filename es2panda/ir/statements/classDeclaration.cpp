@@ -16,10 +16,13 @@
 #include "classDeclaration.h"
 
 #include <compiler/base/lreference.h>
+#include <compiler/core/compilerContext.h>
+#include <compiler/core/emitter/emitter.h>
 #include <compiler/core/pandagen.h>
 #include <ir/astDump.h>
 #include <ir/base/classDefinition.h>
 #include <ir/base/decorator.h>
+#include <ir/expressions/callExpression.h>
 #include <ir/expressions/identifier.h>
 #include <ir/module/exportDefaultDeclaration.h>
 
@@ -47,6 +50,10 @@ void ClassDeclaration::Compile(compiler::PandaGen *pg) const
     if (def_->Declare()) {
         return;
     }
+    if (isAnnotationDecl_) {
+        pg->Context()->GetEmitter()->addAnnotationRecord(std::string(def_->GetName()), this);
+        return;
+    }
     const auto *node = def_->Ident() ? def_->Ident() : this->Parent();
     auto lref = compiler::LReference::CreateLRef(pg, node, true);
     def_->Compile(pg);
@@ -64,6 +71,20 @@ void ClassDeclaration::UpdateSelf(const NodeUpdater &cb, [[maybe_unused]] binder
 
     for (auto iter = decorators_.begin(); iter != decorators_.end(); iter++) {
         *iter = std::get<ir::AstNode *>(cb(*iter))->AsDecorator();
+    }
+}
+
+void ClassDeclaration::findAnnotationsAmongDecorators()
+{
+    for (auto* decorator: decorators_) {
+        if (decorator->Expr()->IsCallExpression() && decorator->Expr()->AsCallExpression()->Callee()->AsIdentifier()->Name().Find("_MAGICPREFIX_") != std::string_view::npos) {
+            annotations_.push_back(decorator);
+        }
+    }
+
+    for (auto* annotation: annotations_) {
+        auto it = std::find(decorators_.begin(), decorators_.end(), annotation);
+        decorators_.erase(it);
     }
 }
 

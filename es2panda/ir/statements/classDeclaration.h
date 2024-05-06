@@ -31,9 +31,10 @@ namespace panda::es2panda::ir {
 
 class ClassDeclaration : public Statement {
 public:
-    explicit ClassDeclaration(ClassDefinition *def, ArenaVector<Decorator *> &&decorators)
-        : Statement(AstNodeType::CLASS_DECLARATION), def_(def), decorators_(std::move(decorators))
+    explicit ClassDeclaration(ClassDefinition *def, ArenaAllocator *allocator, ArenaVector<Decorator *> &&decorators, bool isAnnoDecl)
+        : Statement(AstNodeType::CLASS_DECLARATION), def_(def), decorators_(std::move(decorators)), annotations_(allocator->Adapter()), isAnnotationDecl_(isAnnoDecl)
     {
+        findAnnotationsAmongDecorators();
     }
 
     const ClassDefinition *Definition() const
@@ -56,6 +57,11 @@ public:
         return !decorators_.empty();
     }
 
+    bool IsAnnotationDecl() const
+    {
+        return isAnnotationDecl_;
+    }
+
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;
     void Compile(compiler::PandaGen *pg) const override;
@@ -63,8 +69,12 @@ public:
     void UpdateSelf(const NodeUpdater &cb, [[maybe_unused]] binder::Binder *binder) override;
 
 private:
+    void findAnnotationsAmongDecorators();
+
     ClassDefinition *def_;
     ArenaVector<Decorator *> decorators_;
+    ArenaVector<Decorator *> annotations_;
+    bool isAnnotationDecl_ = false;
 };
 
 }  // namespace panda::es2panda::ir

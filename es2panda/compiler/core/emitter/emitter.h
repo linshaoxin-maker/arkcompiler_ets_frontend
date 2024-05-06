@@ -86,6 +86,7 @@ private:
     void GenVariablesDebugInfo();
     void GenFunctionKind();
     void GenIcSize();
+    void GenAnnotations();
     util::StringView SourceCode() const;
     lexer::LineIndex &GetLineIndex() const;
 
@@ -107,6 +108,7 @@ public:
     NO_COPY_SEMANTIC(Emitter);
     NO_MOVE_SEMANTIC(Emitter);
 
+    void addAnnotationRecord(const std::string &annoName, const ir::ClassDeclaration *classDecl);
     void AddFunction(FunctionEmitter *func, CompilerContext *context);
     void AddSourceTextModuleRecord(ModuleRecordEmitter *module, CompilerContext *context);
     static void GenBufferLiterals(ArenaVector<std::pair<int32_t, std::vector<Literal>>> &literalBuffers,

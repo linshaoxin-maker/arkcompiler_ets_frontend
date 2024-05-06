@@ -22,6 +22,7 @@
 #include <compiler/core/function.h>
 #include <compiler/core/pandagen.h>
 #include <es2panda.h>
+#include "ir/statements/blockStatement.h"
 #include <mem/arena_allocator.h>
 #include <mem/pool_manager.h>
 #include <protobufSnapshotGenerator.h>
@@ -36,6 +37,10 @@ void CompileFunctionJob::Run()
 {
     std::unique_lock<std::mutex> lock(m_);
     cond_.wait(lock, [this] { return dependencies_ == 0; });
+
+    if (scope_->InternalName().Find("_MAGICPREFIX_") != std::string_view::npos) {
+        return;
+    }
 
     ArenaAllocator allocator(SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
     PandaGen pg(&allocator, context_, scope_);

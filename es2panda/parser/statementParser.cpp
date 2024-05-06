@@ -689,7 +689,8 @@ ir::ClassDeclaration *ParserImpl::ParseClassDeclaration(bool idRequired, ArenaVe
     decl->BindNode(classDefinition);
 
     lexer::SourcePosition endLoc = classDefinition->End();
-    auto *classDecl = AllocNode<ir::ClassDeclaration>(classDefinition, std::move(decorators));
+    bool isAnnoDecl = className.Find("_MAGICPREFIX_") != std::string_view::npos;
+    auto *classDecl = AllocNode<ir::ClassDeclaration>(classDefinition, Allocator(), std::move(decorators), isAnnoDecl);
     classDecl->SetRange({startLoc, endLoc});
     return classDecl;
 }

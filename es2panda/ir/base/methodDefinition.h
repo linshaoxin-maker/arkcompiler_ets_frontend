@@ -51,9 +51,11 @@ public:
           modifiers_(modifiers),
           overloads_(allocator->Adapter()),
           decorators_(std::move(decorators)),
+          annotations_(allocator->Adapter()),
           paramDecorators_(std::move(paramDecorators)),
           isComputed_(isComputed)
     {
+        findAnnotationsAmongDecorators();
     }
 
     MethodDefinitionKind Kind() const
@@ -126,6 +128,11 @@ public:
         return decorators_;
     }
 
+    const ArenaVector<Decorator *> &Annotations() const
+    {
+        return annotations_;
+    }
+
     const ArenaVector<ParamDecorators> &GetParamDecorators() const
     {
         return paramDecorators_;
@@ -172,6 +179,8 @@ public:
     void UpdateSelf(const NodeUpdater &cb, [[maybe_unused]] binder::Binder *binder) override;
 
 private:
+    void findAnnotationsAmongDecorators();
+
     MethodDefinitionKind kind_;
     Expression *key_;
     compiler::VReg keyReg_ {0};
@@ -179,6 +188,7 @@ private:
     ModifierFlags modifiers_;
     ArenaVector<MethodDefinition *> overloads_;
     ArenaVector<Decorator *> decorators_;
+    ArenaVector<Decorator *> annotations_;
     ArenaVector<ParamDecorators> paramDecorators_;
     bool isComputed_;
 };
