@@ -41,22 +41,7 @@ public:
         flags_ |= flags;
         relation->SetNode(node);
 
-        if(source->IsETSTypeParameter()){
-            auto constraintType = source->AsETSTypeParameter()->GetConstraintType();
-            if(constraintType->Variable()&& constraintType->Variable()->Declaration()){ 
-                auto  declNode = constraintType->Variable()->Declaration()->Node();
-                    if(declNode && declNode->IsFinal())
-                        source = constraintType;
-            }
-        }
-        if(target->IsETSTypeParameter()){
-            auto constraintType = target->AsETSTypeParameter()->GetConstraintType();
-            if(constraintType->Variable()&& constraintType->Variable()->Declaration()){ 
-                auto  declNode = constraintType->Variable()->Declaration()->Node();
-                    if(declNode && declNode->IsFinal())
-                        target = constraintType;
-            }
-        }
+        CheckConstraint(source, target);
 
         // NOTE (oeotvos) The narrowing flag will be applied here. It means, that the result of "let tmp: int = 1.5"
         // will be 1, which could cause problems.
@@ -92,6 +77,7 @@ public:
 
     void ValidateArrayTypeInitializerByElement(TypeRelation *relation, ir::ArrayExpression *node, ETSArrayType *target);
 
+    void CheckConstraint(Type *&source, Type *&target);
 private:
     TypeRelationFlag flags_ = TypeRelationFlag::IN_ASSIGNMENT_CONTEXT;
     bool assignable_ {false};

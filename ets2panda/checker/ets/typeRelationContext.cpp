@@ -41,6 +41,28 @@ void AssignmentContext::ValidateArrayTypeInitializerByElement(TypeRelation *rela
     }
 }
 
+void AssignmentContext::CheckConstraint(Type *&source, Type *&target)
+{ 
+    if (source->IsETSTypeParameter()) {
+        auto constraintType = source->AsETSTypeParameter()->GetConstraintType();
+        if (constraintType->Variable() != nullptr && constraintType->Variable()->Declaration() != nullptr) { 
+            auto  declNode = constraintType->Variable()->Declaration()->Node();
+                if(declNode != nullptr && declNode->IsFinal()) {
+                    source = constraintType;
+                }
+        }
+    }
+    if (target->IsETSTypeParameter()) {
+        auto constraintType = target->AsETSTypeParameter()->GetConstraintType();
+        if (constraintType->Variable() != nullptr && constraintType->Variable()->Declaration() != nullptr) { 
+            auto  declNode = constraintType->Variable()->Declaration()->Node();
+                if (declNode != nullptr && declNode->IsFinal()) {
+                    target = constraintType;
+                }
+        }
+    }
+}
+
 bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSTypeParameterInstantiation *typeArgs,
                                                  const lexer::SourcePosition &pos)
 {
