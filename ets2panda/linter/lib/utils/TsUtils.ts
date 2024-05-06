@@ -31,7 +31,6 @@ import { SENDABLE_DECORATOR } from './consts/SendableAPI';
 import { USE_SHARED } from './consts/SharedModuleAPI';
 import {
   ARKTS_COLLECTIONS_D_ETS,
-  ARKTS_COLLECTIONS_TYPES,
   COLLECTIONS_NAMESPACE,
   ARKTS_LANG_D_ETS,
   LANG_NAMESPACE,
@@ -1919,7 +1918,7 @@ export class TsUtils {
   }
 
   private static isArkTSCollectionsArrayLikeDeclaration(decl: ts.Declaration): boolean {
-    if (!ts.isClassDeclaration(decl) || !decl.name || !ARKTS_COLLECTIONS_TYPES.includes(decl.name.text)) {
+    if (!ts.isClassDeclaration(decl) || !decl.name) {
       return false;
     }
 
