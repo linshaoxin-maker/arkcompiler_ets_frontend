@@ -19,9 +19,11 @@
 #include <ir/base/decorator.h>
 #include <ir/base/scriptFunction.h>
 #include <ir/expression.h>
+#include <ir/expressions/callExpression.h>
 #include <ir/expressions/functionExpression.h>
 
 #include <utility>
+#include <algorithm>
 
 namespace panda::es2panda::ir {
 
@@ -119,6 +121,20 @@ void MethodDefinition::UpdateSelf(const NodeUpdater &cb, [[maybe_unused]] binder
         for (auto iter = param.decorators.begin(); iter != param.decorators.end(); iter++) {
             *iter = std::get<ir::AstNode *>(cb(*iter))->AsDecorator();
         }
+    }
+}
+
+void MethodDefinition::findAnnotationsAmongDecorators()
+{
+    for (auto* decorator: decorators_) {
+        if (decorator->Expr()->IsCallExpression() && decorator->Expr()->AsCallExpression()->Callee()->AsIdentifier()->Name().Find("_MAGICPREFIX_") != std::string_view::npos) {
+            annotations_.push_back(decorator);
+        }
+    }
+
+    for (auto* annotation: annotations_) {
+        auto it = std::find(decorators_.begin(), decorators_.end(), annotation);
+        decorators_.erase(it);
     }
 }
 

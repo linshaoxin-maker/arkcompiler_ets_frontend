@@ -87,6 +87,7 @@ private:
     void GenVariablesDebugInfo();
     void GenFunctionKind();
     void GenIcSize();
+    void GenAnnotations();
     util::StringView SourceCode() const;
     lexer::LineIndex &GetLineIndex() const;
 
@@ -108,6 +109,7 @@ public:
     NO_COPY_SEMANTIC(Emitter);
     NO_MOVE_SEMANTIC(Emitter);
 
+    void addAnnotationRecord(const std::string &annoName, const ir::ClassDeclaration *classDecl);
     void AddFunction(FunctionEmitter *func, CompilerContext *context);
     void AddSourceTextModuleRecord(ModuleRecordEmitter *module, CompilerContext *context);
     void FillTypeInfoRecord(CompilerContext *context, bool typeFlag, int64_t typeSummaryIndex,
