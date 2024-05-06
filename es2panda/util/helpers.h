@@ -37,6 +37,7 @@ class Statement;
 }  // namespace panda::es2panda::ir
 
 namespace panda::es2panda {
+struct CompileContextInfo;
 struct CompilerOptions;
 enum class ErrorType;
 }  // namespace panda::es2panda
@@ -136,6 +137,7 @@ public:
     static void ThrowError(ErrorType type, const parser::Program *program, const lexer::SourcePosition &pos,
         const std::string_view &msg);
     static bool IsUseShared(const ir::Statement *statement);
+    static std::string UpdatePackageVersionIfNeeded(const std::string &ohmurl, const CompileContextInfo &info);
 
     static const uint32_t MAX_DOUBLE_DIGIT = 310;
     static const uint32_t MAX_DOUBLE_PRECISION_DIGIT = 17;

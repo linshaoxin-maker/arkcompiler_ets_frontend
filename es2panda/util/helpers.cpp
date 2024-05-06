@@ -955,4 +955,45 @@ bool Helpers::IsUseShared(const ir::Statement *statement)
     return statement->AsExpressionStatement()->GetExpression()->AsStringLiteral()->Str().Is(USE_SHARED);
 }
 
+static bool StringStartsWith(const std::string &str, const std::string &prefix)
+{
+    return (str.size() >= prefix.size()) &&
+           std::equal(prefix.begin(), prefix.end(), str.begin());
+}
+
+std::string Helpers::UpdatePackageVersionIfNeeded(const std::string &ohmurl, const panda::es2panda::CompileContextInfo &info)
+{
+    // ohmurl: @normalized:N&<module name>&<bundle name>&[<package name>|<@package/name>]/<import_path>&version
+    // Replace version if the package name exists in the pkgContextInfo
+    constexpr char AND_TOKEN = '&';
+    constexpr char AT_TOKEN = '@';
+    constexpr char OHMURL_PATH_SEPARATOR = '/';
+    const std::string NON_NATIVE_NORMALIZED_OHMURL_PREFIX = "@normalized:N&";
+    if (!StringStartsWith(ohmurl, NON_NATIVE_NORMALIZED_OHMURL_PREFIX)) {
+        return ohmurl;
+    }
+    auto bundle_name_start = ohmurl.find(AND_TOKEN, NON_NATIVE_NORMALIZED_OHMURL_PREFIX.size());
+    if (bundle_name_start == std::string::npos) {
+        return ohmurl;
+    }
+    auto package_name_start = ohmurl.find(AND_TOKEN, bundle_name_start + 1);
+    if (package_name_start == std::string::npos) {
+        return ohmurl;
+    }
+    package_name_start += 1;
+    auto import_path_start = ohmurl.find(OHMURL_PATH_SEPARATOR, package_name_start);
+    if (ohmurl[package_name_start] == AT_TOKEN) {
+        import_path_start = ohmurl.find(OHMURL_PATH_SEPARATOR, import_path_start + 1);
+    }
+    std::string package_name = ohmurl.substr(package_name_start, import_path_start - package_name_start);
+    auto iter = info.pkgContextInfo.find(package_name);
+    if (iter == info.pkgContextInfo.end()) {
+        return ohmurl;
+    }
+    auto version_start = ohmurl.rfind(AND_TOKEN);
+    ASSERT(version_start != std::string::npos);
+    auto ret =  ohmurl.substr(0, version_start + 1) + iter->second.version;
+    return ret;
+}
+
 }  // namespace panda::es2panda::util
