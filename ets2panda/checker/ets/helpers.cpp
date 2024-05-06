@@ -1101,6 +1101,143 @@ static void CheckExpandedType(Type *expandedAliasType, std::set<util::StringView
     }
 }
 
+template <PropertyType PROP_TYPE>
+void ETSChecker::MakePropertyNonNullish(ETSObjectType *const classType, varbinder::LocalVariable *const prop)
+{
+    auto *const propType = prop->TsType();
+    auto *const nonNullishPropType = GetNonNullishType(propType);
+
+    auto *const propCopy = prop->Copy(Allocator(), prop->Declaration());
+
+    propCopy->SetTsType(nonNullishPropType);
+    classType->RemoveProperty<PROP_TYPE>(prop);
+    classType->AddProperty<PROP_TYPE>(propCopy);
+}
+
+void ETSChecker::MakePropertiesNonNullish(ETSObjectType *const classType)
+{
+    classType->AddObjectFlag(ETSObjectFlags::REQUIRED);
+    classType->InstanceFields();
+
+    for (const auto &[_, propVar] : classType->InstanceFields()) {
+        MakePropertyNonNullish<PropertyType::INSTANCE_FIELD>(classType, propVar);
+    }
+
+    for (const auto &[_, propVar] : classType->StaticFields()) {
+        MakePropertyNonNullish<PropertyType::STATIC_FIELD>(classType, propVar);
+    }
+
+    if (classType->SuperType() != nullptr) {
+        auto *const superRequired = classType->SuperType()->Clone(this)->AsETSObjectType();
+        MakePropertiesNonNullish(superRequired);
+        classType->SetSuperType(superRequired);
+    }
+}
+
+static bool StringEqualsPropertyName(const util::StringView pname1, const ir::Expression *const prop2Key)
+{
+    util::StringView pname2;
+    if (prop2Key->IsStringLiteral()) {
+        pname2 = prop2Key->AsStringLiteral()->Str();
+    } else if (prop2Key->IsIdentifier()) {
+        pname2 = prop2Key->AsIdentifier()->Name();
+    }
+
+    return pname1.Is(pname2.Mutf8());
+}
+
+void ETSChecker::ValidateObjectLiteralForRequiredType(const ETSObjectType *const requiredType,
+                                                      const ir::ObjectExpression *const initObjExpr)
+{
+    const std::size_t classPropertyCount = requiredType->InstanceFields().size() + requiredType->StaticFields().size();
+
+    auto initObjExprContainsField = [&initObjExpr](const util::StringView pname1) {
+        return std::find_if(initObjExpr->Properties().begin(), initObjExpr->Properties().end(),
+                            [&pname1](const ir::Expression *const initProp) {
+                                return StringEqualsPropertyName(pname1, initProp->AsProperty()->Key());
+                            }) != initObjExpr->Properties().end();
+    };
+
+    if (classPropertyCount > initObjExpr->Properties().size()) {
+        std::string_view missingProp;
+
+        for (const auto &[propName, _] : requiredType->InstanceFields()) {
+            if (!initObjExprContainsField(propName)) {
+                missingProp = propName.Utf8();
+            }
+        }
+
+        for (const auto &[propName, _] : requiredType->StaticFields()) {
+            if (!initObjExprContainsField(propName)) {
+                missingProp = propName.Utf8();
+            }
+        }
+
+        if (!missingProp.empty()) {
+            ThrowTypeError({"Class property '", missingProp, "' needs to be initialized for required type."},
+                           initObjExpr->Start());
+        }
+    }
+}
+
+ir::TypeNode *ETSChecker::GetRequiredTypeBaseTypeNode(const ir::TSTypeParameterInstantiation *const typeParams)
+{
+    if (typeParams->Params().size() != 1) {
+        ThrowTypeError("Invalid number of type parameters for Partial type", typeParams->Start());
+    }
+
+    return typeParams->Params().front();
+}
+
+Type *ETSChecker::HandleRequiredTypeNode(ir::TypeNode *const typeParamNode)
+{
+    auto *const bareTypeToBeRequired = typeParamNode->Check(this);
+    return HandleRequiredType(bareTypeToBeRequired);
+}
+
+Type *ETSChecker::HandleRequiredType(Type *typeToBeRequired)
+{
+    if (const auto found = NamedTypeStack().find(typeToBeRequired); found != NamedTypeStack().end()) {
+        return *found;
+    }
+
+    NamedTypeStackElement ntse(this, typeToBeRequired);
+
+    if (typeToBeRequired->IsETSTypeParameter()) {
+        auto *const requiredClone = typeToBeRequired->Clone(this);
+        requiredClone->AddTypeFlag(TypeFlag::ETS_REQUIRED_TYPE_PARAMETER);
+        return requiredClone;
+    }
+
+    if (typeToBeRequired->IsETSUnionType()) {
+        ArenaVector<Type *> unionTypes(Allocator()->Adapter());
+        for (auto *type : typeToBeRequired->AsETSUnionType()->ConstituentTypes()) {
+            if (type->IsETSObjectType()) {
+                type = type->Clone(this);
+                MakePropertiesNonNullish(type->AsETSObjectType());
+            }
+
+            if (type->IsETSNullType() || type->IsETSUndefinedType()) {
+                continue;
+            }
+
+            unionTypes.emplace_back(type);
+        }
+
+        return CreateETSUnionType(std::move(unionTypes));
+    }
+
+    if (typeToBeRequired->IsETSObjectType()) {
+        typeToBeRequired->AsETSObjectType()->InstanceFields();  // call to instantiate properties
+    }
+
+    typeToBeRequired = typeToBeRequired->Clone(this);
+
+    MakePropertiesNonNullish(typeToBeRequired->AsETSObjectType());
+
+    return typeToBeRequired;
+}
+
 Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypeParameterInstantiation *const typeParams)
 {
     ASSERT(name->IsIdentifier() && name->AsIdentifier()->Variable() &&
@@ -1116,6 +1253,11 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
         }
 
         ThrowTypeError("Type alias declaration is not generic, but type parameters were provided", typeParams->Start());
+    }
+
+    if (name->AsIdentifier()->Name().Is(compiler::Signatures::REQUIRED_TYPE_NAME)) {
+        // Handle 'Required<T>' types
+        return HandleRequiredTypeNode(GetRequiredTypeBaseTypeNode(typeParams));
     }
 
     if (typeParams == nullptr) {

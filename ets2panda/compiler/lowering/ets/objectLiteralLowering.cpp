@@ -53,6 +53,32 @@ static void RestoreNestedBlockExpression(const ArenaVector<ir::Statement *> &sta
     }
 }
 
+static void AllowRequiredTypeInstantiation(const ir::Expression *const loweringResult)
+{
+    if (!loweringResult->IsBlockExpression()) {
+        return;
+    }
+
+    const auto *const blockExpression = loweringResult->AsBlockExpression();
+    const auto *const firstStatement = blockExpression->Statements().front();
+    if (!firstStatement->IsVariableDeclaration() ||
+        !firstStatement->AsVariableDeclaration()->Declarators().front()->Init()->IsETSNewClassInstanceExpression()) {
+        return;
+    }
+
+    const auto *const varDecl = firstStatement->AsVariableDeclaration()->Declarators().front()->Init();
+
+    varDecl->AddAstNodeFlags(ir::AstNodeFlags::ALLOW_REQUIRED_INSTANTIATION);
+
+    for (auto *const stmt : blockExpression->Statements()) {
+        if (stmt->IsExpressionStatement() && stmt->AsExpressionStatement()->GetExpression()->IsAssignmentExpression() &&
+            stmt->AsExpressionStatement()->GetExpression()->AsAssignmentExpression()->Right()->IsBlockExpression()) {
+            AllowRequiredTypeInstantiation(
+                stmt->AsExpressionStatement()->GetExpression()->AsAssignmentExpression()->Right()->AsBlockExpression());
+        }
+    }
+}
+
 static void GenerateNewStatements(checker::ETSChecker *checker, ir::ObjectExpression *objExpr, std::stringstream &ss,
                                   std::vector<ir::AstNode *> &newStmts,
                                   std::deque<ir::BlockExpression *> &nestedBlckExprs)
@@ -66,21 +92,29 @@ static void GenerateNewStatements(checker::ETSChecker *checker, ir::ObjectExpres
         return newStmts.size();
     };
 
+    const bool isClassTypeRequired = classType->HasObjectFlag(checker::ETSObjectFlags::REQUIRED);
+
     // Generating: let <genSym>: <preferredType> = new <preferredType>();
     auto *genSymIdent = Gensym(allocator);
     auto *preferredType = checker->AllocNode<ir::OpaqueTypeNode>(classType);
-    ss << "let @@I" << addNode(genSymIdent) << ": @@T" << addNode(preferredType) << " = new @@I"
-       << addNode(checker->AllocNode<ir::Identifier>(classType->Name(), allocator));
+    auto *className = checker->AllocNode<ir::Identifier>(
+        isClassTypeRequired ? compiler::Signatures::REQUIRED_TYPE_NAME : classType->Name(), allocator);
 
-    // Type params of class type
-    if (!classType->TypeArguments().empty()) {
+    ss << "let @@I" << addNode(genSymIdent) << ": @@T" << addNode(preferredType) << " = new @@I" << addNode(className);
+
+    if (isClassTypeRequired) {
+        ss << compiler::Signatures::GENERIC_BEGIN;
+        classType->ToString(ss, false);
+        ss << compiler::Signatures::GENERIC_END;
+    } else if (!classType->TypeArguments().empty()) {
+        // Type params of class type
         ss << "<";
         for (auto *type : classType->TypeArguments()) {
             type->ToString(ss);
-            ss << ",";
         }
         ss << ">";
     }
+
     ss << "();" << std::endl;
 
     // Generating: <genSym>.key_i = value_i      ( i <= [0, object_literal.properties.size) )
@@ -149,6 +183,8 @@ static ir::AstNode *HandleObjectLiteralLowering(public_lib::Context *ctx, ir::Ob
                                  loweringResult->Scope());
 
     varbinder->ResolveReferencesForScope(loweringResult, NearestScope(loweringResult));
+
+    AllowRequiredTypeInstantiation(loweringResult);
 
     checker::SavedCheckerContext scc {checker, checker::CheckerStatus::IGNORE_VISIBILITY};
     loweringResult->Check(checker);
