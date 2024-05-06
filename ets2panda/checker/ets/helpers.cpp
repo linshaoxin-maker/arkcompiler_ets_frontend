@@ -566,13 +566,12 @@ void ETSChecker::InferAliasLambdaType(ir::TypeNode *localTypeAnnotation, ir::Exp
     if (localTypeAnnotation != nullptr && localTypeAnnotation->IsETSTypeReference()) {
         bool isAnnotationTypeAlias = true;
         while (localTypeAnnotation->IsETSTypeReference() && isAnnotationTypeAlias) {
-            auto *node = localTypeAnnotation->AsETSTypeReference()
-                             ->Part()
-                             ->Name()
-                             ->AsIdentifier()
-                             ->Variable()
-                             ->Declaration()
-                             ->Node();
+            auto *nodeVar = localTypeAnnotation->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Variable();
+            if (nodeVar == nullptr) {
+                break;
+            }
+
+            auto *node = nodeVar->Declaration()->Node();
 
             isAnnotationTypeAlias = node->IsTSTypeAliasDeclaration();
             if (isAnnotationTypeAlias) {
@@ -1082,6 +1081,84 @@ static void CheckExpandedType(Type *expandedAliasType, std::set<util::StringView
     }
 }
 
+template <PropertyType PROP_TYPE>
+void ETSChecker::MakePropertyNullish(ETSObjectType *const classType, varbinder::LocalVariable *const prop)
+{
+    auto *const propType = prop->Declaration()->Node()->Check(this);
+
+    if (propType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+        ThrowTypeError("Base type of a Partial type can only contain fields with reference type.",
+                       prop->Declaration()->Node()->Start());
+    }
+
+    auto *const nullishPropType = CreateETSUnionType({propType, GlobalETSUndefinedType()});
+    auto *newDecl = Allocator()->New<varbinder::ConstDecl>(prop->Name(), prop->Declaration()->Node());
+    auto *const propCopy = prop->Copy(Allocator(), newDecl);
+    propCopy->SetTsType(nullishPropType);
+    classType->RemoveProperty<PROP_TYPE>(prop);
+    classType->AddProperty<PROP_TYPE>(propCopy);
+}
+
+void ETSChecker::MakePropertiesNullish(ETSObjectType *const classType)
+{
+    classType->AddObjectFlag(ETSObjectFlags::PARTIAL);
+
+    for (std::pair<util::StringView, varbinder::LocalVariable *> prop : classType->InstanceFields()) {
+        MakePropertyNullish<PropertyType::INSTANCE_FIELD>(classType, prop.second);
+    }
+
+    for (std::pair<util::StringView, varbinder::LocalVariable *> prop : classType->StaticFields()) {
+        MakePropertyNullish<PropertyType::STATIC_FIELD>(classType, prop.second);
+    }
+
+    if (classType->SuperType() != nullptr) {
+        auto *const superPartial = classType->SuperType()->Clone(this)->AsETSObjectType();
+        MakePropertiesNullish(superPartial);
+        classType->SetSuperType(superPartial);
+    }
+}
+
+Type *ETSChecker::HandlePartialType(const ir::TSTypeParameterInstantiation *const typeParams)
+{
+    if (typeParams->Params().size() != 1) {
+        ThrowTypeError("Invalid number of type parameters for Partial type", typeParams->Start());
+    }
+
+    auto *const typeParamNode = typeParams->Params()[0];
+    auto *typeToBePartial = typeParamNode->Check(this);
+
+    if (auto found = NamedTypeStack().find(typeToBePartial); found != NamedTypeStack().end()) {
+        return *found;
+    }
+
+    NamedTypeStackElement ntse(this, typeToBePartial);
+
+    auto makeNullishETSObjectType = [this](ETSObjectType *type) {
+        type->AsETSObjectType()->InstanceFields();  // call to instantiate properties
+        auto *clonedType = type->Clone(this)->AsETSObjectType();
+        MakePropertiesNullish(clonedType);
+        return clonedType;
+    };
+
+    if (typeToBePartial->IsETSTypeParameter()) {
+        typeToBePartial = GetApparentType(typeToBePartial);
+    }
+
+    if (typeToBePartial->IsETSUnionType()) {
+        ArenaVector<Type *> unionTypes(Allocator()->Adapter());
+        for (auto *type : typeToBePartial->AsETSUnionType()->ConstituentTypes()) {
+            unionTypes.emplace_back(type->IsETSObjectType() ? makeNullishETSObjectType(type->AsETSObjectType())
+                                                            : type->Clone(this));
+        }
+
+        return CreateETSUnionType(std::move(unionTypes));
+    }
+
+    ASSERT(typeToBePartial->IsETSObjectType());
+
+    return makeNullishETSObjectType(typeToBePartial->AsETSObjectType());
+}
+
 Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypeParameterInstantiation *const typeParams)
 {
     ASSERT(name->IsIdentifier() && name->AsIdentifier()->Variable() &&
@@ -1097,6 +1174,11 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
         }
 
         ThrowTypeError("Type alias declaration is not generic, but type parameters were provided", typeParams->Start());
+    }
+
+    if (name->AsIdentifier()->Name().Is(compiler::Signatures::PARTIAL_TYPE_NAME)) {
+        // Handle 'Partial<T>' types
+        return HandlePartialType(typeParams);
     }
 
     if (typeParams == nullptr) {

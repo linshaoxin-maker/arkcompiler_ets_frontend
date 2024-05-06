@@ -106,6 +106,8 @@ checker::Type *ETSTypeReferencePart::GetType(checker::ETSChecker *checker)
                 SetTsType(checker->GlobalETSUndefinedType());
             } else if (ident->Name() == compiler::Signatures::NULL_LITERAL) {
                 SetTsType(checker->GlobalETSNullType());
+            } else if (ident->Name() == compiler::Signatures::PARTIAL_TYPE_NAME) {
+                SetTsType(checker->HandlePartialType(typeParams_));
             }
         }
         if (TsType() == nullptr) {

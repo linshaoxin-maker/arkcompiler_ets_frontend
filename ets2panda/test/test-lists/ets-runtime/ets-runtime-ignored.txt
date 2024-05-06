@@ -58,3 +58,8 @@ local-class-standard-example2.ets
 # verifier false positive for 64 bit instructions on union types.
 # Issue: #16216
 union_wide_property_access.ets
+
+# verifier fails on undefined assignment with Partial<T> type
+# ignore the test, to make it possible to use partial types
+# when the verifier won't fail on it, remove this test from skiplist
+partialTypeRuntime.ets
