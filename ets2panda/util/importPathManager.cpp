@@ -126,6 +126,8 @@ void ImportPathManager::UnixWalkThroughDirectoryAndAddToParseList(const StringVi
 void ImportPathManager::AddToParseList(const StringView &resolvedPath, bool isDefaultImport)
 {
     if (ark::os::file::File::IsDirectory(resolvedPath.Mutf8())) {
+        InsertModuleInfo(resolvedPath, util::ImportPathManager::ModuleInfo {StringView(), false});
+
 #ifdef USE_UNIX_SYSCALL
         UnixWalkThroughDirectoryAndAddToParseList(resolvedPath, isDefaultImport);
 #else
@@ -145,6 +147,8 @@ void ImportPathManager::AddToParseList(const StringView &resolvedPath, bool isDe
             return;
         }
     }
+
+    InsertModuleInfo(resolvedPath, util::ImportPathManager::ModuleInfo {StringView(), false});
 
     auto &dynamicPaths = arktsConfig_->DynamicPaths();
     if (auto it = dynamicPaths.find(resolvedPath.Mutf8()); it != dynamicPaths.cend()) {
@@ -202,6 +206,23 @@ void ImportPathManager::InsertModuleInfo(const util::StringView &path,
                                          const util::ImportPathManager::ModuleInfo &moduleInfo)
 {
     moduleList_.insert({path, moduleInfo});
+}
+
+void ImportPathManager::UpdateModuleInfo(const util::StringView &path,
+                                         const util::ImportPathManager::ModuleInfo &moduleInfo)
+{
+    auto it = moduleList_.find(path);
+    ASSERT(it != moduleList_.end());
+
+    it->second = moduleInfo;
+    if (moduleInfo.isPackageModule) {
+        auto pdir = moduleList_.find(UString(ark::os::GetParentDir(path.Mutf8()), allocator_).View());
+        if (pdir != moduleList_.end()) {
+            pdir->second = moduleInfo;
+        } else {
+            InsertModuleInfo(UString(ark::os::GetParentDir(path.Mutf8()), allocator_).View(), moduleInfo);
+        }
+    }
 }
 
 const ArenaMap<StringView, ImportPathManager::ModuleInfo> &ImportPathManager::ModuleList() const

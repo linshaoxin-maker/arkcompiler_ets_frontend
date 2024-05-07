@@ -151,6 +151,10 @@ void ETSParser::ParseProgram(ScriptKind kind)
         // NOTE(user): handle multiple sourceFiles
     }
 
+    importPathManager_->InsertModuleInfo(
+        GetProgram()->AbsoluteName(),
+        util::ImportPathManager::ModuleInfo {(IsETSModule()) ? GetProgram()->FileName() : util::StringView(), false});
+
     ArenaVector<ir::Statement *> statements(Allocator()->Adapter());
     auto decl = ParsePackageDeclaration();
     if (decl != nullptr) {
@@ -2357,16 +2361,14 @@ ir::Statement *ETSParser::ParseFunctionStatement([[maybe_unused]] const Statemen
 ir::ETSPackageDeclaration *ETSParser::ParsePackageDeclaration()
 {
     auto startLoc = Lexer()->GetToken().Start();
-
     if (Lexer()->GetToken().Type() != lexer::TokenType::KEYW_PACKAGE) {
         if (!IsETSModule() && GetProgram()->IsEntryPoint()) {
-            // NOTE(rsipka): consider adding a filename name as module name to entry points as well
-            importPathManager_->InsertModuleInfo(GetProgram()->AbsoluteName(),
-                                                 util::ImportPathManager::ModuleInfo {util::StringView(""), false});
             return nullptr;
         }
-        importPathManager_->InsertModuleInfo(GetProgram()->AbsoluteName(),
+
+        importPathManager_->UpdateModuleInfo(GetProgram()->AbsoluteName(),
                                              util::ImportPathManager::ModuleInfo {GetProgram()->FileName(), false});
+
         GetProgram()->SetPackageName(GetProgram()->FileName());
         return nullptr;
     }
@@ -2385,9 +2387,7 @@ ir::ETSPackageDeclaration *ETSParser::ParsePackageDeclaration()
 
     GetProgram()->SetPackageName(packageName);
     // NOTE(rsipka): handle these two cases, check that is it really required
-    importPathManager_->InsertModuleInfo(GetProgram()->AbsoluteName(),
-                                         util::ImportPathManager::ModuleInfo {packageName, true});
-    importPathManager_->InsertModuleInfo(GetProgram()->ResolvedFilePath(),
+    importPathManager_->UpdateModuleInfo(GetProgram()->AbsoluteName(),
                                          util::ImportPathManager::ModuleInfo {packageName, true});
 
     return packageDeclaration;
