@@ -93,6 +93,30 @@ bool CompileFileJob::RetrieveProgramFromCacheFiles(const std::string &buffer)
     return false;
 }
 
+bool CompileFileJob::UpdateModuleRecordImport(pandasm::Program &program, const panda::es2panda::CompileContextInfo compileContextInfo) 
+{
+    const std::string MODULE_RECORD_IDX = "moduleRecordIdx";
+    auto &recordTable = program.record_table;
+    std::vector<std::string> literal_array_keys;
+    for (auto &pair : recordTable) {
+        for (auto &field : pair.second.field_list) {
+            if (field.name == MODULE_RECORD_IDX) {
+                literal_array_keys.emplace(literal_array_keys.begin(), field.metadata->GetValue().value().GetValue<std::string>());
+            }
+        }
+    }
+    for (std::string literal_array_key : literal_array_keys) {
+        auto &array = program.literalarray_table[literal_array_key];
+        uint32_t importSize = std::get<uint32_t>(array.literals_[0].value_);
+        for (size_t idx = 1; idx < importSize + 1; ++idx ) {
+            std::string &importString = std::get<std::string>(array.literals_[idx].value_);
+            const std::string &newOhmurl = util::Helpers::UpdatePackageVersionIfNeeded(importString, compileContextInfo);
+            importString = newOhmurl;
+        }
+    }
+    return true;
+}
+
 void CompileFileJob::Run()
 {
     std::stringstream ss;
@@ -113,7 +137,9 @@ void CompileFileJob::Run()
     if (prog == nullptr) {
         return;
     }
-
+    if (!src_->isSourceMode) {
+        UpdateModuleRecordImport(*prog, options_->compileContextInfo);
+    }
     bool requireOptimizationAfterAnalysis = false;
     // When cross-program optimizations are required, skip program-local optimization at this stage
     // and perform it later after the analysis of all programs has been completed
