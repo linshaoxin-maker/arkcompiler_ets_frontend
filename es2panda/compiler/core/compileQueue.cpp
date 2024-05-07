@@ -129,6 +129,7 @@ void CompileFileJob::Run()
     {
         std::unique_lock<std::mutex> lock(global_m_);
         auto *cache = allocator_->New<util::ProgramCache>(src_->hash, std::move(*prog), src_->isSourceMode);
+        cache->generateFromAbc = !src_->isSourceMode;
         progsInfo_.insert({src_->fileName, cache});
         if (requireOptimizationAfterAnalysis) {
             optimizationPendingProgs_.insert(src_->fileName);

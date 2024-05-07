@@ -76,9 +76,10 @@ class EmitFileQueue : public util::WorkerQueue {
 public:
     explicit EmitFileQueue(const std::unique_ptr<panda::es2panda::aot::Options> &options,
                            std::map<std::string, size_t> *statp,
-                           const std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo)
+                           std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
+                           util::DepsRelationInfo *depsRelationInfo)
         : WorkerQueue(options->CompilerOptions().fileThreadCount), options_(options), statp_(statp),
-        progsInfo_(progsInfo) {
+          progsInfo_(progsInfo), depsRelationInfo_(depsRelationInfo) {
             mergeAbc_ = options_->CompilerOptions().mergeAbc;
         }
 
@@ -92,7 +93,8 @@ private:
     void ScheduleEmitCacheJobs(EmitMergedAbcJob *emitMergedAbcJob);
     const std::unique_ptr<panda::es2panda::aot::Options> &options_;
     std::map<std::string, size_t> *statp_;
-    const std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo_;
+    std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo_;
+    util::DepsRelationInfo *depsRelationInfo_ = nullptr;
     bool mergeAbc_ { false };
 };
 }  // namespace panda::es2panda::aot
