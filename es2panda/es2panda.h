@@ -23,6 +23,7 @@
 #include <util/symbolTable.h>
 #include <abc2program/abc2program_compiler.h>
 
+#include <any>
 #include <string>
 #include <unordered_map>
 
@@ -75,6 +76,18 @@ struct PatchFixOptions {
     bool coldFix {false};
 };
 
+
+struct PkgInfo {
+    std::string version;
+};
+
+struct CompileContextInfo {
+    std::vector<std::string> compileEntries;
+    std::string projectRootPath {};
+    std::vector<std::string> hspPkgNames;
+    std::unordered_map<std::string, PkgInfo> pkgContextInfo;
+};
+
 struct CompilerOptions {
     bool enableAbcInput {false};
     bool dumpAsmProgram {false};
@@ -103,6 +116,8 @@ struct CompilerOptions {
     bool bcVersion {false};
     bool bcMinVersion {false};
     int targetApiVersion {0};
+    std::string compileContextInfoPath {};
+    CompileContextInfo compileContextInfo {};
     std::unordered_map<std::string, std::string> cacheFiles;
     std::string transformLib {};
     bool branchElimination {false};
@@ -217,6 +232,8 @@ private:
     void CheckUnsupportOptionsForAbcInput(const std::string &fname, const CompilerOptions &options);
     void ChecktargetApiVersionIsSupportedForAbcInput(const CompilerOptions &options);
     panda::pandasm::Program *AbcToAsmProgram(const std::string &fname, const CompilerOptions &options);
+    void UpdatePackageVersion(panda::pandasm::Program *prog, const CompilerOptions &options);
+    void UpdateDynamicImportPackageVersion(panda::pandasm::Program *prog, const CompilerOptions &options);
 
     parser::ParserImpl *parser_;
     compiler::CompilerImpl *compiler_;
