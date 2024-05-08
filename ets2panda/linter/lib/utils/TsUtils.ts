@@ -49,7 +49,7 @@ export class TsUtils {
     private readonly tsTypeChecker: ts.TypeChecker,
     private readonly testMode: boolean,
     private readonly advancedClassChecks: boolean,
-    private readonly useSdkLogic: boolean
+    private readonly useRtLogic: boolean
   ) {}
 
   entityNameToString(name: ts.EntityName): string {
@@ -60,7 +60,7 @@ export class TsUtils {
   }
 
   isNumberLikeType(tsType: ts.Type): boolean {
-    if (!this.useSdkLogic && tsType.isUnion()) {
+    if (this.useRtLogic && tsType.isUnion()) {
       for (const tsCompType of tsType.types) {
         if ((tsCompType.flags & ts.TypeFlags.NumberLike) === 0) {
           return false;
@@ -279,7 +279,7 @@ export class TsUtils {
     }
 
     // Avoid type recursion in heritage by caching checked types.
-    (checkedBaseTypes ||= new Set<ts.Type>()).add(tsType);
+    (checkedBaseTypes = checkedBaseTypes || new Set<ts.Type>()).add(tsType);
 
     for (const tsTypeDecl of tsType.symbol.declarations) {
       const isClassOrInterfaceDecl = ts.isClassDeclaration(tsTypeDecl) || ts.isInterfaceDeclaration(tsTypeDecl);
@@ -778,7 +778,7 @@ export class TsUtils {
   }
 
   getNonNullableType(t: ts.Type): ts.Type {
-    const isNullableUnionType = this.useSdkLogic ? t.isUnion() : TsUtils.isNullableUnionType(t);
+    const isNullableUnionType = this.useRtLogic ? TsUtils.isNullableUnionType(t) : t.isUnion();
     if (isNullableUnionType) {
       return t.getNonNullableType();
     }
@@ -846,9 +846,9 @@ export class TsUtils {
     if (isStdLibraryType(lhsType) || TsUtils.isPrimitiveType(lhsType)) {
       const rhsSym = ts.isCallExpression(rhsExpr) ?
         this.getSymbolOfCallExpression(rhsExpr) :
-        this.useSdkLogic ?
-          this.tsTypeChecker.getSymbolAtLocation(rhsExpr) :
-          this.trueSymbolAtLocation(rhsExpr);
+        this.useRtLogic ?
+          this.trueSymbolAtLocation(rhsExpr) :
+          this.tsTypeChecker.getSymbolAtLocation(rhsExpr);
       if (rhsSym && this.isLibrarySymbol(rhsSym)) {
         return true;
       }
@@ -1005,7 +1005,7 @@ export class TsUtils {
 
   isSymbolAPI(symbol: ts.Symbol): boolean {
     const parentName = this.getParentSymbolName(symbol);
-    if (this.useSdkLogic) {
+    if (!this.useRtLogic) {
       const name = parentName ? parentName : symbol.escapedName;
       return name === SYMBOL || name === SYMBOL_CONSTRUCTOR;
     }
@@ -1013,7 +1013,7 @@ export class TsUtils {
   }
 
   isSymbolIterator(symbol: ts.Symbol): boolean {
-    if (this.useSdkLogic) {
+    if (!this.useRtLogic) {
       const name = symbol.name;
       const parName = this.getParentSymbolName(symbol);
       return (parName === SYMBOL || parName === SYMBOL_CONSTRUCTOR) && name === ITERATOR;
@@ -1640,9 +1640,9 @@ export class TsUtils {
       return false;
     }
 
-    const isEts = this.useSdkLogic ?
-      getScriptKind(sourceFile) === ts.ScriptKind.ETS :
-      !!isEtsFileCb && isEtsFileCb(sourceFile);
+    const isEts = this.useRtLogic ?
+      !!isEtsFileCb && isEtsFileCb(sourceFile) :
+      getScriptKind(sourceFile) === ts.ScriptKind.ETS;
     return (
       isEts &&
       sourceFile.isDeclarationFile &&
@@ -1656,7 +1656,7 @@ export class TsUtils {
     const modifiers = ts.getModifiers(decl);
     return (
       !!modifiers &&
-      (this.useSdkLogic && TsUtils.hasModifier(modifiers, ts.SyntaxKind.ReadonlyKeyword) ||
+      (!this.useRtLogic && TsUtils.hasModifier(modifiers, ts.SyntaxKind.ReadonlyKeyword) ||
         TsUtils.hasModifier(modifiers, ts.SyntaxKind.PublicKeyword) ||
         TsUtils.hasModifier(modifiers, ts.SyntaxKind.ProtectedKeyword) ||
         TsUtils.hasModifier(modifiers, ts.SyntaxKind.PrivateKeyword))
@@ -2089,7 +2089,7 @@ export class TsUtils {
   }
 
   private isFromPrivateIdentifierOrSdk(isFromPrivateIdentifier: boolean): boolean {
-    return !this.useSdkLogic || isFromPrivateIdentifier;
+    return this.useRtLogic || isFromPrivateIdentifier;
   }
 
   private static isIdentifierOrPrivateIdentifier(node?: ts.PropertyName): node is ts.Identifier | ts.PrivateIdentifier {

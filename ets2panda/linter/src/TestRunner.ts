@@ -27,6 +27,7 @@ import * as ts from 'typescript';
 import type { CommandLineOptions } from '../lib/CommandLineOptions';
 import { compileLintOptions } from './Compiler';
 
+let enableUseRtLogic = true;
 const TEST_DIR = 'test';
 const TAB = '    ';
 
@@ -37,6 +38,7 @@ interface TestNodeInfo {
   autofix?: Autofix[];
   suggest?: string;
   rule?: string;
+  exclusive?: string;
 }
 
 enum Mode {
@@ -51,7 +53,7 @@ const AUTOFIX_SKIP_EXT = '.autofix.skip';
 const ARGS_CONFIG_EXT = '.args.json';
 const DIFF_EXT = '.diff';
 
-function runTests(testDirs: string[]): number {
+function runTests(): number {
 
   /*
    * Set the IDE mode manually to enable storing information
@@ -63,10 +65,8 @@ function runTests(testDirs: string[]): number {
   let hasComparisonFailures = false;
   let passed = 0;
   let failed = 0;
+  const testDirs = getParam();
   // Get tests from test directory
-  if (!testDirs?.length) {
-    testDirs = [TEST_DIR];
-  }
   for (const testDir of testDirs) {
     const testFiles: string[] = fs.readdirSync(testDir).filter((x) => {
       return (
@@ -97,6 +97,24 @@ function runTests(testDirs: string[]): number {
   process.exit(hasComparisonFailures ? -1 : 0);
 }
 
+function getParam(): string[] {
+  let pathArg = null;
+  for (const key of process.argv) {
+    if (key.includes('-P:')) {
+      pathArg = key.replace('-P:', '').split(',');
+    }
+
+    if (key.includes('-SDK')) {
+      enableUseRtLogic = false;
+    }
+  }
+
+  if (!pathArg?.length) {
+    pathArg = [TEST_DIR];
+  }
+  return pathArg;
+}
+
 function parseArgs(testDir: string, testFile: string, mode: Mode): CommandLineOptions {
   // Configure test parameters and run linter.
   const args: string[] = [path.join(testDir, testFile)];
@@ -114,6 +132,10 @@ function parseArgs(testDir: string, testFile: string, mode: Mode): CommandLineOp
     args.push('--autofix');
   }
 
+  if (enableUseRtLogic) {
+    args.push('--enableUseRtLogic');
+  }
+
   return parseCommandLine(args);
 }
 
@@ -126,6 +148,16 @@ function compareExpectedAndActual(testDir: string, testFile: string, mode: Mode,
   try {
     const expectedResultFile = fs.readFileSync(path.join(testDir, testResultFileName)).toString();
     expectedResult = JSON.parse(expectedResultFile);
+
+    /**
+     * The exclusive field is added to identify whether the use case is exclusive to the RT or SDK
+     * RT means the RT exclusive
+     * SDK means the SDK exclusive
+     * undefined means shared
+     */
+    expectedResult.nodes = expectedResult?.nodes.filter((x) => {
+      return !x?.exclusive || x.exclusive === (enableUseRtLogic ? 'RT' : 'SDK');
+    });
 
     if (!expectedResult?.nodes || expectedResult.nodes.length !== resultNodes.length) {
       const expectedResultCount = expectedResult?.nodes ? expectedResult.nodes.length : 0;
@@ -234,7 +266,7 @@ function writeActualResultFile(
   resultNodes: TestNodeInfo[],
   diff: string
 ): void {
-  const actualResultsDir = path.join(testDir, 'results');
+  const actualResultsDir = path.join(testDir, enableUseRtLogic ? 'results_rt' : 'results_sdk');
   const resultExt = RESULT_EXT[mode];
   if (!fs.existsSync(actualResultsDir)) {
     fs.mkdirSync(actualResultsDir);
@@ -261,4 +293,4 @@ ${actualNode}`;
   return diff;
 }
 
-runTests(process.argv.slice(2));
+runTests();

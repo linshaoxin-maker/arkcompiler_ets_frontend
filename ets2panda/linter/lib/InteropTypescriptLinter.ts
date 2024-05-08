@@ -80,7 +80,6 @@ export class InteropTypescriptLinter {
   static kitInfos = new Map<string, KitInfo>();
   private static etsLoaderPath: string;
   private static sdkPath: string;
-  static useSdkLogic = false;
   static advancedClassChecks = false;
 
   private initCounters(): void {
@@ -93,13 +92,14 @@ export class InteropTypescriptLinter {
   constructor(
     private readonly tsTypeChecker: ts.TypeChecker,
     private readonly compileOptions: ts.CompilerOptions,
-    private readonly incrementalLintInfo?: IncrementalLintInfo
+    private readonly incrementalLintInfo?: IncrementalLintInfo,
+    private readonly useRtLogic?: boolean
   ) {
     this.tsUtils = new TsUtils(
       this.tsTypeChecker,
       InteropTypescriptLinter.testMode,
       InteropTypescriptLinter.advancedClassChecks,
-      InteropTypescriptLinter.useSdkLogic
+      !!this.useRtLogic
     );
     this.currentErrorLine = 0;
     this.currentWarningLine = 0;

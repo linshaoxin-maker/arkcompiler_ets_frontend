@@ -278,14 +278,16 @@
             "column": 3,
             "problem": "DeclWithDuplicateName",
             "suggest": "",
-            "rule": "Use unique names for types and namespaces. (arkts-unique-names)"
+            "rule": "Use unique names for types and namespaces. (arkts-unique-names)",
+            "exclusive": "RT"
         },
         {
             "line": 59,
             "column": 3,
             "problem": "DeclWithDuplicateName",
             "suggest": "",
-            "rule": "Use unique names for types and namespaces. (arkts-unique-names)"
+            "rule": "Use unique names for types and namespaces. (arkts-unique-names)",
+            "exclusive": "RT"
         },
         {
             "line": 56,
@@ -348,7 +350,8 @@
             "column": 3,
             "problem": "DeclWithDuplicateName",
             "suggest": "",
-            "rule": "Use unique names for types and namespaces. (arkts-unique-names)"
+            "rule": "Use unique names for types and namespaces. (arkts-unique-names)",
+            "exclusive": "RT"
         },
         {
             "line": 71,

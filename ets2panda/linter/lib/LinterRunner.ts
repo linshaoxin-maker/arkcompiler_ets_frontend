@@ -103,6 +103,7 @@ export function lint(options: LintOptions): LintRunResult {
     new TypeScriptLinter(
       tsProgram.getTypeChecker(),
       cmdOptions.enableAutofix,
+      !!cmdOptions.enableUseRtLogic,
       cancellationToken,
       options.incrementalLintInfo,
       tscStrictDiagnostics,
@@ -112,10 +113,10 @@ export function lint(options: LintOptions): LintRunResult {
     new InteropTypescriptLinter(
       tsProgram.getTypeChecker(),
       tsProgram.getCompilerOptions(),
-      options.incrementalLintInfo
+      options.incrementalLintInfo,
+      !!cmdOptions.enableUseRtLogic
     );
   const { errorNodes, problemsInfos } = lintFiles(srcFiles, linter);
-
   consoleLog('\n\n\nFiles scanned: ', srcFiles.length);
   consoleLog('\nFiles with problems: ', errorNodes);
 
@@ -123,7 +124,6 @@ export function lint(options: LintOptions): LintRunResult {
 
   logTotalProblemsInfo(errorNodesTotal, warningNodes, linter);
   logProblemsPercentageByFeatures(linter);
-
   return {
     errorNodes: errorNodesTotal,
     problemsInfos: mergeArrayMaps(problemsInfos, transformTscDiagnostics(tscStrictDiagnostics))
