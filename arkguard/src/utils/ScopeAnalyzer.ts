@@ -202,6 +202,13 @@ namespace secharmony {
   }
 
   export function createScope(name: string, node: Node, type: ScopeKind, lexicalScope: boolean = false, upper ?: Scope): Scope {
+    let current: Scope = initializeScope(name, node, type, upper);
+
+    current.parent?.addChild(current);
+    return current;
+  }
+
+  function initializeScope(name: string, node: Node, type: ScopeKind, upper ?: Scope): Scope {
     // scope name
     let scopeName: string = name;
     // kind of a scope, such as global ,function like, block ..
@@ -251,43 +258,40 @@ namespace secharmony {
       getLabelLocation,
     };
 
-    current.parent?.addChild(current);
     return current;
+  }
 
-    function addChild(child: Scope): void {
-      current.children.push(child);
+  function addChild(child: Scope): void {
+    this.children.push(child);
+  }
+
+  function addDefinition(def: Symbol, obfuscateAsProperty: boolean = false): void {
+    if (this.kind === ScopeKind.GLOBAL || obfuscateAsProperty) {
+      Reflect.set(def, 'obfuscateAsProperty', true);
+    }
+    this.defs.add(def);
+  }
+
+  function addLabel(label: Label): void {
+    this.labels.push(label);
+  }
+
+  function getSymbolLocation(sym: Symbol): string {
+    if (!this.defs.has(sym)) {
+      return '';
     }
 
-    function addDefinition(def: Symbol, obfuscateAsProperty: boolean = false): void {
-      if (current.kind === ScopeKind.GLOBAL || obfuscateAsProperty) {
-        Reflect.set(def, 'obfuscateAsProperty', true);
-      }
-      current.defs.add(def);
+    return this.loc ? sym.name : this.loc + '#' + sym.name;
+  }
+
+  function getLabelLocation(label: Label): string {
+    if (!this.labels.includes(label)) {
+      return '';
     }
 
-    function addLabel(label: Label): void {
-      current.labels.push(label);
-    }
+    let index: number = this.labels.findIndex((lb: Label) => lb === label);
 
-    function getSymbolLocation(sym: Symbol): string {
-      if (!defs.has(sym)) {
-        return '';
-      }
-
-      return current.loc ? sym.name : current.loc + '#' + sym.name;
-    }
-
-    function getLabelLocation(label: Label): string {
-      if (!current.labels.includes(label)) {
-        return '';
-      }
-
-      let index: number = current.labels.findIndex((lb: Label) => {
-        return lb === label;
-      });
-
-      return current.loc ? label.name : current.loc + '#' + index + label.name;
-    }
+    return this.loc ? label.name : this.loc + '#' + index + label.name;
   }
 
   export interface Label {
