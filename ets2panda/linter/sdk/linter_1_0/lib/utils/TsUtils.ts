@@ -98,6 +98,10 @@ export class TsUtils {
     return tsType.symbol && (tsType.symbol.flags & ts.SymbolFlags.Enum) !== 0;
   }
 
+  static isEnumMemberType(tsType: ts.Type): boolean {
+    return tsType.symbol && (tsType.symbol.flags & ts.SymbolFlags.EnumMember) !== 0;
+  }
+
   static hasModifier(tsModifiers: readonly ts.Modifier[] | undefined, tsModifierKind: number): boolean {
     if (!tsModifiers) {
       return false;
@@ -325,6 +329,14 @@ export class TsUtils {
       }
     }
     return false;
+  }
+
+  static isThisOrSuperExpr(tsExpr: ts.Expression): boolean {
+    return tsExpr.kind == ts.SyntaxKind.ThisKeyword || tsExpr.kind == ts.SyntaxKind.SuperKeyword;
+  }
+
+  static isObjectLiteralType(type: ts.Type): boolean {
+    return type.symbol && (type.symbol.flags & ts.SymbolFlags.ObjectLiteral) !== 0
   }
 
   static isMethodAssignment(tsSymbol: ts.Symbol | undefined): boolean {
@@ -755,30 +767,92 @@ export class TsUtils {
     return t;
   }
 
-  private isObjectLiteralAssignableToUnion(lhsType: ts.UnionType, rhsExpr: ts.ObjectLiteralExpression): boolean {
-    for (const compType of lhsType.types) {
-      if (this.isObjectLiteralAssignable(compType, rhsExpr)) {
-        return true;
+  private areTypesAssignable(lhsType: ts.Type, rhsType: ts.Type): boolean {
+    if (rhsType.isUnion()) {
+      let res = true;
+      for (const compType of rhsType.types) {
+        res = res && this.areTypesAssignable(lhsType, compType);
+      }
+      return res;
+    }
+
+    if (lhsType.isUnion()) {
+      for (const compType of lhsType.types) {
+        if (this.areTypesAssignable(compType, rhsType)) {
+          return true;
+        }
       }
     }
-    return false;
+
+    const isRhsUndefined: boolean = !!(rhsType.flags & ts.TypeFlags.Undefined);
+    const isRhsNull: boolean = !!(rhsType.flags & ts.TypeFlags.Null);
+    if (isRhsUndefined || isRhsNull) {
+      return true;
+    }
+
+    if (TsUtils.isAnyType(lhsType) || this.isLibraryType(lhsType)) {
+      return true;
+    }
+
+    lhsType = this.tsTypeChecker.getBaseTypeOfLiteralType(lhsType);
+    rhsType = this.tsTypeChecker.getBaseTypeOfLiteralType(rhsType);
+    if (this.isEnumAssignment(lhsType, rhsType)) {
+      return true;
+    }
+
+    if (this.areCompatibleFunctionals(lhsType, rhsType)) {
+      return true;
+    }
+    return lhsType === rhsType || this.relatedByInheritanceOrIdentical(rhsType, this.getTargetType(lhsType));
   }
 
-  isObjectLiteralAssignable(lhsType: ts.Type | undefined, rhsExpr: ts.ObjectLiteralExpression): boolean {
+  private getTargetType(type: ts.Type): ts.Type {
+    return (type.getFlags() & ts.TypeFlags.Object) && 
+            (type as ts.ObjectType).objectFlags & ts.ObjectFlags.Reference ? (type as ts.TypeReference).target : type;
+  }
+
+  private isEnumAssignment(lhsType: ts.Type, rhsType: ts.Type) {
+    const isNumberEnum = TsUtils.isPrimitiveEnumType(rhsType, ts.TypeFlags.NumberLiteral) || 
+                          TsUtils.isPrimititveEnumMemberType(rhsType, ts.TypeFlags.NumberLiteral);
+    const isStringEnum = TsUtils.isPrimitiveEnumType(rhsType, ts.TypeFlags.StringLiteral) || 
+                          TsUtils.isPrimititveEnumMemberType(rhsType, ts.TypeFlags.StringLiteral);
+    return (TsUtils.isNumberType(lhsType) && isNumberEnum) || (this.isStringType(lhsType) && isStringEnum);
+  }
+
+  static isPrimitiveEnumType(type: ts.Type, primitiveType: ts.TypeFlags): boolean {
+    const isNonPrimitive = (type.flags & ts.TypeFlags.NonPrimitive) !== 0;
+    if (!TsUtils.isEnumType(type) || !type.isUnion() || isNonPrimitive) {
+      return false;
+    }
+
+    for (const t of type.types) {
+      if ((t.flags & primitiveType) === 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static isPrimititveEnumMemberType(type: ts.Type, primitiveType: ts.TypeFlags): boolean {
+    const isNonPrimitive = (type.flags & ts.TypeFlags.NonPrimitive) !== 0;
+    if (!TsUtils.isEnumMemberType(type) || isNonPrimitive) {
+      return false;
+    }
+    return (type.flags & primitiveType) !== 0;
+  }
+
+  isExpressionAssignabletoType(lhsType: ts.Type | undefined, rhsExpr: ts.Expression): boolean {
     if (lhsType === undefined) {
       return false;
     }
     // Always check with the non-nullable variant of lhs type.
-    lhsType = TsUtils.getNonNullableType(lhsType);
-    if (lhsType.isUnion() && this.isObjectLiteralAssignableToUnion(lhsType, rhsExpr)) {
-      return true;
-    }
+    let nonNullableLhs = TsUtils.getNonNullableType(lhsType);
 
     /*
      * Allow initializing with anything when the type
      * originates from the library.
      */
-    if (TsUtils.isAnyType(lhsType) || this.isLibraryType(lhsType)) {
+    if (TsUtils.isAnyType(nonNullableLhs) || this.isLibraryType(nonNullableLhs)) {
       return true;
     }
 
@@ -787,16 +861,8 @@ export class TsUtils {
      * Allow initializing with a dynamic object when the LHS type
      * is primitive or defined in standard library.
      */
-    if (this.isDynamicObjectAssignedToStdType(lhsType, rhsExpr)) {
+    if (this.isDynamicObjectAssignedToStdType(nonNullableLhs, rhsExpr)) {
       return true;
-    }
-    // For Partial<T>, Required<T>, Readonly<T> types, validate their argument type.
-    if (this.isStdPartialType(lhsType) || this.isStdRequiredType(lhsType) || this.isStdReadonlyType(lhsType)) {
-      if (lhsType.aliasTypeArguments && lhsType.aliasTypeArguments.length === 1) {
-        lhsType = lhsType.aliasTypeArguments[0];
-      } else {
-        return false;
-      }
     }
 
     /*
@@ -804,12 +870,48 @@ export class TsUtils {
      * Record supports any type for a its value, but the key value
      * must be either a string or number literal.
      */
-    if (this.isStdRecordType(lhsType)) {
+    if (this.isStdRecordType(nonNullableLhs) && ts.isObjectLiteralExpression(rhsExpr)) {
       return TsUtils.validateRecordObjectKeys(rhsExpr);
     }
-    return (
-      TsUtils.validateObjectLiteralType(lhsType) && !this.hasMethods(lhsType) && this.validateFields(lhsType, rhsExpr)
-    );
+
+    // For Partial<T>, Required<T>, Readonly<T> types, validate their argument type.
+    if (this.isStdPartialType(nonNullableLhs) || this.isStdRequiredType(nonNullableLhs) || this.isStdReadonlyType(nonNullableLhs)) {
+      if (nonNullableLhs.aliasTypeArguments && nonNullableLhs.aliasTypeArguments.length === 1) {
+        nonNullableLhs = nonNullableLhs.aliasTypeArguments[0];
+      } else {
+        return false;
+      }
+    }
+
+    let rhsType = TsUtils.getNonNullableType(this.tsTypeChecker.getTypeAtLocation(rhsExpr));
+    if (rhsType.isUnion()) {
+      let res = true;
+      for (const commpType of rhsType.types) {
+        res = res && this.areTypesAssignable(lhsType, commpType);
+      }
+      return res;
+    }
+
+    if (lhsType.isUnion()) {
+      for (const commpType of lhsType.types) {
+        if (this.isExpressionAssignabletoType(commpType, rhsExpr)) {
+          return true;
+        }
+      }
+    }
+
+    if (ts.isObjectLiteralExpression(rhsExpr)) {
+      return this.isObjectLiteralAssignable(nonNullableLhs, rhsExpr);
+    }
+    return this.areTypesAssignable(lhsType, rhsType);
+  }
+
+  private isObjectLiteralAssignable(lhsType: ts.Type, rhsExpr: ts.Expression): boolean {
+    if (ts.isObjectLiteralExpression(rhsExpr)) {
+      return TsUtils.validateObjectLiteralType(lhsType) && !this.hasMethods(lhsType) && 
+              this.validateFields(lhsType, rhsExpr);
+    }
+    return false;
   }
 
   private isDynamicObjectAssignedToStdType(lhsType: ts.Type, rhsExpr: ts.Expression): boolean {
@@ -839,24 +941,12 @@ export class TsUtils {
   private validateField(type: ts.Type, prop: ts.PropertyAssignment): boolean {
     const propName = prop.name.getText();
     const propSym = this.findProperty(type, propName);
-    if (!propSym?.declarations?.length) {
+    if (!propSym || !propSym?.declarations?.length) {
       return false;
     }
 
     const propType = this.tsTypeChecker.getTypeOfSymbolAtLocation(propSym, propSym.declarations[0]);
-    const initExpr = TsUtils.unwrapParenthesized(prop.initializer);
-    if (ts.isObjectLiteralExpression(initExpr)) {
-      if (!this.isObjectLiteralAssignable(propType, initExpr)) {
-        return false;
-      }
-    } else if (
-      this.needToDeduceStructuralIdentity(propType, this.tsTypeChecker.getTypeAtLocation(initExpr), initExpr)
-    ) {
-      // Only check for structural sub-typing.
-      return false;
-    }
-
-    return true;
+    return this.isExpressionAssignabletoType(propType, prop.initializer);
   }
 
   static validateRecordObjectKeys(objectLiteral: ts.ObjectLiteralExpression): boolean {
@@ -1169,7 +1259,7 @@ export class TsUtils {
     let curNode: ts.Node = expr;
     while (ts.isObjectLiteralExpression(curNode) || ts.isArrayLiteralExpression(curNode)) {
       const exprType = this.tsTypeChecker.getContextualType(curNode);
-      if (exprType !== undefined && !TsUtils.isAnonymous(exprType)) {
+      if (exprType !== undefined) {
         const res = this.isDynamicType(exprType);
         if (res !== undefined) {
           return res;

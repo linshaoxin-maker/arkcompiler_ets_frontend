@@ -476,7 +476,7 @@ export class TypeScriptLinter {
     if (
       !this.tsUtils.isStructObjectInitializer(objectLiteralExpr) &&
       !this.tsUtils.isDynamicLiteralInitializer(objectLiteralExpr) &&
-      !this.tsUtils.isObjectLiteralAssignable(objectLiteralType, objectLiteralExpr)
+      !this.tsUtils.isExpressionAssignabletoType(objectLiteralType, objectLiteralExpr)
     ) {
       this.incrementCounters(node, FaultID.ObjectLiteralNoContextType);
     }
@@ -504,7 +504,7 @@ export class TypeScriptLinter {
         const objectLiteralType = this.tsTypeChecker.getContextualType(element);
         if (
           !this.tsUtils.isDynamicLiteralInitializer(arrayLitNode) &&
-          !this.tsUtils.isObjectLiteralAssignable(objectLiteralType, element)
+          !this.tsUtils.isExpressionAssignabletoType(objectLiteralType, element)
         ) {
           noContextTypeForArrayLiteral = true;
           break;
@@ -828,6 +828,7 @@ export class TypeScriptLinter {
     const isGeneric = funcExpr.typeParameters !== undefined && funcExpr.typeParameters.length > 0;
     const isGenerator = funcExpr.asteriskToken !== undefined;
     const hasThisKeyword = scopeContainsThis(funcExpr.body);
+    const hasValidContext = hasPredecessor(funcExpr, TypeScriptLinter.isClassLikeOrIface);
     const isCalledRecursively = this.tsUtils.isFunctionCalledRecursively(funcExpr);
     const [hasUnfixableReturnType, newRetTypeNode] = this.handleMissingReturnType(funcExpr);
     const autofixable =
@@ -845,8 +846,8 @@ export class TypeScriptLinter {
     if (isGenerator) {
       this.incrementCounters(funcExpr, FaultID.GeneratorFunction);
     }
-    if (!hasPredecessor(funcExpr, TypeScriptLinter.isClassLikeOrIface)) {
-      this.reportThisKeywordsInScope(funcExpr.body);
+    if (hasThisKeyword && !hasValidContext) {
+      this.incrementCounters(funcExpr, FaultID.FunctionContainsThis);
     }
     if (hasUnfixableReturnType) {
       this.incrementCounters(funcExpr, FaultID.LimitedReturnTypeInference);
@@ -855,8 +856,10 @@ export class TypeScriptLinter {
 
   private handleArrowFunction(node: ts.Node): void {
     const arrowFunc = node as ts.ArrowFunction;
-    if (!hasPredecessor(arrowFunc, TypeScriptLinter.isClassLikeOrIface)) {
-      this.reportThisKeywordsInScope(arrowFunc.body);
+    const hasThisKeyword = scopeContainsThis(arrowFunc.body);
+    const hasValidContext = hasPredecessor(arrowFunc, TypeScriptLinter.isClassLikeOrIface);
+    if (hasThisKeyword && !hasValidContext) {
+      this.incrementCounters(arrowFunc, FaultID.FunctionContainsThis);
     }
     const contextType = this.tsTypeChecker.getContextualType(arrowFunc);
     if (!(contextType && this.tsUtils.isLibraryType(contextType))) {
@@ -886,8 +889,8 @@ export class TypeScriptLinter {
     if (tsFunctionDeclaration.name) {
       this.countDeclarationsWithDuplicateName(tsFunctionDeclaration.name, tsFunctionDeclaration);
     }
-    if (tsFunctionDeclaration.body) {
-      this.reportThisKeywordsInScope(tsFunctionDeclaration.body);
+    if (tsFunctionDeclaration.body && scopeContainsThis(tsFunctionDeclaration.body)) {
+      this.incrementCounters(node, FaultID.FunctionContainsThis);
     }
     const funcDeclParent = tsFunctionDeclaration.parent;
     if (!ts.isSourceFile(funcDeclParent) && !ts.isModuleBlock(funcDeclParent)) {
@@ -1331,8 +1334,8 @@ export class TypeScriptLinter {
         }
       }
     }
-    if (tsMethodDecl.body && isStatic) {
-      this.reportThisKeywordsInScope(tsMethodDecl.body);
+    if (isStatic && tsMethodDecl.body && scopeContainsThis(tsMethodDecl.body)) {
+      this.incrementCounters(node, FaultID.FunctionContainsThis);
     }
     if (!tsMethodDecl.type) {
       this.handleMissingReturnType(tsMethodDecl);
@@ -1362,7 +1365,9 @@ export class TypeScriptLinter {
     if (!ts.isClassDeclaration(parent)) {
       return;
     }
-    this.reportThisKeywordsInScope(classStaticBlockDecl.body);
+    if (scopeContainsThis(classStaticBlockDecl.body)) {
+      this.incrementCounters(node, FaultID.FunctionContainsThis);
+    }
     // May be undefined in `export default class { ... }`.
     const className = parent.name?.text ?? '';
     if (this.staticBlocks.has(className)) {
@@ -1452,44 +1457,19 @@ export class TypeScriptLinter {
     }
   }
 
-  private isElementAcessAllowed(type: ts.Type): boolean {
-    if (type.isUnion()) {
-      for (const t of type.types) {
-        if (!this.isElementAcessAllowed(t)) {
-          return false;
-        }
-      }
-      return true;
-    }
-
-    const typeNode = this.tsTypeChecker.typeToTypeNode(type, undefined, ts.NodeBuilderFlags.None);
-
-    return (
-      this.tsUtils.isLibraryType(type) ||
-      TsUtils.isAnyType(type) ||
-      this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isArray) ||
-      this.tsUtils.isOrDerivedFrom(type, TsUtils.isTuple) ||
-      this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isStdRecordType) ||
-      this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isStringType) ||
-      this.tsUtils.isOrDerivedFrom(type, this.tsUtils.isStdMapType) ||
-      isIntrinsicObjectType(type) ||
-      TsUtils.isEnumType(type) ||
-      // we allow EsObject here beacuse it is reported later using FaultId.EsObjectType
-      TsUtils.isEsObjectType(typeNode)
-    );
-  }
-
   private handleElementAccessExpression(node: ts.Node): void {
     const tsElementAccessExpr = node as ts.ElementAccessExpression;
-    const tsElementAccessExprSymbol = this.tsUtils.trueSymbolAtLocation(tsElementAccessExpr.expression);
-    const tsElemAccessBaseExprType = TsUtils.getNonNullableType(
-      this.tsUtils.getTypeOrTypeConstraintAtLocation(tsElementAccessExpr.expression)
-    );
+    const tsElemAccessBaseExprType = this.tsTypeChecker.getTypeAtLocation(tsElementAccessExpr.expression);
+    const checkClassOrInterface = tsElemAccessBaseExprType.isClassOrInterface() && 
+                                  !TsUtils.isGenericArrayType(tsElemAccessBaseExprType) &&
+                                  !this.tsUtils.isOrDerivedFrom(tsElemAccessBaseExprType, this.tsUtils.isArray);
+    const checkThisOrSuper = TsUtils.isThisOrSuperExpr(tsElementAccessExpr.expression) && 
+                              !this.tsUtils.isOrDerivedFrom(tsElemAccessBaseExprType, this.tsUtils.isArray);
     if (
       // unnamed types do not have symbol, so need to check that explicitly
-      !this.tsUtils.isLibrarySymbol(tsElementAccessExprSymbol) &&
-      !ts.isArrayLiteralExpression(tsElementAccessExpr.expression) &&
-      !this.isElementAcessAllowed(tsElemAccessBaseExprType)
+      !this.tsUtils.isLibraryType(tsElemAccessBaseExprType) &&
+      !this.tsUtils.isArray(tsElemAccessBaseExprType) &&
+      (checkClassOrInterface || TsUtils.isObjectLiteralType(tsElemAccessBaseExprType) || checkThisOrSuper)
     ) {
       let autofix = Autofixer.fixPropertyAccessByIndex(node);
       const autofixable = autofix !== undefined;

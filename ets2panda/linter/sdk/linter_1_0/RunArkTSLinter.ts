@@ -70,6 +70,7 @@ export function runArkTSLinter(tsBuilderProgram: ArkTSProgram, reverseStrictBuil
   const linter = new TypeScriptLinter(
     strictProgram.getTypeChecker(),
     new AutofixInfoSet(undefined),
+    true,
     undefined,
     undefined,
     tscStrictDiagnostics
