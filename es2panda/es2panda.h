@@ -32,6 +32,9 @@ struct Program;
 }  // namespace panda::pandasm
 
 namespace panda::es2panda {
+struct CompileContextInfo;
+struct PkgInfo;
+
 namespace parser {
 class ParserImpl;
 class Transformer;
@@ -74,18 +77,6 @@ struct PatchFixOptions {
     bool hotReload {false};
     bool coldReload {false};
     bool coldFix {false};
-};
-
-
-struct PkgInfo {
-    std::string version;
-};
-
-struct CompileContextInfo {
-    std::vector<std::string> compileEntries;
-    std::string projectRootPath {};
-    std::vector<std::string> hspPkgNames;
-    std::unordered_map<std::string, PkgInfo> pkgContextInfo;
 };
 
 struct CompilerOptions {
