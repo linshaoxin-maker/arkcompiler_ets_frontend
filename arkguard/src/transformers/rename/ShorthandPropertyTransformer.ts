@@ -108,7 +108,7 @@ namespace secharmony {
          * @param {SourceFile} node - Virtual constructor node
         */
         if (isStructDeclaration(node)) {
-          return tryRemoveVirtualConstructor(node);
+          return NodeUtils.tryRemoveVirtualConstructor(node);
         }
 
         return visitEachChild(node, transformShortHandProperty, context);

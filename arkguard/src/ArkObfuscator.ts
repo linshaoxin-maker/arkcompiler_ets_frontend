@@ -499,26 +499,22 @@ export class ArkObfuscator {
    * @param historyNameCache
    * @param originalFilePath When filename obfuscation is enabled, it is used as the source code path.
    */
-  public async obfuscate(content: SourceFile | string, sourceFilePath: string, previousStageSourceMap?: RawSourceMap,
+  public async obfuscate(content: string, sourceFilePath: string, previousStageSourceMap?: RawSourceMap,
     historyNameCache?: Map<string, string>, originalFilePath?: string, projectInfo?: ProjectInfo): Promise<ObfuscationResultType> {
     ArkObfuscator.projectInfo = projectInfo;
     let ast: SourceFile;
     let result: ObfuscationResultType = { content: undefined };
     if (this.isObfsIgnoreFile(sourceFilePath)) {
       // need add return value
-      return result;
+      return {content};
     }
 
     performancePrinter?.singleFilePrinter?.startEvent(EventList.CREATE_AST, performancePrinter.timeSumPrinter, sourceFilePath);
-    if (typeof content === 'string') {
-      ast = TypeUtils.createObfSourceFile(sourceFilePath, content);
-    } else {
-      ast = content;
-    }
+    ast = TypeUtils.createObfSourceFile(sourceFilePath, content);
     performancePrinter?.singleFilePrinter?.endEvent(EventList.CREATE_AST, performancePrinter.timeSumPrinter);
 
     if (ast.statements.length === 0) {
-      return result;
+      return {content};
     }
 
     if (historyNameCache && historyNameCache.size > 0 && this.mCustomProfiles.mNameObfuscation) {

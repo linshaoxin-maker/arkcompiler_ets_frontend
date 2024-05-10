@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import type {ClassElement, Expression, Identifier, Node, ObjectBindingPattern, SourceFile, StructDeclaration} from 'typescript';
+import type {ClassElement, Expression, Identifier, Node, NodeArray, ObjectBindingPattern, SourceFile, StructDeclaration} from 'typescript';
 import {
   SyntaxKind,
   factory,
@@ -218,5 +218,18 @@ export class NodeUtils {
       return true;
     }
     return false;
+  }
+
+  public static tryRemoveVirtualConstructor(node: StructDeclaration): StructDeclaration {
+    const sourceFile = NodeUtils.getSourceFileOfNode(node);
+    if (sourceFile && sourceFile.isDeclarationFile && NodeUtils.isInETSFile(sourceFile)) {
+      const membersWithoutVirtualConstructor = node.members.filter(member => {
+        // @ts-ignore
+        return !isConstructorDeclaration(member) || !member.virtual;
+      });
+      return factory.updateStructDeclaration(node, node.modifiers, node.name, 
+        node.typeParameters, node.heritageClauses, membersWithoutVirtualConstructor);
+    }
+    return node;
   }
 }
