@@ -112,6 +112,14 @@ ir::Statement *RecordLowering::CreateStatement(const std::string &src, ir::Expre
     return nullptr;
 }
 
+bool CheckUpdateExpression(std::string className) 
+{
+    if (className == "escompat.Record" || className == "escompat.Map") {
+        return false;
+    }
+    return true;
+}
+
 ir::Expression *RecordLowering::UpdateObjectExpression(ir::ObjectExpression *expr, public_lib::Context *ctx)
 {
     auto checker = ctx->checker->AsETSChecker();
@@ -119,7 +127,6 @@ ir::Expression *RecordLowering::UpdateObjectExpression(ir::ObjectExpression *exp
         // Hasn't been through checker
         checker->ThrowTypeError("Unexpected type error in Record object literal", expr->Start());
     }
-
     if (!expr->PreferredType()->IsETSObjectType()) {
         // Unexpected preferred type
         return expr;
@@ -127,7 +134,7 @@ ir::Expression *RecordLowering::UpdateObjectExpression(ir::ObjectExpression *exp
 
     std::stringstream ss;
     expr->TsType()->ToAssemblerType(ss);
-    if (ss.str() != "escompat.Map") {
+    if (CheckUpdateExpression(ss.str())) {
         // Only update object expressions for Map/Record types
         return expr;
     }
@@ -170,13 +177,22 @@ ir::Expression *RecordLowering::CreateBlockExpression(ir::ObjectExpression *expr
 
     // Initialize map with provided type arguments
     auto *ident = Gensym(checker->Allocator());
-    const std::string createMapSrc =
-        "let @@I1 = new Map<" + TypeToString(keyType) + "," + TypeToString(valueType) + ">()";
+    std::stringstream ss;
+    expr->TsType()->ToAssemblerType(ss);
 
-    // Build statements from properties
     ArenaVector<ir::Statement *> statements(ctx->allocator->Adapter());
     auto &properties = expr->Properties();
-    statements.push_back(CreateStatement(createMapSrc, ident, nullptr, nullptr, ctx));
+    // currently we only have Map and Record in this if branch
+    if (ss.str() == "escompat.Map") {
+        const std::string createMapSrc = "let @@I1 = new Map<" + TypeToString(keyType) + "," + TypeToString(valueType) + ">()";
+        statements.push_back(CreateStatement(createMapSrc, ident, nullptr, nullptr, ctx));
+    } else {
+        const std::string createRecordSrc = "let @@I1 = new Record<" + TypeToString(keyType) + "," + TypeToString(valueType) + ">()";
+        statements.push_back(CreateStatement(createRecordSrc, ident, nullptr, nullptr, ctx));
+    }
+
+    // Build statements from properties
+
     for (const auto &property : properties) {
         ASSERT(property->IsProperty());
         auto p = property->AsProperty();

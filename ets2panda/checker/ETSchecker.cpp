@@ -216,7 +216,6 @@ void ETSChecker::CheckProgram(parser::Program *program, bool runAnalysis)
             CheckProgram(extProg);
         }
     }
-
     ASSERT(Program()->Ast()->IsProgram());
     Program()->Ast()->Check(this);
 
