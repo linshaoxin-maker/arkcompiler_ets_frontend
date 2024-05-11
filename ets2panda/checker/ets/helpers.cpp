@@ -611,9 +611,12 @@ checker::Type *ETSChecker::FixOptionalVariableType(varbinder::Variable *const bi
     return bindingVar->TsType();
 }
 
+int count_ljh = 0;
 checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *typeAnnotation,
                                                     ir::Expression *init, ir::ModifierFlags const flags)
 {
+    count_ljh = count_ljh + 1;
+    std::cout << "count_ljh:" << count_ljh << std::endl;
     const util::StringView &varName = ident->Name();
     ASSERT(ident->Variable());
     varbinder::Variable *const bindingVar = ident->Variable();
@@ -1050,6 +1053,147 @@ void ETSChecker::SetArrayPreferredTypeForNestedMemberExpressions(ir::MemberExpre
     }
 }
 
+template <PropertyType PROP_TYPE>
+void ETSChecker::MakePropertyNullish(ETSObjectType *const classType, varbinder::LocalVariable *const prop)
+{
+    auto *const propType = prop->Declaration()->Node()->Check(this);
+
+    if (propType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+        ThrowTypeError("Base type of a Partial type can only contain fields with reference type.",
+                       prop->Declaration()->Node()->Start());
+    }
+
+    auto *const nullishPropType = CreateETSUnionType(
+        {PrimitiveTypeAsETSBuiltinType(propType) == nullptr ? propType : PrimitiveTypeAsETSBuiltinType(propType),
+         GlobalETSUndefinedType()});
+    auto *const propCopy = prop->Copy(Allocator(), prop->Declaration());
+    propCopy->SetTsType(nullishPropType);
+    classType->RemoveProperty<PROP_TYPE>(prop);
+    classType->AddProperty<PROP_TYPE>(propCopy);
+}
+
+void ETSChecker::MakePropertiesReadonly(ETSObjectType *const classType)
+{
+    classType->AddObjectFlag(ETSObjectFlags::READONLY);
+
+    for (std::pair<util::StringView, varbinder::LocalVariable *> prop : classType->InstanceFields()) {
+        if (prop.second->HasFlag(varbinder::VariableFlags::READONLY)) {
+            continue;
+        }
+        prop.second->AddFlag(varbinder::VariableFlags::READONLY);
+    }
+
+    for (std::pair<util::StringView, varbinder::LocalVariable *> prop : classType->StaticFields()) {
+        if (prop.second->HasFlag(varbinder::VariableFlags::READONLY)) {
+            continue;
+        }
+        prop.second->AddFlag(varbinder::VariableFlags::READONLY);
+    }
+
+    if (classType->SuperType() != nullptr) {
+        auto *const superReadonly = classType->SuperType()->Clone(this)->AsETSObjectType();
+        MakePropertiesReadonly(superReadonly);
+        classType->SetSuperType(superReadonly);
+    }
+}
+
+void ETSChecker::MakePropertiesNullish(ETSObjectType *const classType)
+{
+    classType->AddObjectFlag(ETSObjectFlags::PARTIAL);
+
+    for (std::pair<util::StringView, varbinder::LocalVariable *> prop : classType->InstanceFields()) {
+        MakePropertyNullish<PropertyType::INSTANCE_FIELD>(classType, prop.second);
+    }
+
+    for (std::pair<util::StringView, varbinder::LocalVariable *> prop : classType->StaticFields()) {
+        MakePropertyNullish<PropertyType::STATIC_FIELD>(classType, prop.second);
+    }
+
+    if (classType->SuperType() != nullptr) {
+        auto *const superPartial = classType->SuperType()->Clone(this)->AsETSObjectType();
+        MakePropertiesNullish(superPartial);
+        classType->SetSuperType(superPartial);
+    }
+}
+
+Type *ETSChecker::HandleReadonlyType(const ir::TSTypeParameterInstantiation *const typeParams)
+{
+    if (typeParams->Params().size() != 1) {
+        ThrowTypeError("Invalid number of type parameters for Readonly type", typeParams->Start());
+    }
+
+    auto *const typeParamNode = typeParams->Params()[0];
+    auto *typeToBeReadonly = typeParamNode->Check(this);
+
+    if (auto found = ReadonlyTypeStack().find(typeToBeReadonly); found != ReadonlyTypeStack().end()) {
+        return *found;
+    }
+
+    ReadonlyTypeStackElement ntse(this, typeToBeReadonly);
+
+    if (typeToBeReadonly->IsETSTypeParameter()) { // 这个分支存疑？为什么用的是constraint的type
+        typeToBeReadonly = typeToBeReadonly->AsETSTypeParameter()->GetConstraintType()->Clone(this);
+    } else if (typeToBeReadonly->IsETSObjectType()) {
+        typeToBeReadonly = typeToBeReadonly->Clone(this);
+    }
+
+    if (typeToBeReadonly->IsETSUnionType()) {
+        ArenaVector<Type *> unionTypes(Allocator()->Adapter());
+        for (auto *type : typeToBeReadonly->AsETSUnionType()->ConstituentTypes()) {
+            if (type->IsETSObjectType()) {
+                MakePropertiesReadonly(type->Clone(this)->AsETSObjectType());
+            }
+
+            unionTypes.emplace_back(type);
+        }
+
+        return CreateETSUnionType(std::move(unionTypes));
+    }
+
+    MakePropertiesReadonly(typeToBeReadonly->AsETSObjectType());
+
+    return typeToBeReadonly;
+}
+
+Type *ETSChecker::HandlePartialType(const ir::TSTypeParameterInstantiation *const typeParams)
+{
+    if (typeParams->Params().size() != 1) {
+        ThrowTypeError("Invalid number of type parameters for Partial type", typeParams->Start());
+    }
+
+    auto *const typeParamNode = typeParams->Params()[0];
+    auto *typeToBePartial = typeParamNode->Check(this);
+
+    if (auto found = NamedTypeStack().find(typeToBePartial); found != NamedTypeStack().end()) {
+        return *found;
+    }
+
+    NamedTypeStackElement ntse(this, typeToBePartial);
+
+    if (typeToBePartial->IsETSTypeParameter()) {
+        typeToBePartial = typeToBePartial->AsETSTypeParameter()->GetConstraintType()->Clone(this);
+    } else if (typeToBePartial->IsETSObjectType()) {
+        typeToBePartial = typeToBePartial->Clone(this);
+    }
+
+    if (typeToBePartial->IsETSUnionType()) {
+        ArenaVector<Type *> unionTypes(Allocator()->Adapter());
+        for (auto *type : typeToBePartial->AsETSUnionType()->ConstituentTypes()) {
+            if (type->IsETSObjectType()) {
+                MakePropertiesNullish(type->Clone(this)->AsETSObjectType());
+            }
+
+            unionTypes.emplace_back(type);
+        }
+
+        return CreateETSUnionType(std::move(unionTypes));
+    }
+
+    MakePropertiesNullish(typeToBePartial->AsETSObjectType());
+
+    return typeToBePartial;
+}
+
 Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypeParameterInstantiation *const typeParams)
 {
     ASSERT(name->IsIdentifier() && name->AsIdentifier()->Variable() &&
@@ -1065,6 +1209,15 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
         }
 
         ThrowTypeError("Type alias declaration is not generic, but type parameters were provided", typeParams->Start());
+    }
+
+    if (name->AsIdentifier()->Name().Is(compiler::Signatures::PARTIAL_TYPE_NAME)) {
+        // Handle 'Partial<T>' types
+        return HandlePartialType(typeParams);
+    }
+
+    if (name->AsIdentifier()->Name().Is(compiler::Signatures::READONLY_TYPE_NAME)) {
+        return HandleReadonlyType(typeParams);
     }
 
     if (typeParams == nullptr) {

@@ -748,9 +748,17 @@ checker::Type *ETSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
     expr->SetTsType(funcType);
     return expr->TsType();
 }
+void test_func_ljh(void)
+{
+    return;
+}
 
+int count_ljh3 = 0;
 checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *const expr) const
 {
+    count_ljh3 = count_ljh3 + 1;
+    std::cout << "count_ljh3:" << count_ljh3 << std::endl;
+    test_func_ljh();
     if (expr->TsType() != nullptr) {
         return expr->TsType();
     }
@@ -775,6 +783,11 @@ checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *const expr) const
 
     if (expr->target_ != nullptr) {
         checker->ValidateUnaryOperatorOperand(expr->target_);
+    }
+
+    if (expr->target_ != nullptr && expr->target_->HasFlag(varbinder::VariableFlags::READONLY)) {
+        //checker->ThrowTypeError("Left-hand side of assignment expression is readonly type", expr->Left()->Start());
+	    std::cout << "!!!!!!!" << std::endl;
     }
 
     auto [rightType, relationNode] = CheckAssignmentExprOperatorType(expr, leftType);
@@ -1302,9 +1315,12 @@ checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
     expr->SetTsType(objType);
     return objType;
 }
-
+int count_ljh2 = 0;
 void ETSAnalyzer::CheckObjectExprProps(const ir::ObjectExpression *expr) const
 {
+    count_ljh2 = count_ljh2 + 1;
+    std::cout << "count_ljh2:" << count_ljh2 << std::endl;
+
     ETSChecker *checker = GetETSChecker();
     checker::ETSObjectType *objType = expr->PreferredType()->AsETSObjectType();
 

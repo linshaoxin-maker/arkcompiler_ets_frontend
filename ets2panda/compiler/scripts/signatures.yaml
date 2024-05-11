@@ -126,6 +126,13 @@ defines:
     ref: UNDEFINED
   - name: 'null'
     ref: NULL_LITERAL
+<<<<<<< HEAD
+=======
+  - name: 'Partial'
+    ref: PARTIAL_TYPE_NAME
+  - name: 'Readonly'
+    ref: READONLY_TYPE_NAME
+>>>>>>> 4541bf43... test
 
 packages:
   - name: 'std.core'
