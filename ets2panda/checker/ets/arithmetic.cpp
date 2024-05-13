@@ -17,6 +17,7 @@
 
 #include "varbinder/variable.h"
 #include "checker/ETSchecker.h"
+#include "checker/ETSAnalyzerHelpers.h"
 
 namespace ark::es2panda::checker {
 
@@ -529,6 +530,11 @@ Type *ETSChecker::CheckBinaryOperatorNullishCoalescing(ir::Expression *right, le
     if (!IsReferenceType(leftType)) {
         ThrowTypeError("Left-hand side expression must be a reference type.", pos);
     }
+
+    if (right->IsArrowFunctionExpression()) {
+        return CreateETSUnionType({GetNonNullishType(leftType), InitAnonymousLambdaCallee(this, right, rightType)});
+    }
+
     return CreateETSUnionType({GetNonNullishType(leftType), MaybeBoxExpression(right)});
 }
 
