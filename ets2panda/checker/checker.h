@@ -135,6 +135,16 @@ public:
         return typeStack_;
     }
 
+    [[nodiscard]] std::unordered_set<Type *> &NamedTypeStack() noexcept
+    {
+        return namedTypeStack_;
+    }
+
+    [[nodiscard]] std::unordered_set<Type *> &ReadonlyTypeStack() noexcept
+    {
+        return readOnlyTypeStack_;
+    }
+
     [[nodiscard]] virtual bool IsETSChecker() const noexcept
     {
         return false;
@@ -184,6 +194,11 @@ public:
 
     friend class ScopeContext;
     friend class TypeStackElement;
+<<<<<<< HEAD
+=======
+    friend class NamedTypeStackElement;
+    friend class ReadonlyTypeStackElement;
+>>>>>>> 4541bf43... test
     friend class SavedCheckerContext;
 
     varbinder::VarBinder *VarBinder() const;
@@ -210,6 +225,11 @@ private:
     RelationHolder supertypeResults_;
 
     std::unordered_set<const void *> typeStack_;
+<<<<<<< HEAD
+=======
+    std::unordered_set<Type *> namedTypeStack_;
+    std::unordered_set<Type *> readOnlyTypeStack_;
+>>>>>>> 4541bf43... test
 };
 
 class TypeStackElement {
@@ -244,6 +264,49 @@ private:
     void *element_;
 };
 
+<<<<<<< HEAD
+=======
+class NamedTypeStackElement {
+public:
+    explicit NamedTypeStackElement(Checker *checker, Type *element) : checker_(checker), element_(element)
+    {
+        checker->namedTypeStack_.insert(element);
+    }
+
+    ~NamedTypeStackElement()
+    {
+        checker_->namedTypeStack_.erase(element_);
+    }
+
+    NO_COPY_SEMANTIC(NamedTypeStackElement);
+    NO_MOVE_SEMANTIC(NamedTypeStackElement);
+
+private:
+    Checker *checker_;
+    Type *element_;
+};
+
+class ReadonlyTypeStackElement {
+public:
+    explicit ReadonlyTypeStackElement(Checker *checker, Type *element) : checker_(checker), element_(element)
+    {
+        checker->readOnlyTypeStack_.insert(element);
+    }
+
+    ~ReadonlyTypeStackElement()
+    {
+        checker_->readOnlyTypeStack_.erase(element_);
+    }
+
+    NO_COPY_SEMANTIC(ReadonlyTypeStackElement);
+    NO_MOVE_SEMANTIC(ReadonlyTypeStackElement);
+
+private:
+    Checker *checker_;
+    Type *element_;
+};
+
+>>>>>>> 4541bf43... test
 class ScopeContext {
 public:
     explicit ScopeContext(Checker *checker, varbinder::Scope *newScope)

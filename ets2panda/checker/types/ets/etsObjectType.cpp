@@ -397,6 +397,9 @@ bool ETSObjectType::CheckIdenticalFlags(const ETSObjectFlags target) const
     constexpr auto FLAGS_TO_REMOVE = ETSObjectFlags::INCOMPLETE_INSTANTIATION |
                                      ETSObjectFlags::CHECKED_COMPATIBLE_ABSTRACTS |
                                      ETSObjectFlags::CHECKED_INVOKE_LEGITIMACY;
+                                     ETSObjectFlags::CHECKED_INVOKE_LEGITIMACY 
+				     ETSObjectFlags::PARTIAL |
+				     ETSObjectFlags::READONLY;
 
     auto cleanedTargetFlags = target;
     cleanedTargetFlags &= ~FLAGS_TO_REMOVE;

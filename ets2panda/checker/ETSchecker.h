@@ -466,6 +466,12 @@ public:
     Type *GetTypeFromClassReference(varbinder::Variable *var);
     void ValidateGenericTypeAliasForClonedNode(ir::TSTypeAliasDeclaration *typeAliasNode,
                                                const ir::TSTypeParameterInstantiation *exactTypeParams);
+    template <PropertyType PROP_TYPE>
+    void MakePropertyNullish(ETSObjectType *classType, varbinder::LocalVariable *prop);
+    void MakePropertiesNullish(ETSObjectType *classType);
+    Type *HandlePartialType(const ir::TSTypeParameterInstantiation *typeParams);
+    void MakePropertiesReadonly(ETSObjectType *classType);
+    Type *HandleReadonlyType(const ir::TSTypeParameterInstantiation *typeParams);
     Type *HandleTypeAlias(ir::Expression *name, const ir::TSTypeParameterInstantiation *typeParams);
     Type *GetTypeFromEnumReference(varbinder::Variable *var);
     Type *GetTypeFromTypeParameterReference(varbinder::LocalVariable *var, const lexer::SourcePosition &pos);
@@ -665,8 +671,8 @@ public:
     T *AllocNode(Args &&...args)
     {
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-        return util::NodeAllocator::ForceSetParent<T>(Allocator(), std::forward<Args>(args)...);
-    }
+return util::NodeAllocator::ForceSetParent<T>(Allocator(), std::forward<Args>(args)...);
+}
 
     ETSObjectType *GetCachedFunctionlInterface(ir::ETSFunctionType *type);
     void CacheFunctionalInterface(ir::ETSFunctionType *type, ETSObjectType *ifaceType);
