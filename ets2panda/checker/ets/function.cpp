@@ -2438,6 +2438,7 @@ ir::Statement *ETSChecker::CreateLambdaCtorFieldInit(util::StringView name, varb
     auto *initializer =
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         AllocNode<ir::AssignmentExpression>(leftHandSide, rightHandSide, lexer::TokenType::PUNCTUATOR_SUBSTITUTION);
+    initializer->SetTsType(var->TsType());
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     return AllocNode<ir::ExpressionStatement>(initializer);
 }
@@ -2470,7 +2471,7 @@ void ETSChecker::CreateLambdaObjectForFunctionReference(ir::AstNode *refNode, Si
     // Create the synthetic constructor node, where we will initialize the synthetic field (if present) to the
     // instance object
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-    auto *ctor = CreateLambdaImplicitCtor(refNode->Range(), isStaticReference);
+    auto *ctor = CreateLambdaImplicitCtor(refNode->Range(), isStaticReference, functionalInterface);
     properties.push_back(ctor);
 
     // Create the template for the synthetic invoke function which will propagate the function call to the saved
@@ -2534,7 +2535,8 @@ ir::AstNode *ETSChecker::CreateLambdaImplicitField(varbinder::ClassScope *scope,
     return field;
 }
 
-ir::MethodDefinition *ETSChecker::CreateLambdaImplicitCtor(const lexer::SourceRange &pos, bool isStaticReference)
+ir::MethodDefinition *ETSChecker::CreateLambdaImplicitCtor(const lexer::SourceRange &pos, bool isStaticReference,
+                                                           ETSObjectType *functionalInterface)
 {
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
     ArenaVector<ir::Statement *> statements(Allocator()->Adapter());
@@ -2542,6 +2544,9 @@ ir::MethodDefinition *ETSChecker::CreateLambdaImplicitCtor(const lexer::SourceRa
     // Create the parameters for the synthetic constructor
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto [funcParamScope, var] = CreateLambdaCtorImplicitParam(params, pos, isStaticReference);
+    if (var != nullptr && var->TsType() == nullptr) {
+        var->SetTsType(functionalInterface);
+    }
 
     // Create the scopes
     auto paramCtx = varbinder::LexicalScope<varbinder::FunctionParamScope>::Enter(VarBinder(), funcParamScope, false);
@@ -3087,9 +3092,15 @@ ir::MethodDefinition *ETSChecker::CreateAsyncImplMethod(ir::MethodDefinition *as
     modifiers &= ~ir::ModifierFlags::ASYNC;
     ir::ScriptFunction *asyncFunc = asyncMethod->Function();
     ir::ScriptFunctionFlags flags = ir::ScriptFunctionFlags::METHOD;
+
     if (asyncFunc->IsProxy()) {
         flags |= ir::ScriptFunctionFlags::PROXY;
     }
+
+    if (asyncFunc->HasReturnStatement()) {
+        flags |= ir::ScriptFunctionFlags::HAS_RETURN;
+    }
+
     asyncMethod->AddModifier(ir::ModifierFlags::NATIVE);
     asyncFunc->AddModifier(ir::ModifierFlags::NATIVE);
     // Create async_impl method copied from CreateInvokeFunction
@@ -3100,31 +3111,39 @@ ir::MethodDefinition *ETSChecker::CreateAsyncImplMethod(ir::MethodDefinition *as
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     varbinder::FunctionParamScope *paramScope = CopyParams(asyncFunc->Params(), params);
 
-    // Set impl method return type "Object" because it may return Promise as well as Promise parameter's type
-    auto *objectId = AllocNode<ir::Identifier>(compiler::Signatures::BUILTIN_OBJECT_CLASS, Allocator());
-    objectId->SetReference();
-    VarBinder()->AsETSBinder()->LookupTypeReference(objectId, false);
-    auto *returnTypeAnn =
-        AllocNode<ir::ETSTypeReference>(AllocNode<ir::ETSTypeReferencePart>(objectId, nullptr, nullptr));
-    objectId->SetParent(returnTypeAnn->Part());
-    returnTypeAnn->Part()->SetParent(returnTypeAnn);
-    auto *asyncFuncRetTypeAnn = asyncFunc->ReturnTypeAnnotation();
-    auto *promiseType = [this](ir::TypeNode *type) {
-        if (type != nullptr) {
-            return type->GetType(this)->AsETSObjectType();
-        }
+    ir::ETSTypeReference *returnTypeAnn = nullptr;
 
-        return GlobalBuiltinPromiseType()->AsETSObjectType();
-    }(asyncFuncRetTypeAnn);
-    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-    auto *retType = Allocator()->New<ETSAsyncFuncReturnType>(Allocator(), Relation(), promiseType);
-    returnTypeAnn->SetTsType(retType);
+    if (!asyncFunc->Signature()->HasSignatureFlag(SignatureFlags::NEED_RETURN_TYPE)) {
+        // Set impl method return type "Object" because it may return Promise as well as Promise parameter's type
+        auto *objectId = AllocNode<ir::Identifier>(compiler::Signatures::BUILTIN_OBJECT_CLASS, Allocator());
+        objectId->SetReference();
+        VarBinder()->AsETSBinder()->LookupTypeReference(objectId, false);
+        returnTypeAnn =
+            AllocNode<ir::ETSTypeReference>(AllocNode<ir::ETSTypeReferencePart>(objectId, nullptr, nullptr));
+        objectId->SetParent(returnTypeAnn->Part());
+        returnTypeAnn->Part()->SetParent(returnTypeAnn);
+        auto *asyncFuncRetTypeAnn = asyncFunc->ReturnTypeAnnotation();
+        auto *promiseType = [this](ir::TypeNode *type) {
+            if (type != nullptr) {
+                return type->GetType(this)->AsETSObjectType();
+            }
+
+            return GlobalBuiltinPromiseType()->AsETSObjectType();
+        }(asyncFuncRetTypeAnn);
+        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
+        auto *retType = Allocator()->New<ETSAsyncFuncReturnType>(Allocator(), Relation(), promiseType);
+        returnTypeAnn->SetTsType(retType);
+    }
 
     ir::MethodDefinition *implMethod =
-        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         CreateMethod(implName.View(), modifiers, flags, std::move(params), paramScope, returnTypeAnn, body);
     asyncFunc->SetBody(nullptr);
-    returnTypeAnn->SetParent(implMethod->Function());
+
+    if (returnTypeAnn != nullptr) {
+        returnTypeAnn->SetParent(implMethod->Function());
+    }
+
+    implMethod->Function()->AddFlag(ir::ScriptFunctionFlags::ASYNC_IMPL);
     implMethod->SetParent(asyncMethod->Parent());
     return implMethod;
 }

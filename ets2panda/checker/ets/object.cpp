@@ -701,11 +701,13 @@ void ETSChecker::ValidateOverriding(ETSObjectType *classType, const lexer::Sourc
         bool functionOverridden = false;
         bool isGetter = false;
         bool isSetter = false;
+        bool isExternal = false;
         for (auto abstractSignature = (*it)->CallSignatures().begin();
              abstractSignature != (*it)->CallSignatures().end();) {
             bool foundSignature = false;
             isGetter = (*abstractSignature)->HasSignatureFlag(SignatureFlags::GETTER);
             isSetter = (*abstractSignature)->HasSignatureFlag(SignatureFlags::SETTER);
+            isExternal = (*abstractSignature)->Function()->IsExternal();
             for (auto *const implemented : implementedSignatures) {
                 Signature *substImplemented = AdjustForTypeParameters(*abstractSignature, implemented);
 
@@ -749,6 +751,10 @@ void ETSChecker::ValidateOverriding(ETSObjectType *classType, const lexer::Sourc
 
         for (auto *field : classType->Fields()) {
             if (field->Name() == (*it)->Name()) {
+                if (isExternal) {
+                    field->Declaration()->Node()->AddModifier(ir::ModifierFlags::EXTERNAL);
+                }
+
                 field->Declaration()->Node()->AddModifier(isGetter && isSetter ? ir::ModifierFlags::GETTER_SETTER
                                                           : isGetter           ? ir::ModifierFlags::GETTER
                                                                                : ir::ModifierFlags::SETTER);
@@ -847,8 +853,6 @@ void ETSChecker::CheckClassDefinition(ir::ClassDefinition *classDef)
             it->Check(this);
         }
     }
-    // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-    CreateAsyncProxyMethods(classDef);
 
     if (classDef->IsGlobal()) {
         return;
@@ -875,7 +879,7 @@ void ETSChecker::CheckConstructors(ir::ClassDefinition *classDef, ETSObjectType 
     }
 }
 
-static bool IsAsyncMethod(ir::AstNode *node)
+bool IsAsyncMethod(ir::AstNode *node)
 {
     if (!node->IsMethodDefinition()) {
         return false;
@@ -887,24 +891,27 @@ static bool IsAsyncMethod(ir::AstNode *node)
 void ETSChecker::CreateAsyncProxyMethods(ir::ClassDefinition *classDef)
 {
     ArenaVector<ir::MethodDefinition *> asyncImpls(Allocator()->Adapter());
+
     for (auto *it : classDef->Body()) {
         if (!IsAsyncMethod(it)) {
             continue;
         }
-        auto *method = it->AsMethodDefinition();
-        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-        asyncImpls.push_back(CreateAsyncProxy(method, classDef));
-        auto *proxy = asyncImpls.back();
-        for (auto *overload : method->Overloads()) {
-            if (!overload->IsAsync()) {
+
+        auto *asyncMethod = it->AsMethodDefinition();
+        auto *proxy = CreateAsyncProxy(asyncMethod, classDef);
+        asyncImpls.push_back(proxy);
+
+        for (auto *overload : asyncMethod->Overloads()) {
+            if (!IsAsyncMethod(overload)) {
                 continue;
             }
-            // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
+
             auto *impl = CreateAsyncProxy(overload, classDef, false);
             impl->Function()->Id()->SetVariable(proxy->Function()->Id()->Variable());
             proxy->AddOverload(impl);
         }
     }
+
     for (auto *it : asyncImpls) {
         it->SetParent(classDef);
         it->Check(this);

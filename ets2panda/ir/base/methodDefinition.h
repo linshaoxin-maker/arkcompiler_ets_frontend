@@ -43,7 +43,9 @@ public:
                               ModifierFlags const modifiers, ArenaAllocator *const allocator, bool const isComputed)
         : ClassElement(AstNodeType::METHOD_DEFINITION, key, value, modifiers, allocator, isComputed),
           kind_(kind),
-          overloads_(allocator->Adapter())
+          overloads_(allocator->Adapter()),
+          overloaded_(nullptr),
+          asyncPairMethod_(nullptr)
     {
         ASSERT(key_ != nullptr && value_ != nullptr);
     }
@@ -71,6 +73,26 @@ public:
         return overloads_;
     }
 
+    [[nodiscard]] const MethodDefinition *Overloaded() const noexcept
+    {
+        return overloaded_;
+    }
+
+    [[nodiscard]] MethodDefinition *Overloaded() noexcept
+    {
+        return overloaded_;
+    }
+
+    [[nodiscard]] const MethodDefinition *AsyncPairMethod() const noexcept
+    {
+        return asyncPairMethod_;
+    }
+
+    [[nodiscard]] MethodDefinition *AsyncPairMethod() noexcept
+    {
+        return asyncPairMethod_;
+    }
+
     void SetOverloads(OverloadsT &&overloads)
     {
         overloads_ = std::move(overloads);
@@ -84,6 +106,17 @@ public:
     void AddOverload(MethodDefinition *const overload)
     {
         overloads_.emplace_back(overload);
+        overload->SetOverloaded(this);
+    }
+
+    void SetOverloaded(MethodDefinition *const overloaded)
+    {
+        overloaded_ = overloaded;
+    }
+
+    void SetAsyncPairMethod(MethodDefinition *const method)
+    {
+        asyncPairMethod_ = method;
     }
 
     [[nodiscard]] bool HasOverload(MethodDefinition *overload) noexcept
@@ -117,6 +150,10 @@ public:
 private:
     MethodDefinitionKind kind_;
     OverloadsT overloads_;
+    MethodDefinition *overloaded_;
+    // Pair method points at the original async method in case of an implement method and vice versa an implement
+    // method's point at the async method
+    MethodDefinition *asyncPairMethod_;
 };
 }  // namespace ark::es2panda::ir
 

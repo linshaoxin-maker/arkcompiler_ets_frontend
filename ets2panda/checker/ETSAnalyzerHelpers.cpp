@@ -14,6 +14,7 @@
  */
 
 #include "ETSAnalyzerHelpers.h"
+#include "checker/types/ets/etsAsyncFuncReturnType.h"
 
 namespace ark::es2panda::checker {
 
@@ -85,9 +86,10 @@ void DoBodyTypeChecking(ETSChecker *checker, ir::MethodDefinition *node, ir::Scr
     }
 
     if (scriptFunc->IsAsyncFunc()) {
-        auto *retType = scriptFunc->Signature()->ReturnType();
-        if (!retType->IsETSObjectType() ||
-            retType->AsETSObjectType()->GetOriginalBaseType() != checker->GlobalBuiltinPromiseType()) {
+        auto *asyncFuncReturnType = scriptFunc->Signature()->ReturnType();
+
+        if (!asyncFuncReturnType->IsETSObjectType() ||
+            asyncFuncReturnType->AsETSObjectType()->GetOriginalBaseType() != checker->GlobalBuiltinPromiseType()) {
             checker->ThrowTypeError("Return type of async function must be 'Promise'.", scriptFunc->Start());
         }
     } else if (scriptFunc->HasBody() && !scriptFunc->IsExternal()) {
@@ -112,12 +114,64 @@ void DoBodyTypeChecking(ETSChecker *checker, ir::MethodDefinition *node, ir::Scr
         scriptFunc->Body()->Check(checker);
 
         if (scriptFunc->ReturnTypeAnnotation() == nullptr) {
+            if (scriptFunc->IsAsyncImplFunc()) {
+                SetAsyncImplFuncReturnType(checker, scriptFunc);
+            }
+
             for (auto &returnStatement : scriptFunc->ReturnStatements()) {
                 returnStatement->SetReturnType(checker, scriptFunc->Signature()->ReturnType());
             }
         }
 
         checker->Context().SetContainingSignature(nullptr);
+    }
+}
+
+void SetAsyncImplFuncReturnType(ETSChecker *checker, ir::ScriptFunction *scriptFunc)
+{
+    const auto &promiseGlobal = checker->GlobalBuiltinPromiseType()->AsETSObjectType();
+    auto promiseType =
+        promiseGlobal->Instantiate(checker->Allocator(), checker->Relation(), checker->GetGlobalTypesHolder())
+            ->AsETSObjectType();
+    promiseType->AddTypeFlag(checker::TypeFlag::GENERIC);
+    promiseType->TypeArguments().clear();
+    promiseType->TypeArguments().emplace_back(scriptFunc->Signature()->ReturnType());
+
+    auto *objectId =
+        checker->AllocNode<ir::Identifier>(compiler::Signatures::BUILTIN_OBJECT_CLASS, checker->Allocator());
+    objectId->SetReference();
+    checker->VarBinder()->AsETSBinder()->LookupTypeReference(objectId, false);
+    auto *returnType = checker->AllocNode<ir::ETSTypeReference>(
+        checker->AllocNode<ir::ETSTypeReferencePart>(objectId, nullptr, nullptr));
+    objectId->SetParent(returnType->Part());
+    returnType->Part()->SetParent(returnType);
+    returnType->SetTsType(
+        checker->Allocator()->New<ETSAsyncFuncReturnType>(checker->Allocator(), checker->Relation(), promiseType));
+    returnType->Check(checker);
+    scriptFunc->Signature()->SetReturnType(returnType->TsType());
+}
+
+void HandleAsyncMethodCheck(ETSChecker *checker, ir::MethodDefinition *node)
+{
+    auto *classDef = node->Parent()->AsClassDefinition();
+    auto *scriptFunc = node->Function();
+    ir::MethodDefinition *implMethod = checker->CreateAsyncProxy(node, classDef);
+
+    implMethod->Check(checker);
+    node->SetAsyncPairMethod(implMethod);
+
+    if (scriptFunc->Signature()->HasSignatureFlag(SignatureFlags::NEED_RETURN_TYPE)) {
+        node->Function()->Signature()->SetReturnType(
+            implMethod->Function()->Signature()->ReturnType()->AsETSAsyncFuncReturnType()->PromiseType());
+        scriptFunc->Signature()->RemoveSignatureFlag(SignatureFlags::NEED_RETURN_TYPE);
+    }
+
+    if (node->Function()->IsOverload()) {
+        auto *overloadedImplMethod = node->Overloaded()->AsyncPairMethod();
+        implMethod->Function()->Id()->SetVariable(overloadedImplMethod->Function()->Id()->Variable());
+        overloadedImplMethod->AddOverload(implMethod);
+    } else {
+        classDef->Body().push_back(implMethod);
     }
 }
 
@@ -522,6 +576,7 @@ void InferReturnType(ETSChecker *checker, ir::ScriptFunction *containingFunc, ch
 
     containingFunc->Signature()->SetReturnType(funcReturnType);
     containingFunc->Signature()->RemoveSignatureFlag(checker::SignatureFlags::NEED_RETURN_TYPE);
+    containingFunc->Signature()->AddSignatureFlag(checker::SignatureFlags::INFERRED_RETURN_TYPE);
     checker->VarBinder()->AsETSBinder()->BuildFunctionName(containingFunc);
 
     if (stArgument != nullptr && stArgument->IsObjectExpression()) {
@@ -541,15 +596,6 @@ void ProcessReturnStatements(ETSChecker *checker, ir::ScriptFunction *containing
                                     st->Start());
         }
     } else {
-        //  previous return statement(s) don't have any value
-        if (funcReturnType->IsETSVoidType() || funcReturnType == checker->GlobalVoidType()) {
-            checker->ThrowTypeError("All return statements in the function should be empty or have a value.",
-                                    stArgument->Start());
-        }
-
-        const auto name = containingFunc->Scope()->InternalName().Mutf8();
-        CheckArgumentVoidType(funcReturnType, checker, name, st);
-
         if (stArgument->IsObjectExpression()) {
             stArgument->AsObjectExpression()->SetPreferredType(funcReturnType);
         }
@@ -559,6 +605,16 @@ void ProcessReturnStatements(ETSChecker *checker, ir::ScriptFunction *containing
         }
 
         checker::Type *argumentType = stArgument->Check(checker);
+
+        //  previous return statement(s) don't have any value
+        if (funcReturnType->IsETSVoidType() && !argumentType->IsETSVoidType()) {
+            checker->ThrowTypeError("All return statements in the function should be empty or have a value.",
+                                    stArgument->Start());
+        }
+
+        const auto name = containingFunc->Scope()->InternalName().Mutf8();
+        CheckArgumentVoidType(funcReturnType, checker, name, st);
+
         // remove CONSTANT type modifier if exists
         if (argumentType->HasTypeFlag(checker::TypeFlag::CONSTANT)) {
             argumentType =
