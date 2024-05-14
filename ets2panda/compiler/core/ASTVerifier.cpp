@@ -497,15 +497,6 @@ public:
 private:
     bool CheckMoreAstExceptions(const ir::Identifier *ast) const
     {
-        // NOTE(kkonkuznetsov): skip extension functions
-        if (ast->Parent() != nullptr && ast->Parent()->IsMemberExpression()) {
-            // Only properties cause verifier warnings
-            auto property = ast->Parent()->AsMemberExpression()->Property();
-            if (property == ast) {
-                return true;
-            }
-        }
-
         // NOTE(kkonkuznetsov): skip async functions
         auto parent = ast->Parent();
         while (parent != nullptr) {
@@ -555,11 +546,6 @@ private:
             return true;
         }
 
-        // NOTE(kkonkuznetsov): skip import alias
-        if (ast->Parent()->IsTSQualifiedName()) {
-            return true;
-        }
-
         return false;
     }
 
@@ -578,6 +564,11 @@ private:
             return true;
         }
 
+        // NOTE(kkonkuznetsov): skip anonymous class id
+        if (ast->Parent()->Parent() != nullptr && ast->Parent()->Parent()->IsETSNewClassInstanceExpression()) {
+            return true;
+        }
+
         // NOTE(kkonkuznetsov): skip package declarations
         auto parent = ast->Parent();
         while (parent != nullptr) {
@@ -586,16 +577,6 @@ private:
             }
 
             parent = parent->Parent();
-        }
-
-        // NOTE(kkonkuznetsov): skip imports
-        if (IsImportLike(ast->Parent())) {
-            return true;
-        }
-
-        // NOTE(kkonkuznetsov): skip anonymous class id
-        if (ast->Parent()->Parent() != nullptr && ast->Parent()->Parent()->IsETSNewClassInstanceExpression()) {
-            return true;
         }
 
         return false;
@@ -914,6 +895,10 @@ public:
         const auto node = scope->Node();
         auto result = std::make_tuple(CheckDecision::CORRECT, CheckAction::CONTINUE);
         if (!IsContainedIn(ast, node)) {
+            if (CheckCatchClause(ast, node)) {
+                return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+            }
+
             if (CheckScopeNodeExceptions(node)) {
                 return {CheckDecision::CORRECT, CheckAction::CONTINUE};
             }
@@ -937,15 +922,31 @@ public:
 private:
     ArenaAllocator &allocator_;
 
-    bool CheckScopeNodeExceptions(const ir::AstNode *node) const
+    bool CheckCatchClause(const ir::AstNode *ast, const ir::AstNode *node) const
     {
         if (node == nullptr) {
             return false;
         }
 
-        // NOTE(kkonkuznetsov): skip catch clause
+        // Check that ast node is contained within node parent for Catch Clause:
+        // Catch Clause {
+        //      Catch Body {
+        //          AST that we need to check
+        //      }
+        //      Param (Scope Node) {
+        //      }
+        // }
         if (node->Parent() != nullptr && node->Parent()->IsCatchClause()) {
-            return true;
+            return IsContainedIn(ast, node->Parent());
+        }
+
+        return false;
+    }
+
+    bool CheckScopeNodeExceptions(const ir::AstNode *node) const
+    {
+        if (node == nullptr) {
+            return false;
         }
 
         // NOTE(kkonkuznetsov): lambdas
