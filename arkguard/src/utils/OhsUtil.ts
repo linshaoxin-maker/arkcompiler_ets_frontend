@@ -84,69 +84,83 @@ export function findOhImportStatement(node: Statement, moduleName: string): OhPa
     return OhPackType.NONE;
   }
 
-  /** esmodule */
-  if (isBinaryExpression(initializer)) {
-    if (initializer.operatorToken.kind !== SyntaxKind.BarBarToken) {
-      return OhPackType.NONE;
-    }
-
-    if (!isCallExpression(initializer.left)) {
-      return OhPackType.NONE;
-    }
-
-    if (!isPropertyAccessExpression(initializer.left.expression)) {
-      return OhPackType.NONE;
-    }
-
-    if (!isIdentifier(initializer.left.expression.expression) ||
-      initializer.left.expression.expression.text !== 'globalThis') {
-      return OhPackType.NONE;
-    }
-
-    if (!isIdentifier(initializer.left.expression.name) ||
-      initializer.left.expression.name.text !== 'requireNapi') {
-      return OhPackType.NONE;
-    }
-
-    if (initializer.left.arguments.length !== 1) {
-      return OhPackType.NONE;
-    }
-
-    const arg: Expression = initializer.left.arguments[0];
-    if (isStringLiteral(arg) && arg.text === moduleName.substring('@ohos.'.length)) {
-      return OhPackType.ES_MODULE;
-    }
+  if (isEsModule(initializer, moduleName)) {
+    return OhPackType.ES_MODULE;
   }
 
-  /** jsbundle */
-  if (isCallExpression(initializer)) {
-    if (initializer.arguments.length !== 1) {
-      return OhPackType.NONE;
-    }
-
-    if (!isIdentifier(initializer.expression) ||
-      initializer.expression.text !== '_interopRequireDefault') {
-      return OhPackType.NONE;
-    }
-
-    const arg: Expression = initializer.arguments[0];
-    if (!isCallExpression(arg)) {
-      return OhPackType.NONE;
-    }
-
-    if (!isIdentifier(arg.expression) || arg.expression.text !== 'requireModule') {
-      return OhPackType.NONE;
-    }
-
-    const innerArg: Expression = arg.arguments[0];
-    if (!isStringLiteral(innerArg) || innerArg.text !== moduleName) {
-      return OhPackType.NONE;
-    }
-
+  if (isJsBundle(initializer, moduleName)) {
     return OhPackType.JS_BUNDLE;
   }
 
   return OhPackType.NONE;
+}
+
+/** esmodule */
+function isEsModule(initializer: Expression, moduleName: string): boolean {
+  if (!isBinaryExpression(initializer)) {
+    return false;
+  }
+
+  if (initializer.operatorToken.kind !== SyntaxKind.BarBarToken) {
+    return false;
+  }
+
+  if (!isCallExpression(initializer.left)) {
+    return false;
+  }
+
+  if (!isPropertyAccessExpression(initializer.left.expression)) {
+    return false;  
+  }
+
+  if (!isIdentifier(initializer.left.expression.expression) ||
+      initializer.left.expression.expression.text !== 'globalThis') {
+    return false;
+  }
+
+  if (!isIdentifier(initializer.left.expression.name) ||
+      initializer.left.expression.name.text !== 'requireNapi') {
+    return false;
+  }
+
+  if (initializer.left.arguments.length !== 1) {
+    return false;
+  }
+
+  const arg = initializer.left.arguments[0];
+  return isStringLiteral(arg) && arg.text === moduleName.substring('@ohos.'.length);
+}
+
+/** jsbundle */
+function isJsBundle(initializer: Expression, moduleName: string): boolean {
+  if (!isCallExpression(initializer)) {
+    return false;
+  }
+
+  if (initializer.arguments.length !== 1) {
+    return false;
+  }
+
+  if (!isIdentifier(initializer.expression) ||
+      initializer.expression.text !== '_interopRequireDefault') {
+    return false;  
+  }
+
+  const arg = initializer.arguments[0];
+  if (!isCallExpression(arg)) {
+    return false;
+  }
+
+  if (!isIdentifier(arg.expression) || arg.expression.text !== 'requireModule') {
+    return false;
+  }
+
+  const innerArg = arg.arguments[0];
+  if (!isStringLiteral(innerArg) || innerArg.text !== moduleName) {
+    return false
+  }
+
+  return true;
 }
 
 function containViewPU(heritageClauses: NodeArray<HeritageClause>): boolean {
