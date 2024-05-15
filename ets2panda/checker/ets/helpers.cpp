@@ -1050,6 +1050,70 @@ void ETSChecker::SetArrayPreferredTypeForNestedMemberExpressions(ir::MemberExpre
     }
 }
 
+void ETSChecker::MakePropertiesReadonly(ETSObjectType *const classType)
+{
+    classType->AddObjectFlag(ETSObjectFlags::READONLY);
+
+    for (std::pair<util::StringView, varbinder::LocalVariable *> prop : classType->InstanceFields()) {
+        if (prop.second->HasFlag(varbinder::VariableFlags::READONLY)) {
+            continue;
+        }
+        prop.second->AddFlag(varbinder::VariableFlags::READONLY);
+    }
+
+    for (std::pair<util::StringView, varbinder::LocalVariable *> prop : classType->StaticFields()) {
+        if (prop.second->HasFlag(varbinder::VariableFlags::READONLY)) {
+            continue;
+        }
+        prop.second->AddFlag(varbinder::VariableFlags::READONLY);
+    }
+
+    if (classType->SuperType() != nullptr) {
+        auto *const superReadonly = classType->SuperType()->Clone(this)->AsETSObjectType();
+        MakePropertiesReadonly(superReadonly);
+        classType->SetSuperType(superReadonly);
+    }
+}
+
+Type *ETSChecker::HandleReadonlyType(const ir::TSTypeParameterInstantiation *const typeParams)
+{
+    if (typeParams->Params().size() != 1) {
+        ThrowTypeError("Invalid number of type parameters for Readonly type", typeParams->Start());
+    }
+
+    auto *const typeParamNode = typeParams->Params()[0];
+    auto *typeToBeReadonly = typeParamNode->Check(this);
+
+    if (auto found = ReadonlyTypeStack().find(typeToBeReadonly); found != ReadonlyTypeStack().end()) {
+        return *found;
+    }
+
+    ReadonlyTypeStackElement ntse(this, typeToBeReadonly);
+
+    if (typeToBeReadonly->IsETSTypeParameter()) { // 这个分支存疑？为什么用的是constraint的type
+        typeToBeReadonly = typeToBeReadonly->AsETSTypeParameter()->GetConstraintType()->Clone(this);
+    } else if (typeToBeReadonly->IsETSObjectType()) {
+        typeToBeReadonly = typeToBeReadonly->Clone(this);
+    }
+
+    if (typeToBeReadonly->IsETSUnionType()) {
+        ArenaVector<Type *> unionTypes(Allocator()->Adapter());
+        for (auto *type : typeToBeReadonly->AsETSUnionType()->ConstituentTypes()) {
+            if (type->IsETSObjectType()) {
+                MakePropertiesReadonly(type->Clone(this)->AsETSObjectType());
+            }
+
+            unionTypes.emplace_back(type);
+        }
+
+        return CreateETSUnionType(std::move(unionTypes));
+    }
+
+    MakePropertiesReadonly(typeToBeReadonly->AsETSObjectType());
+
+    return typeToBeReadonly;
+}
+
 Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypeParameterInstantiation *const typeParams)
 {
     ASSERT(name->IsIdentifier() && name->AsIdentifier()->Variable() &&
@@ -1065,6 +1129,10 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
         }
 
         ThrowTypeError("Type alias declaration is not generic, but type parameters were provided", typeParams->Start());
+    }
+
+    if (name->AsIdentifier()->Name().Is(compiler::Signatures::READONLY_TYPE_NAME)) {
+        return HandleReadonlyType(typeParams);
     }
 
     if (typeParams == nullptr) {
