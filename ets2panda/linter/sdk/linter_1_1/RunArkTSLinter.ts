@@ -15,12 +15,10 @@
 
 import * as ts from 'typescript';
 import * as path from 'node:path';
-import { Autofixer } from './lib/autofixes/Autofixer';
 import { ProblemInfo } from './lib/ProblemInfo';
 import { ProblemSeverity } from './lib/ProblemSeverity';
 import { TypeScriptLinter } from './lib/TypeScriptLinter';
 import { getTscDiagnostics } from './lib/ts-diagnostics/GetTscDiagnostics';
-import { ArkTSProgram } from '../ArkTSProgram';
 import { ArkTSLinterTimePrinter, TimePhase } from '../ArkTSTimePrinter';
 import { getScriptKind } from '../GetScriptKind';
 import { SdkTSCCompiledProgram } from './SdkTSCCompiledProgram';
@@ -35,7 +33,7 @@ export function translateDiag(srcFile: ts.SourceFile, problemInfo: ProblemInfo):
   return makeDiag(severity, LINTER_MSG_CODE_START /*+ problemInfo.ruleTag */, srcFile , problemInfo.start, (problemInfo.end - problemInfo.start + 1), problemInfo.rule);
 }
 
-export function runArkTSLinter(tsBuilderProgram: ts.BuilderProgram, srcFile?: ts.SourceFile, buildInfoWriteFile?: ts.WriteFileCallback): ts.Diagnostic[] {
+export function runArkTSLinter(tsBuilderProgram: ts.BuilderProgram, srcFile?: ts.SourceFile, buildInfoWriteFile?: ts.WriteFileCallback, arkTSVersion?: string): ts.Diagnostic[] {
   let diagnostics: ts.Diagnostic[] = [];
 
   // Initialize incremental linter state. Since this call collects changed files
@@ -44,11 +42,8 @@ export function runArkTSLinter(tsBuilderProgram: ts.BuilderProgram, srcFile?: ts
   // below, as it will update program state, clearing the changedFiles list in program state.
   const tscDiagnosticsLinter = new SdkTSCCompiledProgram(tsBuilderProgram);
   const program = tscDiagnosticsLinter.getProgram();
-  const originArkTSProgram: ArkTSProgram = {
-    builderProgram: tsBuilderProgram, 
-    wasStrict: !!program.getCompilerOptions().allowJs
-  };
-  const incrementalLinterState = new ts.incrementalLinter.IncrementalLinterState(originArkTSProgram);
+  const incrementalLinterState = new ts.incrementalLinter.IncrementalLinterState(tsBuilderProgram, arkTSVersion);
+  incrementalLinterState.updateProgramStateArkTSVersion(arkTSVersion);
   const timePrinterInstance = ArkTSLinterTimePrinter.getInstance();
   timePrinterInstance.appendTime(TimePhase.INIT);
 
