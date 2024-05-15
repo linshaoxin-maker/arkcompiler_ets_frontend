@@ -110,7 +110,6 @@ static void GenerateNewStatements(checker::ETSChecker *checker, ir::ObjectExpres
 
     ss << "(@@I" << addNode(genSymIdent->Clone(allocator, nullptr)) << ");" << std::endl;
 }
-
 static ir::AstNode *HandleObjectLiteralLowering(public_lib::Context *ctx, ir::ObjectExpression *objExpr)
 {
     /*
@@ -150,7 +149,8 @@ static ir::AstNode *HandleObjectLiteralLowering(public_lib::Context *ctx, ir::Ob
 
     varbinder->ResolveReferencesForScope(loweringResult, NearestScope(loweringResult));
 
-    checker::SavedCheckerContext scc {checker, checker::CheckerStatus::IGNORE_VISIBILITY};
+    checker::SavedCheckerContext scc {checker, checker::CheckerStatus::IGNORE_VISIBILITY |
+                                               checker::CheckerStatus::IN_OBJECT_LITERAL};
     loweringResult->Check(checker);
 
     return loweringResult;
