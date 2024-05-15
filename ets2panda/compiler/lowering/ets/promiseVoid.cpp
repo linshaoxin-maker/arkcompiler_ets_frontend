@@ -106,6 +106,9 @@ static bool CheckForPromiseVoid(const ir::TypeNode *type)
         return false;
     }
 
+    if (typePart->TypeParams() == nullptr) {
+        return false;
+    }
     const auto &params = typePart->TypeParams()->Params();
     if (params.size() != 1) {
         return false;
