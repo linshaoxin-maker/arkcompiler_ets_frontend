@@ -33,7 +33,7 @@ function main(): void {
     assert foo("NFD") == 0: "Error! foo(\"NFD\") must be equal 0";
     let x = foo() == 41 ? new A() : undefined;
     assert x instanceof A;
-    let y = foo("wxyz") == 42 ? "TRUE" : new A();
+    let y: string | A = foo("wxyz") == 42 ? "TRUE" : new A();
     assert y instanceof A;
     y = "JK";
     assert y == "JK";

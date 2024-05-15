@@ -77,6 +77,11 @@ checker::Type *NumberLiteral::Check(checker::ETSChecker *checker)
     return checker->GetAnalyzer()->Check(this);
 }
 
+checker::Type *NumberLiteral::GetType(checker::ETSChecker *checker)
+{
+    return checker->GetAnalyzer()->Check(this);
+}
+
 NumberLiteral *NumberLiteral::Clone(ArenaAllocator *const allocator, AstNode *const parent)
 {
     if (auto *const clone = allocator->New<NumberLiteral>(number_); clone != nullptr) {

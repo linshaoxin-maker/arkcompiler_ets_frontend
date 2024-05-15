@@ -222,6 +222,14 @@ checker::Type *MemberExpression::TraverseUnionMember(checker::ETSChecker *checke
 checker::Type *MemberExpression::CheckUnionMember(checker::ETSChecker *checker, checker::Type *baseType)
 {
     auto *const unionType = baseType->AsETSUnionType();
+    if (unionType->GetAssemblerLUB()->IsETSObjectType()) {
+        // Try to resolve member for lub
+        auto *const lub = unionType->GetAssemblerLUB()->AsETSObjectType();
+        auto searchName = lub->GetReExportAliasValue(Property()->AsIdentifier()->Name());
+        if (lub->GetProperty(searchName, checker::PropertySearchFlags::SEARCH_ALL) != nullptr) {
+            return SetAndAdjustType(checker, lub);
+        }
+    }
     auto *const commonPropType = TraverseUnionMember(checker, unionType, nullptr);
     SetObjectType(checker->GlobalETSObjectType());
     return commonPropType;
@@ -237,6 +245,14 @@ checker::Type *MemberExpression::AdjustType(checker::ETSChecker *checker, checke
     }
     SetTsType(type);
     return TsType();
+}
+
+checker::Type *MemberExpression::SetAndAdjustType(checker::ETSChecker *checker, checker::ETSObjectType *objectType)
+{
+    SetObjectType(objectType);
+    auto [resType, resVar] = ResolveObjectMember(checker);
+    SetPropVar(resVar);
+    return AdjustType(checker, resType);
 }
 
 void MemberExpression::CheckArrayIndexValue(checker::ETSChecker *checker) const

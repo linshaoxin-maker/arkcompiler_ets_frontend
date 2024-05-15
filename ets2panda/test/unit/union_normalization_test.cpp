@@ -174,9 +174,13 @@ public:
 protected:
     static constexpr uint8_t SIZE2 = 2;
     static constexpr uint8_t SIZE3 = 3;
+    static constexpr uint8_t SIZE4 = 4;
+    static constexpr uint8_t SIZE5 = 5;
     static constexpr uint8_t IDX0 = 0;
     static constexpr uint8_t IDX1 = 1;
     static constexpr uint8_t IDX2 = 2;
+    static constexpr uint8_t IDX3 = 3;
+    static constexpr uint8_t IDX4 = 4;
 
 private:
     std::unique_ptr<ArenaAllocator> allocator_;
@@ -188,12 +192,15 @@ private:
 
 TEST_F(UnionNormalizationTest, UnionWithObject)
 {
-    // Test normalization: int | Object | string ==> Object
     InitializeChecker("_.ets", "");
 
     auto checker = Checker();
     ASSERT(checker);
 
+    auto *syntheticNode = checker->AllocNode<ir::Identifier>("synth", checker->Allocator());
+    checker->Relation()->SetNode(syntheticNode);
+
+    // Test normalization: int | Object | string ==> Object
     ArenaVector<checker::Type *> unionConstituents(checker->Allocator()->Adapter());
     unionConstituents.emplace_back(checker->GlobalIntType());
     unionConstituents.emplace_back(checker->GetGlobalTypesHolder()->GlobalETSObjectType());
@@ -204,6 +211,17 @@ TEST_F(UnionNormalizationTest, UnionWithObject)
     ASSERT_NE(normalizedType, nullptr);
     ASSERT_TRUE(normalizedType->IsETSObjectType());
     ASSERT_EQ(normalizedType, checker->GlobalETSObjectType());
+
+    // Test normalization: 1 | Object ==> Object
+    ArenaVector<checker::Type *> unionConstituents2(checker->Allocator()->Adapter());
+    unionConstituents2.emplace_back(checker->CreateIntType(1));
+    unionConstituents2.emplace_back(checker->GetGlobalTypesHolder()->GlobalETSObjectType());
+
+    // Create union type, which will be normalized inside creation function
+    auto *const normalizedType2 = checker->CreateETSUnionType(std::move(unionConstituents2));
+    ASSERT_NE(normalizedType2, nullptr);
+    ASSERT_TRUE(normalizedType2->IsETSObjectType());
+    ASSERT_EQ(normalizedType2, checker->GlobalETSObjectType());
 }
 
 TEST_F(UnionNormalizationTest, UnionWithIdenticalTypes1)
@@ -226,6 +244,9 @@ TEST_F(UnionNormalizationTest, UnionWithIdenticalTypes1)
     unionConstituents.emplace_back(checker->GlobalBuiltinETSStringType());
     unionConstituents.emplace_back(checker->GlobalDoubleType());
 
+    auto *syntheticNode = checker->AllocNode<ir::Identifier>("synth", checker->Allocator());
+    checker->Relation()->SetNode(syntheticNode);
+
     // Create union type, which will be normalized inside creation function
     auto *const normalizedType = checker->CreateETSUnionType(std::move(unionConstituents));
     ASSERT_NE(normalizedType, nullptr);
@@ -237,9 +258,9 @@ TEST_F(UnionNormalizationTest, UnionWithIdenticalTypes1)
     ASSERT_EQ(unionType->ConstituentTypes().at(IDX2), checker->GlobalBuiltinETSStringType());
 }
 
-TEST_F(UnionNormalizationTest, DISABLED_UnionWithIdenticalTypes2)
+TEST_F(UnionNormalizationTest, UnionWithIdenticalTypes2)
 {
-    // Test normalization: Base | int | Base | double | short | number ==> Base | number
+    // Test normalization: Base | int | Base | double | short | number ==> Base | Int | Double | Short
     InitializeChecker("_.ets", "class Base {}");
 
     auto program = Program();
@@ -259,19 +280,24 @@ TEST_F(UnionNormalizationTest, DISABLED_UnionWithIdenticalTypes2)
     unionConstituents.emplace_back(checker->GlobalShortType());
     unionConstituents.emplace_back(checker->GlobalDoubleType());
 
+    auto *syntheticNode = checker->AllocNode<ir::Identifier>("synth", checker->Allocator());
+    checker->Relation()->SetNode(syntheticNode);
+
     // Create union type, which will be normalized inside creation function
     auto *const normalizedType = checker->CreateETSUnionType(std::move(unionConstituents));
     ASSERT_NE(normalizedType, nullptr);
     ASSERT_TRUE(normalizedType->IsETSUnionType());
     auto *const unionType = normalizedType->AsETSUnionType();
-    ASSERT_EQ(unionType->ConstituentTypes().size(), SIZE2);
+    ASSERT_EQ(unionType->ConstituentTypes().size(), SIZE4);
     ASSERT_EQ(unionType->ConstituentTypes().at(IDX0), baseType);
-    ASSERT_EQ(unionType->ConstituentTypes().at(IDX1), checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+    ASSERT_EQ(unionType->ConstituentTypes().at(IDX1), checker->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
+    ASSERT_EQ(unionType->ConstituentTypes().at(IDX2), checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+    ASSERT_EQ(unionType->ConstituentTypes().at(IDX3), checker->GetGlobalTypesHolder()->GlobalShortBuiltinType());
 }
 
-TEST_F(UnionNormalizationTest, DISABLED_UnionWithNumeric1)
+TEST_F(UnionNormalizationTest, UnionWithNumeric1)
 {
-    // Test normalization: boolean | int | double | short ==> boolean | double
+    // Test normalization: boolean | int | double | short ==> Boolean | Int | Double | Short
     InitializeChecker("_.ets", "");
 
     auto checker = Checker();
@@ -283,19 +309,24 @@ TEST_F(UnionNormalizationTest, DISABLED_UnionWithNumeric1)
     unionConstituents.emplace_back(checker->GlobalDoubleType());
     unionConstituents.emplace_back(checker->GlobalShortType());
 
+    auto *syntheticNode = checker->AllocNode<ir::Identifier>("synth", checker->Allocator());
+    checker->Relation()->SetNode(syntheticNode);
+
     // Create union type, which will be normalized inside creation function
     auto *const normalizedType = checker->CreateETSUnionType(std::move(unionConstituents));
     ASSERT_NE(normalizedType, nullptr);
     ASSERT_TRUE(normalizedType->IsETSUnionType());
     auto *const unionType = normalizedType->AsETSUnionType();
-    ASSERT_EQ(unionType->ConstituentTypes().size(), SIZE2);
+    ASSERT_EQ(unionType->ConstituentTypes().size(), SIZE4);
     ASSERT_EQ(unionType->ConstituentTypes().at(IDX0), checker->GetGlobalTypesHolder()->GlobalETSBooleanBuiltinType());
-    ASSERT_EQ(unionType->ConstituentTypes().at(IDX1), checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+    ASSERT_EQ(unionType->ConstituentTypes().at(IDX1), checker->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
+    ASSERT_EQ(unionType->ConstituentTypes().at(IDX2), checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+    ASSERT_EQ(unionType->ConstituentTypes().at(IDX3), checker->GetGlobalTypesHolder()->GlobalShortBuiltinType());
 }
 
-TEST_F(UnionNormalizationTest, DISABLED_UnionWithNumeric2)
+TEST_F(UnionNormalizationTest, UnionWithNumeric2)
 {
-    // Test normalization: string | int | Base | double | short ==> string | Base | double
+    // Test normalization: string | int | Base | double | short ==> string | Int | Base | Double | Short
     InitializeChecker("_.ets", "class Base {}");
 
     auto program = Program();
@@ -314,15 +345,20 @@ TEST_F(UnionNormalizationTest, DISABLED_UnionWithNumeric2)
     unionConstituents.emplace_back(checker->GlobalDoubleType());
     unionConstituents.emplace_back(checker->GlobalShortType());
 
+    auto *syntheticNode = checker->AllocNode<ir::Identifier>("synth", checker->Allocator());
+    checker->Relation()->SetNode(syntheticNode);
+
     // Create union type, which will be normalized inside creation function
     auto *const normalizedType = checker->CreateETSUnionType(std::move(unionConstituents));
     ASSERT_NE(normalizedType, nullptr);
     ASSERT_TRUE(normalizedType->IsETSUnionType());
     auto *const unionType = normalizedType->AsETSUnionType();
-    ASSERT_EQ(unionType->ConstituentTypes().size(), SIZE3);
+    ASSERT_EQ(unionType->ConstituentTypes().size(), SIZE5);
     ASSERT_EQ(unionType->ConstituentTypes().at(IDX0), checker->GlobalBuiltinETSStringType());
-    ASSERT_EQ(unionType->ConstituentTypes().at(IDX1), baseType);
-    ASSERT_EQ(unionType->ConstituentTypes().at(IDX2), checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+    ASSERT_EQ(unionType->ConstituentTypes().at(IDX1), checker->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
+    ASSERT_EQ(unionType->ConstituentTypes().at(IDX2), baseType);
+    ASSERT_EQ(unionType->ConstituentTypes().at(IDX3), checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+    ASSERT_EQ(unionType->ConstituentTypes().at(IDX4), checker->GetGlobalTypesHolder()->GlobalShortBuiltinType());
 }
 
 TEST_F(UnionNormalizationTest, UnionWithSubTypes)
@@ -353,6 +389,9 @@ TEST_F(UnionNormalizationTest, UnionWithSubTypes)
     ArenaVector<checker::Type *> unionConstituents1(checker->Allocator()->Adapter());
     unionConstituents1.emplace_back(derived1Type);
     unionConstituents1.emplace_back(baseType);
+
+    auto *syntheticNode = checker->AllocNode<ir::Identifier>("synth", checker->Allocator());
+    checker->Relation()->SetNode(syntheticNode);
 
     // Create union type, which will be normalized inside creation function
     auto *const normalizedType1 = checker->CreateETSUnionType(std::move(unionConstituents1));
@@ -397,7 +436,7 @@ TEST_F(UnionNormalizationTest, UnionWithSubTypes)
     ASSERT_EQ(normalizedType4, baseType);
 }
 
-TEST_F(UnionNormalizationTest, DISABLED_UnionLinearization)
+TEST_F(UnionNormalizationTest, UnionLinearization)
 {
     // Test 3 cases of normalization
     static constexpr std::string_view SRC =
@@ -427,34 +466,42 @@ TEST_F(UnionNormalizationTest, DISABLED_UnionLinearization)
     auto checker = Checker();
     ASSERT(checker);
 
-    // Test normalization: int | (int | string) | number ==> string | number
+    auto *syntheticNode = checker->AllocNode<ir::Identifier>("synth", checker->Allocator());
+    checker->Relation()->SetNode(syntheticNode);
+
+    // Test normalization: int | (int | string) | number ==> Int | string | Number
     auto *const ut1Type = FindTypeAlias(checker, "UT1");
     ASSERT_NE(ut1Type, nullptr);
     ASSERT_TRUE(ut1Type->IsETSUnionType());
     auto *ut1 = ut1Type->AsETSUnionType();
-    ASSERT_EQ(ut1->ConstituentTypes().size(), SIZE2);
-    ASSERT_EQ(ut1->ConstituentTypes().at(IDX0), checker->GlobalBuiltinETSStringType());
+    ASSERT_EQ(ut1->ConstituentTypes().size(), SIZE3);
+    ASSERT_EQ(ut1->ConstituentTypes().at(IDX0), checker->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
     ASSERT_EQ(ut1->ConstituentTypes().at(IDX1), checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+    ASSERT_EQ(ut1->ConstituentTypes().at(IDX2), checker->GlobalBuiltinETSStringType());
 
-    // Test normalization: int | UT | number ==> string | number
+    // Test normalization: int | UT | number ==> Int | string | Number
     auto *const ut2Type = FindTypeAlias(checker, "UT2");
     ASSERT_NE(ut2Type, nullptr);
     ASSERT_TRUE(ut2Type->IsETSUnionType());
     auto *ut2 = ut2Type->AsETSUnionType();
-    ASSERT_EQ(ut2->ConstituentTypes().size(), SIZE2);
-    ASSERT_EQ(ut2->ConstituentTypes().at(IDX0), checker->GlobalBuiltinETSStringType());
+    ASSERT_EQ(ut2->ConstituentTypes().size(), SIZE3);
+    ASSERT_EQ(ut2->ConstituentTypes().at(IDX0), checker->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
     ASSERT_EQ(ut2->ConstituentTypes().at(IDX1), checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+    ASSERT_EQ(ut2->ConstituentTypes().at(IDX2), checker->GlobalBuiltinETSStringType());
 
     // Test normalization:
-    // int | (Derived2 | Base) | Derived1 | (string | number | short) | (int | string) ==> Base | string | number
+    // int | (Derived2 | Base) | Derived1 | (string | number | short) | (int | string) ==>
+    // Int | Base | string | Number | Short
     auto *const ut3Type = FindTypeAlias(checker, "UT3");
     ASSERT_NE(ut3Type, nullptr);
     ASSERT_TRUE(ut3Type->IsETSUnionType());
     auto *ut3 = ut3Type->AsETSUnionType();
-    ASSERT_EQ(ut3->ConstituentTypes().size(), SIZE3);
-    ASSERT_EQ(ut3->ConstituentTypes().at(IDX0), baseType);
-    ASSERT_EQ(ut3->ConstituentTypes().at(IDX1), checker->GlobalBuiltinETSStringType());
-    ASSERT_EQ(ut3->ConstituentTypes().at(IDX2), checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+    ASSERT_EQ(ut3->ConstituentTypes().size(), SIZE5);
+    ASSERT_EQ(ut3->ConstituentTypes().at(IDX0), checker->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
+    ASSERT_EQ(ut3->ConstituentTypes().at(IDX1), baseType);
+    ASSERT_EQ(ut3->ConstituentTypes().at(IDX2), checker->GlobalBuiltinETSStringType());
+    ASSERT_EQ(ut3->ConstituentTypes().at(IDX3), checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+    ASSERT_EQ(ut3->ConstituentTypes().at(IDX4), checker->GetGlobalTypesHolder()->GlobalShortBuiltinType());
 }
 
 TEST_F(UnionNormalizationTest, UnionStringLiterals)
@@ -468,6 +515,9 @@ TEST_F(UnionNormalizationTest, UnionStringLiterals)
     ArenaVector<checker::Type *> unionConstituents1(checker->Allocator()->Adapter());
     unionConstituents1.emplace_back(checker->GlobalBuiltinETSStringType());
     unionConstituents1.emplace_back(checker->CreateETSStringLiteralType("abc"));
+
+    auto *syntheticNode = checker->AllocNode<ir::Identifier>("synth", checker->Allocator());
+    checker->Relation()->SetNode(syntheticNode);
 
     // Create union type, which will be normalized inside creation function
     auto *const normalizedType1 = checker->CreateETSUnionType(std::move(unionConstituents1));
@@ -498,13 +548,112 @@ TEST_F(UnionNormalizationTest, UnionStringLiterals)
     auto *const normalizedType3 = checker->CreateETSUnionType(std::move(unionConstituents3));
     ASSERT_NE(normalizedType3, nullptr);
     ASSERT_TRUE(normalizedType3->IsETSUnionType());
-    auto *const unionType = normalizedType3->AsETSUnionType();
-    ASSERT_EQ(unionType->ConstituentTypes().size(), SIZE2);
-    ASSERT_EQ(unionType->ConstituentTypes().at(IDX0), checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
-    ASSERT_EQ(unionType->ConstituentTypes().at(IDX1), checker->GlobalBuiltinETSStringType());
+    auto *const unionType1 = normalizedType3->AsETSUnionType();
+    ASSERT_EQ(unionType1->ConstituentTypes().size(), SIZE2);
+    ASSERT_EQ(unionType1->ConstituentTypes().at(IDX0), checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+    ASSERT_EQ(unionType1->ConstituentTypes().at(IDX1), checker->GlobalBuiltinETSStringType());
+
+    // Test normalization: "hello" | "goodbye" ==> "hello" | "goodbye"
+    ArenaVector<checker::Type *> unionConstituents4(checker->Allocator()->Adapter());
+    unionConstituents4.emplace_back(checker->CreateETSStringLiteralType("hello"));
+    unionConstituents4.emplace_back(checker->CreateETSStringLiteralType("goodbye"));
+
+    // Create union type, which will be normalized inside creation function
+    auto *const normalizedType4 = checker->CreateETSUnionType(std::move(unionConstituents4));
+    ASSERT_NE(normalizedType4, nullptr);
+    ASSERT_TRUE(normalizedType4->IsETSUnionType());
+    auto *const unionType2 = normalizedType4->AsETSUnionType();
+    ASSERT_TRUE(unionType2->ConstituentTypes().at(IDX0)->IsETSStringType());
+    ASSERT_EQ(unionType2->ConstituentTypes().at(IDX0)->AsETSStringType()->GetValue(), "hello");
+    ASSERT_TRUE(unionType2->ConstituentTypes().at(IDX1)->IsETSStringType());
+    ASSERT_EQ(unionType2->ConstituentTypes().at(IDX1)->AsETSStringType()->GetValue(), "goodbye");
 }
 
-TEST_F(UnionNormalizationTest, DISABLED_UnionWithNever)
+TEST_F(UnionNormalizationTest, UnionWithPrimitives)
+{
+    InitializeChecker("_.ets", "");
+
+    auto checker = Checker();
+    ASSERT(checker);
+
+    // Test normalization: int | short | number ==> number
+    ArenaVector<checker::Type *> unionConstituents1(checker->Allocator()->Adapter());
+    unionConstituents1.emplace_back(checker->GlobalIntType());
+    unionConstituents1.emplace_back(checker->GlobalShortType());
+    unionConstituents1.emplace_back(checker->GlobalDoubleType());
+
+    auto *syntheticNode = checker->AllocNode<ir::Identifier>("synth", checker->Allocator());
+    checker->Relation()->SetNode(syntheticNode);
+
+    // Create union type, which will be normalized inside creation function
+    auto *const normalizedType1 = checker->CreateETSUnionType(std::move(unionConstituents1));
+    ASSERT_NE(normalizedType1, nullptr);
+    ASSERT_TRUE(normalizedType1->IsDoubleType() && !normalizedType1->IsConstantType());
+
+    // Test normalization: byte | short ==> short
+    ArenaVector<checker::Type *> unionConstituents2(checker->Allocator()->Adapter());
+    unionConstituents2.emplace_back(checker->GlobalByteType());
+    unionConstituents2.emplace_back(checker->GlobalShortType());
+
+    // Create union type, which will be normalized inside creation function
+    auto *const normalizedType2 = checker->CreateETSUnionType(std::move(unionConstituents2));
+    ASSERT_NE(normalizedType2, nullptr);
+    ASSERT_TRUE(normalizedType2->IsShortType() && !normalizedType2->IsConstantType());
+
+    // Test normalization: int | number | float ==> number
+    ArenaVector<checker::Type *> unionConstituents3(checker->Allocator()->Adapter());
+    unionConstituents3.emplace_back(checker->GlobalIntType());
+    unionConstituents3.emplace_back(checker->GlobalDoubleType());
+    unionConstituents3.emplace_back(checker->GlobalFloatType());
+
+    // Create union type, which will be normalized inside creation function
+    auto *const normalizedType3 = checker->CreateETSUnionType(std::move(unionConstituents3));
+    ASSERT_NE(normalizedType3, nullptr);
+    ASSERT_TRUE(normalizedType3->IsDoubleType() && !normalizedType3->IsConstantType());
+
+    // Test normalization: int | float | byte ==> float
+    ArenaVector<checker::Type *> unionConstituents4(checker->Allocator()->Adapter());
+    unionConstituents4.emplace_back(checker->GlobalIntType());
+    unionConstituents4.emplace_back(checker->GlobalFloatType());
+    unionConstituents4.emplace_back(checker->GlobalByteType());
+
+    // Create union type, which will be normalized inside creation function
+    auto *const normalizedType4 = checker->CreateETSUnionType(std::move(unionConstituents4));
+    ASSERT_NE(normalizedType4, nullptr);
+    ASSERT_TRUE(normalizedType4->IsFloatType() && !normalizedType4->IsConstantType());
+
+    // Test normalization: int | Number ==> Int | Number
+    ArenaVector<checker::Type *> unionConstituents5(checker->Allocator()->Adapter());
+    unionConstituents5.emplace_back(checker->GlobalIntType());
+    unionConstituents5.emplace_back(checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+
+    // Create union type, which will be normalized inside creation function
+    auto *const normalizedType5 = checker->CreateETSUnionType(std::move(unionConstituents5));
+    ASSERT_NE(normalizedType5, nullptr);
+    ASSERT_TRUE(normalizedType5->IsETSUnionType());
+    auto *const unionType5 = normalizedType5->AsETSUnionType();
+    ASSERT_EQ(unionType5->ConstituentTypes().size(), SIZE2);
+    ASSERT_EQ(unionType5->ConstituentTypes().at(IDX0), checker->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
+    ASSERT_EQ(unionType5->ConstituentTypes().at(IDX1), checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+
+    // Test normalization: Byte | Int | Long ==> Byte | Int | Long
+    ArenaVector<checker::Type *> unionConstituents6(checker->Allocator()->Adapter());
+    unionConstituents6.emplace_back(checker->GetGlobalTypesHolder()->GlobalByteBuiltinType());
+    unionConstituents6.emplace_back(checker->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
+    unionConstituents6.emplace_back(checker->GetGlobalTypesHolder()->GlobalLongBuiltinType());
+
+    // Create union type, which will be normalized inside creation function
+    auto *const normalizedType6 = checker->CreateETSUnionType(std::move(unionConstituents6));
+    ASSERT_NE(normalizedType6, nullptr);
+    ASSERT_TRUE(normalizedType6->IsETSUnionType());
+    auto *const unionType6 = normalizedType6->AsETSUnionType();
+    ASSERT_EQ(unionType6->ConstituentTypes().size(), SIZE3);
+    ASSERT_EQ(unionType6->ConstituentTypes().at(IDX0), checker->GetGlobalTypesHolder()->GlobalByteBuiltinType());
+    ASSERT_EQ(unionType6->ConstituentTypes().at(IDX1), checker->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
+    ASSERT_EQ(unionType6->ConstituentTypes().at(IDX2), checker->GetGlobalTypesHolder()->GlobalLongBuiltinType());
+}
+
+TEST_F(UnionNormalizationTest, UnionWithNever)
 {
     // Test normalization: int | never | number ==> number
     InitializeChecker("_.ets", "");
@@ -515,13 +664,239 @@ TEST_F(UnionNormalizationTest, DISABLED_UnionWithNever)
     ArenaVector<checker::Type *> unionConstituents(checker->Allocator()->Adapter());
     unionConstituents.emplace_back(checker->GlobalIntType());
     unionConstituents.emplace_back(checker->GetGlobalTypesHolder()->GlobalBuiltinNeverType());
-    unionConstituents.emplace_back(checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+    unionConstituents.emplace_back(checker->GlobalDoubleType());
+
+    auto *syntheticNode = checker->AllocNode<ir::Identifier>("synth", checker->Allocator());
+    checker->Relation()->SetNode(syntheticNode);
 
     // Create union type, which will be normalized inside creation function
     auto *const normalizedType = checker->CreateETSUnionType(std::move(unionConstituents));
     ASSERT_NE(normalizedType, nullptr);
-    ASSERT_TRUE(normalizedType->IsETSObjectType());
-    ASSERT_EQ(normalizedType, checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+    ASSERT_TRUE(normalizedType->IsDoubleType() && !normalizedType->IsConstantType());
+}
+
+TEST_F(UnionNormalizationTest, UnionWithLiterals1)
+{
+    // Test normalization: 'x' | string | 'x' | 'y' ==> string
+    InitializeChecker("_.ets", "");
+
+    auto checker = Checker();
+    ASSERT(checker);
+
+    auto *syntheticNode = checker->AllocNode<ir::Identifier>("synth", checker->Allocator());
+    checker->Relation()->SetNode(syntheticNode);
+
+    ArenaVector<checker::Type *> unionConstituents1(checker->Allocator()->Adapter());
+    unionConstituents1.emplace_back(checker->CreateETSStringLiteralType("x"));
+    unionConstituents1.emplace_back(checker->GlobalBuiltinETSStringType());
+    unionConstituents1.emplace_back(checker->CreateETSStringLiteralType("x"));
+    unionConstituents1.emplace_back(checker->CreateETSStringLiteralType("y"));
+
+    // Create union type, which will be normalized inside creation function
+    auto *const normalizedType1 = checker->CreateETSUnionType(std::move(unionConstituents1));
+    ASSERT_NE(normalizedType1, nullptr);
+    ASSERT_TRUE(normalizedType1->IsETSObjectType());
+    ASSERT_EQ(normalizedType1, checker->GlobalBuiltinETSStringType());
+
+    // Test normalization: string | 11 | true | boolean | 33  ==> string | 11 | boolean | 33
+    ArenaVector<checker::Type *> unionConstituents2(checker->Allocator()->Adapter());
+    unionConstituents2.emplace_back(checker->GlobalBuiltinETSStringType());
+    unionConstituents2.emplace_back(checker->CreateIntType(11));
+    unionConstituents2.emplace_back(checker->CreateETSBooleanType(true));
+    unionConstituents2.emplace_back(checker->GlobalETSBooleanType());
+    unionConstituents2.emplace_back(checker->CreateIntType(33));
+
+    // Create union type, which will be normalized inside creation function
+    auto *const normalizedType2 = checker->CreateETSUnionType(std::move(unionConstituents2));
+    ASSERT_NE(normalizedType2, nullptr);
+    ASSERT_TRUE(normalizedType2->IsETSUnionType());
+    auto *const unionType2 = normalizedType2->AsETSUnionType();
+    ASSERT_EQ(unionType2->ConstituentTypes().size(), SIZE4);
+    ASSERT_EQ(unionType2->ConstituentTypes().at(IDX0), checker->GlobalBuiltinETSStringType());
+    ASSERT_TRUE(unionType2->ConstituentTypes().at(IDX1)->IsIntType());
+    ASSERT_EQ(unionType2->ConstituentTypes().at(IDX1)->AsIntType()->GetValue(), 11);
+    ASSERT_EQ(unionType2->ConstituentTypes().at(IDX2), checker->GetGlobalTypesHolder()->GlobalETSBooleanBuiltinType());
+    ASSERT_TRUE(unionType2->ConstituentTypes().at(IDX3)->IsIntType());
+    ASSERT_EQ(unionType2->ConstituentTypes().at(IDX3)->AsIntType()->GetValue(), 33);
+
+    // Test normalization: c'X' | c'Y' | char | string  ==> char | string
+    ArenaVector<checker::Type *> unionConstituents3(checker->Allocator()->Adapter());
+    unionConstituents3.emplace_back(checker->CreateCharType('X'));
+    unionConstituents3.emplace_back(checker->CreateCharType('Y'));
+    unionConstituents3.emplace_back(checker->GlobalCharType());
+    unionConstituents3.emplace_back(checker->GlobalBuiltinETSStringType());
+
+    // Create union type, which will be normalized inside creation function
+    auto *const normalizedType3 = checker->CreateETSUnionType(std::move(unionConstituents3));
+    ASSERT_NE(normalizedType3, nullptr);
+    ASSERT_TRUE(normalizedType3->IsETSUnionType());
+    auto *const unionType3 = normalizedType3->AsETSUnionType();
+    ASSERT_EQ(unionType3->ConstituentTypes().size(), SIZE2);
+    ASSERT_EQ(unionType3->ConstituentTypes().at(IDX0), checker->GetGlobalTypesHolder()->GlobalCharBuiltinType());
+    ASSERT_EQ(unionType3->ConstituentTypes().at(IDX1), checker->GlobalBuiltinETSStringType());
+
+    // Test normalization: 325 | 525 | 725  ==> 325 | 525 | 725
+    ArenaVector<checker::Type *> unionConstituents4(checker->Allocator()->Adapter());
+    unionConstituents4.emplace_back(checker->CreateIntType(325));
+    unionConstituents4.emplace_back(checker->CreateIntType(525));
+    unionConstituents4.emplace_back(checker->CreateIntType(725));
+
+    // Create union type, which will be normalized inside creation function
+    auto *const normalizedType4 = checker->CreateETSUnionType(std::move(unionConstituents4));
+    ASSERT_NE(normalizedType4, nullptr);
+    ASSERT_TRUE(normalizedType4->IsETSUnionType());
+    auto *const unionType4 = normalizedType4->AsETSUnionType();
+    ASSERT_TRUE(unionType4->IsNumericUnion());
+    ASSERT_EQ(unionType4->ConstituentTypes().size(), SIZE3);
+    ASSERT_TRUE(unionType4->ConstituentTypes().at(IDX0)->IsIntType());
+    ASSERT_EQ(unionType4->ConstituentTypes().at(IDX0)->AsIntType()->GetValue(), 325);
+    ASSERT_TRUE(unionType4->ConstituentTypes().at(IDX1)->IsIntType());
+    ASSERT_EQ(unionType4->ConstituentTypes().at(IDX1)->AsIntType()->GetValue(), 525);
+    ASSERT_TRUE(unionType4->ConstituentTypes().at(IDX2)->IsIntType());
+    ASSERT_EQ(unionType4->ConstituentTypes().at(IDX2)->AsIntType()->GetValue(), 725);
+
+    // Test normalization: number | 0 ==> number
+    ArenaVector<checker::Type *> unionConstituents5(checker->Allocator()->Adapter());
+    unionConstituents5.emplace_back(checker->GlobalDoubleType());
+    unionConstituents5.emplace_back(checker->CreateIntType(0));
+
+    auto *const normalizedType5 = checker->CreateETSUnionType(std::move(unionConstituents5));
+    ASSERT_NE(normalizedType5, nullptr);
+    ASSERT_TRUE(normalizedType5->IsDoubleType() && !normalizedType5->IsConstantType());
+
+    // Test normalization: short | 2 ==> short
+    ArenaVector<checker::Type *> unionConstituents6(checker->Allocator()->Adapter());
+    unionConstituents6.emplace_back(checker->GlobalShortType());
+    unionConstituents6.emplace_back(checker->CreateIntType(2));
+
+    auto *const normalizedType6 = checker->CreateETSUnionType(std::move(unionConstituents6));
+    ASSERT_NE(normalizedType6, nullptr);
+    ASSERT_TRUE(normalizedType6->IsShortType() && !normalizedType6->IsConstantType());
+}
+
+TEST_F(UnionNormalizationTest, UnionSpecSamplesWithPrimitives)
+{
+    InitializeChecker("_.ets", "");
+
+    auto checker = Checker();
+    ASSERT(checker);
+
+    auto *syntheticNode = checker->AllocNode<ir::Identifier>("synth", checker->Allocator());
+    checker->Relation()->SetNode(syntheticNode);
+
+    // Test normalization: 1 | 1 | 1  ==> 1
+    ArenaVector<checker::Type *> unionConstituents1(checker->Allocator()->Adapter());
+    unionConstituents1.emplace_back(checker->CreateIntType(1));
+    unionConstituents1.emplace_back(checker->CreateIntType(1));
+    unionConstituents1.emplace_back(checker->CreateIntType(1));
+
+    auto *const normalizedType1 = checker->CreateETSUnionType(std::move(unionConstituents1));
+    ASSERT_NE(normalizedType1, nullptr);
+    ASSERT_TRUE(normalizedType1->IsIntType() && normalizedType1->IsConstantType());
+    ASSERT_EQ(normalizedType1->AsIntType()->GetValue(), 1);
+
+    // Test normalization: number | Number ==> Number
+    ArenaVector<checker::Type *> unionConstituents2(checker->Allocator()->Adapter());
+    unionConstituents2.emplace_back(checker->GlobalDoubleType());
+    unionConstituents2.emplace_back(checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+
+    auto *const normalizedType2 = checker->CreateETSUnionType(std::move(unionConstituents2));
+    ASSERT_NE(normalizedType2, nullptr);
+    ASSERT_TRUE(normalizedType2->IsETSObjectType());
+    ASSERT_EQ(normalizedType2->AsETSObjectType(), checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+
+    // Test normalization: Int | float ==> Int | Float
+    ArenaVector<checker::Type *> unionConstituents3(checker->Allocator()->Adapter());
+    unionConstituents3.emplace_back(checker->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
+    unionConstituents3.emplace_back(checker->GlobalFloatType());
+
+    auto *const normalizedType3 = checker->CreateETSUnionType(std::move(unionConstituents3));
+    ASSERT_NE(normalizedType3, nullptr);
+    ASSERT_TRUE(normalizedType3->IsETSUnionType());
+    auto *const unionType3 = normalizedType3->AsETSUnionType();
+    ASSERT_EQ(unionType3->ConstituentTypes().size(), SIZE2);
+    ASSERT_EQ(unionType3->ConstituentTypes().at(IDX0), checker->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
+    ASSERT_EQ(unionType3->ConstituentTypes().at(IDX1), checker->GetGlobalTypesHolder()->GlobalFloatBuiltinType());
+
+    // Test normalization: Int | 3.14 ==> Int | 3.14
+    ArenaVector<checker::Type *> unionConstituents4(checker->Allocator()->Adapter());
+    unionConstituents4.emplace_back(checker->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
+    unionConstituents4.emplace_back(checker->CreateDoubleType(3.14));
+
+    auto *const normalizedType4 = checker->CreateETSUnionType(std::move(unionConstituents4));
+    ASSERT_NE(normalizedType4, nullptr);
+    ASSERT_TRUE(normalizedType4->IsETSUnionType());
+    auto *const unionType4 = normalizedType4->AsETSUnionType();
+    ASSERT_EQ(unionType4->ConstituentTypes().size(), SIZE2);
+    ASSERT_EQ(unionType4->ConstituentTypes().at(IDX0), checker->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
+    ASSERT_TRUE(unionType4->ConstituentTypes().at(IDX1)->IsDoubleType());
+    ASSERT_EQ(unionType4->ConstituentTypes().at(IDX1)->AsDoubleType()->GetValue(), 3.14);
+
+    // Test normalization: int | short | float | 2 ==> float
+    ArenaVector<checker::Type *> unionConstituents5(checker->Allocator()->Adapter());
+    unionConstituents5.emplace_back(checker->GlobalIntType());
+    unionConstituents5.emplace_back(checker->GlobalShortType());
+    unionConstituents5.emplace_back(checker->GlobalFloatType());
+    unionConstituents5.emplace_back(checker->CreateIntType(2));
+
+    auto *const normalizedType5 = checker->CreateETSUnionType(std::move(unionConstituents5));
+    ASSERT_NE(normalizedType5, nullptr);
+    ASSERT_TRUE(normalizedType5->IsFloatType() && !normalizedType5->IsConstantType());
+
+    // Test normalization: int | long | 2.71828 ==> long | 2.71828
+    ArenaVector<checker::Type *> unionConstituents6(checker->Allocator()->Adapter());
+    unionConstituents6.emplace_back(checker->GlobalIntType());
+    unionConstituents6.emplace_back(checker->GlobalLongType());
+    unionConstituents6.emplace_back(checker->CreateDoubleType(2.71828));
+
+    auto *const normalizedType6 = checker->CreateETSUnionType(std::move(unionConstituents6));
+    ASSERT_NE(normalizedType6, nullptr);
+    ASSERT_TRUE(normalizedType6->IsETSUnionType());
+    auto *const unionType6 = normalizedType6->AsETSUnionType();
+    ASSERT_EQ(unionType6->ConstituentTypes().size(), SIZE2);
+    ASSERT_TRUE(unionType6->ConstituentTypes().at(IDX0)->IsDoubleType());
+    ASSERT_EQ(unionType6->ConstituentTypes().at(IDX0)->AsDoubleType()->GetValue(), 2.71828);
+    ASSERT_EQ(unionType6->ConstituentTypes().at(IDX1), checker->GlobalLongType());
+
+    // Test normalization: 1 | number | number ==> number
+    ArenaVector<checker::Type *> unionConstituents7(checker->Allocator()->Adapter());
+    unionConstituents7.emplace_back(checker->CreateIntType(1));
+    unionConstituents7.emplace_back(checker->GlobalDoubleType());
+    unionConstituents7.emplace_back(checker->GlobalDoubleType());
+
+    auto *const normalizedType7 = checker->CreateETSUnionType(std::move(unionConstituents7));
+    ASSERT_NE(normalizedType7, nullptr);
+    ASSERT_TRUE(normalizedType7->IsDoubleType() && !normalizedType7->IsConstantType());
+
+    // Test normalization: Int | 3.14f | Float ==> Int | Float
+    ArenaVector<checker::Type *> unionConstituents8(checker->Allocator()->Adapter());
+    unionConstituents8.emplace_back(checker->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
+    unionConstituents8.emplace_back(checker->CreateFloatType(3.14));
+    unionConstituents8.emplace_back(checker->GetGlobalTypesHolder()->GlobalFloatBuiltinType());
+
+    // Create union type, which will be normalized inside creation function
+    auto *const normalizedType8 = checker->CreateETSUnionType(std::move(unionConstituents8));
+    ASSERT_NE(normalizedType8, nullptr);
+    ASSERT_TRUE(normalizedType8->IsETSUnionType());
+    auto *const unionType8 = normalizedType8->AsETSUnionType();
+    ASSERT_EQ(unionType8->ConstituentTypes().size(), SIZE2);
+    ASSERT_EQ(unionType8->ConstituentTypes().at(IDX0), checker->GetGlobalTypesHolder()->GlobalIntegerBuiltinType());
+    ASSERT_EQ(unionType8->ConstituentTypes().at(IDX1), checker->GetGlobalTypesHolder()->GlobalFloatBuiltinType());
+
+    // Test normalization: 1 | string | number ==> string | Number
+    ArenaVector<checker::Type *> unionConstituents9(checker->Allocator()->Adapter());
+    unionConstituents9.emplace_back(checker->CreateIntType(1));
+    unionConstituents9.emplace_back(checker->GetGlobalTypesHolder()->GlobalETSStringBuiltinType());
+    unionConstituents9.emplace_back(checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
+
+    // Create union type, which will be normalized inside creation function
+    auto *const normalizedType9 = checker->CreateETSUnionType(std::move(unionConstituents9));
+    ASSERT_NE(normalizedType9, nullptr);
+    ASSERT_TRUE(normalizedType9->IsETSUnionType());
+    auto *const unionType9 = normalizedType9->AsETSUnionType();
+    ASSERT_EQ(unionType9->ConstituentTypes().size(), SIZE2);
+    ASSERT_EQ(unionType9->ConstituentTypes().at(IDX0), checker->GetGlobalTypesHolder()->GlobalETSStringBuiltinType());
+    ASSERT_EQ(unionType9->ConstituentTypes().at(IDX1), checker->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
 }
 
 }  // namespace ark::es2panda

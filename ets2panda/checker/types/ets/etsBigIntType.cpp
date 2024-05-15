@@ -18,22 +18,32 @@
 namespace ark::es2panda::checker {
 void ETSBigIntType::Identical(TypeRelation *relation, Type *other)
 {
-    if (other->IsETSBigIntType()) {
+    bool bothConstants = IsConstantType() && other->IsConstantType() && other->IsETSBigIntType();
+    bool bothNonConstants = !IsConstantType() && !other->IsConstantType();
+    if ((bothConstants && value_ == other->AsETSBigIntType()->GetValue()) ||
+        (bothNonConstants && other->IsETSBigIntType())) {
         relation->Result(true);
+    }
+}
+
+void ETSBigIntType::AssignmentTarget([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *source)
+{
+    if (source->IsETSBigIntType()) {
+        Identical(relation, source);
+        relation->Result(relation->IsTrue() || !IsConstantType());
         return;
     }
 
     relation->Result(false);
 }
 
-void ETSBigIntType::AssignmentTarget([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *source)
+void ETSBigIntType::IsSupertypeOf(TypeRelation *relation, Type *source)
 {
-    if (source->IsETSBigIntType()) {
-        relation->Result(true);
+    if (IsConstantType()) {
+        relation->Result(false);
         return;
     }
-
-    relation->Result(false);
+    ETSObjectType::IsSupertypeOf(relation, source);
 }
 
 Type *ETSBigIntType::Instantiate([[maybe_unused]] ArenaAllocator *allocator, [[maybe_unused]] TypeRelation *relation,

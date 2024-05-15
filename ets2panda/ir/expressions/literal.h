@@ -16,10 +16,10 @@
 #ifndef ES2PANDA_IR_EXPRESSION_LITERAL_H
 #define ES2PANDA_IR_EXPRESSION_LITERAL_H
 
-#include "ir/expression.h"
+#include "ir/typeNode.h"
 
 namespace ark::es2panda::ir {
-class Literal : public Expression {
+class Literal : public TypeNode {
 public:
     Literal() = delete;
     ~Literal() override = default;
@@ -33,7 +33,7 @@ public:
     }
 
 protected:
-    explicit Literal(AstNodeType const type) : Expression(type) {}
+    explicit Literal(AstNodeType const type) : TypeNode(type) {}
 };
 }  // namespace ark::es2panda::ir
 

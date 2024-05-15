@@ -278,7 +278,8 @@ bool Type::PossiblyETSValueTypedExceptNullish() const
 bool Type::IsETSReferenceType() const
 {
     return IsETSObjectType() || IsETSArrayType() || IsETSNullType() || IsETSUndefinedType() || IsETSStringType() ||
-           IsETSTypeParameter() || IsETSUnionType() || IsETSNonNullishType() || IsETSBigIntType();
+           IsETSTypeParameter() || IsETSNonNullishType() || IsETSBigIntType() ||
+           (IsETSUnionType() && AsETSUnionType()->IsReferenceUnion());
 }
 
 bool Type::IsETSUnboxableObject() const
@@ -295,6 +296,10 @@ Type *ETSChecker::GetNonConstantTypeFromPrimitiveType(Type *type) const
 {
     if (type->IsETSStringType()) {
         return GlobalBuiltinETSStringType();
+    }
+
+    if (type->IsETSBigIntType()) {
+        return GlobalETSBigIntType();
     }
 
     if (!type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
@@ -824,7 +829,8 @@ void ETSChecker::CheckBoxedSourceTypeAssignable(TypeRelation *relation, Type *so
         relation, (relation->ApplyWidening() ? TypeRelationFlag::WIDENING : TypeRelationFlag::NONE) |
                       (relation->ApplyNarrowing() ? TypeRelationFlag::NARROWING : TypeRelationFlag::NONE) |
                       (relation->OnlyCheckBoxingUnboxing() ? TypeRelationFlag::ONLY_CHECK_BOXING_UNBOXING
-                                                           : TypeRelationFlag::NONE));
+                                                           : TypeRelationFlag::NONE) |
+                      (relation->OnlyCheckWidening() ? TypeRelationFlag::ONLY_CHECK_WIDENING : TypeRelationFlag::NONE));
     auto *boxedSourceType = relation->GetChecker()->AsETSChecker()->PrimitiveTypeAsETSBuiltinType(source);
     if (boxedSourceType == nullptr) {
         return;

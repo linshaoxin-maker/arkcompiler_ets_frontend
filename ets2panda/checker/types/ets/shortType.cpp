@@ -21,7 +21,9 @@
 namespace ark::es2panda::checker {
 void ShortType::Identical(TypeRelation *relation, Type *other)
 {
-    if (other->IsShortType()) {
+    bool bothConstants = IsConstantType() && other->IsConstantType() && other->IsShortType();
+    bool bothNonConstants = !IsConstantType() && !other->IsConstantType();
+    if ((bothConstants && value_ == other->AsShortType()->GetValue()) || (bothNonConstants && other->IsShortType())) {
         relation->Result(true);
     }
 }
@@ -32,6 +34,20 @@ void ShortType::AssignmentTarget(TypeRelation *relation, [[maybe_unused]] Type *
         relation->GetChecker()->AsETSChecker()->AddUnboxingFlagToPrimitiveType(relation, source, this);
     }
     NarrowingWideningConverter(relation->GetChecker()->AsETSChecker(), relation, this, source);
+    if (!relation->IsTrue() && source->IsETSPrimitiveType() && source->IsConstantType()) {
+        Identical(relation, relation->GetChecker()->AsETSChecker()->GetNonConstantTypeFromPrimitiveType(source));
+    }
+    if (!relation->IsTrue() && source->IsETSUnionType()) {
+        bool allIsAssignable = std::all_of(
+            source->AsETSUnionType()->ConstituentTypes().begin(), source->AsETSUnionType()->ConstituentTypes().end(),
+            [relation, this](Type *src) {
+                Identical(relation, relation->GetChecker()->AsETSChecker()->GetNonConstantTypeFromPrimitiveType(src));
+                bool identical = relation->IsTrue();
+                NarrowingWideningConverter(relation->GetChecker()->AsETSChecker(), relation, this, src);
+                return identical || relation->IsTrue();
+            });
+        relation->Result(allIsAssignable);
+    }
 }
 
 bool ShortType::AssignmentSource([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *target)
@@ -53,7 +69,12 @@ bool ShortType::AssignmentSource([[maybe_unused]] TypeRelation *relation, [[mayb
 void ShortType::Cast(TypeRelation *const relation, Type *const target)
 {
     if (target->HasTypeFlag(TypeFlag::SHORT)) {
-        conversion::Identity(relation, this, target);
+        //        if (IsConstantType() && value_ == target->AsShortType()->GetValue()) {
+        if (IsConstantType()) {
+            relation->Result(true);
+        } else {
+            conversion::Identity(relation, this, target);
+        }
         return;
     }
 
