@@ -17,6 +17,7 @@
 
 #include "varbinder/variable.h"
 #include "checker/ETSchecker.h"
+#include "checker/ETSAnalyzerHelpers.h"
 
 namespace ark::es2panda::checker {
 
@@ -507,10 +508,8 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorInstanceOf(lexer::Sour
         ThrowTypeError("Bad operand type, the types of the operands must be same type.", pos);
     }
 
-    if (rightType->IsETSDynamicType() || leftType->IsETSDynamicType()) {
-        if (!(rightType->IsETSDynamicType() && leftType->IsETSDynamicType())) {
-            ThrowTypeError("Bad operand type, both types of the operands must be dynamic.", pos);
-        }
+    if (rightType->IsETSDynamicType() && !rightType->AsETSDynamicType()->HasDecl()) {
+        ThrowTypeError("Right-hand side of instanceof expression must represent a type.", pos);
     }
 
     tsType = GlobalETSBooleanType();
@@ -529,6 +528,7 @@ Type *ETSChecker::CheckBinaryOperatorNullishCoalescing(ir::Expression *right, le
     if (!IsReferenceType(leftType)) {
         ThrowTypeError("Left-hand side expression must be a reference type.", pos);
     }
+
     return CreateETSUnionType({GetNonNullishType(leftType), MaybeBoxExpression(right)});
 }
 
