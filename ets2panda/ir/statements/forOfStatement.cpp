@@ -161,18 +161,29 @@ checker::Type *ForOfStatement::CheckIteratorMethodForObject(checker::ETSChecker 
         checker->CheckThrowingStatements(this);
     }
 
-    // From here on we assume that '$_iterator()' function returns the valid 'Iterator<T>' implementation :)
-    // Otherwise a plenty of checks required for each line of code below...
-    auto *const nextMethod =
-        signature->ReturnType()->AsETSObjectType()->GetProperty(ITERATOR_INTERFACE_METHOD, searchFlag);
-    auto &nextSignatures = checker->GetTypeOfVariable(nextMethod)->AsETSFunctionType()->CallSignatures();
+    auto *returnType = signature->ReturnType();
+    //  If the iterator method does not have explicit return type annotation we have to infer it first!
+    if (returnType->IsETSVoidType() && signature->HasSignatureFlag(checker::SignatureFlags::NEED_RETURN_TYPE)) {
+        if (signature->Function()->Parent()->Parent()->IsMethodDefinition()) {
+            checker::SavedCheckerContext savedContext(checker, checker::CheckerStatus::NO_OPTS);
+            signature->Function()->Parent()->Parent()->Parent()->Check(checker);
+            returnType = signature->ReturnType();
+        }
+    }
 
-    auto const *const nextSignature = checker->ValidateSignatures(nextSignatures, nullptr, arguments, position,
-                                                                  "iterator", checker::TypeRelationFlag::NO_THROW);
-    if (nextSignature != nullptr && nextSignature->ReturnType()->IsETSObjectType()) {
-        if (auto const *const resultType = nextSignature->ReturnType()->AsETSObjectType();
-            resultType->Name().Is(ITERATOR_RESULT_NAME)) {
-            return resultType->TypeArguments()[0];
+    if (returnType->IsETSObjectType()) {
+        // From here on we assume that '$_iterator()' function returns the valid 'Iterator<T>' implementation :)
+        // Otherwise a plenty of checks required for each line of code below...
+        auto *const nextMethod = returnType->AsETSObjectType()->GetProperty(ITERATOR_INTERFACE_METHOD, searchFlag);
+        auto &nextSignatures = checker->GetTypeOfVariable(nextMethod)->AsETSFunctionType()->CallSignatures();
+
+        auto const *const nextSignature = checker->ValidateSignatures(nextSignatures, nullptr, arguments, position,
+                                                                      "iterator", checker::TypeRelationFlag::NO_THROW);
+        if (nextSignature != nullptr && nextSignature->ReturnType()->IsETSObjectType()) {
+            if (auto const *const resultType = nextSignature->ReturnType()->AsETSObjectType();
+                resultType->Name().Is(ITERATOR_RESULT_NAME)) {
+                return resultType->TypeArguments()[0];
+            }
         }
     }
 
