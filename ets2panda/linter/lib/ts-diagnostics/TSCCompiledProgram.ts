@@ -21,19 +21,19 @@ import { FaultID } from '../Problems';
 import { faultsAttrs } from '../FaultAttrs';
 
 export interface TSCCompiledProgram {
-  getProgram: () => ts.Program;
+  getBuilderProgram: () => ts.BuilderProgram;
   getStrictDiagnostics: (fileName: string) => ts.Diagnostic[];
 }
 
 export class TSCCompiledProgramSimple implements TSCCompiledProgram {
-  private readonly program: ts.Program;
+  private readonly builderProgram: ts.BuilderProgram;
 
-  constructor(program: ts.Program) {
-    this.program = program;
+  constructor(builderProgram: ts.BuilderProgram) {
+    this.builderProgram = builderProgram;
   }
 
-  getProgram(): ts.Program {
-    return this.program;
+  getBuilderProgram(): ts.BuilderProgram {
+    return this.builderProgram;
   }
 
   getStrictDiagnostics(fileName: string): ts.Diagnostic[] {
@@ -46,33 +46,32 @@ export class TSCCompiledProgramSimple implements TSCCompiledProgram {
 export type ProgressCallback = (message: string) => void;
 
 export class TSCCompiledProgramWithDiagnostics implements TSCCompiledProgram {
-  private readonly program: ts.Program;
+  private readonly builderProgram: ts.BuilderProgram;
   private readonly cachedDiagnostics: Map<string, ts.Diagnostic[]> = new Map();
 
   constructor(
-    strict: ts.Program,
-    nonStrict: ts.Program,
+    strict: ts.BuilderProgram,
     inputFiles: string[],
     cancellationToken?: ts.CancellationToken,
     progressCb?: ProgressCallback
   ) {
-    this.program = strict;
+    this.builderProgram = strict;
 
     inputFiles.forEach((fileName) => {
       progressCb?.(fileName);
 
-      const sourceFile = this.program.getSourceFile(fileName);
+      const sourceFile = this.builderProgram.getSourceFile(fileName);
       if (sourceFile !== undefined) {
         this.cachedDiagnostics.set(
           sourceFile.fileName,
-          getStrictDiagnostics(strict, nonStrict, sourceFile.fileName, cancellationToken)
+          getStrictDiagnostics(strict, sourceFile.fileName, cancellationToken)
         );
       }
     });
   }
 
-  getProgram(): ts.Program {
-    return this.program;
+  getBuilderProgram(): ts.BuilderProgram {
+    return this.builderProgram;
   }
 
   getStrictDiagnostics(fileName: string): ts.Diagnostic[] {

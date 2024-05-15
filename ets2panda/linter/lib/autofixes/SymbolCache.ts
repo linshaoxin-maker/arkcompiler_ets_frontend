@@ -30,7 +30,7 @@ export class SymbolCache {
         this.cancellationToken?.throwIfCancellationRequested();
       }
 
-      const symbol = this.handlersMap.get(node.kind)?.call(this, node);
+      const symbol = this.handlersMap.get(node?.kind)?.call(this, node);
       if (symbol !== undefined) {
         this.addReference(symbol, node);
       }

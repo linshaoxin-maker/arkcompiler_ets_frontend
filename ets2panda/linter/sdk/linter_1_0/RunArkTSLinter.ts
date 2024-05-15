@@ -35,20 +35,20 @@ export function translateDiag(srcFile: ts.SourceFile, problemInfo: ProblemInfo):
   return makeDiag(severity, LINTER_MSG_CODE_START /*+ problemInfo.ruleTag */, srcFile , problemInfo.start, (problemInfo.end - problemInfo.start + 1), problemInfo.rule);
 }
 
-export function runArkTSLinter(tsBuilderProgram: ArkTSProgram, reverseStrictBuilderProgram: ArkTSProgram,
-  srcFile?: ts.SourceFile, buildInfoWriteFile?: ts.WriteFileCallback
-): ts.Diagnostic[] {
+export function runArkTSLinter(tsBuilderProgram: ts.BuilderProgram, srcFile?: ts.SourceFile, buildInfoWriteFile?: ts.WriteFileCallback): ts.Diagnostic[] {
   let diagnostics: ts.Diagnostic[] = [];
 
   // Initialize incremental linter state. Since this call collects changed files
   // from the old program state, it needs to be done before re-evaluating program
   // diagnostics through the call 'tscDiagnosticsLinter.updateCompilationDiagnostics()'
   // below, as it will update program state, clearing the changedFiles list in program state.
-  const incrementalLinterState = new ts.incrementalLinter.IncrementalLinterState(tsBuilderProgram);
-
-  const tscDiagnosticsLinter = new SdkTSCCompiledProgram(tsBuilderProgram, reverseStrictBuilderProgram);
-  const strictProgram = tscDiagnosticsLinter.getStrictProgram();
-  
+  const tscDiagnosticsLinter = new SdkTSCCompiledProgram(tsBuilderProgram);
+  const program = tscDiagnosticsLinter.getProgram();
+  const originArkTSProgram: ArkTSProgram = {
+    builderProgram: tsBuilderProgram, 
+    wasStrict: !!program.getCompilerOptions().allowJs
+  };
+  const incrementalLinterState = new ts.incrementalLinter.IncrementalLinterState(originArkTSProgram);
   const timePrinterInstance = ArkTSLinterTimePrinter.getInstance();
   timePrinterInstance.appendTime(TimePhase.INIT);
 
@@ -58,7 +58,7 @@ export function runArkTSLinter(tsBuilderProgram: ArkTSProgram, reverseStrictBuil
   if (!!srcFile) {
     srcFiles.push(srcFile);
   } else {
-    srcFiles = strictProgram.getSourceFiles() as ts.SourceFile[];
+    srcFiles = program.getSourceFiles() as ts.SourceFile[];
   }
 
   const tscStrictDiagnostics = getTscDiagnostics(tscDiagnosticsLinter, srcFiles.filter(file => incrementalLinterState.isFileChanged(file)));
@@ -68,7 +68,7 @@ export function runArkTSLinter(tsBuilderProgram: ArkTSProgram, reverseStrictBuil
   TypeScriptLinter.ideMode = true;
 
   const linter = new TypeScriptLinter(
-    strictProgram.getTypeChecker(),
+    program.getLinterTypeChecker(),
     new AutofixInfoSet(undefined),
     true,
     undefined,
@@ -103,8 +103,7 @@ export function runArkTSLinter(tsBuilderProgram: ArkTSProgram, reverseStrictBuil
 
   // Write tsbuildinfo file only after we cached the linter diagnostics.
   if (!!buildInfoWriteFile) {
-    incrementalLinterState.emitBuildInfo(buildInfoWriteFile, tscDiagnosticsLinter.getStrictBuilderProgram());
-    incrementalLinterState.emitBuildInfo(buildInfoWriteFile, tscDiagnosticsLinter.getNonStrictBuilderProgram());
+    incrementalLinterState.emitBuildInfo(buildInfoWriteFile, tscDiagnosticsLinter.getBuilderProgram());
     timePrinterInstance.appendTime(TimePhase.EMIT_BUILD_INFO);
   }
 

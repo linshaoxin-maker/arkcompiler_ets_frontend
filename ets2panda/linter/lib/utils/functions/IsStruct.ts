@@ -33,5 +33,5 @@ export function isStructDeclarationKind(kind: ts.SyntaxKind): boolean {
 }
 
 export function isStructDeclaration(node: ts.Node): boolean {
-  return isStructDeclarationKind(node.kind);
+  return isStructDeclarationKind(node?.kind);
 }

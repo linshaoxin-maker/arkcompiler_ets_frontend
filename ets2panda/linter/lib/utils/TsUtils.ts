@@ -274,7 +274,7 @@ export class TsUtils {
     }
 
     // Avoid type recursion in heritage by caching checked types.
-    (checkedBaseTypes ||= new Set<ts.Type>()).add(tsType);
+    (checkedBaseTypes = checkedBaseTypes || new Set<ts.Type>()).add(tsType);
 
     for (const tsTypeDecl of tsType.symbol.declarations) {
       const isClassOrInterfaceDecl = ts.isClassDeclaration(tsTypeDecl) || ts.isInterfaceDeclaration(tsTypeDecl);
@@ -1983,7 +1983,7 @@ export class TsUtils {
       }
     }
 
-    classType ??= this.tsTypeChecker.getTypeAtLocation(tsClassLikeDecl);
+    classType = classType ?? this.tsTypeChecker.getTypeAtLocation(tsClassLikeDecl);
     if (classType) {
       const baseType = TsUtils.getBaseClassType(classType);
       if (baseType) {

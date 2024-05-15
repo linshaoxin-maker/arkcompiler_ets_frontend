@@ -84,7 +84,7 @@ export function lint(options: LintOptions): LintRunResult {
   const cmdOptions = options.cmdOptions;
   const cancellationToken = options.cancellationToken;
   const tscCompiledProgram = options.tscCompiledProgram;
-  const tsProgram = tscCompiledProgram.getProgram();
+  const tsProgram = tscCompiledProgram.getBuilderProgram().getProgram();
 
   // Prepare list of input files for linter and retrieve AST for those files.
   let inputFiles = prepareInputFilesList(cmdOptions);
@@ -101,7 +101,7 @@ export function lint(options: LintOptions): LintRunResult {
 
   const tscStrictDiagnostics = getTscDiagnostics(tscCompiledProgram, srcFiles);
   const linter = new TypeScriptLinter(
-    tsProgram.getTypeChecker(),
+    tsProgram.getLinterTypeChecker(),
     new AutofixInfoSet(cmdOptions.autofixInfo),
     !!cmdOptions.strictMode,
     cancellationToken,

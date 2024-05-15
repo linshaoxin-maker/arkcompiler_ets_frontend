@@ -599,7 +599,7 @@ export class TsUtils {
       rhsType.isClassOrInterface() &&
       !this.relatedByInheritanceOrIdentical(rhsType, lhsType);
     if (allowPromotion) {
-      res &&= !this.relatedByInheritanceOrIdentical(lhsType, rhsType);
+      res = res && !this.relatedByInheritanceOrIdentical(lhsType, rhsType);
     }
     return res;
   }

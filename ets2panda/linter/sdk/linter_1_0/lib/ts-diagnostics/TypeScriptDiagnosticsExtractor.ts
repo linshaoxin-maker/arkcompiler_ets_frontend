@@ -19,16 +19,15 @@ import type * as ts from 'typescript';
  * Returns diagnostics which appear in strict compilation mode only
  */
 export function getStrictDiagnostics(
-  strictProgram: ts.Program,
-  nonStrictProgram: ts.Program,
+  builderProgram: ts.BuilderProgram,
   fileName: string,
   cancellationToken?: ts.CancellationToken
 ): ts.Diagnostic[] {
   // applying filter is a workaround for tsc bug
-  const strict = getAllDiagnostics(strictProgram, fileName, cancellationToken).filter((diag) => {
+  const strict = getAllDiagnostics(builderProgram, fileName, cancellationToken, true).filter((diag) => {
     return !(diag.length === 0 && diag.start === 0);
   });
-  const nonStrict = getAllDiagnostics(nonStrictProgram, fileName, cancellationToken);
+  const nonStrict = getAllDiagnostics(builderProgram, fileName, cancellationToken, false);
 
   // collect hashes for later easier comparison
   const nonStrictHashes = nonStrict.reduce((result, value) => {
@@ -46,17 +45,21 @@ export function getStrictDiagnostics(
 }
 
 function getAllDiagnostics(
-  program: ts.Program,
+  builderProgram: ts.BuilderProgram,
   fileName: string,
-  cancellationToken?: ts.CancellationToken
+  cancellationToken?: ts.CancellationToken,
+  isStrict: boolean = false
 ): ts.Diagnostic[] {
-  const sourceFile = program.getSourceFile(fileName);
-  return program.
-    getSemanticDiagnostics(sourceFile, cancellationToken).
-    concat(program.getSyntacticDiagnostics(sourceFile, cancellationToken)).
-    filter((diag) => {
-      return diag.file === sourceFile;
-    });
+  const sourceFile = builderProgram.getSourceFile(fileName);
+  const syntacticDiagnostics: readonly ts.Diagnostic[] = builderProgram.getSyntacticDiagnostics(sourceFile, cancellationToken);
+  if (isStrict) {
+    return !builderProgram.builderProgramForLinter ? [] : builderProgram.builderProgramForLinter.getSemanticDiagnostics(sourceFile, cancellationToken)
+      .concat(syntacticDiagnostics)
+      .filter(diag => diag.file === sourceFile);
+  }
+  return builderProgram.getSemanticDiagnostics(sourceFile, cancellationToken)
+    .concat(syntacticDiagnostics)
+    .filter(diag => diag.file === sourceFile);
 }
 
 function hashDiagnostic(diagnostic: ts.Diagnostic): string | undefined {
