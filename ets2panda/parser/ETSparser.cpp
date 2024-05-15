@@ -3197,7 +3197,12 @@ ir::Expression *ETSParser::ParseExpressionOrTypeAnnotation(lexer::TokenType type
             return typeAnnotation;
         }
 
-        return ParseTypeAnnotation(&options);
+        auto typeAnnotation = ParseTypeAnnotation(&options);
+        if (typeAnnotation->IsETSTypeReference()) {
+            typeAnnotation->AsETSTypeReference()->Part()->SetAllowDynamicType();
+        }
+
+        return typeAnnotation;
     }
 
     return ParseExpression(ExpressionParseFlags::DISALLOW_YIELD);
@@ -3521,6 +3526,9 @@ ir::Expression *ETSParser::ParseNewExpression()
 
     auto *newExprNode =
         AllocNode<ir::ETSNewClassInstanceExpression>(typeReference, std::move(arguments), classDefinition);
+    if (newExprNode->GetTypeRef()->IsETSTypeReference()) {
+        newExprNode->GetTypeRef()->AsETSTypeReference()->Part()->SetAllowDynamicType();
+    }
     newExprNode->SetRange({start, Lexer()->GetToken().End()});
 
     return newExprNode;

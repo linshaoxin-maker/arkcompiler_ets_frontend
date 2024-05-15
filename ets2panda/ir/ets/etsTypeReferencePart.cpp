@@ -112,7 +112,7 @@ checker::Type *ETSTypeReferencePart::GetType(checker::ETSChecker *checker)
             }
         }
 
-        checker::Type *baseType = checker->GetReferencedTypeBase(name_);
+        checker::Type *baseType = checker->GetReferencedTypeBase(name_, IsDynamicTypeAllowed());
 
         ASSERT(baseType != nullptr);
         if (baseType->IsETSObjectType()) {

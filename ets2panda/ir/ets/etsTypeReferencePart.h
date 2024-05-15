@@ -55,6 +55,16 @@ public:
         return name_;
     }
 
+    bool IsDynamicTypeAllowed() const
+    {
+        return allowDynamicType_;
+    }
+
+    void SetAllowDynamicType()
+    {
+        allowDynamicType_ = true;
+    }
+
     void TransformChildren(const NodeTransformer &cb, std::string_view transformationName) override;
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;
@@ -76,6 +86,7 @@ private:
     ir::Expression *name_;
     ir::TSTypeParameterInstantiation *typeParams_ {};
     ir::ETSTypeReferencePart *prev_ {};
+    bool allowDynamicType_ {false};
 };
 }  // namespace ark::es2panda::ir
 

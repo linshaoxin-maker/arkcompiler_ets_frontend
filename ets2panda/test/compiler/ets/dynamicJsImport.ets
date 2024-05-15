@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,7 +21,7 @@ import { A as AA } from "dynamic_js_import_tests"
 import { B } from "dynamic_js_import_tests"
 
 function main(): void {
-    let o: B = new B(AA.x, 1, 2.0)
+    let o: JSValue = new B(AA.x, 1, 2.0)
     let r = o.foo(3.0, 4)
     let e = r[10]
     e();

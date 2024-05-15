@@ -115,7 +115,7 @@ public:
     bool BuildInternalName(ir::ScriptFunction *scriptFunc) override;
     void AddCompilableFunction(ir::ScriptFunction *func) override;
 
-    void LookupTypeReference(ir::Identifier *ident, bool allowDynamicNamespaces);
+    void LookupTypeReference(ir::Identifier *ident, bool allowDynamic);
     void LookupTypeArgumentReferences(ir::ETSTypeReference *typeRef);
     void BuildInterfaceDeclaration(ir::TSInterfaceDeclaration *decl);
     void BuildMemberExpression(ir::MemberExpression *memberExpr);
