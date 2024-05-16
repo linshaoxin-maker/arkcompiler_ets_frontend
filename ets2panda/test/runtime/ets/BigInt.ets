@@ -361,13 +361,42 @@ function test_literals() : void {
 }
 
 function test_cast(): void {
-    const v = 1559053
-    const b: byte = 44
-    const s: short = -17600
-    const i: int = 1150483640
-    const l: long = -8223372036854775808
+    let expected: BigInt = 1559053n;
 
-    // NOTE(kkonsw): casts currently do not work
+    const v = 1559053
+    assert (expected == (v as BigInt))
+
+    const b: byte = 44
+    expected = 44n;
+    assert (expected == (b as BigInt))
+
+    const s: short = -17600
+    expected = -17600n;
+    assert (expected == (s as BigInt))
+
+    const i: int = 1150483640
+    expected = 1150483640n
+    assert (expected == (i as BigInt))
+
+    const l: long = -8223372036854775808
+    expected = -8223372036854775808n
+    assert (expected == (l as BigInt))
+
+    const d: double = 1.44f
+    expected = new BigInt(d)
+    assert (expected == d as BigInt)
+
+    const f: float = 1.44f
+    expected = new BigInt(f)
+    assert (expected == f as BigInt)
+
+    const bl: boolean = true
+    expected = 1n
+    assert (expected == f as BigInt)
+
+    const be = 10n + (5 as BigInt)
+    expected = 15n
+    assert (expected == be)
 }
 
 function test_bigint_methods(): void {
@@ -375,6 +404,9 @@ function test_bigint_methods(): void {
     const s: short = -17600
     const i: int = 1150483640
     const l: long = -8223372036854775808
+    const f: float = 1.44f
+    const d: double = 15.55f
+    const bo: boolean = true;
 
     /* Testing BigInt constructor */
     let n0 = new BigInt(0)
@@ -401,24 +433,36 @@ function test_bigint_methods(): void {
     assert(n5.toString() == "-8223372036854775808")
     assert n5 == -8223372036854775808n
 
+    let n6 = new BigInt(f)
+    assert(n6.toString() == (f as int).toString())
+    assert(n6 == 1n)
+
+    let n7 = new BigInt(d)
+    assert(n7.toString() == (d as int).toString())
+    assert(n7 == 15n)
+
+    let n8 = new BigInt(bo)
+    assert(n8.toString() == "1")
+    assert(n8 == 1n)
+
     let dec = new BigInt("-12392320390239294724747283477947923471101032")
     assert dec == -12392320390239294724747283477947923471101032n
 
-    const n7 = 12392320390239294724747283477947923471101032n
+    const n9 = 12392320390239294724747283477947923471101032n
 
     /* Testing asIntN() static method */
-    // assert BigInt.asIntN(0, n7) == 0n
-    // assert BigInt.asIntN(8, n7) == 104n
-    // assert BigInt.asIntN(16, n7) == 27752n
-    // assert BigInt.asIntN(32, n7) == -737317784n
-    // assert BigInt.asIntN(64, n7) == -7098331616643290008n
+    // assert BigInt.asIntN(0, n9) == 0n
+    // assert BigInt.asIntN(8, n9) == 104n
+    // assert BigInt.asIntN(16, n9) == 27752n
+    // assert BigInt.asIntN(32, n9) == -737317784n
+    // assert BigInt.asIntN(64, n9) == -7098331616643290008n
 
     /* Testing asUintN() static method */
-    // assert BigInt.asUintN(0, n7) == 0n
-    // assert BigInt.asUintN(8, n7) == 104n
-    // assert BigInt.asUintN(16, n7) == 27752n
-    // assert BigInt.asUintN(32, n7) == 3557649512n
-    // assert BigInt.asUintN(64, n7) == 11348412457066261608n
+    // assert BigInt.asUintN(0, n9) == 0n
+    // assert BigInt.asUintN(8, n9) == 104n
+    // assert BigInt.asUintN(16, n9) == 27752n
+    // assert BigInt.asUintN(32, n9) == 3557649512n
+    // assert BigInt.asUintN(64, n9) == 11348412457066261608n
 }
 
 function test_unary(): void {
