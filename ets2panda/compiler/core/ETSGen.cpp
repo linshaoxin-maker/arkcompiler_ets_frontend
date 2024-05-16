@@ -637,9 +637,10 @@ void ETSGen::LoadThis(const ir::AstNode *node)
     LoadAccumulator(node, GetThisReg());
 }
 
-void ETSGen::CreateBigIntObject(const ir::AstNode *node, VReg arg0, std::string_view signature)
+void ETSGen::CreateBigIntObject(const ir::AstNode *node, VReg arg0, const std::string_view signature)
 {
     Ra().Emit<InitobjShort>(node, signature, arg0, dummyReg_);
+    SetAccumulatorType(Checker()->GlobalETSBigIntType());
 }
 
 void ETSGen::CreateLambdaObjectFromIdentReference(const ir::AstNode *node, ir::ClassDefinition *lambdaObj)
@@ -1960,6 +1961,54 @@ void ETSGen::CastToReftype(const ir::AstNode *const node, const checker::Type *c
     SetAccumulatorType(targetType);
 }
 
+void ETSGen::CastToBigint(const ir::AstNode *const node)
+{
+    const VReg value = AllocReg();
+    StoreAccumulator(node, value);
+    auto typeKind = checker::ETSChecker::TypeKind(GetAccumulatorType());
+    switch (typeKind) {
+        case checker::TypeFlag::ETS_BIGINT:
+        case checker::TypeFlag::BIG_INT_OBJECT: {
+            break;
+        }
+        case checker::TypeFlag::INT: {
+            CreateBigIntObject(node, value, Signatures::BUILTIN_BIGINT_CTOR_INT);
+            break;
+        }
+        case checker::TypeFlag::ETS_BOOLEAN: {
+            CreateBigIntObject(node, value, Signatures::BUILTIN_BIGINT_CTOR_BOOLEAN);
+            break;
+        }
+        case checker::TypeFlag::CHAR: {
+            CreateBigIntObject(node, value, Signatures::BUILTIN_BIGINT_CTOR_CHAR);
+            break;
+        }
+        case checker::TypeFlag::BYTE: {
+            CreateBigIntObject(node, value, Signatures::BUILTIN_BIGINT_CTOR_BYTE);
+            break;
+        }
+        case checker::TypeFlag::SHORT: {
+            CreateBigIntObject(node, value, Signatures::BUILTIN_BIGINT_CTOR_SHORT);
+            break;
+        }
+        case checker::TypeFlag::LONG: {
+            CreateBigIntObject(node, value, Signatures::BUILTIN_BIGINT_CTOR_LONG);
+            break;
+        }
+        case checker::TypeFlag::FLOAT: {
+            CreateBigIntObject(node, value, Signatures::BUILTIN_BIGINT_CTOR_FLOAT);
+            break;
+        }
+        case checker::TypeFlag::DOUBLE: {
+            CreateBigIntObject(node, value, Signatures::BUILTIN_BIGINT_CTOR_DOUBLE);
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+}
+
 void ETSGen::CastDynamicToObject(const ir::AstNode *node, const checker::Type *targetType)
 {
     if (targetType->IsETSStringType()) {
@@ -2829,6 +2878,10 @@ void ETSGen::LoadArrayElement(const ir::AstNode *node, VReg objectReg)
             Ra().Emit<FldarrWide>(node, objectReg);
             break;
         }
+        case checker::TypeFlag::BIG_INT_OBJECT: {
+            Ra().Emit<LdarrObj>(node, objectReg);
+            break;
+        }
 
         default: {
             UNREACHABLE();
@@ -2873,6 +2926,10 @@ void ETSGen::StoreArrayElement(const ir::AstNode *node, VReg objectReg, VReg ind
         }
         case checker::TypeFlag::DOUBLE: {
             Ra().Emit<FstarrWide>(node, objectReg, index);
+            break;
+        }
+        case checker::TypeFlag::BIG_INT_OBJECT: {
+            Ra().Emit<StarrObj>(node, objectReg, index);
             break;
         }
 

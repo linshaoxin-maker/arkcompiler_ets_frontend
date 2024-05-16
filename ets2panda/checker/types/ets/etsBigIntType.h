@@ -27,6 +27,7 @@ public:
     {
         SetSuperType(super);
         SetAssemblerName(compiler::Signatures::BUILTIN_BIGINT);
+        typeFlags_ |= TypeFlag::ETS_BIGINT;
     }
 
     explicit ETSBigIntType(ArenaAllocator *allocator, ETSObjectType *super, TypeRelation *relation,
