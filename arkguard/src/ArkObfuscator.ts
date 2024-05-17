@@ -20,6 +20,8 @@ import {
   createObfTextSingleLineWriter,
 } from 'typescript';
 
+// test
+
 import type {
   CompilerOptions,
   EmitTextWriter,
