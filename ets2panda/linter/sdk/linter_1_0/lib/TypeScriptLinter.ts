@@ -57,7 +57,6 @@ import {
   LibraryTypeCallDiagnosticChecker
 } from './utils/functions/LibraryTypeCallDiagnosticChecker';
 import { forEachNodeInSubtree } from './utils/functions/ForEachNodeInSubtree';
-import { isIntrinsicObjectType } from './utils/functions/isIntrinsicObjectType';
 
 export function consoleLog(...args: unknown[]): void {
   if (TypeScriptLinter.ideMode) {
@@ -239,7 +238,7 @@ export class TypeScriptLinter {
     const cookBookMsgNum = faultsAttrs[faultId] ? Number(faultsAttrs[faultId].cookBookRef) : 0;
     const cookBookTg = cookBookTag[cookBookMsgNum];
     let severity = ProblemSeverity.ERROR;
-    if (faultsAttrs[faultId] && faultsAttrs[faultId].warning) {
+    if (faultsAttrs[faultId]?.warning) {
       severity = ProblemSeverity.WARNING;
     }
     const isMsgNumValid = cookBookMsgNum > 0;
@@ -1460,10 +1459,10 @@ export class TypeScriptLinter {
   private handleElementAccessExpression(node: ts.Node): void {
     const tsElementAccessExpr = node as ts.ElementAccessExpression;
     const tsElemAccessBaseExprType = this.tsTypeChecker.getTypeAtLocation(tsElementAccessExpr.expression);
-    const checkClassOrInterface = tsElemAccessBaseExprType.isClassOrInterface() && 
+    const checkClassOrInterface = tsElemAccessBaseExprType.isClassOrInterface() &&
                                   !TsUtils.isGenericArrayType(tsElemAccessBaseExprType) &&
                                   !this.tsUtils.isOrDerivedFrom(tsElemAccessBaseExprType, this.tsUtils.isArray);
-    const checkThisOrSuper = TsUtils.isThisOrSuperExpr(tsElementAccessExpr.expression) && 
+    const checkThisOrSuper = TsUtils.isThisOrSuperExpr(tsElementAccessExpr.expression) &&
                               !this.tsUtils.isOrDerivedFrom(tsElemAccessBaseExprType, this.tsUtils.isArray);
     if (
       // unnamed types do not have symbol, so need to check that explicitly

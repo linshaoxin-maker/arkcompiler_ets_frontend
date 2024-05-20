@@ -51,15 +51,18 @@ function getAllDiagnostics(
   isStrict: boolean = false
 ): ts.Diagnostic[] {
   const sourceFile = builderProgram.getSourceFile(fileName);
-  const syntacticDiagnostics: readonly ts.Diagnostic[] = builderProgram.getSyntacticDiagnostics(sourceFile, cancellationToken);
+  const syntacticDiagnostics: readonly ts.Diagnostic[] =
+  builderProgram.getSyntacticDiagnostics(sourceFile, cancellationToken);
   if (isStrict) {
-    return !builderProgram.builderProgramForLinter ? [] : builderProgram.builderProgramForLinter.getSemanticDiagnostics(sourceFile, cancellationToken)
-      .concat(syntacticDiagnostics)
-      .filter(diag => diag.file === sourceFile);
+    return !builderProgram.builderProgramForLinter ?
+      [] :
+      builderProgram.builderProgramForLinter.getSemanticDiagnostics(sourceFile, cancellationToken).
+        concat(syntacticDiagnostics).
+        filter((diag) => { return diag.file === sourceFile; });
   }
-  return builderProgram.getSemanticDiagnostics(sourceFile, cancellationToken)
-    .concat(syntacticDiagnostics)
-    .filter(diag => diag.file === sourceFile);
+  return builderProgram.getSemanticDiagnostics(sourceFile, cancellationToken).
+    concat(syntacticDiagnostics).
+    filter((diag) => { return diag.file === sourceFile; });
 }
 
 function hashDiagnostic(diagnostic: ts.Diagnostic): string | undefined {

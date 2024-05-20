@@ -17,7 +17,7 @@
 /build/**
 /bundle/**
 /dist/**
-/sdk/**
+/arkTSTest/**
 /docs/**
 /node_modules/**
 /scripts/**

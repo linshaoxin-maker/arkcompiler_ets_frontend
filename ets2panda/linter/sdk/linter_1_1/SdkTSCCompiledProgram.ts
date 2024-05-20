@@ -1,46 +1,46 @@
 /*
-* Copyright (c) 2024 Huawei Device Co., Ltd.
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, softwareP
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, softwareP
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import * as ts from 'typescript';
+import type * as ts from 'typescript';
 import { ArkTSLinterTimePrinter, TimePhase } from '../ArkTSTimePrinter';
-import { TSCCompiledProgram } from './lib/ts-diagnostics/TSCCompiledProgram';
-import { getStrictDiagnostics } from './lib/ts-diagnostics/TypeScriptDiagnosticsExtractor';
+import type { TSCCompiledProgram } from '../../lib/ts-diagnostics/TSCCompiledProgram';
+import { getStrictDiagnostics } from '../../lib/ts-diagnostics/TypeScriptDiagnosticsExtractor';
 
 export class SdkTSCCompiledProgram implements TSCCompiledProgram {
-  private builerProgram: ts.BuilderProgram;
+  private readonly builerProgram: ts.BuilderProgram;
 
   constructor(builerProgram: ts.BuilderProgram) {
     this.builerProgram = builerProgram;
   }
 
-  public getProgram(): ts.Program {
+  getProgram(): ts.Program {
     return this.builerProgram.getProgram();
   }
 
-  public getBuilderProgram(): ts.BuilderProgram {
+  getBuilderProgram(): ts.BuilderProgram {
     return this.builerProgram;
   }
 
-  public getStrictDiagnostics(fileName: string): ts.Diagnostic[] {
+  getStrictDiagnostics(fileName: string): ts.Diagnostic[] {
     return getStrictDiagnostics(this.getBuilderProgram(), fileName);
   }
 
   /**
    * Updates all diagnostics in TSC compilation program after the incremental build.
    */
-  public updateCompilationDiagnostics() {
+  updateCompilationDiagnostics(): void {
     this.builerProgram.getSemanticDiagnostics();
     const timePrinterInstance = ArkTSLinterTimePrinter.getInstance();
     timePrinterInstance.appendTime(TimePhase.STRICT_PROGRAM_GET_SEMANTIC_DIAGNOSTICS);

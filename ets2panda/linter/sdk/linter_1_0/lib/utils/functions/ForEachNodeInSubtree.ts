@@ -21,7 +21,7 @@ export function forEachNodeInSubtree(
   stopCond?: (n: ts.Node) => boolean
 ): void {
   cb(node);
-  if (stopCond && stopCond(node)) {
+  if (stopCond?.(node)) {
     return;
   }
 

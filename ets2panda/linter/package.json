@@ -28,7 +28,7 @@
     "prettier-fix": "npx prettier --write .",
     "fix": "npm run prettier-fix && npm run eslint-fix",
     "arkTSLinterTest" : "npm run compile && cd ./arkTSTest && node run.js || cd ../..",
-    "arkTSLinterBuild" : "./node_modules/.bin/babel ./sdk --out-dir arkTSTest/lib --extensions .ts && ./node_modules/.bin/babel ./lib --out-dir arkTSTest/lib/linter_1_1/lib --extensions .ts"
+    "arkTSLinterBuild" : "./node_modules/.bin/babel ./sdk --out-dir arkTSTest/testLib --extensions .ts && ./node_modules/.bin/babel ./lib --out-dir arkTSTest/lib --extensions .ts"
   },
   "dependencies": {
     "@babel/cli": "7.20.7",

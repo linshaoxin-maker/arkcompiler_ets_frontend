@@ -332,11 +332,11 @@ export class TsUtils {
   }
 
   static isThisOrSuperExpr(tsExpr: ts.Expression): boolean {
-    return tsExpr.kind == ts.SyntaxKind.ThisKeyword || tsExpr.kind == ts.SyntaxKind.SuperKeyword;
+    return tsExpr.kind === ts.SyntaxKind.ThisKeyword || tsExpr.kind === ts.SyntaxKind.SuperKeyword;
   }
 
   static isObjectLiteralType(type: ts.Type): boolean {
-    return type.symbol && (type.symbol.flags & ts.SymbolFlags.ObjectLiteral) !== 0
+    return type.symbol && (type.symbol.flags & ts.SymbolFlags.ObjectLiteral) !== 0;
   }
 
   static isMethodAssignment(tsSymbol: ts.Symbol | undefined): boolean {
@@ -806,17 +806,20 @@ export class TsUtils {
     return lhsType === rhsType || this.relatedByInheritanceOrIdentical(rhsType, this.getTargetType(lhsType));
   }
 
+  // eslint-disable-next-line class-methods-use-this
   private getTargetType(type: ts.Type): ts.Type {
-    return (type.getFlags() & ts.TypeFlags.Object) && 
-            (type as ts.ObjectType).objectFlags & ts.ObjectFlags.Reference ? (type as ts.TypeReference).target : type;
+    return type.getFlags() & ts.TypeFlags.Object &&
+            (type as ts.ObjectType).objectFlags & ts.ObjectFlags.Reference ?
+      (type as ts.TypeReference).target :
+      type;
   }
 
-  private isEnumAssignment(lhsType: ts.Type, rhsType: ts.Type) {
-    const isNumberEnum = TsUtils.isPrimitiveEnumType(rhsType, ts.TypeFlags.NumberLiteral) || 
+  private isEnumAssignment(lhsType: ts.Type, rhsType: ts.Type): boolean {
+    const isNumberEnum = TsUtils.isPrimitiveEnumType(rhsType, ts.TypeFlags.NumberLiteral) ||
                           TsUtils.isPrimititveEnumMemberType(rhsType, ts.TypeFlags.NumberLiteral);
-    const isStringEnum = TsUtils.isPrimitiveEnumType(rhsType, ts.TypeFlags.StringLiteral) || 
+    const isStringEnum = TsUtils.isPrimitiveEnumType(rhsType, ts.TypeFlags.StringLiteral) ||
                           TsUtils.isPrimititveEnumMemberType(rhsType, ts.TypeFlags.StringLiteral);
-    return (TsUtils.isNumberType(lhsType) && isNumberEnum) || (this.isStringType(lhsType) && isStringEnum);
+    return TsUtils.isNumberType(lhsType) && isNumberEnum || this.isStringType(lhsType) && isStringEnum;
   }
 
   static isPrimitiveEnumType(type: ts.Type, primitiveType: ts.TypeFlags): boolean {
@@ -848,34 +851,19 @@ export class TsUtils {
     // Always check with the non-nullable variant of lhs type.
     let nonNullableLhs = TsUtils.getNonNullableType(lhsType);
 
-    /*
-     * Allow initializing with anything when the type
-     * originates from the library.
-     */
-    if (TsUtils.isAnyType(nonNullableLhs) || this.isLibraryType(nonNullableLhs)) {
+    if (this.doValidateInitializing(nonNullableLhs)) {
       return true;
     }
 
-    /*
-     * issue 13412:
-     * Allow initializing with a dynamic object when the LHS type
-     * is primitive or defined in standard library.
-     */
     if (this.isDynamicObjectAssignedToStdType(nonNullableLhs, rhsExpr)) {
       return true;
     }
 
-    /*
-     * Allow initializing Record objects with object initializer.
-     * Record supports any type for a its value, but the key value
-     * must be either a string or number literal.
-     */
-    if (this.isStdRecordType(nonNullableLhs) && ts.isObjectLiteralExpression(rhsExpr)) {
-      return TsUtils.validateRecordObjectKeys(rhsExpr);
+    if (this.doValidateRecordType(nonNullableLhs, rhsExpr)) {
+      return TsUtils.validateRecordObjectKeys(rhsExpr as ts.ObjectLiteralExpression);
     }
 
-    // For Partial<T>, Required<T>, Readonly<T> types, validate their argument type.
-    if (this.isStdPartialType(nonNullableLhs) || this.isStdRequiredType(nonNullableLhs) || this.isStdReadonlyType(nonNullableLhs)) {
+    if (this.doValidateType(nonNullableLhs)) {
       if (nonNullableLhs.aliasTypeArguments && nonNullableLhs.aliasTypeArguments.length === 1) {
         nonNullableLhs = nonNullableLhs.aliasTypeArguments[0];
       } else {
@@ -883,7 +871,7 @@ export class TsUtils {
       }
     }
 
-    let rhsType = TsUtils.getNonNullableType(this.tsTypeChecker.getTypeAtLocation(rhsExpr));
+    const rhsType = TsUtils.getNonNullableType(this.tsTypeChecker.getTypeAtLocation(rhsExpr));
     if (rhsType.isUnion()) {
       let res = true;
       for (const commpType of rhsType.types) {
@@ -906,9 +894,33 @@ export class TsUtils {
     return this.areTypesAssignable(lhsType, rhsType);
   }
 
+  /*
+   * Allow initializing Record objects with object initializer.
+   * Record supports any type for a its value, but the key value
+   * must be either a string or number literal.
+   */
+  private doValidateRecordType(nonNullableLhs: ts.Type, rhsExpr: ts.Expression): boolean {
+    return this.isStdRecordType(nonNullableLhs) && ts.isObjectLiteralExpression(rhsExpr);
+  }
+
+  /*
+   * Allow initializing with anything when the type
+   * originates from the library.
+   */
+  private doValidateInitializing(nonNullableLhs: ts.Type): boolean {
+    return TsUtils.isAnyType(nonNullableLhs) || this.isLibraryType(nonNullableLhs);
+  }
+
+  // For Partial<T>, Required<T>, Readonly<T> types, validate their argument type.
+  private doValidateType(nonNullableLhs: ts.Type): boolean {
+    return this.isStdPartialType(nonNullableLhs) ||
+    this.isStdRequiredType(nonNullableLhs) ||
+    this.isStdReadonlyType(nonNullableLhs);
+  }
+
   private isObjectLiteralAssignable(lhsType: ts.Type, rhsExpr: ts.Expression): boolean {
     if (ts.isObjectLiteralExpression(rhsExpr)) {
-      return TsUtils.validateObjectLiteralType(lhsType) && !this.hasMethods(lhsType) && 
+      return TsUtils.validateObjectLiteralType(lhsType) && !this.hasMethods(lhsType) &&
               this.validateFields(lhsType, rhsExpr);
     }
     return false;
@@ -941,7 +953,7 @@ export class TsUtils {
   private validateField(type: ts.Type, prop: ts.PropertyAssignment): boolean {
     const propName = prop.name.getText();
     const propSym = this.findProperty(type, propName);
-    if (!propSym || !propSym?.declarations?.length) {
+    if (!propSym?.declarations?.length) {
       return false;
     }
 
