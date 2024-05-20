@@ -299,6 +299,10 @@ public:
     void InferTypesForLambda(ir::ScriptFunction *lambda, ir::ETSFunctionType *calleeType);
     bool TypeInference(Signature *signature, const ArenaVector<ir::Expression *> &arguments,
                        TypeRelationFlag flags = TypeRelationFlag::NONE);
+    bool CheckLambdaTypeAnnotation(ir::AstNode *typeAnnotation, ir::ArrowFunctionExpression *arrowFuncExpr,
+                                   Type *parameterType, TypeRelationFlag flags);
+    bool CheckLambdaInvocable(ir::AstNode *typeAnnotation, ir::ArrowFunctionExpression *arrowFuncExpr,
+                              Type *parameterType, TypeRelationFlag flags);
     bool CheckLambdaAssignable(ir::Expression *param, ir::ScriptFunction *lambda);
     bool CheckLambdaAssignableUnion(ir::AstNode *typeAnn, ir::ScriptFunction *lambda);
     bool IsCompatibleTypeArgument(ETSTypeParameter *typeParam, Type *typeArgument, const Substitution *substitution);
