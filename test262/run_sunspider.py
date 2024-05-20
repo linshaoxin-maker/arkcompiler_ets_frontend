@@ -110,7 +110,6 @@ ARK_FRONTEND_BINARY = DEFAULT_ARK_FRONTEND_BINARY
 ARK_ARCH = DEFAULT_ARK_ARCH
 PROTO_BIN_SUFFIX = "protoBin"
 
-
 class ArkProgram():
     def __init__(self, args):
         self.args = args
@@ -461,6 +460,15 @@ class ArkProgram():
         merge_abc_binary = self.args.merge_abc_binary
         retcode = 0
 
+        # execute arkguard
+        js_file_allpath = os.path.join(os.path.dirname(os.path.abspath(__file__)),'../',js_file)
+        cmd_args = ['node', '--no-warnings', '--loader=ts-node/esm', './src/cli/SecHarmony.ts', js_file_allpath,
+                            '--config-path', './scripts/test262Config.json']
+        retcode = exec_command(cmd_args, customCwd = '/mnt/data/d30053437/ohostest/arkcompiler/ets_frontend/arkguard')
+        #with open('/mnt/data/zwx1285830/ohos/openharmony/arkcompiler/ets_frontend/test262/log.txt', 'a') as file: file.write(' '.join(map(str, cmd_args)) +'\n')
+        if retcode == 1:
+            return retcode
+        #with open('/mnt/data/zwx1285830/ohos/openharmony/arkcompiler/ets_frontend/test262/log.txt', 'a') as file: file.write(open(js_file_allpath).read() +'\n')
         # generate the dependencies' proto when ark_frontend is [es2panda]
         if (file_name in self.module_list or file_name in self.dynamicImport_list):
             compile_as_module, dependencies = self.gen_dependencies_proto(js_file)
