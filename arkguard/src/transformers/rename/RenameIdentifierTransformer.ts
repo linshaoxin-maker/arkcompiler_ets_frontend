@@ -94,6 +94,8 @@ import {
 import {performancePrinter, ArkObfuscator} from '../../ArkObfuscator';
 import { EventList } from '../../utils/PrinterUtils';
 import { isViewPUBasedClass } from '../../utils/OhsUtil';
+import { getPropertyName, isValueInMap, searchMangledInParent } from '../../utils/NameUtils';
+import { ToplevelObf } from '../../common/ToplevelObf';
 
 namespace secharmony {
   /**
@@ -121,8 +123,19 @@ namespace secharmony {
     }
     let generator: INameGenerator = getNameGenerator(profile.mNameGeneratorType, options);
 
-    const openTopLevel: boolean = option?.mNameObfuscation?.mTopLevel;
+    const defaultRervedNames: string[] = ['this', '__global'];
+    let reservedNames: string[] = profile?.mReservedNames ?? []
+    defaultRervedNames.forEach(tempName => { reservedNames.push(tempName); });
+
     const exportObfuscation: boolean = option?.mExportObfuscation;
+    // if toplevel obfuscation is enabled.
+    let topLevelObfConfig: ToplevelObf | undefined = undefined;
+    if (ArkObfuscator.mToplevelObf?.isEnableToplevelObf || exportObfuscation) {
+      topLevelObfConfig = ArkObfuscator.mToplevelObf;
+      profile?.mReservedToplevelNames?.forEach(item => topLevelObfConfig.reservedToplevelNames.add(item));
+      defaultRervedNames.forEach(tempName => { topLevelObfConfig.reservedToplevelNames.add(tempName); });
+    }
+    const propertyObfuscation: boolean = profile.mRenameProperties;
     return renameIdentifierFactory;
 
     function renameIdentifierFactory(context: TransformationContext): Transformer<Node> {
@@ -233,13 +246,16 @@ namespace secharmony {
         defs.forEach((def) => {
           const original: string = def.name;
           let mangled: string = original;
+          console.log('---original----',original);
           // No allow to rename reserved names.
-          if ((!Reflect.has(def, 'obfuscateAsProperty') && reservedNames.includes(original)) ||
-            (!exportObfuscation && scope.exportNames.has(def.name)) ||
-            isSkippedGlobal(openTopLevel, scope)) {
+          if (isSkippedGlobal(!!topLevelObfConfig?.isEnableToplevelObf, scope) ||
+          (topLevelObfConfig.isEnableToplevelObf && topLevelObfConfig.reservedToplevelNames.has(original)) ||
+          (!Reflect.has(def, 'obfuscateAsProperty') && reservedNames.includes(original))) {
             scope.mangledNames.add(mangled);
             return;
           }
+
+          console.log('---original123----',original);
 
           if (mangledSymbolNames.has(def)) {
             return;
@@ -262,6 +278,7 @@ namespace secharmony {
             originalNameWithScope: path
           };
           scope.mangledNames.add(mangled);
+          console.log('---symbolInfo----',symbolInfo);
           mangledSymbolNames.set(def, symbolInfo);
         });
       }
@@ -271,45 +288,7 @@ namespace secharmony {
           return original;
         }
 
-        const historyName: string = historyMangledTable?.get(original);
-        let mangledName: string = historyName ? historyName : globalMangledTable.get(original);
-
-        while (!mangledName) {
-          let tmpName = generator.getName();
-          if (needToBeReserved(reservedProperties, universalReservedProperties, tmpName) ||
-            tmpName === original) {
-            continue;
-          }
-
-          let isInGlobalMangledTable = false;
-          for (const value of globalMangledTable.values()) {
-            if (value === tmpName) {
-              isInGlobalMangledTable = true;
-              break;
-            }
-          }
-
-          if (isInGlobalMangledTable) {
-            continue;
-          }
-
-          let isInHistoryMangledTable = false;
-          if (historyMangledTable) {
-            for (const value of historyMangledTable.values()) {
-              if (value === tmpName) {
-                isInHistoryMangledTable = true;
-                break;
-              }
-            }
-          }
-
-          if (!isInHistoryMangledTable) {
-            mangledName = tmpName;
-            break;
-          }
-        }
-
-        globalMangledTable.set(original, mangledName);
+        let mangledName: string = getPropertyName(original, generator, reservedProperties, universalReservedProperties, historyMangledTable, globalMangledTable);
         return mangledName;
       }
 
@@ -327,21 +306,6 @@ namespace secharmony {
         }
 
         return isObjectLiteralScope(scope);
-      }
-
-      function searchMangledInParent(scope: Scope, name: string): boolean {
-        let found: boolean = false;
-        let parentScope = scope;
-        while (parentScope) {
-          if (parentScope.mangledNames.has(name)) {
-            found = true;
-            break;
-          }
-
-          parentScope = parentScope.parent;
-        }
-
-        return found;
       }
 
       function getMangled(scope: Scope, localGenerator: INameGenerator): string {
@@ -369,7 +333,7 @@ namespace secharmony {
             continue;
           }
 
-          if ((profile.mRenameProperties && manager.getRootScope().constructorReservedParams.has(mangled)) ||
+          if ((propertyObfuscation && manager.getRootScope().constructorReservedParams.has(mangled)) ||
             ApiExtractor.mConstructorPropertySet?.has(mangled)) {
             mangled = '';
           }
@@ -547,7 +511,7 @@ namespace secharmony {
         if (NodeUtils.isNewTargetNode(node)) {
           return node;
         }
-        
+
         let sym: Symbol | undefined = checker.getSymbolAtLocation(node);
         let mangledPropertyNameOfNoSymbolImportExport = '';
         if ((!sym || sym.name === 'default')) {
@@ -582,7 +546,7 @@ namespace secharmony {
         if (!mangledName || mangledName === sym?.name) {
           return node;
         }
-
+        console.log('--mangledName--',mangledName);
         return factory.createIdentifier(mangledName);
       }
 
@@ -640,7 +604,7 @@ namespace secharmony {
 
   export let nameCache: Map<string, string | Map<string, string>> = new Map();
   export let historyNameCache: Map<string, string> = undefined;
-  export let globalNameCache: Map<string, string> = new Map();
+
   export let identifierLineMap: Map<Identifier, string> = new Map();
   export let classMangledName: Map<Node, string> = new Map();
 }

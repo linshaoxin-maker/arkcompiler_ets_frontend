@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+import { ArkObfuscator } from '../ArkObfuscator';
 import {FileUtils} from './FileUtils';
 
 export const NAME_CACHE_SUFFIX: string = '.cache.json';

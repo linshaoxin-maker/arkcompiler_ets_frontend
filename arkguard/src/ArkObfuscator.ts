@@ -69,6 +69,7 @@ export { FileUtils } from './utils/FileUtils';
 export { MemoryUtils } from './utils/MemoryUtils';
 import { TypeUtils } from './utils/TypeUtils';
 import { handleReservedConfig } from './utils/TransformUtil';
+import { ToplevelObf } from './common/ToplevelObf';
 export { separateUniversalReservedItem, containWildcards, wildcardTransformer } from './utils/TransformUtil';
 export type { ReservedNameInfo } from './utils/TransformUtil';
 
@@ -121,6 +122,8 @@ export class ArkObfuscator {
 
   // If isKeptCurrentFile is true, both identifier and property obfuscation are skipped.
   static mIsKeptCurrentFile: boolean = false;
+
+  static mToplevelObf: ToplevelObf | undefined;
 
   public constructor(sourceFiles?: string[], configPath?: string) {
     this.mSourceFiles = sourceFiles;
@@ -227,6 +230,9 @@ export class ArkObfuscator {
       this.mCompilerOptions.sourceMap = true;
     }
 
+    if (this.mCustomProfiles.mNameObfuscation?.mTopLevel || this.mCustomProfiles.mExportObfuscation) {
+      ArkObfuscator.mToplevelObf = new ToplevelObf(this.mCustomProfiles.mNameObfuscation.mReservedToplevelNames, true);
+    }
     this.initPerformancePrinter();
     // load transformers
     this.mTransformers = new TransformerManager(this.mCustomProfiles).getTransformers();
@@ -577,7 +583,7 @@ export class ArkObfuscator {
 
     result.filePath = ast.fileName;
     result.content = this.mTextWriter.getText();
-
+    console.log(result.content)
     if (this.mCustomProfiles.mEnableSourceMap && sourceMapGenerator) {
       let sourceMapJson: RawSourceMap = sourceMapGenerator.toJSON();
       sourceMapJson.sourceRoot = '';
