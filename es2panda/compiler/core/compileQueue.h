@@ -83,6 +83,7 @@ public:
     ~CompileFileJob() override = default;
 
     void Run() override;
+    bool UpdateModuleRecordImport(pandasm::Program &program, const panda::es2panda::CompileContextInfo compileContextInfo);
 
 private:
     bool RetrieveProgramFromCacheFiles(const std::string &buffer);

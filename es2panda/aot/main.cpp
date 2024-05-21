@@ -16,6 +16,7 @@
 #include <abc2program/program_dump.h>
 #include <assembly-program.h>
 #include <assembly-emitter.h>
+#include <resolveDepsRelation.h>
 #include <emitFiles.h>
 #include <es2panda.h>
 #include <mem/arena_allocator.h>
@@ -112,10 +113,11 @@ static void DumpPandaFileSizePctStatistic(std::map<std::string, size_t> &stat)
     std::cout << "total: " << totalSize << std::endl;
 }
 
-static bool GenerateProgramsByWorkers(const std::map<std::string, panda::es2panda::util::ProgramCache*> &programsInfo,
-    const std::unique_ptr<panda::es2panda::aot::Options> &options, std::map<std::string, size_t> *statp)
+static bool GenerateProgramsByWorkers(std::map<std::string, panda::es2panda::util::ProgramCache*> &programsInfo,
+    const std::unique_ptr<panda::es2panda::aot::Options> &options, std::map<std::string, size_t> *statp,
+    util::DepsRelationInfo *depsRelationInfo)
 {
-    auto queue = new panda::es2panda::aot::EmitFileQueue(options, statp, programsInfo);
+    auto queue = new panda::es2panda::aot::EmitFileQueue(options, statp, programsInfo, depsRelationInfo);
 
     bool emitResult = true;
     try {
@@ -155,8 +157,8 @@ static void DumpProgramInfos(const std::map<std::string, panda::es2panda::util::
     }
 }
 
-static bool GenerateProgram(const std::map<std::string, panda::es2panda::util::ProgramCache*> &programsInfo,
-    const std::unique_ptr<panda::es2panda::aot::Options> &options)
+static bool GenerateProgram(std::map<std::string, panda::es2panda::util::ProgramCache*> &programsInfo,
+    const std::unique_ptr<panda::es2panda::aot::Options> &options, util::DepsRelationInfo *depsRelationInfo)
 {
     DumpProgramInfos(programsInfo, options);
 
@@ -180,7 +182,7 @@ static bool GenerateProgram(const std::map<std::string, panda::es2panda::util::P
     std::map<std::string, size_t> stat;
     std::map<std::string, size_t> *statp = (dumpSize || dumpSizePct) ? &stat : nullptr;
 
-    if (!GenerateProgramsByWorkers(programsInfo, options, statp)) {
+    if (!GenerateProgramsByWorkers(programsInfo, options, statp, depsRelationInfo)) {
         return false;
     }
 
@@ -195,8 +197,9 @@ static bool GenerateProgram(const std::map<std::string, panda::es2panda::util::P
     return true;
 }
 
-static bool GenerateAbcFiles(const std::map<std::string, panda::es2panda::util::ProgramCache*> &programsInfo,
-    const std::unique_ptr<panda::es2panda::aot::Options> &options, size_t expectedProgsCount)
+static bool GenerateAbcFiles(std::map<std::string, panda::es2panda::util::ProgramCache*> &programsInfo,
+    const std::unique_ptr<panda::es2panda::aot::Options> &options, size_t expectedProgsCount,
+    util::DepsRelationInfo *depsRelationInfo)
 {
     if (programsInfo.size() != expectedProgsCount) {
         std::cerr << "The size of programs is expected to be " << expectedProgsCount
@@ -204,12 +207,21 @@ static bool GenerateAbcFiles(const std::map<std::string, panda::es2panda::util::
         return false;
     }
 
-    if (!GenerateProgram(programsInfo, options)) {
+    if (!GenerateProgram(programsInfo, options, depsRelationInfo)) {
         std::cerr << "GenerateProgram Failed!" << std::endl;
         return false;
     }
 
     return true;
+}
+
+static bool ResolveDepsRelations(const std::map<std::string, panda::es2panda::util::ProgramCache*> &programsInfo,
+                                 const std::unique_ptr<panda::es2panda::aot::Options> &options,
+                                 std::map<std::string, std::unordered_set<std::string>> &resolveDepsRelation,
+                                 std::unordered_set<std::string> &generatedRecords)
+{
+    panda::es2panda::aot::DepsRelationResolver depsRelationResolver(programsInfo, options, resolveDepsRelation, generatedRecords);
+    return depsRelationResolver.Resolve();
 }
 
 int Run(int argc, const char **argv)
@@ -249,7 +261,14 @@ int Run(int argc, const char **argv)
         expectedProgsCount++;
     }
 
-    if (!GenerateAbcFiles(programsInfo, options, expectedProgsCount)) {
+    std::map<std::string, std::unordered_set<std::string>> resolveDepsRelation {};
+    std::unordered_set<std::string> generatedRecords {};
+    if (!ResolveDepsRelations(programsInfo, options, resolveDepsRelation, generatedRecords)) {
+        return 1;
+    }
+    auto *depsRelationInfo = allocator.New<util::DepsRelationInfo>(resolveDepsRelation, generatedRecords);
+
+    if (!GenerateAbcFiles(programsInfo, options, expectedProgsCount, depsRelationInfo)) {
         return 1;
     }
 

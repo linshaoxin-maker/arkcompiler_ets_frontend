@@ -24,6 +24,7 @@ struct ProgramCache {
     uint32_t hashCode;
     panda::pandasm::Program program;
     bool needUpdateCache { false };
+    bool generateFromAbc { false };
 
     ProgramCache(uint32_t hashCode, panda::pandasm::Program program) : hashCode(hashCode), program(std::move(program))
     {

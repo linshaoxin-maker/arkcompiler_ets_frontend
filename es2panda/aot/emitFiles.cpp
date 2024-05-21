@@ -16,9 +16,11 @@
 #include "emitFiles.h"
 
 #include <assembly-emitter.h>
-#include <es2panda.h>
 #include <mem/arena_allocator.h>
+
+#include <es2panda.h>
 #include <protobufSnapshotGenerator.h>
+#include <util/helpers.h>
 
 namespace panda::es2panda::aot {
 void EmitFileQueue::ScheduleEmitCacheJobs(EmitMergedAbcJob *emitMergedAbcJob)
@@ -45,6 +47,9 @@ void EmitFileQueue::Schedule()
     auto targetApi = options_->CompilerOptions().targetApiVersion;
 
     if (mergeAbc_) {
+        util::Helpers::RemoveProgramsRedundantData(progsInfo_, depsRelationInfo_->resolveDepsRelation,
+            depsRelationInfo_->generatedRecords);
+
         // generate merged abc
         auto emitMergedAbcJob = new EmitMergedAbcJob(options_->CompilerOutput(),
             options_->CompilerOptions().transformLib, progsInfo_, targetApi);

@@ -15,6 +15,8 @@
 
 #include "helpers.h"
 
+#include <function_collect_string.h>
+
 #include <binder/scope.h>
 #include <es2panda.h>
 #include <ir/base/classDefinition.h>
@@ -927,6 +929,127 @@ const ir::ClassDefinition *Helpers::GetContainingSendableClass(const ir::AstNode
     }
 
     return nullptr;
+}
+
+static bool StringStartsWith(const std::string &str, const std::string &prefix)
+{
+    return (str.size() >= prefix.size()) &&
+           std::equal(prefix.begin(), prefix.end(), str.begin());
+}
+
+std::string Helpers::UpdatePackageVersionIfNeeded(const std::string &ohmurl, const panda::es2panda::CompileContextInfo &info)
+{
+    // ohmurl: @normalized:N&<module name>&<bundle name>&[<package name>|<@package/name>]/<import_path>&version
+    // Replace version if the package name exists in the pkgContextInfo
+    constexpr char AND_TOKEN = '&';
+    constexpr char AT_TOKEN = '@';
+    constexpr char OHMURL_PATH_SEPARATOR = '/';
+    const std::string NON_NATIVE_NORMALIZED_OHMURL_PREFIX = "@normalized:N&";
+    if (!StringStartsWith(ohmurl, NON_NATIVE_NORMALIZED_OHMURL_PREFIX)) {
+        return ohmurl;
+    }
+    auto bundle_name_start = ohmurl.find(AND_TOKEN, NON_NATIVE_NORMALIZED_OHMURL_PREFIX.size());
+    if (bundle_name_start == std::string::npos) {
+        return ohmurl;
+    }
+    auto package_name_start = ohmurl.find(AND_TOKEN, bundle_name_start + 1);
+    if (package_name_start == std::string::npos) {
+        return ohmurl;
+    }
+    package_name_start += 1;
+    auto import_path_start = ohmurl.find(OHMURL_PATH_SEPARATOR, package_name_start);
+    if (ohmurl[package_name_start] == AT_TOKEN) {
+        import_path_start = ohmurl.find(OHMURL_PATH_SEPARATOR, import_path_start + 1);
+    }
+    std::string package_name = ohmurl.substr(package_name_start, import_path_start - package_name_start);
+    auto iter = info.pkgContextInfo.find(package_name);
+    if (iter == info.pkgContextInfo.end()) {
+        return ohmurl;
+    }
+    auto version_start = ohmurl.rfind(AND_TOKEN);
+    ASSERT(version_start != std::string::npos);
+    auto ret =  ohmurl.substr(0, version_start + 1) + iter->second.version;
+    return ret;
+}
+
+bool Helpers::BelongToRetainRecord(const std::string &name, const std::unordered_set<std::string> &retainRecordSet,
+    const std::string &delimiter)
+{
+    size_t dotPos = name.rfind(delimiter);
+    ASSERT(dotPos != std::string::npos);
+    auto recordName = name.substr(0, dotPos);
+    return retainRecordSet.count(recordName);
+}
+
+void Helpers::RemoveProgramRedundantData(panda::pandasm::Program &program,
+    const std::unordered_set<std::string> &retainRecordSet, const std::unordered_set<std::string> &generatedRecords)
+{
+    // remove redundant record
+    auto recordIter = program.record_table.begin();
+    while (recordIter != program.record_table.end()) {
+        if (!retainRecordSet.count(recordIter->first) && !generatedRecords.count(recordIter->first)) {
+            recordIter = program.record_table.erase(recordIter);
+        } else {
+            recordIter++;
+        }
+    }
+
+    std::set<std::string> updatedStrings {};
+
+    // remove redundant function
+    auto functionIter = program.function_table.begin();
+    while (functionIter != program.function_table.end()) {
+        auto funcName = functionIter->first;
+        if (!BelongToRetainRecord(funcName, retainRecordSet)) {
+            functionIter = program.function_table.erase(functionIter);
+
+            auto synonymsIter = program.function_synonyms.find(funcName);
+            if (synonymsIter != program.function_synonyms.end()) {
+                program.function_synonyms.erase(synonymsIter);
+            }
+        } else {
+            auto insnStringSet = functionIter->second.CollectStringsFromFunctionInsns();
+            updatedStrings.insert(insnStringSet.begin(), insnStringSet.end());
+
+            functionIter++;
+        }
+    }
+
+    // remove redundant string
+    program.strings = updatedStrings;
+
+    // remove redundant literalarray
+    auto literalarrayIter = program.literalarray_table.begin();
+    while (literalarrayIter != program.literalarray_table.end()) {
+        if (!BelongToRetainRecord(literalarrayIter->first, retainRecordSet, "_")) {
+            literalarrayIter = program.literalarray_table.erase(literalarrayIter);
+        } else {
+            literalarrayIter++;
+        }
+    }
+}
+
+void Helpers::RemoveProgramsRedundantData(std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
+    const std::map<std::string, std::unordered_set<std::string>> &resolveDepsRelation,
+    const std::unordered_set<std::string> &generatedRecords)
+{
+    // remove redundant data in progs before emitting mergeabc job
+    auto progInfoIter = progsInfo.begin();
+    while (progInfoIter != progsInfo.end()) {
+        // 1. remove redundant files which are not dependant in compilation
+        if (!resolveDepsRelation.count(progInfoIter->first)) {
+            progInfoIter = progsInfo.erase(progInfoIter);
+            continue;
+        }
+
+        // 2. remove redundant data from programs which are generated from abc
+        if (progInfoIter->second->generateFromAbc) {
+            RemoveProgramRedundantData(progInfoIter->second->program,
+                resolveDepsRelation.find(progInfoIter->first)->second, generatedRecords);
+        }
+
+        progInfoIter++;
+    }
 }
 
 }  // namespace panda::es2panda::util

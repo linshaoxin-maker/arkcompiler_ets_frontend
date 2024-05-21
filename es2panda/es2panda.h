@@ -23,6 +23,7 @@
 #include <util/symbolTable.h>
 #include <abc2program/abc2program_compiler.h>
 
+#include <any>
 #include <string>
 #include <unordered_map>
 
@@ -31,6 +32,9 @@ struct Program;
 }  // namespace panda::pandasm
 
 namespace panda::es2panda {
+struct CompileContextInfo;
+struct PkgInfo;
+
 namespace parser {
 class ParserImpl;
 class Transformer;
@@ -104,6 +108,8 @@ struct CompilerOptions {
     bool bcMinVersion {false};
     int targetApiVersion {0};
     bool targetBcVersion {false};
+    std::string compileContextInfoPath {};
+    CompileContextInfo compileContextInfo {};
     std::unordered_map<std::string, std::string> cacheFiles;
     std::string transformLib {};
     bool branchElimination {false};
@@ -218,6 +224,8 @@ private:
     void CheckUnsupportOptionsForAbcInput(const std::string &fname, const CompilerOptions &options);
     void ChecktargetApiVersionIsSupportedForAbcInput(const CompilerOptions &options);
     panda::pandasm::Program *AbcToAsmProgram(const std::string &fname, const CompilerOptions &options);
+    void UpdatePackageVersion(panda::pandasm::Program *prog, const CompilerOptions &options);
+    void UpdateDynamicImportPackageVersion(panda::pandasm::Program *prog, const CompilerOptions &options);
 
     parser::ParserImpl *parser_;
     compiler::CompilerImpl *compiler_;
