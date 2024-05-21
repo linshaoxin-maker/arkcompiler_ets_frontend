@@ -463,6 +463,56 @@ bool ETSChecker::ValidateSignatureRestParams(Signature *substitutedSig, const Ar
     return true;
 }
 
+void ETSChecker::MaybeSubstituteLambdaArgumentsInFunctionCall(ir::CallExpression *callExpr)
+{
+    ir::AstNode *expr = callExpr;
+
+    while (!expr->IsFunctionExpression()) {
+        if (expr->Parent()->IsClassDefinition()) {
+            return;
+        }
+        expr = expr->Parent();
+    }
+
+    auto *funcExpr = expr->AsFunctionExpression();
+
+    for (const auto it : funcExpr->Function()->Params()) {
+        if (const auto ident = it->AsETSParameterExpression()->Ident();
+            callExpr->Callee()->IsIdentifier() && ident->Name() == callExpr->Callee()->AsIdentifier()->Name() &&
+            ident->IsAnnotatedExpression()) {
+            if (ident->AsAnnotatedExpression()->TypeAnnotation()->IsETSFunctionType()) {
+                MaybeSubstituteLambdaArguments(
+                    ident->AsAnnotatedExpression()->TypeAnnotation()->AsETSFunctionType()->Params(), callExpr);
+            } else if (const auto funcType = ident->AsAnnotatedExpression()
+                                                 ->TypeAnnotation()
+                                                 ->AsETSTypeReference()
+                                                 ->Part()
+                                                 ->Name()
+                                                 ->AsIdentifier()
+                                                 ->Variable()
+                                                 ->Declaration()
+                                                 ->Node()
+                                                 ->AsTSTypeAliasDeclaration()
+                                                 ->TypeAnnotation();
+                       funcType->IsETSFunctionType()) {
+                MaybeSubstituteLambdaArguments(funcType->AsETSFunctionType()->Params(), callExpr);
+            }
+        }
+    }
+}
+
+void ETSChecker::MaybeSubstituteLambdaArguments(const ArenaVector<ir::Expression *> &params,
+                                                ir::CallExpression *callExpr)
+{
+    for (size_t i = 0; i < params.size(); i++) {
+        if (params[i]->AsETSParameterExpression()->IsDefault() && callExpr->Arguments().size() <= i &&
+            params[i]->AsETSParameterExpression()->Initializer() != nullptr) {
+            callExpr->Arguments().push_back(
+                params[i]->AsETSParameterExpression()->Initializer()->Clone(Allocator(), callExpr)->AsExpression());
+        }
+    }
+}
+
 Signature *ETSChecker::ValidateSignature(Signature *signature, const ir::TSTypeParameterInstantiation *typeArguments,
                                          const ArenaVector<ir::Expression *> &arguments,
                                          const lexer::SourcePosition &pos, TypeRelationFlag flags,
@@ -824,6 +874,14 @@ Signature *ETSChecker::ResolveCallExpressionAndTrailingLambda(ArenaVector<Signat
     Signature *sig = nullptr;
 
     if (callExpr->TrailingBlock() == nullptr) {
+        for (auto it : signatures) {
+            MaybeSubstituteLambdaArguments(it->Function()->Params(), callExpr);
+
+            if (callExpr->Arguments().size() != it->Function()->Params().size()) {
+                MaybeSubstituteLambdaArgumentsInFunctionCall(callExpr);
+            }
+        }
+
         sig = ValidateSignatures(signatures, callExpr->TypeParams(), callExpr->Arguments(), pos, "call", throwFlag);
         return sig;
     }
@@ -1669,9 +1727,9 @@ void ETSChecker::ResolveLambdaObject(ir::ClassDefinition *lambdaObject, ETSObjec
 
     // Resolve the invoke function
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-    ResolveLambdaObjectInvoke(lambdaObject, lambda, proxyMethod, !saveThis, true);
+    ResolveLambdaObjectInvoke(lambdaObject, lambda, proxyMethod, functionalInterface, !saveThis, true);
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-    ResolveLambdaObjectInvoke(lambdaObject, lambda, proxyMethod, !saveThis, false);
+    ResolveLambdaObjectInvoke(lambdaObject, lambda, proxyMethod, functionalInterface, !saveThis, false);
 }
 
 static void CreateParametersForInvokeSignature(ETSChecker *checker, ir::ArrowFunctionExpression *lambda,
@@ -1748,27 +1806,46 @@ static Signature *CreateInvokeSignature(ETSChecker *checker, ir::ArrowFunctionEx
     return invokeSignature;
 }
 
+static void UpdateSignatureForOptionalParams(ir::ArrowFunctionExpression *lambda,
+                                             const ETSObjectType *functionalInterface)
+{
+    const auto params = functionalInterface->GetAllProperties()[0]
+                            ->TsType()
+                            ->AsETSFunctionType()
+                            ->CallSignatures()[0]
+                            ->Function()
+                            ->Params();
+
+    for (size_t i = 0; i < lambda->Function()->Params().size(); i++) {
+        if (const auto param = lambda->Function()->Params()[i]->AsETSParameterExpression(); param->IsDefault()) {
+            params[i]->AsETSParameterExpression()->SetInitializer(param->Initializer());
+        }
+    }
+}
+
 void ETSChecker::ResolveLambdaObjectInvoke(ir::ClassDefinition *lambdaObject, ir::ArrowFunctionExpression *lambda,
-                                           ir::MethodDefinition *proxyMethod, bool isStatic, bool ifaceOverride)
+                                           ir::MethodDefinition *proxyMethod, ETSObjectType *functionalInterface,
+                                           bool isStatic, bool ifaceOverride)
 {
     const auto &lambdaBody = lambdaObject->Body();
-    auto *invokeFunc = lambdaBody[lambdaBody.size() - (ifaceOverride ? 2 : 1)]->AsMethodDefinition()->Function();
+    auto *invokeFunc = lambdaBody[lambdaBody.size() - (ifaceOverride ? 2 : 1)]->AsMethodDefinition();
     ETSObjectType *lambdaObjectType = lambdaObject->TsType()->AsETSObjectType();
-
+    UpdateSignatureForOptionalParams(lambda, functionalInterface);
     // Set the implicit 'this' parameters type to the lambda object
-    auto *thisVar = invokeFunc->Scope()->ParamScope()->Params().front();
+    auto *thisVar = invokeFunc->Function()->Scope()->ParamScope()->Params().front();
     thisVar->SetTsType(lambdaObjectType);
 
     // Create the function type for the invoke method
-    auto *invokeSignature = CreateInvokeSignature(this, lambda, invokeFunc, lambdaObjectType, ifaceOverride);
+    auto *invokeSignature =
+        CreateInvokeSignature(this, lambda, invokeFunc->Function(), lambdaObjectType, ifaceOverride);
     auto *invokeType = CreateETSFunctionType(invokeSignature);
-    invokeFunc->SetSignature(invokeSignature);
-    invokeFunc->Id()->Variable()->SetTsType(invokeType);
-    VarBinder()->AsETSBinder()->BuildFunctionName(invokeFunc);
+    invokeFunc->Function()->SetSignature(invokeSignature);
+    invokeFunc->Function()->Id()->Variable()->SetTsType(invokeType);
+    VarBinder()->AsETSBinder()->BuildFunctionName(invokeFunc->Function());
     lambdaObjectType->AddProperty<checker::PropertyType::INSTANCE_METHOD>(
-        invokeFunc->Id()->Variable()->AsLocalVariable());
+        invokeFunc->Function()->Id()->Variable()->AsLocalVariable());
 
-    if (invokeFunc->IsAsyncFunc()) {
+    if (invokeFunc->Function()->IsAsyncFunc()) {
         return;
     }
 

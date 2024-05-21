@@ -639,4 +639,76 @@ void ProcessReturnStatements(ETSChecker *checker, ir::ScriptFunction *containing
     }
 }
 
+ETSObjectType *CreateOptionalSignaturesForFunctionalType(ETSChecker *checker, ir::ETSFunctionType *node,
+                                                         ETSObjectType *genericInterfaceType,
+                                                         Substitution *substitution, size_t optionalParameterIndex)
+{
+    const auto &params = node->Params();
+    auto returnType = node->ReturnType()->GetType(checker);
+
+    for (size_t i = 0; i < optionalParameterIndex; i++) {
+        auto *paramType = params[i]->AsETSParameterExpression()->TypeAnnotation()->GetType(checker);
+
+        if (paramType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+            checker->Relation()->SetNode(params[i]);
+            auto *const boxedTypeArg = checker->PrimitiveTypeAsETSBuiltinType(paramType);
+            ASSERT(boxedTypeArg);
+            paramType =
+                boxedTypeArg->Instantiate(checker->Allocator(), checker->Relation(), checker->GetGlobalTypesHolder());
+        }
+
+        checker::ETSChecker::EmplaceSubstituted(
+            substitution, genericInterfaceType->TypeArguments()[i]->AsETSTypeParameter()->GetOriginal(), paramType);
+    }
+
+    for (size_t i = optionalParameterIndex; i < params.size(); i++) {
+        checker::ETSChecker::EmplaceSubstituted(
+            substitution, genericInterfaceType->TypeArguments()[i]->AsETSTypeParameter()->GetOriginal(),
+            CreateParamTypeWithDefaultParam(checker, params[i]));
+    }
+
+    if (returnType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+        checker->Relation()->SetNode(node->ReturnType());
+        auto *const boxedTypeRet = checker->PrimitiveTypeAsETSBuiltinType(returnType);
+        returnType =
+            boxedTypeRet->Instantiate(checker->Allocator(), checker->Relation(), checker->GetGlobalTypesHolder());
+    }
+
+    checker::ETSChecker::EmplaceSubstituted(
+        substitution,
+        genericInterfaceType->TypeArguments()[genericInterfaceType->TypeArguments().size() - 1]
+            ->AsETSTypeParameter()
+            ->GetOriginal(),
+        returnType);
+
+    return genericInterfaceType->Substitute(checker->Relation(), substitution)->AsETSObjectType();
+}
+
+Type *CreateParamTypeWithDefaultParam(ETSChecker *checker, ir::Expression *param)
+{
+    if (!param->AsETSParameterExpression()->IsDefault()) {
+        checker->ThrowTypeError({"Expected initializer for ", param->AsETSParameterExpression()->Ident()->Name()},
+                                param->Start());
+    }
+
+    auto *paramType = param->AsETSParameterExpression()->TypeAnnotation()->GetType(checker);
+
+    if (paramType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+        checker->Relation()->SetNode(param);
+        auto *const boxedTypeArg = checker->PrimitiveTypeAsETSBuiltinType(paramType);
+        ASSERT(boxedTypeArg);
+        paramType =
+            boxedTypeArg->Instantiate(checker->Allocator(), checker->Relation(), checker->GetGlobalTypesHolder());
+    }
+
+    ArenaVector<Type *> types(checker->Allocator()->Adapter());
+    types.push_back(paramType);
+
+    if (param->AsETSParameterExpression()->Initializer()->IsUndefinedLiteral()) {
+        types.push_back(checker->GlobalETSUndefinedType());
+    }
+
+    return checker->CreateETSUnionType(Span<Type *const>(types));
+}
+
 }  // namespace ark::es2panda::checker
