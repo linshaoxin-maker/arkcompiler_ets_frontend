@@ -17,7 +17,10 @@ import * as fs from 'fs';
 
 export enum EventList {
   OBFUSCATION_INITIALIZATION = 'Obfuscation initialization',
+  SCAN_SYSTEMAPI = 'Scan system api',
+  SCAN_SOURCEFILES = 'Scan source files',
   ALL_FILES_OBFUSCATION = 'All files obfuscation',
+  OBFUSCATE = `Obfuscate`,
   CREATE_AST = 'Create AST',
   OBFUSCATE_AST = 'Obfuscate AST',
   VIRTUAL_CONSTRUCTOR_OBFUSCATION = 'Virtual constructor obfuscation',
@@ -30,31 +33,45 @@ export enum EventList {
   CREATE_OBFUSCATED_NAMES = 'Create obfuscated names',
   OBFUSCATE_NODES = 'Obfuscate nodes',
   FILENAME_OBFUSCATION = 'Filename obfuscation',
-  CREATE_PRINTER = 'Create Printer'
-}
+  CREATE_PRINTER = 'Create Printer',
+  GET_SOURCEMAP_GENERATOR = `Get sourcemap generator`,
+  SOURCEMAP_MERGE = 'Sourcemap merge',
+  CREATE_NAMECACHE = `Create namecache`,
+  MANGLE_FILENAME = `Mangle filename`,
+  WRITE_FILE = `Write file`
+ }
 
 export enum EventIndentation {
+  THREESPACE = 3,
   TWOSPACE = 2,
   ONESPACE = 1,
   NOSPACE = 0,
 };
 
 export const eventList = new Map<string, number>([
-  [EventList.OBFUSCATION_INITIALIZATION, EventIndentation.NOSPACE],
-  [EventList.ALL_FILES_OBFUSCATION, EventIndentation.NOSPACE],
-  [EventList.CREATE_AST, EventIndentation.ONESPACE],
-  [EventList.OBFUSCATE_AST, EventIndentation.ONESPACE],
-  [EventList.VIRTUAL_CONSTRUCTOR_OBFUSCATION, EventIndentation.TWOSPACE],
-  [EventList.SHORT_HAND_OBFUSCATION, EventIndentation.TWOSPACE],
-  [EventList.REMOVE_CONSOLE, EventIndentation.TWOSPACE],
-  [EventList.PROPERTY_OBFUSCATION, EventIndentation.TWOSPACE],
-  [EventList.IDENTIFIER_OBFUSCATION, EventIndentation.TWOSPACE],
-  [EventList.CREATE_CHECKER, EventIndentation.TWOSPACE],
-  [EventList.SCOPE_ANALYZE, EventIndentation.TWOSPACE],
-  [EventList.CREATE_OBFUSCATED_NAMES, EventIndentation.TWOSPACE],
-  [EventList.OBFUSCATE_NODES, EventIndentation.TWOSPACE],
-  [EventList.FILENAME_OBFUSCATION, EventIndentation.TWOSPACE],
-  [EventList.CREATE_PRINTER, EventIndentation.ONESPACE],
+  [EventList.OBFUSCATION_INITIALIZATION, EventIndentation.ONESPACE],
+  [EventList.SCAN_SYSTEMAPI, EventIndentation.TWOSPACE],
+  [EventList.SCAN_SOURCEFILES, EventIndentation.ONESPACE],
+  [EventList.ALL_FILES_OBFUSCATION, EventIndentation.ONESPACE],
+  [EventList.OBFUSCATE, EventIndentation.ONESPACE],
+  [EventList.CREATE_AST, EventIndentation.TWOSPACE],
+  [EventList.OBFUSCATE_AST, EventIndentation.TWOSPACE],
+  [EventList.VIRTUAL_CONSTRUCTOR_OBFUSCATION, EventIndentation.THREESPACE],
+  [EventList.SHORT_HAND_OBFUSCATION, EventIndentation.THREESPACE],
+  [EventList.REMOVE_CONSOLE, EventIndentation.THREESPACE],
+  [EventList.PROPERTY_OBFUSCATION, EventIndentation.THREESPACE],
+  [EventList.IDENTIFIER_OBFUSCATION, EventIndentation.THREESPACE],
+  [EventList.CREATE_CHECKER, EventIndentation.THREESPACE],
+  [EventList.SCOPE_ANALYZE, EventIndentation.THREESPACE],
+  [EventList.CREATE_OBFUSCATED_NAMES, EventIndentation.THREESPACE],
+  [EventList.OBFUSCATE_NODES, EventIndentation.THREESPACE],
+  [EventList.FILENAME_OBFUSCATION, EventIndentation.THREESPACE],
+  [EventList.CREATE_PRINTER, EventIndentation.TWOSPACE],
+  [EventList.GET_SOURCEMAP_GENERATOR, EventIndentation.TWOSPACE],
+  [EventList.SOURCEMAP_MERGE, EventIndentation.TWOSPACE],
+  [EventList.CREATE_NAMECACHE, EventIndentation.TWOSPACE],
+  [EventList.MANGLE_FILENAME, EventIndentation.ONESPACE],
+  [EventList.WRITE_FILE, EventIndentation.ONESPACE]
 ]);
 
 export interface TimeAndMemInfo {
@@ -63,6 +80,7 @@ export interface TimeAndMemInfo {
   startMemory: number;
   endMemory: number;
   memoryUsage: number;
+  filePath?: string;
 }
 
 const MILLISECOND_TO_SECOND = 1000;
@@ -104,14 +122,16 @@ export class TimeTracker extends BasePrinter {
   private maxTimeFile = "";
   private maxMemoryUsage: number = 0;
   private maxMemoryFile: string = '';
+  private enablePrinter = true;
+
+  disablePrinter(): void {
+    this.enablePrinter = false;
+  }
 
   startEvent(eventName: string, timeSumPrinter?: TimeSumPrinter, currentFile?: string): void {
     this.eventStack.set(eventName, {start: Date.now(), duration: 0, startMemory: process.memoryUsage().heapUsed, 
-      endMemory: 0, memoryUsage: 0});
+      endMemory: 0, memoryUsage: 0, filePath: currentFile});
     timeSumPrinter?.addEventDuration(eventName, 0);
-    if (eventName === EventList.CREATE_AST) {
-      this.print(currentFile);
-    }
   }
 
   endEvent(eventName: string, timeSumPrinter?: TimeSumPrinter, isFilesPrinter?: boolean): void {
@@ -152,27 +172,46 @@ export class TimeTracker extends BasePrinter {
 
     if ((eventName === EventList.ALL_FILES_OBFUSCATION)) {
       this.eventStack.get(eventName).duration = this.filesTimeSum;
-      this.outputData();
+      if (this.enablePrinter) {
+        this.outputData();
+      }
+      const totalTimeUsage = this.getTotalTime();
       const maxTimeUsage = this.maxTimeUsage.toFixed(SIG_FIGS);
       const maxMemoryUsage = (this.maxMemoryUsage/BYTE_TO_MB).toFixed(SIG_FIGS);
-      this.print(`Max time cost: ${this.maxTimeFile}: ${maxTimeUsage}s`)
-      this.print(`Max memory usage: ${this.maxMemoryFile}: ${maxMemoryUsage}MB\n`)
+      this.print(`Obfuscation time cost: ${totalTimeUsage}s`);
+      this.print(`Max time cost of single file: ${this.maxTimeFile}: ${maxTimeUsage}s`);
+      this.print(`Max memory usage of single file: ${this.maxMemoryFile}: ${maxMemoryUsage}MB\n`);
     }
 
-    if ((eventName === EventList.CREATE_PRINTER)) {
+    let dataFromArkguard = eventName === EventList.CREATE_PRINTER && !this.eventStack.has(EventList.WRITE_FILE) && this.enablePrinter;
+    if (dataFromArkguard) {
       this.outputData();
+      return;
+    }
+
+    let dataFromIde = eventName === EventList.WRITE_FILE && this.enablePrinter;
+    if (dataFromIde) {
+      this.outputData();
+      return;
     }
   }
 
   getCurrentEventData(): string {
     let eventData = "";
     for (const eventName of this.eventStack.keys()) {
-      let depth = eventList.get(eventName)?? 0;
+      if (eventName == EventList.OBFUSCATION_INITIALIZATION) {
+        const totalTimeUsage = this.getTotalTime();
+        eventData += `Obfuscation time cost: ${totalTimeUsage}s\n`;
+      }
+      let depth = eventList.get(eventName)?? 2;
       let eventInfo = this.eventStack.get(eventName);
       const duration = eventInfo.duration;
       const startMemory = eventInfo.startMemory/BYTE_TO_MB;
       const endMemory = eventInfo.endMemory/BYTE_TO_MB;
       const memoryUsage = eventInfo.memoryUsage/BYTE_TO_MB;
+      if (eventInfo.filePath) {
+        eventData += eventInfo.filePath + `\n`;
+      }
       eventData += this.formatEvent(eventName, duration, startMemory, endMemory, memoryUsage, depth);
     }
     return eventData;
@@ -187,6 +226,13 @@ export class TimeTracker extends BasePrinter {
     const formatttedMemoryUsage  = memoryUsage.toFixed(SIG_FIGS) + 'MB';
     return `${indent}${eventName}: timeCost:${formattedDuration} startMemory:${formatttedStartMemory} `+
     `endMemory:${formatttedEndMemory} memoryUsage:${formatttedMemoryUsage}\n`;
+  }
+
+  private getTotalTime(): string {
+    let totalTime = (this.eventStack.get(EventList.OBFUSCATION_INITIALIZATION)?.duration ?? 0) +
+    (this.eventStack.get(EventList.SCAN_SOURCEFILES)?.duration ?? 0) +
+    (this.eventStack.get(EventList.ALL_FILES_OBFUSCATION)?.duration ?? 0);
+    return totalTime.toFixed(SIG_FIGS);
   }
 }
 

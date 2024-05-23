@@ -38,6 +38,7 @@ import path from 'path';
 import sourceMap from 'source-map';
 
 import type { IOptions } from './configs/IOptions';
+import { EventList, TimeSumPrinter, TimeTracker } from './utils/PrinterUtils';
 import { FileUtils } from './utils/FileUtils';
 import { TransformerManager } from './transformers/TransformerManager';
 import { getSourceMapGenerator } from './utils/SourceMapUtil';
@@ -63,7 +64,7 @@ import { ListUtil } from './utils/ListUtil';
 import { needReadApiInfo, readProjectProperties, readProjectPropertiesByCollectedPaths } from './common/ApiReader';
 import { ApiExtractor } from './common/ApiExtractor';
 import esInfo from './configs/preset/es_reserved_properties.json';
-import { EventList, TimeSumPrinter, TimeTracker } from './utils/PrinterUtils';
+export { EventList, TimeSumPrinter, TimeTracker } from './utils/PrinterUtils';
 import { Extension, type ProjectInfo } from './common/type';
 export { FileUtils } from './utils/FileUtils';
 export { MemoryUtils } from './utils/MemoryUtils';
@@ -82,10 +83,11 @@ export interface PerformancePrinter {
   filesPrinter?: TimeTracker;
   singleFilePrinter?: TimeTracker;
   timeSumPrinter?: TimeSumPrinter;
-  iniPrinter: TimeTracker;
 }
 export let performancePrinter: PerformancePrinter = {
-  iniPrinter: new TimeTracker(),
+  filesPrinter: new TimeTracker(),
+  singleFilePrinter: new TimeTracker(),
+  timeSumPrinter: new TimeSumPrinter(),
 };
 
 type ObfuscationResultType = {
@@ -285,9 +287,9 @@ export class ArkObfuscator {
     }
 
     this.producePropertyCache(propertyCachePath);
-    performancePrinter?.filesPrinter?.endEvent(EventList.ALL_FILES_OBFUSCATION);
-    performancePrinter?.timeSumPrinter?.print('Sum up time of processes');
+    performancePrinter?.timeSumPrinter?.print('All files obfuscation:');
     performancePrinter?.timeSumPrinter?.summarizeEventDuration();
+    performancePrinter?.filesPrinter?.endEvent(EventList.ALL_FILES_OBFUSCATION);
   }
 
   /**
@@ -364,19 +366,28 @@ export class ArkObfuscator {
       const printConfig = this.mCustomProfiles.mPerformancePrinter;
       const printPath = printConfig.mOutputPath;
 
+      let emptyPrinter = !(printConfig.mFilesPrinter || printConfig.mSingleFilePrinter || printConfig.mSumPrinter);
+      if (emptyPrinter) {
+        performancePrinter = undefined;
+        return;
+      }
+
       if (printConfig.mFilesPrinter) {
-        performancePrinter.filesPrinter = performancePrinter.iniPrinter;
         performancePrinter.filesPrinter.setOutputPath(printPath);
       } else {
-        performancePrinter.iniPrinter = undefined;
+        performancePrinter.filesPrinter.disablePrinter();
       }
 
       if (printConfig.mSingleFilePrinter) {
-        performancePrinter.singleFilePrinter = new TimeTracker(printPath);
+        performancePrinter.singleFilePrinter.setOutputPath(printPath);
+      } else {
+        performancePrinter.singleFilePrinter.disablePrinter();
       }
 
       if (printConfig.mSumPrinter) {
-        performancePrinter.timeSumPrinter = new TimeSumPrinter(printPath);
+        performancePrinter.timeSumPrinter.setOutputPath(printPath);
+      } else {
+        performancePrinter.timeSumPrinter = undefined;
       }
     } else {
       performancePrinter = undefined;
@@ -468,7 +479,9 @@ export class ArkObfuscator {
     let content: string = FileUtils.readFile(sourceFilePath);
     this.readNameCache(sourceFilePath, outputDir);
     performancePrinter?.filesPrinter?.startEvent(sourceFilePath);
+    performancePrinter?.singleFilePrinter?.startEvent(EventList.OBFUSCATE, performancePrinter.timeSumPrinter, sourceFilePath);
     const mixedInfo: ObfuscationResultType = await this.obfuscate(content, sourceFilePath);
+    performancePrinter?.singleFilePrinter?.endEvent(EventList.OBFUSCATE, performancePrinter.timeSumPrinter);
     performancePrinter?.filesPrinter?.endEvent(sourceFilePath, undefined, true);
 
     if (this.mWriteOriginalFile && mixedInfo) {
@@ -549,7 +562,7 @@ export class ArkObfuscator {
   }
 
   private createAst(content: SourceFile | string, sourceFilePath: string): SourceFile {
-    performancePrinter?.singleFilePrinter?.startEvent(EventList.CREATE_AST, performancePrinter.timeSumPrinter, sourceFilePath);
+    performancePrinter?.singleFilePrinter?.startEvent(EventList.CREATE_AST, performancePrinter.timeSumPrinter);
     let ast: SourceFile;
     if (typeof content === 'string') {
       ast = TypeUtils.createObfSourceFile(sourceFilePath, content);
@@ -599,7 +612,9 @@ export class ArkObfuscator {
     // convert ast to output source file and generate sourcemap if needed.
     let sourceMapGenerator: SourceMapGenerator = undefined;
     if (this.mCustomProfiles.mEnableSourceMap) {
+      performancePrinter?.singleFilePrinter?.startEvent(EventList.GET_SOURCEMAP_GENERATOR, performancePrinter.timeSumPrinter);
       sourceMapGenerator = getSourceMapGenerator(sourceFilePath);
+      performancePrinter?.singleFilePrinter?.endEvent(EventList.GET_SOURCEMAP_GENERATOR, performancePrinter.timeSumPrinter);
     }
 
     if (sourceFilePath.endsWith('.js')) {
@@ -624,11 +639,14 @@ export class ArkObfuscator {
     sourceMapJson.sourceRoot = '';
     sourceMapJson.file = path.basename(sourceFilePath);
     if (previousStageSourceMap) {
+      performancePrinter?.singleFilePrinter?.startEvent(EventList.SOURCEMAP_MERGE, performancePrinter.timeSumPrinter);
       sourceMapJson = mergeSourceMap(previousStageSourceMap as RawSourceMap, sourceMapJson);
+      performancePrinter?.singleFilePrinter?.endEvent(EventList.SOURCEMAP_MERGE, performancePrinter.timeSumPrinter);
     }
     result.sourceMap = sourceMapJson;
     let nameCache = renameIdentifierModule.nameCache;
     if (this.mCustomProfiles.mEnableNameCache) {
+      performancePrinter?.singleFilePrinter?.startEvent(EventList.CREATE_NAMECACHE, performancePrinter.timeSumPrinter);
       let newIdentifierCache!: Object;
       let newMemberMethodCache!: Object;
       if (previousStageSourceMap) {
@@ -648,6 +666,7 @@ export class ArkObfuscator {
       nameCache.set(IDENTIFIER_CACHE, newIdentifierCache);
       nameCache.set(MEM_METHOD_CACHE, newMemberMethodCache);
       result.nameCache = { [IDENTIFIER_CACHE]: newIdentifierCache, [MEM_METHOD_CACHE]: newMemberMethodCache };
+      performancePrinter?.singleFilePrinter?.endEvent(EventList.CREATE_NAMECACHE, performancePrinter.timeSumPrinter);
     }
   }
 
