@@ -21,28 +21,37 @@ import { consoleLog } from '../lib/TypeScriptLinter';
 import type { LintOptions } from '../lib/LintOptions';
 import { TSCCompiledProgramWithDiagnostics } from '../lib/ts-diagnostics/TSCCompiledProgram';
 
-function compile(cmdOptions: CommandLineOptions, overrideCompilerOptions: ts.CompilerOptions): ts.BuilderProgram {
+function compile(cmdOptions: CommandLineOptions, overrideCompilerOptions: ts.CompilerOptions): ts.Program {
   const createProgramOptions = formTscOptions(cmdOptions, overrideCompilerOptions);
-  const builderProgram = ts.createIncrementalProgramForArkTs(createProgramOptions);
+  const program = ts.createProgram(createProgramOptions);
   // Log Tsc errors if needed
   if (cmdOptions.logTscErrors) {
-    const diagnostics = ts.getPreEmitDiagnostics(builderProgram.getProgram());
+    const diagnostics = ts.getPreEmitDiagnostics(program);
     logTscDiagnostic(diagnostics, consoleLog);
   }
-  return builderProgram;
+  return program;
 }
 
 export function compileLintOptions(cmdOptions: CommandLineOptions): LintOptions {
   const strict = compile(cmdOptions, getOverrideCompilerOptions(true));
+  const nonStrict = compile(cmdOptions, getOverrideCompilerOptions(false));
   return {
     cmdOptions: cmdOptions,
-    tscCompiledProgram: new TSCCompiledProgramWithDiagnostics(strict, cmdOptions.inputFiles)
+    tscCompiledProgram: new TSCCompiledProgramWithDiagnostics(strict, nonStrict, cmdOptions.inputFiles)
   };
 }
 
 function getOverrideCompilerOptions(strict: boolean): ts.CompilerOptions {
   return {
-    allowJs: !!strict,
-    checkJs: strict ? false : undefined
+    strict: false,
+    alwaysStrict: false,
+    noImplicitAny: false,
+    noImplicitThis: false,
+    strictBindCallApply: false,
+    useUnknownInCatchVariables: false,
+    strictNullChecks: strict,
+    strictFunctionTypes: strict,
+    strictPropertyInitialization: strict,
+    noImplicitReturns: strict
   };
 }

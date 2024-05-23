@@ -57,7 +57,6 @@ export function runArkTSLinter(tsBuilderProgram: ts.BuilderProgram, srcFile?: ts
   incrementalLinterState.updateProgramStateArkTSVersion(arkTSVersion);
   const timePrinterInstance = ArkTSLinterTimePrinter.getInstance();
   timePrinterInstance.appendTime(TimePhase.INIT);
-
   tscDiagnosticsLinter.updateCompilationDiagnostics();
   const srcFiles: ts.SourceFile[] = getSrcFiles(program, srcFile);
   const tscStrictDiagnostics = getTscDiagnostics(tscDiagnosticsLinter, srcFiles.filter((file) => {

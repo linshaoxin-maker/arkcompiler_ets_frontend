@@ -16,7 +16,7 @@
 import type * as ts from 'typescript';
 import { ArkTSLinterTimePrinter, TimePhase } from '../ArkTSTimePrinter';
 import type { TSCCompiledProgram } from '../../lib/ts-diagnostics/TSCCompiledProgram';
-import { getStrictDiagnostics } from '../../lib/ts-diagnostics/TypeScriptDiagnosticsExtractor';
+import { getStrictDiagnostics } from './SdkTypeScriptDiagnosticsExtractor';
 
 export class SdkTSCCompiledProgram implements TSCCompiledProgram {
   private readonly builerProgram: ts.BuilderProgram;
