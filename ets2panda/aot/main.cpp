@@ -158,7 +158,14 @@ static int Run(int argc, const char **argv)
     return CompileFromSource(compiler, input, options.get());
 }
 }  // namespace ark::es2panda::aot
-
+int count_ljh = 0;
+int count_ljh2 = 0;
+std::string name_ljh = "hello";
+int count_ljh3 = 0;
+int count_ljh4 = 0;
+int count_ljh5 = 0;
+int count_ljh6 = 0;
+int count_buildProgram = 0;
 int main(int argc, const char **argv)
 {
     ark::es2panda::aot::MemManager mm;

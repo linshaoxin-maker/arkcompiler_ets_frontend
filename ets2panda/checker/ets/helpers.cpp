@@ -1966,6 +1966,19 @@ std::vector<bool> ETSChecker::FindTypeInferenceArguments(const ArenaVector<ir::E
     return argTypeInferenceRequired;
 }
 
+bool ETSChecker::CheckETSFunctionAssignableUnion(ir::AstNode *typeAnn, ir::AstNode *node)
+{
+    for (auto *type : typeAnn->AsETSUnionType()->Types()) {
+        for (auto *type2 : node->AsETSUnionType()->Types()) {
+            if (type->IsETSFunctionType() && type2->IsETSFunctionType()) {
+                return type2->AsETSFunctionType()->Params().size() == type->AsETSFunctionType()->Params().size();
+            }
+        }
+    }
+
+    return false;
+}
+
 bool ETSChecker::CheckLambdaAssignableUnion(ir::AstNode *typeAnn, ir::ScriptFunction *lambda)
 {
     for (auto *type : typeAnn->AsETSUnionType()->Types()) {

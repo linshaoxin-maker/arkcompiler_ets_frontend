@@ -301,6 +301,8 @@ public:
                        TypeRelationFlag flags = TypeRelationFlag::NONE);
     bool CheckLambdaAssignable(ir::Expression *param, ir::ScriptFunction *lambda);
     bool CheckLambdaAssignableUnion(ir::AstNode *typeAnn, ir::ScriptFunction *lambda);
+    bool CheckETSFunctionAssignableUnion(ir::AstNode *typeAnn, ir::AstNode *node);
+    bool CheckETSFunctionAssignable(ir::Expression *param, ir::AstNode *node);
     bool IsCompatibleTypeArgument(ETSTypeParameter *typeParam, Type *typeArgument, const Substitution *substitution);
     Substitution *NewSubstitution()
     {

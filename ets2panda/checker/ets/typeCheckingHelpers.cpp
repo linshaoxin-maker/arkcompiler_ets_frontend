@@ -882,6 +882,21 @@ static ir::AstNode *DerefETSTypeReference(ir::AstNode *node)
     return node;
 }
 
+bool ETSChecker::CheckETSFunctionAssignable(ir::Expression *param, ir::AstNode *node)
+{
+    ASSERT(param->IsETSParameterExpression());
+    ir::AstNode *typeAnn = param->AsETSParameterExpression()->Ident()->TypeAnnotation();
+
+    if (!typeAnn->IsETSFunctionType()) {
+        if (typeAnn->IsETSUnionType()) {
+            return CheckETSFunctionAssignableUnion(typeAnn, node);
+        }
+
+        return false;
+    }
+    return false;
+}
+
 bool ETSChecker::CheckLambdaAssignable(ir::Expression *param, ir::ScriptFunction *lambda)
 {
     ASSERT(param->IsETSParameterExpression());

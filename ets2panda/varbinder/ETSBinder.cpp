@@ -914,9 +914,11 @@ void ETSBinder::InitImplicitThisParam()
 {
     thisParam_ = Allocator()->New<ir::Identifier>("this", Allocator());
 }
-
+int count_buildProgram = 0;
 void ETSBinder::BuildProgram()
 {
+    count_buildProgram = count_buildProgram + 1;
+    std::cout << "count_buildProgram:" << count_buildProgram << std::endl;
     for (auto &[_, extPrograms] : Program()->ExternalSources()) {
         (void)_;
         for (auto *extProg : extPrograms) {
