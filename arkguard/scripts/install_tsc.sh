@@ -40,5 +40,5 @@ cd $old_work_dir
 target_dir=./node_modules/typescript
 
 echo "move $package_path to override $target_dir"
-rm -r $target_dir
+# rm -r $target_dir
 mv $package_path $target_dir
