@@ -12,14 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-function foo(): int {
-    try {
-        return 0;
-    } catch (e: ArithmeticError) {
-        return 1;
-        let a = 2; // unreachable statement
-    } catch (e: ClassCastError) {
-        return 2;
+class A<T=string> {
+    data : T
+    constructor(t : T) {
+        this.data = t;
     }
+}
+
+function main() : void {
+    let a = new A("hello");
+    let a1 = new A<string>("world")
+    assert a.data instanceof string
+    assert a1.data instanceof string
 }

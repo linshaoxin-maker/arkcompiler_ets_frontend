@@ -13,13 +13,12 @@
  * limitations under the License.
  */
 
-function foo(): int {
-    try {
-        return 0;
-    } catch (e: ArithmeticError) {
-        return 1;
-        let a = 2; // unreachable statement
-    } catch (e: ClassCastError) {
-        return 2;
-    }
+function main() {
+    let m: Map<string, number> = {"kek": 2}
+    m.set("kek", 1)
+    
+    let r: Record<string, number> = {"kek": 2}
+    r.set("kek", 1)                // <---------- FAIL HERE 
 }
+
+

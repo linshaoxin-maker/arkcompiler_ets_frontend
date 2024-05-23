@@ -13,13 +13,26 @@
  * limitations under the License.
  */
 
-function foo(): int {
-    try {
-        return 0;
-    } catch (e: ArithmeticError) {
-        return 1;
-        let a = 2; // unreachable statement
-    } catch (e: ClassCastError) {
-        return 2;
-    }
+type AliasPrimitive<T> = T;
+type AliasAlias<T> = AliasPrimitive<T>;
+
+function fn(p: double)
+{
+    assert(p == 42);
+}
+
+function fn(p: Double)
+{
+    assert(false);
+}
+
+function main() {
+    let v1 : double = new Int(42);  // unboxing -> widening
+    fn(v1);                
+
+    let v2 : AliasPrimitive<double> = new Int(42);  // unboxing -> widening
+    fn(v2);                
+
+    let v3 : AliasAlias<double> = new Int(42);   // unboxing -> widening
+    fn(v3);                
 }

@@ -13,13 +13,4 @@
  * limitations under the License.
  */
 
-function foo(): int {
-    try {
-        return 0;
-    } catch (e: ArithmeticError) {
-        return 1;
-        let a = 2; // unreachable statement
-    } catch (e: ClassCastError) {
-        return 2;
-    }
-}
+declare final class B {}
