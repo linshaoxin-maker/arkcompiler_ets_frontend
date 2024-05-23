@@ -314,7 +314,7 @@ private:
                                       std::pair<binder::FunctionScope *, binder::FunctionScope *> implicitScopes);
     void ParseClassKeyModifiers(ClassElmentDescriptor *desc);
     void CheckClassGeneratorMethod(ClassElmentDescriptor *desc);
-    void CheckClassPrivateIdentifier(ClassElmentDescriptor *desc);
+    void CheckClassPrivateIdentifier(ClassElmentDescriptor *desc, bool isClassDecoratorPresent = false);
     void CheckFieldKey(ir::Expression *propName);
     ir::Expression *ParseClassKeyAnnotation();
     ir::Decorator *ParseDecorator();
@@ -322,7 +322,8 @@ private:
     ir::Statement *ParseClassElement(const ArenaVector<ir::Statement *> &properties,
                                      ArenaVector<ir::TSIndexSignature *> *indexSignatures, bool hasSuperClass,
                                      bool isDeclare, bool isAbstractClass, bool isExtendsFromNull,
-                                     std::pair<binder::FunctionScope *, binder::FunctionScope *> implicitScopes);
+                                     std::pair<binder::FunctionScope *, binder::FunctionScope *> implicitScopes,
+                                     bool isClassDecoratorPresent = false);
     ir::MethodDefinition *CreateImplicitMethod(ir::Expression *superClass, bool hasSuperClass,
                                                ir::ScriptFunctionFlags funcFlag, bool isDeclare = false);
     ir::MethodDefinition *CheckClassMethodOverload(ir::Statement *property, ir::MethodDefinition **ctor, bool isDeclare,
@@ -330,7 +331,7 @@ private:
                                                    bool implExists, bool isAbstract = false);
     ir::Identifier *SetIdentNodeInClassDefinition(bool isDeclare, binder::ConstDecl **decl);
     ir::ClassDefinition *ParseClassDefinition(bool isDeclaration, bool idRequired = true, bool isDeclare = false,
-                                              bool isAbstract = false);
+                                              bool isAbstract = false, bool isClassDecoratorPresent = false);
     ir::Expression *ParseSuperClass(bool isDeclare, bool *hasSuperClass, bool *isExtendsFromNull);
     ArenaVector<ir::TSClassImplements *> ParseTSClassImplements(bool isDeclare);
     void ValidateClassConstructor(const ir::MethodDefinition *ctor,
