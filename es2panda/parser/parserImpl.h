@@ -357,6 +357,9 @@ private:
     ir::Expression *TryParseConstraintOfInferType(TypeAnnotationParsingOptions *options);
     ir::Expression *ParsePropertyDefinition(ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
     bool CheckOutIsIdentInTypeParameter();
+    void ParseInModifier(bool isAllowInOut, bool &isTypeIn, bool &isTypeOut);
+    void ParseOutModifier(bool isAllowInOut, bool &isTypeOut);
+    std::pair<bool, bool> ParseInOutModifiers(bool isAllowInOut);
     ir::TSTypeParameter *ParseTsTypeParameter(bool throwError, bool addBinding = false, bool isAllowInOut = false);
     ir::TSTypeParameterDeclaration *ParseTsTypeParameterDeclaration(bool throwError = true, bool isAllowInOut = false);
     ir::TSTypeParameterInstantiation *ParseTsTypeParameterInstantiation(bool throwError = true);
@@ -508,6 +511,10 @@ private:
     void ParseDirectivePrologue(ArenaVector<ir::Statement *> *statements);
     ArenaVector<ir::Statement *> ParseStatementList(StatementParsingFlags flags = StatementParsingFlags::ALLOW_LEXICAL);
     bool IsTsDeclarationStatement() const;
+    bool IsTsModuleDeclaration() const;
+    ir::Statement *ParseBasedOnTokenType(StatementParsingFlags flags,
+                                         bool isDeclare, ArenaVector<ir::Decorator *> &&decorators);
+
     ir::Statement *ParseStatement(StatementParsingFlags flags = StatementParsingFlags::NONE);
     ir::TSModuleDeclaration *ParseTsModuleDeclaration(bool isDeclare, bool isExport = false);
     ir::TSModuleDeclaration *ParseTsAmbientExternalModuleDeclaration(const lexer::SourcePosition &startLoc,
@@ -549,6 +556,9 @@ private:
     ir::Statement *ParseForStatement();
     ir::IfStatement *ParseIfStatement();
 
+    void CheckImportStatementValidity(StatementParsingFlags flags);
+    bool CheckIfTypeImport();
+    ir::AssertClause *GetAssertClause(bool isType);
     ir::Statement *ParseImportDeclaration(StatementParsingFlags flags);
     ir::LabelledStatement *ParseLabelledStatement(const lexer::LexerPosition &pos);
     ir::ReturnStatement *ParseReturnStatement();

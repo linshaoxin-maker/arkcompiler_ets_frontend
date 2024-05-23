@@ -3665,46 +3665,62 @@ bool ParserImpl::CheckOutIsIdentInTypeParameter()
     return false;
 }
 
-ir::TSTypeParameter *ParserImpl::ParseTsTypeParameter(bool throwError, bool addBinding, bool isAllowInOut)
+void ParserImpl::ParseInModifier(bool isAllowInOut, bool &isTypeIn, bool &isTypeOut)
 {
-    lexer::SourcePosition startLoc = lexer_->GetToken().Start();
-
-    bool isTypeIn = false;
-    bool isTypeOut = false;
-
+    if (!isAllowInOut) {
+        ThrowSyntaxError("'in' modifier can only appear on a type parameter of a class, interface or type alias");
+    }
+    isTypeIn = true;
+    lexer_->NextToken();
     if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_IN) {
-        if (!isAllowInOut) {
-            ThrowSyntaxError("'in' modifier can only appear on a type parameter of a class, interface or type alias");
-        }
-        isTypeIn = true;
-        lexer_->NextToken();
-        if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_IN) {
-            ThrowSyntaxError("'in' modifier already seen.");
-        }
+        ThrowSyntaxError("'in' modifier already seen.");
+    }
 
-        if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_OUT && !CheckOutIsIdentInTypeParameter()) {
-            isTypeOut = true;
-            lexer_->NextToken();
-            if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_OUT && !CheckOutIsIdentInTypeParameter()) {
-                ThrowSyntaxError("'out' modifier already seen.");
-            }
-        }
-    } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_OUT && !CheckOutIsIdentInTypeParameter()) {
-        if (!isAllowInOut) {
-            ThrowSyntaxError("'out' modifier can only appear on a type parameter of a class, interface or type alias");
-        }
-
+    if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_OUT && !CheckOutIsIdentInTypeParameter()) {
         isTypeOut = true;
         lexer_->NextToken();
-
-        if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_IN) {
-            ThrowSyntaxError("'in' modifier must precede 'out' modifier.");
-        }
-
         if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_OUT && !CheckOutIsIdentInTypeParameter()) {
             ThrowSyntaxError("'out' modifier already seen.");
         }
     }
+}
+
+void ParserImpl::ParseOutModifier(bool isAllowInOut, bool &isTypeOut)
+{
+    if (!isAllowInOut) {
+        ThrowSyntaxError("'out' modifier can only appear on a type parameter of a class, interface or type alias");
+    }
+
+    isTypeOut = true;
+    lexer_->NextToken();
+
+    if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_IN) {
+        ThrowSyntaxError("'in' modifier must precede 'out' modifier.");
+    }
+
+    if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_OUT && !CheckOutIsIdentInTypeParameter()) {
+        ThrowSyntaxError("'out' modifier already seen.");
+    }
+}
+
+std::pair<bool, bool> ParserImpl::ParseInOutModifiers(bool isAllowInOut)
+{
+    bool isTypeIn = false;
+    bool isTypeOut = false;
+    if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_IN) {
+        ParseInModifier(isAllowInOut, isTypeIn, isTypeOut);
+    } else if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_OUT && !CheckOutIsIdentInTypeParameter()) {
+        ParseOutModifier(isAllowInOut, isTypeOut);
+    }
+
+    return {isTypeIn, isTypeOut};
+}
+
+ir::TSTypeParameter *ParserImpl::ParseTsTypeParameter(bool throwError, bool addBinding, bool isAllowInOut)
+{
+    lexer::SourcePosition startLoc = lexer_->GetToken().Start();
+
+    auto [isTypeIn, isTypeOut] = ParseInOutModifiers(isAllowInOut);
 
     if (lexer_->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
         if (!throwError) {
