@@ -897,7 +897,8 @@ bool ETSChecker::CheckLambdaAssignable(ir::Expression *param, ir::Expression *ar
         return CheckOptionalLambdaAssignableUnion(typeAnn, argument);
     }
     if (typeAnn->IsETSFunctionType() && argument->IsArrowFunctionExpression()) {
-        return CheckLambdaAssignableETSFunction(typeAnn, argument->AsArrowFunctionExpression()->Function()->Params().size());
+        return CheckLambdaAssignableETSFunction(typeAnn,
+                                                argument->AsArrowFunctionExpression()->Function()->Params().size());
     }
     return false;
 }

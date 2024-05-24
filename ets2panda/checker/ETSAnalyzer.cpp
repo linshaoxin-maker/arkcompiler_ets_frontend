@@ -122,11 +122,8 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::MetaProperty *expr) const
 {
     UNREACHABLE();
 }
-int count_ljh6 = 0;
 checker::Type *ETSAnalyzer::Check(ir::MethodDefinition *node) const
 {
-    count_ljh6 = count_ljh6 + 1;
-    std::cout << "count_ljh6:" << count_ljh6 << std::endl;
     ETSChecker *checker = GetETSChecker();
 
     auto *scriptFunc = node->Function();
@@ -1004,11 +1001,8 @@ checker::Type *ETSAnalyzer::GetReturnType(ir::CallExpression *expr, checker::Typ
 
     return returnType;
 }
-int count_ljh4 = 0;
 checker::Type *ETSAnalyzer::Check(ir::CallExpression *expr) const
 {
-    count_ljh4 = count_ljh4 + 1;
-    std::cout << "count_ljh4:" << count_ljh4 << std::endl;
     ETSChecker *checker = GetETSChecker();
     if (expr->TsType() != nullptr) {
         return expr->TsType();
@@ -1753,7 +1747,6 @@ checker::Type *ETSAnalyzer::Check(ir::BlockStatement *st) const
     checker::ScopeContext scopeCtx(checker, st->Scope());
 
     for (size_t i = 0; i < st->Statements().size(); i++) {
-        std::cout << "st->Statements()[i],i:" << i << std::endl;
         auto el = st->Statements()[i];
         el->Check(checker);
 
@@ -2003,11 +1996,8 @@ checker::Type *ETSAnalyzer::Check(ir::LabelledStatement *st) const
     st->body_->Check(checker);
     return nullptr;
 }
-int count_ljh3 = 0;
 checker::Type *ETSAnalyzer::GetFunctionReturnType(ir::ReturnStatement *st, ir::ScriptFunction *containingFunc) const
 {
-    count_ljh3 = count_ljh3 + 1;
-    std::cout << "count_ljh3:" << count_ljh3 << std::endl;
     ASSERT(containingFunc->ReturnTypeAnnotation() != nullptr || containingFunc->Signature()->ReturnType() != nullptr);
 
     ETSChecker *checker = GetETSChecker();

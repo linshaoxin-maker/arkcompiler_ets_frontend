@@ -552,16 +552,12 @@ Signature *ETSChecker::GetMostSpecificSignature(ArenaVector<Signature *> &compat
 
     return mostSpecificSignature;
 }
-int count_ljh = 0;
 Signature *ETSChecker::ValidateSignatures(ArenaVector<Signature *> &signatures,
                                           const ir::TSTypeParameterInstantiation *typeArguments,
                                           const ArenaVector<ir::Expression *> &arguments,
                                           const lexer::SourcePosition &pos, std::string_view signatureKind,
                                           TypeRelationFlag resolveFlags)
 {
-    count_ljh = count_ljh + 1;
-    std::cout << "count_ljh:" << count_ljh << std::endl;
-
     auto compatibleSignatures = CollectSignatures(signatures, typeArguments, arguments, pos, resolveFlags);
     if (!compatibleSignatures.empty()) {
         return GetMostSpecificSignature(compatibleSignatures, arguments, pos, resolveFlags);
@@ -741,17 +737,11 @@ Signature *ETSChecker::ResolveCallExpression(ArenaVector<Signature *> &signature
     ASSERT(sig);
     return sig;
 }
-int count_ljh2 = 0;
-std::string name_ljh = "hello";
 Signature *ETSChecker::ResolveCallExpressionAndTrailingLambda(ArenaVector<Signature *> &signatures,
                                                               ir::CallExpression *callExpr,
                                                               const lexer::SourcePosition &pos,
                                                               const TypeRelationFlag throwFlag)
 {
-    count_ljh2 = count_ljh2 + 1;
-    std::cout << "count_ljh2:" << count_ljh2 << std::endl;
-    name_ljh = signatures[0]->Function()->Id()->Name().Mutf8();
-    std::cout << name_ljh << std::endl;
     Signature *sig = nullptr;
 
     if (callExpr->TrailingBlock() == nullptr) {

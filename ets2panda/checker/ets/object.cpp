@@ -802,11 +802,8 @@ void ETSChecker::CheckLocalClass(ir::ClassDefinition *classDef, CheckerStatus &c
         localClasses_.push_back(classDef);
     }
 }
-int count_ljh5 = 0;
 void ETSChecker::CheckClassDefinition(ir::ClassDefinition *classDef)
 {
-    count_ljh5 = count_ljh5 + 1;
-    std::cout << "count_ljh5:" << count_ljh5 << std::endl;
     classDef->SetClassDefinitionChecked();
     auto *classType = classDef->TsType()->AsETSObjectType();
     auto newStatus = checker::CheckerStatus::IN_CLASS;
