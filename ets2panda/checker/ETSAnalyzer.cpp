@@ -1753,7 +1753,7 @@ checker::Type *ETSAnalyzer::Check(ir::BlockStatement *st) const
     checker::ScopeContext scopeCtx(checker, st->Scope());
 
     for (size_t i = 0; i < st->Statements().size(); i++) {
-	std::cout << "st->Statements()[i],i:" << i << std::endl;
+        std::cout << "st->Statements()[i],i:" << i << std::endl;
         auto el = st->Statements()[i];
         el->Check(checker);
 

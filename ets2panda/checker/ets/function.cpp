@@ -222,26 +222,20 @@ Signature *ETSChecker::ValidateParameterlessConstructor(Signature *signature, co
 
 bool ETSChecker::CheckOptionalLambdaFunction(ir::Expression *argument, Signature *substitutedSig, std::size_t index)
 {
-    if (argument->IsIdentifier()) {
-        ir::AstNode *typeAnn = argument->AsIdentifier()->TypeAnnotation();
-        if (typeAnn != nullptr && typeAnn->IsETSUnionType()) {
-            return CheckETSFunctionAssignable(substitutedSig->Function()->Params()[index],typeAnn);
+    if (argument->IsArrowFunctionExpression() || argument->IsIdentifier()) {
+        if (!CheckLambdaAssignable(substitutedSig->Function()->Params()[index], argument)) {
+            return false;
         }
-    }
-    if (argument->IsArrowFunctionExpression()) {
-        auto *const arrowFuncExpr = argument->AsArrowFunctionExpression();
-
-        if (ir::ScriptFunction *const lambda = arrowFuncExpr->Function();
-            CheckLambdaAssignable(substitutedSig->Function()->Params()[index], lambda)) {
-            if (arrowFuncExpr->TsType() != nullptr) {
-                arrowFuncExpr->Check(this);
-                CreateLambdaObjectForLambdaReference(arrowFuncExpr, arrowFuncExpr->Function()->Signature()->Owner());
-                return true;
-            }
+        if (argument->IsArrowFunctionExpression() && argument->AsArrowFunctionExpression()->TsType() != nullptr) {
+            argument->AsArrowFunctionExpression()->Check(this);
+            CreateLambdaObjectForLambdaReference(
+                argument->AsArrowFunctionExpression(),
+                argument->AsArrowFunctionExpression()->Function()->Signature()->Owner());
         }
+        return true;
     }
 
-return false;
+    return false;
 }
 
 bool ETSChecker::ValidateArgumentAsIdentifier(const ir::Identifier *identifier)
@@ -280,9 +274,7 @@ bool ETSChecker::ValidateSignatureRequiredParams(Signature *substitutedSig,
 
         if (argTypeInferenceRequired[index]) {
             ASSERT(argument->IsArrowFunctionExpression());
-            auto *const arrowFuncExpr = argument->AsArrowFunctionExpression();
-            ir::ScriptFunction *const lambda = arrowFuncExpr->Function();
-            if (CheckLambdaAssignable(substitutedSig->Function()->Params()[index], lambda)) {
+            if (CheckLambdaAssignable(substitutedSig->Function()->Params()[index], argument)) {
                 continue;
             }
             return false;

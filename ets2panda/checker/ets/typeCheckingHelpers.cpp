@@ -882,37 +882,24 @@ static ir::AstNode *DerefETSTypeReference(ir::AstNode *node)
     return node;
 }
 
-bool ETSChecker::CheckETSFunctionAssignable(ir::Expression *param, ir::AstNode *node)
-{
-    ASSERT(param->IsETSParameterExpression());
-    ir::AstNode *typeAnn = param->AsETSParameterExpression()->Ident()->TypeAnnotation();
-
-    if (!typeAnn->IsETSFunctionType()) {
-        if (typeAnn->IsETSUnionType()) {
-            return CheckETSFunctionAssignableUnion(typeAnn, node);
-        }
-
-        return false;
-    }
-    return false;
-}
-
-bool ETSChecker::CheckLambdaAssignable(ir::Expression *param, ir::ScriptFunction *lambda)
+bool ETSChecker::CheckLambdaAssignable(ir::Expression *param, ir::Expression *argument)
 {
     ASSERT(param->IsETSParameterExpression());
     ir::AstNode *typeAnn = param->AsETSParameterExpression()->Ident()->TypeAnnotation();
     if (typeAnn->IsETSTypeReference()) {
         typeAnn = DerefETSTypeReference(typeAnn);
     }
-    if (!typeAnn->IsETSFunctionType()) {
-        if (typeAnn->IsETSUnionType()) {
-            return CheckLambdaAssignableUnion(typeAnn, lambda);
-        }
-
+    if (!typeAnn->IsETSFunctionType() && !typeAnn->IsETSUnionType()) {
         return false;
     }
-    ir::ETSFunctionType *calleeType = typeAnn->AsETSFunctionType();
-    return lambda->Params().size() == calleeType->Params().size();
+
+    if (typeAnn->IsETSUnionType()) {
+        return CheckOptionalLambdaAssignableUnion(typeAnn, argument);
+    }
+    if (typeAnn->IsETSFunctionType() && argument->IsArrowFunctionExpression()) {
+        return CheckLambdaAssignableETSFunction(typeAnn, argument->AsArrowFunctionExpression()->Function()->Params().size());
+    }
+    return false;
 }
 
 bool ETSChecker::TypeInference(Signature *signature, const ArenaVector<ir::Expression *> &arguments,
