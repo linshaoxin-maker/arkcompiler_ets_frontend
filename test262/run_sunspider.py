@@ -111,6 +111,74 @@ ARK_ARCH = DEFAULT_ARK_ARCH
 PROTO_BIN_SUFFIX = "protoBin"
 
 
+def output(retcode, msg):
+    if retcode == 0:
+        if msg != '':
+            print(str(msg))
+    elif retcode == -6:
+        sys.stderr.write("Aborted (core dumped)")
+    elif retcode == -4:
+        sys.stderr.write("Aborted (core dumped)")
+    elif retcode == -11:
+        sys.stderr.write("Segmentation fault (core dumped)")
+    elif msg != '':
+        sys.stderr.write(str(msg))
+    else:
+        sys.stderr.write("Unknown Error: " + str(retcode))
+
+
+def exec_command(cmd_args, timeout=DEFAULT_TIMEOUT, customCwd=None):
+    proc = subprocess.Popen(cmd_args,
+                            stderr=subprocess.PIPE,
+                            stdout=subprocess.PIPE,
+                            close_fds=True,
+                            start_new_session=True,
+                            cwd=customCwd)
+    cmd_string = " ".join(cmd_args)
+    code_format = 'utf-8'
+    if platform.system() == "Windows":
+        code_format = 'gbk'
+
+    try:
+        (output_res, errs) = proc.communicate(timeout=timeout)
+        ret_code = proc.poll()
+
+        if errs.decode(code_format, 'ignore') != '':
+            output(1, errs.decode(code_format, 'ignore'))
+            return 1
+
+        if ret_code and ret_code != 1:
+            code = ret_code
+            msg = f"Command {cmd_string}: \n"
+            msg += f"error: {str(errs.decode(code_format, 'ignore'))}"
+        else:
+            code = 0
+            msg = str(output_res.decode(code_format, 'ignore'))
+
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.terminate()
+        os.kill(proc.pid, signal.SIGTERM)
+        code = 1
+        msg = f"Timeout:'{cmd_string}' timed out after' {str(timeout)} seconds"
+    except Exception as err:
+        code = 1
+        msg = f"{cmd_string}: unknown error: {str(err)}"
+    output(code, msg)
+    return code
+
+
+def print_command(cmd_args):
+    sys.stderr.write("\n")
+    sys.stderr.write(" ".join(cmd_args))
+    sys.stderr.write("\n")
+
+
+# for debug use, to keep aot file
+def run_command(cmd_args):
+    return subprocess.run(" ".join(cmd_args))
+
+
 class ArkProgram():
     def __init__(self, args):
         self.args = args
@@ -467,6 +535,15 @@ class ArkProgram():
         
         if self.abc2program:
             return self.gen_abc_for_mix_compile_mode(dependencies, out_file)
+         # execute arkguard
+        js_file_allpath = os.path.join(os.path.dirname(os.path.abspath(__file__)),'../',js_file)
+        cmd_args = ['node', '--no-warnings', '--loader=ts-node/esm', './src/cli/SecHarmony.ts', js_file_allpath,
+                            '--config-path', './scripts/test262Config.json']
+        retcode = exec_command(cmd_args, customCwd = '/mnt/data/z00840281/code/OpenHarmony/arkcompiler/ets_frontend/arkguard')
+        #with open('/mnt/data/zwx1285830/ohos/openharmony/arkcompiler/ets_frontend/test262/log.txt', 'a') as file: file.write(' '.join(map(str, cmd_args)) +'\n')
+        if retcode == 1:
+            return retcode
+        #with open('/mnt/data/zwx1285830/ohos/openharmony/arkcompiler/ets_frontend/test262/log.txt', 'a') as file: file.write(open(js_file_allpath).read() +'\n')
 
         # generate execution command
         cmd_args = self.gen_command(js_file, compile_as_module)

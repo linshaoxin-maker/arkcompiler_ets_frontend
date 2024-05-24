@@ -61,7 +61,7 @@ import { needToBeReserved } from '../../utils/TransformUtil';
 namespace secharmony {
 
   // global mangled file name table used by all files in a project
-  export let globalFileNameMangledTable: Map<string, string> = undefined;
+  export let globalFileNameMangledTable: Map<string, string> = new Map<string, string>();
 
   // used for file name cache
   export let historyFileNameMangledTable: Map<string, string> = undefined;
@@ -83,6 +83,24 @@ namespace secharmony {
     if (!profile || !profile.mEnable) {
       return null;
     }
+    let nameGenaratorOption: NameGeneratorOptions = {};
+    if (profile.mNameGeneratorType === NameGeneratorType.HEX) {
+      nameGenaratorOption.hexWithPrefixSuffix = true;
+    }
+
+    generator = getNameGenerator(profile.mNameGeneratorType, nameGenaratorOption);
+    let configReservedFileName: string[] = profile?.mReservedFileNames ?? [];
+    const tempReservedName: string[] = ['.', '..', ''];
+    configReservedFileName.forEach(directory => {
+      tempReservedName.push(directory);
+      const pathOrExtension: PathAndExtension = FileUtils.getFileSuffix(directory);
+      if (pathOrExtension.ext) {
+        tempReservedName.push(pathOrExtension.ext);
+        tempReservedName.push(pathOrExtension.path);
+      }
+    });
+    reservedFileNames = new Set<string>(tempReservedName);
+    universalReservedFileNames = profile?.mUniversalReservedFileNames ?? [];
 
     return renameFileNameFactory;
 
@@ -92,32 +110,10 @@ namespace secharmony {
         localPackageSet = projectInfo.localPackageSet;
         useNormalized = projectInfo.useNormalized;
       }
-      let options: NameGeneratorOptions = {};
-      if (profile.mNameGeneratorType === NameGeneratorType.HEX) {
-        options.hexWithPrefixSuffix = true;
-      }
-
-      generator = getNameGenerator(profile.mNameGeneratorType, options);
-      let configReservedFileName: string[] = profile?.mReservedFileNames ?? [];
-      const tempReservedName: string[] = ['.', '..', ''];
-      configReservedFileName.forEach(directory => {
-        tempReservedName.push(directory);
-        const pathOrExtension: PathAndExtension = FileUtils.getFileSuffix(directory);
-        if (pathOrExtension.ext) {
-          tempReservedName.push(pathOrExtension.ext);
-          tempReservedName.push(pathOrExtension.path);
-        }
-      });
-      reservedFileNames = new Set<string>(tempReservedName);
-      universalReservedFileNames = profile?.mUniversalReservedFileNames ?? [];
 
       return renameFileNameTransformer;
 
       function renameFileNameTransformer(node: Node): Node {
-        if (globalFileNameMangledTable === undefined) {
-          globalFileNameMangledTable = new Map<string, string>();
-        }
-
         performancePrinter?.singleFilePrinter?.startEvent(EventList.FILENAME_OBFUSCATION, performancePrinter.timeSumPrinter);
         let ret: Node = updateNodeInfo(node);
         if (!isInOhModules(projectInfo, orignalFilePathForSearching) && isSourceFile(ret)) {
