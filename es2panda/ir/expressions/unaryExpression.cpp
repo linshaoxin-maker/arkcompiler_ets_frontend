@@ -126,87 +126,102 @@ checker::Type *UnaryExpression::Check(checker::Checker *checker) const
     }
 
     if (operator_ == lexer::TokenType::KEYW_DELETE) {
-        checker::Type *propType = argument_->Check(checker);
+        return CheckDeleteOperator(checker);
+    }
 
-        if (!argument_->IsMemberExpression()) {
-            checker->ThrowTypeError("The operand of a delete operator must be a property reference.",
-                                    argument_->Start());
+    if (argument_->IsLiteral()) {
+        return CheckLiteralOperator(checker);
+    }
+
+    switch (operator_) {
+        return CheckOthersOperator(checker);
+    }
+
+    return nullptr;
+}
+
+checker::Type *UnaryExpression::CheckDeleteOperator(checker::Checker *checker) const
+{
+    checker::Type *propType = argument_->Check(checker);
+
+    if (!argument_->IsMemberExpression()) {
+        checker->ThrowTypeError("The operand of a delete operator must be a property reference.",
+                                argument_->Start());
+    }
+
+    const ir::MemberExpression *memberArg = argument_->AsMemberExpression();
+
+    if (memberArg->Property()->IsTSPrivateIdentifier() || memberArg->Property()->IsPrivateIdentifier()) {
+        checker->ThrowTypeError("The operand of a delete operator cannot be a private identifier.",
+                                argument_->Start());
+    }
+
+    ASSERT(propType->Variable());
+
+    if (propType->Variable()->HasFlag(binder::VariableFlags::READONLY)) {
+        checker->ThrowTypeError("The operand of a delete operator cannot be a readonly property.",
+                                argument_->Start());
+    }
+
+    if (!propType->Variable()->HasFlag(binder::VariableFlags::OPTIONAL)) {
+        checker->ThrowTypeError("The operand of a delete operator must be a optional.", argument_->Start());
+    }
+
+    return checker->GlobalBooleanType();
+}
+
+checker::Type *UnaryExpression::CheckLiteralOperator(checker::Checker *checker) const
+{
+    const ir::Literal *lit = argument_->AsLiteral();
+
+    if (lit->IsNumberLiteral()) {
+        auto numberValue = lit->AsNumberLiteral()->Number<double>();
+        if (operator_ == lexer::TokenType::PUNCTUATOR_PLUS) {
+            return checker->CreateNumberLiteralType(numberValue);
         }
 
-        const ir::MemberExpression *memberArg = argument_->AsMemberExpression();
+        if (operator_ == lexer::TokenType::PUNCTUATOR_MINUS) {
+            return checker->CreateNumberLiteralType(-numberValue);
+        }
+    } else if (lit->IsBigIntLiteral() && operator_ == lexer::TokenType::PUNCTUATOR_MINUS) {
+        return checker->CreateBigintLiteralType(lit->AsBigIntLiteral()->Str(), true);
+    }
+}
 
-        if (memberArg->Property()->IsTSPrivateIdentifier() || memberArg->Property()->IsPrivateIdentifier()) {
-            checker->ThrowTypeError("The operand of a delete operator cannot be a private identifier.",
-                                    argument_->Start());
+checker::Type *UnaryExpression::CheckOthersOperator(checker::Checker *checker) const
+{
+    case lexer::TokenType::PUNCTUATOR_PLUS:
+    case lexer::TokenType::PUNCTUATOR_MINUS:
+    case lexer::TokenType::PUNCTUATOR_TILDE: {
+        checker->CheckNonNullType(operandType, Start());
+        // TODO(aszilagyi): check Symbol like types
+
+        if (operator_ == lexer::TokenType::PUNCTUATOR_PLUS) {
+            if (checker::Checker::MaybeTypeOfKind(operandType, checker::TypeFlag::BIGINT_LIKE)) {
+                checker->ThrowTypeError({"Operator '+' cannot be applied to type '", operandType, "'"}, Start());
+            }
+
+            return checker->GlobalNumberType();
         }
 
-        ASSERT(propType->Variable());
-
-        if (propType->Variable()->HasFlag(binder::VariableFlags::READONLY)) {
-            checker->ThrowTypeError("The operand of a delete operator cannot be a readonly property.",
-                                    argument_->Start());
+        return checker->GetUnaryResultType(operandType);
+    }
+    case lexer::TokenType::PUNCTUATOR_EXCLAMATION_MARK: {
+        checker->CheckTruthinessOfType(operandType, Start());
+        auto facts = operandType->GetTypeFacts();
+        if (facts & checker::TypeFacts::TRUTHY) {
+            return checker->GlobalFalseType();
         }
 
-        if (!propType->Variable()->HasFlag(binder::VariableFlags::OPTIONAL)) {
-            checker->ThrowTypeError("The operand of a delete operator must be a optional.", argument_->Start());
+        if (facts & checker::TypeFacts::FALSY) {
+            return checker->GlobalTrueType();
         }
 
         return checker->GlobalBooleanType();
     }
-
-    if (argument_->IsLiteral()) {
-        const ir::Literal *lit = argument_->AsLiteral();
-
-        if (lit->IsNumberLiteral()) {
-            auto numberValue = lit->AsNumberLiteral()->Number<double>();
-            if (operator_ == lexer::TokenType::PUNCTUATOR_PLUS) {
-                return checker->CreateNumberLiteralType(numberValue);
-            }
-
-            if (operator_ == lexer::TokenType::PUNCTUATOR_MINUS) {
-                return checker->CreateNumberLiteralType(-numberValue);
-            }
-        } else if (lit->IsBigIntLiteral() && operator_ == lexer::TokenType::PUNCTUATOR_MINUS) {
-            return checker->CreateBigintLiteralType(lit->AsBigIntLiteral()->Str(), true);
-        }
+    default: {
+        UNREACHABLE();
     }
-
-    switch (operator_) {
-        case lexer::TokenType::PUNCTUATOR_PLUS:
-        case lexer::TokenType::PUNCTUATOR_MINUS:
-        case lexer::TokenType::PUNCTUATOR_TILDE: {
-            checker->CheckNonNullType(operandType, Start());
-            // TODO(aszilagyi): check Symbol like types
-
-            if (operator_ == lexer::TokenType::PUNCTUATOR_PLUS) {
-                if (checker::Checker::MaybeTypeOfKind(operandType, checker::TypeFlag::BIGINT_LIKE)) {
-                    checker->ThrowTypeError({"Operator '+' cannot be applied to type '", operandType, "'"}, Start());
-                }
-
-                return checker->GlobalNumberType();
-            }
-
-            return checker->GetUnaryResultType(operandType);
-        }
-        case lexer::TokenType::PUNCTUATOR_EXCLAMATION_MARK: {
-            checker->CheckTruthinessOfType(operandType, Start());
-            auto facts = operandType->GetTypeFacts();
-            if (facts & checker::TypeFacts::TRUTHY) {
-                return checker->GlobalFalseType();
-            }
-
-            if (facts & checker::TypeFacts::FALSY) {
-                return checker->GlobalTrueType();
-            }
-
-            return checker->GlobalBooleanType();
-        }
-        default: {
-            UNREACHABLE();
-        }
-    }
-
-    return nullptr;
 }
 
 void UnaryExpression::UpdateSelf(const NodeUpdater &cb, [[maybe_unused]] binder::Binder *binder)
