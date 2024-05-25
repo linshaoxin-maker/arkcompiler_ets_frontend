@@ -29,7 +29,7 @@ class Config():
     def __init__(self):
         # Default config settings for all projects, if it's not what you need, config them in application_configs
         self.cmd_prefix = r"hvigorw.bat"
-        
+
         self.output_split = "_"
         self.ide_filename = ["AS", "DevEco"]
         self.debug_or_release = ["Debug", "Release"]
@@ -38,6 +38,7 @@ class Config():
                              "time_all.csv", "time_avg.csv"]
         self.error_filename = 'error.log'
         self.ide = IdeType.DevEco
+        self.preview_build = False
         self.incremental_code_str = "let index = 5 + 6\n"
         self.incremental_code_start_pos = "let index = 5 + 6\n"
         self.incremental_code_end_pos = 'this.num = num'
@@ -65,21 +66,21 @@ class Config():
     # If Default config is not what you need, you can set here!
     application_configs = dict(
         [
-            (    
+            (
                 "FTB", dict
                     (
                         project_path=r"D:/FTB",
                         name='FTB',
                     )
             ),
-            (    
+            (
                 "FDY", dict
                     (
                         project_path=r"D:/FDY",
                         name='FDY',
                     )
             ),
-            (    
+            (
                 "FWX", dict
                     (
                         project_path=r"D:/FWX",
@@ -92,8 +93,9 @@ class Config():
                         # The following params must be set according you environment
                         project_path=r"D:/HelloWorld",
                         name='HelloWorld',
-                        
+
                         # The following params is not neccessary to be modified
+                        self.preview_build = True
                         debug_package_path=r'entry/build/default/outputs/default/entry-default-unsigned.hap',
                         release_package_path=r'entry/build/default/outputs/default/entry-default-unsigned.hap',
                         incremental_code_path=r'entry/src/main/ets/pages/Index.ets',
@@ -133,7 +135,7 @@ def get_html_prefix():
            '<img src="cid:performance10"><img src="cid:performance11">' + \
            '<img src="cid:performance00"><img src="cid:performance01">' + \
            '<img src="cid:performance02"><img src="cid:performance12">'
-           
+
 
 
 def get_html_suffix():
@@ -148,7 +150,8 @@ class BuildMode():
 class LogType():
     FULL = 0
     INCREMENTAL = 1
-    SIZE = 2
+    PREVIEW = 2
+    SIZE = 3
 
 
 class MailPicConfig():
@@ -172,37 +175,44 @@ class MailPicConfig():
         BuildMode.DEBUG: {
             LogType.FULL: os.path.join(mail_data_path, 'debug_full_time.csv'),
             LogType.INCREMENTAL: os.path.join(mail_data_path, 'debug_incremental_time.csv'),
+            LogType.PREVIEW: os.path.join(mail_data_path, 'debug_preview_model_build_time.csv'),
             LogType.SIZE: os.path.join(mail_data_path, 'debug_size.csv')
         },
-        BuildMode.RELEASE:{
+        BuildMode.RELEASE: {
             LogType.FULL: os.path.join(mail_data_path, 'release_full_time.csv'),
             LogType.INCREMENTAL: os.path.join(mail_data_path, 'release_incremental_time.csv'),
+            LogType.PREVIEW: os.path.join(mail_data_path, 'release_preview_model_build_time.csv'),
             LogType.SIZE: os.path.join(mail_data_path, 'release_size.csv')
+
         }
     }
-    
+
     mail_pic_name = {
         BuildMode.DEBUG: {
-            LogType.FULL:os.path.join(mail_data_path, 'debug_full_time.jpg'),
+            LogType.FULL: os.path.join(mail_data_path, 'debug_full_time.jpg'),
             LogType.INCREMENTAL: os.path.join(mail_data_path, 'debug_incremental_time.jpg'),
+            LogType.PREVIEW: os.path.join(mail_data_path, 'debug_preview_model_build_time.jpg'),
             LogType.SIZE: os.path.join(mail_data_path, 'debug_size.jpg')
         },
-        BuildMode.RELEASE:{
+        BuildMode.RELEASE: {
             LogType.FULL: os.path.join(mail_data_path, 'release_full_time.jpg'),
             LogType.INCREMENTAL: os.path.join(mail_data_path, 'release_incremental_time.jpg'),
+            LogType.PREVIEW: os.path.join(mail_data_path, 'release_preview_model_build_time.jpg'),
             LogType.SIZE: os.path.join(mail_data_path, 'release_size.jpg')
         }
     }
-    
-    mail_pic_table_lable = {
+
+    mail_pic_table_label = {
         BuildMode.DEBUG: {
             LogType.FULL: 'Debug Full Build',
             LogType.INCREMENTAL: 'Debug Incremental Build',
+            LogType.PREVIEW: 'Debug Preview Model Build',
             LogType.SIZE: 'Debug Full Build size'
         },
-        BuildMode.RELEASE:{
+        BuildMode.RELEASE: {
             LogType.FULL: 'Release Full Build',
             LogType.INCREMENTAL: 'Release Incremental Time',
+            LogType.PREVIEW: 'Release Preview Model Build',
             LogType.SIZE: 'Release Full Build size'
         }
     }
