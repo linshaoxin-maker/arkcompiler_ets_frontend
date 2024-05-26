@@ -741,7 +741,7 @@ public:
     }
 
 protected:
-    T *paramScope_;
+    T *paramScope_ = nullptr;
 };
 
 class FunctionScope : public ScopeWithParamScope<VariableScope, FunctionParamScope> {
@@ -1345,6 +1345,9 @@ template <typename T, typename... Args>
 T *Scope::NewDecl(ArenaAllocator *allocator, Args &&... args)
 {
     T *decl = allocator->New<T>(std::forward<Args>(args)...);
+    if (decl == nullptr) {
+        throw Error(ErrorType::GENERIC, "Unsuccessful allocation in adding decl");
+    }
     decls_.push_back(decl);
 
     return decl;
@@ -1371,6 +1374,9 @@ VariableType *Scope::CreateVar(ArenaAllocator *allocator, util::StringView name,
                                const ir::AstNode *node)
 {
     auto *decl = allocator->New<DeclType>(name);
+    if (decl == nullptr) {
+        throw Error(ErrorType::GENERIC, "Unsuccessful allocation in adding decl");
+    }
     auto *variable = allocator->New<VariableType>(decl, flags);
     decl->BindNode(node);
     return variable;
