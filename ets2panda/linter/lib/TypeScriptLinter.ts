@@ -2079,7 +2079,10 @@ export class TypeScriptLinter {
      */
     if (ts.isSpreadElement(node)) {
       const spreadExprType = this.tsUtils.getTypeOrTypeConstraintAtLocation(node.expression);
-      if (spreadExprType && this.tsUtils.isOrDerivedFrom(spreadExprType, this.tsUtils.isArray)) {
+      if (spreadExprType &&
+        (TypeScriptLinter.useRelaxedRules ||
+         ts.isCallLikeExpression(node.parent) || ts.isArrayLiteralExpression(node.parent)) &&
+        this.tsUtils.isOrDerivedFrom(spreadExprType, this.tsUtils.isArray)) {
         return;
       }
     }
