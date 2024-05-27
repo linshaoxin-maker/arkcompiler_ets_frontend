@@ -363,6 +363,12 @@ public:
                                            bool isAsSrcLeftType = false);
     void ElaborateElementwise(Type *targetType, const ir::Expression *sourceNode, const lexer::SourcePosition &pos);
     void InferSimpleVariableDeclaratorType(const ir::VariableDeclarator *declarator);
+    void HandleLetDeclaration(const binder::Decl *decl, binder::Variable *var);
+    void HandleVarDeclaration(const binder::Decl *decl, binder::Variable *var);
+    void HandleMethodDeclaration(const binder::Decl *decl, binder::Variable *var);
+    void HandleParamDeclaration(const binder::Decl *decl, binder::Variable *var);
+    void HandleEnumDeclaration(const binder::Decl *decl, binder::Variable *var);
+    void HandleDeclarationType(const binder::Decl *decl, binder::Variable *var);
     Type *GetTypeOfVariable(binder::Variable *var);
     Type *GetUnaryResultType(Type *operandType);
     Type *GetTypeFromClassOrInterfaceReference(const ir::TSTypeReference *node, binder::Variable *var);
