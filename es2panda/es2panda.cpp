@@ -172,8 +172,9 @@ util::PatchFix *Compiler::InitPatchFixHelper(const SourceFile &input, const Comp
     bool needDumpSymbolFile = !options.patchFixOptions.dumpSymbolTable.empty();
     bool needGeneratePatch = options.patchFixOptions.generatePatch && !options.patchFixOptions.symbolTable.empty();
     bool isHotReload = options.patchFixOptions.hotReload;
+    bool isColdReload = options.patchFixOptions.coldReload;
     bool isColdFix = options.patchFixOptions.coldFix;
-    if (symbolTable && (needDumpSymbolFile || needGeneratePatch || isHotReload)) {
+    if (symbolTable && (needDumpSymbolFile || needGeneratePatch || isHotReload || isColdReload)) {
         util::PatchFixKind patchFixKind = util::PatchFixKind::DUMPSYMBOLTABLE;
         if (needGeneratePatch) {
             patchFixKind = isColdFix ? util::PatchFixKind::COLDFIX : util::PatchFixKind::HOTFIX;
@@ -181,8 +182,11 @@ util::PatchFix *Compiler::InitPatchFixHelper(const SourceFile &input, const Comp
         if (isHotReload) {
             patchFixKind = util::PatchFixKind::HOTRELOAD;
         }
+        if (isColdReload) {
+            patchFixKind = util::PatchFixKind::COLDRELOAD;
+        }
         patchFixHelper = new util::PatchFix(needDumpSymbolFile, needGeneratePatch, patchFixKind, input.recordName,
-            symbolTable);
+            symbolTable, options.targetApiVersion);
         parser_->AddPatchFixHelper(patchFixHelper);
         compiler_->AddPatchFixHelper(patchFixHelper);
     }
@@ -209,7 +213,7 @@ int Compiler::CompileFiles(CompilerOptions &options,
     if (!options.patchFixOptions.symbolTable.empty() || !options.patchFixOptions.dumpSymbolTable.empty()) {
         symbolTable = new util::SymbolTable(options.patchFixOptions.symbolTable,
             options.patchFixOptions.dumpSymbolTable);
-        if (!symbolTable->Initialize()) {
+        if (!symbolTable->Initialize(options.targetApiVersion)) {
             std::cerr << "Failed to initialize for Hotfix." << std::endl;
             return 1;
         }

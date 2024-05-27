@@ -156,7 +156,7 @@ public:
     ParserStatus newStatus;
 };
 
-enum class TypeAnnotationParsingOptions {
+enum class TypeAnnotationParsingOptions : uint8_t {
     NO_OPTS = 0,
     IN_UNION = 1 << 0,
     ALLOW_CONST = 1 << 1,
@@ -172,7 +172,7 @@ DEFINE_BITOPS(TypeAnnotationParsingOptions)
 
 class ArrowFunctionContext;
 
-enum class PrivateGetterSetterType {
+enum class PrivateGetterSetterType : uint8_t {
     GETTER = 0,
     SETTER = 1 << 0,
     STATIC = 1 << 1,
@@ -253,8 +253,9 @@ private:
     ir::Expression *ParseTsTypeOperatorOrTypeReference(bool throwError);
     ir::Expression *ParseTsIdentifierReference(TypeAnnotationParsingOptions options);
     ir::Expression *ParseTsBasicType(TypeAnnotationParsingOptions options);
-    ir::TSIntersectionType *ParseTsIntersectionType(ir::Expression *type, bool inUnion, bool restrictExtends);
-    ir::TSUnionType *ParseTsUnionType(ir::Expression *type, bool restrictExtends);
+    ir::TSIntersectionType *ParseTsIntersectionType(ir::Expression *type, bool inUnion, bool restrictExtends,
+                                                    bool throwError);
+    ir::TSUnionType *ParseTsUnionType(ir::Expression *type, bool restrictExtends, bool throwError);
     ir::Expression *ParseTsParenthesizedOrFunctionType(ir::Expression *typeAnnotation, bool throwError);
     ir::TSArrayType *ParseTsArrayType(ir::Expression *elementType);
     bool IsTsFunctionType();

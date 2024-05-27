@@ -28,6 +28,7 @@ import { forEachNodeInSubtree } from './functions/ForEachNodeInSubtree';
 import { FaultID } from '../Problems';
 import type { IsEtsFileCallback } from '../IsEtsFileCallback';
 import { SENDABLE_DECORATOR } from './consts/SendableAPI';
+import { USE_SHARED } from './consts/SharedModuleAPI';
 import {
   ARKTS_COLLECTIONS_D_ETS,
   ARKTS_COLLECTIONS_TYPES,
@@ -1788,6 +1789,21 @@ export class TsUtils {
     return this.isSendableClassOrInterface(type);
   }
 
+  isShareableType(tsType: ts.Type): boolean {
+    const sym = tsType.getSymbol();
+    if (TsUtils.isConstEnum(sym)) {
+      return true;
+    }
+
+    if (tsType.isUnion()) {
+      return tsType.types.every((elemType) => {
+        return this.isShareableType(elemType);
+      });
+    }
+
+    return this.isSendableType(tsType);
+  }
+
   isSendableClassOrInterface(type: ts.Type): boolean {
     const sym = type.getSymbol();
     if (!sym) {
@@ -2199,5 +2215,40 @@ export class TsUtils {
     } while (newName !== undefined);
 
     return newName;
+  }
+
+  static isSharedModule(sourceFile: ts.SourceFile): boolean {
+    const statements = sourceFile.statements;
+    for (const statement of statements) {
+      if (ts.isImportDeclaration(statement)) {
+        continue;
+      }
+
+      return (
+        ts.isExpressionStatement(statement) &&
+        ts.isStringLiteral(statement.expression) &&
+        statement.expression.text === USE_SHARED
+      );
+    }
+    return false;
+  }
+
+  private getDeclarationNode(node: ts.Node): ts.Declaration | undefined {
+    const sym = this.trueSymbolAtLocation(node);
+    return TsUtils.getDeclaration(sym);
+  }
+
+  static isFunctionLikeDeclaration(node: ts.Declaration): boolean {
+    return ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node) ||
+      ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node) || ts.isConstructorDeclaration(node) ||
+      ts.isFunctionExpression(node) || ts.isArrowFunction(node);
+  }
+
+  isShareableEntity(node: ts.Node): boolean {
+    const decl = this.getDeclarationNode(node);
+    const typeNode = (decl as any)?.type;
+    return typeNode && !TsUtils.isFunctionLikeDeclaration(decl!) ?
+      this.isSendableTypeNode(typeNode) :
+      this.isShareableType(this.tsTypeChecker.getTypeAtLocation(decl ? decl : node));
   }
 }

@@ -26,9 +26,12 @@
 #include <unordered_map>
 #include <vector>
 
+namespace ark::es2panda::public_lib {
+struct Context;
+}  // namespace ark::es2panda::public_lib
+
 namespace ark::es2panda::compiler {
 class IRNode;
-class CompilerContext;
 }  // namespace ark::es2panda::compiler
 
 namespace ark::es2panda::varbinder {
@@ -260,6 +263,8 @@ public:
 
     virtual Variable *FindLocal(const util::StringView &name, ResolveBindingOptions options) const;
 
+    bool IsSuperscopeOf(const varbinder::Scope *subscope) const;
+
     ConstScopeFindResult Find(const util::StringView &name,
                               ResolveBindingOptions options = ResolveBindingOptions::BINDINGS) const;
 
@@ -388,7 +393,7 @@ public:
         return evalBindings_;
     }
 
-    void CheckDirectEval(compiler::CompilerContext *compilerCtx);
+    void CheckDirectEval(public_lib::Context *context);
 
 protected:
     explicit VariableScope(ArenaAllocator *allocator, Scope *parent) : Scope(allocator, parent) {}

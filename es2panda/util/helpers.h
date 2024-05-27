@@ -39,6 +39,17 @@ class Statement;
 namespace panda::es2panda {
 struct CompilerOptions;
 enum class ErrorType;
+
+struct PkgInfo {
+    std::string packageName {};
+    std::string version {};
+};
+
+struct CompileContextInfo {
+    std::vector<std::string> compileEntries;
+    std::set<std::string> externalPkgNames;
+    std::unordered_map<std::string, PkgInfo> pkgContextInfo;
+};
 }  // namespace panda::es2panda
 
 namespace panda::es2panda::binder {
@@ -109,9 +120,11 @@ public:
     static bool IsPattern(const ir::AstNode *node);
     static std::vector<const ir::Identifier *> CollectBindingNames(const ir::AstNode *node);
     static util::StringView FunctionName(ArenaAllocator *allocator, const ir::ScriptFunction *func);
+    static util::StringView GetName(ArenaAllocator *allocator, const ir::AstNode *node);
     static std::tuple<util::StringView, bool> ParamName(ArenaAllocator *allocator, const ir::AstNode *param,
                                                         uint32_t index);
     static bool IsChild(const ir::AstNode *parent, const ir::AstNode *child);
+    static bool IsChildScope(const binder::Scope *parent, const binder::Scope *child);
     static bool IsObjectPropertyValue(const ArenaVector<ir::Expression *> &properties, const ir::AstNode *ident);
     static SignedNumberLiteral GetSignedNumberLiteral(const ir::Expression *expr);
 
@@ -130,12 +143,11 @@ public:
     static std::wstring Utf8ToUtf16(const std::string &utf8);
     template <typename T, typename... Args>
     static T FileStream(const std::string &str, Args &&...args);
-    static bool ShouldCheckConcurrent(const binder::Scope *scope, const util::StringView name);
-    static void SendableCheckForClassStaticInitializer(const util::StringView name, const binder::Scope *&iter,
-        ir::ScriptFunction *&concurrentFunc);
     static void ThrowError(ErrorType type, const parser::Program *program, const lexer::SourcePosition &pos,
         const std::string_view &msg);
     static bool IsUseShared(const ir::Statement *statement);
+    static const ir::ClassDefinition *GetContainingSendableClass(const ir::AstNode *node);
+    static bool IsSpecialScopeName(const util::StringView &str);
 
     static const uint32_t MAX_DOUBLE_DIGIT = 310;
     static const uint32_t MAX_DOUBLE_PRECISION_DIGIT = 17;
@@ -150,6 +162,19 @@ public:
     static constexpr std::string_view USE_CONCURRENT = "use concurrent";
     static constexpr std::string_view USE_SENDABLE = "use sendable";
     static constexpr std::string_view USE_SHARED = "use shared";
+    static constexpr std::string_view STRING_EMPTY = ""; // Default tag value, or tag of GlobalScope and ModuleScope
+    static constexpr std::string_view CLASS_SCOPE_TAG = "~";
+    static constexpr std::string_view FUNCTION_TAG = "*";
+    static constexpr std::string_view METHOD_TAG = ">";
+    static constexpr std::string_view CTOR_TAG = "=";
+    static constexpr std::string_view NAMESPACE_TAG = "&";
+    static constexpr std::string_view ENUM_TAG = "%";
+    static constexpr std::string_view STATIC_METHOD_TAG = "<";
+    static constexpr std::string_view DUPLICATED_SEPERATOR = "^";
+    static constexpr std::string_view FUNC_NAME_SEPARATOR = "#";
+    static constexpr std::string_view INDEX_NAME_SPICIFIER = "@";
+    static constexpr std::string_view DOT = ".";
+    static constexpr std::string_view BACKSLASH = "\\";
     static const uint64_t FNV_PRIME = 1099511628211U;
     static const uint64_t FNV_OFFSET = 14695981039346656037U;
     static const int32_t DEFAULT_TARGET_API_VERSION = 12;

@@ -498,10 +498,14 @@ util::StringView Helpers::FunctionName(ArenaAllocator *allocator, const ir::Scri
 
         parent = parent->Parent()->Parent();
     }
+    return GetName(allocator, parent);
+}
 
-    switch (parent->Type()) {
+util::StringView Helpers::GetName(ArenaAllocator *allocator, const ir::AstNode *node)
+{
+    switch (node->Type()) {
         case ir::AstNodeType::VARIABLE_DECLARATOR: {
-            const ir::VariableDeclarator *varDecl = parent->AsVariableDeclarator();
+            const ir::VariableDeclarator *varDecl = node->AsVariableDeclarator();
 
             if (varDecl->Id()->IsIdentifier()) {
                 return varDecl->Id()->AsIdentifier()->Name();
@@ -510,7 +514,7 @@ util::StringView Helpers::FunctionName(ArenaAllocator *allocator, const ir::Scri
             break;
         }
         case ir::AstNodeType::METHOD_DEFINITION: {
-            const ir::MethodDefinition *methodDef = parent->AsMethodDefinition();
+            const ir::MethodDefinition *methodDef = node->AsMethodDefinition();
 
             if (methodDef->Key()->IsIdentifier()) {
                 return methodDef->Key()->AsIdentifier()->Name();
@@ -519,7 +523,7 @@ util::StringView Helpers::FunctionName(ArenaAllocator *allocator, const ir::Scri
             break;
         }
         case ir::AstNodeType::ASSIGNMENT_EXPRESSION: {
-            const ir::AssignmentExpression *assignment = parent->AsAssignmentExpression();
+            const ir::AssignmentExpression *assignment = node->AsAssignmentExpression();
 
             if (assignment->Left()->IsIdentifier()) {
                 return assignment->Left()->AsIdentifier()->Name();
@@ -528,7 +532,7 @@ util::StringView Helpers::FunctionName(ArenaAllocator *allocator, const ir::Scri
             break;
         }
         case ir::AstNodeType::ASSIGNMENT_PATTERN: {
-            const ir::AssignmentExpression *assignment = parent->AsAssignmentPattern();
+            const ir::AssignmentExpression *assignment = node->AsAssignmentPattern();
 
             if (assignment->Left()->IsIdentifier()) {
                 return assignment->Left()->AsIdentifier()->Name();
@@ -537,10 +541,18 @@ util::StringView Helpers::FunctionName(ArenaAllocator *allocator, const ir::Scri
             break;
         }
         case ir::AstNodeType::PROPERTY: {
-            const ir::Property *prop = parent->AsProperty();
+            const ir::Property *prop = node->AsProperty();
 
             if (prop->Kind() != ir::PropertyKind::PROTO &&
                 Helpers::IsConstantPropertyKey(prop->Key(), prop->IsComputed())) {
+                return Helpers::LiteralToPropName(allocator, prop->Key());
+            }
+
+            break;
+        }
+        case ir::AstNodeType::CLASS_PROPERTY: {
+            const ir::ClassProperty *prop = node->AsClassProperty();
+            if (Helpers::IsConstantPropertyKey(prop->Key(), prop->IsComputed())) {
                 return Helpers::LiteralToPropName(allocator, prop->Key());
             }
 
@@ -587,6 +599,19 @@ std::tuple<util::StringView, bool> Helpers::ParamName(ArenaAllocator *allocator,
 }
 
 bool Helpers::IsChild(const ir::AstNode *parent, const ir::AstNode *child)
+{
+    while (child) {
+        if (child == parent) {
+            return true;
+        }
+
+        child = child->Parent();
+    }
+
+    return false;
+}
+
+bool Helpers::IsChildScope(const binder::Scope *parent, const binder::Scope *child)
 {
     while (child) {
         if (child == parent) {
@@ -834,12 +859,6 @@ bool Helpers::SetFuncFlagsForDirectives(const ir::StringLiteral *strLit, ir::Scr
     if (strLit->Str().Is(USE_SENDABLE) && func->IsConstructor()) {
         auto *classDef = const_cast<ir::ClassDefinition*>(GetClassDefiniton(func));
         classDef->SetSendable();
-        func->AddFlag(ir::ScriptFunctionFlags::CONCURRENT);
-        for (auto *stmt : classDef->Body()) {
-            if (stmt->IsMethodDefinition()) {
-                util::Concurrent::SetConcurrent(stmt->AsMethodDefinition()->Function(), strLit, lineIndex);
-            }
-        }
         return true;
     }
 
@@ -887,52 +906,6 @@ std::wstring Helpers::Utf8ToUtf16(const std::string &utf8)
 }
 #endif
 
-// For sendable class method, it's marked concurrent, do not check class name as closure variable.
-bool Helpers::ShouldCheckConcurrent(const binder::Scope *scope, const util::StringView name)
-{
-    if (!scope->IsFunctionScope()) {
-        return false;
-    }
-
-    auto scriptFunc = scope->Node()->AsScriptFunction();
-    if (!scriptFunc->IsConcurrent()) {
-        return false;
-    }
-    if (!scriptFunc->Parent() || !scriptFunc->Parent()->Parent() ||
-        !scriptFunc->Parent()->Parent()->IsMethodDefinition()) {
-        return true;
-    }
-
-    auto *classDef = scriptFunc->Parent()->Parent()->Parent()->AsClassDefinition();
-    if (classDef->IsSendable()) {
-        ASSERT(classDef->Ident() != nullptr);
-        if (name == classDef->Ident()->Name()) {
-            return false;
-        }
-    }
-    return true;
-}
-
-/* Since sendable class has class context instead of class env, when resolving variables in sendable class's static
- * initializer, we have to skip class scope(because there's no class env), and search it in top level scope.
- * Since lexical variables in sendable class is forbiden, it can only search for class name.*/
-void Helpers::SendableCheckForClassStaticInitializer(const util::StringView name, const binder::Scope *&iter,
-    ir::ScriptFunction *&concurrentFunc)
-{
-    if (!iter->IsFunctionScope() || !iter->Node()->AsScriptFunction()->IsStaticInitializer()) {
-        return;
-    }
-
-    auto classDef = iter->Parent()->Parent()->Node()->AsClassDefinition();
-    if (classDef->IsSendable()) {
-        ASSERT(classDef->Ident());
-        if (classDef->Ident()->Name() != name) {
-            concurrentFunc = const_cast<ir::ScriptFunction *>(classDef->StaticInitializer()->Function());
-        }
-        iter = iter->Parent();
-    }
-}
-
 void Helpers::ThrowError(ErrorType type, const parser::Program *program, const lexer::SourcePosition &pos,
     const std::string_view &msg)
 {
@@ -955,4 +928,22 @@ bool Helpers::IsUseShared(const ir::Statement *statement)
     return statement->AsExpressionStatement()->GetExpression()->AsStringLiteral()->Str().Is(USE_SHARED);
 }
 
+const ir::ClassDefinition *Helpers::GetContainingSendableClass(const ir::AstNode *node)
+{
+    while (node != nullptr) {
+        if (node->IsClassDefinition() && node->AsClassDefinition()->IsSendable()) {
+            return node->AsClassDefinition();
+        }
+
+        node = node->Parent();
+    }
+
+    return nullptr;
+}
+
+bool Helpers::IsSpecialScopeName(const util::StringView &name)
+{
+    return name.Find(Helpers::DOT.data()) != std::string::npos ||
+           name.Find(Helpers::BACKSLASH.data()) != std::string::npos;
+}
 }  // namespace panda::es2panda::util

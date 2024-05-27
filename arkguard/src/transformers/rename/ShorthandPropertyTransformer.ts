@@ -28,6 +28,7 @@ import {
 import type {
   BindingElement,
   ClassElement,
+  Expression,
   Identifier,
   Node,
   SourceFile,
@@ -79,8 +80,14 @@ namespace secharmony {
          * `let info = {name1: name1};`
          */
         if (isShorthandPropertyAssignment((node))) {
-          // update parent
-          return factory.createPropertyAssignment(factory.createIdentifier(node.name.text), node.name);
+          let initializer = node.objectAssignmentInitializer;
+          let expression: Expression = node.name;
+          if (initializer) {
+            expression = factory.createBinaryExpression(node.name, node.equalsToken, initializer);
+          }
+
+          let identifier = factory.createIdentifier(node.name.escapedText.toString());
+          return factory.createPropertyAssignment(identifier, expression);
         }
 
         /**
@@ -103,42 +110,18 @@ namespace secharmony {
             node.name, node.initializer);
         }
 
-        /** 
-         * Remove virtual constructor to avoid being printed into the output file
-         * @param {SourceFile} node - Virtual constructor node
-        */
-        if (isStructDeclaration(node)) {
-          return tryRemoveVirtualConstructor(node);
-        }
-
         return visitEachChild(node, transformShortHandProperty, context);
       }
 
       function isElementsInObjectBindingPattern(node: Node): node is BindingElement {
         return node.parent && isObjectBindingPattern(node.parent) && isBindingElement(node);
       }
-
-      function tryRemoveVirtualConstructor(node: StructDeclaration): StructDeclaration {
-        const sourceFile = NodeUtils.getSourceFileOfNode(node);
-        const tempStructMembers: ClassElement[] = [];
-        if (sourceFile && sourceFile.isDeclarationFile && NodeUtils.isInETSFile(sourceFile)) {
-          for (let member of node.members) {
-            // @ts-ignore
-            if (!isConstructorDeclaration(member) || !member.virtual) {
-              tempStructMembers.push(member);
-            }
-          }
-          const structMembersWithVirtualConstructor = factory.createNodeArray(tempStructMembers);
-          return factory.updateStructDeclaration(node, node.modifiers, node.name, node.typeParameters, node.heritageClauses, structMembersWithVirtualConstructor);
-        }
-        return node;
-      }
     }
   };
 
   export let transformerPlugin: TransformPlugin = {
     'name': 'ShortHandPropertyTransformer',
-    'order': (1 << TransformerOrder.SHORTHAND_PROPERTY_TRANSFORMER),
+    'order': TransformerOrder.SHORTHAND_PROPERTY_TRANSFORMER,
     'createTransformerFactory': createShorthandPropertyTransformerFactory,
   };
 }

@@ -120,7 +120,13 @@ def parse_args():
                         help="ark's product name")
     parser.add_argument('--run-pgo', action='store_true',
                         help="Run test262 with aot pgo")
-    return parser.parse_args()
+    parser.add_argument('--abc2program', action='store_true',
+                        help="Use abc2prog to generate abc, aot or pgo is not supported yet under this option")
+    
+    args = parser.parse_args()
+    if args.abc2program and (args.run_pgo or args.ark_aot):
+        sys.exit("Error: '--abc2program' used together with  '--ark-aot' or '--run-pgo' is not supported")
+    return args
 
 
 def run_check(runnable, env=None):
@@ -570,7 +576,7 @@ def get_host_args_of_product_name(args):
     return ark_tool, libs_dir, ark_aot_tool, merge_abc_binary
 
 
-def get_host_args_of_host_type(args, host_type, ark_tool, ark_aot_tool, libs_dir, ark_frontend,
+def get_host_args_of_host_type(args, host_args, ark_tool, ark_aot_tool, libs_dir, ark_frontend,
                                ark_frontend_binary, opt_level, es2abc_thread_count,
                                merge_abc_binary, merge_abc_mode, product_name):
     host_args = f"-B test262/run_sunspider.py "
@@ -588,10 +594,13 @@ def get_host_args_of_host_type(args, host_type, ark_tool, ark_aot_tool, libs_dir
     host_args += f"--merge-abc-binary={merge_abc_binary} "
     host_args += f"--merge-abc-mode={merge_abc_mode} "
     host_args += f"--product-name={product_name} "
+    if args.abc2program:
+        host_args = f"{host_args}--abc2program "
 
     return host_args
 
-def get_host_args_of_ark_arch(args):
+
+def get_host_args_of_ark_arch(args, host_args):
     host_args += f"--ark-arch={args.ark_arch} "
     host_args += f"--ark-arch-root={args.ark_arch_root} "
 
@@ -646,12 +655,12 @@ def get_host_args(args, host_type):
         merge_abc_mode = args.merge_abc_mode
 
     if host_type == DEFAULT_HOST_TYPE:
-        host_args = get_host_args_of_host_type(args, host_type, ark_tool, ark_aot_tool, libs_dir, ark_frontend,
+        host_args = get_host_args_of_host_type(args, host_args, ark_tool, ark_aot_tool, libs_dir, ark_frontend,
                                                ark_frontend_binary, opt_level, es2abc_thread_count,
                                                merge_abc_binary, merge_abc_mode, product_name)
 
     if args.ark_arch != ark_arch:
-        host_args = get_host_args_of_ark_arch(args)
+        host_args = get_host_args_of_ark_arch(args, host_args)
 
     return host_args
 

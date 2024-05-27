@@ -18,6 +18,7 @@ import type {
   IPrinterOption,
   INameObfuscationOption,
   IKeepSourcePathsAndDependency,
+  IDeclarationCommentOption
 } from './INameObfuscationOption';
 
 export interface IOptions {
@@ -28,16 +29,10 @@ export interface IOptions {
   readonly mRemoveComments?: boolean;
 
   // Whether to remove JSDoc comments;
-  readonly mRemoveDeclarationComments?: {
-    readonly mEnable: boolean,
-    mReservedComments: string[]
-  };
+  readonly mRemoveDeclarationComments?: IDeclarationCommentOption;
 
   // Whether to disable console output
   readonly mDisableConsole?: boolean;
-
-  // whether to disable hilog output
-  readonly mDisableHilog?: boolean;
 
   // Whether to do code simplification, includes variable declarations merging, expression merging...
   readonly mSimplify?: boolean;

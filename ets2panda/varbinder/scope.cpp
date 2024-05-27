@@ -37,10 +37,10 @@
 #include "ir/ts/tsEnumDeclaration.h"
 #include "ir/ts/tsTypeAliasDeclaration.h"
 #include "compiler/base/literals.h"
-#include "compiler/core/compilerContext.h"
 #include "macros.h"
 #include "util/ustring.h"
 #include "generated/signatures.h"
+#include "public/public.h"
 
 namespace ark::es2panda::varbinder {
 VariableScope *Scope::EnclosingVariableScope()
@@ -71,6 +71,17 @@ const VariableScope *Scope::EnclosingVariableScope() const
     }
 
     return nullptr;
+}
+
+bool Scope::IsSuperscopeOf(const varbinder::Scope *subscope) const
+{
+    while (subscope != nullptr) {
+        if (subscope == this) {
+            return true;
+        }
+        subscope = ir::AstNode::EnclosingScope(subscope->Node()->Parent());
+    }
+    return false;
 }
 
 // NOTE(psiket): Duplication
@@ -301,9 +312,9 @@ Variable *Scope::AddLocal(ArenaAllocator *allocator, Variable *currentVariable, 
     }
 }
 
-void VariableScope::CheckDirectEval(compiler::CompilerContext *compilerCtx)
+void VariableScope::CheckDirectEval(public_lib::Context *context)
 {
-    ASSERT(compilerCtx);
+    ASSERT(context);
     const auto &varMap = Bindings();
 
     if (!HasFlag(ScopeFlags::NO_REG_STORE) || varMap.empty()) {
@@ -356,8 +367,8 @@ void VariableScope::CheckDirectEval(compiler::CompilerContext *compilerCtx)
             literals[buffIndex++] = compiler::Literal(variable->Name());
         }
     }
-
-    evalBindings_ = compilerCtx->AddContextLiteral(std::move(literals));
+    context->contextLiterals.emplace_back(literals);
+    evalBindings_ = context->contextLiterals.size() - 1;
 }
 
 Variable *ParamScope::AddParam(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl, VariableFlags flags)
@@ -551,7 +562,7 @@ Scope::InsertResult GlobalScope::InsertImpl(const util::StringView &name, Variab
     if (!isDynamic && isForeign && !var->Declaration()->Name().Is(compiler::Signatures::ETS_GLOBAL)) {
         const auto *const node = var->Declaration()->Node();
 
-        if (!(node->IsExported() || node->IsDefaultExported())) {
+        if (!(node->IsExported() || node->IsDefaultExported() || node->IsExportedType())) {
             return Scope::InsertResult {Bindings().end(), false};
         }
     }

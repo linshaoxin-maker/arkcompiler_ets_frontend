@@ -127,6 +127,11 @@ public:
         program_ = program;
     }
 
+    ArenaUnorderedMap<util::StringView, int32_t> &GetScopeNames()
+    {
+        return topScope_->GetScopeNames();
+    }
+
     const ArenaUnorderedMap<const ir::ScriptFunction *, util::StringView> &AnonymousFunctionNames() const
     {
         return anonymousFunctionNames_;
@@ -198,6 +203,7 @@ private:
     void AddMandatoryParams();
     void AssignIndexToModuleVariable();
     void BuildFunction(FunctionScope *funcScope, util::StringView name, const ir::ScriptFunction *func = nullptr);
+    void LegacyBuildFunction(FunctionScope *funcScope, util::StringView name, const ir::ScriptFunction *func = nullptr);
     void BuildScriptFunction(Scope *outerScope, const ir::ScriptFunction *scriptFunc);
     void BuildClassDefinition(ir::ClassDefinition *classDef);
     void LookupReference(const util::StringView &name);
@@ -282,6 +288,9 @@ template <typename T, typename... Args>
 T *Binder::AddTsDecl(const lexer::SourcePosition &pos, bool isDeclare, Args &&... args)
 {
     T *decl = Allocator()->New<T>(std::forward<Args>(args)...);
+    if (decl == nullptr) {
+        throw Error(ErrorType::GENERIC, "Unsuccessful allocation in adding ts decl during binder");
+    }
     decl->SetDeclare(isDeclare);
 
     if (scope_->AddTsDecl(Allocator(), decl, program_->Extension())) {
@@ -296,6 +305,9 @@ template <typename T, typename... Args>
 T *Binder::AddTsDecl(const lexer::SourcePosition &pos, DeclarationFlags flag, bool isDeclare, Args &&... args)
 {
     T *decl = Allocator()->New<T>(std::forward<Args>(args)...);
+    if (decl == nullptr) {
+        throw Error(ErrorType::GENERIC, "Unsuccessful allocation in adding ts decl during binder");
+    }
     decl->AddFlag(flag);
     decl->SetDeclare(isDeclare);
 
@@ -311,6 +323,9 @@ template <typename T, typename... Args>
 T *Binder::AddDecl(const lexer::SourcePosition &pos, bool isDeclare, Args &&... args)
 {
     T *decl = Allocator()->New<T>(std::forward<Args>(args)...);
+    if (decl == nullptr) {
+        throw Error(ErrorType::GENERIC, "Unsuccessful allocation in adding decl during binder");
+    }
     decl->SetDeclare(isDeclare);
 
     if (scope_->AddDecl(Allocator(), decl, program_->Extension())) {
@@ -325,6 +340,9 @@ template <typename T, typename... Args>
 T *Binder::AddDecl(const lexer::SourcePosition &pos, DeclarationFlags flag, bool isDeclare, Args &&... args)
 {
     T *decl = Allocator()->New<T>(std::forward<Args>(args)...);
+    if (decl == nullptr) {
+        throw Error(ErrorType::GENERIC, "Unsuccessful allocation in adding decl during binder");
+    }
     decl->AddFlag(flag);
     decl->SetDeclare(isDeclare);
 

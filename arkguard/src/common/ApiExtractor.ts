@@ -85,6 +85,7 @@ export namespace ApiExtractor {
   export let mPropertySet: Set<string> = new Set<string>();
   export let mLibExportNameSet: Set<string> = new Set<string>();
   export let mConstructorPropertySet: Set<string> = undefined;
+  export let mSystemExportSet: Set<string> = new Set<string>();
   /**
    * filter classes or interfaces with export, default, etc
    */
@@ -313,60 +314,12 @@ export namespace ApiExtractor {
    */
   const visitProjectExport = function (astNode): void {
     if (isExportAssignment(astNode)) {
-      // let xxx; export default xxx = a;
-      if (isBinaryExpression(astNode.expression)) {
-        if (isObjectLiteralExpression(astNode.expression.right)) {
-          getObjectProperties(astNode.expression.right, mCurrentExportedPropertySet);
-          return;
-        }
-
-        if (isClassExpression(astNode.expression.right)) {
-          getClassProperties(astNode.expression.right, mCurrentExportedPropertySet);
-        }
-
-        return;
-      }
-
-      // export = xxx; The xxx here can't be obfuscated
-      // export default yyy; The yyy here can be obfuscated
-      if (isIdentifier(astNode.expression)) {
-        if (!mCurrentExportNameSet.has(astNode.expression.getText())) {
-          mCurrentExportNameSet.add(astNode.expression.getText());
-          mCurrentExportedPropertySet.add(astNode.expression.getText());
-        }
-        return;
-      }
-
-      if (isObjectLiteralExpression(astNode.expression)) {
-        getObjectProperties(astNode.expression, mCurrentExportedPropertySet);
-      }
-
+      handleExportAssignment(astNode);
       return;
     }
 
     if (isExportDeclaration(astNode)) {
-      if (astNode.exportClause) {
-        if (astNode.exportClause.kind === SyntaxKind.NamedExports) {
-          astNode.exportClause.forEachChild((child) => {
-            if (!isExportSpecifier(child)) {
-              return;
-            }
-
-            if (child.propertyName) {
-              mCurrentExportNameSet.add(child.propertyName.getText());
-            }
-
-            let exportName = child.name.getText();
-            mCurrentExportedPropertySet.add(exportName);
-            mCurrentExportNameSet.add(exportName);
-          });
-        }
-
-        if (astNode.exportClause.kind === SyntaxKind.NamespaceExport) {
-          mCurrentExportedPropertySet.add(astNode.exportClause.name.getText());
-          return;
-        }
-      }
+      handleExportDeclaration(astNode);
       return;
     }
 
@@ -405,6 +358,61 @@ export namespace ApiExtractor {
 
     forEachChild(astNode, visitProjectExport);
   };
+
+  function handleExportAssignment(astNode): void {
+    // let xxx; export default xxx = a;
+    if (isBinaryExpression(astNode.expression)) {
+      if (isObjectLiteralExpression(astNode.expression.right)) {
+        getObjectProperties(astNode.expression.right, mCurrentExportedPropertySet);
+        return;
+      }
+
+      if (isClassExpression(astNode.expression.right)) {
+        getClassProperties(astNode.expression.right, mCurrentExportedPropertySet);
+      }
+
+      return;
+    }
+
+    // export = xxx; The xxx here can't be obfuscated
+    // export default yyy; The yyy here can be obfuscated
+    if (isIdentifier(astNode.expression)) {
+      if (!mCurrentExportNameSet.has(astNode.expression.getText())) {
+        mCurrentExportNameSet.add(astNode.expression.getText());
+        mCurrentExportedPropertySet.add(astNode.expression.getText());
+      }
+      return;
+    }
+
+    if (isObjectLiteralExpression(astNode.expression)) {
+      getObjectProperties(astNode.expression, mCurrentExportedPropertySet);
+    }
+  }
+
+  function handleExportDeclaration(astNode): void {
+    if (astNode.exportClause) {
+      if (astNode.exportClause.kind === SyntaxKind.NamedExports) {
+        astNode.exportClause.forEachChild((child) => {
+          if (!isExportSpecifier(child)) {
+            return;
+          }
+
+          if (child.propertyName) {
+            mCurrentExportNameSet.add(child.propertyName.getText());
+          }
+
+          let exportName = child.name.getText();
+          mCurrentExportedPropertySet.add(exportName);
+          mCurrentExportNameSet.add(exportName);
+        });
+      }
+
+      if (astNode.exportClause.kind === SyntaxKind.NamespaceExport) {
+        mCurrentExportedPropertySet.add(astNode.exportClause.name.getText());
+        return;
+      } 
+    }
+  }
 
   /**
    * extract the class, enum, and object properties of the export in the project before obfuscation
@@ -478,6 +486,7 @@ export namespace ApiExtractor {
       case ApiType.API:
         mCurrentExportNameSet.clear();
         forEachChild(sourceFile, visitExport);
+        mCurrentExportNameSet.forEach(item => mSystemExportSet.add(item));
 
         forEachChild(sourceFile, visitPropertyAndName);
         mCurrentExportNameSet.clear();

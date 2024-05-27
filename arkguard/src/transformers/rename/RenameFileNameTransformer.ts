@@ -57,10 +57,11 @@ import { NodeUtils } from '../../utils/NodeUtils';
 import { orignalFilePathForSearching, performancePrinter, ArkObfuscator } from '../../ArkObfuscator';
 import type { PathAndExtension, ProjectInfo } from '../../common/type';
 import { EventList } from '../../utils/PrinterUtils';
+import { needToBeReserved } from '../../utils/TransformUtil';
 namespace secharmony {
 
   // global mangled file name table used by all files in a project
-  export let globalFileNameMangledTable: Map<string, string> = undefined;
+  export let globalFileNameMangledTable: Map<string, string> = new Map<string, string>();
 
   // used for file name cache
   export let historyFileNameMangledTable: Map<string, string> = undefined;
@@ -70,6 +71,7 @@ namespace secharmony {
   let reservedFileNames: Set<string> | undefined;
   let localPackageSet: Set<string> | undefined;
   let useNormalized: boolean = false;
+  let universalReservedFileNames: RegExp[] | undefined;
 
   /**
    * Rename Properties Transformer
@@ -82,6 +84,24 @@ namespace secharmony {
       return null;
     }
 
+    let nameGeneratorOption: NameGeneratorOptions = {};
+    if (profile.mNameGeneratorType === NameGeneratorType.HEX) {
+      nameGeneratorOption.hexWithPrefixSuffix = true;
+    }
+
+    generator = getNameGenerator(profile.mNameGeneratorType, nameGeneratorOption);
+    let configReservedFileName: string[] = profile?.mReservedFileNames ?? [];
+    const tempReservedName: string[] = ['.', '..', ''];
+    configReservedFileName.forEach(directory => {
+      tempReservedName.push(directory);
+      const pathOrExtension: PathAndExtension = FileUtils.getFileSuffix(directory);
+      if (pathOrExtension.ext) {
+        tempReservedName.push(pathOrExtension.ext);
+        tempReservedName.push(pathOrExtension.path);
+      }
+    });
+    reservedFileNames = new Set<string>(tempReservedName);
+    universalReservedFileNames = profile?.mUniversalReservedFileNames ?? [];
     return renameFileNameFactory;
 
     function renameFileNameFactory(context: TransformationContext): Transformer<Node> {
@@ -90,28 +110,6 @@ namespace secharmony {
         localPackageSet = projectInfo.localPackageSet;
         useNormalized = projectInfo.useNormalized;
       }
-      let options: NameGeneratorOptions = {};
-      if (profile.mNameGeneratorType === NameGeneratorType.HEX) {
-        options.hexWithPrefixSuffix = true;
-      }
-
-      generator = getNameGenerator(profile.mNameGeneratorType, options);
-      let tempReservedFileNameOrPath: string[] = profile?.mReservedFileNames ?? [];
-      let tempReservedFileName: string[] = ['.', '..', ''];
-      tempReservedFileNameOrPath.map(fileNameOrPath => {
-        if (fileNameOrPath && fileNameOrPath.length > 0) {
-          const directories = FileUtils.splitFilePath(fileNameOrPath);
-          directories.forEach(directory => {
-            tempReservedFileName.push(directory);
-            const pathOrExtension: PathAndExtension = FileUtils.getFileSuffix(directory);
-            if (pathOrExtension.ext) {
-              tempReservedFileName.push(pathOrExtension.ext);
-              tempReservedFileName.push(pathOrExtension.path);
-            }
-          });
-        }
-      });
-      reservedFileNames = new Set<string>(tempReservedFileName);
 
       return renameFileNameTransformer;
 
@@ -335,7 +333,7 @@ namespace secharmony {
   }
 
   function mangleFileNamePart(original: string): string {
-    if (reservedFileNames.has(original)) {
+    if (needToBeReserved(reservedFileNames, universalReservedFileNames, original)) {
       return original;
     }
 
@@ -344,7 +342,7 @@ namespace secharmony {
 
     while (!mangledName) {
       mangledName = generator.getName();
-      if (mangledName === original || reservedFileNames.has(mangledName)) {
+      if (mangledName === original || needToBeReserved(reservedFileNames, universalReservedFileNames, mangledName)) {
         mangledName = null;
         continue;
       }
@@ -366,7 +364,7 @@ namespace secharmony {
 
   export let transformerPlugin: TransformPlugin = {
     'name': 'renamePropertiesPlugin',
-    'order': (1 << TransformerOrder.RENAME_FILE_NAME_TRANSFORMER),
+    'order': TransformerOrder.RENAME_FILE_NAME_TRANSFORMER,
     'createTransformerFactory': createRenameFileNameFactory
   };
 }

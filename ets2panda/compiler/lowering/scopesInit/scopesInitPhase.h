@@ -23,7 +23,6 @@
 #include "varbinder/ETSBinder.h"
 #include "compiler/lowering/scopesInit/savedBindingsCtx.h"
 #include "checker/checker.h"
-#include "compiler/core/compilerContext.h"
 #include "ir/visitor/IterateAstVisitor.h"
 #include "ir/expressions/literals/undefinedLiteral.h"
 #include "ir/expressions/blockExpression.h"
@@ -337,7 +336,7 @@ private:
     void VisitClassStaticBlock(ir::ClassStaticBlock *staticBlock) override;
     void VisitBlockExpression(ir::BlockExpression *blockExpr) override;
     void VisitImportNamespaceSpecifier(ir::ImportNamespaceSpecifier *importSpec) override;
-    void VisitImportSpecifier([[maybe_unused]] ir::ImportSpecifier *importSpec) override {};
+    void VisitImportSpecifier([[maybe_unused]] ir::ImportSpecifier *importSpec) override;
     void VisitImportDefaultSpecifier([[maybe_unused]] ir::ImportDefaultSpecifier *importSpec) override {};
     void VisitETSReExportDeclaration(ir::ETSReExportDeclaration *reExport) override;
     void VisitETSParameterExpression(ir::ETSParameterExpression *paramExpr) override;

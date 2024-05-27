@@ -31,6 +31,9 @@ struct Program;
 }  // namespace panda::pandasm
 
 namespace panda::es2panda {
+struct CompileContextInfo;
+struct PkgInfo;
+
 namespace parser {
 class ParserImpl;
 class Transformer;
@@ -71,6 +74,7 @@ struct PatchFixOptions {
     std::string symbolTable {};
     bool generatePatch {false};
     bool hotReload {false};
+    bool coldReload {false};
     bool coldFix {false};
 };
 
@@ -102,10 +106,13 @@ struct CompilerOptions {
     bool bcVersion {false};
     bool bcMinVersion {false};
     int targetApiVersion {0};
+    bool targetBcVersion {false};
     std::unordered_map<std::string, std::string> cacheFiles;
     std::string transformLib {};
     bool branchElimination {false};
     bool requireGlobalOptimization {false};
+    std::string compileContextInfoPath {};
+    CompileContextInfo compileContextInfo {};
 };
 
 enum class ErrorType {
@@ -187,8 +194,9 @@ public:
     NO_MOVE_SEMANTIC(Compiler);
 
     panda::pandasm::Program *Compile(const SourceFile &input, const CompilerOptions &options,
-        util::SymbolTable *symbolTable = nullptr);
-    panda::pandasm::Program *CompileFile(const CompilerOptions &options, SourceFile *src, util::SymbolTable *symbolTable);
+                                     util::SymbolTable *symbolTable = nullptr);
+    panda::pandasm::Program *CompileFile(const CompilerOptions &options, SourceFile *src,
+                                         util::SymbolTable *symbolTable);
 
     static int CompileFiles(CompilerOptions &options,
         std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo, panda::ArenaAllocator *allocator);

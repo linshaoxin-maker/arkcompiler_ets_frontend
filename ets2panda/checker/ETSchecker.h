@@ -21,6 +21,9 @@
 #include "checker/types/ets/types.h"
 #include "checker/ets/primitiveWrappers.h"
 #include "checker/resolveResult.h"
+#include "util/helpers.h"
+
+#include <mutex>
 
 namespace ark::es2panda::varbinder {
 class VarBinder;
@@ -297,6 +300,7 @@ public:
     bool NeedTypeInference(const ir::ScriptFunction *lambda);
     std::vector<bool> FindTypeInferenceArguments(const ArenaVector<ir::Expression *> &arguments);
     void InferTypesForLambda(ir::ScriptFunction *lambda, ir::ETSFunctionType *calleeType);
+    void HandleLambdaTypeInfer(ir::AstNode *typeAnn, ir::ScriptFunction *const lambda);
     bool TypeInference(Signature *signature, const ArenaVector<ir::Expression *> &arguments,
                        TypeRelationFlag flags = TypeRelationFlag::NONE);
     bool CheckLambdaAssignable(ir::Expression *param, ir::ScriptFunction *lambda);
@@ -330,7 +334,11 @@ public:
     bool ValidateSignatureRequiredParams(Signature *substitutedSig, const ArenaVector<ir::Expression *> &arguments,
                                          TypeRelationFlag flags, const std::vector<bool> &argTypeInferenceRequired,
                                          bool throwError);
+    bool ValidateSignatureInvocationContext(Signature *substitutedSig, ir::Expression *argument, const Type *targetType,
+                                            std::size_t index, TypeRelationFlag flags);
+    bool CheckInvokable(Signature *substitutedSig, ir::Expression *argument, std::size_t index, TypeRelationFlag flags);
     bool CheckOptionalLambdaFunction(ir::Expression *argument, Signature *substitutedSig, std::size_t index);
+    bool ValidateArgumentAsIdentifier(const ir::Identifier *identifier);
     bool ValidateSignatureRestParams(Signature *substitutedSig, const ArenaVector<ir::Expression *> &arguments,
                                      TypeRelationFlag flags, bool throwError);
     Signature *ValidateSignatures(ArenaVector<Signature *> &signatures,
@@ -381,7 +389,8 @@ public:
     void CreateLambdaObjectForFunctionReference(ir::AstNode *refNode, Signature *signature,
                                                 ETSObjectType *functionalInterface);
     ir::AstNode *CreateLambdaImplicitField(varbinder::ClassScope *scope, const lexer::SourcePosition &pos);
-    ir::MethodDefinition *CreateLambdaImplicitCtor(const lexer::SourceRange &pos, bool isStaticReference);
+    ir::MethodDefinition *CreateLambdaImplicitCtor(const lexer::SourceRange &pos, bool isStaticReference,
+                                                   ETSObjectType *functionalInterface);
     ir::MethodDefinition *CreateLambdaImplicitCtor(ArenaVector<ir::AstNode *> &properties);
     ir::MethodDefinition *CreateProxyMethodForLambda(ir::ClassDefinition *klass, ir::ArrowFunctionExpression *lambda,
                                                      ArenaVector<ir::AstNode *> &captured, bool isStatic);
@@ -583,6 +592,9 @@ public:
                                                              varbinder::ClassScope *scope, bool isSetter,
                                                              ETSChecker *checker);
     void GenerateGetterSetterPropertyAndMethod(ir::ClassProperty *originalProp, ETSObjectType *classType);
+    ir::MethodDefinition *GenerateSetterForProperty(ir::ClassProperty *originalProp, ir::ClassProperty *interfaceProp,
+                                                    ir::ClassProperty *classProp, ETSObjectType *classType,
+                                                    ir::MethodDefinition *getter);
     ETSObjectType *GetImportSpecifierObjectType(ir::ETSImportDeclaration *importDecl, ir::Identifier *ident);
     void ImportNamespaceObjectTypeAddReExportType(ir::ETSImportDeclaration *importDecl,
                                                   checker::ETSObjectType *lastObjectType, ir::Identifier *ident);

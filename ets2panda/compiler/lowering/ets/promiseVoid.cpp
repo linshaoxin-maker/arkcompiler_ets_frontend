@@ -17,7 +17,6 @@
 #include "checker/ETSchecker.h"
 #include "checker/checker.h"
 #include "compiler/core/ASTVerifier.h"
-#include "compiler/core/compilerContext.h"
 #include "generated/signatures.h"
 #include "ir/base/scriptFunction.h"
 #include "ir/ets/etsTypeReference.h"
@@ -106,6 +105,9 @@ static bool CheckForPromiseVoid(const ir::TypeNode *type)
         return false;
     }
 
+    if (typePart->TypeParams() == nullptr) {
+        return false;
+    }
     const auto &params = typePart->TypeParams()->Params();
     if (params.size() != 1) {
         return false;

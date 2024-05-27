@@ -67,6 +67,7 @@ def check_timeout(value):
             "%s is an invalid timeout value" % value)
     return ivalue
 
+
 def get_args():
     parser = argparse.ArgumentParser(description="Regression test runner")
     parser.add_argument(
@@ -154,6 +155,8 @@ def get_args():
         help='run hotreload tests')
     parser.add_argument('--coldfix', dest='coldfix', action='store_true', default=False,
         help='run coldfix tests')
+    parser.add_argument('--coldreload', dest='coldreload', action='store_true', default=False,
+        help='run coldreload tests')
     parser.add_argument('--base64', dest='base64', action='store_true', default=False,
         help='run base64 tests')
     parser.add_argument('--bytecode', dest='bytecode', action='store_true', default=False,
@@ -679,6 +682,10 @@ class CompilerProjectTest(Test):
         # Skip execution if --dump-assembly exists in flags
         self.requires_execution = "--dump-assembly" not in self.flags
         self.file_record_mapping = None
+        self.generated_abc_inputs_path = os.path.join(os.path.join(self.projects_path, self.project), "abcinputs_gen")
+        self.abc_input_filenames = None
+        self.record_names_path = os.path.join(os.path.join(self.projects_path, self.project), 'recordnames.txt')
+        self.abc_inputs_path = os.path.join(os.path.join(self.projects_path, self.project), 'abcinputs')
 
     def remove_project(self, runner):
         project_path = runner.build_dir + "/" + self.project
@@ -686,6 +693,8 @@ class CompilerProjectTest(Test):
             shutil.rmtree(project_path)
         if path.exists(self.files_info_path):
             os.remove(self.files_info_path)
+        if path.exists(self.generated_abc_inputs_path):
+            shutil.rmtree(self.generated_abc_inputs_path)
 
     def get_file_absolute_path_and_name(self, runner):
         sub_path = self.path[len(self.projects_path):]
@@ -717,31 +726,116 @@ class CompilerProjectTest(Test):
                 self.remove_project(runner)
                 return self
 
-    def gen_record_name(self, test_path):
-        record_name = os.path.relpath(test_path, os.path.dirname(self.files_info_path)).split('.')[0]
-        if (self.file_record_mapping != None and record_name in self.file_record_mapping):
-            record_name = self.file_record_mapping[record_name]
-        return record_name
-
-    def gen_files_info(self, runner):
-        record_names_path = os.path.join(os.path.join(self.projects_path, self.project), 'recordnames.txt')
-        if path.exists(record_names_path):
-            with open(record_names_path) as mapping_fp:
+    def collect_record_mapping(self):
+        # Collect record mappings from recordnames.txt, file format:
+        # 'source_file_name:record_name\n' * n
+        if path.exists(self.record_names_path):
+            with open(self.record_names_path) as mapping_fp:
                 mapping_lines = mapping_fp.readlines()
                 self.file_record_mapping = {}
                 for mapping_line in mapping_lines:
                     cur_mapping = mapping_line[:-1].split(":")
                     self.file_record_mapping[cur_mapping[0]] = cur_mapping[1]
+
+    def get_record_name(self, test_path):
+        record_name = os.path.relpath(test_path, os.path.dirname(self.files_info_path)).split('.')[0]
+        if (self.file_record_mapping is not None and record_name in self.file_record_mapping):
+            record_name = self.file_record_mapping[record_name]
+        return record_name
+
+    def collect_abc_inputs(self, runner):
+        # Collect abc input information from the 'abcinputs' directory. Each txt file in the directory
+        # will generate a merged abc file with the same filename and serve as the final abc input.
+        # file format: 'source_file_name.ts\n' * n
+        if not path.exists(self.abc_inputs_path):
+            return
+        if not path.exists(self.generated_abc_inputs_path):
+            os.makedirs(self.generated_abc_inputs_path)
+        self.abc_input_filenames = {}
+        filenames = os.listdir(self.abc_inputs_path)
+        for filename in filenames:
+            if not filename.endswith('.txt'):
+                self.remove_project(runner)
+                raise Exception("Invalid abc input file: %s, only txt files are allowed in abcinputs directory: %s"
+                                %(filename, self.abc_inputs_path))
+            with open(path.join(self.abc_inputs_path, filename)) as abc_inputs_fp:
+                abc_inputs_lines = abc_inputs_fp.readlines()
+                for abc_input_line in abc_inputs_lines:
+                    # filename is 'xxx.txt', remove '.txt' here
+                    self.abc_input_filenames[abc_input_line[:-1]] = filename[:-len('.txt')]
+
+    def get_belonging_abc_input(self, test_path):
+        filename = os.path.relpath(test_path, os.path.dirname(self.files_info_path))
+        if (self.abc_input_filenames is not None and filename in self.abc_input_filenames):
+            return self.abc_input_filenames[filename]
+        return None
+
+    def gen_abc_input_files_infos(self, runner, abc_files_infos, final_file_info_f):
+        for abc_files_info_name in abc_files_infos:
+            abc_files_info = abc_files_infos[abc_files_info_name]
+            if len(abc_files_info) != 0:
+                abc_input_path = path.join(self.generated_abc_inputs_path, abc_files_info_name)
+                abc_files_info_path = ("%s-filesInfo.txt" %(abc_input_path))
+                abc_files_info_fd = os.open(abc_files_info_path, os.O_RDWR | os.O_CREAT | os.O_TRUNC)
+                abc_files_info_f = os.fdopen(abc_files_info_fd, 'w')
+                abc_files_info_f.writelines(abc_files_info)
+                final_file_info_f.writelines('%s-abcinput.abc;;;;\n' %(abc_input_path))
+
+    def gen_files_info(self, runner):
+        # After collect_record_mapping, self.file_record_mapping stores {'source file name' : 'source file record name'}
+        self.collect_record_mapping()
+        # After collect_abc_inputs, self.abc_input_filenames stores {'source file name' : 'belonging abc input name'}
+        self.collect_abc_inputs(runner)
+
         fd = os.open(self.files_info_path, os.O_RDWR | os.O_CREAT | os.O_TRUNC)
-        f = os.fdopen(fd, "w")
+        f = os.fdopen(fd, 'w')
+        abc_files_infos = {}
         for test_path in self.test_paths:
-            record_name = self.gen_record_name(test_path)
-            module_kind = "esm"
-            file_info = ('%s;%s;%s;%s;%s' % (test_path, record_name, module_kind, test_path, record_name))
-            f.writelines(file_info + '\n')
+            record_name = self.get_record_name(test_path)
+            module_kind = 'esm'
+            file_info = ('%s;%s;%s;%s;%s\n' % (test_path, record_name, module_kind, test_path, record_name))
+            belonging_abc_input = self.get_belonging_abc_input(test_path)
+            if belonging_abc_input is not None:
+                if not belonging_abc_input in abc_files_infos:
+                    abc_files_infos[belonging_abc_input] = []
+                abc_files_infos[belonging_abc_input].append(file_info)
+            else:
+                f.writelines(file_info)
+        self.gen_abc_input_files_infos(runner, abc_files_infos, f)
         f.close()
 
+    def gen_es2abc_cmd(self, runner, input, output):
+        es2abc_cmd = runner.cmd_prefix + [runner.es2panda]
+        es2abc_cmd.extend(self.flags)
+        es2abc_cmd.extend(['%s%s' % ("--output=", output)])
+        es2abc_cmd.append('@' + input)
+        return es2abc_cmd
+
+    def gen_merged_abc_for_abc_input(self, runner, files_info_name):
+        self.passed = True
+        if not files_info_name.endswith(".txt"):
+            return
+        abc_input_files_info_path = path.join(self.generated_abc_inputs_path, files_info_name)
+        abc_input_merged_abc_path = path.join(self.generated_abc_inputs_path,
+                                              '%s-abcinput.abc' %(files_info_name[:-len('-filesInfo.txt')]))
+        es2abc_cmd = self.gen_es2abc_cmd(runner, abc_input_files_info_path, abc_input_merged_abc_path)
+        self.log_cmd(es2abc_cmd)
+        process = subprocess.Popen(es2abc_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = process.communicate()
+        if err:
+            self.passed = False
+            self.error = err.decode("utf-8", errors="ignore")
+
     def gen_merged_abc(self, runner):
+        # Generate abc inputs
+        if (os.path.exists(self.generated_abc_inputs_path)):
+            filesInfo_names = os.listdir(self.generated_abc_inputs_path)
+            for filename in filesInfo_names:
+                self.gen_merged_abc_for_abc_input(runner, filename)
+                if (not self.passed):
+                    self.remove_project(runner)
+                    return self
+        # Generate the abc to be tested
         for test_path in self.test_paths:
             self.path = test_path
             if (self.path.endswith("-exec.ts")):
@@ -751,15 +845,17 @@ class CompilerProjectTest(Test):
                     os.makedirs(file_absolute_path)
                 test_abc_name = ("%s.abc" % (path.splitext(file_name)[0]))
                 output_abc_name = path.join(file_absolute_path, test_abc_name)
-        es2abc_cmd = runner.cmd_prefix + [runner.es2panda]
-        es2abc_cmd.extend(self.flags)
-        es2abc_cmd.extend(['%s%s' % ("--output=", output_abc_name)])
-        es2abc_cmd.append('@' + os.path.join(os.path.dirname(exec_file_path), "filesInfo.txt"))
+
+        es2abc_cmd = self.gen_es2abc_cmd(runner, self.files_info_path, output_abc_name)
+        compile_context_info_path = path.join(path.join(self.projects_path, self.project), "compileContextInfo.json")
+        if path.exists(compile_context_info_path):
+            es2abc_cmd.append("%s%s" %("--compile-context-info=", compile_context_info_path))
         self.log_cmd(es2abc_cmd)
         self.path = exec_file_path
         process = subprocess.Popen(es2abc_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = process.communicate()
 
+        # Check dump-assembly outputs when required
         if "--dump-assembly" in self.flags:
             pa_expected_path = "".join([self.get_path_to_expected()[:self.get_path_to_expected().rfind(".txt")],
                                         ".pa.txt"])
@@ -839,9 +935,83 @@ class TSDeclarationTest(Test):
         return "%s-expected.txt" % file_name
 
 
+class BcVersionRunner(Runner):
+    def __init__(self, args):
+        Runner.__init__(self, args, "Target bc version")
+        self.ts2abc = path.join(self.test_root, '..', 'scripts', 'ts2abc.js')
+
+    def add_cmd(self):
+        for api_version in range(8, 14):
+            cmd = self.cmd_prefix + [self.es2panda]
+            cmd += ["--target-bc-version"]
+            cmd += ["--target-api-version"]
+            cmd += [str(api_version)]
+            self.tests += [BcVersionTest(cmd, api_version)]
+            node_cmd = ["node"] + [self.ts2abc]
+            node_cmd += ["".join(["es2abc=", self.es2panda])]
+            node_cmd += ["--target-api-version"]
+            node_cmd += [str(api_version)]
+            self.tests += [BcVersionTest(node_cmd, api_version)]
+
+    def run(self):
+        for test in self.tests:
+            test.run()
+
+
+class BcVersionTest(Test):
+    def __init__(self, cmd, api_version):
+        Test.__init__(self, "", 0)
+        self.cmd = cmd
+        self.api_version = api_version
+        self.bc_version_expect = {
+            8: "12.0.4.0",
+            9: "9.0.0.0",
+            10: "9.0.0.0",
+            11: "11.0.2.0",
+            12: "12.0.4.0",
+            13: "12.0.4.0"
+        }
+        self.es2abc_script_expect = {
+            8: "0.0.0.2",
+            9: "9.0.0.0",
+            10: "9.0.0.0",
+            11: "11.0.2.0",
+            12: "12.0.4.0",
+            13: "12.0.4.0"
+        }
+    
+    def run(self):
+        process = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = process.communicate()
+        self.output = out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore")
+        if self.cmd[0] == "node":
+            self.passed = self.es2abc_script_expect.get(self.api_version) == self.output and process.returncode in [0, 1]
+        else:
+            self.passed = self.bc_version_expect.get(self.api_version) == self.output and process.returncode in [0, 1]
+        if not self.passed:
+            self.error = err.decode("utf-8", errors="ignore")
+        return self
+
+
 class TransformerRunner(Runner):
     def __init__(self, args):
         Runner.__init__(self, args, "Transformer")
+
+    def add_directory(self, directory, extension, flags):
+        glob_expression = path.join(
+            self.test_root, directory, "**/*.%s" % (extension))
+        files = glob(glob_expression, recursive=True)
+        files = fnmatch.filter(files, self.test_root + '**' + self.args.filter)
+
+        self.tests += list(map(lambda f: TransformerTest(f, flags), files))
+
+    def test_path(self, src):
+        return src
+
+
+class TransformerInTargetApiVersion10Runner(Runner):
+    def __init__(self, args):
+        Runner.__init__(self, args, "TransformerInTargetApiVersion10")
 
     def add_directory(self, directory, extension, flags):
         glob_expression = path.join(
@@ -888,22 +1058,27 @@ class TransformerTest(Test):
 
 
 class PatchTest(Test):
-    def __init__(self, test_path, mode_arg):
+    def __init__(self, test_path, mode_arg, target_version, preserve_files):
         Test.__init__(self, test_path, "")
         self.mode = mode_arg
+        self.target_version = target_version
+        self.preserve_files = preserve_files
 
     def gen_cmd(self, runner):
-        symbol_table_file = 'base.map'
+        symbol_table_file = os.path.join(self.path, 'base.map')
         origin_input_file = 'base.js'
-        origin_output_abc = 'base.abc'
+        origin_output_abc = os.path.join(self.path, 'base.abc')
         modified_input_file = 'base_mod.js'
-        modified_output_abc = 'patch.abc'
+        modified_output_abc = os.path.join(self.path, 'patch.abc')
+        target_version_cmd = ""
+        if self.target_version > 0:
+            target_version_cmd = "--target-api-version=" + str(self.target_version)
 
-        gen_base_cmd = runner.cmd_prefix + [runner.es2panda, '--module']
+        gen_base_cmd = runner.cmd_prefix + [runner.es2panda, '--module', target_version_cmd]
         if 'record-name-with-dots' in os.path.basename(self.path):
             gen_base_cmd.extend(['--merge-abc', '--record-name=record.name.with.dots'])
-        gen_base_cmd.extend(['--dump-symbol-table', os.path.join(self.path, symbol_table_file)])
-        gen_base_cmd.extend(['--output', os.path.join(self.path, origin_output_abc)])
+        gen_base_cmd.extend(['--dump-symbol-table', symbol_table_file])
+        gen_base_cmd.extend(['--output', origin_output_abc])
         gen_base_cmd.extend([os.path.join(self.path, origin_input_file)])
         self.log_cmd(gen_base_cmd)
 
@@ -913,11 +1088,13 @@ class PatchTest(Test):
             mode_arg = ["--hot-reload"]
         elif self.mode == 'coldfix':
             mode_arg = ["--generate-patch", "--cold-fix"]
+        elif self.mode == 'coldreload':
+            mode_arg = ["--cold-reload"]
 
-        patch_test_cmd = runner.cmd_prefix + [runner.es2panda, '--module']
+        patch_test_cmd = runner.cmd_prefix + [runner.es2panda, '--module', target_version_cmd]
         patch_test_cmd.extend(mode_arg)
-        patch_test_cmd.extend(['--input-symbol-table', os.path.join(self.path, symbol_table_file)])
-        patch_test_cmd.extend(['--output', os.path.join(self.path, modified_output_abc)])
+        patch_test_cmd.extend(['--input-symbol-table', symbol_table_file])
+        patch_test_cmd.extend(['--output', modified_output_abc])
         patch_test_cmd.extend([os.path.join(self.path, modified_input_file)])
         if 'record-name-with-dots' in os.path.basename(self.path):
             patch_test_cmd.extend(['--merge-abc', '--record-name=record.name.with.dots'])
@@ -932,11 +1109,10 @@ class PatchTest(Test):
                 patch_test_cmd.extend(['--dump-assembly'])
         self.log_cmd(patch_test_cmd)
 
-        return gen_base_cmd, patch_test_cmd
+        return gen_base_cmd, patch_test_cmd, symbol_table_file, origin_output_abc, modified_output_abc
 
     def run(self, runner):
-        gen_base_cmd, patch_test_cmd = self.gen_cmd(runner)
-
+        gen_base_cmd, patch_test_cmd, symbol_table_file, origin_output_abc, modified_output_abc = self.gen_cmd(runner)
         process_base = subprocess.Popen(gen_base_cmd, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         stdout_base, stderr_base = process_base.communicate(timeout=runner.args.es2panda_timeout)
@@ -965,7 +1141,11 @@ class PatchTest(Test):
         if not self.passed:
             self.error = "expected output:" + os.linesep + expected + os.linesep + "actual output:" + os.linesep +\
                 self.output
-
+        if not self.preserve_files:
+            os.remove(symbol_table_file)
+            os.remove(origin_output_abc)
+            if (os.path.exists(modified_output_abc)):
+                os.remove(modified_output_abc)
         return self
 
 
@@ -973,23 +1153,27 @@ class PatchRunner(Runner):
     def __init__(self, args, name):
         Runner.__init__(self, args, name)
         self.preserve_files = args.error
-
-    def __del__(self):
-        if not self.preserve_files:
-            self.clear_directory()
-
-    def add_directory(self):
         self.tests_in_dirs = []
-        for item in self.test_directory:
-            glob_expression = path.join(item, "*")
-            self.tests_in_dirs += glob(glob_expression, recursive=False)
+        dirs = os.listdir(path.join(self.test_root, "patch"))
+        for sub_dir in dirs:
+            target_version = 0
+            if sub_dir.isdigit():
+                target_version = int(sub_dir)
+            self.add_tests(sub_dir, name)
 
-    def clear_directory(self):
-        for test in self.tests_in_dirs:
-            files_in_dir = os.listdir(test)
-            filtered_files = [file for file in files_in_dir if file.endswith(".map") or file.endswith(".abc")]
-            for file in filtered_files:
-                os.remove(os.path.join(test, file))
+    def add_tests(self, path, name):
+        name_dir = os.path.join(self.test_root, "patch", path, name)
+        if not os.path.exists(name_dir):
+            return
+        target_version = 0
+        if path.isdigit():
+            target_version = int(path)
+        for sub_path in os.listdir(name_dir):
+            test_base_path = os.path.join(name_dir, sub_path)
+            for test_dir in os.listdir(test_base_path):
+                test_path = os.path.join(test_base_path, test_dir)
+                self.tests_in_dirs.append(test_path)
+                self.tests.append(PatchTest(test_path, name, target_version, self.preserve_files))
 
     def test_path(self, src):
         return os.path.basename(src)
@@ -997,30 +1181,19 @@ class PatchRunner(Runner):
 
 class HotfixRunner(PatchRunner):
     def __init__(self, args):
-        PatchRunner.__init__(self, args, "Hotfix")
-        self.test_directory = [path.join(self.test_root, "hotfix", "hotfix-throwerror"),
-            path.join(self.test_root, "hotfix", "hotfix-noerror")]
-        self.add_directory()
-        self.tests += list(map(lambda t: PatchTest(t, "hotfix"), self.tests_in_dirs))
-
+        PatchRunner.__init__(self, args, "hotfix")
 
 class HotreloadRunner(PatchRunner):
     def __init__(self, args):
-        PatchRunner.__init__(self, args, "Hotreload")
-        self.test_directory = [path.join(self.test_root, "hotreload", "hotreload-throwerror"),
-            path.join(self.test_root, "hotreload", "hotreload-noerror")]
-        self.add_directory()
-        self.tests += list(map(lambda t: PatchTest(t, "hotreload"), self.tests_in_dirs))
-
+        PatchRunner.__init__(self, args, "hotreload")
 
 class ColdfixRunner(PatchRunner):
     def __init__(self, args):
-        PatchRunner.__init__(self, args, "Coldfix")
-        self.test_directory = [path.join(self.test_root, "coldfix", "coldfix-throwerror"),
-            path.join(self.test_root, "coldfix", "coldfix-noerror")]
-        self.add_directory()
-        self.tests += list(map(lambda t: PatchTest(t, "coldfix"), self.tests_in_dirs))
+        PatchRunner.__init__(self, args, "coldfix")
 
+class ColdreloadRunner(PatchRunner):
+    def __init__(self, args):
+        PatchRunner.__init__(self, args, "coldreload")
 
 class DebuggerTest(Test):
     def __init__(self, test_path, mode):
@@ -1172,13 +1345,13 @@ class BytecodeRunner(Runner):
 
 
 class CompilerTestInfo(object):
-    def __init__(self, dir, extension, flags):
-        self.dir = dir
+    def __init__(self, directory, extension, flags):
+        self.directory = directory
         self.extension = extension
         self.flags = flags
 
     def update_dir(self, prefiex_dir):
-        self.dir = os.path.sep.join([prefiex_dir, self.dir])
+        self.directory = os.path.sep.join([prefiex_dir, self.directory])
 
 
 # Copy compiler directory to test/.local directory, and do inplace obfuscation.
@@ -1187,14 +1360,22 @@ def prepare_for_obfuscation(compiler_test_infos, test_root):
     tmp_path = os.path.join(test_root, tmp_dir_name)
     if not os.path.exists(tmp_path):
         os.mkdir(tmp_path)
-    src_dir = os.path.join(test_root, "compiler")
-    target_dir = os.path.join(tmp_path, "compiler")
-    if os.path.exists(target_dir):
-        shutil.rmtree(target_dir)
-    shutil.copytree(src_dir, target_dir)
+
+    test_root_dirs = set()
+    for info in compiler_test_infos:
+        root_dir = info.directory.split("/")[0]
+        test_root_dirs.add(root_dir)
+
+    for test_dir in test_root_dirs:
+        src_dir = os.path.join(test_root, test_dir)
+        target_dir = os.path.join(tmp_path, test_dir)
+        if os.path.exists(target_dir):
+            shutil.rmtree(target_dir)
+        shutil.copytree(src_dir, target_dir)
 
     for info in compiler_test_infos:
         info.update_dir(tmp_dir_name)
+
 
 def add_directory_for_regression(runners, args):
     runner = RegressionRunner(args)
@@ -1208,7 +1389,9 @@ def add_directory_for_regression(runners, args):
     runner.add_directory("parser/ts/cases/declaration", "d.ts",
                          ["--parse-only", "--module", "--dump-ast"], TSDeclarationTest)
     runner.add_directory("parser/commonjs", "js", ["--commonjs", "--parse-only", "--dump-ast"])
-    runner.add_directory("parser/binder", "js", ["--dump-assembly"])
+    runner.add_directory("parser/binder", "js", ["--dump-assembly", "--dump-literal-buffer", "--module"])
+    runner.add_directory("parser/binder", "ts", ["--dump-assembly", "--dump-literal-buffer", "--module"])
+    runner.add_directory("parser/binder/targetVersion11", "js", ["--dump-assembly", "--target-api-version=11"])
     runner.add_directory("parser/js/emptySource", "js", ["--dump-assembly"])
     runner.add_directory("parser/js/language/arguments-object", "js", ["--parse-only"])
     runner.add_directory("parser/js/language/statements/for-statement", "js", ["--parse-only", "--dump-ast"])
@@ -1225,6 +1408,18 @@ def add_directory_for_regression(runners, args):
                                      "--check-transformed-ast-structure"])
 
     runners.append(transformer_runner)
+
+    bc_version_runner = BcVersionRunner(args)
+    bc_version_runner.add_cmd()
+
+    runners.append(bc_version_runner)
+
+    transformer_api_version_10_runner = TransformerInTargetApiVersion10Runner(args)
+    transformer_api_version_10_runner.add_directory("parser/ts/transformed_cases_api_version_10", "ts",
+                                                    ["--parse-only", "--module", "--target-api-version=10",
+                                                    "--dump-transformed-ast"])
+
+    runners.append(transformer_api_version_10_runner)
 
 def add_directory_for_asm(runners, args):
     runner = AbcToAsmRunner(args)
@@ -1244,7 +1439,8 @@ def add_directory_for_asm(runners, args):
     runner.add_directory("parser/ts", "ts", ["--module"])
     runner.add_directory("parser/ts/type_checker", "ts", ["--enable-type-check", "--module"])
     runner.add_directory("parser/commonjs", "js", ["--commonjs"])
-    runner.add_directory("parser/binder", "js", [])
+    runner.add_directory("parser/binder", "js", ["--dump-assembly", "--dump-literal-buffer", "--module"])
+    runner.add_directory("parser/binder", "ts", ["--dump-assembly", "--dump-literal-buffer", "--module"])
     runner.add_directory("parser/js/emptySource", "js", [])
     runner.add_directory("parser/js/language/arguments-object", "js", [])
     runner.add_directory("parser/js/language/statements/for-statement", "js", [])
@@ -1255,10 +1451,11 @@ def add_directory_for_asm(runners, args):
 
     runners.append(runner)
 
+
 def add_directory_for_compiler(runners, args):
     runner = CompilerRunner(args)
     compiler_test_infos = []
-    compiler_test_infos.append(CompilerTestInfo("compiler/js", "js", []))
+    compiler_test_infos.append(CompilerTestInfo("compiler/js", "js", ["--module"]))
     compiler_test_infos.append(CompilerTestInfo("compiler/ts/cases", "ts", []))
     compiler_test_infos.append(CompilerTestInfo("compiler/ts/projects", "ts", ["--module"]))
     compiler_test_infos.append(CompilerTestInfo("compiler/ts/projects", "ts", ["--module", "--merge-abc"]))
@@ -1267,37 +1464,44 @@ def add_directory_for_compiler(runners, args):
     compiler_test_infos.append(CompilerTestInfo("compiler/recordsource/with-on", "js", ["--record-source"]))
     compiler_test_infos.append(CompilerTestInfo("compiler/recordsource/with-off", "js", []))
     compiler_test_infos.append(CompilerTestInfo("compiler/interpreter/lexicalEnv", "js", []))
+    compiler_test_infos.append(CompilerTestInfo("compiler/sendable", "ts", ["--module"]))
     compiler_test_infos.append(CompilerTestInfo("optimizer/js/branch-elimination", "js",
                                                 ["--module", "--branch-elimination", "--dump-assembly"]))
-    # This directory of test cases is for dump-assembly comparison only, and is not executed.
+    # Following directories of test cases are for dump-assembly comparison only, and is not executed.
     # Check CompilerProjectTest for more details.
     compiler_test_infos.append(CompilerTestInfo("optimizer/ts/branch-elimination/projects", "ts",
                                                 ["--module", "--branch-elimination", "--merge-abc", "--dump-assembly",
                                                 "--file-threads=8"]))
+    compiler_test_infos.append(CompilerTestInfo("compiler/bytecodehar/projects", "ts",
+                                                ["--merge-abc", "--dump-assembly", "--enable-abc-input"]))
 
     if args.enable_arkguard:
         prepare_for_obfuscation(compiler_test_infos, runner.test_root)
 
     for info in compiler_test_infos:
-        runner.add_directory(info.dir, info.extension, info.flags)
+        runner.add_directory(info.directory, info.extension, info.flags)
 
     runners.append(runner)
+
 
 def add_directory_for_bytecode(runners, args):
     runner = BytecodeRunner(args)
     runner.add_directory("bytecode/commonjs", "js", ["--commonjs", "--dump-assembly"])
     runner.add_directory("bytecode/js", "js", ["--dump-assembly"])
+    runner.add_directory("bytecode/ts/cases", "ts", ["--dump-assembly"])
     runner.add_directory("bytecode/ts/api11", "ts", ["--dump-assembly", "--module", "--target-api-version=11"])
     runner.add_directory("bytecode/ts/api12", "ts", ["--dump-assembly", "--module", "--target-api-version=12"])
     runner.add_directory("bytecode/watch-expression", "js", ["--debugger-evaluate-expression", "--dump-assembly"])
 
     runners.append(runner)
 
+
 def add_directory_for_debug(runners, args):
     runner = RegressionRunner(args)
     runner.add_directory("debug/parser", "js", ["--parse-only", "--dump-ast"])
 
     runners.append(runner)
+
 
 def add_cmd_for_aop_transform(runners, args):
     runner = AopTransform(args)
@@ -1336,6 +1540,7 @@ def add_cmd_for_aop_transform(runners, args):
 
     runners.append(runner)
 
+
 class AopTransform(Runner):
     def __init__(self, args):
         Runner.__init__(self, args, "AopTransform")
@@ -1345,6 +1550,7 @@ class AopTransform(Runner):
 
     def test_path(self, src):
         return src
+
 
 def main():
     args = get_args()
@@ -1371,6 +1577,9 @@ def main():
 
     if args.coldfix:
         runners.append(ColdfixRunner(args))
+
+    if args.coldreload:
+        runners.append(ColdreloadRunner(args))
 
     if args.debugger:
         runners.append(DebuggerRunner(args))

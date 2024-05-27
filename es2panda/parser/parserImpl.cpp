@@ -187,13 +187,11 @@ void ParserImpl::ParseProgram(ScriptKind kind)
     auto statements = ParseStatementList(StatementParsingFlags::STMT_GLOBAL_LEXICAL);
 
     // For close-source har, check 'use shared' when parsing its transformed js code after obfuscation.
-    if (Extension() == ScriptExtension::JS) {
-        for (auto statement : statements) {
-            if (program_.IsShared()) {
-                break;
-            }
-            program_.SetShared(util::Helpers::IsUseShared(statement));
+    for (auto statement : statements) {
+        if (program_.IsShared()) {
+            break;
         }
+        program_.SetShared(util::Helpers::IsUseShared(statement));
     }
 
     if (IsDtsFile() && !CheckTopStatementsForRequiredDeclare(statements)) {
@@ -550,7 +548,8 @@ ir::Expression *ParserImpl::ParseTsTypeAnnotationElement(ir::Expression *typeAnn
                 break;
             }
 
-            return ParseTsUnionType(typeAnnotation, *options & TypeAnnotationParsingOptions::RESTRICT_EXTENDS);
+            return ParseTsUnionType(typeAnnotation, *options & TypeAnnotationParsingOptions::RESTRICT_EXTENDS,
+                                    *options & TypeAnnotationParsingOptions::THROW_ERROR);
         }
         case lexer::TokenType::PUNCTUATOR_BITWISE_AND: {
             if (*options & (TypeAnnotationParsingOptions::IN_MODIFIER |
@@ -559,7 +558,8 @@ ir::Expression *ParserImpl::ParseTsTypeAnnotationElement(ir::Expression *typeAnn
             }
 
             return ParseTsIntersectionType(typeAnnotation, *options & TypeAnnotationParsingOptions::IN_UNION,
-                                           *options & TypeAnnotationParsingOptions::RESTRICT_EXTENDS);
+                                           *options & TypeAnnotationParsingOptions::RESTRICT_EXTENDS,
+                                           *options & TypeAnnotationParsingOptions::THROW_ERROR);
         }
         case lexer::TokenType::PUNCTUATOR_MINUS:
         case lexer::TokenType::LITERAL_NUMBER:
@@ -1483,7 +1483,7 @@ ir::Expression *ParserImpl::ParseTsTypeLiteralOrInterfaceMember()
         readonly = true;
         lexer_->NextToken();
     }
- 
+
     ParseTsTypeLiteralOrInterfaceKeyModifiers(&isGetAccessor, &isSetAccessor);
     ir::Expression *key = ParseTsTypeLiteralOrInterfaceKey(&computed, &signature, &isIndexSignature);
 
@@ -1601,7 +1601,8 @@ util::StringView GetTSPropertyName(ir::Expression *key)
     }
 }
 
-void ParserImpl::CheckObjectTypeForDuplicatedProperties(ir::Expression *member, ArenaVector<ir::Expression *> const &members)
+void ParserImpl::CheckObjectTypeForDuplicatedProperties(ir::Expression *member,
+    ArenaVector<ir::Expression *> const &members)
 {
     ir::Expression *key = nullptr;
 
@@ -1705,13 +1706,15 @@ ir::TSArrayType *ParserImpl::ParseTsArrayType(ir::Expression *elementType)
     return arrayType;
 }
 
-ir::TSUnionType *ParserImpl::ParseTsUnionType(ir::Expression *type, bool restrictExtends)
+ir::TSUnionType *ParserImpl::ParseTsUnionType(ir::Expression *type, bool restrictExtends, bool throwError)
 {
     ArenaVector<ir::Expression *> types(Allocator()->Adapter());
     lexer::SourcePosition startLoc;
 
-    TypeAnnotationParsingOptions options =
-        TypeAnnotationParsingOptions::THROW_ERROR | TypeAnnotationParsingOptions::IN_UNION;
+    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::IN_UNION;
+    if (throwError) {
+        options |= TypeAnnotationParsingOptions::THROW_ERROR;
+    }
 
     if (restrictExtends) {
         options |= TypeAnnotationParsingOptions::RESTRICT_EXTENDS;
@@ -1731,7 +1734,12 @@ ir::TSUnionType *ParserImpl::ParseTsUnionType(ir::Expression *type, bool restric
 
         lexer_->NextToken();  // eat '|'
 
-        types.push_back(ParseTsTypeAnnotation(&options));
+        ir::Expression* unionSuffixType = ParseTsTypeAnnotation(&options);
+        if (unionSuffixType == nullptr) {
+            return nullptr;
+        }
+
+        types.push_back(unionSuffixType);
     }
 
     lexer::SourcePosition endLoc = types.back()->End();
@@ -1744,13 +1752,16 @@ ir::TSUnionType *ParserImpl::ParseTsUnionType(ir::Expression *type, bool restric
     return unionType;
 }
 
-ir::TSIntersectionType *ParserImpl::ParseTsIntersectionType(ir::Expression *type, bool inUnion, bool restrictExtends)
+ir::TSIntersectionType *ParserImpl::ParseTsIntersectionType(ir::Expression *type, bool inUnion, bool restrictExtends,
+                                                            bool throwError)
 {
     ArenaVector<ir::Expression *> types(Allocator()->Adapter());
     lexer::SourcePosition startLoc;
 
-    TypeAnnotationParsingOptions options =
-        TypeAnnotationParsingOptions::THROW_ERROR | TypeAnnotationParsingOptions::IN_INTERSECTION;
+    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::IN_INTERSECTION;
+    if (throwError) {
+        options |= TypeAnnotationParsingOptions::THROW_ERROR;
+    }
 
     if (restrictExtends) {
         options |= TypeAnnotationParsingOptions::RESTRICT_EXTENDS;
@@ -1774,7 +1785,11 @@ ir::TSIntersectionType *ParserImpl::ParseTsIntersectionType(ir::Expression *type
 
         lexer_->NextToken();  // eat '&'
 
-        types.push_back(ParseTsTypeAnnotation(&options));
+        ir::Expression* suffixType = ParseTsTypeAnnotation(&options);
+        if (suffixType == nullptr) {
+            return nullptr;
+        }
+        types.push_back(suffixType);
     }
 
     lexer::SourcePosition endLoc = types.back()->End();
@@ -1932,7 +1947,7 @@ ir::Expression *ParserImpl::ParseTsFunctionType(lexer::SourcePosition startLoc, 
     if (throwError) {
         options |= TypeAnnotationParsingOptions::THROW_ERROR;
     }
-    
+
     ir::Expression *returnTypeAnnotation = ParseTsTypeAnnotation(&options);
 
     if (returnTypeAnnotation == nullptr) {
@@ -2933,6 +2948,8 @@ ir::MethodDefinition *ParserImpl::CreateImplicitMethod(ir::Expression *superClas
 
     auto *paramScope = Binder()->Allocator()->New<binder::FunctionParamScope>(Allocator(), Binder()->GetScope());
     auto *scope = Binder()->Allocator()->New<binder::FunctionScope>(Allocator(), paramScope);
+    ASSERT(paramScope != nullptr);
+    ASSERT(scope != nullptr);
 
     bool isConstructor = (funcFlag == ir::ScriptFunctionFlags::CONSTRUCTOR);
     if (isConstructor && hasSuperClass) {
@@ -4201,7 +4218,8 @@ bool ParserImpl::CurrentTokenIsModifier(char32_t nextCp) const
 void ParserImpl::ThrowParameterModifierError(ir::ModifierFlags status) const
 {
     ThrowSyntaxError(
-        {"'", (status & ir::ModifierFlags::STATIC) ? "static" : ((status & ir::ModifierFlags::ASYNC) ? "async" : "declare") ,
+        {"'",
+         (status & ir::ModifierFlags::STATIC) ? "static" : ((status & ir::ModifierFlags::ASYNC) ? "async" : "declare"),
          "' modifier cannot appear on a parameter."},
         lexer_->GetToken().Start());
 }

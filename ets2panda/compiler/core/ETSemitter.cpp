@@ -34,12 +34,12 @@
 #include "ir/ts/tsTypeParameter.h"
 #include "ir/typeNode.h"
 #include "parser/program/program.h"
-#include "compiler/core/compilerContext.h"
 #include "checker/checker.h"
 #include "checker/types/signature.h"
 #include "checker/ETSchecker.h"
 #include "checker/types/type.h"
 #include "checker/types/ets/types.h"
+#include "public/public.h"
 
 #include "assembly-program.h"
 
@@ -105,18 +105,16 @@ static pandasm::Type PandasmTypeWithRank(checker::Type const *type)
     return pandasm::Type(ss.str(), type->Rank());
 }
 
-static pandasm::Function GenScriptFunction(CompilerContext const *context, const ir::ScriptFunction *scriptFunc)
+static pandasm::Function GenScriptFunction(public_lib::Context const *context, const ir::ScriptFunction *scriptFunc)
 {
     auto *funcScope = scriptFunc->Scope();
     auto *paramScope = funcScope->ParamScope();
 
     auto func = pandasm::Function(funcScope->InternalName().Mutf8(), EXTENSION);
-
     func.params.reserve(paramScope->Params().size());
 
     for (const auto *var : paramScope->Params()) {
-        func.params.emplace_back(PandasmTypeWithRank(context->Checker()->AsETSChecker()->MaybeBoxedType(var)),
-                                 EXTENSION);
+        func.params.emplace_back(PandasmTypeWithRank(context->checker->AsETSChecker()->MaybeBoxedType(var)), EXTENSION);
     }
 
     if (scriptFunc->IsConstructor() || scriptFunc->IsStaticBlock()) {
@@ -125,10 +123,15 @@ static pandasm::Function GenScriptFunction(CompilerContext const *context, const
         func.returnType = PandasmTypeWithRank(scriptFunc->Signature()->ReturnType());
     }
 
+    uint32_t accessFlags = 0;
     if (!scriptFunc->IsStaticBlock()) {
         const auto *methodDef = util::Helpers::GetContainingClassMethodDefinition(scriptFunc);
-        func.metadata->SetAccessFlags(TranslateModifierFlags(methodDef->Modifiers()));
+        accessFlags |= TranslateModifierFlags(methodDef->Modifiers());
     }
+    if (scriptFunc->HasRestParameter()) {
+        accessFlags |= ACC_VARARGS;
+    }
+    func.metadata->SetAccessFlags(accessFlags);
 
     return func;
 }
@@ -136,6 +139,11 @@ static pandasm::Function GenScriptFunction(CompilerContext const *context, const
 pandasm::Function *ETSFunctionEmitter::GenFunctionSignature()
 {
     auto func = GenScriptFunction(Cg()->Context(), Cg()->RootNode()->AsScriptFunction());
+
+    if (Cg()->RootNode()->AsScriptFunction()->IsExternal()) {
+        func.metadata->SetAttribute(Signatures::EXTERNAL);
+    }
+
     auto *funcElement = new pandasm::Function(func.name, func.language);
     *funcElement = std::move(func);
     GetProgramElement()->SetFunction(funcElement);
@@ -195,7 +203,7 @@ static pandasm::Function GenExternalFunction(checker::Signature *signature, bool
 void ETSEmitter::GenAnnotation()
 {
     Program()->lang = EXTENSION;
-    const auto *varbinder = static_cast<varbinder::ETSBinder *>(Context()->VarBinder());
+    const auto *varbinder = static_cast<varbinder::ETSBinder *>(Context()->parserProgram->VarBinder());
 
     auto *globalRecordTable = varbinder->GetGlobalRecordTable();
 
@@ -223,7 +231,7 @@ void ETSEmitter::GenAnnotation()
         GenExternalRecord(recordTable);
     }
 
-    const auto *checker = static_cast<checker::ETSChecker *>(Context()->Checker());
+    const auto *checker = static_cast<checker::ETSChecker *>(Context()->checker);
 
     for (auto [arrType, signature] : checker->GlobalArrayTypes()) {
         GenGlobalArrayRecord(arrType, signature);
@@ -409,7 +417,8 @@ void ETSEmitter::GenInterfaceRecord(const ir::TSInterfaceDeclaration *interfaceD
     }
 
     interfaceRecord.metadata->SetAccessFlags(accessFlags);
-    interfaceRecord.sourceFile = Context()->VarBinder()->Program()->SourceFile().GetAbsolutePath().Mutf8();
+    interfaceRecord.sourceFile =
+        Context()->parserProgram->VarBinder()->Program()->SourceFile().GetAbsolutePath().Mutf8();
     interfaceRecord.metadata->SetAttributeValue(Signatures::EXTENDS_ATTRIBUTE, Signatures::BUILTIN_OBJECT);
 
     for (auto *it : baseType->Interfaces()) {
@@ -453,7 +462,7 @@ void ETSEmitter::GenClassRecord(const ir::ClassDefinition *classDef, bool extern
     }
 
     classRecord.metadata->SetAccessFlags(accessFlags);
-    classRecord.sourceFile = Context()->VarBinder()->Program()->SourceFile().GetAbsolutePath().Mutf8();
+    classRecord.sourceFile = Context()->parserProgram->VarBinder()->Program()->SourceFile().GetAbsolutePath().Mutf8();
 
     auto *baseType = classDef->TsType()->AsETSObjectType();
     if (baseType->SuperType() != nullptr) {
@@ -512,7 +521,7 @@ void ETSEmitter::GenClassRecord(const ir::ClassDefinition *classDef, bool extern
     auto classIdent = classDef->Ident()->Name().Mutf8();
     bool isConstruct = classIdent == Signatures::JSNEW_CLASS;
     if (isConstruct || classIdent == Signatures::JSCALL_CLASS) {
-        auto *callNames = Context()->Checker()->AsETSChecker()->DynamicCallNames(isConstruct);
+        auto *callNames = Context()->checker->AsETSChecker()->DynamicCallNames(isConstruct);
         annotations.push_back(GenAnnotationDynamicCall(*callNames));
     }
 
@@ -641,7 +650,7 @@ ir::MethodDefinition *ETSEmitter::FindAsyncImpl(ir::ScriptFunction *asyncFunc)
     }
 
     ir::MethodDefinition *method = (*it)->AsMethodDefinition();
-    auto *checker = static_cast<checker::ETSChecker *>(Context()->Checker());
+    auto *checker = static_cast<checker::ETSChecker *>(Context()->checker);
     checker::TypeRelation *typeRel = checker->Relation();
     checker::SavedTypeRelationFlagsContext savedFlagsCtx(typeRel, checker::TypeRelationFlag::NO_RETURN_TYPE_CHECK);
     method->Function()->Signature()->Compatible(typeRel, asyncFunc->Signature());

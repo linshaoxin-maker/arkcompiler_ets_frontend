@@ -99,6 +99,7 @@ using FunctionSignature = std::tuple<ir::FunctionSignature, ark::es2panda::ir::S
 
 // NOLINTBEGIN(modernize-avoid-c-arrays)
 inline constexpr char const ARRAY_FORMAT_NODE = '[';
+inline constexpr char const EXPRESSION_FORMAT_NODE = 'E';
 inline constexpr char const STATEMENT_FORMAT_NODE = 'S';
 // NOLINTEND(modernize-avoid-c-arrays)
 
@@ -300,6 +301,7 @@ protected:
         return false;
     }
 
+    util::StringView ParseSymbolIteratorIdentifier() const noexcept;
     ir::Identifier *ExpectIdentifier(bool isReference = false, bool isUserDefinedType = false);
     void ExpectToken(lexer::TokenType tokenType, bool consumeToken = true);
 
@@ -516,6 +518,7 @@ protected:
     using NodeFormatType = std::tuple<bool, char, std::size_t>;
     virtual ir::Identifier *ParseIdentifierFormatPlaceholder(std::optional<NodeFormatType> nodeFormat) const;
     virtual ir::Statement *ParseStatementFormatPlaceholder() const;
+    virtual ir::AstNode *ParseTypeParametersFormatPlaceholder() const;
     virtual ArenaVector<ir::AstNode *> &ParseAstNodesArrayFormatPlaceholder() const;
     virtual ArenaVector<ir::Statement *> &ParseStatementsArrayFormatPlaceholder() const;
     virtual ArenaVector<ir::Expression *> &ParseExpressionsArrayFormatPlaceholder() const;

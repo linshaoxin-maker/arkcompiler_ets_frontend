@@ -20,6 +20,7 @@
 #include "ir/base/scriptFunction.h"
 #include "ir/ts/tsTypeParameter.h"
 #include "checker/ETSchecker.h"
+#include "public/public.h"
 
 namespace ark::es2panda::checker {
 
@@ -92,6 +93,24 @@ Signature *Signature::Substitute(TypeRelation *relation, const Substitution *sub
     result->ownerVar_ = ownerVar_;
 
     return result;
+}
+
+void Signature::ToAssemblerType(public_lib::Context *context, std::stringstream &ss) const
+{
+    ss << compiler::Signatures::MANGLE_BEGIN;
+
+    for (const auto *param : signatureInfo_->params) {
+        MaybeBoxedType(context->checker, param)->ToAssemblerTypeWithRank(ss);
+        ss << compiler::Signatures::MANGLE_SEPARATOR;
+    }
+
+    if (signatureInfo_->restVar != nullptr) {
+        MaybeBoxedType(context->checker, signatureInfo_->restVar)->ToAssemblerTypeWithRank(ss);
+        ss << compiler::Signatures::MANGLE_SEPARATOR;
+    }
+
+    returnType_->ToAssemblerTypeWithRank(ss);
+    ss << compiler::Signatures::MANGLE_SEPARATOR;
 }
 
 Signature *Signature::Copy(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes)
@@ -221,6 +240,7 @@ bool Signature::CheckReturnType(TypeRelation *relation, Type *type1, Type *type2
 
 void Signature::Compatible(TypeRelation *relation, Signature *other)
 {
+    relation->Result(false);
     bool isEts = relation->GetChecker()->IsETSChecker();
     auto const thisToCheckParametersNumber = GetToCheckParamCount(this, isEts);
     auto const otherToCheckParametersNumber = GetToCheckParamCount(other, isEts);
@@ -229,12 +249,13 @@ void Signature::Compatible(TypeRelation *relation, Signature *other)
         // skip check for ets cases only when all parameters are mandatory
         if (!isEts || (thisToCheckParametersNumber == this->Params().size() &&
                        otherToCheckParametersNumber == other->Params().size())) {
-            relation->Result(false);
             return;
         }
     }
 
-    if (!CheckReturnType(relation, this->ReturnType(), other->ReturnType())) {
+    if (HasSignatureFlag(SignatureFlags::GETTER_OR_SETTER) !=
+            other->HasSignatureFlag(SignatureFlags::GETTER_OR_SETTER) ||
+        !CheckReturnType(relation, this->ReturnType(), other->ReturnType())) {
         return;
     }
 
@@ -258,6 +279,7 @@ void Signature::Compatible(TypeRelation *relation, Signature *other)
         "ToCheckParametersNumber" is the number of parameters that need to be checked to ensure identical.
         "parametersNumber" is the number of parameters that can be checked in Signature::params().
     */
+    relation->Result(true);
     auto const toCheckParametersNumber = std::max(thisToCheckParametersNumber, otherToCheckParametersNumber);
     auto const parametersNumber = std::min({this->Params().size(), other->Params().size(), toCheckParametersNumber});
 

@@ -63,7 +63,7 @@ namespace panda::es2panda::binder {
 void Binder::InitTopScope()
 {
     if (program_->Kind() == parser::ScriptKind::MODULE) {
-        topScope_ = Allocator()->New<ModuleScope>(Allocator());
+        topScope_ = Allocator()->New<ModuleScope>(Allocator(), program_);
     } else {
         topScope_ = Allocator()->New<GlobalScope>(Allocator());
     }
@@ -314,7 +314,7 @@ void Binder::LookupIdentReference(ir::Identifier *ident)
     if (res.level != 0) {
         ASSERT(res.variable);
         if (!res.variable->Declaration()->IsDeclare() && !ident->Parent()->IsTSTypeReference() &&
-            !ident->Parent()->IsTSTypeQuery()) {
+            !ident->Parent()->IsTSTypeQuery() && !(bindingFlags_ & ResolveBindingFlags::TS_BEFORE_TRANSFORM)) {
             util::Concurrent::ProcessConcurrent(Program()->GetLineIndex(), ident, res, program_);
             res.variable->SetLexical(res.scope, program_->PatchFixHelper());
         }
@@ -352,8 +352,9 @@ void Binder::StoreAndCheckSpecialFunctionName(std::string &internalNameStr, std:
                 internalNameStr, recordName);
             return;
         }
-        // else: must be coldfix or hotreload mode
-        ASSERT(program_->PatchFixHelper()->IsColdFix() || program_->PatchFixHelper()->IsHotReload());
+        // else: must be coldfix or hotreload mode or coldreload mode
+        ASSERT(program_->PatchFixHelper()->IsColdFix() || program_->PatchFixHelper()->IsHotReload() ||
+               program_->PatchFixHelper()->IsColdReload());
     }
 }
 
@@ -364,10 +365,24 @@ void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name, cons
     }
     functionScopes_.push_back(funcScope);
     funcScope->SetInFunctionScopes();
+    if (Program()->TargetApiVersion() > 11) {
+        funcScope->SetSelfScopeName(name);
+        auto recordName = program_->FormatedRecordName().Mutf8();
+        funcScope->BindNameWithScopeInfo(name, util::UString(recordName, Allocator()).View());
+        if (func && (name == ANONYMOUS_FUNC_NAME)) {
+            anonymousFunctionNames_[func] = util::UString(funcScope->InternalName().Mutf8(), Allocator()).View();
+        }
+    } else {
+        LegacyBuildFunction(funcScope, name, func);
+    }
+}
 
+void Binder::LegacyBuildFunction(FunctionScope *funcScope, util::StringView name, const ir::ScriptFunction *func)
+{
     bool funcNameWithoutDot = (name.Find(".") == std::string::npos);
     bool funcNameWithoutBackslash = (name.Find("\\") == std::string::npos);
-    if (name != ANONYMOUS_FUNC_NAME && funcNameWithoutDot && funcNameWithoutBackslash && !functionNames_.count(name)) {
+    if (name != ANONYMOUS_FUNC_NAME && funcNameWithoutDot &&
+        funcNameWithoutBackslash && !functionNames_.count(name)) {
         // function with normal name, and hasn't been recorded
         auto internalName = std::string(program_->FormatedRecordName()) + std::string(name);
         functionNames_.insert(name);
@@ -671,6 +686,13 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
 
             if (ident->IsReference()) {
                 LookupIdentReference(ident);
+            }
+
+            /* During ts to js transformation, a non-empty namespace in ts file will be transformed
+               into a anonymous function while empty namespace will be removed. So the name for the
+               namespace need to be stored before the transformation.*/
+            if (scope_->Type() == ScopeType::TSMODULE) {
+                scope_->SetSelfScopeName(ident->Name());
             }
 
             ResolveReferences(childNode);

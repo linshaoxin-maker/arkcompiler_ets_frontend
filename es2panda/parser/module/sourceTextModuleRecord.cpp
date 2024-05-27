@@ -35,6 +35,7 @@ namespace panda::es2panda::parser {
     // import defaultExport from 'test.js'
     void SourceTextModuleRecord::AddImportEntry(SourceTextModuleRecord::ImportEntry *entry)
     {
+        ASSERT(entry != nullptr);
         ASSERT(!entry->importName_.Empty());
         ASSERT(!entry->localName_.Empty());
         ASSERT(entry->moduleRequestIdx_ != -1);
@@ -84,6 +85,7 @@ namespace panda::es2panda::parser {
     // import { x } from 'test.js'; export { x }
     bool SourceTextModuleRecord::AddIndirectExportEntry(SourceTextModuleRecord::ExportEntry *entry)
     {
+        ASSERT(entry != nullptr);
         ASSERT(!entry->importName_.Empty());
         ASSERT(!entry->exportName_.Empty());
         ASSERT(entry->localName_.Empty());
@@ -125,6 +127,7 @@ namespace panda::es2panda::parser {
 
     bool SourceTextModuleRecord::CheckImplicitIndirectExport(SourceTextModuleRecord::ExportEntry *exportEntry)
     {
+        ASSERT(exportEntry != nullptr);
         ASSERT(!exportEntry->localName_.Empty());
         auto regularImport = regularImportEntries_.find(exportEntry->localName_);
         if (regularImport != regularImportEntries_.end()) {
@@ -167,8 +170,7 @@ namespace panda::es2panda::parser {
     {
         uint32_t index = 0;
         for (auto it = localExportEntries_.begin(); it != localExportEntries_.end();
-             it = localExportEntries_.upper_bound(it->first))
-        {
+             it = localExportEntries_.upper_bound(it->first)) {
             auto variable = CheckAndAssignIndex(moduleScope, it->first, &index);
             if (variable != nullptr && variable->IsModuleVariable() && variable->Declaration()->IsConstDecl()) {
                 auto range = localExportEntries_.equal_range(it->first);

@@ -24,11 +24,14 @@
 #include <ir/base/scriptFunction.h>
 #include <ir/base/classDefinition.h>
 #include <ir/expressions/identifier.h>
+#include <ir/expressions/literals/stringLiteral.h>
 #include <ir/expressions/privateIdentifier.h>
 #include <ir/module/exportAllDeclaration.h>
 #include <ir/module/exportNamedDeclaration.h>
 #include <ir/module/exportSpecifier.h>
 #include <ir/module/importDeclaration.h>
+#include <ir/ts/tsModuleDeclaration.h>
+#include <ir/ts/tsEnumDeclaration.h>
 #include <macros.h>
 #include <util/concurrent.h>
 #include <util/ustring.h>
@@ -90,20 +93,29 @@ Variable *Scope::FindLocal(const util::StringView &name, ResolveBindingOptions o
     return res->second;
 }
 
-bool Scope::HasLexEnvInCorrespondingFunctionScope(const FunctionParamScope *scope) const
+void Scope::CalculateLevelInCorrespondingFunctionScope(const FunctionParamScope *scope, uint32_t &lexLevel,
+                                                       uint32_t &sendableLevel) const
 {
     auto *funcVariableScope = scope->GetFunctionScope();
     // we may only have function param scope without function scope in TS here
-    if ((funcVariableScope != nullptr) && (funcVariableScope->NeedLexEnv())) {
-        return true;
+    if (funcVariableScope == nullptr) {
+        return;
     }
-    return false;
+
+    if (funcVariableScope->NeedLexEnv()) {
+        lexLevel++;
+    }
+
+    if (funcVariableScope->NeedSendableEnv()) {
+        sendableLevel++;
+    }
 }
 
 ScopeFindResult Scope::Find(const util::StringView &name, ResolveBindingOptions options) const
 {
     uint32_t level = 0;
     uint32_t lexLevel = 0;
+    uint32_t sendableLevel = 0;
     const auto *iter = this;
     ir::ScriptFunction *concurrentFunc = nullptr;
     // If the first scope is functionParamScope, it means its corresponding functionScope is not
@@ -117,11 +129,17 @@ ScopeFindResult Scope::Find(const util::StringView &name, ResolveBindingOptions 
         Variable *v = iter->FindLocal(name, options);
 
         if (v != nullptr) {
-            return {name, const_cast<Scope *>(iter), level, lexLevel, v, concurrentFunc};
+            return {name, const_cast<Scope *>(iter), level, lexLevel, sendableLevel, v, concurrentFunc};
         }
 
         if (iter->IsFunctionVariableScope() && !lexical) {
             lexical = true;
+        }
+
+        if (iter->IsFunctionScope() && !concurrentFunc) {
+            if (iter->Node()->AsScriptFunction()->IsConcurrent()) {
+                concurrentFunc = const_cast<ir::ScriptFunction *>(iter->Node()->AsScriptFunction());
+            }
         }
 
         if (iter->IsVariableScope()) {
@@ -129,27 +147,23 @@ ScopeFindResult Scope::Find(const util::StringView &name, ResolveBindingOptions 
                 level++;
             }
 
-            if (util::Helpers::ShouldCheckConcurrent(iter, name) && !concurrentFunc) {
-                concurrentFunc = const_cast<ir::ScriptFunction *>(iter->Node()->AsScriptFunction());
+            if (iter->AsVariableScope()->NeedLexEnv()) {
+                lexLevel++;
             }
 
-            if (iter->AsVariableScope()->NeedLexEnv() &&
-                (!iter->IsClassScope() || !iter->Node()->AsClassDefinition()->IsSendable())) {
-                lexLevel++;
+            if (iter->AsVariableScope()->NeedSendableEnv()) {
+                sendableLevel++;
             }
         } else if (functionScopeNotIterated) {
             level++;
-            if (HasLexEnvInCorrespondingFunctionScope(iter->AsFunctionParamScope())) {
-                lexLevel++;
-            }
+            CalculateLevelInCorrespondingFunctionScope(iter->AsFunctionParamScope(), lexLevel, sendableLevel);
         }
 
         prevScopeNotFunctionScope = !iter->IsFunctionVariableScope();
-        util::Helpers::SendableCheckForClassStaticInitializer(name, iter, concurrentFunc);
         iter = iter->Parent();
     }
 
-    return {name, nullptr, 0, 0, nullptr, concurrentFunc};
+    return {name, nullptr, 0, 0, 0, nullptr, concurrentFunc};
 }
 
 std::pair<uint32_t, uint32_t> Scope::Find(const ir::Expression *expr, bool onlyLevel) const
@@ -174,6 +188,12 @@ std::pair<uint32_t, uint32_t> Scope::Find(const ir::Expression *expr, bool onlyL
     }
 
     UNREACHABLE();
+}
+
+bool ClassScope::IsVariableScope() const
+{
+    // sendable class does not need a lexical env, handle it's scope as a non-variable scope
+    return !node_->AsClassDefinition()->IsSendable();
 }
 
 Result ClassScope::GetPrivateProperty(const util::StringView &name, bool isSetter) const
@@ -255,6 +275,33 @@ void ClassScope::AddPrivateName(std::vector<const ir::Statement *> privateProper
     }
 }
 
+util::StringView ClassScope::GetSelfScopeName()
+{
+    if (hasSelfScopeNameSet_) {
+        return selfScopeName_;
+    }
+
+    std::stringstream scopeName;
+
+    if (node_ && node_->IsClassDefinition() && node_->AsClassDefinition()->Ident()) {
+        util::StringView selfName = node_->AsClassDefinition()->Ident()->Name();
+        scopeName << selfName;
+        return util::UString(scopeName.str(), allocator_).View();
+    }
+    // To get the name for anonymous class
+    if (node_->Parent() && node_->Parent()->Parent()) {
+        scopeName << util::Helpers::GetName(allocator_, node_->Parent()->Parent());
+        return util::UString(scopeName.str(), allocator_).View();
+    }
+
+    return util::UString(scopeName.str(), allocator_).View();
+}
+
+util::StringView ClassScope::GetScopeTag()
+{
+    return util::UString(util::Helpers::CLASS_SCOPE_TAG.data(), allocator_).View();
+}
+
 PrivateNameFindResult Scope::FindPrivateName(const util::StringView &name, bool isSetter) const
 {
     uint32_t lexLevel = 0;
@@ -320,6 +367,57 @@ std::tuple<Scope *, bool> Scope::IterateShadowedVariables(const util::StringView
     }
 
     return {iter, false};
+}
+
+void Scope::SetFullScopeNames()
+{
+    if (hasFullScopeNameSet_) {
+        return;
+    }
+    hasFullScopeNameSet_ = true;
+    if (!hasSelfScopeNameSet_) {
+        SetSelfScopeName(GetSelfScopeName());
+    }
+
+    std::stringstream selfScopeStream;
+    OptimizeSelfScopeName(selfScopeStream);
+    std::stringstream fullScopeName;
+    Scope *parent = GetParentWithScopeName();
+    if (parent) {
+        fullScopeName << parent->GetFullScopeName() <<
+                         GetScopeTag() <<
+                         selfScopeStream.str();
+        if (scopeDuplicateIndex_ > 0) {
+            fullScopeName << util::Helpers::DUPLICATED_SEPERATOR <<
+                             std::hex << scopeDuplicateIndex_;
+        }
+    }
+
+    fullScopeName_ = util::UString(fullScopeName.str(), allocator_).View();
+}
+
+void Scope::OptimizeSelfScopeName(std::stringstream &selfScopeStream)
+{
+    bool useIndex = false;
+    auto it = topScope_->scopeNames_.find(selfScopeName_);
+    if (it == topScope_->scopeNames_.end()) {
+        std::stringstream indexScopeName;
+        indexScopeName << util::Helpers::INDEX_NAME_SPICIFIER << std::hex << topScope_->scopeNames_.size();
+        if (selfScopeName_.Length() > indexScopeName.str().length()) {
+            topScope_->scopeNames_.insert(
+                {selfScopeName_, (int32_t)topScope_->scopeNames_.size()}
+            );
+            selfScopeStream << indexScopeName.str();
+            useIndex = true;
+        }
+    } else {
+        selfScopeStream << util::Helpers::INDEX_NAME_SPICIFIER << std::hex << it->second;
+        useIndex = true;
+    }
+
+    if (!useIndex) {
+        selfScopeStream << selfScopeName_;
+    }
 }
 
 bool Scope::AddLocal(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
@@ -432,6 +530,52 @@ bool FunctionParamScope::AddBinding([[maybe_unused]] ArenaAllocator *allocator,
     UNREACHABLE();
 }
 
+const util::StringView &FunctionParamScope::GetFullScopeName()
+{
+    if (functionScope_) {
+        return functionScope_->GetFullScopeName();
+    }
+
+    // FunctionParam should have the same name with FunctionScope
+    // Get scope name from parent in case the functionScope_ is nullptr
+    if (parent_) {
+        return parent_->GetFullScopeName();
+    }
+
+    return fullScopeName_;
+}
+
+uint32_t FunctionParamScope::GetDuplicateScopeIndex(const util::StringView &childScopeName)
+{
+    if (functionScope_) {
+        return functionScope_->GetDuplicateScopeIndex(childScopeName);
+    }
+
+    if (parent_) {
+        return parent_->GetDuplicateScopeIndex(childScopeName);
+    }
+
+    return 0;
+}
+
+void FunctionScope::BindNameWithScopeInfo(util::StringView name, util::StringView recordName)
+{
+    name_ = name;
+    std::stringstream internalName;
+    internalName << recordName << util::Helpers::FUNC_NAME_SEPARATOR;
+
+    Scope *parent = GetParentWithScopeName();
+    if (parent != nullptr) {
+        internalName << parent->GetFullScopeName();
+    }
+    internalName << GetScopeTag() << util::Helpers::FUNC_NAME_SEPARATOR << GetSelfScopeName();
+    if (scopeDuplicateIndex_ > 0) {
+        internalName << util::Helpers::DUPLICATED_SEPERATOR <<
+                        std::hex << scopeDuplicateIndex_;
+    }
+    internalName_ = util::UString(internalName.str(), allocator_).View();
+}
+
 bool FunctionScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                                [[maybe_unused]] ScriptExtension extension)
 {
@@ -463,11 +607,91 @@ bool FunctionScope::AddBinding(ArenaAllocator *allocator, Variable *currentVaria
     }
 }
 
+void FunctionScope::SetSelfScopeName(const util::StringView &ident)
+{
+    Scope::SetSelfScopeName(ident);
+    paramScope_->selfScopeName_ = selfScopeName_;
+    paramScope_->hasSelfScopeNameSet_ = true;
+    hasSelfScopeNameSet_ = true;
+}
+
+util::StringView FunctionScope::GetScopeTag()
+{
+    if (IsFunctionScope() && (node_->IsScriptFunction() && node_->AsScriptFunction()->IsConstructor())) {
+        return util::UString(util::Helpers::CTOR_TAG.data(), allocator_).View();
+    }
+    if (parent_ && parent_->Parent() && parent_->Parent()->IsClassScope()) {
+        bool hasNodeParent = node_ && node_->Parent() && node_->Parent()->Parent();
+        const ir::AstNode *nodeParent = hasNodeParent ? node_->Parent()->Parent() : nullptr;
+        if (nodeParent && nodeParent->IsMethodDefinition() && nodeParent->AsMethodDefinition()->IsStatic()) {
+            return util::UString(util::Helpers::STATIC_METHOD_TAG.data(), allocator_).View();
+        }
+        return util::UString(util::Helpers::METHOD_TAG.data(), allocator_).View();
+    }
+    return util::UString(util::Helpers::FUNCTION_TAG.data(), allocator_).View();
+}
+
+util::StringView FunctionScope::GetSelfScopeName()
+{
+    if (hasSelfScopeNameSet_) {
+        return selfScopeName_;
+    }
+
+    if (node_ && node_->IsScriptFunction()) {
+        auto selfName = util::Helpers::FunctionName(allocator_, node_->AsScriptFunction());
+        if (!util::Helpers::IsSpecialScopeName(selfName)) {
+            return selfName;
+        }
+    }
+    return util::UString(util::Helpers::STRING_EMPTY.data(), allocator_).View();
+}
+
+util::StringView TSModuleScope::GetSelfScopeName()
+{
+    if (hasSelfScopeNameSet_) {
+        return selfScopeName_;
+    }
+    throw Error(ErrorType::GENERIC, "namespace or module name should be set in Binder::ResolveReference()");
+}
+
+util::StringView TSModuleScope::GetScopeTag()
+{
+    return util::UString(util::Helpers::NAMESPACE_TAG.data(), allocator_).View();
+}
+
 bool TSEnumScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                              [[maybe_unused]] ScriptExtension extension)
 {
     ASSERT(newDecl->Type() == DeclType::ENUM);
     return enumMemberBindings_->insert({newDecl->Name(), allocator->New<EnumVariable>(newDecl, false)}).second;
+}
+
+void TSEnumScope::SetSelfScopeName(const util::StringView &ident)
+{
+    if (!hasSelfScopeNameSet_) {
+        FunctionScope::SetSelfScopeName(GetSelfScopeName());
+    }
+}
+
+util::StringView TSEnumScope::GetSelfScopeName()
+{
+    if (hasSelfScopeNameSet_) {
+        return selfScopeName_;
+    }
+
+    std::stringstream scopeName;
+    if (node_ && node_->IsScriptFunction()) {
+        auto scriptFunction = node_->AsScriptFunction();
+        if (scriptFunction->Params().size() > 0 && scriptFunction->Params()[0]->IsIdentifier()) {
+            scopeName << scriptFunction->Params()[0]->AsIdentifier()->Name();
+        }
+    }
+    return util::UString(scopeName.str(), allocator_).View();
+}
+
+util::StringView TSEnumScope::GetScopeTag()
+{
+    return util::UString(util::Helpers::ENUM_TAG.data(), allocator_).View();
 }
 
 bool GlobalScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
@@ -501,6 +725,11 @@ bool GlobalScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariabl
     }
 
     return true;
+}
+
+void GlobalScope::SetSelfScopeName([[maybe_unused]] const util::StringView &ident)
+{
+    hasSelfScopeNameSet_ = true;
 }
 
 // ModuleScope
@@ -581,6 +810,11 @@ bool ModuleScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariabl
     }
 }
 
+void ModuleScope::SetSelfScopeName([[maybe_unused]] const util::StringView &ident)
+{
+    hasSelfScopeNameSet_ = true;
+}
+
 // LocalScope
 
 bool LocalScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
@@ -618,5 +852,4 @@ bool CatchScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariable
 
     return AddLocal(allocator, currentVariable, newDecl, extension);
 }
-
 }  // namespace panda::es2panda::binder

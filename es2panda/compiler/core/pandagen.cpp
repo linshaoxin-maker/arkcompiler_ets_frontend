@@ -58,17 +58,8 @@ void PandaGen::SetFunctionKind()
 
     auto *func = rootNode_->AsScriptFunction();
     if (func->IsConcurrent()) {
-        if (func->IsMethod() || func->IsConstructor()) {
-            const auto *classDef = util::Helpers::GetClassDefiniton(func);
-            // The method/constructor of the sendable class does not set function kind to concurrent
-            if (!classDef->IsSendable()) {
-                funcKind_ = panda::panda_file::FunctionKind::CONCURRENT_FUNCTION;
-                return;
-            }
-        } else {
-            funcKind_ = panda::panda_file::FunctionKind::CONCURRENT_FUNCTION;
-            return;
-        }
+        funcKind_ = panda::panda_file::FunctionKind::CONCURRENT_FUNCTION;
+        return;
     }
 
     if (func->IsMethod()) {
@@ -255,6 +246,10 @@ void PandaGen::InitializeLexEnv(const ir::AstNode *node)
 
     if (topScope_->NeedLexEnv()) {
         NewLexicalEnv(node, topScope_->LexicalSlots(), topScope_);
+    }
+
+    if (topScope_->NeedSendableEnv()) {
+        NewSendableEnv(node, topScope_->SendableSlots());
     }
 }
 
@@ -571,7 +566,9 @@ void PandaGen::StoreObjByName(const ir::AstNode *node, VReg obj, const util::Str
 
 void PandaGen::DefineFieldByName(const ir::AstNode *node, VReg obj, const util::StringView &prop)
 {
-    ra_.Emit<Definefieldbyname>(node, 0, prop, obj);
+    // use definepropertybyname instead of definefieldbyname since api12 for runtime's performance.
+    Binder()->Program()->TargetApiVersion() >= 12 ? ra_.Emit<Definepropertybyname>(node, 0, prop, obj) :
+        ra_.Emit<Definefieldbyname>(node, 0, prop, obj);
     strings_.insert(prop);
 }
 
@@ -1084,7 +1081,8 @@ void PandaGen::GreaterEqual(const ir::AstNode *node, VReg lhs)
 
 void PandaGen::IsTrue(const ir::AstNode *node)
 {
-    ra_.Emit<Istrue>(node);
+    // use callruntime.istrue instead of istrue since api12 for runtime's performance.
+    Binder()->Program()->TargetApiVersion() >= 12 ? ra_.Emit<CallruntimeIstrue>(node, 0) :  ra_.Emit<Istrue>(node);
 }
 
 void PandaGen::BranchIfUndefined(const ir::AstNode *node, Label *target)
@@ -1141,7 +1139,8 @@ void PandaGen::BranchIfNotTrue(const ir::AstNode *node, Label *target)
 
 void PandaGen::BranchIfFalse(const ir::AstNode *node, Label *target)
 {
-    ra_.Emit<Isfalse>(node);
+    // use callruntime.istrue instead of istrue since api12 for runtime's performance.
+    Binder()->Program()->TargetApiVersion() >= 12 ? ra_.Emit<CallruntimeIsfalse>(node, 0) :  ra_.Emit<Isfalse>(node);
     ra_.Emit<Jnez>(node, target);
 }
 
@@ -1256,14 +1255,14 @@ void PandaGen::CallThis(const ir::AstNode *node, VReg startReg, size_t argCount)
         case 3: { // 2 args
             VReg arg0 = thisReg + 1;
             VReg arg1 = arg0 + 1;
-            ra_.Emit<Callthis2>(node, 0, thisReg , arg0, arg1);
+            ra_.Emit<Callthis2>(node, 0, thisReg, arg0, arg1);
             break;
         }
         case 4: { // 3 args
             VReg arg0 = thisReg + 1;
             VReg arg1 = arg0 + 1;
             VReg arg2 = arg1 + 1;
-            ra_.Emit<Callthis3>(node, 0, thisReg , arg0, arg1, arg2);
+            ra_.Emit<Callthis3>(node, 0, thisReg, arg0, arg1, arg2);
             break;
         }
         default: {
@@ -1863,6 +1862,16 @@ void PandaGen::LoadLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t 
     ra_.Emit<Ldlexvar>(node, level, slot);
 }
 
+void PandaGen::LoadSendableVar(const ir::AstNode *node, uint32_t level, uint32_t slot)
+{
+    if ((level > util::Helpers::MAX_INT8) || (slot > util::Helpers::MAX_INT8)) {
+        ra_.Emit<CallruntimeWideldsendablevar>(node, level, slot);
+        return;
+    }
+
+    ra_.Emit<CallruntimeLdsendablevar>(node, level, slot);
+}
+
 void PandaGen::LoadLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot, const util::StringView &name)
 {
     if (context_->PatchFixHelper() && context_->PatchFixHelper()->IsAdditionalVarInPatch(slot)) {
@@ -1898,6 +1907,16 @@ void PandaGen::StoreLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t
     }
 
     ra_.Emit<Stlexvar>(node, level, slot);
+}
+
+void PandaGen::StoreSendableVar(const ir::AstNode *node, uint32_t level, uint32_t slot)
+{
+    if ((level > util::Helpers::MAX_INT8) || (slot > util::Helpers::MAX_INT8)) {
+        ra_.Emit<CallruntimeWidestsendablevar>(node, level, slot);
+        return;
+    }
+
+    ra_.Emit<CallruntimeStsendablevar>(node, level, slot);
 }
 
 void PandaGen::StoreLexicalVar(const ir::AstNode *node, uint32_t level, uint32_t slot,
@@ -1969,6 +1988,12 @@ void PandaGen::NewLexicalEnv(const ir::AstNode *node, uint32_t num, binder::Vari
 void PandaGen::NewLexEnv(const ir::AstNode *node, uint32_t num)
 {
     num <= util::Helpers::MAX_INT8 ? ra_.Emit<Newlexenv>(node, num) : ra_.Emit<WideNewlexenv>(node, num);
+}
+
+void PandaGen::NewSendableEnv(const ir::AstNode * node, uint32_t num)
+{
+    num <= util::Helpers::MAX_INT8 ? ra_.Emit<CallruntimeNewsendableenv>(node, num) :
+        ra_.Emit<CallruntimeWidenewsendableenv>(node, num);
 }
 
 void PandaGen::NewLexEnvWithScopeInfo(const ir::AstNode *node, uint32_t num, int32_t scopeInfoIdx)
@@ -2079,7 +2104,6 @@ Operand PandaGen::ToPropertyKey(const ir::Expression *prop, bool isComputed)
 VReg PandaGen::LoadPropertyKey(const ir::Expression *prop, bool isComputed)
 {
     Operand op = ToNamedPropertyKey(prop, isComputed);
-
     if (std::holds_alternative<util::StringView>(op)) {
         LoadAccumulatorString(prop, std::get<util::StringView>(op));
     } else if (std::holds_alternative<int64_t>(op)) {

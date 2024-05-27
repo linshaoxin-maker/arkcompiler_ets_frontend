@@ -92,6 +92,7 @@ export class TypeScriptLinter {
   autofixer: Autofixer | undefined;
 
   private sourceFile?: ts.SourceFile;
+  private static sharedModulesCache: Map<string, boolean>;
   static filteredDiagnosticMessages: Set<ts.DiagnosticMessageChain>;
   static ideMode: boolean = false;
   static testMode: boolean = false;
@@ -101,6 +102,7 @@ export class TypeScriptLinter {
 
   static initGlobals(): void {
     TypeScriptLinter.filteredDiagnosticMessages = new Set<ts.DiagnosticMessageChain>();
+    TypeScriptLinter.sharedModulesCache = new Map<string, boolean>();
   }
 
   private initEtsHandlers(): void {
@@ -196,7 +198,9 @@ export class TypeScriptLinter {
     [ts.SyntaxKind.Constructor, this.handleConstructorDeclaration],
     [ts.SyntaxKind.PrivateIdentifier, this.handlePrivateIdentifier],
     [ts.SyntaxKind.IndexSignature, this.handleIndexSignature],
-    [ts.SyntaxKind.TypeLiteral, this.handleTypeLiteral]
+    [ts.SyntaxKind.TypeLiteral, this.handleTypeLiteral],
+    [ts.SyntaxKind.ExportKeyword, this.handleExportKeyword],
+    [ts.SyntaxKind.ExportDeclaration, this.handleExportDeclaration]
   ]);
 
   private getLineAndCharacterOfNode(node: ts.Node | ts.CommentRange): ts.LineAndCharacter {
@@ -646,6 +650,27 @@ export class TypeScriptLinter {
         this.incrementCounters(importDeclNode.assertClause, FaultID.ImportAssertion);
       }
     }
+
+    // handle no side effect import in sendable module
+    this.handleSharedModuleNoSideEffectImport(importDeclNode);
+  }
+
+  private handleSharedModuleNoSideEffectImport(node : ts.ImportDeclaration):void {
+    // check 'use shared'
+    if (TypeScriptLinter.inSharedModule(node) && !node.importClause) {
+      this.incrementCounters(node, FaultID.SharedNoSideEffectImport);
+    }
+  }
+
+  private static inSharedModule(node: ts.Node): boolean {
+    const sourceFile: ts.SourceFile = node.getSourceFile();
+    const modulePath = path.normalize(sourceFile.fileName);
+    if (TypeScriptLinter.sharedModulesCache.has(modulePath)) {
+      return TypeScriptLinter.sharedModulesCache.get(modulePath)!;
+    }
+    const isSharedModule: boolean = TsUtils.isSharedModule(sourceFile);
+    TypeScriptLinter.sharedModulesCache.set(modulePath, isSharedModule);
+    return isSharedModule;
   }
 
   private handlePropertyAccessExpression(node: ts.Node): void {
@@ -1686,6 +1711,14 @@ export class TypeScriptLinter {
     if (exportAssignment.isExportEquals) {
       this.incrementCounters(node, FaultID.ExportAssignment);
     }
+
+    if (!TypeScriptLinter.inSharedModule(node)) {
+      return;
+    }
+
+    if (!this.tsUtils.isShareableEntity(exportAssignment.expression)) {
+      this.incrementCounters(exportAssignment.expression, FaultID.SharedModuleExports);
+    }
   }
 
   private handleCallExpression(node: ts.Node): void {
@@ -2046,10 +2079,7 @@ export class TypeScriptLinter {
      */
     if (ts.isSpreadElement(node)) {
       const spreadExprType = this.tsUtils.getTypeOrTypeConstraintAtLocation(node.expression);
-      if (spreadExprType &&
-        (TypeScriptLinter.useRelaxedRules ||
-         ts.isCallLikeExpression(node.parent) || ts.isArrayLiteralExpression(node.parent)) &&
-        this.tsUtils.isOrDerivedFrom(spreadExprType, this.tsUtils.isArray)) {
+      if (spreadExprType && this.tsUtils.isOrDerivedFrom(spreadExprType, this.tsUtils.isArray)) {
         return;
       }
     }
@@ -2390,25 +2420,38 @@ export class TypeScriptLinter {
 
     const declarations = trueSym.getDeclarations();
     if (declarations?.length) {
-      const decl = declarations[0];
-      const declPosition = decl.getStart();
-      if (decl.getSourceFile().fileName !== node.getSourceFile().fileName ||
-          declPosition && declPosition >= scope.getStart() && declPosition < scope.getEnd()) {
-        return;
-      }
-
-      /**
-       * The cases in condition will introduce closure if defined in the same file as the Sendable class. The following
-       * cases are excluded because they are not allowed in ArkTS:
-       * 1. ImportEqualDecalration
-       * 2. BindingElement
-       */
-      if (ts.isVariableDeclaration(decl) || ts.isFunctionDeclaration(decl) || ts.isClassDeclaration(decl) ||
-          ts.isInterfaceDeclaration(decl) || ts.isEnumDeclaration(decl) || ts.isModuleDeclaration(decl) ||
-          ts.isParameter(decl)) {
-        this.incrementCounters(node, FaultID.SendableCapturedVars);
-      }
+      this.checkLocalDeclWithSendableClosure(node, scope, declarations[0]);
     }
+  }
+
+  private checkLocalDeclWithSendableClosure(node: ts.Identifier, scope: ts.Node, decl: ts.Declaration): void {
+    const declPosition = decl.getStart();
+    if (decl.getSourceFile().fileName !== node.getSourceFile().fileName ||
+        declPosition !== undefined && declPosition >= scope.getStart() && declPosition < scope.getEnd()) {
+      return;
+    }
+    if (this.isTopSendableClosure(decl)) {
+      return;
+    }
+
+    /**
+     * The cases in condition will introduce closure if defined in the same file as the Sendable class. The following
+     * cases are excluded because they are not allowed in ArkTS:
+     * 1. ImportEqualDecalration
+     * 2. BindingElement
+     */
+    if (ts.isVariableDeclaration(decl) || ts.isFunctionDeclaration(decl) || ts.isClassDeclaration(decl) ||
+        ts.isInterfaceDeclaration(decl) || ts.isEnumDeclaration(decl) || ts.isModuleDeclaration(decl) ||
+        ts.isParameter(decl)) {
+      this.incrementCounters(node, FaultID.SendableCapturedVars);
+    }
+  }
+
+  private isTopSendableClosure(decl: ts.Declaration): boolean {
+    return (
+      ts.isSourceFile(decl.parent) && ts.isClassDeclaration(decl) &&
+      this.tsUtils.isSendableClassOrInterface(this.tsTypeChecker.getTypeAtLocation(decl))
+    );
   }
 
   private checkNamespaceImportVar(node: ts.Node): boolean {
@@ -2433,5 +2476,58 @@ export class TypeScriptLinter {
     this.sourceFile = sourceFile;
     this.visitSourceFile(this.sourceFile);
     this.handleCommentDirectives(this.sourceFile);
+  }
+
+  private handleExportKeyword(node: ts.Node): void {
+    const parentNode = node.parent;
+    if (!TypeScriptLinter.inSharedModule(node) || ts.isModuleBlock(parentNode.parent)) {
+      return;
+    }
+
+    switch (parentNode.kind) {
+      case ts.SyntaxKind.EnumDeclaration:
+      case ts.SyntaxKind.InterfaceDeclaration:
+      case ts.SyntaxKind.ClassDeclaration:
+        if (!this.tsUtils.isShareableType(this.tsTypeChecker.getTypeAtLocation(parentNode))) {
+          this.incrementCounters((parentNode as ts.NamedDeclaration).name ?? parentNode, FaultID.SharedModuleExports);
+        }
+        return;
+      case ts.SyntaxKind.VariableStatement:
+        for (const variableDeclaration of (parentNode as ts.VariableStatement).declarationList.declarations) {
+          if (!this.tsUtils.isShareableEntity(variableDeclaration.name)) {
+            this.incrementCounters(variableDeclaration.name, FaultID.SharedModuleExports);
+          }
+        }
+        return;
+      case ts.SyntaxKind.TypeAliasDeclaration:
+        return;
+      default:
+        this.incrementCounters(parentNode, FaultID.SharedModuleExports);
+    }
+  }
+
+  private handleExportDeclaration(node: ts.Node): void {
+    if (!TypeScriptLinter.inSharedModule(node) || ts.isModuleBlock(node.parent)) {
+      return;
+    }
+
+    const exportDecl = node as ts.ExportDeclaration;
+    if (exportDecl.exportClause === undefined) {
+      this.incrementCounters(exportDecl, FaultID.SharedModuleNoWildcardExport);
+      return;
+    }
+
+    if (ts.isNamespaceExport(exportDecl.exportClause)) {
+      if (!this.tsUtils.isShareableType(this.tsTypeChecker.getTypeAtLocation(exportDecl.exportClause.name))) {
+        this.incrementCounters(exportDecl.exportClause.name, FaultID.SharedModuleExports);
+      }
+      return;
+    }
+
+    for (const exportSpecifier of exportDecl.exportClause.elements) {
+      if (!this.tsUtils.isShareableEntity(exportSpecifier.name)) {
+        this.incrementCounters(exportSpecifier.name, FaultID.SharedModuleExports);
+      }
+    }
   }
 }

@@ -9,11 +9,11 @@
         "loc": {
           "start": {
             "line": 17,
-            "column": 15
+            "column": 22
           },
           "end": {
             "line": 17,
-            "column": 38
+            "column": 45
           }
         }
       },
@@ -22,16 +22,16 @@
           "type": "ImportNamespaceSpecifier",
           "local": {
             "type": "Identifier",
-            "name": "",
+            "name": "all",
             "decorators": [],
             "loc": {
               "start": {
-                "line": 1,
-                "column": 1
+                "line": 17,
+                "column": 13
               },
               "end": {
-                "line": 1,
-                "column": 1
+                "line": 17,
+                "column": 16
               }
             }
           },
@@ -42,7 +42,7 @@
             },
             "end": {
               "line": 17,
-              "column": 14
+              "column": 16
             }
           }
         }
@@ -54,7 +54,7 @@
         },
         "end": {
           "line": 17,
-          "column": 39
+          "column": 46
         }
       }
     },
@@ -155,6 +155,100 @@
             "type": "MethodDefinition",
             "key": {
               "type": "Identifier",
+              "name": "main",
+              "decorators": [],
+              "loc": {
+                "start": {
+                  "line": 1,
+                  "column": 1
+                },
+                "end": {
+                  "line": 1,
+                  "column": 1
+                }
+              }
+            },
+            "kind": "method",
+            "accessibility": "public",
+            "static": true,
+            "optional": false,
+            "computed": false,
+            "value": {
+              "type": "FunctionExpression",
+              "function": {
+                "type": "ScriptFunction",
+                "id": {
+                  "type": "Identifier",
+                  "name": "main",
+                  "decorators": [],
+                  "loc": {
+                    "start": {
+                      "line": 1,
+                      "column": 1
+                    },
+                    "end": {
+                      "line": 1,
+                      "column": 1
+                    }
+                  }
+                },
+                "generator": false,
+                "async": false,
+                "expression": false,
+                "params": [],
+                "body": {
+                  "type": "BlockStatement",
+                  "statements": [],
+                  "loc": {
+                    "start": {
+                      "line": 1,
+                      "column": 1
+                    },
+                    "end": {
+                      "line": 1,
+                      "column": 1
+                    }
+                  }
+                },
+                "loc": {
+                  "start": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 1
+                  }
+                }
+              },
+              "loc": {
+                "start": {
+                  "line": 1,
+                  "column": 1
+                },
+                "end": {
+                  "line": 1,
+                  "column": 1
+                }
+              }
+            },
+            "overloads": [],
+            "decorators": [],
+            "loc": {
+              "start": {
+                "line": 1,
+                "column": 1
+              },
+              "end": {
+                "line": 1,
+                "column": 1
+              }
+            }
+          },
+          {
+            "type": "MethodDefinition",
+            "key": {
+              "type": "Identifier",
               "name": "_$init$_",
               "decorators": [],
               "loc": {
@@ -238,9 +332,39 @@
                           },
                           "arguments": [
                             {
-                              "type": "Identifier",
-                              "name": "dbl",
-                              "decorators": [],
+                              "type": "MemberExpression",
+                              "object": {
+                                "type": "Identifier",
+                                "name": "all",
+                                "decorators": [],
+                                "loc": {
+                                  "start": {
+                                    "line": 19,
+                                    "column": 13
+                                  },
+                                  "end": {
+                                    "line": 19,
+                                    "column": 16
+                                  }
+                                }
+                              },
+                              "property": {
+                                "type": "Identifier",
+                                "name": "dbl",
+                                "decorators": [],
+                                "loc": {
+                                  "start": {
+                                    "line": 19,
+                                    "column": 17
+                                  },
+                                  "end": {
+                                    "line": 19,
+                                    "column": 20
+                                  }
+                                }
+                              },
+                              "computed": false,
+                              "optional": false,
                               "loc": {
                                 "start": {
                                   "line": 19,
@@ -248,7 +372,7 @@
                                 },
                                 "end": {
                                   "line": 19,
-                                  "column": 16
+                                  "column": 20
                                 }
                               }
                             }
@@ -261,7 +385,7 @@
                             },
                             "end": {
                               "line": 19,
-                              "column": 46
+                              "column": 50
                             }
                           }
                         },
@@ -272,7 +396,7 @@
                           },
                           "end": {
                             "line": 19,
-                            "column": 46
+                            "column": 50
                           }
                         }
                       },
@@ -283,7 +407,7 @@
                         },
                         "end": {
                           "line": 19,
-                          "column": 46
+                          "column": 50
                         }
                       }
                     },
@@ -326,9 +450,39 @@
                           },
                           "arguments": [
                             {
-                              "type": "Identifier",
-                              "name": "flt",
-                              "decorators": [],
+                              "type": "MemberExpression",
+                              "object": {
+                                "type": "Identifier",
+                                "name": "all",
+                                "decorators": [],
+                                "loc": {
+                                  "start": {
+                                    "line": 20,
+                                    "column": 13
+                                  },
+                                  "end": {
+                                    "line": 20,
+                                    "column": 16
+                                  }
+                                }
+                              },
+                              "property": {
+                                "type": "Identifier",
+                                "name": "flt",
+                                "decorators": [],
+                                "loc": {
+                                  "start": {
+                                    "line": 20,
+                                    "column": 17
+                                  },
+                                  "end": {
+                                    "line": 20,
+                                    "column": 20
+                                  }
+                                }
+                              },
+                              "computed": false,
+                              "optional": false,
                               "loc": {
                                 "start": {
                                   "line": 20,
@@ -336,7 +490,7 @@
                                 },
                                 "end": {
                                   "line": 20,
-                                  "column": 16
+                                  "column": 20
                                 }
                               }
                             }
@@ -349,7 +503,7 @@
                             },
                             "end": {
                               "line": 20,
-                              "column": 45
+                              "column": 49
                             }
                           }
                         },
@@ -360,7 +514,7 @@
                           },
                           "end": {
                             "line": 20,
-                            "column": 45
+                            "column": 49
                           }
                         }
                       },
@@ -371,7 +525,7 @@
                         },
                         "end": {
                           "line": 20,
-                          "column": 45
+                          "column": 49
                         }
                       }
                     }
@@ -458,9 +612,39 @@
               },
               "arguments": [
                 {
-                  "type": "Identifier",
-                  "name": "dbl",
-                  "decorators": [],
+                  "type": "MemberExpression",
+                  "object": {
+                    "type": "Identifier",
+                    "name": "all",
+                    "decorators": [],
+                    "loc": {
+                      "start": {
+                        "line": 19,
+                        "column": 13
+                      },
+                      "end": {
+                        "line": 19,
+                        "column": 16
+                      }
+                    }
+                  },
+                  "property": {
+                    "type": "Identifier",
+                    "name": "dbl",
+                    "decorators": [],
+                    "loc": {
+                      "start": {
+                        "line": 19,
+                        "column": 17
+                      },
+                      "end": {
+                        "line": 19,
+                        "column": 20
+                      }
+                    }
+                  },
+                  "computed": false,
+                  "optional": false,
                   "loc": {
                     "start": {
                       "line": 19,
@@ -468,7 +652,7 @@
                     },
                     "end": {
                       "line": 19,
-                      "column": 16
+                      "column": 20
                     }
                   }
                 }
@@ -481,7 +665,7 @@
                 },
                 "end": {
                   "line": 19,
-                  "column": 46
+                  "column": 50
                 }
               }
             },
@@ -500,7 +684,7 @@
               },
               "end": {
                 "line": 19,
-                "column": 46
+                "column": 50
               }
             }
           },
@@ -540,9 +724,39 @@
               },
               "arguments": [
                 {
-                  "type": "Identifier",
-                  "name": "flt",
-                  "decorators": [],
+                  "type": "MemberExpression",
+                  "object": {
+                    "type": "Identifier",
+                    "name": "all",
+                    "decorators": [],
+                    "loc": {
+                      "start": {
+                        "line": 20,
+                        "column": 13
+                      },
+                      "end": {
+                        "line": 20,
+                        "column": 16
+                      }
+                    }
+                  },
+                  "property": {
+                    "type": "Identifier",
+                    "name": "flt",
+                    "decorators": [],
+                    "loc": {
+                      "start": {
+                        "line": 20,
+                        "column": 17
+                      },
+                      "end": {
+                        "line": 20,
+                        "column": 20
+                      }
+                    }
+                  },
+                  "computed": false,
+                  "optional": false,
                   "loc": {
                     "start": {
                       "line": 20,
@@ -550,7 +764,7 @@
                     },
                     "end": {
                       "line": 20,
-                      "column": 16
+                      "column": 20
                     }
                   }
                 }
@@ -563,7 +777,7 @@
                 },
                 "end": {
                   "line": 20,
-                  "column": 45
+                  "column": 49
                 }
               }
             },
@@ -582,7 +796,7 @@
               },
               "end": {
                 "line": 20,
-                "column": 45
+                "column": 49
               }
             }
           }
