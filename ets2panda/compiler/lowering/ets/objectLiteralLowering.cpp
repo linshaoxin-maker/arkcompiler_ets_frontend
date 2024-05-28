@@ -26,6 +26,23 @@ std::string_view ObjectLiteralLowering::Name() const
     return "ObjectLiteralLowering";
 }
 
+static void MaybeAllowConstAssign(checker::Type *targetType, ArenaVector<ir::Statement *> &statements)
+{
+    if (!targetType->IsETSObjectType() ||
+        !targetType->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::PARTIAL)) {
+        return;
+    }
+
+    for (auto *stmt : statements) {
+        if (!stmt->IsExpressionStatement() ||
+            !stmt->AsExpressionStatement()->GetExpression()->IsAssignmentExpression()) {
+            continue;
+        }
+
+        stmt->AsExpressionStatement()->GetExpression()->AsAssignmentExpression()->SetIgnoreConstAssign();
+    }
+}
+
 static constexpr std::string_view NESTED_BLOCK_EXPRESSION = "_$NESTED_BLOCK_EXPRESSION$_";
 
 static void RestoreNestedBlockExpression(const ArenaVector<ir::Statement *> &statements,
@@ -140,6 +157,8 @@ static ir::AstNode *HandleObjectLiteralLowering(public_lib::Context *ctx, ir::Ob
 
     auto *loweringResult = parser->CreateFormattedExpression(ss.str(), newStmts);
     loweringResult->SetParent(objExpr->Parent());
+
+    MaybeAllowConstAssign(objExpr->PreferredType(), loweringResult->AsBlockExpression()->Statements());
 
     auto scopeCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(varbinder, NearestScope(objExpr));
     InitScopesPhaseETS::RunExternalNode(loweringResult, varbinder);

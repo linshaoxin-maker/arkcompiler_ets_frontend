@@ -22,6 +22,13 @@ namespace ark::es2panda::checker {
 class ETSAnalyzer;
 }  // namespace ark::es2panda::checker
 namespace ark::es2panda::ir {
+enum class AssignmentFlags : uint32_t {
+    NO_OPTS = 0,
+    IGNORE_CONST_ASSIGN = 1U << 0U,
+};
+
+DEFINE_BITOPS(AssignmentFlags)
+
 class AssignmentExpression : public Expression {
 private:
     struct Tag {};
@@ -121,6 +128,16 @@ public:
         return target_;
     }
 
+    void SetIgnoreConstAssign()
+    {
+        ignoreConstAssign_ = true;
+    }
+
+    [[nodiscard]] bool IsIgnoreConstAssign() const
+    {
+        return ignoreConstAssign_;
+    }
+
     [[nodiscard]] AssignmentExpression *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
     [[nodiscard]] bool ConvertibleToAssignmentPattern(bool mustBePattern = true);
@@ -155,6 +172,7 @@ private:
     lexer::TokenType operator_;
     varbinder::Variable *target_ {};
     checker::Type *operationType_ {};
+    bool ignoreConstAssign_ = false;
 };
 }  // namespace ark::es2panda::ir
 
