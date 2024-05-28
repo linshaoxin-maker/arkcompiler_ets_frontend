@@ -95,7 +95,7 @@ def parse_args():
                         help="Run test262 with aot pgo")
     parser.add_argument('--abc2program', action='store_true',
                         help="Use abc2prog to generate abc, aot or pgo is not supported yet under this option")
-    parser.add_argument('--enable-force-gc', action='store_true',
+    parser.add_argument('--disenable-force-gc', action='store_true',
                         help="Run test262 with close force-gc")
     arguments = parser.parse_args()
     return arguments
@@ -119,7 +119,7 @@ class ArkProgram():
         self.ark_tool = ARK_TOOL
         self.ark_aot = False
         self.run_pgo = False
-        self.enable_force_gc = False
+        self.disenable_force_gc = False
         self.ark_aot_tool = ARK_AOT_TOOL
         self.libs_dir = LIBS_DIR
         self.ark_frontend = ARK_FRONTEND
@@ -149,8 +149,8 @@ class ArkProgram():
         if self.args.run_pgo:
             self.run_pgo = self.args.run_pgo
 
-        if self.args.enable_force_gc:
-            self.enable_force_gc = self.args.enable_force_gc
+        if self.args.disenable_force_gc:
+            self.disenable_force_gc = self.args.disenable_force_gc
 
         if self.args.ark_aot_tool:
             self.ark_aot_tool = self.args.ark_aot_tool
@@ -665,7 +665,7 @@ class ArkProgram():
                         f'--compiler-pgo-profiler-path={file_name_pre}.ap',
                         "--asm-interpreter=true",
                         f'--entry-point={record_name}']
-        if self.enable_force_gc:
+        if self.disenable_force_gc:
             cmd_args.append(f"--enable-force-gc=false")
         cmd_args.append(f'{file_name_pre}.abc')
         return_code = exec_command(cmd_args)
