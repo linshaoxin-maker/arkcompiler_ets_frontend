@@ -86,6 +86,8 @@ bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSType
     auto *const substitution = checker_->NewSubstitution();
 
     for (size_t idx = 0; idx < type->TypeArguments().size(); ++idx) {
+        if (type->TypeArguments().at(idx)->IsWildcardType())
+            continue;
         auto const [typeParam, typeArg] = getTypes(idx);
         checker_->CheckValidGenericTypeParameter(typeArg, pos);
         typeArg->Substitute(checker_->Relation(), substitution);
@@ -93,11 +95,17 @@ bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSType
     }
 
     for (size_t idx = 0; idx < type->TypeArguments().size(); ++idx) {
+        if (type->TypeArguments().at(idx)->IsWildcardType())
+            continue;
         auto const [typeParam, typeArg] = getTypes(idx);
         if (typeParam->GetConstraintType() == nullptr) {
             continue;
         }
         auto *const constraint = typeParam->GetConstraintType()->Substitute(checker_->Relation(), substitution);
+
+        if (CheckRecursiveTypeArg(typeArg)) {
+            continue;
+        }
 
         if (!ValidateTypeArg(constraint, typeArg) && typeArgs != nullptr &&
             !checker_->Relation()->NoThrowGenericTypeAlias()) {
@@ -182,11 +190,18 @@ void InstantiationContext::InstantiateType(ETSObjectType *type, ArenaVector<Type
         }
         ETSChecker::EmplaceSubstituted(constraintsSubstitution, typeParams[ix]->AsETSTypeParameter(), typeArgTypes[ix]);
     }
+
     for (size_t ix = 0; ix < typeParams.size(); ix++) {
         auto *typeParam = typeParams[ix];
         if (!typeParam->IsETSTypeParameter()) {
             continue;
         }
+
+        if (CheckRecursiveTypeArg(typeArgTypes[ix])) {
+            ETSChecker::EmplaceSubstituted(substitution, typeParam->AsETSTypeParameter(), typeArgTypes[ix]);
+            continue;
+        }
+
         if (!checker_->IsCompatibleTypeArgument(typeParam->AsETSTypeParameter(), typeArgTypes[ix],
                                                 constraintsSubstitution) &&
             !checker_->Relation()->NoThrowGenericTypeAlias()) {
@@ -195,9 +210,31 @@ void InstantiationContext::InstantiateType(ETSObjectType *type, ArenaVector<Type
         }
         ETSChecker::EmplaceSubstituted(substitution, typeParam->AsETSTypeParameter(), typeArgTypes[ix]);
     }
+
     result_ = type->Substitute(checker_->Relation(), substitution)->AsETSObjectType();
 
     type->GetInstantiationMap().try_emplace(hash, result_);
     result_->AddTypeFlag(TypeFlag::GENERIC);
 }
+
+bool InstantiationContext::CheckRecursiveTypeArg(Type *typeArgType)
+{
+    if (typeArgType->IsETSObjectType() && typeArgType->AsETSObjectType()->SuperType() == nullptr &&
+        typeArgType->AsETSObjectType()->GetDeclNode()->IsClassDefinition()) {
+        auto classDef = typeArgType->AsETSObjectType()->GetDeclNode()->AsClassDefinition();
+        if (classDef->Super() != nullptr) {
+            typeArgType->AsETSObjectType()->SetRecursive();
+            return true;
+        }
+    }
+
+    if (typeArgType->IsETSTypeParameter() &&
+        typeArgType->AsETSTypeParameter()->GetConstraintType() == checker_->GlobalETSNullishObjectType()) {
+        if (typeArgType->AsETSTypeParameter()->GetDeclNode()->Constraint() != nullptr) {
+            return true;
+        }
+    }
+    return false;
+}
+
 }  // namespace ark::es2panda::checker

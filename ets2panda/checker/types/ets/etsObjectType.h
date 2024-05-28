@@ -405,6 +405,20 @@ public:
     {
         return propertiesInstantiated_;
     }
+    void SetRecursive()
+    {
+        recursive_ = true;
+    }
+
+    bool IsRecursive() const
+    {
+        return recursive_;
+    }
+
+    void RemoveResursive()
+    {
+        recursive_ = false;
+    }
 
 protected:
     virtual ETSFunctionType *CreateETSFunctionType(const util::StringView &name) const;
@@ -440,6 +454,7 @@ private:
             propertiesInstantiated_ = true;
         }
     }
+
     ArenaMap<util::StringView, const varbinder::LocalVariable *> CollectAllProperties() const;
     bool CastWideningNarrowing(TypeRelation *relation, Type *target, TypeFlag unboxFlags, TypeFlag wideningFlags,
                                TypeFlag narrowingFlags);
@@ -482,6 +497,7 @@ private:
     mutable bool propertiesInstantiated_ = false;
     mutable ArenaVector<Signature *> constructSignatures_;
     mutable PropertyHolder properties_;
+    bool recursive_ = false;
 };
 }  // namespace ark::es2panda::checker
 

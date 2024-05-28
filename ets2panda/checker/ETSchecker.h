@@ -684,6 +684,8 @@ public:
 
     ir::ETSParameterExpression *AddParam(util::StringView name, ir::TypeNode *type);
 
+    ArenaVector<Type *> InitializeTypeArgumentsForClassOrInterface(ir::TSTypeParameterDeclaration *const typeParams);
+
 private:
     using ClassBuilder = std::function<void(ArenaVector<ir::AstNode *> *)>;
     using ClassInitializerBuilder =
@@ -784,6 +786,11 @@ private:
     // Static invoke
     bool TryTransformingToStaticInvoke(ir::Identifier *ident, const Type *resolvedType);
 
+    // Recursive Check
+    void ReValidateRecursiveTypeParams(ETSObjectType *superObj, const lexer::SourcePosition &pos);
+    void ReValidateRecursiveTypeParam(ETSTypeParameter *typeParam, ETSObjectType *typeArg,
+                                      const lexer::SourcePosition &pos, checker::Substitution *substitution);
+    bool ValidateTypeArg(Type *constraintType, Type *typeArg);
     ArrayMap arrayTypes_;
     ArenaList<ir::ClassDefinition *> localClasses_;
     ArenaList<ir::ETSNewClassInstanceExpression *> localClassInstantiations_;

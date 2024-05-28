@@ -166,6 +166,7 @@ private:
 
     void InstantiateType(ETSObjectType *type, ArenaVector<Type *> &typeArgTypes, const lexer::SourcePosition &pos);
     util::StringView GetHashFromTypeArguments(ArenaVector<Type *> &typeArgTypes);
+    bool CheckRecursiveTypeArg(Type *typeArgType);
 
     ETSChecker *checker_;
     ETSObjectType *result_ {};
