@@ -32,6 +32,7 @@ private:
                                           public_lib::Context *ctx);
     std::string TypeToString(checker::Type *type) const;
     void CheckKeyType(checker::Type *keyType, ir::ObjectExpression *expr, public_lib::Context *ctx) const;
+    void CheckDuplicateKey(ir::ObjectExpression *expr, public_lib::Context *ctx);
     ir::Statement *CreateStatement(const std::string &src, ir::Expression *ident, ir::Expression *key,
                                    ir::Expression *value, public_lib::Context *ctx);
 };

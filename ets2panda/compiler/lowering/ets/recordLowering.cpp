@@ -70,21 +70,63 @@ void RecordLowering::CheckKeyType(checker::Type *keyType, ir::ObjectExpression *
 {
     // NOTE(kkonsw): also check unions and primitives
     // The Record key type should be restricted to number types and string types
-    if (keyType->IsETSObjectType()) {
-        if (keyType->IsETSStringType() ||
-            keyType->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_BYTE) ||
-            keyType->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_CHAR) ||
-            keyType->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_SHORT) ||
-            keyType->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_INT) ||
-            keyType->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_LONG) ||
-            keyType->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_FLOAT) ||
-            keyType->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_DOUBLE)) {
-            return;
-        }
+    // union types constructed from these types, and literals of these types
+    auto isValidKeyType = [&ctx](checker::Type *type) {
+        auto checker = ctx->checker->AsETSChecker();
+        return type->IsETSStringType() ||
+               checker->MaybePrimitiveBuiltinType(type)->HasTypeFlag(checker::TypeFlag::ETS_NUMERIC);
+    };
+
+    auto throwTypeError = [&ctx, &expr]() {
+        ctx->checker->AsETSChecker()->ThrowTypeError("Incorrect property type in Record Object Literal expression",
+                                                     expr->Start());
+    };
+
+    if (keyType->IsETSObjectType() && isValidKeyType(keyType)) {
+        return;
     }
 
-    ctx->checker->AsETSChecker()->ThrowTypeError("Incorrect property type in Record Object Literal expression",
-                                                 expr->Start());
+    if (keyType->IsETSUnionType()) {
+        for (auto type : keyType->AsETSUnionType()->ConstituentTypes()) {
+            if (!isValidKeyType(type)) {
+                throwTypeError();
+            }
+        }
+        return;
+    }
+    throwTypeError();
+}
+
+void RecordLowering::CheckDuplicateKey(ir::ObjectExpression *expr, public_lib::Context *ctx)
+{
+    std::unordered_set<std::variant<int32_t, int64_t, float, double, util::StringView>> keySet;
+    for (auto *it : expr->Properties()) {
+        auto *prop = it->AsProperty();
+        switch (prop->Key()->Type()) {
+            case ir::AstNodeType::NUMBER_LITERAL: {
+                auto number = prop->Key()->AsNumberLiteral()->Number();
+                if ((number.IsInt() && keySet.insert(number.GetInt()).second) ||
+                    (number.IsLong() && keySet.insert(number.GetLong()).second) ||
+                    (number.IsFloat() && keySet.insert(number.GetFloat()).second) ||
+                    (number.IsDouble() && keySet.insert(number.GetDouble()).second)) {
+                    continue;
+                }
+                ctx->checker->AsETSChecker()->ThrowTypeError(
+                    "An object literal cannot mulitiple properties with same name", expr->Start());
+            }
+            case ir::AstNodeType::STRING_LITERAL: {
+                if (keySet.insert(prop->Key()->AsStringLiteral()->Str()).second) {
+                    continue;
+                }
+                ctx->checker->AsETSChecker()->ThrowTypeError(
+                    "An object literal cannot mulitiple properties with same name", expr->Start());
+            }
+            default: {
+                UNREACHABLE();
+                break;
+            }
+        }
+    }
 }
 
 ir::Statement *RecordLowering::CreateStatement(const std::string &src, ir::Expression *ident, ir::Expression *key,
@@ -145,6 +187,9 @@ ir::Expression *RecordLowering::UpdateObjectExpression(ir::ObjectExpression *exp
     ASSERT(typeArguments.size() == NUM_ARGUMENTS);
     CheckKeyType(typeArguments[0], expr, ctx);
 
+    // check Duplicate key
+    CheckDuplicateKey(expr, ctx);
+    
     auto *const scope = NearestScope(expr);
     checker::SavedCheckerContext scc {checker, checker::CheckerStatus::IGNORE_VISIBILITY};
     auto expressionCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(checker->VarBinder(), scope);
@@ -184,10 +229,12 @@ ir::Expression *RecordLowering::CreateBlockExpression(ir::ObjectExpression *expr
     auto &properties = expr->Properties();
     // currently we only have Map and Record in this if branch
     if (ss.str() == "escompat.Map") {
-        const std::string createMapSrc = "let @@I1 = new Map<" + TypeToString(keyType) + "," + TypeToString(valueType) + ">()";
+        const std::string createMapSrc = "let @@I1 = new Map<" + 
+        TypeToString(keyType) + "," + TypeToString(valueType) + ">()";
         statements.push_back(CreateStatement(createMapSrc, ident, nullptr, nullptr, ctx));
     } else {
-        const std::string createRecordSrc = "let @@I1 = new Record<" + TypeToString(keyType) + "," + TypeToString(valueType) + ">()";
+        const std::string createRecordSrc = "let @@I1 = new Record<" + 
+        TypeToString(keyType) + "," + TypeToString(valueType) + ">()";
         statements.push_back(CreateStatement(createRecordSrc, ident, nullptr, nullptr, ctx));
     }
 
@@ -197,7 +244,8 @@ ir::Expression *RecordLowering::CreateBlockExpression(ir::ObjectExpression *expr
         ASSERT(property->IsProperty());
         auto p = property->AsProperty();
         statements.push_back(
-            CreateStatement("@@I1.set(@@E2, @@E3)", ident->Clone(ctx->allocator, nullptr), p->Key(), p->Value(), ctx));
+            CreateStatement("@@I1.set(@@E2, @@E3)", 
+            ident->Clone(ctx->allocator, nullptr), p->Key(), p->Value(), ctx));
     }
     statements.push_back(CreateStatement("@@I1", ident->Clone(ctx->allocator, nullptr), nullptr, nullptr, ctx));
 
