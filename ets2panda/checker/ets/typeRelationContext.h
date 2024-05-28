@@ -41,8 +41,6 @@ public:
         flags_ |= flags;
         relation->SetNode(node);
 
-        CheckConstraint(source, target);
-
         // NOTE (oeotvos) The narrowing flag will be applied here. It means, that the result of "let tmp: int = 1.5"
         // will be 1, which could cause problems.
         if (source->HasTypeFlag(TypeFlag::CONSTANT)) {
@@ -77,7 +75,6 @@ public:
 
     void ValidateArrayTypeInitializerByElement(TypeRelation *relation, ir::ArrayExpression *node, ETSArrayType *target);
 
-    void CheckConstraint(Type *&source, Type *&target);
 private:
     TypeRelationFlag flags_ = TypeRelationFlag::IN_ASSIGNMENT_CONTEXT;
     bool assignable_ {false};
@@ -169,6 +166,7 @@ private:
 
     void InstantiateType(ETSObjectType *type, ArenaVector<Type *> &typeArgTypes, const lexer::SourcePosition &pos);
     util::StringView GetHashFromTypeArguments(ArenaVector<Type *> &typeArgTypes);
+    bool CheckRecursiveTypeArg(Type *typeArgType);
 
     ETSChecker *checker_;
     ETSObjectType *result_ {};

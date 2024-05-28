@@ -75,7 +75,6 @@ ETSObjectType *ETSChecker::GetSuperType(ETSObjectType *type)
     }
 
     ETSObjectType *superObj = superType->AsETSObjectType();
-
     // struct node has class defination, too
     if (superObj->GetDeclNode()->Parent()->IsETSStructDeclaration()) {
         ThrowTypeError({"struct ", classDef->Ident()->Name(), " is not extensible."}, classDef->Super()->Start());
@@ -86,8 +85,9 @@ ETSObjectType *ETSChecker::GetSuperType(ETSObjectType *type)
     }
 
     type->SetSuperType(superObj);
-    GetSuperType(superObj);
 
+    GetSuperType(superObj);
+    ReValidateRecursiveTypeParams(superObj, classDef->Super()->Start());
     type->AddObjectFlag(ETSObjectFlags::RESOLVED_SUPER);
     return type->SuperType();
 }
@@ -272,6 +272,8 @@ void ETSChecker::CreateTypeForClassOrInterfaceTypeParameters(ETSObjectType *type
     ir::TSTypeParameterDeclaration *typeParams = type->GetDeclNode()->IsClassDefinition()
                                                      ? type->GetDeclNode()->AsClassDefinition()->TypeParams()
                                                      : type->GetDeclNode()->AsTSInterfaceDeclaration()->TypeParams();
+
+    type->SetTypeArguments(InitializeTypeArgumentsForClassOrInterface(typeParams));
     type->SetTypeArguments(CreateTypeForTypeParameters(typeParams));
     type->AddObjectFlag(ETSObjectFlags::RESOLVED_TYPE_PARAMS);
     type->AddObjectFlag(ETSObjectFlags::INCOMPLETE_INSTANTIATION);
@@ -1864,5 +1866,75 @@ void ETSChecker::CheckInvokeMethodsLegitimacy(ETSObjectType *const classType)
                        classType->GetDeclNode()->Start());
     }
     classType->AddObjectFlag(ETSObjectFlags::CHECKED_INVOKE_LEGITIMACY);
+}
+ArenaVector<Type *> ETSChecker::InitializeTypeArgumentsForClassOrInterface(
+    ir::TSTypeParameterDeclaration *const typeParams)
+{
+    ArenaVector<Type *> result {Allocator()->Adapter()};
+
+    for (int i = 0; i < (int)typeParams->Params().size(); i++) {
+        result.emplace_back(GlobalWildcardType());
+    }
+    return result;
+}
+
+void ETSChecker::ReValidateRecursiveTypeParams(ETSObjectType *superObj, const lexer::SourcePosition &pos)
+{
+    if (superObj == nullptr) {
+        return;
+    }
+    auto baseType = superObj->GetBaseType();
+    if (baseType == nullptr) {
+        return;
+    }
+    auto *const substitution = NewSubstitution();
+    for (int idx = 0; idx < (int)baseType->TypeArguments().size(); idx++) {
+        auto typeParam = baseType->TypeArguments().at(idx);
+        auto typeArg = superObj->TypeArguments().at(idx);
+        typeArg->Substitute(Relation(), substitution);
+        if (typeParam->IsETSTypeParameter()) {
+            ETSChecker::EmplaceSubstituted(substitution, typeParam->AsETSTypeParameter(), typeArg);
+        }
+    }
+    for (int idx = 0; idx < (int)baseType->TypeArguments().size(); idx++) {
+        auto typeParam = baseType->TypeArguments().at(idx);
+        auto typeArg = superObj->TypeArguments().at(idx);
+        if (typeParam->IsETSTypeParameter() && typeArg->IsETSObjectType()) {
+            ReValidateRecursiveTypeParams(typeArg->AsETSObjectType(), pos);
+            if (typeArg->AsETSObjectType()->IsRecursive()) {
+                ReValidateRecursiveTypeParam(typeParam->AsETSTypeParameter(), typeArg->AsETSObjectType(), pos,
+                                             substitution);
+                typeArg->AsETSObjectType()->RemoveResursive();
+            }
+        }
+    }
+}
+void ETSChecker::ReValidateRecursiveTypeParam(ETSTypeParameter *typeParam, ETSObjectType *typeArg,
+                                              const lexer::SourcePosition &pos, checker::Substitution *substitution)
+{
+    if (typeParam->GetConstraintType() == nullptr) {
+        return;
+    }
+    auto *const constraint = typeParam->GetConstraintType()->Substitute(Relation(), substitution);
+    if (!ValidateTypeArg(constraint, typeArg) && !Relation()->NoThrowGenericTypeAlias()) {
+        ThrowTypeError({"Type '", typeArg, "' is not assignable to constraint type '", constraint, "'."}, pos);
+    }
+}
+
+bool ETSChecker::ValidateTypeArg(Type *constraintType, Type *typeArg)
+{
+    if (typeArg->IsWildcardType()) {
+        return true;
+    }
+
+    if (typeArg->IsETSVoidType() && constraintType->IsETSUnionType()) {
+        for (auto const it : constraintType->AsETSUnionType()->ConstituentTypes()) {
+            if (it->IsETSUndefinedType() || it->IsETSVoidType()) {
+                return true;
+            }
+        }
+    }
+
+    return Relation()->IsAssignableTo(typeArg, constraintType);
 }
 }  // namespace ark::es2panda::checker
