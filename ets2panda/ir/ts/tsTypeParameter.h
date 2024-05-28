@@ -37,6 +37,8 @@ public:
         ASSERT(flags == ModifierFlags::NONE || flags == ModifierFlags::IN || flags == ModifierFlags::OUT);
     }
 
+    explicit TSTypeParameter(TSTypeParameter const &other, ArenaAllocator *const allocator);
+
     const Identifier *Name() const
     {
         return name_;
@@ -61,6 +63,8 @@ public:
     {
         return defaultType_;
     }
+
+    [[nodiscard]] TSTypeParameter *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
     void TransformChildren(const NodeTransformer &cb, std::string_view transformationName) override;
     void Iterate(const NodeTraverser &cb) const override;

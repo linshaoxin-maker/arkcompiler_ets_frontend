@@ -31,6 +31,8 @@ public:
     {
     }
 
+    FunctionSignature(FunctionSignature const &other, ArenaAllocator *const allocator);
+
     const FunctionParams &Params() const
     {
         return params_;
@@ -69,6 +71,8 @@ public:
     void Iterate(const NodeTraverser &cb) const;
 
     void TransformChildren(const NodeTransformer &cb, std::string_view transformationName);
+
+    [[nodiscard]] FunctionSignature *Clone(ArenaAllocator *allocator) const;
 
 private:
     TSTypeParameterDeclaration *typeParams_;

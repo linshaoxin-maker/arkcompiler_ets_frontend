@@ -24,6 +24,14 @@
 #include "ir/expressions/identifier.h"
 
 namespace ark::es2panda::ir {
+TSTypeParameter::TSTypeParameter(TSTypeParameter const &other, ArenaAllocator *allocator)
+    : Expression(static_cast<Expression const &>(other))
+{
+    name_ = other.name_ != nullptr ? other.name_->Clone(allocator, this)->AsIdentifier() : nullptr;
+    constraint_ = other.constraint_ != nullptr ? other.constraint_->Clone(allocator, this)->AsTypeNode() : nullptr;
+    defaultType_ = other.defaultType_ != nullptr ? other.defaultType_->Clone(allocator, this)->AsTypeNode() : nullptr;
+}
+
 void TSTypeParameter::TransformChildren(const NodeTransformer &cb, std::string_view transformationName)
 {
     if (auto *transformedNode = cb(name_); name_ != transformedNode) {
@@ -93,5 +101,19 @@ checker::Type *TSTypeParameter::Check([[maybe_unused]] checker::TSChecker *check
 checker::Type *TSTypeParameter::Check([[maybe_unused]] checker::ETSChecker *checker)
 {
     return checker->GetAnalyzer()->Check(this);
+}
+
+TSTypeParameter *TSTypeParameter::Clone(ArenaAllocator *allocator, AstNode *parent)
+{
+    if (auto *const clone = allocator->New<TSTypeParameter>(*this, allocator); clone != nullptr) {
+        if (parent != nullptr) {
+            clone->SetParent(parent);
+        }
+
+        clone->SetRange(Range());
+        return clone;
+    }
+
+    throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
 }
 }  // namespace ark::es2panda::ir

@@ -31,6 +31,8 @@ public:
     {
     }
 
+    explicit TSTypeParameterDeclaration(TSTypeParameterDeclaration const &other, ArenaAllocator *allocator);
+
     [[nodiscard]] bool IsScopeBearer() const noexcept override
     {
         return true;
@@ -64,6 +66,8 @@ public:
     {
         return requiredParams_;
     }
+
+    [[nodiscard]] TSTypeParameterDeclaration *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
     void TransformChildren(const NodeTransformer &cb, std::string_view transformationName) override;
     void Iterate(const NodeTraverser &cb) const override;

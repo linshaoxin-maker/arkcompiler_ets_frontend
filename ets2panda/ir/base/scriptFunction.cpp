@@ -183,4 +183,25 @@ checker::Type *ScriptFunction::Check(checker::ETSChecker *checker)
 {
     return checker->GetAnalyzer()->Check(this);
 }
+
+ScriptFunction *ScriptFunction::Clone(ArenaAllocator *const allocator, AstNode *const parent)
+{
+    auto signature = this->irSignature_.Clone(allocator);
+
+    if (auto *const clone = allocator->New<ScriptFunction>(
+            allocator, ir::ScriptFunction::ScriptFunctionData {body_, std::move(*signature), funcFlags_, Modifiers(),
+                                                               declare_, lang_});
+        clone != nullptr) {
+        if (parent != nullptr) {
+            clone->SetParent(parent);
+        }
+        clone->body_->SetParent(clone);
+
+        clone->SetRange(Range());
+        return clone;
+    }
+
+    throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
+}
+
 }  // namespace ark::es2panda::ir
