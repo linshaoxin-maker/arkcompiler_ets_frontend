@@ -20,7 +20,8 @@
             "components": [
                 "json",
                 "runtime_core",
-                "zlib"
+                "zlib",
+                "ets_frontend"
             ],
             "third_party": [
                 "bounds_checking_function",
