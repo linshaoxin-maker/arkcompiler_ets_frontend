@@ -80,9 +80,8 @@ static ir::AstNode *LowerExpression(public_lib::Context *ctx, ir::MemberExpressi
 {
     ASSERT(expr->IsOptional());
     expr->ClearOptional();
-    return LowerOptionalExpr<ir::MemberExpression>([](auto *e) { return e->Object(); }, 
+    return LowerOptionalExpr<ir::MemberExpression>([](auto *e) { return e->Object(); },
                                                    [](auto *e, auto *obj) { e->SetObject(obj); }, ctx, expr, chain);
-
 }
 
 static ir::AstNode *LowerExpression(public_lib::Context *ctx, ir::CallExpression *const expr,
