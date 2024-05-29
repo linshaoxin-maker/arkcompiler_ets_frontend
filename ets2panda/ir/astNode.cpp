@@ -148,7 +148,6 @@ std::string AstNode::DumpEtsSrc() const
 
 void AstNode::SetOriginalNode(AstNode *originalNode)
 {
-    ASSERT(originalNode_ == nullptr);
     originalNode_ = originalNode;
 }
 
