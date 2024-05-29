@@ -154,7 +154,7 @@ ir::Statement *RecordLowering::CreateStatement(const std::string &src, ir::Expre
     return nullptr;
 }
 
-bool CheckUpdateExpression(std::string className) 
+bool CheckUpdateExpression(std::string className)
 {
     if (className == "escompat.Record" || className == "escompat.Map") {
         return false;
@@ -189,7 +189,7 @@ ir::Expression *RecordLowering::UpdateObjectExpression(ir::ObjectExpression *exp
 
     // check Duplicate key
     CheckDuplicateKey(expr, ctx);
-    
+
     auto *const scope = NearestScope(expr);
     checker::SavedCheckerContext scc {checker, checker::CheckerStatus::IGNORE_VISIBILITY};
     auto expressionCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(checker->VarBinder(), scope);
@@ -229,12 +229,12 @@ ir::Expression *RecordLowering::CreateBlockExpression(ir::ObjectExpression *expr
     auto &properties = expr->Properties();
     // currently we only have Map and Record in this if branch
     if (ss.str() == "escompat.Map") {
-        const std::string createMapSrc = "let @@I1 = new Map<" + 
-        TypeToString(keyType) + "," + TypeToString(valueType) + ">()";
+        const std::string createMapSrc =
+            "let @@I1 = new Map<" + TypeToString(keyType) + "," + TypeToString(valueType) + ">()";
         statements.push_back(CreateStatement(createMapSrc, ident, nullptr, nullptr, ctx));
     } else {
-        const std::string createRecordSrc = "let @@I1 = new Record<" + 
-        TypeToString(keyType) + "," + TypeToString(valueType) + ">()";
+        const std::string createRecordSrc =
+            "let @@I1 = new Record<" + TypeToString(keyType) + "," + TypeToString(valueType) + ">()";
         statements.push_back(CreateStatement(createRecordSrc, ident, nullptr, nullptr, ctx));
     }
 
@@ -244,8 +244,7 @@ ir::Expression *RecordLowering::CreateBlockExpression(ir::ObjectExpression *expr
         ASSERT(property->IsProperty());
         auto p = property->AsProperty();
         statements.push_back(
-            CreateStatement("@@I1.set(@@E2, @@E3)", 
-            ident->Clone(ctx->allocator, nullptr), p->Key(), p->Value(), ctx));
+            CreateStatement("@@I1.set(@@E2, @@E3)", ident->Clone(ctx->allocator, nullptr), p->Key(), p->Value(), ctx));
     }
     statements.push_back(CreateStatement("@@I1", ident->Clone(ctx->allocator, nullptr), nullptr, nullptr, ctx));
 

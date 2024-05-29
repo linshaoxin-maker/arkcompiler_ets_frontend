@@ -80,13 +80,9 @@ static ir::AstNode *LowerExpression(public_lib::Context *ctx, ir::MemberExpressi
 {
     ASSERT(expr->IsOptional());
     expr->ClearOptional();
-    auto sourceExpr =  LowerOptionalExpr<ir::MemberExpression>([](auto *e) { return e->Object(); },
+    return LowerOptionalExpr<ir::MemberExpression>([](auto *e) { return e->Object(); }, 
                                                    [](auto *e, auto *obj) { e->SetObject(obj); }, ctx, expr, chain);
-    if (expr->Kind() == ir::MemberExpressionKind::ELEMENT_ACCESS) {
-       auto const & stmts = sourceExpr->AsBlockExpression()->Statements();
-       stmts[1]->AsExpressionStatement()->GetExpression()->AsConditionalExpression()->SetChaingOpWithEle(true);
-    }
-    return sourceExpr;
+
 }
 
 static ir::AstNode *LowerExpression(public_lib::Context *ctx, ir::CallExpression *const expr,

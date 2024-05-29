@@ -1108,10 +1108,6 @@ checker::Type *ETSAnalyzer::Check(ir::ConditionalExpression *expr) const
         }
     }
 
-    if (expr->IsChainingOpWithEle() &&  
-        !consequentSmartCasts[0].first->TsType()->PossiblyETSNullish()) {
-        checker->ThrowTypeError("type of reference expression must be a nullish type", expr->Alternate()->Start());
-    }
     return expr->TsType();
 }
 
@@ -1280,7 +1276,7 @@ checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
                                 expr->Start());
     }
 
-    if (expr->PreferredType()->ToAssemblerName().str() == "escompat.Record" || 
+    if (expr->PreferredType()->ToAssemblerName().str() == "escompat.Record" ||
         expr->PreferredType()->ToAssemblerName().str() == "escompat.Map") {
         // 7.6.3 Object Literal of Record Type
         // Record is an alias to Map

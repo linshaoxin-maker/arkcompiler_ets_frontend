@@ -105,7 +105,7 @@ public:
         v->Accept(this);
     }
 
-    [[nodiscard]] bool IsChainingOpWithEle() const noexcept 
+    [[nodiscard]] bool IsChainingOpWithEle() const noexcept
     {
         return chaingingOpWithEle;
     }
@@ -114,13 +114,12 @@ public:
     {
         this->chaingingOpWithEle = flag;
     }
-    
+
 private:
     Expression *test_;
     Expression *consequent_;
     Expression *alternate_;
     bool chaingingOpWithEle = false;
-
 };
 }  // namespace ark::es2panda::ir
 
