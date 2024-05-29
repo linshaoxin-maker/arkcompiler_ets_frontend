@@ -608,6 +608,25 @@ checker::Type *ETSChecker::FixOptionalVariableType(varbinder::Variable *const bi
     return bindingVar->TsType();
 }
 
+checker::Type *PreferredObjectTypeFromAnnotation(checker::Type *annotationType)
+{
+    if (!annotationType->IsETSUnionType()) {
+        return annotationType;
+    }
+
+    checker::Type *resolvedType = nullptr;
+    for (auto constituentType : annotationType->AsETSUnionType()->ConstituentTypes()) {
+        if (constituentType->IsETSObjectType()) {
+            if (resolvedType != nullptr) {
+                return nullptr;
+            }
+            resolvedType = constituentType;
+        }
+    }
+
+    return resolvedType;
+}
+
 checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *typeAnnotation,
                                                     ir::Expression *init, ir::ModifierFlags const flags)
 {
@@ -658,7 +677,7 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
     }
 
     if (init->IsObjectExpression()) {
-        init->AsObjectExpression()->SetPreferredType(annotationType);
+        init->AsObjectExpression()->SetPreferredType(PreferredObjectTypeFromAnnotation(annotationType));
     }
 
     InferAliasLambdaType(typeAnnotation, init);
