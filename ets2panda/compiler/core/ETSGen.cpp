@@ -38,10 +38,8 @@
 #include "checker/types/typeFlag.h"
 #include "checker/checker.h"
 #include "checker/ETSchecker.h"
-#include "checker/ets/boxingConverter.h"
 #include "checker/types/ets/etsObjectType.h"
 #include "checker/types/ets/etsAsyncFuncReturnType.h"
-#include "checker/types/ets/types.h"
 #include "parser/program/program.h"
 #include "checker/types/globalTypesHolder.h"
 #include "public/public.h"
@@ -288,7 +286,7 @@ void ETSGen::LoadDynamicNamespaceVariable(const ir::AstNode *node, varbinder::Va
     LoadStaticProperty(node, var->TsType(), FormDynamicModulePropReference(var));
 }
 
-void ETSGen::LoadVar(const ir::AstNode *node, varbinder::Variable const *const var)
+void ETSGen::LoadVar(const ir::Identifier *node, varbinder::Variable const *const var)
 {
     if (VarBinder()->IsDynamicModuleVariable(var)) {
         LoadDynamicModuleVariable(node, var);
@@ -322,7 +320,7 @@ void ETSGen::LoadVar(const ir::AstNode *node, varbinder::Variable const *const v
         }
         case ReferenceKind::LOCAL: {
             LoadAccumulator(node, local->Vreg());
-            SetAccumulatorType(TypeForVar(var));
+            SetAccumulatorType(GetVRegType(local->Vreg()));
             break;
         }
         default: {
@@ -335,7 +333,7 @@ void ETSGen::LoadVar(const ir::AstNode *node, varbinder::Variable const *const v
     }
 }
 
-void ETSGen::StoreVar(const ir::AstNode *node, const varbinder::ConstScopeFindResult &result)
+void ETSGen::StoreVar(const ir::Identifier *node, const varbinder::ConstScopeFindResult &result)
 {
     auto *local = result.variable->AsLocalVariable();
     ApplyConversion(node, local->TsType());
@@ -359,7 +357,7 @@ void ETSGen::StoreVar(const ir::AstNode *node, const varbinder::ConstScopeFindRe
                 EmitLocalBoxSet(node, local);
             } else {
                 StoreAccumulator(node, local->Vreg());
-                SetVRegType(local->Vreg(), local->TsType());
+                SetVRegType(local->Vreg(), GetAccumulatorType());
             }
             break;
         }
