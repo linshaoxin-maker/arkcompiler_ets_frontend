@@ -47,7 +47,7 @@ void EmitFileQueue::Schedule()
     if (mergeAbc_) {
         // generate merged abc
         auto emitMergedAbcJob = new EmitMergedAbcJob(options_->CompilerOutput(),
-            options_->CompilerOptions().transformLib, progsInfo_, targetApi);
+            options_->CompilerOptions().transformLib, progsInfo_, targetApi, statp_);
         // Disable generating cached files when cross-program optimization is required, to prevent cached files from
         // not being invalidated when their dependencies are changed
         if (!options_->CompilerOptions().requireGlobalOptimization) {
@@ -97,7 +97,7 @@ void EmitMergedAbcJob::Run()
     }
 
     bool success = panda::pandasm::AsmEmitter::EmitPrograms(
-        panda::os::file::File::GetExtendedFilePath(outputFileName_), progs, true, targetApiVersion_);
+        panda::os::file::File::GetExtendedFilePath(outputFileName_), progs, true, targetApiVersion_, statp_);
 
     for (auto *dependant : dependants_) {
         dependant->Signal();
