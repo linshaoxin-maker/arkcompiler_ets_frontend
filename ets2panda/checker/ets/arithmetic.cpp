@@ -392,6 +392,38 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorStrictEqual(ir::Expres
     return {tsType, GlobalETSObjectType()};
 }
 
+struct TypeParams {
+    checker::Type *leftType;
+    checker::Type *rightType;
+    Type *unboxedL;
+    Type *unboxedR;
+};
+
+static std::tuple<Type *, Type *> CheckBinaryOperatorEqualHelper(ETSChecker *checker, ir::Expression *left,
+                                                                 ir::Expression *right, const TypeParams &typeParams)
+{
+    checker::Type *const leftType = typeParams.leftType;
+    checker::Type *const rightType = typeParams.rightType;
+    Type *unboxedL = typeParams.unboxedL;
+    Type *unboxedR = typeParams.unboxedR;
+    if (rightType->IsETSNullType()) {
+        if (unboxedL != nullptr && unboxedL->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+            checker->FlagExpressionWithUnboxing(leftType, unboxedL, left);
+            checker->FlagExpressionWithUnboxing(rightType, unboxedR, right);
+            return {checker->GlobalETSBooleanType(), checker->CreateETSUnionType({leftType, rightType})};
+        }
+
+        if (left->IsArrowFunctionExpression()) {
+            auto *annotationType =
+                left->AsArrowFunctionExpression()->CreateTypeAnnotation(checker)->GetType(checker)->AsETSObjectType();
+            checker->AsETSChecker()->CreateLambdaObjectForLambdaReference(left->AsArrowFunctionExpression(),
+                                                                          annotationType);
+            return {checker->GlobalETSBooleanType(), annotationType};
+        }
+    }
+    return {nullptr, nullptr};
+}
+
 std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorEqual(
     ir::Expression *left, ir::Expression *right, lexer::TokenType operationType, lexer::SourcePosition pos,
     checker::Type *const leftType, checker::Type *const rightType, Type *unboxedL, Type *unboxedR)
@@ -439,7 +471,9 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorEqual(
         tsType = GlobalETSBooleanType();
         return {tsType, tsType};
     }
-    return {nullptr, nullptr};
+
+    TypeParams typeParams {leftType, rightType, unboxedL, unboxedR};
+    return CheckBinaryOperatorEqualHelper(this, left, right, typeParams);
 }
 
 std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorEqualDynamic(ir::Expression *left, ir::Expression *right,
@@ -582,13 +616,6 @@ struct BinaryOperatorParams {
     lexer::TokenType operationType;
     lexer::SourcePosition pos;
     bool isEqualOp;
-};
-
-struct TypeParams {
-    checker::Type *leftType;
-    checker::Type *rightType;
-    Type *unboxedL;
-    Type *unboxedR;
 };
 
 static std::tuple<Type *, Type *> CheckBinaryOperatorHelper(ETSChecker *checker,

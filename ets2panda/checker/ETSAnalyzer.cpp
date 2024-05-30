@@ -1835,7 +1835,17 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::EmptyStatement *st) const
 checker::Type *ETSAnalyzer::Check(ir::ExpressionStatement *st) const
 {
     ETSChecker *checker = GetETSChecker();
-    return st->GetExpression()->Check(checker);
+    auto *expressionType = st->GetExpression()->Check(checker);
+    auto *expression = st->GetExpression();
+
+    if (expression->IsArrowFunctionExpression()) {
+        ir::ArrowFunctionExpression *arrowFunc = expression->AsArrowFunctionExpression();
+        ir::TypeNode *tmpAnnotation = arrowFunc->CreateTypeAnnotation(checker);
+        auto *annotationType = tmpAnnotation->GetType(checker)->AsETSObjectType();
+        checker->AsETSChecker()->CreateLambdaObjectForLambdaReference(arrowFunc, annotationType);
+    }
+
+    return expressionType;
 }
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ForInStatement *st) const
