@@ -3850,5 +3850,4 @@ void ParserImpl::RecursiveDepthException()
     lexer::SourceLocation loc = index.GetLocation(pos);
     throw Error(ErrorType::GENERIC, "Too many nested expressions/statemnets/declarations", loc.line, loc.col);
 }
-
 }  // namespace panda::es2panda::parser
