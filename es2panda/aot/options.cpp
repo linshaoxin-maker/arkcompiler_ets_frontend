@@ -27,6 +27,7 @@
 #include <dirent.h>
 #endif
 
+#include "bytecode_optimizer/bytecodeopt_options.h"
 #include "compiler_options.h"
 #include "os/file.h"
 
@@ -269,11 +270,6 @@ void Options::ParseCompileContextInfo(const std::string compileContextInfoPath)
     compilerOptions_.compileContextInfo.pkgContextInfo = pkgContextMap;
 }
 
-bool Options::NeedUpdatePkgVersionInRecordName()
-{
-    return compilerOptions_.enableAbcInput && !compilerOptions_.compileContextInfo.pkgContextInfo.empty();
-}
-
 // Collect dependencies based on the compile entries and remove redundant content from the abc file as input.
 bool Options::NeedRemoveRedundantRecord()
 {
@@ -337,6 +333,8 @@ bool Options::Parse(int argc, const char **argv)
 
     // optimizer
     panda::PandArg<bool> opBranchElimination("branch-elimination", false, "Enable branch elimination optimization");
+    panda::PandArg<bool> opOptTryCatchFunc("opt-try-catch-func", true, "Enable optimizations for functions with "\
+        "try-catch blocks");
 
     // patchfix && hotreload
     panda::PandArg<std::string> opDumpSymbolTable("dump-symbol-table", "", "dump symbol table to file");
@@ -404,6 +402,7 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&opMergeAbc);
     argparser_->Add(&opuseDefineSemantic);
     argparser_->Add(&opBranchElimination);
+    argparser_->Add(&opOptTryCatchFunc);
 
     argparser_->Add(&opDumpSymbolTable);
     argparser_->Add(&opInputSymbolTable);
@@ -645,6 +644,7 @@ bool Options::Parse(int argc, const char **argv)
                                                  compilerOptions_.branchElimination &&
                                                  compilerOptions_.mergeAbc;
     panda::compiler::options.SetCompilerBranchElimination(compilerOptions_.branchElimination);
+    panda::bytecodeopt::options.SetSkipMethodsWithEh(!opOptTryCatchFunc.GetValue());
 
     return true;
 }
