@@ -80,6 +80,12 @@ checker::Type *ETSUnionType::GetType(checker::ETSChecker *checker)
         types.push_back(it->GetType(checker));
     }
 
+    for (auto *it : types) {
+        if (it->HasTypeFlag(checker::TypeFlag::VOID | checker::TypeFlag::ETS_VOID)) {
+            checker->ThrowTypeError("Using void type as a type annotation is prohibited", Start());
+        }
+    }
+
     checker->Relation()->SetNode(this);
     SetTsType(checker->CreateETSUnionType(std::move(types)));
     checker->Relation()->SetNode(nullptr);

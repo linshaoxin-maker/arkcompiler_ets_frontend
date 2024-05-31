@@ -13,23 +13,6 @@
  * limitations under the License.
  */
 
-function globalFunction(exec: (len: number) =>void){
-    let length: number = 0;
-    exec(length);
-}
-
-class NativeModule {
-    MethodeOfClass(n: number):void {}
-}
-
-function nativeModule(): NativeModule {
-    return new NativeModule();
-}
-
-class NativeString {
-    static MethodeOfStatic() {
-        globalFunction((len: number):void => {
-            nativeModule().MethodeOfClass(len);
-        });
-    }
+function main(): void {
+    let x: void
 }
