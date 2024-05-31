@@ -158,7 +158,6 @@ static int Run(int argc, const char **argv)
     return CompileFromSource(compiler, input, options.get());
 }
 }  // namespace ark::es2panda::aot
-
 int main(int argc, const char **argv)
 {
     ark::es2panda::aot::MemManager mm;

@@ -303,8 +303,11 @@ public:
     void HandleLambdaTypeInfer(ir::AstNode *typeAnn, ir::ScriptFunction *const lambda);
     bool TypeInference(Signature *signature, const ArenaVector<ir::Expression *> &arguments,
                        TypeRelationFlag flags = TypeRelationFlag::NONE);
-    bool CheckLambdaAssignable(ir::Expression *param, ir::ScriptFunction *lambda);
-    bool CheckLambdaAssignableUnion(ir::AstNode *typeAnn, ir::ScriptFunction *lambda);
+    bool CheckLambdaAssignable(ir::Expression *param, ir::Expression *argument);
+    bool CheckLambdaAssignableUnion(ir::AstNode *typeAnn, size_t paramSize);
+    bool CheckLambdaAssignableETSFunction(ir::AstNode *type, size_t paramSize);
+    bool CheckETSFunctionAssignableUnion(ir::AstNode *typeAnn, ir::AstNode *node);
+    bool CheckOptionalLambdaAssignableUnion(ir::AstNode *typeAnn, ir::Expression *expr);
     bool IsCompatibleTypeArgument(ETSTypeParameter *typeParam, Type *typeArgument, const Substitution *substitution);
     Substitution *NewSubstitution()
     {

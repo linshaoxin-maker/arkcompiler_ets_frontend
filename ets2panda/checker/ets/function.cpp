@@ -222,17 +222,17 @@ Signature *ETSChecker::ValidateParameterlessConstructor(Signature *signature, co
 
 bool ETSChecker::CheckOptionalLambdaFunction(ir::Expression *argument, Signature *substitutedSig, std::size_t index)
 {
-    if (argument->IsArrowFunctionExpression()) {
-        auto *const arrowFuncExpr = argument->AsArrowFunctionExpression();
-
-        if (ir::ScriptFunction *const lambda = arrowFuncExpr->Function();
-            CheckLambdaAssignable(substitutedSig->Function()->Params()[index], lambda)) {
-            if (arrowFuncExpr->TsType() != nullptr) {
-                arrowFuncExpr->Check(this);
-                CreateLambdaObjectForLambdaReference(arrowFuncExpr, arrowFuncExpr->Function()->Signature()->Owner());
-                return true;
-            }
+    if (argument->IsArrowFunctionExpression() || argument->IsIdentifier()) {
+        if (!CheckLambdaAssignable(substitutedSig->Function()->Params()[index], argument)) {
+            return false;
         }
+        if (argument->IsArrowFunctionExpression() && argument->AsArrowFunctionExpression()->TsType() != nullptr) {
+            argument->AsArrowFunctionExpression()->Check(this);
+            CreateLambdaObjectForLambdaReference(
+                argument->AsArrowFunctionExpression(),
+                argument->AsArrowFunctionExpression()->Function()->Signature()->Owner());
+        }
+        return true;
     }
 
     return false;
@@ -274,9 +274,7 @@ bool ETSChecker::ValidateSignatureRequiredParams(Signature *substitutedSig,
 
         if (argTypeInferenceRequired[index]) {
             ASSERT(argument->IsArrowFunctionExpression());
-            auto *const arrowFuncExpr = argument->AsArrowFunctionExpression();
-            ir::ScriptFunction *const lambda = arrowFuncExpr->Function();
-            if (CheckLambdaAssignable(substitutedSig->Function()->Params()[index], lambda)) {
+            if (CheckLambdaAssignable(substitutedSig->Function()->Params()[index], argument)) {
                 continue;
             }
             return false;
@@ -554,7 +552,6 @@ Signature *ETSChecker::GetMostSpecificSignature(ArenaVector<Signature *> &compat
 
     return mostSpecificSignature;
 }
-
 Signature *ETSChecker::ValidateSignatures(ArenaVector<Signature *> &signatures,
                                           const ir::TSTypeParameterInstantiation *typeArguments,
                                           const ArenaVector<ir::Expression *> &arguments,
@@ -740,7 +737,6 @@ Signature *ETSChecker::ResolveCallExpression(ArenaVector<Signature *> &signature
     ASSERT(sig);
     return sig;
 }
-
 Signature *ETSChecker::ResolveCallExpressionAndTrailingLambda(ArenaVector<Signature *> &signatures,
                                                               ir::CallExpression *callExpr,
                                                               const lexer::SourcePosition &pos,

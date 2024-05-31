@@ -2031,17 +2031,43 @@ std::vector<bool> ETSChecker::FindTypeInferenceArguments(const ArenaVector<ir::E
     return argTypeInferenceRequired;
 }
 
-bool ETSChecker::CheckLambdaAssignableUnion(ir::AstNode *typeAnn, ir::ScriptFunction *lambda)
+bool ETSChecker::CheckLambdaAssignableETSFunction(ir::AstNode *type, size_t paramSize)
 {
-    for (auto *type : typeAnn->AsETSUnionType()->Types()) {
-        if (type->IsETSFunctionType()) {
-            return lambda->Params().size() == type->AsETSFunctionType()->Params().size();
-        }
+    if (type->IsETSFunctionType()) {
+        return paramSize == type->AsETSFunctionType()->Params().size();
     }
-
     return false;
 }
 
+bool ETSChecker::CheckLambdaAssignableUnion(ir::AstNode *typeAnn, size_t paramSize)
+{
+    for (auto *type : typeAnn->AsETSUnionType()->Types()) {
+        if (type->IsETSFunctionType()) {
+            return CheckLambdaAssignableETSFunction(type, paramSize);
+        }
+    }
+    return false;
+}
+
+bool ETSChecker::CheckOptionalLambdaAssignableUnion(ir::AstNode *typeAnn, ir::Expression *expr)
+{
+    bool ret = false;
+    if (expr->IsArrowFunctionExpression()) {
+        return CheckLambdaAssignableUnion(typeAnn, expr->AsArrowFunctionExpression()->Function()->Params().size());
+    }
+    if (expr->IsIdentifier()) {
+        ir::AstNode *node = expr->AsIdentifier()->TypeAnnotation();
+        if (node != nullptr && node->IsETSUnionType()) {
+            for (auto *type : node->AsETSUnionType()->Types()) {
+                if (type->IsETSFunctionType()) {
+                    ret |= CheckLambdaAssignableUnion(typeAnn, type->AsETSFunctionType()->Params().size());
+                }
+            }
+            return ret;
+        }
+    }
+    return false;
+}
 void ETSChecker::InferTypesForLambda(ir::ScriptFunction *lambda, ir::ETSFunctionType *calleeType)
 {
     for (size_t i = 0; i < calleeType->Params().size(); ++i) {

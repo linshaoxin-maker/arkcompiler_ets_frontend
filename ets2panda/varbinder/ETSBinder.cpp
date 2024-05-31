@@ -899,7 +899,6 @@ void ETSBinder::InitImplicitThisParam()
 {
     thisParam_ = Allocator()->New<ir::Identifier>("this", Allocator());
 }
-
 void ETSBinder::BuildProgram()
 {
     for (auto &[_, extPrograms] : Program()->ExternalSources()) {

@@ -121,7 +121,6 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::MetaProperty *expr) const
 {
     UNREACHABLE();
 }
-
 checker::Type *ETSAnalyzer::Check(ir::MethodDefinition *node) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -1007,7 +1006,6 @@ checker::Type *ETSAnalyzer::GetReturnType(ir::CallExpression *expr, checker::Typ
 
     return returnType;
 }
-
 checker::Type *ETSAnalyzer::Check(ir::CallExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -2003,7 +2001,6 @@ checker::Type *ETSAnalyzer::Check(ir::LabelledStatement *st) const
     st->body_->Check(checker);
     return nullptr;
 }
-
 checker::Type *ETSAnalyzer::GetFunctionReturnType(ir::ReturnStatement *st, ir::ScriptFunction *containingFunc) const
 {
     ASSERT(containingFunc->ReturnTypeAnnotation() != nullptr || containingFunc->Signature()->ReturnType() != nullptr);
