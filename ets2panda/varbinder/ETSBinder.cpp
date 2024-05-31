@@ -682,7 +682,10 @@ ArenaVector<parser::Program *> ETSBinder::GetExternalProgram(const util::StringV
 {
     const auto &extRecords = globalRecordTable_.Program()->ExternalSources();
 
-    auto [name, _] = GetModuleInfo(sourceName);
+    auto [name, isPackage] = GetModuleInfo(sourceName);
+    if (ark::os::file::File::IsDirectory(sourceName.Mutf8()) && !isPackage) {
+        ThrowError(importPath->Start(), "Cannot find package in directory: " + importPath->Str().Mutf8());
+    }
     auto res = extRecords.find(name);
     if (res == extRecords.end()) {
         ThrowError(importPath->Start(), "Cannot find import: " + importPath->Str().Mutf8());

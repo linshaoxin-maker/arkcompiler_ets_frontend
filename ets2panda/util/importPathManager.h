@@ -61,8 +61,9 @@ public:
     StringView ResolvePath(const StringView &currentModulePath, const StringView &importPath) const;
     void AddToParseList(const StringView &path, bool isDefaultImport);
     const ArenaVector<ParseInfo> &ParseList();
+    void InsertModuleInfo(const util::StringView &path, const util::ImportPathManager::ModuleInfo &moduleInfo);
     ImportData GetImportData(const util::StringView &path, const ScriptExtension &extension) const;
-    void InsertModuleInfo(const util::StringView &path, const ModuleInfo &moduleInfo);
+    void UpdateModuleInfo(const util::StringView &path, const ModuleInfo &moduleInfo);
     const ArenaMap<StringView, ModuleInfo> &ModuleList() const;
     void MarkAsParsed(const StringView &path);
 
