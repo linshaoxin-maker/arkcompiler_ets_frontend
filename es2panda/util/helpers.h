@@ -17,6 +17,7 @@
 #define ES2PANDA_UTIL_HELPERS_H
 
 #include <cmath>
+#include <mutex>
 
 #include <mem/arena_allocator.h>
 #include <os/file.h>
@@ -185,6 +186,8 @@ public:
     static const uint64_t FNV_OFFSET = 14695981039346656037U;
     static const int32_t DEFAULT_TARGET_API_VERSION = 12;
     static const int32_t ABC_TO_PROGRAM_MIN_SUPPORTED_API_VERSION = 12;
+    static std::mutex BYTECODE_ANALYSIS_RESULTS_MUTEX;
+    static std::mutex BYTECODE_MAPS_MUTEX;
 private:
     static bool SetFuncFlagsForDirectives(const ir::StringLiteral *strLit, ir::ScriptFunction *func,
                                           const lexer::LineIndex &lineIndex);
