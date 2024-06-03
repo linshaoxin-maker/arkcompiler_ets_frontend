@@ -195,49 +195,17 @@ bool ParserImpl::IsTsDeclarationStatement() const
     return isTsDeclarationStatement;
 }
 
-ir::Statement *ParserImpl::ParseStatement(StatementParsingFlags flags)
+bool ParserImpl::IsTsModuleDeclaration() const
 {
-    bool isDeclare = false;
-    auto decorators = ParseDecorators();
-
-    if (Extension() == ScriptExtension::TS) {
-        if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_DECLARE) {
-            isDeclare = CheckDeclare();
-        }
-
-        if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_ABSTRACT) {
-            const auto startPos = lexer_->Save();
-            lexer_->NextToken();  // eat abstract keyword
-
-            if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_DECLARE) {
-                if (isDeclare) {
-                    ThrowSyntaxError("'declare' modifier already seen.");
-                }
-                lexer_->NextToken();
-                isDeclare = true;
-            }
-
-            if (lexer_->GetToken().Type() != lexer::TokenType::KEYW_CLASS) {
-                lexer_->Rewind(startPos);
-            } else {
-                return ParseClassStatement(flags, isDeclare, std::move(decorators), true);
-            }
-        }
-
-        if ((lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_GLOBAL ||
+    return (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_GLOBAL ||
              lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_MODULE ||
              lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_NAMESPACE) &&
-             IsTsDeclarationStatement()) {
-            auto savedStatus = context_.Status();
-            if (isDeclare) {
-                context_.Status() |= ParserStatus::IN_AMBIENT_CONTEXT;
-            }
-            ir::TSModuleDeclaration *decl = ParseTsModuleDeclaration(isDeclare);
-            context_.Status() = savedStatus;
-            return decl;
-        }
-    }
+             IsTsDeclarationStatement();
+}
 
+ir::Statement *ParserImpl::ParseBasedOnTokenType(StatementParsingFlags flags,
+                                                 bool isDeclare, ArenaVector<ir::Decorator *> &&decorators)
+{
     switch (lexer_->GetToken().Type()) {
         case lexer::TokenType::PUNCTUATOR_LEFT_BRACE: {
             return ParseBlockStatement();
@@ -303,11 +271,52 @@ ir::Statement *ParserImpl::ParseStatement(StatementParsingFlags flags)
             return ParsePotentialExpressionStatement(flags, isDeclare);
         }
         default: {
-            break;
+            return ParseExpressionStatement(flags);
+        }
+    }
+}
+
+ir::Statement *ParserImpl::ParseStatement(StatementParsingFlags flags)
+{
+    bool isDeclare = false;
+    auto decorators = ParseDecorators();
+
+    if (Extension() == ScriptExtension::TS) {
+        if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_DECLARE) {
+            isDeclare = CheckDeclare();
+        }
+
+        if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_ABSTRACT) {
+            const auto startPos = lexer_->Save();
+            lexer_->NextToken();  // eat abstract keyword
+
+            if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_DECLARE) {
+                if (isDeclare) {
+                    ThrowSyntaxError("'declare' modifier already seen.");
+                }
+                lexer_->NextToken();
+                isDeclare = true;
+            }
+
+            if (lexer_->GetToken().Type() != lexer::TokenType::KEYW_CLASS) {
+                lexer_->Rewind(startPos);
+            } else {
+                return ParseClassStatement(flags, isDeclare, std::move(decorators), true);
+            }
+        }
+
+        if (IsTsModuleDeclaration()) {
+            auto savedStatus = context_.Status();
+            if (isDeclare) {
+                context_.Status() |= ParserStatus::IN_AMBIENT_CONTEXT;
+            }
+            ir::TSModuleDeclaration *decl = ParseTsModuleDeclaration(isDeclare);
+            context_.Status() = savedStatus;
+            return decl;
         }
     }
 
-    return ParseExpressionStatement(flags);
+    return ParseBasedOnTokenType(flags, isDeclare, std::move(decorators));
 }
 
 ir::TSModuleDeclaration *ParserImpl::ParseTsModuleDeclaration(bool isDeclare, bool isExport)
@@ -3078,14 +3087,8 @@ ir::AstNode *ParserImpl::ParseImportSpecifiers(ArenaVector<ir::AstNode *> *speci
     return nullptr;
 }
 
-ir::Statement *ParserImpl::ParseImportDeclaration(StatementParsingFlags flags)
+void ParserImpl::CheckImportStatementValidity(StatementParsingFlags flags)
 {
-    char32_t nextChar = lexer_->Lookahead();
-    // dynamic import || import.meta
-    if (nextChar == LEX_CHAR_LEFT_PAREN || nextChar == LEX_CHAR_DOT) {
-        return ParseExpressionStatement();
-    }
-
     if (Extension() == ScriptExtension::JS) {
         if (!(flags & StatementParsingFlags::GLOBAL)) {
             ThrowSyntaxError("'import' and 'export' may only appear at the top level");
@@ -3095,11 +3098,10 @@ ir::Statement *ParserImpl::ParseImportDeclaration(StatementParsingFlags flags)
             ThrowSyntaxError("'import' and 'export' may appear only with 'sourceType: module'");
         }
     }
+}
 
-    lexer::SourcePosition startLoc = lexer_->GetToken().Start();
-    lexer_->NextToken();  // eat import
-
-    bool isType = false;
+bool ParserImpl::CheckIfTypeImport()
+{
     if (Extension() == ScriptExtension::TS &&
         lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_TYPE) {
         const auto savedPos = lexer_->Save();
@@ -3108,11 +3110,41 @@ ir::Statement *ParserImpl::ParseImportDeclaration(StatementParsingFlags flags)
             lexer_->GetToken().KeywordType() != lexer::TokenType::KEYW_FROM) ||
             lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE ||
             lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_MULTIPLY) {
-            isType = true;
+            return true;
         } else {
             lexer_->Rewind(savedPos);
         }
     }
+    return false;
+}
+
+ir::AssertClause *ParserImpl::GetAssertClause(bool isType)
+{
+    if (Extension() == ScriptExtension::TS && !lexer_->GetToken().NewLine() &&
+        lexer_->GetToken().Type() == lexer::TokenType::LITERAL_IDENT &&
+        lexer_->GetToken().Ident().Is("assert")) {
+        if (isType) {
+            ThrowSyntaxError("Import assertions cannot be used with type-only imports or exports.");
+        }
+        return ParseAssertClause();
+    }
+    return nullptr;
+}
+
+ir::Statement *ParserImpl::ParseImportDeclaration(StatementParsingFlags flags)
+{
+    char32_t nextChar = lexer_->Lookahead();
+    // dynamic import || import.meta
+    if (nextChar == LEX_CHAR_LEFT_PAREN || nextChar == LEX_CHAR_DOT) {
+        return ParseExpressionStatement();
+    }
+
+    CheckImportStatementValidity(flags);
+
+    lexer::SourcePosition startLoc = lexer_->GetToken().Start();
+    lexer_->NextToken();  // eat import
+
+    bool isType = CheckIfTypeImport();
 
     ArenaVector<ir::AstNode *> specifiers(Allocator()->Adapter());
 
@@ -3140,15 +3172,7 @@ ir::Statement *ParserImpl::ParseImportDeclaration(StatementParsingFlags flags)
         AddImportEntryItem(source, nullptr, isType);
     }
 
-    ir::AssertClause *assertClause = nullptr;
-    if (Extension() == ScriptExtension::TS && !lexer_->GetToken().NewLine() &&
-        lexer_->GetToken().Type() == lexer::TokenType::LITERAL_IDENT &&
-        lexer_->GetToken().Ident().Is("assert")) {
-        if (isType) {
-            ThrowSyntaxError("Import assertions cannot be used with type-only imports or exports.");
-        }
-        assertClause = ParseAssertClause();
-    }
+    ir::AssertClause *assertClause = GetAssertClause(isType);
 
     lexer::SourcePosition endLoc = source->End();
     auto *importDeclaration = AllocNode<ir::ImportDeclaration>(source, std::move(specifiers), assertClause, isType);

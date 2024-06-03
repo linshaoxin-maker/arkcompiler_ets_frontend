@@ -510,6 +510,10 @@ private:
     void ParseDirectivePrologue(ArenaVector<ir::Statement *> *statements);
     ArenaVector<ir::Statement *> ParseStatementList(StatementParsingFlags flags = StatementParsingFlags::ALLOW_LEXICAL);
     bool IsTsDeclarationStatement() const;
+    bool IsTsModuleDeclaration() const;
+    ir::Statement *ParseBasedOnTokenType(StatementParsingFlags flags,
+                                         bool isDeclare, ArenaVector<ir::Decorator *> &&decorators);
+
     ir::Statement *ParseStatement(StatementParsingFlags flags = StatementParsingFlags::NONE);
     ir::TSModuleDeclaration *ParseTsModuleDeclaration(bool isDeclare, bool isExport = false);
     ir::TSModuleDeclaration *ParseTsAmbientExternalModuleDeclaration(const lexer::SourcePosition &startLoc,
@@ -551,6 +555,9 @@ private:
     ir::Statement *ParseForStatement();
     ir::IfStatement *ParseIfStatement();
 
+    void CheckImportStatementValidity(StatementParsingFlags flags);
+    bool CheckIfTypeImport();
+    ir::AssertClause *GetAssertClause(bool isType);
     ir::Statement *ParseImportDeclaration(StatementParsingFlags flags);
     ir::LabelledStatement *ParseLabelledStatement(const lexer::LexerPosition &pos);
     ir::ReturnStatement *ParseReturnStatement();
