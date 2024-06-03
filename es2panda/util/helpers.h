@@ -196,6 +196,8 @@ public:
     static constexpr std::string_view SUB_API_VERSION_1 = "beta1";
     static constexpr std::string_view SUB_API_VERSION_2 = "beta2";
     static constexpr std::string_view DEFAULT_SUB_API_VERSION = SUB_API_VERSION_1;
+    static const size_t DEFAULT_MEMORY_LIMIT = 16_GB;
+    static const size_t MEMORY_LIMIT_UNLIMITED = 0;
 
 private:
     static bool SetFuncFlagsForDirectives(const ir::StringLiteral *strLit, ir::ScriptFunction *func,
