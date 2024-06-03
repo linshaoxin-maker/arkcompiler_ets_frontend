@@ -185,6 +185,8 @@ public:
     static const uint64_t FNV_OFFSET = 14695981039346656037U;
     static const int32_t DEFAULT_TARGET_API_VERSION = 12;
     static const int32_t ABC_TO_PROGRAM_MIN_SUPPORTED_API_VERSION = 12;
+    static const size_t DEFAULT_MEMORY_LIMIT = 8192;
+    static const size_t MEMORY_LIMIT_UNLIMITED = 0;
 private:
     static bool SetFuncFlagsForDirectives(const ir::StringLiteral *strLit, ir::ScriptFunction *func,
                                           const lexer::LineIndex &lineIndex);

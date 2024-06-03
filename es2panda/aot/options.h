@@ -133,6 +133,11 @@ public:
         return outputFiles_;
     }
 
+    size_t MemoryLimit() const
+    {
+        return memoryLimit_;
+    }
+
     bool CollectInputFilesFromFileList(const std::string &input, const std::string &inputExtension);
     bool CollectInputFilesFromFileDirectory(const std::string &input, const std::string &extension);
     void ParseCacheFileOption(const std::string &cacheInput);
@@ -161,6 +166,7 @@ private:
     int functionThreadCount_ {0};
     int fileThreadCount_ {0};
     int abcClassThreadCount_ {0};
+    size_t memoryLimit_ {0};
     std::string npmModuleEntryList_;
     std::vector<es2panda::SourceFile> sourceFiles_;
     std::unordered_map<std::string, std::string> outputFiles_;

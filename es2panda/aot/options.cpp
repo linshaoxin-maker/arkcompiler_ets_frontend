@@ -338,6 +338,8 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<bool> opMergeAbc("merge-abc", false, "Compile as merge abc");
     panda::PandArg<bool> opuseDefineSemantic("use-define-semantic", false, "Compile ts class fields "\
         "in accordance with ECMAScript2022");
+    panda::PandArg<size_t> opMemoryLimit("memory-limit", util::Helpers::DEFAULT_MEMORY_LIMIT,
+                                         "Memory usage limitation in MB (0 stands for unlimited)");
 
     // optimizer
     panda::PandArg<bool> opBranchElimination("branch-elimination", false, "Enable branch elimination optimization");
@@ -401,6 +403,7 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&opFunctionThreadCount);
     argparser_->Add(&opFileThreadCount);
     argparser_->Add(&opAbcClassThreadCount);
+    argparser_->Add(&opMemoryLimit);
     argparser_->Add(&opSizeStat);
     argparser_->Add(&opSizePctStat);
     argparser_->Add(&opDumpLiteralBuffer);
@@ -531,6 +534,18 @@ bool Options::Parse(int argc, const char **argv)
 
     if (opuseDefineSemantic.GetValue()) {
         compilerOptions_.useDefineSemantic = opuseDefineSemantic.GetValue();
+    }
+
+    if (opMemoryLimit.GetValue()) {
+        memoryLimit_ = opMemoryLimit.GetValue();
+        // The command line argument is in MB, while the memory limited in pool manager is in byte
+        // and stored in size_t field. We check possible overflow here
+        if ((SIZE_MAX >> SHIFT_MB) <= memoryLimit_) {
+            std::stringstream ss;
+            ss << "Invalid memory limitation (too large, maximum: " << (SIZE_MAX >> SHIFT_MB) << " MB)";
+            errorMsg_  = ss.str();
+            return false;
+        }
     }
 
     if (!inputIsEmpty) {
