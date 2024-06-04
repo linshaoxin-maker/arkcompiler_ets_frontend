@@ -525,7 +525,9 @@ Type *ETSChecker::CheckBinaryOperatorNullishCoalescing(ir::Expression *right, le
         ThrowTypeError("Left-hand side expression must be a reference type.", pos);
     }
 
-    return CreateETSUnionType({GetNonNullishType(leftType), MaybeBoxExpression(right)});
+    auto *rhsType = right->IsArrowFunctionExpression() ? InitAnonymousLambdaCallee(this, right, rightType)
+                                                       : MaybeBoxExpression(right);
+    return CreateETSUnionType({GetNonNullishType(leftType), rhsType});
 }
 
 using CheckBinaryFunction = std::function<checker::Type *(
