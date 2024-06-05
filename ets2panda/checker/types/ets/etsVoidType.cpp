@@ -26,7 +26,9 @@ void ETSVoidType::Identical(TypeRelation *relation, Type *other)
 bool ETSVoidType::AssignmentSource(TypeRelation *relation, Type *target)
 {
     if (!target->IsETSUndefinedType()) {
-        Identical(relation, target);
+        relation->RaiseError("aaa void assignment, type: " + target->ToString() + "\nNode: " + relation->GetNode()->DumpEtsSrc(),
+        relation->GetNode()->Start());
+        relation->Result(false);
     } else {
         relation->Result(true);
     }
@@ -34,7 +36,10 @@ bool ETSVoidType::AssignmentSource(TypeRelation *relation, Type *target)
     return relation->IsTrue();
 }
 
-void ETSVoidType::AssignmentTarget([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *source) {}
+void ETSVoidType::AssignmentTarget([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *source) {
+    relation->RaiseError("aaa void assignment", relation->GetNode()->Start());
+    relation->Result(false);
+}
 
 Type *ETSVoidType::Instantiate([[maybe_unused]] ArenaAllocator *allocator, [[maybe_unused]] TypeRelation *relation,
                                [[maybe_unused]] GlobalTypesHolder *globalTypes)

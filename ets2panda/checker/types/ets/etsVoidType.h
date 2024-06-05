@@ -17,6 +17,7 @@
 #define ES2PANDA_COMPILER_CHECKER_TYPES_ETS_VOID_TYPE_H
 
 #include "checker/types/type.h"
+#include "ir/expression.h"
 
 namespace ark::es2panda::checker {
 class ETSVoidType : public Type {
