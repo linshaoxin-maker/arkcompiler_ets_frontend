@@ -614,6 +614,8 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
     checker::Type *annotationType = nullptr;
 
     const bool isConst = (flags & ir::ModifierFlags::CONST) != 0;
+    const bool isReadonly = (flags & ir::ModifierFlags::READONLY) != 0;
+    const bool isStatic = (flags & ir::ModifierFlags::STATIC) != 0;
 
     if (typeAnnotation != nullptr) {
         annotationType = typeAnnotation->GetType(this);
@@ -688,7 +690,7 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
         const Type *sourceType = TryGettingFunctionTypeFromInvokeFunction(initType);
         AssignmentContext(Relation(), init, initType, annotationType, init->Start(),
                           {"Type '", sourceType, "' cannot be assigned to type '", targetType, "'"});
-        if (isConst && initType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) &&
+        if (isConst && (!isReadonly || isStatic) && initType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) &&
             annotationType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
             bindingVar->SetTsType(init->TsType());
         }
