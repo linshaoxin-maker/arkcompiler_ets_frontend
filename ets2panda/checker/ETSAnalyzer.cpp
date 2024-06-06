@@ -1105,6 +1105,8 @@ checker::Type *ETSAnalyzer::Check(ir::CallExpression *expr) const
     if (expr->UncheckedType() != nullptr) {
         checker->ComputeApparentType(returnType);
     }
+
+    CheckVoidTypeExpression(checker, expr);
     return expr->TsType();
 }
 
