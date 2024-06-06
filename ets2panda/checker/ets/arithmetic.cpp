@@ -339,10 +339,6 @@ checker::Type *ETSChecker::CheckBinaryOperatorLogical(ir::Expression *left, ir::
                                                       lexer::SourcePosition pos, checker::Type *const leftType,
                                                       checker::Type *const rightType, Type *unboxedL, Type *unboxedR)
 {
-    if (leftType->IsETSUnionType() || rightType->IsETSUnionType()) {
-        ThrowTypeError("Bad operand type, unions are not allowed in binary expressions except equality.", pos);
-    }
-
     if (unboxedL == nullptr || !unboxedL->IsConditionalExprType() || unboxedR == nullptr ||
         !unboxedR->IsConditionalExprType()) {
         ThrowTypeError("Bad operand type, the types of the operands must be of possible condition type.", pos);
