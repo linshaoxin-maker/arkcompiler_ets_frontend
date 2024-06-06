@@ -29,7 +29,6 @@ import {
   isArrowFunction,
   isGetAccessor,
   isSetAccessor,
-  isPropertyDeclaration
 } from 'typescript';
 
 import type {
@@ -112,7 +111,7 @@ namespace secharmony {
   export function isObjectLiteralScope(scope: Scope): boolean {
     return scope.kind === ScopeKind.OBJECT_LITERAL;
   }
-
+  let globalChecker: TypeChecker= undefined;
   /**
    * Structure of a scope
    */
@@ -262,6 +261,7 @@ namespace secharmony {
       if (obfuscateAsProperty) {
         Reflect.set(def, 'obfuscateAsProperty', true);
       }
+      def = NodeUtils.followIfAliased(def, globalChecker);
       current.defs.add(def);
     }
 
@@ -362,6 +362,7 @@ namespace secharmony {
 
     function analyze(ast: SourceFile, typeChecker: TypeChecker, isEnabledExportObfuscation = false): void {
       checker = typeChecker;
+      globalChecker = typeChecker;
       exportObfuscation = isEnabledExportObfuscation;
       analyzeScope(ast);
     }
@@ -391,7 +392,7 @@ namespace secharmony {
       });
     }
 
-    function addExportSymbolInScope(node: Node): void {
+    function addExportSymbolInScope(node: ExportSpecifier): void {
       let defSymbols: Symbol = node?.symbol;
 
       if (!defSymbols) {

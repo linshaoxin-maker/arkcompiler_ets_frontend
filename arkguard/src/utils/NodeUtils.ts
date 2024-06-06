@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 
-import type {ClassElement, Expression, Identifier, Node, ObjectBindingPattern, SourceFile, StructDeclaration} from 'typescript';
+import type {ClassElement, ExportSpecifier, Expression, Identifier, Node, ObjectBindingPattern, SourceFile, StructDeclaration, TypeChecker} from 'typescript';
 import {
+  SymbolFlags,
   SyntaxKind,
   factory,
   getModifiers,
@@ -40,7 +41,8 @@ import {
   isPropertySignature,
   isQualifiedName,
   isSetAccessor,
-  isVariableDeclaration
+  isVariableDeclaration,
+  Symbol
 } from 'typescript';
 import { isParameterPropertyModifier } from './OhsUtil';
 
@@ -218,5 +220,12 @@ export class NodeUtils {
       return true;
     }
     return false;
+  }
+
+  public static followIfAliased(sym: Symbol, typeChecker: TypeChecker): Symbol {
+    if ((sym.getFlags() & SymbolFlags.Alias) !== 0) {
+      return typeChecker.getAliasedSymbol(sym);
+    }
+    return sym;
   }
 }

@@ -513,6 +513,7 @@ namespace secharmony {
         }
 
         let sym: Symbol | undefined = checker.getSymbolAtLocation(node);
+        sym = NodeUtils.followIfAliased(sym, checker);
         let mangledPropertyNameOfNoSymbolImportExport = '';
         if ((!sym || sym.name === 'default')) {
           if (exportObfuscation && noSymbolIdentifier.has(node.escapedText as string) && trySearchImportExportSpecifier(node)) {
