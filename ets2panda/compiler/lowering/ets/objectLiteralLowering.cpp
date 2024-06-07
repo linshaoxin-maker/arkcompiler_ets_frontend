@@ -36,7 +36,9 @@ static bool CheckReadonlyFlag(checker::ETSObjectType *classType)
 }
 static void MaybeAllowConstAssign(checker::Type *targetType, ArenaVector<ir::Statement *> &statements)
 {
-    if (!targetType->IsETSObjectType() || !CheckReadonlyFlag(targetType->AsETSObjectType())) {
+    if (!targetType->IsETSObjectType() ||
+        (!CheckReadonlyFlag(targetType->AsETSObjectType()) &&
+         !targetType->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::READONLY))) {
         return;
     }
     for (auto *stmt : statements) {

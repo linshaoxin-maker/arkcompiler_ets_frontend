@@ -135,6 +135,11 @@ public:
         return typeStack_;
     }
 
+    [[nodiscard]] std::unordered_set<Type *> &ReadonlyTypeStack() noexcept
+    {
+        return readOnlyTypeStack_;
+    }
+
     [[nodiscard]] virtual bool IsETSChecker() const noexcept
     {
         return false;
@@ -184,6 +189,7 @@ public:
 
     friend class ScopeContext;
     friend class TypeStackElement;
+    friend class ReadonlyTypeStackElement;
     friend class SavedCheckerContext;
 
     varbinder::VarBinder *VarBinder() const;
@@ -210,6 +216,7 @@ private:
     RelationHolder supertypeResults_ {{}, RelationType::SUPERTYPE};
 
     std::unordered_set<const void *> typeStack_;
+    std::unordered_set<Type *> readOnlyTypeStack_;
 };
 
 class TypeStackElement {
@@ -242,6 +249,26 @@ public:
 private:
     Checker *checker_;
     void *element_;
+};
+
+class ReadonlyTypeStackElement {
+public:
+    explicit ReadonlyTypeStackElement(Checker *checker, Type *element) : checker_(checker), element_(element)
+    {
+        checker->readOnlyTypeStack_.insert(element);
+    }
+
+    ~ReadonlyTypeStackElement()
+    {
+        checker_->readOnlyTypeStack_.erase(element_);
+    }
+
+    NO_COPY_SEMANTIC(ReadonlyTypeStackElement);
+    NO_MOVE_SEMANTIC(ReadonlyTypeStackElement);
+
+private:
+    Checker *checker_;
+    Type *element_;
 };
 
 class ScopeContext {
