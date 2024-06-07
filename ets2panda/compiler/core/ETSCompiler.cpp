@@ -2107,6 +2107,7 @@ void ETSCompiler::CompileCast(const ir::TSAsExpression *expr) const
         case checker::TypeFlag::ETS_OBJECT:
         case checker::TypeFlag::ETS_TYPE_PARAMETER:
         case checker::TypeFlag::ETS_NONNULLISH:
+        case checker::TypeFlag::ETS_READONLY:
         case checker::TypeFlag::ETS_UNION:
         case checker::TypeFlag::ETS_NULL:
         case checker::TypeFlag::ETS_UNDEFINED: {

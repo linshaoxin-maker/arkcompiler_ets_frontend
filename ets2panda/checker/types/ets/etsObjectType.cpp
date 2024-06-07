@@ -343,7 +343,7 @@ void ETSObjectType::ToString(std::stringstream &ss, bool precise) const
 void ETSObjectType::IdenticalUptoTypeArguments(TypeRelation *relation, Type *other)
 {
     relation->Result(false);
-    if (!other->IsETSObjectType() || !CheckIdenticalFlags(other->AsETSObjectType()->ObjectFlags())) {
+    if (!other->IsETSObjectType() || !CheckIdenticalFlags(other->AsETSObjectType())) {
         return;
     }
 
@@ -391,13 +391,15 @@ void ETSObjectType::Identical(TypeRelation *relation, Type *other)
     relation->Result(true);
 }
 
-bool ETSObjectType::CheckIdenticalFlags(const ETSObjectFlags target) const
+bool ETSObjectType::CheckIdenticalFlags(ETSObjectType *other) const
 {
     constexpr auto FLAGS_TO_REMOVE = ETSObjectFlags::INCOMPLETE_INSTANTIATION |
                                      ETSObjectFlags::CHECKED_COMPATIBLE_ABSTRACTS |
-                                     ETSObjectFlags::CHECKED_INVOKE_LEGITIMACY;
-
-    auto cleanedTargetFlags = target;
+                                     ETSObjectFlags::CHECKED_INVOKE_LEGITIMACY | ETSObjectFlags::READONLY;
+    if (!HasObjectFlag(ETSObjectFlags::READONLY) && other->HasObjectFlag(ETSObjectFlags::READONLY)) {
+        return false;
+    }
+    auto cleanedTargetFlags = other->ObjectFlags();
     cleanedTargetFlags &= ~FLAGS_TO_REMOVE;
 
     auto cleanedSelfFlags = ObjectFlags();
@@ -413,6 +415,10 @@ bool ETSObjectType::AssignmentSource(TypeRelation *const relation, [[maybe_unuse
 
 void ETSObjectType::AssignmentTarget(TypeRelation *const relation, Type *source)
 {
+    if (source->IsETSObjectType() && source->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::READONLY)) {
+        return;
+    }
+
     if (HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
         EnsurePropertiesInstantiated();
         auto found = properties_[static_cast<size_t>(PropertyType::INSTANCE_METHOD)].find(
