@@ -565,6 +565,10 @@ private:
 
     bool CheckAstExceptions(const ir::Identifier *ast) const
     {
+        // NOTE(lujiahui): skip Readonly property
+        if (ast->Parent()->IsETSTypeReferencePart() && ast->Name().Is("Readonly")) {
+            return true;
+        }
         // NOTE(kkonkuznetsov): skip enums
         if (ast->Parent()->IsMemberExpression() &&
             (ast->Parent()->AsMemberExpression()->Object()->TsType() == nullptr ||
@@ -589,7 +593,11 @@ private:
         }
 
         // NOTE(kkonkuznetsov): skip imports
+<<<<<<< HEAD
         if (IsImportLike(ast->Parent())) {
+=======
+if (IsImportLike(ast->Parent())) {
+>>>>>>> [ArkTS]Support for Readonly<T> types
             return true;
         }
 
