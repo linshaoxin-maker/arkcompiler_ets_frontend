@@ -19,6 +19,8 @@ type PropDecoratorWithCall = PropDecorator & ((val: string) => PropDecorator);
 let Prop: PropDecorator;
 let Link: PropDecorator;
 let ObjectLink: PropDecorator;
+let Param: PropDecorator;
+let Event: PropDecorator;
 let Consume: PropDecoratorWithCall;
 let Provide: PropDecoratorWithCall;
 let CustomDialog: PropDecorator = (x, y) => {};
@@ -32,6 +34,12 @@ class Decorators {
 
   @ObjectLink
   public ol: number;
+
+  @Param
+  pa: number
+
+  @Event
+  e: number
 
   @Consume
   private c: number;
