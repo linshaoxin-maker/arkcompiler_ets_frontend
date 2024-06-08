@@ -1093,13 +1093,13 @@ void ETSChecker::MakePropertiesUtility(ETSObjectType *const classType, MakePrope
 
 void ETSChecker::MakePropertiesReadonly(ETSObjectType *const classType)
 {
-    MakePropertiesUtility(classType, [this](auto propType, auto *classType, auto *prop) {
+    MakePropertiesUtility(classType, [this](auto propType, auto *type, auto *prop) {
         switch (propType) {
             case PropertyType::INSTANCE_FIELD:
-                MakePropertyReadonly<PropertyType::INSTANCE_FIELD>(classType, prop);
+                MakePropertyReadonly<PropertyType::INSTANCE_FIELD>(type, prop);
                 break;
             case PropertyType::STATIC_FIELD:
-                MakePropertyReadonly<PropertyType::STATIC_FIELD>(classType, prop);
+                MakePropertyReadonly<PropertyType::STATIC_FIELD>(type, prop);
                 break;
             default:
                 UNREACHABLE();

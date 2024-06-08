@@ -1360,7 +1360,7 @@ void ETSAnalyzer::CheckObjectExprProps(const ir::ObjectExpression *expr) const
         }
         checker->ValidatePropertyAccess(lv, objType, propExpr->Start());
 
-	if (key->IsIdentifier()) {
+        if (key->IsIdentifier()) {
             key->AsIdentifier()->SetVariable(lv);
         }
 
