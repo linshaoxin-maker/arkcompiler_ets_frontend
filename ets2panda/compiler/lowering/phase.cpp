@@ -36,6 +36,7 @@
 #include "compiler/lowering/ets/tupleLowering.h"
 #include "compiler/lowering/ets/bigintLowering.h"
 #include "compiler/lowering/ets/unionLowering.h"
+#include "compiler/lowering/ets/nullishStringLowering.h"
 #include "compiler/lowering/plugin_phase.h"
 #include "compiler/lowering/scopesInit/scopesInitPhase.h"
 #include "public/es2panda_lib.h"
@@ -52,6 +53,7 @@ std::vector<Phase *> GetTrivialPhaseList()
 }
 
 static BigIntLowering g_bigintLowering;
+static NullishStringLowering g_nullishStringLowering;
 static InterfacePropertyDeclarationsPhase g_interfacePropDeclPhase;
 static LambdaConstructionPhase g_lambdaConstructionPhase;
 static OpAssignmentLowering g_opAssignmentLowering;
@@ -109,6 +111,7 @@ std::vector<Phase *> GetETSPhaseList()
         &g_expandBracketsPhase,
         &g_localClassLowering,
         &g_objectLiteralLowering,
+        &g_nullishStringLowering,
         &g_pluginsAfterLowerings,
     };
     // clang-format on
