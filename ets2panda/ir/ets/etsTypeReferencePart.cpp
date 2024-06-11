@@ -108,7 +108,9 @@ checker::Type *ETSTypeReferencePart::GetType(checker::ETSChecker *checker)
                 SetTsType(checker->GlobalETSNullType());
             } else if (ident->Name() == compiler::Signatures::READONLY_TYPE_NAME) {
                 SetTsType(checker->HandleReadonlyType(typeParams_));
-            }
+            } else if (ident->Name() == compiler::Signatures::REQUIRED_TYPE_NAME) {
+	        SetTsType(checker->HandleReadonlyType(typeParams_));
+	    }
         }
         if (TsType() == nullptr) {
             checker::Type *baseType = checker->GetReferencedTypeBase(name_);

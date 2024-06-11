@@ -128,6 +128,8 @@ defines:
     ref: NULL_LITERAL
   - name: 'Readonly'
     ref: READONLY_TYPE_NAME
+  - name: 'Required'
+    ref: REQUIRED_TYPE_NAME
 
 packages:
   - name: 'std.core'
