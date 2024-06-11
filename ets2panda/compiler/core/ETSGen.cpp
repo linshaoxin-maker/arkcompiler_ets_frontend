@@ -243,6 +243,52 @@ util::StringView ETSGen::FormDynamicModulePropReference(const varbinder::Variabl
     return FormDynamicModulePropReference(import);
 }
 
+ETSGen::CastTableType &ETSGen::CastTable()
+{
+    static auto castToEnum = [](ETSGen *instance, const ir::TSAsExpression *expr, const checker::Type *) {
+        instance->CastToEnum(expr);
+    };
+
+    static auto castToArrayOrObject = [](ETSGen *instance, const ir::TSAsExpression *expr,
+                                         const checker::Type *targetType) {
+        instance->CastToReftype(expr, targetType, expr->IsUncheckedCast());
+    };
+
+    static CastTableType castTable = {
+        {checker::TypeFlag::ETS_BOOLEAN, [](ETSGen *instance, const ir::TSAsExpression *expr,
+                                            const checker::Type *) { instance->CastToBoolean(expr); }},
+        {checker::TypeFlag::CHAR,
+         [](ETSGen *instance, const ir::TSAsExpression *expr, const checker::Type *) { instance->CastToChar(expr); }},
+        {checker::TypeFlag::BYTE,
+         [](ETSGen *instance, const ir::TSAsExpression *expr, const checker::Type *) { instance->CastToByte(expr); }},
+        {checker::TypeFlag::SHORT,
+         [](ETSGen *instance, const ir::TSAsExpression *expr, const checker::Type *) { instance->CastToShort(expr); }},
+        {checker::TypeFlag::DOUBLE,
+         [](ETSGen *instance, const ir::TSAsExpression *expr, const checker::Type *) { instance->CastToDouble(expr); }},
+        {checker::TypeFlag::FLOAT,
+         [](ETSGen *instance, const ir::TSAsExpression *expr, const checker::Type *) { instance->CastToFloat(expr); }},
+        {checker::TypeFlag::LONG,
+         [](ETSGen *instance, const ir::TSAsExpression *expr, const checker::Type *) { instance->CastToLong(expr); }},
+        {checker::TypeFlag::INT,
+         [](ETSGen *instance, const ir::TSAsExpression *expr, const checker::Type *) { instance->CastToInt(expr); }},
+        {checker::TypeFlag::ETS_DYNAMIC_TYPE,
+         [](ETSGen *instance, const ir::TSAsExpression *expr, const checker::Type *targetType) {
+             instance->CastToDynamic(expr, targetType->AsETSDynamicType());
+         }},
+        {checker::TypeFlag::ETS_ENUM, castToEnum},
+        {checker::TypeFlag::ETS_STRING_ENUM, castToEnum},
+        {checker::TypeFlag::ETS_ARRAY, castToArrayOrObject},
+        {checker::TypeFlag::ETS_OBJECT, castToArrayOrObject},
+        {checker::TypeFlag::ETS_TYPE_PARAMETER, castToArrayOrObject},
+        {checker::TypeFlag::ETS_NONNULLISH, castToArrayOrObject},
+        {checker::TypeFlag::ETS_UNION, castToArrayOrObject},
+        {checker::TypeFlag::ETS_NULL, castToArrayOrObject},
+        {checker::TypeFlag::ETS_UNDEFINED, castToArrayOrObject},
+    };
+
+    return castTable;
+}
+
 void ETSGen::LoadAccumulatorDynamicModule(const ir::AstNode *node, const ir::ETSImportDeclaration *import)
 {
     ASSERT(import->Language().IsDynamic());
@@ -1573,6 +1619,22 @@ void ETSGen::EmitPropertyBoxSet(const ir::AstNode *const node, const checker::Ty
     SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalVoidType());
 }
 
+void ETSGen::CastTo(const ir::TSAsExpression *expr)
+{
+    auto targetType = Checker()->GetApparentType(expr->TsType());
+    auto typeFlag = checker::ETSChecker::TypeKind(targetType);
+    auto castTable = CastTable();
+
+    auto it = castTable.find(typeFlag);
+    if (it != castTable.end()) {
+        auto castFunc = it->second;
+        castFunc(this, expr, targetType);
+        return;
+    }
+
+    UNREACHABLE();
+}
+
 void ETSGen::CastToBoolean([[maybe_unused]] const ir::AstNode *node)
 {
     auto typeKind = checker::ETSChecker::TypeKind(GetAccumulatorType());
@@ -2115,6 +2177,17 @@ void ETSGen::CastDynamicTo(const ir::AstNode *node, enum checker::TypeFlag typeF
     // Get value from dynamic object
     Ra().Emit<CallShort, 1>(node, methodName, dynObjReg, dummyReg_);
     SetAccumulatorType(objectType);
+}
+
+void ETSGen::CastToEnum(const ir::TSAsExpression *expr)
+{
+    auto *const signature = expr->TsType()->IsETSEnumType()
+                                ? expr->TsType()->AsETSEnumType()->FromIntMethod().globalSignature
+                                : expr->TsType()->AsETSStringEnumType()->FromIntMethod().globalSignature;
+    ArenaVector<ir::Expression *> arguments(Allocator()->Adapter());
+    arguments.push_back(const_cast<ir::Expression *>(expr->Expr()));
+    CallStatic(expr, signature, arguments);
+    SetAccumulatorType(signature->ReturnType());
 }
 
 void ETSGen::ToBinaryResult(const ir::AstNode *node, Label *ifFalse)

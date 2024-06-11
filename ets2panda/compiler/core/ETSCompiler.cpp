@@ -2068,71 +2068,11 @@ void ETSCompiler::CompileCastUnboxable(const ir::TSAsExpression *expr) const
 void ETSCompiler::CompileCast(const ir::TSAsExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
-    auto *targetType = etsg->Checker()->GetApparentType(expr->TsType());
 
-    switch (checker::ETSChecker::TypeKind(targetType)) {
-        case checker::TypeFlag::ETS_BOOLEAN: {
-            etsg->CastToBoolean(expr);
-            break;
-        }
-        case checker::TypeFlag::CHAR: {
-            etsg->CastToChar(expr);
-            break;
-        }
-        case checker::TypeFlag::BYTE: {
-            etsg->CastToByte(expr);
-            break;
-        }
-        case checker::TypeFlag::SHORT: {
-            etsg->CastToShort(expr);
-            break;
-        }
-        case checker::TypeFlag::INT: {
-            etsg->CastToInt(expr);
-            break;
-        }
-        case checker::TypeFlag::LONG: {
-            etsg->CastToLong(expr);
-            break;
-        }
-        case checker::TypeFlag::FLOAT: {
-            etsg->CastToFloat(expr);
-            break;
-        }
-        case checker::TypeFlag::DOUBLE: {
-            etsg->CastToDouble(expr);
-            break;
-        }
-        case checker::TypeFlag::ETS_ARRAY:
-        case checker::TypeFlag::ETS_OBJECT:
-        case checker::TypeFlag::ETS_TYPE_PARAMETER:
-        case checker::TypeFlag::ETS_NONNULLISH:
-        case checker::TypeFlag::ETS_UNION:
-        case checker::TypeFlag::ETS_NULL:
-        case checker::TypeFlag::ETS_UNDEFINED: {
-            etsg->CastToReftype(expr, targetType, expr->isUncheckedCast_);
-            break;
-        }
-        case checker::TypeFlag::ETS_DYNAMIC_TYPE: {
-            etsg->CastToDynamic(expr, targetType->AsETSDynamicType());
-            break;
-        }
-        case checker::TypeFlag::ETS_STRING_ENUM:
-            [[fallthrough]];
-        case checker::TypeFlag::ETS_ENUM: {
-            auto *const signature = expr->TsType()->IsETSEnumType()
-                                        ? expr->TsType()->AsETSEnumType()->FromIntMethod().globalSignature
-                                        : expr->TsType()->AsETSStringEnumType()->FromIntMethod().globalSignature;
-            ArenaVector<ir::Expression *> arguments(etsg->Allocator()->Adapter());
-            arguments.push_back(expr->expression_);
-            etsg->CallStatic(expr, signature, arguments);
-            etsg->SetAccumulatorType(signature->ReturnType());
-            break;
-        }
-        default: {
-            UNREACHABLE();
-        }
-    }
+    ASSERT(expr);
+    ASSERT(etsg);
+
+    etsg->CastTo(expr);
 }
 
 void ETSCompiler::Compile(const ir::TSAsExpression *expr) const

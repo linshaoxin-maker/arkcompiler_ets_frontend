@@ -498,6 +498,7 @@ public:
     void CompileStatements(const ArenaVector<ir::Statement *> &statements);
 
     // Cast
+    void CastTo(const ir::TSAsExpression *expr);
     void CastToBoolean(const ir::AstNode *node);
     void CastToByte(const ir::AstNode *node);
     void CastToChar(const ir::AstNode *node);
@@ -511,6 +512,7 @@ public:
     void CastDynamicTo(const ir::AstNode *node, enum checker::TypeFlag typeFlag);
     void CastToReftype(const ir::AstNode *node, const checker::Type *targetType, bool unchecked);
     void CastDynamicToObject(const ir::AstNode *node, const checker::Type *targetType);
+    void CastToEnum(const ir::TSAsExpression *expr);
 
     void InternalIsInstance(const ir::AstNode *node, const checker::Type *target);
     void InternalCheckCast(const ir::AstNode *node, const checker::Type *target);
@@ -642,6 +644,11 @@ public:
     }
 
     ~ETSGen() override = default;
+
+    using CastTableType =
+        std::unordered_map<checker::TypeFlag,
+                           std::function<void(ETSGen *, const ir::TSAsExpression *, const checker::Type *)>>;
+
     NO_COPY_SEMANTIC(ETSGen);
     NO_MOVE_SEMANTIC(ETSGen);
 
@@ -1186,6 +1193,8 @@ private:
 
     util::StringView FormDynamicModulePropReference(const varbinder::Variable *var);
     util::StringView FormDynamicModulePropReference(const ir::ETSImportDeclaration *import);
+
+    static CastTableType &CastTable();
 
     friend class TargetTypeContext;
 
