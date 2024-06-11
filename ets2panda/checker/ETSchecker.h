@@ -481,7 +481,16 @@ public:
     Type *GetTypeFromClassReference(varbinder::Variable *var);
     void ValidateGenericTypeAliasForClonedNode(ir::TSTypeAliasDeclaration *typeAliasNode,
                                                const ir::TSTypeParameterInstantiation *exactTypeParams);
+    template <PropertyType PROP_TYPE, typename PropProcessFunc>
+    void MakePropertyUtility(ETSObjectType *classType, varbinder::LocalVariable *prop, PropProcessFunc func);
+    template <PropertyType PROP_TYPE>
+    void MakePropertyReadonly(ETSObjectType *classType, varbinder::LocalVariable *prop);
+    template <typename MakePropertiesUtilityFunc>
+    void MakePropertiesUtility(ETSObjectType *classType, MakePropertiesUtilityFunc func);
+    void MakePropertiesReadonly(ETSObjectType *classType);
+    Type *HandleReadonlyType(const ir::TSTypeParameterInstantiation *typeParams);
     Type *HandleTypeAlias(ir::Expression *name, const ir::TSTypeParameterInstantiation *typeParams);
+    Type *GetReadonlyType(Type *type);
     Type *GetTypeFromEnumReference(varbinder::Variable *var);
     Type *GetTypeFromTypeParameterReference(varbinder::LocalVariable *var, const lexer::SourcePosition &pos);
     Type *GetNonConstantTypeFromPrimitiveType(Type *type) const;

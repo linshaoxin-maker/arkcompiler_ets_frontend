@@ -150,8 +150,7 @@ bool ETSChecker::EnhanceSubstitutionForType(const ArenaVector<Type *> &typeParam
     if (argumentType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
         argumentType = PrimitiveTypeAsETSBuiltinType(argumentType);
     }
-    if (paramType->IsETSTypeParameter()) {
-        auto *const tparam = paramType->AsETSTypeParameter();
+    auto typePrameterCheck = [this, typeParams, paramType, argumentType, substitution](ETSTypeParameter *tparam) {
         auto *const originalTparam = tparam->GetOriginal();
         if (std::find(typeParams.begin(), typeParams.end(), originalTparam) != typeParams.end() &&
             substitution->count(originalTparam) == 0) {
@@ -163,11 +162,22 @@ bool ETSChecker::EnhanceSubstitutionForType(const ArenaVector<Type *> &typeParam
                 ThrowTypeError({"Type parameter already instantiated with another type "},
                                tparam->GetDeclNode()->Start());
             }
-            ETSChecker::EmplaceSubstituted(substitution, originalTparam, argumentType);
+            if (paramType->IsETSReadonlyType()) {
+                ETSChecker::EmplaceSubstituted(substitution, originalTparam, GetReadonlyType(argumentType));
+            } else {
+                ETSChecker::EmplaceSubstituted(substitution, originalTparam, argumentType);
+            }
             return true;
         }
+        return true;
+    };
+    if (paramType->IsETSTypeParameter()) {
+        typePrameterCheck(paramType->AsETSTypeParameter());
     }
 
+    if (paramType->IsETSReadonlyType()) {
+        typePrameterCheck(paramType->AsETSReadonlyType()->GetUnderlying());
+    }
     if (paramType->IsETSUnionType()) {
         return EnhanceSubstitutionForUnion(typeParams, paramType->AsETSUnionType(), argumentType, substitution);
     }
@@ -318,7 +328,6 @@ bool ETSChecker::ValidateArgumentAsIdentifier(const ir::Identifier *identifier)
     auto result = Scope()->Find(identifier->Name());
     return result.variable != nullptr && (result.variable->HasFlag(varbinder::VariableFlags::CLASS_OR_INTERFACE));
 }
-
 bool ETSChecker::ValidateSignatureRequiredParams(Signature *substitutedSig,
                                                  const ArenaVector<ir::Expression *> &arguments, TypeRelationFlag flags,
                                                  const std::vector<bool> &argTypeInferenceRequired, bool throwError)
@@ -462,7 +471,6 @@ bool ETSChecker::ValidateSignatureRestParams(Signature *substitutedSig, const Ar
 
     return true;
 }
-
 Signature *ETSChecker::ValidateSignature(Signature *signature, const ir::TSTypeParameterInstantiation *typeArguments,
                                          const ArenaVector<ir::Expression *> &arguments,
                                          const lexer::SourcePosition &pos, TypeRelationFlag flags,
