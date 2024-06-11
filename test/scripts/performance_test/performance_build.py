@@ -16,6 +16,7 @@
 
 
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -31,6 +32,8 @@ class PerformanceBuild():
     def __init__(self, config_input, mail_obj):
         self.config = None
         self.first_line_in_avg_excel = ""
+        self.preview_all_time_dic = {}
+        self.preview_avg_time_dic = {}
         self.time_avg_dic = {}
         self.all_time_dic = {}
         self.size_avg_dic = {}
@@ -109,12 +112,19 @@ class PerformanceBuild():
 
     def reset(self):
         self.first_line_in_avg_excel = ""
+        self.preview_all_time_dic = {}
+        self.preview_avg_time_dic = {}
         self.time_avg_dic = {}
         self.all_time_dic = {}
         self.size_avg_dic = {}
         self.all_size_dic = {}
         self.error_log_str = ''
         self.revert_incremental_code()
+
+    @staticmethod
+    def delete_preview_cache():
+        # shutil.rmtree()
+        pass
 
     def clean_project(self):
         if not self.config.developing_test_data_path:
@@ -141,7 +151,7 @@ class PerformanceBuild():
                 PerformanceBuild.append_into_dic(name_str1, info.file_size, self.all_size_dic)
                 PerformanceBuild.append_into_dic(name_str2, info.compress_size, self.all_size_dic)
 
-    def collect_build_data(self, is_debug, report_path):
+    def get_build_time(self, report_path, time_dic):
         event_obj = None
         with open(report_path, 'r+', encoding='UTF-8') as report:
             event_obj = json5.load(report)['events']
@@ -167,10 +177,46 @@ class PerformanceBuild():
                 build_time = node['additional']['totalTime'] / 1000000000
             else:
                 continue
-            PerformanceBuild.append_into_dic(task_name, build_time, self.all_time_dic)
+            PerformanceBuild.append_into_dic(task_name, build_time, time_dic)
         if found_error:
             raise Exception('Build Failed')
+
+    def collect_preview_build_data(self, report_path, is_debug):
+        self.get_build_time(report_path, self.preview_all_time_dic)
+        self.get_preview_build_picture()
+        self.cal_incremental_avg_time(self.preview_all_time_dic, self.preview_avg_time_dic)
+        self.add_preview_buildtime_pic_data(self.preview_avg_time_dic, is_debug)
+
+    def collect_build_data(self, is_debug, report_path):
+        self.get_build_time(report_path, self.all_time_dic)
         self.get_bytecode_size(is_debug)
+
+    def get_report_path(self, cmd_suffix):
+        reports_before = []
+        report_dir = '.hvigor/report'
+        if os.path.exists(report_dir):
+            reports_before = os.listdir(report_dir)
+        cmd = self.config.cmd_prefix + cmd_suffix
+        print(cmd)
+        subprocess.Popen(cmd, stderr=sys.stderr,
+                         stdout=sys.stdout).communicate(timeout=self.timeout)
+        report_path = (set(os.listdir(report_dir)) - set(reports_before)).pop()
+        return os.path.join(report_dir, report_path)
+
+    # TODO : get the preview model build runtime picture
+    def get_preview_build_picture(self):
+        pass
+
+    def preview_build(self, is_debug):
+        self.delete_preview_cache()
+        cmd_suffix = self.config.preview_debug_suffix if is_debug else self.config.preview_release_suffix
+        report_path = self.get_report_path(cmd_suffix)
+        self.collect_preview_build_data(report_path, is_debug)
+
+    def build(self, is_debug):
+        cmd_suffix = self.config.cmd_debug_suffix if is_debug else self.config.cmd_release_suffix
+        report_path = self.get_report_path(cmd_suffix)
+        self.collect_build_data(is_debug, report_path)
 
     def start_build(self, is_debug):
         if self.config.developing_test_data_path:
@@ -178,19 +224,11 @@ class PerformanceBuild():
             self.collect_build_data(is_debug, os.path.join(os.path.dirname(__file__),
                                                            self.config.developing_test_data_path))
             return True
-        reports_before = []
-        report_dir = '.hvigor/report'
-        if os.path.exists(report_dir):
-            reports_before = os.listdir(report_dir)
-        cmd_suffix = self.config.cmd_debug_suffix if is_debug else self.config.cmd_release_suffix
-        print(self.config.cmd_prefix + cmd_suffix)
-        subprocess.Popen((self.config.cmd_prefix + cmd_suffix).split(" "),
-                              stderr=sys.stderr,
-                              stdout=sys.stdout).communicate(timeout=self.timeout)
-        report_path = (set(os.listdir(report_dir)) - set(reports_before)).pop()
-        self.collect_build_data(is_debug, os.path.join(report_dir, report_path))
+
+        if self.config.preview_build:
+            self.preview_build(is_debug)
+        self.build(is_debug)
         return True
-        
 
     def get_millisecond(self, time_string):
         if self.config.ide != performance_config.IdeType.DevEco and not self.config.developing_test_data_path:
@@ -210,16 +248,16 @@ class PerformanceBuild():
                 target_str = res[1]
             else:
                 target_str = res[0]
-            
+
             res = target_str.split(" ms")
             if len(res) > 1:
                 cost_time = cost_time + int(res[0])
             return cost_time
-        
-    def cal_incremental_avg_time(self):
+
+    def cal_incremental_avg_time(self, all_time_dic, avg_time_dic):
         self.first_line_in_avg_excel = self.first_line_in_avg_excel + "\n"
-        for key in self.all_time_dic:
-            task_count = len(self.all_time_dic[key])
+        for key in all_time_dic:
+            task_count = len(all_time_dic[key])
             has_task = True
             if task_count != 2 * self.config.build_times:
                 if task_count == self.config.build_times:
@@ -231,16 +269,16 @@ class PerformanceBuild():
             for i in range(0, self.config.build_times):
                 index = i * 2
                 if not has_task:
-                    self.all_time_dic[key].insert(index + 1, 0)
-                sum_build_time = sum_build_time + self.all_time_dic[key][index]
+                    all_time_dic[key].insert(index + 1, 0)
+                sum_build_time = sum_build_time + all_time_dic[key][index]
             cost = round(sum_build_time / self.config.build_times, 2)
-            PerformanceBuild.append_into_dic(key, cost, self.time_avg_dic)
+            PerformanceBuild.append_into_dic(key, cost, avg_time_dic)
             # average of incremental build
             sum_build_time = 0
-            for i in range(1, len(self.all_time_dic[key]), 2):
-                sum_build_time = sum_build_time + self.all_time_dic[key][i]
+            for i in range(1, len(all_time_dic[key]), 2):
+                sum_build_time = sum_build_time + all_time_dic[key][i]
             cost = round(sum_build_time / self.config.build_times, 2)
-            PerformanceBuild.append_into_dic(key, cost, self.time_avg_dic)
+            PerformanceBuild.append_into_dic(key, cost, avg_time_dic)
 
     def cal_incremental_avg_size(self):
         total_raw_size = []
@@ -272,7 +310,7 @@ class PerformanceBuild():
             PerformanceBuild.append_into_dic(key, incremental_first_size, self.size_avg_dic)
 
     def cal_incremental_avg(self):
-        self.cal_incremental_avg_time()
+        self.cal_incremental_avg_time(self.all_time_dic, self.time_avg_dic)
         self.cal_incremental_avg_size()
 
     @staticmethod
@@ -294,19 +332,26 @@ class PerformanceBuild():
     @staticmethod
     def app_title(context):
         return rf'<th bgcolor="SkyBlue" colspan="3"><font size="4">{context}</font></th>'
-    
+
+    def add_preview_buildtime_pic_data(self, dic, is_debug):
+        for key in dic:
+            if "total" in key:
+                preview_build_time = dic[key][0]
+                break
+        self.mail_helper.add_pic_data(self.config.name, is_debug, [preview_build_time], 2)
+
     def add_time_pic_data(self, dic, is_debug):
         for key in dic:
             if "total" in key:
                 full_time = dic[key][0]
                 incremental_time = dic[key][1]
                 break
-        self.mail_helper.add_pic_data(self.config.name, is_debug, [full_time, incremental_time])
+        self.mail_helper.add_pic_data(self.config.name, is_debug, [full_time, incremental_time], 0)
 
     def add_size_pic_data(self, dic, is_debug):
         for key in dic:
             full_size = dic[key][0]
-        self.mail_helper.add_pic_data(self.config.name, is_debug, [full_size])
+        self.mail_helper.add_pic_data(self.config.name, is_debug, [full_size], 3)
 
     def write_mail_files(self, dic):
         if not hasattr(self.config, 'show_time_detail_filter'):
@@ -344,13 +389,15 @@ class PerformanceBuild():
         content = "".join(content_list)
         self.mail_helper.add_logs_file(file_path, content.encode())
 
-
     def write_logs_from_dic(self, path_prefix, log_filename, source_dic, need_first_line):
         file_path = self.config.output_split.join((path_prefix, log_filename))
         file_path = os.path.join(self.prj_name, file_path)
         first_line = self.first_line_in_avg_excel if need_first_line else None
         self.write_from_dic(file_path, first_line, source_dic)
         return
+
+    def generate_preview_model_build_result(self, is_debug):
+        pass
 
     def generate_full_and_incremental_results(self, is_debug):
         path_prefix = self.config.output_split.join(
@@ -377,7 +424,6 @@ class PerformanceBuild():
                 PerformanceBuild.app_title(self.config.name + (' Debug' if is_debug else ' Release')) + \
                 temp_mail_msg + '</table>'
             self.mail_msg += temp_mail_msg
-
 
     def error_handle(self, is_debug, log_type):
         build_mode = 'Debug' if is_debug else 'Release'
