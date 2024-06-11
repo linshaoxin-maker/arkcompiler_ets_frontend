@@ -1365,6 +1365,10 @@ void ETSCompiler::Compile(const ir::UpdateExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
 
+    if (expr->Argument()->IsTSNonNullExpression()) {
+        expr->Argument()->Compile(etsg);
+    }
+
     auto lref = compiler::ETSLReference::Create(etsg, expr->Argument(), false);
 
     const auto argumentBoxingFlags = static_cast<ir::BoxingUnboxingFlags>(expr->Argument()->GetBoxingUnboxingFlags() &
