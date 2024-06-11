@@ -104,6 +104,7 @@ public:
             accumulatedChecks_.insert("NodeHasTypeForAll");
             accumulatedChecks_.insert("IdentifierHasVariableForAll");
             accumulatedChecks_.insert("ReferenceTypeAnnotationIsNullForAll");
+            accumulatedChecks_.insert("ReferenceNotDeclarationForAll");
             accumulatedChecks_.insert("ArithmeticOperationValidForAll");
             accumulatedChecks_.insert("SequenceExpressionHasLastTypeForAll");
             accumulatedChecks_.insert("ForLoopCorrectlyInitializedForAll");

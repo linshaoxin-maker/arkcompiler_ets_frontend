@@ -64,6 +64,7 @@
 #include "varbinder/scope.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <iterator>
 
 namespace ark::es2panda::compiler::ast_verifier {
@@ -474,6 +475,347 @@ public:
             }
         }
         return result;
+    }
+};
+
+class ReferenceNotDeclaration {
+public:
+    explicit ReferenceNotDeclaration([[maybe_unused]] ArenaAllocator &allocator) {}
+
+    [[nodiscard]] CheckResult operator()(CheckContext &ctx, const ir::AstNode *ast)
+    {
+        if (!ast->IsIdentifier()) {
+            return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+        }
+
+        auto id = ast->AsIdentifier();
+        if (id->IsReference()) {
+            return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+        }
+        // GLOBAL class is not a reference
+        if (id->Name() == "ETSGLOBAL") {
+            return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+        }
+        // Checking most of the cases
+        if (CommonDeclarationCheck(id)) {
+            return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+        }
+
+        ctx.AddCheckMessage("IDENTIFIER_NOT_REFERENCE", *ast, ast->Start());
+        return {CheckDecision::INCORRECT, CheckAction::CONTINUE};
+    }
+
+    bool CommonDeclarationCheck(const ir::Identifier *id)
+    {
+        auto parent = id->Parent();
+        // We need two Parts because check is too long to fit in one function
+        if (CheckDeclarationsPart1(parent) || CheckDeclarationsPart2(parent)) {
+            return true;
+        }
+
+        // Parameters in methods are not references
+        // Example:
+        // function foo(a: int)
+        if (parent->IsETSParameterExpression()) {
+            return true;
+        }
+
+        // Class Properties are not references
+        if (parent->IsClassProperty()) {
+            return true;
+        }
+
+        // Identifier in catch is not a reference
+        // Example:
+        //
+        // _try_{
+        //   _throw_new_Exception();}_catch_(e)_{}
+        if (parent->IsCatchClause()) {
+            return true;
+        }
+
+        // Type Parameter is not a reference
+        // Example:
+        // interface X <K> {}
+        if (parent->IsTSTypeParameter()) {
+            return true;
+        }
+
+        // Rest Parameter is not a reference
+        // Example:
+        // class A {
+        //    constructor(... items :Object[]){}
+        // }
+        if (parent->IsRestElement()) {
+            return true;
+        }
+
+        // Script function identifiers are not references
+        // Example:
+        // public static foo()
+        if (parent->IsScriptFunction()) {
+            return true;
+        }
+
+        // NOTE: currently fields of Super class are not references
+        // Example:
+        // interface Interface {
+        //     infield: number
+        // }
+        // abstract class Abstract {
+        //     infield: number = -1
+        // }
+        // class Derived extends Abstract implements Interface {
+        // }
+        // function main() {
+        //     let d = new Derived
+        //     assert d.infield == -1
+        // }
+        if (parent->IsMemberExpression()) {
+            auto expr = id->Parent()->AsMemberExpression();
+            if (expr->Object() != nullptr && expr->Object()->IsSuperExpression()) {
+                return true;
+            }
+        }
+
+        // NOTE: fails on recursion with default parameter
+        // Likely issue in default parameter lowering.
+        // Need to investigate.
+        // Example:
+        // function main() : void {
+        ///     boo2 (1,2)
+        // }
+        // function boo2(a0 : int, a1 : int, a2 : int = boo2(1,2)) : int {
+        //     return a0 + a1 + a2;}
+        if (parent->IsCallExpression()) {
+            return true;
+        }
+
+        // NOTE: currently some generated identifiers in costructors are not references
+        // Example:
+        // class GlobalClass {
+        // static capture_param_method(param : int) {
+        // class LocalClass {
+        //    method() {
+        //        assert(param == 1)
+        //    }
+        // }
+        /// let_lc=new_LocalClass ()
+        /// lc.method()
+        // }
+        // }
+        // function_main():int {
+        ///      GlobalClass. capture_param_method(1)
+        // return 0;}
+        if (parent->IsETSNewClassInstanceExpression()) {
+            return true;
+        }
+
+        if (CommonDeclarationCheckPart2(parent)) {
+            return true;
+        }
+
+        if (CheckNameRelated(id)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    bool CommonDeclarationCheckPart2(const ir::AstNode *parentNode)
+    {
+        // New methods are not references
+        if (parentNode->IsMethodDefinition()) {
+            return true;
+        }
+
+        // New classes are not references
+        if (parentNode->IsClassDefinition()) {
+            return true;
+        }
+
+        // NOTE: currently identifiers inside dynamic object expressions are not references
+        // Example:
+        // JS code:
+        // Class A {
+        //     name}
+        // import {A} from_"dynamic_js_import_tests"
+        // function main(): void {
+        // leta:A={_name:_"Edalyn"};}
+        auto parent = parentNode;
+        while (parent != nullptr) {
+            if (parent->IsObjectExpression()) {
+                return true;
+            }
+
+            parent = parent->Parent();
+        }
+
+        return false;
+    }
+
+    bool CheckDeclarationsPart1(const ir::AstNode *parentNode)
+    {
+        // All declarations are not references
+        if (parentNode->IsVariableDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsClassDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsETSPackageDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsVariableDeclarator()) {
+            return true;
+        }
+
+        if (parentNode->IsFunctionDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsImportDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsETSImportDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsETSStructDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsExportAllDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsExportDefaultDeclaration()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    bool CheckDeclarationsPart2(const ir::AstNode *parentNode)
+    {
+        // All declarations are not references
+        if (parentNode->IsExportNamedDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsTSEnumDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsTSInterfaceDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsTSModuleDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsTSSignatureDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsETSReExportDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsTSImportEqualsDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsTSTypeAliasDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->IsTSTypeParameterDeclaration()) {
+            return true;
+        }
+
+        if (parentNode->Parent() != nullptr) {
+            auto parent = parentNode->Parent();
+            if (parent->IsTSEnumDeclaration()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool CheckNameRelated(const ir::Identifier *id)
+    {
+        auto name = id->Name();
+        // NOTE: skip $dynmodule and JSRuntime identifiers that are not references
+        if (name == "$dynmodule" || name == "JSRuntime") {
+            return true;
+        }
+
+        // NOTE: skip <property> identifiers that are not references
+        if (name.Utf8().find("<property>") == 0) {
+            return true;
+        }
+
+        // NOTE: should be deleted as soon as issue with Identifiers with no name is fixed
+        if (name.Empty()) {
+            return true;
+        }
+
+        // NOTE: some lambda identifiers are not references
+        if (name.Utf8().find("lambda$invoke") == 0) {
+            return true;
+        }
+        // NOTE: currently some generated gensym identifiers are not references
+        if (name.Utf8().find("gensym") == 0) {
+            return true;
+        }
+
+        // NOTE: currently some generated field identifiers are not references
+        if (name.Utf8().find("field") == 0) {
+            return true;
+        }
+
+        if (id->Parent()->IsMemberExpression()) {
+            auto expr = id->Parent()->AsMemberExpression();
+            // NOTE: skip static invoke
+            // Example:
+            // DELETE THIS PART FOR EXMPL:_X((_):_String_=_>_{_return_"XXX"_},)_
+            if (expr->Property() != nullptr && expr->Property()->IsIdentifier()) {
+                if (expr->Property()->AsIdentifier()->Name() == "invoke") {
+                    return true;
+                }
+            }
+
+            // NOTE: skip static instantiate
+            // Example:
+            //     B() {
+            //   C() {
+            //   }
+            //   .color("navy")
+            // }
+            if (expr->Property() != nullptr && expr->Property()->IsIdentifier()) {
+                if (expr->Property()->AsIdentifier()->Name() == "instantiate") {
+                    return true;
+                }
+            }
+
+            // NOTE????: Property of generated gensym are not references
+            // Example:
+            // let tuples: Tuple[] = [{index: 11}];
+            if (expr->Object() != nullptr && expr->Object()->IsIdentifier()) {
+                if (expr->Object()->AsIdentifier()->Name().Utf8().find("gensym") == 0) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 };
 
@@ -1399,6 +1741,7 @@ ASTVerifier::ASTVerifier(ArenaAllocator *allocator)
     AddInvariant<ArithmeticOperationValid>(allocator, "ArithmeticOperationValid");
     AddInvariant<SequenceExpressionHasLastType>(allocator, "SequenceExpressionHasLastType");
     AddInvariant<ReferenceTypeAnnotationIsNull>(allocator, "ReferenceTypeAnnotationIsNull");
+    AddInvariant<ReferenceNotDeclaration>(allocator, "ReferenceNotDeclaration");
     AddInvariant<VariableNameIdentifierNameSame>(allocator, "VariableNameIdentifierNameSame");
 }
 
