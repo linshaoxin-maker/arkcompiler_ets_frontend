@@ -115,7 +115,6 @@ const ClassScope *Scope::EnclosingClassScope() const
     return nullptr;
 }
 
-// NOLINTNEXTLINE(google-default-arguments)
 Variable *Scope::FindLocal(const util::StringView &name, ResolveBindingOptions options) const
 {
     if ((options & ResolveBindingOptions::INTERFACES) != 0) {
@@ -157,9 +156,11 @@ Scope::InsertResult Scope::TryInsertBinding(const util::StringView &name, Variab
     return bindings_.try_emplace(name, var);
 }
 
-void Scope::ReplaceBindings(VariableMap bindings)
+void Scope::MergeBindings(VariableMap const &bindings)
 {
-    bindings_ = std::move(bindings);
+    for (auto &[k, v] : bindings) {
+        bindings_.try_emplace(k, v);
+    }
 }
 
 Scope::VariableMap::size_type Scope::EraseBinding(const util::StringView &name)
@@ -535,7 +536,7 @@ Scope::InsertResult GlobalScope::TryInsertBinding(const util::StringView &name, 
     return insRes;
 }
 
-void GlobalScope::ReplaceBindings([[maybe_unused]] const VariableMap bindings)
+void GlobalScope::MergeBindings([[maybe_unused]] const VariableMap &bindings)
 {
     UNREACHABLE();
 }
@@ -890,7 +891,7 @@ void LoopDeclarationScope::ConvertToVariableScope(ArenaAllocator *allocator)
         evalBindings_ = parentVarScope->EvalBindings();
         initScope_ = allocator->New<LocalScope>(allocator, Parent());
         initScope_->BindNode(Node());
-        initScope_->ReplaceBindings(bindings);
+        initScope_->MergeBindings(bindings);
     }
 }
 

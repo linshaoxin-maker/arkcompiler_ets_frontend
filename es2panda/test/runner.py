@@ -795,7 +795,8 @@ class CompilerProjectTest(Test):
             module_kind = 'esm'
             if (os.path.basename(test_path).startswith("commonjs")):
                 module_kind = 'commonjs'
-            file_info = ('%s;%s;%s;%s;%s\n' % (test_path, record_name, module_kind, test_path, record_name))
+            file_info = ('%s;%s;%s;%s;%s\n' % (test_path, record_name, module_kind,
+                                               os.path.relpath(test_path, self.projects_path), record_name))
             belonging_abc_input = self.get_belonging_abc_input(test_path)
             if belonging_abc_input is not None:
                 if not belonging_abc_input in abc_files_infos:
@@ -981,7 +982,7 @@ class BcVersionTest(Test):
             12: "12.0.4.0",
             13: "12.0.4.0"
         }
-    
+
     def run(self):
         process = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = process.communicate()
@@ -1157,25 +1158,26 @@ class PatchRunner(Runner):
         self.preserve_files = args.error
         self.tests_in_dirs = []
         dirs = os.listdir(path.join(self.test_root, "patch"))
-        for sub_dir in dirs:
-            target_version = 0
-            if sub_dir.isdigit():
-                target_version = int(sub_dir)
-            self.add_tests(sub_dir, name)
+        for target_version_path in dirs:
+            self.add_tests(target_version_path, name)
 
-    def add_tests(self, path, name):
-        name_dir = os.path.join(self.test_root, "patch", path, name)
+    def add_tests(self, target_version_path, name):
+        name_dir = os.path.join(self.test_root, "patch", target_version_path, name)
         if not os.path.exists(name_dir):
             return
         target_version = 0
-        if path.isdigit():
-            target_version = int(path)
+        if target_version_path.isdigit():
+            target_version = int(target_version_path)
         for sub_path in os.listdir(name_dir):
             test_base_path = os.path.join(name_dir, sub_path)
-            for test_dir in os.listdir(test_base_path):
-                test_path = os.path.join(test_base_path, test_dir)
-                self.tests_in_dirs.append(test_path)
-                self.tests.append(PatchTest(test_path, name, target_version, self.preserve_files))
+            if name != "coldreload":
+                for test_dir in os.listdir(test_base_path):
+                    test_path = os.path.join(test_base_path, test_dir)
+                    self.tests_in_dirs.append(test_path)
+                    self.tests.append(PatchTest(test_path, name, target_version, self.preserve_files))
+            else:
+                self.tests_in_dirs.append(test_base_path)
+                self.tests.append(PatchTest(test_base_path, name, target_version, self.preserve_files))
 
     def test_path(self, src):
         return os.path.basename(src)
@@ -1185,17 +1187,21 @@ class HotfixRunner(PatchRunner):
     def __init__(self, args):
         PatchRunner.__init__(self, args, "hotfix")
 
+
 class HotreloadRunner(PatchRunner):
     def __init__(self, args):
         PatchRunner.__init__(self, args, "hotreload")
+
 
 class ColdfixRunner(PatchRunner):
     def __init__(self, args):
         PatchRunner.__init__(self, args, "coldfix")
 
+
 class ColdreloadRunner(PatchRunner):
     def __init__(self, args):
         PatchRunner.__init__(self, args, "coldreload")
+
 
 class DebuggerTest(Test):
     def __init__(self, test_path, mode):
@@ -1478,9 +1484,12 @@ def add_directory_for_compiler(runners, args):
                                                 "--file-threads=8"]))
     compiler_test_infos.append(CompilerTestInfo("compiler/bytecodehar/projects", "ts",
                                                 ["--merge-abc", "--dump-assembly", "--enable-abc-input",
-                                                 "--dump-deps-info", "--dump-literal-buffer"]))
+                                                 "--dump-deps-info", "--remove-redundant-file",
+                                                 "--dump-literal-buffer", "--dump-string"]))
     compiler_test_infos.append(CompilerTestInfo("compiler/bytecodehar/js/projects", "js",
-                                                ["--merge-abc", "--dump-assembly", "--enable-abc-input", "--dump-deps-info"]))
+                                                ["--merge-abc", "--dump-assembly", "--enable-abc-input",
+                                                 "--dump-deps-info", "--remove-redundant-file",
+                                                 "--dump-literal-buffer", "--dump-string"]))
 
     if args.enable_arkguard:
         prepare_for_obfuscation(compiler_test_infos, runner.test_root)
@@ -1551,7 +1560,7 @@ def add_cmd_for_aop_transform(runners, args):
 class AopTransform(Runner):
     def __init__(self, args):
         Runner.__init__(self, args, "AopTransform")
-    
+
     def add_cmd(self, cmd, compare_str, compare_abc_str, remove_file, func=TestAop):
         self.tests += [func(cmd, compare_str, compare_abc_str, remove_file)]
 

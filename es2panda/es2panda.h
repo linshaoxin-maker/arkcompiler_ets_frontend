@@ -114,11 +114,9 @@ struct CompilerOptions {
     std::string compileContextInfoPath {};
     CompileContextInfo compileContextInfo {};
     bool dumpDepsInfo {false};
-
-    bool NeedUpdatePkgVersionForAbcInput() const
-    {
-        return enableAbcInput && !compileContextInfo.pkgContextInfo.empty();
-    }
+    bool updatePkgVersionForAbcInput {false};
+    bool removeRedundantFile {false};
+    bool dumpString {false};
 };
 
 enum class ErrorType {
@@ -228,7 +226,6 @@ private:
                                        util::SymbolTable *symbolTable);
     static void CleanPatchFixHelper(const util::PatchFix *patchFixHelper);
     void CheckCompilerOptionsForAbcInput(const std::string &fname, const CompilerOptions &options);
-    void CheckUnsupportOptionsForAbcInput(const std::string &fname, const CompilerOptions &options);
     void ChecktargetApiVersionIsSupportedForAbcInput(const CompilerOptions &options);
     panda::pandasm::Program *AbcToAsmProgram(const std::string &fname, const CompilerOptions &options);
     void UpdateDynamicImportPackageVersion(panda::pandasm::Program *prog, const CompilerOptions &options);

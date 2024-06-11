@@ -665,8 +665,12 @@ ir::ModifierFlags ETSParser::ParseClassMethodModifiers(bool seenStatic)
 
         Lexer()->NextToken(lexer::NextTokenFlags::KEYWORD_TO_IDENT);
         flags |= currentFlag;
-        if ((flags & ir::ModifierFlags::ASYNC) != 0 && (flags & ir::ModifierFlags::NATIVE) != 0) {
-            ThrowSyntaxError("Native method cannot be async");
+        if ((flags & ir::ModifierFlags::ASYNC) != 0) {
+            if ((flags & ir::ModifierFlags::NATIVE) != 0) {
+                ThrowSyntaxError("Native method cannot be async");
+            } else if ((flags & ir::ModifierFlags::ABSTRACT) != 0) {
+                ThrowSyntaxError("Abstract method cannot be async");
+            }
         }
     }
 
@@ -1002,7 +1006,6 @@ ir::AstNode *ETSParser::ParseClassElement(const ArenaVector<ir::AstNode *> &prop
 
     bool seenStatic = false;
     char32_t nextCp = Lexer()->Lookahead();
-
     if (Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_STATIC && nextCp != lexer::LEX_CHAR_EQUALS &&
         nextCp != lexer::LEX_CHAR_COLON && nextCp != lexer::LEX_CHAR_LEFT_PAREN &&
         nextCp != lexer::LEX_CHAR_LESS_THAN) {
@@ -1705,7 +1708,6 @@ ir::AstNode *ETSParser::ParseTypeLiteralOrInterfaceMember()
 {
     auto startLoc = Lexer()->GetToken().Start();
     ir::ModifierFlags methodFlags = ParseInterfaceMethodModifiers();
-
     if (methodFlags != ir::ModifierFlags::NONE) {
         if ((methodFlags & ir::ModifierFlags::PRIVATE) == 0) {
             methodFlags |= ir::ModifierFlags::PUBLIC;
@@ -2411,8 +2413,16 @@ ir::ImportSource *ETSParser::ParseSourceFromClause(bool requireFrom)
     auto importPath = Lexer()->GetToken().Ident();
 
     auto resolvedImportPath = importPathManager_->ResolvePath(GetProgram()->AbsoluteName(), importPath);
-    importPathManager_->AddToParseList(resolvedImportPath,
-                                       (GetContext().Status() & ParserStatus::IN_DEFAULT_IMPORTS) != 0U);
+    if (globalProgram_->AbsoluteName() != resolvedImportPath) {
+        importPathManager_->AddToParseList(resolvedImportPath,
+                                           (GetContext().Status() & ParserStatus::IN_DEFAULT_IMPORTS) != 0U);
+    } else {
+        if (!IsETSModule()) {
+            ThrowSyntaxError("Please compile `" + globalProgram_->FileName().Mutf8() + "." +
+                             globalProgram_->SourceFile().GetExtension().Mutf8() +
+                             "` with `--ets-module` option. It is being imported by another file.");
+        }
+    }
 
     auto *resolvedSource = AllocNode<ir::StringLiteral>(resolvedImportPath);
     auto importData = importPathManager_->GetImportData(resolvedImportPath, Extension());
@@ -3398,7 +3408,6 @@ ir::Expression *ETSParser::ParsePostPrimaryExpression(ir::Expression *primaryExp
             }
             case lexer::TokenType::PUNCTUATOR_EXCLAMATION_MARK: {
                 const bool shouldBreak = ParsePotentialNonNullExpression(&returnExpression, startLoc);
-
                 if (shouldBreak) {
                     break;
                 }

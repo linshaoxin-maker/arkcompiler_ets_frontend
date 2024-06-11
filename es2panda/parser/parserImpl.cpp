@@ -1481,7 +1481,7 @@ ir::Expression *ParserImpl::ParseTsTypeLiteralOrInterfaceMember()
         nextToken != LEX_CHAR_COLON && nextToken != LEX_CHAR_COMMA && nextToken != LEX_CHAR_LESS_THAN &&
         nextToken != LEX_CHAR_SEMICOLON) {
         readonly = true;
-        lexer_->NextToken();
+        lexer_->NextToken(lexer::LexerNextTokenFlags::KEYWORD_TO_IDENT);
     }
 
     ParseTsTypeLiteralOrInterfaceKeyModifiers(&isGetAccessor, &isSetAccessor);
@@ -2995,6 +2995,9 @@ ir::MethodDefinition *ParserImpl::CreateImplicitMethod(ir::Expression *superClas
     auto *body = AllocNode<ir::BlockStatement>(scope, std::move(statements));
     auto *func = AllocNode<ir::ScriptFunction>(scope, std::move(params), nullptr, isDeclare ? nullptr : body, nullptr,
                                                funcFlag, isDeclare, Extension() == ScriptExtension::TS);
+    if (isConstructor) {
+        func->AddFlag(ir::ScriptFunctionFlags::GENERATED_CONSTRUCTOR);
+    }
     scope->BindNode(func);
     paramScope->BindNode(func);
     scope->BindParamScope(paramScope);

@@ -43,5 +43,14 @@ void Dumper::DumpLiterals(std::map<std::string, panda::pandasm::LiteralArray> co
     }
 }
 
+void Dumper::DumpStrings(std::set<std::string> const &strings)
+{
+    std::cout << "======> strings <======" << std::endl;
+    for (auto &string : strings) {
+        std::cout << "\"" << string << "\"; ";
+    }
+    std::cout << std::endl;
+}
+
 }  // namespace panda::es2panda::util
 

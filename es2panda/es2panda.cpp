@@ -61,18 +61,7 @@ panda::pandasm::Program *CreateJsonContentProgram(std::string src, std::string r
 
 void Compiler::CheckCompilerOptionsForAbcInput(const std::string &fname, const CompilerOptions &options)
 {
-    CheckUnsupportOptionsForAbcInput(fname, options);
     ChecktargetApiVersionIsSupportedForAbcInput(options);
-}
-
-void Compiler::CheckUnsupportOptionsForAbcInput(const std::string &fname, const CompilerOptions &options)
-{
-    if (!options.patchFixOptions.dumpSymbolTable.empty() ||
-        !options.patchFixOptions.symbolTable.empty() || options.patchFixOptions.generatePatch) {
-        throw Error(ErrorType::GENERIC, "When the abc file '" + fname +
-            "' is used as the input, the following option is not supported: " +
-            "{ dump-symbol-table | input-symbol-table | generate-patch }");
-    }
 }
 
 void Compiler::ChecktargetApiVersionIsSupportedForAbcInput(const CompilerOptions &options)
@@ -217,7 +206,7 @@ util::PatchFix *Compiler::InitPatchFixHelper(const SourceFile &input, const Comp
             patchFixKind = util::PatchFixKind::COLDRELOAD;
         }
         patchFixHelper = new util::PatchFix(needDumpSymbolFile, needGeneratePatch, patchFixKind, input.recordName,
-            symbolTable, options.targetApiVersion);
+            symbolTable);
         parser_->AddPatchFixHelper(patchFixHelper);
         compiler_->AddPatchFixHelper(patchFixHelper);
     }

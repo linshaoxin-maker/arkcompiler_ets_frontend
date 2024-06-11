@@ -21,6 +21,7 @@
 #include "checker/ets/typeRelationContext.h"
 #include "checker/types/globalTypesHolder.h"
 #include "checker/types/ets/etsTupleType.h"
+#include "checker/types/ets/etsAsyncFuncReturnType.h"
 
 namespace ark::es2panda::checker {
 
@@ -162,13 +163,26 @@ checker::Type *ETSAnalyzer::Check(ir::MethodDefinition *node) const
         }
     }
 
+    if (IsAsyncMethod(node)) {
+        if (scriptFunc->ReturnTypeAnnotation() != nullptr) {
+            auto *asyncFuncReturnType = scriptFunc->Signature()->ReturnType();
+
+            if (!asyncFuncReturnType->IsETSObjectType() ||
+                asyncFuncReturnType->AsETSObjectType()->GetOriginalBaseType() != checker->GlobalBuiltinPromiseType()) {
+                checker->ThrowTypeError("Return type of async function must be 'Promise'.", scriptFunc->Start());
+            }
+        }
+
+        ComposeAsyncImplMethod(checker, node);
+    }
+
     DoBodyTypeChecking(checker, node, scriptFunc);
     CheckPredefinedMethodReturnType(checker, scriptFunc);
 
     checker->CheckOverride(node->TsType()->AsETSFunctionType()->FindSignature(node->Function()));
 
-    for (auto *it : node->Overloads()) {
-        it->Check(checker);
+    for (auto *overload : node->Overloads()) {
+        overload->Check(checker);
     }
 
     if (scriptFunc->IsRethrowing()) {
@@ -356,10 +370,18 @@ checker::Type *ETSAnalyzer::Check(ir::ETSLaunchExpression *expr) const
     // Launch expression returns a Promise<T> type, so we need to insert the expression's type
     // as type parameter for the Promise class.
 
-    auto *exprType =
-        expr->expr_->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE) && !expr->expr_->TsType()->IsETSVoidType()
-            ? checker->PrimitiveTypeAsETSBuiltinType(expr->expr_->TsType())
-            : expr->expr_->TsType();
+    auto exprType = [&checker](auto *tsType) {
+        if (tsType->IsETSVoidType()) {
+            return checker->GlobalETSUndefinedType();
+        }
+
+        if (tsType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+            return checker->PrimitiveTypeAsETSBuiltinType(tsType);
+        }
+
+        return tsType;
+    }(expr->expr_->TsType());
+
     checker::Substitution *substitution = checker->NewSubstitution();
     ASSERT(launchPromiseType->TypeArguments().size() == 1);
     checker::ETSChecker::EmplaceSubstituted(
@@ -804,7 +826,6 @@ checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *const expr) const
                                           ? variableScope->IsGlobalScope() || (variableScope->Parent() != nullptr &&
                                                                                variableScope->Parent()->IsGlobalScope())
                                           : false;
-
         if (!topLevelVariable && !variable->HasFlag(varbinder::VariableFlags::BOXED)) {
             if (checker->Relation()->IsIdenticalTo(leftType, smartType)) {
                 checker->Context().RemoveSmartCast(variable);
@@ -882,8 +903,38 @@ checker::Type *ETSAnalyzer::Check(ir::AwaitExpression *expr) const
         checker->ThrowTypeError("'await' expressions require Promise object as argument.", expr->Argument()->Start());
     }
 
-    expr->SetTsType(argType->AsETSObjectType()->TypeArguments().at(0));
+    Type *type = argType->AsETSObjectType()->TypeArguments().at(0);
+    expr->SetTsType(UnwrapPromiseType(type));
     return expr->TsType();
+}
+
+checker::Type *ETSAnalyzer::UnwrapPromiseType(checker::Type *type) const
+{
+    ETSChecker *checker = GetETSChecker();
+    checker::Type *promiseType = checker->GlobalBuiltinPromiseType();
+    while (type->IsETSObjectType() && type->AsETSObjectType()->GetOriginalBaseType() == promiseType) {
+        type = type->AsETSObjectType()->TypeArguments().at(0);
+    }
+    if (!type->IsETSUnionType()) {
+        return type;
+    }
+    const auto &ctypes = type->AsETSUnionType()->ConstituentTypes();
+    auto it = std::find_if(ctypes.begin(), ctypes.end(), [promiseType](checker::Type *t) {
+        return t == promiseType || (t->IsETSObjectType() && t->AsETSObjectType()->GetBaseType() == promiseType);
+    });
+    if (it == ctypes.end()) {
+        return type;
+    }
+    ArenaVector<Type *> newCTypes(ctypes);
+    do {
+        size_t index = it - ctypes.begin();
+        newCTypes[index] = UnwrapPromiseType(ctypes[index]);
+        ++it;
+        it = std::find_if(it, ctypes.end(), [promiseType](checker::Type *t) {
+            return t == promiseType || t->AsETSObjectType()->GetBaseType() == promiseType;
+        });
+    } while (it != ctypes.end());
+    return checker->CreateETSUnionType(std::move(newCTypes));
 }
 
 checker::Type *ETSAnalyzer::Check(ir::BinaryExpression *expr) const
@@ -1080,7 +1131,6 @@ checker::Type *ETSAnalyzer::Check(ir::ConditionalExpression *expr) const
     SmartCastArray smartCasts = checker->Context().EnterTestExpression();
     checker->CheckTruthinessOfType(expr->Test());
     SmartCastTypes testedTypes = checker->Context().ExitTestExpression();
-
     if (testedTypes.has_value()) {
         for (auto [variable, consequentType, _] : *testedTypes) {
             checker->ApplySmartCast(variable, consequentType);
@@ -1949,7 +1999,6 @@ checker::Type *ETSAnalyzer::Check(ir::IfStatement *st) const
     SmartCastArray smartCasts = checker->Context().EnterTestExpression();
     checker->CheckTruthinessOfType(st->Test());
     SmartCastTypes testedTypes = checker->Context().ExitTestExpression();
-
     if (testedTypes.has_value()) {
         for (auto [variable, consequentType, _] : *testedTypes) {
             checker->ApplySmartCast(variable, consequentType);
@@ -1974,7 +2023,6 @@ checker::Type *ETSAnalyzer::Check(ir::IfStatement *st) const
         checker->Context().EnterPath();
         st->Alternate()->Check(checker);
         bool const alternateTerminated = checker->Context().ExitPath();
-
         if (alternateTerminated) {
             if (!consequentTerminated) {
                 // Here we need to restore types from consequent if block.
@@ -2231,7 +2279,6 @@ checker::Type *ETSAnalyzer::Check(ir::VariableDeclarator *st) const
     //  NOTE: T_S and K_o_t_l_i_n don't act in such way, but we can try - why not? :)
     if (auto *const initType = st->Init() != nullptr ? st->Init()->TsType() : nullptr; initType != nullptr) {
         smartType = checker->ResolveSmartType(initType, variableType);
-
         //  Set smart type for identifier if it differs from annotated type
         //  Top-level and captured variables are not processed here!
         if (!checker->Relation()->IsIdenticalTo(variableType, smartType)) {
@@ -2504,7 +2551,6 @@ checker::Type *ETSAnalyzer::Check(ir::TSNonNullExpression *expr) const
     if (expr->TsType() == nullptr) {
         ETSChecker *checker = GetETSChecker();
         auto exprType = expr->expr_->Check(checker);
-
         if (!exprType->PossiblyETSNullish()) {
             checker->ThrowTypeError(
                 "Bad operand type, the operand of the non-nullish expression must be a nullish type",
