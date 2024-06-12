@@ -33,6 +33,100 @@ import options
 import utils
 
 
+class FullTest:
+    @staticmethod
+    def prepare_full_task(task, test_name):
+        if test_name in task.full_compilation_info:
+            full_task = task.full_compilation_info[test_name]
+        else:
+            full_task = options.FullCompilationInfo()
+            full_task.name = test_name
+            task.full_compilation_info[test_name] = full_task
+        return full_task
+
+    @staticmethod
+    def full_compile(task, is_debug):
+        test_name = "full_compile"
+        logging.info(f"==========> Running {test_name} for task: {task.name}")
+        clean_compile(task)
+
+        full_task = FullTest.prepare_full_task(task, test_name)
+        [stdout, stderr] = compile_project(task, is_debug)
+        passed = validate(full_task, task, is_debug, stdout, stderr, 'full_compile')
+        if passed:
+            backup_compile_output(task, is_debug)
+        clean_compile(task)
+
+        return passed
+
+    @staticmethod
+    def import_ordinary_npm_package(task, is_debug):
+        pass
+
+    @staticmethod
+    def import_special_npm_package(task, is_debug):
+        pass
+
+    @staticmethod
+    def import_static_library(task, is_debug):
+        test_name = 'import_static_library'
+        clean_compile(task)
+        full_task = FullTest.prepare_full_task(task, test_name)
+        logging.info(f"==========> Running {test_name} for task: {task.name}")
+
+        reverse_dependency_import(task, 'Har', 1)
+        [stdout, stderr] = compile_project(task, is_debug)
+        validate(full_task, task, is_debug, stdout, stderr, 'import_static_library')
+        reverse_dependency_import(task, 'Har', 0)
+
+    @staticmethod
+    def import_share_library(task, is_debug):
+        test_name = 'import_share_library'
+        clean_compile(task)
+        full_task = FullTest.prepare_full_task(task, test_name)
+        logging.info(f"==========> Running {test_name} for task: {task.name}")
+
+        reverse_dependency_import(task, 'Hsp', 1)
+        [stdout, stderr] = compile_project(task, is_debug)
+        validate(full_task, task, is_debug, stdout, stderr, 'import_share_library')
+        reverse_dependency_import(task, 'Hsp', 0)
+
+    @staticmethod
+    def import_so_file(task, is_debug):
+        # only c++ native projects require testing
+        pass
+
+    @staticmethod
+    def has_syntax_error_in_js(task, is_debug):
+        test_name = 'has_syntax_error_in_js'
+        clean_compile(task)
+        full_task = FullTest.prepare_full_task(task, test_name)
+        info = full_task.debug_info if is_debug else full_task.release_info
+        logging.info(f"==========> Running {test_name} for task: {task.name}")
+
+        add_or_delete_js_file(task, 1, True)
+        passed = is_get_expected_error(task, is_debug, info)
+        if passed:
+            info.result = options.TaskResult.passed
+        add_or_delete_js_file(task, 0)
+
+    @staticmethod
+    def ts_obfuscation(task, is_debug):
+        # ts obfuscation only supports for release mode
+        if is_debug:
+            return
+
+        test_name = 'ts_obfuscation'
+        clean_compile(task)
+        full_task = FullTest.prepare_full_task(task, test_name)
+        logging.info(f"==========> Running {test_name} for task: {task.name}")
+
+        origin_status = change_ts_obfuscation_status(task, True)
+        [stdout, stderr] = compile_project(task, is_debug)
+        validate(full_task, task, is_debug, stdout, stderr)
+        change_ts_obfuscation_status(task, origin_status)
+
+
 class IncrementalTest:
     @staticmethod
     def validate_module_name_change(task, inc_task, is_debug, stdout, stderr, new_module_name):
