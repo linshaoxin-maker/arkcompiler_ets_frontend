@@ -51,7 +51,7 @@ namespace ark::es2panda::compiler {
 static constexpr auto TYPE_FLAG_BYTECODE_REF = checker::TypeFlag::ETS_ARRAY | checker::TypeFlag::ETS_OBJECT |
                                                checker::TypeFlag::ETS_UNION | checker::TypeFlag::ETS_TYPE_PARAMETER |
                                                checker::TypeFlag::ETS_NONNULLISH | checker::TypeFlag::ETS_NULL |
-                                               checker::TypeFlag::ETS_UNDEFINED;
+                                               checker::TypeFlag::ETS_UNDEFINED | checker::TypeFlag::ETS_READONLY;
 
 ETSGen::ETSGen(ArenaAllocator *allocator, RegSpiller *spiller, public_lib::Context *context,
                std::tuple<varbinder::FunctionScope *, ProgramElement *, AstCompiler *> toCompile) noexcept
@@ -2042,6 +2042,7 @@ void ETSGen::CastToDynamic(const ir::AstNode *node, const checker::ETSDynamicTyp
         case checker::TypeFlag::ETS_OBJECT:
         case checker::TypeFlag::ETS_TYPE_PARAMETER:
         case checker::TypeFlag::ETS_NONNULLISH:
+        case checker::TypeFlag::ETS_READONLY:
         case checker::TypeFlag::ETS_UNION: {  // NOTE(vpukhov): refine dynamic type cast rules
             if (GetAccumulatorType()->IsETSStringType()) {
                 methodName = compiler::Signatures::Dynamic::NewStringBuiltin(type->Language());
