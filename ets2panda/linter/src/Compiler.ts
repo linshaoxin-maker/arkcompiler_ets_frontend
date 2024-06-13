@@ -15,11 +15,11 @@
 
 import * as ts from 'typescript';
 import type { CommandLineOptions } from '../lib/CommandLineOptions';
-import { formTscOptions } from './ts-compiler/FormTscOptions';
-import { logTscDiagnostic } from '../lib/utils/functions/LogTscDiagnostic';
-import { consoleLog } from '../lib/TypeScriptLinter';
 import type { LintOptions } from '../lib/LintOptions';
+import { consoleLog } from '../lib/TypeScriptLinter';
 import { TSCCompiledProgramWithDiagnostics } from '../lib/ts-diagnostics/TSCCompiledProgram';
+import { logTscDiagnostic } from '../lib/utils/Functions';
+import { formTscOptions } from './ts-compiler/FormTscOptions';
 
 function compile(cmdOptions: CommandLineOptions, overrideCompilerOptions: ts.CompilerOptions): ts.Program {
   const createProgramOptions = formTscOptions(cmdOptions, overrideCompilerOptions);
