@@ -234,7 +234,6 @@ static pandasm::Program *CreateCompiler(const CompilationUnit &unit, const Phase
 {
     ArenaAllocator allocator(SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
     auto program = parser::Program::NewProgram<VarBinder>(&allocator);
-    program.MarkEntry();
     auto parser =
         Parser(&program, unit.options.CompilerOptions(), static_cast<parser::ParserStatus>(unit.rawParserStatus));
     auto checker = Checker();

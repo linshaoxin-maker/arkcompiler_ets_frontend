@@ -536,50 +536,34 @@ void ETSEmitter::GenClassRecord(const ir::ClassDefinition *classDef, bool extern
 
 pandasm::AnnotationData ETSEmitter::GenAnnotationSignature(const ir::ClassDefinition *classDef)
 {
-    static constexpr std::string_view OBJECT = "Lstd/core/Object";
     std::vector<pandasm::ScalarValue> parts {};
-    std::stringstream ss {};
     const auto &params = classDef->TypeParams()->Params();
 
-    bool firstIteration = true;
+    auto const addStringValue = [&parts](std::string_view str) {
+        parts.emplace_back(pandasm::ScalarValue::Create<pandasm::Value::Type::STRING>(str));
+    };
+
+    if (!params.empty()) {
+        addStringValue(Signatures::GENERIC_BEGIN);
+    }
+
     for (const auto *param : params) {
-        if (firstIteration) {
-            ss << Signatures::GENERIC_BEGIN;
-            firstIteration = false;
-        }
-        ss << param->Name()->Name() << Signatures::MANGLE_BEGIN;
-        parts.emplace_back(pandasm::ScalarValue::Create<pandasm::Value::Type::STRING>(ss.str()));
-
-        std::stringstream {}.swap(ss);
-        if (param->Constraint() == nullptr) {
-            ss << OBJECT;
-        } else {
-            param->Constraint()->TsType()->ToAssemblerTypeWithRank(ss);
-            auto str = ss.str();
-            std::replace(str.begin(), str.end(), *Signatures::METHOD_SEPARATOR.begin(),
-                         *Signatures::NAMESPACE_SEPARATOR.begin());
-            std::stringstream {}.swap(ss);
-            ss << Signatures::CLASS_REF_BEGIN << str << Signatures::MANGLE_SEPARATOR;
-        }
-
-        parts.emplace_back(pandasm::ScalarValue::Create<pandasm::Value::Type::STRING>(ss.str()));
-        std::stringstream {}.swap(ss);  // cleanup
+        addStringValue(Signatures::MANGLE_BEGIN);
+        std::stringstream ss;
+        param->Constraint()->TsType()->ToAssemblerTypeWithRank(ss);
+        auto asmName = ss.str();
+        addStringValue(checker::ETSObjectType::NameToDescriptor(util::StringView(asmName)));
     }
 
-    ss << Signatures::GENERIC_END;
-    parts.emplace_back(pandasm::ScalarValue::Create<pandasm::Value::Type::STRING>(ss.str()));
+    if (!params.empty()) {
+        addStringValue(Signatures::GENERIC_END);
+    }
 
-    std::stringstream {}.swap(ss);
-    if (classDef->TsType()->AsETSObjectType()->SuperType() == nullptr) {
-        ss << OBJECT;
+    if (auto super = classDef->TsType()->AsETSObjectType()->SuperType(); super != nullptr) {
+        addStringValue(checker::ETSObjectType::NameToDescriptor(util::StringView(super->AssemblerName().Mutf8())));
     } else {
-        ss << Signatures::CLASS_REF_BEGIN;
-        auto superType = classDef->TsType()->AsETSObjectType()->SuperType()->AssemblerName().Mutf8();
-        std::replace(superType.begin(), superType.end(), *Signatures::METHOD_SEPARATOR.begin(),
-                     *Signatures::NAMESPACE_SEPARATOR.begin());
-        ss << superType << Signatures::MANGLE_SEPARATOR;
+        addStringValue("Lstd/core/Object");
     }
-    parts.emplace_back(pandasm::ScalarValue::Create<pandasm::Value::Type::STRING>(ss.str()));
 
     GenAnnotationRecord(Signatures::ETS_ANNOTATION_SIGNATURE);
     pandasm::AnnotationData signature(Signatures::ETS_ANNOTATION_SIGNATURE);

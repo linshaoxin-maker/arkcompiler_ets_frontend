@@ -64,7 +64,7 @@ void ETSNullType::ToAssemblerType(std::stringstream &ss) const
 
 void ETSNullType::ToDebugInfoType(std::stringstream &ss) const
 {
-    ETSObjectType::DebugInfoTypeFromName(ss, compiler::Signatures::BUILTIN_OBJECT);
+    ss << ETSObjectType::NameToDescriptor(compiler::Signatures::BUILTIN_OBJECT);
 }
 
 Type *ETSNullType::Instantiate([[maybe_unused]] ArenaAllocator *allocator, [[maybe_unused]] TypeRelation *relation,
@@ -115,7 +115,7 @@ void ETSUndefinedType::ToAssemblerType(std::stringstream &ss) const
 
 void ETSUndefinedType::ToDebugInfoType(std::stringstream &ss) const
 {
-    ETSObjectType::DebugInfoTypeFromName(ss, compiler::Signatures::BUILTIN_OBJECT);
+    ss << ETSObjectType::NameToDescriptor(compiler::Signatures::BUILTIN_OBJECT);
 }
 
 Type *ETSUndefinedType::Instantiate([[maybe_unused]] ArenaAllocator *allocator, [[maybe_unused]] TypeRelation *relation,

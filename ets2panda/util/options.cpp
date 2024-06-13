@@ -174,7 +174,8 @@ bool Options::Parse(int argc, const char **argv)
     ark::PandArg<bool> opDebugInfo("debug-info", false, "Compile with debug info");
     ark::PandArg<bool> opDumpDebugInfo("dump-debug-info", false, "Dump debug info");
     ark::PandArg<int> opOptLevel("opt-level", 0, "Compiler optimization level (options: 0 | 1 | 2)", 0, MAX_OPT_LEVEL);
-    ark::PandArg<bool> opEtsModule("ets-module", false, "Compile the input as ets-module");
+    ark::PandArg<std::string> opEtsPath("etspath", "", ".ets sources root path");
+    ark::PandArg<bool> opEtsModule("ets-module", false, "Unused, left for compatibility");
 
     // ETS-warnings
     ark::PandArg<bool> opEtsEnableAll("ets-warnings-all", false, "Show performance-related ets-warnings");
@@ -271,6 +272,7 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&logLevel);
     argparser_->Add(&stdLib);
     argparser_->Add(&genStdLib);
+    argparser_->Add(&opEtsPath);
     argparser_->Add(&plugins);
     argparser_->Add(&skipPhases);
     argparser_->Add(&verifierAllChecks);
@@ -401,8 +403,8 @@ bool Options::Parse(int argc, const char **argv)
     compilerOptions_.isDebug = opDebugInfo.GetValue();
     compilerOptions_.parseOnly = opParseOnly.GetValue();
     compilerOptions_.stdLib = stdLib.GetValue();
+    compilerOptions_.etsPath = opEtsPath.GetValue();
     compilerOptions_.compilationMode = compilationMode;
-    compilerOptions_.isEtsModule = opEtsModule.GetValue();
     compilerOptions_.plugins = SplitToStringVector(plugins.GetValue());
     compilerOptions_.skipPhases = SplitToStringSet(skipPhases.GetValue());
     compilerOptions_.verifierFullProgram = verifierFullProgram.GetValue();

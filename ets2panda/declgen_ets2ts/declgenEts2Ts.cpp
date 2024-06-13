@@ -65,7 +65,9 @@ void TSDeclGen::Generate()
     Out(license.str());
     Out("declare const exports: any;");
     OutEndl();
-    Out("let ETSGLOBAL: any = (globalThis as any).Panda.getClass('LETSGLOBAL;');");
+    auto globalDesc =
+        checker::ETSObjectType::NameToDescriptor(program_->GlobalClass()->TsType()->AsETSObjectType()->AssemblerName());
+    Out("let ETSGLOBAL: any = (globalThis as any).Panda.getClass('", globalDesc, "');");
     OutEndl(2U);
 
     for (auto *globalStatement : program_->Ast()->Statements()) {

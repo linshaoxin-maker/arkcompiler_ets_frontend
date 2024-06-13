@@ -417,11 +417,6 @@ private:
         return GetOptions().arktsConfig;
     }
 
-    bool IsETSModule() const
-    {
-        return GetOptions().isEtsModule;
-    }
-
     bool IsStructKeyword() const;
 
     bool IsExternal() const override

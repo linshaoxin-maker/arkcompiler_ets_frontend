@@ -429,7 +429,7 @@ std::string RedeclarationErrorMessageAssembler(const Variable *const var, const 
     return str;
 }
 
-static const util::StringView &GetPackageName(varbinder::Variable *var)
+static util::StringView GetPackageName(varbinder::Variable *var)
 {
     Scope *scope = var->GetScope();
 
@@ -439,7 +439,7 @@ static const util::StringView &GetPackageName(varbinder::Variable *var)
 
     ASSERT(scope->Node()->IsETSScript());
 
-    return scope->Node()->AsETSScript()->Program()->ModuleName();
+    return scope->Node()->AsETSScript()->Program()->PackageName();
 }
 
 void AddOverloadFlag(bool isStdLib, varbinder::Variable *var, varbinder::Variable *variable)

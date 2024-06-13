@@ -1019,7 +1019,7 @@
                         "arguments": [
                           {
                             "type": "StringLiteral",
-                            "value": "L$jsnew;",
+                            "value": "LdynamicJsImport/$jsnew;",
                             "loc": {
                               "start": {
                                 "line": 1,
@@ -1613,7 +1613,7 @@
                         "arguments": [
                           {
                             "type": "StringLiteral",
-                            "value": "L$jscall;",
+                            "value": "LdynamicJsImport/$jscall;",
                             "loc": {
                               "start": {
                                 "line": 1,

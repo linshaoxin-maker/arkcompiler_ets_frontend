@@ -368,7 +368,8 @@ void ETSLReference::SetValue() const
     }
 
     if (objectType->IsETSUnionType()) {
-        etsg_->StoreUnionProperty(Node(), memberExprTsType, baseReg_, propName);
+        etsg_->StorePropertyByName(Node(), baseReg_,
+                                   checker::ETSChecker::FormNamedAccessMetadata(memberExpr->PropVar()));
         return;
     }
 

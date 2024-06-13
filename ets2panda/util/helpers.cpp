@@ -658,12 +658,12 @@ bool Helpers::IsStdLib(const parser::Program *program)
 {
     const auto &stdlib = StdLib();
 
-    // NOTE(rsipka): early check: if program is not a package module then it is not part of the stdlib either
-    if (!program->IsPackageModule()) {
+    // NOTE(rsipka): early check: if program is not in a package then it is not part of the stdlib either
+    if (program->IsSeparateModule()) {
         return false;
     }
 
-    auto fileFolder = program->ModuleName().Mutf8();
+    auto fileFolder = program->PackageName().Mutf8();
     std::replace(fileFolder.begin(), fileFolder.end(), *compiler::Signatures::METHOD_SEPARATOR.begin(),
                  *compiler::Signatures::NAMESPACE_SEPARATOR.begin());
     return std::count(stdlib.begin(), stdlib.end(), fileFolder) != 0;

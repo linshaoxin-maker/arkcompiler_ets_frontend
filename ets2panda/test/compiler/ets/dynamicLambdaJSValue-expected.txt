@@ -1112,7 +1112,7 @@
                         "arguments": [
                           {
                             "type": "StringLiteral",
-                            "value": "L$jsnew;",
+                            "value": "LdynamicLambdaJSValue/$jsnew;",
                             "loc": {
                               "start": {
                                 "line": 1,
@@ -1583,7 +1583,7 @@
                         "arguments": [
                           {
                             "type": "StringLiteral",
-                            "value": "L$jscall;",
+                            "value": "LdynamicLambdaJSValue/$jscall;",
                             "loc": {
                               "start": {
                                 "line": 1,

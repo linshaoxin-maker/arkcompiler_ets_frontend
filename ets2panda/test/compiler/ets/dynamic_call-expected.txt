@@ -757,7 +757,7 @@
                         "arguments": [
                           {
                             "type": "StringLiteral",
-                            "value": "L$jsnew;",
+                            "value": "Ldynamic_call/$jsnew;",
                             "loc": {
                               "start": {
                                 "line": 1,
@@ -1228,7 +1228,7 @@
                         "arguments": [
                           {
                             "type": "StringLiteral",
-                            "value": "L$jscall;",
+                            "value": "Ldynamic_call/$jscall;",
                             "loc": {
                               "start": {
                                 "line": 1,

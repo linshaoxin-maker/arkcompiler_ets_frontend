@@ -114,7 +114,6 @@ public:
         compiler::CompilationUnit unit {input, *options, 0, options->Extension()};
         auto getPhases = compiler::GetPhaseList(ScriptExtension::ETS);
 
-        program->MarkEntry();
         auto parser =
             Parser(program, unit.options.CompilerOptions(), static_cast<parser::ParserStatus>(unit.rawParserStatus));
         auto analyzer = Analyzer(checker);

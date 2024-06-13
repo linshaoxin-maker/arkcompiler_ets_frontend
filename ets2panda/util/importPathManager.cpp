@@ -266,5 +266,27 @@ StringView ImportPathManager::AppendExtensionOrIndexFileIfOmitted(const StringVi
     throw Error(ErrorType::GENERIC, "", "Not supported path: " + path.Mutf8());
 }
 
+util::StringView ImportPathManager::FormPackageName(const util::Path &path)
+{
+    if (absoluteEtsPath_.empty()) {
+        return path.GetFileName();
+    }
+    std::string filePath(path.GetAbsolutePath());
+    if (filePath.rfind(absoluteEtsPath_, 0) != 0) {
+        throw Error(ErrorType::GENERIC, filePath, "Source file outside etspath");
+    }
+    filePath = filePath.substr(absoluteEtsPath_.size());
+    if (auto pos = filePath.find_last_of('.'); pos != std::string::npos) {
+        filePath = filePath.substr(0, pos);
+    } else {
+        throw Error(ErrorType::GENERIC, filePath, "Invalid filename");
+    }
+    while (filePath[0] == util::PATH_DELIMITER) {
+        filePath = filePath.substr(1);
+    }
+    std::replace(filePath.begin(), filePath.end(), util::PATH_DELIMITER, '.');
+    return util::UString(filePath, allocator_).View();
+}
+
 }  // namespace ark::es2panda::util
 #undef USE_UNIX_SYSCALL

@@ -513,9 +513,6 @@ ETSStringEnumType *ETSChecker::CreateETSStringEnumType(ir::TSEnumDeclaration con
 ETSObjectType *ETSChecker::CreateNewETSObjectType(util::StringView name, ir::AstNode *declNode, ETSObjectFlags flags)
 {
     util::StringView assemblerName = name;
-    util::StringView prefix {};
-
-    auto *containingObjType = util::Helpers::GetContainingObjectType(declNode->Parent());
 
     if (declNode->IsClassDefinition()) {
         if (declNode->AsClassDefinition()->IsLocal()) {
@@ -525,24 +522,14 @@ ETSObjectType *ETSChecker::CreateNewETSObjectType(util::StringView name, ir::Ast
         }
     }
 
-    if (containingObjType != nullptr) {
-        prefix = containingObjType->AssemblerName();
-    } else if (const auto *topStatement = declNode->GetTopStatement();
-               topStatement->Type() !=
-               ir::AstNodeType::ETS_SCRIPT) {  // NOTE: should not occur, fix for TS_INTERFACE_DECLARATION
-        ASSERT(declNode->IsTSInterfaceDeclaration());
-        assemblerName = declNode->AsTSInterfaceDeclaration()->InternalName();
+    std::stringstream ss;
+    if (auto *containigType = util::Helpers::GetContainingObjectType(declNode->Parent()); containigType != nullptr) {
+        ss << containigType->AssemblerName() << '.';
     } else {
-        auto program = static_cast<ir::ETSScript *>(declNode->GetTopStatement())->Program();
-        prefix = program->OmitModuleName() ? util::StringView() : program->ModuleName();
+        ss << declNode->GetTopStatement()->AsETSScript()->Program()->PackagePrefix();
     }
-
-    if (!prefix.Empty()) {
-        assemblerName =
-            util::UString(prefix.Mutf8() + compiler::Signatures::METHOD_SEPARATOR.data() + assemblerName.Mutf8(),
-                          Allocator())
-                .View();
-    }
+    ss << assemblerName;
+    assemblerName = util::UString(ss.str(), Allocator()).View();
 
     Language lang(Language::Id::ETS);
     bool hasDecl = false;

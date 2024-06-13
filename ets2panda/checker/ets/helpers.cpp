@@ -2485,17 +2485,15 @@ ETSObjectType *ETSChecker::GetImportSpecifierObjectType(ir::ETSImportDeclaration
     auto programList = VarBinder()->AsETSBinder()->GetProgramList(importPath);
     ASSERT(!programList.empty());
 
-    std::vector<util::StringView> syntheticNames = GetNameForSynteticObjectType(programList.front()->ModuleName());
+    std::vector<util::StringView> syntheticNames = GetNameForSynteticObjectType(programList.front()->PackageName());
     ASSERT(!syntheticNames.empty());
 
-    auto assemblerName = syntheticNames[0];
-    if (!programList.front()->OmitModuleName()) {
-        assemblerName = util::UString(assemblerName.Mutf8()
-                                          .append(compiler::Signatures::METHOD_SEPARATOR)
-                                          .append(compiler::Signatures::ETS_GLOBAL),
-                                      Allocator())
-                            .View();
-    }
+    auto assemblerName = util::UString(syntheticNames[0]
+                                           .Mutf8()
+                                           .append(compiler::Signatures::METHOD_SEPARATOR)
+                                           .append(compiler::Signatures::ETS_GLOBAL),
+                                       Allocator())
+                             .View();
 
     auto *moduleObjectType = Allocator()->New<checker::ETSObjectType>(
         Allocator(), syntheticNames[0], assemblerName, ident, checker::ETSObjectFlags::CLASS, Relation());
@@ -2519,4 +2517,12 @@ ETSObjectType *ETSChecker::GetImportSpecifierObjectType(ir::ETSImportDeclaration
 
     return moduleObjectType;
 }
+
+ETSChecker::NamedAccessMeta ETSChecker::FormNamedAccessMetadata(varbinder::Variable const *prop)
+{
+    const auto *field = prop->Declaration()->Node()->AsClassProperty();
+    const auto *owner = field->Parent()->AsClassDefinition();
+    return {owner->TsType()->AsETSObjectType(), field->TsType(), field->Id()->Name()};
+}
+
 }  // namespace ark::es2panda::checker

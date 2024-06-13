@@ -955,14 +955,14 @@ void ETSObjectType::InstantiateProperties() const
     }
 }
 
-void ETSObjectType::DebugInfoTypeFromName(std::stringstream &ss, util::StringView asmName)
+std::string ETSObjectType::NameToDescriptor(util::StringView name)
 {
-    ss << compiler::Signatures::CLASS_REF_BEGIN;
-    auto copied = asmName.Mutf8();
-    std::replace(copied.begin(), copied.end(), *compiler::Signatures::METHOD_SEPARATOR.begin(),
+    auto desc = std::string(compiler::Signatures::CLASS_REF_BEGIN)
+                    .append(name.Utf8())
+                    .append(std::string(compiler::Signatures::MANGLE_SEPARATOR));
+    std::replace(desc.begin(), desc.end(), *compiler::Signatures::METHOD_SEPARATOR.begin(),
                  *compiler::Signatures::NAMESPACE_SEPARATOR.begin());
-    ss << copied;
-    ss << compiler::Signatures::MANGLE_SEPARATOR;
+    return desc;
 }
 
 std::uint32_t ETSObjectType::GetPrecedence(checker::ETSChecker *checker, ETSObjectType const *type) noexcept
@@ -1035,7 +1035,7 @@ void ETSObjectType::ToAssemblerType([[maybe_unused]] std::stringstream &ss) cons
 
 void ETSObjectType::ToDebugInfoType(std::stringstream &ss) const
 {
-    DebugInfoTypeFromName(ss, assemblerName_);
+    ss << NameToDescriptor(assemblerName_);
 }
 
 void ETSObjectType::ToDebugInfoSignatureType(std::stringstream &ss) const

@@ -245,14 +245,10 @@ void ETSGen::LoadAccumulatorDynamicModule(const ir::AstNode *node, const ir::ETS
 util::StringView ETSGen::FormDynamicModulePropReference(const ir::ETSImportDeclaration *import)
 {
     std::stringstream ss;
-
-    if (!VarBinder()->Program()->OmitModuleName()) {
-        ss << VarBinder()->Program()->ModuleName() << compiler::Signatures::METHOD_SEPARATOR;
-    }
-
-    ss << compiler::Signatures::DYNAMIC_MODULE_CLASS << compiler::Signatures::METHOD_SEPARATOR
-       << import->AssemblerName();
-
+    ss << VarBinder()->Program()->PackagePrefix();
+    ss << compiler::Signatures::DYNAMIC_MODULE_CLASS;
+    ss << '.';
+    ss << import->AssemblerName();
     return util::UString(ss.str(), Allocator()).View();
 }
 
@@ -439,34 +435,38 @@ void ETSGen::LoadProperty(const ir::AstNode *const node, const checker::Type *pr
     SetAccumulatorType(propType);
 }
 
-void ETSGen::StoreUnionProperty([[maybe_unused]] const ir::AstNode *node,
-                                [[maybe_unused]] const checker::Type *propType, [[maybe_unused]] VReg objReg,
-                                [[maybe_unused]] const util::StringView &propName)
+void ETSGen::StorePropertyByName([[maybe_unused]] const ir::AstNode *node, [[maybe_unused]] VReg objReg,
+                                 [[maybe_unused]] checker::ETSChecker::NamedAccessMeta const &fieldMeta)
 {
 #ifdef PANDA_WITH_ETS
+    auto [metaObj, propType, propName] = fieldMeta;
+    const auto fullName = FormClassPropReference(metaObj, propName);
+
     if (propType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
-        Ra().Emit<EtsStobjNameObj>(node, objReg, propName);
+        Ra().Emit<EtsStobjNameObj>(node, objReg, fullName);
     } else if (propType->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
-        Ra().Emit<EtsStobjNameWide>(node, objReg, propName);
+        Ra().Emit<EtsStobjNameWide>(node, objReg, fullName);
     } else {
-        Ra().Emit<EtsStobjName>(node, objReg, propName);
+        Ra().Emit<EtsStobjName>(node, objReg, fullName);
     }
 #else
     UNREACHABLE();
 #endif  // PANDA_WITH_ETS
 }
 
-void ETSGen::LoadUnionProperty([[maybe_unused]] const ir::AstNode *const node,
-                               [[maybe_unused]] const checker::Type *propType, [[maybe_unused]] const VReg objReg,
-                               [[maybe_unused]] const util::StringView &propName)
+void ETSGen::LoadPropertyByName([[maybe_unused]] const ir::AstNode *const node, [[maybe_unused]] VReg objReg,
+                                [[maybe_unused]] checker::ETSChecker::NamedAccessMeta const &fieldMeta)
 {
 #ifdef PANDA_WITH_ETS
+    auto [metaObj, propType, propName] = fieldMeta;
+    const auto fullName = FormClassPropReference(metaObj, propName);
+
     if (propType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
-        Ra().Emit<EtsLdobjNameObj>(node, objReg, propName);
+        Ra().Emit<EtsLdobjNameObj>(node, objReg, fullName);
     } else if (propType->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
-        Ra().Emit<EtsLdobjNameWide>(node, objReg, propName);
+        Ra().Emit<EtsLdobjNameWide>(node, objReg, fullName);
     } else {
-        Ra().Emit<EtsLdobjName>(node, objReg, propName);
+        Ra().Emit<EtsLdobjName>(node, objReg, fullName);
     }
     SetAccumulatorType(propType);
 #else

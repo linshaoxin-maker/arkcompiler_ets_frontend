@@ -429,7 +429,6 @@ static es2panda_Context *CreateContext(es2panda_Config *config, std::string cons
 
         auto *varbinder = res->allocator->New<varbinder::ETSBinder>(res->allocator);
         res->parserProgram = new parser::Program(res->allocator, varbinder);
-        res->parserProgram->MarkEntry();
         res->parser =
             new parser::ETSParser(res->parserProgram, cfg->options->CompilerOptions(), parser::ParserStatus::NO_OPTS);
         res->checker = new checker::ETSChecker();

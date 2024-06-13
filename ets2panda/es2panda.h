@@ -104,7 +104,6 @@ enum ETSWarnings {
 struct CompilerOptions {
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
     bool isDebug {};
-    bool isEtsModule {};
     bool isEval {};
     bool isDirectEval {};
     bool isFunctionEval {};
@@ -117,6 +116,7 @@ struct CompilerOptions {
     bool verifierAllChecks {};
     bool verifierFullProgram {};
     std::string stdLib {};
+    std::string etsPath {};
     std::vector<std::string> plugins {};
     std::unordered_set<std::string> skipPhases {};
     std::unordered_set<std::string> verifierWarnings {};

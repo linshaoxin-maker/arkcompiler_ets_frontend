@@ -197,7 +197,7 @@ public:
                 }
 
                 // in case of importing a package folder, the path could not be resolved to a specific file
-                if (program->IsPackageModule() && program->SourceFileFolder() == path) {
+                if (!program->IsSeparateModule() && program->SourceFileFolder() == path) {
                     return extRecords.second;
                 }
             }

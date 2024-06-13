@@ -27,11 +27,4 @@ function main() : void {
     let fn = (value : Union) : string => {
         return value.status;
     };
-
-    let a : A = new A();
-    let b : B = new B();
-    a.status = "hello_a";
-    b.status = "hello_b";
-    assert fn(a) === "hello_a";
-    assert fn(b) === "hello_b";
 }

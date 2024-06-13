@@ -1111,7 +1111,7 @@ void ETSCompiler::Compile(const ir::MemberExpression *expr) const
     } else if (objectType->IsETSDynamicType()) {
         etsg->LoadPropertyDynamic(expr, expr->TsType(), objReg, propName);
     } else if (objectType->IsETSUnionType()) {
-        etsg->LoadUnionProperty(expr, expr->TsType(), objReg, propName);
+        etsg->LoadPropertyByName(expr, objReg, checker::ETSChecker::FormNamedAccessMetadata(expr->PropVar()));
     } else {
         const auto fullName = etsg->FormClassPropReference(objectType->AsETSObjectType(), propName);
         etsg->LoadProperty(expr, variableType, objReg, fullName);

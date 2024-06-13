@@ -378,7 +378,7 @@ public:
     void IsSupertypeOf(TypeRelation *relation, Type *source) override;
     Type *AsSuper(Checker *checker, varbinder::Variable *sourceVar) override;
     void ToAssemblerType([[maybe_unused]] std::stringstream &ss) const override;
-    static void DebugInfoTypeFromName(std::stringstream &ss, util::StringView asmName);
+    static std::string NameToDescriptor(util::StringView name);
     void ToDebugInfoType(std::stringstream &ss) const override;
     void ToDebugInfoSignatureType(std::stringstream &ss) const;
 
