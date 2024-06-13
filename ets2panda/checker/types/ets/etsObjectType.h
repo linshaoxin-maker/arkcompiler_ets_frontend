@@ -360,7 +360,7 @@ public:
                                                                    PropertySearchFlags flags) const;
     varbinder::LocalVariable *CollectSignaturesForSyntheticType(ETSFunctionType *funcType, const util::StringView &name,
                                                                 PropertySearchFlags flags) const;
-    bool CheckIdenticalFlags(ETSObjectFlags target) const;
+    bool CheckIdenticalFlags(ETSObjectType *other) const;
     bool CheckIdenticalVariable(varbinder::Variable *otherVar) const;
 
     void Iterate(const PropertyTraverser &cb) const;

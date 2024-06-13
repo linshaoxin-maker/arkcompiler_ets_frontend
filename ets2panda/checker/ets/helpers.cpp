@@ -18,6 +18,7 @@
 #include "parser/ETSparser.h"
 
 #include "checker/types/ets/etsTupleType.h"
+#include "checker/types/ets/etsReadonlyType.h"
 #include "checker/ets/typeRelationContext.h"
 #include "checker/ETSchecker.h"
 #include "checker/types/globalTypesHolder.h"
@@ -565,13 +566,11 @@ void ETSChecker::InferAliasLambdaType(ir::TypeNode *localTypeAnnotation, ir::Arr
     if (localTypeAnnotation->IsETSTypeReference()) {
         bool isAnnotationTypeAlias = true;
         while (localTypeAnnotation->IsETSTypeReference() && isAnnotationTypeAlias) {
-            auto *node = localTypeAnnotation->AsETSTypeReference()
-                             ->Part()
-                             ->Name()
-                             ->AsIdentifier()
-                             ->Variable()
-                             ->Declaration()
-                             ->Node();
+            auto *nodeVar = localTypeAnnotation->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Variable();
+            if (nodeVar == nullptr) {
+                break;
+            }
+            auto *node = nodeVar->Declaration()->Node();
 
             isAnnotationTypeAlias = node->IsTSTypeAliasDeclaration();
             if (isAnnotationTypeAlias) {
@@ -615,6 +614,8 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
     checker::Type *annotationType = nullptr;
 
     const bool isConst = (flags & ir::ModifierFlags::CONST) != 0;
+    const bool isReadonly = (flags & ir::ModifierFlags::READONLY) != 0;
+    const bool isStatic = (flags & ir::ModifierFlags::STATIC) != 0;
 
     if (typeAnnotation != nullptr) {
         annotationType = typeAnnotation->GetType(this);
@@ -689,7 +690,9 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
         const Type *sourceType = TryGettingFunctionTypeFromInvokeFunction(initType);
         AssignmentContext(Relation(), init, initType, annotationType, init->Start(),
                           {"Type '", sourceType, "' cannot be assigned to type '", targetType, "'"});
-        if (isConst && initType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) &&
+        // note: after readonly function parameter and readonly number[] supported
+        // should be checked if they are assigned with CONSTANT which is not correct
+        if (isConst && (!isReadonly || isStatic) && initType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) &&
             annotationType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
             bindingVar->SetTsType(init->TsType());
         }
@@ -1046,7 +1049,102 @@ void ETSChecker::SetArrayPreferredTypeForNestedMemberExpressions(ir::MemberExpre
         array->SetPreferredType(CreateETSArrayType(elementType));
     }
 }
+template <PropertyType PROP_TYPE, typename PropProcessFunc>
+void ETSChecker::MakePropertyUtility(ETSObjectType *const classType, varbinder::LocalVariable *const prop,
+                                     PropProcessFunc func)
+{
+    auto *const propType = prop->Declaration()->Node()->Check(this);
 
+    if (propType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+        ThrowTypeError("Base type of a Readonly type can only contain fields with reference type.",
+                       prop->Declaration()->Node()->Start());
+    }
+
+    auto *newDecl = Allocator()->New<varbinder::ConstDecl>(prop->Name(), prop->Declaration()->Node());
+    auto *const propCopy = prop->Copy(Allocator(), newDecl);
+    func(propCopy, propType);
+    classType->RemoveProperty<PROP_TYPE>(prop);
+    classType->AddProperty<PROP_TYPE>(propCopy);
+}
+template <PropertyType PROP_TYPE>
+void ETSChecker::MakePropertyReadonly(ETSObjectType *const classType, varbinder::LocalVariable *const prop)
+{
+    classType->AddObjectFlag(ETSObjectFlags::READONLY);
+    MakePropertyUtility<PROP_TYPE>(classType, prop, [](auto *propCopy, auto *propType) {
+        propCopy->AddFlag(varbinder::VariableFlags::READONLY);
+        propCopy->SetTsType(propType);
+    });
+}
+template <typename MakePropertiesUtilityFunc>
+void ETSChecker::MakePropertiesUtility(ETSObjectType *const classType, MakePropertiesUtilityFunc func)
+{
+    for (std::pair<util::StringView, varbinder::LocalVariable *> prop : classType->InstanceFields()) {
+        func(PropertyType::INSTANCE_FIELD, classType, prop.second);
+    }
+
+    for (std::pair<util::StringView, varbinder::LocalVariable *> prop : classType->StaticFields()) {
+        func(PropertyType::STATIC_FIELD, classType, prop.second);
+    }
+
+    if (classType->SuperType() != nullptr) {
+        auto *const superReadonly = classType->SuperType()->Clone(this)->AsETSObjectType();
+        MakePropertiesUtility(superReadonly, func);
+        classType->SetSuperType(superReadonly);
+    }
+}
+
+void ETSChecker::MakePropertiesReadonly(ETSObjectType *const classType)
+{
+    MakePropertiesUtility(classType, [this](auto propType, auto *type, auto *prop) {
+        switch (propType) {
+            case PropertyType::INSTANCE_FIELD:
+                MakePropertyReadonly<PropertyType::INSTANCE_FIELD>(type, prop);
+                break;
+            case PropertyType::STATIC_FIELD:
+                MakePropertyReadonly<PropertyType::STATIC_FIELD>(type, prop);
+                break;
+            default:
+                UNREACHABLE();
+        }
+    });
+}
+
+Type *ETSChecker::GetReadonlyType(Type *type)
+{
+    if (type->IsETSObjectType()) {
+        type->AsETSObjectType()->InstanceFields();
+        auto *clonedType = type->Clone(this)->AsETSObjectType();
+        MakePropertiesReadonly(clonedType);
+        return clonedType;
+    }
+    if (type->IsETSTypeParameter()) {
+        return Allocator()->New<ETSReadonlyType>(type->AsETSTypeParameter());
+    }
+    if (type->IsETSUnionType()) {
+        ArenaVector<Type *> unionTypes(Allocator()->Adapter());
+        for (auto *t : type->AsETSUnionType()->ConstituentTypes()) {
+            unionTypes.emplace_back(t->IsETSObjectType() ? GetReadonlyType(t) : t->Clone(this));
+        }
+        return CreateETSUnionType(std::move(unionTypes));
+    }
+    return type;
+}
+Type *ETSChecker::HandleReadonlyType(const ir::TSTypeParameterInstantiation *const typeParams)
+{
+    if (typeParams->Params().size() != 1) {
+        ThrowTypeError("Invalid number of type parameters for Readonly type", typeParams->Start());
+    }
+
+    auto *const typeParamNode = typeParams->Params()[0];
+    auto *typeToBeReadonly = typeParamNode->Check(this);
+
+    if (auto found = ReadonlyTypeStack().find(typeToBeReadonly); found != ReadonlyTypeStack().end()) {
+        return *found;
+    }
+
+    ReadonlyTypeStackElement ntse(this, typeToBeReadonly);
+    return GetReadonlyType(typeToBeReadonly);
+}
 static void CheckExpandedType(Type *expandedAliasType, std::set<util::StringView> &parametersNeedToBeBoxed,
                               bool needToBeBoxed)
 {
@@ -1097,6 +1195,10 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
         }
 
         ThrowTypeError("Type alias declaration is not generic, but type parameters were provided", typeParams->Start());
+    }
+
+    if (name->AsIdentifier()->Name().Is(compiler::Signatures::READONLY_TYPE_NAME)) {
+        return HandleReadonlyType(typeParams);
     }
 
     if (typeParams == nullptr) {

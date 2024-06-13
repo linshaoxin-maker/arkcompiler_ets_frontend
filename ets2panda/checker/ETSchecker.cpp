@@ -204,7 +204,6 @@ bool ETSChecker::StartChecker([[maybe_unused]] varbinder::VarBinder *varbinder, 
 
     return true;
 }
-
 void ETSChecker::CheckProgram(parser::Program *program, bool runAnalysis)
 {
     auto *savedProgram = Program();

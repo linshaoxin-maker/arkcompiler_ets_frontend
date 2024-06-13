@@ -775,7 +775,6 @@ checker::Type *ETSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
     expr->SetTsType(funcType);
     return expr->TsType();
 }
-
 checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *const expr) const
 {
     if (expr->TsType() != nullptr) {
@@ -800,7 +799,7 @@ checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *const expr) const
         checker->ThrowTypeError("Invalid left-hand side of assignment expression", expr->Left()->Start());
     }
 
-    if (expr->target_ != nullptr) {
+    if (expr->target_ != nullptr && !expr->IsIgnoreConstAssign()) {
         checker->ValidateUnaryOperatorOperand(expr->target_);
     }
 
@@ -1058,7 +1057,6 @@ checker::Type *ETSAnalyzer::GetReturnType(ir::CallExpression *expr, checker::Typ
 
     return returnType;
 }
-
 checker::Type *ETSAnalyzer::Check(ir::CallExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -1074,6 +1072,12 @@ checker::Type *ETSAnalyzer::Check(ir::CallExpression *expr) const
         calleeType = checker->GetApparentType(expr->Callee()->Check(checker));
     }
     checker->CheckNonNullish(expr->Callee());
+    if (expr->Callee()->IsMemberExpression() && expr->Callee()->AsMemberExpression()->Object() != nullptr &&
+        expr->Callee()->AsMemberExpression()->Object()->TsType()->IsETSObjectType() &&
+        expr->Callee()->AsMemberExpression()->Object()->TsType()->AsETSObjectType()->HasObjectFlag(
+            ETSObjectFlags::READONLY)) {
+        checker->ThrowTypeError("Cannot call readonly type methods.", expr->Start());
+    }
     checker::Type *returnType;
     if (calleeType->IsETSDynamicType() && !calleeType->AsETSDynamicType()->HasDecl()) {
         // Trailing lambda for js function call is not supported, check the correctness of `foo() {}`
@@ -1385,9 +1389,6 @@ void ETSAnalyzer::CheckObjectExprProps(const ir::ObjectExpression *expr) const
             checker->ThrowTypeError({"type ", objType->Name(), " has no property named ", pname}, propExpr->Start());
         }
         checker->ValidatePropertyAccess(lv, objType, propExpr->Start());
-        if (lv->HasFlag(varbinder::VariableFlags::READONLY)) {
-            checker->ThrowTypeError({"cannot assign to readonly property ", pname}, propExpr->Start());
-        }
 
         if (key->IsIdentifier()) {
             key->AsIdentifier()->SetVariable(lv);
@@ -1797,7 +1798,6 @@ checker::Type *ETSAnalyzer::Check(ir::AssertStatement *st) const
 
     return nullptr;
 }
-
 checker::Type *ETSAnalyzer::Check(ir::BlockStatement *st) const
 {
     ETSChecker *checker = GetETSChecker();
