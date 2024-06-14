@@ -16,6 +16,7 @@
 #include "ETSAnalyzer.h"
 
 #include "util/helpers.h"
+#include "utils/arena_containers.h"
 #include "checker/ETSchecker.h"
 #include "checker/ets/castingContext.h"
 #include "checker/ets/typeRelationContext.h"
@@ -417,6 +418,21 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewArrayInstanceExpression *expr) const
     return expr->TsType();
 }
 
+void ETSAnalyzer::SetPreferredDynamicTypeForChildNodes(Language lang,
+                                                       const ArenaVector<ir::Expression *> &children) const
+{
+    auto newDynType = GetETSChecker()->GlobalBuiltinDynamicType(lang);
+    for (auto child : children) {
+        // NOTE(staroverovag): handle ArrayExpressions
+        if (child->IsProperty()) {
+            child = child->AsProperty()->Value();
+        }
+        if (child->IsObjectExpression()) {
+            child->AsObjectExpression()->SetPreferredType(newDynType);
+        }
+    }
+}
+
 void ETSAnalyzer::CheckLocalClassInstantiation(ir::ETSNewClassInstanceExpression *expr, ETSObjectType *calleeObj) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -463,6 +479,7 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewClassInstanceExpression *expr) const
 
     if (calleeType->IsETSDynamicType() && !calleeType->AsETSDynamicType()->HasDecl()) {
         auto lang = calleeType->AsETSDynamicType()->Language();
+        SetPreferredDynamicTypeForChildNodes(lang, expr->GetArguments());
         expr->SetSignature(checker->ResolveDynamicCallExpression(expr->GetTypeRef(), expr->GetArguments(), lang, true));
     } else {
         auto *signature = checker->ResolveConstructExpression(calleeObj, expr->GetArguments(), expr->Start());
@@ -586,11 +603,6 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSWildcardType *node) co
 }
 
 // compile methods for EXPRESSIONS in alphabetical order
-
-checker::Type *ETSAnalyzer::GetPreferredType(ir::ArrayExpression *expr) const
-{
-    return expr->preferredType_;
-}
 
 static void CheckArrayElement(ETSChecker *checker, checker::Type *elementType,
                               std::vector<checker::Type *> targetElementType, ir::Expression *currentElement,
@@ -1079,6 +1091,7 @@ checker::Type *ETSAnalyzer::Check(ir::CallExpression *expr) const
         // Trailing lambda for js function call is not supported, check the correctness of `foo() {}`
         checker->EnsureValidCurlyBrace(expr);
         auto lang = calleeType->AsETSDynamicType()->Language();
+        SetPreferredDynamicTypeForChildNodes(lang, expr->Arguments());
         expr->SetSignature(checker->ResolveDynamicCallExpression(expr->Callee(), expr->Arguments(), lang, false));
         returnType = expr->Signature()->ReturnType();
     } else {
@@ -1291,10 +1304,6 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::NewExpression *expr) cons
 {
     UNREACHABLE();
 }
-checker::Type *ETSAnalyzer::PreferredType(ir::ObjectExpression *expr) const
-{
-    return expr->preferredType_;
-}
 
 checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
 {
@@ -1313,6 +1322,7 @@ checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
     }
 
     if (expr->PreferredType()->IsETSDynamicType()) {
+        SetPreferredDynamicTypeForChildNodes(expr->PreferredType()->AsETSDynamicType()->Language(), expr->Properties());
         for (ir::Expression *propExpr : expr->Properties()) {
             ASSERT(propExpr->IsProperty());
             ir::Property *prop = propExpr->AsProperty();
