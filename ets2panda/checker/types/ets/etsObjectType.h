@@ -371,8 +371,8 @@ public:
     void AssignmentTarget(TypeRelation *relation, Type *source) override;
     Type *Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes) override;
     bool SubstituteTypeArgs(TypeRelation *relation, ArenaVector<Type *> &newTypeArgs, const Substitution *substitution);
-    void SetCopiedTypeProperties(TypeRelation *relation, ETSObjectType *copiedType, ArenaVector<Type *> &newTypeArgs,
-                                 const Substitution *substitution);
+    void SetCopiedTypeProperties(TypeRelation *relation, ETSObjectType *copiedType, ArenaVector<Type *> &&newTypeArgs,
+                                 ETSObjectType *base);
     void UpdateTypeProperties(checker::ETSChecker *checker, PropertyProcesser const &func);
     ETSObjectType *Substitute(TypeRelation *relation, const Substitution *substitution) override;
     ETSObjectType *Substitute(TypeRelation *relation, const Substitution *substitution, bool cache);
@@ -482,7 +482,7 @@ private:
 
     // for lazy properties instantiation
     TypeRelation *relation_ = nullptr;
-    const Substitution *substitution_ = nullptr;
+    const Substitution *effectiveSubstitution_ = nullptr;
     mutable bool propertiesInstantiated_ = false;
     mutable ArenaVector<Signature *> constructSignatures_;
     mutable PropertyHolder properties_;
