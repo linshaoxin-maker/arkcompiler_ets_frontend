@@ -18,6 +18,20 @@
 #include "ir/typeNode.h"
 
 namespace ark::es2panda::ir {
+FunctionSignature::FunctionSignature(FunctionSignature const &other, ArenaAllocator *allocator)
+    : params_(allocator->Adapter())
+{
+    typeParams_ = other.typeParams_ != nullptr
+                      ? other.typeParams_->Clone(allocator, nullptr)->AsTSTypeParameterDeclaration()
+                      : nullptr;
+    returnTypeAnnotation_ = other.returnTypeAnnotation_ != nullptr
+                                ? other.returnTypeAnnotation_->Clone(allocator, nullptr)->AsTypeNode()
+                                : nullptr;
+
+    for (auto *param : other.params_) {
+        params_.emplace_back(param->Clone(allocator, nullptr)->AsExpression());
+    }
+}
 
 void FunctionSignature::Iterate(const NodeTraverser &cb) const
 {
@@ -56,5 +70,14 @@ void FunctionSignature::TransformChildren(const NodeTransformer &cb, std::string
             returnTypeAnnotation_ = static_cast<TypeNode *>(transformedNode);
         }
     }
+}
+
+FunctionSignature *FunctionSignature::Clone(ArenaAllocator *const allocator) const
+{
+    if (auto *const clone = allocator->New<FunctionSignature>(*this, allocator); clone != nullptr) {
+        return clone;
+    }
+
+    throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
 }
 }  // namespace ark::es2panda::ir

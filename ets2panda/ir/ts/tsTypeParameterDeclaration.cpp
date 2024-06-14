@@ -23,6 +23,17 @@
 #include "ir/ts/tsTypeParameter.h"
 
 namespace ark::es2panda::ir {
+TSTypeParameterDeclaration::TSTypeParameterDeclaration(TSTypeParameterDeclaration const &other,
+                                                       ArenaAllocator *allocator)
+    : Expression(static_cast<Expression const &>(other)), params_(allocator->Adapter())
+{
+    scope_ = other.scope_;
+    requiredParams_ = other.requiredParams_;
+    for (auto *param : other.params_) {
+        params_.emplace_back(param->Clone(allocator, this)->AsTSTypeParameter());
+    }
+}
+
 void TSTypeParameterDeclaration::TransformChildren(const NodeTransformer &cb, std::string_view transformationName)
 {
     for (auto *&it : params_) {
@@ -72,5 +83,19 @@ checker::Type *TSTypeParameterDeclaration::Check([[maybe_unused]] checker::TSChe
 checker::Type *TSTypeParameterDeclaration::Check([[maybe_unused]] checker::ETSChecker *checker)
 {
     return checker->GetAnalyzer()->Check(this);
+}
+
+TSTypeParameterDeclaration *TSTypeParameterDeclaration::Clone(ArenaAllocator *allocator, AstNode *parent)
+{
+    if (auto *const clone = allocator->New<TSTypeParameterDeclaration>(*this, allocator); clone != nullptr) {
+        if (parent != nullptr) {
+            clone->SetParent(parent);
+        }
+
+        clone->SetRange(Range());
+        return clone;
+    }
+
+    throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
 }
 }  // namespace ark::es2panda::ir
