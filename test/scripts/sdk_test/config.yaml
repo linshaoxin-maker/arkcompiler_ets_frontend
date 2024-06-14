@@ -146,3 +146,5 @@ patch_content:
   patch_lines_error:
     tail: "\n let a_duplicated_value_for_test_suite = 1; function a_duplicated_value_for_test_suite() {};"
     expected_error: [Duplicate identifier 'a_duplicated_value_for_test_suite', Identifier 'a_duplicated_value_for_test_suite' has already been declared]
+
+    this is a new line
