@@ -14,6 +14,7 @@
  */
 
 #include "symbolTable.h"
+#include "timers.h"
 
 #include <fstream>
 #include <iostream>
@@ -130,14 +131,23 @@ bool SymbolTable::ReadSymbolTable(const std::string &symbolTable)
 
 void SymbolTable::WriteSymbolTable(const std::string &content)
 {
+    es2panda::util::Timer::timerStart(util::PATCH_FIX_AQUIRE_LOCK, "");
     std::lock_guard<std::mutex> lock(m_);
+    es2panda::util::Timer::timerEnd(util::PATCH_FIX_AQUIRE_LOCK, "");
+
+    es2panda::util::Timer::timerStart(util::PATCH_FIX_OPEN_FILE, "");
     std::fstream fs;
     fs.open(panda::os::file::File::GetExtendedFilePath(dumpSymbolTable_),
         std::ios_base::app | std::ios_base::in);
+
+    es2panda::util::Timer::timerEnd(util::PATCH_FIX_OPEN_FILE, "");
+
+    es2panda::util::Timer::timerStart(util::PATCH_FIX_WRITE_FILE, "");
     if (fs.is_open()) {
         fs << content;
         fs.close();
     }
+    es2panda::util::Timer::timerEnd(util::PATCH_FIX_WRITE_FILE, "");
 }
 
 std::vector<std::string_view> SymbolTable::GetStringItems(std::string_view input, const std::string &separator)

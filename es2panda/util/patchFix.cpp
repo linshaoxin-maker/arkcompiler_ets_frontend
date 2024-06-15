@@ -14,11 +14,13 @@
  */
 
 #include "patchFix.h"
+#include "timers.h"
 #include <binder/binder.h>
 #include <binder/scope.h>
 #include <binder/variable.h>
 #include <compiler/core/pandagen.h>
 #include <ir/expressions/literal.h>
+#include <parser/program/program.h>
 
 #include <fstream>
 #include <iostream>
@@ -616,6 +618,7 @@ void PatchFix::HandleFunction(const compiler::PandaGen *pg, panda::pandasm::Func
 void PatchFix::DumpFunctionInfo(const compiler::PandaGen *pg, panda::pandasm::Function *func,
     PatchFix::LiteralBuffers &literalBuffers)
 {
+    es2panda::util::Timer::timerStart(util::PATCH_FIX_COLLECT_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
     std::stringstream ss;
 
     ss << pg->InternalName();
@@ -647,8 +650,12 @@ void PatchFix::DumpFunctionInfo(const compiler::PandaGen *pg, panda::pandasm::Fu
            << variable.second.second << SymbolTable::SECOND_LEVEL_SEPERATOR;
     }
     ss << SymbolTable::SECOND_LEVEL_SEPERATOR << std::endl;
+    es2panda::util::Timer::timerEnd(util::PATCH_FIX_COLLECT_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
 
+
+    es2panda::util::Timer::timerStart(util::PATCH_FIX_WRITE_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
     symbolTable_->WriteSymbolTable(ss.str());
+    es2panda::util::Timer::timerEnd(util::PATCH_FIX_WRITE_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
 }
 
 bool PatchFix::IsAdditionalVarInPatch(uint32_t slot)
