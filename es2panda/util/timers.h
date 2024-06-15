@@ -36,25 +36,40 @@ constexpr std::string_view EVENT_COMPILE_TO_PROGRAM = "Compile to program";
 constexpr std::string_view EVENT_EMIT_SINGLE_PROGRAM = "Emit single program";
 constexpr std::string_view EVENT_EMIT_MERGED_PROGRAM = "Emit merged program";
 constexpr std::string_view EVENT_EMIT_CACHE_FILE = "Emit cache file";
+constexpr std::string_view PATCH_FIX_DUMP_FUNCTION_INFO = "patch fix dump function info";
+constexpr std::string_view PATCH_FIX_COLLECT_FUNCTION_INFO = "patch fix collect function info";
+constexpr std::string_view PATCH_FIX_WRITE_FUNCTION_INFO = "patch fix write function info";
+constexpr std::string_view PATCH_FIX_AQUIRE_LOCK = "patch fix aquire lock";
+constexpr std::string_view PATCH_FIX_OPEN_FILE = "patch fix open file";
+constexpr std::string_view PATCH_FIX_WRITE_FILE = "patch fix write file";
 
 // Event level, indicating the level of an event, where each event is a sub-event of the nearest preceding level event.
 // The top-level event's level is 0
 enum EventLevel {
-    ZERO = 0,
+    ZEROTH = 0,
     FIRST,
     SECOND,
-    THIRD
+    THIRD,
+    FORTH,
+    FIFTH,
+    SIXTH
 };
 
 // Holds pairs of {event, level} according to the order during compilation process.
 // When adding new events later, please add them in the compilation order for ease of reading and maintenance.
 const std::unordered_map<std::string_view, EventLevel> eventMap = {
-    { EVENT_TOTAL, EventLevel::ZERO },
+    { EVENT_TOTAL, EventLevel::ZEROTH },
     { EVENT_COMPILE, EventLevel::FIRST },
     { EVENT_READ_INPUT_AND_CACHE, EventLevel::SECOND },
     { EVENT_COMPILE_FILE, EventLevel::SECOND },
     { EVENT_PARSE, EventLevel::THIRD },
     { EVENT_COMPILE_TO_PROGRAM, EventLevel::THIRD },
+    { PATCH_FIX_DUMP_FUNCTION_INFO, EventLevel::FORTH },
+    { PATCH_FIX_COLLECT_FUNCTION_INFO, EventLevel::FIFTH },
+    { PATCH_FIX_WRITE_FUNCTION_INFO, EventLevel::FIFTH },
+    { PATCH_FIX_AQUIRE_LOCK, EventLevel::SIXTH },
+    { PATCH_FIX_OPEN_FILE, EventLevel::SIXTH },
+    { PATCH_FIX_WRITE_FILE, EventLevel::SIXTH },
     { EVENT_OPTIMIZE_PROGRAM, EventLevel::SECOND },
     { EVENT_EMIT_ABC, EventLevel::FIRST },
     { EVENT_EMIT_SINGLE_PROGRAM, EventLevel::SECOND },
