@@ -6,6 +6,7 @@
 
 namespace ark::es2panda::ir {
 
+// TODO(psaykerone): Make inherit from LiteralBuilder, for stringliteral and numberliteral
 class NumberLiteralBuilder : public AstBuilder {
 public:
     NumberLiteralBuilder(ark::ArenaAllocator *allocator) : AstBuilder(allocator)
@@ -17,13 +18,21 @@ public:
         return *this;
     }
 
+    void SetParent(AstNode *const parent)
+    {
+        parent_ = parent;
+    }
+    
     NumberLiteral *Build()
     {
-        return AllocNode<ir::NumberLiteral>(value_);
+        NumberLiteral *node = AllocNode<ir::NumberLiteral>(value_);
+        node->SetParent(parent_);
+        return node;
     }
 
 private:
     util::StringView value_;
+    AstNode *parent_ {};
 };
 
 }  // namespace ark::es2panda::ir

@@ -30,6 +30,7 @@ public:
           statements_(std::move(statementList)),
           trailingBlocks_(allocator->Adapter())
     {
+        std::cout << "qwer" << std::endl;
     }
 
     // NOTE (somas): this friend relationship can be removed once there are getters for private fields

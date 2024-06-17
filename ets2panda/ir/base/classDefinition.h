@@ -81,6 +81,7 @@ public:
           localIndex_(classCounter_++),
           localPrefix_("$" + std::to_string(localIndex_))
     {
+        std::cout << "qwe" << std::endl;
     }
 
     explicit ClassDefinition(ArenaAllocator *allocator, Identifier *ident, ArenaVector<AstNode *> &&body,

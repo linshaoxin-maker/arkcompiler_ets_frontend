@@ -37,21 +37,59 @@ public:
         return *this;
     }
 
+    void SetParent(AstNode *const parent)
+    {
+        parent_ = parent;
+    }
+
+    ClassDefinitionBuilder &SetTSTypeParameterDeclaration(TSTypeParameterDeclaration *typeParams)
+    {
+        typeParams_ = typeParams;
+        return *this;
+    }
+
+    ClassDefinitionBuilder &SetTSTypeParameterInstantiation(TSTypeParameterInstantiation *superTypeParams)
+    {
+        superTypeParams_ = superTypeParams;
+        return *this;
+    }
+
+    ClassDefinitionBuilder &SetImplements(ArenaVector<TSClassImplements *> &&implements)
+    {
+        implements_ = std::move(implements);
+        return *this;
+    }
+
+    ClassDefinitionBuilder &SetImplements(TSClassImplements *implement)
+    {
+        implements_.emplace_back(implement);
+        return *this;
+    }
+
     ClassDefinition *Build()
     {
         // TODO: use full constructor
-        auto classDef = AllocNode<ir::ClassDefinition>(Allocator(), ident_, ir::ClassDefinitionModifiers::CLASS_DECL,
-                                                       ir::ModifierFlags::NONE, Language(Language::Id::ETS));
-        classDef->AddProperties(std::move(body_));
+        // auto classDef = AllocNode<ir::ClassDefinition>(Allocator(), ident_, ir::ClassDefinitionModifiers::CLASS_DECL,
+        //                                                ir::ModifierFlags::NONE, Language(Language::Id::ETS));
+        auto classDef = AllocNode<ClassDefinition>(util::StringView(), ident_,
+                             typeParams_, superTypeParams_,
+                             std::move(implements_), ctor_,
+                             superClass_, std::move(body_), ir::ClassDefinitionModifiers::CLASS_DECL,
+                             ir::ModifierFlags::NONE, Language(Language::Id::ETS));
+        classDef->SetParent(parent_);
         return classDef;
     }
 
 private:
-    util::StringView privateId_;
-    Identifier *ident_;
-    MethodDefinition *ctor_;
-    Expression *superClass_;
+    util::StringView privateId_ {};
+    Identifier *ident_ {};
+    MethodDefinition *ctor_ {};
+    Expression *superClass_ {};
     ArenaVector<AstNode *> body_;
+    TSTypeParameterDeclaration *typeParams_ {};
+    TSTypeParameterInstantiation *superTypeParams_ {};
+    ArenaVector<TSClassImplements *> implements_;
+    AstNode *parent_ {};
 };
 
 }  // namespace ark::es2panda::ir

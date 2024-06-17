@@ -16,13 +16,21 @@ public:
         return *this;
     }
 
+    void SetParent(AstNode *const parent)
+    {
+        parent_ = parent;
+    }
+
     Identifier *Build()
     {
-        return AllocNode<ir::Identifier>(name_, Allocator());
+        ir::Identifier *node = AllocNode<ir::Identifier>(name_, Allocator());
+        node->SetParent(parent_);
+        return node;
     }
 
 private:
     util::StringView name_;
+    AstNode *parent_ {};
 };
 
 }  // namespace ark::es2panda::ir

@@ -28,15 +28,23 @@ public:
         return *this;
     }
 
+    void SetParent(AstNode *const parent)
+    {
+        parent_ = parent;
+    }
+
     ClassProperty *Build()
     {
-        return AllocNode<ir::ClassProperty>(key_, value_, nullptr, modifiers_, Allocator(), false);
+        ir::ClassProperty *node =AllocNode<ir::ClassProperty>(key_, value_, nullptr, modifiers_, Allocator(), false);
+        node->SetParent(parent_);
+        return node;
     }
 
 private:
     Expression *key_;
     Expression *value_;
     ModifierFlags modifiers_;
+    AstNode *parent_ {};
 };
 
 }  // namespace ark::es2panda::ir

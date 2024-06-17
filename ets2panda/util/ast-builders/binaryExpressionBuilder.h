@@ -35,15 +35,23 @@ public:
         return *this;
     }
 
-    BinaryExpression *build()
+    void SetParent(AstNode *const parent)
     {
-        return AllocNode<ir::BinaryExpression>(left_, right_, operator_);
+        parent_ = parent;
+    }
+
+    BinaryExpression *Build()
+    {
+        ir::BinaryExpression *node = AllocNode<ir::BinaryExpression>(left_, right_, operator_);
+        node->SetParent(parent_); 
+        return node;
     }
 
 private:
     Expression *left_;
     Expression *right_;
     lexer::TokenType operator_;
+    AstNode *parent_ {};
 };
 
 }  // namespace ark::es2panda::ir
