@@ -37,6 +37,7 @@
 #include "compiler/lowering/ets/tupleLowering.h"
 #include "compiler/lowering/ets/bigintLowering.h"
 #include "compiler/lowering/ets/unionLowering.h"
+#include "compiler/lowering/ets/stringConstructorLowering.h"
 #include "compiler/lowering/plugin_phase.h"
 #include "compiler/lowering/scopesInit/scopesInitPhase.h"
 #include "public/es2panda_lib.h"
@@ -53,6 +54,7 @@ std::vector<Phase *> GetTrivialPhaseList()
 }
 
 static BigIntLowering g_bigintLowering;
+static StringConstructorLowering g_stringConstructorLowering;
 static InterfacePropertyDeclarationsPhase g_interfacePropDeclPhase;
 static LambdaConstructionPhase g_lambdaConstructionPhase;
 static OpAssignmentLowering g_opAssignmentLowering;
@@ -112,6 +114,7 @@ std::vector<Phase *> GetETSPhaseList()
         &g_localClassLowering,
         &g_objectLiteralLowering,
         &g_stringComparisonLowering,
+        &g_stringConstructorLowering,
         &g_pluginsAfterLowerings,
     };
     // clang-format on
@@ -199,8 +202,7 @@ static void CheckOptionsBeforePhase(const CompilerOptions &options, const parser
     }
 
     if (options.dumpEtsSrcBeforePhases.count(name) > 0) {
-        std::cout << "Before phase " << name << " ets source"
-                  << ":" << std::endl;
+        std::cout << "Before phase " << name << " ets source" << ":" << std::endl;
         std::cout << program->Ast()->DumpEtsSrc() << std::endl;
     }
 }
@@ -214,8 +216,7 @@ static void CheckOptionsAfterPhase(const CompilerOptions &options, const parser:
     }
 
     if (options.dumpEtsSrcAfterPhases.count(name) > 0) {
-        std::cout << "After phase " << name << " ets source"
-                  << ":" << std::endl;
+        std::cout << "After phase " << name << " ets source" << ":" << std::endl;
         std::cout << program->Ast()->DumpEtsSrc() << std::endl;
     }
 }
