@@ -57,12 +57,13 @@ def output(retcode, msg):
         sys.stderr.write("Unknown Error: " + str(retcode))
 
 
-def exec_command(cmd_args, timeout=DEFAULT_TIMEOUT):
+def exec_command(cmd_args, timeout=DEFAULT_TIMEOUT, customCwd=None):
     proc = subprocess.Popen(cmd_args,
                             stderr=subprocess.PIPE,
                             stdout=subprocess.PIPE,
                             close_fds=True,
-                            start_new_session=True)
+                            start_new_session=True,
+                            cwd=customCwd)
     cmd_string = " ".join(cmd_args)
     code_format = 'utf-8'
     if platform.system() == "Windows":
