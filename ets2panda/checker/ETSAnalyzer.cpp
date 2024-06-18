@@ -2642,7 +2642,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSTypeAliasDeclaration *st) const
     }
 
     if (st->TypeParameterTypes().empty()) {
-        st->SetTypeParameterTypes(checker->CreateTypeForTypeParameters(st->TypeParams()));
+        st->SetTypeParameterTypes(checker->CreateUnconstrainedTypeParameters(st->TypeParams()));
+        checker->AssignTypeParameterConstraints(st->TypeParams());
     }
 
     for (auto *const param : st->TypeParams()->Params()) {

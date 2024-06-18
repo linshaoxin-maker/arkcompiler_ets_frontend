@@ -49,63 +49,14 @@ bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSType
             checker_->ReportWarning(
                 {"Type parameter is erased from type '", type->Name(), "' when used in instanceof expression."}, pos);
         }
-
         result_ = type;
         return true;
     }
-
     checker_->CheckNumberOfTypeArguments(type, typeArgs, pos);
     if (type->TypeArguments().empty()) {
         result_ = type;
         return true;
     }
-
-    /*
-    The first loop is to create a substitution of typeParams & typeArgs.
-    so that we can replace the typeParams in constaints by the right type.
-    e.g:
-        class X <K extends Comparable<T>,T> {}
-        function main(){
-            const myCharClass = new X<Char,String>();
-        }
-    In the case above, the constraintsSubstitution should store "K->Char" and "T->String".
-    And in the second loop, we use this substitution to replace typeParams in constraints.
-    In this case, we will check "Comparable<String>" with "Char", since "Char" doesn't
-    extends "Comparable<String>", we will get an error here.
-    */
-
-    auto const isDefaulted = [typeArgs](size_t idx) { return typeArgs == nullptr || idx >= typeArgs->Params().size(); };
-
-    auto const getTypes = [this, &typeArgs, type, isDefaulted](size_t idx) -> std::pair<ETSTypeParameter *, Type *> {
-        auto *typeParam = type->TypeArguments().at(idx)->AsETSTypeParameter();
-        return {typeParam, isDefaulted(idx)
-                               ? typeParam->GetDefaultType()
-                               : checker_->MaybePromotedBuiltinType(typeArgs->Params().at(idx)->GetType(checker_))};
-    };
-
-    auto *const substitution = checker_->NewSubstitution();
-
-    for (size_t idx = 0; idx < type->TypeArguments().size(); ++idx) {
-        auto const [typeParam, typeArg] = getTypes(idx);
-        checker_->CheckValidGenericTypeParameter(typeArg, pos);
-        typeArg->Substitute(checker_->Relation(), substitution);
-        ETSChecker::EmplaceSubstituted(substitution, typeParam, typeArg);
-    }
-
-    for (size_t idx = 0; idx < type->TypeArguments().size(); ++idx) {
-        auto const [typeParam, typeArg] = getTypes(idx);
-        if (typeParam->GetConstraintType() == nullptr) {
-            continue;
-        }
-        auto *const constraint = typeParam->GetConstraintType()->Substitute(checker_->Relation(), substitution);
-
-        if (!ValidateTypeArg(constraint, typeArg) && typeArgs != nullptr &&
-            !checker_->Relation()->NoThrowGenericTypeAlias()) {
-            checker_->ThrowTypeError({"Type '", typeArg, "' is not assignable to constraint type '", constraint, "'."},
-                                     isDefaulted(idx) ? pos : typeArgs->Params().at(idx)->Start());
-        }
-    }
-
     return false;
 }
 
@@ -164,6 +115,72 @@ void InstantiationContext::InstantiateType(ETSObjectType *type, ir::TSTypeParame
     result_->AddObjectFlag(flags);
 }
 
+static void CheckConstraints(ETSChecker *checker_, ETSObjectType *type, ArenaVector<Type *> &typeArgTypes,
+                             Substitution *substitution, const lexer::SourcePosition &pos)
+{
+    auto const &typeParams = type->TypeArguments();
+    auto relation = checker_->Relation();
+
+    for (size_t ix = 0; ix < typeParams.size(); ix++) {
+        if (!typeParams[ix]->IsETSTypeParameter()) {
+            continue;
+        }
+        auto typeParam = typeParams[ix]->AsETSTypeParameter();
+        auto typeArgument = typeArgTypes[ix];
+        if (typeArgument->IsWildcardType()) {
+            continue;
+        }
+        ASSERT(typeArgument->IsETSReferenceType());
+        ASSERT(!typeArgument->IsETSObjectType() ||
+               typeArgument->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::RESOLVED_HEADER));
+        auto constraint = typeParam->GetConstraintType()->Substitute(relation, substitution);
+        if (!relation->IsSupertypeOf(constraint, typeArgument)) {
+            checker_->ThrowTypeError(  // TODO: refine message to print constraint type
+                {"Type ", typeArgTypes[ix], " is not assignable to", " type parameter ", typeParams[ix]}, pos);
+        }
+    }
+}
+
+struct InstantiationConstraintRecord {
+    ETSObjectType *type;
+    ArenaVector<Type *> typeArgTypes;  // TODO: to be moved here instead of copying
+    Substitution *substitution;
+    const lexer::SourcePosition pos;
+};
+static std::vector<InstantiationConstraintRecord> ctstack;  // TODO: to be put into checker
+static int ctcount {0};                                     // TODO: to be put into checker
+
+InstantiationContext::Guard::Guard() : isheld(true)
+{
+    ASSERT(ctcount != 0 || ctstack.empty());
+    ctcount++;
+}
+
+void InstantiationContext::Guard::Unlock()
+{
+    ASSERT(isheld);
+    isheld = false;
+    ctcount--;
+}
+
+InstantiationContext::Guard::~Guard()
+{
+    if (isheld) {
+        Unlock();
+    }
+}
+
+void InstantiationContext::Guard::TryCheckConstraints(ETSChecker *checker)
+{
+    Unlock();
+    if (ctcount == 0) {
+        for (auto &cr : ctstack) {
+            CheckConstraints(checker, cr.type, cr.typeArgTypes, cr.substitution, cr.pos);
+        }
+        ctstack.clear();
+    }
+}
+
 void InstantiationContext::InstantiateType(ETSObjectType *type, ArenaVector<Type *> &typeArgTypes,
                                            const lexer::SourcePosition &pos)
 {
@@ -175,29 +192,22 @@ void InstantiationContext::InstantiateType(ETSObjectType *type, ArenaVector<Type
     }
 
     auto *substitution = checker_->NewSubstitution();
-    auto *constraintsSubstitution = checker_->NewSubstitution();
     for (size_t ix = 0; ix < typeParams.size(); ix++) {
         if (!typeParams[ix]->IsETSTypeParameter()) {
             continue;
         }
-        ETSChecker::EmplaceSubstituted(constraintsSubstitution, typeParams[ix]->AsETSTypeParameter(), typeArgTypes[ix]);
+        ETSChecker::EmplaceSubstituted(substitution, typeParams[ix]->AsETSTypeParameter(), typeArgTypes[ix]);
     }
-    for (size_t ix = 0; ix < typeParams.size(); ix++) {
-        auto *typeParam = typeParams[ix];
-        if (!typeParam->IsETSTypeParameter()) {
-            continue;
-        }
-        if (!checker_->IsCompatibleTypeArgument(typeParam->AsETSTypeParameter(), typeArgTypes[ix],
-                                                constraintsSubstitution) &&
-            !checker_->Relation()->NoThrowGenericTypeAlias()) {
-            checker_->ThrowTypeError(
-                {"Type ", typeArgTypes[ix], " is not assignable to", " type parameter ", typeParams[ix]}, pos);
-        }
-        ETSChecker::EmplaceSubstituted(substitution, typeParam->AsETSTypeParameter(), typeArgTypes[ix]);
-    }
-    result_ = type->Substitute(checker_->Relation(), substitution)->AsETSObjectType();
 
+    InstantiationContext::Guard iguard;
+    if (!checker_->Relation()->NoThrowGenericTypeAlias()) {
+        ctstack.push_back({type, typeArgTypes, substitution, pos});
+    }
+
+    result_ = type->Substitute(checker_->Relation(), substitution)->AsETSObjectType();
     type->GetInstantiationMap().try_emplace(hash, result_);
     result_->AddTypeFlag(TypeFlag::GENERIC);
+
+    iguard.TryCheckConstraints(checker_);
 }
 }  // namespace ark::es2panda::checker

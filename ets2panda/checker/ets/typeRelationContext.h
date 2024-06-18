@@ -156,6 +156,17 @@ public:
         return result_;
     }
 
+    struct Guard {
+        Guard();
+        ~Guard();
+
+        void TryCheckConstraints(ETSChecker *checker);
+
+    private:
+        void Unlock();
+        bool isheld;
+    };
+
 private:
     bool ValidateTypeArguments(ETSObjectType *type, ir::TSTypeParameterInstantiation *typeArgs,
                                const lexer::SourcePosition &pos);

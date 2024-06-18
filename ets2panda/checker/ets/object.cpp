@@ -156,7 +156,7 @@ ArenaVector<ETSObjectType *> ETSChecker::GetInterfaces(ETSObjectType *type)
     return type->Interfaces();
 }
 
-ArenaVector<Type *> ETSChecker::CreateTypeForTypeParameters(ir::TSTypeParameterDeclaration const *typeParams)
+ArenaVector<Type *> ETSChecker::CreateUnconstrainedTypeParameters(ir::TSTypeParameterDeclaration const *typeParams)
 {
     ArenaVector<Type *> result {Allocator()->Adapter()};
     checker::ScopeContext scopeCtx(this, typeParams->Scope());
@@ -174,14 +174,18 @@ ArenaVector<Type *> ETSChecker::CreateTypeForTypeParameters(ir::TSTypeParameterD
     for (auto *const typeParam : typeParams->Params()) {
         result.emplace_back(SetUpParameterType(typeParam));
     }
+    return result;
+}
 
+void ETSChecker::AssignTypeParameterConstraints(ir::TSTypeParameterDeclaration const *typeParams)
+{
+    InstantiationContext::Guard iscope;
     // The type parameter might be used in the constraint, like 'K extend Comparable<K>',
     // so we need to create their type first, then set up the constraint
     for (auto *const param : typeParams->Params()) {
         SetUpTypeParameterConstraint(param);
     }
-
-    return result;
+    iscope.TryCheckConstraints(this);
 }
 
 void ETSChecker::CheckTypeParameterConstraint(ir::TSTypeParameter *param, Type2TypeMap &extends)
@@ -216,6 +220,7 @@ void ETSChecker::SetUpTypeParameterConstraint(ir::TSTypeParameter *const param)
 {
     ETSTypeParameter *const paramType = [this, param]() {
         auto *const type = param->Name()->Variable()->TsType();
+        ASSERT(type != nullptr);
         return type != nullptr ? type->AsETSTypeParameter() : SetUpParameterType(param);
     }();
 
@@ -234,7 +239,7 @@ void ETSChecker::SetUpTypeParameterConstraint(ir::TSTypeParameter *const param)
     if (param->Constraint() != nullptr) {
         traverseReferenced(param->Constraint());
         auto *const constraint = param->Constraint()->GetType(this);
-        if (!constraint->IsETSObjectType() && !constraint->IsETSTypeParameter() && !constraint->IsETSUnionType()) {
+        if (!constraint->IsETSReferenceType()) {
             ThrowTypeError("Extends constraint must be an object", param->Constraint()->Start());
         }
         paramType->SetConstraintType(constraint);
@@ -272,7 +277,8 @@ void ETSChecker::CreateTypeForClassOrInterfaceTypeParameters(ETSObjectType *type
     ir::TSTypeParameterDeclaration *typeParams = type->GetDeclNode()->IsClassDefinition()
                                                      ? type->GetDeclNode()->AsClassDefinition()->TypeParams()
                                                      : type->GetDeclNode()->AsTSInterfaceDeclaration()->TypeParams();
-    type->SetTypeArguments(CreateTypeForTypeParameters(typeParams));
+    type->SetTypeArguments(CreateUnconstrainedTypeParameters(typeParams));
+    AssignTypeParameterConstraints(typeParams);
     type->AddObjectFlag(ETSObjectFlags::RESOLVED_TYPE_PARAMS);
     type->AddObjectFlag(ETSObjectFlags::INCOMPLETE_INSTANTIATION);
 }
@@ -292,15 +298,15 @@ ETSObjectType *ETSChecker::BuildBasicInterfaceProperties(ir::TSInterfaceDeclarat
         interfaceType = var->TsType()->AsETSObjectType();
     }
 
+    InstantiationContext::Guard iscope;
     if (interfaceDecl->TypeParams() != nullptr) {
         interfaceType->AddTypeFlag(TypeFlag::GENERIC);
         CreateTypeForClassOrInterfaceTypeParameters(interfaceType);
     }
 
     GetInterfacesOfInterface(interfaceType);
-
     interfaceType->SetSuperType(GlobalETSObjectType());
-
+    iscope.TryCheckConstraints(this);
     return interfaceType;
 }
 
@@ -329,6 +335,7 @@ ETSObjectType *ETSChecker::BuildBasicClassProperties(ir::ClassDefinition *classD
 
     classDef->SetTsType(classType);
 
+    InstantiationContext::Guard iscope;
     if (classDef->TypeParams() != nullptr) {
         classType->AddTypeFlag(TypeFlag::GENERIC);
         CreateTypeForClassOrInterfaceTypeParameters(classType);
@@ -349,7 +356,7 @@ ETSObjectType *ETSChecker::BuildBasicClassProperties(ir::ClassDefinition *classD
         GetSuperType(classType);
         GetInterfacesOfClass(classType);
     }
-
+    iscope.TryCheckConstraints(this);
     return classType;
 }
 
