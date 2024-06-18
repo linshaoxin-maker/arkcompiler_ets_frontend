@@ -46,3 +46,20 @@ parser/ets/recursive_import/case_4_3-sources-in-circle_no-ets-module-compile_2/f
 parser/ets/recursive_import/case_4_3-sources-in-circle_no-ets-module-compile_2/main__foo1_as__module.ets
 parser/ets/recursive_import/case_5_main-is-not-part-of-circle/foo2__module.ets
 parser/ets/recursive_import/case_5_main-is-not-part-of-circle/foo3__module.ets
+
+# `<in T>` are not yet supported
+parser/ets/contravariance_ArrayTypeWithFieldsType.ets
+parser/ets/contravariance_ArrayTypeWithMethodReturnType.ets
+parser/ets/contravariance_CircularDependencies01.ets
+parser/ets/contravariance_CircularDependencies02.ets
+parser/ets/contravariance_CircularDependencies03.ets
+parser/ets/contravariance_FunctionTypeWithFieldsType01.ets
+parser/ets/contravariance_FunctionTypeWithFieldsType02.ets
+parser/ets/contravariance_ObjectTypeWithFieldsType.ets
+parser/ets/contravariance_ObjectTypeWithMethodReturnType.ets
+parser/ets/contravariance_TupleTypeWithFieldsType.ets
+parser/ets/contravariance_TupleTypeWithMethodReturnType.ets
+parser/ets/contravariance_TypeParameterTypeWithFieldsType.ets
+parser/ets/contravariance_TypeParameterTypeWithMethodReturnType.ets
+parser/ets/contravariance_UnionTypeWithFieldsType.ets
+parser/ets/contravariance_UnionTypeWithMethodReturnType.ets
