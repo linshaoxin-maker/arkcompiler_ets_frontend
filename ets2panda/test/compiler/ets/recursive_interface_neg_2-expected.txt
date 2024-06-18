@@ -779,4 +779,4 @@
     }
   }
 }
-TypeError: Type 'D' is not assignable to constraint type 'A<B,D>'. [recursive_interface_neg_2.ets:15:1]
+TypeError: Type D is not assignable to type parameter T2 [recursive_interface_neg_2.ets:17:22]
