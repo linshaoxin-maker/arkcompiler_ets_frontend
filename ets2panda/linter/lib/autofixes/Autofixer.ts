@@ -14,12 +14,9 @@
  */
 
 import * as ts from 'typescript';
-import { isAssignmentOperator } from '../utils/functions/isAssignmentOperator';
+import { NameGenerator, forEachNodeInSubtree, isAssignmentOperator, scopeContainsThis } from '../utils/Functions';
 import { TsUtils } from '../utils/TsUtils';
-import { scopeContainsThis } from '../utils/functions/ContainsThis';
 import { SymbolCache } from './SymbolCache';
-import { NameGenerator } from '../utils/functions/NameGenerator';
-import { forEachNodeInSubtree } from '../utils/functions/ForEachNodeInSubtree';
 
 const GENERATED_OBJECT_LITERAL_INTERFACE_NAME = 'GeneratedObjectLiteralInterface_';
 const GENERATED_OBJECT_LITERAL_INTERFACE_TRESHOLD = 1000;

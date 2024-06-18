@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-import { Logger } from '../lib/Logger';
-import { logTscDiagnostic } from '../lib/utils/functions/LogTscDiagnostic';
-import type { CommandLineOptions } from '../lib/CommandLineOptions';
 import { Command, Option } from 'commander';
-import * as ts from 'typescript';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as ts from 'typescript';
+import type { CommandLineOptions } from '../lib/CommandLineOptions';
+import { Logger } from '../lib/Logger';
+import { logTscDiagnostic } from '../lib/utils/Functions';
 
 const TS_EXT = '.ts';
 const TSX_EXT = '.tsx';

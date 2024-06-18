@@ -15,8 +15,7 @@
 
 import * as ts from 'typescript';
 import { LinterConfig } from '../TypeScriptLinterConfig';
-import { forEachNodeInSubtree } from '../utils/functions/ForEachNodeInSubtree';
-import { isStructDeclaration } from '../utils/functions/IsStruct';
+import { forEachNodeInSubtree, isStructDeclaration } from '../utils/Functions';
 import type { TsUtils } from '../utils/TsUtils';
 
 export class SymbolCache {

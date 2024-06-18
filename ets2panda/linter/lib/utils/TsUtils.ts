@@ -13,31 +13,35 @@
  * limitations under the License.
  */
 
-import * as ts from 'typescript';
 import * as path from 'node:path';
-import { STANDARD_LIBRARIES } from './consts/StandardLibraries';
-import { TYPED_ARRAYS } from './consts/TypedArrays';
-import { ES_OBJECT } from './consts/ESObject';
-import { isIntrinsicObjectType } from './functions/isIntrinsicObjectType';
-import { isStdLibraryType } from './functions/IsStdLibrary';
-import { isStructDeclaration, isStructDeclarationKind } from './functions/IsStruct';
-import { pathContainsDirectory } from './functions/PathHelper';
-import { ARKTS_IGNORE_DIRS, ARKTS_IGNORE_FILES } from './consts/ArktsIgnorePaths';
-import { isAssignmentOperator } from './functions/isAssignmentOperator';
-import { forEachNodeInSubtree } from './functions/ForEachNodeInSubtree';
-import { FaultID } from '../Problems';
+import * as ts from 'typescript';
 import type { IsEtsFileCallback } from '../IsEtsFileCallback';
-import { SENDABLE_DECORATOR } from './consts/SendableAPI';
-import { USE_SHARED } from './consts/SharedModuleAPI';
+import { FaultID } from '../Problems';
 import {
   ARKTS_COLLECTIONS_D_ETS,
   ARKTS_COLLECTIONS_TYPES,
-  COLLECTIONS_NAMESPACE,
+  ARKTS_IGNORE_DIRS,
+  ARKTS_IGNORE_FILES,
   ARKTS_LANG_D_ETS,
+  COLLECTIONS_NAMESPACE,
+  ES_OBJECT,
+  ISENDABLE_TYPE,
   LANG_NAMESPACE,
-  ISENDABLE_TYPE
-} from './consts/SupportedDetsIndexableTypes';
-import type { NameGenerator } from './functions/NameGenerator';
+  SENDABLE_DECORATOR,
+  STANDARD_LIBRARIES,
+  TYPED_ARRAYS,
+  USE_SHARED
+} from './Consts';
+import type { NameGenerator } from './Functions';
+import {
+  forEachNodeInSubtree,
+  isAssignmentOperator,
+  isIntrinsicObjectType,
+  isStdLibraryType,
+  isStructDeclaration,
+  isStructDeclarationKind,
+  pathContainsDirectory
+} from './Functions';
 
 export type CheckType = (this: TsUtils, t: ts.Type) => boolean;
 export class TsUtils {
@@ -45,7 +49,7 @@ export class TsUtils {
     private readonly tsTypeChecker: ts.TypeChecker,
     private readonly testMode: boolean,
     private readonly advancedClassChecks: boolean
-  ) {}
+  ) { }
 
   entityNameToString(name: ts.EntityName): string {
     if (ts.isIdentifier(name)) {
@@ -180,21 +184,22 @@ export class TsUtils {
      * different syntax kind.
      */
     const symbolDecls = symbol?.getDeclarations();
-    if (symbolDecls) {
-      for (const symDecl of symbolDecls) {
-        const declKind = symDecl.kind;
-        // we relax arkts-unique-names for namespace collision with class/interface/enum/type/struct
-        const isNamespaceTypeCollision =
-          TsUtils.isTypeDeclSyntaxKind(declKind) && tsDeclKind === ts.SyntaxKind.ModuleDeclaration ||
-          TsUtils.isTypeDeclSyntaxKind(tsDeclKind) && declKind === ts.SyntaxKind.ModuleDeclaration;
+    if (!symbolDecls) {
+      return false;
+    }
+    for (const symDecl of symbolDecls) {
+      const declKind = symDecl.kind;
+      // we relax arkts-unique-names for namespace collision with class/interface/enum/type/struct
+      const isNamespaceTypeCollision =
+        TsUtils.isTypeDeclSyntaxKind(declKind) && tsDeclKind === ts.SyntaxKind.ModuleDeclaration ||
+        TsUtils.isTypeDeclSyntaxKind(tsDeclKind) && declKind === ts.SyntaxKind.ModuleDeclaration;
 
-        /*
-         * Don't count declarations with 'Identifier' syntax kind as those
-         * usually depict declaring an object's property through assignment.
-         */
-        if (declKind !== ts.SyntaxKind.Identifier && declKind !== tsDeclKind && !isNamespaceTypeCollision) {
-          return true;
-        }
+      /*
+       * Don't count declarations with 'Identifier' syntax kind as those
+       * usually depict declaring an object's property through assignment.
+       */
+      if (declKind !== ts.SyntaxKind.Identifier && declKind !== tsDeclKind && !isNamespaceTypeCollision) {
+        return true;
       }
     }
 
@@ -202,18 +207,18 @@ export class TsUtils {
   }
 
   static isPrimitiveType(type: ts.Type): boolean {
-    const f = type.getFlags();
-    return (
-      (f & ts.TypeFlags.Boolean) !== 0 ||
-      (f & ts.TypeFlags.BooleanLiteral) !== 0 ||
-      (f & ts.TypeFlags.Number) !== 0 ||
-      (f & ts.TypeFlags.NumberLiteral) !== 0
 
     /*
      *  In ArkTS 'string' is not a primitive type. So for the common subset 'string'
      *  should be considered as a reference type. That is why next line is commented out.
      * (f & ts.TypeFlags.String) != 0 || (f & ts.TypeFlags.StringLiteral) != 0
      */
+    const f = type.getFlags();
+    return (
+      (f & ts.TypeFlags.Boolean) !== 0 ||
+      (f & ts.TypeFlags.BooleanLiteral) !== 0 ||
+      (f & ts.TypeFlags.Number) !== 0 ||
+      (f & ts.TypeFlags.NumberLiteral) !== 0
     );
   }
 
@@ -645,15 +650,19 @@ export class TsUtils {
   }
 
   isCallToFunctionWithOmittedReturnType(tsExpr: ts.Expression): boolean {
-    if (ts.isCallExpression(tsExpr)) {
-      const tsCallSignature = this.tsTypeChecker.getResolvedSignature(tsExpr);
-      if (tsCallSignature) {
-        const tsSignDecl = tsCallSignature.getDeclaration();
-        // `tsSignDecl` is undefined when `getResolvedSignature` returns `unknownSignature`
-        if (!tsSignDecl?.type) {
-          return true;
-        }
-      }
+    if (!ts.isCallExpression(tsExpr)) {
+      return false;
+    }
+
+    const tsCallSignature = this.tsTypeChecker.getResolvedSignature(tsExpr);
+    if (!tsCallSignature) {
+      return false;
+    }
+
+    const tsSignDecl = tsCallSignature.getDeclaration();
+    // `tsSignDecl` is undefined when `getResolvedSignature` returns `unknownSignature`
+    if (!tsSignDecl?.type) {
+      return true;
     }
 
     return false;
@@ -695,15 +704,18 @@ export class TsUtils {
     let hasDefaultCtor: boolean = false;
 
     type.symbol.members.forEach((value) => {
-      if ((value.flags & ts.SymbolFlags.Constructor) !== 0) {
-        hasCtor = true;
+      if ((value.flags & ts.SymbolFlags.Constructor) === 0) {
+        return;
+      }
 
-        if (value.declarations !== undefined && value.declarations.length > 0) {
-          const declCtor = value.declarations[0] as ts.ConstructorDeclaration;
-          if (declCtor.parameters.length === 0) {
-            hasDefaultCtor = true;
-          }
-        }
+      hasCtor = true;
+      if (value.declarations === undefined || value.declarations.length <= 0) {
+        return;
+      }
+
+      const declCtor = value.declarations[0] as ts.ConstructorDeclaration;
+      if (declCtor.parameters.length === 0) {
+        hasDefaultCtor = true;
       }
     });
 
@@ -738,11 +750,13 @@ export class TsUtils {
 
   hasMethods(type: ts.Type): boolean {
     const properties = this.tsTypeChecker.getPropertiesOfType(type);
-    if (properties?.length) {
-      for (const prop of properties) {
-        if (prop.getFlags() & ts.SymbolFlags.Method) {
-          return true;
-        }
+    if (!properties?.length) {
+      return false;
+    }
+
+    for (const prop of properties) {
+      if (prop.getFlags() & ts.SymbolFlags.Method) {
+        return true;
       }
     }
     return false;
@@ -750,14 +764,15 @@ export class TsUtils {
 
   findProperty(type: ts.Type, name: string): ts.Symbol | undefined {
     const properties = this.tsTypeChecker.getPropertiesOfType(type);
-    if (properties?.length) {
-      for (const prop of properties) {
-        if (prop.name === name) {
-          return prop;
-        }
-      }
+    if (!properties?.length) {
+      return undefined;
     }
 
+    for (const prop of properties) {
+      if (prop.name === name) {
+        return prop;
+      }
+    }
     return undefined;
   }
 
@@ -838,23 +853,23 @@ export class TsUtils {
   }
 
   private isDynamicObjectAssignedToStdType(lhsType: ts.Type, rhsExpr: ts.Expression): boolean {
-    if (isStdLibraryType(lhsType) || TsUtils.isPrimitiveType(lhsType)) {
-      const rhsSym = ts.isCallExpression(rhsExpr) ?
-        this.getSymbolOfCallExpression(rhsExpr) :
-        this.trueSymbolAtLocation(rhsExpr);
-      if (rhsSym && this.isLibrarySymbol(rhsSym)) {
-        return true;
-      }
+    if (!isStdLibraryType(lhsType) && !TsUtils.isPrimitiveType(lhsType)) {
+      return false;
+    }
+
+    const rhsSym = ts.isCallExpression(rhsExpr) ?
+      this.getSymbolOfCallExpression(rhsExpr) :
+      this.trueSymbolAtLocation(rhsExpr);
+    if (rhsSym && this.isLibrarySymbol(rhsSym)) {
+      return true;
     }
     return false;
   }
 
   validateFields(objectType: ts.Type, objectLiteral: ts.ObjectLiteralExpression): boolean {
     for (const prop of objectLiteral.properties) {
-      if (ts.isPropertyAssignment(prop)) {
-        if (!this.validateField(objectType, prop)) {
-          return false;
-        }
+      if (ts.isPropertyAssignment(prop) && !this.validateField(objectType, prop)) {
+        return false;
       }
     }
 
@@ -881,13 +896,10 @@ export class TsUtils {
 
     const propType = this.tsTypeChecker.getTypeOfSymbolAtLocation(propSym, propSym.declarations[0]);
     const initExpr = TsUtils.unwrapParenthesized(prop.initializer);
-    if (ts.isObjectLiteralExpression(initExpr)) {
-      if (!this.isObjectLiteralAssignable(propType, initExpr)) {
-        return false;
-      }
-    } else if (
-      this.needToDeduceStructuralIdentity(propType, this.tsTypeChecker.getTypeAtLocation(initExpr), initExpr)
-    ) {
+    if (ts.isObjectLiteralExpression(initExpr) && !this.isObjectLiteralAssignable(propType, initExpr)) {
+      return false;
+    }
+    if (this.needToDeduceStructuralIdentity(propType, this.tsTypeChecker.getTypeAtLocation(initExpr), initExpr)) {
       // Only check for structural sub-typing.
       return false;
     }
@@ -1196,14 +1208,15 @@ export class TsUtils {
      * Thus, it should have 'aliasSymbol' and 'target' properties. The 'target'
      * in this case will resolve to origin 'Record' symbol.
      */
-    if (type.aliasSymbol) {
-      const target = (type as ts.TypeReference).target;
-      if (target) {
-        const sym = target.aliasSymbol;
-        return !!sym && sym.getName() === 'Record' && this.isGlobalSymbol(sym);
-      }
+    if (!type.aliasSymbol) {
+      return false;
     }
 
+    const target = (type as ts.TypeReference).target;
+    if (target) {
+      const sym = target.aliasSymbol;
+      return !!sym && sym.getName() === 'Record' && this.isGlobalSymbol(sym);
+    }
     return false;
   }
 
@@ -1233,15 +1246,16 @@ export class TsUtils {
 
   isLibraryType(type: ts.Type): boolean {
     const nonNullableType = type.getNonNullableType();
-    if (nonNullableType.isUnion()) {
-      for (const componentType of nonNullableType.types) {
-        if (!this.isLibraryType(componentType)) {
-          return false;
-        }
-      }
-      return true;
+    if (!nonNullableType.isUnion()) {
+      return this.isLibrarySymbol(nonNullableType.aliasSymbol ?? nonNullableType.getSymbol());
     }
-    return this.isLibrarySymbol(nonNullableType.aliasSymbol ?? nonNullableType.getSymbol());
+
+    for (const componentType of nonNullableType.types) {
+      if (!this.isLibraryType(componentType)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   hasLibraryType(node: ts.Node): boolean {
@@ -1249,39 +1263,40 @@ export class TsUtils {
   }
 
   isLibrarySymbol(sym: ts.Symbol | undefined): boolean {
-    if (sym?.declarations && sym.declarations.length > 0) {
-      const srcFile = sym.declarations[0].getSourceFile();
-      if (!srcFile) {
-        return false;
-      }
-      const fileName = srcFile.fileName;
-
-      /*
-       * Symbols from both *.ts and *.d.ts files should obey interop rules.
-       * We disable such behavior for *.ts files in the test mode due to lack of 'ets'
-       * extension support.
-       */
-      const ext = path.extname(fileName).toLowerCase();
-      const isThirdPartyCode =
-        ARKTS_IGNORE_DIRS.some((ignore) => {
-          return pathContainsDirectory(path.normalize(fileName), ignore);
-        }) ||
-        ARKTS_IGNORE_FILES.some((ignore) => {
-          return path.basename(fileName) === ignore;
-        });
-      const isEts = ext === '.ets';
-      const isTs = ext === '.ts' && !srcFile.isDeclarationFile;
-      const isStatic = (isEts || isTs && this.testMode) && !isThirdPartyCode;
-      const isStdLib = STANDARD_LIBRARIES.includes(path.basename(fileName).toLowerCase());
-
-      /*
-       * We still need to confirm support for certain API from the
-       * TypeScript standard library in ArkTS. Thus, for now do not
-       * count standard library modules as dynamic.
-       */
-      return !isStatic && !isStdLib;
+    if (!sym?.declarations || sym.declarations.length <= 0) {
+      return false;
     }
-    return false;
+
+    const srcFile = sym.declarations[0].getSourceFile();
+    if (!srcFile) {
+      return false;
+    }
+    const fileName = srcFile.fileName;
+
+    /*
+     * Symbols from both *.ts and *.d.ts files should obey interop rules.
+     * We disable such behavior for *.ts files in the test mode due to lack of 'ets'
+     * extension support.
+     */
+    const ext = path.extname(fileName).toLowerCase();
+    const isThirdPartyCode =
+      ARKTS_IGNORE_DIRS.some((ignore) => {
+        return pathContainsDirectory(path.normalize(fileName), ignore);
+      }) ||
+      ARKTS_IGNORE_FILES.some((ignore) => {
+        return path.basename(fileName) === ignore;
+      });
+    const isEts = ext === '.ets';
+    const isTs = ext === '.ts' && !srcFile.isDeclarationFile;
+    const isStatic = (isEts || isTs && this.testMode) && !isThirdPartyCode;
+    const isStdLib = STANDARD_LIBRARIES.includes(path.basename(fileName).toLowerCase());
+
+    /*
+     * We still need to confirm support for certain API from the
+     * TypeScript standard library in ArkTS. Thus, for now do not
+     * count standard library modules as dynamic.
+     */
+    return !isStatic && !isStdLib;
   }
 
   isDynamicType(type: ts.Type | undefined): boolean | undefined {
@@ -1477,18 +1492,19 @@ export class TsUtils {
   }
 
   static isAnonymousType(type: ts.Type): boolean {
-    if (type.isUnionOrIntersection()) {
-      for (const compType of type.types) {
-        if (TsUtils.isAnonymousType(compType)) {
-          return true;
-        }
-      }
-      return false;
+    if (!type.isUnionOrIntersection()) {
+      return (
+        (type.flags & ts.TypeFlags.Object) !== 0 &&
+        ((type as ts.ObjectType).objectFlags & ts.ObjectFlags.Anonymous) !== 0
+      );
     }
 
-    return (
-      (type.flags & ts.TypeFlags.Object) !== 0 && ((type as ts.ObjectType).objectFlags & ts.ObjectFlags.Anonymous) !== 0
-    );
+    for (const compType of type.types) {
+      if (TsUtils.isAnonymousType(compType)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   getSymbolOfCallExpression(callExpr: ts.CallExpression): ts.Symbol | undefined {
@@ -1650,14 +1666,15 @@ export class TsUtils {
 
   static getBaseClassType(type: ts.Type): ts.InterfaceType | undefined {
     const baseTypes = type.getBaseTypes();
-    if (baseTypes) {
-      for (const baseType of baseTypes) {
-        if (baseType.isClass()) {
-          return baseType;
-        }
-      }
+    if (!baseTypes) {
+      return undefined;
     }
 
+    for (const baseType of baseTypes) {
+      if (baseType.isClass()) {
+        return baseType;
+      }
+    }
     return undefined;
   }
 
@@ -1781,8 +1798,8 @@ export class TsUtils {
 
   isSendableType(type: ts.Type): boolean {
     if ((type.flags & (ts.TypeFlags.Boolean | ts.TypeFlags.Number | ts.TypeFlags.String |
-                       ts.TypeFlags.BigInt | ts.TypeFlags.Null | ts.TypeFlags.Undefined |
-                       ts.TypeFlags.TypeParameter)) !== 0) {
+      ts.TypeFlags.BigInt | ts.TypeFlags.Null | ts.TypeFlags.Undefined |
+      ts.TypeFlags.TypeParameter)) !== 0) {
       return true;
     }
 
@@ -1813,12 +1830,10 @@ export class TsUtils {
     const targetType = TsUtils.reduceReference(type);
 
     // class with @Sendable decorator
-    if (targetType.isClass()) {
-      if (sym.declarations?.length) {
-        const decl = sym.declarations[0];
-        if (ts.isClassDeclaration(decl)) {
-          return TsUtils.hasSendableDecorator(decl);
-        }
+    if (targetType.isClass() && sym.declarations?.length) {
+      const decl = sym.declarations[0];
+      if (ts.isClassDeclaration(decl)) {
+        return TsUtils.hasSendableDecorator(decl);
       }
     }
     // ISendable interface, or a class/interface that implements/extends ISendable interface
@@ -1984,16 +1999,19 @@ export class TsUtils {
     }
 
     classType ??= this.tsTypeChecker.getTypeAtLocation(tsClassLikeDecl);
-    if (classType) {
-      const baseType = TsUtils.getBaseClassType(classType);
-      if (baseType) {
-        const baseDecl = baseType.getSymbol()?.valueDeclaration as ts.ClassLikeDeclaration;
-        if (baseDecl) {
-          return this.classMemberHasDuplicateName(targetMember, baseDecl);
-        }
-      }
+    if (!classType) {
+      return false;
     }
 
+    const baseType = TsUtils.getBaseClassType(classType);
+    if (!baseType) {
+      return false;
+    }
+
+    const baseDecl = baseType.getSymbol()?.valueDeclaration as ts.ClassLikeDeclaration;
+    if (baseDecl) {
+      return this.classMemberHasDuplicateName(targetMember, baseDecl);
+    }
     return false;
   }
 
@@ -2105,8 +2123,7 @@ export class TsUtils {
     }
 
     for (const propDecl of symbol.declarations) {
-      if (!ts.isPropertyDeclaration(propDecl) && !ts.isPropertySignature(propDecl)
-      ) {
+      if (!ts.isPropertyDeclaration(propDecl) && !ts.isPropertySignature(propDecl)) {
         return false;
       }
 
@@ -2183,23 +2200,22 @@ export class TsUtils {
 
   static declarationNameExists(srcFile: ts.SourceFile, name: string): boolean {
     return srcFile.statements.some((stmt) => {
-      if (ts.isImportDeclaration(stmt)) {
-        if (!stmt.importClause) {
-          return false;
-        }
-        if (stmt.importClause.namedBindings) {
-          if (ts.isNamespaceImport(stmt.importClause.namedBindings)) {
-            return stmt.importClause.namedBindings.name.text === name;
-          }
-          return stmt.importClause.namedBindings.elements.some((x) => {
-            return x.name.text === name;
-          });
-        }
+      if (!ts.isImportDeclaration(stmt)) {
+        return TsUtils.isDeclarationStatement(stmt) && stmt.name !== undefined &&
+          ts.isIdentifier(stmt.name) && stmt.name.text === name;
+      }
+      if (!stmt.importClause) {
+        return false;
+      }
+      if (!stmt.importClause.namedBindings) {
         return stmt.importClause.name?.text === name;
       }
-
-      return TsUtils.isDeclarationStatement(stmt) && stmt.name !== undefined &&
-        ts.isIdentifier(stmt.name) && stmt.name.text === name;
+      if (ts.isNamespaceImport(stmt.importClause.namedBindings)) {
+        return stmt.importClause.namedBindings.name.text === name;
+      }
+      return stmt.importClause.namedBindings.elements.some((x) => {
+        return x.name.text === name;
+      });
     });
   }
 

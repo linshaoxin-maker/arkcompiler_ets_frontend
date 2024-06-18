@@ -13,26 +13,25 @@
  * limitations under the License.
  */
 
-import type * as ts from 'typescript';
-import type { ProblemInfo } from './ProblemInfo';
-import { TypeScriptLinter, consoleLog } from './TypeScriptLinter';
-import { FaultID } from './Problems';
-import { faultDesc } from './FaultDesc';
-import { faultsAttrs } from './FaultAttrs';
-import type { LintRunResult } from './LintRunResult';
 import * as path from 'node:path';
-import type { LintOptions } from './LintOptions';
+import type * as ts from 'typescript';
 import type { CommandLineOptions } from './CommandLineOptions';
-import { mergeArrayMaps } from './utils/functions/MergeArrayMaps';
+import { faultsAttrs } from './FaultAttrs';
+import { faultDesc } from './FaultDesc';
+import type { LintOptions } from './LintOptions';
+import type { LintRunResult } from './LintRunResult';
+import type { ProblemInfo } from './ProblemInfo';
+import { ProblemSeverity } from './ProblemSeverity';
+import { FaultID } from './Problems';
+import { TypeScriptLinter, consoleLog } from './TypeScriptLinter';
 import { getTscDiagnostics } from './ts-diagnostics/GetTscDiagnostics';
 import { transformTscDiagnostics } from './ts-diagnostics/TransformTscDiagnostics';
 import {
   ARKTS_IGNORE_DIRS_NO_OH_MODULES,
   ARKTS_IGNORE_DIRS_OH_MODULES,
   ARKTS_IGNORE_FILES
-} from './utils/consts/ArktsIgnorePaths';
-import { pathContainsDirectory } from './utils/functions/PathHelper';
-import { ProblemSeverity } from './ProblemSeverity';
+} from './utils/Consts';
+import { mergeArrayMaps, pathContainsDirectory } from './utils/Functions';
 
 function prepareInputFilesList(cmdOptions: CommandLineOptions): string[] {
   let inputFiles = cmdOptions.inputFiles;
