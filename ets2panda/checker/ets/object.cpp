@@ -911,6 +911,78 @@ void ETSChecker::CheckClassDefinition(ir::ClassDefinition *classDef)
     CheckConstFields(classType);
     CheckGetterSetterProperties(classType);
     CheckInvokeMethodsLegitimacy(classType);
+    if (classDef->TypeParams() == nullptr) {
+        return;
+    }
+    for (auto *typeParam : classDef->TypeParams()->Params()) {
+        if (!typeParam->IsIn()) {
+            continue;
+        }
+        for (auto *it : classDef->Body()){
+            if (it->IsClassProperty()) {
+                auto *st = it->AsClassProperty();
+                bool isETSFunctionType = st->TypeAnnotation() == nullptr? false:st->TypeAnnotation()->IsETSFunctionType();
+                CheckContravariance(st->TsType(), it->Start(), isETSFunctionType);
+            }
+        }
+
+        for (auto *it : classDef->Body()) {
+            if (it->IsMethodDefinition()) {
+                auto *scriptFunc = it->AsMethodDefinition()->Function();
+                if(scriptFunc->ReturnTypeAnnotation() != nullptr){
+                    CheckContravariance(scriptFunc->ReturnTypeAnnotation()->TsType(), it->Start(),
+                                        scriptFunc->ReturnTypeAnnotation()->IsETSFunctionType());
+                }
+            }
+        }
+    }
+}
+
+void ETSChecker::CheckContravariance(const checker::Type *type, const lexer::SourcePosition &pos, bool isETSFunctionType)
+{
+     if (type->IsETSTypeParameter()) {
+        if (type->AsETSTypeParameter()->GetDeclNode()->IsIn()) {
+            ThrowTypeError({"The type parameter '", type->AsETSTypeParameter()->GetDeclNode()->Name()->Name(),
+                            "' declared with the 'in' modifier must not be used as a return type or a member variable type."}, pos);
+        }
+    }
+
+    if(type->IsETSObjectType()){
+        if (isETSFunctionType) { 
+            auto returnType = type->AsETSObjectType()->TypeArguments().back();
+            CheckContravariance(returnType, pos);
+        }else {  //Stack Overflow here in contravariance_CircularDependencies03.ets
+            auto methods = type->AsETSObjectType()->InstanceMethods();
+            for (const auto &[name, var] : methods) {
+                for (auto const *sig : var->TsType()->AsETSFunctionType()->CallSignatures()) {
+                    if (type!=sig->ReturnType()) {
+                        CheckContravariance(sig->ReturnType(), pos);
+                    }
+                }
+            }
+            auto fields = type->AsETSObjectType()->InstanceFields();
+            for (const auto &[name, var] : fields) {
+                if (type!=var->TsType()) {
+                    CheckContravariance(var->TsType(), pos);
+                }
+            }
+        }
+    }
+
+    if (type->IsETSArrayType()) {
+        CheckContravariance(type->AsETSArrayType()->ElementType(), pos);
+    }
+
+    if (type->IsETSUnionType()) {
+        for (auto *ctype : type->AsETSUnionType()->ConstituentTypes()) {
+            CheckContravariance(ctype, pos);
+        }
+    }
+
+    if(type->IsETSTupleType()) {
+        CheckContravariance(type->AsETSTupleType()->ElementType(), pos);
+    }
+
 }
 
 void ETSChecker::CheckConstructors(ir::ClassDefinition *classDef, ETSObjectType *classType)

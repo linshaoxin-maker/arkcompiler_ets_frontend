@@ -168,6 +168,7 @@ public:
     void CheckInnerClassMembers(const ETSObjectType *classType);
     void CheckLocalClass(ir::ClassDefinition *classDef, CheckerStatus &checkerStatus);
     void CheckClassDefinition(ir::ClassDefinition *classDef);
+    void CheckContravariance(const checker::Type *type, const lexer::SourcePosition &pos, bool isETSFunctionType = false);
     void CheckConstructors(ir::ClassDefinition *classDef, ETSObjectType *classType);
     void FindAssignment(const ir::AstNode *node, const varbinder::LocalVariable *classVar, bool &initialized);
     void FindAssignments(const ir::AstNode *node, const varbinder::LocalVariable *classVar, bool &initialized);
