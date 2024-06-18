@@ -165,7 +165,7 @@ static bool IsValidTypeForBinaryOp(const ir::AstNode *ast, bool isBitwise)
                !typedAst->TsType()->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::BUILTIN_BOOLEAN);
     }
 
-    return typedAst->TsType()->HasTypeFlag(checker::TypeFlag::ETS_NUMERIC) ||
+    return typedAst->TsType()->HasTypeFlag(checker::TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC) ||
            typedAst->TsType()->HasTypeFlag(checker::TypeFlag::NUMBER_LITERAL) ||
            typedAst->TsType()->HasTypeFlag(checker::TypeFlag::BIGINT) ||
            typedAst->TsType()->HasTypeFlag(checker::TypeFlag::BIGINT_LITERAL);
@@ -223,7 +223,7 @@ bool IsVisibleInternalNode(const ir::AstNode *ast, const ir::AstNode *objTypeDec
     if (currentProgram == nullptr) {
         return false;
     }
-    util::StringView packageNameCurrent = currentProgram->GetPackageName();
+    util::StringView moduleNameCurrent = currentProgram->ModuleName();
     // NOTE(orlovskymaxim) This relies on the fact, that GetTopStatement has no bugs, that is not the case for now
     if (!objTypeDeclNode->GetTopStatement()->IsETSScript()) {
         return false;
@@ -233,9 +233,8 @@ bool IsVisibleInternalNode(const ir::AstNode *ast, const ir::AstNode *objTypeDec
     if (objectProgram == nullptr) {
         return false;
     }
-    util::StringView packageNameObject = objectProgram->GetPackageName();
-    return currentTopStatement == objectTopStatement ||
-           (packageNameCurrent == packageNameObject && !packageNameCurrent.Empty());
+    util::StringView moduleNameObject = objectProgram->ModuleName();
+    return currentTopStatement == objectTopStatement || moduleNameCurrent == moduleNameObject;
 }
 
 static const checker::Type *GetClassDefinitionType(const ir::AstNode *ast)
