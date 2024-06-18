@@ -179,13 +179,13 @@ ArenaVector<Type *> ETSChecker::CreateUnconstrainedTypeParameters(ir::TSTypePara
 
 void ETSChecker::AssignTypeParameterConstraints(ir::TSTypeParameterDeclaration const *typeParams)
 {
-    InstantiationContext::Guard iscope;
+    ConstraintCheckScope ctScope(this);
     // The type parameter might be used in the constraint, like 'K extend Comparable<K>',
     // so we need to create their type first, then set up the constraint
     for (auto *const param : typeParams->Params()) {
         SetUpTypeParameterConstraint(param);
     }
-    iscope.TryCheckConstraints(this);
+    ctScope.TryCheckConstraints();
 }
 
 void ETSChecker::CheckTypeParameterConstraint(ir::TSTypeParameter *param, Type2TypeMap &extends)
@@ -298,7 +298,7 @@ ETSObjectType *ETSChecker::BuildBasicInterfaceProperties(ir::TSInterfaceDeclarat
         interfaceType = var->TsType()->AsETSObjectType();
     }
 
-    InstantiationContext::Guard iscope;
+    ConstraintCheckScope ctScope(this);
     if (interfaceDecl->TypeParams() != nullptr) {
         interfaceType->AddTypeFlag(TypeFlag::GENERIC);
         CreateTypeForClassOrInterfaceTypeParameters(interfaceType);
@@ -306,7 +306,7 @@ ETSObjectType *ETSChecker::BuildBasicInterfaceProperties(ir::TSInterfaceDeclarat
 
     GetInterfacesOfInterface(interfaceType);
     interfaceType->SetSuperType(GlobalETSObjectType());
-    iscope.TryCheckConstraints(this);
+    ctScope.TryCheckConstraints();
     return interfaceType;
 }
 
@@ -335,7 +335,7 @@ ETSObjectType *ETSChecker::BuildBasicClassProperties(ir::ClassDefinition *classD
 
     classDef->SetTsType(classType);
 
-    InstantiationContext::Guard iscope;
+    ConstraintCheckScope ctScope(this);
     if (classDef->TypeParams() != nullptr) {
         classType->AddTypeFlag(TypeFlag::GENERIC);
         CreateTypeForClassOrInterfaceTypeParameters(classType);
@@ -356,7 +356,7 @@ ETSObjectType *ETSChecker::BuildBasicClassProperties(ir::ClassDefinition *classD
         GetSuperType(classType);
         GetInterfacesOfClass(classType);
     }
-    iscope.TryCheckConstraints(this);
+    ctScope.TryCheckConstraints();
     return classType;
 }
 

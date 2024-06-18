@@ -295,7 +295,8 @@ checker::Type *ETSAnalyzer::Check(ir::ETSClassLiteral *expr) const
     ArenaVector<checker::Type *> typeArgTypes(checker->Allocator()->Adapter());
     typeArgTypes.push_back(exprType);  // NOTE: Box it if it's a primitive type
 
-    checker::InstantiationContext ctx(checker, checker->GlobalBuiltinTypeType(), typeArgTypes, expr->Range().start);
+    checker::InstantiationContext ctx(checker, checker->GlobalBuiltinTypeType(), std::move(typeArgTypes),
+                                      expr->Range().start);
     expr->SetTsType(ctx.Result());
 
     return expr->TsType();

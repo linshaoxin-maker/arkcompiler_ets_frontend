@@ -3456,4 +3456,14 @@ void ETSChecker::CacheFunctionalInterface(ir::ETSFunctionType *type, ETSObjectTy
     functionalInterfaceCache_.emplace(hash, ifaceType);
 }
 
+ArenaVector<ConstraintCheckRecord> &ETSChecker::PendingConstraintCheckRecords()
+{
+    return pendingConstraintCheckRecords_;
+}
+
+size_t &ETSChecker::ConstraintCheckScopesCount()
+{
+    return constraintCheckScopesCount_;
+}
+
 }  // namespace ark::es2panda::checker
