@@ -706,15 +706,15 @@ export namespace ApiExtractor {
     return supportedParsingExtension.some(extension => path.endsWith(extension));
   }
 
-   /**
+  /**
    * parse common project or file to extract exported api list
    * @return reserved api names
    */
-   export function parseProjectSourceByPaths(projectPaths: string[], customProfiles: IOptions, scanningApiType: ApiType): string[] {
+  export function parseProjectSourceByPaths(projectPaths: string[], customProfiles: IOptions, scanningApiType: ApiType): string[] {
     mPropertySet.clear();
     projectPaths.forEach(path => {
       parseFile(path, scanningApiType);
-    })
+    });
     let reservedProperties: string[] = [...mPropertySet];
     mPropertySet.clear();
     return reservedProperties;
@@ -730,7 +730,7 @@ export namespace ApiExtractor {
     mLibExportNameSet.clear();
     libPaths.forEach(path => {
       parseFile(path, scanningApiType);
-    })
+    });
     let reservedLibExportNames: string[] = undefined;
     if (scanProjectConfig.mExportObfuscation) {
       reservedLibExportNames = [...mLibExportNameSet];
