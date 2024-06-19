@@ -994,6 +994,10 @@ ir::AstNode *ETSParser::ParseClassElement(const ArenaVector<ir::AstNode *> &prop
     auto startLoc = Lexer()->GetToken().Start();
     auto savedPos = Lexer()->Save();  // NOLINT(clang-analyzer-deadcode.DeadStores)
 
+    if (Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_TYPE) {
+        return ParseTypeAliasDeclaration();
+    }
+
     if (Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_STATIC &&
         Lexer()->Lookahead() == lexer::LEX_CHAR_LEFT_BRACE) {
         return ParseClassStaticBlock();
@@ -1205,11 +1209,6 @@ ir::Statement *ETSParser::ParseTypeDeclaration(bool allowStatic)
 ir::TSTypeAliasDeclaration *ETSParser::ParseTypeAliasDeclaration()
 {
     ASSERT(Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_TYPE);
-
-    if ((GetContext().Status() & parser::ParserStatus::FUNCTION) != 0U) {
-        ThrowSyntaxError("Type alias is allowed only as top-level declaration");
-    }
-
     lexer::SourcePosition typeStart = Lexer()->GetToken().Start();
     Lexer()->NextToken();  // eat type keyword
 
@@ -1754,6 +1753,10 @@ ir::AstNode *ETSParser::ParseTypeLiteralOrInterfaceMember()
             auto *method = ParseInterfaceMethod(ir::ModifierFlags::PUBLIC, ir::MethodDefinitionKind::METHOD);
             method->SetStart(startLoc);
             return method;
+        }
+
+        if (Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_TYPE) {
+            return ParseTypeAliasDeclaration();
         }
 
         auto *field = ParseInterfaceField();
@@ -3186,9 +3189,6 @@ ir::Expression *ETSParser::ParsePrimaryExpression(ExpressionParseFlags flags)
         }
         case lexer::TokenType::PUNCTUATOR_BACK_TICK: {
             return ParseTemplateLiteral();
-        }
-        case lexer::TokenType::KEYW_TYPE: {
-            ThrowSyntaxError("Type alias is allowed only as top-level declaration");
         }
         case lexer::TokenType::PUNCTUATOR_FORMAT: {
             return ParseExpressionFormatPlaceholder();
