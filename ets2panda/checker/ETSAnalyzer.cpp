@@ -608,8 +608,7 @@ static void CheckArrayElement(ETSChecker *checker, checker::Type *elementType,
                                      TypeRelationFlag::NO_THROW).IsAssignable() &&
          !(targetElementType[0]->IsETSArrayType() && currentElement->IsArrayExpression()))) {
         if (targetElementType[1] == nullptr) {
-            checker->ThrowTypeError({"Array element type '", elementType, "' is not assignable to explicit type '",
-                                     targetElementType[1], "'"},
+            checker->ThrowTypeError({"Cannot deduce array element type in the assignment expression"},
                                     currentElement->Start());
         } else if (!(targetElementType[0]->IsETSArrayType() && currentElement->IsArrayExpression()) &&
                    !checker::AssignmentContext(checker->Relation(), currentElement, elementType, targetElementType[1],
