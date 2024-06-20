@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,25 +13,13 @@
  * limitations under the License.
  */
 
-import type * as ts from 'typescript';
-import { LinterConfig } from '../../TypeScriptLinterConfig';
+import * as npath from 'node:path';
 
-export function isStruct(symbol: ts.Symbol): boolean {
-  if (!symbol.declarations) {
-    return false;
-  }
-  for (const decl of symbol.declarations) {
-    if (isStructDeclaration(decl)) {
+export function pathContainsDirectory(path: string, dir: string): boolean {
+  for (const pathDir of npath.dirname(path).split(npath.sep)) {
+    if (pathDir === dir) {
       return true;
     }
   }
   return false;
-}
-
-export function isStructDeclarationKind(kind: ts.SyntaxKind): boolean {
-  return LinterConfig.tsSyntaxKindNames[kind] === 'StructDeclaration';
-}
-
-export function isStructDeclaration(node: ts.Node): boolean {
-  return isStructDeclarationKind(node?.kind);
 }

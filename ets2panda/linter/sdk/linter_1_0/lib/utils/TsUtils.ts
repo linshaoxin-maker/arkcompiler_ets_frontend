@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,18 +25,6 @@ import { pathContainsDirectory } from './functions/PathHelper';
 import { ARKTS_IGNORE_DIRS, ARKTS_IGNORE_FILES } from './consts/ArktsIgnorePaths';
 import { isAssignmentOperator } from './functions/isAssignmentOperator';
 import { forEachNodeInSubtree } from './functions/ForEachNodeInSubtree';
-import { FaultID } from '../Problems';
-import type { IsEtsFileCallback } from '../IsEtsFileCallback';
-import { SENDABLE_DECORATOR } from './consts/SendableAPI';
-import { USE_SHARED } from './consts/SharedModuleAPI';
-import {
-  ARKTS_COLLECTIONS_D_ETS,
-  COLLECTIONS_NAMESPACE,
-  ARKTS_LANG_D_ETS,
-  LANG_NAMESPACE,
-  ISENDABLE_TYPE
-} from './consts/SupportedDetsIndexableTypes';
-import type { NameGenerator } from './functions/NameGenerator';
 
 export type CheckType = (this: TsUtils, t: ts.Type) => boolean;
 export class TsUtils {
@@ -53,7 +41,7 @@ export class TsUtils {
     return this.entityNameToString(name.left) + this.entityNameToString(name.right);
   }
 
-  static isNumberLikeType(tsType: ts.Type): boolean {
+  static isNumberType(tsType: ts.Type): boolean {
     if (tsType.isUnion()) {
       for (const tsCompType of tsType.types) {
         if ((tsCompType.flags & ts.TypeFlags.NumberLike) === 0) {
@@ -65,7 +53,7 @@ export class TsUtils {
     return (tsType.getFlags() & ts.TypeFlags.NumberLike) !== 0;
   }
 
-  static isBooleanLikeType(tsType: ts.Type): boolean {
+  static isBooleanType(tsType: ts.Type): boolean {
     return (tsType.getFlags() & ts.TypeFlags.BooleanLike) !== 0;
   }
 
@@ -102,15 +90,16 @@ export class TsUtils {
   }
 
   static isEnumType(tsType: ts.Type): boolean {
-    // when type equals `typeof <Enum>`, only symbol contains information about it's type.
-    const isEnumSymbol = tsType.symbol && this.isEnum(tsType.symbol);
-    // otherwise, we should analyze flags of the type itself
-    const isEnumType = !!(tsType.flags & ts.TypeFlags.Enum) || !!(tsType.flags & ts.TypeFlags.EnumLiteral);
-    return isEnumSymbol || isEnumType;
+
+    /*
+     * Note: For some reason, test (tsType.flags & ts.TypeFlags.Enum) != 0 doesn't work here.
+     * Must use SymbolFlags to figure out if this is an enum type.
+     */
+    return tsType.symbol && (tsType.symbol.flags & ts.SymbolFlags.Enum) !== 0;
   }
 
-  static isEnum(tsSymbol: ts.Symbol): boolean {
-    return !!(tsSymbol.flags & ts.SymbolFlags.Enum);
+  static isEnumMemberType(tsType: ts.Type): boolean {
+    return tsType.symbol && (tsType.symbol.flags & ts.SymbolFlags.EnumMember) !== 0;
   }
 
   static hasModifier(tsModifiers: readonly ts.Modifier[] | undefined, tsModifierKind: number): boolean {
@@ -234,15 +223,6 @@ export class TsUtils {
     );
   }
 
-  static isReadonlyArrayType(tsType: ts.Type): boolean {
-    return (
-      TsUtils.isTypeReference(tsType) &&
-      tsType.typeArguments?.length === 1 &&
-      tsType.target.typeParameters?.length === 1 &&
-      tsType.getSymbol()?.getName() === 'ReadonlyArray'
-    );
-  }
-
   isTypedArray(tsType: ts.Type): boolean {
     const symbol = tsType.symbol;
     if (!symbol) {
@@ -253,7 +233,7 @@ export class TsUtils {
   }
 
   isArray(tsType: ts.Type): boolean {
-    return TsUtils.isGenericArrayType(tsType) || TsUtils.isReadonlyArrayType(tsType) || this.isTypedArray(tsType);
+    return TsUtils.isGenericArrayType(tsType) || this.isTypedArray(tsType);
   }
 
   static isTuple(tsType: ts.Type): boolean {
@@ -261,7 +241,7 @@ export class TsUtils {
   }
 
   // does something similar to relatedByInheritanceOrIdentical function
-  isOrDerivedFrom(tsType: ts.Type, checkType: CheckType, checkedBaseTypes?: Set<ts.Type>): boolean {
+  isOrDerivedFrom(tsType: ts.Type, checkType: CheckType): boolean {
     tsType = TsUtils.reduceReference(tsType);
 
     if (checkType.call(this, tsType)) {
@@ -272,9 +252,6 @@ export class TsUtils {
       return false;
     }
 
-    // Avoid type recursion in heritage by caching checked types.
-    (checkedBaseTypes = checkedBaseTypes || new Set<ts.Type>()).add(tsType);
-
     for (const tsTypeDecl of tsType.symbol.declarations) {
       const isClassOrInterfaceDecl = ts.isClassDeclaration(tsTypeDecl) || ts.isInterfaceDeclaration(tsTypeDecl);
       const isDerived = isClassOrInterfaceDecl && !!tsTypeDecl.heritageClauses;
@@ -282,7 +259,7 @@ export class TsUtils {
         continue;
       }
       for (const heritageClause of tsTypeDecl.heritageClauses) {
-        if (this.processParentTypesCheck(heritageClause.types, checkType, checkedBaseTypes)) {
+        if (this.processParentTypesCheck(heritageClause.types, checkType)) {
           return true;
         }
       }
@@ -316,6 +293,20 @@ export class TsUtils {
     return (tsType.getFlags() & ts.TypeFlags.Any) !== 0;
   }
 
+  isStringType(tsType: ts.Type): boolean {
+    if ((tsType.getFlags() & ts.TypeFlags.String) !== 0) {
+      return true;
+    }
+
+    if (!TsUtils.isTypeReference(tsType)) {
+      return false;
+    }
+
+    const symbol = tsType.symbol;
+    const name = this.tsTypeChecker.getFullyQualifiedName(symbol);
+    return name === 'String' && this.isGlobalSymbol(symbol);
+  }
+
   static isUnknownType(tsType: ts.Type): boolean {
     return (tsType.getFlags() & ts.TypeFlags.Unknown) !== 0;
   }
@@ -338,6 +329,14 @@ export class TsUtils {
       }
     }
     return false;
+  }
+
+  static isThisOrSuperExpr(tsExpr: ts.Expression): boolean {
+    return tsExpr.kind === ts.SyntaxKind.ThisKeyword || tsExpr.kind === ts.SyntaxKind.SuperKeyword;
+  }
+
+  static isObjectLiteralType(type: ts.Type): boolean {
+    return type.symbol && (type.symbol.flags & ts.SymbolFlags.ObjectLiteral) !== 0;
   }
 
   static isMethodAssignment(tsSymbol: ts.Symbol | undefined): boolean {
@@ -505,7 +504,7 @@ export class TsUtils {
     return tsConstValue !== undefined && typeof tsConstValue === 'string';
   }
 
-  // Returns true if typeA is a subtype of typeB
+  // Returns true iff typeA is a subtype of typeB
   relatedByInheritanceOrIdentical(typeA: ts.Type, typeB: ts.Type): boolean {
     typeA = TsUtils.reduceReference(typeA);
     typeB = TsUtils.reduceReference(typeB);
@@ -539,12 +538,13 @@ export class TsUtils {
   private needToDeduceStructuralIdentityHandleUnions(
     lhsType: ts.Type,
     rhsType: ts.Type,
-    rhsExpr: ts.Expression
+    rhsExpr: ts.Expression,
+    allowPromotion: boolean
   ): boolean {
     if (rhsType.isUnion()) {
       // Each Class/Interface of the RHS union type must be compatible with LHS type.
       for (const compType of rhsType.types) {
-        if (this.needToDeduceStructuralIdentity(lhsType, compType, rhsExpr)) {
+        if (this.needToDeduceStructuralIdentity(lhsType, compType, rhsExpr, allowPromotion)) {
           return true;
         }
       }
@@ -553,7 +553,7 @@ export class TsUtils {
     if (lhsType.isUnion()) {
       // RHS type needs to be compatible with at least one type of the LHS union.
       for (const compType of lhsType.types) {
-        if (!this.needToDeduceStructuralIdentity(compType, rhsType, rhsExpr)) {
+        if (!this.needToDeduceStructuralIdentity(compType, rhsType, rhsExpr, allowPromotion)) {
           return false;
         }
       }
@@ -564,7 +564,12 @@ export class TsUtils {
   }
 
   // return true if two class types are not related by inheritance and structural identity check is needed
-  needToDeduceStructuralIdentity(lhsType: ts.Type, rhsType: ts.Type, rhsExpr: ts.Expression): boolean {
+  needToDeduceStructuralIdentity(
+    lhsType: ts.Type,
+    rhsType: ts.Type,
+    rhsExpr: ts.Expression,
+    allowPromotion: boolean = false
+  ): boolean {
     lhsType = TsUtils.getNonNullableType(lhsType);
     rhsType = TsUtils.getNonNullableType(rhsType);
     if (this.isLibraryType(lhsType)) {
@@ -578,7 +583,7 @@ export class TsUtils {
       return false;
     }
     if (rhsType.isUnion() || lhsType.isUnion()) {
-      return this.needToDeduceStructuralIdentityHandleUnions(lhsType, rhsType, rhsExpr);
+      return this.needToDeduceStructuralIdentityHandleUnions(lhsType, rhsType, rhsExpr, allowPromotion);
     }
     if (
       this.advancedClassChecks &&
@@ -589,11 +594,14 @@ export class TsUtils {
       // missing exact rule
       return true;
     }
-    return (
+    let res =
       lhsType.isClassOrInterface() &&
       rhsType.isClassOrInterface() &&
-      !this.relatedByInheritanceOrIdentical(rhsType, lhsType)
-    );
+      !this.relatedByInheritanceOrIdentical(rhsType, lhsType);
+    if (allowPromotion) {
+      res = res && !this.relatedByInheritanceOrIdentical(lhsType, rhsType);
+    }
+    return res;
   }
 
   private processParentTypes(
@@ -614,18 +622,10 @@ export class TsUtils {
     return false;
   }
 
-  private processParentTypesCheck(
-    parentTypes: ts.NodeArray<ts.Expression>,
-    checkType: CheckType,
-    checkedBaseTypes: Set<ts.Type>
-  ): boolean {
+  private processParentTypesCheck(parentTypes: ts.NodeArray<ts.Expression>, checkType: CheckType): boolean {
     for (const baseTypeExpr of parentTypes) {
       const baseType = TsUtils.reduceReference(this.tsTypeChecker.getTypeAtLocation(baseTypeExpr));
-      if (
-        baseType &&
-        !checkedBaseTypes.has(baseType) &&
-        this.isOrDerivedFrom(baseType, checkType, checkedBaseTypes)
-      ) {
+      if (baseType && this.isOrDerivedFrom(baseType, checkType)) {
         return true;
       }
     }
@@ -747,7 +747,7 @@ export class TsUtils {
     return false;
   }
 
-  findProperty(type: ts.Type, name: string): ts.Symbol | undefined {
+  private findProperty(type: ts.Type, name: string): ts.Symbol | undefined {
     const properties = this.tsTypeChecker.getPropertiesOfType(type);
     if (properties?.length) {
       for (const prop of properties) {
@@ -760,18 +760,6 @@ export class TsUtils {
     return undefined;
   }
 
-  checkTypeSet(typeSet: ts.Type, predicate: CheckType): boolean {
-    if (!typeSet.isUnionOrIntersection()) {
-      return predicate.call(this, typeSet);
-    }
-    for (const elemType of typeSet.types) {
-      if (this.checkTypeSet(elemType, predicate)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   static getNonNullableType(t: ts.Type): ts.Type {
     if (TsUtils.isNullableUnionType(t)) {
       return t.getNonNullableType();
@@ -779,61 +767,163 @@ export class TsUtils {
     return t;
   }
 
-  private isObjectLiteralAssignableToUnion(lhsType: ts.UnionType, rhsExpr: ts.ObjectLiteralExpression): boolean {
-    for (const compType of lhsType.types) {
-      if (this.isObjectLiteralAssignable(compType, rhsExpr)) {
-        return true;
+  private areTypesAssignable(lhsType: ts.Type, rhsType: ts.Type): boolean {
+    if (rhsType.isUnion()) {
+      let res = true;
+      for (const compType of rhsType.types) {
+        res = res && this.areTypesAssignable(lhsType, compType);
+      }
+      return res;
+    }
+
+    if (lhsType.isUnion()) {
+      for (const compType of lhsType.types) {
+        if (this.areTypesAssignable(compType, rhsType)) {
+          return true;
+        }
       }
     }
-    return false;
-  }
 
-  isObjectLiteralAssignable(lhsType: ts.Type | undefined, rhsExpr: ts.ObjectLiteralExpression): boolean {
-    if (lhsType === undefined) {
-      return false;
-    }
-    // Always check with the non-nullable variant of lhs type.
-    lhsType = TsUtils.getNonNullableType(lhsType);
-    if (lhsType.isUnion() && this.isObjectLiteralAssignableToUnion(lhsType, rhsExpr)) {
+    const isRhsUndefined: boolean = !!(rhsType.flags & ts.TypeFlags.Undefined);
+    const isRhsNull: boolean = !!(rhsType.flags & ts.TypeFlags.Null);
+    if (isRhsUndefined || isRhsNull) {
       return true;
     }
 
-    /*
-     * Allow initializing with anything when the type
-     * originates from the library.
-     */
     if (TsUtils.isAnyType(lhsType) || this.isLibraryType(lhsType)) {
       return true;
     }
 
-    /*
-     * issue 13412:
-     * Allow initializing with a dynamic object when the LHS type
-     * is primitive or defined in standard library.
-     */
-    if (this.isDynamicObjectAssignedToStdType(lhsType, rhsExpr)) {
+    lhsType = this.tsTypeChecker.getBaseTypeOfLiteralType(lhsType);
+    rhsType = this.tsTypeChecker.getBaseTypeOfLiteralType(rhsType);
+    if (this.isEnumAssignment(lhsType, rhsType)) {
       return true;
     }
-    // For Partial<T>, Required<T>, Readonly<T> types, validate their argument type.
-    if (this.isStdPartialType(lhsType) || this.isStdRequiredType(lhsType) || this.isStdReadonlyType(lhsType)) {
-      if (lhsType.aliasTypeArguments && lhsType.aliasTypeArguments.length === 1) {
-        lhsType = lhsType.aliasTypeArguments[0];
+
+    if (this.areCompatibleFunctionals(lhsType, rhsType)) {
+      return true;
+    }
+    return lhsType === rhsType || this.relatedByInheritanceOrIdentical(rhsType, this.getTargetType(lhsType));
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  private getTargetType(type: ts.Type): ts.Type {
+    return type.getFlags() & ts.TypeFlags.Object &&
+            (type as ts.ObjectType).objectFlags & ts.ObjectFlags.Reference ?
+      (type as ts.TypeReference).target :
+      type;
+  }
+
+  private isEnumAssignment(lhsType: ts.Type, rhsType: ts.Type): boolean {
+    const isNumberEnum = TsUtils.isPrimitiveEnumType(rhsType, ts.TypeFlags.NumberLiteral) ||
+                          TsUtils.isPrimititveEnumMemberType(rhsType, ts.TypeFlags.NumberLiteral);
+    const isStringEnum = TsUtils.isPrimitiveEnumType(rhsType, ts.TypeFlags.StringLiteral) ||
+                          TsUtils.isPrimititveEnumMemberType(rhsType, ts.TypeFlags.StringLiteral);
+    return TsUtils.isNumberType(lhsType) && isNumberEnum || this.isStringType(lhsType) && isStringEnum;
+  }
+
+  static isPrimitiveEnumType(type: ts.Type, primitiveType: ts.TypeFlags): boolean {
+    const isNonPrimitive = (type.flags & ts.TypeFlags.NonPrimitive) !== 0;
+    if (!TsUtils.isEnumType(type) || !type.isUnion() || isNonPrimitive) {
+      return false;
+    }
+
+    for (const t of type.types) {
+      if ((t.flags & primitiveType) === 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static isPrimititveEnumMemberType(type: ts.Type, primitiveType: ts.TypeFlags): boolean {
+    const isNonPrimitive = (type.flags & ts.TypeFlags.NonPrimitive) !== 0;
+    if (!TsUtils.isEnumMemberType(type) || isNonPrimitive) {
+      return false;
+    }
+    return (type.flags & primitiveType) !== 0;
+  }
+
+  isExpressionAssignabletoType(lhsType: ts.Type | undefined, rhsExpr: ts.Expression): boolean {
+    if (lhsType === undefined) {
+      return false;
+    }
+    // Always check with the non-nullable variant of lhs type.
+    let nonNullableLhs = TsUtils.getNonNullableType(lhsType);
+
+    if (this.doValidateInitializing(nonNullableLhs)) {
+      return true;
+    }
+
+    if (this.isDynamicObjectAssignedToStdType(nonNullableLhs, rhsExpr)) {
+      return true;
+    }
+
+    if (this.doValidateRecordType(nonNullableLhs, rhsExpr)) {
+      return TsUtils.validateRecordObjectKeys(rhsExpr as ts.ObjectLiteralExpression);
+    }
+
+    if (this.doValidateType(nonNullableLhs)) {
+      if (nonNullableLhs.aliasTypeArguments && nonNullableLhs.aliasTypeArguments.length === 1) {
+        nonNullableLhs = nonNullableLhs.aliasTypeArguments[0];
       } else {
         return false;
       }
     }
 
-    /*
-     * Allow initializing Record objects with object initializer.
-     * Record supports any type for a its value, but the key value
-     * must be either a string or number literal.
-     */
-    if (this.isStdRecordType(lhsType)) {
-      return this.validateRecordObjectKeys(rhsExpr);
+    const rhsType = TsUtils.getNonNullableType(this.tsTypeChecker.getTypeAtLocation(rhsExpr));
+    if (rhsType.isUnion()) {
+      let res = true;
+      for (const commpType of rhsType.types) {
+        res = res && this.areTypesAssignable(lhsType, commpType);
+      }
+      return res;
     }
-    return (
-      TsUtils.validateObjectLiteralType(lhsType) && !this.hasMethods(lhsType) && this.validateFields(lhsType, rhsExpr)
-    );
+
+    if (lhsType.isUnion()) {
+      for (const commpType of lhsType.types) {
+        if (this.isExpressionAssignabletoType(commpType, rhsExpr)) {
+          return true;
+        }
+      }
+    }
+
+    if (ts.isObjectLiteralExpression(rhsExpr)) {
+      return this.isObjectLiteralAssignable(nonNullableLhs, rhsExpr);
+    }
+    return this.areTypesAssignable(lhsType, rhsType);
+  }
+
+  /*
+   * Allow initializing Record objects with object initializer.
+   * Record supports any type for a its value, but the key value
+   * must be either a string or number literal.
+   */
+  private doValidateRecordType(nonNullableLhs: ts.Type, rhsExpr: ts.Expression): boolean {
+    return this.isStdRecordType(nonNullableLhs) && ts.isObjectLiteralExpression(rhsExpr);
+  }
+
+  /*
+   * Allow initializing with anything when the type
+   * originates from the library.
+   */
+  private doValidateInitializing(nonNullableLhs: ts.Type): boolean {
+    return TsUtils.isAnyType(nonNullableLhs) || this.isLibraryType(nonNullableLhs);
+  }
+
+  // For Partial<T>, Required<T>, Readonly<T> types, validate their argument type.
+  private doValidateType(nonNullableLhs: ts.Type): boolean {
+    return this.isStdPartialType(nonNullableLhs) ||
+    this.isStdRequiredType(nonNullableLhs) ||
+    this.isStdReadonlyType(nonNullableLhs);
+  }
+
+  private isObjectLiteralAssignable(lhsType: ts.Type, rhsExpr: ts.Expression): boolean {
+    if (ts.isObjectLiteralExpression(rhsExpr)) {
+      return TsUtils.validateObjectLiteralType(lhsType) && !this.hasMethods(lhsType) &&
+              this.validateFields(lhsType, rhsExpr);
+    }
+    return false;
   }
 
   private isDynamicObjectAssignedToStdType(lhsType: ts.Type, rhsExpr: ts.Expression): boolean {
@@ -860,48 +950,20 @@ export class TsUtils {
     return true;
   }
 
-  getPropertySymbol(type: ts.Type, prop: ts.PropertyAssignment): ts.Symbol | undefined {
-    const propNameSymbol = this.tsTypeChecker.getSymbolAtLocation(prop.name);
-    const propName = propNameSymbol ?
-      ts.symbolName(propNameSymbol) :
-      ts.isMemberName(prop.name) ?
-        ts.idText(prop.name) :
-        prop.name.getText();
-    const propSym = this.findProperty(type, propName);
-    return propSym;
-  }
-
   private validateField(type: ts.Type, prop: ts.PropertyAssignment): boolean {
-    // Issue 15497: Use unescaped property name to find correpsponding property.
-    const propSym = this.getPropertySymbol(type, prop);
+    const propName = prop.name.getText();
+    const propSym = this.findProperty(type, propName);
     if (!propSym?.declarations?.length) {
       return false;
     }
 
     const propType = this.tsTypeChecker.getTypeOfSymbolAtLocation(propSym, propSym.declarations[0]);
-    const initExpr = TsUtils.unwrapParenthesized(prop.initializer);
-    if (ts.isObjectLiteralExpression(initExpr)) {
-      if (!this.isObjectLiteralAssignable(propType, initExpr)) {
-        return false;
-      }
-    } else if (
-      this.needToDeduceStructuralIdentity(propType, this.tsTypeChecker.getTypeAtLocation(initExpr), initExpr)
-    ) {
-      // Only check for structural sub-typing.
-      return false;
-    }
-
-    return true;
+    return this.isExpressionAssignabletoType(propType, prop.initializer);
   }
 
-  validateRecordObjectKeys(objectLiteral: ts.ObjectLiteralExpression): boolean {
+  static validateRecordObjectKeys(objectLiteral: ts.ObjectLiteralExpression): boolean {
     for (const prop of objectLiteral.properties) {
-      if (!prop.name) {
-        return false;
-      }
-      const isValidComputedProperty =
-        ts.isComputedPropertyName(prop.name) && this.isValidComputedPropertyName(prop.name, true);
-      if (!ts.isStringLiteral(prop.name) && !ts.isNumericLiteral(prop.name) && !isValidComputedProperty) {
+      if (!prop.name || !ts.isStringLiteral(prop.name) && !ts.isNumericLiteral(prop.name)) {
         return false;
       }
     }
@@ -1022,172 +1084,6 @@ export class TsUtils {
       (nodeOrComment as ts.Node).getEnd();
   }
 
-  static getHighlightRange(nodeOrComment: ts.Node | ts.CommentRange, faultId: number): [number, number] {
-    return (
-      this.highlightRangeHandlers.get(faultId)?.call(this, nodeOrComment) ?? [
-        this.getStartPos(nodeOrComment),
-        this.getEndPos(nodeOrComment)
-      ]
-    );
-  }
-
-  static highlightRangeHandlers = new Map([
-    [FaultID.VarDeclaration, TsUtils.getVarDeclarationHighlightRange],
-    [FaultID.CatchWithUnsupportedType, TsUtils.getCatchWithUnsupportedTypeHighlightRange],
-    [FaultID.ForInStatement, TsUtils.getForInStatementHighlightRange],
-    [FaultID.WithStatement, TsUtils.getWithStatementHighlightRange],
-    [FaultID.DeleteOperator, TsUtils.getDeleteOperatorHighlightRange],
-    [FaultID.TypeQuery, TsUtils.getTypeQueryHighlightRange],
-    [FaultID.InstanceofUnsupported, TsUtils.getInstanceofUnsupportedHighlightRange],
-    [FaultID.ConstAssertion, TsUtils.getConstAssertionHighlightRange],
-    [FaultID.LimitedReturnTypeInference, TsUtils.getLimitedReturnTypeInferenceHighlightRange],
-    [FaultID.LocalFunction, TsUtils.getLocalFunctionHighlightRange],
-    [FaultID.FunctionBind, TsUtils.getFunctionApplyCallHighlightRange],
-    [FaultID.FunctionApplyCall, TsUtils.getFunctionApplyCallHighlightRange],
-    [FaultID.DeclWithDuplicateName, TsUtils.getDeclWithDuplicateNameHighlightRange],
-    [FaultID.ObjectLiteralNoContextType, TsUtils.getObjectLiteralNoContextTypeHighlightRange],
-    [FaultID.ClassExpression, TsUtils.getClassExpressionHighlightRange],
-    [FaultID.MultipleStaticBlocks, TsUtils.getMultipleStaticBlocksHighlightRange],
-    [FaultID.ParameterProperties, TsUtils.getParameterPropertiesHighlightRange],
-    [FaultID.SendableDefiniteAssignment, TsUtils.getSendableDefiniteAssignmentHighlightRange],
-    [FaultID.ObjectTypeLiteral, TsUtils.getObjectTypeLiteralHighlightRange]
-  ]);
-
-  static getKeywordHighlightRange(nodeOrComment: ts.Node | ts.CommentRange, keyword: string): [number, number] {
-    const start = this.getStartPos(nodeOrComment);
-    return [start, start + keyword.length];
-  }
-
-  static getVarDeclarationHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
-    return this.getKeywordHighlightRange(nodeOrComment, 'var');
-  }
-
-  static getCatchWithUnsupportedTypeHighlightRange(
-    nodeOrComment: ts.Node | ts.CommentRange
-  ): [number, number] | undefined {
-    const catchClauseNode = (nodeOrComment as ts.CatchClause).variableDeclaration;
-    if (catchClauseNode !== undefined) {
-      return [catchClauseNode.getStart(), catchClauseNode.getEnd()];
-    }
-
-    return undefined;
-  }
-
-  static getForInStatementHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
-    return [
-      this.getEndPos((nodeOrComment as ts.ForInStatement).initializer) + 1,
-      this.getStartPos((nodeOrComment as ts.ForInStatement).expression) - 1
-    ];
-  }
-
-  static getWithStatementHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
-    return [this.getStartPos(nodeOrComment), (nodeOrComment as ts.WithStatement).statement.getStart() - 1];
-  }
-
-  static getDeleteOperatorHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
-    return this.getKeywordHighlightRange(nodeOrComment, 'delete');
-  }
-
-  static getTypeQueryHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
-    return this.getKeywordHighlightRange(nodeOrComment, 'typeof');
-  }
-
-  static getInstanceofUnsupportedHighlightRange(
-    nodeOrComment: ts.Node | ts.CommentRange
-  ): [number, number] | undefined {
-    return this.getKeywordHighlightRange((nodeOrComment as ts.BinaryExpression).operatorToken, 'instanceof');
-  }
-
-  static getConstAssertionHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
-    if (nodeOrComment.kind === ts.SyntaxKind.AsExpression) {
-      return [
-        (nodeOrComment as ts.AsExpression).expression.getEnd() + 1,
-        (nodeOrComment as ts.AsExpression).type.getStart() - 1
-      ];
-    }
-    return [
-      (nodeOrComment as ts.TypeAssertion).expression.getEnd() + 1,
-      (nodeOrComment as ts.TypeAssertion).type.getEnd() + 1
-    ];
-  }
-
-  static getLimitedReturnTypeInferenceHighlightRange(
-    nodeOrComment: ts.Node | ts.CommentRange
-  ): [number, number] | undefined {
-    let node: ts.Node | undefined;
-    if (nodeOrComment.kind === ts.SyntaxKind.FunctionExpression) {
-      // we got error about return type so it should be present
-      node = (nodeOrComment as ts.FunctionExpression).type;
-    } else if (nodeOrComment.kind === ts.SyntaxKind.FunctionDeclaration) {
-      node = (nodeOrComment as ts.FunctionDeclaration).name;
-    } else if (nodeOrComment.kind === ts.SyntaxKind.MethodDeclaration) {
-      node = (nodeOrComment as ts.MethodDeclaration).name;
-    }
-
-    if (node !== undefined) {
-      return [node.getStart(), node.getEnd()];
-    }
-
-    return undefined;
-  }
-
-  static getLocalFunctionHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
-    return this.getKeywordHighlightRange(nodeOrComment, 'function');
-  }
-
-  static getFunctionApplyCallHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
-    const pointPos = (nodeOrComment as ts.Node).getText().lastIndexOf('.');
-    return [this.getStartPos(nodeOrComment) + pointPos + 1, this.getEndPos(nodeOrComment)];
-  }
-
-  static getDeclWithDuplicateNameHighlightRange(
-    nodeOrComment: ts.Node | ts.CommentRange
-  ): [number, number] | undefined {
-    // in case of private identifier no range update is needed
-    const nameNode: ts.Node | undefined = (nodeOrComment as ts.NamedDeclaration).name;
-    if (nameNode !== undefined) {
-      return [nameNode.getStart(), nameNode.getEnd()];
-    }
-
-    return undefined;
-  }
-
-  static getObjectLiteralNoContextTypeHighlightRange(
-    nodeOrComment: ts.Node | ts.CommentRange
-  ): [number, number] | undefined {
-    return this.getKeywordHighlightRange(nodeOrComment, '{');
-  }
-
-  static getClassExpressionHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
-    return this.getKeywordHighlightRange(nodeOrComment, 'class');
-  }
-
-  static getMultipleStaticBlocksHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
-    return this.getKeywordHighlightRange(nodeOrComment, 'static');
-  }
-
-  static getParameterPropertiesHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
-    const params = (nodeOrComment as ts.ConstructorDeclaration).parameters;
-    if (params.length) {
-      return [params[0].getStart(), params[params.length - 1].getEnd()];
-    }
-    return undefined;
-  }
-
-  static getObjectTypeLiteralHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
-    return this.getKeywordHighlightRange(nodeOrComment, '{');
-  }
-
-  // highlight ranges for Sendable rules
-
-  static getSendableDefiniteAssignmentHighlightRange(
-    nodeOrComment: ts.Node | ts.CommentRange
-  ): [number, number] | undefined {
-    const name = (nodeOrComment as ts.PropertyDeclaration).name;
-    const exclamationToken = (nodeOrComment as ts.PropertyDeclaration).exclamationToken;
-    return [name.getStart(), exclamationToken ? exclamationToken.getEnd() : name.getEnd()];
-  }
-
   isStdRecordType(type: ts.Type): boolean {
 
     /*
@@ -1204,6 +1100,11 @@ export class TsUtils {
     }
 
     return false;
+  }
+
+  isStdMapType(type: ts.Type): boolean {
+    const sym = type.symbol;
+    return !!sym && sym.getName() === 'Map' && this.isGlobalSymbol(sym);
   }
 
   isStdErrorType(type: ts.Type): boolean {
@@ -1370,7 +1271,7 @@ export class TsUtils {
     let curNode: ts.Node = expr;
     while (ts.isObjectLiteralExpression(curNode) || ts.isArrayLiteralExpression(curNode)) {
       const exprType = this.tsTypeChecker.getContextualType(curNode);
-      if (exprType !== undefined && !TsUtils.isAnonymous(exprType)) {
+      if (exprType !== undefined) {
         const res = this.isDynamicType(exprType);
         if (res !== undefined) {
           return res;
@@ -1577,706 +1478,5 @@ export class TsUtils {
   private isStdFunctionType(type: ts.Type): boolean {
     const sym = type.getSymbol();
     return !!sym && sym.getName() === 'Function' && this.isGlobalSymbol(sym);
-  }
-
-  isStdBigIntType(type: ts.Type): boolean {
-    const sym = type.symbol;
-    return !!sym && sym.getName() === 'BigInt' && this.isGlobalSymbol(sym);
-  }
-
-  isStdNumberType(type: ts.Type): boolean {
-    const sym = type.symbol;
-    return !!sym && sym.getName() === 'Number' && this.isGlobalSymbol(sym);
-  }
-
-  isStdBooleanType(type: ts.Type): boolean {
-    const sym = type.symbol;
-    return !!sym && sym.getName() === 'Boolean' && this.isGlobalSymbol(sym);
-  }
-
-  isEnumStringLiteral(expr: ts.Expression): boolean {
-    const symbol = this.trueSymbolAtLocation(expr);
-    const isEnumMember = !!symbol && !!(symbol.flags & ts.SymbolFlags.EnumMember);
-    const type = this.tsTypeChecker.getTypeAtLocation(expr);
-    const isStringEnumLiteral = TsUtils.isEnumType(type) && !!(type.flags & ts.TypeFlags.StringLiteral);
-    return isEnumMember && isStringEnumLiteral;
-  }
-
-  isValidComputedPropertyName(computedProperty: ts.ComputedPropertyName, isRecordObjectInitializer = false): boolean {
-    const expr = computedProperty.expression;
-    if (!isRecordObjectInitializer) {
-      const symbol = this.trueSymbolAtLocation(expr);
-      if (!!symbol && this.isSymbolIterator(symbol)) {
-        return true;
-      }
-    }
-    // We allow computed property names if expression is string literal or string Enum member
-    return ts.isStringLiteralLike(expr) || this.isEnumStringLiteral(computedProperty.expression);
-  }
-
-  static skipPropertyInferredTypeCheck(decl: ts.PropertyDeclaration, sourceFile: ts.SourceFile | undefined,
-    isEtsFileCb: IsEtsFileCallback | undefined): boolean {
-    return !!sourceFile && !!isEtsFileCb && isEtsFileCb(sourceFile) && sourceFile.isDeclarationFile &&
-      !!decl.modifiers?.some((m) => { return m.kind === ts.SyntaxKind.PrivateKeyword; });
-  }
-
-  static hasAccessModifier(decl: ts.HasModifiers): boolean {
-    const modifiers = ts.getModifiers(decl);
-    return (
-      !!modifiers &&
-      (TsUtils.hasModifier(modifiers, ts.SyntaxKind.PublicKeyword) ||
-        TsUtils.hasModifier(modifiers, ts.SyntaxKind.ProtectedKeyword) ||
-        TsUtils.hasModifier(modifiers, ts.SyntaxKind.PrivateKeyword))
-    );
-  }
-
-  static getModifier(
-    modifiers: readonly ts.Modifier[] | undefined, modifierKind: ts.SyntaxKind
-  ): ts.Modifier | undefined {
-    if (!modifiers) {
-      return undefined;
-    }
-    return modifiers.find((x) => {
-      return x.kind === modifierKind;
-    });
-  }
-
-  static getAccessModifier(modifiers: readonly ts.Modifier[] | undefined): ts.Modifier | undefined {
-    return TsUtils.getModifier(modifiers, ts.SyntaxKind.PublicKeyword) ??
-      TsUtils.getModifier(modifiers, ts.SyntaxKind.ProtectedKeyword) ??
-      TsUtils.getModifier(modifiers, ts.SyntaxKind.PrivateKeyword);
-  }
-
-  static getBaseClassType(type: ts.Type): ts.InterfaceType | undefined {
-    const baseTypes = type.getBaseTypes();
-    if (baseTypes) {
-      for (const baseType of baseTypes) {
-        if (baseType.isClass()) {
-          return baseType;
-        }
-      }
-    }
-
-    return undefined;
-  }
-
-  static destructuringAssignmentHasSpreadOperator(node: ts.AssignmentPattern): boolean {
-    if (ts.isArrayLiteralExpression(node)) {
-      return node.elements.some((x) => {
-        if (ts.isSpreadElement(x)) {
-          return true;
-        }
-        if (ts.isObjectLiteralExpression(x) || ts.isArrayLiteralExpression(x)) {
-          return TsUtils.destructuringAssignmentHasSpreadOperator(x);
-        }
-        return false;
-      });
-    }
-
-    return node.properties.some((x) => {
-      if (ts.isSpreadAssignment(x)) {
-        return true;
-      }
-      if (ts.isPropertyAssignment(x) &&
-        (ts.isObjectLiteralExpression(x.initializer) || ts.isArrayLiteralExpression(x.initializer))
-      ) {
-        return TsUtils.destructuringAssignmentHasSpreadOperator(x.initializer);
-      }
-      return false;
-    });
-  }
-
-  static destructuringDeclarationHasSpreadOperator(node: ts.BindingPattern): boolean {
-    return node.elements.some((x) => {
-      if (ts.isBindingElement(x)) {
-        if (x.dotDotDotToken) {
-          return true;
-        }
-        if (ts.isArrayBindingPattern(x.name) || ts.isObjectBindingPattern(x.name)) {
-          return TsUtils.destructuringDeclarationHasSpreadOperator(x.name);
-        }
-      }
-      return false;
-    });
-  }
-
-  static hasNestedObjectDestructuring(node: ts.ArrayBindingOrAssignmentPattern): boolean {
-    if (ts.isArrayLiteralExpression(node)) {
-      return node.elements.some((x) => {
-        const elem = ts.isSpreadElement(x) ? x.expression : x;
-        if (ts.isArrayLiteralExpression(elem)) {
-          return TsUtils.hasNestedObjectDestructuring(elem);
-        }
-        return ts.isObjectLiteralExpression(elem);
-      });
-    }
-
-    return node.elements.some((x) => {
-      if (ts.isBindingElement(x)) {
-        if (ts.isArrayBindingPattern(x.name)) {
-          return TsUtils.hasNestedObjectDestructuring(x.name);
-        }
-        return ts.isObjectBindingPattern(x.name);
-      }
-      return false;
-    });
-  }
-
-  static getDecoratorName(decorator: ts.Decorator): string {
-    let decoratorName = '';
-    if (ts.isIdentifier(decorator.expression)) {
-      decoratorName = decorator.expression.text;
-    } else if (ts.isCallExpression(decorator.expression) && ts.isIdentifier(decorator.expression.expression)) {
-      decoratorName = decorator.expression.expression.text;
-    }
-    return decoratorName;
-  }
-
-  static unwrapParenthesizedTypeNode(typeNode: ts.TypeNode): ts.TypeNode {
-    let unwrappedTypeNode = typeNode;
-    while (ts.isParenthesizedTypeNode(unwrappedTypeNode)) {
-      unwrappedTypeNode = unwrappedTypeNode.type;
-    }
-
-    return unwrappedTypeNode;
-  }
-
-  isSendableTypeNode(typeNode: ts.TypeNode): boolean {
-
-    /*
-     * In order to correctly identify the usage of the enum member or
-     * const enum in type annotation, we need to handle union type and
-     * type alias cases by processing the type node and checking the
-     * symbol in case of type reference node.
-     */
-
-    typeNode = TsUtils.unwrapParenthesizedTypeNode(typeNode);
-
-    // Only a sendable union type is supported
-    if (ts.isUnionTypeNode(typeNode)) {
-      return typeNode.types.every((elemType) => {
-        return this.isSendableTypeNode(elemType);
-      });
-    }
-
-    const sym = ts.isTypeReferenceNode(typeNode) ?
-      this.trueSymbolAtLocation(typeNode.typeName) :
-      undefined;
-
-    if (sym && sym.getFlags() & ts.SymbolFlags.TypeAlias) {
-      const typeDecl = TsUtils.getDeclaration(sym);
-      if (typeDecl && ts.isTypeAliasDeclaration(typeDecl)) {
-        return this.isSendableTypeNode(typeDecl.type);
-      }
-    }
-
-    // Const enum type is supported
-    if (TsUtils.isConstEnum(sym)) {
-      return true;
-    }
-
-    return this.isSendableType(this.tsTypeChecker.getTypeFromTypeNode(typeNode));
-  }
-
-  isSendableType(type: ts.Type): boolean {
-    if ((type.flags & (ts.TypeFlags.Boolean | ts.TypeFlags.Number | ts.TypeFlags.String |
-                       ts.TypeFlags.BigInt | ts.TypeFlags.Null | ts.TypeFlags.Undefined |
-                       ts.TypeFlags.TypeParameter)) !== 0) {
-      return true;
-    }
-
-    return this.isSendableClassOrInterface(type);
-  }
-
-  isShareableType(tsType: ts.Type): boolean {
-    const sym = tsType.getSymbol();
-    if (TsUtils.isConstEnum(sym)) {
-      return true;
-    }
-
-    if (tsType.isUnion()) {
-      return tsType.types.every((elemType) => {
-        return this.isShareableType(elemType);
-      });
-    }
-
-    return this.isSendableType(tsType);
-  }
-
-  isSendableClassOrInterface(type: ts.Type): boolean {
-    const sym = type.getSymbol();
-    if (!sym) {
-      return false;
-    }
-
-    const targetType = TsUtils.reduceReference(type);
-
-    // class with @Sendable decorator
-    if (targetType.isClass()) {
-      if (sym.declarations?.length) {
-        const decl = sym.declarations[0];
-        if (ts.isClassDeclaration(decl)) {
-          return TsUtils.hasSendableDecorator(decl);
-        }
-      }
-    }
-    // ISendable interface, or a class/interface that implements/extends ISendable interface
-    return this.isOrDerivedFrom(type, TsUtils.isISendableInterface);
-  }
-
-  typeContainsSendableClassOrInterface(type: ts.Type): boolean {
-    // Only check type contains sendable class / interface
-    if ((type.flags & ts.TypeFlags.Union) !== 0) {
-      return !!(type as ts.UnionType)?.types?.some((type) => {
-        return this.typeContainsSendableClassOrInterface(type);
-      });
-    }
-
-    return this.isSendableClassOrInterface(type);
-  }
-
-  static isConstEnum(sym: ts.Symbol | undefined): boolean {
-    return !!sym && sym.flags === ts.SymbolFlags.ConstEnum;
-  }
-
-  isSendableUnionType(type: ts.UnionType): boolean {
-    const types = type?.types;
-    if (!types) {
-      return false;
-    }
-
-    return types.every((type) => {
-      return this.isSendableType(type);
-    });
-  }
-
-  static hasSendableDecorator(decl: ts.ClassDeclaration): boolean {
-    const decorators = ts.getDecorators(decl);
-    return !!decorators?.some((x) => {
-      return TsUtils.getDecoratorName(x) === SENDABLE_DECORATOR;
-    });
-  }
-
-  static getNonSendableDecorators(decl: ts.ClassDeclaration): ts.Decorator[] | undefined {
-    const decorators = ts.getDecorators(decl);
-    return decorators?.filter((x) => {
-      return TsUtils.getDecoratorName(x) !== SENDABLE_DECORATOR;
-    });
-  }
-
-  static getDecoratorsIfInSendableClass(declaration: ts.HasDecorators): readonly ts.Decorator[] | undefined {
-    const classNode = TsUtils.getClassNodeFromDeclaration(declaration);
-    if (classNode === undefined || !TsUtils.hasSendableDecorator(classNode)) {
-      return undefined;
-    }
-    return ts.getDecorators(declaration);
-  }
-
-  private static getClassNodeFromDeclaration(declaration: ts.HasDecorators): ts.ClassDeclaration | undefined {
-    if (declaration.kind === ts.SyntaxKind.Parameter) {
-      return ts.isClassDeclaration(declaration.parent.parent) ? declaration.parent.parent : undefined;
-    }
-    return ts.isClassDeclaration(declaration.parent) ? declaration.parent : undefined;
-  }
-
-  static isISendableInterface(type: ts.Type): boolean {
-    const symbol = type.aliasSymbol ?? type.getSymbol();
-    if (symbol?.declarations === undefined || symbol.declarations.length < 1) {
-      return false;
-    }
-
-    return TsUtils.isArkTSISendableDeclaration(symbol.declarations[0]);
-  }
-
-  private static isArkTSISendableDeclaration(decl: ts.Declaration): boolean {
-    if (!ts.isInterfaceDeclaration(decl) || !decl.name || decl.name.text !== ISENDABLE_TYPE) {
-      return false;
-    }
-
-    if (!ts.isModuleBlock(decl.parent) || decl.parent.parent.name.text !== LANG_NAMESPACE) {
-      return false;
-    }
-
-    if (path.basename(decl.getSourceFile().fileName).toLowerCase() !== ARKTS_LANG_D_ETS) {
-      return false;
-    }
-
-    return true;
-  }
-
-  isAllowedIndexSignature(node: ts.IndexSignatureDeclaration): boolean {
-
-    /*
-     * For now, relax index signature only for specific array-like types
-     * with the following signature: 'collections.Array<T>.[_: number]: T'.
-     */
-
-    if (node.parameters.length !== 1) {
-      return false;
-    }
-
-    const paramType = this.tsTypeChecker.getTypeAtLocation(node.parameters[0]);
-    if ((paramType.flags & ts.TypeFlags.Number) === 0) {
-      return false;
-    }
-
-    return this.isArkTSCollectionsArrayLikeDeclaration(node.parent);
-  }
-
-  isArkTSCollectionsArrayLikeType(type: ts.Type): boolean {
-    const symbol = type.aliasSymbol ?? type.getSymbol();
-    if (symbol?.declarations === undefined || symbol.declarations.length < 1) {
-      return false;
-    }
-
-    return this.isArkTSCollectionsArrayLikeDeclaration(symbol.declarations[0]);
-  }
-
-  private isArkTSCollectionsArrayLikeDeclaration(decl: ts.Declaration): boolean {
-    if (!ts.isClassDeclaration(decl) && !ts.isInterfaceDeclaration(decl) || !decl.name) {
-      return false;
-    }
-
-    if (!this.tsTypeChecker.getTypeAtLocation(decl).getNumberIndexType()) {
-      return false;
-    }
-
-    if (!ts.isModuleBlock(decl.parent) || decl.parent.parent.name.text !== COLLECTIONS_NAMESPACE) {
-      return false;
-    }
-
-    if (path.basename(decl.getSourceFile().fileName).toLowerCase() !== ARKTS_COLLECTIONS_D_ETS) {
-      return false;
-    }
-
-    return true;
-  }
-
-  classMemberHasDuplicateName(
-    targetMember: ts.ClassElement, tsClassLikeDecl: ts.ClassLikeDeclaration, classType?: ts.Type
-  ): boolean {
-
-    /*
-     * If two class members have the same name where one is a private identifer,
-     * then such members are considered to have duplicate names.
-     */
-    if (!TsUtils.isIdentifierOrPrivateIdentifier(targetMember.name)) {
-      return false;
-    }
-
-    for (const classMember of tsClassLikeDecl.members) {
-      if (targetMember === classMember) {
-        continue;
-      }
-
-      // Check constructor parameter properties.
-      if (ts.isConstructorDeclaration(classMember) && classMember.parameters.some((x) => {
-        return ts.isIdentifier(x.name) && TsUtils.hasAccessModifier(x) &&
-          TsUtils.isPrivateIdentifierDuplicateOfIdentifier(targetMember.name as ts.Identifier, x.name);
-      })) {
-        return true;
-      }
-
-      if (!TsUtils.isIdentifierOrPrivateIdentifier(classMember.name)) {
-        continue;
-      }
-
-      if (TsUtils.isPrivateIdentifierDuplicateOfIdentifier(targetMember.name, classMember.name)) {
-        return true;
-      }
-    }
-
-    classType = classType ?? this.tsTypeChecker.getTypeAtLocation(tsClassLikeDecl);
-    if (classType) {
-      const baseType = TsUtils.getBaseClassType(classType);
-      if (baseType) {
-        const baseDecl = baseType.getSymbol()?.valueDeclaration as ts.ClassLikeDeclaration;
-        if (baseDecl) {
-          return this.classMemberHasDuplicateName(targetMember, baseDecl);
-        }
-      }
-    }
-
-    return false;
-  }
-
-  private static isIdentifierOrPrivateIdentifier(node?: ts.PropertyName): node is ts.Identifier | ts.PrivateIdentifier {
-    if (!node) {
-      return false;
-    }
-    return ts.isIdentifier(node) || ts.isPrivateIdentifier(node);
-  }
-
-  private static isPrivateIdentifierDuplicateOfIdentifier(
-    ident1: ts.Identifier | ts.PrivateIdentifier,
-    ident2: ts.Identifier | ts.PrivateIdentifier
-  ): boolean {
-    if (ts.isIdentifier(ident1) && ts.isPrivateIdentifier(ident2)) {
-      return ident1.text === ident2.text.substring(1);
-    }
-    if (ts.isIdentifier(ident2) && ts.isPrivateIdentifier(ident1)) {
-      return ident2.text === ident1.text.substring(1);
-    }
-    if (ts.isPrivateIdentifier(ident1) && ts.isPrivateIdentifier(ident2)) {
-      return ident1.text.substring(1) === ident2.text.substring(1);
-    }
-    return false;
-  }
-
-  findIdentifierNameForSymbol(symbol: ts.Symbol): string | undefined {
-    let name = TsUtils.getIdentifierNameFromString(symbol.name);
-    if (name === undefined || name === symbol.name) {
-      return name;
-    }
-
-    const parentType = this.getTypeByProperty(symbol);
-    if (parentType === undefined) {
-      return undefined;
-    }
-
-    while (this.findProperty(parentType, name) !== undefined) {
-      name = '_' + name;
-    }
-
-    return name;
-  }
-
-  private static getIdentifierNameFromString(str: string): string | undefined {
-    let result: string = '';
-
-    let offset = 0;
-    while (offset < str.length) {
-      const codePoint = str.codePointAt(offset);
-      if (!codePoint) {
-        return undefined;
-      }
-
-      const charSize = TsUtils.charSize(codePoint);
-
-      if (offset === 0 && !ts.isIdentifierStart(codePoint, undefined)) {
-        result = '__';
-      }
-
-      if (!ts.isIdentifierPart(codePoint, undefined)) {
-        if (codePoint === 0x20) {
-          result += '_';
-        } else {
-          result += 'x' + codePoint.toString(16);
-        }
-      } else {
-        for (let i = 0; i < charSize; i++) {
-          result += str.charAt(offset + i);
-        }
-      }
-
-      offset += charSize;
-    }
-
-    return result;
-  }
-
-  private static charSize(codePoint: number): number {
-    return codePoint >= 0x10000 ? 2 : 1;
-  }
-
-  private getTypeByProperty(symbol: ts.Symbol): ts.Type | undefined {
-    if (symbol.declarations === undefined) {
-      return undefined;
-    }
-
-    for (const propDecl of symbol.declarations) {
-      if (
-        !ts.isPropertyDeclaration(propDecl) &&
-        !ts.isPropertyAssignment(propDecl) &&
-        !ts.isPropertySignature(propDecl)
-      ) {
-        return undefined;
-      }
-
-      const type = this.tsTypeChecker.getTypeAtLocation(propDecl.parent);
-      if (type !== undefined) {
-        return type;
-      }
-    }
-
-    return undefined;
-  }
-
-  static isPropertyOfInternalClassOrInterface(symbol: ts.Symbol): boolean {
-    if (symbol.declarations === undefined) {
-      return false;
-    }
-
-    for (const propDecl of symbol.declarations) {
-      if (!ts.isPropertyDeclaration(propDecl) && !ts.isPropertySignature(propDecl)
-      ) {
-        return false;
-      }
-
-      if (!ts.isClassDeclaration(propDecl.parent) && !ts.isInterfaceDeclaration(propDecl.parent)) {
-        return false;
-      }
-
-      if (TsUtils.hasModifier(ts.getModifiers(propDecl.parent), ts.SyntaxKind.ExportKeyword)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  static isIntrinsicObjectType(type: ts.Type): boolean {
-    return !!(type.flags & ts.TypeFlags.NonPrimitive);
-  }
-
-  isStringType(tsType: ts.Type): boolean {
-    if ((tsType.getFlags() & ts.TypeFlags.String) !== 0) {
-      return true;
-    }
-
-    if (!TsUtils.isTypeReference(tsType)) {
-      return false;
-    }
-
-    const symbol = tsType.symbol;
-    const name = this.tsTypeChecker.getFullyQualifiedName(symbol);
-    return name === 'String' && this.isGlobalSymbol(symbol);
-  }
-
-  isStdMapType(type: ts.Type): boolean {
-    const sym = type.symbol;
-    return !!sym && sym.getName() === 'Map' && this.isGlobalSymbol(sym);
-  }
-
-  hasGenericTypeParameter(type: ts.Type): boolean {
-    if (type.isUnionOrIntersection()) {
-      return type.types.some((x) => {
-        return this.hasGenericTypeParameter(x);
-      });
-    }
-    if (TsUtils.isTypeReference(type)) {
-      const typeArgs = this.tsTypeChecker.getTypeArguments(type);
-      return typeArgs.some((x) => {
-        return this.hasGenericTypeParameter(x);
-      });
-    }
-    return type.isTypeParameter();
-  }
-
-  static getEnclosingTopLevelStatement(node: ts.Node): ts.Node | undefined {
-    return ts.findAncestor(node, (ancestor) => {
-      return ts.isSourceFile(ancestor.parent);
-    });
-  }
-
-  static isDeclarationStatement(node: ts.Node): node is ts.DeclarationStatement {
-    const kind = node.kind;
-    return kind === ts.SyntaxKind.FunctionDeclaration ||
-      kind === ts.SyntaxKind.ModuleDeclaration ||
-      kind === ts.SyntaxKind.ClassDeclaration ||
-      kind === ts.SyntaxKind.StructDeclaration ||
-      kind === ts.SyntaxKind.TypeAliasDeclaration ||
-      kind === ts.SyntaxKind.InterfaceDeclaration ||
-      kind === ts.SyntaxKind.EnumDeclaration ||
-      kind === ts.SyntaxKind.MissingDeclaration ||
-      kind === ts.SyntaxKind.ImportEqualsDeclaration ||
-      kind === ts.SyntaxKind.ImportDeclaration ||
-      kind === ts.SyntaxKind.NamespaceExportDeclaration;
-  }
-
-  static declarationNameExists(srcFile: ts.SourceFile, name: string): boolean {
-    return srcFile.statements.some((stmt) => {
-      if (ts.isImportDeclaration(stmt)) {
-        if (!stmt.importClause) {
-          return false;
-        }
-        if (stmt.importClause.namedBindings) {
-          if (ts.isNamespaceImport(stmt.importClause.namedBindings)) {
-            return stmt.importClause.namedBindings.name.text === name;
-          }
-          return stmt.importClause.namedBindings.elements.some((x) => {
-            return x.name.text === name;
-          });
-        }
-        return stmt.importClause.name?.text === name;
-      }
-
-      return TsUtils.isDeclarationStatement(stmt) && stmt.name !== undefined &&
-        ts.isIdentifier(stmt.name) && stmt.name.text === name;
-    });
-  }
-
-  static generateUniqueName(nameGenerator: NameGenerator, srcFile: ts.SourceFile): string | undefined {
-    let newName: string | undefined;
-
-    do {
-      newName = nameGenerator.getName();
-      if (newName !== undefined && TsUtils.declarationNameExists(srcFile, newName)) {
-        continue;
-      }
-      break;
-    } while (newName !== undefined);
-
-    return newName;
-  }
-
-  static isSharedModule(sourceFile: ts.SourceFile): boolean {
-    const statements = sourceFile.statements;
-    for (const statement of statements) {
-      if (ts.isImportDeclaration(statement)) {
-        continue;
-      }
-
-      return (
-        ts.isExpressionStatement(statement) &&
-        ts.isStringLiteral(statement.expression) &&
-        statement.expression.text === USE_SHARED
-      );
-    }
-    return false;
-  }
-
-  getDeclarationNode(node: ts.Node): ts.Declaration | undefined {
-    const sym = this.trueSymbolAtLocation(node);
-    return TsUtils.getDeclaration(sym);
-  }
-
-  static isFunctionLikeDeclaration(node: ts.Declaration): boolean {
-    return ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node) ||
-      ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node) || ts.isConstructorDeclaration(node) ||
-      ts.isFunctionExpression(node) || ts.isArrowFunction(node);
-  }
-
-  isShareableEntity(node: ts.Node): boolean {
-    const decl = this.getDeclarationNode(node);
-    const typeNode = (decl as any)?.type;
-    return typeNode && !TsUtils.isFunctionLikeDeclaration(decl!) ?
-      this.isSendableTypeNode(typeNode) :
-      this.isShareableType(this.tsTypeChecker.getTypeAtLocation(decl ? decl : node));
-  }
-
-  isSendableClassOrInterfaceEntity(node: ts.Node): boolean {
-    const decl = this.getDeclarationNode(node);
-    if (!decl) {
-      return false;
-    }
-    if (ts.isClassDeclaration(decl)) {
-      return TsUtils.hasSendableDecorator(decl);
-    }
-    if (ts.isInterfaceDeclaration(decl)) {
-      return this.isOrDerivedFrom(this.tsTypeChecker.getTypeAtLocation(decl), TsUtils.isISendableInterface);
-    }
-    return false;
-  }
-
-  static isInImportWhiteList(resolvedModule: ts.ResolvedModuleFull): boolean {
-    if (
-      !resolvedModule.resolvedFileName ||
-      path.basename(resolvedModule.resolvedFileName).toLowerCase() !== ARKTS_LANG_D_ETS &&
-      path.basename(resolvedModule.resolvedFileName).toLowerCase() !== ARKTS_COLLECTIONS_D_ETS
-    ) {
-      return false;
-    }
-    return true;
   }
 }
