@@ -4120,8 +4120,6 @@ void ETSParser::CheckDeclare()
 
 ir::FunctionDeclaration *ETSParser::ParseFunctionDeclaration(bool canBeAnonymous, ir::ModifierFlags modifiers)
 {
-    lexer::SourcePosition startLoc = Lexer()->GetToken().Start();
-
     ASSERT(Lexer()->GetToken().Type() == lexer::TokenType::KEYW_FUNCTION);
     Lexer()->NextToken();
     auto newStatus = ParserStatus::NEED_RETURN_TYPE | ParserStatus::ALLOW_SUPER;
@@ -4159,7 +4157,6 @@ ir::FunctionDeclaration *ETSParser::ParseFunctionDeclaration(bool canBeAnonymous
     }
     funcDecl->SetRange(func->Range());
     func->AddModifier(modifiers);
-    func->SetStart(startLoc);
 
     if (className != nullptr) {
         func->AddFlag(ir::ScriptFunctionFlags::INSTANCE_EXTENSION_METHOD);

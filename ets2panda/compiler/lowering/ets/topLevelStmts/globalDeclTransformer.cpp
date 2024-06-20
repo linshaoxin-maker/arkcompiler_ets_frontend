@@ -41,7 +41,6 @@ GlobalDeclTransformer::ResultT GlobalDeclTransformer::TransformStatements(const 
 void GlobalDeclTransformer::VisitFunctionDeclaration(ir::FunctionDeclaration *funcDecl)
 {
     auto *funcExpr = util::NodeAllocator::ForceSetParent<ir::FunctionExpression>(allocator_, funcDecl->Function());
-    funcDecl->Function()->SetStart(funcDecl->Function()->Id()->End());
     funcExpr->SetRange(funcDecl->Function()->Range());
     ir::MethodDefinitionKind methodKind;
     if (funcDecl->Function()->IsExtensionMethod()) {
