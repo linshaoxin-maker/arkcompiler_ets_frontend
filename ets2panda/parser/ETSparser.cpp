@@ -2158,14 +2158,9 @@ std::pair<ir::TypeNode *, bool> ETSParser::GetTypeAnnotationFromToken(TypeAnnota
 
             if (((*options) & TypeAnnotationParsingOptions::IGNORE_FUNCTION_TYPE) == 0 &&
                 (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS ||
-                 Lexer()->Lookahead() == lexer::LEX_CHAR_COLON)) {
+                 Lexer()->Lookahead() == lexer::LEX_CHAR_COLON || Lexer()->Lookahead() == lexer::LEX_CHAR_QUESTION)) {
                 typeAnnotation = ParseFunctionType();
                 typeAnnotation->SetStart(startLoc);
-
-                if (auto position = GetDefaultParamPosition(typeAnnotation->AsETSFunctionType()->Params())) {
-                    ThrowSyntaxError("Default parameters can not be used in functional type", position.value());
-                }
-
                 return std::make_pair(typeAnnotation, false);
             }
 

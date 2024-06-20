@@ -341,6 +341,8 @@ public:
     Signature *ValidateSignature(Signature *signature, const ir::TSTypeParameterInstantiation *typeArguments,
                                  const ArenaVector<ir::Expression *> &arguments, const lexer::SourcePosition &pos,
                                  TypeRelationFlag initialFlags, const std::vector<bool> &argTypeInferenceRequired);
+    void MaybeSubstituteLambdaArgumentsInFunctionCall(ir::CallExpression *callExpr);
+    void MaybeSubstituteLambdaArguments(const ArenaVector<ir::Expression *> &params, ir::CallExpression *callExpr);
     bool ValidateSignatureRequiredParams(Signature *substitutedSig, const ArenaVector<ir::Expression *> &arguments,
                                          TypeRelationFlag flags, const std::vector<bool> &argTypeInferenceRequired,
                                          bool throwError);
@@ -432,7 +434,8 @@ public:
     void ResolveLambdaObjectCtor(ir::ClassDefinition *lambdaObject);
     void ResolveLambdaObjectInvoke(ir::ClassDefinition *lambdaObject, Signature *signatureRef, bool ifaceOverride);
     void ResolveLambdaObjectInvoke(ir::ClassDefinition *lambdaObject, ir::ArrowFunctionExpression *lambda,
-                                   ir::MethodDefinition *proxyMethod, bool isStatic, bool ifaceOverride);
+                                   ir::MethodDefinition *proxyMethod, ETSObjectType *functionalInterface, bool isStatic,
+                                   bool ifaceOverride);
     void ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition *lambdaObject, Signature *signatureRef,
                                            bool ifaceOverride);
     void ResolveLambdaObjectInvokeFuncBody(ir::ClassDefinition *lambdaObject, ir::ArrowFunctionExpression *lambda,
