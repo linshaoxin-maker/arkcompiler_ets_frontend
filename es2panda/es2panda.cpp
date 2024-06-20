@@ -251,7 +251,7 @@ int Compiler::CompileFiles(CompilerOptions &options,
 
     if (symbolTable) {
         if (!options.patchFixOptions.dumpSymbolTable.empty()) {
-            symbolTable->WriteSymbolTable();
+            symbolTable->ActualWriteSymbolTable();
         }
         delete symbolTable;
         symbolTable = nullptr;

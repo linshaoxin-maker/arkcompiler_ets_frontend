@@ -80,9 +80,15 @@ void Timer::PrintTimers()
 
         double eventTime = 0.0;
         std::vector<std::pair<std::string, double>> eachFileTime;
+
+        // ss << "****event: " << event << std::endl;
         for (auto &[file, timePointRecord] : timeRecord.timePoints) {
             auto t = std::chrono::duration_cast<std::chrono::milliseconds>(
                 timePointRecord.endTime - timePointRecord.startTime).count();
+
+            // ss << "****file: " << file << " ,start: " <<
+            //     std::chrono::duration_cast<std::chrono::milliseconds>(timePointRecord.startTime.time_since_epoch()).count() <<
+            //     " ,end: " << std::chrono::duration_cast<std::chrono::milliseconds>(timePointRecord.endTime.time_since_epoch()).count() << std::endl;
             eventTime += t;
             if (!file.empty()) {
                 eachFileTime.push_back(std::pair(file, t));
