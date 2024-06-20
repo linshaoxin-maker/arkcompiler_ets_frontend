@@ -56,9 +56,6 @@ type_param_in_union.ets
 # Issue: #16216
 union_wide_property_access.ets
 
-# Issue: #16049
-increment-on-nullish-type.ets
-
 # Issue: #17711
 annotation_tests/AnnotationDeclare01.ets
 annotation_tests/AnnotationDeclare02.ets
