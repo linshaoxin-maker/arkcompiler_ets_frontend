@@ -46,6 +46,7 @@ public:
 
     bool Initialize(int targetApiVersion);
     void WriteSymbolTable(const std::string &content);
+    void ActualWriteSymbolTable();
     ArenaUnorderedMap<std::string, OriginFunctionInfo> *GetOriginFunctionInfo()
     {
         return &originFunctionInfo_;
@@ -81,6 +82,8 @@ private:
     ArenaUnorderedMap<std::string, std::string> originModuleInfo_;
     // <recordName, <specialFuncIndex, specialFuncName>>
     ArenaUnorderedMap<std::string, std::unordered_map<std::string, std::string>> originRecordHashFunctionNames_;
+
+    std::stringstream ss_;
 };
 }  // namespace panda::es2panda::util
 

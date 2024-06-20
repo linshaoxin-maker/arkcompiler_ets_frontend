@@ -135,6 +135,25 @@ void SymbolTable::WriteSymbolTable(const std::string &content)
     std::lock_guard<std::mutex> lock(m_);
     es2panda::util::Timer::timerEnd(util::PATCH_FIX_AQUIRE_LOCK, "");
 
+    // es2panda::util::Timer::timerStart(util::PATCH_FIX_OPEN_FILE, "");
+    // std::fstream fs;
+    // fs.open(panda::os::file::File::GetExtendedFilePath(dumpSymbolTable_),
+    //     std::ios_base::app | std::ios_base::in);
+
+    // es2panda::util::Timer::timerEnd(util::PATCH_FIX_OPEN_FILE, "");
+
+    // es2panda::util::Timer::timerStart(util::PATCH_FIX_WRITE_FILE, "");
+    // if (fs.is_open()) {
+    //     fs << content;
+    //     fs.close();
+    // }
+    // es2panda::util::Timer::timerEnd(util::PATCH_FIX_WRITE_FILE, "");
+
+    ss_ << content;
+}
+
+void SymbolTable::ActualWriteSymbolTable()
+{
     es2panda::util::Timer::timerStart(util::PATCH_FIX_OPEN_FILE, "");
     std::fstream fs;
     fs.open(panda::os::file::File::GetExtendedFilePath(dumpSymbolTable_),
@@ -144,11 +163,12 @@ void SymbolTable::WriteSymbolTable(const std::string &content)
 
     es2panda::util::Timer::timerStart(util::PATCH_FIX_WRITE_FILE, "");
     if (fs.is_open()) {
-        fs << content;
+        fs << ss_.str();
         fs.close();
     }
     es2panda::util::Timer::timerEnd(util::PATCH_FIX_WRITE_FILE, "");
 }
+
 
 std::vector<std::string_view> SymbolTable::GetStringItems(std::string_view input, const std::string &separator)
 {

@@ -615,11 +615,17 @@ void PatchFix::HandleFunction(const compiler::PandaGen *pg, panda::pandasm::Func
     CollectFuncDefineIns(func);
 }
 
-void PatchFix::DumpFunctionInfo(const compiler::PandaGen *pg, panda::pandasm::Function *func,
-    PatchFix::LiteralBuffers &literalBuffers)
+static double collect_function_info_time = 0.0;
+static double write_function_info_time = 0.0;
+
+void PatchFix::DumpFunctionInfo(const compiler::PandaGen *pg, [[maybe_unused]] panda::pandasm::Function *func,
+    [[maybe_unused]] PatchFix::LiteralBuffers &literalBuffers)
 {
     es2panda::util::Timer::timerStart(util::PATCH_FIX_COLLECT_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
+
     std::stringstream ss;
+
+    auto start_time_1 = std::chrono::steady_clock::now();
 
     ss << pg->InternalName();
     ss << SymbolTable::SECOND_LEVEL_SEPERATOR << pg->InternalName() << SymbolTable::SECOND_LEVEL_SEPERATOR;
@@ -650,11 +656,20 @@ void PatchFix::DumpFunctionInfo(const compiler::PandaGen *pg, panda::pandasm::Fu
            << variable.second.second << SymbolTable::SECOND_LEVEL_SEPERATOR;
     }
     ss << SymbolTable::SECOND_LEVEL_SEPERATOR << std::endl;
-    es2panda::util::Timer::timerEnd(util::PATCH_FIX_COLLECT_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
 
+    auto start_time_2 = std::chrono::steady_clock::now();
+    collect_function_info_time += std::chrono::duration_cast<std::chrono::nanoseconds>(start_time_2 - start_time_1).count();
+
+    es2panda::util::Timer::timerEnd(util::PATCH_FIX_COLLECT_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
 
     es2panda::util::Timer::timerStart(util::PATCH_FIX_WRITE_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
     symbolTable_->WriteSymbolTable(ss.str());
+
+    auto start_time_3 = std::chrono::steady_clock::now();
+    write_function_info_time += std::chrono::duration_cast<std::chrono::nanoseconds>(start_time_3 - start_time_2).count();
+
+    std::cout << "collect_function_info_time: "<< collect_function_info_time << "write_function_info_time: " << write_function_info_time << std::endl;
+
     es2panda::util::Timer::timerEnd(util::PATCH_FIX_WRITE_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
 }
 
