@@ -228,9 +228,10 @@ int Compiler::CompileFiles(CompilerOptions &options,
     queue = nullptr;
 
     if (symbolTable) {
-        if (!options.patchFixOptions.dumpSymbolTable.empty()) {
-            symbolTable->ActualWriteSymbolTable();
-        }
+        // An optional optimization
+        // if (!options.patchFixOptions.dumpSymbolTable.empty()) {
+        //     symbolTable->ActualWriteSymbolTable();
+        // }
         delete symbolTable;
         symbolTable = nullptr;
     }
