@@ -21,7 +21,7 @@
 #include <es2panda.h>
 #include <protobufSnapshotGenerator.h>
 #include <util/helpers.h>
-#include <util/timers.h>
+#include <abc2program/timers.h>
 
 namespace panda::es2panda::aot {
 void EmitFileQueue::ScheduleEmitCacheJobs(EmitMergedAbcJob *emitMergedAbcJob)
@@ -82,7 +82,7 @@ void EmitFileQueue::Schedule()
 
 void EmitSingleAbcJob::Run()
 {
-    es2panda::util::Timer::timerStart(util::EVENT_EMIT_SINGLE_PROGRAM, outputFileName_);
+    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_EMIT_SINGLE_PROGRAM, outputFileName_);
     if (!panda::pandasm::AsmEmitter::Emit(panda::os::file::File::GetExtendedFilePath(outputFileName_), *prog_, statp_,
         nullptr, true, nullptr, targetApiVersion_, targetApiSubVersion_)) {
         throw Error(ErrorType::GENERIC, "Failed to emit " + outputFileName_ + ", error: " +
@@ -91,12 +91,12 @@ void EmitSingleAbcJob::Run()
     for (auto *dependant : dependants_) {
         dependant->Signal();
     }
-    es2panda::util::Timer::timerEnd(util::EVENT_EMIT_SINGLE_PROGRAM, outputFileName_);
+    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_EMIT_SINGLE_PROGRAM, outputFileName_);
 }
 
 void EmitMergedAbcJob::Run()
 {
-    es2panda::util::Timer::timerStart(util::EVENT_EMIT_MERGED_PROGRAM, "");
+    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_EMIT_MERGED_PROGRAM, "");
     std::vector<panda::pandasm::Program*> progs;
     progs.reserve(progsInfo_.size());
     for (const auto &info: progsInfo_) {
@@ -110,7 +110,7 @@ void EmitMergedAbcJob::Run()
     for (auto *dependant : dependants_) {
         dependant->Signal();
     }
-    es2panda::util::Timer::timerEnd(util::EVENT_EMIT_MERGED_PROGRAM, "");
+    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_EMIT_MERGED_PROGRAM, "");
 
     if (!success) {
         throw Error(ErrorType::GENERIC, "Failed to emit " + outputFileName_ + ", error: " +
@@ -128,9 +128,9 @@ void EmitCacheJob::Run()
 {
     std::unique_lock<std::mutex> lock(m_);
     cond_.wait(lock, [this] { return dependencies_ == 0; });
-    es2panda::util::Timer::timerStart(util::EVENT_EMIT_CACHE_FILE, outputProtoName_);
+    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_EMIT_CACHE_FILE, outputProtoName_);
     panda::proto::ProtobufSnapshotGenerator::UpdateCacheFile(progCache_, outputProtoName_);
-    es2panda::util::Timer::timerEnd(util::EVENT_EMIT_CACHE_FILE, outputProtoName_);
+    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_EMIT_CACHE_FILE, outputProtoName_);
 }
 
 }  // namespace panda::es2panda::util
