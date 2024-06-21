@@ -33,7 +33,7 @@
 
 #include "mergeProgram.h"
 #include "util/helpers.h"
-#include "util/timers.h"
+#include "abc2program/timers.h"
 #include "utils/pandargs.h"
 
 namespace panda::es2panda::aot {
@@ -633,7 +633,7 @@ bool Options::Parse(int argc, const char **argv)
     if (opPerfFile.WasSet()) {
         perfFile_ = opPerfFile.GetValue().empty() ? opPerfFile.GetDefaultValue() : opPerfFile.GetValue();
     }
-    es2panda::util::Timer::InitializeTimer(perfFile_);
+    panda::abc2program::Timer::InitializeTimer(perfFile_);
 
     compilerOptions_.recordDebugSource = opRecordDebugSource.GetValue();
     compilerOptions_.enableAbcInput = opEnableAbcInput.GetValue();

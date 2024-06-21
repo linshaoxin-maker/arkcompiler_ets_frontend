@@ -28,7 +28,7 @@
 #include <util/commonUtil.h>
 #include <util/dumper.h>
 #include <util/helpers.h>
-#include <util/timers.h>
+#include <abc2program/timers.h>
 
 namespace panda::es2panda::compiler {
 
@@ -104,7 +104,7 @@ void CompileFileJob::Run()
 {
     std::stringstream ss;
     std::string buffer;
-    es2panda::util::Timer::timerStart(util::EVENT_READ_INPUT_AND_CACHE, src_->fileName);
+    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_READ_INPUT_AND_CACHE, src_->fileName);
     if (!src_->fileName.empty() && src_->isSourceMode) {
         if (!util::Helpers::ReadFileToBuffer(src_->fileName, ss)) {
             return;
@@ -112,13 +112,13 @@ void CompileFileJob::Run()
         buffer = ss.str();
         src_->source = buffer;
         if (RetrieveProgramFromCacheFiles(buffer)) {
-            es2panda::util::Timer::timerEnd(util::EVENT_READ_INPUT_AND_CACHE, src_->fileName);
+            panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_READ_INPUT_AND_CACHE, src_->fileName);
             return;
         }
     }
-    es2panda::util::Timer::timerEnd(util::EVENT_READ_INPUT_AND_CACHE, src_->fileName);
+    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_READ_INPUT_AND_CACHE, src_->fileName);
 
-    es2panda::util::Timer::timerStart(util::EVENT_COMPILE_FILE, src_->fileName);
+    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_COMPILE_FILE, src_->fileName);
     es2panda::Compiler compiler(src_->scriptExtension, options_->functionThreadCount);
     panda::pandasm::Program *prog = nullptr;
     if (src_->isSourceMode) {
@@ -134,9 +134,9 @@ void CompileFileJob::Run()
     if (prog == nullptr) {
         return;
     }
-    es2panda::util::Timer::timerEnd(util::EVENT_COMPILE_FILE, src_->fileName);
+    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_COMPILE_FILE, src_->fileName);
 
-    es2panda::util::Timer::timerStart(util::EVENT_OPTIMIZE_PROGRAM, src_->fileName);
+    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_OPTIMIZE_PROGRAM, src_->fileName);
     bool requireOptimizationAfterAnalysis = false;
     // When cross-program optimizations are required, skip program-local optimization at this stage
     // and perform it later after the analysis of all programs has been completed
@@ -148,7 +148,7 @@ void CompileFileJob::Run()
             util::Helpers::OptimizeProgram(prog, src_->fileName);
         }
     }
-    es2panda::util::Timer::timerEnd(util::EVENT_OPTIMIZE_PROGRAM, src_->fileName);
+    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_OPTIMIZE_PROGRAM, src_->fileName);
 
     {
         std::unique_lock<std::mutex> lock(globalMutex_);

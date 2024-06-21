@@ -14,7 +14,7 @@
  */
 
 #include "patchFix.h"
-#include "timers.h"
+#include <abc2program/timers.h>
 #include <binder/binder.h>
 #include <binder/scope.h>
 #include <binder/variable.h>
@@ -622,7 +622,7 @@ static double write_function_info_time = 0.0;
 void PatchFix::DumpFunctionInfo(const compiler::PandaGen *pg, [[maybe_unused]] panda::pandasm::Function *func,
     [[maybe_unused]] PatchFix::LiteralBuffers &literalBuffers)
 {
-    es2panda::util::Timer::timerStart(util::PATCH_FIX_COLLECT_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
+    panda::abc2program::Timer::timerStart(panda::abc2program::PATCH_FIX_COLLECT_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
 
     std::stringstream ss;
 
@@ -662,17 +662,13 @@ void PatchFix::DumpFunctionInfo(const compiler::PandaGen *pg, [[maybe_unused]] p
     auto start_time_2 = std::chrono::steady_clock::now();
     collect_function_info_time += std::chrono::duration_cast<std::chrono::nanoseconds>(start_time_2 - start_time_1).count();
 
-    es2panda::util::Timer::timerEnd(util::PATCH_FIX_COLLECT_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
-
-    es2panda::util::Timer::timerStart(util::PATCH_FIX_WRITE_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
-    symbolTable_->WriteSymbolTable(ss.str());
+    panda::abc2program::Timer::timerEnd(panda::abc2program::PATCH_FIX_COLLECT_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
 
     auto start_time_3 = std::chrono::steady_clock::now();
     write_function_info_time += std::chrono::duration_cast<std::chrono::nanoseconds>(start_time_3 - start_time_2).count();
 
     std::cout << "collect_function_info_time: "<< collect_function_info_time << "write_function_info_time: " << write_function_info_time << std::endl;
 
-    es2panda::util::Timer::timerEnd(util::PATCH_FIX_WRITE_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
 }
 
 bool PatchFix::IsAdditionalVarInPatch(uint32_t slot)
