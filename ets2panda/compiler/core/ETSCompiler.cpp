@@ -2406,4 +2406,8 @@ void ETSCompiler::Compile([[maybe_unused]] const ir::TSVoidKeyword *node) const
     UNREACHABLE();
 }
 
+void ETSCompiler::Compile([[maybe_unused]] const ir::DummyNode *node) const
+{
+    UNREACHABLE();
+}
 }  // namespace ark::es2panda::compiler
