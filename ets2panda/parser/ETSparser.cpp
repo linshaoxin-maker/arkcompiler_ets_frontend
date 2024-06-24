@@ -563,8 +563,7 @@ ir::ModifierFlags ETSParser::ParseClassFieldModifiers(bool seenStatic)
                 break;
             }
             case lexer::TokenType::KEYW_READONLY: {
-                // NOTE(OCs): Use ir::ModifierFlags::READONLY once compiler is ready for it.
-                currentFlag = ir::ModifierFlags::CONST | ir::ModifierFlags::READONLY;
+                currentFlag = ir::ModifierFlags::READONLY;
                 break;
             }
             default: {
