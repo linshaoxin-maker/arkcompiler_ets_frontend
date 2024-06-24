@@ -1555,6 +1555,8 @@ void ETSChecker::CreateLambdaObjectForLambdaReference(ir::ArrowFunctionExpressio
         return;
     }
 
+    const bool inExternal = HasStatus(CheckerStatus::IN_EXTERNAL_MODULE);
+
     // Create the class scope for the synthetic lambda class node
     auto classCtx = varbinder::LexicalScope<varbinder::ClassScope>(VarBinder());
     auto *classScope = classCtx.GetScope();
@@ -1586,14 +1588,21 @@ void ETSChecker::CreateLambdaObjectForLambdaReference(ir::ArrowFunctionExpressio
     CreateLambdaFuncDecl(invoke0Func, classScope->InstanceMethodScope());
     CreateLambdaFuncDecl(invokeFunc, classScope->InstanceMethodScope());
 
+    auto modifiers = ir::ClassDefinitionModifiers::DECLARATION;
+    if (inExternal) {
+        modifiers |= ir::ClassDefinitionModifiers::FROM_EXTERNAL;
+        for (const auto &func : {ctor, invoke0Func, invokeFunc}) {
+            func->Function()->AddFlag(ir::ScriptFunctionFlags::EXTERNAL);
+        }
+    }
+
     // Create the synthetic lambda class node
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *identNode = AllocNode<ir::Identifier>(util::StringView("LambdaObject"), Allocator());
     auto *lambdaObject =
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-        AllocNode<ir::ClassDefinition>(Allocator(), identNode, std::move(properties),
-                                       ir::ClassDefinitionModifiers::DECLARATION, ir::ModifierFlags::FINAL,
-                                       Language(Language::Id::ETS));
+        AllocNode<ir::ClassDefinition>(Allocator(), identNode, std::move(properties), modifiers,
+                                       ir::ModifierFlags::FINAL, Language(Language::Id::ETS));
     lambda->SetResolvedLambda(lambdaObject);
     lambda->SetTsType(functionalInterface);
     lambdaObject->SetScope(classScope);
@@ -2514,6 +2523,8 @@ void ETSChecker::CreateLambdaObjectForFunctionReference(ir::AstNode *refNode, Si
         return;
     }
 
+    const bool inExternal = HasStatus(CheckerStatus::IN_EXTERNAL_MODULE);
+
     /* signature has been converted through BpxPrimitives, we need to call the original one */
     auto *trueSignature = signature->Function()->Signature();
 
@@ -2551,11 +2562,17 @@ void ETSChecker::CreateLambdaObjectForFunctionReference(ir::AstNode *refNode, Si
     // Create the synthetic lambda class node
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *identNode = Allocator()->New<ir::Identifier>(util::StringView("LambdaObject"), Allocator());
+    auto modifiers = ir::ClassDefinitionModifiers::DECLARATION;
+    if (inExternal) {
+        modifiers |= ir::ClassDefinitionModifiers::FROM_EXTERNAL;
+        for (const auto &func : {ctor, invoke0Func, invokeFunc}) {
+            func->Function()->AddFlag(ir::ScriptFunctionFlags::EXTERNAL);
+        }
+    }
     auto *lambdaObject =
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-        Allocator()->New<ir::ClassDefinition>(Allocator(), identNode, std::move(properties),
-                                              ir::ClassDefinitionModifiers::DECLARATION, ir::ModifierFlags::FINAL,
-                                              Language(Language::Id::ETS));
+        Allocator()->New<ir::ClassDefinition>(Allocator(), identNode, std::move(properties), modifiers,
+                                              ir::ModifierFlags::FINAL, Language(Language::Id::ETS));
     lambdaObject->SetScope(classScope);
     // Set the parent nodes
     ctor->SetParent(lambdaObject);
