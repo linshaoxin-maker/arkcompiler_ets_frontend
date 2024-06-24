@@ -560,6 +560,11 @@ private:
             return true;
         }
 
+        // NOTE(mmartin): find a better solution to handle partial type resolution
+        if (ast->Name().Is(Signatures::PARTIAL_TYPE_NAME)) {
+            return true;
+        }
+
         return false;
     }
 

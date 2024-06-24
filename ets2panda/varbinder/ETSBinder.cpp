@@ -96,7 +96,8 @@ void ETSBinder::LookupTypeArgumentReferences(ir::ETSTypeReference *typeRef)
 void ETSBinder::LookupTypeReference(ir::Identifier *ident, bool allowDynamicNamespaces)
 {
     const auto &name = ident->Name();
-    if (name == compiler::Signatures::UNDEFINED || name == compiler::Signatures::NULL_LITERAL) {
+    if (name == compiler::Signatures::UNDEFINED || name == compiler::Signatures::NULL_LITERAL ||
+        name == compiler::Signatures::PARTIAL_TYPE_NAME) {
         return;
     }
     auto *iter = GetScope();
@@ -878,6 +879,29 @@ bool ETSBinder::BuildInternalName(ir::ScriptFunction *scriptFunc)
     bool compilable = scriptFunc->Body() != nullptr && !isExternal;
     if (!compilable) {
         recordTable_->Signatures().push_back(funcScope);
+    }
+
+    return compilable;
+}
+
+bool ETSBinder::BuildInternalNameWithCustomRecordTable(ir::ScriptFunction *const scriptFunc,
+                                                       RecordTable *const recordTable)
+{
+    const bool isExternal = recordTable->IsExternal();
+    if (isExternal) {
+        scriptFunc->AddFlag(ir::ScriptFunctionFlags::EXTERNAL);
+    }
+
+    if (scriptFunc->IsArrow()) {
+        return true;
+    }
+
+    auto *const funcScope = scriptFunc->Scope();
+    funcScope->BindName(recordTable->RecordName());
+
+    const bool compilable = scriptFunc->Body() != nullptr && !isExternal;
+    if (!compilable) {
+        recordTable->Signatures().push_back(funcScope);
     }
 
     return compilable;
