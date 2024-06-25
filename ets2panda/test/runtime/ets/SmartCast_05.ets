@@ -38,9 +38,9 @@ function foo2(x: C|null|undefined): string {
 
 function bar(x: C|null|undefined, y: boolean, z: boolean): string {
   if ((x instanceof C && y) || (x instanceof C && z))  {
-    return (x.a ? "true1" : "false1") + y + z;
+    return (x.a ? "true1" : "false1") as string + y + z;
   } else  {
-    return (x != null ? (x.a ? "true2" : "false2") : "null") + y + z;
+    return (x != null ? (x.a ? "true2" : "false2") : "null") as string + y + z;
   }
 }
 

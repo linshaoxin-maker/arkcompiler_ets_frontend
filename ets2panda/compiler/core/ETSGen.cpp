@@ -40,6 +40,8 @@
 #include "checker/ETSchecker.h"
 #include "checker/types/ets/etsObjectType.h"
 #include "checker/types/ets/etsAsyncFuncReturnType.h"
+#include "checker/types/ets/etsUnionType.h"
+#include "checker/types/ets/types.h"
 #include "parser/program/program.h"
 #include "checker/types/globalTypesHolder.h"
 #include "public/public.h"
@@ -61,12 +63,22 @@ ETSGen::ETSGen(ArenaAllocator *allocator, RegSpiller *spiller, public_lib::Conte
 
 void ETSGen::SetAccumulatorType(const checker::Type *type)
 {
-    SetVRegType(acc_, type);
+    if (type != nullptr && type->IsETSUnionType() && type->AsETSUnionType()->IsNumericUnion()) {
+        SetVRegType(acc_, type->AsETSUnionType()->GetAssemblerLUB());
+    } else {
+        SetVRegType(acc_, type);
+    }
 }
 
 const checker::Type *ETSGen::GetAccumulatorType() const
 {
     return GetVRegType(acc_);
+}
+
+static bool IsRefType(const checker::Type *const type)
+{
+    bool isPrimitiveUnion = type->IsETSUnionType() && type->AsETSUnionType()->IsNumericUnion();
+    return type->HasTypeFlag(TYPE_FLAG_BYTECODE_REF) && !isPrimitiveUnion;
 }
 
 void ETSGen::CompileAndCheck(const ir::Expression *expr)
@@ -141,7 +153,7 @@ void ETSGen::StoreAccumulator(const ir::AstNode *const node, const VReg vreg)
     const auto *const accType = GetAccumulatorType();
 
     ASSERT(accType != nullptr);
-    if (accType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
+    if (IsRefType(accType)) {
         Ra().Emit<StaObj>(node, vreg);
     } else if (accType->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
         Ra().Emit<StaWide>(node, vreg);
@@ -157,7 +169,7 @@ void ETSGen::LoadAccumulator(const ir::AstNode *node, VReg vreg)
     const auto *const vregType = GetVRegType(vreg);
 
     ASSERT(vregType != nullptr);
-    if (vregType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
+    if (IsRefType(vregType)) {
         Ra().Emit<LdaObj>(node, vreg);
     } else if (vregType->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
         Ra().Emit<LdaWide>(node, vreg);
@@ -173,7 +185,7 @@ IRNode *ETSGen::AllocMov(const ir::AstNode *const node, const VReg vd, const VRe
     const auto *const sourceType = GetVRegType(vs);
 
     auto *const mov = [this, sourceType, node, vd, vs]() -> IRNode * {
-        if (sourceType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
+        if (IsRefType(sourceType)) {
             return Allocator()->New<MovObj>(node, vd, vs);
         }
         if (sourceType->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
@@ -211,7 +223,7 @@ void ETSGen::MoveVreg(const ir::AstNode *const node, const VReg vd, const VReg v
 {
     const auto *const sourceType = GetVRegType(vs);
 
-    if (sourceType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
+    if (IsRefType(sourceType)) {
         Ra().Emit<MovObj>(node, vd, vs);
     } else if (sourceType->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
         Ra().Emit<MovWide>(node, vd, vs);
@@ -399,7 +411,7 @@ void ETSGen::StoreStaticOwnProperty(const ir::AstNode *node, const checker::Type
 void ETSGen::StoreStaticProperty(const ir::AstNode *const node, const checker::Type *propType,
                                  const util::StringView &fullName)
 {
-    if (propType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
+    if (IsRefType(propType)) {
         Sa().Emit<StstaticObj>(node, fullName);
     } else if (propType->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
         Sa().Emit<StstaticWide>(node, fullName);
@@ -411,7 +423,7 @@ void ETSGen::StoreStaticProperty(const ir::AstNode *const node, const checker::T
 void ETSGen::LoadStaticProperty(const ir::AstNode *const node, const checker::Type *propType,
                                 const util::StringView &fullName)
 {
-    if (propType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
+    if (IsRefType(propType)) {
         Sa().Emit<LdstaticObj>(node, fullName);
     } else if (propType->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
         Sa().Emit<LdstaticWide>(node, fullName);
@@ -430,7 +442,7 @@ void ETSGen::StoreProperty(const ir::AstNode *const node, const checker::Type *p
     if (node->IsIdentifier() && node->AsIdentifier()->Variable()->HasFlag(varbinder::VariableFlags::BOXED)) {
         propType = Checker()->GlobalBuiltinBoxType(propType);
     }
-    if (propType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
+    if (IsRefType(propType)) {
         Ra().Emit<StobjObj>(node, objReg, fullName);
     } else if (propType->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
         Ra().Emit<StobjWide>(node, objReg, fullName);
@@ -445,7 +457,7 @@ void ETSGen::LoadProperty(const ir::AstNode *const node, const checker::Type *pr
     if (node->IsIdentifier() && node->AsIdentifier()->Variable()->HasFlag(varbinder::VariableFlags::BOXED)) {
         propType = Checker()->GlobalBuiltinBoxType(propType);
     }
-    if (propType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
+    if (IsRefType(propType)) {
         Ra().Emit<LdobjObj>(node, objReg, fullName);
     } else if (propType->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
         Ra().Emit<LdobjWide>(node, objReg, fullName);
@@ -718,7 +730,7 @@ void ETSGen::LoadDefaultValue([[maybe_unused]] const ir::AstNode *node, [[maybe_
         if (type->AsETSUnionType()->HasUndefinedType()) {
             type = Checker()->GetGlobalTypesHolder()->GlobalETSUndefinedType();
         } else {
-            type = Checker()->GetGlobalTypesHolder()->GlobalETSObjectType();
+            type = type->AsETSUnionType()->GetAssemblerLUB();
         }
     }
     if (type->IsUndefinedType() || type->IsETSUndefinedType()) {
@@ -743,7 +755,7 @@ void ETSGen::ReturnAcc(const ir::AstNode *node)
 {
     const auto *const accType = GetAccumulatorType();
 
-    if (accType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
+    if (IsRefType(accType)) {
         Sa().Emit<ReturnObj>(node);
     } else if (accType->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
         Sa().Emit<ReturnWide>(node);
@@ -1066,7 +1078,7 @@ bool ETSGen::TryLoadConstantExpression(const ir::Expression *node)
 {
     const auto *type = node->TsType();
 
-    if (!type->HasTypeFlag(checker::TypeFlag::CONSTANT)) {
+    if (!type->IsConstantType() || type->IsETSArrayType()) {
         return false;
     }
     // bug: this should be forbidden for most expression types!
@@ -1924,7 +1936,7 @@ void ETSGen::CastToInt(const ir::AstNode *node)
 
 void ETSGen::CastToReftype(const ir::AstNode *const node, const checker::Type *const targetType, const bool unchecked)
 {
-    ASSERT(GetAccumulatorType()->HasTypeFlag(TYPE_FLAG_BYTECODE_REF));
+    ASSERT(IsRefType(GetAccumulatorType()));
 
     const auto *const sourceType = GetAccumulatorType();
 

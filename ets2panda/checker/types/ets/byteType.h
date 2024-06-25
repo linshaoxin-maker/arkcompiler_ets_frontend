@@ -39,7 +39,7 @@ public:
 
     void ToString(std::stringstream &ss, [[maybe_unused]] bool precise) const override
     {
-        ss << "byte";
+        ss << (IsConstantType() ? std::to_string(value_) : "byte");
     }
 
     void ToAssemblerType(std::stringstream &ss) const override

@@ -557,7 +557,7 @@ void InferReturnType(ETSChecker *checker, ir::ScriptFunction *containingFunc, ch
         // remove CONSTANT type modifier if exists
         funcReturnType =
             funcReturnType->Instantiate(checker->Allocator(), checker->Relation(), checker->GetGlobalTypesHolder());
-        funcReturnType->RemoveTypeFlag(checker::TypeFlag::CONSTANT);
+        //        funcReturnType->RemoveTypeFlag(checker::TypeFlag::CONSTANT);
     }
     /*
     when st_argment is ArrowFunctionExpression, need infer type for st_argment

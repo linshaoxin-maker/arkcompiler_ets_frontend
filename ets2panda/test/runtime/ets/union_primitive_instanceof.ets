@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-function bar(str: string): double {
-    const value = (new Number(str)).valueOf()
-    const str2 = value?.toString()  // CTE: value is non-nullish
-    if (str2 == str) {
-        return value
-    }
-    return 0.0
+function testcond(cond: boolean) {
+    return cond ? 5 : 1;
+}
+
+function main() {
+    assert((testcond(true) instanceof Int) && (testcond(true) == 5));
+    assert((testcond(false) instanceof Int) && (testcond(false) == 1));
 }

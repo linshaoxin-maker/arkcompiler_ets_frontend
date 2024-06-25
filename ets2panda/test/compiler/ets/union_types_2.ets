@@ -13,28 +13,19 @@
  * limitations under the License.
  */
 
-class A {}
-
-class B {
+class A {
     num: int = 42;
+    foo() {}
 }
 
-class C {
-    num: int = 43;
-    constructor(num: int) {
-        this.num = num;
-    }
-    num_to_return() : int {
-        return this.num;
-    }
-}
-
-function foo(x : A | B | C) {
-    x.num;  // CTE - `A` doesn't have field `num`
-}
+class B {}
 
 function main() {
-    let x : A | B | C;
-    x = new C(777);
-    foo(x);
+    let x : String | short | A = 5 as short;
+    assert (x as short) * 2 == 10: "Error! Must be 10";
+    x = "STRSTR";
+    assert (x as String).equals("STRSTR"): "Error! Must be `STRSTR`";
+    x = new A();
+    assert (x as A).num == 42: "Error! Field of A must be `42`";
+    x = new B();  // CTE
 }

@@ -39,7 +39,7 @@ public:
 
     void ToString(std::stringstream &ss, [[maybe_unused]] bool precise) const override
     {
-        ss << "long";
+        ss << (IsConstantType() ? std::to_string(value_) : "long");
     }
 
     void ToAssemblerType([[maybe_unused]] std::stringstream &ss) const override

@@ -2196,6 +2196,23 @@ std::pair<ir::TypeNode *, bool> ETSParser::GetTypeAnnotationFromToken(TypeAnnota
             typeAnnotation = ParseThisType(options);
             break;
         }
+        case lexer::TokenType::LITERAL_NUMBER: {
+            typeAnnotation = ParseNumberLiteral();
+            break;
+        }
+        case lexer::TokenType::LITERAL_TRUE:
+        case lexer::TokenType::LITERAL_FALSE: {
+            typeAnnotation = ParseBooleanLiteral();
+            break;
+        }
+        case lexer::TokenType::LITERAL_CHAR: {
+            typeAnnotation = ParseCharLiteral();
+            break;
+        }
+        case lexer::TokenType::LITERAL_STRING: {
+            typeAnnotation = ParseStringLiteral();
+            break;
+        }
         default: {
             break;
         }

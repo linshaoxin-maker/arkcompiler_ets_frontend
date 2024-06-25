@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <codecvt>
 #include "charType.h"
 
 #include "checker/ets/conversion.h"
@@ -21,7 +22,9 @@
 namespace ark::es2panda::checker {
 void CharType::Identical(TypeRelation *relation, Type *other)
 {
-    if (other->IsCharType()) {
+    bool bothConstants = IsConstantType() && other->IsConstantType() && other->IsCharType();
+    bool bothNonConstants = !IsConstantType() && !other->IsConstantType();
+    if ((bothConstants && value_ == other->AsCharType()->GetValue()) || (bothNonConstants && other->IsCharType())) {
         relation->Result(true);
     }
 }
@@ -32,12 +35,32 @@ void CharType::AssignmentTarget(TypeRelation *relation, [[maybe_unused]] Type *s
         relation->GetChecker()->AsETSChecker()->AddUnboxingFlagToPrimitiveType(relation, source, this);
     }
     NarrowingWideningConverter(relation->GetChecker()->AsETSChecker(), relation, this, source);
+    if (!relation->IsTrue() && source->IsETSPrimitiveType() && source->IsConstantType()) {
+        Identical(relation, relation->GetChecker()->AsETSChecker()->GetNonConstantTypeFromPrimitiveType(source));
+    }
+    if (!relation->IsTrue() && source->IsETSUnionType()) {
+        bool allIsAssignable = std::all_of(
+            source->AsETSUnionType()->ConstituentTypes().begin(), source->AsETSUnionType()->ConstituentTypes().end(),
+            [relation, this](Type *src) {
+                Identical(relation, relation->GetChecker()->AsETSChecker()->GetNonConstantTypeFromPrimitiveType(src));
+                bool identical = relation->IsTrue();
+                NarrowingWideningConverter(relation->GetChecker()->AsETSChecker(), relation, this, src);
+                return identical || relation->IsTrue();
+            });
+        relation->Result(allIsAssignable);
+    }
 }
 
 bool CharType::AssignmentSource([[maybe_unused]] TypeRelation *relation, [[maybe_unused]] Type *target)
 {
     if (relation->InAssignmentContext()) {
         if (target->IsETSStringType()) {
+            if (target->IsConstantType()) {
+                std::u16string u16str(1, value_);
+                std::wstring_convert<std::codecvt_utf8_utf16<UType>, UType> converter;
+                std::string valueStr = converter.to_bytes(u16str);
+                return relation->Result(IsConstantType() && target->AsETSStringType()->GetValue().Is(valueStr));
+            }
             conversion::Boxing(relation, this);
             relation->GetNode()->AddAstNodeFlags(ir::AstNodeFlags::CONVERT_TO_STRING);
             return relation->Result(true);
@@ -57,6 +80,11 @@ bool CharType::AssignmentSource([[maybe_unused]] TypeRelation *relation, [[maybe
 
 void CharType::Cast(TypeRelation *const relation, Type *const target)
 {
+    if (IsConstantType() && target->HasTypeFlag(TypeFlag::CHAR)) {
+        relation->Result(true);
+        return;
+    }
+
     if (target->HasTypeFlag(TypeFlag::CHAR)) {
         conversion::Identity(relation, this, target);
         return;

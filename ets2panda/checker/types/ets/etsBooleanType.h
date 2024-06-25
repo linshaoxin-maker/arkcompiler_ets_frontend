@@ -38,7 +38,7 @@ public:
 
     void ToString(std::stringstream &ss, [[maybe_unused]] bool precise) const override
     {
-        ss << "boolean";
+        ss << (IsConstantType() ? (value_ ? "true" : "false") : "boolean");
     }
 
     void ToAssemblerType([[maybe_unused]] std::stringstream &ss) const override
