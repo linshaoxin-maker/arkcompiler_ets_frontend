@@ -911,6 +911,114 @@ void ETSChecker::CheckClassDefinition(ir::ClassDefinition *classDef)
     CheckConstFields(classType);
     CheckGetterSetterProperties(classType);
     CheckInvokeMethodsLegitimacy(classType);
+    CheckTypeParamsContravariance(classDef);
+}
+
+void ETSChecker::CheckTypeParamsContravariance(ir::ClassDefinition *classDef)
+{
+    if (classDef->TypeParams() == nullptr) {
+        return;
+    }
+
+    for (auto *typeParam : classDef->TypeParams()->Params()) {
+        if (!typeParam->IsIn()) {
+            continue;
+        }
+
+        std::vector<const Type *> checkedTypes;
+        for (auto *it : classDef->Body()) {
+            if (!it->IsClassProperty()) {
+                continue;
+            }
+
+            auto *st = it->AsClassProperty();
+            bool isETSFunctionType =
+                st->TypeAnnotation() == nullptr ? false : st->TypeAnnotation()->IsETSFunctionType();
+            CheckContravariance(st->TsType(), it->Start(), checkedTypes, isETSFunctionType);
+        }
+
+        for (auto *it : classDef->Body()) {
+            if (!it->IsMethodDefinition()) {
+                continue;
+            }
+
+            auto *scriptFunc = it->AsMethodDefinition()->Function();
+            if (scriptFunc->ReturnTypeAnnotation() != nullptr) {
+                CheckContravariance(scriptFunc->ReturnTypeAnnotation()->TsType(), it->Start(), checkedTypes,
+                                    scriptFunc->ReturnTypeAnnotation()->IsETSFunctionType());
+            }
+        }
+    }
+}
+
+void ETSChecker::CheckContravariance(const checker::Type *type, const lexer::SourcePosition &pos,
+                                     std::vector<const Type *> &checkedTypes, bool isETSFunctionType)
+{
+    if (type->IsETSTypeParameter() && type->AsETSTypeParameter()->GetDeclNode()->IsIn()) {
+        ThrowTypeError(
+            {"The type parameter '", type->AsETSTypeParameter()->GetDeclNode()->Name()->Name(),
+             "' declared with the 'in' modifier must not be used as a return type or a member variable type."},
+            pos);
+    }
+
+    if (type->IsETSObjectType()) {
+        CheckContravarianceForObjectType(type, pos, checkedTypes, isETSFunctionType);
+    }
+
+    if (type->IsETSArrayType()) {
+        CheckContravariance(type->AsETSArrayType()->ElementType(), pos, checkedTypes);
+    }
+
+    if (type->IsETSUnionType()) {
+        for (auto *ctype : type->AsETSUnionType()->ConstituentTypes()) {
+            CheckContravariance(ctype, pos, checkedTypes);
+        }
+    }
+
+    if (type->IsETSTupleType()) {
+        CheckContravariance(type->AsETSTupleType()->ElementType(), pos, checkedTypes);
+    }
+}
+
+static bool IsCheckedType(const checker::Type *type, std::vector<const Type *> &checkedTypes)
+{
+    auto &typeArguments = type->AsETSObjectType()->TypeArguments();
+    ir::AstNode *typeDeclNode = type->AsETSObjectType()->GetDeclNode();
+
+    for (auto *checkedType : checkedTypes) {
+        if (typeDeclNode == checkedType->AsETSObjectType()->GetDeclNode() &&
+            typeArguments == checkedType->AsETSObjectType()->TypeArguments()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void ETSChecker::CheckContravarianceForObjectType(const checker::Type *type, const lexer::SourcePosition &pos,
+                                                  std::vector<const Type *> &checkedTypes, bool isETSFunctionType)
+{
+    if (IsCheckedType(type, checkedTypes)) {
+        return;
+    }
+    checkedTypes.push_back(type);
+
+    if (isETSFunctionType) {
+        auto returnType = type->AsETSObjectType()->TypeArguments().back();
+        CheckContravariance(returnType, pos, checkedTypes);
+    } else {
+        auto methods = type->AsETSObjectType()->InstanceMethods();
+        for (const auto &[name, var] : methods) {
+            for (auto const *sig : var->TsType()->AsETSFunctionType()->CallSignatures()) {
+                CheckContravariance(sig->ReturnType(), pos, checkedTypes);
+            }
+        }
+
+        auto fields = type->AsETSObjectType()->InstanceFields();
+        for (const auto &[name, var] : fields) {
+            CheckContravariance(var->TsType(), pos, checkedTypes);
+        }
+    }
 }
 
 void ETSChecker::CheckConstructors(ir::ClassDefinition *classDef, ETSObjectType *classType)
