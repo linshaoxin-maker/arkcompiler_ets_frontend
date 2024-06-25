@@ -41,8 +41,6 @@ public:
 
     [[nodiscard]] bool IsETSParser() const noexcept override;
 
-    const ArenaMap<util::StringView, util::ImportPathManager::ModuleInfo> &ModuleList() const;
-
     ArenaVector<ir::ETSImportDeclaration *> ParseDefaultSources(std::string_view srcFile, std::string_view importSrc);
 
 public:
@@ -352,6 +350,7 @@ private:
                                                   const lexer::SourcePosition &startLoc);
     ir::AstNode *ParseInnerRest(const ArenaVector<ir::AstNode *> &properties, ir::ClassDefinitionModifiers modifiers,
                                 ir::ModifierFlags memberModifiers, const lexer::SourcePosition &startLoc);
+    ir::AstNode *ParseAmbientSignature();
 
     ir::ClassDefinition *CreateClassDefinitionForNewExpression(ArenaVector<ir::Expression *> &arguments,
                                                                ir::TypeNode *typeReference,
@@ -381,6 +380,8 @@ private:
     ir::Expression *ParseLaunchExpression(ExpressionParseFlags flags);
     void ValidateInstanceOfExpression(ir::Expression *expr);
     void ValidateRestParameter(ir::Expression *param) override;
+    bool ValidateBreakLabel(util::StringView label) override;
+    bool ValidateContinueLabel(util::StringView label) override;
     void CheckPredefinedMethods(ir::ScriptFunction const *function, const lexer::SourcePosition &position) const;
 
     bool CheckClassElement(ir::AstNode *property, ir::MethodDefinition *&ctor,

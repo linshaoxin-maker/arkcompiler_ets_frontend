@@ -398,6 +398,9 @@ checker::Type *ETSAnalyzer::Check(ir::ETSNewArrayInstanceExpression *expr) const
     auto *elementType = expr->TypeReference()->GetType(checker);
     checker->ValidateArrayIndex(expr->Dimension(), true);
     if (!elementType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+        if (elementType->IsETSUnionType() && !elementType->AsETSUnionType()->HasNullishType(checker)) {
+            checker->ThrowTypeError({"Union types in array declaration must include a nullish type."}, expr->Start());
+        }
         if (elementType->IsETSObjectType()) {
             auto *calleeObj = elementType->AsETSObjectType();
             const auto flags = checker::ETSObjectFlags::ABSTRACT | checker::ETSObjectFlags::INTERFACE;
@@ -609,7 +612,7 @@ static void CheckArrayElement(ETSChecker *checker, checker::Type *elementType,
          !(targetElementType[0]->IsETSArrayType() && currentElement->IsArrayExpression()))) {
         if (targetElementType[1] == nullptr) {
             checker->ThrowTypeError({"Array element type '", elementType, "' is not assignable to explicit type '",
-                                     targetElementType[1], "'"},
+                                     targetElementType[0], "'"},
                                     currentElement->Start());
         } else if (!(targetElementType[0]->IsETSArrayType() && currentElement->IsArrayExpression()) &&
                    !checker::AssignmentContext(checker->Relation(), currentElement, elementType, targetElementType[1],
@@ -800,7 +803,7 @@ checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *const expr) const
         checker->ThrowTypeError("Invalid left-hand side of assignment expression", expr->Left()->Start());
     }
 
-    if (expr->target_ != nullptr) {
+    if (expr->target_ != nullptr && !expr->IsIgnoreConstAssign()) {
         checker->ValidateUnaryOperatorOperand(expr->target_);
     }
 
@@ -1074,6 +1077,12 @@ checker::Type *ETSAnalyzer::Check(ir::CallExpression *expr) const
         calleeType = checker->GetApparentType(expr->Callee()->Check(checker));
     }
     checker->CheckNonNullish(expr->Callee());
+    if (expr->Callee()->IsMemberExpression() && expr->Callee()->AsMemberExpression()->Object() != nullptr &&
+        expr->Callee()->AsMemberExpression()->Object()->TsType()->IsETSObjectType() &&
+        expr->Callee()->AsMemberExpression()->Object()->TsType()->AsETSObjectType()->HasObjectFlag(
+            ETSObjectFlags::READONLY)) {
+        checker->ThrowTypeError("Cannot call readonly type methods.", expr->Start());
+    }
     checker::Type *returnType;
     if (calleeType->IsETSDynamicType() && !calleeType->AsETSDynamicType()->HasDecl()) {
         // Trailing lambda for js function call is not supported, check the correctness of `foo() {}`
@@ -1102,6 +1111,8 @@ checker::Type *ETSAnalyzer::Check(ir::CallExpression *expr) const
     if (expr->UncheckedType() != nullptr) {
         checker->ComputeApparentType(returnType);
     }
+
+    CheckVoidTypeExpression(checker, expr);
     return expr->TsType();
 }
 
@@ -1137,7 +1148,8 @@ checker::Type *ETSAnalyzer::Check(ir::ConditionalExpression *expr) const
         }
     }
 
-    auto *const consequentType = expr->Consequent()->Check(checker);
+    auto *consequent = expr->Consequent();
+    auto *consequentType = consequent->Check(checker);
 
     SmartCastArray consequentSmartCasts = checker->Context().CloneSmartCasts();
     checker->Context().RestoreSmartCasts(smartCasts);
@@ -1148,7 +1160,8 @@ checker::Type *ETSAnalyzer::Check(ir::ConditionalExpression *expr) const
         }
     }
 
-    auto *const alternateType = expr->Alternate()->Check(checker);
+    auto *alternate = expr->Alternate();
+    auto *alternateType = alternate->Check(checker);
 
     // Here we need to combine types from consequent and alternate if blocks.
     checker->Context().CombineSmartCasts(consequentSmartCasts);
@@ -1156,10 +1169,19 @@ checker::Type *ETSAnalyzer::Check(ir::ConditionalExpression *expr) const
     if (checker->IsTypeIdenticalTo(consequentType, alternateType)) {
         expr->SetTsType(checker->GetNonConstantTypeFromPrimitiveType(consequentType));
     } else {
-        expr->SetTsType(checker->CreateETSUnionType({consequentType, alternateType}));
-        if (expr->TsType()->IsETSReferenceType()) {
-            checker->MaybeBoxExpression(expr->Consequent());
-            checker->MaybeBoxExpression(expr->Alternate());
+        //  If possible and required update number literal type to the proper value (identical to left-side type)
+        if (alternate->IsNumberLiteral() &&
+            checker->AdjustNumberLiteralType(alternate->AsNumberLiteral(), alternateType, consequentType)) {
+            expr->SetTsType(consequentType);
+        } else if (consequent->IsNumberLiteral() &&
+                   checker->AdjustNumberLiteralType(consequent->AsNumberLiteral(), consequentType, alternateType)) {
+            expr->SetTsType(alternateType);
+        } else {
+            expr->SetTsType(checker->CreateETSUnionType({consequentType, alternateType}));
+            if (expr->TsType()->IsETSReferenceType()) {
+                checker->MaybeBoxExpression(expr->Consequent());
+                checker->MaybeBoxExpression(expr->Alternate());
+            }
         }
     }
 
@@ -1386,9 +1408,6 @@ void ETSAnalyzer::CheckObjectExprProps(const ir::ObjectExpression *expr) const
             checker->ThrowTypeError({"type ", objType->Name(), " has no property named ", pname}, propExpr->Start());
         }
         checker->ValidatePropertyAccess(lv, objType, propExpr->Start());
-        if (lv->HasFlag(varbinder::VariableFlags::READONLY)) {
-            checker->ThrowTypeError({"cannot assign to readonly property ", pname}, propExpr->Start());
-        }
 
         if (key->IsIdentifier()) {
             key->AsIdentifier()->SetVariable(lv);
@@ -1606,6 +1625,11 @@ checker::Type *ETSAnalyzer::Check(ir::UpdateExpression *expr) const
         if (auto *const asExprVar = expr->Argument()->AsTSAsExpression()->Variable(); asExprVar != nullptr) {
             checker->ValidateUnaryOperatorOperand(asExprVar);
         }
+    } else if (expr->Argument()->IsTSNonNullExpression()) {
+        if (auto *const nonNullExprVar = expr->Argument()->AsTSNonNullExpression()->Variable();
+            nonNullExprVar != nullptr) {
+            checker->ValidateUnaryOperatorOperand(nonNullExprVar);
+        }
     } else {
         ASSERT(expr->Argument()->IsMemberExpression());
         varbinder::LocalVariable *propVar = expr->argument_->AsMemberExpression()->PropVar();
@@ -1620,7 +1644,7 @@ checker::Type *ETSAnalyzer::Check(ir::UpdateExpression *expr) const
     }
 
     auto unboxedType = checker->ETSBuiltinTypeAsPrimitiveType(operandType);
-    if (unboxedType == nullptr || !unboxedType->HasTypeFlag(checker::TypeFlag::ETS_NUMERIC)) {
+    if (unboxedType == nullptr || !unboxedType->HasTypeFlag(checker::TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC)) {
         checker->ThrowTypeError("Bad operand type, the type of the operand must be numeric type.",
                                 expr->Argument()->Start());
     }
@@ -2605,6 +2629,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSQualifiedName *expr) const
         varbinder::Variable *prop =
             baseType->AsETSObjectType()->GetProperty(expr->Right()->Name(), checker::PropertySearchFlags::SEARCH_DECL);
 
+        expr->Right()->SetVariable(prop);
         if (prop != nullptr) {
             return checker->GetTypeOfVariable(prop);
         }
@@ -2737,4 +2762,8 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSVoidKeyword *node) cons
     UNREACHABLE();
 }
 
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::DummyNode *expr) const
+{
+    UNREACHABLE();
+}
 }  // namespace ark::es2panda::checker

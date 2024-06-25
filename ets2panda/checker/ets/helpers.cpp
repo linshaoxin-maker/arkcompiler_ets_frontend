@@ -18,6 +18,7 @@
 #include "parser/ETSparser.h"
 
 #include "checker/types/ets/etsTupleType.h"
+#include "checker/types/ets/etsReadonlyType.h"
 #include "checker/ets/typeRelationContext.h"
 #include "checker/ETSchecker.h"
 #include "checker/types/globalTypesHolder.h"
@@ -298,7 +299,8 @@ std::tuple<Type *, bool> ETSChecker::ApplyBinaryOperatorPromotion(Type *left, Ty
     };
 
     if (doPromotion) {
-        if (unboxedL->HasTypeFlag(TypeFlag::ETS_NUMERIC) && unboxedR->HasTypeFlag(TypeFlag::ETS_NUMERIC)) {
+        if (unboxedL->HasTypeFlag(TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC) &&
+            unboxedR->HasTypeFlag(TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC)) {
             return numericPromotion();
         }
 
@@ -542,8 +544,9 @@ checker::Type *ETSChecker::CheckArrayElements(ir::Identifier *ident, ir::ArrayEx
         for (auto element : elements) {
             auto const eType = element->Check(this);
             auto const primEType = ETSBuiltinTypeAsPrimitiveType(eType);
-            if (primEType != nullptr && primType != nullptr && primEType->HasTypeFlag(TypeFlag::ETS_NUMERIC) &&
-                primType->HasTypeFlag(TypeFlag::ETS_NUMERIC)) {
+            if (primEType != nullptr && primType != nullptr &&
+                primEType->HasTypeFlag(TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC) &&
+                primType->HasTypeFlag(TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC)) {
                 type = GlobalDoubleType();
             } else if (IsTypeIdenticalTo(type, eType)) {
                 continue;
@@ -565,13 +568,11 @@ void ETSChecker::InferAliasLambdaType(ir::TypeNode *localTypeAnnotation, ir::Arr
     if (localTypeAnnotation->IsETSTypeReference()) {
         bool isAnnotationTypeAlias = true;
         while (localTypeAnnotation->IsETSTypeReference() && isAnnotationTypeAlias) {
-            auto *node = localTypeAnnotation->AsETSTypeReference()
-                             ->Part()
-                             ->Name()
-                             ->AsIdentifier()
-                             ->Variable()
-                             ->Declaration()
-                             ->Node();
+            auto *nodeVar = localTypeAnnotation->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Variable();
+            if (nodeVar == nullptr) {
+                break;
+            }
+            auto *node = nodeVar->Declaration()->Node();
 
             isAnnotationTypeAlias = node->IsTSTypeAliasDeclaration();
             if (isAnnotationTypeAlias) {
@@ -634,6 +635,8 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
     checker::Type *annotationType = nullptr;
 
     const bool isConst = (flags & ir::ModifierFlags::CONST) != 0;
+    const bool isReadonly = (flags & ir::ModifierFlags::READONLY) != 0;
+    const bool isStatic = (flags & ir::ModifierFlags::STATIC) != 0;
 
     if (typeAnnotation != nullptr) {
         annotationType = typeAnnotation->GetType(this);
@@ -708,7 +711,9 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
         const Type *sourceType = TryGettingFunctionTypeFromInvokeFunction(initType);
         AssignmentContext(Relation(), init, initType, annotationType, init->Start(),
                           {"Type '", sourceType, "' cannot be assigned to type '", targetType, "'"});
-        if (isConst && initType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) &&
+        // Note(lujiahui): It should be checked if the readonly function parameter and readonly number[] parameters
+        // are assigned with CONSTANT, which would not be correct. (After feature supported)
+        if (isConst && (!isReadonly || isStatic) && initType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) &&
             annotationType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
             bindingVar->SetTsType(init->TsType());
         }
@@ -984,7 +989,25 @@ std::optional<SmartCastTuple> CheckerContext::ResolveSmartCastTypes()
                ? std::make_optional(std::make_tuple(testCondition_.variable, consequentType, alternateType))
                : std::make_optional(std::make_tuple(testCondition_.variable, alternateType, consequentType));
 }
+void ETSChecker::CheckVoidAnnotation(const ir::ETSPrimitiveType *typeAnnotation)
+{
+    // Void annotation is valid only when used as 'return type' , 'type parameter instantiation', 'default type'.
+    if (typeAnnotation->GetPrimitiveType() != ir::PrimitiveType::VOID) {
+        return;
+    }
 
+    auto parent = typeAnnotation->Parent();
+    if (parent->IsScriptFunction() && parent->AsScriptFunction()->ReturnTypeAnnotation() == typeAnnotation) {
+        return;
+    }
+    if (parent->IsETSFunctionType() && parent->AsETSFunctionType()->ReturnType() == typeAnnotation) {
+        return;
+    }
+    if (parent->IsTSTypeParameterInstantiation() || parent->IsTSTypeParameter()) {
+        return;
+    }
+    ThrowTypeError({"'void' used as type annotation."}, typeAnnotation->Start());
+}
 void ETSChecker::ApplySmartCast(varbinder::Variable const *const variable, checker::Type *const smartType) noexcept
 {
     ASSERT(variable != nullptr);
@@ -1066,6 +1089,55 @@ void ETSChecker::SetArrayPreferredTypeForNestedMemberExpressions(ir::MemberExpre
     }
 }
 
+void ETSChecker::MakePropertiesReadonly(ETSObjectType *const classType)
+{
+    classType->UpdateTypeProperties(this, [this](auto *property, auto *propType) {
+        auto *newDecl = Allocator()->New<varbinder::ConstDecl>(property->Name(), property->Declaration()->Node());
+        auto *const propCopy = property->Copy(Allocator(), newDecl);
+        propCopy->AddFlag(varbinder::VariableFlags::READONLY);
+        propCopy->SetTsType(propType);
+        return propCopy;
+    });
+}
+
+Type *ETSChecker::GetReadonlyType(Type *type)
+{
+    if (type->IsETSObjectType()) {
+        type->AsETSObjectType()->InstanceFields();
+        auto *clonedType = type->Clone(this)->AsETSObjectType();
+        MakePropertiesReadonly(clonedType);
+        return clonedType;
+    }
+    if (type->IsETSTypeParameter()) {
+        return Allocator()->New<ETSReadonlyType>(type->AsETSTypeParameter());
+    }
+    if (type->IsETSUnionType()) {
+        ArenaVector<Type *> unionTypes(Allocator()->Adapter());
+        for (auto *t : type->AsETSUnionType()->ConstituentTypes()) {
+            unionTypes.emplace_back(t->IsETSObjectType() ? GetReadonlyType(t) : t->Clone(this));
+        }
+        return CreateETSUnionType(std::move(unionTypes));
+    }
+    return type;
+}
+
+Type *ETSChecker::HandleReadonlyType(const ir::TSTypeParameterInstantiation *const typeParams)
+{
+    if (typeParams->Params().size() != 1) {
+        ThrowTypeError("Invalid number of type parameters for Readonly type", typeParams->Start());
+    }
+
+    auto *const typeParamNode = typeParams->Params()[0];
+    auto *typeToBeReadonly = typeParamNode->Check(this);
+
+    if (auto found = NamedTypeStack().find(typeToBeReadonly); found != NamedTypeStack().end()) {
+        return *found;
+    }
+
+    NamedTypeStackElement ntse(this, typeToBeReadonly);
+    return GetReadonlyType(typeToBeReadonly);
+}
+
 static void CheckExpandedType(Type *expandedAliasType, std::set<util::StringView> &parametersNeedToBeBoxed,
                               bool needToBeBoxed)
 {
@@ -1116,6 +1188,10 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
         }
 
         ThrowTypeError("Type alias declaration is not generic, but type parameters were provided", typeParams->Start());
+    }
+
+    if (name->AsIdentifier()->Name().Is(compiler::Signatures::READONLY_TYPE_NAME)) {
+        return HandleReadonlyType(typeParams);
     }
 
     if (typeParams == nullptr) {
@@ -1221,25 +1297,23 @@ void ETSChecker::SetPropertiesForModuleObject(checker::ETSObjectType *moduleObjT
 {
     auto *etsBinder = static_cast<varbinder::ETSBinder *>(VarBinder());
 
-    auto extRecords = etsBinder->GetGlobalRecordTable()->Program()->ExternalSources();
-    auto [name, isPackageModule] = etsBinder->GetModuleInfo(importPath);
-    auto res = extRecords.find(name);
-    ASSERT(res != extRecords.end());
+    auto programList = etsBinder->GetProgramList(importPath);
+    ASSERT(!programList.empty());
 
     // Check imported properties before assigning them to module object
-    res->second.front()->Ast()->Check(this);
+    programList.front()->Ast()->Check(this);
 
     BindingsModuleObjectAddProperty<checker::PropertyType::STATIC_FIELD>(
-        moduleObjType, importDecl, res->second.front()->GlobalClassScope()->StaticFieldScope()->Bindings());
+        moduleObjType, importDecl, programList.front()->GlobalClassScope()->StaticFieldScope()->Bindings());
 
     BindingsModuleObjectAddProperty<checker::PropertyType::STATIC_METHOD>(
-        moduleObjType, importDecl, res->second.front()->GlobalClassScope()->StaticMethodScope()->Bindings());
+        moduleObjType, importDecl, programList.front()->GlobalClassScope()->StaticMethodScope()->Bindings());
 
     BindingsModuleObjectAddProperty<checker::PropertyType::STATIC_DECL>(
-        moduleObjType, importDecl, res->second.front()->GlobalClassScope()->InstanceDeclScope()->Bindings());
+        moduleObjType, importDecl, programList.front()->GlobalClassScope()->InstanceDeclScope()->Bindings());
 
     BindingsModuleObjectAddProperty<checker::PropertyType::STATIC_DECL>(
-        moduleObjType, importDecl, res->second.front()->GlobalClassScope()->TypeAliasScope()->Bindings());
+        moduleObjType, importDecl, programList.front()->GlobalClassScope()->TypeAliasScope()->Bindings());
 }
 
 void ETSChecker::SetrModuleObjectTsType(ir::Identifier *local, checker::ETSObjectType *moduleObjType)
@@ -1486,32 +1560,34 @@ util::StringView ETSChecker::GetContainingObjectNameFromSignature(Signature *sig
     return {""};
 }
 
-const ir::AstNode *ETSChecker::FindJumpTarget(const ir::AstNode *node) const
+const ir::AstNode *ETSChecker::FindJumpTarget(ir::AstNode *node)
 {
     ASSERT(node->IsBreakStatement() || node->IsContinueStatement());
 
     bool const isContinue = node->IsContinueStatement();
-    auto const *const target = isContinue ? node->AsContinueStatement()->Ident() : node->AsBreakStatement()->Ident();
 
+    // Look for label
+    auto label = isContinue ? node->AsContinueStatement()->Ident() : node->AsBreakStatement()->Ident();
+    if (label != nullptr) {
+        auto var = label->Variable();
+        if (var != nullptr && var->Declaration()->IsLabelDecl()) {
+            return var->Declaration()->Node();
+        }
+
+        // Failed to resolve variable for label
+        ThrowError(label);
+    }
+
+    // No label, find the nearest loop or switch statement
     const auto *iter = node->Parent();
-
     while (iter != nullptr) {
         switch (iter->Type()) {
-            case ir::AstNodeType::LABELLED_STATEMENT: {
-                if (const auto *labelled = iter->AsLabelledStatement(); labelled->Ident()->Name() == target->Name()) {
-                    return isContinue ? labelled->GetReferencedStatement() : labelled;
-                }
-                break;
-            }
             case ir::AstNodeType::DO_WHILE_STATEMENT:
             case ir::AstNodeType::WHILE_STATEMENT:
             case ir::AstNodeType::FOR_UPDATE_STATEMENT:
             case ir::AstNodeType::FOR_OF_STATEMENT:
             case ir::AstNodeType::SWITCH_STATEMENT: {
-                if (target == nullptr) {
-                    return iter;
-                }
-                break;
+                return iter;
             }
             default: {
                 break;
@@ -1574,7 +1650,6 @@ Type *ETSChecker::MaybeBoxExpression(ir::Expression *expr)
     if (promoted != expr->TsType()) {
         expr->AddBoxingUnboxingFlags(GetBoxingFlag(promoted));
     }
-    Relation()->SetNode(expr);
     return promoted;
 }
 
@@ -2493,17 +2568,19 @@ ETSObjectType *ETSChecker::GetImportSpecifierObjectType(ir::ETSImportDeclaration
 {
     auto importPath = importDecl->ResolvedSource()->Str();
 
-    auto [moduleName, isPackageModule] = VarBinder()->AsETSBinder()->GetModuleInfo(importPath);
+    auto programList = VarBinder()->AsETSBinder()->GetProgramList(importPath);
+    ASSERT(!programList.empty());
 
-    std::vector<util::StringView> syntheticNames = GetNameForSynteticObjectType(moduleName);
-
+    std::vector<util::StringView> syntheticNames = GetNameForSynteticObjectType(programList.front()->ModuleName());
     ASSERT(!syntheticNames.empty());
 
     auto assemblerName = syntheticNames[0];
-    if (!isPackageModule) {
-        assemblerName =
-            util::UString(assemblerName.Mutf8().append(".").append(compiler::Signatures::ETS_GLOBAL), Allocator())
-                .View();
+    if (!programList.front()->OmitModuleName()) {
+        assemblerName = util::UString(assemblerName.Mutf8()
+                                          .append(compiler::Signatures::METHOD_SEPARATOR)
+                                          .append(compiler::Signatures::ETS_GLOBAL),
+                                      Allocator())
+                            .View();
     }
 
     auto *moduleObjectType = Allocator()->New<checker::ETSObjectType>(

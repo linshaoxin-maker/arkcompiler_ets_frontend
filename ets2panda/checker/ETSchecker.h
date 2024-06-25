@@ -16,14 +16,14 @@
 #ifndef ES2PANDA_CHECKER_ETS_CHECKER_H
 #define ES2PANDA_CHECKER_ETS_CHECKER_H
 
+#include <mutex>
+
 #include "checker/checker.h"
 
 #include "checker/types/ets/types.h"
 #include "checker/ets/primitiveWrappers.h"
 #include "checker/resolveResult.h"
 #include "util/helpers.h"
-
-#include <mutex>
 
 namespace ark::es2panda::varbinder {
 class VarBinder;
@@ -284,8 +284,10 @@ public:
                                                               checker::Type *rightType, Type *unboxedL, Type *unboxedR);
     std::tuple<Type *, Type *> CheckBinaryOperatorInstanceOf(lexer::SourcePosition pos, checker::Type *leftType,
                                                              checker::Type *rightType);
-    checker::Type *CheckBinaryOperatorNullishCoalescing(ir::Expression *right, lexer::SourcePosition pos,
-                                                        checker::Type *leftType, checker::Type *rightType);
+    checker::Type *CheckBinaryOperatorNullishCoalescing(ir::Expression *left, ir::Expression *right,
+                                                        lexer::SourcePosition pos);
+    bool AdjustNumberLiteralType(ir::NumberLiteral *literal, Type *literalType, Type *otherType);
+
     Type *HandleArithmeticOperationOnTypes(Type *left, Type *right, lexer::TokenType operationType);
     Type *HandleBitwiseOperationOnTypes(Type *left, Type *right, lexer::TokenType operationType);
     void FlagExpressionWithUnboxing(Type *type, Type *unboxedType, ir::Expression *typeExpression);
@@ -320,6 +322,8 @@ public:
     static void EmplaceSubstituted(Substitution *substitution, ETSTypeParameter *tparam, Type *typeArg);
     [[nodiscard]] bool EnhanceSubstitutionForType(const ArenaVector<Type *> &typeParams, Type *paramType,
                                                   Type *argumentType, Substitution *substitution);
+    [[nodiscard]] bool EnhanceSubstitutionForReadonly(const ArenaVector<Type *> &typeParams, ETSReadonlyType *paramType,
+                                                      Type *argumentType, Substitution *substitution);
     [[nodiscard]] bool EnhanceSubstitutionForObject(const ArenaVector<Type *> &typeParams, ETSObjectType *paramType,
                                                     Type *argumentType, Substitution *substitution);
     [[nodiscard]] bool EnhanceSubstitutionForUnion(const ArenaVector<Type *> &typeParams, ETSUnionType *paramUn,
@@ -328,8 +332,6 @@ public:
                                                    Type *argumentType, Substitution *substitution);
     [[nodiscard]] bool EnhanceSubstitutionForGenericType(const ArenaVector<Type *> &typeParams, const Type *argType,
                                                          const Type *paramType, Substitution *substitution);
-    ArenaVector<Type *> GetSourceParameters(const ETSObjectType *object, const Type *paramType,
-                                            const ArenaVector<Type *> &requiredOrder);
     [[nodiscard]] static bool HasTypeArgsOfObject(Type *argType, Type *paramType);
     [[nodiscard]] bool InsertTypeIntoSubstitution(const ArenaVector<Type *> &typeParams, const Type *typeParam,
                                                   const size_t index, Substitution *substitution, Type *objectParam);
@@ -356,6 +358,14 @@ public:
                                   const ArenaVector<ir::Expression *> &arguments, const lexer::SourcePosition &pos,
                                   std::string_view signatureKind,
                                   TypeRelationFlag resolveFlags = TypeRelationFlag::NONE);
+    Signature *FindMostSpecificSignature(const ArenaVector<Signature *> &signatures,
+                                         const ArenaMultiMap<size_t, Signature *> &bestSignaturesForParameter,
+                                         size_t paramCount);
+    void EvaluateMostSpecificSearch(Type *&mostSpecificType, Signature *&prevSig, const lexer::SourcePosition &pos,
+                                    Signature *sig, Type *sigType);
+    void SearchAmongMostSpecificTypes(Type *&mostSpecificType, Signature *&prevSig, const lexer::SourcePosition &pos,
+                                      size_t argumentsSize, size_t paramCount, size_t idx, Signature *sig,
+                                      bool lookForClassType);
     Signature *ChooseMostSpecificSignature(ArenaVector<Signature *> &signatures,
                                            const std::vector<bool> &argTypeInferenceRequired,
                                            const lexer::SourcePosition &pos, size_t argumentsSize = ULONG_MAX);
@@ -481,7 +491,10 @@ public:
     Type *GetTypeFromClassReference(varbinder::Variable *var);
     void ValidateGenericTypeAliasForClonedNode(ir::TSTypeAliasDeclaration *typeAliasNode,
                                                const ir::TSTypeParameterInstantiation *exactTypeParams);
+    void MakePropertiesReadonly(ETSObjectType *classType);
+    Type *HandleReadonlyType(const ir::TSTypeParameterInstantiation *typeParams);
     Type *HandleTypeAlias(ir::Expression *name, const ir::TSTypeParameterInstantiation *typeParams);
+    Type *GetReadonlyType(Type *type);
     Type *GetTypeFromEnumReference(varbinder::Variable *var);
     Type *GetTypeFromTypeParameterReference(varbinder::LocalVariable *var, const lexer::SourcePosition &pos);
     Type *GetNonConstantTypeFromPrimitiveType(Type *type) const;
@@ -526,7 +539,7 @@ public:
     {
         return type->IsETSReferenceType();
     }
-    const ir::AstNode *FindJumpTarget(const ir::AstNode *node) const;
+    const ir::AstNode *FindJumpTarget(ir::AstNode *node);
     void ValidatePropertyAccess(varbinder::Variable *var, ETSObjectType *obj, const lexer::SourcePosition &pos);
     varbinder::VariableFlags GetAccessFlagFromNode(const ir::AstNode *node);
     Type *CheckSwitchDiscriminant(ir::Expression *discriminant);
@@ -611,6 +624,7 @@ public:
                                                   checker::ETSObjectType *lastObjectType, ir::Identifier *ident);
     checker::ETSObjectType *CreateSyntheticType(util::StringView const &syntheticName,
                                                 checker::ETSObjectType *lastObjectType, ir::Identifier *id);
+    void CheckVoidAnnotation(const ir::ETSPrimitiveType *typeAnnotation);
 
     // Smart cast support
     [[nodiscard]] checker::Type *ResolveSmartType(checker::Type *sourceType, checker::Type *targetType);

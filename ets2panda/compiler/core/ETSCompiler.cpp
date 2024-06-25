@@ -230,7 +230,12 @@ void ETSCompiler::Compile(const ir::ETSNewArrayInstanceExpression *expr) const
     etsg->ApplyConversionAndStoreAccumulator(expr, dim, expr->Dimension()->TsType());
     etsg->NewArray(expr, arr, dim, expr->TsType());
 
-    if (expr->Signature() != nullptr) {
+    const auto *exprType = expr->TypeReference()->TsType();
+
+    const bool isUnionTypeContainsUndefined =
+        expr->TypeReference()->IsETSTypeReference() && exprType->IsETSUnionType() &&
+        exprType->AsETSUnionType()->HasType(etsg->Checker()->GlobalETSUndefinedType());
+    if (expr->Signature() != nullptr || isUnionTypeContainsUndefined) {
         compiler::VReg countReg = etsg->AllocReg();
         auto *startLabel = etsg->AllocLabel();
         auto *endLabel = etsg->AllocLabel();
@@ -243,14 +248,18 @@ void ETSCompiler::Compile(const ir::ETSNewArrayInstanceExpression *expr) const
 
         etsg->LoadAccumulator(expr, countReg);
         etsg->StoreAccumulator(expr, indexReg);
-        const compiler::TargetTypeContext ttctx2(etsg, expr->TypeReference()->TsType());
+
+        const compiler::TargetTypeContext ttctx2(etsg, exprType);
         ArenaVector<ir::Expression *> arguments(GetCodeGen()->Allocator()->Adapter());
-        etsg->InitObject(expr, expr->Signature(), arguments);
-        etsg->StoreArrayElement(expr, arr, indexReg, expr->TypeReference()->TsType());
+        if (isUnionTypeContainsUndefined) {
+            exprType = etsg->LoadDefaultValue(expr, exprType);
+        } else {
+            etsg->InitObject(expr, expr->Signature(), arguments);
+        }
+        etsg->StoreArrayElement(expr, arr, indexReg, exprType);
 
         etsg->IncrementImmediateRegister(expr, countReg, checker::TypeFlag::INT, static_cast<std::int32_t>(1));
         etsg->JumpTo(expr, startLabel);
-
         etsg->SetLabel(expr, endLabel);
     }
 
@@ -740,7 +749,9 @@ static void ConvertRestArguments(checker::ETSChecker *const checker, const ir::C
             }
             auto *arrayExpression = checker->AllocNode<ir::ArrayExpression>(std::move(elements), checker->Allocator());
             arrayExpression->SetParent(const_cast<ir::CallExpression *>(expr));
-            arrayExpression->SetTsType(signature->RestVar()->TsType());
+            auto restType = signature->RestVar()->TsType()->AsETSArrayType();
+            arrayExpression->SetTsType(restType);
+            arrayExpression->SetPreferredType(restType->ElementType());
             arguments.erase(expr->Arguments().begin() + parameterCount, expr->Arguments().end());
             arguments.emplace_back(arrayExpression);
         }
@@ -1353,6 +1364,10 @@ void ETSCompiler::Compile(const ir::UnaryExpression *expr) const
 void ETSCompiler::Compile(const ir::UpdateExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
+
+    if (expr->Argument()->IsTSNonNullExpression()) {
+        expr->Argument()->Compile(etsg);
+    }
 
     auto lref = compiler::ETSLReference::Create(etsg, expr->Argument(), false);
 
@@ -2406,4 +2421,8 @@ void ETSCompiler::Compile([[maybe_unused]] const ir::TSVoidKeyword *node) const
     UNREACHABLE();
 }
 
+void ETSCompiler::Compile([[maybe_unused]] const ir::DummyNode *node) const
+{
+    UNREACHABLE();
+}
 }  // namespace ark::es2panda::compiler
