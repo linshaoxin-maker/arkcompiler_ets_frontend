@@ -765,9 +765,13 @@ void ConvertArgumentsForFunctionalCall(checker::ETSChecker *const checker, const
         arguments[i]->SetParent(cast);
         cast->SetParent(const_cast<ir::CallExpression *>(expr));
         cast->SetTsType(paramType);
-
         if (paramType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
             cast->AddBoxingUnboxingFlags(checker->GetBoxingFlag(paramType));
+        }
+
+        if (cast->Expr()->GetBoxingUnboxingFlags() == ir::BoxingUnboxingFlags::NONE &&
+            arguments[i]->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+            cast->Expr()->AddBoxingUnboxingFlags(checker->GetBoxingFlag(arguments[i]->TsType()));
         }
 
         arguments[i] = cast;

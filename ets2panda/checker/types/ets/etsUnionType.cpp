@@ -159,19 +159,35 @@ void ETSUnionType::RelationTarget(TypeRelation *relation, Type *source, RelFN co
     relation->Result(related);
 }
 
-bool ETSUnionType::AssignmentSource(TypeRelation *relation, Type *target)
+static bool IsConstituentAssignableTo(Type *constituentType, Type *target, TypeRelation *relation)
 {
     auto *const checker = relation->GetChecker()->AsETSChecker();
-    if (target->HasTypeFlag(TypeFlag::PRIMITIVE)) {
+
+    if (relation->IsAssignableTo(constituentType, target)) {
+        return true;
+    }
+    if (checker->CheckUnboxedTypesAssignable(relation, constituentType, target); relation->IsTrue()) {
+        return true;
+    }
+    if (checker->CheckBoxedSourceTypeAssignable(relation, constituentType, target); relation->IsTrue()) {
+        return true;
+    }
+    return false;
+}
+
+bool ETSUnionType::AssignmentSource(TypeRelation *relation, Type *target)
+{
+    // auto *const checker = relation->GetChecker()->AsETSChecker();
+    if (target->HasTypeFlag(TypeFlag::PRIMITIVE) || target->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
         if (!relation->ApplyUnboxing()) {
             return relation->Result(false);
         }
-        relation->GetNode()->SetBoxingUnboxingFlags(
-            relation->GetChecker()->AsETSChecker()->GetUnboxingFlag(checker->MaybePrimitiveBuiltinType(target)));
+        relation->GetNode()->AddAstNodeFlags(ir::AstNodeFlags::UNION_CAST_PRIMITIVE);
     }
 
-    return relation->Result(std::all_of(constituentTypes_.begin(), constituentTypes_.end(),
-                                        [relation, target](auto *t) { return relation->IsAssignableTo(t, target); }));
+    return relation->Result(
+        std::all_of(constituentTypes_.begin(), constituentTypes_.end(),
+                    [relation, target](auto *t) { return IsConstituentAssignableTo(t, target, relation); }));
 }
 
 void ETSUnionType::AssignmentTarget(TypeRelation *relation, Type *source)
