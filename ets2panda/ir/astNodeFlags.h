@@ -29,7 +29,9 @@ enum class AstNodeFlags {
     CHECKCAST = 1U << 0U,
     CONVERT_TO_STRING = 1U << 1U,
     ALLOW_REQUIRED_INSTANTIATION = 1U << 2U,
-    HAS_EXPORT_ALIAS = 1U << 3U
+    HAS_EXPORT_ALIAS = 1U << 3U,
+    ENUM_GET_VALUE = 1U << 4U,
+    UNION_CAST_PRIMITIVE = 1U << 5U,
 };
 
 enum class ModifierFlags : uint32_t {
