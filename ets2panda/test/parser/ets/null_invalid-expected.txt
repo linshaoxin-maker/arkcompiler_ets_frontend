@@ -430,4 +430,4 @@
     }
   }
 }
-TypeError: Type 'null' cannot be assigned to type 'Object' [null_invalid.ets:17:18]
+TypeError: Type 'null|Object' cannot be assigned to type 'Object' [null_invalid.ets:17:18]
