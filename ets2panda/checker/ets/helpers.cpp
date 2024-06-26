@@ -672,6 +672,10 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
         ThrowTypeError("Cannot get the expression type", init->Start());
     }
 
+    if (typeAnnotation == nullptr && init->IsNullLiteral()) {
+        initType = this->CreateETSUnionType({GlobalETSNullType(), GlobalETSObjectType()});
+    }
+
     if (typeAnnotation == nullptr &&
         (init->IsArrowFunctionExpression() ||
          (init->IsTSAsExpression() && init->AsTSAsExpression()->Expr()->IsArrowFunctionExpression()))) {
