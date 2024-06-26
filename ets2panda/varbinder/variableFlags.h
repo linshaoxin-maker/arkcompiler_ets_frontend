@@ -31,6 +31,7 @@ namespace ark::es2panda::varbinder {
     _(IMPORT, ImportDecl)                \
     _(DYNAMIC_IMPORT, DynamicImportDecl) \
     _(EXPORT, ExportDecl)                \
+    _(ANNOTATION, AnnotationDecl)        \
     /* TS */                             \
     _(TYPE_ALIAS, TypeAliasDecl)         \
     _(NAMESPACE, NameSpaceDecl)          \
@@ -57,6 +58,7 @@ enum class DeclType {
     _(FUNCTION_PARAM, FunctionParamScope) \
     _(CATCH, CatchScope)                  \
     _(CLASS, ClassScope)                  \
+    _(ANNOTATION, AnnotationScope)        \
     _(LOCAL, LocalScope)                  \
     /* Variable Scopes */                 \
     _(LOOP, LoopScope)                    \
@@ -154,7 +156,7 @@ enum class VariableFlags : uint64_t {
     BUILTIN_TYPE = 1ULL << 31ULL,
 
     BOXED = 1ULL << 32ULL,
-
+    ANNOTATION = 1ULL << 33ULL,
     HOIST_VAR = HOIST | VAR,
     CLASS_OR_INTERFACE = CLASS | INTERFACE,
     CLASS_OR_INTERFACE_OR_ENUM = CLASS_OR_INTERFACE | ENUM_LITERAL,

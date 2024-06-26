@@ -33,6 +33,7 @@
 #include "ir/statements/variableDeclarator.h"
 #include "ir/statements/functionDeclaration.h"
 #include "ir/statements/returnStatement.h"
+#include "ir/statements/annotationDeclaration.h"
 #include "ir/ets/etsPrimitiveType.h"
 #include "ir/ets/etsTypeReferencePart.h"
 #include "ir/ets/etsNewClassInstanceExpression.h"
@@ -720,6 +721,10 @@ bool ETSBinder::AddImportSpecifiersToTopBindings(ir::AstNode *const specifier,
         ThrowError(importPath->Start(), "Imported element not exported '" + var->Declaration()->Name().Mutf8() + "'");
     }
 
+    if (var->Declaration()->Node()->IsAnnotationDeclaration() &&
+        var->Declaration()->Node()->AsAnnotationDeclaration()->Ident()->Name() != localName) {
+        ThrowError(importPath->Start(), "Can not rename annotation '" + var->Declaration()->Name().Mutf8() + "'");
+    }
     auto variable = Program()->GlobalClassScope()->FindLocal(localName, ResolveBindingOptions::ALL);
     if (variable != nullptr && var != variable) {
         if (variable->Declaration()->IsFunctionDecl() && var->Declaration()->IsFunctionDecl()) {

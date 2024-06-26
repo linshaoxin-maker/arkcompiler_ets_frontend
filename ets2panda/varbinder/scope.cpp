@@ -23,6 +23,7 @@
 #include "ir/astNode.h"
 #include "ir/expressions/identifier.h"
 #include "ir/statements/classDeclaration.h"
+#include "ir/statements/annotationDeclaration.h"
 #include "ir/base/classDefinition.h"
 #include "ir/base/scriptFunction.h"
 #include "ir/base/classProperty.h"
@@ -810,6 +811,11 @@ void ClassScope::SetBindingProps(Decl *newDecl, BindingProps *props, bool isStat
                                    typeAliasScope_);
             break;
         }
+        case DeclType::ANNOTATION: {
+            props->SetBindingProps(VariableFlags::ANNOTATION, newDecl->Node()->AsAnnotationDeclaration()->Ident(),
+                                   instanceDeclScope_);
+            break;
+        }
         default: {
             UNREACHABLE();
             break;
@@ -822,7 +828,6 @@ Variable *ClassScope::AddBinding(ArenaAllocator *allocator, [[maybe_unused]] Var
 {
     bool isStatic = newDecl->Node()->IsStatic();
     BindingProps props;
-
     if (isStatic) {
         props.SetFlagsType(VariableFlags::STATIC);
     }
@@ -934,4 +939,5 @@ Variable *CatchScope::AddBinding(ArenaAllocator *allocator, Variable *currentVar
 
     return AddLocal(allocator, currentVariable, newDecl, extension);
 }
+
 }  // namespace ark::es2panda::varbinder

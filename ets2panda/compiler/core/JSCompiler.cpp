@@ -1495,6 +1495,9 @@ void JSCompiler::Compile(const ir::ClassDeclaration *st) const
     lref.SetValue();
 }
 
+void JSCompiler::Compile([[maybe_unused]] const ir::AnnotationDeclaration *st) const {}
+void JSCompiler::Compile([[maybe_unused]] const ir::AnnotationUsage *st) const {}
+
 static void CompileImpl(const ir::ContinueStatement *self, PandaGen *cg)
 {
     compiler::Label *target = cg->ControlFlowChangeContinue(self->Ident());

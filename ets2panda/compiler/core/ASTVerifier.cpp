@@ -49,6 +49,8 @@
 #include "ir/statements/variableDeclaration.h"
 #include "ir/statements/variableDeclarator.h"
 #include "ir/statements/classDeclaration.h"
+#include "ir/statements/annotationDeclaration.h"
+#include "ir/statements/annotationUsage.h"
 #include "ir/statements/expressionStatement.h"
 #include "ir/statements/throwStatement.h"
 #include "ir/statements/tryStatement.h"
@@ -682,6 +684,12 @@ private:
         }
         if (ast->IsClassDefinition()) {
             for (const auto &member : ast->AsClassDefinition()->Body()) {
+                [[maybe_unused]] auto _ = (*this)(ctx, member);
+            }
+            return {CheckDecision::CORRECT, CheckAction::SKIP_SUBTREE};
+        }
+        if (ast->IsAnnotationDeclaration()) {
+            for (const auto &member : ast->AsAnnotationDeclaration()->Properties()) {
                 [[maybe_unused]] auto _ = (*this)(ctx, member);
             }
             return {CheckDecision::CORRECT, CheckAction::SKIP_SUBTREE};
@@ -1379,6 +1387,7 @@ private:
             }
             return {CheckDecision::CORRECT, CheckAction::SKIP_SUBTREE};
         }
+
         return {CheckDecision::CORRECT, CheckAction::CONTINUE};
     }
 };

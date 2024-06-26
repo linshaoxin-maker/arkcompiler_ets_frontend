@@ -13,62 +13,51 @@
  * limitations under the License.
  */
 
-#ifndef ES2PANDA_IR_STATEMENT_CLASS_DECLARATION_H
-#define ES2PANDA_IR_STATEMENT_CLASS_DECLARATION_H
+#ifndef ES2PANDA_IR_STATEMENT_ANNOTATION_USAGE_H
+#define ES2PANDA_IR_STATEMENT_ANNOTATION_USAGE_H
 
+#include "varbinder/scope.h"
+#include "varbinder/variable.h"
 #include "ir/statement.h"
-#include "ir/statements/annotationUsage.h"
+#include "ir/astNode.h"
+#include "ir/expression.h"
+#include "ir/statements/annotationDeclaration.h"
 
 namespace ark::es2panda::ir {
-class AnnotationUsage;
-class ClassDeclaration : public Statement {
+class AnnotationUsage : public Statement {
 public:
-    explicit ClassDeclaration(ClassDefinition *def, ArenaAllocator *allocator)
-        : Statement(AstNodeType::CLASS_DECLARATION),
-          def_(def),
-          decorators_(allocator->Adapter()),
-          annotations_(allocator->Adapter())
+    explicit AnnotationUsage(Expression *expr, ArenaAllocator *allocator)
+        : Statement(AstNodeType::ANNOTATION_USAGE), expr_(expr), properties_(allocator->Adapter())
+    {
+    }
+    explicit AnnotationUsage(Expression *expr, ArenaVector<AstNode *> &&properties)
+        : Statement(AstNodeType::ANNOTATION_USAGE), expr_(expr), properties_(std::move(properties))
     {
     }
 
-    ClassDefinition *Definition()
+    [[nodiscard]] const Expression *Expr() const noexcept
     {
-        return def_;
+        return expr_;
     }
 
-    const ClassDefinition *Definition() const
+    [[nodiscard]] ArenaVector<AstNode *> &Properties() noexcept
     {
-        return def_;
+        return properties_;
     }
 
-    const ArenaVector<Decorator *> &Decorators() const
+    [[nodiscard]] const ArenaVector<AstNode *> &Properties() const noexcept
     {
-        return decorators_;
+        return properties_;
     }
 
-    const ArenaVector<Decorator *> *DecoratorsPtr() const override
+    [[nodiscard]] const ArenaVector<AstNode *> *PropertiesPtr() const
     {
-        return &Decorators();
+        return &Properties();
     }
 
-    void AddDecorators(ArenaVector<Decorator *> &&decorators) override
+    void AddProperties(ArenaVector<AstNode *> &&properties)
     {
-        decorators_ = std::move(decorators);
-    }
-
-    bool CanHaveDecorator([[maybe_unused]] bool inTs) const override
-    {
-        return true;
-    }
-
-    const ArenaVector<AnnotationUsage *> &Annotations() const
-    {
-        return annotations_;
-    }
-
-    void AddAnnotations(ArenaVector<AnnotationUsage *> &&annotations)
-    {
-        annotations_ = std::move(annotations);
+        properties_ = std::move(properties);
     }
 
     void TransformChildren(const NodeTransformer &cb, std::string_view transformationName) override;
@@ -77,7 +66,6 @@ public:
     void Dump(ir::SrcDumper *dumper) const override;
     void Compile(compiler::PandaGen *pg) const override;
     void Compile(compiler::ETSGen *etsg) const override;
-
     checker::Type *Check(checker::TSChecker *checker) override;
     checker::Type *Check(checker::ETSChecker *checker) override;
 
@@ -87,9 +75,8 @@ public:
     }
 
 private:
-    ClassDefinition *def_;
-    ArenaVector<Decorator *> decorators_;
-    ArenaVector<AnnotationUsage *> annotations_;
+    Expression *expr_;
+    ArenaVector<ir::AstNode *> properties_;
 };
 }  // namespace ark::es2panda::ir
 

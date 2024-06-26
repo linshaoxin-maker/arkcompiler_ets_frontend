@@ -113,6 +113,7 @@ protected:
     void VisitArrowFunctionExpression(ir::ArrowFunctionExpression *arrowExpr) override;
     void VisitDirectEvalExpression(ir::DirectEvalExpression *directCallExpr) override;
     void VisitTSFunctionType(ir::TSFunctionType *funcType) override;
+    void VisitAnnotationDeclaration(ir::AnnotationDeclaration *annoDecl) override;
 
 protected:
     varbinder::Scope *GetScope()

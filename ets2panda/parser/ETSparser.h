@@ -344,6 +344,10 @@ private:
                                                    ir::ModifierFlags modFlags = ir::ModifierFlags::NONE) override;
     ir::AstNode *ParseClassElement(const ArenaVector<ir::AstNode *> &properties, ir::ClassDefinitionModifiers modifiers,
                                    ir::ModifierFlags flags) override;
+    ir::AnnotationDeclaration *ParseAnnotationDeclaration(
+        [[maybe_unused]] ir::ModifierFlags flags = ir::ModifierFlags::NONE);
+    ir::AstNode *ParseAnnotationProperty(ir::ModifierFlags memberModifiers = ir::ModifierFlags::NONE);
+    ArenaVector<ir::AstNode *> ParseAnnotationProperties(ir::ModifierFlags memberModifiers = ir::ModifierFlags::NONE);
     ir::AstNode *ParseInnerTypeDeclaration(ir::ModifierFlags memberModifiers, lexer::LexerPosition savedPos,
                                            bool isStepToken, bool seenStatic);
     ir::AstNode *ParseInnerConstructorDeclaration(ir::ModifierFlags memberModifiers,

@@ -295,6 +295,16 @@ public:
         return DeclType::CONST;
     }
 };
+class AnnotationDecl : public Decl {
+public:
+    explicit AnnotationDecl(util::StringView name) : Decl(name) {}
+    explicit AnnotationDecl(util::StringView name, ir::AstNode *node) : Decl(name, node) {}
+
+    DeclType Type() const override
+    {
+        return DeclType::ANNOTATION;
+    }
+};
 
 class LabelDecl : public Decl {
 public:

@@ -1308,6 +1308,16 @@ checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ClassDeclaration *st) cons
     UNREACHABLE();
 }
 
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::AnnotationDeclaration *expr) const
+{
+    return nullptr;
+}
+
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::AnnotationUsage *expr) const
+{
+    return nullptr;
+}
+
 checker::Type *TSAnalyzer::Check(ir::ContinueStatement *st) const
 {
     (void)st;
