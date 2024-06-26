@@ -33,6 +33,7 @@
 #include "ir/statements/variableDeclarator.h"
 #include "ir/statements/functionDeclaration.h"
 #include "ir/statements/returnStatement.h"
+#include "ir/statements/annotationDeclaration.h"
 #include "ir/ets/etsPrimitiveType.h"
 #include "ir/ets/etsTypeReferencePart.h"
 #include "ir/ets/etsNewClassInstanceExpression.h"
@@ -124,6 +125,7 @@ void ETSBinder::LookupTypeReference(ir::Identifier *ident, bool allowDynamicName
             case ir::AstNodeType::TS_INTERFACE_DECLARATION:
             case ir::AstNodeType::TS_TYPE_PARAMETER:
             case ir::AstNodeType::TS_TYPE_ALIAS_DECLARATION:
+            case ir::AstNodeType::ANNOTATION_DECLARATION:
             case ir::AstNodeType::IMPORT_NAMESPACE_SPECIFIER: {
                 ident->SetVariable(res.variable);
                 return;
@@ -343,6 +345,9 @@ void ETSBinder::BuildClassDefinitionImpl(ir::ClassDefinition *classDef)
 
     for (auto *impl : classDef->Implements()) {
         ResolveReference(impl);
+    }
+    for (auto *anno : classDef->Annotations()) {
+        ResolveReference(anno);
     }
 
     for (auto *stmt : classDef->Body()) {
@@ -720,6 +725,10 @@ bool ETSBinder::AddImportSpecifiersToTopBindings(ir::AstNode *const specifier,
         ThrowError(importPath->Start(), "Imported element not exported '" + var->Declaration()->Name().Mutf8() + "'");
     }
 
+    if (var->Declaration()->Node()->IsAnnotationDeclaration() &&
+        var->Declaration()->Node()->AsAnnotationDeclaration()->Ident()->Name() != localName) {
+        ThrowError(importPath->Start(), "Can not rename annotation '" + var->Declaration()->Name().Mutf8() + "'");
+    }
     auto variable = Program()->GlobalClassScope()->FindLocal(localName, ResolveBindingOptions::ALL);
     if (variable != nullptr && var != variable) {
         if (variable->Declaration()->IsFunctionDecl() && var->Declaration()->IsFunctionDecl()) {

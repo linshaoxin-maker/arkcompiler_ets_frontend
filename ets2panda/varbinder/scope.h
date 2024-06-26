@@ -703,7 +703,7 @@ public:
 
     void SetBindingProps(Decl *newDecl, BindingProps *props, bool isStatic);
 
-private:
+protected:
     LocalScope *typeAliasScope_;
     LocalScope *staticDeclScope_;
     LocalScope *staticFieldScope_;
@@ -712,6 +712,16 @@ private:
     LocalScope *instanceFieldScope_;
     LocalScope *instanceMethodScope_;
     mutable uint32_t anonymousClassIdx_ {1};
+};
+
+class AnnotationScope : public ClassScope {
+public:
+    explicit AnnotationScope(ArenaAllocator *allocator, Scope *parent) : ClassScope(allocator, parent) {}
+
+    ScopeType Type() const override
+    {
+        return ScopeType::ANNOTATION;
+    }
 };
 
 class CatchParamScope : public ParamScope {

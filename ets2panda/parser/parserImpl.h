@@ -34,6 +34,7 @@ class Lexer;
 }  // namespace ark::es2panda::lexer
 
 namespace ark::es2panda::ir {
+class AnnotationDeclaration;
 class ArrowFunctionExpression;
 class AstNode;
 class BlockStatement;
@@ -358,6 +359,7 @@ protected:
     virtual ir::ClassDeclaration *ParseClassStatement(StatementParsingFlags flags,
                                                       ir::ClassDefinitionModifiers modifiers,
                                                       ir::ModifierFlags modFlags = ir::ModifierFlags::NONE);
+
     // NOLINTNEXTLINE(google-default-arguments)
     virtual ir::ETSStructDeclaration *ParseStructStatement(StatementParsingFlags flags,
                                                            ir::ClassDefinitionModifiers modifiers,
@@ -560,8 +562,8 @@ protected:
     virtual ir::Expression *ParseSuperClassReference();
 
     using ClassBody = std::tuple<ir::MethodDefinition *, ArenaVector<ir::AstNode *>, lexer::SourceRange>;
-    ClassBody ParseClassBody(ir::ClassDefinitionModifiers modifiers, ir::ModifierFlags flags = ir::ModifierFlags::NONE);
-
+    ClassBody ParseClassBody(ir::ClassDefinitionModifiers modifiers, ir::ModifierFlags flags = ir::ModifierFlags::NONE,
+                             [[maybe_unused]] ETSParser *parser = nullptr);
     Program *GetProgram() const
     {
         return program_;

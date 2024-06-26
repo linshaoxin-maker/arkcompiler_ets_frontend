@@ -34,6 +34,7 @@
 #include "ir/module/importDefaultSpecifier.h"
 #include "ir/module/importNamespaceSpecifier.h"
 #include "ir/module/importSpecifier.h"
+#include "ir/statements/annotationDeclaration.h"
 #include "ir/statements/assertStatement.h"
 #include "ir/statements/blockStatement.h"
 #include "ir/statements/breakStatement.h"

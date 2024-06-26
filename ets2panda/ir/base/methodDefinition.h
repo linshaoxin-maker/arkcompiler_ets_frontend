@@ -17,15 +17,16 @@
 #define ES2PANDA_PARSER_INCLUDE_AST_METHOD_DEFINITION_H
 
 #include "ir/base/classElement.h"
+#include "ir/statements/annotationUsage.h"
 
 namespace ark::es2panda::checker {
 class ETSAnalyzer;
 }  // namespace ark::es2panda::checker
 
 namespace ark::es2panda::ir {
-
 class Expression;
 class ScriptFunction;
+class AnnotationUsage;
 
 enum class MethodDefinitionKind { NONE, CONSTRUCTOR, METHOD, EXTENSION_METHOD, GET, SET };
 
@@ -40,12 +41,26 @@ public:
     using OverloadsT = ArenaVector<MethodDefinition *>;
 
     explicit MethodDefinition(MethodDefinitionKind const kind, Expression *const key, Expression *const value,
+                              ModifierFlags const modifiers, ArenaAllocator *const allocator,
+                              ArenaVector<AnnotationUsage *> &&annotations, bool const isComputed)
+        : ClassElement(AstNodeType::METHOD_DEFINITION, key, value, modifiers, allocator, isComputed),
+          kind_(kind),
+          overloads_(allocator->Adapter()),
+          baseOverloadMethod_(nullptr),
+          asyncPairMethod_(nullptr),
+          annotations_(std::move(annotations))
+    {
+        ASSERT(key_ != nullptr && value_ != nullptr);
+    }
+
+    explicit MethodDefinition(MethodDefinitionKind const kind, Expression *const key, Expression *const value,
                               ModifierFlags const modifiers, ArenaAllocator *const allocator, bool const isComputed)
         : ClassElement(AstNodeType::METHOD_DEFINITION, key, value, modifiers, allocator, isComputed),
           kind_(kind),
           overloads_(allocator->Adapter()),
           baseOverloadMethod_(nullptr),
-          asyncPairMethod_(nullptr)
+          asyncPairMethod_(nullptr),
+          annotations_(allocator->Adapter())
     {
         ASSERT(key_ != nullptr && value_ != nullptr);
     }
@@ -124,6 +139,24 @@ public:
         return std::find(overloads_.begin(), overloads_.end(), overload) != overloads_.end();
     }
 
+    [[nodiscard]] ArenaVector<ir::AnnotationUsage *> &Annotations() noexcept
+    {
+        return annotations_;
+    }
+
+    [[nodiscard]] const ArenaVector<ir::AnnotationUsage *> &Annotations() const noexcept
+    {
+        return annotations_;
+    }
+
+    void SetAnnotations(ArenaVector<ir::AnnotationUsage *> &&annotations)
+    {
+        annotations_ = std::move(annotations);
+        for (auto anno : annotations_) {
+            anno->SetParent(this);
+        }
+    }
+
     ScriptFunction *Function();
     const ScriptFunction *Function() const;
     PrivateFieldKind ToPrivateFieldKind(bool isStatic) const override;
@@ -157,6 +190,7 @@ private:
     // Pair method points at the original async method in case of an implement method and vice versa an implement
     // method's point at the async method
     MethodDefinition *asyncPairMethod_;
+    ArenaVector<AnnotationUsage *> annotations_;
 };
 }  // namespace ark::es2panda::ir
 

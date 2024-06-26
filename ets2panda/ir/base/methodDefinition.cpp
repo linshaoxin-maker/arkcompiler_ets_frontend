@@ -63,6 +63,10 @@ void MethodDefinition::ResolveReferences(const NodeTraverser &cb) const
     for (auto *it : decorators_) {
         cb(it);
     }
+
+    for (auto *it : annotations_) {
+        cb(it);
+    }
 }
 
 void MethodDefinition::Iterate(const NodeTraverser &cb) const
@@ -77,6 +81,9 @@ void MethodDefinition::Iterate(const NodeTraverser &cb) const
     }
 
     for (auto *it : decorators_) {
+        cb(it);
+    }
+    for (auto *it : annotations_) {
         cb(it);
     }
 }
@@ -104,6 +111,13 @@ void MethodDefinition::TransformChildren(const NodeTransformer &cb, std::string_
         if (auto *transformedNode = cb(it); it != transformedNode) {
             it->SetTransformedNode(transformationName, transformedNode);
             it = transformedNode->AsDecorator();
+        }
+    }
+
+    for (auto *&it : annotations_) {
+        if (auto *transformedNode = cb(it); it != transformedNode) {
+            it->SetTransformedNode(transformationName, transformedNode);
+            it = transformedNode->AsAnnotationUsage();
         }
     }
 }
@@ -147,7 +161,8 @@ void MethodDefinition::Dump(ir::AstDumper *dumper) const
                  {"computed", isComputed_},
                  {"value", value_},
                  {"overloads", overloads_},
-                 {"decorators", decorators_}});
+                 {"decorators", decorators_},
+                 {"annotations", annotations_}});
 }
 
 void MethodDefinition::Dump(ir::SrcDumper *dumper) const
@@ -247,6 +262,7 @@ MethodDefinition *MethodDefinition::Clone(ArenaAllocator *const allocator, AstNo
             clone->AddOverload(overloads->Clone(allocator, clone));
         }
 
+        // annotations clone: wait to implement
         return clone;
     }
 

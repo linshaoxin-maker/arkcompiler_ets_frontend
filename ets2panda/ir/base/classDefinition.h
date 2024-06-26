@@ -20,6 +20,7 @@
 #include "varbinder/variable.h"
 #include "ir/astNode.h"
 #include "ir/expressions/identifier.h"
+#include "ir/statements/annotationUsage.h"
 #include "util/bitset.h"
 #include "util/language.h"
 
@@ -79,7 +80,8 @@ public:
           capturedVars_(body_.get_allocator()),
           localVariableIsNeeded_(body_.get_allocator()),
           localIndex_(classCounter_++),
-          localPrefix_("$" + std::to_string(localIndex_))
+          localPrefix_("$" + std::to_string(localIndex_)),
+          annotations_(body_.get_allocator())
     {
     }
 
@@ -94,7 +96,8 @@ public:
           capturedVars_(allocator->Adapter()),
           localVariableIsNeeded_(allocator->Adapter()),
           localIndex_(classCounter_++),
-          localPrefix_("$" + std::to_string(localIndex_))
+          localPrefix_("$" + std::to_string(localIndex_)),
+          annotations_(allocator->Adapter())
     {
     }
 
@@ -109,7 +112,8 @@ public:
           capturedVars_(allocator->Adapter()),
           localVariableIsNeeded_(allocator->Adapter()),
           localIndex_(classCounter_++),
-          localPrefix_("$" + std::to_string(localIndex_))
+          localPrefix_("$" + std::to_string(localIndex_)),
+          annotations_(allocator->Adapter())
 
     {
     }
@@ -146,6 +150,19 @@ public:
     }
 
     void SetIdent(ir::Identifier *ident) noexcept;
+
+    const ArenaVector<AnnotationUsage *> &Annotations() const
+    {
+        return annotations_;
+    }
+
+    void AddAnnotations(ArenaVector<AnnotationUsage *> &&annotations)
+    {
+        annotations_ = std::move(annotations);
+        for (auto anno : annotations_) {
+            anno->SetParent(this);
+        }
+    }
 
     [[nodiscard]] const util::StringView &PrivateId() const noexcept
     {
@@ -383,6 +400,7 @@ private:
     static int classCounter_;
     const int localIndex_ {};
     const std::string localPrefix_ {};
+    ArenaVector<AnnotationUsage *> annotations_;
 };
 }  // namespace ark::es2panda::ir
 
