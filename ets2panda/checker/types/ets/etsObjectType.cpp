@@ -343,7 +343,7 @@ void ETSObjectType::ToString(std::stringstream &ss, bool precise) const
 void ETSObjectType::IdenticalUptoTypeArguments(TypeRelation *relation, Type *other)
 {
     relation->Result(false);
-    if (!other->IsETSObjectType() || !CheckIdenticalFlags(other->AsETSObjectType()->ObjectFlags())) {
+    if (!other->IsETSObjectType() || !CheckIdenticalFlags(other->AsETSObjectType())) {
         return;
     }
 
@@ -394,13 +394,17 @@ void ETSObjectType::Identical(TypeRelation *relation, Type *other)
     relation->Result(true);
 }
 
-bool ETSObjectType::CheckIdenticalFlags(const ETSObjectFlags target) const
+bool ETSObjectType::CheckIdenticalFlags(ETSObjectType *other) const
 {
     constexpr auto FLAGS_TO_REMOVE = ETSObjectFlags::INCOMPLETE_INSTANTIATION |
                                      ETSObjectFlags::CHECKED_COMPATIBLE_ABSTRACTS |
-                                     ETSObjectFlags::CHECKED_INVOKE_LEGITIMACY;
-
-    auto cleanedTargetFlags = target;
+                                     ETSObjectFlags::CHECKED_INVOKE_LEGITIMACY | ETSObjectFlags::READONLY;
+    // note(lujiahui): we support assigning T to Readonly<T>, but do not support assigning Readonly<T> to T
+    // more details in spec
+    if (!HasObjectFlag(ETSObjectFlags::READONLY) && other->HasObjectFlag(ETSObjectFlags::READONLY)) {
+        return false;
+    }
+    auto cleanedTargetFlags = other->ObjectFlags();
     cleanedTargetFlags &= ~FLAGS_TO_REMOVE;
 
     auto cleanedSelfFlags = ObjectFlags();
@@ -416,6 +420,11 @@ bool ETSObjectType::AssignmentSource(TypeRelation *const relation, [[maybe_unuse
 
 void ETSObjectType::AssignmentTarget(TypeRelation *const relation, Type *source)
 {
+    if (source->IsETSObjectType() && source->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::READONLY)) {
+        relation->Result(false);
+        return;
+    }
+
     if (HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
         EnsurePropertiesInstantiated();
         auto found = properties_[static_cast<size_t>(PropertyType::INSTANCE_METHOD)].find(
@@ -766,7 +775,7 @@ Type *ETSObjectType::Instantiate(ArenaAllocator *const allocator, TypeRelation *
     copiedType->SetBaseType(this);
     copiedType->propertiesInstantiated_ = false;
     copiedType->relation_ = relation;
-    copiedType->substitution_ = nullptr;
+    copiedType->effectiveSubstitution_ = nullptr;
 
     relation->DecreaseTypeRecursionCount(base);
 
@@ -813,18 +822,74 @@ bool ETSObjectType::SubstituteTypeArgs(TypeRelation *const relation, ArenaVector
     return anyChange;
 }
 
+static Substitution *ComputeEffectiveSubstitution(TypeRelation *const relation,
+                                                  const ArenaVector<Type *> &baseTypeParams,
+                                                  ArenaVector<Type *> &newTypeArgs)
+{
+    ASSERT(baseTypeParams.size() == newTypeArgs.size());
+    auto *const checker = relation->GetChecker()->AsETSChecker();
+    auto *effectiveSubstitution = checker->NewSubstitution();
+
+    for (size_t ix = 0; ix < baseTypeParams.size(); ix++) {
+        ETSChecker::EmplaceSubstituted(effectiveSubstitution, baseTypeParams[ix]->AsETSTypeParameter(),
+                                       newTypeArgs[ix]);
+    }
+
+    return effectiveSubstitution;
+}
+
 void ETSObjectType::SetCopiedTypeProperties(TypeRelation *const relation, ETSObjectType *const copiedType,
-                                            ArenaVector<Type *> &newTypeArgs, const Substitution *const substitution)
+                                            ArenaVector<Type *> &&newTypeArgs, ETSObjectType *base)
 {
     copiedType->typeFlags_ = typeFlags_;
     copiedType->RemoveObjectFlag(ETSObjectFlags::CHECKED_COMPATIBLE_ABSTRACTS |
                                  ETSObjectFlags::INCOMPLETE_INSTANTIATION | ETSObjectFlags::CHECKED_INVOKE_LEGITIMACY);
     copiedType->SetVariable(variable_);
-    copiedType->SetBaseType(this);
+    copiedType->SetBaseType(base);
+
+    auto const &baseTypeParams = base->TypeArguments();
+    copiedType->effectiveSubstitution_ = ComputeEffectiveSubstitution(relation, baseTypeParams, newTypeArgs);
 
     copiedType->SetTypeArguments(std::move(newTypeArgs));
     copiedType->relation_ = relation;
-    copiedType->substitution_ = substitution;
+}
+
+void ETSObjectType::UpdateTypeProperty(checker::ETSChecker *checker, varbinder::LocalVariable *const prop,
+                                       PropertyType fieldType, PropertyProcesser const &func)
+{
+    auto *const propType = prop->Declaration()->Node()->Check(checker);
+
+    if (propType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+        checker->ThrowTypeError("Base type of a Utility type can only contain fields with reference type.",
+                                prop->Declaration()->Node()->Start());
+    }
+
+    auto *const propCopy = func(prop, propType);
+    if (fieldType == PropertyType::INSTANCE_FIELD) {
+        RemoveProperty<PropertyType::INSTANCE_FIELD>(prop);
+        AddProperty<PropertyType::INSTANCE_FIELD>(propCopy);
+    } else {
+        RemoveProperty<PropertyType::STATIC_FIELD>(prop);
+        AddProperty<PropertyType::STATIC_FIELD>(propCopy);
+    }
+}
+
+void ETSObjectType::UpdateTypeProperties(checker::ETSChecker *checker, PropertyProcesser const &func)
+{
+    AddObjectFlag(ETSObjectFlags::READONLY);
+    for (auto const &prop : InstanceFields()) {
+        UpdateTypeProperty(checker, prop.second, PropertyType::INSTANCE_FIELD, func);
+    }
+
+    for (auto const &prop : StaticFields()) {
+        UpdateTypeProperty(checker, prop.second, PropertyType::STATIC_FIELD, func);
+    }
+
+    if (SuperType() != nullptr) {
+        auto *const superProp = SuperType()->Clone(checker)->AsETSObjectType();
+        superProp->UpdateTypeProperties(checker, func);
+        SetSuperType(superProp);
+    }
 }
 
 ETSObjectType *ETSObjectType::Substitute(TypeRelation *relation, const Substitution *substitution, bool cache)
@@ -858,7 +923,7 @@ ETSObjectType *ETSObjectType::Substitute(TypeRelation *relation, const Substitut
     relation->IncreaseTypeRecursionCount(base);
 
     auto *const copiedType = checker->CreateNewETSObjectType(name_, declNode_, flags_);
-    SetCopiedTypeProperties(relation, copiedType, newTypeArgs, substitution);
+    SetCopiedTypeProperties(relation, copiedType, std::move(newTypeArgs), base);
 
     if (cache) {
         GetInstantiationMap().try_emplace(hash, copiedType);
@@ -896,43 +961,43 @@ void ETSObjectType::InstantiateProperties() const
     checker->ResolveDeclaredMembersOfObject(this);
 
     for (auto *const it : baseType_->ConstructSignatures()) {
-        auto *newSig = it->Substitute(relation_, substitution_);
+        auto *newSig = it->Substitute(relation_, effectiveSubstitution_);
         constructSignatures_.push_back(newSig);
     }
 
     for (auto const &[_, prop] : baseType_->InstanceFields()) {
         (void)_;
-        auto *copiedProp = CopyPropertyWithTypeArguments(prop, relation_, substitution_);
+        auto *copiedProp = CopyPropertyWithTypeArguments(prop, relation_, effectiveSubstitution_);
         properties_[static_cast<size_t>(PropertyType::INSTANCE_FIELD)].emplace(prop->Name(), copiedProp);
     }
 
     for (auto const &[_, prop] : baseType_->StaticFields()) {
         (void)_;
-        auto *copiedProp = CopyPropertyWithTypeArguments(prop, relation_, substitution_);
+        auto *copiedProp = CopyPropertyWithTypeArguments(prop, relation_, effectiveSubstitution_);
         properties_[static_cast<size_t>(PropertyType::STATIC_FIELD)].emplace(prop->Name(), copiedProp);
     }
 
     for (auto const &[_, prop] : baseType_->InstanceMethods()) {
         (void)_;
-        auto *copiedProp = CopyPropertyWithTypeArguments(prop, relation_, substitution_);
+        auto *copiedProp = CopyPropertyWithTypeArguments(prop, relation_, effectiveSubstitution_);
         properties_[static_cast<size_t>(PropertyType::INSTANCE_METHOD)].emplace(prop->Name(), copiedProp);
     }
 
     for (auto const &[_, prop] : baseType_->StaticMethods()) {
         (void)_;
-        auto *copiedProp = CopyPropertyWithTypeArguments(prop, relation_, substitution_);
+        auto *copiedProp = CopyPropertyWithTypeArguments(prop, relation_, effectiveSubstitution_);
         properties_[static_cast<size_t>(PropertyType::STATIC_METHOD)].emplace(prop->Name(), copiedProp);
     }
 
     for (auto const &[_, prop] : baseType_->InstanceDecls()) {
         (void)_;
-        auto *copiedProp = CopyPropertyWithTypeArguments(prop, relation_, substitution_);
+        auto *copiedProp = CopyPropertyWithTypeArguments(prop, relation_, effectiveSubstitution_);
         properties_[static_cast<size_t>(PropertyType::INSTANCE_DECL)].emplace(prop->Name(), copiedProp);
     }
 
     for (auto const &[_, prop] : baseType_->StaticDecls()) {
         (void)_;
-        auto *copiedProp = CopyPropertyWithTypeArguments(prop, relation_, substitution_);
+        auto *copiedProp = CopyPropertyWithTypeArguments(prop, relation_, effectiveSubstitution_);
         properties_[static_cast<size_t>(PropertyType::STATIC_DECL)].emplace(prop->Name(), copiedProp);
     }
 }

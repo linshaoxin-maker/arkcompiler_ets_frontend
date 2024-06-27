@@ -25,6 +25,7 @@
 #include "ir/base/classDefinition.h"
 
 namespace ark::es2panda::checker {
+using PropertyProcesser = std::function<varbinder::LocalVariable *(varbinder::LocalVariable *, Type *)>;
 class ETSObjectType : public Type {
 public:
     using PropertyMap = ArenaUnorderedMap<util::StringView, varbinder::LocalVariable *>;
@@ -360,7 +361,7 @@ public:
                                                                    PropertySearchFlags flags) const;
     varbinder::LocalVariable *CollectSignaturesForSyntheticType(ETSFunctionType *funcType, const util::StringView &name,
                                                                 PropertySearchFlags flags) const;
-    bool CheckIdenticalFlags(ETSObjectFlags target) const;
+    bool CheckIdenticalFlags(ETSObjectType *other) const;
     bool CheckIdenticalVariable(varbinder::Variable *otherVar) const;
 
     void Iterate(const PropertyTraverser &cb) const;
@@ -370,8 +371,9 @@ public:
     void AssignmentTarget(TypeRelation *relation, Type *source) override;
     Type *Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes) override;
     bool SubstituteTypeArgs(TypeRelation *relation, ArenaVector<Type *> &newTypeArgs, const Substitution *substitution);
-    void SetCopiedTypeProperties(TypeRelation *relation, ETSObjectType *copiedType, ArenaVector<Type *> &newTypeArgs,
-                                 const Substitution *substitution);
+    void SetCopiedTypeProperties(TypeRelation *relation, ETSObjectType *copiedType, ArenaVector<Type *> &&newTypeArgs,
+                                 ETSObjectType *base);
+    void UpdateTypeProperties(checker::ETSChecker *checker, PropertyProcesser const &func);
     ETSObjectType *Substitute(TypeRelation *relation, const Substitution *substitution) override;
     ETSObjectType *Substitute(TypeRelation *relation, const Substitution *substitution, bool cache);
     void Cast(TypeRelation *relation, Type *target) override;
@@ -445,6 +447,8 @@ private:
                                TypeFlag narrowingFlags);
     void IdenticalUptoTypeArguments(TypeRelation *relation, Type *other);
     void IsGenericSupertypeOf(TypeRelation *relation, Type *source);
+    void UpdateTypeProperty(checker::ETSChecker *checker, varbinder::LocalVariable *const prop, PropertyType fieldType,
+                            PropertyProcesser const &func);
 
     ir::TSTypeParameterDeclaration *GetTypeParams() const
     {
@@ -478,7 +482,7 @@ private:
 
     // for lazy properties instantiation
     TypeRelation *relation_ = nullptr;
-    const Substitution *substitution_ = nullptr;
+    const Substitution *effectiveSubstitution_ = nullptr;
     mutable bool propertiesInstantiated_ = false;
     mutable ArenaVector<Signature *> constructSignatures_;
     mutable PropertyHolder properties_;

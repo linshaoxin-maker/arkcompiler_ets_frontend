@@ -323,7 +323,9 @@ static void ConvertRestArguments(checker::ETSChecker *const checker, const ir::E
             }
             auto *arrayExpression = checker->AllocNode<ir::ArrayExpression>(std::move(elements), checker->Allocator());
             arrayExpression->SetParent(const_cast<ir::ETSNewClassInstanceExpression *>(expr));
-            arrayExpression->SetTsType(expr->GetSignature()->RestVar()->TsType());
+            auto restType = expr->GetSignature()->RestVar()->TsType()->AsETSArrayType();
+            arrayExpression->SetTsType(restType);
+            arrayExpression->SetPreferredType(restType->ElementType());
             arguments.erase(expr->GetArguments().begin() + parameterCount, expr->GetArguments().end());
             arguments.emplace_back(arrayExpression);
         }
@@ -749,7 +751,9 @@ static void ConvertRestArguments(checker::ETSChecker *const checker, const ir::C
             }
             auto *arrayExpression = checker->AllocNode<ir::ArrayExpression>(std::move(elements), checker->Allocator());
             arrayExpression->SetParent(const_cast<ir::CallExpression *>(expr));
-            arrayExpression->SetTsType(signature->RestVar()->TsType());
+            auto restType = signature->RestVar()->TsType()->AsETSArrayType();
+            arrayExpression->SetTsType(restType);
+            arrayExpression->SetPreferredType(restType->ElementType());
             arguments.erase(expr->Arguments().begin() + parameterCount, expr->Arguments().end());
             arguments.emplace_back(arrayExpression);
         }
@@ -1362,6 +1366,10 @@ void ETSCompiler::Compile(const ir::UnaryExpression *expr) const
 void ETSCompiler::Compile(const ir::UpdateExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
+
+    if (expr->Argument()->IsTSNonNullExpression()) {
+        expr->Argument()->Compile(etsg);
+    }
 
     auto lref = compiler::ETSLReference::Create(etsg, expr->Argument(), false);
 
@@ -2415,4 +2423,8 @@ void ETSCompiler::Compile([[maybe_unused]] const ir::TSVoidKeyword *node) const
     UNREACHABLE();
 }
 
+void ETSCompiler::Compile([[maybe_unused]] const ir::DummyNode *node) const
+{
+    UNREACHABLE();
+}
 }  // namespace ark::es2panda::compiler
