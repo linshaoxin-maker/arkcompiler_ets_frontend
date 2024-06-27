@@ -126,6 +126,8 @@ defines:
     ref: UNDEFINED
   - name: 'null'
     ref: NULL_LITERAL
+  - name: 'Required'
+    ref: REQUIRED_TYPE_NAME
 
 packages:
   - name: 'std.core'

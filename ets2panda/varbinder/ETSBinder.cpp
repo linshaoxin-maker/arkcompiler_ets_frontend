@@ -95,7 +95,8 @@ void ETSBinder::LookupTypeArgumentReferences(ir::ETSTypeReference *typeRef)
 void ETSBinder::LookupTypeReference(ir::Identifier *ident, bool allowDynamicNamespaces)
 {
     const auto &name = ident->Name();
-    if (name == compiler::Signatures::UNDEFINED || name == compiler::Signatures::NULL_LITERAL) {
+    if (name == compiler::Signatures::UNDEFINED || name == compiler::Signatures::NULL_LITERAL ||
+        name == compiler::Signatures::REQUIRED_TYPE_NAME) {
         return;
     }
     auto *iter = GetScope();

@@ -483,6 +483,14 @@ public:
     Type *GetTypeFromClassReference(varbinder::Variable *var);
     void ValidateGenericTypeAliasForClonedNode(ir::TSTypeAliasDeclaration *typeAliasNode,
                                                const ir::TSTypeParameterInstantiation *exactTypeParams);
+    template <PropertyType PROP_TYPE>
+    void MakePropertyNonNullish(ETSObjectType *classType, varbinder::LocalVariable *prop);
+    void MakePropertiesNonNullish(ETSObjectType *classType);
+    void ValidateObjectLiteralForRequiredType(const ETSObjectType *requiredType,
+                                              const ir::ObjectExpression *initObjExpr);
+    Type *HandleRequiredTypeNode(ir::TypeNode *typeParamNode);
+    ir::TypeNode *GetRequiredTypeBaseTypeNode(const ir::TSTypeParameterInstantiation *typeParams);
+    Type *HandleRequiredType(Type *typeToBeRequired);
     Type *HandleTypeAlias(ir::Expression *name, const ir::TSTypeParameterInstantiation *typeParams);
     Type *GetTypeFromEnumReference(varbinder::Variable *var);
     Type *GetTypeFromTypeParameterReference(varbinder::LocalVariable *var, const lexer::SourcePosition &pos);
