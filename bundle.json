@@ -21,6 +21,7 @@
                 "json",
                 "runtime_core",
                 "zlib",
+                "ets_frontend",
                 "bounds_checking_function"
             ],
             "third_party": [
