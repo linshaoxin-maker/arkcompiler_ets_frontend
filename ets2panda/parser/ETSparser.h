@@ -89,6 +89,8 @@ public:
     ir::Expression *CreateExpression(std::string_view sourceCode,
                                      ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
 
+    ir::AnnotationUsage *ParseAnnotationUsage();
+
     ir::Expression *CreateFormattedExpression(std::string_view sourceCode, std::vector<ir::AstNode *> &insertingNodes);
 
     template <typename... Args>
