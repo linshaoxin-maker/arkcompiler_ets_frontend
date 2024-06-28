@@ -570,6 +570,13 @@ class CompilerRunner(Runner):
                 files = glob(glob_expression, recursive=True)
                 files = fnmatch.filter(files, self.test_root + '**' + self.args.filter)
                 self.tests.append(CompilerProjectTest(projects_path, project, files, flags))
+        elif directory.endswith("fileinfo"):
+            projects_path = path.join(self.test_root, directory)
+            for project in os.listdir(projects_path):
+                glob_expression = path.join(projects_path, project, "**/*.%s" % (extension))
+                files = glob(glob_expression, recursive=True)
+                files = fnmatch.filter(files, path.join(self.test_root , '**' , self.args.filter))
+                self.tests.append(CompilerProjectCompatibleTest(projects_path, project, files, flags))
         else:
             glob_expression = path.join(
                 self.test_root, directory, "**/*.%s" % (extension))
@@ -952,6 +959,39 @@ class CompilerProjectTest(Test):
 
         self.remove_project(runner)
         return self
+
+
+class CompilerProjectCompatibleTest(CompilerProjectTest):
+    def gen_files_info(self, runner):
+        # After collect_record_mapping, self.file_record_mapping stores {'source file name' : 'source file record name'}
+        self.collect_record_mapping()
+        # After collect_abc_inputs, self.abc_input_filenames stores {'source file name' : 'belonging abc input name'}
+        self.collect_abc_inputs(runner)
+
+        with open(self.files_info_path, 'w') as files_info_fp:
+            abc_files_infos = {}
+            i = 0
+            for test_path in self.test_paths:
+                record_name = self.get_record_name(test_path)
+                module_kind = 'esm'
+                if (os.path.basename(test_path).startswith("commonjs")):
+                    module_kind = 'commonjs'
+                fmt = '%s;%s;%s;%s;%s\n'
+                if (i == 0):
+                    fmt = '%s;%s;%s;%s;%s\r\n'
+                file_info = (fmt % (test_path, record_name, module_kind,
+                                    os.path.relpath(test_path, self.projects_path), record_name))
+                belonging_abc_input = self.get_belonging_abc_input(test_path)
+                if belonging_abc_input is not None:
+                    if not belonging_abc_input in abc_files_infos:
+                        abc_files_infos[belonging_abc_input] = []
+                    abc_files_infos[belonging_abc_input].append(file_info)
+                else:
+                    files_info_fp.writelines(file_info)
+                i += 1
+                i = i % 2
+            files_info_fp.writelines('\r\n\n\r\n\n')
+            self.gen_abc_input_files_infos(runner, abc_files_infos, files_info_fp)
 
 
 class TSDeclarationTest(Test):
@@ -1517,6 +1557,7 @@ def add_directory_for_compiler(runners, args):
     compiler_test_infos.append(CompilerTestInfo("compiler/bytecodehar/merge_abc_consistence_check/projects", "js",
                                                 ["--merge-abc", "--dump-assembly", "--enable-abc-input",
                                                  "--abc-class-threads=4"]))
+    compiler_test_infos.append(CompilerTestInfo("compiler/fileinfo", "ts", ["--module", "--merge-abc"]))
 
     if args.enable_arkguard:
         prepare_for_obfuscation(compiler_test_infos, runner.test_root)

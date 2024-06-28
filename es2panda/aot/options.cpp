@@ -32,6 +32,7 @@
 #include "os/file.h"
 
 #include "mergeProgram.h"
+#include "util/commonUtil.h"
 #include "util/helpers.h"
 #include "utils/pandargs.h"
 
@@ -93,6 +94,18 @@ static std::vector<std::string> GetStringItems(std::string &input, const std::st
         }
         input.erase(0, pos + delimiter.length());
     }
+
+    if (input.empty()) {
+        return items;
+    }
+    /**
+     * The line feed of file in linux is '\n', but window is '\r\n',
+     * the function std::getline() check the end of line by '\n',
+     * therefore, when the last item is end with '\r', should erase it.
+     */
+    if (input.back() == util::CHAR_CARRIAGE_RETURN) {
+        input.erase(input.length() - 1, 1);
+    }
     if (!input.empty()) {
         items.push_back(input);
     }
@@ -145,7 +158,7 @@ bool Options::CheckFilesValidity(const std::string &input, const std::vector<std
 {
     // For compatibility, only throw error when item list's size is bigger than given size.
     if ((compilerOptions_.mergeAbc && itemList.size() > ITEM_COUNT_MERGE) ||
-        (!compilerOptions_.mergeAbc && itemList.size() > ITEM_COUNT_NOT_MERGE) || itemList.empty()) {
+        (!compilerOptions_.mergeAbc && itemList.size() > ITEM_COUNT_NOT_MERGE)) {
         std::cerr << "Failed to parse line " << line << " of the input file: '"
             << input << "'." << std::endl
             << "Expected " << (compilerOptions_.mergeAbc ? ITEM_COUNT_MERGE : ITEM_COUNT_NOT_MERGE)
@@ -176,6 +189,9 @@ bool Options::CollectInputFilesFromFileList(const std::string &input, const std:
 
     while (std::getline(ifs, line)) {
         std::vector<std::string> itemList = GetStringItems(line, LIST_ITEM_SEPERATOR);
+        if (itemList.empty()) {
+            continue;
+        }
         if (!CheckFilesValidity(input, itemList, line)) {
             return false;
         }
