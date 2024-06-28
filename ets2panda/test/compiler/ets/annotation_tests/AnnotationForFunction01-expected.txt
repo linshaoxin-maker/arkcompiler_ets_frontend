@@ -1,0 +1,1 @@
+SyntaxError: Identifier expected. [AnnotationForFunction01.ets:24:4]
