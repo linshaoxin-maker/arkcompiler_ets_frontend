@@ -562,7 +562,8 @@ protected:
     virtual ir::Expression *ParseSuperClassReference();
 
     using ClassBody = std::tuple<ir::MethodDefinition *, ArenaVector<ir::AstNode *>, lexer::SourceRange>;
-    ClassBody ParseClassBody(ir::ClassDefinitionModifiers modifiers, ir::ModifierFlags flags = ir::ModifierFlags::NONE, [[maybe_unused]]ETSParser *parser = nullptr);
+    ClassBody ParseClassBody(ir::ClassDefinitionModifiers modifiers, ir::ModifierFlags flags = ir::ModifierFlags::NONE,
+                             [[maybe_unused]] ETSParser *parser = nullptr);
     Program *GetProgram() const
     {
         return program_;

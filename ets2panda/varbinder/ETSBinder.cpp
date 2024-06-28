@@ -125,6 +125,7 @@ void ETSBinder::LookupTypeReference(ir::Identifier *ident, bool allowDynamicName
             case ir::AstNodeType::TS_INTERFACE_DECLARATION:
             case ir::AstNodeType::TS_TYPE_PARAMETER:
             case ir::AstNodeType::TS_TYPE_ALIAS_DECLARATION:
+            case ir::AstNodeType::ANNOTATION_DECLARATION:
             case ir::AstNodeType::IMPORT_NAMESPACE_SPECIFIER: {
                 ident->SetVariable(res.variable);
                 return;
@@ -344,6 +345,9 @@ void ETSBinder::BuildClassDefinitionImpl(ir::ClassDefinition *classDef)
 
     for (auto *impl : classDef->Implements()) {
         ResolveReference(impl);
+    }
+    for (auto *anno : classDef->Annotations()) {
+        ResolveReference(anno);
     }
 
     for (auto *stmt : classDef->Body()) {

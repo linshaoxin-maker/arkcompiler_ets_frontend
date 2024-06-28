@@ -90,6 +90,7 @@ public:
                                      ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
 
     ir::AnnotationUsage *ParseAnnotationUsage();
+    ArenaVector<ir::AnnotationUsage *> ParseAnnotations(ir::ModifierFlags &flags, bool isTopLevelSt = true);
 
     ir::Expression *CreateFormattedExpression(std::string_view sourceCode, std::vector<ir::AstNode *> &insertingNodes);
 

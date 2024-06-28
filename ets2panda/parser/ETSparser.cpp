@@ -16,6 +16,7 @@
 #include "ETSparser.h"
 #include "ETSNolintParser.h"
 #include <utility>
+#include <tuple>
 
 #include "macros.h"
 #include "parser/parserFlags.h"
@@ -291,7 +292,13 @@ ArenaVector<ir::Statement *> ETSParser::ParseTopLevelStatements()
 
 ir::Statement *ETSParser::ParseTopLevelDeclStatement(StatementParsingFlags flags)
 {
-    auto [memberModifiers, startLoc] = ParseMemberModifiers();
+    // Extract annotations before top level statements
+    auto memberModifiers = ir::ModifierFlags::NONE;
+    auto annotations = ParseAnnotations(memberModifiers);
+
+    auto [modifiers, startLoc] = ParseMemberModifiers();
+    memberModifiers |= modifiers;
+
     if ((memberModifiers & (ir::ModifierFlags::EXPORTED)) != 0U &&
         (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_MULTIPLY ||
          Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE)) {
@@ -314,13 +321,23 @@ ir::Statement *ETSParser::ParseTopLevelDeclStatement(StatementParsingFlags flags
             result = ParseStatement(flags);
             break;
         }
+        case lexer::TokenType::PUNCTUATOR_AT: {
+            Lexer()->NextToken();
+            ExpectToken(lexer::TokenType::KEYW_INTERFACE, false);
+            result = ParseAnnotationDeclaration(ir::ModifierFlags::ANNOTATION_DECLARATION);
+            break;
+        }
+        case lexer::TokenType::KEYW_INTERFACE: {
+            if ((memberModifiers & ir::ModifierFlags::ANNOTATION_DECLARATION) != 0U) {
+                result = ParseAnnotationDeclaration(memberModifiers);
+                break;
+            }
+        }
         case lexer::TokenType::KEYW_NAMESPACE:
         case lexer::TokenType::KEYW_STATIC:
         case lexer::TokenType::KEYW_ABSTRACT:
         case lexer::TokenType::KEYW_FINAL:
         case lexer::TokenType::KEYW_ENUM:
-        case lexer::TokenType::KEYW_INTERFACE:
-        case lexer::TokenType::PUNCTUATOR_AT:
         case lexer::TokenType::KEYW_CLASS: {
             result = ParseTypeDeclaration(false);
             break;
@@ -342,6 +359,13 @@ ir::Statement *ETSParser::ParseTopLevelDeclStatement(StatementParsingFlags flags
             ThrowSyntaxError("Can not export annotation default!");
         }
         result->AddModifier(memberModifiers);
+    }
+    if (!annotations.empty()) {
+        if (result != nullptr && result->IsClassDeclaration() && !result->AsClassDeclaration()->IsAbstract()) {
+            result->AsClassDeclaration()->Definition()->AddAnnotations(std::move(annotations));
+        } else {
+            ThrowSyntaxError("Annotations can not be applied here");
+        }
     }
     return result;
 }
@@ -691,23 +715,25 @@ void ETSParser::ParseClassFieldDefinition(ir::Identifier *fieldName, ir::Modifie
         Lexer()->NextToken();  // eat '?'
         optionalField = true;
     }
-    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COLON) {
+    bool isAnnotationUsage = (modifiers & ir::ModifierFlags::ANNOTATION_USAGE) != 0;
+    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COLON && !isAnnotationUsage) {
         Lexer()->NextToken();  // eat ':'
         typeAnnotation = ParseTypeAnnotation(&options);
         endLoc = typeAnnotation->End();
     }
 
     ir::Expression *initializer = nullptr;
-    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SUBSTITUTION) {
-        Lexer()->NextToken();  // eat '='
+    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SUBSTITUTION ||
+        (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COLON && isAnnotationUsage)) {
+        Lexer()->NextToken();  // eat '='/ eat ':' for annotation
         initializer = ParseExpression();
     } else if (typeAnnotation == nullptr) {
         ThrowSyntaxError("Field type annotation expected");
     }
 
     bool isDeclare = (modifiers & ir::ModifierFlags::DECLARE) != 0;
-
-    if (isDeclare && initializer != nullptr) {
+    bool isAnnotationDeclare = (modifiers & ir::ModifierFlags::ANNOTATION_DECLARATION) != 0;
+    if (isDeclare && initializer != nullptr && !isAnnotationDeclare) {
         ThrowSyntaxError("Initializers are not allowed in ambient contexts.");
     }
 
@@ -1006,42 +1032,39 @@ ir::AstNode *ETSParser::ParseInnerRest(const ArenaVector<ir::AstNode *> &propert
     return placeholder;
 }
 
-ir::AnnotationUsage *ETSParser::ParseAnnotationUsage() {
-    auto ident = ExpectIdentifier();
+ArenaVector<ir::AnnotationUsage *> ETSParser::ParseAnnotations(ir::ModifierFlags &flags, bool isTopLevelSt)
+{
+    ArenaVector<ir::AnnotationUsage *> annotations(Allocator()->Adapter());
+    while (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_AT) {
+        Lexer()->NextToken();  // eat @
+        if (Lexer()->GetToken().Type() == lexer::TokenType::KEYW_INTERFACE) {
+            if (!annotations.empty() || !isTopLevelSt) {
+                ThrowSyntaxError("Annotations can not be applied!");
+            }
+            flags |= ir::ModifierFlags::ANNOTATION_DECLARATION;
+            return annotations;
+        }
+        annotations.emplace_back(ParseAnnotationUsage());
+    }
+    return annotations;
+}
+ir::AnnotationUsage *ETSParser::ParseAnnotationUsage()
+{
+    auto [ident, _] = ParseClassImplementsElement();
     ArenaVector<ir::AstNode *> properties(Allocator()->Adapter());
 
-
-    ExpectToken(lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS, true);//eat "("
-    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
-        // properties = ParseAnnotationProperties();
-        [[maybe_unused]] auto *initializer = ParseExpression();
-        [[maybe_unused]] auto annoEx = initializer->AsAnnotatedExpression();
+    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS) {
+        Lexer()->NextToken();
+        if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
+            auto flags = ir::ModifierFlags::ANNOTATION_USAGE;
+            properties = ParseAnnotationProperties(flags);
+        }
+        ExpectToken(lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS, true);  // eat ")"
     }
 
-
-    ExpectToken(lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS, true);//eat ")"
     ir::AnnotationUsage *annotationUsage = AllocNode<ir::AnnotationUsage>(ident, std::move(properties));
     return annotationUsage;
 }
-
-ir::AnnotationUsage *ETSParser::ParseAnnotationUsage() {
-    auto ident = ExpectIdentifier();
-    ArenaVector<ir::AstNode *> properties(Allocator()->Adapter());
-
-
-    ExpectToken(lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS, true);//eat "("
-    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
-        // properties = ParseAnnotationProperties();
-        [[maybe_unused]] auto *initializer = ParseExpression();
-        [[maybe_unused]] auto annoEx = initializer->AsAnnotatedExpression();
-    }
-
-
-    ExpectToken(lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS, true);//eat ")"
-    ir::AnnotationUsage *annotationUsage = AllocNode<ir::AnnotationUsage>(ident, std::move(properties));
-    return annotationUsage;
-}
-
 
 ir::AnnotationDeclaration *ETSParser::ParseAnnotationDeclaration(ir::ModifierFlags flags)
 {
@@ -1062,8 +1085,8 @@ ir::AnnotationDeclaration *ETSParser::ParseAnnotationDeclaration(ir::ModifierFla
 
     lexer::SourcePosition endLoc = Lexer()->GetToken().End();
 
-    auto *annotationDecl = AllocNode<ir::AnnotationDeclaration>(ident,std::move(properties));
-    annotationDecl->SetRange({startLoc,endLoc});
+    auto *annotationDecl = AllocNode<ir::AnnotationDeclaration>(ident, std::move(properties));
+    annotationDecl->SetRange({startLoc, endLoc});
     return annotationDecl;
 }
 
@@ -1093,14 +1116,9 @@ ArenaVector<ir::AstNode *> ETSParser::ParseAnnotationProperties(ir::ModifierFlag
         }
     }
 
-    Lexer()->NextToken(); // eat "}"
+    Lexer()->NextToken();  // eat "}"
     return properties;
 }
-
-
-
-
-
 
 ir::AstNode *ETSParser::ParseAnnotationProperty(ir::ModifierFlags memberModifiers)
 {
@@ -1117,6 +1135,7 @@ ir::AstNode *ETSParser::ParseAnnotationProperty(ir::ModifierFlags memberModifier
     }
     ArenaVector<ir::AstNode *> fieldDeclarations(Allocator()->Adapter());
     auto *placeholder = AllocNode<ir::TSInterfaceBody>(std::move(fieldDeclarations));
+
     ParseClassFieldDefinition(memberName, memberModifiers, placeholder->BodyPtr());
     return placeholder;
 }
@@ -1298,26 +1317,16 @@ ir::Statement *ETSParser::ParseTypeDeclaration(bool allowStatic)
             GetContext().Status() &= ~ParserStatus::IN_NAMESPACE;
             return ns;
         }
-        case lexer::TokenType::PUNCTUATOR_AT:{
-            Lexer()->NextToken(); //eat @
-            if(Lexer()->GetToken().Type()==lexer::TokenType::KEYW_INTERFACE){
-                return ParseAnnotationDeclaration();
-            }
-            //ExpectToken(lexer::TokenType::KEYW_INTERFACE,false);
-            //parse annotations, generate vector, then go to ParseClassDeclaration
-            ir::AnnotationUsage *annotationUsage = ParseAnnotationUsage();
-            annotations.emplace_back(annotationUsage);
-            while (Lexer()->GetToken().Type()==lexer::TokenType::PUNCTUATOR_AT) {
-                Lexer()->NextToken();//eat @
-                annotations.emplace_back(ParseAnnotationUsage());
-            }
+        case lexer::TokenType::PUNCTUATOR_AT: {
+            auto flag = ir::ModifierFlags::NONE;
+            annotations = ParseAnnotations(flag, false);
         }
         case lexer::TokenType::KEYW_CLASS: {
-            auto classDefinition = ParseClassDeclaration(modifiers);
+            auto classDeclaration = ParseClassDeclaration(modifiers);
             if (!annotations.empty()) {
-                classDefinition->AddAnnotations(std::move(annotations));
+                classDeclaration->Definition()->AddAnnotations(std::move(annotations));
             }
-            return classDefinition;
+            return classDeclaration;
         }
         case lexer::TokenType::KEYW_TYPE: {
             return ParseTypeAliasDeclaration();
@@ -4263,7 +4272,9 @@ void ETSParser::CheckDeclare()
             return;
         }
         default: {
-            ThrowSyntaxError("Unexpected token.");
+            if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_AT) {
+                ThrowSyntaxError("Unexpected token.");
+            }
         }
     }
 }

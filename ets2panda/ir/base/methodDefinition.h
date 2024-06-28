@@ -17,13 +17,13 @@
 #define ES2PANDA_PARSER_INCLUDE_AST_METHOD_DEFINITION_H
 
 #include "ir/base/classElement.h"
+#include "ir/statements/annotationUsage.h"
 
 namespace ark::es2panda::checker {
 class ETSAnalyzer;
 }  // namespace ark::es2panda::checker
 
 namespace ark::es2panda::ir {
-
 class Expression;
 class ScriptFunction;
 class AnnotationUsage;
@@ -152,6 +152,9 @@ public:
     void SetAnnotations(ArenaVector<ir::AnnotationUsage *> &&annotations)
     {
         annotations_ = std::move(annotations);
+        for (auto anno : annotations_) {
+            anno->SetParent(this);
+        }
     }
 
     ScriptFunction *Function();

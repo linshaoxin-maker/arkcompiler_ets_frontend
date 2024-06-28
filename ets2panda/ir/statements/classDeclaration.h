@@ -17,17 +17,12 @@
 #define ES2PANDA_IR_STATEMENT_CLASS_DECLARATION_H
 
 #include "ir/statement.h"
-#include "ir/statements/annotationUsage.h"
 
 namespace ark::es2panda::ir {
-class AnnotationUsage;
 class ClassDeclaration : public Statement {
 public:
     explicit ClassDeclaration(ClassDefinition *def, ArenaAllocator *allocator)
-        : Statement(AstNodeType::CLASS_DECLARATION),
-          def_(def),
-          decorators_(allocator->Adapter()),
-          annotations_(allocator->Adapter())
+        : Statement(AstNodeType::CLASS_DECLARATION), def_(def), decorators_(allocator->Adapter())
     {
     }
 
@@ -61,16 +56,6 @@ public:
         return true;
     }
 
-    const ArenaVector<AnnotationUsage *> &Annotations() const
-    {
-        return annotations_;
-    }
-
-    void AddAnnotations(ArenaVector<AnnotationUsage *> &&annotations)
-    {
-        annotations_ = std::move(annotations);
-    }
-
     void TransformChildren(const NodeTransformer &cb, std::string_view transformationName) override;
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;
@@ -89,7 +74,6 @@ public:
 private:
     ClassDefinition *def_;
     ArenaVector<Decorator *> decorators_;
-    ArenaVector<AnnotationUsage *> annotations_;
 };
 }  // namespace ark::es2panda::ir
 

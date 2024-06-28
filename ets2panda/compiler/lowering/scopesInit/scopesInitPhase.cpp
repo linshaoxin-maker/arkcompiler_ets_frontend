@@ -376,6 +376,7 @@ void ScopesInitPhase::IterateNoTParams(ir::ClassDefinition *classDef)
     CallNode(classDef->Implements());
     CallNode(classDef->Ctor());
     CallNode(classDef->Body());
+    CallNode(classDef->Annotations());
 }
 
 void ScopesInitPhase::ThrowSyntaxError(std::string_view errorMessage, const lexer::SourcePosition &pos) const

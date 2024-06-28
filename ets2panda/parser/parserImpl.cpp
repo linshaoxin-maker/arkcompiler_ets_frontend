@@ -40,6 +40,7 @@
 #include "ir/statements/blockStatement.h"
 #include "ir/statements/expressionStatement.h"
 #include "ir/statements/functionDeclaration.h"
+#include "ir/statements/classDeclaration.h"
 #include "ir/ts/tsInterfaceBody.h"
 #include "lexer/lexer.h"
 #include "lexer/token/letters.h"
@@ -745,7 +746,7 @@ std::tuple<ir::Expression *, ir::TSTypeParameterInstantiation *> ParserImpl::Par
 // NOLINTNEXTLINE(google-default-arguments)
 ir::ClassDefinition *ParserImpl::ParseClassDefinition(ir::ClassDefinitionModifiers modifiers, ir::ModifierFlags flags)
 {
-    lexer_->NextToken();
+    ExpectToken(lexer::TokenType::KEYW_CLASS);
 
     ir::Identifier *identNode = ParseClassIdent(modifiers);
 
@@ -776,7 +777,8 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(ir::ClassDefinitionModifie
     return classDefinition;
 }
 
-ParserImpl::ClassBody ParserImpl::ParseClassBody(ir::ClassDefinitionModifiers modifiers, ir::ModifierFlags flags, [[maybe_unused]] ETSParser *parser)
+ParserImpl::ClassBody ParserImpl::ParseClassBody(ir::ClassDefinitionModifiers modifiers, ir::ModifierFlags flags,
+                                                 [[maybe_unused]] ETSParser *parser)
 {
     auto savedCtx = SavedStatusContext<ParserStatus::IN_CLASS_BODY>(&context_);
 
@@ -802,17 +804,19 @@ ParserImpl::ClassBody ParserImpl::ParseClassBody(ir::ClassDefinitionModifiers mo
                 continue;
             }
 
-            if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_AT) {
-                Lexer()->NextToken();// eat @
-                annotations.emplace_back(parser->ParseAnnotationUsage());
-                while(lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_AT){
-                    lexer_->NextToken(); // eat @
-                    annotations.emplace_back(parser->ParseAnnotationUsage());
-                }
+            if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_AT) {
+                annotations = parser->ParseAnnotations(flags, false);
             }
+
             ir::AstNode *property = ParseClassElement(properties, modifiers, flags);
-            if (property->IsMethodDefinition() && !annotations.empty()) {
-                property->AsMethodDefinition()->SetAnnotations(std::move(annotations));
+            if (!annotations.empty()) {
+                if (property->IsMethodDefinition() && !property->IsAbstract()) {
+                    property->AsMethodDefinition()->SetAnnotations(std::move(annotations));
+                } else if (property->IsClassDeclaration() && !property->IsAbstract()) {
+                    property->AsClassDeclaration()->Definition()->AddAnnotations(std::move(annotations));
+                } else {
+                    ThrowSyntaxError("Annotations can not be applied!");
+                }
             }
 
             if (CheckClassElement(property, ctor, properties)) {

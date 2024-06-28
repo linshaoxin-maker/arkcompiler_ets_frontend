@@ -31,13 +31,6 @@ void ClassDeclaration::TransformChildren(const NodeTransformer &cb, std::string_
         }
     }
 
-    for (auto *&it : annotations_) {
-        if (auto *transformedNode = cb(it); it != transformedNode) {
-            it->SetTransformedNode(transformationName, transformedNode);
-            it = transformedNode->AsAnnotationUsage();
-        }
-    }
-
     if (auto *transformedNode = cb(def_); def_ != transformedNode) {
         def_->SetTransformedNode(transformationName, transformedNode);
         def_ = transformedNode->AsClassDefinition();
@@ -50,18 +43,12 @@ void ClassDeclaration::Iterate(const NodeTraverser &cb) const
         cb(it);
     }
 
-    for (auto *it : annotations_) {
-        cb(it);
-    }
     cb(def_);
 }
 
 void ClassDeclaration::Dump(ir::AstDumper *dumper) const
 {
-    dumper->Add({{"type", "ClassDeclaration"},
-                 {"definition", def_},
-                 {"decorators", AstDumper::Optional(decorators_)},
-                 {"annotations", AstDumper::Optional(annotations_)}});
+    dumper->Add({{"type", "ClassDeclaration"}, {"definition", def_}, {"decorators", AstDumper::Optional(decorators_)}});
 }
 
 void ClassDeclaration::Dump(ir::SrcDumper *dumper) const
@@ -69,21 +56,6 @@ void ClassDeclaration::Dump(ir::SrcDumper *dumper) const
     if (def_ != nullptr) {
         def_->Dump(dumper);
     }
-    dumper->Add(" {");
-
-    if (!annotations_.empty()) {
-        dumper->IncrIndent();
-        dumper->Endl();
-        for (auto anno : annotations_) {
-            anno->Dump(dumper);
-            if (anno == annotations_.back()) {
-                dumper->DecrIndent();
-            }
-            dumper->Endl();
-        }
-    }
-    dumper->Add("}");
-    dumper->Endl();
     // NOTE(nsizov): support decorators when supported in ArkTS
     ASSERT(decorators_.empty());
 }

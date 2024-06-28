@@ -24,6 +24,7 @@
 #include "ir/expressions/identifier.h"
 #include "ir/statements/classDeclaration.h"
 #include "ir/statements/annotationDeclaration.h"
+#include "ir/statements/annotationUsage.h"
 #include "ir/base/classDefinition.h"
 #include "ir/base/scriptFunction.h"
 #include "ir/base/classProperty.h"
@@ -287,6 +288,7 @@ Variable *Scope::AddLocal(ArenaAllocator *allocator, Variable *currentVariable, 
             return bindings_.insert({newDecl->Name(), allocator->New<LocalVariable>(newDecl, VariableFlags::CLASS)})
                 .first->second;
         }
+
         case DeclType::TYPE_PARAMETER: {
             return bindings_
                 .insert({newDecl->Name(), allocator->New<LocalVariable>(newDecl, VariableFlags::TYPE_PARAMETER)})
@@ -813,7 +815,7 @@ void ClassScope::SetBindingProps(Decl *newDecl, BindingProps *props, bool isStat
         }
         case DeclType::ANNOTATION: {
             props->SetBindingProps(VariableFlags::ANNOTATION, newDecl->Node()->AsAnnotationDeclaration()->Ident(),
-                                   instanceDeclScope_);
+                                   isStatic ? staticDeclScope_ : instanceDeclScope_);
             break;
         }
         default: {
