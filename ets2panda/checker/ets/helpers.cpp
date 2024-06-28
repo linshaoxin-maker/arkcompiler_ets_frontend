@@ -530,6 +530,43 @@ void ETSChecker::ResolveReturnStatement(checker::Type *funcReturnType, checker::
     }
 }
 
+static bool CheckArrayElementsHelper(checker::ETSChecker *checker, ir::Expression *element,
+                                     ArenaVector<checker::Type *> &newTypes, ir::Identifier *ident)
+{
+    auto const eType = element->Check(checker);
+    bool allNumeric = true;
+    if (eType->HasTypeFlag(TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC)) {
+        if (eType->HasTypeFlag(TypeFlag::INT)) {
+            newTypes.emplace_back(checker->GlobalIntType());
+        } else if (eType->HasTypeFlag(TypeFlag::BYTE)) {
+            newTypes.emplace_back(checker->GlobalByteType());
+        } else if (eType->HasTypeFlag(TypeFlag::SHORT)) {
+            newTypes.emplace_back(checker->GlobalShortType());
+        } else if (eType->HasTypeFlag(TypeFlag::LONG)) {
+            newTypes.emplace_back(checker->GlobalLongType());
+        } else if (eType->HasTypeFlag(TypeFlag::FLOAT)) {
+            newTypes.emplace_back(checker->GlobalFloatType());
+        } else if (eType->HasTypeFlag(TypeFlag::DOUBLE)) {
+            newTypes.emplace_back(checker->GlobalDoubleType());
+        } else {
+            newTypes.emplace_back(checker->GlobalIntType());
+        }
+    } else if (eType->HasTypeFlag(TypeFlag::NULL_TYPE | TypeFlag::ETS_NULL)) {
+        newTypes.emplace_back(checker->GlobalETSNullType());
+        // on discuss: checker->CreateETSUnionType({checker->GlobalETSNullType(), checker->GlobalETSObjectType()});
+        allNumeric = false;
+    } else if (eType->HasTypeFlag(TypeFlag::UNDEFINED | TypeFlag::ETS_UNDEFINED)) {
+        newTypes.emplace_back(checker->GlobalETSUndefinedType());
+        allNumeric = false;
+    } else if (eType->IsETSObjectType() || eType->IsETSBooleanType()) {
+        newTypes.emplace_back(eType);
+        allNumeric = false;
+    } else {
+        checker->ThrowTypeError({"such a Union type is not implemented yet!"}, ident->Start());
+    }
+    return allNumeric;
+}
+
 checker::Type *ETSChecker::CheckArrayElements(ir::Identifier *ident, ir::ArrayExpression *init)
 {
     ArenaVector<ir::Expression *> elements = init->AsArrayExpression()->Elements();
@@ -537,25 +574,21 @@ checker::Type *ETSChecker::CheckArrayElements(ir::Identifier *ident, ir::ArrayEx
     if (elements.empty()) {
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
         annotationType = Allocator()->New<ETSArrayType>(GlobalETSObjectType());
+    } else if (elements.size() == 1) {
+        auto const eType = elements[0]->Check(this);
+        annotationType = eType->HasTypeFlag(TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC)
+                             ? Allocator()->New<ETSArrayType>(GlobalDoubleType())
+                             : Allocator()->New<ETSArrayType>(eType);
     } else {
-        auto type = elements[0]->Check(this);
-        auto const primType = ETSBuiltinTypeAsPrimitiveType(type);
+        bool allNumericFlag = true;
+        ArenaVector<checker::Type *> newTypes(Allocator()->Adapter());
         for (auto element : elements) {
-            auto const eType = element->Check(this);
-            auto const primEType = ETSBuiltinTypeAsPrimitiveType(eType);
-            if (primEType != nullptr && primType != nullptr &&
-                primEType->HasTypeFlag(TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC) &&
-                primType->HasTypeFlag(TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC)) {
-                type = GlobalDoubleType();
-            } else if (IsTypeIdenticalTo(type, eType)) {
-                continue;
-            } else {
-                // NOTE: Create union type when implemented here
-                ThrowTypeError({"Union type is not implemented yet!"}, ident->Start());
+            if (!CheckArrayElementsHelper(this, element, newTypes, ident)) {
+                allNumericFlag = false;
             }
         }
-        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-        annotationType = Allocator()->New<ETSArrayType>(type);
+        checker::Type *uni = allNumericFlag ? GlobalDoubleType() : this->CreateETSUnionType(std::move(newTypes));
+        annotationType = Allocator()->New<ETSArrayType>(uni);
     }
     return annotationType;
 }
