@@ -389,9 +389,6 @@ checker::Type *ArrayExpression::Check(checker::ETSChecker *checker)
 void ArrayExpression::GetPrefferedTypeFromFuncParam(checker::ETSChecker *checker, Expression *param,
                                                     checker::TypeRelationFlag flags)
 {
-    if (preferredType_ != nullptr) {
-        return;
-    }
     auto paramType = param->Check(checker);
     if (paramType->IsETSArrayType()) {
         paramType = paramType->AsETSArrayType()->ElementType();
@@ -403,7 +400,11 @@ void ArrayExpression::GetPrefferedTypeFromFuncParam(checker::ETSChecker *checker
         isAssignable &= assignCtx.IsAssignable();
     }
     if (isAssignable) {
-        preferredType_ = param->Check(checker);
+        preferredType_ = paramType;
+        if (TsType() != nullptr) {
+            SetTsType(nullptr);
+            preferredType_ = nullptr;
+        }
     }
 }
 

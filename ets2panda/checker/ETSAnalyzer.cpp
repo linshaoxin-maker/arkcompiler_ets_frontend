@@ -2401,6 +2401,8 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
 
     checker->ComputeApparentType(targetType);
     expr->SetTsType(targetType);
+    expr->SetConst(sourceType->HasTypeFlag(TypeFlag::CONSTANT) ||
+                   (expr->Expr()->IsTSAsExpression() && expr->Expr()->AsTSAsExpression()->IsConst()));
     return expr->TsType();
 }
 

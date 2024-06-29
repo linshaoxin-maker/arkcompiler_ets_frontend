@@ -56,6 +56,11 @@ public:
         return isConst_;
     }
 
+    void SetConst(bool isConst) noexcept
+    {
+        isConst_ = isConst;
+    }
+
     [[nodiscard]] TSAsExpression *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
     void SetUncheckedCast(bool isUncheckedCast) noexcept
