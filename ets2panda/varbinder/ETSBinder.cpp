@@ -95,7 +95,8 @@ void ETSBinder::LookupTypeArgumentReferences(ir::ETSTypeReference *typeRef)
 void ETSBinder::LookupTypeReference(ir::Identifier *ident, bool allowDynamicNamespaces)
 {
     const auto &name = ident->Name();
-    if (name == compiler::Signatures::UNDEFINED || name == compiler::Signatures::NULL_LITERAL) {
+    if (name == compiler::Signatures::UNDEFINED || name == compiler::Signatures::NULL_LITERAL ||
+        name == compiler::Signatures::READONLY_TYPE_NAME) {
         return;
     }
     auto *iter = GetScope();
@@ -354,7 +355,8 @@ void ETSBinder::BuildClassDefinitionImpl(ir::ClassDefinition *classDef)
         auto fieldName = stmt->AsClassProperty()->Id()->Name();
         auto fieldVar = fieldScope->FindLocal(fieldName, varbinder::ResolveBindingOptions::BINDINGS);
         fieldVar->AddFlag(VariableFlags::INITIALIZED);
-        if (fieldVar->Declaration()->IsConstDecl() && stmt->AsClassProperty()->Value() == nullptr) {
+        if ((fieldVar->Declaration()->IsConstDecl() || fieldVar->Declaration()->IsReadonlyDecl()) &&
+            stmt->AsClassProperty()->Value() == nullptr) {
             fieldVar->AddFlag(VariableFlags::EXPLICIT_INIT_REQUIRED);
         }
     }

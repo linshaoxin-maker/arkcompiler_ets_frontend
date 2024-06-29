@@ -18,6 +18,7 @@
 #include "parser/ETSparser.h"
 
 #include "checker/types/ets/etsTupleType.h"
+#include "checker/types/ets/etsReadonlyType.h"
 #include "checker/ets/typeRelationContext.h"
 #include "checker/ETSchecker.h"
 #include "checker/types/globalTypesHolder.h"
@@ -567,13 +568,11 @@ void ETSChecker::InferAliasLambdaType(ir::TypeNode *localTypeAnnotation, ir::Arr
     if (localTypeAnnotation->IsETSTypeReference()) {
         bool isAnnotationTypeAlias = true;
         while (localTypeAnnotation->IsETSTypeReference() && isAnnotationTypeAlias) {
-            auto *node = localTypeAnnotation->AsETSTypeReference()
-                             ->Part()
-                             ->Name()
-                             ->AsIdentifier()
-                             ->Variable()
-                             ->Declaration()
-                             ->Node();
+            auto *nodeVar = localTypeAnnotation->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Variable();
+            if (nodeVar == nullptr) {
+                break;
+            }
+            auto *node = nodeVar->Declaration()->Node();
 
             isAnnotationTypeAlias = node->IsTSTypeAliasDeclaration();
             if (isAnnotationTypeAlias) {
@@ -714,7 +713,7 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
                           {"Type '", sourceType, "' cannot be assigned to type '", targetType, "'"});
         // Note(lujiahui): It should be checked if the readonly function parameter and readonly number[] parameters
         // are assigned with CONSTANT, which would not be correct. (After feature supported)
-        if (isConst && (!isReadonly || isStatic) && initType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) &&
+        if ((isConst || (isReadonly && isStatic)) && initType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) &&
             annotationType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
             bindingVar->SetTsType(init->TsType());
         }
@@ -727,7 +726,8 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
                        init->Start());
     }
 
-    isConst ? bindingVar->SetTsType(initType) : bindingVar->SetTsType(GetNonConstantTypeFromPrimitiveType(initType));
+    (isConst || (isReadonly && isStatic)) ? bindingVar->SetTsType(initType)
+                                          : bindingVar->SetTsType(GetNonConstantTypeFromPrimitiveType(initType));
 
     return FixOptionalVariableType(bindingVar, flags);
 }
@@ -1072,6 +1072,55 @@ void ETSChecker::SetArrayPreferredTypeForNestedMemberExpressions(ir::MemberExpre
     }
 }
 
+void ETSChecker::MakePropertiesReadonly(ETSObjectType *const classType)
+{
+    classType->UpdateTypeProperties(this, [this](auto *property, auto *propType) {
+        auto *newDecl = Allocator()->New<varbinder::ReadonlyDecl>(property->Name(), property->Declaration()->Node());
+        auto *const propCopy = property->Copy(Allocator(), newDecl);
+        propCopy->AddFlag(varbinder::VariableFlags::READONLY);
+        propCopy->SetTsType(propType);
+        return propCopy;
+    });
+}
+
+Type *ETSChecker::GetReadonlyType(Type *type)
+{
+    if (type->IsETSObjectType()) {
+        type->AsETSObjectType()->InstanceFields();
+        auto *clonedType = type->Clone(this)->AsETSObjectType();
+        MakePropertiesReadonly(clonedType);
+        return clonedType;
+    }
+    if (type->IsETSTypeParameter()) {
+        return Allocator()->New<ETSReadonlyType>(type->AsETSTypeParameter());
+    }
+    if (type->IsETSUnionType()) {
+        ArenaVector<Type *> unionTypes(Allocator()->Adapter());
+        for (auto *t : type->AsETSUnionType()->ConstituentTypes()) {
+            unionTypes.emplace_back(t->IsETSObjectType() ? GetReadonlyType(t) : t->Clone(this));
+        }
+        return CreateETSUnionType(std::move(unionTypes));
+    }
+    return type;
+}
+
+Type *ETSChecker::HandleReadonlyType(const ir::TSTypeParameterInstantiation *const typeParams)
+{
+    if (typeParams->Params().size() != 1) {
+        ThrowTypeError("Invalid number of type parameters for Readonly type", typeParams->Start());
+    }
+
+    auto *const typeParamNode = typeParams->Params()[0];
+    auto *typeToBeReadonly = typeParamNode->Check(this);
+
+    if (auto found = NamedTypeStack().find(typeToBeReadonly); found != NamedTypeStack().end()) {
+        return *found;
+    }
+
+    NamedTypeStackElement ntse(this, typeToBeReadonly);
+    return GetReadonlyType(typeToBeReadonly);
+}
+
 static void CheckExpandedType(Type *expandedAliasType, std::set<util::StringView> &parametersNeedToBeBoxed,
                               bool needToBeBoxed)
 {
@@ -1122,6 +1171,10 @@ Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypePa
         }
 
         ThrowTypeError("Type alias declaration is not generic, but type parameters were provided", typeParams->Start());
+    }
+
+    if (name->AsIdentifier()->Name().Is(compiler::Signatures::READONLY_TYPE_NAME)) {
+        return HandleReadonlyType(typeParams);
     }
 
     if (typeParams == nullptr) {
@@ -1717,11 +1770,15 @@ std::string ETSChecker::GetStringFromIdentifierValue(checker::Type *caseType) co
 bool IsConstantMemberOrIdentifierExpression(ir::Expression *expression)
 {
     if (expression->IsMemberExpression()) {
-        return expression->AsMemberExpression()->PropVar()->Declaration()->IsConstDecl();
+        auto *var = expression->AsMemberExpression()->PropVar();
+        return var->Declaration()->IsConstDecl() ||
+               (var->Declaration()->IsReadonlyDecl() && var->HasFlag(varbinder::VariableFlags::STATIC));
     }
 
     if (expression->IsIdentifier()) {
-        return expression->AsIdentifier()->Variable()->Declaration()->IsConstDecl();
+        auto *var = expression->AsIdentifier()->Variable();
+        return var->Declaration()->IsConstDecl() ||
+               (var->Declaration()->IsReadonlyDecl() && var->HasFlag(varbinder::VariableFlags::STATIC));
     }
 
     return false;
