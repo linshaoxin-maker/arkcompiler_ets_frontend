@@ -50,6 +50,7 @@ using DynamicLambdaObjectSignatureMap = ArenaUnorderedMap<std::string, Signature
 using FunctionalInterfaceMap = ArenaUnorderedMap<util::StringView, ETSObjectType *>;
 using TypeMapping = ArenaUnorderedMap<Type const *, Type *>;
 using DynamicCallNamesMap = ArenaMap<const ArenaVector<util::StringView>, uint32_t>;
+using ConstraintCheckRecord = std::tuple<const ArenaVector<Type*>*, const Substitution*, lexer::SourcePosition>;
 
 class ETSChecker final : public Checker {
 public:
@@ -59,6 +60,7 @@ public:
           arrayTypes_(Allocator()->Adapter()),
           localClasses_(Allocator()->Adapter()),
           localClassInstantiations_(Allocator()->Adapter()),
+          pendingConstraintCheckRecords_(Allocator()->Adapter()),
           globalArraySignatures_(Allocator()->Adapter()),
           primitiveWrappers_(Allocator()),
           cachedComputedAbstracts_(Allocator()->Adapter()),
@@ -335,7 +337,8 @@ public:
     [[nodiscard]] static bool HasTypeArgsOfObject(Type *argType, Type *paramType);
     [[nodiscard]] bool InsertTypeIntoSubstitution(const ArenaVector<Type *> &typeParams, const Type *typeParam,
                                                   const size_t index, Substitution *substitution, Type *objectParam);
-    ArenaVector<Type *> CreateTypeForTypeParameters(ir::TSTypeParameterDeclaration const *typeParams);
+    ArenaVector<Type *> CreateUnconstrainedTypeParameters(ir::TSTypeParameterDeclaration const *typeParams);
+    void AssignTypeParameterConstraints(ir::TSTypeParameterDeclaration const *typeParams);
     Signature *ValidateParameterlessConstructor(Signature *signature, const lexer::SourcePosition &pos,
                                                 TypeRelationFlag flags);
     Signature *CollectParameterlessConstructor(ArenaVector<Signature *> &signatures, const lexer::SourcePosition &pos,
@@ -689,6 +692,8 @@ public:
         return util::NodeAllocator::ForceSetParent<T>(Allocator(), std::forward<Args>(args)...);
     }
 
+    ArenaVector<ConstraintCheckRecord> &PendingConstraintCheckRecords();
+    size_t &ConstraintCheckScopesCount();
     ETSObjectType *GetCachedFunctionlInterface(ir::ETSFunctionType *type);
     void CacheFunctionalInterface(ir::ETSFunctionType *type, ETSObjectType *ifaceType);
     const ArenaList<ir::ClassDefinition *> &GetLocalClasses() const;
@@ -802,6 +807,8 @@ private:
     ArrayMap arrayTypes_;
     ArenaList<ir::ClassDefinition *> localClasses_;
     ArenaList<ir::ETSNewClassInstanceExpression *> localClassInstantiations_;
+    ArenaVector<ConstraintCheckRecord> pendingConstraintCheckRecords_;
+    size_t constraintCheckScopesCount_{0};
     GlobalArraySignatureMap globalArraySignatures_;
     PrimitiveWrappers primitiveWrappers_;
     ComputedAbstracts cachedComputedAbstracts_;
