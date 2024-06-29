@@ -330,8 +330,6 @@ public:
                                                    Type *argumentType, Substitution *substitution);
     [[nodiscard]] bool EnhanceSubstitutionForGenericType(const ArenaVector<Type *> &typeParams, const Type *argType,
                                                          const Type *paramType, Substitution *substitution);
-    ArenaVector<Type *> GetSourceParameters(const ETSObjectType *object, const Type *paramType,
-                                            const ArenaVector<Type *> &requiredOrder);
     [[nodiscard]] static bool HasTypeArgsOfObject(Type *argType, Type *paramType);
     [[nodiscard]] bool InsertTypeIntoSubstitution(const ArenaVector<Type *> &typeParams, const Type *typeParam,
                                                   const size_t index, Substitution *substitution, Type *objectParam);
@@ -358,6 +356,14 @@ public:
                                   const ArenaVector<ir::Expression *> &arguments, const lexer::SourcePosition &pos,
                                   std::string_view signatureKind,
                                   TypeRelationFlag resolveFlags = TypeRelationFlag::NONE);
+    Signature *FindMostSpecificSignature(const ArenaVector<Signature *> &signatures,
+                                         const ArenaMultiMap<size_t, Signature *> &bestSignaturesForParameter,
+                                         size_t paramCount);
+    void EvaluateMostSpecificSearch(Type *&mostSpecificType, Signature *&prevSig, const lexer::SourcePosition &pos,
+                                    Signature *sig, Type *sigType);
+    void SearchAmongMostSpecificTypes(Type *&mostSpecificType, Signature *&prevSig, const lexer::SourcePosition &pos,
+                                      size_t argumentsSize, size_t paramCount, size_t idx, Signature *sig,
+                                      bool lookForClassType);
     Signature *ChooseMostSpecificSignature(ArenaVector<Signature *> &signatures,
                                            const std::vector<bool> &argTypeInferenceRequired,
                                            const lexer::SourcePosition &pos, size_t argumentsSize = ULONG_MAX);
