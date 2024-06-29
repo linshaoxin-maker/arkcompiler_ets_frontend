@@ -644,6 +644,8 @@ private:
 
     std::pair<const ir::Identifier *, ir::TypeNode *> GetTargetIdentifierAndType(ir::Identifier *ident);
     [[noreturn]] void ThrowError(ir::Identifier *ident);
+    [[noreturn]] void ThrowOperatorCannotBeApplied(lexer::TokenType operationType, checker::Type *const leftType,
+                                                   checker::Type *const rightType, lexer::SourcePosition pos);
     void WrongContextErrorClassifyByType(ir::Identifier *ident, varbinder::Variable *resolved);
     void CheckEtsFunctionType(ir::Identifier *ident, ir::Identifier const *id, ir::TypeNode const *annotation);
     [[noreturn]] void NotResolvedError(ir::Identifier *const ident, const varbinder::Variable *classVar,

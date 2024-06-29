@@ -359,6 +359,13 @@ checker::Type *ETSChecker::CheckBinaryOperatorLogical(ir::Expression *left, ir::
     UNREACHABLE();
 }
 
+void ETSChecker::ThrowOperatorCannotBeApplied(lexer::TokenType operationType, checker::Type *const leftType,
+                                              checker::Type *const rightType, lexer::SourcePosition pos)
+{
+    ThrowTypeError(
+        {"Operator '", operationType, "' cannot be applied to types '", leftType, "' and '", rightType, "'."}, pos);
+}
+
 std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorStrictEqual(ir::Expression *left, lexer::SourcePosition pos,
                                                                       checker::Type *const leftType,
                                                                       checker::Type *const rightType)
@@ -400,6 +407,10 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorEqual(
 
         tsType = GlobalETSBooleanType();
         return {tsType, leftType};
+    }
+
+    if (leftType->IsETSBigIntType() != rightType->IsETSBigIntType()) {
+        ThrowOperatorCannotBeApplied(operationType, leftType, rightType, pos);
     }
 
     if (leftType->IsETSDynamicType() || rightType->IsETSDynamicType()) {
@@ -472,10 +483,13 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorLessGreater(
         return {GlobalETSBooleanType(), CreateETSUnionType({MaybeBoxExpression(left), MaybeBoxExpression(right)})};
     }
 
+    if (leftType->IsETSBigIntType() != rightType->IsETSBigIntType()) {
+        ThrowOperatorCannotBeApplied(operationType, leftType, rightType, pos);
+    }
+
     if ((unboxedL != nullptr) && (unboxedR != nullptr) &&
         (unboxedL->IsETSBooleanType() != unboxedR->IsETSBooleanType())) {
-        ThrowTypeError(
-            {"Operator '", operationType, "' cannot be applied to types '", leftType, "' and '", rightType, "'."}, pos);
+        ThrowOperatorCannotBeApplied(operationType, leftType, rightType, pos);
     }
 
     if (promotedType == nullptr && !bothConst) {
