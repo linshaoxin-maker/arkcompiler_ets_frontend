@@ -586,15 +586,16 @@ ArenaVector<Signature *> ETSChecker::CollectSignatures(ArenaVector<Signature *> 
     // If there's only one signature, we don't need special checks for boxing/unboxing/widening.
     // We are also able to provide more specific error messages.
     if (signatures.size() == 1) {
-        TypeRelationFlag flags = TypeRelationFlag::WIDENING | resolveFlags;
+        TypeRelationFlag flags = TypeRelationFlag::WIDENING | TypeRelationFlag::STRING_TO_CHAR | resolveFlags;
         collectSignatures(flags);
     } else {
-        std::array<TypeRelationFlag, 4U> flagVariants {TypeRelationFlag::NO_THROW | TypeRelationFlag::NO_UNBOXING |
+        std::array<TypeRelationFlag, 5U> flagVariants {TypeRelationFlag::NO_THROW | TypeRelationFlag::NO_UNBOXING |
                                                            TypeRelationFlag::NO_BOXING,
                                                        TypeRelationFlag::NO_THROW,
                                                        TypeRelationFlag::NO_THROW | TypeRelationFlag::WIDENING |
                                                            TypeRelationFlag::NO_UNBOXING | TypeRelationFlag::NO_BOXING,
-                                                       TypeRelationFlag::NO_THROW | TypeRelationFlag::WIDENING};
+                                                       TypeRelationFlag::NO_THROW | TypeRelationFlag::WIDENING,
+                                                       TypeRelationFlag::NO_THROW | TypeRelationFlag::STRING_TO_CHAR};
         for (auto flags : flagVariants) {
             flags = flags | resolveFlags;
             collectSignatures(flags);
@@ -803,16 +804,6 @@ Signature *ETSChecker::ChooseMostSpecificSignature(ArenaVector<Signature *> &sig
     }
 
     return mostSpecificSignature;
-}
-
-Signature *ETSChecker::ResolveCallExpression(ArenaVector<Signature *> &signatures,
-                                             const ir::TSTypeParameterInstantiation *typeArguments,
-                                             const ArenaVector<ir::Expression *> &arguments,
-                                             const lexer::SourcePosition &pos)
-{
-    auto sig = ValidateSignatures(signatures, typeArguments, arguments, pos, "call");
-    ASSERT(sig);
-    return sig;
 }
 
 Signature *ETSChecker::ResolveCallExpressionAndTrailingLambda(ArenaVector<Signature *> &signatures,

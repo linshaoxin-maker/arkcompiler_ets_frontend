@@ -58,6 +58,7 @@ enum class TypeRelationFlag : uint32_t {
     NO_CHECK_TRAILING_LAMBDA = 1U << 23U,
     NO_THROW_GENERIC_TYPEALIAS = 1U << 24U,
     OVERRIDING_CONTEXT = 1U << 25U,
+    STRING_TO_CHAR = 1U << 26U,
 
     ASSIGNMENT_CONTEXT = WIDENING | BOXING | UNBOXING,
     CASTING_CONTEXT = NARROWING | WIDENING | BOXING | UNBOXING | UNCHECKED_CAST,
@@ -156,6 +157,11 @@ public:
     bool ApplyUnboxing() const
     {
         return (flags_ & TypeRelationFlag::UNBOXING) != 0;
+    }
+
+    bool ApplyStringToChar() const
+    {
+        return (flags_ & TypeRelationFlag::STRING_TO_CHAR) != 0;
     }
 
     bool NoReturnTypeCheck() const
