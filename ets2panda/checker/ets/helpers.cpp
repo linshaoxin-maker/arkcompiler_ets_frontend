@@ -18,6 +18,7 @@
 #include "parser/ETSparser.h"
 
 #include "checker/types/ets/etsTupleType.h"
+#include "checker/types/ets/etsReadonlyType.h"
 #include "checker/ets/typeRelationContext.h"
 #include "checker/ETSchecker.h"
 #include "checker/types/globalTypesHolder.h"
@@ -549,6 +550,9 @@ checker::Type *ETSChecker::CheckArrayElements(ir::Identifier *ident, ir::ArrayEx
                 type = GlobalDoubleType();
             } else if (IsTypeIdenticalTo(type, eType)) {
                 continue;
+            } else if (type->IsETSEnumType() && eType->IsETSEnumType() &&
+                       type->AsETSEnumType()->IsSameEnumType(eType->AsETSEnumType())) {
+                continue;
             } else {
                 // NOTE: Create union type when implemented here
                 ThrowTypeError({"Union type is not implemented yet!"}, ident->Start());
@@ -567,13 +571,12 @@ void ETSChecker::InferAliasLambdaType(ir::TypeNode *localTypeAnnotation, ir::Arr
     if (localTypeAnnotation->IsETSTypeReference()) {
         bool isAnnotationTypeAlias = true;
         while (localTypeAnnotation->IsETSTypeReference() && isAnnotationTypeAlias) {
-            auto *node = localTypeAnnotation->AsETSTypeReference()
-                             ->Part()
-                             ->Name()
-                             ->AsIdentifier()
-                             ->Variable()
-                             ->Declaration()
-                             ->Node();
+            auto *nodeVar = localTypeAnnotation->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Variable();
+            if (nodeVar == nullptr) {
+                break;
+            }
+
+            auto *node = nodeVar->Declaration()->Node();
 
             isAnnotationTypeAlias = node->IsTSTypeAliasDeclaration();
             if (isAnnotationTypeAlias) {
@@ -714,8 +717,9 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
                           {"Type '", sourceType, "' cannot be assigned to type '", targetType, "'"});
         // Note(lujiahui): It should be checked if the readonly function parameter and readonly number[] parameters
         // are assigned with CONSTANT, which would not be correct. (After feature supported)
-        if (isConst && (!isReadonly || isStatic) && initType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) &&
-            annotationType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+        if (isConst && (!isReadonly || isStatic) &&
+            ((initType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && annotationType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) ||
+             (initType->IsETSStringType() && annotationType->IsETSStringType()))) {
             bindingVar->SetTsType(init->TsType());
         }
         return FixOptionalVariableType(bindingVar, flags);
@@ -990,7 +994,25 @@ std::optional<SmartCastTuple> CheckerContext::ResolveSmartCastTypes()
                ? std::make_optional(std::make_tuple(testCondition_.variable, consequentType, alternateType))
                : std::make_optional(std::make_tuple(testCondition_.variable, alternateType, consequentType));
 }
+void ETSChecker::CheckVoidAnnotation(const ir::ETSPrimitiveType *typeAnnotation)
+{
+    // Void annotation is valid only when used as 'return type' , 'type parameter instantiation', 'default type'.
+    if (typeAnnotation->GetPrimitiveType() != ir::PrimitiveType::VOID) {
+        return;
+    }
 
+    auto parent = typeAnnotation->Parent();
+    if (parent->IsScriptFunction() && parent->AsScriptFunction()->ReturnTypeAnnotation() == typeAnnotation) {
+        return;
+    }
+    if (parent->IsETSFunctionType() && parent->AsETSFunctionType()->ReturnType() == typeAnnotation) {
+        return;
+    }
+    if (parent->IsTSTypeParameterInstantiation() || parent->IsTSTypeParameter()) {
+        return;
+    }
+    ThrowTypeError({"'void' used as type annotation."}, typeAnnotation->Start());
+}
 void ETSChecker::ApplySmartCast(varbinder::Variable const *const variable, checker::Type *const smartType) noexcept
 {
     ASSERT(variable != nullptr);

@@ -168,6 +168,10 @@ void ClassDefinition::Dump(ir::SrcDumper *dumper) const
         dumper->Add("extern ");
     }
 
+    if (IsExported()) {
+        dumper->Add("export ");
+    }
+
     if (IsFinal()) {
         dumper->Add("final ");
     }
