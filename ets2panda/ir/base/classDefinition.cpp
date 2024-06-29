@@ -92,6 +92,13 @@ void ClassDefinition::TransformChildren(const NodeTransformer &cb, std::string_v
         }
     }
 
+    for (auto *&it : annotations_) {
+        if (auto *transformedNode = cb(it); it != transformedNode) {
+            it->SetTransformedNode(transformationName, transformedNode);
+            it = transformedNode->AsAnnotationUsage();
+        }
+    }
+
     if (ctor_ != nullptr) {
         if (auto *transformedNode = cb(ctor_); ctor_ != transformedNode) {
             ctor_->SetTransformedNode(transformationName, transformedNode);
@@ -129,6 +136,10 @@ void ClassDefinition::Iterate(const NodeTraverser &cb) const
         cb(it);
     }
 
+    for (auto *it : annotations_) {
+        cb(it);
+    }
+
     if (ctor_ != nullptr) {
         cb(ctor_);
     }
@@ -156,6 +167,7 @@ void ClassDefinition::Dump(ir::AstDumper *dumper) const
                  {"superClass", AstDumper::Nullish(superClass_)},
                  {"superTypeParameters", AstDumper::Optional(superTypeParams_)},
                  {"implements", implements_},
+                 {"annotations", annotations_},
                  {"constructor", AstDumper::Optional(ctor_)},
                  {"body", body_, propFilter}});
 }
@@ -200,6 +212,15 @@ void ClassDefinition::Dump(ir::SrcDumper *dumper) const
         }
     }
 
+    if (!annotations_.empty()) {
+        dumper->Add(" annotations ");
+        for (auto anno : annotations_) {
+            anno->Dump(dumper);
+            if (anno != annotations_.back()) {
+                dumper->Add(", ");
+            }
+        }
+    }
     dumper->Add(" {");
     if (!body_.empty()) {
         dumper->IncrIndent();

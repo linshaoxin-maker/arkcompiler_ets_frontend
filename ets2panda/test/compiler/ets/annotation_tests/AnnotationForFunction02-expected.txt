@@ -1,0 +1,1 @@
+SyntaxError: Unexpected token, expected: '{'. [AnnotationForFunction02.ets:23:13]

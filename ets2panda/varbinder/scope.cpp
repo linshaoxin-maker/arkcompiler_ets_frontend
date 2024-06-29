@@ -23,6 +23,8 @@
 #include "ir/astNode.h"
 #include "ir/expressions/identifier.h"
 #include "ir/statements/classDeclaration.h"
+#include "ir/statements/annotationDeclaration.h"
+#include "ir/statements/annotationUsage.h"
 #include "ir/base/classDefinition.h"
 #include "ir/base/scriptFunction.h"
 #include "ir/base/classProperty.h"
@@ -286,6 +288,7 @@ Variable *Scope::AddLocal(ArenaAllocator *allocator, Variable *currentVariable, 
             return bindings_.insert({newDecl->Name(), allocator->New<LocalVariable>(newDecl, VariableFlags::CLASS)})
                 .first->second;
         }
+
         case DeclType::TYPE_PARAMETER: {
             return bindings_
                 .insert({newDecl->Name(), allocator->New<LocalVariable>(newDecl, VariableFlags::TYPE_PARAMETER)})
@@ -810,6 +813,11 @@ void ClassScope::SetBindingProps(Decl *newDecl, BindingProps *props, bool isStat
                                    typeAliasScope_);
             break;
         }
+        case DeclType::ANNOTATION: {
+            props->SetBindingProps(VariableFlags::ANNOTATION, newDecl->Node()->AsAnnotationDeclaration()->Ident(),
+                                   isStatic ? staticDeclScope_ : instanceDeclScope_);
+            break;
+        }
         default: {
             UNREACHABLE();
             break;
@@ -822,7 +830,6 @@ Variable *ClassScope::AddBinding(ArenaAllocator *allocator, [[maybe_unused]] Var
 {
     bool isStatic = newDecl->Node()->IsStatic();
     BindingProps props;
-
     if (isStatic) {
         props.SetFlagsType(VariableFlags::STATIC);
     }
@@ -934,4 +941,5 @@ Variable *CatchScope::AddBinding(ArenaAllocator *allocator, Variable *currentVar
 
     return AddLocal(allocator, currentVariable, newDecl, extension);
 }
+
 }  // namespace ark::es2panda::varbinder

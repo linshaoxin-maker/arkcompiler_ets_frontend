@@ -248,6 +248,17 @@ void ScopesInitPhase::VisitClassDeclaration(ir::ClassDeclaration *classDecl)
     BindClassDefinition(classDecl->Definition());
 }
 
+void ScopesInitPhase::VisitAnnotationDeclaration(ir::AnnotationDeclaration *annoDecl)
+{
+    auto annoCtx = LexicalScopeCreateOrEnter<varbinder::AnnotationScope>(VarBinder(), annoDecl);
+    auto *classScope = annoCtx.GetScope();
+    BindScopeNode(classScope, annoDecl);
+    Iterate(annoDecl);
+    const auto locStart = annoDecl->Ident()->Start();
+    const auto &annoName = annoDecl->Ident()->Name();
+    AddOrGetDecl<varbinder::AnnotationDecl>(VarBinder(), annoName, annoDecl, locStart, annoName, annoDecl);
+}
+
 void ScopesInitPhase::VisitDoWhileStatement(ir::DoWhileStatement *doWhileStmt)
 {
     auto lexicalScope = LexicalScopeCreateOrEnter<varbinder::LoopScope>(VarBinder(), doWhileStmt);
@@ -365,6 +376,7 @@ void ScopesInitPhase::IterateNoTParams(ir::ClassDefinition *classDef)
     CallNode(classDef->Implements());
     CallNode(classDef->Ctor());
     CallNode(classDef->Body());
+    CallNode(classDef->Annotations());
 }
 
 void ScopesInitPhase::ThrowSyntaxError(std::string_view errorMessage, const lexer::SourcePosition &pos) const
@@ -1225,6 +1237,11 @@ void InitScopesPhaseETS::AddGlobalDeclaration(ir::AstNode *node)
             }
             ident = def->Ident();
             isBuiltin = def->IsFromExternal();
+            break;
+        }
+        case ir::AstNodeType::ANNOTATION_DECLARATION: {
+            ident = node->AsAnnotationDeclaration()->Ident();
+            isBuiltin = false;  // def->IsFromExternal();
             break;
         }
         case ir::AstNodeType::STRUCT_DECLARATION: {

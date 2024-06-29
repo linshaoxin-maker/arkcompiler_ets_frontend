@@ -1,0 +1,1 @@
+SyntaxError: Identifier expected. [AnnotationForAbstractClass.ets:23:10]

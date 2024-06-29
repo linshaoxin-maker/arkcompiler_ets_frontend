@@ -14,6 +14,7 @@
  */
 
 #include "parserImpl.h"
+#include <utility>
 
 #include "varbinder/privateBinding.h"
 #include "ir/astNode.h"
@@ -39,9 +40,11 @@
 #include "ir/statements/blockStatement.h"
 #include "ir/statements/expressionStatement.h"
 #include "ir/statements/functionDeclaration.h"
+#include "ir/ts/tsInterfaceBody.h"
 #include "lexer/lexer.h"
 #include "lexer/token/letters.h"
 #include "lexer/token/sourceLocation.h"
+#include "parser/ETSparser.h"
 
 using namespace std::literals::string_literals;
 
@@ -773,7 +776,8 @@ ir::ClassDefinition *ParserImpl::ParseClassDefinition(ir::ClassDefinitionModifie
     return classDefinition;
 }
 
-ParserImpl::ClassBody ParserImpl::ParseClassBody(ir::ClassDefinitionModifiers modifiers, ir::ModifierFlags flags)
+ParserImpl::ClassBody ParserImpl::ParseClassBody(ir::ClassDefinitionModifiers modifiers, ir::ModifierFlags flags,
+                                                 [[maybe_unused]] ETSParser *parser)
 {
     auto savedCtx = SavedStatusContext<ParserStatus::IN_CLASS_BODY>(&context_);
 
@@ -782,6 +786,7 @@ ParserImpl::ClassBody ParserImpl::ParseClassBody(ir::ClassDefinitionModifiers mo
 
     ir::MethodDefinition *ctor = nullptr;
     ArenaVector<ir::AstNode *> properties(Allocator()->Adapter());
+    ArenaVector<ir::AnnotationUsage *> annotations(Allocator()->Adapter());
 
     SavedClassPrivateContext classContext(this);
 
@@ -798,7 +803,15 @@ ParserImpl::ClassBody ParserImpl::ParseClassBody(ir::ClassDefinitionModifiers mo
                 continue;
             }
 
+            while (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_AT) {
+                lexer_->NextToken();  // eat @
+                annotations.emplace_back(parser->ParseAnnotationUsage());
+            }
+
             ir::AstNode *property = ParseClassElement(properties, modifiers, flags);
+            if (property->IsMethodDefinition() && !annotations.empty()) {
+                property->AsMethodDefinition()->SetAnnotations(std::move(annotations));
+            }
 
             if (CheckClassElement(property, ctor, properties)) {
                 continue;

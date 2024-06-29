@@ -193,7 +193,6 @@ static bool RunVerifierAndPhases(ArenaAllocator &allocator, public_lib::Context 
     auto runner = ASTVerificationRunner(allocator, context);
     auto verificationCtx = ast_verifier::VerificationContext {};
     const auto runAllChecks = context.config->options->CompilerOptions().verifierAllChecks;
-
     for (auto *phase : phases) {
         if (!phase->Apply(&context, &program)) {
             return false;
