@@ -198,14 +198,15 @@ public:
 
     varbinder::VarBinder *VarBinder() const;
 
-protected:
-    void Initialize(varbinder::VarBinder *varbinder);
-    parser::Program *Program() const;
-    void SetProgram(parser::Program *program);
     util::ErrorLogger *ErrorLogger()
     {
         return errorLogger_;
     }
+
+protected:
+    void Initialize(varbinder::VarBinder *varbinder);
+    parser::Program *Program() const;
+    void SetProgram(parser::Program *program);
 
 private:
     ArenaAllocator allocator_;

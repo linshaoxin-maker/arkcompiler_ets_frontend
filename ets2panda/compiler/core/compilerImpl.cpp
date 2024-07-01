@@ -187,15 +187,16 @@ static public_lib::Context::CodeGenCb MakeCompileJob()
 
 #ifndef NDEBUG
 
-static bool RunVerifierAndPhases(ArenaAllocator &allocator, public_lib::Context &context,
+static bool RunVerifierAndPhases(CompilerImpl *compilerImpl, public_lib::Context &context,
                                  const std::vector<Phase *> &phases, parser::Program &program)
 {
-    auto runner = ASTVerificationRunner(allocator, context);
+    auto runner = ASTVerificationRunner(*context.allocator, context);
     auto verificationCtx = ast_verifier::VerificationContext {};
     const auto runAllChecks = context.config->options->CompilerOptions().verifierAllChecks;
 
     for (auto *phase : phases) {
         if (!phase->Apply(&context, &program)) {
+            compilerImpl->SetIsAnyError(context.checker->ErrorLogger()->IsAnyError());
             return false;
         }
 
@@ -267,12 +268,13 @@ static pandasm::Program *CreateCompiler(const CompilationUnit &unit, const Phase
     parser.ParseScript(unit.input, unit.options.CompilerOptions().compilationMode == CompilationMode::GEN_STD_LIB);
 #ifndef NDEBUG
     if (unit.ext == ScriptExtension::ETS) {
-        if (!RunVerifierAndPhases(allocator, context, getPhases(unit.ext), program)) {
+        if (!RunVerifierAndPhases(compilerImpl, context, getPhases(unit.ext), program)) {
             return nullptr;
         }
     } else {
         for (auto *phase : getPhases(unit.ext)) {
             if (!phase->Apply(&context, &program)) {
+                compilerImpl->SetIsAnyError(checker.ErrorLogger()->IsAnyError());
                 return nullptr;
             }
         }
@@ -280,6 +282,7 @@ static pandasm::Program *CreateCompiler(const CompilationUnit &unit, const Phase
 #else
     for (auto *phase : getPhases(unit.ext)) {
         if (!phase->Apply(&context, &program)) {
+            compilerImpl->SetIsAnyError(checker.ErrorLogger()->IsAnyError());
             return nullptr;
         }
     }

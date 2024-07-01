@@ -99,7 +99,7 @@ void Checker::LogTypeError(std::string_view message, const lexer::SourcePosition
     lexer::LineIndex index(program_->SourceCode());
     lexer::SourceLocation loc = index.GetLocation(pos);
 
-    errorLogger_->Log(Error {ErrorType::TYPE, program_->SourceFilePath().Utf8(), message, loc.line, loc.col});
+    errorLogger_->WriteLog(Error {ErrorType::TYPE, program_->SourceFilePath().Utf8(), message, loc.line, loc.col});
 }
 
 void Checker::Warning(const std::string_view message, const lexer::SourcePosition &pos) const

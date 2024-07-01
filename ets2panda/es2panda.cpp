@@ -81,6 +81,11 @@ pandasm::Program *Compiler::Compile(const SourceFile &input, const util::Options
     }
 }
 
+bool Compiler::IsAnyError() const noexcept
+{
+    return compiler_->IsAnyError();
+}
+
 void Compiler::DumpAsm(const pandasm::Program *prog)
 {
     compiler::CompilerImpl::DumpAsm(prog);
