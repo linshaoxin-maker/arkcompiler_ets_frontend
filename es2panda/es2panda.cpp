@@ -74,6 +74,17 @@ void Compiler::ChecktargetApiVersionIsSupportedForAbcInput(const CompilerOptions
     }
 }
 
+bool Compiler::CheckRecordName(const std::string &recordName)
+{
+    if (recordName.find("[") != std::string::npos || recordName.find("]") != std::string::npos) {
+        std::string msg = "The recordName is not allowed to contain \"[\" or \"]\", but current recordName is: \"" +
+                          recordName + "\".";
+        error_ = Error(ErrorType::GENERIC, msg);
+        return false;
+    }
+    return true;
+}
+
 void Compiler::AbcToAsmProgram(const std::string &fname, const CompilerOptions &options,
                                std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
                                panda::ArenaAllocator *allocator)
@@ -114,6 +125,9 @@ panda::pandasm::Program *Compiler::Compile(const SourceFile &input, const Compil
     /* TODO(dbatyai): pass string view */
     std::string fname(input.fileName);
     std::string src(input.source);
+    if (!CheckRecordName(input.recordName)) {
+        return nullptr;
+    }
     std::string rname(input.recordName);
     std::string sourcefile(input.sourcefile);
     std::string pkgName(input.pkgName);

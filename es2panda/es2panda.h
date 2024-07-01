@@ -240,6 +240,7 @@ private:
     static void CleanPatchFixHelper(const util::PatchFix *patchFixHelper);
     void CheckCompilerOptionsForAbcInput(const std::string &fname, const CompilerOptions &options);
     void ChecktargetApiVersionIsSupportedForAbcInput(const CompilerOptions &options);
+    bool CheckRecordName(const std::string &recordName);
 
     static size_t expectedProgsCount_;
     parser::ParserImpl *parser_;
