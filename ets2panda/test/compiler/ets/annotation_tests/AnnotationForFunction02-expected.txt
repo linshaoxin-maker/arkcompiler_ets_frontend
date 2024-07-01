@@ -1,0 +1,1 @@
+SyntaxError: Annotations can not be applied here [AnnotationForFunction02.ets:24:1]
