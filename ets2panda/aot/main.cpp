@@ -57,9 +57,13 @@ static int CompileFromSource(es2panda::Compiler &compiler, es2panda::SourceFile 
     if (program == nullptr) {
         const auto &err = compiler.GetError();
 
-        // Intentional exit or --parse-only option usage.
         if (err.Type() == ErrorType::INVALID) {
-            return 0;
+            if (compiler.IsAnyError()) {
+                return 1;
+            } else {
+                // Intentional exit or --parse-only option usage.
+                return 0;
+            }
         }
 
         std::cout << err.TypeString() << ": " << err.Message();

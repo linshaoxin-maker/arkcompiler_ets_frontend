@@ -49,7 +49,7 @@ public:
 class CompilerImpl {
 public:
     explicit CompilerImpl(size_t threadCount, std::vector<util::Plugin> const *plugins)
-        : queue_(threadCount), plugins_(plugins)
+        : queue_(threadCount), plugins_(plugins), isAnyError_ {false}
     {
     }
     NO_COPY_SEMANTIC(CompilerImpl);
@@ -72,11 +72,22 @@ public:
         return &queue_;
     }
 
+    bool IsAnyError()
+    {
+        return isAnyError_;
+    }
+
+    void SetIsAnyError(bool value)
+    {
+        isAnyError_ = value;
+    }
+
 private:
     static void HandleContextLiterals(public_lib::Context *context);
 
     CompileQueue queue_;
     std::vector<util::Plugin> const *plugins_;
+    bool isAnyError_;
 };
 }  // namespace ark::es2panda::compiler
 
