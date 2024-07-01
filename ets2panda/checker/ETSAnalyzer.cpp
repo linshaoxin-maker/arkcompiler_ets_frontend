@@ -671,6 +671,61 @@ static void CheckElement(ir::ArrayExpression *expr, ETSChecker *checker, std::ve
     }
 }
 
+static bool CheckArrayElementsHelper(checker::ETSChecker *checker, ir::Expression *element,
+                                     ArenaVector<checker::Type *> &newTypes)
+{
+    auto const eType = element->Check(checker);
+    bool allNumeric = true;
+    if (eType->HasTypeFlag(TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC)) {
+        if (eType->HasTypeFlag(TypeFlag::INT)) {
+            newTypes.emplace_back(checker->GlobalIntType());
+        } else if (eType->HasTypeFlag(TypeFlag::BYTE)) {
+            newTypes.emplace_back(checker->GlobalByteType());
+        } else if (eType->HasTypeFlag(TypeFlag::SHORT)) {
+            newTypes.emplace_back(checker->GlobalShortType());
+        } else if (eType->HasTypeFlag(TypeFlag::LONG)) {
+            newTypes.emplace_back(checker->GlobalLongType());
+        } else if (eType->HasTypeFlag(TypeFlag::FLOAT)) {
+            newTypes.emplace_back(checker->GlobalFloatType());
+        } else if (eType->HasTypeFlag(TypeFlag::DOUBLE)) {
+            newTypes.emplace_back(checker->GlobalDoubleType());
+        } else {
+            newTypes.emplace_back(checker->GlobalIntType());
+        }
+    } else if (eType->HasTypeFlag(TypeFlag::NULL_TYPE | TypeFlag::ETS_NULL)) {
+        newTypes.emplace_back(checker->GlobalETSNullType());
+        // on discuss: checker->CreateETSUnionType({checker->GlobalETSNullType(), checker->GlobalETSObjectType()}));
+        allNumeric = false;
+    } else if (eType->HasTypeFlag(TypeFlag::UNDEFINED | TypeFlag::ETS_UNDEFINED)) {
+        newTypes.emplace_back(checker->GlobalETSUndefinedType());
+        allNumeric = false;
+    } else if (eType->IsETSObjectType() || eType->IsETSBooleanType()) {
+        newTypes.emplace_back(eType);
+        allNumeric = false;
+    } else {
+        checker->ThrowTypeError({"such a Union type is not implemented yet!"}, element->Start());
+    }
+    return allNumeric;
+}
+
+static checker::Type *GetPreferredTypeHelper(checker::ETSChecker *checker, ir::ArrayExpression *expr)
+{
+    if (expr->Elements().size() == 1) {
+        return expr->Elements()[0]->Check(checker);
+    }
+
+    checker::Type *preferredType = nullptr;
+    bool allNumericFlag = true;
+    ArenaVector<checker::Type *> newTypes(checker->Allocator()->Adapter());
+    for (auto element : expr->Elements()) {
+        if (!CheckArrayElementsHelper(checker, element, newTypes)) {
+            allNumericFlag = false;
+        }
+    }
+    preferredType = allNumericFlag ? checker->GlobalDoubleType() : checker->CreateETSUnionType(std::move(newTypes));
+    return preferredType;
+}
+
 checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -689,7 +744,8 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
 
     if (!expr->Elements().empty()) {
         if (expr->preferredType_ == nullptr || expr->preferredType_ == checker->GlobalETSObjectType()) {
-            expr->preferredType_ = checker->CreateETSArrayType(expr->Elements()[0]->Check(checker));
+            expr->preferredType_ = expr->Elements().size() == 1 ? expr->Elements()[0]->Check(checker)
+                                                                : GetPreferredTypeHelper(checker, expr);
         }
 
         const bool isPreferredTuple = expr->preferredType_->IsETSTupleType();
