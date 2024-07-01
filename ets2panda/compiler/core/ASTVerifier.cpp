@@ -566,11 +566,6 @@ private:
             parent = parent->Parent();
         }
 
-        // NOTE(kkonkuznetsov): lambdas
-        if (ast->Name().Utf8().find("lambda$invoke$") == 0) {
-            return true;
-        }
-
         // NOTE(kkonkuznetsov): some identifiers have empty names
         if (ast->Name().Empty()) {
             return true;
@@ -698,11 +693,6 @@ public:
     {
         if (!ast->IsIdentifier()) {
             // Check invariant of Identifier only
-            return {CheckDecision::CORRECT, CheckAction::CONTINUE};
-        }
-
-        // NOTE(kkonkuznetsov): lambdas
-        if (ast->AsIdentifier()->Name().Utf8().find("lambda$invoke$") == 0) {
             return {CheckDecision::CORRECT, CheckAction::CONTINUE};
         }
 
@@ -834,21 +824,6 @@ private:
             }
         }
 
-        // NOTE(kkonkuznetsov): lambdas
-        auto parent = ast->Parent();
-        while (parent != nullptr) {
-            if (parent->IsScriptFunction()) {
-                auto script = parent->AsScriptFunction();
-                if (script->Id() != nullptr && script->Id()->Name().Utf8().find("lambda$invoke$") == 0) {
-                    return true;
-                }
-
-                break;
-            }
-
-            parent = parent->Parent();
-        }
-
         return false;
     }
 };
@@ -978,26 +953,7 @@ private:
         }
 
         // NOTE(kkonkuznetsov): skip catch clause
-        if (node->Parent() != nullptr && node->Parent()->IsCatchClause()) {
-            return true;
-        }
-
-        // NOTE(kkonkuznetsov): lambdas
-        auto parent = node->Parent();
-        while (parent != nullptr) {
-            if (parent->IsFunctionExpression()) {
-                auto script = parent->AsFunctionExpression()->Function();
-                if (script->Id()->Name().Utf8().find("lambda$invoke$") == 0) {
-                    return true;
-                }
-
-                break;
-            }
-
-            parent = parent->Parent();
-        }
-
-        return false;
+        return (node->Parent() != nullptr && node->Parent()->IsCatchClause());
     }
 
     bool CheckAstExceptions(const ir::AstNode *ast) const
@@ -1029,21 +985,6 @@ private:
             if (annotation != nullptr && annotation->IsETSUnionType()) {
                 return true;
             }
-        }
-
-        // NOTE(kkonkuznetsov): skip lambdas
-        parent = ast->Parent();
-        while (parent != nullptr) {
-            if (parent->IsFunctionExpression()) {
-                auto script = parent->AsFunctionExpression()->Function();
-                if (script->Id()->Name().Utf8().find("lambda$invoke$") == 0) {
-                    return true;
-                }
-
-                break;
-            }
-
-            parent = parent->Parent();
         }
 
         return false;
