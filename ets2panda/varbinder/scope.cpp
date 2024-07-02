@@ -441,6 +441,20 @@ Variable *FunctionParamScope::AddBinding([[maybe_unused]] ArenaAllocator *alloca
 Variable *FunctionScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                                     [[maybe_unused]] ScriptExtension extension)
 {
+    auto getVar = [newDecl, allocator, this](ir::Identifier *ident, VariableFlags flags) -> Variable * {
+        auto *var = InsertBinding(newDecl->Name(), allocator->New<LocalVariable>(newDecl, flags)).first->second;
+
+        if (var == nullptr) {
+            return nullptr;
+        }
+
+        var->SetScope(this);
+        if (ident != nullptr) {
+            ident->SetVariable(var);
+        }
+        return var;
+    };
+
     switch (newDecl->Type()) {
         case DeclType::VAR: {
             return AddVar<LocalVariable>(allocator, currentVariable, newDecl);
@@ -454,40 +468,14 @@ Variable *FunctionScope::AddBinding(ArenaAllocator *allocator, Variable *current
         case DeclType::ENUM_LITERAL: {
             return AddTSBinding<LocalVariable>(allocator, currentVariable, newDecl, VariableFlags::ENUM_LITERAL);
         }
-        // NOTE(psiket):Duplication
         case DeclType::INTERFACE: {
-            ir::Identifier *ident {};
-            ident = newDecl->Node()->AsTSInterfaceDeclaration()->Id();
-
-            auto *var = InsertBinding(newDecl->Name(), allocator->New<LocalVariable>(newDecl, VariableFlags::INTERFACE))
-                            .first->second;
-
-            if (var == nullptr) {
-                return nullptr;
-            }
-
-            var->SetScope(this);
-            if (ident != nullptr) {
-                ident->SetVariable(var);
-            }
-            return var;
+            return getVar(newDecl->Node()->AsTSInterfaceDeclaration()->Id(), VariableFlags::INTERFACE);
         }
         case DeclType::CLASS: {
-            ir::Identifier *ident {};
-            ident = newDecl->Node()->AsClassDefinition()->Ident();
-
-            auto *var = InsertBinding(newDecl->Name(), allocator->New<LocalVariable>(newDecl, VariableFlags::CLASS))
-                            .first->second;
-
-            if (var == nullptr) {
-                return nullptr;
-            }
-
-            var->SetScope(this);
-            if (ident != nullptr) {
-                ident->SetVariable(var);
-            }
-            return var;
+            return getVar(newDecl->Node()->AsClassDefinition()->Ident(), VariableFlags::CLASS);
+        }
+        case DeclType::TYPE_ALIAS: {
+            return getVar(newDecl->Node()->AsTSTypeAliasDeclaration()->Id(), VariableFlags::TYPE_ALIAS);
         }
         default: {
             return AddLexical<LocalVariable>(allocator, currentVariable, newDecl);

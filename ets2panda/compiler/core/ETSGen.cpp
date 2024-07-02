@@ -2187,6 +2187,9 @@ void ETSGen::RefEqualityLoose(const ir::AstNode *node, VReg lhs, VReg rhs, Label
 void ETSGen::CompileStatements(const ArenaVector<ir::Statement *> &statements)
 {
     for (const auto *stmt : statements) {
+        if (stmt->IsTSTypeAliasDeclaration()) {
+            continue;
+        }
         stmt->Compile(this);
     }
 }
