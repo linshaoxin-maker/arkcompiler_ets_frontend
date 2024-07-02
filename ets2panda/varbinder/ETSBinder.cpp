@@ -55,7 +55,6 @@
 #include "ir/module/importDeclaration.h"
 #include "ir/module/importSpecifier.h"
 #include "ir/expressions/literals/stringLiteral.h"
-#include "parser/program/program.h"
 #include "util/helpers.h"
 #include "util/ustring.h"
 #include "checker/types/type.h"
@@ -178,6 +177,12 @@ void ETSBinder::ResolveReferenceForScope(ir::AstNode *const node, Scope *const s
             break;
         }
     }
+}
+
+void ETSBinder::ResolveReferencesForScopeWithContext(ir::AstNode *node, Scope *scope)
+{
+    auto lexScope = LexicalScope<Scope>::Enter(this, scope);
+    ResolveReference(node);
 }
 
 void ETSBinder::LookupIdentReference(ir::Identifier *ident)
@@ -368,23 +373,6 @@ void ETSBinder::BuildClassDefinitionImpl(ir::ClassDefinition *classDef)
     }
 }
 
-void ETSBinder::AddLambdaFunctionThisParam(const ir::ScriptFunction *const func, bool isExternal)
-{
-    auto paramScopeCtx = LexicalScope<FunctionParamScope>::Enter(this, func->Scope()->ParamScope());
-    auto *const thisParam = AddMandatoryParam(MANDATORY_PARAM_THIS);
-    thisParam->Declaration()->BindNode(thisParam_);
-    if (!func->IsAsyncFunc() && !isExternal) {
-        Functions().push_back(func->Scope());
-    }
-}
-
-void ETSBinder::AddInvokeFunctionThisParam(ir::ScriptFunction *func)
-{
-    auto paramScopeCtx = LexicalScope<FunctionParamScope>::Enter(this, func->Scope()->ParamScope());
-    auto *thisParam = AddMandatoryParam(MANDATORY_PARAM_THIS);
-    thisParam->Declaration()->BindNode(thisParam_);
-}
-
 void ETSBinder::BuildProxyMethod(ir::ScriptFunction *func, const util::StringView &containingClassName, bool isStatic,
                                  bool isExternal)
 {
@@ -400,31 +388,6 @@ void ETSBinder::BuildProxyMethod(ir::ScriptFunction *func, const util::StringVie
     if (!func->IsAsyncFunc() && !isExternal) {
         Functions().push_back(func->Scope());
     }
-}
-
-void ETSBinder::BuildLambdaObject(ir::AstNode *refNode, ir::ClassDefinition *lambdaObject,
-                                  checker::Signature *signature, bool isExternal)
-{
-    auto boundCtx = BoundContext(GetGlobalRecordTable(), lambdaObject);
-    const auto &lambdaBody = lambdaObject->Body();
-
-    AddLambdaFunctionThisParam(lambdaBody[lambdaBody.size() - 3U]->AsMethodDefinition()->Function(), isExternal);
-    AddLambdaFunctionThisParam(lambdaBody[lambdaBody.size() - 2U]->AsMethodDefinition()->Function(), isExternal);
-    AddLambdaFunctionThisParam(lambdaBody[lambdaBody.size() - 1U]->AsMethodDefinition()->Function(), isExternal);
-
-    LambdaObjects().insert({refNode, {lambdaObject, signature}});
-}
-
-void ETSBinder::BuildFunctionType(ir::ETSFunctionType *funcType)
-{
-    auto boundCtx = BoundContext(GetGlobalRecordTable(), funcType->FunctionalInterface());
-
-    auto *invokeFunc = funcType->FunctionalInterface()->Body()->Body()[0]->AsMethodDefinition()->Function();
-    auto *funcScope = invokeFunc->Scope();
-    funcScope->BindName(recordTable_->RecordName());
-    AddInvokeFunctionThisParam(invokeFunc);
-
-    GetGlobalRecordTable()->Signatures().push_back(funcScope);
 }
 
 void ETSBinder::AddDynamicSpecifiersToTopBindings(ir::AstNode *const specifier,
@@ -453,6 +416,58 @@ void ETSBinder::InsertForeignBinding(ir::AstNode *const specifier, const ir::ETS
     TopScope()->InsertForeignBinding(name, var);
 }
 
+std::string RedeclarationErrorMessageAssembler(const Variable *const var, const Variable *const variable,
+                                               util::StringView localName)
+{
+    auto type = var->Declaration()->Node()->IsClassDefinition() ? "Class '"
+                : var->Declaration()->IsFunctionDecl()          ? "Function '"
+                                                                : "Variable '";
+    auto str = util::Helpers::AppendAll(type, localName.Utf8(), "'");
+    str += variable->Declaration()->Type() == var->Declaration()->Type() ? " is already defined."
+                                                                         : " is already defined with different type.";
+
+    return str;
+}
+
+static const util::StringView &GetPackageName(varbinder::Variable *var)
+{
+    Scope *scope = var->GetScope();
+
+    while (scope->Parent() != nullptr) {
+        scope = scope->Parent();
+    }
+
+    ASSERT(scope->Node()->IsETSScript());
+
+    return scope->Node()->AsETSScript()->Program()->ModuleName();
+}
+
+void AddOverloadFlag(bool isStdLib, varbinder::Variable *var, varbinder::Variable *variable)
+{
+    auto *const currentNode = variable->Declaration()->Node()->AsMethodDefinition();
+    auto *const method = var->Declaration()->Node()->AsMethodDefinition();
+
+    // Necessary because stdlib and escompat handled as same package, it can be removed after fixing package handling
+    if (isStdLib && (GetPackageName(var) != GetPackageName(variable))) {
+        return;
+    }
+
+    if (!method->Overloads().empty() && !method->HasOverload(currentNode)) {
+        method->AddOverload(currentNode);
+        currentNode->Function()->Id()->SetVariable(var);
+        currentNode->Function()->AddFlag(ir::ScriptFunctionFlags::OVERLOAD);
+        currentNode->Function()->AddFlag(ir::ScriptFunctionFlags::EXTERNAL_OVERLOAD);
+        return;
+    }
+
+    if (!currentNode->HasOverload(method)) {
+        currentNode->AddOverload(method);
+        method->Function()->Id()->SetVariable(variable);
+        method->Function()->AddFlag(ir::ScriptFunctionFlags::OVERLOAD);
+        method->Function()->AddFlag(ir::ScriptFunctionFlags::EXTERNAL_OVERLOAD);
+    }
+}
+
 void ETSBinder::ImportAllForeignBindings(ir::AstNode *const specifier,
                                          const varbinder::Scope::VariableMap &globalBindings,
                                          const parser::Program *const importProgram,
@@ -466,7 +481,19 @@ void ETSBinder::ImportAllForeignBindings(ir::AstNode *const specifier,
             continue;
         }
 
-        if (!importGlobalScope->IsForeignBinding(bindingName) && !var->Declaration()->Node()->IsDefaultExported()) {
+        if (!importGlobalScope->IsForeignBinding(bindingName) && !var->Declaration()->Node()->IsDefaultExported() &&
+            (var->AsLocalVariable()->Declaration()->Node()->IsExported() ||
+             var->AsLocalVariable()->Declaration()->Node()->IsExportedType())) {
+            auto variable = Program()->GlobalClassScope()->FindLocal(bindingName, ResolveBindingOptions::ALL);
+            if (variable != nullptr && var != variable && variable->Declaration()->IsFunctionDecl() &&
+                var->Declaration()->IsFunctionDecl()) {
+                bool isStdLib = util::Helpers::IsStdLib(Program());
+                AddOverloadFlag(isStdLib, var, variable);
+                continue;
+            }
+            if (variable != nullptr && var != variable) {
+                ThrowError(import->Source()->Start(), RedeclarationErrorMessageAssembler(var, variable, bindingName));
+            }
             InsertForeignBinding(specifier, import, bindingName, var);
         }
     }
@@ -657,6 +684,16 @@ bool ETSBinder::AddImportSpecifiersToTopBindings(ir::AstNode *const specifier,
         ThrowError(importPath->Start(), "Imported element not exported '" + var->Declaration()->Name().Mutf8() + "'");
     }
 
+    auto variable = Program()->GlobalClassScope()->FindLocal(localName, ResolveBindingOptions::ALL);
+    if (variable != nullptr && var != variable) {
+        if (variable->Declaration()->IsFunctionDecl() && var->Declaration()->IsFunctionDecl()) {
+            bool isStdLib = util::Helpers::IsStdLib(Program());
+            AddOverloadFlag(isStdLib, var, variable);
+            return true;
+        }
+        ThrowError(importPath->Start(), RedeclarationErrorMessageAssembler(var, variable, localName));
+    }
+
     InsertForeignBinding(specifier, import, localName, var);
     return true;
 }
@@ -687,14 +724,18 @@ ArenaVector<parser::Program *> ETSBinder::GetExternalProgram(const util::StringV
         return mainModule;
     }
 
-    const auto &extRecords = globalRecordTable_.Program()->ExternalSources();
-    auto [name, _] = GetModuleInfo(sourceName);
-    auto res = extRecords.find(name);
-    if (res == extRecords.end()) {
+    auto programList = GetProgramList(sourceName);
+    if (programList.empty()) {
+        // NOTE(rsipka): it is not clear that an error should be thrown in these cases
+        if (ark::os::file::File::IsDirectory(sourceName.Mutf8())) {
+            ThrowError(importPath->Start(),
+                       "Cannot find index.[ets|ts] or package module in folder: " + importPath->Str().Mutf8());
+        }
+
         ThrowError(importPath->Start(), "Cannot find import: " + importPath->Str().Mutf8());
     }
 
-    return res->second;
+    return programList;
 }
 
 void ETSBinder::AddSpecifiersToTopBindings(ir::AstNode *const specifier, const ir::ETSImportDeclaration *const import,
@@ -716,11 +757,8 @@ void ETSBinder::AddSpecifiersToTopBindings(ir::AstNode *const specifier, const i
     const auto &globalBindings = importGlobalScope->Bindings();
 
     if (AddImportNamespaceSpecifiersToTopBindings(specifier, globalBindings, importProgram, importGlobalScope,
-                                                  import)) {
-        return;
-    }
-
-    if (AddImportSpecifiersToTopBindings(specifier, globalBindings, import, record, std::move(viewedReExport))) {
+                                                  import) ||
+        AddImportSpecifiersToTopBindings(specifier, globalBindings, import, record, std::move(viewedReExport))) {
         return;
     }
 
@@ -844,61 +882,10 @@ void ETSBinder::BuildFunctionName(const ir::ScriptFunction *func) const
         ss << util::Helpers::FunctionName(Allocator(), func);
     }
 
-    signature->ToAssemblerType(GetContext(), ss);
+    signature->ToAssemblerType(ss);
 
     util::UString internalName(ss.str(), Allocator());
     funcScope->BindInternalName(internalName.View());
-}
-
-void ETSBinder::FormLambdaName(util::UString &name, const util::StringView &signature)
-{
-    name.Append(compiler::Signatures::LAMBDA_SEPARATOR);
-    auto replaced = std::string(signature.Utf8());
-    std::replace(replaced.begin(), replaced.end(), '.', '-');
-    std::replace(replaced.begin(), replaced.end(), ':', '-');
-    std::replace(replaced.begin(), replaced.end(), ';', '-');
-    replaced.append(std::to_string(0));
-    name.Append(replaced);
-}
-
-void ETSBinder::BuildLambdaObjectName(const ir::AstNode *refNode)
-{
-    auto found = lambdaObjects_.find(refNode);
-    ASSERT(found != lambdaObjects_.end());
-    auto *lambdaClass = found->second.first;
-    auto *signatureRef = found->second.second;
-
-    util::UString lambdaObjectName(lambdaClass->Ident()->Name(), Allocator());
-    FormLambdaName(lambdaObjectName, signatureRef->InternalName());
-    lambdaClass->Ident()->SetName(lambdaObjectName.View());
-    lambdaClass->SetInternalName(lambdaClass->Ident()->Name());
-
-    util::StringView assemblerName(lambdaClass->Ident()->Name());
-    auto *program = static_cast<const ir::ETSScript *>(refNode->GetTopStatement())->Program();
-    util::StringView prefix = program->GetPackageName();
-    if (!prefix.Empty()) {
-        util::UString fullPath(prefix, Allocator());
-        fullPath.Append('.');
-        fullPath.Append(assemblerName);
-        assemblerName = fullPath.View();
-    }
-
-    checker::ETSObjectType *lambdaObject = lambdaClass->TsType()->AsETSObjectType();
-    lambdaObject->SetName(lambdaClass->Ident()->Name());
-    lambdaObject->SetAssemblerName(lambdaClass->Ident()->Name());
-
-    const auto &lambdaBody = lambdaClass->Body();
-    auto *ctorFunc = lambdaBody[lambdaBody.size() - 3U]->AsMethodDefinition()->Function();
-    auto *ctorFuncScope = ctorFunc->Scope();
-    ctorFuncScope->BindName(lambdaClass->Ident()->Name());
-
-    auto *invoke0Func = lambdaBody[lambdaBody.size() - 2U]->AsMethodDefinition()->Function();
-    auto *invoke0FuncScope = invoke0Func->Scope();
-    invoke0FuncScope->BindName(lambdaClass->Ident()->Name());
-
-    auto *invokeFunc = lambdaBody[lambdaBody.size() - 1U]->AsMethodDefinition()->Function();
-    auto *invokeFuncScope = invokeFunc->Scope();
-    invokeFuncScope->BindName(lambdaClass->Ident()->Name());
 }
 
 void ETSBinder::InitImplicitThisParam()
@@ -995,28 +982,28 @@ bool ETSBinder::ImportGlobalPropertiesForNotDefaultedExports(varbinder::Variable
         return false;
     }
 
+    auto variable = Program()->GlobalClassScope()->FindLocal(name, ResolveBindingOptions::ALL);
+
+    bool isStdLib = util::Helpers::IsStdLib(Program());
+    if (variable != nullptr && var != variable) {
+        if (variable->Declaration()->IsFunctionDecl() && var->Declaration()->IsFunctionDecl()) {
+            AddOverloadFlag(isStdLib, var, variable);
+            return true;
+        }
+
+        ThrowError(classElement->Id()->Start(), RedeclarationErrorMessageAssembler(var, variable, name.Utf8()));
+    }
+
     const auto insRes = TopScope()->InsertForeignBinding(name, var);
     if (!(!insRes.second && insRes.first != TopScope()->Bindings().end()) || !(insRes.first->second != var)) {
         return true;
     }
     if (insRes.first->second->Declaration()->IsFunctionDecl() && var->Declaration()->IsFunctionDecl()) {
-        auto *const currentNode = insRes.first->second->Declaration()->Node();
-        auto *const method = var->Declaration()->Node()->AsMethodDefinition();
-        if (!currentNode->AsMethodDefinition()->HasOverload(method)) {
-            currentNode->AsMethodDefinition()->AddOverload(method);
-            method->Function()->Id()->SetVariable(insRes.first->second);
-            method->Function()->AddFlag(ir::ScriptFunctionFlags::OVERLOAD);
-        }
+        AddOverloadFlag(isStdLib, var, insRes.first->second);
         return true;
     }
 
-    auto str = util::Helpers::AppendAll("Variable '", name.Utf8(), "'");
-    if (insRes.first->second->Declaration()->Type() == var->Declaration()->Type()) {
-        str += " is already defined.";
-    } else {
-        str += " is already defined with different type.";
-    }
-    ThrowError(classElement->Id()->Start(), str);
+    ThrowError(classElement->Id()->Start(), RedeclarationErrorMessageAssembler(var, insRes.first->second, name.Utf8()));
 }
 
 void ETSBinder::ImportGlobalProperties(const ir::ClassDefinition *const classDef)

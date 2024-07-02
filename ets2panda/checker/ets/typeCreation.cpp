@@ -346,9 +346,6 @@ ETSObjectType *ETSChecker::CreateETSObjectTypeCheckBuiltins(util::StringView nam
 
     auto *objType = CreateNewETSObjectType(name, declNode, flags);
     auto nameToGlobalBoxType = GetNameToGlobalBoxTypeMap();
-    if (nameToGlobalBoxType.find(name) != nameToGlobalBoxType.end()) {
-        return UpdateBoxedGlobalType(objType, name);
-    }
 
     return UpdateGlobalType(objType, name);
 }
@@ -536,14 +533,15 @@ ETSObjectType *ETSChecker::CreateNewETSObjectType(util::StringView name, ir::Ast
         ASSERT(declNode->IsTSInterfaceDeclaration());
         assemblerName = declNode->AsTSInterfaceDeclaration()->InternalName();
     } else {
-        prefix = static_cast<ir::ETSScript *>(declNode->GetTopStatement())->Program()->GetPackageName();
+        auto program = static_cast<ir::ETSScript *>(declNode->GetTopStatement())->Program();
+        prefix = program->OmitModuleName() ? util::StringView() : program->ModuleName();
     }
 
     if (!prefix.Empty()) {
-        util::UString fullPath(prefix, Allocator());
-        fullPath.Append('.');
-        fullPath.Append(assemblerName);
-        assemblerName = fullPath.View();
+        assemblerName =
+            util::UString(prefix.Mutf8() + compiler::Signatures::METHOD_SEPARATOR.data() + assemblerName.Mutf8(),
+                          Allocator())
+                .View();
     }
 
     Language lang(Language::Id::ETS);
@@ -569,7 +567,6 @@ ETSObjectType *ETSChecker::CreateNewETSObjectType(util::StringView name, ir::Ast
     if (lang.IsDynamic()) {
         return Allocator()->New<ETSDynamicType>(Allocator(), name, assemblerName, declNode, flags, Relation(), lang,
                                                 hasDecl);
-        ;
     }
 
     return Allocator()->New<ETSObjectType>(Allocator(), name, assemblerName, declNode, flags, Relation());
@@ -617,4 +614,26 @@ Signature *ETSChecker::CreateBuiltinArraySignature(ETSArrayType *arrayType, size
 
     return signature;
 }
+
+ETSObjectType *ETSChecker::FunctionTypeToFunctionalInterfaceType(Signature *signature)
+{
+    auto *retType = signature->ReturnType();
+    if (signature->RestVar() != nullptr) {
+        auto *functionN = GlobalBuiltinFunctionType(GlobalBuiltinFunctionTypeVariadicThreshold())->AsETSObjectType();
+        auto *substitution = NewSubstitution();
+        substitution->emplace(functionN->TypeArguments()[0]->AsETSTypeParameter(), MaybePromotedBuiltinType(retType));
+        return functionN->Substitute(Relation(), substitution);
+    }
+
+    auto *funcIface = GlobalBuiltinFunctionType(signature->Params().size())->AsETSObjectType();
+    auto *substitution = NewSubstitution();
+    for (size_t i = 0; i < signature->Params().size(); i++) {
+        substitution->emplace(funcIface->TypeArguments()[i]->AsETSTypeParameter(),
+                              MaybePromotedBuiltinType(signature->Params()[i]->TsType()));
+    }
+    substitution->emplace(funcIface->TypeArguments()[signature->Params().size()]->AsETSTypeParameter(),
+                          MaybePromotedBuiltinType(signature->ReturnType()));
+    return funcIface->Substitute(Relation(), substitution);
+}
+
 }  // namespace ark::es2panda::checker

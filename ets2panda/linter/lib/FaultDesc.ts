@@ -103,10 +103,16 @@ faultDesc[FaultID.SendableDefiniteAssignment] = 'Use of definite assignment asse
 faultDesc[FaultID.SendableGenericTypes] = 'Sendable generic types';
 faultDesc[FaultID.SendableCapturedVars] = 'Sendable class captured variables';
 faultDesc[FaultID.SendableClassDecorator] = 'Sendable class decorator';
-faultDesc[FaultID.SendableObjectInitialization] = 'Object literal or array literal is not allowed to \
-                                                                   initialize a "Sendable" object';
+faultDesc[FaultID.SendableObjectInitialization] =
+  'Object literal or array literal is not allowed to initialize a "Sendable" object';
 faultDesc[FaultID.SendableComputedPropName] = 'Sendable computed property name';
 faultDesc[FaultID.SendableAsExpr] = 'Sendable as expr';
 faultDesc[FaultID.SharedNoSideEffectImport] = 'Shared no side effect import';
 faultDesc[FaultID.SharedModuleExports] = 'Shared module exports';
 faultDesc[FaultID.SharedModuleNoWildcardExport] = 'Share module no wildcard export';
+faultDesc[FaultID.NoTsImportEts] = 'No ts Import Ets';
+faultDesc[FaultID.SendableTypeInheritance] = 'Sendable type inheritance';
+faultDesc[FaultID.SendableTypeExported] = 'Sendable type exported';
+faultDesc[FaultID.NoTsReExportEts] = 'No ts re-export ets';
+faultDesc[FaultID.NoSIdeEffectImportEtsToTs] = 'No side effect import ets to ts';
+faultDesc[FaultID.NoNameSpaceImportEtsToTs] = 'No namespace import ets to ts';

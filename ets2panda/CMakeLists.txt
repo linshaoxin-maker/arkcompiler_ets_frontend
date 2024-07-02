@@ -153,6 +153,8 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/ets/topLevelStmts/globalClassHandler.cpp
   compiler/lowering/ets/topLevelStmts/globalDeclTransformer.cpp
   compiler/lowering/ets/topLevelStmts/topLevelStmts.cpp
+  compiler/lowering/ets/expressionLambdaLowering.cpp
+  compiler/lowering/ets/boxingForLocals.cpp
   compiler/lowering/ets/lambdaLowering.cpp
   compiler/lowering/ets/localClassLowering.cpp
   compiler/lowering/ets/objectIndexAccess.cpp
@@ -370,6 +372,7 @@ set(ES2PANDA_LIB_SRC
   checker/ets/aliveAnalyzer.cpp
   checker/ets/etsWarningAnalyzer.cpp
   checker/ets/arithmetic.cpp
+  checker/ets/assignAnalyzer.cpp
   checker/ets/baseAnalyzer.cpp
   checker/ets/boxingConverter.cpp
   checker/ets/castingContext.cpp

@@ -14,12 +14,12 @@
  */
 
 import * as ts from 'typescript';
-import { isAssignmentOperator } from '../utils/functions/isAssignmentOperator';
 import { TsUtils } from '../utils/TsUtils';
 import { scopeContainsThis } from '../utils/functions/ContainsThis';
-import { SymbolCache } from './SymbolCache';
-import { NameGenerator } from '../utils/functions/NameGenerator';
 import { forEachNodeInSubtree } from '../utils/functions/ForEachNodeInSubtree';
+import { NameGenerator } from '../utils/functions/NameGenerator';
+import { isAssignmentOperator } from '../utils/functions/isAssignmentOperator';
+import { SymbolCache } from './SymbolCache';
 
 const GENERATED_OBJECT_LITERAL_INTERFACE_NAME = 'GeneratedObjectLiteralInterface_';
 const GENERATED_OBJECT_LITERAL_INTERFACE_TRESHOLD = 1000;
@@ -138,18 +138,21 @@ export class Autofixer {
   }
 
   private static renameElementAccessExpression(
-    node: ts.ElementAccessExpression, newName: string
+    node: ts.ElementAccessExpression,
+    newName: string
   ): Autofix[] | undefined {
     const argExprKind = node.argumentExpression.kind;
     if (argExprKind !== ts.SyntaxKind.NumericLiteral && argExprKind !== ts.SyntaxKind.StringLiteral) {
       return undefined;
     }
 
-    return [{
-      replacementText: node.expression.getText() + '.' + newName,
-      start: node.getStart(),
-      end: node.getEnd()
-    }];
+    return [
+      {
+        replacementText: node.expression.getText() + '.' + newName,
+        start: node.getStart(),
+        end: node.getEnd()
+      }
+    ];
   }
 
   fixFunctionExpression(
@@ -181,15 +184,19 @@ export class Autofixer {
   }
 
   private static isNodeInWhileOrIf(node: ts.Node): boolean {
-    return node.kind === ts.SyntaxKind.WhileStatement ||
+    return (
+      node.kind === ts.SyntaxKind.WhileStatement ||
       node.kind === ts.SyntaxKind.DoStatement ||
-      node.kind === ts.SyntaxKind.IfStatement;
+      node.kind === ts.SyntaxKind.IfStatement
+    );
   }
 
   private static isNodeInForLoop(node: ts.Node): boolean {
-    return node.kind === ts.SyntaxKind.ForInStatement ||
+    return (
+      node.kind === ts.SyntaxKind.ForInStatement ||
       node.kind === ts.SyntaxKind.ForOfStatement ||
-      node.kind === ts.SyntaxKind.ForStatement;
+      node.kind === ts.SyntaxKind.ForStatement
+    );
   }
 
   private static parentInFor(node: ts.Node): ts.Node | undefined {
@@ -443,40 +450,29 @@ export class Autofixer {
 
   fixTypeAssertion(typeAssertion: ts.TypeAssertion): Autofix[] {
     const asExpr = ts.factory.createAsExpression(typeAssertion.expression, typeAssertion.type);
-    const text = this.printer.printNode(ts.EmitHint.Unspecified, asExpr, typeAssertion.getSourceFile());
+    const text = this.nonCommentPrinter.printNode(ts.EmitHint.Unspecified, asExpr, typeAssertion.getSourceFile());
     return [{ start: typeAssertion.getStart(), end: typeAssertion.getEnd(), replacementText: text }];
   }
 
   fixCommaOperator(tsNode: ts.Node): Autofix[] {
     const tsExprNode = tsNode as ts.BinaryExpression;
     const text = this.recursiveCommaOperator(tsExprNode);
-    return [{ start: tsExprNode.parent.getStart(), end: tsExprNode.parent.getEnd(), replacementText: text }];
+    return [{ start: tsExprNode.parent.getFullStart(), end: tsExprNode.parent.getEnd(), replacementText: text }];
   }
 
   private recursiveCommaOperator(tsExprNode: ts.BinaryExpression): string {
     let text = '';
     if (tsExprNode.operatorToken.kind !== ts.SyntaxKind.CommaToken) {
-      const midExpr = ts.factory.createExpressionStatement(tsExprNode);
-      return this.nonCommentPrinter.printNode(ts.EmitHint.Unspecified, midExpr, tsExprNode.getSourceFile());
+      return tsExprNode.getFullText() + ';';
     }
 
     if (tsExprNode.left.kind === ts.SyntaxKind.BinaryExpression) {
       text += this.recursiveCommaOperator(tsExprNode.left as ts.BinaryExpression);
-
-      const rightExpr = ts.factory.createExpressionStatement(tsExprNode.right);
-      const rightText = this.nonCommentPrinter.printNode(
-        ts.EmitHint.Unspecified, rightExpr, tsExprNode.getSourceFile()
-      );
-      text += '\n' + rightText;
+      text += '\n' + tsExprNode.right.getFullText() + ';';
     } else {
-      const leftExpr = ts.factory.createExpressionStatement(tsExprNode.left);
-      const rightExpr = ts.factory.createExpressionStatement(tsExprNode.right);
-
-      const leftText = this.nonCommentPrinter.printNode(ts.EmitHint.Unspecified, leftExpr, tsExprNode.getSourceFile());
-      const rightText = this.nonCommentPrinter.printNode(
-        ts.EmitHint.Unspecified, rightExpr, tsExprNode.getSourceFile()
-      );
-      text = leftText + '\n' + rightText;
+      const leftText = tsExprNode.left.getFullText();
+      const rightText = tsExprNode.right.getFullText();
+      text = leftText + ';\n' + rightText + ';';
     }
 
     return text;
@@ -585,7 +581,8 @@ export class Autofixer {
   }
 
   fixCtorParameterProperties(
-    ctorDecl: ts.ConstructorDeclaration, paramTypes: ts.TypeNode[] | undefined
+    ctorDecl: ts.ConstructorDeclaration,
+    paramTypes: ts.TypeNode[] | undefined
   ): Autofix[] | undefined {
     if (paramTypes === undefined) {
       return undefined;
@@ -597,7 +594,11 @@ export class Autofixer {
 
     for (let i = 0; i < ctorDecl.parameters.length; i++) {
       this.fixCtorParameterPropertiesProcessParam(
-        ctorDecl.parameters[i], paramTypes[i], ctorDecl.getSourceFile(), fieldInitStmts, autofixes
+        ctorDecl.parameters[i],
+        paramTypes[i],
+        ctorDecl.getSourceFile(),
+        fieldInitStmts,
+        autofixes
       );
     }
 
@@ -623,28 +624,38 @@ export class Autofixer {
       return;
     }
 
-    if (TsUtils.hasAccessModifier(param)) {
+    if (this.utils.hasAccessModifier(param)) {
       const propIdent = ts.factory.createIdentifier(param.name.text);
 
       const newFieldNode = ts.factory.createPropertyDeclaration(
-        ts.getModifiers(param), propIdent, undefined, paramType, undefined
+        ts.getModifiers(param),
+        propIdent,
+        undefined,
+        paramType,
+        undefined
       );
       const newFieldText = this.printer.printNode(ts.EmitHint.Unspecified, newFieldNode, sourceFile) + '\n';
       autofixes[0].replacementText += newFieldText;
 
       const newParamDecl = ts.factory.createParameterDeclaration(
-        undefined, undefined, param.name, param.questionToken, param.type, param.initializer
+        undefined,
+        undefined,
+        param.name,
+        param.questionToken,
+        param.type,
+        param.initializer
       );
       const newParamText = this.printer.printNode(ts.EmitHint.Unspecified, newParamDecl, sourceFile);
       autofixes.push({ start: param.getStart(), end: param.getEnd(), replacementText: newParamText });
 
-      fieldInitStmts.push(ts.factory.createExpressionStatement(ts.factory.createAssignment(
-        ts.factory.createPropertyAccessExpression(
-          ts.factory.createThis(),
-          propIdent
-        ),
-        propIdent
-      )));
+      fieldInitStmts.push(
+        ts.factory.createExpressionStatement(
+          ts.factory.createAssignment(
+            ts.factory.createPropertyAccessExpression(ts.factory.createThis(), propIdent),
+            propIdent
+          )
+        )
+      );
     }
   }
 
@@ -660,7 +671,7 @@ export class Autofixer {
 
     const memberDecl = classMember.valueDeclaration as ts.ClassElement;
     const parentDecl = memberDecl.parent;
-    if (!ts.isClassLike(parentDecl) || this.utils.classMemberHasDuplicateName(memberDecl, parentDecl)) {
+    if (!ts.isClassLike(parentDecl) || this.utils.classMemberHasDuplicateName(memberDecl, parentDecl, true)) {
       this.privateIdentifierCache.set(classMember, undefined);
       return undefined;
     }
@@ -701,9 +712,8 @@ export class Autofixer {
 
   fixNestedFunction(tsFunctionDeclaration: ts.FunctionDeclaration): Autofix[] | undefined {
     const isGenerator = tsFunctionDeclaration.asteriskToken !== undefined;
-    const hasThisKeyword = tsFunctionDeclaration.body === undefined ?
-      false :
-      scopeContainsThis(tsFunctionDeclaration.body);
+    const hasThisKeyword =
+      tsFunctionDeclaration.body === undefined ? false : scopeContainsThis(tsFunctionDeclaration.body);
     const canBeFixed = !isGenerator && !hasThisKeyword;
     if (!canBeFixed) {
       return undefined;
@@ -733,10 +743,12 @@ export class Autofixer {
     const typeDecl = ts.factory.createFunctionTypeNode(typeParameters, parameters, type);
     const arrowFunc = ts.factory.createArrowFunction(modifiers, typeParameters, parameters, type, token, body);
 
-    const declaration: ts.VariableDeclaration = ts.factory.createVariableDeclaration(name,
+    const declaration: ts.VariableDeclaration = ts.factory.createVariableDeclaration(
+      name,
       undefined,
       typeDecl,
-      arrowFunc);
+      arrowFunc
+    );
     const list: ts.VariableDeclarationList = ts.factory.createVariableDeclarationList([declaration], ts.NodeFlags.Let);
 
     const statement = ts.factory.createVariableStatement(modifiers, list);
@@ -751,7 +763,7 @@ export class Autofixer {
     bodyStatements = bodyStatements.concat(body.statements);
     for (let i = 1; i < nodes.length; i++) {
       bodyStatements = bodyStatements.concat((nodes[i] as ts.ClassStaticBlockDeclaration).body.statements);
-      autofix[i] = { start: nodes[i].getStart(), end: nodes[i].getEnd(), replacementText: '' };
+      autofix[i] = { start: nodes[i].getFullStart(), end: nodes[i].getEnd(), replacementText: '' };
     }
     body = ts.factory.createBlock(bodyStatements, true);
     // static blocks shouldn't have modifiers
@@ -765,14 +777,18 @@ export class Autofixer {
 
   private fixSinglePrivateIdentifier(ident: ts.PrivateIdentifier): Autofix {
     if (
-      ts.isPropertyDeclaration(ident.parent) || ts.isMethodDeclaration(ident.parent) ||
-      ts.isGetAccessorDeclaration(ident.parent) || ts.isSetAccessorDeclaration(ident.parent)
+      ts.isPropertyDeclaration(ident.parent) ||
+      ts.isMethodDeclaration(ident.parent) ||
+      ts.isGetAccessorDeclaration(ident.parent) ||
+      ts.isSetAccessorDeclaration(ident.parent)
     ) {
       // Note: 'private' modifier should always be first.
       const mods = ts.getModifiers(ident.parent);
-      let newMods: ts.Modifier[] = [ts.factory.createModifier(ts.SyntaxKind.PrivateKeyword)];
+      const newMods: ts.Modifier[] = [ts.factory.createModifier(ts.SyntaxKind.PrivateKeyword)];
       if (mods) {
-        newMods = newMods.concat(mods);
+        for (const mod of mods) {
+          newMods.push(ts.factory.createModifier(mod.kind));
+        }
       }
 
       const newName = ident.text.slice(1, ident.text.length);
@@ -901,15 +917,15 @@ export class Autofixer {
     }
 
     const newProp: ts.PropertySignature = ts.factory.createPropertySignature(
-      undefined, prop.name, undefined, propTypeNode
+      undefined,
+      prop.name,
+      undefined,
+      propTypeNode
     );
     return newProp;
   }
 
-  private static propertyTypeIsCapturedFromEnclosingLocalScope(
-    type: ts.Type,
-    enclosingStmt: ts.Node
-  ): boolean {
+  private static propertyTypeIsCapturedFromEnclosingLocalScope(type: ts.Type, enclosingStmt: ts.Node): boolean {
     const sym = type.getSymbol();
     let symNode: ts.Node | undefined = TsUtils.getDeclaration(sym);
 
@@ -930,7 +946,11 @@ export class Autofixer {
     pos: number
   ): Autofix {
     const newInterfaceDecl = ts.factory.createInterfaceDeclaration(
-      undefined, interfaceName, undefined, undefined, members
+      undefined,
+      interfaceName,
+      undefined,
+      undefined,
+      members
     );
     const text = this.printer.printNode(ts.EmitHint.Unspecified, newInterfaceDecl, srcFile) + '\n';
     return { start: pos, end: pos, replacementText: text };
@@ -947,9 +967,10 @@ export class Autofixer {
      * then simply add new 'contextual' type to the declaration.
      * Otherwise, cast object literal to newly created interface type.
      */
-    if ((ts.isVariableDeclaration(objectLiteralExpr.parent) ||
-      ts.isPropertyDeclaration(objectLiteralExpr.parent) ||
-      ts.isParameter(objectLiteralExpr.parent)) &&
+    if (
+      (ts.isVariableDeclaration(objectLiteralExpr.parent) ||
+        ts.isPropertyDeclaration(objectLiteralExpr.parent) ||
+        ts.isParameter(objectLiteralExpr.parent)) &&
       !objectLiteralExpr.parent.type
     ) {
       const text = ': ' + newInterfaceName;
@@ -985,19 +1006,30 @@ export class Autofixer {
     GENERATED_OBJECT_LITERAL_INTERFACE_TRESHOLD
   );
 
-  fixTypeliteral(typeLiteral: ts.TypeLiteralNode): Autofix[] | undefined {
-
-    /*
-     * In case of type alias initialized with type literal, replace
-     * entire type alias with identical interface declaration.
-     */
+  /*
+   * In case of type alias initialized with type literal, replace
+   * entire type alias with identical interface declaration.
+   */
+  private proceedTypeAliasDeclaration(typeLiteral: ts.TypeLiteralNode): Autofix[] | undefined {
     if (ts.isTypeAliasDeclaration(typeLiteral.parent)) {
       const typeAlias = typeLiteral.parent;
       const newInterfaceDecl = ts.factory.createInterfaceDeclaration(
-        typeAlias.modifiers, typeAlias.name, typeAlias.typeParameters, undefined, typeLiteral.members
+        typeAlias.modifiers,
+        typeAlias.name,
+        typeAlias.typeParameters,
+        undefined,
+        typeLiteral.members
       );
-      const text = this.printer.printNode(ts.EmitHint.Unspecified, newInterfaceDecl, typeLiteral.getSourceFile()) + '\n';
+      const text = this.printer.printNode(ts.EmitHint.Unspecified, newInterfaceDecl, typeLiteral.getSourceFile());
       return [{ start: typeAlias.getStart(), end: typeAlias.getEnd(), replacementText: text }];
+    }
+    return undefined;
+  }
+
+  fixTypeliteral(typeLiteral: ts.TypeLiteralNode): Autofix[] | undefined {
+    const typeAliasAutofix = this.proceedTypeAliasDeclaration(typeLiteral);
+    if (typeAliasAutofix) {
+      return typeAliasAutofix;
     }
 
     /*
@@ -1020,7 +1052,11 @@ export class Autofixer {
     }
     const newInterfacePos = enclosingStmt.getStart();
     const newInterfaceDecl = ts.factory.createInterfaceDeclaration(
-      undefined, newInterfaceName, undefined, undefined, typeLiteral.members
+      undefined,
+      newInterfaceName,
+      undefined,
+      undefined,
+      typeLiteral.members
     );
     const interfaceText = this.printer.printNode(ts.EmitHint.Unspecified, newInterfaceDecl, srcFile) + '\n';
 

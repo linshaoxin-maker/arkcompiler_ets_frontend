@@ -25,6 +25,7 @@ namespace ark::es2panda::varbinder {
     _(VAR, VarDecl)                      \
     _(LET, LetDecl)                      \
     _(CONST, ConstDecl)                  \
+    _(LABEL, LabelDecl)                  \
     _(FUNC, FunctionDecl)                \
     _(PARAM, ParameterDecl)              \
     _(IMPORT, ImportDecl)                \
@@ -151,8 +152,6 @@ enum class VariableFlags : uint64_t {
     LEXICAL_BOUND = 1U << 30U,
 
     BUILTIN_TYPE = 1ULL << 31ULL,
-
-    BOXED = 1ULL << 32ULL,
 
     HOIST_VAR = HOIST | VAR,
     CLASS_OR_INTERFACE = CLASS | INTERFACE,

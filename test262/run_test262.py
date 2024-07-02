@@ -47,26 +47,36 @@ def parse_args():
     parser.add_argument('--es51', action='store_true',
                         help='Run test262 ES5.1 version')
     parser.add_argument('--es2021', default=False, const='all',
-                        nargs='?', choices=['all', 'only'],
+                        nargs='?', choices=['all', 'only', 'other'],
                         help='Run test262 - ES2021. ' +
                         'all: Contains all use cases for es5_tests and es2015_tests and es2021_tests and intl_tests' +
-                        'only: Only include use cases for ES2021')
+                        'only: Only include use cases for ES2021' +
+                        'other: Contains all use cases for es5_tests and es2015_tests and es2021_tests and intl_tests' +
+                        'and other_tests')
     parser.add_argument('--es2022', default=False, const='all',
-                        nargs='?', choices=['all', 'only'],
+                        nargs='?', choices=['all', 'only', 'other'],
                         help='Run test262 - ES2022. ' +
                         'all: Contains all use cases for es5_tests and es2015_tests and es2021_tests' +
                         'and es2022_tests and intl_tests' +
-                        'only: Only include use cases for ES2022')
+                        'only: Only include use cases for ES2022' +
+                        'other: Contains all use cases for es5_tests and es2015_tests and es2021_tests' +
+                        'and es2022_tests and intl_tests and other_tests')
     parser.add_argument('--es2023', default=False, const='all',
-                        nargs='?', choices=['all', 'only'],
+                        nargs='?', choices=['all', 'only', 'other'],
                         help='Run test262 - ES2023. ' +
                         'all: Contains all use cases for es5_tests and es2015_tests and es2021_tests' +
                         'and es2022_tests and es2023_tests and intl_tests' +
-                        'only: Only include use cases for ES2023')
+                        'only: Only include use cases for ES2023' +
+                        'other: Contains all use cases for es5_tests and es2015_tests and es2021_tests' +
+                        'and es2022_tests and es2023_tests and intl_tests and other_tests')
     parser.add_argument('--intl', default=False, const='intl',
                         nargs='?', choices=['intl'],
                         help='Run test262 - Intltest. ' +
                         'intl: Only include use cases for intlcsae')
+    parser.add_argument('--other', default=False, const='other',
+                        nargs='?', choices=['other'],
+                        help='Run test262 - other_tests ' +
+                        'other_tests: Only include use cases for other_tests')
     parser.add_argument('--es2015', default=False, const='es2015',
                         nargs='?', choices=['es2015'],
                         help='Run test262 - es2015. ' +
@@ -120,8 +130,12 @@ def parse_args():
                         help="ark's product name")
     parser.add_argument('--run-pgo', action='store_true',
                         help="Run test262 with aot pgo")
+    parser.add_argument('--enable-litecg', action='store_true',
+                        help="Run test262 with aot litecg enabled")
     parser.add_argument('--run-jit', action='store_true',
                         help="Run test262 with JIT")
+    parser.add_argument('--run-baseline-jit', action='store_true',
+                        help="Run test262 with baseline JIT")
     parser.add_argument('--abc2program', action='store_true',
                         help="Use abc2prog to generate abc, aot or pgo is not supported yet under this option")
     parser.add_argument('--disable-force-gc', action='store_true',
@@ -289,6 +303,8 @@ class TestPrepare():
                 self.args.es2022 = "all"
             elif TEST_ES2023_DIR in self.args.dir:
                 self.args.es2023 = "all"
+            elif TEST_OTHERTESTS_DIR in self.args.dir:
+                self.args.other = "other"
 
         if self.args.file:
             if TEST_ES5_DIR in self.args.file:
@@ -303,6 +319,8 @@ class TestPrepare():
                 self.args.es2022 = "all"
             elif TEST_ES2023_DIR in self.args.file:
                 self.args.es2023 = "all"
+            elif TEST_OTHERTESTS_DIR in self.args.dir:
+                self.args.other = "other"
 
     def prepare_out_dir(self):
         if self.args.es51:
@@ -319,6 +337,8 @@ class TestPrepare():
             self.out_dir = os.path.join(BASE_OUT_DIR, "test_es2023")
         elif self.args.ci_build:
             self.out_dir = os.path.join(BASE_OUT_DIR, "test_CI")
+        elif self.args.other:
+            self.out_dir = os.path.join(BASE_OUT_DIR, "other_tests")
         else:
             self.out_dir = os.path.join(BASE_OUT_DIR, "test")
 
@@ -338,6 +358,8 @@ class TestPrepare():
             self.args.dir = TEST_ES2022_DIR
         elif self.args.es2023:
             self.args.dir = TEST_ES2023_DIR
+        elif self.args.other:
+            self.args.dir = TEST_OTHERTESTS_DIR
         elif self.args.ci_build:
             self.args.dir = TEST_CI_DIR
         else:
@@ -364,6 +386,8 @@ class TestPrepare():
             dstdir = os.path.join(TEST_ES2022_DIR, file)
         elif self.args.es2023:
             dstdir = os.path.join(TEST_ES2023_DIR, file)
+        elif self.args.other:
+            dstdir = os.path.join(TEST_OTHERTESTS_DIR, file)
         elif self.args.ci_build:
             dstdir = os.path.join(TEST_CI_DIR, file)
 
@@ -401,6 +425,11 @@ class TestPrepare():
             files.extend(self.get_tests_from_file(ES5_LIST_FILE))
             files.extend(self.get_tests_from_file(INTL_LIST_FILE))
             files.extend(self.get_tests_from_file(ES2015_LIST_FILE))
+        if self.args.es2021 == "other":
+            files.extend(self.get_tests_from_file(ES5_LIST_FILE))
+            files.extend(self.get_tests_from_file(INTL_LIST_FILE))
+            files.extend(self.get_tests_from_file(ES2015_LIST_FILE))
+            files.extend(self.get_tests_from_file(OTHER_LIST_FILE))
         return files
 
     def prepare_es2022_tests(self):
@@ -412,6 +441,13 @@ class TestPrepare():
             files.extend(self.get_tests_from_file(ES2015_LIST_FILE))
             files.extend(self.collect_tests())
             files.extend(self.get_tests_from_file(ES2021_LIST_FILE))
+        if self.args.es2022 == "other":
+            files.extend(self.get_tests_from_file(ES5_LIST_FILE))
+            files.extend(self.get_tests_from_file(INTL_LIST_FILE))
+            files.extend(self.get_tests_from_file(ES2015_LIST_FILE))
+            files.extend(self.collect_tests())
+            files.extend(self.get_tests_from_file(ES2021_LIST_FILE))
+            files.extend(self.get_tests_from_file(OTHER_LIST_FILE))
         return files
 
     def prepare_es2023_tests(self):
@@ -424,6 +460,14 @@ class TestPrepare():
             files.extend(self.collect_tests())
             files.extend(self.get_tests_from_file(ES2021_LIST_FILE))
             files.extend(self.get_tests_from_file(ES2022_LIST_FILE))
+        if self.args.es2023 == "other":
+            files.extend(self.get_tests_from_file(ES5_LIST_FILE))
+            files.extend(self.get_tests_from_file(INTL_LIST_FILE))
+            files.extend(self.get_tests_from_file(ES2015_LIST_FILE))
+            files.extend(self.collect_tests())
+            files.extend(self.get_tests_from_file(ES2021_LIST_FILE))
+            files.extend(self.get_tests_from_file(ES2022_LIST_FILE))
+            files.extend(self.get_tests_from_file(OTHER_LIST_FILE))
         return files
 
     def prepare_intl_tests(self):
@@ -433,6 +477,13 @@ class TestPrepare():
             files = self.get_tests_from_file(INTL_LIST_FILE)
         return files
 
+    def prepare_other_tests(self):
+        files = []
+        files = self.collect_tests()
+        if self.args.other:
+            files = self.get_tests_from_file(OTHER_LIST_FILE)
+        return files
+        
     def prepare_es2015_tests(self):
         files = []
         files = self.collect_tests()
@@ -452,6 +503,9 @@ class TestPrepare():
         elif self.args.intl:
             test_dir = TEST_INTL_DIR
             files = self.prepare_intl_tests()
+        elif self.args.other:
+            test_dir = TEST_OTHERTESTS_DIR
+            files = self.prepare_other_tests()
         elif self.args.es2021:
             test_dir = TEST_ES2021_DIR
             files = self.prepare_es2021_tests()
@@ -483,6 +537,9 @@ class TestPrepare():
         elif self.args.intl:
             self.prepare_test_suit()
             src_dir = TEST_INTL_DIR
+        elif self.args.other:
+            self.prepare_test_suit()
+            src_dir = TEST_OTHERTESTS_DIR
         elif self.args.es2021:
             self.prepare_test_suit()
             src_dir = TEST_ES2021_DIR
@@ -599,8 +656,12 @@ def get_host_args_of_host_type(args, host_args, ark_tool, ark_aot_tool, libs_dir
         host_args += f"--ark-aot "
     if args.run_pgo:
         host_args += f"--run-pgo "
+    if args.enable_litecg:
+        host_args += f"--enable-litecg "
     if args.run_jit:
         host_args += f"--run-jit "
+    if args.run_baseline_jit:
+        host_args += f"--run-baseline-jit "
     host_args += f"--ark-aot-tool={ark_aot_tool} "
     host_args += f"--libs-dir={libs_dir} "
     host_args += f"--ark-frontend={ark_frontend} "

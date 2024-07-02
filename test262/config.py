@@ -20,7 +20,12 @@ Description: Execute 262 test suite configuration file
 
 
 import os
+import sys
+import platform
 from multiprocessing import cpu_count
+
+IS_LINUX_ARM64 = (sys.platform == "linux" and platform.machine().lower() == "aarch64")
+CLANG_TOOLCHAIN = "clang_arm64" if IS_LINUX_ARM64 else "clang_x64"
 
 DATA_DIR = os.path.join("test262", "data")
 ESHOST_DIR = os.path.join("test262", "eshost")
@@ -30,7 +35,10 @@ BASE_OUT_DIR = os.path.join("out", "test262")
 
 CUR_FILE_DIR = os.path.dirname(__file__)
 CODE_ROOT = os.path.abspath(os.path.join(CUR_FILE_DIR, "../../.."))
-LLVM_DIR = f"{CODE_ROOT}/prebuilts/clang/ohos/linux-x86_64/llvm/lib/"
+if IS_LINUX_ARM64:
+    LLVM_DIR = f"{CODE_ROOT}/prebuilts/clang/ohos/linux-aarch64/llvm/lib/"
+else:
+    LLVM_DIR = f"{CODE_ROOT}/prebuilts/clang/ohos/linux-x86_64/llvm/lib/"
 
 DEFAULT_MODE = 2
 
@@ -38,6 +46,7 @@ TEST_FULL_DIR = os.path.join(DATA_DIR, "test")
 TEST_ES5_DIR = os.path.join(DATA_DIR, "test_es51")
 TEST_ES2015_DIR = os.path.join(DATA_DIR, "test_es2015")
 TEST_ES2021_DIR = os.path.join(DATA_DIR, "test_es2021")
+TEST_OTHERTESTS_DIR = os.path.join(DATA_DIR, "other_tests")
 TEST_ES2022_DIR = os.path.join(DATA_DIR, "test_es2022")
 TEST_ES2023_DIR = os.path.join(DATA_DIR, "test_es2023")
 TEST_INTL_DIR = os.path.join(DATA_DIR, "test_intl")
@@ -73,6 +82,7 @@ ES5_LIST_FILE = os.path.join("test262", "es5_tests.txt")
 ES2015_LIST_FILE = os.path.join("test262", "es2015_tests.txt")
 INTL_LIST_FILE = os.path.join("test262", "intl_tests.txt")
 ES2021_LIST_FILE = os.path.join("test262", "es2021_tests.txt")
+OTHER_LIST_FILE = os.path.join("test262", "other_tests.txt")
 ES2022_LIST_FILE = os.path.join("test262", "es2022_tests.txt")
 ES2023_LIST_FILE = os.path.join("test262", "es2023_tests.txt")
 CI_LIST_FILE = os.path.join("test262", "CI_tests.txt")

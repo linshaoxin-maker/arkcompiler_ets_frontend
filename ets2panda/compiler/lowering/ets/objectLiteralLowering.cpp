@@ -26,6 +26,28 @@ std::string_view ObjectLiteralLowering::Name() const
     return "ObjectLiteralLowering";
 }
 
+static void MaybeAllowConstAssign(checker::Type *targetType, ArenaVector<ir::Statement *> &statements)
+{
+    if (!targetType->IsETSObjectType()) {
+        return;
+    }
+    for (auto *stmt : statements) {
+        if (stmt->IsExpressionStatement() && stmt->AsExpressionStatement()->GetExpression()->IsAssignmentExpression()) {
+            auto *variable = stmt->AsExpressionStatement()
+                                 ->GetExpression()
+                                 ->AsAssignmentExpression()
+                                 ->Left()
+                                 ->AsMemberExpression()
+                                 ->Property()
+                                 ->AsIdentifier()
+                                 ->Variable();
+            if (variable != nullptr && variable->HasFlag(varbinder::VariableFlags::READONLY)) {
+                stmt->AsExpressionStatement()->GetExpression()->AsAssignmentExpression()->SetIgnoreConstAssign();
+            }
+        }
+    }
+}
+
 static constexpr std::string_view NESTED_BLOCK_EXPRESSION = "_$NESTED_BLOCK_EXPRESSION$_";
 
 static void RestoreNestedBlockExpression(const ArenaVector<ir::Statement *> &statements,
@@ -69,19 +91,8 @@ static void GenerateNewStatements(checker::ETSChecker *checker, ir::ObjectExpres
     // Generating: let <genSym>: <preferredType> = new <preferredType>();
     auto *genSymIdent = Gensym(allocator);
     auto *preferredType = checker->AllocNode<ir::OpaqueTypeNode>(classType);
-    ss << "let @@I" << addNode(genSymIdent) << ": @@T" << addNode(preferredType) << " = new @@I"
-       << addNode(checker->AllocNode<ir::Identifier>(classType->Name(), allocator));
-
-    // Type params of class type
-    if (!classType->TypeArguments().empty()) {
-        ss << "<";
-        for (auto *type : classType->TypeArguments()) {
-            type->ToString(ss);
-            ss << ",";
-        }
-        ss << ">";
-    }
-    ss << "();" << std::endl;
+    ss << "let @@I" << addNode(genSymIdent) << ": @@T" << addNode(preferredType) << " = new @@T"
+       << addNode(checker->AllocNode<ir::OpaqueTypeNode>(classType)) << "();" << std::endl;
 
     // Generating: <genSym>.key_i = value_i      ( i <= [0, object_literal.properties.size) )
     for (auto *propExpr : objExpr->Properties()) {
@@ -140,6 +151,8 @@ static ir::AstNode *HandleObjectLiteralLowering(public_lib::Context *ctx, ir::Ob
 
     auto *loweringResult = parser->CreateFormattedExpression(ss.str(), newStmts);
     loweringResult->SetParent(objExpr->Parent());
+
+    MaybeAllowConstAssign(objExpr->PreferredType(), loweringResult->AsBlockExpression()->Statements());
 
     auto scopeCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(varbinder, NearestScope(objExpr));
     InitScopesPhaseETS::RunExternalNode(loweringResult, varbinder);

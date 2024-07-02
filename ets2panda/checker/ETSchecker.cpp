@@ -24,6 +24,7 @@
 #include "varbinder/ETSBinder.h"
 #include "parser/program/program.h"
 #include "checker/ets/aliveAnalyzer.h"
+#include "checker/ets/assignAnalyzer.h"
 #include "checker/ets/etsWarningAnalyzer.h"
 #include "checker/types/globalTypesHolder.h"
 #include "ir/base/scriptFunction.h"
@@ -137,21 +138,6 @@ void ETSChecker::InitializeBuiltin(varbinder::Variable *var, const util::StringV
     GetGlobalTypesHolder()->InitializeBuiltin(name, type);
 }
 
-const ArenaList<ir::ClassDefinition *> &ETSChecker::GetLocalClasses() const
-{
-    return localClasses_;
-}
-
-const ArenaList<ir::ETSNewClassInstanceExpression *> &ETSChecker::GetLocalClassInstantiations() const
-{
-    return localClassInstantiations_;
-}
-
-void ETSChecker::AddToLocalClassInstantiationList(ir::ETSNewClassInstanceExpression *newExpr)
-{
-    localClassInstantiations_.push_back(newExpr);
-}
-
 bool ETSChecker::StartChecker([[maybe_unused]] varbinder::VarBinder *varbinder, const CompilerOptions &options)
 {
     Initialize(varbinder);
@@ -186,9 +172,6 @@ bool ETSChecker::StartChecker([[maybe_unused]] varbinder::VarBinder *varbinder, 
     BuildDynamicImportClass();
 
 #ifndef NDEBUG
-    for (auto lambda : etsBinder->LambdaObjects()) {
-        ASSERT(!lambda.second.first->TsType()->AsETSObjectType()->AssemblerName().Empty());
-    }
     for (auto *func : varbinder->Functions()) {
         ASSERT(!func->Node()->AsScriptFunction()->Scope()->InternalName().Empty());
     }
@@ -221,7 +204,8 @@ void ETSChecker::CheckProgram(parser::Program *program, bool runAnalysis)
     Program()->Ast()->Check(this);
 
     if (runAnalysis) {
-        AliveAnalyzer(Program()->Ast(), this);
+        AliveAnalyzer aliveAnalyzer(Program()->Ast(), this);
+        AssignAnalyzer(this).Analyze(Program()->Ast());
     }
 
     ASSERT(VarBinder()->AsETSBinder()->GetExternalRecordTable().find(program)->second);
@@ -403,7 +387,7 @@ ETSObjectType *ETSChecker::GlobalBuiltinDynamicType(Language lang) const
     return nullptr;
 }
 
-ETSObjectType *ETSChecker::GlobalBuiltinBoxType(const Type *contents) const
+ETSObjectType *ETSChecker::GlobalBuiltinBoxType(Type *contents)
 {
     switch (TypeKind(contents)) {
         case TypeFlag::ETS_BOOLEAN:
@@ -422,8 +406,12 @@ ETSObjectType *ETSChecker::GlobalBuiltinBoxType(const Type *contents) const
             return AsETSObjectType(&GlobalTypesHolder::GlobalFloatBoxBuiltinType);
         case TypeFlag::DOUBLE:
             return AsETSObjectType(&GlobalTypesHolder::GlobalDoubleBoxBuiltinType);
-        default:
-            return AsETSObjectType(&GlobalTypesHolder::GlobalBoxBuiltinType);
+        default: {
+            auto *base = AsETSObjectType(&GlobalTypesHolder::GlobalBoxBuiltinType);
+            auto *substitution = NewSubstitution();
+            substitution->emplace(base->TypeArguments()[0]->AsETSTypeParameter(), contents);
+            return base->Substitute(Relation(), substitution);
+        }
     }
 }
 
@@ -440,12 +428,6 @@ GlobalArraySignatureMap &ETSChecker::GlobalArrayTypes()
 const GlobalArraySignatureMap &ETSChecker::GlobalArrayTypes() const
 {
     return globalArraySignatures_;
-}
-
-// For use in Signature::ToAssemblerType
-const Type *MaybeBoxedType(Checker *checker, const varbinder::Variable *var)
-{
-    return checker->AsETSChecker()->MaybeBoxedType(var);
 }
 
 void ETSChecker::HandleUpdatedCallExpressionNode(ir::CallExpression *callExpr)

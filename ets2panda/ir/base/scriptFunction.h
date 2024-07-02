@@ -165,6 +165,11 @@ public:
         return (funcFlags_ & ir::ScriptFunctionFlags::OVERLOAD) != 0;
     }
 
+    [[nodiscard]] bool IsExternalOverload() const
+    {
+        return (funcFlags_ & ir::ScriptFunctionFlags::EXTERNAL_OVERLOAD) != 0;
+    }
+
     [[nodiscard]] bool IsConstructor() const noexcept
     {
         return (funcFlags_ & ir::ScriptFunctionFlags::CONSTRUCTOR) != 0;
@@ -303,6 +308,8 @@ public:
     {
         return lang_;
     }
+
+    [[nodiscard]] ScriptFunction *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
     void TransformChildren(const NodeTransformer &cb, std::string_view transformationName) override;
     void Iterate(const NodeTraverser &cb) const override;

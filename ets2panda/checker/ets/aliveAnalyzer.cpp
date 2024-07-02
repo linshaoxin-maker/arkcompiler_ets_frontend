@@ -222,7 +222,7 @@ void AliveAnalyzer::AnalyzeMethodDef(const ir::MethodDefinition *methodDef)
         isPromiseVoid = asAsync->GetPromiseTypeArg() == checker_->GlobalETSUndefinedType();
     }
 
-    if (status_ == LivenessStatus::ALIVE && !isVoid && !isPromiseVoid) {
+    if (status_ == LivenessStatus::ALIVE && !isVoid && !isPromiseVoid && !checker_->IsAsyncImplMethod(methodDef)) {
         checker_->ThrowTypeError("Function with a non void return type must return a value.", func->Id()->Start());
     }
 
@@ -423,8 +423,11 @@ void AliveAnalyzer::AnalyzeTry(const ir::TryStatement *tryStmt)
     if (tryStmt->FinallyBlock() != nullptr) {
         status_ = LivenessStatus::ALIVE;
         AnalyzeStats(tryStmt->FinallyBlock()->Statements());
+        const_cast<ir::TryStatement *>(tryStmt)->SetFinallyCanCompleteNormally(status_ == LivenessStatus::ALIVE);
         if (status_ == LivenessStatus::DEAD) {
             isAlive = false;
+            // NOTE(user) Add lint categories and option to enable/disable compiler warnings
+            checker_->Warning("Finally clause cannot complete normally", tryStmt->FinallyBlock()->Start());
         }
     }
 

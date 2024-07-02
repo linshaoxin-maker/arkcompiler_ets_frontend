@@ -74,11 +74,11 @@ Type *ETSUnionType::ComputeAssemblerLUB(ETSChecker *checker, ETSUnionType *un)
 
     Type *lub = nullptr;
     for (auto *t : un->ConstituentTypes()) {
-        ASSERT(t->IsETSReferenceType());
+        ASSERT(t->IsETSReferenceType() || t->IsETSVoidType());
         if (t->IsETSNullType() || lub == t) {
             continue;
         }
-        if (t->IsETSUndefinedType()) {
+        if (t->IsETSUndefinedType() || t->IsETSVoidType()) {
             return checker->GetGlobalTypesHolder()->GlobalETSObjectType();
         }
         if (lub == nullptr) {
@@ -214,7 +214,7 @@ void ETSUnionType::CastTarget(TypeRelation *relation, Type *source)
     RelationTarget(relation, source, relFn);
 }
 
-static auto constexpr ETS_NORMALIZABLE_NUMERIC = TypeFlag(TypeFlag::ETS_NUMERIC & ~TypeFlag::CHAR);
+static auto constexpr ETS_NORMALIZABLE_NUMERIC = TypeFlag(TypeFlag::ETS_NUMERIC);
 
 static Type *LargestNumeric(Type *t1, Type *t2)
 {
@@ -248,12 +248,15 @@ static std::optional<Type *> TryMergeTypes(TypeRelation *relation, Type *const t
 void ETSUnionType::LinearizeAndEraseIdentical(TypeRelation *relation, ArenaVector<Type *> &types)
 {
     auto *const checker = relation->GetChecker()->AsETSChecker();
-    ASSERT(std::none_of(types.begin(), types.end(), [](auto *t) { return t->IsETSFunctionType(); }));
 
     // Linearize
     size_t const initialSz = types.size();
     for (size_t i = 0; i < initialSz; ++i) {
-        auto *const ct = types[i];
+        auto *ct = types[i];
+        if (ct->IsETSFunctionType()) {
+            ASSERT(ct->AsETSFunctionType()->CallSignatures().size() == 1);
+            ct = checker->FunctionTypeToFunctionalInterfaceType(ct->AsETSFunctionType()->CallSignatures()[0]);
+        }
         if (ct->IsETSUnionType()) {
             auto const &otherTypes = ct->AsETSUnionType()->ConstituentTypes();
             types.insert(types.end(), otherTypes.begin(), otherTypes.end());
@@ -674,5 +677,20 @@ bool ETSUnionType::HasUndefinedType() const
         }
     }
     return false;
+}
+
+bool ETSUnionType::HasType(Type *type) const
+{
+    for (const auto &cType : constituentTypes_) {
+        if (cType == type) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ETSUnionType::HasNullishType(const ETSChecker *checker) const
+{
+    return HasType(checker->GlobalETSNullType()) || HasType(checker->GlobalETSUndefinedType());
 }
 }  // namespace ark::es2panda::checker

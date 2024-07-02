@@ -128,11 +128,6 @@ bool ETSParser::IsETSParser() const noexcept
     return true;
 }
 
-const ArenaMap<util::StringView, util::ImportPathManager::ModuleInfo> &ETSParser::ModuleList() const
-{
-    return importPathManager_->ModuleList();
-}
-
 std::unique_ptr<lexer::Lexer> ETSParser::InitLexer(const SourceFile &sourceFile)
 {
     GetProgram()->SetSource(sourceFile);
@@ -159,7 +154,6 @@ void ETSParser::ParseProgram(ScriptKind kind)
     auto script = ParseETSGlobalScript(startLoc, statements);
 
     AddExternalSource(ParseSources());
-    GetProgram()->VarBinder()->AsETSBinder()->SetModuleList(this->ModuleList());
     GetProgram()->SetAst(script);
 }
 
@@ -186,8 +180,7 @@ void ETSParser::AddExternalSource(const std::vector<Program *> &programs)
     for (auto *newProg : programs) {
         auto &extSources = globalProgram_->ExternalSources();
 
-        const util::StringView name =
-            newProg->Ast()->Statements().empty() ? newProg->FileName() : newProg->GetPackageName();
+        const util::StringView name = newProg->ModuleName();
         if (extSources.count(name) == 0) {
             extSources.emplace(name, Allocator()->Adapter());
         }
@@ -245,6 +238,7 @@ std::vector<Program *> ETSParser::ParseSources()
 
         auto currentLang = GetContext().SetLanguage(data.lang);
         auto extSrc = Allocator()->New<util::UString>(externalSource, Allocator());
+        importPathManager_->MarkAsParsed(parseList[idx].sourcePath);
         auto newProg = ParseSource(
             {parseList[idx].sourcePath.Utf8(), extSrc->View().Utf8(), parseList[idx].sourcePath.Utf8(), false});
 
@@ -570,7 +564,7 @@ ir::ModifierFlags ETSParser::ParseClassFieldModifiers(bool seenStatic)
             }
             case lexer::TokenType::KEYW_READONLY: {
                 // NOTE(OCs): Use ir::ModifierFlags::READONLY once compiler is ready for it.
-                currentFlag = ir::ModifierFlags::CONST;
+                currentFlag = ir::ModifierFlags::CONST | ir::ModifierFlags::READONLY;
                 break;
             }
             default: {
@@ -805,9 +799,11 @@ ir::ScriptFunction *ETSParser::ParseFunction(ParserStatus newStatus, ir::Identif
     functionContext.AddFlag(throwMarker);
 
     // clang-format off
+    bool isDeclare = InAmbientContext();
+    ir::ModifierFlags mFlags = isDeclare ? ir::ModifierFlags::DECLARE : ir::ModifierFlags::NONE;
     auto *funcNode = AllocNode<ir::ScriptFunction>(
         Allocator(), ir::ScriptFunction::ScriptFunctionData {
-                        body, std::move(signature), functionContext.Flags(), {}, false, GetContext().GetLanguage()});
+            body, std::move(signature), functionContext.Flags(), mFlags, isDeclare, GetContext().GetLanguage()});
     // clang-format on
 
     funcNode->SetRange({startLoc, endLoc});
@@ -971,13 +967,30 @@ ir::AstNode *ETSParser::ParseInnerRest(const ArenaVector<ir::AstNode *> &propert
         }
     }
 
+    auto parseClassMethod = [&memberModifiers, &startLoc, this](ir::Identifier *methodName) {
+        auto *classMethod = ParseClassMethodDefinition(methodName, memberModifiers, nullptr);
+        classMethod->SetStart(startLoc);
+        return classMethod;
+    };
+
+    if (InAmbientContext()) {
+        if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS &&
+            (GetContext().Status() & ParserStatus::IN_CLASS_BODY) != 0U) {
+            // Special case for processing of special '(param: type): returnType` identifier using in ambient context
+            util::StringView tokenName = util::StringView {compiler::Signatures::STATIC_INVOKE_METHOD};
+            memberModifiers |= ir::ModifierFlags::STATIC;
+            auto *ident = AllocNode<ir::Identifier>(tokenName, Allocator());
+            ident->SetReference(false);
+            ident->SetRange({Lexer()->GetToken().Start(), Lexer()->GetToken().End()});
+            return parseClassMethod(ident);
+        }
+    }
+
     auto *memberName = ExpectIdentifier();
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS ||
         Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
-        auto *classMethod = ParseClassMethodDefinition(memberName, memberModifiers, nullptr);
-        classMethod->SetStart(startLoc);
-        return classMethod;
+        return parseClassMethod(memberName);
     }
 
     ArenaVector<ir::AstNode *> fieldDeclarations(Allocator()->Adapter());
@@ -1375,26 +1388,20 @@ ir::ClassDefinition *ETSParser::ParseClassDefinition(ir::ClassDefinitionModifier
         implements = ParseClassImplementClause();
     }
 
+    ArenaVector<ir::AstNode *> properties(Allocator()->Adapter());
+    ir::MethodDefinition *ctor = nullptr;
+    lexer::SourceRange bodyRange;
+
     if ((flags & ir::ModifierFlags::DECLARE) != 0U &&
         Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
-        ArenaVector<ir::AstNode *> properties(Allocator()->Adapter());
-        ir::MethodDefinition *ctor = nullptr;
+        // without ClassBody
+        bodyRange = lexer::SourceRange {Lexer()->GetToken().Start(), Lexer()->GetToken().Start()};
+    } else {
+        ExpectToken(lexer::TokenType::PUNCTUATOR_LEFT_BRACE, false);
 
-        auto *classDefinition = AllocNode<ir::ClassDefinition>(
-            util::StringView(), identNode, typeParamDecl, superTypeParams, std::move(implements), ctor, superClass,
-            std::move(properties), modifiers, flags, GetContext().GetLanguage());
-
-        classDefinition->SetEnd(identNode->End());
-
-        GetContext().Status() &= ~ParserStatus::ALLOW_SUPER;
-
-        return classDefinition;
+        // Parse ClassBody
+        std::tie(ctor, properties, bodyRange) = ParseClassBody(modifiers, flags);
     }
-
-    ExpectToken(lexer::TokenType::PUNCTUATOR_LEFT_BRACE, false);
-
-    // Parse ClassBody
-    auto [ctor, properties, bodyRange] = ParseClassBody(modifiers, flags);
 
     auto *classDefinition = AllocNode<ir::ClassDefinition>(
         util::StringView(), identNode, typeParamDecl, superTypeParams, std::move(implements), ctor, superClass,
@@ -1720,6 +1727,18 @@ void ETSParser::ValidateRestParameter(ir::Expression *param)
     }
 }
 
+bool ETSParser::ValidateBreakLabel([[maybe_unused]] util::StringView label)
+{
+    // For ETS validate labels in checker via variables
+    return true;
+}
+
+bool ETSParser::ValidateContinueLabel([[maybe_unused]] util::StringView label)
+{
+    // For ETS validate labels in checker via variables
+    return true;
+}
+
 ir::AstNode *ETSParser::ParseTypeLiteralOrInterfaceMember()
 {
     auto startLoc = Lexer()->GetToken().Start();
@@ -1800,6 +1819,10 @@ ir::TypeNode *ETSParser::ParseTypeReference(TypeAnnotationParsingOptions *option
 {
     auto startPos = Lexer()->GetToken().Start();
     ir::ETSTypeReferencePart *typeRefPart = nullptr;
+
+    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_FORMAT) {
+        return ParseTypeFormatPlaceholder();
+    }
 
     while (true) {
         auto partPos = Lexer()->GetToken().Start();
@@ -2377,15 +2400,9 @@ ir::ETSPackageDeclaration *ETSParser::ParsePackageDeclaration()
     auto startLoc = Lexer()->GetToken().Start();
 
     if (Lexer()->GetToken().Type() != lexer::TokenType::KEYW_PACKAGE) {
-        if (!IsETSModule() && GetProgram()->IsEntryPoint()) {
-            // NOTE(rsipka): consider adding a filename name as module name to entry points as well
-            importPathManager_->InsertModuleInfo(GetProgram()->AbsoluteName(),
-                                                 util::ImportPathManager::ModuleInfo {util::StringView(""), false});
-            return nullptr;
-        }
-        importPathManager_->InsertModuleInfo(GetProgram()->AbsoluteName(),
-                                             util::ImportPathManager::ModuleInfo {GetProgram()->FileName(), false});
-        GetProgram()->SetPackageName(GetProgram()->FileName());
+        // NOTE(rsipka): Unclear behavior/code. Currently, all entry programs omit the module name if it is not a
+        // package module and the '--ets-module' option is not specified during compilation
+        GetProgram()->SetModuleInfo(GetProgram()->FileName(), false, GetProgram()->IsEntryPoint() && !IsETSModule());
         return nullptr;
     }
 
@@ -2401,12 +2418,7 @@ ir::ETSPackageDeclaration *ETSParser::ParsePackageDeclaration()
     auto packageName =
         name->IsIdentifier() ? name->AsIdentifier()->Name() : name->AsTSQualifiedName()->ToString(Allocator());
 
-    GetProgram()->SetPackageName(packageName);
-    // NOTE(rsipka): handle these two cases, check that is it really required
-    importPathManager_->InsertModuleInfo(GetProgram()->AbsoluteName(),
-                                         util::ImportPathManager::ModuleInfo {packageName, true});
-    importPathManager_->InsertModuleInfo(GetProgram()->ResolvedFilePath(),
-                                         util::ImportPathManager::ModuleInfo {packageName, true});
+    GetProgram()->SetModuleInfo(packageName, true);
 
     return packageDeclaration;
 }
@@ -2849,7 +2861,7 @@ ir::VariableDeclarator *ETSParser::ParseVariableDeclarator(ir::Expression *init,
     }
 
     if ((flags & VariableParsingFlags::CONST) != 0 &&
-        static_cast<uint32_t>(flags & VariableParsingFlags::ACCEPT_CONST_NO_INIT) == 0U) {
+        static_cast<uint32_t>(flags & VariableParsingFlags::ACCEPT_CONST_NO_INIT) == 0U && !InAmbientContext()) {
         ThrowSyntaxError("Missing initializer in const declaration");
     }
 
@@ -3292,7 +3304,7 @@ ir::ArrowFunctionExpression *ETSParser::ParseArrowFunctionExpression()
 {
     auto newStatus = ParserStatus::ARROW_FUNCTION;
     auto *func = ParseFunction(newStatus);
-    auto *arrowFuncNode = AllocNode<ir::ArrowFunctionExpression>(Allocator(), func);
+    auto *arrowFuncNode = AllocNode<ir::ArrowFunctionExpression>(func);
     arrowFuncNode->SetRange(func->Range());
     return arrowFuncNode;
 }
@@ -3571,7 +3583,7 @@ ir::Expression *ETSParser::ParseAsyncExpression()
 
     auto newStatus = ParserStatus::NEED_RETURN_TYPE | ParserStatus::ARROW_FUNCTION | ParserStatus::ASYNC_FUNCTION;
     auto *func = ParseFunction(newStatus);
-    auto *arrowFuncNode = AllocNode<ir::ArrowFunctionExpression>(Allocator(), func);
+    auto *arrowFuncNode = AllocNode<ir::ArrowFunctionExpression>(func);
     arrowFuncNode->SetRange(func->Range());
     return arrowFuncNode;
 }
@@ -4108,7 +4120,8 @@ void ETSParser::CheckDeclare()
         case lexer::TokenType::KEYW_TYPE:
         case lexer::TokenType::KEYW_ABSTRACT:
         case lexer::TokenType::KEYW_FINAL:
-        case lexer::TokenType::KEYW_INTERFACE: {
+        case lexer::TokenType::KEYW_INTERFACE:
+        case lexer::TokenType::KEYW_ASYNC: {
             return;
         }
         default: {
