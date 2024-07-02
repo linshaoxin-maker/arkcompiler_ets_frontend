@@ -958,7 +958,7 @@ void ETSObjectType::InstantiateProperties() const
     }
 
     ASSERT(!propertiesInstantiated_);
-    checker->ResolveDeclaredMembersOfObject(this);
+    declNode_->Check(checker);
 
     for (auto *const it : baseType_->ConstructSignatures()) {
         auto *newSig = it->Substitute(relation_, substitution_);

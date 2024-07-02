@@ -714,6 +714,10 @@ void ETSChecker::ValidateOverriding(ETSObjectType *classType, const lexer::Sourc
             isSetter = (*abstractSignature)->HasSignatureFlag(SignatureFlags::SETTER);
             isExternal = (*abstractSignature)->Function()->IsExternal();
             for (auto *const implemented : implementedSignatures) {
+                if (implemented->HasSignatureFlag(SignatureFlags::NEED_RETURN_TYPE)) {
+                    implemented->OwnerVar()->Declaration()->Node()->Check(this);
+                }
+
                 Signature *substImplemented = AdjustForTypeParameters(*abstractSignature, implemented);
 
                 if (substImplemented == nullptr) {
@@ -862,6 +866,10 @@ void ETSChecker::CheckClassDefinition(ir::ClassDefinition *classDef)
 {
     classDef->SetClassDefinitionChecked();
     auto *classType = classDef->TsType()->AsETSObjectType();
+    if (classType->SuperType() != nullptr) {
+        classType->SuperType()->GetDeclNode()->Check(this);
+    }
+
     auto newStatus = checker::CheckerStatus::IN_CLASS;
     classType->SetEnclosingType(Context().ContainingClass());
 
