@@ -23,6 +23,7 @@ import { ArkTSLinterTimePrinter, TimePhase } from '../ArkTSTimePrinter';
 import { getScriptKind } from '../../lib/utils/functions/GetScriptKind';
 import { SdkTSCCompiledProgram } from './SdkTSCCompiledProgram';
 import { IncrementalLinterState } from './incrementalLinter';
+import { InteropTypescriptLinter } from '../../lib/InteropTypescriptLinter';
 
 function makeDiag(
   category: ts.DiagnosticCategory,
@@ -73,48 +74,100 @@ export function runArkTSLinter(
     })
   );
   timePrinterInstance.appendTime(TimePhase.GET_TSC_DIAGNOSTICS);
-
+  const etsLoaderPath = program.getCompilerOptions().etsLoaderPath;
+  const tsImportSendableEnable = program.getCompilerOptions().tsImportSendableEnable;
   const linter = createTypeScriptLinter(program, tscStrictDiagnostics, needAutoFix, isUseRtLogic);
-  for (const fileToLint of srcFiles) {
-    if (getScriptKind(fileToLint) !== ts.ScriptKind.ETS) {
-      continue;
-    }
-
-    const currentDiagnostics = getDiagnostic(incrementalLinterState, linter, fileToLint, tscStrictDiagnostics);
-    diagnostics.push(...currentDiagnostics);
-
-    // Add linter diagnostics to new cache.
-    incrementalLinterState.updateDiagnostics(fileToLint, currentDiagnostics);
-  }
-
+  const interopTypescriptLinter = createInteropTypescriptLinter(
+    program,
+    tsBuilderProgram.getCompilerOptions(),
+    isUseRtLogic
+  );
+  processFiles(
+    incrementalLinterState,
+    linter,
+    interopTypescriptLinter,
+    srcFiles,
+    tscStrictDiagnostics,
+    diagnostics,
+    etsLoaderPath,
+    tsImportSendableEnable
+  );
   timePrinterInstance.appendTime(TimePhase.LINT);
-
-  // Write tsbuildinfo file only after we cached the linter diagnostics.
   if (buildInfoWriteFile) {
     IncrementalLinterState.emitBuildInfo(buildInfoWriteFile, tscDiagnosticsLinter.getBuilderProgram());
     timePrinterInstance.appendTime(TimePhase.EMIT_BUILD_INFO);
   }
-
   releaseResources();
   return diagnostics;
+}
+
+function processFiles(
+  incrementalLinterState: IncrementalLinterState,
+  linter: TypeScriptLinter,
+  interopTypescriptLinter: InteropTypescriptLinter,
+  srcFiles: ts.SourceFile[],
+  tscStrictDiagnostics: Map<string, ts.Diagnostic[]>,
+  diagnostics: ts.Diagnostic[],
+  etsLoaderPath?: string,
+  tsImportSendableEnable?: boolean
+): void {
+  for (const fileToLint of srcFiles) {
+    const scriptKind = getScriptKind(fileToLint);
+    if (scriptKind !== ts.ScriptKind.ETS && scriptKind !== ts.ScriptKind.TS) {
+      return;
+    }
+    
+    const currentDiagnostics = getDiagnostic(
+      incrementalLinterState,
+      linter,
+      interopTypescriptLinter,
+      fileToLint,
+      tscStrictDiagnostics,
+      scriptKind,
+      etsLoaderPath,
+      tsImportSendableEnable
+    );
+    diagnostics.push(...currentDiagnostics);
+    incrementalLinterState.updateDiagnostics(fileToLint, currentDiagnostics);
+  }
 }
 
 function getDiagnostic(
   incrementalLinterState: IncrementalLinterState,
   linter: TypeScriptLinter,
+  interopTypescriptLinter: InteropTypescriptLinter,
   fileToLint: ts.SourceFile,
-  tscStrictDiagnostics: Map<string, ts.Diagnostic[]>
+  tscStrictDiagnostics: Map<string, ts.Diagnostic[]>,
+  scriptKind: ts.ScriptKind,
+  etsLoaderPath?: string,
+  tsImportSendableEnable?: boolean
 ): ts.Diagnostic[] {
-  let currentDiagnostics: ts.Diagnostic[];
+  let currentDiagnostics: ts.Diagnostic[] = [];
   if (incrementalLinterState.isFileChanged(fileToLint)) {
-    linter.lint(fileToLint);
+    if (scriptKind === ts.ScriptKind.ETS) {
+      linter.lint(fileToLint);
 
-    // Get list of bad nodes from the current run.
-    currentDiagnostics = tscStrictDiagnostics.get(path.normalize(fileToLint.fileName)) ?? [];
-    linter.problemsInfos.forEach((x) => {
-      return currentDiagnostics.push(translateDiag(fileToLint, x));
-    });
-    linter.problemsInfos.length = 0;
+      // Get list of bad nodes from the current run.
+      currentDiagnostics = tscStrictDiagnostics.get(path.normalize(fileToLint.fileName)) ?? [];
+      linter.problemsInfos.forEach((x) => {
+        return currentDiagnostics.push(translateDiag(fileToLint, x));
+      });
+    } else {
+      const isKit = path.basename(fileToLint.fileName).toLowerCase().
+        indexOf('@kit.') === 0;
+      const isInSdk = etsLoaderPath ?
+        path.normalize(fileToLint.fileName).indexOf(path.resolve(etsLoaderPath, '../..')) === 0 :
+        false;
+      const isInOhModules = ts.isOHModules(fileToLint.fileName);
+      if (isKit || isInOhModules || !tsImportSendableEnable && !isInSdk) {
+        return currentDiagnostics;
+      }
+
+      interopTypescriptLinter.lint(fileToLint);
+      interopTypescriptLinter.problemsInfos.forEach((x) => {
+        return currentDiagnostics.push(translateDiag(fileToLint, x));
+      });
+    }
   } else {
     // Get diagnostics from old run.
     currentDiagnostics = incrementalLinterState.getOldDiagnostics(fileToLint);
@@ -149,6 +202,14 @@ function createTypeScriptLinter(
     undefined,
     tscStrictDiagnostics
   );
+}
+
+function createInteropTypescriptLinter(
+  program: ts.Program,
+  compileOptions: ts.CompilerOptions,
+  isUseRtLogic?: boolean
+): InteropTypescriptLinter {
+  return new InteropTypescriptLinter(program.getLinterTypeChecker(), compileOptions, undefined, !!isUseRtLogic);
 }
 
 // Reclaim memory for Hvigor with "no-parallel" and "daemon".
