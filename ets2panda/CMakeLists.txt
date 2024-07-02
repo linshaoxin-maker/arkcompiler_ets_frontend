@@ -257,6 +257,7 @@ set(ES2PANDA_LIB_SRC
   ir/statements/ifStatement.cpp
   ir/statements/labelledStatement.cpp
   ir/statements/loopStatement.cpp
+  ir/statements/namespaceDeclaration.cpp
   ir/statements/returnStatement.cpp
   ir/statements/switchCaseStatement.cpp
   ir/statements/switchStatement.cpp

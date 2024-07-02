@@ -76,6 +76,13 @@ void ImportExportDecls::VisitExportNamedDeclaration(ir::ExportNamedDeclaration *
     }
 }
 
+void ImportExportDecls::VisitNamespaceDeclaration(ir::NamespaceDeclaration *nsDecl)
+{
+    for (auto stmt : nsDecl->Statements()) {
+        stmt->Accept(this);
+    }
+}
+
 void HandleSimpleType(std::set<util::StringView> &exportedTypes, std::set<util::StringView> &exportedStatements,
                       ir::Statement *stmt, util::StringView name, parser::Program *program, lexer::SourcePosition pos)
 {

@@ -64,6 +64,7 @@ private:
     void VisitFunctionDeclaration(ir::FunctionDeclaration *funcDecl) override;
     void VisitVariableDeclaration(ir::VariableDeclaration *varDecl) override;
     void VisitExportNamedDeclaration(ir::ExportNamedDeclaration *exportDecl) override;
+    void VisitNamespaceDeclaration(ir::NamespaceDeclaration *nsDecl) override;
 
 private:
     varbinder::ETSBinder *varbinder_ {nullptr};

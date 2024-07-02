@@ -1418,6 +1418,11 @@ checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::LabelledStatement *st) con
     UNREACHABLE();
 }
 
+checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::NamespaceDeclaration *ns) const
+{
+    UNREACHABLE();
+}
+
 checker::Type *TSAnalyzer::Check(ir::ReturnStatement *st) const
 {
     TSChecker *checker = GetTSChecker();

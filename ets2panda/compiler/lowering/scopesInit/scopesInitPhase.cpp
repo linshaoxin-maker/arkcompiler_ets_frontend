@@ -1089,6 +1089,13 @@ void InitScopesPhaseETS::VisitClassDefinition(ir::ClassDefinition *classDef)
     BindScopeNode(classScope, classDef);
 }
 
+void InitScopesPhaseETS::VisitNamespaceDeclaration(ir::NamespaceDeclaration *ns)
+{
+    auto name = ns->Ident()->Name();
+    AddOrGetDecl<varbinder::NameSpaceDecl>(VarBinder(), name, ns, ns->Start(), name);
+    CallNode(ns->Statements());
+}
+
 void InitScopesPhaseETS::VisitTSInterfaceBody(ir::TSInterfaceBody *interfBody)
 {
     Iterate(interfBody);

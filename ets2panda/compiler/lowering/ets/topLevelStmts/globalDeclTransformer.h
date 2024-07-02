@@ -64,6 +64,7 @@ public:
     ResultT TransformStatements(const ArenaVector<ir::Statement *> &stmts, bool addInitializer);
 
     void VisitFunctionDeclaration(ir::FunctionDeclaration *funcDecl) override;
+    void VisitNamespaceDeclaration(ir::NamespaceDeclaration *nsDecl) override;
     void VisitVariableDeclaration(ir::VariableDeclaration *varDecl) override;
     void HandleNode(ir::AstNode *node) override;
 

@@ -40,6 +40,7 @@
 #include "ir/statements/functionDeclaration.h"
 #include "ir/statements/expressionStatement.h"
 #include "ir/statements/classDeclaration.h"
+#include "ir/statements/namespaceDeclaration.h"
 #include "ir/statements/variableDeclarator.h"
 #include "ir/statements/variableDeclaration.h"
 #include "ir/expressions/callExpression.h"
@@ -934,8 +935,8 @@ ir::AstNode *ETSParser::ParseInnerTypeDeclaration(ir::ModifierFlags memberModifi
 ir::AstNode *ETSParser::ParseInnerConstructorDeclaration(ir::ModifierFlags memberModifiers,
                                                          const lexer::SourcePosition &startLoc)
 {
-    if ((GetContext().Status() & ParserStatus::IN_NAMESPACE) != 0) {
-        ThrowSyntaxError({"Namespaces should not have a constructor"});
+    if ((GetContext().Status() & ParserStatus::IN_CLASS_BODY) == 0) {
+        ThrowSyntaxError({"Constructor should not be outside a class body"});
     }
     if ((memberModifiers & ir::ModifierFlags::ASYNC) != 0) {
         ThrowSyntaxError({"Constructor should not be async."});
@@ -1169,10 +1170,7 @@ ir::Statement *ETSParser::ParseTypeDeclaration(bool allowStatic)
             if (!InAmbientContext()) {
                 ThrowSyntaxError("Namespaces are declare only");
             }
-            GetContext().Status() |= ParserStatus::IN_NAMESPACE;
-            auto *ns = ParseClassDeclaration(modifiers, ir::ModifierFlags::STATIC);
-            GetContext().Status() &= ~ParserStatus::IN_NAMESPACE;
-            return ns;
+            return ParseNamespaceDeclaration();
         }
         case lexer::TokenType::KEYW_CLASS: {
             return ParseClassDeclaration(modifiers);
@@ -1576,6 +1574,47 @@ ir::MethodDefinition *ETSParser::ParseInterfaceMethod(ir::ModifierFlags flags, i
     ConsumeSemicolon(method);
 
     return method;
+}
+
+ir::NamespaceDeclaration *ETSParser::ParseNamespaceDeclaration()
+{
+    Lexer()->NextToken();
+
+    ir::Identifier *ident = ExpectIdentifier();
+    if (ident == nullptr) {
+        ThrowSyntaxError("Unexpected token, expected an identifier.");
+    }
+
+    ExpectToken(lexer::TokenType::PUNCTUATOR_LEFT_BRACE, false);
+
+    auto savedCtx = SavedStatusContext<ParserStatus::IN_NAMESPACE>(&GetContext());
+    lexer::SourcePosition startLoc = Lexer()->GetToken().Start();
+
+    Lexer()->NextToken(lexer::NextTokenFlags::KEYWORD_TO_IDENT);
+
+    ArenaVector<ir::Statement *> statements(Allocator()->Adapter());
+    while (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
+        if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
+            Lexer()->NextToken();
+            continue;
+        }
+
+        auto element = ParseTopLevelDeclStatement(StatementParsingFlags::ALLOW_LEXICAL);
+        if (element == nullptr) {
+            const auto &token = Lexer()->GetToken();
+            auto tokenTypeName = token.IsKeyword() ? "Keyword '" : "Identifier '";
+            ThrowSyntaxError({tokenTypeName, token.Ident().Utf8(), "' is not allowed within namespace"});
+        }
+
+        statements.push_back(element);
+    }
+
+    lexer::SourcePosition endLoc = Lexer()->GetToken().End();
+    Lexer()->NextToken();
+
+    auto ns = AllocNode<ir::NamespaceDeclaration>(ident, std::move(statements));
+    ns->SetRange(lexer::SourceRange {startLoc, endLoc});
+    return ns;
 }
 
 std::pair<bool, std::size_t> ETSParser::CheckDefaultParameters(const ir::ScriptFunction *const function) const

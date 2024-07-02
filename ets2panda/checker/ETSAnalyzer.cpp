@@ -2064,6 +2064,11 @@ checker::Type *ETSAnalyzer::Check(ir::LabelledStatement *st) const
     return nullptr;
 }
 
+checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::NamespaceDeclaration *ns) const
+{
+    UNREACHABLE();
+}
+
 checker::Type *ETSAnalyzer::GetFunctionReturnType(ir::ReturnStatement *st, ir::ScriptFunction *containingFunc) const
 {
     ASSERT(containingFunc->ReturnTypeAnnotation() != nullptr || containingFunc->Signature()->ReturnType() != nullptr);

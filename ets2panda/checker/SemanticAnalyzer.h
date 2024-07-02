@@ -107,6 +107,7 @@
 #include "ir/statements/functionDeclaration.h"
 #include "ir/statements/ifStatement.h"
 #include "ir/statements/labelledStatement.h"
+#include "ir/statements/namespaceDeclaration.h"
 #include "ir/statements/returnStatement.h"
 #include "ir/statements/switchCaseStatement.h"
 #include "ir/statements/switchStatement.h"

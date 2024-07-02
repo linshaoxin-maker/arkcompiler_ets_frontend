@@ -357,6 +357,7 @@ private:
     void VisitClassProperty(ir::ClassProperty *classProp) override;
     void VisitBreakStatement(ir::BreakStatement *stmt) override;
     void VisitContinueStatement(ir::ContinueStatement *stmt) override;
+    void VisitNamespaceDeclaration(ir::NamespaceDeclaration *ns) override;
     void AttachLabelToScope(ir::AstNode *node) override;
     void VisitArrowFunctionExpression(ir::ArrowFunctionExpression *arrowExpr) override
     {
