@@ -582,18 +582,16 @@ Type *ETSChecker::GetTypeFromTypeAliasReference(varbinder::Variable *var)
 
     auto *recursiveType = tse.GetElementType();
 
-    if (isRecursive) {
-        if (recursiveType != nullptr) {
-            return recursiveType;
-        }
-
-        recursiveType = CreateETSRecursiveType(aliasTypeNode->Id()->Name());
-        if (aliasTypeNode->TypeParams() != nullptr) {
-            recursiveType->AsETSRecursiveType()->SetTypeArguments(
-                CreateTypeForTypeParameters(aliasTypeNode->TypeParams()));
-        }
-        tse.SetElementType(recursiveType);
+    if (recursiveType != nullptr) {
+        return recursiveType;
     }
+
+    recursiveType = CreateETSRecursiveType(aliasTypeNode->Id()->Name());
+    if (aliasTypeNode->TypeParams() != nullptr) {
+           recursiveType->AsETSRecursiveType()->SetTypeArguments(
+              CreateTypeForTypeParameters(aliasTypeNode->TypeParams()));
+    }
+    tse.SetElementType(recursiveType);
 
     aliasTypeNode->Check(this);
     auto *aliasedType = aliasTypeNode->TypeAnnotation()->GetType(this);
