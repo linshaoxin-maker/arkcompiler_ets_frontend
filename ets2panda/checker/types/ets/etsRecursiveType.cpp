@@ -55,7 +55,14 @@ void ETSRecursiveType::ToString(std::stringstream &ss, bool precise) const
 
 void ETSRecursiveType::ToAssemblerType(std::stringstream &ss) const
 {
-    globalETSObjectType_->ToAssemblerType(ss);
+	if(recursionCount_ > 0) {
+		globalETSObjectType_->ToAssemblerType(ss);
+		return;
+	}
+
+	recursionCount_++;
+	subType_->ToAssemblerType(ss);
+	recursionCount_--;
 }
 
 void ETSRecursiveType::ToDebugInfoType(std::stringstream &ss) const

@@ -86,6 +86,7 @@ private:
     InstantiationMap instantiationMap_;
     ArenaVector<Type *> typeArguments_;
     const Substitution *substitution_ = nullptr;
+    thread_local uint8_t recursionCount_ = 0;
 };
 }  // namespace ark::es2panda::checker
 
