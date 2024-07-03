@@ -1409,6 +1409,11 @@ def add_directory_for_regression(runners, args):
     runner.add_directory("parser/unicode", "js", ["--parse-only"])
     runner.add_directory("parser/ts/stack_overflow", "ts", ["--parse-only", "--dump-ast"])
 
+    # Tests for memory-limit option
+    runner.add_directory("options/memory_limit/oom", "js", ["--memory-limit=1"])
+    runner.add_directory("options/memory_limit/nolimit", "js", ["--memory-limit=0"])
+    runner.add_directory("options/memory_limit/param_overflow", "js", ["--memory-limit=100000000000000"])
+
     runners.append(runner)
 
     transformer_runner = TransformerRunner(args)
