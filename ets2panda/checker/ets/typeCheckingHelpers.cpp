@@ -598,11 +598,9 @@ Type *ETSChecker::GetTypeFromTypeAliasReference(varbinder::Variable *var)
     aliasTypeNode->Check(this);
     auto *aliasedType = aliasTypeNode->TypeAnnotation()->GetType(this);
 
-    if (isRecursive) {
-        recursiveType->AsETSRecursiveType()->SetSubType(aliasedType);
-        recursiveType->AsETSRecursiveType()->ApplaySubstitution(Relation());
-        aliasedType = recursiveType;
-    }
+    recursiveType->AsETSRecursiveType()->SetSubType(aliasedType);
+    recursiveType->AsETSRecursiveType()->ApplaySubstitution(Relation());
+    aliasedType = recursiveType;
 
     var->SetTsType(aliasedType);
     return aliasedType;
