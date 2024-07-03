@@ -25,6 +25,7 @@
     "test_main_sdk": "npm run compile && rimraf test/results_sdk && node build/src/TestRunner.js -P:test -SDK",
     "test_regression_sdk": "npm run compile && rimraf test_regression/results_sdk && node build/src/TestRunner.js -P:test_regression -SDK",
     "test_rules_sdk": "npm run compile && rimraf test_rules/results_sdk && node build/src/TestRunner.js -P:test_rules -SDK",
+    "test_ts_import_ets": "npm run compile && rimraf test_ts_import_ets/ts/results_sdk && node build/src/TestRunner.js -P:test_ts_import_ets/ts -SDK -CheckTs",
     "test_extended_features": "npm run compile && rimraf test_extended_features/results && node build/src/TestRunner.js test_extended_features",
     "update-tests": "node scripts/update-test-results.mjs test test_rules test_regression test_extended_features",
     "eslint-check": "npx eslint --ext .ts .",

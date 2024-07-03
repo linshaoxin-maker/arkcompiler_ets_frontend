@@ -18,6 +18,7 @@ import { LoggerImpl } from './LoggerImpl';
 Logger.init(new LoggerImpl());
 
 import { TypeScriptLinter } from '../lib/TypeScriptLinter';
+import { InteropTypescriptLinter } from '../lib/InteropTypescriptLinter';
 import { lint } from '../lib/LinterRunner';
 import { parseCommandLine } from './CommandLineParser';
 import type { Autofix } from '../lib/autofixes/Autofixer';
@@ -28,6 +29,7 @@ import type { CommandLineOptions } from '../lib/CommandLineOptions';
 import { compileLintOptions } from './Compiler';
 
 let enableUseRtLogic = true;
+let enableCheckTsFile = false;
 const TEST_DIR = 'test';
 const TAB = '    ';
 
@@ -61,6 +63,8 @@ function runTests(): number {
    */
   TypeScriptLinter.ideMode = true;
   TypeScriptLinter.testMode = true;
+  InteropTypescriptLinter.ideMode = true;
+  InteropTypescriptLinter.testMode = true;
 
   let hasComparisonFailures = false;
   let passed = 0;
@@ -107,6 +111,10 @@ function getParam(): string[] {
     if (key.includes('-SDK')) {
       enableUseRtLogic = false;
     }
+
+    if (key.includes('-CheckTs')) {
+      enableCheckTsFile = true;
+    }
   }
 
   if (!pathArg?.length) {
@@ -125,6 +133,7 @@ function parseArgs(testDir: string, testFile: string, mode: Mode): CommandLineOp
     const args = JSON.parse(data);
     if (args.testMode !== undefined) {
       TypeScriptLinter.testMode = args.testMode;
+      InteropTypescriptLinter.testMode = args.testMode;
     }
   }
 
@@ -187,15 +196,16 @@ function runTest(testDir: string, testFile: string, mode: Mode): boolean {
   TypeScriptLinter.initGlobals();
 
   const currentTestMode = TypeScriptLinter.testMode;
-
+  const currentInteropTestMode = InteropTypescriptLinter.testMode;
   const cmdOptions = parseArgs(testDir, testFile, mode);
-  const result = lint(compileLintOptions(cmdOptions));
+  const result = lint(compileLintOptions(cmdOptions, enableCheckTsFile));
   const fileProblems = result.problemsInfos.get(path.normalize(cmdOptions.inputFiles[0]));
   if (fileProblems === undefined) {
     return true;
   }
 
   TypeScriptLinter.testMode = currentTestMode;
+  InteropTypescriptLinter.testMode = currentInteropTestMode;
 
   // Get list of bad nodes from the current run.
   const resultNodes: TestNodeInfo[] = fileProblems.map<TestNodeInfo>((x) => {
