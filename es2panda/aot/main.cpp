@@ -142,7 +142,7 @@ static void DumpProgramInfos(const std::map<std::string, panda::es2panda::util::
     if (compilerOptions.dumpAsm || compilerOptions.dumpLiteralBuffer || compilerOptions.dumpAsmProgram) {
         for (const auto &progInfo : programsInfo) {
             if (compilerOptions.dumpAsmProgram) {
-                panda::abc2program::PandasmProgramDumper dumper;
+                panda::abc2program::PandasmProgramDumper dumper(compilerOptions.isDebug);
                 dumper.Dump(std::cout, progInfo.second->program);
             }
 
