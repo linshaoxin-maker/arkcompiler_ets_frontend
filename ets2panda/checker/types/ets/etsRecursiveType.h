@@ -38,7 +38,7 @@ public:
     void SetSubType(Type *subType)
     {
         subType_ = subType;
-        AddTypeFlags(subType_.TypeFlags());
+        AddTypeFlag(subType_->TypeFlags());
     }
 
     std::tuple<bool, bool> ResolveConditionExpr() const override
@@ -65,6 +65,22 @@ public:
     void ApplaySubstitution(TypeRelation *relation);
 
     void SetTypeArguments(ArenaVector<Type *> typeArguments);
+
+
+    // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+    #define TYPE_AS_CASTS(typeFlag, typeName)                \
+        typeName *As##typeName() override                    \
+        {                                                    \
+            ASSERT(subType_->Is##typeName());                \
+            return reinterpret_cast<typeName *>(subType_);   \
+        }                                                    \
+        const typeName *As##typeName() const override        \
+        {                                                    \
+            ASSERT(subType_->Is##typeName());                \
+            return reinterpret_cast<const typeName *>(suvType_); \
+        }
+        TYPE_MAPPING(TYPE_AS_CASTS)
+    #undef TYPE_AS_CASTS
 
 private:
     ETSRecursiveType *GetInstantiatedType(util::StringView hash);
