@@ -17,6 +17,7 @@
 #define ES2PANDA_COMPILER_CHECKER_TYPES_ETS_ETS_RECURSIVE_TYPE_H
 
 #include "checker/types/ets/etsObjectType.h"
+#include "checker/types/typeMapping.h"
 
 namespace ark::es2panda::checker {
 class ETSRecursiveType : public Type {
