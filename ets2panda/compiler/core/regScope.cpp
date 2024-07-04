@@ -155,11 +155,10 @@ FunctionRegScope::FunctionRegScope(PandaGen *pg) : RegScope(pg), envScope_(pg->A
 
 FunctionRegScope::~FunctionRegScope()
 {
-    if (cg_->IsDebug()) {
+    if (cg_->IsDebug() && !cg_->insns_.empty()) {
         cg_->topScope_->SetScopeStart(cg_->insns_.front());
+        DebuggerCloseScope();
     }
-
-    DebuggerCloseScope();
 
     if (envScope_ != nullptr) {
         envScope_->~EnvScope();
