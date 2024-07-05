@@ -43,6 +43,7 @@
 #include <util/concurrent.h>
 
 #ifdef ENABLE_BYTECODE_OPT
+#include <bytecode_optimizer/analysis_bytecode.h>
 #include <bytecode_optimizer/bytecodeopt_options.h>
 #include <bytecode_optimizer/bytecode_analysis_results.h>
 #include <bytecode_optimizer/optimize_bytecode.h>
@@ -65,6 +66,8 @@
 namespace panda::es2panda::util {
 
 // Helpers
+std::mutex Helpers::BYTECODE_ANALYSIS_RESULTS_MUTEX;
+std::mutex Helpers::BYTECODE_MAPS_MUTEX;
 
 bool Helpers::IsGlobalIdentifier(const util::StringView &str)
 {
@@ -668,9 +671,16 @@ SignedNumberLiteral Helpers::GetSignedNumberLiteral(const ir::Expression *expr)
 
 void Helpers::SetConstantLocalExportSlots(const std::string &record, const std::unordered_set<uint32_t> &slots)
 {
-    bool ignored;
-    auto &result = panda::bytecodeopt::BytecodeAnalysisResults::GetOrCreateBytecodeAnalysisResult(record, ignored);
-    result.SetConstantLocalExportSlots(slots);
+    bool exist = false;
+    bytecodeopt::BytecodeAnalysisResult *result_ptr = nullptr;
+    {
+        std::unique_lock<std::mutex> lock(Helpers::BYTECODE_ANALYSIS_RESULTS_MUTEX);
+        result_ptr = &bytecodeopt::BytecodeAnalysisResults::GetOrCreateBytecodeAnalysisResult(record, exist);
+    }
+    // AnalysisProgram of the current record should be called before, so the corresponding
+    // BytecodeAnalysisResult must exist
+    ASSERT(exist);
+    result_ptr->SetConstantLocalExportSlots(slots);
 }
 
 static std::string GetTempOutputName(const std::string &inputFile)
@@ -693,8 +703,13 @@ void Helpers::AnalysisProgram(panda::pandasm::Program *prog, const std::string &
 #ifdef PANDA_WITH_BYTECODE_OPTIMIZER
     auto tempOutput = GetTempOutputName(inputFile);
     bool exists = false;
-    auto mapsp = &panda::bytecodeopt::BytecodeAnalysisResults::GetOrCreateBytecodeMaps(tempOutput, exists);
+    pandasm::AsmEmitter::PandaFileToPandaAsmMaps *mapsp = nullptr;
+    {
+        std::unique_lock<std::mutex> lock(BYTECODE_MAPS_MUTEX);
+        mapsp = &panda::bytecodeopt::BytecodeAnalysisResults::GetOrCreateBytecodeMaps(tempOutput, exists);
+    }
     ASSERT(!exists);
+    ASSERT(mapsp != nullptr);
 
     const uint32_t COMPONENT_MASK = panda::Logger::Component::ASSEMBLER |
                                     panda::Logger::Component::BYTECODE_OPTIMIZER |
@@ -702,8 +717,9 @@ void Helpers::AnalysisProgram(panda::pandasm::Program *prog, const std::string &
     panda::Logger::InitializeStdLogging(panda::Logger::Level::ERROR, COMPONENT_MASK);
 
     if (panda::pandasm::AsmEmitter::Emit(tempOutput, *prog, statp, mapsp, true)) {
-        panda::bytecodeopt::AnalysisBytecode(prog, mapsp, tempOutput, true, true);
+        panda::bytecodeopt::AnalysisBytecode(prog, mapsp, tempOutput, &BYTECODE_ANALYSIS_RESULTS_MUTEX, true, true);
     } else {
+        std::unique_lock<std::mutex> lock(BYTECODE_MAPS_MUTEX);
         panda::bytecodeopt::BytecodeAnalysisResults::DeleteBytecodeMaps(tempOutput);
     }
 #endif
@@ -722,7 +738,12 @@ void Helpers::OptimizeProgram(panda::pandasm::Program *prog, const std::string &
     panda::Logger::InitializeStdLogging(panda::Logger::Level::ERROR, COMPONENT_MASK);
 
     bool exists = false;
-    auto mapsp = &panda::bytecodeopt::BytecodeAnalysisResults::GetOrCreateBytecodeMaps(tempOutput, exists);
+    pandasm::AsmEmitter::PandaFileToPandaAsmMaps *mapsp = nullptr;
+    {
+        std::unique_lock<std::mutex> lock(BYTECODE_MAPS_MUTEX);
+        mapsp = &panda::bytecodeopt::BytecodeAnalysisResults::GetOrCreateBytecodeMaps(tempOutput, exists);
+    }
+    ASSERT(mapsp != nullptr);
     if (!exists) {
         exists = panda::pandasm::AsmEmitter::Emit(tempOutput, *prog, statp, mapsp, true);
     }
@@ -730,8 +751,10 @@ void Helpers::OptimizeProgram(panda::pandasm::Program *prog, const std::string &
         panda::bytecodeopt::OptimizeBytecode(prog, mapsp, tempOutput, true, true);
         std::remove(tempOutput.c_str());
     }
-    panda::bytecodeopt::BytecodeAnalysisResults::DeleteBytecodeMaps(tempOutput);
-
+    {
+        std::unique_lock<std::mutex> lock(BYTECODE_MAPS_MUTEX);
+        panda::bytecodeopt::BytecodeAnalysisResults::DeleteBytecodeMaps(tempOutput);
+    }
 #endif
 }
 
