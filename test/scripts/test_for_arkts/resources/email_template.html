@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ArkTS Test Results</title>
+  <style>
+    .passed {
+      color: #28a745;
+    }
+    .failed {
+      color: #dc3545;
+    }
+    blockquote {
+      margin: 20px 0;
+      padding: 10px 20px;
+      background-color: #f9f9f9;
+      border-left: 5px solid #ccc;
+      font-style: italic;
+    }
+    blockquote > p {
+      margin: 0;
+      padding: 5px 0;
+      color: #666;
+      line-height: 1.0;
+    }
+  </style>
+</head>
+<body>
+  <h1>ArkTS Test Results</h1>
+  <h2>Branch: master</h2>
+  <h2>DateTime: {{ datetime }}</h2>
+  <hr>
+  <h2>RT Test Results</h2>
+  <blockquote>
+    <p>test_main: Language Feature Test</p>
+    <p>test_rules: Rules Test</p>
+    <p>test_regression: Issue Test</p>
+  </blockquote>
+  <p><strong>test_main:</strong> {{ rt_main_result }}</p>
+  <ul>
+    {{ rt_main_failures }}
+  </ul>
+  <p><strong>test_rules:</strong> {{ rt_rules_result }}</p>
+  <ul>
+    {{ rt_rules_failures }}
+  </ul>
+  <p><strong>test_regression:</strong> {{ rt_regression_result }}</p>
+  <ul>
+    {{ rt_regression_failures }}
+  </ul>
+  <hr>
+  <h2>TSC Test Results</h2>
+  <p><strong>tsc_result:</strong> {{ tsc_test_result }}</p>
+  <ul>
+    {{ tsc_test_failures }}
+  </ul>
+  <hr>
+  <h2>arkTSTest Test Results</h2>
+  <p><strong>arktstest_v1.0_result:</strong> {{ arktstest_v1.0_result }}</p>
+  <ul>
+    {{ arktstest_v1.0_failures }}
+  </ul>
+  <p><strong>arktstest_v1.1_result:</strong> {{ arktstest_v1.1_result }}</p>
+  <ul>
+    {{ arktstest_v1.1_failures }}
+  </ul>
+</body>
+</html>

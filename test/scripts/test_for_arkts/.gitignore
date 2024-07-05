@@ -1,0 +1,12 @@
+./**/.vscode/
+./**/.venv/
+./**/__pycache__/
+
+
+./**/logs/
+./**/extern/
+./**/result/
+./**/*.tar.gz
+./**/.pdm.toml
+./**/.pdm-python
+./**/.pdm-build/
