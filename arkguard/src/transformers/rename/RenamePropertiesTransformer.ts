@@ -218,35 +218,32 @@ namespace secharmony {
         }
       }
 
-      function modifyNodeText(node: Identifier | NumericLiteral | StringLiteralLike , mangledName: string): Identifier |
-        NumericLiteral | StringLiteralLike {
+      function modifyNodeText(node: Identifier , mangledName: string): Identifier {
         //@ts-ignore
         node.escapedText = mangledName
-        //@ts-ignore
-        node.pos = -1;
-        //@ts-ignore
-        node.end = -1;
+        setInvalidPosforNode(node);
         return node;
       }
 
       function modifyStringLiteralLikeText(node: StringLiteralLike | NumericLiteral, mangledName: string): StringLiteralLike | NumericLiteral {
         //@ts-ignore
         node.text = mangledName
-        //@ts-ignore
-        node.pos = -1;
-        //@ts-ignore
-        node.end = -1;
+        setInvalidPosforNode(node);
         return node;
       }
 
       function modifyPrivateIdentifierText(node: PrivateIdentifier , mangledName: string): PrivateIdentifier {
         //@ts-ignore
         node.escapedText = '#'+ mangledName
+        setInvalidPosforNode(node);
+        return node;
+      }
+
+      function setInvalidPosforNode(node: Node): void {
         //@ts-ignore
         node.pos = -1;
         //@ts-ignore
         node.end = -1;
-        return node;
       }
 
       function getPropertyName(original: string): string {

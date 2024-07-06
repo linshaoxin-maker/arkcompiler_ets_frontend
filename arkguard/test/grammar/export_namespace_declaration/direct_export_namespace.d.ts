@@ -13,52 +13,52 @@
  * limitations under the License.
  */
 
-export declare namespace ns1 {
-    function foo1(): void;
-    class className1 {
-         prop11: number;
+export declare namespace ns11 {
+    function foo11(): void;
+    class className11 {
+        prop11: number;
     }
-    interface interName1 {
+    interface interName11 {
     }
 }
 
 
-export declare namespace ns2 {
-    export function foo2(): void;
-    export class className2 {
+export declare namespace ns12 {
+    export function foo12(): void;
+    export class className12 {
         prop21: number;
-        prop22: interName1 | undefined;
+        prop22: interName11 | undefined;
     }
-    interface interName1 {
+    interface interName11 {
     }
-    export interface interName2 {
+    export interface interName12 {
     }
     export {};
 }
 
-export declare namespace ns3 {
-    function foo3(): void;
-    class className3 {
+export declare namespace ns13 {
+    function foo13(): void;
+    class className13 {
         31: number;
-        prop22: interName1 | undefined;
+        prop22: interName13 | undefined;
     }
-    interface interName1 {
+    interface interName13 {
     }
 }
 
-export declare namespace ns4 {
-    function foo4(): void;
-    class className4 {
+export declare namespace ns14 {
+    function foo14(): void;
+    class className14 {
         [41]: number;
     }
 }
 
-export declare namespace ns5 {
-    function foo5(): void;
-    class className5 {
+export declare namespace ns15 {
+    function foo15(): void;
+    class className15 {
         [`55`]: string;
     }
-    interface interName5 {
+    interface interName15 {
     }
 }
 
@@ -71,11 +71,11 @@ export declare namespace ns12 {
     }
 }
 
-export declare namespace ns6 {
-    function foo6(): void;
-    class className6 {
+export declare namespace ns16 {
+    function foo16(): void;
+    class className16 {
         #private;
     }
-    interface interName6 {
+    interface interName16 {
     }
 }

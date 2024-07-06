@@ -12,14 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-declare namespace ns_default_0 {
-  function foo_default_0(): void;
-  class className_default_0 {
-      prop_default_01: number;
-      prop_default_02: interName0 | undefined;
-  }
-  interface interName0 {
-  }
+declare namespace t {
+    function foo19(): void;
+    class className19 {
+        prop91: number;
+        prop92: x | undefined;
+    }
+    interface x {
+    }
 }
-export default ns_default_0;
+declare namespace u {
+    export function foo20(): void;
+    export class v {
+        prop101: number;
+        prop102: w | undefined;
+    }
+    interface w {
+    }
+    export {};
+}
