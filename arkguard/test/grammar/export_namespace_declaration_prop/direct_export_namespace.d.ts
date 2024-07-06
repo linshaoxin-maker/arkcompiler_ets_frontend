@@ -16,7 +16,7 @@
 export declare namespace ns1 {
     function foo1(): void;
     class className1 {
-         prop11: number;
+        prop11: number;
     }
     interface interName1 {
     }
