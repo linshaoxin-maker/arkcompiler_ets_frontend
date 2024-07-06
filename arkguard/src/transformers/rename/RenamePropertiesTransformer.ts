@@ -202,11 +202,11 @@ namespace secharmony {
         let mangledName: string = getPropertyName(original);
 
         if (isStringLiteralLike(node)) {
-          return modifyNodeText(node, mangledName);
+          return modifyStringLiteralLikeText(node, mangledName);
         }
 
         if (isNumericLiteral(node)) {
-          return computeName ? modifyNodeText(node, mangledName) : modifyNodeText(node, mangledName);
+          return modifyStringLiteralLikeText(node, mangledName);
         }
 
         if (isIdentifier(node)) {
@@ -222,6 +222,14 @@ namespace secharmony {
         NumericLiteral | StringLiteralLike {
         //@ts-ignore
         node.escapedText = mangledName
+        //@ts-ignore
+        node.pos = -1;
+        //@ts-ignore
+        node.end = -1;
+        return node;
+      }
+
+      function modifyStringLiteralLikeText(node: StringLiteralLike | NumericLiteral, mangledName: string): StringLiteralLike | NumericLiteral {
         //@ts-ignore
         node.text = mangledName
         //@ts-ignore
