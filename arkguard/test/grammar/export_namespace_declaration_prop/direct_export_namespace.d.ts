@@ -7,6 +7,8 @@ export declare namespace ns1 {
     interface interName1 {
     }
 }
+
+
 // export declare namespace ns2 {
 //     export function foo2(): void;
 //     export class className2 {
@@ -17,3 +19,35 @@ export declare namespace ns1 {
 //     }
 //     export {};
 // }
+
+export declare namespace ns3 {
+    function foo3(): void;
+    class className3 {
+        31: number;
+        // prop22: interName1 | undefined;
+    }
+    interface interName1 {
+    }
+}
+
+export declare namespace ns4 {
+    function foo4(): void;
+    class className4 {
+        [41]: number;
+    }
+}
+
+export declare namespace ns5 {
+    function foo5(): void;
+    class className5 {
+        [`55`]: string;
+    }
+}
+
+
+export declare namespace ns6 {
+    function foo6(): void;
+    class className6 {
+        #private;
+    }
+}

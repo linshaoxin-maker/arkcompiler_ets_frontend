@@ -11,7 +11,7 @@
         "mDictionaryList": [],
         "mReservedNames": [],
         "mRenameProperties": true,
-        "mReservedToplevelNames":["foo1", "className1"],
+        "mReservedToplevelNames":["foo1", "className1", "foo3", "foo4", "foo5", "foo6"],
         "mReservedProperties": [ "strictEqual" ],
         "mKeepStringProperty": false,
         "mTopLevel": true

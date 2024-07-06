@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import {
+import ts, {
   factory,
   forEachChild,
   isComputedPropertyName,
@@ -43,7 +43,11 @@ import type {
   ClassDeclaration,
   ClassExpression,
   StructDeclaration,
-  PropertyName
+  PropertyName,
+  NumericLiteral,
+  StringLiteral,
+  StringLiteralLike,
+  PrivateIdentifier
 } from 'typescript';
 
 import type {IOptions} from '../../configs/IOptions';
@@ -170,10 +174,8 @@ namespace secharmony {
 
       function renameComputedProperty(node: ComputedPropertyName): ComputedPropertyName {
         if (isStringLiteralLike(node.expression) || isNumericLiteral(node.expression)) {
-          let prop: Node = renameProperty(node.expression, true);
-          if (prop !== node.expression) {
-            return factory.createComputedPropertyName(prop as Expression);
-          }
+          renameProperty(node.expression, true);
+          return node;
         }
 
         if (isIdentifier(node.expression)) {
@@ -200,19 +202,43 @@ namespace secharmony {
         let mangledName: string = getPropertyName(original);
 
         if (isStringLiteralLike(node)) {
-          return factory.createStringLiteral(mangledName);
+          return modifyNodeText(node, mangledName);
         }
 
         if (isNumericLiteral(node)) {
-          return computeName ? factory.createStringLiteral(mangledName) : factory.createIdentifier(mangledName);
-
+          return computeName ? modifyNodeText(node, mangledName) : modifyNodeText(node, mangledName);
         }
 
-        if (isIdentifier(node) || isNumericLiteral(node)) {
-          return factory.createIdentifier(mangledName);
+        if (isIdentifier(node)) {
+          return modifyNodeText(node, mangledName);
         }
 
-        return factory.createPrivateIdentifier('#' + mangledName);
+        if (isPrivateIdentifier(node)) {
+          return modifyPrivateIdentifierText(node, mangledName);
+        }
+      }
+
+      function modifyNodeText(node: Identifier | NumericLiteral | StringLiteralLike , mangledName: string): Identifier |
+        NumericLiteral | StringLiteralLike {
+        //@ts-ignore
+        node.escapedText = mangledName
+        //@ts-ignore
+        node.text = mangledName
+        //@ts-ignore
+        node.pos = -1;
+        //@ts-ignore
+        node.end = -1;
+        return node;
+      }
+
+      function modifyPrivateIdentifierText(node: PrivateIdentifier , mangledName: string): PrivateIdentifier {
+        //@ts-ignore
+        node.escapedText = '#'+ mangledName
+        //@ts-ignore
+        node.pos = -1;
+        //@ts-ignore
+        node.end = -1;
+        return node;
       }
 
       function getPropertyName(original: string): string {
