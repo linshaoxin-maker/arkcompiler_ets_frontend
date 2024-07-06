@@ -12,7 +12,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export default class __exportClass {
-    __classProp1: string = "123";
-    __classProp2: number = 123;
+
+namespace ModuleNs {
+  export let nsProp1 = "123";
+  export function nsFunc() {}
 }
+
+class ModuleClass {
+  classProp1 = "123";
+  objProp = {
+    innerProp: 123
+  }
+}
+
+class TestClass {
+  prop4 = 123;
+  propObj = {
+    innerProp1: "123"
+  };
+}
+
+export class TestClass2 {
+  prop1 = "123";
+  objProp1 = {
+    innerProp2: 123
+  }
+}
+
+export {ModuleNs as default, ModuleClass as mc};
+export {otherElement1, otherElement2 as o2} from './filePath';
