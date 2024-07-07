@@ -12,14 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-export declare namespace ns21 {
-  function foo21(): void;
-  struct structName21 {
-    prop21: number;
-  }
-  interface interName21 {
-  }
+export declare namespace y {
+    function foo21(): void;
+    struct structName21 {
+        prop21: number;
+    }
+    interface z {
+    }
 }
 export declare namespace ns22 {
 }
