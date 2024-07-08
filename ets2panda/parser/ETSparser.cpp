@@ -210,6 +210,7 @@ std::vector<Program *> ETSParser::ParseSources()
     std::vector<Program *> programs;
 
     auto &parseList = importPathManager_->ParseList();
+    std::map<std::string, std::string> files_packages;
 
     // This parse list `paths` can grow in the meantime, so keep this index-based iteration
     // NOLINTNEXTLINE(modernize-loop-convert)
@@ -241,6 +242,21 @@ std::vector<Program *> ETSParser::ParseSources()
         importPathManager_->MarkAsParsed(parseList[idx].sourcePath);
         auto newProg = ParseSource(
             {parseList[idx].sourcePath.Utf8(), extSrc->View().Utf8(), parseList[idx].sourcePath.Utf8(), false});
+
+        std::map<std::string, std::string>::iterator it = files_packages.find(newProg->SourceFileFolder().Mutf8());
+        if (newProg->IsPackageModule()) {
+            if (it != files_packages.end() && it->second != newProg->ModuleName().Mutf8()) {
+                ThrowSyntaxError(
+                    {"Package folder contains different module than ", newProg->ModuleName().Mutf8(), "."});
+            }
+            files_packages.insert(std::make_pair(newProg->SourceFileFolder().Mutf8(), newProg->ModuleName().Mutf8()));
+        } else {
+            if (it != files_packages.end() && !it->second.empty()) {
+                ThrowSyntaxError(
+                    {"Package folder contains different module than ", newProg->ModuleName().Mutf8(), "."});
+            }
+            files_packages.insert(std::make_pair(newProg->SourceFileFolder().Mutf8(), ""));
+        }
 
         programs.emplace_back(newProg);
         GetContext().SetLanguage(currentLang);
