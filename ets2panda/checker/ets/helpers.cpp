@@ -2515,7 +2515,7 @@ void ETSChecker::InferTypesForLambda(ir::ScriptFunction *lambda, ir::ETSFunction
         }
     }
     if (lambda->ReturnTypeAnnotation() == nullptr) {
-        lambda->SetReturnTypeAnnotation(calleeType->ReturnType());
+        lambda->SetReturnTypeAnnotation(calleeType->ReturnType()->Clone(Allocator(), lambda));
     }
 }
 

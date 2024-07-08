@@ -904,13 +904,6 @@ public:
         ast->Iterate([&](const ir::AstNode *node) {
             if (ir::AstNode const *parent = node->Parent(); ast != parent) {
                 //  NOTE: Temporary suppress.
-                //  Should be removed after special lowering for lambda-functions will be implemented: #14376
-                if ((ast->IsScriptFunction() || ast->IsETSFunctionType()) && parent != nullptr &&
-                    parent->IsScriptFunction()) {
-                    return;
-                }
-
-                //  NOTE: Temporary suppress.
                 //  Should be removed after new ENUMs support will be implemented: #14443
                 if (ast->IsClassDeclaration() && parent != nullptr && parent->IsETSNewClassInstanceExpression()) {
                     return;
