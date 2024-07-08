@@ -60,6 +60,8 @@
 #include "util/ustring.h"
 #include "checker/types/type.h"
 #include "checker/types/ets/types.h"
+#include "variable.h"
+#include "variableFlags.h"
 
 namespace ark::es2panda::varbinder {
 
@@ -207,8 +209,34 @@ void ETSBinder::LookupIdentReference(ir::Identifier *ident)
         return;
     }
 
+    // if(name.Mutf8() == "p")
+    // {
+    //     std::cout << "bingo" << std::endl;
+    // }
+
+    auto ref = ident->IsReference();
+    auto dec = res.variable->Declaration()->IsLetOrConstDecl();
+    auto flag = res.variable->HasFlag(VariableFlags::INITIALIZED);
+    if(ref && dec && flag)
+    {
+        
+    } 
+
     if (ident->IsReference() && res.variable->Declaration()->IsLetOrConstDecl() &&
         !res.variable->HasFlag(VariableFlags::INITIALIZED)) {
+//        std::cout << "Prog " << Program()->Ast()->DumpEtsSrc() << std::endl;
+//        std::cout << "Parent: " << ident->Parent()->Parent()->Parent()->Parent()->DumpEtsSrc() << std::endl;
+//        std::cout << "id " << ident->DumpEtsSrc() << std::endl;
+//        auto type = res.variable->Type();
+//        if(res.variable->IsLocalVariable() /*&& res.variable->AsLocalVariable()->GetScope()->Node()->AsClassElement()->Value() != nullptr*/)
+//        {
+//            std::cout << "this is nightmare" << std::endl;
+//            res.variable->AddFlag(VariableFlags::INITIALIZED);
+//            return;
+//        }
+
+//        std::cout << "ts type " << type << std::endl; 
+
         ThrowTDZ(ident->Start(), name);
     }
 }

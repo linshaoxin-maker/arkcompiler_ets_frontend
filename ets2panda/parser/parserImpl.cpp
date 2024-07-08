@@ -1172,6 +1172,10 @@ ir::Identifier *ParserImpl::ExpectIdentifier(bool isReference, bool isUserDefine
     if (token.IsDefinableTypeName() && isUserDefinedType) {
         ThrowSyntaxError("Cannot be used as user-defined type.");
     }
+    if(isReference)
+    {
+        
+    }
 
     auto const &tokenStart = token.Start();
     util::StringView tokenName {};
@@ -1188,7 +1192,6 @@ ir::Identifier *ParserImpl::ExpectIdentifier(bool isReference, bool isUserDefine
     }
 
     auto *ident = AllocNode<ir::Identifier>(tokenName, Allocator());
-    ident->SetReference(isReference);
     //  NOTE: here actual token can be changed!
     ident->SetRange({tokenStart, lexer_->GetToken().End()});
 

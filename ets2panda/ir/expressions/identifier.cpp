@@ -42,10 +42,6 @@ Identifier *Identifier::Clone(ArenaAllocator *const allocator, AstNode *const pa
             clone->SetParent(parent);
         }
 
-        if (this->IsReference()) {
-            clone->SetReference();
-        }
-
         clone->SetRange(Range());
 
         return clone;
@@ -134,4 +130,211 @@ checker::Type *Identifier::Check(checker::ETSChecker *checker)
 {
     return checker->GetAnalyzer()->Check(this);
 }
+
+bool Identifier::CommonDeclarationCheck(const ir::Identifier *id) const
+{
+    if (id->Parent() != nullptr) {
+        auto parent = id->Parent();
+        // We need two Parts because check is too long to fit in one function
+        if (CheckDeclarationsPart1(parent) || CheckDeclarationsPart2(parent)) {
+            return true;
+        }
+
+        // Parameters in methods are not references
+        // Example:
+        // function foo(a: int)
+        if (parent->IsETSParameterExpression()) {
+            return true;
+        }
+
+        // Class Properties are not references
+        if (parent->IsClassProperty()) {
+            return true;
+        }
+
+        // Identifier in catch is not a reference
+        // Example:
+        //
+        // _try_{
+        //   _throw_new_Exception();}_catch_(e)_{}
+        if (parent->IsCatchClause()) {
+            return true;
+        }
+
+        // Type Parameter is not a reference
+        // Example:
+        // interface X <K> {}
+        if (parent->IsTSTypeParameter()) {
+            return true;
+        }
+
+        // Rest Parameter is not a reference
+        // Example:
+        // class A {
+        //    constructor(... items :Object[]){}
+        // }
+        if (parent->IsRestElement()) {
+            return true;
+        }
+
+        // Script function identifiers are not references
+        // Example:
+        // public static foo()
+        if (parent->IsScriptFunction()) {
+            return true;
+        }
+
+        // New methods are not references
+        if (parent->IsMethodDefinition()) {
+            return true;
+        }
+
+        // New classes are not references
+        if (parent->IsClassDefinition()) {
+            return true;
+        }
+    }
+
+    // if (CheckNameRelated(id)) {
+    //     return true;
+    // }
+
+    return false;
+}
+
+
+bool Identifier::CheckDeclarationsPart1(const ir::AstNode *parentNode) const
+{
+    // All declarations are not references
+    if (parentNode->IsVariableDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsClassDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsETSPackageDeclaration()) {
+        return true;
+    }
+
+    // if (parentNode->IsVariableDeclarator()) {
+    //     return true;
+    // }
+
+    if (parentNode->IsFunctionDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsImportDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsETSImportDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsETSStructDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsExportAllDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsExportDefaultDeclaration()) {
+        return true;
+    }
+
+    return false;
+}
+
+bool Identifier::CheckDeclarationsPart2(const ir::AstNode *parentNode) const
+{
+    // All declarations are not references
+    if (parentNode->IsExportNamedDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsTSEnumDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsTSInterfaceDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsTSModuleDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsTSSignatureDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsETSReExportDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsTSImportEqualsDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsTSTypeAliasDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsTSTypeParameterDeclaration()) {
+        return true;
+    }
+
+    if (parentNode->IsDeclare()) {
+        return true;
+    }
+
+    if (parentNode->Parent() != nullptr) {
+        auto parent = parentNode->Parent();
+        if (parent->IsTSEnumDeclaration()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool Identifier::CheckNameRelated(const ir::Identifier *id) const
+{
+    auto name = id->Name();
+    // NOTE: skip $dynmodule and JSRuntime identifiers that are not references
+    if (name == "$dynmodule" || name == "JSRuntime") {
+        return true;
+    }
+
+    // NOTE: skip <property> identifiers that are not references
+    if (name.Utf8().find("<property>") == 0) {
+        return true;
+    }
+
+    // NOTE: should be deleted as soon as issue with Identifiers with no name is fixed
+    if (name.Empty()) {
+        return true;
+    }
+
+    // NOTE: some lambda identifiers are not references
+    if (name.Utf8().find("lambda$invoke") == 0) {
+        return true;
+    }
+    // NOTE: currently some generated gensym identifiers are not references
+    if (name.Utf8().find("gensym") == 0) {
+        return true;
+    }
+
+    // NOTE: currently some generated field identifiers are not references
+    if (name.Utf8().find("field") == 0) {
+        return true;
+    }
+
+    return false;
+}
+
 }  // namespace ark::es2panda::ir
