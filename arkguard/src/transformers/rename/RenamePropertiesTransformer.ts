@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import ts, {
+import {
   factory,
   forEachChild,
   isComputedPropertyName,
@@ -29,7 +29,8 @@ import ts, {
   setParentRecursive,
   visitEachChild,
   isStringLiteral,
-  isSourceFile
+  isSourceFile,
+  setTextRange
 } from 'typescript';
 
 import type {
@@ -47,7 +48,8 @@ import type {
   NumericLiteral,
   StringLiteral,
   StringLiteralLike,
-  PrivateIdentifier
+  PrivateIdentifier,
+  TextRange
 } from 'typescript';
 
 import type {IOptions} from '../../configs/IOptions';
@@ -141,12 +143,12 @@ namespace secharmony {
 
         if (NodeUtils.isClassPropertyInConstructorParams(node)) {
           currentConstructorParams.add((node as Identifier).escapedText.toString());
-          return renameProperty(node, false);
+          return renameProperty(node);
         }
 
         if (NodeUtils.isClassPropertyInConstructorBody(node, currentConstructorParams)) {
           if (currentConstructorParams.has((node as Identifier).escapedText.toString())) {
-            return renameProperty(node, false);
+            return renameProperty(node);
           }
         }
 
@@ -162,19 +164,19 @@ namespace secharmony {
           return renameComputedProperty(node);
         }
 
-        return renameProperty(node, false);
+        return renameProperty(node);
       }
 
       function renameElementAccessProperty(node: Node): Node {
         if (isStringLiteralLike(node)) {
-          return renameProperty(node, false);
+          return renameProperty(node);
         }
         return visitEachChild(node, renameProperties, context);
       }
 
       function renameComputedProperty(node: ComputedPropertyName): ComputedPropertyName {
         if (isStringLiteralLike(node.expression) || isNumericLiteral(node.expression)) {
-          renameProperty(node.expression, true);
+          renameProperty(node.expression);
           return node;
         }
 
@@ -185,7 +187,7 @@ namespace secharmony {
         return visitEachChild(node, renameProperties, context);
       }
 
-      function renameProperty(node: Node, computeName: boolean): Node {
+      function renameProperty(node: Node): Node {
         if (!isStringLiteralLike(node) && !isIdentifier(node) && !isPrivateIdentifier(node) && !isNumericLiteral(node)) {
           return visitEachChild(node, renameProperties, context);
         }
@@ -210,15 +212,16 @@ namespace secharmony {
         }
 
         if (isIdentifier(node)) {
-          return modifyNodeText(node, mangledName);
+          return modifyIdentifierText(node, mangledName);
         }
 
         if (isPrivateIdentifier(node)) {
           return modifyPrivateIdentifierText(node, mangledName);
         }
+        return node;
       }
 
-      function modifyNodeText(node: Identifier , mangledName: string): Identifier {
+      function modifyIdentifierText(node: Identifier , mangledName: string): Identifier {
         //@ts-ignore
         node.escapedText = mangledName
         setInvalidPosforNode(node);
@@ -240,10 +243,8 @@ namespace secharmony {
       }
 
       function setInvalidPosforNode(node: Node): void {
-        //@ts-ignore
-        node.pos = -1;
-        //@ts-ignore
-        node.end = -1;
+        const invalidRange: TextRange = { pos: -1, end: -1 };
+        setTextRange(node, invalidRange);
       }
 
       function getPropertyName(original: string): string {
