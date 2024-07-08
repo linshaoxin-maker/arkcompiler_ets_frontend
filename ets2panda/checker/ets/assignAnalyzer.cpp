@@ -1412,8 +1412,6 @@ void AssignAnalyzer::LetInit(const ir::AstNode *node)
             } else {
                 uninit(adr);
             }
-        } else {
-            Warning({"Cannot assign to '", name, "' because it is a read-only property."}, pos);
         }
     }
 

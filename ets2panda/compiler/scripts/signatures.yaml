@@ -126,6 +126,8 @@ defines:
     ref: UNDEFINED
   - name: 'null'
     ref: NULL_LITERAL
+  - name: '<property>'
+    ref: PROPERTY
 
 packages:
   - name: 'std.core'
