@@ -16,6 +16,7 @@
 #include "ASTVerifier.h"
 
 #include "checker/types/typeFlag.h"
+#include "checker/types/ets/etsBooleanType.h"
 #include "ir/astNode.h"
 #include "ir/base/classDefinition.h"
 #include "ir/base/classElement.h"
@@ -44,6 +45,8 @@
 #include "ir/expressions/memberExpression.h"
 #include "ir/statements/blockStatement.h"
 #include "ir/statements/forInStatement.h"
+#include "ir/statements/whileStatement.h"
+#include "ir/statements/doWhileStatement.h"
 #include "ir/statements/forOfStatement.h"
 #include "ir/statements/forUpdateStatement.h"
 #include "ir/statements/variableDeclaration.h"
@@ -1077,6 +1080,111 @@ public:
 private:
 };
 
+class CheckInfiniteLoop {
+public:
+    explicit CheckInfiniteLoop([[maybe_unused]] ArenaAllocator &allocator) {}
+
+    [[nodiscard]] CheckResult operator()(CheckContext &ctx, const ir::AstNode *ast)
+    {
+        if (ast->IsDoWhileStatement()) {
+            return HandleDoWhileStatement(ctx, ast->AsDoWhileStatement());
+        }
+
+        if (ast->IsWhileStatement()) {
+            return HandleWhileStatement(ctx, ast->AsWhileStatement());
+        }
+
+        if (ast->IsForUpdateStatement()) {
+            return HandleForUpdateStatement(ctx, ast->AsForUpdateStatement());
+        }
+
+        return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+    }
+
+private:
+    bool ConditionIsAlwaysTrue(const ir::Expression *const test) const
+    {
+        ASSERT(test);
+        auto const *const type = test->TsType();
+        if (type == nullptr) {
+            return false;
+        }
+
+        if (!type->IsConditionalExprType()) {
+            // Cannot be tested for truthiness
+            return false;
+        }
+
+        const auto [constant, truthy] = type->ResolveConditionExpr();
+        return (constant && truthy);
+    }
+
+    bool HasBreakOrReturnStatement(const ir::Statement *const body) const
+    {
+        ASSERT(body);
+        bool hasExit = body->IsBreakStatement() || body->IsReturnStatement();
+        body->IterateRecursively(
+            [&hasExit](ir::AstNode *child) { hasExit |= child->IsBreakStatement() || child->IsReturnStatement(); });
+
+        return hasExit;
+    }
+
+    [[nodiscard]] CheckResult HandleWhileStatement(CheckContext &ctx, const ir::WhileStatement *const stmt) const
+    {
+        auto const *body = stmt->Body();
+        auto const *test = stmt->Test();
+        if ((body == nullptr) || (test == nullptr)) {
+            return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+        }
+
+        if (ConditionIsAlwaysTrue(test)) {
+            if (!HasBreakOrReturnStatement(body)) {
+                ctx.AddCheckMessage("INFINITE LOOP", *stmt, stmt->Start());
+            }
+        }
+
+        return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+    }
+
+    [[nodiscard]] CheckResult HandleDoWhileStatement(CheckContext &ctx, const ir::DoWhileStatement *const stmt) const
+    {
+        auto const *body = stmt->Body();
+        auto const *test = stmt->Test();
+        if ((body == nullptr) || (test == nullptr)) {
+            return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+        }
+
+        if (ConditionIsAlwaysTrue(test)) {
+            if (!HasBreakOrReturnStatement(body)) {
+                ctx.AddCheckMessage("INFINITE LOOP", *stmt, stmt->Start());
+            }
+        }
+
+        return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+    }
+
+    [[nodiscard]] CheckResult HandleForUpdateStatement(CheckContext &ctx,
+                                                       const ir::ForUpdateStatement *const stmt) const
+    {
+        auto const *body = stmt->Body();
+        if (body == nullptr) {
+            // Body existence is checked in ForLoopCorrectlyInitialized
+            return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+        }
+
+        // Test can be null for for-update statements
+        auto const *test = stmt->Test();
+        if (test == nullptr || ConditionIsAlwaysTrue(test)) {
+            if (!HasBreakOrReturnStatement(body)) {
+                ctx.AddCheckMessage("INFINITE LOOP", *stmt, stmt->Start());
+                return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+            }
+        }
+
+        return {CheckDecision::CORRECT, CheckAction::CONTINUE};
+    }
+};
+
 class ForLoopCorrectlyInitialized {
 public:
     explicit ForLoopCorrectlyInitialized([[maybe_unused]] ArenaAllocator &allocator) {}
@@ -1094,6 +1202,7 @@ public:
         if (ast->IsForUpdateStatement()) {
             return HandleForUpdateStatement(ctx, ast);
         }
+
         return {CheckDecision::CORRECT, CheckAction::CONTINUE};
     }
 
@@ -1132,8 +1241,6 @@ private:
 
     [[nodiscard]] CheckResult HandleForUpdateStatement(CheckContext &ctx, const ir::AstNode *ast)
     {
-        // The most important part of for-loop is the test.
-        // But it also can be null. Then there must be break;(return) in the body.
         auto const *test = ast->AsForUpdateStatement()->Test();
         if (test == nullptr) {
             auto const *body = ast->AsForUpdateStatement()->Body();
@@ -1141,13 +1248,7 @@ private:
                 ctx.AddCheckMessage("NULL FOR-TEST AND FOR-BODY", *ast, ast->Start());
                 return {CheckDecision::INCORRECT, CheckAction::CONTINUE};
             }
-            bool hasExit = body->IsBreakStatement() || body->IsReturnStatement();
-            body->IterateRecursively(
-                [&hasExit](ir::AstNode *child) { hasExit |= child->IsBreakStatement() || child->IsReturnStatement(); });
-            if (!hasExit) {
-                // an infinite loop
-                ctx.AddCheckMessage("NULL FOR-TEST AND FOR-BODY doesn't exit", *ast, ast->Start());
-            }
+
             return {CheckDecision::CORRECT, CheckAction::CONTINUE};
         }
 
@@ -1390,6 +1491,7 @@ ASTVerifier::ASTVerifier(ArenaAllocator *allocator)
     AddInvariant<EveryChildHasValidParent>(allocator, "EveryChildHasValidParent");
     AddInvariant<EveryChildInParentRange>(allocator, "EveryChildInParentRange");
     AddInvariant<VariableHasEnclosingScope>(allocator, "VariableHasEnclosingScope");
+    AddInvariant<CheckInfiniteLoop>(allocator, "CheckInfiniteLoop");
     AddInvariant<ForLoopCorrectlyInitialized>(allocator, "ForLoopCorrectlyInitialized");
     AddInvariant<ModifierAccessValid>(allocator, "ModifierAccessValid");
     AddInvariant<ImportExportAccessValid>(allocator, "ImportExportAccessValid");
