@@ -1470,50 +1470,6 @@ void ETSCompiler::Compile([[maybe_unused]] const ir::ImportSpecifier *st) const
     UNREACHABLE();
 }
 
-static void ThrowError(compiler::ETSGen *const etsg, const ir::AssertStatement *st)
-{
-    const compiler::RegScope rs(etsg);
-
-    if (st->Second() != nullptr) {
-        st->Second()->Compile(etsg);
-    } else {
-        etsg->LoadAccumulatorString(st, "Assertion failed.");
-    }
-
-    const auto message = etsg->AllocReg();
-    etsg->StoreAccumulator(st, message);
-
-    const auto assertionError = etsg->AllocReg();
-    etsg->NewObject(st, compiler::Signatures::BUILTIN_ASSERTION_ERROR, assertionError);
-    etsg->CallExact(st, compiler::Signatures::BUILTIN_ASSERTION_ERROR_CTOR, assertionError, message);
-    etsg->EmitThrow(st, assertionError);
-}
-
-void ETSCompiler::Compile(const ir::AssertStatement *st) const
-{
-    ETSGen *etsg = GetETSGen();
-    auto res = compiler::Condition::CheckConstantExpr(etsg, st->Test());
-    if (res == compiler::Condition::Result::CONST_TRUE) {
-        return;
-    }
-
-    if (res == compiler::Condition::Result::CONST_FALSE) {
-        ThrowError(etsg, st);
-        return;
-    }
-
-    compiler::Label *trueLabel = etsg->AllocLabel();
-    compiler::Label *falseLabel = etsg->AllocLabel();
-
-    compiler::Condition::Compile(etsg, st->Test(), falseLabel);
-    etsg->JumpTo(st, trueLabel);
-
-    etsg->SetLabel(st, falseLabel);
-    ThrowError(etsg, st);
-
-    etsg->SetLabel(st, trueLabel);
-}
-
 void ETSCompiler::Compile(const ir::BlockStatement *st) const
 {
     ETSGen *etsg = GetETSGen();

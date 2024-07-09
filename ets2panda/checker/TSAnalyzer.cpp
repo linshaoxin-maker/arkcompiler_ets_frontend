@@ -1336,11 +1336,6 @@ checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::ImportSpecifier *st) const
 {
     UNREACHABLE();
 }
-// compile methods for STATEMENTS in alphabetical order
-checker::Type *TSAnalyzer::Check([[maybe_unused]] ir::AssertStatement *st) const
-{
-    UNREACHABLE();
-}
 
 checker::Type *TSAnalyzer::Check(ir::BlockStatement *st) const
 {

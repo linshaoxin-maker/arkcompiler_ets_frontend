@@ -1822,26 +1822,6 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ImportSpecifier *st) cons
     UNREACHABLE();
 }
 
-// compile methods for STATEMENTS in alphabetical order
-checker::Type *ETSAnalyzer::Check(ir::AssertStatement *st) const
-{
-    ETSChecker *checker = GetETSChecker();
-    if (!(st->Test()->Check(checker)->HasTypeFlag(TypeFlag::ETS_BOOLEAN | TypeFlag::BOOLEAN_LIKE) ||
-          st->Test()->Check(checker)->ToString() == "Boolean")) {
-        checker->ThrowTypeError("Bad operand type, the type of the operand must be boolean type.", st->Test()->Start());
-    }
-
-    if (st->Second() != nullptr) {
-        auto *msgType = st->second_->Check(checker);
-
-        if (!msgType->IsETSStringType()) {
-            checker->ThrowTypeError("Assert message must be string", st->Second()->Start());
-        }
-    }
-
-    return nullptr;
-}
-
 checker::Type *ETSAnalyzer::Check(ir::BlockStatement *st) const
 {
     ETSChecker *checker = GetETSChecker();
