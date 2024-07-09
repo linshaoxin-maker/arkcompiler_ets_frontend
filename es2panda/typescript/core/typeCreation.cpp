@@ -126,6 +126,7 @@ Type *Checker::CreateUnionType(ArenaVector<Type *> &&constituentTypes)
 Type *Checker::CreateObjectTypeWithCallSignature(Signature *callSignature)
 {
     auto *objType = allocator_->New<ObjectLiteralType>(allocator_->New<ObjectDescriptor>(allocator_));
+    ASSERT(objType != nullptr);
     objType->AddCallSignature(callSignature);
     return objType;
 }
@@ -133,6 +134,7 @@ Type *Checker::CreateObjectTypeWithCallSignature(Signature *callSignature)
 Type *Checker::CreateObjectTypeWithConstructSignature(Signature *constructSignature)
 {
     auto *objType = allocator_->New<ObjectLiteralType>(allocator_->New<ObjectDescriptor>(allocator_));
+    ASSERT(objType != nullptr);
     objType->AddConstructSignature(constructSignature);
     return objType;
 }
@@ -140,6 +142,7 @@ Type *Checker::CreateObjectTypeWithConstructSignature(Signature *constructSignat
 Type *Checker::CreateFunctionTypeWithSignature(Signature *callSignature)
 {
     auto *funcObjType = allocator_->New<FunctionType>(allocator_->New<ObjectDescriptor>(allocator_));
+    ASSERT(funcObjType != nullptr);
     funcObjType->AddCallSignature(callSignature);
     return funcObjType;
 }
@@ -147,6 +150,7 @@ Type *Checker::CreateFunctionTypeWithSignature(Signature *callSignature)
 Type *Checker::CreateConstructorTypeWithSignature(Signature *constructSignature)
 {
     auto *constructObjType = allocator_->New<ConstructorType>(allocator_->New<ObjectDescriptor>(allocator_));
+    ASSERT(constructObjType != nullptr);
     constructObjType->AddConstructSignature(constructSignature);
     return constructObjType;
 }
@@ -154,6 +158,7 @@ Type *Checker::CreateConstructorTypeWithSignature(Signature *constructSignature)
 Type *Checker::CreateTupleType(ObjectDescriptor *desc, ArenaVector<ElementFlags> &&elementFlags,
                                ElementFlags combinedFlags, uint32_t minLength, uint32_t fixedLength, bool readonly)
 {
+    ASSERT(desc != nullptr);
     desc->stringIndexInfo = allocator_->New<IndexInfo>(GlobalAnyType(), "x", readonly);
     return allocator_->New<TupleType>(desc, std::move(elementFlags), combinedFlags, minLength, fixedLength, readonly);
 }
@@ -162,6 +167,7 @@ Type *Checker::CreateTupleType(ObjectDescriptor *desc, ArenaVector<ElementFlags>
                                ElementFlags combinedFlags, uint32_t minLength, uint32_t fixedLength, bool readonly,
                                NamedTupleMemberPool &&namedMembers)
 {
+    ASSERT(desc != nullptr);
     desc->stringIndexInfo = allocator_->New<IndexInfo>(GlobalAnyType(), "x", readonly);
 
     if (!namedMembers.empty()) {

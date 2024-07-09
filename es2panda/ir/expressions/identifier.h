@@ -16,6 +16,7 @@
 #ifndef ES2PANDA_IR_EXPRESSION_IDENTIFIER_H
 #define ES2PANDA_IR_EXPRESSION_IDENTIFIER_H
 
+#include <cstdint>
 #include <ir/expression.h>
 #include <util/ustring.h>
 
@@ -34,7 +35,7 @@ class Variable;
 
 namespace panda::es2panda::ir {
 
-enum class IdentifierFlags {
+enum class IdentifierFlags : uint32_t {
     NONE,
     OPTIONAL = 1 << 0,
     REFERENCE = 1 << 1,

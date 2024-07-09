@@ -78,6 +78,7 @@ private:
     bool CheckRegIndices(IRNode *ins, const Span<VReg *> &registers,
                          std::vector<OperandKind> *regsKind = nullptr)
     {
+        ASSERT(ins != nullptr);
         Formats formats = ins->GetFormats();
 
         for (const auto &format : formats) {

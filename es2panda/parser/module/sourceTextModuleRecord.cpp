@@ -62,6 +62,7 @@ namespace panda::es2panda::parser {
     // export default ...
     bool SourceTextModuleRecord::AddLocalExportEntry(SourceTextModuleRecord::ExportEntry *entry)
     {
+        ASSERT(entry != nullptr);
         ASSERT(entry->importName_.Empty());
         ASSERT(!entry->localName_.Empty());
         ASSERT(!entry->exportName_.Empty());
@@ -157,6 +158,7 @@ namespace panda::es2panda::parser {
     void SourceTextModuleRecord::ConvertLocalExportToIndirect(SourceTextModuleRecord::ImportEntry *importEntry,
                                                               SourceTextModuleRecord::ExportEntry *exportEntry)
     {
+        ASSERT(exportEntry != nullptr);
         ASSERT(exportEntry->importName_.Empty());
         ASSERT(exportEntry->moduleRequestIdx_ == -1);
         ASSERT(!importEntry->importName_.Empty());

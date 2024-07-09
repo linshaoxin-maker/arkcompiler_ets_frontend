@@ -40,6 +40,7 @@ void DoWhileStatement::Dump(ir::AstDumper *dumper) const
 void DoWhileStatement::Compile(compiler::PandaGen *pg) const
 {
     auto *startLabel = pg->AllocLabel();
+    ASSERT(startLabel != nullptr);
     compiler::LabelTarget labelTarget(pg);
 
     pg->SetLabel(this, startLabel);

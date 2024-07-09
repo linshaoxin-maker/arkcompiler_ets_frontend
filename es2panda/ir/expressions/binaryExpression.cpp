@@ -50,6 +50,8 @@ void BinaryExpression::CompileLogical(compiler::PandaGen *pg) const
            operator_ == lexer::TokenType::PUNCTUATOR_NULLISH_COALESCING);
     auto *skipRight = pg->AllocLabel();
     auto *endLabel = pg->AllocLabel();
+    ASSERT(skipRight != nullptr);
+    ASSERT(endLabel != nullptr);
 
     // left -> acc -> lhs -> toboolean -> acc -> bool_lhs
     left_->Compile(pg);

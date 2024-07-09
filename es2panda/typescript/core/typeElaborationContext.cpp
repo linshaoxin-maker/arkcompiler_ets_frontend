@@ -95,6 +95,19 @@ void ArrayElaborationContext::RemoveUnnecessaryTypes()
     }
 }
 
+Type *ObjectElaborationContext::GetTargetElementType(Type *propKeyType, const ir::Property *prop)
+{
+    ASSERT(propKeyType != nullptr);
+    Type* targetElementType = nullptr;
+    if (targetType_->IsUnionType()) {
+        targetElementType = GetBestMatchingType(propKeyType, prop->IsShorthand() ? nullptr : prop->Value());
+    } else {
+        targetElementType = checker_->GetPropertyTypeForIndexType(targetType_, propKeyType);
+    }
+
+    return targetElementType;
+}
+
 void ObjectElaborationContext::Start()
 {
     ASSERT(sourceNode_->IsObjectExpression());
@@ -131,15 +144,7 @@ void ObjectElaborationContext::Start()
                 }
             }
         }
-
-        Type *targetElementType = nullptr;
-
-        if (targetType_->IsUnionType()) {
-            targetElementType = GetBestMatchingType(propKeyType, prop->IsShorthand() ? nullptr : prop->Value());
-        } else {
-            targetElementType = checker_->GetPropertyTypeForIndexType(targetType_, propKeyType);
-        }
-
+        Type* targetElementType = GetTargetElementType(propKeyType, prop);
         if (!targetElementType) {
             if (propKeyType->HasTypeFlag(TypeFlag::LITERAL)) {
                 checker_->ThrowTypeError({"Object literal may only specify known properties, and ", propKeyType,

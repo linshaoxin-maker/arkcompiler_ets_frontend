@@ -158,6 +158,7 @@ void DestructuringIterator::Step(Label *doneTarget) const
     Label *noClose = pg_->AllocLabel();
 
     pg_->SetLabel(node_, labelSet.TryBegin());
+    ASSERT(noClose != nullptr);
     JumpIfDone(noClose);
     Next();
     Complete();

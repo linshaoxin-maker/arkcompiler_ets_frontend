@@ -317,6 +317,7 @@ Type *ArrayDestructuringContext::CreateTupleTypeForRest(TupleType *tuple)
         util::StringView memberIndex = util::Helpers::ToStringView(checker_->Allocator(), iterIndex);
         auto *memberVar =
             binder::Scope::CreateVar(checker_->Allocator(), memberIndex, binder::VariableFlags::PROPERTY, nullptr);
+        ASSERT(memberVar != nullptr);
         memberVar->SetTsType(tupleElementType);
         elementFlags.push_back(memberFlag);
         desc->properties.push_back(memberVar);
@@ -541,6 +542,7 @@ Type *ObjectDestructuringContext::CreateObjectTypeForRest(ObjectType *objType)
         if (!it->HasFlag(binder::VariableFlags::INFERED_IN_PATTERN)) {
             auto *memberVar =
                 binder::Scope::CreateVar(checker_->Allocator(), it->Name(), binder::VariableFlags::NONE, nullptr);
+            ASSERT(memberVar != nullptr);
             memberVar->SetTsType(it->TsType());
             memberVar->AddFlag(it->Flags());
             desc->properties.push_back(memberVar);
@@ -548,6 +550,7 @@ Type *ObjectDestructuringContext::CreateObjectTypeForRest(ObjectType *objType)
     }
 
     Type *returnType = checker_->Allocator()->New<ObjectLiteralType>(desc);
+    ASSERT(returnType != nullptr);
     returnType->AsObjectType()->AddObjectFlag(ObjectFlags::RESOLVED_MEMBERS);
     return returnType;
 }

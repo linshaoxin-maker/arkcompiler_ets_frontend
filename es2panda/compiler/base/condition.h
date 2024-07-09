@@ -28,6 +28,7 @@ public:
     Condition() = delete;
 
     static void Compile(PandaGen *pg, const ir::Expression *expr, Label *falseLabel);
+    static bool CompileBinaryExpression(PandaGen *pg, const ir::BinaryExpression *binexpr, Label *falseLabel);
 };
 
 }  // namespace panda::es2panda::compiler

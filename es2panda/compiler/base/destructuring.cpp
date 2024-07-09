@@ -157,6 +157,7 @@ static void GenObjectProperty(PandaGen *pg, const ir::ObjectExpression *object,
         auto *getDefault = pg->AllocLabel();
         auto *store = pg->AllocLabel();
 
+        ASSERT(store != nullptr);
         pg->BranchIfStrictUndefined(element, getDefault);
         pg->LoadAccumulator(element, loadedValue);
         pg->Branch(element, store);

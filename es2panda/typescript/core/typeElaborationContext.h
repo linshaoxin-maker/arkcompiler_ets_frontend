@@ -80,6 +80,7 @@ public:
     }
 
     void Start() override;
+    Type* GetTargetElementType(Type* propKeyType, const ir::Property* prop);
     void RemoveUnnecessaryTypes() override;
 };
 }  // namespace panda::es2panda::checker

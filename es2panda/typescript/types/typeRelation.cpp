@@ -51,6 +51,7 @@ ArenaAllocator *TypeRelation::Allocator()
 RelationResult TypeRelation::CacheLookup(const Type *source, const Type *target, const RelationHolder &holder,
                                          RelationType type) const
 {
+    ASSERT(source != nullptr);
     if (result_ == RelationResult::CACHE_MISS) {
         return result_;
     }
@@ -140,6 +141,7 @@ bool TypeRelation::IsAssignableTo(Type *source, Type *target)
 
 bool TypeRelation::IsComparableTo(Type *source, Type *target)
 {
+    ASSERT(target != nullptr);
     result_ = CacheLookup(source, target, checker_->ComparableResults(), RelationType::COMPARABLE);
     if (result_ == RelationResult::CACHE_MISS) {
         if (IsAssignableTo(source, target)) {

@@ -373,6 +373,7 @@ Type *Checker::CheckComputedPropertyName(const ir::Expression *key)
 
 IndexInfo *Checker::GetApplicableIndexInfo(Type *type, Type *indexType)
 {
+    ASSERT(indexType != nullptr);
     ResolveStructuredTypeMembers(type);
     bool getNumberInfo = indexType->HasTypeFlag(TypeFlag::NUMBER_LIKE);
 
@@ -403,6 +404,7 @@ Type *Checker::GetPropertyTypeForIndexType(Type *type, Type *indexType)
         return type->AsArrayType()->ElementType();
     }
 
+    ASSERT(indexType != nullptr);
     if (indexType->HasTypeFlag(TypeFlag::STRING_LITERAL | TypeFlag::NUMBER_LITERAL)) {
         binder::Variable *prop = nullptr;
 

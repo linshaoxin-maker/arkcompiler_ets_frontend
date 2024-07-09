@@ -16,7 +16,9 @@
 #ifndef ES2PANDA_PARSER_INCLUDE_AST_CLASS_DEFINITION_H
 #define ES2PANDA_PARSER_INCLUDE_AST_CLASS_DEFINITION_H
 
+#include <cstdint>
 #include <binder/variable.h>
+#include "compiler/base/literals.h"
 #include <ir/base/classProperty.h>
 #include <ir/base/methodDefinition.h>
 #include <ir/expressions/privateIdentifier.h>
@@ -38,7 +40,7 @@ class LocalScope;
 
 namespace panda::es2panda::ir {
 
-enum class FieldType {
+enum class FieldType : uint32_t {
     NONE = 0,
     NUMBER = (1 << 0),
     STRING = (1 << 1),
@@ -256,9 +258,12 @@ public:
 
 private:
     compiler::VReg CompileHeritageClause(compiler::PandaGen *pg) const;
+    void FinalizeClassPublicBuffer(compiler::PandaGen *pg, compiler::LiteralBuffer *buf,
+                                   compiler::LiteralBuffer *staticBuf, int32_t fieldTypeBufIdx,
+                                   uint32_t instancePropertyCount) const;
     void InitializeClassName(compiler::PandaGen *pg) const;
-    int32_t CreateClassPublicBuffer(compiler::PandaGen *pg, util::BitSet &compiled, int32_t fieldTypeBufIdx = 0) const;
-    int32_t CreateClassPrivateBuffer(compiler::PandaGen *pg) const;
+    uint32_t CreateClassPublicBuffer(compiler::PandaGen *pg, util::BitSet &compiled, int32_t fieldTypeBufIdx = 0) const;
+    uint32_t CreateClassPrivateBuffer(compiler::PandaGen *pg) const;
     void CompileMissingProperties(compiler::PandaGen *pg, const util::BitSet &compiled, compiler::VReg classReg) const;
     void StaticInitialize(compiler::PandaGen *pg, compiler::VReg classReg) const;
     void InstanceInitialize(compiler::PandaGen *pg, compiler::VReg classReg) const;
@@ -267,7 +272,7 @@ private:
     void AddFieldTypeForTypeReference(const TSTypeReference *typeReference, FieldType &fieldType,
                                       compiler::PandaGen *pg) const;
     bool IsTypeParam(const util::StringView &propertyName) const;
-    int32_t CreateFieldTypeBuffer(compiler::PandaGen *pg) const;
+    uint32_t CreateFieldTypeBuffer(compiler::PandaGen *pg) const;
     void CompileSendableClass(compiler::PandaGen *pg) const;
     void CompileGetterOrSetter(compiler::PandaGen *pg, compiler::VReg dest, const MethodDefinition *prop) const;
 

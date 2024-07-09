@@ -35,7 +35,9 @@ const util::StringView &Variable::Name() const
 
 LocalVariable *LocalVariable::Copy(ArenaAllocator *allocator, Decl *decl) const
 {
+    ASSERT(decl != nullptr);
     auto *var = allocator->New<LocalVariable>(decl, flags_);
+    ASSERT(var != nullptr);
     var->vreg_ = vreg_;
     return var;
 }

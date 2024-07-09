@@ -16,6 +16,7 @@
 #ifndef ES2PANDA_COMPILER_SCOPES_VARIABLE_FLAGS_H
 #define ES2PANDA_COMPILER_SCOPES_VARIABLE_FLAGS_H
 
+#include <cstdint>
 #include <cstdlib>
 #include <util/enumbitops.h>
 
@@ -78,7 +79,7 @@ enum class ResolveBindingOptions {
 
 DEFINE_BITOPS(ResolveBindingOptions)
 
-enum class ResolveBindingFlags {
+enum class ResolveBindingFlags : uint8_t {
     ALL = 1U << 0U,
     TS_BEFORE_TRANSFORM = 1U << 1U,
     TS_AFTER_TRANSFORM = 1U << 2U,
@@ -109,7 +110,7 @@ enum class VariableKind {
     MODULE,
 };
 
-enum class VariableFlags {
+enum class VariableFlags : uint32_t {
     NONE = 0,
     OPTIONAL = 1 << 0,
     PROPERTY = 1 << 1,
@@ -151,7 +152,7 @@ enum class LetOrConstStatus {
     UNINITIALIZED,
 };
 
-enum class VariableScopeFlags {
+enum class VariableScopeFlags : uint8_t {
     NONE = 0,
     SET_LEXICAL_FUNCTION = 1U << 0U,
     USE_ARGS = 1U << 2U,
@@ -161,7 +162,7 @@ enum class VariableScopeFlags {
 
 DEFINE_BITOPS(VariableScopeFlags)
 
-enum class DeclarationFlags {
+enum class DeclarationFlags : uint8_t {
     NONE = 0,
     IMPORT = 1 << 0,
     EXPORT = 1 << 1,

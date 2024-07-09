@@ -281,14 +281,14 @@ LiteralBuffer *PandaGen::NewLiteralBuffer()
     return allocator_->New<LiteralBuffer>(allocator_);
 }
 
-int32_t PandaGen::AddLiteralBuffer(LiteralBuffer *buf)
+uint32_t PandaGen::AddLiteralBuffer(LiteralBuffer *buf)
 {
     buffStorage_.push_back(buf);
     buf->SetIndex(context_->NewLiteralIndex());
     return buf->Index();
 }
 
-int32_t PandaGen::AddLexicalVarNamesForDebugInfo(ArenaMap<uint32_t, std::pair<util::StringView, int>> &lexicalVars)
+uint32_t PandaGen::AddLexicalVarNamesForDebugInfo(ArenaMap<uint32_t, std::pair<util::StringView, int>> &lexicalVars)
 {
     auto *buf = NewLiteralBuffer();
     buf->Add(Allocator()->New<ir::NumberLiteral>(lexicalVars.size()));
@@ -1173,6 +1173,8 @@ void PandaGen::EmitRethrow(const ir::AstNode *node)
     RegScope rs(this);
     auto *skipThrow = AllocLabel();
     auto *doThrow = AllocLabel();
+    ASSERT(skipThrow != nullptr);
+    ASSERT(doThrow != nullptr);
 
     VReg exception = AllocReg();
     StoreAccumulator(node, exception);
@@ -1230,6 +1232,8 @@ void PandaGen::ValidateClassDirectReturn(const ir::AstNode *node)
 
     auto *notUndefined = AllocLabel();
     auto *condEnd = AllocLabel();
+    ASSERT(notUndefined != nullptr);
+    ASSERT(condEnd != nullptr);
 
     BranchIfStrictNotUndefined(node, notUndefined);
     GetThis(func);
@@ -1416,6 +1420,8 @@ void PandaGen::Negate(const ir::AstNode *node)
 {
     auto *falseLabel = AllocLabel();
     auto *endLabel = AllocLabel();
+    ASSERT(falseLabel != nullptr);
+    ASSERT(endLabel != nullptr);
     BranchIfTrue(node, falseLabel);
     LoadConst(node, Constant::JS_TRUE);
     Branch(node, endLabel);
@@ -1593,6 +1599,7 @@ void PandaGen::CreateArray(const ir::AstNode *node, const ArenaVector<ir::Expres
 
     auto *buf = NewLiteralBuffer();
 
+    ASSERT(buf != nullptr);
     size_t i = 0;
     // This loop handles constant literal data by collecting it into a literal buffer
     // until a non-constant element is encountered.
@@ -2229,9 +2236,11 @@ void PandaGen::StorePrivateProperty(const ir::AstNode *node, uint32_t level, uin
 {
     ra_.Emit<Stprivateproperty>(node, 0, level, slot, obj);
 }
+
 void PandaGen::ThrowTypeErrorIfFalse(const ir::AstNode *node, util::StringView str)
 {
     auto *trueLabel = AllocLabel();
+    ASSERT(trueLabel != nullptr);
     BranchIfTrue(node, trueLabel);
     ThrowTypeError(node, str);
     SetLabel(node, trueLabel);

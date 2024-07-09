@@ -64,6 +64,7 @@ void ForUpdateStatement::Compile(compiler::PandaGen *pg) const
     }
 
     auto *startLabel = pg->AllocLabel();
+    ASSERT(startLabel != nullptr);
     pg->SetLabel(this, startLabel);
 
     {

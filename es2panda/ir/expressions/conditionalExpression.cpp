@@ -39,6 +39,8 @@ void ConditionalExpression::Compile(compiler::PandaGen *pg) const
 {
     auto *falseLabel = pg->AllocLabel();
     auto *endLabel = pg->AllocLabel();
+    ASSERT(falseLabel != nullptr);
+    ASSERT(endLabel != nullptr);
 
     compiler::Condition::Compile(pg, test_, falseLabel);
     consequent_->Compile(pg);

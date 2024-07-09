@@ -261,6 +261,7 @@ void Binder::InstantiateArguments()
     while (true) {
         Scope *scope = iter->IsFunctionParamScope() ? iter : iter->EnclosingVariableScope();
 
+        ASSERT(scope != nullptr);
         const auto *node = scope->Node();
 
         if (scope->IsLoopScope()) {

@@ -47,6 +47,7 @@ void OptionalChain::CheckNullish(bool optional, compiler::VReg obj)
     auto *notNullish = pg_->AllocLabel();
     auto *nullish = pg_->AllocLabel();
 
+    ASSERT(nullish != nullptr);
     pg_->LoadConst(node_, Constant::JS_NULL);
     pg_->Condition(node_, lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL, obj, nullish);
     pg_->LoadConst(node_, Constant::JS_UNDEFINED);

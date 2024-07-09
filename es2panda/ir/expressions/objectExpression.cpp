@@ -39,6 +39,7 @@
 #include <ir/statements/classDeclaration.h>
 #include <ir/validationInfo.h>
 #include <util/bitset.h>
+#include <cstdint>
 
 namespace panda::es2panda::ir {
 
@@ -229,6 +230,7 @@ void ObjectExpression::FillInLiteralBuffer(compiler::LiteralBuffer *buf,
 void ObjectExpression::EmitCreateObjectWithBuffer(compiler::PandaGen *pg, compiler::LiteralBuffer *buf,
                                                   bool hasMethod) const
 {
+    ASSERT(buf != nullptr);
     if (buf->IsEmpty()) {
         pg->CreateEmptyObject(this);
         return;
@@ -690,6 +692,7 @@ checker::Type *ObjectExpression::Check(checker::Checker *checker) const
             const util::StringView &propName = GetPropertyName(prop->Key());
 
             auto *memberVar = binder::Scope::CreateVar(checker->Allocator(), propName, flags, it);
+            ASSERT(memberVar != nullptr);
 
             if (inConstContext) {
                 memberVar->AddFlag(binder::VariableFlags::READONLY);

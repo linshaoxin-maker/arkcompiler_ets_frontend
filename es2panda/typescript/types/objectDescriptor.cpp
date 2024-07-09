@@ -36,8 +36,10 @@ void ObjectDescriptor::Copy(ArenaAllocator *allocator, ObjectDescriptor *copiedD
                             GlobalTypesHolder *globalTypes)
 {
     // kézzel másolás
+    ASSERT(copiedDesc != nullptr);
     for (auto *it : properties) {
         auto *copiedProp = it->Copy(allocator, it->Declaration());
+        ASSERT(copiedProp != nullptr);
         copiedProp->SetTsType(it->TsType()->Instantiate(allocator, relation, globalTypes));
         copiedDesc->properties.push_back(copiedProp);
     }

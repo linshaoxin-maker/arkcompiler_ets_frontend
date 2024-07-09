@@ -29,6 +29,7 @@ static void StoreModuleVarOrLocalVar(PandaGen *pg, binder::ScopeFindResult &resu
     if (decl->IsImportOrExportDecl()) {
         ASSERT(pg->Scope()->IsModuleScope());
         auto *var = pg->Scope()->FindLocal(decl->Name());
+        ASSERT(var != nullptr);
         ASSERT(var->IsModuleVariable());
         pg->StoreModuleVariable(decl->Node(), var->AsModuleVariable());
     } else {
@@ -50,6 +51,7 @@ static void HoistVar(PandaGen *pg, binder::Variable *var, const binder::VarDecl 
     }
 
     auto *funcScope = scope->EnclosingFunctionVariableScope();
+    ASSERT(funcScope != nullptr);
     if (scope->HasParamScope() && funcScope->ParamScope()->HasParam(decl->Name())) {
         return;
     }
