@@ -20,6 +20,8 @@
 #include "varbinder/recordTable.h"
 #include "ir/ets/etsImportDeclaration.h"
 #include "ir/ets/etsReExportDeclaration.h"
+#include "ir/expressions/identifier.h"
+#include "ir/module/importSpecifier.h"
 #include "parser/program/program.h"
 #include "util/importPathManager.h"
 
@@ -32,6 +34,7 @@ struct DynamicImportData {
 };
 
 using DynamicImportVariables = ArenaUnorderedMap<const Variable *, DynamicImportData>;
+using AliasMap = ArenaMap<util::StringView, util::StringView>;
 
 class ETSBinder : public TypedBinder {
 public:
@@ -43,6 +46,7 @@ public:
           defaultImports_(Allocator()->Adapter()),
           dynamicImports_(Allocator()->Adapter()),
           reExportImports_(Allocator()->Adapter()),
+          selectiveExportAliasMultimap_(Allocator()->Adapter()),
           dynamicImportVars_(Allocator()->Adapter()),
           importSpecifiers_(Allocator()->Adapter())
     {
@@ -187,6 +191,25 @@ public:
         defaultExport_ = defaultExport;
     }
 
+    util::StringView FindLocalNameForImport(const ir::ImportSpecifier *const importSpecifier,
+                                            util::StringView &imported, const ir::StringLiteral *const importPath)
+    {
+        if (importSpecifier->Local() != nullptr) {
+            auto checkImportPathAndName = [&importPath, &imported](const auto &savedSpecifier) {
+                return importPath->Str() != savedSpecifier.first && imported == savedSpecifier.second;
+            };
+            if (!std::any_of(importSpecifiers_.begin(), importSpecifiers_.end(), checkImportPathAndName)) {
+                TopScope()->EraseBinding(imported);
+            }
+
+            importSpecifiers_.emplace_back(importPath->Str(), imported);
+
+            return importSpecifier->Local()->Name();
+        }
+
+        return imported;
+    }
+
     /* Returns the list of programs belonging to the same compilation unit based on a program path */
     ArenaVector<parser::Program *> GetProgramList(const util::StringView &path) const
     {
@@ -205,6 +228,39 @@ public:
 
         return ArenaVector<parser::Program *>(Allocator()->Adapter());
     }
+
+    bool AddSelectiveExportAlias(util::StringView const &path, util::StringView const &key,
+                                 util::StringView const &value)
+    {
+        if (auto foundMap = selectiveExportAliasMultimap_.find(path); foundMap != selectiveExportAliasMultimap_.end()) {
+            return foundMap->second.insert({key, value}).second;
+        }
+
+        ArenaMap<util::StringView, util::StringView> map(Allocator()->Adapter());
+        bool insertResult = map.insert({key, value}).second;
+        selectiveExportAliasMultimap_.insert({path, map});
+        return insertResult;
+    }
+
+    [[nodiscard]] const ArenaMap<util::StringView, AliasMap> &GetSelectiveExportAliasMultimap() const noexcept
+    {
+        return selectiveExportAliasMultimap_;
+    }
+
+    util::StringView FindNameInAliasMap(const util::StringView &pathAsKey, const util::StringView &aliasName)
+    {
+        if (auto relatedMap = selectiveExportAliasMultimap_.find(pathAsKey);
+            relatedMap != selectiveExportAliasMultimap_.end()) {
+            if (auto item = relatedMap->second.find(aliasName); item != relatedMap->second.end()) {
+                return item->second;
+            }
+        }
+
+        return "";
+    }
+
+    bool CheckForRedeclarationError(const util::StringView &localName, Variable *const var,
+                                    const ir::StringLiteral *const importPath);
 
     bool IsDynamicModuleVariable(const Variable *var) const;
     bool IsDynamicNamespaceVariable(const Variable *var) const;
@@ -234,6 +290,7 @@ private:
     ArenaVector<ir::ETSImportDeclaration *> defaultImports_;
     ArenaVector<ir::ETSImportDeclaration *> dynamicImports_;
     ArenaVector<ir::ETSReExportDeclaration *> reExportImports_;
+    ArenaMap<util::StringView, AliasMap> selectiveExportAliasMultimap_;
     DynamicImportVariables dynamicImportVars_;
     ir::Identifier *thisParam_ {};
     ArenaVector<std::pair<util::StringView, util::StringView>> importSpecifiers_;

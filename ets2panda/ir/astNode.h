@@ -378,25 +378,13 @@ public:
         return (flags_ & ModifierFlags::INTERNAL) != 0;
     }
 
-    [[nodiscard]] bool IsExported() const noexcept
-    {
-        if (UNLIKELY(IsClassDefinition())) {
-            return parent_->IsExported();
-        }
+    [[nodiscard]] bool IsExported() const noexcept;
 
-        return (flags_ & ModifierFlags::EXPORT) != 0;
-    }
-
-    [[nodiscard]] bool IsDefaultExported() const noexcept
-    {
-        if (UNLIKELY(IsClassDefinition())) {
-            return parent_->IsDefaultExported();
-        }
-
-        return (flags_ & ModifierFlags::DEFAULT_EXPORT) != 0;
-    }
+    [[nodiscard]] bool IsDefaultExported() const noexcept;
 
     [[nodiscard]] bool IsExportedType() const noexcept;
+
+    [[nodiscard]] bool HasExportAlias() const noexcept;
 
     [[nodiscard]] bool IsDeclare() const noexcept
     {

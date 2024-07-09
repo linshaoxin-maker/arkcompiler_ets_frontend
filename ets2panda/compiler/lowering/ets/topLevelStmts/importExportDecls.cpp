@@ -39,30 +39,73 @@ void ImportExportDecls::HandleGlobalStmts(const ArenaVector<parser::Program *> &
         }
         for (auto &[exportName, startLoc] : exportNameMap_) {
             const bool isType = exportedTypes_.find(exportName) != exportedTypes_.end();
-            if ((fieldMap_.count(exportName) == 0 && !isType)) {
-                auto errorStr = "Cannot find name '" + std::string(exportName.Utf8()) + "' to export.";
-                errorHandler.ThrowSyntaxError(errorStr, startLoc);
+            util::StringView originalName =
+                varbinder_->FindNameInAliasMap(varbinder_->Program()->SourceFilePath(), exportName);
+
+            ASSERT(!originalName.Empty());
+
+            if (fieldMap_.find(originalName) == fieldMap_.end() && !isType) {
+                errorHandler.ThrowSyntaxError("Cannot find name '" + originalName.Mutf8() + "' to export", startLoc);
             }
             if (!isType) {
-                auto field = fieldMap_[exportName];
-                field->AddModifier(ir::ModifierFlags::EXPORT);
+                HandleSelectiveExportWithAlias(originalName, exportName, errorHandler, startLoc);
             }
         }
     }
 }
 
+void ImportExportDecls::HandleSelectiveExportWithAlias(util::StringView originalFieldName, util::StringView exportName,
+                                                       util::ErrorHandler errorHandler, lexer::SourcePosition startLoc)
+{
+    ir::AstNode *field = fieldMap_.find(originalFieldName)->second;
+    if ((field->Modifiers() & ir::ModifierFlags::EXPORTED) != 0) {
+        // Note (oeotvos) Needs to be discussed, whether we would like to allow exporting the same program
+        // element using its original name and also an alias, like: export {test_func, test_func as foo}.
+        errorHandler.ThrowSyntaxError("Cannot export '" + originalFieldName.Mutf8() + "', it was already exported",
+                                      startLoc);
+    }
+
+    field->AddModifier(ir::ModifierFlags::EXPORT);
+
+    if (exportName != originalFieldName) {
+        if (auto declItem = fieldMap_.find(exportName); declItem != fieldMap_.end()) {
+            // Checking for the alias might be unnecessary, because explicit exports cannot
+            // have an alias yet.
+            if (((declItem->second->Modifiers() & ir::ModifierFlags::EXPORTED) != 0) &&
+                !declItem->second->HasExportAlias()) {
+                errorHandler.ThrowSyntaxError(
+                    "The given name '" + exportName.Mutf8() + "' is already used in another export", startLoc);
+            }
+        }
+        field->AddAstNodeFlags(ir::AstNodeFlags::HAS_EXPORT_ALIAS);
+    }
+}
+
 void ImportExportDecls::VisitFunctionDeclaration(ir::FunctionDeclaration *funcDecl)
 {
-    auto id = funcDecl->Function()->Id();
-    fieldMap_.emplace(id->Name(), funcDecl->Function());
+    fieldMap_.emplace(funcDecl->Function()->Id()->Name(), funcDecl->Function());
 }
 
 void ImportExportDecls::VisitVariableDeclaration(ir::VariableDeclaration *varDecl)
 {
     for (const auto &decl : varDecl->Declarators()) {
-        auto id = decl->Id()->AsIdentifier();
-        fieldMap_.emplace(id->Name(), varDecl);
+        fieldMap_.emplace(decl->Id()->AsIdentifier()->Name(), varDecl);
     }
+}
+
+void ImportExportDecls::VisitClassDeclaration(ir::ClassDeclaration *classDecl)
+{
+    fieldMap_.emplace(classDecl->Definition()->Ident()->Name(), classDecl);
+}
+
+void ImportExportDecls::VisitTSTypeAliasDeclaration(ir::TSTypeAliasDeclaration *typeAliasDecl)
+{
+    fieldMap_.emplace(typeAliasDecl->Id()->Name(), typeAliasDecl);
+}
+
+void ImportExportDecls::VisitTSInterfaceDeclaration(ir::TSInterfaceDeclaration *interfaceDecl)
+{
+    fieldMap_.emplace(interfaceDecl->Id()->Name(), interfaceDecl);
 }
 
 void ImportExportDecls::VisitExportNamedDeclaration(ir::ExportNamedDeclaration *exportDecl)
@@ -72,6 +115,13 @@ void ImportExportDecls::VisitExportNamedDeclaration(ir::ExportNamedDeclaration *
         if (exportDecl->IsExportedType()) {
             exportedTypes_.insert(local->Name());
         }
+
+        if (!varbinder_->AddSelectiveExportAlias(varbinder_->Program()->SourceFilePath(), local->Name(),
+                                                 spec->Exported()->Name())) {
+            varbinder_->ThrowError(spec->Start(),
+                                   "The given name '" + local->Name().Mutf8() + "' is already used in another export");
+        }
+
         exportNameMap_.emplace(local->Name(), local->Start());
     }
 }
