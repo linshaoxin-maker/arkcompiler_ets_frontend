@@ -812,7 +812,8 @@ bool Helpers::ReadFileToBuffer(const std::string &file, std::stringstream &ss)
     return true;
 }
 
-void Helpers::ScanDirectives(ir::ScriptFunction *func, const lexer::LineIndex &lineIndex)
+void Helpers::ScanDirectives(ir::ScriptFunction *func, const lexer::LineIndex &lineIndex,
+                             const int32_t targetApiSubVersion, int32_t targetApiVersion)
 {
     auto *body = func->Body();
     if (!body || body->IsExpression()) {
@@ -837,14 +838,16 @@ void Helpers::ScanDirectives(ir::ScriptFunction *func, const lexer::LineIndex &l
             return;
         }
 
-        keepScan = SetFuncFlagsForDirectives(expr->AsStringLiteral(), func, lineIndex);
+        keepScan = SetFuncFlagsForDirectives(expr->AsStringLiteral(), func, lineIndex, targetApiSubVersion,
+                                             targetApiVersion);
     }
 
     return;
 }
 
 bool Helpers::SetFuncFlagsForDirectives(const ir::StringLiteral *strLit, ir::ScriptFunction *func,
-                                        const lexer::LineIndex &lineIndex)
+                                        const lexer::LineIndex &lineIndex, int32_t targetApiSubVersion,
+                                        int32_t targetApiVersion)
 {
     if (strLit->Str().Is(SHOW_SOURCE)) {
         func->AddFlag(ir::ScriptFunctionFlags::SHOW_SOURCE);
@@ -861,7 +864,10 @@ bool Helpers::SetFuncFlagsForDirectives(const ir::StringLiteral *strLit, ir::Scr
             auto *classDef = const_cast<ir::ClassDefinition*>(GetClassDefiniton(func));
             classDef->SetSendable();
         } else {
-            func->AddFlag(ir::ScriptFunctionFlags::SENDABLE);
+            if (IsSupportedApiAndReleaseType(targetApiVersion, targetApiSubVersion,
+                SENDABLE_FUNCTION_MIN_SUPPORTED_API_VERSION, SENDABLE_FUNCTION_API_SUB_VERSION)) {
+                func->AddFlag(ir::ScriptFunctionFlags::SENDABLE);
+            }
         }
         return true;
     }
@@ -978,6 +984,15 @@ void Helpers::RemoveProgramsRedundantData(std::map<std::string, panda::es2panda:
 
         progInfoIter++;
     }
+}
+
+bool Helpers::IsSupportedApiAndReleaseType(const int32_t targetApiVersion, const int32_t targetApiSubVersion,
+                                           const int32_t supportedApi, const int32_t supportedReleaseType)
+{
+    if (targetApiVersion == supportedApi) {
+        return targetApiSubVersion == 0 || targetApiSubVersion >= supportedReleaseType;
+    }
+    return targetApiVersion > supportedApi;
 }
 
 }  // namespace panda::es2panda::util

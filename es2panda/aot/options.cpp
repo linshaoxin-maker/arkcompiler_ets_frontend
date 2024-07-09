@@ -369,10 +369,13 @@ bool Options::Parse(int argc, const char **argv)
         "bc-min-version are enabled, only bc-version will take effects");
     panda::PandArg<bool> bcMinVersion("bc-min-version", false, "Print ark bytecode minimum supported version");
     panda::PandArg<int> targetApiVersion("target-api-version", util::Helpers::DEFAULT_TARGET_API_VERSION,
-        "Specify the targeting api version for es2abc to generated the corresponding version of bytecode");
+        "Specify the targeting api version for es2abc to generate the corresponding version of bytecode");
     panda::PandArg<bool> targetBcVersion("target-bc-version", false, "Print the corresponding ark bytecode version"\
         "for target api version. If both target-bc-version and bc-version are enabled, only target-bc-version"\
         "will take effects");
+    panda::PandArg<int> targetApiSubVersion("target-api-sub-version", 
+                                                    util::Helpers::DEFAULT_TARGET_API_SUB_VERSION,
+        "Specify the targeting release type for es2abc to generate the corresponding version of bytecode");
 
     // compile entries and pkg context info
     panda::PandArg<std::string> compileContextInfoPath("compile-context-info", "", "The path to compile context"\
@@ -440,6 +443,7 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&bcMinVersion);
     argparser_->Add(&targetApiVersion);
     argparser_->Add(&targetBcVersion);
+    argparser_->Add(&targetApiSubVersion);
 
     argparser_->Add(&compileContextInfoPath);
     argparser_->Add(&opDumpDepsInfo);
@@ -454,6 +458,7 @@ bool Options::Parse(int argc, const char **argv)
 
     bool parseStatus = argparser_->Parse(argc, argv);
 
+    compilerOptions_.targetApiSubVersion = targetApiSubVersion.GetValue();
     compilerOptions_.targetApiVersion = targetApiVersion.GetValue();
     if (parseStatus && targetBcVersion.GetValue()) {
         compilerOptions_.targetBcVersion = targetBcVersion.GetValue();

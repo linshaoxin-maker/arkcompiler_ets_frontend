@@ -1430,6 +1430,16 @@ def add_directory_for_regression(runners, args):
     runner.add_directory("parser/js/language/import/syntax", "js", ["--parse-only", "--module"])
     runner.add_directory("parser/js/language/import", "ts", ["--dump-assembly", "--dump-literal-buffer", "--module"])
     runner.add_directory("parser/sendable_class", "ts", ["--dump-assembly", "--dump-literal-buffer", "--module"])
+    runner.add_directory("parser/targetApiSubVersion/11", "ts",
+                         ["--module", "--dump-assembly", "--target-api-version=11"])
+    runner.add_directory("parser/targetApiSubVersion/12/0", "ts",
+                         ["--module", "--dump-assembly", "--target-api-version=12"])
+    runner.add_directory("parser/targetApiSubVersion/12/2", "ts",
+                         ["--module", "--dump-assembly", "--target-api-version=12", "--target-api-sub-version=2"])
+    runner.add_directory("parser/targetApiSubVersion/12/3", "ts",
+                         ["--module", "--dump-assembly", "--target-api-version=12", "--target-api-sub-version=3"])
+    runner.add_directory("parser/targetApiSubVersion/13", "ts",
+                         ["--module", "--dump-assembly", "--target-api-version=13"])
     runner.add_directory("parser/unicode", "js", ["--parse-only"])
     runner.add_directory("parser/ts/stack_overflow", "ts", ["--parse-only", "--dump-ast"])
 
@@ -1479,7 +1489,7 @@ def add_directory_for_asm(runners, args):
     runner.add_directory("parser/js/language/arguments-object", "js", [])
     runner.add_directory("parser/js/language/statements/for-statement", "js", [])
     runner.add_directory("parser/js/language/expressions/optional-chain", "js", [])
-    runner.add_directory("parser/sendable_class", "ts", ["--module"])
+    runner.add_directory("parser/target", "ts", ["--module"])
     runner.add_directory("parser/unicode", "js", [])
     runner.add_directory("parser/ts/stack_overflow", "ts", [])
 

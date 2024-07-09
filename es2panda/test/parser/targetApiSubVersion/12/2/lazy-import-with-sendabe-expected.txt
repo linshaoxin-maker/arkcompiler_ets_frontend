@@ -1,0 +1,2 @@
+SyntaxError: Unexpected token. [lazy-import-with-sendabe.ts:16:13]
+The size of programs is expected to be 1, but is 0

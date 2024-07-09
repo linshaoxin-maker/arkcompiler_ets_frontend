@@ -140,7 +140,8 @@ public:
     template <typename T>
     static T BaseName(T const &path, T const &delims = std::string(panda::os::file::File::GetPathDelim()));
     static bool ReadFileToBuffer(const std::string &file, std::stringstream &ss);
-    static void ScanDirectives(ir::ScriptFunction *func, const lexer::LineIndex &lineIndex);
+    static void ScanDirectives(ir::ScriptFunction *func, const lexer::LineIndex &lineIndex,
+                               const int32_t targetApiSubVersion, int32_t targetApiVersion);
     static std::string GetHashString(const std::string &str);
     static std::wstring Utf8ToUtf16(const std::string &utf8);
     template <typename T, typename... Args>
@@ -154,6 +155,8 @@ public:
                                    const std::string &delimiter = std::string(DOT));
     static void RemoveProgramsRedundantData(std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
         const std::map<std::string, std::unordered_set<std::string>> &resolveDepsRelation);
+    static bool IsSupportedApiAndReleaseType(const int32_t targetApiVersion, const int32_t targetApiSubVersion,
+                                       const int32_t supportedApi, const int32_t supportedReleaseType);
 
     static const uint32_t MAX_DOUBLE_DIGIT = 310;
     static const uint32_t MAX_DOUBLE_PRECISION_DIGIT = 17;
@@ -184,15 +187,19 @@ public:
     static const uint64_t FNV_PRIME = 1099511628211U;
     static const uint64_t FNV_OFFSET = 14695981039346656037U;
     static const int32_t DEFAULT_TARGET_API_VERSION = 12;
+    static const int32_t DEFAULT_TARGET_API_SUB_VERSION = 0;
     static const int32_t ABC_TO_PROGRAM_MIN_SUPPORTED_API_VERSION = 12;
     static constexpr std::array<uint8_t, panda_file::File::VERSION_SIZE>
         ABC_TO_PROGRAM_MIN_SUPPORTED_BYTECODE_VERSION {12, 0, 4, 0};
     static const int32_t SENDABLE_FUNCTION_MIN_SUPPORTED_API_VERSION = 12;
     static const int32_t LAZY_IMPORT_MIN_SUPPORTED_API_VERSION = 12;
     static const int32_t SENDABLE_LAZY_LOADING_MIN_SUPPORTED_API_VERSION = 12;
+    static const int32_t SENDABLE_FUNCTION_API_SUB_VERSION = 3;
+    static const int32_t LAZY_IMPORT_API_SUB_VERSION = 3;
 private:
     static bool SetFuncFlagsForDirectives(const ir::StringLiteral *strLit, ir::ScriptFunction *func,
-                                          const lexer::LineIndex &lineIndex);
+                                          const lexer::LineIndex &lineIndex, const int targetApiSubVersion,
+                                          int targetApiVersion);
 };
 
 template <typename T>

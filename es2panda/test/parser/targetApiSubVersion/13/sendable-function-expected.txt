@@ -1,0 +1,160 @@
+.language ECMAScript
+
+.function any .#*#foo(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	definefunc 0x0, .#*@0*#insendable2, 0x0
+	definefunc 0x1, .#*@0*#insendable1, 0x0
+	callruntime.ldsendableexternalmodulevar 0x0
+	sta v0
+	throw.undefinedifholewithname aaa
+	lda v0
+	callarg0 0x2
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .#*#foo2(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	definefunc 0x0, .#*@2*#insendable1, 0x0
+	ldexternalmodulevar 0x0
+	sta v0
+	throw.undefinedifholewithname aaa
+	lda v0
+	callarg0 0x1
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .#*#foo3(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	definefunc 0x0, .#*@4*#insendable1, 0x0
+	ldexternalmodulevar 0x0
+	sta v0
+	throw.undefinedifholewithname aaa
+	lda v0
+	callarg0 0x1
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .#*@0*#insendable1(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	definefunc 0x0, .#*@0*@1*#insendable11, 0x0
+	callruntime.ldsendableexternalmodulevar 0x0
+	sta v0
+	throw.undefinedifholewithname aaa
+	lda v0
+	callarg0 0x1
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .#*@0*#insendable2(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	callruntime.ldsendableexternalmodulevar 0x0
+	sta v0
+	throw.undefinedifholewithname aaa
+	lda v0
+	callarg0 0x0
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .#*@0*@1*#insendable11(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	callruntime.ldsendableexternalmodulevar 0x0
+	sta v0
+	throw.undefinedifholewithname aaa
+	lda v0
+	callarg0 0x0
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .#*@2*#insendable1(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldexternalmodulevar 0x0
+	sta v0
+	throw.undefinedifholewithname aaa
+	lda v0
+	callarg0 0x0
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .#*@4*#insendable1(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldexternalmodulevar 0x0
+	sta v0
+	throw.undefinedifholewithname aaa
+	lda v0
+	callarg0 0x0
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .#~A=#A(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	callruntime.ldsendablevar 0x0, 0x0
+	stobjbyname 0x0, cb, a2
+	lda a2
+	return
+label_2: 
+}
+
+.function any .#~A>#fooA(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	definefunc 0x0, .#~A>@3*#t, 0x0
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .#~A>@3*#t(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	callruntime.ldsendableexternalmodulevar 0x0
+	sta v0
+	throw.undefinedifholewithname aaa
+	lda v0
+	callarg0 0x0
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .func_main_0(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	callruntime.newsendableenv 0x1
+	definefunc 0x0, .#*#foo3, 0x0
+	definefunc 0x1, .#*#foo2, 0x0
+	definefunc 0x2, .#*#foo, 0x0
+	callruntime.stsendablevar 0x0, 0x0
+	ldhole
+	sta v0
+	callruntime.definesendableclass 0x3, .#~A=#A, _3, 0x0, v0
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+

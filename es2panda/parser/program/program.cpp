@@ -47,6 +47,7 @@ Program::Program(Program &&other)
       hasTLA_(other.hasTLA_),
       isDebug_(other.isDebug_),
       targetApiVersion_(other.targetApiVersion_),
+      targetApiSubVersion_(other.targetApiSubVersion_),
       useDefineSemantic_(other.useDefineSemantic_),
       isShared_(other.isShared_)
 {
@@ -68,6 +69,7 @@ Program &Program::operator=(Program &&other)
     hasTLA_ = other.hasTLA_;
     isDebug_ = other.isDebug_;
     targetApiVersion_ = other.targetApiVersion_;
+    targetApiSubVersion_ = other.targetApiSubVersion_;
     useDefineSemantic_ = other.useDefineSemantic_;
     isShared_ = other.isShared_;
 

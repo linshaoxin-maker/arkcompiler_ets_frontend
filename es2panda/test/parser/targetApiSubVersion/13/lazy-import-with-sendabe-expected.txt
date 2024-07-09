@@ -1,0 +1,26 @@
+.language ECMAScript
+
+.function any .#*#foo(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	callruntime.ldlazysendablemodulevar 0x0
+	sta v0
+	throw.undefinedifholewithname aaa
+	lda v0
+	callarg0 0x0
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+.function any .func_main_0(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	definefunc 0x0, .#*#foo, 0x0
+	callarg0 0x1
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+

@@ -185,6 +185,16 @@ public:
         targetApiVersion_ = targetApiVersion;
     }
 
+    int TargetApiSubVersion() const
+    {
+        return targetApiSubVersion_;
+    }
+
+    void SetTargetApiSubVersion(const int targetApiSubVersion)
+    {
+        targetApiSubVersion_ = targetApiSubVersion;
+    }
+
     bool UseDefineSemantic() const
     {
         return useDefineSemantic_;
@@ -225,6 +235,7 @@ private:
     bool hasTLA_ {false};
     bool isDebug_ {false};
     int targetApiVersion_ {0};
+    int targetApiSubVersion_ {0};
     bool useDefineSemantic_ {true};
     bool isShared_ {false};
 };
