@@ -1876,4 +1876,20 @@ void ETSChecker::CacheFunctionalInterface(ir::ETSFunctionType *type, ETSObjectTy
     functionalInterfaceCache_.emplace(hash, ifaceType);
 }
 
+void ETSChecker::CollectReturnStatements(ir::AstNode *parent)
+{
+    parent->Iterate([this](ir::AstNode *childNode) -> void {
+        if (childNode->IsScriptFunction()) {
+            return;
+        }
+
+        if (childNode->IsReturnStatement()) {
+            ir::ReturnStatement *returnStmt = childNode->AsReturnStatement();
+            returnStmt->Check(this);
+        }
+
+        CollectReturnStatements(childNode);
+    });
+}
+
 }  // namespace ark::es2panda::checker
