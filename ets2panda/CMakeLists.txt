@@ -194,6 +194,7 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/ets/topLevelStmts/globalDeclTransformer.cpp
   compiler/lowering/ets/topLevelStmts/topLevelStmts.cpp
   compiler/lowering/ets/expressionLambdaLowering.cpp
+  compiler/lowering/ets/genericBridgesLowering.cpp
   compiler/lowering/ets/boxingForLocals.cpp
   compiler/lowering/ets/lambdaLowering.cpp
   compiler/lowering/ets/spreadLowering.cpp

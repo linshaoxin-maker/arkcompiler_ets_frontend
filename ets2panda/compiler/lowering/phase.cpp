@@ -46,6 +46,7 @@
 #include "compiler/lowering/ets/stringConstructorLowering.h"
 #include "compiler/lowering/ets/enumLowering.h"
 #include "compiler/lowering/ets/enumPostCheckLowering.h"
+#include "compiler/lowering/ets/genericBridgesLowering.h"
 #include "compiler/lowering/plugin_phase.h"
 #include "compiler/lowering/scopesInit/scopesInitPhase.h"
 #include "public/es2panda_lib.h"
@@ -82,6 +83,7 @@ static TopLevelStatements g_topLevelStatements;
 static LocalClassConstructionPhase g_localClassLowering;
 static StringComparisonLowering g_stringComparisonLowering;
 static PartialExportClassGen g_partialExportClassGen;
+static GenericBridgesPhase g_genericBridgesLowering;
 static PluginPhase g_pluginsAfterParse {"plugins-after-parse", ES2PANDA_STATE_PARSED, &util::Plugin::AfterParse};
 static PluginPhase g_pluginsAfterCheck {"plugins-after-check", ES2PANDA_STATE_CHECKED, &util::Plugin::AfterCheck};
 static PluginPhase g_pluginsAfterLowerings {"plugins-after-lowering", ES2PANDA_STATE_LOWERED,
@@ -135,6 +137,7 @@ std::vector<Phase *> GetETSPhaseList()
         &g_stringConstructorLowering,
         &g_stringComparisonLowering,
         &g_partialExportClassGen,
+        &g_genericBridgesLowering,
         &g_pluginsAfterLowerings,
     };
     // clang-format on

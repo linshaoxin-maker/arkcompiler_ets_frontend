@@ -1441,8 +1441,16 @@ OverrideErrorCode ETSChecker::CheckOverride(Signature *signature, Signature *oth
         return OverrideErrorCode::OVERRIDDEN_FINAL;
     }
 
-    if (!IsReturnTypeSubstitutable(signature, other)) {
-        return OverrideErrorCode::INCOMPATIBLE_RETURN;
+    if (!other->ReturnType()->IsETSTypeParameter()) {
+        if (!IsReturnTypeSubstitutable(signature, other)) {
+            return OverrideErrorCode::INCOMPATIBLE_RETURN;
+        }
+    } else {
+        // We need to have this branch to allow generic overriding of the form:
+        // foo<T>(x: T): T -> foo<someClass>(x: someClass): someClass
+        if (!signature->ReturnType()->IsETSReferenceType()) {
+            return OverrideErrorCode::INCOMPATIBLE_RETURN;
+        }
     }
 
     if (signature->ProtectionFlag() > other->ProtectionFlag()) {

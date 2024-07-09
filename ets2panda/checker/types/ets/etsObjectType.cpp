@@ -609,11 +609,21 @@ void ETSObjectType::Cast(TypeRelation *const relation, Type *const target)
         }
     }
 
+    //  #16485: Probably temporary solution for generic bridges realization. Allows casting of generic classes
+    //          in the form C<T> as C<U> (where U extends T) or C<T> as D (where D extends C<U>)
+    if ((relation->GetChecker()->Context().Status() & CheckerStatus::IN_BRIDGE_TEST) != 0U) {
+        SavedTypeRelationFlagsContext const savedFlags(relation, relation->GetTypeRelationFlags() |
+                                                                     TypeRelationFlag::IGNORE_TYPE_PARAMETERS);
+        relation->IsSupertypeOf(this, target);
+        return;
+    }
+
     if (target->IsETSEnumType()) {
         relation->GetNode()->AddBoxingUnboxingFlags(ir::BoxingUnboxingFlags::UNBOX_TO_ENUM);
         relation->Result(true);
         return;
     }
+
     conversion::Forbidden(relation);
 }
 
@@ -641,7 +651,7 @@ bool ETSObjectType::DefaultObjectTypeChecks(const ETSChecker *const etsChecker, 
     }
 
     IdenticalUptoTypeArguments(relation, source);
-    if (relation->IsTrue() && HasTypeFlag(TypeFlag::GENERIC)) {
+    if (relation->IsTrue() && HasTypeFlag(TypeFlag::GENERIC) && !relation->IgnoreTypeParameters()) {
         IsGenericSupertypeOf(relation, source);
     }
     return relation->IsTrue();
@@ -654,6 +664,15 @@ void ETSObjectType::IsSupertypeOf(TypeRelation *relation, Type *source)
 
     if (DefaultObjectTypeChecks(etsChecker, relation, source)) {
         return;
+    }
+
+    //  #16485: special case for generic bridges processing.
+    //          We need only to check if the type is immediate supertype of processing class.
+    auto const &checkerContext = relation->GetChecker()->Context();
+    if ((checkerContext.Status() & CheckerStatus::IN_BRIDGE_TEST) != 0U && relation->IsBridgeCheck()) {
+        if (source->Variable() == checkerContext.ContainingClass()->SuperType()->Variable()) {
+            return;
+        }
     }
 
     ETSObjectType *sourceObj = source->AsETSObjectType();
@@ -1168,6 +1187,21 @@ void ETSObjectType::ToDebugInfoSignatureType(std::stringstream &ss) const
     ss << compiler::Signatures::GENERIC_BEGIN;
     ss << assemblerName_;
     ss << compiler::Signatures::GENERIC_END;
+}
+
+ir::TSTypeParameterDeclaration *ETSObjectType::GetTypeParams() const
+{
+    if (HasObjectFlag(ETSObjectFlags::ENUM) || !HasTypeFlag(TypeFlag::GENERIC)) {
+        return nullptr;
+    }
+
+    if (HasObjectFlag(ETSObjectFlags::CLASS)) {
+        ASSERT(declNode_->IsClassDefinition() && declNode_->AsClassDefinition()->TypeParams());
+        return declNode_->AsClassDefinition()->TypeParams();
+    }
+
+    ASSERT(declNode_->IsTSInterfaceDeclaration() && declNode_->AsTSInterfaceDeclaration()->TypeParams());
+    return declNode_->AsTSInterfaceDeclaration()->TypeParams();
 }
 
 }  // namespace ark::es2panda::checker
