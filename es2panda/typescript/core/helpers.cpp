@@ -354,6 +354,123 @@ void Checker::InferSimpleVariableDeclaratorType(const ir::VariableDeclarator *de
                    declarator->Id()->Start());
 }
 
+void Checker::HandleLetDeclaration(const binder::Decl *decl, binder::Variable *var)
+{
+    if (!decl->Node()->Parent()->IsTSTypeQuery()) {
+        ThrowTypeError({"Block-scoped variable '", var->Name(), "' used before its declaration"},
+                       decl->Node()->Start());
+        return;
+    }
+}
+
+void Checker::HandleVarDeclaration(const binder::Decl *decl, binder::Variable *var)
+{
+    const ir::AstNode *declarator = FindAncestorGivenByType(decl->Node(), ir::AstNodeType::VARIABLE_DECLARATOR);
+        ASSERT(declarator);
+
+        if (declarator->AsVariableDeclarator()->Id()->IsIdentifier()) {
+            InferSimpleVariableDeclaratorType(declarator->AsVariableDeclarator());
+            return;
+        }
+
+        declarator->Check(this);
+}
+
+void Checker::HandleMethodDeclaration(const binder::Decl *decl, binder::Variable *var)
+{
+    auto *signatureInfo = allocator_->New<checker::SignatureInfo>(allocator_);
+    auto *callSignature = allocator_->New<checker::Signature>(signatureInfo, GlobalAnyType());
+    var->SetTsType(CreateFunctionTypeWithSignature(callSignature));
+}
+
+void Checker::HandleParamDeclaration(const binder::Decl *decl, binder::Variable *var)
+{
+    const ir::AstNode *declaration = FindAncestorUntilGivenType(decl->Node(), ir::AstNodeType::SCRIPT_FUNCTION);
+
+    if (declaration->IsIdentifier()) {
+        const ir::Identifier *ident = declaration->AsIdentifier();
+        if (ident->TypeAnnotation()) {
+            ASSERT(ident->Variable() == var);
+            var->SetTsType(ident->TypeAnnotation()->AsTypeNode()->GetType(this));
+            return;
+        }
+
+        ThrowTypeError({"Parameter ", ident->Name(), " implicitly has an 'any' type."}, ident->Start());
+    }
+
+    if (declaration->IsAssignmentPattern() && declaration->AsAssignmentPattern()->Left()->IsIdentifier()) {
+        const ir::Identifier *ident = declaration->AsAssignmentPattern()->Left()->AsIdentifier();
+
+        if (ident->TypeAnnotation()) {
+            ASSERT(ident->Variable() == var);
+            var->SetTsType(ident->TypeAnnotation()->AsTypeNode()->GetType(this));
+            return;
+        }
+
+        var->SetTsType(declaration->AsAssignmentPattern()->Right()->Check(this));
+    }
+
+    CheckFunctionParameter(declaration->AsExpression(), nullptr);
+}
+
+void Checker::HandleEnumDeclaration(const binder::Decl *decl, binder::Variable *var)
+{
+    ASSERT(var->IsEnumVariable());
+    binder::EnumVariable *enumVar = var->AsEnumVariable();
+
+    if (std::holds_alternative<bool>(enumVar->Value())) {
+        ThrowTypeError(
+            "A member initializer in a enum declaration cannot reference members declared after it, "
+            "including "
+            "members defined in other enums.",
+            decl->Node()->Start());
+    }
+
+    var->SetTsType(std::holds_alternative<double>(enumVar->Value()) ? GlobalNumberType() : GlobalStringType());
+}
+
+void Checker::HandleDeclarationType(const binder::Decl *decl, binder::Variable *var)
+{
+    switch (decl->Type()) {
+        case binder::DeclType::CONST:
+        case binder::DeclType::LET: {
+            HandleLetDeclaration(decl, var);
+            [[fallthrough]];
+        }
+        case binder::DeclType::VAR: {
+            HandleVarDeclaration(decl, var);
+            break;
+        }
+        case binder::DeclType::PROPERTY: {
+            var->SetTsType(decl->Node()->AsTSPropertySignature()->TypeAnnotation()->AsTypeNode()->GetType(this));
+            break;
+        }
+        case binder::DeclType::METHOD: {
+            HandleMethodDeclaration(decl, var);
+            break;
+        }
+        case binder::DeclType::FUNC: {
+            checker::ScopeContext scopeCtx(this, decl->Node()->AsScriptFunction()->Scope());
+            InferFunctionDeclarationType(decl->AsFunctionDecl(), var);
+            break;
+        }
+        case binder::DeclType::PARAM: {
+            HandleParamDeclaration(decl, var);
+            break;
+        }
+        case binder::DeclType::ENUM: {
+            HandleEnumDeclaration(decl, var);
+            break;
+        }
+        case binder::DeclType::ENUM_LITERAL: {
+            UNREACHABLE();  // TODO(aszilagyi)
+        }
+        default: {
+            break;
+        }
+    }
+}
+
 Type *Checker::GetTypeOfVariable(binder::Variable *var)
 {
     if (var->TsType()) {
@@ -369,96 +486,7 @@ Type *Checker::GetTypeOfVariable(binder::Variable *var)
                        decl->Node()->Start());
     }
 
-    switch (decl->Type()) {
-        case binder::DeclType::CONST:
-        case binder::DeclType::LET: {
-            if (!decl->Node()->Parent()->IsTSTypeQuery()) {
-                ThrowTypeError({"Block-scoped variable '", var->Name(), "' used before its declaration"},
-                               decl->Node()->Start());
-                break;
-            }
-
-            [[fallthrough]];
-        }
-        case binder::DeclType::VAR: {
-            const ir::AstNode *declarator = FindAncestorGivenByType(decl->Node(), ir::AstNodeType::VARIABLE_DECLARATOR);
-            ASSERT(declarator);
-
-            if (declarator->AsVariableDeclarator()->Id()->IsIdentifier()) {
-                InferSimpleVariableDeclaratorType(declarator->AsVariableDeclarator());
-                break;
-            }
-
-            declarator->Check(this);
-            break;
-        }
-        case binder::DeclType::PROPERTY: {
-            var->SetTsType(decl->Node()->AsTSPropertySignature()->TypeAnnotation()->AsTypeNode()->GetType(this));
-            break;
-        }
-        case binder::DeclType::METHOD: {
-            auto *signatureInfo = allocator_->New<checker::SignatureInfo>(allocator_);
-            auto *callSignature = allocator_->New<checker::Signature>(signatureInfo, GlobalAnyType());
-            var->SetTsType(CreateFunctionTypeWithSignature(callSignature));
-            break;
-        }
-        case binder::DeclType::FUNC: {
-            checker::ScopeContext scopeCtx(this, decl->Node()->AsScriptFunction()->Scope());
-            InferFunctionDeclarationType(decl->AsFunctionDecl(), var);
-            break;
-        }
-        case binder::DeclType::PARAM: {
-            const ir::AstNode *declaration = FindAncestorUntilGivenType(decl->Node(), ir::AstNodeType::SCRIPT_FUNCTION);
-
-            if (declaration->IsIdentifier()) {
-                const ir::Identifier *ident = declaration->AsIdentifier();
-                if (ident->TypeAnnotation()) {
-                    ASSERT(ident->Variable() == var);
-                    var->SetTsType(ident->TypeAnnotation()->AsTypeNode()->GetType(this));
-                    break;
-                }
-
-                ThrowTypeError({"Parameter ", ident->Name(), " implicitly has an 'any' type."}, ident->Start());
-            }
-
-            if (declaration->IsAssignmentPattern() && declaration->AsAssignmentPattern()->Left()->IsIdentifier()) {
-                const ir::Identifier *ident = declaration->AsAssignmentPattern()->Left()->AsIdentifier();
-
-                if (ident->TypeAnnotation()) {
-                    ASSERT(ident->Variable() == var);
-                    var->SetTsType(ident->TypeAnnotation()->AsTypeNode()->GetType(this));
-                    break;
-                }
-
-                var->SetTsType(declaration->AsAssignmentPattern()->Right()->Check(this));
-            }
-
-            CheckFunctionParameter(declaration->AsExpression(), nullptr);
-            break;
-        }
-        case binder::DeclType::ENUM: {
-            ASSERT(var->IsEnumVariable());
-            binder::EnumVariable *enumVar = var->AsEnumVariable();
-
-            if (std::holds_alternative<bool>(enumVar->Value())) {
-                ThrowTypeError(
-                    "A member initializer in a enum declaration cannot reference members declared after it, "
-                    "including "
-                    "members defined in other enums.",
-                    decl->Node()->Start());
-            }
-
-            var->SetTsType(std::holds_alternative<double>(enumVar->Value()) ? GlobalNumberType() : GlobalStringType());
-            break;
-        }
-        case binder::DeclType::ENUM_LITERAL: {
-            UNREACHABLE();  // TODO(aszilagyi)
-        }
-        default: {
-            break;
-        }
-    }
-
+    HandleDeclarationType(decl, var);
     typeStack_.erase(decl->Node());
     return var->TsType();
 }
