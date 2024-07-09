@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,6 +27,10 @@
 namespace ark::es2panda::checker {
 class Type;
 enum class PropertyType;
+// NOLINTBEGIN(readability-redundant-declaration)
+bool IsTypeError(Type const *tp);
+[[noreturn]] void ThrowEmptyError();
+// NOLINTEND(readability-redundant-declaration)
 }  // namespace ark::es2panda::checker
 
 namespace ark::es2panda::varbinder {
@@ -81,7 +85,15 @@ public:
         return flags_;
     }
 
-    [[nodiscard]] checker::Type *TsType() const noexcept
+    [[nodiscard]] checker::Type *TsType() const
+    {
+        if (UNLIKELY(IsTypeError(tsType_))) {
+            checker::ThrowEmptyError();
+        }
+        return tsType_;
+    }
+
+    [[nodiscard]] checker::Type *TsTypeOrError() const noexcept
     {
         return tsType_;
     }

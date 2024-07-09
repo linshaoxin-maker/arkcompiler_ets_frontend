@@ -20,6 +20,7 @@
 
 #include "checker/checkerContext.h"
 #include "checker/SemanticAnalyzer.h"
+#include "util/errorLogger.h"
 
 namespace ark::es2panda::parser {
 class Program;
@@ -135,6 +136,11 @@ public:
         return typeStack_;
     }
 
+    [[nodiscard]] std::unordered_set<Type *> &NamedTypeStack() noexcept
+    {
+        return namedTypeStack_;
+    }
+
     [[nodiscard]] virtual bool IsETSChecker() const noexcept
     {
         return false;
@@ -161,6 +167,8 @@ public:
     [[noreturn]] void ThrowTypeError(std::string_view message, const lexer::SourcePosition &pos);
     [[noreturn]] void ThrowTypeError(std::initializer_list<TypeErrorMessageElement> list,
                                      const lexer::SourcePosition &pos);
+    void LogTypeError(std::string_view message, const lexer::SourcePosition &pos);
+    void LogTypeError(std::initializer_list<TypeErrorMessageElement> list, const lexer::SourcePosition &pos);
     void Warning(std::string_view message, const lexer::SourcePosition &pos) const;
     void ReportWarning(std::initializer_list<TypeErrorMessageElement> list, const lexer::SourcePosition &pos);
 
@@ -184,9 +192,16 @@ public:
 
     friend class ScopeContext;
     friend class TypeStackElement;
+    friend class NamedTypeStackElement;
     friend class SavedCheckerContext;
+    friend class NamedTypeStackElement;
 
     varbinder::VarBinder *VarBinder() const;
+
+    util::ErrorLogger *ErrorLogger()
+    {
+        return errorLogger_;
+    }
 
 protected:
     void Initialize(varbinder::VarBinder *varbinder);
@@ -202,6 +217,7 @@ private:
     varbinder::VarBinder *varbinder_ {};
     parser::Program *program_ {};
     varbinder::Scope *scope_ {};
+    util::ErrorLogger *errorLogger_ {};
 
     RelationHolder identicalResults_ {{}, RelationType::IDENTICAL};
     RelationHolder assignableResults_ {{}, RelationType::ASSIGNABLE};
@@ -210,6 +226,26 @@ private:
     RelationHolder supertypeResults_ {{}, RelationType::SUPERTYPE};
 
     std::unordered_set<const void *> typeStack_;
+    std::unordered_set<Type *> namedTypeStack_;
+};
+
+class NamedTypeStackElement {
+public:
+    explicit NamedTypeStackElement(Checker *checker, Type *element) : checker_(checker), element_(element)
+    {
+        checker_->namedTypeStack_.insert(element);
+    }
+
+    ~NamedTypeStackElement()
+    {
+        checker_->namedTypeStack_.erase(element_);
+    }
+    NO_COPY_SEMANTIC(NamedTypeStackElement);
+    NO_MOVE_SEMANTIC(NamedTypeStackElement);
+
+private:
+    Checker *checker_;
+    Type *element_;
 };
 
 class TypeStackElement {

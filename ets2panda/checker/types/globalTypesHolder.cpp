@@ -15,6 +15,7 @@
 
 #include "globalTypesHolder.h"
 
+#include "checker/types/typeError.h"
 #include "checker/types/ts/numberType.h"
 #include "checker/types/ts/anyType.h"
 #include "checker/types/ts/stringType.h"
@@ -95,6 +96,7 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMap
     globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_NULL)] = allocator->New<ETSNullType>();
     globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_UNDEFINED)] = allocator->New<ETSUndefinedType>();
     globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_WILDCARD)] = allocator->New<WildcardType>();
+    globalTypes_[static_cast<size_t>(GlobalTypeId::TYPE_ERROR)] = allocator->New<TypeError>();
 
     builtinNameMappings_.emplace("Boolean", GlobalTypeId::ETS_BOOLEAN_BUILTIN);
     builtinNameMappings_.emplace("Byte", GlobalTypeId::ETS_BYTE_BUILTIN);
@@ -148,6 +150,8 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMap
     builtinNameMappings_.emplace("Map", GlobalTypeId::ETS_MAP_BUILTIN);
     builtinNameMappings_.emplace("RegExp", GlobalTypeId::ETS_REGEXP_BUILTIN);
     builtinNameMappings_.emplace("Set", GlobalTypeId::ETS_SET_BUILTIN);
+
+    builtinNameMappings_.emplace("TYPE ERROR", GlobalTypeId::TYPE_ERROR);
 
     // ETS functional types
     for (size_t id = static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS), nargs = 0;
@@ -628,6 +632,11 @@ Type *GlobalTypesHolder::GlobalFunctionBuiltinType(size_t nargs)
         return globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_FUNCTIONN_CLASS));
     }
     return globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS) + nargs);
+}
+
+Type *GlobalTypesHolder::GlobalTypeError()
+{
+    return globalTypes_.at(static_cast<size_t>(GlobalTypeId::TYPE_ERROR));
 }
 
 void GlobalTypesHolder::InitializeBuiltin(const util::StringView name, Type *type)

@@ -131,6 +131,8 @@ enum class GlobalTypeId : std::size_t {
     ETS_FUNCTION16_CLASS,
     ETS_FUNCTIONN_CLASS,
 
+    TYPE_ERROR,
+
     COUNT,
 };
 
@@ -242,6 +244,8 @@ public:
     // JS specific types
     Type *GlobalJSRuntimeBuiltinType();
     Type *GlobalJSValueBuiltinType();
+
+    Type *GlobalTypeError();
 
     void InitializeBuiltin(util::StringView name, Type *type);
 
