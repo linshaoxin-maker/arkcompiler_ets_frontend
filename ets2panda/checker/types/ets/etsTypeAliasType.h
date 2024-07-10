@@ -13,18 +13,18 @@
  * limitations under the License.
  */
 
-#ifndef ES2PANDA_COMPILER_CHECKER_TYPES_ETS_ETS_RECURSIVE_TYPE_H
-#define ES2PANDA_COMPILER_CHECKER_TYPES_ETS_ETS_RECURSIVE_TYPE_H
+#ifndef ES2PANDA_COMPILER_CHECKER_TYPES_ETS_ETS_TYPE_ALIAS_TYPE_H
+#define ES2PANDA_COMPILER_CHECKER_TYPES_ETS_ETS_TYPE_ALIAS_TYPE_H
 
 #include "checker/types/ets/etsObjectType.h"
 #include "checker/types/typeMapping.h"
 
 namespace ark::es2panda::checker {
-class ETSRecursiveType : public Type {
+class ETSTypeAliasType : public Type {
 public:
-    using InstantiationMap = ArenaUnorderedMap<util::StringView, ETSRecursiveType *>;
+    using InstantiationMap = ArenaUnorderedMap<util::StringView, ETSTypeAliasType *>;
 
-    explicit ETSRecursiveType(ETSChecker *checker, util::StringView name, bool isRecursive);
+    explicit ETSTypeAliasType(ETSChecker *checker, util::StringView name, bool isRecursive);
 
     util::StringView TypeName()
     {
@@ -77,14 +77,14 @@ public:
     #define TYPE_AS_CASTS(typeFlag, typeName)                    \
         typeName *As##typeName() override                        \
         {                                                        \
-			if (typeFlag == TypeFlag::ETS_RECURSIVE) {           \
+			if (typeFlag == TypeFlag::ETS_TYPE_ALIAS) {          \
 			    return reinterpret_cast<typeName *>(this);       \
 			}                                                    \
             return subType_->As##typeName();                     \
         }                                                        \
         const typeName *As##typeName() const override            \
         {                                                        \
-			if (typeFlag == TypeFlag::ETS_RECURSIVE) {           \
+			if (typeFlag == TypeFlag::ETS_TYPE_ALIAS) {          \
 			  return reinterpret_cast<const typeName *>(this);   \
 			}											         \
 			return subType_->As##typeName();                     \
@@ -93,22 +93,22 @@ public:
     #undef TYPE_AS_CASTS
 
 private:
-    ETSRecursiveType *GetInstantiatedType(util::StringView hash);
-    void EmplaceInstantiatedType(util::StringView hash, ETSRecursiveType *emplaceType);
+    ETSTypeAliasType *GetInstantiatedType(util::StringView hash);
+    void EmplaceInstantiatedType(util::StringView hash, ETSTypeAliasType *emplaceType);
     bool SubstituteTypeArgs(TypeRelation *const relation, ArenaVector<Type *> &newTypeArgs,
                             const Substitution *const substitution);
 
     void IsArgumentsIdentical(TypeRelation *relation, Type *other);
 
-    ETSRecursiveType *GetBaseType()
+    ETSTypeAliasType *GetBaseType()
     {
         return base_ == nullptr ? this : base_;
     }
 
     util::StringView name_;
     bool isRecursive_;
-    ETSRecursiveType *base_ = nullptr;
-    ETSRecursiveType *parent_ = nullptr;
+    ETSTypeAliasType *base_ = nullptr;
+    ETSTypeAliasType *parent_ = nullptr;
     Type *subType_ = nullptr;
     Type *globalETSObjectType_;
     InstantiationMap instantiationMap_;

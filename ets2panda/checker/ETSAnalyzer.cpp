@@ -681,8 +681,8 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
 
     if (expr->preferredType_ != nullptr) {
 
-    	if (expr->preferredType_->IsETSRecursiveType() && expr->preferredType_->AsETSRecursiveType()->IsRecursive()) {
-    			expr->preferredType_ = checker->CreateETSArrayType(expr->preferredType_->AsETSRecursiveType()->GetSubType());
+    	if (expr->preferredType_->IsETSTypeAliasType() && expr->preferredType_->AsETSTypeAliasType()->IsRecursive()) {
+    			expr->preferredType_ = checker->CreateETSArrayType(expr->preferredType_->AsETSTypeAliasType()->GetSubType());
     	}
 
 
@@ -700,7 +700,7 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
 				expr->preferredType_ = preferredType;
 			} else {
 				if (expr->Elements()[0]->IsArrayExpression()) {
-					if (preferredType->IsETSRecursiveType() && preferredType->AsETSRecursiveType()->IsRecursive()) {
+					if (preferredType->IsETSTypeAliasType() && preferredType->AsETSTypeAliasType()->IsRecursive()) {
 						expr->Elements()[0]->AsArrayExpression()->preferredType_ = preferredType;
 					} else {
 						expr->Elements()[0]->AsArrayExpression()->preferredType_ =
@@ -708,7 +708,7 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
 					}
 				}
 				auto nestedType = expr->Elements()[0]->Check(checker);
-				if (!(nestedType->IsETSRecursiveType() && nestedType->AsETSRecursiveType()->IsRecursive())) {
+				if (!(nestedType->IsETSTypeAliasType() && nestedType->AsETSTypeAliasType()->IsRecursive())) {
 					nestedType = checker->CreateETSArrayType(nestedType);
 				}
 				expr->preferredType_ = nestedType;

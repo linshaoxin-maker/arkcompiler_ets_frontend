@@ -227,7 +227,7 @@ public:
     {
         return CreateETSUnionType(Span<Type *const>(constituentTypes));
     }
-    ETSRecursiveType *CreateETSRecursiveType(util::StringView name, bool isRecursive);
+    ETSTypeAliasType *CreateETSTypeAliasType(util::StringView name, bool isRecursive);
     ETSFunctionType *CreateETSFunctionType(Signature *signature);
     ETSFunctionType *CreateETSFunctionType(Signature *signature, util::StringView name);
     ETSFunctionType *CreateETSFunctionType(ir::ScriptFunction *func, Signature *signature, util::StringView name);

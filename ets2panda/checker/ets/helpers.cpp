@@ -938,8 +938,8 @@ std::optional<SmartCastTuple> CheckerContext::ResolveSmartCastTypes()
     ASSERT(testCondition_.testedType != nullptr);
 
     auto *subType = testCondition_.testedType;
-	while (subType->IsETSRecursiveType()) {
-		subType = subType->AsETSRecursiveType()->GetSubType();
+	while (subType->IsETSTypeAliasType()) {
+		subType = subType->AsETSTypeAliasType()->GetSubType();
 	}
 
     // NOTE: functional types are not supported now
@@ -1128,7 +1128,7 @@ static void CheckExpandedType(Type *expandedAliasType, std::set<util::StringView
         needToBeBoxed =
             objectType->GetDeclNode()->IsClassDefinition() || objectType->GetDeclNode()->IsTSInterfaceDeclaration();
         for (const auto typeArgument : objectType->TypeArguments()) {
-        	if (typeArgument->IsETSRecursiveType() && typeArgument->AsETSRecursiveType()->IsRecursive()) {
+        	if (typeArgument->IsETSTypeAliasType() && typeArgument->AsETSTypeAliasType()->IsRecursive()) {
         		continue;
         	}
             CheckExpandedType(typeArgument, parametersNeedToBeBoxed, needToBeBoxed);
@@ -1143,14 +1143,14 @@ static void CheckExpandedType(Type *expandedAliasType, std::set<util::StringView
         auto arrayType = expandedAliasType->AsETSArrayType();
         needToBeBoxed = false;
         auto elementType = arrayType->ElementType();
-        if(elementType != arrayType && !(elementType->IsETSRecursiveType() && elementType->AsETSRecursiveType()->IsRecursive())) {
+        if(elementType != arrayType && !(elementType->IsETSTypeAliasType() && elementType->AsETSTypeAliasType()->IsRecursive())) {
         	CheckExpandedType(elementType, parametersNeedToBeBoxed, needToBeBoxed);
         }
     } else if (expandedAliasType->IsETSUnionType()) {
         auto unionType = expandedAliasType->AsETSUnionType();
         needToBeBoxed = false;
         for (auto type : unionType->ConstituentTypes()) {
-        	if (type->IsETSRecursiveType() && type->AsETSRecursiveType()->IsRecursive()) {
+        	if (type->IsETSTypeAliasType() && type->AsETSTypeAliasType()->IsRecursive()) {
         		continue;
         	}
             CheckExpandedType(type, parametersNeedToBeBoxed, needToBeBoxed);

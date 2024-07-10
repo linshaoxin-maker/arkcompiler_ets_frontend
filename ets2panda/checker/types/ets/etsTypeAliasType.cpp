@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "etsRecursiveType.h"
+#include "etsTypeAliasType.h"
 
 #include "varbinder/variable.h"
 #include "checker/ETSchecker.h"
@@ -23,8 +23,8 @@
 
 namespace ark::es2panda::checker {
 
-ETSRecursiveType::ETSRecursiveType(ETSChecker *checker, util::StringView name, bool isRecursive)
-    : Type(TypeFlag::ETS_RECURSIVE),
+ETSTypeAliasType::ETSTypeAliasType(ETSChecker *checker, util::StringView name, bool isRecursive)
+    : Type(TypeFlag::ETS_TYPE_ALIAS),
       name_(name),
 	  isRecursive_(isRecursive),
       instantiationMap_(checker->Allocator()->Adapter()),
@@ -33,7 +33,7 @@ ETSRecursiveType::ETSRecursiveType(ETSChecker *checker, util::StringView name, b
     globalETSObjectType_ = checker->GetGlobalTypesHolder()->GlobalETSObjectType();
 }
 
-void ETSRecursiveType::ToString(std::stringstream &ss, bool precise) const
+void ETSTypeAliasType::ToString(std::stringstream &ss, bool precise) const
 {
     if (precise) {
         ToAssemblerType(ss);
@@ -54,7 +54,7 @@ void ETSRecursiveType::ToString(std::stringstream &ss, bool precise) const
     }
 }
 
-void ETSRecursiveType::ToAssemblerType(std::stringstream &ss) const
+void ETSTypeAliasType::ToAssemblerType(std::stringstream &ss) const
 {
 	if(subType_ == nullptr || recursionCount_ > 0) {
 		globalETSObjectType_->ToAssemblerType(ss);
@@ -66,14 +66,14 @@ void ETSRecursiveType::ToAssemblerType(std::stringstream &ss) const
 	recursionCount_--;
 }
 
-void ETSRecursiveType::ToDebugInfoType(std::stringstream &ss) const
+void ETSTypeAliasType::ToDebugInfoType(std::stringstream &ss) const
 {
     ss << name_;
 }
 
-void ETSRecursiveType::IsArgumentsIdentical(TypeRelation *relation, Type *other)
+void ETSTypeAliasType::IsArgumentsIdentical(TypeRelation *relation, Type *other)
 {
-    auto const otherTypeArguments = other->AsETSRecursiveType()->typeArguments_;
+    auto const otherTypeArguments = other->AsETSTypeAliasType()->typeArguments_;
 
     auto const argsNumber = typeArguments_.size();
     relation->Result(false);
@@ -94,10 +94,10 @@ void ETSRecursiveType::IsArgumentsIdentical(TypeRelation *relation, Type *other)
     relation->Result(true);
 }
 
-void ETSRecursiveType::Identical(TypeRelation *relation, Type *other)
+void ETSTypeAliasType::Identical(TypeRelation *relation, Type *other)
 {
-    if (other->IsETSRecursiveType()) {
-        if (other->AsETSRecursiveType()->name_ == this->name_) {
+    if (other->IsETSTypeAliasType()) {
+        if (other->AsETSTypeAliasType()->name_ == this->name_) {
             IsArgumentsIdentical(relation, other);
             return;
         }
@@ -108,9 +108,9 @@ void ETSRecursiveType::Identical(TypeRelation *relation, Type *other)
     }
 }
 
-void ETSRecursiveType::AssignmentTarget(TypeRelation *relation, Type *source)
+void ETSTypeAliasType::AssignmentTarget(TypeRelation *relation, Type *source)
 {
-    if (source->IsETSRecursiveType()) {
+    if (source->IsETSTypeAliasType()) {
         relation->IsIdenticalTo(this, source);
     }
 
@@ -121,9 +121,9 @@ void ETSRecursiveType::AssignmentTarget(TypeRelation *relation, Type *source)
     }
 }
 
-bool ETSRecursiveType::AssignmentSource(TypeRelation *relation, Type *target)
+bool ETSTypeAliasType::AssignmentSource(TypeRelation *relation, Type *target)
 {
-    if (target->IsETSRecursiveType()) {
+    if (target->IsETSTypeAliasType()) {
         relation->IsIdenticalTo(target, this);
     }
 
@@ -136,9 +136,9 @@ bool ETSRecursiveType::AssignmentSource(TypeRelation *relation, Type *target)
     return relation->IsTrue();
 }
 
-void ETSRecursiveType::Cast(TypeRelation *const relation, Type *const target)
+void ETSTypeAliasType::Cast(TypeRelation *const relation, Type *const target)
 {
-    if (target->IsETSRecursiveType()) {
+    if (target->IsETSTypeAliasType()) {
         relation->IsIdenticalTo(this, target);
     }
 
@@ -149,9 +149,9 @@ void ETSRecursiveType::Cast(TypeRelation *const relation, Type *const target)
     }
 }
 
-void ETSRecursiveType::CastTarget(TypeRelation *relation, Type *source)
+void ETSTypeAliasType::CastTarget(TypeRelation *relation, Type *source)
 {
-    if (source->IsETSRecursiveType()) {
+    if (source->IsETSTypeAliasType()) {
         relation->IsIdenticalTo(this, source);
     }
 
@@ -162,9 +162,9 @@ void ETSRecursiveType::CastTarget(TypeRelation *relation, Type *source)
     }
 }
 
-void ETSRecursiveType::IsSupertypeOf(TypeRelation *relation, Type *source)
+void ETSTypeAliasType::IsSupertypeOf(TypeRelation *relation, Type *source)
 {
-    if (source->IsETSRecursiveType()) {
+    if (source->IsETSTypeAliasType()) {
         relation->IsIdenticalTo(this, source);
     }
 
@@ -175,9 +175,9 @@ void ETSRecursiveType::IsSupertypeOf(TypeRelation *relation, Type *source)
     }
 }
 
-void ETSRecursiveType::IsSubtypeOf(TypeRelation *relation, Type *target)
+void ETSTypeAliasType::IsSubtypeOf(TypeRelation *relation, Type *target)
 {
-    if (target->IsETSRecursiveType()) {
+    if (target->IsETSTypeAliasType()) {
         relation->IsIdenticalTo(this, target);
     }
 
@@ -188,12 +188,12 @@ void ETSRecursiveType::IsSubtypeOf(TypeRelation *relation, Type *target)
     }
 }
 
-Type *ETSRecursiveType::Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes)
+Type *ETSTypeAliasType::Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes)
 {
     return subType_->Instantiate(allocator, relation, globalTypes);
 }
 
-ETSRecursiveType *ETSRecursiveType::GetInstantiatedType(util::StringView hash)
+ETSTypeAliasType *ETSTypeAliasType::GetInstantiatedType(util::StringView hash)
 {
     auto &instantiationMap = base_ == nullptr ? instantiationMap_ : base_->instantiationMap_;
 
@@ -205,14 +205,14 @@ ETSRecursiveType *ETSRecursiveType::GetInstantiatedType(util::StringView hash)
     return nullptr;
 }
 
-void ETSRecursiveType::EmplaceInstantiatedType(util::StringView hash, ETSRecursiveType *emplaceType)
+void ETSTypeAliasType::EmplaceInstantiatedType(util::StringView hash, ETSTypeAliasType *emplaceType)
 {
     auto &instantiationMap = base_ == nullptr ? instantiationMap_ : base_->instantiationMap_;
 
     instantiationMap.try_emplace(hash, emplaceType);
 }
 
-bool ETSRecursiveType::SubstituteTypeArgs(TypeRelation *const relation, ArenaVector<Type *> &newTypeArgs,
+bool ETSTypeAliasType::SubstituteTypeArgs(TypeRelation *const relation, ArenaVector<Type *> &newTypeArgs,
                                           const Substitution *const substitution)
 {
     bool anyChange = false;
@@ -227,7 +227,7 @@ bool ETSRecursiveType::SubstituteTypeArgs(TypeRelation *const relation, ArenaVec
     return anyChange;
 }
 
-void ETSRecursiveType::ApplaySubstitution(TypeRelation *relation)
+void ETSTypeAliasType::ApplaySubstitution(TypeRelation *relation)
 {
     ASSERT(base_ == nullptr);
 
@@ -235,7 +235,7 @@ void ETSRecursiveType::ApplaySubstitution(TypeRelation *relation)
     EmplaceInstantiatedType(hash, this);
 
     auto getTypes = [this]() {
-        std::vector<ETSRecursiveType *> types;
+        std::vector<ETSTypeAliasType *> types;
 
         for (auto [name, type] : instantiationMap_) {
             if (type->subType_ == nullptr) {
@@ -246,7 +246,7 @@ void ETSRecursiveType::ApplaySubstitution(TypeRelation *relation)
         return types;
     };
 
-    std::vector<ETSRecursiveType *> types;
+    std::vector<ETSTypeAliasType *> types;
 
     while (!(types = getTypes(), types.empty())) {
         for (auto type : types) {
@@ -255,12 +255,12 @@ void ETSRecursiveType::ApplaySubstitution(TypeRelation *relation)
     }
 }
 
-void ETSRecursiveType::SetTypeArguments(ArenaVector<Type *> typeArguments)
+void ETSTypeAliasType::SetTypeArguments(ArenaVector<Type *> typeArguments)
 {
     typeArguments_ = std::move(typeArguments);
 }
 
-Type *ETSRecursiveType::Substitute(TypeRelation *relation, const Substitution *substitution)
+Type *ETSTypeAliasType::Substitute(TypeRelation *relation, const Substitution *substitution)
 {
     if (substitution == nullptr || substitution->empty()) {
         return this;
@@ -276,12 +276,12 @@ Type *ETSRecursiveType::Substitute(TypeRelation *relation, const Substitution *s
 
     const util::StringView hash = checker->GetHashFromTypeArguments(newTypeArgs);
 
-    ETSRecursiveType *copiedType = GetInstantiatedType(hash);
+    ETSTypeAliasType *copiedType = GetInstantiatedType(hash);
     if (copiedType != nullptr) {
         return copiedType;
     }
 
-    copiedType = checker->CreateETSRecursiveType(name_, isRecursive_);
+    copiedType = checker->CreateETSTypeAliasType(name_, isRecursive_);
     copiedType->base_ = base_ == nullptr ? this : base_;
     copiedType->parent_ = this;
     copiedType->substitution_ = substitution;
