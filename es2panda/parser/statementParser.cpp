@@ -2907,7 +2907,7 @@ void ParserImpl::ParseNamedImportSpecifiers(ArenaVector<ir::AstNode *> *specifie
         bool isTypeOfImportSpecifier = isType;
         if (Extension() == ScriptExtension::TS && lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_TYPE) {
             const auto savedPos = lexer_->Save();
-            lexer_->NextToken();  // eat type
+            lexer_->NextToken(lexer::LexerNextTokenFlags::KEYWORD_TO_IDENT);  // eat type
 
             if (lexer_->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
                 lexer_->Rewind(savedPos);
