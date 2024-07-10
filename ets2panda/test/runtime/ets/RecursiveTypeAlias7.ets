@@ -18,7 +18,7 @@ type A<K> = string | A<K>[]
 function main(): int {
   let a: A<Int> = "test";
 
-  a = [a, [a, [a, [a]]]] as A<Int>;
+  a = [a, [a, [a, [a] as A<Int>] as A<Int>] as A<Int>] as A<Int>;
   
   assert((a as A<Int>[])[0] == "test");
   assert(((a as A<Int>[])[1] as A<Int>[])[0] == "test");
