@@ -589,7 +589,7 @@ Type *ETSChecker::GetTypeFromTypeAliasReference(varbinder::Variable *var)
     recursiveType = CreateETSTypeAliasType(aliasTypeNode->Id()->Name(), isRecursive);
     if (aliasTypeNode->TypeParams() != nullptr) {
            recursiveType->AsETSTypeAliasType()->SetTypeArguments(
-              CreateTypeForTypeParameters(aliasTypeNode->TypeParams()));
+        		   CreateUnconstrainedTypeParameters(aliasTypeNode->TypeParams()));
     }
     tse.SetElementType(recursiveType);
 
