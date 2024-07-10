@@ -272,7 +272,7 @@ void ETSChecker::ValidateGenericTypeAliasForClonedNode(ir::TSTypeAliasDeclaratio
     clonedNode->TransformChildrenRecursively(
         [this, &checkTypealias, &exactTypeParams, typeAliasNode](ir::AstNode *const node) -> ir::AstNode * {
             if (node->IsExpression() && node->AsExpression()->TsType() != nullptr &&
-                node->AsExpression()->TsType()->IsETSRecursiveType()) {
+                node->AsExpression()->TsType()->IsETSRecursiveType() && node->AsExpression()->TsType()->AsETSRecursiveType()->IsRecursive()) {
                 checkTypealias = false;
                 return node;
             }

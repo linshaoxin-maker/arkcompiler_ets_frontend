@@ -295,7 +295,7 @@ bool Type::IsETSReferenceType() const
 {
     return IsETSObjectType() || IsETSArrayType() || IsETSNullType() || IsETSUndefinedType() || IsETSStringType() ||
            IsETSTypeParameter() || IsETSUnionType() || IsETSNonNullishType() || IsETSBigIntType() ||
-           IsETSFunctionType() || IsETSRecursiveType();
+           IsETSFunctionType();
 }
 
 bool Type::IsETSUnboxableObject() const
@@ -586,7 +586,7 @@ Type *ETSChecker::GetTypeFromTypeAliasReference(varbinder::Variable *var)
         return recursiveType;
     }
 
-    recursiveType = CreateETSRecursiveType(aliasTypeNode->Id()->Name());
+    recursiveType = CreateETSRecursiveType(aliasTypeNode->Id()->Name(), isRecursive);
     if (aliasTypeNode->TypeParams() != nullptr) {
            recursiveType->AsETSRecursiveType()->SetTypeArguments(
               CreateTypeForTypeParameters(aliasTypeNode->TypeParams()));

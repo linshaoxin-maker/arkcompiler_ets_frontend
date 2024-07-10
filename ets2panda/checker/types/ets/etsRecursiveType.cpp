@@ -23,9 +23,10 @@
 
 namespace ark::es2panda::checker {
 
-ETSRecursiveType::ETSRecursiveType(ETSChecker *checker, util::StringView name)
+ETSRecursiveType::ETSRecursiveType(ETSChecker *checker, util::StringView name, bool isRecursive)
     : Type(TypeFlag::ETS_RECURSIVE),
       name_(name),
+	  isRecursive_(isRecursive),
       instantiationMap_(checker->Allocator()->Adapter()),
       typeArguments_(checker->Allocator()->Adapter())
 {
@@ -55,7 +56,7 @@ void ETSRecursiveType::ToString(std::stringstream &ss, bool precise) const
 
 void ETSRecursiveType::ToAssemblerType(std::stringstream &ss) const
 {
-	if(recursionCount_ > 0) {
+	if(subType_ == nullptr || recursionCount_ > 0) {
 		globalETSObjectType_->ToAssemblerType(ss);
 		return;
 	}
@@ -280,7 +281,7 @@ Type *ETSRecursiveType::Substitute(TypeRelation *relation, const Substitution *s
         return copiedType;
     }
 
-    copiedType = checker->CreateETSRecursiveType(name_);
+    copiedType = checker->CreateETSRecursiveType(name_, isRecursive_);
     copiedType->base_ = base_ == nullptr ? this : base_;
     copiedType->parent_ = this;
     copiedType->substitution_ = substitution;

@@ -50,7 +50,7 @@ namespace ark::es2panda::compiler {
 static constexpr auto TYPE_FLAG_BYTECODE_REF =
     checker::TypeFlag::ETS_ARRAY | checker::TypeFlag::ETS_OBJECT | checker::TypeFlag::FUNCTION |
     checker::TypeFlag::ETS_UNION | checker::TypeFlag::ETS_TYPE_PARAMETER | checker::TypeFlag::ETS_NONNULLISH |
-    checker::TypeFlag::ETS_NULL | checker::TypeFlag::ETS_UNDEFINED | checker::TypeFlag::ETS_READONLY | checker::TypeFlag::ETS_RECURSIVE;
+    checker::TypeFlag::ETS_NULL | checker::TypeFlag::ETS_UNDEFINED | checker::TypeFlag::ETS_READONLY;
 
 ETSGen::ETSGen(ArenaAllocator *allocator, RegSpiller *spiller, public_lib::Context *context,
                std::tuple<varbinder::FunctionScope *, ProgramElement *, AstCompiler *> toCompile) noexcept
@@ -640,7 +640,7 @@ const checker::Type *ETSGen::LoadDefaultValue([[maybe_unused]] const ir::AstNode
     if (type->IsUndefinedType() || type->IsETSUndefinedType() || type->IsETSVoidType()) {
         LoadAccumulatorUndefined(node);
     } else if (type->IsETSObjectType() || type->IsETSArrayType() || type->IsETSTypeParameter() ||
-               type->IsETSNullType() || type->IsETSRecursiveType()) {
+               type->IsETSNullType()) {
         LoadAccumulatorNull(node, type);
     } else if (type->IsETSBooleanType()) {
         LoadAccumulatorBoolean(node, type->AsETSBooleanType()->GetValue());
@@ -811,7 +811,7 @@ void ETSGen::BranchIfIsInstance(const ir::AstNode *const node, const VReg srcReg
         TestIsInstanceConstituent(n, ifTrue, ifFalse, t, allowUndefined);
     };
 
-    if (!target->IsETSUnionType() && !target->IsETSRecursiveType()) {
+    if (!target->IsETSUnionType()) {
         checkType(node, target);
     } else if (target->IsETSUnionType()) {
         for (auto *ct : target->AsETSUnionType()->ConstituentTypes()) {
@@ -865,7 +865,7 @@ void ETSGen::InternalIsInstance(const ir::AstNode *node, const es2panda::checker
 // checkcast can only be used for Object and [] types, ensure source is not nullish!
 void ETSGen::InternalCheckCast(const ir::AstNode *node, const es2panda::checker::Type *target)
 {
-    ASSERT(target->IsETSObjectType() || target->IsETSArrayType() || target->IsETSRecursiveType());
+    ASSERT(target->IsETSObjectType() || target->IsETSArrayType());
     if (!target->IsETSObjectType() || !target->AsETSObjectType()->IsGlobalETSObjectType()) {
         Sa().Emit<Checkcast>(node, ToAssemblerType(target));
     }
@@ -875,7 +875,7 @@ void ETSGen::InternalCheckCast(const ir::AstNode *node, const es2panda::checker:
 // optimized specialization for object and [] targets
 void ETSGen::CheckedReferenceNarrowingObject(const ir::AstNode *node, const checker::Type *target)
 {
-    ASSERT(target->IsETSObjectType() || target->IsETSArrayType() || target->IsETSRecursiveType());
+    ASSERT(target->IsETSObjectType() || target->IsETSArrayType());
     const RegScope rs(this);
     const auto srcReg = AllocReg();
     StoreAccumulator(node, srcReg);
@@ -925,7 +925,7 @@ void ETSGen::CheckedReferenceNarrowing(const ir::AstNode *node, const checker::T
         SetAccumulatorType(target);
         return;
     }
-    if (target->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT | checker::TypeFlag::ETS_RECURSIVE)) {
+    if (target->HasTypeFlag(checker::TypeFlag::ETS_ARRAY_OR_OBJECT)) {
         CheckedReferenceNarrowingObject(node, target);
         return;
     }

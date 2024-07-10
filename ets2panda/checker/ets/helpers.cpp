@@ -936,11 +936,19 @@ std::optional<SmartCastTuple> CheckerContext::ResolveSmartCastTypes()
     }
 
     ASSERT(testCondition_.testedType != nullptr);
+
+    auto *subType = testCondition_.testedType;
+	while (subType->IsETSRecursiveType()) {
+		subType = subType->AsETSRecursiveType()->GetSubType();
+	}
+
     // NOTE: functional types are not supported now
-    if (!testCondition_.testedType->IsETSReferenceType() ||
-        testCondition_.testedType->HasTypeFlag(TypeFlag::FUNCTION)) {
+    if (!subType->IsETSReferenceType() ||
+        subType->HasTypeFlag(TypeFlag::FUNCTION)) {
         return std::nullopt;
     }
+
+
 
     auto *smartType = GetSmartCast(testCondition_.variable);
     if (smartType == nullptr) {
@@ -1110,7 +1118,7 @@ Type *ETSChecker::HandleReadonlyType(const ir::TSTypeParameterInstantiation *con
 static void CheckExpandedType(Type *expandedAliasType, std::set<util::StringView> &parametersNeedToBeBoxed,
                               bool needToBeBoxed)
 {
-    if (expandedAliasType->IsETSTypeParameter()) {
+	if (expandedAliasType->IsETSTypeParameter()) {
         auto paramName = expandedAliasType->AsETSTypeParameter()->GetDeclNode()->Name()->Name();
         if (needToBeBoxed) {
             parametersNeedToBeBoxed.insert(paramName);
@@ -1120,6 +1128,9 @@ static void CheckExpandedType(Type *expandedAliasType, std::set<util::StringView
         needToBeBoxed =
             objectType->GetDeclNode()->IsClassDefinition() || objectType->GetDeclNode()->IsTSInterfaceDeclaration();
         for (const auto typeArgument : objectType->TypeArguments()) {
+        	if (typeArgument->IsETSRecursiveType() && typeArgument->AsETSRecursiveType()->IsRecursive()) {
+        		continue;
+        	}
             CheckExpandedType(typeArgument, parametersNeedToBeBoxed, needToBeBoxed);
         }
     } else if (expandedAliasType->IsETSTupleType()) {
@@ -1132,11 +1143,16 @@ static void CheckExpandedType(Type *expandedAliasType, std::set<util::StringView
         auto arrayType = expandedAliasType->AsETSArrayType();
         needToBeBoxed = false;
         auto elementType = arrayType->ElementType();
-        CheckExpandedType(elementType, parametersNeedToBeBoxed, needToBeBoxed);
+        if(elementType != arrayType && !(elementType->IsETSRecursiveType() && elementType->AsETSRecursiveType()->IsRecursive())) {
+        	CheckExpandedType(elementType, parametersNeedToBeBoxed, needToBeBoxed);
+        }
     } else if (expandedAliasType->IsETSUnionType()) {
         auto unionType = expandedAliasType->AsETSUnionType();
         needToBeBoxed = false;
         for (auto type : unionType->ConstituentTypes()) {
+        	if (type->IsETSRecursiveType() && type->AsETSRecursiveType()->IsRecursive()) {
+        		continue;
+        	}
             CheckExpandedType(type, parametersNeedToBeBoxed, needToBeBoxed);
         }
     }

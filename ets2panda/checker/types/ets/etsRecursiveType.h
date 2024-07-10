@@ -24,7 +24,7 @@ class ETSRecursiveType : public Type {
 public:
     using InstantiationMap = ArenaUnorderedMap<util::StringView, ETSRecursiveType *>;
 
-    explicit ETSRecursiveType(ETSChecker *checker, util::StringView name);
+    explicit ETSRecursiveType(ETSChecker *checker, util::StringView name, bool isRecursive);
 
     util::StringView TypeName()
     {
@@ -40,11 +40,16 @@ public:
     {
         subType_ = subType;
         AddTypeFlag(subType_->TypeFlags());
+        SetVariable(subType_->Variable());
     }
 
     std::tuple<bool, bool> ResolveConditionExpr() const override
     {
         return {false, false};
+    }
+
+    bool IsRecursive() const {
+    	return isRecursive_;
     }
 
     void ToString(std::stringstream &ss, bool precise) const override;
@@ -69,16 +74,20 @@ public:
 
 
     // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-    #define TYPE_AS_CASTS(typeFlag, typeName)                \
-        typeName *As##typeName() override                    \
-        {                                                    \
-            ASSERT(subType_->Is##typeName());                \
-            return reinterpret_cast<typeName *>(subType_);   \
-        }                                                    \
-        const typeName *As##typeName() const override        \
-        {                                                    \
-            ASSERT(subType_->Is##typeName());                \
-            return reinterpret_cast<const typeName *>(suvType_); \
+    #define TYPE_AS_CASTS(typeFlag, typeName)                    \
+        typeName *As##typeName() override                        \
+        {                                                        \
+			if (typeFlag == TypeFlag::ETS_RECURSIVE) {           \
+			    return reinterpret_cast<typeName *>(this);       \
+			}                                                    \
+            return subType_->As##typeName();                     \
+        }                                                        \
+        const typeName *As##typeName() const override            \
+        {                                                        \
+			if (typeFlag == TypeFlag::ETS_RECURSIVE) {           \
+			  return reinterpret_cast<const typeName *>(this);   \
+			}											         \
+			return subType_->As##typeName();                     \
         }
         TYPE_MAPPING(TYPE_AS_CASTS)
     #undef TYPE_AS_CASTS
@@ -97,6 +106,7 @@ private:
     }
 
     util::StringView name_;
+    bool isRecursive_;
     ETSRecursiveType *base_ = nullptr;
     ETSRecursiveType *parent_ = nullptr;
     Type *subType_ = nullptr;

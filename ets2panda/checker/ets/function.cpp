@@ -65,7 +65,7 @@ bool ETSChecker::IsCompatibleTypeArgument(ETSTypeParameter *typeParam, Type *typ
     if (typeArgument->IsWildcardType()) {
         return true;
     }
-    ASSERT(IsReferenceType(typeArgument) || typeArgument->IsETSVoidType());
+    ASSERT(IsReferenceType(typeArgument) || typeArgument->IsETSVoidType() || typeArgument->IsETSRecursiveType());
     auto *constraint = typeParam->GetConstraintType()->Substitute(Relation(), substitution);
     if (typeArgument->IsETSVoidType()) {
         return Relation()->IsSupertypeOf(constraint, GlobalETSUndefinedType());

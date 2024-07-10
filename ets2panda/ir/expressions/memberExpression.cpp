@@ -342,7 +342,7 @@ checker::Type *MemberExpression::CheckTupleAccessMethod(checker::ETSChecker *che
 
 checker::Type *MemberExpression::CheckComputed(checker::ETSChecker *checker, checker::Type *baseType)
 {
-    if (baseType->IsETSArrayType() || baseType->IsETSDynamicType() || baseType->IsETSRecursiveType()) {
+    if (baseType->IsETSArrayType() || baseType->IsETSDynamicType()) {
         if (!baseType->IsETSTupleType()) {
             checker->ValidateArrayIndex(property_);
         }
@@ -355,7 +355,7 @@ checker::Type *MemberExpression::CheckComputed(checker::ETSChecker *checker, che
         }
 
         // NOTE: apply capture conversion on this type
-        if (baseType->IsETSArrayType() || baseType->IsETSRecursiveType()) {
+        if (baseType->IsETSArrayType()) {
             if (baseType->IsETSTupleType()) {
                 return CheckTupleAccessMethod(checker, baseType);
             }
