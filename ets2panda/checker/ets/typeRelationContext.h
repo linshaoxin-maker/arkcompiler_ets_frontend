@@ -94,6 +94,13 @@ public:
         auto *const etsChecker = relation->GetChecker()->AsETSChecker();
 
         relation->SetNode(node);
+
+        // NOTE (oeotvos) The narrowing flag will be applied here. It means, that the result of "let tmp: int = 1.5"
+        // will be 1, which could cause problems.
+        if (source->HasTypeFlag(TypeFlag::CONSTANT)) {
+            flags_ |= TypeRelationFlag::NARROWING;
+        }
+
         relation->SetFlags(flags_ | initialFlags);
 
         if (!relation->IsAssignableTo(source, target)) {
