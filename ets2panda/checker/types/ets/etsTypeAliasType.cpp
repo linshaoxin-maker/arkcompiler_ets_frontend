@@ -35,6 +35,11 @@ ETSTypeAliasType::ETSTypeAliasType(ETSChecker *checker, util::StringView name, b
 
 void ETSTypeAliasType::ToString(std::stringstream &ss, bool precise) const
 {
+	if (!isRecursive_) {
+		subType_->ToString(ss, precise);
+		return;
+	}
+
     if (precise) {
         ToAssemblerType(ss);
     } else {
