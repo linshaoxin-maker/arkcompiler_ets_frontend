@@ -2064,9 +2064,16 @@ checker::Type *ETSAnalyzer::Check(ir::LabelledStatement *st) const
     return nullptr;
 }
 
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::NamespaceDeclaration *ns) const
+checker::Type *ETSAnalyzer::Check(ir::NamespaceDeclaration *ns) const
 {
-    UNREACHABLE();
+    ETSChecker *checker = GetETSChecker();
+    //ns->Ident()->Check(checker);
+
+    for (auto st : ns->Statements()) {
+        st->Check(checker);
+    }
+
+    return nullptr;
 }
 
 checker::Type *ETSAnalyzer::GetFunctionReturnType(ir::ReturnStatement *st, ir::ScriptFunction *containingFunc) const

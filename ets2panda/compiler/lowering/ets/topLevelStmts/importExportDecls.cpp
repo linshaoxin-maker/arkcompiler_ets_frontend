@@ -76,11 +76,11 @@ void ImportExportDecls::VisitExportNamedDeclaration(ir::ExportNamedDeclaration *
     }
 }
 
-void ImportExportDecls::VisitNamespaceDeclaration(ir::NamespaceDeclaration *nsDecl)
+void ImportExportDecls::VisitNamespaceDeclaration(ir::NamespaceDeclaration * /*nsDecl*/)
 {
-    for (auto stmt : nsDecl->Statements()) {
+    /*for (auto stmt : nsDecl->Statements()) {
         stmt->Accept(this);
-    }
+    }*/
 }
 
 void HandleSimpleType(std::set<util::StringView> &exportedTypes, std::set<util::StringView> &exportedStatements,

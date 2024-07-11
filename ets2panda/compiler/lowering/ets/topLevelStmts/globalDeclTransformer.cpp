@@ -56,11 +56,11 @@ void GlobalDeclTransformer::VisitFunctionDeclaration(ir::FunctionDeclaration *fu
     result_.classProperties.emplace_back(method);
 }
 
-void GlobalDeclTransformer::VisitNamespaceDeclaration(ir::NamespaceDeclaration *nsDecl)
+void GlobalDeclTransformer::VisitNamespaceDeclaration(ir::NamespaceDeclaration * /*nsDecl*/)
 {
-    for (auto stmt : nsDecl->Statements()) {
+    /*for (auto stmt : nsDecl->Statements()) {
         stmt->Accept(this);
-    }
+    }*/
 }
 
 void GlobalDeclTransformer::VisitVariableDeclaration(ir::VariableDeclaration *varDecl)

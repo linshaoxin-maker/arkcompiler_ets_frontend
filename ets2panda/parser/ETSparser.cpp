@@ -1612,7 +1612,7 @@ ir::NamespaceDeclaration *ETSParser::ParseNamespaceDeclaration()
     lexer::SourcePosition endLoc = Lexer()->GetToken().End();
     Lexer()->NextToken();
 
-    auto ns = AllocNode<ir::NamespaceDeclaration>(ident, std::move(statements));
+    auto ns = AllocNode<ir::NamespaceDeclaration>(Allocator(), ident, std::move(statements));
     ns->SetRange(lexer::SourceRange {startLoc, endLoc});
     return ns;
 }

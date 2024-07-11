@@ -23,13 +23,36 @@
 
 namespace ark::es2panda::ir {
 
-NamespaceDeclaration::NamespaceDeclaration(Identifier *ident, ArenaVector<Statement *> statements)
+ir::MethodDefinition *CreateMethodDefinition(ArenaAllocator *allocator, ir::FunctionDeclaration *funcDecl)
+{
+    auto *funcExpr = util::NodeAllocator::ForceSetParent<ir::FunctionExpression>(allocator, funcDecl->Function());
+    funcDecl->Function()->SetStart(funcDecl->Function()->Id()->End());
+    funcExpr->SetRange(funcDecl->Function()->Range());
+
+    ir::MethodDefinitionKind methodKind = ir::MethodDefinitionKind::EXTENSION_METHOD;
+    /*if (funcDecl->Function()->IsExtensionMethod()) {
+        methodKind = ir::MethodDefinitionKind::EXTENSION_METHOD;
+    }*/
+
+    auto *method = util::NodeAllocator::ForceSetParent<ir::MethodDefinition>(
+        allocator, methodKind, funcDecl->Function()->Id()->Clone(allocator, nullptr), funcExpr,
+        funcDecl->Function()->Modifiers(), allocator, false);
+    method->SetRange(funcDecl->Range());
+
+    return method;
+}
+
+NamespaceDeclaration::NamespaceDeclaration(ArenaAllocator *allocator, Identifier *ident, ArenaVector<Statement *> statements)
     : Statement(AstNodeType::NAMESPACE_DECLARATION), ident_(ident), statements_(std::move(statements))
 {
     ASSERT(ident_ != nullptr);
     ident_->SetParent(this);
 
-    for (auto st : statements_) {
+    for (auto& st : statements_) {
+        if (st->IsFunctionDeclaration()) {
+            st = CreateMethodDefinition(allocator, st->AsFunctionDeclaration());
+        }
+
         st->SetParent(this);
     }
 }

@@ -23,7 +23,7 @@ namespace ark::es2panda::ir {
 
 class NamespaceDeclaration : public Statement {
 public:
-    explicit NamespaceDeclaration(Identifier *ident, ArenaVector<Statement *> statements);
+    explicit NamespaceDeclaration(ArenaAllocator *allocator, Identifier *ident, ArenaVector<Statement *> statements);
 
     [[nodiscard]] bool IsScopeBearer() const noexcept override
     {
