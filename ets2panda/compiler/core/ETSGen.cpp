@@ -813,7 +813,7 @@ void ETSGen::BranchIfIsInstance(const ir::AstNode *const node, const VReg srcReg
 
     if (!target->IsETSUnionType()) {
         checkType(node, target);
-    } else if (target->IsETSUnionType()) {
+    } else {
         for (auto *ct : target->AsETSUnionType()->ConstituentTypes()) {
             checkType(node, ct);
         }

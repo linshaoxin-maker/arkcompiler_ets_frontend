@@ -1136,7 +1136,7 @@ static void CheckExpandedType(Type *expandedAliasType, std::set<util::StringView
         auto arrayType = expandedAliasType->AsETSArrayType();
         needToBeBoxed = false;
         auto elementType = arrayType->ElementType();
-        if(elementType != arrayType && !(elementType->IsETSTypeAliasType() && elementType->AsETSTypeAliasType()->IsRecursive())) {
+        if(!elementType->IsETSTypeAliasType() || !elementType->AsETSTypeAliasType()->IsRecursive()) {
         	CheckExpandedType(elementType, parametersNeedToBeBoxed, needToBeBoxed);
         }
     } else if (expandedAliasType->IsETSUnionType()) {
