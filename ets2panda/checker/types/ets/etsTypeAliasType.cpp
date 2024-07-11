@@ -73,7 +73,12 @@ void ETSTypeAliasType::ToAssemblerType(std::stringstream &ss) const
 
 void ETSTypeAliasType::ToDebugInfoType(std::stringstream &ss) const
 {
-    ss << name_;
+	if (isRecursive_) {
+		ss << name_;
+		return;
+	}
+
+	subType_->ToDebugInfoType(ss);
 }
 
 void ETSTypeAliasType::IsArgumentsIdentical(TypeRelation *relation, Type *other)
