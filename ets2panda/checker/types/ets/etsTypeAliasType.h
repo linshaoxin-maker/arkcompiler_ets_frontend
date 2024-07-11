@@ -36,6 +36,11 @@ public:
         return subType_;
     }
 
+    const Type *GetSubType() const
+    {
+        return subType_;
+    }
+
     void SetSubType(Type *subType)
     {
         subType_ = subType;
@@ -55,6 +60,7 @@ public:
     void ToString(std::stringstream &ss, bool precise) const override;
 
     void ToAssemblerType(std::stringstream &ss) const override;
+    void ToAssemblerTypeWithRank(std::stringstream &ss) const override;
     void ToDebugInfoType(std::stringstream &ss) const override;
 
     void Identical(TypeRelation *relation, Type *other) override;
@@ -65,6 +71,8 @@ public:
     void IsSupertypeOf(TypeRelation *relation, Type *source) override;
     void IsSubtypeOf(TypeRelation *relation, Type *target) override;
     Type *Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes) override;
+
+    uint32_t Rank() const override;
 
     Type *Substitute(TypeRelation *relation, const Substitution *substitution) override;
 

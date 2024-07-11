@@ -71,6 +71,18 @@ void ETSTypeAliasType::ToAssemblerType(std::stringstream &ss) const
 	recursionCount_--;
 }
 
+void ETSTypeAliasType::ToAssemblerTypeWithRank(std::stringstream &ss) const
+{
+	if (subType_ == nullptr || recursionCount_ > 0) {
+		globalETSObjectType_->ToAssemblerType(ss);
+		return;
+	}
+
+	recursionCount_++;
+	subType_->ToAssemblerTypeWithRank(ss);
+	recursionCount_--;
+}
+
 void ETSTypeAliasType::ToDebugInfoType(std::stringstream &ss) const
 {
 	if (isRecursive_) {
@@ -196,6 +208,14 @@ void ETSTypeAliasType::IsSubtypeOf(TypeRelation *relation, Type *target)
         relation->IsSupertypeOf(target, subType_);
         relation->DecreaseTypeRecursionCount(GetBaseType());
     }
+}
+
+uint32_t ETSTypeAliasType::Rank() const {
+	if (isRecursive_) {
+		return 0;
+	}
+
+	return subType_->Rank();
 }
 
 Type *ETSTypeAliasType::Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes)
