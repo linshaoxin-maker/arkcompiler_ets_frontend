@@ -937,18 +937,11 @@ std::optional<SmartCastTuple> CheckerContext::ResolveSmartCastTypes()
 
     ASSERT(testCondition_.testedType != nullptr);
 
-    auto *subType = testCondition_.testedType;
-	while (subType->IsETSTypeAliasType()) {
-		subType = subType->AsETSTypeAliasType()->GetSubType();
-	}
-
     // NOTE: functional types are not supported now
-    if (!subType->IsETSReferenceType() ||
-        subType->HasTypeFlag(TypeFlag::FUNCTION)) {
+    if (!testCondition_.testedType->IsETSReferenceType() ||
+    		testCondition_.testedType->HasTypeFlag(TypeFlag::FUNCTION)) {
         return std::nullopt;
     }
-
-
 
     auto *smartType = GetSmartCast(testCondition_.variable);
     if (smartType == nullptr) {
