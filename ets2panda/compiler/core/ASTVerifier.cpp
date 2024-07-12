@@ -809,11 +809,6 @@ private:
 
     bool CheckAstExceptions(const ir::AstNode *ast)
     {
-        // NOTE(kkonkuznetsov): in some cases with lambdas scope node is null
-        if (ast->Parent() != nullptr && ast->Parent()->IsETSFunctionType()) {
-            return true;
-        }
-
         if (ast->IsLabelledStatement()) {
             // Labels are attached to loop scopes,
             // however label identifier is outside of loop.
