@@ -13,8 +13,11 @@
  * limitations under the License.
  */
 
+function foo(): int {
+    return 1;
+}
 
-function foo (p: String){}
-function foo (p: number){}
-
-let f = foo
+function main(){
+    let goo = foo;
+    assert goo() == 1
+}

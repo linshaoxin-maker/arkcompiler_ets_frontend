@@ -708,7 +708,9 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
     }
 
     if (typeAnnotation == nullptr && initType->IsETSFunctionType()) {
-        ASSERT(initType->AsETSFunctionType()->CallSignatures().size() == 1);
+        if (initType->AsETSFunctionType()->CallSignatures().size() != 1) {
+            ThrowTypeError("Ambiguous function initialization because of multiple overloads", init->Start());
+        }
         annotationType = FunctionTypeToFunctionalInterfaceType(initType->AsETSFunctionType()->CallSignatures()[0]);
         bindingVar->SetTsType(annotationType);
     }

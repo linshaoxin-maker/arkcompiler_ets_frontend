@@ -715,7 +715,7 @@ private:
     std::pair<const ir::Identifier *, ir::TypeNode *> GetTargetIdentifierAndType(ir::Identifier *ident);
     [[noreturn]] void ThrowError(ir::Identifier *ident);
     void WrongContextErrorClassifyByType(ir::Identifier *ident, varbinder::Variable *resolved);
-    void CheckEtsFunctionType(ir::Identifier *ident, ir::Identifier const *id, ir::TypeNode const *annotation);
+    void CheckEtsFunctionType(ir::Identifier *ident, ir::Identifier const *id);
     [[noreturn]] void NotResolvedError(ir::Identifier *const ident, const varbinder::Variable *classVar,
                                        const ETSObjectType *classType);
     void ValidateCallExpressionIdentifier(ir::Identifier *const ident, varbinder::Variable *const resolved,
