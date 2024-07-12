@@ -1,1 +1,0 @@
-SyntaxError: Type alias is allowed only as top-level declaration [type_alias_2.ets:18:5]
