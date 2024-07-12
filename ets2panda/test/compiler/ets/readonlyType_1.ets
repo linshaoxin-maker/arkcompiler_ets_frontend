@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,15 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-"use strict";
-
-let a = 1;
-
-function A() {
-  "use sendable";
-  let b = a + 1;
-  print(b);
+ 
+class A {
+    fld: Number
+    constructor (fld : Number) {
+        this.fld = fld
+    }
 }
 
-A();
+function foo(a0: A) {
+    let a: Readonly<A> = new A(2)
+    a.fld = 5
+}
+

@@ -157,6 +157,7 @@ export class Autofixer {
 
   fixFunctionExpression(
     funcExpr: ts.FunctionExpression,
+    // eslint-disable-next-line default-param-last
     retType: ts.TypeNode | undefined = funcExpr.type,
     modifiers: readonly ts.Modifier[] | undefined,
     isGenerator: boolean,
@@ -241,6 +242,7 @@ export class Autofixer {
       if (node.kind === ts.SyntaxKind.Block || node.kind === ts.SyntaxKind.SourceFile) {
         break;
       }
+      // eslint-disable-next-line no-param-reassign
       node = node.parent;
     }
     return node;
@@ -251,6 +253,7 @@ export class Autofixer {
       if (node === scope) {
         return true;
       }
+      // eslint-disable-next-line no-param-reassign
       node = node.parent;
     }
     return false;
@@ -261,6 +264,7 @@ export class Autofixer {
       if (Autofixer.isFunctionLikeDeclarationKind(node)) {
         break;
       }
+      // eslint-disable-next-line no-param-reassign
       node = node.parent;
     }
     // node now Function like declaration
@@ -286,6 +290,7 @@ export class Autofixer {
           return true;
         }
       }
+      // eslint-disable-next-line no-param-reassign
       ident = ident.parent;
     }
     return false;
@@ -845,12 +850,45 @@ export class Autofixer {
     );
   }
 
+  fixRecordObjectLiteral(objectLiteralExpr: ts.ObjectLiteralExpression): Autofix[] | undefined {
+    const autofix: Autofix[] = [];
+
+    for (const prop of objectLiteralExpr.properties) {
+      if (!prop.name) {
+        return undefined;
+      }
+      if (this.utils.isValidRecordObjectLiteralKey(prop.name)) {
+        // Skip property with a valid property key.
+        continue;
+      }
+      if (!ts.isIdentifier(prop.name)) {
+        // Can only fix identifier name.
+        return undefined;
+      }
+
+      const stringLiteralName = ts.factory.createStringLiteralFromNode(prop.name, true);
+      const text = this.printer.printNode(ts.EmitHint.Unspecified, stringLiteralName, prop.name.getSourceFile());
+      autofix.push({ start: prop.name.getStart(), end: prop.name.getEnd(), replacementText: text });
+    }
+
+    return autofix;
+  }
+
   fixUntypedObjectLiteral(
     objectLiteralExpr: ts.ObjectLiteralExpression,
     objectLiteralType: ts.Type | undefined
   ): Autofix[] | undefined {
-    // Can't fix if object literal already has contextual type.
     if (objectLiteralType) {
+
+      /*
+       * Special case for object literal of Record type: fix object's property names
+       * by replacing identifiers with string literals.
+       */
+      if (this.utils.isStdRecordType(this.utils.getNonNullableType(objectLiteralType))) {
+        return this.fixRecordObjectLiteral(objectLiteralExpr);
+      }
+
+      // Can't fix when object literal has a contextual type.
       return undefined;
     }
 

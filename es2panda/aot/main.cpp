@@ -25,6 +25,7 @@
 #include <options.h>
 #include <protobufSnapshotGenerator.h>
 #include <resolveDepsRelation.h>
+#include <util/commonUtil.h>
 #include <util/dumper.h>
 #include <util/moduleHelpers.h>
 #include <util/programCache.h>
@@ -134,15 +135,24 @@ static bool GenerateProgramsByWorkers(const std::map<std::string, panda::es2pand
     return emitResult;
 }
 
+static void DumpProgram(const pandasm::Program &program, bool isNormalized)
+{
+    panda::abc2program::PandasmProgramDumper dumper;
+    if (isNormalized) {
+        dumper.SetDumperSource(abc2program::PandasmDumperSource::ECMASCRIPT);
+    }
+    dumper.Dump(std::cout, program);
+}
+
 static void DumpProgramInfos(const std::map<std::string, panda::es2panda::util::ProgramCache*> &programsInfo,
     const std::unique_ptr<panda::es2panda::aot::Options> &options)
 {
     const es2panda::CompilerOptions &compilerOptions = options->CompilerOptions();
-    if (compilerOptions.dumpAsm || compilerOptions.dumpLiteralBuffer || compilerOptions.dumpAsmProgram) {
+    if (compilerOptions.dumpAsm || compilerOptions.dumpLiteralBuffer || compilerOptions.dumpAsmProgram ||
+        compilerOptions.dumpNormalizedAsmProgram) {
         for (const auto &progInfo : programsInfo) {
-            if (compilerOptions.dumpAsmProgram) {
-                panda::abc2program::PandasmProgramDumper dumper;
-                dumper.Dump(std::cout, progInfo.second->program);
+            if (compilerOptions.dumpAsmProgram || compilerOptions.dumpNormalizedAsmProgram) {
+                DumpProgram(progInfo.second->program, compilerOptions.dumpNormalizedAsmProgram);
             }
 
             if (compilerOptions.dumpAsm) {
@@ -206,6 +216,49 @@ static bool GenerateProgram(std::map<std::string, panda::es2panda::util::Program
     return true;
 }
 
+static bool CheckMergeModeConsistency(bool mergeAbc,
+                                      std::map<std::string, panda::es2panda::util::ProgramCache*> programsInfo)
+{
+    std::unordered_map<std::string, std::unordered_set<std::string>> recordNameMap;
+
+    // Names of these program records generated from abc input all follow such format: abcName|recordName
+    for (auto &[name, _] : programsInfo) {
+        if (util::RecordNotGeneratedFromBytecode(name)) {
+            continue;
+        }
+
+        auto nameVec = util::Split(name, util::CHAR_VERTICAL_LINE);
+        auto abcFileName = nameVec[0];
+        auto recordName = nameVec.back();
+
+        if (mergeAbc) {
+            if (recordName == util::GLOBAL_TYPE_NAME) {
+                std::cerr << "Current compile mode is merge-abc, all input abc files must be merged mode. "
+                          << "But file '" << abcFileName << "' is not a merged abc." << std::endl;
+                return false;
+            }
+        } else {
+            if (recordNameMap.find(abcFileName) != recordNameMap.end()) {
+                recordNameMap.find(abcFileName)->second.insert(recordName);
+            } else {
+                recordNameMap.insert({abcFileName, {recordName}});
+            }
+        }
+    }
+
+    if (!mergeAbc) {
+        for (auto &[abcFileName, recordNameSet] : recordNameMap) {
+            if (!recordNameSet.count(util::GLOBAL_TYPE_NAME)) {
+                std::cerr << "Current compile mode is non merge-abc, all input abc files must be unmerged mode. "
+                          << "But file '" << abcFileName << "' is a merged abc." << std::endl;
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 static bool GenerateAbcFiles(std::map<std::string, panda::es2panda::util::ProgramCache*> &programsInfo,
                              const std::unique_ptr<panda::es2panda::aot::Options> &options, size_t expectedProgsCount,
                              const std::map<std::string, std::unordered_set<std::string>> &resolvedDepsRelation)
@@ -259,6 +312,11 @@ int Run(int argc, const char **argv)
 
     Compiler::SetExpectedProgsCount(options->CompilerOptions().sourceFiles.size());
     int ret = Compiler::CompileFiles(options->CompilerOptions(), programsInfo, &allocator);
+
+    if (!CheckMergeModeConsistency(options->CompilerOptions().mergeAbc, programsInfo)) {
+        return 1;
+    }
+
     if (options->ParseOnly()) {
         return ret;
     }

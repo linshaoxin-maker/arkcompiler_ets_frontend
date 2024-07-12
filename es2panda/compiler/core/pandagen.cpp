@@ -40,6 +40,7 @@
 #include <ir/expressions/literals/numberLiteral.h>
 #include <ir/expressions/literals/stringLiteral.h>
 #include <ir/expressions/newExpression.h>
+#include <ir/module/importSpecifier.h>
 #include <ir/statement.h>
 #include <util/concurrent.h>
 #include <util/helpers.h>
@@ -51,6 +52,7 @@ namespace panda::es2panda::compiler {
 
 void PandaGen::SetFunctionKind()
 {
+    int targetApiVersion = Binder()->Program()->TargetApiVersion();
     if (rootNode_->IsProgram()) {
         funcKind_ = panda::panda_file::FunctionKind::FUNCTION;
         return;
@@ -81,6 +83,10 @@ void PandaGen::SetFunctionKind()
         }
 
         funcKind_ = panda::panda_file::FunctionKind::ASYNC_FUNCTION;
+        
+        if (func->IsSendable() && targetApiVersion >= util::Helpers::SENDABLE_FUNCTION_MIN_SUPPORTED_API_VERSION) {
+            funcKind_ |= panda::panda_file::FunctionKind::SENDABLE_FUNCTION;
+        }
         return;
     }
 
@@ -95,6 +101,10 @@ void PandaGen::SetFunctionKind()
     }
 
     funcKind_ = panda::panda_file::FunctionKind::FUNCTION;
+
+    if (func->IsSendable() && targetApiVersion >= util::Helpers::SENDABLE_FUNCTION_MIN_SUPPORTED_API_VERSION) {
+        funcKind_ |= panda::panda_file::FunctionKind::SENDABLE_FUNCTION;
+    }
 }
 
 void PandaGen::SetInSendable()
@@ -1757,10 +1767,26 @@ void PandaGen::LoadExternalModuleVariable(const ir::AstNode *node, const binder:
 {
     auto index = variable->Index();
 
+    auto targetApiVersion = Binder()->Program()->TargetApiVersion();
+    bool isLazy = variable->Declaration()->Node()->IsImportSpecifier() ?
+        variable->Declaration()->Node()->AsImportSpecifier()->IsLazy() : false;
+    if (isLazy) {
+        // Change the behavior of using imported object in sendable class since api12
+        if (inSendable_ && targetApiVersion >= util::Helpers::SENDABLE_LAZY_LOADING_MIN_SUPPORTED_API_VERSION) {
+            index <= util::Helpers::MAX_INT8 ? ra_.Emit<CallruntimeLdlazysendablemodulevar>(node, index) :
+                                               ra_.Emit<CallruntimeWideldlazysendablemodulevar>(node, index);
+            return;
+        }
+
+        index <= util::Helpers::MAX_INT8 ? ra_.Emit<CallruntimeLdlazymodulevar>(node, index) :
+                                           ra_.Emit<CallruntimeWideldlazymodulevar>(node, index);
+        return;
+    }
+
     // Change the behavior of using imported object in sendable class since api12
-    if (inSendable_ && Binder()->Program()->TargetApiVersion() >= 12) {
+    if (inSendable_ && targetApiVersion >= util::Helpers::SENDABLE_LAZY_LOADING_MIN_SUPPORTED_API_VERSION) {
         index <= util::Helpers::MAX_INT8 ? ra_.Emit<CallruntimeLdsendableexternalmodulevar>(node, index) :
-                                       ra_.Emit<CallruntimeWideldsendableexternalmodulevar>(node, index);
+                                           ra_.Emit<CallruntimeWideldsendableexternalmodulevar>(node, index);
         return;
     }
 
