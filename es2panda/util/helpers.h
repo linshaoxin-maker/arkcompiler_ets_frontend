@@ -150,6 +150,7 @@ public:
     static bool IsUseShared(const ir::Statement *statement);
     static const ir::ClassDefinition *GetContainingSendableClass(const ir::AstNode *node);
     static bool IsSpecialScopeName(const util::StringView &str);
+    static bool IsBeta2();
     static bool BelongingToRecords(const std::string &name, const std::unordered_set<std::string> &retainRecordSet,
                                    const std::string &delimiter = std::string(DOT));
     static void RemoveProgramsRedundantData(std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,

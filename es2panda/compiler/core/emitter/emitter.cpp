@@ -429,7 +429,7 @@ void Emitter::AddScopeNamesRecord(CompilerContext *context)
 {
     std::lock_guard<std::mutex> lock(m_);
     // make literalarray for scope names
-    if (context->Binder()->Program()->TargetApiVersion() < 12) {
+    if (Helpers::IsBeta2() || context->Binder()->Program()->TargetApiVersion() < 12) {
         return;
     }
     const auto &scopeNamesMap = context->Binder()->GetScopeNames();

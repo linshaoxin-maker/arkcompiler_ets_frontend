@@ -951,6 +951,11 @@ bool Helpers::IsSpecialScopeName(const util::StringView &name)
            name.Find(Helpers::BACKSLASH.data()) != std::string::npos;
 }
 
+bool Helpers::IsBeta2()
+{
+    return true;
+}
+
 bool Helpers::BelongingToRecords(const std::string &name, const std::unordered_set<std::string> &retainRecordSet,
                                  const std::string &delimiter)
 {

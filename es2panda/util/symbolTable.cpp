@@ -110,7 +110,7 @@ bool SymbolTable::ReadSymbolTable(const std::string &symbolTable)
             }
 
             originFunctionInfo_.insert(std::pair<std::string, OriginFunctionInfo>(info.funcInternalName, info));
-            if (targetApiVersion_ < 12) {
+            if (Helpers::IsBeta2() || targetApiVersion_ < 12) {
                 // index of function in its record's special function array
                 std::string specialFuncIndex{funcItems[3]};
                 ReadRecordHashFunctionNames(info.recordName, info.funcInternalName, specialFuncIndex);
