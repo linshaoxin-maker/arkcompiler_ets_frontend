@@ -22,6 +22,11 @@
 #include "macros.h"
 #include "parser/ETSparser.h"
 #include "varbinder/ETSBinder.h"
+#include "util/ast-builders/classDefinitionBuilder.h"
+#include "util/ast-builders/binaryExpressionBuilder.h"
+#include "util/ast-builders/classPropertyBuilder.h"
+#include "util/ast-builders/identifierBuilder.h"
+#include "util/ast-builders/numberLiteralBuilder.h"
 
 #include <gtest/gtest.h>
 
@@ -48,6 +53,10 @@ using ark::es2panda::varbinder::LetDecl;
 using ark::es2panda::varbinder::LocalScope;
 using ark::es2panda::varbinder::LocalVariable;
 using ark::es2panda::varbinder::VariableFlags;
+using ark::es2panda::ir::BinaryExpressionBuilder;
+using ark::es2panda::ir::IdentifierBuilder;
+using ark::es2panda::ir::NumberLiteralBuilder;
+
 
 TEST_F(ASTVerifierTest, NullParent)
 {
@@ -163,16 +172,16 @@ TEST_F(ASTVerifierTest, ArithmeticExpressionCorrect1)
     auto program = Program::NewProgram<ETSBinder>(Allocator());
     auto parser = ETSParser(&program, CompilerOptions {});
 
-    auto left = NumberLiteral(Number {1});
-    auto right = NumberLiteral(Number {6});
-    auto arithmeticExpression = BinaryExpression(&left, &right, TokenType::PUNCTUATOR_PLUS);
+    auto left = NumberLiteralBuilder(Allocator()).SetValue(StringView("1")).Build();
+    auto right = NumberLiteralBuilder(Allocator()).SetValue(StringView("6")).Build();
+    auto arithmeticExpression = BinaryExpressionBuilder(Allocator()).setLeft(left).setRight(right).setOperator(TokenType::PUNCTUATOR_PLUS).Build();
 
-    left.SetTsType(etschecker.GlobalIntType());
-    right.SetTsType(etschecker.GlobalIntType());
+    left->SetTsType(etschecker.GlobalIntType());
+    right->SetTsType(etschecker.GlobalIntType());
 
     auto checks = InvariantNameSet {};
     checks.insert("ArithmeticOperationValid");
-    const auto &messages = verifier.Verify(arithmeticExpression.AsBinaryExpression(), checks);
+    const auto &messages = verifier.Verify(arithmeticExpression->AsBinaryExpression(), checks);
     ASSERT_EQ(messages.size(), 0);
 }
 
