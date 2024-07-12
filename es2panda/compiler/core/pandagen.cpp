@@ -576,9 +576,13 @@ void PandaGen::StoreObjByName(const ir::AstNode *node, VReg obj, const util::Str
 
 void PandaGen::DefineFieldByName(const ir::AstNode *node, VReg obj, const util::StringView &prop)
 {
+# if defined Beta2
+    ra_.Emit<Definefieldbyname>(node, 0, prop, obj);
+# else
     // use definepropertybyname instead of definefieldbyname since api12 for runtime's performance.
     Binder()->Program()->TargetApiVersion() >= 12 ? ra_.Emit<Definepropertybyname>(node, 0, prop, obj) :
         ra_.Emit<Definefieldbyname>(node, 0, prop, obj);
+# endif
     strings_.insert(prop);
 }
 
@@ -1091,8 +1095,12 @@ void PandaGen::GreaterEqual(const ir::AstNode *node, VReg lhs)
 
 void PandaGen::IsTrue(const ir::AstNode *node)
 {
+# if defined Beta2
+    ra_.Emit<Istrue>(node);
+# else
     // use callruntime.istrue instead of istrue since api12 for runtime's performance.
     Binder()->Program()->TargetApiVersion() >= 12 ? ra_.Emit<CallruntimeIstrue>(node, 0) :  ra_.Emit<Istrue>(node);
+# endif
 }
 
 void PandaGen::BranchIfUndefined(const ir::AstNode *node, Label *target)
@@ -1149,9 +1157,13 @@ void PandaGen::BranchIfNotTrue(const ir::AstNode *node, Label *target)
 
 void PandaGen::BranchIfFalse(const ir::AstNode *node, Label *target)
 {
+# if defined Beta2
+    ra_.Emit<Isfalse>(node);
+# else
     // use callruntime.istrue instead of istrue since api12 for runtime's performance.
     Binder()->Program()->TargetApiVersion() >= 12 ? ra_.Emit<CallruntimeIsfalse>(node, 0) :  ra_.Emit<Isfalse>(node);
     ra_.Emit<Jnez>(node, target);
+# endif
 }
 
 void PandaGen::BranchIfStrictNull(const ir::AstNode *node, class Label *target)
