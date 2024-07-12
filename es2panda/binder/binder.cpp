@@ -365,7 +365,7 @@ void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name, cons
     }
     functionScopes_.push_back(funcScope);
     funcScope->SetInFunctionScopes();
-    if (!Helpers::IsBeta2() && Program()->TargetApiVersion() > 11) {
+    if (!util::Helpers::IsBeta2() && Program()->TargetApiVersion() > 11) {
         funcScope->SetSelfScopeName(name);
         auto recordName = program_->FormatedRecordName().Mutf8();
         funcScope->BindNameWithScopeInfo(name, util::UString(recordName, Allocator()).View());

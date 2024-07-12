@@ -126,7 +126,7 @@ void PatchFix::ValidateJsonContentRecInfo(const std::string &recordName, const s
 
 bool PatchFix::IsAnonymousOrSpecialOrDuplicateFunction(const std::string &funcName)
 {
-    if (Helpers::IsBeta2() || targetApiVersion_ < 12) {
+    if (util::Helpers::IsBeta2() || targetApiVersion_ < 12) {
         return funcName.find(binder::Binder::ANONYMOUS_SPECIAL_DUPLICATE_FUNCTION_SPECIFIER) != std::string::npos;
     }
     // Function name is like: #scopes^1#functionname^1
@@ -567,7 +567,7 @@ void PatchFix::HandleFunction(const compiler::PandaGen *pg, panda::pandasm::Func
     std::string funcName = func->name;
     auto originFunction = originFunctionInfo_->find(funcName);
     if (originFunction == originFunctionInfo_->end()) {
-        if ((!Helpers::IsBeta2() &&
+        if ((!util::Helpers::IsBeta2() &&
             pg->Binder()->Program()->TargetApiVersion() > 11) &&
             IsHotFix() &&
             IsAnonymousOrSpecialOrDuplicateFunction(funcName)) {
@@ -625,7 +625,7 @@ void PatchFix::DumpFunctionInfo(const compiler::PandaGen *pg, panda::pandasm::Fu
     std::vector<std::pair<std::string, std::string>> hashList = GenerateFunctionAndClassHash(func, literalBuffers);
     ss << hashList.back().second << SymbolTable::SECOND_LEVEL_SEPERATOR;
 
-    if (Helpers::IsBeta2() || pg->Binder()->Program()->TargetApiVersion() < 12) {
+    if (util::Helpers::IsBeta2() || pg->Binder()->Program()->TargetApiVersion() < 12) {
         auto internalNameStr = pg->InternalName().Mutf8();
         if (internalNameStr.find("#") != std::string::npos) {
             ss << (pg->Binder()->SpecialFuncNameIndexMap()).at(internalNameStr) << SymbolTable::SECOND_LEVEL_SEPERATOR;

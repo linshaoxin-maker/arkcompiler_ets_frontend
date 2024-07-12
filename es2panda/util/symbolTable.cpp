@@ -17,6 +17,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <util/helpers.h>
 
 namespace panda::es2panda::util {
 const std::string SymbolTable::FIRST_LEVEL_SEPERATOR = "|";
@@ -110,7 +111,7 @@ bool SymbolTable::ReadSymbolTable(const std::string &symbolTable)
             }
 
             originFunctionInfo_.insert(std::pair<std::string, OriginFunctionInfo>(info.funcInternalName, info));
-            if (Helpers::IsBeta2() || targetApiVersion_ < 12) {
+            if (util::Helpers::IsBeta2() || targetApiVersion_ < 12) {
                 // index of function in its record's special function array
                 std::string specialFuncIndex{funcItems[3]};
                 ReadRecordHashFunctionNames(info.recordName, info.funcInternalName, specialFuncIndex);
