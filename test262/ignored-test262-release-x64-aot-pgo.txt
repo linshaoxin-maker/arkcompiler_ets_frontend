@@ -17,3 +17,6 @@ test262/data/test_es2021/language/module-code/instn-iee-err-circular-as.js
 # Issue #18004
 test262/data/test_es2021/language/module-code/instn-iee-err-circular.js
 # --- end of Issue #18004
+# Issue #18161
+test262/data/test_es2021/built-ins/Array/prototype/copyWithin/coerced-values-start-change-target.js
+# --- end of Issue #18161
