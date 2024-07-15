@@ -784,7 +784,7 @@ ir::BoxingUnboxingFlags ETSChecker::GetBoxingFlag(Type *const boxingType)
             return ir::BoxingUnboxingFlags::BOX_TO_DOUBLE;
         }
         default:
-            UNREACHABLE();
+           return ir::BoxingUnboxingFlags::NONE;
     }
 }
 
@@ -817,7 +817,7 @@ ir::BoxingUnboxingFlags ETSChecker::GetUnboxingFlag(Type const *const unboxingTy
             return ir::BoxingUnboxingFlags::UNBOX_TO_DOUBLE;
         }
         default:
-            UNREACHABLE();
+        	return ir::BoxingUnboxingFlags::NONE;
     }
 }
 

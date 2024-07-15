@@ -1866,7 +1866,10 @@ Type const *ETSChecker::GetApparentType(Type const *type) const
     if (auto it = apparentTypes_.find(type); LIKELY(it != apparentTypes_.end())) {
         return it->second;
     }
-    // Relaxed for some types
+	// Relaxed for some types
+	if (type->IsETSTypeAliasType()) {
+		return GetApparentType(type->AsETSTypeAliasType()->GetSubType());
+	}
     if (type->IsETSTypeParameter()) {
         return GetApparentType(type->AsETSTypeParameter()->GetConstraintType());
     }
