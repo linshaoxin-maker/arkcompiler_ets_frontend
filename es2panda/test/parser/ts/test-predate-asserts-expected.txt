@@ -1,0 +1,186 @@
+{
+  "type": "Program",
+  "statements": [
+    {
+      "type": "FunctionDeclaration",
+      "function": {
+        "type": "ScriptFunction",
+        "id": {
+          "type": "Identifier",
+          "name": "AssertsFunction",
+          "loc": {
+            "start": {
+              "line": 17,
+              "column": 10
+            },
+            "end": {
+              "line": 17,
+              "column": 25
+            }
+          }
+        },
+        "generator": false,
+        "async": false,
+        "expression": false,
+        "params": [
+          {
+            "type": "Identifier",
+            "name": "a",
+            "typeAnnotation": {
+              "type": "TSUnionType",
+              "types": [
+                {
+                  "type": "TSNumberKeyword",
+                  "loc": {
+                    "start": {
+                      "line": 17,
+                      "column": 29
+                    },
+                    "end": {
+                      "line": 17,
+                      "column": 35
+                    }
+                  }
+                },
+                {
+                  "type": "TSStringKeyword",
+                  "loc": {
+                    "start": {
+                      "line": 17,
+                      "column": 38
+                    },
+                    "end": {
+                      "line": 17,
+                      "column": 44
+                    }
+                  }
+                }
+              ],
+              "loc": {
+                "start": {
+                  "line": 17,
+                  "column": 29
+                },
+                "end": {
+                  "line": 17,
+                  "column": 44
+                }
+              }
+            },
+            "loc": {
+              "start": {
+                "line": 17,
+                "column": 26
+              },
+              "end": {
+                "line": 17,
+                "column": 27
+              }
+            }
+          }
+        ],
+        "returnType": {
+          "type": "TSTypePredicate",
+          "parameterName": {
+            "type": "Identifier",
+            "name": "a",
+            "loc": {
+              "start": {
+                "line": 17,
+                "column": 55
+              },
+              "end": {
+                "line": 17,
+                "column": 56
+              }
+            }
+          },
+          "typeAnnotation": null,
+          "asserts": true,
+          "loc": {
+            "start": {
+              "line": 17,
+              "column": 47
+            },
+            "end": {
+              "line": 17,
+              "column": 56
+            }
+          }
+        },
+        "body": {
+          "type": "BlockStatement",
+          "statements": [
+            {
+              "type": "ReturnStatement",
+              "argument": null,
+              "loc": {
+                "start": {
+                  "line": 17,
+                  "column": 59
+                },
+                "end": {
+                  "line": 17,
+                  "column": 65
+                }
+              }
+            }
+          ],
+          "loc": {
+            "start": {
+              "line": 17,
+              "column": 57
+            },
+            "end": {
+              "line": 17,
+              "column": 67
+            }
+          }
+        },
+        "loc": {
+          "start": {
+            "line": 17,
+            "column": 1
+          },
+          "end": {
+            "line": 17,
+            "column": 67
+          }
+        }
+      },
+      "loc": {
+        "start": {
+          "line": 17,
+          "column": 1
+        },
+        "end": {
+          "line": 17,
+          "column": 67
+        }
+      }
+    },
+    {
+      "type": "EmptyStatement",
+      "loc": {
+        "start": {
+          "line": 17,
+          "column": 67
+        },
+        "end": {
+          "line": 17,
+          "column": 68
+        }
+      }
+    }
+  ],
+  "loc": {
+    "start": {
+      "line": 1,
+      "column": 1
+    },
+    "end": {
+      "line": 18,
+      "column": 1
+    }
+  }
+}
