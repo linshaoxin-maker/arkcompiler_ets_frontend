@@ -43,9 +43,22 @@
 #include "public/public.h"
 
 namespace ark::es2panda::varbinder {
+
+__attribute__((noinline)) Scope *ThisScope(Scope *sc)
+{
+    ASSERT(sc != nullptr);
+    return sc;
+}
+
+__attribute__((noinline)) const Scope *ThisScope(const Scope *sc)
+{
+    ASSERT(sc != nullptr);
+    return sc;
+}
+
 VariableScope *Scope::EnclosingVariableScope()
 {
-    Scope *iter = this;
+    Scope *iter = ThisScope(this);
 
     while (iter != nullptr) {
         if (iter->IsVariableScope()) {
@@ -60,7 +73,7 @@ VariableScope *Scope::EnclosingVariableScope()
 
 const VariableScope *Scope::EnclosingVariableScope() const
 {
-    const auto *iter = this;
+    const auto *iter = ThisScope(this);
 
     while (iter != nullptr) {
         if (iter->IsVariableScope()) {
@@ -87,7 +100,7 @@ bool Scope::IsSuperscopeOf(const varbinder::Scope *subscope) const
 // NOTE(psiket): Duplication
 ClassScope *Scope::EnclosingClassScope()
 {
-    Scope *iter = this;
+    Scope *iter = ThisScope(this);
 
     while (iter != nullptr) {
         if (iter->IsClassScope()) {
@@ -102,8 +115,7 @@ ClassScope *Scope::EnclosingClassScope()
 
 const ClassScope *Scope::EnclosingClassScope() const
 {
-    const auto *iter = this;
-
+    const auto *iter = ThisScope(this);
     while (iter != nullptr) {
         if (iter->IsVariableScope()) {
             return iter->AsClassScope();
@@ -177,7 +189,7 @@ Scope::VariableMap::size_type Scope::EraseBinding(const util::StringView &name)
 
 ConstScopeFindResult Scope::FindInGlobal(const util::StringView &name, const ResolveBindingOptions options) const
 {
-    const auto *scopeIter = this;
+    const auto *scopeIter = ThisScope(this);
     const auto *scopeParent = this->Parent();
     // One scope below true global is ETSGLOBAL
     while (scopeParent != nullptr && !scopeParent->IsGlobalScope()) {
@@ -192,12 +204,12 @@ ConstScopeFindResult Scope::FindInGlobal(const util::StringView &name, const Res
         resolved = scopeParent->FindLocal(name, options);
     }
 
-    return {name, scopeIter, 0, 0, resolved};
+    return ConstScopeFindResult(name, scopeIter, 0, 0, resolved);
 }
 
 ConstScopeFindResult Scope::FindInFunctionScope(const util::StringView &name, const ResolveBindingOptions options) const
 {
-    const auto *scopeIter = this;
+    const auto *scopeIter = ThisScope(this);
     while (scopeIter != nullptr && !scopeIter->IsGlobalScope()) {
         if (!scopeIter->IsClassScope()) {
             if (auto *const resolved = scopeIter->FindLocal(name, options); resolved != nullptr) {
@@ -233,7 +245,7 @@ Decl *Scope::FindDecl(const util::StringView &name) const
 
 std::tuple<Scope *, bool> Scope::IterateShadowedVariables(const util::StringView &name, const VariableVisitor &visitor)
 {
-    auto *iter = this;
+    auto *iter = ThisScope(this);
 
     while (iter != nullptr) {
         auto *v = iter->FindLocal(name, varbinder::ResolveBindingOptions::BINDINGS);
