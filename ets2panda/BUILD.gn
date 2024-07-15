@@ -65,7 +65,6 @@ libes2panda_sources = [
   "checker/ets/conversion.cpp",
   "checker/ets/dynamic.cpp",
   "checker/ets/dynamic/dynamicCall.cpp",
-  "checker/ets/enum.cpp",
   "checker/ets/etsWarningAnalyzer.cpp",
   "checker/ets/function.cpp",
   "checker/ets/helpers.cpp",
