@@ -331,6 +331,17 @@ static void ConvertRestArguments(checker::ETSChecker *const checker, const ir::E
     }
 }
 
+static void MaybeCastUnionTypeToFunctionType(compiler::ETSGen *etsg, const ir::CallExpression *expr,
+                                             checker::Signature *signature)
+{
+    expr->Callee()->AsMemberExpression()->Object()->Compile(etsg);
+    auto objType = expr->Callee()->AsMemberExpression()->Object()->TsType();
+    if (auto propType = expr->Callee()->AsMemberExpression()->Property()->TsType();
+        propType != nullptr && propType->IsETSFunctionType() && objType->IsETSUnionType()) {
+        etsg->CastUnionToFunctionType(expr, objType->AsETSUnionType(), signature);
+    }
+}
+
 void ETSCompiler::Compile(const ir::ETSNewClassInstanceExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
@@ -951,7 +962,7 @@ void ETSCompiler::Compile(const ir::CallExpression *expr) const
         EmitCall(expr, calleeReg, signature);
     } else if (!isReference && expr->Callee()->IsMemberExpression()) {
         if (!isStatic) {
-            expr->Callee()->AsMemberExpression()->Object()->Compile(etsg);
+            MaybeCastUnionTypeToFunctionType(etsg, expr, signature);
             etsg->StoreAccumulator(expr, calleeReg);
         }
         EmitCall(expr, calleeReg, signature);
