@@ -36,6 +36,7 @@
 #include "ir/expressions/literals/numberLiteral.h"
 #include "ir/module/exportNamedDeclaration.h"
 #include "ir/module/exportSpecifier.h"
+#include "ir/module/importDeclaration.h"
 #include "ir/statements/blockStatement.h"
 #include "ir/statements/classDeclaration.h"
 #include "ir/statements/doWhileStatement.h"
@@ -719,8 +720,9 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
         }
         case ir::AstNodeType::ANNOTATION: {
             auto *annotation = childNode->AsAnnotation();
-            std::string annoName{annotation->Name()};
-            ScopeFindResult res = scope_->Find(annotation->Name(), bindingOptions_);
+            std::string annoName{annotation->RawName()};
+            ScopeFindResult res = scope_->Find(annotation->RawName(), bindingOptions_);
+            std::string prefix = program_->RecordName().Mutf8();
             if (res.variable != nullptr) {
                 if (res.variable->Declaration()->Node()->IsImportSpecifier()) {
                     annotation->SetIsImported();
@@ -732,12 +734,14 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
                 ScopeFindResult res = scope_->Find(util::StringView(importName), bindingOptions_);
                 if (res.variable != nullptr && res.variable->Declaration()->Node()->IsImportNamespaceSpecifier()) {
                     annotation->SetIsImported();
+                    prefix = importName;
                 } else {
                     ThrowInvalidAnnotationDeclaration(annotation->Start(), annotation->Name());
                 }
             } else {
                 ThrowInvalidAnnotationDeclaration(annotation->Start(), annotation->Name());
             }
+            annotation->AddModulePrefix(prefix);
             ResolveReferences(childNode);
             break;
         }

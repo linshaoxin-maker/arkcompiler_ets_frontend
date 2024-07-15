@@ -51,6 +51,12 @@ public:
         nameView_ = util::StringView(name_);
     }
 
+    void AddModulePrefix(const std::string &prefix)
+    {
+        fullName_ = prefix + "." + name_;
+        fullNameView_ = util::StringView(fullName_);
+    }
+
     const Expression *Expr() const
     {
         return expr_;
@@ -61,9 +67,14 @@ public:
         return expr_;
     }
 
-    const util::StringView &Name() const
+    const util::StringView &RawName() const
     {
         return nameView_;
+    }
+
+    const util::StringView &Name() const
+    {
+        return fullNameView_;
     }
 
     bool IsImported() const
@@ -98,6 +109,8 @@ private:
     Expression *expr_ = nullptr;
     std::string name_ = "";
     util::StringView nameView_;
+    util::StringView fullNameView_ = "";
+    std::string fullName_ = "";
     bool isImported_ = false;
 };
 
