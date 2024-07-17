@@ -29,7 +29,8 @@ import {
   setParentRecursive,
   visitEachChild,
   isStringLiteral,
-  isSourceFile
+  isSourceFile,
+  setTextRange
 } from 'typescript';
 
 import type {
@@ -43,7 +44,12 @@ import type {
   ClassDeclaration,
   ClassExpression,
   StructDeclaration,
-  PropertyName
+  PropertyName,
+  NumericLiteral,
+  StringLiteral,
+  StringLiteralLike,
+  PrivateIdentifier,
+  TextRange
 } from 'typescript';
 
 import type {IOptions} from '../../configs/IOptions';
@@ -137,12 +143,12 @@ namespace secharmony {
 
         if (NodeUtils.isClassPropertyInConstructorParams(node)) {
           currentConstructorParams.add((node as Identifier).escapedText.toString());
-          return renameProperty(node, false);
+          return renameProperty(node);
         }
 
         if (NodeUtils.isClassPropertyInConstructorBody(node, currentConstructorParams)) {
           if (currentConstructorParams.has((node as Identifier).escapedText.toString())) {
-            return renameProperty(node, false);
+            return renameProperty(node);
           }
         }
 
@@ -158,22 +164,20 @@ namespace secharmony {
           return renameComputedProperty(node);
         }
 
-        return renameProperty(node, false);
+        return renameProperty(node);
       }
 
       function renameElementAccessProperty(node: Node): Node {
         if (isStringLiteralLike(node)) {
-          return renameProperty(node, false);
+          return renameProperty(node);
         }
         return visitEachChild(node, renameProperties, context);
       }
 
       function renameComputedProperty(node: ComputedPropertyName): ComputedPropertyName {
         if (isStringLiteralLike(node.expression) || isNumericLiteral(node.expression)) {
-          let prop: Node = renameProperty(node.expression, true);
-          if (prop !== node.expression) {
-            return factory.createComputedPropertyName(prop as Expression);
-          }
+          renameProperty(node.expression);
+          return node;
         }
 
         if (isIdentifier(node.expression)) {
@@ -183,7 +187,7 @@ namespace secharmony {
         return visitEachChild(node, renameProperties, context);
       }
 
-      function renameProperty(node: Node, computeName: boolean): Node {
+      function renameProperty(node: Node): Node {
         if (!isStringLiteralLike(node) && !isIdentifier(node) && !isPrivateIdentifier(node) && !isNumericLiteral(node)) {
           return visitEachChild(node, renameProperties, context);
         }
@@ -200,19 +204,47 @@ namespace secharmony {
         let mangledName: string = getPropertyName(original);
 
         if (isStringLiteralLike(node)) {
-          return factory.createStringLiteral(mangledName);
+          return modifyStringLiteralLikeText(node, mangledName);
         }
 
         if (isNumericLiteral(node)) {
-          return computeName ? factory.createStringLiteral(mangledName) : factory.createIdentifier(mangledName);
-
+          return modifyStringLiteralLikeText(node, mangledName);
         }
 
-        if (isIdentifier(node) || isNumericLiteral(node)) {
-          return factory.createIdentifier(mangledName);
+        if (isIdentifier(node)) {
+          return modifyIdentifierText(node, mangledName);
         }
 
-        return factory.createPrivateIdentifier('#' + mangledName);
+        if (isPrivateIdentifier(node)) {
+          return modifyPrivateIdentifierText(node, mangledName);
+        }
+        return node;
+      }
+
+      function modifyIdentifierText(node: Identifier , mangledName: string): Identifier {
+        //@ts-ignore
+        node.escapedText = mangledName
+        setInvalidPosforNode(node);
+        return node;
+      }
+
+      function modifyStringLiteralLikeText(node: StringLiteralLike | NumericLiteral, mangledName: string): StringLiteralLike | NumericLiteral {
+        //@ts-ignore
+        node.text = mangledName
+        setInvalidPosforNode(node);
+        return node;
+      }
+
+      function modifyPrivateIdentifierText(node: PrivateIdentifier , mangledName: string): PrivateIdentifier {
+        //@ts-ignore
+        node.escapedText = '#'+ mangledName
+        setInvalidPosforNode(node);
+        return node;
+      }
+
+      function setInvalidPosforNode(node: Node): void {
+        const invalidRange: TextRange = { pos: -1, end: -1 };
+        setTextRange(node, invalidRange);
       }
 
       function getPropertyName(original: string): string {

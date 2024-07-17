@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,21 +13,23 @@
  * limitations under the License.
  */
 
-import type {IOptions} from '../configs/IOptions';
-import type {Node, TransformerFactory} from 'typescript';
-
-export interface TransformPlugin {
-  name: string;
-  order: number
-  createTransformerFactory: (option: IOptions) => TransformerFactory<Node>;
+declare namespace ns17 {
+  function foo17(): void;
+  class className17 {
+      prop71: number;
+      prop72: interName17 | undefined;
+  }
+  interface interName17 {
+  }
 }
-
-export enum TransformerOrder {
-  SHORTHAND_PROPERTY_TRANSFORMER,
-  SIMPLIFY_TRANSFORMER,
-  RENAME_PROPERTIES_TRANSFORMER,
-  RENAME_IDENTIFIER_TRANSFORMER,
-  DISABLE_CONSOLE_TRANSFORMER,
-  VIRTUAL_CONSTRUCTOR_TRANSFORMER,
-  RENAME_FILE_NAME_TRANSFORMER
+declare namespace ns18 {
+  export function foo18(): void;
+  export class className18 {
+      prop81: number;
+      prop82: interName18 | undefined;
+  }
+  interface interName18 {
+  }
+  export {};
 }
+export { ns17, ns18 };
