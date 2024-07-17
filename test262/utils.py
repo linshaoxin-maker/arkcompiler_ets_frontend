@@ -78,7 +78,7 @@ def exec_command(cmd_args, timeout=DEFAULT_TIMEOUT, custom_cwd=None):
         for err in errs_str.split("\n"):
             if "memset will be used instead" not in err and "This is the expected behaviour if you are running under QEMU" not in err and "Can't connect to server" not in err:
                 list_errs.append(err)
-        
+
         if len(list_errs) != 1:
             output(1, "".join(list_errs))
             return 1
