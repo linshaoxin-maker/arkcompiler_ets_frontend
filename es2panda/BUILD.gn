@@ -294,7 +294,6 @@ config("es2abc_config_common") {
     "$ark_root:ark_config",
     "$sdk_libc_secshared_config",
     "$ark_root/libpandafile:arkfile_public_config",
-    "$ark_root/libpandabase:arkbase_public_config",
     "$ark_root/assembler:arkassembler_public_config",
     "$ark_root/abc2program:abc2program_public_config",
     ":es2abc_config_src",
@@ -414,6 +413,7 @@ ohos_static_library("es2panda_lib") {
       "runtime_core:libarkbase_frontend_static",
       "runtime_core:libarkfile_frontend_static",
       "runtime_core:libarkziparchive_frontend_static",
+      "runtime_core:libarkbase_static",
     ]
 
     if (enable_bytecode_optimizer) {
@@ -475,9 +475,15 @@ ohos_executable("es2panda") {
   external_deps = [ "zlib:libz" ]
 
   if (!is_arkui_x) {
-    external_deps += [ "json:nlohmann_json_static" ]
+    external_deps += [
+      "json:nlohmann_json_static",
+      "runtime_core:libarkbase_static",
+    ]
   } else {
-    deps += [ "$ark_third_party_root/json:nlohmann_json_static" ]
+    deps += [
+      "$ark_third_party_root/json:nlohmann_json_static",
+      "$ark_root/libpandabase:libarkbase_static",
+    ]
   }
 
   ldflags = []
