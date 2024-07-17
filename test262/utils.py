@@ -73,9 +73,17 @@ def exec_command(cmd_args, timeout=DEFAULT_TIMEOUT, custom_cwd=None):
         (output_res, errs) = proc.communicate(timeout=timeout)
         ret_code = proc.poll()
 
-        if errs.decode(code_format, 'ignore') != '':
-            output(1, errs.decode(code_format, 'ignore'))
+        errs_str = errs.decode(code_format, 'ignore')
+        list_errs = []
+        for err in errs_str.split("\n"):
+            if "memset will be used instead" not in err and "This is the expected behaviour if you are running under QEMU" not in err and "Can't connect to server" not in err:
+                list_errs.append(err)
+        
+        if len(list_errs) != 1:
+            output(1, "".join(list_errs))
             return 1
+
+        errs = None
 
         if ret_code and ret_code != 1:
             code = ret_code

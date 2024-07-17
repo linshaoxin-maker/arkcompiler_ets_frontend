@@ -52,6 +52,9 @@ def parse_args():
     parser.add_argument("--js-file",
                         required=True,
                         help="js file")
+    parser.add_argument("--stub-file",
+                        required=False,
+                        help="stub file")
     parser.add_argument('--ark-frontend',
                         default=DEFAULT_ARK_FRONTEND,
                         required=False,
@@ -142,6 +145,7 @@ class ArkProgram():
         self.module_list = []
         self.dynamicImport_list = []
         self.js_file = ""
+        self.stub_file = ""
         self.module = False
         self.abc_file = ""
         self.arch = ARK_ARCH
@@ -211,6 +215,8 @@ class ArkProgram():
         self.dynamicImport_list = DYNAMIC_IMPORT_LIST
 
         self.js_file = self.args.js_file
+
+        self.stub_file = self.args.stub_file
 
         self.arch = self.args.ark_arch
 
@@ -562,6 +568,8 @@ class ArkProgram():
             cmd_args.append("--compiler-opt-inlining=true")
             cmd_args.append("--compiler-max-inline-bytecodes=45")
             cmd_args.append("--compiler-opt-level=2")
+            if self.stub_file != "":
+                cmd_args.append(f"--stub-file={self.stub_file}")
             if self.disable_force_gc:
                 cmd_args.append(f"--enable-force-gc=false")
             cmd_args.append(f'--compiler-pgo-profiler-path={file_name_pre}.ap')
@@ -622,6 +630,8 @@ class ArkProgram():
 
         record_name = os.path.splitext(os.path.split(self.js_file)[1])[0]
         cmd_args.insert(-1, f'--entry-point={record_name}')
+        if self.stub_file != "":
+            cmd_args.insert(-1, f'--stub-file={self.stub_file}')
         retcode = exec_command(cmd_args)
         if retcode:
             print_command(cmd_args)
@@ -721,6 +731,8 @@ class ArkProgram():
                         f'--compiler-pgo-profiler-path={file_name_pre}.ap',
                         "--asm-interpreter=true",
                         f'--entry-point={record_name}']
+        if self.stub_file != "":
+                cmd_args.append(f"--stub-file={self.stub_file}")
         if self.disable_force_gc:
             cmd_args.append(f"--enable-force-gc=false")
         cmd_args.append(f'{file_name_pre}.abc')
