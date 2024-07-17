@@ -112,9 +112,9 @@ namespace secharmony {
           return node;
         }
 
+        performancePrinter?.singleFilePrinter?.startEvent(EventList.PROPERTY_OBFUSCATION, performancePrinter.timeSumPrinter);
         collectReservedNames(node);
 
-        performancePrinter?.singleFilePrinter?.startEvent(EventList.PROPERTY_OBFUSCATION, performancePrinter.timeSumPrinter);
         let ret: Node = renameProperties(node);
         swapMangledTable();
         let parentNodes = setParentRecursive(ret, true);
