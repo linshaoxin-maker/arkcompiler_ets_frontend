@@ -18,5 +18,5 @@ class A<T extends Object> {
         this.data[2].equals(e);
     }
 
-    private data: T[];
+    private data: T[] = [];
 }

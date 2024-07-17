@@ -21000,6 +21000,20 @@
                 }
               }
             },
+            "value": {
+              "type": "ArrayExpression",
+              "elements": [],
+              "loc": {
+                "start": {
+                  "line": 238,
+                  "column": 25
+                },
+                "end": {
+                  "line": 238,
+                  "column": 27
+                }
+              }
+            },
             "accessibility": "private",
             "static": false,
             "readonly": false,
@@ -21052,11 +21066,11 @@
               "loc": {
                 "start": {
                   "line": 238,
-                  "column": 22
+                  "column": 23
                 },
                 "end": {
                   "line": 238,
-                  "column": 23
+                  "column": 24
                 }
               }
             },
@@ -21069,7 +21083,7 @@
               },
               "end": {
                 "line": 238,
-                "column": 23
+                "column": 27
               }
             }
           },
