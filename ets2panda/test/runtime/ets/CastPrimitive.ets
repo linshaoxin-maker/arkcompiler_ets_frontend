@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 - 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -80,6 +80,17 @@ function main(): void {
 
   i = false;
   assert i as boolean == false;
+
+  assert 4294967296.0 as byte == -1;
+  assert 4294967296.0 as char == c'\uFFFF';
+  assert 4294967296.0 as short == -1;
+  assert 4294967296.0 as int == Int.MAX_VALUE;
+  assert 4294967296.0 as long == 4294967296;
+  assert -4294967296.0 as byte == 0;
+  assert -4294967296.0 as char == c'\u0000';
+  assert -4294967296.0 as short == 0;
+  assert -4294967296.0 as int == Int.MIN_VALUE;
+  assert -4294967296.0 as long == -4294967296;
 
   return;
 }
