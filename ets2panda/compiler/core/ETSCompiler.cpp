@@ -1984,7 +1984,7 @@ void ETSCompiler::CompileCastUnboxable(const ir::TSAsExpression *expr) const
     }
 }
 
-void ETSCompiler::CompileCast(const ir::TSAsExpression *expr) const
+void ETSCompiler::CompileCastPrimitives(const ir::TSAsExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
     auto *targetType = etsg->Checker()->GetApparentType(expr->TsType());
@@ -2022,6 +2022,18 @@ void ETSCompiler::CompileCast(const ir::TSAsExpression *expr) const
             etsg->CastToDouble(expr);
             break;
         }
+        default: {
+            UNREACHABLE();
+        }
+    }
+}
+
+void ETSCompiler::CompileCast(const ir::TSAsExpression *expr) const
+{
+    ETSGen *etsg = GetETSGen();
+    auto *targetType = etsg->Checker()->GetApparentType(expr->TsType());
+
+    switch (checker::ETSChecker::TypeKind(targetType)) {
         case checker::TypeFlag::ETS_ARRAY:
         case checker::TypeFlag::ETS_OBJECT:
         case checker::TypeFlag::ETS_TYPE_PARAMETER:
@@ -2049,7 +2061,7 @@ void ETSCompiler::CompileCast(const ir::TSAsExpression *expr) const
             break;
         }
         default: {
-            UNREACHABLE();
+            return CompileCastPrimitives(expr);
         }
     }
 }
