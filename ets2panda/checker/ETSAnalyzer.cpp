@@ -697,7 +697,7 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
             if (expr->Elements().empty()) {
                 expr->preferredType_ = preferredType;
             } else {
-                if (expr->Elements()[0]->IsArrayExpression()) {
+                if (preferredType != nullptr && expr->Elements()[0]->IsArrayExpression()) {
                     if (preferredType->IsETSTypeAliasType() && preferredType->AsETSTypeAliasType()->IsRecursive()) {
                         expr->Elements()[0]->AsArrayExpression()->preferredType_ = preferredType;
                     } else {
