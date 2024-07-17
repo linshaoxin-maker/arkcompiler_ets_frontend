@@ -732,7 +732,7 @@ class ArkProgram():
                         "--asm-interpreter=true",
                         f'--entry-point={record_name}']
         if self.stub_file != "":
-                cmd_args.append(f"--stub-file={self.stub_file}")
+            cmd_args.append(f"--stub-file={self.stub_file}")
         if self.disable_force_gc:
             cmd_args.append(f"--enable-force-gc=false")
         cmd_args.append(f'{file_name_pre}.abc')
