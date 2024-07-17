@@ -53,6 +53,7 @@ def parse_args():
                         required=True,
                         help="js file")
     parser.add_argument("--stub-file",
+                        default=DEFAULT_STUB_FILE,
                         required=False,
                         help="stub file")
     parser.add_argument('--ark-frontend',
