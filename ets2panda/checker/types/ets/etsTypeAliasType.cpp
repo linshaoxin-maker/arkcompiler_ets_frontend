@@ -26,7 +26,7 @@ namespace ark::es2panda::checker {
 ETSTypeAliasType::ETSTypeAliasType(ETSChecker *checker, util::StringView name, bool isRecursive)
     : Type(TypeFlag::ETS_TYPE_ALIAS),
       name_(name),
-	  isRecursive_(isRecursive),
+      isRecursive_(isRecursive),
       instantiationMap_(checker->Allocator()->Adapter()),
       typeArguments_(checker->Allocator()->Adapter())
 {
@@ -35,10 +35,10 @@ ETSTypeAliasType::ETSTypeAliasType(ETSChecker *checker, util::StringView name, b
 
 void ETSTypeAliasType::ToString(std::stringstream &ss, bool precise) const
 {
-	if (!isRecursive_) {
-		subType_->ToString(ss, precise);
-		return;
-	}
+    if (!isRecursive_) {
+        subType_->ToString(ss, precise);
+        return;
+    }
 
     if (precise) {
         ToAssemblerType(ss);
@@ -61,36 +61,36 @@ void ETSTypeAliasType::ToString(std::stringstream &ss, bool precise) const
 
 void ETSTypeAliasType::ToAssemblerType(std::stringstream &ss) const
 {
-	if(subType_ == nullptr || recursionCount_ > 0) {
-		globalETSObjectType_->ToAssemblerType(ss);
-		return;
-	}
+    if (subType_ == nullptr || recursionCount_ > 0) {
+        globalETSObjectType_->ToAssemblerType(ss);
+        return;
+    }
 
-	recursionCount_++;
-	subType_->ToAssemblerType(ss);
-	recursionCount_--;
+    recursionCount_++;
+    subType_->ToAssemblerType(ss);
+    recursionCount_--;
 }
 
 void ETSTypeAliasType::ToAssemblerTypeWithRank(std::stringstream &ss) const
 {
-	if (subType_ == nullptr || recursionCount_ > 0) {
-		globalETSObjectType_->ToAssemblerType(ss);
-		return;
-	}
+    if (subType_ == nullptr || recursionCount_ > 0) {
+        globalETSObjectType_->ToAssemblerType(ss);
+        return;
+    }
 
-	recursionCount_++;
-	subType_->ToAssemblerTypeWithRank(ss);
-	recursionCount_--;
+    recursionCount_++;
+    subType_->ToAssemblerTypeWithRank(ss);
+    recursionCount_--;
 }
 
 void ETSTypeAliasType::ToDebugInfoType(std::stringstream &ss) const
 {
-	if (isRecursive_) {
-		ss << name_;
-		return;
-	}
+    if (isRecursive_) {
+        ss << name_;
+        return;
+    }
 
-	subType_->ToDebugInfoType(ss);
+    subType_->ToDebugInfoType(ss);
 }
 
 void ETSTypeAliasType::IsArgumentsIdentical(TypeRelation *relation, Type *other)
@@ -210,12 +210,13 @@ void ETSTypeAliasType::IsSubtypeOf(TypeRelation *relation, Type *target)
     }
 }
 
-uint32_t ETSTypeAliasType::Rank() const {
-	if (isRecursive_) {
-		return 0;
-	}
+uint32_t ETSTypeAliasType::Rank() const
+{
+    if (isRecursive_) {
+        return 0;
+    }
 
-	return subType_->Rank();
+    return subType_->Rank();
 }
 
 Type *ETSTypeAliasType::Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes)

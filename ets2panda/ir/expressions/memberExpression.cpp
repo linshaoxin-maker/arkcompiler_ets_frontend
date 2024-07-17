@@ -360,7 +360,7 @@ checker::Type *MemberExpression::CheckComputed(checker::ETSChecker *checker, che
                 return CheckTupleAccessMethod(checker, baseType);
             }
 
-            if (baseType->IsETSTypeAliasType() &&  baseType->AsETSTypeAliasType()->IsRecursive()) {
+            if (baseType->IsETSTypeAliasType() && baseType->AsETSTypeAliasType()->IsRecursive()) {
                 return baseType;
             }
 

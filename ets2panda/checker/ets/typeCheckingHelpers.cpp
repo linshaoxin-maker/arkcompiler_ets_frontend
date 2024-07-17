@@ -588,8 +588,8 @@ Type *ETSChecker::GetTypeFromTypeAliasReference(varbinder::Variable *var)
 
     recursiveType = CreateETSTypeAliasType(aliasTypeNode->Id()->Name(), isRecursive);
     if (aliasTypeNode->TypeParams() != nullptr) {
-           recursiveType->AsETSTypeAliasType()->SetTypeArguments(
-        		   CreateUnconstrainedTypeParameters(aliasTypeNode->TypeParams()));
+        recursiveType->AsETSTypeAliasType()->SetTypeArguments(
+            CreateUnconstrainedTypeParameters(aliasTypeNode->TypeParams()));
     }
     tse.SetElementType(recursiveType);
 
@@ -784,7 +784,7 @@ ir::BoxingUnboxingFlags ETSChecker::GetBoxingFlag(Type *const boxingType)
             return ir::BoxingUnboxingFlags::BOX_TO_DOUBLE;
         }
         default:
-           return ir::BoxingUnboxingFlags::NONE;
+            return ir::BoxingUnboxingFlags::NONE;
     }
 }
 
@@ -817,7 +817,7 @@ ir::BoxingUnboxingFlags ETSChecker::GetUnboxingFlag(Type const *const unboxingTy
             return ir::BoxingUnboxingFlags::UNBOX_TO_DOUBLE;
         }
         default:
-        	return ir::BoxingUnboxingFlags::NONE;
+            return ir::BoxingUnboxingFlags::NONE;
     }
 }
 

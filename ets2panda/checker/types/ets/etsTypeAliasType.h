@@ -53,8 +53,9 @@ public:
         return {false, false};
     }
 
-    bool IsRecursive() const {
-    	return isRecursive_;
+    bool IsRecursive() const
+    {
+        return isRecursive_;
     }
 
     void ToString(std::stringstream &ss, bool precise) const override;
@@ -80,25 +81,24 @@ public:
 
     void SetTypeArguments(ArenaVector<Type *> typeArguments);
 
-
-    // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-    #define TYPE_AS_CASTS(typeFlag, typeName)                    \
-        typeName *As##typeName() override                        \
-        {                                                        \
-			if (typeFlag == TypeFlag::ETS_TYPE_ALIAS) {          \
-			    return reinterpret_cast<typeName *>(this);       \
-			}                                                    \
-            return subType_->As##typeName();                     \
-        }                                                        \
-        const typeName *As##typeName() const override            \
-        {                                                        \
-			if (typeFlag == TypeFlag::ETS_TYPE_ALIAS) {          \
-			  return reinterpret_cast<const typeName *>(this);   \
-			}											         \
-			return subType_->As##typeName();                     \
-        }
-        TYPE_MAPPING(TYPE_AS_CASTS)
-    #undef TYPE_AS_CASTS
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define TYPE_AS_CASTS(typeFlag, typeName)                    \
+    typeName *As##typeName() override                        \
+    {                                                        \
+        if (typeFlag == TypeFlag::ETS_TYPE_ALIAS) {          \
+            return reinterpret_cast<typeName *>(this);       \
+        }                                                    \
+        return subType_->As##typeName();                     \
+    }                                                        \
+    const typeName *As##typeName() const override            \
+    {                                                        \
+        if (typeFlag == TypeFlag::ETS_TYPE_ALIAS) {          \
+            return reinterpret_cast<const typeName *>(this); \
+        }                                                    \
+        return subType_->As##typeName();                     \
+    }
+    TYPE_MAPPING(TYPE_AS_CASTS)
+#undef TYPE_AS_CASTS
 
 private:
     ETSTypeAliasType *GetInstantiatedType(util::StringView hash);

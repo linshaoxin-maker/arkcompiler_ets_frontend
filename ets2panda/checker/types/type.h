@@ -58,7 +58,7 @@ public:
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TYPE_IS_CHECKS(typeFlag, typeName) \
-    bool Is##typeName() const      \
+    bool Is##typeName() const              \
     {                                      \
         return HasTypeFlag(typeFlag);      \
     }
