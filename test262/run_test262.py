@@ -696,7 +696,7 @@ def get_disable_force_gc(host_args, args):
     return host_args
 
 def get_host_args_of_stub_file(args, host_args):
-    host_args += f"--disable-force-gc "
+    host_args += f"--stub-file={args.stub_file} "
 
     return host_args
 
