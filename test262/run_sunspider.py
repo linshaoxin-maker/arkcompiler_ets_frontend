@@ -673,7 +673,6 @@ class ArkProgram():
             if self.run_jit or self.run_baseline_jit:
                 cmd_args.insert(-1, f'--compiler-target-triple=aarch64-unknown-linux-gnu')
             if self.run_baseline_jit:
-                cmd_args.insert(-1, f'--stub-file=../../out/arm64.release/gen/arkcompiler/ets_runtime/stub.an')
                 cmd_args.insert(-1, f'--test-assert=true')
         elif self.arch == ARK_ARCH_LIST[2]:
             qemu_tool = "qemu-arm"
@@ -699,6 +698,8 @@ class ArkProgram():
         if self.run_baseline_jit:
             cmd_args.insert(-1, f'--compiler-enable-baselinejit=true')
             cmd_args.insert(-1, f'--compiler-force-baselinejit-compile-main=true')
+        if self.stub_file != "":
+            cmd_args.insert(-1, f"--stub-file={self.stub_file}")
         retcode = 0
         if self.abc2program:
             retcode = self.execute_abc2program_outputs(cmd_args)
