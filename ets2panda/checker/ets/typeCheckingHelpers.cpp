@@ -580,25 +580,25 @@ Type *ETSChecker::GetTypeFromTypeAliasReference(varbinder::Variable *var)
 
     TypeStackElement tse(this, aliasTypeNode, "Circular type alias reference", aliasTypeNode->Start(), isRecursive);
 
-    auto *recursiveType = tse.GetElementType();
+    auto *typeAliasType = tse.GetElementType();
 
-    if (recursiveType != nullptr) {
-        return recursiveType;
+    if (typeAliasType != nullptr) {
+        return typeAliasType;
     }
 
-    recursiveType = CreateETSTypeAliasType(aliasTypeNode->Id()->Name(), isRecursive);
+    typeAliasType = CreateETSTypeAliasType(aliasTypeNode->Id()->Name(), isRecursive);
     if (aliasTypeNode->TypeParams() != nullptr) {
-        recursiveType->AsETSTypeAliasType()->SetTypeArguments(
+        typeAliasType->AsETSTypeAliasType()->SetTypeArguments(
             CreateUnconstrainedTypeParameters(aliasTypeNode->TypeParams()));
     }
-    tse.SetElementType(recursiveType);
+    tse.SetElementType(typeAliasType);
 
     aliasTypeNode->Check(this);
     auto *aliasedType = aliasTypeNode->TypeAnnotation()->GetType(this);
 
-    recursiveType->AsETSTypeAliasType()->SetSubType(aliasedType);
-    recursiveType->AsETSTypeAliasType()->ApplaySubstitution(Relation());
-    aliasedType = recursiveType;
+    typeAliasType->AsETSTypeAliasType()->SetTargetType(aliasedType);
+    typeAliasType->AsETSTypeAliasType()->ApplaySubstitution(Relation());
+    aliasedType = typeAliasType;
 
     var->SetTsType(aliasedType);
     return aliasedType;

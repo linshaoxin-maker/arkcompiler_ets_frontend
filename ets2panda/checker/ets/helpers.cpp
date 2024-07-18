@@ -936,7 +936,6 @@ std::optional<SmartCastTuple> CheckerContext::ResolveSmartCastTypes()
     }
 
     ASSERT(testCondition_.testedType != nullptr);
-
     // NOTE: functional types are not supported now
     if (!testCondition_.testedType->IsETSReferenceType() ||
         testCondition_.testedType->HasTypeFlag(TypeFlag::FUNCTION)) {

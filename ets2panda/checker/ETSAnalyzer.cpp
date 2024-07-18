@@ -682,7 +682,7 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
     if (expr->preferredType_ != nullptr) {
         if (expr->preferredType_->IsETSTypeAliasType() && expr->preferredType_->AsETSTypeAliasType()->IsRecursive()) {
             expr->preferredType_ =
-                checker->CreateETSArrayType(expr->preferredType_->AsETSTypeAliasType()->GetSubType());
+                checker->CreateETSArrayType(expr->preferredType_->AsETSTypeAliasType()->GetTargetType());
         }
 
         if (expr->preferredType_->IsETSUnionType()) {

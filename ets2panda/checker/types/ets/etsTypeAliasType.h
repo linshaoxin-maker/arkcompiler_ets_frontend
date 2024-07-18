@@ -31,21 +31,21 @@ public:
         return name_;
     }
 
-    Type *GetSubType()
+    Type *GetTargetType()
     {
-        return subType_;
+        return targetType_;
     }
 
-    const Type *GetSubType() const
+    const Type *GetTargetType() const
     {
-        return subType_;
+        return targetType_;
     }
 
-    void SetSubType(Type *subType)
+    void SetTargetType(Type *targetType)
     {
-        subType_ = subType;
-        AddTypeFlag(subType_->TypeFlags());
-        SetVariable(subType_->Variable());
+        targetType_ = targetType;
+        AddTypeFlag(targetType_->TypeFlags());
+        SetVariable(targetType_->Variable());
     }
 
     std::tuple<bool, bool> ResolveConditionExpr() const override
@@ -88,14 +88,14 @@ public:
         if (typeFlag == TypeFlag::ETS_TYPE_ALIAS) {          \
             return reinterpret_cast<typeName *>(this);       \
         }                                                    \
-        return subType_->As##typeName();                     \
+        return targetType_->As##typeName();                  \
     }                                                        \
     const typeName *As##typeName() const override            \
     {                                                        \
         if (typeFlag == TypeFlag::ETS_TYPE_ALIAS) {          \
             return reinterpret_cast<const typeName *>(this); \
         }                                                    \
-        return subType_->As##typeName();                     \
+        return targetType_->As##typeName();                  \
     }
     TYPE_MAPPING(TYPE_AS_CASTS)
 #undef TYPE_AS_CASTS
@@ -117,7 +117,7 @@ private:
     bool isRecursive_;
     ETSTypeAliasType *base_ = nullptr;
     ETSTypeAliasType *parent_ = nullptr;
-    Type *subType_ = nullptr;
+    Type *targetType_ = nullptr;
     Type *globalETSObjectType_;
     InstantiationMap instantiationMap_;
     ArenaVector<Type *> typeArguments_;

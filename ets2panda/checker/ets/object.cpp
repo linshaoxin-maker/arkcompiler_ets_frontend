@@ -1868,7 +1868,7 @@ Type const *ETSChecker::GetApparentType(Type const *type) const
     }
     // Relaxed for some types
     if (type->IsETSTypeAliasType()) {
-        return GetApparentType(type->AsETSTypeAliasType()->GetSubType());
+        return GetApparentType(type->AsETSTypeAliasType()->GetTargetType());
     }
     if (type->IsETSTypeParameter()) {
         return GetApparentType(type->AsETSTypeParameter()->GetConstraintType());

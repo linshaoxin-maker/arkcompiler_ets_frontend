@@ -36,7 +36,7 @@ ETSTypeAliasType::ETSTypeAliasType(ETSChecker *checker, util::StringView name, b
 void ETSTypeAliasType::ToString(std::stringstream &ss, bool precise) const
 {
     if (!isRecursive_) {
-        subType_->ToString(ss, precise);
+        targetType_->ToString(ss, precise);
         return;
     }
 
@@ -61,25 +61,25 @@ void ETSTypeAliasType::ToString(std::stringstream &ss, bool precise) const
 
 void ETSTypeAliasType::ToAssemblerType(std::stringstream &ss) const
 {
-    if (subType_ == nullptr || recursionCount_ > 0) {
+    if (targetType_ == nullptr || recursionCount_ > 0) {
         globalETSObjectType_->ToAssemblerType(ss);
         return;
     }
 
     recursionCount_++;
-    subType_->ToAssemblerType(ss);
+    targetType_->ToAssemblerType(ss);
     recursionCount_--;
 }
 
 void ETSTypeAliasType::ToAssemblerTypeWithRank(std::stringstream &ss) const
 {
-    if (subType_ == nullptr || recursionCount_ > 0) {
+    if (targetType_ == nullptr || recursionCount_ > 0) {
         globalETSObjectType_->ToAssemblerType(ss);
         return;
     }
 
     recursionCount_++;
-    subType_->ToAssemblerTypeWithRank(ss);
+    targetType_->ToAssemblerTypeWithRank(ss);
     recursionCount_--;
 }
 
@@ -90,7 +90,7 @@ void ETSTypeAliasType::ToDebugInfoType(std::stringstream &ss) const
         return;
     }
 
-    subType_->ToDebugInfoType(ss);
+    targetType_->ToDebugInfoType(ss);
 }
 
 void ETSTypeAliasType::IsArgumentsIdentical(TypeRelation *relation, Type *other)
@@ -125,8 +125,8 @@ void ETSTypeAliasType::Identical(TypeRelation *relation, Type *other)
         }
     }
 
-    if (subType_ != nullptr) {
-        subType_->Identical(relation, other);
+    if (targetType_ != nullptr) {
+        targetType_->Identical(relation, other);
     }
 }
 
@@ -136,9 +136,9 @@ void ETSTypeAliasType::AssignmentTarget(TypeRelation *relation, Type *source)
         relation->IsIdenticalTo(this, source);
     }
 
-    if (!relation->IsTrue() && relation->TypeRecursionPossible(GetBaseType()) && subType_ != nullptr) {
+    if (!relation->IsTrue() && relation->TypeRecursionPossible(GetBaseType()) && targetType_ != nullptr) {
         relation->IncreaseTypeRecursionCount(GetBaseType());
-        relation->IsAssignableTo(source, subType_);
+        relation->IsAssignableTo(source, targetType_);
         relation->DecreaseTypeRecursionCount(GetBaseType());
     }
 }
@@ -149,9 +149,9 @@ bool ETSTypeAliasType::AssignmentSource(TypeRelation *relation, Type *target)
         relation->IsIdenticalTo(target, this);
     }
 
-    if (!relation->IsTrue() && relation->TypeRecursionPossible(GetBaseType()) && subType_ != nullptr) {
+    if (!relation->IsTrue() && relation->TypeRecursionPossible(GetBaseType()) && targetType_ != nullptr) {
         relation->IncreaseTypeRecursionCount(GetBaseType());
-        relation->IsAssignableTo(subType_, target);
+        relation->IsAssignableTo(targetType_, target);
         relation->DecreaseTypeRecursionCount(GetBaseType());
     }
 
@@ -166,7 +166,7 @@ void ETSTypeAliasType::Cast(TypeRelation *const relation, Type *const target)
 
     if (!relation->IsTrue() && relation->TypeRecursionPossible(GetBaseType())) {
         relation->IncreaseTypeRecursionCount(GetBaseType());
-        subType_->Cast(relation, target);
+        targetType_->Cast(relation, target);
         relation->DecreaseTypeRecursionCount(GetBaseType());
     }
 }
@@ -179,7 +179,7 @@ void ETSTypeAliasType::CastTarget(TypeRelation *relation, Type *source)
 
     if (!relation->IsTrue() && relation->TypeRecursionPossible(GetBaseType())) {
         relation->IncreaseTypeRecursionCount(GetBaseType());
-        subType_->CastTarget(relation, source);
+        targetType_->CastTarget(relation, source);
         relation->DecreaseTypeRecursionCount(GetBaseType());
     }
 }
@@ -190,9 +190,9 @@ void ETSTypeAliasType::IsSupertypeOf(TypeRelation *relation, Type *source)
         relation->IsIdenticalTo(this, source);
     }
 
-    if (!relation->IsTrue() && relation->TypeRecursionPossible(GetBaseType()) && subType_ != nullptr) {
+    if (!relation->IsTrue() && relation->TypeRecursionPossible(GetBaseType()) && targetType_ != nullptr) {
         relation->IncreaseTypeRecursionCount(GetBaseType());
-        relation->IsSupertypeOf(subType_, source);
+        relation->IsSupertypeOf(targetType_, source);
         relation->DecreaseTypeRecursionCount(GetBaseType());
     }
 }
@@ -203,9 +203,9 @@ void ETSTypeAliasType::IsSubtypeOf(TypeRelation *relation, Type *target)
         relation->IsIdenticalTo(this, target);
     }
 
-    if (!relation->IsTrue() && relation->TypeRecursionPossible(GetBaseType()) && subType_ != nullptr) {
+    if (!relation->IsTrue() && relation->TypeRecursionPossible(GetBaseType()) && targetType_ != nullptr) {
         relation->IncreaseTypeRecursionCount(GetBaseType());
-        relation->IsSupertypeOf(target, subType_);
+        relation->IsSupertypeOf(target, targetType_);
         relation->DecreaseTypeRecursionCount(GetBaseType());
     }
 }
@@ -216,12 +216,12 @@ uint32_t ETSTypeAliasType::Rank() const
         return 0;
     }
 
-    return subType_->Rank();
+    return targetType_->Rank();
 }
 
 Type *ETSTypeAliasType::Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes)
 {
-    return subType_->Instantiate(allocator, relation, globalTypes);
+    return targetType_->Instantiate(allocator, relation, globalTypes);
 }
 
 ETSTypeAliasType *ETSTypeAliasType::GetInstantiatedType(util::StringView hash)
@@ -269,7 +269,7 @@ void ETSTypeAliasType::ApplaySubstitution(TypeRelation *relation)
         std::vector<ETSTypeAliasType *> types;
 
         for (auto [name, type] : instantiationMap_) {
-            if (type->subType_ == nullptr) {
+            if (type->targetType_ == nullptr) {
                 types.push_back(type);
             }
         }
@@ -281,7 +281,7 @@ void ETSTypeAliasType::ApplaySubstitution(TypeRelation *relation)
 
     while (!(types = getTypes(), types.empty())) {
         for (auto type : types) {
-            type->SetSubType(type->parent_->subType_->Substitute(relation, type->substitution_));
+            type->SetTargetType(type->parent_->targetType_->Substitute(relation, type->substitution_));
         }
     }
 }
@@ -320,8 +320,8 @@ Type *ETSTypeAliasType::Substitute(TypeRelation *relation, const Substitution *s
 
     EmplaceInstantiatedType(hash, copiedType);
 
-    if (subType_ != nullptr) {
-        copiedType->SetSubType(subType_->Substitute(relation, substitution));
+    if (targetType_ != nullptr) {
+        copiedType->SetTargetType(targetType_->Substitute(relation, substitution));
     }
 
     return copiedType;
