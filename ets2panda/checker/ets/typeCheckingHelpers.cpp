@@ -522,6 +522,53 @@ void ETSChecker::CheckEtsFunctionType(ir::Identifier *const ident, ir::Identifie
     }
 }
 
+bool ETSChecker::IsRecursiveType(const ir::TSTypeAliasDeclaration *const typeAliasNode)
+{
+    auto typeParamCheck = [typeAliasNode](ir::ETSTypeReferencePart *part) {
+        if (part->TypeParams() == nullptr) {
+            return false;
+        }
+        for (const auto &param : part->TypeParams()->Params()) {
+            if (param->IsETSTypeReference() &&
+                param->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Name() == typeAliasNode->Id()->Name()) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    auto recursiveArrayCheck = [typeAliasNode](ir::TSArrayType *array) {
+        if (array->ElementType()->IsETSTypeReference()) {
+            return array->ElementType()->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Name() ==
+                   typeAliasNode->Id()->Name();
+        }
+        return false;
+    };
+
+    if (typeAliasNode->TypeAnnotation()->IsETSUnionType()) {
+        for (auto &type : typeAliasNode->TypeAnnotation()->AsETSUnionType()->Types()) {
+            if (type->IsETSTypeReference() && typeParamCheck(type->AsETSTypeReference()->Part())) {
+                return true;
+            }
+            if (type->IsTSArrayType() && recursiveArrayCheck(type->AsTSArrayType())) {
+                return true;
+            }
+        }
+    }
+
+    if (typeAliasNode->TypeAnnotation()->IsTSArrayType() &&
+        recursiveArrayCheck(typeAliasNode->TypeAnnotation()->AsTSArrayType())) {
+        return true;
+    }
+
+    if (typeAliasNode->TypeAnnotation()->IsETSTypeReference() &&
+        typeParamCheck(typeAliasNode->TypeAnnotation()->AsETSTypeReference()->Part())) {
+        return true;
+    }
+
+    return false;
+}
+
 Type *ETSChecker::GetTypeFromTypeAliasReference(varbinder::Variable *var)
 {
     if (var->TsType() != nullptr) {
@@ -529,9 +576,29 @@ Type *ETSChecker::GetTypeFromTypeAliasReference(varbinder::Variable *var)
     }
 
     auto *const aliasTypeNode = var->Declaration()->Node()->AsTSTypeAliasDeclaration();
-    TypeStackElement tse(this, aliasTypeNode, "Circular type alias reference", aliasTypeNode->Start());
+    auto isRecursive = IsRecursiveType(aliasTypeNode);
+
+    TypeStackElement tse(this, aliasTypeNode, "Circular type alias reference", aliasTypeNode->Start(), isRecursive);
+
+    auto *typeAliasType = tse.GetElementType();
+
+    if (typeAliasType != nullptr) {
+        return typeAliasType;
+    }
+
+    typeAliasType = CreateETSTypeAliasType(aliasTypeNode->Id()->Name(), isRecursive);
+    if (aliasTypeNode->TypeParams() != nullptr) {
+        typeAliasType->AsETSTypeAliasType()->SetTypeArguments(
+            CreateUnconstrainedTypeParameters(aliasTypeNode->TypeParams()));
+    }
+    tse.SetElementType(typeAliasType);
+
     aliasTypeNode->Check(this);
-    auto *const aliasedType = aliasTypeNode->TypeAnnotation()->GetType(this);
+    auto *aliasedType = aliasTypeNode->TypeAnnotation()->GetType(this);
+
+    typeAliasType->AsETSTypeAliasType()->SetTargetType(aliasedType);
+    typeAliasType->AsETSTypeAliasType()->ApplaySubstitution(Relation());
+    aliasedType = typeAliasType;
 
     var->SetTsType(aliasedType);
     return aliasedType;
@@ -717,7 +784,7 @@ ir::BoxingUnboxingFlags ETSChecker::GetBoxingFlag(Type *const boxingType)
             return ir::BoxingUnboxingFlags::BOX_TO_DOUBLE;
         }
         default:
-            UNREACHABLE();
+            return ir::BoxingUnboxingFlags::NONE;
     }
 }
 
@@ -750,7 +817,7 @@ ir::BoxingUnboxingFlags ETSChecker::GetUnboxingFlag(Type const *const unboxingTy
             return ir::BoxingUnboxingFlags::UNBOX_TO_DOUBLE;
         }
         default:
-            UNREACHABLE();
+            return ir::BoxingUnboxingFlags::NONE;
     }
 }
 

@@ -426,6 +426,7 @@ set(ES2PANDA_LIB_SRC
   checker/types/ets/etsReadonlyType.cpp
   checker/types/ets/etsNullishTypes.cpp
   checker/types/ets/etsObjectType.cpp
+  checker/types/ets/etsTypeAliasType.cpp
   checker/types/ets/etsStringType.cpp
   checker/types/ets/etsBigIntType.cpp
   checker/types/ets/etsTupleType.cpp

@@ -67,12 +67,12 @@ public:
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TYPE_AS_CASTS(typeFlag, typeName)                \
-    typeName *As##typeName()                             \
+    virtual typeName *As##typeName()                     \
     {                                                    \
         ASSERT(Is##typeName());                          \
         return reinterpret_cast<typeName *>(this);       \
     }                                                    \
-    const typeName *As##typeName() const                 \
+    virtual const typeName *As##typeName() const         \
     {                                                    \
         ASSERT(Is##typeName());                          \
         return reinterpret_cast<const typeName *>(this); \

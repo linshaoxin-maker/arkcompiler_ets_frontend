@@ -274,7 +274,7 @@ checker::Type *MemberExpression::CheckIndexAccessMethod(checker::ETSChecker *che
     searchFlag |= checker::PropertySearchFlags::SEARCH_IN_BASE | checker::PropertySearchFlags::SEARCH_IN_INTERFACES;
     // NOTE(DZ) maybe we need to exclude static methods: search_flag &= ~(checker::PropertySearchFlags::SEARCH_STATIC);
 
-    if (objType_->HasTypeFlag(checker::TypeFlag::GENERIC)) {
+    if (objType_->HasTypeFlag(checker::TypeFlag::GENERIC | checker::TypeFlag::ETS_TYPE_ALIAS)) {
         searchFlag |= checker::PropertySearchFlags::SEARCH_ALL;
     }
 
@@ -358,6 +358,10 @@ checker::Type *MemberExpression::CheckComputed(checker::ETSChecker *checker, che
         if (baseType->IsETSArrayType()) {
             if (baseType->IsETSTupleType()) {
                 return CheckTupleAccessMethod(checker, baseType);
+            }
+
+            if (baseType->IsETSTypeAliasType() && baseType->AsETSTypeAliasType()->IsRecursive()) {
+                return baseType;
             }
 
             if (object_->IsArrayExpression() && property_->IsNumberLiteral()) {

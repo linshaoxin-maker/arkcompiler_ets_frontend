@@ -665,7 +665,7 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
         SetArrayPreferredTypeForNestedMemberExpressions(init->AsMemberExpression(), annotationType);
     }
 
-    if (init->IsArrayExpression() && annotationType->IsETSArrayType()) {
+    if (init->IsArrayExpression()) {
         if (annotationType->IsETSTupleType()) {
             ValidateTupleMinElementSize(init->AsArrayExpression(), annotationType->AsETSTupleType());
         }
@@ -1120,6 +1120,9 @@ static void CheckExpandedType(Type *expandedAliasType, std::set<util::StringView
         needToBeBoxed =
             objectType->GetDeclNode()->IsClassDefinition() || objectType->GetDeclNode()->IsTSInterfaceDeclaration();
         for (const auto typeArgument : objectType->TypeArguments()) {
+            if (typeArgument->IsETSTypeAliasType() && typeArgument->AsETSTypeAliasType()->IsRecursive()) {
+                continue;
+            }
             CheckExpandedType(typeArgument, parametersNeedToBeBoxed, needToBeBoxed);
         }
     } else if (expandedAliasType->IsETSTupleType()) {
@@ -1132,11 +1135,16 @@ static void CheckExpandedType(Type *expandedAliasType, std::set<util::StringView
         auto arrayType = expandedAliasType->AsETSArrayType();
         needToBeBoxed = false;
         auto elementType = arrayType->ElementType();
-        CheckExpandedType(elementType, parametersNeedToBeBoxed, needToBeBoxed);
+        if (!elementType->IsETSTypeAliasType() || !elementType->AsETSTypeAliasType()->IsRecursive()) {
+            CheckExpandedType(elementType, parametersNeedToBeBoxed, needToBeBoxed);
+        }
     } else if (expandedAliasType->IsETSUnionType()) {
         auto unionType = expandedAliasType->AsETSUnionType();
         needToBeBoxed = false;
         for (auto type : unionType->ConstituentTypes()) {
+            if (type->IsETSTypeAliasType() && type->AsETSTypeAliasType()->IsRecursive()) {
+                continue;
+            }
             CheckExpandedType(type, parametersNeedToBeBoxed, needToBeBoxed);
         }
     }
