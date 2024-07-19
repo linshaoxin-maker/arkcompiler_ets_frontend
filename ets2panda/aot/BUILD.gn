@@ -14,6 +14,12 @@
 import("//arkcompiler/runtime_core/static_core/ark_config.gni")
 import("//build/ohos.gni")
 
+group("es2panda_package") {
+  if (enable_static_vm) {
+    deps = [ ":es2panda" ]
+  }
+}
+
 ohos_executable("es2panda") {
   sources = [ "main.cpp" ]
 

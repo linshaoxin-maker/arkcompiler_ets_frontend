@@ -35,7 +35,7 @@
             ],
             "inner_kits": [
                 {
-                    "name": "//arkcompiler/ets_frontend/ets2panda/aot:es2panda"
+                    "name": "//arkcompiler/ets_frontend/ets2panda/aot:es2panda_package"
                 }
             ],
             "test": [
