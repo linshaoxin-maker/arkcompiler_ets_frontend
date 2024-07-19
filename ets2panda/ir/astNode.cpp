@@ -30,7 +30,7 @@ AstNode::AstNode(AstNode const &other)
     // boxing_unboxing_flags_ {};  leave default value!
 }
 
-[[nodiscard]] bool ir::AstNode::IsExportedType() const noexcept
+[[nodiscard]] bool AstNode::IsExportedType() const noexcept
 {
     if (UNLIKELY(IsClassDefinition())) {
         return this->parent_->IsExportedType();
@@ -52,6 +52,15 @@ varbinder::Scope *AstNode::Scope() const noexcept
 void AstNode::ClearScope() noexcept
 {
     UNREACHABLE();
+}
+
+[[nodiscard]] bool AstNode::HasAliasExport() const noexcept
+{
+    if (UNLIKELY(IsClassDefinition())) {
+        return parent_->HasAliasExport();
+    }
+
+    return (astNodeFlags_ & AstNodeFlags::HAS_EXPORT_ALIAS) != 0;
 }
 
 ir::ClassElement *AstNode::AsClassElement()
@@ -204,7 +213,6 @@ std::string AstNode::DumpEtsSrc() const
 
 void AstNode::SetOriginalNode(AstNode *originalNode)
 {
-    ASSERT(originalNode_ == nullptr);
     originalNode_ = originalNode;
 }
 

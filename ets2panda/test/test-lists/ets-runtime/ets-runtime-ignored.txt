@@ -10,9 +10,6 @@ StringFasta.ets
 # panda#10423
 generics_1.ets
 
-# panda#10623
-generic-set.ets
-
 # panda#11502
 nullCoalesc.ets
 
@@ -55,9 +52,6 @@ type_param_in_union.ets
 # verifier false positive for 64 bit instructions on union types.
 # Issue: #16216
 union_wide_property_access.ets
-
-# Issue: #16049
-increment-on-nullish-type.ets
 
 # Issue: #17711
 annotation_tests/AnnotationDeclare01.ets
