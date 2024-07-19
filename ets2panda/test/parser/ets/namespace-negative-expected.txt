@@ -1,0 +1,1 @@
+SyntaxError: Keyword 'constructor' is not allowed within namespace [namespace-negative.ets:17:5]

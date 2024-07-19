@@ -1687,6 +1687,11 @@ void JSCompiler::Compile(const ir::LabelledStatement *st) const
     CompileImpl(st, pg);
 }
 
+void JSCompiler::Compile([[maybe_unused]] const ir::NamespaceDeclaration *ns) const
+{
+    UNREACHABLE();
+}
+
 void JSCompiler::Compile(const ir::ReturnStatement *st) const
 {
     PandaGen *pg = GetPandaGen();

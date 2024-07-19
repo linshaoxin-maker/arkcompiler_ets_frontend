@@ -64,6 +64,7 @@
     _(MEMBER_EXPRESSION, MemberExpression)                                                \
     _(META_PROPERTY_EXPRESSION, MetaProperty)                                             \
     _(METHOD_DEFINITION, MethodDefinition)                                                \
+    _(NAMESPACE_DECLARATION, NamespaceDeclaration)                                        \
     _(NAMED_TYPE, NamedType)                                                              \
     _(NEW_EXPRESSION, NewExpression)                                                      \
     _(NULL_LITERAL, NullLiteral)                                                          \

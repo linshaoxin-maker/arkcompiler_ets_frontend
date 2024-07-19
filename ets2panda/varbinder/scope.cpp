@@ -810,6 +810,11 @@ void ClassScope::SetBindingProps(Decl *newDecl, BindingProps *props, bool isStat
                                    typeAliasScope_);
             break;
         }
+        case DeclType::NAMESPACE: {
+            props->SetBindingProps(VariableFlags::LOCAL, newDecl->Node()->AsNamespaceDeclaration()->Ident(),
+                                   isStatic ? staticDeclScope_ : instanceDeclScope_);
+            break;
+        }
         default: {
             UNREACHABLE();
             break;

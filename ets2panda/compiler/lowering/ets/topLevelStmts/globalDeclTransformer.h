@@ -29,6 +29,7 @@ class GlobalDeclTransformer : public ir::visitor::CustomAstVisitor {
         ir::AstNodeType::ETS_PACKAGE_DECLARATION,   ir::AstNodeType::ETS_IMPORT_DECLARATION,
         ir::AstNodeType::TS_TYPE_ALIAS_DECLARATION, ir::AstNodeType::EXPORT_ALL_DECLARATION,
         ir::AstNodeType::EXPORT_NAMED_DECLARATION,  ir::AstNodeType::REEXPORT_STATEMENT,
+        ir::AstNodeType::NAMESPACE_DECLARATION,
     };
 
     const std::unordered_set<ir::AstNodeType> propertiesDecl_ = {
@@ -64,6 +65,7 @@ public:
     ResultT TransformStatements(const ArenaVector<ir::Statement *> &stmts, bool addInitializer);
 
     void VisitFunctionDeclaration(ir::FunctionDeclaration *funcDecl) override;
+    void VisitNamespaceDeclaration(ir::NamespaceDeclaration *nsDecl) override;
     void VisitVariableDeclaration(ir::VariableDeclaration *varDecl) override;
     void HandleNode(ir::AstNode *node) override;
 

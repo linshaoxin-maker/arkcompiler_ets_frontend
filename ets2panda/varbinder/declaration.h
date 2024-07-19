@@ -257,6 +257,7 @@ public:
 class NameSpaceDecl : public Decl {
 public:
     explicit NameSpaceDecl(util::StringView name) : Decl(name) {}
+    explicit NameSpaceDecl(util::StringView name, ir::AstNode *node) : Decl(name, node) {}
 
     DeclType Type() const override
     {

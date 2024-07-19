@@ -627,6 +627,11 @@ void VarBinder::ResolveReference(ir::AstNode *childNode)
             BuildTypeAliasDeclaration(childNode->AsTSTypeAliasDeclaration());
             break;
         }
+        case ir::AstNodeType::NAMESPACE_DECLARATION: {
+            auto scopeCtx = LexicalScope<Scope>::Enter(this, childNode->AsNamespaceDeclaration()->Scope());
+            ResolveReferences(childNode);
+            break;
+        }
         default: {
             HandleCustomNodes(childNode);
             break;

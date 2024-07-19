@@ -1731,6 +1731,11 @@ void ETSCompiler::Compile(const ir::LabelledStatement *st) const
     CompileImpl(st, etsg);
 }
 
+void ETSCompiler::Compile([[maybe_unused]] const ir::NamespaceDeclaration *ns) const
+{
+    UNREACHABLE();
+}
+
 void ETSCompiler::Compile(const ir::ReturnStatement *st) const
 {
     ETSGen *etsg = GetETSGen();

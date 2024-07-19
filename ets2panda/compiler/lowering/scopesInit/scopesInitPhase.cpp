@@ -1091,6 +1091,18 @@ void InitScopesPhaseETS::VisitClassDefinition(ir::ClassDefinition *classDef)
     BindScopeNode(classScope, classDef);
 }
 
+void InitScopesPhaseETS::VisitNamespaceDeclaration(ir::NamespaceDeclaration *ns)
+{
+    auto name = ns->Ident()->Name();
+    auto decl = AddOrGetDecl<varbinder::NameSpaceDecl>(VarBinder(), name, ns, ns->Start(), name, ns);
+    decl->BindNode(ns);
+
+    auto scopeCtx = LexicalScopeCreateOrEnter<varbinder::ClassScope>(VarBinder(), ns);
+    CallNode(ns->Statements());
+
+    BindScopeNode(scopeCtx.GetScope(), ns);
+}
+
 void InitScopesPhaseETS::VisitTSInterfaceBody(ir::TSInterfaceBody *interfBody)
 {
     Iterate(interfBody);
