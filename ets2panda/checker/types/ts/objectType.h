@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,6 +32,8 @@ class IndexInfo;
 OBJECT_TYPE_MAPPING(DECLARE_OBJECT_TYPENAMES)
 #undef DECLARE_OBJECT_TYPENAMES
 
+using ENUMBITOPS_OPERATORS;
+
 enum class ObjectFlags : uint32_t {
     NO_OPTS = 0U,
     CHECK_EXCESS_PROPS = 1U << 0U,
@@ -40,7 +42,13 @@ enum class ObjectFlags : uint32_t {
     RESOLVED_DECLARED_MEMBERS = 1U << 3U,
 };
 
-DEFINE_BITOPS(ObjectFlags)
+}  // namespace ark::es2panda::checker
+
+template <>
+struct enumbitops::IsAllowedType<ark::es2panda::checker::ObjectFlags> : std::true_type {
+};
+
+namespace ark::es2panda::checker {
 
 class ObjectType : public Type {
 public:

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,6 +24,9 @@
 #include "util/ustring.h"
 
 namespace ark::es2panda::lexer {
+
+using ENUMBITOPS_OPERATORS;
+
 enum class TokenFlags : uint32_t {
     NONE = 0U,
     NEW_LINE = 1U << 0U,
@@ -33,7 +36,13 @@ enum class TokenFlags : uint32_t {
     NUMBER_HAS_UNDERSCORE = 1U << 5U,
 };
 
-DEFINE_BITOPS(TokenFlags)
+}  // namespace ark::es2panda::lexer
+
+template <>
+struct enumbitops::IsAllowedType<ark::es2panda::lexer::TokenFlags> : std::true_type {
+};
+
+namespace ark::es2panda::lexer {
 
 class Token {
 public:
