@@ -33,6 +33,7 @@
 #include <macros.h>
 #include <parser/program/program.h>
 #include <util/helpers.h>
+#include <util/timers.h>
 
 #include <string>
 #include <string_view>
@@ -69,9 +70,12 @@ void FunctionEmitter::Generate(util::PatchFix *patchFixHelper)
     GenLiteralBuffers();
     GenFunctionSource();
     GenConcurrentFunctionModuleRequests();
+
+    es2panda::util::Timer::timerStart(util::PATCH_FIX_DUMP_FUNCTION_INFO, std::string(pg_->Binder()->Program()->SourceFile()));
     if (patchFixHelper != nullptr) {
         patchFixHelper->ProcessFunction(pg_, func_, literalBuffers_);
     }
+    es2panda::util::Timer::timerEnd(util::PATCH_FIX_DUMP_FUNCTION_INFO, std::string(pg_->Binder()->Program()->SourceFile()));
 }
 
 const ArenaSet<util::StringView> &FunctionEmitter::Strings() const

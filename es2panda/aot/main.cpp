@@ -29,6 +29,7 @@
 #include <util/dumper.h>
 #include <util/moduleHelpers.h>
 #include <util/programCache.h>
+#include <util/timers.h>
 #include <util/workerQueue.h>
 
 namespace panda::es2panda::aot {
@@ -299,6 +300,7 @@ int Run(int argc, const char **argv)
         return 0;
     }
 
+    es2panda::util::Timer::timerStart(util::EVENT_TOTAL, "");
     if (options->CompilerOptions().bcVersion || options->CompilerOptions().bcMinVersion) {
         std::string version = options->CompilerOptions().bcVersion ?
             panda::panda_file::GetVersion(panda::panda_file::version) :
@@ -311,6 +313,7 @@ int Run(int argc, const char **argv)
     panda::ArenaAllocator allocator(panda::SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
 
     Compiler::SetExpectedProgsCount(options->CompilerOptions().sourceFiles.size());
+    es2panda::util::Timer::timerStart(util::EVENT_COMPILE, "");
     int ret = Compiler::CompileFiles(options->CompilerOptions(), programsInfo, &allocator);
 
     if (!CheckMergeModeConsistency(options->CompilerOptions().mergeAbc, programsInfo)) {
@@ -326,7 +329,9 @@ int Run(int argc, const char **argv)
             options->CompilerOptions(), programsInfo, &allocator);
         Compiler::SetExpectedProgsCount(Compiler::GetExpectedProgsCount() + 1);
     }
+    es2panda::util::Timer::timerEnd(util::EVENT_COMPILE, "");
 
+    es2panda::util::Timer::timerStart(util::EVENT_EMIT_ABC, "");
     // A mapping of program to its records which are resolved and collected as valid dependencies.
     std::map<std::string, std::unordered_set<std::string>> resolvedDepsRelation {};
 
@@ -337,6 +342,12 @@ int Run(int argc, const char **argv)
 
     if (!GenerateAbcFiles(programsInfo, options, Compiler::GetExpectedProgsCount(), resolvedDepsRelation)) {
         return 1;
+    }
+    es2panda::util::Timer::timerEnd(util::EVENT_EMIT_ABC, "");
+
+    es2panda::util::Timer::timerEnd(util::EVENT_TOTAL, "");
+    if (!options->PerfFile().empty()) {
+        es2panda::util::Timer::PrintTimers();
     }
 
     return 0;

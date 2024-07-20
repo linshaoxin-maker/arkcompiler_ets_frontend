@@ -257,6 +257,7 @@ es2panda_src = [
   "util/patchFix.cpp",
   "util/moduleHelpers.cpp",
   "util/symbolTable.cpp",
+  "util/timers.cpp",
   "util/ustring.cpp",
   "util/workerQueue.cpp",
   "util/commonUtil.cpp",
