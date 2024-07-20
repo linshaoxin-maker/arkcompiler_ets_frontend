@@ -43,9 +43,9 @@ class EmitMergedAbcJob : public util::WorkerJob {
 public:
     explicit EmitMergedAbcJob(const std::string &outputFileName, const std::string &transformLib,
                               const std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
-                              uint8_t targetApi)
+                              uint8_t targetApi, std::map<std::string, size_t> *statp)
         : outputFileName_(outputFileName), transformLib_(transformLib),
-        progsInfo_(progsInfo), targetApiVersion_(targetApi) {};
+        progsInfo_(progsInfo), targetApiVersion_(targetApi), statp_(statp) {};
     NO_COPY_SEMANTIC(EmitMergedAbcJob);
     NO_MOVE_SEMANTIC(EmitMergedAbcJob);
     ~EmitMergedAbcJob() override = default;
@@ -56,6 +56,7 @@ private:
     std::string transformLib_;
     const std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo_;
     uint8_t targetApiVersion_ = 0;
+    std::map<std::string, size_t> *statp_;
 };
 
 class EmitCacheJob : public util::WorkerJob {
