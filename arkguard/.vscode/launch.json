@@ -8,9 +8,9 @@
             "program": "--loader=ts-node/esm",
             "args": [
             "./src/cli/SecHarmony.ts",
-            "${workspaceFolder}/test/test.ts",
+            "${workspaceFolder}/test/grammar/toplevel_export/test2.ts",
             "--config-path",
-            "${workspaceFolder}/test/config.json"
+            "${workspaceFolder}/test/grammar/toplevel_export/obfConfig.json"
             ],
             "sourceMaps": true,
             "smartStep": true,
