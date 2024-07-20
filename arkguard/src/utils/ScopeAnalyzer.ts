@@ -497,7 +497,7 @@ namespace secharmony {
       if (exportObfuscation) {
         collectExportSymbols(node, propetyNameNode, exportDeclaration);
       } else {
-        collectExportNames(node, propetyNameNode, exportDeclaration);
+        collectExportWhiteList(node, propetyNameNode, exportDeclaration);
       }
 
       forEachChild(node, analyzeScope);
@@ -936,11 +936,13 @@ namespace secharmony {
         const nameSymbol = checker.getSymbolAtLocation(node.name);
         current.addDefinition(nameSymbol, true);
       } else if (isIdentifier(propetyNameNode)) {
+        /**
+         * import {a as b} from './filePath' // a might not have a symbol
+         */
         let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
         if (!propertySymbol) {
           noSymbolIdentifier.add(propetyNameNode.escapedText as string);
         } else {
-          current.defs.add(propertySymbol);
           current.addDefinition(propertySymbol, true);
         }
       }
@@ -971,13 +973,16 @@ namespace secharmony {
           if (propertySymbol) {
             current.addDefinition(propertySymbol, true);
           } else {
+            /**
+             * export {a as b} from './filePath.ts' // a might not have a symbol
+             */
             noSymbolIdentifier.add(propetyNameNode.escapedText as string);
           }
         }
       }
     }
 
-    function collectExportNames(node: ExportSpecifier, propetyNameNode: Identifier | undefined, exportDeclaration: any): void {
+    function collectExportWhiteList(node: ExportSpecifier, propetyNameNode: Identifier | undefined, exportDeclaration: any): void {
       /**
        * export {a as b}; // collect b
        * export {a}; // collect a
