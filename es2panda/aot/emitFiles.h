@@ -25,8 +25,9 @@ namespace panda::es2panda::aot {
 class EmitSingleAbcJob : public util::WorkerJob {
 public:
     explicit EmitSingleAbcJob(const std::string &outputFileName, panda::pandasm::Program *prog,
-                              std::map<std::string, size_t> *statp, uint8_t targetApi)
-        : outputFileName_(outputFileName), prog_(prog), statp_(statp), targetApiVersion_(targetApi) {};
+                              std::map<std::string, size_t> *statp, uint8_t targetApi, uint8_t targetApiSubVersion)
+        : outputFileName_(outputFileName), prog_(prog), statp_(statp), targetApiVersion_(targetApi),
+        targetApiSubVersion_(targetApiSubVersion) {};
     NO_COPY_SEMANTIC(EmitSingleAbcJob);
     NO_MOVE_SEMANTIC(EmitSingleAbcJob);
     ~EmitSingleAbcJob() override = default;
@@ -37,15 +38,16 @@ private:
     panda::pandasm::Program *prog_;
     std::map<std::string, size_t> *statp_;
     uint8_t targetApiVersion_ = 0;
+    uint8_t targetApiSubVersion_;
 };
 
 class EmitMergedAbcJob : public util::WorkerJob {
 public:
     explicit EmitMergedAbcJob(const std::string &outputFileName, const std::string &transformLib,
                               const std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
-                              uint8_t targetApi)
+                              uint8_t targetApi, uint8_t targetApiSubVersion)
         : outputFileName_(outputFileName), transformLib_(transformLib),
-        progsInfo_(progsInfo), targetApiVersion_(targetApi) {};
+        progsInfo_(progsInfo), targetApiVersion_(targetApi), targetApiSubVersion_(targetApiSubVersion) {};
     NO_COPY_SEMANTIC(EmitMergedAbcJob);
     NO_MOVE_SEMANTIC(EmitMergedAbcJob);
     ~EmitMergedAbcJob() override = default;
@@ -56,6 +58,7 @@ private:
     std::string transformLib_;
     const std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo_;
     uint8_t targetApiVersion_ = 0;
+    uint8_t targetApiSubVersion_;
 };
 
 class EmitCacheJob : public util::WorkerJob {

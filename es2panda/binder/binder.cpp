@@ -723,7 +723,8 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
                 scriptFunc->SetInSendable();
             }
             util::Helpers::ScanDirectives(const_cast<ir::ScriptFunction *>(scriptFunc),
-                                          Program()->GetLineIndex());
+                                          Program()->GetLineIndex(), Program()->TargetApiSubVersion(),
+                                          Program()->TargetApiVersion());
 
             if (scriptFunc->IsConstructor() && util::Helpers::GetClassDefiniton(scriptFunc)->IsSendable()) {
                 scriptFunc->SetInSendable();

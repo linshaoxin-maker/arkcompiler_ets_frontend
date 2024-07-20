@@ -3104,7 +3104,8 @@ ir::Statement *ParserImpl::ParseImportDeclaration(StatementParsingFlags flags)
     lexer_->NextToken();  // eat import
 
     bool isLazy = false;
-    if (program_.TargetApiVersion() >= util::Helpers::LAZY_IMPORT_MIN_SUPPORTED_API_VERSION &&
+    if (util::Helpers::IsSupportedApiAndReleaseType(program_.TargetApiVersion(), program_.TargetApiSubVersion(),
+        util::Helpers::LAZY_IMPORT_MIN_SUPPORTED_API_VERSION, util::Helpers::LAZY_IMPORT_API_SUB_VERSION) &&
         lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_LAZY) {
         const auto savedPos = lexer_->Save();
         lexer_->NextToken();  // eat lazy
