@@ -29,7 +29,7 @@ import {
   isArrowFunction,
   isGetAccessor,
   isSetAccessor,
-  isPropertyDeclaration
+  isExportDeclaration,
 } from 'typescript';
 
 import type {
@@ -177,7 +177,7 @@ namespace secharmony {
      * @param def definition symbol
      */
     addDefinition(def: Symbol, obfuscateAsProperty: boolean = false): void {
-      if (this.kind === ScopeKind.GLOBAL || obfuscateAsProperty) {
+      if (obfuscateAsProperty) {
         Reflect.set(def, 'obfuscateAsProperty', true);
       }
       this.defs.add(def);
@@ -327,7 +327,7 @@ namespace secharmony {
       if (!defSymbols) {
         return;
       }
-      current.addDefinition(defSymbols);
+      current.addDefinition(defSymbols, true);
     }
 
     /**
@@ -435,18 +435,8 @@ namespace secharmony {
     function analyzeImportNames(node: ImportSpecifier): void {
       try {
         const propetyNameNode: Identifier | undefined = node.propertyName;
-        if (exportObfuscation && propetyNameNode && isIdentifier(propetyNameNode)) {
-          let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
-          if (!propertySymbol) {
-            noSymbolIdentifier.add(propetyNameNode.escapedText as string);
-          } else {
-            current.addDefinition(propertySymbol);
-          }
-
-          const nameSymbol = checker.getSymbolAtLocation(node.name);
-          if (nameSymbol) {
-            current.addDefinition(nameSymbol);
-          }
+        if (exportObfuscation) {
+          collectImportSymbols(node, propetyNameNode);
         } else {
           const nameText = propetyNameNode ? propetyNameNode.text : node.name.text;
           current.importNames.add(nameText);
@@ -502,16 +492,14 @@ namespace secharmony {
     }
 
     function analyzeExportNames(node: ExportSpecifier): void {
-      // get export names.
-      current.exportNames.add(node.name.text);
-      addExportSymbolInScope(node);
       const propetyNameNode: Identifier | undefined = node.propertyName;
-      if (exportObfuscation && propetyNameNode && isIdentifier(propetyNameNode)) {
-        let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
-        if (!propertySymbol) {
-          noSymbolIdentifier.add(propetyNameNode.escapedText as string);
-        }
+      const exportDeclaration = node.parent.parent;
+      if (exportObfuscation) {
+        collectExportSymbols(node, propetyNameNode, exportDeclaration);
+      } else {
+        collectExportWhiteList(node, propetyNameNode, exportDeclaration);
       }
+
       forEachChild(node, analyzeScope);
     }
 
@@ -932,6 +920,82 @@ namespace secharmony {
       };
 
       noSymbolVisit(node);
+    }
+
+    /**
+     * Collect original symbols of import elements when enable export obfuscation
+     * import {a as b, c} from './filePath; // Collect the symbol of a and c
+     * import {default as a} from './filePath; // Collect the symbol of default
+     * 
+     * Default import symbols will not be collected
+     * import a from './filePath'; // The symbol of a will not be collected
+     * import a as b from './filePath'; // Symbols of a and b will not be collected
+     */
+    function collectImportSymbols(node: ImportSpecifier, propetyNameNode: Identifier | undefined): void {
+      if (!propetyNameNode) {
+        const nameSymbol = checker.getSymbolAtLocation(node.name);
+        current.addDefinition(nameSymbol, true);
+      } else if (isIdentifier(propetyNameNode)) {
+        /**
+         * import {a as b} from './filePath' // a might not have a symbol
+         */
+        let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
+        if (!propertySymbol) {
+          noSymbolIdentifier.add(propetyNameNode.escapedText as string);
+        } else {
+          current.addDefinition(propertySymbol, true);
+        }
+      }
+    }
+
+    function collectExportSymbols(node: ExportSpecifier, propetyNameNode: Identifier | undefined, exportDeclaration: any): void {
+      addExportSymbolInScope(node);
+  
+      if (!exportDeclaration.moduleSpecifier) {
+        /**
+         * export {a}; // a should be obfuscated as property
+         * export {a as b}; // b should be obfuscated as property
+         */
+        const currentSymbol = checker.getSymbolAtLocation(node.name);
+        const originalSymbol = checker.getAliasedSymbol(currentSymbol);
+        current.addDefinition(originalSymbol, true);
+      } else {
+        /**
+         * export {a} from './filePath; // a should be obfuscated as property
+         * export {a as b} from './filePath'; // Both a and b should be obfuscated as property
+         */
+        const nameSymbol = checker.getSymbolAtLocation(node.name);
+        if (nameSymbol) {
+          current.addDefinition(nameSymbol, true);
+        }
+        if (propetyNameNode && isIdentifier(propetyNameNode)) {
+          const propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
+          if (propertySymbol) {
+            current.addDefinition(propertySymbol, true);
+          } else {
+            /**
+             * export {a as b} from './filePath.ts' // a might not have a symbol
+             */
+            noSymbolIdentifier.add(propetyNameNode.escapedText as string);
+          }
+        }
+      }
+    }
+
+    function collectExportWhiteList(node: ExportSpecifier, propetyNameNode: Identifier | undefined, exportDeclaration: any): void {
+      /**
+       * export {a as b}; // collect b
+       * export {a}; // collect a
+       * export {a as b} from './filePath' // collect b but a is omited
+       * export {a} from './filePath' // collect a
+       */
+      current.exportNames.add(node.name.text);
+      if (propetyNameNode && exportDeclaration.moduleSpecifier) {
+        /**
+         * export {a as b} from './filePath' // collect a
+         */
+        current.exportNames.add(propetyNameNode.text);
+      }
     }
   }
 }
