@@ -47,6 +47,10 @@ ets2panda_add_gtest(ast_verifier_reference_typeannotation_test
     CPP_SOURCES ast_verifier_reference_typeannotation_test.cpp
 )
 
+ets2panda_add_gtest(ast_verifier_reference_notDeclaration_test
+    CPP_SOURCES ast_verifier_reference_notDeclaration_test.cpp
+)
+
 ets2panda_add_gtest(ast_verifier_identifier_has_variable_test
     CPP_SOURCES ast_verifier_identifier_has_variable_test.cpp
 )
