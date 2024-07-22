@@ -73,6 +73,7 @@
 
 #include <memory>
 
+#include "parser/parserStatusContext.h"
 #include "parserImpl.h"
 
 namespace ark::es2panda::parser {
