@@ -39,6 +39,8 @@ private:
     bool IsStartOfAbstractConstructorType() const;
     bool CurrentLiteralIsBasicType() const;
     ir::TypeNode *ParseTypeAnnotationElement(ir::TypeNode *typeAnnotation, TypeAnnotationParsingOptions *options);
+    class ParseTypeAnnotationElementHelper;
+    class ParsePotentialArrowExpressionHelper;
     ir::TypeNode *ParseTypeOperatorOrTypeReference();
     ir::TypeNode *ParseIdentifierReference();
     ir::TypeNode *ParseBasicType();
