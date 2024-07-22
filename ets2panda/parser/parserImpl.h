@@ -198,6 +198,10 @@ protected:
                                                                   ir::TypeNode *returnTypeAnnotation);
     ir::Expression *ParseAssignmentExpression(ir::Expression *lhsExpression,
                                               ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
+    ir::Expression *ParseAssignmentBinaryExpression(lexer::TokenType tokenType, ir::Expression *lhsExpression,
+                                                    ExpressionParseFlags flags);
+    ir::Expression *ParseAssignmentEqualExpression(lexer::TokenType tokenType, ir::Expression *lhsExpression,
+                                                   ExpressionParseFlags flags);
     ir::SequenceExpression *ParseSequenceExpression(ir::Expression *startExpr, bool acceptRest = false);
     ir::FunctionExpression *ParseFunctionExpression(ParserStatus newStatus = ParserStatus::NO_OPTS);
     ir::ArrowFunctionExpression *ParseArrowFunctionExpression(ir::Expression *expr,
@@ -304,6 +308,7 @@ protected:
     // NOLINTNEXTLINE(google-default-arguments)
     virtual ir::Expression *ParsePatternElement(ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS,
                                                 bool allowDefault = true);
+    void ParsePatternElementErrorCheck(ExpressionParseFlags flags, bool allowDefault);
     virtual bool ParsePotentialNonNullExpression(ir::Expression **returnExpression, lexer::SourcePosition startLoc);
     virtual ir::AstNode *ParseImportSpecifiers(ArenaVector<ir::AstNode *> *specifiers);
     virtual ir::Statement *ParseImportDeclaration(StatementParsingFlags flags);
@@ -314,6 +319,8 @@ protected:
     virtual ir::ObjectExpression *ParseObjectExpression(ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
     // NOLINTNEXTLINE(google-default-arguments)
     virtual ir::ArrayExpression *ParseArrayExpression(ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
+    void ParseArrayExpressionErrorCheck(ir::ArrayExpression *arrayExpressionNode, ExpressionParseFlags flags,
+                                        bool inPattern);
     virtual ir::ArrowFunctionExpression *ParsePotentialArrowExpression(ir::Expression **returnExpression,
                                                                        const lexer::SourcePosition &startLoc);
     virtual bool ParsePotentialGenericFunctionCall(ir::Expression *primaryExpr, ir::Expression **returnExpression,
@@ -379,8 +386,13 @@ protected:
     virtual ir::Expression *ParsePrimaryExpression(ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS);
     virtual ir::Expression *ParsePostPrimaryExpression(ir::Expression *primaryExpr, lexer::SourcePosition startLoc,
                                                        bool ignoreCallExpression, bool *isChainExpression);
+    ir::Expression *ParsePostPrimaryExpressionBackTick(ir::Expression *returnExpression,
+                                                       lexer::SourcePosition startLoc);
+    ir::Expression *ParsePostPrimaryExpressionDot(ir::Expression *returnExpression, lexer::TokenType tokenType,
+                                                  bool *isChainExpression);
     virtual ir::ClassElement *ParseClassStaticBlock();
     virtual ParserStatus ValidateArrowParameter(ir::Expression *expr, bool *seenOptional);
+    void ValidateArrowParameterAssignment(ir::AssignmentExpression *expr);
     virtual ArrowFunctionDescriptor ConvertToArrowParameter(ir::Expression *expr, bool isAsync);
     virtual ir::Expression *ParseNewExpression();
 
