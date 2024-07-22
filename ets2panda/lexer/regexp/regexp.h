@@ -62,6 +62,7 @@ private:
     void ParseDisjunction();
     void ParseAlternatives();
     void ParseAlternative();
+    bool ParseAlternativeCharLeftParen();
 
     void ParseNonCapturingGroup();
     void ParseNamedCapturingGroup();
@@ -71,6 +72,7 @@ private:
     char32_t ParseClassAtom();
     void ParseCharacterClass();
     void ParseAtomEscape();
+    void ParseAtomEscapeSwitch(char32_t cp);
 
     uint32_t ParseControlEscape();
     uint32_t ParseDecimalEscape();
