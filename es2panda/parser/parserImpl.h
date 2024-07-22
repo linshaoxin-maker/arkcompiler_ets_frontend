@@ -513,6 +513,8 @@ private:
     ArenaVector<ir::Statement *> ParseStatementList(StatementParsingFlags flags = StatementParsingFlags::ALLOW_LEXICAL);
     bool IsTsDeclarationStatement() const;
     ir::Statement *ParseStatement(StatementParsingFlags flags = StatementParsingFlags::NONE);
+    ir::Statement *ParseStatementHelper();
+    ir::Statement *ParserImpl::ParseStatementControlStructure();
     ir::TSModuleDeclaration *ParseTsModuleDeclaration(bool isDeclare, bool isExport = false);
     ir::TSModuleDeclaration *ParseTsAmbientExternalModuleDeclaration(const lexer::SourcePosition &startLoc,
                                                                      bool isDeclare);
