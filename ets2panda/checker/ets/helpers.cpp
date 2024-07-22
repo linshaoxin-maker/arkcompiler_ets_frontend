@@ -2334,7 +2334,7 @@ void ETSChecker::GenerateGetterSetterPropertyAndMethod(ir::ClassProperty *origin
 {
     auto *const classDef = classType->GetDeclNode()->AsClassDefinition();
     auto *interfaceProp = originalProp->Clone(Allocator(), originalProp->Parent());
-    interfaceProp->ClearModifier(ir::ModifierFlags::GETTER_SETTER | ir::ModifierFlags::EXTERNAL);
+    interfaceProp->ClearModifier(ir::ModifierFlags::GETTER_SETTER);
 
     ASSERT(Scope()->IsClassScope());
     auto *const scope = Scope()->AsClassScope();
@@ -2369,7 +2369,7 @@ void ETSChecker::GenerateGetterSetterPropertyAndMethod(ir::ClassProperty *origin
         var = methodScope->FindLocal(name, varbinder::ResolveBindingOptions::BINDINGS);
     }
 
-    if ((originalProp->Modifiers() & ir::ModifierFlags::EXTERNAL) != 0U) {
+    if (HasStatus(CheckerStatus::IN_EXTERNAL)) {
         getter->Function()->AddFlag(ir::ScriptFunctionFlags::EXTERNAL);
     }
 
@@ -2388,7 +2388,7 @@ ir::MethodDefinition *ETSChecker::GenerateSetterForProperty(ir::ClassProperty *o
         setter->Function()->AddModifier(ir::ModifierFlags::OVERRIDE);
     }
 
-    if ((originalProp->Modifiers() & ir::ModifierFlags::EXTERNAL) != 0U) {
+    if (HasStatus(CheckerStatus::IN_EXTERNAL)) {
         setter->Function()->AddFlag(ir::ScriptFunctionFlags::EXTERNAL);
     }
 
