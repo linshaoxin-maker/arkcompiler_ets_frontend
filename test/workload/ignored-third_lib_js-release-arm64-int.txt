@@ -1,1 +1,8 @@
 # Known failures list for third_lib_js - release-arm64-int
+
+# Issue #18153
+Drools_test
+loadsh_test
+validator_test
+dayjs_test
+memory-cache_test
