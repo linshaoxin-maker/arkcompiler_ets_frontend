@@ -312,6 +312,20 @@ export class TsUtils {
     );
   }
 
+  static isObjectLiteral(tsType: ts.Type): tsType is ts.TypeReference {
+    return (
+      (tsType.getFlags() & ts.TypeFlags.Object) !== 0 &&
+      ((tsType as ts.ObjectType).objectFlags & ts.ObjectFlags.ObjectLiteral) !== 0
+    );
+  }
+
+  static isArrayLiteral(tsType: ts.Type): tsType is ts.TypeReference {
+    return (
+      (tsType.getFlags() & ts.TypeFlags.Object) !== 0 &&
+      ((tsType as ts.ObjectType).objectFlags & ts.ObjectFlags.ArrayLiteral) !== 0
+    );
+  }
+
   static isPrototypeSymbol(symbol: ts.Symbol | undefined): boolean {
     return !!symbol && !!symbol.flags && (symbol.flags & ts.SymbolFlags.Prototype) !== 0;
   }
@@ -1877,6 +1891,11 @@ export class TsUtils {
     if (sym && sym.getFlags() & ts.SymbolFlags.TypeAlias) {
       const typeDecl = TsUtils.getDeclaration(sym);
       if (typeDecl && ts.isTypeAliasDeclaration(typeDecl)) {
+        // Recursion here will lose generic parameters, So make a judgment before recursion
+        const type: ts.Type = this.tsTypeChecker.getTypeFromTypeNode(typeNode);
+        if (this.isToolsTypeAlias(type)) {
+          return this.isSendableToolsTypeAlias(type);
+        }
         return this.isSendableTypeNode(typeDecl.type);
       }
     }
@@ -1907,6 +1926,9 @@ export class TsUtils {
       return true;
     }
     if (TsUtils.isSendableFunction(type)) {
+      return true;
+    }
+    if (this.isSendableToolsTypeAlias(type)) {
       return true;
     }
 
@@ -2596,5 +2618,57 @@ export class TsUtils {
       return !TsUtils.isSendableFunction(type);
     }
     return false;
+  }
+
+  isWrongSendableToolsAssignment(lhsType: ts.Type, rhsType: ts.Type): boolean {
+    // eslint-disable-next-line no-param-reassign
+    lhsType = this.getNonNullableType(lhsType);
+    // eslint-disable-next-line no-param-reassign
+    rhsType = this.getNonNullableType(rhsType);
+
+    if (!this.hasSendableToolsTypeAlias(lhsType)) {
+      return false;
+    }
+
+    if (rhsType.isUnion()) {
+      return rhsType.types.some((compType) => {
+        return this.isInvalidSendableToolsAssignmentType(compType);
+      });
+    }
+    return this.isInvalidSendableToolsAssignmentType(rhsType);
+  }
+
+  private isInvalidSendableToolsAssignmentType(type: ts.Type): boolean {
+    if (TsUtils.isObjectLiteral(type) || TsUtils.isArrayLiteral(type)) {
+      return true;
+    }
+    let checkType;
+    if (this.isToolsTypeAlias(type) && type.aliasTypeArguments?.length === 1) {
+      checkType = TsUtils.reduceReference(type.aliasTypeArguments[0]);
+    } else {
+      checkType = type;
+    }
+    return checkType.isClassOrInterface() && !this.isSendableClassOrInterface(checkType);
+  }
+
+  // The properties of sendable are allowed to be modified with 'Readonly<T>', 'Partial<T>', and 'Required<T>'.
+  isSendableToolsTypeAlias(type: ts.Type): boolean {
+    if (!this.isToolsTypeAlias(type)) {
+      return false;
+    }
+    return type.aliasTypeArguments?.length === 1 && this.isSendableClassOrInterface(type.aliasTypeArguments[0]);
+  }
+
+  isToolsTypeAlias(type: ts.Type): boolean {
+    return this.isStdReadonlyType(type) || this.isStdPartialType(type) || this.isStdRequiredType(type);
+  }
+
+  hasSendableToolsTypeAlias(type: ts.Type): boolean {
+    if (type.isUnion()) {
+      return type.types.some((compType) => {
+        return this.hasSendableToolsTypeAlias(compType);
+      });
+    }
+    return this.isSendableToolsTypeAlias(type);
   }
 }

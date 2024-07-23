@@ -2742,6 +2742,12 @@ export class TypeScriptLinter {
     // check that 'sendable typeAlias' is assigned correctly
     if (this.tsUtils.isWrongSendableFunctionAssignment(lhsType, rhsType)) {
       this.incrementCounters(field, FaultID.SendableFunctionAssignment);
+      return;
+    }
+
+    if (this.tsUtils.isWrongSendableToolsAssignment(lhsType, rhsType)) {
+      this.incrementCounters(field, FaultID.SendableToolsLimited);
+      return;
     }
     const isStrict = this.tsUtils.needStrictMatchType(lhsType, rhsType);
     // 'isNewStructuralCheck' means that this assignment scenario was previously omitted, so only strict matches are checked now
