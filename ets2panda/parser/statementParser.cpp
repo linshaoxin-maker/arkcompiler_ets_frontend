@@ -847,22 +847,11 @@ std::tuple<ir::Expression *, ir::Expression *> ParserImpl::ParseForUpdate(bool i
     return {rightNode, updateNode};
 }
 
-ir::Statement *ParserImpl::ParseForStatement()
+std::tuple<ir::Expression *, ir::AstNode *> ParserImpl::ParseForLoopInitializer()
 {
-    lexer::SourcePosition startLoc = lexer_->GetToken().Start();
-    ForStatementKind forKind = ForStatementKind::UPDATE;
-    ir::AstNode *initNode = nullptr;
-    ir::Expression *updateNode = nullptr;
-    ir::Expression *leftNode = nullptr;
-    ir::Expression *rightNode = nullptr;
-    bool canBeForInOf = true;
-    bool isAwait = false;
-    lexer_->NextToken();
     VariableParsingFlags varFlags = VariableParsingFlags::IN_FOR;
-    ExpressionParseFlags exprFlags = ExpressionParseFlags::NO_OPTS;
 
     if (lexer_->GetToken().Type() == lexer::TokenType::KEYW_AWAIT) {
-        isAwait = true;
         varFlags |= VariableParsingFlags::DISALLOW_INIT;
         lexer_->NextToken();
     }
@@ -892,32 +881,42 @@ ir::Statement *ParserImpl::ParseForStatement()
 
     switch (lexer_->GetToken().Type()) {
         case lexer::TokenType::KEYW_VAR: {
-            initNode = ParseVariableDeclaration(varFlags | VariableParsingFlags::VAR);
-            break;
+            return {nullptr, ParseVariableDeclaration(varFlags | VariableParsingFlags::VAR)};
         }
         case lexer::TokenType::KEYW_LET: {
-            initNode = ParseVariableDeclaration(varFlags | VariableParsingFlags::LET);
-            break;
+            return {nullptr, ParseVariableDeclaration(varFlags | VariableParsingFlags::LET)};
         }
         case lexer::TokenType::KEYW_CONST: {
-            initNode = ParseVariableDeclaration(varFlags | VariableParsingFlags::CONST |
-                                                VariableParsingFlags::ACCEPT_CONST_NO_INIT);
-            break;
+            return {nullptr, ParseVariableDeclaration(varFlags | VariableParsingFlags::CONST |
+                                                      VariableParsingFlags::ACCEPT_CONST_NO_INIT)};
         }
         case lexer::TokenType::PUNCTUATOR_SEMI_COLON: {
-            if (isAwait) {
+            if ((varFlags & VariableParsingFlags::DISALLOW_INIT) != 0 /*isAsync*/) {
                 ThrowSyntaxError(UNEXPECTED_TOKEN, lexer_->GetToken().Start());
             }
 
-            canBeForInOf = false;
             lexer_->NextToken();
-            break;
+            return {nullptr, nullptr};
         }
         default: {
-            leftNode = ParseUnaryOrPrefixUpdateExpression(ExpressionParseFlags::POTENTIALLY_IN_PATTERN);
-            break;
+            return {ParseUnaryOrPrefixUpdateExpression(ExpressionParseFlags::POTENTIALLY_IN_PATTERN), nullptr};
         }
     }
+}
+
+ir::Statement *ParserImpl::ParseForStatement()
+{
+    lexer::SourcePosition startLoc = lexer_->GetToken().Start();
+    ForStatementKind forKind = ForStatementKind::UPDATE;
+    ir::AstNode *initNode = nullptr;
+    ir::Expression *updateNode = nullptr;
+    ir::Expression *leftNode = nullptr;
+    ir::Expression *rightNode = nullptr;
+
+    lexer_->NextToken();
+    bool isAwait = lexer_->GetToken().Type() == lexer::TokenType::KEYW_AWAIT;
+    std::tie(leftNode, initNode) = ParseForLoopInitializer();
+    bool canBeForInOf = (leftNode != nullptr) || (initNode != nullptr);
 
     IterationContext iterCtx(&context_);
 
@@ -938,10 +937,11 @@ ir::Statement *ParserImpl::ParseForStatement()
         if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COLON) {
             ThrowSyntaxError(INVALID_TYPE_ANNOTATION_IN_FOR, lexer_->GetToken().Start());
         }
-        std::tie(forKind, initNode, rightNode, updateNode) = ParseForInOf(leftNode, exprFlags, isAwait);
+        std::tie(forKind, initNode, rightNode, updateNode) =
+            ParseForInOf(leftNode, ExpressionParseFlags::NO_OPTS, isAwait);
     } else if (initNode != nullptr) {
         // initNode was parsed as VariableDeclaration and declaration size = 1
-        std::tie(forKind, rightNode, updateNode) = ParseForInOf(initNode, exprFlags, isAwait);
+        std::tie(forKind, rightNode, updateNode) = ParseForInOf(initNode, ExpressionParseFlags::NO_OPTS, isAwait);
     }
 
     if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_EXCLAMATION_MARK) {
