@@ -378,6 +378,11 @@ set(ES2PANDA_LIB_SRC
   parser/parserImpl.cpp
   parser/ETSFormattedParser.cpp
   parser/ETSparser.cpp
+  parser/ETSparserClasses.cpp
+  parser/ETSparserEnums.cpp
+  parser/ETSparserExpressions.cpp
+  parser/ETSparserStatements.cpp
+  parser/ETSparserTypes.cpp
   parser/ETSNolintParser.cpp
   parser/TSparser.cpp
   parser/TypedParser.cpp
