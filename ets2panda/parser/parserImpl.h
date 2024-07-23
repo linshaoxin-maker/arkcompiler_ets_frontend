@@ -139,6 +139,7 @@ protected:
                                                                                   ExpressionParseFlags exprFlags,
                                                                                   bool isAwait);
     std::tuple<ir::Expression *, ir::Expression *> ParseForUpdate(bool isAwait);
+    std::tuple<ir::Expression *, ir::AstNode *> ParseForLoopInitializer();
     ir::SwitchCaseStatement *ParseSwitchCaseStatement(bool *seenDefault);
     virtual ir::Expression *ParseCatchParam();
     ir::CatchClause *ParseCatchClause();
