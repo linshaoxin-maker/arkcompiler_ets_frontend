@@ -4,16 +4,22 @@
 mathjs_test
 textEncoding_test
 Easyrelpace_test
-Drools_test
 gson_test
 bignumber_test
 Matrix_test
 lodash_test
-dayjs_test
-validator_test
 jBox2d_test
 pdfview_test
 sax_test
 pcx_test
 js-joda_test
 jsDiff_test
+
+# Issue #18340
+Drools_test
+
+# Issue #18330
+dayjs_test
+
+# Issue #18331
+validator_test
