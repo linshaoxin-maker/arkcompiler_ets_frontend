@@ -1811,6 +1811,7 @@ export class TypeScriptLinter {
     if (callSignature !== undefined && !this.tsUtils.isLibrarySymbol(calleeSym)) {
       this.handleGenericCallWithNoTypeArgs(tsCallExpr, callSignature);
       this.handleStructIdentAndUndefinedInArgs(tsCallExpr, callSignature);
+      this.checkCallExpressionReturnType(tsCallExpr, callSignature);
     }
     this.handleLibraryTypeCall(tsCallExpr);
 
@@ -1819,6 +1820,24 @@ export class TypeScriptLinter {
       this.tsUtils.hasEsObjectType(tsCallExpr.expression.expression)
     ) {
       this.incrementCounters(node, FaultID.EsObjectType);
+    }
+  }
+
+  private checkCallExpressionReturnType(tsCallExpr: ts.CallExpression, callSignature: ts.Signature): void {
+    const declReturnType = callSignature.declaration?.type;
+    if (declReturnType && ts.isTypeReferenceNode(declReturnType)) {
+
+      /*
+       * If there is no typeParamter in the return type, there is no need to check,
+       * avoid duplication of checks associated with handleTypeReference
+       */
+      if (!this.tsUtils.typeNodeContainsTypeParameter(declReturnType)) {
+        return;
+      }
+    }
+
+    if (this.tsUtils.isWrongSendableTypeArguments(callSignature.getReturnType())) {
+      this.incrementCounters(tsCallExpr, FaultID.SendableGenericTypesWarning);
     }
   }
 

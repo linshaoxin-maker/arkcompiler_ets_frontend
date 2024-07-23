@@ -2671,4 +2671,32 @@ export class TsUtils {
     }
     return this.isSendableToolsTypeAlias(type);
   }
+
+  // SendableType with generic arguments other than 'sendable data type' is not allowed.
+  isWrongSendableTypeArguments(type: ts.Type): boolean {
+    if (type.isUnion()) {
+      return type.types.some((compType) => {
+        return this.isWrongSendableTypeArguments(compType);
+      });
+    }
+    if (!TsUtils.isTypeReference(type) || !type.typeArguments?.length || !this.isSendableClassOrInterface(type)) {
+      return false;
+    }
+    return type.typeArguments.some((compType) => {
+      return !this.isSendableType(compType);
+    });
+  }
+
+  typeNodeContainsTypeParameter(type: ts.TypeNode): boolean {
+    return TsUtils.typeContainsTypeParameter(this.tsTypeChecker.getTypeAtLocation(type));
+  }
+
+  static typeContainsTypeParameter(type: ts.Type): boolean {
+    if (!TsUtils.isTypeReference(type) || !type.typeArguments?.length) {
+      return false;
+    }
+    return type.typeArguments.some((compType) => {
+      return compType.flags === ts.TypeFlags.TypeParameter;
+    });
+  }
 }

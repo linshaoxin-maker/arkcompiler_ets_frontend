@@ -1,0 +1,32 @@
+{
+    "nodes": [
+        {
+            "line": 17,
+            "column": 1,
+            "problem": "SendableGenericTypesWarning",
+            "suggest": "",
+            "rule": "Type arguments of generic \"Sendable\" type must be a \"Sendable\" data type (arkts-sendable-generic-types)"
+        },
+        {
+            "line": 23,
+            "column": 1,
+            "problem": "SendableGenericTypesWarning",
+            "suggest": "",
+            "rule": "Type arguments of generic \"Sendable\" type must be a \"Sendable\" data type (arkts-sendable-generic-types)"
+        },
+        {
+            "line": 30,
+            "column": 1,
+            "problem": "SendableGenericTypesWarning",
+            "suggest": "",
+            "rule": "Type arguments of generic \"Sendable\" type must be a \"Sendable\" data type (arkts-sendable-generic-types)"
+        },
+        {
+            "line": 37,
+            "column": 1,
+            "problem": "SendableGenericTypesWarning",
+            "suggest": "",
+            "rule": "Type arguments of generic \"Sendable\" type must be a \"Sendable\" data type (arkts-sendable-generic-types)"
+        }
+    ]
+}
