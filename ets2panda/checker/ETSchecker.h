@@ -604,12 +604,23 @@ public:
     // Partial
     Type *HandlePartialType(Type *typeToBePartial);
     Type *HandlePartialTypeNode(ir::TypeNode *typeParamNode);
+    Type *HandlePartialInterface(util::StringView name, util::StringView qualifiedName,
+                                 ir::TSInterfaceDeclaration *const interfaceDecl, varbinder::RecordTable *recordTable,
+                                 bool inCurrentFile);
     ir::ClassProperty *CreateNullishProperty(ir::ClassProperty *prop, ir::ClassDefinition *newClassDefinition);
+    ir::ClassProperty *CreateNullishPropertyFromAccessor(ir::MethodDefinition *const accessor,
+                                                         ir::ClassDefinition *newClassDefinition);
+    ir::MethodDefinition *CreateNullishAccessor(ir::MethodDefinition *const accessor,
+                                                ir::TSInterfaceDeclaration *interface);
     ir::ClassDefinition *CreatePartialClassDeclaration(ir::ClassDefinition *newClassDefinition,
                                                        const ir::ClassDefinition *classDef);
+    ark::es2panda::ir::TSInterfaceDeclaration *CreatePartialTypeInterfaceDecl(
+        util::StringView name, util::StringView qualifiedName, ir::TSInterfaceDeclaration *const interfaceDecl);
     void CreateConstructorForPartialType(ir::ClassDefinition *partialClassDef, checker::ETSObjectType *partialType,
                                          varbinder::RecordTable *recordTable);
     ir::ClassDefinition *CreateClassPrototype(util::StringView name, parser::Program *classDeclProgram);
+    ir::TSInterfaceDeclaration *CreateInterfacePrototype(util::StringView name,
+                                                         parser::Program *const classDeclProgram);
     varbinder::Variable *SearchNamesInMultiplePrograms(const std::set<const parser::Program *> &programs,
                                                        const std::set<util::StringView> &classNamesToFind);
     util::StringView GetQualifiedClassName(const parser::Program *classDefProgram, util::StringView className);
