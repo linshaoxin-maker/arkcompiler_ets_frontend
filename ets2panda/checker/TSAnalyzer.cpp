@@ -544,7 +544,7 @@ checker::Type *TSAnalyzer::Check(ir::AssignmentExpression *expr) const
     }
 
     if (expr->Left()->IsIdentifier() && expr->Left()->AsIdentifier()->Variable() != nullptr &&
-        expr->Left()->AsIdentifier()->Variable()->Declaration()->IsConstDecl()) {
+        expr->Left()->AsIdentifier()->Variable()->Declaration()->Is<varbinder::ConstDecl>()) {
         checker->ThrowTypeError(
             {"Cannot assign to ", expr->Left()->AsIdentifier()->Name(), " because it is a constant."},
             expr->Left()->Start());
@@ -756,7 +756,7 @@ checker::Type *TSAnalyzer::Check(ir::Identifier *expr) const
 
     const varbinder::Decl *decl = expr->Variable()->Declaration();
 
-    if (decl->IsTypeAliasDecl() || decl->IsInterfaceDecl()) {
+    if (decl->Is<varbinder::TypeAliasDecl>() || decl->Is<varbinder::InterfaceDecl>()) {
         checker->ThrowTypeError({expr->Name(), " only refers to a type, but is being used as a value here."},
                                 expr->Start());
     }
@@ -1445,7 +1445,8 @@ checker::Type *TSAnalyzer::Check(ir::FunctionDeclaration *st) const
     checker::ScopeContext scopeCtx(checker, st->Function()->Scope());
 
     if (result.variable->TsType() == nullptr) {
-        checker->InferFunctionDeclarationType(result.variable->Declaration()->AsFunctionDecl(), result.variable);
+        checker->InferFunctionDeclarationType(result.variable->Declaration()->As<varbinder::FunctionDecl>(),
+                                              result.variable);
     }
 
     st->Function()->Body()->Check(checker);
@@ -1818,8 +1819,8 @@ static varbinder::EnumMemberResult EvaluateIdentifier(checker::TSChecker *checke
                                 enumVar->Declaration()->Node()->Start());
     }
 
-    if (enumMember->IsEnumVariable()) {
-        varbinder::EnumVariable *exprEnumVar = enumMember->AsEnumVariable();
+    if (enumMember->Is<varbinder::EnumVariable>()) {
+        auto exprEnumVar = enumMember->As<varbinder::EnumVariable>();
         if (std::holds_alternative<bool>(exprEnumVar->Value())) {
             checker->ThrowTypeError(
                 "A member initializer in a enum declaration cannot reference members declared after it, "
@@ -2000,7 +2001,7 @@ static void AddEnumValueDeclaration(checker::TSChecker *checker, double number, 
 
     util::StringView memberStr = util::Helpers::ToStringView(checker->Allocator(), number);
 
-    varbinder::LocalScope *enumScope = checker->Scope()->AsLocalScope();
+    auto enumScope = checker->Scope()->As<varbinder::LocalScope>();
     varbinder::Variable *res = enumScope->FindLocal(memberStr, varbinder::ResolveBindingOptions::BINDINGS);
     varbinder::EnumVariable *enumVar = nullptr;
 
@@ -2009,13 +2010,13 @@ static void AddEnumValueDeclaration(checker::TSChecker *checker, double number, 
         decl->BindNode(variable->Declaration()->Node());
         enumScope->AddDecl(checker->Allocator(), decl, ScriptExtension::TS);
         res = enumScope->FindLocal(memberStr, varbinder::ResolveBindingOptions::BINDINGS);
-        ASSERT(res && res->IsEnumVariable());
-        enumVar = res->AsEnumVariable();
-        enumVar->AsEnumVariable()->SetBackReference();
+        ASSERT(res && res->Is<varbinder::EnumVariable>());
+        enumVar = res->As<varbinder::EnumVariable>();
+        enumVar->As<varbinder::EnumVariable>()->SetBackReference();
         enumVar->SetTsType(checker->GlobalStringType());
     } else {
-        ASSERT(res->IsEnumVariable());
-        enumVar = res->AsEnumVariable();
+        ASSERT(res->Is<varbinder::EnumVariable>());
+        enumVar = res->As<varbinder::EnumVariable>();
         auto *decl = checker->Allocator()->New<varbinder::EnumDecl>(memberStr);
         decl->BindNode(variable->Declaration()->Node());
         enumVar->ResetDecl(decl);
@@ -2093,7 +2094,7 @@ checker::Type *TSAnalyzer::InferType(checker::TSChecker *checker, bool isConst, 
 {
     double value = -1.0;
 
-    varbinder::LocalScope *enumScope = checker->Scope()->AsLocalScope();
+    auto enumScope = checker->Scope()->As<varbinder::LocalScope>();
 
     bool initNext = false;
     bool isLiteralEnum = false;
@@ -2102,8 +2103,8 @@ checker::Type *TSAnalyzer::InferType(checker::TSChecker *checker, bool isConst, 
     for (size_t i = 0; i < localsSize; i++) {
         const util::StringView &currentName = enumScope->Decls()[i]->Name();
         varbinder::Variable *currentVar = enumScope->FindLocal(currentName, varbinder::ResolveBindingOptions::BINDINGS);
-        ASSERT(currentVar && currentVar->IsEnumVariable());
-        InferEnumVariableType(currentVar->AsEnumVariable(), &value, &initNext, &isLiteralEnum, isConst);
+        ASSERT(currentVar && currentVar->Is<varbinder::EnumVariable>());
+        InferEnumVariableType(currentVar->As<varbinder::EnumVariable>(), &value, &initNext, &isLiteralEnum, isConst);
     }
 
     checker::Type *enumType = checker->Allocator()->New<checker::EnumLiteralType>(

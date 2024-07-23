@@ -110,7 +110,7 @@ const ArenaVector<ir::AstNode *> &ETSEnumInterface::GetMembers() const noexcept
 varbinder::LocalVariable *ETSEnumInterface::GetMemberVar() const noexcept
 {
     ASSERT(IsLiteralType());
-    return member_->Key()->AsIdentifier()->Variable()->AsLocalVariable();
+    return member_->Key()->AsIdentifier()->Variable()->As<varbinder::LocalVariable>();
 }
 
 util::StringView ETSEnumInterface::GetName() const noexcept
@@ -226,9 +226,9 @@ bool ETSEnumInterface::IsEnumTypeExpression(const ir::Expression *const expressi
             const auto *const memberExpr = expression->AsMemberExpression();
             return memberExpr->PropVar() != nullptr
                        ? memberExpr->PropVar()
-                       : memberExpr->Object()->AsIdentifier()->Variable()->AsLocalVariable();
+                       : memberExpr->Object()->AsIdentifier()->Variable()->As<varbinder::LocalVariable>();
         }
-        return expression->AsIdentifier()->Variable()->AsLocalVariable();
+        return expression->AsIdentifier()->Variable()->As<varbinder::LocalVariable>();
     }();
 
     ASSERT(localVar->Declaration() == decl_->Key()->AsIdentifier()->Variable()->Declaration() ||

@@ -37,23 +37,23 @@ void Program::DumpSilent() const
 
 varbinder::ClassScope *Program::GlobalClassScope()
 {
-    return globalClass_->Scope()->AsClassScope();
+    return globalClass_->Scope()->As<varbinder::ClassScope>();
 }
 
 const varbinder::ClassScope *Program::GlobalClassScope() const
 {
-    return globalClass_->Scope()->AsClassScope();
+    return globalClass_->Scope()->As<varbinder::ClassScope>();
 }
 
 varbinder::GlobalScope *Program::GlobalScope()
 {
-    ASSERT(ast_->Scope()->IsGlobalScope() || ast_->Scope()->IsModuleScope());
+    ASSERT(ast_->Scope()->Is<varbinder::GlobalScope>() || ast_->Scope()->Is<varbinder::ModuleScope>());
     return static_cast<varbinder::GlobalScope *>(ast_->Scope());
 }
 
 const varbinder::GlobalScope *Program::GlobalScope() const
 {
-    ASSERT(ast_->Scope()->IsGlobalScope() || ast_->Scope()->IsModuleScope());
+    ASSERT(ast_->Scope()->Is<varbinder::GlobalScope>() || ast_->Scope()->Is<varbinder::ModuleScope>());
     return static_cast<const varbinder::GlobalScope *>(ast_->Scope());
 }
 

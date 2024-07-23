@@ -146,8 +146,8 @@ void LocalClassConstructionPhase::ModifyConstructorParameters(
 
             parameters.insert(parameters.begin(), newParam);
             ASSERT(newParam->Variable()->Type() == varbinder::VariableType::LOCAL);
-            sigParams.insert(sigParams.begin(), newParam->Ident()->Variable()->AsLocalVariable());
-            parameterMap[var] = newParam->Ident()->Variable()->AsLocalVariable();
+            sigParams.insert(sigParams.begin(), newParam->Ident()->Variable()->As<varbinder::LocalVariable>());
+            parameterMap[var] = newParam->Ident()->Variable()->As<varbinder::LocalVariable>();
         }
         reinterpret_cast<varbinder::ETSBinder *>(checker->VarBinder())->BuildFunctionName(constructor);
         LOG(DEBUG, ES2PANDA) << "    Transformed Constructor: " << signature->InternalName();
@@ -162,7 +162,7 @@ void LocalClassConstructionPhase::ModifyConstructorParameters(
             auto *fieldVar = variableMap[var];
             auto *leftHandSide = fieldInit->Left();
             leftHandSide->AsMemberExpression()->SetObjectType(classType);
-            leftHandSide->AsMemberExpression()->SetPropVar(fieldVar->AsLocalVariable());
+            leftHandSide->AsMemberExpression()->SetPropVar(fieldVar->As<varbinder::LocalVariable>());
             leftHandSide->AsMemberExpression()->SetIgnoreBox();
             leftHandSide->AsMemberExpression()->SetTsType(fieldVar->TsType());
             leftHandSide->AsMemberExpression()->Object()->SetTsType(classType);

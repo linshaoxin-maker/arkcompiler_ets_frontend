@@ -35,14 +35,12 @@ class IRNode;
 }  // namespace ark::es2panda::compiler
 
 namespace ark::es2panda::varbinder {
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DECLARE_CLASSES(type, className) class className;
-SCOPE_TYPES(DECLARE_CLASSES)
-#undef DECLARE_CLASSES
-
 class Scope;
 class VariableScope;
 class Variable;
+class FunctionScope;
+class FunctionParamScope;
+class ClassScope;
 
 template <typename ScopeT,
           std::enable_if_t<std::is_pointer_v<ScopeT> && std::is_base_of_v<Scope, std::remove_pointer_t<ScopeT>>, bool> =
@@ -80,28 +78,23 @@ public:
 
     virtual ScopeType Type() const = 0;
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DECLARE_CHECKS_CASTS(scopeType, className)        \
-    bool Is##className() const                            \
-    {                                                     \
-        return Type() == ScopeType::scopeType;            \
-    }                                                     \
-    className *As##className()                            \
-    {                                                     \
-        ASSERT(Is##className());                          \
-        return reinterpret_cast<className *>(this);       \
-    }                                                     \
-    const className *As##className() const                \
-    {                                                     \
-        ASSERT(Is##className());                          \
-        return reinterpret_cast<const className *>(this); \
-    }
-    SCOPE_TYPES(DECLARE_CHECKS_CASTS)
-#undef DECLARE_CHECKS_CASTS
-
-    bool IsVariableScope() const
+    template <class T>
+    bool Is() const
     {
-        return Type() > ScopeType::LOCAL;
+        return Type() == T::TYPE;
+    }
+
+    template <class T>
+    const T *As() const
+    {
+        ASSERT(Is<T>());
+        return reinterpret_cast<const T *>(this);
+    }
+
+    template <class T>
+    T *As()
+    {
+        return const_cast<T *>(const_cast<const Scope *>(this)->As<T>());
     }
 
     bool IsFunctionVariableScope() const
@@ -119,18 +112,6 @@ public:
     {
         ASSERT(IsFunctionVariableScope());
         return reinterpret_cast<const FunctionScope *>(this);
-    }
-
-    VariableScope *AsVariableScope()
-    {
-        ASSERT(IsVariableScope());
-        return reinterpret_cast<VariableScope *>(this);
-    }
-
-    const VariableScope *AsVariableScope() const
-    {
-        ASSERT(IsVariableScope());
-        return reinterpret_cast<const VariableScope *>(this);
     }
 
     VariableScope *EnclosingVariableScope();
@@ -218,8 +199,8 @@ public:
     Variable *AddDecl(ArenaAllocator *allocator, Decl *decl, [[maybe_unused]] ScriptExtension extension)
     {
         decls_.push_back(decl);
-        auto options = decl->IsTypeAliasDecl() ? varbinder::ResolveBindingOptions::TYPE_ALIASES
-                                               : varbinder::ResolveBindingOptions::BINDINGS;
+        auto options = decl->Is<TypeAliasDecl>() ? varbinder::ResolveBindingOptions::TYPE_ALIASES
+                                                 : varbinder::ResolveBindingOptions::BINDINGS;
         return AddBinding(allocator, FindLocal(decl->Name(), options), decl, extension);
     }
 
@@ -321,7 +302,7 @@ private:
         // iter will be the EXACT type of scope with cv-qualifiers
         auto &&iter = scope;
 
-        if (iter->IsFunctionParamScope()) {
+        if (iter->template Is<FunctionParamScope>()) {
             auto *const v = iter->FindLocal(name, options);
 
             if (v != nullptr) {
@@ -329,7 +310,7 @@ private:
             }
 
             level++;
-            const auto *const funcVariableScope = iter->AsFunctionParamScope()->GetFunctionScope();
+            const auto *const funcVariableScope = iter->template As<FunctionParamScope>()->GetFunctionScope();
 
             if (funcVariableScope != nullptr && funcVariableScope->NeedLexEnv()) {
                 lexLevel++;
@@ -345,10 +326,10 @@ private:
                 return {name, iter, level, lexLevel, v};
             }
 
-            if (iter->IsVariableScope()) {
+            if (iter->template Is<VariableScope>()) {
                 level++;
 
-                if (iter->AsVariableScope()->NeedLexEnv()) {
+                if (iter->template As<VariableScope>()->NeedLexEnv()) {
                     lexLevel++;
                 }
             }
@@ -367,6 +348,12 @@ private:
     const compiler::IRNode *startIns_ {};
     const compiler::IRNode *endIns_ {};
 };
+
+template <>
+inline bool Scope::Is<VariableScope>() const
+{
+    return Type() > ScopeType::LOCAL;
+}
 
 class VariableScope : public Scope {
 public:
@@ -420,9 +407,11 @@ protected:
 
 class ParamScope : public Scope {
 public:
+    static constexpr auto TYPE = ScopeType::PARAM;
+
     ScopeType Type() const override
     {
-        return ScopeType::PARAM;
+        return TYPE;
     }
 
     ArenaVector<LocalVariable *> &Params()
@@ -453,6 +442,8 @@ class FunctionScope;
 
 class FunctionParamScope : public ParamScope {
 public:
+    static constexpr auto TYPE = ScopeType::FUNCTION_PARAM;
+
     explicit FunctionParamScope(ArenaAllocator *allocator, Scope *parent) : ParamScope(allocator, parent) {}
 
     FunctionScope *GetFunctionScope() const
@@ -474,7 +465,7 @@ public:
 
     ScopeType Type() const override
     {
-        return ScopeType::FUNCTION_PARAM;
+        return TYPE;
     }
 
     Variable *AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
@@ -525,12 +516,14 @@ protected:
 
 class LocalScope : public Scope {
 public:
+    static constexpr auto TYPE = ScopeType::LOCAL;
+
     explicit LocalScope(ArenaAllocator *allocator, Scope *parent) : Scope(allocator, parent) {}
     explicit LocalScope(ArenaAllocator *allocator, Scope *parent, ScopeFlags flags) : Scope(allocator, parent, flags) {}
 
     ScopeType Type() const override
     {
-        return ScopeType::LOCAL;
+        return TYPE;
     }
 
     Variable *AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
@@ -571,6 +564,8 @@ private:
 
 class FunctionScope : public ScopeWithParamScope<VariableScope, FunctionParamScope> {
 public:
+    static constexpr auto TYPE = ScopeType::FUNCTION;
+
     explicit FunctionScope(ArenaAllocator *allocator, Scope *parent)
         : ScopeWithParamScope(allocator, parent),
           typeAliasScope_(allocator->New<LocalScope>(allocator, this, ScopeFlags::TYPE_ALIAS))
@@ -579,7 +574,7 @@ public:
 
     ScopeType Type() const override
     {
-        return ScopeType::FUNCTION;
+        return TYPE;
     }
 
     void BindName(util::StringView name)
@@ -620,6 +615,8 @@ private:
 
 class ClassScope : public LocalScopeWithTypeAlias {
 public:
+    static constexpr auto TYPE = ScopeType::CLASS;
+
     explicit ClassScope(ArenaAllocator *allocator, Scope *parent)
         : LocalScopeWithTypeAlias(allocator, parent),
           staticDeclScope_(allocator->New<LocalScope>(allocator, this, ScopeFlags::STATIC_DECL_SCOPE)),
@@ -633,7 +630,7 @@ public:
 
     ScopeType Type() const override
     {
-        return ScopeType::CLASS;
+        return TYPE;
     }
 
     LocalScope *StaticDeclScope()
@@ -753,11 +750,13 @@ private:
 
 class CatchParamScope : public ParamScope {
 public:
+    static constexpr auto TYPE = ScopeType::CATCH_PARAM;
+
     explicit CatchParamScope(ArenaAllocator *allocator, Scope *parent) : ParamScope(allocator, parent) {}
 
     ScopeType Type() const override
     {
-        return ScopeType::CATCH_PARAM;
+        return TYPE;
     }
 
     Variable *AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
@@ -768,11 +767,13 @@ public:
 
 class CatchScope : public ScopeWithParamScope<LocalScopeWithTypeAlias, CatchParamScope> {
 public:
+    static constexpr auto TYPE = ScopeType::CATCH;
+
     explicit CatchScope(ArenaAllocator *allocator, Scope *parent) : ScopeWithParamScope(allocator, parent) {}
 
     ScopeType Type() const override
     {
-        return ScopeType::CATCH;
+        return TYPE;
     }
 
     Variable *AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
@@ -783,6 +784,8 @@ class LoopScope;
 
 class LoopDeclarationScope : public VariableScope {
 public:
+    static constexpr auto TYPE = ScopeType::LOOP_DECL;
+
     explicit LoopDeclarationScope(ArenaAllocator *allocator, Scope *parent) : VariableScope(allocator, parent) {}
 
     ScopeType Type() const override
@@ -816,6 +819,8 @@ private:
 
 class LoopScope : public VariableScope {
 public:
+    static constexpr auto TYPE = ScopeType::LOOP;
+
     explicit LoopScope(ArenaAllocator *allocator, Scope *parent) : VariableScope(allocator, parent) {}
 
     LoopDeclarationScope *DeclScope()
@@ -851,6 +856,8 @@ protected:
 
 class GlobalScope : public FunctionScope {
 public:
+    static constexpr auto TYPE = ScopeType::GLOBAL;
+
     explicit GlobalScope(ArenaAllocator *allocator)
         : FunctionScope(allocator, nullptr), foreignBindings_(allocator->Adapter())
     {
@@ -861,7 +868,7 @@ public:
 
     ScopeType Type() const override
     {
-        return ScopeType::GLOBAL;
+        return TYPE;
     }
 
     Variable *AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
@@ -891,6 +898,8 @@ public:
     using ExportDeclList = ArenaVector<ExportDecl *>;
     using LocalExportNameMap = ArenaMultiMap<varbinder::Variable *, util::StringView>;
 
+    static constexpr auto TYPE = ScopeType::MODULE;
+
     explicit ModuleScope(ArenaAllocator *allocator)
         : GlobalScope(allocator),
           allocator_(allocator),
@@ -902,7 +911,7 @@ public:
 
     ScopeType Type() const override
     {
-        return ScopeType::MODULE;
+        return TYPE;
     }
 
     const ModuleEntry<ir::ImportDeclaration *, ImportDeclList> &Imports() const
@@ -972,7 +981,7 @@ Variable *VariableScope::AddFunction(ArenaAllocator *allocator, Variable *curren
         return InsertBinding(newDecl->Name(), allocator->New<T>(newDecl, flags)).first->second;
     }
 
-    if (extension != ScriptExtension::JS || IsModuleScope()) {
+    if (extension != ScriptExtension::JS || Is<ModuleScope>()) {
         return nullptr;
     }
 

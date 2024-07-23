@@ -422,7 +422,7 @@ void CheckerContext::OnBreakStatement(ir::BreakStatement const *breakStatement)
     smartCasts.reserve(smartCasts_.size());
 
     for (auto const [variable, type] : smartCasts_) {
-        if (!inInnerScope(variable->AsLocalVariable()->GetScope(), breakStatement)) {
+        if (!inInnerScope(variable->As<varbinder::LocalVariable>()->GetScope(), breakStatement)) {
             smartCasts.emplace_back(variable, type);
         }
     }

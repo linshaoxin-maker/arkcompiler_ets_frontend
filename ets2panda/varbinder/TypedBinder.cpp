@@ -57,9 +57,9 @@ void TypedBinder::BuildSignatureDeclarationBaseParams(ir::AstNode *typeNode)
         }
     }
 
-    ASSERT(scope && scope->IsFunctionParamScope());
+    ASSERT(scope && scope->Is<FunctionParamScope>());
 
-    auto scopeCtx = LexicalScope<FunctionParamScope>::Enter(this, scope->AsFunctionParamScope(), false);
+    auto scopeCtx = LexicalScope<FunctionParamScope>::Enter(this, scope->As<FunctionParamScope>(), false);
     ResolveReferences(typeNode);
 }
 

@@ -100,7 +100,7 @@ checker::Type *ETSTypeReferencePart::GetType(checker::ETSChecker *checker)
     if (prev_ == nullptr) {
         if (name_->IsIdentifier()) {
             const auto ident = name_->AsIdentifier();
-            if ((ident->Variable() != nullptr) && (ident->Variable()->Declaration()->IsTypeAliasDecl())) {
+            if ((ident->Variable() != nullptr) && (ident->Variable()->Declaration()->Is<varbinder::TypeAliasDecl>())) {
                 SetTsType(checker->HandleTypeAlias(name_, typeParams_));
             } else if (ident->Name() == compiler::Signatures::UNDEFINED) {
                 SetTsType(checker->GlobalETSUndefinedType());

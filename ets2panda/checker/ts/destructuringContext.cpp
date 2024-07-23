@@ -89,7 +89,7 @@ void DestructuringContext::SetInferredTypeForVariable(varbinder::Variable *var, 
     }
 
     if (signatureInfo_ != nullptr) {
-        signatureInfo_->params.push_back(var->AsLocalVariable());
+        signatureInfo_->params.push_back(var->As<varbinder::LocalVariable>());
         signatureInfo_->minArgCount++;
     }
 

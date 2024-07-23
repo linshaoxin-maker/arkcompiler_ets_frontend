@@ -133,7 +133,7 @@ std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSCheck
 
     param->TypeAnnotation()->Check(this);
     paramVar->SetTsType(param->TypeAnnotation()->GetType(this));
-    return {paramVar->AsLocalVariable(), nullptr, isOptional};
+    return {paramVar->As<varbinder::LocalVariable>(), nullptr, isOptional};
 }
 
 Type *TSChecker::CreateParameterTypeForArrayAssignmentPattern(ir::ArrayExpression *arrayPattern, Type *inferredType)
@@ -214,12 +214,12 @@ ReturnedVariable TSChecker::CheckFunctionAssignmentPatternParameter(ir::Assignme
             Type *paramType = paramIdent->TypeAnnotation()->GetType(this);
             paramVar->SetTsType(paramType);
             ElaborateElementwise(paramType, param->Right(), paramIdent->Start());
-            return {paramVar->AsLocalVariable(), nullptr, true};
+            return {paramVar->As<varbinder::LocalVariable>(), nullptr, true};
         }
 
         paramVar->SetTsType(GetBaseTypeOfLiteralType(param->Right()->Check(this)));
         paramVar->AddFlag(varbinder::VariableFlags::OPTIONAL);
-        return {paramVar->AsLocalVariable(), nullptr, true};
+        return {paramVar->As<varbinder::LocalVariable>(), nullptr, true};
     }
 
     Type *paramType = nullptr;
@@ -248,7 +248,7 @@ ReturnedVariable TSChecker::CheckFunctionAssignmentPatternParameter(ir::Assignme
         varbinder::Scope::CreateVar(Allocator(), pn.View(), varbinder::VariableFlags::NONE, param);
     patternVar->SetTsType(paramType);
     patternVar->AddFlag(varbinder::VariableFlags::OPTIONAL);
-    return {patternVar->AsLocalVariable(), nullptr, true};
+    return {patternVar->As<varbinder::LocalVariable>(), nullptr, true};
 }
 
 std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSChecker::CheckFunctionRestParameter(
@@ -274,7 +274,7 @@ std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSCheck
             ir::Identifier *restIdent = param->Argument()->AsIdentifier();
             ASSERT(restIdent->Variable());
             restIdent->Variable()->SetTsType(restType->AsArrayType()->ElementType());
-            return {nullptr, restIdent->Variable()->AsLocalVariable(), false};
+            return {nullptr, restIdent->Variable()->As<varbinder::LocalVariable>(), false};
         }
         case ir::AstNodeType::OBJECT_PATTERN: {
             ASSERT(param->Argument()->IsObjectPattern());
@@ -316,11 +316,11 @@ std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSCheck
             ArrayDestructuringContext({this, param->AsArrayPattern(), false, false, param->TypeAnnotation(), nullptr});
         destructuringContext.Start();
         patternVar->SetTsType(destructuringContext.InferredType());
-        return {patternVar->AsLocalVariable(), nullptr, false};
+        return {patternVar->As<varbinder::LocalVariable>(), nullptr, false};
     }
 
     patternVar->SetTsType(param->CheckPattern(this));
-    return {patternVar->AsLocalVariable(), nullptr, false};
+    return {patternVar->As<varbinder::LocalVariable>(), nullptr, false};
 }
 
 std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSChecker::CheckFunctionObjectPatternParameter(
@@ -338,11 +338,11 @@ std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSCheck
             {this, param->AsObjectPattern(), false, false, param->TypeAnnotation(), nullptr});
         destructuringContext.Start();
         patternVar->SetTsType(destructuringContext.InferredType());
-        return {patternVar->AsLocalVariable(), nullptr, false};
+        return {patternVar->As<varbinder::LocalVariable>(), nullptr, false};
     }
 
     patternVar->SetTsType(param->CheckPattern(this));
-    return {patternVar->AsLocalVariable(), nullptr, false};
+    return {patternVar->As<varbinder::LocalVariable>(), nullptr, false};
 }
 
 std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSChecker::CheckFunctionParameter(
@@ -352,7 +352,7 @@ std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> TSCheck
     if (param->TsType() != nullptr) {
         ASSERT(param->TsType()->Variable());
         varbinder::Variable *var = param->TsType()->Variable();
-        result = {var->AsLocalVariable(), nullptr, var->HasFlag(varbinder::VariableFlags::OPTIONAL)};
+        result = {var->As<varbinder::LocalVariable>(), nullptr, var->HasFlag(varbinder::VariableFlags::OPTIONAL)};
         return result;
     }
 

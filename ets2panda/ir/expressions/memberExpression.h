@@ -113,7 +113,7 @@ public:
         if (Kind() == MemberExpressionKind::ELEMENT_ACCESS) {
             return nullptr;
         }
-        return Property()->Variable() != nullptr ? Property()->Variable()->AsLocalVariable() : nullptr;
+        return Property()->Variable() != nullptr ? Property()->Variable()->As<varbinder::LocalVariable>() : nullptr;
     }
 
     [[nodiscard]] const varbinder::LocalVariable *PropVar() const noexcept
@@ -121,7 +121,7 @@ public:
         if (Kind() == MemberExpressionKind::ELEMENT_ACCESS) {
             return nullptr;
         }
-        return Property()->Variable() != nullptr ? Property()->Variable()->AsLocalVariable() : nullptr;
+        return Property()->Variable() != nullptr ? Property()->Variable()->As<varbinder::LocalVariable>() : nullptr;
     }
 
     [[nodiscard]] bool IsComputed() const noexcept

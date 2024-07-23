@@ -298,13 +298,13 @@ static void GenLocalVariableInfo(pandasm::debuginfo::LocalVariable &variableDebu
         variableDebug.signatureType = "any";
     } else {
         std::stringstream ss;
-        var->AsLocalVariable()->TsType()->ToDebugInfoType(ss);
+        var->As<varbinder::LocalVariable>()->TsType()->ToDebugInfoType(ss);
         variableDebug.signature = ss.str();
         variableDebug.signatureType = ss.str();  // NOTE: Handle typeParams, either class or interface
     }
 
     variableDebug.reg =
-        static_cast<int32_t>(IRNode::MapRegister(var->AsLocalVariable()->Vreg().GetIndex(), totalRegsNum));
+        static_cast<int32_t>(IRNode::MapRegister(var->As<varbinder::LocalVariable>()->Vreg().GetIndex(), totalRegsNum));
     variableDebug.start = start;
     variableDebug.length = static_cast<uint32_t>(varsLength);
 }
@@ -315,8 +315,8 @@ void FunctionEmitter::GenScopeVariableInfoEnd(pandasm::Function *func, const var
     const auto extension = cg_->VarBinder()->Program()->Extension();
     auto varsLength = static_cast<uint32_t>(count - start + 1);
 
-    if (scope->IsFunctionScope()) {
-        for (auto *param : scope->AsFunctionScope()->ParamScope()->Params()) {
+    if (scope->Is<varbinder::FunctionScope>()) {
+        for (auto *param : scope->As<varbinder::FunctionScope>()->ParamScope()->Params()) {
             auto &variableDebug = func->localVariableDebug.emplace_back();
             GenLocalVariableInfo(variableDebug, param, std::make_tuple(start, varsLength, cg_->TotalRegsNum()),
                                  extension);
@@ -327,8 +327,9 @@ void FunctionEmitter::GenScopeVariableInfoEnd(pandasm::Function *func, const var
                                                                          unsortedBindings.end());
     for (const auto &[_, variable] : bindings) {
         (void)_;
-        if (!variable->IsLocalVariable() || variable->LexicalBound() || variable->Declaration()->IsParameterDecl() ||
-            variable->Declaration()->IsTypeAliasDecl()) {
+        if (!variable->Is<varbinder::LocalVariable>() || variable->LexicalBound() ||
+            variable->Declaration()->Is<varbinder::ParameterDecl>() ||
+            variable->Declaration()->Is<varbinder::TypeAliasDecl>()) {
             continue;
         }
 

@@ -826,10 +826,11 @@ checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *const expr) const
         //  Add/Remove/Modify smart cast for identifier
         //  (excluding the variables defined at top-level scope or captured in lambda-functions!)
         auto const *const variableScope = variable->GetScope();
-        auto const topLevelVariable = variableScope != nullptr
-                                          ? variableScope->IsGlobalScope() || (variableScope->Parent() != nullptr &&
-                                                                               variableScope->Parent()->IsGlobalScope())
-                                          : false;
+        auto const topLevelVariable =
+            variableScope != nullptr
+                ? variableScope->Is<varbinder::GlobalScope>() ||
+                      (variableScope->Parent() != nullptr && variableScope->Parent()->Is<varbinder::GlobalScope>())
+                : false;
         if (!topLevelVariable) {
             if (checker->Relation()->IsIdenticalTo(leftType, smartType)) {
                 checker->Context().RemoveSmartCast(variable);
@@ -1865,10 +1866,10 @@ checker::Type *ETSAnalyzer::Check(ir::BlockStatement *st) const
 
     //  Remove possible smart casts for variables declared in inner scope:
     if (auto const *const scope = st->Scope();
-        scope->IsFunctionScope() && st->Parent()->Parent()->Parent()->IsMethodDefinition()) {
+        scope->Is<varbinder::FunctionScope>() && st->Parent()->Parent()->Parent()->IsMethodDefinition()) {
         // When exiting method definition, just clear all smart casts
         checker->Context().ClearSmartCasts();
-    } else if (!scope->IsGlobalScope()) {
+    } else if (!scope->Is<varbinder::GlobalScope>()) {
         // otherwise only check inner declarations
         for (auto const *const decl : scope->Decls()) {
             if (decl->IsLetOrConstDecl() && decl->Node()->IsIdentifier()) {

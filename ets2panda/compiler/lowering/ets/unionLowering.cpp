@@ -76,13 +76,13 @@ static varbinder::LocalVariable *CreateUnionFieldClassProperty(checker::ETSCheck
 {
     auto *const allocator = checker->Allocator();
     auto *const dummyClass = GetUnionFieldClass(checker, varbinder);
-    auto *classScope = dummyClass->Scope()->AsClassScope();
+    auto *classScope = dummyClass->Scope()->As<varbinder::ClassScope>();
 
     // Enter the union filed class instance field scope
     auto fieldCtx = varbinder::LexicalScope<varbinder::LocalScope>::Enter(varbinder, classScope->InstanceFieldScope());
 
     if (auto *var = classScope->FindLocal(propName, varbinder::ResolveBindingOptions::VARIABLES); var != nullptr) {
-        return var->AsLocalVariable();
+        return var->As<varbinder::LocalVariable>();
     }
 
     // Create field name for synthetic class
@@ -103,7 +103,7 @@ static varbinder::LocalVariable *CreateUnionFieldClassProperty(checker::ETSCheck
     ArenaVector<ir::AstNode *> fieldDecl {allocator->Adapter()};
     fieldDecl.push_back(field);
     dummyClass->AddProperties(std::move(fieldDecl));
-    return var->AsLocalVariable();
+    return var->As<varbinder::LocalVariable>();
 }
 
 static void HandleUnionPropertyAccess(checker::ETSChecker *checker, varbinder::VarBinder *vbind,

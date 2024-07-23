@@ -746,8 +746,8 @@ public:
             return std::nullopt;
         }
 
-        if (decision == CheckDecision::CORRECT && variable->IsLocalVariable()) {
-            const auto localVar = variable->AsLocalVariable();
+        if (decision == CheckDecision::CORRECT && variable->Is<varbinder::LocalVariable>()) {
+            const auto localVar = variable->As<varbinder::LocalVariable>();
             if (localVar->HasFlag(varbinder::VariableFlags::LOCAL)) {
                 return localVar;
             }
@@ -1297,7 +1297,7 @@ private:
             auto varParent = var->Declaration()->Node()->Parent();
             if (varParent != nullptr && !IsContainedIn(ident->Parent(), varParent) && ident->Parent() != varParent) {
                 if (var->GetScope() != nullptr && var->GetScope()->Parent() != nullptr &&
-                    var->GetScope()->Parent()->IsGlobalScope() &&
+                    var->GetScope()->Parent()->Is<varbinder::GlobalScope>() &&
                     ident->GetTopStatement() == varParent->GetTopStatement()) {
                     return true;
                 }

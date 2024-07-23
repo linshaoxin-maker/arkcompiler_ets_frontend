@@ -50,7 +50,7 @@ namespace ark::es2panda::checker {
 void ProcessCheckerNode(ETSChecker *checker, ir::AstNode *node)
 {
     auto scope = compiler::NearestScope(node);
-    if (scope->IsGlobalScope()) {
+    if (scope->Is<varbinder::GlobalScope>()) {
         // NOTE(aleksisch): All classes are contained in ETSGlobal class scope (not just Global scope),
         // however it's parent is ETSScript. It should be fixed
         scope = checker->VarBinder()->Program()->GlobalClassScope();
@@ -73,7 +73,7 @@ void ProcessCheckerNode(ETSChecker *checker, ir::AstNode *node)
 void ProcessScopesNode(ETSChecker *checker, ir::AstNode *node)
 {
     auto *scope = compiler::NearestScope(node);
-    if (scope->IsGlobalScope()) {
+    if (scope->Is<varbinder::GlobalScope>()) {
         // NOTE(aleksisch): All classes are contained in ETSGlobal scope,
         // however it's parent is ETSScript (not ETSGlobal). It should be fixed
         scope = checker->VarBinder()->Program()->GlobalClassScope();

@@ -406,8 +406,8 @@ void JSCompiler::Compile(const ir::ClassDefinition *node) const
     auto res = pg->Scope()->Find(node->PrivateId());
     ASSERT(res.variable);
 
-    if (res.variable->AsLocalVariable()->LexicalBound()) {
-        pg->StoreLexicalVar(node, res.lexLevel, res.variable->AsLocalVariable()->LexIdx());
+    if (res.variable->As<varbinder::LocalVariable>()->LexicalBound()) {
+        pg->StoreLexicalVar(node, res.lexLevel, res.variable->As<varbinder::LocalVariable>()->LexIdx());
     }
 
     InitializeClassName(pg, node);
@@ -1263,7 +1263,7 @@ void JSCompiler::Compile(const ir::ThisExpression *expr) const
     PandaGen *pg = GetPandaGen();
     auto res = pg->Scope()->Find(varbinder::VarBinder::MANDATORY_PARAM_THIS);
 
-    ASSERT(res.variable && res.variable->IsLocalVariable());
+    ASSERT(res.variable && res.variable->Is<varbinder::LocalVariable>());
     pg->LoadAccFromLexEnv(expr, res);
 
     const ir::ScriptFunction *func = util::Helpers::GetContainingConstructor(expr);
@@ -1302,7 +1302,7 @@ void JSCompiler::Compile(const ir::UnaryExpression *expr) const
             if (expr->Argument()->IsIdentifier()) {
                 auto result = pg->Scope()->Find(expr->Argument()->AsIdentifier()->Name());
                 if (result.variable == nullptr ||
-                    (result.scope->IsGlobalScope() && result.variable->IsGlobalVariable())) {
+                    (result.scope->Is<varbinder::GlobalScope>() && result.variable->Is<varbinder::GlobalVariable>())) {
                     compiler::RegScope rs(pg);
                     compiler::VReg variable = pg->AllocReg();
                     compiler::VReg global = pg->AllocReg();

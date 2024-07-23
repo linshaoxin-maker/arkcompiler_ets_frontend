@@ -256,6 +256,11 @@ protected:
     virtual void AddCompilableFunction(ir::ScriptFunction *func);
 
 private:
+    void ResolveDoWhileStatementReference(ir::DoWhileStatement *doWhileStatement);
+    void ResolveWhileStatementReference(ir::WhileStatement *whileStatement);
+    void ResolveIdentifierReference(ir::Identifier *ident);
+    void ResolveSuperExpressionReference(ir::AstNode *childNode);
+
     parser::Program *program_ {};
     ArenaAllocator *allocator_ {};
     public_lib::Context *context_ {};
@@ -307,13 +312,13 @@ public:
             varbinder->varScope_->CheckDirectEval(varbinder->context_);
             // NOLINTNEXTLINE(readability-braces-around-statements,readability-misleading-indentation)
         } else if constexpr (std::is_same_v<T, LoopScope>) {
-            if (scope->IsLoopScope()) {
+            if (scope->template Is<LoopScope>()) {
                 varbinder->varScope_ = scope;
                 varbinder->varScope_->CheckDirectEval(varbinder->context_);
             }
             // NOLINTNEXTLINE(readability-braces-around-statements,readability-misleading-indentation)
         } else if constexpr (std::is_same_v<T, LoopDeclarationScope>) {
-            if (scope->IsLoopDeclarationScope()) {
+            if (scope->template Is<LoopDeclarationScope>()) {
                 varbinder->varScope_ = scope;
                 varbinder->varScope_->CheckDirectEval(varbinder->context_);
             }

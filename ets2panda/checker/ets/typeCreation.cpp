@@ -160,7 +160,7 @@ namespace {
     auto *const signatureInfo = checker->CreateSignatureInfo();
     signatureInfo->params.reserve(function->Params().size());
     for (const auto *const param : function->Params()) {
-        signatureInfo->params.push_back(param->AsETSParameterExpression()->Variable()->AsLocalVariable());
+        signatureInfo->params.push_back(param->AsETSParameterExpression()->Variable()->As<varbinder::LocalVariable>());
     }
     signatureInfo->minArgCount = signatureInfo->params.size();
 
@@ -197,7 +197,8 @@ ETSEnumType::Method ETSChecker::MakeMethod(ir::TSEnumDeclaration const *const en
     if (buildPorxyParam) {
         return {MakeGlobalSignature(this, function, returnType),
                 MakeProxyFunctionType(
-                    this, name, {function->Params()[0]->AsETSParameterExpression()->Variable()->AsLocalVariable()},
+                    this, name,
+                    {function->Params()[0]->AsETSParameterExpression()->Variable()->As<varbinder::LocalVariable>()},
                     function, returnType)};
     }
     return {MakeGlobalSignature(this, function, returnType),

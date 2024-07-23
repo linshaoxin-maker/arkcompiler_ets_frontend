@@ -160,10 +160,10 @@ void ETSFunction::Compile(ETSGen *etsg)
     FunctionRegScope lrs(etsg);
     auto *topScope = etsg->TopScope();
 
-    if (topScope->IsFunctionScope()) {
+    if (topScope->Is<varbinder::FunctionScope>()) {
         CompileFunction(etsg);
     } else {
-        ASSERT(topScope->IsGlobalScope());
+        ASSERT(topScope->Is<varbinder::GlobalScope>());
         CompileSourceBlock(etsg, etsg->RootNode()->AsBlockStatement());
     }
 

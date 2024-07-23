@@ -292,7 +292,7 @@ void ETSGen::LoadVar(const ir::Identifier *node, varbinder::Variable const *cons
         return;
     }
 
-    auto *local = var->AsLocalVariable();
+    auto *local = var->As<varbinder::LocalVariable>();
 
     switch (ETSLReference::ResolveReferenceKind(var)) {
         case ReferenceKind::STATIC_FIELD: {
@@ -325,7 +325,7 @@ void ETSGen::LoadVar(const ir::Identifier *node, varbinder::Variable const *cons
 
 void ETSGen::StoreVar(const ir::Identifier *node, const varbinder::ConstScopeFindResult &result)
 {
-    auto *local = result.variable->AsLocalVariable();
+    auto *local = result.variable->As<varbinder::LocalVariable>();
     ApplyConversion(node, local->TsType());
 
     switch (ETSLReference::ResolveReferenceKind(result.variable)) {
@@ -619,7 +619,7 @@ void ETSGen::CreateBigIntObject(const ir::AstNode *node, VReg arg0, std::string_
 VReg ETSGen::GetThisReg() const
 {
     const auto res = Scope()->Find(varbinder::VarBinder::MANDATORY_PARAM_THIS);
-    return res.variable->AsLocalVariable()->Vreg();
+    return res.variable->As<varbinder::LocalVariable>()->Vreg();
 }
 
 const checker::Type *ETSGen::LoadDefaultValue([[maybe_unused]] const ir::AstNode *node,

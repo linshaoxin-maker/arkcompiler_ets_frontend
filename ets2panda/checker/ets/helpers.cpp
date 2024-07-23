@@ -180,7 +180,7 @@ bool ETSChecker::SaveCapturedVariableInLocalClass(varbinder::Variable *const var
             return;
         }
 
-        if (var->Declaration()->IsParameterDecl()) {
+        if (var->Declaration()->Is<varbinder::ParameterDecl>()) {
             LOG(DEBUG, ES2PANDA) << "    - Modified parameter ";
             scopeIter->Node()->AsClassDefinition()->AddToLocalVariableIsNeeded(var);
         }
@@ -223,7 +223,7 @@ void ETSChecker::SaveCapturedVariable(varbinder::Variable *const var, ir::Identi
 
     const auto *scopeIter = Scope();
     while (scopeIter != var->GetScope()) {
-        if (scopeIter->IsFunctionScope()) {
+        if (scopeIter->Is<varbinder::FunctionScope>()) {
             Context().AddCapturedVar(var, pos);
             return;
         }
@@ -949,10 +949,10 @@ std::optional<SmartCastTuple> CheckerContext::ResolveSmartCastTypes()
 
     // Exclude processing of global variables and those captured in lambdas and modified there
     auto const *const variableScope = testCondition_.variable->GetScope();
-    auto const topLevelVariable =
-        variableScope != nullptr ? variableScope->IsGlobalScope() ||
-                                       (variableScope->Parent() != nullptr && variableScope->Parent()->IsGlobalScope())
-                                 : false;
+    auto const topLevelVariable = variableScope != nullptr ? variableScope->Is<varbinder::GlobalScope>() ||
+                                                                 (variableScope->Parent() != nullptr &&
+                                                                  variableScope->Parent()->Is<varbinder::GlobalScope>())
+                                                           : false;
     if (topLevelVariable) {
         return std::nullopt;
     }
@@ -1136,10 +1136,14 @@ static void CheckExpandedType(Type *expandedAliasType, std::set<util::StringView
 Type *ETSChecker::HandleTypeAlias(ir::Expression *const name, const ir::TSTypeParameterInstantiation *const typeParams)
 {
     ASSERT(name->IsIdentifier() && name->AsIdentifier()->Variable() &&
-           name->AsIdentifier()->Variable()->Declaration()->IsTypeAliasDecl());
+           name->AsIdentifier()->Variable()->Declaration()->Is<varbinder::TypeAliasDecl>());
 
-    auto *const typeAliasNode =
-        name->AsIdentifier()->Variable()->Declaration()->AsTypeAliasDecl()->Node()->AsTSTypeAliasDeclaration();
+    auto *const typeAliasNode = name->AsIdentifier()
+                                    ->Variable()
+                                    ->Declaration()
+                                    ->As<varbinder::TypeAliasDecl>()
+                                    ->Node()
+                                    ->AsTSTypeAliasDeclaration();
 
     // NOTE (mmartin): modify for default params
     if ((typeParams == nullptr) != (typeAliasNode->TypeParams() == nullptr)) {
@@ -1236,14 +1240,15 @@ void ETSChecker::BindingsModuleObjectAddProperty(checker::ETSObjectType *moduleO
 {
     for (auto [_, var] : bindings) {
         (void)_;
-        auto [found, aliasedName] = FindSpecifierForModuleObject(importDecl, var->AsLocalVariable()->Name());
-        if ((var->AsLocalVariable()->Declaration()->Node()->IsExported() ||
-             var->AsLocalVariable()->Declaration()->Node()->IsExportedType()) &&
+        auto [found, aliasedName] =
+            FindSpecifierForModuleObject(importDecl, var->template As<varbinder::LocalVariable>()->Name());
+        if ((var->template As<varbinder::LocalVariable>()->Declaration()->Node()->IsExported() ||
+             var->template As<varbinder::LocalVariable>()->Declaration()->Node()->IsExportedType()) &&
             found) {
             if (!aliasedName.Empty()) {
                 moduleObjType->AddReExportAlias(var->Declaration()->Name(), aliasedName);
             }
-            moduleObjType->AddProperty<TYPE>(var->AsLocalVariable());
+            moduleObjType->AddProperty<TYPE>(var->template As<varbinder::LocalVariable>());
         }
     }
 }
@@ -1303,7 +1308,7 @@ Type *ETSChecker::GetReferencedTypeBase(ir::Expression *name)
         return name->TsType();
     }
 
-    auto *refVar = name->AsIdentifier()->Variable()->AsLocalVariable();
+    auto *refVar = name->AsIdentifier()->Variable()->As<varbinder::LocalVariable>();
 
     checker::Type *tsType = nullptr;
     switch (refVar->Declaration()->Node()->Type()) {
@@ -1518,7 +1523,7 @@ const ir::AstNode *ETSChecker::FindJumpTarget(ir::AstNode *node)
     auto label = isContinue ? node->AsContinueStatement()->Ident() : node->AsBreakStatement()->Ident();
     if (label != nullptr) {
         auto var = label->Variable();
-        if (var != nullptr && var->Declaration()->IsLabelDecl()) {
+        if (var != nullptr && var->Declaration()->Is<varbinder::LabelDecl>()) {
             return var->Declaration()->Node();
         }
 
@@ -1736,14 +1741,14 @@ bool IsConstantMemberOrIdentifierExpression(ir::Expression *expression)
 {
     if (expression->IsMemberExpression()) {
         auto *var = expression->AsMemberExpression()->PropVar();
-        return var->Declaration()->IsConstDecl() ||
-               (var->Declaration()->IsReadonlyDecl() && var->HasFlag(varbinder::VariableFlags::STATIC));
+        return var->Declaration()->Is<varbinder::ConstDecl>() ||
+               (var->Declaration()->Is<varbinder::ReadonlyDecl>() && var->HasFlag(varbinder::VariableFlags::STATIC));
     }
 
     if (expression->IsIdentifier()) {
         auto *var = expression->AsIdentifier()->Variable();
-        return var->Declaration()->IsConstDecl() ||
-               (var->Declaration()->IsReadonlyDecl() && var->HasFlag(varbinder::VariableFlags::STATIC));
+        return var->Declaration()->Is<varbinder::ConstDecl>() ||
+               (var->Declaration()->Is<varbinder::ReadonlyDecl>() && var->HasFlag(varbinder::VariableFlags::STATIC));
     }
 
     return false;
@@ -1907,7 +1912,7 @@ void ETSChecker::CheckRethrowingFunction(ir::ScriptFunction *func)
 
         if (type->IsETSTypeReference()) {
             auto *typeDecl = type->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Variable()->Declaration();
-            if (typeDecl->IsTypeAliasDecl()) {
+            if (typeDecl->Is<varbinder::TypeAliasDecl>()) {
                 type = typeDecl->Node()->AsTSTypeAliasDeclaration()->TypeAnnotation();
             }
         }
@@ -2199,7 +2204,7 @@ void ETSChecker::GenerateGetterSetterBody(ArenaVector<ir::Statement *> &stmts, A
         AllocNode<ir::MemberExpression>(baseExpression, field->Key()->AsIdentifier()->Clone(Allocator(), nullptr),
                                         ir::MemberExpressionKind::PROPERTY_ACCESS, false, false);
     memberExpression->SetTsType(field->TsType());
-    memberExpression->SetPropVar(field->Key()->Variable()->AsLocalVariable());
+    memberExpression->SetPropVar(field->Key()->Variable()->As<varbinder::LocalVariable>());
     memberExpression->SetRange(classDef->Range());
     if (memberExpression->ObjType() == nullptr && classDef->TsType() != nullptr) {
         memberExpression->SetObjectType(classDef->TsType()->AsETSObjectType());
@@ -2312,10 +2317,11 @@ ir::ClassProperty *GetImplementationClassProp(ETSChecker *checker, ir::ClassProp
     bool isSuperOwner = ((originalProp->Modifiers() & ir::ModifierFlags::SUPER_OWNER) != 0U);
     if (!isSuperOwner) {
         auto *const classDef = classType->GetDeclNode()->AsClassDefinition();
-        auto *const scope = checker->Scope()->AsClassScope();
+        auto *const scope = checker->Scope()->As<varbinder::ClassScope>();
         auto *const classProp = checker->ClassPropToImplementationProp(
             interfaceProp->Clone(checker->Allocator(), originalProp->Parent()), scope);
-        classType->AddProperty<PropertyType::INSTANCE_FIELD>(classProp->Key()->Variable()->AsLocalVariable());
+        classType->AddProperty<PropertyType::INSTANCE_FIELD>(
+            classProp->Key()->Variable()->As<varbinder::LocalVariable>());
         classDef->Body().push_back(classProp);
         return classProp;
     }
@@ -2336,8 +2342,8 @@ void ETSChecker::GenerateGetterSetterPropertyAndMethod(ir::ClassProperty *origin
     auto *interfaceProp = originalProp->Clone(Allocator(), originalProp->Parent());
     interfaceProp->ClearModifier(ir::ModifierFlags::GETTER_SETTER | ir::ModifierFlags::EXTERNAL);
 
-    ASSERT(Scope()->IsClassScope());
-    auto *const scope = Scope()->AsClassScope();
+    ASSERT(Scope()->Is<varbinder::ClassScope>());
+    auto *const scope = Scope()->As<varbinder::ClassScope>();
     scope->InstanceFieldScope()->EraseBinding(interfaceProp->Key()->AsIdentifier()->Name());
     interfaceProp->SetRange(originalProp->Range());
 
@@ -2352,7 +2358,7 @@ void ETSChecker::GenerateGetterSetterPropertyAndMethod(ir::ClassProperty *origin
     getter->SetParent(classDef);
     getter->TsType()->AddTypeFlag(TypeFlag::GETTER);
     getter->Variable()->SetTsType(getter->TsType());
-    classType->AddProperty<checker::PropertyType::INSTANCE_METHOD>(getter->Variable()->AsLocalVariable());
+    classType->AddProperty<checker::PropertyType::INSTANCE_METHOD>(getter->Variable()->As<varbinder::LocalVariable>());
 
     auto *const methodScope = scope->InstanceMethodScope();
     auto name = getter->Key()->AsIdentifier()->Name();
@@ -2383,7 +2389,7 @@ ir::MethodDefinition *ETSChecker::GenerateSetterForProperty(ir::ClassProperty *o
                                                             ir::MethodDefinition *getter)
 {
     ir::MethodDefinition *setter =
-        GenerateDefaultGetterSetter(interfaceProp, classProp, Scope()->AsClassScope(), true, this);
+        GenerateDefaultGetterSetter(interfaceProp, classProp, Scope()->As<varbinder::ClassScope>(), true, this);
     if (((originalProp->Modifiers() & ir::ModifierFlags::SETTER) != 0U)) {
         setter->Function()->AddModifier(ir::ModifierFlags::OVERRIDE);
     }
@@ -2396,7 +2402,7 @@ ir::MethodDefinition *ETSChecker::GenerateSetterForProperty(ir::ClassProperty *o
     setter->TsType()->AddTypeFlag(TypeFlag::SETTER);
     getter->Variable()->TsType()->AsETSFunctionType()->AddCallSignature(
         setter->TsType()->AsETSFunctionType()->CallSignatures()[0]);
-    classType->AddProperty<checker::PropertyType::INSTANCE_METHOD>(setter->Variable()->AsLocalVariable());
+    classType->AddProperty<checker::PropertyType::INSTANCE_METHOD>(setter->Variable()->As<varbinder::LocalVariable>());
     getter->AddOverload(setter);
     return setter;
 }

@@ -20,58 +20,44 @@
 #include "util/enumbitops.h"
 
 namespace ark::es2panda::varbinder {
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DECLARATION_KINDS(_)             \
-    _(VAR, VarDecl)                      \
-    _(LET, LetDecl)                      \
-    _(CONST, ConstDecl)                  \
-    _(LABEL, LabelDecl)                  \
-    _(READONLY, ReadonlyDecl)            \
-    _(FUNC, FunctionDecl)                \
-    _(PARAM, ParameterDecl)              \
-    _(IMPORT, ImportDecl)                \
-    _(DYNAMIC_IMPORT, DynamicImportDecl) \
-    _(EXPORT, ExportDecl)                \
-    /* TS */                             \
-    _(TYPE_ALIAS, TypeAliasDecl)         \
-    _(NAMESPACE, NameSpaceDecl)          \
-    _(INTERFACE, InterfaceDecl)          \
-    _(ENUM_LITERAL, EnumLiteralDecl)     \
-    _(TYPE_PARAMETER, TypeParameterDecl) \
-    _(PROPERTY, PropertyDecl)            \
-    _(CLASS, ClassDecl)                  \
-    _(METHOD, MethodDecl)                \
-    _(ENUM, EnumDecl)
-
 enum class DeclType {
     NONE,
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DECLARE_TYPES(decl_kind, class_name) decl_kind,
-    DECLARATION_KINDS(DECLARE_TYPES)
-#undef DECLARE_TYPES
+    VAR,
+    LET,
+    CONST,
+    LABEL,
+    READONLY,
+    FUNC,
+    PARAM,
+    IMPORT,
+    DYNAMIC_IMPORT,
+    EXPORT,
+    // TS
+    TYPE_ALIAS,
+    NAMESPACE,
+    INTERFACE,
+    ENUM_LITERAL,
+    TYPE_PARAMETER,
+    PROPERTY,
+    CLASS,
+    METHOD,
+    ENUM,
 };
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define SCOPE_TYPES(_)                           \
-    _(PARAM, ParamScope)                         \
-    _(CATCH_PARAM, CatchParamScope)              \
-    _(FUNCTION_PARAM, FunctionParamScope)        \
-    _(CATCH, CatchScope)                         \
-    _(CLASS, ClassScope)                         \
-    _(LOCAL, LocalScope)                         \
-    _(LOCAL_WITH_ALIAS, LocalScopeWithTypeAlias) \
-    /* Variable Scopes */                        \
-    _(LOOP, LoopScope)                           \
-    _(LOOP_DECL, LoopDeclarationScope)           \
-    _(FUNCTION, FunctionScope)                   \
-    _(GLOBAL, GlobalScope)                       \
-    _(MODULE, ModuleScope)
-
 enum class ScopeType {
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define GEN_SCOPE_TYPES(type, class_name) type,
-    SCOPE_TYPES(GEN_SCOPE_TYPES)
-#undef GEN_SCOPE_TYPES
+    PARAM,
+    CATCH_PARAM,
+    FUNCTION_PARAM,
+    CATCH,
+    CLASS,
+    LOCAL,
+    LOCAL_WITH_ALIAS,
+    // Variable Scopes
+    LOOP,
+    LOOP_DECL,
+    FUNCTION,
+    GLOBAL,
+    MODULE,
 };
 
 using ENUMBITOPS_OPERATORS;
@@ -97,18 +83,11 @@ enum class ResolveBindingOptions : uint32_t {
     ALL_NON_TYPE = ALL - TYPE_ALIASES,
 };
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define VARIABLE_TYPES(_)     \
-    _(LOCAL, LocalVariable)   \
-    _(GLOBAL, GlobalVariable) \
-    _(MODULE, ModuleVariable) \
-    _(ENUM, EnumVariable)
-
 enum class VariableType {
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define GEN_VARIABLE_TYPES(type, class_name) type,
-    VARIABLE_TYPES(GEN_VARIABLE_TYPES)
-#undef GEN_VARIABLE_TYPES
+    LOCAL,
+    GLOBAL,
+    MODULE,
+    ENUM,
 };
 
 enum class VariableKind {

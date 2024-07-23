@@ -34,11 +34,6 @@ class Decl;
 class Scope;
 class VariableScope;
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DECLARE_CLASSES(type, className) class className;
-VARIABLE_TYPES(DECLARE_CLASSES)
-#undef DECLARE_CLASSES
-
 class Variable {
 public:
     virtual ~Variable() = default;
@@ -47,24 +42,24 @@ public:
 
     VariableType virtual Type() const = 0;
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DECLARE_CHECKS_CASTS(variableType, className)     \
-    bool Is##className() const                            \
-    {                                                     \
-        return Type() == VariableType::variableType;      \
-    }                                                     \
-    className *As##className()                            \
-    {                                                     \
-        ASSERT(Is##className());                          \
-        return reinterpret_cast<className *>(this);       \
-    }                                                     \
-    const className *As##className() const                \
-    {                                                     \
-        ASSERT(Is##className());                          \
-        return reinterpret_cast<const className *>(this); \
+    template <class T>
+    bool Is() const
+    {
+        return Type() == T::TYPE;
     }
-    VARIABLE_TYPES(DECLARE_CHECKS_CASTS)
-#undef DECLARE_CHECKS_CASTS
+
+    template <class T>
+    const T *As() const
+    {
+        ASSERT(Is<T>());
+        return reinterpret_cast<const T *>(this);
+    }
+
+    template <class T>
+    T *As()
+    {
+        return const_cast<T *>(const_cast<const Variable *>(this)->As<T>());
+    }
 
     [[nodiscard]] const Decl *Declaration() const noexcept
     {
@@ -144,15 +139,24 @@ private:
     Scope *scope_ {};
 };
 
-class LocalVariable : public Variable {
+template <VariableType V>
+class TypedVariable : public Variable {
 public:
-    explicit LocalVariable(Decl *decl, VariableFlags flags);
-    explicit LocalVariable(VariableFlags flags);
+    static constexpr VariableType TYPE = V;
 
     VariableType Type() const override
     {
-        return VariableType::LOCAL;
+        return TYPE;
     }
+
+protected:
+    using Variable::Variable;
+};
+
+class LocalVariable : public TypedVariable<VariableType::LOCAL> {
+public:
+    explicit LocalVariable(Decl *decl, VariableFlags flags);
+    explicit LocalVariable(VariableFlags flags);
 
     void BindVReg(compiler::VReg vreg)
     {
@@ -190,26 +194,16 @@ private:
     compiler::VReg vreg_ {};
 };
 
-class GlobalVariable : public Variable {
+class GlobalVariable : public TypedVariable<VariableType::GLOBAL> {
 public:
-    explicit GlobalVariable(Decl *decl, VariableFlags flags) : Variable(decl, flags) {}
-
-    VariableType Type() const override
-    {
-        return VariableType::GLOBAL;
-    }
+    explicit GlobalVariable(Decl *decl, VariableFlags flags) : TypedVariable(decl, flags) {}
 
     void SetLexical([[maybe_unused]] Scope *scope) override;
 };
 
-class ModuleVariable : public Variable {
+class ModuleVariable : public TypedVariable<VariableType::MODULE> {
 public:
-    explicit ModuleVariable(Decl *decl, VariableFlags flags) : Variable(decl, flags) {}
-
-    VariableType Type() const override
-    {
-        return VariableType::MODULE;
-    }
+    explicit ModuleVariable(Decl *decl, VariableFlags flags) : TypedVariable(decl, flags) {}
 
     compiler::VReg &ModuleReg()
     {
@@ -238,16 +232,11 @@ private:
     util::StringView exoticName_ {};
 };
 
-class EnumVariable : public Variable {
+class EnumVariable : public TypedVariable<VariableType::ENUM> {
 public:
     explicit EnumVariable(Decl *decl, bool backReference = false)
-        : Variable(decl, VariableFlags::NONE), backReference_(backReference)
+        : TypedVariable(decl, VariableFlags::NONE), backReference_(backReference)
     {
-    }
-
-    VariableType Type() const override
-    {
-        return VariableType::ENUM;
     }
 
     void SetValue(EnumMemberResult value)

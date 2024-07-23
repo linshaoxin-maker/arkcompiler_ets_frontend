@@ -393,7 +393,7 @@ static void ResolveDeclaredFieldsOfObject(ETSChecker *checker, const ETSObjectTy
         ASSERT(it->Declaration()->Node()->IsClassProperty());
         auto *classProp = it->Declaration()->Node()->AsClassProperty();
         it->AddFlag(checker->GetAccessFlagFromNode(classProp));
-        type->AddProperty<PropertyType::INSTANCE_FIELD>(it->AsLocalVariable());
+        type->AddProperty<PropertyType::INSTANCE_FIELD>(it->As<varbinder::LocalVariable>());
     }
 
     for (auto &[_, it] : scope->StaticFieldScope()->Bindings()) {
@@ -401,7 +401,7 @@ static void ResolveDeclaredFieldsOfObject(ETSChecker *checker, const ETSObjectTy
         ASSERT(it->Declaration()->Node()->IsClassProperty());
         auto *classProp = it->Declaration()->Node()->AsClassProperty();
         it->AddFlag(checker->GetAccessFlagFromNode(classProp));
-        type->AddProperty<PropertyType::STATIC_FIELD>(it->AsLocalVariable());
+        type->AddProperty<PropertyType::STATIC_FIELD>(it->As<varbinder::LocalVariable>());
     }
 }
 
@@ -426,7 +426,7 @@ static void ResolveDeclaredMethodsOfObject(ETSChecker *checker, const ETSObjectT
         it->SetTsType(funcType);
         funcType->SetVariable(it);
         method->SetTsType(funcType);
-        type->AddProperty<PropertyType::INSTANCE_METHOD>(it->AsLocalVariable());
+        type->AddProperty<PropertyType::INSTANCE_METHOD>(it->As<varbinder::LocalVariable>());
     }
 
     for (auto &[_, it] : scope->StaticMethodScope()->Bindings()) {
@@ -458,7 +458,7 @@ static void ResolveDeclaredMethodsOfObject(ETSChecker *checker, const ETSObjectT
             continue;
         }
 
-        type->AddProperty<PropertyType::STATIC_METHOD>(it->AsLocalVariable());
+        type->AddProperty<PropertyType::STATIC_METHOD>(it->As<varbinder::LocalVariable>());
     }
 }
 
@@ -467,13 +467,13 @@ static void ResolveDeclaredDeclsOfObject(ETSChecker *checker, const ETSObjectTyp
     for (auto &[_, it] : scope->InstanceDeclScope()->Bindings()) {
         (void)_;
         it->AddFlag(checker->GetAccessFlagFromNode(it->Declaration()->Node()));
-        type->AddProperty<PropertyType::INSTANCE_DECL>(it->AsLocalVariable());
+        type->AddProperty<PropertyType::INSTANCE_DECL>(it->As<varbinder::LocalVariable>());
     }
 
     for (auto &[_, it] : scope->StaticDeclScope()->Bindings()) {
         (void)_;
         it->AddFlag(checker->GetAccessFlagFromNode(it->Declaration()->Node()));
-        type->AddProperty<PropertyType::STATIC_DECL>(it->AsLocalVariable());
+        type->AddProperty<PropertyType::STATIC_DECL>(it->As<varbinder::LocalVariable>());
     }
 }
 
@@ -510,9 +510,9 @@ void ETSChecker::ResolveDeclaredMembersOfObject(const ETSObjectType *type)
     auto savedContext = checker::SavedCheckerContext(this, status, type);
     checker::ScopeContext scopeCtx(this, scope);
 
-    ResolveDeclaredFieldsOfObject(this, type, scope->AsClassScope());
-    ResolveDeclaredMethodsOfObject(this, type, scope->AsClassScope());
-    ResolveDeclaredDeclsOfObject(this, type, scope->AsClassScope());
+    ResolveDeclaredFieldsOfObject(this, type, scope->As<varbinder::ClassScope>());
+    ResolveDeclaredMethodsOfObject(this, type, scope->As<varbinder::ClassScope>());
+    ResolveDeclaredDeclsOfObject(this, type, scope->As<varbinder::ClassScope>());
 }
 
 bool ETSChecker::HasETSFunctionType(ir::TypeNode *typeAnnotation)
@@ -540,7 +540,7 @@ bool ETSChecker::HasETSFunctionType(ir::TypeNode *typeAnnotation)
     };
 
     auto *typeDecl = typeAnnotation->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Variable()->Declaration();
-    if (typeDecl != nullptr && typeDecl->IsTypeAliasDecl()) {
+    if (typeDecl != nullptr && typeDecl->Is<varbinder::TypeAliasDecl>()) {
         addTypeAlias(typeDecl);
     }
 
@@ -826,10 +826,10 @@ void ETSChecker::ValidateNonOverriddenFunction(ETSObjectType *classType, ArenaVe
 
                 auto newFieldVar = classType->GetDeclNode()
                                        ->Scope()
-                                       ->AsClassScope()
+                                       ->As<varbinder::ClassScope>()
                                        ->InstanceFieldScope()
                                        ->AddDecl(Allocator(), newFieldDecl, ScriptExtension::ETS)
-                                       ->AsLocalVariable();
+                                       ->As<varbinder::LocalVariable>();
                 newFieldVar->AddFlag(varbinder::VariableFlags::PROPERTY);
                 newFieldVar->AddFlag(varbinder::VariableFlags::PUBLIC);
                 classType->AddProperty<PropertyType::INSTANCE_FIELD>(newFieldVar);
@@ -1240,7 +1240,7 @@ ArenaVector<const ir::Expression *> ETSChecker::CheckMemberOrCallOrObjectExpress
 void ETSChecker::CheckConstFields(const ETSObjectType *classType)
 {
     for (const auto &prop : classType->Fields()) {
-        if (!(prop->Declaration()->IsConstDecl() || prop->Declaration()->IsReadonlyDecl()) ||
+        if (!(prop->Declaration()->Is<varbinder::ConstDecl>() || prop->Declaration()->Is<varbinder::ReadonlyDecl>()) ||
             !prop->HasFlag(varbinder::VariableFlags::EXPLICIT_INIT_REQUIRED)) {
             continue;
         }
@@ -1319,7 +1319,7 @@ void ETSChecker::CheckInnerClassMembers(const ETSObjectType *classType)
 
     for (const auto &[_, it] : classType->StaticFields()) {
         (void)_;
-        if (!it->Declaration()->IsReadonlyDecl()) {
+        if (!it->Declaration()->Is<varbinder::ReadonlyDecl>()) {
             ThrowTypeError("Inner class cannot have non-readonly static properties",
                            it->Declaration()->Node()->Start());
         }
@@ -2021,11 +2021,11 @@ void ETSChecker::AddElementsToModuleObject(ETSObjectType *moduleObj, const util:
         }
 
         if (var->HasFlag(varbinder::VariableFlags::METHOD)) {
-            moduleObj->AddProperty<checker::PropertyType::STATIC_METHOD>(var->AsLocalVariable());
+            moduleObj->AddProperty<checker::PropertyType::STATIC_METHOD>(var->As<varbinder::LocalVariable>());
         } else if (var->HasFlag(varbinder::VariableFlags::PROPERTY)) {
-            moduleObj->AddProperty<checker::PropertyType::STATIC_FIELD>(var->AsLocalVariable());
+            moduleObj->AddProperty<checker::PropertyType::STATIC_FIELD>(var->As<varbinder::LocalVariable>());
         } else {
-            moduleObj->AddProperty<checker::PropertyType::STATIC_DECL>(var->AsLocalVariable());
+            moduleObj->AddProperty<checker::PropertyType::STATIC_DECL>(var->As<varbinder::LocalVariable>());
         }
     }
 }

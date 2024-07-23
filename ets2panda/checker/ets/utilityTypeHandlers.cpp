@@ -173,9 +173,9 @@ ir::ClassProperty *ETSChecker::CreateNullishProperty(ir::ClassProperty *const pr
 
     propClone->SetVariable(Allocator()->New<varbinder::LocalVariable>(newDecl, varbinder::VariableFlags::PROPERTY));
 
-    propClone->Variable()->SetScope(classProp->IsStatic()
-                                        ? newClassDefinition->Scope()->AsClassScope()->StaticFieldScope()
-                                        : newClassDefinition->Scope()->AsClassScope()->InstanceFieldScope());
+    propClone->Variable()->SetScope(
+        classProp->IsStatic() ? newClassDefinition->Scope()->As<varbinder::ClassScope>()->StaticFieldScope()
+                              : newClassDefinition->Scope()->As<varbinder::ClassScope>()->InstanceFieldScope());
 
     propClone->Variable()->Declaration()->BindNode(propClone);
 
@@ -238,7 +238,7 @@ void ETSChecker::CreateConstructorForPartialType(ir::ClassDefinition *const part
                                                  varbinder::RecordTable *const recordTable)
 {
     // Create scopes
-    auto *const scope = partialClassDef->Scope()->AsClassScope();
+    auto *const scope = partialClassDef->Scope()->As<varbinder::ClassScope>();
     const auto classCtx = varbinder::LexicalScope<varbinder::ClassScope>::Enter(VarBinder(), scope);
 
     // Create ctor

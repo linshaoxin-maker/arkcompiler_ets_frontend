@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 - 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021 - 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -66,8 +66,8 @@ void LoopEnvScope::CopyBindings(PandaGen *pg, varbinder::VariableScope *scope, v
             continue;
         }
 
-        pg->LoadLexicalVar(scope_->Node(), 1, variable->AsLocalVariable()->LexIdx());
-        pg->StoreLexicalVar(scope_->Parent()->Node(), 0, variable->AsLocalVariable()->LexIdx());
+        pg->LoadLexicalVar(scope_->Node(), 1, variable->As<varbinder::LocalVariable>()->LexIdx());
+        pg->StoreLexicalVar(scope_->Parent()->Node(), 0, variable->As<varbinder::LocalVariable>()->LexIdx());
     }
 }
 

@@ -20,14 +20,14 @@
 #include <utility>
 
 namespace ark::es2panda::varbinder {
-LocalVariable::LocalVariable(Decl *decl, VariableFlags flags) : Variable(decl, flags)
+LocalVariable::LocalVariable(Decl *decl, VariableFlags flags) : TypedVariable(decl, flags)
 {
-    if (decl->IsConstDecl() || decl->IsReadonlyDecl()) {
+    if (decl->Is<ConstDecl>() || decl->Is<ReadonlyDecl>()) {
         flags_ |= VariableFlags::READONLY;
     }
 }
 
-LocalVariable::LocalVariable(VariableFlags flags) : Variable(flags) {}
+LocalVariable::LocalVariable(VariableFlags flags) : TypedVariable(flags) {}
 
 const util::StringView &Variable::Name() const
 {

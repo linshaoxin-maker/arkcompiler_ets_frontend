@@ -49,14 +49,14 @@ static ArenaSet<varbinder::Variable *> FindCaptured(public_lib::Context *ctx, ir
 
         if (withinLambda && ast->IsScopeBearer()) {
             innermostArrowScopes.insert(ast->Scope());
-            if (ast->Scope()->IsFunctionScope()) {
-                innermostArrowScopes.insert(ast->Scope()->AsFunctionScope()->ParamScope());
+            if (ast->Scope()->Is<varbinder::FunctionScope>()) {
+                innermostArrowScopes.insert(ast->Scope()->As<varbinder::FunctionScope>()->ParamScope());
             }
-            if (ast->Scope()->IsCatchScope()) {
-                innermostArrowScopes.insert(ast->Scope()->AsCatchScope()->ParamScope());
+            if (ast->Scope()->Is<varbinder::CatchScope>()) {
+                innermostArrowScopes.insert(ast->Scope()->As<varbinder::CatchScope>()->ParamScope());
             }
-            if (ast->Scope()->IsLoopScope()) {
-                innermostArrowScopes.insert(ast->Scope()->AsLoopScope()->DeclScope());
+            if (ast->Scope()->Is<varbinder::LoopScope>()) {
+                innermostArrowScopes.insert(ast->Scope()->As<varbinder::LoopScope>()->DeclScope());
             }
         } else if (withinLambda && ast->IsIdentifier()) {
             auto *var = ast->AsIdentifier()->Variable();
@@ -64,7 +64,7 @@ static ArenaSet<varbinder::Variable *> FindCaptured(public_lib::Context *ctx, ir
                 return;
             }
             auto *scope = var->GetScope();
-            if (scope != nullptr && !scope->IsClassScope() && !scope->IsGlobalScope() &&
+            if (scope != nullptr && !scope->Is<varbinder::ClassScope>() && !scope->Is<varbinder::GlobalScope>() &&
                 innermostArrowScopes.count(scope) == 0) {
                 captured.insert(var);
             }
