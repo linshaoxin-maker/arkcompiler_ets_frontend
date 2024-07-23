@@ -29,15 +29,11 @@ util::StringView Signature::InternalName() const
     return internalName_.Empty() ? func_->Scope()->InternalName() : internalName_;
 }
 
-Signature *Signature::Substitute(TypeRelation *relation, const Substitution *substitution)
+void Signature::FillNewSigInfo(SignatureInfo *newSigInfo, bool &anyChange, TypeRelation *relation,
+                               const Substitution *substitution)
 {
-    if (substitution == nullptr || substitution->empty()) {
-        return this;
-    }
     auto *checker = relation->GetChecker()->AsETSChecker();
     auto *allocator = checker->Allocator();
-    bool anyChange = false;
-    SignatureInfo *newSigInfo = allocator->New<SignatureInfo>(allocator);
 
     if (!signatureInfo_->typeParams.empty()) {
         for (auto *tparam : signatureInfo_->typeParams) {
@@ -67,6 +63,19 @@ Signature *Signature::Substitute(TypeRelation *relation, const Substitution *sub
             newSigInfo->restVar->SetTsType(newRestType);
         }
     }
+}
+
+Signature *Signature::Substitute(TypeRelation *relation, const Substitution *substitution)
+{
+    if (substitution == nullptr || substitution->empty()) {
+        return this;
+    }
+    auto *checker = relation->GetChecker()->AsETSChecker();
+    auto *allocator = checker->Allocator();
+    bool anyChange = false;
+    SignatureInfo *newSigInfo = allocator->New<SignatureInfo>(allocator);
+
+    FillNewSigInfo(newSigInfo, anyChange, relation, substitution);
 
     if (!anyChange) {
         newSigInfo = signatureInfo_;
@@ -79,8 +88,7 @@ Signature *Signature::Substitute(TypeRelation *relation, const Substitution *sub
     if (!anyChange) {
         return this;
     }
-    auto *result = allocator->New<Signature>(newSigInfo, newReturnType);
-    result->func_ = func_;
+    auto *result = allocator->New<Signature>(newSigInfo, newReturnType, func_);
     result->flags_ = flags_;
     result->internalName_ = internalName_;
     result->ownerObj_ = ownerObj_;

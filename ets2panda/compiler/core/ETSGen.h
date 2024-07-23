@@ -609,16 +609,22 @@ public:
         Ra().Emit<CallVirtShort>(node, name, athis, arg0);
     }
 
-    void CallDynamic(const ir::AstNode *node, VReg obj, VReg param2, checker::Signature *signature,
+    struct CallDynamicData {
+        const ir::AstNode *node = nullptr;
+        VReg obj;
+        VReg param2;
+    };
+
+    void CallDynamic(CallDynamicData data, checker::Signature *signature,
                      const ArenaVector<ir::Expression *> &arguments)
     {
-        CallDynamicImpl<CallShort, Call, CallRange>(node, obj, param2, signature, arguments);
+        CallDynamicImpl<CallShort, Call, CallRange>(data, signature, arguments);
     }
 
-    void CallDynamic(const ir::AstNode *node, VReg obj, VReg param2, VReg param3, checker::Signature *signature,
+    void CallDynamic(CallDynamicData data, VReg param3, checker::Signature *signature,
                      const ArenaVector<ir::Expression *> &arguments)
     {
-        CallDynamicImpl<CallShort, Call, CallRange>(node, obj, param2, param3, signature, arguments);
+        CallDynamicImpl<CallShort, Call, CallRange>(data, param3, signature, arguments);
     }
 
 #ifdef PANDA_WITH_ETS
@@ -1079,7 +1085,7 @@ private:
     ApplyConversionAndStoreAccumulator(arguments[idx], arg##idx, paramType##idx)
 
     template <typename Short, typename General, typename Range>
-    void CallDynamicImpl(const ir::AstNode *node, VReg &obj, VReg &param2, checker::Signature *signature,
+    void CallDynamicImpl(CallDynamicData data, checker::Signature *signature,
                          const ArenaVector<ir::Expression *> &arguments)
     {
         RegScope rs(this);
@@ -1087,18 +1093,18 @@ private:
 
         switch (arguments.size()) {
             case 0U: {
-                Ra().Emit<Short>(node, name, obj, param2);
+                Ra().Emit<Short>(data.node, name, data.obj, data.param2);
                 break;
             }
             case 1U: {
                 COMPILE_ARG(0, 2U);
-                Ra().Emit<General, 3U>(node, name, obj, param2, arg0, dummyReg_);
+                Ra().Emit<General, 3U>(data.node, name, data.obj, data.param2, arg0, dummyReg_);
                 break;
             }
             case 2U: {
                 COMPILE_ARG(0, 2U);
                 COMPILE_ARG(1, 2U);
-                Ra().Emit<General>(node, name, obj, param2, arg0, arg1);
+                Ra().Emit<General>(data.node, name, data.obj, data.param2, arg0, arg1);
                 break;
             }
             default: {
@@ -1106,14 +1112,14 @@ private:
                     COMPILE_ARG(idx, 2U);
                 }
 
-                Rra().Emit<Range>(node, obj, arguments.size() + 2U, name, obj);
+                Rra().Emit<Range>(data.node, data.obj, arguments.size() + 2U, name, data.obj);
                 break;
             }
         }
     }
 
     template <typename Short, typename General, typename Range>
-    void CallDynamicImpl(const ir::AstNode *node, VReg obj, VReg param2, VReg param3, checker::Signature *signature,
+    void CallDynamicImpl(CallDynamicData data, VReg param3, checker::Signature *signature,
                          const ArenaVector<ir::Expression *> &arguments)
     {
         RegScope rs(this);
@@ -1121,12 +1127,12 @@ private:
 
         switch (arguments.size()) {
             case 0U: {
-                Ra().Emit<General, 3U>(node, name, obj, param2, param3, dummyReg_);
+                Ra().Emit<General, 3U>(data.node, name, data.obj, data.param2, param3, dummyReg_);
                 break;
             }
             case 1U: {
                 COMPILE_ARG(0, 3U);
-                Ra().Emit<General>(node, name, obj, param2, param3, arg0);
+                Ra().Emit<General>(data.node, name, data.obj, data.param2, param3, arg0);
                 break;
             }
             default: {
@@ -1134,7 +1140,7 @@ private:
                     COMPILE_ARG(idx, 3U);
                 }
 
-                Rra().Emit<Range>(node, obj, arguments.size() + 3U, name, obj);
+                Rra().Emit<Range>(data.node, data.obj, arguments.size() + 3U, name, data.obj);
                 break;
             }
         }
@@ -1145,6 +1151,22 @@ private:
 
     void ToBinaryResult(const ir::AstNode *node, Label *ifFalse);
 
+    std::map<checker::TypeFlag, checker::Type *> &GetTypeMap()
+    {
+        static std::map<checker::TypeFlag, checker::Type *> typeMap = {
+            {checker::TypeFlag::ETS_BOOLEAN, Checker()->GlobalByteType()},
+            {checker::TypeFlag::BYTE, Checker()->GlobalByteType()},
+            {checker::TypeFlag::CHAR, Checker()->GlobalCharType()},
+            {checker::TypeFlag::SHORT, Checker()->GlobalShortType()},
+            {checker::TypeFlag::INT, Checker()->GlobalIntType()},
+            {checker::TypeFlag::LONG, Checker()->GlobalLongType()},
+            {checker::TypeFlag::FLOAT, Checker()->GlobalFloatType()},
+            {checker::TypeFlag::DOUBLE, Checker()->GlobalDoubleType()},
+            {checker::TypeFlag::ETS_STRING_ENUM, Checker()->GlobalIntType()},
+            {checker::TypeFlag::ETS_ENUM, Checker()->GlobalIntType()},
+        };
+        return typeMap;
+    }
     template <typename T>
     void LoadAccumulatorNumber(const ir::AstNode *node, T number, checker::TypeFlag targetType);
     void InitializeContainingClass();
@@ -1171,50 +1193,43 @@ void ETSGen::LoadAccumulatorNumber(const ir::AstNode *node, T number, checker::T
         case checker::TypeFlag::ETS_BOOLEAN:
         case checker::TypeFlag::BYTE: {
             Sa().Emit<Ldai>(node, static_cast<checker::ByteType::UType>(number));
-            SetAccumulatorType(Checker()->GlobalByteType());
             break;
         }
         case checker::TypeFlag::CHAR: {
             Sa().Emit<Ldai>(node, static_cast<checker::CharType::UType>(number));
-            SetAccumulatorType(Checker()->GlobalCharType());
             break;
         }
         case checker::TypeFlag::SHORT: {
             Sa().Emit<Ldai>(node, static_cast<checker::ShortType::UType>(number));
-            SetAccumulatorType(Checker()->GlobalShortType());
             break;
         }
         case checker::TypeFlag::INT: {
             Sa().Emit<Ldai>(node, static_cast<checker::IntType::UType>(number));
-            SetAccumulatorType(Checker()->GlobalIntType());
             break;
         }
         case checker::TypeFlag::LONG: {
             Sa().Emit<LdaiWide>(node, static_cast<checker::LongType::UType>(number));
-            SetAccumulatorType(Checker()->GlobalLongType());
             break;
         }
         case checker::TypeFlag::FLOAT: {
             Sa().Emit<Fldai>(node, static_cast<checker::FloatType::UType>(number));
-            SetAccumulatorType(Checker()->GlobalFloatType());
             break;
         }
         case checker::TypeFlag::DOUBLE: {
             Sa().Emit<FldaiWide>(node, static_cast<checker::DoubleType::UType>(number));
-            SetAccumulatorType(Checker()->GlobalDoubleType());
             break;
         }
         case checker::TypeFlag::ETS_STRING_ENUM:
             [[fallthrough]];
         case checker::TypeFlag::ETS_ENUM: {
             Sa().Emit<Ldai>(node, static_cast<checker::ETSEnumInterface::UType>(number));
-            SetAccumulatorType(Checker()->GlobalIntType());
             break;
         }
         default: {
             UNREACHABLE();
         }
     }
+    SetAccumulatorType(GetTypeMap()[typeKind]);
 
     if (targetType_ && (targetType_->IsETSObjectType() || targetType_->IsETSUnionType())) {
         ApplyConversion(node, targetType_);
