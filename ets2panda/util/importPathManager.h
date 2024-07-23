@@ -22,6 +22,7 @@
 
 #include "util/arktsconfig.h"
 #include "util/ustring.h"
+#include "util/path.h"
 #include "es2panda.h"
 
 namespace ark::es2panda::util {
@@ -39,10 +40,13 @@ public:
         bool isParsed;
     };
 
-    ImportPathManager(ark::ArenaAllocator *allocator, std::shared_ptr<ArkTsConfig> arktsConfig, std::string stdLib)
+    ImportPathManager(ark::ArenaAllocator *allocator, std::shared_ptr<ArkTsConfig> arktsConfig,
+                      const CompilerOptions &options)
         : allocator_(allocator),
           arktsConfig_(std::move(arktsConfig)),
-          stdLib_(std::move(stdLib)),
+          // NOTE(vpukhov): enforce workdir as default value
+          absoluteEtsPath_(options.etsPath.empty() ? "" : util::Path(options.etsPath, allocator_).GetAbsolutePath()),
+          stdLib_(options.stdLib),
           parseList_(allocator->Adapter())
     {
     }
@@ -58,6 +62,8 @@ public:
     ImportData GetImportData(const util::StringView &path, const ScriptExtension &extension) const;
     void MarkAsParsed(const StringView &path);
 
+    util::StringView FormPackageName(const util::Path &path);
+
 private:
     bool IsRelativePath(const StringView &path) const;
     StringView GetRealPath(const StringView &path) const;
@@ -68,7 +74,8 @@ private:
 
     ArenaAllocator *allocator_ {nullptr};
     std::shared_ptr<ArkTsConfig> arktsConfig_ {nullptr};
-    std::string stdLib_ {};
+    std::string absoluteEtsPath_;
+    std::string stdLib_;
     ArenaVector<ParseInfo> parseList_;
     std::string_view pathDelimiter_ {ark::os::file::File::GetPathDelim()};
 };

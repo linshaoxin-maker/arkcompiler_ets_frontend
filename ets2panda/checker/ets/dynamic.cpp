@@ -294,6 +294,14 @@ std::conditional_t<IS_STATIC, ir::ClassStaticBlock *, ir::MethodDefinition *> ET
     }
 }
 
+static util::StringView FormClassDescriptor(ETSChecker *checker, util::StringView name)
+{
+    std::stringstream ss;
+    ss << checker->VarBinder()->Program()->PackagePrefix() << name;
+    auto fullName = ss.str();
+    return util::UString(ETSObjectType::NameToDescriptor(util::StringView(fullName)), checker->Allocator()).View();
+}
+
 ir::ClassStaticBlock *ETSChecker::CreateDynamicCallClassInitializer(Language lang, bool isConstruct)
 {
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
@@ -314,21 +322,11 @@ ir::ClassStaticBlock *ETSChecker::CreateDynamicCallClassInitializer(Language lan
 
         ArenaVector<ir::Expression *> callParams(Allocator()->Adapter());
 
-        std::stringstream ss;
         auto name = isConstruct ? compiler::Signatures::Dynamic::NewClass(lang)
                                 : compiler::Signatures::Dynamic::CallClass(lang);
 
-        ss << compiler::Signatures::CLASS_REF_BEGIN;
-        if (!VarBinder()->Program()->OmitModuleName()) {
-            std::string moduleString(VarBinder()->Program()->ModuleName());
-            std::replace(moduleString.begin(), moduleString.end(), *compiler::Signatures::METHOD_SEPARATOR.begin(),
-                         *compiler::Signatures::NAMESPACE_SEPARATOR.begin());
-            ss << moduleString << compiler::Signatures::NAMESPACE_SEPARATOR;
-        }
-        ss << name << compiler::Signatures::MANGLE_SEPARATOR;
-
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-        auto *className = AllocNode<ir::StringLiteral>(util::UString(ss.str(), Allocator()).View());
+        auto *className = AllocNode<ir::StringLiteral>(FormClassDescriptor(this, name));
         callParams.push_back(className);
 
         // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)

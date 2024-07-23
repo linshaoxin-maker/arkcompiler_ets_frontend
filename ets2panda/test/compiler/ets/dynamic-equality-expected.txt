@@ -758,7 +758,7 @@
                         "arguments": [
                           {
                             "type": "StringLiteral",
-                            "value": "L$jscall;",
+                            "value": "Ldynamic-equality/$jscall;",
                             "loc": {
                               "start": {
                                 "line": 1,

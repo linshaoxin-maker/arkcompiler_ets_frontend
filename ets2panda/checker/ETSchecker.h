@@ -636,6 +636,9 @@ public:
     void ValidateObjectLiteralForRequiredType(const ETSObjectType *requiredType,
                                               const ir::ObjectExpression *initObjExpr);
 
+    using NamedAccessMeta = std::tuple<ETSObjectType const *, checker::Type const *, const util::StringView>;
+    static NamedAccessMeta FormNamedAccessMetadata(varbinder::Variable const *prop);
+
     // Smart cast support
     [[nodiscard]] checker::Type *ResolveSmartType(checker::Type *sourceType, checker::Type *targetType);
     [[nodiscard]] std::pair<Type *, Type *> CheckTestNullishCondition(Type *testedType, Type *actualType, bool strict);

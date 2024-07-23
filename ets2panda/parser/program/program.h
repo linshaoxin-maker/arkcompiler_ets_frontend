@@ -185,36 +185,28 @@ public:
         resolvedFilePath_ = util::UString(sourceFile.resolvedPath, Allocator()).View();
     }
 
-    void SetModuleInfo(const util::StringView &name, bool isPackage, bool omitName = false)
+    void SetPackageInfo(const util::StringView &name, bool isPackage)
     {
-        moduleInfo_.moduleName = name;
-        moduleInfo_.isPackageModule = isPackage;
-        moduleInfo_.omitModuleName = omitName;
+        packageInfo_.packageName = name;
+        packageInfo_.packagePrefix = util::UString(std::string(name) + '.', allocator_).View();
+        packageInfo_.isSeparateModule = !isPackage;
     }
 
-    const util::StringView &ModuleName() const
+    util::StringView PackageName() const
     {
-        return moduleInfo_.moduleName;
+        ASSERT(!packageInfo_.packageName.Empty());
+        return packageInfo_.packageName;
     }
 
-    bool IsPackageModule() const
+    util::StringView PackagePrefix() const
     {
-        return moduleInfo_.isPackageModule;
+        ASSERT(!packageInfo_.packagePrefix.Empty());
+        return packageInfo_.packagePrefix;
     }
 
-    bool OmitModuleName() const
+    bool IsSeparateModule() const
     {
-        return moduleInfo_.omitModuleName;
-    }
-
-    const bool &IsEntryPoint() const
-    {
-        return entryPoint_;
-    }
-
-    void MarkEntry()
-    {
-        entryPoint_ = true;
+        return packageInfo_.isSeparateModule;
     }
 
     varbinder::ClassScope *GlobalClassScope();
@@ -231,16 +223,13 @@ public:
     bool NodeContainsETSNolint(const ir::AstNode *node, ETSWarnings warning);
 
 private:
-    struct ModuleInfo {
-        explicit ModuleInfo(util::StringView name = util::StringView(), bool isPackage = false, bool omitName = false)
-            : moduleName(name), isPackageModule(isPackage), omitModuleName(omitName)
-        {
-        }
+    struct PackageInfo {
+        PackageInfo() = default;
 
         // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
-        util::StringView moduleName;
-        bool isPackageModule;
-        bool omitModuleName;  // unclear naming, used to determine the entry point without --ets-module option
+        util::StringView packageName;
+        util::StringView packagePrefix;
+        bool isSeparateModule {false};
         // NOLINTEND(misc-non-private-member-variables-in-classes)
     };
 
@@ -255,9 +244,8 @@ private:
     ExternalSource externalSources_;
     ScriptKind kind_ {};
     ScriptExtension extension_ {};
-    bool entryPoint_ {};
     ETSNolintsCollectionMap etsnolintCollection_;
-    ModuleInfo moduleInfo_ {};
+    PackageInfo packageInfo_;
 };
 }  // namespace ark::es2panda::parser
 

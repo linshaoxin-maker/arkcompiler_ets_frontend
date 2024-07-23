@@ -70,12 +70,10 @@ void GlobalClassHandler::InitGlobalClass(const ArenaVector<parser::Program *> &p
     bool topLevelStatementsExist = false;
     for (auto program : programs) {
         program->Ast()->IterateRecursively(addCCtor);
-        if (program->IsEntryPoint() && !mainExists && MainFunctionExists(program->Ast()->Statements())) {
+        if (!mainExists && MainFunctionExists(program->Ast()->Statements())) {
             mainExists = true;
         }
-
-        // NOTE(rsipka): unclear naming, OmitModuleName() used to determine the entry point without --ets-module option
-        auto stmts = MakeGlobalStatements(program->Ast(), globalClass, program->OmitModuleName());
+        auto stmts = MakeGlobalStatements(program->Ast(), globalClass, program->IsSeparateModule());
         if (!topLevelStatementsExist && !stmts.empty()) {
             topLevelStatementsExist = true;
         }
@@ -87,7 +85,7 @@ void GlobalClassHandler::InitGlobalClass(const ArenaVector<parser::Program *> &p
 
 static ir::MethodDefinition *CreateAndFillTopLevelMethod(
     const ArenaVector<GlobalClassHandler::GlobalStmts> &initStatements, ArenaAllocator *allocator,
-    const std::string_view name)
+    ir::ClassDefinition *global, const std::string_view name)
 {
     const auto functionFlags = ir::ScriptFunctionFlags::NONE;
     const auto functionModifiers = ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC;
@@ -119,6 +117,8 @@ static ir::MethodDefinition *CreateAndFillTopLevelMethod(
             stmt->SetParent(methodDef->Function()->Body());
         }
     }
+    methodDef->SetParent(global);
+    global->Body().insert(global->Body().begin(), methodDef);
     return methodDef;
 }
 
@@ -237,26 +237,16 @@ void GlobalClassHandler::InitCallToCCTOR(parser::Program *program, const ArenaVe
     program->Ast()->Statements().emplace_back(globalDecl);
     globalDecl->SetParent(program->Ast());
     InitGlobalClass(globalClass, program->Kind());
-    auto &globalBody = globalClass->Body();
-    // NOTE(rsipka): unclear call, OmitModuleName() used to determine the entry points without --ets-module option
-    if (program->OmitModuleName() && program->Kind() != parser::ScriptKind::STDLIB) {
-        ir::MethodDefinition *initMethod = CreateAndFillTopLevelMethod(initStatements, allocator_, INIT_NAME);
-        ir::MethodDefinition *mainMethod = nullptr;
-        if (!mainExists && topLevelStatementsExist) {
-            const ArenaVector<GlobalStmts> emptyStatements(allocator_->Adapter());
-            mainMethod = CreateAndFillTopLevelMethod(emptyStatements, allocator_, compiler::Signatures::MAIN);
-        }
-        if (initMethod != nullptr) {
-            initMethod->SetParent(program->GlobalClass());
-            globalBody.insert(globalBody.begin(), initMethod);
-            if (!initMethod->Function()->Body()->AsBlockStatement()->Statements().empty()) {
-                AddInitCall(program->GlobalClass(), initMethod);
-            }
-        }
-        if (mainMethod != nullptr) {
-            mainMethod->SetParent(program->GlobalClass());
-            globalBody.insert(globalBody.begin(), mainMethod);
-        }
+    if (!program->IsSeparateModule() || program->Kind() == parser::ScriptKind::STDLIB) {
+        return;
+    }
+    ir::MethodDefinition *initMethod = CreateAndFillTopLevelMethod(initStatements, allocator_, globalClass, INIT_NAME);
+    if (!initMethod->Function()->Body()->AsBlockStatement()->Statements().empty()) {
+        AddInitCall(globalClass, initMethod);
+    }
+    if (!mainExists && topLevelStatementsExist) {
+        const ArenaVector<GlobalStmts> emptyStatements(allocator_->Adapter());
+        CreateAndFillTopLevelMethod(emptyStatements, allocator_, globalClass, compiler::Signatures::MAIN);
     }
 }
 
