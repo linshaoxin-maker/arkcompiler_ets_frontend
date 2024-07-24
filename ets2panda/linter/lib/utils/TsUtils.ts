@@ -2699,4 +2699,47 @@ export class TsUtils {
       return compType.flags === ts.TypeFlags.TypeParameter;
     });
   }
+
+  private readonly fileExportDeclCaches = new Map<ts.SourceFile, Set<ts.Node>>();
+
+  isFileExportDecl(node: ts.HasModifiers): boolean {
+    const sourceFile = node.getSourceFile();
+    if (!sourceFile) {
+      return false;
+    }
+    if (!this.fileExportDeclCaches.has(sourceFile)) {
+      this.searchFileExportDecl(sourceFile);
+    }
+    return !!this.fileExportDeclCaches.get(sourceFile)?.has(node);
+  }
+
+  // Search for and save the exported declaration in the specified file, re-exporting another module will not be included.
+  private searchFileExportDecl(sourceFile: ts.SourceFile): void {
+    if (this.fileExportDeclCaches.has(sourceFile)) {
+      return;
+    }
+    const exportDeclSet = new Set<ts.Node>();
+    sourceFile.statements.forEach((statement: ts.Statement) => {
+      if (ts.isExportAssignment(statement)) {
+        if (statement.isExportEquals) {
+          return;
+        }
+        const exportDecl = this.getDeclarationNode(statement.expression);
+        exportDecl && exportDeclSet.add(exportDecl);
+      } else if (ts.isExportDeclaration(statement)) {
+        if (!statement.exportClause || !ts.isNamedExports(statement.exportClause)) {
+          return;
+        }
+        statement.exportClause.elements.forEach((specifier) => {
+          const exportDecl = this.getDeclarationNode(specifier.propertyName ?? specifier.name);
+          exportDecl && exportDeclSet.add(exportDecl);
+        });
+      } else if (ts.canHaveModifiers(statement)) {
+        if (TsUtils.hasModifier(ts.getModifiers(statement), ts.SyntaxKind.ExportKeyword)) {
+          exportDeclSet.add(statement);
+        }
+      }
+    });
+    this.fileExportDeclCaches.set(sourceFile, exportDeclSet);
+  }
 }

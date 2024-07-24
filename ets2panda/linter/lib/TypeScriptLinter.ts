@@ -984,7 +984,8 @@ export class TypeScriptLinter {
       this.scanCapturedVarsInSendableScope(
         tsFunctionDeclaration,
         tsFunctionDeclaration,
-        FaultID.SendableFunctionImportedVariables
+        FaultID.SendableFunctionImportedVariables,
+        FaultID.SendableFunctionImportedVariablesWarning
       );
     }
   }
@@ -1373,7 +1374,12 @@ export class TypeScriptLinter {
     // Check captured variables for sendable class
     if (isSendableClass) {
       tsClassDecl.members.forEach((classMember) => {
-        this.scanCapturedVarsInSendableScope(classMember, tsClassDecl, FaultID.SendableCapturedVars);
+        this.scanCapturedVarsInSendableScope(
+          classMember,
+          tsClassDecl,
+          FaultID.SendableCapturedVars,
+          FaultID.SendableCapturedVarsWarning
+        );
       });
     }
 
@@ -2542,7 +2548,12 @@ export class TypeScriptLinter {
     this.incrementCounters(node, FaultID.ObjectTypeLiteral, autofix);
   }
 
-  private scanCapturedVarsInSendableScope(startNode: ts.Node, scope: ts.Node, faultId: FaultID): void {
+  private scanCapturedVarsInSendableScope(
+    startNode: ts.Node,
+    scope: ts.Node,
+    faultId: FaultID,
+    warningFaultId: FaultID
+  ): void {
     const callback = (node: ts.Node): void => {
       // Namespace import will introduce closure in the es2abc compiler stage
       if (!ts.isIdentifier(node) || this.checkNamespaceImportVar(node)) {
@@ -2559,7 +2570,7 @@ export class TypeScriptLinter {
         return;
       }
 
-      this.checkLocalDecl(node, scope, faultId);
+      this.checkLocalDecl(node, scope, faultId, warningFaultId);
     };
     // Type nodes should not checked because no closure will be introduced
     const stopCondition = (node: ts.Node): boolean => {
@@ -2572,7 +2583,7 @@ export class TypeScriptLinter {
     forEachNodeInSubtree(startNode, callback, stopCondition);
   }
 
-  private checkLocalDecl(node: ts.Identifier, scope: ts.Node, faultId: FaultID): void {
+  private checkLocalDecl(node: ts.Identifier, scope: ts.Node, faultId: FaultID, warningFaultId: FaultID): void {
     const trueSym = this.tsUtils.trueSymbolAtLocation(node);
     // Sendable decorator should be used in method of Sendable classes
     if (trueSym === undefined) {
@@ -2586,15 +2597,17 @@ export class TypeScriptLinter {
 
     const declarations = trueSym.getDeclarations();
     if (declarations?.length) {
-      this.checkLocalDeclWithSendableClosure(node, scope, declarations[0], faultId);
+      this.checkLocalDeclWithSendableClosure(node, scope, declarations[0], faultId, warningFaultId);
     }
   }
 
+  // eslint-disable-next-line complexity
   private checkLocalDeclWithSendableClosure(
     node: ts.Identifier,
     scope: ts.Node,
     decl: ts.Declaration,
-    faultId: FaultID
+    faultId: FaultID,
+    warningFaultId: FaultID
   ): void {
     const declPosition = decl.getStart();
     if (
@@ -2602,6 +2615,9 @@ export class TypeScriptLinter {
       declPosition !== undefined && declPosition >= scope.getStart() && declPosition < scope.getEnd()
     ) {
       return;
+    }
+    if ((ts.isClassDeclaration(decl) || ts.isFunctionDeclaration(decl)) && this.tsUtils.isFileExportDecl(decl)) {
+      this.incrementCounters(node, warningFaultId);
     }
     if (this.isTopSendableClosure(decl)) {
       return;
@@ -2766,7 +2782,6 @@ export class TypeScriptLinter {
 
     if (this.tsUtils.isWrongSendableToolsAssignment(lhsType, rhsType)) {
       this.incrementCounters(field, FaultID.SendableToolsLimited);
-      return;
     }
     const isStrict = this.tsUtils.needStrictMatchType(lhsType, rhsType);
     // 'isNewStructuralCheck' means that this assignment scenario was previously omitted, so only strict matches are checked now
