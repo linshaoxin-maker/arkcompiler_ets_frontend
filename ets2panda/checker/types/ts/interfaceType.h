@@ -139,6 +139,7 @@ public:
     IndexInfo *FindIndexInfo(bool findNumberInfo);
 
 private:
+    void IdenticalHelperFunction(TypeRelation *&relation, InterfaceType *&otherInterface);
     util::StringView name_;
     ArenaVector<ObjectType *> bases_;
     ArenaAllocator *allocator_;
