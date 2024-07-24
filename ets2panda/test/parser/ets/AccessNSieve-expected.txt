@@ -1527,18 +1527,77 @@
                                     "type": "BlockStatement",
                                     "statements": [
                                       {
-                                        "type": "ExpressionStatement",
-                                        "expression": {
-                                          "type": "AssignmentExpression",
-                                          "operator": "=",
-                                          "left": {
-                                            "type": "MemberExpression",
-                                            "object": {
-                                              "type": "MemberExpression",
-                                              "object": {
-                                                "type": "Identifier",
-                                                "name": "AccessNSieve",
-                                                "decorators": [],
+                                        "type": "BlockStatement",
+                                        "statements": [
+                                          {
+                                            "type": "ExpressionStatement",
+                                            "expression": {
+                                              "type": "AssignmentExpression",
+                                              "operator": "=",
+                                              "left": {
+                                                "type": "MemberExpression",
+                                                "object": {
+                                                  "type": "MemberExpression",
+                                                  "object": {
+                                                    "type": "Identifier",
+                                                    "name": "AccessNSieve",
+                                                    "decorators": [],
+                                                    "loc": {
+                                                      "start": {
+                                                        "line": 36,
+                                                        "column": 11
+                                                      },
+                                                      "end": {
+                                                        "line": 36,
+                                                        "column": 23
+                                                      }
+                                                    }
+                                                  },
+                                                  "property": {
+                                                    "type": "Identifier",
+                                                    "name": "isPrime",
+                                                    "decorators": [],
+                                                    "loc": {
+                                                      "start": {
+                                                        "line": 36,
+                                                        "column": 24
+                                                      },
+                                                      "end": {
+                                                        "line": 36,
+                                                        "column": 31
+                                                      }
+                                                    }
+                                                  },
+                                                  "computed": false,
+                                                  "optional": false,
+                                                  "loc": {
+                                                    "start": {
+                                                      "line": 36,
+                                                      "column": 11
+                                                    },
+                                                    "end": {
+                                                      "line": 36,
+                                                      "column": 31
+                                                    }
+                                                  }
+                                                },
+                                                "property": {
+                                                  "type": "Identifier",
+                                                  "name": "k",
+                                                  "decorators": [],
+                                                  "loc": {
+                                                    "start": {
+                                                      "line": 36,
+                                                      "column": 32
+                                                    },
+                                                    "end": {
+                                                      "line": 36,
+                                                      "column": 33
+                                                    }
+                                                  }
+                                                },
+                                                "computed": true,
+                                                "optional": false,
                                                 "loc": {
                                                   "start": {
                                                     "line": 36,
@@ -1546,27 +1605,24 @@
                                                   },
                                                   "end": {
                                                     "line": 36,
-                                                    "column": 23
+                                                    "column": 34
                                                   }
                                                 }
                                               },
-                                              "property": {
-                                                "type": "Identifier",
-                                                "name": "isPrime",
-                                                "decorators": [],
+                                              "right": {
+                                                "type": "BooleanLiteral",
+                                                "value": false,
                                                 "loc": {
                                                   "start": {
                                                     "line": 36,
-                                                    "column": 24
+                                                    "column": 37
                                                   },
                                                   "end": {
                                                     "line": 36,
-                                                    "column": 31
+                                                    "column": 42
                                                   }
                                                 }
                                               },
-                                              "computed": false,
-                                              "optional": false,
                                               "loc": {
                                                 "start": {
                                                   "line": 36,
@@ -1574,27 +1630,10 @@
                                                 },
                                                 "end": {
                                                   "line": 36,
-                                                  "column": 31
+                                                  "column": 42
                                                 }
                                               }
                                             },
-                                            "property": {
-                                              "type": "Identifier",
-                                              "name": "k",
-                                              "decorators": [],
-                                              "loc": {
-                                                "start": {
-                                                  "line": 36,
-                                                  "column": 32
-                                                },
-                                                "end": {
-                                                  "line": 36,
-                                                  "column": 33
-                                                }
-                                              }
-                                            },
-                                            "computed": true,
-                                            "optional": false,
                                             "loc": {
                                               "start": {
                                                 "line": 36,
@@ -1602,43 +1641,19 @@
                                               },
                                               "end": {
                                                 "line": 36,
-                                                "column": 34
+                                                "column": 43
                                               }
-                                            }
-                                          },
-                                          "right": {
-                                            "type": "BooleanLiteral",
-                                            "value": false,
-                                            "loc": {
-                                              "start": {
-                                                "line": 36,
-                                                "column": 37
-                                              },
-                                              "end": {
-                                                "line": 36,
-                                                "column": 42
-                                              }
-                                            }
-                                          },
-                                          "loc": {
-                                            "start": {
-                                              "line": 36,
-                                              "column": 11
-                                            },
-                                            "end": {
-                                              "line": 36,
-                                              "column": 42
                                             }
                                           }
-                                        },
+                                        ],
                                         "loc": {
                                           "start": {
-                                            "line": 36,
-                                            "column": 11
+                                            "line": 35,
+                                            "column": 50
                                           },
                                           "end": {
-                                            "line": 36,
-                                            "column": 43
+                                            "line": 37,
+                                            "column": 10
                                           }
                                         }
                                       }
@@ -1649,8 +1664,8 @@
                                         "column": 50
                                       },
                                       "end": {
-                                        "line": 37,
-                                        "column": 10
+                                        "line": 38,
+                                        "column": 14
                                       }
                                     }
                                   },
@@ -1660,8 +1675,8 @@
                                       "column": 9
                                     },
                                     "end": {
-                                      "line": 37,
-                                      "column": 10
+                                      "line": 38,
+                                      "column": 14
                                     }
                                   }
                                 },

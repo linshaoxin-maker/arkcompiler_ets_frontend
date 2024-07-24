@@ -451,16 +451,31 @@
                               }
                             },
                             "consequent": {
-                              "type": "BreakStatement",
-                              "label": null,
+                              "type": "BlockStatement",
+                              "statements": [
+                                {
+                                  "type": "BreakStatement",
+                                  "label": null,
+                                  "loc": {
+                                    "start": {
+                                      "line": 19,
+                                      "column": 17
+                                    },
+                                    "end": {
+                                      "line": 19,
+                                      "column": 23
+                                    }
+                                  }
+                                }
+                              ],
                               "loc": {
                                 "start": {
                                   "line": 19,
                                   "column": 17
                                 },
                                 "end": {
-                                  "line": 19,
-                                  "column": 23
+                                  "line": 20,
+                                  "column": 4
                                 }
                               }
                             },
@@ -471,8 +486,8 @@
                                 "column": 5
                               },
                               "end": {
-                                "line": 19,
-                                "column": 23
+                                "line": 20,
+                                "column": 4
                               }
                             }
                           }

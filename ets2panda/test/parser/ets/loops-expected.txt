@@ -1666,217 +1666,247 @@
                           "type": "BlockStatement",
                           "statements": [
                             {
-                              "type": "LabelledStatement",
-                              "label": {
-                                "type": "Identifier",
-                                "name": "loop2",
-                                "decorators": [],
-                                "loc": {
-                                  "start": {
-                                    "line": 49,
-                                    "column": 5
+                              "type": "BlockStatement",
+                              "statements": [
+                                {
+                                  "type": "LabelledStatement",
+                                  "label": {
+                                    "type": "Identifier",
+                                    "name": "loop2",
+                                    "decorators": [],
+                                    "loc": {
+                                      "start": {
+                                        "line": 49,
+                                        "column": 5
+                                      },
+                                      "end": {
+                                        "line": 49,
+                                        "column": 10
+                                      }
+                                    }
                                   },
-                                  "end": {
-                                    "line": 49,
-                                    "column": 10
-                                  }
-                                }
-                              },
-                              "body": {
-                                "type": "ForUpdateStatement",
-                                "init": {
-                                  "type": "VariableDeclaration",
-                                  "declarations": [
-                                    {
-                                      "type": "VariableDeclarator",
-                                      "id": {
+                                  "body": {
+                                    "type": "ForUpdateStatement",
+                                    "init": {
+                                      "type": "VariableDeclaration",
+                                      "declarations": [
+                                        {
+                                          "type": "VariableDeclarator",
+                                          "id": {
+                                            "type": "Identifier",
+                                            "name": "j",
+                                            "decorators": [],
+                                            "loc": {
+                                              "start": {
+                                                "line": 50,
+                                                "column": 14
+                                              },
+                                              "end": {
+                                                "line": 50,
+                                                "column": 15
+                                              }
+                                            }
+                                          },
+                                          "init": {
+                                            "type": "NumberLiteral",
+                                            "value": 1,
+                                            "loc": {
+                                              "start": {
+                                                "line": 50,
+                                                "column": 18
+                                              },
+                                              "end": {
+                                                "line": 50,
+                                                "column": 19
+                                              }
+                                            }
+                                          },
+                                          "loc": {
+                                            "start": {
+                                              "line": 50,
+                                              "column": 14
+                                            },
+                                            "end": {
+                                              "line": 50,
+                                              "column": 19
+                                            }
+                                          }
+                                        }
+                                      ],
+                                      "kind": "let",
+                                      "loc": {
+                                        "start": {
+                                          "line": 50,
+                                          "column": 10
+                                        },
+                                        "end": {
+                                          "line": 50,
+                                          "column": 19
+                                        }
+                                      }
+                                    },
+                                    "test": {
+                                      "type": "BinaryExpression",
+                                      "operator": "<",
+                                      "left": {
                                         "type": "Identifier",
                                         "name": "j",
                                         "decorators": [],
                                         "loc": {
                                           "start": {
                                             "line": 50,
-                                            "column": 14
+                                            "column": 21
                                           },
                                           "end": {
                                             "line": 50,
-                                            "column": 15
+                                            "column": 22
                                           }
                                         }
                                       },
-                                      "init": {
+                                      "right": {
                                         "type": "NumberLiteral",
-                                        "value": 1,
+                                        "value": 5,
                                         "loc": {
                                           "start": {
                                             "line": 50,
-                                            "column": 18
+                                            "column": 25
                                           },
                                           "end": {
                                             "line": 50,
-                                            "column": 19
+                                            "column": 26
                                           }
                                         }
                                       },
                                       "loc": {
                                         "start": {
                                           "line": 50,
-                                          "column": 14
+                                          "column": 21
                                         },
                                         "end": {
                                           "line": 50,
-                                          "column": 19
+                                          "column": 26
                                         }
                                       }
-                                    }
-                                  ],
-                                  "kind": "let",
-                                  "loc": {
-                                    "start": {
-                                      "line": 50,
-                                      "column": 10
                                     },
-                                    "end": {
-                                      "line": 50,
-                                      "column": 19
-                                    }
-                                  }
-                                },
-                                "test": {
-                                  "type": "BinaryExpression",
-                                  "operator": "<",
-                                  "left": {
-                                    "type": "Identifier",
-                                    "name": "j",
-                                    "decorators": [],
-                                    "loc": {
-                                      "start": {
-                                        "line": 50,
-                                        "column": 21
-                                      },
-                                      "end": {
-                                        "line": 50,
-                                        "column": 22
-                                      }
-                                    }
-                                  },
-                                  "right": {
-                                    "type": "NumberLiteral",
-                                    "value": 5,
-                                    "loc": {
-                                      "start": {
-                                        "line": 50,
-                                        "column": 25
-                                      },
-                                      "end": {
-                                        "line": 50,
-                                        "column": 26
-                                      }
-                                    }
-                                  },
-                                  "loc": {
-                                    "start": {
-                                      "line": 50,
-                                      "column": 21
-                                    },
-                                    "end": {
-                                      "line": 50,
-                                      "column": 26
-                                    }
-                                  }
-                                },
-                                "update": {
-                                  "type": "UpdateExpression",
-                                  "operator": "++",
-                                  "prefix": false,
-                                  "argument": {
-                                    "type": "Identifier",
-                                    "name": "j",
-                                    "decorators": [],
-                                    "loc": {
-                                      "start": {
-                                        "line": 50,
-                                        "column": 28
-                                      },
-                                      "end": {
-                                        "line": 50,
-                                        "column": 29
-                                      }
-                                    }
-                                  },
-                                  "loc": {
-                                    "start": {
-                                      "line": 50,
-                                      "column": 28
-                                    },
-                                    "end": {
-                                      "line": 50,
-                                      "column": 31
-                                    }
-                                  }
-                                },
-                                "body": {
-                                  "type": "BlockStatement",
-                                  "statements": [
-                                    {
-                                      "type": "BreakStatement",
-                                      "label": {
+                                    "update": {
+                                      "type": "UpdateExpression",
+                                      "operator": "++",
+                                      "prefix": false,
+                                      "argument": {
                                         "type": "Identifier",
-                                        "name": "loop1",
+                                        "name": "j",
                                         "decorators": [],
                                         "loc": {
                                           "start": {
-                                            "line": 51,
-                                            "column": 13
+                                            "line": 50,
+                                            "column": 28
                                           },
                                           "end": {
-                                            "line": 51,
-                                            "column": 18
+                                            "line": 50,
+                                            "column": 29
                                           }
                                         }
                                       },
                                       "loc": {
                                         "start": {
-                                          "line": 51,
-                                          "column": 7
+                                          "line": 50,
+                                          "column": 28
                                         },
                                         "end": {
-                                          "line": 51,
-                                          "column": 19
+                                          "line": 50,
+                                          "column": 31
                                         }
                                       }
+                                    },
+                                    "body": {
+                                      "type": "BlockStatement",
+                                      "statements": [
+                                        {
+                                          "type": "BlockStatement",
+                                          "statements": [
+                                            {
+                                              "type": "BreakStatement",
+                                              "label": {
+                                                "type": "Identifier",
+                                                "name": "loop1",
+                                                "decorators": [],
+                                                "loc": {
+                                                  "start": {
+                                                    "line": 51,
+                                                    "column": 13
+                                                  },
+                                                  "end": {
+                                                    "line": 51,
+                                                    "column": 18
+                                                  }
+                                                }
+                                              },
+                                              "loc": {
+                                                "start": {
+                                                  "line": 51,
+                                                  "column": 7
+                                                },
+                                                "end": {
+                                                  "line": 51,
+                                                  "column": 19
+                                                }
+                                              }
+                                            }
+                                          ],
+                                          "loc": {
+                                            "start": {
+                                              "line": 50,
+                                              "column": 33
+                                            },
+                                            "end": {
+                                              "line": 52,
+                                              "column": 6
+                                            }
+                                          }
+                                        }
+                                      ],
+                                      "loc": {
+                                        "start": {
+                                          "line": 50,
+                                          "column": 33
+                                        },
+                                        "end": {
+                                          "line": 53,
+                                          "column": 4
+                                        }
+                                      }
+                                    },
+                                    "loc": {
+                                      "start": {
+                                        "line": 50,
+                                        "column": 5
+                                      },
+                                      "end": {
+                                        "line": 53,
+                                        "column": 4
+                                      }
                                     }
-                                  ],
+                                  },
                                   "loc": {
                                     "start": {
-                                      "line": 50,
-                                      "column": 33
+                                      "line": 49,
+                                      "column": 5
                                     },
                                     "end": {
-                                      "line": 52,
-                                      "column": 6
+                                      "line": 53,
+                                      "column": 4
                                     }
                                   }
-                                },
-                                "loc": {
-                                  "start": {
-                                    "line": 50,
-                                    "column": 5
-                                  },
-                                  "end": {
-                                    "line": 52,
-                                    "column": 6
-                                  }
                                 }
-                              },
+                              ],
                               "loc": {
                                 "start": {
-                                  "line": 49,
-                                  "column": 5
+                                  "line": 48,
+                                  "column": 31
                                 },
                                 "end": {
-                                  "line": 52,
-                                  "column": 6
+                                  "line": 53,
+                                  "column": 4
                                 }
                               }
                             }
@@ -1887,8 +1917,8 @@
                               "column": 31
                             },
                             "end": {
-                              "line": 53,
-                              "column": 4
+                              "line": 54,
+                              "column": 2
                             }
                           }
                         },
@@ -1898,8 +1928,8 @@
                             "column": 3
                           },
                           "end": {
-                            "line": 53,
-                            "column": 4
+                            "line": 54,
+                            "column": 2
                           }
                         }
                       },
@@ -1909,8 +1939,8 @@
                           "column": 3
                         },
                         "end": {
-                          "line": 53,
-                          "column": 4
+                          "line": 54,
+                          "column": 2
                         }
                       }
                     }
@@ -2176,217 +2206,247 @@
                           "type": "BlockStatement",
                           "statements": [
                             {
-                              "type": "LabelledStatement",
-                              "label": {
-                                "type": "Identifier",
-                                "name": "loop2",
-                                "decorators": [],
-                                "loc": {
-                                  "start": {
-                                    "line": 60,
-                                    "column": 5
+                              "type": "BlockStatement",
+                              "statements": [
+                                {
+                                  "type": "LabelledStatement",
+                                  "label": {
+                                    "type": "Identifier",
+                                    "name": "loop2",
+                                    "decorators": [],
+                                    "loc": {
+                                      "start": {
+                                        "line": 60,
+                                        "column": 5
+                                      },
+                                      "end": {
+                                        "line": 60,
+                                        "column": 10
+                                      }
+                                    }
                                   },
-                                  "end": {
-                                    "line": 60,
-                                    "column": 10
-                                  }
-                                }
-                              },
-                              "body": {
-                                "type": "ForUpdateStatement",
-                                "init": {
-                                  "type": "VariableDeclaration",
-                                  "declarations": [
-                                    {
-                                      "type": "VariableDeclarator",
-                                      "id": {
-                                        "type": "Identifier",
-                                        "name": "j",
-                                        "decorators": [],
-                                        "loc": {
-                                          "start": {
-                                            "line": 61,
-                                            "column": 14
+                                  "body": {
+                                    "type": "ForUpdateStatement",
+                                    "init": {
+                                      "type": "VariableDeclaration",
+                                      "declarations": [
+                                        {
+                                          "type": "VariableDeclarator",
+                                          "id": {
+                                            "type": "Identifier",
+                                            "name": "j",
+                                            "decorators": [],
+                                            "loc": {
+                                              "start": {
+                                                "line": 61,
+                                                "column": 14
+                                              },
+                                              "end": {
+                                                "line": 61,
+                                                "column": 15
+                                              }
+                                            }
                                           },
-                                          "end": {
-                                            "line": 61,
-                                            "column": 15
+                                          "init": {
+                                            "type": "NumberLiteral",
+                                            "value": 1,
+                                            "loc": {
+                                              "start": {
+                                                "line": 61,
+                                                "column": 18
+                                              },
+                                              "end": {
+                                                "line": 61,
+                                                "column": 19
+                                              }
+                                            }
+                                          },
+                                          "loc": {
+                                            "start": {
+                                              "line": 61,
+                                              "column": 14
+                                            },
+                                            "end": {
+                                              "line": 61,
+                                              "column": 19
+                                            }
                                           }
                                         }
-                                      },
-                                      "init": {
-                                        "type": "NumberLiteral",
-                                        "value": 1,
-                                        "loc": {
-                                          "start": {
-                                            "line": 61,
-                                            "column": 18
-                                          },
-                                          "end": {
-                                            "line": 61,
-                                            "column": 19
-                                          }
-                                        }
-                                      },
+                                      ],
+                                      "kind": "let",
                                       "loc": {
                                         "start": {
                                           "line": 61,
-                                          "column": 14
+                                          "column": 10
                                         },
                                         "end": {
                                           "line": 61,
                                           "column": 19
                                         }
                                       }
-                                    }
-                                  ],
-                                  "kind": "let",
-                                  "loc": {
-                                    "start": {
-                                      "line": 61,
-                                      "column": 10
                                     },
-                                    "end": {
-                                      "line": 61,
-                                      "column": 19
-                                    }
-                                  }
-                                },
-                                "test": {
-                                  "type": "BinaryExpression",
-                                  "operator": "<",
-                                  "left": {
-                                    "type": "Identifier",
-                                    "name": "j",
-                                    "decorators": [],
-                                    "loc": {
-                                      "start": {
-                                        "line": 61,
-                                        "column": 21
-                                      },
-                                      "end": {
-                                        "line": 61,
-                                        "column": 22
-                                      }
-                                    }
-                                  },
-                                  "right": {
-                                    "type": "NumberLiteral",
-                                    "value": 5,
-                                    "loc": {
-                                      "start": {
-                                        "line": 61,
-                                        "column": 25
-                                      },
-                                      "end": {
-                                        "line": 61,
-                                        "column": 26
-                                      }
-                                    }
-                                  },
-                                  "loc": {
-                                    "start": {
-                                      "line": 61,
-                                      "column": 21
-                                    },
-                                    "end": {
-                                      "line": 61,
-                                      "column": 26
-                                    }
-                                  }
-                                },
-                                "update": {
-                                  "type": "UpdateExpression",
-                                  "operator": "++",
-                                  "prefix": false,
-                                  "argument": {
-                                    "type": "Identifier",
-                                    "name": "j",
-                                    "decorators": [],
-                                    "loc": {
-                                      "start": {
-                                        "line": 61,
-                                        "column": 28
-                                      },
-                                      "end": {
-                                        "line": 61,
-                                        "column": 29
-                                      }
-                                    }
-                                  },
-                                  "loc": {
-                                    "start": {
-                                      "line": 61,
-                                      "column": 28
-                                    },
-                                    "end": {
-                                      "line": 61,
-                                      "column": 31
-                                    }
-                                  }
-                                },
-                                "body": {
-                                  "type": "BlockStatement",
-                                  "statements": [
-                                    {
-                                      "type": "ContinueStatement",
-                                      "label": {
+                                    "test": {
+                                      "type": "BinaryExpression",
+                                      "operator": "<",
+                                      "left": {
                                         "type": "Identifier",
-                                        "name": "loop1",
+                                        "name": "j",
                                         "decorators": [],
                                         "loc": {
                                           "start": {
-                                            "line": 62,
-                                            "column": 16
+                                            "line": 61,
+                                            "column": 21
                                           },
                                           "end": {
-                                            "line": 62,
-                                            "column": 21
+                                            "line": 61,
+                                            "column": 22
+                                          }
+                                        }
+                                      },
+                                      "right": {
+                                        "type": "NumberLiteral",
+                                        "value": 5,
+                                        "loc": {
+                                          "start": {
+                                            "line": 61,
+                                            "column": 25
+                                          },
+                                          "end": {
+                                            "line": 61,
+                                            "column": 26
                                           }
                                         }
                                       },
                                       "loc": {
                                         "start": {
-                                          "line": 62,
-                                          "column": 7
+                                          "line": 61,
+                                          "column": 21
                                         },
                                         "end": {
-                                          "line": 62,
-                                          "column": 22
+                                          "line": 61,
+                                          "column": 26
                                         }
                                       }
+                                    },
+                                    "update": {
+                                      "type": "UpdateExpression",
+                                      "operator": "++",
+                                      "prefix": false,
+                                      "argument": {
+                                        "type": "Identifier",
+                                        "name": "j",
+                                        "decorators": [],
+                                        "loc": {
+                                          "start": {
+                                            "line": 61,
+                                            "column": 28
+                                          },
+                                          "end": {
+                                            "line": 61,
+                                            "column": 29
+                                          }
+                                        }
+                                      },
+                                      "loc": {
+                                        "start": {
+                                          "line": 61,
+                                          "column": 28
+                                        },
+                                        "end": {
+                                          "line": 61,
+                                          "column": 31
+                                        }
+                                      }
+                                    },
+                                    "body": {
+                                      "type": "BlockStatement",
+                                      "statements": [
+                                        {
+                                          "type": "BlockStatement",
+                                          "statements": [
+                                            {
+                                              "type": "ContinueStatement",
+                                              "label": {
+                                                "type": "Identifier",
+                                                "name": "loop1",
+                                                "decorators": [],
+                                                "loc": {
+                                                  "start": {
+                                                    "line": 62,
+                                                    "column": 16
+                                                  },
+                                                  "end": {
+                                                    "line": 62,
+                                                    "column": 21
+                                                  }
+                                                }
+                                              },
+                                              "loc": {
+                                                "start": {
+                                                  "line": 62,
+                                                  "column": 7
+                                                },
+                                                "end": {
+                                                  "line": 62,
+                                                  "column": 22
+                                                }
+                                              }
+                                            }
+                                          ],
+                                          "loc": {
+                                            "start": {
+                                              "line": 61,
+                                              "column": 33
+                                            },
+                                            "end": {
+                                              "line": 63,
+                                              "column": 6
+                                            }
+                                          }
+                                        }
+                                      ],
+                                      "loc": {
+                                        "start": {
+                                          "line": 61,
+                                          "column": 33
+                                        },
+                                        "end": {
+                                          "line": 64,
+                                          "column": 4
+                                        }
+                                      }
+                                    },
+                                    "loc": {
+                                      "start": {
+                                        "line": 61,
+                                        "column": 5
+                                      },
+                                      "end": {
+                                        "line": 64,
+                                        "column": 4
+                                      }
                                     }
-                                  ],
+                                  },
                                   "loc": {
                                     "start": {
-                                      "line": 61,
-                                      "column": 33
+                                      "line": 60,
+                                      "column": 5
                                     },
                                     "end": {
-                                      "line": 63,
-                                      "column": 6
+                                      "line": 64,
+                                      "column": 4
                                     }
                                   }
-                                },
-                                "loc": {
-                                  "start": {
-                                    "line": 61,
-                                    "column": 5
-                                  },
-                                  "end": {
-                                    "line": 63,
-                                    "column": 6
-                                  }
                                 }
-                              },
+                              ],
                               "loc": {
                                 "start": {
-                                  "line": 60,
-                                  "column": 5
+                                  "line": 59,
+                                  "column": 31
                                 },
                                 "end": {
-                                  "line": 63,
-                                  "column": 6
+                                  "line": 64,
+                                  "column": 4
                                 }
                               }
                             }
@@ -2397,8 +2457,8 @@
                               "column": 31
                             },
                             "end": {
-                              "line": 64,
-                              "column": 4
+                              "line": 65,
+                              "column": 2
                             }
                           }
                         },
@@ -2408,8 +2468,8 @@
                             "column": 3
                           },
                           "end": {
-                            "line": 64,
-                            "column": 4
+                            "line": 65,
+                            "column": 2
                           }
                         }
                       },
@@ -2419,8 +2479,8 @@
                           "column": 3
                         },
                         "end": {
-                          "line": 64,
-                          "column": 4
+                          "line": 65,
+                          "column": 2
                         }
                       }
                     }
