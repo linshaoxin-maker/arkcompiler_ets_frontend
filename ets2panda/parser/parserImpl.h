@@ -251,6 +251,8 @@ protected:
     bool ParseDirective(ArenaVector<ir::Statement *> *statements);
     void ParseDirectivePrologue(ArenaVector<ir::Statement *> *statements);
     ir::BlockStatement *ParseFunctionBody();
+    std::tuple<ForStatementKind, ir::AstNode *, ir::Expression *, ir::Expression *> ParseIsForInOf(
+        ir::Expression *leftNode, ExpressionParseFlags exprFlags);
     std::tuple<ForStatementKind, ir::AstNode *, ir::Expression *, ir::Expression *> ParseForInOf(
         ir::Expression *leftNode, ExpressionParseFlags exprFlags, bool isAwait);
     std::tuple<ForStatementKind, ir::Expression *, ir::Expression *> ParseForInOf(ir::AstNode *initNode,

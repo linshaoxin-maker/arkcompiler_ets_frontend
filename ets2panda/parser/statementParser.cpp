@@ -724,51 +724,53 @@ std::tuple<ForStatementKind, ir::Expression *, ir::Expression *> ParserImpl::Par
     return {forKind, rightNode, updateNode};
 }
 
+std::tuple<ForStatementKind, ir::AstNode *, ir::Expression *, ir::Expression *> ParserImpl::ParseIsForInOf(
+    ir::Expression *leftNode, ExpressionParseFlags exprFlags)
+{
+    ASSERT(lexer_->GetToken().IsForInOf());
+    ForStatementKind forKind = ForStatementKind::OF;
+
+    if (lexer_->GetToken().Type() == lexer::TokenType::KEYW_IN) {
+        forKind = ForStatementKind::IN;
+        exprFlags = ExpressionParseFlags::ACCEPT_COMMA;
+        ValidateForInStatement();
+    }
+
+    bool isValid = true;
+    switch (leftNode->Type()) {
+        case ir::AstNodeType::IDENTIFIER:
+        case ir::AstNodeType::MEMBER_EXPRESSION: {
+            break;
+        }
+        case ir::AstNodeType::ARRAY_EXPRESSION: {
+            isValid = leftNode->AsArrayExpression()->ConvertibleToArrayPattern();
+            break;
+        }
+        case ir::AstNodeType::OBJECT_EXPRESSION: {
+            isValid = leftNode->AsObjectExpression()->ConvertibleToObjectPattern();
+            break;
+        }
+        default: {
+            isValid = false;
+        }
+    }
+
+    if (!isValid) {
+        ValidateLvalueAssignmentTarget(leftNode);
+    }
+
+    lexer_->NextToken();
+
+    return {forKind, leftNode, ParseExpression(exprFlags), nullptr};
+}
+
 std::tuple<ForStatementKind, ir::AstNode *, ir::Expression *, ir::Expression *> ParserImpl::ParseForInOf(
     ir::Expression *leftNode, ExpressionParseFlags exprFlags, bool isAwait)
 {
-    ForStatementKind forKind = ForStatementKind::UPDATE;
-    ir::AstNode *initNode = nullptr;
     ir::Expression *updateNode = nullptr;
     ir::Expression *rightNode = nullptr;
-
     if (lexer_->GetToken().IsForInOf()) {
-        if (lexer_->GetToken().Type() == lexer::TokenType::KEYW_IN) {
-            forKind = ForStatementKind::IN;
-            exprFlags = ExpressionParseFlags::ACCEPT_COMMA;
-            ValidateForInStatement();
-        } else {
-            forKind = ForStatementKind::OF;
-        }
-
-        bool isValid = true;
-        switch (leftNode->Type()) {
-            case ir::AstNodeType::IDENTIFIER:
-            case ir::AstNodeType::MEMBER_EXPRESSION: {
-                break;
-            }
-            case ir::AstNodeType::ARRAY_EXPRESSION: {
-                isValid = leftNode->AsArrayExpression()->ConvertibleToArrayPattern();
-                break;
-            }
-            case ir::AstNodeType::OBJECT_EXPRESSION: {
-                isValid = leftNode->AsObjectExpression()->ConvertibleToObjectPattern();
-                break;
-            }
-            default: {
-                isValid = false;
-            }
-        }
-
-        if (!isValid) {
-            ValidateLvalueAssignmentTarget(leftNode);
-        }
-
-        initNode = leftNode;
-        lexer_->NextToken();
-        rightNode = ParseExpression(exprFlags);
-
-        return {forKind, initNode, rightNode, updateNode};
+        return ParseIsForInOf(leftNode, exprFlags);
     }
 
     if (isAwait) {
@@ -777,19 +779,14 @@ std::tuple<ForStatementKind, ir::AstNode *, ir::Expression *, ir::Expression *> 
 
     ir::Expression *expr = ParseAssignmentExpression(leftNode);
 
-    if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA) {
-        initNode = ParseSequenceExpression(expr);
-    } else {
-        initNode = expr;
-    }
+    ir::AstNode *initNode =
+        lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA ? ParseSequenceExpression(expr) : expr;
 
     if (initNode->IsConditionalExpression()) {
         ir::ConditionalExpression *condExpr = initNode->AsConditionalExpression();
-        if (condExpr->Alternate()->IsBinaryExpression()) {
-            const auto *binaryExpr = condExpr->Alternate()->AsBinaryExpression();
-            if (binaryExpr->OperatorType() == lexer::TokenType::KEYW_IN) {
-                ThrowSyntaxError("Invalid left-hand side in for-in statement");
-            }
+        if (condExpr->Alternate()->IsBinaryExpression() &&
+            condExpr->Alternate()->AsBinaryExpression()->OperatorType() == lexer::TokenType::KEYW_IN) {
+            ThrowSyntaxError("Invalid left-hand side in for-in statement");
         }
     }
 
@@ -797,28 +794,20 @@ std::tuple<ForStatementKind, ir::AstNode *, ir::Expression *, ir::Expression *> 
         ThrowSyntaxError("Invalid left-hand side in 'For[In/Of]Statement'");
     }
 
-    if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
-        ThrowSyntaxError("Unexpected token, expected ';' in 'ForStatement'.");
-    }
-
-    lexer_->NextToken();
+    ExpectToken(lexer::TokenType::PUNCTUATOR_SEMI_COLON, true);
 
     if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
         lexer_->NextToken();
     } else {
         rightNode = ParseExpression(ExpressionParseFlags::ACCEPT_COMMA | ExpressionParseFlags::IN_FOR);
-
-        if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
-            ThrowSyntaxError("Unexpected token, expected ';' in 'ForStatement'.");
-        }
-        lexer_->NextToken();
+        ExpectToken(lexer::TokenType::PUNCTUATOR_SEMI_COLON, true);
     }
 
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
         updateNode = ParseExpression(ExpressionParseFlags::ACCEPT_COMMA | ExpressionParseFlags::IN_FOR);
     }
 
-    return {forKind, initNode, rightNode, updateNode};
+    return {ForStatementKind::UPDATE, initNode, rightNode, updateNode};
 }
 
 std::tuple<ir::Expression *, ir::Expression *> ParserImpl::ParseForUpdate(bool isAwait)
