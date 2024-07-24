@@ -19,6 +19,7 @@
 
 #include "macros.h"
 #include "parser/parserFlags.h"
+#include "parser/parserStatusContext.h"
 #include "util/helpers.h"
 #include "util/language.h"
 #include "utils/arena_containers.h"
@@ -117,6 +118,8 @@
 #include "generated/signatures.h"
 
 namespace ark::es2panda::parser {
+class FunctionContext;
+
 using namespace std::literals::string_literals;
 
 ETSParser::ETSParser(Program *program, const CompilerOptions &options, ParserStatus status)

@@ -14,6 +14,7 @@
  */
 
 #include "parser/parserFlags.h"
+#include "parser/parserStatusContext.h"
 #include "util/helpers.h"
 #include "ir/astNode.h"
 #include "ir/base/catchClause.h"

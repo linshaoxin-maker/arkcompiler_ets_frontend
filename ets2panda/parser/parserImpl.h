@@ -17,6 +17,7 @@
 #define ES2PANDA_PARSER_CORE_PARSER_IMPL_H
 
 #include "es2panda.h"
+#include "forwardDeclForParserImpl.h"
 #include "ir/base/scriptFunctionSignature.h"
 #include "lexer/token/sourceLocation.h"
 #include "lexer/token/tokenType.h"
@@ -26,123 +27,7 @@
 #include "parser/program/program.h"
 #include "util/helpers.h"
 
-namespace ark::es2panda::lexer {
-enum class TokenFlags : uint32_t;
-class LexerPosition;
-class Token;
-class Lexer;
-}  // namespace ark::es2panda::lexer
-
-namespace ark::es2panda::ir {
-class ArrowFunctionExpression;
-class AstNode;
-class BlockStatement;
-class BreakStatement;
-class CallExpression;
-class ClassDeclaration;
-class ClassDefinition;
-class ContinueStatement;
-class DoWhileStatement;
-class ExportAllDeclaration;
-class ExportDefaultDeclaration;
-class ExportNamedDeclaration;
-class ExportNamedDeclaration;
-class Expression;
-class FunctionDeclaration;
-class FunctionExpression;
-class Identifier;
-class IfStatement;
-class ImportSource;
-class ImportDeclaration;
-class LabelledStatement;
-class NewExpression;
-class ObjectExpression;
-class ReturnStatement;
-class ScriptFunction;
-class SequenceExpression;
-class SpreadElement;
-class Statement;
-class StringLiteral;
-class SwitchCaseStatement;
-class SwitchStatement;
-class TemplateLiteral;
-class ThrowStatement;
-class TryStatement;
-class VariableDeclaration;
-class WhileStatement;
-class WithStatement;
-class MemberExpression;
-class MethodDefinition;
-class Property;
-class YieldExpression;
-class MetaProperty;
-class EmptyStatement;
-class DebuggerStatement;
-class CatchClause;
-class VariableDeclarator;
-class ClassElement;
-
-enum class PropertyKind;
-enum class MethodDefinitionKind;
-enum class ModifierFlags : uint32_t;
-enum class Primitives;
-enum class ClassDefinitionModifiers : uint32_t;
-enum class CatchClauseType;
-enum class VariableDeclaratorFlag;
-}  // namespace ark::es2panda::ir
-
 namespace ark::es2panda::parser {
-
-class ETSParser;
-
-using FunctionSignature = std::tuple<ir::FunctionSignature, ark::es2panda::ir::ScriptFunctionFlags>;
-
-// NOLINTBEGIN(modernize-avoid-c-arrays)
-inline constexpr char const ARRAY_FORMAT_NODE = '[';
-inline constexpr char const EXPRESSION_FORMAT_NODE = 'E';
-inline constexpr char const STATEMENT_FORMAT_NODE = 'S';
-// NOLINTEND(modernize-avoid-c-arrays)
-
-class ClassElementDescriptor {
-public:
-    explicit ClassElementDescriptor(ArenaAllocator *allocator) : decorators(allocator->Adapter()) {}
-
-    // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
-    ArenaVector<ir::Decorator *> decorators;
-    ir::MethodDefinitionKind methodKind {};
-    ParserStatus newStatus {};
-    ir::ModifierFlags modifiers {};
-    lexer::SourcePosition methodStart {};
-    lexer::SourcePosition propStart {};
-    bool isPrivateIdent {};
-    bool hasSuperClass {};
-    bool isGenerator {};
-    bool invalidComputedProperty {};
-    bool isComputed {};
-    bool isIndexSignature {};
-    bool classMethod {};
-    bool classField {};
-    varbinder::LocalScope *staticFieldScope {};
-    varbinder::LocalScope *staticMethodScope {};
-    varbinder::LocalScope *instanceFieldScope {};
-    varbinder::LocalScope *instanceMethodScope {};
-    // NOLINTEND(misc-non-private-member-variables-in-classes)
-};
-
-class ArrowFunctionDescriptor {
-public:
-    explicit ArrowFunctionDescriptor(ArenaVector<ir::Expression *> &&p, lexer::SourcePosition sl, ParserStatus ns)
-        : params(p), startLoc(sl), newStatus(ns)
-    {
-    }
-
-    // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
-    ArenaVector<ir::Expression *> params;
-    lexer::SourcePosition startLoc;
-    ParserStatus newStatus;
-    // NOLINTEND(misc-non-private-member-variables-in-classes)
-};
-
 using ENUMBITOPS_OPERATORS;
 
 enum class TypeAnnotationParsingOptions : uint32_t {
@@ -164,8 +49,6 @@ enum class TypeAnnotationParsingOptions : uint32_t {
     ALLOW_DECLARATION_SITE_VARIANCE = 1U << 14U,
     DISALLOW_UNION = 1U << 15U,
 };
-
-class ArrowFunctionContext;
 
 class ParserImpl {
 public:
@@ -207,9 +90,6 @@ protected:
     void ValidatePrivateIdentifier();
 
     static ir::VariableDeclaratorFlag GetFlag(VariableParsingFlags flags);
-    ir::MethodDefinition *CheckClassMethodOverload(ir::Statement *property, ir::MethodDefinition **ctor,
-                                                   lexer::SourcePosition errorInfo, ir::MethodDefinition *lastOverload,
-                                                   bool implExists, bool isAbstract = false);
 
     void ThrowAllocationError(std::string_view message) const;
 
@@ -609,158 +489,6 @@ private:
     uint32_t classId_ {};
     lexer::Lexer *lexer_ {};
     const CompilerOptions &options_;
-};
-
-template <ParserStatus STATUS>
-class SavedStatusContext {
-public:
-    explicit SavedStatusContext(ParserContext *ctx)
-        // NOLINTNEXTLINE(readability-magic-numbers)
-        : ctx_(ctx), savedStatus_(static_cast<ParserStatus>(ctx->Status() & STATUS))
-    {
-        // NOLINTNEXTLINE(readability-magic-numbers)
-        ctx->Status() |= STATUS;
-    }
-
-    NO_COPY_SEMANTIC(SavedStatusContext);
-    NO_MOVE_SEMANTIC(SavedStatusContext);
-
-    ~SavedStatusContext()
-    {
-        if (savedStatus_ == ParserStatus::NO_OPTS) {
-            ctx_->Status() &= ~savedStatus_;
-        }
-    }
-
-private:
-    ParserContext *ctx_;
-    ParserStatus savedStatus_;
-};
-
-class SwitchContext : public SavedStatusContext<ParserStatus::IN_SWITCH> {
-public:
-    explicit SwitchContext(ParserContext *ctx) : SavedStatusContext(ctx) {}
-    NO_COPY_SEMANTIC(SwitchContext);
-    NO_MOVE_SEMANTIC(SwitchContext);
-    ~SwitchContext() = default;
-};
-
-class IterationContext : public SavedStatusContext<ParserStatus::IN_ITERATION> {
-public:
-    explicit IterationContext(ParserContext *ctx) : SavedStatusContext(ctx) {}
-
-    NO_COPY_SEMANTIC(IterationContext);
-    NO_MOVE_SEMANTIC(IterationContext);
-    ~IterationContext() = default;
-};
-
-class FunctionParameterContext : public SavedStatusContext<ParserStatus::FUNCTION_PARAM> {
-public:
-    explicit FunctionParameterContext(ParserContext *ctx) : SavedStatusContext(ctx) {}
-
-    NO_COPY_SEMANTIC(FunctionParameterContext);
-    NO_MOVE_SEMANTIC(FunctionParameterContext);
-    ~FunctionParameterContext() = default;
-};
-
-class SavedParserContext {
-public:
-    template <typename... Args>
-    explicit SavedParserContext(ParserImpl *parser, Args &&...args) : parser_(parser), prev_(parser->context_)
-    {
-        parser_->context_ = ParserContext(&prev_, std::forward<Args>(args)...);
-    }
-
-    NO_COPY_SEMANTIC(SavedParserContext);
-    DEFAULT_MOVE_SEMANTIC(SavedParserContext);
-
-    ~SavedParserContext()
-    {
-        parser_->context_ = prev_;
-    }
-
-private:
-    ParserImpl *parser_;
-    ParserContext prev_;
-};
-
-class SavedClassPrivateContext {
-public:
-    explicit SavedClassPrivateContext(ParserImpl *parser) : parser_(parser), prev_(parser->classPrivateContext_)
-    {
-        parser_->classPrivateContext_ = ClassPrivateContext(&prev_);
-    }
-
-    NO_COPY_SEMANTIC(SavedClassPrivateContext);
-    DEFAULT_MOVE_SEMANTIC(SavedClassPrivateContext);
-
-    ~SavedClassPrivateContext()
-    {
-        parser_->classPrivateContext_ = prev_;
-    }
-
-private:
-    ParserImpl *parser_;
-    ClassPrivateContext prev_;
-};
-
-class FunctionContext : public SavedParserContext {
-public:
-    explicit FunctionContext(ParserImpl *parser, ParserStatus newStatus) : SavedParserContext(parser, newStatus)
-    {
-        if ((newStatus & ParserStatus::GENERATOR_FUNCTION) != 0) {
-            flags_ |= ir::ScriptFunctionFlags::GENERATOR;
-        }
-
-        if ((newStatus & ParserStatus::ASYNC_FUNCTION) != 0) {
-            flags_ |= ir::ScriptFunctionFlags::ASYNC;
-        }
-
-        if ((newStatus & ParserStatus::CONSTRUCTOR_FUNCTION) != 0) {
-            flags_ |= ir::ScriptFunctionFlags::CONSTRUCTOR;
-        }
-    }
-
-    ir::ScriptFunctionFlags Flags() const
-    {
-        return flags_;
-    }
-
-    void AddFlag(ir::ScriptFunctionFlags flags)
-    {
-        flags_ |= flags;
-    }
-
-    NO_COPY_SEMANTIC(FunctionContext);
-    NO_MOVE_SEMANTIC(FunctionContext);
-    ~FunctionContext() = default;
-
-private:
-    ir::ScriptFunctionFlags flags_ {ir::ScriptFunctionFlags::NONE};
-};
-
-class ArrowFunctionContext : public FunctionContext {
-public:
-    explicit ArrowFunctionContext(ParserImpl *parser, bool isAsync)
-        : FunctionContext(parser, InitialFlags(parser->context_.Status()))
-    {
-        if (isAsync) {
-            AddFlag(ir::ScriptFunctionFlags::ASYNC);
-        }
-
-        AddFlag(ir::ScriptFunctionFlags::ARROW);
-    }
-
-    NO_COPY_SEMANTIC(ArrowFunctionContext);
-    NO_MOVE_SEMANTIC(ArrowFunctionContext);
-    ~ArrowFunctionContext() = default;
-
-private:
-    static ParserStatus InitialFlags(ParserStatus currentStatus)
-    {
-        return ParserStatus::FUNCTION | ParserStatus::ARROW_FUNCTION |
-               static_cast<ParserStatus>(currentStatus & (ParserStatus::ALLOW_SUPER | ParserStatus::ALLOW_SUPER_CALL));
-    }
 };
 }  // namespace ark::es2panda::parser
 

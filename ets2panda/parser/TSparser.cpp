@@ -15,6 +15,7 @@
 
 #include "TSparser.h"
 
+#include "parser/parserStatusContext.h"
 #include "parserFlags.h"
 #include "util/helpers.h"
 #include "varbinder/privateBinding.h"
