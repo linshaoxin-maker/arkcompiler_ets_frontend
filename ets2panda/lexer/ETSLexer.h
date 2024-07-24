@@ -49,10 +49,10 @@ public:
         }
 
         try {
-            ScanNumberLeadingZeroImpl<uint32_t, uint32_t>();
+            ScanNumberLeadingZeroImpl<int32_t, int32_t>();
         } catch (...) {
             Rewind(savedLexerPosition);
-            ScanNumberLeadingZeroImpl<uint64_t, uint64_t>();
+            ScanNumberLeadingZeroImpl<int64_t, int64_t>();
         }
 
         if ((GetToken().flags_ & TokenFlags::NUMBER_BIGINT) != 0) {

@@ -16,5 +16,5 @@
 enum InvalidInitTypeEnum {
   Red,
   Green = -1,
-  Blue = 0xFFFFFFFF
+  Blue = -0x1
 }
