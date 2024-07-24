@@ -42,39 +42,8 @@ void InterfaceType::ToString(std::stringstream &ss, [[maybe_unused]] bool precis
     }
 }
 
-void InterfaceType::Identical(TypeRelation *relation, Type *other)
+void InterfaceType::IdenticalHelperFunction(TypeRelation *&relation, InterfaceType *&otherInterface)
 {
-    if (!other->IsObjectType() || !other->AsObjectType()->IsInterfaceType()) {
-        return;
-    }
-
-    InterfaceType *otherInterface = other->AsObjectType()->AsInterfaceType();
-
-    const ArenaVector<varbinder::LocalVariable *> &targetProperties = Properties();
-    const ArenaVector<varbinder::LocalVariable *> &sourceProperties = otherInterface->Properties();
-
-    if (targetProperties.size() != sourceProperties.size()) {
-        relation->Result(false);
-        return;
-    }
-
-    for (auto *targetProp : targetProperties) {
-        bool foundProp = std::any_of(sourceProperties.begin(), sourceProperties.end(),
-                                     [targetProp, relation](varbinder::LocalVariable *sourceProp) {
-                                         if (targetProp->Name() == sourceProp->Name()) {
-                                             Type *targetType = relation->GetChecker()->GetTypeOfVariable(targetProp);
-                                             Type *sourceType = relation->GetChecker()->GetTypeOfVariable(sourceProp);
-                                             return relation->IsIdenticalTo(targetType, sourceType);
-                                         }
-
-                                         return false;
-                                     });
-        if (!foundProp) {
-            relation->Result(false);
-            return;
-        }
-    }
-
     const ArenaVector<Signature *> &targetCallSignatures = CallSignatures();
     const ArenaVector<Signature *> &sourceCallSignatures = otherInterface->CallSignatures();
     if (targetCallSignatures.size() != sourceCallSignatures.size()) {
@@ -123,6 +92,42 @@ void InterfaceType::Identical(TypeRelation *relation, Type *other)
 
         relation->IsIdenticalTo(targetStringInfo, sourceStringInfo);
     }
+}
+
+void InterfaceType::Identical(TypeRelation *relation, Type *other)
+{
+    if (!other->IsObjectType() || !other->AsObjectType()->IsInterfaceType()) {
+        return;
+    }
+
+    InterfaceType *otherInterface = other->AsObjectType()->AsInterfaceType();
+
+    const ArenaVector<varbinder::LocalVariable *> &targetProperties = Properties();
+    const ArenaVector<varbinder::LocalVariable *> &sourceProperties = otherInterface->Properties();
+
+    if (targetProperties.size() != sourceProperties.size()) {
+        relation->Result(false);
+        return;
+    }
+
+    for (auto *targetProp : targetProperties) {
+        bool foundProp = std::any_of(sourceProperties.begin(), sourceProperties.end(),
+                                     [targetProp, relation](varbinder::LocalVariable *sourceProp) {
+                                         if (targetProp->Name() == sourceProp->Name()) {
+                                             Type *targetType = relation->GetChecker()->GetTypeOfVariable(targetProp);
+                                             Type *sourceType = relation->GetChecker()->GetTypeOfVariable(sourceProp);
+                                             return relation->IsIdenticalTo(targetType, sourceType);
+                                         }
+
+                                         return false;
+                                     });
+        if (!foundProp) {
+            relation->Result(false);
+            return;
+        }
+    }
+
+    return IdenticalHelperFunction(relation, otherInterface);
 }
 
 Type *InterfaceType::Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes)
