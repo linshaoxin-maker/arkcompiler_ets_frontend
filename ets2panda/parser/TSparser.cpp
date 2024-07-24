@@ -1467,45 +1467,117 @@ ir::TypeNode *TSParser::ParseFunctionType(lexer::SourcePosition startLoc, bool i
     return funcType;
 }
 
+class TSParser::ParseTypeAnnotationElementHelper {
+    friend ir::TypeNode *TSParser::ParseTypeAnnotationElement(ir::TypeNode *typeAnnotation,
+                                                              TypeAnnotationParsingOptions *options);
+
+private:
+    static ir::TypeNode *ParseKeywordTokens(TSParser *parser, lexer::Lexer *lexer, ir::TypeNode *typeAnnotation,
+                                            TypeAnnotationParsingOptions *options)
+    {
+        switch (lexer->GetToken().Type()) {
+            case lexer::TokenType::KEYW_NEW: {
+                return parser->ParseParenthesizedOrFunctionType(
+                    typeAnnotation, ((*options) & TypeAnnotationParsingOptions::THROW_ERROR) != 0);
+            }
+            case lexer::TokenType::KEYW_TYPEOF: {
+                if (typeAnnotation != nullptr) {
+                    break;
+                }
+
+                return parser->ParseTypeReferenceOrQuery(true);
+            }
+            case lexer::TokenType::KEYW_IMPORT: {
+                if (typeAnnotation != nullptr) {
+                    break;
+                }
+
+                return parser->ParseImportType(lexer->GetToken().Start());
+            }
+            case lexer::TokenType::KEYW_CONST: {
+                if (((*options) & TypeAnnotationParsingOptions::ALLOW_CONST) == 0) {
+                    break;
+                }
+
+                (*options) &= ~TypeAnnotationParsingOptions::ALLOW_CONST;
+                return parser->ParseConstExpression();
+            }
+            case lexer::TokenType::KEYW_EXTENDS: {
+                if (((*options) &
+                     (TypeAnnotationParsingOptions::IN_UNION | TypeAnnotationParsingOptions::IN_INTERSECTION)) != 0) {
+                    break;
+                }
+
+                if (typeAnnotation == nullptr) {
+                    return parser->ParseIdentifierReference();
+                }
+
+                return parser->ParseConditionalType(typeAnnotation,
+                                                    ((*options) & TypeAnnotationParsingOptions::RESTRICT_EXTENDS) != 0);
+            }
+            case lexer::TokenType::KEYW_THIS: {
+                return parser->ParseThisTypeOrTypePredicate(
+                    typeAnnotation, ((*options) & TypeAnnotationParsingOptions::CAN_BE_TS_TYPE_PREDICATE) != 0,
+                    ((*options) & TypeAnnotationParsingOptions::THROW_ERROR) != 0);
+            }
+            default: {
+                break;
+            }
+        }
+
+        return nullptr;
+    }
+
+    static ir::TypeNode *ParsePunctuatorTokens(TSParser *parser, lexer::Lexer *lexer, ir::TypeNode *typeAnnotation,
+                                               TypeAnnotationParsingOptions *options)
+    {
+        switch (lexer->GetToken().Type()) {
+            case lexer::TokenType::PUNCTUATOR_BITWISE_OR: {
+                if (((*options) &
+                     (TypeAnnotationParsingOptions::IN_UNION | TypeAnnotationParsingOptions::IN_INTERSECTION)) != 0) {
+                    break;
+                }
+
+                return parser->ParseUnionType(typeAnnotation,
+                                              ((*options) & TypeAnnotationParsingOptions::RESTRICT_EXTENDS) != 0);
+            }
+            case lexer::TokenType::PUNCTUATOR_BITWISE_AND: {
+                if (((*options) & TypeAnnotationParsingOptions::IN_INTERSECTION) != 0) {
+                    break;
+                }
+
+                return parser->ParseIntersectionType(
+                    typeAnnotation, ((*options) & TypeAnnotationParsingOptions::IN_UNION) != 0,
+                    ((*options) & TypeAnnotationParsingOptions::RESTRICT_EXTENDS) != 0);
+            }
+            case lexer::TokenType::PUNCTUATOR_LESS_THAN:
+            case lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS:
+            case lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET: {
+                if (typeAnnotation != nullptr) {
+                    if (lexer->Lookahead() == lexer::LEX_CHAR_RIGHT_SQUARE) {
+                        return parser->ParseArrayType(typeAnnotation);
+                    }
+
+                    return parser->ParseIndexAccessType(typeAnnotation);
+                }
+
+                return parser->ParseTupleType();
+            }
+            case lexer::TokenType::PUNCTUATOR_LEFT_BRACE: {
+                return parser->ParseTypeLiteralOrMappedType(typeAnnotation);
+            }
+            default: {
+                break;
+            }
+        }
+
+        return nullptr;
+    }
+};
+
 ir::TypeNode *TSParser::ParseTypeAnnotationElement(ir::TypeNode *typeAnnotation, TypeAnnotationParsingOptions *options)
 {
     switch (Lexer()->GetToken().Type()) {
-        case lexer::TokenType::PUNCTUATOR_BITWISE_OR: {
-            if (((*options) &
-                 (TypeAnnotationParsingOptions::IN_UNION | TypeAnnotationParsingOptions::IN_INTERSECTION)) != 0) {
-                break;
-            }
-
-            return ParseUnionType(typeAnnotation, ((*options) & TypeAnnotationParsingOptions::RESTRICT_EXTENDS) != 0);
-        }
-        case lexer::TokenType::PUNCTUATOR_BITWISE_AND: {
-            if (((*options) & TypeAnnotationParsingOptions::IN_INTERSECTION) != 0) {
-                break;
-            }
-
-            return ParseIntersectionType(typeAnnotation, ((*options) & TypeAnnotationParsingOptions::IN_UNION) != 0,
-                                         ((*options) & TypeAnnotationParsingOptions::RESTRICT_EXTENDS) != 0);
-        }
-        case lexer::TokenType::PUNCTUATOR_LESS_THAN:
-        case lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS:
-        case lexer::TokenType::KEYW_NEW: {
-            return ParseParenthesizedOrFunctionType(typeAnnotation,
-                                                    ((*options) & TypeAnnotationParsingOptions::THROW_ERROR) != 0);
-        }
-        case lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET: {
-            if (typeAnnotation != nullptr) {
-                if (Lexer()->Lookahead() == lexer::LEX_CHAR_RIGHT_SQUARE) {
-                    return ParseArrayType(typeAnnotation);
-                }
-
-                return ParseIndexAccessType(typeAnnotation);
-            }
-
-            return ParseTupleType();
-        }
-        case lexer::TokenType::PUNCTUATOR_LEFT_BRACE: {
-            return ParseTypeLiteralOrMappedType(typeAnnotation);
-        }
         case lexer::TokenType::PUNCTUATOR_MINUS:
         case lexer::TokenType::LITERAL_NUMBER:
         case lexer::TokenType::LITERAL_STRING:
@@ -1519,29 +1591,6 @@ ir::TypeNode *TSParser::ParseTypeAnnotationElement(ir::TypeNode *typeAnnotation,
 
             return ParseBasicType();
         }
-        case lexer::TokenType::KEYW_TYPEOF: {
-            if (typeAnnotation != nullptr) {
-                break;
-            }
-
-            return ParseTypeReferenceOrQuery(true);
-        }
-        case lexer::TokenType::KEYW_IMPORT: {
-            if (typeAnnotation != nullptr) {
-                break;
-            }
-
-            lexer::SourcePosition startLoc = Lexer()->GetToken().Start();
-            return ParseImportType(startLoc);
-        }
-        case lexer::TokenType::KEYW_CONST: {
-            if (((*options) & TypeAnnotationParsingOptions::ALLOW_CONST) == 0) {
-                break;
-            }
-
-            (*options) &= ~TypeAnnotationParsingOptions::ALLOW_CONST;
-            return ParseConstExpression();
-        }
         case lexer::TokenType::LITERAL_IDENT: {
             if (IsStartOfAbstractConstructorType()) {
                 return ParseParenthesizedOrFunctionType(typeAnnotation,
@@ -1551,25 +1600,19 @@ ir::TypeNode *TSParser::ParseTypeAnnotationElement(ir::TypeNode *typeAnnotation,
             return ParseTypeReferenceOrTypePredicate(
                 typeAnnotation, ((*options) & TypeAnnotationParsingOptions::CAN_BE_TS_TYPE_PREDICATE) != 0);
         }
-        case lexer::TokenType::KEYW_EXTENDS: {
-            if (((*options) &
-                 (TypeAnnotationParsingOptions::IN_UNION | TypeAnnotationParsingOptions::IN_INTERSECTION)) != 0) {
-                break;
-            }
-
-            if (typeAnnotation == nullptr) {
-                return ParseIdentifierReference();
-            }
-
-            return ParseConditionalType(typeAnnotation,
-                                        ((*options) & TypeAnnotationParsingOptions::RESTRICT_EXTENDS) != 0);
-        }
-        case lexer::TokenType::KEYW_THIS: {
-            return ParseThisTypeOrTypePredicate(
-                typeAnnotation, ((*options) & TypeAnnotationParsingOptions::CAN_BE_TS_TYPE_PREDICATE) != 0,
-                ((*options) & TypeAnnotationParsingOptions::THROW_ERROR) != 0);
-        }
         default: {
+            ir::TypeNode *parsedValue =
+                ParseTypeAnnotationElementHelper::ParseKeywordTokens(this, Lexer(), typeAnnotation, options);
+            if (parsedValue != nullptr) {
+                return parsedValue;
+            }
+
+            parsedValue =
+                ParseTypeAnnotationElementHelper::ParsePunctuatorTokens(this, Lexer(), typeAnnotation, options);
+            if (parsedValue != nullptr) {
+                return parsedValue;
+            }
+
             break;
         }
     }
@@ -1596,6 +1639,42 @@ ir::ArrayExpression *TSParser::ParseArrayExpression(ExpressionParseFlags flags)
     ParsePotentialOptionalFunctionParameter(arrayExpression);
     return arrayExpression;
 }
+
+class TSParser::ParsePotentialArrowExpressionHelper {
+    friend ir::ArrowFunctionExpression *TSParser::ParsePotentialArrowExpression(ir::Expression **returnExpression,
+                                                                                const lexer::SourcePosition &startLoc);
+
+private:
+    static ir::ArrowFunctionExpression *CreateCallExpression(TSParser *parser, lexer::Lexer *lexer,
+                                                             ir::Expression **returnExpression,
+                                                             ir::TSTypeParameterDeclaration *typeParamDecl,
+                                                             const lexer::SourcePosition &startLoc)
+    {
+        ir::CallExpression *callExpression = parser->ParseCallExpression(*returnExpression, false);
+
+        ir::TypeNode *returnTypeAnnotation = nullptr;
+        if (lexer->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COLON) {
+            lexer->NextToken();  // eat ':'
+            TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
+            returnTypeAnnotation = parser->ParseTypeAnnotation(&options);
+        }
+
+        if (lexer->GetToken().Type() == lexer::TokenType::PUNCTUATOR_ARROW) {
+            ir::ArrowFunctionExpression *arrowFuncExpr =
+                parser->ParseArrowFunctionExpression(callExpression, typeParamDecl, returnTypeAnnotation, true);
+            arrowFuncExpr->SetStart(startLoc);
+
+            return arrowFuncExpr;
+        }
+
+        if (returnTypeAnnotation != nullptr || typeParamDecl != nullptr) {
+            parser->ThrowSyntaxError("'=>' expected");
+        }
+
+        *returnExpression = callExpression;
+        return nullptr;
+    }
+};
 
 ir::ArrowFunctionExpression *TSParser::ParsePotentialArrowExpression(ir::Expression **returnExpression,
                                                                      const lexer::SourcePosition &startLoc)
@@ -1644,29 +1723,8 @@ ir::ArrowFunctionExpression *TSParser::ParsePotentialArrowExpression(ir::Express
             [[fallthrough]];
         }
         case lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS: {
-            ir::CallExpression *callExpression = ParseCallExpression(*returnExpression, false);
-
-            ir::TypeNode *returnTypeAnnotation = nullptr;
-            if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COLON) {
-                Lexer()->NextToken();  // eat ':'
-                TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
-                returnTypeAnnotation = ParseTypeAnnotation(&options);
-            }
-
-            if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_ARROW) {
-                ir::ArrowFunctionExpression *arrowFuncExpr =
-                    ParseArrowFunctionExpression(callExpression, typeParamDecl, returnTypeAnnotation, true);
-                arrowFuncExpr->SetStart(startLoc);
-
-                return arrowFuncExpr;
-            }
-
-            if (returnTypeAnnotation != nullptr || typeParamDecl != nullptr) {
-                ThrowSyntaxError("'=>' expected");
-            }
-
-            *returnExpression = callExpression;
-            break;
+            return ParsePotentialArrowExpressionHelper::CreateCallExpression(this, Lexer(), returnExpression,
+                                                                             typeParamDecl, startLoc);
         }
         default: {
             break;
