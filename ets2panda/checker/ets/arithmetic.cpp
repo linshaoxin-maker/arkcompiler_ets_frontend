@@ -176,88 +176,79 @@ void ETSChecker::CheckBinaryPlusMultDivOperandsForUnionType(const Type *leftType
     }
 }
 
-checker::Type *ETSChecker::CheckBinaryOperatorMulDivMod(ir::Expression *left, ir::Expression *right,
-                                                        lexer::TokenType operationType, lexer::SourcePosition pos,
-                                                        bool isEqualOp, checker::Type *const leftType,
-                                                        checker::Type *const rightType, Type *unboxedL, Type *unboxedR)
+checker::Type *ETSChecker::CheckBinaryOperatorMulDivMod(CheckBinaryOperatorData &&data)
 {
     checker::Type *tsType {};
-    auto [promotedType, bothConst] =
-        ApplyBinaryOperatorPromotion(unboxedL, unboxedR, TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC, !isEqualOp);
+    auto [promotedType, bothConst] = ApplyBinaryOperatorPromotion(
+        data.unboxedL, data.unboxedR, TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC, !data.isEqualOp);
 
-    FlagExpressionWithUnboxing(leftType, unboxedL, left);
-    FlagExpressionWithUnboxing(rightType, unboxedR, right);
+    FlagExpressionWithUnboxing(data.leftType, data.unboxedL, data.left);
+    FlagExpressionWithUnboxing(data.rightType, data.unboxedR, data.right);
 
-    CheckBinaryPlusMultDivOperandsForUnionType(leftType, rightType, left, right);
+    CheckBinaryPlusMultDivOperandsForUnionType(data.leftType, data.rightType, data.left, data.right);
 
     if (promotedType == nullptr && !bothConst) {
-        ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", pos);
+        ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", data.pos);
     }
 
     if (bothConst) {
-        tsType = HandleArithmeticOperationOnTypes(leftType, rightType, operationType);
+        tsType = HandleArithmeticOperationOnTypes(data.leftType, data.rightType, data.operationType);
     }
 
     tsType = (tsType != nullptr) ? tsType : promotedType;
     return tsType;
 }
 
-checker::Type *ETSChecker::CheckBinaryOperatorPlus(ir::Expression *left, ir::Expression *right,
-                                                   lexer::TokenType operationType, lexer::SourcePosition pos,
-                                                   bool isEqualOp, checker::Type *const leftType,
-                                                   checker::Type *const rightType, Type *unboxedL, Type *unboxedR)
+checker::Type *ETSChecker::CheckBinaryOperatorPlus(CheckBinaryOperatorData &&data)
 {
-    if (leftType->IsETSStringType() || rightType->IsETSStringType()) {
-        if (operationType == lexer::TokenType::PUNCTUATOR_MINUS ||
-            operationType == lexer::TokenType::PUNCTUATOR_MINUS_EQUAL) {
-            ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", pos);
+    if (data.leftType->IsETSStringType() || data.rightType->IsETSStringType()) {
+        if (data.operationType == lexer::TokenType::PUNCTUATOR_MINUS ||
+            data.operationType == lexer::TokenType::PUNCTUATOR_MINUS_EQUAL) {
+            ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", data.pos);
         }
 
-        return HandleStringConcatenation(leftType, rightType);
+        return HandleStringConcatenation(data.leftType, data.rightType);
     }
 
-    CheckBinaryPlusMultDivOperandsForUnionType(leftType, rightType, left, right);
+    CheckBinaryPlusMultDivOperandsForUnionType(data.leftType, data.rightType, data.left, data.right);
 
-    auto [promotedType, bothConst] =
-        ApplyBinaryOperatorPromotion(unboxedL, unboxedR, TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC, !isEqualOp);
+    auto [promotedType, bothConst] = ApplyBinaryOperatorPromotion(
+        data.unboxedL, data.unboxedR, TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC, !data.isEqualOp);
 
-    FlagExpressionWithUnboxing(leftType, unboxedL, left);
-    FlagExpressionWithUnboxing(rightType, unboxedR, right);
+    FlagExpressionWithUnboxing(data.leftType, data.unboxedL, data.left);
+    FlagExpressionWithUnboxing(data.rightType, data.unboxedR, data.right);
 
     if (promotedType == nullptr && !bothConst) {
-        ThrowTypeError("Bad operand type, the types of the operands must be numeric type or String.", pos);
+        ThrowTypeError("Bad operand type, the types of the operands must be numeric type or String.", data.pos);
     }
 
     if (bothConst) {
-        return HandleArithmeticOperationOnTypes(leftType, rightType, operationType);
+        return HandleArithmeticOperationOnTypes(data.leftType, data.rightType, data.operationType);
     }
 
     return promotedType;
 }
 
-checker::Type *ETSChecker::CheckBinaryOperatorShift(ir::Expression *left, ir::Expression *right,
-                                                    lexer::TokenType operationType, lexer::SourcePosition pos,
-                                                    bool isEqualOp, checker::Type *const leftType,
-                                                    checker::Type *const rightType, Type *unboxedL, Type *unboxedR)
+checker::Type *ETSChecker::CheckBinaryOperatorShift(CheckBinaryOperatorData &&data)
 {
-    if (leftType->IsETSUnionType() || rightType->IsETSUnionType()) {
-        ThrowTypeError("Bad operand type, unions are not allowed in binary expressions except equality.", pos);
+    if (data.leftType->IsETSUnionType() || data.rightType->IsETSUnionType()) {
+        ThrowTypeError("Bad operand type, unions are not allowed in binary expressions except equality.", data.pos);
     }
 
-    auto promotedLeftType = ApplyUnaryOperatorPromotion(unboxedL, false, !isEqualOp);
-    auto promotedRightType = ApplyUnaryOperatorPromotion(unboxedR, false, !isEqualOp);
+    auto promotedLeftType = ApplyUnaryOperatorPromotion(data.unboxedL, false, !data.isEqualOp);
+    auto promotedRightType = ApplyUnaryOperatorPromotion(data.unboxedR, false, !data.isEqualOp);
 
-    FlagExpressionWithUnboxing(leftType, unboxedL, left);
-    FlagExpressionWithUnboxing(rightType, unboxedR, right);
+    FlagExpressionWithUnboxing(data.leftType, data.unboxedL, data.left);
+    FlagExpressionWithUnboxing(data.rightType, data.unboxedR, data.right);
 
     if (promotedLeftType == nullptr || !promotedLeftType->HasTypeFlag(checker::TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC) ||
         promotedRightType == nullptr ||
         !promotedRightType->HasTypeFlag(checker::TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC)) {
-        ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", pos);
+        ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", data.pos);
     }
 
     if (promotedLeftType->HasTypeFlag(TypeFlag::CONSTANT) && promotedRightType->HasTypeFlag(TypeFlag::CONSTANT)) {
-        return HandleBitwiseOperationOnTypes(promotedLeftType, promotedRightType, operationType);
+        return HandleBitwiseOperationOnTypes(promotedLeftType, promotedRightType, data.operationType);
     }
 
     switch (ETSType(promotedLeftType)) {
@@ -285,47 +276,44 @@ checker::Type *ETSChecker::CheckBinaryOperatorShift(ir::Expression *left, ir::Ex
     return nullptr;
 }
 
-checker::Type *ETSChecker::CheckBinaryOperatorBitwise(ir::Expression *left, ir::Expression *right,
-                                                      lexer::TokenType operationType, lexer::SourcePosition pos,
-                                                      bool isEqualOp, checker::Type *const leftType,
-                                                      checker::Type *const rightType, Type *unboxedL, Type *unboxedR)
+checker::Type *ETSChecker::CheckBinaryOperatorBitwise(CheckBinaryOperatorData &&data)
 {
     // NOTE (mmartin): These need to be done for other binary expressions, but currently it's not defined precisely when
     // to apply this conversion
 
-    if (leftType->IsETSEnumType()) {
-        left->AddAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
-        unboxedL = GlobalIntType();
+    if (data.leftType->IsETSEnumType()) {
+        data.left->AddAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
+        data.unboxedL = GlobalIntType();
     }
 
-    if (rightType->IsETSEnumType()) {
-        right->AddAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
-        unboxedR = GlobalIntType();
+    if (data.rightType->IsETSEnumType()) {
+        data.right->AddAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
+        data.unboxedR = GlobalIntType();
     }
 
-    if (leftType->IsETSUnionType() || rightType->IsETSUnionType()) {
-        ThrowTypeError("Bad operand type, unions are not allowed in binary expressions except equality.", pos);
+    if (data.leftType->IsETSUnionType() || data.rightType->IsETSUnionType()) {
+        ThrowTypeError("Bad operand type, unions are not allowed in binary expressions except equality.", data.pos);
     }
 
-    if (unboxedL != nullptr && unboxedL->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN) && unboxedR != nullptr &&
-        unboxedR->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN)) {
-        FlagExpressionWithUnboxing(leftType, unboxedL, left);
-        FlagExpressionWithUnboxing(rightType, unboxedR, right);
-        return HandleBooleanLogicalOperators(unboxedL, unboxedR, operationType);
+    if (data.unboxedL != nullptr && data.unboxedL->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN) &&
+        data.unboxedR != nullptr && data.unboxedR->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN)) {
+        FlagExpressionWithUnboxing(data.leftType, data.unboxedL, data.left);
+        FlagExpressionWithUnboxing(data.rightType, data.unboxedR, data.right);
+        return HandleBooleanLogicalOperators(data.unboxedL, data.unboxedR, data.operationType);
     }
 
-    auto [promotedType, bothConst] =
-        ApplyBinaryOperatorPromotion(unboxedL, unboxedR, TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC, !isEqualOp);
+    auto [promotedType, bothConst] = ApplyBinaryOperatorPromotion(
+        data.unboxedL, data.unboxedR, TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC, !data.isEqualOp);
 
-    FlagExpressionWithUnboxing(leftType, unboxedL, left);
-    FlagExpressionWithUnboxing(rightType, unboxedR, right);
+    FlagExpressionWithUnboxing(data.leftType, data.unboxedL, data.left);
+    FlagExpressionWithUnboxing(data.rightType, data.unboxedR, data.right);
 
     if (promotedType == nullptr && !bothConst) {
-        ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", pos);
+        ThrowTypeError("Bad operand type, the types of the operands must be numeric type.", data.pos);
     }
 
     if (bothConst) {
-        return HandleBitwiseOperationOnTypes(leftType, rightType, operationType);
+        return HandleBitwiseOperationOnTypes(data.leftType, data.rightType, data.operationType);
     }
 
     return SelectGlobalIntegerTypeForNumeric(promotedType);
@@ -573,10 +561,7 @@ Type *ETSChecker::CheckBinaryOperatorNullishCoalescing(ir::Expression *left, ir:
     return CreateETSUnionType({leftType, rightType});
 }
 
-using CheckBinaryFunction = std::function<checker::Type *(
-    ETSChecker *, ir::Expression *left, ir::Expression *right, lexer::TokenType operationType,
-    lexer::SourcePosition pos, bool isEqualOp, checker::Type *const leftType, checker::Type *const rightType,
-    Type *unboxedL, Type *unboxedR)>;
+using CheckBinaryFunction = std::function<checker::Type *(ETSChecker *, ETSChecker::CheckBinaryOperatorData &&data)>;
 
 std::map<lexer::TokenType, CheckBinaryFunction> &GetCheckMap()
 {
@@ -734,7 +719,8 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left,
     auto checkMap = GetCheckMap();
     if (checkMap.find(operationType) != checkMap.end()) {
         auto check = checkMap[operationType];
-        tsType = check(this, left, right, operationType, pos, isEqualOp, leftType, rightType, unboxedL, unboxedR);
+        tsType = check(this, ETSChecker::CheckBinaryOperatorData {left, right, operationType, pos, isEqualOp, leftType,
+                                                                  rightType, unboxedL, unboxedR});
         return {tsType, tsType};
     }
 

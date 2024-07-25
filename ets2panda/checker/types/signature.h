@@ -251,6 +251,8 @@ public:
     util::StringView InternalName() const;
 
     Signature *Copy(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes);
+    void FillNewSigInfo(SignatureInfo *newSigInfo, bool &anyChange, TypeRelation *relation,
+                        const Substitution *substitution);
     Signature *Substitute(TypeRelation *relation, const Substitution *substitution);
 
     void ToString(std::stringstream &ss, const varbinder::Variable *variable, bool printAsMethod = false,
