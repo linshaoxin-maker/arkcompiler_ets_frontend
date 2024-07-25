@@ -147,8 +147,8 @@ checker::Type *ForOfStatement::CheckIteratorMethodForObject(checker::ETSChecker 
     ArenaVector<Expression *> arguments {checker->Allocator()->Adapter()};
     auto &signatures = checker->GetTypeOfVariable(method)->AsETSFunctionType()->CallSignatures();
 
-    checker::Signature *signature = checker->ValidateSignatures(signatures, nullptr, arguments, position, "iterator",
-                                                                checker::TypeRelationFlag::NO_THROW);
+    checker::Signature *signature = checker->ValidateSignatures(checker::ETSChecker::ValidateSignaturesData {
+        signatures, nullptr, arguments, position, "iterator", checker::TypeRelationFlag::NO_THROW});
     if (signature == nullptr) {
         checker->ThrowTypeError("Cannot find iterator method with the required signature.", position);
     }
@@ -171,8 +171,8 @@ checker::Type *ForOfStatement::CheckIteratorMethodForObject(checker::ETSChecker 
 
     auto &nextSignatures = checker->GetTypeOfVariable(nextMethod)->AsETSFunctionType()->CallSignatures();
 
-    auto const *const nextSignature = checker->ValidateSignatures(nextSignatures, nullptr, arguments, position,
-                                                                  "iterator", checker::TypeRelationFlag::NO_THROW);
+    auto const *const nextSignature = checker->ValidateSignatures(checker::ETSChecker::ValidateSignaturesData {
+        nextSignatures, nullptr, arguments, position, "iterator", checker::TypeRelationFlag::NO_THROW});
     if (nextSignature != nullptr && nextSignature->ReturnType()->IsETSObjectType()) {
         if (auto const *const resultType = nextSignature->ReturnType()->AsETSObjectType();
             resultType->Name().Is(ITERATOR_RESULT_NAME)) {
