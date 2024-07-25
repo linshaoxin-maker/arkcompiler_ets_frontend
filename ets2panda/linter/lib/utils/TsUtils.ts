@@ -312,6 +312,20 @@ export class TsUtils {
     );
   }
 
+  static isObjectLiteral(tsType: ts.Type): tsType is ts.TypeReference {
+    return (
+      (tsType.getFlags() & ts.TypeFlags.Object) !== 0 &&
+      ((tsType as ts.ObjectType).objectFlags & ts.ObjectFlags.ObjectLiteral) !== 0
+    );
+  }
+
+  static isArrayLiteral(tsType: ts.Type): tsType is ts.TypeReference {
+    return (
+      (tsType.getFlags() & ts.TypeFlags.Object) !== 0 &&
+      ((tsType as ts.ObjectType).objectFlags & ts.ObjectFlags.ArrayLiteral) !== 0
+    );
+  }
+
   static isPrototypeSymbol(symbol: ts.Symbol | undefined): boolean {
     return !!symbol && !!symbol.flags && (symbol.flags & ts.SymbolFlags.Prototype) !== 0;
   }
@@ -1880,6 +1894,11 @@ export class TsUtils {
     if (sym && sym.getFlags() & ts.SymbolFlags.TypeAlias) {
       const typeDecl = TsUtils.getDeclaration(sym);
       if (typeDecl && ts.isTypeAliasDeclaration(typeDecl)) {
+        // Recursion here will lose generic parameters, So make a judgment before recursion
+        const type: ts.Type = this.tsTypeChecker.getTypeFromTypeNode(typeNode);
+        if (this.isToolsTypeAlias(type)) {
+          return this.isSendableToolsTypeAlias(type);
+        }
         return this.isSendableTypeNode(typeDecl.type);
       }
     }
@@ -1910,6 +1929,9 @@ export class TsUtils {
       return true;
     }
     if (TsUtils.isSendableFunction(type)) {
+      return true;
+    }
+    if (this.isSendableToolsTypeAlias(type)) {
       return true;
     }
 
@@ -2601,5 +2623,128 @@ export class TsUtils {
       return !TsUtils.isSendableFunction(type);
     }
     return false;
+  }
+
+  isWrongSendableToolsAssignment(lhsType: ts.Type, rhsType: ts.Type): boolean {
+    // eslint-disable-next-line no-param-reassign
+    lhsType = this.getNonNullableType(lhsType);
+    // eslint-disable-next-line no-param-reassign
+    rhsType = this.getNonNullableType(rhsType);
+
+    if (!this.hasSendableToolsTypeAlias(lhsType)) {
+      return false;
+    }
+
+    if (rhsType.isUnion()) {
+      return rhsType.types.some((compType) => {
+        return this.isInvalidSendableToolsAssignmentType(compType);
+      });
+    }
+    return this.isInvalidSendableToolsAssignmentType(rhsType);
+  }
+
+  private isInvalidSendableToolsAssignmentType(type: ts.Type): boolean {
+    if (TsUtils.isObjectLiteral(type) || TsUtils.isArrayLiteral(type)) {
+      return true;
+    }
+    let checkType;
+    if (this.isToolsTypeAlias(type) && type.aliasTypeArguments?.length === 1) {
+      checkType = TsUtils.reduceReference(type.aliasTypeArguments[0]);
+    } else {
+      checkType = type;
+    }
+    return checkType.isClassOrInterface() && !this.isSendableClassOrInterface(checkType);
+  }
+
+  // The properties of sendable are allowed to be modified with 'Readonly<T>', 'Partial<T>', and 'Required<T>'.
+  isSendableToolsTypeAlias(type: ts.Type): boolean {
+    if (!this.isToolsTypeAlias(type)) {
+      return false;
+    }
+    return type.aliasTypeArguments?.length === 1 && this.isSendableClassOrInterface(type.aliasTypeArguments[0]);
+  }
+
+  isToolsTypeAlias(type: ts.Type): boolean {
+    return this.isStdReadonlyType(type) || this.isStdPartialType(type) || this.isStdRequiredType(type);
+  }
+
+  hasSendableToolsTypeAlias(type: ts.Type): boolean {
+    if (type.isUnion()) {
+      return type.types.some((compType) => {
+        return this.hasSendableToolsTypeAlias(compType);
+      });
+    }
+    return this.isSendableToolsTypeAlias(type);
+  }
+
+  // SendableType with generic arguments other than 'sendable data type' is not allowed.
+  isWrongSendableTypeArguments(type: ts.Type): boolean {
+    if (type.isUnion()) {
+      return type.types.some((compType) => {
+        return this.isWrongSendableTypeArguments(compType);
+      });
+    }
+    if (!TsUtils.isTypeReference(type) || !type.typeArguments?.length || !this.isSendableClassOrInterface(type)) {
+      return false;
+    }
+    return type.typeArguments.some((compType) => {
+      return !this.isSendableType(compType);
+    });
+  }
+
+  typeNodeContainsTypeParameter(type: ts.TypeNode): boolean {
+    return TsUtils.typeContainsTypeParameter(this.tsTypeChecker.getTypeAtLocation(type));
+  }
+
+  static typeContainsTypeParameter(type: ts.Type): boolean {
+    if (!TsUtils.isTypeReference(type) || !type.typeArguments?.length) {
+      return false;
+    }
+    return type.typeArguments.some((compType) => {
+      return compType.flags === ts.TypeFlags.TypeParameter;
+    });
+  }
+
+  private readonly fileExportDeclCaches = new Map<ts.SourceFile, Set<ts.Node>>();
+
+  isFileExportDecl(node: ts.HasModifiers): boolean {
+    const sourceFile = node.getSourceFile();
+    if (!sourceFile) {
+      return false;
+    }
+    if (!this.fileExportDeclCaches.has(sourceFile)) {
+      this.searchFileExportDecl(sourceFile);
+    }
+    return !!this.fileExportDeclCaches.get(sourceFile)?.has(node);
+  }
+
+  // Search for and save the exported declaration in the specified file, re-exporting another module will not be included.
+  private searchFileExportDecl(sourceFile: ts.SourceFile): void {
+    if (this.fileExportDeclCaches.has(sourceFile)) {
+      return;
+    }
+    const exportDeclSet = new Set<ts.Node>();
+    sourceFile.statements.forEach((statement: ts.Statement) => {
+      if (ts.isExportAssignment(statement)) {
+        if (statement.isExportEquals) {
+          return;
+        }
+        const exportDecl = this.getDeclarationNode(statement.expression);
+        exportDecl && exportDeclSet.add(exportDecl);
+      } else if (ts.isExportDeclaration(statement)) {
+        if (!statement.exportClause || !ts.isNamedExports(statement.exportClause)) {
+          return;
+        }
+        statement.exportClause.elements.forEach((specifier) => {
+          const exportDecl = this.getDeclarationNode(specifier.propertyName ?? specifier.name);
+          exportDecl && exportDeclSet.add(exportDecl);
+        });
+      } else if (ts.canHaveModifiers(statement)) {
+        if (TsUtils.hasModifier(ts.getModifiers(statement), ts.SyntaxKind.ExportKeyword)) {
+          exportDeclSet.add(statement);
+        }
+      }
+    });
+    this.fileExportDeclCaches.set(sourceFile, exportDeclSet);
   }
 }
