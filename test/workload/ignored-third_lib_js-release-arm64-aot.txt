@@ -1,1 +1,11 @@
 # Known failures list for third_lib_js - release-arm64-aot
+
+# Issue #18153
+Drools_test
+utf8_test
+ahocorasik_test
+loadsh_test
+validator_test
+dayjs_test
+sax_test
+mathjs_test
