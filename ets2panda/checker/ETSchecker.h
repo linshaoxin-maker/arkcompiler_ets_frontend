@@ -60,6 +60,62 @@ using ConstraintCheckRecord = std::tuple<const ArenaVector<Type *> *, const Subs
 
 class ETSChecker final : public Checker {
 public:
+    // Need to reduce the number of constructor parameters to pass OHOS CI code check
+    struct CheckBinaryOperatorData {
+        ir::Expression *left = nullptr;
+        ir::Expression *right = nullptr;
+        lexer::TokenType operationType;
+        lexer::SourcePosition pos;
+        bool isEqualOp;
+        checker::Type *leftType = nullptr;
+        checker::Type *rightType = nullptr;
+        Type *unboxedL = nullptr;
+        Type *unboxedR = nullptr;
+    };
+
+    // Need to reduce the number of constructor parameters to pass OHOS CI code check
+    struct CreateMethodData {
+        const util::StringView name_;
+        ir::ModifierFlags modifiers;
+        ir::ScriptFunctionFlags flags;
+        ArenaVector<ir::Expression *> params;
+        varbinder::FunctionParamScope *paramScope = nullptr;
+        ir::TypeNode *returnType = nullptr;
+        ir::AstNode *body = nullptr;
+    };
+
+    // Need to reduce the number of constructor parameters to pass OHOS CI code check
+    struct SearchAmongMostSpecificTypesData {
+        Type *&mostSpecificType;
+        Signature *&prevSig;
+        const lexer::SourcePosition pos_;
+        size_t argumentsSize;
+        size_t paramCount;
+        size_t idx;
+        Signature *sig = nullptr;
+        bool lookForClassType;
+    };
+
+    // Need to reduce the number of constructor parameters to pass OHOS CI code check
+    struct ValidateSignaturesData {
+        ArenaVector<Signature *> signatures;
+        const ir::TSTypeParameterInstantiation *typeArguments = nullptr;
+        const ArenaVector<ir::Expression *> arguments_;
+        const lexer::SourcePosition pos_;
+        std::string_view signatureKind;
+        TypeRelationFlag resolveFlags = TypeRelationFlag::NONE;
+    };
+
+    // Need to reduce the number of constructor parameters to pass OHOS CI code check
+    struct ValidateSignatureData {
+        Signature *signature;
+        const ir::TSTypeParameterInstantiation *typeArguments = nullptr;
+        const ArenaVector<ir::Expression *> arguments_;
+        const lexer::SourcePosition pos_;
+        TypeRelationFlag initialFlags;
+        const std::vector<bool> argTypeInferenceRequired_;
+    };
+
     explicit ETSChecker()
         // NOLINTNEXTLINE(readability-redundant-member-init)
         : Checker(),
@@ -283,20 +339,10 @@ public:
     std::tuple<Type *, Type *> CheckBinaryOperator(ir::Expression *left, ir::Expression *right, ir::Expression *expr,
                                                    lexer::TokenType operationType, lexer::SourcePosition pos,
                                                    bool forcePromotion = false);
-    checker::Type *CheckBinaryOperatorMulDivMod(ir::Expression *left, ir::Expression *right,
-                                                lexer::TokenType operationType, lexer::SourcePosition pos,
-                                                bool isEqualOp, checker::Type *leftType, checker::Type *rightType,
-                                                Type *unboxedL, Type *unboxedR);
-    checker::Type *CheckBinaryOperatorPlus(ir::Expression *left, ir::Expression *right, lexer::TokenType operationType,
-                                           lexer::SourcePosition pos, bool isEqualOp, checker::Type *leftType,
-                                           checker::Type *rightType, Type *unboxedL, Type *unboxedR);
-    checker::Type *CheckBinaryOperatorShift(ir::Expression *left, ir::Expression *right, lexer::TokenType operationType,
-                                            lexer::SourcePosition pos, bool isEqualOp, checker::Type *leftType,
-                                            checker::Type *rightType, Type *unboxedL, Type *unboxedR);
-    checker::Type *CheckBinaryOperatorBitwise(ir::Expression *left, ir::Expression *right,
-                                              lexer::TokenType operationType, lexer::SourcePosition pos, bool isEqualOp,
-                                              checker::Type *leftType, checker::Type *rightType, Type *unboxedL,
-                                              Type *unboxedR);
+    checker::Type *CheckBinaryOperatorMulDivMod(CheckBinaryOperatorData &&data);
+    checker::Type *CheckBinaryOperatorPlus(CheckBinaryOperatorData &&data);
+    checker::Type *CheckBinaryOperatorShift(CheckBinaryOperatorData &&data);
+    checker::Type *CheckBinaryOperatorBitwise(CheckBinaryOperatorData &&data);
     checker::Type *CheckBinaryOperatorLogical(ir::Expression *left, ir::Expression *right, ir::Expression *expr,
                                               lexer::SourcePosition pos, checker::Type *leftType,
                                               checker::Type *rightType, Type *unboxedL, Type *unboxedR);
@@ -375,9 +421,7 @@ public:
                                                 TypeRelationFlag flags);
     Signature *CollectParameterlessConstructor(ArenaVector<Signature *> &signatures, const lexer::SourcePosition &pos,
                                                TypeRelationFlag resolveFlags = TypeRelationFlag::NONE);
-    Signature *ValidateSignature(Signature *signature, const ir::TSTypeParameterInstantiation *typeArguments,
-                                 const ArenaVector<ir::Expression *> &arguments, const lexer::SourcePosition &pos,
-                                 TypeRelationFlag initialFlags, const std::vector<bool> &argTypeInferenceRequired);
+    Signature *ValidateSignature(ValidateSignatureData &&data);
     bool ValidateSignatureRequiredParams(Signature *substitutedSig, const ArenaVector<ir::Expression *> &arguments,
                                          TypeRelationFlag flags, const std::vector<bool> &argTypeInferenceRequired,
                                          bool throwError);
@@ -388,19 +432,13 @@ public:
     bool ValidateArgumentAsIdentifier(const ir::Identifier *identifier);
     bool ValidateSignatureRestParams(Signature *substitutedSig, const ArenaVector<ir::Expression *> &arguments,
                                      TypeRelationFlag flags, bool throwError);
-    Signature *ValidateSignatures(ArenaVector<Signature *> &signatures,
-                                  const ir::TSTypeParameterInstantiation *typeArguments,
-                                  const ArenaVector<ir::Expression *> &arguments, const lexer::SourcePosition &pos,
-                                  std::string_view signatureKind,
-                                  TypeRelationFlag resolveFlags = TypeRelationFlag::NONE);
+    Signature *ValidateSignatures(ValidateSignaturesData &&data);
     Signature *FindMostSpecificSignature(const ArenaVector<Signature *> &signatures,
                                          const ArenaMultiMap<size_t, Signature *> &bestSignaturesForParameter,
                                          size_t paramCount);
     void EvaluateMostSpecificSearch(Type *&mostSpecificType, Signature *&prevSig, const lexer::SourcePosition &pos,
                                     Signature *sig, Type *sigType);
-    void SearchAmongMostSpecificTypes(Type *&mostSpecificType, Signature *&prevSig, const lexer::SourcePosition &pos,
-                                      size_t argumentsSize, size_t paramCount, size_t idx, Signature *sig,
-                                      bool lookForClassType);
+    void SearchAmongMostSpecificTypes(SearchAmongMostSpecificTypesData &&data);
     Signature *ChooseMostSpecificSignature(ArenaVector<Signature *> &signatures,
                                            const std::vector<bool> &argTypeInferenceRequired,
                                            const lexer::SourcePosition &pos, size_t argumentsSize = ULONG_MAX);
@@ -440,10 +478,7 @@ public:
     ir::MethodDefinition *CreateAsyncImplMethod(ir::MethodDefinition *asyncMethod, ir::ClassDefinition *classDef);
     ir::MethodDefinition *CreateAsyncProxy(ir::MethodDefinition *asyncMethod, ir::ClassDefinition *classDef,
                                            bool createDecl = true);
-    ir::MethodDefinition *CreateMethod(const util::StringView &name, ir::ModifierFlags modifiers,
-                                       ir::ScriptFunctionFlags flags, ArenaVector<ir::Expression *> &&params,
-                                       varbinder::FunctionParamScope *paramScope, ir::TypeNode *returnType,
-                                       ir::AstNode *body);
+    ir::MethodDefinition *CreateMethod(CreateMethodData &&data);
     varbinder::FunctionParamScope *CopyParams(const ArenaVector<ir::Expression *> &params,
                                               ArenaVector<ir::Expression *> &outParams);
     void ReplaceScope(ir::AstNode *root, ir::AstNode *oldNode, varbinder::Scope *newScope);
