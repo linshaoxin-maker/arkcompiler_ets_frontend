@@ -2,7 +2,11 @@
 
 # Issue #18153
 Drools_test
-validator_test
-dayjs_test
 lodash_test
 js-joda_test
+
+# Issue #18331
+validator_test
+
+# Issue #18330
+dayjs_test
