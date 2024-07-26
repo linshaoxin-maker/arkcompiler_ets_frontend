@@ -19,7 +19,7 @@ import type { IsEtsFileCallback } from '../IsEtsFileCallback';
 import { FaultID } from '../Problems';
 import { ARKTS_IGNORE_DIRS, ARKTS_IGNORE_FILES } from './consts/ArktsIgnorePaths';
 import { ES_OBJECT } from './consts/ESObject';
-import { SENDABLE_DECORATOR, SENDABLE_CLOSURE_DECLS } from './consts/SendableAPI';
+import { SENDABLE_DECORATOR } from './consts/SendableAPI';
 import { USE_SHARED } from './consts/SharedModuleAPI';
 import { STANDARD_LIBRARIES } from './consts/StandardLibraries';
 import {
@@ -2703,11 +2703,8 @@ export class TsUtils {
   // Search for and save the exported declaration in the specified file, re-exporting another module will not be included.
   searchFileExportDecl(sourceFile: ts.SourceFile, targetDecls?: ts.SyntaxKind[]): Set<ts.Node> {
     const exportDeclSet = new Set<ts.Node>();
-    const appendDecl = (decl: ts.Node | undefined):void => {
-      if (
-        !decl ||
-         targetDecls && !targetDecls.includes(decl.kind)
-      ) {
+    const appendDecl = (decl: ts.Node | undefined): void => {
+      if (!decl || targetDecls && !targetDecls.includes(decl.kind)) {
         return;
       }
       exportDeclSet.add(decl);

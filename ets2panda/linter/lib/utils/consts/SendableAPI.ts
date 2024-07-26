@@ -23,7 +23,4 @@ export const SENDABLE_DECORATOR_NODES = [
   ts.SyntaxKind.TypeAliasDeclaration
 ];
 
-export const SENDABLE_CLOSURE_DECLS = [
-  ts.SyntaxKind.ClassDeclaration,
-  ts.SyntaxKind.FunctionDeclaration
-];
+export const SENDABLE_CLOSURE_DECLS = [ts.SyntaxKind.ClassDeclaration, ts.SyntaxKind.FunctionDeclaration];
