@@ -151,9 +151,16 @@ class ArkProgram():
         self.merge_abc_binary = DEFAULT_MERGE_ABC_BINARY
         self.merge_abc_mode = DEFAULT_MERGE_ABC_MODE
         self.abc2program = False
+        self.repro_commands = []
         # when enabling abc2program, may generate a list of abc files
         self.abc_outputs = []
         self.enable_arkguard = False
+
+    def print_full_repro(self):
+        sys.stderr.write("Full repro:\n")
+        sys.stderr.write('\n\n'.join(map(' '.join, self.repro_commands)))    
+        sys.stderr.write("\n")
+
 
     def proce_parameters(self):
         if self.args.ark_tool:
@@ -293,6 +300,7 @@ class ArkProgram():
                         '--suffix', PROTO_BIN_SUFFIX, '--outputFilePath',
                         file_dir, '--output', output_abc]
             if not is_apart_abc_existed:
+                self.repro_commands.append(cmd_args)
                 retcode = exec_command(cmd_args)
         return retcode
 
@@ -328,12 +336,14 @@ class ArkProgram():
                         '--suffix', PROTO_BIN_SUFFIX, '--outputFilePath',
                         file_dir, '--output', proto_abc_file]
             self.abc_file = f'{file_name_pre}.abc'
+            self.repro_commands.append(cmd_args)
             return exec_command(cmd_args)
         elif os.path.exists(proto_bin_file):
             cmd_args = [merge_abc_binary, '--input', proto_bin_file,
                         '--suffix', PROTO_BIN_SUFFIX, '--outputFilePath',
                         file_dir, '--output', proto_abc_file]
             self.abc_file = f'{file_name_pre}.abc'
+            self.repro_commands.append(cmd_args)
             return exec_command(cmd_args)
         return 0
 
@@ -347,6 +357,7 @@ class ArkProgram():
             return self.gen_merged_abc(dependencies, file_name_pre, proto_bin_file)
 
     def gen_abc_for_script_mode(self, cmd_args, retcode):
+        self.repro_commands.append(cmd_args)
         retcode = exec_command(cmd_args)
         if retcode == 1:
             return retcode
@@ -365,6 +376,7 @@ class ArkProgram():
             cmd_args = [merge_abc_binary, '--input', proto_bin_file,
                         '--suffix', PROTO_BIN_SUFFIX, '--outputFilePath',
                         file_dir, '--output', proto_abc_file]
+            self.repro_commands.append(cmd_args)
             retcode = exec_command(cmd_args)
             if retcode == 1:
                 return retcode
@@ -584,6 +596,7 @@ class ArkProgram():
                             self.abc_file]
         if self.enable_litecg:
             cmd_args.insert(-1, "--compiler-enable-litecg=true")
+        self.repro_commands.append(cmd_args)
         retcode = exec_command(cmd_args, 180000)
         if retcode:
             print_command(self.abc_cmd)
@@ -622,6 +635,7 @@ class ArkProgram():
 
         record_name = os.path.splitext(os.path.split(self.js_file)[1])[0]
         cmd_args.insert(-1, f'--entry-point={record_name}')
+        self.repro_commands.append(cmd_args)
         retcode = exec_command(cmd_args)
         if retcode:
             print_command(cmd_args)
@@ -632,6 +646,7 @@ class ArkProgram():
         for abc in self.abc_outputs:
             abc = get_formated_path(abc)
             cmd_args[-1] = abc
+            self.repro_commands.append(cmd_args)
             retcode = exec_command(cmd_args)
             if retcode:
                 print_command(cmd_args)
@@ -694,6 +709,7 @@ class ArkProgram():
         if self.abc2program:
             retcode = self.execute_abc2program_outputs(cmd_args)
         else:
+            self.repro_commands.append(cmd_args)
             retcode = exec_command(cmd_args)
             if retcode:
                 print_command(cmd_args)
@@ -726,6 +742,7 @@ class ArkProgram():
         if self.disable_force_gc:
             cmd_args.append(f"--enable-force-gc=false")
         cmd_args.append(f'{file_name_pre}.abc')
+        self.repro_commands.append(cmd_args)
         return_code = exec_command(cmd_args)
         if return_code:
             print_command(cmd_args)
@@ -751,6 +768,7 @@ class ArkProgram():
         if self.ark_aot:
             self.compile_aot()
             self.execute_aot()
+            self.print_full_repro()
         else:
             self.execute()
 
