@@ -19,7 +19,7 @@ import type { IsEtsFileCallback } from '../IsEtsFileCallback';
 import { FaultID } from '../Problems';
 import { ARKTS_IGNORE_DIRS, ARKTS_IGNORE_FILES } from './consts/ArktsIgnorePaths';
 import { ES_OBJECT } from './consts/ESObject';
-import { SENDABLE_DECORATOR } from './consts/SendableAPI';
+import { SENDABLE_DECORATOR, SENDABLE_CLOSURE_DECLS } from './consts/SendableAPI';
 import { USE_SHARED } from './consts/SharedModuleAPI';
 import { STANDARD_LIBRARIES } from './consts/StandardLibraries';
 import {
@@ -2700,46 +2700,45 @@ export class TsUtils {
     });
   }
 
-  private readonly fileExportDeclCaches = new Map<ts.SourceFile, Set<ts.Node>>();
-
-  isFileExportDecl(node: ts.HasModifiers): boolean {
-    const sourceFile = node.getSourceFile();
-    if (!sourceFile) {
-      return false;
-    }
-    if (!this.fileExportDeclCaches.has(sourceFile)) {
-      this.searchFileExportDecl(sourceFile);
-    }
-    return !!this.fileExportDeclCaches.get(sourceFile)?.has(node);
-  }
-
   // Search for and save the exported declaration in the specified file, re-exporting another module will not be included.
-  private searchFileExportDecl(sourceFile: ts.SourceFile): void {
-    if (this.fileExportDeclCaches.has(sourceFile)) {
-      return;
-    }
+  searchFileExportDecl(sourceFile: ts.SourceFile, targetDecls?: ts.SyntaxKind[]): Set<ts.Node> {
     const exportDeclSet = new Set<ts.Node>();
+    const appendDecl = (decl: ts.Node | undefined):void => {
+      if (
+        !decl ||
+         targetDecls && !targetDecls.includes(decl.kind)
+      ) {
+        return;
+      }
+      exportDeclSet.add(decl);
+    };
+
     sourceFile.statements.forEach((statement: ts.Statement) => {
       if (ts.isExportAssignment(statement)) {
         if (statement.isExportEquals) {
           return;
         }
-        const exportDecl = this.getDeclarationNode(statement.expression);
-        exportDecl && exportDeclSet.add(exportDecl);
+        appendDecl(this.getDeclarationNode(statement.expression));
       } else if (ts.isExportDeclaration(statement)) {
         if (!statement.exportClause || !ts.isNamedExports(statement.exportClause)) {
           return;
         }
         statement.exportClause.elements.forEach((specifier) => {
-          const exportDecl = this.getDeclarationNode(specifier.propertyName ?? specifier.name);
-          exportDecl && exportDeclSet.add(exportDecl);
+          appendDecl(this.getDeclarationNode(specifier.propertyName ?? specifier.name));
         });
       } else if (ts.canHaveModifiers(statement)) {
-        if (TsUtils.hasModifier(ts.getModifiers(statement), ts.SyntaxKind.ExportKeyword)) {
-          exportDeclSet.add(statement);
+        if (!TsUtils.hasModifier(ts.getModifiers(statement), ts.SyntaxKind.ExportKeyword)) {
+          return;
+        }
+        if (ts.isVariableStatement(statement)) {
+          for (const exportDecl of statement.declarationList.declarations) {
+            appendDecl(exportDecl);
+          }
+        } else {
+          appendDecl(statement);
         }
       }
     });
-    this.fileExportDeclCaches.set(sourceFile, exportDeclSet);
+    return exportDeclSet;
   }
 }

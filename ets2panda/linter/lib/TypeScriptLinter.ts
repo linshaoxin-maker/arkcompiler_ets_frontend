@@ -59,7 +59,7 @@ import {
 import { SupportedStdCallApiChecker } from './utils/functions/SupportedStdCallAPI';
 import { identiferUseInValueContext } from './utils/functions/identiferUseInValueContext';
 import { isAssignmentOperator } from './utils/functions/isAssignmentOperator';
-import { SENDABLE_DECORATOR, SENDABLE_DECORATOR_NODES } from './utils/consts/SendableAPI';
+import { SENDABLE_DECORATOR, SENDABLE_DECORATOR_NODES, SENDABLE_CLOSURE_DECLS } from './utils/consts/SendableAPI';
 
 export function consoleLog(...args: unknown[]): void {
   if (TypeScriptLinter.ideMode) {
@@ -93,6 +93,8 @@ export class TypeScriptLinter {
   supportedStdCallApiChecker: SupportedStdCallApiChecker;
 
   autofixer: Autofixer | undefined;
+
+  private fileExportSendableDeclCaches: Set<ts.Node> | undefined;
 
   private sourceFile?: ts.SourceFile;
   private static sharedModulesCache: Map<string, boolean>;
@@ -2616,7 +2618,7 @@ export class TypeScriptLinter {
     ) {
       return;
     }
-    if ((ts.isClassDeclaration(decl) || ts.isFunctionDeclaration(decl)) && this.tsUtils.isFileExportDecl(decl)) {
+    if (this.isFileExportSendableDecl(decl)) {
       this.incrementCounters(node, warningFaultId);
     }
     if (this.isTopSendableClosure(decl)) {
@@ -2671,6 +2673,20 @@ export class TypeScriptLinter {
     return false;
   }
 
+  isFileExportSendableDecl(node: ts.Node): boolean {
+    if (!ts.isClassDeclaration(node) && !ts.isFunctionDeclaration(node)) {
+      return false;
+    }
+    const sourceFile = node.getSourceFile();
+    if (!sourceFile) {
+      return false;
+    }
+    if (!this.fileExportSendableDeclCaches) {
+      this.fileExportSendableDeclCaches = this.tsUtils.searchFileExportDecl(sourceFile, SENDABLE_CLOSURE_DECLS);
+    }
+    return !!this.fileExportSendableDeclCaches.has(node);
+  }
+
   lint(sourceFile: ts.SourceFile): void {
     if (this.enableAutofix) {
       this.autofixer = new Autofixer(this.tsTypeChecker, this.tsUtils, sourceFile, this.cancellationToken);
@@ -2678,6 +2694,7 @@ export class TypeScriptLinter {
 
     this.walkedComments.clear();
     this.sourceFile = sourceFile;
+    this.fileExportSendableDeclCaches = undefined;
     this.visitSourceFile(this.sourceFile);
     this.handleCommentDirectives(this.sourceFile);
   }
