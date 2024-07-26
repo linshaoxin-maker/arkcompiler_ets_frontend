@@ -133,6 +133,8 @@ public:
     GlobalArraySignatureMap &GlobalArrayTypes();
     const GlobalArraySignatureMap &GlobalArrayTypes() const;
 
+    Type *GlobalTypeError() const;
+
     void InitializeBuiltins(varbinder::ETSBinder *varbinder);
     void InitializeBuiltin(varbinder::Variable *var, const util::StringView &name);
     bool StartChecker([[maybe_unused]] varbinder::VarBinder *varbinder, const CompilerOptions &options) override;
@@ -278,8 +280,9 @@ public:
     Type *NegateNumericType(Type *type, ir::Expression *node);
     Type *BitwiseNegateNumericType(Type *type, ir::Expression *node);
     bool CheckBinaryOperatorForBigInt(Type *left, Type *right, lexer::TokenType op);
-    void CheckBinaryPlusMultDivOperandsForUnionType(const Type *leftType, const Type *rightType,
-                                                    const ir::Expression *left, const ir::Expression *right);
+    [[nodiscard]] bool CheckBinaryPlusMultDivOperandsForUnionType(const Type *leftType, const Type *rightType,
+                                                                  const ir::Expression *left,
+                                                                  const ir::Expression *right);
     std::tuple<Type *, Type *> CheckBinaryOperator(ir::Expression *left, ir::Expression *right, ir::Expression *expr,
                                                    lexer::TokenType operationType, lexer::SourcePosition pos,
                                                    bool forcePromotion = false);
@@ -461,6 +464,7 @@ public:
     template <checker::PropertyType TYPE>
     void BindingsModuleObjectAddProperty(checker::ETSObjectType *moduleObjType, ir::ETSImportDeclaration *importDecl,
                                          const varbinder::Scope::VariableMap &bindings);
+    util::StringView FindPropNameForNamespaceImport(const util::StringView &originalName);
     void SetPropertiesForModuleObject(checker::ETSObjectType *moduleObjType, const util::StringView &importPath,
                                       ir::ETSImportDeclaration *importDecl = nullptr);
     void SetrModuleObjectTsType(ir::Identifier *local, checker::ETSObjectType *moduleObjType);
