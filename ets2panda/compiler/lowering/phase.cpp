@@ -15,7 +15,6 @@
 
 #include "phase.h"
 #include "checker/checker.h"
-#include "compiler/core/ASTVerifier.h"
 #include "ets/ambientLowering.h"
 #include "ets/defaultParameterLowering.h"
 #include "lexer/token/sourceLocation.h"
@@ -122,6 +121,7 @@ std::vector<Phase *> GetETSPhaseList()
         &g_pluginsAfterCheck,
         &g_bigintLowering,
         &g_opAssignmentLowering,
+        &g_constStringToCharLowering,
         &g_boxingForLocals,
         &g_lambdaConversionPhase,
         &g_recordLowering,
@@ -133,7 +133,6 @@ std::vector<Phase *> GetETSPhaseList()
         &g_localClassLowering,
         &g_objectLiteralLowering,
         &g_stringConstructorLowering,
-        &g_constStringToCharLowering,
         &g_stringComparisonLowering,
         &g_partialExportClassGen,
         &g_pluginsAfterLowerings,
