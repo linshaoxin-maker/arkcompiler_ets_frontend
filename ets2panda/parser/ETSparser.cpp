@@ -109,7 +109,10 @@ void ETSParser::ParseProgram(ScriptKind kind)
     auto decl = ParsePackageDeclaration();
     if (decl != nullptr) {
         statements.emplace_back(decl);
+        // If we found a package declaration, then add all files with the same package to the package parse list
+        AddPackageSourcesToParseList();
     }
+
     auto script = ParseETSGlobalScript(startLoc, statements);
 
     AddExternalSource(ParseSources());
@@ -136,14 +139,15 @@ ir::ETSScript *ETSParser::ParseETSGlobalScript(lexer::SourcePosition startLoc, A
 
 void ETSParser::AddExternalSource(const std::vector<Program *> &programs)
 {
-    for (auto *newProg : programs) {
-        auto &extSources = globalProgram_->ExternalSources();
+    auto &extSources = globalProgram_->ExternalSources();
 
-        const util::StringView name = newProg->ModuleName();
-        if (extSources.count(name) == 0) {
-            extSources.emplace(name, Allocator()->Adapter());
+    for (auto *newProg : programs) {
+        const util::StringView moduleName = newProg->ModuleName();
+        if (extSources.count(moduleName) == 0) {
+            extSources.try_emplace(moduleName, Allocator()->Adapter());
         }
-        extSources.at(name).emplace_back(newProg);
+
+        extSources.at(moduleName).emplace_back(newProg);
     }
 }
 
@@ -198,10 +202,33 @@ std::vector<Program *> ETSParser::ParseSources()
         auto currentLang = GetContext().SetLanguage(data.lang);
         auto extSrc = Allocator()->New<util::UString>(externalSource, Allocator());
         importPathManager_->MarkAsParsed(parseList[idx].sourcePath);
-        auto newProg = ParseSource(
-            {parseList[idx].sourcePath.Utf8(), extSrc->View().Utf8(), parseList[idx].sourcePath.Utf8(), false});
 
-        programs.emplace_back(newProg);
+        // In case of implicit package import, if we find a malformed STS file in the package's directory, instead of
+        // aborting compilation we just ignore the file
+
+        // NOTE (mmartin): after the multiple syntax error handling in the parser is implemented, this try-catch must be
+        // changed, as exception throwing will be removed
+
+        try {
+            parser::Program *newProg = ParseSource(
+                {parseList[idx].sourcePath.Utf8(), extSrc->View().Utf8(), parseList[idx].sourcePath.Utf8(), false});
+
+            if (!parseList[idx].isImplicitPackageImported || newProg->IsPackageModule()) {
+                // don't insert the separate modules into the programs, when we collect implicit package imports
+                programs.emplace_back(newProg);
+            }
+        } catch (const Error &) {
+            // Here file is not a valid STS source. Ignore and continue if it's implicit package import, else throw the
+            // syntax error as usual
+
+            if (!parseList[idx].isImplicitPackageImported) {
+                throw;
+            }
+
+            util::Helpers::LogWarning("Error during parse of file '", parseList[idx].sourcePath,
+                                      "' in compiled package. File will be omitted.");
+        }
+
         GetContext().SetLanguage(currentLang);
     }
 
@@ -969,13 +996,13 @@ ir::ImportSource *ETSParser::ParseSourceFromClause(bool requireFrom)
     auto resolvedImportPath = importPathManager_->ResolvePath(GetProgram()->AbsoluteName(), importPath);
     if (globalProgram_->AbsoluteName() != resolvedImportPath) {
         importPathManager_->AddToParseList(resolvedImportPath,
-                                           (GetContext().Status() & ParserStatus::IN_DEFAULT_IMPORTS) != 0U);
-    } else {
-        if (!IsETSModule()) {
-            ThrowSyntaxError("Please compile `" + globalProgram_->FileName().Mutf8() + "." +
-                             globalProgram_->SourceFile().GetExtension().Mutf8() +
-                             "` with `--ets-module` option. It is being imported by another file.");
-        }
+                                           (GetContext().Status() & ParserStatus::IN_DEFAULT_IMPORTS) != 0U
+                                               ? util::ImportFlags::DEFAULT_IMPORT
+                                               : util::ImportFlags::NONE);
+    } else if (!IsETSModule()) {
+        ThrowSyntaxError("Please compile `" + globalProgram_->FileName().Mutf8() + "." +
+                         globalProgram_->SourceFile().GetExtension().Mutf8() +
+                         "` with `--ets-module` option. It is being imported by another file.");
     }
 
     auto *resolvedSource = AllocNode<ir::StringLiteral>(resolvedImportPath);
@@ -1713,6 +1740,14 @@ ir::FunctionDeclaration *ETSParser::ParseFunctionDeclaration(bool canBeAnonymous
     }
 
     return funcDecl;
+}
+
+void ETSParser::AddPackageSourcesToParseList()
+{
+    importPathManager_->AddToParseList(GetProgram()->SourceFileFolder(), util::ImportFlags::IMPLICIT_PACKAGE_IMPORT);
+
+    // Global program file is always in the same folder that we scanned, but we don't need to parse it twice
+    importPathManager_->MarkAsParsed(globalProgram_->SourceFilePath());
 }
 
 //================================================================================================//
