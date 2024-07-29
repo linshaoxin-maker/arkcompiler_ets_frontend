@@ -148,6 +148,11 @@ test262/data/test_es2021/built-ins/Array/prototype/reduce/15.4.4.21-5-8.js
 test262/data/test_es2021/built-ins/Array/prototype/reduce/15.4.4.21-7-9.js
 # --- end of Issue #18302
 
+#18438
+test262/data/test_es2021/language/statements/for-await-of/ticks-with-async-iter-resolved-promise-and-constructor-lookup-two.js
+test262/data/test_es2021/language/statements/for-await-of/ticks-with-sync-iter-resolved-promise-and-constructor-lookup.js
+test262/data/test_es2021/language/statements/async-generator/return-undefined-implicit-and-explicit.js
+
 #18379
 test262/data/test_es2021/intl402/DateTimeFormat/taint-Object-prototype-date-time-components.js
 test262/data/test_es2021/intl402/DateTimeFormat/taint-Object-prototype-dayPeriod.js
@@ -167,6 +172,7 @@ test262/data/test_es2021/intl402/PluralRules/prototype/resolvedOptions/propertie
 test262/data/test_es2021/intl402/Intl/getCanonicalLocales/preferred-variant.js
 test262/data/test_es2021/intl402/Intl/getCanonicalLocales/transformed-ext-canonical.js
 test262/data/test_es2021/intl402/Intl/getCanonicalLocales/complex-region-subtag-replacement.js
+test262/data/test_es2021/intl402/Intl/getCanonicalLocales/complex-language-subtag-replacement.js
 
 
 #18382
