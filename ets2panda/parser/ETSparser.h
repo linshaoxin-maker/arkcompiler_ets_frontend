@@ -238,6 +238,7 @@ private:
     void ParseProgram(ScriptKind kind) override;
     [[nodiscard]] std::unique_ptr<lexer::Lexer> InitLexer(const SourceFile &sourceFile) override;
     ir::ETSPackageDeclaration *ParsePackageDeclaration();
+    void AddPackageSourcesToParseList();
     ArenaVector<ir::Statement *> ParseTopLevelStatements();
 
     static bool IsClassMethodModifier(lexer::TokenType type) noexcept;
