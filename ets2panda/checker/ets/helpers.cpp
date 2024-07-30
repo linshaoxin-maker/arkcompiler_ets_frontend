@@ -1837,10 +1837,16 @@ void ETSChecker::CheckThrowingStatements(ir::AstNode *node)
                 node->Start());
         }
 
-        ThrowTypeError(
-            "This statement can cause an exception, therefore it must be enclosed in a try statement with a default "
-            "catch clause",
-            node->Start());
+        if (auto interfaces =
+                ancestorFunction->AsScriptFunction()->Signature()->Owner()->AsETSObjectType()->Interfaces();
+            !(!interfaces.empty() &&
+              interfaces[0]->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::FUNCTIONAL_INTERFACE))) {
+            ThrowTypeError(
+                "This statement can cause an exception, therefore it must be enclosed in a try statement with a "
+                "default "
+                "catch clause",
+                node->Start());
+        }
     }
 }
 
@@ -1899,6 +1905,10 @@ ir::BlockStatement *ETSChecker::FindFinalizerOfTryStatement(ir::AstNode *startFr
 
 void ETSChecker::CheckRethrowingFunction(ir::ScriptFunction *func)
 {
+    if (func->Signature()->Owner()->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL_INTERFACE)) {
+        return;
+    }
+
     bool foundThrowingParam = false;
 
     // It doesn't support lambdas yet.
