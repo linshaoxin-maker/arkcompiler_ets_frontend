@@ -999,7 +999,9 @@ void ETSChecker::CheckClassDefinition(ir::ClassDefinition *classDef)
     }
 
     auto newStatus = checker::CheckerStatus::IN_CLASS;
-    classType->SetEnclosingType(Context().ContainingClass());
+    if (classType != Context().ContainingClass()) {  // avoid ininite recursion
+        classType->SetEnclosingType(Context().ContainingClass());
+    }
 
     if (classDef->IsInner()) {
         newStatus |= CheckerStatus::INNER_CLASS;

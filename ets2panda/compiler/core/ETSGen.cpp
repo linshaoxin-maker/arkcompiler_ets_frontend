@@ -354,13 +354,21 @@ util::StringView ETSGen::FormClassPropReference(const checker::ETSObjectType *cl
     std::stringstream ss;
 
     auto *iter = classType;
+    auto *fastIter = iter->EnclosingType();  // to detect infinite recursion
     std::string fullName = classType->AssemblerName().Mutf8();
     while (iter->EnclosingType() != nullptr) {
         auto enclosingName = iter->EnclosingType()->Name().Mutf8().append(".").append(fullName);
         if (iter->EnclosingType()->GetDeclNode()->Type() == ir::AstNodeType::IDENTIFIER) {
             fullName = enclosingName;
         }
+
+        ASSERT(fastIter != iter);
         iter = iter->EnclosingType();
+        if (fastIter != nullptr && fastIter->EnclosingType() != nullptr) {
+            fastIter = fastIter->EnclosingType()->EnclosingType();
+        } else {
+            fastIter = nullptr;
+        }
     }
 
     if (fullName != classType->AssemblerName().Mutf8()) {
