@@ -144,6 +144,8 @@ public:
     NO_MOVE_SEMANTIC(GlobalTypesHolder);
 
     void AddETSEscompatLayer();
+    void AddEtsSpecificTypes(ArenaAllocator *allocator);
+    void AddEtsSpecificBuiltinTypes();
     void AddTSSpecificTypes(ArenaAllocator *allocator);
 
     // TS specific types
