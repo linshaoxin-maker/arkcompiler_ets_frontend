@@ -1243,9 +1243,25 @@ void ETSChecker::BindingsModuleObjectAddProperty(checker::ETSObjectType *moduleO
             if (!aliasedName.Empty()) {
                 moduleObjType->AddReExportAlias(var->Declaration()->Name(), aliasedName);
             }
-            moduleObjType->AddProperty<TYPE>(var->AsLocalVariable());
+            moduleObjType->AddProperty<TYPE>(var->AsLocalVariable(),
+                                             FindPropNameForNamespaceImport(var->AsLocalVariable()->Name()));
         }
     }
+}
+
+util::StringView ETSChecker::FindPropNameForNamespaceImport(const util::StringView &originalName)
+{
+    if (auto relatedMapItem =
+            VarBinder()->AsETSBinder()->GetSelectiveExportAliasMultimap().find(Program()->SourceFilePath());
+        relatedMapItem != VarBinder()->AsETSBinder()->GetSelectiveExportAliasMultimap().end()) {
+        if (auto result = std::find_if(relatedMapItem->second.begin(), relatedMapItem->second.end(),
+                                       [originalName](const auto &item) { return item.second == originalName; });
+            result != relatedMapItem->second.end()) {
+            return result->first;
+        }
+    }
+
+    return originalName;
 }
 
 void ETSChecker::SetPropertiesForModuleObject(checker::ETSObjectType *moduleObjType, const util::StringView &importPath,
@@ -1264,6 +1280,9 @@ void ETSChecker::SetPropertiesForModuleObject(checker::ETSObjectType *moduleObjT
 
     BindingsModuleObjectAddProperty<checker::PropertyType::STATIC_METHOD>(
         moduleObjType, importDecl, programList.front()->GlobalClassScope()->StaticMethodScope()->Bindings());
+
+    BindingsModuleObjectAddProperty<checker::PropertyType::STATIC_DECL>(
+        moduleObjType, importDecl, programList.front()->GlobalClassScope()->StaticDeclScope()->Bindings());
 
     BindingsModuleObjectAddProperty<checker::PropertyType::STATIC_DECL>(
         moduleObjType, importDecl, programList.front()->GlobalClassScope()->InstanceDeclScope()->Bindings());
@@ -2109,7 +2128,7 @@ void ETSChecker::InferTypesForLambda(ir::ScriptFunction *lambda, ir::ETSFunction
         }
     }
     if (lambda->ReturnTypeAnnotation() == nullptr) {
-        lambda->SetReturnTypeAnnotation(calleeType->ReturnType());
+        lambda->SetReturnTypeAnnotation(calleeType->ReturnType()->Clone(Allocator(), lambda));
     }
 }
 
@@ -2247,8 +2266,6 @@ ir::MethodDefinition *ETSChecker::GenerateDefaultGetterSetter(ir::ClassProperty 
     functionScope->BindParamScope(paramScope);
     paramScope->BindFunctionScope(functionScope);
 
-    auto flags = ir::ModifierFlags::PUBLIC;
-
     ArenaVector<ir::Expression *> params(checker->Allocator()->Adapter());
     ArenaVector<ir::Statement *> stmts(checker->Allocator()->Adapter());
     checker->GenerateGetterSetterBody(stmts, params, field, paramScope, isSetter);
@@ -2262,7 +2279,7 @@ ir::MethodDefinition *ETSChecker::GenerateDefaultGetterSetter(ir::ClassProperty 
     auto *func = checker->AllocNode<ir::ScriptFunction>(
         checker->Allocator(),
         ir::ScriptFunction::ScriptFunctionData {body, ir::FunctionSignature(nullptr, std::move(params), returnTypeAnn),
-                                                funcFlags, flags, true});
+                                                funcFlags, ir::ModifierFlags::PUBLIC, true});
 
     if (!isSetter) {
         func->AddFlag(ir::ScriptFunctionFlags::HAS_RETURN);
@@ -2272,20 +2289,20 @@ ir::MethodDefinition *ETSChecker::GenerateDefaultGetterSetter(ir::ClassProperty 
     body->SetScope(functionScope);
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *methodIdent = property->Key()->AsIdentifier()->Clone(checker->Allocator(), nullptr);
-    auto *decl = checker->Allocator()->New<varbinder::FunctionDecl>(
-        checker->Allocator(), property->Key()->AsIdentifier()->Name(),
-        property->Key()->AsIdentifier()->Variable()->Declaration()->Node());
-    auto *var = checker->Allocator()->New<varbinder::LocalVariable>(decl, varbinder::VariableFlags::VAR);
-    var->AddFlag(varbinder::VariableFlags::METHOD);
-
-    methodIdent->SetVariable(var);
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *funcExpr = checker->AllocNode<ir::FunctionExpression>(func);
     funcExpr->SetRange(func->Range());
     func->AddFlag(ir::ScriptFunctionFlags::METHOD);
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *method = checker->AllocNode<ir::MethodDefinition>(ir::MethodDefinitionKind::METHOD, methodIdent, funcExpr,
-                                                            flags, checker->Allocator(), false);
+                                                            ir::ModifierFlags::PUBLIC, checker->Allocator(), false);
+
+    auto *decl = checker->Allocator()->New<varbinder::FunctionDecl>(checker->Allocator(),
+                                                                    property->Key()->AsIdentifier()->Name(), method);
+    auto *var = checker->Allocator()->New<varbinder::LocalVariable>(decl, varbinder::VariableFlags::VAR);
+    var->AddFlag(varbinder::VariableFlags::METHOD);
+
+    methodIdent->SetVariable(var);
 
     method->Id()->SetMutator();
     method->SetRange(field->Range());
