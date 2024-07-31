@@ -290,19 +290,6 @@ checker::Type *ETSChecker::CheckBinaryOperatorBitwise(ir::Expression *left, ir::
                                                       bool isEqualOp, checker::Type *const leftType,
                                                       checker::Type *const rightType, Type *unboxedL, Type *unboxedR)
 {
-    // NOTE (mmartin): These need to be done for other binary expressions, but currently it's not defined precisely when
-    // to apply this conversion
-
-    if (leftType->IsETSEnumType()) {
-        left->AddAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
-        unboxedL = GlobalIntType();
-    }
-
-    if (rightType->IsETSEnumType()) {
-        right->AddAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
-        unboxedR = GlobalIntType();
-    }
-
     if (leftType->IsETSUnionType() || rightType->IsETSUnionType()) {
         ThrowTypeError("Bad operand type, unions are not allowed in binary expressions except equality.", pos);
     }
@@ -501,7 +488,13 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorLessGreater(
         if (rightType->IsETSStringType() && leftType->IsETSStringType()) {
             return {GlobalETSBooleanType(), GlobalETSBooleanType()};
         }
-        ThrowTypeError("Bad operand type, the types of the operands must be numeric or boolean type.", pos);
+        if (((leftType->IsETSEnumType() && rightType->IsETSEnumType()) ||
+             (leftType->IsETSStringEnumType() && rightType->IsETSStringEnumType())) &&
+            leftType->AsEnumInterface()->IsSameEnumType(rightType->AsEnumInterface())) {
+            return {GlobalETSBooleanType(), GlobalETSBooleanType()};
+        }
+        ThrowTypeError(
+            "Bad operand type, the types of the operands must be numeric, same enumeration, or boolean type.", pos);
     }
 
     if (bothConst) {
@@ -519,7 +512,8 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperatorInstanceOf(lexer::Sour
                                                                      checker::Type *const rightType)
 {
     checker::Type *tsType {};
-    if (!IsReferenceType(leftType) || !IsReferenceType(rightType)) {
+    if (!IsReferenceType(leftType) ||
+        (!IsReferenceType(rightType) && !rightType->IsETSStringEnumType() && !rightType->IsETSEnumType())) {
         ThrowTypeError("Bad operand type, the types of the operands must be same type.", pos);
     }
 
