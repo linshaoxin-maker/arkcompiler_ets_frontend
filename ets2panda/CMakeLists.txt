@@ -110,6 +110,24 @@ panda_gen(
 )
 
 set(ES2PANDA_LIB_SRC
+  ast_verifier/ASTVerifier.cpp
+  ast_verifier/arithmeticOperationValid.cpp
+  ast_verifier/checkContext.cpp
+  ast_verifier/everyChildHasValidParent.cpp
+  ast_verifier/everyChildInParentRange.cpp
+  ast_verifier/helpers.cpp
+  ast_verifier/identifierHasVariable.cpp
+  ast_verifier/importExportAccessValid.cpp
+  ast_verifier/nodeHasParent.cpp
+  ast_verifier/nodeHasSourceRange.cpp
+  ast_verifier/nodeHasType.cpp
+  ast_verifier/referenceTypeAnnotationIsNull.cpp
+  ast_verifier/forLoopCorrectlyInitialized.cpp
+  ast_verifier/modifierAccessValid.cpp
+  ast_verifier/sequenceExpressionHasLastType.cpp
+  ast_verifier/variableHasEnclosingScope.cpp
+  ast_verifier/variableHasScope.cpp
+  ast_verifier/variableNameIdentifierNameSame.cpp
   es2panda.cpp
   varbinder/ASBinder.cpp
   varbinder/TSBinder.cpp
@@ -130,7 +148,6 @@ set(ES2PANDA_LIB_SRC
   compiler/base/literals.cpp
   compiler/base/lreference.cpp
   compiler/base/optionalChain.cpp
-  compiler/core/ASTVerifier.cpp
   compiler/core/codeGen.cpp
   compiler/core/compileJob.cpp
   compiler/core/compileQueue.cpp
@@ -192,6 +209,7 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/ets/structLowering.cpp
   compiler/lowering/ets/defaultParameterLowering.cpp
   compiler/lowering/ets/objectLiteralLowering.cpp
+  compiler/lowering/ets/interfaceObjectLiteralLowering.cpp
   compiler/lowering/ets/stringComparison.cpp
   compiler/lowering/ets/stringConstructorLowering.cpp
   compiler/lowering/ets/enumLowering.cpp
@@ -494,6 +512,7 @@ set(ES2PANDA_LIB_SRC
   util/arktsconfig.cpp
   util/bitset.cpp
   util/errorHandler.cpp
+  util/errorLogger.cpp
   util/helpers.cpp
   util/importPathManager.cpp
   util/path.cpp
