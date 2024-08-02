@@ -14,7 +14,7 @@
 import("//arkcompiler/runtime_core/static_core/ark_config.gni")
 import("//build/ohos.gni")
 
-ohos_executable("es2panda") {
+ohos_executable("ets2panda") {
   sources = [ "main.cpp" ]
 
   include_dirs = [
@@ -54,7 +54,8 @@ ohos_executable("es2panda") {
     "runtime_core:libarktsfile_package",
     sdk_libc_secshared_dep,
   ]
-
+  
+  output_name = "es2panda"
   libs = platform_libs
   ldflags = platform_ldflags
   if (is_linux) {
