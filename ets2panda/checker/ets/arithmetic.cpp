@@ -197,17 +197,12 @@ bool ETSChecker::CheckBinaryPlusMultDivOperandsForUnionType(const Type *leftType
     return true;
 }
 
-checker::Type *ETSChecker::CheckBinaryOperatorMulDivMod(ir::Expression *left, ir::Expression *right,
-                                                        lexer::TokenType operationType, lexer::SourcePosition pos,
-                                                        bool isEqualOp, checker::Type *leftType,
-                                                        checker::Type *rightType, Type *unboxedL, Type *unboxedR)
+checker::Type *ETSChecker::CheckBinaryOperatorMulDivMod(
+    std::tuple<ir::Expression *, ir::Expression *, lexer::TokenType, lexer::SourcePosition> op, bool isEqualOp,
+    std::tuple<checker::Type *, checker::Type *, Type *, Type *> types)
 {
-    // Try to handle errors on a lower level
-    RepairTypeErrorsInOperands(&leftType, &rightType);
-    RepairTypeErrorsInOperands(&unboxedL, &unboxedR);
-    if (leftType->IsTypeError()) {  // both are errors
-        return GlobalTypeError();
-    }
+    auto [left, right, operationType, pos] = op;
+    auto [leftType, rightType, unboxedL, unboxedR] = types;
 
     checker::Type *tsType {};
     auto [promotedType, bothConst] =
@@ -233,18 +228,12 @@ checker::Type *ETSChecker::CheckBinaryOperatorMulDivMod(ir::Expression *left, ir
     return tsType;
 }
 
-checker::Type *ETSChecker::CheckBinaryOperatorPlus(ir::Expression *left, ir::Expression *right,
-                                                   lexer::TokenType operationType, lexer::SourcePosition pos,
-                                                   bool isEqualOp, checker::Type *leftType, checker::Type *rightType,
-                                                   Type *unboxedL, Type *unboxedR)
+checker::Type *ETSChecker::CheckBinaryOperatorPlus(
+    std::tuple<ir::Expression *, ir::Expression *, lexer::TokenType, lexer::SourcePosition> op, bool isEqualOp,
+    std::tuple<checker::Type *, checker::Type *, Type *, Type *> types)
 {
-    // Try to handle errors on a lower level
-    RepairTypeErrorsInOperands(&leftType, &rightType);
-    RepairTypeErrorsInOperands(&unboxedL, &unboxedR);
-    if (leftType->IsTypeError()) {  // both are errors
-        return GlobalTypeError();
-    }
-
+    auto [left, right, operationType, pos] = op;
+    auto [leftType, rightType, unboxedL, unboxedR] = types;
     if (leftType->IsETSStringType() || rightType->IsETSStringType()) {
         if (operationType == lexer::TokenType::PUNCTUATOR_MINUS ||
             operationType == lexer::TokenType::PUNCTUATOR_MINUS_EQUAL) {
@@ -277,16 +266,12 @@ checker::Type *ETSChecker::CheckBinaryOperatorPlus(ir::Expression *left, ir::Exp
     return promotedType;
 }
 
-checker::Type *ETSChecker::CheckBinaryOperatorShift(ir::Expression *left, ir::Expression *right,
-                                                    lexer::TokenType operationType, lexer::SourcePosition pos,
-                                                    bool isEqualOp, checker::Type *leftType, checker::Type *rightType,
-                                                    Type *unboxedL, Type *unboxedR)
+checker::Type *ETSChecker::CheckBinaryOperatorShift(
+    std::tuple<ir::Expression *, ir::Expression *, lexer::TokenType, lexer::SourcePosition> op, bool isEqualOp,
+    std::tuple<checker::Type *, checker::Type *, Type *, Type *> types)
 {
-    RepairTypeErrorWithDefault(&leftType, GlobalIntType());
-    RepairTypeErrorWithDefault(&rightType, GlobalIntType());
-    RepairTypeErrorWithDefault(&unboxedL, GlobalIntType());
-    RepairTypeErrorWithDefault(&unboxedR, GlobalIntType());
-
+    auto [left, right, operationType, pos] = op;
+    auto [leftType, rightType, unboxedL, unboxedR] = types;
     if (leftType->IsETSUnionType() || rightType->IsETSUnionType()) {
         LogTypeError("Bad operand type, unions are not allowed in binary expressions except equality.", pos);
         return GlobalTypeError();
@@ -334,15 +319,23 @@ checker::Type *ETSChecker::CheckBinaryOperatorShift(ir::Expression *left, ir::Ex
     return nullptr;
 }
 
-checker::Type *ETSChecker::CheckBinaryOperatorBitwise(ir::Expression *left, ir::Expression *right,
-                                                      lexer::TokenType operationType, lexer::SourcePosition pos,
-                                                      bool isEqualOp, checker::Type *leftType, checker::Type *rightType,
-                                                      Type *unboxedL, Type *unboxedR)
+checker::Type *ETSChecker::CheckBinaryOperatorBitwise(
+    std::tuple<ir::Expression *, ir::Expression *, lexer::TokenType, lexer::SourcePosition> op, bool isEqualOp,
+    std::tuple<checker::Type *, checker::Type *, Type *, Type *> types)
 {
-    RepairTypeErrorsInOperands(&leftType, &rightType);
-    RepairTypeErrorsInOperands(&unboxedL, &unboxedR);
-    if (leftType->IsTypeError()) {  // both are errors
-        return GlobalTypeError();
+    auto [left, right, operationType, pos] = op;
+    auto [leftType, rightType, unboxedL, unboxedR] = types;
+    // NOTE (mmartin): These need to be done for other binary expressions, but currently it's not defined precisely when
+    // to apply this conversion
+
+    if (leftType->IsETSEnumType()) {
+        left->AddAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
+        unboxedL = GlobalIntType();
+    }
+
+    if (rightType->IsETSEnumType()) {
+        right->AddAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
+        unboxedR = GlobalIntType();
     }
 
     if (leftType->IsETSUnionType() || rightType->IsETSUnionType()) {
@@ -730,10 +723,9 @@ Type *ETSChecker::CheckBinaryOperatorNullishCoalescing(ir::Expression *left, ir:
     return CreateETSUnionType({leftType, rightType});
 }
 
-using CheckBinaryFunction =
-    std::function<checker::Type *(ETSChecker *, ir::Expression *left, ir::Expression *right,
-                                  lexer::TokenType operationType, lexer::SourcePosition pos, bool isEqualOp,
-                                  checker::Type *leftType, checker::Type *rightType, Type *unboxedL, Type *unboxedR)>;
+using CheckBinaryFunction = std::function<checker::Type *(
+    ETSChecker *, std::tuple<ir::Expression *, ir::Expression *, lexer::TokenType, lexer::SourcePosition> op,
+    bool isEqualOp, std::tuple<checker::Type *, checker::Type *, Type *, Type *> types)>;
 
 std::map<lexer::TokenType, CheckBinaryFunction> &GetCheckMap()
 {
@@ -894,7 +886,8 @@ std::tuple<Type *, Type *> ETSChecker::CheckBinaryOperator(ir::Expression *left,
     auto checkMap = GetCheckMap();
     if (checkMap.find(operationType) != checkMap.end()) {
         auto check = checkMap[operationType];
-        tsType = check(this, left, right, operationType, pos, isEqualOp, leftType, rightType, unboxedL, unboxedR);
+        tsType = check(this, std::make_tuple(left, right, operationType, pos), isEqualOp,
+                       std::make_tuple(leftType, rightType, unboxedL, unboxedR));
         return {tsType, tsType};
     }
 
