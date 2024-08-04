@@ -73,4 +73,16 @@ export class DictionaryNameGenerator implements INameGenerator {
     this.mDictIndex = 0;
     this.mTransformNumber = 0;
   }
+
+  public getDictIndex(): number {
+    return this.mDictIndex;
+  }
+
+  public getTransformNumber(): number {
+    return this.mTransformNumber;
+  }
+
+  public getDictionaryList(): string[] {
+    return this.mDictionaryList;
+  }
 }
