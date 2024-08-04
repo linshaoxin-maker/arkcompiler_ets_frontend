@@ -83,6 +83,9 @@ abstract class BasePrinter {
     this.outputPath = outputPath;
   }
 
+  getOutputPath(): string {
+    return this.outputPath;
+  }
   print(message: string): void {
     if (this.outputPath && this.outputPath !== "") {
       fs.appendFileSync(`${this.outputPath}`, message + "\n");
@@ -95,6 +98,7 @@ abstract class BasePrinter {
     const eventData = this.getCurrentEventData();
     this.print(eventData);
   }
+
 }
 
 export class TimeTracker extends BasePrinter {
@@ -188,6 +192,22 @@ export class TimeTracker extends BasePrinter {
     return `${indent}${eventName}: timeCost:${formattedDuration} startMemory:${formatttedStartMemory} `+
     `endMemory:${formatttedEndMemory} memoryUsage:${formatttedMemoryUsage}\n`;
   }
+
+  getEventStack(): Map<string, TimeAndMemInfo> {
+    return this.eventStack;
+  }
+
+  getFilesTimeSum(): number {
+    return this.filesTimeSum;
+  }
+
+  getMaxTimeUsage(): number {
+    return this.maxTimeUsage;
+  }
+
+  getMaxTimeFile(): string {
+    return this.maxTimeFile;
+  }
 }
 
 export class TimeSumPrinter extends BasePrinter {
@@ -216,5 +236,9 @@ export class TimeSumPrinter extends BasePrinter {
     const indent = INDENT.repeat(depth);
     const formattedDuration = duration.toFixed(SIG_FIGS) + 's';
     return `${indent}${eventName}: ${formattedDuration}\n`;
+  }
+
+  getEventSum(): Map<string, number> {
+    return this.eventSum;
   }
 }
