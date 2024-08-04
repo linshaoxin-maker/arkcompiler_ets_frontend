@@ -68,12 +68,3 @@ test262/data/test_es2021/intl402/PluralRules/prototype/resolvedOptions/propertie
 test262/data/test_es2021/intl402/Intl/getCanonicalLocales/preferred-variant.js
 test262/data/test_es2021/intl402/Intl/getCanonicalLocales/transformed-ext-canonical.js
 test262/data/test_es2021/intl402/Intl/getCanonicalLocales/complex-region-subtag-replacement.js
-
-
-#18382
-test262/data/test_es2021/intl402/constructors-taint-Object-prototype-2.js
-test262/data/test_es2021/intl402/Collator/taint-Object-prototype.js
-
-
-#18217
-test262/data/test_es2021/intl402/constructors-taint-Object-prototype.js
