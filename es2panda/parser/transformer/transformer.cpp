@@ -1411,10 +1411,10 @@ std::vector<ir::AstNode *> Transformer::CreateParamDecorators(util::StringView c
     std::vector<ir::AstNode *> res;
     size_t pos = variableDeclarations.size();
     auto paramsDecorators = node->GetParamDecorators();
-    for (int i = static_cast<int>(paramsDecorators.size() - 1); i >= 0; i--) {
+    for (int i = static_cast<int>(paramsDecorators.size()) - 1; i >= 0; i--) {
         auto paramIndex = paramsDecorators[i].paramIndex;
         auto decorators = paramsDecorators[i].decorators;
-        for (int j = static_cast<int>(decorators.size() - 1); j >= 0; j--) {
+        for (int j = static_cast<int>(decorators.size()) - 1; j >= 0; j--) {
             ArenaVector<ir::Expression *> arguments(Allocator()->Adapter());
             arguments.push_back(CreateDecoratorTarget(className, isConstructor || isStatic));
             arguments.push_back(isConstructor ?

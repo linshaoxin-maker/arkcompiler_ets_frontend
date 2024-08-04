@@ -279,7 +279,9 @@ void PandaGen::CopyFunctionArguments(const ir::AstNode *node)
 
 LiteralBuffer *PandaGen::NewLiteralBuffer()
 {
-    return allocator_->New<LiteralBuffer>(allocator_);
+    LiteralBuffer *buf = allocator_->New<LiteralBuffer>(allocator_);
+    CHECK_NOT_NULL(buf)
+    return buf;
 }
 
 int32_t PandaGen::AddLiteralBuffer(LiteralBuffer *buf)
