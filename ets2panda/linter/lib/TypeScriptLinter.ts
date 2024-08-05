@@ -1827,7 +1827,7 @@ export class TypeScriptLinter {
       this.incrementCounters(node, FaultID.EsObjectType);
     }
 
-    if (this.sendableGeneric.isWrongCallExpression(tsCallExpr)) {
+    if (this.sendableGeneric.isWrongCallOrNewExpression(tsCallExpr)) {
       this.incrementCounters(node, FaultID.Rule_1);
     }
   }
