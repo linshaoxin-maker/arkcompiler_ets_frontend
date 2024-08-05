@@ -79,7 +79,6 @@ const getAliasValue = (config, target) => {
 };
 
 function run(inputDirs, configPath, type) {
-  console.log('----inputDirs----',inputDirs)
   for (let inputDir of inputDirs){
     const inputAbsDir = path.join(__dirname, inputDir)
     const dirs = fs.readdirSync(inputAbsDir);
@@ -133,7 +132,10 @@ function mergeDeep(target, source) {
 }
 
 function generateObfConfigg(optionsCombinations, inputDirs, outputDir) {
+<<<<<<< HEAD
 
+=======
+>>>>>>> c7ffd6eb (Develop a test suite for combinations)
   const outputAbsDir = path.join(__dirname, outputDir);
   for (let i = 0; i < optionsCombinations.length; i++) {
     const options = optionsCombinations[i];
@@ -194,13 +196,12 @@ function generateCombinations(obj) {
   return result;
 }
 
-function readConfig() {
+function parseConfigAndRun() {
   const configs = JSON.parse(fs.readFileSync(combinationConfigPath, 'utf-8'));
   for (let key in configs) {
     const enableOptions = configs[key].enableOptions;
     const inputDirs = configs[key].inputDirs;
     const outputDir = configs[key].outputDir;
-    console.log('----------',inputDirs, configs[key]);
     const optionsCombinations = generateCombinations(enableOptions);
     console.log("混淆选项组合数量", optionsCombinations.length);
     console.log("混淆选项组合", optionsCombinations);
@@ -213,8 +214,12 @@ function countResult() {
   resultStatistics.runTestAndCount(testDirectory);
 }
 function main() {
+<<<<<<< HEAD
   readConfig();
   // 统计结果
+=======
+  parseConfigAndRun();
+>>>>>>> c7ffd6eb (Develop a test suite for combinations)
   countResult();
 }
 

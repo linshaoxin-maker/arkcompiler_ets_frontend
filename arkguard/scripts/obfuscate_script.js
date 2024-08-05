@@ -15,21 +15,20 @@
 
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
+const { execSync } = require('child_process');
 const resultStatistics = require('./execute_result_statistics');
 import { Extension } from '../src/common/type';
 
 export function obfuscateDirs(obfConfig, obfDir, casesFlag) {
   const command = `node --loader=ts-node/esm src/cli/SecHarmony.ts ${obfDir} --config-path ${obfConfig} --cases-flag ${casesFlag}`;
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error executing command: ${error.message}`);
-      return;
-    }
-    if (stdout) {
-      console.log('Debug info: ', stdout);
-    }
-  });
+  try {
+    const output = execSync(command, { encoding: 'utf-8' });
+    console.log(output);
+  } catch (error) {
+    console.error('Error:', error.message);
+    console.error('Stdout:', error.stdout.toString());
+    console.error('Stderr:', error.stderr.toString());
+  }
 }
 
 function traverseDirs(rootDirPath, configPath) {
