@@ -160,16 +160,8 @@ bool ETSChecker::EnhanceSubstitutionForType(const ArenaVector<Type *> &typeParam
                 ThrowTypeError({argumentType, " is not compatible with type ", tparam}, tparam->GetDeclNode()->Start());
             }
 
-            if (!IsCompatibleTypeArgument(tparam, argumentType, substitution)) {
-                return false;
-            }
-            if (substitution->find(originalTparam) != substitution->end() &&
-                substitution->at(originalTparam) != argumentType) {
-                ThrowTypeError({"Type parameter already instantiated with another type "},
-                               tparam->GetDeclNode()->Start());
-            }
             ETSChecker::EmplaceSubstituted(substitution, originalTparam, argumentType);
-            return true;
+            return IsCompatibleTypeArgument(tparam, argumentType, substitution);
         }
     }
 
@@ -1079,6 +1071,11 @@ SignatureInfo *ETSChecker::ComposeSignatureInfo(ir::ScriptFunction *func)
             ASSERT(paramVar);
 
             auto *const paramTypeAnnotation = param->TypeAnnotation();
+            if (paramIdent->TsType() == nullptr && paramTypeAnnotation == nullptr) {
+                ThrowTypeError({"The type of parameter '", paramIdent->Name(), "' cannot be determined"},
+                               param->Start());
+            }
+
             if (paramIdent->TsType() == nullptr) {
                 ASSERT(paramTypeAnnotation);
 

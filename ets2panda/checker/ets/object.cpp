@@ -306,8 +306,7 @@ ETSObjectType *ETSChecker::BuildBasicInterfaceProperties(ir::TSInterfaceDeclarat
 
     checker::ETSObjectType *interfaceType {};
     if (var->TsType() == nullptr) {
-        interfaceType = CreateETSObjectType(var->Name(), interfaceDecl,
-                                            checker::ETSObjectFlags::INTERFACE | checker::ETSObjectFlags::ABSTRACT);
+        interfaceType = CreateETSObjectType(var->Name(), interfaceDecl, checker::ETSObjectFlags::INTERFACE);
         interfaceType->SetVariable(var);
         var->SetTsType(interfaceType);
     } else {
@@ -584,7 +583,6 @@ void ETSChecker::CreateFunctionTypesFromAbstracts(const std::vector<Signature *>
         }
 
         auto *created = CreateETSFunctionType(it);
-        created->AddTypeFlag(TypeFlag::SYNTHETIC);
         target->push_back(created);
     }
 }
@@ -850,10 +848,6 @@ void ETSChecker::ApplyModifiersAndRemoveImplementedAbstracts(ArenaVector<ETSFunc
 {
     for (auto *field : classType->Fields()) {
         if (field->Name() == (*it)->Name()) {
-            if (isGetSetExternal.isExternal) {
-                field->Declaration()->Node()->AddModifier(ir::ModifierFlags::EXTERNAL);
-            }
-
             field->Declaration()->Node()->AddModifier(isGetSetExternal.isGetter && isGetSetExternal.isSetter
                                                           ? ir::ModifierFlags::GETTER_SETTER
                                                       : isGetSetExternal.isGetter ? ir::ModifierFlags::GETTER
@@ -999,7 +993,9 @@ void ETSChecker::CheckClassDefinition(ir::ClassDefinition *classDef)
     }
 
     auto newStatus = checker::CheckerStatus::IN_CLASS;
-    classType->SetEnclosingType(Context().ContainingClass());
+    if (Context().ContainingClass() != classType) {
+        classType->SetEnclosingType(Context().ContainingClass());
+    }
 
     if (classDef->IsInner()) {
         newStatus |= CheckerStatus::INNER_CLASS;

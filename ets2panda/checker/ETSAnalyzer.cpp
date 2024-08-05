@@ -96,7 +96,7 @@ checker::Type *ETSAnalyzer::Check(ir::ClassProperty *st) const
 
     st->SetTsType(checker->CheckVariableDeclaration(st->Id(), st->TypeAnnotation(), st->Value(), st->Modifiers()));
 
-    return st->TsType();
+    return st->TsTypeOrError();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ClassStaticBlock *st) const
@@ -782,8 +782,8 @@ checker::Type *ETSAnalyzer::Check(ir::ArrowFunctionExpression *expr) const
 
 checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *const expr) const
 {
-    if (expr->TsType() != nullptr) {
-        return expr->TsType();
+    if (expr->TsTypeOrError() != nullptr) {
+        return expr->TsTypeOrError();
     }
 
     ETSChecker *checker = GetETSChecker();
@@ -841,7 +841,7 @@ checker::Type *ETSAnalyzer::Check(ir::AssignmentExpression *const expr) const
     }
 
     expr->SetTsType(smartType);
-    return expr->TsType();
+    return expr->TsTypeOrError();
 }
 
 std::tuple<Type *, ir::Expression *> ETSAnalyzer::CheckAssignmentExprOperatorType(ir::AssignmentExpression *expr,
@@ -943,8 +943,8 @@ checker::Type *ETSAnalyzer::UnwrapPromiseType(checker::Type *type) const
 
 checker::Type *ETSAnalyzer::Check(ir::BinaryExpression *expr) const
 {
-    if (expr->TsType() != nullptr) {
-        return expr->TsType();
+    if (expr->TsTypeOrError() != nullptr) {
+        return expr->TsTypeOrError();
     }
 
     ETSChecker *checker = GetETSChecker();
@@ -955,7 +955,7 @@ checker::Type *ETSAnalyzer::Check(ir::BinaryExpression *expr) const
 
     checker->Context().CheckBinarySmartCastCondition(expr);
 
-    return expr->TsType();
+    return expr->TsTypeOrError();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::BlockExpression *st) const
@@ -1066,6 +1066,18 @@ checker::Type *ETSAnalyzer::GetReturnType(ir::CallExpression *expr, checker::Typ
     return returnType;
 }
 
+static void CheckAbstractCall(ETSChecker *checker, ir::CallExpression *expr)
+{
+    if (expr->Callee()->IsMemberExpression()) {
+        auto obj = expr->Callee()->AsMemberExpression()->Object();
+        if (obj != nullptr && obj->IsSuperExpression()) {
+            if ((expr->Signature() != nullptr) && (expr->Signature()->HasSignatureFlag(SignatureFlags::ABSTRACT))) {
+                checker->ThrowTypeError("Cannot call abstract method!", expr->Start());
+            }
+        }
+    }
+}
+
 checker::Type *ETSAnalyzer::Check(ir::CallExpression *expr) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -1121,6 +1133,7 @@ checker::Type *ETSAnalyzer::Check(ir::CallExpression *expr) const
     }
 
     CheckVoidTypeExpression(checker, expr);
+    CheckAbstractCall(checker, expr);
     return expr->TsType();
 }
 
@@ -1208,7 +1221,7 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::FunctionExpression *expr)
 
 checker::Type *ETSAnalyzer::Check(ir::Identifier *expr) const
 {
-    if (expr->TsType() == nullptr) {
+    if (expr->TsTypeOrError() == nullptr) {
         ETSChecker *checker = GetETSChecker();
 
         auto *identType = checker->ResolveIdentifier(expr);
@@ -1222,7 +1235,7 @@ checker::Type *ETSAnalyzer::Check(ir::Identifier *expr) const
 
         checker->Context().CheckIdentifierSmartCastCondition(expr);
     }
-    return expr->TsType();
+    return expr->TsTypeOrError();
 }
 
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ImportExpression *expr) const
@@ -1368,7 +1381,18 @@ checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
     }
 
     checker::ETSObjectType *objType = expr->PreferredType()->AsETSObjectType();
-    if (objType->HasObjectFlag(checker::ETSObjectFlags::ABSTRACT | checker::ETSObjectFlags::INTERFACE)) {
+    if (objType->HasObjectFlag(checker::ETSObjectFlags::INTERFACE)) {
+        // Object literal of interface tpye
+        // Further interfaceObjectLiteralLowering phase will resolve interface type
+        // and create corresponding anonymous class and class type
+        // Here we just set the type to pass the checker
+        CheckObjectExprProps(expr, checker::PropertySearchFlags::SEARCH_INSTANCE_METHOD |
+                                       checker::PropertySearchFlags::SEARCH_IN_INTERFACES);
+        expr->SetTsType(objType);
+        return objType;
+    }
+
+    if (objType->HasObjectFlag(checker::ETSObjectFlags::ABSTRACT)) {
         checker->ThrowTypeError({"target type for class composite ", objType->Name(), " is not instantiable"},
                                 expr->Start());
     }
@@ -1395,13 +1419,15 @@ checker::Type *ETSAnalyzer::Check(ir::ObjectExpression *expr) const
         checker->ThrowTypeError({"type ", objType->Name(), " has no parameterless constructor"}, expr->Start());
     }
 
-    CheckObjectExprProps(expr);
+    CheckObjectExprProps(expr, checker::PropertySearchFlags::SEARCH_INSTANCE_FIELD |
+                                   checker::PropertySearchFlags::SEARCH_IN_BASE |
+                                   checker::PropertySearchFlags::SEARCH_INSTANCE_METHOD);
 
     expr->SetTsType(objType);
     return objType;
 }
 
-void ETSAnalyzer::CheckObjectExprProps(const ir::ObjectExpression *expr) const
+void ETSAnalyzer::CheckObjectExprProps(const ir::ObjectExpression *expr, checker::PropertySearchFlags searchFlags) const
 {
     ETSChecker *checker = GetETSChecker();
     checker::ETSObjectType *objType = expr->PreferredType()->AsETSObjectType();
@@ -1421,9 +1447,7 @@ void ETSAnalyzer::CheckObjectExprProps(const ir::ObjectExpression *expr) const
             checker->ThrowTypeError({"key in class composite should be either identifier or string literal"},
                                     expr->Start());
         }
-        varbinder::LocalVariable *lv = objType->GetProperty(
-            pname, checker::PropertySearchFlags::SEARCH_INSTANCE_FIELD | checker::PropertySearchFlags::SEARCH_IN_BASE |
-                       checker::PropertySearchFlags::SEARCH_INSTANCE_METHOD);
+        varbinder::LocalVariable *lv = objType->GetProperty(pname, searchFlags);
         if (lv == nullptr) {
             checker->ThrowTypeError({"type ", objType->Name(), " has no property named ", pname}, propExpr->Start());
         }
@@ -2325,7 +2349,7 @@ checker::Type *ETSAnalyzer::Check(ir::VariableDeclarator *st) const
 
     //  Now try to define the actual type of Identifier so that smart cast can be used in further checker processing
     //  NOTE: T_S and K_o_t_l_i_n don't act in such way, but we can try - why not? :)
-    if (auto *const initType = st->Init() != nullptr ? st->Init()->TsType() : nullptr; initType != nullptr) {
+    if (auto *const initType = st->Init() != nullptr ? st->Init()->TsTypeOrError() : nullptr; initType != nullptr) {
         smartType = checker->ResolveSmartType(initType, variableType);
         //  Set smart type for identifier if it differs from annotated type
         //  Top-level and captured variables are not processed here!
@@ -2476,9 +2500,9 @@ checker::Type *ETSAnalyzer::Check(ir::TSEnumDeclaration *st) const
     if (enumVar->TsType() == nullptr) {
         checker::Type *etsEnumType = nullptr;
         if (auto *const itemInit = st->Members().front()->AsTSEnumMember()->Init(); itemInit->IsNumberLiteral()) {
-            etsEnumType = checker->CreateEnumIntClassFromEnumDeclaration(st);
+            etsEnumType = checker->CreateEnumIntTypeFromEnumDeclaration(st);
         } else if (itemInit->IsStringLiteral()) {
-            etsEnumType = checker->CreateEnumStringClassFromEnumDeclaration(st);
+            etsEnumType = checker->CreateEnumStringTypeFromEnumDeclaration(st);
         } else {
             checker->ThrowTypeError("Invalid enumeration value type.", st->Start());
         }
@@ -2658,10 +2682,14 @@ checker::Type *ETSAnalyzer::Check(ir::TSQualifiedName *expr) const
         // clang-format off
         auto searchName =
             importDecl->IsETSImportDeclaration()
-                ? checker->VarBinder()->AsETSBinder()->GetExportSelectiveAliasValue(
+                ? checker->VarBinder()->AsETSBinder()->FindNameInAliasMap(
                     importDecl->AsETSImportDeclaration()->ResolvedSource()->Str(), expr->Right()->Name())
                 : expr->Right()->Name();
         // clang-format on
+        // NOTE (oeotvos) This should be done differently in the follow-up patch.
+        if (searchName.Empty()) {
+            searchName = expr->Right()->Name();
+        }
         varbinder::Variable *prop =
             baseType->AsETSObjectType()->GetProperty(searchName, checker::PropertySearchFlags::SEARCH_DECL);
 
@@ -2669,7 +2697,7 @@ checker::Type *ETSAnalyzer::Check(ir::TSQualifiedName *expr) const
             checker->ThrowTypeError({"'", expr->Right()->Name(), "' type does not exist."}, expr->Right()->Start());
         }
 
-        if (expr->Right()->Name().Is(searchName.Mutf8()) && prop->Declaration()->Node()->HasAliasExport()) {
+        if (expr->Right()->Name().Is(searchName.Mutf8()) && prop->Declaration()->Node()->HasExportAlias()) {
             checker->ThrowTypeError({"Cannot find imported element '", searchName, "' exported with alias"},
                                     expr->Right()->Start());
         }
