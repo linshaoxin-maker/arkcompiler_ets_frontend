@@ -145,10 +145,7 @@ export class TypeScriptLinter {
       TypeScriptLinter.advancedClassChecks,
       TypeScriptLinter.useSdkLogic
     );
-    this.sendableGeneric = new SendableGeneric(
-      this.tsTypeChecker,
-      this.tsUtils
-    );
+    this.sendableGeneric = new SendableGeneric(this.tsTypeChecker, this.tsUtils);
     this.currentErrorLine = 0;
     this.currentWarningLine = 0;
     this.walkedComments = new Set<number>();
