@@ -38,7 +38,8 @@ export default class SendableGeneric {
     for (let i = 0; i < typeArgumentsTypes?.length; i++) {
       const argType = typeArgumentsTypes[i];
       const param = genericDecl.typeParameters?.[i];
-      if (SendableGeneric.getTypeParamByType(argType) || !param) {
+      if (SendableGeneric.getTypeParamsByType(argType)?.length === (argType.isUnion() ? argType.types.length : 1) || !param) {
+        // 实参全部都是泛型引用时，不做检查
         continue;
       }
       //
@@ -54,8 +55,6 @@ export default class SendableGeneric {
     return true;
   }
 
-  // checkNewExpression(tsNewExpr: ts.NewExpression):void {}
-
   // -------------------- contact -------------------- //
   private readonly declMap: Map<GenericDeclaration, boolean> = new Map();
   private readonly paramMap: Map<ts.TypeParameterDeclaration, ts.TypeParameterDeclaration[]> = new Map();
@@ -70,25 +69,39 @@ export default class SendableGeneric {
       if (this.declMap.has(item)) {
         continue;
       }
-      this.createContactMap(SendableGeneric.getContactStart(item));
+      this.declMap.set(decl, true);
+      this.createContactMap(item);
     }
   }
 
   private createContactMap(decl: GenericDeclaration):void {
-    const concat = (typeArgumentsTypes:readonly ts.Type[], decl: GenericDeclaration):void => {
+    const appendQueue = (decl: GenericDeclaration):void => {
+      if (this.declMap.has(decl)) {
+        return;
+      }
+      this.createQueue.push(decl);
+    };
+    const concat = (typeArgumentsTypes:readonly ts.Type[], curDecl: GenericDeclaration):void => {
+      let need = false;
       typeArgumentsTypes.forEach((argType, index) => {
         // 实参关联到的 泛型形参
-        const typeParam = decl.typeParameters?.[index];
-        const refTypeParam = SendableGeneric.getTypeParamByType(argType);
-        if (typeParam && refTypeParam) {
-          if (!this.paramMap.has(refTypeParam)) {
-            this.paramMap.set(refTypeParam, []);
-          }
-          this.paramMap.get(refTypeParam)?.push(typeParam);
+        const typeParam = curDecl.typeParameters?.[index];
+        const refTypeParams = SendableGeneric.getTypeParamsByType(argType);
+        if (typeParam && refTypeParams.length) {
+          refTypeParams.forEach((refTypeParam) => {
+            if (!this.paramMap.has(refTypeParam)) {
+              this.paramMap.set(refTypeParam, []);
+            }
+            this.paramMap.get(refTypeParam)?.push(typeParam);
+            need = true;
+          });
         }
       });
+      need && appendQueue(curDecl);
     };
-    const recursion = (node: ts.Node, parents: ts.Node[]):void => {
+
+
+    const recursion = (node: ts.Node):void => {
 
       /*
        * -------------------- T 的应用 -------------------- //
@@ -114,27 +127,31 @@ export default class SendableGeneric {
 
       // -------------------- 包裹了其他声明 -------------------- //
       if (SendableGeneric.isGenericDeclaration(node)) {
-        this.declMap.set(node, true);
+        // 子声明可能因为被调用先检查过了，此时不需要再遍历子声明
+        appendQueue(node);
+        return;
       }
       ts.forEachChild(node, (child) => {
-        recursion(child, parents);
+        recursion(child);
       });
     };
-    recursion(decl, []);
+    ts.forEachChild(decl, (child) => {
+      recursion(child);
+    });
   }
 
   // 存在作用域包裹的情况(函数包函数,类包函数)，需要找到顶级作用域的声明开始搜索
-  static getContactStart(decl: GenericDeclaration): GenericDeclaration {
-    let parent: ts.Node = decl.parent;
-    let target = decl;
-    while (parent) {
-      if (SendableGeneric.isGenericDeclaration(parent)) {
-        target = parent;
-      }
-      parent = parent.parent;
-    }
-    return target;
-  }
+  // static getContactStart(decl: GenericDeclaration): GenericDeclaration {
+  //   let parent: ts.Node = decl.parent;
+  //   let target = decl;
+  //   while (parent) {
+  //     if (SendableGeneric.isGenericDeclaration(parent)) {
+  //       target = parent;
+  //     }
+  //     parent = parent.parent;
+  //   }
+  //   return target;
+  // }
 
   // -------------------- Utils -------------------- //
 
@@ -196,11 +213,18 @@ export default class SendableGeneric {
     return decl && ts.isTypeParameterDeclaration(decl) ? decl : undefined;
   }
 
-  static getTypeParamByType(argType: ts.Type) : ts.TypeParameterDeclaration | undefined {
+  static getTypeParamsByType(argType: ts.Type, result:ts.TypeParameterDeclaration[] = []) :ts.TypeParameterDeclaration[] {
+    if (argType.isUnion()) {
+      argType.types.forEach((compType) => {
+        SendableGeneric.getTypeParamsByType(compType, result);
+      });
+    }
     if (argType.isTypeParameter()) {
       const decl = TsUtils.getDeclaration(argType.symbol);
-      return decl && ts.isTypeParameterDeclaration(decl) ? decl : undefined;
+      if (decl && ts.isTypeParameterDeclaration(decl)) {
+        result.push(decl);
+      }
     }
-    return undefined;
+    return result;
   }
 }
