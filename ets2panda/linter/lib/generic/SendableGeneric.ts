@@ -24,7 +24,7 @@ export default class SendableGeneric {
     }
   ):boolean {
     // 判断是不是一个带泛型模版的函数
-    const genericDecl = this.getGenericDeclByCallExpression(callExpr);
+    const genericDecl = this.getGenericDeclByCallOrNewExpression(callExpr);
     if (!genericDecl) {
       return true;
     }
@@ -105,15 +105,16 @@ export default class SendableGeneric {
 
       /*
        * -------------------- T 的应用 -------------------- //
-       * 处理函数调用
+       * 处理函数调用/new调用
        */
-      if (ts.isCallExpression(node)) {
-        const decl = this.getGenericDeclByCallExpression(node);
+      if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
+        const decl = this.getGenericDeclByCallOrNewExpression(node);
         if (decl) {
           const typeArguments = this.getCallTypeArguments(node);
           typeArguments?.length && concat(typeArguments, decl);
         }
       }
+
       // 处理类型使用
       if (ts.isTypeReferenceNode(node)) {
         const decl = this.getGenericDeclByTypeReference(node);
@@ -139,20 +140,6 @@ export default class SendableGeneric {
       recursion(child);
     });
   }
-
-  // 存在作用域包裹的情况(函数包函数,类包函数)，需要找到顶级作用域的声明开始搜索
-  // static getContactStart(decl: GenericDeclaration): GenericDeclaration {
-  //   let parent: ts.Node = decl.parent;
-  //   let target = decl;
-  //   while (parent) {
-  //     if (SendableGeneric.isGenericDeclaration(parent)) {
-  //       target = parent;
-  //     }
-  //     parent = parent.parent;
-  //   }
-  //   return target;
-  // }
-
   // -------------------- Utils -------------------- //
 
   // 带泛型模版的声明
@@ -167,9 +154,13 @@ export default class SendableGeneric {
   }
 
   // 通过 callExpr 得到一个带泛型模版的声明
-  private getGenericDeclByCallExpression(callExpr: ts.CallExpression): GenericDeclaration | undefined {
-    const decl = this.tsUtils.getDeclarationNode(callExpr.expression);
-    if (!decl || !TsUtils.isFunctionLikeDeclaration(decl) || !decl.typeParameters?.length) {
+  private getGenericDeclByCallOrNewExpression(callOrNew: ts.CallExpression | ts.NewExpression): GenericDeclaration | undefined {
+    const decl = this.tsUtils.getDeclarationNode(callOrNew.expression);
+    if (
+      !decl ||
+      !TsUtils.isFunctionLikeDeclaration(decl) && !ts.isClassDeclaration(decl) ||
+      !decl.typeParameters?.length
+    ) {
       return undefined;
     }
     return decl;
@@ -188,8 +179,8 @@ export default class SendableGeneric {
   }
 
   // 获取函数调用的泛型实参
-  private getCallTypeArguments(tsCallExpr: CallExpression): readonly ts.Type[] | undefined {
-    const callSignature = this.tsTypeChecker.getResolvedSignature(tsCallExpr);
+  private getCallTypeArguments(callOrNew: ts.CallExpression | ts.NewExpression): readonly ts.Type[] | undefined {
+    const callSignature = this.tsTypeChecker.getResolvedSignature(callOrNew);
     if (!callSignature?.mapper) {
       return undefined;
     }
