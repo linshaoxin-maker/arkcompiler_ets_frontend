@@ -68,6 +68,7 @@ import { SupportedStdCallApiChecker } from './utils/functions/SupportedStdCallAP
 import { identiferUseInValueContext } from './utils/functions/identiferUseInValueContext';
 import { isAssignmentOperator } from './utils/functions/isAssignmentOperator';
 import { StdClassVarDecls } from './utils/consts/StdClassVariableDeclarations';
+import SendableGeneric from './generic/SendableGeneric';
 
 export function consoleLog(...args: unknown[]): void {
   if (TypeScriptLinter.ideMode) {
@@ -102,6 +103,7 @@ export class TypeScriptLinter {
 
   autofixer: Autofixer | undefined;
   private fileExportSendableDeclCaches: Set<ts.Node> | undefined;
+  private readonly sendableGeneric: SendableGeneric;
 
   private sourceFile?: ts.SourceFile;
   private readonly compatibleSdkVersion: number;
@@ -161,6 +163,10 @@ export class TypeScriptLinter {
       TypeScriptLinter.advancedClassChecks,
       TypeScriptLinter.useSdkLogic,
       this.arkts2
+    );
+    this.sendableGeneric = new SendableGeneric(
+      this.tsTypeChecker,
+      this.tsUtils
     );
     this.currentErrorLine = 0;
     this.currentWarningLine = 0;
@@ -1936,6 +1942,10 @@ export class TypeScriptLinter {
       const faultId = this.arkts2 ? FaultID.EsObjectTypeError : FaultID.EsObjectType;
       this.incrementCounters(node, faultId);
     }
+
+    if (!this.sendableGeneric.checkCallExpression(tsCallExpr)) {
+      this.incrementCounters(node, FaultID.Rule_1);
+    }
   }
 
   private handleEtsComponentExpression(node: ts.Node): void {
@@ -2197,6 +2207,7 @@ export class TypeScriptLinter {
       this.handleGenericCallWithNoTypeArgs(tsNewExpr, callSignature);
     }
     this.handleSendableGenericTypes(tsNewExpr);
+    // this.sendableGeneric.checkNewExpression(tsNewExpr);
   }
 
   private handleSendableGenericTypes(node: ts.NewExpression): void {
