@@ -81,9 +81,6 @@ export class ArkObfuscatorForTest extends ArkObfuscator {
     if (!path.isAbsolute(this.mCustomProfiles.mOutputDir)) {
       this.mCustomProfiles.mOutputDir = path.join(path.dirname(this.mConfigPath), this.mCustomProfiles.mOutputDir);
     }
-    if (this.mCustomProfiles.mOutputDir && !fs.existsSync(this.mCustomProfiles.mOutputDir)) {
-      fs.mkdirSync(this.mCustomProfiles.mOutputDir);
-    }
 
     performancePrinter?.filesPrinter?.startEvent(EventList.ALL_FILES_OBFUSCATION);
     readProjectProperties(this.mSourceFiles, this.mCustomProfiles);
@@ -123,9 +120,6 @@ export class ArkObfuscatorForTest extends ArkObfuscator {
     // there is no need to create directory because the directory names will be obfuscated.
     if (!this.mCustomProfiles.mRenameFileName?.mEnable) {
       newDir = path.join(this.mCustomProfiles.mOutputDir, currentDir);
-      if (!fs.existsSync(newDir)) {
-        fs.mkdirSync(newDir);
-      }
     }
 
     const fileNames: string[] = fs.readdirSync(dirName);
@@ -149,6 +143,7 @@ export class ArkObfuscatorForTest extends ArkObfuscator {
   public async obfuscateFile(sourceFilePath: string, outputDir: string): Promise<void> {
     const fileName: string = FileUtils.getFileName(sourceFilePath);
     if (this.isObfsIgnoreFile(fileName)) {
+      fs.mkdirSync(outputDir, { recursive: true });
       fs.copyFileSync(sourceFilePath, path.join(outputDir, fileName));
       return;
     }
@@ -177,7 +172,13 @@ export class ArkObfuscatorForTest extends ArkObfuscator {
       return;
     }
     if (outputDir && mixedInfo) {
-      // the writing file is for the ut.
+      const outputPath: string = this.getOutputPath(sourceFilePath, mixedInfo);
+      this.writeContent(outputPath, mixedInfo);
+    }
+  }
+
+  private getOutputPath(sourceFilePath: string, mixedInfo: ObfuscationResultType): string {
+    if (this.mTestCasesFlag === 'grammar') {
       const testCasesRootPath = path.join(__dirname, '../', 'test/grammar');
       let relativePath = '';
       let resultPath = '';
@@ -187,17 +188,32 @@ export class ArkObfuscatorForTest extends ArkObfuscator {
         relativePath = sourceFilePath.replace(testCasesRootPath, '');
       }
       resultPath = path.join(this.mCustomProfiles.mOutputDir, relativePath);
-      fs.mkdirSync(path.dirname(resultPath), { recursive: true });
-      fs.writeFileSync(resultPath, mixedInfo.content);
+      return resultPath;
+    } else if (this.mTestCasesFlag === 'combinations') {
+      const outputDir = this.mCustomProfiles.mOutputDir;
+      const directory = outputDir.substring(0, outputDir.lastIndexOf('/') + 1);
+      const sourceBaseDir = directory.replace('combinations_local', 'combinations');
+      const relativePath = sourceFilePath.replace(sourceBaseDir, '');
+      const resultPath = path.join(this.mCustomProfiles.mOutputDir, relativePath);
+      return resultPath;
+    } else {
+      throw new Error('Please select a test type')
+    }
+  }
 
-      if (this.mCustomProfiles.mEnableSourceMap && mixedInfo.sourceMap) {
-        fs.writeFileSync(path.join(resultPath + '.map'),
-          JSON.stringify(mixedInfo.sourceMap, null, JSON_TEXT_INDENT_LENGTH));
-      }
+  private writeContent(outputPath: string, mixedInfo: ObfuscationResultType): void {
+    if (!fs.existsSync(path.dirname(outputPath))) {
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    }
+    fs.writeFileSync(outputPath, mixedInfo.content);
 
-      if (this.mCustomProfiles.mEnableNameCache && this.mCustomProfiles.mEnableNameCache) {
-        this.produceNameCache(mixedInfo.nameCache, resultPath);
-      }
+    if (this.mCustomProfiles.mEnableSourceMap && mixedInfo.sourceMap) {
+      fs.writeFileSync(path.join(outputPath + '.map'),
+        JSON.stringify(mixedInfo.sourceMap, null, JSON_TEXT_INDENT_LENGTH));
+    }
+
+    if (this.mCustomProfiles.mEnableNameCache && this.mCustomProfiles.mEnableNameCache) {
+      this.produceNameCache(mixedInfo.nameCache, outputPath);
     }
   }
 

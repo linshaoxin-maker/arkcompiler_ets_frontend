@@ -118,6 +118,9 @@ export class ArkObfuscator {
   // Used only for testing
   protected mWriteOriginalFile: boolean = false;
 
+  // Used only for testing
+  protected mTestCasesFlag: string | undefined = undefined;
+
   // A text writer of Printer
   private mTextWriter: EmitTextWriter;
 
@@ -141,6 +144,11 @@ export class ArkObfuscator {
 
   public setWriteOriginalFile(flag: boolean): void {
     this.mWriteOriginalFile = flag;
+  }
+
+  // only for ut
+  public setTestCasesFlag(flag: string | undefined): void {
+    this.mTestCasesFlag = flag;
   }
 
   public addReservedProperties(newReservedProperties: string[]): void {
