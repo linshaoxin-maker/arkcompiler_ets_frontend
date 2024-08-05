@@ -38,6 +38,7 @@ import type { NameGenerator } from './functions/NameGenerator';
 import { pathContainsDirectory } from './functions/PathHelper';
 import { isAssignmentOperator } from './functions/isAssignmentOperator';
 import { isIntrinsicObjectType } from './functions/isIntrinsicObjectType';
+import { AnyTxtRecord } from 'node:dns';
 
 export const SYMBOL = 'Symbol';
 export const SYMBOL_CONSTRUCTOR = 'SymbolConstructor';
@@ -1892,6 +1893,15 @@ export class TsUtils {
     return this.isSendableType(this.tsTypeChecker.getTypeFromTypeNode(typeNode));
   }
 
+  isSendableTypeWithUnion(type: ts.Type): boolean {
+    if (type.isUnion()) {
+      return type.types.every((compType) => {
+        return this.isSendableType(compType);
+      });
+    }
+    return this.isSendableType(type);
+  }
+
   isSendableType(type: ts.Type): boolean {
     if (
       (type.flags &
@@ -2447,7 +2457,7 @@ export class TsUtils {
     return TsUtils.getDeclaration(sym);
   }
 
-  static isFunctionLikeDeclaration(node: ts.Declaration): boolean {
+  static isFunctionLikeDeclaration(node: ts.Node): node is ts.FunctionLikeDeclaration {
     return (
       ts.isFunctionDeclaration(node) ||
       ts.isMethodDeclaration(node) ||

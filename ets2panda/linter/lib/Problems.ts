@@ -122,6 +122,7 @@ export enum FaultID {
   SendableFunctionProperty,
   SendableFunctionAsExpr,
   SendableDecoratorLimited,
+  Rule_1,
   // this should always be last enum
   LAST_ID
 }

@@ -223,3 +223,5 @@ cookBookTag[179] =
   'Casting "Non-sendable" function to "Sendable" typeAlias is not allowed (arkts-sendable-function-as-expr)';
 cookBookTag[180] =
   'The "@Sendable" decorator can only be used on "class", "function", "typeAlias" (arkts-sendable-decorator-limited)';
+cookBookTag[181] =
+  '这次调用会导致错误的Sendable赋值 (arkts-1)';

@@ -126,3 +126,4 @@ faultDesc[FaultID.SendableFunctionOverloadDecorator] = 'Sendable function overlo
 faultDesc[FaultID.SendableFunctionProperty] = 'Sendable function property';
 faultDesc[FaultID.SendableFunctionAsExpr] = 'Sendable function as expr';
 faultDesc[FaultID.SendableDecoratorLimited] = 'Sendable decorator limited';
+faultDesc[FaultID.Rule_1] = 'rule_1';
