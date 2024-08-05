@@ -1,0 +1,14 @@
+{
+  "basicGrammar": {
+    "enableOptions": [
+      "",
+      "",
+      "",
+      ""
+    ],
+    "testsFolder": {
+
+    },
+    "outputRootDir":""
+  }
+}
