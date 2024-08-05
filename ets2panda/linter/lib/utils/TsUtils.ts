@@ -1893,18 +1893,6 @@ export class TsUtils {
     return this.isSendableType(this.tsTypeChecker.getTypeFromTypeNode(typeNode));
   }
 
-  isSendableTypeWithUnion(type: ts.Type): boolean {
-    if (type.isUnion()) {
-      return type.types.every((compType) => {
-        return this.isSendableTypeWithUnion(compType);
-      });
-    }
-    if (type.isTypeParameter()) {
-      return true;
-    }
-    return this.isSendableType(type);
-  }
-
   isSendableType(type: ts.Type): boolean {
     if (
       (type.flags &

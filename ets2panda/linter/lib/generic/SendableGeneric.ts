@@ -2,11 +2,13 @@
 /* eslint-disable max-lines-per-function */
 /* eslint-disable multiline-comment-style */
 import * as ts from 'typescript';
-import type { CallExpression } from 'typescript';
+
 import { TsUtils } from '../utils/TsUtils';
 
-
-export type GenericDeclaration = ts.DeclarationWithTypeParameterChildren;
+// 带有泛型模版的声明
+export type GenericDeclaration = ts.DeclarationWithTypeParameterChildren & {
+  typeParameters: ts.NodeArray<ts.TypeParameterDeclaration>
+};
 
 export default class SendableGeneric {
   constructor(
@@ -14,26 +16,19 @@ export default class SendableGeneric {
     private readonly tsUtils: TsUtils
   ) {}
 
-  checkCallExpression(
-    callExpr: ts.CallExpression,
-    checkHandle:(decl:GenericDeclaration, typeArg:ts.Type)=>boolean = (decl:GenericDeclaration, typeArg:ts.Type) => {
-      if (!ts.isClassDeclaration(decl) || !TsUtils.hasSendableDecorator(decl)) {
-        return true;
-      }
-      return this.tsUtils.isSendableTypeWithUnion(typeArg);
-    }
+  isWrongCallOrNewExpression(
+    callOrNew: ts.CallExpression | ts.NewExpression
   ):boolean {
-    // 判断是不是一个带泛型模版的函数
-    const genericDecl = this.getGenericDeclByCallOrNewExpression(callExpr);
+    const genericDecl = this.getGenericDeclByCallOrNewExpression(callOrNew);
     if (!genericDecl) {
-      return true;
+      return false;
     }
     // 开始检查关联性
-    this.beginCreateContact(genericDecl);
+    this.createContactMap(genericDecl);
     // 检查这次调用传入的实参
-    const typeArgumentsTypes = this.getCallTypeArguments(callExpr);
+    const typeArgumentsTypes = this.getTypeArgsTypesByCallOrNew(callOrNew);
     if (!typeArgumentsTypes?.length) {
-      return true;
+      return false;
     }
     for (let i = 0; i < typeArgumentsTypes?.length; i++) {
       const argType = typeArgumentsTypes[i];
@@ -46,103 +41,111 @@ export default class SendableGeneric {
       const list = [param];
       while (list.length) {
         const typeParam = list.shift()!;
-        if (!checkHandle(typeParam.parent as ts.DeclarationWithTypeParameterChildren, argType)) {
-          return false;
+        if (this.isWrongSendable(typeParam.parent, argType)) {
+          return true;
         }
-        list.push(...this.paramMap.get(typeParam) || []);
+        list.push(...this.paramContact.get(typeParam) || []);
       }
     }
-    return true;
+    return false;
   }
 
-  // -------------------- contact -------------------- //
-  private readonly declMap: Map<GenericDeclaration, boolean> = new Map();
-  private readonly paramMap: Map<ts.TypeParameterDeclaration, ts.TypeParameterDeclaration[]> = new Map();
 
-  private createQueue: GenericDeclaration[] = [];
+  private readonly declSearched: Set<GenericDeclaration> = new Set();
+  private readonly paramContact: Map<ts.TypeParameterDeclaration, ts.TypeParameterDeclaration[]> = new Map();
+  private readonly paramValidity: Map<ts.TypeParameterDeclaration, boolean> = new Map();
+  private readonly searchQueue: GenericDeclaration[] = [];
 
-  private beginCreateContact(decl: GenericDeclaration): void {
-    this.createQueue = [decl];
-    while (this.createQueue.length) {
-      const item = this.createQueue.shift()!;
-      // 检查过了
-      if (this.declMap.has(item)) {
+  // 从指定泛型声明开始,创建泛型类型参数的引用关系图
+  private createContactMap(decl: GenericDeclaration): void {
+    this.searchQueue.push(decl);
+    while (this.searchQueue.length) {
+      const decl = this.searchQueue.shift()!;
+      if (this.declSearched.has(decl)) {
         continue;
       }
-      this.declMap.set(decl, true);
-      this.createContactMap(item);
+      this.searchContact(decl);
     }
   }
 
-  private createContactMap(decl: GenericDeclaration):void {
-    const appendQueue = (decl: GenericDeclaration):void => {
-      if (this.declMap.has(decl)) {
+  private searchContact(searchDecl: GenericDeclaration):void {
+    const appendSearchQueue = (decl: GenericDeclaration):void => {
+      if (this.declSearched.has(decl)) {
         return;
       }
-      this.createQueue.push(decl);
+      this.searchQueue.push(decl);
     };
-    const concat = (typeArgumentsTypes:readonly ts.Type[], curDecl: GenericDeclaration):void => {
-      let need = false;
+
+    // decl被使用时传入的实参typeArgumentsTypes,如果typeArgumentsTypes中存在泛型引用,则创建关联
+    const createContact = (typeArgumentsTypes:readonly ts.Type[], decl: GenericDeclaration):void => {
+      let needSearch = false;
       typeArgumentsTypes.forEach((argType, index) => {
         // 实参关联到的 泛型形参
-        const typeParam = curDecl.typeParameters?.[index];
+        const typeParam = decl.typeParameters?.[index];
         const refTypeParams = SendableGeneric.getTypeParamsByType(argType);
         if (typeParam && refTypeParams.length) {
-          refTypeParams.forEach((refTypeParam) => {
-            if (!this.paramMap.has(refTypeParam)) {
-              this.paramMap.set(refTypeParam, []);
+          refTypeParams.forEach((param) => {
+            if (!this.paramContact.has(param)) {
+              this.paramContact.set(param, []);
             }
-            this.paramMap.get(refTypeParam)?.push(typeParam);
-            need = true;
+            this.paramContact.get(param)?.push(typeParam);
+            needSearch = true;
           });
         }
       });
-      need && appendQueue(curDecl);
+      needSearch && appendSearchQueue(decl);
     };
 
-
-    const recursion = (node: ts.Node):void => {
+    const searchNode = (node: ts.Node):void => {
 
       /*
        * -------------------- T 的应用 -------------------- //
-       * 处理函数调用/new调用
+       * 处理函数调用/new调用, foo<T>(); new Cls<T>();
        */
       if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
         const decl = this.getGenericDeclByCallOrNewExpression(node);
         if (decl) {
-          const typeArguments = this.getCallTypeArguments(node);
-          typeArguments?.length && concat(typeArguments, decl);
+          const types = this.getTypeArgsTypesByCallOrNew(node);
+          types?.length && createContact(types, decl);
         }
       }
 
-      // 处理类型使用
+      // 处理类型引用, const a:Class<T>; const a:Interface<T>; const a:Type<T>;
       if (ts.isTypeReferenceNode(node)) {
         const decl = this.getGenericDeclByTypeReference(node);
         if (decl) {
           const typeArguments = node.typeArguments;
-          typeArguments?.length && concat(typeArguments.map((arg) => {
+          typeArguments?.length && createContact(typeArguments.map((arg) => {
             return this.tsTypeChecker.getTypeAtLocation(arg);
           }), decl);
         }
       }
 
-      // -------------------- 包裹了其他声明 -------------------- //
+      // 声明嵌套 function foo<T>(){class Cls<T>{}};
       if (SendableGeneric.isGenericDeclaration(node)) {
-        // 子声明可能因为被调用先检查过了，此时不需要再遍历子声明
-        appendQueue(node);
+        appendSearchQueue(node);
         return;
       }
       ts.forEachChild(node, (child) => {
-        recursion(child);
+        searchNode(child);
       });
     };
-    ts.forEachChild(decl, (child) => {
-      recursion(child);
+    if (this.declSearched.has(searchDecl)) {
+      return;
+    }
+    this.declSearched.add(searchDecl);
+    if (ts.isClassDeclaration(searchDecl) && TsUtils.hasSendableDecorator(searchDecl)) {
+      searchDecl.typeParameters.forEach((param) => {
+        this.paramValidity.set(param, true);
+      });
+    }
+    ts.forEachChild(searchDecl, (child) => {
+      searchNode(child);
     });
   }
   // -------------------- Utils -------------------- //
 
-  // 带泛型模版的声明
+  // 是否为带泛型模版的声明
   static isGenericDeclaration(node: ts.Node): node is GenericDeclaration {
     return (
       (TsUtils.isFunctionLikeDeclaration(node) ||
@@ -153,7 +156,7 @@ export default class SendableGeneric {
     );
   }
 
-  // 通过 callExpr 得到一个带泛型模版的声明
+  // 通过 callExpr/newExpr 得到对应的 GenericDeclaration
   private getGenericDeclByCallOrNewExpression(callOrNew: ts.CallExpression | ts.NewExpression): GenericDeclaration | undefined {
     const decl = this.tsUtils.getDeclarationNode(callOrNew.expression);
     if (
@@ -163,10 +166,10 @@ export default class SendableGeneric {
     ) {
       return undefined;
     }
-    return decl;
+    return decl as GenericDeclaration;
   }
 
-  // 通过 typeReferenceNode 得到一个带泛型模版的声明
+  // 通过 typeReferenceNode 得到对应的 GenericDeclaration
   private getGenericDeclByTypeReference(node: ts.TypeReferenceNode): GenericDeclaration | undefined {
     if (!node.typeArguments?.length) {
       return undefined;
@@ -179,7 +182,7 @@ export default class SendableGeneric {
   }
 
   // 获取函数调用的泛型实参
-  private getCallTypeArguments(callOrNew: ts.CallExpression | ts.NewExpression): readonly ts.Type[] | undefined {
+  private getTypeArgsTypesByCallOrNew(callOrNew: ts.CallExpression | ts.NewExpression): readonly ts.Type[] | undefined {
     const callSignature = this.tsTypeChecker.getResolvedSignature(callOrNew);
     if (!callSignature?.mapper) {
       return undefined;
@@ -194,16 +197,7 @@ export default class SendableGeneric {
     return undefined;
   }
 
-
-  getTypeParamByRef(node: ts.Node) : ts.TypeParameterDeclaration | undefined {
-    if (!ts.isTypeReferenceNode(node)) {
-      return undefined;
-    }
-    const decl = this.tsUtils.getDeclarationNode(node.typeName);
-
-    return decl && ts.isTypeParameterDeclaration(decl) ? decl : undefined;
-  }
-
+  // 如果type是泛型模版类型，返回相应的TypeParameterDeclaration
   static getTypeParamsByType(argType: ts.Type, result:ts.TypeParameterDeclaration[] = []) :ts.TypeParameterDeclaration[] {
     if (argType.isUnion()) {
       argType.types.forEach((compType) => {
@@ -218,4 +212,38 @@ export default class SendableGeneric {
     }
     return result;
   }
+
+  // -------------------- check --------------------//
+
+  static isValidTypeParam(param: ts.TypeParameterDeclaration):boolean {
+    const decl = param.parent;
+    return ts.isClassDeclaration(decl) && TsUtils.hasSendableDecorator(decl);
+  }
+
+  isWrongSendable:(decl:ts.Node, typeArg:ts.Type)=>boolean = (decl:ts.Node, typeArg:ts.Type) => {
+    if (!ts.isClassDeclaration(decl) || !TsUtils.hasSendableDecorator(decl)) {
+      // 只对@Sendable class做检查
+      return false;
+    }
+    return !this.isWrongSendableType(typeArg);
+  };
+
+  isWrongSendableType(type: ts.Type): boolean {
+    if (type.isUnion()) {
+      return type.types.every((compType) => {
+        return this.isWrongSendableType(compType);
+      });
+    }
+    if (type.isTypeParameter()) {
+      // 忽略泛型引用
+      return false;
+    }
+    return !this.tsUtils.isSendableType(type);
+  }
 }
+
+
+// DeclarationWithTypeParameterChildren::ClassLikeDeclaration::ClassExpression  const cls = class {}; 已经被linter限制了，无需考虑
+// DeclarationWithTypeParameterChildren::ClassLikeDeclaration::StructDeclaration  stuct test<T>{}; 已经被限制了，无需考虑
+// 需要考虑 interface 的各种情况
+
