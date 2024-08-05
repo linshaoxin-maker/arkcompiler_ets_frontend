@@ -61,7 +61,7 @@ function countResult() {
 }
 
 function run() {
-  const testCasesRootDir = path.join(__dirname, '../test/grammar');
+  const testCasesRootDir = path.join(__dirname, '../test/grammar/obfuscation_validation');
   traverseDirs(testCasesRootDir, testCasesRootDir);
 }
 
