@@ -2087,6 +2087,9 @@ export class TypeScriptLinter {
     }
     this.handleSendableGenericTypes(tsNewExpr);
     // this.sendableGeneric.checkNewExpression(tsNewExpr);
+    if (this.sendableGeneric.isWrongCallOrNewExpression(tsNewExpr)) {
+      this.incrementCounters(node, FaultID.Rule_1);
+    }
   }
 
   private handleSendableGenericTypes(node: ts.NewExpression): void {
@@ -2156,6 +2159,9 @@ export class TypeScriptLinter {
     const typeNameType = this.tsTypeChecker.getTypeAtLocation(typeRef.typeName);
     if (this.tsUtils.isSendableClassOrInterface(typeNameType)) {
       this.checkSendableTypeArguments(typeRef);
+    }
+    if (this.sendableGeneric.isWrongTypeReference(typeRef)) {
+      this.incrementCounters(node, FaultID.Rule_1);
     }
   }
 

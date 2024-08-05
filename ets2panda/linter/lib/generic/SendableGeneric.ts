@@ -44,6 +44,34 @@ export default class SendableGeneric {
     return false;
   }
 
+  isWrongTypeReference(
+    typeRef: ts.TypeReferenceNode
+  ):boolean {
+    const genericDecl = this.getGenericDeclByTypeReference(typeRef);
+    if (!genericDecl) {
+      return false;
+    }
+    // 开始检查关联性
+    this.createContactMap(genericDecl);
+
+    // 检查这次调用传入的实参
+    const typeArgumentsTypes = this.getTypeArgsTypesByTypeReference(typeRef);
+    if (!typeArgumentsTypes?.length) {
+      return false;
+    }
+    for (let i = 0; i < typeArgumentsTypes?.length; i++) {
+      const argType = typeArgumentsTypes[i];
+      const param = genericDecl.typeParameters?.[i];
+      if (!param) {
+        continue;
+      }
+      if (!!this.paramValidity.get(param) && this.isWrongSendableType(argType)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
 
   private readonly declSearched: Set<GenericDeclaration> = new Set();
   private readonly paramValidity: Map<ts.TypeParameterDeclaration, boolean> = new Map();
@@ -63,21 +91,27 @@ export default class SendableGeneric {
     }
     //
     const deduce = (param: ts.TypeParameterDeclaration, parents:ts.TypeParameterDeclaration[]):boolean => {
-      const sets = this.paramContact.get(param);
-      const list = sets ? [...sets] : [];
       let result = false;
       if (this.paramValidity.has(param)) {
         result = !!this.paramValidity.get(param);
+      } else if (SendableGeneric.isValidTypeParam(param)) {
+        result = true;
       } else if (parents.includes(param)) {
         // 出现了循环引用
         result = false;
       } else {
-        parents.push(param);
-        result = list.some((child) => {
-          const bool = deduce(child, parents);
-          return bool;
-        });
-        parents.pop();
+        const sets = this.paramContact.get(param);
+        if (!sets) {
+          result = false;
+        } else {
+          parents.push(param);
+          for (const child of sets) {
+            if (deduce(child, parents)) {
+              result = true;
+            }
+          }
+          parents.pop();
+        }
       }
       this.paramValidity.set(param, result);
       return result;
@@ -87,8 +121,8 @@ export default class SendableGeneric {
       deduce(param, []);
     }
 
-    this.paramContact = new Map();
-    this.searchQueue = [];
+    this.paramContact.clear();
+    this.searchQueue.length = 0;
   }
 
   private searchContact(topDecl: GenericDeclaration):void {
@@ -123,7 +157,6 @@ export default class SendableGeneric {
     const searchNode = (node: ts.Node):void => {
 
       /*
-       * -------------------- T 的应用 -------------------- //
        * 处理函数调用/new调用, foo<T>(); new Cls<T>();
        */
       if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
@@ -138,21 +171,19 @@ export default class SendableGeneric {
       if (ts.isTypeReferenceNode(node)) {
         const decl = this.getGenericDeclByTypeReference(node);
         if (decl) {
-          const typeArguments = node.typeArguments;
-          typeArguments?.length && createContact(typeArguments.map((arg) => {
-            return this.tsTypeChecker.getTypeAtLocation(arg);
-          }), decl);
+          const types = this.getTypeArgsTypesByTypeReference(node);
+          types?.length && createContact(types, decl);
         }
       }
 
       // 声明嵌套 function foo<T>(){class Cls<T>{}};
-      if (SendableGeneric.isGenericDeclaration(node)) {
-        if (ts.isClassDeclaration(node) && TsUtils.hasSendableDecorator(node)) {
-          node.typeParameters.forEach((param) => {
-            this.paramValidity.set(param, true);
-          });
-        }
-      }
+      // if (SendableGeneric.isGenericDeclaration(node)) {
+      //   if (ts.isClassDeclaration(node) && TsUtils.hasSendableDecorator(node)) {
+      //     node.typeParameters.forEach((param) => {
+      //       this.paramValidity.set(param, true);
+      //     });
+      //   }
+      // }
       ts.forEachChild(node, (child) => {
         searchNode(child);
       });
@@ -229,6 +260,12 @@ export default class SendableGeneric {
     return undefined;
   }
 
+  private getTypeArgsTypesByTypeReference(node: ts.TypeReferenceNode): readonly ts.Type[] | undefined {
+    return node.typeArguments?.map((arg) => {
+      return this.tsTypeChecker.getTypeAtLocation(arg);
+    });
+  }
+
   // 如果type是泛型模版类型，返回相应的TypeParameterDeclaration
   static getTypeParamsByType(argType: ts.Type, result:ts.TypeParameterDeclaration[] = []) :ts.TypeParameterDeclaration[] {
     if (argType.isUnion()) {
@@ -254,7 +291,7 @@ export default class SendableGeneric {
 
   isWrongSendableType(type: ts.Type): boolean {
     if (type.isUnion()) {
-      return type.types.every((compType) => {
+      return type.types.some((compType) => {
         return this.isWrongSendableType(compType);
       });
     }
