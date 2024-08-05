@@ -16,10 +16,6 @@ parser/ets/import_tests/import_nested_class_2.sts
 parser/ets/import_tests/import_nested_class_3.sts
 parser/ets/import_tests/import_separate_module.sts
 parser/ets/import_tests/import_several_8.sts
-# panda#17052
-parser/ets/import_tests/import_recursive.sts
-parser/ets/import_tests/packages/recursive/subpackage/subpackage_module_1.sts
-parser/ets/import_tests/packages/recursive/subpackage_module_1.sts
 
 # panda#11580 ([ETS front-end] Overriding issues)
 compiler/ets/override3.sts
