@@ -10,6 +10,20 @@ export type GenericDeclaration = ts.DeclarationWithTypeParameterChildren & {
   typeParameters: ts.NodeArray<ts.TypeParameterDeclaration>;
 };
 
+/**
+ * 思路：
+ * 1. 在函数调用( foo<T>(); )，new表达式( new SomeClass<T>() )，类型声明( const a:SomeClass<T>;const b:SomeType<T> )... 等处触发检查
+ * 2. 找到对应的声明(函数声明,类声明,别名声明...)，并且找到该声明的顶级父泛型声明(存在声明嵌套的情况 function foo<T>() { class SomeClass<T>{} })，为避免重复查找，所以将顶级父声明作为查找目标
+ * 3. 遍历当前声明，找到当前声明中所有使用到当前声明的泛型形参（T）的节点，绑定T和该节点对应声明的泛型形参（T2），并将该节点的声明加入搜索列表重复2-3
+ * 4. 通过2-3的不断遍历，获取到相关泛型形参的所有能关联到的其他泛型形参。
+ * 5. 检测所有查找到的泛型形参，是否可以关联到SendableClass的泛型形参，并缓存
+ * 6. 获取函数调用的实参，使用步骤5的缓存，如果实参对应的形参可以关联到SendableClass，则判断该实参是否为SendableType
+ * 7. 返回结果
+ *
+ * 副作用：
+ * 内存消耗，每个带泛型的声明，其中的每个泛型形参，都会生成一个 {key: TypeParameterDeclaration, value: boolean} 的缓存数据
+ * 性能消耗，每个带泛型的声明，都会完整的遍历一次
+ */
 export default class SendableGeneric {
   constructor(
     private readonly tsTypeChecker: ts.TypeChecker,
@@ -17,112 +31,107 @@ export default class SendableGeneric {
   ) {}
 
   isWrongCallOrNewExpression(callOrNew: ts.CallExpression | ts.NewExpression): boolean {
-    return this.isWrongGeneric(
-      () => {
-        return this.getGenericDeclByCallOrNewExpression(callOrNew);
-      },
-      () => {
-        return this.getTypeArgsTypesByCallOrNew(callOrNew);
-      }
-    );
-  }
-
-  isWrongTypeReference(typeRef: ts.TypeReferenceNode): boolean {
-    return this.isWrongGeneric(
-      () => {
-        return this.getGenericDeclByTypeReference(typeRef);
-      },
-      () => {
-        return this.getTypeArgsTypesByTypeReference(typeRef);
-      }
-    );
-  }
-
-  private isWrongGeneric(
-    getGenericDecl: () => GenericDeclaration | undefined,
-    getTypeArgumentsTypes: () => readonly ts.Type[] | undefined
-  ): boolean {
-    const genericDecl = getGenericDecl();
-    if (!genericDecl) {
+    const decl = this.getGenericDeclByCallOrNewExpression(callOrNew);
+    if (!decl) {
       return false;
     }
-    // 开始检查关联性
-    this.createContactMap(genericDecl);
-
-    // 检查这次调用传入的实参
-    const typeArgumentsTypes = getTypeArgumentsTypes();
+    const typeArgumentsTypes = this.getTypeArgsTypesByCallOrNew(callOrNew);
     if (!typeArgumentsTypes?.length) {
       return false;
     }
-    for (let i = 0; i < typeArgumentsTypes?.length; i++) {
-      const argType = typeArgumentsTypes[i];
-      const param = genericDecl.typeParameters?.[i];
-      if (!param) {
-        continue;
-      }
-      if (!!this.paramValidity.get(param) && this.isWrongSendableType(argType)) {
+    return this.isWrongGeneric(decl, typeArgumentsTypes);
+  }
+
+  isWrongTypeReference(typeRef: ts.TypeReferenceNode): boolean {
+    const decl = this.getGenericDeclByTypeReference(typeRef);
+    if (!decl) {
+      return false;
+    }
+    const typeArgumentsTypes = this.getTypeArgsTypesByTypeReference(typeRef);
+    if (!typeArgumentsTypes?.length) {
+      return false;
+    }
+    return this.isWrongGeneric(decl, typeArgumentsTypes);
+  }
+
+  private isWrongGeneric(
+    genericDecl: GenericDeclaration,
+    typeArgumentsTypes: readonly ts.Type[]
+  ): boolean {
+    // 为泛型引用创建映射
+    this.createContact(genericDecl);
+    // 检查这次调用传入的实参是否会导致错误的Sendable泛型
+    for (let i = 0; i < Math.min(typeArgumentsTypes.length, genericDecl.typeParameters.length); i++) {
+      if (
+        !!this.paramContactSendable.get(genericDecl.typeParameters[i]) &&
+         this.isWrongSendableType(typeArgumentsTypes[i])
+      ) {
         return true;
       }
     }
     return false;
   }
 
-  private readonly declSearched: Set<GenericDeclaration> = new Set();
-  private readonly paramValidity: Map<ts.TypeParameterDeclaration, boolean> = new Map();
+  //
+  private readonly searchedDecl: Set<GenericDeclaration> = new Set();
+  private readonly paramContactSendable: Map<ts.TypeParameterDeclaration, boolean> = new Map();
   private paramContactTemp: Map<ts.TypeParameterDeclaration, Set<ts.TypeParameterDeclaration>> = new Map();
   private searchQueueTemp: GenericDeclaration[] = [];
 
   // 从指定泛型声明开始,创建泛型类型参数的引用关系图
-  private createContactMap(decl: GenericDeclaration): void {
+  private createContact(decl: GenericDeclaration): void {
     this.paramContactTemp = new Map();
     this.searchQueueTemp = [SendableGeneric.getTopGenericDeclaration(decl)];
     while (this.searchQueueTemp.length) {
-      const first = this.searchQueueTemp.shift()!;
-      if (this.declSearched.has(first)) {
-        continue;
-      }
-      this.searchContact(first);
+      this.searchContact(this.searchQueueTemp.shift()!);
     }
-    //
-    const deduce = (param: ts.TypeParameterDeclaration, parents: ts.TypeParameterDeclaration[]): boolean => {
-      let result = false;
-      if (this.paramValidity.has(param)) {
-        result = !!this.paramValidity.get(param);
-      } else if (SendableGeneric.isValidTypeParam(param)) {
-        result = true;
-      } else if (parents.includes(param)) {
-        // 出现了循环引用
-        result = false;
-      } else {
-        const sets = this.paramContactTemp.get(param);
-        if (!sets) {
-          result = false;
-        } else {
-          parents.push(param);
-          for (const child of sets) {
-            if (deduce(child, parents)) {
-              result = true;
-            }
-          }
-          parents.pop();
-        }
-      }
-      this.paramValidity.set(param, result);
-      return result;
-    };
 
     for (const param of this.paramContactTemp.keys()) {
-      deduce(param, []);
+      this.checkParamCantactToSendable(param);
     }
 
     this.paramContactTemp.clear();
     this.searchQueueTemp.length = 0;
   }
 
+  // 检查泛型形参是否关联到SendableClass
+  private checkParamCantactToSendable(param: ts.TypeParameterDeclaration, parents: ts.TypeParameterDeclaration[] = []):boolean {
+    let result = false;
+    if (this.paramContactSendable.has(param)) {
+      result = !!this.paramContactSendable.get(param);
+    } else if (SendableGeneric.isValidTypeParam(param)) {
+      result = true;
+    } else if (parents.includes(param)) {
+      // 出现了循环引用
+      result = false;
+    } else {
+      const sets = this.paramContactTemp.get(param);
+      if (!sets) {
+        result = false;
+      } else {
+        parents.push(param);
+        for (const child of sets) {
+          if (this.checkParamCantactToSendable(child, parents)) {
+            result = true;
+          }
+        }
+        parents.pop();
+      }
+    }
+    this.paramContactSendable.set(param, result);
+    return result;
+  }
+
+  // 搜索泛型间的关联
   private searchContact(topDecl: GenericDeclaration): void {
+    if (this.searchedDecl.has(topDecl)) {
+      return;
+    }
+    this.searchedDecl.add(topDecl);
+
     const appendSearchQueue = (decl: GenericDeclaration): void => {
       const topDecl = SendableGeneric.getTopGenericDeclaration(decl);
-      if (this.declSearched.has(topDecl)) {
+      if (this.searchedDecl.has(topDecl)) {
         return;
       }
       this.searchQueueTemp.push(topDecl);
@@ -174,14 +183,11 @@ export default class SendableGeneric {
         searchNode(child);
       });
     };
-    if (this.declSearched.has(topDecl)) {
-      return;
-    }
-    this.declSearched.add(topDecl);
     searchNode(topDecl);
   }
   // -------------------- Utils -------------------- //
 
+  // 获取一个泛型声明的
   static getTopGenericDeclaration(decl: GenericDeclaration): GenericDeclaration {
     let parent: ts.Node = decl.parent;
     let target = decl;
