@@ -1943,7 +1943,7 @@ export class TypeScriptLinter {
       this.incrementCounters(node, faultId);
     }
 
-    if (!this.sendableGeneric.checkCallExpression(tsCallExpr)) {
+    if (this.sendableGeneric.isWrongCallExpression(tsCallExpr)) {
       this.incrementCounters(node, FaultID.Rule_1);
     }
   }
