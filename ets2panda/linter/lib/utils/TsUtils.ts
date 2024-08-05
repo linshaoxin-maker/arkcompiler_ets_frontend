@@ -39,7 +39,6 @@ import type { NameGenerator } from './functions/NameGenerator';
 import { srcFilePathContainsDirectory } from './functions/PathHelper';
 import { isAssignmentOperator } from './functions/isAssignmentOperator';
 import { isIntrinsicObjectType } from './functions/isIntrinsicObjectType';
-import { AnyTxtRecord } from 'node:dns';
 
 export const SYMBOL = 'Symbol';
 export const SYMBOL_CONSTRUCTOR = 'SymbolConstructor';
