@@ -193,6 +193,7 @@ export default class SendableGeneric {
         return;
       }
 
+      // Sendable类声明中的Non-Sendable类声明,不算inSendableClass
       const childInSendableClass = ts.isClassDeclaration(node) ? TsUtils.hasSendableDecorator(node) : isInSendableClass;
 
       ts.forEachChild(node, (child) => {

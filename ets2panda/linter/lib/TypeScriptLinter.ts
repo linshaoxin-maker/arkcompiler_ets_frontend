@@ -1941,7 +1941,7 @@ export class TypeScriptLinter {
     }
 
     if (this.sendableGeneric.isWrongCallOrNewExpression(tsCallExpr)) {
-      this.incrementCounters(node, FaultID.Rule_1);
+      this.incrementCounters(node, FaultID.SendableGenericPropagate);
     }
   }
 
@@ -2206,7 +2206,7 @@ export class TypeScriptLinter {
     this.handleSendableGenericTypes(tsNewExpr);
     // this.sendableGeneric.checkNewExpression(tsNewExpr);
     if (this.sendableGeneric.isWrongCallOrNewExpression(tsNewExpr)) {
-      this.incrementCounters(node, FaultID.Rule_1);
+      this.incrementCounters(node, FaultID.SendableGenericPropagate);
     }
   }
 
@@ -2280,7 +2280,7 @@ export class TypeScriptLinter {
       this.checkSendableTypeArguments(typeRef);
     }
     if (this.sendableGeneric.isWrongTypeReference(typeRef)) {
-      this.incrementCounters(node, FaultID.Rule_1);
+      this.incrementCounters(node, FaultID.SendableGenericPropagate);
     }
   }
 

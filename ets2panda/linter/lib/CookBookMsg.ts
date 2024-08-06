@@ -230,4 +230,4 @@ cookBookTag[183] = 'Object literal properties can only contain name-value pairs 
 cookBookTag[184] = 'Optional methods are not supported (arkts-optional-methods)';
 cookBookTag[185] = 'syntax for import type is disabled (arkts-import-types)';
 cookBookTag[186] = '"new" expression with dynamic constructor type is not supported (arkts-no-dynamic-ctor-call)';
-cookBookTag[187] = '这次调用会导致错误的Sendable赋值 (arkts-1)';
+cookBookTag[187] = 'If a generic parameter is passed on to a property of a "sendable" class, it must be a "sendable" data type (arkts-sendable-generic-propagate)';
