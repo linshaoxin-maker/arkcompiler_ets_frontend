@@ -1,11 +1,13 @@
 {
   "basicGrammar": {
-    "enableOptions": [
-      "",
-      "",
-      "",
-      ""
-    ],
+    "enableOptions": {
+      "mNameObfuscation": {
+        "mRenameProperties": true,
+        "mKeepStringProperty": false,
+        "mTopLevel": true
+      },
+      "mExportObfuscation": true
+    },
     "testsFolder": {
 
     },

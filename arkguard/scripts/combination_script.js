@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-import fs from 'fs'
+const fs = require('fs')
+const path = require('path')
 
-const combinationConfigPath = './combination_config.json'
+const combinationConfigPath = path.join(__dirname, './combination_config.json');
 
 const defaultConfig = {
   "mCompact": false,
   "mRemoveComments": false,
   "mOutputDir": "../local",
-  "mDisableHilog": false,
   "mDisableConsole": false,
   "mSimplify": false,
   "mNameObfuscation": {
@@ -37,37 +37,104 @@ const defaultConfig = {
   "mEnableNameCache": false
 }
 
-function run(cmd) {
-  
+const configAlias = {
+  "mCompact": "comp",
+  "mRemoveComments": false,
+  "mOutputDir": "../local",
+  "mDisableConsole": "con",
+  "mSimplify": false,
+  "mNameObfuscation": {
+      "mEnable": "localVar",
+      "mNameGeneratorType": 1,
+      "mDictionaryList": [],
+      "mRenameProperties": "prop",
+      "mKeepStringProperty": "strProp",
+      "mTopLevel": "top"
+  },
+  "mExportObfuscation": "export",
+  "mEnableSourceMap": false,
+  "mEnableNameCache": false
 }
 
-function combineOptions(enbleOptions, result) {
-  const result = [];
-
-  function combine(currentCombination, start) {
-    result.push([...currentCombination]);
-
-    for (let i = start; i < array.length; i++) {
-      currentCombination.push(enbleOptions[i]);
-      combine(currentCombination, i + 1);
-      currentCombination.pop();
+function concatConfigsAlias(options, configAlias) {
+  const keys = Object.keys(target);
+  const result = ''
+  for (const key of keys) {
+    if (configAlias[key] == 'object') {
+      result += configAlias[key];
+    } else {
+      return undefined; // Return undefined if the key doesn't exist
     }
   }
+  return result;
+}
 
-  combine([], 0);
+function run(optionsCombinations, testsFolder) {
+  const outpurDir = {"mOutputDir": testsFolder};
+  for (let options of optionsCombinations) {
+    const configAlias = concatConfigsAlias(options, '');
+    const updatedConfig =  {...defaultConfig, ...options, ...outpurDir}
+  }
+}
+
+function generateCombinations(obj) {
+  const result = [{}]; // Initialize with the empty object
+  const keys = Object.keys(obj);
+
+  function combine(current, remainingKeys) {
+    if (remainingKeys.length === 0) return;
+
+    const key = remainingKeys[0];
+    const value = obj[key];
+
+    if (typeof value === 'object' && !Array.isArray(value)) {
+      const subKeys = Object.keys(value);
+      const subCombinations = [];
+
+      subKeys.forEach(subKey => {
+        const subValue = value[subKey];
+        const currentSubCombinations = subCombinations.slice();
+
+        currentSubCombinations.forEach(subComb => {
+          const newComb = { ...subComb, [subKey]: subValue };
+          subCombinations.push(newComb);
+        });
+
+        subCombinations.push({ [subKey]: subValue });
+      });
+      console.log('subCombinations---',subCombinations)
+      subCombinations.forEach(subComb => {
+        const newComb = { ...current, [key]: subComb };
+        result.push(newComb);
+        combine(newComb, remainingKeys.slice(1));
+      });
+    } else {
+      const newComb = { ...current, [key]: value };
+      result.push(newComb);
+      combine(newComb, remainingKeys.slice(1));
+    }
+
+    combine(current, remainingKeys.slice(1));
+  }
+
+  combine({}, keys);
   return result;
 }
 
 function readConfig() {
   const configs = JSON.parse(fs.readFileSync(combinationConfigPath, 'utf-8'));
-  for (let key in configContent) {
-    const enbleOptions = configs.enbleOptions;
-    const testsFolder = configs.testsFolder;
-    const outputRootDir = configs.outputRootDir;
-    const arkguardConfig = combineOptions(enbleOptions, outputRootDir);
-    const cmd = ``
+  console.log(configs)
+  for (let key in configs) {
+    const enableOptions = configs[key].enableOptions;
+    const testsFolder = configs[key].testsFolder;
+    const outputRootDir = configs[key].outputRootDir;
+    const optionsCombinations = generateCombinations(enableOptions);
+    console.log("混淆选项组合数量", optionsCombinations.length);
+    run(optionsCombinations, testsFolder)
   }
 }
 function main() {
-  
+  readConfig();
 }
+
+main();
