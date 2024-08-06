@@ -104,7 +104,6 @@ function check7() {
 
     assert(str == "ffff");
 }
-
 function main() {
     check1();
     check2();

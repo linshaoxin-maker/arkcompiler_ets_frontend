@@ -1587,7 +1587,7 @@ void ETSChecker::AddBoxingUnboxingFlagsToNode(ir::AstNode *node, Type *boxingUnb
 {
     if (boxingUnboxingType->IsETSObjectType()) {
         node->AddBoxingUnboxingFlags(GetBoxingFlag(boxingUnboxingType));
-    } else {
+    } else if (!boxingUnboxingType->IsETSUnionType()) {
         node->AddBoxingUnboxingFlags(GetUnboxingFlag(boxingUnboxingType));
     }
 }
