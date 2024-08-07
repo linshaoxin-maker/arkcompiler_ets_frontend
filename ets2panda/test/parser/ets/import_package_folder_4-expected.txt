@@ -1,0 +1,1 @@
+SyntaxError: Package folder contains different module than test2. [import_package_folder_4.ets:22:1]
