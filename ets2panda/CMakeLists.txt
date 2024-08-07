@@ -234,6 +234,7 @@ set(ES2PANDA_LIB_SRC
   ir/base/decorator.cpp
   ir/base/metaProperty.cpp
   ir/base/methodDefinition.cpp
+  ir/base/namespaceDefinition.cpp
   ir/base/property.cpp
   ir/base/scriptFunction.cpp
   ir/base/scriptFunctionSignature.cpp
@@ -308,6 +309,7 @@ set(ES2PANDA_LIB_SRC
   ir/statements/ifStatement.cpp
   ir/statements/labelledStatement.cpp
   ir/statements/loopStatement.cpp
+  ir/statements/namespaceDeclaration.cpp
   ir/statements/returnStatement.cpp
   ir/statements/switchCaseStatement.cpp
   ir/statements/switchStatement.cpp
@@ -407,6 +409,7 @@ set(ES2PANDA_LIB_SRC
   parser/ETSparserClasses.cpp
   parser/ETSparserEnums.cpp
   parser/ETSparserExpressions.cpp
+  parser/ETSparserNamespaces.cpp
   parser/ETSparserStatements.cpp
   parser/ETSparserTypes.cpp
   parser/ETSNolintParser.cpp
