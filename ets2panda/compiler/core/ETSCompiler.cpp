@@ -799,6 +799,9 @@ bool ETSCompiler::IsSucceedCompilationProxyMemberExpr(const ir::CallExpression *
     ETSGen *etsg = GetETSGen();
     auto *const calleeObject = expr->callee_->AsMemberExpression()->Object();
     auto const *const enumInterface = [calleeType = calleeObject->TsType()]() -> checker::ETSEnumInterface const * {
+        if (calleeType == nullptr) {
+            return nullptr;
+        }
         if (calleeType->IsETSEnumType()) {
             return calleeType->AsETSEnumType();
         }
@@ -1031,7 +1034,7 @@ void ETSCompiler::Compile(const ir::Identifier *expr) const
         etsg->LoadVar(expr, expr->Variable());
     }
 
-    if (smartType->IsETSReferenceType() && (expr->Parent() == nullptr || !expr->Parent()->IsTSAsExpression())) {
+    if (smartType->IsETSReferenceType()) {
         //  In case when smart cast type of identifier differs from initial variable type perform cast if required
         if (!etsg->Checker()->AsETSChecker()->Relation()->IsSupertypeOf(smartType, etsg->GetAccumulatorType())) {
             etsg->CastToReftype(expr, smartType, false);
@@ -1316,7 +1319,7 @@ void ETSCompiler::Compile([[maybe_unused]] const ir::TypeofExpression *expr) con
         etsg->LoadAccumulatorString(expr, "number");
         return;
     }
-    if (argType->IsETSStringType()) {
+    if (argType->IsETSStringType() || argType->IsETSStringEnumType()) {
         etsg->LoadAccumulatorString(expr, "string");
         return;
     }
@@ -2048,9 +2051,11 @@ void ETSCompiler::CompileCast(const ir::TSAsExpression *expr) const
         case checker::TypeFlag::ETS_STRING_ENUM:
             [[fallthrough]];
         case checker::TypeFlag::ETS_ENUM: {
-            auto *const signature = expr->TsType()->IsETSEnumType()
-                                        ? expr->TsType()->AsETSEnumType()->FromIntMethod().globalSignature
-                                        : expr->TsType()->AsETSStringEnumType()->FromIntMethod().globalSignature;
+            auto *const acuType = etsg->GetAccumulatorType();
+            if (acuType->IsETSEnumType() || acuType->IsETSStringEnumType()) {
+                break;
+            }
+            auto *const signature = expr->TsType()->AsEnumInterface()->FromIntMethod().globalSignature;
             ArenaVector<ir::Expression *> arguments(etsg->Allocator()->Adapter());
             arguments.push_back(expr->expression_);
             etsg->CallExact(expr, signature, arguments);
