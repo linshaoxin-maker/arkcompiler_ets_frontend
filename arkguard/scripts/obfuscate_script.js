@@ -18,8 +18,8 @@ const path = require('path');
 const { exec } = require('child_process');
 import { Extension } from '../src/common/type';
 
-function obfuscateDirs(obfConfig, obfDir) {
-  const command = `node --loader=ts-node/esm src/cli/SecHarmony.ts ${obfDir} --config-path ${obfConfig}`;
+export function obfuscateDirs(obfConfig, obfDir, casesFlag) {
+  const command = `node --loader=ts-node/esm src/cli/SecHarmony.ts ${obfDir} --config-path ${obfConfig} --cases-flag ${casesFlag}`;
   exec(command, (error, stdout, stderr) => {
     if (error) {
       console.error(`Error executing command: ${error.message}`);
@@ -43,7 +43,7 @@ function traverseDirs(rootDirPath, configPath) {
   });
 
   if (hasJsOrTsFiles) {
-    obfuscateDirs(path.join(configPath, configFile), rootDirPath);
+    obfuscateDirs(path.join(configPath, configFile), rootDirPath, 'grammar');
     return;
   }
 

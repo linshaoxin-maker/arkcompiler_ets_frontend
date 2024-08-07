@@ -1,0 +1,6 @@
+class A1 {
+  prop1: string;
+  method1(){
+    
+  }
+}

@@ -3,14 +3,12 @@
     "enableOptions": {
       "mNameObfuscation": {
         "mRenameProperties": true,
-        "mKeepStringProperty": false,
-        "mTopLevel": true
+        "mTopLevel": true,
+        "mKeepStringProperty": false
       },
       "mExportObfuscation": true
     },
-    "testsFolder": {
-
-    },
-    "outputRootDir":""
+    "inputDir": "../test/combinations/basic_grammar",
+    "outputDir": "../test/combinations_local/basic_grammar"
   }
 }

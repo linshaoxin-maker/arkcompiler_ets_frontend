@@ -15,13 +15,15 @@
 
 const fs = require('fs')
 const path = require('path')
+const obfuscate_script = require('./obfuscate_script');
+const { execSync } = require('child_process');
 
 const combinationConfigPath = path.join(__dirname, './combination_config.json');
-
+const indentation = 2;
 const defaultConfig = {
   "mCompact": false,
   "mRemoveComments": false,
-  "mOutputDir": "../local",
+  "mOutputDir": "",
   "mDisableConsole": false,
   "mSimplify": false,
   "mNameObfuscation": {
@@ -29,12 +31,22 @@ const defaultConfig = {
       "mNameGeneratorType": 1,
       "mDictionaryList": [],
       "mRenameProperties": false,
-      "mKeepStringProperty": false,
+      "mKeepStringProperty": true,
       "mTopLevel": false
   },
   "mExportObfuscation": false,
   "mEnableSourceMap": false,
-  "mEnableNameCache": false
+  "mEnableNameCache": false,
+  "mKeepFileSourceCode": {
+    "mKeepSourceOfPaths": [],
+    "mkeepFilesAndDependencies": []
+  },
+  "mRenameFileName": {
+      "mEnable": false,
+      "mNameGeneratorType": 1,
+      "mReservedFileNames": [],
+      "mOhmUrlUseNormalized": false
+  }
 }
 
 const configAlias = {
@@ -56,24 +68,73 @@ const configAlias = {
   "mEnableNameCache": false
 }
 
-function concatConfigsAlias(options, configAlias) {
-  const keys = Object.keys(target);
-  const result = ''
-  for (const key of keys) {
-    if (configAlias[key] == 'object') {
-      result += configAlias[key];
-    } else {
-      return undefined; // Return undefined if the key doesn't exist
+const getAliasValue = (config, target) => {
+  for (const key in target) {
+    if (target.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+      if (typeof target[key] === 'object' && !Array.isArray(target[key])) {
+        return getAliasValue(config[key], target[key]);
+      } else {
+        return config[key];
+      }
     }
   }
-  return result;
+  return undefined;
+};
+
+function run(inputAbsDir, configPath, type) {
+  const command = `node --loader=ts-node/esm src/cli/SecHarmony.ts ${inputAbsDir} --config-path ${configPath} --cases-flag ${type}`;
+  execSync(command);
 }
 
-function run(optionsCombinations, testsFolder) {
-  const outpurDir = {"mOutputDir": testsFolder};
+const getAliasFromConfig = (config, input) => {
+  let result = '';
+
+  const recursiveSearch = (configPart, inputPart) => {
+    for (const key in inputPart) {
+      if (inputPart.hasOwnProperty(key) && configPart.hasOwnProperty(key)) {
+        const inputVal = inputPart[key];
+        const configVal = configPart[key];
+
+        if (typeof inputVal === 'object' && !Array.isArray(inputVal)) {
+          recursiveSearch(configVal, inputVal);
+        } else {
+          const connector = result == '' ? '' : '+'
+          result += (connector + configVal)
+        }
+      }
+    }
+  };
+
+  recursiveSearch(config, input);
+  return result === '' ? 'default' : result;;
+}
+
+function mergeDeep(target, source) {
+  for (const key in source) {
+    if (source[key] instanceof Object && key in target) {
+      Object.assign(source[key], mergeDeep(target[key], source[key]));
+    }
+  }
+
+  Object.assign(target || {}, source);
+  return target;
+}
+
+function generateObfConfigg(optionsCombinations, inputDir, outputDir) {
+  const inputAbsDir = path.join(__dirname, inputDir);
+  const outputAbsDir = path.join(__dirname, outputDir);
+  
   for (let options of optionsCombinations) {
-    const configAlias = concatConfigsAlias(options, '');
-    const updatedConfig =  {...defaultConfig, ...options, ...outpurDir}
+    const aliasStr =  getAliasFromConfig(configAlias, options);
+    console.log('----aliasStr----',aliasStr)
+    const outpurDirForCurrentOption = path.join(outputAbsDir, aliasStr);
+    const tempConfigPath = path.join(__dirname, aliasStr + '_tempConfig.json');
+    const mergeConfig = mergeDeep(structuredClone(defaultConfig), options)
+    const updatedConfig =  Object.assign(mergeConfig, {mOutputDir: outpurDirForCurrentOption})
+    fs.writeFileSync(tempConfigPath, JSON.stringify(updatedConfig, null, indentation));
+    // run(inputAbsDir, tempConfigPath, 'combinations');
+    // delete temp config file
+    fs.unlinkSync(tempConfigPath);
   }
 }
 
@@ -102,7 +163,7 @@ function generateCombinations(obj) {
 
         subCombinations.push({ [subKey]: subValue });
       });
-      console.log('subCombinations---',subCombinations)
+      // console.log('subCombinations---',subCombinations)
       subCombinations.forEach(subComb => {
         const newComb = { ...current, [key]: subComb };
         result.push(newComb);
@@ -123,14 +184,13 @@ function generateCombinations(obj) {
 
 function readConfig() {
   const configs = JSON.parse(fs.readFileSync(combinationConfigPath, 'utf-8'));
-  console.log(configs)
   for (let key in configs) {
     const enableOptions = configs[key].enableOptions;
-    const testsFolder = configs[key].testsFolder;
-    const outputRootDir = configs[key].outputRootDir;
+    const inputDir = configs[key].inputDir;
+    const outputDir = configs[key].outputDir;
     const optionsCombinations = generateCombinations(enableOptions);
     console.log("混淆选项组合数量", optionsCombinations.length);
-    run(optionsCombinations, testsFolder)
+    generateObfConfigg(optionsCombinations, inputDir, outputDir)
   }
 }
 function main() {
