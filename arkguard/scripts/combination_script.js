@@ -15,8 +15,9 @@
 
 const fs = require('fs')
 const path = require('path')
-const obfuscate_script = require('./obfuscate_script');
+const resultStatistics = require('./execute_result_statistics');
 const { execSync } = require('child_process');
+const { dir } = require('console');
 
 const combinationConfigPath = path.join(__dirname, './combination_config.json');
 const indentation = 2;
@@ -51,21 +52,17 @@ const defaultConfig = {
 
 const configAlias = {
   "mCompact": "comp",
-  "mRemoveComments": false,
-  "mOutputDir": "../local",
+  "mRemoveComments": "rmComments",
   "mDisableConsole": "con",
-  "mSimplify": false,
   "mNameObfuscation": {
       "mEnable": "localVar",
-      "mNameGeneratorType": 1,
-      "mDictionaryList": [],
       "mRenameProperties": "prop",
       "mKeepStringProperty": "strProp",
       "mTopLevel": "top"
   },
   "mExportObfuscation": "export",
-  "mEnableSourceMap": false,
-  "mEnableNameCache": false
+  "mEnableSourceMap": "sourcemap",
+  "mEnableNameCache": "namecache"
 }
 
 const getAliasValue = (config, target) => {
@@ -81,9 +78,24 @@ const getAliasValue = (config, target) => {
   return undefined;
 };
 
-function run(inputAbsDir, configPath, type) {
-  const command = `node --loader=ts-node/esm src/cli/SecHarmony.ts ${inputAbsDir} --config-path ${configPath} --cases-flag ${type}`;
-  execSync(command);
+function run(inputDirs, configPath, type) {
+  console.log('----inputDirs----',inputDirs)
+  for (let inputDir of inputDirs){
+    const inputAbsDir = path.join(__dirname, inputDir)
+    const dirs = fs.readdirSync(inputAbsDir);
+    for (let oneCasePath of dirs) {
+      const inputPath = path.join(inputAbsDir, oneCasePath)
+      const command = `node --loader=ts-node/esm src/cli/SecHarmony.ts ${inputPath} --config-path ${configPath} --cases-flag ${type}`;
+      try {
+        const output = execSync(command, { encoding: 'utf-8' });
+        console.log(output);
+      } catch (error) {
+        console.error('Error:', error.message);
+        console.error('Stdout:', error.stdout.toString());
+        console.error('Stderr:', error.stderr.toString());
+      }
+    }
+  }
 }
 
 const getAliasFromConfig = (config, input) => {
@@ -120,19 +132,18 @@ function mergeDeep(target, source) {
   return target;
 }
 
-function generateObfConfigg(optionsCombinations, inputDir, outputDir) {
-  const inputAbsDir = path.join(__dirname, inputDir);
+function generateObfConfigg(optionsCombinations, inputDirs, outputDir) {
+
   const outputAbsDir = path.join(__dirname, outputDir);
-  
-  for (let options of optionsCombinations) {
-    const aliasStr =  getAliasFromConfig(configAlias, options);
-    console.log('----aliasStr----',aliasStr)
+  for (let i = 0; i < optionsCombinations.length; i++) {
+    const options = optionsCombinations[i];
+    const aliasStr = getAliasFromConfig(configAlias, options);
     const outpurDirForCurrentOption = path.join(outputAbsDir, aliasStr);
-    const tempConfigPath = path.join(__dirname, aliasStr + '_tempConfig.json');
-    const mergeConfig = mergeDeep(structuredClone(defaultConfig), options)
+    const tempConfigPath = path.join(__dirname, aliasStr + '_config.json');
+    const mergeConfig = mergeDeep(structuredClone(defaultConfig), structuredClone(options))
     const updatedConfig =  Object.assign(mergeConfig, {mOutputDir: outpurDirForCurrentOption})
     fs.writeFileSync(tempConfigPath, JSON.stringify(updatedConfig, null, indentation));
-    // run(inputAbsDir, tempConfigPath, 'combinations');
+    run(inputDirs, tempConfigPath, 'combinations');
     // delete temp config file
     fs.unlinkSync(tempConfigPath);
   }
@@ -146,6 +157,7 @@ function generateCombinations(obj) {
     if (remainingKeys.length === 0) return;
 
     const key = remainingKeys[0];
+
     const value = obj[key];
 
     if (typeof value === 'object' && !Array.isArray(value)) {
@@ -186,15 +198,24 @@ function readConfig() {
   const configs = JSON.parse(fs.readFileSync(combinationConfigPath, 'utf-8'));
   for (let key in configs) {
     const enableOptions = configs[key].enableOptions;
-    const inputDir = configs[key].inputDir;
+    const inputDirs = configs[key].inputDirs;
     const outputDir = configs[key].outputDir;
+    console.log('----------',inputDirs, configs[key]);
     const optionsCombinations = generateCombinations(enableOptions);
     console.log("混淆选项组合数量", optionsCombinations.length);
-    generateObfConfigg(optionsCombinations, inputDir, outputDir)
+    console.log("混淆选项组合", optionsCombinations);
+    generateObfConfigg(optionsCombinations, inputDirs, outputDir)
   }
+}
+
+function countResult() {
+  const testDirectory = path.resolve('./test/combinations_local');
+  resultStatistics.runTestAndCount(testDirectory);
 }
 function main() {
   readConfig();
+  // 统计结果
+  countResult();
 }
 
 main();

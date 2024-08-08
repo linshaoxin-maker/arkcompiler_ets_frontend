@@ -38,7 +38,6 @@ const minParametersNum: number = 3;
   }
 
   initOptionsSetting();
-  console.log('------program.opts()------', program.opts());
   let configPath: string = program.opts()?.configPath;
   configPath = path.resolve(configPath);
   let fileList: Array<string> = [];

@@ -16,6 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
+const resultStatistics = require('./execute_result_statistics');
 import { Extension } from '../src/common/type';
 
 export function obfuscateDirs(obfConfig, obfDir, casesFlag) {
@@ -55,6 +56,11 @@ function traverseDirs(rootDirPath, configPath) {
   }
 }
 
+function countResult() {
+  const testDirectory = path.resolve('./test/local');
+  resultStatistics.runTestAndCount(testDirectory);
+}
+
 function run() {
   const testCasesRootDir = path.join(__dirname, '../test/grammar/obfuscation_validation');
   traverseDirs(testCasesRootDir, testCasesRootDir);
@@ -62,6 +68,7 @@ function run() {
 
 function main() {
   run();
+  countResult();
 }
 
 main();

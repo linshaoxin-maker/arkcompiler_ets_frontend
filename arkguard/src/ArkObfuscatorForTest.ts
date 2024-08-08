@@ -86,7 +86,6 @@ export class ArkObfuscatorForTest extends ArkObfuscator {
     if (!path.isAbsolute(this.mCustomProfiles.mOutputDir)) {
       this.mCustomProfiles.mOutputDir = path.join(path.dirname(this.mConfigPath), this.mCustomProfiles.mOutputDir);
     }
-    console.log('----orignal output----',this.mCustomProfiles.mOutputDir);
 
     performancePrinter?.filesPrinter?.startEvent(EventList.ALL_FILES_OBFUSCATION);
     readProjectProperties(this.mSourceFiles, this.mCustomProfiles);
@@ -285,11 +284,11 @@ export class ArkObfuscatorForTest extends ArkObfuscator {
       resultPath = path.join(this.mCustomProfiles.mOutputDir, relativePath);
       return resultPath;
     } else if (this.mTestCasesFlag === 'combinations') {
-      const relativePath = sourceFilePath.replace(this.mSourceFiles[0], '');
-      console.log('---relativePath--', relativePath);
+      const outputDir = this.mCustomProfiles.mOutputDir;
+      const directory = outputDir.substring(0, outputDir.lastIndexOf('/') + 1);
+      const sourceBaseDir = directory.replace('combinations_local', 'combinations');
+      const relativePath = sourceFilePath.replace(sourceBaseDir, '');
       const resultPath = path.join(this.mCustomProfiles.mOutputDir, relativePath);
-      console.log('---this.mCustomProfiles.mOutputDir--', this.mCustomProfiles.mOutputDir);
-      console.log('---resultPath--', resultPath);
       return resultPath;
     } else {
       throw new Error('Please select a test type')
@@ -297,7 +296,9 @@ export class ArkObfuscatorForTest extends ArkObfuscator {
   }
 
   private writeContent(outputPath: string, mixedInfo: ObfuscationResultType): void {
-    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    if (!fs.existsSync(path.dirname(outputPath))) {
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    }
     fs.writeFileSync(outputPath, mixedInfo.content);
 
     if (this.mCustomProfiles.mEnableSourceMap && mixedInfo.sourceMap) {
