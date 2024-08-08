@@ -69,7 +69,7 @@ enum class ScopeType {
 #undef GEN_SCOPE_TYPES
 };
 
-enum class ResolveBindingOptions {
+enum class ResolveBindingOptions : uint8_t {
     BINDINGS = 1U << 0U,
     INTERFACES = 1U << 1U,
 
@@ -78,7 +78,7 @@ enum class ResolveBindingOptions {
 
 DEFINE_BITOPS(ResolveBindingOptions)
 
-enum class ResolveBindingFlags {
+enum class ResolveBindingFlags : uint8_t {
     ALL = 1U << 0U,
     TS_BEFORE_TRANSFORM = 1U << 1U,
     TS_AFTER_TRANSFORM = 1U << 2U,
@@ -109,7 +109,7 @@ enum class VariableKind {
     MODULE,
 };
 
-enum class VariableFlags {
+enum class VariableFlags : uint64_t {
     NONE = 0,
     OPTIONAL = 1 << 0,
     PROPERTY = 1 << 1,
