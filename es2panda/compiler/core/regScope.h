@@ -52,7 +52,7 @@ public:
     explicit LocalRegScope(PandaGen *pg);
     NO_COPY_SEMANTIC(LocalRegScope);
     NO_MOVE_SEMANTIC(LocalRegScope);
-    ~LocalRegScope();
+    ~LocalRegScope() noexcept;
 
     void *operator new(size_t) = delete;
     void *operator new[](size_t) = delete;
@@ -80,7 +80,7 @@ public:
     explicit FunctionRegScope(PandaGen *pg);
     NO_COPY_SEMANTIC(FunctionRegScope);
     NO_MOVE_SEMANTIC(FunctionRegScope);
-    ~FunctionRegScope();
+    ~FunctionRegScope() noexcept;
 
     void *operator new(size_t) = delete;
     void *operator new[](size_t) = delete;
