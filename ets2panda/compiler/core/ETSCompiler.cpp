@@ -331,6 +331,82 @@ static void ConvertRestArguments(checker::ETSChecker *const checker, const ir::E
     }
 }
 
+static void HandleUnionTypeSize(compiler::ETSGen *etsg, checker::Type const *const exprType,
+                                const ir::ForOfStatement *st, VReg objReg)
+{
+    ArenaVector<Label *> labels(etsg->Allocator()->Adapter());
+
+    for (auto it : exprType->AsETSUnionType()->ConstituentTypes()) {
+        labels.push_back(etsg->AllocLabel());
+        etsg->LoadAccumulator(st->Right(), objReg);
+        etsg->IsInstance(st->Right(), objReg, it);
+        etsg->BranchIfTrue(st, labels.back());
+    }
+
+    labels.push_back(etsg->AllocLabel());
+
+    for (size_t i = 0; i < exprType->AsETSUnionType()->ConstituentTypes().size(); i++) {
+        compiler::VReg unionReg = etsg->AllocReg();
+        auto currentType = exprType->AsETSUnionType()->ConstituentTypes()[i];
+        etsg->SetLabel(st->Right(), labels[i]);
+        etsg->LoadAccumulator(st, objReg);
+        etsg->CastToReftype(st->Right(), currentType, false);
+        etsg->StoreAccumulator(st, unionReg);
+        etsg->LoadAccumulator(st, unionReg);
+        if (currentType->IsETSArrayType()) {
+            etsg->LoadArrayLength(st, unionReg);
+        } else {
+            etsg->LoadStringLength(st);
+        }
+
+        if (i + 1 != exprType->AsETSUnionType()->ConstituentTypes().size()) {
+            etsg->Branch(st, labels.back());
+        }
+    }
+
+    etsg->SetLabel(st->Right(), labels.back());
+}
+
+static void HandleGetElementOfUnionType(compiler::ETSGen *etsg, checker::Type const *const exprType,
+                                        const ir::ForOfStatement *st, VReg objReg, VReg countReg)
+{
+    ArenaVector<Label *> labels(etsg->Allocator()->Adapter());
+
+    for (auto it : exprType->AsETSUnionType()->ConstituentTypes()) {
+        labels.push_back(etsg->AllocLabel());
+        etsg->LoadAccumulator(st->Right(), objReg);
+        etsg->IsInstance(st->Right(), objReg, it);
+        etsg->BranchIfTrue(st, labels.back());
+    }
+
+    labels.push_back(etsg->AllocLabel());
+
+    for (size_t i = 0; i < exprType->AsETSUnionType()->ConstituentTypes().size(); i++) {
+        compiler::VReg unionReg = etsg->AllocReg();
+        auto currentType = exprType->AsETSUnionType()->ConstituentTypes()[i];
+        etsg->SetLabel(st->Right(), labels[i]);
+        etsg->LoadAccumulator(st, objReg);
+        etsg->CastToReftype(st->Right(), currentType, false);
+        etsg->StoreAccumulator(st, unionReg);
+        etsg->LoadAccumulator(st, unionReg);
+        if (currentType->IsETSArrayType()) {
+            etsg->LoadAccumulator(st, countReg);
+            etsg->LoadArrayElement(st, unionReg);
+        } else {
+            etsg->LoadStringChar(st, unionReg, countReg);
+            etsg->ApplyCastToBoxingFlags(st, ir::BoxingUnboxingFlags::BOX_TO_CHAR);
+            etsg->SetAccumulatorType(etsg->EmitBoxedType(ir::BoxingUnboxingFlags::BOX_TO_CHAR, st));
+            etsg->CastToChar(st);
+        }
+
+        if (i + 1 != exprType->AsETSUnionType()->ConstituentTypes().size()) {
+            etsg->Branch(st, labels.back());
+        }
+    }
+
+    etsg->SetLabel(st->Right(), labels.back());
+}
+
 void ETSCompiler::Compile(const ir::ETSNewClassInstanceExpression *expr) const
 {
     ETSGen *etsg = GetETSGen();
@@ -1605,7 +1681,7 @@ void ETSCompiler::Compile(const ir::ForOfStatement *st) const
     compiler::LocalRegScope declRegScope(etsg, st->Scope()->DeclScope()->InitScope());
 
     checker::Type const *const exprType = st->Right()->TsType();
-    ASSERT(exprType->IsETSArrayType() || exprType->IsETSStringType());
+    ASSERT(exprType->IsETSArrayType() || exprType->IsETSStringType() || exprType->IsETSUnionType());
 
     st->Right()->Compile(etsg);
     compiler::VReg objReg = etsg->AllocReg();
@@ -1613,6 +1689,9 @@ void ETSCompiler::Compile(const ir::ForOfStatement *st) const
 
     if (exprType->IsETSArrayType()) {
         etsg->LoadArrayLength(st, objReg);
+    } else if (exprType->IsETSUnionType()) {
+        HandleUnionTypeSize(etsg, exprType, st, objReg);
+        std::cout << "alma" << std::endl;
     } else {
         etsg->LoadStringLength(st);
     }
@@ -1634,8 +1713,10 @@ void ETSCompiler::Compile(const ir::ForOfStatement *st) const
 
     auto lref = compiler::ETSLReference::Create(etsg, st->Left(), false);
 
-    if (st->Right()->TsType()->IsETSArrayType()) {
+    if (exprType->IsETSArrayType()) {
         etsg->LoadArrayElement(st, objReg);
+    } else if (exprType->IsETSUnionType()) {
+        HandleGetElementOfUnionType(etsg, exprType, st, objReg, countReg);
     } else {
         etsg->LoadStringChar(st, objReg, countReg);
     }
