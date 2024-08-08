@@ -141,6 +141,7 @@ void ObjectElaborationContext::Start()
         }
 
         if (!targetElementType) {
+            CHECK_NOT_NULL(propKeyType);
             if (propKeyType->HasTypeFlag(TypeFlag::LITERAL)) {
                 checker_->ThrowTypeError({"Object literal may only specify known properties, and ", propKeyType,
                                           " does not exist in type '", targetType_, "'."},
