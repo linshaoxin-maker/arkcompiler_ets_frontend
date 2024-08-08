@@ -1,0 +1,128 @@
+{
+  "type": "Program",
+  "statements": [
+    {
+      "type": "TSDeclareFunction",
+      "function": {
+        "type": "ScriptFunction",
+        "id": {
+          "type": "Identifier",
+          "name": "MyFunction",
+          "loc": {
+            "start": {
+              "line": 17,
+              "column": 18
+            },
+            "end": {
+              "line": 17,
+              "column": 28
+            }
+          }
+        },
+        "generator": false,
+        "async": false,
+        "expression": false,
+        "params": [
+          {
+            "type": "Identifier",
+            "name": "a",
+            "typeAnnotation": {
+              "type": "TSNumberKeyword",
+              "loc": {
+                "start": {
+                  "line": 17,
+                  "column": 32
+                },
+                "end": {
+                  "line": 17,
+                  "column": 38
+                }
+              }
+            },
+            "loc": {
+              "start": {
+                "line": 17,
+                "column": 29
+              },
+              "end": {
+                "line": 17,
+                "column": 30
+              }
+            }
+          },
+          {
+            "type": "Identifier",
+            "name": "b",
+            "typeAnnotation": {
+              "type": "TSNumberKeyword",
+              "loc": {
+                "start": {
+                  "line": 17,
+                  "column": 43
+                },
+                "end": {
+                  "line": 17,
+                  "column": 49
+                }
+              }
+            },
+            "loc": {
+              "start": {
+                "line": 17,
+                "column": 40
+              },
+              "end": {
+                "line": 17,
+                "column": 41
+              }
+            }
+          }
+        ],
+        "returnType": {
+          "type": "TSNumberKeyword",
+          "loc": {
+            "start": {
+              "line": 17,
+              "column": 52
+            },
+            "end": {
+              "line": 17,
+              "column": 58
+            }
+          }
+        },
+        "declare": true,
+        "loc": {
+          "start": {
+            "line": 17,
+            "column": 9
+          },
+          "end": {
+            "line": 17,
+            "column": 59
+          }
+        }
+      },
+      "loc": {
+        "start": {
+          "line": 17,
+          "column": 9
+        },
+        "end": {
+          "line": 17,
+          "column": 59
+        }
+      }
+    }
+  ],
+  "loc": {
+    "start": {
+      "line": 1,
+      "column": 1
+    },
+    "end": {
+      "line": 18,
+      "column": 1
+    }
+  }
+}

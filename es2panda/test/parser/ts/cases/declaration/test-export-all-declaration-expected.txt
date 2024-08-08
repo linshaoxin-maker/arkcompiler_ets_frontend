@@ -1,0 +1,43 @@
+{
+  "type": "Program",
+  "statements": [
+    {
+      "type": "ExportAllDeclaration",
+      "source": {
+        "type": "StringLiteral",
+        "value": "./test-export-named-declaration",
+        "loc": {
+          "start": {
+            "line": 17,
+            "column": 15
+          },
+          "end": {
+            "line": 17,
+            "column": 48
+          }
+        }
+      },
+      "exported": null,
+      "loc": {
+        "start": {
+          "line": 17,
+          "column": 1
+        },
+        "end": {
+          "line": 17,
+          "column": 49
+        }
+      }
+    }
+  ],
+  "loc": {
+    "start": {
+      "line": 1,
+      "column": 1
+    },
+    "end": {
+      "line": 17,
+      "column": 49
+    }
+  }
+}

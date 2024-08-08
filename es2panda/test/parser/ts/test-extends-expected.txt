@@ -1,0 +1,276 @@
+{
+  "type": "Program",
+  "statements": [
+    {
+      "type": "TSTypeAliasDeclaration",
+      "id": {
+        "type": "Identifier",
+        "name": "GetReturnType",
+        "loc": {
+          "start": {
+            "line": 17,
+            "column": 6
+          },
+          "end": {
+            "line": 17,
+            "column": 19
+          }
+        }
+      },
+      "typeAnnotation": {
+        "type": "TSConditionalType",
+        "checkType": {
+          "type": "TSTypeReference",
+          "typeName": {
+            "type": "Identifier",
+            "name": "T",
+            "loc": {
+              "start": {
+                "line": 17,
+                "column": 25
+              },
+              "end": {
+                "line": 17,
+                "column": 26
+              }
+            }
+          },
+          "loc": {
+            "start": {
+              "line": 17,
+              "column": 25
+            },
+            "end": {
+              "line": 17,
+              "column": 26
+            }
+          }
+        },
+        "extendsType": {
+          "type": "TSFunctionType",
+          "params": [
+            {
+              "type": "RestElement",
+              "argument": {
+                "type": "Identifier",
+                "name": "args",
+                "typeAnnotation": {
+                  "type": "TSArrayType",
+                  "elementType": {
+                    "type": "TSAnyKeyword",
+                    "loc": {
+                      "start": {
+                        "line": 17,
+                        "column": 45
+                      },
+                      "end": {
+                        "line": 17,
+                        "column": 48
+                      }
+                    }
+                  },
+                  "loc": {
+                    "start": {
+                      "line": 17,
+                      "column": 45
+                    },
+                    "end": {
+                      "line": 17,
+                      "column": 50
+                    }
+                  }
+                },
+                "loc": {
+                  "start": {
+                    "line": 17,
+                    "column": 39
+                  },
+                  "end": {
+                    "line": 17,
+                    "column": 43
+                  }
+                }
+              },
+              "loc": {
+                "start": {
+                  "line": 17,
+                  "column": 36
+                },
+                "end": {
+                  "line": 17,
+                  "column": 43
+                }
+              }
+            }
+          ],
+          "returnType": {
+            "type": "TSInferType",
+            "typeParameter": {
+              "type": "TSTypeParameter",
+              "name": {
+                "type": "Identifier",
+                "name": "R",
+                "loc": {
+                  "start": {
+                    "line": 17,
+                    "column": 61
+                  },
+                  "end": {
+                    "line": 17,
+                    "column": 62
+                  }
+                }
+              },
+              "in": false,
+              "out": false,
+              "loc": {
+                "start": {
+                  "line": 17,
+                  "column": 61
+                },
+                "end": {
+                  "line": 17,
+                  "column": 64
+                }
+              }
+            },
+            "loc": {
+              "start": {
+                "line": 17,
+                "column": 55
+              },
+              "end": {
+                "line": 17,
+                "column": 64
+              }
+            }
+          },
+          "loc": {
+            "start": {
+              "line": 17,
+              "column": 35
+            },
+            "end": {
+              "line": 17,
+              "column": 64
+            }
+          }
+        },
+        "trueType": {
+          "type": "TSTypeReference",
+          "typeName": {
+            "type": "Identifier",
+            "name": "R",
+            "loc": {
+              "start": {
+                "line": 17,
+                "column": 65
+              },
+              "end": {
+                "line": 17,
+                "column": 66
+              }
+            }
+          },
+          "loc": {
+            "start": {
+              "line": 17,
+              "column": 65
+            },
+            "end": {
+              "line": 17,
+              "column": 66
+            }
+          }
+        },
+        "falseType": {
+          "type": "TSNeverKeyword",
+          "loc": {
+            "start": {
+              "line": 17,
+              "column": 69
+            },
+            "end": {
+              "line": 17,
+              "column": 74
+            }
+          }
+        },
+        "loc": {
+          "start": {
+            "line": 17,
+            "column": 25
+          },
+          "end": {
+            "line": 17,
+            "column": 74
+          }
+        }
+      },
+      "typeParameters": {
+        "type": "TSTypeParameterDeclaration",
+        "params": [
+          {
+            "type": "TSTypeParameter",
+            "name": {
+              "type": "Identifier",
+              "name": "T",
+              "loc": {
+                "start": {
+                  "line": 17,
+                  "column": 20
+                },
+                "end": {
+                  "line": 17,
+                  "column": 21
+                }
+              }
+            },
+            "in": false,
+            "out": false,
+            "loc": {
+              "start": {
+                "line": 17,
+                "column": 20
+              },
+              "end": {
+                "line": 17,
+                "column": 22
+              }
+            }
+          }
+        ],
+        "loc": {
+          "start": {
+            "line": 17,
+            "column": 19
+          },
+          "end": {
+            "line": 17,
+            "column": 22
+          }
+        }
+      },
+      "loc": {
+        "start": {
+          "line": 17,
+          "column": 1
+        },
+        "end": {
+          "line": 17,
+          "column": 75
+        }
+      }
+    }
+  ],
+  "loc": {
+    "start": {
+      "line": 1,
+      "column": 1
+    },
+    "end": {
+      "line": 18,
+      "column": 1
+    }
+  }
+}

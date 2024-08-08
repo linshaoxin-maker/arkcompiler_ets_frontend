@@ -1,0 +1,1 @@
+SyntaxError: Type expected [test-type-expected.ts:17:11]
