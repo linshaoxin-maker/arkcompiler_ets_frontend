@@ -57,24 +57,26 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
     auto *const testType = expr->Check(this);
     auto *const conditionType = ETSBuiltinTypeAsConditionalType(testType);
 
-    if (conditionType == nullptr || !conditionType->IsConditionalExprType()) {
-        ThrowTypeError("Condition must be of possible condition type", expr->Start());
+    expr->SetTsType(conditionType);
+
+    if (conditionType == nullptr || (!conditionType->IsTypeError() && !conditionType->IsConditionalExprType())) {
+        LogTypeError("Condition must be of possible condition type", expr->Start());
+        return;
     }
 
     if (conditionType->IsETSVoidType()) {
-        ThrowTypeError("An expression of type 'void' cannot be tested for truthiness", expr->Start());
+        LogTypeError("An expression of type 'void' cannot be tested for truthiness", expr->Start());
+        return;
     }
 
     if (conditionType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
         FlagExpressionWithUnboxing(testType, conditionType, expr);
     }
-
-    expr->SetTsType(conditionType);
 }
 
 void ETSChecker::CheckNonNullish(ir::Expression const *expr)
 {
-    if (expr->TsType()->PossiblyETSNullish()) {
+    if (expr->TsTypeOrError()->PossiblyETSNullish()) {
         ThrowTypeError("Value is possibly nullish.", expr->Start());
     }
 }
@@ -399,8 +401,8 @@ Type *ETSChecker::GetTypeOfVariable(varbinder::Variable *const var)
         return GetTypeOfSetterGetter(var);
     }
 
-    if (var->TsType() != nullptr) {
-        return var->TsType();
+    if (var->TsTypeOrError() != nullptr) {
+        return var->TsTypeOrError();
     }
 
     // NOTE: kbaladurin. forbid usage of imported entities as types without declarations
@@ -578,11 +580,9 @@ Type *ETSChecker::GetTypeFromEnumReference([[maybe_unused]] varbinder::Variable 
 
     auto *const enumDecl = var->Declaration()->Node()->AsTSEnumDeclaration();
     if (auto *const itemInit = enumDecl->Members().front()->AsTSEnumMember()->Init(); itemInit->IsNumberLiteral()) {
-        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-        return CreateEnumIntClassFromEnumDeclaration(enumDecl);
+        return CreateEnumIntTypeFromEnumDeclaration(enumDecl);
     } else if (itemInit->IsStringLiteral()) {  // NOLINT(readability-else-after-return)
-        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-        return CreateEnumStringClassFromEnumDeclaration(enumDecl);
+        return CreateEnumStringTypeFromEnumDeclaration(enumDecl);
     } else {  // NOLINT(readability-else-after-return)
         ThrowTypeError("Invalid enumeration value type.", enumDecl->Start());
     }
@@ -648,6 +648,10 @@ Type *ETSChecker::ETSBuiltinTypeAsPrimitiveType(Type *objectType)
 
 Type *ETSChecker::ETSBuiltinTypeAsConditionalType(Type *const objectType)
 {
+    if (objectType->IsTypeError()) {
+        return objectType;
+    }
+
     if ((objectType == nullptr) || !objectType->IsConditionalExprType()) {
         return nullptr;
     }
