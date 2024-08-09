@@ -1195,10 +1195,6 @@ checker::ETSFunctionType *ETSChecker::BuildFunctionSignature(ir::ScriptFunction 
 
     AddSignatureFlags(func, signature);
 
-    if (!isArrow) {
-        nameVar->SetTsType(funcType);
-    }
-
     return funcType;
 }
 
