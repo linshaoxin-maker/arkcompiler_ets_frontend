@@ -63,7 +63,6 @@
 #include "ir/module/importSpecifier.h"
 #include "ir/module/exportSpecifier.h"
 #include "ir/module/exportNamedDeclaration.h"
-#include "ir/statements/assertStatement.h"
 #include "ir/statements/blockStatement.h"
 #include "ir/statements/ifStatement.h"
 #include "ir/statements/labelledStatement.h"
@@ -252,28 +251,6 @@ ir::Statement *ETSParser::ParseFunctionStatement([[maybe_unused]] const Statemen
 {
     ASSERT((flags & StatementParsingFlags::GLOBAL) == 0);
     ThrowSyntaxError("Nested functions are not allowed");
-}
-
-ir::Statement *ETSParser::ParseAssertStatement()
-{
-    lexer::SourcePosition startLoc = Lexer()->GetToken().Start();
-    Lexer()->NextToken();
-
-    ir::Expression *test = ParseExpression();
-    lexer::SourcePosition endLoc = test->End();
-    ir::Expression *second = nullptr;
-
-    if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COLON) {
-        Lexer()->NextToken();  // eat ':'
-        second = ParseExpression();
-        endLoc = second->End();
-    }
-
-    auto *asStatement = AllocNode<ir::AssertStatement>(test, second);
-    asStatement->SetRange({startLoc, endLoc});
-    ConsumeSemicolon(asStatement);
-
-    return asStatement;
 }
 
 ir::Statement *ETSParser::ParseTryStatement()

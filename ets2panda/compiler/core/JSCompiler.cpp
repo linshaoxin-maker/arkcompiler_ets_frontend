@@ -1486,11 +1486,6 @@ void JSCompiler::Compile([[maybe_unused]] const ir::ImportSpecifier *st) const
 {
     UNREACHABLE();
 }
-// Compile methods for STATEMENTS in alphabetical order
-void JSCompiler::Compile([[maybe_unused]] const ir::AssertStatement *st) const
-{
-    UNREACHABLE();
-}
 
 void JSCompiler::Compile(const ir::BlockStatement *st) const
 {

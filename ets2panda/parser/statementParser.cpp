@@ -35,7 +35,6 @@
 #include "ir/module/importDefaultSpecifier.h"
 #include "ir/module/importNamespaceSpecifier.h"
 #include "ir/module/importSpecifier.h"
-#include "ir/statements/assertStatement.h"
 #include "ir/statements/blockStatement.h"
 #include "ir/statements/breakStatement.h"
 #include "ir/statements/classDeclaration.h"
@@ -79,9 +78,6 @@ ir::Statement *ParserImpl::ParseStatement(StatementParsingFlags flags)
         }
         case lexer::TokenType::PUNCTUATOR_SEMI_COLON: {
             return ParseEmptyStatement();
-        }
-        case lexer::TokenType::KEYW_ASSERT: {
-            return ParseAssertStatement();
         }
         case lexer::TokenType::KEYW_EXPORT: {
             return ParseExportDeclaration(flags);
@@ -396,11 +392,6 @@ void ParserImpl::ParseDirectivePrologue(ArenaVector<ir::Statement *> *statements
             break;
         }
     }
-}
-
-ir::Statement *ParserImpl::ParseAssertStatement()
-{
-    return nullptr;
 }
 
 void ParserImpl::ValidateLabeledStatement([[maybe_unused]] lexer::TokenType type) {}
