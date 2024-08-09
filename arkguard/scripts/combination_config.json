@@ -2,12 +2,14 @@
   "basicGrammar": {
     "enableOptions": {
       "mNameObfuscation": {
-        "mRenameProperties": true
+        "mRenameProperties": true,
+        "mKeepStringProperty": false,
+        "mTopLevel": true
       },
       "mExportObfuscation": true
     },
     "inputDirs": [
-      "../test/combinations/basic_grammar/class_cases",
+      "../test/combinations/basic_grammar/export_import_cases",
       "../test/combinations/basic_grammar/function_cases"
     ],
     "outputDir": "../test/combinations_local/basic_grammar"
