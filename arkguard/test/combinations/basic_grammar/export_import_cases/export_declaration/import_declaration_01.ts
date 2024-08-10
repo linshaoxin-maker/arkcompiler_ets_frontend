@@ -6,6 +6,7 @@ import { var1, var2, var3, var4, var5, var6 } from './export_declaration_01'
 assert(foo1() === 1);
 assert(foo2().next().value === 1);
 assert(foo2().next().value === 2);
+
 assert(await foo3() === 3);
 assert((await foo4().next()).value === 4);
 

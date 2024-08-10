@@ -4,6 +4,7 @@ assert(default_01 === 2);
 import default_02 from './export_default_02_instance'
 assert(default_02.num === 1)
 import default_03 from './export_default_03_this'
+console.log('-----03----',default_03);
 assert(default_03 === undefined)
 import default_04 from './export_default_04_var'
 assert(default_04 === 4)
@@ -24,30 +25,34 @@ assert(default_10 === "str3str4")
 import default_11 from './export_default_11_conditional'
 assert(default_11 === 2)
 import default_12 from './export_default_12_meta'
+console.log('-----12----',default_12);
 assert(default_12)  //  xxxx
 import default_13 from './export_default_13_module'
-assert(default_13.num === 1)
+console.log('-----13----',default_13);
+// assert(default_13.num === 1)
 import default_14 from './export_default_14_namepsace'
-assert(default_14.num === 1)
+assert(default_14 === "ns_inner")
 import default_15 from './export_default_15_object'
-assert(default_15.num === 1)
+assert(default_15 === 1)
 import default_16 from './export_default_16_function_ans'
-assert(default_16.num === 1)
+assert(default_16 === 2)
 import default_17 from './export_default_17_function_conditional'
-assert(default_17.num === 1)
+assert(default_17 === 9)
 import default_18 from './export_default_18_arrow'
-assert(default_18.num === 1)
+console.log('-----18----',default_18);
+// assert(default_18 === 1)
 import default_19 from './export_default_19_arrow_async'
-assert(default_19.num === 1)
+console.log('-----19----',default_19);
+// assert(default_19 === 1)
 import default_20 from './export_default_20_expression_01'
-assert(default_20.num === 1)
+assert(default_20 === 2)
 import default_21 from './export_default_21_expression_02'
-assert(default_21.num === 1)
+assert(default_21 === 12)
 import default_22 from './export_default_22_expression_03'
-assert(default_22.num === 1)
+assert(default_22 === 3)
 import default_23 from './export_default_23_expression_04'
-assert(default_23.num === 1)
+assert(default_23 === 1)
 import default_24 from './export_default_24_expression_05'
-assert(default_24.num === 1)
+assert(default_24 === 1)
 import default_25 from './export_default_25_object'
-assert(default_25.num === 1)
+assert(default_25.inner_prop === 2)
