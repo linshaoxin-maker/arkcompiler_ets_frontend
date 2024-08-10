@@ -1058,6 +1058,10 @@ void ETSChecker::CheckConstructors(ir::ClassDefinition *classDef, ETSObjectType 
 {
     if (!classDef->IsDeclare()) {
         for (auto *it : classType->ConstructSignatures()) {
+            // Abstruct constructor don't need to check, there are no func body_ in it.
+            if (it->HasSignatureFlag(SignatureFlags::ABSTRACT)) {
+                continue;
+            }
             CheckCyclicConstructorCall(it);
             CheckImplicitSuper(classType, it);
             CheckThisOrSuperCallInConstructor(classType, it);
