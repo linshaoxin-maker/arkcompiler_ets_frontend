@@ -160,16 +160,8 @@ bool ETSChecker::EnhanceSubstitutionForType(const ArenaVector<Type *> &typeParam
                 ThrowTypeError({argumentType, " is not compatible with type ", tparam}, tparam->GetDeclNode()->Start());
             }
 
-            if (!IsCompatibleTypeArgument(tparam, argumentType, substitution)) {
-                return false;
-            }
-            if (substitution->find(originalTparam) != substitution->end() &&
-                substitution->at(originalTparam) != argumentType) {
-                ThrowTypeError({"Type parameter already instantiated with another type "},
-                               tparam->GetDeclNode()->Start());
-            }
             ETSChecker::EmplaceSubstituted(substitution, originalTparam, argumentType);
-            return true;
+            return IsCompatibleTypeArgument(tparam, argumentType, substitution);
         }
     }
 
@@ -804,10 +796,22 @@ Signature *ETSChecker::ChooseMostSpecificSignature(ArenaVector<Signature *> &sig
     // Multiple signatures with zero parameter because of inheritance.
     // Return the closest one in inheritance chain that is defined at the beginning of the vector.
     if (paramCount == 0) {
-        if (signatures.front()->RestVar() == nullptr) {
-            return signatures.front();
+        auto zeroParamSignature = std::find_if(signatures.begin(), signatures.end(),
+                                               [](auto *signature) { return signature->RestVar() == nullptr; });
+        // If there is a zero parameter signature, return that
+        if (zeroParamSignature != signatures.end()) {
+            return *zeroParamSignature;
         }
-        ThrowTypeError({"Call to `", signatures.front()->Function()->Id()->Name(), "` is ambiguous "}, pos);
+        // If there are multiple rest parameter signatures with different argument types, throw error
+        if (signatures.size() > 1 && std::any_of(signatures.begin(), signatures.end(), [signatures](const auto *param) {
+                return param->RestVar()->TsType() != signatures.front()->RestVar()->TsType();
+            })) {
+            ThrowTypeError({"Call to `", signatures.front()->Function()->Id()->Name(), "` is ambiguous "}, pos);
+        }
+        // Else return the signature with the rest parameter
+        auto restParamSignature = std::find_if(signatures.begin(), signatures.end(),
+                                               [](auto *signature) { return signature->RestVar() != nullptr; });
+        return *restParamSignature;
     }
 
     // Collect which signatures are most specific for each parameter.
@@ -947,7 +951,8 @@ void ETSChecker::CheckIdenticalOverloads(ETSFunctionType *func, ETSFunctionType 
     SavedTypeRelationFlagsContext savedFlagsCtx(Relation(), TypeRelationFlag::NO_RETURN_TYPE_CHECK);
 
     Relation()->IsIdenticalTo(func, overload);
-    if (Relation()->IsTrue()) {
+    if (Relation()->IsTrue() && func->CallSignatures()[0]->GetSignatureInfo()->restVar ==
+                                    overload->CallSignatures()[0]->GetSignatureInfo()->restVar) {
         ThrowTypeError("Function " + func->Name().Mutf8() + " is already declared.", currentFunc->Start());
     }
     if (HasSameAssemblySignature(func, overload)) {
@@ -1050,8 +1055,11 @@ SignatureInfo *ETSChecker::ComposeSignatureInfo(ir::ScriptFunction *func)
     }
 
     if (func->TypeParams() != nullptr) {
-        signatureInfo->typeParams = CreateUnconstrainedTypeParameters(func->TypeParams());
-        AssignTypeParameterConstraints(func->TypeParams());
+        auto [typeParamTypes, ok] = CreateUnconstrainedTypeParameters(func->TypeParams());
+        signatureInfo->typeParams = std::move(typeParamTypes);
+        if (ok) {
+            AssignTypeParameterConstraints(func->TypeParams());
+        }
     }
 
     for (auto *const it : func->Params()) {
@@ -1076,6 +1084,11 @@ SignatureInfo *ETSChecker::ComposeSignatureInfo(ir::ScriptFunction *func)
             ASSERT(paramVar);
 
             auto *const paramTypeAnnotation = param->TypeAnnotation();
+            if (paramIdent->TsType() == nullptr && paramTypeAnnotation == nullptr) {
+                ThrowTypeError({"The type of parameter '", paramIdent->Name(), "' cannot be determined"},
+                               param->Start());
+            }
+
             if (paramIdent->TsType() == nullptr) {
                 ASSERT(paramTypeAnnotation);
 
