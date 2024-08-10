@@ -175,6 +175,10 @@ export class ArkObfuscator {
     this.mWriteOriginalFile = flag;
   }
 
+  public getWriteOriginalFileForTest(): boolean {  
+    return this.mWriteOriginalFile;
+  }
+
   // Pass the collected whitelists related to property obfuscation to Arkguard.
   public addReservedSetForPropertyObf(properties: ReseverdSetForArkguard): void {
     if (properties.structPropertySet && properties.structPropertySet.size > 0) {
