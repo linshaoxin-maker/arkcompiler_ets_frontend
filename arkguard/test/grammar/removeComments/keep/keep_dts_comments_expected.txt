@@ -1,0 +1,90 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+declare const globalString: string;
+/**
+ * Enumeration of colors.
+ */
+declare enum ColorEnum {
+    /** Represents the color red */
+    RED,
+    /** Represents the color green */
+    GREEN,
+    /** Represents the color blue */
+    BLUE
+}
+/**
+ * Interface defining the structure of a configuration object.
+ */
+declare interface Config {
+    /** A string property */
+    configName: string;
+    isActive: boolean;
+    /**
+     * A method to apply the configuration.
+     * @param configName The name of the configuration
+     */
+    applyConfig(configName: string): void;
+}
+/**
+ * Class implementing Config interface.
+ */
+declare class ConfigManager implements Config {
+    /** A string property */
+    configName: string;
+    isActive: boolean;
+    constructor(configName: string, isActive: boolean);
+    /**
+     * A method to apply the configuration.
+     * @param configName The name of the configuration
+     */
+    applyConfig(configName: string): void;
+    /**
+     * A method to validate the configuration.
+     * @param isActive A boolean indicating if the configuration should be active
+     * @returns A boolean indicating if the configuration is valid
+     */
+    validateConfig(isActive: boolean): boolean;
+    /**
+     * A static method to get the default configuration.
+     */
+    static getDefaultConfig(): Config;
+}
+/**
+ * Function that takes a color enum value and returns a config object.
+ * @param color A value of ColorEnum
+ * @returns An object implementing Config
+ */
+declare function getConfigByColor(color: ColorEnum): Config;
+/**
+ * A namespace containing related constants and utilities.
+ */
+declare namespace AppUtilities {
+    const appName: string;
+    /** A function inside the namespace */
+    function nsFunc(): void;
+}
+declare module "config-module" {
+    /**
+     * function declaration containing exported functions.
+    */
+    export function initializeModule(): void;
+}
+/**
+ * A type representing user information.
+ */
+declare type UserInfo = {
+    /** The user's name */
+    userName: string;
+};
