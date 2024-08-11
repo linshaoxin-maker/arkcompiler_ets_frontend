@@ -17,10 +17,10 @@ const fs = require('fs')
 const path = require('path')
 const resultStatistics = require('./execute_result_statistics');
 const { execSync } = require('child_process');
-const { dir } = require('console');
 
 const combinationConfigPath = path.join(__dirname, './combination_config.json');
 const indentation = 2;
+const suiteType = 'combinations'
 const defaultConfig = {
   "mCompact": false,
   "mRemoveComments": false,
@@ -130,17 +130,25 @@ function mergeDeep(target, source) {
   return target;
 }
 
-function generateObfConfigg(optionsCombinations, inputDirs, outputDir) {
+function mergeConfig(options, optionsAlias, whitelist, outputDir) {
+  const whitelistConfig = whitelist[optionsAlias];
+  const outputConfig = {mOutputDir: outputDir};
+  let optionConfig = mergeDeep(structuredClone(options), structuredClone(whitelistConfig));
+  optionConfig = mergeDeep(optionConfig, outputConfig);
+  const mergedConfig = mergeDeep(structuredClone(defaultConfig), structuredClone(optionConfig));
+  return mergedConfig;
+}
+
+function generateObfConfigg(optionsCombinations, inputDirs, outputDir, whitelist) {
   const outputAbsDir = path.join(__dirname, outputDir);
   for (let i = 0; i < optionsCombinations.length; i++) {
     const options = optionsCombinations[i];
     const aliasStr = getAliasFromConfig(configAlias, options);
     const outpurDirForCurrentOption = path.join(outputAbsDir, aliasStr);
     const tempConfigPath = path.join(__dirname, aliasStr + '_config.json');
-    const mergeConfig = mergeDeep(structuredClone(defaultConfig), structuredClone(options))
-    const updatedConfig =  Object.assign(mergeConfig, {mOutputDir: outpurDirForCurrentOption})
-    fs.writeFileSync(tempConfigPath, JSON.stringify(updatedConfig, null, indentation));
-    run(inputDirs, tempConfigPath, 'combinations');
+    const mergedConfig = mergeConfig(options, aliasStr, whitelist, outpurDirForCurrentOption)
+    fs.writeFileSync(tempConfigPath, JSON.stringify(mergedConfig, null, indentation));
+    run(inputDirs, tempConfigPath, suiteType);
     // delete temp config file
     fs.unlinkSync(tempConfigPath);
   }
@@ -172,7 +180,7 @@ function generateCombinations(obj) {
 
         subCombinations.push({ [subKey]: subValue });
       });
-      // console.log('subCombinations---',subCombinations)
+
       subCombinations.forEach(subComb => {
         const newComb = { ...current, [key]: subComb };
         result.push(newComb);
@@ -197,10 +205,10 @@ function parseConfigAndRun() {
     const enableOptions = configs[key].enableOptions;
     const inputDirs = configs[key].inputDirs;
     const outputDir = configs[key].outputDir;
+    const whitelist = configs[key].whitelist
     const optionsCombinations = generateCombinations(enableOptions);
-    console.log("混淆选项组合数量", optionsCombinations.length);
-    console.log("混淆选项组合", optionsCombinations);
-    generateObfConfigg(optionsCombinations, inputDirs, outputDir)
+    console.log("混淆选项组合数量: ", optionsCombinations.length);
+    generateObfConfigg(optionsCombinations, inputDirs, outputDir, whitelist)
   }
 }
 
