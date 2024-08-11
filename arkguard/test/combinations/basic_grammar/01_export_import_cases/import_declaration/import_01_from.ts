@@ -28,15 +28,15 @@ assert(defaultApi1(2, 3) === 3);
 assert(module2.var1 === 1);
 assert(var1 === 1);
 assert(var2 === 2);
-assert(var3 === 1);
+assert(var3 === 3);
 assert(maxFunc1(3, 4) === 4);
 assert(maxFunc2(7, 8) === 8);
 assert(module3.var3 === 3);
 assert(maxFunc3(3, 4) === 4);
 assert(reduceFunc(5, 4) === 1);
 
-import "";
-import ''
+// import ""; TypeError: The argument 'id' must be a non-empty string. Received ''
+// import '';
 import './export_api'
 
 import { moduleAlias } from './export_api_02'

@@ -4,11 +4,15 @@ import { className1 } from './export_declaration_01'
 import { var1, var2, var3, var4, var5, var6 } from './export_declaration_01'
 
 assert(foo1() === 1);
-assert(foo2().next().value === 1);
-assert(foo2().next().value === 2);
+const function_iteraotr= foo2();
+assert(function_iteraotr.next().value === 1);
+assert(function_iteraotr.next().value === 2);
 
-assert(await foo3() === 3);
-assert((await foo4().next()).value === 4);
+async function assser_async() {
+  assert(await foo3() === 3);
+  assert((await foo4().next()).value === 4);
+}
+assser_async();
 
 let ins = new className1();
 assert(ins.prop === 'hello');

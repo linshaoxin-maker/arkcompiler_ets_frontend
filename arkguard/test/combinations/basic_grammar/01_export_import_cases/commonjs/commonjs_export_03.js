@@ -1,0 +1,1 @@
+module.exports = {obj_prop1: 1, obj_prop2: {inner_prop1: 2}}

@@ -86,8 +86,7 @@ function run(inputDirs, configPath, type) {
       const inputPath = path.join(inputAbsDir, oneCasePath)
       const command = `node --loader=ts-node/esm src/cli/SecHarmony.ts ${inputPath} --config-path ${configPath} --cases-flag ${type}`;
       try {
-        const output = execSync(command, { encoding: 'utf-8' });
-        console.log(output);
+        execSync(command, { encoding: 'utf-8' });
       } catch (error) {
         console.error('Error:', error.message);
         console.error('Stdout:', error.stdout.toString());
@@ -132,10 +131,6 @@ function mergeDeep(target, source) {
 }
 
 function generateObfConfigg(optionsCombinations, inputDirs, outputDir) {
-<<<<<<< HEAD
-=======
-
->>>>>>> b7993e19 (add the test cases)
   const outputAbsDir = path.join(__dirname, outputDir);
   for (let i = 0; i < optionsCombinations.length; i++) {
     const options = optionsCombinations[i];
@@ -196,20 +191,12 @@ function generateCombinations(obj) {
   return result;
 }
 
-<<<<<<< HEAD
 function parseConfigAndRun() {
-=======
-function readConfig() {
->>>>>>> b7993e19 (add the test cases)
   const configs = JSON.parse(fs.readFileSync(combinationConfigPath, 'utf-8'));
   for (let key in configs) {
     const enableOptions = configs[key].enableOptions;
     const inputDirs = configs[key].inputDirs;
     const outputDir = configs[key].outputDir;
-<<<<<<< HEAD
-=======
-    console.log('----------',inputDirs, configs[key]);
->>>>>>> b7993e19 (add the test cases)
     const optionsCombinations = generateCombinations(enableOptions);
     console.log("混淆选项组合数量", optionsCombinations.length);
     console.log("混淆选项组合", optionsCombinations);
@@ -222,12 +209,7 @@ function countResult() {
   resultStatistics.runTestAndCount(testDirectory);
 }
 function main() {
-<<<<<<< HEAD
   parseConfigAndRun();
-=======
-  readConfig();
-  // 统计结果
->>>>>>> b7993e19 (add the test cases)
   countResult();
 }
 

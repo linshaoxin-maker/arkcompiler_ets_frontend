@@ -25,9 +25,12 @@ const NonExecutableFile = ['name_as_export_api_1.ts', 'name_as_import_api_1.ts',
 function runTest(filePath) {
   try {
     const command = `node ./node_modules/ts-node/dist/bin.js ${filePath}`;
-    execSync(command);
+    execSync(command, { encoding: 'utf-8' });
   } catch (error) {
     console.error(`Test case ${filePath} failed:`, error);
+    console.error('Error:', error.message);
+    console.error('Stdout:', error.stdout.toString());
+    console.error('Stderr:', error.stderr.toString());
     return false;
   }
   return true;
