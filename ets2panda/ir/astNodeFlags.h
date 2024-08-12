@@ -18,19 +18,14 @@
 
 #include <cstdint>
 
-#include "util/enumbitops.h"
-
 namespace ark::es2panda::ir {
-
-using ENUMBITOPS_OPERATORS;
-
 enum class AstNodeFlags {
     NO_OPTS = 0,
     CHECKCAST = 1U << 0U,
-    CONVERT_TO_STRING = 1U << 1U,
-    ALLOW_REQUIRED_INSTANTIATION = 1U << 2U,
-    HAS_EXPORT_ALIAS = 1U << 3U
-    UNION_CAST_PRIMITIVE = 1U << 3U,
+    ENUM_GET_VALUE = 1U << 1U,
+    CONVERT_TO_STRING = 1U << 2U,
+    ALLOW_REQUIRED_INSTANTIATION = 1U << 3U,
+    UNION_CAST_PRIMITIVE = 1U << 4U,
 };
 
 enum class ModifierFlags : uint32_t {
@@ -112,41 +107,19 @@ enum class BoxingUnboxingFlags : uint32_t {
     BOX_TO_LONG = 1U << 5U,
     BOX_TO_FLOAT = 1U << 6U,
     BOX_TO_DOUBLE = 1U << 7U,
-    BOX_TO_ENUM = 1U << 8U,
-    UNBOX_TO_BOOLEAN = 1U << 9U,
-    UNBOX_TO_BYTE = 1U << 10U,
-    UNBOX_TO_SHORT = 1U << 11U,
-    UNBOX_TO_CHAR = 1U << 12U,
-    UNBOX_TO_INT = 1U << 13U,
-    UNBOX_TO_LONG = 1U << 14U,
-    UNBOX_TO_FLOAT = 1U << 15U,
-    UNBOX_TO_DOUBLE = 1U << 16U,
-    UNBOX_TO_ENUM = 1U << 17U,
+    UNBOX_TO_BOOLEAN = 1U << 8U,
+    UNBOX_TO_BYTE = 1U << 9U,
+    UNBOX_TO_SHORT = 1U << 10U,
+    UNBOX_TO_CHAR = 1U << 11U,
+    UNBOX_TO_INT = 1U << 12U,
+    UNBOX_TO_LONG = 1U << 13U,
+    UNBOX_TO_FLOAT = 1U << 14U,
+    UNBOX_TO_DOUBLE = 1U << 15U,
     BOXING_FLAG = BOX_TO_BOOLEAN | BOX_TO_BYTE | BOX_TO_SHORT | BOX_TO_CHAR | BOX_TO_INT | BOX_TO_LONG | BOX_TO_FLOAT |
-                  BOX_TO_DOUBLE | BOX_TO_ENUM,
+                  BOX_TO_DOUBLE,
     UNBOXING_FLAG = UNBOX_TO_BOOLEAN | UNBOX_TO_BYTE | UNBOX_TO_SHORT | UNBOX_TO_CHAR | UNBOX_TO_INT | UNBOX_TO_LONG |
-                    UNBOX_TO_FLOAT | UNBOX_TO_DOUBLE | UNBOX_TO_ENUM,
+                    UNBOX_TO_FLOAT | UNBOX_TO_DOUBLE,
 };
 }  // namespace ark::es2panda::ir
-
-namespace enumbitops {
-
-template <>
-struct IsAllowedType<ark::es2panda::ir::AstNodeFlags> : std::true_type {
-};
-
-template <>
-struct IsAllowedType<ark::es2panda::ir::ModifierFlags> : std::true_type {
-};
-
-template <>
-struct IsAllowedType<ark::es2panda::ir::ScriptFunctionFlags> : std::true_type {
-};
-
-template <>
-struct IsAllowedType<ark::es2panda::ir::BoxingUnboxingFlags> : std::true_type {
-};
-
-}  // namespace enumbitops
 
 #endif
