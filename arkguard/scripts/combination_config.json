@@ -9,7 +9,7 @@
       "mExportObfuscation": true
     },
     "inputDirs": [
-      "../test/combinations/basic_grammar/04_class_cases"
+      "../test/combinations/basic_grammar/function_cases"
     ],
     "outputDir": "../test/combinations_local/basic_grammar",
     "whitelist": {

@@ -16,7 +16,7 @@
         "mTopLevel": true,
         "mReservedToplevelNames": ["ViewPU"]
     },
-    "mEnableSourceMap": false,
-    "mEnableNameCache": false,
+    "mEnableSourceMap": true,
+    "mEnableNameCache": true,
     "mExportObfuscation": true
 }
