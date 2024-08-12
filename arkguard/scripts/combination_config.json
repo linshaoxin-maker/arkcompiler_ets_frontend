@@ -9,7 +9,7 @@
       "mExportObfuscation": true
     },
     "inputDirs": [
-      "../test/combinations/basic_grammar/04_class_cases"
+      "../test/combinations/basic_grammar/01_export_import_cases"
     ],
     "outputDir": "../test/combinations_local/basic_grammar",
     "whitelist": {
@@ -17,6 +17,12 @@
         "mNameObfuscation": {
           "mReservedToplevelNames": ["C3"],
           "mReservedProperties": []
+        }
+      },
+      "prop+export": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": [],
+          "mReservedProperties": ["var1", "var3", "addFunc", "reduceFunc", "moduleAlias"]
         }
       }
     }
