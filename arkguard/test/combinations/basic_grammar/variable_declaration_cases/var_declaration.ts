@@ -45,8 +45,7 @@ function function5(flag: boolean): number | undefined {
     var variable7: number = 10;
   }
   // var hoisting
-  // @ts-expect-error
-  return variable7; // There is an error in TS: Variable 'variable7' is used before being assigned. But in JS it's OK.
+  return variable7;
 }
 
 assert.strictEqual(function5(true), 10);
