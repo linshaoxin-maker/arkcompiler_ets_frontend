@@ -20,7 +20,7 @@ import {
   performancePrinter,
   renameIdentifierModule
 } from './ArkObfuscator';
-import { readProjectProperties } from './common/ApiReader';
+import { readProjectProperties } from './common/ApiReaderForTest';
 import { FileUtils } from './utils/FileUtils';
 import { EventList } from './utils/PrinterUtils';
 import { handleReservedConfig } from './utils/TransformUtil';
@@ -83,7 +83,7 @@ export class ArkObfuscatorForTest extends ArkObfuscator {
     }
 
     performancePrinter?.filesPrinter?.startEvent(EventList.ALL_FILES_OBFUSCATION);
-    readProjectProperties(this.mSourceFiles, this.mCustomProfiles);
+    readProjectProperties(this.mSourceFiles, structuredClone(this.mCustomProfiles), this);
     const propertyCachePath = path.join(this.mCustomProfiles.mOutputDir, 
                                         path.basename(this.mSourceFiles[0])); // Get dir name
     this.readPropertyCache(propertyCachePath);

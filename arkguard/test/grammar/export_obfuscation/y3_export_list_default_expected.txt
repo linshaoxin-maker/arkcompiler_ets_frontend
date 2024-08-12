@@ -12,8 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-function b6(c6: number, d6: number) {
-    return c6 / d6;
+function a6(b6: number, c6: number) {
+    return b6 / c6;
 }
-export { b6 as default };
-
+export { a6 as default };
