@@ -30,16 +30,6 @@ ETSChecker *ETSAnalyzer::GetETSChecker() const
     return static_cast<ETSChecker *>(GetChecker());
 }
 
-// from as folder
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::NamedType *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::PrefixAssertionExpression *expr) const
-{
-    UNREACHABLE();
-}
 // from base folder
 checker::Type *ETSAnalyzer::Check(ir::CatchClause *st) const
 {
@@ -115,16 +105,6 @@ checker::Type *ETSAnalyzer::Check(ir::ClassStaticBlock *st) const
     checker->AddStatus(checker::CheckerStatus::IN_STATIC_BLOCK | checker::CheckerStatus::IN_STATIC_CONTEXT);
     func->Body()->Check(checker);
     return st->TsType();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::Decorator *st) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::MetaProperty *expr) const
-{
-    UNREACHABLE();
 }
 
 // Satisfy the Chinese code checker
@@ -247,16 +227,6 @@ void ETSAnalyzer::CheckMethodModifiers(ir::MethodDefinition *node) const
     }
 }
 
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::Property *expr) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ScriptFunction *node) const
-{
-    UNREACHABLE();
-}
-
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::SpreadElement *expr) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -271,31 +241,6 @@ checker::Type *ETSAnalyzer::Check(ir::TemplateElement *expr) const
     ETSChecker *checker = GetETSChecker();
     expr->SetTsType(checker->CreateETSStringLiteralType(expr->Raw()));
     return expr->TsType();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSIndexSignature *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSMethodSignature *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSPropertySignature *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSSignatureDeclaration *node) const
-{
-    UNREACHABLE();
-}
-// from ets folder
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSScript *node) const
-{
-    UNREACHABLE();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ETSClassLiteral *expr) const
@@ -370,11 +315,6 @@ checker::Type *ETSAnalyzer::Check(ir::ETSFunctionType *node) const
 
     node->SetTsType(interfaceType);
     return interfaceType;
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSImportDeclaration *node) const
-{
-    UNREACHABLE();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ETSLaunchExpression *expr) const
@@ -561,12 +501,6 @@ checker::Type *ETSAnalyzer::Check(ir::ETSStructDeclaration *node) const
     return nullptr;
 }
 
-checker::Type *ETSAnalyzer::Check(ir::ETSTuple *node) const
-{
-    (void)node;
-    UNREACHABLE();
-}
-
 checker::Type *ETSAnalyzer::Check(ir::ETSTypeReference *node) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -587,17 +521,6 @@ checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSNullType *node) const
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSUndefinedType *node) const
 {
     return nullptr;
-}
-
-checker::Type *ETSAnalyzer::Check(ir::ETSUnionType *node) const
-{
-    (void)node;
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSWildcardType *node) const
-{
-    UNREACHABLE();
 }
 
 // compile methods for EXPRESSIONS in alphabetical order
@@ -1124,21 +1047,6 @@ checker::Type *ETSAnalyzer::Check(ir::CallExpression *expr) const
     return expr->TsType();
 }
 
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ChainExpression *expr) const
-{
-    UNREACHABLE();  // eliminated in OptionalLowering
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ClassExpression *expr) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ETSReExportDeclaration *expr) const
-{
-    UNREACHABLE();
-}
-
 checker::Type *ETSAnalyzer::Check(ir::ConditionalExpression *expr) const
 {
     if (expr->TsType() != nullptr) {
@@ -1196,16 +1104,6 @@ checker::Type *ETSAnalyzer::Check(ir::ConditionalExpression *expr) const
     return expr->TsType();
 }
 
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::DirectEvalExpression *expr) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::FunctionExpression *expr) const
-{
-    UNREACHABLE();
-}
-
 checker::Type *ETSAnalyzer::Check(ir::Identifier *expr) const
 {
     if (expr->TsType() == nullptr) {
@@ -1223,11 +1121,6 @@ checker::Type *ETSAnalyzer::Check(ir::Identifier *expr) const
         checker->Context().CheckIdentifierSmartCastCondition(expr);
     }
     return expr->TsType();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ImportExpression *expr) const
-{
-    UNREACHABLE();
 }
 
 checker::Type *ETSAnalyzer::SetAndAdjustType(ETSChecker *checker, ir::MemberExpression *expr,
@@ -1329,10 +1222,6 @@ checker::Type *ETSAnalyzer::Check(ir::MemberExpression *expr) const
     checker->ThrowTypeError({"Cannot access property of non-object or non-enum type"}, expr->Object()->Start());
 }
 
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::NewExpression *expr) const
-{
-    UNREACHABLE();
-}
 checker::Type *ETSAnalyzer::PreferredType(ir::ObjectExpression *expr) const
 {
     return expr->preferredType_;
@@ -1455,11 +1344,6 @@ void ETSAnalyzer::CheckObjectExprProps(const ir::ObjectExpression *expr) const
     }
 }
 
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::OmittedExpression *expr) const
-{
-    UNREACHABLE();
-}
-
 checker::Type *ETSAnalyzer::Check(ir::OpaqueTypeNode *expr) const
 {
     return expr->TsType();
@@ -1489,11 +1373,6 @@ checker::Type *ETSAnalyzer::Check(ir::SuperExpression *expr) const
 
     expr->SetTsType(checker->CheckThisOrSuperAccess(expr, checker->Context().ContainingClass()->SuperType(), "super"));
     return expr->TsType();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TaggedTemplateExpression *expr) const
-{
-    UNREACHABLE();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TemplateLiteral *expr) const
@@ -1674,11 +1553,6 @@ checker::Type *ETSAnalyzer::Check(ir::UpdateExpression *expr) const
     return expr->TsType();
 }
 
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::YieldExpression *expr) const
-{
-    UNREACHABLE();
-}
-
 // compile methods for LITERAL EXPRESSIONS in alphabetical order
 checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::BigIntLiteral *expr) const
 {
@@ -1736,11 +1610,6 @@ checker::Type *ETSAnalyzer::Check(ir::NumberLiteral *expr) const
     return expr->TsType();
 }
 
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::RegExpLiteral *expr) const
-{
-    UNREACHABLE();
-}
-
 checker::Type *ETSAnalyzer::Check(ir::StringLiteral *expr) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -1748,33 +1617,6 @@ checker::Type *ETSAnalyzer::Check(ir::StringLiteral *expr) const
         expr->SetTsType(checker->CreateETSStringLiteralType(expr->Str()));
     }
     return expr->TsType();
-}
-
-checker::Type *ETSAnalyzer::Check(ir::UndefinedLiteral *expr) const
-{
-    (void)expr;
-    UNREACHABLE();
-}
-
-// compile methods for MODULE-related nodes in alphabetical order
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ExportAllDeclaration *st) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ExportDefaultDeclaration *st) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ExportNamedDeclaration *st) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ExportSpecifier *st) const
-{
-    UNREACHABLE();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ImportDeclaration *st) const
@@ -1788,11 +1630,6 @@ checker::Type *ETSAnalyzer::Check(ir::ImportDeclaration *st) const
     }
 
     return type;
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ImportDefaultSpecifier *st) const
-{
-    UNREACHABLE();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::ImportNamespaceSpecifier *st) const
@@ -1815,11 +1652,6 @@ checker::Type *ETSAnalyzer::Check(ir::ImportNamespaceSpecifier *st) const
     }
 
     return checker->GetImportSpecifierObjectType(importDecl, st->Local()->AsIdentifier());
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ImportSpecifier *st) const
-{
-    UNREACHABLE();
 }
 
 // compile methods for STATEMENTS in alphabetical order
@@ -1905,11 +1737,6 @@ checker::Type *ETSAnalyzer::Check(ir::ContinueStatement *st) const
     return nullptr;
 }
 
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::DebuggerStatement *st) const
-{
-    UNREACHABLE();
-}
-
 checker::Type *ETSAnalyzer::Check(ir::DoWhileStatement *st) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -1934,11 +1761,6 @@ checker::Type *ETSAnalyzer::Check(ir::ExpressionStatement *st) const
 {
     ETSChecker *checker = GetETSChecker();
     return st->GetExpression()->Check(checker);
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::ForInStatement *st) const
-{
-    UNREACHABLE();
 }
 
 // NOLINTBEGIN(modernize-avoid-c-arrays)
@@ -2033,11 +1855,6 @@ checker::Type *ETSAnalyzer::Check(ir::ForUpdateStatement *st) const
 
     checker->Context().ExitLoop(smartCasts, clearFlag, st);
     return nullptr;
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::FunctionDeclaration *st) const
-{
-    UNREACHABLE();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::IfStatement *st) const
@@ -2187,11 +2004,6 @@ checker::Type *ETSAnalyzer::Check(ir::ReturnStatement *st) const
     }
 
     return nullptr;
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::SwitchCaseStatement *st) const
-{
-    UNREACHABLE();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::SwitchStatement *st) const
@@ -2364,12 +2176,6 @@ checker::Type *ETSAnalyzer::Check(ir::WhileStatement *st) const
     return nullptr;
 }
 
-// from ts folder
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSAnyKeyword *node) const
-{
-    UNREACHABLE();
-}
-
 checker::Type *ETSAnalyzer::Check(ir::TSArrayType *node) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -2442,31 +2248,6 @@ checker::Type *ETSAnalyzer::Check(ir::TSAsExpression *expr) const
     return expr->TsType();
 }
 
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSBigintKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSBooleanKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSClassImplements *expr) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSConditionalType *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSConstructorType *node) const
-{
-    UNREACHABLE();
-}
-
 checker::Type *ETSAnalyzer::Check(ir::TSEnumDeclaration *st) const
 {
     ETSChecker *checker = GetETSChecker();
@@ -2490,46 +2271,6 @@ checker::Type *ETSAnalyzer::Check(ir::TSEnumDeclaration *st) const
     }
 
     return st->TsType();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSEnumMember *st) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSExternalModuleReference *expr) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSFunctionType *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSImportEqualsDeclaration *st) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSImportType *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSIndexedAccessType *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSInferType *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSInterfaceBody *expr) const
-{
-    UNREACHABLE();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TSInterfaceDeclaration *st) const
@@ -2558,46 +2299,6 @@ checker::Type *ETSAnalyzer::Check(ir::TSInterfaceDeclaration *st) const
     return nullptr;
 }
 
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSInterfaceHeritage *expr) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSIntersectionType *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSLiteralType *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSMappedType *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSModuleBlock *st) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSModuleDeclaration *st) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSNamedTupleMember *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSNeverKeyword *node) const
-{
-    UNREACHABLE();
-}
-
 checker::Type *ETSAnalyzer::Check(ir::TSNonNullExpression *expr) const
 {
     if (expr->TsType() == nullptr) {
@@ -2621,31 +2322,6 @@ checker::Type *ETSAnalyzer::Check(ir::TSNonNullExpression *expr) const
     }
     expr->SetOriginalType(expr->TsType());
     return expr->TsType();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSNullKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSNumberKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSObjectKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSParameterProperty *expr) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSParenthesizedType *node) const
-{
-    UNREACHABLE();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TSQualifiedName *expr) const
@@ -2679,21 +2355,6 @@ checker::Type *ETSAnalyzer::Check(ir::TSQualifiedName *expr) const
     }
 
     checker->ThrowTypeError({"'", expr->Right()->Name(), "' type does not exist."}, expr->Right()->Start());
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSStringKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSThisType *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTupleType *node) const
-{
-    UNREACHABLE();
 }
 
 checker::Type *ETSAnalyzer::Check(ir::TSTypeAliasDeclaration *st) const
@@ -2739,75 +2400,5 @@ checker::Type *ETSAnalyzer::Check(ir::TSTypeAliasDeclaration *st) const
     }
 
     return nullptr;
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypeAssertion *expr) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypeLiteral *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypeOperator *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypeParameter *expr) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypeParameterDeclaration *expr) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypeParameterInstantiation *expr) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypePredicate *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypeQuery *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSTypeReference *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSUndefinedKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSUnionType *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSUnknownKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::TSVoidKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-checker::Type *ETSAnalyzer::Check([[maybe_unused]] ir::DummyNode *expr) const
-{
-    UNREACHABLE();
 }
 }  // namespace ark::es2panda::checker
