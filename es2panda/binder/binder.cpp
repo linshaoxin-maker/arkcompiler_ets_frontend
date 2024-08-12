@@ -378,7 +378,7 @@ void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name, cons
     }
     functionScopes_.push_back(funcScope);
     funcScope->SetInFunctionScopes();
-    if (!util::Helpers::IsDefaultApiVersion(Program()->TargetApiVersion(), Program()->GetTargetApiSubVersion())) {
+    if (VersionManager::GetVersion().IsFuncNameManglingRefactoringSupported()) {
         funcScope->SetSelfScopeName(name);
         auto recordName = program_->FormatedRecordName().Mutf8();
         funcScope->BindNameWithScopeInfo(name, util::UString(recordName, Allocator()).View());
@@ -575,17 +575,22 @@ void Binder::BuildVarDeclarator(ir::VariableDeclarator *varDecl)
     BuildVarDeclaratorId(varDecl, varDecl->Id());
 }
 
+void Binder::BuildClassName(const ir::ClassDefinition *classDef)
+{
+    util::StringView className = classDef->GetName();
+    ASSERT(!className.Empty());
+    ScopeFindResult res = scope_->Find(className);
+
+    ASSERT(res.variable && (res.variable->Declaration()->IsClassDecl() ||
+           (res.variable->Declaration()->IsFunctionDecl() &&
+           res.variable->Declaration()->AsFunctionDecl()->GetDeclClass() != nullptr)));
+    res.variable->AddFlag(VariableFlags::INITIALIZED);
+}
+
 void Binder::BuildClassDefinition(ir::ClassDefinition *classDef)
 {
     if (classDef->Parent()->IsClassDeclaration()) {
-        util::StringView className = classDef->GetName();
-        ASSERT(!className.Empty());
-        ScopeFindResult res = scope_->Find(className);
-
-        ASSERT(res.variable && (res.variable->Declaration()->IsClassDecl() ||
-               (res.variable->Declaration()->IsFunctionDecl() &&
-               res.variable->Declaration()->AsFunctionDecl()->GetDeclClass() != nullptr)));
-        res.variable->AddFlag(VariableFlags::INITIALIZED);
+        BuildClassName(classDef);
     }
 
     auto scopeCtx = LexicalScope<ClassScope>::Enter(this, classDef->Scope());
@@ -607,7 +612,8 @@ void Binder::BuildClassDefinition(ir::ClassDefinition *classDef)
     }
 
     // new class features in ecma2022 are only supported for api11 and above
-    if (Program()->TargetApiVersion() > 10 && !(bindingFlags_ & ResolveBindingFlags::TS_BEFORE_TRANSFORM)) {
+    if (VersionManager::GetVersion().IsClassSupported()
+        && !(bindingFlags_ & ResolveBindingFlags::TS_BEFORE_TRANSFORM)) {
         classDef->BuildClassEnvironment(program_->UseDefineSemantic());
     }
 
@@ -764,11 +770,9 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
             if ((inSendableClass_ && !scriptFunc->IsStaticInitializer()) || inSendableFunction_) {
                 scriptFunc->SetInSendable();
             }
-            bool enableSendableClass = program_->TargetApiVersion() >=
-                util::Helpers::SENDABLE_CLASS_MIN_SUPPORTED_API_VERSION;
             util::Helpers::ScanDirectives(const_cast<ir::ScriptFunction *>(scriptFunc), Program()->GetLineIndex(),
-                enableSendableClass,
-                !util::Helpers::IsDefaultApiVersion(program_->TargetApiVersion(), program_->GetTargetApiSubVersion()));
+                VersionManager::GetVersion().IsSendableClassSupported(),
+                VersionManager::GetVersion().IsSendableFunctionSupported());
 
             if (scriptFunc->IsConstructor() && util::Helpers::GetClassDefiniton(scriptFunc)->IsSendable()) {
                 scriptFunc->SetInSendable();
@@ -837,7 +841,7 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
             /* for ts tranformer cases, all class properties are implemented by transformer in api10 and
              * only public instance class properties are implemented by transformer in api11*/
             auto *prop = childNode->AsClassProperty();
-            if (Program()->Extension() == ScriptExtension::TS && (Program()->TargetApiVersion() < 11 ||
+            if (Program()->Extension() == ScriptExtension::TS && (!VersionManager::GetVersion().IsClassSupported() ||
                 (!prop->IsStatic() && !prop->IsPrivate()))) {
                 const ir::ScriptFunction *ctor = util::Helpers::GetContainingConstructor(prop);
                 auto scopeCtx = LexicalScope<FunctionScope>::Enter(this, ctor->Scope());

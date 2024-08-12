@@ -58,8 +58,7 @@ public:
 static void GenerateBase64Output(panda::pandasm::Program *prog,
                                  const std::unique_ptr<panda::es2panda::aot::Options> &options)
 {
-    auto pandaFile = panda::pandasm::AsmEmitter::Emit(*prog, nullptr, options->CompilerOptions().targetApiVersion,
-        options->CompilerOptions().targetApiSubVersion);
+    auto pandaFile = panda::pandasm::AsmEmitter::Emit(*prog, nullptr);
     const uint8_t *buffer = pandaFile->GetBase();
     size_t size = pandaFile->GetPtr().GetSize();
     std::string content(reinterpret_cast<const char*>(buffer), size);
@@ -312,8 +311,7 @@ int Run(int argc, const char **argv)
     }
 
     if (options->CompilerOptions().targetBcVersion) {
-        auto bcVersionByApi = panda::panda_file::GetVersionByApi(options->CompilerOptions().targetApiVersion,
-            options->CompilerOptions().targetApiSubVersion);
+        auto bcVersionByApi = VersionManager::GetVersion().GetFileFormatVersion();
         std::cout << panda::panda_file::GetVersion(bcVersionByApi.value());
         return 0;
     }

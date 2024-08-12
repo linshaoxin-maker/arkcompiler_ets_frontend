@@ -108,7 +108,6 @@ struct CompilerOptions {
     PatchFixOptions patchFixOptions;
     bool bcVersion {false};
     bool bcMinVersion {false};
-    int targetApiVersion {0};
     bool targetBcVersion {false};
     std::unordered_map<std::string, std::string> cacheFiles;
     std::string transformLib {};
@@ -120,7 +119,6 @@ struct CompilerOptions {
     bool updatePkgVersionForAbcInput {false};
     bool removeRedundantFile {false};
     bool dumpString {false};
-    std::string targetApiSubVersion;
     std::string moduleRecordFieldName;
     bool enableAnnotations;
 };

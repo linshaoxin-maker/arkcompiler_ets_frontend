@@ -52,7 +52,6 @@ namespace panda::es2panda::compiler {
 
 void PandaGen::SetFunctionKind()
 {
-    int targetApiVersion = Binder()->Program()->TargetApiVersion();
     if (rootNode_->IsProgram()) {
         funcKind_ = panda::panda_file::FunctionKind::FUNCTION;
         return;
@@ -84,7 +83,7 @@ void PandaGen::SetFunctionKind()
 
         funcKind_ = panda::panda_file::FunctionKind::ASYNC_FUNCTION;
         
-        if (func->IsSendable() && targetApiVersion >= util::Helpers::SENDABLE_FUNCTION_MIN_SUPPORTED_API_VERSION) {
+        if (func->IsSendable()) {
             funcKind_ |= panda::panda_file::FunctionKind::SENDABLE_FUNCTION;
         }
         return;
@@ -102,7 +101,7 @@ void PandaGen::SetFunctionKind()
 
     funcKind_ = panda::panda_file::FunctionKind::FUNCTION;
 
-    if (func->IsSendable() && targetApiVersion >= util::Helpers::SENDABLE_FUNCTION_MIN_SUPPORTED_API_VERSION) {
+    if (func->IsSendable()) {
         funcKind_ |= panda::panda_file::FunctionKind::SENDABLE_FUNCTION;
     }
 }
@@ -579,8 +578,7 @@ void PandaGen::StoreObjByName(const ir::AstNode *node, VReg obj, const util::Str
 
 void PandaGen::DefineFieldByName(const ir::AstNode *node, VReg obj, const util::StringView &prop)
 {
-    if (util::Helpers::IsDefaultApiVersion(Binder()->Program()->TargetApiVersion(),
-        Binder()->Program()->GetTargetApiSubVersion())) {
+    if (!VersionManager::GetVersion().IsPerformanceOptimizationSupported()) {
         ra_.Emit<Definefieldbyname>(node, 0, prop, obj);
         strings_.insert(prop);
         return;
@@ -1099,8 +1097,7 @@ void PandaGen::GreaterEqual(const ir::AstNode *node, VReg lhs)
 
 void PandaGen::IsTrue(const ir::AstNode *node)
 {
-    if (util::Helpers::IsDefaultApiVersion(Binder()->Program()->TargetApiVersion(),
-        Binder()->Program()->GetTargetApiSubVersion())) {
+    if (!VersionManager::GetVersion().IsPerformanceOptimizationSupported()) {
         ra_.Emit<Istrue>(node);
         return;
     }
@@ -1162,8 +1159,7 @@ void PandaGen::BranchIfNotTrue(const ir::AstNode *node, Label *target)
 
 void PandaGen::BranchIfFalse(const ir::AstNode *node, Label *target)
 {
-    if (util::Helpers::IsDefaultApiVersion(Binder()->Program()->TargetApiVersion(),
-        Binder()->Program()->GetTargetApiSubVersion())) {
+    if (!VersionManager::GetVersion().IsPerformanceOptimizationSupported()) {
         ra_.Emit<Isfalse>(node);
         ra_.Emit<Jnez>(node, target);
         return;
@@ -1783,12 +1779,11 @@ void PandaGen::LoadExternalModuleVariable(const ir::AstNode *node, const binder:
 {
     auto index = variable->Index();
 
-    auto targetApiVersion = Binder()->Program()->TargetApiVersion();
     bool isLazy = variable->Declaration()->Node()->IsImportSpecifier() ?
         variable->Declaration()->Node()->AsImportSpecifier()->IsLazy() : false;
     if (isLazy) {
         // Change the behavior of using imported object in sendable class since api12
-        if (inSendable_ && targetApiVersion >= util::Helpers::SENDABLE_LAZY_LOADING_MIN_SUPPORTED_API_VERSION) {
+        if (inSendable_ && VersionManager::GetVersion().IsSendableLazyLoadingSupported()) {
             index <= util::Helpers::MAX_INT8 ? ra_.Emit<CallruntimeLdlazysendablemodulevar>(node, index) :
                                                ra_.Emit<CallruntimeWideldlazysendablemodulevar>(node, index);
             return;
@@ -1800,7 +1795,7 @@ void PandaGen::LoadExternalModuleVariable(const ir::AstNode *node, const binder:
     }
 
     // Change the behavior of using imported object in sendable class since api12
-    if (inSendable_ && targetApiVersion >= util::Helpers::SENDABLE_LAZY_LOADING_MIN_SUPPORTED_API_VERSION) {
+    if (inSendable_ && VersionManager::GetVersion().IsSendableLazyLoadingSupported()) {
         index <= util::Helpers::MAX_INT8 ? ra_.Emit<CallruntimeLdsendableexternalmodulevar>(node, index) :
                                            ra_.Emit<CallruntimeWideldsendableexternalmodulevar>(node, index);
         return;

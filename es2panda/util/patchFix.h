@@ -54,9 +54,7 @@ public:
         funcDefineIns_(allocator_.Adapter()),
         modifiedClassNames_(allocator_.Adapter()),
         classMemberFunctions_(allocator_.Adapter()),
-        funcDefinedClasses_(allocator_.Adapter()),
-        targetApiVersion_(symbolTable->GetTargetApiVersion()),
-        targetApiSubVersion_(symbolTable->GetTargetApiSubVersion()) {
+        funcDefinedClasses_(allocator_.Adapter()) {
             originFunctionInfo_ = symbolTable_->GetOriginFunctionInfo();
             originModuleInfo_ = symbolTable_->GetOriginModuleInfo();
             originRecordHashFunctionNames_ = symbolTable_->GetOriginRecordHashFunctionNames();
@@ -138,8 +136,6 @@ private:
     ArenaSet<std::string> modifiedClassNames_;
     ArenaUnorderedMap<std::string, std::vector<std::string>> classMemberFunctions_;
     ArenaUnorderedMap<std::string, std::vector<std::string>> funcDefinedClasses_;
-    int targetApiVersion_ {0};
-    std::string targetApiSubVersion_;
 };
 
 } // namespace panda::es2panda::util

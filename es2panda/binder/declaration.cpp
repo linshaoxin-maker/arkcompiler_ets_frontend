@@ -39,8 +39,7 @@ bool Decl::NeedSetInSendableEnv(Scope *scope) const
         return false;
     }
 
-    // sendable env will not be effective before api 12
-    if (scope->AsModuleScope()->Program()->TargetApiVersion() < 12) {
+    if (!VersionManager::GetVersion().IsSendableEnvSupported()) {
         return false;
     }
     return IsSendableClassDecl() || IsSendableFunctionDecl();

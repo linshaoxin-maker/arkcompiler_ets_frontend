@@ -386,7 +386,7 @@ void ObjectExpression::CompilePropertyWithInit(compiler::PandaGen *pg, const ir:
     }
 
     value->Compile(pg);
-    if (!nameSetting && pg->Binder()->Program()->TargetApiVersion() > 10) {
+    if (!nameSetting && VersionManager::GetVersion().IsClassSupported()) {
         pg->DefineOwnProperty(this, objReg, key);
     } else {
         pg->StoreOwnProperty(this, objReg, key, nameSetting);

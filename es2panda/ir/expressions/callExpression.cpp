@@ -73,7 +73,7 @@ void CallExpression::CompileSuperCallWithSpreadArgs(compiler::PandaGen *pg) cons
     // For super call in default constructor.
     if (constructorFunc->HasFlag(ir::ScriptFunctionFlags::GENERATED_CONSTRUCTOR)) {
         // Use callruntime.supercallforwardallargs to optimize super call in default constructor since api13.
-        if (pg->Binder()->Program()->TargetApiVersion() >= util::Helpers::SUPER_CALL_OPT_MIN_SUPPORTED_API_VERSION) {
+        if (VersionManager::GetVersion().IsSuperCallOptimizationSupported()) {
             compiler::VReg funcObj = pg->AllocReg();
             pg->GetFunctionObject(this);
             pg->StoreAccumulator(this, funcObj);

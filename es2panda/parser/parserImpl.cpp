@@ -135,8 +135,6 @@ Program ParserImpl::Parse(const SourceFile &sourceFile, const CompilerOptions &o
     program_.SetKind(sourceFile.scriptKind);
     program_.SetRecordName(sourceFile.recordName);
     program_.SetDebug(options.isDebug);
-    program_.SetTargetApiVersion(options.targetApiVersion);
-    program_.SetTargetApiSubVersion(options.targetApiSubVersion);
     program_.SetEnableAnnotations(options.enableAnnotations);
     program_.SetShared(sourceFile.isSharedModule);
     program_.SetModuleRecordFieldName(options.moduleRecordFieldName);
@@ -2368,7 +2366,7 @@ void ParserImpl::ValidateClassKey(ClassElmentDescriptor *desc, bool isDeclare)
 
 ir::Expression *ParserImpl::ParseClassKey(ClassElmentDescriptor *desc, bool isDeclare)
 {
-    if (desc->isPrivateIdent && program_.TargetApiVersion() > 10) {
+    if (desc->isPrivateIdent && VersionManager::GetVersion().IsClassSupported()) {
         ValidateClassKey(desc, isDeclare);
         return ParsePrivateIdentifier();
     }
@@ -2638,7 +2636,8 @@ ir::MethodDefinition *ParserImpl::ParseClassMethod(ClassElmentDescriptor *desc,
 
     ir::MethodDefinition *method = nullptr;
 
-    if (desc->isPrivateIdent && Extension() == ScriptExtension::TS && program_.TargetApiVersion() <= 10) {
+    if (desc->isPrivateIdent && Extension() == ScriptExtension::TS &&
+        !VersionManager::GetVersion().IsClassSupported()) {
         ir::Expression *privateId = AllocNode<ir::TSPrivateIdentifier>(propName, nullptr, nullptr);
         auto privateIdStart = lexer::SourcePosition(propName->Start().index - 1, propName->Start().line);
         privateId->SetRange({privateIdStart, propName->End()});
@@ -2713,7 +2712,8 @@ ir::Statement *ParserImpl::ParseClassProperty(ClassElmentDescriptor *desc,
         propEnd = value->End();
     }
 
-    if (Extension() == ScriptExtension::TS && desc->isPrivateIdent && program_.TargetApiVersion() <= 10) {
+    if (Extension() == ScriptExtension::TS && desc->isPrivateIdent &&
+        !VersionManager::GetVersion().IsClassSupported()) {
         auto *privateId = AllocNode<ir::TSPrivateIdentifier>(propName, value, typeAnnotation);
         auto privateIdStart = lexer::SourcePosition(propName->Start().index - 1, propName->Start().line);
         privateId->SetRange({privateIdStart, propName->End()});
@@ -2750,7 +2750,7 @@ void ParserImpl::CheckClassPrivateIdentifier(ClassElmentDescriptor *desc)
 
     desc->isPrivateIdent = true;
 
-    if (Extension() == ScriptExtension::TS && program_.TargetApiVersion() <= 10) {
+    if (Extension() == ScriptExtension::TS && !VersionManager::GetVersion().IsClassSupported()) {
         lexer_->NextToken(lexer::LexerNextTokenFlags::KEYWORD_TO_IDENT);
     }
 }
@@ -3410,7 +3410,7 @@ bool ParserImpl::SuperCallShouldBeRootLevel(const ir::MethodDefinition *ctor,
     for (const auto *property : properties) {
         if (property->IsClassProperty()) {
             auto *classProperty = property->AsClassProperty();
-            bool isPrivateProperty = program_.TargetApiVersion() > 10 ?
+            bool isPrivateProperty = VersionManager::GetVersion().IsClassSupported() ?
                 classProperty->Key()->IsPrivateIdentifier() : classProperty->Key()->IsTSPrivateIdentifier();
             if (classProperty->Value() != nullptr || isPrivateProperty) {
                 return true;
