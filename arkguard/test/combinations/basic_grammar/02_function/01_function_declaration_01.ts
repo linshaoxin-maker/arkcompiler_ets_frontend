@@ -1,16 +1,16 @@
-import assert from 'assert'
+import assert from 'assert';
 
 let x = 1;
-assert(x === 1)
+assert(x === 1);
 
 function foo_01() {
     return x;
 }
-foo_01()
-assert(foo_01() === x)
+foo_01();
+assert(foo_01() === x);
 
 
-function foo_02() 
+function foo_02()
 {
     function foo_02() {
         function bar_02() {
@@ -62,14 +62,14 @@ function foo_06({a}) {
     return a;
 }
 foo_06({a:1});
-assert(foo_06({a:1}) === {a:1});
+assert(foo_06({a:1}) === 1);
 
 
 function foo_07({a, ...b}) {
     a;
     b.c;
     b.d({a:1});
-    return b.c.a + b.d(a);
+    return b.c + b.d({a:a});
 }
 foo_07({a: "1", c: foo_06({a:1}), d: foo_06});
 assert(foo_07({a: "1", c: foo_06({a:1}), d: foo_06}) === "11");
@@ -79,7 +79,7 @@ function foo_08({a,"c":d,...b}) {
     a;
     d.c;
     b.d({a:1});
-    return d.c.a + b.d(a);
+    return d.c + b.d({a:a});
 }
 foo_08({a: "1", c: {c: foo_06({a:1})}, d: foo_06});
 assert(foo_08({a: "1", c: {c: foo_06({a:1})}, d: foo_06}) === "11");
@@ -115,10 +115,10 @@ function foo_12(a1:number, a2:string) {
     return a1 + a2;
 }
 foo_12(1, "a");
-assert(foo_12(1, "a") === "1a")
+assert(foo_12(1, "a") === "1a");
 
 let val = 1;
 function foo_13(a1:number, a2:string) {
     return a1 + a2 + val;
 }
-assert(foo_13(1, "1") === "111")
+assert(foo_13(1, "1") === "111");

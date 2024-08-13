@@ -1,0 +1,10 @@
+import assert from 'assert';
+class Person {
+    name: string = "";
+    set g(a: string) {
+        this.name = a;
+    }
+}
+let p = new Person();
+p.g = "name";
+assert(p.name === "name");

@@ -1,4 +1,4 @@
-import assert from 'assert'
+import assert from 'assert';
 
 class C {
   [1](){
@@ -49,4 +49,4 @@ async function f() {
   assert(await c.method7() === 9);
   assert((await c.method8().next()).value === 10);
 }
-f()
+f();
