@@ -39,18 +39,19 @@ assert(v2.d()() === v2);
 
 const {
     B = function () {
-      let B = 'binding'
+      let B = 'binding';
+      return B;
     },
     C = function g() {
-      let C = 'binding'
+      let C = 'binding';
       return C;
     }
 } = {B: undefined, C: ()=>{
   return 'test';
 }}
-B;
+B();
 C();
-assert(B === undefined);
+assert(B() == 'binding');
 assert(C() === 'test');
 
 var x = function g() {
@@ -67,5 +68,7 @@ assert(y()() === y);
 var z = function f(para: any, ...paras:any):any {
   return arguments;
 }
-z(1,2,3)
-assert(z(1,2,3) === {"0": 1, "1": 2, "2": 3})
+z(1,2,3);
+assert(z(1,2,3)['0'] === 1);
+assert(z(1,2,3)['1'] === 2);
+assert(z(1,2,3)['2'] === 3);

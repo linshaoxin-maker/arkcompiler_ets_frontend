@@ -22,11 +22,11 @@ let c = 3;
 let x1 = ()=>{};
 assert(x1() === undefined);
 let x2 = () => 1?2:3;
-assert(x2() === 2)
+assert(x2() === 2);
 let d = () => a?b:c;
 assert(d() === 2);
 let x3 = ([]) => 1?2:3;
-assert(x3([]) === 2)
+assert(x3([]) === 2);
 let e = ([]) => a?b:c;
 assert(e([]) === 2);
 let x4 = (...a:any):any => a;

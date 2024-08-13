@@ -24,6 +24,6 @@ class Person {
 }
 
 let p = new Person();
-p.personName === "name"
+p.personName = "name";
 
-assert(p.name === "name")
+assert(p.name === "name");

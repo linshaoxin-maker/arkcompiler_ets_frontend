@@ -53,6 +53,22 @@
       }
     }
   },
+  "basicGrammar_2function": {
+    "enableOptions": {
+      "mNameObfuscation": {
+        "mRenameProperties": true,
+        "mKeepStringProperty": false,
+        "mTopLevel": true
+      },
+      "mExportObfuscation": true
+    },
+    "inputDirs": [
+      "../test/combinations/basic_grammar/02_function"
+    ],
+    "outputDir": "../test/local/combinations/basic_grammar",
+    "whitelist": {
+    }
+  },
   "basicGrammar_9shorthand_11deconstruction": {
     "enableOptions": {
       "mNameObfuscation": {
