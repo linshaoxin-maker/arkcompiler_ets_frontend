@@ -1,59 +1,183 @@
-{
-  "name": "@panda/tslinter",
-  "version": "1.0.0",
-  "main": "dist/tslinter.js",
-  "bin": "bin/tslinter.js",
-  "files": [
-    "dist/*"
-  ],
-  "private": true,
-  "license": "Apache-2.0",
-  "scripts": {
-    "tsc": "tsc",
-    "webpack": "webpack -t node --config webpack.config.js",
-    "clean": "rimraf build dist bundle",
-    "compile": "npm run tsc",
-    "build": "npm run clean && npm run compile && npm run webpack && npm run pack:linter",
-    "postinstall": "node scripts/install-ohos-typescript.mjs && npm run build",
-    "pack:linter": "rimraf bundle && mkdir bundle && npm pack --pack-destination bundle",
-    "pretest": " npm run fix",
-    "test": "npm run test_main && npm run test_rules && npm run test_regression",
-    "test_main": "npm run compile && rimraf test/results_rt && node build/src/TestRunner.js -P:test",
-    "test_regression": "npm run compile && rimraf test_regression/results_rt && node build/src/TestRunner.js -P:test_regression",
-    "test_rules": "npm run compile && rimraf test_rules/results_rt && node build/src/TestRunner.js -P:test_rules",
-    "test_sdk": "npm run test_main_sdk && npm run test_rules_sdk && npm run test_regression_sdk",
-    "test_main_sdk": "npm run compile && rimraf test/results_sdk && node build/src/TestRunner.js -P:test -SDK",
-    "test_regression_sdk": "npm run compile && rimraf test_regression/results_sdk && node build/src/TestRunner.js -P:test_regression -SDK",
-    "test_rules_sdk": "npm run compile && rimraf test_rules/results_sdk && node build/src/TestRunner.js -P:test_rules -SDK",
-    "test_ts_import_ets": "npm run compile && rimraf test_ts_import_ets/ts/results_sdk && node build/src/TestRunner.js -P:test_ts_import_ets/ts -SDK -CheckTs",
-    "test_extended_features": "npm run compile && rimraf test_extended_features/results && node build/src/TestRunner.js test_extended_features",
-    "update-tests": "node scripts/update-test-results.mjs test test_rules test_regression test_extended_features",
-    "eslint-check": "npx eslint --ext .ts .",
-    "eslint-fix": "npm run eslint-check -- --fix",
-    "prettier-fix": "npx prettier --write .",
-    "fix": "npm run prettier-fix && npm run eslint-fix"
-  },
-  "dependencies": {
-    "commander": "9.4.0",
-    "log4js": "6.4.0"
-  },
-  "devDependencies": {
-    "@stylistic/eslint-plugin": "latest",
-    "@types/node": "18.11.7",
-    "@typescript-eslint/eslint-plugin": "latest",
-    "@typescript-eslint/parser": "latest",
-    "eslint": "latest",
-    "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-jsdoc": "^48.0.6",
-    "eslint-plugin-no-null": "^1.0.2",
-    "prettier": "latest",
-    "rimraf": "^3.0.2",
-    "shelljs": "^0.8.5",
-    "webpack": "^5.75.0",
-    "webpack-cli": "^5.0.1"
-  },
-  "bundledDependencies": [
-    "log4js",
-    "commander"
-  ]
-}
+    14 ./test_rules/rule149.ts.autofix.skip
+    14 ./test_rules/rule19.ts.autofix.skip
+    14 ./test_rules/rule84.ts.autofix.skip
+    14 ./test_rules/rule17.ts.autofix.skip
+    14 ./test_rules/rule30_6.ts.autofix.skip
+    14 ./test_rules/rule14_1.ts.autofix.skip
+    14 ./test_rules/rule74.ts.autofix.skip
+    14 ./test_rules/rule138.ts.autofix.skip
+    14 ./test_rules/rule21_1.ts.autofix.skip
+    14 ./test_rules/rule8_1.ts.autofix.skip
+    14 ./test_rules/rule96.ts.autofix.skip
+    14 ./test_rules/rule134.ts.autofix.skip
+    14 ./test_rules/rule104.ts.autofix.skip
+    14 ./test_rules/rule147.ts.autofix.skip
+    14 ./test_rules/rule143.ts.autofix.skip
+    14 ./test_rules/rule150.ts.autofix.skip
+    14 ./test_rules/rule59.ts.autofix.skip
+    14 ./test_rules/rule65.ts.autofix.skip
+    14 ./test_rules/rule14.ts.autofix.skip
+    14 ./test_rules/rule136.ts.autofix.skip
+    14 ./test_rules/rule15.ts.autofix.skip
+    14 ./test_rules/rule142.ts.autofix.skip
+    14 ./test_rules/rule151.ts.autofix.skip
+    14 ./test_rules/rule40.ts.autofix.skip
+    14 ./test_rules/rule130.ts.autofix.skip
+    14 ./test_rules/rule94.ts.autofix.skip
+    14 ./test_rules/rule152.ts.autofix.skip
+    14 ./test_rules/rule50.ts.autofix.skip
+    14 ./test_rules/rule80.ts.autofix.skip
+    14 ./test_rules/rule30_5.ts.autofix.skip
+    14 ./test_rules/rule129.ts.autofix.skip
+    14 ./test_rules/rule8_2.ts.autofix.skip
+    14 ./test_rules/rule43.ts.autofix.skip
+    14 ./test_rules/rule87.ts.autofix.skip
+    14 ./test_rules/rule51.ts.autofix.skip
+    14 ./test_rules/rule111.ts.autofix.skip
+    14 ./test_rules/rule91.ts.autofix.skip
+    14 ./test_rules/rule28.ts.autofix.skip
+    14 ./test_rules/rule69.ts.autofix.skip
+    14 ./test_rules/rule34.ts.autofix.skip
+    14 ./test_rules/rule55.ts.autofix.skip
+    14 ./test_rules/rule103.ts.autofix.skip
+    14 ./test_rules/rule145.ts.autofix.skip
+    14 ./test_rules/rule21_3.ts.autofix.skip
+    14 ./test_rules/rule102.ts.autofix.skip
+    14 ./test_rules/rule146.ts.autofix.skip
+    14 ./test_rules/rule121.ts.autofix.skip
+    14 ./test_rules/rule8_6.ts.autofix.skip
+    14 ./test_rules/rule106.ts.autofix.skip
+    14 ./test_rules/rule4.ts.autofix.skip
+    14 ./test_rules/rule137.ts.autofix.skip
+    14 ./test_rules/rule8_4.ts.autofix.skip
+    14 ./test_rules/rule99.ts.autofix.skip
+    14 ./test_rules/rule52.ts.autofix.skip
+    14 ./test_rules/rule30_3.ts.autofix.skip
+    14 ./test_rules/rule139.ts.autofix.skip
+    14 ./test_rules/rule144.ts.autofix.skip
+    14 ./test_rules/rule30_4.ts.autofix.skip
+    14 ./test_rules/rule8_5.ts.autofix.skip
+    14 ./test_rules/rule8.ts.autofix.skip
+    14 ./test_rules/rule128.ts.autofix.skip
+    14 ./test_rules/rule60.ts.autofix.skip
+    14 ./test_rules/rule8_3.ts.autofix.skip
+    14 ./test_rules/rule2.ts.autofix.skip
+    14 ./test_rules/rule132.ts.autofix.skip
+    14 ./test_rules/rule126.ts.autofix.skip
+    14 ./test_rules/rule140.ts.autofix.skip
+    14 ./test_rules/rule116.ts.autofix.skip
+    14 ./test_rules/rule93.ts.autofix.skip
+    14 ./test_rules/rule155.ts.autofix.skip
+    14 ./test_rules/rule30_2.ts.autofix.skip
+    14 ./test_rules/rule22.ts.autofix.skip
+    14 ./test_rules/rule21.ts.autofix.skip
+    14 ./test_rules/rule30.ts.autofix.skip
+    14 ./test_rules/rule21_2.ts.autofix.skip
+    14 ./test_rules/rule27.ts.autofix.skip
+    14 ./test_rules/rule66.ts.autofix.skip
+    14 ./test_rules/rule83.ts.autofix.skip
+    14 ./test_rules/rule30_1.ts.autofix.skip
+    14 ./test_rules/rule54.tsx.autofix.skip
+    14 ./test_rules/rule114.ts.autofix.skip
+    13 ./test/sendable_class_interface_property.ts.autofix.skip
+    13 ./test/object_literals_iface_interop.ts.autofix.skip
+    13 ./test/record_type.ts.autofix.skip
+    14 ./test/jsx.tsx.autofix.skip
+    13 ./test/sendable_generic_types.ts.autofix.skip
+    13 ./test/namespace_export_assignment.ts.autofix.skip
+    13 ./test/object_literals_iface.ts.autofix.skip
+    14 ./test/const_assertion.ts.autofix.skip
+    14 ./test/classC.ts.autofix.skip
+    14 ./test/definite_assignment.ts.autofix.skip
+    14 ./test/array_literals.ts.autofix.skip
+    13 ./test/ts_nocheck_2.ts.autofix.skip
+    14 ./test/ambient_module.ts.autofix.skip
+    14 ./test/interfaces_props.ts.autofix.skip
+    14 ./test/global_this.ts.autofix.skip
+    14 ./test/func_inferred_type_args.ts.autofix.skip
+    14 ./test/destructuring_assignments.ts.autofix.skip
+    14 ./test/@arkts.lang.d.ets.autofix.skip
+    14 ./test/imported_use_as_object_module.ts.autofix.skip
+    14 ./test/function_overload.ts.autofix.skip
+    14 ./test/destructuring_declarations.ts.autofix.skip
+    14 ./test/dynamic_import.ts.autofix.skip
+    14 ./test/enum_member_non_constant.ts.autofix.skip
+    14 ./test/symbol_api.ts.autofix.skip
+    14 ./test/type_declarations.ts.autofix.skip
+    14 ./test/assign_to_method.ts.autofix.skip
+    14 ./test/array_literal_spread.ts.autofix.skip
+    14 ./test/implements_class.ts.autofix.skip
+    14 ./test/inferred_type.ts.autofix.skip
+    14 ./test/instanceof.ts.autofix.skip
+    13 ./test/prototype_assignment.ts.autofix.skip
+    13 ./test/sendable_class_inheritance.ts.autofix.skip
+    14 ./test/generators.ts.autofix.skip
+    14 ./test/classB.ts.autofix.skip
+    14 ./test/for_stmts.ts.autofix.skip
+    14 ./test/function_spread_arg.ts.autofix.skip
+    14 ./test/interop_imports.ts.autofix.skip
+    13 ./test/limited_stdlib_api.ts.autofix.skip
+    13 ./test/shared_module_no_side_effects_imports.ts.autofix.skip
+    14 ./test/indexed_derived_from_array.ts.autofix.skip
+    14 ./test/new_target.ts.autofix.skip
+    13 ./test/sendable_as_expr.ts.autofix.skip
+    14 ./test/delete_operator.ts.autofix.skip
+    13 ./test/sendable_class_initialization.ts.autofix.skip
+    14 ./test/iface2.ts.autofix.skip
+    14 ./test/binary_wrong_types.ts.autofix.skip
+    14 ./test/optional_library_types.ts.autofix.skip
+    14 ./test/ts_ignore.ts.autofix.skip
+    13 ./test/ts_ignore_2.ts.autofix.skip
+    14 ./test/arkui_decorators.ts.autofix.skip
+    14 ./test/dynamic_object_literals.ts.autofix.skip
+    14 ./test/non_initializable_prop_decorators.ts.autofix.skip
+    14 ./test/loop_over_set.ts.autofix.skip
+    14 ./test/function_object_methods.ts.autofix.skip
+    14 ./test/enum_indexing.ts.autofix.skip
+    13 ./test/shared_module.ts.autofix.skip
+    14 ./test/interface_literal_prop_name.ts.autofix.skip
+    14 ./test/es_object.ts.autofix.skip
+    13 ./test/throw_error.ts.autofix.skip
+    13 ./test/sendable_captured_variables.ts.autofix.skip
+    14 ./test/this_type.ts.autofix.skip
+    14 ./test/null_check_calls.ts.autofix.skip
+    13 ./test/sendable_class_decorator.ts.autofix.skip
+    14 ./test/property_decl_on_function.ts.autofix.skip
+    14 ./test/library_type_call.ts.autofix.skip
+    14 ./test/unknown_params.ts.autofix.skip
+    14 ./test/unary_wrong_types.ts.autofix.skip
+    14 ./test/template_literals.ts.autofix.skip
+    14 ./test/utility_types.ts.autofix.skip
+    13 ./test/shared_module_no_side_effects_imports_dependencie.ts.autofix.skip
+    14 ./test/destructuring_for_loop.ts.autofix.skip
+    13 ./test/d_ts.ts.autofix.skip
+    13 ./test/partial_type.ts.autofix.skip
+    14 ./test/interop_import.ts.autofix.skip
+    14 ./test/destructuring_parameters.ts.autofix.skip
+    14 ./test/mapped_types.ts.autofix.skip
+    14 ./test/import_assertion.ts.autofix.skip
+    14 ./test/imported_use_as_object.ts.autofix.skip
+    14 ./test/structural_identity.ts.autofix.skip
+    13 ./test/functions.ts.autofix.skip
+    14 ./test/recursive_types.ts.autofix.skip
+    14 ./test/var_declarations.ts.autofix.skip
+    13 ./test/conditional_types.ts.autofix.skip
+    14 ./test/ts_nocheck.ts.autofix.skip
+    14 ./test/strict_mode_error.ts.autofix.skip
+    14 ./test/undefined_check_calls.ts.autofix.skip
+    14 ./test/unique_names.ts.autofix.skip
+    14 ./test/class_as_object.ts.autofix.skip
+    14 ./test/UMD_module.ts.autofix.skip
+    14 ./test/constructor_types.ts.autofix.skip
+    14 ./test/classA.ts.autofix.skip
+    14 ./test/import_after_statement.ts.autofix.skip
+    14 ./test/arkts_sendable_imported_variables.ts.autofix.skip
+    14 ./test_regression/15431.ts.autofix.skip
+    14 ./test_regression/14832.ts.autofix.skip
+    14 ./test_regression/14412.ts.autofix.skip
+    14 ./test_regression/14860.ts.autofix.skip
+    14 ./test_regression/14953.ts.autofix.skip
+    14 ./test_regression/15497.ts.autofix.skip
+    14 ./test_regression/15086.ts.autofix.skip
+    14 ./test_regression/15391.ts.autofix.skip
+  2525 total

@@ -21,6 +21,7 @@
 /node_modules/**
 /scripts/**
 /test/**
+/arkTSTest/**
 /test_extended_features/**
 /test_rules/**
 /test_regression/**

@@ -22,6 +22,7 @@
 /scripts/**
 /third_party/**
 /test/**
+/arkTSTest/**
 /test_extended_features/**
 /test_rules/**
 /test_ts_import_ets/**
