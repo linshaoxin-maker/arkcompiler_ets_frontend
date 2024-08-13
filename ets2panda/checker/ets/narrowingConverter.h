@@ -181,9 +181,6 @@ private:
         if (Source()->HasTypeFlag(TypeFlag::CONSTANT)) {
             SType value = reinterpret_cast<SourceType *>(Source())->GetValue();
             if (Relation()->InCastingContext() || util::Helpers::IsTargetFitInSourceRange<TType, SType>(value)) {
-                auto narrowedValue = CalculateNarrowedValue<TType, SType>(Target(), Source(), value);
-                TargetType *newType = Checker()->Allocator()->New<TargetType>(narrowedValue);
-                Relation()->GetNode()->SetTsType(newType);
                 Relation()->Result(true);
                 return;
             }
