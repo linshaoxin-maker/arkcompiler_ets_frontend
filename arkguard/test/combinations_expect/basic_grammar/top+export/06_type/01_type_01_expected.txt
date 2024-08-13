@@ -1,0 +1,84 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import b from 'assert';
+export type c<T> = () => T;
+export type d<T extends c<T>> = () => T;
+type e = () => e;
+let f: d<() => e>;
+f = () => f;
+b(f() === f);
+let g: number = 1;
+typeof g;
+type h = typeof g;
+let i: h = 1;
+b(i === 1);
+let j: [
+    string,
+    number,
+    boolean
+] = ["", 1, false];
+b(j[0] === "");
+b(j[1] === 1);
+b(j[2] === false);
+type f = [
+    number,
+    string,
+    ...number[]
+];
+let k: number | string = 1;
+b(k === 1);
+let l: number & (string | number) = 1;
+b(l === 1);
+type m = number;
+type n = string;
+function a<b1>(c1: b1 extends m ? m : n) { return c1; }
+b(a<number>(1) === 1);
+type o<T> = T extends {
+    a: infer U;
+    b: infer U;
+} ? U : never;
+let p: o<{
+    a: number;
+    b: number;
+}> = 1;
+b(p === 1);
+let q: (string | number)[] = [1, 2];
+b(q[0] === 1);
+b(q[1] === 2);
+interface r {
+    name: string;
+    age: number;
+}
+type s = keyof r;
+let t: s = "name";
+b(t === "name");
+type u = {
+    U: number;
+};
+let v: u['U'] = 2;
+b(v === 2);
+type w<T extends any[]> = {
+    [P in keyof T]: T[P];
+};
+let x: w<number[]> = [1];
+b(x[0] === 1);
+let y: "cc" = "cc";
+b(y === "cc");
+let z: [
+    prop1: string,
+    prop2: number
+] = ["1", 2];
+b(z[0] === "1");
+b(z[1] === 2);
