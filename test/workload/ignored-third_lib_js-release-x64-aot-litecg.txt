@@ -8,6 +8,7 @@ js-joda_test
 
 #18484
 jBox2d_test
+pdfview_test
 
 #18629
 jsDiff_test
