@@ -1,0 +1,14 @@
+import assert from "assert";
+interface a2 {
+    d2: number;
+    e2(para: number): number;
+}
+let b2 = class C7 implements a2 {
+    d2: number = 7;
+    e2(d2: number): number {
+        return d2 * 2 * this.d2;
+    }
+};
+let c2 = new b2();
+assert(c2.d2 === 7);
+assert(c2.e2(2) === 28);

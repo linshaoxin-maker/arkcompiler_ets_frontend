@@ -1,1 +1,0 @@
-export default 'str3'+'str4';

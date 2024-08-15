@@ -1,0 +1,26 @@
+import n1 from "assert";
+abstract class o1 {
+    abstract methodAC1(): number;
+    methodAc2(): string {
+        return '22';
+    }
+}
+class p1 extends o1 {
+    methodAC1(): number {
+        return 11;
+    }
+}
+let q1 = new p1();
+n1(q1.methodAC1() === 11, 'success');
+n1(q1.methodAc2() === '22', 'success');
+class r1 extends o1 {
+    methodAC1(): number {
+        return 111;
+    }
+    methodAc2(): string {
+        return '222';
+    }
+}
+let s1 = new r1();
+n1(s1.methodAC1() === 111, 'success');
+n1(s1.methodAc2() === '222', 'success');

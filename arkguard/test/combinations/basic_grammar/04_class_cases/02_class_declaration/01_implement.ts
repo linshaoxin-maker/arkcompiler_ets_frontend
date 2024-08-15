@@ -6,7 +6,7 @@ interface I1 {
 class A1 implements I1 {
   prop1: number = 2;
 }
-let insA1 = new A1(1);
+let insA1 = new A1();
 assert(insA1.prop1 === 2)
 
 // 多实现interface

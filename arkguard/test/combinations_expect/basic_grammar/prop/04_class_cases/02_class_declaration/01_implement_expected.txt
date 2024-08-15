@@ -1,0 +1,64 @@
+import assert from "assert";
+// 单实现interface
+interface I1 {
+    g: number;
+}
+class A1 implements I1 {
+    g: number = 2;
+}
+let insA1 = new A1();
+assert(insA1.g === 2);
+// 多实现interface
+interface I2 {
+    h(): string;
+}
+interface I3<T> {
+    i(): void;
+}
+class A2<U> implements I2, I3<number> {
+    i(): void {
+        let d = 'i can swim';
+        return;
+    }
+    h<c>(): string {
+        return 'i can fly';
+    }
+    j: number;
+}
+let insA2 = new A2();
+assert(insA2.h() === 'i can fly');
+// 单实现class
+class C1 {
+    k() { return 4; }
+}
+class C2 implements C1 {
+    k(): number {
+        return 1;
+    }
+}
+let insC2 = new C2();
+assert(insC2.k() === 1);
+// 多实现class
+class C3 {
+    l: number;
+    m(): number {
+        return 1;
+    }
+}
+class C4 {
+    o(b: string): string {
+        return 'hello 4' + b;
+    }
+}
+class C5 implements C3, C4 {
+    o(a: string): string {
+        return 'hello 44' + a;
+    }
+    l: number;
+    m(): number {
+        return 33;
+    }
+}
+let insC5 = new C5();
+assert(insC5.m() === 33);
+assert(insC5.o('55') === 'hello 4455');

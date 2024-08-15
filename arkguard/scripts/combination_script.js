@@ -131,13 +131,6 @@ function mergeDeep(target, source) {
   return target;
 }
 
-<<<<<<< HEAD
-function generateObfConfigg(optionsCombinations, inputDirs, outputDir) {
-<<<<<<< HEAD
-
-=======
->>>>>>> c7ffd6eb (Develop a test suite for combinations)
-=======
 function mergeConfig(options, optionsAlias, whitelist, outputDir) {
   const whitelistConfig = whitelist[optionsAlias];
   const outputConfig = {mOutputDir: outputDir};
@@ -148,7 +141,6 @@ function mergeConfig(options, optionsAlias, whitelist, outputDir) {
 }
 
 function generateObfConfigg(optionsCombinations, inputDirs, outputDir, whitelist) {
->>>>>>> 28c8b29d (support whitelist)
   const outputAbsDir = path.join(__dirname, outputDir);
   for (let i = 0; i < optionsCombinations.length; i++) {
     const options = optionsCombinations[i];

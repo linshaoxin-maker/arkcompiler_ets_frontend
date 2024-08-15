@@ -1,1 +1,0 @@
-export default {objProp1: 1, objProp2: 2};

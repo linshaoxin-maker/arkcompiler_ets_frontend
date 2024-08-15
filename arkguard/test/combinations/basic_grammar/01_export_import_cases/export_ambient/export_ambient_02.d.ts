@@ -1,5 +1,19 @@
-// 这不再是环境模块声明了，而是模块增强！
-import {express} from 'path1'
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import {express} from 'path1';
 export {};
 declare module "path1" {
   export function normalize2(p: string): string;
@@ -10,8 +24,8 @@ declare module "path1" {
   }
 }
 
-class ExpressClass implements express {
+declare class ExpressClass implements express {
   prop1: number;
   prop2: number;
-  constructor() {}
+  constructor();
 }

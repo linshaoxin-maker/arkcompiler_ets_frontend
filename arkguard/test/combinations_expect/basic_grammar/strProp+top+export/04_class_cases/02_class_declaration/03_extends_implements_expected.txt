@@ -1,0 +1,25 @@
+import a from "assert";
+class m {
+    prop_c5: number = 0;
+    method_c5(): number {
+        return 5;
+    }
+}
+interface x {
+    inter_p5: number;
+    method_i5(): number;
+}
+class y extends m implements x {
+    inter_p5: number = 1;
+    method_i5(): number {
+        return 2 * 5;
+    }
+}
+let n = new m();
+a(n.prop_c5 === 0);
+a(n.method_c5() === 5);
+let z = new y();
+a(z.prop_c5 === 0);
+a(z.method_c5() === 5);
+a(z.inter_p5 === 1);
+a(z.method_i5() === 10);

@@ -303,22 +303,6 @@ export class ArkObfuscatorForTest extends ArkObfuscator {
     }
   }
 
-  private writeContent(outputPath: string, mixedInfo: ObfuscationResultType): void {
-    if (!fs.existsSync(path.dirname(outputPath))) {
-      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-    }
-    fs.writeFileSync(outputPath, mixedInfo.content);
-
-    if (this.mCustomProfiles.mEnableSourceMap && mixedInfo.sourceMap) {
-      fs.writeFileSync(path.join(outputPath + '.map'),
-        JSON.stringify(mixedInfo.sourceMap, null, JSON_TEXT_INDENT_LENGTH));
-    }
-
-    if (this.mCustomProfiles.mEnableNameCache && this.mCustomProfiles.mEnableNameCache) {
-      this.produceNameCache(mixedInfo.nameCache, outputPath);
-    }
-  }
-
   private loadunobfuscationNameMap(mixedInfo: ObfuscationResultType, relativePath: string): void {
     let arrayObject: Record<string, string[]> = {};
     // The type of unobfuscationNameMap's value is Set, convert Set to Array.

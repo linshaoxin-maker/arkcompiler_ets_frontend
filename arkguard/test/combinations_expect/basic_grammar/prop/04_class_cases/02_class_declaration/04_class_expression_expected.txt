@@ -1,0 +1,14 @@
+import assert from "assert";
+interface I6 {
+    c1: number;
+    d1(para: number): number;
+}
+let cons1 = class C7 implements I6 {
+    c1: number = 7;
+    d1(g: number): number {
+        return g * 2 * this.c1;
+    }
+};
+let insC7 = new cons1();
+assert(insC7.c1 === 7);
+assert(insC7.d1(2) === 28);
