@@ -1,0 +1,44 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import assert from 'assert';
+interface g {
+    o: number;
+    p(): void;
+}
+interface h extends g {
+    q: string;
+}
+class i {
+    public t(q: any) { return q; }
+    private x = 1;
+}
+interface j extends i {
+    u(x: any): any;
+}
+class k {
+    public t(p: any) { return p; }
+    private x = 1;
+}
+class l {
+    public v(o: any) { return o; }
+    private x1 = 1;
+}
+class e {
+    public a1(n: any) { return n; }
+    private x2 = 1;
+}
+interface m extends k, l, e {
+    u(x: any): any;
+}
