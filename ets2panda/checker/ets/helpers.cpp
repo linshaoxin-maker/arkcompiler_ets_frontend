@@ -588,10 +588,17 @@ void ETSChecker::InferAliasLambdaType(ir::TypeNode *localTypeAnnotation, ir::Arr
     }
 }
 
-checker::Type *ETSChecker::FixOptionalVariableType(varbinder::Variable *const bindingVar, ir::ModifierFlags flags)
+checker::Type *ETSChecker::FixOptionalVariableType(varbinder::Variable *const bindingVar, ir::ModifierFlags flags,
+                                                   ir::Expression *init)
 {
     if ((flags & ir::ModifierFlags::OPTIONAL) != 0) {
         auto type = bindingVar->TsTypeOrError();
+        if (init != nullptr && init->TsType()->IsETSEnumType()) {
+            init->SetBoxingUnboxingFlags(ir::BoxingUnboxingFlags::BOX_TO_ENUM);
+        }
+        if (type->IsETSEnumType()) {
+            type = type->AsETSEnumType()->GetDecl()->BoxedClass()->TsType();
+        }
         if (type->IsETSUnionType()) {
             auto constituentTypes = type->AsETSUnionType()->ConstituentTypes();
             constituentTypes.push_back(GlobalETSUndefinedType());
@@ -683,7 +690,7 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
     }
 
     if (init == nullptr) {
-        return FixOptionalVariableType(bindingVar, flags);
+        return FixOptionalVariableType(bindingVar, flags, init);
     }
 
     CheckInit(ident, typeAnnotation, init, annotationType, bindingVar);
@@ -708,7 +715,7 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
              (initType->IsETSStringType() && annotationType->IsETSStringType()))) {
             bindingVar->SetTsType(init->TsType());
         }
-        return FixOptionalVariableType(bindingVar, flags);
+        return FixOptionalVariableType(bindingVar, flags, init);
     }
 
     if (initType->IsETSObjectType() && initType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::ENUM) &&
@@ -720,7 +727,7 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
     (isConst || (isReadonly && isStatic)) ? bindingVar->SetTsType(initType)
                                           : bindingVar->SetTsType(GetNonConstantTypeFromPrimitiveType(initType));
 
-    return FixOptionalVariableType(bindingVar, flags);
+    return FixOptionalVariableType(bindingVar, flags, init);
 }
 
 void ETSChecker::CheckAnnotationTypeForVariableDeclaration(checker::Type *annotationType, bool isUnionFunction,
