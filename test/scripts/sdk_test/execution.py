@@ -45,7 +45,7 @@ class IncrementalTest:
         output_file_name = '-'.join(output_file_name_items)
         new_module_name_output_file = os.path.join(
             output_dir, output_file_name)
-
+        print("hello test")
         logging.debug(f"new module hap file: {new_module_name_output_file}")
 
         passed = validate(inc_task, task, is_debug, stdout,
