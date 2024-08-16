@@ -357,13 +357,6 @@ export class DebugInfo {
         } else {
             pandaGen.setSourceFileDebugInfo(sourceFile.fileName);
         }
-
-        if (CmdOptions.isDebugMode()) {
-            if (ts.isSourceFile(node)) {
-                pandaGen.setSourceCodeDebugInfo(node.text);
-            }
-            return;
-        }
     }
 
     public static copyDebugInfo(insn: IRNode, expansion: IRNode[]) {
