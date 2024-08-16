@@ -5,3 +5,27 @@ crypto-js_test
 
 #19247
 jsDiff_test
+
+#18517
+js-joda_test
+
+#19106
+memory-cache_test
+
+#19231
+jBox2d_test
+
+#19284
+mathjs_test
+
+#19246
+asn-one_test
+
+#19033
+Easyrelpace_test
+
+#19424
+zxing-text-encoding_test
+
+#19353
+Matrix_test
