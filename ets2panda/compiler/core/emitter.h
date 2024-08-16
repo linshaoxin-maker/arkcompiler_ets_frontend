@@ -130,6 +130,8 @@ protected:
     }
 
 private:
+    void RemoveUnreferencedExterns();
+
     pandasm::Program *prog_;
     const public_lib::Context *context_;
     uint32_t literalBufferIndex_ {};

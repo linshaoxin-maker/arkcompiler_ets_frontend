@@ -81,6 +81,9 @@ private:
             std::cerr << options->ErrorMsg() << std::endl;
             return nullptr;
         }
+        auto compilerOpts = options->CompilerOptions();
+        compilerOpts.keepUnusedExterns = true;
+        options->SetCompilerOptions(compilerOpts);
 
         Logger::ComponentMask mask {};
         mask.set(Logger::Component::ES2PANDA);

@@ -168,6 +168,7 @@ struct AllArgs {
     ark::PandArg<bool> opDumpDebugInfo {"dump-debug-info", false, "Dump debug info"};
     ark::PandArg<int> opOptLevel {"opt-level", 0, "Compiler optimization level (options: 0 | 1 | 2)", 0, MAX_OPT_LEVEL};
     ark::PandArg<bool> opEtsModule {"ets-module", false, "Compile the input as ets-module"};
+    ark::PandArg<bool> opKeepUnusedExterns {"keep-unused-externs", false, "Don't remove extern declarations"};
 
     // ETS-warnings
     ark::PandArg<bool> opEtsEnableAll {"ets-warnings-all", false, "Show performance-related ets-warnings"};
@@ -292,6 +293,7 @@ struct AllArgs {
 
         argparser.Add(&opOptLevel);
         argparser.Add(&opEtsModule);
+        argparser.Add(&opKeepUnusedExterns);
         argparser.Add(&opThreadCount);
         argparser.Add(&opSizeStat);
         argparser.Add(&opListFiles);
@@ -344,6 +346,7 @@ struct AllArgs {
         compilerOptions.parseOnly = opParseOnly.GetValue();
         compilerOptions.stdLib = stdLib.GetValue();
         compilerOptions.isEtsModule = opEtsModule.GetValue();
+        compilerOptions.keepUnusedExterns = opKeepUnusedExterns.GetValue();
         compilerOptions.plugins = SplitToStringVector(plugins.GetValue());
         compilerOptions.skipPhases = SplitToStringSet(skipPhases.GetValue());
         compilerOptions.verifierFullProgram = verifierFullProgram.GetValue();

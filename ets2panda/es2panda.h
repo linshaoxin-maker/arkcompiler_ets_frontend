@@ -118,6 +118,7 @@ struct CompilerOptions {
     bool parseOnly {};
     bool verifierAllChecks {};
     bool verifierFullProgram {};
+    bool keepUnusedExterns {};
     std::string stdLib {};
     std::vector<std::string> plugins {};
     std::unordered_set<std::string> skipPhases {};

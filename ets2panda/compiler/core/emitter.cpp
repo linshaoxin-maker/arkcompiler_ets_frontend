@@ -15,6 +15,7 @@
 
 #include "emitter.h"
 
+#include "assembly-emitter.h"
 #include "ir/irnode.h"
 #include "util/helpers.h"
 #include "varbinder/scope.h"
@@ -30,6 +31,8 @@
 #include "generated/isa.h"
 #include "macros.h"
 #include "public/public.h"
+#include "mangling.h"
+#include "generated/signatures.h"
 
 #include <string>
 #include <string_view>
@@ -487,6 +490,155 @@ void Emitter::AddLiteralBuffer(const LiteralBuffer &literals, uint32_t index)
     prog_->literalarrayTable.emplace(std::to_string(index), std::move(literalArrayInstance));
 }
 
+// NOTE(pronai) these are not referenced directly in the assembly
+// always consider them referenced for now
+static const auto specialSigs = {
+    Signatures::ETS_ANNOTATION_INNER_CLASS,
+    Signatures::ETS_ANNOTATION_ENCLOSING_CLASS,
+    Signatures::ETS_ANNOTATION_ENCLOSING_METHOD,
+    Signatures::ETS_ANNOTATION_SIGNATURE,
+    Signatures::ETS_COROUTINE_ASYNC,
+    Signatures::ETS_ANNOTATION_DYNAMIC_CALL,
+    std::string_view("_ESAnnotation"),
+};
+
+struct ExternTraversal final {
+private:
+    std::vector<std::string> boundary;
+    std::unordered_set<std::string> enqueued;
+    std::unordered_set<std::string> referencedExterns;
+    const std::map<std::string, ark::pandasm::Record> &recordTable_;
+    const std::map<std::string, ark::pandasm::Function> &functionTable_;
+
+    void MaybeEnqueue(std::string id)
+    {
+        if (!id.empty() && enqueued.find(id) == enqueued.cend()) {
+            boundary.push_back(id);
+            enqueued.insert(id);
+        }
+    };
+
+    void EnqueueRoots()
+    {
+        for (const auto &sig : specialSigs) {
+            MaybeEnqueue(std::string(sig.substr(0, sig.npos)));
+        }
+
+        for (const auto &[name, rec] : recordTable_) {
+            if (!rec.metadata->IsForeign()) {
+                MaybeEnqueue(name);
+            }
+        }
+
+        for (const auto &[name, func] : functionTable_) {
+            if (!func.metadata->IsForeign()) {
+                MaybeEnqueue(name);
+            }
+        }
+    }
+
+    bool TryHandleAsFunction(const std::string &extName)
+    {
+        const auto &funcLoc = functionTable_.find(extName);
+        if (funcLoc == functionTable_.cend()) {
+            return false;
+        }
+
+        referencedExterns.insert(extName);
+        MaybeEnqueue(pandasm::GetOwnerName(funcLoc->first));
+        MaybeEnqueue(funcLoc->second.returnType.GetPandasmName());
+
+        for (const auto &param : funcLoc->second.params) {
+            MaybeEnqueue(param.type.GetPandasmName());
+        }
+
+        if (!funcLoc->second.metadata->IsForeign()) {
+            for (const auto &inst : funcLoc->second.ins) {
+                for (const auto &id : inst.ids) {
+                    MaybeEnqueue(id);
+                }
+            }
+
+            for (const auto &cblk : funcLoc->second.catchBlocks) {
+                MaybeEnqueue(cblk.exceptionRecord);
+            }
+        }
+        return true;
+    }
+
+    bool TryHandleAsRecord(const std::string &extName)
+    {
+        const auto &recLoc = recordTable_.find(extName);
+
+        if (recLoc == recordTable_.cend()) {
+            return false;
+        }
+        referencedExterns.insert(extName);
+        MaybeEnqueue(recLoc->second.metadata->GetBase());
+
+        for (const auto &iface : recLoc->second.metadata->GetInterfaces()) {
+            MaybeEnqueue(iface);
+        }
+
+        for (const auto &field : recLoc->second.fieldList) {
+            MaybeEnqueue(field.type.GetPandasmName());
+        }
+        return true;
+    }
+
+public:
+    ExternTraversal(const std::map<std::string, ark::pandasm::Record> &recordTable,
+                    const std::map<std::string, ark::pandasm::Function> &functionTable)
+        : recordTable_(recordTable), functionTable_(functionTable)
+    {
+    }
+
+    std::unordered_set<std::string> MarkReferencedExterns()
+    {
+        EnqueueRoots();
+        while (!boundary.empty()) {
+            const auto extName = *(boundary.end() - 1);
+            boundary.pop_back();
+
+            if (!TryHandleAsFunction(extName) && !TryHandleAsRecord(extName)) {
+                MaybeEnqueue(pandasm::GetOwnerName(extName));
+            }
+        }
+        return referencedExterns;
+    }
+};
+
+static void PerformRemoval(const std::unordered_set<std::string> referencedExterns,
+                           std::map<std::string, ark::pandasm::Record> &recordTable,
+                           std::map<std::string, ark::pandasm::Function> &functionTable)
+{
+    auto &rt = recordTable;
+    for (auto it = rt.begin(); it != rt.end();) {
+        const auto &[name, rec] = *it;
+        if (rec.metadata->IsForeign() && referencedExterns.find(rec.name) == referencedExterns.end()) {
+            it = rt.erase(it);
+        } else {
+            it++;
+        }
+    }
+
+    auto &ft = functionTable;
+    for (auto it = ft.begin(); it != ft.end();) {
+        if (it->second.metadata->IsForeign() && referencedExterns.find(it->second.name) == referencedExterns.end()) {
+            it = ft.erase(it);
+        } else {
+            it++;
+        }
+    }
+}
+
+void Emitter::RemoveUnreferencedExterns()
+{
+    ExternTraversal traversal(Program()->recordTable, Program()->functionTable);
+    const auto referencedExterns = traversal.MarkReferencedExterns();
+    PerformRemoval(referencedExterns, Program()->recordTable, Program()->functionTable);
+}
+
 pandasm::Program *Emitter::Finalize(bool dumpDebugInfo, std::string_view globalClass)
 {
     if (dumpDebugInfo) {
@@ -499,6 +651,8 @@ pandasm::Program *Emitter::Finalize(bool dumpDebugInfo, std::string_view globalC
         if (it != prog_->recordTable.end()) {
             prog_->recordTable.erase(it);
         }
+    } else if (!context_->config->options->CompilerOptions().keepUnusedExterns) {
+        RemoveUnreferencedExterns();
     }
     auto *prog = prog_;
     prog_ = nullptr;
