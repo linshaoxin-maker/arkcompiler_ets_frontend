@@ -36,13 +36,13 @@ void CompileImports(PandaGen *pg, varbinder::ModuleScope *scope)
         for (const auto *decl : decls) {
             varbinder::Variable *v = scope->FindLocal(decl->LocalName(), varbinder::ResolveBindingOptions::BINDINGS);
 
-            if (!v->IsModuleVariable()) {
+            if (!v->Is<varbinder::ModuleVariable>()) {
                 ASSERT(decl->ImportName() == "*");
 
                 varbinder::ConstScopeFindResult result(decl->LocalName(), scope, 0, v);
                 pg->StoreAccToLexEnv(decl->Node(), result, true);
             } else {
-                v->AsModuleVariable()->ModuleReg() = moduleReg;
+                v->As<varbinder::ModuleVariable>()->ModuleReg() = moduleReg;
             }
         }
     }

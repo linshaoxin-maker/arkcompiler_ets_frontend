@@ -81,10 +81,10 @@ static void CompileFunctionParameterDeclaration(PandaGen *pg, const ir::ScriptFu
             paramVar = pg->Scope()->FindLocal(name, varbinder::ResolveBindingOptions::BINDINGS);
         }
 
-        ASSERT(paramVar && paramVar->IsLocalVariable());
+        ASSERT(paramVar && paramVar->Is<varbinder::LocalVariable>());
 
         VReg paramReg = VReg(varbinder::VarBinder::MANDATORY_PARAMS_NUMBER + VReg::PARAM_START + index++);
-        ASSERT(paramVar->LexicalBound() || paramVar->AsLocalVariable()->Vreg() == paramReg);
+        ASSERT(paramVar->LexicalBound() || paramVar->As<varbinder::LocalVariable>()->Vreg() == paramReg);
 
         if (param->IsAssignmentPattern()) {
             RegScope rs(pg);
@@ -134,7 +134,7 @@ void Function::LoadClassContexts(const ir::AstNode *node, PandaGen *pg, VReg cto
         ASSERT(res.variable);
 
         if (classDef->HasMatchingPrivateKey(name)) {
-            pg->LoadLexicalVar(node, res.lexLevel, res.variable->AsLocalVariable()->LexIdx());
+            pg->LoadLexicalVar(node, res.lexLevel, res.variable->As<varbinder::LocalVariable>()->LexIdx());
             pg->StoreAccumulator(node, ctor);
             break;
         }
@@ -260,7 +260,7 @@ void Function::Compile(PandaGen *pg)
     auto *topScope = pg->TopScope();
 
     if (pg->FunctionHasFinalizer()) {
-        ASSERT(topScope->IsFunctionScope());
+        ASSERT(topScope->Is<varbinder::FunctionScope>());
 
         TryContext tryCtx(pg);
         pg->FunctionInit(tryCtx.GetCatchTable());
@@ -269,10 +269,10 @@ void Function::Compile(PandaGen *pg)
     } else {
         pg->FunctionInit(nullptr);
 
-        if (topScope->IsFunctionScope()) {
+        if (topScope->Is<varbinder::FunctionScope>()) {
             CompileFunction(pg);
         } else {
-            ASSERT(topScope->IsGlobalScope() || topScope->IsModuleScope());
+            ASSERT(topScope->Is<varbinder::GlobalScope>() || topScope->Is<varbinder::ModuleScope>());
             CompileSourceBlock(pg, pg->RootNode()->AsBlockStatement());
         }
     }

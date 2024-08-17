@@ -48,8 +48,8 @@ VariableScope *Scope::EnclosingVariableScope()
     Scope *iter = this;
 
     while (iter != nullptr) {
-        if (iter->IsVariableScope()) {
-            return iter->AsVariableScope();
+        if (iter->Is<VariableScope>()) {
+            return iter->As<VariableScope>();
         }
 
         iter = iter->Parent();
@@ -63,8 +63,8 @@ const VariableScope *Scope::EnclosingVariableScope() const
     const auto *iter = this;
 
     while (iter != nullptr) {
-        if (iter->IsVariableScope()) {
-            return iter->AsVariableScope();
+        if (iter->Is<VariableScope>()) {
+            return iter->As<VariableScope>();
         }
 
         iter = iter->Parent();
@@ -90,8 +90,8 @@ ClassScope *Scope::EnclosingClassScope()
     Scope *iter = this;
 
     while (iter != nullptr) {
-        if (iter->IsClassScope()) {
-            return iter->AsClassScope();
+        if (iter->Is<ClassScope>()) {
+            return iter->As<ClassScope>();
         }
 
         iter = iter->Parent();
@@ -105,8 +105,8 @@ const ClassScope *Scope::EnclosingClassScope() const
     const auto *iter = this;
 
     while (iter != nullptr) {
-        if (iter->IsVariableScope()) {
-            return iter->AsClassScope();
+        if (iter->Is<VariableScope>()) {
+            return iter->As<ClassScope>();
         }
 
         iter = iter->Parent();
@@ -173,7 +173,7 @@ ConstScopeFindResult Scope::FindInGlobal(const util::StringView &name, const Res
     const auto *scopeIter = this;
     const auto *scopeParent = this->Parent();
     // One scope below true global is ETSGLOBAL
-    while (scopeParent != nullptr && !scopeParent->IsGlobalScope()) {
+    while (scopeParent != nullptr && !scopeParent->Is<GlobalScope>()) {
         scopeIter = scopeParent;
         scopeParent = scopeIter->Parent();
     }
@@ -191,8 +191,8 @@ ConstScopeFindResult Scope::FindInGlobal(const util::StringView &name, const Res
 ConstScopeFindResult Scope::FindInFunctionScope(const util::StringView &name, const ResolveBindingOptions options) const
 {
     const auto *scopeIter = this;
-    while (scopeIter != nullptr && !scopeIter->IsGlobalScope()) {
-        if (!scopeIter->IsClassScope()) {
+    while (scopeIter != nullptr && !scopeIter->Is<GlobalScope>()) {
+        if (!scopeIter->Is<ClassScope>()) {
             if (auto *const resolved = scopeIter->FindLocal(name, options); resolved != nullptr) {
                 return ConstScopeFindResult(name, scopeIter, 0, 0, resolved);
             }
@@ -255,7 +255,7 @@ Variable *Scope::AddLocalVar(ArenaAllocator *allocator, Decl *newDecl)
     }
 
     VariableFlags varFlags = VariableFlags::HOIST_VAR | VariableFlags::LEXICAL_VAR;
-    if (scope->IsGlobalScope()) {
+    if (scope->Is<GlobalScope>()) {
         return scope->InsertBinding(newDecl->Name(), allocator->New<GlobalVariable>(newDecl, varFlags)).first->second;
     }
 
@@ -328,7 +328,7 @@ void VariableScope::CheckDirectEval(public_lib::Context *context)
         (void)name;
         var->SetLexical(this);
 
-        if (var->LexicalBound() && var->Declaration()->IsConstDecl()) {
+        if (var->LexicalBound() && var->Declaration()->Is<ConstDecl>()) {
             constBindings++;
         }
     }
@@ -341,7 +341,7 @@ void VariableScope::CheckDirectEval(public_lib::Context *context)
                 continue;
             }
 
-            literals[variable->AsLocalVariable()->LexIdx()] = compiler::Literal(name);
+            literals[variable->As<varbinder::LocalVariable>()->LexIdx()] = compiler::Literal(name);
         }
     } else {
         std::vector<varbinder::Variable *> bindings(LexicalSlots());
@@ -352,7 +352,7 @@ void VariableScope::CheckDirectEval(public_lib::Context *context)
                 continue;
             }
 
-            bindings[variable->AsLocalVariable()->LexIdx()] = variable;
+            bindings[variable->As<varbinder::LocalVariable>()->LexIdx()] = variable;
         }
 
         uint32_t buffIndex = 0;
@@ -362,7 +362,7 @@ void VariableScope::CheckDirectEval(public_lib::Context *context)
                 buffIndex++;
                 continue;
             }
-            if (variable->Declaration()->IsConstDecl()) {
+            if (variable->Declaration()->Is<ConstDecl>()) {
                 literals[buffIndex++] = compiler::Literal(true);
             }
             literals[buffIndex++] = compiler::Literal(variable->Name());
@@ -374,7 +374,7 @@ void VariableScope::CheckDirectEval(public_lib::Context *context)
 
 Variable *ParamScope::AddParam(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl, VariableFlags flags)
 {
-    ASSERT(newDecl->IsParameterDecl());
+    ASSERT(newDecl->Is<ParameterDecl>());
 
     if (currentVariable != nullptr) {
         return nullptr;
@@ -656,7 +656,7 @@ Variable *ModuleScope::AddImport(ArenaAllocator *allocator, Variable *currentVar
     }
 
     auto *variable = allocator->New<ModuleVariable>(newDecl, VariableFlags::NONE);
-    variable->ExoticName() = newDecl->AsImportDecl()->ImportName();
+    variable->ExoticName() = newDecl->As<ImportDecl>()->ImportName();
     InsertBinding(newDecl->Name(), variable);
     return variable;
 }
@@ -701,7 +701,7 @@ bool ModuleScope::ExportAnalysis()
                 return false;
             }
 
-            if (!variable->IsModuleVariable()) {
+            if (!variable->Is<varbinder::ModuleVariable>()) {
                 variable->AddFlag(VariableFlags::LOCAL_EXPORT);
                 localExports_.insert({variable, decl->ExportName()});
             }
@@ -757,7 +757,7 @@ Variable *LocalScope::AddBinding(ArenaAllocator *allocator, Variable *currentVar
 Variable *LocalScopeWithTypeAlias::AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                                               [[maybe_unused]] ScriptExtension extension)
 {
-    if (newDecl->IsTypeAliasDecl()) {
+    if (newDecl->Is<TypeAliasDecl>()) {
         auto *ident = newDecl->Node()->AsTSTypeAliasDeclaration()->Id();
         auto *var = typeAliasScope_->AddBinding(allocator, currentVariable, newDecl, extension);
         if (var != nullptr) {
@@ -962,7 +962,7 @@ void LoopDeclarationScope::ConvertToVariableScope(ArenaAllocator *allocator)
 
         slotIndex_++;
         loopType_ = ScopeType::LOOP_DECL;
-        auto *copiedVar = var->AsLocalVariable()->Copy(allocator, var->Declaration());
+        auto *copiedVar = var->As<varbinder::LocalVariable>()->Copy(allocator, var->Declaration());
         copiedVar->AddFlag(VariableFlags::INITIALIZED | VariableFlags::PER_ITERATION);
         var->AddFlag(VariableFlags::LOOP_DECL);
         loopScope_->InsertBinding(name, copiedVar);
@@ -988,7 +988,7 @@ void LoopScope::ConvertToVariableScope(ArenaAllocator *allocator)
 
     for (const auto &[_, var] : Bindings()) {
         (void)_;
-        if (var->LexicalBound() && var->Declaration()->IsLetDecl()) {
+        if (var->LexicalBound() && var->Declaration()->Is<LetDecl>()) {
             ASSERT(declScope_->NeedLexEnv());
             loopType_ = ScopeType::LOOP;
             break;
@@ -1010,12 +1010,12 @@ Variable *CatchParamScope::AddBinding(ArenaAllocator *allocator, Variable *curre
 Variable *CatchScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                                  [[maybe_unused]] ScriptExtension extension)
 {
-    if (!newDecl->IsVarDecl() &&
+    if (!newDecl->Is<VarDecl>() &&
         (paramScope_->FindLocal(newDecl->Name(), varbinder::ResolveBindingOptions::BINDINGS) != nullptr)) {
         return nullptr;
     }
 
-    if (newDecl->IsTypeAliasDecl()) {
+    if (newDecl->Is<TypeAliasDecl>()) {
         auto *ident = newDecl->Node()->AsTSTypeAliasDeclaration()->Id();
         auto *var = TypeAliasScope()->AddBinding(allocator, currentVariable, newDecl, extension);
         if (var != nullptr) {

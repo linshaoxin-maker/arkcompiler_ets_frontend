@@ -444,17 +444,18 @@ void PandaGen::LoadVar(const ir::Identifier *node, const varbinder::ConstScopeFi
         return;
     }
 
-    if (var->IsGlobalVariable()) {
+    if (var->Is<varbinder::GlobalVariable>()) {
         LoadGlobalVar(node, var->Name());
         return;
     }
 
-    if (var->IsModuleVariable()) {
-        LoadModuleVariable(node, var->AsModuleVariable()->ModuleReg(), var->AsModuleVariable()->ExoticName());
+    if (var->Is<varbinder::ModuleVariable>()) {
+        LoadModuleVariable(node, var->As<varbinder::ModuleVariable>()->ModuleReg(),
+                           var->As<varbinder::ModuleVariable>()->ExoticName());
         return;
     }
 
-    ASSERT(var->IsLocalVariable());
+    ASSERT(var->Is<varbinder::LocalVariable>());
     LoadAccFromLexEnv(node, result);
 }
 
@@ -471,17 +472,17 @@ void PandaGen::StoreVar(const ir::AstNode *node, const varbinder::ConstScopeFind
         return;
     }
 
-    if (var->IsGlobalVariable()) {
+    if (var->Is<varbinder::GlobalVariable>()) {
         StoreGlobalVar(node, var->Name());
         return;
     }
 
-    if (var->IsModuleVariable()) {
+    if (var->Is<varbinder::ModuleVariable>()) {
         ThrowConstAssignment(node, var->Name());
         return;
     }
 
-    ASSERT(var->IsLocalVariable());
+    ASSERT(var->Is<varbinder::LocalVariable>());
     StoreAccToLexEnv(node, result, isDeclaration);
 }
 
@@ -1853,7 +1854,7 @@ void PandaGen::DirectEval(const ir::AstNode *node, uint32_t parserStatus)
 void PandaGen::LoadLexicalContext(const ir::AstNode *node)
 {
     auto result = Scope()->Find(varbinder::VarBinder::LEXICAL_CONTEXT_PARAM);
-    LoadLexicalVar(node, result.lexLevel, result.variable->AsLocalVariable()->LexIdx());
+    LoadLexicalVar(node, result.lexLevel, result.variable->As<varbinder::LocalVariable>()->LexIdx());
 }
 
 bool PandaGen::IsDirectEval() const

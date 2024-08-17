@@ -54,8 +54,8 @@ LocalRegScope::LocalRegScope(CodeGen *cg, varbinder::Scope *scope) : RegScope(cg
 
     for (const auto &[_, var] : scope->OrderedBindings(cg_->Allocator())) {
         (void)_;
-        if (!var->LexicalBound() && var->IsLocalVariable()) {
-            var->AsLocalVariable()->BindVReg(cg_->AllocReg());
+        if (!var->LexicalBound() && var->Is<varbinder::LocalVariable>()) {
+            var->As<varbinder::LocalVariable>()->BindVReg(cg_->AllocReg());
         }
     }
 
@@ -101,13 +101,13 @@ void FunctionRegScope::InitializeParams(const StoreParamCb &cb)
 
     for (const auto it : funcScope->OrderedBindings(cg_->Allocator())) {
         auto *const var = std::get<1>(it);
-        if (var->Declaration()->IsParameterDecl() || var->Declaration()->IsTypeAliasDecl()) {
+        if (var->Declaration()->Is<varbinder::ParameterDecl>() || var->Declaration()->Is<varbinder::TypeAliasDecl>()) {
             continue;
         }
 
-        if (!var->LexicalBound() && var->IsLocalVariable()) {
+        if (!var->LexicalBound() && var->Is<varbinder::LocalVariable>()) {
             const auto vreg = cg_->AllocReg();
-            var->AsLocalVariable()->BindVReg(vreg);
+            var->As<varbinder::LocalVariable>()->BindVReg(vreg);
         }
     }
 
@@ -146,8 +146,8 @@ FunctionRegScope::FunctionRegScope(PandaGen *pg) : RegScope(pg), envScope_(pg->A
 
     pg->LoadAccFromArgs(pg->rootNode_);
 
-    if (funcScope->IsModuleScope()) {
-        ModuleContext::Compile(pg, pg->scope_->AsModuleScope());
+    if (funcScope->Is<varbinder::ModuleScope>()) {
+        ModuleContext::Compile(pg, pg->scope_->As<varbinder::ModuleScope>());
     }
 
     Hoisting::Hoist(pg);

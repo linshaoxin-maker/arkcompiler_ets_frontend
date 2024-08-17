@@ -31,11 +31,9 @@ class ETSImportDeclaration;
 namespace ark::es2panda::varbinder {
 class Scope;
 class LocalScope;
-
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DECLARE_CLASSES(decl_kind, className) class className;
-DECLARATION_KINDS(DECLARE_CLASSES)
-#undef DECLARE_CLASSES
+class LetDecl;
+class ConstDecl;
+class ParameterDecl;
 
 class Decl {
 public:
@@ -60,24 +58,24 @@ public:
         return node_;
     }
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DECLARE_CHECKS_CASTS(declKind, className)         \
-    bool Is##className() const                            \
-    {                                                     \
-        return Type() == DeclType::declKind;              \
-    }                                                     \
-    className *As##className()                            \
-    {                                                     \
-        ASSERT(Is##className());                          \
-        return reinterpret_cast<className *>(this);       \
-    }                                                     \
-    const className *As##className() const                \
-    {                                                     \
-        ASSERT(Is##className());                          \
-        return reinterpret_cast<const className *>(this); \
+    template <class T>
+    bool Is() const
+    {
+        return Type() == T::TYPE;
     }
-    DECLARATION_KINDS(DECLARE_CHECKS_CASTS)
-#undef DECLARE_CHECKS_CASTS
+
+    template <class T>
+    const T *As() const
+    {
+        ASSERT(Is<T>());
+        return reinterpret_cast<const T *>(this);
+    }
+
+    template <class T>
+    T *As()
+    {
+        return const_cast<T *>(const_cast<const Decl *>(this)->As<T>());
+    }
 
     void BindNode(ir::AstNode *node)
     {
@@ -86,12 +84,12 @@ public:
 
     bool IsLetOrConstDecl() const
     {
-        return IsLetDecl() || IsConstDecl();
+        return Is<LetDecl>() || Is<ConstDecl>();
     }
 
     bool PossibleTDZ() const
     {
-        return IsLetOrConstDecl() || IsParameterDecl();
+        return IsLetOrConstDecl() || Is<ParameterDecl>();
     }
 
 protected:
@@ -104,16 +102,30 @@ protected:
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
-template <typename T>
-class MultiDecl : public Decl {
+template <DeclType D>
+class TypedDecl : public Decl {
+public:
+    static constexpr DeclType TYPE = D;
+
+    DeclType Type() const override
+    {
+        return TYPE;
+    }
+
+protected:
+    using Decl::Decl;
+};
+
+template <typename T, DeclType D>
+class MultiDecl : public TypedDecl<D> {
 public:
     explicit MultiDecl(ArenaAllocator *allocator, util::StringView name)
-        : Decl(name), declarations_(allocator->Adapter())
+        : MultiDecl::TypedDecl(name), declarations_(allocator->Adapter())
     {
     }
 
     explicit MultiDecl(ArenaAllocator *allocator, util::StringView name, ir::AstNode *declNode)
-        : Decl(name, declNode), declarations_(allocator->Adapter())
+        : MultiDecl::TypedDecl(name, declNode), declarations_(allocator->Adapter())
     {
     }
 
@@ -131,17 +143,12 @@ private:
     ArenaVector<T *> declarations_;
 };
 
-class EnumLiteralDecl : public Decl {
+class EnumLiteralDecl : public TypedDecl<DeclType::ENUM_LITERAL> {
 public:
-    explicit EnumLiteralDecl(util::StringView name, bool isConst) : Decl(name), isConst_(isConst) {}
+    explicit EnumLiteralDecl(util::StringView name, bool isConst) : TypedDecl(name), isConst_(isConst) {}
     explicit EnumLiteralDecl(util::StringView name, ir::AstNode *declNode, bool isConst)
-        : Decl(name, declNode), isConst_(isConst)
+        : TypedDecl(name, declNode), isConst_(isConst)
     {
-    }
-
-    DeclType Type() const override
-    {
-        return DeclType::ENUM_LITERAL;
     }
 
     bool IsConst() const
@@ -164,179 +171,104 @@ private:
     bool isConst_ {};
 };
 
-class InterfaceDecl : public MultiDecl<ir::TSInterfaceDeclaration> {
+class InterfaceDecl : public MultiDecl<ir::TSInterfaceDeclaration, DeclType::INTERFACE> {
 public:
     explicit InterfaceDecl(ArenaAllocator *allocator, util::StringView name) : MultiDecl(allocator, name) {}
     explicit InterfaceDecl(ArenaAllocator *allocator, util::StringView name, ir::AstNode *declNode)
         : MultiDecl(allocator, name, declNode)
     {
     }
-
-    DeclType Type() const override
-    {
-        return DeclType::INTERFACE;
-    }
 };
 
-class ClassDecl : public Decl {
+class ClassDecl : public TypedDecl<DeclType::CLASS> {
 public:
-    explicit ClassDecl(util::StringView name) : Decl(name) {}
-    explicit ClassDecl(util::StringView name, ir::AstNode *node) : Decl(name, node) {}
-
-    DeclType Type() const override
-    {
-        return DeclType::CLASS;
-    }
+    explicit ClassDecl(util::StringView name) : TypedDecl(name) {}
+    explicit ClassDecl(util::StringView name, ir::AstNode *node) : TypedDecl(name, node) {}
 };
 
-class FunctionDecl : public MultiDecl<ir::ScriptFunction> {
+class FunctionDecl : public MultiDecl<ir::ScriptFunction, DeclType::FUNC> {
 public:
     explicit FunctionDecl(ArenaAllocator *allocator, util::StringView name, ir::AstNode *node)
         : MultiDecl(allocator, name)
     {
         node_ = node;
     }
-
-    DeclType Type() const override
-    {
-        return DeclType::FUNC;
-    }
 };
 
-class TypeParameterDecl : public Decl {
+class TypeParameterDecl : public TypedDecl<DeclType::TYPE_PARAMETER> {
 public:
-    explicit TypeParameterDecl(util::StringView name) : Decl(name) {}
-
-    DeclType Type() const override
-    {
-        return DeclType::TYPE_PARAMETER;
-    }
+    explicit TypeParameterDecl(util::StringView name) : TypedDecl(name) {}
 };
 
-class PropertyDecl : public Decl {
+class PropertyDecl : public TypedDecl<DeclType::PROPERTY> {
 public:
-    explicit PropertyDecl(util::StringView name) : Decl(name) {}
-
-    DeclType Type() const override
-    {
-        return DeclType::PROPERTY;
-    }
+    explicit PropertyDecl(util::StringView name) : TypedDecl(name) {}
 };
 
-class MethodDecl : public Decl {
+class MethodDecl : public TypedDecl<DeclType::METHOD> {
 public:
-    explicit MethodDecl(util::StringView name) : Decl(name) {}
-
-    DeclType Type() const override
-    {
-        return DeclType::METHOD;
-    }
+    explicit MethodDecl(util::StringView name) : TypedDecl(name) {}
 };
 
-class EnumDecl : public Decl {
+class EnumDecl : public TypedDecl<DeclType::ENUM> {
 public:
-    explicit EnumDecl(util::StringView name) : Decl(name) {}
-
-    DeclType Type() const override
-    {
-        return DeclType::ENUM;
-    }
+    explicit EnumDecl(util::StringView name) : TypedDecl(name) {}
 };
 
-class TypeAliasDecl : public Decl {
+class TypeAliasDecl : public TypedDecl<DeclType::TYPE_ALIAS> {
 public:
-    explicit TypeAliasDecl(util::StringView name) : Decl(name) {}
-    explicit TypeAliasDecl(util::StringView name, ir::AstNode *node) : Decl(name, node) {}
-
-    DeclType Type() const override
-    {
-        return DeclType::TYPE_ALIAS;
-    }
+    explicit TypeAliasDecl(util::StringView name) : TypedDecl(name) {}
+    explicit TypeAliasDecl(util::StringView name, ir::AstNode *node) : TypedDecl(name, node) {}
 };
 
-class NameSpaceDecl : public Decl {
+class NameSpaceDecl : public TypedDecl<DeclType::NAMESPACE> {
 public:
-    explicit NameSpaceDecl(util::StringView name) : Decl(name) {}
-
-    DeclType Type() const override
-    {
-        return DeclType::NAMESPACE;
-    }
+    explicit NameSpaceDecl(util::StringView name) : TypedDecl(name) {}
 };
 
-class VarDecl : public Decl {
+class VarDecl : public TypedDecl<DeclType::VAR> {
 public:
-    explicit VarDecl(util::StringView name) : Decl(name) {}
-
-    DeclType Type() const override
-    {
-        return DeclType::VAR;
-    }
+    explicit VarDecl(util::StringView name) : TypedDecl(name) {}
 };
 
-class LetDecl : public Decl {
+class LetDecl : public TypedDecl<DeclType::LET> {
 public:
-    explicit LetDecl(util::StringView name) : Decl(name) {}
-    explicit LetDecl(util::StringView name, ir::AstNode *declNode) : Decl(name, declNode) {}
-
-    DeclType Type() const override
-    {
-        return DeclType::LET;
-    }
+    explicit LetDecl(util::StringView name) : TypedDecl(name) {}
+    explicit LetDecl(util::StringView name, ir::AstNode *declNode) : TypedDecl(name, declNode) {}
 };
 
-class ConstDecl : public Decl {
+class ConstDecl : public TypedDecl<DeclType::CONST> {
 public:
-    explicit ConstDecl(util::StringView name) : Decl(name) {}
-    explicit ConstDecl(util::StringView name, ir::AstNode *declNode) : Decl(name, declNode) {}
-
-    DeclType Type() const override
-    {
-        return DeclType::CONST;
-    }
+    explicit ConstDecl(util::StringView name) : TypedDecl(name) {}
+    explicit ConstDecl(util::StringView name, ir::AstNode *declNode) : TypedDecl(name, declNode) {}
 };
 
-class LabelDecl : public Decl {
+class LabelDecl : public TypedDecl<DeclType::LABEL> {
 public:
-    explicit LabelDecl(util::StringView name) : Decl(name) {}
-    explicit LabelDecl(util::StringView name, ir::AstNode *declNode) : Decl(name, declNode) {}
-
-    DeclType Type() const override
-    {
-        return DeclType::LABEL;
-    }
+    explicit LabelDecl(util::StringView name) : TypedDecl(name) {}
+    explicit LabelDecl(util::StringView name, ir::AstNode *declNode) : TypedDecl(name, declNode) {}
 };
 
-class ReadonlyDecl : public Decl {
+class ReadonlyDecl : public TypedDecl<DeclType::READONLY> {
 public:
-    explicit ReadonlyDecl(util::StringView name) : Decl(name) {}
-    explicit ReadonlyDecl(util::StringView name, ir::AstNode *declNode) : Decl(name, declNode) {}
-
-    DeclType Type() const override
-    {
-        return DeclType::READONLY;
-    }
+    explicit ReadonlyDecl(util::StringView name) : TypedDecl(name) {}
+    explicit ReadonlyDecl(util::StringView name, ir::AstNode *declNode) : TypedDecl(name, declNode) {}
 };
 
-class ParameterDecl : public Decl {
+class ParameterDecl : public TypedDecl<DeclType::PARAM> {
 public:
-    explicit ParameterDecl(util::StringView name) : Decl(name) {}
-
-    DeclType Type() const override
-    {
-        return DeclType::PARAM;
-    }
+    explicit ParameterDecl(util::StringView name) : TypedDecl(name) {}
 };
 
-class ImportDecl : public Decl {
+class ImportDecl : public TypedDecl<DeclType::IMPORT> {
 public:
     explicit ImportDecl(util::StringView importName, util::StringView localName)
-        : Decl(localName), importName_(importName)
+        : TypedDecl(localName), importName_(importName)
     {
     }
 
     explicit ImportDecl(util::StringView importName, util::StringView localName, ir::AstNode *node)
-        : Decl(localName), importName_(importName)
+        : TypedDecl(localName), importName_(importName)
     {
         BindNode(node);
     }
@@ -351,24 +283,19 @@ public:
         return name_;
     }
 
-    DeclType Type() const override
-    {
-        return DeclType::IMPORT;
-    }
-
 private:
     util::StringView importName_;
 };
 
-class ExportDecl : public Decl {
+class ExportDecl : public TypedDecl<DeclType::EXPORT> {
 public:
     explicit ExportDecl(util::StringView exportName, util::StringView localName)
-        : Decl(localName), exportName_(exportName)
+        : TypedDecl(localName), exportName_(exportName)
     {
     }
 
     explicit ExportDecl(util::StringView exportName, util::StringView localName, ir::AstNode *node)
-        : Decl(localName), exportName_(exportName)
+        : TypedDecl(localName), exportName_(exportName)
     {
         BindNode(node);
     }
@@ -381,11 +308,6 @@ public:
     const util::StringView &LocalName() const
     {
         return name_;
-    }
-
-    DeclType Type() const override
-    {
-        return DeclType::EXPORT;
     }
 
 private:

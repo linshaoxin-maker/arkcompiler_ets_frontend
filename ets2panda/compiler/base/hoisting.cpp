@@ -24,7 +24,7 @@ static void HoistVar(PandaGen *pg, varbinder::Variable *var, const varbinder::Va
 {
     auto *scope = pg->Scope();
 
-    if (scope->IsGlobalScope()) {
+    if (scope->Is<varbinder::GlobalScope>()) {
         pg->LoadConst(decl->Node(), Constant::JS_UNDEFINED);
         pg->StoreGlobalVar(decl->Node(), decl->Name());
         return;
@@ -43,13 +43,14 @@ static void HoistFunction(PandaGen *pg, varbinder::Variable *var, const varbinde
 
     const auto &internalName = scriptFunction->Scope()->InternalName();
 
-    if (scope->IsGlobalScope()) {
+    if (scope->Is<varbinder::GlobalScope>()) {
         pg->DefineFunction(decl->Node(), scriptFunction, internalName);
         pg->StoreGlobalVar(decl->Node(), var->Declaration()->Name());
         return;
     }
 
-    ASSERT(scope->IsFunctionScope() || scope->IsCatchScope() || scope->IsLocalScope() || scope->IsModuleScope());
+    ASSERT(scope->Is<varbinder::FunctionScope>() || scope->Is<varbinder::CatchScope>() ||
+           scope->Is<varbinder::LocalScope>() || scope->Is<varbinder::ModuleScope>());
     varbinder::ConstScopeFindResult result(decl->Name(), scope, 0, var);
 
     pg->DefineFunction(decl->Node(), scriptFunction, internalName);
@@ -68,11 +69,11 @@ void Hoisting::Hoist(PandaGen *pg)
 
         const auto *decl = var->Declaration();
 
-        if (decl->IsVarDecl()) {
-            HoistVar(pg, var, decl->AsVarDecl());
+        if (decl->Is<varbinder::VarDecl>()) {
+            HoistVar(pg, var, decl->As<varbinder::VarDecl>());
         } else {
-            ASSERT(decl->IsFunctionDecl());
-            HoistFunction(pg, var, decl->AsFunctionDecl());
+            ASSERT(decl->Is<varbinder::FunctionDecl>());
+            HoistFunction(pg, var, decl->As<varbinder::FunctionDecl>());
         }
     }
 }

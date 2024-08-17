@@ -264,10 +264,10 @@ static ir::MethodDefinition *SetUpCalleeMethod(public_lib::Context *ctx, LambdaI
         auto paramScopeCtx = varbinder::LexicalScope<varbinder::FunctionParamScope>::Enter(varBinder, paramScope);
         varBinder->AddMandatoryParam(varbinder::TypedBinder::MANDATORY_PARAM_THIS);
         calleeClass->Definition()->TsType()->AsETSObjectType()->AddProperty<checker::PropertyType::INSTANCE_METHOD>(
-            var->AsLocalVariable());
+            var->As<varbinder::LocalVariable>());
     } else {
         calleeClass->Definition()->TsType()->AsETSObjectType()->AddProperty<checker::PropertyType::STATIC_METHOD>(
-            var->AsLocalVariable());
+            var->As<varbinder::LocalVariable>());
     }
 
     varbinder::BoundContext bctx {varBinder->GetRecordTable(), calleeClass->Definition(), true};
@@ -287,7 +287,7 @@ static ir::MethodDefinition *CreateCalleeMethod(public_lib::Context *ctx, ir::Ar
     auto *varBinder = ctx->checker->VarBinder()->AsETSBinder();
     auto *checker = ctx->checker->AsETSChecker();
 
-    auto *classScope = info->calleeClass->Definition()->Scope()->AsClassScope();
+    auto *classScope = info->calleeClass->Definition()->Scope()->As<varbinder::ClassScope>();
 
     auto *oldTypeParams = (info->enclosingFunction != nullptr) ? info->enclosingFunction->TypeParams() : nullptr;
     auto enclosingScope =
@@ -320,7 +320,7 @@ static ir::MethodDefinition *CreateCalleeMethod(public_lib::Context *ctx, ir::Ar
             cmInfo->body, ir::FunctionSignature(newTypeParams, std::move(params), returnTypeAnnotation), funcFlags,
             modifierFlags});
     auto *funcScope = cmInfo->body == nullptr ? allocator->New<varbinder::FunctionScope>(allocator, paramScope)
-                                              : cmInfo->body->Scope()->AsFunctionScope();
+                                              : cmInfo->body->Scope()->As<varbinder::FunctionScope>();
     funcScope->BindName(info->calleeClass->Definition()->TsType()->AsETSObjectType()->AssemblerName());
     func->SetScope(funcScope);
 
@@ -929,7 +929,7 @@ static ir::AstNode *BuildLambdaClassWhenNeeded(public_lib::Context *ctx, ir::Ast
         auto *id = node->AsIdentifier();
         auto *var = id->Variable();
         if (id->IsReference() && id->TsType() != nullptr && id->TsType()->IsETSFunctionType() && var != nullptr &&
-            var->Declaration()->IsFunctionDecl() && !IsInCalleePosition(id)) {
+            var->Declaration()->Is<varbinder::FunctionDecl>() && !IsInCalleePosition(id)) {
             return ConvertFunctionReference(ctx, id);
         }
     }
@@ -943,7 +943,7 @@ static ir::AstNode *BuildLambdaClassWhenNeeded(public_lib::Context *ctx, ir::Ast
                 checker::PropertySearchFlags::SEARCH_INSTANCE_METHOD |
                     checker::PropertySearchFlags::SEARCH_STATIC_METHOD |
                     checker::PropertySearchFlags::DISALLOW_SYNTHETIC_METHOD_CREATION);
-            if (var != nullptr && var->Declaration()->IsFunctionDecl() && !IsInCalleePosition(mexpr)) {
+            if (var != nullptr && var->Declaration()->Is<varbinder::FunctionDecl>() && !IsInCalleePosition(mexpr)) {
                 return ConvertFunctionReference(ctx, mexpr);
             }
         }

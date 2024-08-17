@@ -75,7 +75,7 @@ void VarBinder::InitTopScope()
 
 std::tuple<ParameterDecl *, Variable *> VarBinder::AddParamDecl(ir::AstNode *param)
 {
-    ASSERT(scope_->IsFunctionParamScope() || scope_->IsCatchParamScope());
+    ASSERT(scope_->Is<FunctionParamScope>() || scope_->Is<CatchParamScope>());
     auto [decl, node, var] = static_cast<ParamScope *>(scope_)->AddParamDecl(Allocator(), param);
 
     if (node == nullptr) {
@@ -170,12 +170,12 @@ bool VarBinder::InstantiateArgumentsImpl(Scope **scope, Scope *iter, const ir::A
     }
     auto *argumentsVariable =
         (*scope)->AddDecl<ConstDecl, LocalVariable>(Allocator(), FUNCTION_ARGUMENTS, VariableFlags::INITIALIZED);
-    if (iter->IsFunctionParamScope()) {
+    if (iter->Is<FunctionParamScope>()) {
         if (argumentsVariable == nullptr) {
             return true;
         }
 
-        *scope = iter->AsFunctionParamScope()->GetFunctionScope();
+        *scope = iter->As<FunctionParamScope>()->GetFunctionScope();
         (*scope)->InsertBinding(argumentsVariable->Name(), argumentsVariable);
     }
 
@@ -187,11 +187,11 @@ void VarBinder::InstantiateArguments()
 {
     auto *iter = scope_;
     while (true) {
-        Scope *scope = iter->IsFunctionParamScope() ? iter : iter->EnclosingVariableScope();
+        Scope *scope = iter->Is<FunctionParamScope>() ? iter : iter->EnclosingVariableScope();
 
         const auto *node = scope->Node();
 
-        if (scope->IsLoopScope()) {
+        if (scope->Is<LoopScope>()) {
             iter = scope->Parent();
             continue;
         }
@@ -213,8 +213,8 @@ void VarBinder::PropagateDirectEval() const
     auto *iter = scope_;
 
     do {
-        VariableScope *scope = iter->IsFunctionParamScope() ? iter->AsFunctionParamScope()->GetFunctionScope()
-                                                            : iter->EnclosingVariableScope();
+        VariableScope *scope = iter->Is<FunctionParamScope>() ? iter->As<FunctionParamScope>()->GetFunctionScope()
+                                                              : iter->EnclosingVariableScope();
 
         scope->AddFlag(ScopeFlags::NO_REG_STORE);
         iter = iter->Parent();
@@ -379,7 +379,7 @@ void VarBinder::InitializeClassBinding(ir::ClassDefinition *classDef)
 {
     auto res = scope_->Find(classDef->Ident()->Name());
 
-    ASSERT(res.variable && res.variable->Declaration()->IsLetDecl());
+    ASSERT(res.variable && res.variable->Declaration()->Is<LetDecl>());
     res.variable->AddFlag(VariableFlags::INITIALIZED);
 }
 
@@ -388,7 +388,7 @@ void VarBinder::InitializeClassIdent(ir::ClassDefinition *classDef)
     auto res = scope_->Find(classDef->Ident()->Name());
 
     ASSERT(res.variable &&
-           (res.variable->Declaration()->IsConstDecl() || res.variable->Declaration()->IsReadonlyDecl()));
+           (res.variable->Declaration()->Is<ConstDecl>() || res.variable->Declaration()->Is<ReadonlyDecl>()));
     res.variable->AddFlag(VariableFlags::INITIALIZED);
 }
 
@@ -535,103 +535,84 @@ void VarBinder::VisitScriptFunctionWithPotentialTypeParams(ir::ScriptFunction *f
     VisitScriptFunction(func);
 }
 
+void VarBinder::ResolveDoWhileStatementReference(ir::DoWhileStatement *doWhileStatement)
+{
+    {
+        auto loopScopeCtx = LexicalScope<LoopScope>::Enter(this, doWhileStatement->Scope());
+        ResolveReference(doWhileStatement->Body());
+    }
+
+    ResolveReference(doWhileStatement->Test());
+}
+
+void VarBinder::ResolveWhileStatementReference(ir::WhileStatement *whileStatement)
+{
+    ResolveReference(whileStatement->Test());
+
+    auto loopScopeCtx = LexicalScope<LoopScope>::Enter(this, whileStatement->Scope());
+    ResolveReference(whileStatement->Body());
+}
+
+void VarBinder::ResolveIdentifierReference(ir::Identifier *ident)
+{
+    LookupIdentReference(ident);
+    ResolveReferences(ident);
+}
+
+void VarBinder::ResolveSuperExpressionReference(ir::AstNode *childNode)
+{
+    VariableScope *varScope = scope_->EnclosingVariableScope();
+    varScope->AddFlag(ScopeFlags::USE_SUPER);
+    ResolveReferences(childNode);
+}
+
 void VarBinder::ResolveReference(ir::AstNode *childNode)
 {
     switch (childNode->Type()) {
-        case ir::AstNodeType::IDENTIFIER: {
-            auto *ident = childNode->AsIdentifier();
-
-            LookupIdentReference(ident);
-            ResolveReferences(childNode);
-            break;
-        }
-        case ir::AstNodeType::SUPER_EXPRESSION: {
-            VariableScope *varScope = scope_->EnclosingVariableScope();
-            varScope->AddFlag(ScopeFlags::USE_SUPER);
-            ResolveReferences(childNode);
-            break;
-        }
-        case ir::AstNodeType::SCRIPT_FUNCTION: {
-            VisitScriptFunctionWithPotentialTypeParams(childNode->AsScriptFunction());
-            break;
-        }
-        case ir::AstNodeType::VARIABLE_DECLARATOR: {
-            BuildVarDeclarator(childNode->AsVariableDeclarator());
-            break;
-        }
-        case ir::AstNodeType::CLASS_DEFINITION: {
-            BuildClassDefinition(childNode->AsClassDefinition());
-            break;
-        }
-        case ir::AstNodeType::CLASS_PROPERTY: {
-            BuildClassProperty(childNode->AsClassProperty());
-            break;
-        }
+        case ir::AstNodeType::IDENTIFIER:
+            return ResolveIdentifierReference(childNode->AsIdentifier());
+        case ir::AstNodeType::SUPER_EXPRESSION:
+            return ResolveSuperExpressionReference(childNode);
+        case ir::AstNodeType::SCRIPT_FUNCTION:
+            return VisitScriptFunctionWithPotentialTypeParams(childNode->AsScriptFunction());
+        case ir::AstNodeType::VARIABLE_DECLARATOR:
+            return BuildVarDeclarator(childNode->AsVariableDeclarator());
+        case ir::AstNodeType::CLASS_DEFINITION:
+            return BuildClassDefinition(childNode->AsClassDefinition());
+        case ir::AstNodeType::CLASS_PROPERTY:
+            return BuildClassProperty(childNode->AsClassProperty());
         case ir::AstNodeType::BLOCK_STATEMENT: {
             auto scopeCtx = LexicalScope<Scope>::Enter(this, childNode->AsBlockStatement()->Scope());
-
-            ResolveReferences(childNode);
-            break;
+            return ResolveReferences(childNode);
         }
         case ir::AstNodeType::BLOCK_EXPRESSION: {
             auto scopeCtx = LexicalScope<Scope>::Enter(this, childNode->AsBlockExpression()->Scope());
-
-            ResolveReferences(childNode);
-            break;
+            return ResolveReferences(childNode);
         }
         case ir::AstNodeType::SWITCH_STATEMENT: {
             auto scopeCtx = LexicalScope<LocalScope>::Enter(this, childNode->AsSwitchStatement()->Scope());
-
-            ResolveReferences(childNode);
-            break;
+            return ResolveReferences(childNode);
         }
-        case ir::AstNodeType::DO_WHILE_STATEMENT: {
-            auto *doWhileStatement = childNode->AsDoWhileStatement();
-
-            {
-                auto loopScopeCtx = LexicalScope<LoopScope>::Enter(this, doWhileStatement->Scope());
-                ResolveReference(doWhileStatement->Body());
-            }
-
-            ResolveReference(doWhileStatement->Test());
-            break;
-        }
-        case ir::AstNodeType::WHILE_STATEMENT: {
-            auto *whileStatement = childNode->AsWhileStatement();
-            ResolveReference(whileStatement->Test());
-
-            auto loopScopeCtx = LexicalScope<LoopScope>::Enter(this, whileStatement->Scope());
-            ResolveReference(whileStatement->Body());
-
-            break;
-        }
-        case ir::AstNodeType::FOR_UPDATE_STATEMENT: {
-            BuildForUpdateLoop(childNode->AsForUpdateStatement());
-            break;
-        }
+        case ir::AstNodeType::DO_WHILE_STATEMENT:
+            return ResolveDoWhileStatementReference(childNode->AsDoWhileStatement());
+        case ir::AstNodeType::WHILE_STATEMENT:
+            return ResolveWhileStatementReference(childNode->AsWhileStatement());
+        case ir::AstNodeType::FOR_UPDATE_STATEMENT:
+            return BuildForUpdateLoop(childNode->AsForUpdateStatement());
         case ir::AstNodeType::FOR_IN_STATEMENT: {
             auto *forInStmt = childNode->AsForInStatement();
-            BuildForInOfLoop(forInStmt->Scope(), forInStmt->Left(), forInStmt->Right(), forInStmt->Body());
-
-            break;
+            return BuildForInOfLoop(forInStmt->Scope(), forInStmt->Left(), forInStmt->Right(), forInStmt->Body());
         }
         case ir::AstNodeType::FOR_OF_STATEMENT: {
             auto *forOfStmt = childNode->AsForOfStatement();
-            BuildForInOfLoop(forOfStmt->Scope(), forOfStmt->Left(), forOfStmt->Right(), forOfStmt->Body());
-            break;
+            return BuildForInOfLoop(forOfStmt->Scope(), forOfStmt->Left(), forOfStmt->Right(), forOfStmt->Body());
         }
-        case ir::AstNodeType::CATCH_CLAUSE: {
-            BuildCatchClause(childNode->AsCatchClause());
-            break;
-        }
-        case ir::AstNodeType::TS_TYPE_ALIAS_DECLARATION: {
-            BuildTypeAliasDeclaration(childNode->AsTSTypeAliasDeclaration());
-            break;
-        }
-        default: {
-            HandleCustomNodes(childNode);
-            break;
-        }
+        case ir::AstNodeType::CATCH_CLAUSE:
+            return BuildCatchClause(childNode->AsCatchClause());
+        case ir::AstNodeType::TS_TYPE_ALIAS_DECLARATION:
+            return BuildTypeAliasDeclaration(childNode->AsTSTypeAliasDeclaration());
+        default:
+            return HandleCustomNodes(childNode);
     }
 }
 
@@ -642,15 +623,15 @@ void VarBinder::ResolveReferences(const ir::AstNode *parent)
 
 LocalVariable *VarBinder::AddMandatoryParam(const std::string_view &name)
 {
-    ASSERT(scope_->IsFunctionParamScope());
+    ASSERT(scope_->Is<FunctionParamScope>());
 
     auto *decl = Allocator()->New<ParameterDecl>(name);
     auto *param = Allocator()->New<LocalVariable>(decl, VariableFlags::VAR);
 
-    auto &funcParams = scope_->AsFunctionParamScope()->Params();
+    auto &funcParams = scope_->As<FunctionParamScope>()->Params();
 
     funcParams.insert(funcParams.begin(), param);
-    scope_->AsFunctionParamScope()->GetFunctionScope()->InsertBinding(decl->Name(), param);
+    scope_->As<FunctionParamScope>()->GetFunctionScope()->InsertBinding(decl->Name(), param);
     scope_->InsertBinding(decl->Name(), param);
 
     return param;
@@ -677,7 +658,7 @@ void VarBinder::AddMandatoryParams()
     auto iter = functionScopes_.begin();
     [[maybe_unused]] auto *funcScope = *iter++;
 
-    ASSERT(funcScope->IsGlobalScope() || funcScope->IsModuleScope());
+    ASSERT(funcScope->Is<GlobalScope>() || funcScope->Is<ModuleScope>());
 
     const auto &options = context_->config->options->CompilerOptions();
     if (options.isDirectEval) {

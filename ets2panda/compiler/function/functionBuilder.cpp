@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 - 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021 - 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -86,8 +86,8 @@ VReg FunctionBuilder::FunctionReg(const ir::ScriptFunction *node) const
 {
     varbinder::FunctionScope *scope = node->Scope();
     auto res = scope->Find(varbinder::VarBinder::MANDATORY_PARAM_FUNC);
-    ASSERT(res.level == 0 && res.variable->IsLocalVariable());
-    return res.variable->AsLocalVariable()->Vreg();
+    ASSERT(res.level == 0 && res.variable->Is<varbinder::LocalVariable>());
+    return res.variable->As<varbinder::LocalVariable>()->Vreg();
 }
 
 void FunctionBuilder::Await(const ir::AstNode *node)

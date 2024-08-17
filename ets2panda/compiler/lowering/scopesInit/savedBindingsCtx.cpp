@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 - 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021 - 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -31,10 +31,10 @@ void ImportDeclarationContext::BindImportDecl(ir::ImportDeclaration *importDecl)
             continue;
         }
 
-        declList.push_back(variable->Declaration()->AsImportDecl());
+        declList.push_back(variable->Declaration()->As<varbinder::ImportDecl>());
     }
 
-    VarBinder()->GetScope()->AsModuleScope()->AddImportDecl(importDecl, std::move(declList));
+    VarBinder()->GetScope()->As<varbinder::ModuleScope>()->AddImportDecl(importDecl, std::move(declList));
 }
 
 void ExportDeclarationContext::BindExportDecl(ir::AstNode *exportDecl)
@@ -73,7 +73,7 @@ void ExportDeclarationContext::BindExportDecl(ir::AstNode *exportDecl)
         declList.push_back(decl);
     }
 
-    auto *moduleScope = VarBinder()->GetScope()->AsModuleScope();
+    auto *moduleScope = VarBinder()->GetScope()->As<varbinder::ModuleScope>();
     moduleScope->AddExportDecl(exportDecl, std::move(declList));
 }
 

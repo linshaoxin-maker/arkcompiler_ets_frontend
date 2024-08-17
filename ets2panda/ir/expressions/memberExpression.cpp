@@ -172,7 +172,7 @@ std::pair<checker::Type *, varbinder::LocalVariable *> MemberExpression::Resolve
     switch (resolveRes.size()) {
         case 1U: {
             if (resolveRes[0]->Kind() == checker::ResolvedKind::PROPERTY) {
-                auto var = resolveRes[0]->Variable()->AsLocalVariable();
+                auto var = resolveRes[0]->Variable()->As<varbinder::LocalVariable>();
                 checker->ValidatePropertyAccess(var, objType_, property_->Start());
                 return {checker->GetTypeOfVariable(var), var};
             }

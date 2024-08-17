@@ -201,7 +201,7 @@ void TSChecker::ResolvePropertiesOfObjectType(ObjectType *type, ir::AstNode *mem
 
         if (!isInterface ||
             ValidateInterfaceMemberRedeclaration(type, prop, member->AsTSPropertySignature()->Key()->Start())) {
-            type->AddProperty(prop->AsLocalVariable());
+            type->AddProperty(prop->As<varbinder::LocalVariable>());
         }
 
         return;
@@ -212,7 +212,7 @@ void TSChecker::ResolvePropertiesOfObjectType(ObjectType *type, ir::AstNode *mem
 
         if (!isInterface ||
             ValidateInterfaceMemberRedeclaration(type, method, member->AsTSMethodSignature()->Key()->Start())) {
-            type->AddProperty(method->AsLocalVariable());
+            type->AddProperty(method->As<varbinder::LocalVariable>());
         }
 
         return;
@@ -439,8 +439,8 @@ ArenaVector<ObjectType *> TSChecker::GetBaseTypes(InterfaceType *type)
         return type->Bases();
     }
 
-    ASSERT(type->Variable() && type->Variable()->Declaration()->IsInterfaceDecl());
-    varbinder::InterfaceDecl *decl = type->Variable()->Declaration()->AsInterfaceDecl();
+    ASSERT(type->Variable() && type->Variable()->Declaration()->Is<varbinder::InterfaceDecl>());
+    auto decl = type->Variable()->Declaration()->As<varbinder::InterfaceDecl>();
 
     TypeStackElement tse(this, type, {"Type ", type->Name(), " recursively references itself as a base type."},
                          decl->Node()->AsTSInterfaceDeclaration()->Id()->Start());
@@ -503,8 +503,8 @@ void TSChecker::ResolveDeclaredMembers(InterfaceType *type)
         return;
     }
 
-    ASSERT(type->Variable() && type->Variable()->Declaration()->IsInterfaceDecl());
-    varbinder::InterfaceDecl *decl = type->Variable()->Declaration()->AsInterfaceDecl();
+    ASSERT(type->Variable() && type->Variable()->Declaration()->Is<varbinder::InterfaceDecl>());
+    auto decl = type->Variable()->Declaration()->As<varbinder::InterfaceDecl>();
 
     ArenaVector<ir::TSSignatureDeclaration *> signatureDeclarations(Allocator()->Adapter());
     ArenaVector<ir::TSIndexSignature *> indexDeclarations(Allocator()->Adapter());

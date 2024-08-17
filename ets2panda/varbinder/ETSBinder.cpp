@@ -197,7 +197,8 @@ void ETSBinder::LookupIdentReference(ir::Identifier *ident)
         auto *outerFunction = GetScope()->EnclosingVariableScope()->Node();
 
         if ((!outerFunction->IsScriptFunction() || !outerFunction->AsScriptFunction()->IsArrow()) &&
-            !res.variable->IsGlobalVariable() && res.variable->HasFlag(VariableFlags::LOCAL) && res.level > 1) {
+            !res.variable->Is<varbinder::GlobalVariable>() && res.variable->HasFlag(VariableFlags::LOCAL) &&
+            res.level > 1) {
             ThrowInvalidCapture(ident->Start(), name);
         }
     }
@@ -221,7 +222,7 @@ void ETSBinder::InitializeInterfaceIdent(ir::TSInterfaceDeclaration *decl)
 {
     auto res = GetScope()->Find(decl->Id()->Name());
 
-    ASSERT(res.variable && res.variable->Declaration()->IsInterfaceDecl());
+    ASSERT(res.variable && res.variable->Declaration()->Is<InterfaceDecl>());
     res.variable->AddFlag(VariableFlags::INITIALIZED);
     decl->Id()->SetVariable(res.variable);
 }
@@ -243,7 +244,7 @@ void ETSBinder::ResolveInterfaceDeclaration(ir::TSInterfaceDeclaration *decl)
         ResolveReference(extend);
     }
 
-    auto scopeCtx = LexicalScope<ClassScope>::Enter(this, decl->Scope()->AsClassScope());
+    auto scopeCtx = LexicalScope<ClassScope>::Enter(this, decl->Scope()->As<ClassScope>());
 
     for (auto *stmt : decl->Body()->Body()) {
         if (!stmt->IsClassProperty()) {
@@ -253,7 +254,7 @@ void ETSBinder::ResolveInterfaceDeclaration(ir::TSInterfaceDeclaration *decl)
         ResolveReference(stmt);
 
         auto fieldVar =
-            ResolvePropertyReference(stmt->AsClassProperty(), decl->Scope()->AsClassScope())
+            ResolvePropertyReference(stmt->AsClassProperty(), decl->Scope()->As<ClassScope>())
                 ->FindLocal(stmt->AsClassProperty()->Id()->Name(), varbinder::ResolveBindingOptions::BINDINGS);
         fieldVar->AddFlag(VariableFlags::INITIALIZED);
     }
@@ -343,7 +344,7 @@ LocalScope *ETSBinder::ResolvePropertyReference(ir::ClassProperty *prop, ClassSc
 
 void ETSBinder::BuildClassDefinitionImpl(ir::ClassDefinition *classDef)
 {
-    auto classCtx = LexicalScope<ClassScope>::Enter(this, classDef->Scope()->AsClassScope());
+    auto classCtx = LexicalScope<ClassScope>::Enter(this, classDef->Scope()->As<ClassScope>());
 
     if (classDef->Super() != nullptr) {
         ResolveReference(classDef->Super());
@@ -358,11 +359,11 @@ void ETSBinder::BuildClassDefinitionImpl(ir::ClassDefinition *classDef)
             continue;
         }
 
-        auto fieldScope = ResolvePropertyReference(stmt->AsClassProperty(), classDef->Scope()->AsClassScope());
+        auto fieldScope = ResolvePropertyReference(stmt->AsClassProperty(), classDef->Scope()->As<ClassScope>());
         auto fieldName = stmt->AsClassProperty()->Id()->Name();
         auto fieldVar = fieldScope->FindLocal(fieldName, varbinder::ResolveBindingOptions::BINDINGS);
         fieldVar->AddFlag(VariableFlags::INITIALIZED);
-        if ((fieldVar->Declaration()->IsConstDecl() || fieldVar->Declaration()->IsReadonlyDecl()) &&
+        if ((fieldVar->Declaration()->Is<ConstDecl>() || fieldVar->Declaration()->Is<ReadonlyDecl>()) &&
             stmt->AsClassProperty()->Value() == nullptr) {
             fieldVar->AddFlag(VariableFlags::EXPLICIT_INIT_REQUIRED);
         }
@@ -436,7 +437,7 @@ std::string RedeclarationErrorMessageAssembler(const Variable *const var, const 
                                                util::StringView localName)
 {
     auto type = var->Declaration()->Node()->IsClassDefinition() ? "Class '"
-                : var->Declaration()->IsFunctionDecl()          ? "Function '"
+                : var->Declaration()->Is<FunctionDecl>()        ? "Function '"
                                                                 : "Variable '";
     auto str = util::Helpers::AppendAll(type, localName.Utf8(), "'");
     str += variable->Declaration()->Type() == var->Declaration()->Type() ? " is already defined."
@@ -498,11 +499,11 @@ void ETSBinder::ImportAllForeignBindings(ir::AstNode *const specifier,
         }
 
         if (!importGlobalScope->IsForeignBinding(bindingName) && !var->Declaration()->Node()->IsDefaultExported() &&
-            (var->AsLocalVariable()->Declaration()->Node()->IsExported() ||
-             var->AsLocalVariable()->Declaration()->Node()->IsExportedType())) {
+            (var->As<varbinder::LocalVariable>()->Declaration()->Node()->IsExported() ||
+             var->As<varbinder::LocalVariable>()->Declaration()->Node()->IsExportedType())) {
             auto variable = Program()->GlobalClassScope()->FindLocal(bindingName, ResolveBindingOptions::ALL);
-            if (variable != nullptr && var != variable && variable->Declaration()->IsFunctionDecl() &&
-                var->Declaration()->IsFunctionDecl()) {
+            if (variable != nullptr && var != variable && variable->Declaration()->Is<FunctionDecl>() &&
+                var->Declaration()->Is<FunctionDecl>()) {
                 bool isStdLib = util::Helpers::IsStdLib(Program());
                 AddOverloadFlag(isStdLib, var, variable);
                 continue;
@@ -623,7 +624,7 @@ Variable *ETSBinder::FindImportSpecifiersVariable(const util::StringView &import
             foundVar = staticFieldBindings.find(searchImported);
             if (foundVar != staticFieldBindings.end()) {
                 found = true;
-                foundVar->second->AsLocalVariable()->AddFlag(VariableFlags::INITIALIZED);
+                foundVar->second->As<varbinder::LocalVariable>()->AddFlag(VariableFlags::INITIALIZED);
                 break;
             }
         }
@@ -754,7 +755,7 @@ bool ETSBinder::AddImportSpecifiersToTopBindings(ir::AstNode *const specifier,
 
     auto variable = Program()->GlobalClassScope()->FindLocal(localName, ResolveBindingOptions::ALL);
     if (variable != nullptr && var != variable) {
-        if (variable->Declaration()->IsFunctionDecl() && var->Declaration()->IsFunctionDecl()) {
+        if (variable->Declaration()->Is<FunctionDecl>() && var->Declaration()->Is<FunctionDecl>()) {
             bool isStdLib = util::Helpers::IsStdLib(Program());
             AddOverloadFlag(isStdLib, var, variable);
             return true;
@@ -1079,7 +1080,7 @@ bool ETSBinder::ImportGlobalPropertiesForNotDefaultedExports(varbinder::Variable
 
     bool isStdLib = util::Helpers::IsStdLib(Program());
     if (variable != nullptr && var != variable) {
-        if (variable->Declaration()->IsFunctionDecl() && var->Declaration()->IsFunctionDecl()) {
+        if (variable->Declaration()->Is<FunctionDecl>() && var->Declaration()->Is<FunctionDecl>()) {
             AddOverloadFlag(isStdLib, var, variable);
             return true;
         }
@@ -1091,7 +1092,7 @@ bool ETSBinder::ImportGlobalPropertiesForNotDefaultedExports(varbinder::Variable
     if (!(!insRes.second && insRes.first != TopScope()->Bindings().end()) || !(insRes.first->second != var)) {
         return true;
     }
-    if (insRes.first->second->Declaration()->IsFunctionDecl() && var->Declaration()->IsFunctionDecl()) {
+    if (insRes.first->second->Declaration()->Is<FunctionDecl>() && var->Declaration()->Is<FunctionDecl>()) {
         AddOverloadFlag(isStdLib, var, insRes.first->second);
         return true;
     }
@@ -1101,7 +1102,7 @@ bool ETSBinder::ImportGlobalPropertiesForNotDefaultedExports(varbinder::Variable
 
 void ETSBinder::ImportGlobalProperties(const ir::ClassDefinition *const classDef)
 {
-    const auto scopeCtx = LexicalScope<ClassScope>::Enter(this, classDef->Scope()->AsClassScope());
+    const auto scopeCtx = LexicalScope<ClassScope>::Enter(this, classDef->Scope()->As<ClassScope>());
 
     for (const auto *const prop : classDef->Body()) {
         const auto *const classElement = prop->AsClassElement();

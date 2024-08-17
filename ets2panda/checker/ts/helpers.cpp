@@ -400,9 +400,8 @@ void TSChecker::GetTypeParam(varbinder::Variable *var, varbinder::Decl *decl)
 
 void TSChecker::GetTypeEnum(varbinder::Variable *var, varbinder::Decl *decl)
 {
-    ASSERT(var->IsEnumVariable());
-    varbinder::EnumVariable *enumVar = var->AsEnumVariable();
-
+    ASSERT(var->Is<varbinder::EnumVariable>());
+    auto enumVar = var->As<varbinder::EnumVariable>();
     if (std::holds_alternative<bool>(enumVar->Value())) {
         ThrowTypeError(
             "A member initializer in a enum declaration cannot reference members declared after it, "
@@ -443,7 +442,7 @@ Type *TSChecker::GetDeclTsType(varbinder::Variable *var, varbinder::Decl *decl)
         }
         case varbinder::DeclType::FUNC: {
             checker::ScopeContext scopeCtx(this, decl->Node()->AsScriptFunction()->Scope());
-            InferFunctionDeclarationType(decl->AsFunctionDecl(), var);
+            InferFunctionDeclarationType(decl->As<varbinder::FunctionDecl>(), var);
             break;
         }
         case varbinder::DeclType::PARAM: {
@@ -520,11 +519,11 @@ Type *TSChecker::GetTypeReferenceType(ir::TSTypeReference *node, varbinder::Vari
     ASSERT(var->Declaration());
     varbinder::Decl *decl = var->Declaration();
 
-    if (decl->IsInterfaceDecl()) {
+    if (decl->Is<varbinder::InterfaceDecl>()) {
         return GetTypeFromClassOrInterfaceReference(node, var);
     }
 
-    if (decl->IsTypeAliasDecl()) {
+    if (decl->Is<varbinder::TypeAliasDecl>()) {
         return GetTypeFromTypeAliasReference(node, var);
     }
 

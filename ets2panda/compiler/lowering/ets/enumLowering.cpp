@@ -152,7 +152,7 @@ template <typename ElementMaker>
                                                            ElementMaker &&elementMaker)
 {
     auto fieldCtx = varbinder::LexicalScope<varbinder::LocalScope>::Enter(
-        varbinder_, globalClass->Scope()->AsClassScope()->StaticFieldScope());
+        varbinder_, globalClass->Scope()->As<varbinder::ClassScope>()->StaticFieldScope());
     ArenaVector<ir::Expression *> elements(checker_->Allocator()->Adapter());
     elements.reserve(enumDecl->Members().size());
     for (const auto *const member : enumDecl->Members()) {

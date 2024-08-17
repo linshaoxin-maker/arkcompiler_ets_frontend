@@ -31,7 +31,7 @@ static bool CheckTdz(const ir::AstNode *node)
 
 static void CheckConstAssignment(PandaGen *pg, const ir::AstNode *node, varbinder::Variable *variable)
 {
-    if (!variable->Declaration()->IsConstDecl()) {
+    if (!variable->Declaration()->Is<varbinder::ConstDecl>()) {
         return;
     }
 
@@ -42,16 +42,16 @@ static void CheckConstAssignment(PandaGen *pg, const ir::AstNode *node, varbinde
 
 static void ExpandLoadLexVar(PandaGen *pg, const ir::AstNode *node, const varbinder::ConstScopeFindResult &result)
 {
-    if (result.variable->Declaration()->IsVarDecl()) {
-        pg->LoadLexicalVar(node, result.lexLevel, result.variable->AsLocalVariable()->LexIdx());
+    if (result.variable->Declaration()->Is<varbinder::VarDecl>()) {
+        pg->LoadLexicalVar(node, result.lexLevel, result.variable->As<varbinder::LocalVariable>()->LexIdx());
     } else {
-        pg->LoadLexical(node, result.name, result.lexLevel, result.variable->AsLocalVariable()->LexIdx());
+        pg->LoadLexical(node, result.name, result.lexLevel, result.variable->As<varbinder::LocalVariable>()->LexIdx());
     }
 }
 
 static void ExpandLoadNormalVar(PandaGen *pg, const ir::AstNode *node, const varbinder::ConstScopeFindResult &result)
 {
-    auto *local = result.variable->AsLocalVariable();
+    auto *local = result.variable->As<varbinder::LocalVariable>();
 
     if (CheckTdz(node)) {
         pg->ThrowTdz(node, local->Name());
@@ -73,11 +73,11 @@ void VirtualLoadVar::Expand(PandaGen *pg, const ir::AstNode *node, const varbind
 
 static void StoreLocalExport(PandaGen *pg, const ir::AstNode *node, varbinder::Variable *variable)
 {
-    if (!variable->HasFlag(varbinder::VariableFlags::LOCAL_EXPORT) || !pg->Scope()->IsModuleScope()) {
+    if (!variable->HasFlag(varbinder::VariableFlags::LOCAL_EXPORT) || !pg->Scope()->Is<varbinder::ModuleScope>()) {
         return;
     }
 
-    auto range = pg->Scope()->AsModuleScope()->LocalExports().equal_range(variable);
+    auto range = pg->Scope()->As<varbinder::ModuleScope>()->LocalExports().equal_range(variable);
 
     for (auto it = range.first; it != range.second; ++it) {
         if (it->second != "default") {
@@ -89,12 +89,12 @@ static void StoreLocalExport(PandaGen *pg, const ir::AstNode *node, varbinder::V
 static void ExpandStoreLexVar(PandaGen *pg, const ir::AstNode *node, const varbinder::ConstScopeFindResult &result,
                               bool isDecl)
 {
-    varbinder::LocalVariable *local = result.variable->AsLocalVariable();
+    auto local = result.variable->As<varbinder::LocalVariable>();
 
     const auto *decl = result.variable->Declaration();
 
     if (decl->IsLetOrConstDecl() && !isDecl) {
-        if (decl->IsConstDecl()) {
+        if (decl->Is<varbinder::ConstDecl>()) {
             pg->ThrowConstAssignment(node, local->Name());
         }
 
@@ -109,7 +109,7 @@ static void ExpandStoreLexVar(PandaGen *pg, const ir::AstNode *node, const varbi
 static void ExpandStoreNormalVar(PandaGen *pg, const ir::AstNode *node, const varbinder::ConstScopeFindResult &result,
                                  bool isDecl)
 {
-    auto *local = result.variable->AsLocalVariable();
+    auto *local = result.variable->As<varbinder::LocalVariable>();
     VReg localReg = local->Vreg();
 
     if (!isDecl) {

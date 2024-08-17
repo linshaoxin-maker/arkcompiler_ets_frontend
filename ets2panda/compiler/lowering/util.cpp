@@ -81,8 +81,8 @@ ArenaSet<varbinder::Variable *> FindCaptured(ArenaAllocator *allocator, ir::AstN
     scopeBearer->IterateRecursivelyPreorder([&result, &scopes](ir::AstNode *ast) {
         if (ast->IsScopeBearer() && ast->Scope() != nullptr) {
             scopes.insert(ast->Scope());
-            if (ast->Scope()->IsFunctionScope()) {
-                scopes.insert(ast->Scope()->AsFunctionScope()->ParamScope());
+            if (ast->Scope()->Is<varbinder::FunctionScope>()) {
+                scopes.insert(ast->Scope()->As<varbinder::FunctionScope>()->ParamScope());
             } else if (ast->IsForUpdateStatement() || ast->IsForInStatement() || ast->IsForOfStatement() ||
                        ast->IsCatchClause()) {
                 // NOTE(gogabr) LoopScope _does not_ currently respond to IsLoopScope().
@@ -96,7 +96,8 @@ ArenaSet<varbinder::Variable *> FindCaptured(ArenaAllocator *allocator, ir::AstN
                 return;
             }
             auto *sc = var->GetScope();
-            if (sc != nullptr && !sc->IsClassScope() && !sc->IsGlobalScope() && scopes.count(var->GetScope()) == 0) {
+            if (sc != nullptr && !sc->Is<varbinder::ClassScope>() && !sc->Is<varbinder::GlobalScope>() &&
+                scopes.count(var->GetScope()) == 0) {
                 result.insert(var);
             }
         }

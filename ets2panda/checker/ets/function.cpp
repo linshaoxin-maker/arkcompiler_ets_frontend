@@ -1061,7 +1061,7 @@ SignatureInfo *ETSChecker::ComposeSignatureInfo(ir::ScriptFunction *func)
             auto const *const restIdent = param->Ident();
 
             ASSERT(restIdent->Variable());
-            signatureInfo->restVar = restIdent->Variable()->AsLocalVariable();
+            signatureInfo->restVar = restIdent->Variable()->As<varbinder::LocalVariable>();
 
             auto *const restParamTypeAnnotation = param->TypeAnnotation();
             ASSERT(restParamTypeAnnotation);
@@ -1083,7 +1083,7 @@ SignatureInfo *ETSChecker::ComposeSignatureInfo(ir::ScriptFunction *func)
             } else {
                 paramVar->SetTsType(paramIdent->TsType());
             }
-            signatureInfo->params.push_back(paramVar->AsLocalVariable());
+            signatureInfo->params.push_back(paramVar->As<varbinder::LocalVariable>());
             ++signatureInfo->minArgCount;
         }
     }
@@ -1524,7 +1524,7 @@ void ETSChecker::CheckCapturedVariables()
     // If we want to capture non constant local variables, we should wrap them in a generic reference class
     for (auto [var, _] : Context().CapturedVars()) {
         (void)_;
-        if ((var->Declaration() == nullptr) || var->Declaration()->IsConstDecl() ||
+        if ((var->Declaration() == nullptr) || var->Declaration()->Is<varbinder::ConstDecl>() ||
             !var->HasFlag(varbinder::VariableFlags::LOCAL) || var->GetScope()->Node()->IsArrowFunctionExpression()) {
             continue;
         }
@@ -1615,8 +1615,8 @@ ir::MethodDefinition *ETSChecker::CreateAsyncImplMethod(ir::MethodDefinition *as
     asyncMethod->AddModifier(ir::ModifierFlags::NATIVE);
     asyncFunc->AddModifier(ir::ModifierFlags::NATIVE);
     // Create async_impl method copied from CreateInvokeFunction
-    auto scopeCtx =
-        varbinder::LexicalScope<varbinder::ClassScope>::Enter(VarBinder(), classDef->Scope()->AsClassScope());
+    auto scopeCtx = varbinder::LexicalScope<varbinder::ClassScope>::Enter(
+        VarBinder(), classDef->Scope()->As<varbinder::ClassScope>());
     auto *body = asyncFunc->Body();
     ArenaVector<ir::Expression *> params(Allocator()->Adapter());
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
@@ -1702,9 +1702,9 @@ ir::MethodDefinition *ETSChecker::CreateAsyncProxy(ir::MethodDefinition *asyncMe
     bool isStatic = asyncMethod->IsStatic();
     if (createDecl) {
         if (isStatic) {
-            CreateFuncDecl(this, implMethod, classDef->Scope()->AsClassScope()->StaticMethodScope());
+            CreateFuncDecl(this, implMethod, classDef->Scope()->As<varbinder::ClassScope>()->StaticMethodScope());
         } else {
-            CreateFuncDecl(this, implMethod, classDef->Scope()->AsClassScope()->InstanceMethodScope());
+            CreateFuncDecl(this, implMethod, classDef->Scope()->As<varbinder::ClassScope>()->InstanceMethodScope());
         }
         implMethod->Id()->SetVariable(implMethod->Function()->Id()->Variable());
     }

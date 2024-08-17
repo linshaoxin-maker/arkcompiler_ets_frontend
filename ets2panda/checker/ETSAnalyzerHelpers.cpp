@@ -290,7 +290,7 @@ checker::Type *InitAnonymousLambdaCallee(checker::ETSChecker *checker, ir::Expre
     auto signature = ir::FunctionSignature(nullptr, std::move(params), typeAnnotation);
     auto *funcType = checker->AllocNode<ir::ETSFunctionType>(std::move(signature), ir::ScriptFunctionFlags::NONE);
 
-    funcType->SetScope(arrowFunc->Scope()->AsFunctionScope()->ParamScope());
+    funcType->SetScope(arrowFunc->Scope()->As<varbinder::FunctionScope>()->ParamScope());
     auto *const funcIface = typeAnnotation != nullptr ? funcType->Check(checker) : funcReturnType;
     checker->Relation()->SetNode(callee);
     checker->Relation()->IsAssignableTo(calleeType, funcIface);
@@ -519,9 +519,9 @@ checker::Type *GetIteratorType(ETSChecker *checker, checker::Type *elemType, ir:
     if (left->IsIdentifier()) {
         if (auto *const variable = left->AsIdentifier()->Variable(); variable != nullptr) {
             auto *decl = variable->Declaration();
-            if (decl->IsConstDecl() || decl->IsReadonlyDecl()) {
+            if (decl->Is<varbinder::ConstDecl>() || decl->Is<varbinder::ReadonlyDecl>()) {
                 std::string_view errorMsg =
-                    decl->IsConstDecl() ? INVALID_CONST_ASSIGNMENT : INVALID_READONLY_ASSIGNMENT;
+                    decl->Is<varbinder::ConstDecl>() ? INVALID_CONST_ASSIGNMENT : INVALID_READONLY_ASSIGNMENT;
                 checker->ThrowTypeError({errorMsg, variable->Name()}, decl->Node()->Start());
             }
         }

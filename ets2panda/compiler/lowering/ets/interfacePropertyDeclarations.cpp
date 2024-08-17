@@ -144,7 +144,7 @@ static ir::Expression *UpdateInterfacePropertys(checker::ETSChecker *const check
     ArenaVector<ir::AstNode *> newPropertyList(checker->Allocator()->Adapter());
 
     auto scope = NearestScope(interface);
-    ASSERT(scope->IsClassScope());
+    ASSERT(scope->Is<varbinder::ClassScope>());
 
     for (const auto &prop : propertyList) {
         if (!prop->IsClassProperty()) {
@@ -154,7 +154,7 @@ static ir::Expression *UpdateInterfacePropertys(checker::ETSChecker *const check
         auto getter = GenerateGetterOrSetter(checker, prop->AsClassProperty(), false);
         newPropertyList.emplace_back(getter);
 
-        auto methodScope = scope->AsClassScope()->InstanceMethodScope();
+        auto methodScope = scope->As<varbinder::ClassScope>()->InstanceMethodScope();
         auto name = getter->Key()->AsIdentifier()->Name();
 
         auto *decl = checker->Allocator()->New<varbinder::FunctionDecl>(checker->Allocator(), name, getter);
@@ -163,7 +163,7 @@ static ir::Expression *UpdateInterfacePropertys(checker::ETSChecker *const check
 
         if (var == nullptr) {
             auto prevDecl = methodScope->FindDecl(name);
-            ASSERT(prevDecl->IsFunctionDecl());
+            ASSERT(prevDecl->Is<varbinder::FunctionDecl>());
             prevDecl->Node()->AsMethodDefinition()->AddOverload(getter);
 
             if (!prop->AsClassProperty()->IsReadonly()) {
@@ -182,7 +182,7 @@ static ir::Expression *UpdateInterfacePropertys(checker::ETSChecker *const check
             newPropertyList.emplace_back(setter);
             getter->AddOverload(setter);
         }
-        scope->AsClassScope()->InstanceFieldScope()->EraseBinding(name);
+        scope->As<varbinder::ClassScope>()->InstanceFieldScope()->EraseBinding(name);
     }
 
     auto newInterface = checker->AllocNode<ir::TSInterfaceBody>(std::move(newPropertyList));
