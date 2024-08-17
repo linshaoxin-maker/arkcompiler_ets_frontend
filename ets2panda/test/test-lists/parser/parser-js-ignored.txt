@@ -26,9 +26,6 @@ compiler/ets/override3.sts
 compiler/ets/override4.sts
 compiler/ets/override5.sts
 
-# Requires smart casts
-parser/ets/null-coalesc-negative.sts
-
 # Lambda tests, disabled because crash during compiler
 parser/ets/trailing_lambda_tests/trailing_lambda_define_lambda_in_body_capture_variable.sts
 
