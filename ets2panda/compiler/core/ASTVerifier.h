@@ -58,6 +58,11 @@ public:
         return invariantName_;
     }
 
+    std::string Cause() const
+    {
+        return cause_;
+    }
+
     std::function<void(JsonObjectBuilder &)> DumpJSON(CheckSeverity severity, const std::string &sourceName,
                                                       const std::string &phaseName) const
     {
@@ -106,6 +111,7 @@ public:
             accumulatedChecks_.insert("ReferenceTypeAnnotationIsNullForAll");
             accumulatedChecks_.insert("ArithmeticOperationValidForAll");
             accumulatedChecks_.insert("SequenceExpressionHasLastTypeForAll");
+            accumulatedChecks_.insert("CheckInfiniteLoopForAll");
             accumulatedChecks_.insert("ForLoopCorrectlyInitializedForAll");
             accumulatedChecks_.insert("VariableHasEnclosingScopeForAll");
             accumulatedChecks_.insert("ModifierAccessValidForAll");
