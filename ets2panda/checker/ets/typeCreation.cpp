@@ -655,13 +655,16 @@ ETSObjectType *ETSChecker::FunctionTypeToFunctionalInterfaceType(Signature *sign
 {
     auto *retType = signature->ReturnType();
     if (signature->RestVar() != nullptr) {
-        auto *functionN = GlobalBuiltinFunctionType(GlobalBuiltinFunctionTypeVariadicThreshold())->AsETSObjectType();
+        auto *functionN =
+            GlobalBuiltinFunctionType(GlobalBuiltinFunctionTypeVariadicThreshold(), signature->Function()->Flags())
+                ->AsETSObjectType();
         auto *substitution = NewSubstitution();
         substitution->emplace(functionN->TypeArguments()[0]->AsETSTypeParameter(), MaybePromotedBuiltinType(retType));
         return functionN->Substitute(Relation(), substitution);
     }
 
-    auto *funcIface = GlobalBuiltinFunctionType(signature->Params().size())->AsETSObjectType();
+    auto *funcIface =
+        GlobalBuiltinFunctionType(signature->Params().size(), signature->Function()->Flags())->AsETSObjectType();
     auto *substitution = NewSubstitution();
     for (size_t i = 0; i < signature->Params().size(); i++) {
         substitution->emplace(funcIface->TypeArguments()[i]->AsETSTypeParameter(),
