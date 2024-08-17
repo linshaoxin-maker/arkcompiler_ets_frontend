@@ -26,33 +26,38 @@ using ENUMBITOPS_OPERATORS;
 
 enum class TypeFlag : uint64_t {
     NONE = 0,
-    NUMBER = 1ULL << 0ULL,               // x: number
-    STRING = 1ULL << 1ULL,               // x: string
-    BOOLEAN = 1ULL << 2ULL,              // x: boolean
-    VOID = 1ULL << 3ULL,                 // x: void
-    NULL_TYPE = 1ULL << 4ULL,            // x: null
-    UNDEFINED = 1ULL << 5ULL,            // x: undefined
-    UNKNOWN = 1ULL << 6ULL,              // x: unknown
-    NEVER = 1ULL << 7ULL,                // x: never
-    UNION = 1ULL << 8ULL,                // x: a | b
-    OBJECT = 1ULL << 9ULL,               // x: object
-    BIGINT = 1ULL << 10ULL,              // x: bigint
-    BOOLEAN_LITERAL = 1ULL << 11ULL,     // x: true
-    NUMBER_LITERAL = 1ULL << 12ULL,      // x: 10
-    STRING_LITERAL = 1ULL << 13ULL,      // x: "foo"
-    BIGINT_LITERAL = 1ULL << 14ULL,      // x: 10n
-    ENUM = 1ULL << 15ULL,                // enum x
-    ENUM_LITERAL = 1ULL << 16ULL,        // member of enum
-    SYMBOL = 1ULL << 17ULL,              // x: symbol
-    UNIQUE_SYMBOL = 1ULL << 18ULL,       // one of JS unique symbols
-    TYPE_PARAMETER = 1ULL << 19ULL,      // function<x>
-    INTERSECTION = 1ULL << 20ULL,        // x: a & b
-    INDEX = 1ULL << 21ULL,               // keyof x
-    INDEX_ACCESS = 1ULL << 22ULL,        // x[a]
-    CONDITIONAL = 1ULL << 23ULL,         // x extends a ? b : c
-    SUBSTITUTION = 1ULL << 24ULL,        // type parameter substitution
-    TEMPLATE_LITERAL = 1ULL << 25ULL,    // x: `hello ${World}`
-    STRING_MAPPING = 1ULL << 27ULL,      // Uppercase/Lowercase type
+    NUMBER = 1ULL << 0ULL,            // x: number
+    STRING = 1ULL << 1ULL,            // x: string
+    BOOLEAN = 1ULL << 2ULL,           // x: boolean
+    VOID = 1ULL << 3ULL,              // x: void
+    NULL_TYPE = 1ULL << 4ULL,         // x: null
+    UNDEFINED = 1ULL << 5ULL,         // x: undefined
+    UNKNOWN = 1ULL << 6ULL,           // x: unknown
+    NEVER = 1ULL << 7ULL,             // x: never
+    UNION = 1ULL << 8ULL,             // x: a | b
+    OBJECT = 1ULL << 9ULL,            // x: object
+    BIGINT = 1ULL << 10ULL,           // x: bigint
+    BOOLEAN_LITERAL = 1ULL << 11ULL,  // x: true
+    NUMBER_LITERAL = 1ULL << 12ULL,   // x: 10
+    STRING_LITERAL = 1ULL << 13ULL,   // x: "foo"
+    BIGINT_LITERAL = 1ULL << 14ULL,   // x: 10n
+    ENUM = 1ULL << 15ULL,             // enum x
+    ENUM_LITERAL = 1ULL << 16ULL,     // member of enum
+    SYMBOL = 1ULL << 17ULL,           // x: symbol
+    UNIQUE_SYMBOL = 1ULL << 18ULL,    // one of JS unique symbols
+    TYPE_PARAMETER = 1ULL << 19ULL,   // function<x>
+    INTERSECTION = 1ULL << 20ULL,     // x: a & b
+
+    ETS_RECURSIVE = 1ULL << 21ULL,  // recursive type alias
+    // NOTE: need to clean-up unused bits
+    // these ones below seems to be not used, but reserved?
+    // INDEX = 1ULL << 21ULL,             // keyof x
+    // INDEX_ACCESS = 1ULL << 22ULL,      // x[a]
+    // CONDITIONAL = 1ULL << 23ULL,       // x extends a ? b : c
+    // SUBSTITUTION = 1ULL << 24ULL,      // type parameter substitution
+    // TEMPLATE_LITERAL = 1ULL << 25ULL,  // x: `hello ${World}`
+    // STRING_MAPPING = 1ULL << 27ULL,    // Uppercase/Lowercase type
+    // end of unused bits
     ANY = 1ULL << 28ULL,                 // x: any
     ARRAY = 1ULL << 29ULL,               // x: number[]
     FUNCTION = 1ULL << 30ULL,            // x: (a) => b
@@ -93,7 +98,7 @@ enum class TypeFlag : uint64_t {
     ETS_DYNAMIC_FUNCTION_TYPE = FUNCTION | ETS_DYNAMIC_FLAG,
     ETS_TYPE = BYTE | SHORT | INT | LONG | FLOAT | DOUBLE | CHAR | ETS_BOOLEAN | ETS_VOID | ETS_OBJECT | ETS_ARRAY |
                WILDCARD | ETS_TYPE_PARAMETER | ETS_ENUM | ETS_STRING_ENUM | ETS_DYNAMIC_TYPE | ETS_UNION | ETS_NULL |
-               ETS_UNDEFINED | ETS_NONNULLISH | ETS_READONLY,
+               ETS_UNDEFINED | ETS_NONNULLISH | ETS_READONLY | ETS_RECURSIVE,
     ETS_PRIMITIVE = BYTE | SHORT | INT | LONG | FLOAT | DOUBLE | CHAR | ETS_BOOLEAN,
     ETS_PRIMITIVE_RETURN = ETS_PRIMITIVE | ETS_ENUM,
     ETS_ARRAY_INDEX = BYTE | SHORT | INT,
