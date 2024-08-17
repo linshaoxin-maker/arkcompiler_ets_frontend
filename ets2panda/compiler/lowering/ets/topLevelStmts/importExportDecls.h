@@ -65,11 +65,18 @@ public:
                           lexer::SourcePosition pos);
 
     void VerifySingleExportDefault(const ArenaVector<parser::Program *> &programs);
+    void HandleSelectiveExportWithAlias(util::StringView originalFieldName, util::StringView exportName,
+                                        lexer::SourcePosition startLoc);
+    void PopulateAliasMap(const ir::ExportNamedDeclaration *decl, const util::StringView &path);
 
 private:
     void VisitFunctionDeclaration(ir::FunctionDeclaration *funcDecl) override;
     void VisitVariableDeclaration(ir::VariableDeclaration *varDecl) override;
     void VisitExportNamedDeclaration(ir::ExportNamedDeclaration *exportDecl) override;
+    void VisitClassDeclaration(ir::ClassDeclaration *classDecl) override;
+    void VisitTSTypeAliasDeclaration(ir::TSTypeAliasDeclaration *typeAliasDecl) override;
+    void VisitTSInterfaceDeclaration(ir::TSInterfaceDeclaration *interfaceDecl) override;
+    void VisitETSImportDeclaration(ir::ETSImportDeclaration *importDecl) override;
 
 private:
     varbinder::ETSBinder *varbinder_ {nullptr};
@@ -77,6 +84,7 @@ private:
     std::map<util::StringView, lexer::SourcePosition> exportNameMap_;
     std::set<util::StringView> exportedTypes_;
     parser::ETSParser *parser_ {nullptr};
+    std::set<util::StringView> importedSpecifiersForExportCheck_;
 };
 }  // namespace ark::es2panda::compiler
 
