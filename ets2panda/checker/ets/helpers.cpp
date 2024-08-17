@@ -2272,13 +2272,6 @@ ir::MethodDefinition *ETSChecker::GenerateDefaultGetterSetter(ir::ClassProperty 
     body->SetScope(functionScope);
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *methodIdent = property->Key()->AsIdentifier()->Clone(checker->Allocator(), nullptr);
-    auto *decl = checker->Allocator()->New<varbinder::FunctionDecl>(
-        checker->Allocator(), property->Key()->AsIdentifier()->Name(),
-        property->Key()->AsIdentifier()->Variable()->Declaration()->Node());
-    auto *var = checker->Allocator()->New<varbinder::LocalVariable>(decl, varbinder::VariableFlags::VAR);
-    var->AddFlag(varbinder::VariableFlags::METHOD);
-
-    methodIdent->SetVariable(var);
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *funcExpr = checker->AllocNode<ir::FunctionExpression>(func);
     funcExpr->SetRange(func->Range());
@@ -2286,6 +2279,13 @@ ir::MethodDefinition *ETSChecker::GenerateDefaultGetterSetter(ir::ClassProperty 
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     auto *method = checker->AllocNode<ir::MethodDefinition>(ir::MethodDefinitionKind::METHOD, methodIdent, funcExpr,
                                                             flags, checker->Allocator(), false);
+
+    auto *decl = checker->Allocator()->New<varbinder::FunctionDecl>(checker->Allocator(),
+                                                                    property->Key()->AsIdentifier()->Name(), method);
+    auto *var = checker->Allocator()->New<varbinder::LocalVariable>(decl, varbinder::VariableFlags::VAR);
+    var->AddFlag(varbinder::VariableFlags::METHOD);
+
+    methodIdent->SetVariable(var);
 
     method->Id()->SetMutator();
     method->SetRange(field->Range());
