@@ -9,7 +9,6 @@ parser/ets/import_tests/import_class_members_1.sts
 parser/ets/import_tests/import_class_members_2.sts
 parser/ets/import_tests/import_class_members_3.sts
 parser/ets/import_tests/import_invalid_package.sts
-parser/ets/import_tests/import_name_conflict_1.sts
 parser/ets/import_tests/import_name_conflict_3.sts
 parser/ets/import_tests/import_nested_class_1.sts
 parser/ets/import_tests/import_nested_class_2.sts

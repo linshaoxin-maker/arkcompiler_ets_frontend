@@ -709,6 +709,21 @@ static util::StringView ImportLocalName(const ir::ImportSpecifier *importSpecifi
     return imported;
 }
 
+bool ETSBinder::DetectNameConflict(const util::StringView localName, Variable *const var, Variable *const otherVar,
+                                   const ir::StringLiteral *const importPath, bool overloadAllowed)
+{
+    if (otherVar == nullptr || var == otherVar) {
+        return false;
+    }
+
+    if (overloadAllowed && var->Declaration()->IsFunctionDecl() && otherVar->Declaration()->IsFunctionDecl()) {
+        AddOverloadFlag(util::Helpers::IsStdLib(Program()), var, otherVar);
+        return true;
+    }
+
+    ThrowError(importPath->Start(), RedeclarationErrorMessageAssembler(var, otherVar, localName));
+}
+
 bool ETSBinder::AddImportSpecifiersToTopBindings(ir::AstNode *const specifier,
                                                  const varbinder::Scope::VariableMap &globalBindings,
                                                  const ir::ETSImportDeclaration *const import,
@@ -752,14 +767,11 @@ bool ETSBinder::AddImportSpecifiersToTopBindings(ir::AstNode *const specifier,
 
     ValidateImportVariable(var, import, imported, importPath);
 
-    auto variable = Program()->GlobalClassScope()->FindLocal(localName, ResolveBindingOptions::ALL);
-    if (variable != nullptr && var != variable) {
-        if (variable->Declaration()->IsFunctionDecl() && var->Declaration()->IsFunctionDecl()) {
-            bool isStdLib = util::Helpers::IsStdLib(Program());
-            AddOverloadFlag(isStdLib, var, variable);
-            return true;
-        }
-        ThrowError(importPath->Start(), RedeclarationErrorMessageAssembler(var, variable, localName));
+    auto varInGlobalClassScope = Program()->GlobalClassScope()->FindLocal(localName, ResolveBindingOptions::ALL);
+    auto previouslyImportedVariable = TopScope()->FindLocal(localName, ResolveBindingOptions::ALL);
+    if (DetectNameConflict(localName, var, varInGlobalClassScope, importPath, true) ||
+        DetectNameConflict(localName, var, previouslyImportedVariable, importPath, false)) {
+        return true;
     }
 
     InsertForeignBinding(specifier, import, localName, var);
