@@ -165,6 +165,7 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/scopesInit/scopesInitPhase.cpp
   compiler/lowering/phase.cpp
   compiler/lowering/plugin_phase.cpp
+  compiler/lowering/resolveIdentifiers.cpp
   compiler/lowering/util.cpp
   compiler/lowering/ets/topLevelStmts/importExportDecls.cpp
   compiler/lowering/ets/topLevelStmts/globalClassHandler.cpp
@@ -172,6 +173,7 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/ets/topLevelStmts/topLevelStmts.cpp
   compiler/lowering/ets/expressionLambdaLowering.cpp
   compiler/lowering/ets/boxingForLocals.cpp
+  compiler/lowering/ets/capturedVariables.cpp
   compiler/lowering/ets/lambdaLowering.cpp
   compiler/lowering/ets/spreadLowering.cpp
   compiler/lowering/ets/localClassLowering.cpp
