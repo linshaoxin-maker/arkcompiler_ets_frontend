@@ -132,17 +132,19 @@ function mergeConfig(options, optionsAlias, whitelist, outputDir) {
   return mergedConfig;
 }
 
-function generateObfConfigg(optionsCombinations, inputDirs, outputDir, whitelist) {
+function generateConfigAndRun(optionsCombinations, inputDirs, outputDir, whitelist) {
   const outputAbsDir = path.join(__dirname, outputDir);
   for (let i = 0; i < optionsCombinations.length; i++) {
+    // Prepare the obfuscation config
     const options = optionsCombinations[i];
     const aliasStr = getAliasFromConfig(configAlias, options);
-    const outpurDirForCurrentOption = path.join(outputAbsDir, aliasStr);
+    const outputDirForCurrentOption = path.join(outputAbsDir, aliasStr);
     const tempConfigPath = path.join(__dirname, aliasStr + '_config.json');
-    const mergedConfig = mergeConfig(options, aliasStr, whitelist, outpurDirForCurrentOption)
+    const mergedConfig = mergeConfig(options, aliasStr, whitelist, outputDirForCurrentOption)
     fs.writeFileSync(tempConfigPath, JSON.stringify(mergedConfig, null, indentation));
+    // Execute the obfuscation
     run(inputDirs, tempConfigPath, suiteType);
-    // delete temp config file
+    // Delete temp config file
     fs.unlinkSync(tempConfigPath);
   }
 }
@@ -200,7 +202,7 @@ function parseConfigAndRun() {
     const whitelist = configs[key].whitelist
     const optionsCombinations = generateCombinations(enableOptions);
     console.log('混淆选项组合数量: ', optionsCombinations.length);
-    generateObfConfigg(optionsCombinations, inputDirs, outputDir, whitelist)
+    generateConfigAndRun(optionsCombinations, inputDirs, outputDir, whitelist)
   }
 }
 
