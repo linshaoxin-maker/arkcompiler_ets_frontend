@@ -366,7 +366,15 @@ Emitter::Emitter(CompilerContext *context)
 Emitter::~Emitter()
 {
     delete prog_;
+    if (rec_) {
+        delete rec_;
+        rec_ = nullptr;
+    }
 }
+
+
+
+
 
 void Emitter::SetPkgNameField(const std::string &pkgName)
 {
@@ -741,11 +749,6 @@ panda::pandasm::Program *Emitter::Finalize(bool dumpDebugInfo, util::PatchFix *p
     if (dumpDebugInfo) {
         debuginfo::DebugInfoDumper dumper(prog_);
         dumper.Dump();
-    }
-
-    if (rec_) {
-        delete rec_;
-        rec_ = nullptr;
     }
 
     if (patchFixHelper) {
