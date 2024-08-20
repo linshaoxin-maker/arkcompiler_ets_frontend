@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 
-export const NON_INITIALIZABLE_PROPERTY_DECORATORS = ['Link', 'Consume', 'ObjectLink', 'Prop', 'BuilderParam'];
+// test++
+export const NON_INITIALIZABLE_PROPERTY_DECORATORS = ['Link', 'Consume', 'ObjectLink', 'Prop', 'BuilderParam', 'Param', 'Event'];
 
 export const NON_INITIALIZABLE_PROPERTY_DECORATORS_TSC = [
   'Link',
