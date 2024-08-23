@@ -7,7 +7,7 @@ dayjs_test
 Drools_test
 
 #18372
-js-joda_test
+
 
 #18342
 mathjs_test

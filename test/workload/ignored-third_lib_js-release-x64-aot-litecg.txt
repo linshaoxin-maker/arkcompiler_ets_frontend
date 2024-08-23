@@ -4,7 +4,7 @@
 Drools_test
 
 #18517
-js-joda_test
+
 
 #18484
 jBox2d_test
