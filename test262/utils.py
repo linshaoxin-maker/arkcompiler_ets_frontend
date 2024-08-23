@@ -86,22 +86,22 @@ def exec_command(cmd_args, timeout=DEFAULT_TIMEOUT, custom_cwd=None):
         code_format = 'gbk'
 
     try:
-        (output_res, errs) = proc.communicate(timeout=timeout)
+        stdout, stderr = proc.communicate(timeout=timeout)
         ret_code = proc.poll()
 
-        errs_str = errs.decode(code_format, 'ignore')
-        if filter_arm_specific_errors(errs_str):
-            errs = None
-        else:
-            return 1
+        errs_str = ''
+        if stderr:
+            errs_str = str(stderr.decode(code_format, 'ignore'))
+            if not filter_arm_specific_errors(errs_str):
+                return 1
 
         if ret_code and ret_code != 1:
             code = ret_code
             msg = f"Command {cmd_string}: \n"
-            msg += f"error: {str(errs.decode(code_format, 'ignore'))}"
+            msg += f"error: {errs_str}"
         else:
             code = 0
-            msg = str(output_res.decode(code_format, 'ignore'))
+            msg = str(stdout.decode(code_format, 'ignore')) if stdout else ''
 
     except subprocess.TimeoutExpired:
         proc.kill()
