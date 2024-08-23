@@ -25,6 +25,7 @@
 #include "parser/context/parserContext.h"
 #include "parser/parserFlags.h"
 #include "parser/program/program.h"
+#include "util/errorLogger.h"
 #include "util/helpers.h"
 
 namespace ark::es2panda::parser {
@@ -79,6 +80,13 @@ public:
     }
 
     [[noreturn]] void ThrowSyntaxError(std::string_view errorMessage, const lexer::SourcePosition &pos) const;
+
+    void LogSyntaxError(std::string_view errorMessage, const lexer::SourcePosition &pos);
+
+    util::ErrorLogger *ErrorLogger()
+    {
+        return &errorLogger_;
+    }
 
 protected:
     virtual void ParseProgram(ScriptKind kind);
@@ -159,6 +167,10 @@ protected:
     [[noreturn]] void ThrowSyntaxError(std::initializer_list<std::string_view> list) const;
     [[noreturn]] void ThrowSyntaxError(std::initializer_list<std::string_view> list,
                                        const lexer::SourcePosition &pos) const;
+    void LogExpectedToken(lexer::TokenType tokenType);
+    void LogSyntaxError(std::string_view errorMessage);
+    void LogSyntaxError(std::initializer_list<std::string_view> list);
+    void LogSyntaxError(std::initializer_list<std::string_view> list, const lexer::SourcePosition &pos);
 
     template <typename T, typename... Args>
     T *AllocNode(Args &&...args)
@@ -504,6 +516,7 @@ private:
     uint32_t classId_ {};
     lexer::Lexer *lexer_ {};
     const CompilerOptions &options_;
+    util::ErrorLogger errorLogger_;
 };
 }  // namespace ark::es2panda::parser
 
