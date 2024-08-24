@@ -293,7 +293,6 @@ panda::pandasm::Program *Compiler::CompileFile(const CompilerOptions &options, S
         if (err.Message().empty() && options.parseOnly) {
             return nullptr;
         }
-
         std::cerr << err.TypeString() << ": " << err.Message();
         std::cerr << " [" << util::Helpers::BaseName(src->fileName) << ":"
                   << err.Line() << ":" << err.Col() << "]" << std::endl;
