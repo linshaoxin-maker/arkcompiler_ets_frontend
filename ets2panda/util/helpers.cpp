@@ -15,6 +15,7 @@
 
 #include "helpers.h"
 
+#include "generated/signatures.h"
 #include "varbinder/privateBinding.h"
 #include "checker/types/ets/types.h"
 #include "ir/astNode.h"
@@ -472,27 +473,8 @@ void Helpers::CheckImportedName(const ArenaVector<ir::ImportSpecifier *> &specif
     }
 }
 
-util::StringView Helpers::FunctionName(ArenaAllocator *allocator, const ir::ScriptFunction *func)
+static util::StringView FunctionNameFromParent(const ir::AstNode *parent, ArenaAllocator *allocator)
 {
-    if (func->Id() != nullptr) {
-        return func->Id()->Name();
-    }
-
-    if (func->Parent()->IsFunctionDeclaration()) {
-        return "*default*";
-    }
-
-    const ir::AstNode *parent = func->Parent()->Parent();
-
-    if (func->IsConstructor()) {
-        parent = parent->Parent();
-        if (parent->AsClassDefinition()->Ident() != nullptr) {
-            return parent->AsClassDefinition()->Ident()->Name();
-        }
-
-        parent = parent->Parent()->Parent();
-    }
-
     switch (parent->Type()) {
         case ir::AstNodeType::VARIABLE_DECLARATOR: {
             const ir::VariableDeclarator *varDecl = parent->AsVariableDeclarator();
@@ -552,6 +534,30 @@ util::StringView Helpers::FunctionName(ArenaAllocator *allocator, const ir::Scri
     }
 
     return util::StringView();
+}
+
+util::StringView Helpers::FunctionName(ArenaAllocator *allocator, const ir::ScriptFunction *func)
+{
+    if (func->Id() != nullptr) {
+        return func->Id()->Name();
+    }
+
+    if (func->Parent()->IsFunctionDeclaration()) {
+        return "*default*";
+    }
+
+    const ir::AstNode *parent = func->Parent()->Parent();
+
+    if (func->IsConstructor()) {
+        parent = parent->Parent();
+        if (parent->AsClassDefinition()->Ident() != nullptr) {
+            return parent->AsClassDefinition()->Ident()->Name();
+        }
+
+        parent = parent->Parent()->Parent();
+    }
+
+    return FunctionNameFromParent(parent, allocator);
 }
 
 std::tuple<util::StringView, bool> Helpers::ParamName(ArenaAllocator *allocator, const ir::AstNode *param,
@@ -656,8 +662,15 @@ std::vector<std::string> &Helpers::StdLib()
 bool Helpers::IsStdLib(const parser::Program *program)
 {
     const auto &stdlib = StdLib();
-    auto fileFolder = program->GetPackageName().Mutf8();
-    std::replace(fileFolder.begin(), fileFolder.end(), '.', '/');
+
+    // NOTE(rsipka): early check: if program is not a package module then it is not part of the stdlib either
+    if (!program->IsPackageModule()) {
+        return false;
+    }
+
+    auto fileFolder = program->ModuleName().Mutf8();
+    std::replace(fileFolder.begin(), fileFolder.end(), *compiler::Signatures::METHOD_SEPARATOR.begin(),
+                 *compiler::Signatures::NAMESPACE_SEPARATOR.begin());
     return std::count(stdlib.begin(), stdlib.end(), fileFolder) != 0;
 }
 

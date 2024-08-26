@@ -369,6 +369,7 @@ const ir::ScriptFunction *Helpers::GetContainingFunction(const ir::AstNode *node
 
 const ir::ClassDefinition *Helpers::GetClassDefiniton(const ir::ScriptFunction *node)
 {
+    CHECK_NOT_NULL(node);
     ASSERT(node->IsConstructor() || node->IsMethod());
     ASSERT(node->Parent()->IsFunctionExpression());
     ASSERT(node->Parent()->Parent()->IsMethodDefinition());
@@ -805,14 +806,17 @@ bool Helpers::ReadFileToBuffer(const std::string &file, std::stringstream &ss)
     std::ifstream inputStream = Helpers::FileStream<std::ifstream>(
         panda::os::file::File::GetExtendedFilePath(file), std::ios::binary);
     if (inputStream.fail()) {
-        std::cerr << "Failed to read file to buffer: " << file << std::endl;
+        std::cerr << "Failed to read file to buffer: " << file << std::endl <<
+                     "Solutions: > Check whether the above file exists." <<
+                     "> Check whether you have the correct access permissions for the file.";
         return false;
     }
     ss << inputStream.rdbuf();
     return true;
 }
 
-void Helpers::ScanDirectives(ir::ScriptFunction *func, const lexer::LineIndex &lineIndex)
+void Helpers::ScanDirectives(ir::ScriptFunction *func, const lexer::LineIndex &lineIndex, bool enableSendableClass,
+                             bool enableSendableFunc)
 {
     auto *body = func->Body();
     if (!body || body->IsExpression()) {
@@ -837,28 +841,31 @@ void Helpers::ScanDirectives(ir::ScriptFunction *func, const lexer::LineIndex &l
             return;
         }
 
-        keepScan = SetFuncFlagsForDirectives(expr->AsStringLiteral(), func, lineIndex);
+        keepScan = SetFuncFlagsForDirectives(expr->AsStringLiteral(), func, lineIndex, enableSendableClass,
+                                             enableSendableFunc);
     }
 
     return;
 }
 
 bool Helpers::SetFuncFlagsForDirectives(const ir::StringLiteral *strLit, ir::ScriptFunction *func,
-                                        const lexer::LineIndex &lineIndex)
+                                        const lexer::LineIndex &lineIndex, bool enableSendableClass,
+                                        bool enableSendableFunc)
 {
-    if (strLit->Str().Is(SHOW_SOURCE)) {
-        func->AddFlag(ir::ScriptFunctionFlags::SHOW_SOURCE);
-        return true;
-    }
-
     if (strLit->Str().Is(USE_CONCURRENT)) {
         util::Concurrent::SetConcurrent(func, strLit, lineIndex);
         return true;
     }
 
-    if (strLit->Str().Is(USE_SENDABLE) && func->IsConstructor()) {
-        auto *classDef = const_cast<ir::ClassDefinition*>(GetClassDefiniton(func));
-        classDef->SetSendable();
+    if (strLit->Str().Is(USE_SENDABLE)) {
+        if (func->IsConstructor()) {
+            if (enableSendableClass) {
+                auto *classDef = const_cast<ir::ClassDefinition*>(GetClassDefiniton(func));
+                classDef->SetSendable();
+            }
+        } else if (enableSendableFunc) {
+            func->AddFlag(ir::ScriptFunctionFlags::SENDABLE);
+        }
         return true;
     }
 
@@ -952,8 +959,8 @@ bool Helpers::BelongingToRecords(const std::string &name, const std::unordered_s
 {
     size_t pos = name.rfind(delimiter);
     if (pos == std::string::npos) {
-        std::cerr << "The input name: " << name << " is illegal, it should contain the delimiter character '"
-                  << delimiter << "'" << std::endl;
+        std::cerr << "The input name: " << name << " is illegal, it should contain the delimiter character '" <<
+                     delimiter << "'" << std::endl;
         return false;
     }
 
@@ -974,6 +981,19 @@ void Helpers::RemoveProgramsRedundantData(std::map<std::string, panda::es2panda:
 
         progInfoIter++;
     }
+}
+
+bool Helpers::IsDefaultApiVersion(int apiVersion, std::string subApiVersion)
+{
+    return apiVersion < DEFAULT_TARGET_API_VERSION || ((apiVersion == DEFAULT_TARGET_API_VERSION) &&
+        (subApiVersion == SUB_API_VERSION_1 || subApiVersion == SUB_API_VERSION_2));
+}
+
+bool Helpers::IsSupportLazyImportVersion(int apiVersion, std::string subApiVersion)
+{
+    return !(apiVersion < LAZY_IMPORT_MIN_SUPPORTED_API_VERSION ||
+           ((apiVersion == LAZY_IMPORT_MIN_SUPPORTED_API_VERSION) &&
+           (subApiVersion == SUB_API_VERSION_1 || subApiVersion == SUB_API_VERSION_2)));
 }
 
 }  // namespace panda::es2panda::util

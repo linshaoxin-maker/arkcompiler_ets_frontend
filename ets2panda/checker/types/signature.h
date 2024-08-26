@@ -25,8 +25,6 @@ struct Context;
 }  // namespace ark::es2panda::public_lib
 
 namespace ark::es2panda::checker {
-// For use in Signature::ToAssemblerType
-Type const *MaybeBoxedType(Checker *checker, varbinder::Variable const *var);
 
 class SignatureInfo {
 public:
@@ -65,6 +63,8 @@ public:
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
+using ENUMBITOPS_OPERATORS;
+
 enum class SignatureFlags : uint32_t {
     NO_OPTS = 0U,
     VIRTUAL = 1U << 0U,
@@ -93,7 +93,13 @@ enum class SignatureFlags : uint32_t {
     FUNCTIONAL_INTERFACE_SIGNATURE = VIRTUAL | ABSTRACT | CALL | PUBLIC | TYPE
 };
 
-DEFINE_BITOPS(SignatureFlags)
+}  // namespace ark::es2panda::checker
+
+template <>
+struct enumbitops::IsAllowedType<ark::es2panda::checker::SignatureFlags> : std::true_type {
+};
+
+namespace ark::es2panda::checker {
 
 class Signature {
 public:
@@ -123,6 +129,16 @@ public:
     SignatureInfo *GetSignatureInfo()
     {
         return signatureInfo_;
+    }
+
+    const ArenaVector<Type *> &TypeParams() const
+    {
+        return signatureInfo_->typeParams;
+    }
+
+    ArenaVector<Type *> &TypeParams()
+    {
+        return signatureInfo_->typeParams;
     }
 
     const ArenaVector<varbinder::LocalVariable *> &Params() const
@@ -233,12 +249,17 @@ public:
         return (flags_ & flag) != 0U;
     }
 
+    [[nodiscard]] SignatureFlags GetFlags() const noexcept
+    {
+        return flags_;
+    }
+
     bool IsFinal() const noexcept
     {
         return HasSignatureFlag(SignatureFlags::FINAL);
     }
 
-    void ToAssemblerType(public_lib::Context *context, std::stringstream &ss) const;
+    void ToAssemblerType(std::stringstream &ss) const;
 
     util::StringView InternalName() const;
 

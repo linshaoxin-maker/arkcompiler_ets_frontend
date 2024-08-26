@@ -35,6 +35,7 @@ binder::LocalVariable *ObjectDescriptor::FindProperty(const util::StringView &na
 void ObjectDescriptor::Copy(ArenaAllocator *allocator, ObjectDescriptor *copiedDesc, TypeRelation *relation,
                             GlobalTypesHolder *globalTypes)
 {
+    CHECK_NOT_NULL(copiedDesc);
     // kézzel másolás
     for (auto *it : properties) {
         auto *copiedProp = it->Copy(allocator, it->Declaration());

@@ -31,6 +31,8 @@ class IndexInfo;
 class Type;
 class Checker;
 
+using ENUMBITOPS_OPERATORS;
+
 enum class TypeRelationFlag : uint32_t {
     NONE = 0U,
     NARROWING = 1U << 0U,
@@ -58,6 +60,8 @@ enum class TypeRelationFlag : uint32_t {
     NO_CHECK_TRAILING_LAMBDA = 1U << 23U,
     NO_THROW_GENERIC_TYPEALIAS = 1U << 24U,
     OVERRIDING_CONTEXT = 1U << 25U,
+    IGNORE_REST_PARAM = 1U << 26U,
+    STRING_TO_CHAR = 1U << 27U,
 
     ASSIGNMENT_CONTEXT = WIDENING | BOXING | UNBOXING,
     CASTING_CONTEXT = NARROWING | WIDENING | BOXING | UNBOXING | UNCHECKED_CAST,
@@ -67,7 +71,13 @@ enum class RelationResult { TRUE, FALSE, UNKNOWN, MAYBE, CACHE_MISS, ERROR };
 
 enum class RelationType { COMPARABLE, ASSIGNABLE, IDENTICAL, UNCHECKED_CASTABLE, SUPERTYPE };
 
-DEFINE_BITOPS(TypeRelationFlag)
+}  // namespace ark::es2panda::checker
+
+template <>
+struct enumbitops::IsAllowedType<ark::es2panda::checker::TypeRelationFlag> : std::true_type {
+};
+
+namespace ark::es2panda::checker {
 
 class RelationKey {
 public:
@@ -156,6 +166,11 @@ public:
     bool ApplyUnboxing() const
     {
         return (flags_ & TypeRelationFlag::UNBOXING) != 0;
+    }
+
+    bool ApplyStringToChar() const
+    {
+        return (flags_ & TypeRelationFlag::STRING_TO_CHAR) != 0;
     }
 
     bool NoReturnTypeCheck() const

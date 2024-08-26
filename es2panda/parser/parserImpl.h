@@ -36,7 +36,7 @@
 #include <unordered_set>
 
 namespace panda::es2panda::lexer {
-enum class TokenFlags;
+enum class TokenFlags : uint8_t;
 enum class TokenType;
 class LexerPosition;
 class Token;
@@ -117,7 +117,7 @@ class VariableDeclarator;
 enum class PropertyKind;
 enum class TSTupleKind;
 enum class MethodDefinitionKind;
-enum class ModifierFlags;
+enum class ModifierFlags : uint16_t;
 }  // namespace panda::es2panda::ir
 
 namespace panda::es2panda::parser {
@@ -450,10 +450,11 @@ private:
                                 binder::DeclarationFlags flag);
 
     ir::StringLiteral *ParseFromClause(bool requireFrom = true);
-    void ParseNamedImportSpecifiers(ArenaVector<ir::AstNode *> *specifiers, bool isType);
+    void ParseNamedImportSpecifiers(ArenaVector<ir::AstNode *> *specifiers, bool isType, bool isLazy);
+    bool HandleTypeImportOrExportSpecifier();
     ir::Expression *ParseModuleReference();
     ir::AstNode *ParseImportDefaultSpecifier(ArenaVector<ir::AstNode *> *specifiers, bool isType);
-    ir::AstNode *ParseImportSpecifiers(ArenaVector<ir::AstNode *> *specifiers, bool isType);
+    ir::AstNode *ParseImportSpecifiers(ArenaVector<ir::AstNode *> *specifiers, bool isType, bool isLazy);
     void ValidateAssignmentTarget(ExpressionParseFlags flags, ir::Expression *node);
     void ValidateLvalueAssignmentTarget(ir::Expression *node) const;
     void ValidateArrowParameterBindings(const ir::Expression *node);
@@ -491,8 +492,10 @@ private:
 
     bool IsLabelFollowedByIterationStatement();
 
-    void AddImportEntryItem(const ir::StringLiteral *source, const ArenaVector<ir::AstNode *> *specifiers, bool isType);
-    void AddImportEntryItemForImportSpecifier(const ir::StringLiteral *source, const ir::AstNode *specifier);
+    void AddImportEntryItem(const ir::StringLiteral *source, const ArenaVector<ir::AstNode *> *specifiers, bool isType,
+        bool isLazy);
+    void AddImportEntryItemForImportSpecifier(const ir::StringLiteral *source, const ir::AstNode *specifier,
+        bool isLazy);
     void AddImportEntryItemForImportDefaultOrNamespaceSpecifier(const ir::StringLiteral *source,
                                                                 const ir::AstNode *specifier, bool isType);
     void AddExportNamedEntryItem(const ArenaVector<ir::ExportSpecifier *> &specifiers,
@@ -517,6 +520,7 @@ private:
     ir::TSModuleDeclaration *ParseTsModuleOrNamespaceDelaration(const lexer::SourcePosition &startLoc,
                                                                 bool isDeclare,
                                                                 bool isExport);
+    bool IsInstantiatedInTsModuleBlock(ir::Statement **body);
 
     ir::TSImportEqualsDeclaration *ParseTsImportEqualsDeclaration(const lexer::SourcePosition &startLoc,
                                                                   bool isExport = false);
@@ -560,6 +564,8 @@ private:
                                                 bool isDeclare = false, bool isAbstract = false,
                                                 bool isExported = false);
     ir::TSTypeAliasDeclaration *ParseTsTypeAliasDeclaration(bool isDeclare);
+    ir::Expression *ParseEnumComputedPropertyKey(binder::EnumDecl *&decl, const lexer::SourcePosition &keyStartLoc,
+                                                 bool isDeclare);
     ir::TSEnumDeclaration *ParseEnumMembers(ir::Identifier *key, const lexer::SourcePosition &enumStart,
                                             bool isExport, bool isDeclare, bool isConst);
     ir::TSEnumDeclaration *ParseEnumDeclaration(bool isExport = false, bool isDeclare = false, bool isConst = false);
@@ -583,6 +589,7 @@ private:
     ir::VariableDeclaration *ParseContextualLet(VariableParsingFlags flags,
                                                 StatementParsingFlags stmFlags = StatementParsingFlags::ALLOW_LEXICAL,
                                                 bool isDeclare = false);
+    void VerifySupportLazyImportVersion();
 
     util::StringView GetNamespaceExportInternalName()
     {
@@ -596,11 +603,11 @@ private:
     {
         return program_.Binder();
     }
-    static constexpr unsigned maxRecursionDepth = 1024;
+    static constexpr unsigned MAX_RECURSION_DEPTH = 1024;
 
     inline void RecursiveDepthCheck()
     {
-        if (recursiveDepth_ < maxRecursionDepth) {
+        if (recursiveDepth_ < MAX_RECURSION_DEPTH) {
             return;
         }
         RecursiveDepthException();

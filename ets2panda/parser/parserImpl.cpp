@@ -14,6 +14,7 @@
  */
 
 #include "parserImpl.h"
+#include "parserStatusContext.h"
 
 #include "varbinder/privateBinding.h"
 #include "ir/astNode.h"
@@ -383,11 +384,8 @@ ir::Expression *ParserImpl::ParseClassKey(ClassElementDescriptor *desc)
         }
         case lexer::TokenType::PUNCTUATOR_LEFT_SQUARE_BRACKET: {
             ThrowIfPrivateIdent(desc, "Unexpected character in private identifier");
-            auto [isComputed, invalidComputedProperty, isIndexSignature] =
+            std::tie(desc->isComputed, desc->invalidComputedProperty, desc->isIndexSignature) =
                 ParseComputedClassFieldOrIndexSignature(&propName);
-            desc->isComputed = isComputed;
-            desc->invalidComputedProperty = invalidComputedProperty;
-            desc->isIndexSignature = isIndexSignature;
             break;
         }
         default: {
@@ -827,6 +825,17 @@ void ParserImpl::ValidateRestParameter(ir::Expression *param)
             ThrowSyntaxError("Rest parameter must be last formal parameter.");
         }
     }
+}
+
+bool ParserImpl::ValidateBreakLabel(util::StringView label)
+{
+    return context_.FindLabel(label) != nullptr;
+}
+
+bool ParserImpl::ValidateContinueLabel(util::StringView label)
+{
+    const ParserContext *labelCtx = context_.FindLabel(label);
+    return labelCtx != nullptr && ((labelCtx->Status() & ParserStatus::IN_ITERATION) != 0);
 }
 
 ArenaVector<ir::Expression *> ParserImpl::ParseFunctionParams()

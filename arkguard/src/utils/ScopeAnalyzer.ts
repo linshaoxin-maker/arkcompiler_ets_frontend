@@ -29,7 +29,8 @@ import {
   isArrowFunction,
   isGetAccessor,
   isSetAccessor,
-  isPropertyDeclaration
+  isPropertyDeclaration,
+  getOriginalNode
 } from 'typescript';
 
 import type {
@@ -49,6 +50,7 @@ import type {
   InterfaceDeclaration,
   LabeledStatement,
   ModuleDeclaration,
+  NamespaceExport,
   Node,
   ObjectBindingPattern,
   ObjectLiteralExpression,
@@ -141,8 +143,9 @@ namespace secharmony {
 
     importNames: Set<string>;
     exportNames: Set<string>;
+    fileExportNames?: Set<string>;
+    fileImportNames?: Set<string>;
     mangledNames: Set<string>;
-    constructorReservedParams: Set<string>;
     // location path
     loc: string;
 
@@ -157,7 +160,6 @@ namespace secharmony {
       this.importNames = new Set<string>();
       this.exportNames = new Set<string>();
       this.mangledNames = new Set<string>();
-      this.constructorReservedParams = new Set<string>();
       this.loc = this.parent?.loc ? this.parent.loc + '#' + this.name : this.name;
 
       this.parent?.addChild(this);
@@ -315,10 +317,27 @@ namespace secharmony {
         // with export identification, special handling.
         if (def.exportSymbol) {
           current.exportNames.add(def.name);
-          current.addDefinition(def.exportSymbol, true);
+          root.fileExportNames.add(def.name);
+          if (def.exportSymbol.name === def.name) {
+            /* For export declaration, `def` and its `exportSymbol` has same name,
+                eg. export class Ability {}
+                  def.name: "Ability"
+                  def.exportSymbol.name: "Ability"
+                Collect the `def.exportSymbol` since import symbol is asscociated with it.
+            */
+            current.addDefinition(def.exportSymbol, true);
+          } else {
+            /* For default exports, `def` and its `exportSymbol` has different name,
+                eg. export default class Ability {}
+                  def.name: "Ability"
+                  def.exportSymbol.name: "default"
+              Collect the `def` symbol since we should obfuscate "Ability" instead of "default".
+            */
+            current.addDefinition(def);
+          }
+        } else {
+          current.addDefinition(def);
         }
-
-        current.addDefinition(def);
       });
     }
 
@@ -420,6 +439,10 @@ namespace secharmony {
           analyzeExportNames(node as ExportSpecifier);
           break;
 
+        case SyntaxKind.NamespaceExport:
+          analyzeNamespaceExport(node as NamespaceExport);
+          break;
+
         case SyntaxKind.CatchClause:
           analyzeCatchClause(node as CatchClause);
           break;
@@ -435,7 +458,7 @@ namespace secharmony {
         if (exportObfuscation && propetyNameNode && isIdentifier(propetyNameNode)) {
           let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
           if (!propertySymbol) {
-            noSymbolIdentifier.add(propetyNameNode.escapedText as string);
+            noSymbolIdentifier.add(propetyNameNode.text);
           } else {
             current.addDefinition(propertySymbol);
           }
@@ -447,6 +470,7 @@ namespace secharmony {
         } else {
           const nameText = propetyNameNode ? propetyNameNode.text : node.name.text;
           current.importNames.add(nameText);
+          root.fileImportNames.add(nameText);
         }
         forEachChild(node, analyzeScope);
       } catch (e) {
@@ -485,6 +509,7 @@ namespace secharmony {
         }
 
         current.importNames.add(bindingElement.name.text);
+        root.fileImportNames.add(bindingElement.name.text);
       });
     }
 
@@ -501,15 +526,27 @@ namespace secharmony {
     function analyzeExportNames(node: ExportSpecifier): void {
       // get export names.
       current.exportNames.add(node.name.text);
+      root.fileExportNames.add(node.name.text);
       addExportSymbolInScope(node);
       const propetyNameNode: Identifier | undefined = node.propertyName;
       if (exportObfuscation && propetyNameNode && isIdentifier(propetyNameNode)) {
         let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
         if (!propertySymbol) {
-          noSymbolIdentifier.add(propetyNameNode.escapedText as string);
+          noSymbolIdentifier.add(propetyNameNode.text);
         }
       }
       forEachChild(node, analyzeScope);
+    }
+
+    function analyzeNamespaceExport(node: NamespaceExport): void {
+      if (!exportObfuscation) {
+        return;
+      }
+
+      let symbol = checker.getSymbolAtLocation(node.name);
+      if (symbol) {
+        current.addDefinition(symbol, true);
+      }
     }
 
     function analyzeBreakOrContinue(node: BreakOrContinueStatement): void {
@@ -543,6 +580,8 @@ namespace secharmony {
     function analyzeSourceFile(node: SourceFile): void {
       let scopeName: string = '';
       root = new Scope(scopeName, node, ScopeKind.GLOBAL, true);
+      root.fileExportNames = new Set<string>();
+      root.fileImportNames = new Set<string>();
       current = root;
       scopes.push(current);
       // locals of a node(scope) is symbol that defines in current scope(node).
@@ -572,10 +611,12 @@ namespace secharmony {
         if (def.exportSymbol) {
           if (!current.exportNames.has(def.name)) {
             current.exportNames.add(def.name);
+            root.fileExportNames.add(def.name);
           }
           const name: string = def.exportSymbol.name;
           if (!current.exportNames.has(name)) {
             current.exportNames.add(name);
+            root.fileExportNames.add(def.name);
           }
         }
       }
@@ -636,10 +677,9 @@ namespace secharmony {
         }
 
         current.defs.forEach((def) => {
-          if (isIdentifier(param.name) && (def.name === param.name.escapedText)) {
+          if (isIdentifier(param.name) && (def.name === param.name.text)) {
             current.defs.delete(def);
             current.mangledNames.add(def.name);
-            root.constructorReservedParams.add(def.name);
           }
         });
       };
@@ -658,7 +698,7 @@ namespace secharmony {
     function analyzeFunctionLike(node: FunctionLikeDeclaration): void {
       // For example, the constructor of the StructDeclaration, inserted by arkui, will add a virtual attribute.
       // @ts-ignore
-      if (node.virtual) {
+      if (getOriginalNode(node).virtual) {
         return;
       }
       let scopeName: string = (node?.name as Identifier)?.text ?? '$' + current.children.length;
@@ -681,7 +721,11 @@ namespace secharmony {
       if ((isFunctionExpression(node) || isArrowFunction(node)) && isVariableDeclaration(node.parent)) {
         symbol = checker.getSymbolAtLocation(node.name ? node.name : node.parent.name);
       } else {
-        symbol = checker.getSymbolAtLocation(node.name);
+        if (isFunctionDeclaration(node)) {
+          symbol = NodeUtils.findSymbolOfIdentifier(checker, node.name);
+        } else {
+          symbol = checker.getSymbolAtLocation(node.name);
+        }
       }
       if (symbol) {
         Reflect.set(symbol, 'isFunction', true);
@@ -695,8 +739,14 @@ namespace secharmony {
        * }
        * // the above getaccessor and setaccessor were obfuscated as identifiers.
        */
-      if (!(isGetAccessor(node) || isSetAccessor(node)) && node.symbol && current.parent && !current.parent.defs.has(node.symbol)) {
-        current.parent.defs.add(node.symbol);
+      if (!(isGetAccessor(node) || isSetAccessor(node)) && symbol && current.parent && !current.parent.defs.has(symbol)) {
+        /*
+          Handle the case when `FunctionLikeDeclaration` node is as initializer of variable declaration.
+          eg. const foo = function bar() {};
+          The `current` scope is the function's scope, the `current.parent` scope is where the function is defined.
+          `foo` has already added in the parent scope, we need to add `bar` here too.
+         */
+        current.parent.defs.add(symbol);
       }
 
       if (isFunctionDeclaration(node) || isMethodDeclaration(node)) {
@@ -745,7 +795,7 @@ namespace secharmony {
         // Class members are seen as attribute names, and  the reference of external symbols can be renamed as the same
         node.members?.forEach((elm: ClassElement) => {
           // @ts-ignore
-          if (elm?.symbol && !elm.virtual) {
+          if (elm?.symbol && !getOriginalNode(elm).virtual) {
             current.addDefinition(elm.symbol);
           }
         });
@@ -826,14 +876,14 @@ namespace secharmony {
       let symbol: Symbol = null;
 
       try {
-        symbol = checker.getSymbolAtLocation(node);
+        symbol = NodeUtils.findSymbolOfIdentifier(checker, node);
       } catch (e) {
         console.error(e);
         return;
       }
 
       if (!symbol) {
-        current.mangledNames.add(node.escapedText.toString());
+        current.mangledNames.add(node.text);
         return;
       }
 
@@ -909,7 +959,7 @@ namespace secharmony {
 
       const sym: Symbol | undefined = checker.getSymbolAtLocation(node);
       if (!sym) {
-        current.mangledNames.add((node as Identifier).escapedText.toString());
+        current.mangledNames.add((node as Identifier).text);
       }
     }
 

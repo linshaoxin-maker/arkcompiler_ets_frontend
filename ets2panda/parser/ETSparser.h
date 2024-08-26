@@ -41,8 +41,6 @@ public:
 
     [[nodiscard]] bool IsETSParser() const noexcept override;
 
-    const ArenaMap<util::StringView, util::ImportPathManager::ModuleInfo> &ModuleList() const;
-
     ArenaVector<ir::ETSImportDeclaration *> ParseDefaultSources(std::string_view srcFile, std::string_view importSrc);
 
 public:
@@ -53,6 +51,11 @@ public:
 
     template <typename>
     static constexpr bool STATIC_FALSE = false;
+
+    std::string_view FormattingFileName()
+    {
+        return GetContext().FormattingFileName();
+    }
 
     template <typename T>
     void SetFormattingFileName(T &&fileName)
@@ -83,6 +86,10 @@ public:
             nodes.emplace_back(AllocNode<ir::SequenceExpression>(std::forward<T>(arg)));
         } else if constexpr (std::is_same_v<std::decay_t<T>, ArenaVector<ir::Statement *>>) {
             nodes.emplace_back(AllocNode<ir::BlockExpression>(std::forward<T>(arg)));
+        } else if constexpr (std::is_same_v<std::decay_t<T>, ArenaVector<checker::Type *>>) {
+            for (auto *type : arg) {
+                nodes.emplace_back(AllocNode<ir::OpaqueTypeNode>(type));
+            }
         } else {
             static_assert(STATIC_FALSE<T>, "Format argument has invalid type.");
         }
@@ -186,6 +193,18 @@ public:
         return CreateFormattedClassMethodDefinition(sourceCode, insertingNodes);
     }
 
+    ir::Statement *CreateFormattedTopLevelStatement(std::string_view sourceCode,
+                                                    std::vector<ir::AstNode *> &insertingNodes);
+
+    template <typename... Args>
+    ir::Statement *CreateFormattedTopLevelStatement(std::string_view sourceCode, Args &&...args)
+    {
+        std::vector<ir::AstNode *> insertingNodes {};
+        insertingNodes.reserve(sizeof...(Args));
+        (ProcessFormattedArg(insertingNodes, std::forward<Args>(args)), ...);
+        return CreateFormattedTopLevelStatement(sourceCode, insertingNodes);
+    }
+
 private:
     NodeFormatType GetFormatPlaceholderType() const;
 
@@ -209,6 +228,7 @@ private:
                                     ir::ClassDefinitionModifiers modifiers);
 
     ir::TypeNode *CreateTypeAnnotation(TypeAnnotationParsingOptions *options, std::string_view sourceCode);
+    ir::Statement *CreateTopLevelStatement(std::string_view const sourceCode);
 
     //============================================================================================//
     //  END: Methods to create AST node(s)...
@@ -232,6 +252,7 @@ private:
     std::vector<Program *> ParseSources();
     std::tuple<ir::ImportSource *, std::vector<std::string>> ParseFromClause(bool requireFrom);
     ArenaVector<ir::ImportSpecifier *> ParseNamedSpecifiers();
+    ir::ExportNamedDeclaration *ParseSingleExport(ir::ModifierFlags modifiers);
     ArenaVector<ir::ETSImportDeclaration *> ParseImportDeclarations();
     parser::Program *ParseSource(const SourceFile &sourceFile);
     void AddExternalSource(const std::vector<Program *> &programs);
@@ -241,7 +262,7 @@ private:
     ir::MethodDefinition *ParseClassGetterSetterMethod(const ArenaVector<ir::AstNode *> &properties,
                                                        ir::ClassDefinitionModifiers modifiers,
                                                        ir::ModifierFlags memberModifiers);
-    ir::MethodDefinition *ParseInterfaceGetterSetterMethod(ir::ModifierFlags modifiers);
+    ir::MethodDefinition *ParseInterfaceGetterSetterMethod(const ir::ModifierFlags modifiers);
     ir::Statement *ParseIdentKeyword();
     ir::Statement *ParseTypeDeclaration(bool allowStatic = false);
     ir::Statement *ParseTypeDeclarationAbstractFinal(bool allowStatic, ir::ClassDefinitionModifiers modifiers);
@@ -252,6 +273,7 @@ private:
     ir::MethodDefinition *ParseInterfaceMethod(ir::ModifierFlags flags, ir::MethodDefinitionKind methodKind);
     std::tuple<ir::ModifierFlags, bool> ParseClassMemberAccessModifiers();
     ir::ModifierFlags ParseClassFieldModifiers(bool seenStatic);
+    ir::ModifierFlags ParseClassMethodModifierFlag();
     ir::ModifierFlags ParseClassMethodModifiers(bool seenStatic);
     ir::MethodDefinition *ParseClassMethodDefinition(ir::Identifier *methodName, ir::ModifierFlags modifiers,
                                                      ir::Identifier *className = nullptr);
@@ -273,7 +295,6 @@ private:
     ir::TypeNode *ParseBaseTypeReference(TypeAnnotationParsingOptions *options);
     ir::TypeNode *ParsePrimitiveType(TypeAnnotationParsingOptions *options, ir::PrimitiveType type);
     ir::TypeNode *ParseUnionType(ir::TypeNode *firstType);
-    ir::TSIntersectionType *ParseIntersectionType(ir::Expression *type);
     ir::TypeNode *GetTypeAnnotationOfPrimitiveType(lexer::TokenType tokenType, TypeAnnotationParsingOptions *options);
     ir::TypeNode *ParseWildcardType(TypeAnnotationParsingOptions *options);
     ir::TypeNode *ParseFunctionType();
@@ -288,7 +309,10 @@ private:
 
     void ThrowIfVarDeclaration(VariableParsingFlags flags) override;
     std::optional<lexer::SourcePosition> GetDefaultParamPosition(ArenaVector<ir::Expression *> params);
+
+    ir::TypeNode *ParsePotentialFunctionalType(TypeAnnotationParsingOptions *options, lexer::SourcePosition startLoc);
     std::pair<ir::TypeNode *, bool> GetTypeAnnotationFromToken(TypeAnnotationParsingOptions *options);
+    std::pair<ir::TypeNode *, bool> GetTypeAnnotationFromParentheses(TypeAnnotationParsingOptions *options);
     ir::TypeNode *ParseLiteralIdent(TypeAnnotationParsingOptions *options);
     void ParseRightParenthesis(TypeAnnotationParsingOptions *options, ir::TypeNode *&typeAnnotation,
                                lexer::LexerPosition savedPos);
@@ -352,6 +376,7 @@ private:
                                                   const lexer::SourcePosition &startLoc);
     ir::AstNode *ParseInnerRest(const ArenaVector<ir::AstNode *> &properties, ir::ClassDefinitionModifiers modifiers,
                                 ir::ModifierFlags memberModifiers, const lexer::SourcePosition &startLoc);
+    ir::AstNode *ParseAmbientSignature();
 
     ir::ClassDefinition *CreateClassDefinitionForNewExpression(ArenaVector<ir::Expression *> &arguments,
                                                                ir::TypeNode *typeReference,
@@ -361,6 +386,7 @@ private:
     ir::Expression *ParseAwaitExpression();
     ir::TSTypeParameter *ParseTypeParameter(TypeAnnotationParsingOptions *options) override;
 
+    bool IsStringEnum();
     ir::TSEnumDeclaration *ParseEnumMembers(ir::Identifier *key, const lexer::SourcePosition &enumStart, bool isConst,
                                             bool isStatic) override;
     void ParseNumberEnum(ArenaVector<ir::AstNode *> &members);
@@ -378,9 +404,12 @@ private:
                                               ir::ModifierFlags flags = ir::ModifierFlags::NONE) override;
     // NOLINTNEXTLINE(google-default-arguments)
     ir::Statement *ParseEnumDeclaration(bool isConst = false, bool isStatic = false) override;
+    ir::Statement *ParsePotentialConstEnum(VariableParsingFlags flags) override;
     ir::Expression *ParseLaunchExpression(ExpressionParseFlags flags);
     void ValidateInstanceOfExpression(ir::Expression *expr);
     void ValidateRestParameter(ir::Expression *param) override;
+    bool ValidateBreakLabel(util::StringView label) override;
+    bool ValidateContinueLabel(util::StringView label) override;
     void CheckPredefinedMethods(ir::ScriptFunction const *function, const lexer::SourcePosition &position) const;
 
     bool CheckClassElement(ir::AstNode *property, ir::MethodDefinition *&ctor,
@@ -431,6 +460,9 @@ private:
     friend class InnerSourceParser;
 
 private:
+    std::optional<ir::Expression *> GetPostPrimaryExpression(ir::Expression *returnExpression,
+                                                             lexer::SourcePosition startLoc, bool ignoreCallExpression,
+                                                             [[maybe_unused]] bool *isChainExpression);
     parser::Program *globalProgram_;
     std::vector<ir::AstNode *> insertingNodes_ {};
     std::unique_ptr<util::ImportPathManager> importPathManager_ {nullptr};
@@ -471,6 +503,27 @@ private:
     util::StringView savedSourceCode_ {};
     util::StringView savedSourceFile_ {};
     util::StringView savedSourceFilePath_ {};
+};
+
+class SavedFormattingFileName {
+public:
+    SavedFormattingFileName(ETSParser *parser, std::string_view fname)
+        : parser_(parser), savedFname_(parser->FormattingFileName())
+    {
+        parser->SetFormattingFileName(fname);
+    }
+
+    NO_COPY_SEMANTIC(SavedFormattingFileName);
+    NO_MOVE_SEMANTIC(SavedFormattingFileName);
+
+    ~SavedFormattingFileName()
+    {
+        parser_->SetFormattingFileName(savedFname_);
+    }
+
+private:
+    ETSParser *parser_;
+    std::string_view savedFname_;
 };
 
 }  // namespace ark::es2panda::parser

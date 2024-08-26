@@ -1,0 +1,14 @@
+import add from './namecacheTest7_export';
+import { multiply, k } from './namecacheTest7_export';
+import { PI, h } from './namecacheTest7_export';
+import { g, i } from './namecacheTest7_export';
+import type { j } from './namecacheTest7_export';
+let t = new h("xiaoming", 12);
+let u: h = new h("xiaohong", 11);
+var value: j = "hello";
+const v: number = 5;
+let a1 = (k(v, PI) == multiply(v, PI));
+let b1: i = {
+    id: 1,
+    m: "2023"
+};

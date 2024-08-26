@@ -15,6 +15,7 @@
 
 #include "globalTypesHolder.h"
 
+#include "checker/types/typeError.h"
 #include "checker/types/ts/numberType.h"
 #include "checker/types/ts/anyType.h"
 #include "checker/types/ts/stringType.h"
@@ -50,9 +51,25 @@
 #include "util/helpers.h"
 
 namespace ark::es2panda::checker {
-GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMappings_(allocator->Adapter())
+
+void GlobalTypesHolder::AddETSEscompatLayer()
 {
-    // TS specific types
+    // ETS escompat layer
+    builtinNameMappings_.emplace("Array", GlobalTypeId::ETS_ARRAY_BUILTIN);
+    builtinNameMappings_.emplace("Date", GlobalTypeId::ETS_DATE_BUILTIN);
+    builtinNameMappings_.emplace("Error", GlobalTypeId::ETS_ERROR_BUILTIN);
+    builtinNameMappings_.emplace("OutOfMemoryError", GlobalTypeId::ETS_OUT_OF_MEMORY_ERROR_BUILTIN);
+    builtinNameMappings_.emplace("NoSuchMethodError", GlobalTypeId::ETS_NO_SUCH_METHOD_ERROR_BUILTIN);
+    builtinNameMappings_.emplace("DivideByZeroError", GlobalTypeId::ETS_DIVIDE_BY_ZERO_ERROR_BUILTIN);
+    builtinNameMappings_.emplace("NullPointerError", GlobalTypeId::ETS_NULL_POINTER_ERROR_BUILTIN);
+    builtinNameMappings_.emplace("UncaughtExceptionError", GlobalTypeId::ETS_UNCAUGHT_EXCEPTION_ERROR_BUILTIN);
+    builtinNameMappings_.emplace("Map", GlobalTypeId::ETS_MAP_BUILTIN);
+    builtinNameMappings_.emplace("RegExp", GlobalTypeId::ETS_REGEXP_BUILTIN);
+    builtinNameMappings_.emplace("Set", GlobalTypeId::ETS_SET_BUILTIN);
+}
+
+void GlobalTypesHolder::AddTSSpecificTypes(ArenaAllocator *allocator)
+{
     globalTypes_[static_cast<size_t>(GlobalTypeId::NUMBER)] = allocator->New<NumberType>();
     globalTypes_[static_cast<size_t>(GlobalTypeId::ANY)] = allocator->New<AnyType>();
     globalTypes_[static_cast<size_t>(GlobalTypeId::STRING)] = allocator->New<StringType>();
@@ -81,7 +98,10 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMap
     globalTypes_[static_cast<size_t>(GlobalTypeId::EMPTY_OBJECT)] = allocator->New<ObjectLiteralType>();
     globalTypes_[static_cast<size_t>(GlobalTypeId::RESOLVING_RETURN_TYPE)] = allocator->New<AnyType>();
     globalTypes_[static_cast<size_t>(GlobalTypeId::ERROR_TYPE)] = allocator->New<AnyType>();
+}
 
+void GlobalTypesHolder::AddEtsSpecificTypes(ArenaAllocator *allocator)
+{
     // ETS specific types
     globalTypes_[static_cast<size_t>(GlobalTypeId::BYTE)] = allocator->New<ByteType>();
     globalTypes_[static_cast<size_t>(GlobalTypeId::SHORT)] = allocator->New<ShortType>();
@@ -95,7 +115,11 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMap
     globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_NULL)] = allocator->New<ETSNullType>();
     globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_UNDEFINED)] = allocator->New<ETSUndefinedType>();
     globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_WILDCARD)] = allocator->New<WildcardType>();
+    globalTypes_[static_cast<size_t>(GlobalTypeId::TYPE_ERROR)] = allocator->New<TypeError>();
+}
 
+void GlobalTypesHolder::AddEtsSpecificBuiltinTypes()
+{
     builtinNameMappings_.emplace("Boolean", GlobalTypeId::ETS_BOOLEAN_BUILTIN);
     builtinNameMappings_.emplace("Byte", GlobalTypeId::ETS_BYTE_BUILTIN);
     builtinNameMappings_.emplace("Char", GlobalTypeId::ETS_CHAR_BUILTIN);
@@ -135,28 +159,28 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMap
     builtinNameMappings_.emplace("FloatBox", GlobalTypeId::ETS_FLOAT_BOX_BUILTIN);
     builtinNameMappings_.emplace("DoubleBox", GlobalTypeId::ETS_DOUBLE_BOX_BUILTIN);
     builtinNameMappings_.emplace("never", GlobalTypeId::ETS_NEVER_BUILTIN);
+}
+
+GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMappings_(allocator->Adapter())
+{
+    // TS specific types
+    AddTSSpecificTypes(allocator);
+
+    // ETS specific types
+    AddEtsSpecificTypes(allocator);
+
+    AddEtsSpecificBuiltinTypes();
 
     // ETS escompat layer
-    builtinNameMappings_.emplace("Array", GlobalTypeId::ETS_ARRAY_BUILTIN);
-    builtinNameMappings_.emplace("Date", GlobalTypeId::ETS_DATE_BUILTIN);
-    builtinNameMappings_.emplace("Error", GlobalTypeId::ETS_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("OutOfMemoryError", GlobalTypeId::ETS_OUT_OF_MEMORY_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("NoSuchMethodError", GlobalTypeId::ETS_NO_SUCH_METHOD_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("DivideByZeroError", GlobalTypeId::ETS_DIVIDE_BY_ZERO_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("NullPointerError", GlobalTypeId::ETS_NULL_POINTER_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("UncaughtExceptionError", GlobalTypeId::ETS_UNCAUGHT_EXCEPTION_ERROR_BUILTIN);
-    builtinNameMappings_.emplace("Map", GlobalTypeId::ETS_MAP_BUILTIN);
-    builtinNameMappings_.emplace("RegExp", GlobalTypeId::ETS_REGEXP_BUILTIN);
-    builtinNameMappings_.emplace("Set", GlobalTypeId::ETS_SET_BUILTIN);
+    AddETSEscompatLayer();
+
+    builtinNameMappings_.emplace("TYPE ERROR", GlobalTypeId::TYPE_ERROR);
 
     // ETS functional types
     for (size_t id = static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS), nargs = 0;
          id < static_cast<size_t>(GlobalTypeId::ETS_FUNCTIONN_CLASS); id++, nargs++) {
-        std::stringstream ss;
-        ss << "Function";
-        ss << nargs;
-
-        builtinNameMappings_.emplace(util::UString(ss.str(), allocator).View(), static_cast<GlobalTypeId>(id));
+        builtinNameMappings_.emplace(util::UString("Function" + std::to_string(nargs), allocator).View(),
+                                     static_cast<GlobalTypeId>(id));
     }
 
     builtinNameMappings_.emplace("FunctionN", GlobalTypeId::ETS_FUNCTIONN_CLASS);
@@ -628,6 +652,11 @@ Type *GlobalTypesHolder::GlobalFunctionBuiltinType(size_t nargs)
         return globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_FUNCTIONN_CLASS));
     }
     return globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS) + nargs);
+}
+
+Type *GlobalTypesHolder::GlobalTypeError()
+{
+    return globalTypes_.at(static_cast<size_t>(GlobalTypeId::TYPE_ERROR));
 }
 
 void GlobalTypesHolder::InitializeBuiltin(const util::StringView name, Type *type)

@@ -28,7 +28,6 @@ template <class T>
 T DirName(T const &path, T const &delims = ark::os::file::File::GetPathDelim())
 {
     std::size_t pos = path.find_last_of(delims);
-
     if (pos == std::string::npos) {
         return "./";
     }
@@ -79,6 +78,11 @@ pandasm::Program *Compiler::Compile(const SourceFile &input, const util::Options
         error_ = e;
         return nullptr;
     }
+}
+
+bool Compiler::IsAnyError() const noexcept
+{
+    return compiler_->IsAnyError();
 }
 
 void Compiler::DumpAsm(const pandasm::Program *prog)

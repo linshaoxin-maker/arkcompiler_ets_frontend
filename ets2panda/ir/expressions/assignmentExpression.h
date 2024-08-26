@@ -121,8 +121,20 @@ public:
         return target_;
     }
 
+    void SetIgnoreConstAssign()
+    {
+        ignoreConstAssign_ = true;
+    }
+
+    [[nodiscard]] bool IsIgnoreConstAssign() const
+    {
+        return ignoreConstAssign_;
+    }
+
     [[nodiscard]] AssignmentExpression *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
+    [[nodiscard]] bool ConvertibleToAssignmentPatternLeft(bool mustBePattern);
+    [[nodiscard]] bool ConvertibleToAssignmentPatternRight();
     [[nodiscard]] bool ConvertibleToAssignmentPattern(bool mustBePattern = true);
 
     void TransformChildren(const NodeTransformer &cb, std::string_view transformationName) override;
@@ -155,6 +167,7 @@ private:
     lexer::TokenType operator_;
     varbinder::Variable *target_ {};
     checker::Type *operationType_ {};
+    bool ignoreConstAssign_ = false;
 };
 }  // namespace ark::es2panda::ir
 

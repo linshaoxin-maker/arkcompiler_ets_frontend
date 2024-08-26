@@ -16,7 +16,7 @@
     "nodes": [
         {
             "line": 20,
-            "column": 3,
+            "column": 11,
             "problem": "LiteralAsPropertyName",
             "autofix": [
                 {
@@ -182,6 +182,25 @@
             ],
             "suggest": "",
             "rule": "Object literal must correspond to some explicitly declared class or interface (arkts-no-untyped-obj-literals)"
+        },
+        {
+            "line": 69,
+            "column": 3,
+            "problem": "LiteralAsPropertyName",
+            "autofix": [
+                {
+                    "replacementText": "___2",
+                    "start": 1637,
+                    "end": 1638
+                },
+                {
+                    "replacementText": "___2",
+                    "start": 1719,
+                    "end": 1720
+                }
+            ],
+            "suggest": "",
+            "rule": "Objects with property names that are not identifiers are not supported (arkts-identifiers-as-prop-names)"
         },
         {
             "line": 74,

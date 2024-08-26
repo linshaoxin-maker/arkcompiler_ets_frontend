@@ -1005,9 +1005,9 @@ void AssignAnalyzer::AnalyzeCond(const ir::AstNode *node)
     ASSERT(node->IsExpression());
     const ir::Expression *expr = node->AsExpression();
 
-    if (expr->TsType() != nullptr && expr->TsType()->IsETSBooleanType() &&
-        expr->TsType()->HasTypeFlag(TypeFlag::CONSTANT)) {
-        const ETSBooleanType *condType = expr->TsType()->AsETSBooleanType();
+    if (auto etype = expr->TsTypeOrError();
+        etype != nullptr && etype->IsETSBooleanType() && etype->HasTypeFlag(TypeFlag::CONSTANT)) {
+        const ETSBooleanType *condType = etype->AsETSBooleanType();
         if (inits_.IsReset()) {
             Merge();
         }
@@ -1376,7 +1376,8 @@ bool AssignAnalyzer::VariableHasDefaultValue(const ir::AstNode *node)
         UNREACHABLE();
     }
 
-    return type != nullptr && (type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE) || type->PossiblyETSNullish());
+    return type != nullptr && (type->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE) ||
+                               (type->PossiblyETSNullish() && !type->HasTypeFlag(checker::TypeFlag::GENERIC)));
 }
 
 void AssignAnalyzer::LetInit(const ir::AstNode *node)
@@ -1412,8 +1413,6 @@ void AssignAnalyzer::LetInit(const ir::AstNode *node)
             } else {
                 uninit(adr);
             }
-        } else {
-            Warning({"Cannot assign to '", name, "' because it is a read-only property."}, pos);
         }
     }
 

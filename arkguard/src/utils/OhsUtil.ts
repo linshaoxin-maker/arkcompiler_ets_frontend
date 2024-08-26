@@ -33,7 +33,7 @@ import {
   SyntaxKind,
   isExpressionStatement,
   isClassExpression,
-  getModifiers,
+  getModifiers
 } from 'typescript';
 
 import type {
@@ -54,6 +54,7 @@ import type {
 } from 'typescript';
 
 import { ApiExtractor } from '../common/ApiExtractor';
+import { UnobfuscationCollections } from './CommonCollections';
 
 export const stringPropsSet: Set<string> = new Set();
 /**
@@ -61,6 +62,17 @@ export const stringPropsSet: Set<string> = new Set();
  * So the whitelist of struct properties is collected during the project scanning process.
  */
 export const structPropsSet: Set<string> = new Set();
+
+/**
+ * Add enum elements into whitelist when compiling har module to avoid obfuscating enum elements
+ * since enum elements in js file cannot be obfuscated properly.
+ */
+export const enumPropsSet: Set<string> = new Set();
+
+/**
+ * Collect the original name of export elements to ensure we can collect their properties
+ */
+export const exportOriginalNameSet: Set<string> = new Set();
 
 function containViewPU(heritageClauses: NodeArray<HeritageClause>): boolean {
   if (!heritageClauses) {
@@ -94,7 +106,7 @@ function containViewPU(heritageClauses: NodeArray<HeritageClause>): boolean {
  * used to ignore user defined ui component class property name
  * @param classNode
  */
-export function isViewPUBasedClass(classNode: ClassDeclaration): boolean {
+export function isViewPUBasedClass(classNode: ClassDeclaration | undefined): boolean {
   if (!classNode) {
     return false;
   }

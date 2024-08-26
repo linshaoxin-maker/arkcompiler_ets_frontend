@@ -107,6 +107,16 @@ void ETSChecker::ValidateCallExpressionIdentifier(ir::Identifier *const ident, v
     if (TryTransformingToStaticInvoke(ident, type)) {
         return;
     }
+
+    if (type->IsETSUnionType()) {
+        for (auto it : type->AsETSUnionType()->ConstituentTypes()) {
+            if (it->IsETSFunctionType() || it->IsETSDynamicType() ||
+                (it->IsETSObjectType() && it->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL))) {
+                return;
+            }
+        }
+    }
+
     ThrowTypeError({"This expression is not callable."}, ident->Start());
 }
 
@@ -121,6 +131,10 @@ void ETSChecker::ValidateNewClassInstanceIdentifier(ir::Identifier *const ident,
 void ETSChecker::ValidateMemberIdentifier(ir::Identifier *const ident, varbinder::Variable *const resolved,
                                           Type *const type)
 {
+    if (resolved->Declaration()->Node()->IsTSEnumDeclaration() &&
+        ident->Parent()->AsMemberExpression()->HasMemberKind(ir::MemberExpressionKind::ELEMENT_ACCESS)) {
+        return;
+    }
     if (ident->Parent()->AsMemberExpression()->IsComputed()) {
         if ((resolved != nullptr) && !resolved->Declaration()->PossibleTDZ()) {
             WrongContextErrorClassifyByType(ident, resolved);
@@ -129,8 +143,7 @@ void ETSChecker::ValidateMemberIdentifier(ir::Identifier *const ident, varbinder
         return;
     }
 
-    if (!IsReferenceType(type) && !type->IsETSEnumType() && !type->IsETSStringEnumType() &&
-        !type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+    if (!IsReferenceType(type) && !type->IsETSEnumType() && !type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
         ThrowError(ident);
     }
 }
@@ -236,18 +249,19 @@ void ETSChecker::ValidateResolvedIdentifier(ir::Identifier *const ident, varbind
 
 void ETSChecker::ValidateUnaryOperatorOperand(varbinder::Variable *variable)
 {
-    if (IsVariableGetterSetter(variable)) {
+    if (IsVariableGetterSetter(variable) || variable->Declaration() == nullptr) {
         return;
     }
 
-    if (variable->Declaration()->IsConstDecl()) {
+    if (variable->Declaration()->IsConstDecl() || variable->Declaration()->IsReadonlyDecl()) {
+        std::string_view fieldType = variable->Declaration()->IsConstDecl() ? "constant" : "readonly";
         if (HasStatus(CheckerStatus::IN_CONSTRUCTOR | CheckerStatus::IN_STATIC_BLOCK) &&
             !variable->HasFlag(varbinder::VariableFlags::EXPLICIT_INIT_REQUIRED)) {
-            ThrowTypeError({"Cannot reassign constant field ", variable->Name()},
+            ThrowTypeError({"Cannot reassign ", fieldType, " ", variable->Name()},
                            variable->Declaration()->Node()->Start());
         }
         if (!HasStatus(CheckerStatus::IN_CONSTRUCTOR | CheckerStatus::IN_STATIC_BLOCK)) {
-            ThrowTypeError({"Cannot assign to a constant variable ", variable->Name()},
+            ThrowTypeError({"Cannot assign to a ", fieldType, " variable ", variable->Name()},
                            variable->Declaration()->Node()->Start());
         }
     }

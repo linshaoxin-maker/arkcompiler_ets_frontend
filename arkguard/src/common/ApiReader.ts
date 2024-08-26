@@ -19,10 +19,10 @@ import {FileUtils} from '../utils/FileUtils';
 import {ApiExtractor} from './ApiExtractor';
 import {ListUtil} from '../utils/ListUtil';
 import type {IOptions} from '../configs/IOptions';
-import { stringPropsSet, structPropsSet } from '../utils/OhsUtil';
-import { sys } from 'typescript';
+import { stringPropsSet, structPropsSet, enumPropsSet } from '../utils/OhsUtil';
 
 export const scanProjectConfig: {
+  mPropertyObfuscation?: boolean,
   mKeepStringProperty?: boolean,
   mExportObfuscation?: boolean,
   mkeepFilesAndDependencies?: Set<string>,
@@ -80,9 +80,8 @@ export function readProjectProperties(projectPaths: string[], customProfiles: IO
   } else {
     scanningCommonType = ApiExtractor.ApiType.CONSTRUCTOR_PROPERTY;
     scanningLibsType = ApiExtractor.ApiType.CONSTRUCTOR_PROPERTY;
-    ApiExtractor.mConstructorPropertySet = new Set();
   }
-
+  ApiExtractor.mConstructorPropertySet = new Set();
   // This call is for UT.
   initScanProjectConfig(customProfiles);
 
@@ -128,19 +127,28 @@ export function readProjectProperties(projectPaths: string[], customProfiles: IO
 }
 
 function initScanProjectConfig(customProfiles: IOptions, isHarCompiled?: boolean) {
+  scanProjectConfig.mPropertyObfuscation = customProfiles.mNameObfuscation?.mRenameProperties;
   scanProjectConfig.mKeepStringProperty = customProfiles.mNameObfuscation?.mKeepStringProperty;
   scanProjectConfig.mExportObfuscation = customProfiles.mExportObfuscation;
   scanProjectConfig.mkeepFilesAndDependencies = customProfiles.mKeepFileSourceCode?.mkeepFilesAndDependencies;
   scanProjectConfig.isHarCompiled = isHarCompiled;
 }
+
+export interface ReseverdSetForArkguard {
+  structPropertySet: Set<string> | undefined;
+  stringPropertySet: Set<string> | undefined;
+  exportNameAndPropSet: Set<string> | undefined;
+  exportNameSet: Set<string> | undefined;
+  enumPropertySet: Set<string> | undefined;
+}
+
 /**
  * read project reserved properties by collected paths
  * @param filesForCompilation set collection of files
  * @param customProfiles
  */
-export function readProjectPropertiesByCollectedPaths(filesForCompilation: Set<string>, customProfiles: IOptions, isHarCompiled: boolean): {
-  projectAndLibsReservedProperties: string[];
-  libExportNames: string[]} {
+export function readProjectPropertiesByCollectedPaths(filesForCompilation: Set<string>,
+  customProfiles: IOptions, isHarCompiled: boolean): ReseverdSetForArkguard {
   const ApiType = ApiExtractor.ApiType;
   let scanningCommonType = undefined;
   let scanningLibsType = undefined;
@@ -152,54 +160,45 @@ export function readProjectPropertiesByCollectedPaths(filesForCompilation: Set<s
     scanningLibsType = ApiType.CONSTRUCTOR_PROPERTY;
   }
   // The purpose of collecting constructor properties is to avoid generating the same name as the constructor property when obfuscating identifier names.
-  // If property obfuscation is enabled, as property obfuscation precedes identifer obfuscation.
-  // the constructor property will be obfuscated first, so there is no need to collect this name.
-  ApiExtractor.mConstructorPropertySet = isEnabledPropertyObfuscation(customProfiles) ? undefined : new Set();
+  ApiExtractor.mConstructorPropertySet = new Set();
 
   initScanProjectConfig(customProfiles, isHarCompiled);
 
-  const sourcePaths: string[] = [];
-  const remoteHarParhs: string[] = [];
-
-  filesForCompilation.forEach(path => {
-    if (ApiExtractor.isRemoteHar(path)) {
-      remoteHarParhs.push(path);
-    } else {
-      sourcePaths.push(path);
-    }
-  });
-
   stringPropsSet.clear();
 
-  const projProperties: string[] = ApiExtractor.parseProjectSourceByPaths(sourcePaths, customProfiles, scanningCommonType);
-  const libExportNamesAndReservedProps = ApiExtractor.parseThirdPartyLibsByPaths(remoteHarParhs, scanningLibsType);
-  let sdkProperties = libExportNamesAndReservedProps?.reservedProperties ?? [];
+  const exportWhiteList = ApiExtractor.parseFileByPaths(filesForCompilation, scanningCommonType);
+  const exportNamesAndProperties: Set<string> | undefined = exportWhiteList.reservedExportPropertyAndName;
+  const exportNames: Set<string> | undefined = exportWhiteList.reservedExportNames;
 
-  const nameObfuscationConfig = customProfiles.mNameObfuscation;
+  // if -enable-property-obfuscation, collect structPropsSet, exportNamesAndProperties and
+  // stringPropsSet(if -enable-string-property-obufscation is not enabled) as whitelists.
+  let exportNameAndPropSet: Set<string>;
+  let structPropertySet: Set<string>;
+  let stringPropertySet: Set<string>;
+  let enumPropertySet: Set<string>;
   if (isEnabledPropertyObfuscation(customProfiles)) {
-    // read project code export names
-    nameObfuscationConfig.mReservedProperties = ListUtil.uniqueMergeList(projProperties, nameObfuscationConfig.mReservedProperties, [...structPropsSet]);
-
-    // read project lib export names
-    if (sdkProperties && sdkProperties.length > 0) {
-      nameObfuscationConfig.mReservedProperties = ListUtil.uniqueMergeList(sdkProperties, nameObfuscationConfig.mReservedProperties);
-    }
-
-    if (scanProjectConfig.mKeepStringProperty && stringPropsSet.size > 0) {
-      nameObfuscationConfig.mReservedProperties = ListUtil.uniqueMergeList([...stringPropsSet], nameObfuscationConfig.mReservedProperties);
+    exportNameAndPropSet = new Set(exportNamesAndProperties);
+    structPropertySet = new Set(structPropsSet);
+    enumPropertySet = new Set(enumPropsSet);
+    if (scanProjectConfig.mKeepStringProperty) {
+      stringPropertySet = new Set(stringPropsSet);
     }
   }
   structPropsSet.clear();
   stringPropsSet.clear();
+  enumPropsSet.clear();
 
-  if (scanProjectConfig.mExportObfuscation && libExportNamesAndReservedProps?.reservedLibExportNames) {
-    nameObfuscationConfig.mReservedNames = ListUtil.uniqueMergeList(libExportNamesAndReservedProps.reservedLibExportNames,
-      nameObfuscationConfig.mReservedNames);
+  let exportNameSet: Set<string>;
+  if (scanProjectConfig.mExportObfuscation) {
+    exportNameSet = new Set(exportNames);
   }
 
   return {
-    projectAndLibsReservedProperties: nameObfuscationConfig.mReservedProperties ?? [],
-    libExportNames: nameObfuscationConfig.mReservedNames ?? []
+    structPropertySet: structPropertySet,
+    stringPropertySet: stringPropertySet,
+    exportNameAndPropSet: exportNameAndPropSet,
+    exportNameSet: exportNameSet,
+    enumPropertySet: enumPropertySet,
   };
 }
 

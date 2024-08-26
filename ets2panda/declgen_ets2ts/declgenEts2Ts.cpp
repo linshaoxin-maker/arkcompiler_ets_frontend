@@ -75,7 +75,12 @@ void TSDeclGen::Generate()
         } else if (globalStatement->IsTSEnumDeclaration()) {
             GenEnumDeclaration(globalStatement->AsTSEnumDeclaration());
         } else if (globalStatement->IsClassDeclaration()) {
-            GenClassDeclaration(globalStatement->AsClassDeclaration());
+            // The classes generated for enums starts with '#' but those are invalid names and
+            // not requred for the ts code
+            if (globalStatement->AsClassDeclaration()->Definition()->Ident()->Name().Mutf8().find('#') ==
+                std::string::npos) {
+                GenClassDeclaration(globalStatement->AsClassDeclaration());
+            }
         } else if (globalStatement->IsTSInterfaceDeclaration()) {
             GenInterfaceDeclaration(globalStatement->AsTSInterfaceDeclaration());
         } else if (globalStatement->IsTSTypeAliasDeclaration()) {
@@ -136,7 +141,7 @@ void TSDeclGen::GenType(const checker::Type *checkerType)
     DebugPrint(std::string("  Converting type: ") + GetDebugTypeName(checkerType) + " (" + var_name + ")");
 #endif
 
-    if (checkerType->HasTypeFlag(checker::TypeFlag::ETS_NUMERIC)) {
+    if (checkerType->HasTypeFlag(checker::TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC)) {
         Out("number");
         return;
     }
@@ -152,10 +157,9 @@ void TSDeclGen::GenType(const checker::Type *checkerType)
         case checker::TypeFlag::ETS_BOOLEAN:
         case checker::TypeFlag::ETS_TYPE_PARAMETER:
         case checker::TypeFlag::ETS_NONNULLISH:
+        case checker::TypeFlag::ETS_READONLY:
+        case checker::TypeFlag::ETS_INT_ENUM:
             Out(checkerType->ToString());
-            return;
-        case checker::TypeFlag::ETS_ENUM:
-            GenEnumType(checkerType->AsETSEnumType());
             return;
         case checker::TypeFlag::ETS_OBJECT:
         case checker::TypeFlag::ETS_DYNAMIC_TYPE:
@@ -267,7 +271,7 @@ void TSDeclGen::GenFunctionType(const checker::ETSFunctionType *etsFunctionType,
     GenFunctionBody(methodDef, sig, isConstructor, isSetter);
 }
 
-void TSDeclGen::GenEnumType(const checker::ETSEnumType *enumType)
+void TSDeclGen::GenEnumType(const checker::ETSIntEnumType *enumType)
 {
     for (auto *member : enumType->GetMembers()) {
         Out(INDENT);
@@ -473,8 +477,8 @@ void TSDeclGen::GenEnumDeclaration(const ir::TSEnumDeclaration *enumDecl)
     Out("enum ", enumName, " {");
     OutEndl();
 
-    ASSERT(enumDecl->TsType()->IsETSEnumType());
-    GenEnumType(enumDecl->TsType()->AsETSEnumType());
+    ASSERT(enumDecl->TsType()->IsETSIntEnumType());
+    GenEnumType(enumDecl->TsType()->AsETSIntEnumType());
 
     Out("}");
     OutEndl();
@@ -526,7 +530,7 @@ void TSDeclGen::GenClassDeclaration(const ir::ClassDeclaration *classDecl)
     DebugPrint("GenClassDeclaration: " + className);
 
     if (className == compiler::Signatures::DYNAMIC_MODULE_CLASS || className == compiler::Signatures::JSNEW_CLASS ||
-        className == compiler::Signatures::JSCALL_CLASS) {
+        className == compiler::Signatures::JSCALL_CLASS || (className.find("$partial") != std::string::npos)) {
         return;
     }
 
@@ -575,6 +579,12 @@ void TSDeclGen::GenClassDeclaration(const ir::ClassDeclaration *classDecl)
 
 void TSDeclGen::GenMethodDeclaration(const ir::MethodDefinition *methodDef)
 {
+    const auto methodIdent = GetKeyIdent(methodDef->Key());
+    const auto methodName = methodIdent->Name().Mutf8();
+    if (methodName.find('#') != std::string::npos) {
+        return;
+    }
+
     if (state_.inGlobalClass) {
         Out("function ");
     } else {
@@ -589,8 +599,6 @@ void TSDeclGen::GenMethodDeclaration(const ir::MethodDefinition *methodDef)
         Out("set ");
     }
 
-    const auto methodIdent = GetKeyIdent(methodDef->Key());
-    const auto methodName = methodIdent->Name().Mutf8();
     DebugPrint("  GenMethodDeclaration: " + methodName);
     Out(methodName);
 

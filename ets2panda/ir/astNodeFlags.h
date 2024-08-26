@@ -18,12 +18,21 @@
 
 #include <cstdint>
 
+#include "util/enumbitops.h"
+
 namespace ark::es2panda::ir {
+
+using ENUMBITOPS_OPERATORS;
+
 enum class AstNodeFlags {
     NO_OPTS = 0,
     CHECKCAST = 1U << 0U,
-    ENUM_GET_VALUE = 1U << 1U,
-    CONVERT_TO_STRING = 1U << 2U,
+    CONVERT_TO_STRING = 1U << 1U,
+    ALLOW_REQUIRED_INSTANTIATION = 1U << 2U,
+    HAS_EXPORT_ALIAS = 1U << 3U,
+    GENERATE_VALUE_OF = 1U << 4U,
+    GENERATE_GET_NAME = 1U << 5U,  // Transform the Enum[enumVar] MemberExpression to enumVar.getName() call
+    RECHECK = 1U << 6U,
 };
 
 enum class ModifierFlags : uint32_t {
@@ -53,7 +62,6 @@ enum class ModifierFlags : uint32_t {
     SETTER = 1U << 22U,
     DEFAULT_EXPORT = 1U << 23U,
     EXPORT_TYPE = 1U << 24U,
-    EXTERNAL = 1U << 25U,
     SUPER_OWNER = 1U << 26U,
     ACCESS = PUBLIC | PROTECTED | PRIVATE | INTERNAL,
     ALL = STATIC | ASYNC | ACCESS | DECLARE | READONLY | ABSTRACT,
@@ -105,19 +113,41 @@ enum class BoxingUnboxingFlags : uint32_t {
     BOX_TO_LONG = 1U << 5U,
     BOX_TO_FLOAT = 1U << 6U,
     BOX_TO_DOUBLE = 1U << 7U,
-    UNBOX_TO_BOOLEAN = 1U << 8U,
-    UNBOX_TO_BYTE = 1U << 9U,
-    UNBOX_TO_SHORT = 1U << 10U,
-    UNBOX_TO_CHAR = 1U << 11U,
-    UNBOX_TO_INT = 1U << 12U,
-    UNBOX_TO_LONG = 1U << 13U,
-    UNBOX_TO_FLOAT = 1U << 14U,
-    UNBOX_TO_DOUBLE = 1U << 15U,
+    BOX_TO_ENUM = 1U << 8U,
+    UNBOX_TO_BOOLEAN = 1U << 9U,
+    UNBOX_TO_BYTE = 1U << 10U,
+    UNBOX_TO_SHORT = 1U << 11U,
+    UNBOX_TO_CHAR = 1U << 12U,
+    UNBOX_TO_INT = 1U << 13U,
+    UNBOX_TO_LONG = 1U << 14U,
+    UNBOX_TO_FLOAT = 1U << 15U,
+    UNBOX_TO_DOUBLE = 1U << 16U,
+    UNBOX_TO_ENUM = 1U << 17U,
     BOXING_FLAG = BOX_TO_BOOLEAN | BOX_TO_BYTE | BOX_TO_SHORT | BOX_TO_CHAR | BOX_TO_INT | BOX_TO_LONG | BOX_TO_FLOAT |
-                  BOX_TO_DOUBLE,
+                  BOX_TO_DOUBLE | BOX_TO_ENUM,
     UNBOXING_FLAG = UNBOX_TO_BOOLEAN | UNBOX_TO_BYTE | UNBOX_TO_SHORT | UNBOX_TO_CHAR | UNBOX_TO_INT | UNBOX_TO_LONG |
-                    UNBOX_TO_FLOAT | UNBOX_TO_DOUBLE,
+                    UNBOX_TO_FLOAT | UNBOX_TO_DOUBLE | UNBOX_TO_ENUM,
 };
 }  // namespace ark::es2panda::ir
+
+namespace enumbitops {
+
+template <>
+struct IsAllowedType<ark::es2panda::ir::AstNodeFlags> : std::true_type {
+};
+
+template <>
+struct IsAllowedType<ark::es2panda::ir::ModifierFlags> : std::true_type {
+};
+
+template <>
+struct IsAllowedType<ark::es2panda::ir::ScriptFunctionFlags> : std::true_type {
+};
+
+template <>
+struct IsAllowedType<ark::es2panda::ir::BoxingUnboxingFlags> : std::true_type {
+};
+
+}  // namespace enumbitops
 
 #endif

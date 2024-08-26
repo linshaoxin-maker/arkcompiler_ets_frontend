@@ -1,10 +1,10 @@
 {
   "IdentifierCache": {
     "#Person2": "c1",
-    "Person2#o#inputage": "d1"
+    "Person2#myage#inputage": "d1"
   },
   "MemberMethodCache": {
-    "myage:20:22": "o",
-    "myage:24:26": "o"
+    "myage:20:22": "p",
+    "myage:24:26": "p"
   }
 }

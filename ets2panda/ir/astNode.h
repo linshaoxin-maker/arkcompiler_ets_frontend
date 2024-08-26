@@ -21,7 +21,6 @@
 #include "ir/visitor/AstVisitor.h"
 #include "lexer/token/sourceLocation.h"
 #include "macros.h"
-#include "util/enumbitops.h"
 
 namespace ark::es2panda::compiler {
 class PandaGen;
@@ -62,20 +61,14 @@ enum class AstNodeType {
 #undef DECLARE_NODE_TYPES
 };
 
-DEFINE_BITOPS(AstNodeFlags)
-
-DEFINE_BITOPS(ModifierFlags)
-
-DEFINE_BITOPS(ScriptFunctionFlags)
-
-DEFINE_BITOPS(BoxingUnboxingFlags)
-
 // Forward declarations
 class AstDumper;
 class Expression;
 class SrcDumper;
 class Statement;
 class ClassElement;
+template <typename T>
+class Typed;
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_CLASSES(nodeType, className) class className;
@@ -137,6 +130,18 @@ public:
     virtual bool IsTyped() const
     {
         return false;
+    }
+
+    Typed<AstNode> *AsTyped()
+    {
+        ASSERT(IsTyped());
+        return reinterpret_cast<Typed<AstNode> *>(this);
+    }
+
+    Typed<AstNode> const *AsTyped() const
+    {
+        ASSERT(IsTyped());
+        return reinterpret_cast<Typed<AstNode> const *>(this);
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -364,23 +369,9 @@ public:
         return (flags_ & ModifierFlags::INTERNAL) != 0;
     }
 
-    [[nodiscard]] bool IsExported() const noexcept
-    {
-        if (UNLIKELY(IsClassDefinition())) {
-            return parent_->IsExported();
-        }
+    [[nodiscard]] bool IsExported() const noexcept;
 
-        return (flags_ & ModifierFlags::EXPORT) != 0;
-    }
-
-    [[nodiscard]] bool IsDefaultExported() const noexcept
-    {
-        if (UNLIKELY(IsClassDefinition())) {
-            return parent_->IsDefaultExported();
-        }
-
-        return (flags_ & ModifierFlags::DEFAULT_EXPORT) != 0;
-    }
+    [[nodiscard]] bool IsDefaultExported() const noexcept;
 
     [[nodiscard]] bool IsExportedType() const noexcept;
 
@@ -424,6 +415,8 @@ public:
         return flags_;
     }
 
+    [[nodiscard]] bool HasExportAlias() const noexcept;
+
     // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_FLAG_OPERATIONS(flag_type, member_name)     \
     void Set##flag_type(flag_type flags) const noexcept     \
@@ -454,45 +447,32 @@ public:
     DECLARE_FLAG_OPERATIONS(AstNodeFlags, astNodeFlags_);
 #undef DECLARE_FLAG_OPERATIONS
 
-    ir::ClassElement *AsClassElement()
-    {
-        ASSERT(IsMethodDefinition() || IsClassProperty() || IsClassStaticBlock());
-        return reinterpret_cast<ir::ClassElement *>(this);
-    }
-
-    const ir::ClassElement *AsClassElement() const
-    {
-        ASSERT(IsMethodDefinition() || IsClassProperty() || IsClassStaticBlock());
-        return reinterpret_cast<const ir::ClassElement *>(this);
-    }
+    ir::ClassElement *AsClassElement();
+    const ir::ClassElement *AsClassElement() const;
 
     static varbinder::Scope *EnclosingScope(const ir::AstNode *expr);
 
-    [[nodiscard]] virtual bool IsScopeBearer() const noexcept
-    {
-        return false;
-    }
-
-    [[nodiscard]] virtual varbinder::Scope *Scope() const noexcept
-    {
-        UNREACHABLE();
-    }
+    [[nodiscard]] virtual bool IsScopeBearer() const noexcept;
+    [[nodiscard]] virtual varbinder::Scope *Scope() const noexcept;
 
     virtual void ClearScope() noexcept;
 
     [[nodiscard]] ir::BlockStatement *GetTopStatement();
     [[nodiscard]] const ir::BlockStatement *GetTopStatement() const;
 
-    [[nodiscard]] virtual AstNode *Clone([[maybe_unused]] ArenaAllocator *const allocator,
-                                         [[maybe_unused]] AstNode *const parent)
-    {
-        UNREACHABLE();
-    }
+    [[nodiscard]] virtual AstNode *Clone(ArenaAllocator *const allocator, AstNode *const parent);
 
     virtual void TransformChildren(const NodeTransformer &cb, std::string_view transformationName) = 0;
     virtual void Iterate(const NodeTraverser &cb) const = 0;
+
     void TransformChildrenRecursively(const NodeTransformer &cb, std::string_view transformationName);
+    void TransformChildrenRecursivelyPreorder(const NodeTransformer &cb, std::string_view transformationName);
+    void TransformChildrenRecursivelyPostorder(const NodeTransformer &cb, std::string_view transformationName);
+
     void IterateRecursively(const NodeTraverser &cb) const;
+    void IterateRecursivelyPreorder(const NodeTraverser &cb) const;
+    void IterateRecursivelyPostorder(const NodeTraverser &cb) const;
+
     bool IsAnyChild(const NodePredicate &cb) const;
     AstNode *FindChild(const NodePredicate &cb) const;
 
@@ -545,46 +525,6 @@ private:
 };
 
 template <typename T>
-class Typed : public T {
-public:
-    Typed() = delete;
-    ~Typed() override = default;
-
-    NO_COPY_OPERATOR(Typed);
-    NO_MOVE_SEMANTIC(Typed);
-
-    [[nodiscard]] checker::Type *TsType() noexcept
-    {
-        return tsType_;
-    }
-
-    [[nodiscard]] const checker::Type *TsType() const noexcept
-    {
-        return tsType_;
-    }
-
-    void SetTsType(checker::Type *tsType) noexcept
-    {
-        tsType_ = tsType;
-    }
-
-    bool IsTyped() const override
-    {
-        return true;
-    }
-
-protected:
-    explicit Typed(AstNodeType const type) : T(type) {}
-    explicit Typed(AstNodeType const type, ModifierFlags const flags) : T(type, flags) {}
-
-    // NOTE: when cloning node its type is not copied but removed empty so that it can be re-checked further.
-    Typed(Typed const &other) : T(static_cast<T const &>(other)) {}
-
-private:
-    checker::Type *tsType_ {};
-};
-
-template <typename T>
 class Annotated : public T {
 public:
     Annotated() = delete;
@@ -617,40 +557,5 @@ private:
     TypeNode *typeAnnotation_ {};
 };
 
-class TypedAstNode : public Typed<AstNode> {
-public:
-    TypedAstNode() = delete;
-    ~TypedAstNode() override = default;
-
-    NO_COPY_OPERATOR(TypedAstNode);
-    NO_MOVE_SEMANTIC(TypedAstNode);
-
-protected:
-    explicit TypedAstNode(AstNodeType const type) : Typed<AstNode>(type) {}
-    explicit TypedAstNode(AstNodeType const type, ModifierFlags const flags) : Typed<AstNode>(type, flags) {}
-
-    TypedAstNode(TypedAstNode const &other) : Typed<AstNode>(static_cast<Typed<AstNode> const &>(other)) {}
-};
-
-class AnnotatedAstNode : public Annotated<AstNode> {
-public:
-    AnnotatedAstNode() = delete;
-    ~AnnotatedAstNode() override = default;
-
-    NO_COPY_OPERATOR(AnnotatedAstNode);
-    NO_MOVE_SEMANTIC(AnnotatedAstNode);
-
-protected:
-    explicit AnnotatedAstNode(AstNodeType const type, TypeNode *const typeAnnotation)
-        : Annotated<AstNode>(type, typeAnnotation)
-    {
-    }
-    explicit AnnotatedAstNode(AstNodeType const type) : Annotated<AstNode>(type) {}
-    explicit AnnotatedAstNode(AstNodeType const type, ModifierFlags const flags) : Annotated<AstNode>(type, flags) {}
-
-    AnnotatedAstNode(AnnotatedAstNode const &other) : Annotated<AstNode>(static_cast<Annotated<AstNode> const &>(other))
-    {
-    }
-};
 }  // namespace ark::es2panda::ir
 #endif

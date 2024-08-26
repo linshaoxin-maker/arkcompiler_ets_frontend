@@ -13,51 +13,53 @@
  * limitations under the License.
  */
 
-import * as ts from 'typescript';
 import * as path from 'node:path';
-import { TsUtils } from './utils/TsUtils';
-import { FaultID } from './Problems';
+import * as ts from 'typescript';
+import { cookBookMsg, cookBookTag } from './CookBookMsg';
 import { faultsAttrs } from './FaultAttrs';
 import { faultDesc } from './FaultDesc';
-import { cookBookMsg, cookBookTag } from './CookBookMsg';
-import { LinterConfig } from './TypeScriptLinterConfig';
-import type { Autofix } from './autofixes/Autofixer';
-import { Autofixer } from './autofixes/Autofixer';
+import type { IncrementalLintInfo } from './IncrementalLintInfo';
+import type { IsEtsFileCallback } from './IsEtsFileCallback';
+import { Logger } from './Logger';
 import type { ProblemInfo } from './ProblemInfo';
 import { ProblemSeverity } from './ProblemSeverity';
-import { Logger } from './Logger';
+import { FaultID } from './Problems';
+import { LinterConfig } from './TypeScriptLinterConfig';
+import { cookBookRefToFixTitle } from './autofixes/AutofixTitles';
+import type { Autofix } from './autofixes/Autofixer';
+import { Autofixer } from './autofixes/Autofixer';
+import type { ReportAutofixCallback } from './autofixes/ReportAutofixCallback';
+import { SYMBOL, SYMBOL_CONSTRUCTOR, TsUtils } from './utils/TsUtils';
+import { ALLOWED_STD_SYMBOL_API } from './utils/consts/AllowedStdSymbolAPI';
+import { FUNCTION_HAS_NO_RETURN_ERROR_CODE } from './utils/consts/FunctionHasNoReturnErrorCode';
+import { LIMITED_STANDARD_UTILITY_TYPES } from './utils/consts/LimitedStandardUtilityTypes';
 import { LIMITED_STD_GLOBAL_FUNC } from './utils/consts/LimitedStdGlobalFunc';
 import { LIMITED_STD_OBJECT_API } from './utils/consts/LimitedStdObjectAPI';
-import { LIMITED_STD_REFLECT_API } from './utils/consts/LimitedStdReflectAPI';
 import { LIMITED_STD_PROXYHANDLER_API } from './utils/consts/LimitedStdProxyHandlerAPI';
-import { ALLOWED_STD_SYMBOL_API } from './utils/consts/AllowedStdSymbolAPI';
+import { LIMITED_STD_REFLECT_API } from './utils/consts/LimitedStdReflectAPI';
 import {
+  NON_INITIALIZABLE_PROPERTY_CLASS_DECORATORS,
   NON_INITIALIZABLE_PROPERTY_DECORATORS,
-  NON_INITIALIZABLE_PROPERTY_CLASS_DECORATORS
+  NON_INITIALIZABLE_PROPERTY_DECORATORS_TSC
 } from './utils/consts/NonInitializablePropertyDecorators';
 import { NON_RETURN_FUNCTION_DECORATORS } from './utils/consts/NonReturnFunctionDecorators';
-import { LIMITED_STANDARD_UTILITY_TYPES } from './utils/consts/LimitedStandardUtilityTypes';
 import { PROPERTY_HAS_NO_INITIALIZER_ERROR_CODE } from './utils/consts/PropertyHasNoInitializerErrorCode';
-import { FUNCTION_HAS_NO_RETURN_ERROR_CODE } from './utils/consts/FunctionHasNoReturnErrorCode';
-import { identiferUseInValueContext } from './utils/functions/identiferUseInValueContext';
-import { hasPredecessor } from './utils/functions/HasPredecessor';
-import { isStructDeclaration, isStruct } from './utils/functions/IsStruct';
-import { isAssignmentOperator } from './utils/functions/isAssignmentOperator';
-import type { IncrementalLintInfo } from './IncrementalLintInfo';
-import { cookBookRefToFixTitle } from './autofixes/AutofixTitles';
-import { isStdLibraryType } from './utils/functions/IsStdLibrary';
-import type { ReportAutofixCallback } from './autofixes/ReportAutofixCallback';
+import { SENDABLE_DECORATOR, SENDABLE_DECORATOR_NODES } from './utils/consts/SendableAPI';
 import type { DiagnosticChecker } from './utils/functions/DiagnosticChecker';
+import { forEachNodeInSubtree } from './utils/functions/ForEachNodeInSubtree';
+import { hasPredecessor } from './utils/functions/HasPredecessor';
+import { isStdLibraryType } from './utils/functions/IsStdLibrary';
+import { isStruct, isStructDeclaration } from './utils/functions/IsStruct';
 import {
   ARGUMENT_OF_TYPE_0_IS_NOT_ASSIGNABLE_TO_PARAMETER_OF_TYPE_1_ERROR_CODE,
-  OBJECT_IS_POSSIBLY_UNDEFINED_ERROR_CODE,
+  LibraryTypeCallDiagnosticChecker,
   NO_OVERLOAD_MATCHES_THIS_CALL_ERROR_CODE,
-  TYPE_0_IS_NOT_ASSIGNABLE_TO_TYPE_1_ERROR_CODE,
-  LibraryTypeCallDiagnosticChecker
+  OBJECT_IS_POSSIBLY_UNDEFINED_ERROR_CODE,
+  TYPE_0_IS_NOT_ASSIGNABLE_TO_TYPE_1_ERROR_CODE
 } from './utils/functions/LibraryTypeCallDiagnosticChecker';
-import { forEachNodeInSubtree } from './utils/functions/ForEachNodeInSubtree';
-import type { IsEtsFileCallback } from './IsEtsFileCallback';
 import { SupportedStdCallApiChecker } from './utils/functions/SupportedStdCallAPI';
+import { identiferUseInValueContext } from './utils/functions/identiferUseInValueContext';
+import { isAssignmentOperator } from './utils/functions/isAssignmentOperator';
 
 export function consoleLog(...args: unknown[]): void {
   if (TypeScriptLinter.ideMode) {
@@ -98,7 +100,7 @@ export class TypeScriptLinter {
   static ideMode: boolean = false;
   static testMode: boolean = false;
   static useRelaxedRules = false;
-
+  static useSdkLogic = false;
   static advancedClassChecks = false;
 
   static initGlobals(): void {
@@ -112,7 +114,7 @@ export class TypeScriptLinter {
      * some syntax elements are ArkTs-specific and are only implemented inside patched
      * compiler, so we initialize those handlers if corresponding properties do exist
      */
-    const etsComponentExpression: ts.SyntaxKind | undefined = (ts.SyntaxKind as any).EtsComponentExpression;
+    const etsComponentExpression: ts.SyntaxKind | undefined = ts.SyntaxKind.EtsComponentExpression;
     if (etsComponentExpression) {
       this.handlersMap.set(etsComponentExpression, this.handleEtsComponentExpression);
     }
@@ -125,6 +127,7 @@ export class TypeScriptLinter {
     }
   }
 
+  // eslint-disable-next-line max-params
   constructor(
     private readonly tsTypeChecker: ts.TypeChecker,
     private readonly enableAutofix: boolean,
@@ -134,7 +137,12 @@ export class TypeScriptLinter {
     private readonly reportAutofixCb?: ReportAutofixCallback,
     private readonly isEtsFileCb?: IsEtsFileCallback
   ) {
-    this.tsUtils = new TsUtils(this.tsTypeChecker, TypeScriptLinter.testMode, TypeScriptLinter.advancedClassChecks);
+    this.tsUtils = new TsUtils(
+      this.tsTypeChecker,
+      TypeScriptLinter.testMode,
+      TypeScriptLinter.advancedClassChecks,
+      TypeScriptLinter.useSdkLogic
+    );
     this.currentErrorLine = 0;
     this.currentWarningLine = 0;
     this.walkedComments = new Set<number>();
@@ -201,7 +209,10 @@ export class TypeScriptLinter {
     [ts.SyntaxKind.IndexSignature, this.handleIndexSignature],
     [ts.SyntaxKind.TypeLiteral, this.handleTypeLiteral],
     [ts.SyntaxKind.ExportKeyword, this.handleExportKeyword],
-    [ts.SyntaxKind.ExportDeclaration, this.handleExportDeclaration]
+    [ts.SyntaxKind.ExportDeclaration, this.handleExportDeclaration],
+    [ts.SyntaxKind.ThisType, this.handleThisType],
+    [ts.SyntaxKind.ReturnStatement, this.handleReturnStatement],
+    [ts.SyntaxKind.Decorator, this.handleDecorator]
   ]);
 
   private getLineAndCharacterOfNode(node: ts.Node | ts.CommentRange): ts.LineAndCharacter {
@@ -211,11 +222,7 @@ export class TypeScriptLinter {
     return { line: line + 1, character: character + 1 };
   }
 
-  incrementCounters(
-    node: ts.Node | ts.CommentRange,
-    faultId: number,
-    autofix?: Autofix[]
-  ): void {
+  incrementCounters(node: ts.Node | ts.CommentRange, faultId: number, autofix?: Autofix[]): void {
     this.nodeCounters[faultId]++;
     const { line, character } = this.getLineAndCharacterOfNode(node);
     if (TypeScriptLinter.ideMode) {
@@ -244,14 +251,11 @@ export class TypeScriptLinter {
         this.warningLineNumbersString += line + ', ';
         break;
       }
+      default:
     }
   }
 
-  private incrementCountersIdeMode(
-    node: ts.Node | ts.CommentRange,
-    faultId: number,
-    autofix?: Autofix[]
-  ): void {
+  private incrementCountersIdeMode(node: ts.Node | ts.CommentRange, faultId: number, autofix?: Autofix[]): void {
     if (!TypeScriptLinter.ideMode) {
       return;
     }
@@ -277,6 +281,7 @@ export class TypeScriptLinter {
       severity: severity,
       problem: FaultID[faultId],
       suggest: isMsgNumValid ? cookBookMsg[cookBookMsgNum] : '',
+      // eslint-disable-next-line no-nested-ternary
       rule: isMsgNumValid && cookBookTg !== '' ? cookBookTg : faultDescr ? faultDescr : faultType,
       ruleTag: cookBookMsgNum,
       autofix: autofix,
@@ -361,7 +366,7 @@ export class TypeScriptLinter {
 
   private countClassMembersWithDuplicateName(tsClassDecl: ts.ClassDeclaration): void {
     for (const currentMember of tsClassDecl.members) {
-      if (this.tsUtils.classMemberHasDuplicateName(currentMember, tsClassDecl)) {
+      if (this.tsUtils.classMemberHasDuplicateName(currentMember, tsClassDecl, false)) {
         this.incrementCounters(currentMember, FaultID.DeclWithDuplicateName);
       }
     }
@@ -441,11 +446,17 @@ export class TypeScriptLinter {
         continue;
       }
       const decl: ts.Declaration = p.declarations[0];
-      const isPropertyDecl = ts.isPropertyDeclaration(decl) || ts.isPropertyDeclaration(decl);
+      const isPropertyDecl = ts.isPropertySignature(decl) || ts.isPropertyDeclaration(decl);
       const isMethodDecl = ts.isMethodSignature(decl) || ts.isMethodDeclaration(decl);
       if (isMethodDecl || isPropertyDecl) {
         this.countInterfaceExtendsDifferentPropertyTypes(node, prop2type, p.name, decl.type);
       }
+    }
+  }
+
+  private handleThisType(node: ts.Node): void {
+    if (node.parent.kind !== ts.SyntaxKind.MethodDeclaration && node.parent.kind !== ts.SyntaxKind.MethodSignature) {
+      this.incrementCounters(node, FaultID.ThisTyping);
     }
   }
 
@@ -480,7 +491,7 @@ export class TypeScriptLinter {
       return;
     }
     const arrayLitNode = node as ts.ArrayLiteralExpression;
-    let noContextTypeForArrayLiteral = false;
+    let emptyContextTypeForArrayLiteral = false;
 
     const arrayLitType = this.tsTypeChecker.getContextualType(arrayLitNode);
     if (arrayLitType && this.tsUtils.typeContainsSendableClassOrInterface(arrayLitType)) {
@@ -494,18 +505,21 @@ export class TypeScriptLinter {
      */
     const arrayLitElements = arrayLitNode.elements;
     for (const element of arrayLitElements) {
+      const elementContextType = this.tsTypeChecker.getContextualType(element);
       if (ts.isObjectLiteralExpression(element)) {
-        const objectLiteralType = this.tsTypeChecker.getContextualType(element);
         if (
           !this.tsUtils.isDynamicLiteralInitializer(arrayLitNode) &&
-          !this.tsUtils.isObjectLiteralAssignable(objectLiteralType, element)
+          !this.tsUtils.isObjectLiteralAssignable(elementContextType, element)
         ) {
-          noContextTypeForArrayLiteral = true;
+          emptyContextTypeForArrayLiteral = true;
           break;
         }
       }
+      if (elementContextType) {
+        this.checkAssignmentMatching(element, elementContextType, element, true);
+      }
     }
-    if (noContextTypeForArrayLiteral) {
+    if (emptyContextTypeForArrayLiteral) {
       this.incrementCounters(node, FaultID.ArrayLiteralNoContextType);
     }
   }
@@ -600,7 +614,10 @@ export class TypeScriptLinter {
   private checkForLoopDestructuring(forInit: ts.ForInitializer): void {
     if (ts.isVariableDeclarationList(forInit) && forInit.declarations.length === 1) {
       const varDecl = forInit.declarations[0];
-      if (ts.isArrayBindingPattern(varDecl.name) || ts.isObjectBindingPattern(varDecl.name)) {
+      if (
+        !TypeScriptLinter.useSdkLogic &&
+        (ts.isArrayBindingPattern(varDecl.name) || ts.isObjectBindingPattern(varDecl.name))
+      ) {
         this.incrementCounters(varDecl, FaultID.DestructuringDeclaration);
       }
     }
@@ -645,8 +662,8 @@ export class TypeScriptLinter {
       }
     }
 
-    const expr1 = importDeclNode.moduleSpecifier;
-    if (expr1.kind === ts.SyntaxKind.StringLiteral) {
+    const expr = importDeclNode.moduleSpecifier;
+    if (expr.kind === ts.SyntaxKind.StringLiteral) {
       if (importDeclNode.assertClause) {
         this.incrementCounters(importDeclNode.assertClause, FaultID.ImportAssertion);
       }
@@ -656,7 +673,7 @@ export class TypeScriptLinter {
     this.handleSharedModuleNoSideEffectImport(importDeclNode);
   }
 
-  private handleSharedModuleNoSideEffectImport(node : ts.ImportDeclaration):void {
+  private handleSharedModuleNoSideEffectImport(node: ts.ImportDeclaration): void {
     // check 'use shared'
     if (TypeScriptLinter.inSharedModule(node) && !node.importClause) {
       this.incrementCounters(node, FaultID.SharedNoSideEffectImport);
@@ -699,19 +716,22 @@ export class TypeScriptLinter {
     if (!!baseExprSym && TsUtils.symbolHasEsObjectType(baseExprSym)) {
       this.incrementCounters(propertyAccessNode, FaultID.EsObjectType);
     }
+    if (TsUtils.isSendableFunction(baseExprType) || this.tsUtils.hasSendableTypeAlias(baseExprType)) {
+      this.incrementCounters(propertyAccessNode, FaultID.SendableFunctionProperty);
+    }
   }
 
   private handlePropertyDeclaration(node: ts.PropertyDeclaration): void {
     const propName = node.name;
     if (!!propName && ts.isNumericLiteral(propName)) {
       const autofix = this.autofixer?.fixLiteralAsPropertyNamePropertyName(propName);
-      this.incrementCounters(node, FaultID.LiteralAsPropertyName, autofix);
+      this.incrementCounters(node.name, FaultID.LiteralAsPropertyName, autofix);
     }
 
     const decorators = ts.getDecorators(node);
     this.filterOutDecoratorsDiagnostics(
       decorators,
-      NON_INITIALIZABLE_PROPERTY_DECORATORS,
+      TypeScriptLinter.useSdkLogic ? NON_INITIALIZABLE_PROPERTY_DECORATORS_TSC : NON_INITIALIZABLE_PROPERTY_DECORATORS,
       { begin: propName.getStart(), end: propName.getStart() },
       PROPERTY_HAS_NO_INITIALIZER_ERROR_CODE
     );
@@ -724,18 +744,22 @@ export class TypeScriptLinter {
       PROPERTY_HAS_NO_INITIALIZER_ERROR_CODE,
       propType
     );
+    if (node.type && node.initializer) {
+      this.checkAssignmentMatching(node, this.tsTypeChecker.getTypeAtLocation(node.type), node.initializer, true);
+    }
     this.handleDeclarationInferredType(node);
     this.handleDefiniteAssignmentAssertion(node);
     this.handleSendableClassProperty(node);
   }
 
   private handleSendableClassProperty(node: ts.PropertyDeclaration): void {
-    const typeNode = node.type;
-    if (!typeNode) {
-      return;
-    }
     const classNode = node.parent;
     if (!ts.isClassDeclaration(classNode) || !TsUtils.hasSendableDecorator(classNode)) {
+      return;
+    }
+    const typeNode = node.type;
+    if (!typeNode) {
+      this.incrementCounters(node, FaultID.SendableExplicitFieldType);
       return;
     }
     TsUtils.getDecoratorsIfInSendableClass(node)?.forEach((decorator) => {
@@ -769,11 +793,16 @@ export class TypeScriptLinter {
     isDynamic = isLibraryType || this.tsUtils.isDynamicLiteralInitializer(node.parent);
     if (!isRecordObjectInitializer && !isDynamic) {
       const autofix = this.autofixer?.fixLiteralAsPropertyNamePropertyAssignment(node);
-      this.incrementCounters(node, FaultID.LiteralAsPropertyName, autofix);
+      this.incrementCounters(node.name, FaultID.LiteralAsPropertyName, autofix);
     }
   }
 
   private handlePropertySignature(node: ts.PropertySignature): void {
+    const propName = node.name;
+    if (!!propName && ts.isNumericLiteral(propName)) {
+      const autofix = this.autofixer?.fixLiteralAsPropertyNamePropertyName(propName);
+      this.incrementCounters(node.name, FaultID.LiteralAsPropertyName, autofix);
+    }
     this.handleSendableInterfaceProperty(node);
   }
 
@@ -816,10 +845,7 @@ export class TypeScriptLinter {
     }
   }
 
-  private filterOutDiagnostics(
-    range: { begin: number; end: number },
-    code: number
-  ): void {
+  private filterOutDiagnostics(range: { begin: number; end: number }, code: number): void {
     // Filter out strict diagnostics within the given range with the given code.
     if (!this.tscStrictDiagnostics || !this.sourceFile) {
       return;
@@ -895,7 +921,11 @@ export class TypeScriptLinter {
     const isGenerator = funcExpr.asteriskToken !== undefined;
     const [hasUnfixableReturnType, newRetTypeNode] = this.handleMissingReturnType(funcExpr);
     const autofix = this.autofixer?.fixFunctionExpression(
-      funcExpr, newRetTypeNode, ts.getModifiers(funcExpr), isGenerator, hasUnfixableReturnType
+      funcExpr,
+      newRetTypeNode,
+      ts.getModifiers(funcExpr),
+      isGenerator,
+      hasUnfixableReturnType
     );
     this.incrementCounters(funcExpr, FaultID.FunctionExpression, autofix);
     if (isGenerator) {
@@ -944,12 +974,25 @@ export class TypeScriptLinter {
     if (tsFunctionDeclaration.asteriskToken) {
       this.incrementCounters(node, FaultID.GeneratorFunction);
     }
+    if (TsUtils.hasSendableDecoratorFunctionOverload(tsFunctionDeclaration)) {
+      TsUtils.getNonSendableDecorators(tsFunctionDeclaration)?.forEach((decorator) => {
+        this.incrementCounters(decorator, FaultID.SendableFunctionDecorator);
+      });
+      if (!TsUtils.hasSendableDecorator(tsFunctionDeclaration)) {
+        this.incrementCounters(tsFunctionDeclaration, FaultID.SendableFunctionOverloadDecorator);
+      }
+      this.scanCapturedVarsInSendableScope(
+        tsFunctionDeclaration,
+        tsFunctionDeclaration,
+        FaultID.SendableFunctionImportedVariables
+      );
+    }
   }
 
   private handleMissingReturnType(
     funcLikeDecl: ts.FunctionLikeDeclaration | ts.MethodSignature
   ): [boolean, ts.TypeNode | undefined] {
-    if (funcLikeDecl.type) {
+    if (!TypeScriptLinter.useSdkLogic && funcLikeDecl.type) {
       return [false, funcLikeDecl.type];
     }
 
@@ -1077,7 +1120,6 @@ export class TypeScriptLinter {
       this.processBinaryAssignment(node, tsLhsExpr, tsRhsExpr);
     }
     const leftOperandType = this.tsTypeChecker.getTypeAtLocation(tsLhsExpr);
-    const rightOperandType = this.tsTypeChecker.getTypeAtLocation(tsRhsExpr);
     const typeNode = this.tsUtils.getVariableDeclarationTypeNode(tsLhsExpr);
     switch (tsBinaryExpr.operatorToken.kind) {
       // FaultID.BitOpWithWrongType - removed as rule #61
@@ -1091,9 +1133,7 @@ export class TypeScriptLinter {
         this.incrementCounters(tsBinaryExpr.operatorToken, FaultID.InOperator);
         break;
       case ts.SyntaxKind.EqualsToken:
-        if (this.tsUtils.needToDeduceStructuralIdentity(leftOperandType, rightOperandType, tsRhsExpr)) {
-          this.incrementCounters(tsBinaryExpr, FaultID.StructuralIdentity);
-        }
+        this.checkAssignmentMatching(tsBinaryExpr, leftOperandType, tsRhsExpr);
         this.handleEsObjectAssignment(tsBinaryExpr, typeNode, tsRhsExpr);
         break;
       default:
@@ -1111,7 +1151,10 @@ export class TypeScriptLinter {
         this.tsUtils.isOrDerivedFrom(rhsType, TsUtils.isTuple);
       const hasNestedObjectDestructuring = TsUtils.hasNestedObjectDestructuring(tsLhsExpr);
 
-      if (!TypeScriptLinter.useRelaxedRules || !isArrayOrTuple || hasNestedObjectDestructuring ||
+      if (
+        !TypeScriptLinter.useRelaxedRules ||
+        !isArrayOrTuple ||
+        hasNestedObjectDestructuring ||
         TsUtils.destructuringAssignmentHasSpreadOperator(tsLhsExpr)
       ) {
         this.incrementCounters(node, FaultID.DestructuringAssignment);
@@ -1188,7 +1231,10 @@ export class TypeScriptLinter {
 
   private handleVariableDeclaration(node: ts.Node): void {
     const tsVarDecl = node as ts.VariableDeclaration;
-    if (ts.isVariableDeclarationList(tsVarDecl.parent) && ts.isVariableStatement(tsVarDecl.parent.parent)) {
+    if (
+      TypeScriptLinter.useSdkLogic ||
+      ts.isVariableDeclarationList(tsVarDecl.parent) && ts.isVariableStatement(tsVarDecl.parent.parent)
+    ) {
       this.handleDeclarationDestructuring(tsVarDecl);
     }
 
@@ -1196,12 +1242,11 @@ export class TypeScriptLinter {
     this.checkVarDeclForDuplicateNames(tsVarDecl.name);
 
     if (tsVarDecl.type && tsVarDecl.initializer) {
-      const tsVarInit = tsVarDecl.initializer;
-      const tsVarType = this.tsTypeChecker.getTypeAtLocation(tsVarDecl.type);
-      const tsInitType = this.tsTypeChecker.getTypeAtLocation(tsVarInit);
-      if (this.tsUtils.needToDeduceStructuralIdentity(tsVarType, tsInitType, tsVarInit)) {
-        this.incrementCounters(tsVarDecl, FaultID.StructuralIdentity);
-      }
+      this.checkAssignmentMatching(
+        tsVarDecl,
+        this.tsTypeChecker.getTypeAtLocation(tsVarDecl.type),
+        tsVarDecl.initializer
+      );
     }
     this.handleEsObjectDelaration(tsVarDecl);
     this.handleDeclarationInferredType(tsVarDecl);
@@ -1213,15 +1258,22 @@ export class TypeScriptLinter {
     if (ts.isObjectBindingPattern(decl.name)) {
       this.incrementCounters(decl, faultId);
     } else if (ts.isArrayBindingPattern(decl.name)) {
+      if (!TypeScriptLinter.useRelaxedRules) {
+        this.incrementCounters(decl, faultId);
+        return;
+      }
+
       // Array destructuring is allowed only for Arrays/Tuples and without spread operator.
       const rhsType = this.tsTypeChecker.getTypeAtLocation(decl.initializer ?? decl.name);
-      const isArrayOrTuple = rhsType && (
-        this.tsUtils.isOrDerivedFrom(rhsType, this.tsUtils.isArray) ||
-          this.tsUtils.isOrDerivedFrom(rhsType, TsUtils.isTuple)
-      );
+      const isArrayOrTuple =
+        rhsType &&
+        (this.tsUtils.isOrDerivedFrom(rhsType, this.tsUtils.isArray) ||
+          this.tsUtils.isOrDerivedFrom(rhsType, TsUtils.isTuple));
       const hasNestedObjectDestructuring = TsUtils.hasNestedObjectDestructuring(decl.name);
 
-      if (!TypeScriptLinter.useRelaxedRules || !isArrayOrTuple || hasNestedObjectDestructuring ||
+      if (
+        !isArrayOrTuple ||
+        hasNestedObjectDestructuring ||
         TsUtils.destructuringDeclarationHasSpreadOperator(decl.name)
       ) {
         this.incrementCounters(decl, faultId);
@@ -1321,7 +1373,7 @@ export class TypeScriptLinter {
     // Check captured variables for sendable class
     if (isSendableClass) {
       tsClassDecl.members.forEach((classMember) => {
-        this.scanCapturedVarsInSendableScope(classMember, tsClassDecl);
+        this.scanCapturedVarsInSendableScope(classMember, tsClassDecl, FaultID.SendableCapturedVars);
       });
     }
 
@@ -1471,6 +1523,14 @@ export class TypeScriptLinter {
   private handleTypeAliasDeclaration(node: ts.Node): void {
     const tsTypeAlias = node as ts.TypeAliasDeclaration;
     this.countDeclarationsWithDuplicateName(tsTypeAlias.name, tsTypeAlias);
+    if (TsUtils.hasSendableDecorator(tsTypeAlias)) {
+      TsUtils.getNonSendableDecorators(tsTypeAlias)?.forEach((decorator) => {
+        this.incrementCounters(decorator, FaultID.SendableTypeAliasDecorator);
+      });
+      if (!ts.isFunctionTypeNode(tsTypeAlias.type)) {
+        this.incrementCounters(tsTypeAlias.type, FaultID.SendableTypeAliasDeclaration);
+      }
+    }
   }
 
   private handleImportClause(node: ts.Node): void {
@@ -1639,7 +1699,7 @@ export class TypeScriptLinter {
     const typeNode = this.tsTypeChecker.typeToTypeNode(type, undefined, ts.NodeBuilderFlags.None);
 
     if (this.tsUtils.isArkTSCollectionsArrayLikeType(type)) {
-      return TsUtils.isNumberLikeType(argType);
+      return this.tsUtils.isNumberLikeType(argType);
     }
 
     return (
@@ -1660,7 +1720,7 @@ export class TypeScriptLinter {
   private handleElementAccessExpression(node: ts.Node): void {
     const tsElementAccessExpr = node as ts.ElementAccessExpression;
     const tsElementAccessExprSymbol = this.tsUtils.trueSymbolAtLocation(tsElementAccessExpr.expression);
-    const tsElemAccessBaseExprType = TsUtils.getNonNullableType(
+    const tsElemAccessBaseExprType = this.tsUtils.getNonNullableType(
       this.tsUtils.getTypeOrTypeConstraintAtLocation(tsElementAccessExpr.expression)
     );
     const tsElemAccessArgType = this.tsTypeChecker.getTypeAtLocation(tsElementAccessExpr.argumentExpression);
@@ -1769,19 +1829,23 @@ export class TypeScriptLinter {
   }
 
   private handleImportCall(tsCallExpr: ts.CallExpression): void {
-    if (tsCallExpr.expression.kind === ts.SyntaxKind.ImportKeyword) {
-      // relax rule#133 "arkts-no-runtime-import"
-      const tsArgs = tsCallExpr.arguments;
-      if (tsArgs.length > 1 && ts.isObjectLiteralExpression(tsArgs[1])) {
-        for (const tsProp of tsArgs[1].properties) {
-          if (
-            (ts.isPropertyAssignment(tsProp) || ts.isShorthandPropertyAssignment(tsProp)) &&
-            tsProp.name.getText() === 'assert'
-          ) {
-            this.incrementCounters(tsProp, FaultID.ImportAssertion);
-            break;
-          }
-        }
+    if (tsCallExpr.expression.kind !== ts.SyntaxKind.ImportKeyword) {
+      return;
+    }
+
+    // relax rule#133 "arkts-no-runtime-import"
+    const tsArgs = tsCallExpr.arguments;
+    if (tsArgs.length <= 1 || !ts.isObjectLiteralExpression(tsArgs[1])) {
+      return;
+    }
+
+    for (const tsProp of tsArgs[1].properties) {
+      if (
+        (ts.isPropertyAssignment(tsProp) || ts.isShorthandPropertyAssignment(tsProp)) &&
+        tsProp.name.getText() === 'assert'
+      ) {
+        this.incrementCounters(tsProp, FaultID.ImportAssertion);
+        break;
       }
     }
   }
@@ -1889,9 +1953,7 @@ export class TypeScriptLinter {
         if (!tsParamType) {
           continue;
         }
-        if (this.tsUtils.needToDeduceStructuralIdentity(tsParamType, tsArgType, tsArg)) {
-          this.incrementCounters(tsArg, FaultID.StructuralIdentity);
-        }
+        this.checkAssignmentMatching(tsArg, tsParamType, tsArg);
       }
     }
   }
@@ -1902,8 +1964,8 @@ export class TypeScriptLinter {
     ['ObjectConstructor', { arr: LIMITED_STD_OBJECT_API, fault: FaultID.LimitedStdLibApi }],
     ['Reflect', { arr: LIMITED_STD_REFLECT_API, fault: FaultID.LimitedStdLibApi }],
     ['ProxyHandler', { arr: LIMITED_STD_PROXYHANDLER_API, fault: FaultID.LimitedStdLibApi }],
-    ['Symbol', { arr: null, fault: FaultID.SymbolType }],
-    ['SymbolConstructor', { arr: null, fault: FaultID.SymbolType }]
+    [SYMBOL, { arr: null, fault: FaultID.SymbolType }],
+    [SYMBOL_CONSTRUCTOR, { arr: null, fault: FaultID.SymbolType }]
   ]);
 
   private handleStdlibAPICall(callExpr: ts.CallExpression, calleeSym: ts.Symbol): void {
@@ -1921,9 +1983,11 @@ export class TypeScriptLinter {
       return;
     }
     const lookup = TypeScriptLinter.LimitedApis.get(parName);
-    if (lookup !== undefined && (lookup.arr === null || lookup.arr.includes(name)) &&
+    if (
+      lookup !== undefined &&
+      (lookup.arr === null || lookup.arr.includes(name)) &&
       (!TypeScriptLinter.useRelaxedRules ||
-       !this.supportedStdCallApiChecker.isSupportedStdCallAPI(callExpr, parName, name))
+        !this.supportedStdCallApiChecker.isSupportedStdCallAPI(callExpr, parName, name))
     ) {
       this.incrementCounters(callExpr, lookup.fault);
     }
@@ -2006,8 +2070,9 @@ export class TypeScriptLinter {
         this.incrementCounters(calleeExpr, FaultID.ClassAsObject);
       }
     }
+    const sym = this.tsUtils.trueSymbolAtLocation(tsNewExpr.expression);
     const callSignature = this.tsTypeChecker.getResolvedSignature(tsNewExpr);
-    if (callSignature !== undefined) {
+    if (callSignature !== undefined && !this.tsUtils.isLibrarySymbol(sym)) {
       this.handleStructIdentAndUndefinedInArgs(tsNewExpr, callSignature);
       this.handleGenericCallWithNoTypeArgs(tsNewExpr, callSignature);
     }
@@ -2041,7 +2106,7 @@ export class TypeScriptLinter {
     const exprType = this.tsTypeChecker.getTypeAtLocation(tsAsExpr.expression).getNonNullableType();
     // check for rule#65:   'number as Number' and 'boolean as Boolean' are disabled
     if (
-      TsUtils.isNumberLikeType(exprType) && this.tsUtils.isStdNumberType(targetType) ||
+      this.tsUtils.isNumberLikeType(exprType) && this.tsUtils.isStdNumberType(targetType) ||
       TsUtils.isBooleanLikeType(exprType) && this.tsUtils.isStdBooleanType(targetType)
     ) {
       this.incrementCounters(node, FaultID.TypeAssertion);
@@ -2053,6 +2118,9 @@ export class TypeScriptLinter {
       this.tsUtils.isSendableClassOrInterface(targetType)
     ) {
       this.incrementCounters(tsAsExpr, FaultID.SendableAsExpr);
+    }
+    if (this.tsUtils.isWrongSendableFunctionAssignment(targetType, exprType)) {
+      this.incrementCounters(tsAsExpr, FaultID.SendableFunctionAsExpr);
     }
   }
 
@@ -2073,12 +2141,43 @@ export class TypeScriptLinter {
       return;
     }
 
+    this.checkPartialType(node);
+
+    const typeNameType = this.tsTypeChecker.getTypeAtLocation(typeRef.typeName);
+    if (this.tsUtils.isSendableClassOrInterface(typeNameType)) {
+      this.checkSendableTypeArguments(typeRef);
+    }
+  }
+
+  private checkPartialType(node: ts.Node): void {
+    const typeRef = node as ts.TypeReferenceNode;
     // Using Partial<T> type is allowed only when its argument type is either Class or Interface.
     const isStdPartial = this.tsUtils.entityNameToString(typeRef.typeName) === 'Partial';
+    if (!isStdPartial) {
+      return;
+    }
+
     const hasSingleTypeArgument = !!typeRef.typeArguments && typeRef.typeArguments.length === 1;
-    const argType = hasSingleTypeArgument && this.tsTypeChecker.getTypeFromTypeNode(typeRef.typeArguments[0]);
-    if (isStdPartial && argType && !argType.isClassOrInterface()) {
+    let argType;
+    if (TypeScriptLinter.useSdkLogic) {
+      const firstTypeArg = !!typeRef.typeArguments && hasSingleTypeArgument && typeRef.typeArguments[0];
+      argType = firstTypeArg && this.tsTypeChecker.getTypeFromTypeNode(firstTypeArg);
+    } else {
+      argType = hasSingleTypeArgument && this.tsTypeChecker.getTypeFromTypeNode(typeRef.typeArguments[0]);
+    }
+
+    if (argType && !argType.isClassOrInterface()) {
       this.incrementCounters(node, FaultID.UtilityType);
+    }
+  }
+
+  private checkSendableTypeArguments(typeRef: ts.TypeReferenceNode): void {
+    if (typeRef.typeArguments) {
+      for (const typeArg of typeRef.typeArguments) {
+        if (!this.tsUtils.isSendableTypeNode(typeArg)) {
+          this.incrementCounters(typeArg, FaultID.SendableGenericTypes);
+        }
+      }
     }
   }
 
@@ -2097,7 +2196,13 @@ export class TypeScriptLinter {
      */
     if (ts.isSpreadElement(node)) {
       const spreadExprType = this.tsUtils.getTypeOrTypeConstraintAtLocation(node.expression);
-      if (spreadExprType && this.tsUtils.isOrDerivedFrom(spreadExprType, this.tsUtils.isArray)) {
+      if (
+        spreadExprType &&
+        (!TypeScriptLinter.useSdkLogic ||
+          ts.isCallLikeExpression(node.parent) ||
+          ts.isArrayLiteralExpression(node.parent)) &&
+        this.tsUtils.isOrDerivedFrom(spreadExprType, this.tsUtils.isArray)
+      ) {
         return;
       }
     }
@@ -2126,14 +2231,21 @@ export class TypeScriptLinter {
 
   private handleComputedPropertyName(node: ts.Node): void {
     const computedProperty = node as ts.ComputedPropertyName;
-    if (this.isSendableInvalidCompPropName(computedProperty)) {
+    if (this.isSendableCompPropName(computedProperty)) {
+      // cancel the '[Symbol.iterface]' restriction of 'sendable class/interface' in the 'collections.d.ts' file
+      if (this.tsUtils.isSymbolIteratorExpression(computedProperty.expression)) {
+        const declNode = computedProperty.parent?.parent;
+        if (declNode && TsUtils.isArkTSCollectionsClassOrInterfaceDeclaration(declNode)) {
+          return;
+        }
+      }
       this.incrementCounters(node, FaultID.SendableComputedPropName);
     } else if (!this.tsUtils.isValidComputedPropertyName(computedProperty, false)) {
       this.incrementCounters(node, FaultID.ComputedPropertyName);
     }
   }
 
-  private isSendableInvalidCompPropName(compProp: ts.ComputedPropertyName): boolean {
+  private isSendableCompPropName(compProp: ts.ComputedPropertyName): boolean {
     const declNode = compProp.parent?.parent;
     if (declNode && ts.isClassDeclaration(declNode) && TsUtils.hasSendableDecorator(declNode)) {
       return true;
@@ -2158,6 +2270,36 @@ export class TypeScriptLinter {
     });
   }
 
+  /*
+   * issue 13987:
+   * When variable have no type annotation and no initial value, and 'noImplicitAny'
+   * option is enabled, compiler attempts to infer type from variable references:
+   * see https://github.com/microsoft/TypeScript/pull/11263.
+   * In this case, we still want to report the error, since ArkTS doesn't allow
+   * to omit both type annotation and initializer.
+   */
+  private proceedVarPropDeclaration(
+    decl: ts.VariableDeclaration | ts.PropertyDeclaration | ts.ParameterDeclaration
+  ): boolean | undefined {
+    if (
+      (ts.isVariableDeclaration(decl) && ts.isVariableStatement(decl.parent.parent) ||
+        ts.isPropertyDeclaration(decl)) &&
+      !decl.initializer
+    ) {
+      if (
+        ts.isPropertyDeclaration(decl) &&
+        this.tsUtils.skipPropertyInferredTypeCheck(decl, this.sourceFile, this.isEtsFileCb)
+      ) {
+        return true;
+      }
+
+      this.incrementCounters(decl, FaultID.AnyType);
+      return true;
+    }
+    return undefined;
+  }
+
+  // eslint-disable-next-line max-lines-per-function
   private handleDeclarationInferredType(
     decl: ts.VariableDeclaration | ts.PropertyDeclaration | ts.ParameterDeclaration
   ): void {
@@ -2181,25 +2323,7 @@ export class TypeScriptLinter {
       return;
     }
 
-    /*
-     * issue 13987:
-     * When variable have no type annotation and no initial value, and 'noImplicitAny'
-     * option is enabled, compiler attempts to infer type from variable references:
-     * see https://github.com/microsoft/TypeScript/pull/11263.
-     * In this case, we still want to report the error, since ArkTS doesn't allow
-     * to omit both type annotation and initializer.
-     */
-    if (
-      (ts.isVariableDeclaration(decl) && ts.isVariableStatement(decl.parent.parent) ||
-        ts.isPropertyDeclaration(decl)) && !decl.initializer
-    ) {
-      if (ts.isPropertyDeclaration(decl) &&
-        TsUtils.skipPropertyInferredTypeCheck(decl, this.sourceFile, this.isEtsFileCb)
-      ) {
-        return;
-      }
-
-      this.incrementCounters(decl, FaultID.AnyType);
+    if (this.proceedVarPropDeclaration(decl)) {
       return;
     }
 
@@ -2353,16 +2477,19 @@ export class TypeScriptLinter {
 
   private handleConstructorDeclaration(node: ts.Node): void {
     const ctorDecl = node as ts.ConstructorDeclaration;
-    if (ctorDecl.parameters.some((x) => {
-      return TsUtils.hasAccessModifier(x);
-    })) {
-      let paramTypes: ts.TypeNode[] | undefined;
-      if (ctorDecl.body) {
-        paramTypes = this.collectCtorParamTypes(ctorDecl);
-      }
-
-      const autofix = this.autofixer?.fixCtorParameterProperties(ctorDecl, paramTypes);
-      this.incrementCounters(node, FaultID.ParameterProperties, autofix);
+    const paramProperties = ctorDecl.parameters.filter((x) => {
+      return this.tsUtils.hasAccessModifier(x);
+    });
+    if (paramProperties.length === 0) {
+      return;
+    }
+    let paramTypes: ts.TypeNode[] | undefined;
+    if (ctorDecl.body) {
+      paramTypes = this.collectCtorParamTypes(ctorDecl);
+    }
+    const autofix = this.autofixer?.fixCtorParameterProperties(ctorDecl, paramTypes);
+    for (const param of paramProperties) {
+      this.incrementCounters(param, FaultID.ParameterProperties, autofix);
     }
   }
 
@@ -2402,7 +2529,7 @@ export class TypeScriptLinter {
     this.incrementCounters(node, FaultID.ObjectTypeLiteral, autofix);
   }
 
-  private scanCapturedVarsInSendableScope(startNode: ts.Node, scope: ts.Node): void {
+  private scanCapturedVarsInSendableScope(startNode: ts.Node, scope: ts.Node, faultId: FaultID): void {
     const callback = (node: ts.Node): void => {
       // Namespace import will introduce closure in the es2abc compiler stage
       if (!ts.isIdentifier(node) || this.checkNamespaceImportVar(node)) {
@@ -2414,17 +2541,25 @@ export class TypeScriptLinter {
       if (ts.isPropertyAccessExpression(parent) && parent.name === node) {
         return;
       }
+      // When overloading function, will misreport
+      if (ts.isFunctionDeclaration(startNode) && startNode.name === node) {
+        return;
+      }
 
-      this.checkLocalDecl(node, scope);
+      this.checkLocalDecl(node, scope, faultId);
     };
     // Type nodes should not checked because no closure will be introduced
     const stopCondition = (node: ts.Node): boolean => {
+      // already existed 'arkts-sendable-class-decoratos' error
+      if (ts.isDecorator(node) && node.parent === startNode) {
+        return true;
+      }
       return ts.isTypeReferenceNode(node);
     };
     forEachNodeInSubtree(startNode, callback, stopCondition);
   }
 
-  private checkLocalDecl(node: ts.Identifier, scope: ts.Node): void {
+  private checkLocalDecl(node: ts.Identifier, scope: ts.Node, faultId: FaultID): void {
     const trueSym = this.tsUtils.trueSymbolAtLocation(node);
     // Sendable decorator should be used in method of Sendable classes
     if (trueSym === undefined) {
@@ -2438,14 +2573,21 @@ export class TypeScriptLinter {
 
     const declarations = trueSym.getDeclarations();
     if (declarations?.length) {
-      this.checkLocalDeclWithSendableClosure(node, scope, declarations[0]);
+      this.checkLocalDeclWithSendableClosure(node, scope, declarations[0], faultId);
     }
   }
 
-  private checkLocalDeclWithSendableClosure(node: ts.Identifier, scope: ts.Node, decl: ts.Declaration): void {
+  private checkLocalDeclWithSendableClosure(
+    node: ts.Identifier,
+    scope: ts.Node,
+    decl: ts.Declaration,
+    faultId: FaultID
+  ): void {
     const declPosition = decl.getStart();
-    if (decl.getSourceFile().fileName !== node.getSourceFile().fileName ||
-        declPosition !== undefined && declPosition >= scope.getStart() && declPosition < scope.getEnd()) {
+    if (
+      decl.getSourceFile().fileName !== node.getSourceFile().fileName ||
+      declPosition !== undefined && declPosition >= scope.getStart() && declPosition < scope.getEnd()
+    ) {
       return;
     }
     if (this.isTopSendableClosure(decl)) {
@@ -2458,18 +2600,33 @@ export class TypeScriptLinter {
      * 1. ImportEqualDecalration
      * 2. BindingElement
      */
-    if (ts.isVariableDeclaration(decl) || ts.isFunctionDeclaration(decl) || ts.isClassDeclaration(decl) ||
-        ts.isInterfaceDeclaration(decl) || ts.isEnumDeclaration(decl) || ts.isModuleDeclaration(decl) ||
-        ts.isParameter(decl)) {
-      this.incrementCounters(node, FaultID.SendableCapturedVars);
+    if (
+      ts.isVariableDeclaration(decl) ||
+      ts.isFunctionDeclaration(decl) ||
+      ts.isClassDeclaration(decl) ||
+      ts.isInterfaceDeclaration(decl) ||
+      ts.isEnumDeclaration(decl) ||
+      ts.isModuleDeclaration(decl) ||
+      ts.isParameter(decl)
+    ) {
+      this.incrementCounters(node, faultId);
     }
   }
 
   private isTopSendableClosure(decl: ts.Declaration): boolean {
-    return (
-      ts.isSourceFile(decl.parent) && ts.isClassDeclaration(decl) &&
+    if (!ts.isSourceFile(decl.parent)) {
+      return false;
+    }
+    if (
+      ts.isClassDeclaration(decl) &&
       this.tsUtils.isSendableClassOrInterface(this.tsTypeChecker.getTypeAtLocation(decl))
-    );
+    ) {
+      return true;
+    }
+    if (ts.isFunctionDeclaration(decl) && TsUtils.hasSendableDecoratorFunctionOverload(decl)) {
+      return true;
+    }
+    return false;
   }
 
   private checkNamespaceImportVar(node: ts.Node): boolean {
@@ -2505,6 +2662,7 @@ export class TypeScriptLinter {
     switch (parentNode.kind) {
       case ts.SyntaxKind.EnumDeclaration:
       case ts.SyntaxKind.InterfaceDeclaration:
+      case ts.SyntaxKind.FunctionDeclaration:
       case ts.SyntaxKind.ClassDeclaration:
         if (!this.tsUtils.isShareableType(this.tsTypeChecker.getTypeAtLocation(parentNode))) {
           this.incrementCounters((parentNode as ts.NamedDeclaration).name ?? parentNode, FaultID.SharedModuleExports);
@@ -2545,6 +2703,68 @@ export class TypeScriptLinter {
     for (const exportSpecifier of exportDecl.exportClause.elements) {
       if (!this.tsUtils.isShareableEntity(exportSpecifier.name)) {
         this.incrementCounters(exportSpecifier.name, FaultID.SharedModuleExports);
+      }
+    }
+  }
+
+  private handleReturnStatement(node: ts.Node): void {
+    // The return value must match the return type of the 'function'
+    const returnStat = node as ts.ReturnStatement;
+    const expr = returnStat.expression;
+    if (!expr) {
+      return;
+    }
+    const lhsType = this.tsTypeChecker.getContextualType(expr);
+    if (!lhsType) {
+      return;
+    }
+    this.checkAssignmentMatching(node, lhsType, expr, true);
+    this.checkThisReturnType(expr);
+  }
+
+  private checkThisReturnType(returnExpr: ts.Expression): void {
+    const funcAncestor = ts.findAncestor(returnExpr, (node: ts.Node): boolean => {
+      return TsUtils.isFunctionLikeDeclaration(node as ts.Declaration);
+    });
+    if (TsUtils.isMethodWithThisReturnType(funcAncestor as ts.Node)) {
+      if (returnExpr.kind !== ts.SyntaxKind.ThisKeyword) {
+        this.incrementCounters(returnExpr, FaultID.ThisTyping);
+      }
+    }
+  }
+
+  /**
+   * 'arkts-no-structural-typing' check was missing in some scenarios,
+   * in order not to cause incompatibility,
+   * only need to strictly match the type of filling the check again
+   */
+  private checkAssignmentMatching(
+    field: ts.Node,
+    lhsType: ts.Type,
+    rhsExpr: ts.Expression,
+    isNewStructuralCheck: boolean = false
+  ): void {
+    const rhsType = this.tsTypeChecker.getTypeAtLocation(rhsExpr);
+    // check that 'sendable typeAlias' is assigned correctly
+    if (this.tsUtils.isWrongSendableFunctionAssignment(lhsType, rhsType)) {
+      this.incrementCounters(field, FaultID.SendableFunctionAssignment);
+    }
+    const isStrict = this.tsUtils.needStrictMatchType(lhsType, rhsType);
+    // 'isNewStructuralCheck' means that this assignment scenario was previously omitted, so only strict matches are checked now
+    if (isNewStructuralCheck && !isStrict) {
+      return;
+    }
+    if (this.tsUtils.needToDeduceStructuralIdentity(lhsType, rhsType, rhsExpr, isStrict)) {
+      this.incrementCounters(field, FaultID.StructuralIdentity);
+    }
+  }
+
+  private handleDecorator(node: ts.Node): void {
+    const decorator: ts.Decorator = node as ts.Decorator;
+    if (TsUtils.getDecoratorName(decorator) === SENDABLE_DECORATOR) {
+      const parent: ts.Node = decorator.parent;
+      if (!parent || !SENDABLE_DECORATOR_NODES.includes(parent.kind)) {
+        this.incrementCounters(decorator, FaultID.SendableDecoratorLimited);
       }
     }
   }

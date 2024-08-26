@@ -11,5 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+* @gavin1012_hw @zhuoli72
+/arkguard/ @zhangchen168
+/es2panda/ @gavin1012_hw
 /ets2panda/ @igelhaus @semenovaleksandr @csabaosztrogonac
-/ets2panda/linter/ @ragnvald
+/legacy_bin/ @ctw-ian
+/merge_abc/ @gavin1012_hw
+/test/ @gavin1012_hw
+/test262/ @gavin1012_hw
+/test262/*.json                 @shirunova_viktoria @gavin1012_hw @zhuheng27
+/test262/*.py			@shirunova_viktoria @gavin1012_hw @zhuheng27
+/test262/ignored*.txt		@shirunova_viktoria @gavin1012_hw @kuchkovairina @zhuheng27
+/test_ecma_bcopt/ @gavin1012_hw
+/ets2panda/linter/              @ragnvald
+/test/workload/ignored*.txt     @shirunova_viktoria @kuchkovairina @gavin1012_hw @zhuheng27

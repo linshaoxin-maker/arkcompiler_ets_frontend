@@ -31,6 +31,8 @@ struct Program;
 }  // namespace ark::pandasm
 
 namespace ark::es2panda {
+
+constexpr std::string_view ES2PANDA_VERSION = "0.1";
 namespace util {
 class Options;
 }  // namespace util
@@ -244,6 +246,10 @@ public:
     pandasm::Program *Compile(const SourceFile &input, const util::Options &options, uint32_t parseStatus = 0);
 
     static void DumpAsm(const pandasm::Program *prog);
+
+    // This is used as a _different_ channel of error reporting than GetError().
+    // If this is true, the errors in question have already been reported to the user.
+    bool IsAnyError() const noexcept;
 
     const Error &GetError() const noexcept
     {

@@ -260,6 +260,7 @@ void Binder::InstantiateArguments()
     auto *iter = scope_;
     while (true) {
         Scope *scope = iter->IsFunctionParamScope() ? iter : iter->EnclosingVariableScope();
+        CHECK_NOT_NULL(scope);
 
         const auto *node = scope->Node();
 
@@ -311,17 +312,16 @@ void Binder::LookupIdentReference(ir::Identifier *ident)
         }
     }
 
+    if (res.variable == nullptr) {
+        return;
+    }
+
     if (res.level != 0) {
-        ASSERT(res.variable);
         if (!res.variable->Declaration()->IsDeclare() && !ident->Parent()->IsTSTypeReference() &&
             !ident->Parent()->IsTSTypeQuery() && !(bindingFlags_ & ResolveBindingFlags::TS_BEFORE_TRANSFORM)) {
             util::Concurrent::ProcessConcurrent(Program()->GetLineIndex(), ident, res, program_);
             res.variable->SetLexical(res.scope, program_->PatchFixHelper());
         }
-    }
-
-    if (res.variable == nullptr) {
-        return;
     }
 
     auto decl = res.variable->Declaration();
@@ -365,7 +365,7 @@ void Binder::BuildFunction(FunctionScope *funcScope, util::StringView name, cons
     }
     functionScopes_.push_back(funcScope);
     funcScope->SetInFunctionScopes();
-    if (Program()->TargetApiVersion() > 11) {
+    if (!util::Helpers::IsDefaultApiVersion(Program()->TargetApiVersion(), Program()->GetTargetApiSubVersion())) {
         funcScope->SetSelfScopeName(name);
         auto recordName = program_->FormatedRecordName().Mutf8();
         funcScope->BindNameWithScopeInfo(name, util::UString(recordName, Allocator()).View());
@@ -603,6 +603,7 @@ void Binder::BuildClassDefinition(ir::ClassDefinition *classDef)
 
         classDef->Ident()->SetParent(classDef);
     }
+    bool previousInSendableClass = inSendableClass_;
 
     ResolveReference(classDef, classDef->Ctor());
 
@@ -621,7 +622,7 @@ void Binder::BuildClassDefinition(ir::ClassDefinition *classDef)
     for (auto *iter : classDef->IndexSignatures()) {
         ResolveReference(classDef, iter);
     }
-    inSendable_ = false;
+    inSendableClass_ = previousInSendableClass;
 }
 
 void Binder::BuildForUpdateLoop(ir::ForUpdateStatement *forUpdateStmt)
@@ -715,18 +716,26 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
             break;
         }
         case ir::AstNodeType::SCRIPT_FUNCTION: {
+            bool previousInSendableFunction = inSendableFunction_;
             auto *scriptFunc = childNode->AsScriptFunction();
             // Static initializer only be executed once. Treat it as unshared method.
-            if (inSendable_ && !scriptFunc->IsStaticInitializer()) {
+            if ((inSendableClass_ && !scriptFunc->IsStaticInitializer()) || inSendableFunction_) {
                 scriptFunc->SetInSendable();
             }
-            util::Helpers::ScanDirectives(const_cast<ir::ScriptFunction *>(scriptFunc),
-                                          Program()->GetLineIndex());
+            bool enableSendableClass = program_->TargetApiVersion() >=
+                util::Helpers::SENDABLE_CLASS_MIN_SUPPORTED_API_VERSION;
+            util::Helpers::ScanDirectives(const_cast<ir::ScriptFunction *>(scriptFunc), Program()->GetLineIndex(),
+                enableSendableClass,
+                !util::Helpers::IsDefaultApiVersion(program_->TargetApiVersion(), program_->GetTargetApiSubVersion()));
 
             if (scriptFunc->IsConstructor() && util::Helpers::GetClassDefiniton(scriptFunc)->IsSendable()) {
                 scriptFunc->SetInSendable();
-                inSendable_ = true;
+                inSendableClass_ = true;
+            } else if (scriptFunc->IsSendable()) {
+                scriptFunc->SetInSendable();
+                inSendableFunction_ = true;
             }
+
             auto *funcScope = scriptFunc->Scope();
 
             auto *outerScope = scope_;
@@ -767,6 +776,7 @@ void Binder::ResolveReference(const ir::AstNode *parent, ir::AstNode *childNode)
             BuildScriptFunction(outerScope, scriptFunc);
 
             ResolveReference(scriptFunc, scriptFunc->Body());
+            inSendableFunction_ = previousInSendableFunction;
             break;
         }
         case ir::AstNodeType::VARIABLE_DECLARATOR: {

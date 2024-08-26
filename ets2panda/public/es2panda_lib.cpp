@@ -15,7 +15,6 @@
 
 #include "es2panda_lib.h"
 #include <memory>
-#include "compiler/lowering/scopesInit/scopesInitPhase.h"
 
 #include "varbinder/varbinder.h"
 #include "varbinder/scope.h"
@@ -33,7 +32,8 @@
 #include "compiler/core/ETSGen.h"
 #include "compiler/core/regSpiller.h"
 #include "compiler/lowering/phase.h"
-#include "compiler/lowering/util.h"
+#include "compiler/lowering/checkerPhase.h"
+#include "compiler/lowering/scopesInit/scopesInitPhase.h"
 #include "ir/astNode.h"
 #include "ir/expressions/arrowFunctionExpression.h"
 #include "ir/ts/tsAsExpression.h"
@@ -112,7 +112,8 @@ static char const *StringViewToCString(ArenaAllocator *allocator, util::StringVi
         return utf8.data();
     }
     char *res = reinterpret_cast<char *>(allocator->Alloc(utf8.size() + 1));
-    memmove(res, utf8.cbegin(), utf8.size());
+    [[maybe_unused]] auto err = memmove_s(res, utf8.size() + 1, utf8.cbegin(), utf8.size());
+    ASSERT(err == EOK);
     res[utf8.size()] = '\0';
     return res;
     // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic, readability-simplify-subscript-expr)
@@ -122,7 +123,8 @@ static char const *ArenaStrdup(ArenaAllocator *allocator, char const *src)
 {
     size_t len = strlen(src);
     char *res = reinterpret_cast<char *>(allocator->Alloc(len + 1));
-    memmove(res, src, len);
+    [[maybe_unused]] auto err = memmove_s(res, len + 1, src, len);
+    ASSERT(err == EOK);
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     res[len] = '\0';
@@ -433,6 +435,7 @@ static es2panda_Context *CreateContext(es2panda_Config *config, std::string cons
         res->parser =
             new parser::ETSParser(res->parserProgram, cfg->options->CompilerOptions(), parser::ParserStatus::NO_OPTS);
         res->checker = new checker::ETSChecker();
+        res->checker->ErrorLogger()->SetOstream(nullptr);
         res->analyzer = new checker::ETSAnalyzer(res->checker);
         res->checker->SetAnalyzer(res->analyzer);
 
@@ -522,7 +525,7 @@ static Context *InitScopes(Context *ctx)
                 break;
             }
             ctx->phases[ctx->currentPhase]->Apply(ctx, ctx->parserProgram);
-        } while (ctx->phases[ctx->currentPhase++]->Name() != "scopes");
+        } while (ctx->phases[ctx->currentPhase++]->Name() != compiler::ScopesInitPhase::NAME);
         ctx->state = ES2PANDA_STATE_SCOPE_INITED;
     } catch (Error &e) {
         std::stringstream ss;
@@ -545,6 +548,13 @@ static Context *Check(Context *ctx)
 
     ASSERT(ctx->state >= ES2PANDA_STATE_PARSED && ctx->state < ES2PANDA_STATE_CHECKED);
 
+    auto handleError = [ctx](Error const &e) {
+        std::stringstream ss;
+        ss << e.TypeString() << ": " << e.Message() << "[" << e.File() << ":" << e.Line() << "," << e.Col() << "]";
+        ctx->errorMessage = ss.str();
+        ctx->state = ES2PANDA_STATE_ERROR;
+    };
+
     try {
         do {
             if (ctx->currentPhase >= ctx->phases.size()) {
@@ -552,13 +562,14 @@ static Context *Check(Context *ctx)
             }
 
             ctx->phases[ctx->currentPhase]->Apply(ctx, ctx->parserProgram);
-        } while (ctx->phases[ctx->currentPhase++]->Name() != "checker");
-        ctx->state = ES2PANDA_STATE_CHECKED;
+        } while (ctx->phases[ctx->currentPhase++]->Name() != compiler::CheckerPhase::NAME);
+        if (ctx->checker->ErrorLogger()->IsAnyError()) {
+            handleError(ctx->checker->ErrorLogger()->Log()[0]);
+        } else {
+            ctx->state = ES2PANDA_STATE_CHECKED;
+        }
     } catch (Error &e) {
-        std::stringstream ss;
-        ss << e.TypeString() << ": " << e.Message() << "[" << e.File() << ":" << e.Line() << "," << e.Col() << "]";
-        ctx->errorMessage = ss.str();
-        ctx->state = ES2PANDA_STATE_ERROR;
+        handleError(e);
     }
     return ctx;
 }
@@ -882,7 +893,7 @@ extern "C" es2panda_AstNode *CreateArrowFunctionExpression(es2panda_Context *con
     auto *func = reinterpret_cast<ir::AstNode *>(scriptFunction)->AsScriptFunction();
     auto *allocator = ctx->allocator;
 
-    return reinterpret_cast<es2panda_AstNode *>(allocator->New<ir::ArrowFunctionExpression>(allocator, func));
+    return reinterpret_cast<es2panda_AstNode *>(allocator->New<ir::ArrowFunctionExpression>(func));
 }
 
 extern "C" es2panda_AstNode *ArrowFunctionExpressionScriptFunction(es2panda_AstNode *ast)
@@ -1172,7 +1183,7 @@ extern "C" es2panda_AstNode *CreateClassDefinition(es2panda_Context *context, es
 
     auto classDef =
         allocator->New<ir::ClassDefinition>(allocator, id, ir::ClassDefinitionModifiers::NONE,
-                                            E2pToIrModifierFlags(flags), Language::FromString("ets").value());
+                                            E2pToIrModifierFlags(flags), Language::FromString("sts").value());
     return reinterpret_cast<es2panda_AstNode *>(classDef);
 }
 

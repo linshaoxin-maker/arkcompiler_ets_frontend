@@ -16,7 +16,7 @@
 export const cookBookMsg: string[] = [];
 export const cookBookTag: string[] = [];
 
-for (let i = 0; i <= 170; i++) {
+for (let i = 0; i <= 171; i++) {
   cookBookMsg[i] = '';
 }
 
@@ -41,7 +41,8 @@ cookBookTag[17] = 'Indexed signatures are not supported (arkts-no-indexed-signat
 cookBookTag[18] = '';
 cookBookTag[19] = 'Use inheritance instead of intersection types (arkts-no-intersection-types)';
 cookBookTag[20] = '';
-cookBookTag[21] = 'Type notation using "this" is not supported (arkts-no-typing-with-this)';
+cookBookTag[21] =
+  'Type notation using "this" is only supported for methods, that return "this" explicitly (arkts-this-typing)';
 cookBookTag[22] = 'Conditional types are not supported (arkts-no-conditional-types)';
 cookBookTag[23] = '';
 cookBookTag[24] = '';
@@ -178,20 +179,47 @@ cookBookTag[150] = '"import" statements after other statements are not allowed (
 cookBookTag[151] = 'Usage of "ESObject" type is restricted (arkts-limited-esobj)';
 cookBookTag[152] = '"Function.apply", "Function.call" are not supported (arkts-no-func-apply-call)';
 cookBookTag[153] = 'The inheritance for "Sendable" classes is limited (arkts-sendable-class-inheritance)';
-cookBookTag[154] = 'Properties in "Sendable" classes and interfaces must have a Sendable data type (arkts-sendable-prop-types)';
-cookBookTag[155] = 'Definite assignment assertion in not allowed in "Sendable" classes (arkts-sendable-definite-assignment)';
-cookBookTag[156] = 'Type arguments of generic "Sendable" type must be a "Sendable" data type (arkts-sendable-generic-types)';
+cookBookTag[154] =
+  'Properties in "Sendable" classes and interfaces must have a Sendable data type (arkts-sendable-prop-types)';
+cookBookTag[155] =
+  'Definite assignment assertion in not allowed in "Sendable" classes (arkts-sendable-definite-assignment)';
+cookBookTag[156] =
+  'Type arguments of generic "Sendable" type must be a "Sendable" data type (arkts-sendable-generic-types)';
 cookBookTag[157] = 'Only imported variables can be captured by "Sendable" class (arkts-sendable-imported-variables)';
 cookBookTag[158] = 'Only "@Sendable" decorator can be used on "Sendable" class (arkts-sendable-class-decorator)';
-cookBookTag[159] = 'Objects of "Sendable" type can not be initialized using object literal or array literal (arkts-sendable-obj-init)';
-cookBookTag[160] = 'Computed property names are not allowed in "Sendable" classes and interfaces (arkts-sendable-computed-prop-name)';
+cookBookTag[159] =
+  'Objects of "Sendable" type can not be initialized using object literal or array literal (arkts-sendable-obj-init)';
+cookBookTag[160] =
+  'Computed property names are not allowed in "Sendable" classes and interfaces (arkts-sendable-computed-prop-name)';
 cookBookTag[161] = 'Casting "Non-sendable" data to "Sendable" type is not allowed (arkts-sendable-as-expr)';
-cookBookTag[162] = 'Importing a module for side-effects only is not supported in shared module (arkts-no-side-effects-imports)';
+cookBookTag[162] =
+  'Importing a module for side-effects only is not supported in shared module (arkts-no-side-effects-imports)';
 cookBookTag[163] = 'Only "Sendable" entities can be exported in shared module (arkts-shared-module-exports)';
 cookBookTag[164] = '"export * from ..." is not allowed in shared module (arkts-shared-module-no-wildcard-export)';
-cookBookTag[165] = 'Only "Sendable" classes and "Sendable" interfaces are allowed for importing from ets into ts file (arkts-no-ts-import-ets)';
-cookBookTag[166] = 'In ts files, "Sendable" types cannot be used in implements and extends clauses (arkts-no-ts-sendable-type-inheritance)';
-cookBookTag[167] = 'In sdk ts files, "Sendable" class and "Sendable" interface can not be exported (arkts-no-dts-sendable-type-export)';
+cookBookTag[165] =
+  'Only "Sendable" classes and "Sendable" interfaces are allowed for importing from ets into ts file (arkts-no-ts-import-ets)';
+cookBookTag[166] =
+  'In ts files, "Sendable" types cannot be used in implements and extends clauses (arkts-no-ts-sendable-type-inheritance)';
+cookBookTag[167] =
+  'In sdk ts files, "Sendable" class and "Sendable" interface can not be exported (arkts-no-dts-sendable-type-export)';
 cookBookTag[168] = 'In ts files, entities from ets files can not be re-exported (arkts-no-ts-re-export-ets)';
-cookBookTag[169] = 'Namespace import are nbot allowed for importing from ets to ts file (arkts-no-namespace-import-in-ts-import-ets)';
-cookBookTag[170] = 'Side effect import are not allowed for importing from ets to ts file (arkts-no-side-effect-import-in-ts-import-ets)';
+cookBookTag[169] =
+  'Namespace import are nbot allowed for importing from ets to ts file (arkts-no-namespace-import-in-ts-import-ets)';
+cookBookTag[170] =
+  'Side effect import are not allowed for importing from ets to ts file (arkts-no-side-effect-import-in-ts-import-ets)';
+cookBookTag[171] = 'Field in sendable class must have type annotation (arkts-sendable-explicit-field-type)';
+cookBookTag[172] =
+  'Only imported variables can be captured by "Sendable" function (arkts-sendable-function-imported-variables)';
+cookBookTag[173] = 'Only "@Sendable" decorator can be used on "Sendable" function (arkts-sendable-function-decorator)';
+cookBookTag[174] =
+  'Only "@Sendable" decorator can be used on "Sendable" typeAlias (arkts-sendable-typeAlias-decorator)';
+cookBookTag[175] = 'Only "FunctionType" can declare "Sendable" typeAlias (arkts-sendable-typeAlias-declaration)';
+cookBookTag[176] =
+  'Only "Sendable" function or "Sendable" typeAlias object can be assigned to "Sendable" typeAlias (arkts-sendable-function-assignment)';
+cookBookTag[177] =
+  'When declaring "@Sendable" overloaded function, needs to add "@Sendable" decorator on each function (arkts-sendable-function-overload-decorator)';
+cookBookTag[178] = 'The property of "Sendable" function is limited (arkts-sendable-function-property)';
+cookBookTag[179] =
+  'Casting "Non-sendable" function to "Sendable" typeAlias is not allowed (arkts-sendable-function-as-expr)';
+cookBookTag[180] =
+  'The "@Sendable" decorator can only be used on "class", "function", "typeAlias" (arkts-sendable-decorator-limited)';

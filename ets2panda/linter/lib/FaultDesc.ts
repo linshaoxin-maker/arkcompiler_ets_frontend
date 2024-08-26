@@ -70,7 +70,7 @@ faultDesc[FaultID.EnumMemberNonConstInit] = 'Enum members with non-constant init
 faultDesc[FaultID.ImplementsClass] = 'Class type mentioned in "implements" clause';
 faultDesc[FaultID.MethodReassignment] = 'Access to undefined field';
 faultDesc[FaultID.MultipleStaticBlocks] = 'Multiple static blocks';
-faultDesc[FaultID.ThisType] = '"this" type';
+faultDesc[FaultID.ThisTyping] = '"this" typing is supported only for methods with explicit "this" return';
 faultDesc[FaultID.IntefaceExtendDifProps] = 'Extends same properties with different types';
 faultDesc[FaultID.StructuralIdentity] = 'Use of type structural identity';
 faultDesc[FaultID.ExportAssignment] = 'Export assignments (export = ..)';
@@ -103,8 +103,8 @@ faultDesc[FaultID.SendableDefiniteAssignment] = 'Use of definite assignment asse
 faultDesc[FaultID.SendableGenericTypes] = 'Sendable generic types';
 faultDesc[FaultID.SendableCapturedVars] = 'Sendable class captured variables';
 faultDesc[FaultID.SendableClassDecorator] = 'Sendable class decorator';
-faultDesc[FaultID.SendableObjectInitialization] = 'Object literal or array literal is not allowed to \
-                                                                   initialize a "Sendable" object';
+faultDesc[FaultID.SendableObjectInitialization] =
+  'Object literal or array literal is not allowed to initialize a "Sendable" object';
 faultDesc[FaultID.SendableComputedPropName] = 'Sendable computed property name';
 faultDesc[FaultID.SendableAsExpr] = 'Sendable as expr';
 faultDesc[FaultID.SharedNoSideEffectImport] = 'Shared no side effect import';
@@ -116,3 +116,13 @@ faultDesc[FaultID.SendableTypeExported] = 'Sendable type exported';
 faultDesc[FaultID.NoTsReExportEts] = 'No ts re-export ets';
 faultDesc[FaultID.NoSIdeEffectImportEtsToTs] = 'No side effect import ets to ts';
 faultDesc[FaultID.NoNameSpaceImportEtsToTs] = 'No namespace import ets to ts';
+faultDesc[FaultID.SendableExplicitFieldType] = 'Field in sendable class must have type annotation';
+faultDesc[FaultID.SendableFunctionImportedVariables] = 'Sendable function imported variables';
+faultDesc[FaultID.SendableFunctionDecorator] = 'Sendable function decorator';
+faultDesc[FaultID.SendableTypeAliasDecorator] = 'Sendable typeAlias decorator';
+faultDesc[FaultID.SendableTypeAliasDeclaration] = 'Sendable typeAlias declaration';
+faultDesc[FaultID.SendableFunctionAssignment] = 'Sendable function assignment';
+faultDesc[FaultID.SendableFunctionOverloadDecorator] = 'Sendable function overload decorator';
+faultDesc[FaultID.SendableFunctionProperty] = 'Sendable function property';
+faultDesc[FaultID.SendableFunctionAsExpr] = 'Sendable function as expr';
+faultDesc[FaultID.SendableDecoratorLimited] = 'Sendable decorator limited';

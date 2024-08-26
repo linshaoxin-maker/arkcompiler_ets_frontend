@@ -233,34 +233,46 @@ void Options::ParseCacheFileOption(const std::string &cacheInput)
 
 void Options::ParseCompileContextInfo(const std::string compileContextInfoPath)
 {
-    std::ifstream ifs;
-    ifs.open(panda::os::file::File::GetExtendedFilePath(compileContextInfoPath));
-    if (!ifs.is_open()) {
-        std::cerr << "Failed to open compile context info file from the provided path: '" <<
-                     compileContextInfoPath << "'." << std::endl <<
-                     "Please verify the file's existence, check the correctness of the path, " <<
-                     "and ensure you have the necessary permissions to access the file. " << std::endl;
+    std::stringstream ss;
+    std::string buffer;
+    if (!util::Helpers::ReadFileToBuffer(compileContextInfoPath, ss)) {
+        return;
+    }
+
+    buffer = ss.str();
+    if (buffer.empty() || !nlohmann::json::accept(buffer)) {
+        std::cerr << "The input file '" << compileContextInfoPath <<"' is incomplete format of json" << std::endl;
         return;
     }
     // Parser compile context info base on the input json file.
-    nlohmann::json compileContextInfoJson = nlohmann::json::parse(ifs);
+    nlohmann::json compileContextInfoJson = nlohmann::json::parse(buffer);
     if (!compileContextInfoJson.contains("compileEntries") || !compileContextInfoJson.contains("hspPkgNames") ||
         !compileContextInfoJson.contains("pkgContextInfo")) {
         std::cerr << "The input json file '" << compileContextInfoPath << "' content format is incorrect" << std::endl;
         return;
     }
+    if (!compileContextInfoJson["compileEntries"].is_array() || !compileContextInfoJson["hspPkgNames"].is_array() ||
+        !compileContextInfoJson["pkgContextInfo"].is_object()) {
+        std::cerr << "The input json file '" << compileContextInfoPath << "' content type is incorrect" << std::endl;
+        return;
+    }
+    std::set<std::string> externalPkgNames;
+    for (const auto& elem : compileContextInfoJson["hspPkgNames"]) {
+        if (elem.is_string()) {
+            externalPkgNames.insert(elem.get<std::string>());
+        }
+    }
+    compilerOptions_.compileContextInfo.externalPkgNames = externalPkgNames;
     compilerOptions_.compileContextInfo.compileEntries = compileContextInfoJson["compileEntries"];
-    compilerOptions_.compileContextInfo.externalPkgNames = compileContextInfoJson["hspPkgNames"];
-
     std::unordered_map<std::string, PkgInfo> pkgContextMap;
     for (const auto& [key, value] : compileContextInfoJson["pkgContextInfo"].items()) {
         PkgInfo pkgInfo;
-        if (value.contains("version")) {
+        if (value.contains("version") && value["version"].is_string()) {
             pkgInfo.version = value["version"];
         } else {
             std::cerr << "Failed to get version from pkgContextInfo."  << std::endl;
         }
-        if (value.contains("packageName")) {
+        if (value.contains("packageName") && value["packageName"].is_string()) {
             pkgInfo.packageName = value["packageName"];
         } else {
             std::cerr << "Failed to get package name from pkgContextInfo."  << std::endl;
@@ -304,12 +316,23 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<bool> opDumpTransformedAst("dump-transformed-ast", false, "Dump the parsed AST after transform");
     panda::PandArg<bool> opCheckTransformedAstStructure("check-transformed-ast-structure", false,
                                                         "Check the AST structure after transform");
-    panda::PandArg<bool> opRecordSource("record-source", false, "Record all functions' source codes to support the "\
-        "using of [function].toString()");
+    panda::PandArg<bool> opRecordDebugSource("record-debug-source", false, "Record source code to support "\
+        "multi-platform debugger & detailed backtrace in debug mode");
 
     // compiler
     panda::PandArg<bool> opEnableAbcInput("enable-abc-input", false, "Allow abc file as input");
-    panda::PandArg<bool> opDumpAsmProgram("dump-asm-program", false, "Reserved");
+    panda::PandArg<bool> opDumpAsmProgram("dump-asm-program", false, "Dump program");
+    std::string descOfDumpNormalizedProg =
+        "Dump program in normalized form to ensure the output of source code compilation is consistent with that of "
+        "abc file compilation.\n"
+        "  The normalized form differs mainly as follows:\n"
+        "  1. all instructions will be labled consecutively and all the labels will be dumped\n"
+        "  2. the content of a literal array, rather than its id, will be dumped when the literal array appears in "
+        "an opcode or is nested in another literal array\n"
+        "  3. labels stored in catch blocks will be unified\n"
+        "  4. strings won't be dumped\n"
+        "  5. invalid opcodes won't be dumped, local variables' start and end offset will skip invalid opcodes";
+    panda::PandArg<bool> opDumpNormalizedAsmProgram("dump-normalized-asm-program", false, descOfDumpNormalizedProg);
     panda::PandArg<bool> opDumpAssembly("dump-assembly", false, "Dump pandasm");
     panda::PandArg<bool> opDebugInfo("debug-info", false, "Compile with debug info");
     panda::PandArg<bool> opDumpDebugInfo("dump-debug-info", false, "Dump debug info");
@@ -362,6 +385,9 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<bool> targetBcVersion("target-bc-version", false, "Print the corresponding ark bytecode version"\
         "for target api version. If both target-bc-version and bc-version are enabled, only target-bc-version"\
         "will take effects");
+    panda::PandArg<std::string> targetApiSubVersion("target-api-sub-version",
+        std::string {util::Helpers::DEFAULT_SUB_API_VERSION},
+        "Specify the targeting api sub version for es2abc to generated the corresponding version of bytecode");
 
     // compile entries and pkg context info
     panda::PandArg<std::string> compileContextInfoPath("compile-context-info", "", "The path to compile context"\
@@ -385,11 +411,12 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&opDumpAst);
     argparser_->Add(&opDumpTransformedAst);
     argparser_->Add(&opCheckTransformedAstStructure);
-    argparser_->Add(&opRecordSource);
+    argparser_->Add(&opRecordDebugSource);
     argparser_->Add(&opParseOnly);
     argparser_->Add(&opEnableTypeCheck);
     argparser_->Add(&opEnableAbcInput);
     argparser_->Add(&opDumpAsmProgram);
+    argparser_->Add(&opDumpNormalizedAsmProgram);
     argparser_->Add(&opDumpAssembly);
     argparser_->Add(&opDebugInfo);
     argparser_->Add(&opDumpDebugInfo);
@@ -428,6 +455,7 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&bcMinVersion);
     argparser_->Add(&targetApiVersion);
     argparser_->Add(&targetBcVersion);
+    argparser_->Add(&targetApiSubVersion);
 
     argparser_->Add(&compileContextInfoPath);
     argparser_->Add(&opDumpDepsInfo);
@@ -443,6 +471,7 @@ bool Options::Parse(int argc, const char **argv)
     bool parseStatus = argparser_->Parse(argc, argv);
 
     compilerOptions_.targetApiVersion = targetApiVersion.GetValue();
+    compilerOptions_.targetApiSubVersion = targetApiSubVersion.GetValue();
     if (parseStatus && targetBcVersion.GetValue()) {
         compilerOptions_.targetBcVersion = targetBcVersion.GetValue();
         return true;
@@ -593,9 +622,10 @@ bool Options::Parse(int argc, const char **argv)
         options_ |= OptionFlags::SIZE_PCT_STAT;
     }
 
-    compilerOptions_.recordSource = opRecordSource.GetValue();
+    compilerOptions_.recordDebugSource = opRecordDebugSource.GetValue();
     compilerOptions_.enableAbcInput = opEnableAbcInput.GetValue();
     compilerOptions_.dumpAsmProgram = opDumpAsmProgram.GetValue();
+    compilerOptions_.dumpNormalizedAsmProgram = opDumpNormalizedAsmProgram.GetValue();
     compilerOptions_.dumpAsm = opDumpAssembly.GetValue();
     compilerOptions_.dumpAst = opDumpAst.GetValue();
     compilerOptions_.dumpTransformedAst = opDumpTransformedAst.GetValue();

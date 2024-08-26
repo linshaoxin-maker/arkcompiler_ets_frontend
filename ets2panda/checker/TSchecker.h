@@ -106,6 +106,18 @@ enum class AstNodeType;
 
 namespace ark::es2panda::checker {
 
+struct ExpressionTypeInfo {
+    Type *leftType;
+    Type *rightType;
+};
+
+struct TupleTypeInfo {
+    ElementFlags combinedFlags;
+    uint32_t minLength;
+    uint32_t fixedLength;
+    bool readonly;
+};
+
 class TSChecker : public Checker {
 public:
     // NOLINTNEXTLINE(readability-redundant-member-init)
@@ -274,6 +286,10 @@ public:
                                            bool isAsSrcLeftType = false);
     void ElaborateElementwise(Type *targetType, ir::Expression *sourceNode, const lexer::SourcePosition &pos);
     void InferSimpleVariableDeclaratorType(ir::VariableDeclarator *declarator);
+    void GetTypeVar(varbinder::Decl *decl);
+    void GetTypeParam(varbinder::Variable *var, varbinder::Decl *decl);
+    void GetTypeEnum(varbinder::Variable *var, varbinder::Decl *decl);
+    Type *GetDeclTsType(varbinder::Variable *var, varbinder::Decl *decl);
     Type *GetTypeOfVariable(varbinder::Variable *var) override;
     Type *GetUnaryResultType(Type *operandType);
     Type *GetTypeFromClassOrInterfaceReference(ir::TSTypeReference *node, varbinder::Variable *var);
@@ -286,10 +302,10 @@ public:
     Type *CreateStringLiteralType(const util::StringView &str);
     Type *CreateFunctionTypeWithSignature(Signature *callSignature);
     Type *CreateConstructorTypeWithSignature(Signature *constructSignature);
-    Type *CreateTupleType(ObjectDescriptor *desc, ArenaVector<ElementFlags> &&elementFlags, ElementFlags combinedFlags,
-                          uint32_t minLength, uint32_t fixedLength, bool readonly);
-    Type *CreateTupleType(ObjectDescriptor *desc, ArenaVector<ElementFlags> &&elementFlags, ElementFlags combinedFlags,
-                          uint32_t minLength, uint32_t fixedLength, bool readonly, NamedTupleMemberPool &&namedMembers);
+    Type *CreateTupleType(ObjectDescriptor *desc, ArenaVector<ElementFlags> &&elementFlags,
+                          const TupleTypeInfo &tupleTypeInfo);
+    Type *CreateTupleType(ObjectDescriptor *desc, ArenaVector<ElementFlags> &&elementFlags,
+                          const TupleTypeInfo &tupleTypeInfo, NamedTupleMemberPool &&namedMembers);
     Type *CreateUnionType(std::initializer_list<Type *> constituentTypes);
     Type *CreateUnionType(ArenaVector<Type *> &&constituentTypes);
     Type *CreateUnionType(ArenaVector<Type *> &constituentTypes);
@@ -335,11 +351,14 @@ public:
         ir::ArrayExpression *param);
     std::tuple<varbinder::LocalVariable *, varbinder::LocalVariable *, bool> CheckFunctionObjectPatternParameter(
         ir::ObjectExpression *param);
+    void ValidateSubsequentNode(const ir::Statement *const subsequentNode, const ir::ScriptFunction *const func);
+    void CheckOverloadSignatureCompatibility(Signature *bodyCallSignature, Signature *signature);
     void InferFunctionDeclarationType(const varbinder::FunctionDecl *decl, varbinder::Variable *funcVar);
     void CollectTypesFromReturnStatements(ir::AstNode *parent, ArenaVector<Type *> *returnTypes);
     void CheckAllCodePathsInNonVoidFunctionReturnOrThrow(ir::ScriptFunction *func, lexer::SourcePosition lineInfo,
                                                          const char *errMsg);
     void CreatePatternParameterName(ir::AstNode *node, std::stringstream &ss);
+    void HandlePropertyPatternParameterName(ir::Property *prop, std::stringstream &ss);
     void ThrowReturnTypeCircularityError(ir::ScriptFunction *func);
     ArgRange GetArgRange(const ArenaVector<Signature *> &signatures, ArenaVector<Signature *> *potentialSignatures,
                          uint32_t callArgsSize, bool *haveSignatureWithRest);
@@ -350,11 +369,11 @@ public:
     Type *CreateParameterTypeForObjectAssignmentPattern(ir::ObjectExpression *objectPattern, Type *inferredType);
 
     // Binary like expression
-    Type *CheckBinaryOperator(Type *leftType, Type *rightType, ir::Expression *leftExpr, ir::Expression *rightExpr,
+    Type *CheckBinaryOperator(ExpressionTypeInfo *leftRightType, ir::Expression *leftExpr, ir::Expression *rightExpr,
                               ir::AstNode *expr, lexer::TokenType op);
-    Type *CheckPlusOperator(Type *leftType, Type *rightType, ir::Expression *leftExpr, ir::Expression *rightExpr,
+    Type *CheckPlusOperator(ExpressionTypeInfo *leftRightType, ir::Expression *leftExpr, ir::Expression *rightExpr,
                             ir::AstNode *expr, lexer::TokenType op);
-    Type *CheckCompareOperator(Type *leftType, Type *rightType, ir::Expression *leftExpr, ir::Expression *rightExpr,
+    Type *CheckCompareOperator(ExpressionTypeInfo *leftRightType, ir::Expression *leftExpr, ir::Expression *rightExpr,
                                ir::AstNode *expr, lexer::TokenType op);
     Type *CheckAndOperator(Type *leftType, Type *rightType, ir::Expression *leftExpr);
     Type *CheckOrOperator(Type *leftType, Type *rightType, ir::Expression *leftExpr);
@@ -367,6 +386,11 @@ private:
     NumberLiteralPool numberLiteralMap_;
     StringLiteralPool stringLiteralMap_;
     StringLiteralPool bigintLiteralMap_;
+
+    // Binary like expression
+    void CheckBooleanLikeType(Type *leftType, Type *rightType, ir::AstNode *expr, lexer::TokenType op);
+
+    void CheckExtendsBases(ObjectType *&baseObj, InterfaceType *&type, varbinder::InterfaceDecl *&decl);
 };
 
 }  // namespace ark::es2panda::checker

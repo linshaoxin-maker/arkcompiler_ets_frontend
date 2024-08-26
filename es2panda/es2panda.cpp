@@ -60,36 +60,55 @@ panda::pandasm::Program *CreateJsonContentProgram(std::string src, std::string r
     return context.GetEmitter()->Finalize(false, nullptr);
 }
 
-void Compiler::CheckCompilerOptionsForAbcInput(const std::string &fname, const CompilerOptions &options)
-{
-    ChecktargetApiVersionIsSupportedForAbcInput(options);
-}
-
-void Compiler::ChecktargetApiVersionIsSupportedForAbcInput(const CompilerOptions &options)
-{
-    if (options.targetApiVersion < util::Helpers::ABC_TO_PROGRAM_MIN_SUPPORTED_API_VERSION) {
-        throw Error(ErrorType::GENERIC, "Target api version '" + std::to_string(options.targetApiVersion) +
-                    "' should be greater than or equal to '" +
-                    std::to_string(util::Helpers::ABC_TO_PROGRAM_MIN_SUPPORTED_API_VERSION) + "'.");
-    }
-}
-
-void Compiler::AbcToAsmProgram(const std::string &fname, const CompilerOptions &options,
-                               std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
-                               panda::ArenaAllocator *allocator)
+void Compiler::CheckOptionsAndFileForAbcInput(const std::string &fname, const CompilerOptions &options)
 {
     if (!options.enableAbcInput) {
         throw Error(ErrorType::GENERIC, "\"--enable-abc-input\" is not enabled, abc file " + fname +
             "could not be used as the input.");
     }
-    CheckCompilerOptionsForAbcInput(fname, options);
+    if (options.targetApiVersion < util::Helpers::ABC_TO_PROGRAM_MIN_SUPPORTED_API_VERSION) {
+        throw Error(ErrorType::GENERIC, "Target api version '" + std::to_string(options.targetApiVersion) +
+                    "' should be greater than or equal to '" +
+                    std::to_string(util::Helpers::ABC_TO_PROGRAM_MIN_SUPPORTED_API_VERSION) + "'.");
+    }
+    if (!options.mergeAbc && options.sourceFiles.size() != 1) {
+        throw Error(ErrorType::GENERIC, "If an abc file is used as input, it must be the only input file "
+                    "when the option '--merge-abc' is not enabled.");
+    }
     if (!abcToAsmCompiler_->OpenAbcFile(fname)) {
         throw Error(ErrorType::GENERIC, "Open abc file " + fname + " failed.");
     }
-    if (!abcToAsmCompiler_->CheckFileVersionIsSupported(util::Helpers::ABC_TO_PROGRAM_MIN_SUPPORTED_API_VERSION,
-                                                        options.targetApiVersion)) {
-        throw Error(ErrorType::GENERIC, "The input abc file " + fname + "'s version is not supported.");
+    if (!abcToAsmCompiler_->CheckFileVersionIsSupported(util::Helpers::ABC_TO_PROGRAM_MIN_SUPPORTED_BYTECODE_VERSION,
+                                                        options.targetApiVersion, options.targetApiSubVersion)) {
+        throw Error(ErrorType::GENERIC, "The input abc file '" + fname + "' owns a higher api version or a higher " +
+                    "sdkReleaseType compared to current compilation process.");
     }
+}
+
+panda::pandasm::Program *Compiler::CompileAbcFile(const std::string &fname, const CompilerOptions &options)
+{
+    try {
+        CheckOptionsAndFileForAbcInput(fname, options);
+        return abcToAsmCompiler_->CompileAbcFile();
+    } catch (const class Error &e) {
+        std::cerr << e.TypeString() << ": " << e.Message();
+        std::cerr << " [" << fname << "]" << std::endl;
+        throw;
+    }
+}
+
+void Compiler::CompileAbcFileInParallel(const std::string &fname, const CompilerOptions &options,
+                                        std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
+                                        panda::ArenaAllocator *allocator)
+{
+    try {
+        CheckOptionsAndFileForAbcInput(fname, options);
+    } catch (const class Error &e) {
+        std::cerr << e.TypeString() << ": " << e.Message();
+        std::cerr << " [" << fname << "]" << std::endl;
+        throw;
+    }
+
     auto *compileAbcClassQueue = new compiler::CompileAbcClassQueue(options.abcClassThreadCount,
                                                                     options,
                                                                     *abcToAsmCompiler_,
@@ -100,7 +119,7 @@ void Compiler::AbcToAsmProgram(const std::string &fname, const CompilerOptions &
         compileAbcClassQueue->Consume();
         compileAbcClassQueue->Wait();
     } catch (const class Error &e) {
-        throw;
+        throw e;
     }
 
     delete compileAbcClassQueue;
@@ -215,7 +234,7 @@ int Compiler::CompileFiles(CompilerOptions &options,
     if (!options.patchFixOptions.symbolTable.empty() || !options.patchFixOptions.dumpSymbolTable.empty()) {
         symbolTable = new util::SymbolTable(options.patchFixOptions.symbolTable,
             options.patchFixOptions.dumpSymbolTable);
-        if (!symbolTable->Initialize(options.targetApiVersion)) {
+        if (!symbolTable->Initialize(options.targetApiVersion, options.targetApiSubVersion)) {
             std::cerr << "Failed to initialize for Hotfix." << std::endl;
             return 1;
         }
@@ -231,6 +250,9 @@ int Compiler::CompileFiles(CompilerOptions &options,
         queue->Consume();
         queue->Wait();
     } catch (const class Error &e) {
+        if (!e.Reported()) {
+            std::cerr << e.TypeString() << ": " << e.Message() << std::endl;
+        }
         failed = true;
     }
 
@@ -238,6 +260,9 @@ int Compiler::CompileFiles(CompilerOptions &options,
     queue = nullptr;
 
     if (symbolTable) {
+        if (!options.patchFixOptions.dumpSymbolTable.empty()) {
+            symbolTable->WriteSymbolTable();
+        }
         delete symbolTable;
         symbolTable = nullptr;
     }
@@ -264,7 +289,7 @@ panda::pandasm::Program *Compiler::CompileFile(const CompilerOptions &options, S
 {
     auto *program = Compile(*src, options, symbolTable);
     if (!program) {
-        const auto &err = GetError();
+        auto &err = GetError();
         if (err.Message().empty() && options.parseOnly) {
             return nullptr;
         }
@@ -272,6 +297,8 @@ panda::pandasm::Program *Compiler::CompileFile(const CompilerOptions &options, S
         std::cerr << err.TypeString() << ": " << err.Message();
         std::cerr << " [" << util::Helpers::BaseName(src->fileName) << ":"
                   << err.Line() << ":" << err.Col() << "]" << std::endl;
+        err.SetReported(true);
+
         throw err;
     }
     return program;

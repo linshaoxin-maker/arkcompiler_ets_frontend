@@ -38,25 +38,19 @@ Signature *Signature::Substitute(TypeRelation *relation, const Substitution *sub
     auto *allocator = checker->Allocator();
     bool anyChange = false;
     SignatureInfo *newSigInfo = allocator->New<SignatureInfo>(allocator);
-    const Substitution *newSubstitution = substitution;
 
     if (!signatureInfo_->typeParams.empty()) {
-        auto *newSubstitutionSeed = checker->CopySubstitution(substitution);
         for (auto *tparam : signatureInfo_->typeParams) {
-            auto *newTparam = tparam->Substitute(relation, newSubstitutionSeed);
+            auto *newTparam = tparam->Substitute(relation, substitution);
             newSigInfo->typeParams.push_back(newTparam);
             anyChange |= (newTparam != tparam);
-            if (newTparam != tparam && tparam->IsETSTypeParameter()) {
-                newSubstitutionSeed->insert({tparam->AsETSTypeParameter(), newTparam});
-            }
         }
-        newSubstitution = newSubstitutionSeed;
     }
     newSigInfo->minArgCount = signatureInfo_->minArgCount;
 
     for (auto *param : signatureInfo_->params) {
         auto *newParam = param;
-        auto *newParamType = param->TsType()->Substitute(relation, newSubstitution);
+        auto *newParamType = param->TsType()->Substitute(relation, substitution);
         if (newParamType != param->TsType()) {
             anyChange = true;
             newParam = param->Copy(allocator, param->Declaration());
@@ -66,7 +60,7 @@ Signature *Signature::Substitute(TypeRelation *relation, const Substitution *sub
     }
 
     if (signatureInfo_->restVar != nullptr) {
-        auto *newRestType = signatureInfo_->restVar->TsType()->Substitute(relation, newSubstitution);
+        auto *newRestType = signatureInfo_->restVar->TsType()->Substitute(relation, substitution);
         if (newRestType != signatureInfo_->restVar->TsType()) {
             anyChange = true;
             newSigInfo->restVar = signatureInfo_->restVar->Copy(allocator, signatureInfo_->restVar->Declaration());
@@ -78,13 +72,11 @@ Signature *Signature::Substitute(TypeRelation *relation, const Substitution *sub
         newSigInfo = signatureInfo_;
     }
 
-    auto *newReturnType = returnType_->Substitute(relation, newSubstitution);
-    if (newReturnType != returnType_) {
-        anyChange = true;
-    }
-    if (!anyChange) {
+    auto *newReturnType = returnType_->Substitute(relation, substitution);
+    if (newReturnType == returnType_ && !anyChange) {
         return this;
     }
+
     auto *result = allocator->New<Signature>(newSigInfo, newReturnType);
     result->func_ = func_;
     result->flags_ = flags_;
@@ -95,17 +87,17 @@ Signature *Signature::Substitute(TypeRelation *relation, const Substitution *sub
     return result;
 }
 
-void Signature::ToAssemblerType(public_lib::Context *context, std::stringstream &ss) const
+void Signature::ToAssemblerType(std::stringstream &ss) const
 {
     ss << compiler::Signatures::MANGLE_BEGIN;
 
     for (const auto *param : signatureInfo_->params) {
-        MaybeBoxedType(context->checker, param)->ToAssemblerTypeWithRank(ss);
+        param->TsType()->ToAssemblerTypeWithRank(ss);
         ss << compiler::Signatures::MANGLE_SEPARATOR;
     }
 
     if (signatureInfo_->restVar != nullptr) {
-        MaybeBoxedType(context->checker, signatureInfo_->restVar)->ToAssemblerTypeWithRank(ss);
+        signatureInfo_->restVar->TsType()->ToAssemblerTypeWithRank(ss);
         ss << compiler::Signatures::MANGLE_SEPARATOR;
     }
 
@@ -298,6 +290,10 @@ void Signature::Compatible(TypeRelation *relation, Signature *other)
         3. == this->Params().size(), must be < otherToCheckParametersNumber as described in 2, and
         we need to check the remaining mandatory parameters of "other" against the RestVar of "this".
     */
+    if (other->RestVar() != nullptr && this->RestVar() != nullptr) {
+        relation->IsIdenticalTo(this->RestVar()->TsType(), other->RestVar()->TsType());
+    }
+
     if (i == toCheckParametersNumber) {
         return;
     }

@@ -83,6 +83,11 @@ public:
         return irSignature_.Params();
     }
 
+    size_t DefaultParamIndex() const noexcept
+    {
+        return this->irSignature_.DefaultParamIndex();
+    }
+
     const ArenaVector<ReturnStatement *> &ReturnStatements() const
     {
         return returnStatements_;
@@ -308,6 +313,8 @@ public:
     {
         return lang_;
     }
+
+    [[nodiscard]] ScriptFunction *Clone(ArenaAllocator *allocator, AstNode *parent) override;
 
     void TransformChildren(const NodeTransformer &cb, std::string_view transformationName) override;
     void Iterate(const NodeTraverser &cb) const override;

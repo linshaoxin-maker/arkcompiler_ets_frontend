@@ -9,7 +9,7 @@
         "mEnable": true,
         "mNameGeneratorType": 1,
         "mDictionaryList": [],
-        "mReservedNames": [
+        "mReservedToplevelNames": [
             "moduleName01",
             "stringLiteralObj02",
             "Interface11",

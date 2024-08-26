@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -141,43 +141,9 @@ void RegExpParser::ParseAlternative()
             return;
         }
         case LEX_CHAR_LEFT_PAREN: {
-            Next();
-
-            if (Peek() != LEX_CHAR_QUESTION) {
-                ParseCapturingGroup();
-                break;
-            }
-
-            Next();  // eat '?'
-
-            char32_t cp = Next();
-            if (cp == LEX_CHAR_COLON) {
-                ParseNonCapturingGroup();
-                break;
-            }
-
-            if (cp == LEX_CHAR_EQUALS || cp == LEX_CHAR_EXCLAMATION) {
-                ParseAssertion();
-
-                if (Unicode()) {
-                    return;
-                }
-
-                break;
-            }
-
-            if (cp != LEX_CHAR_LESS_THAN) {
-                ThrowError("Invalid group");
-            }
-
-            cp = Peek();
-            if (cp == LEX_CHAR_EQUALS || cp == LEX_CHAR_EXCLAMATION) {
-                Next();
-                ParseAssertion();
+            if (ParseAlternativeCharLeftParen()) {
                 return;
             }
-
-            ParseNamedCapturingGroup();
             break;
         }
         case LEX_CHAR_LEFT_SQUARE: {
@@ -203,6 +169,44 @@ void RegExpParser::ParseAlternative()
     }
 
     ParseQuantifier();
+}
+
+bool RegExpParser::ParseAlternativeCharLeftParen()
+{
+    Next();
+
+    if (Peek() != LEX_CHAR_QUESTION) {
+        ParseCapturingGroup();
+        return false;
+    }
+
+    Next();  // eat '?'
+
+    char32_t cp = Next();
+    if (cp == LEX_CHAR_COLON) {
+        ParseNonCapturingGroup();
+        return false;
+    }
+
+    if (cp == LEX_CHAR_EQUALS || cp == LEX_CHAR_EXCLAMATION) {
+        ParseAssertion();
+
+        return Unicode();
+    }
+
+    if (cp != LEX_CHAR_LESS_THAN) {
+        ThrowError("Invalid group");
+    }
+
+    cp = Peek();
+    if (cp == LEX_CHAR_EQUALS || cp == LEX_CHAR_EXCLAMATION) {
+        Next();
+        ParseAssertion();
+        return true;
+    }
+
+    ParseNamedCapturingGroup();
+    return false;
 }
 
 void RegExpParser::ParseAlternatives()
@@ -461,6 +465,11 @@ void RegExpParser::ParseAtomEscape()
 
     Next();
 
+    ParseAtomEscapeSwitch(cp);
+}
+
+void RegExpParser::ParseAtomEscapeSwitch(char32_t cp)
+{
     switch (cp) {
         case LEX_CHAR_LOWERCASE_X: {
             ParseHexEscape();

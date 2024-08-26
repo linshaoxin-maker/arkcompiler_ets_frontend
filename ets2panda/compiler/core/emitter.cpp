@@ -39,6 +39,46 @@
 namespace ark::es2panda::compiler {
 using LiteralPair = std::pair<pandasm::LiteralArray::Literal, pandasm::LiteralArray::Literal>;
 
+static LiteralPair TransformMethodLiterals(const compiler::Literal *literal)
+{
+    pandasm::LiteralArray::Literal valueLit;
+    pandasm::LiteralArray::Literal tagLit;
+
+    compiler::LiteralTag tag = literal->Tag();
+
+    switch (tag) {
+        case compiler::LiteralTag::METHOD: {
+            valueLit.tag = panda_file::LiteralTag::METHOD;
+            valueLit.value = literal->GetMethod();
+            break;
+        }
+        case compiler::LiteralTag::ASYNC_METHOD: {
+            valueLit.tag = panda_file::LiteralTag::ASYNCMETHOD;
+            valueLit.value = literal->GetMethod();
+            break;
+        }
+        case compiler::LiteralTag::GENERATOR_METHOD: {
+            valueLit.tag = panda_file::LiteralTag::GENERATORMETHOD;
+            valueLit.value = literal->GetMethod();
+            break;
+        }
+        case compiler::LiteralTag::ASYNC_GENERATOR_METHOD: {
+            valueLit.tag = panda_file::LiteralTag::ASYNCGENERATORMETHOD;
+            valueLit.value = literal->GetMethod();
+            break;
+        }
+        default: {
+            UNREACHABLE();
+            break;
+        }
+    }
+
+    tagLit.tag = panda_file::LiteralTag::TAGVALUE;
+    tagLit.value = static_cast<uint8_t>(valueLit.tag);
+
+    return {tagLit, valueLit};
+}
+
 static LiteralPair TransformLiteral(const compiler::Literal *literal)
 {
     pandasm::LiteralArray::Literal valueLit;
@@ -72,34 +112,13 @@ static LiteralPair TransformLiteral(const compiler::Literal *literal)
             valueLit.value = static_cast<uint8_t>(0);
             break;
         }
-        case compiler::LiteralTag::METHOD: {
-            valueLit.tag = panda_file::LiteralTag::METHOD;
-            valueLit.value = literal->GetMethod();
-            break;
-        }
-        case compiler::LiteralTag::ASYNC_METHOD: {
-            valueLit.tag = panda_file::LiteralTag::ASYNCMETHOD;
-            valueLit.value = literal->GetMethod();
-            break;
-        }
-        case compiler::LiteralTag::GENERATOR_METHOD: {
-            valueLit.tag = panda_file::LiteralTag::GENERATORMETHOD;
-            valueLit.value = literal->GetMethod();
-            break;
-        }
-        case compiler::LiteralTag::ASYNC_GENERATOR_METHOD: {
-            valueLit.tag = panda_file::LiteralTag::ASYNCGENERATORMETHOD;
-            valueLit.value = literal->GetMethod();
-            break;
-        }
         case compiler::LiteralTag::NULL_VALUE: {
             valueLit.tag = panda_file::LiteralTag::NULLVALUE;
             valueLit.value = static_cast<uint8_t>(0);
             break;
         }
         default:
-            UNREACHABLE();
-            break;
+            return TransformMethodLiterals(literal);
     }
 
     tagLit.tag = panda_file::LiteralTag::TAGVALUE;
@@ -268,9 +287,10 @@ void FunctionEmitter::GenSourceFileDebugInfo(pandasm::Function *func)
 }
 
 static void GenLocalVariableInfo(pandasm::debuginfo::LocalVariable &variableDebug, varbinder::Variable *var,
-                                 uint32_t start, uint32_t varsLength, uint32_t totalRegsNum,
-                                 const ScriptExtension extension)
+                                 std::tuple<uint32_t, uint32_t, uint32_t> info, const ScriptExtension extension)
 {
+    const auto [start, varsLength, totalRegsNum] = info;
+
     variableDebug.name = var->Name().Mutf8();
 
     if (extension == ScriptExtension::JS) {
@@ -289,6 +309,35 @@ static void GenLocalVariableInfo(pandasm::debuginfo::LocalVariable &variableDebu
     variableDebug.length = static_cast<uint32_t>(varsLength);
 }
 
+void FunctionEmitter::GenScopeVariableInfoEnd(pandasm::Function *func, const varbinder::Scope *scope, uint32_t count,
+                                              uint32_t start) const
+{
+    const auto extension = cg_->VarBinder()->Program()->Extension();
+    auto varsLength = static_cast<uint32_t>(count - start + 1);
+
+    if (scope->IsFunctionScope()) {
+        for (auto *param : scope->AsFunctionScope()->ParamScope()->Params()) {
+            auto &variableDebug = func->localVariableDebug.emplace_back();
+            GenLocalVariableInfo(variableDebug, param, std::make_tuple(start, varsLength, cg_->TotalRegsNum()),
+                                 extension);
+        }
+    }
+    const auto &unsortedBindings = scope->Bindings();
+    std::map<util::StringView, es2panda::varbinder::Variable *> bindings(unsortedBindings.begin(),
+                                                                         unsortedBindings.end());
+    for (const auto &[_, variable] : bindings) {
+        (void)_;
+        if (!variable->IsLocalVariable() || variable->LexicalBound() || variable->Declaration()->IsParameterDecl() ||
+            variable->Declaration()->IsTypeAliasDecl()) {
+            continue;
+        }
+
+        auto &variableDebug = func->localVariableDebug.emplace_back();
+        GenLocalVariableInfo(variableDebug, variable, std::make_tuple(start, varsLength, cg_->TotalRegsNum()),
+                             extension);
+    }
+}
+
 void FunctionEmitter::GenScopeVariableInfo(pandasm::Function *func, const varbinder::Scope *scope) const
 {
     const auto *startIns = scope->ScopeStart();
@@ -297,35 +346,11 @@ void FunctionEmitter::GenScopeVariableInfo(pandasm::Function *func, const varbin
     uint32_t start = 0;
     uint32_t count = 0;
 
-    const auto extension = cg_->VarBinder()->Program()->Extension();
-
     for (const auto *it : cg_->Insns()) {
         if (startIns == it) {
             start = count;
         } else if (endIns == it) {
-            auto varsLength = static_cast<uint32_t>(count - start + 1);
-
-            if (scope->IsFunctionScope()) {
-                for (auto *param : scope->AsFunctionScope()->ParamScope()->Params()) {
-                    auto &variableDebug = func->localVariableDebug.emplace_back();
-                    GenLocalVariableInfo(variableDebug, param, start, varsLength, cg_->TotalRegsNum(), extension);
-                }
-            }
-            const auto &unsortedBindings = scope->Bindings();
-            std::map<util::StringView, es2panda::varbinder::Variable *> bindings(unsortedBindings.begin(),
-                                                                                 unsortedBindings.end());
-            for (const auto &[_, variable] : bindings) {
-                (void)_;
-                if (!variable->IsLocalVariable() || variable->LexicalBound() ||
-                    variable->Declaration()->IsParameterDecl() || variable->Declaration()->IsTypeAliasDecl()) {
-                    continue;
-                }
-
-                auto &variableDebug = func->localVariableDebug.emplace_back();
-                GenLocalVariableInfo(variableDebug, variable, start, varsLength, cg_->TotalRegsNum(), extension);
-            }
-
-            break;
+            GenScopeVariableInfoEnd(func, scope, count, start);
         }
 
         count++;

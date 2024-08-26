@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import q from 'assert';
-const { addTest: f, subtractTest: g } = require('./exportsApi3_toplevel');
-q(f(1, 2) == 3, 'success');
-q(g(3, 1) == 2, 'success');
+import a1 from 'assert';
+const { addTest: b1, subtractTest: c1 } = require('./exportsApi3_toplevel');
+a1(b1(1, 2) == 3, 'success');
+a1(c1(3, 1) == 2, 'success');

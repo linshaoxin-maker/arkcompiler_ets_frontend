@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+/* eslint prefer-named-capture-group: 0 */
+
 import type * as ts from 'typescript';
 import type { DiagnosticChecker } from './DiagnosticChecker';
 
@@ -100,7 +102,7 @@ export class LibraryTypeCallDiagnosticChecker implements DiagnosticChecker {
     }
 
     for (const msgChain of this.filteredDiagnosticMessages) {
-      if (typeof msgText == 'string') {
+      if (typeof msgText === 'string') {
         if (msgText === msgChain.messageText) {
           return false;
         }
@@ -140,7 +142,7 @@ export class LibraryTypeCallDiagnosticChecker implements DiagnosticChecker {
       return false;
     }
 
-    if (typeof msgText == 'string') {
+    if (typeof msgText === 'string') {
       return this.checkMessageText(msgText);
     }
 

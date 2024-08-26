@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 const assert = require('assert');
-const m5 = require('./xcommonjs-exports_1');
-assert.strictEqual(m5.v3, 1);
-assert.strictEqual(m5.w3, 2);
-assert.strictEqual(m5.x3(), 'Hello, world!');
-let n5 = new m5.n4();
-assert.strictEqual(n5.y3, '00001');
-assert.strictEqual(n5.g4.i4, 'jack3');
-assert.strictEqual(n5.g4.m4, 12);
-let o5 = new m5.o4();
-o5.r4 = 16;
-assert.strictEqual(o5.q4, 11);
-assert.strictEqual(o5.s4(), 16);
+const i5 = require('./xcommonjs-exports_1');
+assert.strictEqual(i5.u3, 1);
+assert.strictEqual(i5.v3, 2);
+assert.strictEqual(i5.g4(), 'Hello, world!');
+let j5 = new i5.f5();
+assert.strictEqual(j5.h4, '00001');
+assert.strictEqual(j5.i4.j4, 'jack3');
+assert.strictEqual(j5.i4.l4, 12);
+let k5 = new i5.s4();
+k5.u4 = 16;
+assert.strictEqual(k5.t4, 11);
+assert.strictEqual(k5.v4(), 16);

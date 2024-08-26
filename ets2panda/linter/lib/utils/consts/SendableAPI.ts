@@ -13,4 +13,12 @@
  * limitations under the License.
  */
 
+import * as ts from 'typescript';
+
 export const SENDABLE_DECORATOR = 'Sendable';
+
+export const SENDABLE_DECORATOR_NODES = [
+  ts.SyntaxKind.ClassDeclaration,
+  ts.SyntaxKind.FunctionDeclaration,
+  ts.SyntaxKind.TypeAliasDeclaration
+];

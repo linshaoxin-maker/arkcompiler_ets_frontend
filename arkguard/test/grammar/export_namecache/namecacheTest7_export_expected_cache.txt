@@ -1,0 +1,23 @@
+{
+  "IdentifierCache": {
+    "#PI": "PI",
+    "#Student": "h",
+    "#Lesson": "i",
+    "#customType": "j",
+    "#times": "k",
+    "Student#$0#name": "l",
+    "Student#$0#age": "m",
+    "multiply#a": "n",
+    "multiply#b": "o",
+    "subtract#a": "p",
+    "subtract#b": "q",
+    "add#a": "r",
+    "add#b": "s",
+    "#add:17:19": "add",
+    "#subtract:21:23": "g",
+    "#multiply:25:27": "multiply"
+  },
+  "MemberMethodCache": {
+    "Student:36:39": "h"
+  }
+}

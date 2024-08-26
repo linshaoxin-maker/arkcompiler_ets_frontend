@@ -23,6 +23,8 @@
 namespace ark::es2panda::parser {
 class Program;
 
+using ENUMBITOPS_OPERATORS;
+
 enum class ParserStatus : uint64_t {
     NO_OPTS = 0U,
     DIRECT_EVAL = 1U << 0U,
@@ -61,14 +63,22 @@ enum class ParserStatus : uint64_t {
     IN_EXTENSION_FUNCTION = 1U << 30U,
     FUNCTION_HAS_RETURN_STATEMENT = 1U << 31U,
     IN_NAMESPACE = 1ULL << 32ULL,
+
+    ALLOW_DEFAULT_VALUE = 1ULL << 33ULL,
 };
 
-DEFINE_BITOPS(ParserStatus)
+}  // namespace ark::es2panda::parser
+
+template <>
+struct enumbitops::IsAllowedType<ark::es2panda::parser::ParserStatus> : std::true_type {
+};
+
+namespace ark::es2panda::parser {
 
 class ParserContext {
 public:
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    inline static constexpr char const DEFAULT_SOURCE_FILE[] = "<auxiliary_tmp>.ets";
+    inline static constexpr char const DEFAULT_SOURCE_FILE[] = "<auxiliary_tmp>.sts";
 
     explicit ParserContext(const Program *program, ParserStatus status);
 

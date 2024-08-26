@@ -31,17 +31,6 @@ PandaGen *JSCompiler::GetPandaGen() const
     return static_cast<PandaGen *>(GetCodeGen());
 }
 
-// from as folder
-void JSCompiler::Compile([[maybe_unused]] const ir::NamedType *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::PrefixAssertionExpression *expr) const
-{
-    UNREACHABLE();
-}
-
 // from base folder
 void JSCompiler::Compile(const ir::CatchClause *st) const
 {
@@ -71,6 +60,67 @@ static compiler::VReg CompileHeritageClause(compiler::PandaGen *pg, const ir::Cl
     return baseReg;
 }
 
+static void CreatePrivateElement(const ir::ClassElement *prop, const ir::MethodDefinition *propMethod,
+                                 compiler::LiteralBuffer &privateBuf, util::StringView name)
+{
+    privateBuf.emplace_back(static_cast<uint32_t>(prop->ToPrivateFieldKind(propMethod->IsStatic())));
+    privateBuf.emplace_back(name);
+
+    const ir::ScriptFunction *func = propMethod->Value()->AsFunctionExpression()->Function();
+    compiler::LiteralTag tag = compiler::LiteralTag::METHOD;
+    bool isAsyncFunc = func->IsAsyncFunc();
+    if (isAsyncFunc && func->IsGenerator()) {
+        tag = compiler::LiteralTag::ASYNC_GENERATOR_METHOD;
+    } else if (isAsyncFunc && !func->IsGenerator()) {
+        tag = compiler::LiteralTag::ASYNC_METHOD;
+    } else if (!isAsyncFunc && func->IsGenerator()) {
+        tag = compiler::LiteralTag::GENERATOR_METHOD;
+    }
+
+    privateBuf.emplace_back(tag, func->Scope()->InternalName());
+}
+
+compiler::Literal PropertyMethodKind(const ir::MethodDefinition *propMethod, util::BitSet &compiled, size_t i)
+{
+    compiler::Literal value {};
+    switch (propMethod->Kind()) {
+        case ir::MethodDefinitionKind::METHOD: {
+            const ir::FunctionExpression *func = propMethod->Value()->AsFunctionExpression();
+            const util::StringView &internalName = func->Function()->Scope()->InternalName();
+
+            value = compiler::Literal(compiler::LiteralTag::METHOD, internalName);
+            compiled.Set(i);
+            break;
+        }
+        case ir::MethodDefinitionKind::GET:
+        case ir::MethodDefinitionKind::SET: {
+            value = compiler::Literal::NullLiteral();
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+    return value;
+}
+
+static std::tuple<int32_t, compiler::LiteralBuffer> CreateClassStaticPropertiesBuf(compiler::LiteralBuffer &buf,
+                                                                                   compiler::LiteralBuffer &privateBuf,
+                                                                                   compiler::LiteralBuffer &staticBuf,
+                                                                                   compiler::PandaGen *pg)
+{
+    uint32_t litPairs = buf.size() / 2;
+
+    /* Static items are stored at the end of the buffer */
+    buf.insert(buf.end(), staticBuf.begin(), staticBuf.end());
+
+    /* The last literal item represents the offset of the first static property. The regular property literal count
+     * is divided by 2 as key/value pairs count as one. */
+    buf.emplace_back(litPairs);
+
+    return {pg->AddLiteralBuffer(std::move(buf)), privateBuf};
+}
+
 // NOLINTNEXTLINE(google-runtime-references)
 static std::tuple<int32_t, compiler::LiteralBuffer> CreateClassStaticProperties(
     compiler::PandaGen *pg, util::BitSet &compiled, const ArenaVector<ir::AstNode *> &properties)
@@ -89,13 +139,13 @@ static std::tuple<int32_t, compiler::LiteralBuffer> CreateClassStaticProperties(
             continue;
         }
 
-        if (prop->IsClassProperty()) {
+        if (prop->IsClassProperty() && prop->IsPrivateElement()) {
             bool isStatic = prop->IsStatic();
-            if (prop->IsPrivateElement()) {
-                privateBuf.emplace_back(static_cast<uint32_t>(prop->ToPrivateFieldKind(isStatic)));
-                privateBuf.emplace_back(prop->Id()->Name());
-                continue;
-            }
+            privateBuf.emplace_back(static_cast<uint32_t>(prop->ToPrivateFieldKind(isStatic)));
+            privateBuf.emplace_back(prop->Id()->Name());
+            continue;
+        }
+        if (prop->IsClassProperty() && !prop->IsPrivateElement()) {
             continue;
         }
 
@@ -113,23 +163,7 @@ static std::tuple<int32_t, compiler::LiteralBuffer> CreateClassStaticProperties(
         auto &nameMap = prop->IsStatic() ? staticPropNameMap : propNameMap;
 
         if (prop->IsPrivateElement()) {
-            privateBuf.emplace_back(static_cast<uint32_t>(prop->ToPrivateFieldKind(propMethod->IsStatic())));
-            privateBuf.emplace_back(name);
-
-            const ir::ScriptFunction *func = propMethod->Value()->AsFunctionExpression()->Function();
-
-            compiler::LiteralTag tag = compiler::LiteralTag::METHOD;
-            if (func->IsAsyncFunc()) {
-                if (func->IsGenerator()) {
-                    tag = compiler::LiteralTag::ASYNC_GENERATOR_METHOD;
-                } else {
-                    tag = compiler::LiteralTag::ASYNC_METHOD;
-                }
-            } else if (func->IsGenerator()) {
-                tag = compiler::LiteralTag::GENERATOR_METHOD;
-            }
-
-            privateBuf.emplace_back(tag, func->Scope()->InternalName());
+            CreatePrivateElement(prop, propMethod, privateBuf, name);
             compiled.Set(i);
             continue;
         }
@@ -147,40 +181,12 @@ static std::tuple<int32_t, compiler::LiteralBuffer> CreateClassStaticProperties(
             bufferPos = res.first->second;
         }
 
-        compiler::Literal value {};
-
-        switch (propMethod->Kind()) {
-            case ir::MethodDefinitionKind::METHOD: {
-                const ir::FunctionExpression *func = propMethod->Value()->AsFunctionExpression();
-                const util::StringView &internalName = func->Function()->Scope()->InternalName();
-
-                value = compiler::Literal(compiler::LiteralTag::METHOD, internalName);
-                compiled.Set(i);
-                break;
-            }
-            case ir::MethodDefinitionKind::GET:
-            case ir::MethodDefinitionKind::SET: {
-                value = compiler::Literal::NullLiteral();
-                break;
-            }
-            default: {
-                UNREACHABLE();
-            }
-        }
+        compiler::Literal value = PropertyMethodKind(propMethod, compiled, i);
 
         literalBuf[bufferPos + 1] = std::move(value);
     }
 
-    uint32_t litPairs = buf.size() / 2;
-
-    /* Static items are stored at the end of the buffer */
-    buf.insert(buf.end(), staticBuf.begin(), staticBuf.end());
-
-    /* The last literal item represents the offset of the first static property. The regular property literal count
-     * is divided by 2 as key/value pairs count as one. */
-    buf.emplace_back(litPairs);
-
-    return {pg->AddLiteralBuffer(std::move(buf)), privateBuf};
+    return CreateClassStaticPropertiesBuf(buf, privateBuf, staticBuf, pg);
 }
 
 static void CompileStaticFieldInitializers(compiler::PandaGen *pg, compiler::VReg classReg,
@@ -248,6 +254,52 @@ static void CompileStaticFieldInitializers(compiler::PandaGen *pg, compiler::VRe
     }
 }
 
+static void CompilePropertyKind(const ir::MethodDefinition *prop, compiler::VReg dest, compiler::PandaGen *pg,
+                                const ir::ClassDefinition *node)
+{
+    switch (prop->Kind()) {
+        case ir::MethodDefinitionKind::METHOD: {
+            compiler::Operand key = pg->ToOwnPropertyKey(prop->Key(), prop->IsComputed());
+
+            pg->LoadAccumulator(node, dest);
+            const ir::FunctionExpression *func = prop->Value()->AsFunctionExpression();
+            func->Compile(pg);
+
+            pg->StoreOwnProperty(prop->Value()->Parent(), dest, key);
+            break;
+        }
+        case ir::MethodDefinitionKind::GET:
+        case ir::MethodDefinitionKind::SET: {
+            compiler::VReg keyReg = pg->LoadPropertyKey(prop->Key(), prop->IsComputed());
+
+            compiler::VReg undef = pg->AllocReg();
+            pg->LoadConst(node, compiler::Constant::JS_UNDEFINED);
+            pg->StoreAccumulator(node, undef);
+
+            compiler::VReg getter = undef;
+            compiler::VReg setter = undef;
+
+            pg->LoadAccumulator(node, dest);
+
+            compiler::VReg accessor = pg->AllocReg();
+            prop->Value()->Compile(pg);
+            pg->StoreAccumulator(prop->Value(), accessor);
+
+            if (prop->Kind() == ir::MethodDefinitionKind::GET) {
+                getter = accessor;
+            } else {
+                setter = accessor;
+            }
+
+            pg->DefineGetterSetterByValue(node, std::make_tuple(dest, keyReg, getter, setter), prop->IsComputed());
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+}
+
 static void CompileMissingProperties(compiler::PandaGen *pg, const util::BitSet &compiled, compiler::VReg classReg,
                                      const ir::ClassDefinition *node)
 {
@@ -279,48 +331,7 @@ static void CompileMissingProperties(compiler::PandaGen *pg, const util::BitSet 
             const ir::MethodDefinition *prop = properties[i]->AsMethodDefinition();
             compiler::VReg dest = prop->IsStatic() ? classReg : protoReg;
             compiler::RegScope rs(pg);
-
-            switch (prop->Kind()) {
-                case ir::MethodDefinitionKind::METHOD: {
-                    compiler::Operand key = pg->ToOwnPropertyKey(prop->Key(), prop->IsComputed());
-
-                    pg->LoadAccumulator(node, dest);
-                    const ir::FunctionExpression *func = prop->Value()->AsFunctionExpression();
-                    func->Compile(pg);
-
-                    pg->StoreOwnProperty(prop->Value()->Parent(), dest, key);
-                    break;
-                }
-                case ir::MethodDefinitionKind::GET:
-                case ir::MethodDefinitionKind::SET: {
-                    compiler::VReg keyReg = pg->LoadPropertyKey(prop->Key(), prop->IsComputed());
-
-                    compiler::VReg undef = pg->AllocReg();
-                    pg->LoadConst(node, compiler::Constant::JS_UNDEFINED);
-                    pg->StoreAccumulator(node, undef);
-
-                    compiler::VReg getter = undef;
-                    compiler::VReg setter = undef;
-
-                    pg->LoadAccumulator(node, dest);
-
-                    compiler::VReg accessor = pg->AllocReg();
-                    prop->Value()->Compile(pg);
-                    pg->StoreAccumulator(prop->Value(), accessor);
-
-                    if (prop->Kind() == ir::MethodDefinitionKind::GET) {
-                        getter = accessor;
-                    } else {
-                        setter = accessor;
-                    }
-
-                    pg->DefineGetterSetterByValue(node, dest, keyReg, getter, setter, prop->IsComputed());
-                    break;
-                }
-                default: {
-                    UNREACHABLE();
-                }
-            }
+            CompilePropertyKind(prop, dest, pg, node);
 
             continue;
         }
@@ -395,21 +406,6 @@ void JSCompiler::Compile(const ir::ClassDefinition *node) const
     pg->LoadAccumulator(node, classReg);
 }
 
-void JSCompiler::Compile([[maybe_unused]] const ir::ClassProperty *st) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ClassStaticBlock *st) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::Decorator *st) const
-{
-    UNREACHABLE();
-}
-
 void JSCompiler::Compile(const ir::MetaProperty *expr) const
 {
     PandaGen *pg = GetPandaGen();
@@ -422,155 +418,6 @@ void JSCompiler::Compile(const ir::MetaProperty *expr) const
         // NOTE
         pg->Unimplemented();
     }
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::MethodDefinition *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::Property *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ScriptFunction *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::SpreadElement *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TemplateElement *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSIndexSignature *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSMethodSignature *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSPropertySignature *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSSignatureDeclaration *node) const
-{
-    UNREACHABLE();
-}
-// from ets folder
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSScript *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSClassLiteral *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSFunctionType *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile(const ir::ETSTuple *expr) const
-{
-    (void)expr;
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSImportDeclaration *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSReExportDeclaration *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSLaunchExpression *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSNewArrayInstanceExpression *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSNewClassInstanceExpression *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSNewMultiDimArrayInstanceExpression *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSPackageDeclaration *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSParameterExpression *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSPrimitiveType *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSStructDeclaration *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSTypeReference *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSTypeReferencePart *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile(const ir::ETSNullType *node) const
-{
-    (void)node;
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile(const ir::ETSUndefinedType *node) const
-{
-    (void)node;
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile(const ir::ETSUnionType *node) const
-{
-    (void)node;
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ETSWildcardType *expr) const
-{
-    UNREACHABLE();
 }
 
 // JSCompiler::compile methods for EXPRESSIONS in alphabetical order
@@ -701,12 +548,6 @@ static compiler::VReg CreateSpreadArguments(compiler::PandaGen *pg, const ir::Ca
     pg->CreateArray(expr, expr->Arguments(), argsObj);
 
     return argsObj;
-}
-
-void JSCompiler::Compile(const ir::BlockExpression *expr) const
-{
-    (void)expr;
-    UNREACHABLE();
 }
 
 void CompileSuperExprWithoutSpread(PandaGen *pg, const ir::CallExpression *expr)
@@ -1059,6 +900,60 @@ void JSCompiler::CompileStaticProperties(compiler::PandaGen *pg, util::BitSet *c
     }
 }
 
+void CompileRemainingPropertyKind(const ir::Property *prop, compiler::VReg objReg, compiler::PandaGen *pg,
+                                  const ir::ObjectExpression *expr)
+{
+    switch (prop->Kind()) {
+        case ir::PropertyKind::GET:
+        case ir::PropertyKind::SET: {
+            compiler::VReg key = pg->LoadPropertyKey(prop->Key(), prop->IsComputed());
+
+            compiler::VReg undef = pg->AllocReg();
+            pg->LoadConst(expr, compiler::Constant::JS_UNDEFINED);
+            pg->StoreAccumulator(expr, undef);
+
+            compiler::VReg getter = undef;
+            compiler::VReg setter = undef;
+
+            compiler::VReg accessor = pg->AllocReg();
+            pg->LoadAccumulator(prop->Value(), objReg);
+            prop->Value()->Compile(pg);
+            pg->StoreAccumulator(prop->Value(), accessor);
+
+            if (prop->Kind() == ir::PropertyKind::GET) {
+                getter = accessor;
+            } else {
+                setter = accessor;
+            }
+
+            pg->DefineGetterSetterByValue(expr, std::make_tuple(objReg, key, getter, setter), prop->IsComputed());
+            break;
+        }
+        case ir::PropertyKind::INIT: {
+            compiler::Operand key = pg->ToOwnPropertyKey(prop->Key(), prop->IsComputed());
+
+            if (prop->IsMethod()) {
+                pg->LoadAccumulator(prop->Value(), objReg);
+            }
+
+            prop->Value()->Compile(pg);
+            pg->StoreOwnProperty(expr, objReg, key);
+            break;
+        }
+        case ir::PropertyKind::PROTO: {
+            prop->Value()->Compile(pg);
+            compiler::VReg proto = pg->AllocReg();
+            pg->StoreAccumulator(expr, proto);
+
+            pg->SetObjectWithProto(expr, proto, objReg);
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+}
+
 void JSCompiler::CompileRemainingProperties(compiler::PandaGen *pg, const util::BitSet *compiled,
                                             const ir::ObjectExpression *expr) const
 {
@@ -1086,69 +981,10 @@ void JSCompiler::CompileRemainingProperties(compiler::PandaGen *pg, const util::
         }
 
         const ir::Property *prop = expr->Properties()[i]->AsProperty();
-
-        switch (prop->Kind()) {
-            case ir::PropertyKind::GET:
-            case ir::PropertyKind::SET: {
-                compiler::VReg key = pg->LoadPropertyKey(prop->Key(), prop->IsComputed());
-
-                compiler::VReg undef = pg->AllocReg();
-                pg->LoadConst(expr, compiler::Constant::JS_UNDEFINED);
-                pg->StoreAccumulator(expr, undef);
-
-                compiler::VReg getter = undef;
-                compiler::VReg setter = undef;
-
-                compiler::VReg accessor = pg->AllocReg();
-                pg->LoadAccumulator(prop->Value(), objReg);
-                prop->Value()->Compile(pg);
-                pg->StoreAccumulator(prop->Value(), accessor);
-
-                if (prop->Kind() == ir::PropertyKind::GET) {
-                    getter = accessor;
-                } else {
-                    setter = accessor;
-                }
-
-                pg->DefineGetterSetterByValue(expr, objReg, key, getter, setter, prop->IsComputed());
-                break;
-            }
-            case ir::PropertyKind::INIT: {
-                compiler::Operand key = pg->ToOwnPropertyKey(prop->Key(), prop->IsComputed());
-
-                if (prop->IsMethod()) {
-                    pg->LoadAccumulator(prop->Value(), objReg);
-                }
-
-                prop->Value()->Compile(pg);
-                pg->StoreOwnProperty(expr, objReg, key);
-                break;
-            }
-            case ir::PropertyKind::PROTO: {
-                prop->Value()->Compile(pg);
-                compiler::VReg proto = pg->AllocReg();
-                pg->StoreAccumulator(expr, proto);
-
-                pg->SetObjectWithProto(expr, proto, objReg);
-                break;
-            }
-            default: {
-                UNREACHABLE();
-            }
-        }
+        CompileRemainingPropertyKind(prop, objReg, pg, expr);
     }
 
     pg->LoadAccumulator(expr, objReg);
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::OpaqueTypeNode *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::OmittedExpression *expr) const
-{
-    UNREACHABLE();
 }
 
 void JSCompiler::Compile(const ir::SequenceExpression *expr) const
@@ -1375,11 +1211,6 @@ void JSCompiler::Compile(const ir::BooleanLiteral *expr) const
     pg->LoadConst(expr, expr->Value() ? compiler::Constant::JS_TRUE : compiler::Constant::JS_FALSE);
 }
 
-void JSCompiler::Compile([[maybe_unused]] const ir::CharLiteral *expr) const
-{
-    UNREACHABLE();
-}
-
 void JSCompiler::Compile(const ir::NullLiteral *expr) const
 {
     PandaGen *pg = GetPandaGen();
@@ -1412,12 +1243,6 @@ void JSCompiler::Compile(const ir::StringLiteral *expr) const
     pg->LoadAccumulatorString(expr, expr->Str());
 }
 
-void JSCompiler::Compile(const ir::UndefinedLiteral *expr) const
-{
-    (void)expr;
-    UNREACHABLE();
-}
-
 // Compile methods for MODULE-related nodes in alphabetical order
 void JSCompiler::Compile([[maybe_unused]] const ir::ExportAllDeclaration *st) const {}
 
@@ -1438,32 +1263,7 @@ void JSCompiler::Compile(const ir::ExportNamedDeclaration *st) const
     st->Decl()->Compile(pg);
 }
 
-void JSCompiler::Compile([[maybe_unused]] const ir::ExportSpecifier *st) const
-{
-    UNREACHABLE();
-}
-
 void JSCompiler::Compile([[maybe_unused]] const ir::ImportDeclaration *st) const {}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ImportDefaultSpecifier *st) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ImportNamespaceSpecifier *st) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::ImportSpecifier *st) const
-{
-    UNREACHABLE();
-}
-// Compile methods for STATEMENTS in alphabetical order
-void JSCompiler::Compile([[maybe_unused]] const ir::AssertStatement *st) const
-{
-    UNREACHABLE();
-}
 
 void JSCompiler::Compile(const ir::BlockStatement *st) const
 {
@@ -1713,11 +1513,6 @@ void JSCompiler::Compile(const ir::ReturnStatement *st) const
     }
 }
 
-void JSCompiler::Compile([[maybe_unused]] const ir::SwitchCaseStatement *st) const
-{
-    UNREACHABLE();
-}
-
 static void CompileImpl(const ir::SwitchStatement *self, PandaGen *cg)
 {
     compiler::LocalRegScope lrs(cg, self->Scope());
@@ -1927,256 +1722,4 @@ void JSCompiler::Compile(const ir::WhileStatement *st) const
     PandaGen *pg = GetPandaGen();
     CompileImpl(st, pg);
 }
-
-// from ts folder
-void JSCompiler::Compile([[maybe_unused]] const ir::TSAnyKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSArrayType *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSAsExpression *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSBigintKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSBooleanKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSClassImplements *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSConditionalType *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSConstructorType *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSEnumDeclaration *st) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSEnumMember *st) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSExternalModuleReference *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSFunctionType *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSImportEqualsDeclaration *st) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSImportType *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSIndexedAccessType *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSInferType *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSInterfaceBody *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSInterfaceDeclaration *st) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSInterfaceHeritage *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSIntersectionType *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSLiteralType *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSMappedType *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSModuleBlock *st) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSModuleDeclaration *st) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSNamedTupleMember *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSNeverKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSNonNullExpression *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSNullKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSNumberKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSObjectKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSParameterProperty *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSParenthesizedType *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSQualifiedName *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSStringKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSThisType *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSTupleType *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSTypeAliasDeclaration *st) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSTypeAssertion *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSTypeLiteral *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSTypeOperator *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSTypeParameter *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSTypeParameterDeclaration *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSTypeParameterInstantiation *expr) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSTypePredicate *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSTypeQuery *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSTypeReference *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSUndefinedKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSUnionType *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSUnknownKeyword *node) const
-{
-    UNREACHABLE();
-}
-
-void JSCompiler::Compile([[maybe_unused]] const ir::TSVoidKeyword *node) const
-{
-    UNREACHABLE();
-}
-
 }  // namespace ark::es2panda::compiler

@@ -13,37 +13,43 @@
  * limitations under the License.
  */
 
-import * as ts from 'typescript';
 import * as path from 'node:path';
-import { STANDARD_LIBRARIES } from './consts/StandardLibraries';
-import { TYPED_ARRAYS } from './consts/TypedArrays';
-import { ES_OBJECT } from './consts/ESObject';
-import { isIntrinsicObjectType } from './functions/isIntrinsicObjectType';
-import { isStdLibraryType } from './functions/IsStdLibrary';
-import { isStructDeclaration, isStructDeclarationKind } from './functions/IsStruct';
-import { pathContainsDirectory } from './functions/PathHelper';
-import { ARKTS_IGNORE_DIRS, ARKTS_IGNORE_FILES } from './consts/ArktsIgnorePaths';
-import { isAssignmentOperator } from './functions/isAssignmentOperator';
-import { forEachNodeInSubtree } from './functions/ForEachNodeInSubtree';
-import { FaultID } from '../Problems';
+import * as ts from 'typescript';
 import type { IsEtsFileCallback } from '../IsEtsFileCallback';
+import { FaultID } from '../Problems';
+import { ARKTS_IGNORE_DIRS, ARKTS_IGNORE_FILES } from './consts/ArktsIgnorePaths';
+import { ES_OBJECT } from './consts/ESObject';
 import { SENDABLE_DECORATOR } from './consts/SendableAPI';
 import { USE_SHARED } from './consts/SharedModuleAPI';
+import { STANDARD_LIBRARIES } from './consts/StandardLibraries';
 import {
   ARKTS_COLLECTIONS_D_ETS,
-  COLLECTIONS_NAMESPACE,
   ARKTS_LANG_D_ETS,
-  LANG_NAMESPACE,
-  ISENDABLE_TYPE
+  COLLECTIONS_NAMESPACE,
+  ISENDABLE_TYPE,
+  LANG_NAMESPACE
 } from './consts/SupportedDetsIndexableTypes';
+import { TYPED_ARRAYS } from './consts/TypedArrays';
+import { forEachNodeInSubtree } from './functions/ForEachNodeInSubtree';
+import { getScriptKind } from './functions/GetScriptKind';
+import { isStdLibraryType } from './functions/IsStdLibrary';
+import { isStructDeclaration, isStructDeclarationKind } from './functions/IsStruct';
 import type { NameGenerator } from './functions/NameGenerator';
+import { srcFilePathContainsDirectory } from './functions/PathHelper';
+import { isAssignmentOperator } from './functions/isAssignmentOperator';
+import { isIntrinsicObjectType } from './functions/isIntrinsicObjectType';
+
+export const SYMBOL = 'Symbol';
+export const SYMBOL_CONSTRUCTOR = 'SymbolConstructor';
+const ITERATOR = 'iterator';
 
 export type CheckType = (this: TsUtils, t: ts.Type) => boolean;
 export class TsUtils {
   constructor(
     private readonly tsTypeChecker: ts.TypeChecker,
     private readonly testMode: boolean,
-    private readonly advancedClassChecks: boolean
+    private readonly advancedClassChecks: boolean,
+    private readonly useSdkLogic: boolean
   ) {}
 
   entityNameToString(name: ts.EntityName): string {
@@ -53,8 +59,8 @@ export class TsUtils {
     return this.entityNameToString(name.left) + this.entityNameToString(name.right);
   }
 
-  static isNumberLikeType(tsType: ts.Type): boolean {
-    if (tsType.isUnion()) {
+  isNumberLikeType(tsType: ts.Type): boolean {
+    if (!this.useSdkLogic && tsType.isUnion()) {
       for (const tsCompType of tsType.types) {
         if ((tsCompType.flags & ts.TypeFlags.NumberLike) === 0) {
           return false;
@@ -216,6 +222,20 @@ export class TsUtils {
     );
   }
 
+  static isPrimitiveLiteralType(type: ts.Type): boolean {
+    return !!(
+      type.flags &
+      (ts.TypeFlags.BooleanLiteral |
+        ts.TypeFlags.NumberLiteral |
+        ts.TypeFlags.StringLiteral |
+        ts.TypeFlags.BigIntLiteral)
+    );
+  }
+
+  static isPurePrimitiveLiteralType(type: ts.Type): boolean {
+    return TsUtils.isPrimitiveLiteralType(type) && !(type.flags & ts.TypeFlags.EnumLiteral);
+  }
+
   static isTypeSymbol(symbol: ts.Symbol | undefined): boolean {
     return (
       !!symbol &&
@@ -249,7 +269,13 @@ export class TsUtils {
       return false;
     }
     const name = this.tsTypeChecker.getFullyQualifiedName(symbol);
-    return this.isGlobalSymbol(symbol) && TYPED_ARRAYS.includes(name);
+    if (this.isGlobalSymbol(symbol) && TYPED_ARRAYS.includes(name)) {
+      return true;
+    }
+    const decl = TsUtils.getDeclaration(symbol);
+    return (
+      !!decl && TsUtils.isArkTSCollectionsClassOrInterfaceDeclaration(decl) && TYPED_ARRAYS.includes(symbol.getName())
+    );
   }
 
   isArray(tsType: ts.Type): boolean {
@@ -262,6 +288,7 @@ export class TsUtils {
 
   // does something similar to relatedByInheritanceOrIdentical function
   isOrDerivedFrom(tsType: ts.Type, checkType: CheckType, checkedBaseTypes?: Set<ts.Type>): boolean {
+    // eslint-disable-next-line no-param-reassign
     tsType = TsUtils.reduceReference(tsType);
 
     if (checkType.call(this, tsType)) {
@@ -273,6 +300,7 @@ export class TsUtils {
     }
 
     // Avoid type recursion in heritage by caching checked types.
+    // eslint-disable-next-line no-param-reassign
     (checkedBaseTypes ||= new Set<ts.Type>()).add(tsType);
 
     for (const tsTypeDecl of tsType.symbol.declarations) {
@@ -507,7 +535,9 @@ export class TsUtils {
 
   // Returns true if typeA is a subtype of typeB
   relatedByInheritanceOrIdentical(typeA: ts.Type, typeB: ts.Type): boolean {
+    // eslint-disable-next-line no-param-reassign
     typeA = TsUtils.reduceReference(typeA);
+    // eslint-disable-next-line no-param-reassign
     typeB = TsUtils.reduceReference(typeB);
 
     if (typeA === typeB || this.isObject(typeB)) {
@@ -516,8 +546,11 @@ export class TsUtils {
     if (!typeA.symbol?.declarations) {
       return false;
     }
-
+    const isBISendable = TsUtils.isISendableInterface(typeB);
     for (const typeADecl of typeA.symbol.declarations) {
+      if (isBISendable && ts.isClassDeclaration(typeADecl) && TsUtils.hasSendableDecorator(typeADecl)) {
+        return true;
+      }
       if (!ts.isClassDeclaration(typeADecl) && !ts.isInterfaceDeclaration(typeADecl) || !typeADecl.heritageClauses) {
         continue;
       }
@@ -528,7 +561,6 @@ export class TsUtils {
         }
       }
     }
-
     return false;
   }
 
@@ -539,12 +571,13 @@ export class TsUtils {
   private needToDeduceStructuralIdentityHandleUnions(
     lhsType: ts.Type,
     rhsType: ts.Type,
-    rhsExpr: ts.Expression
+    rhsExpr: ts.Expression,
+    isStrict: boolean
   ): boolean {
     if (rhsType.isUnion()) {
       // Each Class/Interface of the RHS union type must be compatible with LHS type.
       for (const compType of rhsType.types) {
-        if (this.needToDeduceStructuralIdentity(lhsType, compType, rhsExpr)) {
+        if (this.needToDeduceStructuralIdentity(lhsType, compType, rhsExpr, isStrict)) {
           return true;
         }
       }
@@ -553,7 +586,7 @@ export class TsUtils {
     if (lhsType.isUnion()) {
       // RHS type needs to be compatible with at least one type of the LHS union.
       for (const compType of lhsType.types) {
-        if (!this.needToDeduceStructuralIdentity(compType, rhsType, rhsExpr)) {
+        if (!this.needToDeduceStructuralIdentity(compType, rhsType, rhsExpr, isStrict)) {
           return false;
         }
       }
@@ -564,9 +597,16 @@ export class TsUtils {
   }
 
   // return true if two class types are not related by inheritance and structural identity check is needed
-  needToDeduceStructuralIdentity(lhsType: ts.Type, rhsType: ts.Type, rhsExpr: ts.Expression): boolean {
-    lhsType = TsUtils.getNonNullableType(lhsType);
-    rhsType = TsUtils.getNonNullableType(rhsType);
+  needToDeduceStructuralIdentity(
+    lhsType: ts.Type,
+    rhsType: ts.Type,
+    rhsExpr: ts.Expression,
+    isStrict: boolean = false
+  ): boolean {
+    // eslint-disable-next-line no-param-reassign
+    lhsType = this.getNonNullableType(lhsType);
+    // eslint-disable-next-line no-param-reassign
+    rhsType = this.getNonNullableType(rhsType);
     if (this.isLibraryType(lhsType)) {
       return false;
     }
@@ -578,7 +618,7 @@ export class TsUtils {
       return false;
     }
     if (rhsType.isUnion() || lhsType.isUnion()) {
-      return this.needToDeduceStructuralIdentityHandleUnions(lhsType, rhsType, rhsExpr);
+      return this.needToDeduceStructuralIdentityHandleUnions(lhsType, rhsType, rhsExpr, isStrict);
     }
     if (
       this.advancedClassChecks &&
@@ -589,11 +629,51 @@ export class TsUtils {
       // missing exact rule
       return true;
     }
+    // if isStrict, things like generics need to be checked
+    if (isStrict) {
+      if (TsUtils.isTypeReference(rhsType) && !!(rhsType.objectFlags & ts.ObjectFlags.ArrayLiteral)) {
+        // The 'arkts-sendable-obj-init' rule already exists. Wait for the new 'strict type' to be modified.
+        return false;
+      }
+      // eslint-disable-next-line no-param-reassign
+      lhsType = TsUtils.reduceReference(lhsType);
+      // eslint-disable-next-line no-param-reassign
+      rhsType = TsUtils.reduceReference(rhsType);
+    }
     return (
       lhsType.isClassOrInterface() &&
       rhsType.isClassOrInterface() &&
       !this.relatedByInheritanceOrIdentical(rhsType, lhsType)
     );
+  }
+
+  // Does the 'arkts-no-structure-typing' rule need to be strictly enforced to complete previously missed scenarios
+  needStrictMatchType(lhsType: ts.Type, rhsType: ts.Type): boolean {
+    if (this.isStrictSendableMatch(lhsType, rhsType)) {
+      return true;
+    }
+    // add other requirements with strict type requirements here
+    return false;
+  }
+
+  // For compatibility, left must all ClassOrInterface is sendable, right must has non-sendable ClassorInterface
+  private isStrictSendableMatch(lhsType: ts.Type, rhsType: ts.Type): boolean {
+    let isStrictLhs = false;
+    if (lhsType.isUnion()) {
+      for (let compType of lhsType.types) {
+        compType = TsUtils.reduceReference(compType);
+        if (!compType.isClassOrInterface()) {
+          continue;
+        }
+        if (!this.isSendableClassOrInterface(compType)) {
+          return false;
+        }
+        isStrictLhs = true;
+      }
+    } else {
+      isStrictLhs = this.isSendableClassOrInterface(lhsType);
+    }
+    return isStrictLhs && this.typeContainsNonSendableClassOrInterface(rhsType);
   }
 
   private processParentTypes(
@@ -621,11 +701,7 @@ export class TsUtils {
   ): boolean {
     for (const baseTypeExpr of parentTypes) {
       const baseType = TsUtils.reduceReference(this.tsTypeChecker.getTypeAtLocation(baseTypeExpr));
-      if (
-        baseType &&
-        !checkedBaseTypes.has(baseType) &&
-        this.isOrDerivedFrom(baseType, checkType, checkedBaseTypes)
-      ) {
+      if (baseType && !checkedBaseTypes.has(baseType) && this.isOrDerivedFrom(baseType, checkType, checkedBaseTypes)) {
         return true;
       }
     }
@@ -694,15 +770,18 @@ export class TsUtils {
     let hasDefaultCtor: boolean = false;
 
     type.symbol.members.forEach((value) => {
-      if ((value.flags & ts.SymbolFlags.Constructor) !== 0) {
-        hasCtor = true;
+      if ((value.flags & ts.SymbolFlags.Constructor) === 0) {
+        return;
+      }
+      hasCtor = true;
 
-        if (value.declarations !== undefined && value.declarations.length > 0) {
-          const declCtor = value.declarations[0] as ts.ConstructorDeclaration;
-          if (declCtor.parameters.length === 0) {
-            hasDefaultCtor = true;
-          }
-        }
+      if (value.declarations === undefined || value.declarations.length <= 0) {
+        return;
+      }
+
+      const declCtor = value.declarations[0] as ts.ConstructorDeclaration;
+      if (declCtor.parameters.length === 0) {
+        hasDefaultCtor = true;
       }
     });
 
@@ -726,6 +805,7 @@ export class TsUtils {
     if (!type) {
       return false;
     }
+    // eslint-disable-next-line no-param-reassign
     type = TsUtils.reduceReference(type);
     return (
       type.isClassOrInterface() &&
@@ -772,8 +852,9 @@ export class TsUtils {
     return false;
   }
 
-  static getNonNullableType(t: ts.Type): ts.Type {
-    if (TsUtils.isNullableUnionType(t)) {
+  getNonNullableType(t: ts.Type): ts.Type {
+    const isNullableUnionType = this.useSdkLogic ? t.isUnion() : TsUtils.isNullableUnionType(t);
+    if (isNullableUnionType) {
       return t.getNonNullableType();
     }
     return t;
@@ -793,7 +874,8 @@ export class TsUtils {
       return false;
     }
     // Always check with the non-nullable variant of lhs type.
-    lhsType = TsUtils.getNonNullableType(lhsType);
+    // eslint-disable-next-line no-param-reassign
+    lhsType = this.getNonNullableType(lhsType);
     if (lhsType.isUnion() && this.isObjectLiteralAssignableToUnion(lhsType, rhsExpr)) {
       return true;
     }
@@ -817,6 +899,7 @@ export class TsUtils {
     // For Partial<T>, Required<T>, Readonly<T> types, validate their argument type.
     if (this.isStdPartialType(lhsType) || this.isStdRequiredType(lhsType) || this.isStdReadonlyType(lhsType)) {
       if (lhsType.aliasTypeArguments && lhsType.aliasTypeArguments.length === 1) {
+        // eslint-disable-next-line no-param-reassign
         lhsType = lhsType.aliasTypeArguments[0];
       } else {
         return false;
@@ -838,9 +921,12 @@ export class TsUtils {
 
   private isDynamicObjectAssignedToStdType(lhsType: ts.Type, rhsExpr: ts.Expression): boolean {
     if (isStdLibraryType(lhsType) || TsUtils.isPrimitiveType(lhsType)) {
+      // eslint-disable-next-line no-nested-ternary
       const rhsSym = ts.isCallExpression(rhsExpr) ?
         this.getSymbolOfCallExpression(rhsExpr) :
-        this.trueSymbolAtLocation(rhsExpr);
+        this.useSdkLogic ?
+          this.tsTypeChecker.getSymbolAtLocation(rhsExpr) :
+          this.trueSymbolAtLocation(rhsExpr);
       if (rhsSym && this.isLibrarySymbol(rhsSym)) {
         return true;
       }
@@ -862,6 +948,7 @@ export class TsUtils {
 
   getPropertySymbol(type: ts.Type, prop: ts.PropertyAssignment): ts.Symbol | undefined {
     const propNameSymbol = this.tsTypeChecker.getSymbolAtLocation(prop.name);
+    // eslint-disable-next-line no-nested-ternary
     const propName = propNameSymbol ?
       ts.symbolName(propNameSymbol) :
       ts.isMemberName(prop.name) ?
@@ -880,15 +967,21 @@ export class TsUtils {
 
     const propType = this.tsTypeChecker.getTypeOfSymbolAtLocation(propSym, propSym.declarations[0]);
     const initExpr = TsUtils.unwrapParenthesized(prop.initializer);
+    const rhsType = this.tsTypeChecker.getTypeAtLocation(initExpr);
     if (ts.isObjectLiteralExpression(initExpr)) {
       if (!this.isObjectLiteralAssignable(propType, initExpr)) {
         return false;
       }
-    } else if (
-      this.needToDeduceStructuralIdentity(propType, this.tsTypeChecker.getTypeAtLocation(initExpr), initExpr)
-    ) {
+    } else {
       // Only check for structural sub-typing.
-      return false;
+      if (
+        this.needToDeduceStructuralIdentity(propType, rhsType, initExpr, this.needStrictMatchType(propType, rhsType))
+      ) {
+        return false;
+      }
+      if (this.isWrongSendableFunctionAssignment(propType, rhsType)) {
+        return false;
+      }
     }
 
     return true;
@@ -896,16 +989,18 @@ export class TsUtils {
 
   validateRecordObjectKeys(objectLiteral: ts.ObjectLiteralExpression): boolean {
     for (const prop of objectLiteral.properties) {
-      if (!prop.name) {
-        return false;
-      }
-      const isValidComputedProperty =
-        ts.isComputedPropertyName(prop.name) && this.isValidComputedPropertyName(prop.name, true);
-      if (!ts.isStringLiteral(prop.name) && !ts.isNumericLiteral(prop.name) && !isValidComputedProperty) {
+      if (!prop.name || !this.isValidRecordObjectLiteralKey(prop.name)) {
         return false;
       }
     }
     return true;
+  }
+
+  isValidRecordObjectLiteralKey(propName: ts.PropertyName): boolean {
+    if (ts.isComputedPropertyName(propName)) {
+      return this.isValidComputedPropertyName(propName, true);
+    }
+    return ts.isStringLiteral(propName) || ts.isNumericLiteral(propName);
   }
 
   private static isSupportedTypeNodeKind(kind: ts.SyntaxKind): boolean {
@@ -984,10 +1079,19 @@ export class TsUtils {
     return false;
   }
 
+  parentSymbolCache = new Map<ts.Symbol, string | undefined>();
+
   getParentSymbolName(symbol: ts.Symbol): string | undefined {
+    const cached = this.parentSymbolCache.get(symbol);
+    if (cached) {
+      return cached;
+    }
+
     const name = this.tsTypeChecker.getFullyQualifiedName(symbol);
     const dotPosition = name.lastIndexOf('.');
-    return dotPosition === -1 ? undefined : name.substring(0, dotPosition);
+    const result = dotPosition === -1 ? undefined : name.substring(0, dotPosition);
+    this.parentSymbolCache.set(symbol, result);
+    return result;
   }
 
   isGlobalSymbol(symbol: ts.Symbol): boolean {
@@ -997,11 +1101,25 @@ export class TsUtils {
 
   isSymbolAPI(symbol: ts.Symbol): boolean {
     const parentName = this.getParentSymbolName(symbol);
-    return !!parentName && (parentName === 'Symbol' || parentName === 'SymbolConstructor');
+    if (this.useSdkLogic) {
+      const name = parentName ? parentName : symbol.escapedName;
+      return name === SYMBOL || name === SYMBOL_CONSTRUCTOR;
+    }
+    return !!parentName && (parentName === SYMBOL || parentName === SYMBOL_CONSTRUCTOR);
   }
 
   isSymbolIterator(symbol: ts.Symbol): boolean {
-    return this.isSymbolAPI(symbol) && symbol.name === 'iterator';
+    if (this.useSdkLogic) {
+      const name = symbol.name;
+      const parName = this.getParentSymbolName(symbol);
+      return (parName === SYMBOL || parName === SYMBOL_CONSTRUCTOR) && name === ITERATOR;
+    }
+    return this.isSymbolAPI(symbol) && symbol.name === ITERATOR;
+  }
+
+  isSymbolIteratorExpression(expr: ts.Expression): boolean {
+    const symbol = this.trueSymbolAtLocation(expr);
+    return !!symbol && this.isSymbolIterator(symbol);
   }
 
   static isDefaultImport(importSpec: ts.ImportSpecifier): boolean {
@@ -1167,9 +1285,10 @@ export class TsUtils {
   }
 
   static getParameterPropertiesHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
-    const params = (nodeOrComment as ts.ConstructorDeclaration).parameters;
-    if (params.length) {
-      return [params[0].getStart(), params[params.length - 1].getEnd()];
+    const param = nodeOrComment as ts.ParameterDeclaration;
+    const modifier = TsUtils.getAccessModifier(ts.getModifiers(param));
+    if (modifier !== undefined) {
+      return [modifier.getStart(), modifier.getEnd()];
     }
     return undefined;
   }
@@ -1263,7 +1382,7 @@ export class TsUtils {
       const ext = path.extname(fileName).toLowerCase();
       const isThirdPartyCode =
         ARKTS_IGNORE_DIRS.some((ignore) => {
-          return pathContainsDirectory(path.normalize(fileName), ignore);
+          return srcFilePathContainsDirectory(srcFile, ignore);
         }) ||
         ARKTS_IGNORE_FILES.some((ignore) => {
           return path.basename(fileName) === ignore;
@@ -1298,6 +1417,7 @@ export class TsUtils {
      * Check the non-nullable version of type to eliminate 'undefined' type
      * from the union type elements.
      */
+    // eslint-disable-next-line no-param-reassign
     type = type.getNonNullableType();
 
     if (type.isUnion()) {
@@ -1605,8 +1725,7 @@ export class TsUtils {
   isValidComputedPropertyName(computedProperty: ts.ComputedPropertyName, isRecordObjectInitializer = false): boolean {
     const expr = computedProperty.expression;
     if (!isRecordObjectInitializer) {
-      const symbol = this.trueSymbolAtLocation(expr);
-      if (!!symbol && this.isSymbolIterator(symbol)) {
+      if (this.isSymbolIteratorExpression(expr)) {
         return true;
       }
     }
@@ -1614,24 +1733,41 @@ export class TsUtils {
     return ts.isStringLiteralLike(expr) || this.isEnumStringLiteral(computedProperty.expression);
   }
 
-  static skipPropertyInferredTypeCheck(decl: ts.PropertyDeclaration, sourceFile: ts.SourceFile | undefined,
-    isEtsFileCb: IsEtsFileCallback | undefined): boolean {
-    return !!sourceFile && !!isEtsFileCb && isEtsFileCb(sourceFile) && sourceFile.isDeclarationFile &&
-      !!decl.modifiers?.some((m) => { return m.kind === ts.SyntaxKind.PrivateKeyword; });
+  skipPropertyInferredTypeCheck(
+    decl: ts.PropertyDeclaration,
+    sourceFile: ts.SourceFile | undefined,
+    isEtsFileCb: IsEtsFileCallback | undefined
+  ): boolean {
+    if (!sourceFile) {
+      return false;
+    }
+
+    const isEts = this.useSdkLogic ?
+      getScriptKind(sourceFile) === ts.ScriptKind.ETS :
+      !!isEtsFileCb && isEtsFileCb(sourceFile);
+    return (
+      isEts &&
+      sourceFile.isDeclarationFile &&
+      !!decl.modifiers?.some((m) => {
+        return m.kind === ts.SyntaxKind.PrivateKeyword;
+      })
+    );
   }
 
-  static hasAccessModifier(decl: ts.HasModifiers): boolean {
+  hasAccessModifier(decl: ts.HasModifiers): boolean {
     const modifiers = ts.getModifiers(decl);
     return (
       !!modifiers &&
-      (TsUtils.hasModifier(modifiers, ts.SyntaxKind.PublicKeyword) ||
+      (this.useSdkLogic && TsUtils.hasModifier(modifiers, ts.SyntaxKind.ReadonlyKeyword) ||
+        TsUtils.hasModifier(modifiers, ts.SyntaxKind.PublicKeyword) ||
         TsUtils.hasModifier(modifiers, ts.SyntaxKind.ProtectedKeyword) ||
         TsUtils.hasModifier(modifiers, ts.SyntaxKind.PrivateKeyword))
     );
   }
 
   static getModifier(
-    modifiers: readonly ts.Modifier[] | undefined, modifierKind: ts.SyntaxKind
+    modifiers: readonly ts.Modifier[] | undefined,
+    modifierKind: ts.SyntaxKind
   ): ts.Modifier | undefined {
     if (!modifiers) {
       return undefined;
@@ -1642,9 +1778,11 @@ export class TsUtils {
   }
 
   static getAccessModifier(modifiers: readonly ts.Modifier[] | undefined): ts.Modifier | undefined {
-    return TsUtils.getModifier(modifiers, ts.SyntaxKind.PublicKeyword) ??
+    return (
+      TsUtils.getModifier(modifiers, ts.SyntaxKind.PublicKeyword) ??
       TsUtils.getModifier(modifiers, ts.SyntaxKind.ProtectedKeyword) ??
-      TsUtils.getModifier(modifiers, ts.SyntaxKind.PrivateKeyword);
+      TsUtils.getModifier(modifiers, ts.SyntaxKind.PrivateKeyword)
+    );
   }
 
   static getBaseClassType(type: ts.Type): ts.InterfaceType | undefined {
@@ -1677,7 +1815,8 @@ export class TsUtils {
       if (ts.isSpreadAssignment(x)) {
         return true;
       }
-      if (ts.isPropertyAssignment(x) &&
+      if (
+        ts.isPropertyAssignment(x) &&
         (ts.isObjectLiteralExpression(x.initializer) || ts.isArrayLiteralExpression(x.initializer))
       ) {
         return TsUtils.destructuringAssignmentHasSpreadOperator(x.initializer);
@@ -1741,7 +1880,7 @@ export class TsUtils {
     return unwrappedTypeNode;
   }
 
-  isSendableTypeNode(typeNode: ts.TypeNode): boolean {
+  isSendableTypeNode(typeNode: ts.TypeNode, isShared: boolean = false): boolean {
 
     /*
      * In order to correctly identify the usage of the enum member or
@@ -1750,23 +1889,31 @@ export class TsUtils {
      * symbol in case of type reference node.
      */
 
+    // eslint-disable-next-line no-param-reassign
     typeNode = TsUtils.unwrapParenthesizedTypeNode(typeNode);
 
     // Only a sendable union type is supported
     if (ts.isUnionTypeNode(typeNode)) {
       return typeNode.types.every((elemType) => {
-        return this.isSendableTypeNode(elemType);
+        return this.isSendableTypeNode(elemType, isShared);
       });
     }
 
-    const sym = ts.isTypeReferenceNode(typeNode) ?
-      this.trueSymbolAtLocation(typeNode.typeName) :
-      undefined;
+    const sym = ts.isTypeReferenceNode(typeNode) ? this.trueSymbolAtLocation(typeNode.typeName) : undefined;
 
     if (sym && sym.getFlags() & ts.SymbolFlags.TypeAlias) {
       const typeDecl = TsUtils.getDeclaration(sym);
       if (typeDecl && ts.isTypeAliasDeclaration(typeDecl)) {
-        return this.isSendableTypeNode(typeDecl.type);
+        const typeArgs = (typeNode as ts.TypeReferenceNode).typeArguments;
+        if (
+          typeArgs &&
+          !typeArgs.every((typeArg) => {
+            return this.isSendableTypeNode(typeArg);
+          })
+        ) {
+          return false;
+        }
+        return this.isSendableTypeNode(typeDecl.type, isShared);
       }
     }
 
@@ -1774,14 +1921,34 @@ export class TsUtils {
     if (TsUtils.isConstEnum(sym)) {
       return true;
     }
+    const type: ts.Type = this.tsTypeChecker.getTypeFromTypeNode(typeNode);
 
-    return this.isSendableType(this.tsTypeChecker.getTypeFromTypeNode(typeNode));
+    // In shared module, literal forms of primitive data types can be exported
+    if (isShared && TsUtils.isPurePrimitiveLiteralType(type)) {
+      return true;
+    }
+
+    return this.isSendableType(type);
   }
 
   isSendableType(type: ts.Type): boolean {
-    if ((type.flags & (ts.TypeFlags.Boolean | ts.TypeFlags.Number | ts.TypeFlags.String |
-                       ts.TypeFlags.BigInt | ts.TypeFlags.Null | ts.TypeFlags.Undefined |
-                       ts.TypeFlags.TypeParameter)) !== 0) {
+    if (
+      (type.flags &
+        (ts.TypeFlags.Boolean |
+          ts.TypeFlags.Number |
+          ts.TypeFlags.String |
+          ts.TypeFlags.BigInt |
+          ts.TypeFlags.Null |
+          ts.TypeFlags.Undefined |
+          ts.TypeFlags.TypeParameter)) !==
+      0
+    ) {
+      return true;
+    }
+    if (this.isSendableTypeAlias(type)) {
+      return true;
+    }
+    if (TsUtils.isSendableFunction(type)) {
       return true;
     }
 
@@ -1798,6 +1965,10 @@ export class TsUtils {
       return tsType.types.every((elemType) => {
         return this.isShareableType(elemType);
       });
+    }
+
+    if (TsUtils.isPurePrimitiveLiteralType(tsType)) {
+      return true;
     }
 
     return this.isSendableType(tsType);
@@ -1835,6 +2006,17 @@ export class TsUtils {
     return this.isSendableClassOrInterface(type);
   }
 
+  typeContainsNonSendableClassOrInterface(type: ts.Type): boolean {
+    if (type.isUnion()) {
+      return type.types.some((compType) => {
+        return this.typeContainsNonSendableClassOrInterface(compType);
+      });
+    }
+    // eslint-disable-next-line no-param-reassign
+    type = TsUtils.reduceReference(type);
+    return type.isClassOrInterface() && !this.isSendableClassOrInterface(type);
+  }
+
   static isConstEnum(sym: ts.Symbol | undefined): boolean {
     return !!sym && sym.flags === ts.SymbolFlags.ConstEnum;
   }
@@ -1850,15 +2032,17 @@ export class TsUtils {
     });
   }
 
-  static hasSendableDecorator(decl: ts.ClassDeclaration): boolean {
-    const decorators = ts.getDecorators(decl);
+  static hasSendableDecorator(decl: ts.ClassDeclaration | ts.FunctionDeclaration | ts.TypeAliasDeclaration): boolean {
+    const decorators = ts.getAllDecorators(decl);
     return !!decorators?.some((x) => {
       return TsUtils.getDecoratorName(x) === SENDABLE_DECORATOR;
     });
   }
 
-  static getNonSendableDecorators(decl: ts.ClassDeclaration): ts.Decorator[] | undefined {
-    const decorators = ts.getDecorators(decl);
+  static getNonSendableDecorators(
+    decl: ts.ClassDeclaration | ts.FunctionDeclaration | ts.TypeAliasDeclaration
+  ): ts.Decorator[] | undefined {
+    const decorators = ts.getAllDecorators(decl);
     return decorators?.filter((x) => {
       return TsUtils.getDecoratorName(x) !== SENDABLE_DECORATOR;
     });
@@ -1933,27 +2117,76 @@ export class TsUtils {
   }
 
   private isArkTSCollectionsArrayLikeDeclaration(decl: ts.Declaration): boolean {
-    if (!ts.isClassDeclaration(decl) && !ts.isInterfaceDeclaration(decl) || !decl.name) {
+    if (!TsUtils.isArkTSCollectionsClassOrInterfaceDeclaration(decl)) {
       return false;
     }
-
     if (!this.tsTypeChecker.getTypeAtLocation(decl).getNumberIndexType()) {
       return false;
     }
-
-    if (!ts.isModuleBlock(decl.parent) || decl.parent.parent.name.text !== COLLECTIONS_NAMESPACE) {
-      return false;
-    }
-
-    if (path.basename(decl.getSourceFile().fileName).toLowerCase() !== ARKTS_COLLECTIONS_D_ETS) {
-      return false;
-    }
-
     return true;
   }
 
+  static isArkTSCollectionsClassOrInterfaceDeclaration(decl: ts.Node): boolean {
+    if (!ts.isClassDeclaration(decl) && !ts.isInterfaceDeclaration(decl) || !decl.name) {
+      return false;
+    }
+    if (!ts.isModuleBlock(decl.parent) || decl.parent.parent.name.text !== COLLECTIONS_NAMESPACE) {
+      return false;
+    }
+    if (path.basename(decl.getSourceFile().fileName).toLowerCase() !== ARKTS_COLLECTIONS_D_ETS) {
+      return false;
+    }
+    return true;
+  }
+
+  private proceedConstructorDeclaration(
+    isFromPrivateIdentifierOrSdk: boolean,
+    targetMember: ts.ClassElement,
+    classMember: ts.ClassElement,
+    isFromPrivateIdentifier: boolean
+  ): boolean | undefined {
+    if (
+      isFromPrivateIdentifierOrSdk &&
+      ts.isConstructorDeclaration(classMember) &&
+      classMember.parameters.some((x) => {
+        return (
+          ts.isIdentifier(x.name) &&
+          this.hasAccessModifier(x) &&
+          this.isPrivateIdentifierDuplicateOfIdentifier(
+            targetMember.name as ts.Identifier,
+            x.name,
+            isFromPrivateIdentifier
+          )
+        );
+      })
+    ) {
+      return true;
+    }
+    return undefined;
+  }
+
+  private proceedClassType(
+    targetMember: ts.ClassElement,
+    classType: ts.Type,
+    isFromPrivateIdentifier: boolean
+  ): boolean | undefined {
+    if (classType) {
+      const baseType = TsUtils.getBaseClassType(classType);
+      if (baseType) {
+        const baseDecl = baseType.getSymbol()?.valueDeclaration as ts.ClassLikeDeclaration;
+        if (baseDecl) {
+          return this.classMemberHasDuplicateName(targetMember, baseDecl, isFromPrivateIdentifier);
+        }
+      }
+    }
+    return undefined;
+  }
+
   classMemberHasDuplicateName(
-    targetMember: ts.ClassElement, tsClassLikeDecl: ts.ClassLikeDeclaration, classType?: ts.Type
+    targetMember: ts.ClassElement,
+    tsClassLikeDecl: ts.ClassLikeDeclaration,
+    isFromPrivateIdentifier: boolean,
+    classType?: ts.Type
   ): boolean {
 
     /*
@@ -1964,40 +2197,44 @@ export class TsUtils {
       return false;
     }
 
+    const isFromPrivateIdentifierOrSdk = this.isFromPrivateIdentifierOrSdk(isFromPrivateIdentifier);
     for (const classMember of tsClassLikeDecl.members) {
       if (targetMember === classMember) {
         continue;
       }
 
       // Check constructor parameter properties.
-      if (ts.isConstructorDeclaration(classMember) && classMember.parameters.some((x) => {
-        return ts.isIdentifier(x.name) && TsUtils.hasAccessModifier(x) &&
-          TsUtils.isPrivateIdentifierDuplicateOfIdentifier(targetMember.name as ts.Identifier, x.name);
-      })) {
-        return true;
+      const constructorDeclarationProceedResult = this.proceedConstructorDeclaration(
+        isFromPrivateIdentifierOrSdk,
+        targetMember,
+        classMember,
+        isFromPrivateIdentifier
+      );
+      if (constructorDeclarationProceedResult) {
+        return constructorDeclarationProceedResult;
       }
-
       if (!TsUtils.isIdentifierOrPrivateIdentifier(classMember.name)) {
         continue;
       }
-
-      if (TsUtils.isPrivateIdentifierDuplicateOfIdentifier(targetMember.name, classMember.name)) {
+      if (this.isPrivateIdentifierDuplicateOfIdentifier(targetMember.name, classMember.name, isFromPrivateIdentifier)) {
         return true;
       }
     }
 
-    classType ??= this.tsTypeChecker.getTypeAtLocation(tsClassLikeDecl);
-    if (classType) {
-      const baseType = TsUtils.getBaseClassType(classType);
-      if (baseType) {
-        const baseDecl = baseType.getSymbol()?.valueDeclaration as ts.ClassLikeDeclaration;
-        if (baseDecl) {
-          return this.classMemberHasDuplicateName(targetMember, baseDecl);
-        }
+    if (isFromPrivateIdentifierOrSdk) {
+      // eslint-disable-next-line no-param-reassign
+      classType ??= this.tsTypeChecker.getTypeAtLocation(tsClassLikeDecl);
+      const proceedClassTypeResult = this.proceedClassType(targetMember, classType, isFromPrivateIdentifier);
+      if (proceedClassTypeResult) {
+        return proceedClassTypeResult;
       }
     }
 
     return false;
+  }
+
+  private isFromPrivateIdentifierOrSdk(isFromPrivateIdentifier: boolean): boolean {
+    return !this.useSdkLogic || isFromPrivateIdentifier;
   }
 
   private static isIdentifierOrPrivateIdentifier(node?: ts.PropertyName): node is ts.Identifier | ts.PrivateIdentifier {
@@ -2007,9 +2244,10 @@ export class TsUtils {
     return ts.isIdentifier(node) || ts.isPrivateIdentifier(node);
   }
 
-  private static isPrivateIdentifierDuplicateOfIdentifier(
+  private isPrivateIdentifierDuplicateOfIdentifier(
     ident1: ts.Identifier | ts.PrivateIdentifier,
-    ident2: ts.Identifier | ts.PrivateIdentifier
+    ident2: ts.Identifier | ts.PrivateIdentifier,
+    isFromPrivateIdentifier: boolean
   ): boolean {
     if (ts.isIdentifier(ident1) && ts.isPrivateIdentifier(ident2)) {
       return ident1.text === ident2.text.substring(1);
@@ -2017,7 +2255,11 @@ export class TsUtils {
     if (ts.isIdentifier(ident2) && ts.isPrivateIdentifier(ident1)) {
       return ident2.text === ident1.text.substring(1);
     }
-    if (ts.isPrivateIdentifier(ident1) && ts.isPrivateIdentifier(ident2)) {
+    if (
+      this.isFromPrivateIdentifierOrSdk(isFromPrivateIdentifier) &&
+      ts.isPrivateIdentifier(ident1) &&
+      ts.isPrivateIdentifier(ident2)
+    ) {
       return ident1.text.substring(1) === ident2.text.substring(1);
     }
     return false;
@@ -2108,8 +2350,7 @@ export class TsUtils {
     }
 
     for (const propDecl of symbol.declarations) {
-      if (!ts.isPropertyDeclaration(propDecl) && !ts.isPropertySignature(propDecl)
-      ) {
+      if (!ts.isPropertyDeclaration(propDecl) && !ts.isPropertySignature(propDecl)) {
         return false;
       }
 
@@ -2171,7 +2412,8 @@ export class TsUtils {
 
   static isDeclarationStatement(node: ts.Node): node is ts.DeclarationStatement {
     const kind = node.kind;
-    return kind === ts.SyntaxKind.FunctionDeclaration ||
+    return (
+      kind === ts.SyntaxKind.FunctionDeclaration ||
       kind === ts.SyntaxKind.ModuleDeclaration ||
       kind === ts.SyntaxKind.ClassDeclaration ||
       kind === ts.SyntaxKind.StructDeclaration ||
@@ -2181,28 +2423,35 @@ export class TsUtils {
       kind === ts.SyntaxKind.MissingDeclaration ||
       kind === ts.SyntaxKind.ImportEqualsDeclaration ||
       kind === ts.SyntaxKind.ImportDeclaration ||
-      kind === ts.SyntaxKind.NamespaceExportDeclaration;
+      kind === ts.SyntaxKind.NamespaceExportDeclaration
+    );
   }
 
   static declarationNameExists(srcFile: ts.SourceFile, name: string): boolean {
     return srcFile.statements.some((stmt) => {
-      if (ts.isImportDeclaration(stmt)) {
-        if (!stmt.importClause) {
-          return false;
-        }
-        if (stmt.importClause.namedBindings) {
-          if (ts.isNamespaceImport(stmt.importClause.namedBindings)) {
-            return stmt.importClause.namedBindings.name.text === name;
-          }
-          return stmt.importClause.namedBindings.elements.some((x) => {
-            return x.name.text === name;
-          });
-        }
+      if (!ts.isImportDeclaration(stmt)) {
+        return (
+          TsUtils.isDeclarationStatement(stmt) &&
+          stmt.name !== undefined &&
+          ts.isIdentifier(stmt.name) &&
+          stmt.name.text === name
+        );
+      }
+
+      if (!stmt.importClause) {
+        return false;
+      }
+
+      if (!stmt.importClause.namedBindings) {
         return stmt.importClause.name?.text === name;
       }
 
-      return TsUtils.isDeclarationStatement(stmt) && stmt.name !== undefined &&
-        ts.isIdentifier(stmt.name) && stmt.name.text === name;
+      if (ts.isNamespaceImport(stmt.importClause.namedBindings)) {
+        return stmt.importClause.namedBindings.name.text === name;
+      }
+      return stmt.importClause.namedBindings.elements.some((x) => {
+        return x.name.text === name;
+      });
     });
   }
 
@@ -2242,16 +2491,22 @@ export class TsUtils {
   }
 
   static isFunctionLikeDeclaration(node: ts.Declaration): boolean {
-    return ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node) ||
-      ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node) || ts.isConstructorDeclaration(node) ||
-      ts.isFunctionExpression(node) || ts.isArrowFunction(node);
+    return (
+      ts.isFunctionDeclaration(node) ||
+      ts.isMethodDeclaration(node) ||
+      ts.isGetAccessorDeclaration(node) ||
+      ts.isSetAccessorDeclaration(node) ||
+      ts.isConstructorDeclaration(node) ||
+      ts.isFunctionExpression(node) ||
+      ts.isArrowFunction(node)
+    );
   }
 
   isShareableEntity(node: ts.Node): boolean {
     const decl = this.getDeclarationNode(node);
     const typeNode = (decl as any)?.type;
     return typeNode && !TsUtils.isFunctionLikeDeclaration(decl!) ?
-      this.isSendableTypeNode(typeNode) :
+      this.isSendableTypeNode(typeNode, true) :
       this.isShareableType(this.tsTypeChecker.getTypeAtLocation(decl ? decl : node));
   }
 
@@ -2273,10 +2528,121 @@ export class TsUtils {
     if (
       !resolvedModule.resolvedFileName ||
       path.basename(resolvedModule.resolvedFileName).toLowerCase() !== ARKTS_LANG_D_ETS &&
-      path.basename(resolvedModule.resolvedFileName).toLowerCase() !== ARKTS_COLLECTIONS_D_ETS
+        path.basename(resolvedModule.resolvedFileName).toLowerCase() !== ARKTS_COLLECTIONS_D_ETS
     ) {
       return false;
     }
     return true;
+  }
+
+  static isMethodWithThisReturnType(node: ts.Node | undefined): boolean {
+    if (node?.kind !== ts.SyntaxKind.MethodDeclaration) {
+      return false;
+    }
+    const method = node as ts.MethodDeclaration;
+    return method.type?.kind === ts.SyntaxKind.ThisType;
+  }
+
+  // If it is an overloaded function, all declarations for that function are found
+  static hasSendableDecoratorFunctionOverload(decl: ts.FunctionDeclaration): boolean {
+    const decorators = TsUtils.getFunctionOverloadDecorators(decl);
+    return !!decorators?.some((x) => {
+      return TsUtils.getDecoratorName(x) === SENDABLE_DECORATOR;
+    });
+  }
+
+  static getFunctionOverloadDecorators(funcDecl: ts.FunctionDeclaration): readonly ts.Decorator[] | undefined {
+    const decls = funcDecl.symbol.getDeclarations();
+    if (!decls?.length) {
+      return undefined;
+    }
+    let result: ts.Decorator[] = [];
+    decls.forEach((decl) => {
+      if (!ts.isFunctionDeclaration(decl)) {
+        return;
+      }
+      const decorators = ts.getAllDecorators(decl);
+      if (decorators?.length) {
+        result = result.concat(decorators);
+      }
+    });
+    return result.length ? result : undefined;
+  }
+
+  static isSendableFunction(type: ts.Type): boolean {
+    const callSigns = type.getCallSignatures();
+    if (!callSigns?.length) {
+      return false;
+    }
+    const decl = callSigns[0].declaration;
+    if (!decl || !ts.isFunctionDeclaration(decl)) {
+      return false;
+    }
+    return TsUtils.hasSendableDecoratorFunctionOverload(decl);
+  }
+
+  isSendableTypeAlias(type: ts.Type): boolean {
+    const decl = this.getTypsAliasOriginalDecl(type);
+    return !!decl && TsUtils.hasSendableDecorator(decl);
+  }
+
+  hasSendableTypeAlias(type: ts.Type): boolean {
+    if (type.isUnion()) {
+      return type.types.some((compType) => {
+        return this.hasSendableTypeAlias(compType);
+      });
+    }
+    return this.isSendableTypeAlias(type);
+  }
+
+  isNonSendableFunctionTypeAlias(type: ts.Type): boolean {
+    const decl = this.getTypsAliasOriginalDecl(type);
+    return !!decl && ts.isFunctionTypeNode(decl.type) && !TsUtils.hasSendableDecorator(decl);
+  }
+
+  // If the alias refers to another alias, the search continues
+  private getTypsAliasOriginalDecl(type: ts.Type): ts.TypeAliasDeclaration | undefined {
+    if (!type.aliasSymbol) {
+      return undefined;
+    }
+    const decl = TsUtils.getDeclaration(type.aliasSymbol);
+    if (!decl || !ts.isTypeAliasDeclaration(decl)) {
+      return undefined;
+    }
+    if (ts.isTypeReferenceNode(decl.type)) {
+      const targetType = this.tsTypeChecker.getTypeAtLocation(decl.type.typeName);
+      if (targetType.aliasSymbol && targetType.aliasSymbol.getFlags() & ts.SymbolFlags.TypeAlias) {
+        return this.getTypsAliasOriginalDecl(targetType);
+      }
+    }
+    return decl;
+  }
+
+  // not allow 'lhsType' contains 'sendable typeAlias' && 'rhsType' contains 'non-sendable function/non-sendable function typeAlias'
+  isWrongSendableFunctionAssignment(lhsType: ts.Type, rhsType: ts.Type): boolean {
+    // eslint-disable-next-line no-param-reassign
+    lhsType = this.getNonNullableType(lhsType);
+    // eslint-disable-next-line no-param-reassign
+    rhsType = this.getNonNullableType(rhsType);
+    if (!this.hasSendableTypeAlias(lhsType)) {
+      return false;
+    }
+
+    if (rhsType.isUnion()) {
+      return rhsType.types.some((compType) => {
+        return this.isInvalidSendableFunctionAssignmentType(compType);
+      });
+    }
+    return this.isInvalidSendableFunctionAssignmentType(rhsType);
+  }
+
+  private isInvalidSendableFunctionAssignmentType(type: ts.Type): boolean {
+    if (type.aliasSymbol) {
+      return this.isNonSendableFunctionTypeAlias(type);
+    }
+    if (TsUtils.isFunctionalType(type)) {
+      return !TsUtils.isSendableFunction(type);
+    }
+    return false;
   }
 }

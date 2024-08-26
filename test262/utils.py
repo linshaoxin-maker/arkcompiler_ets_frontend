@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright (c) 2021 Huawei Device Co., Ltd.
+Copyright (c) 2021-2024 Huawei Device Co., Ltd.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -27,7 +27,7 @@ import time
 import shutil
 import platform
 import re
-from config import DEFAULT_TIMEOUT
+from config import DEFAULT_TIMEOUT, DEFAULT_RETRIES
 
 TERM_NORMAL = '\033[0m'
 TERM_YELLOW = '\033[1;33m'
@@ -57,12 +57,29 @@ def output(retcode, msg):
         sys.stderr.write("Unknown Error: " + str(retcode))
 
 
-def exec_command(cmd_args, timeout=DEFAULT_TIMEOUT):
+def filter_arm_specific_errors(errs_str):
+    list_errs = []
+    for err in errs_str.split("\n"):
+        if err:
+            if ("memset will be used instead" not in err and
+                "This is the expected behaviour if you are running under QEMU" not in err and
+                "Can't connect to server" not in err):
+                list_errs.append(err)
+
+    if len(list_errs) != 0:
+        output(1, " ".join(list_errs))
+        return False
+
+    return True
+
+
+def exec_command(cmd_args, timeout=DEFAULT_TIMEOUT, custom_cwd=None):
     proc = subprocess.Popen(cmd_args,
                             stderr=subprocess.PIPE,
                             stdout=subprocess.PIPE,
                             close_fds=True,
-                            start_new_session=True)
+                            start_new_session=True,
+                            cwd=custom_cwd)
     cmd_string = " ".join(cmd_args)
     code_format = 'utf-8'
     if platform.system() == "Windows":
@@ -72,8 +89,10 @@ def exec_command(cmd_args, timeout=DEFAULT_TIMEOUT):
         (output_res, errs) = proc.communicate(timeout=timeout)
         ret_code = proc.poll()
 
-        if errs.decode(code_format, 'ignore') != '':
-            output(1, errs.decode(code_format, 'ignore'))
+        errs_str = errs.decode(code_format, 'ignore')
+        if filter_arm_specific_errors(errs_str):
+            errs = None
+        else:
             return 1
 
         if ret_code and ret_code != 1:
@@ -215,12 +234,19 @@ def report_command(cmd_type, cmd, env=None):
 
 def git_clone(git_url, code_dir):
     cmd = ['git', 'clone', git_url, code_dir]
-    ret = run_cmd_cwd(cmd)
+    retries = 1
+    while retries <= DEFAULT_RETRIES:
+        ret = run_cmd_cwd(cmd)
+        if ret == 0:
+            break
+        else:
+            print(f"\n warning: Atempt: #{retries} to clone '{git_url}' failed. Try cloining again")
+            retries += 1
     assert not ret, f"\n error: Cloning '{git_url}' failed."
 
 
 def git_checkout(git_bash, cwd):
-    cmd = ['git', 'checkout', git_bash]
+    cmd = ['git', 'checkout', '-f', git_bash]
     ret = run_cmd_cwd(cmd, cwd)
     assert not ret, f"\n error: git checkout '{git_bash}' failed."
 

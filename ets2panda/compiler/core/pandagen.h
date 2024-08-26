@@ -182,9 +182,10 @@ public:
     void CreateObjectHavingMethod(const ir::AstNode *node, uint32_t idx);
     void SetObjectWithProto(const ir::AstNode *node, VReg proto, VReg obj);
     void CopyDataProperties(const ir::AstNode *node, VReg dst, VReg src);
-    void DefineGetterSetterByValue(const ir::AstNode *node, VReg obj, VReg name, VReg getter, VReg setter,
-                                   bool setName);
+    void DefineGetterSetterByValue(const ir::AstNode *node, std::tuple<VReg, VReg, VReg, VReg> registers, bool setName);
     void CreateEmptyArray(const ir::AstNode *node);
+    size_t HandleArrayLiterals(const ir::AstNode *node, const ArenaVector<ir::Expression *> &elements);
+    void HandleArraySpread(const ir::AstNode *node, const ArenaVector<ir::Expression *> &elements, VReg obj);
     void CreateArray(const ir::AstNode *node, const ArenaVector<ir::Expression *> &elements, VReg obj);
     void CreateArrayWithBuffer(const ir::AstNode *node, uint32_t idx);
     void StoreArraySpread(const ir::AstNode *node, VReg array, VReg index);
@@ -264,7 +265,12 @@ public:
 
 private:
     void LoadEvalBindings(const ir::AstNode *node);
-
+    void Call0Args(const ir::AstNode *n, VReg c, VReg thisR, bool hasThis);
+    void Call1Arg(const ir::AstNode *n, VReg c, VReg thisR, const ArenaVector<ir::Expression *> &args, bool hasThis);
+    void Call2Args(const ir::AstNode *n, VReg c, VReg thisR, const ArenaVector<ir::Expression *> &args, bool hasThis);
+    void Call3Args(const ir::AstNode *n, VReg c, VReg thisR, const ArenaVector<ir::Expression *> &args, bool hasThis);
+    bool CallArgsTagged(const ir::AstNode *node, VReg callee, VReg thisReg,
+                        const ArenaVector<ir::Expression *> &arguments, bool hasThis);
     FunctionBuilder *builder_ {};
     EnvScope *envScope_ {};
     OptionalChain *optionalChain_ {};

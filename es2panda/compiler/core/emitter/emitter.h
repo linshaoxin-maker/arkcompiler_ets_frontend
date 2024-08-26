@@ -91,7 +91,6 @@ private:
 
     void GenLiteralBuffers();
     void GenBufferLiterals(const LiteralBuffer *buff);
-    void GenFunctionSource();
     void GenConcurrentFunctionModuleRequests();
 
     const PandaGen *pg_;
@@ -133,6 +132,7 @@ private:
     void GenCommonjsRecord() const;
     void AddHasTopLevelAwaitRecord(bool hasTLA, const CompilerContext *context);
     void AddSharedModuleRecord(const CompilerContext *context);
+    void AddModuleRequestPhaseRecord(ModuleRecordEmitter *module, CompilerContext *context);
 
     std::mutex m_;
     panda::pandasm::Program *prog_;

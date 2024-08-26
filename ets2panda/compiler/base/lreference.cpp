@@ -66,6 +66,9 @@ LReference::LReferenceBase LReference::CreateBase(CodeGen *cg, const ir::AstNode
         case ir::AstNodeType::REST_ELEMENT: {
             return CreateBase(cg, node->AsRestElement()->Argument(), true);
         }
+        case ir::AstNodeType::TS_NON_NULL_EXPRESSION: {
+            return CreateBase(cg, node->AsTSNonNullExpression()->Expr(), isDeclaration);
+        }
         default: {
             UNREACHABLE();
         }
@@ -372,7 +375,7 @@ void ETSLReference::SetValue() const
         return;
     }
 
-    const auto *type = etsg_->Checker()->MaybeBoxedType(memberExpr->PropVar(), etsg_->Allocator());
+    const auto *type = memberExpr->PropVar()->TsType();
 
     etsg_->StoreProperty(Node(), type, baseReg_, propName);
 }

@@ -15,6 +15,7 @@
 
 #include "ETSGen.h"
 
+#include "generated/signatures.h"
 #include "ir/base/scriptFunction.h"
 #include "ir/base/classDefinition.h"
 #include "ir/statement.h"
@@ -46,10 +47,10 @@
 
 namespace ark::es2panda::compiler {
 
-static constexpr auto TYPE_FLAG_BYTECODE_REF = checker::TypeFlag::ETS_ARRAY | checker::TypeFlag::ETS_OBJECT |
-                                               checker::TypeFlag::ETS_UNION | checker::TypeFlag::ETS_TYPE_PARAMETER |
-                                               checker::TypeFlag::ETS_NONNULLISH | checker::TypeFlag::ETS_NULL |
-                                               checker::TypeFlag::ETS_UNDEFINED;
+static constexpr auto TYPE_FLAG_BYTECODE_REF =
+    checker::TypeFlag::ETS_ARRAY | checker::TypeFlag::ETS_OBJECT | checker::TypeFlag::FUNCTION |
+    checker::TypeFlag::ETS_UNION | checker::TypeFlag::ETS_TYPE_PARAMETER | checker::TypeFlag::ETS_NONNULLISH |
+    checker::TypeFlag::ETS_NULL | checker::TypeFlag::ETS_UNDEFINED | checker::TypeFlag::ETS_READONLY;
 
 ETSGen::ETSGen(ArenaAllocator *allocator, RegSpiller *spiller, public_lib::Context *context,
                std::tuple<varbinder::FunctionScope *, ProgramElement *, AstCompiler *> toCompile) noexcept
@@ -204,7 +205,7 @@ IRNode *ETSGen::AllocMov(const ir::AstNode *const node, OutVReg vd, const VReg v
 
 checker::Type const *ETSGen::TypeForVar(varbinder::Variable const *var) const noexcept
 {
-    return Checker()->MaybeBoxedType(var, Allocator());
+    return var->TsType();
 }
 
 void ETSGen::MoveVreg(const ir::AstNode *const node, const VReg vd, const VReg vs)
@@ -244,13 +245,13 @@ void ETSGen::LoadAccumulatorDynamicModule(const ir::AstNode *node, const ir::ETS
 util::StringView ETSGen::FormDynamicModulePropReference(const ir::ETSImportDeclaration *import)
 {
     std::stringstream ss;
-    auto pkgName = VarBinder()->Program()->GetPackageName();
-    if (!pkgName.Empty()) {
-        ss << pkgName << '.';
+
+    if (!VarBinder()->Program()->OmitModuleName()) {
+        ss << VarBinder()->Program()->ModuleName() << compiler::Signatures::METHOD_SEPARATOR;
     }
-    ss << compiler::Signatures::DYNAMIC_MODULE_CLASS;
-    ss << '.';
-    ss << import->AssemblerName();
+
+    ss << compiler::Signatures::DYNAMIC_MODULE_CLASS << compiler::Signatures::METHOD_SEPARATOR
+       << import->AssemblerName();
 
     return util::UString(ss.str(), Allocator()).View();
 }
@@ -320,10 +321,6 @@ void ETSGen::LoadVar(const ir::Identifier *node, varbinder::Variable const *cons
             UNREACHABLE();
         }
     }
-
-    if (var->HasFlag(varbinder::VariableFlags::BOXED) && !node->AsIdentifier()->IsIgnoreBox()) {
-        EmitLocalBoxGet(node, var->TsType());
-    }
 }
 
 void ETSGen::StoreVar(const ir::Identifier *node, const varbinder::ConstScopeFindResult &result)
@@ -338,20 +335,12 @@ void ETSGen::StoreVar(const ir::Identifier *node, const varbinder::ConstScopeFin
             break;
         }
         case ReferenceKind::FIELD: {
-            if (local->HasFlag(varbinder::VariableFlags::BOXED)) {
-                EmitPropertyBoxSet(node, result.variable->TsType(), GetThisReg(), result.name);
-            } else {
-                StoreProperty(node, result.variable->TsType(), GetThisReg(), result.name);
-            }
+            StoreProperty(node, result.variable->TsType(), GetThisReg(), result.name);
             break;
         }
         case ReferenceKind::LOCAL: {
-            if (local->HasFlag(varbinder::VariableFlags::BOXED)) {
-                EmitLocalBoxSet(node, local);
-            } else {
-                StoreAccumulator(node, local->Vreg());
-                SetVRegType(local->Vreg(), GetAccumulatorType());
-            }
+            StoreAccumulator(node, local->Vreg());
+            SetVRegType(local->Vreg(), GetAccumulatorType());
             break;
         }
         default: {
@@ -427,9 +416,6 @@ void ETSGen::StoreProperty(const ir::AstNode *const node, const checker::Type *p
 {
     const auto fullName = FormClassPropReference(GetVRegType(objReg)->AsETSObjectType(), name);
 
-    if (node->IsIdentifier() && node->AsIdentifier()->Variable()->HasFlag(varbinder::VariableFlags::BOXED)) {
-        propType = Checker()->GlobalBuiltinBoxType(propType);
-    }
     if (propType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
         Ra().Emit<StobjObj>(node, objReg, fullName);
     } else if (propType->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
@@ -442,9 +428,6 @@ void ETSGen::StoreProperty(const ir::AstNode *const node, const checker::Type *p
 void ETSGen::LoadProperty(const ir::AstNode *const node, const checker::Type *propType, const VReg objReg,
                           const util::StringView &fullName)
 {
-    if (node->IsIdentifier() && node->AsIdentifier()->Variable()->HasFlag(varbinder::VariableFlags::BOXED)) {
-        propType = Checker()->GlobalBuiltinBoxType(propType);
-    }
     if (propType->HasTypeFlag(TYPE_FLAG_BYTECODE_REF)) {
         Ra().Emit<LdobjObj>(node, objReg, fullName);
     } else if (propType->HasTypeFlag(checker::TypeFlag::ETS_WIDE_NUMERIC)) {
@@ -633,85 +616,18 @@ void ETSGen::CreateBigIntObject(const ir::AstNode *node, VReg arg0, std::string_
     Ra().Emit<InitobjShort>(node, signature, arg0, dummyReg_);
 }
 
-void ETSGen::CreateLambdaObjectFromIdentReference(const ir::AstNode *node, ir::ClassDefinition *lambdaObj)
-{
-    auto *ctor = lambdaObj->TsType()->AsETSObjectType()->ConstructSignatures()[0];
-
-    if (ctor->Params().empty()) {
-        Ra().Emit<InitobjShort>(node, ctor->InternalName(), VReg::RegStart(), VReg::RegStart());
-    } else {
-        Ra().Emit<InitobjShort>(node, ctor->InternalName(), GetThisReg(), VReg::RegStart());
-    }
-
-    SetAccumulatorType(lambdaObj->TsType());
-}
-
-void ETSGen::CreateLambdaObjectFromMemberReference(const ir::AstNode *node, ir::Expression *obj,
-                                                   ir::ClassDefinition *lambdaObj)
-{
-    auto *ctor = lambdaObj->TsType()->AsETSObjectType()->ConstructSignatures()[0];
-    ArenaVector<ir::Expression *> args(Allocator()->Adapter());
-
-    if (!ctor->Params().empty()) {
-        args.push_back(obj);
-    }
-
-    InitObject(node, ctor, args);
-    SetAccumulatorType(lambdaObj->TsType());
-}
-
-void ETSGen::InitLambdaObject(const ir::AstNode *node, checker::Signature *signature, std::vector<VReg> &arguments)
-{
-    RegScope rs(this);
-    util::StringView name = signature->InternalName();
-
-    switch (arguments.size()) {
-        case 0: {
-            Ra().Emit<InitobjShort>(node, name, VReg::RegStart(), VReg::RegStart());
-            break;
-        }
-        case 1: {
-            Ra().Emit<InitobjShort>(node, name, arguments[0], VReg::RegStart());
-            break;
-        }
-        case 2U: {
-            Ra().Emit<InitobjShort>(node, name, arguments[0], arguments[1]);
-            break;
-        }
-        case 3U: {
-            Ra().Emit<Initobj>(node, name, arguments[0], arguments[1], arguments[2U], VReg::RegStart());
-            break;
-        }
-        case 4U: {
-            Ra().Emit<Initobj>(node, name, arguments[0], arguments[1], arguments[2U], arguments[3U]);
-            break;
-        }
-        default: {
-            VReg argStart = NextReg();
-
-            for (size_t i = 0; i < arguments.size(); i++) {
-                auto ttctx = TargetTypeContext(this, signature->Params()[i]->TsType());
-                VReg argReg = AllocReg();
-                MoveVreg(node, argReg, arguments[i]);
-            }
-
-            Rra().Emit<InitobjRange>(node, argStart, arguments.size(), name, argStart);
-            break;
-        }
-    }
-}
-
 VReg ETSGen::GetThisReg() const
 {
     const auto res = Scope()->Find(varbinder::VarBinder::MANDATORY_PARAM_THIS);
     return res.variable->AsLocalVariable()->Vreg();
 }
 
-void ETSGen::LoadDefaultValue([[maybe_unused]] const ir::AstNode *node, [[maybe_unused]] const checker::Type *type)
+const checker::Type *ETSGen::LoadDefaultValue([[maybe_unused]] const ir::AstNode *node,
+                                              [[maybe_unused]] const checker::Type *type)
 {
     if (type->IsETSAsyncFuncReturnType()) {
         LoadDefaultValue(node, type->AsETSAsyncFuncReturnType()->GetPromiseTypeArg());
-        return;
+        return type;
     }
 
     if (type->IsETSUnionType()) {
@@ -721,7 +637,7 @@ void ETSGen::LoadDefaultValue([[maybe_unused]] const ir::AstNode *node, [[maybe_
             type = Checker()->GetGlobalTypesHolder()->GlobalETSObjectType();
         }
     }
-    if (type->IsUndefinedType() || type->IsETSUndefinedType()) {
+    if (type->IsUndefinedType() || type->IsETSUndefinedType() || type->IsETSVoidType()) {
         LoadAccumulatorUndefined(node);
     } else if (type->IsETSObjectType() || type->IsETSArrayType() || type->IsETSTypeParameter() ||
                type->IsETSNullType()) {
@@ -732,6 +648,8 @@ void ETSGen::LoadDefaultValue([[maybe_unused]] const ir::AstNode *node, [[maybe_
         const auto ttctx = TargetTypeContext(this, type);
         LoadAccumulatorInt(node, 0);
     }
+
+    return type;
 }
 
 void ETSGen::EmitReturnVoid(const ir::AstNode *node)
@@ -907,6 +825,9 @@ void ETSGen::BranchIfIsInstance(const ir::AstNode *const node, const VReg srcReg
 void ETSGen::IsInstance(const ir::AstNode *const node, const VReg srcReg, const checker::Type *target)
 {
     target = Checker()->GetApparentType(target);
+    if (target->IsETSEnumType()) {
+        target = target->AsETSEnumType()->GetDecl()->BoxedClass()->TsType();
+    }
     ASSERT(target->IsETSReferenceType());
 
     if (IsAnyReferenceSupertype(target)) {  // should be IsSupertypeOf(target, source)
@@ -1032,7 +953,11 @@ void ETSGen::GuardUncheckedType(const ir::AstNode *node, const checker::Type *un
 {
     if (unchecked != nullptr) {
         SetAccumulatorType(unchecked);
-        CheckedReferenceNarrowing(node, Checker()->MaybePromotedBuiltinType(target));
+        if (target->IsETSEnumType() && (unchecked->IsETSUnionType() || unchecked->IsETSObjectType())) {
+            EmitUnboxEnum(node, target);
+        } else {
+            CheckedReferenceNarrowing(node, Checker()->MaybePromotedBuiltinType(target));
+        }
     }
     SetAccumulatorType(target);
 }
@@ -1169,13 +1094,6 @@ void ETSGen::ApplyConversion(const ir::AstNode *node, const checker::Type *targe
 {
     auto ttctx = TargetTypeContext(this, targetType);
 
-    if (node->HasAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE)) {
-        Ra().Emit<CallAccShort, 0>(
-            node, node->AsExpression()->TsType()->AsETSEnumType()->GetValueMethod().globalSignature->InternalName(),
-            dummyReg_, 0);
-        node->RemoveAstNodeFlags(ir::AstNodeFlags::ENUM_GET_VALUE);
-    }
-
     if ((node->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG) != 0U) {
         ApplyBoxingConversion(node);
 
@@ -1257,6 +1175,7 @@ void ETSGen::ApplyCastToBoxingFlags(const ir::AstNode *node, const ir::BoxingUnb
 void ETSGen::EmitUnboxedCall(const ir::AstNode *node, std::string_view signatureFlag,
                              const checker::Type *const targetType, const checker::Type *const boxedType)
 {
+    RegScope rs(this);
     if (node->HasAstNodeFlags(ir::AstNodeFlags::CHECKCAST)) {
         CheckedReferenceNarrowing(node, boxedType);
     }
@@ -1277,14 +1196,26 @@ void ETSGen::EmitUnboxedCall(const ir::AstNode *node, std::string_view signature
     }
 }
 
+void ETSGen::EmitUnboxEnum(const ir::AstNode *node, const checker::Type *enumType)
+{
+    RegScope rs(this);
+    if (enumType == nullptr) {
+        ASSERT(node->Parent()->IsTSAsExpression());
+        const auto *const asExpression = node->Parent()->AsTSAsExpression();
+        enumType = asExpression->TsType();
+    }
+    ASSERT(enumType->IsETSEnumType());
+    const auto *const enumInterface = enumType->AsETSEnumType();
+    const auto assemblerType = ToAssemblerType(enumInterface->GetDecl()->BoxedClass()->TsType());
+    Sa().Emit<Checkcast>(node, assemblerType);
+    const auto unboxMethod = enumInterface->UnboxMethod();
+    Ra().Emit<CallVirtAccShort, 0>(node, unboxMethod.globalSignature->InternalName(), dummyReg_, 0);
+    SetAccumulatorType(enumType);
+}
+
 void ETSGen::EmitUnboxingConversion(const ir::AstNode *node)
 {
-    const auto unboxingFlag =
-        static_cast<ir::BoxingUnboxingFlags>(ir::BoxingUnboxingFlags::UNBOXING_FLAG & node->GetBoxingUnboxingFlags());
-
-    RegScope rs(this);
-
-    switch (unboxingFlag) {
+    switch (ir::BoxingUnboxingFlags(ir::BoxingUnboxingFlags::UNBOXING_FLAG & node->GetBoxingUnboxingFlags())) {
         case ir::BoxingUnboxingFlags::UNBOX_TO_BOOLEAN: {
             EmitUnboxedCall(node, Signatures::BUILTIN_BOOLEAN_UNBOXED, Checker()->GlobalETSBooleanType(),
                             Checker()->GetGlobalTypesHolder()->GlobalETSBooleanBuiltinType());
@@ -1325,9 +1256,61 @@ void ETSGen::EmitUnboxingConversion(const ir::AstNode *node)
                             Checker()->GetGlobalTypesHolder()->GlobalDoubleBuiltinType());
             break;
         }
+        case ir::BoxingUnboxingFlags::UNBOX_TO_ENUM: {
+            EmitUnboxEnum(node, nullptr);
+            break;
+        }
         default:
             UNREACHABLE();
     }
+}
+
+checker::Type *ETSGen::EmitBoxedType(ir::BoxingUnboxingFlags boxingFlag, const ir::AstNode *node)
+{
+    switch (boxingFlag) {
+        case ir::BoxingUnboxingFlags::BOX_TO_BOOLEAN: {
+            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_BOOLEAN_VALUE_OF, dummyReg_, 0);
+            return Checker()->GetGlobalTypesHolder()->GlobalETSBooleanBuiltinType();
+        }
+        case ir::BoxingUnboxingFlags::BOX_TO_BYTE: {
+            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_BYTE_VALUE_OF, dummyReg_, 0);
+            return Checker()->GetGlobalTypesHolder()->GlobalByteBuiltinType();
+        }
+        case ir::BoxingUnboxingFlags::BOX_TO_CHAR: {
+            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_CHAR_VALUE_OF, dummyReg_, 0);
+            return Checker()->GetGlobalTypesHolder()->GlobalCharBuiltinType();
+        }
+        case ir::BoxingUnboxingFlags::BOX_TO_SHORT: {
+            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_SHORT_VALUE_OF, dummyReg_, 0);
+            return Checker()->GetGlobalTypesHolder()->GlobalShortBuiltinType();
+        }
+        case ir::BoxingUnboxingFlags::BOX_TO_INT: {
+            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_INT_VALUE_OF, dummyReg_, 0);
+            return Checker()->GetGlobalTypesHolder()->GlobalIntegerBuiltinType();
+        }
+        case ir::BoxingUnboxingFlags::BOX_TO_LONG: {
+            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_LONG_VALUE_OF, dummyReg_, 0);
+            return Checker()->GetGlobalTypesHolder()->GlobalLongBuiltinType();
+        }
+        case ir::BoxingUnboxingFlags::BOX_TO_FLOAT: {
+            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_FLOAT_VALUE_OF, dummyReg_, 0);
+            return Checker()->GetGlobalTypesHolder()->GlobalFloatBuiltinType();
+        }
+        case ir::BoxingUnboxingFlags::BOX_TO_DOUBLE: {
+            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_DOUBLE_VALUE_OF, dummyReg_, 0);
+            return Checker()->GetGlobalTypesHolder()->GlobalDoubleBuiltinType();
+        }
+        case ir::BoxingUnboxingFlags::BOX_TO_ENUM: {
+            const auto *const enumInterface = node->AsExpression()->TsType()->AsETSEnumType();
+            const auto boxedFromIntMethod = enumInterface->BoxedFromIntMethod();
+            Ra().Emit<CallAccShort, 0>(node, boxedFromIntMethod.globalSignature->InternalName(), dummyReg_, 0);
+            return enumInterface->GetDecl()->BoxedClass()->TsType();
+        }
+        default:
+            UNREACHABLE();
+            break;
+    }
+    return nullptr;
 }
 
 void ETSGen::EmitBoxingConversion(const ir::AstNode *node)
@@ -1340,50 +1323,7 @@ void ETSGen::EmitBoxingConversion(const ir::AstNode *node)
     ApplyCastToBoxingFlags(node, boxingFlag);
     checker::Type *boxedType;
 
-    switch (boxingFlag) {
-        case ir::BoxingUnboxingFlags::BOX_TO_BOOLEAN: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_BOOLEAN_VALUE_OF, dummyReg_, 0);
-            boxedType = Checker()->GetGlobalTypesHolder()->GlobalETSBooleanBuiltinType();
-            break;
-        }
-        case ir::BoxingUnboxingFlags::BOX_TO_BYTE: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_BYTE_VALUE_OF, dummyReg_, 0);
-            boxedType = Checker()->GetGlobalTypesHolder()->GlobalByteBuiltinType();
-            break;
-        }
-        case ir::BoxingUnboxingFlags::BOX_TO_CHAR: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_CHAR_VALUE_OF, dummyReg_, 0);
-            boxedType = Checker()->GetGlobalTypesHolder()->GlobalCharBuiltinType();
-            break;
-        }
-        case ir::BoxingUnboxingFlags::BOX_TO_SHORT: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_SHORT_VALUE_OF, dummyReg_, 0);
-            boxedType = Checker()->GetGlobalTypesHolder()->GlobalShortBuiltinType();
-            break;
-        }
-        case ir::BoxingUnboxingFlags::BOX_TO_INT: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_INT_VALUE_OF, dummyReg_, 0);
-            boxedType = Checker()->GetGlobalTypesHolder()->GlobalIntegerBuiltinType();
-            break;
-        }
-        case ir::BoxingUnboxingFlags::BOX_TO_LONG: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_LONG_VALUE_OF, dummyReg_, 0);
-            boxedType = Checker()->GetGlobalTypesHolder()->GlobalLongBuiltinType();
-            break;
-        }
-        case ir::BoxingUnboxingFlags::BOX_TO_FLOAT: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_FLOAT_VALUE_OF, dummyReg_, 0);
-            boxedType = Checker()->GetGlobalTypesHolder()->GlobalFloatBuiltinType();
-            break;
-        }
-        case ir::BoxingUnboxingFlags::BOX_TO_DOUBLE: {
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_DOUBLE_VALUE_OF, dummyReg_, 0);
-            boxedType = Checker()->GetGlobalTypesHolder()->GlobalDoubleBuiltinType();
-            break;
-        }
-        default:
-            UNREACHABLE();
-    }
+    boxedType = EmitBoxedType(boxingFlag, node);
 
     SetAccumulatorType(boxedType);
     if (node->IsExpression()) {
@@ -1406,162 +1346,6 @@ VReg ETSGen::MoveAccToReg(const ir::AstNode *const node)
     const auto newReg = AllocReg();
     StoreAccumulator(node, newReg);
     return newReg;
-}
-
-void ETSGen::EmitLocalBoxCtor(ir::AstNode const *node)
-{
-    auto *contentType = node->AsIdentifier()->Variable()->TsType();
-    switch (checker::ETSChecker::TypeKind(contentType)) {
-        case checker::TypeFlag::ETS_BOOLEAN:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_BOOLEAN_BOX_CTOR, dummyReg_, dummyReg_);
-            break;
-        case checker::TypeFlag::BYTE:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_BYTE_BOX_CTOR, dummyReg_, dummyReg_);
-            break;
-        case checker::TypeFlag::CHAR:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_CHAR_BOX_CTOR, dummyReg_, dummyReg_);
-            break;
-        case checker::TypeFlag::SHORT:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_SHORT_BOX_CTOR, dummyReg_, dummyReg_);
-            break;
-        case checker::TypeFlag::INT:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_INT_BOX_CTOR, dummyReg_, dummyReg_);
-            break;
-        case checker::TypeFlag::LONG:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_LONG_BOX_CTOR, dummyReg_, dummyReg_);
-            break;
-        case checker::TypeFlag::FLOAT:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_FLOAT_BOX_CTOR, dummyReg_, dummyReg_);
-            break;
-        case checker::TypeFlag::DOUBLE:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_DOUBLE_BOX_CTOR, dummyReg_, dummyReg_);
-            break;
-        default:
-            Ra().Emit<InitobjShort>(node, Signatures::BUILTIN_BOX_CTOR, dummyReg_, dummyReg_);
-            break;
-    }
-    SetAccumulatorType(Checker()->GlobalBuiltinBoxType(contentType));
-}
-
-void ETSGen::EmitLocalBoxGet(ir::AstNode const *node, checker::Type const *contentType)
-{
-    switch (checker::ETSChecker::TypeKind(contentType)) {
-        case checker::TypeFlag::ETS_BOOLEAN:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_BOOLEAN_BOX_GET, dummyReg_, 0);
-            break;
-        case checker::TypeFlag::BYTE:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_BYTE_BOX_GET, dummyReg_, 0);
-            break;
-        case checker::TypeFlag::CHAR:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_CHAR_BOX_GET, dummyReg_, 0);
-            break;
-        case checker::TypeFlag::SHORT:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_SHORT_BOX_GET, dummyReg_, 0);
-            break;
-        case checker::TypeFlag::INT:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_INT_BOX_GET, dummyReg_, 0);
-            break;
-        case checker::TypeFlag::LONG:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_LONG_BOX_GET, dummyReg_, 0);
-            break;
-        case checker::TypeFlag::FLOAT:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_FLOAT_BOX_GET, dummyReg_, 0);
-            break;
-        case checker::TypeFlag::DOUBLE:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_DOUBLE_BOX_GET, dummyReg_, 0);
-            break;
-        default:
-            Ra().Emit<CallAccShort, 0>(node, Signatures::BUILTIN_BOX_GET, dummyReg_, 0);
-            CheckedReferenceNarrowing(node, contentType);
-            break;
-    }
-    SetAccumulatorType(contentType);
-}
-
-void ETSGen::EmitLocalBoxSet(ir::AstNode const *node, varbinder::LocalVariable *lhsVar)
-{
-    auto *contentType = lhsVar->TsType();
-    auto vreg = lhsVar->Vreg();
-    switch (checker::ETSChecker::TypeKind(contentType)) {
-        case checker::TypeFlag::ETS_BOOLEAN:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_BOOLEAN_BOX_SET, vreg, 1);
-            break;
-        case checker::TypeFlag::BYTE:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_BYTE_BOX_SET, vreg, 1);
-            break;
-        case checker::TypeFlag::CHAR:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_CHAR_BOX_SET, vreg, 1);
-            break;
-        case checker::TypeFlag::SHORT:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_SHORT_BOX_SET, vreg, 1);
-            break;
-        case checker::TypeFlag::INT:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_INT_BOX_SET, vreg, 1);
-            break;
-        case checker::TypeFlag::LONG:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_LONG_BOX_SET, vreg, 1);
-            break;
-        case checker::TypeFlag::FLOAT:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_FLOAT_BOX_SET, vreg, 1);
-            break;
-        case checker::TypeFlag::DOUBLE:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_DOUBLE_BOX_SET, vreg, 1);
-            break;
-        default:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_BOX_SET, vreg, 1);
-            break;
-    }
-
-    SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalVoidType());
-}
-
-void ETSGen::EmitPropertyBoxSet(const ir::AstNode *const node, const checker::Type *propType, const VReg objectReg,
-                                const util::StringView &name)
-{
-    const auto fullName = FormClassPropReference(GetVRegType(objectReg)->AsETSObjectType(), name);
-    const RegScope rs(this);
-
-    auto inputValue = AllocReg();
-    StoreAccumulator(node, inputValue);
-
-    Ra().Emit<LdobjObj>(node, objectReg, fullName);
-    SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalETSObjectType());
-
-    auto field = AllocReg();
-    StoreAccumulator(node, field);
-    LoadAccumulator(node, inputValue);
-
-    switch (checker::ETSChecker::TypeKind(propType)) {
-        case checker::TypeFlag::ETS_BOOLEAN:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_BOOLEAN_BOX_SET, field, 1);
-            break;
-        case checker::TypeFlag::BYTE:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_BYTE_BOX_SET, field, 1);
-            break;
-        case checker::TypeFlag::CHAR:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_CHAR_BOX_SET, field, 1);
-            break;
-        case checker::TypeFlag::SHORT:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_SHORT_BOX_SET, field, 1);
-            break;
-        case checker::TypeFlag::INT:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_INT_BOX_SET, field, 1);
-            break;
-        case checker::TypeFlag::LONG:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_LONG_BOX_SET, field, 1);
-            break;
-        case checker::TypeFlag::FLOAT:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_FLOAT_BOX_SET, field, 1);
-            break;
-        case checker::TypeFlag::DOUBLE:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_DOUBLE_BOX_SET, field, 1);
-            break;
-        default:
-            Ra().Emit<CallAccShort, 1>(node, Signatures::BUILTIN_BOX_SET, field, 1);
-            break;
-    }
-
-    SetAccumulatorType(Checker()->GetGlobalTypesHolder()->GlobalVoidType());
 }
 
 void ETSGen::CastToBoolean([[maybe_unused]] const ir::AstNode *node)
@@ -1888,7 +1672,7 @@ void ETSGen::CastToInt(const ir::AstNode *node)
         }
         case checker::TypeFlag::ETS_BOOLEAN:
         case checker::TypeFlag::CHAR:
-        case checker::TypeFlag::ETS_ENUM:
+        case checker::TypeFlag::ETS_INT_ENUM:
         case checker::TypeFlag::ETS_STRING_ENUM:
         case checker::TypeFlag::BYTE:
         case checker::TypeFlag::SHORT: {
@@ -2119,73 +1903,9 @@ void ETSGen::ToBinaryResult(const ir::AstNode *node, Label *ifFalse)
     SetAccumulatorType(Checker()->GlobalETSBooleanType());
 }
 
-void ETSGen::Binary(const ir::AstNode *node, lexer::TokenType op, VReg lhs)
+void ETSGen::BinaryLogic(const ir::AstNode *node, lexer::TokenType op, VReg lhs)
 {
     switch (op) {
-        case lexer::TokenType::PUNCTUATOR_EQUAL: {
-            Label *ifFalse = AllocLabel();
-            BinaryEquality<JneObj, Jne, Jnez, Jeqz>(node, lhs, ifFalse);
-            break;
-        }
-        case lexer::TokenType::PUNCTUATOR_NOT_EQUAL: {
-            Label *ifFalse = AllocLabel();
-            BinaryEquality<JeqObj, Jeq, Jeqz, Jnez>(node, lhs, ifFalse);
-            break;
-        }
-        case lexer::TokenType::PUNCTUATOR_STRICT_EQUAL: {
-            Label *ifFalse = AllocLabel();
-            RefEqualityStrict<JneObj, Jeqz>(node, lhs, ifFalse);
-            break;
-        }
-        case lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL: {
-            Label *ifFalse = AllocLabel();
-            RefEqualityStrict<JeqObj, Jnez>(node, lhs, ifFalse);
-            break;
-        }
-        case lexer::TokenType::PUNCTUATOR_LESS_THAN: {
-            Label *ifFalse = AllocLabel();
-            BinaryRelation<Jle, Jlez>(node, lhs, ifFalse);
-            break;
-        }
-        case lexer::TokenType::PUNCTUATOR_LESS_THAN_EQUAL: {
-            Label *ifFalse = AllocLabel();
-            BinaryRelation<Jlt, Jltz>(node, lhs, ifFalse);
-            break;
-        }
-        case lexer::TokenType::PUNCTUATOR_GREATER_THAN: {
-            Label *ifFalse = AllocLabel();
-            BinaryRelation<Jge, Jgez>(node, lhs, ifFalse);
-            break;
-        }
-        case lexer::TokenType::PUNCTUATOR_GREATER_THAN_EQUAL: {
-            Label *ifFalse = AllocLabel();
-            BinaryRelation<Jgt, Jgtz>(node, lhs, ifFalse);
-            break;
-        }
-        case lexer::TokenType::PUNCTUATOR_PLUS:
-        case lexer::TokenType::PUNCTUATOR_PLUS_EQUAL: {
-            SwapBinaryOpArgs(node, lhs);
-            BinaryArithmetic<Add2, Add2Wide, Fadd2, Fadd2Wide>(node, lhs);
-            break;
-        }
-        case lexer::TokenType::PUNCTUATOR_MINUS:
-        case lexer::TokenType::PUNCTUATOR_MINUS_EQUAL: {
-            SwapBinaryOpArgs(node, lhs);
-            BinaryArithmetic<Sub2, Sub2Wide, Fsub2, Fsub2Wide>(node, lhs);
-            break;
-        }
-        case lexer::TokenType::PUNCTUATOR_MULTIPLY:
-        case lexer::TokenType::PUNCTUATOR_MULTIPLY_EQUAL: {
-            SwapBinaryOpArgs(node, lhs);
-            BinaryArithmetic<Mul2, Mul2Wide, Fmul2, Fmul2Wide>(node, lhs);
-            break;
-        }
-        case lexer::TokenType::PUNCTUATOR_DIVIDE:
-        case lexer::TokenType::PUNCTUATOR_DIVIDE_EQUAL: {
-            SwapBinaryOpArgs(node, lhs);
-            BinaryArithmetic<Div2, Div2Wide, Fdiv2, Fdiv2Wide>(node, lhs);
-            break;
-        }
         case lexer::TokenType::PUNCTUATOR_MOD:
         case lexer::TokenType::PUNCTUATOR_MOD_EQUAL: {
             SwapBinaryOpArgs(node, lhs);
@@ -2227,6 +1947,89 @@ void ETSGen::Binary(const ir::AstNode *node, lexer::TokenType op, VReg lhs)
         }
         default: {
             UNREACHABLE();
+        }
+    }
+    ASSERT(node->IsAssignmentExpression() || node->IsBinaryExpression());
+    ASSERT(Checker()->Relation()->IsIdenticalTo(const_cast<checker::Type *>(GetAccumulatorType()),
+                                                const_cast<checker::Type *>(node->AsExpression()->TsType())));
+}
+
+void ETSGen::BinaryArithmLogic(const ir::AstNode *node, lexer::TokenType op, VReg lhs)
+{
+    switch (op) {
+        case lexer::TokenType::PUNCTUATOR_PLUS:
+        case lexer::TokenType::PUNCTUATOR_PLUS_EQUAL: {
+            SwapBinaryOpArgs(node, lhs);
+            BinaryArithmetic<Add2, Add2Wide, Fadd2, Fadd2Wide>(node, lhs);
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_MINUS:
+        case lexer::TokenType::PUNCTUATOR_MINUS_EQUAL: {
+            SwapBinaryOpArgs(node, lhs);
+            BinaryArithmetic<Sub2, Sub2Wide, Fsub2, Fsub2Wide>(node, lhs);
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_MULTIPLY:
+        case lexer::TokenType::PUNCTUATOR_MULTIPLY_EQUAL: {
+            SwapBinaryOpArgs(node, lhs);
+            BinaryArithmetic<Mul2, Mul2Wide, Fmul2, Fmul2Wide>(node, lhs);
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_DIVIDE:
+        case lexer::TokenType::PUNCTUATOR_DIVIDE_EQUAL: {
+            SwapBinaryOpArgs(node, lhs);
+            BinaryArithmetic<Div2, Div2Wide, Fdiv2, Fdiv2Wide>(node, lhs);
+            break;
+        }
+        default: {
+            BinaryLogic(node, op, lhs);
+            break;
+        }
+    }
+    ASSERT(node->IsAssignmentExpression() || node->IsBinaryExpression());
+    ASSERT(Checker()->Relation()->IsIdenticalTo(const_cast<checker::Type *>(GetAccumulatorType()),
+                                                const_cast<checker::Type *>(node->AsExpression()->TsType())));
+}
+
+void ETSGen::Binary(const ir::AstNode *node, lexer::TokenType op, VReg lhs)
+{
+    Label *ifFalse = AllocLabel();
+    switch (op) {
+        case lexer::TokenType::PUNCTUATOR_EQUAL: {
+            BinaryEquality<JneObj, Jne, Jnez, Jeqz>(node, lhs, ifFalse);
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_NOT_EQUAL: {
+            BinaryEquality<JeqObj, Jeq, Jeqz, Jnez>(node, lhs, ifFalse);
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_STRICT_EQUAL: {
+            RefEqualityStrict<JneObj, Jeqz>(node, lhs, ifFalse);
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_NOT_STRICT_EQUAL: {
+            RefEqualityStrict<JeqObj, Jnez>(node, lhs, ifFalse);
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_LESS_THAN: {
+            BinaryRelation<Jle, Jlez>(node, lhs, ifFalse);
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_LESS_THAN_EQUAL: {
+            BinaryRelation<Jlt, Jltz>(node, lhs, ifFalse);
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_GREATER_THAN: {
+            BinaryRelation<Jge, Jgez>(node, lhs, ifFalse);
+            break;
+        }
+        case lexer::TokenType::PUNCTUATOR_GREATER_THAN_EQUAL: {
+            BinaryRelation<Jgt, Jgtz>(node, lhs, ifFalse);
+            break;
+        }
+        default: {
+            BinaryArithmLogic(node, op, lhs);
+            break;
         }
     }
     ASSERT(node->IsAssignmentExpression() || node->IsBinaryExpression());
@@ -2803,7 +2606,7 @@ void ETSGen::LoadArrayElement(const ir::AstNode *node, VReg objectReg)
         }
         case checker::TypeFlag::ETS_STRING_ENUM:
             [[fallthrough]];
-        case checker::TypeFlag::ETS_ENUM:
+        case checker::TypeFlag::ETS_INT_ENUM:
         case checker::TypeFlag::INT: {
             Ra().Emit<Ldarr>(node, objectReg);
             break;
@@ -2849,7 +2652,7 @@ void ETSGen::StoreArrayElement(const ir::AstNode *node, VReg objectReg, VReg ind
         }
         case checker::TypeFlag::ETS_STRING_ENUM:
             [[fallthrough]];
-        case checker::TypeFlag::ETS_ENUM:
+        case checker::TypeFlag::ETS_INT_ENUM:
         case checker::TypeFlag::INT: {
             Ra().Emit<Starr>(node, objectReg, index);
             break;
@@ -2971,6 +2774,19 @@ util::StringView ETSGen::ToAssemblerType(const es2panda::checker::Type *type) co
     std::stringstream ss;
     type->ToAssemblerTypeWithRank(ss);
     return util::UString(ss.str(), Allocator()).View();
+}
+void ETSGen::CastUnionToFunctionType(const ir::AstNode *node, const checker::ETSUnionType *unionType,
+                                     checker::Signature *signatureTarget)
+{
+    for (auto it : unionType->ConstituentTypes()) {
+        for (auto prop : it->AsETSObjectType()->GetAllProperties()) {
+            if (prop->TsType()->IsETSFunctionType() &&
+                prop->TsType()->AsETSFunctionType()->CallSignatures().front() == signatureTarget) {
+                InternalCheckCast(node, it);
+                break;
+            }
+        }
+    }
 }
 
 }  // namespace ark::es2panda::compiler

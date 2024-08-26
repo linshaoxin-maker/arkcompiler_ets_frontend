@@ -26,7 +26,7 @@
 namespace ark::es2panda::compiler {
 
 class ImportExportDecls : ir::visitor::EmptyAstVisitor {
-    static constexpr std::string_view DEFAULT_IMPORT_SOURCE_FILE = "<default_import>.ets";
+    static constexpr std::string_view DEFAULT_IMPORT_SOURCE_FILE = "<default_import>.sts";
 
     static std::string CreateDefaultImportSource(const std::vector<std::string> &paths)
     {
@@ -57,13 +57,25 @@ public:
      */
     void HandleGlobalStmts(const ArenaVector<parser::Program *> &programs);
     void VerifyTypeExports(const ArenaVector<parser::Program *> &programs);
+    void VerifyType(ir::Statement *stmt, parser::Program *program, std::set<util::StringView> &exportedTypes,
+                    std::set<util::StringView> &exportedStatements,
+                    std::map<util::StringView, ir::AstNode *> &typesMap);
+    void HandleSimpleType(std::set<util::StringView> &exportedTypes, std::set<util::StringView> &exportedStatements,
+                          ir::Statement *stmt, util::StringView name, parser::Program *program,
+                          lexer::SourcePosition pos);
 
     void VerifySingleExportDefault(const ArenaVector<parser::Program *> &programs);
+    void HandleSelectiveExportWithAlias(util::StringView originalFieldName, util::StringView exportName,
+                                        lexer::SourcePosition startLoc);
+    void PopulateAliasMap(const ir::ExportNamedDeclaration *decl, const util::StringView &path);
 
 private:
     void VisitFunctionDeclaration(ir::FunctionDeclaration *funcDecl) override;
     void VisitVariableDeclaration(ir::VariableDeclaration *varDecl) override;
     void VisitExportNamedDeclaration(ir::ExportNamedDeclaration *exportDecl) override;
+    void VisitClassDeclaration(ir::ClassDeclaration *classDecl) override;
+    void VisitTSTypeAliasDeclaration(ir::TSTypeAliasDeclaration *typeAliasDecl) override;
+    void VisitTSInterfaceDeclaration(ir::TSInterfaceDeclaration *interfaceDecl) override;
 
 private:
     varbinder::ETSBinder *varbinder_ {nullptr};

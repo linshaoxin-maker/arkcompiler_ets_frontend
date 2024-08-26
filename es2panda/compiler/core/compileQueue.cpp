@@ -31,8 +31,8 @@
 
 namespace panda::es2panda::compiler {
 
-std::mutex CompileFileJob::global_m_;
-std::mutex CompileAbcClassQueue::global_m_;
+std::mutex CompileFileJob::globalMutex_;
+std::mutex CompileAbcClassQueue::globalMutex_;
 
 void CompileFunctionJob::Run()
 {
@@ -59,7 +59,9 @@ void CompileModuleRecordJob::Run()
     std::unique_lock<std::mutex> lock(m_);
     cond_.wait(lock, [this] { return dependencies_ == 0; });
 
-    ModuleRecordEmitter moduleEmitter(context_->Binder()->Program()->ModuleRecord(), context_->NewLiteralIndex());
+    bool hasLazyImport = context_->Binder()->Program()->ModuleRecord()->HasLazyImport();
+    ModuleRecordEmitter moduleEmitter(context_->Binder()->Program()->ModuleRecord(), context_->NewLiteralIndex(),
+        hasLazyImport ? context_->NewLiteralIndex() : -1);
     moduleEmitter.Generate();
 
     context_->GetEmitter()->AddSourceTextModuleRecord(&moduleEmitter, context_);
@@ -88,7 +90,7 @@ bool CompileFileJob::RetrieveProgramFromCacheFiles(const std::string &buffer)
                                                                                    &allocator);
 
         if (cacheProgramInfo != nullptr && cacheProgramInfo->hashCode == src_->hash) {
-            std::unique_lock<std::mutex> lock(global_m_);
+            std::unique_lock<std::mutex> lock(globalMutex_);
             auto *cache = allocator_->New<util::ProgramCache>(src_->hash, std::move(cacheProgramInfo->program));
             progsInfo_.insert({src_->fileName, cache});
             return true;
@@ -113,11 +115,17 @@ void CompileFileJob::Run()
     }
 
     es2panda::Compiler compiler(src_->scriptExtension, options_->functionThreadCount);
-    if (!src_->isSourceMode) {
-        compiler.AbcToAsmProgram(src_->fileName, *options_, progsInfo_, allocator_);
+    panda::pandasm::Program *prog = nullptr;
+    if (src_->isSourceMode) {
+        prog = compiler.CompileFile(*options_, src_, symbolTable_);
+    } else if (!options_->mergeAbc) {
+        // If input is an abc file, in non merge-abc mode, compile classes one by one.
+        prog = compiler.CompileAbcFile(src_->fileName, *options_);
+    } else {
+        // If input is an abc file, in merge-abc mode, compile each class parallelly.
+        compiler.CompileAbcFileInParallel(src_->fileName, *options_, progsInfo_, allocator_);
         return;
     }
-    auto *prog = compiler.CompileFile(*options_, src_, symbolTable_);
     if (prog == nullptr) {
         return;
     }
@@ -135,7 +143,7 @@ void CompileFileJob::Run()
     }
 
     {
-        std::unique_lock<std::mutex> lock(global_m_);
+        std::unique_lock<std::mutex> lock(globalMutex_);
         auto *cache = allocator_->New<util::ProgramCache>(src_->hash, std::move(*prog), src_->isSourceMode);
         progsInfo_.insert({src_->fileName, cache});
         if (requireOptimizationAfterAnalysis) {
@@ -164,10 +172,10 @@ void CompileAbcClassJob::Run()
     }
 
     {
-        std::unique_lock<std::mutex> lock(CompileFileJob::global_m_);
+        std::unique_lock<std::mutex> lock(CompileFileJob::globalMutex_);
         ASSERT(compiler_.GetAbcFile().GetFilename().find(util::CHAR_VERTICAL_LINE) == std::string::npos);
         ASSERT(program->record_table.size() == 1);
-        ASSERT(program->record_table.begin()->first.find(util::CHAR_VERTICAL_LINE) == std::string::npos);
+        ASSERT(util::RecordNotGeneratedFromBytecode(program->record_table.begin()->first));
         auto name = compiler_.GetAbcFile().GetFilename();
         name += util::CHAR_VERTICAL_LINE + program->record_table.begin()->first;
         auto *cache = allocator_->New<util::ProgramCache>(std::move(*program));
@@ -269,7 +277,7 @@ void CompileAbcClassQueue::Schedule()
         expectedProgsCountInAbcFile++;
     }
     {
-        std::unique_lock<std::mutex> lock(global_m_);
+        std::unique_lock<std::mutex> lock(globalMutex_);
         Compiler::SetExpectedProgsCount(Compiler::GetExpectedProgsCount() + expectedProgsCountInAbcFile - 1);
     }
 

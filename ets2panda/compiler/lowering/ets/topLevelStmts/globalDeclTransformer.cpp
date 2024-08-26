@@ -27,9 +27,9 @@ void GlobalDeclTransformer::FilterDeclarations(ArenaVector<ir::Statement *> &stm
 }
 
 GlobalDeclTransformer::ResultT GlobalDeclTransformer::TransformStatements(const ArenaVector<ir::Statement *> &stmts,
-                                                                          bool isPackage)
+                                                                          bool addInitializer)
 {
-    isPackage_ = isPackage;
+    addInitializer_ = addInitializer;
     result_.classProperties.clear();
     result_.initStatements.clear();
     for (auto stmt : stmts) {
@@ -53,6 +53,11 @@ void GlobalDeclTransformer::VisitFunctionDeclaration(ir::FunctionDeclaration *fu
         allocator_, methodKind, funcDecl->Function()->Id()->Clone(allocator_, nullptr), funcExpr,
         funcDecl->Function()->Modifiers(), allocator_, false);
     method->SetRange(funcDecl->Range());
+
+    if (funcDecl->Function()->IsExported() && funcDecl->Function()->HasExportAlias()) {
+        method->AddAstNodeFlags(ir::AstNodeFlags::HAS_EXPORT_ALIAS);
+    }
+
     result_.classProperties.emplace_back(method);
 }
 
@@ -66,6 +71,11 @@ void GlobalDeclTransformer::VisitVariableDeclaration(ir::VariableDeclaration *va
                                                                              declarator->Init(), typeAnn,
                                                                              varDecl->Modifiers(), allocator_, false);
         field->SetRange(declarator->Range());
+
+        if (varDecl->IsExported() && varDecl->HasExportAlias()) {
+            field->AddAstNodeFlags(ir::AstNodeFlags::HAS_EXPORT_ALIAS);
+        }
+
         result_.classProperties.emplace_back(field);
         if (auto stmt = InitTopLevelProperty(field); stmt != nullptr) {
             result_.initStatements.emplace_back(stmt);
@@ -84,15 +94,13 @@ ir::ExpressionStatement *GlobalDeclTransformer::InitTopLevelProperty(ir::ClassPr
 {
     ir::ExpressionStatement *initStmt = nullptr;
     const auto initializer = classProperty->Value();
-    if (!isPackage_ && !classProperty->IsConst() && initializer != nullptr &&
-        !initializer->IsArrowFunctionExpression()) {
+    if (addInitializer_ && !classProperty->IsConst() && initializer != nullptr) {
         auto *ident = RefIdent(classProperty->Id()->Name());
         ident->SetRange(classProperty->Id()->Range());
 
         initializer->SetParent(nullptr);
         auto *assignmentExpression = util::NodeAllocator::Alloc<ir::AssignmentExpression>(
-            allocator_, ident, initializer->Clone(allocator_, nullptr)->AsExpression(),
-            lexer::TokenType::PUNCTUATOR_SUBSTITUTION);
+            allocator_, ident, initializer, lexer::TokenType::PUNCTUATOR_SUBSTITUTION);
         assignmentExpression->SetRange({ident->Start(), initializer->End()});
         assignmentExpression->SetTsType(initializer->TsType());
 
@@ -102,10 +110,11 @@ ir::ExpressionStatement *GlobalDeclTransformer::InitTopLevelProperty(ir::ClassPr
 
         classProperty->SetRange({ident->Start(), initializer->End()});
 
-        if (classProperty->TypeAnnotation() != nullptr && !classProperty->TypeAnnotation()->IsETSFunctionType()) {
+        if (classProperty->TypeAnnotation() != nullptr) {
             classProperty->SetValue(nullptr);
         } else {
-            initializer->SetParent(classProperty);
+            // Code will be ignored, but checker is going to deduce the type.
+            classProperty->SetValue(initializer->Clone(allocator_, classProperty)->AsExpression());
         }
         initStmt = expressionStatement;
     } else {

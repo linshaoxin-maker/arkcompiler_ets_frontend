@@ -40,6 +40,7 @@
 #include <ir/expressions/literals/numberLiteral.h>
 #include <ir/expressions/literals/stringLiteral.h>
 #include <ir/expressions/newExpression.h>
+#include <ir/module/importSpecifier.h>
 #include <ir/statement.h>
 #include <util/concurrent.h>
 #include <util/helpers.h>
@@ -51,6 +52,7 @@ namespace panda::es2panda::compiler {
 
 void PandaGen::SetFunctionKind()
 {
+    int targetApiVersion = Binder()->Program()->TargetApiVersion();
     if (rootNode_->IsProgram()) {
         funcKind_ = panda::panda_file::FunctionKind::FUNCTION;
         return;
@@ -81,6 +83,10 @@ void PandaGen::SetFunctionKind()
         }
 
         funcKind_ = panda::panda_file::FunctionKind::ASYNC_FUNCTION;
+        
+        if (func->IsSendable() && targetApiVersion >= util::Helpers::SENDABLE_FUNCTION_MIN_SUPPORTED_API_VERSION) {
+            funcKind_ |= panda::panda_file::FunctionKind::SENDABLE_FUNCTION;
+        }
         return;
     }
 
@@ -95,6 +101,10 @@ void PandaGen::SetFunctionKind()
     }
 
     funcKind_ = panda::panda_file::FunctionKind::FUNCTION;
+
+    if (func->IsSendable() && targetApiVersion >= util::Helpers::SENDABLE_FUNCTION_MIN_SUPPORTED_API_VERSION) {
+        funcKind_ |= panda::panda_file::FunctionKind::SENDABLE_FUNCTION;
+    }
 }
 
 void PandaGen::SetInSendable()
@@ -269,11 +279,14 @@ void PandaGen::CopyFunctionArguments(const ir::AstNode *node)
 
 LiteralBuffer *PandaGen::NewLiteralBuffer()
 {
-    return allocator_->New<LiteralBuffer>(allocator_);
+    LiteralBuffer *buf = allocator_->New<LiteralBuffer>(allocator_);
+    CHECK_NOT_NULL(buf);
+    return buf;
 }
 
 int32_t PandaGen::AddLiteralBuffer(LiteralBuffer *buf)
 {
+    CHECK_NOT_NULL(buf);
     buffStorage_.push_back(buf);
     buf->SetIndex(context_->NewLiteralIndex());
     return buf->Index();
@@ -566,9 +579,14 @@ void PandaGen::StoreObjByName(const ir::AstNode *node, VReg obj, const util::Str
 
 void PandaGen::DefineFieldByName(const ir::AstNode *node, VReg obj, const util::StringView &prop)
 {
-    // use definepropertybyname instead of definefieldbyname since api12 for runtime's performance.
-    Binder()->Program()->TargetApiVersion() >= 12 ? ra_.Emit<Definepropertybyname>(node, 0, prop, obj) :
+    if (util::Helpers::IsDefaultApiVersion(Binder()->Program()->TargetApiVersion(),
+        Binder()->Program()->GetTargetApiSubVersion())) {
         ra_.Emit<Definefieldbyname>(node, 0, prop, obj);
+        strings_.insert(prop);
+        return;
+    }
+
+    ra_.Emit<Definepropertybyname>(node, 0, prop, obj);
     strings_.insert(prop);
 }
 
@@ -1081,8 +1099,13 @@ void PandaGen::GreaterEqual(const ir::AstNode *node, VReg lhs)
 
 void PandaGen::IsTrue(const ir::AstNode *node)
 {
-    // use callruntime.istrue instead of istrue since api12 for runtime's performance.
-    Binder()->Program()->TargetApiVersion() >= 12 ? ra_.Emit<CallruntimeIstrue>(node, 0) :  ra_.Emit<Istrue>(node);
+    if (util::Helpers::IsDefaultApiVersion(Binder()->Program()->TargetApiVersion(),
+        Binder()->Program()->GetTargetApiSubVersion())) {
+        ra_.Emit<Istrue>(node);
+        return;
+    }
+
+    ra_.Emit<CallruntimeIstrue>(node, 0);
 }
 
 void PandaGen::BranchIfUndefined(const ir::AstNode *node, Label *target)
@@ -1139,8 +1162,14 @@ void PandaGen::BranchIfNotTrue(const ir::AstNode *node, Label *target)
 
 void PandaGen::BranchIfFalse(const ir::AstNode *node, Label *target)
 {
-    // use callruntime.istrue instead of istrue since api12 for runtime's performance.
-    Binder()->Program()->TargetApiVersion() >= 12 ? ra_.Emit<CallruntimeIsfalse>(node, 0) :  ra_.Emit<Isfalse>(node);
+    if (util::Helpers::IsDefaultApiVersion(Binder()->Program()->TargetApiVersion(),
+        Binder()->Program()->GetTargetApiSubVersion())) {
+        ra_.Emit<Isfalse>(node);
+        ra_.Emit<Jnez>(node, target);
+        return;
+    }
+
+    ra_.Emit<CallruntimeIsfalse>(node, 0);
     ra_.Emit<Jnez>(node, target);
 }
 
@@ -1266,7 +1295,7 @@ void PandaGen::CallThis(const ir::AstNode *node, VReg startReg, size_t argCount)
             break;
         }
         default: {
-            int64_t actualArgs = argCount - 1;
+            int64_t actualArgs = static_cast<int64_t>(argCount - 1);
             if (actualArgs <= util::Helpers::MAX_INT8) {
                 ra_.EmitRange<Callthisrange>(node, argCount, 0, actualArgs, thisReg);
                 break;
@@ -1595,7 +1624,7 @@ void PandaGen::CreateArray(const ir::AstNode *node, const ArenaVector<ir::Expres
     if (buf->IsEmpty()) {
         CreateEmptyArray(node);
     } else {
-        uint32_t bufIdx = AddLiteralBuffer(buf);
+        uint32_t bufIdx = static_cast<uint32_t>(AddLiteralBuffer(buf));
         CreateArrayWithBuffer(node, bufIdx);
     }
 
@@ -1757,10 +1786,26 @@ void PandaGen::LoadExternalModuleVariable(const ir::AstNode *node, const binder:
 {
     auto index = variable->Index();
 
+    auto targetApiVersion = Binder()->Program()->TargetApiVersion();
+    bool isLazy = variable->Declaration()->Node()->IsImportSpecifier() ?
+        variable->Declaration()->Node()->AsImportSpecifier()->IsLazy() : false;
+    if (isLazy) {
+        // Change the behavior of using imported object in sendable class since api12
+        if (inSendable_ && targetApiVersion >= util::Helpers::SENDABLE_LAZY_LOADING_MIN_SUPPORTED_API_VERSION) {
+            index <= util::Helpers::MAX_INT8 ? ra_.Emit<CallruntimeLdlazysendablemodulevar>(node, index) :
+                                               ra_.Emit<CallruntimeWideldlazysendablemodulevar>(node, index);
+            return;
+        }
+
+        index <= util::Helpers::MAX_INT8 ? ra_.Emit<CallruntimeLdlazymodulevar>(node, index) :
+                                           ra_.Emit<CallruntimeWideldlazymodulevar>(node, index);
+        return;
+    }
+
     // Change the behavior of using imported object in sendable class since api12
-    if (inSendable_ && Binder()->Program()->TargetApiVersion() >= 12) {
+    if (inSendable_ && targetApiVersion >= util::Helpers::SENDABLE_LAZY_LOADING_MIN_SUPPORTED_API_VERSION) {
         index <= util::Helpers::MAX_INT8 ? ra_.Emit<CallruntimeLdsendableexternalmodulevar>(node, index) :
-                                       ra_.Emit<CallruntimeWideldsendableexternalmodulevar>(node, index);
+                                           ra_.Emit<CallruntimeWideldsendableexternalmodulevar>(node, index);
         return;
     }
 

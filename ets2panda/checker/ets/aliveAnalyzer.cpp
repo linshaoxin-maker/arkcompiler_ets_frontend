@@ -92,6 +92,20 @@ void AliveAnalyzer::AnalyzeNode(const ir::AstNode *node)
             AnalyzeDoLoop(node->AsDoWhileStatement());
             break;
         }
+        default: {
+            break;
+        }
+    }
+
+    // Helpers to reduce function size and pass code checker
+    AnalyzeNodeHelper1(node);
+    AnalyzeNodeHelper2(node);
+}
+
+// Helper function to reduce AnalyzeNode size and pass code checker
+void AliveAnalyzer::AnalyzeNodeHelper1(const ir::AstNode *node)
+{
+    switch (node->Type()) {
         case ir::AstNodeType::WHILE_STATEMENT: {
             AnalyzeWhileLoop(node->AsWhileStatement());
             break;
@@ -128,6 +142,16 @@ void AliveAnalyzer::AnalyzeNode(const ir::AstNode *node)
             AnalyzeSwitch(node->AsSwitchStatement());
             break;
         }
+        default: {
+            break;
+        }
+    }
+}
+
+// Helper function to reduce AnalyzeNode size and pass code checker
+void AliveAnalyzer::AnalyzeNodeHelper2(const ir::AstNode *node)
+{
+    switch (node->Type()) {
         case ir::AstNodeType::TRY_STATEMENT: {
             AnalyzeTry(node->AsTryStatement());
             break;
@@ -222,8 +246,12 @@ void AliveAnalyzer::AnalyzeMethodDef(const ir::MethodDefinition *methodDef)
         isPromiseVoid = asAsync->GetPromiseTypeArg() == checker_->GlobalETSUndefinedType();
     }
 
-    if (status_ == LivenessStatus::ALIVE && !isVoid && !isPromiseVoid) {
-        checker_->ThrowTypeError("Function with a non void return type must return a value.", func->Id()->Start());
+    if (status_ == LivenessStatus::ALIVE && !isVoid && !isPromiseVoid && !checker_->IsAsyncImplMethod(methodDef)) {
+        if (!methodDef->Function()->HasReturnStatement()) {
+            checker_->ThrowTypeError("Function with a non void return type must return a value.", func->Id()->Start());
+        }
+
+        checker_->ThrowTypeError("Not all code paths return a value.", func->Id()->Start());
     }
 
     ClearPendingExits();

@@ -68,6 +68,20 @@ ObjectExpression *ObjectExpression::Clone(ArenaAllocator *const allocator, AstNo
     throw Error(ErrorType::GENERIC, "", CLONE_ALLOCATION_ERROR);
 }
 
+static std::pair<ValidationInfo, bool> ValidateProperty(Property *prop, bool &foundProto)
+{
+    ValidationInfo info = prop->ValidateExpression();
+    if (prop->Kind() == PropertyKind::PROTO) {
+        if (foundProto) {
+            return {{"Duplicate __proto__ fields are not allowed in object literals", prop->Key()->Start()}, true};
+        }
+
+        foundProto = true;
+    }
+
+    return {info, false};
+}
+
 ValidationInfo ObjectExpression::ValidateExpression()
 {
     if (optional_) {
@@ -93,16 +107,11 @@ ValidationInfo ObjectExpression::ValidateExpression()
             }
             case AstNodeType::PROPERTY: {
                 auto *prop = it->AsProperty();
-                info = prop->ValidateExpression();
-
-                if (prop->Kind() == PropertyKind::PROTO) {
-                    if (foundProto) {
-                        return {"Duplicate __proto__ fields are not allowed in object literals", prop->Key()->Start()};
-                    }
-
-                    foundProto = true;
+                bool ret = false;
+                std::tie(info, ret) = ValidateProperty(prop, foundProto);
+                if (ret) {
+                    return info;
                 }
-
                 break;
             }
             default: {
@@ -302,47 +311,7 @@ checker::Type *ObjectExpression::CheckPattern(checker::TSChecker *checker)
                     break;
                 }
                 case ir::AstNodeType::ASSIGNMENT_PATTERN: {
-                    auto *assignmentPattern = prop->Value()->AsAssignmentPattern();
-
-                    if (assignmentPattern->Left()->IsIdentifier()) {
-                        bindingVar = assignmentPattern->Left()->AsIdentifier()->Variable();
-                        patternParamType =
-                            checker->GetBaseTypeOfLiteralType(assignmentPattern->Right()->Check(checker));
-                        isOptional = true;
-                        break;
-                    }
-
-                    if (assignmentPattern->Left()->IsArrayPattern()) {
-                        auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::FORCE_TUPLE);
-                        auto destructuringContext =
-                            checker::ArrayDestructuringContext(checker, assignmentPattern->Left()->AsArrayPattern(),
-                                                               false, true, nullptr, assignmentPattern->Right());
-
-                        if (foundVar != nullptr) {
-                            destructuringContext.SetInferredType(
-                                checker->CreateUnionType({foundVar->TsType(), destructuringContext.InferredType()}));
-                        }
-
-                        destructuringContext.Start();
-                        patternParamType = destructuringContext.InferredType();
-                        isOptional = true;
-                        break;
-                    }
-
-                    ASSERT(assignmentPattern->Left()->IsObjectPattern());
-                    auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::FORCE_TUPLE);
-                    auto destructuringContext =
-                        checker::ObjectDestructuringContext(checker, assignmentPattern->Left()->AsObjectPattern(),
-                                                            false, true, nullptr, assignmentPattern->Right());
-
-                    if (foundVar != nullptr) {
-                        destructuringContext.SetInferredType(
-                            checker->CreateUnionType({foundVar->TsType(), destructuringContext.InferredType()}));
-                    }
-
-                    destructuringContext.Start();
-                    patternParamType = destructuringContext.InferredType();
-                    isOptional = true;
+                    isOptional = CheckAssignmentPattern(prop, bindingVar, patternParamType, checker, foundVar);
                     break;
                 }
                 default: {
@@ -373,6 +342,48 @@ checker::Type *ObjectExpression::CheckPattern(checker::TSChecker *checker)
     checker::Type *returnType = checker->Allocator()->New<checker::ObjectLiteralType>(desc);
     returnType->AsObjectType()->AddObjectFlag(checker::ObjectFlags::RESOLVED_MEMBERS);
     return returnType;
+}
+
+bool ObjectExpression::CheckAssignmentPattern(Property *prop, varbinder::Variable *&bindingVar,
+                                              checker::Type *&patternParamType, checker::TSChecker *checker,
+                                              varbinder::LocalVariable *foundVar)
+{
+    auto *assignmentPattern = prop->Value()->AsAssignmentPattern();
+
+    if (assignmentPattern->Left()->IsIdentifier()) {
+        bindingVar = assignmentPattern->Left()->AsIdentifier()->Variable();
+        patternParamType = checker->GetBaseTypeOfLiteralType(assignmentPattern->Right()->Check(checker));
+        return true;
+    }
+
+    if (assignmentPattern->Left()->IsArrayPattern()) {
+        auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::FORCE_TUPLE);
+        auto destructuringContext = checker::ArrayDestructuringContext(
+            {checker, assignmentPattern->Left()->AsArrayPattern(), false, true, nullptr, assignmentPattern->Right()});
+
+        if (foundVar != nullptr) {
+            destructuringContext.SetInferredType(
+                checker->CreateUnionType({foundVar->TsType(), destructuringContext.InferredType()}));
+        }
+
+        destructuringContext.Start();
+        patternParamType = destructuringContext.InferredType();
+        return true;
+    }
+
+    ASSERT(assignmentPattern->Left()->IsObjectPattern());
+    auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::FORCE_TUPLE);
+    auto destructuringContext = checker::ObjectDestructuringContext(
+        {checker, assignmentPattern->Left()->AsObjectPattern(), false, true, nullptr, assignmentPattern->Right()});
+
+    if (foundVar != nullptr) {
+        destructuringContext.SetInferredType(
+            checker->CreateUnionType({foundVar->TsType(), destructuringContext.InferredType()}));
+    }
+
+    destructuringContext.Start();
+    patternParamType = destructuringContext.InferredType();
+    return true;
 }
 
 checker::Type *ObjectExpression::Check(checker::TSChecker *checker)

@@ -38,14 +38,13 @@ public:
 #undef DECLARE_ETSANALYZER_CHECK_METHOD
     checker::Type *PreferredType(ir::ObjectExpression *expr) const;
     checker::Type *GetPreferredType(ir::ArrayExpression *expr) const;
-    void CheckObjectExprProps(const ir::ObjectExpression *expr) const;
+    void CheckObjectExprProps(const ir::ObjectExpression *expr, checker::PropertySearchFlags searchFlags) const;
     std::tuple<Type *, ir::Expression *> CheckAssignmentExprOperatorType(ir::AssignmentExpression *expr,
                                                                          Type *leftType) const;
 
 private:
     ETSChecker *GetETSChecker() const;
     void CheckInstantatedClass(ir::ETSNewClassInstanceExpression *expr, ETSObjectType *&calleeObj) const;
-    void CheckLocalClassInstantiation(ir::ETSNewClassInstanceExpression *expr, ETSObjectType *calleeObj) const;
     void CheckMethodModifiers(ir::MethodDefinition *node) const;
     checker::Signature *ResolveSignature(ETSChecker *checker, ir::CallExpression *expr, checker::Type *calleeType,
                                          bool isFunctionalInterface, bool isUnionTypeWithFunctionalInterface) const;
@@ -63,6 +62,26 @@ private:
         }
 
         return calleeType;
+    }
+
+    void CheckVoidTypeExpression(ETSChecker *checker, const ir::Expression *expr) const
+    {
+        // Existing void expression inconsistency,refer to #17762
+        if (expr->TsType() == nullptr || !expr->TsType()->IsETSVoidType() || expr->Parent() == nullptr) {
+            return;
+        }
+        auto parent = expr->Parent();
+        while (parent->IsConditionalExpression()) {
+            parent = parent->Parent();
+            if (parent == nullptr) {
+                return;
+            }
+        }
+        bool acceptVoid = parent->IsExpressionStatement() || parent->IsReturnStatement() ||
+                          parent->IsETSLaunchExpression() || parent->IsCallExpression();
+        if (!acceptVoid) {
+            checker->ThrowTypeError({"Cannot use type 'void' as value. "}, expr->Start());
+        }
     }
 };
 

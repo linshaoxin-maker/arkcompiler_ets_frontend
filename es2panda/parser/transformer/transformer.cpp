@@ -263,7 +263,8 @@ ir::UpdateNodes Transformer::VisitTSNode(ir::AstNode *childNode)
             }
 
             if (decl->IsTSEnumDeclaration()) {
-                if (decl->AsTSEnumDeclaration()->IsDeclare()) {
+                if (decl->AsTSEnumDeclaration()->IsDeclare() ||
+                    (decl->AsTSEnumDeclaration()->IsConst() && program_->IsShared())) {
                     return childNode;
                 }
                 auto res = VisitTsEnumDeclaration(decl->AsTSEnumDeclaration(), true);
@@ -911,7 +912,8 @@ ir::MethodDefinition* Transformer::AddMethodToClass(ir::ClassDefinition *classDe
         paramScope->AddParamDecl(Allocator(), param);
     }
     auto *scope = Binder()->Allocator()->New<binder::FunctionScope>(Allocator(), paramScope);
-    ASSERT(scope != nullptr);
+    CHECK_NOT_NULL(scope);
+    CHECK_NOT_NULL(paramScope);
     paramScope->BindFunctionScope(scope);
     auto *body = AllocNode<ir::BlockStatement>(scope, std::move(statements));
     auto *func = AllocNode<ir::ScriptFunction>(scope, std::move(params), nullptr, body, nullptr,
@@ -1411,10 +1413,10 @@ std::vector<ir::AstNode *> Transformer::CreateParamDecorators(util::StringView c
     std::vector<ir::AstNode *> res;
     size_t pos = variableDeclarations.size();
     auto paramsDecorators = node->GetParamDecorators();
-    for (int i = static_cast<int>(paramsDecorators.size() - 1); i >= 0; i--) {
+    for (int i = static_cast<int>(paramsDecorators.size()) - 1; i >= 0; i--) {
         auto paramIndex = paramsDecorators[i].paramIndex;
         auto decorators = paramsDecorators[i].decorators;
-        for (int j = static_cast<int>(decorators.size() - 1); j >= 0; j--) {
+        for (int j = static_cast<int>(decorators.size()) - 1; j >= 0; j--) {
             ArenaVector<ir::Expression *> arguments(Allocator()->Adapter());
             arguments.push_back(CreateDecoratorTarget(className, isConstructor || isStatic));
             arguments.push_back(isConstructor ?

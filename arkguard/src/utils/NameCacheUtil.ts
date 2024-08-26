@@ -19,9 +19,9 @@ export const NAME_CACHE_SUFFIX: string = '.cache.json';
 export const PROPERTY_CACHE_FILE: string = 'property.cache.json';
 export const IDENTIFIER_CACHE: string = 'IdentifierCache';
 export const MEM_METHOD_CACHE: string = 'MemberMethodCache';
-const spaceOfNameCache: number = 2;
+export const spaceOfNameCache: number = 2;
 
-export function writeCache(cache: Map<string, string>, destFileName: string): void {
+export function writeCache(cache: Map<string, string> | undefined, destFileName: string): void {
   // convert map to json string
   if (!cache) {
     return;
@@ -42,7 +42,7 @@ export function readCache(filePath: string): Object | undefined {
   return JSON.parse(cacheString);
 }
 
-export function getMapFromJson(jsonObj: Object): Map<string, string> {
+export function getMapFromJson(jsonObj: Object | undefined): Map<string, string> {
   if (jsonObj === undefined) {
     return new Map<string, string>();
   }
@@ -55,6 +55,28 @@ export function deleteLineInfoForNameString(historyNameCache: Map<string, string
     for (const [key, value] of Object.entries(identifierCache)) {
       let newKey = key.includes(':') ? key.split(':')[0] : key;
       historyNameCache.set(newKey, value as string);
+    }
+  }
+}
+
+// The original name of the member method is recorded during the identifier obfuscation.
+// After the property obfuscation, it needs to be updated to the mangled name.
+export function UpdateMemberMethodName(nameCache: Map<string, string | Map<string, string>>, globalMangledTable: Map<string, string>,
+  classInfoInMemberMethodCache: Set<string>): void {
+  let memberMethodCache: Map<string, string> = nameCache.get(MEM_METHOD_CACHE) as Map<string, string>;
+  if (!memberMethodCache) {
+    return;
+  }
+  // the valueName is the orignal name of member method.
+  for (const [key, valueName] of memberMethodCache.entries()) {
+    // It is used to prevent the class name from being updated incorrectly, since the obfuscated class name
+    // is recorded during identifier obfuscation.
+    if (classInfoInMemberMethodCache.has(key)) {
+      continue;
+    }
+    const mangledName: string = globalMangledTable.get(valueName);
+    if (mangledName) {
+      memberMethodCache.set(key, mangledName);
     }
   }
 }

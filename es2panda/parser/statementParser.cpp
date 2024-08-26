@@ -420,28 +420,7 @@ ir::TSModuleDeclaration *ParserImpl::ParseTsModuleOrNamespaceDelaration(const le
 
     auto localCtx = binder::LexicalScope<binder::TSModuleScope>(Binder(), exportBindings);
 
-    bool isInstantiated = false;
-    if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD) {
-        lexer_->NextToken();
-        lexer::SourcePosition moduleStart = lexer_->GetToken().Start();
-        body = ParseTsModuleOrNamespaceDelaration(moduleStart, false, true);
-        isInstantiated = body->AsTSModuleDeclaration()->IsInstantiated();
-    } else {
-        body = ParseTsModuleBlock();
-        auto statements = body->AsTSModuleBlock()->Statements();
-        for (auto *it : statements) {
-            auto statement = it;
-            if (statement->IsExportNamedDeclaration()) {
-                statement = statement->AsExportNamedDeclaration()->Decl();
-            }
-            if (statement != nullptr &&
-                !statement->IsTSInterfaceDeclaration() && !statement->IsTSTypeAliasDeclaration() &&
-                (!statement->IsTSModuleDeclaration() || statement->AsTSModuleDeclaration()->IsInstantiated())) {
-                isInstantiated = true;
-                break;
-            }
-        }
-    }
+    bool isInstantiated = IsInstantiatedInTsModuleBlock(&body);
     if (isDeclare) {
         isInstantiated = false;
     }
@@ -455,6 +434,33 @@ ir::TSModuleDeclaration *ParserImpl::ParseTsModuleOrNamespaceDelaration(const le
     res->Declaration()->AsNamespaceDecl()->Add(moduleDecl);
 
     return moduleDecl;
+}
+
+bool ParserImpl::IsInstantiatedInTsModuleBlock(ir::Statement **body)
+{
+    bool isInstantiated = false;
+    if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD) {
+        lexer_->NextToken();
+        lexer::SourcePosition moduleStart = lexer_->GetToken().Start();
+        *body = ParseTsModuleOrNamespaceDelaration(moduleStart, false, true);
+        isInstantiated = (*body)->AsTSModuleDeclaration()->IsInstantiated();
+    } else {
+        *body = ParseTsModuleBlock();
+        auto statements = (*body)->AsTSModuleBlock()->Statements();
+        for (auto *it : statements) {
+            auto statement = it;
+            if (LIKELY(statement != nullptr) && statement->IsExportNamedDeclaration()) {
+                statement = statement->AsExportNamedDeclaration()->Decl();
+            }
+            if (statement != nullptr && !statement->IsTSInterfaceDeclaration() &&
+                !statement->IsTSTypeAliasDeclaration() &&
+                (!statement->IsTSModuleDeclaration() || statement->AsTSModuleDeclaration()->IsInstantiated())) {
+                isInstantiated = true;
+                break;
+            }
+        }
+    }
+    return isInstantiated;
 }
 
 ir::TSImportEqualsDeclaration *ParserImpl::ParseTsImportEqualsDeclaration(const lexer::SourcePosition &startLoc,
@@ -487,7 +493,7 @@ ir::TSImportEqualsDeclaration *ParserImpl::ParseTsImportEqualsDeclaration(const 
         auto *scope = Binder()->GetScope();
         auto name = id->Name();
         auto *var = scope->FindLocalTSVariable<binder::TSBindingType::IMPORT_EQUALS>(name);
-        ASSERT(var != nullptr);
+        CHECK_NOT_NULL(var);
         var->AsImportEqualsVariable()->SetScope(scope);
         if (isExport && scope->IsTSModuleScope()) {
             scope->AsTSModuleScope()->AddExportTSVariable<binder::TSBindingType::IMPORT_EQUALS>(name, var);
@@ -2192,7 +2198,7 @@ ir::WhileStatement *ParserImpl::ParseWhileStatement()
 }
 
 void ParserImpl::AddImportEntryItem(const ir::StringLiteral *source,
-                                    const ArenaVector<ir::AstNode *> *specifiers, bool isType)
+                                    const ArenaVector<ir::AstNode *> *specifiers, bool isType, bool isLazy)
 {
     if (context_.IsTsModule()) {
         return;
@@ -2215,19 +2221,20 @@ void ParserImpl::AddImportEntryItem(const ir::StringLiteral *source,
             ThrowSyntaxError("Unexpected astNode type", it->Start());
         }
         if (it->IsImportSpecifier()) {
-            AddImportEntryItemForImportSpecifier(source, it);
+            AddImportEntryItemForImportSpecifier(source, it, isLazy);
         } else {
             AddImportEntryItemForImportDefaultOrNamespaceSpecifier(source, it, isType);
         }
     }
 }
 
-void ParserImpl::AddImportEntryItemForImportSpecifier(const ir::StringLiteral *source, const ir::AstNode *specifier)
+void ParserImpl::AddImportEntryItemForImportSpecifier(const ir::StringLiteral *source, const ir::AstNode *specifier,
+    bool isLazy)
 {
     auto *moduleRecord = specifier->AsImportSpecifier()->IsType() ?
         GetSourceTextTypeModuleRecord() : GetSourceTextModuleRecord();
     ASSERT(moduleRecord != nullptr);
-    int moduleRequestIdx = moduleRecord->AddModuleRequest(source->Str());
+    int moduleRequestIdx = moduleRecord->AddModuleRequest(source->Str(), isLazy);
 
     auto localName = specifier->AsImportSpecifier()->Local()->Name();
     auto importName = specifier->AsImportSpecifier()->Imported()->Name();
@@ -2559,12 +2566,9 @@ ir::ExportNamedDeclaration *ParserImpl::ParseExportNamedSpecifiers(const lexer::
     while (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
         bool isTypeOfExportSpecifier = isType;
         if (Extension() == ScriptExtension::TS && lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_TYPE) {
-            const auto savedPos = lexer_->Save();
-            lexer_->NextToken();  // eat type
-
-            if (lexer_->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
-                lexer_->Rewind(savedPos);
-            } else {
+            auto isTypeUsedAsKeyword = HandleTypeImportOrExportSpecifier();
+            if (isTypeUsedAsKeyword) {
+                lexer_->NextToken(lexer::LexerNextTokenFlags::KEYWORD_TO_IDENT);  // eat type
                 if (isType) {
                     ThrowSyntaxError("The type modifier cannot be used on a named export "
                                      "when 'export type' is used on its export statement.");
@@ -2898,24 +2902,21 @@ ir::Identifier *ParserImpl::ParseNamedImport(const lexer::Token &importedToken)
     return local;
 }
 
-void ParserImpl::ParseNamedImportSpecifiers(ArenaVector<ir::AstNode *> *specifiers, bool isType)
+void ParserImpl::ParseNamedImportSpecifiers(ArenaVector<ir::AstNode *> *specifiers, bool isType, bool isLazy)
 {
     lexer_->NextToken(lexer::LexerNextTokenFlags::KEYWORD_TO_IDENT);  // eat `{` character
 
     while (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
         bool isTypeOfImportSpecifier = isType;
         if (Extension() == ScriptExtension::TS && lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_TYPE) {
-            const auto savedPos = lexer_->Save();
-            lexer_->NextToken();  // eat type
-
-            if (lexer_->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
-                lexer_->Rewind(savedPos);
-            } else {
-                if (isType) {
-                    ThrowSyntaxError("The type modifier cannot be used on a named import "
-                                     "when 'import type' is used on its import statement.");
-                }
+            auto isTypeUsedAsKeyword = HandleTypeImportOrExportSpecifier();
+            if (isTypeUsedAsKeyword) {
+                lexer_->NextToken(lexer::LexerNextTokenFlags::KEYWORD_TO_IDENT);  // eat type
                 isTypeOfImportSpecifier = true;
+            }
+            if (isTypeUsedAsKeyword && isType) {
+                ThrowSyntaxError("The type modifier cannot be used on a named import "
+                                 "when 'import type' is used on its import statement.");
             }
         }
 
@@ -2939,7 +2940,7 @@ void ParserImpl::ParseNamedImportSpecifiers(ArenaVector<ir::AstNode *> *specifie
             local = ParseNamedImport(importedToken);
         }
 
-        auto *specifier = AllocNode<ir::ImportSpecifier>(imported, local, isTypeOfImportSpecifier);
+        auto *specifier = AllocNode<ir::ImportSpecifier>(imported, local, isTypeOfImportSpecifier, isLazy);
         specifier->SetRange({imported->Start(), local->End()});
         specifiers->push_back(specifier);
 
@@ -2949,10 +2950,51 @@ void ParserImpl::ParseNamedImportSpecifiers(ArenaVector<ir::AstNode *> *specifie
 
         if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA) {
             lexer_->NextToken(lexer::LexerNextTokenFlags::KEYWORD_TO_IDENT);  // eat comma
+        } else if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
+            ThrowSyntaxError("Unexpected token");
         }
     }
 
     lexer_->NextToken();  // eat right brace
+}
+
+bool ParserImpl::HandleTypeImportOrExportSpecifier()
+{
+    bool isTypeUsedAsKeyword = false;
+    const auto savedPos = lexer_->Save();
+    
+    lexer_->NextToken(lexer::LexerNextTokenFlags::KEYWORD_TO_IDENT);  // eat type
+
+    if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_AS) {
+        // {type as ...? }
+        lexer_->NextToken(); // eat first as
+        if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_AS) {
+            // { type as as ...? }
+            lexer_->NextToken(); // eat second as
+            if (lexer_->GetToken().Type() == lexer::TokenType::LITERAL_IDENT) {
+                // { type as as something }
+                isTypeUsedAsKeyword = true;
+            } else {
+                // { type as as }
+                isTypeUsedAsKeyword = false;
+            }
+        } else if (lexer_->GetToken().Type() == lexer::TokenType::LITERAL_IDENT) {
+            // { type as something }
+            isTypeUsedAsKeyword = false;
+        } else {
+            // { type as }
+            isTypeUsedAsKeyword = true;
+        }
+    } else if (lexer_->GetToken().Type() == lexer::TokenType::LITERAL_IDENT) {
+        // { type something ...? }
+        isTypeUsedAsKeyword = true;
+    } else {
+        // { type }
+        isTypeUsedAsKeyword = false;
+    }
+
+    lexer_->Rewind(savedPos);
+    return isTypeUsedAsKeyword;
 }
 
 ir::Expression *ParserImpl::ParseModuleReference()
@@ -3011,7 +3053,7 @@ ir::AstNode *ParserImpl::ParseImportDefaultSpecifier(ArenaVector<ir::AstNode *> 
             decl->BindNode(local);
             auto *scope = Binder()->GetScope();
             auto *var = scope->FindLocalTSVariable<binder::TSBindingType::IMPORT_EQUALS>(local->Name());
-            ASSERT(var != nullptr);
+            CHECK_NOT_NULL(var);
             var->AsImportEqualsVariable()->SetScope(scope);
         }
 
@@ -3029,6 +3071,8 @@ ir::AstNode *ParserImpl::ParseImportDefaultSpecifier(ArenaVector<ir::AstNode *> 
 
     if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA) {
         lexer_->NextToken();  // eat comma
+    } else if (lexer_->GetToken().KeywordType() != lexer::TokenType::KEYW_FROM) {
+        ThrowSyntaxError("Unexpected token.");
     }
 
     return nullptr;
@@ -3058,7 +3102,7 @@ ir::StringLiteral *ParserImpl::ParseFromClause(bool requireFrom)
     return source;
 }
 
-ir::AstNode *ParserImpl::ParseImportSpecifiers(ArenaVector<ir::AstNode *> *specifiers, bool isType)
+ir::AstNode *ParserImpl::ParseImportSpecifiers(ArenaVector<ir::AstNode *> *specifiers, bool isType, bool isLazy)
 {
     ASSERT(specifiers->empty());
 
@@ -3073,9 +3117,23 @@ ir::AstNode *ParserImpl::ParseImportSpecifiers(ArenaVector<ir::AstNode *> *speci
     if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_MULTIPLY) {
         ParseNameSpaceImport(specifiers, isType);
     } else if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
-        ParseNamedImportSpecifiers(specifiers, isType);
+        ParseNamedImportSpecifiers(specifiers, isType, isLazy);
     }
     return nullptr;
+}
+
+void ParserImpl::VerifySupportLazyImportVersion()
+{
+    if (!util::Helpers::IsSupportLazyImportVersion(program_.TargetApiVersion(), program_.GetTargetApiSubVersion())) {
+        std::string errMessage = "Current configuration does not support using lazy import. Lazy import can be "
+            "used in the beta3 version of API 12 or higher versions.\n"
+            "Solutions: > Check the compatibleSdkVersion and compatibleSdkVersionStage in build-profile.json5."
+            "> If compatibleSdkVersion is set to API 12, then compatibleSdkVersionStage needs to be configured "
+            "as beta3."
+            "> If you're running es2abc in commandline without IDE, please check whether target-api-version and "
+            "target-api-sub-version options are correctly configured.";
+        ThrowSyntaxError(errMessage);
+    }
 }
 
 ir::Statement *ParserImpl::ParseImportDeclaration(StatementParsingFlags flags)
@@ -3099,6 +3157,19 @@ ir::Statement *ParserImpl::ParseImportDeclaration(StatementParsingFlags flags)
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
     lexer_->NextToken();  // eat import
 
+    bool isLazy = false;
+    if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_LAZY) {
+        const auto savedPos = lexer_->Save();
+        lexer_->NextToken();  // eat lazy
+        // only support import lazy {xxx} from '...'
+        if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
+            VerifySupportLazyImportVersion();
+            isLazy = true;
+        } else {
+            lexer_->Rewind(savedPos);
+        }
+    }
+
     bool isType = false;
     if (Extension() == ScriptExtension::TS &&
         lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_TYPE) {
@@ -3119,7 +3190,7 @@ ir::Statement *ParserImpl::ParseImportDeclaration(StatementParsingFlags flags)
     ir::StringLiteral *source = nullptr;
 
     if (lexer_->GetToken().Type() != lexer::TokenType::LITERAL_STRING) {
-        ir::AstNode *astNode = ParseImportSpecifiers(&specifiers, isType);
+        ir::AstNode *astNode = ParseImportSpecifiers(&specifiers, isType, isLazy);
         if (astNode != nullptr) {
             ASSERT(astNode->IsTSImportEqualsDeclaration());
             astNode->SetRange({startLoc, lexer_->GetToken().End()});
@@ -3130,14 +3201,14 @@ ir::Statement *ParserImpl::ParseImportDeclaration(StatementParsingFlags flags)
             ThrowSyntaxError("'import' and 'export' may appear only with 'sourceType: module'");
         }
         source = ParseFromClause(true);
-        AddImportEntryItem(source, &specifiers, isType);
+        AddImportEntryItem(source, &specifiers, isType, isLazy);
     } else {
         if (Extension() == ScriptExtension::TS && !context_.IsModule()) {
             ThrowSyntaxError("'import' and 'export' may appear only with 'sourceType: module'");
         }
         // import 'source'
         source = ParseFromClause(false);
-        AddImportEntryItem(source, nullptr, isType);
+        AddImportEntryItem(source, nullptr, isType, isLazy);
     }
 
     ir::AssertClause *assertClause = nullptr;
@@ -3151,7 +3222,8 @@ ir::Statement *ParserImpl::ParseImportDeclaration(StatementParsingFlags flags)
     }
 
     lexer::SourcePosition endLoc = source->End();
-    auto *importDeclaration = AllocNode<ir::ImportDeclaration>(source, std::move(specifiers), assertClause, isType);
+    auto *importDeclaration = AllocNode<ir::ImportDeclaration>(source, std::move(specifiers),
+        assertClause, isType, isLazy);
     if (importDeclaration->Specifiers().empty() && program_.IsShared()) {
         ThrowSyntaxError("Arkts-no-side-effects-import is not allowed in shared module.");
     }

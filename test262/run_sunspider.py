@@ -52,6 +52,10 @@ def parse_args():
     parser.add_argument("--js-file",
                         required=True,
                         help="js file")
+    parser.add_argument("--stub-file",
+                        default=DEFAULT_STUB_FILE,
+                        required=False,
+                        help="stub file")
     parser.add_argument('--ark-frontend',
                         default=DEFAULT_ARK_FRONTEND,
                         required=False,
@@ -93,13 +97,22 @@ def parse_args():
     parser.add_argument('--run-pgo', action='store_true',
                         required=False,
                         help="Run test262 with aot pgo")
+    parser.add_argument('--enable-litecg', action='store_true',
+                        required=False,
+                        help="Run test262 with aot litecg enabled")
     parser.add_argument('--run-jit', action='store_true',
                         required=False,
                         help="Run test262 with JIT")
+    parser.add_argument('--run-baseline-jit', action='store_true',
+                        required=False,
+                        help="Run test262 with baseline JIT")
     parser.add_argument('--abc2program', action='store_true',
                         help="Use abc2prog to generate abc, aot or pgo is not supported yet under this option")
     parser.add_argument('--disable-force-gc', action='store_true',
                         help="Run test262 with close force-gc")
+    parser.add_argument('--enable-arkguard', action='store_true',
+                        required=False,
+                        help="enable arkguard for 262 tests")
     arguments = parser.parse_args()
     return arguments
 
@@ -122,8 +135,10 @@ class ArkProgram():
         self.ark_tool = ARK_TOOL
         self.ark_aot = False
         self.run_pgo = False
+        self.enable_litecg = False
         self.disable_force_gc = False
         self.run_jit = False
+        self.run_baseline_jit = False
         self.ark_aot_tool = ARK_AOT_TOOL
         self.libs_dir = LIBS_DIR
         self.ark_frontend = ARK_FRONTEND
@@ -131,6 +146,7 @@ class ArkProgram():
         self.module_list = []
         self.dynamicImport_list = []
         self.js_file = ""
+        self.stub_file = ""
         self.module = False
         self.abc_file = ""
         self.arch = ARK_ARCH
@@ -142,6 +158,7 @@ class ArkProgram():
         self.abc2program = False
         # when enabling abc2program, may generate a list of abc files
         self.abc_outputs = []
+        self.enable_arkguard = False
 
     def proce_parameters(self):
         if self.args.ark_tool:
@@ -153,11 +170,17 @@ class ArkProgram():
         if self.args.run_pgo:
             self.run_pgo = self.args.run_pgo
 
+        if self.args.enable_litecg:
+            self.enable_litecg = self.args.enable_litecg
+
         if self.args.disable_force_gc:
             self.disable_force_gc = self.args.disable_force_gc
 
         if self.args.run_jit:
             self.run_jit = self.args.run_jit
+
+        if self.args.run_baseline_jit:
+            self.run_baseline_jit = self.args.run_baseline_jit
 
         if self.args.ark_aot_tool:
             self.ark_aot_tool = self.args.ark_aot_tool
@@ -182,15 +205,19 @@ class ArkProgram():
 
         if self.args.merge_abc_mode:
             self.merge_abc_mode = self.args.merge_abc_mode
-        
+
         if self.args.abc2program:
             self.abc2program = self.args.abc2program
+
+        self.enable_arkguard = self.args.enable_arkguard
 
         self.module_list = MODULE_LIST
 
         self.dynamicImport_list = DYNAMIC_IMPORT_LIST
 
         self.js_file = self.args.js_file
+
+        self.stub_file = self.args.stub_file
 
         self.arch = self.args.ark_arch
 
@@ -205,8 +232,7 @@ class ArkProgram():
             module_mode_list = re.findall(module_pattern, content_file)
 
             for module_mode in list(set(module_mode_list)):
-                if len(module_mode[0]) != 0 or len(module_mode[1]) != 0 or \
-                        len(module_mode[2]) != 0:
+                if len(module_mode[0]) != 0 or len(module_mode[1]) != 0 or len(module_mode[2]) != 0:
                     return True
 
         if "flags: [module]" in content_file or "/language/module-code/" in self.js_file:
@@ -478,7 +504,7 @@ class ArkProgram():
         # generate the dependencies' proto when ark_frontend is [es2panda]
         if (file_name in self.module_list or file_name in self.dynamicImport_list):
             compile_as_module, dependencies = self.gen_dependencies_proto(js_file)
-        
+
         if self.abc2program:
             return self.gen_abc_for_mix_compile_mode(dependencies, out_file)
 
@@ -507,6 +533,19 @@ class ArkProgram():
 
         return retcode
 
+    def execute_arkguard(self):
+        js_file = self.js_file
+        js_file_allpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../', js_file)
+        cmd_args = ['node', '--no-warnings',
+                    '--loader=ts-node/esm',
+                    './src/cli/SecHarmony.ts',
+                    js_file_allpath,
+                    '--config-path',
+                    './test/test262/test262Config.json',
+                    '--inplace']
+        arkguard_path = os.getcwd() + '/arkguard'
+        retcode = exec_command(cmd_args, custom_cwd = arkguard_path)
+
     def compile_aot(self):
         os.environ["LD_LIBRARY_PATH"] = self.libs_dir
         file_name_pre = os.path.splitext(self.js_file)[0]
@@ -529,6 +568,8 @@ class ArkProgram():
             cmd_args.append("--compiler-opt-inlining=true")
             cmd_args.append("--compiler-max-inline-bytecodes=45")
             cmd_args.append("--compiler-opt-level=2")
+            if self.stub_file != "":
+                cmd_args.append(f"--stub-file={self.stub_file}")
             if self.disable_force_gc:
                 cmd_args.append(f"--enable-force-gc=false")
             cmd_args.append(f'--compiler-pgo-profiler-path={file_name_pre}.ap')
@@ -549,6 +590,8 @@ class ArkProgram():
                 cmd_args = [self.ark_aot_tool, ICU_PATH,
                             f'--aot-file={file_name_pre}',
                             self.abc_file]
+        if self.enable_litecg:
+            cmd_args.insert(-1, "--compiler-enable-litecg=true")
         retcode = exec_command(cmd_args, 180000)
         if retcode:
             print_command(self.abc_cmd)
@@ -587,6 +630,8 @@ class ArkProgram():
 
         record_name = os.path.splitext(os.path.split(self.js_file)[1])[0]
         cmd_args.insert(-1, f'--entry-point={record_name}')
+        if self.stub_file != "":
+            cmd_args.insert(-1, f'--stub-file={self.stub_file}')
         retcode = exec_command(cmd_args)
         if retcode:
             print_command(cmd_args)
@@ -624,10 +669,11 @@ class ArkProgram():
             cmd_args = [qemu_tool, qemu_arg1, qemu_arg2, self.ark_tool,
                         ICU_PATH,
                         f'{file_name_pre}.abc']
-            if self.run_jit:
-                cmd_args = [qemu_tool, qemu_arg1, qemu_arg2, self.ark_tool, f'--compiler-enable-litecg=true',
-                            f'--compiler-enable-jit=true --log-debug=jit', ICU_PATH,
-                            f'{file_name_pre}.abc']
+            if self.run_jit or self.run_baseline_jit:
+                cmd_args.insert(-1, f'--compiler-target-triple=aarch64-unknown-linux-gnu')
+                cmd_args.insert(-1, f'--open-ark-tools=true')
+            if self.run_baseline_jit:
+                cmd_args.insert(-1, f'--test-assert=true')
         elif self.arch == ARK_ARCH_LIST[2]:
             qemu_tool = "qemu-arm"
             qemu_arg1 = "-L"
@@ -635,10 +681,6 @@ class ArkProgram():
             cmd_args = [qemu_tool, qemu_arg1, qemu_arg2, self.ark_tool,
                         ICU_PATH,
                         f'{file_name_pre}.abc']
-            if self.run_jit:
-                cmd_args = [qemu_tool, qemu_arg1, qemu_arg2, self.ark_tool, f'--compiler-enable-litecg=true',
-                            f'--compiler-enable-jit=true --log-debug=jit', ICU_PATH,
-                            f'{file_name_pre}.abc']
         elif self.arch == ARK_ARCH_LIST[0]:
             if file_name_pre in FORCE_GC_SKIP_TESTS:
                 unforce_gc = True
@@ -647,13 +689,17 @@ class ArkProgram():
                 asm_arg1 = "--enable-force-gc=false"
             cmd_args = [self.ark_tool, ICU_PATH, asm_arg1,
                         f'{file_name_pre}.abc']
-            if self.run_jit:
-                cmd_args = [self.ark_tool, f'--compiler-enable-litecg=true',
-                            f'--compiler-enable-jit=true --log-debug=jit',ICU_PATH, asm_arg1,
-                            f'{file_name_pre}.abc']
 
         record_name = os.path.splitext(os.path.split(self.js_file)[1])[0]
         cmd_args.insert(-1, f'--entry-point={record_name}')
+        if self.run_jit:
+            cmd_args.insert(-1, f'--compiler-enable-litecg=true')
+            cmd_args.insert(-1, f'--compiler-enable-jit=true --log-debug=jit')
+        if self.run_baseline_jit:
+            cmd_args.insert(-1, f'--compiler-enable-baselinejit=true')
+            cmd_args.insert(-1, f'--compiler-force-baselinejit-compile-main=true')
+        if self.stub_file != "":
+            cmd_args.insert(-1, f"--stub-file={self.stub_file}")
         retcode = 0
         if self.abc2program:
             retcode = self.execute_abc2program_outputs(cmd_args)
@@ -687,6 +733,8 @@ class ArkProgram():
                         f'--compiler-pgo-profiler-path={file_name_pre}.ap',
                         "--asm-interpreter=true",
                         f'--entry-point={record_name}']
+        if self.stub_file != "":
+            cmd_args.append(f"--stub-file={self.stub_file}")
         if self.disable_force_gc:
             cmd_args.append(f"--enable-force-gc=false")
         cmd_args.append(f'{file_name_pre}.abc')
@@ -706,7 +754,8 @@ class ArkProgram():
         self.get_all_skip_force_gc_tests()
         if not self.is_legal_frontend():
             return
-
+        if self.enable_arkguard:
+            self.execute_arkguard()
         if self.gen_abc():
             return
         if self.run_pgo:

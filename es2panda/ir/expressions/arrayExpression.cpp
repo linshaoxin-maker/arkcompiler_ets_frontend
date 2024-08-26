@@ -245,7 +245,7 @@ checker::Type *ArrayExpression::Check(checker::Checker *checker) const
             util::StringView memberIndex = util::Helpers::ToStringView(checker->Allocator(), index);
             binder::LocalVariable *tupleMember =
                 binder::Scope::CreateVar(checker->Allocator(), memberIndex, binder::VariableFlags::PROPERTY, nullptr);
-
+            CHECK_NOT_NULL(tupleMember);
             if (inConstContext) {
                 tupleMember->AddFlag(binder::VariableFlags::READONLY);
             }

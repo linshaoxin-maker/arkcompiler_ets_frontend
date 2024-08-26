@@ -81,6 +81,7 @@ struct PatchFixOptions {
 struct CompilerOptions {
     bool enableAbcInput {false};
     bool dumpAsmProgram {false};
+    bool dumpNormalizedAsmProgram {false};
     bool isDebug {false};
     bool dumpAst {false};
     bool dumpTransformedAst {false};
@@ -95,7 +96,7 @@ struct CompilerOptions {
     bool useDefineSemantic {false};
     bool typeExtractor {false};
     bool typeDtsBuiltin {false};
-    bool recordSource {false};
+    bool recordDebugSource {false};
     int fileThreadCount {0};
     int functionThreadCount {0};
     int abcClassThreadCount {0};
@@ -118,6 +119,7 @@ struct CompilerOptions {
     bool updatePkgVersionForAbcInput {false};
     bool removeRedundantFile {false};
     bool dumpString {false};
+    std::string targetApiSubVersion;
 };
 
 enum class ErrorType {
@@ -182,12 +184,23 @@ public:
         return col_;
     }
 
+    bool Reported() const
+    {
+        return reported_;
+    }
+
+    void SetReported(bool reported)
+    {
+        reported_ = reported;
+    }
+
 private:
     ErrorType type_ {ErrorType::GENERIC};
     std::string message_;
     size_t line_ {};
     size_t col_ {};
     int errorCode_ {1};
+    bool reported_ {false};
 };
 
 class Compiler {
@@ -215,15 +228,17 @@ public:
 
     static void DumpAsm(const panda::pandasm::Program *prog);
 
-    const Error &GetError() const noexcept
+    Error &GetError() noexcept
     {
         return error_;
     }
 
-    void AbcToAsmProgram(const std::string &fname, const CompilerOptions &options,
-                         std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
-                         panda::ArenaAllocator *allocator);
-    
+    panda::pandasm::Program *CompileAbcFile(const std::string &fname, const CompilerOptions &options);
+
+    void CompileAbcFileInParallel(const std::string &fname, const CompilerOptions &options,
+                                  std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
+                                  panda::ArenaAllocator *allocator);
+
     static size_t GetExpectedProgsCount()
     {
         return expectedProgsCount_;
@@ -238,8 +253,7 @@ private:
     util::PatchFix *InitPatchFixHelper(const SourceFile &input, const CompilerOptions &options,
                                        util::SymbolTable *symbolTable);
     static void CleanPatchFixHelper(const util::PatchFix *patchFixHelper);
-    void CheckCompilerOptionsForAbcInput(const std::string &fname, const CompilerOptions &options);
-    void ChecktargetApiVersionIsSupportedForAbcInput(const CompilerOptions &options);
+    void CheckOptionsAndFileForAbcInput(const std::string &fname, const CompilerOptions &options);
 
     static size_t expectedProgsCount_;
     parser::ParserImpl *parser_;

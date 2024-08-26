@@ -146,10 +146,12 @@ public:
         }
     }
 
-    void DetermineExtension(const std::string &extension, const std::string &sourceFileExtension,
-                            std::ifstream &inputStream, const ark::PandArg<std::string> &arktsConfig,
-                            const es2panda::CompilationMode &compMode)
+    void DetermineExtension(const ark::PandArg<std::string> &inputExtension,
+                            const ark::PandArg<std::string> &arktsConfig, const es2panda::CompilationMode &compMode)
     {
+        std::string extension = inputExtension.GetValue();
+        std::string sourceFileExtension = sourceFile_.substr(sourceFile_.find_last_of('.') + 1);
+
         bool extensionIsEmpty = extension.empty();
         if (!sourceFile_.empty() && !extensionIsEmpty && extension != sourceFileExtension) {
             std::cerr << "Warning: Not matching extensions! Sourcefile: " << sourceFileExtension
@@ -167,26 +169,25 @@ public:
             extension_ = es2panda::ScriptExtension::TS;
         } else if (tempExtension == "as") {
             extension_ = es2panda::ScriptExtension::AS;
-        } else if (tempExtension == "ets") {
+        } else if (tempExtension == "sts") {
             extension_ = es2panda::ScriptExtension::ETS;
 
-            inputStream.open(arktsConfig.GetValue());
+            std::ifstream inputStream(arktsConfig.GetValue());
             if (inputStream.fail()) {
                 errorMsg_ = "Failed to open arktsconfig: ";
                 errorMsg_.append(arktsConfig.GetValue());
                 extension_ = es2panda::ScriptExtension::INVALID;
                 return;
             }
-            inputStream.close();
         } else if (extensionIsEmpty && (compMode == CompilationMode::PROJECT)) {
             extension_ = es2panda::ScriptExtension::ETS;
         } else {
             if (!extensionIsEmpty) {
-                errorMsg_ = "Invalid extension (available options: js, ts, as, ets)";
+                errorMsg_ = "Invalid extension (available options: js, ts, as, sts)";
             } else {
                 errorMsg_ =
                     "Unknown extension of sourcefile, set the extension manually or change the file format (available "
-                    "options: js, ts, as, ets)";
+                    "options: js, ts, as, sts)";
             }
             extension_ = es2panda::ScriptExtension::INVALID;
             return;
@@ -222,7 +223,7 @@ public:
     {
         if (extension_ != es2panda::ScriptExtension::ETS) {
             if (compMode == CompilationMode::PROJECT) {
-                errorMsg_ = "Error: only --extension=ets is supported for project compilation mode.";
+                errorMsg_ = "Error: only --extension=sts is supported for project compilation mode.";
                 return false;
             }
         } else {

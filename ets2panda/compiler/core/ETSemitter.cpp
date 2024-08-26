@@ -76,7 +76,7 @@ static uint32_t TranslateModifierFlags(ir::ModifierFlags modifierFlags)
         accessFlags |= ACC_FINAL;
     }
     // NOTE: should be ModifierFlags::READONLY
-    if ((modifierFlags & ir::ModifierFlags::CONST) != 0) {
+    if ((modifierFlags & ir::ModifierFlags::READONLY) != 0) {
         accessFlags |= ACC_READONLY;
     }
     if ((modifierFlags & ir::ModifierFlags::ABSTRACT) != 0) {
@@ -106,7 +106,7 @@ static pandasm::Type PandasmTypeWithRank(checker::Type const *type)
     return pandasm::Type(ss.str(), type->Rank());
 }
 
-static pandasm::Function GenScriptFunction(public_lib::Context const *context, const ir::ScriptFunction *scriptFunc)
+static pandasm::Function GenScriptFunction(const ir::ScriptFunction *scriptFunc)
 {
     auto *funcScope = scriptFunc->Scope();
     auto *paramScope = funcScope->ParamScope();
@@ -115,7 +115,7 @@ static pandasm::Function GenScriptFunction(public_lib::Context const *context, c
     func.params.reserve(paramScope->Params().size());
 
     for (const auto *var : paramScope->Params()) {
-        func.params.emplace_back(PandasmTypeWithRank(context->checker->AsETSChecker()->MaybeBoxedType(var)), EXTENSION);
+        func.params.emplace_back(PandasmTypeWithRank(var->TsType()), EXTENSION);
     }
 
     if (scriptFunc->IsConstructor() || scriptFunc->IsStaticBlock()) {
@@ -139,7 +139,7 @@ static pandasm::Function GenScriptFunction(public_lib::Context const *context, c
 
 pandasm::Function *ETSFunctionEmitter::GenFunctionSignature()
 {
-    auto func = GenScriptFunction(Cg()->Context(), Cg()->RootNode()->AsScriptFunction());
+    auto func = GenScriptFunction(Cg()->RootNode()->AsScriptFunction());
 
     if (Cg()->RootNode()->AsScriptFunction()->IsExternal()) {
         func.metadata->SetAttribute(Signatures::EXTERNAL);
@@ -218,7 +218,8 @@ void ETSEmitter::GenAnnotation()
 
     for (auto *signature : globalRecordTable->Signatures()) {
         auto *scriptFunc = signature->Node()->AsScriptFunction();
-        auto func = GenScriptFunction(Context(), scriptFunc);
+        auto func = scriptFunc->Declare() ? GenExternalFunction(scriptFunc->Signature(), scriptFunc->IsConstructor())
+                                          : GenScriptFunction(scriptFunc);
         if (scriptFunc->IsAsyncFunc()) {
             std::vector<pandasm::AnnotationData> annotations;
             annotations.push_back(GenAnnotationAsync(scriptFunc));
@@ -251,13 +252,52 @@ void ETSEmitter::GenExternalRecord(varbinder::RecordTable *recordTable)
     }
 
     for (auto *signature : recordTable->Signatures()) {
-        auto func = GenScriptFunction(Context(), signature->Node()->AsScriptFunction());
+        auto func = GenScriptFunction(signature->Node()->AsScriptFunction());
 
         if (!isGenStdLib) {
             func.metadata->SetAttribute(Signatures::EXTERNAL);
         }
 
         Program()->functionTable.emplace(func.name, std::move(func));
+    }
+}
+
+// Helper function to reduce EmitDefaultFieldValue size and pass code check
+static pandasm::ScalarValue CreateScalarValue(const checker::Type *type, checker::TypeFlag typeKind)
+{
+    switch (typeKind) {
+        case checker::TypeFlag::ETS_BOOLEAN: {
+            return pandasm::ScalarValue::Create<pandasm::Value::Type::U1>(
+                static_cast<uint8_t>(type->AsETSBooleanType()->GetValue()));
+        }
+        case checker::TypeFlag::BYTE: {
+            return pandasm::ScalarValue::Create<pandasm::Value::Type::I8>(type->AsByteType()->GetValue());
+        }
+        case checker::TypeFlag::SHORT: {
+            return pandasm::ScalarValue::Create<pandasm::Value::Type::I16>(type->AsShortType()->GetValue());
+        }
+        case checker::TypeFlag::INT: {
+            return pandasm::ScalarValue::Create<pandasm::Value::Type::I32>(type->AsIntType()->GetValue());
+        }
+        case checker::TypeFlag::LONG: {
+            return pandasm::ScalarValue::Create<pandasm::Value::Type::I64>(type->AsLongType()->GetValue());
+        }
+        case checker::TypeFlag::FLOAT: {
+            return pandasm::ScalarValue::Create<pandasm::Value::Type::F32>(type->AsFloatType()->GetValue());
+        }
+        case checker::TypeFlag::DOUBLE: {
+            return pandasm::ScalarValue::Create<pandasm::Value::Type::F64>(type->AsDoubleType()->GetValue());
+        }
+        case checker::TypeFlag::CHAR: {
+            return pandasm::ScalarValue::Create<pandasm::Value::Type::U16>(type->AsCharType()->GetValue());
+        }
+        case checker::TypeFlag::ETS_OBJECT: {
+            return pandasm::ScalarValue::Create<pandasm::Value::Type::STRING>(
+                type->AsETSObjectType()->AsETSStringType()->GetValue().Mutf8());
+        }
+        default: {
+            UNREACHABLE();
+        }
     }
 }
 
@@ -274,64 +314,14 @@ void ETSEmitter::EmitDefaultFieldValue(pandasm::Field &classField, const ir::Exp
     }
 
     auto typeKind = checker::ETSChecker::TypeKind(type);
-
     classField.metadata->SetFieldType(classField.type);
-    switch (typeKind) {
-        case checker::TypeFlag::ETS_BOOLEAN: {
-            classField.metadata->SetValue(pandasm::ScalarValue::Create<pandasm::Value::Type::U1>(
-                static_cast<uint8_t>(type->AsETSBooleanType()->GetValue())));
-            break;
-        }
-        case checker::TypeFlag::BYTE: {
-            classField.metadata->SetValue(
-                pandasm::ScalarValue::Create<pandasm::Value::Type::I8>(type->AsByteType()->GetValue()));
-            break;
-        }
-        case checker::TypeFlag::SHORT: {
-            classField.metadata->SetValue(
-                pandasm::ScalarValue::Create<pandasm::Value::Type::I16>(type->AsShortType()->GetValue()));
-            break;
-        }
-        case checker::TypeFlag::INT: {
-            classField.metadata->SetValue(
-                pandasm::ScalarValue::Create<pandasm::Value::Type::I32>(type->AsIntType()->GetValue()));
-            break;
-        }
-        case checker::TypeFlag::LONG: {
-            classField.metadata->SetValue(
-                pandasm::ScalarValue::Create<pandasm::Value::Type::I64>(type->AsLongType()->GetValue()));
-            break;
-        }
-        case checker::TypeFlag::FLOAT: {
-            classField.metadata->SetValue(
-                pandasm::ScalarValue::Create<pandasm::Value::Type::F32>(type->AsFloatType()->GetValue()));
-            break;
-        }
-        case checker::TypeFlag::DOUBLE: {
-            classField.metadata->SetValue(
-                pandasm::ScalarValue::Create<pandasm::Value::Type::F64>(type->AsDoubleType()->GetValue()));
-            break;
-        }
-        case checker::TypeFlag::CHAR: {
-            classField.metadata->SetValue(
-                pandasm::ScalarValue::Create<pandasm::Value::Type::U16>(type->AsCharType()->GetValue()));
-            break;
-        }
-        case checker::TypeFlag::ETS_OBJECT: {
-            classField.metadata->SetValue(pandasm::ScalarValue::Create<pandasm::Value::Type::STRING>(
-                type->AsETSObjectType()->AsETSStringType()->GetValue().Mutf8()));
-            break;
-        }
-        default: {
-            UNREACHABLE();
-        }
-    }
+    classField.metadata->SetValue(CreateScalarValue(type, typeKind));
 }
 
 void ETSEmitter::GenInterfaceMethodDefinition(const ir::MethodDefinition *methodDef, bool external)
 {
     auto *scriptFunc = methodDef->Function();
-    auto func = GenScriptFunction(Context(), scriptFunc);
+    auto func = GenScriptFunction(scriptFunc);
 
     if (external) {
         func.metadata->SetAttribute(Signatures::EXTERNAL);
@@ -347,27 +337,24 @@ void ETSEmitter::GenInterfaceMethodDefinition(const ir::MethodDefinition *method
 
 void ETSEmitter::GenClassField(const ir::ClassProperty *field, pandasm::Record &classRecord, bool external)
 {
-    GenField(field->TsType(), field->Id()->Name(), field->Value(), TranslateModifierFlags(field->Modifiers()),
-             classRecord, external);
+    GenField({field->TsType(), field->Id()->Name(), field->Value(), TranslateModifierFlags(field->Modifiers()),
+              classRecord, external || field->IsDeclare()});
 }
 
-void ETSEmitter::GenField(const checker::Type *tsType, const util::StringView &name, const ir::Expression *value,
-                          uint32_t accesFlags, pandasm::Record &record, bool external)
+void ETSEmitter::GenField(const GenFieldArguments &data)
 {
     auto field = pandasm::Field(Program()->lang);
+    field.name = data.name.Mutf8();
+    field.type = PandasmTypeWithRank(data.tsType);
+    field.metadata->SetAccessFlags(data.accesFlags);
 
-    field.name = name.Mutf8();
-    field.type = PandasmTypeWithRank(tsType);
-
-    field.metadata->SetAccessFlags(accesFlags);
-
-    if (external) {
+    if (data.external) {
         field.metadata->SetAttribute(Signatures::EXTERNAL);
-    } else if (tsType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE) || tsType->IsETSStringType()) {
-        EmitDefaultFieldValue(field, value);
+    } else if (data.tsType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE) || data.tsType->IsETSStringType()) {
+        EmitDefaultFieldValue(field, data.value);
     }
 
-    record.fieldList.emplace_back(std::move(field));
+    data.record.fieldList.emplace_back(std::move(field));
 }
 
 void ETSEmitter::GenClassInheritedFields(const checker::ETSObjectType *baseType, pandasm::Record &classRecord)
@@ -442,16 +429,38 @@ void ETSEmitter::GenInterfaceRecord(const ir::TSInterfaceDeclaration *interfaceD
     Program()->recordTable.emplace(interfaceRecord.name, std::move(interfaceRecord));
 }
 
-void ETSEmitter::GenClassRecord(const ir::ClassDefinition *classDef, bool external)
+std::vector<pandasm::AnnotationData> ETSEmitter::GenAnnotations(const ir::ClassDefinition *classDef)
 {
-    auto classRecord = pandasm::Record(classDef->InternalName().Mutf8(), Program()->lang);
-
-    if (external) {
-        classRecord.metadata->SetAttribute(Signatures::EXTERNAL);
+    std::vector<pandasm::AnnotationData> annotations;
+    const ir::AstNode *parent = classDef->Parent();
+    while (parent != nullptr) {
+        if (parent->IsMethodDefinition()) {
+            annotations.emplace_back(GenAnnotationEnclosingMethod(parent->AsMethodDefinition()));
+            annotations.emplace_back(GenAnnotationInnerClass(classDef, parent));
+            break;
+        }
+        if (parent->IsClassDefinition()) {
+            annotations.emplace_back(GenAnnotationEnclosingClass(
+                parent->AsClassDefinition()->TsType()->AsETSObjectType()->AssemblerName().Utf8()));
+            annotations.emplace_back(GenAnnotationInnerClass(classDef, parent));
+            break;
+        }
+        parent = parent->Parent();
     }
 
-    uint32_t accessFlags = ACC_PUBLIC;
+    auto classIdent = classDef->Ident()->Name().Mutf8();
+    bool isConstruct = classIdent == Signatures::JSNEW_CLASS;
+    if (isConstruct || classIdent == Signatures::JSCALL_CLASS) {
+        auto *callNames = Context()->checker->AsETSChecker()->DynamicCallNames(isConstruct);
+        annotations.push_back(GenAnnotationDynamicCall(*callNames));
+    }
 
+    return annotations;
+}
+
+static uint32_t GetAccessFlags(const ir::ClassDefinition *classDef)
+{
+    uint32_t accessFlags = ACC_PUBLIC;
     if (classDef->IsAbstract()) {
         accessFlags |= ACC_ABSTRACT;
     } else if (classDef->IsFinal()) {
@@ -462,6 +471,17 @@ void ETSEmitter::GenClassRecord(const ir::ClassDefinition *classDef, bool extern
         accessFlags |= ACC_STATIC;
     }
 
+    return accessFlags;
+}
+
+void ETSEmitter::GenClassRecord(const ir::ClassDefinition *classDef, bool external)
+{
+    auto classRecord = pandasm::Record(classDef->InternalName().Mutf8(), Program()->lang);
+    if (external) {
+        classRecord.metadata->SetAttribute(Signatures::EXTERNAL);
+    }
+
+    uint32_t accessFlags = GetAccessFlags(classDef);
     classRecord.metadata->SetAccessFlags(accessFlags);
     classRecord.sourceFile = Context()->parserProgram->VarBinder()->Program()->SourceFile().GetAbsolutePath().Mutf8();
 
@@ -493,7 +513,6 @@ void ETSEmitter::GenClassRecord(const ir::ClassDefinition *classDef, bool extern
     }
 
     GenClassInheritedFields(baseType, classRecord);
-
     for (const auto *prop : classDef->Body()) {
         if (!prop->IsClassProperty()) {
             continue;
@@ -502,30 +521,7 @@ void ETSEmitter::GenClassRecord(const ir::ClassDefinition *classDef, bool extern
         GenClassField(prop->AsClassProperty(), classRecord, external);
     }
 
-    std::vector<pandasm::AnnotationData> annotations;
-
-    const ir::AstNode *parent = classDef->Parent();
-    while (parent != nullptr) {
-        if (parent->IsMethodDefinition()) {
-            annotations.emplace_back(GenAnnotationEnclosingMethod(parent->AsMethodDefinition()));
-            annotations.emplace_back(GenAnnotationInnerClass(classDef, parent));
-            break;
-        }
-        if (parent->IsClassDefinition()) {
-            annotations.emplace_back(GenAnnotationEnclosingClass(
-                parent->AsClassDefinition()->TsType()->AsETSObjectType()->AssemblerName().Utf8()));
-            annotations.emplace_back(GenAnnotationInnerClass(classDef, parent));
-            break;
-        }
-        parent = parent->Parent();
-    }
-    auto classIdent = classDef->Ident()->Name().Mutf8();
-    bool isConstruct = classIdent == Signatures::JSNEW_CLASS;
-    if (isConstruct || classIdent == Signatures::JSCALL_CLASS) {
-        auto *callNames = Context()->checker->AsETSChecker()->DynamicCallNames(isConstruct);
-        annotations.push_back(GenAnnotationDynamicCall(*callNames));
-    }
-
+    std::vector<pandasm::AnnotationData> annotations = GenAnnotations(classDef);
     if (!annotations.empty()) {
         classRecord.metadata->SetAnnotations(std::move(annotations));
     }

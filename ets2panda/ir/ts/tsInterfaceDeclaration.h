@@ -18,7 +18,6 @@
 
 #include "varbinder/scope.h"
 #include "ir/statement.h"
-#include "util/language.h"
 
 namespace ark::es2panda::varbinder {
 class Variable;
@@ -32,18 +31,28 @@ class TSTypeParameterDeclaration;
 
 class TSInterfaceDeclaration : public TypedStatement {
 public:
-    explicit TSInterfaceDeclaration(ArenaAllocator *allocator, Identifier *id, TSTypeParameterDeclaration *typeParams,
-                                    TSInterfaceBody *body, ArenaVector<TSInterfaceHeritage *> &&extends, bool isStatic,
-                                    bool isExternal, Language lang)
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
+    struct ConstructorData {
+        Identifier *id;
+        TSTypeParameterDeclaration *typeParams;
+        TSInterfaceBody *body;
+        bool isStatic;
+        bool isExternal;
+        es2panda::Language lang;
+    };
+    // NOLINTEND(cppcoreguidelines-pro-type-member-init)
+
+    explicit TSInterfaceDeclaration(ArenaAllocator *allocator, ArenaVector<TSInterfaceHeritage *> &&extends,
+                                    ConstructorData &&data)
         : TypedStatement(AstNodeType::TS_INTERFACE_DECLARATION),
           decorators_(allocator->Adapter()),
-          id_(id),
-          typeParams_(typeParams),
-          body_(body),
+          id_(data.id),
+          typeParams_(data.typeParams),
+          body_(data.body),
           extends_(std::move(extends)),
-          isStatic_(isStatic),
-          isExternal_(isExternal),
-          lang_(lang)
+          isStatic_(data.isStatic),
+          isExternal_(data.isExternal),
+          lang_(data.lang)
     {
         if (isStatic_) {
             AddModifier(ir::ModifierFlags::STATIC);
@@ -158,6 +167,21 @@ public:
         return lang_;
     }
 
+    ClassDeclaration *GetAnonClass() noexcept
+    {
+        return anonClass_;
+    }
+
+    ClassDeclaration *GetAnonClass() const noexcept
+    {
+        return anonClass_;
+    }
+
+    void SetAnonClass(ClassDeclaration *anonClass) noexcept
+    {
+        anonClass_ = anonClass;
+    }
+
     void Iterate(const NodeTraverser &cb) const override;
     void Dump(ir::AstDumper *dumper) const override;
     void Dump(ir::SrcDumper *dumper) const override;
@@ -183,6 +207,7 @@ private:
     bool isStatic_;
     bool isExternal_;
     es2panda::Language lang_;
+    ClassDeclaration *anonClass_ {nullptr};
 };
 }  // namespace ark::es2panda::ir
 

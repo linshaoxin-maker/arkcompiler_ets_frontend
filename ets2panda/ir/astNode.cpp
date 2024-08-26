@@ -27,10 +27,29 @@ AstNode::AstNode(AstNode const &other)
         variable_ = other.variable_;
     }
     flags_ = other.flags_;
+    astNodeFlags_ = other.astNodeFlags_;
     // boxing_unboxing_flags_ {};  leave default value!
 }
 
-[[nodiscard]] bool ir::AstNode::IsExportedType() const noexcept
+[[nodiscard]] bool AstNode::IsExported() const noexcept
+{
+    if (UNLIKELY(IsClassDefinition())) {
+        return parent_->IsExported();
+    }
+
+    return (flags_ & ModifierFlags::EXPORT) != 0;
+}
+
+[[nodiscard]] bool AstNode::IsDefaultExported() const noexcept
+{
+    if (UNLIKELY(IsClassDefinition())) {
+        return parent_->IsDefaultExported();
+    }
+
+    return (flags_ & ModifierFlags::DEFAULT_EXPORT) != 0;
+}
+
+[[nodiscard]] bool AstNode::IsExportedType() const noexcept
 {
     if (UNLIKELY(IsClassDefinition())) {
         return this->parent_->IsExportedType();
@@ -39,9 +58,40 @@ AstNode::AstNode(AstNode const &other)
     return (flags_ & ModifierFlags::EXPORT_TYPE) != 0;
 }
 
+[[nodiscard]] bool AstNode::HasExportAlias() const noexcept
+{
+    if (UNLIKELY(IsClassDefinition())) {
+        return parent_->HasExportAlias();
+    }
+
+    return (astNodeFlags_ & AstNodeFlags::HAS_EXPORT_ALIAS) != 0;
+}
+
+bool AstNode::IsScopeBearer() const noexcept
+{
+    return false;
+}
+
+varbinder::Scope *AstNode::Scope() const noexcept
+{
+    UNREACHABLE();
+}
+
 void AstNode::ClearScope() noexcept
 {
     UNREACHABLE();
+}
+
+ir::ClassElement *AstNode::AsClassElement()
+{
+    ASSERT(IsMethodDefinition() || IsClassProperty() || IsClassStaticBlock());
+    return reinterpret_cast<ir::ClassElement *>(this);
+}
+
+const ir::ClassElement *AstNode::AsClassElement() const
+{
+    ASSERT(IsMethodDefinition() || IsClassProperty() || IsClassStaticBlock());
+    return reinterpret_cast<const ir::ClassElement *>(this);
 }
 
 template <typename R, typename T>
@@ -66,21 +116,55 @@ const ir::BlockStatement *AstNode::GetTopStatement() const
     return GetTopStatementImpl<const ir::BlockStatement *>(this);
 }
 
+AstNode *AstNode::Clone([[maybe_unused]] ArenaAllocator *const allocator, [[maybe_unused]] AstNode *const parent)
+{
+    UNREACHABLE();
+}
+
 void AstNode::TransformChildrenRecursively(const NodeTransformer &cb, std::string_view transformationName)
+{  // post-order, but use when you don't care about the order
+    TransformChildrenRecursivelyPostorder(cb, transformationName);
+}
+
+void AstNode::TransformChildrenRecursivelyPreorder(const NodeTransformer &cb, std::string_view transformationName)
 {
     TransformChildren(
         [=](AstNode *child) {
-            child->TransformChildrenRecursively(cb, transformationName);
+            auto *res = cb(child);
+            res->TransformChildrenRecursivelyPreorder(cb, transformationName);
+            return res;
+        },
+        transformationName);
+}
+
+void AstNode::TransformChildrenRecursivelyPostorder(const NodeTransformer &cb, std::string_view transformationName)
+{
+    TransformChildren(
+        [=](AstNode *child) {
+            child->TransformChildrenRecursivelyPostorder(cb, transformationName);
             return cb(child);
         },
         transformationName);
 }
 
 void AstNode::IterateRecursively(const NodeTraverser &cb) const
+{  // pre-order, use when you don't care
+    IterateRecursivelyPreorder(cb);
+}
+
+void AstNode::IterateRecursivelyPreorder(const NodeTraverser &cb) const
 {
     Iterate([=](AstNode *child) {
         cb(child);
-        child->IterateRecursively(cb);
+        child->IterateRecursivelyPreorder(cb);
+    });
+}
+
+void AstNode::IterateRecursivelyPostorder(const NodeTraverser &cb) const
+{
+    Iterate([=](AstNode *child) {
+        child->IterateRecursivelyPostorder(cb);
+        cb(child);
     });
 }
 
@@ -148,7 +232,6 @@ std::string AstNode::DumpEtsSrc() const
 
 void AstNode::SetOriginalNode(AstNode *originalNode)
 {
-    ASSERT(originalNode_ == nullptr);
     originalNode_ = originalNode;
 }
 

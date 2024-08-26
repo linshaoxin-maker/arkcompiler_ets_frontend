@@ -24,36 +24,40 @@
 #include "generated/signatures.h"
 
 namespace ark::es2panda::varbinder {
-BoundContext::BoundContext(RecordTable *recordTable, ir::ClassDefinition *classDef)
+BoundContext::BoundContext(RecordTable *recordTable, ir::ClassDefinition *classDef, bool force)
     : prev_(recordTable->boundCtx_),
       recordTable_(recordTable),
       currentRecord_(classDef),
       savedRecord_(recordTable->record_)
 {
-    if (classDef == nullptr || !recordTable_->classDefinitions_.insert(classDef).second) {
+    if (classDef == nullptr || (!force && !recordTable_->classDefinitions_.insert(classDef).second)) {
         return;
     }
 
     recordTable_->boundCtx_ = this;
     recordTable_->record_ = classDef;
     recordIdent_ = classDef->Ident();
-    classDef->SetInternalName(FormRecordName());
+    if (classDef->InternalName().Empty()) {
+        classDef->SetInternalName(FormRecordName());
+    }
 }
 
-BoundContext::BoundContext(RecordTable *recordTable, ir::TSInterfaceDeclaration *interfaceDecl)
+BoundContext::BoundContext(RecordTable *recordTable, ir::TSInterfaceDeclaration *interfaceDecl, bool force)
     : prev_(recordTable->boundCtx_),
       recordTable_(recordTable),
       currentRecord_(interfaceDecl),
       savedRecord_(recordTable->record_)
 {
-    if (interfaceDecl == nullptr || !recordTable_->interfaceDeclarations_.insert(interfaceDecl).second) {
+    if (interfaceDecl == nullptr || (!force && !recordTable_->interfaceDeclarations_.insert(interfaceDecl).second)) {
         return;
     }
 
     recordTable_->boundCtx_ = this;
     recordTable_->record_ = interfaceDecl;
     recordIdent_ = interfaceDecl->Id();
-    interfaceDecl->SetInternalName(FormRecordName());
+    if (interfaceDecl->InternalName() == "") {
+        interfaceDecl->SetInternalName(FormRecordName());
+    }
 }
 
 BoundContext::~BoundContext()
@@ -64,17 +68,18 @@ BoundContext::~BoundContext()
 
 util::StringView BoundContext::FormRecordName() const
 {
-    const auto &packageName = recordTable_->program_->GetPackageName();
     if (prev_ == nullptr) {
-        if (packageName.Empty()) {
+        if (recordTable_->program_->OmitModuleName()) {
             return recordIdent_->Name();
         }
 
-        util::UString recordName(recordTable_->program_->Allocator());
-        recordName.Append(packageName);
-        recordName.Append(compiler::Signatures::METHOD_SEPARATOR);
-        recordName.Append(recordIdent_->Name());
-        return recordName.View();
+        const auto &moduleName = recordTable_->program_->ModuleName();
+
+        // concatenate the module name with the record ident
+        return util::UString(moduleName.Mutf8() + compiler::Signatures::METHOD_SEPARATOR.data() +
+                                 recordIdent_->Name().Mutf8(),
+                             recordTable_->program_->Allocator())
+            .View();
     }
 
     util::UString recordName(recordTable_->program_->Allocator());

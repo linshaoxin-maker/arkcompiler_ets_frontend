@@ -39,12 +39,20 @@ namespace ark::es2panda::varbinder {
 class FunctionScope;
 class BoundContext;
 
+using ENUMBITOPS_OPERATORS;
+
 enum class RecordTableFlags : uint32_t {
     NONE = 0U,
     EXTERNAL = 1U << 0U,
 };
 
-DEFINE_BITOPS(RecordTableFlags)
+}  // namespace ark::es2panda::varbinder
+
+template <>
+struct enumbitops::IsAllowedType<ark::es2panda::varbinder::RecordTableFlags> : std::true_type {
+};
+
+namespace ark::es2panda::varbinder {
 
 class RecordTable {
 public:
@@ -165,8 +173,8 @@ private:
 
 class BoundContext {
 public:
-    explicit BoundContext(RecordTable *recordTable, ir::ClassDefinition *classDef);
-    explicit BoundContext(RecordTable *recordTable, ir::TSInterfaceDeclaration *interfaceDecl);
+    explicit BoundContext(RecordTable *recordTable, ir::ClassDefinition *classDef, bool force = false);
+    explicit BoundContext(RecordTable *recordTable, ir::TSInterfaceDeclaration *interfaceDecl, bool force = false);
     ~BoundContext();
 
     NO_COPY_SEMANTIC(BoundContext);

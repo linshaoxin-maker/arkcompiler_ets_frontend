@@ -67,7 +67,6 @@ void FunctionEmitter::Generate(util::PatchFix *patchFixHelper)
     GenSourceFileDebugInfo();
     GenFunctionCatchTables();
     GenLiteralBuffers();
-    GenFunctionSource();
     GenConcurrentFunctionModuleRequests();
     if (patchFixHelper != nullptr) {
         patchFixHelper->ProcessFunction(pg_, func_, literalBuffers_);
@@ -256,18 +255,11 @@ void FunctionEmitter::GenSourceFileDebugInfo()
     }
 
     if (pg_->RootNode()->IsProgram()) {
-        func_->source_code = SourceCode().Mutf8();
-    }
-}
-
-void FunctionEmitter::GenFunctionSource()
-{
-    if (pg_->RootNode()->IsProgram()) {
-        return;
-    }
-
-    if (pg_->Context()->IsRecordSource() || (static_cast<const ir::ScriptFunction *>(pg_->RootNode()))->ShowSource()) {
-        func_->source_code = SourceCode().Mutf8();
+        if (pg_->Context()->IsRecordDebugSource()) {
+            func_->source_code = SourceCode().Mutf8();
+        } else {
+            func_->source_code = "not supported";
+        }
     }
 }
 
@@ -429,7 +421,8 @@ void Emitter::AddScopeNamesRecord(CompilerContext *context)
 {
     std::lock_guard<std::mutex> lock(m_);
     // make literalarray for scope names
-    if (context->Binder()->Program()->TargetApiVersion() < 12) {
+    if (util::Helpers::IsDefaultApiVersion(context->Binder()->Program()->TargetApiVersion(),
+        context->Binder()->Program()->GetTargetApiSubVersion())) {
         return;
     }
     const auto &scopeNamesMap = context->Binder()->GetScopeNames();
@@ -486,6 +479,10 @@ void Emitter::AddSourceTextModuleRecord(ModuleRecordEmitter *module, CompilerCon
 {
     std::lock_guard<std::mutex> lock(m_);
 
+    if (module->NeedEmitPhaseRecord()) {
+        AddModuleRequestPhaseRecord(module, context);
+    }
+
     auto moduleLiteral = std::string(context->Binder()->Program()->RecordName()) + "_" +
          std::to_string(module->Index());
     if (context->IsMergeAbc()) {
@@ -521,6 +518,37 @@ void Emitter::AddSourceTextModuleRecord(ModuleRecordEmitter *module, CompilerCon
     auto literalArrayInstance = panda::pandasm::LiteralArray(std::move(moduleLiteralsBuffer));
     prog_->literalarray_table.emplace(static_cast<std::string_view>(moduleLiteral), std::move(literalArrayInstance));
     constant_local_export_slots_ = module->GetConstantLocalExportSlots();
+}
+
+void Emitter::AddModuleRequestPhaseRecord(ModuleRecordEmitter *module, CompilerContext *context)
+{
+    auto phaseLiteral = std::string(context->Binder()->Program()->RecordName()) + "_" +
+         std::to_string(module->PhaseIndex());
+    if (context->IsMergeAbc()) {
+        auto phaseIdxField = panda::pandasm::Field(LANG_EXT);
+        phaseIdxField.name = "moduleRequestPhaseIdx";
+        phaseIdxField.type = panda::pandasm::Type("u32", 0);
+        phaseIdxField.metadata->SetValue(
+            panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::LITERALARRAY>(
+            static_cast<std::string_view>(phaseLiteral)));
+        rec_->field_list.emplace_back(std::move(phaseIdxField));
+    } else {
+        auto moduleRequestPhaseRecord = panda::pandasm::Record("_ModuleRequestPhaseRecord", LANG_EXT);
+        moduleRequestPhaseRecord.metadata->SetAccessFlags(panda::ACC_PUBLIC);
+
+        auto phaseIdxField = panda::pandasm::Field(LANG_EXT);
+        phaseIdxField.name = "moduleRequestPhaseIdx";
+        phaseIdxField.type = panda::pandasm::Type("u32", 0);
+        phaseIdxField.metadata->SetValue(
+            panda::pandasm::ScalarValue::Create<panda::pandasm::Value::Type::LITERALARRAY>(
+            static_cast<std::string_view>(phaseLiteral)));
+        moduleRequestPhaseRecord.field_list.emplace_back(std::move(phaseIdxField));
+
+        prog_->record_table.emplace(moduleRequestPhaseRecord.name, std::move(moduleRequestPhaseRecord));
+    }
+    auto &moduleRequestPhaseLiteralsBuffer = module->PhaseBuffer();
+    auto literalArrayInstance = panda::pandasm::LiteralArray(std::move(moduleRequestPhaseLiteralsBuffer));
+    prog_->literalarray_table.emplace(static_cast<std::string_view>(phaseLiteral), std::move(literalArrayInstance));
 }
 
 void Emitter::AddHasTopLevelAwaitRecord(bool hasTLA, const CompilerContext *context)
@@ -679,6 +707,7 @@ void Emitter::DumpAsm(const panda::pandasm::Program *prog)
     ss << ".language ECMAScript" << std::endl << std::endl;
 
     for (auto &[name, func] : prog->function_table) {
+        ss << "slotNum = 0x" << std::hex << func.GetSlotsNum() << std::dec << std::endl;
         ss << ".function any " << name << '(';
 
         for (uint32_t i = 0; i < func.GetParamsNum(); i++) {

@@ -25,6 +25,8 @@ namespace ark::es2panda::checker {
 class ETSObjectType;
 class Signature;
 
+using ENUMBITOPS_OPERATORS;
+
 enum class CheckerStatus : uint32_t {
     NO_OPTS = 0U,
     FORCE_TUPLE = 1U << 0U,
@@ -51,9 +53,16 @@ enum class CheckerStatus : uint32_t {
     MEET_BREAK = 1U << 21U,
     MEET_CONTINUE = 1U << 22U,
     MEET_THROW = 1U << 23U,
+    IN_EXTERNAL = 1U << 24U,
 };
 
-DEFINE_BITOPS(CheckerStatus)
+}  // namespace ark::es2panda::checker
+
+template <>
+struct enumbitops::IsAllowedType<ark::es2panda::checker::CheckerStatus> : std::true_type {
+};
+
+namespace ark::es2panda::checker {
 
 using CapturedVarsMap = ArenaUnorderedMap<varbinder::Variable *, lexer::SourcePosition>;
 using SmartCastMap = ArenaMap<varbinder::Variable const *, checker::Type *>;

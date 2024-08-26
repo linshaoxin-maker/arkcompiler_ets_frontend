@@ -240,6 +240,86 @@ checker::Type *ArrayExpression::Check(checker::TSChecker *checker)
     return checker->GetAnalyzer()->Check(this);
 }
 
+checker::Type *CheckAssignmentPattern(Expression *it, checker::TSChecker *checker, checker::Type *elementType,
+                                      bool &addOptional, checker::ElementFlags &memberFlag)
+{
+    auto *assignmentPattern = it->AsAssignmentPattern();
+    if (assignmentPattern->Left()->IsIdentifier()) {
+        const ir::Identifier *ident = assignmentPattern->Left()->AsIdentifier();
+        ASSERT(ident->Variable());
+        varbinder::Variable *bindingVar = ident->Variable();
+        checker::Type *initializerType = checker->GetBaseTypeOfLiteralType(assignmentPattern->Right()->Check(checker));
+        bindingVar->SetTsType(initializerType);
+        elementType = initializerType;
+    } else if (assignmentPattern->Left()->IsArrayPattern()) {
+        auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::FORCE_TUPLE);
+        auto destructuringContext = checker::ArrayDestructuringContext(
+            {checker, assignmentPattern->Left()->AsArrayPattern(), false, true, nullptr, assignmentPattern->Right()});
+        destructuringContext.Start();
+        elementType = destructuringContext.InferredType();
+    } else {
+        ASSERT(assignmentPattern->Left()->IsObjectPattern());
+        auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::FORCE_TUPLE);
+        auto destructuringContext = checker::ObjectDestructuringContext(
+            {checker, assignmentPattern->Left()->AsObjectPattern(), false, true, nullptr, assignmentPattern->Right()});
+        destructuringContext.Start();
+        elementType = destructuringContext.InferredType();
+    }
+
+    if (addOptional) {
+        memberFlag = checker::ElementFlags::OPTIONAL;
+    } else {
+        memberFlag = checker::ElementFlags::REQUIRED;
+    }
+    return elementType;
+}
+
+checker::Type *CheckElementPattern(Expression *it, checker::Type *elementType, checker::TSChecker *checker,
+                                   bool &addOptional, checker::ElementFlags &memberFlag)
+{
+    switch (it->Type()) {
+        case ir::AstNodeType::REST_ELEMENT: {
+            elementType = checker->Allocator()->New<checker::ArrayType>(checker->GlobalAnyType());
+            memberFlag = checker::ElementFlags::REST;
+            addOptional = false;
+            return elementType;
+        }
+        case ir::AstNodeType::OBJECT_PATTERN: {
+            elementType = it->AsObjectPattern()->CheckPattern(checker);
+            memberFlag = checker::ElementFlags::REQUIRED;
+            addOptional = false;
+            return elementType;
+        }
+        case ir::AstNodeType::ARRAY_PATTERN: {
+            elementType = it->AsArrayPattern()->CheckPattern(checker);
+            memberFlag = checker::ElementFlags::REQUIRED;
+            addOptional = false;
+            return elementType;
+        }
+        case ir::AstNodeType::ASSIGNMENT_PATTERN: {
+            return CheckAssignmentPattern(it, checker, elementType, addOptional, memberFlag);
+        }
+        case ir::AstNodeType::OMITTED_EXPRESSION: {
+            elementType = checker->GlobalAnyType();
+            memberFlag = checker::ElementFlags::REQUIRED;
+            addOptional = false;
+            return elementType;
+        }
+        case ir::AstNodeType::IDENTIFIER: {
+            const ir::Identifier *ident = it->AsIdentifier();
+            ASSERT(ident->Variable());
+            elementType = checker->GlobalAnyType();
+            ident->Variable()->SetTsType(elementType);
+            memberFlag = checker::ElementFlags::REQUIRED;
+            addOptional = false;
+            return elementType;
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+}
+
 checker::Type *ArrayExpression::CheckPattern(checker::TSChecker *checker)
 {
     checker::ObjectDescriptor *desc = checker->Allocator()->New<checker::ObjectDescriptor>(checker->Allocator());
@@ -253,80 +333,7 @@ checker::Type *ArrayExpression::CheckPattern(checker::TSChecker *checker)
         checker::Type *elementType = nullptr;
         checker::ElementFlags memberFlag = checker::ElementFlags::NO_OPTS;
 
-        switch ((*it)->Type()) {
-            case ir::AstNodeType::REST_ELEMENT: {
-                elementType = checker->Allocator()->New<checker::ArrayType>(checker->GlobalAnyType());
-                memberFlag = checker::ElementFlags::REST;
-                addOptional = false;
-                break;
-            }
-            case ir::AstNodeType::OBJECT_PATTERN: {
-                elementType = (*it)->AsObjectPattern()->CheckPattern(checker);
-                memberFlag = checker::ElementFlags::REQUIRED;
-                addOptional = false;
-                break;
-            }
-            case ir::AstNodeType::ARRAY_PATTERN: {
-                elementType = (*it)->AsArrayPattern()->CheckPattern(checker);
-                memberFlag = checker::ElementFlags::REQUIRED;
-                addOptional = false;
-                break;
-            }
-            case ir::AstNodeType::ASSIGNMENT_PATTERN: {
-                auto *assignmentPattern = (*it)->AsAssignmentPattern();
-
-                if (assignmentPattern->Left()->IsIdentifier()) {
-                    const ir::Identifier *ident = assignmentPattern->Left()->AsIdentifier();
-                    ASSERT(ident->Variable());
-                    varbinder::Variable *bindingVar = ident->Variable();
-                    checker::Type *initializerType =
-                        checker->GetBaseTypeOfLiteralType(assignmentPattern->Right()->Check(checker));
-                    bindingVar->SetTsType(initializerType);
-                    elementType = initializerType;
-                } else if (assignmentPattern->Left()->IsArrayPattern()) {
-                    auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::FORCE_TUPLE);
-                    auto destructuringContext =
-                        checker::ArrayDestructuringContext(checker, assignmentPattern->Left()->AsArrayPattern(), false,
-                                                           true, nullptr, assignmentPattern->Right());
-                    destructuringContext.Start();
-                    elementType = destructuringContext.InferredType();
-                } else {
-                    ASSERT(assignmentPattern->Left()->IsObjectPattern());
-                    auto savedContext = checker::SavedCheckerContext(checker, checker::CheckerStatus::FORCE_TUPLE);
-                    auto destructuringContext =
-                        checker::ObjectDestructuringContext(checker, assignmentPattern->Left()->AsObjectPattern(),
-                                                            false, true, nullptr, assignmentPattern->Right());
-                    destructuringContext.Start();
-                    elementType = destructuringContext.InferredType();
-                }
-
-                if (addOptional) {
-                    memberFlag = checker::ElementFlags::OPTIONAL;
-                } else {
-                    memberFlag = checker::ElementFlags::REQUIRED;
-                }
-
-                break;
-            }
-            case ir::AstNodeType::OMITTED_EXPRESSION: {
-                elementType = checker->GlobalAnyType();
-                memberFlag = checker::ElementFlags::REQUIRED;
-                addOptional = false;
-                break;
-            }
-            case ir::AstNodeType::IDENTIFIER: {
-                const ir::Identifier *ident = (*it)->AsIdentifier();
-                ASSERT(ident->Variable());
-                elementType = checker->GlobalAnyType();
-                ident->Variable()->SetTsType(elementType);
-                memberFlag = checker::ElementFlags::REQUIRED;
-                addOptional = false;
-                break;
-            }
-            default: {
-                UNREACHABLE();
-            }
-        }
+        elementType = CheckElementPattern(*it, elementType, checker, addOptional, memberFlag);
 
         util::StringView memberIndex = util::Helpers::ToStringView(checker->Allocator(), index - 1);
 
@@ -347,17 +354,17 @@ checker::Type *ArrayExpression::CheckPattern(checker::TSChecker *checker)
         index--;
     }
 
-    return checker->CreateTupleType(desc, std::move(elementFlags), combinedFlags, minLength, desc->properties.size(),
-                                    false);
+    const checker::TupleTypeInfo tupleTypeInfo = {combinedFlags, minLength,
+                                                  static_cast<uint32_t>(desc->properties.size()), false};
+    return checker->CreateTupleType(desc, std::move(elementFlags), tupleTypeInfo);
 }
 
 void ArrayExpression::HandleNestedArrayExpression(checker::ETSChecker *const checker,
-                                                  ArrayExpression *const currentElement, const bool isArray,
-                                                  const bool isPreferredTuple, const std::size_t idx)
+                                                  ArrayExpression *const currentElement, const bool isPreferredTuple,
+                                                  const std::size_t idx)
 {
     if (isPreferredTuple) {
-        currentElement->SetPreferredType(isArray ? preferredType_
-                                                 : preferredType_->AsETSTupleType()->GetTypeAtIndex(idx));
+        currentElement->SetPreferredType(preferredType_->AsETSTupleType()->GetTypeAtIndex(idx));
 
         if (currentElement->GetPreferredType()->IsETSTupleType()) {
             checker->ValidateTupleMinElementSize(currentElement, currentElement->GetPreferredType()->AsETSTupleType());
@@ -372,7 +379,7 @@ void ArrayExpression::HandleNestedArrayExpression(checker::ETSChecker *const che
                                                  preferredType_->AsETSArrayType()->ElementType()->AsETSTupleType());
         }
 
-        currentElement->SetPreferredType(isArray ? preferredType_ : preferredType_->AsETSArrayType()->ElementType());
+        currentElement->SetPreferredType(preferredType_->AsETSArrayType()->ElementType());
         return;
     }
 
@@ -394,16 +401,17 @@ void ArrayExpression::GetPrefferedTypeFromFuncParam(checker::ETSChecker *checker
     }
     auto paramType = param->Check(checker);
     if (paramType->IsETSArrayType()) {
-        paramType = paramType->AsETSArrayType()->ElementType();
-    }
-    bool isAssignable = true;
-    for (auto elem : elements_) {
-        auto assignCtx = checker::AssignmentContext(checker->Relation(), elem, elem->Check(checker), paramType,
-                                                    elem->Start(), {""}, checker::TypeRelationFlag::NO_THROW | flags);
-        isAssignable &= assignCtx.IsAssignable();
-    }
-    if (isAssignable) {
-        preferredType_ = param->Check(checker);
+        auto *elementType = paramType->AsETSArrayType()->ElementType();
+        bool isAssignable = true;
+        for (auto elem : elements_) {
+            auto assignCtx =
+                checker::AssignmentContext(checker->Relation(), elem, elem->Check(checker), elementType, elem->Start(),
+                                           {""}, checker::TypeRelationFlag::NO_THROW | flags);
+            isAssignable &= assignCtx.IsAssignable();
+        }
+        if (isAssignable) {
+            preferredType_ = paramType;
+        }
     }
 }
 

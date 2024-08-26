@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 - 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021 - 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 #define ES2PANDA_CHECKER_TSANALYZER_H
 
 #include "checker/SemanticAnalyzer.h"
+#include "checker/TSchecker.h"
 #include "util/helpers.h"
 
 namespace ark::es2panda::checker {
@@ -37,6 +38,18 @@ public:
 
     checker::Type *CheckDeleteKeyword([[maybe_unused]] checker::TSChecker *checker, ir::UnaryExpression *expr) const;
     checker::Type *CheckLiteral([[maybe_unused]] checker::TSChecker *checker, ir::UnaryExpression *expr) const;
+    checker::Type *CheckAssignmentExprOperatorType(ir::AssignmentExpression *expr, checker::Type *leftType,
+                                                   checker::Type *rightType) const;
+    checker::Type *CheckBinaryExprArithmLogical(ir::BinaryExpression *expr, ExpressionTypeInfo *leftRightType,
+                                                TSChecker *checker) const;
+    void CheckComputed(ir::MemberExpression *expr, checker::Type *indexType) const;
+    void CheckSpread(std::unordered_map<util::StringView, lexer::SourcePosition> &allPropertiesMap,
+                     checker::ObjectDescriptor *desc, ir::Expression *it) const;
+    checker::IndexInfo *CreateUnionTypeHelper(ArenaVector<checker::Type *> &computedPropTypes,
+                                              bool inConstContext) const;
+    void CheckNonComputed(checker::ObjectDescriptor *desc, ir::Expression *it,
+                          std::unordered_map<util::StringView, lexer::SourcePosition> &allPropertiesMap,
+                          bool inConstContext) const;
 
 private:
     TSChecker *GetTSChecker() const;

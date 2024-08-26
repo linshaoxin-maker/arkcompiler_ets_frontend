@@ -36,6 +36,7 @@ const util::StringView &Variable::Name() const
 LocalVariable *LocalVariable::Copy(ArenaAllocator *allocator, Decl *decl) const
 {
     auto *var = allocator->New<LocalVariable>(decl, flags_);
+    CHECK_NOT_NULL(var);
     var->vreg_ = vreg_;
     return var;
 }
@@ -57,7 +58,7 @@ void LocalVariable::SetLexical(Scope *scope, util::PatchFix *patchFixHelper)
         // Store the additional lexical variable into PatchEnv
         if (patchFixHelper->IsAdditionalVarInPatch(slot)) {
             patchFixHelper->AllocSlotfromPatchEnv(std::string(name));
-        } else { 
+        } else {
             // Just for restore 'newlexenv' instruction for func_main_0 in patch
             varScope->RestoreFuncMain0LexEnv(patchFixHelper->GetEnvSizeOfFuncMain0());
         }

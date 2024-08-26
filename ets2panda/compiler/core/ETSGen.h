@@ -87,7 +87,7 @@ public:
     void LoadThis(const ir::AstNode *node);
     [[nodiscard]] VReg GetThisReg() const;
 
-    void LoadDefaultValue(const ir::AstNode *node, const checker::Type *type);
+    const checker::Type *LoadDefaultValue(const ir::AstNode *node, const checker::Type *type);
     void EmitReturnVoid(const ir::AstNode *node);
     void ReturnAcc(const ir::AstNode *node);
 
@@ -96,6 +96,8 @@ public:
     void IsInstanceDynamic(const ir::BinaryExpression *node, VReg srcReg, VReg tgtReg);
     void EmitFailedTypeCastException(const ir::AstNode *node, VReg src, checker::Type const *target);
 
+    void BinaryLogic(const ir::AstNode *node, lexer::TokenType op, VReg lhs);
+    void BinaryArithmLogic(const ir::AstNode *node, lexer::TokenType op, VReg lhs);
     void Binary(const ir::AstNode *node, lexer::TokenType op, VReg lhs);
     void Unary(const ir::AstNode *node, lexer::TokenType op);
     void Update(const ir::AstNode *node, lexer::TokenType op);
@@ -392,15 +394,10 @@ public:
     void ApplyCast(const ir::AstNode *node, const checker::Type *targetType);
     void ApplyCastToBoxingFlags(const ir::AstNode *node, const ir::BoxingUnboxingFlags targetType);
     void EmitUnboxingConversion(const ir::AstNode *node);
+    checker::Type *EmitBoxedType(ir::BoxingUnboxingFlags boxingFlag, const ir::AstNode *node);
     void EmitBoxingConversion(const ir::AstNode *node);
     void SwapBinaryOpArgs(const ir::AstNode *node, VReg lhs);
     VReg MoveAccToReg(const ir::AstNode *node);
-
-    void EmitLocalBoxCtor(ir::AstNode const *node);
-    void EmitLocalBoxGet(ir::AstNode const *node, checker::Type const *contentType);
-    void EmitLocalBoxSet(ir::AstNode const *node, varbinder::LocalVariable *lhsVar);
-    void EmitPropertyBoxSet(const ir::AstNode *node, const checker::Type *propType, VReg objectReg,
-                            const util::StringView &name);
 
     void LoadArrayLength(const ir::AstNode *node, VReg arrayReg);
     void LoadArrayElement(const ir::AstNode *node, VReg objectReg);
@@ -511,6 +508,8 @@ public:
     void CastDynamicTo(const ir::AstNode *node, enum checker::TypeFlag typeFlag);
     void CastToReftype(const ir::AstNode *node, const checker::Type *targetType, bool unchecked);
     void CastDynamicToObject(const ir::AstNode *node, const checker::Type *targetType);
+    void CastUnionToFunctionType(const ir::AstNode *node, const checker::ETSUnionType *unionType,
+                                 checker::Signature *signatureTarget);
 
     void InternalIsInstance(const ir::AstNode *node, const checker::Type *target);
     void InternalCheckCast(const ir::AstNode *node, const checker::Type *target);
@@ -612,16 +611,22 @@ public:
         Ra().Emit<CallVirtShort>(node, name, athis, arg0);
     }
 
-    void CallDynamic(const ir::AstNode *node, VReg obj, VReg param2, checker::Signature *signature,
+    struct CallDynamicData {
+        const ir::AstNode *node = nullptr;
+        VReg obj;
+        VReg param2;
+    };
+
+    void CallDynamic(CallDynamicData data, checker::Signature *signature,
                      const ArenaVector<ir::Expression *> &arguments)
     {
-        CallDynamicImpl<CallShort, Call, CallRange>(node, obj, param2, signature, arguments);
+        CallDynamicImpl<CallShort, Call, CallRange>(data, signature, arguments);
     }
 
-    void CallDynamic(const ir::AstNode *node, VReg obj, VReg param2, VReg param3, checker::Signature *signature,
+    void CallDynamic(CallDynamicData data, VReg param3, checker::Signature *signature,
                      const ArenaVector<ir::Expression *> &arguments)
     {
-        CallDynamicImpl<CallShort, Call, CallRange>(node, obj, param2, param3, signature, arguments);
+        CallDynamicImpl<CallShort, Call, CallRange>(data, param3, signature, arguments);
     }
 
 #ifdef PANDA_WITH_ETS
@@ -646,10 +651,6 @@ public:
 
     void CreateBigIntObject(const ir::AstNode *node, VReg arg0,
                             std::string_view signature = Signatures::BUILTIN_BIGINT_CTOR);
-    void CreateLambdaObjectFromIdentReference(const ir::AstNode *node, ir::ClassDefinition *lambdaObj);
-    void CreateLambdaObjectFromMemberReference(const ir::AstNode *node, ir::Expression *obj,
-                                               ir::ClassDefinition *lambdaObj);
-    void InitLambdaObject(const ir::AstNode *node, checker::Signature *signature, std::vector<VReg> &arguments);
 
     void GetType(const ir::AstNode *node, bool isEtsPrimitive)
     {
@@ -664,6 +665,8 @@ public:
     ~ETSGen() override = default;
     NO_COPY_SEMANTIC(ETSGen);
     NO_MOVE_SEMANTIC(ETSGen);
+
+    void EmitUnboxEnum(const ir::AstNode *node, const checker::Type *enumType);
 
 private:
     const VReg dummyReg_ = VReg::RegStart();
@@ -831,7 +834,7 @@ private:
                 BinaryNumberComparison<CmpWide, CondCompare>(node, lhs, ifFalse);
                 break;
             }
-            case checker::TypeFlag::ETS_ENUM:
+            case checker::TypeFlag::ETS_INT_ENUM:
             case checker::TypeFlag::ETS_STRING_ENUM:
             case checker::TypeFlag::ETS_BOOLEAN:
             case checker::TypeFlag::BYTE:
@@ -970,15 +973,15 @@ private:
         }
     }
 // NOLINTBEGIN(cppcoreguidelines-macro-usage, readability-container-size-empty)
-#define COMPILE_ARG(idx)                                                                                      \
-    ASSERT((idx) < arguments.size());                                                                         \
-    ASSERT((idx) < signature->Params().size() || signature->RestVar() != nullptr);                            \
-    auto *paramType##idx = Checker()->MaybeBoxedType(                                                         \
-        (idx) < signature->Params().size() ? signature->Params()[(idx)] : signature->RestVar(), Allocator()); \
-    auto ttctx##idx = TargetTypeContext(this, paramType##idx);                                                \
-    arguments[idx]->Compile(this);                                                                            \
-    VReg arg##idx = AllocReg();                                                                               \
-    ApplyConversion(arguments[idx], nullptr);                                                                 \
+#define COMPILE_ARG(idx)                                                                                       \
+    ASSERT((idx) < arguments.size());                                                                          \
+    ASSERT((idx) < signature->Params().size() || signature->RestVar() != nullptr);                             \
+    auto *param##idx = (idx) < signature->Params().size() ? signature->Params()[(idx)] : signature->RestVar(); \
+    auto *paramType##idx = param##idx->TsType();                                                               \
+    auto ttctx##idx = TargetTypeContext(this, paramType##idx);                                                 \
+    arguments[idx]->Compile(this);                                                                             \
+    VReg arg##idx = AllocReg();                                                                                \
+    ApplyConversion(arguments[idx], nullptr);                                                                  \
     ApplyConversionAndStoreAccumulator(arguments[idx], arg##idx, paramType##idx)
 
     template <typename Short, typename General, typename Range>
@@ -1023,59 +1026,11 @@ private:
     }
 
     template <typename Short, typename General, typename Range>
-    bool ResolveStringFromNullishBuiltin(const ir::AstNode *node, checker::Signature const *signature,
-                                         const ArenaVector<ir::Expression *> &arguments)
-    {
-        if (signature->InternalName() != Signatures::BUILTIN_STRING_FROM_NULLISH_CTOR) {
-            return false;
-        }
-        auto argExpr = arguments[0];
-        if (argExpr->IsExpression()) {
-            if (argExpr->AsExpression()->IsNullLiteral()) {
-                LoadAccumulatorString(node, "null");
-                return true;
-            }
-            if (argExpr->AsExpression()->IsUndefinedLiteral()) {
-                LoadAccumulatorString(node, "undefined");
-                return true;
-            }
-        }
-
-        Label *isNull = AllocLabel();
-        Label *end = AllocLabel();
-        Label *isUndefined = AllocLabel();
-        COMPILE_ARG(0);
-        LoadAccumulator(node, arg0);
-        if (argExpr->TsType()->PossiblyETSNullish()) {
-            BranchIfNull(node, isNull);
-            EmitIsUndefined(node);
-            BranchIfTrue(node, isUndefined);
-        }
-        LoadAccumulator(node, arg0);
-        CastToString(node);
-        StoreAccumulator(node, arg0);
-        Ra().Emit<Short, 1>(node, Signatures::BUILTIN_STRING_FROM_STRING_CTOR, arg0, dummyReg_);
-        JumpTo(node, end);
-        if (argExpr->TsType()->PossiblyETSNullish()) {
-            SetLabel(node, isNull);
-            LoadAccumulatorString(node, "null");
-            JumpTo(node, end);
-            SetLabel(node, isUndefined);
-            LoadAccumulatorString(node, "undefined");
-        }
-        SetLabel(node, end);
-        return true;
-    }
-
-    template <typename Short, typename General, typename Range>
     void CallImpl(const ir::AstNode *node, checker::Signature const *signature,
                   const ArenaVector<ir::Expression *> &arguments)
     {
         ASSERT(signature != nullptr);
         RegScope rs(this);
-        if (ResolveStringFromNullishBuiltin<Short, General, Range>(node, signature, arguments)) {
-            return;
-        }
 
         switch (arguments.size()) {
             case 0U: {
@@ -1134,7 +1089,7 @@ private:
     ApplyConversionAndStoreAccumulator(arguments[idx], arg##idx, paramType##idx)
 
     template <typename Short, typename General, typename Range>
-    void CallDynamicImpl(const ir::AstNode *node, VReg &obj, VReg &param2, checker::Signature *signature,
+    void CallDynamicImpl(CallDynamicData data, checker::Signature *signature,
                          const ArenaVector<ir::Expression *> &arguments)
     {
         RegScope rs(this);
@@ -1142,18 +1097,18 @@ private:
 
         switch (arguments.size()) {
             case 0U: {
-                Ra().Emit<Short>(node, name, obj, param2);
+                Ra().Emit<Short>(data.node, name, data.obj, data.param2);
                 break;
             }
             case 1U: {
                 COMPILE_ARG(0, 2U);
-                Ra().Emit<General, 3U>(node, name, obj, param2, arg0, dummyReg_);
+                Ra().Emit<General, 3U>(data.node, name, data.obj, data.param2, arg0, dummyReg_);
                 break;
             }
             case 2U: {
                 COMPILE_ARG(0, 2U);
                 COMPILE_ARG(1, 2U);
-                Ra().Emit<General>(node, name, obj, param2, arg0, arg1);
+                Ra().Emit<General>(data.node, name, data.obj, data.param2, arg0, arg1);
                 break;
             }
             default: {
@@ -1161,14 +1116,14 @@ private:
                     COMPILE_ARG(idx, 2U);
                 }
 
-                Rra().Emit<Range>(node, obj, arguments.size() + 2U, name, obj);
+                Rra().Emit<Range>(data.node, data.obj, arguments.size() + 2U, name, data.obj);
                 break;
             }
         }
     }
 
     template <typename Short, typename General, typename Range>
-    void CallDynamicImpl(const ir::AstNode *node, VReg obj, VReg param2, VReg param3, checker::Signature *signature,
+    void CallDynamicImpl(CallDynamicData data, VReg param3, checker::Signature *signature,
                          const ArenaVector<ir::Expression *> &arguments)
     {
         RegScope rs(this);
@@ -1176,12 +1131,12 @@ private:
 
         switch (arguments.size()) {
             case 0U: {
-                Ra().Emit<General, 3U>(node, name, obj, param2, param3, dummyReg_);
+                Ra().Emit<General, 3U>(data.node, name, data.obj, data.param2, param3, dummyReg_);
                 break;
             }
             case 1U: {
                 COMPILE_ARG(0, 3U);
-                Ra().Emit<General>(node, name, obj, param2, param3, arg0);
+                Ra().Emit<General>(data.node, name, data.obj, data.param2, param3, arg0);
                 break;
             }
             default: {
@@ -1189,7 +1144,7 @@ private:
                     COMPILE_ARG(idx, 3U);
                 }
 
-                Rra().Emit<Range>(node, obj, arguments.size() + 3U, name, obj);
+                Rra().Emit<Range>(data.node, data.obj, arguments.size() + 3U, name, data.obj);
                 break;
             }
         }
@@ -1202,6 +1157,8 @@ private:
 
     template <typename T>
     void LoadAccumulatorNumber(const ir::AstNode *node, T number, checker::TypeFlag targetType);
+    template <typename T>
+    void SetAccumulatorTargetType(const ir::AstNode *node, checker::TypeFlag typeKind, T number);
     void InitializeContainingClass();
 
     util::StringView FormDynamicModulePropReference(const varbinder::Variable *var);
@@ -1215,12 +1172,8 @@ private:
 };
 
 template <typename T>
-void ETSGen::LoadAccumulatorNumber(const ir::AstNode *node, T number, checker::TypeFlag targetType)
+void ETSGen::SetAccumulatorTargetType(const ir::AstNode *node, checker::TypeFlag typeKind, T number)
 {
-    auto typeKind = targetType_ && (!targetType_->IsETSObjectType() && !targetType_->IsETSUnionType())
-                        ? checker::ETSChecker::TypeKind(targetType_)
-                        : targetType;
-
     switch (typeKind) {
         case checker::TypeFlag::ETS_BOOLEAN:
         case checker::TypeFlag::BYTE: {
@@ -1260,8 +1213,8 @@ void ETSGen::LoadAccumulatorNumber(const ir::AstNode *node, T number, checker::T
         }
         case checker::TypeFlag::ETS_STRING_ENUM:
             [[fallthrough]];
-        case checker::TypeFlag::ETS_ENUM: {
-            Sa().Emit<Ldai>(node, static_cast<checker::ETSEnumInterface::UType>(number));
+        case checker::TypeFlag::ETS_INT_ENUM: {
+            Sa().Emit<Ldai>(node, static_cast<checker::ETSEnumType::UType>(number));
             SetAccumulatorType(Checker()->GlobalIntType());
             break;
         }
@@ -1269,6 +1222,17 @@ void ETSGen::LoadAccumulatorNumber(const ir::AstNode *node, T number, checker::T
             UNREACHABLE();
         }
     }
+}
+
+template <typename T>
+void ETSGen::LoadAccumulatorNumber(const ir::AstNode *node, T number, checker::TypeFlag targetType)
+{
+    auto typeKind = targetType_ && (!targetType_->IsETSObjectType() && !targetType_->IsETSUnionType() &&
+                                    !targetType_->IsETSArrayType())
+                        ? checker::ETSChecker::TypeKind(targetType_)
+                        : targetType;
+
+    SetAccumulatorTargetType(node, typeKind, number);
 
     if (targetType_ && (targetType_->IsETSObjectType() || targetType_->IsETSUnionType())) {
         ApplyConversion(node, targetType_);

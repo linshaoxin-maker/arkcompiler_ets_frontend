@@ -48,14 +48,21 @@ Program::Program(Program &&other)
       isDebug_(other.isDebug_),
       targetApiVersion_(other.targetApiVersion_),
       useDefineSemantic_(other.useDefineSemantic_),
-      isShared_(other.isShared_)
+      isShared_(other.isShared_),
+      targetApiSubVersion_(other.targetApiSubVersion_)
 {
     other.binder_ = nullptr;
     other.ast_ = nullptr;
+    other.moduleRecord_ = nullptr;
+    other.patchFixHelper_ = nullptr;
+    other.typeModuleRecord_ = nullptr;
 }
 
 Program &Program::operator=(Program &&other)
 {
+    if (this == &other) {
+        return *this;
+    }
     allocator_ = std::move(other.allocator_);
     binder_ = other.binder_;
     ast_ = other.ast_;
@@ -70,8 +77,13 @@ Program &Program::operator=(Program &&other)
     targetApiVersion_ = other.targetApiVersion_;
     useDefineSemantic_ = other.useDefineSemantic_;
     isShared_ = other.isShared_;
+    targetApiSubVersion_ = other.targetApiSubVersion_;
 
     other.ast_ = nullptr;
+    other.binder_ = nullptr;
+    other.moduleRecord_ = nullptr;
+    other.patchFixHelper_ = nullptr;
+    other.typeModuleRecord_ = nullptr;
 
     return *this;
 }

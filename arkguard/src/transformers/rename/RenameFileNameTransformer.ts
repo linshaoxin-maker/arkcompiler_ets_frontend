@@ -66,6 +66,12 @@ namespace secharmony {
   // used for file name cache
   export let historyFileNameMangledTable: Map<string, string> = undefined;
 
+  // When the module is compiled, call this function to clear global collections related to file name.
+  export function clearCaches(): void {
+    globalFileNameMangledTable.clear();
+    historyFileNameMangledTable?.clear();
+  }
+
   let profile: IFileNameObfuscationOption | undefined;
   let generator: INameGenerator | undefined;
   let reservedFileNames: Set<string> | undefined;
@@ -93,17 +99,18 @@ namespace secharmony {
     let configReservedFileNameOrPath: string[] = profile?.mReservedFileNames ?? [];
     const tempReservedName: string[] = ['.', '..', ''];
     configReservedFileNameOrPath.map(fileNameOrPath => {
-      if (fileNameOrPath && fileNameOrPath.length > 0) {
-        const directories = FileUtils.splitFilePath(fileNameOrPath);
-        directories.forEach(directory => {
-          tempReservedName.push(directory);
-          const pathOrExtension: PathAndExtension = FileUtils.getFileSuffix(directory);
-          if (pathOrExtension.ext) {
-            tempReservedName.push(pathOrExtension.ext);
-            tempReservedName.push(pathOrExtension.path);
-          }
-        });
+      if (!fileNameOrPath || fileNameOrPath.length === 0) {
+        return;
       }
+      const directories = FileUtils.splitFilePath(fileNameOrPath);
+      directories.forEach(directory => {
+        tempReservedName.push(directory);
+        const pathOrExtension: PathAndExtension = FileUtils.getFileSuffix(directory);
+        if (pathOrExtension.ext) {
+          tempReservedName.push(pathOrExtension.ext);
+          tempReservedName.push(pathOrExtension.path);
+        }
+      });
     });
     reservedFileNames = new Set<string>(tempReservedName);
     universalReservedFileNames = profile?.mUniversalReservedFileNames ?? [];
@@ -170,6 +177,10 @@ namespace secharmony {
     }
   }
 
+  export function updateImportOrExportDeclarationForTest(node: ImportDeclaration | ExportDeclaration): ImportDeclaration | ExportDeclaration {
+    return updateImportOrExportDeclaration(node);
+  }
+
   function isImportCall(n: Node): n is ImportCall {
     return n.kind === SyntaxKind.CallExpression && (<CallExpression>n).expression.kind === SyntaxKind.ImportKeyword;
   }
@@ -199,6 +210,10 @@ namespace secharmony {
       packageName = getAtBundlePgkName(filePath);
     }
     return localPackageSet && localPackageSet.has(packageName);
+  }
+
+  export function isLocalDependencyOhmUrlForTest(filePath: string): boolean {
+    return isLocalDependencyOhmUrl(filePath);
   }
 
   function getAtBundlePgkName(ohmUrl: string): string {
@@ -285,16 +300,14 @@ namespace secharmony {
     return mangleFilePath + extension;
   }
 
+  export function getMangleIncompletePathForTest(orignalPath: string): string {
+    return getMangleIncompletePath(orignalPath);
+  };
+
   export function mangleOhmUrl(ohmUrl: string): string {
     let mangledOhmUrl: string;
     // mOhmUrlStatus: for unit test in Arkguard
     if (useNormalized || profile?.mOhmUrlStatus === OhmUrlStatus.NORMALIZED) {
-      /**
-       * Normalized OhmUrl Format:
-       * hap/hsp: @normalized:N&<module name>&<bundle name>&<standard import path>&
-       * har: @normalized:N&&<bundle name>&<standard import path>&<version>
-       * we only mangle <standard import path>.
-       */
       mangledOhmUrl = handleNormalizedOhmUrl(ohmUrl);
     } else {
       /**
@@ -314,10 +327,22 @@ namespace secharmony {
     return mangledOhmUrl;
   }
 
-  function handleNormalizedOhmUrl(ohmUrl: string, needPkgName?: boolean): string {
+  /**
+   * Normalized OhmUrl Format:
+   * hap/hsp: @normalized:N&<module name>&<bundle name>&<standard import path>&
+   * har: @normalized:N&&<bundle name>&<standard import path>&<version>
+   * we only mangle <standard import path>.
+   */
+  export function handleNormalizedOhmUrl(ohmUrl: string, needPkgName?: boolean): string {
     let originalOhmUrlSegments: string[] = ohmUrl.split('&');
     const standardImportPath = originalOhmUrlSegments[3]; // 3: index of standard import path in array.
-    const index = standardImportPath.indexOf('/');
+    let index = standardImportPath.indexOf('/');
+    // The format of <module name>: @group/packagename or packagename,
+    // and there should only be one '@' symbol and one path separator '/' if and only if the 'group' exists.
+    if (standardImportPath.startsWith('@')) {
+      index = standardImportPath.indexOf('/', index + 1);
+    }
+
     const pakName = standardImportPath.substring(0, index);
     if (needPkgName) {
       return pakName;
@@ -386,7 +411,7 @@ function tryValidateFileExisting(importPath: string): PathAndExtension | undefin
   } else {
     fileAbsPath = path.join(path.dirname(orignalFilePathForSearching), importPath);
   }
-  
+
   const filePathExtensionLess: string = path.normalize(fileAbsPath);
   for (let ext of extensionOrder) {
     const targetPath = filePathExtensionLess + ext;

@@ -25,6 +25,8 @@ namespace ark::es2panda::varbinder {
     _(VAR, VarDecl)                      \
     _(LET, LetDecl)                      \
     _(CONST, ConstDecl)                  \
+    _(LABEL, LabelDecl)                  \
+    _(READONLY, ReadonlyDecl)            \
     _(FUNC, FunctionDecl)                \
     _(PARAM, ParameterDecl)              \
     _(IMPORT, ImportDecl)                \
@@ -50,18 +52,19 @@ enum class DeclType {
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define SCOPE_TYPES(_)                    \
-    _(PARAM, ParamScope)                  \
-    _(CATCH_PARAM, CatchParamScope)       \
-    _(FUNCTION_PARAM, FunctionParamScope) \
-    _(CATCH, CatchScope)                  \
-    _(CLASS, ClassScope)                  \
-    _(LOCAL, LocalScope)                  \
-    /* Variable Scopes */                 \
-    _(LOOP, LoopScope)                    \
-    _(LOOP_DECL, LoopDeclarationScope)    \
-    _(FUNCTION, FunctionScope)            \
-    _(GLOBAL, GlobalScope)                \
+#define SCOPE_TYPES(_)                           \
+    _(PARAM, ParamScope)                         \
+    _(CATCH_PARAM, CatchParamScope)              \
+    _(FUNCTION_PARAM, FunctionParamScope)        \
+    _(CATCH, CatchScope)                         \
+    _(CLASS, ClassScope)                         \
+    _(LOCAL, LocalScope)                         \
+    _(LOCAL_WITH_ALIAS, LocalScopeWithTypeAlias) \
+    /* Variable Scopes */                        \
+    _(LOOP, LoopScope)                           \
+    _(LOOP_DECL, LoopDeclarationScope)           \
+    _(FUNCTION, FunctionScope)                   \
+    _(GLOBAL, GlobalScope)                       \
     _(MODULE, ModuleScope)
 
 enum class ScopeType {
@@ -70,6 +73,8 @@ enum class ScopeType {
     SCOPE_TYPES(GEN_SCOPE_TYPES)
 #undef GEN_SCOPE_TYPES
 };
+
+using ENUMBITOPS_OPERATORS;
 
 enum class ResolveBindingOptions : uint32_t {
     BINDINGS = 1U << 0U,
@@ -89,9 +94,8 @@ enum class ResolveBindingOptions : uint32_t {
 
     LAST = TYPE_ALIASES,
     ALL = (LAST << 1U) - 1U,
+    ALL_NON_TYPE = ALL - TYPE_ALIASES,
 };
-
-DEFINE_BITOPS(ResolveBindingOptions)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define VARIABLE_TYPES(_)     \
@@ -152,14 +156,10 @@ enum class VariableFlags : uint64_t {
 
     BUILTIN_TYPE = 1ULL << 31ULL,
 
-    BOXED = 1ULL << 32ULL,
-
     HOIST_VAR = HOIST | VAR,
     CLASS_OR_INTERFACE = CLASS | INTERFACE,
     CLASS_OR_INTERFACE_OR_ENUM = CLASS_OR_INTERFACE | ENUM_LITERAL,
 };
-
-DEFINE_BITOPS(VariableFlags)
 
 enum class LetOrConstStatus {
     INITIALIZED,
@@ -184,7 +184,22 @@ enum class ScopeFlags : uint32_t {
     STATIC_METHOD_SCOPE = METHOD_SCOPE | STATIC,
 };
 
-DEFINE_BITOPS(ScopeFlags)
 }  // namespace ark::es2panda::varbinder
+
+namespace enumbitops {
+
+template <>
+struct IsAllowedType<ark::es2panda::varbinder::ResolveBindingOptions> : std::true_type {
+};
+
+template <>
+struct IsAllowedType<ark::es2panda::varbinder::VariableFlags> : std::true_type {
+};
+
+template <>
+struct IsAllowedType<ark::es2panda::varbinder::ScopeFlags> : std::true_type {
+};
+
+}  // namespace enumbitops
 
 #endif

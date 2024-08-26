@@ -57,6 +57,26 @@ void CheckExtensionIsShadowedByMethod(checker::ETSChecker *checker, checker::ETS
     CheckExtensionIsShadowedByMethod(checker, objType->SuperType(), extensionFunc, signature);
 }
 
+static void ReplaceThisInExtensionMethod(checker::ETSChecker *checker, ir::ScriptFunction *extensionFunc)
+{
+    ASSERT(!extensionFunc->Params().empty());
+    ASSERT(extensionFunc->Params()[0]->AsETSParameterExpression()->Ident()->Name() ==
+           varbinder::TypedBinder::MANDATORY_PARAM_THIS);
+    auto thisVariable = extensionFunc->Params()[0]->Variable();
+    extensionFunc->Body()->TransformChildrenRecursively(
+        [=](ir::AstNode *ast) {
+            if (ast->IsThisExpression()) {
+                auto *thisParam = checker->Allocator()->New<ir::Identifier>(
+                    varbinder::TypedBinder::MANDATORY_PARAM_THIS, checker->Allocator());
+                thisParam->SetParent(ast->Parent());
+                thisParam->SetVariable(thisVariable);
+                return static_cast<ir::AstNode *>(thisParam);
+            }
+            return ast;
+        },
+        "replace-this-in-extension-method");
+}
+
 void CheckExtensionMethod(checker::ETSChecker *checker, ir::ScriptFunction *extensionFunc, ir::MethodDefinition *node)
 {
     auto *const classType = checker->GetApparentType(extensionFunc->Signature()->Params()[0]->TsType());
@@ -65,8 +85,13 @@ void CheckExtensionMethod(checker::ETSChecker *checker, ir::ScriptFunction *exte
          !classType->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::INTERFACE))) {
         checker->ThrowTypeError("Extension function can only defined for class and interface type.", node->Start());
     }
+    if (classType->Variable()->Declaration()->Node()->IsClassDefinition() &&
+        !classType->Variable()->Declaration()->Node()->AsClassDefinition()->IsClassDefinitionChecked()) {
+        classType->Variable()->Declaration()->Node()->Check(checker);
+    }
 
-    checker->AddStatus(checker::CheckerStatus::IN_INSTANCE_EXTENSION_METHOD);
+    // NOTE(gogabr): should be done in a lowering
+    ReplaceThisInExtensionMethod(checker, extensionFunc);
 
     checker::SignatureInfo *originalExtensionSigInfo = checker->Allocator()->New<checker::SignatureInfo>(
         extensionFunc->Signature()->GetSignatureInfo(), checker->Allocator());
@@ -146,7 +171,7 @@ void ComposeAsyncImplFuncReturnType(ETSChecker *checker, ir::ScriptFunction *scr
 
 void ComposeAsyncImplMethod(ETSChecker *checker, ir::MethodDefinition *node)
 {
-    auto *classDef = node->Parent()->AsClassDefinition();
+    auto *classDef = checker->FindAncestorGivenByType(node, ir::AstNodeType::CLASS_DEFINITION)->AsClassDefinition();
     auto *scriptFunc = node->Function();
     ir::MethodDefinition *implMethod = checker->CreateAsyncProxy(node, classDef);
 
@@ -256,14 +281,10 @@ checker::Type *InitAnonymousLambdaCallee(checker::ETSChecker *checker, ir::Expre
     if (typeAnnotation != nullptr) {
         typeAnnotation = typeAnnotation->Clone(checker->Allocator(), nullptr);
         typeAnnotation->SetTsType(arrowFunc->ReturnTypeAnnotation()->TsType());
-    } else {
-        if ((arrowFunc->Flags() & ir::ScriptFunctionFlags::HAS_RETURN) != 0) {
-            InferReturnType(checker, arrowFunc, funcReturnType, callee);
-        } else if (arrowFunc->Signature()->ReturnType() != nullptr) {
-            auto newTypeAnnotation = callee->AsArrowFunctionExpression()->CreateTypeAnnotation(checker);
-            typeAnnotation = arrowFunc->ReturnTypeAnnotation();
-            funcReturnType = newTypeAnnotation->GetType(checker);
-        }
+    } else if (arrowFunc->Signature()->ReturnType() != nullptr) {
+        auto newTypeAnnotation = callee->AsArrowFunctionExpression()->CreateTypeAnnotation(checker);
+        typeAnnotation = arrowFunc->ReturnTypeAnnotation();
+        funcReturnType = newTypeAnnotation->GetType(checker);
     }
 
     auto signature = ir::FunctionSignature(nullptr, std::move(params), typeAnnotation);
@@ -305,6 +326,12 @@ checker::Signature *ResolveCallForETSExtensionFuncHelperType(checker::ETSExtensi
         type->ClassMethodType()->CallSignatures(), expr, expr->Start(), checker::TypeRelationFlag::NO_THROW);
 
     if (signature != nullptr) {
+        if (expr->Callee()->IsMemberExpression()) {
+            auto memberExpr = expr->Callee()->AsMemberExpression();
+            auto var = type->ClassMethodType()->Variable();
+            memberExpr->Property()->AsIdentifier()->SetVariable(var);
+        }
+
         return signature;
     }
 
@@ -319,7 +346,7 @@ ArenaVector<checker::Signature *> GetUnionTypeSignatures(ETSChecker *checker, ch
         if (constituentType->IsETSObjectType()) {
             ArenaVector<checker::Signature *> tmpCallSignatures(checker->Allocator()->Adapter());
             tmpCallSignatures = constituentType->AsETSObjectType()
-                                    ->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>("invoke")
+                                    ->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>("invoke0")
                                     ->TsType()
                                     ->AsETSFunctionType()
                                     ->CallSignatures();
@@ -406,7 +433,7 @@ void SetTsTypeForUnaryExpression(ETSChecker *checker, ir::UnaryExpression *expr,
     switch (expr->OperatorType()) {
         case lexer::TokenType::PUNCTUATOR_MINUS:
         case lexer::TokenType::PUNCTUATOR_PLUS: {
-            if (operandType == nullptr || !operandType->HasTypeFlag(checker::TypeFlag::ETS_NUMERIC)) {
+            if (operandType == nullptr || !operandType->HasTypeFlag(checker::TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC)) {
                 checker->ThrowTypeError("Bad operand type, the type of the operand must be numeric type.",
                                         expr->Argument()->Start());
             }
@@ -421,7 +448,7 @@ void SetTsTypeForUnaryExpression(ETSChecker *checker, ir::UnaryExpression *expr,
             break;
         }
         case lexer::TokenType::PUNCTUATOR_TILDE: {
-            if (operandType == nullptr || !operandType->HasTypeFlag(checker::TypeFlag::ETS_NUMERIC)) {
+            if (operandType == nullptr || !operandType->HasTypeFlag(checker::TypeFlag::ETS_CONVERTIBLE_TO_NUMERIC)) {
                 checker->ThrowTypeError("Bad operand type, the type of the operand must be numeric type.",
                                         expr->Argument()->Start());
             }
@@ -453,7 +480,8 @@ checker::ETSObjectType *CreateSyntheticType(ETSChecker *checker, util::StringVie
                                             checker::ETSObjectType *lastObjectType, ir::Identifier *id)
 {
     auto *syntheticObjType = checker->Allocator()->New<checker::ETSObjectType>(
-        checker->Allocator(), syntheticName, syntheticName, id, checker::ETSObjectFlags::NO_OPTS, checker->Relation());
+        checker->Allocator(), syntheticName, syntheticName,
+        std::make_tuple(id, checker::ETSObjectFlags::NO_OPTS, checker->Relation()));
 
     auto *classDecl = checker->Allocator()->New<varbinder::ClassDecl>(syntheticName);
     varbinder::LocalVariable *var =
@@ -466,6 +494,7 @@ checker::ETSObjectType *CreateSyntheticType(ETSChecker *checker, util::StringVie
 
 // NOLINTBEGIN(modernize-avoid-c-arrays)
 static constexpr char const INVALID_CONST_ASSIGNMENT[] = "Cannot assign a value to a constant variable ";
+static constexpr char const INVALID_READONLY_ASSIGNMENT[] = "Cannot assign a value to a readonly variable ";
 static constexpr char const ITERATOR_TYPE_ABSENT[] = "Cannot obtain iterator type in 'for-of' statement.";
 // NOLINTEND(modernize-avoid-c-arrays)
 
@@ -474,7 +503,8 @@ checker::Type *GetIteratorType(ETSChecker *checker, checker::Type *elemType, ir:
     // Just to avoid extra nested level(s)
     auto const getIterType = [checker, elemType](ir::VariableDeclarator *const declarator) -> checker::Type * {
         if (declarator->TsType() == nullptr) {
-            if (auto *resolved = checker->FindVariableInFunctionScope(declarator->Id()->AsIdentifier()->Name());
+            if (auto *resolved = checker->FindVariableInFunctionScope(declarator->Id()->AsIdentifier()->Name(),
+                                                                      varbinder::ResolveBindingOptions::ALL_NON_TYPE);
                 resolved != nullptr) {
                 resolved->SetTsType(elemType);
                 return elemType;
@@ -488,9 +518,11 @@ checker::Type *GetIteratorType(ETSChecker *checker, checker::Type *elemType, ir:
     checker::Type *iterType = nullptr;
     if (left->IsIdentifier()) {
         if (auto *const variable = left->AsIdentifier()->Variable(); variable != nullptr) {
-            if (variable->Declaration()->IsConstDecl()) {
-                checker->ThrowTypeError({INVALID_CONST_ASSIGNMENT, variable->Name()},
-                                        variable->Declaration()->Node()->Start());
+            auto *decl = variable->Declaration();
+            if (decl->IsConstDecl() || decl->IsReadonlyDecl()) {
+                std::string_view errorMsg =
+                    decl->IsConstDecl() ? INVALID_CONST_ASSIGNMENT : INVALID_READONLY_ASSIGNMENT;
+                checker->ThrowTypeError({errorMsg, variable->Name()}, decl->Node()->Start());
             }
         }
         iterType = left->AsIdentifier()->TsType();
@@ -642,4 +674,85 @@ void ProcessReturnStatements(ETSChecker *checker, ir::ScriptFunction *containing
     }
 }
 
+ETSObjectType *CreateOptionalSignaturesForFunctionalType(ETSChecker *checker, ir::ETSFunctionType *node,
+                                                         ETSObjectType *genericInterfaceType,
+                                                         Substitution *substitution, size_t optionalParameterIndex)
+{
+    const auto &params = node->Params();
+    auto returnType = node->ReturnType()->GetType(checker);
+
+    for (size_t i = 0; i < optionalParameterIndex; i++) {
+        checker::ETSChecker::EmplaceSubstituted(
+            substitution, genericInterfaceType->TypeArguments()[i]->AsETSTypeParameter()->GetOriginal(),
+            InstantiateBoxedPrimitiveType(checker, params[i],
+                                          params[i]->AsETSParameterExpression()->TypeAnnotation()->GetType(checker)));
+    }
+
+    for (size_t i = optionalParameterIndex; i < params.size(); i++) {
+        checker::ETSChecker::EmplaceSubstituted(
+            substitution, genericInterfaceType->TypeArguments()[i]->AsETSTypeParameter()->GetOriginal(),
+            CreateParamTypeWithDefaultParam(checker, params[i]));
+    }
+
+    checker::ETSChecker::EmplaceSubstituted(
+        substitution,
+        genericInterfaceType->TypeArguments()[genericInterfaceType->TypeArguments().size() - 1]
+            ->AsETSTypeParameter()
+            ->GetOriginal(),
+        InstantiateBoxedPrimitiveType(checker, node->ReturnType(), returnType));
+
+    return genericInterfaceType->Substitute(checker->Relation(), substitution)->AsETSObjectType();
+}
+
+ETSObjectType *CreateInterfaceTypeForETSFunctionType(ETSChecker *checker, ir::ETSFunctionType *node,
+                                                     ETSObjectType *genericInterfaceType, Substitution *substitution)
+{
+    size_t i = 0;
+    if (auto const &params = node->Params(); params.size() < checker->GlobalBuiltinFunctionTypeVariadicThreshold()) {
+        for (; i < params.size(); i++) {
+            checker::ETSChecker::EmplaceSubstituted(
+                substitution, genericInterfaceType->TypeArguments()[i]->AsETSTypeParameter()->GetOriginal(),
+                InstantiateBoxedPrimitiveType(
+                    checker, params[i], params[i]->AsETSParameterExpression()->TypeAnnotation()->GetType(checker)));
+        }
+    }
+
+    checker::ETSChecker::EmplaceSubstituted(
+        substitution, genericInterfaceType->TypeArguments()[i]->AsETSTypeParameter()->GetOriginal(),
+        InstantiateBoxedPrimitiveType(checker, node->ReturnType(), node->ReturnType()->GetType(checker)));
+    return genericInterfaceType->Substitute(checker->Relation(), substitution)->AsETSObjectType();
+}
+
+Type *CreateParamTypeWithDefaultParam(ETSChecker *checker, ir::Expression *param)
+{
+    if (!param->AsETSParameterExpression()->IsDefault()) {
+        checker->ThrowTypeError({"Expected initializer for ", param->AsETSParameterExpression()->Ident()->Name()},
+                                param->Start());
+    }
+
+    ArenaVector<Type *> types(checker->Allocator()->Adapter());
+    types.push_back(InstantiateBoxedPrimitiveType(
+        checker, param, param->AsETSParameterExpression()->TypeAnnotation()->GetType(checker)));
+
+    if (param->AsETSParameterExpression()->Initializer()->IsUndefinedLiteral()) {
+        types.push_back(checker->GlobalETSUndefinedType());
+    }
+
+    return checker->CreateETSUnionType(Span<Type *const>(types));
+}
+
+Type *InstantiateBoxedPrimitiveType(ETSChecker *checker, ir::Expression *param, Type *paramType)
+{
+    if (paramType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+        auto node = checker->Relation()->GetNode();
+        checker->Relation()->SetNode(param);
+        auto *const boxedTypeArg = checker->PrimitiveTypeAsETSBuiltinType(paramType);
+        ASSERT(boxedTypeArg);
+        paramType =
+            boxedTypeArg->Instantiate(checker->Allocator(), checker->Relation(), checker->GetGlobalTypesHolder());
+        checker->Relation()->SetNode(node);
+    }
+
+    return paramType;
+}
 }  // namespace ark::es2panda::checker

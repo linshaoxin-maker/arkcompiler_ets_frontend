@@ -1,0 +1,10 @@
+{
+  "IdentifierCache": {
+    "#I": "m1",
+    "#A": "n1",
+    "test#i": "o1",
+    "test#a": "p1",
+    "#test:21:21": "test"
+  },
+  "MemberMethodCache": {}
+}

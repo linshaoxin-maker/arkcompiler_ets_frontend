@@ -66,6 +66,27 @@ void ScriptFunction::SetIdent(Identifier *id) noexcept
     id_->SetParent(this);
 }
 
+ScriptFunction *ScriptFunction::Clone(ArenaAllocator *allocator, AstNode *parent)
+{
+    ArenaVector<Expression *> params {allocator->Adapter()};
+    for (auto *param : Params()) {
+        params.push_back(param->Clone(allocator, nullptr)->AsExpression());
+    }
+    auto *res = util::NodeAllocator::ForceSetParent<ScriptFunction>(
+        allocator, allocator,
+        ScriptFunctionData {
+            body_ != nullptr ? body_->Clone(allocator, nullptr) : nullptr,
+            FunctionSignature {
+                TypeParams() != nullptr ? TypeParams()->Clone(allocator, nullptr)->AsTSTypeParameterDeclaration()
+                                        : nullptr,
+                std::move(params),
+                ReturnTypeAnnotation() != nullptr ? ReturnTypeAnnotation()->Clone(allocator, nullptr)->AsTypeNode()
+                                                  : nullptr},
+            funcFlags_, flags_, declare_, lang_});
+    res->SetParent(parent);
+    return res;
+}
+
 void ScriptFunction::TransformChildren(const NodeTransformer &cb, std::string_view const transformationName)
 {
     if (id_ != nullptr) {
@@ -99,7 +120,9 @@ void ScriptFunction::Iterate(const NodeTraverser &cb) const
 void ScriptFunction::SetReturnTypeAnnotation(TypeNode *node) noexcept
 {
     irSignature_.SetReturnType(node);
-    node->SetParent(this);
+    if (node != nullptr) {
+        node->SetParent(this);
+    }
 }
 
 void ScriptFunction::Dump(ir::AstDumper *dumper) const

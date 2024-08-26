@@ -1,0 +1,8 @@
+interface m1 {
+    id: number;
+}
+class n1 {
+    e1 = 1;
+}
+export { type m1 };
+export type { n1 };

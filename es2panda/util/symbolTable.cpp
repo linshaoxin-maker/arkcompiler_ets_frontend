@@ -17,6 +17,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <util/helpers.h>
 
 namespace panda::es2panda::util {
 const std::string SymbolTable::FIRST_LEVEL_SEPERATOR = "|";
@@ -24,9 +25,10 @@ const std::string SymbolTable::SECOND_LEVEL_SEPERATOR = ";";
 const size_t FUNCTION_ITEM_NUMBER = 3;
 const size_t MODULE_ITEM_NUMBER = 1;
 
-bool SymbolTable::Initialize(int targetApiVersion)
+bool SymbolTable::Initialize(int targetApiVersion, std::string targetApiSubVersion)
 {
     targetApiVersion_ = targetApiVersion;
+    targetApiSubVersion_ = targetApiSubVersion;
     if (!symbolTable_.empty() && !ReadSymbolTable(symbolTable_)) {
         std::cerr << "Failed to open the symbol table file'" << std::endl;
         return false;
@@ -110,7 +112,7 @@ bool SymbolTable::ReadSymbolTable(const std::string &symbolTable)
             }
 
             originFunctionInfo_.insert(std::pair<std::string, OriginFunctionInfo>(info.funcInternalName, info));
-            if (targetApiVersion_ < 12) {
+            if (util::Helpers::IsDefaultApiVersion(targetApiVersion_, targetApiSubVersion_)) {
                 // index of function in its record's special function array
                 std::string specialFuncIndex{funcItems[3]};
                 ReadRecordHashFunctionNames(info.recordName, info.funcInternalName, specialFuncIndex);
@@ -128,14 +130,19 @@ bool SymbolTable::ReadSymbolTable(const std::string &symbolTable)
     return true;
 }
 
-void SymbolTable::WriteSymbolTable(const std::string &content)
+void SymbolTable::FillSymbolTable(const std::stringstream &content)
 {
     std::lock_guard<std::mutex> lock(m_);
+    symbolTableContent_ << content.rdbuf();
+}
+
+void SymbolTable::WriteSymbolTable()
+{
     std::fstream fs;
     fs.open(panda::os::file::File::GetExtendedFilePath(dumpSymbolTable_),
         std::ios_base::app | std::ios_base::in);
     if (fs.is_open()) {
-        fs << content;
+        fs << symbolTableContent_.str();
         fs.close();
     }
 }

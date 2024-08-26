@@ -24,7 +24,7 @@
 
 namespace panda::es2panda::lexer {
 
-enum class TokenFlags {
+enum class TokenFlags : uint8_t {
     NONE,
     NEW_LINE = (1 << 0),
     HAS_ESCAPE = (1 << 2),
@@ -130,7 +130,6 @@ public:
     bool IsKeyword() const;
     bool IsReservedTypeName() const;
     bool IsJsStrictReservedWord() const;
-    bool IsDefinableTypeName() const;
 
     static bool IsBinaryToken(TokenType type);
     static bool IsBinaryLvalueToken(TokenType type);

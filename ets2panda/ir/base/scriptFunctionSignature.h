@@ -17,6 +17,7 @@
 #define ES2PANDA_COMPILER_CORE_SCRIPT_FUNCTION_SIGNATURE_H
 
 #include "ir/astNode.h"
+#include "ir/ets/etsParameterExpression.h"
 
 namespace ark::es2panda::ir {
 class TSTypeParameterDeclaration;
@@ -66,9 +67,21 @@ public:
         return returnTypeAnnotation_;
     }
 
+    [[nodiscard]] size_t DefaultParamIndex() const
+    {
+        for (size_t i = 0; i < params_.size(); i++) {
+            if (params_[i]->AsETSParameterExpression()->IsDefault()) {
+                return i;
+            }
+        }
+        return params_.size();
+    }
+
     void Iterate(const NodeTraverser &cb) const;
 
     void TransformChildren(const NodeTransformer &cb, std::string_view transformationName);
+
+    [[nodiscard]] FunctionSignature Clone(ArenaAllocator *allocator);
 
 private:
     TSTypeParameterDeclaration *typeParams_;

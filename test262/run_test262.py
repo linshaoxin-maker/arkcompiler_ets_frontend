@@ -47,22 +47,28 @@ def parse_args():
     parser.add_argument('--es51', action='store_true',
                         help='Run test262 ES5.1 version')
     parser.add_argument('--es2021', default=False, const='all',
-                        nargs='?', choices=['all', 'only'],
+                        nargs='?', choices=['all', 'only', 'other'],
                         help='Run test262 - ES2021. ' +
                         'all: Contains all use cases for es5_tests and es2015_tests and es2021_tests and intl_tests' +
-                        'only: Only include use cases for ES2021')
+                        'only: Only include use cases for ES2021' +
+                        'other: Contains all use cases for es5_tests and es2015_tests and es2021_tests and intl_tests' +
+                        'and other_tests')
     parser.add_argument('--es2022', default=False, const='all',
-                        nargs='?', choices=['all', 'only'],
+                        nargs='?', choices=['all', 'only', 'other'],
                         help='Run test262 - ES2022. ' +
                         'all: Contains all use cases for es5_tests and es2015_tests and es2021_tests' +
                         'and es2022_tests and intl_tests' +
-                        'only: Only include use cases for ES2022')
+                        'only: Only include use cases for ES2022' +
+                        'other: Contains all use cases for es5_tests and es2015_tests and es2021_tests' +
+                        'and es2022_tests and intl_tests and other_tests')
     parser.add_argument('--es2023', default=False, const='all',
-                        nargs='?', choices=['all', 'only'],
+                        nargs='?', choices=['all', 'only', 'other'],
                         help='Run test262 - ES2023. ' +
                         'all: Contains all use cases for es5_tests and es2015_tests and es2021_tests' +
                         'and es2022_tests and es2023_tests and intl_tests' +
-                        'only: Only include use cases for ES2023')
+                        'only: Only include use cases for ES2023' +
+                        'other: Contains all use cases for es5_tests and es2015_tests and es2021_tests' +
+                        'and es2022_tests and es2023_tests and intl_tests and other_tests')
     parser.add_argument('--intl', default=False, const='intl',
                         nargs='?', choices=['intl'],
                         help='Run test262 - Intltest. ' +
@@ -124,13 +130,24 @@ def parse_args():
                         help="ark's product name")
     parser.add_argument('--run-pgo', action='store_true',
                         help="Run test262 with aot pgo")
+    parser.add_argument('--enable-litecg', action='store_true',
+                        help="Run test262 with aot litecg enabled")
     parser.add_argument('--run-jit', action='store_true',
                         help="Run test262 with JIT")
+    parser.add_argument('--run-baseline-jit', action='store_true',
+                        help="Run test262 with baseline JIT")
+    parser.add_argument('--enable-rm', action='store_true',
+                        help="Enable force remove of the data directory")
     parser.add_argument('--abc2program', action='store_true',
                         help="Use abc2prog to generate abc, aot or pgo is not supported yet under this option")
+    parser.add_argument('--stub-file',
+                        default=DEFAULT_STUB_FILE,
+                        help="stub file")
     parser.add_argument('--disable-force-gc', action='store_true',
                         help="Run test262 with close force-gc")
-
+    parser.add_argument('--enable-arkguard', action='store_true',
+                        help="enable arkguard for 262 tests")
+    
     args = parser.parse_args()
     if args.abc2program and (args.run_pgo or args.ark_aot):
         sys.exit("Error: '--abc2program' used together with  '--ark-aot' or '--run-pgo' is not supported")
@@ -249,6 +266,11 @@ class TestPrepare():
                 git_clone(TEST262_GIT_URL, DATA_DIR)
                 git_checkout(TEST262_GIT_HASH, DATA_DIR)
 
+        if self.args.enable_rm and self.args.run_jit and not os.path.isfile(TEST262_JIT_LABEL):
+            remove_dir(DATA_DIR)
+            git_clone(TEST262_JIT_GIT_URL, DATA_DIR)
+            git_checkout(TEST262_JIT_GIT_HASH, DATA_DIR)
+
         if not os.path.isdir(os.path.join(ESHOST_DIR, '.git')):
             git_clone(ESHOST_GIT_URL, ESHOST_DIR)
             git_checkout(ESHOST_GIT_HASH, ESHOST_DIR)
@@ -309,7 +331,7 @@ class TestPrepare():
                 self.args.es2022 = "all"
             elif TEST_ES2023_DIR in self.args.file:
                 self.args.es2023 = "all"
-            elif TEST_OTHERTESTS_DIR in self.args.dir:
+            elif TEST_OTHERTESTS_DIR in self.args.file:
                 self.args.other = "other"
 
     def prepare_out_dir(self):
@@ -415,6 +437,11 @@ class TestPrepare():
             files.extend(self.get_tests_from_file(ES5_LIST_FILE))
             files.extend(self.get_tests_from_file(INTL_LIST_FILE))
             files.extend(self.get_tests_from_file(ES2015_LIST_FILE))
+        if self.args.es2021 == "other":
+            files.extend(self.get_tests_from_file(ES5_LIST_FILE))
+            files.extend(self.get_tests_from_file(INTL_LIST_FILE))
+            files.extend(self.get_tests_from_file(ES2015_LIST_FILE))
+            files.extend(self.get_tests_from_file(OTHER_LIST_FILE))
         return files
 
     def prepare_es2022_tests(self):
@@ -426,6 +453,13 @@ class TestPrepare():
             files.extend(self.get_tests_from_file(ES2015_LIST_FILE))
             files.extend(self.collect_tests())
             files.extend(self.get_tests_from_file(ES2021_LIST_FILE))
+        if self.args.es2022 == "other":
+            files.extend(self.get_tests_from_file(ES5_LIST_FILE))
+            files.extend(self.get_tests_from_file(INTL_LIST_FILE))
+            files.extend(self.get_tests_from_file(ES2015_LIST_FILE))
+            files.extend(self.collect_tests())
+            files.extend(self.get_tests_from_file(ES2021_LIST_FILE))
+            files.extend(self.get_tests_from_file(OTHER_LIST_FILE))
         return files
 
     def prepare_es2023_tests(self):
@@ -438,6 +472,14 @@ class TestPrepare():
             files.extend(self.collect_tests())
             files.extend(self.get_tests_from_file(ES2021_LIST_FILE))
             files.extend(self.get_tests_from_file(ES2022_LIST_FILE))
+        if self.args.es2023 == "other":
+            files.extend(self.get_tests_from_file(ES5_LIST_FILE))
+            files.extend(self.get_tests_from_file(INTL_LIST_FILE))
+            files.extend(self.get_tests_from_file(ES2015_LIST_FILE))
+            files.extend(self.collect_tests())
+            files.extend(self.get_tests_from_file(ES2021_LIST_FILE))
+            files.extend(self.get_tests_from_file(ES2022_LIST_FILE))
+            files.extend(self.get_tests_from_file(OTHER_LIST_FILE))
         return files
 
     def prepare_intl_tests(self):
@@ -446,12 +488,14 @@ class TestPrepare():
         if self.args.intl:
             files = self.get_tests_from_file(INTL_LIST_FILE)
         return files
+
     def prepare_other_tests(self):
         files = []
         files = self.collect_tests()
         if self.args.other:
             files = self.get_tests_from_file(OTHER_LIST_FILE)
         return files
+        
     def prepare_es2015_tests(self):
         files = []
         files = self.collect_tests()
@@ -624,8 +668,12 @@ def get_host_args_of_host_type(args, host_args, ark_tool, ark_aot_tool, libs_dir
         host_args += f"--ark-aot "
     if args.run_pgo:
         host_args += f"--run-pgo "
+    if args.enable_litecg:
+        host_args += f"--enable-litecg "
     if args.run_jit:
         host_args += f"--run-jit "
+    if args.run_baseline_jit:
+        host_args += f"--run-baseline-jit "
     host_args += f"--ark-aot-tool={ark_aot_tool} "
     host_args += f"--libs-dir={libs_dir} "
     host_args += f"--ark-frontend={ark_frontend} "
@@ -637,6 +685,8 @@ def get_host_args_of_host_type(args, host_args, ark_tool, ark_aot_tool, libs_dir
     host_args += f"--product-name={product_name} "
     if args.abc2program:
         host_args = f"{host_args}--abc2program "
+    if args.enable_arkguard:
+        host_args = f"{host_args}--enable-arkguard "
 
     return host_args
 
@@ -647,10 +697,18 @@ def get_host_args_of_ark_arch(args, host_args):
 
     return host_args
 
+
 def get_disable_force_gc(host_args, args):
     host_args += f"--disable-force-gc "
 
     return host_args
+
+
+def get_host_args_of_stub_file(args, host_args):
+    host_args += f"--stub-file={args.stub_file} "
+
+    return host_args
+
 
 def get_host_args(args, host_type):
     host_args = ""
@@ -660,6 +718,7 @@ def get_host_args(args, host_type):
     ark_frontend = DEFAULT_ARK_FRONTEND
     ark_frontend_binary = DEFAULT_ARK_FRONTEND_BINARY
     ark_arch = DEFAULT_ARK_ARCH
+    stub_file = DEFAULT_STUB_FILE
     opt_level = DEFAULT_OPT_LEVEL
     es2abc_thread_count = DEFAULT_ES2ABC_THREAD_COUNT
     merge_abc_binary = DEFAULT_MERGE_ABC_BINARY
@@ -707,6 +766,9 @@ def get_host_args(args, host_type):
     if args.ark_arch != ark_arch:
         host_args = get_host_args_of_ark_arch(args, host_args)
 
+    if args.stub_file != stub_file:
+        host_args = get_host_args_of_stub_file(args, host_args)
+
     if args.disable_force_gc:
         host_args = get_disable_force_gc(host_args, args)
 
@@ -744,7 +806,6 @@ def run_test262_test(args):
 
     run_check(test_cmd)
 
-
 Check = collections.namedtuple('Check', ['enabled', 'runner', 'arg'])
 
 
@@ -758,7 +819,6 @@ def main(args):
         sys.exit(ret)
     endtime = datetime.datetime.now()
     print(f"used time is: {str(endtime - starttime)}")
-
 
 if __name__ == "__main__":
     sys.exit(main(parse_args()))

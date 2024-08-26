@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -130,6 +130,8 @@ public:
     static void Utf8Encode(T *str, char32_t cu);
     template <typename T>
     static void Mutf8Encode(T *str, char32_t cu);
+
+    bool IsConvertibleToChar() const;
 
     class Iterator {
     public:
@@ -383,21 +385,23 @@ std::string StringView::EscapeSymbol() const
     std::string str;
     str.reserve(Length());
 
-    Iterator iter(*this);
+    auto skipNewLine = [](auto &iter) {
+        if (iter.HasNext()) {
+            iter.Forward(1);
 
+            if (iter.Peek() != '\n') {
+                iter.Backward(1);
+            }
+        }
+    };
+
+    Iterator iter(*this);
     while (iter.HasNext()) {
         auto cp = iter.Next();
 
         switch (cp) {
             case '\r': {
-                if (iter.HasNext()) {
-                    iter.Forward(1);
-
-                    if (iter.Peek() != '\n') {
-                        iter.Backward(1);
-                    }
-                }
-
+                skipNewLine(iter);
                 [[fallthrough]];
             }
             case '\n': {

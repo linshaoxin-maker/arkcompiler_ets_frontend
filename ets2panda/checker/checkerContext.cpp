@@ -200,7 +200,8 @@ void CheckerContext::CheckAssignments(ir::AstNode const *node, SmartVariables &c
         auto const *variable = ident->Variable();
         if (variable == nullptr) {
             //  NOTE: we're interesting in the local variables ONLY!
-            variable = parent_->AsETSChecker()->FindVariableInFunctionScope(ident->Name());
+            variable = parent_->AsETSChecker()->FindVariableInFunctionScope(
+                ident->Name(), varbinder::ResolveBindingOptions::ALL_NON_TYPE);
         }
 
         if (variable != nullptr) {
@@ -356,10 +357,6 @@ void CheckerContext::CheckSmartCastEqualityCondition(ir::BinaryExpression *const
                             operatorType == lexer::TokenType::PUNCTUATOR_NOT_EQUAL;
 
         if (testedType->DefinitelyETSNullish()) {
-            testCondition_ = {variable, testedType, negate, strict};
-        } else if (!negate || !strict) {
-            // NOTE: we cannot say anything about variable from the expressions like 'x !== "str"'
-            testedType = parent_->AsETSChecker()->ResolveSmartType(testedType, variable->TsType());
             testCondition_ = {variable, testedType, negate, strict};
         }
     }

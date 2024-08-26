@@ -25,6 +25,7 @@
 #include "ir/base/classDefinition.h"
 
 namespace ark::es2panda::checker {
+using PropertyProcesser = std::function<varbinder::LocalVariable *(varbinder::LocalVariable *, Type *)>;
 class ETSObjectType : public Type {
 public:
     using PropertyMap = ArenaUnorderedMap<util::StringView, varbinder::LocalVariable *>;
@@ -35,25 +36,25 @@ public:
     explicit ETSObjectType(ArenaAllocator *allocator) : ETSObjectType(allocator, ETSObjectFlags::NO_OPTS) {}
 
     explicit ETSObjectType(ArenaAllocator *allocator, ETSObjectFlags flags)
-        : ETSObjectType(allocator, "", "", nullptr, flags, nullptr)
+        : ETSObjectType(allocator, "", "", std::make_tuple(nullptr, flags, nullptr))
     {
     }
 
     explicit ETSObjectType(ArenaAllocator *allocator, ETSObjectFlags flags, TypeRelation *relation)
-        : ETSObjectType(allocator, "", "", nullptr, flags, relation)
+        : ETSObjectType(allocator, "", "", std::make_tuple(nullptr, flags, relation))
     {
     }
 
     explicit ETSObjectType(ArenaAllocator *allocator, util::StringView name, util::StringView assemblerName,
                            ir::AstNode *declNode, ETSObjectFlags flags)
-        : ETSObjectType(allocator, name, assemblerName, declNode, flags, nullptr,
+        : ETSObjectType(allocator, name, assemblerName, std::make_tuple(declNode, flags, nullptr),
                         std::make_index_sequence<static_cast<size_t>(PropertyType::COUNT)> {})
     {
     }
 
     explicit ETSObjectType(ArenaAllocator *allocator, util::StringView name, util::StringView assemblerName,
-                           ir::AstNode *declNode, ETSObjectFlags flags, TypeRelation *relation)
-        : ETSObjectType(allocator, name, assemblerName, declNode, flags, relation,
+                           std::tuple<ir::AstNode *, ETSObjectFlags, TypeRelation *> info)
+        : ETSObjectType(allocator, name, assemblerName, info,
                         std::make_index_sequence<static_cast<size_t>(PropertyType::COUNT)> {})
     {
     }
@@ -337,6 +338,19 @@ public:
     }
 
     template <PropertyType TYPE>
+    void AddProperty(varbinder::LocalVariable *prop, util::StringView localName) const
+    {
+        util::StringView nameToAccess = prop->Name();
+
+        if (!localName.Empty()) {
+            nameToAccess = localName;
+        }
+
+        properties_[static_cast<size_t>(TYPE)].emplace(nameToAccess, prop);
+        propertiesInstantiated_ = true;
+    }
+
+    template <PropertyType TYPE>
     void RemoveProperty(varbinder::LocalVariable *prop)
     {
         properties_[static_cast<size_t>(TYPE)].erase(prop->Name());
@@ -360,7 +374,7 @@ public:
                                                                    PropertySearchFlags flags) const;
     varbinder::LocalVariable *CollectSignaturesForSyntheticType(ETSFunctionType *funcType, const util::StringView &name,
                                                                 PropertySearchFlags flags) const;
-    bool CheckIdenticalFlags(ETSObjectFlags target) const;
+    bool CheckIdenticalFlags(ETSObjectType *other) const;
     bool CheckIdenticalVariable(varbinder::Variable *otherVar) const;
 
     void Iterate(const PropertyTraverser &cb) const;
@@ -369,11 +383,10 @@ public:
     bool AssignmentSource(TypeRelation *relation, Type *target) override;
     void AssignmentTarget(TypeRelation *relation, Type *source) override;
     Type *Instantiate(ArenaAllocator *allocator, TypeRelation *relation, GlobalTypesHolder *globalTypes) override;
-    bool SubstituteTypeArgs(TypeRelation *relation, ArenaVector<Type *> &newTypeArgs, const Substitution *substitution);
-    void SetCopiedTypeProperties(TypeRelation *relation, ETSObjectType *copiedType, ArenaVector<Type *> &newTypeArgs,
-                                 const Substitution *substitution);
+    void UpdateTypeProperties(checker::ETSChecker *checker, PropertyProcesser const &func);
     ETSObjectType *Substitute(TypeRelation *relation, const Substitution *substitution) override;
     ETSObjectType *Substitute(TypeRelation *relation, const Substitution *substitution, bool cache);
+    ETSObjectType *SubstituteArguments(TypeRelation *relation, ArenaVector<Type *> const &arguments);
     void Cast(TypeRelation *relation, Type *target) override;
     bool CastNumericObject(TypeRelation *relation, Type *target);
     bool DefaultObjectTypeChecks(const ETSChecker *etsChecker, TypeRelation *relation, Type *source);
@@ -387,6 +400,7 @@ public:
     void AddReExports(ETSObjectType *reExport);
     void AddReExportAlias(util::StringView const &value, util::StringView const &key);
     util::StringView GetReExportAliasValue(util::StringView const &key) const;
+    bool IsReExportHaveAliasValue(util::StringView const &key) const;
     const ArenaVector<ETSObjectType *> &ReExports() const;
 
     ArenaAllocator *Allocator() const
@@ -412,20 +426,20 @@ protected:
 private:
     template <size_t... IS>
     explicit ETSObjectType(ArenaAllocator *allocator, util::StringView name, util::StringView assemblerName,
-                           ir::AstNode *declNode, ETSObjectFlags flags, TypeRelation *relation,
+                           std::tuple<ir::AstNode *, ETSObjectFlags, TypeRelation *> info,
                            [[maybe_unused]] std::index_sequence<IS...> s)
         : Type(TypeFlag::ETS_OBJECT),
           allocator_(allocator),
           name_(name),
           assemblerName_(assemblerName),
-          declNode_(declNode),
+          declNode_(std::get<ir::AstNode *>(info)),
           interfaces_(allocator->Adapter()),
           reExports_(allocator->Adapter()),
           reExportAlias_(allocator->Adapter()),
-          flags_(flags),
+          flags_(std::get<ETSObjectFlags>(info)),
           instantiationMap_(allocator->Adapter()),
           typeArguments_(allocator->Adapter()),
-          relation_(relation),
+          relation_(std::get<TypeRelation *>(info)),
           constructSignatures_(allocator->Adapter()),
           properties_ {(void(IS), PropertyMap {allocator->Adapter()})...}
     {
@@ -445,6 +459,8 @@ private:
                                TypeFlag narrowingFlags);
     void IdenticalUptoTypeArguments(TypeRelation *relation, Type *other);
     void IsGenericSupertypeOf(TypeRelation *relation, Type *source);
+    void UpdateTypeProperty(checker::ETSChecker *checker, varbinder::LocalVariable *const prop, PropertyType fieldType,
+                            PropertyProcesser const &func);
 
     ir::TSTypeParameterDeclaration *GetTypeParams() const
     {
@@ -462,6 +478,15 @@ private:
     }
     varbinder::LocalVariable *SearchFieldsDecls(const util::StringView &name, PropertySearchFlags flags) const;
 
+    void SetCopiedTypeProperties(TypeRelation *relation, ETSObjectType *copiedType, ArenaVector<Type *> &&newTypeArgs,
+                                 ETSObjectType *base);
+    bool SubstituteTypeArgs(TypeRelation *relation, ArenaVector<Type *> &newTypeArgs, const Substitution *substitution);
+
+    bool TryCastByte(TypeRelation *const relation, Type *const target);
+    bool TryCastIntegral(TypeRelation *const relation, Type *const target);
+    bool TryCastFloating(TypeRelation *const relation, Type *const target);
+    bool TryCastUnboxable(TypeRelation *const relation, Type *const target);
+
     ArenaAllocator *allocator_;
     util::StringView name_;
     util::StringView assemblerName_;
@@ -478,7 +503,7 @@ private:
 
     // for lazy properties instantiation
     TypeRelation *relation_ = nullptr;
-    const Substitution *substitution_ = nullptr;
+    const Substitution *effectiveSubstitution_ = nullptr;
     mutable bool propertiesInstantiated_ = false;
     mutable ArenaVector<Signature *> constructSignatures_;
     mutable PropertyHolder properties_;

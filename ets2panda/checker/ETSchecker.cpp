@@ -138,40 +138,13 @@ void ETSChecker::InitializeBuiltin(varbinder::Variable *var, const util::StringV
     GetGlobalTypesHolder()->InitializeBuiltin(name, type);
 }
 
-const ArenaList<ir::ClassDefinition *> &ETSChecker::GetLocalClasses() const
-{
-    return localClasses_;
-}
-
-const ArenaList<ir::ETSNewClassInstanceExpression *> &ETSChecker::GetLocalClassInstantiations() const
-{
-    return localClassInstantiations_;
-}
-
-void ETSChecker::AddToLocalClassInstantiationList(ir::ETSNewClassInstanceExpression *newExpr)
-{
-    localClassInstantiations_.push_back(newExpr);
-}
-
-bool ETSChecker::StartChecker([[maybe_unused]] varbinder::VarBinder *varbinder, const CompilerOptions &options)
+bool ETSChecker::StartChecker(varbinder::VarBinder *varbinder, const CompilerOptions &options)
 {
     Initialize(varbinder);
-
-    if (options.dumpAst) {
-        std::cout << Program()->Dump() << std::endl;
-    }
-
-    if (options.opDumpAstOnlySilent) {
-        Program()->DumpSilent();
-        return false;
-    }
 
     if (options.parseOnly) {
         return false;
     }
-
-    varbinder->SetGenStdLib(options.compilationMode == CompilationMode::GEN_STD_LIB);
-    varbinder->IdentifierAnalysis();
 
     auto *etsBinder = varbinder->AsETSBinder();
     InitializeBuiltins(etsBinder);
@@ -187,9 +160,6 @@ bool ETSChecker::StartChecker([[maybe_unused]] varbinder::VarBinder *varbinder, 
     BuildDynamicImportClass();
 
 #ifndef NDEBUG
-    for (auto lambda : etsBinder->LambdaObjects()) {
-        ASSERT(!lambda.second.first->TsType()->AsETSObjectType()->AssemblerName().Empty());
-    }
     for (auto *func : varbinder->Functions()) {
         ASSERT(!func->Node()->AsScriptFunction()->Scope()->InternalName().Empty());
     }
@@ -203,7 +173,7 @@ bool ETSChecker::StartChecker([[maybe_unused]] varbinder::VarBinder *varbinder, 
         CheckWarnings(Program(), options);
     }
 
-    return true;
+    return !ErrorLogger()->IsAnyError();
 }
 
 void ETSChecker::CheckProgram(parser::Program *program, bool runAnalysis)
@@ -214,12 +184,18 @@ void ETSChecker::CheckProgram(parser::Program *program, bool runAnalysis)
     for (auto &[_, extPrograms] : program->ExternalSources()) {
         (void)_;
         for (auto *extProg : extPrograms) {
+            checker::SavedCheckerContext savedContext(this, Context().Status(), Context().ContainingClass());
+            AddStatus(checker::CheckerStatus::IN_EXTERNAL);
             CheckProgram(extProg, VarBinder()->IsGenStdLib());
         }
     }
 
     ASSERT(Program()->Ast()->IsProgram());
     Program()->Ast()->Check(this);
+
+    if (ErrorLogger()->IsAnyError()) {
+        return;
+    }
 
     if (runAnalysis) {
         AliveAnalyzer aliveAnalyzer(Program()->Ast(), this);
@@ -405,7 +381,7 @@ ETSObjectType *ETSChecker::GlobalBuiltinDynamicType(Language lang) const
     return nullptr;
 }
 
-ETSObjectType *ETSChecker::GlobalBuiltinBoxType(const Type *contents) const
+ETSObjectType *ETSChecker::GlobalBuiltinBoxType(Type *contents)
 {
     switch (TypeKind(contents)) {
         case TypeFlag::ETS_BOOLEAN:
@@ -424,8 +400,12 @@ ETSObjectType *ETSChecker::GlobalBuiltinBoxType(const Type *contents) const
             return AsETSObjectType(&GlobalTypesHolder::GlobalFloatBoxBuiltinType);
         case TypeFlag::DOUBLE:
             return AsETSObjectType(&GlobalTypesHolder::GlobalDoubleBoxBuiltinType);
-        default:
-            return AsETSObjectType(&GlobalTypesHolder::GlobalBoxBuiltinType);
+        default: {
+            auto *base = AsETSObjectType(&GlobalTypesHolder::GlobalBoxBuiltinType);
+            auto *substitution = NewSubstitution();
+            substitution->emplace(base->TypeArguments()[0]->AsETSTypeParameter(), contents);
+            return base->Substitute(Relation(), substitution);
+        }
     }
 }
 
@@ -444,10 +424,9 @@ const GlobalArraySignatureMap &ETSChecker::GlobalArrayTypes() const
     return globalArraySignatures_;
 }
 
-// For use in Signature::ToAssemblerType
-const Type *MaybeBoxedType(Checker *checker, const varbinder::Variable *var)
+Type *ETSChecker::GlobalTypeError() const
 {
-    return checker->AsETSChecker()->MaybeBoxedType(var);
+    return GetGlobalTypesHolder()->GlobalTypeError();
 }
 
 void ETSChecker::HandleUpdatedCallExpressionNode(ir::CallExpression *callExpr)

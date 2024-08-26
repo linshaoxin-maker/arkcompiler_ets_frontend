@@ -69,6 +69,11 @@ public:
         return elements_;
     }
 
+    void SetElements(ArenaVector<Expression *> &&elements) noexcept
+    {
+        elements_ = std::move(elements);
+    }
+
     [[nodiscard]] bool IsDeclaration() const noexcept
     {
         return isDeclaration_;
@@ -95,6 +100,11 @@ public:
     }
 
     [[nodiscard]] checker::Type *GetPreferredType() noexcept
+    {
+        return preferredType_;
+    }
+
+    [[nodiscard]] checker::Type const *GetPreferredType() const noexcept
     {
         return preferredType_;
     }
@@ -132,7 +142,7 @@ public:
     checker::Type *Check(checker::TSChecker *checker) override;
     checker::Type *Check(checker::ETSChecker *checker) override;
     checker::Type *CheckPattern(checker::TSChecker *checker);
-    void HandleNestedArrayExpression(checker::ETSChecker *checker, ArrayExpression *currentElement, bool isArray,
+    void HandleNestedArrayExpression(checker::ETSChecker *checker, ArrayExpression *currentElement,
                                      bool isPreferredTuple, std::size_t idx);
 
     void Accept(ASTVisitorT *v) override
@@ -148,7 +158,7 @@ private:
     ArenaVector<Expression *> elements_;
     checker::Type *preferredType_ {};
     bool isDeclaration_ {};
-    bool trailingComma_;
+    bool trailingComma_ {};
     bool optional_ {};
 };
 }  // namespace ark::es2panda::ir

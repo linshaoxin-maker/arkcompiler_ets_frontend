@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import q from 'assert';
-const { isMainThread1: i2, parentPort1: j2 } = require('./workercustomModule');
-const { PI: l } = Math;
-q(i2 == false, 'success');
-q(j2 === 2, 'success');
+import b3 from 'assert';
+const { isMainThread1: c3, parentPort1: d3 } = require('./workercustomModule');
+const { PI: e3 } = Math;
+b3(c3 == false, 'success');
+b3(d3 === 2, 'success');

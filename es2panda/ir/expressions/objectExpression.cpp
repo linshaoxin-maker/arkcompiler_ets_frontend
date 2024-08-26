@@ -234,8 +234,8 @@ void ObjectExpression::EmitCreateObjectWithBuffer(compiler::PandaGen *pg, compil
         return;
     }
 
-    uint32_t bufIdx = pg->AddLiteralBuffer(buf);
-    pg->CreateObjectWithBuffer(this, bufIdx);
+    int32_t bufIdx = pg->AddLiteralBuffer(buf);
+    pg->CreateObjectWithBuffer(this, static_cast<uint32_t>(bufIdx));
 }
 
 static const Literal *CreateLiteral(compiler::PandaGen *pg, const ir::Property *prop, util::BitSet *compiled,
@@ -690,7 +690,7 @@ checker::Type *ObjectExpression::Check(checker::Checker *checker) const
             const util::StringView &propName = GetPropertyName(prop->Key());
 
             auto *memberVar = binder::Scope::CreateVar(checker->Allocator(), propName, flags, it);
-
+            CHECK_NOT_NULL(memberVar);
             if (inConstContext) {
                 memberVar->AddFlag(binder::VariableFlags::READONLY);
             } else {
@@ -764,6 +764,7 @@ checker::Type *ObjectExpression::Check(checker::Checker *checker) const
     }
 
     checker::Type *returnType = checker->Allocator()->New<checker::ObjectLiteralType>(desc);
+    CHECK_NOT_NULL(returnType);
     returnType->AsObjectType()->AddObjectFlag(checker::ObjectFlags::RESOLVED_MEMBERS |
                                               checker::ObjectFlags::CHECK_EXCESS_PROPS);
     return returnType;

@@ -303,21 +303,19 @@ varbinder::Variable *TSChecker::GetPropertyOfUnionType(UnionType *type, const ut
                 continue;
             }
 
-            if (!it->IsObjectType()) {
-                if (getPartial) {
-                    continue;
-                }
-
+            if (!it->IsObjectType() && getPartial) {
+                continue;
+            }
+            if (!it->IsObjectType() && !getPartial) {
                 return nullptr;
             }
 
             ObjectType *objType = it->AsObjectType();
 
-            if (objType->StringIndexInfo() == nullptr) {
-                if (getPartial) {
-                    continue;
-                }
-
+            if (objType->StringIndexInfo() == nullptr && getPartial) {
+                continue;
+            }
+            if (objType->StringIndexInfo() == nullptr && !getPartial) {
                 return nullptr;
             }
 
@@ -480,18 +478,23 @@ ArenaVector<ObjectType *> TSChecker::GetBaseTypes(InterfaceType *type)
                 continue;
             }
 
-            ArenaVector<ObjectType *> extendsBases = GetBaseTypes(baseObj->AsInterfaceType());
-            for (auto *extendBase : extendsBases) {
-                if (extendBase == type) {
-                    ThrowTypeError({"Type ", type->Name(), " recursively references itself as a base type."},
-                                   decl->Node()->AsTSInterfaceDeclaration()->Id()->Start());
-                }
-            }
+            CheckExtendsBases(baseObj, type, decl);
         }
     }
 
     type->AddObjectFlag(ObjectFlags::RESOLVED_BASE_TYPES);
     return type->Bases();
+}
+
+void TSChecker::CheckExtendsBases(ObjectType *&baseObj, InterfaceType *&type, varbinder::InterfaceDecl *&decl)
+{
+    ArenaVector<ObjectType *> extendsBases = GetBaseTypes(baseObj->AsInterfaceType());
+    for (auto *extendBase : extendsBases) {
+        if (extendBase == type) {
+            ThrowTypeError({"Type ", type->Name(), " recursively references itself as a base type."},
+                           decl->Node()->AsTSInterfaceDeclaration()->Id()->Start());
+        }
+    }
 }
 
 void TSChecker::ResolveDeclaredMembers(InterfaceType *type)

@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -19,7 +19,7 @@ if (PANDA_TARGET_ARM32)
               --build-dir ${PANDA_BINARY_ROOT}
               --arm32-qemu
               --ets-runtime
-              --test-file PunctuatorAnyEqual.ets
+              --test-file PunctuatorAnyEqual.sts
   )
 endif()
 

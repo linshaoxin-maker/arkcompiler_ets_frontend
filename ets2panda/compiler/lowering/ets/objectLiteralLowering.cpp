@@ -26,6 +26,26 @@ std::string_view ObjectLiteralLowering::Name() const
     return "ObjectLiteralLowering";
 }
 
+static void MaybeAllowConstAssign(checker::Type *targetType, ArenaVector<ir::Statement *> &statements)
+{
+    if (!targetType->IsETSObjectType()) {
+        return;
+    }
+    for (auto *const stmt : statements) {
+        if (!stmt->IsExpressionStatement() ||
+            !stmt->AsExpressionStatement()->GetExpression()->IsAssignmentExpression()) {
+            continue;
+        }
+
+        auto *const assignmentExpr = stmt->AsExpressionStatement()->GetExpression()->AsAssignmentExpression();
+        auto *const variable = assignmentExpr->Left()->AsMemberExpression()->Property()->AsIdentifier()->Variable();
+
+        if (variable != nullptr && variable->HasFlag(varbinder::VariableFlags::READONLY)) {
+            assignmentExpr->SetIgnoreConstAssign();
+        }
+    }
+}
+
 static constexpr std::string_view NESTED_BLOCK_EXPRESSION = "_$NESTED_BLOCK_EXPRESSION$_";
 
 static void RestoreNestedBlockExpression(const ArenaVector<ir::Statement *> &statements,
@@ -53,35 +73,53 @@ static void RestoreNestedBlockExpression(const ArenaVector<ir::Statement *> &sta
     }
 }
 
+static void AllowRequiredTypeInstantiation(const ir::Expression *const loweringResult)
+{
+    if (!loweringResult->IsBlockExpression()) {
+        return;
+    }
+
+    const auto *const blockExpression = loweringResult->AsBlockExpression();
+    const auto *const firstStatement = blockExpression->Statements().front();
+    if (!firstStatement->IsVariableDeclaration() ||
+        !firstStatement->AsVariableDeclaration()->Declarators().front()->Init()->IsETSNewClassInstanceExpression()) {
+        return;
+    }
+
+    const auto *const varDecl = firstStatement->AsVariableDeclaration()->Declarators().front()->Init();
+
+    varDecl->AddAstNodeFlags(ir::AstNodeFlags::ALLOW_REQUIRED_INSTANTIATION);
+
+    for (auto *const stmt : blockExpression->Statements()) {
+        if (!stmt->IsExpressionStatement() ||
+            !stmt->AsExpressionStatement()->GetExpression()->IsAssignmentExpression() ||
+            !stmt->AsExpressionStatement()->GetExpression()->AsAssignmentExpression()->Right()->IsBlockExpression()) {
+            continue;
+        }
+
+        AllowRequiredTypeInstantiation(
+            stmt->AsExpressionStatement()->GetExpression()->AsAssignmentExpression()->Right()->AsBlockExpression());
+    }
+}
+
 static void GenerateNewStatements(checker::ETSChecker *checker, ir::ObjectExpression *objExpr, std::stringstream &ss,
                                   std::vector<ir::AstNode *> &newStmts,
                                   std::deque<ir::BlockExpression *> &nestedBlckExprs)
 {
     auto *const allocator = checker->Allocator();
 
-    auto *const classType = objExpr->PreferredType()->AsETSObjectType();
+    auto *const classType = objExpr->TsType()->AsETSObjectType();
 
     auto addNode = [&newStmts](ir::AstNode *node) -> int {
         newStmts.emplace_back(node);
         return newStmts.size();
     };
 
-    // Generating: let <genSym>: <preferredType> = new <preferredType>();
+    // Generating: let <genSym>: <TsType> = new <TsType>();
     auto *genSymIdent = Gensym(allocator);
-    auto *preferredType = checker->AllocNode<ir::OpaqueTypeNode>(classType);
-    ss << "let @@I" << addNode(genSymIdent) << ": @@T" << addNode(preferredType) << " = new @@I"
-       << addNode(checker->AllocNode<ir::Identifier>(classType->Name(), allocator));
-
-    // Type params of class type
-    if (!classType->TypeArguments().empty()) {
-        ss << "<";
-        for (auto *type : classType->TypeArguments()) {
-            type->ToString(ss);
-            ss << ",";
-        }
-        ss << ">";
-    }
-    ss << "();" << std::endl;
+    auto *type = checker->AllocNode<ir::OpaqueTypeNode>(classType);
+    ss << "let @@I" << addNode(genSymIdent) << ": @@T" << addNode(type) << " = new @@T"
+       << addNode(type->Clone(allocator, nullptr)) << "();" << std::endl;
 
     // Generating: <genSym>.key_i = value_i      ( i <= [0, object_literal.properties.size) )
     for (auto *propExpr : objExpr->Properties()) {
@@ -117,13 +155,13 @@ static ir::AstNode *HandleObjectLiteralLowering(public_lib::Context *ctx, ir::Ob
      * For given object literal of class type generates following block expression:
      *
      *  ({
-     *     let <genSym>: <preferredType> = new <preferredType>();
+     *     let <genSym>: <TsType> = new <TsType>();
      *     <genSym>.key_i = value_i      ( i <= [0, object_literal.properties.size) )
      *     <genSym>;                     <-- NOTE: result of block expression
      *  })
      */
 
-    if (objExpr->PreferredType() == nullptr) {
+    if (objExpr->TsType() == nullptr) {
         return objExpr;
     }
 
@@ -141,6 +179,8 @@ static ir::AstNode *HandleObjectLiteralLowering(public_lib::Context *ctx, ir::Ob
     auto *loweringResult = parser->CreateFormattedExpression(ss.str(), newStmts);
     loweringResult->SetParent(objExpr->Parent());
 
+    MaybeAllowConstAssign(objExpr->TsType(), loweringResult->AsBlockExpression()->Statements());
+
     auto scopeCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(varbinder, NearestScope(objExpr));
     InitScopesPhaseETS::RunExternalNode(loweringResult, varbinder);
 
@@ -149,6 +189,8 @@ static ir::AstNode *HandleObjectLiteralLowering(public_lib::Context *ctx, ir::Ob
                                  loweringResult->Scope());
 
     varbinder->ResolveReferencesForScope(loweringResult, NearestScope(loweringResult));
+
+    AllowRequiredTypeInstantiation(loweringResult);
 
     checker::SavedCheckerContext scc {checker, checker::CheckerStatus::IGNORE_VISIBILITY};
     loweringResult->Check(checker);
@@ -168,9 +210,8 @@ bool ObjectLiteralLowering::Perform(public_lib::Context *ctx, parser::Program *p
     program->Ast()->TransformChildrenRecursively(
         [ctx](ir::AstNode *ast) -> ir::AstNode * {
             // Skip processing dynamic objects
-            if (ast->IsObjectExpression() &&
-                !ast->AsObjectExpression()->PreferredType()->AsETSObjectType()->HasObjectFlag(
-                    checker::ETSObjectFlags::DYNAMIC)) {
+            if (ast->IsObjectExpression() && !ast->AsObjectExpression()->TsType()->AsETSObjectType()->HasObjectFlag(
+                                                 checker::ETSObjectFlags::DYNAMIC)) {
                 return HandleObjectLiteralLowering(ctx, ast->AsObjectExpression());
             }
             return ast;
@@ -194,8 +235,7 @@ bool ObjectLiteralLowering::Postcondition(public_lib::Context *ctx, const parser
     // In all object literal contexts (except dynamic) a substitution should take place
     return !program->Ast()->IsAnyChild([](const ir::AstNode *ast) -> bool {
         return ast->IsObjectExpression() &&
-               !ast->AsObjectExpression()->PreferredType()->AsETSObjectType()->HasObjectFlag(
-                   checker::ETSObjectFlags::DYNAMIC);
+               !ast->AsObjectExpression()->TsType()->AsETSObjectType()->HasObjectFlag(checker::ETSObjectFlags::DYNAMIC);
     });
 }
 

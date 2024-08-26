@@ -74,11 +74,11 @@ Type *ETSUnionType::ComputeAssemblerLUB(ETSChecker *checker, ETSUnionType *un)
 
     Type *lub = nullptr;
     for (auto *t : un->ConstituentTypes()) {
-        ASSERT(t->IsETSReferenceType());
+        ASSERT(t->IsETSReferenceType() || t->IsETSVoidType());
         if (t->IsETSNullType() || lub == t) {
             continue;
         }
-        if (t->IsETSUndefinedType()) {
+        if (t->IsETSUndefinedType() || t->IsETSVoidType()) {
             return checker->GetGlobalTypesHolder()->GlobalETSObjectType();
         }
         if (lub == nullptr) {
@@ -170,8 +170,25 @@ bool ETSUnionType::AssignmentSource(TypeRelation *relation, Type *target)
             relation->GetChecker()->AsETSChecker()->GetUnboxingFlag(checker->MaybePrimitiveBuiltinType(target)));
     }
 
-    return relation->Result(std::all_of(constituentTypes_.begin(), constituentTypes_.end(),
-                                        [relation, target](auto *t) { return relation->IsAssignableTo(t, target); }));
+    bool isAssignable = false;
+
+    if (!(target->IsETSObjectType() && target->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL))) {
+        isAssignable = std::all_of(constituentTypes_.begin(), constituentTypes_.end(),
+                                   [relation, target](auto *t) { return relation->IsAssignableTo(t, target); });
+    } else {
+        for (auto it : constituentTypes_) {
+            if (!it->IsETSObjectType() || !it->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
+                isAssignable = false;
+                break;
+            }
+
+            if (relation->IsAssignableTo(it, target)) {
+                isAssignable = true;
+            }
+        }
+    }
+
+    return relation->Result(isAssignable);
 }
 
 void ETSUnionType::AssignmentTarget(TypeRelation *relation, Type *source)
@@ -214,7 +231,7 @@ void ETSUnionType::CastTarget(TypeRelation *relation, Type *source)
     RelationTarget(relation, source, relFn);
 }
 
-static auto constexpr ETS_NORMALIZABLE_NUMERIC = TypeFlag(TypeFlag::ETS_NUMERIC & ~TypeFlag::CHAR);
+static auto constexpr ETS_NORMALIZABLE_NUMERIC = TypeFlag(TypeFlag::ETS_NUMERIC);
 
 static Type *LargestNumeric(Type *t1, Type *t2)
 {
@@ -248,12 +265,15 @@ static std::optional<Type *> TryMergeTypes(TypeRelation *relation, Type *const t
 void ETSUnionType::LinearizeAndEraseIdentical(TypeRelation *relation, ArenaVector<Type *> &types)
 {
     auto *const checker = relation->GetChecker()->AsETSChecker();
-    ASSERT(std::none_of(types.begin(), types.end(), [](auto *t) { return t->IsETSFunctionType(); }));
 
     // Linearize
     size_t const initialSz = types.size();
     for (size_t i = 0; i < initialSz; ++i) {
-        auto *const ct = types[i];
+        auto *ct = types[i];
+        if (ct->IsETSFunctionType()) {
+            ASSERT(ct->AsETSFunctionType()->CallSignatures().size() == 1);
+            ct = checker->FunctionTypeToFunctionalInterfaceType(ct->AsETSFunctionType()->CallSignatures()[0]);
+        }
         if (ct->IsETSUnionType()) {
             auto const &otherTypes = ct->AsETSUnionType()->ConstituentTypes();
             types.insert(types.end(), otherTypes.begin(), otherTypes.end());
@@ -271,9 +291,14 @@ void ETSUnionType::LinearizeAndEraseIdentical(TypeRelation *relation, ArenaVecto
     }
     types.resize(insPos);
 
-    // Promote primitives and literal types
+    // Promote primitives, enums and literal types
     for (auto &ct : types) {
-        ct = checker->MaybePromotedBuiltinType(checker->GetNonConstantTypeFromPrimitiveType(ct));
+        if (ct->IsETSEnumType()) {
+            ct->AsETSEnumType()->GetDecl()->BoxedClass()->Check(checker);
+            ct = ct->AsETSEnumType()->GetDecl()->BoxedClass()->TsType();
+        } else {
+            ct = checker->MaybePromotedBuiltinType(checker->GetNonConstantTypeFromPrimitiveType(ct));
+        }
     }
     // Reduce subtypes
     for (auto cmpIt = types.begin(); cmpIt != types.end(); ++cmpIt) {
@@ -352,6 +377,11 @@ checker::Type *ETSUnionType::GetAssignableType(checker::ETSChecker *checker, che
         return sourceType;
     }
 
+    if (sourceType->IsETSEnumType()) {
+        sourceType->AsETSEnumType()->GetDecl()->BoxedClass()->Check(checker);
+        return sourceType->AsETSEnumType()->GetDecl()->BoxedClass()->TsType();
+    }
+
     auto *objectType = sourceType->IsETSObjectType() ? sourceType->AsETSObjectType() : nullptr;
     if (objectType != nullptr && (!objectType->HasObjectFlag(ETSObjectFlags::BUILTIN_TYPE) ||
                                   objectType->HasObjectFlag(ETSObjectFlags::BUILTIN_STRING))) {
@@ -421,45 +451,45 @@ checker::Type *ETSUnionType::GetAssignableBuiltinType(
     return assignableType;
 }
 
-bool ETSUnionType::ExtractType(checker::ETSChecker *checker, checker::ETSObjectType *sourceType) noexcept
+bool ETSUnionType::ExtractType(checker::ETSChecker *checker, checker::ETSObjectType *sourceType,
+                               ArenaVector<Type *> &unionTypes) noexcept
 {
     std::map<std::uint32_t, ArenaVector<checker::Type *>::const_iterator> numericTypes {};
     bool const isBool = sourceType->HasObjectFlag(ETSObjectFlags::BUILTIN_BOOLEAN);
     bool const isChar = sourceType->HasObjectFlag(ETSObjectFlags::BUILTIN_CHAR);
 
-    auto it = constituentTypes_.cbegin();
-    while (it != constituentTypes_.cend()) {
-        auto *const constituentType = *it;
+    bool rc = false;
+    auto it = unionTypes.cbegin();
+    while (it != unionTypes.cend()) {
+        auto *constituentType = *it;
+        //  Because 'instanceof' expression does not check for type parameters, then for generic types we should
+        //  consider that expressions like 'SomeType<U...>' and 'SomeType<T...>' are identical for smart casting.
+        //  We also have to pass through all the union to process cases like 'C<T>|A|B|C<U>|undefined`
+        if (constituentType->HasTypeFlag(checker::TypeFlag::GENERIC)) {
+            constituentType = constituentType->Clone(checker);
+            constituentType->RemoveTypeFlag(checker::TypeFlag::GENERIC);
+        }
 
         if (checker->Relation()->IsIdenticalTo(constituentType, sourceType)) {
-            constituentTypes_.erase(it);
-            return true;
-        }
-        if (checker->Relation()->IsSupertypeOf(constituentType, sourceType)) {
-            return true;
-        }
-        if (checker->Relation()->IsSupertypeOf(sourceType, constituentType)) {
-            return true;
+            rc = true;
+            it = unionTypes.erase(it);
+            continue;
         }
 
-        if (constituentType->IsETSObjectType()) {
+        if (checker->Relation()->IsSupertypeOf(constituentType, sourceType)) {
+            rc = true;
+        } else if (!rc && constituentType->IsETSObjectType()) {
             auto *const objectType = (*it)->AsETSObjectType();
             if (isBool && objectType->HasObjectFlag(ETSObjectFlags::BUILTIN_BOOLEAN)) {
-                constituentTypes_.erase(it);
+                unionTypes.erase(it);
                 return true;
             }
+
             if (isChar && objectType->HasObjectFlag(ETSObjectFlags::BUILTIN_CHAR)) {
-                constituentTypes_.erase(it);
+                unionTypes.erase(it);
                 return true;
             }
-            //  Because 'instanceof' expression does not check for type parameters, then for generic types we should
-            //  consider that expressions like 'SomeType<U>' and 'SomeType<T>' are identical for smart casting.
-            if (objectType->HasTypeFlag(TypeFlag::GENERIC) && sourceType->HasTypeFlag(TypeFlag::GENERIC) &&
-                checker->Relation()->IsIdenticalTo(objectType->GetOriginalBaseType(),
-                                                   sourceType->GetOriginalBaseType())) {
-                constituentTypes_.erase(it);
-                return true;
-            }
+
             if (auto const id = ETSObjectType::GetPrecedence(checker, objectType); id > 0U) {
                 numericTypes.emplace(id, it);
             }
@@ -468,10 +498,14 @@ bool ETSUnionType::ExtractType(checker::ETSChecker *checker, checker::ETSObjectT
         ++it;
     }
 
+    if (rc) {
+        return true;
+    }
+
     if (auto const sourceId = ETSObjectType::GetPrecedence(checker, sourceType); sourceId > 0U) {
         for (auto const [id, it1] : numericTypes) {
             if (id >= sourceId) {
-                constituentTypes_.erase(it1);
+                unionTypes.erase(it1);
                 return true;
             }
         }
@@ -480,27 +514,25 @@ bool ETSUnionType::ExtractType(checker::ETSChecker *checker, checker::ETSObjectT
     return false;
 }
 
-bool ETSUnionType::ExtractType(checker::ETSChecker *checker, checker::ETSArrayType *sourceType) noexcept
+bool ETSUnionType::ExtractType(checker::ETSChecker *checker, checker::ETSArrayType *sourceType,
+                               ArenaVector<Type *> &unionTypes) noexcept
 {
-    auto it = constituentTypes_.cbegin();
-    while (it != constituentTypes_.cend()) {
+    auto it = unionTypes.cbegin();
+    while (it != unionTypes.cend()) {
         auto *const constituentType = *it;
         if (constituentType != nullptr && constituentType->IsETSArrayType()) {
             if (checker->Relation()->IsIdenticalTo(constituentType, sourceType)) {
-                constituentTypes_.erase(it);
+                unionTypes.erase(it);
                 return true;
             }
             if (checker->Relation()->IsSupertypeOf(constituentType, sourceType)) {
-                return true;
-            }
-            if (checker->Relation()->IsSupertypeOf(sourceType, constituentType)) {
                 return true;
             }
         }
         ++it;
     }
 
-    for (auto const &constituentType : constituentTypes_) {
+    for (auto const &constituentType : unionTypes) {
         if (constituentType != nullptr && constituentType->IsETSObjectType() &&
             constituentType->AsETSObjectType()->IsGlobalETSObjectType()) {
             return true;
@@ -513,24 +545,32 @@ bool ETSUnionType::ExtractType(checker::ETSChecker *checker, checker::ETSArrayTy
 std::pair<checker::Type *, checker::Type *> ETSUnionType::GetComplimentaryType(ETSChecker *const checker,
                                                                                checker::Type *sourceType)
 {
-    checker::Type *clone = Clone(checker);
+    ArenaVector<Type *> unionTypes(checker->Allocator()->Adapter());
+    for (auto *it : constituentTypes_) {
+        unionTypes.emplace_back(it);
+    }
     bool ok = true;
 
     if (sourceType->IsETSUnionType()) {
         for (auto *const constituentType : sourceType->AsETSUnionType()->ConstituentTypes()) {
-            if (ok = clone->AsETSUnionType()->ExtractType(checker, constituentType->AsETSObjectType()); !ok) {
+            if (ok = ExtractType(checker, constituentType->AsETSObjectType(), unionTypes); !ok) {
                 break;
             }
         }
     } else if (sourceType->IsETSArrayType()) {
-        ok = clone->AsETSUnionType()->ExtractType(checker, sourceType->AsETSArrayType());
+        ok = ExtractType(checker, sourceType->AsETSArrayType(), unionTypes);
     } else {
         if (sourceType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && !sourceType->IsETSVoidType()) {
             sourceType = checker->PrimitiveTypeAsETSBuiltinType(sourceType);
+        } else if (sourceType->HasTypeFlag(checker::TypeFlag::GENERIC)) {
+            //  Because 'instanceof' expression does not check for type parameters, then for generic types we should
+            //  consider that expressions like 'SomeType<U>' and 'SomeType<T>' are identical for smart casting.
+            sourceType = sourceType->Clone(checker);
+            sourceType->RemoveTypeFlag(checker::TypeFlag::GENERIC);
         }
 
         if (sourceType->IsETSObjectType()) {
-            ok = clone->AsETSUnionType()->ExtractType(checker, sourceType->AsETSObjectType());
+            ok = ExtractType(checker, sourceType->AsETSObjectType(), unionTypes);
         }
     }
 
@@ -538,11 +578,14 @@ std::pair<checker::Type *, checker::Type *> ETSUnionType::GetComplimentaryType(E
         return std::make_pair(checker->GetGlobalTypesHolder()->GlobalNeverType(), this);
     }
 
-    if (clone->AsETSUnionType()->ConstituentTypes().size() == 1U) {
-        clone = clone->AsETSUnionType()->ConstituentTypes().front();
+    checker::Type *complimentaryType;
+    if (unionTypes.size() == 1U) {
+        complimentaryType = unionTypes.front();
+    } else {
+        complimentaryType = checker->CreateETSUnionType(std::move(unionTypes));
     }
 
-    return std::make_pair(sourceType, clone);
+    return std::make_pair(sourceType, complimentaryType);
 }
 
 Type *ETSUnionType::FindTypeIsCastableToThis(ir::Expression *node, TypeRelation *relation, Type *source) const
@@ -633,8 +676,9 @@ Type *ETSUnionType::FindUnboxableType() const
 
 bool ETSUnionType::HasObjectType(ETSObjectFlags flag) const
 {
-    auto it = std::find_if(constituentTypes_.begin(), constituentTypes_.end(),
-                           [flag](Type *t) { return t->AsETSObjectType()->HasObjectFlag(flag); });
+    auto it = std::find_if(constituentTypes_.begin(), constituentTypes_.end(), [flag](Type *t) {
+        return t->IsETSObjectType() && t->AsETSObjectType()->HasObjectFlag(flag);
+    });
     return it != constituentTypes_.end();
 }
 
@@ -674,5 +718,20 @@ bool ETSUnionType::HasUndefinedType() const
         }
     }
     return false;
+}
+
+bool ETSUnionType::HasType(Type *type) const
+{
+    for (const auto &cType : constituentTypes_) {
+        if (cType == type) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ETSUnionType::HasNullishType(const ETSChecker *checker) const
+{
+    return HasType(checker->GlobalETSNullType()) || HasType(checker->GlobalETSUndefinedType());
 }
 }  // namespace ark::es2panda::checker

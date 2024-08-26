@@ -33,6 +33,8 @@ import type {
   TransformationContext 
 } from 'typescript';
 import type { IOptions } from '../configs/IOptions';
+import { LocalVariableCollections, PropCollections, UnobfuscationCollections } from './CommonCollections';
+import { historyUnobfuscatedNamesMap } from '../transformers/rename/RenameIdentifierTransformer';
 
 export interface ReservedNameInfo {
   universalReservedArray: RegExp[]; // items contain wildcards
@@ -74,7 +76,7 @@ export function collectIdentifiersAndStructs(sourceFile: SourceFile, context: Tr
       structs.push(node);
     }
     // @ts-ignore
-    if (node.virtual) {
+    if (getOriginalNode(node).virtual) {
       return node;
     }
     if (!isIdentifier(node) || !node.parent) {
@@ -117,11 +119,18 @@ export function separateUniversalReservedItem(originalArray: string[]): Reserved
       const regexPattern = wildcardTransformer(reservedItem);
       const regexOperator = new RegExp(`^${regexPattern}$`);
       reservedInfo.universalReservedArray.push(regexOperator);
+      recordWildcardMapping(reservedItem, regexOperator);
     } else {
       reservedInfo.specificReservedArray.push(reservedItem);
     }
   });
   return reservedInfo;
+}
+
+function recordWildcardMapping(originString: string, regExpression: RegExp): void {
+  if (UnobfuscationCollections.printKeptName) {
+    UnobfuscationCollections.reservedWildcardMap.set(regExpression, originString);
+  }
 }
 
 /**
@@ -184,5 +193,192 @@ export function handleReservedConfig(config: IOptions, optionName: string, reser
     const reservedInfo: ReservedNameInfo = separateUniversalReservedItem(reservedConfig[reservedListName]);
     reservedConfig[reservedListName] = reservedInfo.specificReservedArray;
     reservedConfig[universalLisName] = reservedInfo.universalReservedArray;
+  }
+}
+
+export function isReservedLocalVariable(mangledName: string): boolean {
+  return LocalVariableCollections.reservedLangForLocal.has(mangledName) || 
+    LocalVariableCollections.reservedConfig?.has(mangledName) ||
+    LocalVariableCollections.reservedStruct?.has(mangledName) ||
+    UnobfuscationCollections.reservedSdkApiForProp?.has(mangledName) ||
+    UnobfuscationCollections.reservedExportName?.has(mangledName);
+}
+
+export function isReservedTopLevel(originalName: string): boolean {
+  if (PropCollections.enablePropertyObfuscation) {
+    return isReservedProperty(originalName);
+  }
+
+  // The 'mReservedToplevelNames' has already been added to 'PropCollections.reservedProperties'.
+  return UnobfuscationCollections.reservedLangForTopLevel.has(originalName) ||
+    UnobfuscationCollections.reservedSdkApiForGlobal?.has(originalName) ||
+    UnobfuscationCollections.reservedExportName?.has(originalName)||
+    PropCollections.reservedProperties?.has(originalName) ||
+    isMatchWildcard(PropCollections.universalReservedProperties, originalName);
+}
+
+export function isReservedProperty(originalName: string): boolean {
+  return UnobfuscationCollections.reservedSdkApiForProp?.has(originalName) ||
+    UnobfuscationCollections.reservedLangForProperty?.has(originalName) ||
+    UnobfuscationCollections.reservedStruct?.has(originalName)||
+    UnobfuscationCollections.reservedExportNameAndProp?.has(originalName) ||
+    UnobfuscationCollections.reservedStrProp?.has(originalName) ||
+    UnobfuscationCollections.reservedEnum?.has(originalName) ||
+    PropCollections.reservedProperties?.has(originalName) ||
+    isMatchWildcard(PropCollections.universalReservedProperties, originalName);
+}
+
+enum WhitelistType {
+  SDK = 'sdk',
+  LANG = 'lang',
+  CONF = 'conf',
+  STRUCT = 'struct',
+  EXPORT = 'export',
+  STRPROP = 'strProp',
+  ENUM = 'enum'
+}
+
+function needToRecordTopLevel(originalName: string, recordMap: Map<string, Set<string>>, nameWithScope: string): boolean {
+  if (PropCollections.enablePropertyObfuscation) {
+    return needToRecordProperty(originalName, recordMap, nameWithScope);
+  }
+
+  let reservedFlag = false;
+  if (UnobfuscationCollections.reservedLangForTopLevel.has(originalName)) {
+    recordReservedName(nameWithScope, WhitelistType.LANG, recordMap);
+    reservedFlag = true;
+  }
+
+  if (UnobfuscationCollections.reservedSdkApiForGlobal?.has(originalName)) {
+    recordReservedName(nameWithScope, WhitelistType.SDK, recordMap);
+    reservedFlag = true;
+  }
+
+  if (UnobfuscationCollections.reservedExportName?.has(originalName)) {
+    recordReservedName(nameWithScope, WhitelistType.EXPORT, recordMap);
+    reservedFlag = true;
+  }
+
+  // The 'mReservedToplevelNames' has already been added to 'PropCollections.reservedProperties'.
+  if (PropCollections.reservedProperties?.has(originalName) ||
+    isMatchWildcard(PropCollections.universalReservedProperties, originalName)) {
+    recordReservedName(nameWithScope, WhitelistType.CONF, recordMap);
+    reservedFlag = true;
+  }
+
+  return reservedFlag;
+}
+
+function needToReservedLocal(originalName: string, recordMap: Map<string, Set<string>>, nameWithScope: string): boolean {
+  let reservedFlag = false;
+
+  if (LocalVariableCollections.reservedLangForLocal.has(originalName)) {
+    recordReservedName(nameWithScope, WhitelistType.LANG, recordMap);
+    reservedFlag = true;
+  }
+
+  if (UnobfuscationCollections.reservedSdkApiForLocal?.has(originalName)) {
+    recordReservedName(nameWithScope, WhitelistType.SDK, recordMap);
+    reservedFlag = true;
+  }
+
+  if (UnobfuscationCollections.reservedExportName?.has(originalName)) {
+    recordReservedName(nameWithScope, WhitelistType.EXPORT, recordMap);
+    reservedFlag = true;
+  }
+
+  if (LocalVariableCollections.reservedConfig?.has(originalName)) {
+    recordReservedName(nameWithScope, WhitelistType.CONF, recordMap);
+    reservedFlag = true;
+  }
+
+  if (LocalVariableCollections.reservedStruct?.has(originalName)) {
+    recordReservedName(nameWithScope, WhitelistType.STRUCT, recordMap);
+    reservedFlag = true;
+  }
+
+  return reservedFlag;
+}
+
+function needToRecordProperty(originalName: string, recordMap?: Map<string, Set<string>>, nameWithScope?: string): boolean {
+  let reservedFlag = false;
+  let recordName = nameWithScope ? nameWithScope : originalName;
+  if (UnobfuscationCollections.reservedSdkApiForProp?.has(originalName)) {
+    recordReservedName(recordName, WhitelistType.SDK, recordMap);
+    reservedFlag = true;
+  }
+
+  if (UnobfuscationCollections.reservedLangForProperty?.has(originalName)) {
+    recordReservedName(recordName, WhitelistType.LANG, recordMap);
+    reservedFlag = true;
+  }
+
+  if (UnobfuscationCollections.reservedStruct?.has(originalName)) {
+    recordReservedName(recordName, WhitelistType.STRUCT, recordMap);
+    reservedFlag = true;
+  }
+
+  if (UnobfuscationCollections.reservedExportNameAndProp?.has(originalName)) {
+    recordReservedName(recordName, WhitelistType.EXPORT, recordMap);
+    reservedFlag = true;
+  }
+
+  if (UnobfuscationCollections.reservedStrProp?.has(originalName)) {
+    recordReservedName(recordName, WhitelistType.STRPROP, recordMap);
+    reservedFlag = true;
+  }
+
+  if (UnobfuscationCollections.reservedEnum?.has(originalName)) {
+    recordReservedName(recordName, WhitelistType.ENUM, recordMap);
+    reservedFlag = true;
+  }
+
+  if (PropCollections.reservedProperties?.has(originalName) ||
+    isMatchWildcard(PropCollections.universalReservedProperties, originalName)) {
+    recordReservedName(recordName, WhitelistType.CONF, recordMap);
+    reservedFlag = true;
+  }
+
+  return reservedFlag;
+}
+
+export function isInTopLevelWhitelist(originalName: string, recordMap: Map<string, Set<string>>, nameWithScope: string): boolean {
+  if (UnobfuscationCollections.printKeptName) {
+    return needToRecordTopLevel(originalName, recordMap, nameWithScope);
+  }
+
+  return isReservedTopLevel(originalName);
+}
+
+export function isInPropertyWhitelist(originalName: string, recordMap: Map<string, Set<string>>): boolean {
+  if (UnobfuscationCollections.printKeptName) {
+    return needToRecordProperty(originalName, recordMap);
+  }
+
+  return isReservedProperty(originalName);
+}
+
+export function isInLocalWhitelist(originalName: string, recordMap: Map<string, Set<string>>, nameWithScope: string): boolean {
+  if (UnobfuscationCollections.printKeptName) {
+    return needToReservedLocal(originalName, recordMap, nameWithScope);
+  }
+
+  return isReservedLocalVariable(originalName);
+}
+
+export function recordReservedName(originalName: string, type: string, recordObj?: Map<string, Set<string>>): void {
+  if (!UnobfuscationCollections.printKeptName || !recordObj) {
+    return;
+  }
+  if (!recordObj.has(originalName)) {
+    recordObj.set(originalName, new Set());
+  }
+  recordObj.get(originalName).add(type);
+}
+
+export function recordHistoryUnobfuscatedNames(nameWithScope: string): void {
+  if (historyUnobfuscatedNamesMap?.has(nameWithScope)) {
+    UnobfuscationCollections.unobfuscatedNamesMap.set(nameWithScope,
+      new Set(historyUnobfuscatedNamesMap.get(nameWithScope)));
   }
 }

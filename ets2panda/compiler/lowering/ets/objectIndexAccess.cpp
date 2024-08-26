@@ -15,9 +15,9 @@
 
 //
 // desc: Object index access syntax is translated to the call of special setter (in case of assignment):
-//       obj[i] = val; => obj.S_set(i, val);
+//       "obj[i] = val; => obj.S_set(i, val);"
 //   	 or getter (in all the other cases):
-//   	 ...obj[i]... => ...obj.S_get(i)...
+//   	 "...obj[i]... => ...obj.S_get(i)..."
 //      methods.
 //
 
@@ -112,14 +112,21 @@ bool ObjectIndexLowering::Perform(public_lib::Context *ctx, parser::Program *pro
 
 bool ObjectIndexLowering::Postcondition(public_lib::Context *ctx, const parser::Program *program)
 {
+    auto checkExternalPrograms = [this, ctx](const ArenaVector<parser::Program *> &programs) {
+        for (auto *p : programs) {
+            if (!Postcondition(ctx, p)) {
+                return false;
+            }
+        }
+        return true;
+    };
+
     if (ctx->config->options->CompilerOptions().compilationMode == CompilationMode::GEN_STD_LIB) {
         for (auto &[_, extPrograms] : program->ExternalSources()) {
             (void)_;
-            for (auto *extProg : extPrograms) {
-                if (!Postcondition(ctx, extProg)) {
-                    return false;
-                }
-            }
+            if (!checkExternalPrograms(extPrograms)) {
+                return false;
+            };
         }
     }
 

@@ -67,7 +67,7 @@ export enum FaultID {
   ImplementsClass,
   MethodReassignment,
   MultipleStaticBlocks,
-  ThisType,
+  ThisTyping,
   IntefaceExtendDifProps,
   StructuralIdentity,
   ExportAssignment,
@@ -112,6 +112,16 @@ export enum FaultID {
   NoTsReExportEts,
   NoNameSpaceImportEtsToTs,
   NoSIdeEffectImportEtsToTs,
+  SendableExplicitFieldType,
+  SendableFunctionImportedVariables,
+  SendableFunctionDecorator,
+  SendableTypeAliasDecorator,
+  SendableTypeAliasDeclaration,
+  SendableFunctionAssignment,
+  SendableFunctionOverloadDecorator,
+  SendableFunctionProperty,
+  SendableFunctionAsExpr,
+  SendableDecoratorLimited,
   // this should always be last enum
   LAST_ID
 }

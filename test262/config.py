@@ -20,7 +20,12 @@ Description: Execute 262 test suite configuration file
 
 
 import os
+import sys
+import platform
 from multiprocessing import cpu_count
+
+IS_LINUX_ARM64 = (sys.platform == "linux" and platform.machine().lower() == "aarch64")
+CLANG_TOOLCHAIN = "clang_arm64" if IS_LINUX_ARM64 else "clang_x64"
 
 DATA_DIR = os.path.join("test262", "data")
 ESHOST_DIR = os.path.join("test262", "eshost")
@@ -30,7 +35,10 @@ BASE_OUT_DIR = os.path.join("out", "test262")
 
 CUR_FILE_DIR = os.path.dirname(__file__)
 CODE_ROOT = os.path.abspath(os.path.join(CUR_FILE_DIR, "../../.."))
-LLVM_DIR = f"{CODE_ROOT}/prebuilts/clang/ohos/linux-x86_64/llvm/lib/"
+if IS_LINUX_ARM64:
+    LLVM_DIR = f"{CODE_ROOT}/prebuilts/clang/ohos/linux-aarch64/llvm/lib/"
+else:
+    LLVM_DIR = f"{CODE_ROOT}/prebuilts/clang/ohos/linux-x86_64/llvm/lib/"
 
 DEFAULT_MODE = 2
 
@@ -61,6 +69,7 @@ DEFAULT_ZLIB_DIR = f"{CODE_ROOT}/out/hispark_taurus/clang_x64/thirdparty/zlib"
 
 DEFAULT_ARK_TOOL = os.path.join(DEFAULT_ARK_JS_RUNTIME_DIR, "ark_js_vm")
 DEFAULT_LIBS_DIR = f"{DEFAULT_ICUI_DIR}:{LLVM_DIR}:{DEFAULT_ARK_JS_RUNTIME_DIR}:{DEFAULT_ZLIB_DIR}"
+DEFAULT_STUB_FILE = f""
 DEFAULT_ARK_AOT_TOOL = os.path.join(DEFAULT_ARK_JS_RUNTIME_DIR, "ark_aot_compiler")
 
 DEFAULT_HOST_TYPE = "panda"
@@ -95,7 +104,8 @@ ESHOST_GIT_URL = "https://gitee.com/hufeng20/eshost.git"
 HARNESS_GIT_URL = "https://gitee.com/hufeng20/test262-harness.git"
 
 TEST262_JIT_GIT_URL = "https://gitee.com/lxy0115/test262.git"
-TEST262_JIT_GIT_HASH = "41cf77eb3ab4babdf8662c2a60cb63439c61740a"
+TEST262_JIT_GIT_HASH = "055b4a176a2583bb1189ff109a605b34ff29c974"
+TEST262_JIT_LABEL = os.path.join("test262", "data", "preheated.txt")
 
 SKIP_LIST_FILE = os.path.join("test262", "skip_tests.json")
 ES2ABC_SKIP_LIST_FILE = os.path.join("test262", "es2abc_skip_tests.json")
@@ -135,3 +145,5 @@ DEFAULT_MERGE_ABC_MODE = 1
 
 OHOS_TYPESCRIPT = "ohos-typescript-4.2.3-r2.tgz"
 OHOS_TYPESCRIPT_TGZ_PATH = f"{CODE_ROOT}/third_party/typescript/build_package/{OHOS_TYPESCRIPT}"
+
+DEFAULT_RETRIES = 3
