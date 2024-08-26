@@ -201,7 +201,8 @@ def run_subprocess_with_beta3(test_obj, cmd):
 class Test:
     def __init__(self, test_path, flags):
         self.path = test_path
-        self.flags = flags
+        # Enable optimization for function with try-catch to ensure its correctness
+        self.flags = flags + ["--opt-try-catch-func=true"]
         self.output = None
         self.error = None
         self.passed = None
@@ -1028,7 +1029,7 @@ class BcVersionRunner(Runner):
 
 class BcVersionTest(Test):
     def __init__(self, cmd, api_version):
-        Test.__init__(self, "", 0)
+        Test.__init__(self, "", [])
         self.cmd = cmd
         self.api_version = api_version
         self.bc_version_expect = {
@@ -1130,7 +1131,7 @@ class TransformerTest(Test):
 
 class PatchTest(Test):
     def __init__(self, test_path, mode_arg, target_version, preserve_files):
-        Test.__init__(self, test_path, "")
+        Test.__init__(self, test_path, [])
         self.mode = mode_arg
         self.target_version = target_version
         self.preserve_files = preserve_files
@@ -1274,7 +1275,7 @@ class ColdreloadRunner(PatchRunner):
 
 class DebuggerTest(Test):
     def __init__(self, test_path, mode):
-        Test.__init__(self, test_path, "")
+        Test.__init__(self, test_path, [])
         self.mode = mode
 
     def run(self, runner):
@@ -1325,7 +1326,7 @@ class DebuggerRunner(Runner):
 
 class Base64Test(Test):
     def __init__(self, test_path, input_type):
-        Test.__init__(self, test_path, "")
+        Test.__init__(self, test_path, [])
         self.input_type = input_type
 
     def run(self, runner):
