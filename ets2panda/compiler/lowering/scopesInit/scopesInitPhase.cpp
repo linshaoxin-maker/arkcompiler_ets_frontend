@@ -195,7 +195,9 @@ void ScopesInitPhase::VisitCatchClause(ir::CatchClause *catchClause)
             param->AsIdentifier()->SetVariable(var);
         }
     }
-    catchParamScope->BindNode(param);
+
+    // Catch Clause is scope bearer
+    catchParamScope->BindNode(catchClause);
 
     auto catchCtx = LexicalScopeCreateOrEnter<varbinder::CatchScope>(VarBinder(), catchClause);
     auto *catchScope = catchCtx.GetScope();
