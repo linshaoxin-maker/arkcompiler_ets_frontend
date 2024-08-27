@@ -58,10 +58,13 @@ void GlobalClassHandler::InitGlobalClass(const ArenaVector<parser::Program *> &p
         if (node->IsClassDefinition()) {
             auto classDef = node->AsClassDefinition();
             bool allowEmpty = false;
-            auto staticBlock = CreateCCtor(classDef->Body(), classDef->Start(), allowEmpty);
-            if (staticBlock != nullptr) {
-                classDef->Body().emplace_back(staticBlock);
-                staticBlock->SetParent(classDef);
+
+            if (!classDef->IsDeclare()) {
+                auto staticBlock = CreateCCtor(classDef->Body(), classDef->Start(), allowEmpty);
+                if (staticBlock != nullptr) {
+                    classDef->Body().emplace_back(staticBlock);
+                    staticBlock->SetParent(classDef);
+                }
             }
         }
     };
@@ -333,10 +336,13 @@ ArenaVector<ir::Statement *> GlobalClassHandler::MakeGlobalStatements(ir::BlockS
 void GlobalClassHandler::InitGlobalClass(ir::ClassDefinition *classDef, parser::ScriptKind scriptKind)
 {
     auto &globalProperties = classDef->Body();
-    auto staticBlock = CreateCCtor(globalProperties, classDef->Start(), scriptKind != parser::ScriptKind::STDLIB);
-    if (staticBlock != nullptr) {
-        staticBlock->SetParent(classDef);
-        globalProperties.emplace_back(staticBlock);
+
+    if (!classDef->IsDeclare()) {
+        auto staticBlock = CreateCCtor(globalProperties, classDef->Start(), scriptKind != parser::ScriptKind::STDLIB);
+        if (staticBlock != nullptr) {
+            staticBlock->SetParent(classDef);
+            globalProperties.emplace_back(staticBlock);
+        }
     }
     classDef->SetGlobalInitialized();
 }

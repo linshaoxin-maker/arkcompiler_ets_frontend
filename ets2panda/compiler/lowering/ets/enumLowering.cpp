@@ -108,7 +108,7 @@ ir::MethodDefinition *MakeMethodDef(checker::ETSChecker *const checker, ir::Clas
     // clang-format on
     function->SetScope(functionScope);
 
-    if (!function->Declare()) {
+    if (!function->IsDeclare()) {
         varbinder_->AsETSBinder()->AddCompilableFunction(function);
     }
     functionInfo.paramScope->BindNode(function);
