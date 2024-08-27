@@ -7,7 +7,7 @@ dayjs_test
 Drools_test
 
 #18517
-js-joda_test
+
 
 #18340
 jmespath_test

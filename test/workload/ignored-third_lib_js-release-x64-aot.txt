@@ -10,7 +10,7 @@ Drools_test
 jsbn_test
 
 #18372
-js-joda_test
+
 
 #18425
 gson_test
