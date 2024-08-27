@@ -230,7 +230,7 @@ void DefaultParameterLowering::CreateOverloadFunction(ir::MethodDefinition *meth
     overloadMethod->Function()->AddFlag(ir::ScriptFunctionFlags::OVERLOAD);
     overloadMethod->SetRange(funcExpression->Range());
 
-    if (method->Parent()->IsTSInterfaceBody()) {
+    if (!method->IsDeclare() && method->Parent()->IsTSInterfaceBody()) {
         overloadMethod->Function()->Body()->AsBlockStatement()->Statements().clear();
     }
 

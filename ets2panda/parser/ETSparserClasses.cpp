@@ -719,6 +719,7 @@ ir::ClassDefinition *ETSParser::ParseClassDefinition(ir::ClassDefinitionModifier
 
     if (InAmbientContext()) {
         flags |= ir::ModifierFlags::DECLARE;
+        modifiers |= ir::ClassDefinitionModifiers::EXTERN;
     }
 
     // Parse implements clause
@@ -1062,6 +1063,9 @@ void ETSParser::CreateImplicitConstructor([[maybe_unused]] ir::MethodDefinition 
     }
 
     auto *methodDef = BuildImplicitConstructor(ir::ClassDefinitionModifiers::SET_CTOR_ID, startLoc);
+    if ((modifiers & ir::ClassDefinitionModifiers::EXTERN) != 0) {
+        methodDef->Function()->AddFlag(ir::ScriptFunctionFlags::EXTERNAL);
+    }
     properties.push_back(methodDef);
 }
 
