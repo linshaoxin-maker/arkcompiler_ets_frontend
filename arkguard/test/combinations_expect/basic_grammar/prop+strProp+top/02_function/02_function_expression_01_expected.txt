@@ -1,0 +1,49 @@
+import assert from 'assert';
+var g = function k() {
+    let s = 'test';
+    return s;
+};
+g();
+assert(g() === 'test');
+var h = {
+    c: function () {
+        return h;
+    },
+    d: function f() {
+        return h.c;
+    }
+};
+h.c();
+h.d();
+assert(h.c() === h);
+assert(h.d()() === h);
+const { i: i = function () {
+    let r = 'binding';
+    return r;
+}, j: j = function m() {
+    let q = 'binding';
+    return q;
+} } = { i: undefined, j: () => {
+        return 'test';
+    } };
+i();
+j();
+assert(i() == 'binding');
+assert(j() === 'test');
+var x = function n() {
+    return n;
+};
+var y = function o() {
+    return y;
+};
+x();
+y()();
+assert(x() === x);
+assert(y()() === y);
+var z = function p(t: any, ...u: any): any {
+    return arguments;
+};
+z(1, 2, 3);
+assert(z(1, 2, 3)['0'] === 1);
+assert(z(1, 2, 3)['1'] === 2);
+assert(z(1, 2, 3)['2'] === 3);

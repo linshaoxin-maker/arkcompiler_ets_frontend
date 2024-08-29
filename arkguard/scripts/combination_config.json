@@ -1,0 +1,42 @@
+{
+  "basicGrammar": {
+    "enableOptions": {
+      "mNameObfuscation": {
+        "mRenameProperties": true,
+        "mKeepStringProperty": false,
+        "mTopLevel": true
+      },
+      "mExportObfuscation": true
+    },
+    "inputDirs": [
+      "../test/combinations/basic_grammar/04_class_cases"
+    ],
+    "outputDir": "../test/combinations_local/basic_grammar",
+    "whitelist": {
+      "export": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": ["C3"],
+          "mReservedProperties": []
+        }
+      },
+      "strProp+export": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": ["C3"],
+          "mReservedProperties": []
+        }
+      },
+      "strProp+top+export": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": ["C3"],
+          "mReservedProperties": []
+        }
+      },
+      "top+export": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": ["C3"],
+          "mReservedProperties": []
+        }
+      }
+    }
+  }
+}

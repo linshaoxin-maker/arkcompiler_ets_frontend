@@ -1,0 +1,14 @@
+import i1 from "assert";
+interface j1 {
+    prop_i6: number;
+    method_i6(para: number): number;
+}
+let k1 = class C7 implements j1 {
+    prop_i6: number = 7;
+    method_i6(m1: number): number {
+        return m1 * 2 * this.prop_i6;
+    }
+};
+let l1 = new k1();
+i1(l1.prop_i6 === 7);
+i1(l1.method_i6(2) === 28);

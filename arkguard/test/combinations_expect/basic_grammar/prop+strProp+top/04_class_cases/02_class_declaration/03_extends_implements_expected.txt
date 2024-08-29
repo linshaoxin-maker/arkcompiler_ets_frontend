@@ -1,0 +1,25 @@
+import assert from "assert";
+class u {
+    u1: number = 0;
+    v1(): number {
+        return 5;
+    }
+}
+interface q1 {
+    w1: number;
+    z1(): number;
+}
+class s1 extends u implements q1 {
+    w1: number = 1;
+    z1(): number {
+        return 2 * 5;
+    }
+}
+let v = new u();
+assert(v.u1 === 0);
+assert(v.v1() === 5);
+let t1 = new s1();
+assert(t1.u1 === 0);
+assert(t1.v1() === 5);
+assert(t1.w1 === 1);
+assert(t1.z1() === 10);

@@ -1,0 +1,25 @@
+import assert from "assert";
+class C5 {
+    u: number = 0;
+    v(): number {
+        return 5;
+    }
+}
+interface I5 {
+    a1: number;
+    b1(): number;
+}
+class C6 extends C5 implements I5 {
+    a1: number = 1;
+    b1(): number {
+        return 2 * 5;
+    }
+}
+let insC5 = new C5();
+assert(insC5.u === 0);
+assert(insC5.v() === 5);
+let insC6 = new C6();
+assert(insC6.u === 0);
+assert(insC6.v() === 5);
+assert(insC6.a1 === 1);
+assert(insC6.b1() === 10);

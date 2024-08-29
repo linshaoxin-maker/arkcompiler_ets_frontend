@@ -1,0 +1,39 @@
+import assert from "assert";
+// 单个构造器
+class A1 {
+    g: number;
+    constructor(g: number) {
+        this.g = g;
+    }
+    h() {
+    }
+}
+let insA1 = new A1(1);
+assert(insA1.g === 1);
+// 多个构造器
+class A2 {
+    i: string;
+    constructor(f: 'hello');
+    constructor(e: 'bye');
+    constructor(d: string);
+    constructor(c: any) {
+        this.i = c;
+    }
+    j() {
+    }
+}
+let insA2 = new A2('bee');
+assert(insA2.i === 'bee');
+// class声明 - 两个构造器不连续
+declare namespace ns {
+    class A3 {
+        constructor();
+        k: string;
+        constructor(b: number);
+    }
+}
+declare class A4 {
+    constructor();
+    l: string;
+    constructor(a: number);
+}

@@ -36,12 +36,28 @@ function runTest(filePath) {
   }
   return true;
 }
+
 let successCount = 0;
 let failureCount = 0;
 let contentcomparationSuccessCount = 0;
 let contentcomparationFailureCount = 0;
-const failedFiles = [];
-const contentComparisionFailureFiles = [];
+let failedFiles = [];
+let contentComparisionFailureFiles = [];
+
+function init() {
+  successCount = 0;
+  failureCount = 0;
+  contentcomparationSuccessCount = 0;
+  contentcomparationFailureCount = 0;
+  failedFiles = [];
+  contentComparisionFailureFiles = [];
+}
+
+export function runTestAndCount(directoryPath) {
+  init();
+  runTestsInDirectory(directoryPath);
+  printResult()
+}
 
 function runTestsInDirectory(directoryPath) {
   const files = fs.readdirSync(directoryPath);
@@ -81,8 +97,22 @@ function executeRunTest(fileName, filePath) {
   }
 }
 
+const sourceExpectMap = new Map([
+  ['/test/local', '/test/grammar'],
+  ['/test/combinations_local', '/test/combinations_expect']
+]);
+
+function getExpcteDir(filePath) {
+  const baseDir = path.join(__dirname, '..');
+  for ( let [source, expect] of sourceExpectMap.entries()) {
+    if (filePath.startsWith(path.join(baseDir, source))) {
+      return filePath.replace(source, expect);
+    }
+  }
+}
+
 function compareContent(filePath) {
-  const sourcePath = filePath.replace('/test/local/', '/test/grammar/');
+  const sourcePath = getExpcteDir(filePath);
   const sourcePathAndExtension = FileUtils.getFileSuffix(sourcePath);
   const expectationPath = sourcePathAndExtension.path + '_expected.txt';
   const resultPathAndExtension = FileUtils.getFileSuffix(filePath);
@@ -130,23 +160,23 @@ function compareContent(filePath) {
   }
 }
 
-runTestsInDirectory(testDirectory);
-
-console.log('--- Grammar Test Results ---');
-console.log(`Success count: ${successCount}`);
-console.log(`Failure count: ${failureCount}`);
-if (failureCount > 0) {
-  console.log('Execution failed files:');
-  for (const failedFile of failedFiles) {
-    console.log(failedFile);
+function printResult() {
+  console.log('--- Test Results ---');
+  console.log(`Success count: ${successCount}`);
+  console.log(`Failure count: ${failureCount}`);
+  if (failureCount > 0) {
+    console.log('Execution failed files:');
+    for (const failedFile of failedFiles) {
+      console.log(failedFile);
+    }
   }
-}
 
-console.log(`Content comparison Success count: ${contentcomparationSuccessCount}`);
-console.log(`Content comparison Failure count: ${contentcomparationFailureCount}`);
-if (contentcomparationFailureCount > 0) {
-  console.log('Content comparision failed files:');
-  for (const failedFile of contentComparisionFailureFiles) {
-    console.log(failedFile);
+  console.log(`Content comparison Success count: ${contentcomparationSuccessCount}`);
+  console.log(`Content comparison Failure count: ${contentcomparationFailureCount}`);
+  if (contentcomparationFailureCount > 0) {
+    console.log('Content comparision failed files:');
+    for (const failedFile of contentComparisionFailureFiles) {
+      console.log(failedFile);
+    }
   }
 }

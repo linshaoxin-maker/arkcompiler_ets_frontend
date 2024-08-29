@@ -1,0 +1,26 @@
+import a from "assert";
+abstract class e1 {
+    abstract methodAC1(): number;
+    methodAc2(): string {
+        return '22';
+    }
+}
+class f1 extends e1 {
+    methodAC1(): number {
+        return 11;
+    }
+}
+let g1 = new f1();
+a(g1.methodAC1() === 11, 'success');
+a(g1.methodAc2() === '22', 'success');
+class h1 extends e1 {
+    methodAC1(): number {
+        return 111;
+    }
+    methodAc2(): string {
+        return '222';
+    }
+}
+let i1 = new h1();
+a(i1.methodAC1() === 111, 'success');
+a(i1.methodAc2() === '222', 'success');

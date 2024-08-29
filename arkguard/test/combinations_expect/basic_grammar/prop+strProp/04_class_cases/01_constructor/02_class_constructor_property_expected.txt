@@ -1,0 +1,14 @@
+import assert from "assert";
+class A5 {
+    m = 5;
+    constructor(public o: number, private p: string, protected q: boolean, readonly t: number, h: string) {
+        h = h + 1;
+        let i = o;
+        let j = p;
+        let k = q;
+        let l = t;
+        this.m = t;
+    }
+}
+let insA5 = new A5(1, '2', false, 4, '5');
+assert(insA5.m === 4);

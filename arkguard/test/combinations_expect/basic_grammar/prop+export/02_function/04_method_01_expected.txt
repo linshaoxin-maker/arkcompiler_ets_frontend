@@ -1,0 +1,50 @@
+import assert from 'assert';
+class C {
+    [1]() {
+        return 1;
+    }
+    [1 ? 2 : 3]() {
+        return 2;
+    }
+    g() {
+        return 3;
+    }
+    #h() {
+        return 4;
+    }
+    i() {
+        return this.#h();
+    }
+    j() {
+        return 5;
+    }
+    k() {
+        return 6;
+    }
+    l() {
+        return 7;
+    }
+    *m() {
+        return 8;
+    }
+    async o() {
+        return 9;
+    }
+    async *p() {
+        return 10;
+    }
+}
+let c = new C();
+assert(c[1]() === 1);
+assert(c[2]() === 2);
+assert(c.g() === 3);
+assert(c.i() === 4);
+assert(c.j() === 5);
+assert(c.k() === 6);
+assert(c.l() === 7);
+assert(c.m().next().value === 8);
+async function f() {
+    assert(await c.o() === 9);
+    assert((await c.p().next()).value === 10);
+}
+f();

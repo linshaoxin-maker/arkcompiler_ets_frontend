@@ -1,0 +1,25 @@
+import c1 from "assert";
+class d1 {
+    prop_c5: number = 0;
+    method_c5(): number {
+        return 5;
+    }
+}
+interface e1 {
+    inter_p5: number;
+    method_i5(): number;
+}
+class f1 extends d1 implements e1 {
+    inter_p5: number = 1;
+    method_i5(): number {
+        return 2 * 5;
+    }
+}
+let g1 = new d1();
+c1(g1.prop_c5 === 0);
+c1(g1.method_c5() === 5);
+let h1 = new f1();
+c1(h1.prop_c5 === 0);
+c1(h1.method_c5() === 5);
+c1(h1.inter_p5 === 1);
+c1(h1.method_i5() === 10);

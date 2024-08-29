@@ -1,0 +1,25 @@
+import assert from 'assert';
+
+let a = 1;
+let b = 2;
+let c = 3;
+let x1 = ()=>{};
+assert(x1() === undefined);
+let x2 = () => 1?2:3;
+assert(x2() === 2);
+let d = () => a?b:c;
+assert(d() === 2);
+let x3 = ([]) => 1?2:3;
+assert(x3([]) === 2);
+let e = ([]) => a?b:c;
+assert(e([]) === 2);
+let x4 = (...a:any):any => a;
+assert(x4(1,2,3)[0] === 1);
+let x5 = ()=> {1?2:3};
+assert(x5() === undefined);
+let f = ()=> {a?b:c};
+assert(f() === undefined);
+let x6 = ([]) => {1?2:3};
+assert(x6([]) === undefined);
+let g = ([]) => {a?b:c};
+assert(g([]) === undefined);

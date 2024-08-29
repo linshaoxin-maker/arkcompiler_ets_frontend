@@ -1,0 +1,14 @@
+import a from "assert";
+class p {
+    prop_5 = 5;
+    constructor(public para1: number, private para2: string, protected para3: boolean, readonly para4: number, r: string) {
+        r = r + 1;
+        let s = para1;
+        let t = para2;
+        let u = para3;
+        let v = para4;
+        this.prop_5 = para4;
+    }
+}
+let q = new p(1, '2', false, 4, '5');
+a(q.prop_5 === 4);

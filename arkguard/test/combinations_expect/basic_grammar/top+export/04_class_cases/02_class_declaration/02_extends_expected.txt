@@ -1,0 +1,36 @@
+import a from "assert";
+class i {
+    num: number = 1;
+    method_c1(): string {
+        return 'c1';
+    }
+}
+class j extends i {
+    num2: number = 2;
+}
+module s {
+    export class C3 {
+        prop_c3: number = 3;
+        method_c31(): number {
+            return 31;
+        }
+        method_c32(): number {
+            return 32;
+        }
+    }
+    class v extends s.C3 {
+        method_c32(): number {
+            return 42;
+        }
+    }
+    let w = new v();
+    a(w.method_c31() === 31);
+    a(w.method_c32() === 42);
+}
+let t = new i();
+a(t.method_c1() === 'c1');
+let k = new j();
+a(k.num2 === 2);
+let u = new s.C3();
+a(u.method_c31() === 31);
+a(u.method_c32() === 32);
