@@ -1,0 +1,113 @@
+{
+  "basicGrammar": {
+    "enableOptions": {
+      "mNameObfuscation": {
+        "mRenameProperties": true,
+        "mKeepStringProperty": false,
+        "mTopLevel": true
+      },
+      "mExportObfuscation": true
+    },
+    "inputDirs": [
+    ],
+    "outputDir": "../test/combinations_local/basic_grammar",
+    "whitelist": {
+      "prop+export": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": [],
+          "mReservedProperties": [
+            "readFileSync"
+          ]
+        }
+      },
+      "prop": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": [],
+          "mReservedProperties": [
+            "readFileSync"
+          ]
+        }
+      },
+      "prop+strProp": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": [],
+          "mReservedProperties": [
+            "readFileSync"
+          ]
+        }
+      },
+      "prop+strProp+export": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": [],
+          "mReservedProperties": [
+            "readFileSync"
+          ]
+        }
+      },
+      "prop+strProp+top": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": [],
+          "mReservedProperties": [
+            "readFileSync"
+          ]
+        }
+      },
+      "prop+strProp+top+export": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": [],
+          "mReservedProperties": [
+            "readFileSync"
+          ]
+        }
+      },
+      "prop+top": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": [],
+          "mReservedProperties": [
+            "readFileSync"
+          ]
+        }
+      },
+      "prop+top+export": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": [],
+          "mReservedProperties": [
+            "readFileSync"
+          ]
+        }
+      },
+      "strProp+top": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": [
+            "assert"
+          ],
+          "mReservedProperties": []
+        }
+      },
+      "top": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": [
+            "assert"
+          ],
+          "mReservedProperties": []
+        }
+      },
+      "strProp+top+export": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": [
+            "assert"
+          ],
+          "mReservedProperties": []
+        }
+      },
+      "top+export": {
+        "mNameObfuscation": {
+          "mReservedToplevelNames": [
+            "assert"
+          ],
+          "mReservedProperties": []
+        }
+      }
+    }
+  }
+}

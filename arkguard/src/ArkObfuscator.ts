@@ -127,6 +127,9 @@ export class ArkObfuscator {
   // Used only for testing
   protected mWriteOriginalFile: boolean = false;
 
+  // Used only for testing
+  protected mTestCasesFlag: string | undefined = undefined;
+
   // A text writer of Printer
   private mTextWriter: EmitTextWriter;
 
@@ -166,6 +169,10 @@ export class ArkObfuscator {
     if (properties.enumPropertySet && properties.enumPropertySet.size > 0) {
       UnobfuscationCollections.reservedEnum = properties.enumPropertySet;
     }
+  }
+  // only for ut
+  public setTestCasesFlag(flag: string | undefined): void {
+    this.mTestCasesFlag = flag;
   }
 
   public addReservedSetForDefaultObf(properties: ReseverdSetForArkguard): void {
