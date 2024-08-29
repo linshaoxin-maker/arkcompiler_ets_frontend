@@ -37,10 +37,12 @@ class MemManager {
 public:
     explicit MemManager()
     {
-        constexpr auto COMPILER_SIZE = 8192_MB;
-
-        MemConfig::Initialize(0, 0, COMPILER_SIZE, 0);
+        MemConfig::Initialize(0, 0, util::Helpers::MEMORY_LIMIT_UNLIMITED, 0);
         PoolManager::Initialize(PoolType::MMAP);
+        PoolManager::SetOOMHandler([]() {
+            throw Error(ErrorType::GENERIC, "Allocation failed due to out of memory! Please adjust the 'memory-limit' option.");
+        });
+        PoolManager::GetMmapMemPool()->SetUseCompilerSpaceSizeLimit(false);
     }
 
     NO_COPY_SEMANTIC(MemManager);
@@ -50,6 +52,18 @@ public:
     {
         PoolManager::Finalize();
         MemConfig::Finalize();
+    }
+
+    // Set the memory limit of the memory pool, where 0 (util::Helpers::MEMORY_LIMIT_UNLIMITED) stands for unlimited.
+    bool SetMemoryLimit(size_t memoryLimit)
+    {
+        if (memoryLimit == util::Helpers::MEMORY_LIMIT_UNLIMITED) {
+            PoolManager::GetMmapMemPool()->SetUseCompilerSpaceSizeLimit(false);
+            return true;
+        } else {
+            PoolManager::GetMmapMemPool()->SetUseCompilerSpaceSizeLimit(true);
+            return PoolManager::GetMmapMemPool()->SetCompilerSpaceMaxBytes(memoryLimit);
+        }
     }
 };
 
@@ -279,7 +293,7 @@ static bool ResolveDepsRelations(const std::map<std::string, panda::es2panda::ut
     return depsRelationResolver.Resolve();
 }
 
-int Run(int argc, const char **argv)
+int Run(int argc, const char **argv, MemManager &mm)
 {
     auto options = std::make_unique<Options>();
     if (!options->Parse(argc, argv)) {
@@ -292,6 +306,12 @@ int Run(int argc, const char **argv)
             options->CompilerOptions().targetApiSubVersion);
         std::cout << panda::panda_file::GetVersion(bcVersionByApi.value());
         return 0;
+    }
+
+    // SetMemoryLimit will return false if the new memory limit is smaller than the already used memory size.
+    if (!mm.SetMemoryLimit(options->MemoryLimit() << SHIFT_MB)) {
+        std::cerr << "Invalid memory limitation (smaller than the already used memory)" << std::endl;
+        return 1;
     }
 
     if (options->CompilerOptions().bcVersion || options->CompilerOptions().bcMinVersion) {
@@ -341,5 +361,5 @@ int Run(int argc, const char **argv)
 int main(int argc, const char **argv)
 {
     panda::es2panda::aot::MemManager mm;
-    return panda::es2panda::aot::Run(argc, argv);
+    return panda::es2panda::aot::Run(argc, argv, mm);
 }
