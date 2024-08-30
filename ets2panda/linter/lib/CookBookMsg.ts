@@ -223,3 +223,5 @@ cookBookTag[179] =
   'Casting "Non-sendable" function to "Sendable" typeAlias is not allowed (arkts-sendable-function-as-expr)';
 cookBookTag[180] =
   'The "@Sendable" decorator can only be used on "class", "function", "typeAlias" (arkts-sendable-decorator-limited)';
+cookBookTag[181] =
+  'The return type of this generic function is a generic "Sendable", the type arguments of function must be a "Sendable" data type. (arkts-sendable-function-generic-types)';

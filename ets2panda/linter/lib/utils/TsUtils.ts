@@ -2706,4 +2706,63 @@ export class TsUtils {
       this.haveSameBaseType(this.tsTypeChecker.getTypeFromTypeNode(setParams[1].type), valueType)
     );
   }
+
+  /*
+   * If the type contains generic 'SendableClassOrInterface',
+   * return the typeArguments collection for those 'SendableClassOrInterface'.
+   * This collection does not include the default generic type. For example, the 'SomeType' in 'class SomeClass<T = SomeType>'
+   */
+  collectSendableTypeArguments(type: ts.Type, list: ts.Type[] = []): ts.Type[] {
+    if (type.isUnion()) {
+      type.types.forEach((compType) => {
+        this.collectSendableTypeArguments(compType, list);
+      });
+      return list;
+    }
+    if (!TsUtils.isTypeReference(type) || !type.typeArguments?.length || !this.isSendableClassOrInterface(type)) {
+      return list;
+    }
+    type.typeArguments.forEach((compType) => {
+      this.collectTypeChildren(compType, list);
+    });
+    return list;
+  }
+
+  collectTypeChildren(type: ts.Type, list: ts.Type[] = []): ts.Type[] {
+    if (!type.isUnion() || type.flags & ts.TypeFlags.EnumLike || type.flags & ts.TypeFlags.BooleanLike) {
+      list.push(type);
+      return list;
+    }
+
+    /*
+     * Using origin prevents enum from being disassembled, But it doesn't work
+     * when two of the children had a grandchild type that could be merged.
+     */
+    const origin = Reflect.get(type, 'origin');
+    if (origin) {
+      this.collectTypeChildren(origin as ts.Type, list);
+    } else {
+      type.types.forEach((compType) => {
+        this.collectTypeChildren(compType, list);
+      });
+    }
+    return list;
+  }
+
+  /*
+   * This method is considered only when typeNode cannot be found,
+   * Otherwise please use isSendableTypeNode
+   *
+   * If the parent type is 'Boolean | SomeOtherType' or 'SomeEnum | SomeOtherType',
+   * Boolean and Enum in the union-types will become multiple Literal values and
+   * it is difficult to determine whether it is SendableData.
+   * This literal checks are skipped for compatibility purposes.
+   *
+   */
+  isSendableChildType(type: ts.Type): boolean {
+    if (TsUtils.isConstEnum(type.getSymbol()) || TsUtils.isPrimitiveLiteralType(type)) {
+      return true;
+    }
+    return this.isSendableType(type);
+  }
 }

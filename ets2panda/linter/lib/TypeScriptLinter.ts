@@ -1827,6 +1827,7 @@ export class TypeScriptLinter {
     if (callSignature !== undefined && !this.tsUtils.isLibrarySymbol(calleeSym)) {
       this.handleGenericCallWithNoTypeArgs(tsCallExpr, callSignature);
       this.handleStructIdentAndUndefinedInArgs(tsCallExpr, callSignature);
+      this.checkCallExpressionReturnType(tsCallExpr, callSignature);
     }
     this.handleLibraryTypeCall(tsCallExpr);
 
@@ -1835,6 +1836,41 @@ export class TypeScriptLinter {
       this.tsUtils.hasEsObjectType(tsCallExpr.expression.expression)
     ) {
       this.incrementCounters(node, FaultID.EsObjectType);
+    }
+  }
+
+  /*
+   * Check whether the return type of this CallExpression uses the non-sendable
+   * as a generic argument to the Sendable type by reflection.
+   * ex: function foo<T>():SendableClass<T>{}; foo<NonSendable>();
+   */
+  private checkCallExpressionReturnType(tsCallExpr: ts.CallExpression, callSignature: ts.Signature): void {
+    if (!callSignature.declaration?.typeParameters || !callSignature.declaration?.type) {
+      return;
+    }
+
+    /*
+     * If there are more types in the actual 'typeArguments' than when declared,
+     * it can be inferred that the generic arguments passed in this CallExpression are mapped to it.
+     */
+    const declSendableTypeArgList = this.tsUtils.collectSendableTypeArguments(
+      this.tsTypeChecker.getTypeAtLocation(callSignature.declaration.type)
+    );
+    if (
+      !declSendableTypeArgList.some((argument) => {
+        return argument.isTypeParameter();
+      })
+    ) {
+      return;
+    }
+
+    const actualSendableTypeArgList = this.tsUtils.collectSendableTypeArguments(callSignature.getReturnType());
+    if (
+      actualSendableTypeArgList.some((compType) => {
+        return !declSendableTypeArgList.includes(compType) && !this.tsUtils.isSendableChildType(compType);
+      })
+    ) {
+      this.incrementCounters(tsCallExpr, FaultID.SendableFunctionGenericTypes);
     }
   }
 

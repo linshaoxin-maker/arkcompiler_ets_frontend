@@ -1,0 +1,87 @@
+/*
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import type { lang } from './@arkts.lang';
+
+@Sendable
+class SendableClassT<T> {}
+interface SendableInterfaceT<T> extends lang.ISendable {}
+
+interface SendableInterfaceA extends lang.ISendable {}
+interface NormalInterfaceA {}
+
+@Sendable
+class SendableClassA implements SendableInterfaceA {}
+class NormalClassA implements NormalInterfaceA {}
+class NormalClassB implements NormalInterfaceA {}
+
+const varSendableInterfaceA: SendableInterfaceA = new SendableClassA();
+const varNormalInterfaceA: NormalInterfaceA = new NormalClassA();
+
+const enum EnumConst {
+  a,
+  b
+}
+
+enum EnumNormal {
+  a,
+  b
+}
+
+function fooClass<T>(p: T): SendableClassT<T> {
+  return new SendableClassT<T>();
+}
+
+fooClass(EnumConst.a); // OK, const enum is allow
+fooClass<EnumConst>(EnumConst.a);
+fooClass(EnumNormal.a); // ERROR, normal enum not allow
+fooClass<EnumNormal.a>(EnumNormal.a); // OK, Literals are relaxed for compatibility
+fooClass<true>(true);
+fooClass(new SendableClassA());
+fooClass(new NormalClassA()); // ERROR, non-sendable-class not allow
+fooClass(varSendableInterfaceA);
+fooClass(varNormalInterfaceA); // ERROR, non-sendable-interfae not allow
+
+let p = 1; // ERROR,
+fooClass(p as EnumConst | boolean | SendableClassA);
+fooClass(p as EnumConst | boolean | SendableClassA | EnumNormal | NormalClassA); // ERROR
+
+function fooInterface<T>(p: T): SendableInterfaceT<T> {
+  return new SendableClassT<T>();
+}
+
+fooInterface(new SendableClassA());
+fooInterface(new NormalClassA()); // ERROR, non-sendable-class not allow
+
+function fooClassB<T, U>(p: T, p2: U): SendableClassT<T> | SendableClassT<U | NormalClassA> {
+  return new SendableClassT();
+}
+
+fooClassB(new SendableClassA(), new SendableClassA()); // OK
+fooClassB(new SendableClassA(), new NormalClassA()); // OK, return type already contains NormalA, already trigger 'arkts-sendable-generic-types'
+fooClassB(new SendableClassA(), new NormalClassB()); // ERROR
+fooClassB(varSendableInterfaceA, new SendableClassA()); //
+fooClassB(varNormalInterfaceA, new SendableClassA()); // ERROR
+
+@Sendable
+class ArrayLocal<T> {
+  map<U>(callbackFn: (value: T, index: number, array: Array<T>) => U): ArrayLocal<U> {
+    return new ArrayLocal<U>();
+  }
+}
+
+const list: ArrayLocal<number> = new ArrayLocal();
+list.map(() => new SendableClassA()); // OK
+list.map(() => new NormalClassA()); // ERROR
