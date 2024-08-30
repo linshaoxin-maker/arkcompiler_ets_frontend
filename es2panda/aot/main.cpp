@@ -326,7 +326,7 @@ int Run(int argc, const char **argv)
     }
     panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_COMPILE, "");
 
-    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_EMIT_ABC, "");
+    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_RESOLVE_DEPS, "");
     // A mapping of program to its records which are resolved and collected as valid dependencies.
     std::map<std::string, std::unordered_set<std::string>> resolvedDepsRelation {};
 
@@ -334,7 +334,9 @@ int Run(int argc, const char **argv)
         !ResolveDepsRelations(programsInfo, options, resolvedDepsRelation)) {
         return 1;
     }
+    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_RESOLVE_DEPS, "");
 
+    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_EMIT_ABC, "");
     if (!GenerateAbcFiles(programsInfo, options, Compiler::GetExpectedProgsCount(), resolvedDepsRelation)) {
         return 1;
     }

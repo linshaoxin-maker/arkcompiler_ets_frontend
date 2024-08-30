@@ -15,6 +15,7 @@
 
 #include "compileQueue.h"
 
+#include <abc2program/timers.h>
 #include <binder/binder.h>
 #include <binder/scope.h>
 #include <compiler/core/compilerContext.h>
@@ -118,23 +119,27 @@ void CompileFileJob::Run()
     }
     panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_READ_INPUT_AND_CACHE, src_->fileName);
 
-    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_COMPILE_FILE, src_->fileName);
     es2panda::Compiler compiler(src_->scriptExtension, options_->functionThreadCount);
     panda::pandasm::Program *prog = nullptr;
     if (src_->isSourceMode) {
+        panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_COMPILE_FILE, src_->fileName);
         prog = compiler.CompileFile(*options_, src_, symbolTable_);
+        panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_COMPILE_FILE, src_->fileName);
     } else if (!options_->mergeAbc) {
         // If input is an abc file, in non merge-abc mode, compile classes one by one.
+        panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_COMPILE_ABC_FILE, src_->fileName);
         prog = compiler.CompileAbcFile(src_->fileName, *options_);
+        panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_COMPILE_ABC_FILE, src_->fileName);
     } else {
         // If input is an abc file, in merge-abc mode, compile each class parallelly.
+        panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_COMPILE_ABC_FILE, src_->fileName);
         compiler.CompileAbcFileInParallel(src_->fileName, *options_, progsInfo_, allocator_);
+        panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_COMPILE_ABC_FILE, src_->fileName);
         return;
     }
     if (prog == nullptr) {
         return;
     }
-    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_COMPILE_FILE, src_->fileName);
 
     panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_OPTIMIZE_PROGRAM, src_->fileName);
     bool requireOptimizationAfterAnalysis = false;
@@ -164,12 +169,16 @@ void CompileAbcClassJob::Run()
 {
     panda_file::File::EntityId recordId(classId_);
     auto *program = new panda::pandasm::Program();
-    compiler_.CompileAbcClass(recordId, *program);
+    std::string record_name = "";
+    compiler_.CompileAbcClass(recordId, *program, record_name);
 
     // Update version for abc input when needed
     if (options_.updatePkgVersionForAbcInput) {
+        panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_UPDATE_ABC_PKG_VERSION, record_name);
         UpdatePackageVersion(program, options_);
+        panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_UPDATE_ABC_PKG_VERSION, record_name);
         // Remove redundant strings created due to version replacement
+        panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_UPDATE_ABC_PROGRAM_STRING, record_name);
         if (options_.removeRedundantFile) {
             program->strings.clear();
             for (const auto &[_, function] : program->function_table) {
@@ -177,8 +186,10 @@ void CompileAbcClassJob::Run()
                 program->strings.insert(funcStringSet.begin(), funcStringSet.end());
             }
         }
+        panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_UPDATE_ABC_PROGRAM_STRING, record_name);
     }
 
+    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_UPDATE_ABC_PROG_CACHE, record_name);
     {
         std::unique_lock<std::mutex> lock(CompileFileJob::globalMutex_);
         ASSERT(compiler_.GetAbcFile().GetFilename().find(util::CHAR_VERTICAL_LINE) == std::string::npos);
@@ -189,6 +200,7 @@ void CompileAbcClassJob::Run()
         auto *cache = allocator_->New<util::ProgramCache>(std::move(*program));
         progsInfo_.emplace(name, cache);
     }
+    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_UPDATE_ABC_PROG_CACHE, record_name);
 
     delete program;
     program = nullptr;
