@@ -125,7 +125,6 @@ ValidationInfo ObjectExpression::ValidateExpression()
 
 bool ObjectExpression::ConvertibleToObjectPattern()
 {
-    // TODO(rsipka): throw more precise messages in case of false results
     bool restFound = false;
     bool convResult = true;
 
@@ -406,7 +405,6 @@ void ObjectExpression::CompileRemainingProperties(compiler::PandaGen *pg, const 
                                                   compiler::VReg objReg) const
 {
     for (size_t i = 0; i < properties_.size(); i++) {
-        // TODO: Compile and store only the last one of re-declared prop
         if (compiled->Test(i)) {
             continue;
         }
@@ -601,6 +599,7 @@ checker::Type *ObjectExpression::CheckPattern(checker::Checker *checker) const
     }
 
     checker::Type *returnType = checker->Allocator()->New<checker::ObjectLiteralType>(desc);
+    CHECK_NOT_NULL(returnType);
     returnType->AsObjectType()->AddObjectFlag(checker::ObjectFlags::RESOLVED_MEMBERS);
     return returnType;
 }
@@ -657,6 +656,7 @@ checker::Type *GetTypeForProperty(const ir::Property *prop, checker::Checker *ch
 checker::Type *ObjectExpression::Check(checker::Checker *checker) const
 {
     checker::ObjectDescriptor *desc = checker->Allocator()->New<checker::ObjectDescriptor>(checker->Allocator());
+    CHECK_NOT_NULL(desc);
     std::unordered_map<util::StringView, lexer::SourcePosition> allPropertiesMap;
     bool inConstContext = checker->HasStatus(checker::CheckerStatus::IN_CONST_CONTEXT);
     ArenaVector<checker::Type *> computedNumberPropTypes(checker->Allocator()->Adapter());

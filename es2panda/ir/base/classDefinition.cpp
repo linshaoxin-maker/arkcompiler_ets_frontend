@@ -425,7 +425,6 @@ void ClassDefinition::Compile(compiler::PandaGen *pg) const
 
 checker::Type *ClassDefinition::Check(checker::Checker *checker) const
 {
-    // TODO(aszilagyi)
     return checker->GlobalAnyType();
 }
 
@@ -587,8 +586,9 @@ void ClassDefinition::AddFieldTypeForTypeReference(const TSTypeReference *typeRe
     // ts enum type
     const ir::AstNode *declNode = GetDeclNodeFromIdentifier(typeName->AsIdentifier());
     if (declNode != nullptr) {
-        auto originalNode = declNode->Original();
-        if (originalNode && originalNode->Type() == ir::AstNodeType::TS_ENUM_DECLARATION) {
+        // If the result of "declNode->Original()" is nullptr, it means the declNode is original and not transformed.
+        auto originalNode = (declNode->Original() != nullptr) ? declNode->Original() : declNode;
+        if (originalNode->Type() == ir::AstNodeType::TS_ENUM_DECLARATION) {
             fieldType |= FieldType::STRING | FieldType::NUMBER;
             return;
         }

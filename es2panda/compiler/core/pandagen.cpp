@@ -1372,6 +1372,11 @@ void PandaGen::SuperCallSpread(const ir::AstNode *node, VReg vs)
     ra_.Emit<Supercallspread>(node, 0, vs);
 }
 
+void PandaGen::SuperCallForwardAllArgs(const ir::AstNode *node, VReg funcObj)
+{
+    ra_.Emit<CallruntimeSupercallforwardallargs>(node, funcObj);
+}
+
 void PandaGen::NotifyConcurrentResult(const ir::AstNode *node)
 {
     if (IsConcurrent()) {
@@ -1474,14 +1479,6 @@ void PandaGen::CreateIterResultObject(const ir::AstNode *node, VReg value, VReg 
 void PandaGen::SuspendGenerator(const ir::AstNode *node, VReg genObj)
 {
     ra_.Emit<Suspendgenerator>(node, genObj); // iterResult is in acc
-}
-
-void PandaGen::SuspendAsyncGenerator(const ir::AstNode *node, VReg asyncGenObj)
-{
-    /*
-     *  TODO: suspend async generator
-     *  ra_.Emit<EcmaSuspendasyncgenerator>(node, asyncGenObj);
-     */
 }
 
 void PandaGen::GeneratorYield(const ir::AstNode *node, VReg genObj)
@@ -2011,14 +2008,6 @@ void PandaGen::GenDebugger(const ir::AstNode *node)
     }
 }
 
-void PandaGen::CopyLexEnv(const ir::AstNode *node)
-{
-    /*
-     *  TODO: add copy lexenv to optimize the loop env creation
-     *  ra_.Emit<EcmaCopylexenvdyn>(node);
-     */
-}
-
 void PandaGen::NewLexicalEnv(const ir::AstNode *node, uint32_t num, binder::VariableScope *scope)
 {
     if (IsDebug()) {
@@ -2068,6 +2057,7 @@ uint32_t PandaGen::TryDepth() const
 CatchTable *PandaGen::CreateCatchTable()
 {
     auto *catchTable = allocator_->New<CatchTable>(this, TryDepth());
+    CHECK_NOT_NULL(catchTable);
     catchList_.push_back(catchTable);
     return catchTable;
 }

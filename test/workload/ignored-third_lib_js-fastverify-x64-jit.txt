@@ -15,9 +15,6 @@ jmespath_test
 #18342
 mathjs_test
 
-#18487
-pako_test
-
 #18424
 pcx_test
 
@@ -26,11 +23,6 @@ zxing_test
 
 #18331
 validator_test
-
-#18484
-jBox2d_test
-commonmark-js_test
-pdfview_test
 
 #18425
 crypto-js_test
