@@ -25,43 +25,14 @@
   </style>
 </head>
 <body>
-  <h1>ArkTS Test Results</h1>
-  <h2>Branch: master</h2>
-  <h2>DateTime: {{ datetime }}</h2>
-  <hr>
-  <h2>RT Test Results</h2>
-  <blockquote>
-    <p>test_main: Language Feature Test</p>
-    <p>test_rules: Rules Test</p>
-    <p>test_regression: Issue Test</p>
-  </blockquote>
-  <p><strong>test_main:</strong> {{ rt_main_result }}</p>
-  <ul>
-    {{ rt_main_failures }}
-  </ul>
-  <p><strong>test_rules:</strong> {{ rt_rules_result }}</p>
-  <ul>
-    {{ rt_rules_failures }}
-  </ul>
-  <p><strong>test_regression:</strong> {{ rt_regression_result }}</p>
-  <ul>
-    {{ rt_regression_failures }}
-  </ul>
-  <hr>
-  <h2>TSC Test Results</h2>
-  <p><strong>tsc_result:</strong> {{ tsc_test_result }}</p>
-  <ul>
-    {{ tsc_test_failures }}
-  </ul>
-  <hr>
-  <h2>arkTSTest Test Results</h2>
-  <p><strong>arktstest_v1.0_result:</strong> {{ arktstest_v1.0_result }}</p>
-  <ul>
-    {{ arktstest_v1.0_failures }}
-  </ul>
-  <p><strong>arktstest_v1.1_result:</strong> {{ arktstest_v1.1_result }}</p>
-  <ul>
-    {{ arktstest_v1.1_failures }}
-  </ul>
+<h2>ArkTS Test Report</h2>
+{{ manifest }}
+{{ sdk_completion_time }}
+<hr>
+{{ rt_test_results }}
+{{ tsc_test_results }}
+{{ arktstest_test_results }}
+{{ issue_cookbook }}
+{{ verify_3rd_libs }}
 </body>
 </html>

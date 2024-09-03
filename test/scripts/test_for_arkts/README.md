@@ -1,30 +1,31 @@
 ### Environment Setup
 
+> Currently, this project can only be run on WSL.
+
 To run this project, ensure the following software is installed:
 
 - Python
 - Git
 - Node.js
-- pip
-- pdm
 
-Additionally, configure your email password as an environment variable.
+### Run
 
-For Linux:
-```Bash
-export EMAIL_PASSWORD=<your_email_password>
-```
+1. Configure the `config.json` file:
+    - `ohos_sdk`: The path to the SDK
+    - `cookbook_path`: The path to the cookbook project
 
-### Run the Project
-
-1. Set up the project:
+2. Set up the project:
 
 ```Bash
-pdm install
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install pytz requests
 ```
 
-2. Run the project:
+3. Run the test:
 
 ```Bash
-pdm run test
+python run_test.py
 ```
+
+If you need to send an email. Please check the `config.json` and `src/email.py:send_email()`
