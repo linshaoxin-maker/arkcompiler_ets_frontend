@@ -1,7 +1,6 @@
 # Known failures list for test262-other - release-x64-aot-pgo
 
 #18690
-test262/data/other_tests/language/statements/class/elements/privatefieldget-success-2.js
 test262/data/other_tests/language/statements/class/elements/privatefield-on-proxy.js
 test262/data/other_tests/language/statements/class/elements/privategetter-on-proxy.js
 
