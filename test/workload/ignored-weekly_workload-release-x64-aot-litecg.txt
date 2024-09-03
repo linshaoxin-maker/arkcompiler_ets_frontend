@@ -3,9 +3,6 @@
 # Issue #18417
 box2d
 
-# Issue #18491
-stanford-crypto-pbkdf2
-
 # Issue #18483
 typescript-compiler
 
