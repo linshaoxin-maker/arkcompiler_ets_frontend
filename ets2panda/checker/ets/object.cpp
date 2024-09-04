@@ -762,7 +762,6 @@ void ETSChecker::CollectImplementedMethodsFromInterfaces(ETSObjectType *classTyp
     while (index < collectedInterfaces.size()) {
         for (auto &it : abstractsToBeImplemented) {
             for (const auto &prop : collectedInterfaces[index]->Methods()) {
-                GetTypeOfVariable(prop);
                 AddImplementedSignature(implementedSignatures, prop, it);
             }
         }
@@ -2011,7 +2010,10 @@ void ETSChecker::TransformProperties(ETSObjectType *classType)
             LogTypeError("Interface property implementation cannot be generated as non-public",
                          field->Declaration()->Node()->Start());
         }
-        classType->RemoveProperty<checker::PropertyType::INSTANCE_FIELD>(field);
+        if (field->HasFlag(varbinder::VariableFlags::PROPERTY) &&
+            field->HasFlag(varbinder::VariableFlags::INITIALIZED)) {
+            classType->RemoveProperty<checker::PropertyType::INSTANCE_FIELD>(field);
+        }
         GenerateGetterSetterPropertyAndMethod(originalProp, classType);
     }
 
