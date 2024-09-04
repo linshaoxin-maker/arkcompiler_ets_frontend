@@ -30,8 +30,6 @@ pdfview_test
 #18425
 gson_test
 
-#18437
-zxing_test
 
 #18806
 validator_test

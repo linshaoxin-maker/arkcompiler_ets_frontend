@@ -24,8 +24,6 @@ pdfview_test
 #18331
 validator_test
 
-zxing_test
-
 #19231
 jBox2d_test
 
