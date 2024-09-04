@@ -195,6 +195,7 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/ets/topLevelStmts/topLevelStmts.cpp
   compiler/lowering/ets/expressionLambdaLowering.cpp
   compiler/lowering/ets/boxingForLocals.cpp
+  compiler/lowering/ets/capturedVariables.cpp
   compiler/lowering/ets/lambdaLowering.cpp
   compiler/lowering/ets/spreadLowering.cpp
   compiler/lowering/ets/localClassLowering.cpp
@@ -210,6 +211,7 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/ets/unionLowering.cpp
   compiler/lowering/ets/optionalLowering.cpp
   compiler/lowering/ets/expandBrackets.cpp
+  compiler/lowering/ets/packageImplicitImport.cpp
   compiler/lowering/ets/partialExportClassGen.cpp
   compiler/lowering/ets/promiseVoid.cpp
   compiler/lowering/ets/structLowering.cpp
@@ -234,6 +236,7 @@ set(ES2PANDA_LIB_SRC
   ir/base/decorator.cpp
   ir/base/metaProperty.cpp
   ir/base/methodDefinition.cpp
+  ir/base/namespaceDefinition.cpp
   ir/base/property.cpp
   ir/base/scriptFunction.cpp
   ir/base/scriptFunctionSignature.cpp
@@ -308,6 +311,7 @@ set(ES2PANDA_LIB_SRC
   ir/statements/ifStatement.cpp
   ir/statements/labelledStatement.cpp
   ir/statements/loopStatement.cpp
+  ir/statements/namespaceDeclaration.cpp
   ir/statements/returnStatement.cpp
   ir/statements/switchCaseStatement.cpp
   ir/statements/switchStatement.cpp
@@ -407,6 +411,7 @@ set(ES2PANDA_LIB_SRC
   parser/ETSparserClasses.cpp
   parser/ETSparserEnums.cpp
   parser/ETSparserExpressions.cpp
+  parser/ETSparserNamespaces.cpp
   parser/ETSparserStatements.cpp
   parser/ETSparserTypes.cpp
   parser/ETSNolintParser.cpp

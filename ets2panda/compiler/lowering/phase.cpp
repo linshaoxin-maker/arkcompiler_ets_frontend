@@ -26,6 +26,7 @@
 #include "compiler/lowering/ets/topLevelStmts/topLevelStmts.h"
 #include "compiler/lowering/ets/expressionLambdaLowering.h"
 #include "compiler/lowering/ets/boxingForLocals.h"
+#include "compiler/lowering/ets/capturedVariables.h"
 #include "compiler/lowering/ets/lambdaLowering.h"
 #include "compiler/lowering/ets/spreadLowering.h"
 #include "compiler/lowering/ets/interfacePropertyDeclarations.h"
@@ -36,6 +37,7 @@
 #include "compiler/lowering/ets/objectLiteralLowering.h"
 #include "compiler/lowering/ets/interfaceObjectLiteralLowering.h"
 #include "compiler/lowering/ets/optionalLowering.h"
+#include "compiler/lowering/ets/packageImplicitImport.h"
 #include "compiler/lowering/ets/partialExportClassGen.h"
 #include "compiler/lowering/ets/promiseVoid.h"
 #include "compiler/lowering/ets/stringComparison.h"
@@ -65,6 +67,7 @@ static SpreadConstructionPhase g_spreadConstructionPhase;
 static ExpressionLambdaConstructionPhase g_expressionLambdaConstructionPhase;
 static OpAssignmentLowering g_opAssignmentLowering;
 static BoxingForLocals g_boxingForLocals;
+static CapturedVariables g_capturedVariables {};
 static LambdaConversionPhase g_lambdaConversionPhase;
 static ObjectIndexLowering g_objectIndexLowering;
 static ObjectIteratorLowering g_objectIteratorLowering;
@@ -82,6 +85,7 @@ static TopLevelStatements g_topLevelStatements;
 static LocalClassConstructionPhase g_localClassLowering;
 static StringComparisonLowering g_stringComparisonLowering;
 static PartialExportClassGen g_partialExportClassGen;
+static PackageImplicitImport g_packageImplicitImport;
 static PluginPhase g_pluginsAfterParse {"plugins-after-parse", ES2PANDA_STATE_PARSED, &util::Plugin::AfterParse};
 static PluginPhase g_pluginsAfterCheck {"plugins-after-check", ES2PANDA_STATE_CHECKED, &util::Plugin::AfterCheck};
 static PluginPhase g_pluginsAfterLowerings {"plugins-after-lowering", ES2PANDA_STATE_LOWERED,
@@ -103,6 +107,7 @@ std::vector<Phase *> GetETSPhaseList()
     // clang-format off
     return {
         &g_pluginsAfterParse,
+        &g_packageImplicitImport,
         &g_topLevelStatements,
         &g_defaultParameterLowering,
         &g_ambientLowering,
@@ -114,6 +119,7 @@ std::vector<Phase *> GetETSPhaseList()
         &g_interfacePropDeclPhase,
         &g_enumLoweringPhase,
         &g_resolveIdentifiers,
+        &g_capturedVariables,
         &g_checkerPhase,
         &g_enumPostCheckLoweringPhase,
         &g_spreadConstructionPhase,
