@@ -178,6 +178,9 @@ Scope::VariableMap::size_type Scope::EraseBinding(const util::StringView &name)
 ConstScopeFindResult Scope::FindInGlobal(const util::StringView &name, const ResolveBindingOptions options) const
 {
     const auto *scopeIter = this;
+    if (scopeIter == nullptr) {
+        return ConstScopeFindResult(name, scopeIter, 0, 0, nullptr);
+    }
     const auto *scopeParent = this->Parent();
     // One scope below true global is ETSGLOBAL
     while (scopeParent != nullptr && !scopeParent->IsGlobalScope()) {
@@ -192,7 +195,7 @@ ConstScopeFindResult Scope::FindInGlobal(const util::StringView &name, const Res
         resolved = scopeParent->FindLocal(name, options);
     }
 
-    return {name, scopeIter, 0, 0, resolved};
+    return ConstScopeFindResult(name, scopeIter, 0, 0, resolved);
 }
 
 ConstScopeFindResult Scope::FindInFunctionScope(const util::StringView &name, const ResolveBindingOptions options) const

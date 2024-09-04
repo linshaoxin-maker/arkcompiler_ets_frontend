@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 
-declare async function foo(): Promise<void>
+type NullableNumber = Number | null
 
-function main(): void {
-
+ function main() {
+    let array = new (NullableNumber)[10]
+    assert(array[1] == null)
 }
