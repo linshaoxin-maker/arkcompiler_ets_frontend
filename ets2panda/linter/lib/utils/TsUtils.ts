@@ -2490,7 +2490,7 @@ export class TsUtils {
     return TsUtils.getDeclaration(sym);
   }
 
-  static isFunctionLikeDeclaration(node: ts.Declaration): boolean {
+  static isFunctionLikeDeclaration(node: ts.Node): node is ts.FunctionLikeDeclaration {
     return (
       ts.isFunctionDeclaration(node) ||
       ts.isMethodDeclaration(node) ||
