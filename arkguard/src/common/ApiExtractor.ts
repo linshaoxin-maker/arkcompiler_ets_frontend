@@ -40,7 +40,7 @@ import {
   isIdentifier,
   isInterfaceDeclaration,
   isObjectLiteralExpression,
-  isTypeAliasDeclaration, 
+  isTypeAliasDeclaration,
   isVariableDeclaration,
   isVariableStatement,
   isElementAccessExpression,
@@ -62,7 +62,8 @@ import {
   isPropertyAssignment,
   isModuleBlock,
   isFunctionDeclaration,
-  isEnumMember
+  isEnumMember,
+  isIndexedAccessTypeNode
 } from 'typescript';
 
 import fs from 'fs';
@@ -73,7 +74,7 @@ import {
   exportOriginalNameSet,
   getClassProperties,
   getElementAccessExpressionProperties,
-  getEnumProperties, getInterfaceProperties,
+  getEnumProperties, getIndexedAccessTypeProperties, getInterfaceProperties,
   getObjectExportNames,
   getObjectProperties,
   getTypeAliasProperties,
@@ -136,7 +137,7 @@ export namespace ApiExtractor {
   const visitExport = function (astNode, isSystemApi: boolean): void {
     /**
      * export = exportClass //collect exportClass
-     * 
+     *
      * function foo()
      * export default foo //collect foo
      */
@@ -353,7 +354,7 @@ export namespace ApiExtractor {
        */
       let originalName = expression.right.getText();
       if (isRemoteHarOrSystemApi) {
-        // To achieve compatibility changes, originalName is still collected into mCurrentExportNameSet 
+        // To achieve compatibility changes, originalName is still collected into mCurrentExportNameSet
         // for both remoteHar and system API files.
 
         // NOTE: This logic will be optimized later to avoid collecting originalName into mCurrentExportNameSet under any circumstances.
@@ -511,9 +512,9 @@ export namespace ApiExtractor {
           if (child.propertyName) {
             let originalName = child.propertyName.getText();
             if (isRemoteHarFile || astNode.moduleSpecifier) {
-              // For the first condition, this ensures that for remoteHar files, 
+              // For the first condition, this ensures that for remoteHar files,
               // originalName is still collected into mCurrentExportNameSet to maintain compatibility.
-              // NOTE: This specification needs to be revised to determine whether to add originalName 
+              // NOTE: This specification needs to be revised to determine whether to add originalName
               // to mCurrentExportNameSet should be independent of whether it is in a remoteHar file.
 
               // The second condition indicates that for `export {A as B} from './filePath'` statements,
@@ -541,7 +542,7 @@ export namespace ApiExtractor {
       if (astNode.exportClause.kind === SyntaxKind.NamespaceExport) {
         mCurrentExportedPropertySet.add(astNode.exportClause.name.getText());
         return;
-      } 
+      }
     }
   }
 
@@ -574,7 +575,9 @@ export namespace ApiExtractor {
     } else if (isTypeAliasDeclaration(astNode)) {
       getTypeAliasProperties(astNode, currentPropsSet);
     } else if (isElementAccessExpression(astNode)) {
-      getElementAccessExpressionProperties(astNode, currentPropsSet);
+      getElementAccessExpressionProperties(astNode);
+    } else if (isIndexedAccessTypeNode(astNode)) {
+      getIndexedAccessTypeProperties(astNode);
     } else if (isObjectLiteralExpression(astNode)) {
       getObjectProperties(astNode, currentPropsSet);
     } else if (isClassExpression(astNode)) {
@@ -795,7 +798,7 @@ export namespace ApiExtractor {
     const realPath: string = sys.realpath(filePath);
     return isInOhModuleFile(realPath);
   }
-  
+
   export function isInOhModuleFile(filePath: string): boolean {
     return filePath.indexOf('/oh_modules/') !== -1 || filePath.indexOf('\\oh_modules\\') !== -1;
   }
@@ -808,7 +811,7 @@ export namespace ApiExtractor {
   * parse common project or file to extract exported api list
   * @return reserved api names
   */
-  export function parseFileByPaths(projectPaths: Set<string>, scanningApiType: ApiType): 
+  export function parseFileByPaths(projectPaths: Set<string>, scanningApiType: ApiType):
     {reservedExportPropertyAndName: Set<string> | undefined; reservedExportNames: Set<string> | undefined} {
     mPropertySet.clear();
     mExportNames.clear();

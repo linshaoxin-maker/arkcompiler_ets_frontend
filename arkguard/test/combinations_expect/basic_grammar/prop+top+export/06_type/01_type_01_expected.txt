@@ -43,7 +43,7 @@ let p: number & (string | number) = 1;
 assert(p === 1);
 type q = number;
 type t = string;
-function g<h1>(i1: h1 extends q ? q : t) { return i1; }
+function g<d3>(e3: d3 extends q ? q : t) { return e3; }
 assert(g<number>(1) === 1);
 type u<T> = T extends {
     a: infer U;
@@ -59,26 +59,127 @@ assert(v[0] === 1);
 assert(v[1] === 2);
 interface a1 {
     name: string;
-    h1: number;
+    d3: number;
 }
 type b1 = keyof a1;
 let b: b1 = "name";
 assert(b === "name");
+// Different grammar scenarios of indexedAccessType
 type c1 = {
     U: number;
+    V: string;
+    W: boolean;
 };
-let d1: c1['U'] = 2;
-assert(d1 === 2);
-type e1<T extends any[]> = {
+type d1 = {
+    X1: c1;
+};
+let e1: d1["X1"]['U'] = 2;
+assert(e1 === 2);
+let q: c1['U'] = 3;
+let t: c1['V'] = "test";
+let f1: c1['W'] = false;
+assert(q === 3);
+assert(t === "test");
+assert(f1 === false);
+let g1: c1["U" | "V"] = 4;
+let h1: c1["U" | "V"] = "test";
+assert(g1 === 4);
+assert(h1 === "test");
+let i1: d1["X1"]["U" | "V"] = 5;
+let j1: d1["X1"]["U" | "V"] = "test";
+assert(i1 === 5);
+assert(j1 === "test");
+let l1: c1[keyof d1["X1"]] = 6;
+assert(l1 === 6);
+const n1 = [
+    { e3: "Alice", m1: 15 },
+    { e3: "Bob", m1: 23 },
+    { e3: "Eve", m1: 38 },
+];
+type o1 = (typeof n1)[1]["m1"];
+let q1: o1 = 7;
+assert(q1 === 7);
+type s1 = [
+    string,
+    number
+];
+let t1: s1[0] = "test";
+let u1: s1[1] = 9;
+assert(t1 === "test");
+assert(u1 === 9);
+type v1<T extends any[]> = {
     [P in keyof T]: T[P];
 };
-let d: e1<number[]> = [1];
+let d: v1<number[]> = [1];
 assert(d[0] === 1);
-let f1: "cc" = "cc";
-assert(f1 === "cc");
-let g1: [
+let w1: "cc" = "cc";
+assert(w1 === "cc");
+let z1: [
     prop1: string,
     prop2: number
 ] = ["1", 2];
-assert(g1[0] === "1");
-assert(g1[1] === 2);
+assert(z1[0] === "1");
+assert(z1[1] === 2);
+// Defination of unionType
+type a2 = "123" | "321";
+type b2 = 1234 | 4321;
+type c2 = "3124" | 4123;
+type d2 = "U1234" | 2143;
+type e2 = "U4213" | "U4132";
+type f2 = "U3412" | "3421";
+let g2: a2["1234"] = "1";
+assert(g2 === "1");
+let h2: a2[4321] = "2";
+assert(h2 === "2");
+let i2: e2[4321] = "3";
+assert(i2 === "3");
+let j2: e2["1234"] = "4";
+assert(j2 === "4");
+let l2: f2[4321] = "5";
+assert(l2 === "5");
+let m2: f2["1234"] = "6";
+assert(m2 === "6");
+// Define properties in type individually
+type n2 = {
+    "prop3": number;
+    f3: number;
+    "3214": number;
+    1324: number;
+    [2143]: number;
+    ["2314"]: number;
+};
+// Define properties in type and access them using indexedAccessType
+type o2 = {
+    "prop5": number;
+    prop6: number;
+    "3412": number;
+    1243: number;
+    [2134]: number;
+    ["2341"]: number;
+    // need to add in whitelist
+    "3142": number;
+    1432: number;
+    [1423]: number;
+    ["2314"]: number;
+};
+let q2: o2["prop5"] = 1;
+assert(q2 === 1);
+let s2: o2["prop6"] = 2;
+assert(s2 === 2);
+let t2: o2["3412"] = 3;
+assert(t2 === 3);
+let u2: o2[1243] = 4;
+assert(u2 === 4);
+let v2: o2[2134] = 5;
+assert(v2 === 5);
+let w2: o2["2341"] = 6;
+assert(w2 === 6);
+// need to add in whitelist
+let z2: o2[3142] = 7;
+assert(z2 === 7);
+let a3: o2["1432"] = 8;
+assert(a3 === 8);
+let b3: o2["1423"] = 9;
+assert(b3 === 9);
+let c3: o2[2314] = 10;
+assert(c3 === 10);
