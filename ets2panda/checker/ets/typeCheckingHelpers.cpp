@@ -78,11 +78,13 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
     }
 }
 
-void ETSChecker::CheckNonNullish(ir::Expression const *expr)
+bool ETSChecker::CheckNonNullish(ir::Expression const *expr)
 {
     if (expr->TsTypeOrError()->PossiblyETSNullish()) {
-        ThrowTypeError("Value is possibly nullish.", expr->Start());
+        LogTypeError("Value is possibly nullish.", expr->Start());
+        return false;
     }
+    return true;
 }
 
 Type *ETSChecker::GetNonNullishType(Type *type)
@@ -522,20 +524,13 @@ Type *ETSChecker::GuaranteedTypeForUncheckedCallReturn(Signature *sig)
     return GuaranteedTypeForUncheckedCast(baseSig->ReturnType(), sig->ReturnType());
 }
 
-void ETSChecker::CheckEtsFunctionType(ir::Identifier *const ident, ir::Identifier const *const id,
-                                      ir::TypeNode const *const annotation)
+void ETSChecker::CheckEtsFunctionType(ir::Identifier *const ident, ir::Identifier const *const id)
 {
-    if (annotation == nullptr) {
-        ThrowTypeError(
-            {"Cannot infer type for ", id->Name(), " because method reference needs an explicit target type"},
-            id->Start());
-    }
-
     const auto *const targetType = GetTypeOfVariable(id->Variable());
     ASSERT(targetType != nullptr);
 
-    if (!targetType->IsETSObjectType()) {
-        ThrowTypeError("Initializers type is not assignable to the target type", ident->Start());
+    if (!targetType->IsETSObjectType() && !targetType->IsETSUnionType()) {
+        LogTypeError("Initializers type is not assignable to the target type", ident->Start());
     }
 }
 
@@ -583,12 +578,17 @@ Type *ETSChecker::GetTypeFromEnumReference([[maybe_unused]] varbinder::Variable 
     }
 
     auto *const enumDecl = var->Declaration()->Node()->AsTSEnumDeclaration();
+    if (enumDecl->BoxedClass()->TsTypeOrError() == nullptr) {
+        BuildBasicClassProperties(enumDecl->BoxedClass());
+    }
     if (auto *const itemInit = enumDecl->Members().front()->AsTSEnumMember()->Init(); itemInit->IsNumberLiteral()) {
         return CreateEnumIntTypeFromEnumDeclaration(enumDecl);
     } else if (itemInit->IsStringLiteral()) {  // NOLINT(readability-else-after-return)
         return CreateEnumStringTypeFromEnumDeclaration(enumDecl);
     } else {  // NOLINT(readability-else-after-return)
-        ThrowTypeError("Invalid enumeration value type.", enumDecl->Start());
+        LogTypeError("Invalid enumeration value type.", enumDecl->Start());
+        var->SetTsType(GlobalTypeError());
+        return var->TsTypeOrError();
     }
 }
 
@@ -598,10 +598,11 @@ Type *ETSChecker::GetTypeFromTypeParameterReference(varbinder::LocalVariable *va
     if ((var->Declaration()->Node()->AsTSTypeParameter()->Parent()->Parent()->IsClassDefinition() ||
          var->Declaration()->Node()->AsTSTypeParameter()->Parent()->Parent()->IsTSInterfaceDeclaration()) &&
         HasStatus(CheckerStatus::IN_STATIC_CONTEXT)) {
-        ThrowTypeError({"Cannot make a static reference to the non-static type ", var->Name()}, pos);
+        LogTypeError({"Cannot make a static reference to the non-static type ", var->Name()}, pos);
+        var->SetTsType(GlobalTypeError());
     }
 
-    return var->TsType();
+    return var->TsTypeOrError();
 }
 
 bool ETSChecker::IsTypeBuiltinType(const Type *type) const
@@ -1003,7 +1004,8 @@ bool ETSChecker::TypeInference(Signature *signature, const ArenaVector<ir::Expre
             const Type *targetType = TryGettingFunctionTypeFromInvokeFunction(parameterType);
             const std::initializer_list<TypeErrorMessageElement> list = {
                 "Type '", argumentType, "' is not compatible with type '", targetType, "' at index ", index + 1};
-            ThrowTypeError(list, arrowFuncExpr->Start());
+            LogTypeError(list, arrowFuncExpr->Start());
+            return false;
         }
 
         invocable &= rc;
@@ -1033,7 +1035,7 @@ void ETSChecker::CheckExceptionClauseType(const std::vector<checker::ETSObjectTy
     for (auto *exception : exceptions) {
         this->Relation()->IsIdenticalTo(clauseType, exception);
         if (this->Relation()->IsTrue()) {
-            this->ThrowTypeError("Redeclaration of exception type", catchClause->Start());
+            LogTypeError("Redeclaration of exception type", catchClause->Start());
         }
     }
 }

@@ -114,6 +114,7 @@ panda_gen(
 set(ES2PANDA_LIB_SRC
   ast_verifier/ASTVerifier.cpp
   ast_verifier/arithmeticOperationValid.cpp
+  ast_verifier/checkAbstractMethod.cpp
   ast_verifier/checkContext.cpp
   ast_verifier/checkInfiniteLoop.cpp
   ast_verifier/everyChildHasValidParent.cpp
@@ -195,6 +196,7 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/ets/topLevelStmts/topLevelStmts.cpp
   compiler/lowering/ets/expressionLambdaLowering.cpp
   compiler/lowering/ets/boxingForLocals.cpp
+  compiler/lowering/ets/capturedVariables.cpp
   compiler/lowering/ets/lambdaLowering.cpp
   compiler/lowering/ets/spreadLowering.cpp
   compiler/lowering/ets/localClassLowering.cpp
@@ -210,6 +212,7 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/ets/unionLowering.cpp
   compiler/lowering/ets/optionalLowering.cpp
   compiler/lowering/ets/expandBrackets.cpp
+  compiler/lowering/ets/packageImplicitImport.cpp
   compiler/lowering/ets/partialExportClassGen.cpp
   compiler/lowering/ets/promiseVoid.cpp
   compiler/lowering/ets/structLowering.cpp
@@ -234,6 +237,7 @@ set(ES2PANDA_LIB_SRC
   ir/base/decorator.cpp
   ir/base/metaProperty.cpp
   ir/base/methodDefinition.cpp
+  ir/base/namespaceDefinition.cpp
   ir/base/property.cpp
   ir/base/scriptFunction.cpp
   ir/base/scriptFunctionSignature.cpp
@@ -308,6 +312,7 @@ set(ES2PANDA_LIB_SRC
   ir/statements/ifStatement.cpp
   ir/statements/labelledStatement.cpp
   ir/statements/loopStatement.cpp
+  ir/statements/namespaceDeclaration.cpp
   ir/statements/returnStatement.cpp
   ir/statements/switchCaseStatement.cpp
   ir/statements/switchStatement.cpp
@@ -407,6 +412,7 @@ set(ES2PANDA_LIB_SRC
   parser/ETSparserClasses.cpp
   parser/ETSparserEnums.cpp
   parser/ETSparserExpressions.cpp
+  parser/ETSparserNamespaces.cpp
   parser/ETSparserStatements.cpp
   parser/ETSparserTypes.cpp
   parser/ETSNolintParser.cpp
@@ -528,6 +534,8 @@ set(ES2PANDA_LIB_SRC
   test/utils/panda_executable_path_getter.cpp
 )
 
+# libes2panda does not include bytecode optimizer, because it is used in
+# libarkruntime, and conflict with JIT setup ensues
 panda_add_library(es2panda-lib ${PANDA_DEFAULT_LIB_TYPE} ${ES2PANDA_LIB_SRC})
 add_dependencies(es2panda-lib isa_gen_es2panda es2panda_keywords es2panda_signatures)
 
@@ -570,35 +578,8 @@ endif()
 panda_add_sanitizers(TARGET es2panda-lib SANITIZERS
   ${PANDA_SANITIZERS_LIST})
 
-# libes2panda does not include bytecode optimizer, because it is used in
-# libarkruntime, and conflict with JIT setup ensues
-set(ES2PANDA_PUBLIC_SOURCES
-  public/es2panda_lib.cpp
-  util/generateBin.cpp
-  util/options.cpp
-  util/plugin.cpp
-)
-
-
-panda_add_library(es2panda-public ${PANDA_DEFAULT_LIB_TYPE} ${ES2PANDA_PUBLIC_SOURCES})
-add_dependencies(es2panda-public es2panda-lib arkbytecodeopt)
-
-panda_target_include_directories(es2panda-public
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-  PRIVATE ${OUTPUT_DIR}
-)
-
-panda_target_compile_options(es2panda-public
-  PRIVATE -fexceptions -Werror=shadow
-)
-
-panda_target_link_libraries(es2panda-public
-  PUBLIC arkbase es2panda-lib
-  PRIVATE arkbytecodeopt
-)
-
-panda_add_sanitizers(TARGET es2panda-public SANITIZERS
-  ${PANDA_SANITIZERS_LIST})
+SET(ES2PANDA_LIB_DIR public)
+add_subdirectory(${ES2PANDA_LIB_DIR})
 
 add_subdirectory(aot)
 add_subdirectory(declgen_ets2ts)

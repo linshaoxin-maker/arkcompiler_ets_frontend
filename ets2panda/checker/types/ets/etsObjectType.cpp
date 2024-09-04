@@ -182,17 +182,14 @@ varbinder::LocalVariable *ETSObjectType::CollectSignaturesForSyntheticType(ETSFu
                                                                            const util::StringView &name,
                                                                            PropertySearchFlags flags) const
 {
-    if (funcType == nullptr) {
-        return nullptr;
-    }
-
     auto const addSignature = [funcType, flags](varbinder::LocalVariable *found) -> void {
         for (auto *it : found->TsType()->AsETSFunctionType()->CallSignatures()) {
             if (((flags & PropertySearchFlags::IGNORE_ABSTRACT) != 0) &&
                 it->HasSignatureFlag(SignatureFlags::ABSTRACT)) {
                 continue;
             }
-
+            // Issue: #18720
+            // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
             funcType->AddCallSignature(it);
         }
     };
@@ -910,11 +907,6 @@ void ETSObjectType::UpdateTypeProperty(checker::ETSChecker *checker, varbinder::
                                        PropertyType fieldType, PropertyProcesser const &func)
 {
     auto *const propType = prop->Declaration()->Node()->Check(checker);
-
-    if (propType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
-        checker->ThrowTypeError("Base type of a Utility type can only contain fields with reference type.",
-                                prop->Declaration()->Node()->Start());
-    }
 
     auto *const propCopy = func(prop, propType);
     if (fieldType == PropertyType::INSTANCE_FIELD) {

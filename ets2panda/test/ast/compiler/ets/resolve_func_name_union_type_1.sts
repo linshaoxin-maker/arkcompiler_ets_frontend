@@ -13,11 +13,16 @@
  * limitations under the License.
  */
 
-enum Color { Red , Blue }
-function main () {
-    let x = ()  => {
-        let y : Color = Color.Red
-        return y
-    }
-    let expected : () => Color = x
+type NumFunc = () => number
+type UT = string | number
+
+function pi(): number {
+    return 3.14
 }
+
+function main() {
+    let v: UT = pi
+    assert (v as NumFunc)() == 3.14
+}
+
+/* @@? 24:17 Error TypeError: Type '() => double' cannot be assigned to type 'String|Double'  */
