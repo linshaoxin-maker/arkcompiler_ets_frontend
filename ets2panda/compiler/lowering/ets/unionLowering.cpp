@@ -40,32 +40,6 @@
 #include "public/public.h"
 
 namespace ark::es2panda::compiler {
-static std::string_view NumericTypeToConvertorName(checker::TypeFlag type)
-{
-    switch (type) {
-        case checker::TypeFlag::BYTE: {
-            return "byte";
-        }
-        case checker::TypeFlag::SHORT: {
-            return "short";
-        }
-        case checker::TypeFlag::INT: {
-            return "int";
-        }
-        case checker::TypeFlag::LONG: {
-            return "long";
-        }
-        case checker::TypeFlag::DOUBLE: {
-            return "double";
-        }
-        case checker::TypeFlag::FLOAT: {
-            return "float";
-        }
-        default:
-            UNREACHABLE();
-    }
-}
-
 static ir::ClassDefinition *GetUnionFieldClass(checker::ETSChecker *checker, varbinder::VarBinder *varbinder)
 {
     // Create the name for the synthetic class node
@@ -145,22 +119,31 @@ static void HandleUnionPropertyAccess(checker::ETSChecker *checker, varbinder::V
     ASSERT(expr->PropVar() != nullptr);
 }
 
-static std::pair<bool, ir::Expression *> CheckNeedCast(ir::Expression *expr)
+static std::optional<ir::Expression *> CheckNeedCast(ir::Expression *expr)
 {
     if (expr->TsType() == nullptr || !expr->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
-        return {false, nullptr};
+        return {};
     }
 
     if (expr->IsTSAsExpression() && expr->AsTSAsExpression()->Expr()->TsType() != nullptr &&
         expr->AsTSAsExpression()->Expr()->TsType()->IsETSUnionType()) {
-        return {true, expr->AsTSAsExpression()->Expr()};
+        return expr->AsTSAsExpression()->Expr();
     }
+
+    // if (target->HasTypeFlag(TypeFlag::PRIMITIVE)) {
+    //     if (!relation->ApplyUnboxing()) {
+    //         return relation->Result(false);
+    //     }
+    //     relation->GetNode()->AddAstNodeFlags(ir::AstNodeFlags::UNION_CAST_PRIMITIVE);
+    // }
 
     if (expr->HasAstNodeFlags(ir::AstNodeFlags::UNION_CAST_PRIMITIVE)) {
-        return {true, expr};
+        ir::AstDumper d (expr);
+        std::cerr << d.Str();
+        return expr;
     }
 
-    return {false, nullptr};
+    return {};
 }
 
 static void GenerateCastToPrimitive(std::stringstream &ss, checker::Type *nodeType,
@@ -183,7 +166,10 @@ static void GenerateCastToPrimitive(std::stringstream &ss, checker::Type *nodeTy
     ss << "(@@E" << addNode(expr) << " as ";
 
     if (nodeType->HasTypeFlag(checker::TypeFlag::ETS_NUMERIC)) {
-        ss << "Numeric)." << NumericTypeToConvertorName(nodeType->TypeFlags()) << "Value()";
+        ASSERT(nodeType->HasTypeFlag(checker::TypeFlag::CHAR));
+        ASSERT(nodeType->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN));
+
+        ss << "Numeric)." << nodeType->ToString() << "Value()";
     } else if (nodeType->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN)) {
         ss << "Boolean).unboxed()";
     } else if (nodeType->HasTypeFlag(checker::TypeFlag::CHAR)) {
@@ -195,8 +181,8 @@ static void GenerateCastToPrimitive(std::stringstream &ss, checker::Type *nodeTy
 
 static ir::Expression *HandleUnionCastToPrimitive(public_lib::Context *ctx, ir::Expression *expr)
 {
-    auto [needCast, exprNode] = CheckNeedCast(expr);
-    if (!needCast) {
+    auto exprNode = CheckNeedCast(expr);
+    if (!exprNode.has_value()) {
         return expr;
     }
 
@@ -207,7 +193,7 @@ static ir::Expression *HandleUnionCastToPrimitive(public_lib::Context *ctx, ir::
     std::stringstream ss;
     std::vector<ir::AstNode *> newStmts;
 
-    GenerateCastToPrimitive(ss, expr->TsType(), newStmts, exprNode);
+    GenerateCastToPrimitive(ss, expr->TsType(), newStmts, exprNode.value());
 
     auto *loweringResult = parser->CreateFormattedExpression(ss.str(), newStmts);
 

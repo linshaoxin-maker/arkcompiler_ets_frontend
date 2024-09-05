@@ -96,9 +96,16 @@ public:
         relation->SetNode(node);
         relation->SetFlags(flags_ | initialFlags);
 
+        ir::AstDumper d (relation->GetNode());
+                    // std::cerr << d.Str() << std::endl;
+
+        if (relation->GetNode()->IsStringLiteral() ) {
+            std::cerr << d.Str() << std::endl;
+        }
         if (!relation->IsAssignableTo(source, target)) {
             if (((flags_ & TypeRelationFlag::UNBOXING) != 0U) && !relation->IsTrue() && source->IsETSObjectType() &&
                 !target->IsETSObjectType()) {
+                    std::cout << "Error\n";
                 etsChecker->CheckUnboxedSourceTypeWithWideningAssignable(relation, source, target);
             }
             if (((flags_ & TypeRelationFlag::BOXING) != 0) && target->IsETSObjectType() && !relation->IsTrue()) {
