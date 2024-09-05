@@ -79,7 +79,8 @@ void ETSChecker::ValidatePropertyAccess(varbinder::Variable *var, ETSObjectType 
             return;
         }
 
-        ThrowTypeError({"Property ", var->Name(), " is not visible here."}, pos);
+        LogTypeError({"Property ", var->Name(), " is not visible here."}, pos);
+        var->SetTsType(GlobalTypeError());
     }
 }
 
@@ -88,7 +89,8 @@ void ETSChecker::ValidateCallExpressionIdentifier(ir::Identifier *const ident, v
 {
     if (resolved->HasFlag(varbinder::VariableFlags::CLASS_OR_INTERFACE) &&
         ident->Parent()->AsCallExpression()->Callee() != ident) {
-        ThrowTypeError({"Class or interface '", ident->Name(), "' cannot be used as object"}, ident->Start());
+        LogTypeError({"Class or interface '", ident->Name(), "' cannot be used as object"}, ident->Start());
+        ident->Variable()->SetTsType(GlobalTypeError());
     }
 
     if (ident->Parent()->AsCallExpression()->Callee() != ident) {
@@ -97,7 +99,8 @@ void ETSChecker::ValidateCallExpressionIdentifier(ir::Identifier *const ident, v
     if (ident->Variable() != nullptr &&  // It should always be true!
         ident->Variable()->Declaration()->Node() != nullptr &&
         ident->Variable()->Declaration()->Node()->IsImportNamespaceSpecifier()) {
-        ThrowTypeError({"Namespace style identifier ", ident->Name(), " is not callable."}, ident->Start());
+        LogTypeError({"Namespace style identifier ", ident->Name(), " is not callable."}, ident->Start());
+        ident->Variable()->SetTsType(GlobalTypeError());
     }
     if (type->IsETSFunctionType() || type->IsETSDynamicType() ||
         (type->IsETSObjectType() && type->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL))) {
@@ -117,7 +120,8 @@ void ETSChecker::ValidateCallExpressionIdentifier(ir::Identifier *const ident, v
         }
     }
 
-    ThrowTypeError({"This expression is not callable."}, ident->Start());
+    LogTypeError({"This expression is not callable."}, ident->Start());
+    ident->Variable()->SetTsType(GlobalTypeError());
 }
 
 void ETSChecker::ValidateNewClassInstanceIdentifier(ir::Identifier *const ident, varbinder::Variable *const resolved)
@@ -183,8 +187,9 @@ bool ETSChecker::ValidateBinaryExpressionIdentifier(ir::Identifier *const ident,
     bool isFinished = false;
     if (binaryExpr->OperatorType() == lexer::TokenType::KEYW_INSTANCEOF && binaryExpr->Right() == ident) {
         if (!IsReferenceType(type)) {
-            ThrowTypeError({R"(Using the "instance of" operator with non-object type ")", ident->Name(), "\""},
-                           ident->Start());
+            LogTypeError({R"(Using the "instance of" operator with non-object type ")", ident->Name(), "\""},
+                         ident->Start());
+            ident->Variable()->SetTsType(GlobalTypeError());
         }
         isFinished = true;
     }
@@ -257,12 +262,15 @@ void ETSChecker::ValidateUnaryOperatorOperand(varbinder::Variable *variable)
         std::string_view fieldType = variable->Declaration()->IsConstDecl() ? "constant" : "readonly";
         if (HasStatus(CheckerStatus::IN_CONSTRUCTOR | CheckerStatus::IN_STATIC_BLOCK) &&
             !variable->HasFlag(varbinder::VariableFlags::EXPLICIT_INIT_REQUIRED)) {
-            ThrowTypeError({"Cannot reassign ", fieldType, " ", variable->Name()},
-                           variable->Declaration()->Node()->Start());
+            LogTypeError({"Cannot reassign ", fieldType, " ", variable->Name()},
+                         variable->Declaration()->Node()->Start());
+            variable->SetTsType(GlobalTypeError());
+            return;
         }
         if (!HasStatus(CheckerStatus::IN_CONSTRUCTOR | CheckerStatus::IN_STATIC_BLOCK)) {
-            ThrowTypeError({"Cannot assign to a ", fieldType, " variable ", variable->Name()},
-                           variable->Declaration()->Node()->Start());
+            LogTypeError({"Cannot assign to a ", fieldType, " variable ", variable->Name()},
+                         variable->Declaration()->Node()->Start());
+            variable->SetTsType(GlobalTypeError());
         }
     }
 }
