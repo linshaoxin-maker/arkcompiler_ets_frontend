@@ -9,9 +9,6 @@ js-joda_test
 #18897
 splay-latency
 
-#18728
-zxing_test
-
 #18371
 memory-cache_test
 
