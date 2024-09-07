@@ -83,6 +83,7 @@ void InstantiationContext::InstantiateType(ETSObjectType *type, ir::TSTypeParame
         for (auto *const it : typeArgs->Params()) {
             auto *paramType = it->GetType(checker_);
             if (paramType->IsTypeError()) {
+                result_ = paramType;
                 return;
             }
 
