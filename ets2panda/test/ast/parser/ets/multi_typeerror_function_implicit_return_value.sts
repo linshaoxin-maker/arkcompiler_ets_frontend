@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,17 +14,18 @@
  * limitations under the License.
  */
 
-
-class Dog {
-    name: String;
-    legs: Int;
+function fn(i: int) { 
+  if (i > 0) { 
+   return true;
+  }
+  return 0; 
+  return 1.1; 
 }
 
-let dog: Dog = {
-    name: "Scooby"
+function main() {
+  let a = fn(0);
 }
 
-let hasSting = dog?.hasSting;
 
-/* @@? 26:21 Error TypeError: Property 'hasSting' does not exist on type 'Dog'  */
-/* @@? 26:21 Error TypeError: Property 'hasSting' does not exist on type 'Dog'  */
+/* @@? 21:10 Error TypeError: Function cannot have different primitive return types, require 'boolean', found 'int'  */
+/* @@? 22:10 Error TypeError: Function cannot have different primitive return types, require 'boolean', found 'double'  */

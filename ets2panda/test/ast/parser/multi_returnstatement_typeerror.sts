@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,15 @@
  * limitations under the License.
  */
 
+class A{
+    
+};
 
-class Dog {
-    name: String;
-    legs: Int;
+function attr(name: String): String {
+  return 2;
+  return A;
 }
 
-let dog: Dog = {
-    name: "Scooby"
-}
-
-let hasSting = dog?.hasSting;
-
-/* @@? 26:21 Error TypeError: Property 'hasSting' does not exist on type 'Dog'  */
-/* @@? 26:21 Error TypeError: Property 'hasSting' does not exist on type 'Dog'  */
+/* @@? 21:10 Error TypeError: Type 'int' is not compatible with the enclosing method's return type 'String' */
+/* @@? 22:10 Error TypeError: Class name "A" used in the wrong context */
+/* @@? 22:10 Error TypeError: Type 'A' is not compatible with the enclosing method's return type 'String'  */
