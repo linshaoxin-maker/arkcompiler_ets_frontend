@@ -141,19 +141,19 @@ void CompileFileJob::Run()
         return;
     }
 
-    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_OPTIMIZE_PROGRAM, src_->fileName);
     bool requireOptimizationAfterAnalysis = false;
     // When cross-program optimizations are required, skip program-local optimization at this stage
     // and perform it later after the analysis of all programs has been completed
     if (src_->isSourceMode && options_->transformLib.empty()) {
+        panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_OPTIMIZE_PROGRAM, src_->fileName);
         if (options_->requireGlobalOptimization) {
             util::Helpers::AnalysisProgram(prog, src_->fileName);
             requireOptimizationAfterAnalysis = true;
         } else if (options_->optLevel != 0) {
             util::Helpers::OptimizeProgram(prog, src_->fileName);
+            panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_OPTIMIZE_PROGRAM, src_->fileName);
         }
     }
-    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_OPTIMIZE_PROGRAM, src_->fileName);
 
     {
         std::unique_lock<std::mutex> lock(globalMutex_);
@@ -240,6 +240,7 @@ void CompileAbcClassJob::UpdatePackageVersion(panda::pandasm::Program *prog,
 void PostAnalysisOptimizeFileJob::Run()
 {
     util::Helpers::OptimizeProgram(program_, fileName_);
+    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_OPTIMIZE_PROGRAM, fileName_);
 }
 
 void CompileFuncQueue::Schedule()
