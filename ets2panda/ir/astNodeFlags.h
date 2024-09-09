@@ -30,9 +30,10 @@ enum class AstNodeFlags {
     CONVERT_TO_STRING = 1U << 1U,
     ALLOW_REQUIRED_INSTANTIATION = 1U << 2U,
     HAS_EXPORT_ALIAS = 1U << 3U,
-    GENERATE_VALUE_OF = 1U << 4U,
-    GENERATE_GET_NAME = 1U << 5U,  // Transform the Enum[enumVar] MemberExpression to enumVar.getName() call
-    RECHECK = 1U << 6U,
+    UNION_CAST_PRIMITIVE = 1U << 4U,
+    GENERATE_VALUE_OF = 1U << 5U,
+    GENERATE_GET_NAME = 1U << 6U,  // Transform the Enum[enumVar] MemberExpression to enumVar.getName() call
+    RECHECK = 1U << 7U,
 };
 
 enum class ModifierFlags : uint32_t {

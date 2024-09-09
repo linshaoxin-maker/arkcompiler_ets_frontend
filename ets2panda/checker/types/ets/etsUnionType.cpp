@@ -161,13 +161,18 @@ void ETSUnionType::RelationTarget(TypeRelation *relation, Type *source, RelFN co
 
 bool ETSUnionType::AssignmentSource(TypeRelation *relation, Type *target)
 {
-    auto *const checker = relation->GetChecker()->AsETSChecker();
-    if (target->HasTypeFlag(TypeFlag::PRIMITIVE)) {
+    if (target->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+        std::cout << "Want to get flag in\n";
+
         if (!relation->ApplyUnboxing()) {
+            std::cout << "Want to get flag middle\n";
+
             return relation->Result(false);
         }
-        relation->GetNode()->SetBoxingUnboxingFlags(
-            relation->GetChecker()->AsETSChecker()->GetUnboxingFlag(checker->MaybePrimitiveBuiltinType(target)));
+        std::cout << "Want to get flag\n";
+        ir::AstDumper d (relation->GetNode());
+        std::cerr << d.Str();
+        relation->GetNode()->AddAstNodeFlags(ir::AstNodeFlags::UNION_CAST_PRIMITIVE);
     }
 
     bool isAssignable = false;
@@ -187,7 +192,6 @@ bool ETSUnionType::AssignmentSource(TypeRelation *relation, Type *target)
             }
         }
     }
-
     return relation->Result(isAssignable);
 }
 

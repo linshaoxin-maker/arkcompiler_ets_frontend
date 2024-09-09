@@ -119,54 +119,99 @@ static void HandleUnionPropertyAccess(checker::ETSChecker *checker, varbinder::V
     ASSERT(expr->PropVar() != nullptr);
 }
 
-static ir::TSAsExpression *GenAsExpression(checker::ETSChecker *checker, checker::Type *const opaqueType,
-                                           ir::Expression *const node, ir::AstNode *const parent)
+static std::optional<ir::Expression *> CheckNeedCast(ir::Expression *expr)
 {
-    auto *const typeNode = checker->AllocNode<ir::OpaqueTypeNode>(opaqueType);
-    auto *const asExpression = checker->AllocNode<ir::TSAsExpression>(node, typeNode, false);
-    asExpression->SetParent(parent);
-    asExpression->Check(checker);
-    return asExpression;
-}
-
-/*
- *  Function that generates conversion from (union) to (primitive) type as to `as` expressions:
- *      (union) as (prim) => ((union) as (ref)) as (prim),
- *      where (ref) is some unboxable type from union constituent types.
- *  Finally, `(union) as (prim)` expression replaces union_node that came above.
- */
-static ir::TSAsExpression *UnionCastToPrimitive(checker::ETSChecker *checker, checker::ETSObjectType *unboxableRef,
-                                                checker::Type *unboxedPrim, ir::Expression *unionNode)
-{
-    auto *const unionAsRefExpression = GenAsExpression(checker, unboxableRef, unionNode, nullptr);
-    return GenAsExpression(checker, unboxedPrim, unionAsRefExpression, unionNode->Parent());
-}
-
-static ir::TSAsExpression *HandleUnionCastToPrimitive(checker::ETSChecker *checker, ir::TSAsExpression *expr)
-{
-    auto *const unionType = expr->Expr()->TsType()->AsETSUnionType();
-    auto *sourceType = unionType->FindExactOrBoxedType(checker, expr->TsType());
-    if (sourceType == nullptr) {
-        sourceType = unionType->AsETSUnionType()->FindTypeIsCastableToSomeType(expr->Expr(), checker->Relation(),
-                                                                               expr->TsType());
+    if (expr->TsType() == nullptr || !expr->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
+        return {};
     }
-    if (sourceType != nullptr && expr->Expr()->GetBoxingUnboxingFlags() != ir::BoxingUnboxingFlags::NONE) {
-        if (expr->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
-            auto *const asExpr = GenAsExpression(checker, sourceType, expr->Expr(), expr);
-            asExpr->SetBoxingUnboxingFlags(
-                checker->GetUnboxingFlag(checker->ETSBuiltinTypeAsPrimitiveType(sourceType)));
-            expr->Expr()->SetBoxingUnboxingFlags(ir::BoxingUnboxingFlags::NONE);
-            expr->SetExpr(asExpr);
-        }
+
+    if (expr->IsTSAsExpression() && expr->AsTSAsExpression()->Expr()->TsType() != nullptr &&
+        expr->AsTSAsExpression()->Expr()->TsType()->IsETSUnionType()) {
+        return expr->AsTSAsExpression()->Expr();
+    }
+
+    // if (target->HasTypeFlag(TypeFlag::PRIMITIVE)) {
+    //     if (!relation->ApplyUnboxing()) {
+    //         return relation->Result(false);
+    //     }
+    //     relation->GetNode()->AddAstNodeFlags(ir::AstNodeFlags::UNION_CAST_PRIMITIVE);
+    // }
+
+    if (expr->HasAstNodeFlags(ir::AstNodeFlags::UNION_CAST_PRIMITIVE)) {
+        ir::AstDumper d (expr);
+        std::cerr << d.Str();
         return expr;
     }
-    auto *const unboxableUnionType = sourceType != nullptr ? sourceType : unionType->FindUnboxableType();
-    auto *const unboxedUnionType = checker->ETSBuiltinTypeAsPrimitiveType(unboxableUnionType);
-    auto *const node =
-        UnionCastToPrimitive(checker, unboxableUnionType->AsETSObjectType(), unboxedUnionType, expr->Expr());
-    node->SetParent(expr->Parent());
 
-    return node;
+    return {};
+}
+
+static void GenerateCastToPrimitive(std::stringstream &ss, checker::Type *nodeType,
+                                    std::vector<ir::AstNode *> &newStmts, ir::Expression *expr)
+{
+    /*
+     * For given union cast to primitive expression:
+     *
+     *  (<expr> as Numeric).[any_numeric_type]Value() or
+     *  (<expr> as Char/Boolean).unboxed()
+     *
+     */
+    auto addNode = [&newStmts](ir::AstNode *node) -> int {
+        newStmts.emplace_back(node);
+        return newStmts.size();
+    };
+
+    expr->SetBoxingUnboxingFlags(ir::BoxingUnboxingFlags::NONE);
+    expr->SetTsType(nullptr);
+    ss << "(@@E" << addNode(expr) << " as ";
+
+    if (nodeType->HasTypeFlag(checker::TypeFlag::ETS_NUMERIC)) {
+        ASSERT(nodeType->HasTypeFlag(checker::TypeFlag::CHAR));
+        ASSERT(nodeType->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN));
+
+        ss << "Numeric)." << nodeType->ToString() << "Value()";
+    } else if (nodeType->HasTypeFlag(checker::TypeFlag::ETS_BOOLEAN)) {
+        ss << "Boolean).unboxed()";
+    } else if (nodeType->HasTypeFlag(checker::TypeFlag::CHAR)) {
+        ss << "Char).unboxed()";
+    } else {
+        UNREACHABLE();
+    }
+}
+
+static ir::Expression *HandleUnionCastToPrimitive(public_lib::Context *ctx, ir::Expression *expr)
+{
+    auto exprNode = CheckNeedCast(expr);
+    if (!exprNode.has_value()) {
+        return expr;
+    }
+
+    auto *const checker = ctx->checker->AsETSChecker();
+    auto *const parser = ctx->parser->AsETSParser();
+    auto *const varbinder = ctx->checker->VarBinder()->AsETSBinder();
+
+    std::stringstream ss;
+    std::vector<ir::AstNode *> newStmts;
+
+    GenerateCastToPrimitive(ss, expr->TsType(), newStmts, exprNode.value());
+
+    auto *loweringResult = parser->CreateFormattedExpression(ss.str(), newStmts);
+
+    if ((expr->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG) != 0U) {
+        loweringResult->SetBoxingUnboxingFlags(expr->GetBoxingUnboxingFlags());
+    }
+
+    auto *parent = expr->Parent();
+
+    loweringResult->SetParent(parent);
+
+    auto scopeCtx = varbinder::LexicalScope<varbinder::Scope>::Enter(varbinder, NearestScope(expr));
+    InitScopesPhaseETS::RunExternalNode(loweringResult, varbinder);
+
+    varbinder->ResolveReferencesForScope(loweringResult, NearestScope(loweringResult));
+    checker::SavedCheckerContext scc {checker, checker::CheckerStatus::IGNORE_VISIBILITY};
+    loweringResult->Check(checker);
+    return loweringResult;
 }
 
 bool UnionLowering::Perform(public_lib::Context *ctx, parser::Program *program)
@@ -181,7 +226,7 @@ bool UnionLowering::Perform(public_lib::Context *ctx, parser::Program *program)
     checker::ETSChecker *checker = ctx->checker->AsETSChecker();
 
     program->Ast()->TransformChildrenRecursively(
-        [checker](ir::AstNode *ast) -> ir::AstNode * {
+        [checker, ctx](ir::AstNode *ast) -> ir::AstNode * {
             if (ast->IsMemberExpression() && ast->AsMemberExpression()->Object()->TsType() != nullptr) {
                 auto *objType =
                     checker->GetApparentType(checker->GetNonNullishType(ast->AsMemberExpression()->Object()->TsType()));
@@ -191,11 +236,8 @@ bool UnionLowering::Perform(public_lib::Context *ctx, parser::Program *program)
                 }
             }
 
-            if (ast->IsTSAsExpression() && ast->AsTSAsExpression()->Expr()->TsType() != nullptr &&
-                ast->AsTSAsExpression()->Expr()->TsType()->IsETSUnionType() &&
-                ast->AsTSAsExpression()->TsType() != nullptr &&
-                ast->AsTSAsExpression()->TsType()->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE)) {
-                return HandleUnionCastToPrimitive(checker, ast->AsTSAsExpression());
+            if (ast->IsExpression()) {
+                return HandleUnionCastToPrimitive(ctx, ast->AsExpression());
             }
 
             return ast;
