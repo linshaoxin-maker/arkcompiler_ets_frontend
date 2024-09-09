@@ -280,6 +280,32 @@ static bool ResolveDepsRelations(const std::map<std::string, panda::es2panda::ut
     return depsRelationResolver.Resolve();
 }
 
+int ResolveAndGenerate(std::map<std::string, panda::es2panda::util::ProgramCache*> &programsInfo,
+                       const std::unique_ptr<panda::es2panda::aot::Options> &options)
+{
+    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_RESOLVE_DEPS, "");
+    // A mapping of program to its records which are resolved and collected as valid dependencies.
+    std::map<std::string, std::unordered_set<std::string>> resolvedDepsRelation {};
+
+    if (options->NeedCollectDepsRelation() &&
+        !ResolveDepsRelations(programsInfo, options, resolvedDepsRelation)) {
+        return 1;
+    }
+    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_RESOLVE_DEPS, "");
+
+    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_EMIT_ABC, "");
+    if (!GenerateAbcFiles(programsInfo, options, Compiler::GetExpectedProgsCount(), resolvedDepsRelation)) {
+        return 1;
+    }
+    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_EMIT_ABC, "");
+
+    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_TOTAL, "");
+    if (!options->PerfFile().empty()) {
+        panda::abc2program::Timer::PrintTimers();
+    }
+
+    return 0;
+}
 int Run(int argc, const char **argv)
 {
     auto options = std::make_unique<Options>();
@@ -326,28 +352,7 @@ int Run(int argc, const char **argv)
     }
     panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_COMPILE, "");
 
-    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_RESOLVE_DEPS, "");
-    // A mapping of program to its records which are resolved and collected as valid dependencies.
-    std::map<std::string, std::unordered_set<std::string>> resolvedDepsRelation {};
-
-    if (options->NeedCollectDepsRelation() &&
-        !ResolveDepsRelations(programsInfo, options, resolvedDepsRelation)) {
-        return 1;
-    }
-    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_RESOLVE_DEPS, "");
-
-    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_EMIT_ABC, "");
-    if (!GenerateAbcFiles(programsInfo, options, Compiler::GetExpectedProgsCount(), resolvedDepsRelation)) {
-        return 1;
-    }
-    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_EMIT_ABC, "");
-
-    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_TOTAL, "");
-    if (!options->PerfFile().empty()) {
-        panda::abc2program::Timer::PrintTimers();
-    }
-
-    return 0;
+    return ResolveAndGenerate(programsInfo, options);
 }
 }  // namespace panda::es2panda::aot
 

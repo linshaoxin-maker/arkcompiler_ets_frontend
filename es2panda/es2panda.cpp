@@ -250,10 +250,9 @@ int Compiler::CompileFiles(CompilerOptions &options,
     queue = nullptr;
 
     if (symbolTable) {
-        // An optional optimization
-        // if (!options.patchFixOptions.dumpSymbolTable.empty()) {
-        //     symbolTable->ActualWriteSymbolTable();
-        // }
+        if (!options.patchFixOptions.dumpSymbolTable.empty()) {
+            symbolTable->WriteSymbolTable();
+        }
         delete symbolTable;
         symbolTable = nullptr;
     }
