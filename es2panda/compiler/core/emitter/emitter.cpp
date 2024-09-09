@@ -71,11 +71,13 @@ void FunctionEmitter::Generate(util::PatchFix *patchFixHelper)
     GenLiteralBuffers();
     GenConcurrentFunctionModuleRequests();
 
-    panda::abc2program::Timer::timerStart(panda::abc2program::PATCH_FIX_DUMP_FUNCTION_INFO, std::string(pg_->Binder()->Program()->SourceFile()));
+    panda::abc2program::Timer::timerStart(
+        panda::abc2program::PATCH_FIX_DUMP_FUNCTION_INFO, std::string(pg_->Binder()->Program()->SourceFile()));
     if (patchFixHelper != nullptr) {
         patchFixHelper->ProcessFunction(pg_, func_, literalBuffers_);
     }
-    panda::abc2program::Timer::timerEnd(panda::abc2program::PATCH_FIX_DUMP_FUNCTION_INFO, std::string(pg_->Binder()->Program()->SourceFile()));
+    panda::abc2program::Timer::timerEnd(
+        panda::abc2program::PATCH_FIX_DUMP_FUNCTION_INFO, std::string(pg_->Binder()->Program()->SourceFile()));
 }
 
 const ArenaSet<util::StringView> &FunctionEmitter::Strings() const

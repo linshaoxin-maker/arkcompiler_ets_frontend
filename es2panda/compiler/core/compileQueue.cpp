@@ -119,8 +119,14 @@ void CompileFileJob::Run()
     }
     panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_READ_INPUT_AND_CACHE, src_->fileName);
 
+    CompileProgram();
+}
+
+void CompileFileJob::CompileProgram()
+{
     es2panda::Compiler compiler(src_->scriptExtension, options_->functionThreadCount);
     panda::pandasm::Program *prog = nullptr;
+
     if (src_->isSourceMode) {
         panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_COMPILE_FILE, src_->fileName);
         prog = compiler.CompileFile(*options_, src_, symbolTable_);
@@ -137,10 +143,16 @@ void CompileFileJob::Run()
         panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_COMPILE_ABC_FILE, src_->fileName);
         return;
     }
+
     if (prog == nullptr) {
         return;
     }
 
+    OptimizeAndCacheProgram(prog);
+}
+
+void CompileFileJob::OptimizeAndCacheProgram(panda::pandasm::Program *prog)
+{
     bool requireOptimizationAfterAnalysis = false;
     // When cross-program optimizations are required, skip program-local optimization at this stage
     // and perform it later after the analysis of all programs has been completed

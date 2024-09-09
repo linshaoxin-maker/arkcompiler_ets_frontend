@@ -153,23 +153,6 @@ void SymbolTable::WriteSymbolTable()
     panda::abc2program::Timer::timerEnd(panda::abc2program::PATCH_FIX_WRITE_FILE, "");
 }
 
-void SymbolTable::ActualWriteSymbolTable()
-{
-    panda::abc2program::Timer::timerStart(panda::abc2program::PATCH_FIX_OPEN_FILE, "");
-    std::fstream fs;
-    fs.open(panda::os::file::File::GetExtendedFilePath(dumpSymbolTable_),
-        std::ios_base::app | std::ios_base::in);
-
-    panda::abc2program::Timer::timerEnd(panda::abc2program::PATCH_FIX_OPEN_FILE, "");
-
-    panda::abc2program::Timer::timerStart(panda::abc2program::PATCH_FIX_WRITE_FILE, "");
-    if (fs.is_open()) {
-        fs << ss_.str();
-        fs.close();
-    }
-    panda::abc2program::Timer::timerEnd(panda::abc2program::PATCH_FIX_WRITE_FILE, "");
-}
-
 std::vector<std::string_view> SymbolTable::GetStringItems(std::string_view input, const std::string &separator)
 {
     std::vector<std::string_view> items;
