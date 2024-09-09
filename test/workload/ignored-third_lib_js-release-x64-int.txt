@@ -12,8 +12,5 @@ jBox2d_test
 #18372
 js-joda_test
 
-#18342
-mathjs_test
-
 #18383
 memory-cache_test
