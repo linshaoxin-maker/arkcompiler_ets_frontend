@@ -1011,10 +1011,13 @@ checker::ETSFunctionType *ETSChecker::BuildMethodSignature(ir::MethodDefinition 
 
     bool isConstructSig = method->IsConstructor();
 
+    method->Function()->Id()->SetVariable(method->Id()->Variable());
     BuildFunctionSignature(method->Function(), isConstructSig);
     auto *funcType = BuildNamedFunctionType(method->Function());
     std::vector<checker::ETSFunctionType *> overloads;
+    
     for (ir::MethodDefinition *const currentFunc : method->Overloads()) {
+        currentFunc->Function()->Id()->SetVariable(currentFunc->Id()->Variable());
         BuildFunctionSignature(currentFunc->Function(), isConstructSig);
         auto *const overloadType = BuildNamedFunctionType(currentFunc->Function());
         CheckIdenticalOverloads(funcType, overloadType, currentFunc);

@@ -428,11 +428,6 @@ static void ResolveDeclaredMethodsOfObject(ETSChecker *checker, const ETSObjectT
         auto *method = it->Declaration()->Node()->AsMethodDefinition();
         auto *function = method->Function();
 
-        function->Id()->SetVariable(method->Id()->Variable());
-        for (ir::MethodDefinition *const overload : method->Overloads()) {
-            overload->Function()->Id()->SetVariable(overload->Id()->Variable());
-        }
-
         if (function->IsProxy()) {
             continue;
         }
@@ -453,11 +448,6 @@ static void ResolveDeclaredMethodsOfObject(ETSChecker *checker, const ETSObjectT
 
         auto *method = it->Declaration()->Node()->AsMethodDefinition();
         auto *function = method->Function();
-
-        function->Id()->SetVariable(method->Id()->Variable());
-        for (ir::MethodDefinition *const overload : method->Overloads()) {
-            overload->Function()->Id()->SetVariable(overload->Id()->Variable());
-        }
 
         if (function->IsProxy()) {
             continue;
