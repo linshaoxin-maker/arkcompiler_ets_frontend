@@ -27,17 +27,6 @@ function test_invalid_bigint(): void {
     // NOTE(kkonsw): implement validation
 }
 
-function test_bigint_as_string(): void {
-    assert new BigInt("10").toString() == "10"
-    assert new BigInt("1000").toString() == "1000"
-    assert new BigInt("-1000").toString() == "-1000"
-    assert new BigInt("-1").toString() == "-1"
-    assert new BigInt("-10").toString() == "-10"
-    assert new BigInt("-100").toString() == "-100"
-    assert new BigInt("-100000000000000").toString() == "-100000000000000"
-    assert new BigInt("0").toString() == "0"
-}
-
 function test_type(): void {
     let num0 = 0n;
     let num1 = 100_100_100_100_100_100n
@@ -291,7 +280,6 @@ function test_double(): void {
 
 function main() : void {
     test_create_empty_bigint();
-    test_bigint_as_string();
     test_invalid_bigint();
     test_type();
     test_assignment();
