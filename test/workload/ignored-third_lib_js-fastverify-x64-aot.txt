@@ -9,11 +9,17 @@ dayjs_test
 #18340
 Drools_test
 
+#19231
+jBox2d_test
+
 #18517
 js-joda_test
 
 #19104
 hi-base32_test
+
+#18425
+gson_test
 
 #18383
 memory-cache_test
