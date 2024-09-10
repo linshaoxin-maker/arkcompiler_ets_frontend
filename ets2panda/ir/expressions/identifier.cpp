@@ -210,6 +210,14 @@ bool Identifier::CheckDeclarationsPart1(const ir::AstNode *parentNode) const
         return true;
     }
 
+    if(parentNode->IsVariableDeclarator() && parentNode->Parent() != nullptr)
+    {
+        if(parentNode->Parent()->IsVariableDeclaration())
+        {
+            return true;
+        }
+    }
+
     if (parentNode->IsClassDeclaration()) {
         return true;
     }
