@@ -1165,8 +1165,6 @@ ir::Expression *TypedParser::ParseQualifiedName(ExpressionParseFlags flags)
             ThrowSyntaxError("Identifier expected");
     }
 
-    expr->AsIdentifier()->SetReference();
-
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD) {
         expr = ParseQualifiedReference(expr, flags);
     }
@@ -1210,7 +1208,6 @@ ir::Expression *TypedParser::ParseQualifiedReference(ir::Expression *typeName, E
             propName = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
         }
 
-        propName->SetReference();
         propName->SetRange(Lexer()->GetToken().Loc());
 
         typeName = AllocNode<ir::TSQualifiedName>(typeName, propName);

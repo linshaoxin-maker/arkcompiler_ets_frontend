@@ -1161,7 +1161,7 @@ util::StringView ParserImpl::ParseSymbolIteratorIdentifier() const noexcept
     return util::StringView {compiler::Signatures::ITERATOR_METHOD};
 }
 
-ir::Identifier *ParserImpl::ExpectIdentifier(bool isReference, bool isUserDefinedType)
+ir::Identifier *ParserImpl::ExpectIdentifier([[maybe_unused]] bool isReference, bool isUserDefinedType)
 {
     auto const &token = lexer_->GetToken();
     auto const tokenType = token.Type();
@@ -1188,7 +1188,6 @@ ir::Identifier *ParserImpl::ExpectIdentifier(bool isReference, bool isUserDefine
     }
 
     auto *ident = AllocNode<ir::Identifier>(tokenName, Allocator());
-    ident->SetReference(isReference);
     //  NOTE: here actual token can be changed!
     ident->SetRange({tokenStart, lexer_->GetToken().End()});
 

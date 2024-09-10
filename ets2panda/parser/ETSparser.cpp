@@ -506,7 +506,6 @@ ir::AstNode *ETSParser::ParseInnerRest(const ArenaVector<ir::AstNode *> &propert
             util::StringView tokenName = util::StringView {compiler::Signatures::STATIC_INVOKE_METHOD};
             memberModifiers |= ir::ModifierFlags::STATIC;
             auto *ident = AllocNode<ir::Identifier>(tokenName, Allocator());
-            ident->SetReference(false);
             ident->SetRange({Lexer()->GetToken().Start(), Lexer()->GetToken().End()});
             return parseClassMethod(ident);
         }
@@ -1156,7 +1155,6 @@ ir::ExportNamedDeclaration *ETSParser::ParseSingleExport(ir::ModifierFlags modif
 {
     lexer::Token token = Lexer()->GetToken();
     auto *exported = AllocNode<ir::Identifier>(token.Ident(), Allocator());
-    exported->SetReference();
     exported->SetRange(Lexer()->GetToken().Loc());
 
     Lexer()->NextToken();  // eat exported variable name
@@ -1212,7 +1210,6 @@ std::pair<ImportSpecifierVector, ImportDefaultSpecifierVector> ETSParser::ParseN
             lexer::Token importedToken = Lexer()->GetToken();
             auto *imported = AllocNode<ir::Identifier>(importedToken.Ident(), Allocator());
             ir::Identifier *local = nullptr;
-            imported->SetReference();
             imported->SetRange(Lexer()->GetToken().Loc());
 
             Lexer()->NextToken();
@@ -1232,7 +1229,6 @@ std::pair<ImportSpecifierVector, ImportDefaultSpecifierVector> ETSParser::ParseN
             result.emplace_back(specifier);
         } else {
             auto *imported = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
-            imported->SetReference();
             imported->SetRange(Lexer()->GetToken().Loc());
             Lexer()->NextToken();
             auto *specifier = AllocNode<ir::ImportDefaultSpecifier>(imported);
@@ -1272,7 +1268,6 @@ void ETSParser::ParseNameSpaceSpecifier(ArenaVector<ir::AstNode *> *specifiers, 
     auto *local = AllocNode<ir::Identifier>(util::StringView(""), Allocator());
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA ||
         Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_FROM || isReExport) {
-        local->SetReference();
         auto *specifier = AllocNode<ir::ImportNamespaceSpecifier>(local);
         specifier->SetRange({namespaceStart, Lexer()->GetToken().End()});
         specifiers->push_back(specifier);
@@ -1296,7 +1291,6 @@ ir::AstNode *ETSParser::ParseImportDefaultSpecifier(ArenaVector<ir::AstNode *> *
     }
 
     auto *imported = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
-    imported->SetReference();
     imported->SetRange(Lexer()->GetToken().Loc());
     Lexer()->NextToken();  // Eat import specifier.
 
@@ -1430,7 +1424,6 @@ ir::Expression *ETSParser::CreateParameterThis(const util::StringView className)
     paramIdent->SetRange(Lexer()->GetToken().Loc());
 
     ir::Expression *classTypeName = AllocNode<ir::Identifier>(className, Allocator());
-    classTypeName->AsIdentifier()->SetReference();
     classTypeName->SetRange(Lexer()->GetToken().Loc());
 
     auto typeRefPart = AllocNode<ir::ETSTypeReferencePart>(classTypeName, nullptr, nullptr);
