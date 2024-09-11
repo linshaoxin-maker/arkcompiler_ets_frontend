@@ -387,9 +387,8 @@ ir::ClassDeclaration *ETSChecker::BuildClass(util::StringView name, const ClassB
 ir::ClassProperty *ETSChecker::CreateStaticReadonlyField(const char *name)
 {
     auto *fieldIdent = AllocNode<ir::Identifier>(name, Allocator());
-    // NOTE: remove const when readonly is properly supported
     auto flags =
-        ir::ModifierFlags::STATIC | ir::ModifierFlags::PRIVATE | ir::ModifierFlags::READONLY | ir::ModifierFlags::CONST;
+        ir::ModifierFlags::STATIC | ir::ModifierFlags::PRIVATE | ir::ModifierFlags::READONLY;
     auto *field = AllocNode<ir::ClassProperty>(
         fieldIdent, nullptr, AllocNode<ir::ETSPrimitiveType>(ir::PrimitiveType::INT), flags, Allocator(), false);
 
@@ -608,9 +607,7 @@ void ETSChecker::BuildDynamicImportClass()
                 imports.push_back(import);
 
                 auto *fieldIdent = AllocNode<ir::Identifier>(import->AssemblerName(), Allocator());
-                // NOTE: remove const when readonly is properly supported
-                auto flags = ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC | ir::ModifierFlags::READONLY |
-                             ir::ModifierFlags::CONST;
+                auto flags = ir::ModifierFlags::STATIC | ir::ModifierFlags::PUBLIC | ir::ModifierFlags::READONLY;
                 auto *field = AllocNode<ir::ClassProperty>(
                     fieldIdent, nullptr, AllocNode<ir::OpaqueTypeNode>(GlobalBuiltinDynamicType(import->Language())),
                     flags, Allocator(), false);
