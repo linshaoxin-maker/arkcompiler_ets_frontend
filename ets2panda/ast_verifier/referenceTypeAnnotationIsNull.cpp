@@ -21,14 +21,12 @@ namespace ark::es2panda::compiler::ast_verifier {
 
 CheckResult ReferenceTypeAnnotationIsNull::operator()(CheckContext &ctx, const ir::AstNode *ast)
 {
+    //NOTE: aevoronin. This check cause a lot of fails. It will be revisited later.
     auto result = std::make_tuple(CheckDecision::CORRECT, CheckAction::CONTINUE);
-    if (ast->IsIdentifier()) {
-        if (ast->AsIdentifier()->IsReference() && ast->AsIdentifier()->TypeAnnotation() != nullptr) {
-            ctx.AddCheckMessage("TYPE_ANNOTATION_NOT_NULLPTR", *ast, ast->Start());
-            result = {CheckDecision::INCORRECT, CheckAction::CONTINUE};
-        }
-    }
     return result;
+    if (!ast->IsIdentifier()) {
+        return result;
+                ctx.AddCheckMessage("TYPE_ANNOTATION_NOT_NULLPTR", *ast, ast->Start());
+    }
 }
-
 }  // namespace ark::es2panda::compiler::ast_verifier

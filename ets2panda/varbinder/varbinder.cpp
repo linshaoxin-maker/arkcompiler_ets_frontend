@@ -14,7 +14,6 @@
  */
 
 #include "varbinder.h"
-
 #include "varbinder/privateBinding.h"
 #include "parser/program/program.h"
 #include "util/helpers.h"
@@ -246,7 +245,10 @@ void VarBinder::InstantiatePrivateContext(const ir::Identifier *ident) const
 
 void VarBinder::LookupIdentReference(ir::Identifier *ident)
 {
+    auto res = scope_->Find(ident->Name(), BindingOptions());
+
     if (!ident->IsReference()) {
+        ident->SetVariable(res.variable);
         return;
     }
 
@@ -259,7 +261,6 @@ void VarBinder::LookupIdentReference(ir::Identifier *ident)
         return;
     }
 
-    auto res = scope_->Find(ident->Name(), BindingOptions());
     if (res.level != 0) {
         ASSERT(res.variable);
         res.variable->SetLexical(res.scope);
