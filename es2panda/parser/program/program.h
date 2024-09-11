@@ -234,6 +234,16 @@ public:
     {
         return enableAnnotations_;
     }
+    
+    void SetSourceLang(const std::string &sourceLang)
+    {
+        sourceLang_ = util::UString(sourceLang, Allocator());
+    }
+
+    util::StringView SourceLang() const
+    {
+        return sourceLang_.View();
+    }
 
     std::string Dump() const;
     void SetKind(ScriptKind kind);
@@ -261,6 +271,7 @@ private:
     bool enableAnnotations_ {false};
     std::string targetApiSubVersion_ { util::Helpers::DEFAULT_SUB_API_VERSION };
     std::string moduleRecordFieldName_;
+    util::UString sourceLang_ {};
 };
 
 }  // namespace panda::es2panda::parser

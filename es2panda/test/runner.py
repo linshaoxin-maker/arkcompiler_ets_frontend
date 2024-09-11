@@ -836,9 +836,14 @@ class CompilerProjectTest(Test):
             is_shared_module = 'false'
             if (os.path.basename(test_path).startswith("sharedmodule")):
                 is_shared_module = 'true'
-            file_info = ('%s;%s;%s;%s;%s;%s\n' % (test_path, record_name, module_kind,
+            file_extension = os.path.splitext(test_path)[1].lower()
+            if file_extension == '.js':
+                source_lang = 'js'
+            elif file_extension == '.ts':
+                source_lang = 'ts'
+            file_info = ('%s;%s;%s;%s;%s;%s;%s\n' % (test_path, record_name, module_kind,
                                                os.path.relpath(test_path, self.projects_path), record_name,
-                                               is_shared_module))
+                                               is_shared_module, source_lang))
             belonging_abc_input = self.get_belonging_abc_input(test_path)
             if belonging_abc_input is not None:
                 if not belonging_abc_input in abc_files_infos:
