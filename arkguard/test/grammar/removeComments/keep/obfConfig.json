@@ -1,0 +1,47 @@
+{
+    "mCompact": false,
+    "mRemoveComments": false,
+    "mOutputDir": "../../../local",
+    "mDisableHilog": false,
+    "mDisableConsole": false,
+    "mSimplify": false,
+    "mNameObfuscation": {
+        "mEnable": false,
+        "mNameGeneratorType": 1,
+        "mDictionaryList": [],
+        "mReservedNames": [],
+        "mRenameProperties": false,
+        "mReservedProperties": [],
+        "mKeepStringProperty": true
+    },
+    "mRemoveDeclarationComments": {
+        "mEnable": true,
+        "mReservedComments": [
+            "globalString",
+            "ColorEnum",
+            "RED",
+            "GREEN",
+            "BLUE",
+            "Config",
+            "configName",
+            "applyConfig",
+            "ConfigManager",
+            "validateConfig",
+            "getDefaultConfig",
+            "getConfigByColor",
+            "nsFunc",
+            "AppUtilities",
+            "appName",
+            "config-module",
+            "initializeModule",
+            "UserInfo",
+            "userName",
+            "keepStruct",
+            "message",
+            "build"
+        ]
+    },
+    "mEnableSourceMap": false,
+    "mEnableNameCache": false,
+    "mTopLevel": false
+}
