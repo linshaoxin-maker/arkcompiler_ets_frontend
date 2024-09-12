@@ -921,6 +921,7 @@ ir::ClassDefinition *TypedParser::ParseClassDefinition(ir::ClassDefinitionModifi
 
     if (InAmbientContext()) {
         flags |= ir::ModifierFlags::DECLARE;
+        modifiers |= ir::ClassDefinitionModifiers::EXTERN;
     }
 
     auto *classDefinition = AllocNode<ir::ClassDefinition>(
