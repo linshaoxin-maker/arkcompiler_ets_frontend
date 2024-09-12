@@ -217,6 +217,8 @@ bool ObjectLiteralLowering::Perform(public_lib::Context *ctx, parser::Program *p
             return ast;
         },
         Name());
+//        std::cout << "ETS: " << program->Ast()->DumpEtsSrc() << std::endl;
+//        std::cout << "AST: " << program->Ast()->DumpJSON() << std::endl;
 
     return true;
 }
