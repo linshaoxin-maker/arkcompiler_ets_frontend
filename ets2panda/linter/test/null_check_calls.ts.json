@@ -17,6 +17,8 @@
         {
             "line": 43,
             "column": 1,
+            "endLine": 43,
+            "endColumn": 44,
             "problem": "LimitedReturnTypeInference",
             "suggest": "",
             "rule": "Function return type inference is limited (arkts-no-implicit-return-types)"
@@ -24,6 +26,8 @@
         {
             "line": 37,
             "column": 5,
+            "endLine": 37,
+            "endColumn": 9,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'null' is not assignable to parameter of type 'number[]'.",
             "rule": "Argument of type 'null' is not assignable to parameter of type 'number[]'."
@@ -31,6 +35,8 @@
         {
             "line": 42,
             "column": 20,
+            "endLine": 42,
+            "endColumn": 24,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'null' is not assignable to parameter of type 'number'.",
             "rule": "Argument of type 'null' is not assignable to parameter of type 'number'."
@@ -38,6 +44,8 @@
         {
             "line": 43,
             "column": 42,
+            "endLine": 43,
+            "endColumn": 43,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'number | null' is not assignable to parameter of type 'number'.\n  Type 'null' is not assignable to type 'number'.",
             "rule": "Argument of type 'number | null' is not assignable to parameter of type 'number'.\n  Type 'null' is not assignable to type 'number'."
@@ -45,6 +53,8 @@
         {
             "line": 47,
             "column": 5,
+            "endLine": 47,
+            "endColumn": 17,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'number | null' is not assignable to parameter of type 'number'.\n  Type 'null' is not assignable to type 'number'.",
             "rule": "Argument of type 'number | null' is not assignable to parameter of type 'number'.\n  Type 'null' is not assignable to type 'number'."
@@ -52,6 +62,8 @@
         {
             "line": 52,
             "column": 12,
+            "endLine": 52,
+            "endColumn": 13,
             "problem": "StrictDiagnostic",
             "suggest": "Type 'null' is not assignable to type 'Object'.",
             "rule": "Type 'null' is not assignable to type 'Object'."
@@ -59,9 +71,29 @@
         {
             "line": 56,
             "column": 17,
+            "endLine": 56,
+            "endColumn": 23,
             "problem": "StrictDiagnostic",
             "suggest": "Type 'null' is not assignable to type 'Object'.",
             "rule": "Type 'null' is not assignable to type 'Object'."
+        },
+        {
+            "line": 62,
+            "column": 8,
+            "endLine": 62,
+            "endColumn": 12,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'A'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'A'."
+        },
+        {
+            "line": 64,
+            "column": 20,
+            "endLine": 64,
+            "endColumn": 24,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'A'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'A'."
         }
     ]
 }

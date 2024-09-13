@@ -17,6 +17,8 @@
         {
             "line": 20,
             "column": 3,
+            "endLine": 20,
+            "endColumn": 11,
             "problem": "LocalFunction",
             "suggest": "",
             "rule": "Nested functions are not supported (arkts-no-nested-funcs)"
@@ -24,6 +26,8 @@
         {
             "line": 20,
             "column": 17,
+            "endLine": 20,
+            "endColumn": 18,
             "problem": "AnyType",
             "suggest": "",
             "rule": "Use explicit types instead of \"any\", \"unknown\" (arkts-no-any-unknown)"
@@ -31,6 +35,8 @@
         {
             "line": 20,
             "column": 20,
+            "endLine": 20,
+            "endColumn": 24,
             "problem": "AnyType",
             "suggest": "",
             "rule": "Use explicit types instead of \"any\", \"unknown\" (arkts-no-any-unknown)"
@@ -38,6 +44,8 @@
         {
             "line": 29,
             "column": 3,
+            "endLine": 40,
+            "endColumn": 4,
             "problem": "GeneratorFunction",
             "suggest": "",
             "rule": "Generator functions are not supported (arkts-no-generators)"
@@ -45,6 +53,8 @@
         {
             "line": 33,
             "column": 7,
+            "endLine": 33,
+            "endColumn": 18,
             "problem": "YieldExpression",
             "suggest": "",
             "rule": "Generator functions are not supported (arkts-no-generators)"
@@ -52,6 +62,8 @@
         {
             "line": 53,
             "column": 19,
+            "endLine": 53,
+            "endColumn": 20,
             "problem": "AnyType",
             "suggest": "",
             "rule": "Use explicit types instead of \"any\", \"unknown\" (arkts-no-any-unknown)"
@@ -59,6 +71,8 @@
         {
             "line": 55,
             "column": 17,
+            "endLine": 55,
+            "endColumn": 18,
             "problem": "AnyType",
             "suggest": "",
             "rule": "Use explicit types instead of \"any\", \"unknown\" (arkts-no-any-unknown)"
@@ -66,6 +80,8 @@
         {
             "line": 58,
             "column": 27,
+            "endLine": 58,
+            "endColumn": 28,
             "problem": "AnyType",
             "suggest": "",
             "rule": "Use explicit types instead of \"any\", \"unknown\" (arkts-no-any-unknown)"
@@ -73,6 +89,8 @@
         {
             "line": 64,
             "column": 3,
+            "endLine": 64,
+            "endColumn": 7,
             "problem": "FunctionContainsThis",
             "suggest": "",
             "rule": "Using \"this\" inside stand-alone functions is not supported (arkts-no-standalone-this)"
@@ -80,6 +98,8 @@
         {
             "line": 67,
             "column": 3,
+            "endLine": 67,
+            "endColumn": 4,
             "problem": "StrictDiagnostic",
             "suggest": "Property 'c' has no initializer and is not definitely assigned in the constructor.",
             "rule": "Property 'c' has no initializer and is not definitely assigned in the constructor."
@@ -87,6 +107,8 @@
         {
             "line": 93,
             "column": 7,
+            "endLine": 93,
+            "endColumn": 11,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
             "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
@@ -94,6 +116,8 @@
         {
             "line": 97,
             "column": 5,
+            "endLine": 97,
+            "endColumn": 9,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
             "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
@@ -101,6 +125,8 @@
         {
             "line": 101,
             "column": 5,
+            "endLine": 101,
+            "endColumn": 9,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
             "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
@@ -108,6 +134,8 @@
         {
             "line": 102,
             "column": 12,
+            "endLine": 102,
+            "endColumn": 16,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
             "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
@@ -115,6 +143,8 @@
         {
             "line": 106,
             "column": 7,
+            "endLine": 106,
+            "endColumn": 11,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
             "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
@@ -122,6 +152,8 @@
         {
             "line": 107,
             "column": 14,
+            "endLine": 107,
+            "endColumn": 18,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
             "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
@@ -129,6 +161,8 @@
         {
             "line": 108,
             "column": 16,
+            "endLine": 108,
+            "endColumn": 20,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
             "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
@@ -136,6 +170,8 @@
         {
             "line": 116,
             "column": 5,
+            "endLine": 116,
+            "endColumn": 9,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
             "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
@@ -143,6 +179,8 @@
         {
             "line": 118,
             "column": 7,
+            "endLine": 118,
+            "endColumn": 11,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
             "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
@@ -150,6 +188,8 @@
         {
             "line": 120,
             "column": 11,
+            "endLine": 120,
+            "endColumn": 15,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
             "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
@@ -157,6 +197,269 @@
         {
             "line": 122,
             "column": 11,
+            "endLine": 122,
+            "endColumn": 15,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 129,
+            "column": 11,
+            "endLine": 129,
+            "endColumn": 15,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 130,
+            "column": 9,
+            "endLine": 130,
+            "endColumn": 13,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type '() => void'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type '() => void'."
+        },
+        {
+            "line": 132,
+            "column": 5,
+            "endLine": 132,
+            "endColumn": 9,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 135,
+            "column": 18,
+            "endLine": 135,
+            "endColumn": 22,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 138,
+            "column": 5,
+            "endLine": 138,
+            "endColumn": 9,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 141,
+            "column": 22,
+            "endLine": 141,
+            "endColumn": 26,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 142,
+            "column": 20,
+            "endLine": 142,
+            "endColumn": 24,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type '() => void'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type '() => void'."
+        },
+        {
+            "line": 144,
+            "column": 5,
+            "endLine": 144,
+            "endColumn": 9,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 148,
+            "column": 5,
+            "endLine": 148,
+            "endColumn": 9,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 149,
+            "column": 4,
+            "endLine": 149,
+            "endColumn": 8,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'number'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'number'."
+        },
+        {
+            "line": 149,
+            "column": 12,
+            "endLine": 149,
+            "endColumn": 16,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 152,
+            "column": 7,
+            "endLine": 152,
+            "endColumn": 11,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 153,
+            "column": 6,
+            "endLine": 153,
+            "endColumn": 10,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'number'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'number'."
+        },
+        {
+            "line": 153,
+            "column": 14,
+            "endLine": 153,
+            "endColumn": 18,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 154,
+            "column": 4,
+            "endLine": 154,
+            "endColumn": 8,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'number'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'number'."
+        },
+        {
+            "line": 154,
+            "column": 20,
+            "endLine": 154,
+            "endColumn": 24,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 157,
+            "column": 5,
+            "endLine": 157,
+            "endColumn": 9,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 158,
+            "column": 12,
+            "endLine": 158,
+            "endColumn": 16,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 161,
+            "column": 7,
+            "endLine": 161,
+            "endColumn": 11,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 162,
+            "column": 14,
+            "endLine": 162,
+            "endColumn": 18,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 163,
+            "column": 16,
+            "endLine": 163,
+            "endColumn": 20,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 166,
+            "column": 5,
+            "endLine": 166,
+            "endColumn": 9,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 167,
+            "column": 4,
+            "endLine": 167,
+            "endColumn": 8,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'number'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'number'."
+        },
+        {
+            "line": 167,
+            "column": 12,
+            "endLine": 167,
+            "endColumn": 16,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 170,
+            "column": 7,
+            "endLine": 170,
+            "endColumn": 11,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 171,
+            "column": 6,
+            "endLine": 171,
+            "endColumn": 10,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'number'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'number'."
+        },
+        {
+            "line": 171,
+            "column": 14,
+            "endLine": 171,
+            "endColumn": 18,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
+        },
+        {
+            "line": 172,
+            "column": 4,
+            "endLine": 172,
+            "endColumn": 8,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'null' is not assignable to parameter of type 'number'.",
+            "rule": "Argument of type 'null' is not assignable to parameter of type 'number'."
+        },
+        {
+            "line": 172,
+            "column": 20,
+            "endLine": 172,
+            "endColumn": 24,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'null' is not assignable to parameter of type 'string'.",
             "rule": "Argument of type 'null' is not assignable to parameter of type 'string'."
