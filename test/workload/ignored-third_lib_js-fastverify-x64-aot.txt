@@ -60,5 +60,11 @@ zxing-text-encoding_test
 #18425
 Matrix_test
 
+#19251
+pdfview_test
+
+#18424
+pcx_test
+
 #18768
 asn-one_test
