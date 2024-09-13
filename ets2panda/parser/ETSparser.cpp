@@ -2024,7 +2024,7 @@ void ETSParser::CheckDeclare()
     ASSERT(Lexer()->GetToken().KeywordType() == lexer::TokenType::KEYW_DECLARE);
 
     if (InAmbientContext()) {
-        ThrowSyntaxError("A 'declare' modifier cannot be used in an already ambient context.");
+        LogSyntaxError("A 'declare' modifier cannot be used in an already ambient context.");
     }
 
     GetContext().Status() |= ParserStatus::IN_AMBIENT_CONTEXT;
@@ -2049,7 +2049,7 @@ void ETSParser::CheckDeclare()
             if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_AT) {
                 return;
             }
-            ThrowSyntaxError("Unexpected token.");
+            LogSyntaxError("Unexpected token.");
         }
     }
 }
