@@ -26,6 +26,7 @@
 #include "compiler/lowering/ets/topLevelStmts/topLevelStmts.h"
 #include "compiler/lowering/ets/expressionLambdaLowering.h"
 #include "compiler/lowering/ets/boxingForLocals.h"
+#include "compiler/lowering/ets/capturedVariables.h"
 #include "compiler/lowering/ets/lambdaLowering.h"
 #include "compiler/lowering/ets/spreadLowering.h"
 #include "compiler/lowering/ets/interfacePropertyDeclarations.h"
@@ -47,6 +48,7 @@
 #include "compiler/lowering/ets/stringConstructorLowering.h"
 #include "compiler/lowering/ets/enumLowering.h"
 #include "compiler/lowering/ets/enumPostCheckLowering.h"
+#include "compiler/lowering/ets/genericBridgesLowering.h"
 #include "compiler/lowering/plugin_phase.h"
 #include "compiler/lowering/scopesInit/scopesInitPhase.h"
 #include "public/es2panda_lib.h"
@@ -66,6 +68,7 @@ static SpreadConstructionPhase g_spreadConstructionPhase;
 static ExpressionLambdaConstructionPhase g_expressionLambdaConstructionPhase;
 static OpAssignmentLowering g_opAssignmentLowering;
 static BoxingForLocals g_boxingForLocals;
+static CapturedVariables g_capturedVariables {};
 static LambdaConversionPhase g_lambdaConversionPhase;
 static ObjectIndexLowering g_objectIndexLowering;
 static ObjectIteratorLowering g_objectIteratorLowering;
@@ -84,6 +87,7 @@ static LocalClassConstructionPhase g_localClassLowering;
 static StringComparisonLowering g_stringComparisonLowering;
 static PartialExportClassGen g_partialExportClassGen;
 static PackageImplicitImport g_packageImplicitImport;
+static GenericBridgesPhase g_genericBridgesLowering;
 static PluginPhase g_pluginsAfterParse {"plugins-after-parse", ES2PANDA_STATE_PARSED, &util::Plugin::AfterParse};
 static PluginPhase g_pluginsAfterCheck {"plugins-after-check", ES2PANDA_STATE_CHECKED, &util::Plugin::AfterCheck};
 static PluginPhase g_pluginsAfterLowerings {"plugins-after-lowering", ES2PANDA_STATE_LOWERED,
@@ -117,10 +121,11 @@ std::vector<Phase *> GetETSPhaseList()
         &g_interfacePropDeclPhase,
         &g_enumLoweringPhase,
         &g_resolveIdentifiers,
-        &g_checkerPhase,
+        &g_capturedVariables,
+        &g_checkerPhase,        // please DO NOT change order of these two phases: checkerPhase and pluginsAfterCheck
+        &g_pluginsAfterCheck,   // pluginsAfterCheck has to go right after checkerPhase, nothing should be between them
         &g_enumPostCheckLoweringPhase,
         &g_spreadConstructionPhase,
-        &g_pluginsAfterCheck,
         &g_bigintLowering,
         &g_opAssignmentLowering,
         &g_constStringToCharLowering,
@@ -138,7 +143,8 @@ std::vector<Phase *> GetETSPhaseList()
         &g_stringConstructorLowering,
         &g_stringComparisonLowering,
         &g_partialExportClassGen,
-        &g_pluginsAfterLowerings,
+        &g_genericBridgesLowering,
+        &g_pluginsAfterLowerings,  // pluginsAfterLowerings has to come at the very end, nothing should go after it
     };
     // clang-format on
 }
@@ -195,8 +201,9 @@ bool Phase::Apply(public_lib::Context *ctx, parser::Program *program)
 
 #ifndef NDEBUG
     if (!Precondition(ctx, program)) {
-        ctx->checker->ThrowTypeError({"Precondition check failed for ", util::StringView {Name()}},
-                                     lexer::SourcePosition {});
+        ctx->checker->LogTypeError({"Precondition check failed for ", util::StringView {Name()}},
+                                   lexer::SourcePosition {});
+        return false;
     }
 #endif
 
@@ -208,8 +215,9 @@ bool Phase::Apply(public_lib::Context *ctx, parser::Program *program)
 
 #ifndef NDEBUG
     if (!Postcondition(ctx, program)) {
-        ctx->checker->ThrowTypeError({"Postcondition check failed for ", util::StringView {Name()}},
-                                     lexer::SourcePosition {});
+        ctx->checker->LogTypeError({"Postcondition check failed for ", util::StringView {Name()}},
+                                   lexer::SourcePosition {});
+        return false;
     }
 #endif
 

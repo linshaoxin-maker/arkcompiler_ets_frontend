@@ -162,6 +162,9 @@ std::pair<checker::Type *, varbinder::LocalVariable *> MemberExpression::Resolve
     }
 
     auto *const literalType = enumInterface->LookupConstant(checker, object_, property_->AsIdentifier());
+    if (literalType == nullptr) {
+        return {nullptr, nullptr};
+    }
     return {literalType, literalType->GetMemberVar()};
 }
 
@@ -240,7 +243,7 @@ checker::Type *MemberExpression::AdjustType(checker::ETSChecker *checker, checke
         uncheckedType_ = checker->GuaranteedTypeForUncheckedCast(objType->AsETSArrayType()->ElementType(), type);
     }
     SetTsType(type);
-    return TsType();
+    return TsTypeOrError();
 }
 
 bool MemberExpression::CheckArrayIndexValue(checker::ETSChecker *checker) const

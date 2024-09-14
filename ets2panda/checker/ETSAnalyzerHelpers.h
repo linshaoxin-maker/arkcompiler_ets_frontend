@@ -55,9 +55,9 @@ void SetTsTypeForUnaryExpression(ETSChecker *checker, ir::UnaryExpression *expr,
 checker::ETSObjectType *CreateSyntheticType(ETSChecker *checker, util::StringView const &syntheticName,
                                             checker::ETSObjectType *lastObjectType, ir::Identifier *id);
 checker::Type *GetIteratorType(ETSChecker *checker, checker::Type *elemType, ir::AstNode *left);
-void CheckArgumentVoidType(checker::Type *&funcReturnType, ETSChecker *checker, const std::string &name,
+bool CheckArgumentVoidType(checker::Type *&funcReturnType, ETSChecker *checker, const std::string &name,
                            ir::ReturnStatement *st);
-void CheckReturnType(ETSChecker *checker, checker::Type *funcReturnType, checker::Type *argumentType,
+bool CheckReturnType(ETSChecker *checker, checker::Type *funcReturnType, checker::Type *argumentType,
                      ir::Expression *stArgument, bool isAsync);
 void InferReturnType(ETSChecker *checker, ir::ScriptFunction *containingFunc, checker::Type *&funcReturnType,
                      ir::Expression *stArgument);

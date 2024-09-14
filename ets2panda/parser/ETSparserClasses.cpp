@@ -153,7 +153,7 @@ ir::ModifierFlags ETSParser::ParseClassModifiers()
 
 std::tuple<ir::Expression *, ir::TSTypeParameterInstantiation *> ETSParser::ParseClassImplementsElement()
 {
-    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR |
+    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR |
                                            TypeAnnotationParsingOptions::IGNORE_FUNCTION_TYPE |
                                            TypeAnnotationParsingOptions::ALLOW_WILDCARD;
     return {ParseTypeReference(&options), nullptr};
@@ -164,7 +164,7 @@ ir::Expression *ETSParser::ParseSuperClassReference()
     if (Lexer()->GetToken().Type() == lexer::TokenType::KEYW_EXTENDS) {
         Lexer()->NextToken();
 
-        TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR |
+        TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR |
                                                TypeAnnotationParsingOptions::IGNORE_FUNCTION_TYPE |
                                                TypeAnnotationParsingOptions::ALLOW_WILDCARD;
         return ParseTypeReference(&options);
@@ -175,7 +175,7 @@ ir::Expression *ETSParser::ParseSuperClassReference()
 
 ir::TypeNode *ETSParser::ParseInterfaceExtendsElement()
 {
-    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR |
+    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR |
                                            TypeAnnotationParsingOptions::IGNORE_FUNCTION_TYPE |
                                            TypeAnnotationParsingOptions::ALLOW_WILDCARD;
     return ParseTypeReference(&options);
@@ -392,7 +392,7 @@ void ETSParser::ParseClassFieldDefinition(ir::Identifier *fieldName, ir::Modifie
 {
     lexer::SourcePosition endLoc = fieldName->End();
     ir::TypeNode *typeAnnotation = nullptr;
-    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
+    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR;
     bool optionalField = false;
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_QUESTION_MARK) {
@@ -645,7 +645,7 @@ ir::TSInterfaceDeclaration *ETSParser::ParseInterfaceBody(ir::Identifier *name, 
     ir::TSTypeParameterDeclaration *typeParamDecl = nullptr;
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
         auto options =
-            TypeAnnotationParsingOptions::THROW_ERROR | TypeAnnotationParsingOptions::ALLOW_DECLARATION_SITE_VARIANCE;
+            TypeAnnotationParsingOptions::REPORT_ERROR | TypeAnnotationParsingOptions::ALLOW_DECLARATION_SITE_VARIANCE;
         typeParamDecl = ParseTypeParameterDeclaration(&options);
     }
 
@@ -701,11 +701,14 @@ ir::ClassDefinition *ETSParser::ParseClassDefinition(ir::ClassDefinitionModifier
     Lexer()->NextToken();
 
     ir::Identifier *identNode = ParseClassIdent(modifiers);
+    if (identNode == nullptr && Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
+        Lexer()->NextToken();  // Error processing.
+    }
 
     ir::TSTypeParameterDeclaration *typeParamDecl = nullptr;
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
         auto options =
-            TypeAnnotationParsingOptions::THROW_ERROR | TypeAnnotationParsingOptions::ALLOW_DECLARATION_SITE_VARIANCE;
+            TypeAnnotationParsingOptions::REPORT_ERROR | TypeAnnotationParsingOptions::ALLOW_DECLARATION_SITE_VARIANCE;
         typeParamDecl = ParseTypeParameterDeclaration(&options);
     }
 
@@ -719,6 +722,7 @@ ir::ClassDefinition *ETSParser::ParseClassDefinition(ir::ClassDefinitionModifier
 
     if (InAmbientContext()) {
         flags |= ir::ModifierFlags::DECLARE;
+        modifiers |= ir::ClassDefinitionModifiers::EXTERN;
     }
 
     // Parse implements clause
@@ -827,8 +831,11 @@ ir::ClassProperty *ETSParser::ParseInterfaceField()
     if (!Lexer()->TryEatTokenType(lexer::TokenType::PUNCTUATOR_COLON)) {
         ThrowSyntaxError("Interface fields must have type annotation.");
     }
-    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
+    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR;
     typeAnnotation = ParseTypeAnnotation(&options);
+    if (typeAnnotation == nullptr) {  // Error processing.
+        return nullptr;
+    }
 
     name->SetTsTypeAnnotation(typeAnnotation);
     typeAnnotation->SetParent(name);
@@ -954,7 +961,10 @@ ir::AstNode *ETSParser::ParseTypeLiteralOrInterfaceMember()
         }
 
         auto *field = ParseInterfaceField();
-        field->SetStart(startLoc);
+        if (field != nullptr) {  // Error processing.
+            field->SetStart(startLoc);
+        }
+
         return field;
     }
 
@@ -1062,6 +1072,9 @@ void ETSParser::CreateImplicitConstructor([[maybe_unused]] ir::MethodDefinition 
     }
 
     auto *methodDef = BuildImplicitConstructor(ir::ClassDefinitionModifiers::SET_CTOR_ID, startLoc);
+    if ((modifiers & ir::ClassDefinitionModifiers::EXTERN) != 0) {
+        methodDef->Function()->AddFlag(ir::ScriptFunctionFlags::EXTERNAL);
+    }
     properties.push_back(methodDef);
 }
 

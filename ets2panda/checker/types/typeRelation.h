@@ -64,6 +64,7 @@ enum class TypeRelationFlag : uint32_t {
     STRING_TO_CHAR = 1U << 27U,
 
     ASSIGNMENT_CONTEXT = WIDENING | BOXING | UNBOXING,
+    BRIDGE_CHECK = OVERRIDING_CONTEXT | IGNORE_TYPE_PARAMETERS | NO_RETURN_TYPE_CHECK,
     CASTING_CONTEXT = NARROWING | WIDENING | BOXING | UNBOXING | UNCHECKED_CAST,
 };
 
@@ -228,6 +229,11 @@ public:
         return (flags_ & TypeRelationFlag::OVERRIDING_CONTEXT) != 0;
     }
 
+    [[nodiscard]] bool IsBridgeCheck() const noexcept
+    {
+        return (flags_ & TypeRelationFlag::BRIDGE_CHECK) == helpers::ToUnderlying(TypeRelationFlag::BRIDGE_CHECK);
+    }
+
     [[nodiscard]] TypeRelationFlag GetTypeRelationFlags() const noexcept
     {
         return flags_;
@@ -305,6 +311,7 @@ public:
     bool IsSupertypeOf(Type *super, Type *sub);
     void RaiseError(const std::string &errMsg, const lexer::SourcePosition &loc) const;
     void RaiseError(std::initializer_list<TypeErrorMessageElement> list, const lexer::SourcePosition &loc) const;
+    void LogError(std::initializer_list<TypeErrorMessageElement> list, const lexer::SourcePosition &loc) const;
 
     bool Result(bool res)
     {
