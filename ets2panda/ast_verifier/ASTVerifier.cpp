@@ -31,6 +31,7 @@
 #include "ast_verifier/importExportAccessValid.h"
 #include "ast_verifier/arithmeticOperationValid.h"
 #include "ast_verifier/variableNameIdentifierNameSame.h"
+#include "ast_verifier/checkReadonlyFields.h"
 
 namespace ark::es2panda::compiler::ast_verifier {
 
@@ -52,6 +53,7 @@ ASTVerifier::ASTVerifier(ArenaAllocator *allocator)
     AddInvariant<SequenceExpressionHasLastType>(allocator, "SequenceExpressionHasLastType");
     AddInvariant<ReferenceTypeAnnotationIsNull>(allocator, "ReferenceTypeAnnotationIsNull");
     AddInvariant<VariableNameIdentifierNameSame>(allocator, "VariableNameIdentifierNameSame");
+    AddInvariant<CheckReadonlyFields>(allocator, "CheckReadonlyFields");
 }
 
 Messages ASTVerifier::VerifyFull(const ir::AstNode *ast)
