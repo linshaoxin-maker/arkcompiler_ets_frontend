@@ -58,7 +58,13 @@ void GlobalClassHandler::InitGlobalClass(const ArenaVector<parser::Program *> &p
         if (node->IsClassDefinition()) {
             auto classDef = node->AsClassDefinition();
             bool allowEmpty = false;
-            auto staticBlock = CreateCCtor(classDef->Body(), classDef->Start(), allowEmpty);
+
+            auto flags = ir::ModifierFlags::STATIC;
+            if (classDef->IsDeclare()) {
+                flags |= ir::ModifierFlags::DECLARE;
+            }
+
+            auto staticBlock = CreateCCtor(classDef->Body(), classDef->Start(), allowEmpty, flags);
             if (staticBlock != nullptr) {
                 classDef->Body().emplace_back(staticBlock);
                 staticBlock->SetParent(classDef);
@@ -274,7 +280,8 @@ void GlobalClassHandler::AddTriggerCctrMethodsToInit(
 }
 
 ir::ClassStaticBlock *GlobalClassHandler::CreateCCtor(const ArenaVector<ir::AstNode *> &properties,
-                                                      const lexer::SourcePosition &loc, bool allowEmptyCctor)
+                                                      const lexer::SourcePosition &loc, bool allowEmptyCctor,
+                                                      ir::ModifierFlags modifiers)
 {
     bool hasStaticField = false;
     for (const auto *prop : properties) {
@@ -308,13 +315,13 @@ ir::ClassStaticBlock *GlobalClassHandler::CreateCCtor(const ArenaVector<ir::AstN
         allocator_, allocator_,
         ir::ScriptFunction::ScriptFunctionData {body, ir::FunctionSignature(nullptr, std::move(params), nullptr),
                                                 ir::ScriptFunctionFlags::STATIC_BLOCK | ir::ScriptFunctionFlags::HIDDEN,
-                                                ir::ModifierFlags::STATIC, false, Language(Language::Id::ETS)});
+                                                modifiers, false, Language(Language::Id::ETS)});
 
     func->SetIdent(id);
 
     auto *funcExpr = NodeAllocator::Alloc<ir::FunctionExpression>(allocator_, func);
     auto *staticBlock = NodeAllocator::Alloc<ir::ClassStaticBlock>(allocator_, funcExpr, allocator_);
-    staticBlock->AddModifier(ir::ModifierFlags::STATIC);
+    staticBlock->AddModifier(modifiers);
     staticBlock->SetRange({loc, loc});
     return staticBlock;
 }
@@ -333,7 +340,12 @@ ArenaVector<ir::Statement *> GlobalClassHandler::MakeGlobalStatements(ir::BlockS
 void GlobalClassHandler::InitGlobalClass(ir::ClassDefinition *classDef, parser::ScriptKind scriptKind)
 {
     auto &globalProperties = classDef->Body();
-    auto staticBlock = CreateCCtor(globalProperties, classDef->Start(), scriptKind != parser::ScriptKind::STDLIB);
+    auto flags = ir::ModifierFlags::STATIC;
+    if (classDef->IsDeclare()) {
+        flags |= ir::ModifierFlags::DECLARE;
+    }
+    auto staticBlock =
+        CreateCCtor(globalProperties, classDef->Start(), scriptKind != parser::ScriptKind::STDLIB, flags);
     if (staticBlock != nullptr) {
         staticBlock->SetParent(classDef);
         globalProperties.emplace_back(staticBlock);

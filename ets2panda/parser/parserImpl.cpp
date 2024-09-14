@@ -791,13 +791,18 @@ ParserImpl::ClassBody ParserImpl::ParseClassBody(ir::ClassDefinitionModifiers mo
             ThrowSyntaxError("Expected a '}'");
         }
     } else {
-        while (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
+        while (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE &&
+               lexer_->GetToken().Type() != lexer::TokenType::EOS) {
             if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
                 lexer_->NextToken();
                 continue;
             }
 
             ir::AstNode *property = ParseClassElement(properties, modifiers, flags);
+            if (property == nullptr) {  // Error processing.
+                lexer_->NextToken();
+                continue;
+            }
 
             if (CheckClassElement(property, ctor, properties)) {
                 continue;
@@ -853,8 +858,11 @@ ArenaVector<ir::Expression *> ParserImpl::ParseFunctionParams()
     } else {
         while (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
             ir::Expression *parameter = ParseFunctionParameter();
-            ValidateRestParameter(parameter);
+            if (parameter == nullptr) {  // Error processing.
+                continue;
+            }
 
+            ValidateRestParameter(parameter);
             params.push_back(parameter);
 
             if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA) {
@@ -1184,7 +1192,8 @@ ir::Identifier *ParserImpl::ExpectIdentifier(bool isReference, bool isUserDefine
     }
 
     if (tokenName.Empty()) {
-        ThrowSyntaxError("Identifier expected.", tokenStart);
+        LogSyntaxError({"Identifier expected, got '", TokenToString(tokenType), "'."}, tokenStart);
+        return nullptr;  // Error processing.
     }
 
     auto *ident = AllocNode<ir::Identifier>(tokenName, Allocator());
@@ -1247,6 +1256,44 @@ void ParserImpl::ThrowSyntaxError(std::string_view errorMessage, const lexer::So
     lexer::SourceLocation loc = index.GetLocation(pos);
 
     throw Error {ErrorType::SYNTAX, program_->SourceFilePath().Utf8(), errorMessage, loc.line, loc.col};
+}
+
+void ParserImpl::LogExpectedToken(lexer::TokenType const tokenType)
+{
+    LogSyntaxError("Unexpected token, expected: '"s + TokenToString(tokenType) + "'."s);
+    lexer_->GetToken().SetTokenType(tokenType);
+}
+
+void ParserImpl::LogSyntaxError(std::string_view const errorMessage)
+{
+    LogSyntaxError(errorMessage, lexer_->GetToken().Start());
+}
+
+void ParserImpl::LogSyntaxError(std::initializer_list<std::string_view> list)
+{
+    LogSyntaxError(list, lexer_->GetToken().Start());
+}
+
+void ParserImpl::LogSyntaxError(std::initializer_list<std::string_view> list, const lexer::SourcePosition &pos)
+{
+    std::stringstream ss;
+
+    for (const auto &it : list) {
+        ss << it;
+    }
+
+    std::string err = ss.str();
+
+    LogSyntaxError(std::string_view {err}, pos);
+}
+
+void ParserImpl::LogSyntaxError(std::string_view errorMessage, const lexer::SourcePosition &pos)
+{
+    lexer::LineIndex index(program_->SourceCode());
+    lexer::SourceLocation loc = index.GetLocation(pos);
+
+    errorLogger_.WriteLog(
+        Error {ErrorType::SYNTAX, program_->SourceFilePath().Utf8(), errorMessage, loc.line, loc.col});
 }
 
 void ParserImpl::ThrowAllocationError(std::string_view message) const
