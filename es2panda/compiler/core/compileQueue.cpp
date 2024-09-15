@@ -73,7 +73,7 @@ void CompileModuleRecordJob::Run()
     }
 }
 
-bool CompileFileJob::RetrieveProgramFromCacheFiles(const std::string &buffer)
+bool CompileFileJob::RetrieveProgramFromCacheFiles(const std::string &buffer, bool isAbcFile)
 {
     if (options_->requireGlobalOptimization) {
         return false;
@@ -88,17 +88,39 @@ bool CompileFileJob::RetrieveProgramFromCacheFiles(const std::string &buffer)
         src_->hash = GetHash32String(reinterpret_cast<const uint8_t *>(bufToHash.c_str()));
 
         ArenaAllocator allocator(SpaceType::SPACE_TYPE_COMPILER, nullptr, true);
-        auto *cacheProgramInfo = proto::ProtobufSnapshotGenerator::GetCacheContext(cacheFileIter->second,
-                                                                                   &allocator);
-
-        if (cacheProgramInfo != nullptr && cacheProgramInfo->hashCode == src_->hash) {
-            std::unique_lock<std::mutex> lock(globalMutex_);
-            auto *cache = allocator_->New<util::ProgramCache>(src_->hash, std::move(cacheProgramInfo->program));
-            progsInfo_.insert({src_->fileName, cache});
-            return true;
+        if (!isAbcFile) {
+            auto *cacheProgramInfo = proto::ProtobufSnapshotGenerator::GetCacheContext(cacheFileIter->second,
+                                                                                       &allocator);
+            if (cacheProgramInfo != nullptr && cacheProgramInfo->hashCode == src_->hash) {
+                std::unique_lock<std::mutex> lock(globalMutex_);
+                auto *cache = allocator_->New<util::ProgramCache>(src_->hash, std::move(cacheProgramInfo->program));
+                progsInfo_.insert({src_->fileName, cache});
+                return true;
+            }
+        } else {
+            auto *cacheAbcProgramsInfo = proto::ProtobufSnapshotGenerator::GetAbcInputCacheContext(
+                cacheFileIter->second, &allocator);
+            if (cacheAbcProgramsInfo != nullptr && cacheAbcProgramsInfo->hashCode == src_->hash) {
+                std::unique_lock<std::mutex> lock(globalMutex_);
+                Compiler::SetExpectedProgsCount(Compiler::GetExpectedProgsCount() +
+                    cacheAbcProgramsInfo->programsCache.size() - 1);
+                MergeAbcCachePrograms(cacheAbcProgramsInfo->programsCache);
+                return true;
+            }
         }
     }
     return false;
+}
+
+void CompileFileJob::MergeAbcCachePrograms(
+    std::map<std::string, panda::es2panda::util::ProgramCache *> &abcProgramsInfo)
+{
+    for (auto pair : abcProgramsInfo) {
+        if (progsInfo_.find(pair.first) == progsInfo_.end()) {
+            auto *cache = allocator_->New<util::ProgramCache>(std::move(pair.second->program));
+            progsInfo_.insert({pair.first, cache});
+        }
+    }
 }
 
 void CompileFileJob::Run()
@@ -106,13 +128,13 @@ void CompileFileJob::Run()
     std::stringstream ss;
     std::string buffer;
     panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_READ_INPUT_AND_CACHE, src_->fileName);
-    if (!src_->fileName.empty() && src_->isSourceMode) {
+    if (!src_->fileName.empty()) {
         if (!util::Helpers::ReadFileToBuffer(src_->fileName, ss)) {
             return;
         }
         buffer = ss.str();
         src_->source = buffer;
-        if (RetrieveProgramFromCacheFiles(buffer)) {
+        if (RetrieveProgramFromCacheFiles(buffer, !src_->isSourceMode)) {
             panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_READ_INPUT_AND_CACHE, src_->fileName);
             return;
         }
@@ -138,9 +160,7 @@ void CompileFileJob::CompileProgram()
         panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_COMPILE_ABC_FILE, src_->fileName);
     } else {
         // If input is an abc file, in merge-abc mode, compile each class parallelly.
-        panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_COMPILE_ABC_FILE, src_->fileName);
-        compiler.CompileAbcFileInParallel(src_->fileName, *options_, progsInfo_, allocator_);
-        panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_COMPILE_ABC_FILE, src_->fileName);
+        CompileAbcFileJobInParallel(compiler);
         return;
     }
 
@@ -177,13 +197,33 @@ void CompileFileJob::OptimizeAndCacheProgram(panda::pandasm::Program *prog)
     }
 }
 
+void CompileFileJob::CompileAbcFileJobInParallel(es2panda::Compiler &compiler)
+{
+    std::map<std::string, panda::es2panda::util::ProgramCache *> abcProgramsInfo {};
+    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_COMPILE_ABC_FILE, src_->fileName);
+
+    compiler.CompileAbcFileInParallel(src_->fileName, *options_, abcProgramsInfo, allocator_);
+    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_COMPILE_ABC_FILE, src_->fileName);
+
+    panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_UPDATE_ABC_PROG_CACHE, src_->fileName);
+
+    auto *cache = allocator_->New<panda::es2panda::util::AbcProgramsCache>(src_->hash, abcProgramsInfo);
+    CHECK_NOT_NULL(cache);
+    auto outputCacheIter = options_->cacheFiles.find(src_->fileName);
+    if (!options_->requireGlobalOptimization && outputCacheIter != options_->cacheFiles.end()) {
+        panda::proto::ProtobufSnapshotGenerator::UpdateAbcCacheFile(cache, outputCacheIter->second);
+    }
+    MergeAbcCachePrograms(cache->programsCache);
+    panda::abc2program::Timer::timerEnd(panda::abc2program::EVENT_UPDATE_ABC_PROG_CACHE, src_->fileName);
+
+}
+
 void CompileAbcClassJob::Run()
 {
     panda_file::File::EntityId recordId(classId_);
     auto *program = new panda::pandasm::Program();
     std::string record_name = "";
     compiler_.CompileAbcClass(recordId, *program, record_name);
-
     // Update version for abc input when needed
     if (options_.updatePkgVersionForAbcInput) {
         panda::abc2program::Timer::timerStart(panda::abc2program::EVENT_UPDATE_ABC_PKG_VERSION, record_name);
@@ -240,13 +280,52 @@ void CompileAbcClassJob::UpdateStaticImportPackageVersion(panda::pandasm::Progra
     }
 }
 
+void CompileAbcClassJob::AccurateUpdateDynamicImportPackageVersion(panda::pandasm::Program *prog,
+                                                           const panda::es2panda::CompilerOptions &options)
+{
+    for (auto &[name, function] : prog->function_table) {
+        const auto &pkgName = util::GetPkgNameFromRecordName(name);
+        const auto &updateVersionInfo = options.compileContextInfo.updateVersionInfo;
+        if (!pkgName.empty() && updateVersionInfo.find(pkgName) != updateVersionInfo.end()) {
+            const auto versionInfo = updateVersionInfo.at(pkgName);
+            util::VisitDyanmicImports<false>(function, [&prog, options, &versionInfo](std::string &ohmurl) {
+                const auto &newOhmurl = util::AccurateUpdatePackageVersion(ohmurl, versionInfo);
+                prog->strings.insert(newOhmurl);
+                ohmurl = newOhmurl;
+            });
+        }
+    }
+}
+
+void CompileAbcClassJob::AccurateUpdateStaticImportPackageVersion(panda::pandasm::Program *prog,
+    const panda::es2panda::CompilerOptions &options)
+{
+    for (auto &[recordName, record] : prog->record_table) {
+        const auto &pkgName = util::GetPkgNameFromRecordName(recordName);
+        const auto &updateVersionInfo = options.compileContextInfo.updateVersionInfo;
+        if (!pkgName.empty() && updateVersionInfo.find(pkgName) != updateVersionInfo.end()) {
+            const auto versionInfo = updateVersionInfo.at(pkgName);
+            util::VisitStaticImports<false>(*prog, record, [&versionInfo](std::string &ohmurl) {
+                ohmurl = util::AccurateUpdatePackageVersion(ohmurl, versionInfo);
+            });
+        }
+    }
+}
+
 void CompileAbcClassJob::UpdatePackageVersion(panda::pandasm::Program *prog,
                                               const panda::es2panda::CompilerOptions &options)
 {
-    // Replace for esm module static import
-    UpdateStaticImportPackageVersion(prog, options);
-    // Replace for dynamic import
-    UpdateDynamicImportPackageVersion(prog, options);
+    if (!options.compileContextInfo.pkgContextInfo.empty()) {
+        // Replace for esm module static import
+        UpdateStaticImportPackageVersion(prog, options);
+        // Replace for dynamic import
+        UpdateDynamicImportPackageVersion(prog, options);
+    } else {
+        // Accurate replace for esm module static import
+        AccurateUpdateStaticImportPackageVersion(prog, options);
+        // Replace for dynamic import
+        AccurateUpdateDynamicImportPackageVersion(prog, options);
+    }
 }
 
 void PostAnalysisOptimizeFileJob::Run()

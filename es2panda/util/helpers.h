@@ -51,6 +51,8 @@ struct CompileContextInfo {
     std::vector<std::string> compileEntries;
     std::set<std::string> externalPkgNames;
     std::unordered_map<std::string, PkgInfo> pkgContextInfo;
+    // Efficient verison info
+    std::unordered_map<std::string, std::unordered_map<std::string, std::string>> updateVersionInfo;
 };
 }  // namespace panda::es2panda
 

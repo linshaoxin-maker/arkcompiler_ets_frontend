@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,22 +13,8 @@
  * limitations under the License.
  */
 
-syntax = "proto3";
-package protoPanda;
+import * as bytecodeharDynamicImport from "@normalized:N&&&bytecodehar/bytecodehar-dynamic-import&";
+import * as bytecodeharStaticImport from "@normalized:N&&&bytecodehar/bytecodehar-static-import&";
 
-import "assemblyProgram.proto";
-
-message ProgramCache {
-    uint32 hashCode = 1;
-    Program program = 2;
-}
-
-message AbcProtoProgramsCache {
-    message AbcProtoProgramCache {
-        string name = 1;
-        Program program = 2;
-    }
-
-    uint32 hashCode = 1;
-    repeated AbcProtoProgramCache abcProtoProgramsMap = 2;
-}
+print(bytecodeharDynamicImport.test)
+print(bytecodeharStaticImport.test)
