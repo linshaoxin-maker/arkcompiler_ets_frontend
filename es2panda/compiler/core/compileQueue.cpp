@@ -175,6 +175,7 @@ void CompileFileJob::OptimizeAndCacheProgram(panda::pandasm::Program *prog)
         if (requireOptimizationAfterAnalysis) {
             optimizationPendingProgs_.insert(src_->fileName);
         }
+        delete prog;
     }
 }
 
