@@ -30,6 +30,10 @@ public:
         panda::ArenaAllocator *allocator);
     static void UpdateCacheFile(const panda::es2panda::util::ProgramCache *programCache,
         const std::string &cacheFilePath);
+    static panda::es2panda::util::AbcProgramsCache *GetAbcInputCacheContext(const std::string &cacheFilePath,
+        panda::ArenaAllocator *allocator);
+    static void UpdateAbcCacheFile(const panda::es2panda::util::AbcProgramsCache *abcProgramsCache,
+        const std::string &cacheFilePath);
 };
 } // panda::proto
 #endif

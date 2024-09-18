@@ -16,7 +16,7 @@
 #include "options.h"
 
 #include <fstream>
-#include <nlohmann/json.hpp>
+
 #include <set>
 #include <sstream>
 #include <utility>
@@ -33,9 +33,12 @@
 
 #include "mergeProgram.h"
 #include "util/helpers.h"
+#include "abc2program/timers.h"
 #include "utils/pandargs.h"
 
 namespace panda::es2panda::aot {
+
+
 constexpr char PROCESS_AS_LIST_MARK = '@';
 // item list: [filePath; recordName; moduleKind; sourceFile; pkgName; isSharedModule]
 constexpr size_t ITEM_COUNT_MERGE = 6;
@@ -231,6 +234,47 @@ void Options::ParseCacheFileOption(const std::string &cacheInput)
     }
 }
 
+void Options::ParseUpdateVersionInfo(nlohmann::json &compileContextInfoJson)
+{
+    if (compileContextInfoJson.contains("pkgContextInfo") && compileContextInfoJson["pkgContextInfo"].is_object()){
+        std::unordered_map<std::string, PkgInfo> pkgContextMap {};
+        for (const auto& [key, value] : compileContextInfoJson["pkgContextInfo"].items()) {
+            PkgInfo pkgInfo;
+            if (value.contains("version") && value["version"].is_string()) {
+                pkgInfo.version = value["version"];
+            } else {
+                std::cerr << "Failed to get version from pkgContextInfo."  << std::endl;
+            }
+            if (value.contains("packageName") && value["packageName"].is_string()) {
+                pkgInfo.packageName = value["packageName"];
+            } else {
+                std::cerr << "Failed to get package name from pkgContextInfo."  << std::endl;
+            }
+            pkgContextMap[key] = pkgInfo;
+        }
+        compilerOptions_.compileContextInfo.pkgContextInfo = pkgContextMap;
+    } else if (compileContextInfoJson.contains("updateVersionInfo") &&
+               compileContextInfoJson["updateVersionInfo"].is_object()) {
+        std::unordered_map<std::string, std::unordered_map<std::string, std::string>> updateVersionInfo {};
+        for (const auto& [key, value] : compileContextInfoJson["updateVersionInfo"].items()) {
+            if (value.is_object()) {
+                std::unordered_map<std::string, std::string> pkgVersionInfo {};
+                for (const auto& [name, version] : value.items()) {
+                    pkgVersionInfo.insert({name, version});
+                }
+                if (pkgVersionInfo.size() > 0) {
+                    updateVersionInfo[key] = pkgVersionInfo;
+                }
+            } else {
+                std::cerr << "The update version info's content type is incorrect"  << std::endl;
+            }
+        }
+        compilerOptions_.compileContextInfo.updateVersionInfo = updateVersionInfo;
+    } else {
+        UNREACHABLE();
+    }
+}
+
 void Options::ParseCompileContextInfo(const std::string compileContextInfoPath)
 {
     std::stringstream ss;
@@ -246,13 +290,11 @@ void Options::ParseCompileContextInfo(const std::string compileContextInfoPath)
     }
     // Parser compile context info base on the input json file.
     nlohmann::json compileContextInfoJson = nlohmann::json::parse(buffer);
-    if (!compileContextInfoJson.contains("compileEntries") || !compileContextInfoJson.contains("hspPkgNames") ||
-        !compileContextInfoJson.contains("pkgContextInfo")) {
+    if (!compileContextInfoJson.contains("compileEntries") || !compileContextInfoJson.contains("hspPkgNames")) {
         std::cerr << "The input json file '" << compileContextInfoPath << "' content format is incorrect" << std::endl;
         return;
     }
-    if (!compileContextInfoJson["compileEntries"].is_array() || !compileContextInfoJson["hspPkgNames"].is_array() ||
-        !compileContextInfoJson["pkgContextInfo"].is_object()) {
+    if (!compileContextInfoJson["compileEntries"].is_array() || !compileContextInfoJson["hspPkgNames"].is_array()) {
         std::cerr << "The input json file '" << compileContextInfoPath << "' content type is incorrect" << std::endl;
         return;
     }
@@ -264,22 +306,7 @@ void Options::ParseCompileContextInfo(const std::string compileContextInfoPath)
     }
     compilerOptions_.compileContextInfo.externalPkgNames = externalPkgNames;
     compilerOptions_.compileContextInfo.compileEntries = compileContextInfoJson["compileEntries"];
-    std::unordered_map<std::string, PkgInfo> pkgContextMap;
-    for (const auto& [key, value] : compileContextInfoJson["pkgContextInfo"].items()) {
-        PkgInfo pkgInfo;
-        if (value.contains("version") && value["version"].is_string()) {
-            pkgInfo.version = value["version"];
-        } else {
-            std::cerr << "Failed to get version from pkgContextInfo."  << std::endl;
-        }
-        if (value.contains("packageName") && value["packageName"].is_string()) {
-            pkgInfo.packageName = value["packageName"];
-        } else {
-            std::cerr << "Failed to get package name from pkgContextInfo."  << std::endl;
-        }
-        pkgContextMap[key] = pkgInfo;
-    }
-    compilerOptions_.compileContextInfo.pkgContextInfo = pkgContextMap;
+    ParseUpdateVersionInfo(compileContextInfoJson);
 }
 
 // Collect dependencies based on the compile entries.
@@ -359,6 +386,8 @@ bool Options::Parse(int argc, const char **argv)
     panda::PandArg<std::string> opCacheFile("cache-file", "", "cache file for incremental compile");
     panda::PandArg<std::string> opNpmModuleEntryList("npm-module-entry-list", "", "entry list file for module compile");
     panda::PandArg<bool> opMergeAbc("merge-abc", false, "Compile as merge abc");
+    panda::PandArg<std::string> opPerfFile("perf-file", "perf.txt", "Specify the file path to dump time consuming data"\
+        " during compilation process, default to 'perf.txt' in the current directory");
     panda::PandArg<bool> opuseDefineSemantic("use-define-semantic", false, "Compile ts class fields "\
         "in accordance with ECMAScript2022");
     panda::PandArg<std::string> moduleRecordFieldName("module-record-field-name", "", "Specify the field name "\
@@ -444,6 +473,7 @@ bool Options::Parse(int argc, const char **argv)
     argparser_->Add(&opCacheFile);
     argparser_->Add(&opNpmModuleEntryList);
     argparser_->Add(&opMergeAbc);
+    argparser_->Add(&opPerfFile);
     argparser_->Add(&opuseDefineSemantic);
     argparser_->Add(&moduleRecordFieldName);
     argparser_->Add(&opBranchElimination);
@@ -627,6 +657,12 @@ bool Options::Parse(int argc, const char **argv)
         options_ |= OptionFlags::SIZE_PCT_STAT;
     }
 
+    perfFile_ = "";
+    if (opPerfFile.WasSet()) {
+        perfFile_ = opPerfFile.GetValue().empty() ? opPerfFile.GetDefaultValue() : opPerfFile.GetValue();
+    }
+    panda::abc2program::Timer::InitializeTimer(perfFile_);
+
     compilerOptions_.recordDebugSource = opRecordDebugSource.GetValue();
     compilerOptions_.enableAbcInput = opEnableAbcInput.GetValue();
     compilerOptions_.dumpAsmProgram = opDumpAsmProgram.GetValue();
@@ -656,8 +692,9 @@ bool Options::Parse(int argc, const char **argv)
         ParseCompileContextInfo(compileContextInfoPath.GetValue());
     }
     compilerOptions_.dumpDepsInfo = opDumpDepsInfo.GetValue();
-    compilerOptions_.updatePkgVersionForAbcInput = compilerOptions_.enableAbcInput
-        && !compilerOptions_.compileContextInfo.pkgContextInfo.empty();
+    compilerOptions_.updatePkgVersionForAbcInput = compilerOptions_.enableAbcInput &&
+        (!compilerOptions_.compileContextInfo.pkgContextInfo.empty() ||
+        !compilerOptions_.compileContextInfo.updateVersionInfo.empty());
     compilerOptions_.removeRedundantFile = opRemoveRedundantFile.GetValue();
     compilerOptions_.dumpString = opDumpString.GetValue();
     compilerOptions_.moduleRecordFieldName = moduleRecordFieldName.GetValue();

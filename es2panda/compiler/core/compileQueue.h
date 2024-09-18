@@ -85,10 +85,14 @@ public:
     ~CompileFileJob() override = default;
 
     void Run() override;
+    void CompileProgram();
+    void OptimizeAndCacheProgram(panda::pandasm::Program *prog);
 
 private:
     friend class CompileAbcClassJob;
-    bool RetrieveProgramFromCacheFiles(const std::string &buffer);
+    bool RetrieveProgramFromCacheFiles(const std::string &buffer, bool isAbcFile = false);
+    void MergeAbcCachePrograms(std::map<std::string, panda::es2panda::util::ProgramCache *> &abcProgramsInfo);
+    void CompileAbcFileJobInParallel(es2panda::Compiler &compiler);
 
     static std::mutex globalMutex_;
     es2panda::SourceFile *src_;
@@ -118,6 +122,9 @@ private:
     void UpdatePackageVersion(panda::pandasm::Program *prog, const CompilerOptions &options);
     void UpdateDynamicImportPackageVersion(panda::pandasm::Program *prog, const CompilerOptions &options);
     void UpdateStaticImportPackageVersion(panda::pandasm::Program *prog, const CompilerOptions &options);
+    void AccurateUpdateStaticImportPackageVersion(panda::pandasm::Program *prog,
+                                                  const panda::es2panda::CompilerOptions &options);
+    void AccurateUpdateDynamicImportPackageVersion(panda::pandasm::Program *prog, const CompilerOptions &options);
 
     const uint32_t classId_;
     const es2panda::CompilerOptions &options_;

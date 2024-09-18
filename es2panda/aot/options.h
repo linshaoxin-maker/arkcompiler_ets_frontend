@@ -19,7 +19,7 @@
 #include <es2panda.h>
 #include <macros.h>
 #include <parser/program/program.h>
-
+#include <nlohmann/json.hpp>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -133,6 +133,11 @@ public:
         return outputFiles_;
     }
 
+    std::string PerfFile() const
+    {
+        return perfFile_;
+    }
+
     bool CollectInputFilesFromFileList(const std::string &input, const std::string &inputExtension);
     bool CollectInputFilesFromFileDirectory(const std::string &input, const std::string &extension);
     void ParseCacheFileOption(const std::string &cacheInput);
@@ -146,6 +151,7 @@ private:
     void CollectInputSourceFile(const std::vector<std::string> &itemList, const std::string &inputExtension);
     bool CheckFilesValidity(const std::string &input, const std::vector<std::string> &itemList,
                             const std::string &line);
+    void ParseUpdateVersionInfo(nlohmann::json &compileContextInfoJson);
     bool IsAbcFile(const std::string &fileName, const std::string &inputExtension);
     es2panda::parser::ScriptKind scriptKind_ {es2panda::parser::ScriptKind::SCRIPT};
     OptionFlags options_ {OptionFlags::DEFAULT};
@@ -164,6 +170,7 @@ private:
     std::string npmModuleEntryList_;
     std::vector<es2panda::SourceFile> sourceFiles_;
     std::unordered_map<std::string, std::string> outputFiles_;
+    std::string perfFile_;
 };
 }  // namespace panda::es2panda::aot
 
