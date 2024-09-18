@@ -85,6 +85,8 @@ public:
     ~CompileFileJob() override = default;
 
     void Run() override;
+    void CompileProgram();
+    void OptimizeAndCacheProgram(panda::pandasm::Program *prog);
 
 private:
     friend class CompileAbcClassJob;
