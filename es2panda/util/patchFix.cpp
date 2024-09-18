@@ -14,11 +14,13 @@
  */
 
 #include "patchFix.h"
+#include <abc2program/timers.h>
 #include <binder/binder.h>
 #include <binder/scope.h>
 #include <binder/variable.h>
 #include <compiler/core/pandagen.h>
 #include <ir/expressions/literal.h>
+#include <parser/program/program.h>
 
 #include <fstream>
 #include <iostream>
@@ -614,10 +616,18 @@ void PatchFix::HandleFunction(const compiler::PandaGen *pg, panda::pandasm::Func
     CollectFuncDefineIns(func);
 }
 
-void PatchFix::DumpFunctionInfo(const compiler::PandaGen *pg, panda::pandasm::Function *func,
-    PatchFix::LiteralBuffers &literalBuffers)
+static double collect_function_info_time = 0.0;
+static double g_writeFunctionInfoTime = 0.0;
+
+void PatchFix::DumpFunctionInfo(const compiler::PandaGen *pg, [[maybe_unused]] panda::pandasm::Function *func,
+    [[maybe_unused]] PatchFix::LiteralBuffers &literalBuffers)
 {
+    panda::abc2program::Timer::timerStart(
+        panda::abc2program::PATCH_FIX_COLLECT_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
+
     std::stringstream ss;
+
+    auto start_time_1 = std::chrono::steady_clock::now();
 
     ss << pg->InternalName();
     ss << SymbolTable::SECOND_LEVEL_SEPERATOR << pg->InternalName() << SymbolTable::SECOND_LEVEL_SEPERATOR;
@@ -650,6 +660,19 @@ void PatchFix::DumpFunctionInfo(const compiler::PandaGen *pg, panda::pandasm::Fu
     ss << SymbolTable::SECOND_LEVEL_SEPERATOR << std::endl;
 
     symbolTable_->FillSymbolTable(ss);
+    auto start_time_2 = std::chrono::steady_clock::now();
+    collect_function_info_time += std::chrono::duration_cast<std::chrono::nanoseconds>(
+        start_time_2 - start_time_1).count();
+
+    panda::abc2program::Timer::timerEnd(
+        panda::abc2program::PATCH_FIX_COLLECT_FUNCTION_INFO, std::string(pg->Binder()->Program()->SourceFile()));
+
+    auto start_time_3 = std::chrono::steady_clock::now();
+    g_writeFunctionInfoTime += std::chrono::duration_cast<std::chrono::nanoseconds>(
+        start_time_3 - start_time_2).count();
+
+    std::cout << "collect_function_info_time: " << collect_function_info_time <<
+    "g_writeFunctionInfoTime: " << g_writeFunctionInfoTime << std::endl;
 }
 
 bool PatchFix::IsAdditionalVarInPatch(uint32_t slot)
