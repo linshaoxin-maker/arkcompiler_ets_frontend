@@ -149,6 +149,7 @@ void CompileFileJob::Run()
         if (requireOptimizationAfterAnalysis) {
             optimizationPendingProgs_.insert(src_->fileName);
         }
+        delete prog;
     }
 }
 
