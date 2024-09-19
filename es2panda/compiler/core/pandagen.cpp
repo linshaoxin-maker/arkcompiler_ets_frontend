@@ -295,6 +295,7 @@ int32_t PandaGen::AddLiteralBuffer(LiteralBuffer *buf)
 int32_t PandaGen::AddLexicalVarNamesForDebugInfo(ArenaMap<uint32_t, std::pair<util::StringView, int>> &lexicalVars)
 {
     auto *buf = NewLiteralBuffer();
+    CHECK_NOT_NULL(buf);
     buf->Add(Allocator()->New<ir::NumberLiteral>(lexicalVars.size()));
     for (auto &iter : lexicalVars) {
         // The slot is set to UINT32_MAX when the variable is a patchvar while its value is not stored in the slot
@@ -1609,6 +1610,7 @@ void PandaGen::CreateArray(const ir::AstNode *node, const ArenaVector<ir::Expres
     }
 
     auto *buf = NewLiteralBuffer();
+    CHECK_NOT_NULL(buf);
 
     size_t i = 0;
     // This loop handles constant literal data by collecting it into a literal buffer
