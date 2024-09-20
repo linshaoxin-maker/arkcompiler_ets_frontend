@@ -92,6 +92,7 @@ void FunctionEmitter::Generate(util::PatchFix *patchFixHelper)
     if (patchFixHelper != nullptr) {
         patchFixHelper->ProcessFunction(pg_, func_, literalBuffers_);
     }
+    GenExpectedPropertyCountAnnotation();
 }
 
 const ArenaSet<util::StringView> &FunctionEmitter::Strings() const
@@ -584,6 +585,26 @@ void FunctionEmitter::GenConcurrentFunctionModuleRequests()
     }
 }
 
+void FunctionEmitter::GenExpectedPropertyCountAnnotation()
+{
+    if (pg_->GetExpectedPropertyCount() == 0) {
+        return;
+    }
+
+    static const std::string ANNOTATION = "_ESExpectedPropertyCountAnnotation";
+    static const std::string ELEMENT_NAME = "ExpectedPropertyCount";
+
+    pandasm::AnnotationData anno(ANNOTATION);
+
+    pandasm::AnnotationElement ele(ELEMENT_NAME, std::make_unique<pandasm::ScalarValue>(
+        pandasm::ScalarValue::Create<pandasm::Value::Type::U32>(pg_->GetExpectedPropertyCount())));
+    anno.AddElement(std::move(ele));
+
+    std::vector<pandasm::AnnotationData> annos;
+    annos.emplace_back(anno);
+    func_->metadata->AddAnnotations(annos);
+}
+
 // Emitter
 
 Emitter::Emitter(CompilerContext *context)
@@ -612,6 +633,7 @@ Emitter::Emitter(CompilerContext *context)
     }
     AddSharedModuleRecord(context);
     AddScopeNamesRecord(context);
+    MakeExpectedPropertyCountRecord();
 }
 
 Emitter::~Emitter()
@@ -1049,6 +1071,14 @@ void Emitter::AddSharedModuleRecord(const CompilerContext *context)
         sharedModuleRecord.field_list.emplace_back(std::move(sharedModuleField));
         prog_->record_table.emplace(sharedModuleRecord.name, std::move(sharedModuleRecord));
     }
+}
+
+void Emitter::MakeExpectedPropertyCountRecord()
+{
+    static const std::string ANNOTATION = "_ESExpectedPropertyCountAnnotation";
+    pandasm::Record record(ANNOTATION, pandasm::extensions::Language::ECMASCRIPT);
+    record.metadata->AddAccessFlags(panda::ACC_ANNOTATION);
+    prog_->record_table.emplace(ANNOTATION, std::move(record));
 }
 
 // static
