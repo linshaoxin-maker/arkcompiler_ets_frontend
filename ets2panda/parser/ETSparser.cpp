@@ -347,7 +347,9 @@ ir::ScriptFunction *ETSParser::ParseFunction(ParserStatus newStatus, ir::Identif
             ParseFunctionBody(signature.Params(), newStatus, GetContext().Status());
     } else if (isArrow) {
         body = ParseExpression();
-        endLoc = body->AsExpression()->End();
+        if (body != nullptr) {  // Error processing.
+            endLoc = body->AsExpression()->End();
+        }
         functionContext.AddFlag(ir::ScriptFunctionFlags::EXPRESSION);
     }
 
@@ -1586,7 +1588,8 @@ ir::AnnotatedExpression *ETSParser::GetAnnotatedExpressionFromParam()
         }
 
         default: {
-            ThrowSyntaxError("Unexpected token, expected an identifier.");
+            LogSyntaxError("Unexpected token, expected an identifier.");
+            return nullptr;
         }
     }
 
@@ -1621,6 +1624,9 @@ ir::ETSUnionType *ETSParser::CreateOptionalParameterTypeNode(ir::TypeNode *typeA
 ir::Expression *ETSParser::ParseFunctionParameter()
 {
     auto *const paramIdent = GetAnnotatedExpressionFromParam();
+    if (paramIdent == nullptr) {  // Error processing.
+        return nullptr;
+    }
 
     ir::ETSUndefinedType *defaultUndef = nullptr;
 
@@ -1654,7 +1660,7 @@ ir::Expression *ETSParser::ParseFunctionParameter()
         paramIdent->SetTsTypeAnnotation(typeAnnotation);
         paramIdent->SetEnd(typeAnnotation->End());
     } else if (!isArrow && defaultUndef == nullptr) {
-        ThrowSyntaxError(EXPLICIT_PARAM_TYPE);
+        LogSyntaxError(EXPLICIT_PARAM_TYPE);
     }
 
     return ParseFunctionParameterExpression(paramIdent, defaultUndef);
