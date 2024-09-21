@@ -1,5 +1,45 @@
-# Known failures list for  third_lib_js-fastverify-arm64-aot
+# Known failures list for third_lib_js-fastverify-arm64-aot
 
-#18546
+#18484
 jBox2d_test
+commonmark-js_test
+pdfview_test
 
+#18979
+js-joda_test
+
+#18487
+pako_test
+
+#19247
+jsDiff_test
+
+#19246
+asn-one_test
+
+#19109
+crypto-js_test
+mathjs_test
+lodash_test
+Matrix_test
+
+#19426
+validator_test
+
+#19424
+zxing-text-encoding_test
+
+#19073
+zxing_test
+
+#19248
+pinyin4js_test
+
+#19109
+js-sha256_test
+
+#18330
+dayjs_test
+
+#19033
+Easyrelpace_test

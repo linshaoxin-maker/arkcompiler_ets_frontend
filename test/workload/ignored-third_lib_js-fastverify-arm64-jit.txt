@@ -1,1 +1,55 @@
-# Known failures list for  third_lib_js-debug-arm64-jit
+# Known failures list for third_lib_js - fastverify-arm64-jit
+
+#Issue 18484
+jBox2d_test
+
+#Issue 18977
+js-joda_test
+
+#Issue 19106
+memory-cache_test
+
+#Issue 19104
+hi-base32_test
+
+#Issue 19033
+jsDiff_test
+mathjs_test
+
+#Issue 18546
+Drools_test
+
+#19424
+zxing-text-encoding_test
+
+#19353
+Matrix_test
+
+#19426
+validator_test
+
+#19501
+lodash_test
+
+#19285
+crypto-js_test
+
+#19246
+asn-one_test
+
+#18424
+
+#19033
+node-polyfill_test
+Easyrelpace_test
+sax_test
+rxjs_test
+
+#19073
+zxing_test
+
+#18330
+dayjs_test
+
+#19142
+hamcrest_test
