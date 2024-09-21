@@ -63,11 +63,11 @@ Matrix_test
 #19251
 pdfview_test
 
-#18424
-pcx_test
-
 #19703
 sax_test
+
+#18424
+pcx_test
 
 #18768
 asn-one_test
