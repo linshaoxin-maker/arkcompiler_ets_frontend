@@ -42,6 +42,8 @@ zxing-text-encoding_test
 #19248
 pinyin4js_test
 
+#19703
+sax_test
 
 #18546
 jBox2d_test
