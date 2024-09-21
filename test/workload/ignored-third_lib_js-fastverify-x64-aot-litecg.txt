@@ -42,9 +42,6 @@ zxing-text-encoding_test
 #19248
 pinyin4js_test
 
-#19703
-sax_test
-
 #18546
 jBox2d_test
 
@@ -53,6 +50,9 @@ gson_test
 crypto-js_test
 lodash_test
 Matrix_test
+
+#19703
+sax_test
 
 #18383
 memory-cache_test
