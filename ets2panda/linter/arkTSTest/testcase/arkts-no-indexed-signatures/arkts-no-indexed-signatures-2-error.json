@@ -1,0 +1,18 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Indexed signatures are not supported (arkts-no-indexed-signatures)",
+      "expectLineAndCharacter": {
+        "line": 22,
+        "character": 3
+      }
+    },
+    {
+      "messageText": "Object literal must correspond to some explicitly declared class or interface (arkts-no-untyped-obj-literals)",
+      "expectLineAndCharacter": {
+        "line": 24,
+        "character": 33
+      }
+    }
+  ]
+}

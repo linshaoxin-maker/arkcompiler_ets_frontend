@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "\"typeof\" operator is allowed only in expression contexts (arkts-no-type-query)",
+      "expectLineAndCharacter": {
+        "line": 19,
+        "character": 13
+      }
+    }
+  ]
+}

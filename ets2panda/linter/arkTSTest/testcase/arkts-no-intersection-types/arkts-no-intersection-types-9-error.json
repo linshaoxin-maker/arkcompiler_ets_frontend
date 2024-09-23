@@ -1,0 +1,32 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Use inheritance instead of intersection types (arkts-no-intersection-types)",
+      "expectLineAndCharacter": {
+        "line": 25,
+        "character": 16
+      }
+    },
+    {
+      "messageText": "Object literals cannot be used as type declarations (arkts-no-obj-literals-as-types)",
+      "expectLineAndCharacter": {
+        "line": 25,
+        "character": 25
+      }
+    },
+    {
+      "messageText": "Use inheritance instead of intersection types (arkts-no-intersection-types)",
+      "expectLineAndCharacter": {
+        "line": 29,
+        "character": 13
+      }
+    },
+    {
+      "messageText": "Object literals cannot be used as type declarations (arkts-no-obj-literals-as-types)",
+      "expectLineAndCharacter": {
+        "line": 29,
+        "character": 23
+      }
+    }
+  ]
+}

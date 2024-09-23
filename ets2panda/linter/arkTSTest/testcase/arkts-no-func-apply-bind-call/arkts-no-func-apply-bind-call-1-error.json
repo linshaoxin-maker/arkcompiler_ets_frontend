@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "'Function.apply', 'Function.call' are not supported (arkts-no-func-apply-call)",
+      "expectLineAndCharacter": {
+        "line": 22,
+        "character": 36
+      }
+    }
+  ]
+}

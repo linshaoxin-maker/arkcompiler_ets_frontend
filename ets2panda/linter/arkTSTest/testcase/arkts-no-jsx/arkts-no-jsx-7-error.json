@@ -1,0 +1,39 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Only \"as T\" syntax is supported for type casts (arkts-as-casts)",
+      "expectLineAndCharacter": {
+        "line": 21,
+        "character": 3
+      }
+    },
+    {
+      "messageText": "Function return type inference is limited (arkts-no-implicit-return-types)",
+      "expectLineAndCharacter": {
+        "line": 22,
+        "character": 6
+      }
+    },
+    {
+      "messageText": "Function return type inference is limited (arkts-no-implicit-return-types)",
+      "expectLineAndCharacter": {
+        "line": 22,
+        "character": 30
+      }
+    },
+    {
+      "messageText": "Only \"as T\" syntax is supported for type casts (arkts-as-casts)",
+      "expectLineAndCharacter": {
+        "line": 22,
+        "character": 42
+      }
+    },
+    {
+      "messageText": "\"in\" operator is not supported (arkts-no-in)",
+      "expectLineAndCharacter": {
+        "line": 22,
+        "character": 56
+      }
+    }
+  ]
+}

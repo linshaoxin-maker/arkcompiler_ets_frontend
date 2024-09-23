@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Function lacks ending return statement and return type does not include 'undefined'.",
+      "expectLineAndCharacter": {
+        "line": 19,
+        "character": 29
+      }
+    }
+  ]
+}

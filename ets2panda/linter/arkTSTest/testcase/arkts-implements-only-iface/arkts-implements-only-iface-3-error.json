@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Classes cannot be specified in \"implements\" clause (arkts-implements-only-iface)",
+      "expectLineAndCharacter": {
+        "line": 27,
+        "character": 46
+      }
+    }
+  ]
+}

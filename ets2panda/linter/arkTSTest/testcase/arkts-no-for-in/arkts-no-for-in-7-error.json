@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "\"for .. in\" is not supported (arkts-no-for-in)",
+      "expectLineAndCharacter": {
+        "line": 19,
+        "character": 18
+      }
+    }
+  ]
+}

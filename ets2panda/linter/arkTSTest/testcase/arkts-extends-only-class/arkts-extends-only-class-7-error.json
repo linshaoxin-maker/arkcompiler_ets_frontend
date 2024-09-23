@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Interfaces cannot extend classes (arkts-extends-only-class)",
+      "expectLineAndCharacter": {
+        "line": 25,
+        "character": 30
+      }
+    }
+  ]
+}

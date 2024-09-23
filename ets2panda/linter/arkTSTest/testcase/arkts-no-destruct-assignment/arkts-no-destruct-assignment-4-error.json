@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Destructuring assignment is not supported (arkts-no-destruct-assignment)",
+      "expectLineAndCharacter": {
+        "line": 20,
+        "character": 1
+      }
+    }
+  ]
+}

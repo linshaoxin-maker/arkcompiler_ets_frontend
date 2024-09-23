@@ -1,0 +1,25 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Only \"as T\" syntax is supported for type casts (arkts-as-casts)",
+      "expectLineAndCharacter": {
+        "line": 20,
+        "character": 15
+      }
+    },
+    {
+      "messageText": "Destructuring variable declarations are not supported (arkts-no-destruct-decls)",
+      "expectLineAndCharacter": {
+        "line": 20,
+        "character": 26
+      }
+    },
+    {
+      "messageText": "Only \"as T\" syntax is supported for type casts (arkts-as-casts)",
+      "expectLineAndCharacter": {
+        "line": 20,
+        "character": 33
+      }
+    }
+  ]
+}

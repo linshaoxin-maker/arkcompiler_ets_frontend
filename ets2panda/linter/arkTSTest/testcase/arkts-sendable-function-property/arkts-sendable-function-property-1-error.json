@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "The property of \"Sendable\" function is limited (arkts-sendable-function-property)",
+      "expectLineAndCharacter": {
+        "line": 20,
+        "character": 1
+      }
+    }
+  ]
+}

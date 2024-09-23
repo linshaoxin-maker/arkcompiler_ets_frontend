@@ -1,0 +1,18 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Type notation using \"this\" is not supported (arkts-no-typing-with-this)",
+      "expectLineAndCharacter": {
+        "line": 35,
+        "character": 27
+      }
+    },
+    {
+      "messageText": "Type notation using \"this\" is not supported (arkts-no-typing-with-this)",
+      "expectLineAndCharacter": {
+        "line": 36,
+        "character": 34
+      }
+    }
+  ]
+}

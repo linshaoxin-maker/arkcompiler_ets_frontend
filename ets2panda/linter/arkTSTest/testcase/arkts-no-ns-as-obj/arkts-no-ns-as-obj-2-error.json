@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Namespaces cannot be used as objects (arkts-no-ns-as-obj)",
+      "expectLineAndCharacter": {
+        "line": 25,
+        "character": 9
+      }
+    }
+  ]
+}

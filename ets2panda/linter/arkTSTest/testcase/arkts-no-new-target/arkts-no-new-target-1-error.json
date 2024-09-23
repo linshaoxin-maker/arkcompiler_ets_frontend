@@ -1,0 +1,18 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "\"new.target\" is not supported (arkts-no-new-target)",
+      "expectLineAndCharacter": {
+        "line": 19,
+        "character": 10
+      }
+    },
+    {
+      "messageText": "\"throw\" statements cannot accept values of arbitrary types (arkts-limited-throw)",
+      "expectLineAndCharacter": {
+        "line": 20,
+        "character": 7
+      }
+    }
+  ]
+}

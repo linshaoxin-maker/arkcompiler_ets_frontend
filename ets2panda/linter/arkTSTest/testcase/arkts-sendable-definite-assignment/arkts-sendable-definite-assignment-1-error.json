@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Definite assignment assertion is not allowed in \"Sendable\" classes (arkts-sendable-definite-assignment)",
+      "expectLineAndCharacter": {
+        "line": 19,
+        "character": 10
+      }
+    }
+  ]
+}

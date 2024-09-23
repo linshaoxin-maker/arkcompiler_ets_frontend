@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Use \"let\" instead of \"var\" (arkts-no-var)",
+      "expectLineAndCharacter": {
+        "line": 18,
+        "character": 6
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "Casting \"Non-sendable\" data to \"Sendable\" type is not allowed (arkts-sendable-as-expr)",
+      "expectLineAndCharacter": {
+        "line": 24,
+        "character": 9
+      }
+    },
+    {
+      "messageText": "Casting \"Non-sendable\" data to \"Sendable\" type is not allowed (arkts-sendable-as-expr)",
+      "expectLineAndCharacter": {
+        "line": 28,
+        "character": 9
+      }
+    }
+  ]
+}

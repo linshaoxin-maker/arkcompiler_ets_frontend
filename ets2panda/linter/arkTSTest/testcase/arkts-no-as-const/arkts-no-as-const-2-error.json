@@ -1,0 +1,11 @@
+{
+  "arktsVersion_1_1": [
+    {
+      "messageText": "\"as const\" assertions are not supported (arkts-no-as-const)",
+      "expectLineAndCharacter": {
+        "line": 17,
+        "character": 18
+      }
+    }
+  ]
+}
