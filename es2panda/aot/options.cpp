@@ -399,7 +399,7 @@ bool Options::Parse(int argc, const char **argv)
 
     // optimizer
     panda::PandArg<bool> opBranchElimination("branch-elimination", false, "Enable branch elimination optimization");
-    panda::PandArg<bool> opOptTryCatchFunc("opt-try-catch-func", true, "Enable optimizations for functions with "\
+    panda::PandArg<bool> opOptTryCatchFunc("opt-try-catch-func", false, "Enable optimizations for functions with "\
         "try-catch blocks");
 
     // patchfix && hotreload

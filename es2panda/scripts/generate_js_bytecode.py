@@ -107,6 +107,8 @@ def gen_abc_info(input_arguments):
         cmd.insert(src_index, '--enable-annotations')
         # insert d.ts option to cmd later
     cmd.append("--target-api-sub-version=beta3")
+    # Enable optimization for function with try-catch to ensure its correctness
+    cmd.append("--opt-try-catch-func=true")
     run_command(cmd, path)
 
 
