@@ -1,0 +1,12 @@
+{
+  "arktsVersion_1_0": [
+    {
+      "messageText": "Use generic functions instead of generic arrow functions (arkts-no-generic-lambdas)",
+      "expectLineAndCharacter": {
+        "line": 17,
+        "character": 13
+      }
+    }
+  ],
+  "arktsVersion_1_1": []
+}
