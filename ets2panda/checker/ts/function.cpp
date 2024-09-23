@@ -69,7 +69,7 @@ Type *TSChecker::HandleFunctionReturn(ir::ScriptFunction *func)
         return returnType;
     }
 
-    if (func->Declare()) {
+    if (func->IsDeclare()) {
         return GlobalAnyType();
     }
 
