@@ -109,7 +109,7 @@ private:
 TEST_F(DeclareTest, function_without_overloads_0)
 {
     SetCurrentProgram(R"(
-        declare function foo(tmp: double): string 
+        declare function foo(tmp: double): string
     )");
     CheckExternalFlag("ETSGLOBAL.foo:f64;std.core.String;");
 }
@@ -117,7 +117,7 @@ TEST_F(DeclareTest, function_without_overloads_0)
 TEST_F(DeclareTest, function_with_overloads_0)
 {
     SetCurrentProgram(R"(
-        declare function foo(tmp?: double): string 
+        declare function foo(tmp?: double): string
     )");
     CheckExternalFlag("ETSGLOBAL.foo:std.core.Object;std.core.String;");
     CheckExternalFlag("ETSGLOBAL.foo:std.core.String;");
