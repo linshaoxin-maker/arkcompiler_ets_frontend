@@ -1,0 +1,88 @@
+{
+    "nodes": [
+        {
+            "line": 4,
+            "column": 5,
+            "endLine": 4,
+            "endColumn": 18,
+            "problem": "SendableExplicitFieldType",
+            "autofix": [
+                {
+                    "start": 19,
+                    "end": 48,
+                    "replacementText": "// fix\nstatic a: number = 0;"
+                }
+            ],
+            "suggest": "",
+            "rule": "Field in sendable class must have type annotation (arkts-sendable-explicit-field-type)"
+        },
+        {
+            "line": 7,
+            "column": 5,
+            "endLine": 7,
+            "endColumn": 13,
+            "problem": "SendableExplicitFieldType",
+            "autofix": [
+                {
+                    "start": 48,
+                    "end": 77,
+                    "replacementText": "// fix\nb: string = ' ';"
+                }
+            ],
+            "suggest": "",
+            "rule": "Field in sendable class must have type annotation (arkts-sendable-explicit-field-type)"
+        },
+        {
+            "line": 10,
+            "column": 5,
+            "endLine": 10,
+            "endColumn": 7,
+            "problem": "AnyType",
+            "suggest": "",
+            "rule": "Use explicit types instead of \"any\", \"unknown\" (arkts-no-any-unknown)"
+        },
+        {
+            "line": 10,
+            "column": 5,
+            "endLine": 10,
+            "endColumn": 7,
+            "problem": "SendableExplicitFieldType",
+            "suggest": "",
+            "rule": "Field in sendable class must have type annotation (arkts-sendable-explicit-field-type)"
+        },
+        {
+            "line": 13,
+            "column": 5,
+            "endLine": 13,
+            "endColumn": 27,
+            "problem": "SendableExplicitFieldType",
+            "autofix": [
+                {
+                    "start": 103,
+                    "end": 142,
+                    "replacementText": "// fix\nprivate d: undefined = undefined;"
+                }
+            ],
+            "suggest": "",
+            "rule": "Field in sendable class must have type annotation (arkts-sendable-explicit-field-type)"
+        },
+        {
+            "line": 18,
+            "column": 5,
+            "endLine": 18,
+            "endColumn": 47,
+            "problem": "SendableExplicitFieldType",
+            "suggest": "",
+            "rule": "Field in sendable class must have type annotation (arkts-sendable-explicit-field-type)"
+        },
+        {
+            "line": 18,
+            "column": 16,
+            "endLine": 18,
+            "endColumn": 17,
+            "problem": "ObjectLiteralNoContextType",
+            "suggest": "",
+            "rule": "Object literal must correspond to some explicitly declared class or interface (arkts-no-untyped-obj-literals)"
+        }
+    ]
+}

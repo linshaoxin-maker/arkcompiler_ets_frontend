@@ -1148,5 +1148,31 @@ export class Autofixer {
     GENERATED_TYPE_LITERAL_INTERFACE_TRESHOLD
   );
 
+  fixSendableExplicitFieldType(node: ts.PropertyDeclaration): Autofix[] | undefined {
+    const initializer = node.initializer;
+    if (initializer === undefined) {
+      return undefined;
+    }
+
+    const propType = this.typeChecker.getTypeAtLocation(node);
+    const propTypeNode = this.typeChecker.typeToTypeNode(propType, undefined, ts.NodeBuilderFlags.None);
+    if (!propTypeNode || !this.utils.isSupportedType(propTypeNode)) {
+      return undefined;
+    }
+
+    const questionOrExclamationToken: ts.ExclamationToken | ts.QuestionToken | undefined = node.questionToken ?? node.exclamationToken ?? undefined;
+
+    const newPropDecl: ts.PropertyDeclaration = ts.factory.createPropertyDeclaration(
+      node.modifiers,
+      node.name,
+      questionOrExclamationToken,
+      propTypeNode,
+      initializer
+    );
+
+    const text = this.printer.printNode(ts.EmitHint.Unspecified, newPropDecl, node.getSourceFile());
+    return [{ start: node.getFullStart(), end: node.getEnd(), replacementText: text }];
+  }
+
   private readonly symbolCache: SymbolCache;
 }

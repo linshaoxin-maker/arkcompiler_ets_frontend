@@ -792,7 +792,8 @@ export class TypeScriptLinter {
     }
     const typeNode = node.type;
     if (!typeNode) {
-      this.incrementCounters(node, FaultID.SendableExplicitFieldType);
+      const autofix = this.autofixer?.fixSendableExplicitFieldType(node);
+      this.incrementCounters(node, FaultID.SendableExplicitFieldType, autofix);
       return;
     }
     TsUtils.getDecoratorsIfInSendableClass(node)?.forEach((decorator) => {

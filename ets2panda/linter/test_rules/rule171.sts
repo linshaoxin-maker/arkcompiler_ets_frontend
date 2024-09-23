@@ -1,0 +1,23 @@
+@Sendable
+class A {
+    // fix
+    static a = 0;
+    
+    // fix
+    b = ' ';
+    
+    // no fix
+    c;
+
+    // fix
+    private d = undefined;
+
+    ehelper1: number = 4;
+    ehelper2: string = 'abc';
+    // no fix
+    public e = {this.ehelper1, this.ehelper2};
+
+    constructor(c: boolean) {
+        this.c = c;
+    }
+}
