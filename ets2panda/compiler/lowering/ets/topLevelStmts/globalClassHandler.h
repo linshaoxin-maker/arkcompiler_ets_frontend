@@ -69,7 +69,7 @@ private:
     void InitGlobalClass(ir::ClassDefinition *classDef, parser::ScriptKind scriptKind);
     ir::ClassDeclaration *CreateGlobalClass();
     ir::ClassStaticBlock *CreateCCtor(const ArenaVector<ir::AstNode *> &properties, const lexer::SourcePosition &loc,
-                                      bool allowEmptyCctor);
+                                      bool allowEmptyCctor, ir::ModifierFlags modifiers);
 
     /**
      *
