@@ -269,7 +269,16 @@ namespace secharmony {
             return;
           }
 
-          if (mangledSymbolNames.has(def)) {
+          let originalSymbol = TypeUtils.getOriginalSymbol(def, checker);
+
+          // Apply the obfuscated name from the declaration to the current node 
+          // only if the current node's name matches the name at the declaration site.
+          // For example, in the following case:
+          // let A = 1;
+          // export {A as B};
+          // When trying to get B's originalSymbol, you will obtain A's symbol from the declaration site.
+          // However, clearly, you cannot apply A's obfuscated name to B.
+          if (def.name === originalSymbol.name && mangledSymbolNames.has(originalSymbol)) {
             return;
           }
 
@@ -676,7 +685,7 @@ namespace secharmony {
         let sym: Symbol | undefined = NodeUtils.findSymbolOfIdentifier(checker, node);
         let mangledPropertyNameOfNoSymbolImportExport = '';
         if (!sym) {
-          if (exportObfuscation && noSymbolIdentifier.has(node.text) && trySearchImportExportSpecifier(node)) {
+          if (exportObfuscation && openTopLevel && noSymbolIdentifier.has(node.text) && trySearchImportExportSpecifier(node)) {
             mangledPropertyNameOfNoSymbolImportExport = mangleNoSymbolImportExportPropertyName(node.text);
           } else {
             return node;
@@ -696,7 +705,13 @@ namespace secharmony {
           (identifierCache as Map<string, string>).delete(originalName);
         }
 
-        let mangledName: string = mangledSymbolNames.get(sym)?.mangledName;
+        let mangledName: string | undefined = undefined;
+
+        if (sym) {
+          const originalSym = TypeUtils.getOriginalSymbol(sym, checker);
+          // Only those symbols of declaration nodes have mangledNames in mangledSymbolNames
+          mangledName = mangledSymbolNames.get(sym)?.mangledName ?? mangledSymbolNames.get(originalSym)?.mangledName;
+        }
         if (node?.parent.kind === SyntaxKind.ClassDeclaration) {
           classMangledName.set(node, mangledName);
         }

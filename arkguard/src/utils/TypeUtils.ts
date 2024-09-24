@@ -18,6 +18,8 @@ import {
   createCompilerHost,
   createProgram,
   createSourceFile,
+  Symbol,
+  SymbolFlags
 } from 'typescript';
 
 import type {
@@ -100,5 +102,12 @@ export class TypeUtils {
     let typeChecker: TypeChecker = program.getTypeChecker();
     endSingleFileEvent(EventList.GET_CHECKER, performancePrinter.timeSumPrinter);
     return typeChecker;
+  }
+
+  public static getOriginalSymbol(symbol: Symbol, checker: TypeChecker): Symbol {
+    if (symbol.getFlags() === SymbolFlags.Alias) {
+      symbol = checker.getAliasedSymbol(symbol);
+    }
+    return symbol;
   }
 }

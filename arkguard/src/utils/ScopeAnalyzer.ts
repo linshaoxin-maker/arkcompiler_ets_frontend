@@ -318,6 +318,9 @@ namespace secharmony {
         if (def.exportSymbol) {
           current.exportNames.add(def.name);
           root.fileExportNames.add(def.name);
+          if (current.kind !== ScopeKind.GLOBAL) {
+            addExportNamesIntoParentScope(def.name, current);
+          }
           if (def.exportSymbol.name === def.name) {
             /* For export declaration, `def` and its `exportSymbol` has same name,
                 eg. export class Ability {}
@@ -347,7 +350,7 @@ namespace secharmony {
       if (!defSymbols) {
         return;
       }
-      current.addDefinition(defSymbols);
+      current.addDefinition(defSymbols, true);
     }
 
     /**
@@ -460,17 +463,12 @@ namespace secharmony {
     function analyzeImportNames(node: ImportSpecifier): void {
       try {
         const propetyNameNode: Identifier | undefined = node.propertyName;
-        if (exportObfuscation && propetyNameNode && isIdentifier(propetyNameNode)) {
-          let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
-          if (!propertySymbol) {
-            noSymbolIdentifier.add(propetyNameNode.text);
-          } else {
-            current.addDefinition(propertySymbol);
-          }
+        if (exportObfuscation) {
+          addPropertyNameNodeSymbol(propetyNameNode);
 
           const nameSymbol = checker.getSymbolAtLocation(node.name);
           if (nameSymbol) {
-            current.addDefinition(nameSymbol);
+            current.addDefinition(nameSymbol, true);
           }
         } else {
           const nameText = propetyNameNode ? propetyNameNode.text : node.name.text;
@@ -480,6 +478,17 @@ namespace secharmony {
         forEachChild(node, analyzeScope);
       } catch (e) {
         console.error(e);
+      }
+    }
+
+    function addPropertyNameNodeSymbol(propertyNameNode: Identifier | undefined): void {
+      if (propertyNameNode && isIdentifier(propertyNameNode)) {
+        let propertySymbol = checker.getSymbolAtLocation(propertyNameNode);
+        if (!propertySymbol) {
+          noSymbolIdentifier.add(propertyNameNode.text);
+        } else {
+          current.addDefinition(propertySymbol, true);
+        }
       }
     }
 
@@ -532,12 +541,17 @@ namespace secharmony {
       // get export names.
       current.exportNames.add(node.name.text);
       root.fileExportNames.add(node.name.text);
+      if (current.kind !== ScopeKind.GLOBAL) {
+        addExportNamesIntoParentScope(node.name.text, current);
+      }
       addExportSymbolInScope(node);
       const propetyNameNode: Identifier | undefined = node.propertyName;
       if (exportObfuscation && propetyNameNode && isIdentifier(propetyNameNode)) {
         let propertySymbol = checker.getSymbolAtLocation(propetyNameNode);
         if (!propertySymbol) {
           noSymbolIdentifier.add(propetyNameNode.text);
+        } else if (propertySymbol.name !== 'default'){
+          current.addDefinition(propertySymbol, true);
         }
       }
       forEachChild(node, analyzeScope);
@@ -617,11 +631,17 @@ namespace secharmony {
           if (!current.exportNames.has(def.name)) {
             current.exportNames.add(def.name);
             root.fileExportNames.add(def.name);
+            if (current.kind !== ScopeKind.GLOBAL) {
+              addExportNamesIntoParentScope(def.name, current);
+            }
           }
           const name: string = def.exportSymbol.name;
           if (!current.exportNames.has(name)) {
             current.exportNames.add(name);
             root.fileExportNames.add(def.name);
+            if (current.kind !== ScopeKind.GLOBAL) {
+              addExportNamesIntoParentScope(name, current);
+            }
           }
         }
       }
@@ -996,6 +1016,16 @@ namespace secharmony {
       };
 
       noSymbolVisit(node);
+    }
+
+    function addExportNamesIntoParentScope(exportName: string, currentScope: Scope): void {
+      let parentScope: Scope = currentScope;
+      while (parentScope) {
+        if (parentScope.exportNames && !parentScope.exportNames.has(exportName)) {
+          parentScope.exportNames.add(exportName);
+        }
+        parentScope = parentScope.parent;
+      }
     }
   }
   
