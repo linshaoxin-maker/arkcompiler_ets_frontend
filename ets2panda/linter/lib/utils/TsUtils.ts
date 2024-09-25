@@ -1243,6 +1243,7 @@ export class TsUtils {
     [FaultID.LimitedReturnTypeInference, TsUtils.getLimitedReturnTypeInferenceHighlightRange],
     [FaultID.LocalFunction, TsUtils.getLocalFunctionHighlightRange],
     [FaultID.FunctionBind, TsUtils.getFunctionApplyCallHighlightRange],
+    [FaultID.FunctionBindError, TsUtils.getFunctionApplyCallHighlightRange],
     [FaultID.FunctionApplyCall, TsUtils.getFunctionApplyCallHighlightRange],
     [FaultID.DeclWithDuplicateName, TsUtils.getDeclWithDuplicateNameHighlightRange],
     [FaultID.ObjectLiteralNoContextType, TsUtils.getObjectLiteralNoContextTypeHighlightRange],
@@ -1250,7 +1251,8 @@ export class TsUtils {
     [FaultID.MultipleStaticBlocks, TsUtils.getMultipleStaticBlocksHighlightRange],
     [FaultID.ParameterProperties, TsUtils.getParameterPropertiesHighlightRange],
     [FaultID.SendableDefiniteAssignment, TsUtils.getSendableDefiniteAssignmentHighlightRange],
-    [FaultID.ObjectTypeLiteral, TsUtils.getObjectTypeLiteralHighlightRange]
+    [FaultID.ObjectTypeLiteral, TsUtils.getObjectTypeLiteralHighlightRange],
+    [FaultID.StructuralIdentity, TsUtils.getStructuralIdentityHighlightRange]
   ]);
 
   static getKeywordHighlightRange(nodeOrComment: ts.Node | ts.CommentRange, keyword: string): [number, number] {
@@ -1387,6 +1389,21 @@ export class TsUtils {
     const name = (nodeOrComment as ts.PropertyDeclaration).name;
     const exclamationToken = (nodeOrComment as ts.PropertyDeclaration).exclamationToken;
     return [name.getStart(), exclamationToken ? exclamationToken.getEnd() : name.getEnd()];
+  }
+
+  static getStructuralIdentityHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
+    let node: ts.Node | undefined;
+    if (nodeOrComment.kind === ts.SyntaxKind.ReturnStatement) {
+      node = (nodeOrComment as ts.ReturnStatement).expression;
+    } else if (nodeOrComment.kind === ts.SyntaxKind.PropertyDeclaration) {
+      node = (nodeOrComment as ts.PropertyDeclaration).name;
+    }
+
+    if (node !== undefined) {
+      return [node.getStart(), node.getEnd()];
+    }
+
+    return undefined;
   }
 
   isStdRecordType(type: ts.Type): boolean {
@@ -2623,14 +2640,6 @@ export class TsUtils {
     return true;
   }
 
-  static isMethodWithThisReturnType(node: ts.Node | undefined): boolean {
-    if (node?.kind !== ts.SyntaxKind.MethodDeclaration) {
-      return false;
-    }
-    const method = node as ts.MethodDeclaration;
-    return method.type?.kind === ts.SyntaxKind.ThisType;
-  }
-
   // If it is an overloaded function, all declarations for that function are found
   static hasSendableDecoratorFunctionOverload(decl: ts.FunctionDeclaration): boolean {
     const decorators = TsUtils.getFunctionOverloadDecorators(decl);
@@ -2823,5 +2832,10 @@ export class TsUtils {
       }
     });
     return exportDeclSet;
+  }
+
+  static isAmbientNode(node: ts.Node): boolean {
+    // Ambient flag is not exposed, so we apply dirty hack to make it visible
+    return !!(node.flags & (ts.NodeFlags as any).Ambient);
   }
 }
