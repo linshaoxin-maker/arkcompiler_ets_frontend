@@ -710,7 +710,7 @@ namespace secharmony {
         if (sym) {
           const originalSym = TypeUtils.getOriginalSymbol(sym, checker);
           // Only those symbols of declaration nodes have mangledNames in mangledSymbolNames
-          mangledName = mangledSymbolNames.get(sym)?.mangledName ?? mangledSymbolNames.get(originalSym)?.mangledName;
+          mangledName = sym.name === originalSym.name? mangledSymbolNames.get(originalSym)?.mangledName : mangledSymbolNames.get(sym)?.mangledName;
         }
         if (node?.parent.kind === SyntaxKind.ClassDeclaration) {
           classMangledName.set(node, mangledName);

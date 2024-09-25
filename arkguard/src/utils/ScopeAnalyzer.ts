@@ -318,9 +318,7 @@ namespace secharmony {
         if (def.exportSymbol) {
           current.exportNames.add(def.name);
           root.fileExportNames.add(def.name);
-          if (current.kind !== ScopeKind.GLOBAL) {
-            addExportNamesIntoParentScope(def.name, current);
-          }
+          tryAddExportNamesIntoParentScope(def.name, current);
           if (def.exportSymbol.name === def.name) {
             /* For export declaration, `def` and its `exportSymbol` has same name,
                 eg. export class Ability {}
@@ -464,8 +462,7 @@ namespace secharmony {
       try {
         const propetyNameNode: Identifier | undefined = node.propertyName;
         if (exportObfuscation) {
-          addPropertyNameNodeSymbol(propetyNameNode);
-
+          tryAddPropertyNameNodeSymbol(propetyNameNode);
           const nameSymbol = checker.getSymbolAtLocation(node.name);
           if (nameSymbol) {
             current.addDefinition(nameSymbol, true);
@@ -481,7 +478,7 @@ namespace secharmony {
       }
     }
 
-    function addPropertyNameNodeSymbol(propertyNameNode: Identifier | undefined): void {
+    function tryAddPropertyNameNodeSymbol(propertyNameNode: Identifier | undefined): void {
       if (propertyNameNode && isIdentifier(propertyNameNode)) {
         let propertySymbol = checker.getSymbolAtLocation(propertyNameNode);
         if (!propertySymbol) {
@@ -541,9 +538,7 @@ namespace secharmony {
       // get export names.
       current.exportNames.add(node.name.text);
       root.fileExportNames.add(node.name.text);
-      if (current.kind !== ScopeKind.GLOBAL) {
-        addExportNamesIntoParentScope(node.name.text, current);
-      }
+      tryAddExportNamesIntoParentScope(node.name.text, current);
       addExportSymbolInScope(node);
       const propetyNameNode: Identifier | undefined = node.propertyName;
       if (exportObfuscation && propetyNameNode && isIdentifier(propetyNameNode)) {
@@ -631,17 +626,13 @@ namespace secharmony {
           if (!current.exportNames.has(def.name)) {
             current.exportNames.add(def.name);
             root.fileExportNames.add(def.name);
-            if (current.kind !== ScopeKind.GLOBAL) {
-              addExportNamesIntoParentScope(def.name, current);
-            }
+            tryAddExportNamesIntoParentScope(def.name, current);
           }
           const name: string = def.exportSymbol.name;
           if (!current.exportNames.has(name)) {
             current.exportNames.add(name);
             root.fileExportNames.add(def.name);
-            if (current.kind !== ScopeKind.GLOBAL) {
-              addExportNamesIntoParentScope(name, current);
-            }
+            tryAddExportNamesIntoParentScope(name, current);
           }
         }
       }
@@ -1018,13 +1009,27 @@ namespace secharmony {
       noSymbolVisit(node);
     }
 
-    function addExportNamesIntoParentScope(exportName: string, currentScope: Scope): void {
+    function tryAddExportNamesIntoParentScope(exportName: string, currentScope: Scope): void {
+      if (currentScope.kind === ScopeKind.GLOBAL) {
+        return;
+      }
       let parentScope: Scope = currentScope;
       while (parentScope) {
-        if (parentScope.exportNames && !parentScope.exportNames.has(exportName)) {
-          parentScope.exportNames.add(exportName);
-        }
+        tryAddExportNamesIntoCurrentScope(exportName, parentScope);
         parentScope = parentScope.parent;
+      }
+    }
+
+    function tryAddExportNamesIntoCurrentScope(exportName: string, currentScope: Scope): void {
+      if (!currentScope.exportNames || currentScope.exportNames.has(exportName)) {
+        return;
+      }
+      let currentDefs: Set<Symbol> = currentScope.defs;
+      for (const curDef of currentDefs) {
+        if (curDef.name === exportName) {
+          currentScope.exportNames.add(exportName);
+          return;
+        }
       }
     }
   }
