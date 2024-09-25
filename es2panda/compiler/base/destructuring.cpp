@@ -200,7 +200,7 @@ static void GenObjectWithRest(PandaGen *pg, const ir::ObjectExpression *object, 
 
         VReg propName = pg->AllocReg();
         const ir::Expression *key = element->AsProperty()->Key();
-        if (key->IsIdentifier()) {
+        if (!element->AsProperty()->IsComputed() && key->IsIdentifier()) {
             pg->LoadAccumulatorString(key, key->AsIdentifier()->Name());
         } else {
             key->Compile(pg);
