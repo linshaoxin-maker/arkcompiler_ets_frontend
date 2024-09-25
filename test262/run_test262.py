@@ -155,7 +155,9 @@ def parse_args():
                         help="Run test262 with close force-gc")
     parser.add_argument('--enable-arkguard', action='store_true',
                         help="enable arkguard for 262 tests")
-    
+    parser.add_argument('--extra-exclude-list',
+                        help="Additional excluded (skip) test list")
+
     args = parser.parse_args()
     if args.abc2program and (args.run_pgo or args.ark_aot):
         sys.exit("Error: '--abc2program' used together with  '--ark-aot' or '--run-pgo' is not supported")
@@ -226,6 +228,9 @@ def get_all_skip_tests(args):
         SKIP_LIST_FILES.append(ES2ABC_SKIP_LIST_FILE)
     else:
         SKIP_LIST_FILES.append(TS2ABC_SKIP_LIST_FILE)
+
+    if args.extra_exclude_list:
+        SKIP_LIST_FILES.append(os.path.join("test262", args.extra_exclude_list))
 
     for file in SKIP_LIST_FILES:
         with open(file) as jsonfile:
