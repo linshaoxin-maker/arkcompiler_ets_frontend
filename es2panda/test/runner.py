@@ -172,6 +172,8 @@ def get_args():
         help='run debug tests')
     parser.add_argument('--version-control', action='store_true', dest='version_control', default=False,
         help='run api version control tests')
+    parser.add_argument('--regex', dest='regex', action='store_true', default=False,
+        help='run regex test')
 
     return parser.parse_args()
 
@@ -2068,6 +2070,66 @@ class CompilerTestInfo(object):
         self.directory = os.path.sep.join([prefiex_dir, self.directory])
 
 
+class JsRegexRunner(Runner):
+    def __init__(self, args):
+        super().__init__(args, "Regex")
+
+    def add_directory(self, directory, extension, flags):
+        glob_expression = path.join(
+            self.test_root, directory, "*.%s" % extension, )
+        glob_files = glob(glob_expression, recursive=True)
+        self.tests += list(map(lambda f:JsRegexTest(f, flags), glob_files))
+
+    def test_path(self, src):
+        return src
+
+
+class JsRegexTest(Test):
+    def __init__(self, test_path, flags):
+        super().__init__(test_path, flags)
+
+    def run(self, runner):
+        test_abc_name = ("%s.abc" % (path.splitext(self.path)[0])).replace("/", "_")
+        test_abc_path = path.join(runner.build_dir, test_abc_name)
+        cmd = runner.cmd_prefix + [runner.es2panda]
+        cmd.extend(self.flags)
+        cmd.extend(["--output=" + test_abc_path])
+        cmd.append(self.path)
+        process = run_subprocess_with_beta3(self, cmd)
+        out, err = process.communicate()
+
+        if not os.path.exists(test_abc_path):
+            self.passed = False
+            self.error = err.decode("utf-8", errors="ignore")
+            return self
+
+        ld_library_path = runner.ld_library_path
+        os.environ.setdefault("LD_LIBRARY_PATH", ld_library_path)
+        run_abc_cmd = [runner.ark_js_vm, '--enable-force-gc=false', test_abc_path]
+        self.log_cmd(run_abc_cmd)
+        process = subprocess.Popen(run_abc_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = process.communicate()
+        self.output = out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore")
+
+
+        expected_path = self.get_path_to_expected()
+        try:
+            with open(expected_path, 'rb') as fp:
+                expected_b = fp.read()
+            self.passed = expected_b == out and process.returncode in [0, 1]
+
+        except Exception:
+            self.passed = False
+
+        if not self.passed:
+            self.error = err.decode("utf-8", errors="ignore")
+
+        if os.path.exists(test_abc_path):
+            os.remove(test_abc_path)
+
+        return self
+
+
 # Copy compiler directory to test/.local directory, and do inplace obfuscation.
 def prepare_for_obfuscation(compiler_test_infos, test_root):
     tmp_dir_name = ".local"
@@ -2424,6 +2486,13 @@ def add_cmd_for_aop_transform(runners, args):
     runners.append(runner)
 
 
+def add_directory_for_regex(runners, args):
+    runner = JsRegexRunner(args)
+    runner.add_directory("compiler/js/regex", "js", [])
+
+    runners.append(runner)
+
+
 class AopTransform(Runner):
     def __init__(self, args):
         Runner.__init__(self, args, "AopTransform")
@@ -2482,6 +2551,9 @@ def main():
 
     if args.version_control:
         add_directory_for_version_control(runners, args)
+
+    if args.regex:
+        add_directory_for_regex(runners, args)
 
     failed_tests = 0
 
