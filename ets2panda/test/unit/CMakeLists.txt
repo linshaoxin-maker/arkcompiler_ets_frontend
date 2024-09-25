@@ -18,6 +18,7 @@ endif()
 add_subdirectory(dynamic)
 add_subdirectory(lowerings)
 add_subdirectory(public)
+add_subdirectory(src_dumper)
 
 ets2panda_add_gtest(es2panda_astdumper_tests
     CPP_SOURCES ast_dumper_test.cpp
@@ -25,6 +26,10 @@ ets2panda_add_gtest(es2panda_astdumper_tests
 
 ets2panda_add_gtest(es2panda_union_normalization_tests
     CPP_SOURCES union_normalization_test.cpp
+)
+
+ets2panda_add_gtest(es2panda_extern_flag_tests
+    CPP_SOURCES extern_flag_test.cpp
 )
 
 # NOTE: es2panda_rest_parameter_flag test runs a lot of time on qemu, so let's disable it
