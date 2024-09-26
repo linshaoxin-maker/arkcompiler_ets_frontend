@@ -153,7 +153,7 @@ def parse_args():
 
 def parse_configs():
     config_yaml = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.yaml')
-    with open(config_yaml, 'r') as config_file:
+    with open(config_yaml, 'r', encoding='utf-8') as config_file:
         global configs
         configs = yaml.safe_load(config_file)
 

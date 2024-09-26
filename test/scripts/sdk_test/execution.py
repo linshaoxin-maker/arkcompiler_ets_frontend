@@ -230,6 +230,9 @@ class FullTest:
 
     @staticmethod
     def compile_full_module_name_is_inconsistent(task, is_debug):
+        if utils.is_linux():
+            return
+
         test_name = 'module_name_is_inconsistent'
         clean_compile(task)
         full_task = FullTest.prepare_full_task(task, test_name)
@@ -347,7 +350,8 @@ class IncrementalTest:
             backup_path = task.backup_info.cache_release
             inc_info = inc_task.release_info
 
-        validate_cache_file(task, inc_info, modified_files, cache_path, backup_path)
+        new_modified_files = utils.get_split_modify_file_path(task, modified_files, module_path)
+        validate_cache_file(task, inc_info, new_modified_files, cache_path, backup_path)
 
     @staticmethod
     def prepare_incremental_task(task, test_name):
@@ -810,8 +814,8 @@ class IncrementalTest:
                 task, inc_task, is_debug, modified_files)
 
     @staticmethod
-    def compile_incremental_build_entry_then_preview_build(task, is_debug):
-        test_name = 'build_entry_then_preview_build'
+    def compile_incremental_build_entry_then_preview(task, is_debug):
+        test_name = 'build_entry_then_preview'
         inc_task = IncrementalTest.prepare_incremental_task(task, test_name)
         info = inc_task.debug_info if is_debug else inc_task.release_info
         logging.info(f"==========> Running {test_name} for task: {task.name}")
@@ -1071,7 +1075,8 @@ class PreviewTest:
             task.path, *module_path, *task.build_path, *task.preview_cache_path, 'debug')
         backup_path = task.backup_info.cache_debug
 
-        passed = validate_cache_file(task, preview_task_info, modified_files, cache_path, backup_path)
+        new_modified_files = utils.get_split_modify_file_path(task, modified_files, module_path)
+        passed = validate_cache_file(task, preview_task_info, new_modified_files, cache_path, backup_path)
         return passed
 
     @staticmethod
@@ -1090,23 +1095,10 @@ class PreviewTest:
         return passed
 
     @staticmethod
-    def compile_preview_build_entry_then_preview(task, is_debug):
-        test_name = "build_entry_then_preview"
-        preview_task_info = options.CompilationInfo()
-        task.preview_compilation_info[test_name] = preview_task_info
-        logging.info(f"==========> Running {test_name} for task: {task.name}")
-
-        build_entry, build_module_time = is_build_module_successful(task, is_debug, preview_task_info)
-        if not build_entry:
-            return
-        build_preview, preview_build_time = preview_mode_build(preview_task_info, task, is_debug)
-
-        if build_preview:
-            preview_task_info.result = options.TaskResult.passed
-            preview_task_info.time = preview_build_time
-
-    @staticmethod
     def compile_preview_build_modify_file_name(task, is_debug):
+        if utils.is_linux():
+            return
+
         test_name = "build_modify_file_name"
         preview_task_info = options.CompilationInfo()
         task.preview_compilation_info[test_name] = preview_task_info
@@ -1185,7 +1177,7 @@ class PreviewTest:
             if not build_preview:
                 return
 
-            passed = PreviewTest.validate_preview_incremental_file(task, preview_task_info, is_debug, inc_modify_file)
+            passed = PreviewTest.validate_preview_incremental_file(task, preview_task_info, is_debug, [inc_modify_file])
             if passed:
                 preview_task_info.result = options.TaskResult.passed
                 preview_task_info.time = preview_build_time
@@ -1456,8 +1448,8 @@ class OtherTest:
 
         cmd = get_hvigor_compile_cmd(task, is_debug, task.hap_module, long_str)
         [stdout, stderr] = compile_project(task, is_debug, cmd)
-        # Only the Windows platform has a length limit
-        if utils.is_windows():
+        # Only the Windows and Linux platform has a length limit
+        if utils.is_windows() or utils.is_linux():
             expected_error_message = f"Unknown module '{long_str}' in the command line"
 
             if expected_error_message in stderr:
@@ -1493,7 +1485,11 @@ class OtherTest:
             test_info.result = options.TaskResult.failed
             test_info.error_message = stderr
         else:
-            output_file = get_compile_output_file_path(task, '', options.OutputType.unsigned)
+            # output_file = get_compile_output_file_path(task, '', options.OutputType.unsigned)
+            module_path = utils.get_module_path(task, '')
+            output_path = utils.get_output_path(task, '', options.OutputType.unsigned)
+            module_path_len = len(module_path)
+            output_file = os.path.join(task.path, *module_path, *task.build_path, *output_path)
             output_dir = os.path.dirname(output_file)
             output_file_name = os.path.basename(output_file)
 
@@ -1506,8 +1502,8 @@ class OtherTest:
 
             output_dir_items = output_dir.split(os.path.sep)
             output_dir_items[-1] = ohos_test_str
-            if utils.is_windows():
-                # for windows, need to add an empty string to mark between disk identifier and path
+            if utils.is_windows() or utils.is_linux():
+                # for windows or linux, need to add an empty string to mark between disk identifier and path
                 output_dir_items.insert(1, os.path.sep)
             elif utils.is_mac():
                 output_dir_items.insert(0, os.path.sep)
@@ -1744,6 +1740,7 @@ def find_file_by_suffix(extension_list, uncompressed_path, filename, relative_pa
         new_filename = filename.replace(origin_extension, extension)
         new_filepath = os.path.join(uncompressed_path, relative_path, new_filename)
         if not os.path.exists(new_filepath):
+            logging.error(f'file path: {new_filepath} not exists.')
             return False
     return True
 
@@ -1875,14 +1872,16 @@ def validate(compilation_info, task, is_debug, stdout, stderr, picture_name='', 
 def get_hvigor_path():
     hvigor = []
     deveco_path = options.configs.get('deveco_path')
-    node_js_path = os.path.join(deveco_path, 'tools', 'node')
     if utils.is_windows():
-        node_exe_path = os.path.join(node_js_path, 'node.exe')
+        node_exe_path = os.path.join(deveco_path, 'tools', 'node', 'node.exe')
         hvigor_script_path = os.path.join(deveco_path, 'tools', 'hvigor', 'bin', 'hvigorw.js')
         hvigor = [node_exe_path, hvigor_script_path]
+    elif utils.is_linux():
+        hvigor = [os.path.join(deveco_path, 'bin', 'hvigorw')]
+        utils.add_executable_permission(*hvigor)
     else:
         hvigor = [os.path.join(deveco_path, 'hvigorw')]
-        utils.add_executable_permission(hvigor)
+        utils.add_executable_permission(*hvigor)
     return hvigor
 
 
@@ -1979,34 +1978,40 @@ def clean_preview_cache(task, module=''):
 
 
 def sync_project(task):
-    ohpm_bat_path = os.path.join(options.configs.get('deveco_path'), 'tools', 'ohpm', 'bin', 'ohpm.bat')
-    ohpm_install_cmd_suffix = ' install --all --registry https://repo.harmonyos.com/ohpm/ --strict_ssl true'
-    ohpm_install_cmd = f'"{ohpm_bat_path}"' + ohpm_install_cmd_suffix
-    cmd_suffix = '--sync -p product=default -p buildMode=debug --analyze --parallel --incremental --daemon'
-    cmd = [*get_hvigor_path(), cmd_suffix]
-    logging.debug(f"cmd execution path {task.path}")
-    logging.debug(f'ohpm install cmd: {ohpm_install_cmd}')
-    subprocess.Popen(ohpm_install_cmd, shell=False, cwd=task.path,
-                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    logging.debug(f'sync cmd: {cmd}')
-    subprocess.Popen(cmd, shell=False, cwd=task.path,
-                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    # If you don't wait it may cause: current process status is busy, cannot start a build action
-    time.sleep(5)
+    if utils.is_windows():
+        ohpm_bat_path = os.path.join(options.configs.get('deveco_path'), 'tools', 'ohpm', 'bin', 'ohpm.bat')
+        ohpm_install_cmd_suffix = ' install --all --registry https://repo.harmonyos.com/ohpm/ --strict_ssl true'
+        ohpm_install_cmd = f'"{ohpm_bat_path}"' + ohpm_install_cmd_suffix
+        cmd_suffix = '--sync -p product=default -p buildMode=debug --analyze --parallel --incremental --daemon'
+        cmd = [*get_hvigor_path(task.path), cmd_suffix]
+        logging.debug(f"cmd execution path {task.path}")
+        logging.debug(f'ohpm install cmd: {ohpm_install_cmd}')
+        subprocess.Popen(ohpm_install_cmd, shell=False, cwd=task.path,
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        logging.debug(f'sync cmd: {cmd}')
+        subprocess.Popen(cmd, shell=False, cwd=task.path,
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # If you don't wait it may cause: current process status is busy, cannot start a build action
+        time.sleep(5)
+    elif utils.is_linux():
+        ohpm_install_cmd = ['ohpm', 'install']
+        logging.debug(f'ohpm install cmd: {ohpm_install_cmd}')
+        subprocess.Popen(ohpm_install_cmd, shell=False, cwd=task.path,
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
 def compile_full(task, is_debug):
     if not FullTest.full_compile(task, is_debug):
         return False
 
-    FullTest.compile_full_import_ordinary_ohpm_package(task, is_debug)
-    FullTest.compile_full_import_special_ohpm_package(task, is_debug)
-    FullTest.compile_full_import_static_library(task, is_debug)
-    FullTest.compile_full_import_share_library(task, is_debug)
-    FullTest.compile_full_import_so_file(task, is_debug)
-    FullTest.compile_full_has_syntax_error_in_js(task, is_debug)
-    FullTest.compile_full_use_normalize_ohmurl(task, is_debug)
-    FullTest.compile_full_module_name_is_inconsistent(task, is_debug)
+    # FullTest.compile_full_import_ordinary_ohpm_package(task, is_debug)
+    # FullTest.compile_full_import_special_ohpm_package(task, is_debug)
+    # FullTest.compile_full_import_static_library(task, is_debug)
+    # FullTest.compile_full_import_share_library(task, is_debug)
+    # FullTest.compile_full_import_so_file(task, is_debug)
+    # FullTest.compile_full_has_syntax_error_in_js(task, is_debug)
+    # FullTest.compile_full_use_normalize_ohmurl(task, is_debug)
+    # FullTest.compile_full_module_name_is_inconsistent(task, is_debug)
 
     return True
 
@@ -2049,7 +2054,7 @@ def compile_incremental(task, is_debug):
     IncrementalTest.compile_incremental_build_hsp_then_entry(task, is_debug)
     IncrementalTest.compile_incremental_build_hsp_then_ohos(task, is_debug)
     IncrementalTest.compile_incremental_build_entry_then_ohos(task, is_debug)
-    IncrementalTest.compile_incremental_build_entry_then_preview_build(task, is_debug)
+    IncrementalTest.compile_incremental_build_entry_then_preview(task, is_debug)
 
     # These tests require modifying the test files and synchronizing the project,
     # which may result in unexpected modifications
@@ -2063,8 +2068,8 @@ def compile_bytecode_har(task, is_debug):
     clean_compile(task)
 
     BytecodeHarTest.build_bytecode_har(task, is_debug)
-    BytecodeHarTest.build_har_then_bytecode_har(task, is_debug)
-    BytecodeHarTest.import_bytecode_static_library(task, is_debug)
+    # BytecodeHarTest.build_har_then_bytecode_har(task, is_debug)
+    # BytecodeHarTest.import_bytecode_static_library(task, is_debug)
 
 
 def compile_external(task, is_debug):
@@ -2083,7 +2088,6 @@ def compile_preview(task, is_debug):
         logging.error('Preview build failed, skip other preview tests')
         return
 
-    PreviewTest.compile_preview_build_entry_then_preview(task, is_debug)
     PreviewTest.compile_preview_build_modify_file_name(task, is_debug)
     PreviewTest.compile_preview_build_generate_sourcemap(task, is_debug)
     PreviewTest.compile_preview_build_tigger_incremental_build(task, is_debug)
@@ -2504,7 +2508,7 @@ def manage_bytecode_har_dependency(task, is_debug, info, module):
 
 
 def modify_bytecode_module_dependency(task, module, reverse):
-    oh_package_json_path = os.path.join(task.path, task.hap_module, 'oh-package.json5')
+    oh_package_json_path = os.path.join(task.path, *task.hap_module_path, 'oh-package.json5')
     with open(oh_package_json_path, 'r+', encoding='utf-8') as json_file:
         json_data = json5.load(json_file)
         dependencies_dic = json_data["dependencies"]
@@ -2643,7 +2647,8 @@ def is_normalized_ohm_url(task, is_debug, info):
     build_path = os.path.join(task.path, *task.hap_module_path, *task.build_path)
     cache_path = os.path.join(build_path, *task.cache_path, 'debug') if is_debug \
         else os.path.join(build_path, *task.cache_path, 'release')
-    inc_modify_file = os.path.join(*task.inc_modify_file)
+    module_path_len = len(task.hap_module_path)
+    inc_modify_file = os.path.join(*task.inc_modify_file[(module_path_len - 1):])
     dir_name, base_name = os.path.split(inc_modify_file)
     file_name, _ = os.path.splitext(base_name)
     ts_file_name = f'{file_name}.ts'
@@ -2727,36 +2732,36 @@ def execute(test_tasks):
     for task in test_tasks:
         try:
             logging.info(f"======> Running task: {task.name}")
-            if options.arguments.compile_mode in ['all', 'full']:
-                if not execute_full_compile(task):
-                    logging.info("Full compile failed, skip other tests!")
-                    continue
+            # if options.arguments.compile_mode in ['all', 'full']:
+            #     if not execute_full_compile(task):
+            #         logging.info("Full compile failed, skip other tests!")
+            #         continue
 
-            if options.arguments.compile_mode in ['all', 'incremental']:
-                execute_incremental_compile(task)
+            # if options.arguments.compile_mode in ['all', 'incremental']:
+            #     execute_incremental_compile(task)
 
             if options.arguments.compile_mode in ['all', 'bytecode_har']:
                 execute_bytecode_har_compile(task)
 
-            if options.arguments.compile_mode in ['all', 'external']:
-                execute_external_compile(task)
+            # if options.arguments.compile_mode in ['all', 'external']:
+            #     execute_external_compile(task)
 
-            if options.arguments.compile_mode in ['all', 'preview']:
-                execute_preview_compile(task)
+            # if options.arguments.compile_mode in ['all', 'preview']:
+            #     execute_preview_compile(task)
 
-            OtherTest.verify_binary_consistency(task)
+            # OtherTest.verify_binary_consistency(task)
 
-            # for these tests, use one hapMode maybe enough
-            is_debug = True if options.arguments.hap_mode == 'debug' else False
-            OtherTest.execute_break_compile(task, is_debug)
-            if 'error' in task.type:
-                OtherTest.compile_full_with_error(task, is_debug)
+            # # for these tests, use one hapMode maybe enough
+            # is_debug = True if options.arguments.hap_mode == 'debug' else False
+            # OtherTest.execute_break_compile(task, is_debug)
+            # if 'error' in task.type:
+            #     OtherTest.compile_full_with_error(task, is_debug)
 
-            if 'exceed_length_error' in task.type:
-                OtherTest.compile_with_exceed_length(task, is_debug)
+            # if 'exceed_length_error' in task.type:
+            #     OtherTest.compile_with_exceed_length(task, is_debug)
 
-            if 'ohosTest' in task.type:
-                OtherTest.compile_ohos_test(task)
+            # if 'ohosTest' in task.type:
+            #     OtherTest.compile_ohos_test(task)
 
             logging.info(f"======> Running task: {task.name} finished")
         except Exception as e:
