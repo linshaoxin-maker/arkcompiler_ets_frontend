@@ -18,10 +18,10 @@ declare global {
     var myGlobalVar: string;
 }
 globalThis.myGlobalVar = 'myGlobalVar';
-const myGlobalFunction = function () {
+const b = function () {
     return 'myGlobalFunction';
 };
-globalThis.myGlobalFunction = myGlobalFunction;
+globalThis.myGlobalFunction = b;
 a(globalThis.myGlobalVar === 'myGlobalVar', 'success');
 a(globalThis.myGlobalFunction() === 'myGlobalFunction', 'success');
 export {};

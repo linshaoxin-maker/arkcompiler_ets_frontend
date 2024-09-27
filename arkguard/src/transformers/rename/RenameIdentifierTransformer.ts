@@ -273,6 +273,13 @@ namespace secharmony {
 
           // Apply the obfuscated name from the declaration to the current node 
           // only if the current node's name matches the name at the declaration site.
+          //
+          // In most cases symbols, symbol and original symbol have the same symbol name, thus 
+          // these symbols can have the same obfuscated names, for example:
+          // let A = 1;
+          // let B = A;
+          // Clearly, two As should have the same obfuscated names
+          // But sometimes, you cannot apply the obfuscated name of original symbol to every use site
           // For example, in the following case:
           // let A = 1;
           // export {A as B};

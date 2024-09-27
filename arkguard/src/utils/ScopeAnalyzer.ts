@@ -66,6 +66,8 @@ import type {
 
 import {NodeUtils} from './NodeUtils';
 import {isParameterPropertyModifier, isViewPUBasedClass} from './OhsUtil';
+import { TypeUtils } from './TypeUtils';
+
 /**
  * kind of a scope
  */
@@ -318,7 +320,7 @@ namespace secharmony {
         if (def.exportSymbol) {
           current.exportNames.add(def.name);
           root.fileExportNames.add(def.name);
-          tryAddExportNamesIntoParentScope(def.name, current);
+          tryAddExportNamesIntoParentScope(def, current);
           if (def.exportSymbol.name === def.name) {
             /* For export declaration, `def` and its `exportSymbol` has same name,
                 eg. export class Ability {}
@@ -538,7 +540,7 @@ namespace secharmony {
       // get export names.
       current.exportNames.add(node.name.text);
       root.fileExportNames.add(node.name.text);
-      tryAddExportNamesIntoParentScope(node.name.text, current);
+      tryAddExportNamesIntoParentScope(checker.getSymbolAtLocation(node.name), current);
       addExportSymbolInScope(node);
       const propetyNameNode: Identifier | undefined = node.propertyName;
       if (exportObfuscation && propetyNameNode && isIdentifier(propetyNameNode)) {
@@ -626,13 +628,13 @@ namespace secharmony {
           if (!current.exportNames.has(def.name)) {
             current.exportNames.add(def.name);
             root.fileExportNames.add(def.name);
-            tryAddExportNamesIntoParentScope(def.name, current);
+            tryAddExportNamesIntoParentScope(def, current);
           }
           const name: string = def.exportSymbol.name;
           if (!current.exportNames.has(name)) {
             current.exportNames.add(name);
             root.fileExportNames.add(def.name);
-            tryAddExportNamesIntoParentScope(name, current);
+            tryAddExportNamesIntoParentScope(def.exportSymbol, current);
           }
         }
       }
@@ -1009,25 +1011,27 @@ namespace secharmony {
       noSymbolVisit(node);
     }
 
-    function tryAddExportNamesIntoParentScope(exportName: string, currentScope: Scope): void {
+    function tryAddExportNamesIntoParentScope(sym: Symbol, currentScope: Scope): void {
       if (currentScope.kind === ScopeKind.GLOBAL) {
         return;
       }
       let parentScope: Scope = currentScope;
       while (parentScope) {
-        tryAddExportNamesIntoCurrentScope(exportName, parentScope);
+        tryAddExportNamesIntoCurrentScope(sym, parentScope);
         parentScope = parentScope.parent;
       }
     }
 
-    function tryAddExportNamesIntoCurrentScope(exportName: string, currentScope: Scope): void {
-      if (!currentScope.exportNames || currentScope.exportNames.has(exportName)) {
+    function tryAddExportNamesIntoCurrentScope(sym: Symbol, currentScope: Scope): void {
+      if (!currentScope.exportNames || currentScope.exportNames.has(sym.name)) {
         return;
       }
+      let originalSymbol: Symbol = TypeUtils.getOriginalSymbol(sym, checker);
       let currentDefs: Set<Symbol> = currentScope.defs;
       for (const curDef of currentDefs) {
-        if (curDef.name === exportName) {
-          currentScope.exportNames.add(exportName);
+        let curOriginalSym: Symbol = TypeUtils.getOriginalSymbol(curDef, checker);
+        if (curOriginalSym === originalSymbol) {
+          currentScope.exportNames.add(sym.name);
           return;
         }
       }

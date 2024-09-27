@@ -21,16 +21,16 @@ declare global {
         type t = number;
     }
 }
-let a: global1.t = 1;
-b(a === 1);
-namespace c {
+let c: global1.t = 1;
+b(c === 1);
+namespace d {
     export module a {
         export function foo() {
             return 1;
         }
     }
-    module d {
+    module e {
     }
 }
-b(c.a.foo() === 1);
+b(d.a.foo() === 1);
 export {};
