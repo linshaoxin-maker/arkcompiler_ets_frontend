@@ -515,7 +515,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    root_dir = os.path.join(os.path.dirname(__file__), "../test/grammar/nosymboltest")
+    root_dir = os.path.join(os.path.dirname(__file__), "../test/grammar")
     root_dir = os.path.normpath(root_dir)
 
     root_config = os.path.join(root_dir, CONFIG_FILE_NAME)
