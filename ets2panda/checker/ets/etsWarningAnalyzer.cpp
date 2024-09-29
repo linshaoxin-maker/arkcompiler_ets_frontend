@@ -38,6 +38,111 @@
 
 namespace ark::es2panda::checker {
 
+size_t DeleteSpaces(std::string& string)
+{
+    size_t strBegin=string.find_first_not_of(' ');
+    string.erase(0, strBegin);
+    return strBegin;
+}
+
+void ETSWarningAnalyzer::AutoFixSourceFile(const util::StringView &sourcePath, const std::string &tmpPath, size_t whereLine, const ETSWarnings warning, [[maybe_unused]] ir::AstNode *node)
+{
+    std::ifstream sourceFile(static_cast<std::string>(sourcePath));
+    std::rename((static_cast<std::string>(sourcePath)).c_str(), (static_cast<std::string>(tmpPath)).c_str());
+    std::ofstream destFile(static_cast<std::string>(sourcePath));
+
+    std::string line;
+    size_t currentLine = 0;
+    std::string space = "";
+
+    switch (warning) {
+        case ETSWarnings::SUGGEST_FINAL: {
+            while (std::getline(sourceFile, line) && !sourceFile.eof()) {
+                if (currentLine == whereLine) {
+                    size_t shift = DeleteSpaces(line);
+                    space.resize(shift, ' ');
+                    line = space + "final " + line;
+                }
+                destFile << line << std::endl;
+                currentLine++;
+            }
+            break;
+        }
+        case ETSWarnings::BOOST_EQUALITY_EXPRESSION: {
+            // auto binExpr = node->AsBinaryExpression();
+            // auto operatorType = binExpr->OperatorType();
+
+            while (std::getline(sourceFile, line) && !sourceFile.eof()) {
+                // std::string lhsBefore = line;
+                // std::string rhsAfter = line;
+                // std::string lhs = line;
+                // std::string rhs = line;
+                // if (currentLine == whereLine) {
+                //     rhs = rhs.substr(binExpr->Right()->Start().index, binExpr->Right()->End().index - binExpr->Right()->Start().index + 1);
+                //     lhs = lhs.substr(binExpr->Left()->Start().index, binExpr->Left()->End().index - binExpr->Left()->Start().index + 1);
+                //     lhsBefore = lhsBefore.substr(0, binExpr->Left()->Start().index + 1);
+                //     rhsAfter = rhsAfter.substr(binExpr->Left()->End().index, line.size() - 1 - binExpr->Left()->End().index);
+                //     line = lhsBefore + rhs + lexer::TokenToString(operatorType) + lhs + rhsAfter;
+                // }
+                destFile << line << std::endl;
+                currentLine++;
+            }
+            break;
+        }
+        case ETSWarnings::WRAP_TOP_LEVEL_STATEMENTS: {
+            ETSThrowWarning("Autofixing for ets-wrap-top-level-statements is not supported yet", node->Start());
+            break;
+        }
+        case ETSWarnings::REMOVE_ASYNC_FUNCTIONS: {
+            ETSThrowWarning("Autofixing for ets-remove-async is not supported yet", node->Start());
+            break;
+        }
+        case ETSWarnings::REMOVE_LAMBDA: {
+            ETSThrowWarning("Autofixing for ets-remove-lambda is not supported yet", node->Start());
+            break;
+        }
+        case ETSWarnings::IMPLICIT_BOXING_UNBOXING: {
+            ETSThrowWarning("Autofixing for ets-implicit-boxing-unboxing is not supported yet", node->Start());
+            break;
+        }
+        case ETSWarnings::REMOVE_REST_PARAMETERS: {
+            ETSThrowWarning("Autofixing for ets-rest-parameters is not supported yet", node->Start());
+            break;
+        }
+        default:
+            break;
+    }
+
+    sourceFile.close();
+    destFile.close();
+}
+
+bool ETSWarningAnalyzer::AnalyzeLocalClasssesForFinalModifierInMethodDef(const ir::AstNode *body,
+                                                                         const ir::ClassDefinition *classDef)
+{
+    for (const auto *statement : body->AsMethodDefinition()->Function()->Body()->AsBlockStatement()->Statements()) {
+        if (program_->NodeContainsETSNolint(statement, ETSWarnings::SUGGEST_FINAL)) {
+            continue;
+        }
+
+        if (!statement->IsClassDeclaration()) {
+            continue;
+        }
+
+        const auto *superClass = statement->AsClassDeclaration()->Definition()->Super();
+
+        if (superClass == nullptr) {
+            continue;
+        }
+
+        if (superClass->IsETSTypeReference() && superClass->AsETSTypeReference()->Part()->Name()->IsIdentifier() &&
+            (superClass->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Name() == classDef->Ident()->Name())) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void ETSWarningAnalyzer::AnalyzeClassDefForFinalModifier(const ir::ClassDefinition *classDef)
 {
     ASSERT(classDef != nullptr);
@@ -58,19 +163,39 @@ void ETSWarningAnalyzer::AnalyzeClassDefForFinalModifier(const ir::ClassDefiniti
 
         if (!itAsClassDef->IsGlobal()) {
             const auto *superClass = itAsClassDef->Super();
-
             if (superClass == nullptr) {
                 continue;
             }
 
             if (superClass->IsETSTypeReference() && superClass->AsETSTypeReference()->Part()->Name()->IsIdentifier() &&
-                superClass->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Name() == classDef->Ident()->Name()) {
+                (superClass->AsETSTypeReference()->Part()->Name()->AsIdentifier()->Name() ==
+                 classDef->Ident()->Name())) {
                 return;
             }
+            continue;
+        }
+
+        for (const auto *itBody : itAsClassDef->Body()) {
+            if (!itBody->IsMethodDefinition() ||
+                itBody->AsMethodDefinition()->Id()->Name() == compiler::Signatures::INIT_METHOD) {
+                continue;
+            }
+            if (AnalyzeLocalClasssesForFinalModifierInMethodDef(itBody, classDef)) {
+                return;
+            }
+            // NOTE: Add checks for local classes inside classes, ... after supporting in front-end
         }
     }
 
-    ETSThrowWarning("Suggest 'final' modifier for class", classDef->Ident()->Start());
+    if(etsAutoFix_) {
+        size_t whereLine = classDef->Ident()->Start().line;
+        auto file = program_->SourceFilePath().Utf8();
+        auto fileTmp = static_cast<std::string>(program_->SourceFileFolder()) + "/new_tmp_final.ets";
+        AutoFixSourceFile(file, fileTmp, whereLine, ETSWarnings::SUGGEST_FINAL, nullptr);
+    }
+
+    ETSThrowWarning("Suggest 'final' modifier for class '" + std::string(classDef->Ident()->Name()) + "'",
+                    classDef->Ident()->Start());
 }
 
 void ETSWarningAnalyzer::AnalyzeClassMethodForFinalModifier(const ir::MethodDefinition *methodDef,
@@ -113,20 +238,30 @@ void ETSWarningAnalyzer::AnalyzeClassMethodForFinalModifier(const ir::MethodDefi
     }
 
     if (suggestFinal) {
-        ETSThrowWarning("Suggest 'final' modifier for method", methodDef->Function()->Start());
+        if(etsAutoFix_) {
+            size_t whereLine = methodDef->Function()->Start().line;
+            auto file = program_->SourceFilePath().Utf8();
+            auto fileTmp = static_cast<std::string>(program_->SourceFileFolder()) + "/new_tmp_final.ets";
+            AutoFixSourceFile(file, fileTmp, whereLine, ETSWarnings::SUGGEST_FINAL, nullptr);
+        }
+        ETSThrowWarning("Suggest 'final' modifier for method '" + std::string(methodDef->Function()->Id()->Name()) +
+                            "'",
+                        methodDef->Function()->Start());
     }
 }
 
 void ETSWarningAnalyzer::ETSWarningSuggestFinal(const ir::AstNode *node)
 {
-    if (node->IsClassDeclaration() && !program_->NodeContainsETSNolint(node, ETSWarnings::SUGGEST_FINAL)) {
-        if (node->AsClassDeclaration()->Definition()->IsClassDefinition()) {
+    if (node->IsClassDeclaration()) {
+        if (node->AsClassDeclaration()->Definition()->IsClassDefinition() &&
+            !program_->NodeContainsETSNolint(node, ETSWarnings::SUGGEST_FINAL)) {
             AnalyzeClassDefForFinalModifier(node->AsClassDeclaration()->Definition());
         }
 
         const auto classBody = node->AsClassDeclaration()->Definition()->Body();
         for (const auto *it : classBody) {
-            if (it->IsMethodDefinition()) {
+            if (it->IsMethodDefinition() && !program_->NodeContainsETSNolint(it, ETSWarnings::SUGGEST_FINAL) &&
+                !program_->NodeContainsETSNolint(node, ETSWarnings::SUGGEST_FINAL)) {
                 AnalyzeClassMethodForFinalModifier(it->AsMethodDefinition(), node->AsClassDeclaration()->Definition());
             }
         }
@@ -141,11 +276,17 @@ void ETSWarningAnalyzer::CheckTopLevelExpressions(const ir::Expression *expressi
         lexer::SourcePosition pos = exprCallee->Start();
         if (exprCallee->IsMemberExpression()) {
             pos = exprCallee->AsMemberExpression()->Object()->Start();
-            ETSThrowWarning("Prohibit top-level statements", pos);
+            ETSThrowWarning("Wrap top-level call expressions", pos);
         }
     } else if (expression->IsAssignmentExpression()) {
         const auto assignmentExpr = expression->AsAssignmentExpression();
-        ETSThrowWarning("Prohibit top-level statements", assignmentExpr->Left()->Start());
+        // This is special for assignment statements with declaration like 'let i: int = 0;'
+        // That is just because ETSParser.cpp changed top-level statements parsing
+        if (expression->IsIdentifier() && !program_->NodeContainsETSNolint(expression->AsIdentifier(), ETSWarnings::WRAP_TOP_LEVEL_STATEMENTS)) {
+            ETSThrowWarning("Wrap top-level assignment expressions", assignmentExpr->Left()->Start());
+            return;
+        }
+        ETSThrowWarning("Wrap top-level assignment expressions", assignmentExpr->Left()->Start());
     }
 }
 
@@ -153,45 +294,98 @@ void ETSWarningAnalyzer::CheckProhibitedTopLevelStatements(const ir::Statement *
 {
     switch (statement->Type()) {
         case ir::AstNodeType::ARROW_FUNCTION_EXPRESSION:
+        case ir::AstNodeType::AWAIT_EXPRESSION:
         case ir::AstNodeType::FUNCTION_DECLARATION:
         case ir::AstNodeType::SCRIPT_FUNCTION:
         case ir::AstNodeType::ETS_FUNCTION_TYPE:
-        case ir::AstNodeType::IMPORT_NAMESPACE_SPECIFIER:
         case ir::AstNodeType::CLASS_DECLARATION:
-        case ir::AstNodeType::CLASS_EXPRESSION:
-        case ir::AstNodeType::VARIABLE_DECLARATION:
         case ir::AstNodeType::CLASS_DEFINITION:
-        case ir::AstNodeType::CLASS_PROPERTY:
+        case ir::AstNodeType::EXPORT_ALL_DECLARATION:
+        case ir::AstNodeType::EXPORT_DEFAULT_DECLARATION:
+        case ir::AstNodeType::EXPORT_NAMED_DECLARATION:
+        case ir::AstNodeType::EXPORT_SPECIFIER:
+        case ir::AstNodeType::IMPORT_DECLARATION:
+        case ir::AstNodeType::IMPORT_EXPRESSION:
+        case ir::AstNodeType::IMPORT_DEFAULT_SPECIFIER:
+        case ir::AstNodeType::IMPORT_NAMESPACE_SPECIFIER:
+        case ir::AstNodeType::IMPORT_SPECIFIER:
+        case ir::AstNodeType::REEXPORT_STATEMENT:
+        case ir::AstNodeType::ETS_PACKAGE_DECLARATION:
+        case ir::AstNodeType::ETS_IMPORT_DECLARATION:
+        case ir::AstNodeType::STRUCT_DECLARATION:
             break;
         default:
-            ETSThrowWarning("Prohibit top-level statements", statement->Start());
+            // if (etsAutoFix_) {
+            //     // size_t whereLine = statement->Start().line;
+            //     auto file = program_->SourceFilePath().Utf8();
+            //     auto fileTmp = static_cast<std::string>(program_->SourceFileFolder()) + "/new_tmp_top_level.ets";
+            //     AutoFixSourceFile(file, fileTmp, 0, ETSWarnings::WRAP_TOP_LEVEL_STATEMENTS, nullptr);
+            // }
+            ETSThrowWarning("Wrap top-level statements", statement->Start());
             break;
     }
 }
 
-void ETSWarningAnalyzer::ETSWarningsProhibitTopLevelStatements(const ir::AstNode *node)
+void ETSWarningAnalyzer::ETSWarningWrapTopLevelStatements(const ir::AstNode *node)
 {
     if (!node->IsClassDeclaration() ||
-        program_->NodeContainsETSNolint(node, ETSWarnings::PROHIBIT_TOP_LEVEL_STATEMENTS)) {
-        node->Iterate([&](auto *childNode) { ETSWarningsProhibitTopLevelStatements(childNode); });
+        program_->NodeContainsETSNolint(node, ETSWarnings::WRAP_TOP_LEVEL_STATEMENTS)) {
+        node->Iterate([&](auto *childNode) { ETSWarningWrapTopLevelStatements(childNode); });
         return;
     }
 
     const auto *classDef = node->AsClassDeclaration()->Definition();
     if (!classDef->IsGlobal()) {
-        node->Iterate([&](auto *childNode) { ETSWarningsProhibitTopLevelStatements(childNode); });
         return;
     }
 
     for (const auto *itBody : classDef->Body()) {
+        //if (itBody->IsIdentifier()) {
+            // std::cout << itBody->DumpEtsSrc() << " in body" << std::endl;
+        //}
+        if (itBody->IsClassProperty()) {
+            // std::cout << itBody->DumpEtsSrc() << " in class prop "<< std::endl;
+            // This is special for assignment statements with class property like let i: int;
+            // That is just because ETSParser.cpp changed top-level statements parsing
+            // std::cout << itBody->DumpEtsSrc() << std::endl;
+            if (itBody->IsIdentifier() && !program_->NodeContainsETSNolint(itBody->AsIdentifier(), ETSWarnings::WRAP_TOP_LEVEL_STATEMENTS)) {
+                // if (etsAutoFix_) {
+                //     size_t whereLine = itBody->Start().line;
+                //     auto file = program_->SourceFilePath().Utf8();
+                //     auto fileTmp = static_cast<std::string>(program_->SourceFileFolder()) + "/new_tmp_top_level.ets";
+                //     AutoFixSourceFile(file, fileTmp, whereLine, ETSWarnings::WRAP_TOP_LEVEL_STATEMENTS, nullptr);
+                // }
+                ETSThrowWarning("Wrap top-level declarations", itBody->Start());
+                return;
+            }
+            // if (etsAutoFix_) {
+            //     size_t whereLine = itBody->Start().line;
+            //     auto file = program_->SourceFilePath().Utf8();
+            //     auto fileTmp = static_cast<std::string>(program_->SourceFileFolder()) + "/new_tmp_top_level.ets";
+            //     AutoFixSourceFile(file, fileTmp, whereLine, ETSWarnings::WRAP_TOP_LEVEL_STATEMENTS, nullptr);
+            // }
+            ETSThrowWarning("Wrap top-level declarations", itBody->Start());
+            return;
+        }
         if (!itBody->IsMethodDefinition() ||
             itBody->AsMethodDefinition()->Id()->Name() != compiler::Signatures::INIT_METHOD) {
             continue;
         }
-
         for (const auto *statement :
              itBody->AsMethodDefinition()->Function()->Body()->AsBlockStatement()->Statements()) {
-            if (program_->NodeContainsETSNolint(statement, ETSWarnings::PROHIBIT_TOP_LEVEL_STATEMENTS)) {
+            if (statement->IsExpressionStatement() && statement->AsExpressionStatement()->GetExpression()->IsAssignmentExpression()) {
+                //std::cout << statement->DumpEtsSrc() << " gotcha after init check" << std::endl;
+                if (itBody->IsIdentifier() && program_->NodeContainsETSNolint(itBody->AsIdentifier(), ETSWarnings::WRAP_TOP_LEVEL_STATEMENTS)) {
+                    std::cout << statement->DumpEtsSrc() << " gotcha AGAIN after init check" << std::endl;
+                }
+            }
+            // std::cout << statement->DumpEtsSrc() << " after init check" << std::endl;
+            if (program_->NodeContainsETSNolint(itBody->AsMethodDefinition()->Function()->Body()->AsBlockStatement(), ETSWarnings::WRAP_TOP_LEVEL_STATEMENTS)) {
+                //std::cout << "gotcha" << std::endl;
+                continue;
+            }
+            if (program_->NodeContainsETSNolint(statement, ETSWarnings::WRAP_TOP_LEVEL_STATEMENTS) ||
+                program_->NodeContainsETSNolint(node, ETSWarnings::WRAP_TOP_LEVEL_STATEMENTS)) {
                 continue;
             }
 
@@ -200,33 +394,40 @@ void ETSWarningAnalyzer::ETSWarningsProhibitTopLevelStatements(const ir::AstNode
                 continue;
             }
 
-            // Rewrite this part after fixing AST issue about tiop-level
+            // Rewrite this part after fixing AST issue about top-level
             CheckTopLevelExpressions(statement->AsExpressionStatement()->GetExpression());
         }
     }
 }
 
-void ETSWarningAnalyzer::ETSWarningBoostEqualityStatement(const ir::AstNode *node)
+void ETSWarningAnalyzer::ETSWarningBoostEqualityExpression(const ir::AstNode *node)
 {
     ASSERT(node != nullptr);
 
-    if (node->IsBinaryExpression() && !program_->NodeContainsETSNolint(node, ETSWarnings::BOOST_EQUALITY_STATEMENT)) {
-        const auto binExpr = node->AsBinaryExpression();
+    if (node->IsBinaryExpression() && !program_->NodeContainsETSNolint(node, ETSWarnings::BOOST_EQUALITY_EXPRESSION)) {
+        auto binExpr = node->AsBinaryExpression();
         if (binExpr->OperatorType() == lexer::TokenType::PUNCTUATOR_EQUAL ||
             binExpr->OperatorType() == lexer::TokenType::PUNCTUATOR_NOT_EQUAL) {
             if (binExpr->Right()->IsNullLiteral() && !binExpr->Left()->IsNullLiteral()) {
-                ETSThrowWarning("Boost Equality Statement. Change sides of binary expression", node->Start());
+                if (etsAutoFix_) {
+                    size_t whereLine =  node->Start().line;
+                    auto file = program_->SourceFilePath().Utf8();
+                    auto fileTmp = static_cast<std::string>(program_->SourceFileFolder()) + "/new_tmp_equality.ets";
+                    AutoFixSourceFile(file, fileTmp, whereLine, ETSWarnings::BOOST_EQUALITY_EXPRESSION, const_cast<ir::AstNode *>(node));
+                }
+                ETSThrowWarning("Boost Equality Expression. Change sides of binary expression", node->Start());
             }
         }
     }
-    node->Iterate([&](auto *childNode) { ETSWarningBoostEqualityStatement(childNode); });
+    node->Iterate([&](auto *childNode) { ETSWarningBoostEqualityExpression(childNode); });
 }
 
 void ETSWarningAnalyzer::ETSWarningRemoveAsync(const ir::AstNode *node)
 {
     if (node->IsMethodDefinition() && !program_->NodeContainsETSNolint(node, ETSWarnings::REMOVE_ASYNC_FUNCTIONS)) {
         const auto methodDefinition = node->AsMethodDefinition();
-        if (methodDefinition->IsAsync()) {
+        if (methodDefinition->IsAsync() && methodDefinition->Function()->IsAsyncFunc() &&
+            !program_->NodeContainsETSNolint(methodDefinition->Function(), ETSWarnings::REMOVE_ASYNC_FUNCTIONS)) {
             ETSThrowWarning("Replace asynchronous function with coroutine", methodDefinition->Start());
         }
     }
@@ -380,6 +581,23 @@ void ETSWarningAnalyzer::ETSWarningImplicitBoxingUnboxing(const ir::AstNode *nod
     }
 
     node->Iterate([&](auto *childNode) { ETSWarningImplicitBoxingUnboxing(childNode); });
+}
+
+void ETSWarningAnalyzer::ETSWarningRemoveRestParameters(const ir::AstNode *node)
+{
+    ASSERT(node != nullptr);
+
+    if (node->IsScriptFunction() && !program_->NodeContainsETSNolint(node, ETSWarnings::REMOVE_REST_PARAMETERS)) {
+        for (auto *const it : node->AsScriptFunction()->Params()) {
+            auto const *const param = it->AsETSParameterExpression();
+
+            if (param->IsRestParameter()) {
+                ETSThrowWarning("Replace rest parameters with usual function or array of parameters", it->Start());
+                continue;
+            }
+        }
+    }
+    node->Iterate([&](auto *childNode) { ETSWarningRemoveRestParameters(childNode); });
 }
 
 void ETSWarningAnalyzer::ETSThrowWarning(const std::string &message, const lexer::SourcePosition &pos)

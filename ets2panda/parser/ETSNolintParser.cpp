@@ -26,9 +26,10 @@ ETSNolintParser::ETSNolintParser(const ParserImpl *mainParser) : parser_(mainPar
 
     warningsMap_ = {
         {std::u32string(U"ets-implicit-boxing-unboxing"), ETSWarnings::IMPLICIT_BOXING_UNBOXING},
-        {std::u32string(U"ets-prohibit-top-level-statements"), ETSWarnings::PROHIBIT_TOP_LEVEL_STATEMENTS},
-        {std::u32string(U"ets-boost-equality-statement"), ETSWarnings::BOOST_EQUALITY_STATEMENT},
+        {std::u32string(U"ets-wrap-top-level-statements"), ETSWarnings::WRAP_TOP_LEVEL_STATEMENTS},
+        {std::u32string(U"ets-boost-equality-expression"), ETSWarnings::BOOST_EQUALITY_EXPRESSION},
         {std::u32string(U"ets-remove-lambda"), ETSWarnings::REMOVE_LAMBDA},
+        {std::u32string(U"ets-remove-rest-parameters"), ETSWarnings::REMOVE_REST_PARAMETERS},
         {std::u32string(U"ets-suggest-final"), ETSWarnings::SUGGEST_FINAL},
         {std::u32string(U"ets-remove-async"), ETSWarnings::REMOVE_ASYNC_FUNCTIONS},
     };
@@ -133,12 +134,6 @@ void ETSNolintParser::RewindToStart() const
 
 void ETSNolintParser::AddToETSNolintLinesCollection(std::size_t line, const std::set<ETSWarnings> &collection)
 {
-    const auto search = linesCollection_.find(line);
-    if (search != linesCollection_.end()) {
-        search->second.insert(collection.begin(), collection.end());
-        return;
-    }
-
     linesCollection_.insert({line, collection});
 }
 

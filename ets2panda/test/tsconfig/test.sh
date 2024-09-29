@@ -46,8 +46,9 @@ ACTUAL=$(mktemp /tmp/actual.XXXXXX)
 STDLIB="$PANDA_ROOT/plugins/ets/stdlib"
 CMD="$PANDA_RUN_PREFIX $ES2PANDA --stdlib=$STDLIB --arktsconfig=$TSCONFIG"
 $CMD 2> /dev/null
+$CMD > "$ACTUAL"
 pushd "$TSCONFIG_DIR" &> /dev/null
-find . -type f -name '*abc' | sort --version-sort > "$ACTUAL"
+find . -type f -name '*abc' | sort --version-sort >> "$ACTUAL"
 popd &> /dev/null
 
 set +e

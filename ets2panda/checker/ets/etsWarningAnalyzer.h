@@ -21,8 +21,9 @@
 namespace ark::es2panda::checker {
 class ETSWarningAnalyzer {
 public:
-    ETSWarningAnalyzer(const ir::AstNode *node, parser::Program *program, const ETSWarnings warning, bool etsWerror)
-        : program_(program), etsWerror_(etsWerror)
+    ETSWarningAnalyzer(const ir::AstNode *node, parser::Program *program, const ETSWarnings warning, bool etsWerror,
+                       bool etsAutoFix)
+        : program_(program), etsWerror_(etsWerror), etsAutoFix_(etsAutoFix)
     {
         if (node == nullptr) {
             return;
@@ -32,11 +33,11 @@ public:
             case ETSWarnings::SUGGEST_FINAL:
                 ETSWarningSuggestFinal(node);
                 break;
-            case ETSWarnings::PROHIBIT_TOP_LEVEL_STATEMENTS:
-                ETSWarningsProhibitTopLevelStatements(node);
+            case ETSWarnings::WRAP_TOP_LEVEL_STATEMENTS:
+                ETSWarningWrapTopLevelStatements(node);
                 break;
-            case ETSWarnings::BOOST_EQUALITY_STATEMENT:
-                ETSWarningBoostEqualityStatement(node);
+            case ETSWarnings::BOOST_EQUALITY_EXPRESSION:
+                ETSWarningBoostEqualityExpression(node);
                 break;
             case ETSWarnings::REMOVE_ASYNC_FUNCTIONS:
                 ETSWarningRemoveAsync(node);
@@ -47,6 +48,9 @@ public:
             case ETSWarnings::IMPLICIT_BOXING_UNBOXING:
                 ETSWarningImplicitBoxingUnboxing(node);
                 break;
+            case ETSWarnings::REMOVE_REST_PARAMETERS:
+                ETSWarningRemoveRestParameters(node);
+                break;
             default:
                 break;
         }
@@ -55,6 +59,8 @@ public:
 private:
     void ETSThrowWarning(const std::string &message, const lexer::SourcePosition &position);
 
+    void AutoFixSourceFile(const util::StringView &sourcePath, const std::string &tmpPath, size_t whereLine, const ETSWarnings warning, [[maybe_unused]] ir::AstNode *node);
+    bool AnalyzeLocalClasssesForFinalModifierInMethodDef(const ir::AstNode *body, const ir::ClassDefinition *classDef);
     void AnalyzeClassDefForFinalModifier(const ir::ClassDefinition *classDef);
     void AnalyzeClassMethodForFinalModifier(const ir::MethodDefinition *methodDef, const ir::ClassDefinition *classDef);
     void CheckTypeOfBoxing(const ir::AstNode *node);
@@ -65,14 +71,16 @@ private:
     void CheckTypeOfBoxingUnboxing(const ir::AstNode *node);
 
     void ETSWarningSuggestFinal(const ir::AstNode *node);
-    void ETSWarningsProhibitTopLevelStatements(const ir::AstNode *node);
-    void ETSWarningBoostEqualityStatement(const ir::AstNode *node);
+    void ETSWarningWrapTopLevelStatements(const ir::AstNode *node);
+    void ETSWarningBoostEqualityExpression(const ir::AstNode *node);
     void ETSWarningRemoveAsync(const ir::AstNode *node);
     void ETSWarningRemoveLambda(const ir::AstNode *node);
     void ETSWarningImplicitBoxingUnboxing(const ir::AstNode *node);
+    void ETSWarningRemoveRestParameters(const ir::AstNode *node);
 
     parser::Program *program_;
     bool etsWerror_;
+    bool etsAutoFix_;
 };
 }  // namespace ark::es2panda::checker
 

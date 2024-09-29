@@ -94,13 +94,14 @@ struct SourceFile {
 };
 
 enum ETSWarnings {
-    NONE,
     IMPLICIT_BOXING_UNBOXING,
-    PROHIBIT_TOP_LEVEL_STATEMENTS,
-    BOOST_EQUALITY_STATEMENT,
+    WRAP_TOP_LEVEL_STATEMENTS,
+    BOOST_EQUALITY_EXPRESSION,
     REMOVE_LAMBDA,
+    REMOVE_REST_PARAMETERS,
     SUGGEST_FINAL,
     REMOVE_ASYNC_FUNCTIONS,
+    INVALID,
 };
 
 struct CompilerOptions {
@@ -138,17 +139,21 @@ struct CompilerOptions {
     bool etsHasWarnings = false;
 
     // Subset ETS-Warnings
-    bool etsProhibitTopLevelStatements {};
-    bool etsBoostEqualityStatement {};
+    bool etsWrapTopLevelStatements {};
+    bool etsBoostEqualityExpression {};
     bool etsRemoveLambda {};
     bool etsImplicitBoxingUnboxing {};
+    bool etsRemoveRestParameters {};
 
     // Non-subset ETS-Warnings
     bool etsSuggestFinal {};
     bool etsRemoveAsync {};
 
-    bool etsWerror {};  // Treat all enabled ETS-warnings as errors
+    bool etsWerror {};   // Treat all enabled ETS-warnings as errors
+    bool etsAutoFix {};  // Fix all ETS-warnings that are possible to fix automatically
     std::vector<ETSWarnings> etsWarningCollection = {};
+    int subsetWarnings = 5;
+    int nonsubsetWarnings = 2;
 };
 
 enum class ErrorType {
@@ -187,7 +192,7 @@ public:
             case ErrorType::TYPE:
                 return "TypeError";
             case ErrorType::ETS_WARNING:
-                return "System ArkTS: warning treated as error.";
+                return "System ArkTS: warning treated as error";
             default:
                 break;
         }
