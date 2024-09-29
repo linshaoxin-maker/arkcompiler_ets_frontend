@@ -12,12 +12,6 @@ jBox2d_test
 #18629
 jsDiff_test
 
-#18444
-jmespath_test
-
-#18350
-jsbn_test
-
 #19284
 mathjs_test
 
@@ -27,9 +21,6 @@ memory-cache_test
 #19072
 OfflineAssembler
 
-#18424
-pcx_test
-
 #19251
 pdfview_test
 
@@ -38,9 +29,6 @@ rebound_test
 
 #19478
 htmlParser2_test
-
-#18425
-gson_test
 
 #18437
 zxing_test

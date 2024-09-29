@@ -15,20 +15,10 @@ Drools_test
 htmlParser2_test
 
 #18546
-gson_test
 libphonenumber_test
-
-#18340
-jmespath_test
 
 #18546
 jsDiff_test
-
-#18342
-mathjs_test
-
-#18424
-pcx_test
 
 #19251
 pdfview_test
@@ -46,10 +36,13 @@ pinyin4js_test
 #18546
 jBox2d_test
 
-#18425
-gson_test
+#19285
 crypto-js_test
+
+#19501
 lodash_test
+
+#19353
 Matrix_test
 
 #19703
