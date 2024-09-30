@@ -48,23 +48,9 @@ CheckResult IdentifierHasVariable::operator()(CheckContext &ctx, const ir::AstNo
 
 bool IdentifierHasVariable::CheckMoreAstExceptions(const ir::Identifier *ast) const
 {
-    // NOTE(kkonkuznetsov): skip async functions
-    auto parent = ast->Parent();
-    while (parent != nullptr) {
-        if (parent->IsScriptFunction()) {
-            auto script = parent->AsScriptFunction();
-            if (script->IsAsyncFunc()) {
-                return true;
-            }
-
-            break;
-        }
-
-        parent = parent->Parent();
-    }
-
     // NOTE(kkonkuznetsov): skip reexport declarations
-    if (ast->Parent() != nullptr && ast->Parent()->Parent() != nullptr) {
+    const auto *parent = ast->Parent();
+    if (parent != nullptr && parent->Parent() != nullptr) {
         parent = ast->Parent()->Parent();
         if (parent->IsETSReExportDeclaration()) {
             return true;
