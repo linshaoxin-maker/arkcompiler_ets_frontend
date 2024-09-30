@@ -392,6 +392,8 @@ void ETSBinder::BuildProxyMethod(ir::ScriptFunction *func, const util::StringVie
 
     if (!isStatic) {
         auto paramScopeCtx = LexicalScope<FunctionParamScope>::Enter(this, func->Scope()->ParamScope());
+        // Cover original function's 'this' binding
+        GetScope()->AsFunctionParamScope()->GetFunctionScope()->EraseBinding(MANDATORY_PARAM_THIS);
         auto *thisParam = AddMandatoryParam(MANDATORY_PARAM_THIS);
         thisParam->Declaration()->BindNode(thisParam_);
     }
