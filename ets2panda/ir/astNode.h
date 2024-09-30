@@ -40,7 +40,7 @@ class Scope;
 
 namespace ark::es2panda::ir {
 // NOLINTBEGIN(modernize-avoid-c-arrays)
-inline constexpr char const CLONE_ALLOCATION_ERROR[] = "Unsuccessful allocation during cloning.";
+inline constexpr char const CLONE_ALLOCATION_ERROR[] = "Unsuccessful allocation during  cloning.";
 // NOLINTEND(modernize-avoid-c-arrays)
 
 class AstNode;
