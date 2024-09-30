@@ -21,7 +21,8 @@
                 "json",
                 "runtime_core",
                 "zlib",
-                "bounds_checking_function"
+                "bounds_checking_function",
+                "protobuf"
             ],
             "third_party": [
                 "json",
