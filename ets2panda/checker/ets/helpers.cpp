@@ -2243,7 +2243,11 @@ void ETSChecker::InferTypesForLambda(ir::ScriptFunction *lambda, ir::ETSFunction
         }
     }
     if (lambda->ReturnTypeAnnotation() == nullptr) {
-        lambda->SetReturnTypeAnnotation(calleeType->ReturnType()->Clone(Allocator(), lambda));
+        // Return type can be ETSFunctionType
+        // Run varbinder to set scopes for cloned node
+        auto *returnType = calleeType->ReturnType()->Clone(Allocator(), lambda);
+        compiler::InitScopesPhaseETS::RunExternalNode(returnType, VarBinder());
+        lambda->SetReturnTypeAnnotation(returnType);
     }
 }
 
