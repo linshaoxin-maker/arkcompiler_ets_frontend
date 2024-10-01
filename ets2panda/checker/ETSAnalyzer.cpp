@@ -14,8 +14,10 @@
  */
 
 #include "ETSAnalyzer.h"
+#include <cassert>
 
 #include "types/signature.h"
+#include "types/typeRelation.h"
 #include "util/helpers.h"
 #include "checker/ETSchecker.h"
 #include "checker/ets/castingContext.h"
@@ -536,57 +538,16 @@ checker::Type *ETSAnalyzer::GetPreferredType(ir::ArrayExpression *expr) const
     return expr->preferredType_;
 }
 
-static bool CheckArrayElement(ETSChecker *checker, checker::Type *elementType,
-                              std::vector<checker::Type *> targetElementType, ir::Expression *currentElement,
-                              bool &isSecondaryChosen)
+static bool CheckElement(ir::ArrayExpression *expr, ETSChecker *checker, checker::Type *targetElementType,
+                         const bool isTuple)
 {
-    if ((targetElementType[0]->IsETSArrayType() &&
-         targetElementType[0]->AsETSArrayType()->ElementType()->IsETSArrayType() &&
-         !(targetElementType[0]->AsETSArrayType()->ElementType()->IsETSTupleType() &&
-           targetElementType[1] == nullptr)) ||
-        (!checker::AssignmentContext(checker->Relation(), currentElement, elementType, targetElementType[0],
-                                     currentElement->Start(),
-                                     {"Array element type '", elementType, "' is not assignable to explicit type '",
-                                      targetElementType[0], "'"},
-                                     TypeRelationFlag::NO_THROW)
-              .IsAssignable() &&
-         !(targetElementType[0]->IsETSArrayType() && currentElement->IsArrayExpression()))) {
-        if (targetElementType[1] == nullptr) {
-            checker->LogTypeError({"Array element type '", elementType, "' is not assignable to explicit type '",
-                                   targetElementType[0], "'"},
-                                  currentElement->Start());
-            return false;
-        }
-
-        if (!(targetElementType[0]->IsETSArrayType() && currentElement->IsArrayExpression()) &&
-            !checker::AssignmentContext(checker->Relation(), currentElement, elementType, targetElementType[1],
-                                        currentElement->Start(),
-                                        {"Array element type '", elementType, "' is not assignable to explicit type '",
-                                         targetElementType[1], "'"},
-                                        TypeRelationFlag::NO_THROW)
-                 .IsAssignable()) {
-            checker->LogTypeError({"Array element type '", elementType, "' is not assignable to explicit type '",
-                                   targetElementType[1], "'"},
-                                  currentElement->Start());
-            return false;
-        }
-        isSecondaryChosen = true;
-    }
-    return true;
-}
-
-static bool CheckElement(ir::ArrayExpression *expr, ETSChecker *checker, std::vector<checker::Type *> targetElementType,
-                         bool isPreferredTuple)
-{
-    bool isSecondaryChosen = false;
     bool ok = true;
 
     for (std::size_t idx = 0; idx < expr->Elements().size(); ++idx) {
         auto *const currentElement = expr->Elements()[idx];
 
         if (currentElement->IsArrayExpression()) {
-            if (!expr->HandleNestedArrayExpression(checker, currentElement->AsArrayExpression(), isPreferredTuple,
-                                                   idx)) {
+            if(!expr->HandleNestedArrayExpression(checker, currentElement->AsArrayExpression(), isTuple, idx)) {
                 continue;
             }
         }
@@ -598,17 +559,18 @@ static bool CheckElement(ir::ArrayExpression *expr, ETSChecker *checker, std::ve
 
         checker::Type *elementType = currentElement->Check(checker);
 
-        if (!elementType->IsETSArrayType() && isPreferredTuple) {
+        if (!elementType->IsETSArrayType() && isTuple) {
             auto const *const tupleType = expr->GetPreferredType()->AsETSTupleType();
 
             auto *compareType = tupleType->GetTypeAtIndex(idx);
             if (compareType == nullptr) {
-                checker->LogTypeError({"Too many elements in array initializer for tuple with size of ",
+               checker->LogTypeError({"Too many elements in array initializer for tuple with size of ",
                                        static_cast<uint32_t>(tupleType->GetTupleSize())},
                                       currentElement->Start());
                 ok = false;
                 continue;
             }
+
             // clang-format off
             if (!AssignmentContext(checker->Relation(), currentElement, elementType, compareType,
                                    currentElement->Start(), {}, TypeRelationFlag::NO_THROW).IsAssignable()) {
@@ -621,17 +583,15 @@ static bool CheckElement(ir::ArrayExpression *expr, ETSChecker *checker, std::ve
 
             elementType = compareType;
         }
-
-        if (targetElementType[0] == elementType) {
-            continue;
-        }
-
-        if (!CheckArrayElement(checker, elementType, targetElementType, currentElement, isSecondaryChosen)) {
+        // clang-format off
+        if (!AssignmentContext(checker->Relation(), currentElement, elementType, currentElement->Check(checker), 
+                                currentElement->Start(), {}, TypeRelationFlag::NO_THROW).IsAssignable() && expr->GetPreferredType() != nullptr) {
+            checker->LogTypeError({"Type '", elementType, "' is not assignable to type '", currentElement->Check(checker), "'"},
+            currentElement->Start());
             ok = false;
             continue;
-        }
+        }// clang-format on
     }
-
     return ok;
 }
 
@@ -650,22 +610,15 @@ checker::Type *ETSAnalyzer::Check(ir::ArrayExpression *expr) const
         return expr->TsTypeOrError();
     }
 
-    const bool isArray = (expr->preferredType_ != nullptr) && expr->preferredType_->IsETSArrayType() &&
-                         !expr->preferredType_->IsETSTupleType();
-
     if (!expr->Elements().empty()) {
         if (expr->preferredType_ == nullptr || expr->preferredType_ == checker->GlobalETSObjectType()) {
             expr->preferredType_ = checker->CreateETSArrayType(expr->Elements()[0]->Check(checker));
         }
 
-        const bool isPreferredTuple = expr->preferredType_->IsETSTupleType();
-        auto *targetElementType = expr->GetPreferredType()->AsETSArrayType()->ElementType();
-        Type *targetElementTypeSecondary = nullptr;
-        if (isPreferredTuple && !isArray) {
-            targetElementTypeSecondary = expr->GetPreferredType()->AsETSTupleType()->ElementType();
-        }
+        const bool isTuple = expr->preferredType_->IsETSTupleType();
+        auto *targetElementTypeArray = expr->GetPreferredType()->AsETSArrayType()->ElementType();
 
-        if (!CheckElement(expr, checker, {targetElementType, targetElementTypeSecondary}, isPreferredTuple)) {
+        if (!CheckElement(expr, checker, targetElementTypeArray, isTuple)) {
             expr->SetTsType(checker->GlobalTypeError());
             return expr->TsTypeOrError();
         }
