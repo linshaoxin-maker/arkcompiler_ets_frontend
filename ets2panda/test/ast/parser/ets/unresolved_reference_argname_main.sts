@@ -14,11 +14,5 @@
  */
 
 
-/*---
-flags: [module]
----*/
-
-import * as b from "foo"
-import a from "bar";
-import {c, d as e, f } from "bar"
-import "foobar";
+import { foo } from "./unresolved_reference_argname_proxy.sts";
+foo(undefined)

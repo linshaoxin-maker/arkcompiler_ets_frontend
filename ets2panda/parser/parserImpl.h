@@ -28,6 +28,9 @@
 #include "util/errorLogger.h"
 #include "util/helpers.h"
 
+namespace ark::es2panda::lexer {
+class RegExpParser;
+}  // namespace ark::es2panda::lexer
 namespace ark::es2panda::parser {
 using ENUMBITOPS_OPERATORS;
 
@@ -37,7 +40,7 @@ enum class TypeAnnotationParsingOptions : uint32_t {
     ALLOW_CONST = 1U << 1U,
     IN_INTERSECTION = 1U << 2U,
     RESTRICT_EXTENDS = 1U << 3U,
-    THROW_ERROR = 1U << 4U,
+    REPORT_ERROR = 1U << 4U,
     CAN_BE_TS_TYPE_PREDICATE = 1U << 5U,
     BREAK_AT_NEW_LINE = 1U << 6U,
     RETURN_TYPE = 1U << 7U,
@@ -123,7 +126,7 @@ protected:
     ir::MetaProperty *ParsePotentialNewTarget();
     void CheckInvalidDestructuring(const ir::AstNode *object) const;
     void ValidateParenthesizedExpression(ir::Expression *lhsExpression);
-    void ValidateGroupedExpression(ir::Expression *lhsExpression);
+    bool ValidateGroupedExpression(ir::Expression *lhsExpression);
     ir::Expression *ParseImportExpression();
     ir::Expression *ParseOptionalChain(ir::Expression *leftSideExpr);
     ir::Expression *ParsePropertyKey(ExpressionParseFlags flags);
@@ -160,6 +163,7 @@ protected:
     friend class SavedClassPrivateContext;
     friend class ArrowFunctionContext;
     friend class ETSNolintParser;
+    friend class lexer::RegExpParser;
 
     [[noreturn]] void ThrowParameterModifierError(ir::ModifierFlags status) const;
     [[noreturn]] void ThrowUnexpectedToken(lexer::TokenType tokenType) const;
@@ -248,7 +252,7 @@ protected:
     // StatementParser
     ArenaVector<ir::Statement *> ParseStatementList(StatementParsingFlags flags = StatementParsingFlags::ALLOW_LEXICAL);
     virtual ir::Statement *ParseAssertStatement();
-    virtual void ValidateLabeledStatement(lexer::TokenType type);
+    virtual bool ValidateLabeledStatement(lexer::TokenType type);
     ir::BlockStatement *ParseBlockStatement();
     ir::EmptyStatement *ParseEmptyStatement();
     ir::Statement *ParseForStatement();
@@ -381,7 +385,7 @@ protected:
     virtual void ThrowIllegalContinueError();
     virtual void ThrowIfBodyEmptyError(ir::Statement *consequent);
     virtual void ThrowMultipleDefaultError();
-    virtual void ThrowIllegalNewLineErrorAfterThrow();
+    virtual void LogIllegalNewLineErrorAfterThrow();
     virtual void ThrowIfVarDeclaration(VariableParsingFlags flags);
     virtual ir::Expression *ParsePrefixAssertionExpression();
     // NOLINTNEXTLINE(google-default-arguments)
@@ -442,7 +446,11 @@ protected:
     virtual ir::ExportDefaultDeclaration *ParseExportDefaultDeclaration(const lexer::SourcePosition &startLoc,
                                                                         bool isExportEquals = false);
     virtual ir::ExportNamedDeclaration *ParseNamedExportDeclaration(const lexer::SourcePosition &startLoc);
-    virtual void ValidateForInStatement() {};
+    virtual bool ValidateForInStatement()
+    {
+        return true;
+    }
+
     virtual ir::Statement *ParseTryStatement();
     virtual ir::ThrowStatement *ParseThrowStatement();
     virtual ir::DebuggerStatement *ParseDebuggerStatement();

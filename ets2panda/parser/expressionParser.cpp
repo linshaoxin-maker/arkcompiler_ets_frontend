@@ -505,8 +505,12 @@ void ParserImpl::CheckInvalidDestructuring(const ir::AstNode *object) const
     });
 }
 
-void ParserImpl::ValidateGroupedExpression(ir::Expression *lhsExpression)
+bool ParserImpl::ValidateGroupedExpression(ir::Expression *lhsExpression)
 {
+    if (lhsExpression == nullptr) {  // Error processing.
+        return false;
+    }
+
     lexer::TokenType tokenType = lexer_->GetToken().Type();
     if (lhsExpression->IsGrouped() && tokenType != lexer::TokenType::PUNCTUATOR_ARROW) {
         if (lhsExpression->IsSequenceExpression()) {
@@ -517,6 +521,8 @@ void ParserImpl::ValidateGroupedExpression(ir::Expression *lhsExpression)
             ValidateParenthesizedExpression(lhsExpression);
         }
     }
+
+    return true;
 }
 
 void ParserImpl::ValidateParenthesizedExpression(ir::Expression *lhsExpression)
@@ -569,7 +575,9 @@ ir::Expression *ParserImpl::ParsePrefixAssertionExpression()
 
 ir::Expression *ParserImpl::ParseAssignmentExpression(ir::Expression *lhsExpression, ExpressionParseFlags flags)
 {
-    ValidateGroupedExpression(lhsExpression);
+    if (!ValidateGroupedExpression(lhsExpression)) {
+        return nullptr;  // Error processing.
+    }
 
     lexer::TokenType tokenType = lexer_->GetToken().Type();
     switch (tokenType) {
@@ -691,9 +699,6 @@ ir::Expression *ParserImpl::ParseAssignmentEqualExpression(const lexer::TokenTyp
         case lexer::TokenType::PUNCTUATOR_BITWISE_AND_EQUAL:
         case lexer::TokenType::PUNCTUATOR_BITWISE_OR_EQUAL:
         case lexer::TokenType::PUNCTUATOR_BITWISE_XOR_EQUAL:
-        case lexer::TokenType::PUNCTUATOR_LOGICAL_AND_EQUAL:
-        case lexer::TokenType::PUNCTUATOR_LOGICAL_OR_EQUAL:
-        case lexer::TokenType::PUNCTUATOR_LOGICAL_NULLISH_EQUAL:
         case lexer::TokenType::PUNCTUATOR_EXPONENTIATION_EQUAL: {
             ValidateLvalueAssignmentTarget(lhsExpression);
 
@@ -705,6 +710,11 @@ ir::Expression *ParserImpl::ParseAssignmentEqualExpression(const lexer::TokenTyp
 
             binaryAssignmentExpression->SetRange({lhsExpression->Start(), assignmentExpression->End()});
             return binaryAssignmentExpression;
+        }
+        case lexer::TokenType::PUNCTUATOR_LOGICAL_AND_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_LOGICAL_OR_EQUAL:
+        case lexer::TokenType::PUNCTUATOR_LOGICAL_NULLISH_EQUAL: {
+            ThrowUnexpectedToken(tokenType);
         }
         default:
             break;
@@ -950,13 +960,9 @@ ir::RegExpLiteral *ParserImpl::ParseRegularExpression()
     lexer_->ResetTokenEnd();
     auto regexp = lexer_->ScanRegExp();
 
-    lexer::RegExpParser reParser(regexp, Allocator());
+    lexer::RegExpParser reParser(regexp, Allocator(), *this);
 
-    try {
-        reParser.ParsePattern();
-    } catch (lexer::RegExpError &e) {
-        ThrowSyntaxError(e.message.c_str());
-    }
+    reParser.ParsePattern();
 
     auto *regexpNode = AllocNode<ir::RegExpLiteral>(regexp.patternStr, regexp.flags, regexp.flagsStr);
     regexpNode->SetRange(lexer_->GetToken().Loc());
@@ -1594,6 +1600,9 @@ ir::MemberExpression *ParserImpl::ParsePrivatePropertyAccess(ir::Expression *pri
 ir::MemberExpression *ParserImpl::ParsePropertyAccess(ir::Expression *primaryExpr, bool isOptional)
 {
     ir::Identifier *ident = ExpectIdentifier(true);
+    if (ident == nullptr) {  // Error processing.
+        return nullptr;
+    }
 
     auto *memberExpr = AllocNode<ir::MemberExpression>(primaryExpr, ident, ir::MemberExpressionKind::PROPERTY_ACCESS,
                                                        false, isOptional);
@@ -1739,6 +1748,9 @@ ir::Expression *ParserImpl::ParseMemberExpression(bool ignoreCallExpression, Exp
     bool isAsync = lexer_->GetToken().IsAsyncModifier();
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
     ir::Expression *returnExpression = ParsePrimaryExpression(flags);
+    if (returnExpression == nullptr) {  // Error processing.
+        return nullptr;
+    }
 
     if (lexer_->GetToken().NewLine() && returnExpression->IsArrowFunctionExpression()) {
         return returnExpression;

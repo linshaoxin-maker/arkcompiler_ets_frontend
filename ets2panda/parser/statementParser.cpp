@@ -151,7 +151,9 @@ ir::Statement *ParserImpl::ParseStatement(StatementParsingFlags flags)
             return ParsePotentialExpressionStatement(flags);
         }
         case lexer::TokenType::KEYW_WITH: {
-            ThrowSyntaxError("'With' is deprecated and not supported any more.");
+            LogSyntaxError("'With' is deprecated and not supported any more.");
+            lexer_->NextToken();
+            return nullptr;
         }
         case lexer::TokenType::KEYW_ENUM: {
             return ParseEnumDeclaration();
@@ -181,7 +183,7 @@ ir::Statement *ParserImpl::ParseVarStatement()
 ir::Statement *ParserImpl::ParseLetStatement(StatementParsingFlags flags)
 {
     if ((flags & StatementParsingFlags::ALLOW_LEXICAL) == 0) {
-        ThrowSyntaxError("Lexical declaration is not allowed in single statement context");
+        LogSyntaxError("Lexical declaration is not allowed in single statement context");
     }
 
     auto *variableDecl = ParseVariableDeclaration(VariableParsingFlags::LET);
@@ -192,7 +194,7 @@ ir::Statement *ParserImpl::ParseLetStatement(StatementParsingFlags flags)
 ir::Statement *ParserImpl::ParseConstStatement(StatementParsingFlags flags)
 {
     if ((flags & StatementParsingFlags::ALLOW_LEXICAL) == 0) {
-        ThrowSyntaxError("Lexical declaration is not allowed in single statement context");
+        LogSyntaxError("Lexical declaration is not allowed in single statement context");
     }
 
     lexer::SourcePosition constVarStar = lexer_->GetToken().Start();
@@ -230,8 +232,12 @@ ir::Statement *ParserImpl::ParseFunctionStatement(StatementParsingFlags flags)
         return ParseFunctionDeclaration(false, ParserStatus::NO_OPTS);
     }
 
-    ArenaVector<ir::Statement *> stmts(Allocator()->Adapter());
     auto *funcDecl = ParseFunctionDeclaration(false, ParserStatus::NO_OPTS);
+    if (funcDecl == nullptr) {  // Error processing.
+        return nullptr;
+    }
+
+    ArenaVector<ir::Statement *> stmts(Allocator()->Adapter());
     stmts.push_back(funcDecl);
 
     auto *localBlockStmt = AllocNode<ir::BlockStatement>(Allocator(), std::move(stmts));
@@ -247,10 +253,11 @@ ir::Statement *ParserImpl::ParsePotentialExpressionStatement(StatementParsingFla
 
 // NOLINTNEXTLINE(google-default-arguments)
 ir::ETSStructDeclaration *ParserImpl::ParseStructStatement([[maybe_unused]] StatementParsingFlags flags,
-                                                           [[maybe_unused]] ir::ClassDefinitionModifiers modifiers,
-                                                           [[maybe_unused]] ir::ModifierFlags modFlags)
+                                                           ir::ClassDefinitionModifiers modifiers,
+                                                           ir::ModifierFlags modFlags)
 {
-    ThrowSyntaxError("Illegal start of expression", Lexer()->GetToken().Start());
+    LogSyntaxError("Illegal start of expression", Lexer()->GetToken().Start());
+    return ParseStructDeclaration(modifiers, modFlags);
 }
 
 // NOLINTNEXTLINE(google-default-arguments)
@@ -259,7 +266,7 @@ ir::ClassDeclaration *ParserImpl::ParseClassStatement(StatementParsingFlags flag
                                                       ir::ModifierFlags modFlags)
 {
     if ((flags & StatementParsingFlags::ALLOW_LEXICAL) == 0) {
-        ThrowSyntaxError("Lexical declaration is not allowed in single statement context");
+        LogSyntaxError("Lexical declaration is not allowed in single statement context");
     }
 
     return ParseClassDeclaration(modifiers, modFlags);
@@ -275,13 +282,13 @@ ir::ETSStructDeclaration *ParserImpl::ParseStructDeclaration(ir::ClassDefinition
     }
 
     if ((flags & ir::ModifierFlags::ABSTRACT) != 0U) {
-        ThrowSyntaxError("struct declaration is not allowed to use 'abstract' modifiers.");
+        LogSyntaxError("struct declaration is not allowed to use 'abstract' modifiers.");
     }
 
     ir::ClassDefinition *classDefinition = ParseClassDefinition(modifiers, flags);
 
     if ((classDefinition->Modifiers() & ir::ClassDefinitionModifiers::HAS_SUPER) != 0U) {
-        ThrowSyntaxError("struct declaration cannot extends form other class");
+        LogSyntaxError("struct declaration cannot extends from other class");
     }
 
     lexer::SourcePosition endLoc = classDefinition->End();
@@ -309,7 +316,7 @@ ir::ClassDeclaration *ParserImpl::ParseClassDeclaration(ir::ClassDefinitionModif
 void ParserImpl::CheckFunctionDeclaration(StatementParsingFlags flags)
 {
     if ((flags & StatementParsingFlags::LABELLED) != 0) {
-        ThrowSyntaxError(
+        LogSyntaxError(
             "In strict mode code, functions can only be "
             "declared at top level, inside a block, "
             "or "
@@ -318,28 +325,27 @@ void ParserImpl::CheckFunctionDeclaration(StatementParsingFlags flags)
 
     if ((flags & StatementParsingFlags::ALLOW_LEXICAL) == 0) {
         if ((flags & (StatementParsingFlags::IF_ELSE | StatementParsingFlags::LABELLED)) == 0) {
-            ThrowSyntaxError("Lexical declaration is not allowed in single statement context");
+            LogSyntaxError("Lexical declaration is not allowed in single statement context");
         }
 
         if (lexer_->Lookahead() == lexer::LEX_CHAR_ASTERISK) {
-            ThrowSyntaxError("Generators can only be declared at the top level or inside a block");
+            LogSyntaxError("Generators can only be declared at the top level or inside a block");
         }
     }
 }
 
 void ParserImpl::ConsumeSemicolon(ir::Statement *statement)
 {
-    if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
+    auto tokenType = lexer_->GetToken().Type();
+    if (tokenType == lexer::TokenType::PUNCTUATOR_SEMI_COLON) {
         statement->SetEnd(lexer_->GetToken().End());
         lexer_->NextToken();
         return;
     }
 
-    if (!lexer_->GetToken().NewLine()) {
-        if (lexer_->GetToken().Type() != lexer::TokenType::EOS &&
-            lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
-            ThrowSyntaxError("Unexpected token");
-        }
+    if (!lexer_->GetToken().NewLine() && tokenType != lexer::TokenType::EOS &&
+        tokenType != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
+        LogSyntaxError({"Unexpected token '", TokenToString(tokenType), "'."});
     }
 }
 
@@ -356,8 +362,13 @@ ArenaVector<ir::Statement *> ParserImpl::ParseStatementList(StatementParsingFlag
     auto endType =
         (flags & StatementParsingFlags::GLOBAL) != 0 ? lexer::TokenType::EOS : lexer::TokenType::PUNCTUATOR_RIGHT_BRACE;
 
-    while (lexer_->GetToken().Type() != endType) {
-        statements.push_back(ParseStatement(flags));
+    while (lexer_->GetToken().Type() != endType && lexer_->GetToken().Type() != lexer::TokenType::EOS) {
+        auto savedPosition = lexer_->Save();
+        if (auto statement = ParseStatement(flags); statement != nullptr) {
+            statements.push_back(statement);
+        } else if (savedPosition == lexer_->Save()) {
+            lexer_->NextToken();  // Error processing, avoid infinite loop.
+        }
     }
 
     return statements;
@@ -372,7 +383,7 @@ bool ParserImpl::ParseDirective(ArenaVector<ir::Statement *> *statements)
     const auto status = static_cast<ParserStatus>(
         context_.Status() & (ParserStatus::CONSTRUCTOR_FUNCTION | ParserStatus::HAS_COMPLEX_PARAM));
     if (status == ParserStatus::HAS_COMPLEX_PARAM && str.Is("use strict")) {
-        ThrowSyntaxError(
+        LogSyntaxError(
             "Illegal 'use strict' directive in function with "
             "non-simple parameter list");
     }
@@ -403,24 +414,31 @@ ir::Statement *ParserImpl::ParseAssertStatement()
     return nullptr;
 }
 
-void ParserImpl::ValidateLabeledStatement([[maybe_unused]] lexer::TokenType type) {}
+bool ParserImpl::ValidateLabeledStatement([[maybe_unused]] lexer::TokenType type)
+{
+    return true;
+}
 
 ir::BlockStatement *ParserImpl::ParseBlockStatement()
 {
-    ASSERT(lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE);
-
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
-    lexer_->NextToken();
-    auto statements = ParseStatementList();
-
-    if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
-        ThrowSyntaxError("Expected a '}'");
+    if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
+        lexer_->NextToken();
+    } else {
+        LogSyntaxError({"Expected a '{', got '", TokenToString(lexer_->GetToken().Type()), "'."});
     }
+
+    auto statements = ParseStatementList();
 
     auto *blockNode = AllocNode<ir::BlockStatement>(Allocator(), std::move(statements));
     blockNode->SetRange({startLoc, lexer_->GetToken().End()});
 
-    lexer_->NextToken();
+    if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
+        LogSyntaxError({"Expected a '}' got '", TokenToString(lexer_->GetToken().Type()), "'."});
+    } else {
+        lexer_->NextToken();
+    }
+
     return blockNode;
 }
 
@@ -653,6 +671,10 @@ ir::Statement *ParserImpl::ParseExpressionStatement(StatementParsingFlags flags)
     }
 
     ir::Expression *exprNode = ParseExpression(ExpressionParseFlags::ACCEPT_COMMA);
+    if (exprNode == nullptr) {  // Error processing.
+        return nullptr;
+    }
+
     context_.Status() = savedStatus;
     lexer::SourcePosition endPos = exprNode->End();
 
@@ -989,13 +1011,19 @@ ir::IfStatement *ParserImpl::ParseIfStatement()
 
     ThrowIfBodyEmptyError(consequent);
 
+    if (consequent == nullptr) {  // Error processing.
+        return nullptr;
+    }
+
     endLoc = consequent->End();
     ir::Statement *alternate = nullptr;
 
     if (lexer_->GetToken().Type() == lexer::TokenType::KEYW_ELSE) {
         lexer_->NextToken();  // eat ELSE keyword
         alternate = ParseStatement(StatementParsingFlags::IF_ELSE | StatementParsingFlags::ALLOW_LEXICAL);
-        endLoc = alternate->End();
+        if (alternate != nullptr) {  // Error processing.
+            endLoc = alternate->End();
+        }
     }
 
     auto *ifStatement = AllocNode<ir::IfStatement>(test, consequent, alternate);
@@ -1008,11 +1036,11 @@ ir::LabelledStatement *ParserImpl::ParseLabelledStatement(const lexer::LexerPosi
     const util::StringView &actualLabel = pos.GetToken().Ident();
 
     if (lexer_->GetToken().KeywordType() == lexer::TokenType::KEYW_AWAIT && context_.IsModule()) {
-        ThrowSyntaxError("'await' is a reserved identifier in module code", pos.GetToken().Start());
+        LogSyntaxError("'await' is a reserved identifier in module code", pos.GetToken().Start());
     }
 
     if (context_.FindLabel(actualLabel) != nullptr) {
-        ThrowSyntaxError("Label already declared", pos.GetToken().Start());
+        LogSyntaxError("Label already declared", pos.GetToken().Start());
     }
 
     SavedParserContext newCtx(this, ParserStatus::IN_LABELED, actualLabel);
@@ -1023,7 +1051,9 @@ ir::LabelledStatement *ParserImpl::ParseLabelledStatement(const lexer::LexerPosi
 
     lexer_->NextToken();
 
-    ValidateLabeledStatement(Lexer()->GetToken().Type());
+    if (!ValidateLabeledStatement(Lexer()->GetToken().Type())) {
+        return nullptr;  // Error processing.
+    }
 
     ir::Statement *body = ParseStatement(StatementParsingFlags::LABELLED);
 
@@ -1036,7 +1066,7 @@ ir::LabelledStatement *ParserImpl::ParseLabelledStatement(const lexer::LexerPosi
 ir::ReturnStatement *ParserImpl::ParseReturnStatement()
 {
     if ((context_.Status() & ParserStatus::FUNCTION) == 0) {
-        ThrowSyntaxError("return keyword should be used in function body");
+        LogSyntaxError("return keyword should be used in function body");
     }
 
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
@@ -1066,7 +1096,7 @@ ir::ReturnStatement *ParserImpl::ParseReturnStatement()
 
 void ParserImpl::ThrowMultipleDefaultError()
 {
-    ThrowSyntaxError("Multiple default clauses.");
+    LogSyntaxError("Multiple default clauses.");
 }
 
 ir::SwitchCaseStatement *ParserImpl::ParseSwitchCaseStatement(bool *seenDefault)
@@ -1076,7 +1106,7 @@ ir::SwitchCaseStatement *ParserImpl::ParseSwitchCaseStatement(bool *seenDefault)
 
     switch (lexer_->GetToken().KeywordType()) {
         case lexer::TokenType::KEYW_CASE: {
-            lexer_->NextToken();
+            lexer_->NextToken();  // eat 'case'
             testExpr = ParseExpression(ExpressionParseFlags::ACCEPT_COMMA);
             break;
         }
@@ -1085,27 +1115,32 @@ ir::SwitchCaseStatement *ParserImpl::ParseSwitchCaseStatement(bool *seenDefault)
                 ThrowMultipleDefaultError();
             }
             *seenDefault = true;
-            lexer_->NextToken();
+            lexer_->NextToken();  // eat 'default'
             break;
         }
         default: {
-            ThrowSyntaxError("Unexpected token, expected 'case' or 'default'.");
+            LogSyntaxError({"Unexpected token '", lexer::TokenToString(lexer_->GetToken().Type()),
+                            "', expected 'case' or 'default'."});
         }
     }
 
+    lexer::SourcePosition caseEndLoc = lexer_->GetToken().End();
+
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_COLON) {
-        ThrowSyntaxError("Unexpected token, expected ':'");
+        LogSyntaxError({"Unexpected token '", lexer::TokenToString(lexer_->GetToken().Type()), "', expected ':'"});
+    } else {
+        lexer_->NextToken();  // eat ':'
     }
 
     ArenaVector<ir::Statement *> consequents(Allocator()->Adapter());
-    lexer::SourcePosition caseEndLoc = lexer_->GetToken().End();
-
-    lexer_->NextToken();
-
     while (lexer_->GetToken().Type() != lexer::TokenType::KEYW_CASE &&
            lexer_->GetToken().KeywordType() != lexer::TokenType::KEYW_DEFAULT &&
            lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
         ir::Statement *consequent = ParseStatement(StatementParsingFlags::ALLOW_LEXICAL);
+        if (consequent == nullptr) {  // Error processing.
+            break;
+        }
+
         caseEndLoc = consequent->End();
         consequents.push_back(consequent);
     }
@@ -1120,42 +1155,51 @@ ir::SwitchStatement *ParserImpl::ParseSwitchStatement()
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
     lexer_->NextToken();
     if (!(lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS)) {
-        ThrowSyntaxError("Unexpected token, expected '('");
+        LogSyntaxError({"Unexpected token '", lexer::TokenToString(lexer_->GetToken().Type()), "', expected '('"});
+    } else {
+        lexer_->NextToken();  // eat '('
     }
 
-    lexer_->NextToken();
     ir::Expression *discriminant = ParseExpression(ExpressionParseFlags::ACCEPT_COMMA);
 
     if (!(lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS)) {
-        ThrowSyntaxError("Unexpected token, expected ')'");
+        LogSyntaxError({"Unexpected token '", lexer::TokenToString(lexer_->GetToken().Type()), "', expected ')'"});
+    } else {
+        lexer_->NextToken();  // eat ')'
     }
 
-    lexer_->NextToken();
     SwitchContext switchContext(&context_);
 
     if (!(lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE)) {
-        ThrowSyntaxError("Unexpected token, expected '{'");
+        LogSyntaxError({"Unexpected token '", lexer::TokenToString(lexer_->GetToken().Type()), "', expected '{'"});
+    } else {
+        lexer_->NextToken();  // eat '{'
     }
 
-    lexer_->NextToken();
     bool seenDefault = false;
     ArenaVector<ir::SwitchCaseStatement *> cases(Allocator()->Adapter());
 
-    while (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
-        cases.push_back(ParseSwitchCaseStatement(&seenDefault));
+    while (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE &&
+           lexer_->GetToken().Type() != lexer::TokenType::EOS) {
+        auto caseStatement = ParseSwitchCaseStatement(&seenDefault);
+        if (caseStatement != nullptr) {
+            cases.push_back(caseStatement);
+        }
     }
 
     auto *switchStatement = AllocNode<ir::SwitchStatement>(discriminant, std::move(cases));
     switchStatement->SetRange({startLoc, lexer_->GetToken().End()});
 
-    lexer_->NextToken();
+    if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
+        lexer_->NextToken();
+    }
 
     return switchStatement;
 }
 
-void ParserImpl::ThrowIllegalNewLineErrorAfterThrow()
+void ParserImpl::LogIllegalNewLineErrorAfterThrow()
 {
-    ThrowSyntaxError("Illegal newline after throw");
+    LogSyntaxError("Illegal newline after throw");
 }
 
 ir::ThrowStatement *ParserImpl::ParseThrowStatement()
@@ -1164,7 +1208,7 @@ ir::ThrowStatement *ParserImpl::ParseThrowStatement()
     lexer_->NextToken();
 
     if (lexer_->GetToken().NewLine()) {
-        ThrowIllegalNewLineErrorAfterThrow();
+        LogIllegalNewLineErrorAfterThrow();
     }
 
     ir::Expression *expression = ParseExpression(ExpressionParseFlags::ACCEPT_COMMA);
@@ -1187,7 +1231,7 @@ ir::Expression *ParserImpl::ParseCatchParam()
         return param;
     }
 
-    lexer_->NextToken();  // eat left paren
+    lexer_->NextToken();  // eat '('
 
     if (lexer_->GetToken().Type() == lexer::TokenType::LITERAL_IDENT) {
         CheckRestrictedBinding();
@@ -1197,16 +1241,18 @@ ir::Expression *ParserImpl::ParseCatchParam()
     } else if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
         param = ParseObjectExpression(ExpressionParseFlags::MUST_BE_PATTERN);
     } else {
-        ThrowSyntaxError("Unexpected token in catch parameter");
+        LogSyntaxError({"Unexpected token '", lexer::TokenToString(lexer_->GetToken().Type()), "' in catch parameter"});
     }
 
-    ParseCatchParamTypeAnnotation(param);
+    if (param != nullptr) {  // Error processing.
+        ParseCatchParamTypeAnnotation(param);
+    }
 
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
-        ThrowSyntaxError("Unexpected token, expected ')'");
+        LogSyntaxError({"Unexpected token '", lexer::TokenToString(lexer_->GetToken().Type()), "', expected ')'"});
+    } else {
+        lexer_->NextToken();  // eat ')'
     }
-
-    lexer_->NextToken();
 
     return param;
 }
@@ -1219,7 +1265,7 @@ ir::CatchClause *ParserImpl::ParseCatchClause()
     ir::Expression *param = ParseCatchParam();
 
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
-        ThrowSyntaxError("Unexpected token, expected '{'");
+        LogSyntaxError({"Unexpected token '", lexer::TokenToString(lexer_->GetToken().Type()), "', expected '{'"});
     }
 
     ir::BlockStatement *catchBlock = ParseBlockStatement();
@@ -1239,21 +1285,21 @@ ir::Statement *ParserImpl::ParseTryStatement()
     lexer_->NextToken();
 
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
-        ThrowSyntaxError("Unexpected token, expected '{'");
+        LogSyntaxError({"Unexpected token '", lexer::TokenToString(lexer_->GetToken().Type()), "', expected '{'"});
     }
 
     ir::BlockStatement *body = ParseBlockStatement();
 
     if (lexer_->GetToken().Type() != lexer::TokenType::KEYW_CATCH &&
         lexer_->GetToken().Type() != lexer::TokenType::KEYW_FINALLY) {
-        ThrowSyntaxError("Missing catch or finally clause");
+        LogSyntaxError("Missing catch or finally clause");
     }
 
     ir::CatchClause *catchClause = nullptr;
     ir::BlockStatement *finallyClause = nullptr;
     ArenaVector<ir::CatchClause *> catchClauses(Allocator()->Adapter());
 
-    if (lexer_->GetToken().Type() == lexer::TokenType::KEYW_CATCH) {
+    while (lexer_->GetToken().Type() == lexer::TokenType::KEYW_CATCH) {
         catchClause = ParseCatchClause();
         endLoc = catchClause->End();
         catchClauses.push_back(catchClause);
@@ -1261,11 +1307,6 @@ ir::Statement *ParserImpl::ParseTryStatement()
 
     if (lexer_->GetToken().Type() == lexer::TokenType::KEYW_FINALLY) {
         lexer_->NextToken();  // eat 'finally' keyword
-
-        if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
-            ThrowSyntaxError("Unexpected token, expected '{'");
-        }
-
         finallyClause = ParseBlockStatement();
         endLoc = finallyClause->End();
     }
@@ -1296,7 +1337,7 @@ ir::VariableDeclarator *ParserImpl::ParseVariableDeclaratorInitializer(ir::Expre
     lexer_->NextToken();
 
     if (InAmbientContext() && (flags & VariableParsingFlags::CONST) == 0) {
-        ThrowSyntaxError("Initializers are not allowed in ambient contexts.");
+        LogSyntaxError("Initializers are not allowed in ambient contexts.");
     }
 
     auto exprFlags = ((flags & VariableParsingFlags::STOP_AT_IN) != 0 ? ExpressionParseFlags::STOP_AT_IN
@@ -1405,13 +1446,18 @@ ir::Statement *ParserImpl::ParseVariableDeclaration(VariableParsingFlags flags)
 
     while (true) {
         ir::VariableDeclarator *declarator = ParseVariableDeclarator(flags);
-
-        declarators.push_back(declarator);
+        if (declarator != nullptr) {  // Error processing.
+            declarators.push_back(declarator);
+        }
 
         if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_COMMA) {
             break;
         }
         lexer_->NextToken();
+    }
+
+    if (declarators.empty()) {  // Error processing.
+        return nullptr;
     }
 
     auto varKind = ir::VariableDeclaration::VariableDeclarationKind::VAR;
@@ -1435,19 +1481,24 @@ ir::WhileStatement *ParserImpl::ParseWhileStatement()
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
     lexer_->NextToken();
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS) {
-        ThrowSyntaxError("Unexpected token, expected '('");
+        LogSyntaxError({"Unexpected token '", lexer::TokenToString(lexer_->GetToken().Type()), "', expected '('"});
+    } else {
+        lexer_->NextToken();
     }
 
-    lexer_->NextToken();
     ir::Expression *test = ParseExpression(ExpressionParseFlags::ACCEPT_COMMA);
 
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
-        ThrowSyntaxError("Unexpected token, expected ')'");
+        LogSyntaxError({"Unexpected token '", lexer::TokenToString(lexer_->GetToken().Type()), "', expected ')'"});
+    } else {
+        lexer_->NextToken();
     }
 
-    lexer_->NextToken();
     IterationContext iterCtx(&context_);
     ir::Statement *body = ParseStatement();
+    if (body == nullptr || test == nullptr) {  // Error processing.
+        return nullptr;
+    }
 
     lexer::SourcePosition endLoc = body->End();
     auto *whileStatement = AllocNode<ir::WhileStatement>(test, body);
@@ -1519,7 +1570,9 @@ ir::ExportDefaultDeclaration *ParserImpl::ParseExportDefaultDeclaration(const le
 ir::Identifier *ParserImpl::ParseNamedExport(const lexer::Token &exportedToken)
 {
     if (exportedToken.Type() != lexer::TokenType::LITERAL_IDENT) {
-        ThrowSyntaxError("Unexpected token, expected an identifier.");
+        LogSyntaxError(
+            {"Unexpected token '", lexer::TokenToString(exportedToken.Type()), "', expected an identifier."});
+        return nullptr;
     }
 
     CheckRestrictedBinding(exportedToken.KeywordType());
@@ -1545,6 +1598,10 @@ ir::ExportAllDeclaration *ParserImpl::ParseExportAllDeclaration(const lexer::Sou
     }
 
     ir::StringLiteral *source = ParseFromClause();
+    if (source == nullptr) {  // Error processing.
+        return nullptr;
+    }
+
     lexer::SourcePosition endLoc = source->End();
 
     auto *exportDeclaration = AllocNode<ir::ExportAllDeclaration>(source, exported);
@@ -1563,7 +1620,7 @@ ir::ExportNamedDeclaration *ParserImpl::ParseExportNamedSpecifiers(const lexer::
 
     while (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
         if (lexer_->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
-            ThrowSyntaxError("Unexpected token");
+            LogSyntaxError({"Unexpected token '", lexer::TokenToString(lexer_->GetToken().Type()), "'."});
         }
 
         lexer::Token localToken = lexer_->GetToken();
@@ -1582,10 +1639,11 @@ ir::ExportNamedDeclaration *ParserImpl::ParseExportNamedSpecifiers(const lexer::
             exported = ParseNamedExport(localToken);
         }
 
-        auto *specifier = AllocNode<ir::ExportSpecifier>(local, exported);
-        specifier->SetRange({local->Start(), exported->End()});
-
-        specifiers.push_back(specifier);
+        if (exported != nullptr) {  // Error processing.
+            auto *specifier = AllocNode<ir::ExportSpecifier>(local, exported);
+            specifier->SetRange({local->Start(), exported->End()});
+            specifiers.push_back(specifier);
+        }
 
         if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA) {
             lexer_->NextToken(lexer::NextTokenFlags::KEYWORD_TO_IDENT);  // eat comma
@@ -1665,11 +1723,11 @@ ir::ExportNamedDeclaration *ParserImpl::ParseNamedExportDeclaration(const lexer:
 ir::Statement *ParserImpl::ParseExportDeclaration(StatementParsingFlags flags)
 {
     if ((flags & StatementParsingFlags::GLOBAL) == 0) {
-        ThrowSyntaxError("'import' and 'export' may only appear at the top level");
+        LogSyntaxError("'import' and 'export' may only appear at the top level");
     }
 
     if (!context_.IsModule()) {
-        ThrowSyntaxError("'import' and 'export' may appear only with 'sourceType: module'");
+        LogSyntaxError("'import' and 'export' may appear only with 'sourceType: module'");
     }
 
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
@@ -1785,17 +1843,18 @@ ir::StringLiteral *ParserImpl::ParseFromClause(bool requireFrom)
 {
     if (lexer_->GetToken().KeywordType() != lexer::TokenType::KEYW_FROM) {
         if (requireFrom) {
-            ThrowSyntaxError("Unexpected token.");
+            LogSyntaxError(
+                {"Unexpected token '", lexer::TokenToString(lexer_->GetToken().Type()), "', expected 'from'."});
         }
     } else {
         lexer_->NextToken();  // eat `from` literal
     }
 
     if (lexer_->GetToken().Type() != lexer::TokenType::LITERAL_STRING) {
-        ThrowSyntaxError("Unexpected token.");
+        LogSyntaxError(
+            {"Unexpected token '", lexer::TokenToString(lexer_->GetToken().Type()), "', expected 'string literal'."});
+        return nullptr;
     }
-
-    ASSERT(lexer_->GetToken().Type() == lexer::TokenType::LITERAL_STRING);
 
     auto *source = AllocNode<ir::StringLiteral>(lexer_->GetToken().String());
     source->SetRange(lexer_->GetToken().Loc());
@@ -1828,11 +1887,11 @@ ir::AstNode *ParserImpl::ParseImportSpecifiers(ArenaVector<ir::AstNode *> *speci
 ir::Statement *ParserImpl::ParseImportDeclaration(StatementParsingFlags flags)
 {
     if ((flags & StatementParsingFlags::GLOBAL) == 0) {
-        ThrowSyntaxError("'import' and 'export' may only appear at the top level");
+        LogSyntaxError("'import' and 'export' may only appear at the top level");
     }
 
     if (!context_.IsModule()) {
-        ThrowSyntaxError("'import' and 'export' may appear only with 'sourceType: module'");
+        LogSyntaxError("'import' and 'export' may appear only with 'sourceType: module'");
     }
 
     char32_t nextChar = lexer_->Lookahead();
@@ -1852,6 +1911,10 @@ ir::Statement *ParserImpl::ParseImportDeclaration(StatementParsingFlags flags)
         source = ParseFromClause(true);
     } else {
         source = ParseFromClause(false);
+    }
+
+    if (source == nullptr) {  // Error processing.
+        return nullptr;
     }
 
     lexer::SourcePosition endLoc = source->End();
