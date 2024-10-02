@@ -80,7 +80,7 @@ ir::TypeNode *ETSParser::ParseFunctionReturnType([[maybe_unused]] ParserStatus s
 {
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COLON) {
         if ((status & ParserStatus::CONSTRUCTOR_FUNCTION) != 0U) {
-            ThrowSyntaxError("Type annotation isn't allowed for constructor.");
+            LogSyntaxError("Type annotation isn't allowed for constructor.");
         }
         Lexer()->NextToken();  // eat ':'
         TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR |
@@ -95,10 +95,10 @@ ir::TypeNode *ETSParser::ParseFunctionReturnType([[maybe_unused]] ParserStatus s
 ir::TypeNode *ETSParser::ParsePrimitiveType(TypeAnnotationParsingOptions *options, ir::PrimitiveType type)
 {
     if (((*options) & TypeAnnotationParsingOptions::DISALLOW_PRIMARY_TYPE) != 0) {
-        ThrowSyntaxError("Primitive type is not allowed here.");
+        LogSyntaxError("Primitive type is not allowed here.");
     }
 
-    auto *typeAnnotation = AllocNode<ir::ETSPrimitiveType>(type);
+    auto *const typeAnnotation = AllocNode<ir::ETSPrimitiveType>(type);
     typeAnnotation->SetRange(Lexer()->GetToken().Loc());
     Lexer()->NextToken();
     return typeAnnotation;
@@ -247,7 +247,7 @@ bool ETSParser::ParseTriplePeriod(bool spreadTypePresent)
 {
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_PERIOD_PERIOD_PERIOD) {
         if (spreadTypePresent) {
-            ThrowSyntaxError("Only one spread type declaration allowed, at the last index");
+            LogSyntaxError("Only one spread type declaration allowed, at the last index");
         }
 
         spreadTypePresent = true;
@@ -256,7 +256,7 @@ bool ETSParser::ParseTriplePeriod(bool spreadTypePresent)
         // This can't be implemented to any index, with type consistency. If a spread type is in the middle of
         // the tuple, then bounds check can't be made for element access, so the type of elements after the
         // spread can't be determined in compile time.
-        ThrowSyntaxError("Spread type must be at the last index in the tuple type");
+        LogSyntaxError("Spread type must be at the last index in the tuple type");
     }
 
     return spreadTypePresent;
@@ -274,7 +274,10 @@ ir::TypeNode *ETSParser::ParseETSTupleType(TypeAnnotationParsingOptions *const o
 
     bool spreadTypePresent = false;
 
-    while (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
+    while (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET &&
+           Lexer()->GetToken().Type() != lexer::TokenType::EOS) {
+        const auto savedPos = Lexer()->Save();
+
         // Parse named parameter if name presents
         if ((Lexer()->GetToken().Type() == lexer::TokenType::LITERAL_IDENT) &&
             (Lexer()->Lookahead() == lexer::LEX_CHAR_COLON)) {
@@ -285,26 +288,24 @@ ir::TypeNode *ETSParser::ParseETSTupleType(TypeAnnotationParsingOptions *const o
         spreadTypePresent = ParseTriplePeriod(spreadTypePresent);
 
         auto *const currentTypeAnnotation = ParseTypeAnnotation(options);
-        if (currentTypeAnnotation == nullptr) {  // Error processing.
-            Lexer()->NextToken();
-            continue;
-        }
+        if (currentTypeAnnotation != nullptr) {
+            currentTypeAnnotation->SetParent(tupleType);
 
-        currentTypeAnnotation->SetParent(tupleType);
-
-        if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_QUESTION_MARK) {
-            // NOTE(mmartin): implement optional types for tuples
-            ThrowSyntaxError("Optional types in tuples are not yet implemented.");
-        }
-
-        if (spreadTypePresent) {
-            if (!currentTypeAnnotation->IsTSArrayType()) {
-                ThrowSyntaxError("Spread type must be an array type");
+            if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_QUESTION_MARK) {
+                // NOTE(mmartin): implement optional types for tuples
+                LogSyntaxError("Optional types in tuples are not yet implemented.");
+                Lexer()->NextToken();  // eat '?'
             }
 
-            tupleType->SetSpreadType(currentTypeAnnotation);
-        } else {
-            tupleTypeList.push_back(currentTypeAnnotation);
+            if (spreadTypePresent) {
+                if (!currentTypeAnnotation->IsTSArrayType()) {
+                    LogSyntaxError("Spread type must be an array type");
+                }
+
+                tupleType->SetSpreadType(currentTypeAnnotation);
+            } else {
+                tupleTypeList.push_back(currentTypeAnnotation);
+            }
         }
 
         if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA) {
@@ -313,8 +314,17 @@ ir::TypeNode *ETSParser::ParseETSTupleType(TypeAnnotationParsingOptions *const o
         }
 
         if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
-            ThrowSyntaxError("Comma is mandatory between elements in a tuple type declaration");
+            LogSyntaxError("Comma is mandatory between elements in a tuple type declaration");
         }
+
+        if (savedPos == Lexer()->Save()) {
+            Lexer()->NextToken();  // Error processing, avoid infinite loop.
+        }
+    }
+
+    if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
+        LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET);
+        return nullptr;  // Error processing;
     }
 
     Lexer()->NextToken();  // eat ']'
@@ -430,10 +440,10 @@ ir::TypeNode *ETSParser::ParseThisType(TypeAnnotationParsingOptions *options)
         (((GetContext().Status() & ParserStatus::ALLOW_THIS_TYPE) == 0) ||
          ((*options & TypeAnnotationParsingOptions::RETURN_TYPE) == 0) ||
          ((GetContext().Status() & ParserStatus::ARROW_FUNCTION) != 0))) {
-        ThrowSyntaxError("A 'this' type is available only as return type in a non-static method of a class or struct.");
+        LogSyntaxError("A 'this' type is available only as return type in a non-static method of a class or struct.");
     }
 
-    auto *thisType = AllocNode<ir::TSThisType>();
+    auto *const thisType = AllocNode<ir::TSThisType>();
     thisType->SetRange(Lexer()->GetToken().Loc());
 
     Lexer()->NextToken();  // eat 'this'
