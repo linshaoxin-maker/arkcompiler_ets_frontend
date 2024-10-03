@@ -28,6 +28,19 @@
 #include "varbinder/ETSBinder.h"
 #include "compiler/lowering/util.h"
 
+#include "util/ast-builders/blockExpressionBuilder.h"
+#include "util/ast-builders/variableDeclarationBuilder.h"
+#include "util/ast-builders/variableDeclaratorBuilder.h"
+#include "util/ast-builders/identifierBuilder.h"
+#include "util/ast-builders/etsNewClassInstanceExpressionBuilder.h"
+#include "util/ast-builders/etsTypeReferenceBuilder.h"
+#include "util/ast-builders/etsTypeReferencePartBuilder.h"
+#include "util/ast-builders/tsTypeParameterInstantiationBuilder.h"
+#include "util/ast-builders/etsPrimitiveTypeBuilder.h"
+#include "util/ast-builders/memberExpressionBuilder.h"
+#include "util/ast-builders/callExpressionBuilder.h"
+#include "util/ast-builders/expressionStatementBuilder.h"
+
 namespace ark::es2panda::compiler {
 
 std::string_view RecordLowering::Name() const
@@ -183,14 +196,14 @@ ir::Expression *RecordLowering::CreateBlockExpression(ir::ObjectExpression *expr
      * ...
      * map
      */
-    auto checker = ctx->checker->AsETSChecker();
+    // auto checker = ctx->checker->AsETSChecker();
 
     // Initialize map with provided type arguments
-    auto *ident = Gensym(checker->Allocator());
+    // auto *ident = Gensym(checker->Allocator());
     std::stringstream ss;
     expr->TsType()->ToAssemblerType(ss);
+    auto blockExpressionBuilder = ir::BlockExpressionBuilder(ctx->allocator);
 
-    ArenaVector<ir::Statement *> statements(ctx->allocator->Adapter());
     auto &properties = expr->Properties();
     // currently we only have Map and Record in this if branch
     std::string containerType;
@@ -200,23 +213,82 @@ ir::Expression *RecordLowering::CreateBlockExpression(ir::ObjectExpression *expr
         containerType = "Record";
     }
 
-    const std::string createSrc =
-        "let @@I1 = new " + containerType + "<" + TypeToString(keyType) + "," + TypeToString(valueType) + ">()";
-    statements.push_back(CreateStatement(createSrc, ident, nullptr, nullptr, ctx));
+    // Current Realization with DSL
+    // auto identVar = ir::IdentifierBuilder(ctx->allocator).SetName("I1").Build();
+    // auto varI1 =
+    //     ir::VariableDeclarationBuilder(ctx->allocator)
+    //         .AddDeclarator(
+    //             ir::VariableDeclaratorBuilder(ctx->allocator)
+    //                 .SetId(identVar)
+    //                 .SetInit(ir::ETSNewClassInstanceExpressionBuilder(ctx->allocator)
+    //                              .SetTypeReference(
+    //                                  ir::ETSTypeReferenceBuilder(ctx->allocator)
+    //                                      .SetETSTypeReferencePart(
+    //                                          ir::ETSTypeReferencePartBuilder(ctx->allocator)
+    //                                              .SetName(ir::IdentifierBuilder(ctx->allocator)
+    //                                                           .SetName(util::StringView(containerType))
+    //                                                           .Build())
+    //                                              .SetTypeParams(
+    //                                                  ir::TSTypeParameterInstantiationBuilder(ctx->allocator)
+    //                                                      .AddParams(
+    //                                                          ir::ETSTypeReferenceBuilder(ctx->allocator)
+    //                                                              .SetETSTypeReferencePart(
+    //                                                                  ir::ETSTypeReferencePartBuilder(ctx->allocator)
+    //                                                                      .SetName(ir::IdentifierBuilder(ctx->allocator)
+    //                                                                                   .SetName(util::StringView(
+    //                                                                                       TypeToString(keyType)))
+    //                                                                                   .Build())
+    //                                                                      .Build())
+    //                                                              .Build())
+    //                                                      .AddParams(
+    //                                                          ir::ETSTypeReferenceBuilder(ctx->allocator)
+    //                                                              .SetETSTypeReferencePart(
+    //                                                                  ir::ETSTypeReferencePartBuilder(ctx->allocator)
+    //                                                                      .SetName(ir::IdentifierBuilder(ctx->allocator)
+    //                                                                                   .SetName(util::StringView(
+    //                                                                                       TypeToString(valueType)))
+    //                                                                                   .Build())
+    //                                                                      .Build())
+    //                                                              .Build()
+    //                                                      )
+    //                                                      .Build())
+    //                                              .Build())
+    //                                      .Build())
+    //                              .Build())
+    //                 .Build())
+    //         .Build();
+    // blockExpressionBuilder.AddStatement(varI1);
+
+    // 
+    auto * var = VarBuilder()
+                .SetId("I1")
+                .SetInit(
+                    NewClassInstanceExprBuilder().
+                    .SetType("Map")
+                    .AddTypeParameter("Int")
+                    .AddTypeParameter("String")
+                )
+                .Build()
 
     // Build statements from properties
-
     for (const auto &property : properties) {
         ASSERT(property->IsProperty());
-        auto p = property->AsProperty();
-        statements.push_back(
-            CreateStatement("@@I1.set(@@E2, @@E3)", ident->Clone(ctx->allocator, nullptr), p->Key(), p->Value(), ctx));
+        // auto p = property->AsProperty();
+
+        auto stmnt = ir::ExpressionStatementBuilder(ctx->allocator).SetExpression(
+            ir::CallExpressionBuilder(ctx->allocator).SetCallee(
+                ir::MemberExpressionBuilder(ctx->allocator).SetObject(identVar)
+                .SetProperty(ir::IdentifierBuilder(ctx->allocator).SetName(util::StringView("set")).Build()).Build()
+            )
+            .SetArguments(ir::IdentifierBuilder(ctx->allocator).SetName("E2").Build())
+            .SetArguments(ir::IdentifierBuilder(ctx->allocator).SetName("E3").Build()).Build()
+        ).Build();
+        blockExpressionBuilder.AddStatement(stmnt);
     }
-    statements.push_back(CreateStatement("@@I1", ident->Clone(ctx->allocator, nullptr), nullptr, nullptr, ctx));
+    blockExpressionBuilder.AddStatement(ir::ExpressionStatementBuilder(ctx->allocator).SetExpression(identVar).Build());
 
     // Create Block Expression
-    auto block = checker->AllocNode<ir::BlockExpression>(std::move(statements));
-    return block;
+    return blockExpressionBuilder.Build();
 }
 
 }  // namespace ark::es2panda::compiler
