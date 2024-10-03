@@ -1,0 +1,3 @@
+ast/parser/ets/templates/access-method-modifier.erb:
+ - ast/parser/ets/templates/config-access-method-modifier-abstract.yaml
+ - ast/parser/ets/templates/config-access-method-modifier.yaml

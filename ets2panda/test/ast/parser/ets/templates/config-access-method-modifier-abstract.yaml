@@ -1,0 +1,7 @@
+access_modifier_list: 
+  - "internal"
+  - "public"
+  - "protected"
+method_modifier_list:
+  - abstract
+sep: "---\n"

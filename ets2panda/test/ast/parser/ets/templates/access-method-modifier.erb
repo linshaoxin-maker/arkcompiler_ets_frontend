@@ -1,0 +1,26 @@
+<% for am in access_modifier_list do  %>
+<% for mm in method_modifier_list do  %>
+<% if mm == "abstract" %>
+abstract class A { 
+<%else%>    
+class A {
+<% end %>
+    <% if mm == "native" or mm == "abstract" %>
+    /* @@ AccessTest */<%= am %> <%= mm %> /* @@ IdentTest */foo() : void
+    <% elsif mm == "async" %>
+    /* @@ AccessTest */<%= am %> <%= mm %> /* @@ IdentTest */foo() : Promise<Int> {return 6;}
+    <% else %>
+    /* @@ AccessTest */<%= am %> <%= mm %> /* @@ IdentTest */foo() : void {}
+    <% end %>
+}
+/* @@@ AccessTest Node {
+  "accessibility": "<%=am%>"
+} */ 
+
+/* @@@ IdentTest Node {
+    "type": "Identifier",
+    "name": "foo"
+} */ 
+<%=sep%>
+<% end %>
+<% end %>
