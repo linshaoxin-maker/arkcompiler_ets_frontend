@@ -2918,12 +2918,5 @@ export class TypeScriptLinter {
       return;
     }
     this.incrementCounters(node, FaultID.ImportType);
-
-    this.test_m(node);
-  }
-
-  private test_m(node: ts.Node): void {
-    void this;
-    node.getText();
   }
 }

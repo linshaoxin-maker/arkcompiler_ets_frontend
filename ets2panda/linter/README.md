@@ -61,5 +61,3 @@ Run the following command:
 ```bash
 npm test
 ```
-
-test
