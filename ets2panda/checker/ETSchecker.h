@@ -160,8 +160,8 @@ public:
     ETSObjectType *BuildBasicInterfaceProperties(ir::TSInterfaceDeclaration *interfaceDecl);
     ETSObjectType *GetSuperType(ETSObjectType *type);
     ArenaVector<ETSObjectType *> GetInterfaces(ETSObjectType *type);
-    ArenaVector<ETSObjectType *> GetInterfacesOfClass(ETSObjectType *type);
-    ArenaVector<ETSObjectType *> GetInterfacesOfInterface(ETSObjectType *type);
+    void GetInterfacesOfClass(ETSObjectType *type);
+    void GetInterfacesOfInterface(ETSObjectType *type);
     void ValidateImplementedInterface(ETSObjectType *type, Type *interface, std::unordered_set<Type *> *extendsSet,
                                       const lexer::SourcePosition &pos);
     void ResolveDeclaredMembersOfObject(const ETSObjectType *type);
@@ -293,6 +293,10 @@ public:
     std::tuple<Type *, Type *> CheckBinaryOperator(ir::Expression *left, ir::Expression *right, ir::Expression *expr,
                                                    lexer::TokenType operationType, lexer::SourcePosition pos,
                                                    bool forcePromotion = false);
+    std::tuple<Type *, Type *> CheckArithmeticOperations(
+        ir::Expression *expr,
+        std::tuple<ir::Expression *, ir::Expression *, lexer::TokenType, lexer::SourcePosition> op, bool isEqualOp,
+        std::tuple<checker::Type *, checker::Type *, Type *, Type *> types);
     checker::Type *CheckBinaryOperatorMulDivMod(
         std::tuple<ir::Expression *, ir::Expression *, lexer::TokenType, lexer::SourcePosition> op, bool isEqualOp,
         std::tuple<checker::Type *, checker::Type *, Type *, Type *> types);
@@ -441,6 +445,11 @@ public:
     static Signature *GetSignatureFromMethodDefinition(const ir::MethodDefinition *methodDef);
     void CheckIdenticalOverloads(ETSFunctionType *func, ETSFunctionType *overload,
                                  const ir::MethodDefinition *currentFunc);
+    static bool CmpAssemblerTypesWithRank(Signature const *const sig1, Signature const *const sig2) noexcept;
+    static bool HasSameAssemblySignature(Signature const *const sig1, Signature const *const sig2) noexcept;
+    static bool HasSameAssemblySignatures(ETSFunctionType const *const func1,
+                                          ETSFunctionType const *const func2) noexcept;
+
     Signature *AdjustForTypeParameters(Signature *source, Signature *target);
     void ReportOverrideError(Signature *signature, Signature *overriddenSignature, const OverrideErrorCode &errorCode);
     void CheckOverride(Signature *signature);
@@ -495,7 +504,7 @@ public:
     Type *HandleTypeAlias(ir::Expression *name, const ir::TSTypeParameterInstantiation *typeParams);
     Type *GetTypeFromEnumReference(varbinder::Variable *var);
     Type *GetTypeFromTypeParameterReference(varbinder::LocalVariable *var, const lexer::SourcePosition &pos);
-    Type *GetNonConstantTypeFromPrimitiveType(Type *type) const;
+    Type *GetNonConstantType(Type *type);
     bool IsNullLikeOrVoidExpression(const ir::Expression *expr) const;
     bool IsConstantExpression(ir::Expression *expr, Type *type);
     void ValidateUnaryOperatorOperand(varbinder::Variable *variable);
@@ -823,6 +832,8 @@ private:
     ETSObjectType *CreateETSObjectTypeCheckBuiltins(util::StringView name, ir::AstNode *declNode, ETSObjectFlags flags);
     void CheckProgram(parser::Program *program, bool runAnalysis = false);
     void CheckWarnings(parser::Program *program, const CompilerOptions &options);
+
+    bool ComputeSuperType(ETSObjectType *type);
 
     template <typename UType>
     UType HandleModulo(UType leftValue, UType rightValue);
