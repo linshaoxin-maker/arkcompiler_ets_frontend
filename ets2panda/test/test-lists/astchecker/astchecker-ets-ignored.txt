@@ -3,3 +3,10 @@ ast/parser/ets/re_export/import_5.sts
 
 # Issue: #17983
 ast/parser/ets/TypeInferFunc.sts
+
+# Issue: #19440
+ast/parser/ets/iterator_override_next.sts
+
+# Fails with Assertion. Description in Issue #19645
+ast/parser/ets/switch_readonly_member_different_enum_2.sts
+ast/parser/ets/extension_function_tests/extension_function_not_for_class_type.sts

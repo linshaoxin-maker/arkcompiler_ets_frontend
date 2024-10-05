@@ -16,6 +16,7 @@
 #include "checker/ETSchecker.h"
 
 #include "ir/ets/etsNullishTypes.h"
+#include "compiler/lowering/scopesInit/scopesInitPhase.h"
 #include "ir/ets/etsUnionType.h"
 #include "ir/expressions/literals/undefinedLiteral.h"
 #include "varbinder/ETSBinder.h"
@@ -26,7 +27,7 @@ ir::TypeNode *ETSChecker::GetUtilityTypeTypeParamNode(const ir::TSTypeParameterI
                                                       const std::string_view &utilityTypeName)
 {
     if (typeParams->Params().size() != 1) {
-        ThrowTypeError({"Invalid number of type parameters for ", utilityTypeName, " type"}, typeParams->Start());
+        LogTypeError({"Invalid number of type parameters for ", utilityTypeName, " type"}, typeParams->Start());
     }
 
     return typeParams->Params().front();
@@ -35,6 +36,10 @@ ir::TypeNode *ETSChecker::GetUtilityTypeTypeParamNode(const ir::TSTypeParameterI
 Type *ETSChecker::HandleUtilityTypeParameterNode(const ir::TSTypeParameterInstantiation *const typeParams,
                                                  const std::string_view &utilityType)
 {
+    if (typeParams == nullptr) {
+        return GlobalTypeError();
+    }
+
     auto *const bareType = GetUtilityTypeTypeParamNode(typeParams, utilityType)->Check(this);
 
     if (utilityType == compiler::Signatures::PARTIAL_TYPE_NAME) {
@@ -49,7 +54,8 @@ Type *ETSChecker::HandleUtilityTypeParameterNode(const ir::TSTypeParameterInstan
         return HandleRequiredType(bareType);
     }
 
-    ThrowTypeError("This utility type is not yet implemented.", typeParams->Start());
+    LogTypeError("This utility type is not yet implemented.", typeParams->Start());
+    return bareType;
 }
 
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -163,20 +169,6 @@ ir::ClassProperty *ETSChecker::CreateNullishProperty(ir::ClassProperty *const pr
     unionType->SetParent(propClone);
     propClone->SetParent(newClassDefinition);
 
-    // Handle bindings, variables
-    varbinder::Decl *const newDecl =
-        classProp->IsConst()
-            ? static_cast<varbinder::Decl *>(Allocator()->New<varbinder::ConstDecl>(propClone->Id()->Name()))
-            : Allocator()->New<varbinder::LetDecl>(propClone->Id()->Name());
-
-    propClone->SetVariable(Allocator()->New<varbinder::LocalVariable>(newDecl, varbinder::VariableFlags::PROPERTY));
-
-    propClone->Variable()->SetScope(classProp->IsStatic()
-                                        ? newClassDefinition->Scope()->AsClassScope()->StaticFieldScope()
-                                        : newClassDefinition->Scope()->AsClassScope()->InstanceFieldScope());
-
-    propClone->Variable()->Declaration()->BindNode(propClone);
-
     return propClone;
 }
 
@@ -196,9 +188,6 @@ ir::ClassDefinition *ETSChecker::CreatePartialClassDeclaration(ir::ClassDefiniti
         // Method calls on partial classes will make the class not type safe, so we don't copy any methods
         if (prop->IsClassProperty()) {
             auto *const newProp = CreateNullishProperty(prop->AsClassProperty(), newClassDefinition);
-
-            newClassDefinition->Scope()->AddBinding(Allocator(), nullptr, newProp->Variable()->Declaration(),
-                                                    ScriptExtension::ETS);
 
             // Put the new property into the class declaration
             newClassDefinition->Body().emplace_back(newProp);
@@ -223,7 +212,6 @@ ir::ClassDefinition *ETSChecker::CreatePartialClassDeclaration(ir::ClassDefiniti
 
         newClassDefinition->SetTypeParams(newTypeParams);
         newTypeParams->SetParent(newClassDefinition);
-        newTypeParams->SetScope(newClassDefinition->Scope());
     }
 
     newClassDefinition->SetTsType(nullptr);
@@ -278,7 +266,9 @@ ir::ClassDefinition *ETSChecker::CreateClassPrototype(util::StringView name, par
     // Create class declaration node
     auto *const classDecl = AllocNode<ir::ClassDeclaration>(classDef, Allocator());
     classDecl->SetParent(classDeclProgram->Ast());
-    classDef->Scope()->BindNode(classDecl);
+
+    // Class definition is scope bearer, not class declaration
+    classDef->Scope()->BindNode(classDecl->Definition());
     decl->BindNode(classDef);
 
     // Put class declaration in global scope, and in program AST
@@ -352,6 +342,11 @@ Type *ETSChecker::CreatePartialTypeClassDef(ir::ClassDefinition *const partialCl
 {
     // Create nullish properties of the partial class
     CreatePartialClassDeclaration(partialClassDef, classDef);
+
+    // Run varbinder for new partial class to set scopes
+    compiler::InitScopesPhaseETS::RunExternalNode(partialClassDef, VarBinder());
+
+    // Run checker
     partialClassDef->Check(this);
 
     auto *const partialType = partialClassDef->TsType()->AsETSObjectType();
@@ -438,6 +433,10 @@ ir::MethodDefinition *ETSChecker::CreateNonStaticClassInitializer(varbinder::Cla
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 Type *ETSChecker::HandleReadonlyType(const ir::TSTypeParameterInstantiation *const typeParams)
 {
+    if (typeParams == nullptr) {
+        return GlobalTypeError();
+    }
+
     auto *const typeParamNode = GetUtilityTypeTypeParamNode(typeParams, compiler::Signatures::READONLY_TYPE_NAME);
     auto *typeToBeReadonly = typeParamNode->Check(this);
 
@@ -606,8 +605,8 @@ void ETSChecker::ValidateObjectLiteralForRequiredType(const ETSObjectType *const
         }
 
         if (!missingProp.empty()) {
-            ThrowTypeError({"Class property '", missingProp, "' needs to be initialized for required type."},
-                           initObjExpr->Start());
+            LogTypeError({"Class property '", missingProp, "' needs to be initialized for required type."},
+                         initObjExpr->Start());
         }
     }
 }

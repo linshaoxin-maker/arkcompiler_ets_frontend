@@ -153,7 +153,7 @@ ir::ModifierFlags ETSParser::ParseClassModifiers()
 
 std::tuple<ir::Expression *, ir::TSTypeParameterInstantiation *> ETSParser::ParseClassImplementsElement()
 {
-    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR |
+    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR |
                                            TypeAnnotationParsingOptions::IGNORE_FUNCTION_TYPE |
                                            TypeAnnotationParsingOptions::ALLOW_WILDCARD;
     return {ParseTypeReference(&options), nullptr};
@@ -164,7 +164,7 @@ ir::Expression *ETSParser::ParseSuperClassReference()
     if (Lexer()->GetToken().Type() == lexer::TokenType::KEYW_EXTENDS) {
         Lexer()->NextToken();
 
-        TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR |
+        TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR |
                                                TypeAnnotationParsingOptions::IGNORE_FUNCTION_TYPE |
                                                TypeAnnotationParsingOptions::ALLOW_WILDCARD;
         return ParseTypeReference(&options);
@@ -175,7 +175,7 @@ ir::Expression *ETSParser::ParseSuperClassReference()
 
 ir::TypeNode *ETSParser::ParseInterfaceExtendsElement()
 {
-    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR |
+    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR |
                                            TypeAnnotationParsingOptions::IGNORE_FUNCTION_TYPE |
                                            TypeAnnotationParsingOptions::ALLOW_WILDCARD;
     return ParseTypeReference(&options);
@@ -392,7 +392,7 @@ void ETSParser::ParseClassFieldDefinition(ir::Identifier *fieldName, ir::Modifie
 {
     lexer::SourcePosition endLoc = fieldName->End();
     ir::TypeNode *typeAnnotation = nullptr;
-    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
+    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR;
     bool optionalField = false;
 
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_QUESTION_MARK) {
@@ -470,7 +470,6 @@ ir::MethodDefinition *ETSParser::ParseClassMethodDefinition(ir::Identifier *meth
     auto *method = AllocNode<ir::MethodDefinition>(methodKind, methodName->Clone(Allocator(), nullptr)->AsExpression(),
                                                    funcExpr, modifiers, Allocator(), false);
     method->SetRange(funcExpr->Range());
-    func->Id()->SetReference();
     return method;
 }
 
@@ -486,7 +485,6 @@ ir::MethodDefinition *ETSParser::ParseClassMethod(ClassElementDescriptor *desc,
     ir::ScriptFunction *func = ParseFunction(desc->newStatus);
     if (propName->IsIdentifier()) {
         func->SetIdent(propName->AsIdentifier()->Clone(Allocator(), nullptr));
-        func->Id()->SetReference();
     }
 
     auto *funcExpr = AllocNode<ir::FunctionExpression>(func);
@@ -645,7 +643,7 @@ ir::TSInterfaceDeclaration *ETSParser::ParseInterfaceBody(ir::Identifier *name, 
     ir::TSTypeParameterDeclaration *typeParamDecl = nullptr;
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
         auto options =
-            TypeAnnotationParsingOptions::THROW_ERROR | TypeAnnotationParsingOptions::ALLOW_DECLARATION_SITE_VARIANCE;
+            TypeAnnotationParsingOptions::REPORT_ERROR | TypeAnnotationParsingOptions::ALLOW_DECLARATION_SITE_VARIANCE;
         typeParamDecl = ParseTypeParameterDeclaration(&options);
     }
 
@@ -701,11 +699,14 @@ ir::ClassDefinition *ETSParser::ParseClassDefinition(ir::ClassDefinitionModifier
     Lexer()->NextToken();
 
     ir::Identifier *identNode = ParseClassIdent(modifiers);
+    if (identNode == nullptr && Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_BRACE) {
+        Lexer()->NextToken();  // Error processing.
+    }
 
     ir::TSTypeParameterDeclaration *typeParamDecl = nullptr;
     if (Lexer()->GetToken().Type() == lexer::TokenType::PUNCTUATOR_LESS_THAN) {
         auto options =
-            TypeAnnotationParsingOptions::THROW_ERROR | TypeAnnotationParsingOptions::ALLOW_DECLARATION_SITE_VARIANCE;
+            TypeAnnotationParsingOptions::REPORT_ERROR | TypeAnnotationParsingOptions::ALLOW_DECLARATION_SITE_VARIANCE;
         typeParamDecl = ParseTypeParameterDeclaration(&options);
     }
 
@@ -827,8 +828,11 @@ ir::ClassProperty *ETSParser::ParseInterfaceField()
     if (!Lexer()->TryEatTokenType(lexer::TokenType::PUNCTUATOR_COLON)) {
         ThrowSyntaxError("Interface fields must have type annotation.");
     }
-    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::THROW_ERROR;
+    TypeAnnotationParsingOptions options = TypeAnnotationParsingOptions::REPORT_ERROR;
     typeAnnotation = ParseTypeAnnotation(&options);
+    if (typeAnnotation == nullptr) {  // Error processing.
+        return nullptr;
+    }
 
     name->SetTsTypeAnnotation(typeAnnotation);
     typeAnnotation->SetParent(name);
@@ -906,12 +910,9 @@ ir::MethodDefinition *ETSParser::ParseInterfaceMethod(ir::ModifierFlags flags, i
     func->AddFlag(ir::ScriptFunctionFlags::METHOD);
 
     func->SetIdent(name);
-    auto *method = AllocNode<ir::MethodDefinition>(ir::MethodDefinitionKind::METHOD,
-                                                   name->Clone(Allocator(), nullptr)->AsExpression(), funcExpr, flags,
-                                                   Allocator(), false);
+    auto *method = AllocNode<ir::MethodDefinition>(methodKind, name->Clone(Allocator(), nullptr)->AsExpression(),
+                                                   funcExpr, flags, Allocator(), false);
     method->SetRange(funcExpr->Range());
-
-    func->Id()->SetReference();
 
     ConsumeSemicolon(method);
 
@@ -954,7 +955,10 @@ ir::AstNode *ETSParser::ParseTypeLiteralOrInterfaceMember()
         }
 
         auto *field = ParseInterfaceField();
-        field->SetStart(startLoc);
+        if (field != nullptr) {  // Error processing.
+            field->SetStart(startLoc);
+        }
+
         return field;
     }
 
