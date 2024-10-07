@@ -76,6 +76,11 @@ public:
         return nextTokenLine_;
     }
 
+    bool operator==(const LexerPosition &other) const
+    {
+        return iterator_.Save() == other.iterator_.Save();
+    }
+
 private:
     friend class Lexer;
 
