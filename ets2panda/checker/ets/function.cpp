@@ -1768,14 +1768,19 @@ bool ETSChecker::IsReturnTypeSubstitutable(Signature *const s1, Signature *const
     // - If R1 is a reference type then R1, adapted to the type parameters of d2 (link to generic methods), is a
     // subtype of R2.
     ASSERT(IsReferenceType(r1));
-
-    if (Relation()->IsSupertypeOf(r2, r1)) {
+    if (Relation()->IsSupertypeOf(r2, r1)){
         return true;
     }
 
-    return s2->Function()->ReturnTypeAnnotation()->IsETSTypeReference() &&
-           Relation()->IsSupertypeOf(
-               s2->Function()->ReturnTypeAnnotation()->GetType(this)->AsETSTypeParameter()->GetConstraintType(), r1);
+    // This "if" is for lambda overloads as long as they are implemented incorrectly. Check Issue: #18866
+    if (s2->Function()->ReturnTypeAnnotation()->IsETSTypeReference() &&
+        s2->Function()->ReturnTypeAnnotation()->GetType(this)->IsETSTypeParameter() &&
+        Relation()->IsSupertypeOf(
+            s2->Function()->ReturnTypeAnnotation()->GetType(this)->AsETSTypeParameter()->GetConstraintType(), r1)) {
+        return true;
+    }
+    
+    return false;
 }
 
 std::string ETSChecker::GetAsyncImplName(const util::StringView &name)
