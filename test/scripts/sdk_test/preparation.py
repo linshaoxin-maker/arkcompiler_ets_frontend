@@ -49,7 +49,11 @@ def setup_env():
 
 def check_deveco_env():
     if is_linux():
-        return False
+        node_path = os.path.join(options.configs.get('deveco_path'), 'tool', 'node')
+        if not os.path.exists(node_path):
+            logging.error("Node js not found!")
+            return False
+        return True
 
     java_path = os.path.join(options.configs.get('deveco_path'), 'jbr')
     if not os.path.exists(java_path):

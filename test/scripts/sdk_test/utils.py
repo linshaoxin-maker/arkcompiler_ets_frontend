@@ -370,3 +370,15 @@ def file_contains_specified_fields(file_path, fields):
                 return True
             line = file.readline()
     return False
+
+
+def get_split_modify_file_path(task, modified_files, module_path):
+    module_path_len = len(module_path)
+    for i in range(len(modified_files)):
+        modified_file = modified_files[i]
+        path_parts = modified_file.split(os.sep)
+        new_path_parts = path_parts[(module_path_len - 1):]
+        new_path = os.path.join(*new_path_parts)
+        modified_files[i] = new_path
+
+    return modified_files
