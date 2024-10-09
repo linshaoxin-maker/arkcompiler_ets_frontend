@@ -17,7 +17,7 @@
     "postinstall": "node scripts/install-ohos-typescript.mjs && npm run build",
     "pack:linter": "rimraf bundle && mkdir bundle && npm pack --pack-destination bundle",
     "pretest": " npm run fix",
-    "test": "npm run test_main && npm run test_rules && npm run test_regression",
+    "test": "npm run node-v && npm run node-heap && npm run test_main && npm run test_rules && npm run test_regression",
     "test_main": "npm run compile && rimraf test/results && node build/src/TestRunner.js test",
     "test_regression": "npm run compile && rimraf test_regression/results && node build/src/TestRunner.js test_regression",
     "test_rules": "npm run compile && rimraf test_rules/results && node build/src/TestRunner.js test_rules",
@@ -26,7 +26,9 @@
     "eslint-check": "npx eslint --ext .ts .",
     "eslint-fix": "npm run eslint-check -- --fix",
     "prettier-fix": "npx prettier --write .",
-    "fix": "npm run prettier-fix && npm run eslint-fix"
+    "fix": "npm run prettier-fix && npm run eslint-fix",
+    "node-v": "node -e \"console.log('Node version: ')\" && node -v && node -e \"console.log('NPM version: ')\" && npm -v",
+    "node-heap": "node -e \"console.log('Node heap size: ')\" && node -e \"console.log(v8.getHeapStatistics().heap_size_limit/(1024*1024))\""
   },
   "dependencies": {
     "commander": "9.4.0",
