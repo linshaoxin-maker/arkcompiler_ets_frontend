@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+console.log('test filter arkguard');
 
 var [var1, var2] = [1, "foo", true];
 var1 = 2;
