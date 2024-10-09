@@ -34,6 +34,7 @@ import {
 } from './utils/consts/ArktsIgnorePaths';
 import { mergeArrayMaps } from './utils/functions/MergeArrayMaps';
 import { pathContainsDirectory } from './utils/functions/PathHelper';
+import { LibraryTypeCallDiagnosticChecker } from './utils/functions/LibraryTypeCallDiagnosticChecker';
 
 function prepareInputFilesList(cmdOptions: CommandLineOptions): string[] {
   let inputFiles = cmdOptions.inputFiles;
@@ -83,9 +84,9 @@ function countProblems(linter: TypeScriptLinter | InteropTypescriptLinter): [num
   return [errorNodesTotal, warningNodes];
 }
 
-export function lint(options: LintOptions): LintRunResult {
+// eslint-disable-next-line max-lines-per-function
+export function lint(options: LintOptions, etsLoaderPath: string | undefined): LintRunResult {
   const cmdOptions = options.cmdOptions;
-  const cancellationToken = options.cancellationToken;
   const tscCompiledProgram = options.tscCompiledProgram;
   const tsProgram = tscCompiledProgram.getProgram();
 
@@ -103,28 +104,31 @@ export function lint(options: LintOptions): LintRunResult {
   }
 
   const tscStrictDiagnostics = getTscDiagnostics(tscCompiledProgram, srcFiles);
+  LibraryTypeCallDiagnosticChecker.rebuildTscDiagnostics(tscStrictDiagnostics);
   const linter = options.isEtsFile ?
     new TypeScriptLinter(
       tsProgram.getTypeChecker(),
       cmdOptions.enableAutofix,
-      cancellationToken,
+      cmdOptions.arkts2,
+      options.cancellationToken,
       options.incrementalLintInfo,
       tscStrictDiagnostics,
       options.reportAutofixCb,
-      options.isEtsFileCb
+      options.isEtsFileCb,
+      options.compatibleSdkVersion,
+      options.compatibleSdkVersionStage
     ) :
     new InteropTypescriptLinter(
       tsProgram.getTypeChecker(),
       tsProgram.getCompilerOptions(),
-      options.incrementalLintInfo
+      cmdOptions.arkts2,
+      etsLoaderPath
     );
   const { errorNodes, problemsInfos } = lintFiles(srcFiles, linter);
-
   consoleLog('\n\n\nFiles scanned: ', srcFiles.length);
   consoleLog('\nFiles with problems: ', errorNodes);
 
   const [errorNodesTotal, warningNodes] = countProblems(linter);
-
   logTotalProblemsInfo(errorNodesTotal, warningNodes, linter);
   logProblemsPercentageByFeatures(linter);
 

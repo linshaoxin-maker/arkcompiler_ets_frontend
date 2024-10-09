@@ -53,6 +53,7 @@ enum class CheckerStatus : uint32_t {
     MEET_BREAK = 1U << 21U,
     MEET_CONTINUE = 1U << 22U,
     MEET_THROW = 1U << 23U,
+    IN_EXTERNAL = 1U << 24U,
 };
 
 }  // namespace ark::es2panda::checker
@@ -171,10 +172,7 @@ public:
         smartCasts_.erase(variable);
     }
 
-    void SetSmartCast(varbinder::Variable const *const variable, checker::Type *const smartType) noexcept
-    {
-        smartCasts_.insert_or_assign(variable, smartType);
-    }
+    void SetSmartCast(varbinder::Variable const *const variable, checker::Type *const smartType) noexcept;
 
     [[nodiscard]] checker::Type *GetSmartCast(varbinder::Variable const *const variable) const noexcept;
     [[nodiscard]] SmartCastArray CloneSmartCasts(bool clearData = false) noexcept;

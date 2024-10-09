@@ -39,6 +39,20 @@
                 }
               }
             },
+            "value": {
+              "type": "StringLiteral",
+              "value": "",
+              "loc": {
+                "start": {
+                  "line": 18,
+                  "column": 23
+                },
+                "end": {
+                  "line": 18,
+                  "column": 25
+                }
+              }
+            },
             "accessibility": "public",
             "static": false,
             "readonly": false,
@@ -71,7 +85,7 @@
                   },
                   "end": {
                     "line": 18,
-                    "column": 21
+                    "column": 22
                   }
                 }
               },
@@ -82,7 +96,7 @@
                 },
                 "end": {
                   "line": 18,
-                  "column": 21
+                  "column": 22
                 }
               }
             },
@@ -95,7 +109,7 @@
               },
               "end": {
                 "line": 18,
-                "column": 21
+                "column": 25
               }
             }
           },
@@ -113,6 +127,20 @@
                 "end": {
                   "line": 19,
                   "column": 9
+                }
+              }
+            },
+            "value": {
+              "type": "StringLiteral",
+              "value": "",
+              "loc": {
+                "start": {
+                  "line": 19,
+                  "column": 20
+                },
+                "end": {
+                  "line": 19,
+                  "column": 22
                 }
               }
             },
@@ -148,7 +176,7 @@
                   },
                   "end": {
                     "line": 19,
-                    "column": 18
+                    "column": 19
                   }
                 }
               },
@@ -159,7 +187,7 @@
                 },
                 "end": {
                   "line": 19,
-                  "column": 18
+                  "column": 19
                 }
               }
             },
@@ -172,7 +200,7 @@
               },
               "end": {
                 "line": 19,
-                "column": 18
+                "column": 22
               }
             }
           },
@@ -190,6 +218,20 @@
                 "end": {
                   "line": 20,
                   "column": 10
+                }
+              }
+            },
+            "value": {
+              "type": "NumberLiteral",
+              "value": 0,
+              "loc": {
+                "start": {
+                  "line": 20,
+                  "column": 18
+                },
+                "end": {
+                  "line": 20,
+                  "column": 19
                 }
               }
             },
@@ -225,7 +267,7 @@
                   },
                   "end": {
                     "line": 20,
-                    "column": 16
+                    "column": 17
                   }
                 }
               },
@@ -236,7 +278,7 @@
                 },
                 "end": {
                   "line": 20,
-                  "column": 16
+                  "column": 17
                 }
               }
             },
@@ -249,7 +291,7 @@
               },
               "end": {
                 "line": 20,
-                "column": 16
+                "column": 19
               }
             }
           },
@@ -390,6 +432,100 @@
         "superClass": null,
         "implements": [],
         "body": [
+          {
+            "type": "MethodDefinition",
+            "key": {
+              "type": "Identifier",
+              "name": "main",
+              "decorators": [],
+              "loc": {
+                "start": {
+                  "line": 1,
+                  "column": 1
+                },
+                "end": {
+                  "line": 1,
+                  "column": 1
+                }
+              }
+            },
+            "kind": "method",
+            "accessibility": "public",
+            "static": true,
+            "optional": false,
+            "computed": false,
+            "value": {
+              "type": "FunctionExpression",
+              "function": {
+                "type": "ScriptFunction",
+                "id": {
+                  "type": "Identifier",
+                  "name": "main",
+                  "decorators": [],
+                  "loc": {
+                    "start": {
+                      "line": 1,
+                      "column": 1
+                    },
+                    "end": {
+                      "line": 1,
+                      "column": 1
+                    }
+                  }
+                },
+                "generator": false,
+                "async": false,
+                "expression": false,
+                "params": [],
+                "body": {
+                  "type": "BlockStatement",
+                  "statements": [],
+                  "loc": {
+                    "start": {
+                      "line": 1,
+                      "column": 1
+                    },
+                    "end": {
+                      "line": 1,
+                      "column": 1
+                    }
+                  }
+                },
+                "loc": {
+                  "start": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 1
+                  }
+                }
+              },
+              "loc": {
+                "start": {
+                  "line": 1,
+                  "column": 1
+                },
+                "end": {
+                  "line": 1,
+                  "column": 1
+                }
+              }
+            },
+            "overloads": [],
+            "decorators": [],
+            "loc": {
+              "start": {
+                "line": 1,
+                "column": 1
+              },
+              "end": {
+                "line": 1,
+                "column": 1
+              }
+            }
+          },
           {
             "type": "MethodDefinition",
             "key": {
@@ -562,73 +698,387 @@
                           }
                         },
                         "right": {
-                          "type": "MemberExpression",
-                          "object": {
-                            "type": "MemberExpression",
-                            "object": {
-                              "type": "Identifier",
-                              "name": "car",
-                              "decorators": [],
+                          "type": "BlockExpression",
+                          "statements": [
+                            {
+                              "type": "VariableDeclaration",
+                              "declarations": [
+                                {
+                                  "type": "VariableDeclarator",
+                                  "id": {
+                                    "type": "Identifier",
+                                    "name": "gensym$_4",
+                                    "decorators": [],
+                                    "loc": {
+                                      "start": {
+                                        "line": 1,
+                                        "column": 3
+                                      },
+                                      "end": {
+                                        "line": 1,
+                                        "column": 3
+                                      }
+                                    }
+                                  },
+                                  "init": {
+                                    "type": "BlockExpression",
+                                    "statements": [
+                                      {
+                                        "type": "VariableDeclaration",
+                                        "declarations": [
+                                          {
+                                            "type": "VariableDeclarator",
+                                            "id": {
+                                              "type": "Identifier",
+                                              "name": "gensym$_3",
+                                              "decorators": [],
+                                              "loc": {
+                                                "start": {
+                                                  "line": 1,
+                                                  "column": 3
+                                                },
+                                                "end": {
+                                                  "line": 1,
+                                                  "column": 3
+                                                }
+                                              }
+                                            },
+                                            "init": {
+                                              "type": "Identifier",
+                                              "name": "car",
+                                              "decorators": [],
+                                              "loc": {
+                                                "start": {
+                                                  "line": 27,
+                                                  "column": 21
+                                                },
+                                                "end": {
+                                                  "line": 27,
+                                                  "column": 24
+                                                }
+                                              }
+                                            },
+                                            "loc": {
+                                              "start": {
+                                                "line": 1,
+                                                "column": 3
+                                              },
+                                              "end": {
+                                                "line": 1,
+                                                "column": 3
+                                              }
+                                            }
+                                          }
+                                        ],
+                                        "kind": "let",
+                                        "loc": {
+                                          "start": {
+                                            "line": 27,
+                                            "column": 21
+                                          },
+                                          "end": {
+                                            "line": 27,
+                                            "column": 41
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "ExpressionStatement",
+                                        "expression": {
+                                          "type": "ConditionalExpression",
+                                          "test": {
+                                            "type": "BinaryExpression",
+                                            "operator": "==",
+                                            "left": {
+                                              "type": "Identifier",
+                                              "name": "gensym$_3",
+                                              "decorators": [],
+                                              "loc": {
+                                                "start": {
+                                                  "line": 1,
+                                                  "column": 3
+                                                },
+                                                "end": {
+                                                  "line": 1,
+                                                  "column": 3
+                                                }
+                                              }
+                                            },
+                                            "right": {
+                                              "type": "NullLiteral",
+                                              "value": null,
+                                              "loc": {
+                                                "start": {
+                                                  "line": 1,
+                                                  "column": 3
+                                                },
+                                                "end": {
+                                                  "line": 1,
+                                                  "column": 3
+                                                }
+                                              }
+                                            },
+                                            "loc": {
+                                              "start": {
+                                                "line": 1,
+                                                "column": 3
+                                              },
+                                              "end": {
+                                                "line": 1,
+                                                "column": 3
+                                              }
+                                            }
+                                          },
+                                          "consequent": {
+                                            "type": "UndefinedLiteral",
+                                            "value": undefined,
+                                            "loc": {
+                                              "start": {
+                                                "line": 1,
+                                                "column": 3
+                                              },
+                                              "end": {
+                                                "line": 1,
+                                                "column": 3
+                                              }
+                                            }
+                                          },
+                                          "alternate": {
+                                            "type": "MemberExpression",
+                                            "object": {
+                                              "type": "Identifier",
+                                              "name": "gensym$_3",
+                                              "decorators": [],
+                                              "loc": {
+                                                "start": {
+                                                  "line": 27,
+                                                  "column": 21
+                                                },
+                                                "end": {
+                                                  "line": 27,
+                                                  "column": 33
+                                                }
+                                              }
+                                            },
+                                            "property": {
+                                              "type": "Identifier",
+                                              "name": "company",
+                                              "decorators": [],
+                                              "loc": {
+                                                "start": {
+                                                  "line": 27,
+                                                  "column": 26
+                                                },
+                                                "end": {
+                                                  "line": 27,
+                                                  "column": 33
+                                                }
+                                              }
+                                            },
+                                            "computed": false,
+                                            "optional": false,
+                                            "loc": {
+                                              "start": {
+                                                "line": 27,
+                                                "column": 21
+                                              },
+                                              "end": {
+                                                "line": 27,
+                                                "column": 33
+                                              }
+                                            }
+                                          },
+                                          "loc": {
+                                            "start": {
+                                              "line": 1,
+                                              "column": 3
+                                            },
+                                            "end": {
+                                              "line": 1,
+                                              "column": 3
+                                            }
+                                          }
+                                        },
+                                        "loc": {
+                                          "start": {
+                                            "line": 1,
+                                            "column": 3
+                                          },
+                                          "end": {
+                                            "line": 1,
+                                            "column": 3
+                                          }
+                                        }
+                                      }
+                                    ],
+                                    "loc": {
+                                      "start": {
+                                        "line": 27,
+                                        "column": 21
+                                      },
+                                      "end": {
+                                        "line": 27,
+                                        "column": 41
+                                      }
+                                    }
+                                  },
+                                  "loc": {
+                                    "start": {
+                                      "line": 1,
+                                      "column": 3
+                                    },
+                                    "end": {
+                                      "line": 1,
+                                      "column": 3
+                                    }
+                                  }
+                                }
+                              ],
+                              "kind": "let",
                               "loc": {
                                 "start": {
                                   "line": 27,
-                                  "column": 21
+                                  "column": 5
                                 },
                                 "end": {
                                   "line": 27,
-                                  "column": 24
+                                  "column": 41
                                 }
                               }
                             },
-                            "property": {
-                              "type": "Identifier",
-                              "name": "company",
-                              "decorators": [],
+                            {
+                              "type": "ExpressionStatement",
+                              "expression": {
+                                "type": "ConditionalExpression",
+                                "test": {
+                                  "type": "BinaryExpression",
+                                  "operator": "==",
+                                  "left": {
+                                    "type": "Identifier",
+                                    "name": "gensym$_4",
+                                    "decorators": [],
+                                    "loc": {
+                                      "start": {
+                                        "line": 1,
+                                        "column": 3
+                                      },
+                                      "end": {
+                                        "line": 1,
+                                        "column": 3
+                                      }
+                                    }
+                                  },
+                                  "right": {
+                                    "type": "NullLiteral",
+                                    "value": null,
+                                    "loc": {
+                                      "start": {
+                                        "line": 1,
+                                        "column": 3
+                                      },
+                                      "end": {
+                                        "line": 1,
+                                        "column": 3
+                                      }
+                                    }
+                                  },
+                                  "loc": {
+                                    "start": {
+                                      "line": 1,
+                                      "column": 3
+                                    },
+                                    "end": {
+                                      "line": 1,
+                                      "column": 3
+                                    }
+                                  }
+                                },
+                                "consequent": {
+                                  "type": "UndefinedLiteral",
+                                  "value": undefined,
+                                  "loc": {
+                                    "start": {
+                                      "line": 1,
+                                      "column": 3
+                                    },
+                                    "end": {
+                                      "line": 1,
+                                      "column": 3
+                                    }
+                                  }
+                                },
+                                "alternate": {
+                                  "type": "MemberExpression",
+                                  "object": {
+                                    "type": "Identifier",
+                                    "name": "gensym$_4",
+                                    "decorators": [],
+                                    "loc": {
+                                      "start": {
+                                        "line": 27,
+                                        "column": 21
+                                      },
+                                      "end": {
+                                        "line": 27,
+                                        "column": 41
+                                      }
+                                    }
+                                  },
+                                  "property": {
+                                    "type": "Identifier",
+                                    "name": "length",
+                                    "decorators": [],
+                                    "loc": {
+                                      "start": {
+                                        "line": 27,
+                                        "column": 35
+                                      },
+                                      "end": {
+                                        "line": 27,
+                                        "column": 41
+                                      }
+                                    }
+                                  },
+                                  "computed": false,
+                                  "optional": false,
+                                  "loc": {
+                                    "start": {
+                                      "line": 27,
+                                      "column": 21
+                                    },
+                                    "end": {
+                                      "line": 27,
+                                      "column": 41
+                                    }
+                                  }
+                                },
+                                "loc": {
+                                  "start": {
+                                    "line": 1,
+                                    "column": 3
+                                  },
+                                  "end": {
+                                    "line": 1,
+                                    "column": 3
+                                  }
+                                }
+                              },
                               "loc": {
                                 "start": {
-                                  "line": 27,
-                                  "column": 26
+                                  "line": 1,
+                                  "column": 3
                                 },
                                 "end": {
-                                  "line": 27,
-                                  "column": 33
+                                  "line": 1,
+                                  "column": 3
                                 }
                               }
-                            },
-                            "computed": false,
-                            "optional": true,
-                            "loc": {
-                              "start": {
-                                "line": 27,
-                                "column": 21
-                              },
-                              "end": {
-                                "line": 27,
-                                "column": 33
-                              }
                             }
-                          },
-                          "property": {
-                            "type": "Identifier",
-                            "name": "length",
-                            "decorators": [],
-                            "loc": {
-                              "start": {
-                                "line": 27,
-                                "column": 35
-                              },
-                              "end": {
-                                "line": 27,
-                                "column": 41
-                              }
-                            }
-                          },
-                          "computed": false,
-                          "optional": true,
+                          ],
                           "loc": {
                             "start": {
                               "line": 27,
-                              "column": 21
+                              "column": 5
                             },
                             "end": {
                               "line": 27,
@@ -800,73 +1250,387 @@
               }
             },
             "value": {
-              "type": "MemberExpression",
-              "object": {
-                "type": "MemberExpression",
-                "object": {
-                  "type": "Identifier",
-                  "name": "car",
-                  "decorators": [],
+              "type": "BlockExpression",
+              "statements": [
+                {
+                  "type": "VariableDeclaration",
+                  "declarations": [
+                    {
+                      "type": "VariableDeclarator",
+                      "id": {
+                        "type": "Identifier",
+                        "name": "gensym$_6",
+                        "decorators": [],
+                        "loc": {
+                          "start": {
+                            "line": 1,
+                            "column": 3
+                          },
+                          "end": {
+                            "line": 1,
+                            "column": 3
+                          }
+                        }
+                      },
+                      "init": {
+                        "type": "BlockExpression",
+                        "statements": [
+                          {
+                            "type": "VariableDeclaration",
+                            "declarations": [
+                              {
+                                "type": "VariableDeclarator",
+                                "id": {
+                                  "type": "Identifier",
+                                  "name": "gensym$_5",
+                                  "decorators": [],
+                                  "loc": {
+                                    "start": {
+                                      "line": 1,
+                                      "column": 3
+                                    },
+                                    "end": {
+                                      "line": 1,
+                                      "column": 3
+                                    }
+                                  }
+                                },
+                                "init": {
+                                  "type": "Identifier",
+                                  "name": "car",
+                                  "decorators": [],
+                                  "loc": {
+                                    "start": {
+                                      "line": 27,
+                                      "column": 21
+                                    },
+                                    "end": {
+                                      "line": 27,
+                                      "column": 24
+                                    }
+                                  }
+                                },
+                                "loc": {
+                                  "start": {
+                                    "line": 1,
+                                    "column": 3
+                                  },
+                                  "end": {
+                                    "line": 1,
+                                    "column": 3
+                                  }
+                                }
+                              }
+                            ],
+                            "kind": "let",
+                            "loc": {
+                              "start": {
+                                "line": 27,
+                                "column": 21
+                              },
+                              "end": {
+                                "line": 27,
+                                "column": 41
+                              }
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "ConditionalExpression",
+                              "test": {
+                                "type": "BinaryExpression",
+                                "operator": "==",
+                                "left": {
+                                  "type": "Identifier",
+                                  "name": "gensym$_5",
+                                  "decorators": [],
+                                  "loc": {
+                                    "start": {
+                                      "line": 1,
+                                      "column": 3
+                                    },
+                                    "end": {
+                                      "line": 1,
+                                      "column": 3
+                                    }
+                                  }
+                                },
+                                "right": {
+                                  "type": "NullLiteral",
+                                  "value": null,
+                                  "loc": {
+                                    "start": {
+                                      "line": 1,
+                                      "column": 3
+                                    },
+                                    "end": {
+                                      "line": 1,
+                                      "column": 3
+                                    }
+                                  }
+                                },
+                                "loc": {
+                                  "start": {
+                                    "line": 1,
+                                    "column": 3
+                                  },
+                                  "end": {
+                                    "line": 1,
+                                    "column": 3
+                                  }
+                                }
+                              },
+                              "consequent": {
+                                "type": "UndefinedLiteral",
+                                "value": undefined,
+                                "loc": {
+                                  "start": {
+                                    "line": 1,
+                                    "column": 3
+                                  },
+                                  "end": {
+                                    "line": 1,
+                                    "column": 3
+                                  }
+                                }
+                              },
+                              "alternate": {
+                                "type": "MemberExpression",
+                                "object": {
+                                  "type": "Identifier",
+                                  "name": "gensym$_5",
+                                  "decorators": [],
+                                  "loc": {
+                                    "start": {
+                                      "line": 27,
+                                      "column": 21
+                                    },
+                                    "end": {
+                                      "line": 27,
+                                      "column": 33
+                                    }
+                                  }
+                                },
+                                "property": {
+                                  "type": "Identifier",
+                                  "name": "company",
+                                  "decorators": [],
+                                  "loc": {
+                                    "start": {
+                                      "line": 27,
+                                      "column": 26
+                                    },
+                                    "end": {
+                                      "line": 27,
+                                      "column": 33
+                                    }
+                                  }
+                                },
+                                "computed": false,
+                                "optional": false,
+                                "loc": {
+                                  "start": {
+                                    "line": 27,
+                                    "column": 21
+                                  },
+                                  "end": {
+                                    "line": 27,
+                                    "column": 33
+                                  }
+                                }
+                              },
+                              "loc": {
+                                "start": {
+                                  "line": 1,
+                                  "column": 3
+                                },
+                                "end": {
+                                  "line": 1,
+                                  "column": 3
+                                }
+                              }
+                            },
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 3
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 3
+                              }
+                            }
+                          }
+                        ],
+                        "loc": {
+                          "start": {
+                            "line": 27,
+                            "column": 21
+                          },
+                          "end": {
+                            "line": 27,
+                            "column": 41
+                          }
+                        }
+                      },
+                      "loc": {
+                        "start": {
+                          "line": 1,
+                          "column": 3
+                        },
+                        "end": {
+                          "line": 1,
+                          "column": 3
+                        }
+                      }
+                    }
+                  ],
+                  "kind": "let",
                   "loc": {
                     "start": {
                       "line": 27,
-                      "column": 21
+                      "column": 5
                     },
                     "end": {
                       "line": 27,
-                      "column": 24
+                      "column": 41
                     }
                   }
                 },
-                "property": {
-                  "type": "Identifier",
-                  "name": "company",
-                  "decorators": [],
+                {
+                  "type": "ExpressionStatement",
+                  "expression": {
+                    "type": "ConditionalExpression",
+                    "test": {
+                      "type": "BinaryExpression",
+                      "operator": "==",
+                      "left": {
+                        "type": "Identifier",
+                        "name": "gensym$_6",
+                        "decorators": [],
+                        "loc": {
+                          "start": {
+                            "line": 1,
+                            "column": 3
+                          },
+                          "end": {
+                            "line": 1,
+                            "column": 3
+                          }
+                        }
+                      },
+                      "right": {
+                        "type": "NullLiteral",
+                        "value": null,
+                        "loc": {
+                          "start": {
+                            "line": 1,
+                            "column": 3
+                          },
+                          "end": {
+                            "line": 1,
+                            "column": 3
+                          }
+                        }
+                      },
+                      "loc": {
+                        "start": {
+                          "line": 1,
+                          "column": 3
+                        },
+                        "end": {
+                          "line": 1,
+                          "column": 3
+                        }
+                      }
+                    },
+                    "consequent": {
+                      "type": "UndefinedLiteral",
+                      "value": undefined,
+                      "loc": {
+                        "start": {
+                          "line": 1,
+                          "column": 3
+                        },
+                        "end": {
+                          "line": 1,
+                          "column": 3
+                        }
+                      }
+                    },
+                    "alternate": {
+                      "type": "MemberExpression",
+                      "object": {
+                        "type": "Identifier",
+                        "name": "gensym$_6",
+                        "decorators": [],
+                        "loc": {
+                          "start": {
+                            "line": 27,
+                            "column": 21
+                          },
+                          "end": {
+                            "line": 27,
+                            "column": 41
+                          }
+                        }
+                      },
+                      "property": {
+                        "type": "Identifier",
+                        "name": "length",
+                        "decorators": [],
+                        "loc": {
+                          "start": {
+                            "line": 27,
+                            "column": 35
+                          },
+                          "end": {
+                            "line": 27,
+                            "column": 41
+                          }
+                        }
+                      },
+                      "computed": false,
+                      "optional": false,
+                      "loc": {
+                        "start": {
+                          "line": 27,
+                          "column": 21
+                        },
+                        "end": {
+                          "line": 27,
+                          "column": 41
+                        }
+                      }
+                    },
+                    "loc": {
+                      "start": {
+                        "line": 1,
+                        "column": 3
+                      },
+                      "end": {
+                        "line": 1,
+                        "column": 3
+                      }
+                    }
+                  },
                   "loc": {
                     "start": {
-                      "line": 27,
-                      "column": 26
+                      "line": 1,
+                      "column": 3
                     },
                     "end": {
-                      "line": 27,
-                      "column": 33
+                      "line": 1,
+                      "column": 3
                     }
                   }
-                },
-                "computed": false,
-                "optional": true,
-                "loc": {
-                  "start": {
-                    "line": 27,
-                    "column": 21
-                  },
-                  "end": {
-                    "line": 27,
-                    "column": 33
-                  }
                 }
-              },
-              "property": {
-                "type": "Identifier",
-                "name": "length",
-                "decorators": [],
-                "loc": {
-                  "start": {
-                    "line": 27,
-                    "column": 35
-                  },
-                  "end": {
-                    "line": 27,
-                    "column": 41
-                  }
-                }
-              },
-              "computed": false,
-              "optional": true,
+              ],
               "loc": {
                 "start": {
                   "line": 27,
-                  "column": 21
+                  "column": 5
                 },
                 "end": {
                   "line": 27,
@@ -890,6 +1654,100 @@
               "end": {
                 "line": 27,
                 "column": 41
+              }
+            }
+          },
+          {
+            "type": "MethodDefinition",
+            "key": {
+              "type": "Identifier",
+              "name": "_$trigger_cctor$_",
+              "decorators": [],
+              "loc": {
+                "start": {
+                  "line": 1,
+                  "column": 1
+                },
+                "end": {
+                  "line": 1,
+                  "column": 1
+                }
+              }
+            },
+            "kind": "method",
+            "accessibility": "public",
+            "static": true,
+            "optional": false,
+            "computed": false,
+            "value": {
+              "type": "FunctionExpression",
+              "function": {
+                "type": "ScriptFunction",
+                "id": {
+                  "type": "Identifier",
+                  "name": "_$trigger_cctor$_",
+                  "decorators": [],
+                  "loc": {
+                    "start": {
+                      "line": 1,
+                      "column": 1
+                    },
+                    "end": {
+                      "line": 1,
+                      "column": 1
+                    }
+                  }
+                },
+                "generator": false,
+                "async": false,
+                "expression": false,
+                "params": [],
+                "body": {
+                  "type": "BlockStatement",
+                  "statements": [],
+                  "loc": {
+                    "start": {
+                      "line": 1,
+                      "column": 1
+                    },
+                    "end": {
+                      "line": 1,
+                      "column": 1
+                    }
+                  }
+                },
+                "loc": {
+                  "start": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 1
+                  }
+                }
+              },
+              "loc": {
+                "start": {
+                  "line": 1,
+                  "column": 1
+                },
+                "end": {
+                  "line": 1,
+                  "column": 1
+                }
+              }
+            },
+            "overloads": [],
+            "decorators": [],
+            "loc": {
+              "start": {
+                "line": 1,
+                "column": 1
+              },
+              "end": {
+                "line": 1,
+                "column": 1
               }
             }
           }

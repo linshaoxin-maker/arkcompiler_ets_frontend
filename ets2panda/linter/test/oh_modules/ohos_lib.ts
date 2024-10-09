@@ -47,3 +47,27 @@ export interface OhosInterface {
     [key: string]: number;
   };
 }
+
+export type CallbackType = (name: string, param: unknown) => void;
+
+export const callback = (name: string, param: Object): void => {};
+
+export interface a {
+  test:(topic: string) => void
+}
+
+export function doSomething(a: a, topic: string): void {
+
+}
+
+export class TestClassC {
+  public ccc: null = null;
+}
+
+export class TestClassD {
+  public ccc: string = '';
+}
+
+
+export declare function foo_lib(p1: number, p2: string): undefined;
+export declare function foo_lib(p1: string, p2: number): undefined;

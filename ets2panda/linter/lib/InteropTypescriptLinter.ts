@@ -12,25 +12,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import * as ts from 'typescript';
-import * as path from 'node:path';
 import * as fs from 'fs';
-import { TsUtils } from './utils/TsUtils';
-import { FaultID } from './Problems';
+import * as path from 'node:path';
+import * as ts from 'typescript';
+import { cookBookMsg, cookBookTag } from './CookBookMsg';
 import { faultsAttrs } from './FaultAttrs';
 import { faultDesc } from './FaultDesc';
-import { cookBookMsg, cookBookTag } from './CookBookMsg';
-import { LinterConfig } from './TypeScriptLinterConfig';
-import type { Autofix } from './autofixes/Autofixer';
-import type { Autofixer } from './autofixes/Autofixer';
+import { Logger } from './Logger';
 import type { ProblemInfo } from './ProblemInfo';
 import { ProblemSeverity } from './ProblemSeverity';
-import { Logger } from './Logger';
-import type { IncrementalLintInfo } from './IncrementalLintInfo';
+import { FaultID } from './Problems';
+import { LinterConfig } from './TypeScriptLinterConfig';
 import { cookBookRefToFixTitle } from './autofixes/AutofixTitles';
-import { forEachNodeInSubtree } from './utils/functions/ForEachNodeInSubtree';
+import type { Autofix, Autofixer } from './autofixes/Autofixer';
+import { TsUtils } from './utils/TsUtils';
 import { ARKTS_COLLECTIONS_D_ETS, ARKTS_LANG_D_ETS } from './utils/consts/SupportedDetsIndexableTypes';
-import { D_TS, D_ETS, ETS, KIT } from './utils/consts/TsSuffix';
+import { D_ETS, D_TS, ETS, KIT } from './utils/consts/TsSuffix';
+import { forEachNodeInSubtree } from './utils/functions/ForEachNodeInSubtree';
 
 export function consoleLog(...args: unknown[]): void {
   if (InteropTypescriptLinter.ideMode) {
@@ -78,8 +76,8 @@ export class InteropTypescriptLinter {
   static ideMode: boolean = false;
   static testMode: boolean = false;
   static kitInfos = new Map<string, KitInfo>();
-  private static etsLoaderPath: string;
-  private static sdkPath: string;
+  private static etsLoaderPath?: string;
+  private static sdkPath?: string;
   static useSdkLogic = false;
   static advancedClassChecks = false;
 
@@ -93,18 +91,20 @@ export class InteropTypescriptLinter {
   constructor(
     private readonly tsTypeChecker: ts.TypeChecker,
     private readonly compileOptions: ts.CompilerOptions,
-    private readonly incrementalLintInfo?: IncrementalLintInfo
+    private readonly arkts2: boolean,
+    etsLoaderPath: string | undefined
   ) {
     this.tsUtils = new TsUtils(
       this.tsTypeChecker,
       InteropTypescriptLinter.testMode,
       InteropTypescriptLinter.advancedClassChecks,
-      InteropTypescriptLinter.useSdkLogic
+      InteropTypescriptLinter.useSdkLogic,
+      this.arkts2
     );
     this.currentErrorLine = 0;
     this.currentWarningLine = 0;
-    InteropTypescriptLinter.etsLoaderPath = compileOptions.etsLoaderPath ? compileOptions.etsLoaderPath : '';
-    InteropTypescriptLinter.sdkPath = path.resolve(InteropTypescriptLinter.etsLoaderPath, '../..');
+    InteropTypescriptLinter.etsLoaderPath = etsLoaderPath;
+    InteropTypescriptLinter.sdkPath = etsLoaderPath ? path.resolve(etsLoaderPath, '../..') : undefined;
     this.initCounters();
   }
 
@@ -216,9 +216,6 @@ export class InteropTypescriptLinter {
     };
     const stopCondition = (node: ts.Node): boolean => {
       if (!node) {
-        return true;
-      }
-      if (this.incrementalLintInfo?.shouldSkipCheck(node)) {
         return true;
       }
       if (LinterConfig.terminalTokens.has(node.kind)) {
@@ -334,7 +331,7 @@ export class InteropTypescriptLinter {
   }
 
   private allowInSdkImportSendable(resolvedModule: ts.ResolvedModuleFull): boolean {
-    const resolvedModuleIsInSdk = InteropTypescriptLinter.etsLoaderPath ?
+    const resolvedModuleIsInSdk = InteropTypescriptLinter.sdkPath ?
       path.normalize(resolvedModule.resolvedFileName).startsWith(InteropTypescriptLinter.sdkPath) :
       false;
     return (
@@ -532,7 +529,7 @@ export class InteropTypescriptLinter {
     const KIT_CONFIGS = '../ets-loader/kit_configs';
     const KIT_CONFIG_PATH = './build-tools/ets-loader/kit_configs';
 
-    const kitConfigs: string[] = [path.resolve(InteropTypescriptLinter.etsLoaderPath, KIT_CONFIGS)];
+    const kitConfigs: string[] = [path.resolve(InteropTypescriptLinter.etsLoaderPath as string, KIT_CONFIGS)];
     if (process.env.externalApiPaths) {
       const externalApiPaths = process.env.externalApiPaths.split(path.delimiter);
       externalApiPaths.forEach((sdkPath) => {
@@ -570,7 +567,7 @@ export class InteropTypescriptLinter {
 
   lint(sourceFile: ts.SourceFile): void {
     this.sourceFile = sourceFile;
-    this.isInSdk = InteropTypescriptLinter.etsLoaderPath ?
+    this.isInSdk = InteropTypescriptLinter.sdkPath ?
       path.normalize(this.sourceFile.fileName).indexOf(InteropTypescriptLinter.sdkPath) === 0 :
       false;
     this.visitSourceFile(this.sourceFile);

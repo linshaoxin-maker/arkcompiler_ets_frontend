@@ -157,7 +157,6 @@ varbinder::LocalVariable *ETSObjectType::CreateSyntheticVarFromEverySignature(co
     varbinder::LocalVariable *res = allocator_->New<varbinder::LocalVariable>(varbinder::VariableFlags::SYNTHETIC |
                                                                               varbinder::VariableFlags::METHOD);
     ETSFunctionType *funcType = CreateETSFunctionType(name);
-    funcType->AddTypeFlag(TypeFlag::SYNTHETIC);
 
     varbinder::LocalVariable *functionalInterface = CollectSignaturesForSyntheticType(funcType, name, flags);
 
@@ -189,7 +188,8 @@ varbinder::LocalVariable *ETSObjectType::CollectSignaturesForSyntheticType(ETSFu
                 it->HasSignatureFlag(SignatureFlags::ABSTRACT)) {
                 continue;
             }
-
+            // Issue: #18720
+            // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
             funcType->AddCallSignature(it);
         }
     };
@@ -606,6 +606,11 @@ void ETSObjectType::Cast(TypeRelation *const relation, Type *const target)
         }
     }
 
+    if (target->IsETSEnumType()) {
+        relation->GetNode()->AddBoxingUnboxingFlags(ir::BoxingUnboxingFlags::UNBOX_TO_ENUM);
+        relation->Result(true);
+        return;
+    }
     conversion::Forbidden(relation);
 }
 
@@ -902,11 +907,6 @@ void ETSObjectType::UpdateTypeProperty(checker::ETSChecker *checker, varbinder::
                                        PropertyType fieldType, PropertyProcesser const &func)
 {
     auto *const propType = prop->Declaration()->Node()->Check(checker);
-
-    if (propType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
-        checker->ThrowTypeError("Base type of a Utility type can only contain fields with reference type.",
-                                prop->Declaration()->Node()->Start());
-    }
 
     auto *const propCopy = func(prop, propType);
     if (fieldType == PropertyType::INSTANCE_FIELD) {

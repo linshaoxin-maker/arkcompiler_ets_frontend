@@ -203,6 +203,8 @@ ir::AstNode *HandleOpAssignment(public_lib::Context *ctx, ir::AssignmentExpressi
     auto *loweringResult = ConstructOpAssignmentResult(ctx, assignment);
 
     loweringResult->SetParent(assignment->Parent());
+    // NOTE(dslynko, #19200): required for correct debug-info
+    loweringResult->SetRange(assignment->Range());
 
     auto *const scope = NearestScope(assignment);
 
@@ -246,17 +248,17 @@ static ir::Expression *ConstructUpdateResult(public_lib::Context *ctx, ir::Updat
     } else if (argument->IsMemberExpression()) {
         auto *memberExpression = argument->AsMemberExpression();
 
-        if (object = memberExpression->Object(); object->IsIdentifier()) {
+        if (object = memberExpression->Object(); object != nullptr && object->IsIdentifier()) {
             id1 = GetClone(allocator, object->AsIdentifier());
-        } else {
+        } else if (object != nullptr) {
             id1 = Gensym(allocator);
             newAssignmentStatements = "const @@I1 = (@@E2) as @@T3; ";
             objType = object->TsType();
         }
 
-        if (property = memberExpression->Property(); property->IsIdentifier()) {
+        if (property = memberExpression->Property(); property != nullptr && property->IsIdentifier()) {
             id2 = GetClone(allocator, property->AsIdentifier());
-        } else {
+        } else if (property != nullptr) {
             id2 = Gensym(allocator);
             newAssignmentStatements += "const @@I4 = (@@E5) as @@T6; ";
             propType = property->TsType();
@@ -301,6 +303,8 @@ static ir::AstNode *HandleUpdate(public_lib::Context *ctx, ir::UpdateExpression 
     checker::ScopeContext sc {checker, scope};
 
     loweringResult->SetParent(upd->Parent());
+    // NOTE(dslynko, #19200): required for correct debug-info
+    loweringResult->SetRange(upd->Range());
     InitScopesPhaseETS::RunExternalNode(loweringResult, ctx->checker->VarBinder());
 
     checker->VarBinder()->AsETSBinder()->ResolveReferencesForScopeWithContext(loweringResult,

@@ -169,7 +169,7 @@ public:
             extension_ = es2panda::ScriptExtension::TS;
         } else if (tempExtension == "as") {
             extension_ = es2panda::ScriptExtension::AS;
-        } else if (tempExtension == "ets") {
+        } else if (tempExtension == "sts") {
             extension_ = es2panda::ScriptExtension::ETS;
 
             std::ifstream inputStream(arktsConfig.GetValue());
@@ -183,11 +183,11 @@ public:
             extension_ = es2panda::ScriptExtension::ETS;
         } else {
             if (!extensionIsEmpty) {
-                errorMsg_ = "Invalid extension (available options: js, ts, as, ets)";
+                errorMsg_ = "Invalid extension (available options: js, ts, as, sts)";
             } else {
                 errorMsg_ =
                     "Unknown extension of sourcefile, set the extension manually or change the file format (available "
-                    "options: js, ts, as, ets)";
+                    "options: js, ts, as, sts)";
             }
             extension_ = es2panda::ScriptExtension::INVALID;
             return;
@@ -223,7 +223,7 @@ public:
     {
         if (extension_ != es2panda::ScriptExtension::ETS) {
             if (compMode == CompilationMode::PROJECT) {
-                errorMsg_ = "Error: only --extension=ets is supported for project compilation mode.";
+                errorMsg_ = "Error: only --extension=sts is supported for project compilation mode.";
                 return false;
             }
         } else {
@@ -281,6 +281,11 @@ public:
         return listFiles_;
     }
 
+    bool ListPhases() const
+    {
+        return listPhases_;
+    }
+
 private:
     es2panda::ScriptExtension extension_ {es2panda::ScriptExtension::JS};
     OptionFlags options_ {OptionFlags::DEFAULT};
@@ -294,6 +299,7 @@ private:
     int optLevel_ {0};
     int threadCount_ {0};
     bool listFiles_ {false};
+    bool listPhases_ {false};
     util::LogLevel logLevel_ {util::LogLevel::ERROR};
 };
 }  // namespace ark::es2panda::util

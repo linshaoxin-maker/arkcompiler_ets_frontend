@@ -17,12 +17,22 @@
         {
             "line": 16,
             "column": 5,
-            "problem": "DefiniteAssignment"
+            "endLine": 16,
+            "endColumn": 15,
+            "problem": "DefiniteAssignment",
+            "suggest": "",
+            "rule": "Definite assignment assertions are not supported (arkts-no-definite-assignment)",
+            "severity": "WARNING"
         },
         {
             "line": 33,
             "column": 3,
-            "problem": "DefiniteAssignment"
+            "endLine": 33,
+            "endColumn": 35,
+            "problem": "DefiniteAssignment",
+            "suggest": "",
+            "rule": "Definite assignment assertions are not supported (arkts-no-definite-assignment)",
+            "severity": "WARNING"
         }
     ]
 }

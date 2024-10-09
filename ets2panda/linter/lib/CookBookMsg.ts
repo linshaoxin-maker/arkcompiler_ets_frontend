@@ -16,7 +16,7 @@
 export const cookBookMsg: string[] = [];
 export const cookBookTag: string[] = [];
 
-for (let i = 0; i <= 171; i++) {
+for (let i = 0; i <= 183; i++) {
   cookBookMsg[i] = '';
 }
 
@@ -41,8 +41,7 @@ cookBookTag[17] = 'Indexed signatures are not supported (arkts-no-indexed-signat
 cookBookTag[18] = '';
 cookBookTag[19] = 'Use inheritance instead of intersection types (arkts-no-intersection-types)';
 cookBookTag[20] = '';
-cookBookTag[21] =
-  'Type notation using "this" is only supported for methods, that return "this" explicitly (arkts-this-typing)';
+cookBookTag[21] = 'Type notation using "this" is not supported (arkts-no-typing-with-this)';
 cookBookTag[22] = 'Conditional types are not supported (arkts-no-conditional-types)';
 cookBookTag[23] = '';
 cookBookTag[24] = '';
@@ -223,3 +222,11 @@ cookBookTag[179] =
   'Casting "Non-sendable" function to "Sendable" typeAlias is not allowed (arkts-sendable-function-as-expr)';
 cookBookTag[180] =
   'The "@Sendable" decorator can only be used on "class", "function", "typeAlias" (arkts-sendable-decorator-limited)';
+cookBookTag[181] =
+  'The exported "Sendable" class or function cannot be captured by "Sendable" class or function in current file (arkts-sendable-closure-export)';
+cookBookTag[182] =
+  'Sendable functions and sendable typealias are not available when compatibleSdkVersionStage is lowering than beta3 of API12 (arkts-sendable-beta-compatible)';
+cookBookTag[183] = 'Object literal properties can only contain name-value pairs (arkts-obj-literal-props)';
+cookBookTag[184] = 'Optional methods are not supported (arkts-optional-methods)';
+cookBookTag[185] = 'syntax for import type is disabled (arkts-import-types)';
+cookBookTag[186] = '"new" expression with dynamic constructor type is not supported (arkts-no-dynamic-ctor-call)';

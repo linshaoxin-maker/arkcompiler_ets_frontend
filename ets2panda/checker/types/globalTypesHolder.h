@@ -16,6 +16,7 @@
 #ifndef ES2PANDA_COMPILER_CHECKER_TYPES_GLOBAL_TYPES_HOLDER_H
 #define ES2PANDA_COMPILER_CHECKER_TYPES_GLOBAL_TYPES_HOLDER_H
 
+#include "ir/astNodeFlags.h"
 #include "checker/types/type.h"
 
 namespace ark::es2panda::checker {
@@ -131,6 +132,46 @@ enum class GlobalTypeId : std::size_t {
     ETS_FUNCTION16_CLASS,
     ETS_FUNCTIONN_CLASS,
 
+    ETS_THROWING_FUNCTION0_CLASS,
+    ETS_THROWING_FUNCTION1_CLASS,
+    ETS_THROWING_FUNCTION2_CLASS,
+    ETS_THROWING_FUNCTION3_CLASS,
+    ETS_THROWING_FUNCTION4_CLASS,
+    ETS_THROWING_FUNCTION5_CLASS,
+    ETS_THROWING_FUNCTION6_CLASS,
+    ETS_THROWING_FUNCTION7_CLASS,
+    ETS_THROWING_FUNCTION8_CLASS,
+    ETS_THROWING_FUNCTION9_CLASS,
+    ETS_THROWING_FUNCTION10_CLASS,
+    ETS_THROWING_FUNCTION11_CLASS,
+    ETS_THROWING_FUNCTION12_CLASS,
+    ETS_THROWING_FUNCTION13_CLASS,
+    ETS_THROWING_FUNCTION14_CLASS,
+    ETS_THROWING_FUNCTION15_CLASS,
+    ETS_THROWING_FUNCTION16_CLASS,
+    ETS_THROWING_FUNCTIONN_CLASS,
+
+    ETS_RETHROWING_FUNCTION0_CLASS,
+    ETS_RETHROWING_FUNCTION1_CLASS,
+    ETS_RETHROWING_FUNCTION2_CLASS,
+    ETS_RETHROWING_FUNCTION3_CLASS,
+    ETS_RETHROWING_FUNCTION4_CLASS,
+    ETS_RETHROWING_FUNCTION5_CLASS,
+    ETS_RETHROWING_FUNCTION6_CLASS,
+    ETS_RETHROWING_FUNCTION7_CLASS,
+    ETS_RETHROWING_FUNCTION8_CLASS,
+    ETS_RETHROWING_FUNCTION9_CLASS,
+    ETS_RETHROWING_FUNCTION10_CLASS,
+    ETS_RETHROWING_FUNCTION11_CLASS,
+    ETS_RETHROWING_FUNCTION12_CLASS,
+    ETS_RETHROWING_FUNCTION13_CLASS,
+    ETS_RETHROWING_FUNCTION14_CLASS,
+    ETS_RETHROWING_FUNCTION15_CLASS,
+    ETS_RETHROWING_FUNCTION16_CLASS,
+    ETS_RETHROWING_FUNCTIONN_CLASS,
+
+    TYPE_ERROR,
+
     COUNT,
 };
 
@@ -142,7 +183,10 @@ public:
     NO_MOVE_SEMANTIC(GlobalTypesHolder);
 
     void AddETSEscompatLayer();
+    void AddEtsSpecificTypes(ArenaAllocator *allocator);
+    void AddEtsSpecificBuiltinTypes();
     void AddTSSpecificTypes(ArenaAllocator *allocator);
+    void AddFunctionTypes(ArenaAllocator *allocator);
 
     // TS specific types
     Type *GlobalNumberType();
@@ -228,7 +272,7 @@ public:
 
     // Functional types
     size_t VariadicFunctionTypeThreshold();
-    Type *GlobalFunctionBuiltinType(size_t nargs);
+    Type *GlobalFunctionBuiltinType(size_t nargs, ir::ScriptFunctionFlags flags);
 
     // ETS escompat layer
     Type *GlobalArrayBuiltinType();
@@ -245,6 +289,8 @@ public:
     // JS specific types
     Type *GlobalJSRuntimeBuiltinType();
     Type *GlobalJSValueBuiltinType();
+
+    Type *GlobalTypeError();
 
     void InitializeBuiltin(util::StringView name, Type *type);
 

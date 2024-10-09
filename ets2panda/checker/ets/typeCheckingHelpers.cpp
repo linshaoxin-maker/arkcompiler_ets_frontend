@@ -57,26 +57,34 @@ void ETSChecker::CheckTruthinessOfType(ir::Expression *expr)
     auto *const testType = expr->Check(this);
     auto *const conditionType = ETSBuiltinTypeAsConditionalType(testType);
 
-    if (conditionType == nullptr || !conditionType->IsConditionalExprType()) {
-        ThrowTypeError("Condition must be of possible condition type", expr->Start());
+    expr->SetTsType(conditionType);
+
+    if (conditionType == nullptr || (!conditionType->IsTypeError() && !conditionType->IsConditionalExprType())) {
+        LogTypeError("Condition must be of possible condition type", expr->Start());
+        return;
     }
 
     if (conditionType->IsETSVoidType()) {
-        ThrowTypeError("An expression of type 'void' cannot be tested for truthiness", expr->Start());
+        LogTypeError("An expression of type 'void' cannot be tested for truthiness", expr->Start());
+        return;
     }
 
     if (conditionType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
         FlagExpressionWithUnboxing(testType, conditionType, expr);
     }
 
-    expr->SetTsType(conditionType);
+    if (conditionType->IsETSEnumType()) {
+        expr->AddAstNodeFlags(ir::AstNodeFlags::GENERATE_VALUE_OF);
+    }
 }
 
-void ETSChecker::CheckNonNullish(ir::Expression const *expr)
+bool ETSChecker::CheckNonNullish(ir::Expression const *expr)
 {
-    if (expr->TsType()->PossiblyETSNullish()) {
-        ThrowTypeError("Value is possibly nullish.", expr->Start());
+    if (expr->TsTypeOrError()->PossiblyETSNullish()) {
+        LogTypeError("Value is possibly nullish.", expr->Start());
+        return false;
     }
+    return true;
 }
 
 Type *ETSChecker::GetNonNullishType(Type *type)
@@ -399,8 +407,8 @@ Type *ETSChecker::GetTypeOfVariable(varbinder::Variable *const var)
         return GetTypeOfSetterGetter(var);
     }
 
-    if (var->TsType() != nullptr) {
-        return var->TsType();
+    if (var->TsTypeOrError() != nullptr) {
+        return var->TsTypeOrError();
     }
 
     // NOTE: kbaladurin. forbid usage of imported entities as types without declarations
@@ -516,20 +524,13 @@ Type *ETSChecker::GuaranteedTypeForUncheckedCallReturn(Signature *sig)
     return GuaranteedTypeForUncheckedCast(baseSig->ReturnType(), sig->ReturnType());
 }
 
-void ETSChecker::CheckEtsFunctionType(ir::Identifier *const ident, ir::Identifier const *const id,
-                                      ir::TypeNode const *const annotation)
+void ETSChecker::CheckEtsFunctionType(ir::Identifier *const ident, ir::Identifier const *const id)
 {
-    if (annotation == nullptr) {
-        ThrowTypeError(
-            {"Cannot infer type for ", id->Name(), " because method reference needs an explicit target type"},
-            id->Start());
-    }
-
     const auto *const targetType = GetTypeOfVariable(id->Variable());
     ASSERT(targetType != nullptr);
 
-    if (!targetType->IsETSObjectType()) {
-        ThrowTypeError("Initializers type is not assignable to the target type", ident->Start());
+    if (!targetType->IsETSObjectType() && !targetType->IsETSUnionType()) {
+        LogTypeError("Initializers type is not assignable to the target type", ident->Start());
     }
 }
 
@@ -577,14 +578,17 @@ Type *ETSChecker::GetTypeFromEnumReference([[maybe_unused]] varbinder::Variable 
     }
 
     auto *const enumDecl = var->Declaration()->Node()->AsTSEnumDeclaration();
+    if (enumDecl->BoxedClass()->TsTypeOrError() == nullptr) {
+        BuildBasicClassProperties(enumDecl->BoxedClass());
+    }
     if (auto *const itemInit = enumDecl->Members().front()->AsTSEnumMember()->Init(); itemInit->IsNumberLiteral()) {
-        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-        return CreateEnumIntClassFromEnumDeclaration(enumDecl);
+        return CreateEnumIntTypeFromEnumDeclaration(enumDecl);
     } else if (itemInit->IsStringLiteral()) {  // NOLINT(readability-else-after-return)
-        // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
-        return CreateEnumStringClassFromEnumDeclaration(enumDecl);
+        return CreateEnumStringTypeFromEnumDeclaration(enumDecl);
     } else {  // NOLINT(readability-else-after-return)
-        ThrowTypeError("Invalid enumeration value type.", enumDecl->Start());
+        LogTypeError("Invalid enumeration value type.", enumDecl->Start());
+        var->SetTsType(GlobalTypeError());
+        return var->TsTypeOrError();
     }
 }
 
@@ -594,10 +598,11 @@ Type *ETSChecker::GetTypeFromTypeParameterReference(varbinder::LocalVariable *va
     if ((var->Declaration()->Node()->AsTSTypeParameter()->Parent()->Parent()->IsClassDefinition() ||
          var->Declaration()->Node()->AsTSTypeParameter()->Parent()->Parent()->IsTSInterfaceDeclaration()) &&
         HasStatus(CheckerStatus::IN_STATIC_CONTEXT)) {
-        ThrowTypeError({"Cannot make a static reference to the non-static type ", var->Name()}, pos);
+        LogTypeError({"Cannot make a static reference to the non-static type ", var->Name()}, pos);
+        var->SetTsType(GlobalTypeError());
     }
 
-    return var->TsType();
+    return var->TsTypeOrError();
 }
 
 bool ETSChecker::IsTypeBuiltinType(const Type *type) const
@@ -628,8 +633,7 @@ Type *ETSChecker::ETSBuiltinTypeAsPrimitiveType(Type *objectType)
         return nullptr;
     }
 
-    if (objectType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) || objectType->HasTypeFlag(TypeFlag::ETS_ENUM) ||
-        objectType->HasTypeFlag(TypeFlag::ETS_STRING_ENUM)) {
+    if (objectType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) || objectType->IsETSEnumType()) {
         return objectType;
     }
 
@@ -648,6 +652,10 @@ Type *ETSChecker::ETSBuiltinTypeAsPrimitiveType(Type *objectType)
 
 Type *ETSChecker::ETSBuiltinTypeAsConditionalType(Type *const objectType)
 {
+    if (objectType->IsTypeError()) {
+        return objectType;
+    }
+
     if ((objectType == nullptr) || !objectType->IsConditionalExprType()) {
         return nullptr;
     }
@@ -820,6 +828,14 @@ void ETSChecker::CheckBoxedSourceTypeAssignable(TypeRelation *relation, Type *so
                       (relation->ApplyNarrowing() ? TypeRelationFlag::NARROWING : TypeRelationFlag::NONE) |
                       (relation->OnlyCheckBoxingUnboxing() ? TypeRelationFlag::ONLY_CHECK_BOXING_UNBOXING
                                                            : TypeRelationFlag::NONE));
+
+    if (source->IsETSEnumType()) {
+        if (target->IsETSObjectType() && target->AsETSObjectType()->IsGlobalETSObjectType()) {
+            relation->Result(true);
+            return;
+        }
+    }
+
     auto *boxedSourceType = relation->GetChecker()->AsETSChecker()->PrimitiveTypeAsETSBuiltinType(source);
     if (boxedSourceType == nullptr) {
         return;
@@ -988,7 +1004,8 @@ bool ETSChecker::TypeInference(Signature *signature, const ArenaVector<ir::Expre
             const Type *targetType = TryGettingFunctionTypeFromInvokeFunction(parameterType);
             const std::initializer_list<TypeErrorMessageElement> list = {
                 "Type '", argumentType, "' is not compatible with type '", targetType, "' at index ", index + 1};
-            ThrowTypeError(list, arrowFuncExpr->Start());
+            LogTypeError(list, arrowFuncExpr->Start());
+            return false;
         }
 
         invocable &= rc;
@@ -1018,7 +1035,7 @@ void ETSChecker::CheckExceptionClauseType(const std::vector<checker::ETSObjectTy
     for (auto *exception : exceptions) {
         this->Relation()->IsIdenticalTo(clauseType, exception);
         if (this->Relation()->IsTrue()) {
-            this->ThrowTypeError("Redeclaration of exception type", catchClause->Start());
+            LogTypeError("Redeclaration of exception type", catchClause->Start());
         }
     }
 }

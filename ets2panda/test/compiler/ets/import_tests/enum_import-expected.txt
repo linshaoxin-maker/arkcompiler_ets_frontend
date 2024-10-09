@@ -9,11 +9,11 @@
         "loc": {
           "start": {
             "line": 16,
-            "column": 33
+            "column": 36
           },
           "end": {
             "line": 16,
-            "column": 48
+            "column": 51
           }
         }
       },
@@ -103,6 +103,92 @@
               "column": 25
             }
           }
+        },
+        {
+          "type": "ImportSpecifier",
+          "local": {
+            "type": "Identifier",
+            "name": "C",
+            "decorators": [],
+            "loc": {
+              "start": {
+                "line": 16,
+                "column": 27
+              },
+              "end": {
+                "line": 16,
+                "column": 28
+              }
+            }
+          },
+          "imported": {
+            "type": "Identifier",
+            "name": "C",
+            "decorators": [],
+            "loc": {
+              "start": {
+                "line": 16,
+                "column": 27
+              },
+              "end": {
+                "line": 16,
+                "column": 28
+              }
+            }
+          },
+          "loc": {
+            "start": {
+              "line": 16,
+              "column": 27
+            },
+            "end": {
+              "line": 16,
+              "column": 28
+            }
+          }
+        },
+        {
+          "type": "ImportSpecifier",
+          "local": {
+            "type": "Identifier",
+            "name": "_$trigger_cctor$_for_$DOT$$SLASH$enum_export$_",
+            "decorators": [],
+            "loc": {
+              "start": {
+                "line": 1,
+                "column": 1
+              },
+              "end": {
+                "line": 1,
+                "column": 1
+              }
+            }
+          },
+          "imported": {
+            "type": "Identifier",
+            "name": "_$trigger_cctor$_",
+            "decorators": [],
+            "loc": {
+              "start": {
+                "line": 1,
+                "column": 1
+              },
+              "end": {
+                "line": 1,
+                "column": 1
+              }
+            }
+          },
+          "loc": {
+            "start": {
+              "line": 1,
+              "column": 1
+            },
+            "end": {
+              "line": 1,
+              "column": 1
+            }
+          }
         }
       ],
       "loc": {
@@ -112,7 +198,7 @@
         },
         "end": {
           "line": 16,
-          "column": 49
+          "column": 52
         }
       }
     },
@@ -184,7 +270,51 @@
                 "params": [],
                 "body": {
                   "type": "BlockStatement",
-                  "statements": [],
+                  "statements": [
+                    {
+                      "type": "ExpressionStatement",
+                      "expression": {
+                        "type": "CallExpression",
+                        "callee": {
+                          "type": "Identifier",
+                          "name": "_$trigger_cctor$_for_$DOT$$SLASH$enum_export$_",
+                          "decorators": [],
+                          "loc": {
+                            "start": {
+                              "line": 1,
+                              "column": 1
+                            },
+                            "end": {
+                              "line": 1,
+                              "column": 1
+                            }
+                          }
+                        },
+                        "arguments": [],
+                        "optional": false,
+                        "loc": {
+                          "start": {
+                            "line": 1,
+                            "column": 1
+                          },
+                          "end": {
+                            "line": 1,
+                            "column": 1
+                          }
+                        }
+                      },
+                      "loc": {
+                        "start": {
+                          "line": 1,
+                          "column": 1
+                        },
+                        "end": {
+                          "line": 1,
+                          "column": 1
+                        }
+                      }
+                    }
+                  ],
                   "loc": {
                     "start": {
                       "line": 1,
@@ -380,7 +510,7 @@
                               },
                               "property": {
                                 "type": "Identifier",
-                                "name": "getValue",
+                                "name": "valueOf",
                                 "decorators": [],
                                 "loc": {
                                   "start": {
@@ -389,7 +519,7 @@
                                   },
                                   "end": {
                                     "line": 19,
-                                    "column": 36
+                                    "column": 35
                                   }
                                 }
                               },
@@ -402,7 +532,7 @@
                                 },
                                 "end": {
                                   "line": 19,
-                                  "column": 36
+                                  "column": 35
                                 }
                               }
                             },
@@ -415,7 +545,7 @@
                               },
                               "end": {
                                 "line": 19,
-                                "column": 38
+                                "column": 37
                               }
                             }
                           }
@@ -428,7 +558,7 @@
                           },
                           "end": {
                             "line": 19,
-                            "column": 39
+                            "column": 38
                           }
                         }
                       },
@@ -439,7 +569,7 @@
                         },
                         "end": {
                           "line": 19,
-                          "column": 40
+                          "column": 39
                         }
                       }
                     },
@@ -544,7 +674,7 @@
                               },
                               "property": {
                                 "type": "Identifier",
-                                "name": "getValue",
+                                "name": "valueOf",
                                 "decorators": [],
                                 "loc": {
                                   "start": {
@@ -553,7 +683,7 @@
                                   },
                                   "end": {
                                     "line": 20,
-                                    "column": 39
+                                    "column": 38
                                   }
                                 }
                               },
@@ -566,7 +696,7 @@
                                 },
                                 "end": {
                                   "line": 20,
-                                  "column": 39
+                                  "column": 38
                                 }
                               }
                             },
@@ -579,7 +709,7 @@
                               },
                               "end": {
                                 "line": 20,
-                                "column": 41
+                                "column": 40
                               }
                             }
                           }
@@ -592,7 +722,7 @@
                           },
                           "end": {
                             "line": 20,
-                            "column": 42
+                            "column": 41
                           }
                         }
                       },
@@ -603,7 +733,7 @@
                         },
                         "end": {
                           "line": 20,
-                          "column": 43
+                          "column": 42
                         }
                       }
                     }
@@ -651,6 +781,100 @@
               "end": {
                 "line": 21,
                 "column": 2
+              }
+            }
+          },
+          {
+            "type": "MethodDefinition",
+            "key": {
+              "type": "Identifier",
+              "name": "_$trigger_cctor$_",
+              "decorators": [],
+              "loc": {
+                "start": {
+                  "line": 1,
+                  "column": 1
+                },
+                "end": {
+                  "line": 1,
+                  "column": 1
+                }
+              }
+            },
+            "kind": "method",
+            "accessibility": "public",
+            "static": true,
+            "optional": false,
+            "computed": false,
+            "value": {
+              "type": "FunctionExpression",
+              "function": {
+                "type": "ScriptFunction",
+                "id": {
+                  "type": "Identifier",
+                  "name": "_$trigger_cctor$_",
+                  "decorators": [],
+                  "loc": {
+                    "start": {
+                      "line": 1,
+                      "column": 1
+                    },
+                    "end": {
+                      "line": 1,
+                      "column": 1
+                    }
+                  }
+                },
+                "generator": false,
+                "async": false,
+                "expression": false,
+                "params": [],
+                "body": {
+                  "type": "BlockStatement",
+                  "statements": [],
+                  "loc": {
+                    "start": {
+                      "line": 1,
+                      "column": 1
+                    },
+                    "end": {
+                      "line": 1,
+                      "column": 1
+                    }
+                  }
+                },
+                "loc": {
+                  "start": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 1
+                  }
+                }
+              },
+              "loc": {
+                "start": {
+                  "line": 1,
+                  "column": 1
+                },
+                "end": {
+                  "line": 1,
+                  "column": 1
+                }
+              }
+            },
+            "overloads": [],
+            "decorators": [],
+            "loc": {
+              "start": {
+                "line": 1,
+                "column": 1
+              },
+              "end": {
+                "line": 1,
+                "column": 1
               }
             }
           }
