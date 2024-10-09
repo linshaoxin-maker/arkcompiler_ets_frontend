@@ -238,7 +238,7 @@ static void ProcessCalleeMethodBody(ir::AstNode *body, checker::ETSChecker *chec
         }
         if (node->IsVariableDeclarator()) {
             auto *id = node->AsVariableDeclarator()->Id();
-            id->Variable()->SetTsType(id->Variable()->TsType()->Substitute(checker->Relation(), substitution));
+            id->Variable()->SetTsType(id->DeclaredType()->Substitute(checker->Relation(), substitution));
         }
     });
 }
@@ -654,7 +654,7 @@ static ir::CallExpression *CreateCallForLambdaClassInvoke(public_lib::Context *c
     if (lciInfo->classDefinition->TypeParams() != nullptr) {
         auto typeArgs = ArenaVector<ir::TypeNode *>(allocator->Adapter());
         for (auto *tp : lciInfo->classDefinition->TypeParams()->Params()) {
-            typeArgs.push_back(allocator->New<ir::OpaqueTypeNode>(tp->Name()->AsIdentifier()->Variable()->TsType()));
+            typeArgs.emplace_back(allocator->New<ir::OpaqueTypeNode>(tp->Name()->DeclaredType()));
         }
         auto *typeArg =
             util::NodeAllocator::ForceSetParent<ir::TSTypeParameterInstantiation>(allocator, std::move(typeArgs));

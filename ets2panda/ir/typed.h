@@ -63,14 +63,25 @@ public:
         return tsType_;
     }
 
-    void SetTsType(checker::Type *tsType) noexcept
+    checker::Type *SetTsType(checker::Type *const tsType) noexcept
     {
         tsType_ = tsType;
+        return tsType;
     }
 
     bool IsTyped() const override
     {
         return true;
+    }
+
+    [[nodiscard]] virtual checker::Type *DeclaredType() noexcept
+    {
+        return TsTypeOrError();
+    }
+
+    [[nodiscard]] virtual checker::Type const *DeclaredType() const noexcept
+    {
+        return TsTypeOrError();
     }
 
 protected:

@@ -67,6 +67,28 @@ AstNode::AstNode(AstNode const &other)
     return (astNodeFlags_ & AstNodeFlags::HAS_EXPORT_ALIAS) != 0;
 }
 
+bool AstNode::HasBoxingFlag() const noexcept
+{
+    return (GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG) !=
+           static_cast<std::underlying_type_t<ir::BoxingUnboxingFlags>>(0U);
+}
+
+bool AstNode::HasUnboxingFlag() const noexcept
+{
+    return (GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::UNBOXING_FLAG) !=
+           static_cast<std::underlying_type_t<ir::BoxingUnboxingFlags>>(0U);
+}
+
+bool AstNode::HasBoxingUnboxingFlags(bool const both) const noexcept
+{
+    auto const flag = ir::BoxingUnboxingFlags::BOXING_FLAG | ir::BoxingUnboxingFlags::UNBOXING_FLAG;
+    if (!both) {
+        return (GetBoxingUnboxingFlags() & flag) != static_cast<std::underlying_type_t<ir::BoxingUnboxingFlags>>(0U);
+    }
+
+    return (GetBoxingUnboxingFlags() & flag) == static_cast<std::underlying_type_t<ir::BoxingUnboxingFlags>>(flag);
+}
+
 bool AstNode::IsScopeBearer() const noexcept
 {
     return false;

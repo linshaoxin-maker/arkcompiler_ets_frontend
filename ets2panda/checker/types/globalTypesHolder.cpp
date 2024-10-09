@@ -207,15 +207,6 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMap
     builtinNameMappings_.emplace("TYPE ERROR", GlobalTypeId::TYPE_ERROR);
 
     // ETS functional types
-    for (size_t id = static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS), nargs = 0;
-         id < static_cast<size_t>(GlobalTypeId::ETS_FUNCTIONN_CLASS); id++, nargs++) {
-        builtinNameMappings_.emplace(util::UString("Function" + std::to_string(nargs), allocator).View(),
-                                     static_cast<GlobalTypeId>(id));
-    }
-
-    builtinNameMappings_.emplace("FunctionN", GlobalTypeId::ETS_FUNCTIONN_CLASS);
-
-    // Function types
     AddFunctionTypes(allocator);
 
     // ETS interop js specific types

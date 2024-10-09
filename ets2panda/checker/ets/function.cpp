@@ -437,7 +437,7 @@ bool ETSChecker::ValidateSignatureRestParams(Signature *substitutedSig, const Ar
         auto &argument = arguments[index];
 
         if (!argument->IsSpreadElement()) {
-            auto *const argumentType = argument->Check(this);
+            auto *const argumentType = GetNonConstantType(argument->Check(this));
             const Type *targetType = TryGettingFunctionTypeFromInvokeFunction(
                 substitutedSig->RestVar()->TsType()->AsETSArrayType()->ElementType());
             const Type *sourceType = TryGettingFunctionTypeFromInvokeFunction(argumentType);
@@ -461,7 +461,7 @@ bool ETSChecker::ValidateSignatureRestParams(Signature *substitutedSig, const Ar
         }
 
         auto *const restArgument = argument->AsSpreadElement()->Argument();
-        auto *const argumentType = restArgument->Check(this);
+        auto *const argumentType = GetNonConstantType(restArgument->Check(this));
         const Type *targetType = TryGettingFunctionTypeFromInvokeFunction(substitutedSig->RestVar()->TsType());
         const Type *sourceType = TryGettingFunctionTypeFromInvokeFunction(argumentType);
 
@@ -1773,9 +1773,9 @@ bool ETSChecker::IsReturnTypeSubstitutable(Signature *const s1, Signature *const
         return true;
     }
 
-    return s2->Function()->ReturnTypeAnnotation()->IsETSTypeReference() &&
-           Relation()->IsSupertypeOf(
-               s2->Function()->ReturnTypeAnnotation()->GetType(this)->AsETSTypeParameter()->GetConstraintType(), r1);
+    auto *typeAnnotation = s2->Function()->ReturnTypeAnnotation();
+    return typeAnnotation != nullptr && typeAnnotation->IsETSTypeReference() &&
+           Relation()->IsSupertypeOf(typeAnnotation->GetType(this)->AsETSTypeParameter()->GetConstraintType(), r1);
 }
 
 std::string ETSChecker::GetAsyncImplName(const util::StringView &name)
@@ -1967,11 +1967,11 @@ varbinder::FunctionParamScope *ETSChecker::CopyParams(const ArenaVector<ir::Expr
 
         auto *const var = std::get<1>(VarBinder()->AddParamDecl(paramNew));
 
-        var->SetTsType(paramOld->Ident()->Variable()->TsType());
+        var->SetTsType(paramOld->Ident()->DeclaredType());
         var->SetScope(paramCtx.GetScope());
         paramNew->SetVariable(var);
 
-        paramNew->SetTsType(paramOld->Ident()->Variable()->TsType());
+        paramNew->SetTsType(paramOld->Ident()->DeclaredType());
 
         outParams.emplace_back(paramNew);
     }

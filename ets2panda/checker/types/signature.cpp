@@ -177,6 +177,12 @@ void Signature::ToString(std::stringstream &ss, const varbinder::Variable *varia
     }
 
     returnType_->ToString(ss, precise);
+
+    if (Function()->IsThrowing()) {
+        ss << " throws";
+    } else if (Function()->IsRethrowing()) {
+        ss << " rethrows";
+    }
 }
 
 std::string Signature::ToString() const

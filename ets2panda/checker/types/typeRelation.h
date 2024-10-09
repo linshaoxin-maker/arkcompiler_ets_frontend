@@ -355,8 +355,13 @@ private:
 };
 class SavedTypeRelationFlagsContext {
 public:
-    explicit SavedTypeRelationFlagsContext(TypeRelation *relation, TypeRelationFlag newFlag)
-        : relation_(relation), prev_(relation->flags_)
+    explicit SavedTypeRelationFlagsContext(TypeRelation *relation, TypeRelationFlag newFlag,
+                                           bool const preserveAll = false)
+        : relation_(relation),
+          prevFlags_(relation->flags_),
+          prevResult_(relation->result_),
+          prevNode_(relation->node_),
+          preserveAll_(preserveAll)
     {
         relation_->flags_ = newFlag;
     }
@@ -366,12 +371,19 @@ public:
 
     ~SavedTypeRelationFlagsContext()
     {
-        relation_->flags_ = prev_;
+        relation_->flags_ = prevFlags_;
+        if (preserveAll_) {
+            relation_->result_ = prevResult_;
+            relation_->node_ = prevNode_;
+        }
     }
 
 private:
     TypeRelation *relation_;
-    TypeRelationFlag prev_;
+    TypeRelationFlag prevFlags_;
+    RelationResult prevResult_;
+    ir::Expression *prevNode_;
+    bool preserveAll_;
 };
 }  // namespace ark::es2panda::checker
 

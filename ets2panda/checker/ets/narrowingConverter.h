@@ -64,6 +64,34 @@ public:
         }
     }
 
+    template <typename From, typename To>
+    static To CastFloatingPointToIntOrLong(From value)
+    {
+        if (std::isinf(value)) {
+            if (std::signbit(value)) {
+                return std::numeric_limits<To>::min();
+            }
+            return std::numeric_limits<To>::max();
+        }
+        ASSERT(std::is_floating_point_v<From>);
+        ASSERT(std::is_integral_v<To>);
+        To minInt = std::numeric_limits<To>::min();
+        To maxInt = std::numeric_limits<To>::max();
+        auto floatMinInt = static_cast<From>(minInt);
+        auto floatMaxInt = static_cast<From>(maxInt);
+
+        if (value > floatMinInt) {
+            if (value < floatMaxInt) {
+                return static_cast<To>(value);
+            }
+            return maxInt;
+        }
+        if (std::isnan(value)) {
+            return 0;
+        }
+        return minInt;
+    }
+
 private:
     template <typename TargetType>
     void ApplyNarrowing(TypeFlag flag)
@@ -101,34 +129,6 @@ private:
                 break;
             }
         }
-    }
-
-    template <typename From, typename To>
-    To CastFloatingPointToIntOrLong(From value)
-    {
-        if (std::isinf(value)) {
-            if (std::signbit(value)) {
-                return std::numeric_limits<To>::min();
-            }
-            return std::numeric_limits<To>::max();
-        }
-        ASSERT(std::is_floating_point_v<From>);
-        ASSERT(std::is_integral_v<To>);
-        To minInt = std::numeric_limits<To>::min();
-        To maxInt = std::numeric_limits<To>::max();
-        auto floatMinInt = static_cast<From>(minInt);
-        auto floatMaxInt = static_cast<From>(maxInt);
-
-        if (value > floatMinInt) {
-            if (value < floatMaxInt) {
-                return static_cast<To>(value);
-            }
-            return maxInt;
-        }
-        if (std::isnan(value)) {
-            return 0;
-        }
-        return minInt;
     }
 
     template <typename TType, typename SType>

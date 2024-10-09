@@ -94,6 +94,7 @@ public:
 
         auto *const etsChecker = relation->GetChecker()->AsETSChecker();
 
+        relation->Result(false);
         relation->SetNode(node);
         relation->SetFlags(flags_ | initialFlags);
 

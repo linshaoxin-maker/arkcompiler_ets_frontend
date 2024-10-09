@@ -246,7 +246,7 @@ static ir::AstNode *HandleReference(public_lib::Context *ctx, ir::Identifier *id
     auto *checker = ctx->checker->AsETSChecker();
 
     // `as` is needed to account for smart types
-    auto *res = parser->CreateFormattedExpression("@@I1.get() as @@T2", var->Name(), id->TsType());
+    auto *res = parser->CreateFormattedExpression("@@I1.get() as @@T2", var->Name(), id->DeclaredType());
     res->SetParent(id->Parent());
     res->AsTSAsExpression()
         ->Expr()
@@ -261,7 +261,7 @@ static ir::AstNode *HandleReference(public_lib::Context *ctx, ir::Identifier *id
     // adjustment later.
     res->Check(checker);
 
-    ASSERT(res->TsType() == id->TsType());
+    ASSERT(checker->Relation()->IsIdenticalTo(res->TsType(), id->DeclaredType()));
     res->SetBoxingUnboxingFlags(id->GetBoxingUnboxingFlags());
 
     return res;

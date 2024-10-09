@@ -18,7 +18,7 @@
 
 #include "ir/expression.h"
 #include "ir/validationInfo.h"
-#include "checker/types/ets/etsArrayType.h"
+#include "checker/types/typeRelation.h"
 
 namespace ark::es2panda::checker {
 class ETSAnalyzer;
@@ -54,10 +54,6 @@ public:
     }
 
     explicit ArrayExpression(Tag tag, ArrayExpression const &other, ArenaAllocator *allocator);
-
-    // NOTE (vivienvoros): these friend relationships can be removed once there are getters for private fields
-    friend class checker::ETSAnalyzer;
-    friend class compiler::ETSCompiler;
 
     [[nodiscard]] const ArenaVector<Expression *> &Elements() const noexcept
     {

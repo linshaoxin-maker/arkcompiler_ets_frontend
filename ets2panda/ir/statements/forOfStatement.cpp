@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 - 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,13 +29,12 @@ checker::Type *ForOfStatement::CreateUnionIteratorTypes(checker::ETSChecker *che
 
     for (auto it : exprType->AsETSUnionType()->ConstituentTypes()) {
         if (it->IsETSStringType()) {
-            types.push_back(checker->GetGlobalTypesHolder()->GlobalCharType());
+            types.emplace_back(checker->GetGlobalTypesHolder()->GlobalCharType());
         } else if (it->IsETSObjectType()) {
-            types.push_back(this->CheckIteratorMethodForObject(checker, it->AsETSObjectType()));
+            types.emplace_back(this->CheckIteratorMethodForObject(checker, it->AsETSObjectType()));
         } else if (it->IsETSArrayType()) {
-            types.push_back(it->AsETSArrayType()->ElementType()->Instantiate(checker->Allocator(), checker->Relation(),
-                                                                             checker->GetGlobalTypesHolder()));
-            types.back()->RemoveTypeFlag(checker::TypeFlag::CONSTANT);
+            auto *elementType = it->AsETSArrayType()->ElementType()->Clone(checker);
+            types.emplace_back(checker->GetNonConstantType(elementType));
         } else {
             return nullptr;
         }

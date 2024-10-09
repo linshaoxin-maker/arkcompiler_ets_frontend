@@ -624,14 +624,13 @@ void ETSObjectType::Cast(TypeRelation *const relation, Type *const target)
     conversion::Forbidden(relation);
 }
 
-bool ETSObjectType::DefaultObjectTypeChecks(const ETSChecker *const etsChecker, TypeRelation *const relation,
-                                            Type *const source)
+bool ETSObjectType::DefaultObjectTypeChecks(ETSChecker *const checker, TypeRelation *const relation, Type *const source)
 {
     relation->Result(false);
 
     // 3.8.3 Subtyping among Array Types
     auto const *const base = GetConstOriginalBaseType();
-    if (base == etsChecker->GlobalETSObjectType() && source->IsETSArrayType()) {
+    if (base == checker->GlobalETSObjectType() && source->IsETSArrayType()) {
         relation->Result(true);
         return true;
     }
@@ -642,14 +641,14 @@ bool ETSObjectType::DefaultObjectTypeChecks(const ETSChecker *const etsChecker, 
     }
 
     // All classes and interfaces are subtypes of Object
-    if (base == etsChecker->GlobalETSObjectType()) {
+    if (base == checker->GlobalETSObjectType()) {
         relation->Result(true);
         return true;
     }
 
     IdenticalUptoTypeArguments(relation, source);
     if (relation->IsTrue() && HasTypeFlag(TypeFlag::GENERIC) && !relation->IgnoreTypeParameters()) {
-        IsGenericSupertypeOf(relation, source);
+        IsGenericSupertypeOf(checker, source);
     }
     return relation->IsTrue();
 }
@@ -688,9 +687,10 @@ void ETSObjectType::IsSupertypeOf(TypeRelation *relation, Type *source)
     }
 }
 
-void ETSObjectType::IsGenericSupertypeOf(TypeRelation *relation, Type *source)
+void ETSObjectType::IsGenericSupertypeOf(ETSChecker *const checker, Type *source)
 {
     ASSERT(HasTypeFlag(TypeFlag::GENERIC));
+    TypeRelation *relation = checker->Relation();
 
     auto *sourceType = source->AsETSObjectType();
     auto const &sourceTypeArguments = sourceType->TypeArguments();
@@ -713,7 +713,7 @@ void ETSObjectType::IsGenericSupertypeOf(TypeRelation *relation, Type *source)
     ASSERT(typeParams.size() == typeArgumentsNumber);
 
     for (size_t idx = 0U; idx < typeArgumentsNumber; ++idx) {
-        auto *typeArg = typeArguments_[idx];
+        auto *typeArg = checker->GetNonConstantType(typeArguments_[idx]);
         auto *sourceTypeArg = sourceTypeArguments[idx];
         auto *typeParam = typeParams[idx];
 

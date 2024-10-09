@@ -13,20 +13,15 @@
  * limitations under the License.
  */
 
-#include "util/helpers.h"
-#include "macros.h"
-#include "varbinder/ETSBinder.h"
+#include "checker/types/ets/longType.h"
 #include "parser/ETSparser.h"
 
 #include "checker/types/ets/etsTupleType.h"
-#include "checker/types/ets/etsReadonlyType.h"
+#include "checker/ets/narrowingConverter.h"
 #include "checker/ets/typeRelationContext.h"
-#include "checker/ETSchecker.h"
 #include "checker/types/globalTypesHolder.h"
 #include "evaluate/scopedDebugInfoPlugin.h"
-
 #include "compiler/lowering/scopesInit/scopesInitPhase.h"
-#include "generated/signatures.h"
 
 namespace ark::es2panda::checker {
 varbinder::Variable *ETSChecker::FindVariableInFunctionScope(const util::StringView name,
@@ -708,16 +703,6 @@ void ETSChecker::CheckEnumType(ir::Expression *init, checker::Type *initType, co
     }
 }
 
-static bool NeedWideningBasedOnInitializerHeuristics(ir::Expression *e)
-{
-    // NOTE: need to be done by smart casts. Return true if we need to infer wider type.
-    if (e->IsUnaryExpression()) {
-        return NeedWideningBasedOnInitializerHeuristics(e->AsUnaryExpression()->Argument());
-    }
-    const bool isConstInit = e->IsIdentifier() && e->Variable()->Declaration()->IsConstDecl();
-    return e->IsConditionalExpression() || e->IsLiteral() || isConstInit;
-}
-
 checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::TypeNode *typeAnnotation,
                                                     ir::Expression *init, ir::ModifierFlags const flags)
 {
@@ -726,12 +711,12 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
     varbinder::Variable *const bindingVar = ident->Variable();
     checker::Type *annotationType = nullptr;
 
-    const bool isConst = (flags & ir::ModifierFlags::CONST) != 0;
-    const bool isReadonly = (flags & ir::ModifierFlags::READONLY) != 0;
-    const bool isStatic = (flags & ir::ModifierFlags::STATIC) != 0;
+    const bool isConstant = (flags & ir::ModifierFlags::CONST) != 0U;
+    const bool isReadonly = (flags & ir::ModifierFlags::READONLY) != 0U;
+    const bool isStatic = (flags & ir::ModifierFlags::STATIC) != 0U;
     // Note(lujiahui): It should be checked if the readonly function parameter and readonly number[] parameters
     // are assigned with CONSTANT, which would not be correct. (After feature supported)
-    const bool omitInitConstness = isConst || (isReadonly && isStatic);
+    const bool keepConstness = isConstant || (isReadonly && isStatic);
 
     if (typeAnnotation != nullptr) {
         annotationType = typeAnnotation->GetType(this);
@@ -768,20 +753,22 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
     if (annotationType != nullptr) {
         CheckAnnotationTypeForVariableDeclaration(annotationType, annotationType->IsETSUnionType(), init, initType);
 
-        if (omitInitConstness &&
-            ((initType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && annotationType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) ||
-             (initType->IsETSStringType() && annotationType->IsETSStringType()))) {
-            bindingVar->SetTsType(init->TsType());
+        //  NOTE (DZ): In case of 'const' declaration even with the explicit type definition we can `extend` this
+        //  definiton to a constant (literal) type if initializer expression can be evaluated to a constant value.
+        //  It is not directly stated in specification but seems that it doesn't harm anything...
+        if (keepConstness && initType->IsConstantType()) {
+            if (annotationType->IsETSPrimitiveType()) {
+                bindingVar->SetTsType(ResolvePrimitiveSmartType(initType, annotationType));
+            } else if (annotationType->IsETSStringType()) {
+                bindingVar->SetTsType(ResolveStringSmartType(initType, annotationType));
+            } else if (annotationType->IsETSBigIntType()) {
+                bindingVar->SetTsType(ResolveBigIntSmartType(initType, annotationType));
+            }
         }
-        return FixOptionalVariableType(bindingVar, flags, init);
+    } else {
+        CheckEnumType(init, initType, varName);
+        bindingVar->SetTsType(keepConstness ? initType : GetNonConstantType(initType));
     }
-
-    CheckEnumType(init, initType, varName);
-
-    // NOTE: need to be done by smart casts
-    const bool needWidening =
-        !omitInitConstness && typeAnnotation == nullptr && NeedWideningBasedOnInitializerHeuristics(init);
-    bindingVar->SetTsType(needWidening ? GetNonConstantType(initType) : initType);
 
     return FixOptionalVariableType(bindingVar, flags, init);
 }
@@ -821,12 +808,237 @@ void ETSChecker::CheckAnnotationTypeForVariableDeclaration(checker::Type *annota
 //==============================================================================//
 // Smart cast support
 //==============================================================================//
+bool BooleanValue(checker::Type const *sourceType) noexcept
+{
+    // NOLINTBEGIN(readability-else-after-return)
+    if (sourceType->IsIntType()) {
+        return sourceType->AsIntType()->GetValue() != 0;
+    } else if (sourceType->IsDoubleType()) {
+        return sourceType->AsDoubleType()->GetValue() != 0.0;
+    } else if (sourceType->IsLongType()) {
+        return sourceType->AsLongType()->GetValue() != 0L;
+    } else if (sourceType->IsFloatType()) {
+        return sourceType->AsFloatType()->GetValue() != 0.0F;
+    } else if (sourceType->IsCharType()) {
+        return sourceType->AsCharType()->GetValue() != '\0';
+    } else if (sourceType->IsByteType()) {
+        return sourceType->AsByteType()->GetValue() != 0;
+    } else if (sourceType->IsShortType()) {
+        return sourceType->AsShortType()->GetValue() != 0;
+    } else {
+        UNREACHABLE();
+    }
+    // NOLINTEND(readability-else-after-return)
+}
+
+template <typename U>
+U ValueFromInt(checker::IntType const *sourceType) noexcept
+{
+    using UType = checker::IntType::UType;
+    UType value = sourceType->GetValue();
+    if constexpr (std::is_same_v<U, checker::ByteType::UType> || std::is_same_v<U, checker::ShortType::UType> ||
+                  std::is_same_v<U, checker::CharType::UType>) {
+        if (value > static_cast<UType>(std::numeric_limits<U>::max())) {
+            value = static_cast<UType>(std::numeric_limits<U>::max());
+        } else if (value < static_cast<UType>(std::numeric_limits<U>::min())) {
+            value = static_cast<UType>(std::numeric_limits<U>::min());
+        }
+    }
+    return static_cast<U>(value);
+}
+
+template <typename U>
+U ValueFromLong(checker::LongType const *sourceType) noexcept
+{
+    using UType = checker::LongType::UType;
+    UType value = sourceType->GetValue();
+    if constexpr (std::is_same_v<U, checker::ByteType::UType> || std::is_same_v<U, checker::ShortType::UType> ||
+                  std::is_same_v<U, checker::CharType::UType> || std::is_same_v<U, checker::IntType::UType> ||
+                  std::is_same_v<U, checker::FloatType::UType>) {
+        if (value > static_cast<UType>(std::numeric_limits<U>::max())) {
+            value = static_cast<UType>(std::numeric_limits<U>::max());
+        } else if (value < static_cast<UType>(std::numeric_limits<U>::min())) {
+            value = static_cast<UType>(std::numeric_limits<U>::min());
+        }
+    }
+    return static_cast<U>(value);
+}
+
+template <typename U>
+U ValueFromShort(checker::ShortType const *sourceType) noexcept
+{
+    using UType = checker::ShortType::UType;
+    UType value = sourceType->GetValue();
+    if constexpr (std::is_same_v<U, checker::ByteType::UType>) {
+        if (value > static_cast<UType>(std::numeric_limits<U>::max())) {
+            value = static_cast<UType>(std::numeric_limits<U>::max());
+        } else if (value < static_cast<UType>(std::numeric_limits<U>::min())) {
+            value = static_cast<UType>(std::numeric_limits<U>::min());
+        }
+    }
+    return static_cast<U>(value);
+}
+
+template <typename U>
+U ValueFromChar(checker::CharType const *sourceType) noexcept
+{
+    using UType = checker::CharType::UType;
+    UType value = sourceType->GetValue();
+    if constexpr (std::is_same_v<U, checker::ByteType::UType>) {
+        if (value > static_cast<UType>(std::numeric_limits<U>::max())) {
+            value = static_cast<UType>(std::numeric_limits<U>::max());
+        } else if (value < static_cast<UType>(std::numeric_limits<U>::min())) {
+            value = static_cast<UType>(std::numeric_limits<U>::min());
+        }
+    }
+    return static_cast<U>(value);
+}
+
+template <typename U>
+U ValueFromDouble(checker::DoubleType const *sourceType) noexcept
+{
+    using UType = checker::DoubleType::UType;
+    UType value = sourceType->GetValue();
+    if constexpr (std::is_same_v<U, checker::ByteType::UType> || std::is_same_v<U, checker::ShortType::UType> ||
+                  std::is_same_v<U, checker::CharType::UType> || std::is_same_v<U, checker::IntType::UType> ||
+                  std::is_same_v<U, checker::LongType::UType>) {
+        return NarrowingConverter::CastFloatingPointToIntOrLong<UType, U>(value);
+    }
+    return static_cast<U>(value);
+}
+
+template <typename U>
+U ValueFromFloat(checker::FloatType const *sourceType) noexcept
+{
+    using UType = checker::FloatType::UType;
+    UType value = sourceType->GetValue();
+    if constexpr (std::is_same_v<U, checker::ByteType::UType> || std::is_same_v<U, checker::ShortType::UType> ||
+                  std::is_same_v<U, checker::CharType::UType> || std::is_same_v<U, checker::IntType::UType> ||
+                  std::is_same_v<U, checker::LongType::UType>) {
+        return NarrowingConverter::CastFloatingPointToIntOrLong<UType, U>(value);
+    }
+    return static_cast<U>(value);
+}
+
+template <typename U>
+U LiteralValue(checker::Type const *sourceType) noexcept
+{
+    // NOLINTBEGIN(readability-else-after-return)
+    if constexpr (std::is_same_v<U, bool>) {
+        return BooleanValue(sourceType);
+    } else {
+        if (sourceType->IsIntType()) {
+            return ValueFromInt<U>(sourceType->AsIntType());
+        } else if (sourceType->IsDoubleType()) {
+            return ValueFromDouble<U>(sourceType->AsDoubleType());
+        } else if (sourceType->IsLongType()) {
+            return ValueFromLong<U>(sourceType->AsLongType());
+        } else if (sourceType->IsFloatType()) {
+            return ValueFromFloat<U>(sourceType->AsFloatType());
+        } else if (sourceType->IsCharType()) {
+            return ValueFromChar<U>(sourceType->AsCharType());
+        } else if (sourceType->IsETSBooleanType()) {
+            return static_cast<U>(sourceType->AsETSBooleanType()->GetValue() ? 1 : 0);
+        } else if (sourceType->IsByteType()) {
+            return static_cast<U>(sourceType->AsByteType()->GetValue());
+        } else if (sourceType->IsShortType()) {
+            return ValueFromShort<U>(sourceType->AsShortType());
+        } else {
+            UNREACHABLE();
+        }
+    }
+    // NOLINTEND(readability-else-after-return)
+}
+
+checker::Type *ETSChecker::ResolvePrimitiveSmartType(checker::Type *sourceType, checker::Type *targetType) noexcept
+{
+    if (sourceType->IsConstantType() && !targetType->IsConstantType()) {
+        auto const targetFlag = static_cast<checker::TypeFlag>(targetType->TypeFlags() & TypeFlag::ETS_PRIMITIVE);
+        auto const sourceFlag = static_cast<checker::TypeFlag>(sourceType->TypeFlags() & TypeFlag::ETS_PRIMITIVE);
+        if (sourceFlag == targetFlag) {
+            return sourceType;
+        }
+
+        if (sourceFlag != checker::TypeFlag::NONE) {
+            switch (targetFlag) {
+                case TypeFlag::INT: {
+                    return CreateIntType(LiteralValue<std::int32_t>(sourceType));
+                }
+                case TypeFlag::DOUBLE: {
+                    return CreateDoubleType(LiteralValue<std::double_t>(sourceType));
+                }
+                case TypeFlag::LONG: {
+                    return CreateLongType(LiteralValue<std::int64_t>(sourceType));
+                }
+                case TypeFlag::FLOAT: {
+                    return CreateFloatType(LiteralValue<std::float_t>(sourceType));
+                }
+                case TypeFlag::ETS_BOOLEAN: {
+                    return CreateETSBooleanType(LiteralValue<std::int64_t>(sourceType) != 0L);
+                }
+                case TypeFlag::CHAR: {
+                    return CreateCharType(LiteralValue<char16_t>(sourceType));
+                }
+                case TypeFlag::BYTE: {
+                    return CreateByteType(LiteralValue<std::int8_t>(sourceType));
+                }
+                case TypeFlag::SHORT: {
+                    return CreateShortType(LiteralValue<std::int16_t>(sourceType));
+                }
+                default: {
+                    UNREACHABLE();
+                }
+            }
+        }
+
+        if (sourceType->IsETSStringType()) {
+            if (targetType->IsCharType()) {
+                util::StringView::Iterator it(sourceType->AsETSStringType()->GetValue());
+                return CreateCharType(static_cast<char16_t>(it.PeekCp()));
+            }
+        }
+    }
+    return targetType;
+}
+
+checker::Type *ETSChecker::ResolveStringSmartType(checker::Type *sourceType, checker::Type *targetType) noexcept
+{
+    if (sourceType->IsConstantType() && !targetType->IsConstantType()) {
+        //  Convert possible character literal to the string one
+        if (sourceType->IsCharType()) {
+            auto const str = util::Helpers::UTF16toUTF8(sourceType->AsCharType()->GetValue());
+            sourceType = CreateETSStringLiteralType(util::UString(str, Allocator()).View());
+        }
+        return sourceType;
+    }
+    return targetType;
+}
+
+checker::Type *ETSChecker::ResolveBigIntSmartType(checker::Type *sourceType, checker::Type *targetType) noexcept
+{
+    if (sourceType->IsConstantType() && !targetType->IsConstantType()) {
+        if (!sourceType->IsETSBigIntType()) {
+            return CreateETSBigIntLiteralType(util::UString(sourceType->ToString(), Allocator()).View());
+        }
+        return sourceType;
+    }
+    return targetType;
+}
 
 checker::Type *ETSChecker::ResolveSmartType(checker::Type *sourceType, checker::Type *targetType)
 {
-    //  For left-hand variable of primitive type leave it as is.
-    if (targetType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE_RETURN)) {
-        return targetType;
+    //  For left-hand variable of primitive type leave it as is or use/create corresponding literal type.
+    if (targetType->IsETSPrimitiveType()) {
+        return ResolvePrimitiveSmartType(sourceType, targetType);
+    }
+
+    //  For left-hand variable of string type check if it is initialized/assigned with literal value.
+    if (targetType->IsETSStringType()) {
+        return ResolveStringSmartType(sourceType, targetType);
+    }
+
+    if (targetType->IsETSBigIntType()) {
+        return ResolveBigIntSmartType(sourceType, targetType);
     }
 
     //  For left-hand variable of tuple type leave it as is.
@@ -863,8 +1075,7 @@ checker::Type *ETSChecker::ResolveSmartType(checker::Type *sourceType, checker::
     //  NOTE: it always exists at this point!
     if (targetType->IsETSUnionType()) {
         sourceType = targetType->AsETSUnionType()->GetAssignableType(this, sourceType);
-        ASSERT(sourceType != nullptr);
-        return sourceType;
+        return sourceType != nullptr ? sourceType : GlobalTypeError();
     }
 
     //  If source is reference type, set it as the current and use it for identifier smart cast
@@ -873,8 +1084,7 @@ checker::Type *ETSChecker::ResolveSmartType(checker::Type *sourceType, checker::
     }
 
     //  For right-hand variable of primitive type apply boxing conversion (case: 'let x: Object = 5', then x => Int).
-    if (sourceType->HasTypeFlag(TypeFlag::ETS_PRIMITIVE) && !sourceType->IsETSVoidType() &&
-        targetType->IsETSObjectType()) {
+    if (sourceType->IsETSPrimitiveType() && targetType->IsETSObjectType()) {
         return PrimitiveTypeAsETSBuiltinType(sourceType);
     }
 
@@ -1073,6 +1283,11 @@ std::optional<SmartCastTuple> CheckerContext::ResolveSmartCastTypes()
                ? std::make_optional(std::make_tuple(testCondition_.variable, consequentType, alternateType))
                : std::make_optional(std::make_tuple(testCondition_.variable, alternateType, consequentType));
 }
+
+//====================================================================================================================//
+// Smart cast support [end]
+//====================================================================================================================//
+
 bool ETSChecker::CheckVoidAnnotation(const ir::ETSPrimitiveType *typeAnnotation)
 {
     // Void annotation is valid only when used as 'return type' , 'type parameter instantiation', 'default type'.

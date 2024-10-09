@@ -29,19 +29,14 @@
 #include "ir/statements/continueStatement.h"
 #include "ir/statements/tryStatement.h"
 #include "ir/ts/tsInterfaceDeclaration.h"
-#include "varbinder/variableFlags.h"
 #include "compiler/base/lreference.h"
 #include "compiler/base/catchTable.h"
 #include "compiler/core/dynamicContext.h"
 #include "varbinder/ETSBinder.h"
-#include "varbinder/variable.h"
 #include "checker/types/type.h"
-#include "checker/types/typeFlag.h"
-#include "checker/checker.h"
 #include "checker/ETSchecker.h"
 #include "checker/types/ets/etsObjectType.h"
 #include "checker/types/ets/etsAsyncFuncReturnType.h"
-#include "parser/program/program.h"
 #include "checker/types/globalTypesHolder.h"
 #include "public/public.h"
 
@@ -72,25 +67,27 @@ const checker::Type *ETSGen::GetAccumulatorType() const
 
 void ETSGen::CompileAndCheck(const ir::Expression *expr)
 {
+    auto *const checker = const_cast<checker::ETSChecker *>(Checker());
     // NOTE: vpukhov. bad accumulator type leads to terrible bugs in codegen
     // make exact types match mandatory
     expr->Compile(this);
 
     auto const *const accType = GetAccumulatorType();
-    if (accType == expr->TsType() || expr->TsType()->IsETSTypeParameter()) {
+    auto const *const exprType = checker->GetNonConstantType(expr->TsType());
+    if (checker->Relation()->IsIdenticalTo(accType, exprType) || exprType->IsETSTypeParameter()) {
         return;
     }
 
-    if (accType->HasTypeFlag(checker::TypeFlag::ETS_PRIMITIVE) &&
-        ((accType->TypeFlags() ^ expr->TsType()->TypeFlags()) & ~checker::TypeFlag::CONSTANT) == 0) {
+    if ((accType->IsETSPrimitiveType() || accType->IsETSStringType() || accType->IsETSBigIntType()) &&
+        ((accType->TypeFlags() ^ exprType->TypeFlags()) & ~checker::TypeFlag::CONSTANT) == 0U) {
         return;
     }
 
-    if (accType->IsIntType() && expr->TsType()->IsETSEnumType()) {
+    if (accType->IsIntType() && exprType->IsETSEnumType()) {
         return;
     }
     ASSERT_PRINT(false, std::string("Type mismatch after Expression::Compile: ") + accType->ToString() +
-                            " instead of " + expr->TsType()->ToString());
+                            " instead of " + exprType->ToString());
 }
 
 const checker::ETSChecker *ETSGen::Checker() const noexcept
@@ -1015,61 +1012,13 @@ void ETSGen::LoadConstantObject(const ir::Expression *node, const checker::Type 
     }
 }
 
-bool ETSGen::TryLoadConstantExpression(const ir::Expression *node)
-{
-    const auto *type = node->TsType();
-
-    if (!type->HasTypeFlag(checker::TypeFlag::CONSTANT) || type->IsETSObjectType()) {
-        return false;
-    }
-    // bug: this should be forbidden for most expression types!
-
-    auto typeKind = checker::ETSChecker::TypeKind(type);
-
-    switch (typeKind) {
-        case checker::TypeFlag::CHAR: {
-            LoadAccumulatorChar(node, type->AsCharType()->GetValue());
-            break;
-        }
-        case checker::TypeFlag::ETS_BOOLEAN: {
-            LoadAccumulatorBoolean(node, type->AsETSBooleanType()->GetValue());
-            break;
-        }
-        case checker::TypeFlag::BYTE: {
-            LoadAccumulatorByte(node, type->AsByteType()->GetValue());
-            break;
-        }
-        case checker::TypeFlag::SHORT: {
-            LoadAccumulatorShort(node, type->AsShortType()->GetValue());
-            break;
-        }
-        case checker::TypeFlag::INT: {
-            LoadAccumulatorInt(node, type->AsIntType()->GetValue());
-            break;
-        }
-        case checker::TypeFlag::LONG: {
-            LoadAccumulatorWideInt(node, type->AsLongType()->GetValue());
-            break;
-        }
-        case checker::TypeFlag::FLOAT: {
-            LoadAccumulatorFloat(node, type->AsFloatType()->GetValue());
-            break;
-        }
-        case checker::TypeFlag::DOUBLE: {
-            LoadAccumulatorDouble(node, type->AsDoubleType()->GetValue());
-            break;
-        }
-        default: {
-            UNREACHABLE();
-        }
-    }
-
-    return true;
-}
-
 void ETSGen::ApplyConversionCast(const ir::AstNode *node, const checker::Type *targetType)
 {
     switch (checker::ETSChecker::TypeKind(targetType)) {
+        case checker::TypeFlag::INT: {
+            CastToInt(node);
+            break;
+        }
         case checker::TypeFlag::DOUBLE: {
             CastToDouble(node);
             break;
@@ -1082,8 +1031,16 @@ void ETSGen::ApplyConversionCast(const ir::AstNode *node, const checker::Type *t
             CastToLong(node);
             break;
         }
+        case checker::TypeFlag::SHORT: {
+            CastToShort(node);
+            break;
+        }
         case checker::TypeFlag::CHAR: {
             CastToChar(node);
+            break;
+        }
+        case checker::TypeFlag::BYTE: {
+            CastToByte(node);
             break;
         }
         case checker::TypeFlag::ETS_ARRAY:
@@ -1107,22 +1064,20 @@ void ETSGen::ApplyConversionCast(const ir::AstNode *node, const checker::Type *t
 void ETSGen::ApplyBoxingConversion(const ir::AstNode *node)
 {
     EmitBoxingConversion(node);
-    node->SetBoxingUnboxingFlags(
-        static_cast<ir::BoxingUnboxingFlags>(node->GetBoxingUnboxingFlags() & ~(ir::BoxingUnboxingFlags::BOXING_FLAG)));
+    node->RemoveBoxingUnboxingFlags(ir::BoxingUnboxingFlags::BOXING_FLAG);
 }
 
 void ETSGen::ApplyUnboxingConversion(const ir::AstNode *node)
 {
     EmitUnboxingConversion(node);
-    node->SetBoxingUnboxingFlags(static_cast<ir::BoxingUnboxingFlags>(node->GetBoxingUnboxingFlags() &
-                                                                      ~(ir::BoxingUnboxingFlags::UNBOXING_FLAG)));
+    node->RemoveBoxingUnboxingFlags(ir::BoxingUnboxingFlags::UNBOXING_FLAG);
 }
 
 void ETSGen::ApplyConversion(const ir::AstNode *node, const checker::Type *targetType)
 {
     auto ttctx = TargetTypeContext(this, targetType);
 
-    if ((node->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::BOXING_FLAG) != 0U) {
+    if (node->HasBoxingFlag()) {
         ApplyBoxingConversion(node);
 
         if (node->HasAstNodeFlags(ir::AstNodeFlags::CONVERT_TO_STRING)) {
@@ -1133,11 +1088,11 @@ void ETSGen::ApplyConversion(const ir::AstNode *node, const checker::Type *targe
         return;
     }
 
-    if ((node->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::UNBOXING_FLAG) != 0U) {
+    if (node->HasUnboxingFlag()) {
         ApplyUnboxingConversion(node);
     }
 
-    if (targetType == nullptr) {
+    if (targetType == nullptr || Checker()->Relation()->IsIdenticalTo(GetAccumulatorType(), targetType)) {
         return;
     }
 
@@ -1163,6 +1118,18 @@ void ETSGen::ApplyCast(const ir::AstNode *node, const checker::Type *targetType)
         }
         case checker::TypeFlag::INT: {
             CastToInt(node);
+            break;
+        }
+        case checker::TypeFlag::SHORT: {
+            CastToShort(node);
+            break;
+        }
+        case checker::TypeFlag::BYTE: {
+            CastToByte(node);
+            break;
+        }
+        case checker::TypeFlag::CHAR: {
+            CastToChar(node);
             break;
         }
         case checker::TypeFlag::ETS_DYNAMIC_TYPE: {
@@ -1192,6 +1159,18 @@ void ETSGen::ApplyCastToBoxingFlags(const ir::AstNode *node, const ir::BoxingUnb
         }
         case ir::BoxingUnboxingFlags::BOX_TO_INT: {
             CastToInt(node);
+            break;
+        }
+        case ir::BoxingUnboxingFlags::BOX_TO_SHORT: {
+            CastToShort(node);
+            break;
+        }
+        case ir::BoxingUnboxingFlags::BOX_TO_BYTE: {
+            CastToByte(node);
+            break;
+        }
+        case ir::BoxingUnboxingFlags::BOX_TO_CHAR: {
+            CastToChar(node);
             break;
         }
         default: {
@@ -1376,12 +1355,12 @@ VReg ETSGen::MoveAccToReg(const ir::AstNode *const node)
     return newReg;
 }
 
-void ETSGen::CastToBoolean([[maybe_unused]] const ir::AstNode *node)
+void ETSGen::CastToBoolean(const ir::AstNode *node)
 {
     auto typeKind = checker::ETSChecker::TypeKind(GetAccumulatorType());
     switch (typeKind) {
         case checker::TypeFlag::ETS_BOOLEAN: {
-            return;
+            break;  // just to remove possible constness
         }
         case checker::TypeFlag::CHAR: {
             Sa().Emit<U32tou1>(node);
@@ -1420,12 +1399,12 @@ void ETSGen::CastToBoolean([[maybe_unused]] const ir::AstNode *node)
     SetAccumulatorType(Checker()->GlobalETSBooleanType());
 }
 
-void ETSGen::CastToByte([[maybe_unused]] const ir::AstNode *node)
+void ETSGen::CastToByte(const ir::AstNode *node)
 {
     auto typeKind = checker::ETSChecker::TypeKind(GetAccumulatorType());
     switch (typeKind) {
         case checker::TypeFlag::BYTE: {
-            return;
+            break;  // just to remove possible constness
         }
         case checker::TypeFlag::ETS_BOOLEAN:
         case checker::TypeFlag::CHAR: {
@@ -1468,12 +1447,12 @@ void ETSGen::CastToByte([[maybe_unused]] const ir::AstNode *node)
     SetAccumulatorType(Checker()->GlobalByteType());
 }
 
-void ETSGen::CastToChar([[maybe_unused]] const ir::AstNode *node)
+void ETSGen::CastToChar(const ir::AstNode *node)
 {
     auto typeKind = checker::ETSChecker::TypeKind(GetAccumulatorType());
     switch (typeKind) {
         case checker::TypeFlag::CHAR: {
-            return;
+            break;  // just to remove possible constness
         }
         case checker::TypeFlag::ETS_BOOLEAN: {
             break;
@@ -1515,12 +1494,12 @@ void ETSGen::CastToChar([[maybe_unused]] const ir::AstNode *node)
     SetAccumulatorType(Checker()->GlobalCharType());
 }
 
-void ETSGen::CastToShort([[maybe_unused]] const ir::AstNode *node)
+void ETSGen::CastToShort(const ir::AstNode *node)
 {
     auto typeKind = checker::ETSChecker::TypeKind(GetAccumulatorType());
     switch (typeKind) {
         case checker::TypeFlag::SHORT: {
-            return;
+            break;  // just to remove possible constness
         }
         case checker::TypeFlag::ETS_BOOLEAN:
         case checker::TypeFlag::CHAR: {
@@ -1570,7 +1549,7 @@ void ETSGen::CastToDouble(const ir::AstNode *node)
     auto typeKind = checker::ETSChecker::TypeKind(GetAccumulatorType());
     switch (typeKind) {
         case checker::TypeFlag::DOUBLE: {
-            return;
+            break;  // just to remove possible constness
         }
         case checker::TypeFlag::ETS_BOOLEAN:
         case checker::TypeFlag::CHAR: {
@@ -1612,7 +1591,7 @@ void ETSGen::CastToFloat(const ir::AstNode *node)
     auto typeKind = checker::ETSChecker::TypeKind(GetAccumulatorType());
     switch (typeKind) {
         case checker::TypeFlag::FLOAT: {
-            return;
+            break;  // just to remove possible constness
         }
         case checker::TypeFlag::ETS_BOOLEAN:
         case checker::TypeFlag::CHAR: {
@@ -1654,7 +1633,7 @@ void ETSGen::CastToLong(const ir::AstNode *node)
     auto typeKind = checker::ETSChecker::TypeKind(GetAccumulatorType());
     switch (typeKind) {
         case checker::TypeFlag::LONG: {
-            return;
+            break;  // just to remove possible constness
         }
         case checker::TypeFlag::ETS_BOOLEAN:
         case checker::TypeFlag::CHAR: {
@@ -1696,7 +1675,7 @@ void ETSGen::CastToInt(const ir::AstNode *node)
     auto typeKind = checker::ETSChecker::TypeKind(GetAccumulatorType());
     switch (typeKind) {
         case checker::TypeFlag::INT: {
-            return;
+            break;  // just to remove possible constness
         }
         case checker::TypeFlag::ETS_BOOLEAN:
         case checker::TypeFlag::CHAR:
@@ -1984,6 +1963,7 @@ void ETSGen::BinaryLogic(const ir::AstNode *node, lexer::TokenType op, VReg lhs)
 
 void ETSGen::BinaryArithmLogic(const ir::AstNode *node, lexer::TokenType op, VReg lhs)
 {
+    ASSERT(node->IsAssignmentExpression() || node->IsBinaryExpression());
     switch (op) {
         case lexer::TokenType::PUNCTUATOR_PLUS:
         case lexer::TokenType::PUNCTUATOR_PLUS_EQUAL: {
@@ -2014,13 +1994,18 @@ void ETSGen::BinaryArithmLogic(const ir::AstNode *node, lexer::TokenType op, VRe
             break;
         }
     }
-    ASSERT(node->IsAssignmentExpression() || node->IsBinaryExpression());
-    ASSERT(Checker()->Relation()->IsIdenticalTo(const_cast<checker::Type *>(GetAccumulatorType()),
-                                                const_cast<checker::Type *>(node->AsExpression()->TsType())));
+
+    // in case of expressions like 'let x:byte = (1 << 6) - 1` we need to cast the arithmetic result to declared type.
+    auto const *const accType = GetAccumulatorType();
+    auto const *const exprType = node->AsExpression()->TsType();
+    if (accType->IsETSPrimitiveType() && !Checker()->Relation()->IsIdenticalTo(accType, exprType)) {
+        ApplyCast(node, exprType);
+    }
 }
 
 void ETSGen::Binary(const ir::AstNode *node, lexer::TokenType op, VReg lhs)
 {
+    ASSERT(node->IsAssignmentExpression() || node->IsBinaryExpression());
     Label *ifFalse = AllocLabel();
     switch (op) {
         case lexer::TokenType::PUNCTUATOR_EQUAL: {
@@ -2060,9 +2045,7 @@ void ETSGen::Binary(const ir::AstNode *node, lexer::TokenType op, VReg lhs)
             break;
         }
     }
-    ASSERT(node->IsAssignmentExpression() || node->IsBinaryExpression());
-    ASSERT(Checker()->Relation()->IsIdenticalTo(const_cast<checker::Type *>(GetAccumulatorType()),
-                                                const_cast<checker::Type *>(node->AsExpression()->TsType())));
+    ASSERT(Checker()->Relation()->IsIdenticalTo(GetAccumulatorType(), node->AsExpression()->TsType()));
 }
 
 void ETSGen::Condition(const ir::AstNode *node, lexer::TokenType op, VReg lhs, Label *ifFalse)
