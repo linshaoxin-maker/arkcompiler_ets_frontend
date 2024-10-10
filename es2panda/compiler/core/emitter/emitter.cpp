@@ -56,6 +56,24 @@
 
 namespace panda::es2panda::compiler {
 constexpr const auto LANG_EXT = panda::pandasm::extensions::Language::ECMASCRIPT;
+constexpr const auto LANG_TYPESCRIPT = panda::pandasm::extensions::Language::TYPESCRIPT;
+constexpr const auto LANG_JAVASCRIPT = panda::pandasm::extensions::Language::JAVASCRIPT;
+constexpr const auto LANG_ARKTS = panda::pandasm::extensions::Language::ARKTS;
+
+const static std::unordered_map<std::string, panda::pandasm::extensions::Language> languageMap = {
+    {"ets", LANG_ARKTS},
+    {"ts", LANG_TYPESCRIPT},
+    {"js", LANG_JAVASCRIPT}
+};
+
+void SetProgramLanguage(const std::string &language, panda::pandasm::Program *prog) {
+    auto it = languageMap.find(language);
+    if (it != languageMap.end()) {
+        prog->lang = it->second;
+    } else {
+        prog->lang = LANG_EXT;
+    }
+}
 
 FunctionEmitter::FunctionEmitter(ArenaAllocator *allocator, const PandaGen *pg)
     : pg_(pg),
@@ -565,7 +583,9 @@ void FunctionEmitter::GenConcurrentFunctionModuleRequests()
 Emitter::Emitter(CompilerContext *context)
 {
     prog_ = new panda::pandasm::Program();
-    prog_->lang = LANG_EXT;
+    std::string language = std::string(context->Binder()->Program()->SourceLang());
+    
+    SetProgramLanguage(language, prog_);
 
     if (context->IsJsonInputFile()) {
         GenJsonContentRecord(context);
