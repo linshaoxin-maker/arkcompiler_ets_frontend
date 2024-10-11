@@ -83,7 +83,7 @@ import { scanProjectConfig } from './ApiReader';
 import { stringPropsSet, enumPropsSet } from '../utils/OhsUtil';
 import type { IOptions } from '../configs/IOptions';
 import { FileUtils } from '../utils/FileUtils';
-import { supportedParsingExtension } from './type';
+import { Extension, supportedDeclarationExtension, supportedParsingExtension } from './type';
 
 export namespace ApiExtractor {
   interface KeywordInfo {
@@ -96,7 +96,8 @@ export namespace ApiExtractor {
     COMPONENT = 2,
     PROJECT_DEPENDS = 3,
     PROJECT = 4,
-    CONSTRUCTOR_PROPERTY = 5
+    CONSTRUCTOR_PROPERTY = 5,
+    KEEP_DTS
   }
 
   let mCurrentExportedPropertySet: Set<string> = new Set<string>();
@@ -623,6 +624,7 @@ export namespace ApiExtractor {
     // get export name list
     switch (apiType) {
       case ApiType.COMPONENT:
+      case ApiType.KEEP_DTS:
         forEachChild(sourceFile, visitChildNode);
         break;
       case ApiType.API:
@@ -682,19 +684,8 @@ export namespace ApiExtractor {
 
   const projectExtensions: string[] = ['.ets', '.ts', '.js'];
   const projectDependencyExtensions: string[] = ['.d.ets', '.d.ts', '.ets', '.ts', '.js'];
-  const resolvedModules = new Set();
 
-  function tryGetPackageID(filePath: string): string {
-    const ohPackageJsonPath = path.join(filePath, 'oh-package.json5');
-    let packgeNameAndVersion = '';
-    if (fs.existsSync(ohPackageJsonPath)) {
-      const ohPackageContent = json5.parse(fs.readFileSync(ohPackageJsonPath, 'utf-8'));
-      packgeNameAndVersion = ohPackageContent.name + ohPackageContent.version;
-    }
-    return packgeNameAndVersion;
-  }
-
-  function traverseFilesInDir(apiPath: string, apiType: ApiType): void {
+  function traverseDeclFilesInDir(apiPath: string, apiType: ApiType): void {
     let fileNames: string[] = fs.readdirSync(apiPath);
     for (let fileName of fileNames) {
       let filePath: string = path.join(apiPath, fileName);
@@ -704,23 +695,11 @@ export namespace ApiExtractor {
         continue;
       }
       if (fs.statSync(filePath).isDirectory()) {
-        const packgeNameAndVersion = tryGetPackageID(filePath);
-        if (resolvedModules.has(packgeNameAndVersion)) {
-          continue;
-        }
         traverseApiFiles(filePath, apiType);
-        packgeNameAndVersion.length > 0 && resolvedModules.add(packgeNameAndVersion);
-        continue;
       }
-      const suffix: string = path.extname(filePath);
-      if ((apiType !== ApiType.PROJECT) && !projectDependencyExtensions.includes(suffix)) {
-        continue;
+      if (FileUtils.fileExtensionIs(filePath, Extension.DTS) || FileUtils.fileExtensionIs(filePath, Extension.DETS)) {
+        parseFile(filePath, apiType);
       }
-
-      if (apiType === ApiType.PROJECT && !projectExtensions.includes(suffix)) {
-        continue;
-      }
-      parseFile(filePath, apiType);
     }
   }
 
@@ -732,42 +711,11 @@ export namespace ApiExtractor {
    */
   export const traverseApiFiles = function (apiPath: string, apiType: ApiType): void {
     if (fs.statSync(apiPath).isDirectory()) {
-      traverseFilesInDir(apiPath, apiType);
+      traverseDeclFilesInDir(apiPath, apiType);
     } else {
       parseFile(apiPath, apiType);
     }
   };
-
-  /**
-   * desc: parse openHarmony sdk to get api list
-   * @param version version of api, e.g. version 5.0.1.0 for api 9
-   * @param sdkPath sdk real path of openHarmony
-   * @param isEts true for ets, false for js
-   * @param outputDir: sdk api output directory
-   */
-  export function parseOhSdk(sdkPath: string, version: string, isEts: boolean, outputDir: string): void {
-    mPropertySet.clear();
-
-    // visit api directory
-    const apiPath: string = path.join(sdkPath, (isEts ? 'ets' : 'js'), version, 'api');
-    traverseApiFiles(apiPath, ApiType.API);
-
-    // visit component directory if ets
-    if (isEts) {
-      const componentPath: string = path.join(sdkPath, 'ets', version, 'component');
-      traverseApiFiles(componentPath, ApiType.COMPONENT);
-    }
-
-    // visit the UI conversion API
-    const uiConversionPath: string = path.join(sdkPath, (isEts ? 'ets' : 'js'), version,
-      'build-tools', 'ets-loader', 'lib', 'pre_define.js');
-    extractStringsFromFile(uiConversionPath);
-
-    const reservedProperties: string[] = [...mPropertySet.values()];
-    mPropertySet.clear();
-
-    writeToFile(reservedProperties, path.join(outputDir, 'propertiesReserved.json'));
-  }
 
   export function extractStringsFromFile(filePath: string): void {
     let collections: string[] = [];

@@ -99,6 +99,16 @@ describe('FileUtils.getFileExtension', () => {
     const result = FileUtils.getFileExtension('/path/to/file.name.with.dots.txt');
     expect(result).to.equal('txt');
   });
+
+  it('should return extension for valid file name with d.ts', () => {
+    const result = FileUtils.getFileExtension('/path/to/file.d.ts');
+    expect(result).to.equal('ts');
+  });
+
+  it('should return extension for valid file name with d.ets', () => {
+    const result = FileUtils.getFileExtension('D:\path\to\file.d.ets');
+    expect(result).to.equal('ets');
+  });
 });
 
 describe('FileUtils.isRelativePath', () => {
