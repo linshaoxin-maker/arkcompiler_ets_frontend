@@ -109,6 +109,7 @@ export class TypeScriptLinter {
   private readonly compatibleSdkVersion: number;
   private readonly compatibleSdkVersionStage: string;
   private static sharedModulesCache: Map<string, boolean>;
+  static isUsedAsPropCache: Map<string, Map<number, boolean>>;
   static filteredDiagnosticMessages: Set<ts.DiagnosticMessageChain>;
   static strictDiagnosticCache: Set<ts.Diagnostic>;
   static unknowDiagnosticCache: Set<ts.Diagnostic>;
@@ -123,6 +124,7 @@ export class TypeScriptLinter {
     TypeScriptLinter.sharedModulesCache = new Map<string, boolean>();
     TypeScriptLinter.strictDiagnosticCache = new Set<ts.Diagnostic>();
     TypeScriptLinter.unknowDiagnosticCache = new Set<ts.Diagnostic>();
+    TypeScriptLinter.isUsedAsPropCache = new Map<string, Map<number, boolean>>();
   }
 
   private initEtsHandlers(): void {
@@ -2221,11 +2223,24 @@ export class TypeScriptLinter {
       return;
     }
 
-    for (const arg of typeArgs) {
-      if (!this.tsUtils.isSendableTypeNode(arg)) {
-        this.incrementCounters(arg, FaultID.SendableGenericTypes);
-      }
+    const decl = this.getTrueDecl(node);
+    if (
+      decl === undefined ||
+      !ts.isClassDeclaration(decl) && !ts.isInterfaceDeclaration(decl) ||
+      decl.typeParameters === undefined
+    ) {
+      return;
     }
+    const isCollectionDecl = TsUtils.isArkTSCollectionsClassOrInterfaceDeclaration(decl);
+    this.checkGenericTypeArguments(typeArgs, decl, isCollectionDecl);
+  }
+
+  private getTrueDecl(node: ts.NewExpression): ts.Declaration | undefined {
+    let decl = this.tsUtils.getDeclarationNode(node.expression);
+    while (decl && ts.isVariableDeclaration(decl) && decl.initializer) {
+      decl = this.tsUtils.getDeclarationNode(decl.initializer);
+    }
+    return decl;
   }
 
   private handleAsExpression(node: ts.Node): void {
@@ -2306,12 +2321,63 @@ export class TypeScriptLinter {
     }
   }
 
+  private checkUsedAsProp(decl: ts.ClassDeclaration | ts.InterfaceDeclaration, genericTypeRef: string): boolean {
+    return decl.members.some((classMember) => {
+      return (
+        (ts.isPropertyDeclaration(classMember) || ts.isPropertySignature(classMember)) &&
+        this.tsUtils.typeNodeContainsTypeName(classMember.type, genericTypeRef)
+      );
+    });
+  }
+
   private checkSendableTypeArguments(typeRef: ts.TypeReferenceNode): void {
-    if (typeRef.typeArguments) {
-      for (const typeArg of typeRef.typeArguments) {
+    if (typeRef.typeArguments === undefined) {
+      return;
+    }
+    const decl = this.tsUtils.getDeclarationNode(typeRef.typeName) as ts.ClassDeclaration | ts.InterfaceDeclaration;
+    if (decl?.typeParameters === undefined) {
+      return;
+    }
+    const isCollectionDecl = TsUtils.isArkTSCollectionsClassOrInterfaceDeclaration(decl);
+    this.checkGenericTypeArguments(typeRef.typeArguments, decl, isCollectionDecl);
+  }
+
+  private checkGenericTypeArguments(
+    typeArgs: readonly ts.TypeNode[],
+    decl: ts.ClassDeclaration | ts.InterfaceDeclaration,
+    isCollectionDecl: boolean
+  ): void {
+    if (decl.typeParameters === undefined) {
+      return;
+    }
+    const declCacheKey = decl.getText();
+
+    let declCache = TypeScriptLinter.isUsedAsPropCache.get(declCacheKey);
+    if (!declCache) {
+      declCache = new Map<number, boolean>();
+      TypeScriptLinter.isUsedAsPropCache.set(declCacheKey, declCache);
+    }
+    for (let i = 0; i < typeArgs.length; i++) {
+      const typeArg = typeArgs[i];
+      if (isCollectionDecl) {
         if (!this.tsUtils.isSendableTypeNode(typeArg)) {
           this.incrementCounters(typeArg, FaultID.SendableGenericTypes);
         }
+        continue;
+      }
+
+      const genericTypeRef = decl.typeParameters[i].getText();
+
+      let isUsedAsProp = false;
+      if (declCache.has(i)) {
+        isUsedAsProp = declCache.get(i)!;
+      } else {
+        isUsedAsProp = this.checkUsedAsProp(decl, genericTypeRef);
+        declCache.set(i, isUsedAsProp);
+      }
+
+      if (isUsedAsProp && !this.tsUtils.isSendableTypeNode(typeArg)) {
+        this.incrementCounters(typeArg, FaultID.SendableGenericTypes);
       }
     }
   }

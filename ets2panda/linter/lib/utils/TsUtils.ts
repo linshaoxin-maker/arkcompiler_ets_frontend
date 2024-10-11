@@ -2838,4 +2838,43 @@ export class TsUtils {
     // Ambient flag is not exposed, so we apply dirty hack to make it visible
     return !!(node.flags & (ts.NodeFlags as any).Ambient);
   }
+
+  typeNodeContainsTypeName(propType: ts.TypeNode | undefined, typeArgName: string): boolean {
+    if (!propType) {
+      return false;
+    }
+
+    if (ts.isTypeReferenceNode(propType)) {
+      const typeName = propType.typeName.getText();
+      if (typeName === typeArgName) {
+        return true;
+      }
+
+      const sym = ts.isTypeReferenceNode(propType) ? this.trueSymbolAtLocation(propType.typeName) : undefined;
+
+      if (sym && sym.getFlags() & ts.SymbolFlags.TypeAlias) {
+        const typeDecl = TsUtils.getDeclaration(sym);
+        if (typeDecl && ts.isTypeAliasDeclaration(typeDecl)) {
+          const typeArgs = propType.typeArguments;
+          if (
+            typeArgs &&
+            !typeArgs.every((typeArg) => {
+              return this.typeNodeContainsTypeName(typeArg, typeArgName);
+            })
+          ) {
+            return false;
+          }
+          return this.typeNodeContainsTypeName(typeDecl.type, typeArgName);
+        }
+      }
+    }
+
+    if (ts.isUnionTypeNode(propType)) {
+      return propType.types.some((type) => {
+        return this.typeNodeContainsTypeName(type, typeArgName);
+      });
+    }
+
+    return false;
+  }
 }

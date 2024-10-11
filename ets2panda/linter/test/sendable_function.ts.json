@@ -103,13 +103,6 @@
             "rule": "Properties in \"Sendable\" classes and interfaces must have a Sendable data type (arkts-sendable-prop-types)"
         },
         {
-            "line": 140,
-            "column": 9,
-            "problem": "SendableGenericTypes",
-            "suggest": "",
-            "rule": "Type arguments of generic \"Sendable\" type must be a \"Sendable\" data type (arkts-sendable-generic-types)"
-        },
-        {
             "line": 143,
             "column": 1,
             "problem": "SendableFunctionProperty",

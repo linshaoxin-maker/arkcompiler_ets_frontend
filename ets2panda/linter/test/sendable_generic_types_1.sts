@@ -71,7 +71,7 @@ let ObjectA5: SendableClassA<bigint> = new SendableClassA<bigint>(); // OK
 let ObjectA6: SendableClassA<null> = new SendableClassA<null>(); // OK
 let ObjectA7: SendableClassA<undefined> = new SendableClassA<undefined>(); // OK
 
-let NoneSendableObjectA1: SendableClassA<NoneSendableClassA> = new SendableClassA<NoneSendableClassA>(); // error
+let NoneSendableObjectA1: SendableClassA<NoneSendableClassA> = new SendableClassA<NoneSendableClassA>(); // OK
 
 namespace collections {
   @Sendable
@@ -85,15 +85,15 @@ namespace collections {
   }
 }
 
-let arr1: collections.Array<NoneSendableClassA> = new collections.Array<NoneSendableClassA>(); // error
-let arr2: collections.Array<NoneSendableClassA> = new collections.Array(); // error
-let arr3: collections.Array<NoneSendableClassA> = new collections.Array<SendableClassB>(); //error
+let arr1: collections.Array<NoneSendableClassA> = new collections.Array<NoneSendableCOKlassA>(); // OK
+let arr2: collections.Array<NoneSendableClassA> = new collections.Array(); // OK
+let arr3: collections.Array<NoneSendableClassA> = new collections.Array<SendableClassB>(); // OK
 let arr4: collections.Array<SendableClassB> = new collections.Array<SendableClassB>();
 let arr5: collections.Array<SendableClassB> = new collections.Array();
 
-let map1: collections.Map<string,NoneSendableClassA> = new collections.Map<string,NoneSendableClassA>(); // error
-let map2: collections.Map<string,NoneSendableClassA> = new collections.Map(); // error
-let map3: collections.Map<string,NoneSendableClassA> = new collections.Map<string,SendableClassB>(); // error
+let map1: collections.Map<string,NoneSendableClassA> = new collections.Map<string,NoneSendableClassA>(); // OK
+let map2: collections.Map<string,NoneSendableClassA> = new collections.Map(); // OK
+let map3: collections.Map<string,NoneSendableClassA> = new collections.Map<string,SendableClassB>(); // OK
 let map4: collections.Map<string,SendableClassB> = new collections.Map<string,SendableClassB>();
 let map5: collections.Map<string,SendableClassB> = new collections.Map();
 
@@ -108,7 +108,7 @@ class SendableClassC implements SI<SendableClassB> {
     var2: string = '1';
 }
 
-let ObjectC1: SI<NoneSendableClassA> = new SendableClassC(); // ERROR
+let ObjectC1: SI<NoneSendableClassA> = new SendableClassC(); // OK
 
 interface NSI<T> {
   var1: number;
