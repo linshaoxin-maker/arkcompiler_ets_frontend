@@ -48,7 +48,7 @@ class MailHelper():
         if not os.path.exists(performance_config.MailPicConfig.mail_data_path):
             os.mkdir(performance_config.MailPicConfig.mail_data_path)
         for build_mode in range(2):
-                for log_type in range(3):
+                for log_type in range(4):
                     pic_path = MailHelper.find_in_double_map(build_mode,
                                                              log_type,
                                                              performance_config.MailPicConfig.mail_pic_name,
@@ -89,9 +89,9 @@ class MailHelper():
         if it_1:
             prj_table = it_1.get(build_mode)
             if not prj_table:
-                it_1[build_mode] = [np.nan, np.nan, np.nan]
+                it_1[build_mode] = [np.nan, np.nan, np.nan, np.nan]
         else:
-            self.pic_table[prj_name] = {build_mode:[np.nan, np.nan, np.nan]}
+            self.pic_table[prj_name] = {build_mode:[np.nan, np.nan, np.nan, np.nan]}
             self.head_line.append(prj_name)
             self.time_index = [time.strftime("%Y/%m/%d", time.localtime())]
 
@@ -148,7 +148,7 @@ class MailHelper():
 
     def create_pic(self):
         for build_mode in range(2):
-            for log_type in range(3):
+            for log_type in range(4):
                 title_name = MailHelper.find_in_double_map(build_mode,
                                                            log_type,
                                                            performance_config.MailPicConfig.mail_pic_table_label,
