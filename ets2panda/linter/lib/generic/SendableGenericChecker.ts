@@ -24,7 +24,7 @@ export type GenericDeclaration = ts.DeclarationWithTypeParameterChildren & {
  * 内存消耗，每个带泛型的声明，其中的每个泛型形参，都会生成一个 {key: TypeParameterDeclaration, value: boolean} 的缓存数据
  * 性能消耗，每个带泛型的声明，都会完整的遍历一次
  */
-export default class SendableGeneric {
+export default class SendableGenericChecker {
   constructor(
     private readonly tsTypeChecker: ts.TypeChecker,
     private readonly tsUtils: TsUtils
@@ -81,7 +81,7 @@ export default class SendableGeneric {
   // 从指定泛型声明开始,创建泛型类型参数的引用关系图
   private createContact(decl: GenericDeclaration): void {
     this.paramContactTemp = new Map();
-    this.searchQueueTemp = [SendableGeneric.getTopGenericDeclaration(decl)];
+    this.searchQueueTemp = [SendableGenericChecker.getTopGenericDeclaration(decl)];
     while (this.searchQueueTemp.length) {
       this.searchContact(this.searchQueueTemp.shift()!);
     }
@@ -130,7 +130,7 @@ export default class SendableGeneric {
     this.searchedDecl.add(topDecl);
 
     const appendSearchQueue = (decl: GenericDeclaration): void => {
-      const topDecl = SendableGeneric.getTopGenericDeclaration(decl);
+      const topDecl = SendableGenericChecker.getTopGenericDeclaration(decl);
       if (this.searchedDecl.has(topDecl)) {
         return;
       }
@@ -143,7 +143,7 @@ export default class SendableGeneric {
       typeArgumentsTypes.forEach((argType, index) => {
         // 实参关联到的 泛型形参
         const typeParam = decl.typeParameters?.[index];
-        const refTypeParams = SendableGeneric.getTypeParamsByType(argType);
+        const refTypeParams = SendableGenericChecker.getTypeParamsByType(argType);
         if (typeParam && refTypeParams.length) {
           refTypeParams.forEach((param) => {
             if (!this.paramContactTemp.has(param)) {
@@ -164,7 +164,7 @@ export default class SendableGeneric {
         if (ts.isPropertyDeclaration(node) && node.type) {
           // 对SendableClass的属性中引用到的泛型形参，进行标记
           const type = this.tsTypeChecker.getTypeAtLocation(node.type);
-          const params = SendableGeneric.getTypeParamsByType(type);
+          const params = SendableGenericChecker.getTypeParamsByType(type);
           params.forEach((param) => {
             this.paramContactSendable.set(param, true);
           });
@@ -209,7 +209,7 @@ export default class SendableGeneric {
     let parent: ts.Node = decl.parent;
     let target = decl;
     while (parent) {
-      if (SendableGeneric.isGenericDeclaration(parent)) {
+      if (SendableGenericChecker.isGenericDeclaration(parent)) {
         target = parent;
       }
       parent = parent.parent;
@@ -246,7 +246,7 @@ export default class SendableGeneric {
   // 通过 typeReferenceNode 得到对应的 GenericDeclaration
   private getGenericDeclByTypeReference(node: ts.TypeReferenceNode): GenericDeclaration | undefined {
     const decl = this.tsUtils.getDeclarationNode(node.typeName);
-    if (!decl || !SendableGeneric.isGenericDeclaration(decl)) {
+    if (!decl || !SendableGenericChecker.isGenericDeclaration(decl)) {
       return undefined;
     }
     return decl;
@@ -288,7 +288,7 @@ export default class SendableGeneric {
   ): ts.TypeParameterDeclaration[] {
     if (type.isUnion()) {
       type.types.forEach((compType) => {
-        SendableGeneric.getTypeParamsByType(compType, result);
+        SendableGenericChecker.getTypeParamsByType(compType, result);
       });
     }
     if (type.isTypeParameter()) {

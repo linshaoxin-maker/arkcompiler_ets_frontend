@@ -68,7 +68,7 @@ import { SupportedStdCallApiChecker } from './utils/functions/SupportedStdCallAP
 import { identiferUseInValueContext } from './utils/functions/identiferUseInValueContext';
 import { isAssignmentOperator } from './utils/functions/isAssignmentOperator';
 import { StdClassVarDecls } from './utils/consts/StdClassVariableDeclarations';
-import SendableGeneric from './generic/SendableGeneric';
+import SendableGenericChecker from './generic/SendableGenericChecker';
 
 export function consoleLog(...args: unknown[]): void {
   if (TypeScriptLinter.ideMode) {
@@ -103,7 +103,7 @@ export class TypeScriptLinter {
 
   autofixer: Autofixer | undefined;
   private fileExportSendableDeclCaches: Set<ts.Node> | undefined;
-  private readonly sendableGeneric: SendableGeneric;
+  private readonly sendableGenericChecker: SendableGenericChecker;
 
   private sourceFile?: ts.SourceFile;
   private readonly compatibleSdkVersion: number;
@@ -166,7 +166,7 @@ export class TypeScriptLinter {
       TypeScriptLinter.useSdkLogic,
       this.arkts2
     );
-    this.sendableGeneric = new SendableGeneric(this.tsTypeChecker, this.tsUtils);
+    this.sendableGenericChecker = new SendableGenericChecker(this.tsTypeChecker, this.tsUtils);
     this.currentErrorLine = 0;
     this.currentWarningLine = 0;
     this.walkedComments = new Set<number>();
@@ -1942,7 +1942,7 @@ export class TypeScriptLinter {
       this.incrementCounters(node, faultId);
     }
 
-    if (this.sendableGeneric.isWrongCallOrNewExpression(tsCallExpr)) {
+    if (this.sendableGenericChecker.isWrongCallOrNewExpression(tsCallExpr)) {
       this.incrementCounters(node, FaultID.SendableGenericPropagate);
     }
   }
@@ -2206,8 +2206,8 @@ export class TypeScriptLinter {
       this.handleGenericCallWithNoTypeArgs(tsNewExpr, callSignature);
     }
     this.handleSendableGenericTypes(tsNewExpr);
-    // this.sendableGeneric.checkNewExpression(tsNewExpr);
-    if (this.sendableGeneric.isWrongCallOrNewExpression(tsNewExpr)) {
+    // this.sendableGenericChecker.checkNewExpression(tsNewExpr);
+    if (this.sendableGenericChecker.isWrongCallOrNewExpression(tsNewExpr)) {
       this.incrementCounters(node, FaultID.SendableGenericPropagate);
     }
   }
@@ -2294,7 +2294,7 @@ export class TypeScriptLinter {
     if (this.tsUtils.isSendableClassOrInterface(typeNameType)) {
       this.checkSendableTypeArguments(typeRef);
     }
-    if (this.sendableGeneric.isWrongTypeReference(typeRef)) {
+    if (this.sendableGenericChecker.isWrongTypeReference(typeRef)) {
       this.incrementCounters(node, FaultID.SendableGenericPropagate);
     }
   }
