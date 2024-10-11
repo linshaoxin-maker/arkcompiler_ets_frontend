@@ -1683,7 +1683,7 @@ void ETSCompiler::Compile(const ir::VariableDeclarator *st) const
     if (st->Init() != nullptr) {
         if (!etsg->TryLoadConstantExpression(st->Init())) {
             st->Init()->Compile(etsg);
-            etsg->ApplyConversion(st->Init(), nullptr);
+            etsg->ApplyConversion(st->Init(), st->TsType());
         }
     } else {
         etsg->LoadDefaultValue(st, st->Id()->AsIdentifier()->Variable()->TsType());
@@ -1873,7 +1873,7 @@ void ETSCompiler::Compile(const ir::TSAsExpression *expr) const
     auto *targetType = etsg->Checker()->GetApparentType(expr->TsType());
 
     if ((expr->Expr()->GetBoxingUnboxingFlags() & ir::BoxingUnboxingFlags::UNBOXING_FLAG) != 0U) {
-        etsg->ApplyUnboxingConversion(expr->Expr());
+        etsg->ApplyUnboxingConversion(expr->Expr(), targetType);
     }
 
     if (targetType->IsETSObjectType() &&
