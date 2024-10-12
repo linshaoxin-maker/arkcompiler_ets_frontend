@@ -126,11 +126,11 @@
             "loc": {
               "start": {
                 "line": 19,
-                "column": 10
+                "column": 11
               },
               "end": {
                 "line": 19,
-                "column": 20
+                "column": 14
               }
             }
           },
@@ -141,7 +141,7 @@
             },
             "end": {
               "line": 19,
-              "column": 20
+              "column": 14
             }
           }
         }
