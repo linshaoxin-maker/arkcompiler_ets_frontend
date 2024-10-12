@@ -17,6 +17,8 @@
         {
             "line": 37,
             "column": 5,
+            "endLine": 37,
+            "endColumn": 14,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'undefined' is not assignable to parameter of type 'number[]'.",
             "rule": "Argument of type 'undefined' is not assignable to parameter of type 'number[]'."
@@ -24,6 +26,8 @@
         {
             "line": 51,
             "column": 42,
+            "endLine": 51,
+            "endColumn": 60,
             "problem": "StrictDiagnostic",
             "suggest": "Argument of type 'string | undefined' is not assignable to parameter of type 'ResourceStr'.",
             "rule": "Argument of type 'string | undefined' is not assignable to parameter of type 'ResourceStr'."
@@ -31,6 +35,8 @@
         {
             "line": 58,
             "column": 12,
+            "endLine": 58,
+            "endColumn": 13,
             "problem": "StrictDiagnostic",
             "suggest": "Type 'undefined' is not assignable to type 'Object'.",
             "rule": "Type 'undefined' is not assignable to type 'Object'."
@@ -38,9 +44,65 @@
         {
             "line": 62,
             "column": 17,
+            "endLine": 62,
+            "endColumn": 23,
             "problem": "StrictDiagnostic",
             "suggest": "Type 'undefined' is not assignable to type 'Object'.",
             "rule": "Type 'undefined' is not assignable to type 'Object'."
+        },
+        {
+            "line": 81,
+            "column": 8,
+            "endLine": 81,
+            "endColumn": 17,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'undefined' is not assignable to parameter of type 'A'.",
+            "rule": "Argument of type 'undefined' is not assignable to parameter of type 'A'."
+        },
+        {
+            "line": 83,
+            "column": 20,
+            "endLine": 83,
+            "endColumn": 29,
+            "problem": "StrictDiagnostic",
+            "suggest": "Argument of type 'undefined' is not assignable to parameter of type 'A'.",
+            "rule": "Argument of type 'undefined' is not assignable to parameter of type 'A'."
+        },
+        {
+            "line": 91,
+            "column": 9,
+            "endLine": 91,
+            "endColumn": 15,
+            "problem": "StrictDiagnostic",
+            "suggest": "Type 'TestClassC' is not assignable to type 'TestClassD'.\n  Types of property 'ccc' are incompatible.\n    Type 'null' is not assignable to type 'string'.",
+            "rule": "Type 'TestClassC' is not assignable to type 'TestClassD'.\n  Types of property 'ccc' are incompatible.\n    Type 'null' is not assignable to type 'string'."
+        },
+        {
+            "line": 92,
+            "column": 9,
+            "endLine": 92,
+            "endColumn": 15,
+            "problem": "StrictDiagnostic",
+            "suggest": "Type 'TestClassC' is not assignable to type 'TestClassD'.",
+            "rule": "Type 'TestClassC' is not assignable to type 'TestClassD'."
+        },
+        {
+            "line": 105,
+            "column": 9,
+            "endLine": 105,
+            "endColumn": 15,
+            "problem": "StrictDiagnostic",
+            "suggest": "Type 'TestClassC' is not assignable to type 'TestClassD'.",
+            "rule": "Type 'TestClassC' is not assignable to type 'TestClassD'."
+        },
+        {
+            "line": 106,
+            "column": 9,
+            "endLine": 106,
+            "endColumn": 15,
+            "problem": "StrictDiagnostic",
+            "suggest": "Type 'TestClassC' is not assignable to type 'TestClassD'.",
+            "rule": "Type 'TestClassC' is not assignable to type 'TestClassD'."
         }
     ]
 }

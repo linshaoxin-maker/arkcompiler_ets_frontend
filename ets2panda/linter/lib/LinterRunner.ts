@@ -104,7 +104,7 @@ export function lint(options: LintOptions, etsLoaderPath: string | undefined): L
   }
 
   const tscStrictDiagnostics = getTscDiagnostics(tscCompiledProgram, srcFiles);
-  LibraryTypeCallDiagnosticChecker.rebuildTscDiagnostics(tscStrictDiagnostics);
+  LibraryTypeCallDiagnosticChecker.instance.rebuildTscDiagnostics(tscStrictDiagnostics);
   const linter = options.isEtsFile ?
     new TypeScriptLinter(
       tsProgram.getTypeChecker(),
@@ -125,6 +125,7 @@ export function lint(options: LintOptions, etsLoaderPath: string | undefined): L
       etsLoaderPath
     );
   const { errorNodes, problemsInfos } = lintFiles(srcFiles, linter);
+  LibraryTypeCallDiagnosticChecker.instance.clear();
   consoleLog('\n\n\nFiles scanned: ', srcFiles.length);
   consoleLog('\nFiles with problems: ', errorNodes);
 
