@@ -82,19 +82,17 @@ static Type *MaybeBoxedType(ETSChecker *checker, Type *type, ir::Expression *exp
     return res;
 }
 
-static const Substitution *BuildImplicitSubstitutionForArguments(ETSChecker *checker, Signature *signature,
-                                                                 const ArenaVector<ir::Expression *> &arguments)
+static Substitution *BuildSubstitutionForArguments(ETSChecker *checker, Signature *signature,
+                                                   const ArenaVector<ir::Expression *> &arguments,
+                                                   Substitution *substitution)
 {
-    Substitution *substitution = checker->NewSubstitution();
     auto *sigInfo = signature->GetSignatureInfo();
     auto &sigParams = signature->GetSignatureInfo()->typeParams;
-
     for (size_t ix = 0; ix < arguments.size(); ix++) {
         auto *arg = arguments[ix];
         if (arg->IsObjectExpression()) {
             continue;
         }
-
         auto *const argType = arg->IsSpreadElement()
                                   ? MaybeBoxedType(checker, arg->AsSpreadElement()->Argument()->Check(checker),
                                                    arg->AsSpreadElement()->Argument())
@@ -102,16 +100,36 @@ static const Substitution *BuildImplicitSubstitutionForArguments(ETSChecker *che
         auto *const paramType = (ix < signature->MinArgCount()) ? sigInfo->params[ix]->TsType()
                                 : sigInfo->restVar != nullptr   ? sigInfo->restVar->TsType()
                                                                 : nullptr;
-
         if (paramType == nullptr) {
             continue;
         }
-
         if (!checker->EnhanceSubstitutionForType(sigInfo->typeParams, paramType, argType, substitution)) {
-            return nullptr;
+            auto newTypeParam = sigParams[ix]->AsETSTypeParameter();
+            if (auto it = substitution->find(newTypeParam); it != substitution->cend()) {
+                continue;
+            }
+            if (newTypeParam->GetDefaultType() == nullptr) {
+                continue;
+            }
+            auto dflt = newTypeParam->GetDefaultType()->Substitute(checker->Relation(), substitution);
+            if (!checker->EnhanceSubstitutionForType(sigInfo->typeParams, newTypeParam, dflt, substitution)) {
+                return nullptr;
+            }
+            continue;
         }
     }
+    return substitution;
+}
 
+static const Substitution *BuildImplicitSubstitutionForArguments(ETSChecker *checker, Signature *signature,
+                                                                 const ArenaVector<ir::Expression *> &arguments)
+{
+    Substitution *substitution = checker->NewSubstitution();
+    auto *sigInfo = signature->GetSignatureInfo();
+    auto &sigParams = signature->GetSignatureInfo()->typeParams;
+    if (BuildSubstitutionForArguments(checker, signature, arguments, substitution) == nullptr) {
+        return nullptr;
+    }
     if (substitution->size() != sigParams.size()) {
         for (const auto typeParam : sigParams) {
             auto newTypeParam = typeParam->AsETSTypeParameter();
@@ -126,7 +144,6 @@ static const Substitution *BuildImplicitSubstitutionForArguments(ETSChecker *che
                 return nullptr;
             }
         }
-
         if (substitution->size() != sigParams.size() &&
             (signature->Function()->ReturnTypeAnnotation() == nullptr ||
              !checker->EnhanceSubstitutionForType(sigInfo->typeParams,
@@ -135,7 +152,6 @@ static const Substitution *BuildImplicitSubstitutionForArguments(ETSChecker *che
             return nullptr;
         }
     }
-
     return substitution;
 }
 
