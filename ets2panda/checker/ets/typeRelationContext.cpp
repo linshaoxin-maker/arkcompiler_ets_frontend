@@ -50,6 +50,13 @@ bool AssignmentContext::ValidateArrayTypeInitializerByElement(TypeRelation *rela
     return ok;
 }
 
+void AssignmentContext::MaybeFinalSubstitute(Type *&type)
+{
+    if (type->IsETSTypeParameter() && type->AsETSTypeParameter()->IdenticalToFinalConstraint()) {
+        type = type->AsETSTypeParameter()->GetConstraintType();
+    }
+}
+
 bool InstantiationContext::ValidateTypeArguments(ETSObjectType *type, ir::TSTypeParameterInstantiation *typeArgs,
                                                  const lexer::SourcePosition &pos)
 {

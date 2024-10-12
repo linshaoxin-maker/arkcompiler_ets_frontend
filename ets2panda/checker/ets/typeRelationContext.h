@@ -42,6 +42,9 @@ public:
         flags_ |= flags;
         relation->SetNode(node);
 
+        MaybeFinalSubstitute(source);
+        MaybeFinalSubstitute(target);
+
         // NOTE (oeotvos) The narrowing flag will be applied here. It means, that the result of "let tmp: int = 1.5"
         // will be 1, which could cause problems.
         if (source->HasTypeFlag(TypeFlag::CONSTANT)) {
@@ -76,6 +79,8 @@ public:
 
     bool ValidateArrayTypeInitializerByElement(TypeRelation *relation, ir::ArrayExpression *node, ETSArrayType *target);
 
+    void MaybeFinalSubstitute(Type *&type);
+
 private:
     TypeRelationFlag flags_ = TypeRelationFlag::IN_ASSIGNMENT_CONTEXT;
     bool assignable_ {false};
@@ -95,6 +100,7 @@ public:
         auto *const etsChecker = relation->GetChecker()->AsETSChecker();
 
         relation->SetNode(node);
+
         relation->SetFlags(flags_ | initialFlags);
 
         if (!relation->IsAssignableTo(source, target)) {
