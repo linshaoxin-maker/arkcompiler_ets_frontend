@@ -196,6 +196,7 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/ets/topLevelStmts/globalDeclTransformer.cpp
   compiler/lowering/ets/topLevelStmts/topLevelStmts.cpp
   compiler/lowering/ets/expressionLambdaLowering.cpp
+  compiler/lowering/ets/genericBridgesLowering.cpp
   compiler/lowering/ets/boxingForLocals.cpp
   compiler/lowering/ets/capturedVariables.cpp
   compiler/lowering/ets/lambdaLowering.cpp
@@ -335,6 +336,7 @@ set(ES2PANDA_LIB_SRC
   ir/ets/etsPrimitiveType.cpp
   ir/ets/etsNullishTypes.cpp
   ir/ets/etsScript.cpp
+  ir/ets/etsStringLiteralType.cpp
   ir/ets/etsTuple.cpp
   ir/ets/etsTypeReference.cpp
   ir/ets/etsTypeReferencePart.cpp
