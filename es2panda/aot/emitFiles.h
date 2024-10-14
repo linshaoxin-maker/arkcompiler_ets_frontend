@@ -44,20 +44,26 @@ private:
 
 class EmitMergedAbcJob : public util::WorkerJob {
 public:
-    explicit EmitMergedAbcJob(const std::string &outputFileName, const std::string &transformLib,
-                              const std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo,
-                              uint8_t targetApi, std::string targetSubApi)
-        : outputFileName_(outputFileName), transformLib_(transformLib),
-        progsInfo_(progsInfo), targetApiVersion_(targetApi), targetApiSubVersion_(targetSubApi) {};
-    NO_COPY_SEMANTIC(EmitMergedAbcJob);
-    NO_MOVE_SEMANTIC(EmitMergedAbcJob);
-    ~EmitMergedAbcJob() override = default;
+  explicit EmitMergedAbcJob(
+      const std::string &outputFileName, const std::string &transformLib,
+      const std::map<std::string, panda::es2panda::util::ProgramCache *>
+          &progsInfo,
+      std::map<std::string, size_t> *statp, uint8_t targetApi,
+      std::string targetSubApi)
 
-    void Run() override;
+      : outputFileName_(outputFileName), transformLib_(transformLib),
+        progsInfo_(progsInfo),statp_(statp), targetApiVersion_(targetApi),
+        targetApiSubVersion_(targetSubApi){};
+  NO_COPY_SEMANTIC(EmitMergedAbcJob);
+  NO_MOVE_SEMANTIC(EmitMergedAbcJob);
+  ~EmitMergedAbcJob() override = default;
+
+  void Run() override;
 private:
     std::string outputFileName_;
     std::string transformLib_;
     const std::map<std::string, panda::es2panda::util::ProgramCache*> &progsInfo_;
+    std::map<std::string, size_t> *statp_;
     uint8_t targetApiVersion_ = 0;
     std::string targetApiSubVersion_ { util::Helpers::DEFAULT_SUB_API_VERSION };
 };
