@@ -1,0 +1,11 @@
+access_modifier_list: 
+  - "private"
+  - "internal"
+  - "public"
+  - "protected"
+method_modifier_list:
+  - static
+  - final
+  - native
+  - async
+sep: "---\n"
