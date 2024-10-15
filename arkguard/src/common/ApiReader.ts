@@ -107,8 +107,8 @@ export function readProjectPropertiesByCollectedPaths(filesForCompilation: Set<s
   if (scanProjectConfig.mExportObfuscation) {
     exportNameSet = new Set(exportNames);
   }
-
   scanProjectConfig = {};
+
   return {
     structPropertySet: structPropertySet,
     stringPropertySet: stringPropertySet,

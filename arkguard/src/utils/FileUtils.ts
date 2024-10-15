@@ -191,6 +191,6 @@ export class FileUtils {
   }
 
   public static fileExtensionIs(str: string, suffix: string): boolean {
-    return str.endsWith(suffix);
-}
+    return str.length > suffix.length && str.endsWith(suffix);
+  }
 }
