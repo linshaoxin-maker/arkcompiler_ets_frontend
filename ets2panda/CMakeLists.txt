@@ -55,7 +55,7 @@ endif()
 
 if(NOT PANDA_PRODUCT_BUILD)
   execute_process(
-    COMMAND date "+%Y-%m-%d %H:%M:%S"
+    COMMAND date "+%Y-%m-%d_%H:%M:%S"
     OUTPUT_VARIABLE CURRENT_DATE
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
@@ -66,9 +66,11 @@ if(NOT PANDA_PRODUCT_BUILD)
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 
-  add_definitions(-DES2PANDA_DATE="${CURRENT_DATE}")
-  add_definitions(-DES2PANDA_HASH="${LAST_COMMIT_HASH}")
-  endif()
+  set_source_files_properties(
+    util/options.cpp
+    PROPERTIES COMPILE_DEFINITIONS "ES2PANDA_DATE=\"${CURRENT_DATE}\";ES2PANDA_HASH=\"${LAST_COMMIT_HASH}\""
+  )
+endif()
 
 add_custom_command(
   OUTPUT ${GENERATED_STAMP}
@@ -110,6 +112,27 @@ panda_gen(
 )
 
 set(ES2PANDA_LIB_SRC
+  ast_verifier/ASTVerifier.cpp
+  ast_verifier/arithmeticOperationValid.cpp
+  ast_verifier/checkAbstractMethod.cpp
+  ast_verifier/checkContext.cpp
+  ast_verifier/checkInfiniteLoop.cpp
+  ast_verifier/everyChildHasValidParent.cpp
+  ast_verifier/everyChildInParentRange.cpp
+  ast_verifier/getterSetterValidation.cpp
+  ast_verifier/helpers.cpp
+  ast_verifier/identifierHasVariable.cpp
+  ast_verifier/importExportAccessValid.cpp
+  ast_verifier/nodeHasParent.cpp
+  ast_verifier/nodeHasSourceRange.cpp
+  ast_verifier/nodeHasType.cpp
+  ast_verifier/referenceTypeAnnotationIsNull.cpp
+  ast_verifier/forLoopCorrectlyInitialized.cpp
+  ast_verifier/modifierAccessValid.cpp
+  ast_verifier/sequenceExpressionHasLastType.cpp
+  ast_verifier/variableHasEnclosingScope.cpp
+  ast_verifier/variableHasScope.cpp
+  ast_verifier/variableNameIdentifierNameSame.cpp
   es2panda.cpp
   varbinder/ASBinder.cpp
   varbinder/TSBinder.cpp
@@ -130,7 +153,6 @@ set(ES2PANDA_LIB_SRC
   compiler/base/literals.cpp
   compiler/base/lreference.cpp
   compiler/base/optionalChain.cpp
-  compiler/core/ASTVerifier.cpp
   compiler/core/codeGen.cpp
   compiler/core/compileJob.cpp
   compiler/core/compileQueue.cpp
@@ -138,6 +160,7 @@ set(ES2PANDA_LIB_SRC
   compiler/core/dynamicContext.cpp
   compiler/core/emitter.cpp
   compiler/core/JSCompiler.cpp
+  compiler/core/JSCompilerUnreachable.cpp
   compiler/core/JSemitter.cpp
   compiler/core/envScope.cpp
   compiler/core/function.cpp
@@ -149,6 +172,7 @@ set(ES2PANDA_LIB_SRC
   compiler/core/regScope.cpp
   compiler/core/regSpiller.cpp
   compiler/core/ETSCompiler.cpp
+  compiler/core/ETSCompilerUnrechable.cpp
   compiler/core/ETSemitter.cpp
   compiler/core/ETSGen.cpp
   compiler/core/ETSfunction.cpp
@@ -165,6 +189,7 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/scopesInit/scopesInitPhase.cpp
   compiler/lowering/phase.cpp
   compiler/lowering/plugin_phase.cpp
+  compiler/lowering/resolveIdentifiers.cpp
   compiler/lowering/util.cpp
   compiler/lowering/ets/topLevelStmts/importExportDecls.cpp
   compiler/lowering/ets/topLevelStmts/globalClassHandler.cpp
@@ -172,6 +197,7 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/ets/topLevelStmts/topLevelStmts.cpp
   compiler/lowering/ets/expressionLambdaLowering.cpp
   compiler/lowering/ets/boxingForLocals.cpp
+  compiler/lowering/ets/capturedVariables.cpp
   compiler/lowering/ets/lambdaLowering.cpp
   compiler/lowering/ets/spreadLowering.cpp
   compiler/lowering/ets/localClassLowering.cpp
@@ -187,14 +213,17 @@ set(ES2PANDA_LIB_SRC
   compiler/lowering/ets/unionLowering.cpp
   compiler/lowering/ets/optionalLowering.cpp
   compiler/lowering/ets/expandBrackets.cpp
+  compiler/lowering/ets/packageImplicitImport.cpp
   compiler/lowering/ets/partialExportClassGen.cpp
   compiler/lowering/ets/promiseVoid.cpp
   compiler/lowering/ets/structLowering.cpp
   compiler/lowering/ets/defaultParameterLowering.cpp
   compiler/lowering/ets/objectLiteralLowering.cpp
+  compiler/lowering/ets/interfaceObjectLiteralLowering.cpp
   compiler/lowering/ets/stringComparison.cpp
   compiler/lowering/ets/stringConstructorLowering.cpp
   compiler/lowering/ets/enumLowering.cpp
+  compiler/lowering/ets/enumPostCheckLowering.cpp
   ir/astDump.cpp
   ir/srcDump.cpp
   ir/astNode.cpp
@@ -209,6 +238,7 @@ set(ES2PANDA_LIB_SRC
   ir/base/decorator.cpp
   ir/base/metaProperty.cpp
   ir/base/methodDefinition.cpp
+  ir/base/namespaceDefinition.cpp
   ir/base/property.cpp
   ir/base/scriptFunction.cpp
   ir/base/scriptFunctionSignature.cpp
@@ -283,6 +313,7 @@ set(ES2PANDA_LIB_SRC
   ir/statements/ifStatement.cpp
   ir/statements/labelledStatement.cpp
   ir/statements/loopStatement.cpp
+  ir/statements/namespaceDeclaration.cpp
   ir/statements/returnStatement.cpp
   ir/statements/switchCaseStatement.cpp
   ir/statements/switchStatement.cpp
@@ -382,11 +413,13 @@ set(ES2PANDA_LIB_SRC
   parser/ETSparserClasses.cpp
   parser/ETSparserEnums.cpp
   parser/ETSparserExpressions.cpp
+  parser/ETSparserNamespaces.cpp
   parser/ETSparserStatements.cpp
   parser/ETSparserTypes.cpp
   parser/ETSNolintParser.cpp
   parser/TSparser.cpp
   parser/TypedParser.cpp
+  parser/program/entityNameVisitor.cpp
   parser/program/program.cpp
   parser/statementParser.cpp
   parser/statementTSParser.cpp
@@ -394,10 +427,12 @@ set(ES2PANDA_LIB_SRC
   checker/checkerContext.cpp
   checker/ETSAnalyzer.cpp
   checker/ETSAnalyzerHelpers.cpp
+  checker/ETSAnalyzerUnreachable.cpp
   checker/ETSchecker.cpp
   checker/TSchecker.cpp
   checker/ASchecker.cpp
   checker/TSAnalyzer.cpp
+  checker/TSAnalyzerUnreachable.cpp
   checker/JSchecker.cpp
   checker/typeChecker/TypeChecker.cpp
   checker/ets/aliveAnalyzer.cpp
@@ -413,7 +448,6 @@ set(ES2PANDA_LIB_SRC
   checker/ets/function.cpp
   checker/ets/validateHelpers.cpp
   checker/ets/typeCheckingHelpers.cpp
-  checker/ets/enum.cpp
   checker/ets/helpers.cpp
   checker/ets/narrowingConverter.cpp
   checker/ets/narrowingWideningConverter.cpp
@@ -494,13 +528,28 @@ set(ES2PANDA_LIB_SRC
   util/arktsconfig.cpp
   util/bitset.cpp
   util/errorHandler.cpp
+  util/errorLogger.cpp
   util/helpers.cpp
   util/importPathManager.cpp
   util/path.cpp
   util/ustring.cpp
   test/utils/panda_executable_path_getter.cpp
+  evaluate/debugInfoDeserialization/debugInfoDeserializer.cpp
+  evaluate/debugInfoDeserialization/inheritanceResolution.cpp
+  evaluate/debugInfoDeserialization/methodBuilder.cpp
+  evaluate/debugInfoDeserialization/classBuilder.cpp
+  evaluate/debugInfoStorage.cpp
+  evaluate/helpers.cpp
+  evaluate/pathResolver.cpp
+  evaluate/irCheckHelper.cpp
+  evaluate/proxyProgramsCache.cpp
+  evaluate/scopedDebugInfoPlugin.cpp
+  evaluate/entityDeclarator.cpp
+  evaluate/evaluateContext.cpp
 )
 
+# libes2panda does not include bytecode optimizer, because it is used in
+# libarkruntime, and conflict with JIT setup ensues
 panda_add_library(es2panda-lib ${PANDA_DEFAULT_LIB_TYPE} ${ES2PANDA_LIB_SRC})
 add_dependencies(es2panda-lib isa_gen_es2panda es2panda_keywords es2panda_signatures)
 
@@ -525,7 +574,7 @@ panda_target_compile_options(es2panda-lib
 
 panda_target_link_libraries(es2panda-lib
   PUBLIC arkbase hmicuuc.z
-  PRIVATE arkassembler
+  PRIVATE arkassembler arkdisassembler arkfile
 )
 
 if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.1) OR
@@ -543,35 +592,8 @@ endif()
 panda_add_sanitizers(TARGET es2panda-lib SANITIZERS
   ${PANDA_SANITIZERS_LIST})
 
-# libes2panda does not include bytecode optimizer, because it is used in
-# libarkruntime, and conflict with JIT setup ensues
-set(ES2PANDA_PUBLIC_SOURCES
-  public/es2panda_lib.cpp
-  util/generateBin.cpp
-  util/options.cpp
-  util/plugin.cpp
-)
-
-
-panda_add_library(es2panda-public ${PANDA_DEFAULT_LIB_TYPE} ${ES2PANDA_PUBLIC_SOURCES})
-add_dependencies(es2panda-public es2panda-lib arkbytecodeopt)
-
-panda_target_include_directories(es2panda-public
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-  PRIVATE ${OUTPUT_DIR}
-)
-
-panda_target_compile_options(es2panda-public
-  PRIVATE -fexceptions -Werror=shadow
-)
-
-panda_target_link_libraries(es2panda-public
-  PUBLIC arkbase es2panda-lib
-  PRIVATE arkbytecodeopt
-)
-
-panda_add_sanitizers(TARGET es2panda-public SANITIZERS
-  ${PANDA_SANITIZERS_LIST})
+SET(ES2PANDA_LIB_DIR public)
+add_subdirectory(${ES2PANDA_LIB_DIR})
 
 add_subdirectory(aot)
 add_subdirectory(declgen_ets2ts)

@@ -48,6 +48,7 @@
 #include "lexer/token/letters.h"
 #include "libpandabase/utils/utf.h"
 #include "libpandabase/os/filesystem.h"
+#include "ir/module/importDefaultSpecifier.h"
 
 namespace ark::es2panda::util {
 // Helpers
@@ -473,6 +474,32 @@ void Helpers::CheckImportedName(const ArenaVector<ir::ImportSpecifier *> &specif
     }
 }
 
+void Helpers::CheckDefaultImportedName(const ArenaVector<ir::ImportDefaultSpecifier *> &specifiers,
+                                       const ir::ImportDefaultSpecifier *specifier, const std::string &fileName)
+{
+    for (auto *it : specifiers) {
+        if (specifier->Local()->Name() != it->Local()->Name()) {
+            std::cerr << "Warning: default element is explicitly used with alias several times [" << fileName.c_str()
+                      << ":" << specifier->Start().line << ":" << specifier->Start().index << "]" << std::endl;
+            return;
+        }
+    }
+}
+
+void Helpers::CheckDefaultImport(const ArenaVector<ir::ETSImportDeclaration *> &statements)
+{
+    for (auto statement : statements) {
+        for (auto specifier : statement->Specifiers()) {
+            if (specifier->Type() == ir::AstNodeType::IMPORT_DEFAULT_SPECIFIER) {
+                auto fileName = statement->ResolvedSource()->Str();
+                std::cerr << "Warning: default element has already imported [" << fileName << ":"
+                          << specifier->Start().line << ":" << specifier->Start().index << "]" << std::endl;
+                return;
+            }
+        }
+    }
+}
+
 static util::StringView FunctionNameFromParent(const ir::AstNode *parent, ArenaAllocator *allocator)
 {
     switch (parent->Type()) {
@@ -655,18 +682,21 @@ std::pair<std::string_view, std::string_view> Helpers::SplitSignature(std::strin
 std::vector<std::string> &Helpers::StdLib()
 {
     static std::vector<std::string> stdlib {"std/core",       "std/math",  "std/containers",        "std/time",
-                                            "std/interop/js", "std/debug", "std/debug/concurrency", "escompat"};
+                                            "std/interop/js", "std/debug", "std/debug/concurrency", "std/testing",
+                                            "escompat"};
     return stdlib;
 }
 
 bool Helpers::IsStdLib(const parser::Program *program)
 {
-    const auto &stdlib = StdLib();
+    auto stdlib = StdLib();
 
     // NOTE(rsipka): early check: if program is not a package module then it is not part of the stdlib either
     if (!program->IsPackageModule()) {
         return false;
     }
+
+    stdlib.emplace_back("std/math/consts");
 
     auto fileFolder = program->ModuleName().Mutf8();
     std::replace(fileFolder.begin(), fileFolder.end(), *compiler::Signatures::METHOD_SEPARATOR.begin(),

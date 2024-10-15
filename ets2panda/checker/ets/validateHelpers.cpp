@@ -79,7 +79,8 @@ void ETSChecker::ValidatePropertyAccess(varbinder::Variable *var, ETSObjectType 
             return;
         }
 
-        ThrowTypeError({"Property ", var->Name(), " is not visible here."}, pos);
+        LogTypeError({"Property ", var->Name(), " is not visible here."}, pos);
+        var->SetTsType(GlobalTypeError());
     }
 }
 
@@ -88,7 +89,8 @@ void ETSChecker::ValidateCallExpressionIdentifier(ir::Identifier *const ident, v
 {
     if (resolved->HasFlag(varbinder::VariableFlags::CLASS_OR_INTERFACE) &&
         ident->Parent()->AsCallExpression()->Callee() != ident) {
-        ThrowTypeError({"Class or interface '", ident->Name(), "' cannot be used as object"}, ident->Start());
+        LogTypeError({"Class or interface '", ident->Name(), "' cannot be used as object"}, ident->Start());
+        ident->Variable()->SetTsType(GlobalTypeError());
     }
 
     if (ident->Parent()->AsCallExpression()->Callee() != ident) {
@@ -97,7 +99,8 @@ void ETSChecker::ValidateCallExpressionIdentifier(ir::Identifier *const ident, v
     if (ident->Variable() != nullptr &&  // It should always be true!
         ident->Variable()->Declaration()->Node() != nullptr &&
         ident->Variable()->Declaration()->Node()->IsImportNamespaceSpecifier()) {
-        ThrowTypeError({"Namespace style identifier ", ident->Name(), " is not callable."}, ident->Start());
+        LogTypeError({"Namespace style identifier ", ident->Name(), " is not callable."}, ident->Start());
+        ident->Variable()->SetTsType(GlobalTypeError());
     }
     if (type->IsETSFunctionType() || type->IsETSDynamicType() ||
         (type->IsETSObjectType() && type->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL))) {
@@ -107,20 +110,36 @@ void ETSChecker::ValidateCallExpressionIdentifier(ir::Identifier *const ident, v
     if (TryTransformingToStaticInvoke(ident, type)) {
         return;
     }
-    ThrowTypeError({"This expression is not callable."}, ident->Start());
+
+    if (type->IsETSUnionType()) {
+        for (auto it : type->AsETSUnionType()->ConstituentTypes()) {
+            if (it->IsETSFunctionType() || it->IsETSDynamicType() ||
+                (it->IsETSObjectType() && it->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL))) {
+                return;
+            }
+        }
+    }
+
+    LogTypeError({"This expression is not callable."}, ident->Start());
+    ident->Variable()->SetTsType(GlobalTypeError());
 }
 
 void ETSChecker::ValidateNewClassInstanceIdentifier(ir::Identifier *const ident, varbinder::Variable *const resolved)
 {
     if (ident->Parent()->AsETSNewClassInstanceExpression()->GetTypeRef() == ident && (resolved != nullptr) &&
         !resolved->HasFlag(varbinder::VariableFlags::CLASS_OR_INTERFACE)) {
-        ThrowError(ident);
+        LogUnResolvedError(ident);
+        return;
     }
 }
 
 void ETSChecker::ValidateMemberIdentifier(ir::Identifier *const ident, varbinder::Variable *const resolved,
                                           Type *const type)
 {
+    if (resolved->Declaration()->Node()->IsTSEnumDeclaration() &&
+        ident->Parent()->AsMemberExpression()->HasMemberKind(ir::MemberExpressionKind::ELEMENT_ACCESS)) {
+        return;
+    }
     if (ident->Parent()->AsMemberExpression()->IsComputed()) {
         if ((resolved != nullptr) && !resolved->Declaration()->PossibleTDZ()) {
             WrongContextErrorClassifyByType(ident, resolved);
@@ -129,9 +148,9 @@ void ETSChecker::ValidateMemberIdentifier(ir::Identifier *const ident, varbinder
         return;
     }
 
-    if (!IsReferenceType(type) && !type->IsETSEnumType() && !type->IsETSStringEnumType() &&
-        !type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
-        ThrowError(ident);
+    if (!IsReferenceType(type) && !type->IsETSEnumType() && !type->HasTypeFlag(TypeFlag::ETS_PRIMITIVE)) {
+        LogUnResolvedError(ident);
+        return;
     }
 }
 
@@ -141,12 +160,13 @@ void ETSChecker::ValidatePropertyOrDeclaratorIdentifier(ir::Identifier *const id
     const auto [target_ident, typeAnnotation] = GetTargetIdentifierAndType(ident);
 
     if ((resolved != nullptr) && resolved->TsType()->IsETSFunctionType()) {
-        CheckEtsFunctionType(ident, target_ident, typeAnnotation);
+        CheckEtsFunctionType(ident, target_ident);
         return;
     }
 
     if ((resolved != nullptr) && !resolved->Declaration()->PossibleTDZ()) {
-        ThrowError(ident);
+        LogUnResolvedError(ident);
+        return;
     }
 }
 
@@ -156,11 +176,13 @@ void ETSChecker::ValidateAssignmentIdentifier(ir::Identifier *const ident, varbi
     const auto *const assignmentExpr = ident->Parent()->AsAssignmentExpression();
     if (assignmentExpr->Left() == ident && (resolved != nullptr) && !resolved->Declaration()->PossibleTDZ()) {
         WrongContextErrorClassifyByType(ident, resolved);
+        return;
     }
 
     if (assignmentExpr->Right() == ident && (resolved != nullptr) &&
         (!resolved->Declaration()->PossibleTDZ() && !type->IsETSFunctionType())) {
         WrongContextErrorClassifyByType(ident, resolved);
+        return;
     }
 }
 
@@ -170,8 +192,9 @@ bool ETSChecker::ValidateBinaryExpressionIdentifier(ir::Identifier *const ident,
     bool isFinished = false;
     if (binaryExpr->OperatorType() == lexer::TokenType::KEYW_INSTANCEOF && binaryExpr->Right() == ident) {
         if (!IsReferenceType(type)) {
-            ThrowTypeError({R"(Using the "instance of" operator with non-object type ")", ident->Name(), "\""},
-                           ident->Start());
+            LogTypeError({R"(Using the "instance of" operator with non-object type ")", ident->Name(), "\""},
+                         ident->Start());
+            ident->Variable()->SetTsType(GlobalTypeError());
         }
         isFinished = true;
     }
@@ -180,11 +203,6 @@ bool ETSChecker::ValidateBinaryExpressionIdentifier(ir::Identifier *const ident,
 
 void ETSChecker::ValidateResolvedIdentifier(ir::Identifier *const ident, varbinder::Variable *const resolved)
 {
-    if (resolved == nullptr) {
-        ExtraCheckForResolvedError(ident);
-        return;
-    }
-
     auto *smartType = Context().GetSmartCast(resolved);
     auto *const resolvedType = GetApparentType(smartType != nullptr ? smartType : GetTypeOfVariable(resolved));
 
@@ -236,7 +254,7 @@ void ETSChecker::ValidateResolvedIdentifier(ir::Identifier *const ident, varbind
 
 void ETSChecker::ValidateUnaryOperatorOperand(varbinder::Variable *variable)
 {
-    if (IsVariableGetterSetter(variable)) {
+    if (variable == nullptr || IsVariableGetterSetter(variable) || variable->Declaration() == nullptr) {
         return;
     }
 
@@ -244,12 +262,15 @@ void ETSChecker::ValidateUnaryOperatorOperand(varbinder::Variable *variable)
         std::string_view fieldType = variable->Declaration()->IsConstDecl() ? "constant" : "readonly";
         if (HasStatus(CheckerStatus::IN_CONSTRUCTOR | CheckerStatus::IN_STATIC_BLOCK) &&
             !variable->HasFlag(varbinder::VariableFlags::EXPLICIT_INIT_REQUIRED)) {
-            ThrowTypeError({"Cannot reassign ", fieldType, " ", variable->Name()},
-                           variable->Declaration()->Node()->Start());
+            LogTypeError({"Cannot reassign ", fieldType, " ", variable->Name()},
+                         variable->Declaration()->Node()->Start());
+            variable->SetTsType(GlobalTypeError());
+            return;
         }
         if (!HasStatus(CheckerStatus::IN_CONSTRUCTOR | CheckerStatus::IN_STATIC_BLOCK)) {
-            ThrowTypeError({"Cannot assign to a ", fieldType, " variable ", variable->Name()},
-                           variable->Declaration()->Node()->Start());
+            LogTypeError({"Cannot assign to a ", fieldType, " variable ", variable->Name()},
+                         variable->Declaration()->Node()->Start());
+            variable->SetTsType(GlobalTypeError());
         }
     }
 }
@@ -306,12 +327,14 @@ void ETSChecker::ValidateGenericTypeAliasForClonedNode(ir::TSTypeAliasDeclaratio
     }
 }
 
-void ETSChecker::ValidateTupleMinElementSize(ir::ArrayExpression *const arrayExpr, ETSTupleType *tuple)
+bool ETSChecker::ValidateTupleMinElementSize(ir::ArrayExpression *const arrayExpr, ETSTupleType *tuple)
 {
     if (arrayExpr->Elements().size() < static_cast<size_t>(tuple->GetMinTupleSize())) {
-        ThrowTypeError({"Few elements in array initializer for tuple with size of ",
-                        static_cast<size_t>(tuple->GetMinTupleSize())},
-                       arrayExpr->Start());
+        LogTypeError({"Few elements in array initializer for tuple with size of ",
+                      static_cast<size_t>(tuple->GetMinTupleSize())},
+                     arrayExpr->Start());
+        return false;
     }
+    return true;
 }
 }  // namespace ark::es2panda::checker

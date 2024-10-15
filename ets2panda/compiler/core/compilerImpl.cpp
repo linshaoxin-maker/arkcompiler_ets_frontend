@@ -15,7 +15,7 @@
 
 #include "compilerImpl.h"
 
-#include "compiler/core/ASTVerifier.h"
+#include "ast_verifier/ASTVerifier.h"
 #include "es2panda.h"
 #include "checker/ETSAnalyzer.h"
 #include "checker/TSAnalyzer.h"
@@ -28,6 +28,7 @@
 #include "compiler/core/JSemitter.h"
 #include "compiler/core/ETSemitter.h"
 #include "compiler/lowering/phase.h"
+#include "evaluate/scopedDebugInfoPlugin.h"
 #include "parser/parserImpl.h"
 #include "parser/JSparser.h"
 #include "parser/ASparser.h"
@@ -187,15 +188,17 @@ static public_lib::Context::CodeGenCb MakeCompileJob()
 
 #ifndef NDEBUG
 
-static bool RunVerifierAndPhases(ArenaAllocator &allocator, public_lib::Context &context,
+static bool RunVerifierAndPhases(CompilerImpl *compilerImpl, public_lib::Context &context,
                                  const std::vector<Phase *> &phases, parser::Program &program)
 {
-    auto runner = ASTVerificationRunner(allocator, context);
+    auto runner = ASTVerificationRunner(*context.allocator, context);
     auto verificationCtx = ast_verifier::VerificationContext {};
     const auto runAllChecks = context.config->options->CompilerOptions().verifierAllChecks;
 
     for (auto *phase : phases) {
         if (!phase->Apply(&context, &program)) {
+            compilerImpl->SetIsAnyError(context.checker->ErrorLogger()->IsAnyError() ||
+                                        context.parser->ErrorLogger()->IsAnyError());
             return false;
         }
 
@@ -224,8 +227,45 @@ static bool RunVerifierAndPhases(ArenaAllocator &allocator, public_lib::Context 
 }
 #endif
 
+static bool RunPhases(CompilerImpl *compilerImpl, public_lib::Context &context, const std::vector<Phase *> &phases,
+                      parser::Program &program)
+{
+    for (auto *phase : phases) {
+        if (!phase->Apply(&context, &program)) {
+            compilerImpl->SetIsAnyError(context.checker->ErrorLogger()->IsAnyError() ||
+                                        context.parser->ErrorLogger()->IsAnyError());
+            return false;
+        }
+    }
+    return true;
+}
+
+static void CreateDebuggerEvaluationPlugin(checker::ETSChecker &checker, ArenaAllocator &allocator,
+                                           parser::Program *program, const CompilerOptions &options)
+{
+    // Sometimes evaluation mode might work without project context.
+    // In this case, users might omit context files.
+    if (options.debuggerEvalMode && !options.debuggerEvalPandaFiles.empty()) {
+        auto *plugin = allocator.New<evaluate::ScopedDebugInfoPlugin>(program, &checker, options);
+        checker.SetDebugInfoPlugin(plugin);
+    }
+}
+
 using EmitCb = std::function<pandasm::Program *(public_lib::Context *)>;
 using PhaseListGetter = std::function<std::vector<compiler::Phase *>(ScriptExtension)>;
+
+static bool ParserErrorChecker(bool isAnyError, parser::Program *program, CompilerImpl *compilerImpl,
+                               const CompilationUnit &unit)
+{
+    if (isAnyError) {
+        compilerImpl->SetIsAnyError(isAnyError);
+        if (unit.options.CompilerOptions().dumpAst) {
+            std::cout << program->Dump() << std::endl;
+        }
+        return false;
+    }
+    return true;
+}
 
 template <typename Parser, typename VarBinder, typename Checker, typename Analyzer, typename AstCompiler,
           typename CodeGen, typename RegSpiller, typename FunctionEmitter, typename Emitter>
@@ -243,6 +283,10 @@ static pandasm::Program *CreateCompiler(const CompilationUnit &unit, const Phase
 
     auto *varbinder = program.VarBinder();
     varbinder->SetProgram(&program);
+
+    if constexpr (std::is_same_v<Checker, checker::ETSChecker>) {
+        CreateDebuggerEvaluationPlugin(checker, allocator, &program, unit.options.CompilerOptions());
+    }
 
     public_lib::Context context;
 
@@ -265,23 +309,20 @@ static pandasm::Program *CreateCompiler(const CompilationUnit &unit, const Phase
     varbinder->SetContext(&context);
 
     parser.ParseScript(unit.input, unit.options.CompilerOptions().compilationMode == CompilationMode::GEN_STD_LIB);
+    if (!ParserErrorChecker(parser.ErrorLogger()->IsAnyError(), &program, compilerImpl, unit)) {
+        return nullptr;
+    }
 #ifndef NDEBUG
     if (unit.ext == ScriptExtension::ETS) {
-        if (!RunVerifierAndPhases(allocator, context, getPhases(unit.ext), program)) {
+        if (!RunVerifierAndPhases(compilerImpl, context, getPhases(unit.ext), program)) {
             return nullptr;
         }
-    } else {
-        for (auto *phase : getPhases(unit.ext)) {
-            if (!phase->Apply(&context, &program)) {
-                return nullptr;
-            }
-        }
+    } else if (!RunPhases(compilerImpl, context, getPhases(unit.ext), program)) {
+        return nullptr;
     }
 #else
-    for (auto *phase : getPhases(unit.ext)) {
-        if (!phase->Apply(&context, &program)) {
-            return nullptr;
-        }
+    if (!RunPhases(compilerImpl, context, getPhases(unit.ext), program)) {
+        return nullptr;
     }
 #endif
 
@@ -325,4 +366,14 @@ void CompilerImpl::DumpAsm(const ark::pandasm::Program *prog)
 {
     Emitter::DumpAsm(prog);
 }
+
+std::string CompilerImpl::GetPhasesList(const ScriptExtension ext)
+{
+    std::stringstream ss;
+    for (auto phase : compiler::GetPhaseList(ext)) {
+        ss << " " << phase->Name() << std::endl;
+    }
+    return ss.str();
+}
+
 }  // namespace ark::es2panda::compiler

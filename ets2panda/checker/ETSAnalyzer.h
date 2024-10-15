@@ -38,7 +38,7 @@ public:
 #undef DECLARE_ETSANALYZER_CHECK_METHOD
     checker::Type *PreferredType(ir::ObjectExpression *expr) const;
     checker::Type *GetPreferredType(ir::ArrayExpression *expr) const;
-    void CheckObjectExprProps(const ir::ObjectExpression *expr) const;
+    void CheckObjectExprProps(const ir::ObjectExpression *expr, checker::PropertySearchFlags searchFlags) const;
     std::tuple<Type *, ir::Expression *> CheckAssignmentExprOperatorType(ir::AssignmentExpression *expr,
                                                                          Type *leftType) const;
 
@@ -52,13 +52,20 @@ private:
     checker::Type *GetFunctionReturnType(ir::ReturnStatement *st, ir::ScriptFunction *containingFunc) const;
     checker::Type *SetAndAdjustType(ETSChecker *checker, ir::MemberExpression *expr, ETSObjectType *objectType) const;
     checker::Type *UnwrapPromiseType(checker::Type *type) const;
+    bool CheckInferredFunctionReturnType(ir::ReturnStatement *st, ir::ScriptFunction *containingFunc,
+                                         checker::Type *&funcReturnType, ir::TypeNode *returnTypeAnnotation,
+                                         ETSChecker *checker) const;
 
     checker::Type *GetCalleeType(ETSChecker *checker, ir::ETSNewClassInstanceExpression *expr) const
     {
         checker::Type *calleeType = expr->GetTypeRef()->Check(checker);
+        if (calleeType == nullptr) {
+            return nullptr;
+        }
 
         if (!calleeType->IsETSObjectType()) {
-            checker->ThrowTypeError("This expression is not constructible.", expr->Start());
+            checker->LogTypeError("This expression is not constructible.", expr->Start());
+            return checker->GlobalTypeError();
         }
 
         return calleeType;

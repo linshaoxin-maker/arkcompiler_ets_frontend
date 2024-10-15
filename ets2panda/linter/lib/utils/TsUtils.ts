@@ -19,6 +19,7 @@ import type { IsEtsFileCallback } from '../IsEtsFileCallback';
 import { FaultID } from '../Problems';
 import { ARKTS_IGNORE_DIRS, ARKTS_IGNORE_FILES } from './consts/ArktsIgnorePaths';
 import { ES_OBJECT } from './consts/ESObject';
+import { EXTENDED_BASE_TYPES } from './consts/ExtendedBaseTypes';
 import { SENDABLE_DECORATOR } from './consts/SendableAPI';
 import { USE_SHARED } from './consts/SharedModuleAPI';
 import { STANDARD_LIBRARIES } from './consts/StandardLibraries';
@@ -32,10 +33,10 @@ import {
 import { TYPED_ARRAYS } from './consts/TypedArrays';
 import { forEachNodeInSubtree } from './functions/ForEachNodeInSubtree';
 import { getScriptKind } from './functions/GetScriptKind';
-import { isStdLibraryType } from './functions/IsStdLibrary';
+import { isStdLibrarySymbol, isStdLibraryType } from './functions/IsStdLibrary';
 import { isStructDeclaration, isStructDeclarationKind } from './functions/IsStruct';
 import type { NameGenerator } from './functions/NameGenerator';
-import { pathContainsDirectory } from './functions/PathHelper';
+import { srcFilePathContainsDirectory } from './functions/PathHelper';
 import { isAssignmentOperator } from './functions/isAssignmentOperator';
 import { isIntrinsicObjectType } from './functions/isIntrinsicObjectType';
 
@@ -49,7 +50,8 @@ export class TsUtils {
     private readonly tsTypeChecker: ts.TypeChecker,
     private readonly testMode: boolean,
     private readonly advancedClassChecks: boolean,
-    private readonly useSdkLogic: boolean
+    private readonly useSdkLogic: boolean,
+    private readonly arkts2: boolean
   ) {}
 
   entityNameToString(name: ts.EntityName): string {
@@ -222,6 +224,20 @@ export class TsUtils {
     );
   }
 
+  static isPrimitiveLiteralType(type: ts.Type): boolean {
+    return !!(
+      type.flags &
+      (ts.TypeFlags.BooleanLiteral |
+        ts.TypeFlags.NumberLiteral |
+        ts.TypeFlags.StringLiteral |
+        ts.TypeFlags.BigIntLiteral)
+    );
+  }
+
+  static isPurePrimitiveLiteralType(type: ts.Type): boolean {
+    return TsUtils.isPrimitiveLiteralType(type) && !(type.flags & ts.TypeFlags.EnumLiteral);
+  }
+
   static isTypeSymbol(symbol: ts.Symbol | undefined): boolean {
     return (
       !!symbol &&
@@ -231,8 +247,9 @@ export class TsUtils {
   }
 
   // Check whether type is generic 'Array<T>' type defined in TypeScript standard library.
-  static isGenericArrayType(tsType: ts.Type): tsType is ts.TypeReference {
+  isGenericArrayType(tsType: ts.Type): tsType is ts.TypeReference {
     return (
+      !(this.arkts2 && !isStdLibraryType(tsType)) &&
       TsUtils.isTypeReference(tsType) &&
       tsType.typeArguments?.length === 1 &&
       tsType.target.typeParameters?.length === 1 &&
@@ -240,12 +257,33 @@ export class TsUtils {
     );
   }
 
-  static isReadonlyArrayType(tsType: ts.Type): boolean {
+  isReadonlyArrayType(tsType: ts.Type): boolean {
     return (
+      !(this.arkts2 && !isStdLibraryType(tsType)) &&
       TsUtils.isTypeReference(tsType) &&
       tsType.typeArguments?.length === 1 &&
       tsType.target.typeParameters?.length === 1 &&
       tsType.getSymbol()?.getName() === 'ReadonlyArray'
+    );
+  }
+
+  static isConcatArrayType(tsType: ts.Type): boolean {
+    return (
+      isStdLibraryType(tsType) &&
+      TsUtils.isTypeReference(tsType) &&
+      tsType.typeArguments?.length === 1 &&
+      tsType.target.typeParameters?.length === 1 &&
+      tsType.getSymbol()?.getName() === 'ConcatArray'
+    );
+  }
+
+  static isArrayLikeType(tsType: ts.Type): boolean {
+    return (
+      isStdLibraryType(tsType) &&
+      TsUtils.isTypeReference(tsType) &&
+      tsType.typeArguments?.length === 1 &&
+      tsType.target.typeParameters?.length === 1 &&
+      tsType.getSymbol()?.getName() === 'ArrayLike'
     );
   }
 
@@ -265,7 +303,17 @@ export class TsUtils {
   }
 
   isArray(tsType: ts.Type): boolean {
-    return TsUtils.isGenericArrayType(tsType) || TsUtils.isReadonlyArrayType(tsType) || this.isTypedArray(tsType);
+    return this.isGenericArrayType(tsType) || this.isReadonlyArrayType(tsType) || this.isTypedArray(tsType);
+  }
+
+  isIndexableArray(tsType: ts.Type): boolean {
+    return (
+      this.isGenericArrayType(tsType) ||
+      this.isReadonlyArrayType(tsType) ||
+      TsUtils.isConcatArrayType(tsType) ||
+      TsUtils.isArrayLikeType(tsType) ||
+      this.isTypedArray(tsType)
+    );
   }
 
   static isTuple(tsType: ts.Type): boolean {
@@ -341,6 +389,11 @@ export class TsUtils {
         (tsType.flags & ts.TypeFlags.Unknown) !== 0 ||
         (tsType.flags & ts.TypeFlags.Intersection) !== 0)
     );
+  }
+
+  isUnsupportedTypeArkts2(tsType: ts.Type): boolean {
+    const typenode = this.tsTypeChecker.typeToTypeNode(tsType, undefined, ts.NodeBuilderFlags.None);
+    return !!typenode && !this.isSupportedType(typenode);
   }
 
   static isNullableUnionType(type: ts.Type): boolean {
@@ -537,7 +590,13 @@ export class TsUtils {
       if (isBISendable && ts.isClassDeclaration(typeADecl) && TsUtils.hasSendableDecorator(typeADecl)) {
         return true;
       }
-      if (!ts.isClassDeclaration(typeADecl) && !ts.isInterfaceDeclaration(typeADecl) || !typeADecl.heritageClauses) {
+      if (!ts.isClassDeclaration(typeADecl) && !ts.isInterfaceDeclaration(typeADecl)) {
+        continue;
+      }
+      if (this.processExtendedParentTypes(typeA, typeB)) {
+        return true;
+      }
+      if (!typeADecl.heritageClauses) {
         continue;
       }
       for (const heritageClause of typeADecl.heritageClauses) {
@@ -633,8 +692,11 @@ export class TsUtils {
     );
   }
 
-  // Does the 'arkts-no-structure-typing' rule need to be strictly enforced to complete previously missed scenarios
+  // Does the 'arkts-no-structural-typing' rule need to be strictly enforced to complete previously missed scenarios
   needStrictMatchType(lhsType: ts.Type, rhsType: ts.Type): boolean {
+    if (this.arkts2) {
+      return true;
+    }
     if (this.isStrictSendableMatch(lhsType, rhsType)) {
       return true;
     }
@@ -660,6 +722,40 @@ export class TsUtils {
       isStrictLhs = this.isSendableClassOrInterface(lhsType);
     }
     return isStrictLhs && this.typeContainsNonSendableClassOrInterface(rhsType);
+  }
+
+  private processExtendedParentTypes(typeA: ts.Type, typeB: ts.Type): boolean {
+
+    /*
+     * Most standard types in TS Stdlib do not use explicit inheritance and rely on
+     * structural compatibility. In contrast, the type definitions in ArkTS stdlib
+     * use inheritance with explicit base types. We check the inheritance hierarchy
+     * for such types according to how they are defined in ArkTS Stdlib.
+     */
+
+    if (!this.arkts2) {
+      return false;
+    }
+    if (!isStdLibrarySymbol(typeA.symbol) && !isStdLibrarySymbol(typeB.symbol)) {
+      return false;
+    }
+    return this.checkExtendedParentTypes(typeA.symbol.name, typeB.symbol.name);
+  }
+
+  private checkExtendedParentTypes(typeA: string, typeB: string): boolean {
+    if (typeA === typeB) {
+      return true;
+    }
+    const extBaseTypes = EXTENDED_BASE_TYPES.get(typeA);
+    if (!extBaseTypes) {
+      return false;
+    }
+    for (const extBaseType of extBaseTypes) {
+      if (this.checkExtendedParentTypes(extBaseType, typeB)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private processParentTypes(
@@ -1065,10 +1161,19 @@ export class TsUtils {
     return false;
   }
 
+  parentSymbolCache = new Map<ts.Symbol, string | undefined>();
+
   getParentSymbolName(symbol: ts.Symbol): string | undefined {
+    const cached = this.parentSymbolCache.get(symbol);
+    if (cached) {
+      return cached;
+    }
+
     const name = this.tsTypeChecker.getFullyQualifiedName(symbol);
     const dotPosition = name.lastIndexOf('.');
-    return dotPosition === -1 ? undefined : name.substring(0, dotPosition);
+    const result = dotPosition === -1 ? undefined : name.substring(0, dotPosition);
+    this.parentSymbolCache.set(symbol, result);
+    return result;
   }
 
   isGlobalSymbol(symbol: ts.Symbol): boolean {
@@ -1138,6 +1243,7 @@ export class TsUtils {
     [FaultID.LimitedReturnTypeInference, TsUtils.getLimitedReturnTypeInferenceHighlightRange],
     [FaultID.LocalFunction, TsUtils.getLocalFunctionHighlightRange],
     [FaultID.FunctionBind, TsUtils.getFunctionApplyCallHighlightRange],
+    [FaultID.FunctionBindError, TsUtils.getFunctionApplyCallHighlightRange],
     [FaultID.FunctionApplyCall, TsUtils.getFunctionApplyCallHighlightRange],
     [FaultID.DeclWithDuplicateName, TsUtils.getDeclWithDuplicateNameHighlightRange],
     [FaultID.ObjectLiteralNoContextType, TsUtils.getObjectLiteralNoContextTypeHighlightRange],
@@ -1145,7 +1251,8 @@ export class TsUtils {
     [FaultID.MultipleStaticBlocks, TsUtils.getMultipleStaticBlocksHighlightRange],
     [FaultID.ParameterProperties, TsUtils.getParameterPropertiesHighlightRange],
     [FaultID.SendableDefiniteAssignment, TsUtils.getSendableDefiniteAssignmentHighlightRange],
-    [FaultID.ObjectTypeLiteral, TsUtils.getObjectTypeLiteralHighlightRange]
+    [FaultID.ObjectTypeLiteral, TsUtils.getObjectTypeLiteralHighlightRange],
+    [FaultID.StructuralIdentity, TsUtils.getStructuralIdentityHighlightRange]
   ]);
 
   static getKeywordHighlightRange(nodeOrComment: ts.Node | ts.CommentRange, keyword: string): [number, number] {
@@ -1262,9 +1369,10 @@ export class TsUtils {
   }
 
   static getParameterPropertiesHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
-    const params = (nodeOrComment as ts.ConstructorDeclaration).parameters;
-    if (params.length) {
-      return [params[0].getStart(), params[params.length - 1].getEnd()];
+    const param = nodeOrComment as ts.ParameterDeclaration;
+    const modifier = TsUtils.getAccessModifier(ts.getModifiers(param));
+    if (modifier !== undefined) {
+      return [modifier.getStart(), modifier.getEnd()];
     }
     return undefined;
   }
@@ -1281,6 +1389,21 @@ export class TsUtils {
     const name = (nodeOrComment as ts.PropertyDeclaration).name;
     const exclamationToken = (nodeOrComment as ts.PropertyDeclaration).exclamationToken;
     return [name.getStart(), exclamationToken ? exclamationToken.getEnd() : name.getEnd()];
+  }
+
+  static getStructuralIdentityHighlightRange(nodeOrComment: ts.Node | ts.CommentRange): [number, number] | undefined {
+    let node: ts.Node | undefined;
+    if (nodeOrComment.kind === ts.SyntaxKind.ReturnStatement) {
+      node = (nodeOrComment as ts.ReturnStatement).expression;
+    } else if (nodeOrComment.kind === ts.SyntaxKind.PropertyDeclaration) {
+      node = (nodeOrComment as ts.PropertyDeclaration).name;
+    }
+
+    if (node !== undefined) {
+      return [node.getStart(), node.getEnd()];
+    }
+
+    return undefined;
   }
 
   isStdRecordType(type: ts.Type): boolean {
@@ -1358,7 +1481,7 @@ export class TsUtils {
       const ext = path.extname(fileName).toLowerCase();
       const isThirdPartyCode =
         ARKTS_IGNORE_DIRS.some((ignore) => {
-          return pathContainsDirectory(path.normalize(fileName), ignore);
+          return srcFilePathContainsDirectory(srcFile, ignore);
         }) ||
         ARKTS_IGNORE_FILES.some((ignore) => {
           return path.basename(fileName) === ignore;
@@ -1613,7 +1736,7 @@ export class TsUtils {
     return !symbol || (symbol.flags & ts.SymbolFlags.Class) === 0;
   }
 
-  isClassTypeExrepssion(expr: ts.Expression): boolean {
+  isClassTypeExpression(expr: ts.Expression): boolean {
     const sym = this.trueSymbolAtLocation(expr);
     return sym !== undefined && (sym.flags & ts.SymbolFlags.Class) !== 0;
   }
@@ -1856,7 +1979,7 @@ export class TsUtils {
     return unwrappedTypeNode;
   }
 
-  isSendableTypeNode(typeNode: ts.TypeNode): boolean {
+  isSendableTypeNode(typeNode: ts.TypeNode, isShared: boolean = false): boolean {
 
     /*
      * In order to correctly identify the usage of the enum member or
@@ -1871,7 +1994,7 @@ export class TsUtils {
     // Only a sendable union type is supported
     if (ts.isUnionTypeNode(typeNode)) {
       return typeNode.types.every((elemType) => {
-        return this.isSendableTypeNode(elemType);
+        return this.isSendableTypeNode(elemType, isShared);
       });
     }
 
@@ -1880,7 +2003,16 @@ export class TsUtils {
     if (sym && sym.getFlags() & ts.SymbolFlags.TypeAlias) {
       const typeDecl = TsUtils.getDeclaration(sym);
       if (typeDecl && ts.isTypeAliasDeclaration(typeDecl)) {
-        return this.isSendableTypeNode(typeDecl.type);
+        const typeArgs = (typeNode as ts.TypeReferenceNode).typeArguments;
+        if (
+          typeArgs &&
+          !typeArgs.every((typeArg) => {
+            return this.isSendableTypeNode(typeArg);
+          })
+        ) {
+          return false;
+        }
+        return this.isSendableTypeNode(typeDecl.type, isShared);
       }
     }
 
@@ -1888,8 +2020,14 @@ export class TsUtils {
     if (TsUtils.isConstEnum(sym)) {
       return true;
     }
+    const type: ts.Type = this.tsTypeChecker.getTypeFromTypeNode(typeNode);
 
-    return this.isSendableType(this.tsTypeChecker.getTypeFromTypeNode(typeNode));
+    // In shared module, literal forms of primitive data types can be exported
+    if (isShared && TsUtils.isPurePrimitiveLiteralType(type)) {
+      return true;
+    }
+
+    return this.isSendableType(type);
   }
 
   isSendableType(type: ts.Type): boolean {
@@ -1926,6 +2064,10 @@ export class TsUtils {
       return tsType.types.every((elemType) => {
         return this.isShareableType(elemType);
       });
+    }
+
+    if (TsUtils.isPurePrimitiveLiteralType(tsType)) {
+      return true;
     }
 
     return this.isSendableType(tsType);
@@ -1990,10 +2132,7 @@ export class TsUtils {
   }
 
   static hasSendableDecorator(decl: ts.ClassDeclaration | ts.FunctionDeclaration | ts.TypeAliasDeclaration): boolean {
-    const decorators = ts.getAllDecorators(decl);
-    return !!decorators?.some((x) => {
-      return TsUtils.getDecoratorName(x) === SENDABLE_DECORATOR;
-    });
+    return !!TsUtils.getSendableDecorator(decl);
   }
 
   static getNonSendableDecorators(
@@ -2002,6 +2141,15 @@ export class TsUtils {
     const decorators = ts.getAllDecorators(decl);
     return decorators?.filter((x) => {
       return TsUtils.getDecoratorName(x) !== SENDABLE_DECORATOR;
+    });
+  }
+
+  static getSendableDecorator(
+    decl: ts.ClassDeclaration | ts.FunctionDeclaration | ts.TypeAliasDeclaration
+  ): ts.Decorator | undefined {
+    const decorators = ts.getAllDecorators(decl);
+    return decorators?.find((x) => {
+      return TsUtils.getDecoratorName(x) === SENDABLE_DECORATOR;
     });
   }
 
@@ -2463,7 +2611,7 @@ export class TsUtils {
     const decl = this.getDeclarationNode(node);
     const typeNode = (decl as any)?.type;
     return typeNode && !TsUtils.isFunctionLikeDeclaration(decl!) ?
-      this.isSendableTypeNode(typeNode) :
+      this.isSendableTypeNode(typeNode, true) :
       this.isShareableType(this.tsTypeChecker.getTypeAtLocation(decl ? decl : node));
   }
 
@@ -2490,14 +2638,6 @@ export class TsUtils {
       return false;
     }
     return true;
-  }
-
-  static isMethodWithThisReturnType(node: ts.Node | undefined): boolean {
-    if (node?.kind !== ts.SyntaxKind.MethodDeclaration) {
-      return false;
-    }
-    const method = node as ts.MethodDeclaration;
-    return method.type?.kind === ts.SyntaxKind.ThisType;
   }
 
   // If it is an overloaded function, all declarations for that function are found
@@ -2601,5 +2741,101 @@ export class TsUtils {
       return !TsUtils.isSendableFunction(type);
     }
     return false;
+  }
+
+  static isSetExpression(accessExpr: ts.ElementAccessExpression): boolean {
+    if (!ts.isBinaryExpression(accessExpr.parent)) {
+      return false;
+    }
+    const binaryExpr = accessExpr.parent;
+    return binaryExpr.operatorToken.kind === ts.SyntaxKind.EqualsToken && binaryExpr.left === accessExpr;
+  }
+
+  haveSameBaseType(type1: ts.Type, type2: ts.Type): boolean {
+    return this.tsTypeChecker.getBaseTypeOfLiteralType(type1) === this.tsTypeChecker.getBaseTypeOfLiteralType(type2);
+  }
+
+  isGetIndexableType(type: ts.Type, indexType: ts.Type): boolean {
+    const getDecls = type.getProperty('$_get')?.getDeclarations();
+    if (getDecls?.length !== 1 || getDecls[0].kind !== ts.SyntaxKind.MethodDeclaration) {
+      return false;
+    }
+    const getMethodDecl = getDecls[0] as ts.MethodDeclaration;
+    const getParams = getMethodDecl.parameters;
+    if (getMethodDecl.type === undefined || getParams.length !== 1 || getParams[0].type === undefined) {
+      return false;
+    }
+
+    return this.haveSameBaseType(this.tsTypeChecker.getTypeFromTypeNode(getParams[0].type), indexType);
+  }
+
+  isSetIndexableType(type: ts.Type, indexType: ts.Type, valueType: ts.Type): boolean {
+    const setProp = type.getProperty('$_set');
+    const setDecls = setProp?.getDeclarations();
+    if (setDecls?.length !== 1 || setDecls[0].kind !== ts.SyntaxKind.MethodDeclaration) {
+      return false;
+    }
+    const setMethodDecl = setDecls[0] as ts.MethodDeclaration;
+    const setParams = setMethodDecl.parameters;
+    if (
+      setMethodDecl.type !== undefined ||
+      setParams.length !== 2 ||
+      setParams[0].type === undefined ||
+      setParams[1].type === undefined
+    ) {
+      return false;
+    }
+
+    return (
+      this.haveSameBaseType(this.tsTypeChecker.getTypeFromTypeNode(setParams[0].type), indexType) &&
+      this.haveSameBaseType(this.tsTypeChecker.getTypeFromTypeNode(setParams[1].type), valueType)
+    );
+  }
+
+  // Search for and save the exported declaration in the specified file, re-exporting another module will not be included.
+  searchFileExportDecl(sourceFile: ts.SourceFile, targetDecls?: ts.SyntaxKind[]): Set<ts.Node> {
+    const exportDeclSet = new Set<ts.Node>();
+    const appendDecl = (decl: ts.Node | undefined): void => {
+      if (!decl || targetDecls && !targetDecls.includes(decl.kind)) {
+        return;
+      }
+      exportDeclSet.add(decl);
+    };
+
+    sourceFile.statements.forEach((statement: ts.Statement) => {
+      if (ts.isExportAssignment(statement)) {
+        // handle the case:"export default declName;"
+        if (statement.isExportEquals) {
+          return;
+        }
+        appendDecl(this.getDeclarationNode(statement.expression));
+      } else if (ts.isExportDeclaration(statement)) {
+        // handle the case:"export { declName1, declName2 };"
+        if (!statement.exportClause || !ts.isNamedExports(statement.exportClause)) {
+          return;
+        }
+        statement.exportClause.elements.forEach((specifier) => {
+          appendDecl(this.getDeclarationNode(specifier.propertyName ?? specifier.name));
+        });
+      } else if (ts.canHaveModifiers(statement)) {
+        // handle the case:"export const/class/function... decalName;"
+        if (!TsUtils.hasModifier(ts.getModifiers(statement), ts.SyntaxKind.ExportKeyword)) {
+          return;
+        }
+        if (!ts.isVariableStatement(statement)) {
+          appendDecl(statement);
+          return;
+        }
+        for (const exportDecl of statement.declarationList.declarations) {
+          appendDecl(exportDecl);
+        }
+      }
+    });
+    return exportDeclSet;
+  }
+
+  static isAmbientNode(node: ts.Node): boolean {
+    // Ambient flag is not exposed, so we apply dirty hack to make it visible
+    return !!(node.flags & (ts.NodeFlags as any).Ambient);
   }
 }

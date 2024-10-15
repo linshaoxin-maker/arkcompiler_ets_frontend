@@ -17,17 +17,23 @@
         {
             "line": 22,
             "column": 1,
-            "problem": "ImportAfterStatement"
+            "problem": "ImportAfterStatement",
+            "suggest": "",
+            "rule": "\"import\" statements after other statements are not allowed (arkts-no-misplaced-imports)"
         },
         {
             "line": 23,
             "column": 1,
-            "problem": "ImportAfterStatement"
+            "problem": "ImportAfterStatement",
+            "suggest": "",
+            "rule": "\"import\" statements after other statements are not allowed (arkts-no-misplaced-imports)"
         },
         {
             "line": 24,
             "column": 1,
-            "problem": "ImportAfterStatement"
+            "problem": "ImportAfterStatement",
+            "suggest": "",
+            "rule": "\"import\" statements after other statements are not allowed (arkts-no-misplaced-imports)"
         }
     ]
 }

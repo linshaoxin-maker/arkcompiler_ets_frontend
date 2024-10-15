@@ -118,8 +118,12 @@ struct CompilerOptions {
     bool parseOnly {};
     bool verifierAllChecks {};
     bool verifierFullProgram {};
+    bool debuggerEvalMode {};
+    uint64_t debuggerEvalLine {};
+    std::string debuggerEvalSource {};
     std::string stdLib {};
     std::vector<std::string> plugins {};
+    std::vector<std::string> debuggerEvalPandaFiles {};
     std::unordered_set<std::string> skipPhases {};
     std::unordered_set<std::string> verifierWarnings {};
     std::unordered_set<std::string> verifierErrors {};
@@ -247,10 +251,16 @@ public:
 
     static void DumpAsm(const pandasm::Program *prog);
 
+    // This is used as a _different_ channel of error reporting than GetError().
+    // If this is true, the errors in question have already been reported to the user.
+    bool IsAnyError() const noexcept;
+
     const Error &GetError() const noexcept
     {
         return error_;
     }
+
+    std::string GetPhasesList() const;
 
     std::vector<util::Plugin> const &Plugins()
     {

@@ -15,6 +15,7 @@
 
 #include "globalTypesHolder.h"
 
+#include "checker/types/typeError.h"
 #include "checker/types/ts/numberType.h"
 #include "checker/types/ts/anyType.h"
 #include "checker/types/ts/stringType.h"
@@ -67,6 +68,36 @@ void GlobalTypesHolder::AddETSEscompatLayer()
     builtinNameMappings_.emplace("Set", GlobalTypeId::ETS_SET_BUILTIN);
 }
 
+void GlobalTypesHolder::AddFunctionTypes(ArenaAllocator *allocator)
+{
+    // ETS throwing functional types
+    for (size_t id = static_cast<size_t>(GlobalTypeId::ETS_THROWING_FUNCTION0_CLASS), nargs = 0;
+         id < static_cast<size_t>(GlobalTypeId::ETS_THROWING_FUNCTIONN_CLASS); id++, nargs++) {
+        builtinNameMappings_.emplace(util::UString("ThrowingFunction" + std::to_string(nargs), allocator).View(),
+                                     static_cast<GlobalTypeId>(id));
+    }
+
+    builtinNameMappings_.emplace("ThrowingFunctionN", GlobalTypeId::ETS_THROWING_FUNCTIONN_CLASS);
+
+    // ETS rethrowing functional types
+    for (size_t id = static_cast<size_t>(GlobalTypeId::ETS_RETHROWING_FUNCTION0_CLASS), nargs = 0;
+         id < static_cast<size_t>(GlobalTypeId::ETS_RETHROWING_FUNCTIONN_CLASS); id++, nargs++) {
+        builtinNameMappings_.emplace(util::UString("RethrowingFunction" + std::to_string(nargs), allocator).View(),
+                                     static_cast<GlobalTypeId>(id));
+    }
+
+    builtinNameMappings_.emplace("RethrowingFunctionN", GlobalTypeId::ETS_RETHROWING_FUNCTIONN_CLASS);
+
+    // ETS functional types
+    for (size_t id = static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS), nargs = 0;
+         id < static_cast<size_t>(GlobalTypeId::ETS_FUNCTIONN_CLASS); id++, nargs++) {
+        builtinNameMappings_.emplace(util::UString("Function" + std::to_string(nargs), allocator).View(),
+                                     static_cast<GlobalTypeId>(id));
+    }
+
+    builtinNameMappings_.emplace("FunctionN", GlobalTypeId::ETS_FUNCTIONN_CLASS);
+}
+
 void GlobalTypesHolder::AddTSSpecificTypes(ArenaAllocator *allocator)
 {
     globalTypes_[static_cast<size_t>(GlobalTypeId::NUMBER)] = allocator->New<NumberType>();
@@ -99,11 +130,8 @@ void GlobalTypesHolder::AddTSSpecificTypes(ArenaAllocator *allocator)
     globalTypes_[static_cast<size_t>(GlobalTypeId::ERROR_TYPE)] = allocator->New<AnyType>();
 }
 
-GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMappings_(allocator->Adapter())
+void GlobalTypesHolder::AddEtsSpecificTypes(ArenaAllocator *allocator)
 {
-    // TS specific types
-    AddTSSpecificTypes(allocator);
-
     // ETS specific types
     globalTypes_[static_cast<size_t>(GlobalTypeId::BYTE)] = allocator->New<ByteType>();
     globalTypes_[static_cast<size_t>(GlobalTypeId::SHORT)] = allocator->New<ShortType>();
@@ -117,7 +145,11 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMap
     globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_NULL)] = allocator->New<ETSNullType>();
     globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_UNDEFINED)] = allocator->New<ETSUndefinedType>();
     globalTypes_[static_cast<size_t>(GlobalTypeId::ETS_WILDCARD)] = allocator->New<WildcardType>();
+    globalTypes_[static_cast<size_t>(GlobalTypeId::TYPE_ERROR)] = allocator->New<TypeError>();
+}
 
+void GlobalTypesHolder::AddEtsSpecificBuiltinTypes()
+{
     builtinNameMappings_.emplace("Boolean", GlobalTypeId::ETS_BOOLEAN_BUILTIN);
     builtinNameMappings_.emplace("Byte", GlobalTypeId::ETS_BYTE_BUILTIN);
     builtinNameMappings_.emplace("Char", GlobalTypeId::ETS_CHAR_BUILTIN);
@@ -157,21 +189,34 @@ GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMap
     builtinNameMappings_.emplace("FloatBox", GlobalTypeId::ETS_FLOAT_BOX_BUILTIN);
     builtinNameMappings_.emplace("DoubleBox", GlobalTypeId::ETS_DOUBLE_BOX_BUILTIN);
     builtinNameMappings_.emplace("never", GlobalTypeId::ETS_NEVER_BUILTIN);
+}
+
+GlobalTypesHolder::GlobalTypesHolder(ArenaAllocator *allocator) : builtinNameMappings_(allocator->Adapter())
+{
+    // TS specific types
+    AddTSSpecificTypes(allocator);
+
+    // ETS specific types
+    AddEtsSpecificTypes(allocator);
+
+    AddEtsSpecificBuiltinTypes();
 
     // ETS escompat layer
     AddETSEscompatLayer();
 
+    builtinNameMappings_.emplace("TYPE ERROR", GlobalTypeId::TYPE_ERROR);
+
     // ETS functional types
     for (size_t id = static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS), nargs = 0;
          id < static_cast<size_t>(GlobalTypeId::ETS_FUNCTIONN_CLASS); id++, nargs++) {
-        std::stringstream ss;
-        ss << "Function";
-        ss << nargs;
-
-        builtinNameMappings_.emplace(util::UString(ss.str(), allocator).View(), static_cast<GlobalTypeId>(id));
+        builtinNameMappings_.emplace(util::UString("Function" + std::to_string(nargs), allocator).View(),
+                                     static_cast<GlobalTypeId>(id));
     }
 
     builtinNameMappings_.emplace("FunctionN", GlobalTypeId::ETS_FUNCTIONN_CLASS);
+
+    // Function types
+    AddFunctionTypes(allocator);
 
     // ETS interop js specific types
     builtinNameMappings_.emplace("JSRuntime", GlobalTypeId::ETS_INTEROP_JSRUNTIME_BUILTIN);
@@ -630,16 +675,39 @@ Type *GlobalTypesHolder::GlobalBuiltinNeverType()
 
 size_t GlobalTypesHolder::VariadicFunctionTypeThreshold()
 {
-    return static_cast<size_t>(GlobalTypeId::ETS_FUNCTIONN_CLASS) -
-           static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS);
+    auto val =
+        static_cast<size_t>(GlobalTypeId::ETS_FUNCTIONN_CLASS) - static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS);
+    ASSERT(val == (static_cast<size_t>(GlobalTypeId::ETS_THROWING_FUNCTIONN_CLASS) -
+                   static_cast<size_t>(GlobalTypeId::ETS_THROWING_FUNCTION0_CLASS)));
+    ASSERT(val == (static_cast<size_t>(GlobalTypeId::ETS_RETHROWING_FUNCTIONN_CLASS) -
+                   static_cast<size_t>(GlobalTypeId::ETS_RETHROWING_FUNCTION0_CLASS)));
+    return val;
 }
 
-Type *GlobalTypesHolder::GlobalFunctionBuiltinType(size_t nargs)
+Type *GlobalTypesHolder::GlobalFunctionBuiltinType(size_t nargs, ir::ScriptFunctionFlags flags)
 {
+    Type *type = globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS) + nargs);
+
     if (nargs >= VariadicFunctionTypeThreshold()) {
-        return globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_FUNCTIONN_CLASS));
+        if ((flags & ir::ScriptFunctionFlags::THROWS) != 0U) {
+            type = globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_THROWING_FUNCTIONN_CLASS));
+        } else if ((flags & ir::ScriptFunctionFlags::RETHROWS) != 0U) {
+            type = globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_RETHROWING_FUNCTIONN_CLASS));
+        } else {
+            type = globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_FUNCTIONN_CLASS));
+        }
+    } else if ((flags & ir::ScriptFunctionFlags::THROWS) != 0U) {
+        type = globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_THROWING_FUNCTION0_CLASS) + nargs);
+    } else if ((flags & ir::ScriptFunctionFlags::RETHROWS) != 0U) {
+        type = globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_RETHROWING_FUNCTION0_CLASS) + nargs);
     }
-    return globalTypes_.at(static_cast<size_t>(GlobalTypeId::ETS_FUNCTION0_CLASS) + nargs);
+
+    return type;
+}
+
+Type *GlobalTypesHolder::GlobalTypeError()
+{
+    return globalTypes_.at(static_cast<size_t>(GlobalTypeId::TYPE_ERROR));
 }
 
 void GlobalTypesHolder::InitializeBuiltin(const util::StringView name, Type *type)

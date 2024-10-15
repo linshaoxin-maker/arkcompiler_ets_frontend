@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# coding=utf-8
 #
 # Copyright (c) 2022-2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import git
 import os
 import re
 import sys
+
+import git
 
 LINTER_PATH = 'ets2panda/linter'
 
@@ -47,7 +49,7 @@ def get_branch_map(repo, branch_name, path):
         if sha not in result:
             result[sha] = commit
         else:
-            raise Exception('Duplicate commit ' + sha)
+            raise Exception(f'Duplicate commit {sha}')
 
     return result
 

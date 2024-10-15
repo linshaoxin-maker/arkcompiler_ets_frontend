@@ -23,4 +23,5 @@ export interface CommandLineOptions {
   parsedConfigFile?: ts.ParsedCommandLine;
   inputFiles: string[];
   enableAutofix: boolean;
+  arkts2: boolean;
 }

@@ -17,15 +17,17 @@ import { Logger } from '../lib/Logger';
 import { LoggerImpl } from './LoggerImpl';
 Logger.init(new LoggerImpl());
 
-import { TypeScriptLinter } from '../lib/TypeScriptLinter';
-import { lint } from '../lib/LinterRunner';
-import { parseCommandLine } from './CommandLineParser';
-import type { Autofix } from '../lib/autofixes/Autofixer';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as ts from 'typescript';
 import type { CommandLineOptions } from '../lib/CommandLineOptions';
+import { lint } from '../lib/LinterRunner';
+import { TypeScriptLinter } from '../lib/TypeScriptLinter';
+import type { Autofix } from '../lib/autofixes/Autofixer';
+import { parseCommandLine } from './CommandLineParser';
 import { compileLintOptions } from './Compiler';
+import { getEtsLoaderPath } from './LinterCLI';
+import { ProblemSeverity } from '../lib/ProblemSeverity';
 
 const TEST_DIR = 'test';
 const TAB = '    ';
@@ -33,10 +35,13 @@ const TAB = '    ';
 interface TestNodeInfo {
   line: number;
   column: number;
+  endLine: number;
+  endColumn: number;
   problem: string;
   autofix?: Autofix[];
   suggest?: string;
   rule?: string;
+  severity?: string;
 }
 
 enum Mode {
@@ -50,6 +55,8 @@ RESULT_EXT[Mode.AUTOFIX] = '.autofix.json';
 const AUTOFIX_SKIP_EXT = '.autofix.skip';
 const ARGS_CONFIG_EXT = '.args.json';
 const DIFF_EXT = '.diff';
+const testExtensionSts = '.sts';
+const testExtensionDSts = '.d.sts';
 
 function runTests(testDirs: string[]): number {
 
@@ -73,34 +80,53 @@ function runTests(testDirs: string[]): number {
       return (
         x.trimEnd().endsWith(ts.Extension.Ts) && !x.trimEnd().endsWith(ts.Extension.Dts) ||
         x.trimEnd().endsWith(ts.Extension.Tsx) ||
-        x.trimEnd().endsWith(ts.Extension.Ets)
+        x.trimEnd().endsWith(ts.Extension.Ets) ||
+        x.trimEnd().endsWith(testExtensionSts) && !x.trimEnd().endsWith(testExtensionDSts)
       );
     });
     Logger.info(`\nProcessing "${testDir}" directory:\n`);
     // Run each test in Default and Autofix mode:
-    for (const testFile of testFiles) {
-      if (runTest(testDir, testFile, Mode.DEFAULT)) {
-        failed++;
-        hasComparisonFailures = true;
-      } else {
-        passed++;
-      }
-      if (runTest(testDir, testFile, Mode.AUTOFIX)) {
-        failed++;
-        hasComparisonFailures = true;
-      } else {
-        passed++;
-      }
-    }
+    [passed, failed, hasComparisonFailures] = runTestFiles(testFiles, testDir);
   }
   Logger.info(`\nSUMMARY: ${passed + failed} total, ${passed} passed or skipped, ${failed} failed.`);
   Logger.info(failed > 0 ? '\nTEST FAILED' : '\nTEST SUCCESSFUL');
   process.exit(hasComparisonFailures ? -1 : 0);
 }
 
+function runTestFiles(testFiles: string[], testDir: string): [number, number, boolean] {
+  let hasComparisonFailures = false;
+  let passed = 0;
+  let failed = 0;
+  for (const testFile of testFiles) {
+    let renamed = false;
+    let tsName = testFile;
+    if (testFile.includes(testExtensionSts)) {
+      renamed = true;
+      tsName = testFile.replace(testExtensionSts, ts.Extension.Ts);
+      fs.renameSync(path.join(testDir, testFile), path.join(testDir, tsName));
+    }
+    if (runTest(testDir, tsName, Mode.DEFAULT)) {
+      failed++;
+      hasComparisonFailures = true;
+    } else {
+      passed++;
+    }
+    if (runTest(testDir, tsName, Mode.AUTOFIX)) {
+      failed++;
+      hasComparisonFailures = true;
+    } else {
+      passed++;
+    }
+    if (renamed) {
+      fs.renameSync(path.join(testDir, tsName), path.join(testDir, testFile));
+    }
+  }
+  return [passed, failed, hasComparisonFailures];
+}
+
 function parseArgs(testDir: string, testFile: string, mode: Mode): CommandLineOptions {
   // Configure test parameters and run linter.
-  const args: string[] = [path.join(testDir, testFile)];
+  const cmdArgs: string[] = [path.join(testDir, testFile)];
   const argsFileName = path.join(testDir, testFile + ARGS_CONFIG_EXT);
 
   if (fs.existsSync(argsFileName)) {
@@ -109,13 +135,16 @@ function parseArgs(testDir: string, testFile: string, mode: Mode): CommandLineOp
     if (args.testMode !== undefined) {
       TypeScriptLinter.testMode = args.testMode;
     }
+    if (args.arkts2 === true) {
+      cmdArgs.push('--arkts-2');
+    }
   }
 
   if (mode === Mode.AUTOFIX) {
-    args.push('--autofix');
+    cmdArgs.push('--autofix');
   }
 
-  return parseCommandLine(args);
+  return parseCommandLine(cmdArgs);
 }
 
 function compareExpectedAndActual(testDir: string, testFile: string, mode: Mode, resultNodes: TestNodeInfo[]): string {
@@ -158,7 +187,10 @@ function runTest(testDir: string, testFile: string, mode: Mode): boolean {
   const currentTestMode = TypeScriptLinter.testMode;
 
   const cmdOptions = parseArgs(testDir, testFile, mode);
-  const result = lint(compileLintOptions(cmdOptions));
+  const lintOptions = compileLintOptions(cmdOptions);
+  lintOptions.compatibleSdkVersion = '12';
+  lintOptions.compatibleSdkVersionStage = 'beta3';
+  const result = lint(lintOptions, getEtsLoaderPath(lintOptions));
   const fileProblems = result.problemsInfos.get(path.normalize(cmdOptions.inputFiles[0]));
   if (fileProblems === undefined) {
     return true;
@@ -171,10 +203,13 @@ function runTest(testDir: string, testFile: string, mode: Mode): boolean {
     return {
       line: x.line,
       column: x.column,
+      endLine: x.endLine,
+      endColumn: x.endColumn,
       problem: x.problem,
       autofix: mode === Mode.AUTOFIX ? x.autofix : undefined,
       suggest: x.suggest,
-      rule: x.rule
+      rule: x.rule,
+      severity: ProblemSeverity[x.severity]
     };
   });
 
@@ -192,7 +227,7 @@ function expectedAndActualMatch(expectedNodes: TestNodeInfo[], actualNodes: Test
   for (let i = 0; i < actualNodes.length; i++) {
     const actual = actualNodes[i];
     const expect = expectedNodes[i];
-    if (actual.line !== expect.line || actual.column !== expect.column || actual.problem !== expect.problem) {
+    if (!locationMatch(expect, actual) || actual.problem !== expect.problem) {
       return reportDiff(expect, actual);
     }
     if (!autofixArraysMatch(expect.autofix, actual.autofix)) {
@@ -204,9 +239,21 @@ function expectedAndActualMatch(expectedNodes: TestNodeInfo[], actualNodes: Test
     if (expect.rule && actual.rule !== expect.rule) {
       return reportDiff(expect, actual);
     }
+    if (expect.severity && actual.severity !== expect.severity) {
+      return reportDiff(expect, actual);
+    }
   }
 
   return '';
+}
+
+function locationMatch(expected: TestNodeInfo, actual: TestNodeInfo): boolean {
+  return (
+    actual.line === expected.line ||
+    actual.column === expected.column ||
+    !!(expected.endLine && actual.endLine === expected.endLine) ||
+    !!(expected.endColumn && actual.endColumn === expected.endColumn)
+  );
 }
 
 function autofixArraysMatch(expected: Autofix[] | undefined, actual: Autofix[] | undefined): boolean {

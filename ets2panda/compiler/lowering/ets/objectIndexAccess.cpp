@@ -15,9 +15,9 @@
 
 //
 // desc: Object index access syntax is translated to the call of special setter (in case of assignment):
-//       obj[i] = val; => obj.S_set(i, val);
+//       "obj[i] = val; => obj.S_set(i, val);"
 //   	 or getter (in all the other cases):
-//   	 ...obj[i]... => ...obj.S_get(i)...
+//   	 "...obj[i]... => ...obj.S_get(i)..."
 //      methods.
 //
 
@@ -40,6 +40,7 @@ ir::Expression *ObjectIndexLowering::ProcessIndexSetAccess(parser::ETSParser *pa
     auto *const loweringResult = parser->CreateFormattedExpression(
         CALL_EXPRESSION, memberExpression->Object(), memberExpression->Property(), assignmentExpression->Right());
     loweringResult->SetParent(assignmentExpression->Parent());
+    loweringResult->SetRange(assignmentExpression->Range());
 
     loweringResult->Check(checker);
     return loweringResult;
@@ -57,6 +58,7 @@ ir::Expression *ObjectIndexLowering::ProcessIndexGetAccess(parser::ETSParser *pa
     auto *const loweringResult =
         parser->CreateFormattedExpression(CALL_EXPRESSION, memberExpression->Object(), memberExpression->Property());
     loweringResult->SetParent(memberExpression->Parent());
+    loweringResult->SetRange(memberExpression->Range());
 
     loweringResult->Check(checker);
     loweringResult->SetBoxingUnboxingFlags(memberExpression->GetBoxingUnboxingFlags());
