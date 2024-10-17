@@ -1,0 +1,2 @@
+ark_tests/ast/parser/js/expressions/array/test-array-expression-3.js
+ark_tests/ast/parser/js/identifiers/test-identifier-keyword-await-2.js
