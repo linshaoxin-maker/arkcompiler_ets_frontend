@@ -250,6 +250,7 @@ Type *ETSChecker::ResolveIdentifier(ir::Identifier *ident)
                                                                : varbinder::ResolveBindingOptions::ALL_NON_TYPE;
 
     auto *resolved = FindVariableInFunctionScope(ident->Name(), options);
+
     if (resolved == nullptr) {
         // If the reference is not found already in the current class, then it is not bound to the class, so we have to
         // find the reference in the global class first, then in the global scope
@@ -723,7 +724,12 @@ static bool NeedWideningBasedOnInitializerHeuristics(ir::Expression *e)
     if (e->IsUnaryExpression()) {
         return NeedWideningBasedOnInitializerHeuristics(e->AsUnaryExpression()->Argument());
     }
-    const bool isConstInit = e->IsIdentifier() && e->Variable()->Declaration()->IsConstDecl();
+    bool IsConstDecl = false;
+    if (e->Variable()) {
+        IsConstDecl = e->Variable()->Declaration()->IsConstDecl();
+    }
+    const bool isConstInit = e->IsIdentifier() && IsConstDecl;
+
     return e->IsConditionalExpression() || e->IsLiteral() || isConstInit;
 }
 
@@ -753,6 +759,30 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
 
     if (!CheckInit(ident, typeAnnotation, init, annotationType, bindingVar)) {
         return GlobalTypeError();
+    }
+
+    if (init->Variable() && init->Variable()->Declaration()->PossibleTDZ()) {
+        if (init->IsIdentifier() && init->AsIdentifier()->Name() == ident->Variable()->Name()) {
+            LogTypeError({"Variable ", ident->Variable()->Name(), " is accessed before it's initialization"},
+                         init->Start());
+            return GlobalTypeError();
+        }
+    }
+    bool hasError = false;
+    if (ident->IsIdentifier() && init->IsExpression() && init->Parent()->IsClassProperty() &&
+        !init->IsMemberExpression()) {
+        init->IterateRecursively([=, &hasError](ir::AstNode *child) {
+            if (child->IsIdentifier() && !child->IsMemberExpression()) {
+                if (child->AsIdentifier()->Name() == ident->AsIdentifier()->Name()) {
+                    LogTypeError({"Variable ", ident->Variable()->Name(), " is accessed before it's initialization"},
+                                 init->Start());
+                    hasError = true;
+                }
+            }
+        });
+        if (hasError) {
+            return GlobalTypeError();
+        }
     }
 
     checker::Type *initType = init->Check(this);
