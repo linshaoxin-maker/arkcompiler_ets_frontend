@@ -755,7 +755,9 @@ checker::Type *ETSChecker::CheckVariableDeclaration(ir::Identifier *ident, ir::T
 
     if (typeAnnotation == nullptr && initType->IsETSFunctionType()) {
         if (!init->IsArrowFunctionExpression() && (initType->AsETSFunctionType()->CallSignatures().size() != 1)) {
-            ThrowTypeError("Ambiguous function initialization because of multiple overloads", init->Start());
+            LogTypeError("Ambiguous function initialization because of multiple overloads", init->Start());
+            bindingVar->SetTsType(GlobalTypeError());
+            return bindingVar->TsTypeOrError();
         }
 
         annotationType =
@@ -1442,6 +1444,11 @@ Type *ETSChecker::GetReferencedTypeBase(ir::Expression *name)
         }
         case ir::AstNodeType::TS_TYPE_ALIAS_DECLARATION: {
             tsType = GetTypeFromTypeAliasReference(refVar);
+            break;
+        }
+        case ir::AstNodeType::ANNOTATION_DECLARATION: {
+            LogTypeError("Annotations are only implemented at the parse stage.", name->Start());
+            tsType = GlobalTypeError();
             break;
         }
         default: {
@@ -2260,6 +2267,10 @@ void ETSChecker::InferTypesForLambda(ir::ScriptFunction *lambda, ir::ETSFunction
         if (maybeSubstitutedFunctionSig != nullptr) {
             returnTypeAnnotation->SetTsType(maybeSubstitutedFunctionSig->ReturnType());
         }
+
+        // Return type can be ETSFunctionType
+        // Run varbinder to set scopes for cloned node
+        compiler::InitScopesPhaseETS::RunExternalNode(returnTypeAnnotation, VarBinder());
         lambda->SetReturnTypeAnnotation(returnTypeAnnotation);
     }
 }
