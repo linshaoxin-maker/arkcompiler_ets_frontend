@@ -35,3 +35,6 @@ js-sha256_test
 
 #19246
 jsDiff_test
+
+#20145
+hi-base32_test

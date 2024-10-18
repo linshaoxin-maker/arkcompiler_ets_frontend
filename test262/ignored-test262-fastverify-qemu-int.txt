@@ -134,3 +134,7 @@ test262/data/test_es2021/language/expressions/dynamic-import/catch/nested-if-imp
 #20113
 test262/data/test_es2021/intl402/DateTimeFormat/required-date-time-formats.js
 test262/data/test_es2021/intl402/DisplayNames/options-style-invalid-throws.js
+test262/data/test_es2021/intl402/DisplayNames/prototype/resolvedOptions/option-fallback.js
+test262/data/test_es2021/intl402/RelativeTimeFormat/constructor/constructor/locales-valid.js
+test262/data/test_es2021/intl402/RelativeTimeFormat/constructor/constructor/options-numberingSystem-vaild.js
+test262/data/test_es2021/intl402/RelativeTimeFormat/constructor/supportedLocalesOf/branding.js
