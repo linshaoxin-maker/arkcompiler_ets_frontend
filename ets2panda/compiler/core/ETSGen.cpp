@@ -2256,6 +2256,7 @@ void ETSGen::RefEqualityLoose(const ir::AstNode *node, VReg lhs, VReg rhs, Label
 
 void ETSGen::CompileStatements(const ArenaVector<ir::Statement *> &statements)
 {
+    //34 in
     for (const auto *stmt : statements) {
         stmt->Compile(this);
     }

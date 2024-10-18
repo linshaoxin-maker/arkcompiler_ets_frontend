@@ -653,31 +653,44 @@ Signature *ETSChecker::CreateBuiltinArraySignature(ETSArrayType *arrayType, size
 ETSObjectType *ETSChecker::FunctionTypeToFunctionalInterfaceType(Signature *signature)
 {
     auto *retType = signature->ReturnType();
+
+    auto *substitution = NewSubstitution();
     if (signature->RestVar() != nullptr) {
         auto *functionN =
             GlobalBuiltinFunctionType(GlobalBuiltinFunctionTypeVariadicThreshold(), signature->Function()->Flags())
                 ->AsETSObjectType();
-        auto *substitution = NewSubstitution();
         substitution->emplace(functionN->TypeArguments()[0]->AsETSTypeParameter(), MaybePromotedBuiltinType(retType));
-        return functionN->Substitute(Relation(), substitution);
+        functionN = functionN->Substitute(Relation(), substitution);
+        return functionN;
     }
 
+    ETSObjectType *funcIface;
     // Note: FunctionN is not supported yet
     if (signature->Params().size() >= GetGlobalTypesHolder()->VariadicFunctionTypeThreshold()) {
-        return nullptr;
+        funcIface =
+            GlobalBuiltinFunctionType(GlobalBuiltinFunctionTypeVariadicThreshold(), signature->Function()->Flags())
+                ->AsETSObjectType();
+        substitution->emplace(funcIface->TypeArguments()[0]->AsETSTypeParameter(), MaybePromotedBuiltinType(retType));
+        funcIface = funcIface->Substitute(Relation(), substitution);
+        ArenaVector<Type *> &typeArgs = funcIface->TypeArguments();
+        typeArgs.resize(signature->Params().size() + 1);
+        typeArgs[signature->Params().size()] = typeArgs[0];
+        for (size_t i = 0; i < signature->Params().size(); i++) {
+            typeArgs[i] = MaybePromotedBuiltinType(signature->Params()[i]->TsType());
+        }
+        return funcIface;
     }
 
-    auto *funcIface =
+    funcIface =
         GlobalBuiltinFunctionType(signature->Params().size(), signature->Function()->Flags())->AsETSObjectType();
-    auto *substitution = NewSubstitution();
-
+    substitution->emplace(funcIface->TypeArguments()[signature->Params().size()]->AsETSTypeParameter(),
+                          MaybePromotedBuiltinType(signature->ReturnType()));
     for (size_t i = 0; i < signature->Params().size(); i++) {
         substitution->emplace(funcIface->TypeArguments()[i]->AsETSTypeParameter(),
                               MaybePromotedBuiltinType(signature->Params()[i]->TsType()));
     }
-    substitution->emplace(funcIface->TypeArguments()[signature->Params().size()]->AsETSTypeParameter(),
-                          MaybePromotedBuiltinType(signature->ReturnType()));
-    return funcIface->Substitute(Relation(), substitution);
+    funcIface = funcIface->Substitute(Relation(), substitution);
+    return funcIface;
 }
 
 Type *ETSChecker::ResolveFunctionalInterfaces(ArenaVector<Signature *> &signatures)

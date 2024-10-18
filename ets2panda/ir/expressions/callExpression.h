@@ -156,6 +156,7 @@ public:
     void Compile(compiler::ETSGen *etsg) const override;
     checker::Type *Check(checker::TSChecker *checker) override;
     checker::Type *Check(checker::ETSChecker *checker) override;
+    bool IsETSConstructorCall() const;
 
     void Accept(ASTVisitorT *v) override
     {
@@ -176,7 +177,6 @@ protected:
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 
 private:
-    bool IsETSConstructorCall() const;
     checker::Type *InitAnonymousLambdaCallee(checker::ETSChecker *checker, Expression *callee,
                                              checker::Type *calleeType);
 };

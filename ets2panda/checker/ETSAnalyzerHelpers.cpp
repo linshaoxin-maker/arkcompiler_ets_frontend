@@ -340,6 +340,27 @@ checker::Signature *ResolveCallForETSExtensionFuncHelperType(checker::ETSExtensi
     return ResolveCallExtensionFunction(type->ExtensionMethodType(), checker, expr);
 }
 
+[[maybe_unused]] Signature *ConstructSignatureFromFunctionInterface(ETSChecker *checker, ETSObjectType *functionInterface)
+ {
+     ASSERT(functionInterface->HasObjectFlag(ETSObjectFlags::FUNCTIONAL_INTERFACE));
+     auto*substitution = checker->NewSubstitution();
+     auto *signature = functionInterface->AsETSObjectType()
+                           ->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>("invoke0")
+                           ->Declaration()
+                           ->Node()
+                           ->AsMethodDefinition()
+                           ->Value()
+                           ->AsFunctionExpression()
+                           ->Function()
+                           ->Signature();
+     for (size_t i = 0; i < signature->Params().size(); ++i) {
+         substitution->emplace(signature->Params()[i]->TsType()->AsETSTypeParameter(),
+                               functionInterface->TypeArguments()[i]);
+     }
+     substitution->emplace(signature->ReturnType()->AsETSTypeParameter(), functionInterface->TypeArguments().back());
+     return signature->Substitute(checker->Relation(), substitution);
+ }
+
 ArenaVector<checker::Signature *> GetUnionTypeSignatures(ETSChecker *checker, checker::ETSUnionType *etsUnionType)
 {
     ArenaVector<checker::Signature *> callSignatures(checker->Allocator()->Adapter());
@@ -369,7 +390,7 @@ ArenaVector<checker::Signature *> GetUnionTypeSignatures(ETSChecker *checker, ch
     return callSignatures;
 }
 
-ArenaVector<checker::Signature *> &ChooseSignatures(ETSChecker *checker, checker::Type *calleeType,
+ArenaVector<checker::Signature *> &ChooseSignatures(ETSChecker *checker, ir::Expression *callee, Type *calleeType,
                                                     bool isConstructorCall, bool isFunctionalInterface,
                                                     bool isUnionTypeWithFunctionalInterface)
 {
@@ -378,6 +399,19 @@ ArenaVector<checker::Signature *> &ChooseSignatures(ETSChecker *checker, checker
     if (isConstructorCall) {
         return calleeType->AsETSObjectType()->ConstructSignatures();
     }
+    // Ekko: use callee->propvar, (callee's prop variable comes from ETSFunctionType after lambdalowering)
+    // not callee->type->variable, a function interface type may has many variables
+    // apply for callexpr generated before
+    if (callee->IsMemberExpression()) {
+        varbinder::LocalVariable* propVar = callee->AsMemberExpression()->PropVar();
+        if (propVar != nullptr && propVar->FunctionInfo() != nullptr &&
+            !propVar->FunctionInfo()->CallSignatures().empty()) {
+            auto callSigs = propVar->FunctionInfo()->CallSignatures();
+            unionSignatures.insert(unionSignatures.begin(), callSigs.begin(), callSigs.end());
+            return unionSignatures;
+        }
+    }
+
     if (isFunctionalInterface) {
         return calleeType->AsETSObjectType()
             ->GetOwnProperty<checker::PropertyType::INSTANCE_METHOD>(FUNCTIONAL_INTERFACE_INVOKE_METHOD_NAME)

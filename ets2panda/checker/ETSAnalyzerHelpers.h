@@ -45,7 +45,7 @@ checker::Signature *ResolveCallExtensionFunction(checker::ETSFunctionType *funct
 checker::Signature *ResolveCallForETSExtensionFuncHelperType(checker::ETSExtensionFuncHelperType *type,
                                                              checker::ETSChecker *checker, ir::CallExpression *expr);
 ArenaVector<checker::Signature *> GetUnionTypeSignatures(ETSChecker *checker, checker::ETSUnionType *etsUnionType);
-ArenaVector<checker::Signature *> &ChooseSignatures(ETSChecker *checker, checker::Type *calleeType,
+ArenaVector<checker::Signature *> &ChooseSignatures(ETSChecker *checker, ir::Expression *callee, Type *calleeType,
                                                     bool isConstructorCall, bool isFunctionalInterface,
                                                     bool isUnionTypeWithFunctionalInterface);
 checker::ETSObjectType *ChooseCalleeObj(ETSChecker *checker, ir::CallExpression *expr, checker::Type *calleeType,

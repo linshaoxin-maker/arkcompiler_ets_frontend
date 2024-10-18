@@ -1667,8 +1667,9 @@ PropertySearchFlags ETSChecker::GetInitialSearchFlags(const ir::MemberExpression
             }
 
             auto const *targetType = assignmentExpr->Left()->TsTypeOrError();
-            if (targetType->IsETSObjectType() &&
-                targetType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) {
+            if ((targetType->IsETSObjectType() &&
+                 targetType->AsETSObjectType()->HasObjectFlag(ETSObjectFlags::FUNCTIONAL)) ||
+                targetType->IsETSFunctionType()) {
                 return FUNCTIONAL_FLAGS;
             }
 
@@ -1906,7 +1907,11 @@ std::vector<ResolveResult *> ETSChecker::ResolveMemberReference(const ir::Member
 
     resolveRes.emplace_back(Allocator()->New<ResolveResult>(prop, ResolvedKind::PROPERTY));
 
-    ResolveMemberReferenceValidate(prop, searchFlag, memberExpr);
+    // NOTE: Ekko. We skip the Check after lambdalowering, new created member expression can be ensured correct.
+    // After we transferred functiontype to function interface type, we lose some infomation. It will be expensive to check this.
+    if(!HasStatus(CheckerStatus::REACH_LAMBDA_LOWERING)){
+        ResolveMemberReferenceValidate(prop, searchFlag, memberExpr);
+    }
 
     return resolveRes;
 }

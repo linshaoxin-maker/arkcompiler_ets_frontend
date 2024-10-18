@@ -313,7 +313,7 @@ static void MaybeCastUnionTypeToFunctionType(compiler::ETSGen *etsg, const ir::C
     expr->Callee()->AsMemberExpression()->Object()->Compile(etsg);
     auto objType = expr->Callee()->AsMemberExpression()->Object()->TsType();
     if (auto propType = expr->Callee()->AsMemberExpression()->Property()->TsType();
-        propType != nullptr && propType->IsETSFunctionType() && objType->IsETSUnionType()) {
+        propType != nullptr && propType->IsETSObjectType() && objType->IsETSUnionType()) {
         etsg->CastUnionToFunctionType(expr, objType->AsETSUnionType(), signature);
     }
 }
@@ -1038,11 +1038,13 @@ void ETSCompiler::Compile(const ir::MemberExpression *expr) const
     auto ttctx = compiler::TargetTypeContext(etsg, expr->TsType());
     ASSERT(expr->PropVar()->TsType() != nullptr);
     const checker::Type *const variableType = expr->PropVar()->TsType();
-    if (variableType->HasTypeFlag(checker::TypeFlag::GETTER_SETTER)) {
-        if (expr->Object()->IsSuperExpression()) {
-            etsg->CallExact(expr, variableType->AsETSFunctionType()->FindGetter()->InternalName(), objReg);
+
+    if (expr->PropVar()->HasFlag(varbinder::VariableFlags::GETTER_SETTER)) {
+        if (expr->Object()->IsSuperExpression() ||
+            etsg->IsDevirtualizedSignatureFlags(expr->PropVar()->FunctionInfo()->SigGetterFlags())) {
+            etsg->CallExact(expr, expr->PropVar()->FunctionInfo()->InternalGetterName(), objReg);
         } else {
-            etsg->CallVirtual(expr, variableType->AsETSFunctionType()->FindGetter(), objReg);
+            etsg->CallVirtual(expr, expr->PropVar()->FunctionInfo()->InternalGetterName(), objReg);
         }
     } else if (objectType->IsETSDynamicType()) {
         etsg->LoadPropertyDynamic(expr, expr->TsType(), objReg, propName);
@@ -1094,9 +1096,8 @@ bool ETSCompiler::HandleStaticProperties(const ir::MemberExpression *expr, ETSGe
     if (etsg->Checker()->IsVariableStatic(variable)) {
         auto ttctx = compiler::TargetTypeContext(etsg, expr->TsType());
 
-        if (expr->PropVar()->TsType()->HasTypeFlag(checker::TypeFlag::GETTER_SETTER)) {
-            checker::Signature *sig = variable->TsType()->AsETSFunctionType()->FindGetter();
-            etsg->CallExact(expr, sig->InternalName());
+        if (expr->PropVar()->HasFlag(varbinder::VariableFlags::GETTER_SETTER)) {
+            etsg->CallExact(expr, expr->PropVar()->FunctionInfo()->InternalGetterName());
             etsg->SetAccumulatorType(expr->TsType());
             return true;
         }

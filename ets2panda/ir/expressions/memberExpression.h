@@ -82,6 +82,8 @@ public:
     friend class compiler::JSCompiler;
     friend class compiler::ETSCompiler;
 
+    // This is used only for new builded node which use this memberExpr after lambdalowring.
+
     [[nodiscard]] Expression *Object() noexcept
     {
         return object_;

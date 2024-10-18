@@ -51,6 +51,11 @@ public:
         return name_;
     }
 
+    void SetFunctionalInterface(Type *const funcInterface)
+    {
+        funcInterface_ = funcInterface;
+    }
+
     Type *FunctionalInterface() const
     {
         return funcInterface_;
@@ -133,7 +138,7 @@ private:
     ArenaVector<Signature *> callSignatures_;
     util::StringView name_;
     Signature *refSignature_ {};
-    Type *const funcInterface_;
+    Type * funcInterface_;
 };
 }  // namespace ark::es2panda::checker
 

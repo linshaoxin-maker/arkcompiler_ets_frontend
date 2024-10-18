@@ -29,6 +29,9 @@ public:
 
     bool Perform(public_lib::Context *ctx, parser::Program *program) override;
     bool Postcondition(public_lib::Context *ctx, const parser::Program *program) override;
+
+    static void BuildFunctionEssentialInfo(checker::ETSChecker *checker, varbinder::Variable *var,
+                                           checker::ETSFunctionType *functionType, checker::Type *funcInterface);
 };
 
 }  // namespace ark::es2panda::compiler

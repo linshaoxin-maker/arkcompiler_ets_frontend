@@ -40,6 +40,9 @@ LocalVariable *LocalVariable::Copy(ArenaAllocator *allocator, Decl *decl) const
 {
     auto *var = allocator->New<LocalVariable>(decl, flags_);
     var->vreg_ = vreg_;
+    if (functionInfo_ != nullptr) {
+        var->SetFunctionInfo(functionInfo_->Copy(allocator));
+    }
     return var;
 }
 

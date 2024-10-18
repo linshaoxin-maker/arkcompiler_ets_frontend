@@ -484,6 +484,8 @@ private:
     ArenaMap<util::StringView, util::StringView> reExportAlias_;
     ETSObjectFlags flags_;
     InstantiationMap instantiationMap_;
+
+    // as for function interface: [0:size-2] is params ; [size-2] is restvar ; [size-1] is return type.
     ArenaVector<Type *> typeArguments_;
     ETSObjectType *superType_ {};
     ETSObjectType *enclosingType_ {};
