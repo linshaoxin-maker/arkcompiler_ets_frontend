@@ -137,7 +137,8 @@ public:
         (ProcessFormattedArg(insertingNodes, std::forward<Args>(args)), ...);
         return CreateFormattedStatements(sourceCode, insertingNodes);
     }
-
+    ir::Statement *ParseAnnotation(StatementParsingFlags flags, ir::ModifierFlags memberModifiers);
+    ArenaVector<ir::AnnotationUsage *> ParseAnnotations(ir::ModifierFlags &flags, bool isTopLevelSt = true);
     ir::ClassDeclaration *CreateFormattedClassDeclaration(std::string_view sourceCode,
                                                           std::vector<ir::AstNode *> &insertingNodes,
                                                           bool allowStatic = false);
@@ -325,11 +326,12 @@ private:
     ir::TypeNode *ParseLiteralIdent(TypeAnnotationParsingOptions *options);
     void ParseRightParenthesis(TypeAnnotationParsingOptions *options, ir::TypeNode *&typeAnnotation,
                                lexer::LexerPosition savedPos);
+    ir::TypeNode *ParseTypeAnnotationNoPreferParam(TypeAnnotationParsingOptions *options);
     ir::TypeNode *ParseTypeAnnotation(TypeAnnotationParsingOptions *options) override;
     ir::TSTypeAliasDeclaration *ParseTypeAliasDeclaration() override;
 
-    void ValidateForInStatement() override;
-
+    bool ValidateForInStatement() override;
+    bool ValidAnnotationValue(ir::Expression *initializer);
     // NOLINTNEXTLINE(google-default-arguments)
     ir::Expression *ParseCoverParenthesizedExpressionAndArrowParameterList(
         ExpressionParseFlags flags = ExpressionParseFlags::NO_OPTS) override;
@@ -366,7 +368,7 @@ private:
                                                bool ignoreCallExpression, bool *isChainExpression) override;
     ir::Expression *ParsePotentialAsExpression(ir::Expression *primaryExpr) override;
     ir::Statement *ParseAssertStatement() override;
-    void ValidateLabeledStatement(lexer::TokenType type) override;
+    bool ValidateLabeledStatement(lexer::TokenType type) override;
     ir::Expression *ParseCatchParam() override;
     void ParseCatchParamTypeAnnotation([[maybe_unused]] ir::AnnotatedExpression *param) override;
     ir::Expression *ParseSuperClassReference() override;
@@ -379,6 +381,17 @@ private:
                                                    ir::ModifierFlags modFlags = ir::ModifierFlags::NONE) override;
     ir::AstNode *ParseClassElement(const ArenaVector<ir::AstNode *> &properties, ir::ClassDefinitionModifiers modifiers,
                                    ir::ModifierFlags flags) override;
+    void UpdateMemberModifiers(ir::ModifierFlags &memberModifiers, bool &seenStatic);
+    void ApplyAnnotationsToNode(ir::AstNode *node, ArenaVector<ir::AnnotationUsage *> &&annotations,
+                                lexer::SourcePosition pos);
+    ir::ModifierFlags ParseMemberAccessModifiers();
+    ir::AnnotationDeclaration *ParseAnnotationDeclaration(
+        [[maybe_unused]] ir::ModifierFlags flags = ir::ModifierFlags::NONE);
+    ir::AstNode *ParseAnnotationProperty(ir::Identifier *fieldName,
+                                         ir::ModifierFlags memberModifiers = ir::ModifierFlags::NONE,
+                                         bool needTypeAnnotation = true);
+    ArenaVector<ir::AstNode *> ParseAnnotationProperties(ir::ModifierFlags memberModifiers = ir::ModifierFlags::NONE);
+    ir::AnnotationUsage *ParseAnnotationUsage();
     ir::AstNode *ParseInnerTypeDeclaration(ir::ModifierFlags memberModifiers, lexer::LexerPosition savedPos,
                                            bool isStepToken, bool seenStatic);
     ir::AstNode *ParseInnerConstructorDeclaration(ir::ModifierFlags memberModifiers,
@@ -428,7 +441,7 @@ private:
     void ValidateRestParameter(ir::Expression *param) override;
     bool ValidateBreakLabel(util::StringView label) override;
     bool ValidateContinueLabel(util::StringView label) override;
-    void CheckPredefinedMethods(ir::ScriptFunction const *function, const lexer::SourcePosition &position) const;
+    void CheckPredefinedMethods(ir::ScriptFunction const *function, const lexer::SourcePosition &position);
 
     bool CheckClassElement(ir::AstNode *property, ir::MethodDefinition *&ctor,
                            ArenaVector<ir::AstNode *> &properties) override;

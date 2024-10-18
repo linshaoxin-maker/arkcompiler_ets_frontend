@@ -801,20 +801,10 @@ void ETSChecker::CheckAnnotationTypeForVariableDeclaration(checker::Type *annota
         }
     }
 
-    if (isUnionFunction) {
-        if (!AssignmentContext(Relation(), init, initType, annotationType, init->Start(), {},
-                               TypeRelationFlag::NO_THROW)
-                 .IsAssignable()) {
-            LogTypeError({"Type '", sourceType, "' cannot be assigned to type '", annotationType, "'"}, init->Start());
-        }
-    } else {
-        if (!AssignmentContext(Relation(), init, initType, annotationType, init->Start(), {},
-                               TypeRelationFlag::NO_THROW)
-                 .IsAssignable()) {
-            LogTypeError({"Type '", sourceType, "' cannot be assigned to type '",
-                          TryGettingFunctionTypeFromInvokeFunction(annotationType), "'"},
-                         init->Start());
-        }
+    if (!AssignmentContext(Relation(), init, initType, annotationType, init->Start(), {}, TypeRelationFlag::NO_THROW)
+             .IsAssignable()) {
+        Type *targetType = isUnionFunction ? annotationType : TryGettingFunctionTypeFromInvokeFunction(annotationType);
+        LogTypeError({"Type '", sourceType, "' cannot be assigned to type '", targetType, "'"}, init->Start());
     }
 }
 
@@ -1442,6 +1432,11 @@ Type *ETSChecker::GetReferencedTypeBase(ir::Expression *name)
         }
         case ir::AstNodeType::TS_TYPE_ALIAS_DECLARATION: {
             tsType = GetTypeFromTypeAliasReference(refVar);
+            break;
+        }
+        case ir::AstNodeType::ANNOTATION_DECLARATION: {
+            LogTypeError("Annotations are only implemented at the parse stage.", name->Start());
+            tsType = GlobalTypeError();
             break;
         }
         default: {
@@ -2260,6 +2255,10 @@ void ETSChecker::InferTypesForLambda(ir::ScriptFunction *lambda, ir::ETSFunction
         if (maybeSubstitutedFunctionSig != nullptr) {
             returnTypeAnnotation->SetTsType(maybeSubstitutedFunctionSig->ReturnType());
         }
+
+        // Return type can be ETSFunctionType
+        // Run varbinder to set scopes for cloned node
+        compiler::InitScopesPhaseETS::RunExternalNode(returnTypeAnnotation, VarBinder());
         lambda->SetReturnTypeAnnotation(returnTypeAnnotation);
     }
 }
