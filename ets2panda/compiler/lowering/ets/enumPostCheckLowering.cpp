@@ -38,18 +38,12 @@ ir::CallExpression *EnumPostCheckLoweringPhase::CreateCall(
     return checker->AllocNode<ir::CallExpression>(callee, std::move(callArguments), nullptr, false);
 }
 
-bool EnumPostCheckLoweringPhase::Perform(public_lib::Context *ctx, parser::Program *program)
+bool EnumPostCheckLoweringPhase::PerformForModule(public_lib::Context *ctx, parser::Program *program)
 {
     if (program->Extension() != ScriptExtension::ETS) {
         return true;
     }
 
-    for (auto &[_, extPrograms] : program->ExternalSources()) {
-        (void)_;
-        for (auto *extProg : extPrograms) {
-            Perform(ctx, extProg);
-        }
-    }
     program->Ast()->TransformChildrenRecursivelyPostorder(
         // clang-format off
         [this, ctx](ir::AstNode *const node) -> ir::AstNode* {

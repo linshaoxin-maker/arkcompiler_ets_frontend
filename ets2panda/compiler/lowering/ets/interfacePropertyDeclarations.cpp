@@ -189,15 +189,8 @@ static ir::Expression *UpdateInterfacePropertys(checker::ETSChecker *const check
     return newInterface;
 }
 
-bool InterfacePropertyDeclarationsPhase::Perform(public_lib::Context *ctx, parser::Program *program)
+bool InterfacePropertyDeclarationsPhase::PerformForModule(public_lib::Context *ctx, parser::Program *program)
 {
-    for (const auto &[_, ext_programs] : program->ExternalSources()) {
-        (void)_;
-        for (auto *const extProg : ext_programs) {
-            Perform(ctx, extProg);
-        }
-    }
-
     checker::ETSChecker *const checker = ctx->checker->AsETSChecker();
 
     program->Ast()->TransformChildrenRecursively(

@@ -398,18 +398,11 @@ void EnumLoweringPhase::CreateEnumStringClassFromEnumDeclaration(ir::TSEnumDecla
                             GetEnumClassName(checker_, enumDecl).View());
 }
 
-bool EnumLoweringPhase::Perform(public_lib::Context *ctx, parser::Program *program)
+bool EnumLoweringPhase::PerformForModule(public_lib::Context *ctx, parser::Program *program)
 {
     bool isPerformedSuccess = true;
     if (program->Extension() != ScriptExtension::ETS) {
         return isPerformedSuccess;
-    }
-
-    for (auto &[_, extPrograms] : program->ExternalSources()) {
-        (void)_;
-        for (auto *extProg : extPrograms) {
-            isPerformedSuccess &= Perform(ctx, extProg);
-        }
     }
 
     checker_ = ctx->checker->AsETSChecker();
@@ -526,7 +519,7 @@ ir::Identifier *EnumLoweringPhase::CreateBoxedEnumItemsArray(const ir::TSEnumDec
                         newExprArgs.push_back(asExpression);
 
                         auto boxedTypeRef = MakeTypeReference(checker_, boxedClassName);
-                        
+
                         auto *const newExpression = checker_->AllocNode<ir::ETSNewClassInstanceExpression>(
                             boxedTypeRef, std::move(newExprArgs), nullptr);
                         return newExpression;

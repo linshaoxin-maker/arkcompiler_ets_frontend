@@ -249,15 +249,8 @@ static void HandleInterfaceLowering(checker::ETSChecker *checker, ir::ObjectExpr
     objExpr->SetTsType(resultType);
 }
 
-bool InterfaceObjectLiteralLowering::Perform(public_lib::Context *ctx, parser::Program *program)
+bool InterfaceObjectLiteralLowering::PerformForModule(public_lib::Context *ctx, parser::Program *program)
 {
-    for (auto &[_, extPrograms] : program->ExternalSources()) {
-        (void)_;
-        for (auto *extProg : extPrograms) {
-            Perform(ctx, extProg);
-        }
-    }
-
     auto *checker = ctx->checker->AsETSChecker();
 
     program->Ast()->IterateRecursivelyPostorder([checker](ir::AstNode *ast) -> void {
@@ -269,17 +262,9 @@ bool InterfaceObjectLiteralLowering::Perform(public_lib::Context *ctx, parser::P
     return true;
 }
 
-bool InterfaceObjectLiteralLowering::Postcondition(public_lib::Context *ctx, const parser::Program *program)
+bool InterfaceObjectLiteralLowering::PostconditionForModule([[maybe_unused]] public_lib::Context *ctx,
+                                                            const parser::Program *program)
 {
-    for (auto &[_, extPrograms] : program->ExternalSources()) {
-        (void)_;
-        for (auto *extProg : extPrograms) {
-            if (!Postcondition(ctx, extProg)) {
-                return false;
-            }
-        }
-    }
-
     return !program->Ast()->IsAnyChild([](const ir::AstNode *ast) -> bool {
         return ast->IsObjectExpression() && IsInterfaceType(ast->AsObjectExpression()->TsType());
     });

@@ -211,7 +211,7 @@ void LocalClassConstructionPhase::RemapReferencesFromCapturedVariablesToClassPro
     }
 }
 
-bool LocalClassConstructionPhase::Perform(public_lib::Context *ctx, parser::Program *program)
+bool LocalClassConstructionPhase::PerformForModule(public_lib::Context *ctx, parser::Program *program)
 {
     auto *allocator = ctx->allocator;
     checker::ETSChecker *const checker = ctx->checker->AsETSChecker();

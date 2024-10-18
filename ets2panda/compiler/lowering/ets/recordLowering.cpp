@@ -70,17 +70,8 @@ RecordLowering::KeyType RecordLowering::TypeToKey(checker::Type *type) const
     return {};
 }
 
-bool RecordLowering::Perform(public_lib::Context *ctx, parser::Program *program)
+bool RecordLowering::PerformForModule(public_lib::Context *ctx, parser::Program *program)
 {
-    if (ctx->config->options->CompilerOptions().compilationMode == CompilationMode::GEN_STD_LIB) {
-        for (auto &[_, extPrograms] : program->ExternalSources()) {
-            (void)_;
-            for (auto *extProg : extPrograms) {
-                Perform(ctx, extProg);
-            }
-        }
-    }
-
     // Replace Record Object Expressions with Block Expressions
     program->Ast()->TransformChildrenRecursively(
         [this, ctx](ir::AstNode *ast) -> ir::AstNode * {

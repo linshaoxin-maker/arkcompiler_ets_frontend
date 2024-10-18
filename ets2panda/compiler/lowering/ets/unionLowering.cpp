@@ -169,15 +169,8 @@ static ir::TSAsExpression *HandleUnionCastToPrimitive(checker::ETSChecker *check
     return node;
 }
 
-bool UnionLowering::Perform(public_lib::Context *ctx, parser::Program *program)
+bool UnionLowering::PerformForModule(public_lib::Context *ctx, parser::Program *program)
 {
-    for (auto &[_, ext_programs] : program->ExternalSources()) {
-        (void)_;
-        for (auto *extProg : ext_programs) {
-            Perform(ctx, extProg);
-        }
-    }
-
     checker::ETSChecker *checker = ctx->checker->AsETSChecker();
 
     program->Ast()->TransformChildrenRecursively(
@@ -205,7 +198,7 @@ bool UnionLowering::Perform(public_lib::Context *ctx, parser::Program *program)
     return true;
 }
 
-bool UnionLowering::Postcondition(public_lib::Context *ctx, const parser::Program *program)
+bool UnionLowering::PostconditionForModule(public_lib::Context *ctx, const parser::Program *program)
 {
     bool current = !program->Ast()->IsAnyChild([checker = ctx->checker->AsETSChecker()](ir::AstNode *ast) {
         if (!ast->IsMemberExpression() || ast->AsMemberExpression()->Object()->TsType() == nullptr) {
@@ -224,14 +217,6 @@ bool UnionLowering::Postcondition(public_lib::Context *ctx, const parser::Progra
         return current;
     }
 
-    for (auto &[_, ext_programs] : program->ExternalSources()) {
-        (void)_;
-        for (auto *extProg : ext_programs) {
-            if (!Postcondition(ctx, extProg)) {
-                return false;
-            }
-        }
-    }
     return true;
 }
 
