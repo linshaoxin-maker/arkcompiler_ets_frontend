@@ -40,7 +40,6 @@ import {
 import { NON_RETURN_FUNCTION_DECORATORS } from './utils/consts/NonReturnFunctionDecorators';
 import { PROPERTY_HAS_NO_INITIALIZER_ERROR_CODE } from './utils/consts/PropertyHasNoInitializerErrorCode';
 import {
-  SENDABLE_CLOSURE_DECLS,
   SENDABLE_DECORATOR,
   SENDABLE_DECORATOR_NODES,
   SENDABLE_FUNCTION_UNSUPPORTED_STAGES_IN_API12,
@@ -104,7 +103,7 @@ export class TypeScriptLinter {
   supportedStdCallApiChecker: SupportedStdCallApiChecker;
 
   autofixer: Autofixer | undefined;
-  private fileExportSendableDeclCaches: Set<ts.Node> | undefined;
+  private fileExportDeclCaches: Set<ts.Node> | undefined;
 
   private sourceFile?: ts.SourceFile;
   private readonly compatibleSdkVersion: number;
@@ -2747,10 +2746,11 @@ export class TypeScriptLinter {
     ) {
       return;
     }
-    if (this.isFileExportSendableDecl(decl)) {
-      // This part of the check is removed when the relevant functionality is implemented at runtime
-      this.incrementCounters(node, FaultID.SendableClosureExport);
+
+    if (this.isFileExportDecl(decl)) {
+      return;
     }
+
     if (this.isTopSendableClosure(decl)) {
       return;
     }
@@ -2803,14 +2803,12 @@ export class TypeScriptLinter {
     return false;
   }
 
-  private isFileExportSendableDecl(decl: ts.Declaration): boolean {
-    if (!ts.isSourceFile(decl.parent) || !ts.isClassDeclaration(decl) && !ts.isFunctionDeclaration(decl)) {
-      return false;
+  private isFileExportDecl(decl: ts.Declaration): boolean {
+    const sourceFile = decl.getSourceFile();
+    if (!this.fileExportDeclCaches) {
+      this.fileExportDeclCaches = this.tsUtils.searchFileExportDecl(sourceFile);
     }
-    if (!this.fileExportSendableDeclCaches) {
-      this.fileExportSendableDeclCaches = this.tsUtils.searchFileExportDecl(decl.parent, SENDABLE_CLOSURE_DECLS);
-    }
-    return this.fileExportSendableDeclCaches.has(decl);
+    return this.fileExportDeclCaches.has(decl);
   }
 
   lint(sourceFile: ts.SourceFile): void {
@@ -2820,7 +2818,7 @@ export class TypeScriptLinter {
 
     this.walkedComments.clear();
     this.sourceFile = sourceFile;
-    this.fileExportSendableDeclCaches = undefined;
+    this.fileExportDeclCaches = undefined;
     this.visitSourceFile(this.sourceFile);
     this.handleCommentDirectives(this.sourceFile);
   }
