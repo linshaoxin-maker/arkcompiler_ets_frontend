@@ -693,10 +693,7 @@ class CompilerTest(Test):
         run_abc_cmd = [runner.ark_js_vm, '--enable-force-gc=false', test_abc_path]
         self.log_cmd(run_abc_cmd)
 
-        env = os.environ.copy()
-        env["LD_LIBRARY_PATH"] = ld_library_path
-        os.environ.update(env)
-        process = subprocess.Popen(run_abc_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+        process = subprocess.Popen(run_abc_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = process.communicate()
         self.output = out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore")
         expected_path = self.get_path_to_expected()
@@ -975,10 +972,7 @@ class CompilerProjectTest(Test):
                 run_abc_cmd.extend([test_abc_path])
                 self.log_cmd(run_abc_cmd)
 
-                env = os.environ.copy()
-                env["LD_LIBRARY_PATH"] = ld_library_path
-                os.environ.update(env)
-                process = subprocess.Popen(run_abc_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+                process = subprocess.Popen(run_abc_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 out, err = process.communicate()
                 self.output = out.decode("utf-8", errors="ignore") + err.decode("utf-8", errors="ignore")
                 expected_path = self.get_path_to_expected()

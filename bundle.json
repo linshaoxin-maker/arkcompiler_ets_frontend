@@ -40,9 +40,6 @@
                 {
                     "name": "//arkcompiler/ets_frontend/es2panda:es2panda"
                 }
-            ],
-            "test": [
-                "//arkcompiler/ets_frontend/es2panda:es2abc_tests"
             ]
         }
     }
