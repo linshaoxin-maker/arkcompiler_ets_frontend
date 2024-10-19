@@ -64,11 +64,49 @@ interface Person {
 type PersonKeys = keyof Person;
 let b: PersonKeys = "name";
 assert(b === "name");
+// Different grammar scenarios of indexedAccessType
 type T1 = {
-    U: number;
+    h: number;
+    i: string;
+    j: boolean;
 };
-let temp5: T1['U'] = 2;
+type T2 = {
+    k: T1;
+};
+let temp5: T2["k"]["h"] = 2;
 assert(temp5 === 2);
+let temp7: T1["h"] = 3;
+let temp8: T1["i"] = "test";
+let temp9: T1["j"] = false;
+assert(temp7 === 3);
+assert(temp8 === "test");
+assert(temp9 === false);
+let temp10: T1["h" | "i"] = 4;
+let temp11: T1["h" | "i"] = "test";
+assert(temp10 === 4);
+assert(temp11 === "test");
+let temp12: T2["k"]["h" | "i"] = 5;
+let temp13: T2["k"]["h" | "i"] = "test";
+assert(temp12 === 5);
+assert(temp13 === "test");
+let temp14: T1[keyof T2["k"]] = 6;
+assert(temp14 === 6);
+const MyArray = [
+    { l: "Alice", m: 15 },
+    { l: "Bob", m: 23 },
+    { l: "Eve", m: 38 },
+];
+type A1 = typeof MyArray[1]["m"];
+let temp15: A1 = 7;
+assert(temp15 === 7);
+type Tuple = [
+    string,
+    number
+];
+let temp16: Tuple[0] = "test";
+let temp17: Tuple[1] = 9;
+assert(temp16 === "test");
+assert(temp17 === 9);
 type Foo<T extends any[]> = {
     [P in keyof T]: T[P];
 };
@@ -82,3 +120,66 @@ let temp4: [
 ] = ["1", 2];
 assert(temp4[0] === "1");
 assert(temp4[1] === 2);
+// Defination of unionType
+type U1 = "123" | "321";
+type U2 = 1234 | 4321;
+type U3 = "3124" | 4123;
+type U4 = "U1234" | 2143;
+type U5 = "U4213" | "U4132";
+type U6 = "U3412" | "3421";
+let temp18: U1["1234"] = "1";
+assert(temp18 === "1");
+let temp19: U1[4321] = "2";
+assert(temp19 === "2");
+let temp20: U5[4321] = "3";
+assert(temp20 === "3");
+let temp21: U5["1234"] = "4";
+assert(temp21 === "4");
+let temp22: U6[4321] = "5";
+assert(temp22 === "5");
+let temp23: U6["1234"] = "6";
+assert(temp23 === "6");
+// Define properties in type individually
+type nType1 = {
+    "o": number;
+    p: number;
+    "q": number;
+    1324: number;
+    [2143]: number;
+    ["2314"]: number;
+};
+// Define properties in type and access them using indexedAccessType
+type nType2 = {
+    "v": number;
+    a1: number;
+    "b1": number;
+    1243: number;
+    [2134]: number;
+    ["e1"]: number;
+    // need to add in whitelist
+    "3142": number;
+    1432: number;
+    [1423]: number;
+    ["2314"]: number;
+};
+let temp24: nType2["v"] = 1;
+assert(temp24 === 1);
+let temp25: nType2["a1"] = 2;
+assert(temp25 === 2);
+let temp26: nType2["b1"] = 3;
+assert(temp26 === 3);
+let temp27: nType2[1243] = 4;
+assert(temp27 === 4);
+let temp28: nType2[2134] = 5;
+assert(temp28 === 5);
+let temp29: nType2["e1"] = 6;
+assert(temp29 === 6);
+// need to add in whitelist
+let temp30: nType2[3142] = 7;
+assert(temp30 === 7);
+let temp31: nType2["1432"] = 8;
+assert(temp31 === 8);
+let temp32: nType2["1423"] = 9;
+assert(temp32 === 9);
+let temp33: nType2[2314] = 10;
+assert(temp33 === 10);

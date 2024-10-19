@@ -565,7 +565,7 @@
       "prop": {
         "mNameObfuscation": {
           "mReservedToplevelNames": [],
-          "mReservedProperties": ["prop","U","up","prop1","t"]
+          "mReservedProperties": ["prop","U","up","prop1","t","V","W","X1"]
         }
       },
       "export": {
@@ -577,43 +577,43 @@
       "prop+export": {
         "mNameObfuscation": {
           "mReservedToplevelNames": ["A"],
-          "mReservedProperties": ["U","up","prop1","A","B"]
+          "mReservedProperties": ["U","up","prop1","A","B","V","W","X1"]
         }
       },
       "prop+strProp": {
         "mNameObfuscation": {
           "mReservedToplevelNames": [],
-          "mReservedProperties": ["prop","U","up","prop1","t"]
+          "mReservedProperties": ["prop","up","prop1","t","1234","3142","1432","1423","2314"]
         }
       },
       "prop+strProp+export": {
         "mNameObfuscation": {
           "mReservedToplevelNames": ["A"],
-          "mReservedProperties": ["U","up","prop1","A","B"]
+          "mReservedProperties": ["up","prop1","A","B","1234","3142","1432","1423","2314"]
         }
       },
       "prop+strProp+top": {
         "mNameObfuscation": {
           "mReservedToplevelNames": [],
-          "mReservedProperties": ["prop","U","up","prop1","t"]
+          "mReservedProperties": ["prop","up","prop1","t","1234","3142","1432","1423","2314"]
         }
       },
       "prop+strProp+top+export": {
         "mNameObfuscation": {
           "mReservedToplevelNames": [],
-          "mReservedProperties": ["U","up","prop1","A","B"]
+          "mReservedProperties": ["up","prop1","A","B","1234","3142","1432","1423","2314"]
         }
       },
       "prop+top": {
         "mNameObfuscation": {
           "mReservedToplevelNames": [],
-          "mReservedProperties": ["prop","U","up","prop1","t"]
+          "mReservedProperties": ["prop","U","up","prop1","t","V","W","X1"]
         }
       },
       "prop+top+export": {
         "mNameObfuscation": {
           "mReservedToplevelNames": [],
-          "mReservedProperties": ["U","up","prop1","A","B"]
+          "mReservedProperties": ["U","up","prop1","A","B","V","W","X1"]
         }
       },
       "strProp+export": {

@@ -35,7 +35,7 @@ export declare namespace l {
 export declare namespace m {
     function foo3(): void;
     class className3 {
-        f1: number;
+        31: number;
         e1: h | undefined;
     }
     interface h {
@@ -44,7 +44,7 @@ export declare namespace m {
 export declare namespace o {
     function foo4(): void;
     class className4 {
-        ["g1"]: number;
+        [41]: number;
     }
 }
 export declare namespace p {

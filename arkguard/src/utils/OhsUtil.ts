@@ -41,6 +41,8 @@ import {
   isMethodDeclaration,
   isGetAccessorDeclaration,
   isAccessor,
+  isLiteralTypeNode,
+  isUnionTypeNode,
 } from 'typescript';
 
 import type {
@@ -52,6 +54,7 @@ import type {
   GetAccessorDeclaration,
   HeritageClause,
   Identifier,
+  IndexedAccessTypeNode,
   InterfaceDeclaration,
   MethodDeclaration,
   Modifier,
@@ -148,13 +151,34 @@ export function collectPropertyNamesAndStrings(memberName: PropertyName, propert
   }
 }
 
-export function getElementAccessExpressionProperties(elementAccessExpressionNode: ElementAccessExpression, propertySet: Set<string>): void {
+export function getElementAccessExpressionProperties(elementAccessExpressionNode: ElementAccessExpression): void {
   if (!elementAccessExpressionNode || !elementAccessExpressionNode.argumentExpression) {
     return;
   }
 
   if (isStringLiteral(elementAccessExpressionNode.argumentExpression)) {
     stringPropsSet.add(elementAccessExpressionNode.argumentExpression.text);
+  }
+}
+
+export function getIndexedAccessTypeProperties(indexedAccessTypeNode: IndexedAccessTypeNode): void {
+  if (!indexedAccessTypeNode || !indexedAccessTypeNode.indexType) {
+    return;
+  }
+
+  if (isLiteralTypeNode(indexedAccessTypeNode.indexType) && isStringLiteral(indexedAccessTypeNode.indexType.literal)) {
+    stringPropsSet.add(indexedAccessTypeNode.indexType.literal.text);
+  }
+
+  if (isUnionTypeNode(indexedAccessTypeNode.indexType)) {
+    indexedAccessTypeNode.indexType.types.forEach((type) => {
+      if (!type) {
+        return;
+      }
+      if (isLiteralTypeNode(type) && isStringLiteral(type.literal)) {
+        stringPropsSet.add(type.literal.text);
+      }
+    })
   }
 }
 

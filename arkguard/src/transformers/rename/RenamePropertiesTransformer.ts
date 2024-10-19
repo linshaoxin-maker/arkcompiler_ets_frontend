@@ -28,8 +28,10 @@ import {
   isTypeNode,
   setParentRecursive,
   visitEachChild,
-  isStringLiteral,
-  isSourceFile
+  isSourceFile,
+  isIndexedAccessTypeNode,
+  isLiteralTypeNode,
+  isUnionTypeNode,
 } from 'typescript';
 
 import type {
@@ -43,7 +45,8 @@ import type {
   ClassDeclaration,
   ClassExpression,
   StructDeclaration,
-  PropertyName
+  PropertyName,
+  StringLiteral,
 } from 'typescript';
 
 import type {IOptions} from '../../configs/IOptions';
@@ -112,12 +115,12 @@ namespace secharmony {
 
         if (NodeUtils.isClassPropertyInConstructorParams(node)) {
           currentConstructorParams.add((node as Identifier).escapedText.toString());
-          return renameProperty(node, false);
+          return renameProperty(node);
         }
 
         if (NodeUtils.isClassPropertyInConstructorBody(node, currentConstructorParams)) {
           if (currentConstructorParams.has((node as Identifier).escapedText.toString())) {
-            return renameProperty(node, false);
+            return renameProperty(node);
           }
         }
 
@@ -129,23 +132,56 @@ namespace secharmony {
           return renameElementAccessProperty(node);
         }
 
+        if(isIndexedAccessTypeNode(node.parent)) {
+          return renameIndexedAccessProperty(node);
+        }
+
         if (isComputedPropertyName(node)) {
           return renameComputedProperty(node);
         }
 
-        return renameProperty(node, false);
+        return renameProperty(node);
       }
 
       function renameElementAccessProperty(node: Node): Node {
         if (isStringLiteralLike(node)) {
-          return renameProperty(node, false);
+          return renameProperty(node);
+        }
+        return visitEachChild(node, renameProperties, context);
+      }
+
+      function renameIndexedAccessProperty(node: Node): Node {
+        if (isLiteralTypeNode(node) && isStringLiteralLike(node.literal)) {
+          let prop: Node = renameProperty(node.literal);
+          if (prop !== node.literal) {
+            return factory.createLiteralTypeNode(prop as StringLiteral);
+          }
+        }
+        if (isUnionTypeNode(node)) {
+          let types = [];
+          node.types.forEach((type) => {
+            if (!type) {
+              return;
+            }
+            if (isLiteralTypeNode(type) && isStringLiteralLike(type.literal)) {
+              let prop: Node = renameProperty(type.literal);
+              if (prop !== type.literal) {
+                types.push(factory.createLiteralTypeNode(prop as StringLiteral));
+              } else {
+                types.push(type);
+              }
+            } else {
+              types.push(type);
+            }
+          })
+          return factory.createUnionTypeNode(types);
         }
         return visitEachChild(node, renameProperties, context);
       }
 
       function renameComputedProperty(node: ComputedPropertyName): ComputedPropertyName {
-        if (isStringLiteralLike(node.expression) || isNumericLiteral(node.expression)) {
-          let prop: Node = renameProperty(node.expression, true);
+        if (isStringLiteralLike(node.expression)) {
+          let prop: Node = renameProperty(node.expression);
           if (prop !== node.expression) {
             return factory.createComputedPropertyName(prop as Expression);
           }
@@ -158,8 +194,8 @@ namespace secharmony {
         return visitEachChild(node, renameProperties, context);
       }
 
-      function renameProperty(node: Node, computeName: boolean): Node {
-        if (!isStringLiteralLike(node) && !isIdentifier(node) && !isPrivateIdentifier(node) && !isNumericLiteral(node)) {
+      function renameProperty(node: Node): Node {
+        if (!isStringLiteralLike(node) && !isIdentifier(node) && !isPrivateIdentifier(node)) {
           return visitEachChild(node, renameProperties, context);
         }
 
@@ -181,23 +217,7 @@ namespace secharmony {
           return factory.createStringLiteral(mangledName);
         }
 
-        /**
-         * source demo:
-         * class A {
-         *   123 = 1; // it is NumericLiteral
-         *   [456] = 2; // it is NumericLiteral within ComputedPropertyName
-         * }
-         * obfuscation result:
-         * class A {
-         *   a = 1;
-         *   ['b'] = 2;
-         * }
-         */
-        if (isNumericLiteral(node)) {
-          return computeName ? factory.createStringLiteral(mangledName) : factory.createIdentifier(mangledName);
-        }
-
-        if (isIdentifier(node) || isNumericLiteral(node)) {
+        if (isIdentifier(node)) {
           return factory.createIdentifier(mangledName);
         }
 
