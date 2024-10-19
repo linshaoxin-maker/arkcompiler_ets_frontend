@@ -100,6 +100,7 @@ void BinaryExpression::CompilePrivateIn(compiler::PandaGen *pg) const
     compiler::RegScope rs(pg);
     compiler::VReg rhs = pg->AllocReg();
     pg->StoreAccumulator(right_, rhs);
+    pg->ThrowIfNotObject(right_, rhs);
     pg->LoadLexicalVar(this, result.lexLevel, result.result.validateMethodSlot);
     pg->Equal(this, rhs);
 }

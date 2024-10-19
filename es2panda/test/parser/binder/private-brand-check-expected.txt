@@ -1,0 +1,279 @@
+.language ECMAScript
+
+slotNum = 0x0
+.function any .#~A<#(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	ldundefined
+	returnundefined
+label_2: 
+}
+
+slotNum = 0x1
+.function any .#~A<#m(any a0, any a1, any a2, any a3) {
+label_1: 
+label_0: 
+	throw.ifnotobject a3
+	ldlexvar 0x0, 0x1
+	eq 0x0, a3
+	return
+label_2: 
+}
+
+slotNum = 0x0
+.function any .#~A=#A(any a0, any a1, any a2) {
+label_1: 
+label_0: 
+	lda a2
+	return
+label_2: 
+}
+
+slotNum = 0x1f
+.function any .func_main_0(any a0, any a1, any a2) {
+	nop
+label_31: 
+label_0: 
+	ldundefined
+	createarraywithbuffer 0x0, _2
+	sta v0
+	ldundefined
+	stownbyindex 0x1, v0, 0x2
+	ldnull
+	stownbyindex 0x3, v0, 0x3
+	newlexenv 0x2
+label_13: 
+label_19: 
+	ldhole
+	sta v2
+	defineclasswithbuffer 0x5, .#~A=#A, _3, 0x0, v2
+	sta v2
+	stlexvar 0x0, 0x1
+	lda v2
+	ldobjbyname 0x6, prototype
+	callruntime.createprivateproperty 0x0, _4
+label_14: 
+end_label_14: 
+	jmp label_1
+label_33: 
+	sta v1
+label_27: 
+	poplexenv
+	lda v1
+	throw
+label_1: 
+	poplexenv
+label_15: 
+label_16: 
+end_label_16: 
+	jmp label_2
+label_34: 
+	sta v1
+label_28: 
+	lda v1
+	throw
+label_2: 
+	lda v0
+	getiterator 0x8
+	sta v0
+	ldobjbyname 0xa, next
+	sta v1
+	ldfalse
+	sta v3
+label_10: 
+	lda v1
+	callthis0 0xc, v0
+	sta v4
+	throw.ifnotobject v4
+	ldobjbyname 0xe, done
+	callruntime.istrue 0x10
+	jnez label_3
+label_4: 
+	lda v4
+	ldobjbyname 0x12, value
+	sta v4
+label_17: 
+label_23: 
+	lda v2
+	ldobjbyname 0x14, m
+	callthis1 0x16, v2, v4
+label_18: 
+end_label_18: 
+	jmp label_10
+label_35: 
+	sta v5
+label_29: 
+	lda v3
+	callruntime.istrue 0x18
+	jnez label_6
+label_7: 
+	ldtrue
+	ldundefined
+	ldhole
+label_11: 
+label_25: 
+	lda v0
+	ldobjbyname 0x1a, return
+	sta v1
+	ldundefined
+	eq 0x1c, v1
+	jnez label_6
+label_8: 
+	lda v1
+	callthis0 0x1d, v0
+label_12: 
+end_label_12: 
+	jmp label_9
+label_36: 
+label_9: 
+	lda v5
+	throw
+label_6: 
+	lda v5
+	throw
+label_3: 
+	ldundefined
+	returnundefined
+label_32: 
+}
+
+.catchall label_11, end_label_12, label_36
+
+.catchall label_13, end_label_14, label_33
+
+.catchall label_15, end_label_16, label_34
+
+.catchall label_17, end_label_18, label_35
+
+
+======> literal array buffer <======
+------------------------------------
+slot _0
+------------------------------------
+slot _1
+{
+  index: 0
+    tag: 2
+    val: 0
+},
+{
+  index: 1
+    tag: 2
+    val: 0
+},
+{
+  index: 2
+    tag: 2
+    val: 0
+},
+{
+  index: 3
+    tag: 2
+    val: 0
+},
+{
+  index: 4
+    tag: 2
+    val: 0
+},
+{
+  index: 5
+    tag: 2
+    val: 0
+},
+------------------------------------
+slot _2
+{
+  index: 0
+    tag: 0
+    val: 2
+},
+{
+  index: 1
+    tag: 2
+    val: 100
+},
+{
+  index: 2
+    tag: 0
+    val: 5
+},
+{
+  index: 3
+    tag: 5
+    val: foo
+},
+------------------------------------
+slot _3
+{
+  index: 0
+    tag: 0
+    val: 5
+},
+{
+  index: 1
+    tag: 5
+    val: m
+},
+{
+  index: 2
+    tag: 0
+    val: 6
+},
+{
+  index: 3
+    tag: 6
+    val: .#~A<#m
+},
+{
+  index: 4
+    tag: 0
+    val: 9
+},
+{
+  index: 5
+    tag: 9
+    val: 1
+},
+{
+  index: 6
+    tag: 0
+    val: 2
+},
+{
+  index: 7
+    tag: 2
+    val: 0
+},
+------------------------------------
+slot _4
+{
+  index: 0
+    tag: 0
+    val: 6
+},
+{
+  index: 1
+    tag: 6
+    val: .#~A<#
+},
+{
+  index: 2
+    tag: 0
+    val: 9
+},
+{
+  index: 3
+    tag: 9
+    val: 0
+},
+{
+  index: 4
+    tag: 0
+    val: 2
+},
+{
+  index: 5
+    tag: 2
+    val: 0
+},
