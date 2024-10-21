@@ -18,7 +18,6 @@ import {
   createCompilerHost,
   createProgram,
   createSourceFile,
-  Symbol,
   SymbolFlags
 } from 'typescript';
 
@@ -28,6 +27,7 @@ import type {
   Program,
   SourceFile,
   TypeChecker,
+  Symbol,
 } from 'typescript';
 import { Extension, PathAndExtension } from '../common/type';
 import { FileUtils } from './FileUtils';
