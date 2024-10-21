@@ -388,7 +388,7 @@ bool ETSChecker::ValidateSignatureRequiredParams(Signature *substitutedSig,
         // clang-format off
         if (!ValidateSignatureInvocationContext(
             substitutedSig, argument,
-            TryGettingFunctionTypeFromInvokeFunction(substitutedSig->Params()[index]->TsType()), index, flags)) {
+            TryGettingFunctionTypeFromInvokeFunction(substitutedSig->Params()[index]->TsTypeOrError()), index, flags)) {
             // clang-format on
             return false;
         }
@@ -401,7 +401,7 @@ bool ETSChecker::CheckInvokable(Signature *substitutedSig, ir::Expression *argum
                                 TypeRelationFlag flags)
 {
     auto *argumentType = argument->Check(this);
-    auto *targetType = substitutedSig->Params()[index]->TsType();
+    auto *targetType = substitutedSig->Params()[index]->TsTypeOrError();
 
     auto const invocationCtx =
         checker::InvocationContext(Relation(), argument, argumentType, targetType, argument->Start(),
@@ -416,7 +416,7 @@ bool ETSChecker::ValidateSignatureInvocationContext(Signature *substitutedSig, i
 {
     Type *argumentType = argument->Check(this);
     auto const invocationCtx = checker::InvocationContext(
-        Relation(), argument, argumentType, substitutedSig->Params()[index]->TsType(), argument->Start(),
+        Relation(), argument, argumentType, substitutedSig->Params()[index]->TsTypeOrError(), argument->Start(),
         {"Type '", argumentType, "' is not compatible with type '", targetType, "' at index ", index + 1}, flags);
     if (!invocationCtx.IsInvocable()) {
         return CheckOptionalLambdaFunction(argument, substitutedSig, index);
@@ -922,7 +922,8 @@ Signature *ETSChecker::ChooseMostSpecificSignature(ArenaVector<Signature *> &sig
         if (signatures.size() > 1 && std::any_of(signatures.begin(), signatures.end(), [signatures](const auto *param) {
                 return param->RestVar()->TsType() != signatures.front()->RestVar()->TsType();
             })) {
-            ThrowTypeError({"Call to `", signatures.front()->Function()->Id()->Name(), "` is ambiguous "}, pos);
+            LogTypeError({"Call to `", signatures.front()->Function()->Id()->Name(), "` is ambiguous "}, pos);
+            return nullptr;
         }
         // Else return the signature with the rest parameter
         auto restParamSignature = std::find_if(signatures.begin(), signatures.end(),
@@ -1093,7 +1094,7 @@ Signature *ETSChecker::ComposeSignature(ir::ScriptFunction *func, SignatureInfo 
         signature->AddSignatureFlag(SignatureFlags::CONSTRUCTOR);
     }
 
-    if (signature->Owner()->GetDeclNode()->IsFinal() || func->IsFinal()) {
+    if ((signature->Owner() != nullptr && signature->Owner()->GetDeclNode()->IsFinal()) || func->IsFinal()) {
         signature->AddSignatureFlag(SignatureFlags::FINAL);
     }
 
@@ -1304,7 +1305,8 @@ static void AddSignatureFlags(const ir::ScriptFunction *const func, Signature *c
         signature->AddSignatureFlag(SignatureFlags::CONSTRUCTOR);
     }
 
-    if (func->Signature()->Owner()->GetDeclNode()->IsFinal() || func->IsFinal()) {
+    if ((func->Signature()->Owner() != nullptr && func->Signature()->Owner()->GetDeclNode()->IsFinal()) ||
+        func->IsFinal()) {
         signature->AddSignatureFlag(SignatureFlags::FINAL);
     }
 
@@ -1451,7 +1453,7 @@ bool ETSChecker::CheckThrowMarkers(Signature *source, Signature *target)
     if ((source->Function()->IsRethrowing() && target->Function()->IsThrowing()) ||
         (!source->Function()->IsThrowing() &&
          (target->Function()->IsRethrowing() || target->Function()->IsThrowing()))) {
-        ThrowTypeError(
+        LogTypeError(
             "A method that overrides or hides another method cannot change throw or rethrow clauses of the "
             "overridden "
             "or hidden method.",
@@ -1835,7 +1837,6 @@ ir::MethodDefinition *ETSChecker::CreateAsyncImplMethod(ir::MethodDefinition *as
     if (!asyncFunc->Signature()->HasSignatureFlag(SignatureFlags::NEED_RETURN_TYPE)) {
         // Set impl method return type "Object" because it may return Promise as well as Promise parameter's type
         auto *objectId = AllocNode<ir::Identifier>(compiler::Signatures::BUILTIN_OBJECT_CLASS, Allocator());
-        objectId->SetReference();
         VarBinder()->AsETSBinder()->LookupTypeReference(objectId, false);
         returnTypeAnn =
             AllocNode<ir::ETSTypeReference>(AllocNode<ir::ETSTypeReferencePart>(objectId, nullptr, nullptr));
@@ -2150,8 +2151,8 @@ bool ETSChecker::CmpAssemblerTypesWithRank(Signature const *const sig1, Signatur
     for (size_t ix = 0; ix < sig1->MinArgCount(); ix++) {
         std::stringstream s1;
         std::stringstream s2;
-        sig1->Params()[ix]->TsType()->ToAssemblerTypeWithRank(s1);
-        sig2->Params()[ix]->TsType()->ToAssemblerTypeWithRank(s2);
+        sig1->Params()[ix]->TsTypeOrError()->ToAssemblerTypeWithRank(s1);
+        sig2->Params()[ix]->TsTypeOrError()->ToAssemblerTypeWithRank(s2);
         if (s1.str() != s2.str()) {
             return false;
             break;

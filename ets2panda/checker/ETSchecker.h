@@ -143,7 +143,8 @@ public:
     void InitializeBuiltin(varbinder::Variable *var, const util::StringView &name);
     bool StartChecker([[maybe_unused]] varbinder::VarBinder *varbinder, const CompilerOptions &options) override;
     Type *CheckTypeCached(ir::Expression *expr) override;
-    void ResolveStructuredTypeMembers([[maybe_unused]] Type *type) override {}
+    void ResolveStructuredTypeMembers([[maybe_unused]] Type *type) override {};
+    Type *GetTypeFromVariableDeclaration(varbinder::Variable *const var);
     Type *GetTypeOfVariable([[maybe_unused]] varbinder::Variable *var) override;
     Type *GuaranteedTypeForUncheckedCast(Type *base, Type *substituted);
     Type *GuaranteedTypeForUncheckedCallReturn(Signature *sig);
@@ -638,10 +639,41 @@ public:
     Type *HandleUtilityTypeParameterNode(const ir::TSTypeParameterInstantiation *typeParams,
                                          const std::string_view &utilityType);
     // Partial
+    static constexpr auto PARTIAL_CLASS_SUFFIX = "$partial";
     Type *HandlePartialType(Type *typeToBePartial);
+    Type *HandlePartialTypeNode(ir::TypeNode *typeParamNode);
+    Type *HandlePartialInterface(Type *typeToBePartial);
+    Type *HandlePartialClass(Type *typeToBePartial);
     ir::ClassProperty *CreateNullishProperty(ir::ClassProperty *prop, ir::ClassDefinition *newClassDefinition);
-    ir::ClassDefinition *CreatePartialClassDeclaration(ir::ClassDefinition *newClassDefinition,
-                                                       const ir::ClassDefinition *classDef);
+    ir::ClassProperty *CreateNullishProperty(ir::ClassProperty *const prop,
+                                             ir::TSInterfaceDeclaration *const newTSInterfaceDefinition);
+    void ConvertGetterAndSetterToProperty(ir::TSInterfaceDeclaration *interfaceDecl,
+                                          ir::TSInterfaceDeclaration *partialInterface);
+    ir::MethodDefinition *CreateNullishAccessor(ir::MethodDefinition *const accessor,
+                                                ir::TSInterfaceDeclaration *interface);
+    ir::ClassProperty *CreateNullishPropertyFromAccessorInInterface(
+        ir::MethodDefinition *const accessor, ir::TSInterfaceDeclaration *const newTSInterfaceDefinition);
+    ir::ClassProperty *CreateNullishPropertyFromAccessor(ir::MethodDefinition *const accessor,
+                                                         ir::ClassDefinition *newClassDefinition);
+    ir::MethodDefinition *CreateNullishAccessor(ir::MethodDefinition *const accessor,
+                                                ir::ClassDefinition *classDefinition);
+    ArenaMap<ir::TSTypeParameter *, ir::TSTypeParameter *> *CreatePartialClassDeclaration(
+        ir::ClassDefinition *newClassDefinition, ir::ClassDefinition *classDef, Type *superPartialType);
+    ir::ETSTypeReference *BuildSuperPartialTypeReference(Type *superPartialType,
+                                                         ir::TSTypeParameterInstantiation *superPartialRefTypeParams);
+    ir::TSInterfaceDeclaration *CreateInterfaceProto(util::StringView name, const bool isStatic,
+                                                     const bool isClassDeclaredInCurrentFile,
+                                                     const ir::ModifierFlags flags);
+    ir::TSTypeParameterInstantiation *CreateNewSuperPartialRefTypeParamsDecl(
+        ArenaMap<ir::TSTypeParameter *, ir::TSTypeParameter *> *likeSubstitution, const Type *const superPartialType,
+        ir::Expression *superRef);
+    ir::TSTypeParameterDeclaration *ProcessTypeParamAndGenSubstitution(
+        ir::TSTypeParameterDeclaration const *const thisTypeParams,
+        ArenaMap<ir::TSTypeParameter *, ir::TSTypeParameter *> *likeSubstitution,
+        ir::TSTypeParameterDeclaration *newTypeParams);
+    Type *CreatePartialTypeInterfaceDecl(util::StringView qualifiedName,
+                                         ir::TSInterfaceDeclaration *const interfaceDecl,
+                                         ir::TSInterfaceDeclaration *partialInterface);
     void CreateConstructorForPartialType(ir::ClassDefinition *partialClassDef, checker::ETSObjectType *partialType,
                                          varbinder::RecordTable *recordTable);
     ir::ClassDefinition *CreateClassPrototype(util::StringView name, parser::Program *classDeclProgram);
