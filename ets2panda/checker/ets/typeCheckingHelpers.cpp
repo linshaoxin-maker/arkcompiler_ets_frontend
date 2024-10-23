@@ -40,6 +40,7 @@
 #include "ir/ets/etsUnionType.h"
 #include "ir/ets/etsTypeReference.h"
 #include "ir/ets/etsTypeReferencePart.h"
+#include "utils/arena_containers.h"
 #include "varbinder/variable.h"
 #include "varbinder/scope.h"
 #include "varbinder/declaration.h"
@@ -409,6 +410,47 @@ void ETSChecker::IterateInVariableContext(varbinder::Variable *const var)
     }
 }
 
+Type *ETSChecker::GetTypeFromVariableDeclaration(varbinder::Variable *const var)
+{
+    switch (var->Declaration()->Type()) {
+        case varbinder::DeclType::CLASS: {
+            auto *classDef = var->Declaration()->Node()->AsClassDefinition();
+            BuildBasicClassProperties(classDef);
+            return classDef->TsType();
+        }
+        case varbinder::DeclType::ENUM_LITERAL:
+        case varbinder::DeclType::CONST:
+        case varbinder::DeclType::READONLY:
+        case varbinder::DeclType::LET:
+        case varbinder::DeclType::VAR: {
+            auto *declNode = var->Declaration()->Node();
+            if (var->Declaration()->Node()->IsIdentifier()) {
+                declNode = declNode->Parent();
+            }
+            return declNode->Check(this);
+        }
+        case varbinder::DeclType::FUNC:
+        case varbinder::DeclType::IMPORT: {
+            return var->Declaration()->Node()->Check(this);
+        }
+        case varbinder::DeclType::TYPE_ALIAS: {
+            return GetTypeFromTypeAliasReference(var);
+        }
+        case varbinder::DeclType::INTERFACE: {
+            return BuildBasicInterfaceProperties(var->Declaration()->Node()->AsTSInterfaceDeclaration());
+        }
+        case varbinder::DeclType::ANNOTATIONUSAGE: {
+            return GlobalTypeError();
+        }
+        case varbinder::DeclType::ANNOTATIONDECL: {
+            return GlobalTypeError();
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+}
+
 Type *ETSChecker::GetTypeOfVariable(varbinder::Variable *const var)
 {
     if (IsVariableGetterSetter(var)) {
@@ -431,41 +473,7 @@ Type *ETSChecker::GetTypeOfVariable(varbinder::Variable *const var)
     checker::ScopeContext scopeCtx(this, var->GetScope());
     IterateInVariableContext(var);
 
-    switch (var->Declaration()->Type()) {
-        case varbinder::DeclType::CLASS: {
-            auto *classDef = var->Declaration()->Node()->AsClassDefinition();
-            BuildBasicClassProperties(classDef);
-            return classDef->TsType();
-        }
-        case varbinder::DeclType::ENUM_LITERAL:
-        case varbinder::DeclType::CONST:
-        case varbinder::DeclType::READONLY:
-        case varbinder::DeclType::LET:
-        case varbinder::DeclType::VAR: {
-            auto *declNode = var->Declaration()->Node();
-
-            if (var->Declaration()->Node()->IsIdentifier()) {
-                declNode = declNode->Parent();
-            }
-
-            return declNode->Check(this);
-        }
-        case varbinder::DeclType::FUNC:
-        case varbinder::DeclType::IMPORT: {
-            return var->Declaration()->Node()->Check(this);
-        }
-        case varbinder::DeclType::TYPE_ALIAS: {
-            return GetTypeFromTypeAliasReference(var);
-        }
-        case varbinder::DeclType::INTERFACE: {
-            return BuildBasicInterfaceProperties(var->Declaration()->Node()->AsTSInterfaceDeclaration());
-        }
-        default: {
-            UNREACHABLE();
-        }
-    }
-
-    return var->TsType();
+    return GetTypeFromVariableDeclaration(var);
 }
 
 // Determine if unchecked cast is needed and yield guaranteed source type
@@ -615,6 +623,85 @@ Type *ETSChecker::GetTypeFromTypeParameterReference(varbinder::LocalVariable *va
     }
 
     return var->TsTypeOrError();
+}
+
+bool ETSChecker::CheckDuplicateAnnotations(const ArenaVector<ir::AnnotationUsage *> &annotations)
+{
+    std::unordered_set<util::StringView> seenAnnotations;
+    for (const auto &anno : annotations) {
+        auto annoName = anno->Ident()->Name();
+        if (seenAnnotations.find(annoName) != seenAnnotations.end()) {
+            LogTypeError({"Duplicate annotations are not allowed. The annotation '", annoName,
+                          "' has already been applied to this element."},
+                         anno->Start());
+            return false;
+        }
+        seenAnnotations.insert(annoName);
+    }
+    return true;
+}
+
+void ETSChecker::CheckAnnotationPropertyType(ir::ClassProperty *property)
+{
+    // typeAnnotation check
+    if (!ValidateAnnotationPropertyType(property->TsType())) {
+        LogTypeError({"Invalid annotation field type. Only numeric, boolean, string, enum, or "
+                      "arrays of these types are permitted for annotation fields."},
+                     property->Start());
+    }
+
+    // The type of the Initializer has been check in the parser,
+    // except for the enumeration type, because it is a member expression,
+    // so here is an additional check to the enumeration type.
+    if (property->Value() != nullptr && property->Value()->IsMemberExpression() &&
+        !property->TsType()->IsETSEnumType()) {
+        LogTypeError("Invalid value for annotation field, expected a constant literal.", property->Value()->Start());
+    }
+}
+
+void ETSChecker::CheckSinglePropertyAnnotation(ir::AnnotationUsage *st, ir::AnnotationDeclaration *annoDecl,
+                                               ETSChecker *checker)
+{
+    auto *param = st->Properties().at(0)->AsClassProperty();
+    if (annoDecl->Properties().size() > 1) {
+        checker->LogTypeError({"Annotation '", st->Ident()->Name(), "' requires multiple fields to be specified."},
+                              st->Start());
+    }
+    auto singleField = annoDecl->Properties().at(0)->AsClassProperty();
+    auto ctx = checker::AssignmentContext(checker->Relation(), param->Value(), param->TsType(), singleField->TsType(),
+                                          param->Start(), {}, TypeRelationFlag::NO_THROW);
+    if (!ctx.IsAssignable()) {
+        checker->LogTypeError({"The value provided for annotation '", st->Ident()->Name(), "' field '",
+                               param->Id()->Name(), "' is of type '", param->TsType(), "', but expected type is '",
+                               singleField->TsType(), "'."},
+                              param->Start());
+    }
+}
+
+void ETSChecker::CheckMultiplePropertiesAnnotation(ir::AnnotationUsage *st, ir::AnnotationDeclaration *annoDecl,
+                                                   ETSChecker *checker,
+                                                   std::unordered_map<util::StringView, ir::ClassProperty *> &fieldMap)
+{
+    for (auto *it : st->Properties()) {
+        auto *param = it->AsClassProperty();
+        auto result = fieldMap.find(param->Id()->Name());
+        if (result == fieldMap.end()) {
+            checker->LogTypeError({"The parameter '", param->Id()->Name(),
+                                   "' does not match any declared property in the annotation '",
+                                   annoDecl->Ident()->Name(), "'."},
+                                  param->Start());
+            continue;
+        }
+        auto ctx = checker::AssignmentContext(checker->Relation(), param->Value(), param->TsType(),
+                                              result->second->TsType(), param->Start(), {}, TypeRelationFlag::NO_THROW);
+        if (!ctx.IsAssignable()) {
+            checker->LogTypeError({"The value provided for annotation '", st->Ident()->Name(), "' field '",
+                                   param->Id()->Name(), "' is of type '", param->TsType(), "', but expected type is '",
+                                   result->second->TsType(), "'."},
+                                  param->Start());
+        }
+        fieldMap.erase(result);
+    }
 }
 
 bool ETSChecker::IsTypeBuiltinType(const Type *type) const

@@ -169,7 +169,6 @@ ir::AnnotatedExpression *TSParser::ParsePatternElementGetReturnNode(ExpressionPa
         }
         case lexer::TokenType::LITERAL_IDENT: {
             ir::AnnotatedExpression *returnNode = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
-            returnNode->AsIdentifier()->SetReference();
 
             if (returnNode->AsIdentifier()->Decorators().empty()) {
                 returnNode->SetRange(Lexer()->GetToken().Loc());
@@ -278,6 +277,7 @@ ir::Expression *TSParser::ParseFunctionParameter()
 {
     if (Lexer()->GetToken().Type() == lexer::TokenType::KEYW_THIS) {
         Lexer()->GetToken().SetTokenType(lexer::TokenType::LITERAL_IDENT);
+        Lexer()->GetToken().SetTokenStr(ERROR_LITERAL);
     }
 
     lexer::SourcePosition parameterStart = Lexer()->GetToken().Start();
@@ -354,7 +354,6 @@ ir::Expression *TSParser::ParseModuleReference()
 ir::TSTypeReference *TSParser::ParseConstExpression()
 {
     auto *identRef = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
-    identRef->SetReference();
     identRef->SetRange(Lexer()->GetToken().Loc());
 
     auto *typeReference = AllocNode<ir::TSTypeReference>(identRef, nullptr);
@@ -449,6 +448,9 @@ ir::ArrowFunctionExpression *TSParser::ParsePotentialArrowExpression(ir::Express
         }
         case lexer::TokenType::LITERAL_IDENT: {
             ir::Expression *identRef = ParsePrimaryExpression();
+            if (identRef == nullptr) {
+                return nullptr;
+            }
             ASSERT(identRef->IsIdentifier());
 
             if (Lexer()->GetToken().Type() != lexer::TokenType::PUNCTUATOR_ARROW) {
