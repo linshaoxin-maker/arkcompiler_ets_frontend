@@ -201,7 +201,15 @@ ir::ArrayExpression *ParserImpl::ParseArrayExpression(ExpressionParseFlags flags
         }
 
         if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
-            ThrowSyntaxError("Unexpected token, expected ',' or ']'");
+            // array_2.sts
+            LogSyntaxError("Unexpected token, expected ',' or ']'");
+            lexer_->NextToken();
+            if (lexer::Token::IsPunctuatorToken(lexer_->GetToken().Type())) {
+                // [0, 1, 2} -> [0, 1, 2]
+                // the problem is that ["abc". "sss", "aaa"] -> ["abc"] "sss", "aaa"]
+                lexer_->GetToken().SetTokenType(lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET);
+            }
+            // [0 1, 2] -> [0, 1, 2] ; we just skeep the token in this case
         }
     }
 
@@ -320,7 +328,9 @@ ir::ArrowFunctionExpression *ParserImpl::ParseArrowFunctionExpressionBody(ArrowF
         body->SetRange({bodyStart, lexer_->GetToken().End()});
 
         if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
-            ThrowSyntaxError("Expected a '}'");
+            // This check is redundant since we have ParseStatementList()
+            // It is impossible to leave without eos/} or error.
+            LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_BRACE);
         }
 
         lexer_->NextToken();
@@ -427,7 +437,17 @@ ir::ArrowFunctionExpression *ParserImpl::ParseArrowFunctionExpression(ir::Expres
 void ParserImpl::ValidateArrowFunctionRestParameter([[maybe_unused]] ir::SpreadElement *restElement)
 {
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
-        ThrowSyntaxError("Rest parameter must be last formal parameter");
+        // unexpected_token_3.js
+        LogSyntaxError("Rest parameter must be the last formal parameter.");
+        const auto pos = lexer_->Save();
+        lexer_->NextToken();
+        if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
+            // ...a: int, b: int)
+            lexer_->Rewind(pos);
+            lexer_->GetToken().SetTokenType(lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS);
+        }
+        // typo happened, just skip the token
+        // ...a: int,)
     }
 }
 
@@ -450,7 +470,8 @@ ir::Expression *ParserImpl::ParseCoverParenthesizedExpressionAndArrowParameterLi
         lexer_->NextToken();
 
         if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_ARROW) {
-            ThrowSyntaxError("Unexpected token");
+            // test exists for js extension only
+            LogExpectedToken(lexer::TokenType::PUNCTUATOR_ARROW);
         }
 
         return ParseArrowFunctionExpression(restElement, nullptr, nullptr, false);
@@ -460,7 +481,8 @@ ir::Expression *ParserImpl::ParseCoverParenthesizedExpressionAndArrowParameterLi
         lexer_->NextToken();
 
         if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_ARROW) {
-            ThrowSyntaxError("Unexpected token");
+            // test exists for js extension only
+            LogExpectedToken(lexer::TokenType::PUNCTUATOR_ARROW);
         }
 
         auto *arrowExpr = ParseArrowFunctionExpression(nullptr, nullptr, nullptr, false);
@@ -474,9 +496,9 @@ ir::Expression *ParserImpl::ParseCoverParenthesizedExpressionAndArrowParameterLi
                                            ExpressionParseFlags::POTENTIALLY_IN_PATTERN);
 
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
-        ThrowSyntaxError("Unexpected token, expected ')'");
+        // test exists for js extension only
+        LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS);
     }
-
     expr->SetGrouped();
     expr->SetRange({start, lexer_->GetToken().End()});
     lexer_->NextToken();
@@ -505,8 +527,12 @@ void ParserImpl::CheckInvalidDestructuring(const ir::AstNode *object) const
     });
 }
 
-void ParserImpl::ValidateGroupedExpression(ir::Expression *lhsExpression)
+bool ParserImpl::ValidateGroupedExpression(ir::Expression *lhsExpression)
 {
+    if (lhsExpression == nullptr) {  // Error processing.
+        return false;
+    }
+
     lexer::TokenType tokenType = lexer_->GetToken().Type();
     if (lhsExpression->IsGrouped() && tokenType != lexer::TokenType::PUNCTUATOR_ARROW) {
         if (lhsExpression->IsSequenceExpression()) {
@@ -517,6 +543,8 @@ void ParserImpl::ValidateGroupedExpression(ir::Expression *lhsExpression)
             ValidateParenthesizedExpression(lhsExpression);
         }
     }
+
+    return true;
 }
 
 void ParserImpl::ValidateParenthesizedExpression(ir::Expression *lhsExpression)
@@ -569,7 +597,9 @@ ir::Expression *ParserImpl::ParsePrefixAssertionExpression()
 
 ir::Expression *ParserImpl::ParseAssignmentExpression(ir::Expression *lhsExpression, ExpressionParseFlags flags)
 {
-    ValidateGroupedExpression(lhsExpression);
+    if (!ValidateGroupedExpression(lhsExpression)) {
+        return nullptr;  // Error processing.
+    }
 
     lexer::TokenType tokenType = lexer_->GetToken().Type();
     switch (tokenType) {
@@ -578,23 +608,31 @@ ir::Expression *ParserImpl::ParseAssignmentExpression(ir::Expression *lhsExpress
             ir::Expression *consequent = ParseExpression();
 
             if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_COLON) {
-                ThrowSyntaxError("Unexpected token, expected ':'");
+                if (lexer::Token::IsPunctuatorToken(lexer_->GetToken().Type())) {
+                    // typo happened like ';'
+                    // unexpected_token_41.sts - bad test
+                    LogExpectedToken(lexer::TokenType::PUNCTUATOR_COLON);
+                    lexer_->NextToken();  // eat ':'
+                } else {
+                    // just go to the next token if we missed ':'
+                    LogSyntaxError("Unexpected token, expected: ':'.");
+                }
+            } else {
+                lexer_->NextToken();  // eat ':'
             }
 
-            lexer_->NextToken();
             ir::Expression *alternate = ParseExpression();
 
             auto *conditionalExpr = AllocNode<ir::ConditionalExpression>(lhsExpression, consequent, alternate);
             conditionalExpr->SetRange({lhsExpression->Start(), alternate->End()});
             return conditionalExpr;
         }
-        case lexer::TokenType::PUNCTUATOR_ARROW: {
+        case lexer::TokenType::PUNCTUATOR_ARROW:
             if (lexer_->GetToken().NewLine()) {
                 ThrowSyntaxError("Uncaught SyntaxError: expected expression, got '=>'");
             }
 
             return ParseArrowFunctionExpression(lhsExpression, nullptr, nullptr, false);
-        }
         case lexer::TokenType::PUNCTUATOR_SUBSTITUTION: {
             ValidateAssignmentTarget(flags, lhsExpression);
 
@@ -607,12 +645,11 @@ ir::Expression *ParserImpl::ParseAssignmentExpression(ir::Expression *lhsExpress
             binaryAssignmentExpression->SetRange({lhsExpression->Start(), assignmentExpression->End()});
             return binaryAssignmentExpression;
         }
-        case lexer::TokenType::KEYW_AS: {
+        case lexer::TokenType::KEYW_AS:
             if (auto asExpression = ParsePotentialAsExpression(lhsExpression); asExpression != nullptr) {
                 return ParseAssignmentExpression(asExpression);
             }
             break;
-        }
         default: {
             auto expression = ParseAssignmentBinaryExpression(tokenType, lhsExpression, flags);
             if (expression == nullptr) {
@@ -752,7 +789,7 @@ ir::TemplateLiteral *ParserImpl::ParseTemplateLiteral()
         }
 
         if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
-            ThrowSyntaxError("Unexpected token, expected '}'.");
+            LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_BRACE);
         }
 
         expressions.push_back(expression);
@@ -774,7 +811,7 @@ ir::Expression *ParserImpl::ParseNewExpression()
 
     // parse callee part of NewExpression
     ir::Expression *callee = ParseMemberExpression(true);
-    if (callee->IsImportExpression() && !callee->IsGrouped()) {
+    if ((callee->IsImportExpression() && !callee->IsGrouped()) || callee == nullptr) {
         ThrowSyntaxError("Cannot use new with import(...)");
     }
 
@@ -854,7 +891,6 @@ ir::MetaProperty *ParserImpl::ParsePotentialNewTarget()
 ir::Identifier *ParserImpl::ParsePrimaryExpressionIdent([[maybe_unused]] ExpressionParseFlags flags)
 {
     auto *identNode = AllocNode<ir::Identifier>(lexer_->GetToken().Ident(), Allocator());
-    identNode->SetReference();
     identNode->SetRange(lexer_->GetToken().Loc());
 
     lexer_->NextToken();
@@ -1022,11 +1058,11 @@ ir::Expression *ParserImpl::ParseHashMaskOperator()
     ValidatePrivateIdentifier();
     auto *privateIdent = AllocNode<ir::Identifier>(lexer_->GetToken().Ident(), Allocator());
     privateIdent->SetPrivate(true);
-    privateIdent->SetReference();
     lexer_->NextToken();
 
     if (lexer_->GetToken().Type() != lexer::TokenType::KEYW_IN) {
-        ThrowSyntaxError("Unexpected private identifier");
+        LogSyntaxError("Unexpected private identifier");
+        lexer_->GetToken().SetTokenType(lexer::TokenType::KEYW_IN);
     }
 
     return privateIdent;
@@ -1373,7 +1409,8 @@ ArenaVector<ir::Expression *> ParserImpl::ParseCallExpressionArguments(bool &tra
         lexer_->Lookahead() == static_cast<char32_t>(ARRAY_FORMAT_NODE)) {
         arguments = std::move(ParseExpressionsArrayFormatPlaceholder());
         if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
-            ThrowSyntaxError("Expected a ')'");
+            LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS);
+            UNREACHABLE();
         }
     } else {
         while (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
@@ -1391,7 +1428,7 @@ ArenaVector<ir::Expression *> ParserImpl::ParseCallExpressionArguments(bool &tra
                 lexer_->NextToken();
                 trailingComma = true;
             } else if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
-                ThrowSyntaxError("Expected a ')'");
+                LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS);
             }
         }
     }
@@ -1448,7 +1485,6 @@ ir::Expression *ParserImpl::ParseOptionalChain(ir::Expression *leftSideExpr)
     const auto tokenType = lexer_->GetToken().Type();
     if (tokenType == lexer::TokenType::LITERAL_IDENT) {
         auto *identNode = AllocNode<ir::Identifier>(lexer_->GetToken().Ident(), Allocator());
-        identNode->SetReference();
         identNode->SetPrivate(isPrivate);
         identNode->SetRange(lexer_->GetToken().Loc());
 
@@ -1463,7 +1499,8 @@ ir::Expression *ParserImpl::ParseOptionalChain(ir::Expression *leftSideExpr)
         ir::Expression *propertyNode = ParseExpression(ExpressionParseFlags::ACCEPT_COMMA);
 
         if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
-            ThrowSyntaxError("Unexpected token");
+            // test exists for ts extension only
+            LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET);
         }
 
         returnExpression = AllocNode<ir::MemberExpression>(leftSideExpr, propertyNode,
@@ -1496,10 +1533,14 @@ ir::ArrowFunctionExpression *ParserImpl::ParsePotentialArrowExpression(ir::Expre
         }
         case lexer::TokenType::LITERAL_IDENT: {
             ir::Expression *identRef = ParsePrimaryExpression();
+            if (identRef == nullptr) {
+                return nullptr;
+            }
             ASSERT(identRef->IsIdentifier());
 
             if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_ARROW) {
-                ThrowSyntaxError("Unexpected token, expected '=>'");
+                // test exists for js extension only
+                LogExpectedToken(lexer::TokenType::PUNCTUATOR_ARROW);
             }
 
             ir::ArrowFunctionExpression *arrowFuncExpr = ParseArrowFunctionExpression(identRef, nullptr, nullptr, true);
@@ -1560,7 +1601,7 @@ ir::MemberExpression *ParserImpl::ParseElementAccess(ir::Expression *primaryExpr
     ir::Expression *propertyNode = ParseExpression(ExpressionParseFlags::ACCEPT_COMMA);
 
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
-        ThrowSyntaxError("Unexpected token");
+        LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET);
     }
 
     auto *memberExpr = AllocNode<ir::MemberExpression>(primaryExpr, propertyNode,
@@ -1580,7 +1621,6 @@ ir::MemberExpression *ParserImpl::ParsePrivatePropertyAccess(ir::Expression *pri
     auto *privateIdent = AllocNode<ir::Identifier>(lexer_->GetToken().Ident(), Allocator());
     privateIdent->SetRange({memberStart, lexer_->GetToken().End()});
     privateIdent->SetPrivate(true);
-    privateIdent->SetReference();
     lexer_->NextToken();
 
     auto *memberExpr = AllocNode<ir::MemberExpression>(primaryExpr, privateIdent,
@@ -1740,6 +1780,9 @@ ir::Expression *ParserImpl::ParseMemberExpression(bool ignoreCallExpression, Exp
     bool isAsync = lexer_->GetToken().IsAsyncModifier();
     lexer::SourcePosition startLoc = lexer_->GetToken().Start();
     ir::Expression *returnExpression = ParsePrimaryExpression(flags);
+    if (returnExpression == nullptr) {  // Error processing.
+        return nullptr;
+    }
 
     if (lexer_->GetToken().NewLine() && returnExpression->IsArrowFunctionExpression()) {
         return returnExpression;
@@ -1804,7 +1847,6 @@ ir::Expression *ParserImpl::ParsePatternElement(ExpressionParseFlags flags, bool
         }
         case lexer::TokenType::LITERAL_IDENT: {
             returnNode = AllocNode<ir::Identifier>(lexer_->GetToken().Ident(), Allocator());
-            returnNode->AsIdentifier()->SetReference();
             returnNode->SetRange(lexer_->GetToken().Loc());
             lexer_->NextToken();
             break;
@@ -1832,7 +1874,8 @@ ir::Expression *ParserImpl::ParsePatternElement(ExpressionParseFlags flags, bool
 void ParserImpl::ParsePatternElementErrorCheck(const ExpressionParseFlags flags, const bool allowDefault)
 {
     if ((flags & ExpressionParseFlags::IN_REST) != 0) {
-        ThrowSyntaxError("Unexpected token, expected ')'");
+        // unexpected_token_10.js
+        LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS);
     }
 
     if (!allowDefault) {
@@ -1923,7 +1966,9 @@ ir::Property *ParserImpl::ParseShorthandProperty(const lexer::LexerPosition *sta
     lexer::SourcePosition start = lexer_->GetToken().Start();
 
     if (lexer_->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
-        ThrowSyntaxError("Expected an identifier");
+        // for now no tests are available since the func is called once
+        // after checking the same token for the identifier
+        LogExpectedToken(lexer::TokenType::LITERAL_IDENT);
     }
 
     const util::StringView &ident = lexer_->GetToken().Ident();
@@ -1932,7 +1977,6 @@ ir::Property *ParserImpl::ParseShorthandProperty(const lexer::LexerPosition *sta
     key->SetRange(lexer_->GetToken().Loc());
 
     ir::Expression *value = AllocNode<ir::Identifier>(ident, Allocator());
-    value->AsIdentifier()->SetReference();
     value->SetRange(lexer_->GetToken().Loc());
 
     lexer::SourcePosition end;
@@ -2047,7 +2091,9 @@ ir::Expression *ParserImpl::ParsePropertyKey(ExpressionParseFlags flags)
             key = ParseExpression(flags | ExpressionParseFlags::ACCEPT_COMMA);
 
             if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET) {
-                ThrowSyntaxError("Unexpected token, expected ']'");
+                // the same test for ts, sts and js extension
+                // unexpected_token_52.sts
+                LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_SQUARE_BRACKET);
             }
             break;
         }
@@ -2070,10 +2116,16 @@ ir::Expression *ParserImpl::ParsePropertyValue(const ir::PropertyKind *propertyK
         // If the actual property is not getter/setter nor method, the following
         // token must be ':'
         if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_COLON) {
-            ThrowSyntaxError("Unexpected token, expected ':'");
+            if (lexer::Token::IsPunctuatorToken(lexer_->GetToken().Type())) {
+                LogExpectedToken(lexer::TokenType::PUNCTUATOR_COLON);
+                lexer_->NextToken();  // eat colon
+            } else {
+                // we just missed ':'
+                LogSyntaxError("Unexpected token, expected: ':'.");
+            }
+        } else {
+            lexer_->NextToken();  // eat colon
         }
-
-        lexer_->NextToken();  // eat colon
 
         if (!inPattern) {
             return ParseExpression(flags);
@@ -2164,7 +2216,28 @@ bool ParserImpl::ParsePropertyEnd()
     // Property definiton must end with ',' or '}' otherwise we throw SyntaxError
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_COMMA &&
         lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
-        ThrowSyntaxError("Unexpected token, expected ',' or '}'");
+        // test_object_literal3.ts
+        LogSyntaxError("Unexpected token, expected ',' or '}'");
+        const auto pos = lexer_->Save();
+        if (lexer_->GetToken().Type() != lexer::TokenType::LITERAL_IDENT) {
+            lexer_->NextToken();
+            if (lexer_->GetToken().Type() == lexer::TokenType::LITERAL_IDENT) {
+                // {a. b} -> {a, b}
+                lexer_->Rewind(pos);
+                lexer_->GetToken().SetTokenType(lexer::TokenType::PUNCTUATOR_COMMA);
+            } else {
+                lexer_->Rewind(pos);
+                if (lexer::Token::IsPunctuatorToken(lexer_->GetToken().Type())) {
+                    // {a, b) -> {a, b}
+                    lexer_->GetToken().SetTokenType(lexer::TokenType::PUNCTUATOR_RIGHT_BRACE);
+                }
+            }
+        } else {
+            lexer_->NextToken();  // {a b} -> we just skip the token
+            if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_BRACE) {
+                lexer_->GetToken().SetTokenType(lexer::TokenType::PUNCTUATOR_RIGHT_BRACE);
+            }
+        }
     }
 
     if (lexer_->GetToken().Type() == lexer::TokenType::PUNCTUATOR_COMMA &&
@@ -2328,7 +2401,10 @@ ir::Expression *ParserImpl::ParseImportExpression()
 
         if (lexer_->GetToken().Type() != lexer::TokenType::LITERAL_IDENT ||
             lexer_->GetToken().KeywordType() != lexer::TokenType::KEYW_META) {
-            ThrowSyntaxError("The only valid meta property for import is import.Meta");
+            // js tests only: import_meta_1.js, import_meta_2.js, import_meta_3.js
+            LogSyntaxError("The only valid meta property for import is import.Meta");
+
+            lexer_->GetToken().SetTokenType(lexer::TokenType::KEYW_META);
         }
 
         auto *metaProperty = AllocNode<ir::MetaProperty>(ir::MetaProperty::MetaPropertyKind::IMPORT_META);
@@ -2339,7 +2415,7 @@ ir::Expression *ParserImpl::ParseImportExpression()
     }
 
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS) {
-        ThrowSyntaxError("Unexpected token");
+        LogExpectedToken(lexer::TokenType::PUNCTUATOR_LEFT_PARENTHESIS);
     }
 
     lexer_->NextToken();  // eat left parentheses
@@ -2347,7 +2423,8 @@ ir::Expression *ParserImpl::ParseImportExpression()
     ir::Expression *source = ParseExpression();
 
     if (lexer_->GetToken().Type() != lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS) {
-        ThrowSyntaxError("Unexpected token");
+        // test exists for ts extension only
+        LogExpectedToken(lexer::TokenType::PUNCTUATOR_RIGHT_PARENTHESIS);
     }
 
     auto *importExpression = AllocNode<ir::ImportExpression>(source);
