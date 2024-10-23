@@ -409,6 +409,47 @@ void ETSChecker::IterateInVariableContext(varbinder::Variable *const var)
     }
 }
 
+Type *ETSChecker::GetTypeFromVariableDeclaration(varbinder::Variable *const var)
+{
+    switch (var->Declaration()->Type()) {
+        case varbinder::DeclType::CLASS: {
+            auto *classDef = var->Declaration()->Node()->AsClassDefinition();
+            BuildBasicClassProperties(classDef);
+            return classDef->TsType();
+        }
+        case varbinder::DeclType::ENUM_LITERAL:
+        case varbinder::DeclType::CONST:
+        case varbinder::DeclType::READONLY:
+        case varbinder::DeclType::LET:
+        case varbinder::DeclType::VAR: {
+            auto *declNode = var->Declaration()->Node();
+            if (var->Declaration()->Node()->IsIdentifier()) {
+                declNode = declNode->Parent();
+            }
+            return declNode->Check(this);
+        }
+        case varbinder::DeclType::FUNC:
+        case varbinder::DeclType::IMPORT: {
+            return var->Declaration()->Node()->Check(this);
+        }
+        case varbinder::DeclType::TYPE_ALIAS: {
+            return GetTypeFromTypeAliasReference(var);
+        }
+        case varbinder::DeclType::INTERFACE: {
+            return BuildBasicInterfaceProperties(var->Declaration()->Node()->AsTSInterfaceDeclaration());
+        }
+        case varbinder::DeclType::ANNOTATIONUSAGE: {
+            return GlobalTypeError();
+        }
+        case varbinder::DeclType::ANNOTATIONDECL: {
+            return GlobalTypeError();
+        }
+        default: {
+            UNREACHABLE();
+        }
+    }
+}
+
 Type *ETSChecker::GetTypeOfVariable(varbinder::Variable *const var)
 {
     if (IsVariableGetterSetter(var)) {
@@ -431,41 +472,7 @@ Type *ETSChecker::GetTypeOfVariable(varbinder::Variable *const var)
     checker::ScopeContext scopeCtx(this, var->GetScope());
     IterateInVariableContext(var);
 
-    switch (var->Declaration()->Type()) {
-        case varbinder::DeclType::CLASS: {
-            auto *classDef = var->Declaration()->Node()->AsClassDefinition();
-            BuildBasicClassProperties(classDef);
-            return classDef->TsType();
-        }
-        case varbinder::DeclType::ENUM_LITERAL:
-        case varbinder::DeclType::CONST:
-        case varbinder::DeclType::READONLY:
-        case varbinder::DeclType::LET:
-        case varbinder::DeclType::VAR: {
-            auto *declNode = var->Declaration()->Node();
-
-            if (var->Declaration()->Node()->IsIdentifier()) {
-                declNode = declNode->Parent();
-            }
-
-            return declNode->Check(this);
-        }
-        case varbinder::DeclType::FUNC:
-        case varbinder::DeclType::IMPORT: {
-            return var->Declaration()->Node()->Check(this);
-        }
-        case varbinder::DeclType::TYPE_ALIAS: {
-            return GetTypeFromTypeAliasReference(var);
-        }
-        case varbinder::DeclType::INTERFACE: {
-            return BuildBasicInterfaceProperties(var->Declaration()->Node()->AsTSInterfaceDeclaration());
-        }
-        default: {
-            UNREACHABLE();
-        }
-    }
-
-    return var->TsType();
+    return GetTypeFromVariableDeclaration(var);
 }
 
 // Determine if unchecked cast is needed and yield guaranteed source type
@@ -598,9 +605,7 @@ Type *ETSChecker::GetTypeFromEnumReference([[maybe_unused]] varbinder::Variable 
     } else if (itemInit->IsStringLiteral()) {  // NOLINT(readability-else-after-return)
         return CreateEnumStringTypeFromEnumDeclaration(enumDecl);
     } else {  // NOLINT(readability-else-after-return)
-        LogTypeError("Invalid enumeration value type.", enumDecl->Start());
-        var->SetTsType(GlobalTypeError());
-        return var->TsTypeOrError();
+        return TypeError(var, "Invalid enumeration value type.", enumDecl->Start());
     }
 }
 
@@ -610,11 +615,10 @@ Type *ETSChecker::GetTypeFromTypeParameterReference(varbinder::LocalVariable *va
     if ((var->Declaration()->Node()->AsTSTypeParameter()->Parent()->Parent()->IsClassDefinition() ||
          var->Declaration()->Node()->AsTSTypeParameter()->Parent()->Parent()->IsTSInterfaceDeclaration()) &&
         HasStatus(CheckerStatus::IN_STATIC_CONTEXT)) {
-        LogTypeError({"Cannot make a static reference to the non-static type ", var->Name()}, pos);
-        var->SetTsType(GlobalTypeError());
+        return TypeError(var, FormatMsg({"Cannot make a static reference to the non-static type ", var->Name()}), pos);
     }
 
-    return var->TsTypeOrError();
+    return var->TsType();
 }
 
 bool ETSChecker::IsTypeBuiltinType(const Type *type) const

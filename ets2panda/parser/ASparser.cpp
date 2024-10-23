@@ -345,7 +345,6 @@ std::tuple<ir::AnnotatedExpression *, bool> ASParser::ParsePatternElementToken(E
         }
         case lexer::TokenType::LITERAL_IDENT: {
             returnNode = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
-            returnNode->AsIdentifier()->SetReference();
             returnNode->SetRange(Lexer()->GetToken().Loc());
             Lexer()->NextToken();
 
@@ -846,7 +845,6 @@ ir::Expression *ASParser::ParsePotentialAsExpression(ir::Expression *primaryExpr
 ir::Identifier *ASParser::ParsePrimaryExpressionIdent([[maybe_unused]] ExpressionParseFlags flags)
 {
     auto *identNode = AllocNode<ir::Identifier>(Lexer()->GetToken().Ident(), Allocator());
-    identNode->SetReference();
     identNode->SetRange(Lexer()->GetToken().Loc());
 
     Lexer()->NextToken();
@@ -1354,7 +1352,7 @@ std::tuple<bool, ir::BlockStatement *, lexer::SourcePosition, bool> ASParser::Pa
 
 ir::AstNode *ASParser::ParseImportDefaultSpecifier(ArenaVector<ir::AstNode *> *specifiers)
 {
-    ir::Identifier *local = ParseNamedImport(Lexer()->GetToken());
+    ir::Identifier *local = ParseNamedImport(&Lexer()->GetToken());
     Lexer()->NextToken();  // eat local name
 
     auto *specifier = AllocNode<ir::ImportDefaultSpecifier>(local);
