@@ -297,6 +297,8 @@ set(ES2PANDA_LIB_SRC
   ir/module/importNamespaceSpecifier.cpp
   ir/module/importSpecifier.cpp
   ir/statement.cpp
+  ir/statements/annotationDeclaration.cpp
+  ir/statements/annotationUsage.cpp
   ir/statements/assertStatement.cpp
   ir/statements/blockStatement.cpp
   ir/statements/breakStatement.cpp
@@ -532,6 +534,7 @@ set(ES2PANDA_LIB_SRC
   util/bitset.cpp
   util/errorHandler.cpp
   util/errorLogger.cpp
+  util/errorRecovery.cpp
   util/helpers.cpp
   util/importPathManager.cpp
   util/path.cpp

@@ -1059,6 +1059,34 @@ void ETSChecker::CheckClassDefinition(ir::ClassDefinition *classDef)
     // SUPPRESS_CSA_NEXTLINE(alpha.core.AllocatorETSCheckerHint)
     TransformProperties(classType);
 
+    CheckClassAnnotations(classDef);
+    CheckClassMembers(classDef);
+
+    if (classDef->IsGlobal() || classType->SuperType() == nullptr) {
+        return;
+    }
+
+    CheckConstructors(classDef, classType);
+    CheckValidInheritance(classType, classDef);
+    CheckConstFields(classType);
+    CheckGetterSetterProperties(classType);
+    CheckInvokeMethodsLegitimacy(classType);
+}
+
+void ETSChecker::CheckClassAnnotations(ir::ClassDefinition *classDef)
+{
+    if (!CheckDuplicateAnnotations(classDef->Annotations())) {
+        return;
+    }
+    for (auto *it : classDef->Annotations()) {
+        if (!it->IsClassProperty()) {
+            it->Check(this);
+        }
+    }
+}
+
+void ETSChecker::CheckClassMembers(ir::ClassDefinition *classDef)
+{
     for (auto *it : classDef->Body()) {
         if (it->IsClassProperty()) {
             it->Check(this);
@@ -1070,16 +1098,6 @@ void ETSChecker::CheckClassDefinition(ir::ClassDefinition *classDef)
             it->Check(this);
         }
     }
-
-    if (classDef->IsGlobal() || classType->SuperType() == nullptr) {
-        return;
-    }
-
-    CheckConstructors(classDef, classType);
-    CheckValidInheritance(classType, classDef);
-    CheckConstFields(classType);
-    CheckGetterSetterProperties(classType);
-    CheckInvokeMethodsLegitimacy(classType);
 }
 
 void ETSChecker::CheckConstructors(ir::ClassDefinition *classDef, ETSObjectType *classType)
@@ -1972,13 +1990,18 @@ void ETSChecker::CheckProperties(ETSObjectType *classType, ir::ClassDefinition *
             return;
         }
 
+        if (it->Declaration()->Type() == varbinder::DeclType::LET &&
+            found->Declaration()->Type() == varbinder::DeclType::READONLY) {
+            return;
+        }
+
         if (it->TsType()->IsETSFunctionType()) {
             auto getter = it->TsType()->AsETSFunctionType()->FindGetter();
-            if (getter != nullptr && getter->ReturnType() == found->TsType()) {
+            if (getter != nullptr && Relation()->IsIdenticalTo(getter->ReturnType(), found->TsType())) {
                 return;
             }
             auto setter = it->TsType()->AsETSFunctionType()->FindSetter();
-            if (setter != nullptr && setter->Params().front()->TsType() == found->TsType()) {
+            if (setter != nullptr && Relation()->IsIdenticalTo(setter->ReturnType(), found->TsType())) {
                 return;
             }
         }
