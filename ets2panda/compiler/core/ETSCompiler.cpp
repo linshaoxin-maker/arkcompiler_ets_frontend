@@ -1922,4 +1922,6 @@ void ETSCompiler::Compile(const ir::TSNonNullExpression *expr) const
 }
 
 void ETSCompiler::Compile([[maybe_unused]] const ir::TSTypeAliasDeclaration *st) const {}
+void ETSCompiler::Compile([[maybe_unused]] const ir::TSEnumDeclaration *st) const {}
+
 }  // namespace ark::es2panda::compiler
