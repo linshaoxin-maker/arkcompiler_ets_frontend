@@ -15,8 +15,8 @@
 
 interface Test {
     proc()  // passes
-    proc()()  // throws SyntaxError
+    proc()/* @@ IdentTest */()  // throws SyntaxError
 }
 
-/* @@? 18:11 Error SyntaxError: Unexpected token '('. */
-/* @@? 18:11 Error SyntaxError: ',' expected */
+/* @@@ IdentTest Error SyntaxError: Unexpected token '('. */
+/* @@@ IdentTest Error SyntaxError: ',' expected */

@@ -21,10 +21,10 @@ function pi(): number {
 }
 
 function main() {
-    let v: UT = pi
-    assert (v as NumFunc)() == 3.14
+    let v: UT = /* @@ IdentTest */pi
+    assert /* @@ IdentTest1 */(v as NumFunc)() == 3.14
 }
 
-/* @@? 24:17 Error TypeError: Type '() => double' cannot be assigned to type '() => void|Double'  */
-/* @@? 25:12 Error TypeError: Cannot use type 'void' as value.  */
-/* @@? 25:12 Error TypeError: Bad operand type, the types of the operands must be numeric, same enumeration, or boolean type.  */
+/* @@@ IdentTest Error TypeError: Type '() => double' cannot be assigned to type '() => void|Double'  */
+/* @@@ IdentTest1 Error TypeError: Cannot use type 'void' as value.  */
+/* @@@ IdentTest1 Error TypeError: Bad operand type, the types of the operands must be numeric, same enumeration, or boolean type.  */

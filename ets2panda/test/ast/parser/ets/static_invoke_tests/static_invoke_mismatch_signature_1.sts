@@ -18,8 +18,8 @@ class A {
 }
 
 function main() {
-    A()
+    /* @@ IdentTest */A()
 }
 
-/* @@? 21:5 Error TypeError: No static invoke method and static instantiate method in A. A() is not allowed.  */
-/* @@? 21:5 Error TypeError: Type 'A' has no call signatures.  */
+/* @@@ IdentTest Error TypeError: No static invoke method and static instantiate method in A. A() is not allowed.  */
+/* @@@ IdentTest Error TypeError: Type 'A' has no call signatures.  */

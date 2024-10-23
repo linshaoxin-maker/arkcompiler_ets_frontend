@@ -22,7 +22,7 @@ class Alma {
 
 class Banana extends Alma {
   public constructor() {
-    super(5);
+    /* @@ IdentTest */super(5);
   }
 }
 
@@ -31,5 +31,5 @@ function main(): void {
   assert instance.x == 5;
 }
 
-/* @@? 25:5 Error TypeError: Signature constructor(alma: int): void is not visible here.  */
-/* @@? 25:5 Error TypeError: No matching call signature for Alma(int)  */
+/* @@@ IdentTest Error TypeError: Signature constructor(alma: int): void is not visible here.  */
+/* @@@ IdentTest Error TypeError: No matching call signature for Alma(int)  */

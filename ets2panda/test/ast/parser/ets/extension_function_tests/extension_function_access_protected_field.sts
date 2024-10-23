@@ -20,7 +20,7 @@ class Banana {
 }
 
 function Banana.name(): int {
-    return 1 + this.price();
+    return 1 + /* @@ IdentTest */this.price();
 }
 
 function main() {
@@ -28,5 +28,5 @@ function main() {
     console.println(banana.name());
 }
 
-/* @@? 23:16 Error TypeError: Signature price(): int is not visible here.  */
-/* @@? 23:16 Error TypeError: No matching call signature  */
+/* @@@ IdentTest Error TypeError: Signature price(): int is not visible here.  */
+/* @@@ IdentTest Error TypeError: No matching call signature  */

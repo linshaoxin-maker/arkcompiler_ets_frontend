@@ -17,7 +17,7 @@ import * as Test from "import_tests/packages";
 
 // Throw error: entities should only be reachable via Test alias.
 
-let x = foo(dbl /* double based signature */);
+let x = /* @@ IdentTest */foo(dbl /* double based signature */);
 
-/* @@? 20:9 Error TypeError: Unresolved reference foo  */
-/* @@? 20:9 Error TypeError: Unresolved reference foo  */
+/* @@@ IdentTest Error TypeError: Unresolved reference foo  */
+/* @@@ IdentTest Error TypeError: Unresolved reference foo  */

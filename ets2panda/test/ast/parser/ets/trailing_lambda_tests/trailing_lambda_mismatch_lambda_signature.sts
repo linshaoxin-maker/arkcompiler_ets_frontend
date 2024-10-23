@@ -19,10 +19,10 @@ function f(c: (a: int)=>void) {
 }
 
 function main() {
-    f() {
+    /* @@ IdentTest */f() {
         console.println("call back!")
     }
 }
 
-/* @@? 22:5 Error TypeError: Expected 1 arguments, got 0.  */
-/* @@? 22:5 Error TypeError: No matching call signature  */
+/* @@@ IdentTest Error TypeError: Expected 1 arguments, got 0.  */
+/* @@@ IdentTest Error TypeError: No matching call signature  */

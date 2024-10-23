@@ -23,9 +23,9 @@ class A {
 }
 
 function main(): void {
-    new A().foo(2.0)
+    /* @@ IdentTest */new A().foo(2.0)
 }
 
 
-/* @@? 26:5 Error TypeError: Signature foo(a: double): int is not visible here.  */
-/* @@? 26:5 Error TypeError: No matching call signature for foo(double)  */
+/* @@@ IdentTest Error TypeError: Signature foo(a: double): int is not visible here.  */
+/* @@@ IdentTest Error TypeError: No matching call signature for foo(double)  */

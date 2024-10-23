@@ -15,7 +15,7 @@
 
 import * as all from "./selective_export"
 
-let test_var = new all.TestClass();
+let test_var = new all./* @@ IdentTest */TestClass();
 
-/* @@? 18:24 Error TypeError: Cannot find imported element 'TestClass' exported with alias  */
-/* @@? 18:24 Error TypeError: Cannot find imported element 'TestClass' exported with alias  */
+/* @@@ IdentTest Error TypeError: Cannot find imported element 'TestClass' exported with alias  */
+/* @@@ IdentTest Error TypeError: Cannot find imported element 'TestClass' exported with alias  */

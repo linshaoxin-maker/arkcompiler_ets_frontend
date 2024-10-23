@@ -14,6 +14,6 @@
  */
 
 
-a.(b)
-/* @@? 17:3 Error SyntaxError: Identifier expected, got '('. */
-/* @@? 17:3 Error SyntaxError: Unexpected token '('. */
+a./* @@ IdentTest */(b)
+/* @@@ IdentTest Error SyntaxError: Identifier expected, got '('. */
+/* @@@ IdentTest Error SyntaxError: Unexpected token '('. */

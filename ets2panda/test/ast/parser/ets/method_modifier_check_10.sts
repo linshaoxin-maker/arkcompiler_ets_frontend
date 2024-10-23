@@ -14,8 +14,8 @@
  */
 
 class A {
-    final static foo() : void {}
+    /* @@ IdentTest */final static foo() : void {}
 }
 
-/* @@? 17:5 Error TypeError: Invalid method modifier(s): a final method can't have abstract, static or native modifier.  */
-/* @@? 17:5 Error TypeError: Invalid method modifier(s): a static method can't have abstract, final or override modifier.  */
+/* @@@ IdentTest Error TypeError: Invalid method modifier(s): a final method can't have abstract, static or native modifier.  */
+/* @@@ IdentTest Error TypeError: Invalid method modifier(s): a static method can't have abstract, final or override modifier.  */

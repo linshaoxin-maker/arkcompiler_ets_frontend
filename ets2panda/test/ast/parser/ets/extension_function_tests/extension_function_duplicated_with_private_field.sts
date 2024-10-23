@@ -25,9 +25,9 @@ function Banana.name(): int {
 
 function main() {
     let banana = new Banana();
-    console.println(banana.name(2));
+    console.println(/* @@ IdentTest */banana.name(2));
 }
 
-/* @@? 28:21 Error TypeError: Signature name(id: int): int is not visible here.  */
-/* @@? 28:21 Error TypeError: Expected 1 arguments, got 2.  */
-/* @@? 28:21 Error TypeError: No matching call signature for name(Banana, int)  */
+/* @@@ IdentTest Error TypeError: Signature name(id: int): int is not visible here.  */
+/* @@@ IdentTest Error TypeError: Expected 1 arguments, got 2.  */
+/* @@@ IdentTest Error TypeError: No matching call signature for name(Banana, int)  */

@@ -18,10 +18,10 @@ function foo(a : Int, b : Int = 20, c : Int = 30) : Int
     return 1;
 }
 
-function foo(a : Int, b : string = "a", c : Int = 30) : Int
+/* @@ IdentTest */function foo(a : Int, b : string = "a", c : Int = 30) : Int
 {
     return 2;
 }
 
-/* @@? 21:1 Error TypeError: Function foo with this assembly signature already declared.  */
-/* @@? 21:1 Error TypeError: Function foo is already declared.  */
+/* @@@ IdentTest Error TypeError: Function foo with this assembly signature already declared.  */
+/* @@@ IdentTest Error TypeError: Function foo is already declared.  */

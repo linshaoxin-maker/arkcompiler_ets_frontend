@@ -14,10 +14,10 @@
  */
 
 interface J{
-    toString(): String {
+    toString/* @@ IdentTest */(): String {
         return "";
     }
-    $_hashCode():int{
+    $_hashCode/* @@ IdentTest1 */():int{
         return 4;
     }
 }
@@ -30,7 +30,7 @@ function main(): void {
     assert o.$_hashCode() == 4
 }
 
-/* @@? 17:13 Error TypeError: Cannot override non-private method of the class Object from an interface.  */
-/* @@? 17:13 Error TypeError: Method toString(): String in J not overriding any method  */
-/* @@? 20:15 Error TypeError: Cannot override non-private method of the class Object from an interface.  */
-/* @@? 20:15 Error TypeError: Method $_hashCode(): int in J not overriding any method  */
+/* @@@ IdentTest Error TypeError: Cannot override non-private method of the class Object from an interface.  */
+/* @@@ IdentTest Error TypeError: Method toString(): String in J not overriding any method  */
+/* @@@ IdentTest1 Error TypeError: Cannot override non-private method of the class Object from an interface.  */
+/* @@@ IdentTest1 Error TypeError: Method $_hashCode(): int in J not overriding any method  */

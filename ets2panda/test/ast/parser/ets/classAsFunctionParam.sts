@@ -20,9 +20,9 @@ function alma(x: Object) {
 }
 
 function main(): void {
-    alma(C);
+    alma(/* @@ IdentTest */C);
 }
 
-/* @@? 23:10 Error TypeError: Class or interface 'C' cannot be used as object  */
-/* @@? 23:10 Error TypeError: Class name can't be the argument of function or method. */
+/* @@@ IdentTest Error TypeError: Class or interface 'C' cannot be used as object  */
+/* @@@ IdentTest Error TypeError: Class name can't be the argument of function or method. */
 /* @@? 0:0 Error TypeError:  */

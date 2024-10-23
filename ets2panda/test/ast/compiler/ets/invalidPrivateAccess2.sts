@@ -22,8 +22,8 @@ class Klass {
 }
 
 function main(): void {
-    let klass: Klass = new Klass();
+    let klass: Klass = /* @@ IdentTest */new Klass();
 }
 
-/* @@? 25:24 Error TypeError: Signature constructor(): void is not visible here.  */
-/* @@? 25:24 Error TypeError: No matching construct signature  */
+/* @@@ IdentTest Error TypeError: Signature constructor(): void is not visible here.  */
+/* @@@ IdentTest Error TypeError: No matching construct signature  */

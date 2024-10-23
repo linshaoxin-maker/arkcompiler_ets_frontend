@@ -31,10 +31,10 @@ function foo(x: A): string {
 }
 
 function main(): int {
-    let c : string = foo(new C());
+    let c : string = /* @@ IdentTest */foo(new C());
     return 0;
 }
 
 
-/* @@? 34:22 Error TypeError: Call to `foo` is ambiguous as `2` versions of `foo` are available: `foo(x: A): String` and `foo(x: I): String`  */
-/* @@? 34:22 Error TypeError: Call to `foo` is ambiguous as `2` versions of `foo` are available: `foo(x: A): String` and `foo(x: J): String`   */
+/* @@@ IdentTest Error TypeError: Call to `foo` is ambiguous as `2` versions of `foo` are available: `foo(x: A): String` and `foo(x: I): String`  */
+/* @@@ IdentTest Error TypeError: Call to `foo` is ambiguous as `2` versions of `foo` are available: `foo(x: A): String` and `foo(x: J): String`   */

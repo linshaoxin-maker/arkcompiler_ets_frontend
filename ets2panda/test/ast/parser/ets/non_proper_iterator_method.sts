@@ -19,10 +19,10 @@ class C {
 
 function main(): void {
     let c = new C();
-    for (let it of c) {
+    for (let it of /* @@ IdentTest */c) {
     }
 }
 
-/* @@? 22:20 Error TypeError: Object type doesn't have proper iterator method.  */
-/* @@? 22:20 Error TypeError: 'For-of' statement source expression is not of iterable type.  */
+/* @@@ IdentTest Error TypeError: Object type doesn't have proper iterator method.  */
+/* @@@ IdentTest Error TypeError: 'For-of' statement source expression is not of iterable type.  */
 

@@ -24,24 +24,24 @@ switch (arg){
     case '1':
     case '2':
         break;
-    case '2':
+    /* @@ IdentTest */case '2':
         break;
-    case '2':
+    /* @@ IdentTest1 */case '2':
         break;
-    case 2:
+    /* @@ IdentTest2 */case /* @@ IdentTest3 */2:
         break;
-    case v:
+    /* @@ IdentTest4 */case /* @@ IdentTest5 */v:
         break;
-    case A:
+    /* @@ IdentTest6 */case /* @@ IdentTest7 */A:
         break;
 }
 
-/* @@? 31:10 Error TypeError: Switch case type 'int' is not comparable to discriminant type 'String'  */
-/* @@? 33:10 Error TypeError: Switch case type 'null|Int' is not comparable to discriminant type 'String'  */
-/* @@? 35:10 Error TypeError: Class name "A" used in the wrong context */
-/* @@? 35:10 Error TypeError: Switch case type 'A' is not comparable to discriminant type 'String'  */
-/* @@? 33:5 Error TypeError: Constant expression required */
-/* @@? 35:5 Error TypeError: Constant expression required */
-/* @@? 27:5 Error TypeError: Case duplicate */
-/* @@? 29:5 Error TypeError: Case duplicate */
-/* @@? 31:5 Error TypeError: Case duplicate */
+/* @@@ IdentTest3 Error TypeError: Switch case type 'int' is not comparable to discriminant type 'String'  */
+/* @@@ IdentTest5 Error TypeError: Switch case type 'null|Int' is not comparable to discriminant type 'String'  */
+/* @@@ IdentTest7 Error TypeError: Class name "A" used in the wrong context */
+/* @@@ IdentTest7 Error TypeError: Switch case type 'A' is not comparable to discriminant type 'String'  */
+/* @@@ IdentTest4 Error TypeError: Constant expression required */
+/* @@@ IdentTest6 Error TypeError: Constant expression required */
+/* @@@ IdentTest Error TypeError: Case duplicate */
+/* @@@ IdentTest1 Error TypeError: Case duplicate */
+/* @@@ IdentTest2 Error TypeError: Case duplicate */
