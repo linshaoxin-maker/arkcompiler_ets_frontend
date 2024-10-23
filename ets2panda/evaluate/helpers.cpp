@@ -318,12 +318,11 @@ void AddExternalProgram(parser::Program *program, parser::Program *extProgram, s
 ir::ETSTypeReference *CreateETSTypeReference(checker::ETSChecker *checker, util::StringView name)
 {
     auto *identRef = checker->AllocNode<ir::Identifier>(name, checker->Allocator());
-    identRef->AsIdentifier()->SetReference();
-
     auto *typeRefPart = checker->AllocNode<ir::ETSTypeReferencePart>(identRef);
     return checker->AllocNode<ir::ETSTypeReference>(typeRefPart);
 }
 
+// Be aware of lifecycle of string and string_view
 std::pair<std::string_view, std::string_view> SplitRecordName(std::string_view recordName)
 {
     std::string_view moduleName;

@@ -22,6 +22,7 @@
 #include "varbinder/variableFlags.h"
 #include "ir/astNode.h"
 #include "ir/expressions/identifier.h"
+#include "ir/statements/annotationDeclaration.h"
 #include "ir/statements/classDeclaration.h"
 #include "ir/base/classDefinition.h"
 #include "ir/base/scriptFunction.h"
@@ -281,17 +282,22 @@ Variable *Scope::AddLocal(ArenaAllocator *allocator, Variable *currentVariable, 
             return bindings_.insert({newDecl->Name(), allocator->New<EnumVariable>(newDecl, false)}).first->second;
         }
         case DeclType::ENUM_LITERAL: {
-            return bindings_
-                .insert({newDecl->Name(), allocator->New<LocalVariable>(newDecl, VariableFlags::ENUM_LITERAL)})
-                .first->second;
+            auto *var =
+                bindings_.insert({newDecl->Name(), allocator->New<LocalVariable>(newDecl, VariableFlags::ENUM_LITERAL)})
+                    .first->second;
+            newDecl->Node()->AsTSEnumDeclaration()->Key()->SetVariable(var);
+            return var;
         }
         case DeclType::INTERFACE: {
             return bindings_.insert({newDecl->Name(), allocator->New<LocalVariable>(newDecl, VariableFlags::INTERFACE)})
                 .first->second;
         }
         case DeclType::CLASS: {
-            return bindings_.insert({newDecl->Name(), allocator->New<LocalVariable>(newDecl, VariableFlags::CLASS)})
-                .first->second;
+            auto *var =
+                bindings_.insert({newDecl->Name(), allocator->New<LocalVariable>(newDecl, VariableFlags::CLASS)})
+                    .first->second;
+            newDecl->Node()->AsClassDefinition()->Ident()->SetVariable(var);
+            return var;
         }
         case DeclType::TYPE_PARAMETER: {
             return bindings_
@@ -445,6 +451,22 @@ Variable *FunctionParamScope::AddBinding([[maybe_unused]] ArenaAllocator *alloca
     UNREACHABLE();
 }
 
+Variable *AnnotationParamScope::AddBinding([[maybe_unused]] ArenaAllocator *allocator,
+                                           [[maybe_unused]] Variable *currentVariable, [[maybe_unused]] Decl *newDecl,
+                                           [[maybe_unused]] ScriptExtension extension)
+{
+    auto *ident = newDecl->Node()->AsClassProperty()->Id();
+    auto annoVar = allocator->New<LocalVariable>(newDecl, VariableFlags::PROPERTY);
+    auto var = InsertBinding(ident->Name(), annoVar).first->second;
+    if (var != nullptr) {
+        var->SetScope(this);
+        if (ident != nullptr) {
+            ident->SetVariable(var);
+        }
+    }
+    return var;
+}
+
 Variable *FunctionScope::AddBinding(ArenaAllocator *allocator, Variable *currentVariable, Decl *newDecl,
                                     [[maybe_unused]] ScriptExtension extension)
 {
@@ -461,7 +483,9 @@ Variable *FunctionScope::AddBinding(ArenaAllocator *allocator, Variable *current
             return InsertBinding(newDecl->Name(), allocator->New<EnumVariable>(newDecl, false)).first->second;
         }
         case DeclType::ENUM_LITERAL: {
-            return AddTSBinding<LocalVariable>(allocator, currentVariable, newDecl, VariableFlags::ENUM_LITERAL);
+            var = AddTSBinding<LocalVariable>(allocator, currentVariable, newDecl, VariableFlags::ENUM_LITERAL);
+            ident = newDecl->Node()->AsTSEnumDeclaration()->Key();
+            break;
         }
         // NOTE(psiket):Duplication
         case DeclType::INTERFACE: {
@@ -895,6 +919,16 @@ void ClassScope::SetBindingProps(Decl *newDecl, BindingProps *props, bool isStat
         case DeclType::TYPE_ALIAS: {
             props->SetBindingProps(VariableFlags::TYPE_ALIAS, newDecl->Node()->AsTSTypeAliasDeclaration()->Id(),
                                    TypeAliasScope());
+            break;
+        }
+        case DeclType::ANNOTATIONDECL: {
+            props->SetBindingProps(VariableFlags::ANNOTATIONDECL, newDecl->Node()->AsAnnotationDeclaration()->Ident(),
+                                   isStatic ? staticDeclScope_ : instanceDeclScope_);
+            break;
+        }
+        case DeclType::ANNOTATIONUSAGE: {
+            props->SetBindingProps(VariableFlags::ANNOTATIONUSAGE, newDecl->Node()->AsAnnotationUsage()->Ident(),
+                                   isStatic ? staticDeclScope_ : instanceDeclScope_);
             break;
         }
         default: {
