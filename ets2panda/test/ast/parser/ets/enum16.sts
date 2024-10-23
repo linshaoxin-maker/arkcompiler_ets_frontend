@@ -15,8 +15,8 @@
 
 enum InvalidInitTypeEnum {
   Red,
-  Green = 12b7,
+  Green = 12/* @@ IdentTest */b7,
   Blue
 }
 
-/* @@? 18:13 Error SyntaxError: Invalid numeric literal  */
+/* @@@ IdentTest Error SyntaxError: Invalid numeric literal  */

@@ -13,6 +13,6 @@
  * limitations under the License.
  */
 
-let x = "\u{}";
+let x = "\u{/* @@ IdentTest */}";
 
-/* @@? 16:13 Error SyntaxError: Invalid unicode escape sequence  */
+/* @@@ IdentTest Error SyntaxError: Invalid unicode escape sequence  */

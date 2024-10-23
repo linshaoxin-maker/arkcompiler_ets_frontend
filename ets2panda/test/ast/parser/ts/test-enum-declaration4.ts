@@ -17,6 +17,6 @@
 const enum Foo {
 }
 
-enum Foo {}
+enum Foo /* @@ IdentTest */{}
 
-/* @@? 20:10 Error SyntaxError: Variable 'Foo' has already been declared.  */
+/* @@@ IdentTest Error SyntaxError: Variable 'Foo' has already been declared.  */

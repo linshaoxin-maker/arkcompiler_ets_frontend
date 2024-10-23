@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-native function foo();
+native function foo/* @@ IdentTest */();
 
 function main(): void {
     foo();
 }
 
-/* @@? 16:20 Error TypeError: Native and Declare methods should have explicit return type.  */
+/* @@@ IdentTest Error TypeError: Native and Declare methods should have explicit return type.  */

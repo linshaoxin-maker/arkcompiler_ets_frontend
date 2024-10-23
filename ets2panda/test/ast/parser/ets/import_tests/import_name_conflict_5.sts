@@ -13,11 +13,11 @@
  * limitations under the License.
  */
  
-import {bar} from "./check_exported_3";
+import/* @@ IdentTest */ {bar} from "./check_exported_3";
 
 function bar(): int {
     return 42;
 }
 
 //Throw error: Function already declared.
-/* @@? 16:7 Error TypeError: Function bar is already declared.  */
+/* @@@ IdentTest Error TypeError: Function bar is already declared.  */

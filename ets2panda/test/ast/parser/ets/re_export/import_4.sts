@@ -14,10 +14,10 @@
  */
 
 import * as all from "./re_export_4"
-
+/* @@ IdentTest */
 function main() : void
 {
     all.foo();
 }
 
-/* @@? 17:1 Error SyntaxError: Function 'foo' is already defined.  */
+/* @@@ IdentTest Error SyntaxError: Function 'foo' is already defined.  */
